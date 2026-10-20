@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Aw.Sindri.Core.Workflow.ApproveAll;
+using Aw.Sindri.Host;
 using Aw.Sindri.Testing.Workflow.ApproveAll;
 using Aw.Sindri.Tests.ApproveAll;
 using Aw.Sindri.Tests.Callers;
@@ -19,9 +20,13 @@ internal static class ApproveAllScenarios
 {
     internal const string Slug = "workflow-recipes-approve-all";
 
+    /// <summary>The app's challenge route (setup-once spec §4): 'POST /workflow/challenges/app'.</summary>
+    internal const string AppSlug = "workflow-challenges-app";
+
     /// <summary>The (slug, scenario) pairs of this class.</summary>
     public static IReadOnlyList<(string Slug, string Scenario)> All { get; } =
-        [(Slug, "plan"), (Slug, "plan-first-approval"), (Slug, "applied"), (Slug, "refused"), (Slug, "empty")];
+        [(Slug, "plan"), (Slug, "plan-first-approval"), (Slug, "applied"), (Slug, "refused"), (Slug, "empty"),
+            (AppSlug, "profile"), (AppSlug, "approve-all"), (AppSlug, "refused-session"), (AppSlug, "refused-action"), (AppSlug, "before-profile")];
 
     /// <summary>Whether <paramref name="slug"/> and <paramref name="scenario"/> belong to this class.</summary>
     public static bool Handles(string slug, string scenario) => All.Contains((slug, scenario));
@@ -37,6 +42,11 @@ internal static class ApproveAllScenarios
     public static async Task<string> Body(GoldenHost host, string slug, string scenario, CancellationToken ct)
     {
         ArgumentException.ThrowIfNullOrEmpty(slug);
+        if (string.Equals(slug, AppSlug, StringComparison.Ordinal))
+        {
+            return await AppChallenge(host, scenario, ct);
+        }
+
         await ViewScenarios.Approve(host, ct);
         if (string.Equals(scenario, "applied", StringComparison.Ordinal) || string.Equals(scenario, "refused", StringComparison.Ordinal))
         {
@@ -46,6 +56,27 @@ internal static class ApproveAllScenarios
         }
 
         return (await host.Http.Ask(Get(PlanRoute, Human(host.Token.Value)))).Body;
+    }
+
+    private static async Task<string> AppChallenge(GoldenHost host, string scenario, CancellationToken ct)
+    {
+        (string Name, string Value)[] app = [(SindriHeaders.Caller, "human"), (SindriHeaders.Client, "ui"), (SindriHeaders.Token, host.Token.Value)];
+        (string Name, string Value)[] session = [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli")];
+        if (new[] { "approve-all", "refused-session", "refused-action" }.Contains(scenario, StringComparer.Ordinal))
+        {
+            await ViewScenarios.Approve(host, ct);
+        }
+
+        var (headersOf, action) = scenario switch
+        {
+            "profile" => (app, "approve profile " + (await host.LiveHash(ct)).Value[..6]),
+            "approve-all" => (app, "approve-all " + await Digest(host)),
+            "refused-session" => (session, "approve-all " + await Digest(host)),
+            "refused-action" => (app, "revoke workflow.step@9ab2d40c1e77"),
+            "before-profile" => (app, "approve-all c41e07"),
+            _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "no such challenges-app scenario"),
+        };
+        return (await host.Http.Ask(Post("/sindri/workflow/challenges/app", $$"""{"action":"{{action}}"}""", headersOf))).Body;
     }
 
     internal const string PlanRoute = "/sindri/workflow/recipes/approve-all";

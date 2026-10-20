@@ -1,6 +1,23 @@
 {
   "rows": [
     {
+      "action": "AddRepo",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/setup/repos",
+      "cli": "sindri repo add <path>",
+      "ui": "pending:SO-A3",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null,
+      "confirm": null
+    },
+    {
       "action": "ApplyCommand:answer-accept",
       "class": "protected",
       "allowedCallers": [
@@ -13,7 +30,8 @@
       "ui": "cli-only:typed-confirmation",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ApplyCommand:answer-grant",
@@ -28,7 +46,8 @@
       "ui": "cli-only:typed-confirmation",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ApplyCommand:answer-grant-tokens",
@@ -43,7 +62,8 @@
       "ui": "cli-only:typed-confirmation",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ApplyCommand:answer-reject",
@@ -59,7 +79,8 @@
       "ui": "ready",
       "destructive": true,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ApplyCommand:answer-resume",
@@ -75,7 +96,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ApplyCommand:answer-text",
@@ -91,7 +113,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ApplyCommand:cancel",
@@ -107,7 +130,8 @@
       "ui": "ready",
       "destructive": true,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ApplyCommand:command",
@@ -123,7 +147,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ApplyCommand:handback",
@@ -139,7 +164,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ApplyCommand:takeover",
@@ -157,52 +183,59 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ApproveAllRecipes",
       "class": "job",
       "allowedCallers": [
-        "human+terminal"
+        "human+terminal",
+        "human"
       ],
       "terminal": true,
       "method": "POST",
       "route": "/sindri/workflow/recipes/approve-all",
       "cli": "sindri recipe approve-all",
-      "ui": "pending:SO-E3",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": "held"
     },
     {
       "action": "ApproveProfile",
       "class": "protected",
       "allowedCallers": [
-        "human+terminal"
+        "human+terminal",
+        "human"
       ],
       "terminal": true,
       "method": "POST",
       "route": "/sindri/profile/approve",
       "cli": "sindri profile approve [<hash>]",
-      "ui": "cli-only:typed-confirmation",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": "typed"
     },
     {
       "action": "ApproveRecipe",
       "class": "protected",
       "allowedCallers": [
-        "human+terminal"
+        "human+terminal",
+        "human"
       ],
       "terminal": true,
       "method": "POST",
       "route": "/sindri/workflow/recipes/{id}@{hash}/approve",
       "cli": "sindri recipe approve <recipe>",
-      "ui": "cli-only:typed-confirmation",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": "typed"
     },
     {
       "action": "BuildContextMap",
@@ -219,7 +252,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "CancelJob",
@@ -236,7 +270,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": true,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "CloseItem:cancelled",
@@ -252,7 +287,8 @@
       "ui": "ready",
       "destructive": true,
       "readsViews": true,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "CloseItem:done",
@@ -268,7 +304,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": true,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "CompleteStep",
@@ -284,7 +321,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "CompleteStep:report",
@@ -299,7 +337,25 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
+    },
+    {
+      "action": "ConnectOnyx",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/onyx/account",
+      "cli": "sindri onyx connect",
+      "ui": "pending:SO-A5",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "CreateItem",
@@ -315,7 +371,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "Decide",
@@ -331,7 +388,25 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": true,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
+    },
+    {
+      "action": "DeferOnyx",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/onyx/defer",
+      "cli": "sindri onyx defer",
+      "ui": "pending:SO-A5",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "FileRequest",
@@ -349,7 +424,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": true,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "FocusSession",
@@ -365,7 +441,8 @@
       "ui": "pending:CO-4a",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ImportContextMap",
@@ -380,7 +457,25 @@
       "ui": "cli-only:typed-confirmation",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
+    },
+    {
+      "action": "IssueAppChallenge",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/workflow/challenges/app",
+      "cli": "sindri recipe approve <recipe>",
+      "ui": "ready",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "IssueChallenge",
@@ -395,7 +490,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "IssueNonce",
@@ -412,7 +508,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "LaunchInit",
@@ -425,7 +522,8 @@
       "ui": "cli-only:local",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "LaunchShow",
@@ -438,7 +536,8 @@
       "ui": "cli-only:local",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "OpenItem:attach",
@@ -454,7 +553,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": true,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "OpenItem:open",
@@ -470,7 +570,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": true,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "OpenItem:resume",
@@ -486,7 +587,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": true,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "PauseService",
@@ -502,7 +604,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ProbeLaunchTargets",
@@ -519,7 +622,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "PromoteContextMap",
@@ -534,7 +638,8 @@
       "ui": "cli-only:typed-confirmation",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ProposeContextMap",
@@ -551,7 +656,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "RebuildViews",
@@ -567,7 +673,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "RefreshContextMap",
@@ -584,7 +691,26 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
+    },
+    {
+      "action": "RegisterMcp",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human",
+        "service:setup"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/setup/mcp",
+      "cli": "sindri mcp register --apply",
+      "ui": "pending:SO-A4",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "RegisterRecipe",
@@ -600,7 +726,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ResumeService",
@@ -616,7 +743,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ReviewContextMap:accept",
@@ -632,7 +760,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ReviewContextMap:accept-deterministic",
@@ -648,7 +777,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ReviewContextMap:add",
@@ -663,7 +793,8 @@
       "ui": "cli-only:typed-confirmation",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ReviewContextMap:apply-file",
@@ -678,7 +809,8 @@
       "ui": "cli-only:typed-confirmation",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ReviewContextMap:delete",
@@ -693,7 +825,8 @@
       "ui": "cli-only:typed-confirmation",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ReviewContextMap:drop",
@@ -709,7 +842,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ReviewContextMap:merge",
@@ -724,7 +858,8 @@
       "ui": "cli-only:typed-confirmation",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ReviewContextMap:move",
@@ -740,7 +875,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ReviewContextMap:reject",
@@ -756,7 +892,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ReviewContextMap:rename",
@@ -772,7 +909,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ReviewContextMap:repoint",
@@ -788,7 +926,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ReviewContextMap:undo",
@@ -804,7 +943,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "RevokeRecipe",
@@ -819,7 +959,8 @@
       "ui": "cli-only:typed-confirmation",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "RunContextBacktest",
@@ -836,7 +977,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "RunDoctor",
@@ -849,7 +991,8 @@
       "ui": "cli-only:local",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "RunService",
@@ -866,7 +1009,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "SessionExit",
@@ -883,7 +1027,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "SessionHeartbeat",
@@ -900,7 +1045,25 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
+    },
+    {
+      "action": "SetupOnyx",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/onyx/setup",
+      "cli": "sindri onyx up",
+      "ui": "pending:SO-A5",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "StartInstance",
@@ -916,7 +1079,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": true,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "StopProcess",
@@ -933,7 +1097,8 @@
       "ui": "ready",
       "destructive": true,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "SyncSources",
@@ -950,7 +1115,8 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     },
     {
       "action": "ValidateProfile",
@@ -963,7 +1129,8 @@
       "ui": "cli-only:local",
       "destructive": false,
       "readsViews": false,
-      "shortcut": null
+      "shortcut": null,
+      "confirm": null
     }
   ]
 }
