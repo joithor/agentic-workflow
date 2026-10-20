@@ -159,8 +159,14 @@ else
     echo "  ollama model: already pulled ($CI_MODEL, $CI_ID)"
   else
     echo "  Pulling $CI_MODEL (about 275 MB)..."
-    if ollama pull "$CI_MODEL"; then echo "  ollama model: pulled ($CI_MODEL)"; else
+    if ! ollama pull "$CI_MODEL"; then
       echo "  WARN: ollama pull $CI_MODEL failed; run it by hand"; FAILED=1
+    else
+      # The pin is the digest, and a moved tag pulls another one: read the list again and compare the ids.
+      _got="$(ollama list 2>/dev/null | awk -v m="$CI_MODEL" '$1 == m { print $2; exit }')"
+      if [ "$_got" = "$CI_ID" ]; then echo "  ollama model: pulled ($CI_MODEL, $CI_ID)"; else
+        echo "  WARN: $CI_MODEL now has id ${_got:-none}, not the pinned $CI_ID (the tag moved?); update context/code-index.lock in a reviewed change"; FAILED=1
+      fi
     fi
   fi
 fi

@@ -17,7 +17,7 @@ ok()   { PASS=$((PASS + 1)); echo "  ok   $1"; }
 fail() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }
 
 BIN="$TMPROOT/bin"; mkdir -p "$BIN"
-for t in bash sh jq grep sed awk head cat dirname basename uname mktemp find tr cut wc sha256sum shasum mkdir; do
+for t in bash sh jq grep sed awk head cat dirname basename uname mktemp find tr cut wc sha256sum shasum mkdir chmod; do
   p="$(command -v "$t")" && ln -s "$p" "$BIN/$t"
 done
 fake() { printf '#!/bin/sh\n%s\n' "${2:-exit 0}" >"$BIN/$1"; chmod +x "$BIN/$1"; }
@@ -196,16 +196,75 @@ fake ollama "[ \"\$1\" = list ] && { echo 'NAME ID SIZE MODIFIED'; echo '$CI_MOD
 : >"$LOG"; run AW_DEPS_OS=Linux AW_STATE_DIR="$TMPROOT/ci-state"
 expect "a model at the pinned digest is not pulled" 0 "ollama model: already pulled \\($CI_MODEL, $CI_ID\\)"
 grep -q pulled "$LOG" && fail "pulled a model that was present" || ok "no pull when the digest matches"
-fake ollama "[ \"\$1\" = list ] && { echo 'NAME ID SIZE MODIFIED'; echo '$CI_MODEL 000000000000 274 MB 1 day ago'; }; [ \"\$1\" = pull ] && echo \"pulled \$2\" >>\"$LOG\"; exit 0"
+# An ollama fake with a state: `list` shows the model at the id in $OLLAMA_ID_FILE, `pull` logs, exits <rc> and (on success) leaves <id after pull> there.
+ollama_fake() {   # <listed id> <id after pull> <pull exit code>
+  echo "$1" >"$TMPROOT/ollama-id"
+  fake ollama "[ \"\$1\" = list ] && { echo 'NAME ID SIZE MODIFIED'; echo \"$CI_MODEL \$(cat '$TMPROOT/ollama-id') 274 MB 1 day ago\"; exit 0; }
+[ \"\$1\" = pull ] && { echo \"pulled \$2\" >>\"$LOG\"; [ $3 -eq 0 ] && echo '$2' >'$TMPROOT/ollama-id'; exit $3; }
+exit 0"
+}
+ollama_fake 000000000000 "$CI_ID" 0
 : >"$LOG"; run AW_DEPS_OS=Linux AW_STATE_DIR="$TMPROOT/ci-state"
-expect "a model at another digest is pulled" 0 "ollama model: pulled \\($CI_MODEL\\)"
+expect "a model at another digest is pulled and re-checked" 0 "ollama model: pulled \\($CI_MODEL, $CI_ID\\)"
 grep -q "pulled $CI_MODEL" "$LOG" && ok "ollama pull ran with the lock's model name" || fail "no pull: $(cat "$LOG")"
+ollama_fake 000000000000 111111111111 0
+run AW_DEPS_OS=Linux AW_STATE_DIR="$TMPROOT/ci-state"
+expect "a pull that leaves another id (the tag moved) fails and names both ids" 1 "WARN: .*$CI_MODEL.*111111111111.*$CI_ID"
+printf '%s\n' "$OUT" | has "ollama model: pulled" && fail "said pulled for the wrong id" || ok "never says pulled for the wrong id"
+ollama_fake 000000000000 "$CI_ID" 1
+run AW_DEPS_OS=Linux AW_STATE_DIR="$TMPROOT/ci-state"
+expect "a failed ollama pull fails the run" 1 "WARN: ollama pull $CI_MODEL failed"
 fake ollama 'echo "connection refused" >&2; exit 1'
 run AW_DEPS_OS=Linux AW_STATE_DIR="$TMPROOT/ci-state"
 expect "an Ollama server that is down warns" 0 "the Ollama server does not answer"
 rm "$BIN/ollama"
 run AW_DEPS_OS=Linux AW_DRY_RUN=1 AW_STATE_DIR="$TMPROOT/ci-state"
 expect "no ollama skips the model with a warning" 0 "WARN: ollama not installed; skipping the embedding model $CI_MODEL"
+
+# 9d. The real graphify install path, with fakes: a half-built environment is removed, `uv venv` and `uv pip install --require-hashes
+# --exclude-newer` run with the lock's arguments, and the version is checked again. <mode>: ok | installfail | wrongver.
+fresh_state() {   # <dir>: a state dir with the temporal cache only
+  mkdir -p "$1/cache/bin/temporal-$V" "$1/cache/bin/temporal-test-server-$TV"
+  cp "$TMPROOT/ci-state/cache/bin/temporal-$V/temporal" "$1/cache/bin/temporal-$V/temporal"
+  : >"$1/cache/bin/temporal-test-server-$TV/temporal-test-server"; chmod +x "$1"/cache/bin/*/*
+}
+uv_fake() {
+  fake uv "echo \"uv \$*\" >>\"$LOG\"
+case \"\$1\" in
+  venv) mkdir -p \"\$3/bin\"; printf '#!/bin/sh\\necho graphify %s\\n' '$([ "$1" = wrongver ] && echo 0.0.1 || echo "$CI_VER")' >\"\$3/bin/graphify\"; chmod +x \"\$3/bin/graphify\" ;;
+  pip) [ '$1' = installfail ] && { echo 'hash mismatch' >&2; exit 1; } ;;
+esac
+exit 0"
+}
+ollama_fake "$CI_ID" "$CI_ID" 0
+S="$TMPROOT/ci-fresh"; fresh_state "$S"
+ENVDIR="$S/cache/code-index/graphify-$CI_VER-$CI_SHA12"
+mkdir -p "$ENVDIR/lib"; : >"$ENVDIR/lib/half-built"
+uv_fake ok; : >"$LOG"; run AW_DEPS_OS=Linux AW_STATE_DIR="$S"
+expect "a half-built graphify environment is rebuilt" 0 "code-index graphify: installed \\($ENVDIR\\)"
+[ ! -e "$ENVDIR/lib/half-built" ] && ok "the half-built environment was removed first" || fail "the half-built environment is still there"
+grep -qF "uv venv --quiet $ENVDIR" "$LOG" && ok "uv venv ran on the environment path" || fail "no uv venv: $(cat "$LOG")"
+grep -qF "uv pip install --quiet --python $ENVDIR/bin/python --require-hashes -r $REPO/context/code-index-requirements.txt --exclude-newer $CI_DATE" "$LOG" \
+  && ok "uv pip install ran with --require-hashes, the requirements file and the lock's date" || fail "wrong install arguments: $(cat "$LOG")"
+
+S="$TMPROOT/ci-fresh2"; fresh_state "$S"
+uv_fake installfail; run AW_DEPS_OS=Linux AW_STATE_DIR="$S"
+expect "a failing uv install fails the run" 1 "WARN: code-index graphify install failed"
+S="$TMPROOT/ci-fresh3"; fresh_state "$S"
+uv_fake wrongver; run AW_DEPS_OS=Linux AW_STATE_DIR="$S"
+expect "an environment whose graphify is not the pin fails the run" 1 "WARN: code-index graphify install failed"
+S="$TMPROOT/ci-fresh4"; fresh_state "$S"
+rm "$BIN/uv"; run AW_DEPS_OS=Linux AW_STATE_DIR="$S"
+expect "no uv fails the run" 1 "WARN: code-index graphify not installed \\(uv missing\\)"
+
+# 9e. A lock that fails its check: the code index pins are skipped and the run fails. (A copy of the tree, the lock corrupted.)
+COPY="$TMPROOT/tree"; mkdir -p "$COPY/context" "$COPY/sindri" "$COPY/config"
+cp -R "$REPO/scripts" "$COPY/scripts"; cp -R "$REPO/config/lib" "$COPY/config/lib"; cp "$REPO/binaries.lock" "$COPY/"; cp "$REPO/sindri/package.json" "$COPY/sindri/"
+cp "$REPO"/context/code-index* "$COPY/context/"; sed -i 's/^need disk-bytes.*/need disk-bytes 0/' "$COPY/context/code-index.lock"
+S="$TMPROOT/ci-fresh5"; fresh_state "$S"; fake uv 'exit 0'; ollama_fake "$CI_ID" "$CI_ID" 0
+set +e; OUT="$(env -i PATH="$BIN" HOME="$HOME_DIR" AW_DEPS_ZLIB_H="$TMPROOT/zlib.h" AW_DEPS_OS=Linux AW_STATE_DIR="$S" bash "$COPY/scripts/install-deps.sh" 2>&1)"; RC=$?; set -e
+expect "a lock that fails its check skips the code index pins and fails" 1 "WARN: context/code-index.lock fails scripts/code-index-lock.sh check"
+printf '%s\n' "$OUT" | has "code-index graphify" && fail "went on to install with a bad lock" || ok "nothing is installed from a bad lock"
 
 echo ""
 echo "$PASS passed, $FAIL failed"
