@@ -165,6 +165,23 @@ public sealed class ContextMapRefreshServiceTests
         Assert.True(result.IsError);
         Assert.Contains("context-map-refresh", result.Error.Message, StringComparison.Ordinal);
         Assert.Equal(SindriErrors.ServiceFailed.Code, result.Error.Code);
+        Assert.Empty(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Three_failed_refreshes_start_again_when_the_wait_is_over_and_the_run_stays_failed_until_one_succeeds()
+    {
+        Job(JobState.Failed, TimeSpan.FromMinutes(50));
+        Job(JobState.Failed, TimeSpan.FromMinutes(40));
+        Job(JobState.Failed, TimeSpan.FromMinutes(25));   // the third wait is 20 minutes
+        _engine.Heads = [Head("a", "1")];
+
+        var result = await Run(await Service());
+
+        _ = Assert.Single(_start.Requests);
+        Assert.True(result.IsError);
+        Assert.Equal(SindriErrors.ServiceFailed.Code, result.Error.Code);
+        Assert.Contains("started", result.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
