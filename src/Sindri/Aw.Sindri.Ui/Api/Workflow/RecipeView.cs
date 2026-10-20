@@ -23,4 +23,4 @@ internal sealed record RecipeView(
     PathOrdering OrderedBy,
     IReadOnlyList<RecipeStateView> States,
     IReadOnlyList<RecipeLoopView> Loops,
-    string? DisplayName = null);
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? DisplayName = null);

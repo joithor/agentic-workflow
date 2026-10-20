@@ -78,7 +78,7 @@ public sealed class StripRowViewModelTests
         Assert.True(vm.CanAnswer);
         Assert.Equal(Labels.Answer, vm.AnswerText);
         Assert.Null(vm.Protected);
-        Assert.Equal($"{Labels.Answer} {row.Address}", vm.AnswerName);
+        Assert.Equal($"{Labels.Answer}, {row.Subject.Label}", vm.AnswerName);
     }
 
     [Fact]

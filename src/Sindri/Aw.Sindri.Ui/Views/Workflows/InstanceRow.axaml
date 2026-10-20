@@ -36,7 +36,7 @@
         <TextBlock x:Name="WorkflowRowNow" Grid.Column="2" Classes="caption subtle" Text="{Binding Now}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
                    AutomationProperties.Name="{Binding Now}" />
       </Grid>
-      <Expander x:Name="WorkflowRowDetails" Header="{Binding DetailsText}" IsExpanded="{Binding IsDetailsOpen, Mode=TwoWay}">
+      <Expander x:Name="WorkflowRowDetails" Header="{Binding DetailsText}" AutomationProperties.Name="{Binding DetailsText}" IsExpanded="{Binding IsDetailsOpen, Mode=TwoWay}">
         <StackPanel Spacing="6">
           <!-- Each list is one static wrapper that names all its cells: a list's cells are materialized after the row's accessibility node
                was built, and AT-SPI never saw them (live proof, BUG-3). The cells inside are drawn only. -->

@@ -11,4 +11,4 @@ internal sealed record InstanceRecipe(
     string Hash,
     int Version,
     RecipeUrgency Urgency,
-    string? DisplayName = null);
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? DisplayName = null);

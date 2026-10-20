@@ -46,6 +46,8 @@ public sealed class RecipeFramesTests : FrameHost
 
         // desk-round-trip: a loop between neighbours, with its cap
         await Open(window, shell, "workflow.dev-desk-round-trip");
+        shell.Recipe.ToggleDetails();   // the identity line sits in Details
+        Settle(window);
         Assert.Equal(shell.Recipe.Identity, Named<TextBlock>(window, "RecipeIdentity").Text);
         Assert.Contains(Named<TextBlock>(window, "RecipeStateLink").Text, shell.Recipe.States!.Nodes.Select(n => n.Link), StringComparer.Ordinal);
         Assert.Equal(shell.Recipe.States.Nodes.Count, window.GetVisualDescendants().OfType<TextBlock>().Count(t => t.Name == "RecipeStateText" && t.IsEffectivelyVisible));
