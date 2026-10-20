@@ -44,12 +44,9 @@ public static class StepRuns
         new(token, frame.State, runs.Count(r => string.Equals(r.Step, frame.State, StringComparison.Ordinal)) + 1, MaxAttemptsOf(frame.State, states),
             StepRunState.Running, frame.Runtime, at, EndedAt: null, DurationMs: null, Outcome: null, Tokens: null, Actor: null);
 
-    // The cap of the loop the Step's state is in: the active state's round allowance (it may carry a grant), else the recipe's cap that every looped state's cell shows.
-    private static int? MaxAttemptsOf(string state, IReadOnlyList<StateCell> states)
-    {
-        var cell = states.FirstOrDefault(s => string.Equals(s.State, state, StringComparison.Ordinal));
-        return cell?.Round?.Max ?? cell?.Loops.Select(static l => (int?)l.Max).FirstOrDefault();
-    }
+    // The cap of the loop the Step's state is in: its cell's round, which every member of a loop carries. It is the allowance now, so a granted round raises it on the loop's earlier runs too.
+    private static int? MaxAttemptsOf(string state, IReadOnlyList<StateCell> states) =>
+        states.FirstOrDefault(s => string.Equals(s.State, state, StringComparison.Ordinal))?.Round?.Max;
 
     /// <summary>The run after <paramref name="recorded"/>: ended by its report, ended by the frame moving on, or as it was.</summary>
     private static StepRun Closed(StepRun run, RecordedWorkflowEvent recorded)

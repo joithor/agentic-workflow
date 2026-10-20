@@ -27,6 +27,7 @@ internal sealed class StepRunEvents(params RecordedWorkflowEvent[] events) : ISt
         return source;
     }
 
+    // Two modes: built with events, every read gets them whatever the address; built with Of(rows), a read keeps the rows tagged with the asked address (the contract's mode).
     public ValueTask<Result<IReadOnlyList<RecordedWorkflowEvent>>> EventsOf(InstanceAddress address, CancellationToken cancellationToken)
     {
         Asked = address;

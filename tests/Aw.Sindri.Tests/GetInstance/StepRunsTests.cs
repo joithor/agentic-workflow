@@ -66,9 +66,9 @@ public sealed class StepRunsTests
     }
 
     [Fact]
-    public void A_finished_looped_instance_gives_every_run_the_loop_cap_though_no_state_is_active_with_a_round()
+    public void A_finished_looped_instance_gives_every_run_the_loop_cap_from_the_cell_of_its_state_active_or_not()
     {
-        var states = new[] { Cell("verify", round: null, new LoopPair("mitigate", 1, 3)), Cell("mitigate", round: null, new LoopPair("verify", 1, 3)), Cell("done", round: null) };
+        var states = new[] { Cell("verify", new Round(2, 3)), Cell("mitigate", new Round(2, 3)), Cell("done", round: null) };
         var runs = StepRuns.Fold(
             [
                 Started("verify", "1.1"),
