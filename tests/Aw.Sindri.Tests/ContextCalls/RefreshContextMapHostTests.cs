@@ -1,3 +1,6 @@
+using Aw.Context.Core;
+using Aw.Context.Core.Models;
+using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.Fixtures;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
@@ -19,7 +22,8 @@ public sealed class RefreshContextMapHostTests : IDisposable
     public async Task A_service_caller_starts_RefreshContextMap_with_no_challenge_and_the_job_is_recorded_as_that_service()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var host = await ContextHosts.Approved(_repo, sessions: false, ct);
+        var model = new FakeModelPort { Fail = static _ => ContextErrors.SourceUnavailable.With("no agent CLI in the test") };   // why: the cleanup pass asks the model; the real port runs the box's agent CLIs
+        await using var host = await ContextHosts.Approved(_repo, sessions: false, ct, extra: s => s.AddSingleton<IModelPort>(model));
 
         Kernel.Result<JobStartedResponse> started;
         await using (var scope = host.App.Services.CreateAsyncScope())
@@ -33,6 +37,7 @@ public sealed class RefreshContextMapHostTests : IDisposable
         Assert.True(started.IsSuccess, started.IsError ? $"{started.Error.Code}: {started.Error.Message}" : null);
         Assert.Equal("service:context-map-refresh", begun.Value!.Envelope.Actor);
         await WaitForJobToEnd(ledger, ct);
+        Assert.NotEmpty(model.Requests);
     }
 
     // The job ends on its own (a failure is fine here: the start is what this test pins); wait so the host isn't disposed under it.
