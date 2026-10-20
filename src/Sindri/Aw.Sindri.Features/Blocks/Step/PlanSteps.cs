@@ -12,7 +12,11 @@ internal static class PlanSteps
 {
     private static readonly string[] _loaded = ["loaded"];
 
-    /// <summary>'step.plan.intake': loads the candidate design and frozen scope packets; 'loaded' with the seven round-1 seeds.</summary>
+    /// <summary>
+    /// 'step.plan.intake': loads the candidate design and frozen scope packets; 'loaded' with the round-1 seeds and 'fact:anchors', the anchor
+    /// keys of the design's covered surfaces (the surfaces the design's coverage table names, resolved to map anchors through the frozen scope packet's
+    /// scope map), which the planner's 'input.context.code' reads (LN-CTX2).
+    /// </summary>
     public static BlockDescriptor Intake { get; } = BlockStep("step.plan.intake", Capability.None)
         .Reads("fact:scopePacket", "fact:designPacket").Reports("loaded")
         .Writes(Seeds());
@@ -62,6 +66,6 @@ internal static class PlanSteps
     private static OutputSpec[] Seeds() =>
     [
         On("fact:design", _loaded), On("fact:plan", _loaded), On("fact:findings", _loaded), On("fact:questions", _loaded),
-        On("fact:answers", _loaded), On("fact:answerLog", _loaded), On("fact:holdoutSets", _loaded),
+        On("fact:answers", _loaded), On("fact:answerLog", _loaded), On("fact:holdoutSets", _loaded), On("fact:anchors", _loaded),
     ];
 }

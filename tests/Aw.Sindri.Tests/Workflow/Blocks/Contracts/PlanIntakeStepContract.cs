@@ -12,7 +12,7 @@ public sealed class PlanIntakeStepContract : DescriptorContract
 {
     protected override BlockDescriptor Descriptor => PlanSteps.Intake;
 
-    protected override string ExpectedHash => "sha256:3486e90ceb49d09bebecd4a95dcbc270c4ee8ef97d3521c0d6e89ba6148d7b08";
+    protected override string ExpectedHash => "sha256:9c9f38af5e0fb0966cf75ed63fa528c501bd6a568020490b11868ac22e5d0e48";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 
