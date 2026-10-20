@@ -1,0 +1,68 @@
+{
+  "steps": [
+    {
+      "id": "repo",
+      "title": "Add your repo",
+      "state": "done",
+      "why": "Sindri works on the code you point it at, so it needs at least one repository.",
+      "detail": "1 repository added.",
+      "error": null,
+      "action": null,
+      "progress": null
+    },
+    {
+      "id": "profile",
+      "title": "Approve your profile",
+      "state": "needs-you",
+      "why": "Your profile says what Sindri may do on this machine, and nothing runs until you approve it.",
+      "detail": "Your profile is ready for you to read and approve.",
+      "error": null,
+      "action": "ApproveProfile",
+      "progress": null
+    },
+    {
+      "id": "recipes",
+      "title": "Approve the workflows",
+      "state": "needs-you",
+      "why": "Workflows are the step-by-step recipes Sindri follows, and each one needs your approval before it can run.",
+      "detail": "26 workflows waiting for approval.",
+      "error": null,
+      "action": "ApproveAllRecipes",
+      "progress": {
+        "done": 0,
+        "total": 26
+      }
+    },
+    {
+      "id": "mcp",
+      "title": "Connect your coding agent",
+      "state": "todo",
+      "why": "Registering Sindri with your agent, for each repo only, lets the agent ask Sindri for context and report back.",
+      "detail": "Add your repo and approve your profile first.",
+      "error": null,
+      "action": null,
+      "progress": null
+    },
+    {
+      "id": "map",
+      "title": "Map your code",
+      "state": "todo",
+      "why": "The map is how Sindri knows how your code, tickets and decisions connect, so what it tells an agent is relevant.",
+      "detail": "Sindri builds the map once your repo is added and your profile is approved.",
+      "error": null,
+      "action": null,
+      "progress": null
+    },
+    {
+      "id": "onyx",
+      "title": "Set up Onyx",
+      "state": "todo",
+      "why": "Onyx is the search Sindri uses to find your business context, such as decisions and tickets.",
+      "detail": "Onyx isn't set up yet.",
+      "error": null,
+      "action": "SetupOnyx",
+      "progress": null
+    }
+  ],
+  "asOf": "2026-01-01T00:00:00.0000000Z"
+}

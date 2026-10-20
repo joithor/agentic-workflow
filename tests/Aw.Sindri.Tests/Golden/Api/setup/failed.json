@@ -1,0 +1,71 @@
+{
+  "steps": [
+    {
+      "id": "repo",
+      "title": "Add your repo",
+      "state": "done",
+      "why": "Sindri works on the code you point it at, so it needs at least one repository.",
+      "detail": "1 repository added.",
+      "error": null,
+      "action": null,
+      "progress": null
+    },
+    {
+      "id": "profile",
+      "title": "Approve your profile",
+      "state": "done",
+      "why": "Your profile says what Sindri may do on this machine, and nothing runs until you approve it.",
+      "detail": "Your profile is approved.",
+      "error": null,
+      "action": null,
+      "progress": null
+    },
+    {
+      "id": "recipes",
+      "title": "Approve the workflows",
+      "state": "done",
+      "why": "Workflows are the step-by-step recipes Sindri follows, and each one needs your approval before it can run.",
+      "detail": "All 26 workflows approved.",
+      "error": null,
+      "action": null,
+      "progress": {
+        "done": 26,
+        "total": 26
+      }
+    },
+    {
+      "id": "mcp",
+      "title": "Connect your coding agent",
+      "state": "done",
+      "why": "Registering Sindri with your agent, for each repo only, lets the agent ask Sindri for context and report back.",
+      "detail": "Your agent knows where Sindri is in 1 repository.",
+      "error": null,
+      "action": null,
+      "progress": null
+    },
+    {
+      "id": "map",
+      "title": "Map your code",
+      "state": "done",
+      "why": "The map is how Sindri knows how your code, tickets and decisions connect, so what it tells an agent is relevant.",
+      "detail": "The map is built.",
+      "error": null,
+      "action": null,
+      "progress": null
+    },
+    {
+      "id": "onyx",
+      "title": "Set up Onyx",
+      "state": "failed",
+      "why": "Onyx is the search Sindri uses to find your business context, such as decisions and tickets.",
+      "detail": "Docker isn't installed or isn't running, and Onyx runs in Docker.",
+      "error": {
+        "code": "SND-ONYX-001",
+        "sentence": "Docker isn't installed or isn't running, and Onyx runs in Docker."
+      },
+      "action": null,
+      "progress": null
+    }
+  ],
+  "asOf": "2026-01-01T00:00:00.0000000Z"
+}
