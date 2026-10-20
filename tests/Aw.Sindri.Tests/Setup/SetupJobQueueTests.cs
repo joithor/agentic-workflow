@@ -114,4 +114,25 @@ public sealed class SetupJobQueueTests
         Assert.Equal(SetupJobOutcome.Started, next.Value);
         Assert.Equal(["b"], _started);
     }
+
+    [Fact]
+    public async Task A_submit_cancelled_while_it_waits_for_the_queue_leaves_nothing_behind_to_start_later()
+    {
+        var queue = Queue();
+        var gate = new TaskCompletionSource<Result<Unit>>();
+        var first = queue.Submit(_mcp, JobKey.From("mcp-a"), _ => new ValueTask<Result<Unit>>(gate.Task), Token).AsTask();   // holds the turn while its start is pending
+        using var cancel = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        var second = queue.Submit(_mcp, JobKey.From("mcp-b"), Start("b"), cancel.Token).AsTask();
+        await cancel.CancelAsync();
+
+        _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => second);
+        gate.SetResult(Unit.Value);
+        _ = await first;
+        await queue.Finished(_mcp, JobKey.From("mcp-a"), Token);
+        var next = await queue.Submit(_mcp, JobKey.From("mcp-c"), Start("c"), Token);
+
+        Assert.Equal(["c"], _started);
+        Assert.Equal(SetupJobOutcome.Started, next.Value);
+        Assert.Empty(queue.Waiting);
+    }
 }
