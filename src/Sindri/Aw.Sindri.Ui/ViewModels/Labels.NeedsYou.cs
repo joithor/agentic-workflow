@@ -144,10 +144,10 @@ internal static partial class Labels
     internal static string SheetChanged => "Changed";
 
     /// <summary>A profile sheet's line for the profile's hash.</summary>
-    internal static string SheetHash => "Profile hash";
+    internal static string SheetHash => "Fingerprint";
 
     /// <summary>A profile sheet's line for the command that approves it.</summary>
-    internal static string SheetApprove => "Approve with";
+    internal static string SheetApprove => "To approve, run";
 
     /// <summary>The words that name the placeholders a command still has open.</summary>
     /// <param name="names">The open placeholders, without their angle brackets.</param>

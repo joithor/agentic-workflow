@@ -13,6 +13,10 @@
   <StackPanel Spacing="{StaticResource Size.PanelGap}">
     <TextBlock Classes="page-title" Text="{Binding Text.System}" AutomationProperties.Name="{Binding Text.System}" />
 
+    <!-- F3: the page leads with one sentence ("Everything is running." or what is wrong); the per-service detail waits behind Details. -->
+    <TextBlock x:Name="HealthSentence" Classes="body-strong" Text="{Binding Sentence}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Sentence}" />
+
+    <Expander x:Name="HealthDetails" Header="{Binding DetailsHeading}" IsExpanded="{Binding DetailsOpen, Mode=TwoWay}" AutomationProperties.Name="{Binding DetailsHeading}">
     <Border Classes="panel">
       <StackPanel>
         <!-- The control plane: its state is the pill's glyph and word (✓ Running, ⌛ stale, ✕ Not running). -->
@@ -136,5 +140,6 @@
         </Border>
       </StackPanel>
     </Border>
+    </Expander>
   </StackPanel>
 </UserControl>

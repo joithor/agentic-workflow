@@ -60,6 +60,12 @@ internal sealed class ItemText
     /// <summary><see cref="Labels.Instance"/> (the instance row).</summary>
     public string InstanceLabel { get; } = Labels.Instance;
 
+    /// <summary><see cref="Labels.SheetDetails"/>.</summary>
+    public string Details { get; } = Labels.SheetDetails;
+
+    /// <summary><see cref="Labels.SheetVersion"/>.</summary>
+    public string VersionLabel { get; } = Labels.SheetVersion;
+
     /// <summary><see cref="Labels.Confirm"/>.</summary>
     public string Confirm { get; } = Labels.Confirm;
 

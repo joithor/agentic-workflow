@@ -13,6 +13,9 @@ internal sealed partial class HealthViewModel
     /// <summary>One sentence for how Sindri is ("Everything is running."); the System page leads with it and Home's strip repeats it.</summary>
     public string Sentence { get; private set => Set(ref field, value); } = Labels.Connecting;
 
+    /// <summary>The Details expander's heading.</summary>
+    public string DetailsHeading => Labels.SystemDetails;
+
     /// <summary>True while the Details expander is open; closed until asked for.</summary>
     public bool DetailsOpen { get; set => Set(ref field, value); }
 

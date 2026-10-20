@@ -14,7 +14,7 @@ internal static partial class Labels
         ["running"] = "Running",
         ["needs-decision"] = "Needs decision",
         ["needs-answer"] = "Needs answer",
-        ["parked"] = "Parked",
+        ["parked"] = "Paused: needs a decision",
         ["taken-over"] = "With you",
         ["done"] = "Done",
         ["cancelled"] = "Cancelled",
@@ -25,13 +25,13 @@ internal static partial class Labels
     {
         ["waitingOnYou"] = "Waiting on you",
         ["withYou"] = "With you",
-        ["parked"] = "Parked",
+        ["parked"] = "Paused",
         ["running"] = "Running",
         ["queued"] = "Queued",
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <summary>The Queue table's column headings (queue.html).</summary>
-    internal const string ColumnItem = "ITEM";
+    internal const string ColumnItem = "ID";
 
     /// <summary>The title column.</summary>
     internal const string ColumnTitle = "TITLE";
@@ -40,19 +40,19 @@ internal static partial class Labels
     internal const string ColumnRepo = "REPO";
 
     /// <summary>The state column.</summary>
-    internal const string ColumnState = "STATE";
+    internal const string ColumnState = "STATUS";
 
     /// <summary>The step column.</summary>
-    internal const string ColumnStep = "STEP";
+    internal const string ColumnStep = "STAGE";
 
     /// <summary>The since column.</summary>
-    internal const string ColumnSince = "SINCE";
+    internal const string ColumnSince = "AGE";
 
     /// <summary>The top bar's hint while the G chord waits (§8).</summary>
     internal const string ChordHint = "G …";
 
     /// <summary>The badge on a parked item in Waiting on you (§4.5).</summary>
-    internal const string ParkedBadge = "parked";
+    internal const string ParkedBadge = "paused";
 
     /// <summary>The Load more button under a timeline with a next page.</summary>
     internal const string LoadMore = "Load more";
@@ -63,7 +63,7 @@ internal static partial class Labels
     internal static string LoadMoreFor(string itemId) => LoadMore + " timeline for " + itemId;
 
     /// <summary>The item sheet's timeline heading.</summary>
-    internal const string Timeline = "TIMELINE";
+    internal const string Timeline = "History";
 
     /// <summary>The item sheet's actions heading.</summary>
     internal const string ItemActions = "ACTIONS";
@@ -75,10 +75,10 @@ internal static partial class Labels
     internal const string CreatedBy = "Created by";
 
     /// <summary>The "waiting on" label in the item header.</summary>
-    internal const string WaitingOn = "Waiting on";
+    internal const string WaitingOn = "Waiting for";
 
     /// <summary>The "instance" label in the item header.</summary>
-    internal const string Instance = "Instance";
+    internal const string Instance = "Run";
 
     /// <summary>A destructive control's Confirm.</summary>
     internal const string Confirm = "Confirm";
@@ -149,10 +149,10 @@ internal static partial class Labels
     /// <summary>The Queue page's filter field (§8 `/`).</summary>
     internal const string Filter = "Filter by id, title, repo";
 
-    /// <summary>The item header's version: "version 2".</summary>
+    /// <summary>The item header's version, for Details: "2".</summary>
     /// <param name="version">The item's version.</param>
     /// <returns>The words.</returns>
-    internal static string Version(long version) => string.Create(CultureInfo.InvariantCulture, $"version {version}");
+    internal static string Version(long version) => string.Create(CultureInfo.InvariantCulture, $"{version}");
 
     /// <summary>An age as the rows show it (§4.3 "the age, from since"): "12s", "12m", "2h 56m", "9h", "3d".</summary>
     /// <param name="age">How long since.</param>
@@ -165,6 +165,9 @@ internal static partial class Labels
         < 86400 => string.Create(CultureInfo.InvariantCulture, $"{(int)age.TotalHours}h {age.Minutes}m"),
         _ => string.Create(CultureInfo.InvariantCulture, $"{(int)age.TotalDays}d"),
     };
+
+    /// <summary>The Details row for the item's version.</summary>
+    internal const string SheetVersion = "Version";
 
     /// <summary>The item sheet's disclosure heading: who made it, the version and the run's address.</summary>
     internal const string SheetDetails = "Details";

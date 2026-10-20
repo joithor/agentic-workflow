@@ -309,7 +309,7 @@ public sealed class QueueFramesTests : IDisposable
         await Until(window, () => shell.Item.HasProblem);
 
         Assert.Equal(("SND-ITEM-409", A.Detail("items-id-close", "stale-version")), (Named<TextBlock>(window, "ProblemCodeText").Text, Named<TextBlock>(window, "ProblemDetailText").Text));
-        Assert.Equal("Done", Named<TextBlock>(window, "ItemState").Text);
+        Assert.StartsWith("Done", Named<TextBlock>(window, "ItemStatusLine").Text, StringComparison.Ordinal);
         Frame(window, "item-409");
     });
 
