@@ -9,7 +9,7 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// what the side bar did). A pulse row is tinted and pulses until seen, then its tint clears; under reduced motion it keeps
 /// a static outline and the word "new" until seen instead. A failure row keeps a steady tint, a calm row a subtle one.
 /// </summary>
-internal sealed class NeedsYouRowViewModel : ObservableObject
+internal sealed partial class NeedsYouRowViewModel : ObservableObject
 {
     private bool _seen;
     private bool _reduced;
@@ -209,24 +209,6 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
             return field;
         }
     } = [];
-
-    /// <summary>The lines the sheet shows up front: the plain description and anything the person acts on.</summary>
-    public IReadOnlyList<SheetDetail> PrimaryDetails => [.. Details.Where(d => !d.Secondary)];
-
-    /// <summary>The bookkeeping lines (a hash, the approve command) the sheet keeps behind a closed Details.</summary>
-    public IReadOnlyList<SheetDetail> MoreDetails => [.. Details.Where(d => d.Secondary)];
-
-    /// <summary>True when the row has bookkeeping lines.</summary>
-    public bool HasMoreDetails => Details.Any(d => d.Secondary);
-
-    /// <summary>The disclosure's heading.</summary>
-    public string MoreHeading { get; } = Labels.SheetDetails;
-
-    /// <summary>True while the sheet's Details is open; closed until asked for.</summary>
-    public bool DetailsOpen { get; set => Set(ref field, value); }
-
-    /// <summary>True when the served command shows under the lines: not when Details already holds it.</summary>
-    public bool ShowsCliUpFront => Cli.Length > 0 && !HasMoreDetails;
 
     // Built when the row or its age changes, not on every read.
     private (NeedsYouEntry? Entry, string Age) _detailsFor;
