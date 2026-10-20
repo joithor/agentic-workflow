@@ -65,7 +65,7 @@ classify_changes() {
     esac
     case "$file" in
       # The dotnet job's hook-contract step runs these hooks against the C# judge
-      # (config/lib/tests/judge-cs-hook-surface.test.sh); bash-tests.sh leaves that test to it.
+      # (config/lib/tests/judge-cs-hook-surface.test.sh|config/lib/tests/sindri-cs-hook-surface.test.sh); bash-tests.sh leaves that test to it.
       config/hooks/*|config/statusline.sh|config/lib/failopen.sh|config/lib/locks.sh|config/lib/tests/judge-cs-hook-surface.test.sh)
         dotnet=true ;;
     esac
