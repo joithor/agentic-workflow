@@ -87,8 +87,11 @@ internal sealed class StripRowViewModel : ObservableObject
     /// <summary>The item the instance belongs to, as served; null for none.</summary>
     public string? ItemId => _row.ItemId;
 
-    /// <summary>The name screen readers hear: "incident" for an incident (the glyph is not spoken), the subject and the address.</summary>
-    public string AccessibleName => (_row.Recipe.Urgency == RecipeUrgency.Incident ? Labels.Incident + ", " : "") + Labels.StripRowName(Workflow, Subject);
+    /// <summary>The name screen readers hear: the subject (the visible title), the workflow and, for an incident, the word "incident" (the glyph is not spoken).</summary>
+    public string AccessibleName => Labels.StripRowName(Workflow, Subject) + (_row.Recipe.Urgency == RecipeUrgency.Incident ? ", " + Labels.Incident : "");
+
+    /// <summary>The title button's accessible name: the visible title first, then the workflow.</summary>
+    public string OpenName => Labels.StripRowName(Workflow, Subject);
 
     /// <summary>Where Enter and a click go: the instance in the Workflows frame.</summary>
     public DeepLink Link => new(DeepLinkKind.Workflow, _row.Address);

@@ -15,7 +15,7 @@
     <Grid x:Name="StripGrid" ColumnDefinitions="Auto,Auto,2*,3*,Auto,Auto" VerticalAlignment="Center">
       <TextBlock Classes="body-strong" Text="{Binding Glyph}" VerticalAlignment="Center" Margin="0,0,8,0" AutomationProperties.AccessibilityView="Raw" />
       <ctl:StateChipView x:Name="StripChip" Grid.Column="1" Chip="{Binding Chip}" VerticalAlignment="Center" Margin="0,0,8,0" />
-      <Button x:Name="StripTitle" Grid.Column="2" Classes="row-title" Click="OnOpen" AutomationProperties.Name="{Binding AccessibleName}">
+      <Button x:Name="StripTitle" Grid.Column="2" Classes="row-title" Click="OnOpen" AutomationProperties.Name="{Binding OpenName}">
         <TextBlock Classes="body-strong" Text="{Binding Subject}" TextTrimming="CharacterEllipsis" AutomationProperties.AccessibilityView="Raw" />
       </Button>
       <!-- Wide: the recipe, the stage tag, the badge and the served "now" sentence sit on the row's line. Narrow page (UI spec §3.2): they drop to a second line. -->

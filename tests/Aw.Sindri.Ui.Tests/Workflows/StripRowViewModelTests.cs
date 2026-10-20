@@ -105,13 +105,15 @@ public sealed class StripRowViewModelTests
     }
 
     [Fact]
-    public void Row_name_is_the_workflow_and_the_subject_and_the_address_stays_the_rows_key()
+    public void Row_name_is_the_subject_then_the_workflow_and_the_address_stays_the_rows_key()
     {
         var row = Where(r => r.Subject.Label.Length > 0 && r.Recipe.Urgency != RecipeUrgency.Incident);
 
         var vm = Of(row);
 
-        Assert.Equal((row.Address, $"{vm.Workflow}, {row.Subject.Label}"), (vm.Address, vm.AccessibleName));
+        Assert.Equal((row.Address, $"{row.Subject.Label}, {vm.Workflow}"), (vm.Address, vm.AccessibleName));
+        Assert.Equal(vm.AccessibleName, vm.OpenName);
+        Assert.StartsWith(vm.Subject, vm.OpenName, StringComparison.Ordinal);
         Assert.DoesNotContain(row.Address, vm.AccessibleName, StringComparison.Ordinal);
         Assert.DoesNotContain(row.Address, vm.AnswerName, StringComparison.Ordinal);
         Assert.Equal($"Answer, {vm.Subject}", vm.AnswerName);

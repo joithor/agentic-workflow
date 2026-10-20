@@ -49,7 +49,7 @@ internal static partial class Labels
     /// <param name="workflow">The workflow's display name.</param>
     /// <param name="subject">The item's title.</param>
     /// <returns>The name.</returns>
-    internal static string StripRowName(string workflow, string subject) => $"{workflow}, {subject}";
+    internal static string StripRowName(string workflow, string subject) => $"{subject}, {workflow}";
 
     /// <summary>The Home strip's answer button name: the visible word, then the item.</summary>
     /// <param name="subject">The item's title.</param>
