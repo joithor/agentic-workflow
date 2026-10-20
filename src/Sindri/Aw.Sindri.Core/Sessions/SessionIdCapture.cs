@@ -45,7 +45,7 @@ public static class SessionIdCapture
     /// <summary>Whether an entry's session id pattern accepts <paramref name="id"/> (no pattern accepts any).</summary>
     /// <param name="pattern">The entry's pattern, or null.</param>
     /// <param name="id">The id.</param>
-    /// <returns>True when it matches (run non-backtracking with a 100 ms timeout); a pattern that doesn't compile accepts nothing.</returns>
+    /// <returns>True when it matches (run non-backtracking with a 2 s timeout); a pattern that doesn't compile accepts nothing.</returns>
     public static bool Accepts(string? pattern, SessionId id)
     {
         if (pattern is null)
