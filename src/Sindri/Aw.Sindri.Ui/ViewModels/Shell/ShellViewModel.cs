@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Approvals;
 using Aw.Sindri.Ui.ViewModels.Instance;
 using Aw.Sindri.Ui.ViewModels.Item;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
@@ -59,7 +60,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         Health.Pill.PropertyChanged += OnPillChanged;
         CommandOutcome = new CommandOutcomeRegion(control => Health.Banner.HasRebuild && ReferenceEquals(Health.Banner.Rebuild, control));
         Create = new CreateItemViewModel(Health.Catalog, () => Health.ApiUrl(), api);
-        Palette = new CommandPaletteViewModel(Health.Catalog, GoTo, RememberRun, CommandOutcome, () => Create.Open(), OpenStart);
+        Palette = new CommandPaletteViewModel(Health.Catalog, GoTo, RememberRun, CommandOutcome, () => Create.Open(), OpenStart, OpenApproveAll);
         Shortcuts = new ShortcutsViewModel(Health.Catalog);
         Queue = new QueueViewModel(api, Health.Catalog, clock);
         Queue.PageShown(RowScopeOf(CurrentPage));
@@ -69,6 +70,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         Health.Follow(Item.Refresh);
         _api = api;
         NeedsYou = new NeedsYouViewModel(preferences, motion ?? new StillMotion(), clock);
+        ApproveAll = new ApproveAllViewModel(Health.Catalog, () => Health.ApiUrl(), api, clock, () => NeedsYou.Seen.ReducedMotion);
         Decision = new DecisionSheetViewModel(api, () => Health.ApiUrl(), clock, decisions, clipboard);
         InitNeedsYou(clipboard);
         Strip = new WorkflowsStripViewModel(clipboard, clock);
@@ -278,23 +280,6 @@ internal sealed partial class ShellViewModel : ObservableObject
                 break;
             default:
                 break;
-        }
-    }
-
-    private void OnPillChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(HealthPill.IsNotResponding))
-        {
-            OnChanged(nameof(IsNotRespondingBanner));
-            Announce();
-        }
-    }
-
-    private void Changed(params string[] names)
-    {
-        foreach (var name in names)
-        {
-            OnChanged(name);
         }
     }
 }
