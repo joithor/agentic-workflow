@@ -34,7 +34,7 @@ public sealed class ListInstancesServiceTests
     private static async Task<(Result<InstanceList> Result, RecordingInstances Port)> Run(ListInstancesRequest request, params InstanceView[] views)
     {
         var port = new RecordingInstances([.. views.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]);
-        var service = new ListInstancesService(new NoDirectory(), port, new EndedInstanceViews(new FixedReader(views)), new FixedItemViews(), new FixedRepos(), new FixedCaller(current: null), clock: new FakeTimeProvider());
+        var service = new ListInstancesService(new NoDirectory(), port, new EndedInstanceViews(new FixedReader(views)), new FixedItemViews(), new FixedRepos(), new FixedCaller(current: null), rowBuilder: new InstanceRows(new FakeTimeProvider()));
         return (await service.Handle(request, CancellationToken.None), port);
     }
 
@@ -161,7 +161,7 @@ public sealed class ListInstancesServiceTests
             titles,
             new FixedRepos(),
             new FixedCaller(new CallerContextBuilder().Human().Build()),
-            clock: new FakeTimeProvider());
+            rowBuilder: new InstanceRows(new FakeTimeProvider()));
 
         var result = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
 
@@ -300,7 +300,7 @@ public sealed class ListInstancesServiceTests
             items,
             repos ?? new FixedRepos(),
             new FixedCaller(caller),
-            clock: new FakeTimeProvider());
+            rowBuilder: new InstanceRows(new FakeTimeProvider()));
 
     [Fact]
     public async Task A_subject_filter_matches_the_item_title_the_row_shows_and_still_the_id_as_the_key()

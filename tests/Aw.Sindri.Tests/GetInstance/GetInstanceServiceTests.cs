@@ -18,7 +18,7 @@ public sealed class GetInstanceServiceTests
     private const string ItemA = "ITM-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
     private static GetInstanceService Service(SomeInstances instances, DetailViews? views = null, FixedRepos? repos = null, CallerContext? caller = null, StepRunEvents? stepRuns = null, StepRunRecipes? recipes = null) =>
-        new(instances, instances, views ?? new DetailViews(), repos ?? new FixedRepos(), new ListInstances.FixedCaller(caller ?? new CallerContextBuilder().Human().Build()), new FakeTimeProvider(StatusCases.Now), new StepRunReader(stepRuns ?? new StepRunEvents(), recipes ?? new StepRunRecipes()));
+        new(instances, instances, views ?? new DetailViews(), repos ?? new FixedRepos(), new ListInstances.FixedCaller(caller ?? new CallerContextBuilder().Human().Build()), new DetailContexts(new FakeTimeProvider(StatusCases.Now)), new StepRunReader(stepRuns ?? new StepRunEvents(), recipes ?? new StepRunRecipes()));
 
     [Fact]
     public async Task Serves_the_detail_with_title_parent_and_counts()

@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
@@ -101,9 +100,5 @@ internal sealed class JobStartService<TRequest, TResult>(JobAdmitter<TRequest> a
         new(new CommandAccepted(caller.CommandId, sequence), job,
             new JobLinks($"/sindri/jobs/{job.Value}", $"/sindri/jobs/{job.Value}/cancel", string.Create(CultureInfo.InvariantCulture, $"/sindri/events?after={sequence - 1}&types=job.*")));
 
-    private static Error Conflict(JobKind kind, JobKey key, JobId running)
-    {
-        using var id = JsonDocument.Parse($"\"{running.Value}\"");   // a job id is 'JOB-' and hex digits: nothing to escape
-        return SindriErrors.JobConflict.With($"A {kind.Value} job is already running for {key.Value} (fix: run `sindri jobs show {running.Value}`, or wait for it to end)").WithExtension("runningJob", id.RootElement.Clone());
-    }
+    private static Error Conflict(JobKind kind, JobKey key, JobId running) => JobConflicts.Running(kind, key, running);
 }

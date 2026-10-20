@@ -38,6 +38,7 @@ public static class SindriJobServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(key);
         ArgumentNullException.ThrowIfNull(summary);
         services.TryAddSingleton<JobRegistry>();
+        services.TryAddSingleton<IRunningJobs>(static sp => sp.GetRequiredService<JobRegistry>());
         services.TryAddSingleton<IJobKinds, RegisteredJobKinds>();
         services.TryAddScoped<JobAdmitter<TRequest>>();
         services.TryAddScoped<IValidator<TRequest>, JobAcceptAllValidator<TRequest>>();

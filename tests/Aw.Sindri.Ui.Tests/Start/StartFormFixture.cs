@@ -86,6 +86,7 @@ internal sealed class StartFormFixture
     {
         var clone = template.DeepClone();
         (clone["id"], clone["standing"], clone["version"]) = (row.Id, row.Standing, row.Version);
+        _ = clone.AsObject().Remove("displayName");   // the golden's name is its own recipe's: these rows are other recipes, named by their ids here
         return clone;
     }
 }
