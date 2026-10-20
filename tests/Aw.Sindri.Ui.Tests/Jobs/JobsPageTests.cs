@@ -71,13 +71,13 @@ public sealed class JobsPageTests
     public async Task A_kind_and_a_state_this_build_does_not_know_render_by_their_served_words()
     {
         var list = Golden("jobs", "running");
-        list["jobs"]![0]!["kind"] = "RefreshContextMap";
+        list["jobs"]![0]!["kind"] = "TidyUpScratchFiles";
         list["jobs"]![0]!["state"] = "paused";
         _f.ServeList(list);
 
         var row = Assert.Single((await _f.Shown(Token)).Rows);
 
-        Assert.Equal(("Refresh context map", "○ PAUSED"), (row.TitleText, row.ChipText));
+        Assert.Equal(("Tidy up scratch files", "○ PAUSED"), (row.TitleText, row.ChipText));
     }
 
     [Theory]
