@@ -30,9 +30,7 @@ public sealed class ScopingApprovalsTests
     private string Dir => _area.PathFor(Address, "scope-packet").Value;
 
     // computed from the fake's own rule (kind|directory) over the literal directory, not through the code under test
-    private static readonly string _expectedHash = "sha256:" + Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes("Scoping|/run/T-1/scoping/1/scope-packet")));
-
-    private static string Hash => _expectedHash;
+    private static string Hash { get; } = "sha256:" + Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes("Scoping|/run/T-1/scoping/1/scope-packet")));
 
     private async Task Packet(string rounds = "{\"round\":1,\"trigger\":\"first\"}\n{\"round\":2,\"trigger\":\"revise\"}\n")
     {
@@ -117,8 +115,8 @@ public sealed class ScopingApprovalsTests
         _ = await approvals.After(_freeze, Context(), Frozen(), Token);
 
         var row = Assert.Single(await Rows(ledger));
-        Assert.Equal(_expectedHash, Payload(row).PacketHash);
-        Assert.Equal($"scoping.approved:{_expectedHash}", row.IdempotencyKey);
+        Assert.Equal(Hash, Payload(row).PacketHash);
+        Assert.Equal($"scoping.approved:{Hash}", row.IdempotencyKey);
         Assert.Contains("S1", (await _area.Read(Address, "scope-packet/scope-map.json", Token)).Value, StringComparison.Ordinal);   // nothing was moved or deleted
     }
 
