@@ -202,7 +202,14 @@ else
     # The shipped recipes are HEAD's: the copy's directory is replaced by the archive, so an edited or untracked
     # working-tree recipe is never embedded.
     rm -rf "$tree/recipes/sindri"
-    if [ -n "$recipes_tree" ]; then git -C "$root" archive HEAD recipes/sindri | tar -xf - -C "$tree"; fi
+    if [ -n "$recipes_tree" ]; then
+      # pipefail is on: a failure of either side of the pipe stops here, never leaving an empty set to be embedded.
+      if ! git -C "$root" archive HEAD recipes/sindri 2>>"$log" | tar -xf - -C "$tree" 2>>"$log"; then
+        rm -rf "$tree/recipes/sindri"
+        tail -5 "$log" >&2
+        die "could not stage recipes/sindri from HEAD (git archive failed)"
+      fi
+    fi
     if [ -n "$(git -C "$root" status --porcelain 2>/dev/null)" ]; then
       say "the working tree has uncommitted changes; the embedded recipes are HEAD's, and the rest of the build is the working tree's"
     fi
