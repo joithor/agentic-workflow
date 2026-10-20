@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
@@ -60,8 +61,11 @@ public sealed class ApproveAllDialogTests
         var hold = Named<Button>(window, "ApproveHold");
         var on = CenterOf(window, hold);
 
+        IInputElement? captured = null;
+        hold.AddHandler(InputElement.PointerPressedEvent, (_, e) => captured = e.Pointer.Captured, RoutingStrategies.Tunnel, handledEventsToo: true);   // after the dialog's own
         window.MouseDown(on, MouseButton.Left);
         Assert.True(model.IsHolding);
+        Assert.Same(hold, captured);
         window.MouseMove(new Point(on.X, on.Y + 400));
         window.MouseUp(new Point(on.X, on.Y + 400), MouseButton.Left);
         Settle(window);
@@ -107,6 +111,7 @@ public sealed class ApproveAllDialogTests
     {
         var (window, _, model) = await Shown();
         model.Typed = "approve-all c41e07";
+        Assert.True(Named<TextBox>(window, "ApproveTyped").Focus());
 
         await _f.Finish(model.SubmitTyped());
         Settle(window);
