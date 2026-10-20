@@ -12879,3 +12879,7 @@ static Aw.Sindri.Core.Line.LineDeskContext.operator !=(Aw.Sindri.Core.Line.LineD
 static Aw.Sindri.Core.Line.LineDeskContext.operator ==(Aw.Sindri.Core.Line.LineDeskContext? left, Aw.Sindri.Core.Line.LineDeskContext? right) -> bool
 static Aw.Sindri.Core.Line.LineDeskResponse.operator !=(Aw.Sindri.Core.Line.LineDeskResponse? left, Aw.Sindri.Core.Line.LineDeskResponse? right) -> bool
 static Aw.Sindri.Core.Line.LineDeskResponse.operator ==(Aw.Sindri.Core.Line.LineDeskResponse? left, Aw.Sindri.Core.Line.LineDeskResponse? right) -> bool
+Aw.Sindri.Core.Line.LineDesk
+static Aw.Sindri.Core.Line.LineDesk.Check(string! block, Aw.Sindri.Core.Line.LineCheckResponse! response) -> Aw.Sindri.Core.Line.LineDeskResponse!
+static Aw.Sindri.Core.Line.LineDesk.Complete(string! block, Aw.Sindri.Core.Line.LineCheckResponse! response, string! directory, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFile!>! files) -> Aw.Sindri.Core.Line.LineDeskResponse!
+static Aw.Sindri.Core.Line.LineDesk.Incomplete(string! block, Aw.Sindri.Core.Line.LineCheckResponse! response) -> Aw.Sindri.Core.Line.LineDeskResponse!

@@ -192,10 +192,12 @@ public sealed class LineCommandTests : IDisposable
         _packets = Script("aw-packets-stub", $"printf '%s\\n' \"$@\" > '{argv}'\necho '{{\"passed\":false,\"checks\":[{{\"rule\":\"PKT-SCOPE-002\",\"state\":\"fail\",\"subject\":\"P2,P3\",\"message\":\"two phases write one path\"}}]}}'\nexit 1");
         var gold = LineFixture.Plan().Without("validation.json");
         await Put(gold);
+        var repo = Path.Combine(_home.Path, "repo");
+        _ = Directory.CreateDirectory(repo);
 
-        Assert.Equal(1, await Run("plan", "check", "--facts", Facts));
+        Assert.Equal(1, await Run("plan", "check", "--facts", Facts, "--repo", repo));
 
-        Assert.Equal(["validate", "--kind", "plan", Facts, "--json"], await File.ReadAllLinesAsync(argv, TestContext.Current.CancellationToken));
+        Assert.Equal(["validate", "--kind", "plan", Facts, "--repo", repo, "--json"], await File.ReadAllLinesAsync(argv, TestContext.Current.CancellationToken));
         Assert.Contains("PLN-PKT-001", _out.ToString(), StringComparison.Ordinal);
         Assert.Contains("PKT-SCOPE-002", _out.ToString(), StringComparison.Ordinal);
     }
