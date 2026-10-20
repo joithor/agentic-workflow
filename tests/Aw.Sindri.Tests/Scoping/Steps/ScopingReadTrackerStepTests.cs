@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Text;
@@ -111,7 +112,7 @@ public sealed class ScopingReadTrackerStepTests
     [Fact]
     public async Task The_engine_unable_to_answer_fails_the_Step()
     {
-        var result = await Step(new InMemoryTrackerSource(Seed()), new InMemoryScopingTextShape(Aw.Sindri.Core.SindriErrors.InvalidInput.With("no map"))).Run(Context(Input("NTS-2")), TestContext.Current.CancellationToken);
+        var result = await Step(new InMemoryTrackerSource(Seed()), new InMemoryScopingTextShape(SindriErrors.InvalidInput.With("no map"))).Run(Context(Input("NTS-2")), TestContext.Current.CancellationToken);
 
         Assert.Null(result.Result);
         Assert.Contains("no map", result.Failure, StringComparison.Ordinal);

@@ -13305,3 +13305,4 @@ Aw.Sindri.Core.Scoping.IChangeSource.Read(string! checkout, string! reference, A
 Aw.Sindri.Core.Scoping.ChangeRecord.ChangeRecord(string! Ref, string! Base, string! Head, string? PullRequestBody, System.Collections.Generic.IReadOnlyList<string!>! Commits, System.Collections.Generic.IReadOnlyList<string!>! Files, System.Collections.Generic.IReadOnlyList<string!>! Denied, string! Diff, bool Truncated) -> void
 Aw.Sindri.Core.Scoping.ChangeRead.ChangeRead(int MaxDiffBytes) -> void
 static Aw.Sindri.Core.Scoping.ChangeRead.Scoping.get -> Aw.Sindri.Core.Scoping.ChangeRead!
+Aw.Sindri.Core.Scoping.ChangeRead.Cut(string! text) -> (string! Text, bool Truncated)

@@ -165,7 +165,7 @@ public sealed class ShippedBlocksTests
             ["step.brief.seed", "step.build.prepare", "step.interview.record", "step.lens.log", "step.phase.drift", "step.prove.evidence", "step.prove.fail-log", "step.prove.intake", "step.scope.anchor", "step.scope.challenge-log", "step.scope.check", "step.scope.evidence", "step.scope.gather", "step.scope.intake", "step.scope.propose", "step.scope.read-brief", "step.scope.read-change", "step.scope.read-tracker", "step.scope.reanchor", "step.scope.withdraw", "step.ship.return"],
             provider.GetServices<BlockStepRegistration>().Select(static r => r.Step.Value).Order(StringComparer.Ordinal),
             StringComparer.Ordinal);
-        Assert.Equal(18, scope.ServiceProvider.GetServices<IBlockStep>().Count());
+        Assert.Equal(21, scope.ServiceProvider.GetServices<IBlockStep>().Count());
     }
 
     [Fact, Trait("Lane", "unit")]
