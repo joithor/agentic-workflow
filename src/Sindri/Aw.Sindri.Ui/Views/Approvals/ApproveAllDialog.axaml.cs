@@ -43,16 +43,9 @@ internal sealed partial class ApproveAllDialog : UserControl
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
-        if (_watched is not null)
-        {
-            _watched.PropertyChanged -= OnModelChanged;
-        }
-
+        _watched?.PropertyChanged -= OnModelChanged;
         _watched = DataContext as INotifyPropertyChanged;
-        if (_watched is not null)
-        {
-            _watched.PropertyChanged += OnModelChanged;
-        }
+        _watched?.PropertyChanged += OnModelChanged;
     }
 
     // Focus follows what the dialog is waiting for: the hold button when the challenge arrives, Close (or Done) when the approval runs or ends.
@@ -64,11 +57,13 @@ internal sealed partial class ApproveAllDialog : UserControl
             return;
         }
 
-        if (e.PropertyName is nameof(ApproveAllViewModel.CanApprove) or nameof(ApproveAllViewModel.OffersHold) && dialog is { CanApprove: true, OffersHold: true })
+        var changed = e.PropertyName ?? string.Empty;
+        if ((string.Equals(changed, nameof(ApproveAllViewModel.CanApprove), StringComparison.Ordinal) || string.Equals(changed, nameof(ApproveAllViewModel.OffersHold), StringComparison.Ordinal))
+            && dialog is { CanApprove: true, OffersHold: true })
         {
             Dispatcher.UIThread.Post(() => MoveFocusTo("ApproveHold"), DispatcherPriority.Loaded);
         }
-        else if (e.PropertyName == nameof(ApproveAllViewModel.Phase) && dialog.Phase is ApproveAllPhase.Applying or ApproveAllPhase.Done or ApproveAllPhase.Failed)
+        else if (string.Equals(changed, nameof(ApproveAllViewModel.Phase), StringComparison.Ordinal) && dialog.Phase is ApproveAllPhase.Applying or ApproveAllPhase.Done or ApproveAllPhase.Failed)
         {
             Dispatcher.UIThread.Post(() => MoveFocusTo("ApproveClose"), DispatcherPriority.Loaded);
         }
@@ -143,7 +138,7 @@ internal sealed partial class ApproveAllDialog : UserControl
     {
         var pointer = _pointer;
         _pointer = null;
-        pointer?.Capture(null);
+        pointer?.Capture(control: null);
     }
 
     private void OnFill(object? sender, EventArgs e)

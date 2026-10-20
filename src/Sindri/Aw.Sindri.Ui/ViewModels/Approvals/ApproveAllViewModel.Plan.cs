@@ -130,21 +130,7 @@ internal sealed partial class ApproveAllViewModel
             return;
         }
 
-        _asking = true;
-        OnChanged(nameof(CanRetry));
-        Result<AppChallengeView> asked;
-        try
-        {
-            asked = await _api.IssueAppChallenge(api, new AppChallengeRequest(ActionText(plan)), cancellationToken).ConfigureAwait(true);
-        }
-        finally
-        {
-            if (session == _session)
-            {
-                _asking = false;
-            }
-        }
-
+        var asked = await Request(api, plan, session, cancellationToken).ConfigureAwait(true);
         if (session != _session)
         {
             return;
@@ -167,6 +153,24 @@ internal sealed partial class ApproveAllViewModel
         OnChanged(nameof(HoldHelp));
         OnChanged(nameof(HoldName));
         Live.Say(Labels.ApproveReady);
+    }
+
+    // The one challenge request in flight: a second ask waits for it to end.
+    private async Task<Result<AppChallengeView>> Request(Uri api, ApproveAllPlan plan, int session, CancellationToken cancellationToken)
+    {
+        _asking = true;
+        OnChanged(nameof(CanRetry));
+        try
+        {
+            return await _api.IssueAppChallenge(api, new AppChallengeRequest(ActionText(plan)), cancellationToken).ConfigureAwait(true);
+        }
+        finally
+        {
+            if (session == _session)
+            {
+                _asking = false;
+            }
+        }
     }
 
     // No challenge could be had. A refusal already on show stays (it is why the challenge was asked for); the failure is then a line beside it.
