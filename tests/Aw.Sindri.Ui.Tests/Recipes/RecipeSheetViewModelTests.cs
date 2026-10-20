@@ -64,6 +64,32 @@ public sealed class RecipeSheetViewModelTests
     }
 
     [Fact]
+    public async Task The_title_is_the_served_display_name_and_otherwise_the_id_made_readable()
+    {
+        var plain = await Opened(Unnamed);
+        var body = (JsonObject)Golden(Unnamed);
+        body["displayName"] = "Plan and track a project";
+        _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, body.ToJsonString());
+        var named = await Opened(Unnamed);
+
+        Assert.Equal(("Project", "Plan and track a project"), (plain.Title, named.Title));
+        Assert.DoesNotContain("workflow.", named.Title, StringComparison.Ordinal);
+        Assert.Contains(Unnamed, named.Identity, StringComparison.Ordinal);   // the id stays, in Details
+    }
+
+    [Fact]
+    public async Task Details_start_closed_and_the_choice_is_kept_while_the_sheet_is_read_again()
+    {
+        var sheet = await Opened(Unnamed);
+        Assert.False(sheet.IsDetailsOpen);
+
+        sheet.ToggleDetails();
+        await sheet.Refresh(_api, Token);
+
+        Assert.True(sheet.IsDetailsOpen);
+    }
+
+    [Fact]
     public async Task Name_template_shows_only_when_served()
     {
         var named = await Opened(WithName);
