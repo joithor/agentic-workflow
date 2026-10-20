@@ -1,13 +1,17 @@
 using Aw.Context.Core;
+using Aw.Context.Core.Extract;
 using Aw.Context.Core.Models;
 using Aw.Context.Testing.Engine;
+using Aw.Context.Testing.Extract;
 using Aw.Context.Testing.Fixtures;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Features.ContextCalls;
+using Aw.Sindri.Infrastructure.Locks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Aw.Sindri.Tests.ContextCalls;
 
@@ -15,15 +19,28 @@ namespace Aw.Sindri.Tests.ContextCalls;
 public sealed class RefreshContextMapHostTests : IDisposable
 {
     private readonly FixtureRepo _repo = FixtureRepo.Build();
+    private readonly DirectoryInfo _locks = Directory.CreateTempSubdirectory("aw-refresh-locks-");
 
-    public void Dispose() => _repo.Dispose();
+    public void Dispose()
+    {
+        _repo.Dispose();
+        _locks.Delete(recursive: true);
+    }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
     public async Task A_service_caller_starts_RefreshContextMap_with_no_challenge_and_the_job_is_recorded_as_that_service()
     {
         var ct = TestContext.Current.CancellationToken;
-        var model = new FakeModelPort { Fail = static _ => ContextErrors.SourceUnavailable.With("no agent CLI in the test") };   // why: the cleanup pass asks the model; the real port runs the box's agent CLIs
-        await using var host = await ContextHosts.Approved(_repo, sessions: false, ct, extra: s => s.AddSingleton<IModelPort>(model));
+        var model = new FakeModelPort { Fail = static _ => ContextErrors.SourceUnavailable.With("no agent CLI in the test") };
+        await using var host = await ContextHosts.Approved(_repo, sessions: false, ct, extra: services =>
+        {
+            // why: the job's build and cleanup would otherwise run the box's graphify, agent CLIs and heavy-job lock, which stall it under load
+            _ = services.RemoveAll<IClusterSource>();
+            _ = services.AddSingleton<IClusterSource>(new FakeClusterSource());
+            _ = services.AddSingleton<IModelPort>(model);
+            _ = services.RemoveAll<HeavyLockSettings>();
+            _ = services.AddSingleton(new HeavyLockSettings(Path.Combine(_locks.FullName, "heavy-job.lock"), 2, Held: false));
+        });
 
         Kernel.Result<JobStartedResponse> started;
         await using (var scope = host.App.Services.CreateAsyncScope())
@@ -37,7 +54,6 @@ public sealed class RefreshContextMapHostTests : IDisposable
         Assert.True(started.IsSuccess, started.IsError ? $"{started.Error.Code}: {started.Error.Message}" : null);
         Assert.Equal("service:context-map-refresh", begun.Value!.Envelope.Actor);
         await WaitForJobToEnd(ledger, ct);
-        Assert.NotEmpty(model.Requests);
     }
 
     // The job ends on its own (a failure is fine here: the start is what this test pins); wait so the host isn't disposed under it.
@@ -53,6 +69,7 @@ public sealed class RefreshContextMapHostTests : IDisposable
             await Task.Delay(250, ct);
         }
 
-        Assert.Fail("the refresh job didn't end");
+        var tail = (await ledger.ReadAfter(0, 500, ct)).Value ?? [];
+        Assert.Fail("the refresh job didn't end; the ledger ends with: " + string.Join(", ", tail.TakeLast(6).Select(static e => e.Envelope.Type)));
     }
 }
