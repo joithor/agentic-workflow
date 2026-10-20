@@ -12653,3 +12653,78 @@ static readonly Aw.Sindri.Core.SindriErrors.LaunchSessionIdTimedOut -> Aw.Kernel
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext.Deconstruct(out string! Title, out Aw.Sindri.Core.Workflow.Views.ParentRef? Parent, out Aw.Sindri.Core.Workflow.Views.ViewCounts! Counts, out System.DateTimeOffset AsOf, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StepRun!>? StepRuns, out string? RecipeDisplayName) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext.InstanceDetailContext(string! Title, Aw.Sindri.Core.Workflow.Views.ParentRef? Parent, Aw.Sindri.Core.Workflow.Views.ViewCounts! Counts, System.DateTimeOffset AsOf, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StepRun!>? StepRuns = null, string? RecipeDisplayName = null) -> void
 
+Aw.Sindri.Core.Line.LineCheckResponse
+Aw.Sindri.Core.Line.LineCheckResponse.<Clone>$() -> Aw.Sindri.Core.Line.LineCheckResponse!
+Aw.Sindri.Core.Line.LineCheckResponse.Deconstruct(out string! Station, out Aw.Sindri.Core.Line.LineStage Stage, out Aw.Sindri.Core.Line.LineOutcome Outcome, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFinding!>! Findings, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFinding!>! Warnings, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineRuleResult!>! Rules) -> void
+Aw.Sindri.Core.Line.LineCheckResponse.Equals(Aw.Sindri.Core.Line.LineCheckResponse? other) -> bool
+Aw.Sindri.Core.Line.LineCheckResponse.Findings.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFinding!>!
+Aw.Sindri.Core.Line.LineCheckResponse.Findings.init -> void
+Aw.Sindri.Core.Line.LineCheckResponse.LineCheckResponse(string! Station, Aw.Sindri.Core.Line.LineStage Stage, Aw.Sindri.Core.Line.LineOutcome Outcome, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFinding!>! Findings, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFinding!>! Warnings, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineRuleResult!>! Rules) -> void
+Aw.Sindri.Core.Line.LineCheckResponse.Outcome.get -> Aw.Sindri.Core.Line.LineOutcome
+Aw.Sindri.Core.Line.LineCheckResponse.Outcome.init -> void
+Aw.Sindri.Core.Line.LineCheckResponse.Passed.get -> bool
+Aw.Sindri.Core.Line.LineCheckResponse.Rules.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineRuleResult!>!
+Aw.Sindri.Core.Line.LineCheckResponse.Rules.init -> void
+Aw.Sindri.Core.Line.LineCheckResponse.Stage.get -> Aw.Sindri.Core.Line.LineStage
+Aw.Sindri.Core.Line.LineCheckResponse.Stage.init -> void
+Aw.Sindri.Core.Line.LineCheckResponse.Station.get -> string!
+Aw.Sindri.Core.Line.LineCheckResponse.Station.init -> void
+Aw.Sindri.Core.Line.LineCheckResponse.Warnings.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFinding!>!
+Aw.Sindri.Core.Line.LineCheckResponse.Warnings.init -> void
+Aw.Sindri.Core.Line.LineFinding
+Aw.Sindri.Core.Line.LineFinding.<Clone>$() -> Aw.Sindri.Core.Line.LineFinding!
+Aw.Sindri.Core.Line.LineFinding.Deconstruct(out string! Rule, out string? Item, out string! Message, out string! Fix, out Aw.Sindri.Core.Line.LineSeverity Severity) -> void
+Aw.Sindri.Core.Line.LineFinding.Equals(Aw.Sindri.Core.Line.LineFinding? other) -> bool
+Aw.Sindri.Core.Line.LineFinding.Fix.get -> string!
+Aw.Sindri.Core.Line.LineFinding.Fix.init -> void
+Aw.Sindri.Core.Line.LineFinding.Item.get -> string?
+Aw.Sindri.Core.Line.LineFinding.Item.init -> void
+Aw.Sindri.Core.Line.LineFinding.LineFinding(string! Rule, string? Item, string! Message, string! Fix, Aw.Sindri.Core.Line.LineSeverity Severity) -> void
+Aw.Sindri.Core.Line.LineFinding.Message.get -> string!
+Aw.Sindri.Core.Line.LineFinding.Message.init -> void
+Aw.Sindri.Core.Line.LineFinding.Rule.get -> string!
+Aw.Sindri.Core.Line.LineFinding.Rule.init -> void
+Aw.Sindri.Core.Line.LineFinding.Severity.get -> Aw.Sindri.Core.Line.LineSeverity
+Aw.Sindri.Core.Line.LineFinding.Severity.init -> void
+Aw.Sindri.Core.Line.LineOutcome
+Aw.Sindri.Core.Line.LineOutcome.Complete = 3 -> Aw.Sindri.Core.Line.LineOutcome
+Aw.Sindri.Core.Line.LineOutcome.Gaps = 2 -> Aw.Sindri.Core.Line.LineOutcome
+Aw.Sindri.Core.Line.LineOutcome.Incomplete = 4 -> Aw.Sindri.Core.Line.LineOutcome
+Aw.Sindri.Core.Line.LineOutcome.Pass = 1 -> Aw.Sindri.Core.Line.LineOutcome
+Aw.Sindri.Core.Line.LineRuleResult
+Aw.Sindri.Core.Line.LineRuleResult.<Clone>$() -> Aw.Sindri.Core.Line.LineRuleResult!
+Aw.Sindri.Core.Line.LineRuleResult.Deconstruct(out string! Rule, out Aw.Sindri.Core.Line.LineRuleStatus Status, out System.Collections.Generic.IReadOnlyList<string!>! Missing) -> void
+Aw.Sindri.Core.Line.LineRuleResult.Equals(Aw.Sindri.Core.Line.LineRuleResult? other) -> bool
+Aw.Sindri.Core.Line.LineRuleResult.LineRuleResult(string! Rule, Aw.Sindri.Core.Line.LineRuleStatus Status, System.Collections.Generic.IReadOnlyList<string!>! Missing) -> void
+Aw.Sindri.Core.Line.LineRuleResult.Missing.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Line.LineRuleResult.Missing.init -> void
+Aw.Sindri.Core.Line.LineRuleResult.Rule.get -> string!
+Aw.Sindri.Core.Line.LineRuleResult.Rule.init -> void
+Aw.Sindri.Core.Line.LineRuleResult.Status.get -> Aw.Sindri.Core.Line.LineRuleStatus
+Aw.Sindri.Core.Line.LineRuleResult.Status.init -> void
+Aw.Sindri.Core.Line.LineRuleStatus
+Aw.Sindri.Core.Line.LineRuleStatus.Fail = 2 -> Aw.Sindri.Core.Line.LineRuleStatus
+Aw.Sindri.Core.Line.LineRuleStatus.NotRun = 4 -> Aw.Sindri.Core.Line.LineRuleStatus
+Aw.Sindri.Core.Line.LineRuleStatus.Pass = 1 -> Aw.Sindri.Core.Line.LineRuleStatus
+Aw.Sindri.Core.Line.LineRuleStatus.Warn = 3 -> Aw.Sindri.Core.Line.LineRuleStatus
+Aw.Sindri.Core.Line.LineSeverity
+Aw.Sindri.Core.Line.LineSeverity.Fail = 1 -> Aw.Sindri.Core.Line.LineSeverity
+Aw.Sindri.Core.Line.LineSeverity.Warn = 2 -> Aw.Sindri.Core.Line.LineSeverity
+Aw.Sindri.Core.Line.LineStage
+Aw.Sindri.Core.Line.LineStage.Draft = 1 -> Aw.Sindri.Core.Line.LineStage
+Aw.Sindri.Core.Line.LineStage.Evidence = 2 -> Aw.Sindri.Core.Line.LineStage
+override Aw.Sindri.Core.Line.LineCheckResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Line.LineCheckResponse.GetHashCode() -> int
+override Aw.Sindri.Core.Line.LineCheckResponse.ToString() -> string!
+override Aw.Sindri.Core.Line.LineFinding.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Line.LineFinding.GetHashCode() -> int
+override Aw.Sindri.Core.Line.LineFinding.ToString() -> string!
+override Aw.Sindri.Core.Line.LineRuleResult.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Line.LineRuleResult.GetHashCode() -> int
+override Aw.Sindri.Core.Line.LineRuleResult.ToString() -> string!
+static Aw.Sindri.Core.Line.LineCheckResponse.operator !=(Aw.Sindri.Core.Line.LineCheckResponse? left, Aw.Sindri.Core.Line.LineCheckResponse? right) -> bool
+static Aw.Sindri.Core.Line.LineCheckResponse.operator ==(Aw.Sindri.Core.Line.LineCheckResponse? left, Aw.Sindri.Core.Line.LineCheckResponse? right) -> bool
+static Aw.Sindri.Core.Line.LineFinding.operator !=(Aw.Sindri.Core.Line.LineFinding? left, Aw.Sindri.Core.Line.LineFinding? right) -> bool
+static Aw.Sindri.Core.Line.LineFinding.operator ==(Aw.Sindri.Core.Line.LineFinding? left, Aw.Sindri.Core.Line.LineFinding? right) -> bool
+static Aw.Sindri.Core.Line.LineRuleResult.operator !=(Aw.Sindri.Core.Line.LineRuleResult? left, Aw.Sindri.Core.Line.LineRuleResult? right) -> bool
+static Aw.Sindri.Core.Line.LineRuleResult.operator ==(Aw.Sindri.Core.Line.LineRuleResult? left, Aw.Sindri.Core.Line.LineRuleResult? right) -> bool

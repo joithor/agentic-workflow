@@ -88,6 +88,8 @@ using Aw.Sindri.Features.ResumeService;
 using Aw.Sindri.Features.RevokeRecipe;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.SampleSessionUsage;
+using Aw.Sindri.Features.Design;
+using Aw.Sindri.Features.Plan;
 using Aw.Sindri.Features.Scoping;
 using Aw.Sindri.Features.SessionExit;
 using Aw.Sindri.Features.SessionHeartbeat;
@@ -160,7 +162,7 @@ public static class SindriFeaturesServiceCollectionExtensions
     }
 
     private static IServiceCollection AddStationSlices(this IServiceCollection services) =>
-        services.AddScopingSlices().AddBuildSlices().AddShipSlices().AddLensLoops().AddProveSlices();
+        services.AddScopingSlices().AddDesignSlices().AddPlanSlices().AddBuildSlices().AddShipSlices().AddLensLoops().AddProveSlices();
 
     private static IServiceCollection AddCommands(this IServiceCollection services)
     {
