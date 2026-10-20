@@ -27,6 +27,12 @@ public sealed class WorkflowNamesTests
     public void A_blank_display_name_counts_as_missing(string blank) =>
         Assert.Equal("Scoping", WorkflowNames.Of("workflow.scoping", blank));
 
+    [Theory]
+    [InlineData("workflow.scoping", "workflow.scoping")]
+    [InlineData("workflow.scoping", " workflow.scoping ")]
+    public void A_display_name_that_is_the_recipe_id_counts_as_missing(string id, string served) =>
+        Assert.Equal("Scoping", WorkflowNames.Of(id, served));
+
     [Fact]
     public void An_id_that_is_only_the_prefix_stays_something_to_show() =>
         Assert.Equal("Workflow", WorkflowNames.Of("workflow", displayName: null));

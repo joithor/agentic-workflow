@@ -34,7 +34,7 @@ internal sealed partial class ControlPlaneFollower
                     }
                     else
                     {
-                        await health.ReadInstances(url, change: null, stop.Token).ConfigureAwait(true);   // open now: whatever it missed is read
+                        await health.ReadInstances(url, change: null, superseded: null, stop.Token).ConfigureAwait(true);   // open now: whatever it missed is read
                     }
                 }
 
@@ -49,6 +49,14 @@ internal sealed partial class ControlPlaneFollower
         {
             await stop.CancelAsync().ConfigureAwait(true);   // no more waiting for frames; the reader ends with it
             await reader.ConfigureAwait(true);
+        }
+    }
+
+    private static bool Waiting(Dictionary<string, InstanceChange> pending, string instance)
+    {
+        lock (pending)
+        {
+            return pending.ContainsKey(instance);
         }
     }
 
@@ -70,7 +78,7 @@ internal sealed partial class ControlPlaneFollower
 
                 foreach (var change in batch)
                 {
-                    await health.ReadInstances(url, change, stop.Token).ConfigureAwait(true);
+                    await health.ReadInstances(url, change, c => Waiting(pending, c.Instance), stop.Token).ConfigureAwait(true);
                 }
             }
         }
