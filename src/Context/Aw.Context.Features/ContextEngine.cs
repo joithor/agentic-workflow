@@ -106,6 +106,11 @@ internal sealed class ContextEngine(
 
     public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken) => map.Promote(scope, cancellationToken);
 
+    public ValueTask<Result<CleanupReport>> CleanDraft(ContextScope scope, CancellationToken cancellationToken) => map.CleanDraft(scope, cancellationToken);
+
+    public ValueTask<Result<IReadOnlyList<RepoHead>>> MapHeads(ContextScope scope, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("F1: MapHeads is not built yet");
+
     public ValueTask<Result<ProposeResult>> Propose(ScopeProposal proposal, ContextScope scope, CancellationToken cancellationToken) =>
         map.Propose(proposal, scope, cancellationToken);
 

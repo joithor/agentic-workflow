@@ -48,6 +48,9 @@ internal sealed class ContextMap(MapAdmin admin, MapReview review, MapProposals 
 
     public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken) => review.Promote(scope, cancellationToken);
 
+    public ValueTask<Result<CleanupReport>> CleanDraft(ContextScope scope, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("F1: CleanDraft is not built yet");
+
     public ValueTask<Result<ProposeResult>> Propose(ScopeProposal proposal, ContextScope scope, CancellationToken cancellationToken) =>
         proposals.Propose(proposal, scope, cancellationToken);
 
