@@ -54,7 +54,7 @@ public static class WorkflowViewFixtures
     {
         var states = cells.Select(c => owned is not null && c.State == state && c.Badge is null ? c with { Badge = owned } : c).ToList();
         return new(InstanceAddress.From(address), WorkflowInstanceId.Of(InstanceAddress.From(address)), ItemKey.From(address[..address.IndexOf('/', StringComparison.Ordinal)]), shape.Stamp, state,
-            StateChip.For(owned, states.Exists(c => c.Desk && c.Glyph == StateGlyph.Active), states.Exists(c => c.Terminal && c.Glyph == StateGlyph.Done && c.State == state)),
+            StateChip.For(owned, states.Exists(c => c.Desk && c.Glyph == StateGlyph.Active), states.Exists(c => c.Terminal && c.Glyph == StateGlyph.Done && c.State == state) ? OutcomeName.From("resolved") : null),
             since, owned, subject, shape.InputRows(), states, now.Length > 80 ? now[..79] + "…" : now, null, Acts(actions));
     }
 
@@ -445,7 +445,7 @@ public static class WorkflowViewFixtures
             : parked ? Acts("OpenItem", "ApplyCommand:answer-grant", "ApplyCommand:takeover")
             : Acts("OpenItem", "ApplyCommand:takeover");
         // A workflow.step state is a desk task until the agent runtime (P8): an active child that isn't parked is a DECISION with no agent.
-        var chip = StateChip.For(owned, glyph == StateGlyph.Active && !parked, state == "done", notStarted: glyph == StateGlyph.Pending);
+        var chip = StateChip.For(owned, glyph == StateGlyph.Active && !parked, state == "done" ? OutcomeName.From("resolved") : null, notStarted: glyph == StateGlyph.Pending);
         var address = InstanceAddress.From(parent + "/step." + entry.ToString(System.Globalization.CultureInfo.InvariantCulture));
         return new(WorkflowInstanceId.Of(address), address, ItemKey.From(item), title, glyph, state, chip, null, null, age, owned, parked ? owned : null, actions);
     }
