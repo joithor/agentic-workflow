@@ -1,4 +1,5 @@
 using Aw.Context.Core.Code;
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Core.Eval.MapQuality;
@@ -33,6 +34,7 @@ using Aw.Context.Features.GetProposals;
 using Aw.Context.Features.GetSubgraph;
 using Aw.Context.Features.ImportMap;
 using Aw.Context.Features.ListNeighbors;
+using Aw.Context.Features.MapHeads;
 using Aw.Context.Features.PreviewMap;
 using Aw.Context.Features.PreviewReviewFile;
 using Aw.Context.Features.PromoteMap;
@@ -70,7 +72,7 @@ public static class ContextFeaturesServiceCollectionExtensions
         services.TryAddSingleton<IMergeHistory>(sp => sp.GetRequiredService<UnconfiguredBacktest>());
         services.TryAddSingleton<IAsOfDocs>(sp => sp.GetRequiredService<UnconfiguredBacktest>());
         services.TryAddSingleton<IEvalStore>(sp => sp.GetRequiredService<UnconfiguredBacktest>());
-        return services.AddContextSlices();
+        return services.AddMapHeads().AddContextSlices();
     }
 
     private static IServiceCollection AddContextSlices(this IServiceCollection services) => services
@@ -114,6 +116,10 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IContextLenses>(static sp => sp.GetRequiredService<ContextGraph>())
         .AddScoped<IContextEngine, ContextEngine>()
         .AddLensSlices();
+
+    // The repo heads the map watcher reads (F1).
+    private static IServiceCollection AddMapHeads(this IServiceCollection services) =>
+        services.AddScoped<IService<MapHeadsRequest, IReadOnlyList<RepoHead>>, MapHeadsService>();
 
     // The lenses and the code lens share the basis reader and the map reader's views.
     private static IServiceCollection AddLensSlices(this IServiceCollection services) => services
