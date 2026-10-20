@@ -12229,3 +12229,22 @@ static Aw.Sindri.Core.Workflow.Views.RecordedWorkflowEvent.operator ==(Aw.Sindri
 static Aw.Sindri.Core.Workflow.Views.StepRun.operator !=(Aw.Sindri.Core.Workflow.Views.StepRun? left, Aw.Sindri.Core.Workflow.Views.StepRun? right) -> bool
 static Aw.Sindri.Core.Workflow.Views.StepRun.operator ==(Aw.Sindri.Core.Workflow.Views.StepRun? left, Aw.Sindri.Core.Workflow.Views.StepRun? right) -> bool
 static Aw.Sindri.Core.Workflow.Views.StepRuns.Fold(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Views.RecordedWorkflowEvent!>! events, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateCell!>! states) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StepRun!>!
+const Aw.Sindri.Core.Events.InstanceChanged.Type = "workflow.instance-changed" -> string!
+Aw.Sindri.Core.Events.InstanceChanged
+Aw.Sindri.Core.Events.InstanceChanged.Cursor.get -> long
+Aw.Sindri.Core.Events.InstanceChanged.Cursor.init -> void
+Aw.Sindri.Core.Events.InstanceChanged.Instance.get -> string!
+Aw.Sindri.Core.Events.InstanceChanged.Instance.init -> void
+Aw.Sindri.Core.Events.InstanceChanged.InstanceChanged(string! Instance, string! State, long Cursor) -> void
+Aw.Sindri.Core.Events.InstanceChanged.State.get -> string!
+Aw.Sindri.Core.Events.InstanceChanged.State.init -> void
+static Aw.Sindri.Core.Events.InstanceChanged.From(Aw.Sindri.Core.Events.PublicEvent! row) -> Aw.Sindri.Core.Events.InstanceChanged?
+Aw.Sindri.Core.Events.InstanceChanged.<Clone>$() -> Aw.Sindri.Core.Events.InstanceChanged!
+Aw.Sindri.Core.Events.InstanceChanged.Equals(Aw.Sindri.Core.Events.InstanceChanged? other) -> bool
+override Aw.Sindri.Core.Events.InstanceChanged.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.InstanceChanged.GetHashCode() -> int
+override Aw.Sindri.Core.Events.InstanceChanged.ToString() -> string!
+static Aw.Sindri.Core.Events.InstanceChanged.operator !=(Aw.Sindri.Core.Events.InstanceChanged? left, Aw.Sindri.Core.Events.InstanceChanged? right) -> bool
+static Aw.Sindri.Core.Events.InstanceChanged.operator ==(Aw.Sindri.Core.Events.InstanceChanged? left, Aw.Sindri.Core.Events.InstanceChanged? right) -> bool
+Aw.Sindri.Core.Events.InstanceChanged.Deconstruct(out string! Instance, out string! State, out long Cursor) -> void
+static Aw.Sindri.Core.Events.InstanceChanged.Changing.get -> System.Collections.Generic.IReadOnlyList<string!>!
