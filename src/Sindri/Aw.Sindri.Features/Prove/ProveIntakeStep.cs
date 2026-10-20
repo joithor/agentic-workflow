@@ -11,7 +11,8 @@ namespace Aw.Sindri.Features.Prove;
 /// 'beforeAfter' start as <c language="text">{commit, results[]}</c>, 'findings' as an empty list. A packet whose files cannot be read fails the Step with the reason.
 /// </summary>
 /// <param name="files">Reads the phase packet's files.</param>
-internal sealed class ProveIntakeStep(IBriefFiles files) : IBlockStep, IBlockStepId
+/// <param name="checkouts">Where the repo is checked out (a relative packet directory is read from it).</param>
+internal sealed class ProveIntakeStep(IBriefFiles files, IRepoCheckouts checkouts) : IBlockStep, IBlockStepId, IRepoStep
 {
     /// <inheritdoc/>
     public static BlockId Id { get; } = BlockId.From("step.prove.intake");
@@ -21,6 +22,7 @@ internal sealed class ProveIntakeStep(IBriefFiles files) : IBlockStep, IBlockSte
     {
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();
+        _ = checkouts;
         var dir = StepFacts.Read(context, "fact:phasePacket") is JsonObject packet && packet["dir"] is JsonValue d && d.TryGetValue<string>(out var text) ? text : null;
         var head = StepFacts.Head(StepFacts.Read(context, "fact:built"));
         if (dir is null || head is null)

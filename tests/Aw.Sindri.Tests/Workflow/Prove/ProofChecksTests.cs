@@ -27,9 +27,9 @@ public sealed class ProofChecksTests
             "feature",
             HoldoutCount: 3,
             Proof(Artifact("SG-1a", Head), Artifact("SG-2a", Head)),
-            Red: JsonNode.Parse("""{"tests":[{"id":"T1","outcome":"failed"},{"id":"T2","outcome":"failed"}]}"""),
+            Red: JsonNode.Parse("""{"AC-1":["T1"],"AC-2":{"tests":[{"id":"T2","path":"tests/b.cs"}],"commit":"c0ffee","output":"1 failed"}}"""),
             BeforeAfter: JsonNode.Parse($$"""{"commit":"{{Head}}","results":[{"item":"AC-2","signal":"SG-2a","base":"fail","head":"pass","baseScript":"s.sh","headScript":"s.sh"}]}"""),
-            Holdout: JsonNode.Parse($$"""{"commit":"{{Head}}","canary":"clean","results":[{"scenario":"H1","item":"AC-1","verdict":"pass"},{"scenario":"H2","item":"AC-2","verdict":"pass"},{"scenario":"C","item":"AC-1","verdict":"pass"}]}"""));
+            Holdout: JsonNode.Parse($$"""{"commit":"{{Head}}","canary":"clean","results":[{"scenario":"H1","item":"AC-1","verdict":"pass"},{"scenario":"H2","item":"AC-2","verdict":"pass"},{"scenario":"H3","item":"AC-1","verdict":"pass"},{"scenario":"C","kind":"canary","verdict":"pass"}]}"""));
         return change is null ? facts : change(facts);
     }
 
@@ -46,13 +46,14 @@ public sealed class ProofChecksTests
     }
 
     [Fact]
-    public void Without_fact_proof_the_artifact_rules_are_not_run_and_never_reported_as_held()
+    public void Without_fact_proof_the_artifact_rules_cannot_run_and_the_report_says_so_instead_of_holding_them()
     {
         var report = ProofChecks.Run(Good(static f => f with { Proof = null }));
 
         Assert.Empty(report.Failures);
-        Assert.Contains(report.NotRun, static n => n.StartsWith("PRV-ACC-001", StringComparison.Ordinal));
-        Assert.Contains(report.NotRun, static n => n.StartsWith("PRV-SHA-001", StringComparison.Ordinal));
+        Assert.Equal(["PRV-ACC-001", "PRV-SHA-001"], report.Unrunnable.Select(static n => n[..11]), StringComparer.Ordinal);
+        Assert.DoesNotContain(report.NotRun, static n => n.StartsWith("PRV-ACC-001", StringComparison.Ordinal) || n.StartsWith("PRV-SHA-001", StringComparison.Ordinal));
+        Assert.Empty(ProofChecks.Run(Good()).Unrunnable);
     }
 
     [Fact]
@@ -92,12 +93,54 @@ public sealed class ProofChecksTests
         Assert.Contains(problem, finding.Message, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("""{"AC-1":["T1"],"AC-2":["T2"]}""")]
+    [InlineData("""{"AC-1":[{"id":"T1","path":"a.cs"}],"AC-2":{"tests":["T2"]}}""")]
+    [InlineData("""{"AC-1":{"appOnly":{"signal":"SG-1a"}},"AC-2":{"tests":[],"appOnly":{"signal":"SG-2a"},"commit":"c","output":"o"}}""")]
+    [InlineData("""{"AC-1":["T1"],"AC-2":["T2"],"AC-0":[]}""")]
+    public void Every_live_item_with_a_test_or_an_app_only_entry_holds_in_both_shapes_of_the_spec(string red) =>
+        Assert.Empty(ProofChecks.Run(Good(f => f with { Red = JsonNode.Parse(red) })).Failures);
+
     [Fact]
-    public void Red_tests_must_be_recorded_and_every_one_must_have_failed()
+    public void An_item_with_no_test_and_no_app_only_entry_is_one_finding_naming_the_item()
     {
-        Assert.Equal(["PRV-RED-001"], Rules(ProofChecks.Run(Good(static f => f with { Red = JsonNode.Parse("{}") }))));
-        Assert.Equal(["PRV-RED-001"], Rules(ProofChecks.Run(Good(static f => f with { Red = JsonNode.Parse("""{"tests":[{"id":"T1","outcome":"passed"}]}""") }))));
+        Assert.Equal(["PRV-RED-001@AC-2"], Rules(ProofChecks.Run(Good(static f => f with { Red = JsonNode.Parse("""{"AC-1":["T1"]}""") }))));
+        Assert.Equal(["PRV-RED-001@AC-1", "PRV-RED-001@AC-2"], Rules(ProofChecks.Run(Good(static f => f with { Red = JsonNode.Parse("""{"AC-1":[],"AC-2":{"commit":"c"}}""") }))));
+        Assert.Equal(["PRV-RED-001@AC-1", "PRV-RED-001@AC-2"], Rules(ProofChecks.Run(Good(static f => f with { Red = JsonNode.Parse("{}") }))));
+    }
+
+    [Theory]
+    [InlineData("""{"AC-1":"T1","AC-2":["T2"]}""", "AC-1")]
+    [InlineData("""{"AC-1":["T1"],"AC-2":{"tests":"T2"}}""", "AC-2")]
+    [InlineData("""{"AC-1":[7],"AC-2":["T2"]}""", "AC-1")]
+    [InlineData("""{"AC-1":["T1"],"AC-2":{"appOnly":"yes"}}""", "AC-2")]
+    public void An_entry_of_the_wrong_shape_is_a_finding_that_names_the_item_and_the_expected_shape_never_no_tests(string red, string item)
+    {
+        var finding = Assert.Single(ProofChecks.Run(Good(f => f with { Red = JsonNode.Parse(red) })).Failures);
+
+        Assert.Equal(("PRV-RED-001", item), (finding.Rule, finding.Item));
+        Assert.Contains("expected", finding.Message, StringComparison.Ordinal);
+        Assert.Contains("tests", finding.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_red_tests_fact_that_is_not_an_object_is_one_finding_and_a_docs_phase_needs_no_red_tests()
+    {
+        Assert.Equal(["PRV-RED-001"], Rules(ProofChecks.Run(Good(static f => f with { Red = JsonNode.Parse("""[{"id":"T1","outcome":"failed"}]""") }))));
         Assert.Empty(ProofChecks.Run(Good(static f => f with { Red = JsonNode.Parse("{}"), PhaseKind = "docs" })).Failures);
+    }
+
+    [Fact]
+    public void The_canary_is_not_counted_among_the_scenarios_that_ran_nor_judged_nor_spent()
+    {
+        static string Holdout(string canary) => $$"""{"commit":"{{Head}}","canary":"clean","results":[{"scenario":"H1","item":"AC-1","verdict":"pass"},{"scenario":"H2","item":"AC-2","verdict":"pass"},{{canary}}]}""";
+        var onlyTwoAndCanary = ProofChecks.Run(Good(f => f with { Holdout = JsonNode.Parse(Holdout("""{"scenario":"C","kind":"canary","verdict":"pass"}""")) }));
+        var noItemCanary = ProofChecks.Run(Good(f => f with { Holdout = JsonNode.Parse(Holdout("""{"scenario":"C","verdict":"fail"}""")), HoldoutCount = 2 }));
+        var spentCanary = ProofChecks.Run(Good(f => f with { Holdout = JsonNode.Parse(Holdout("""{"scenario":"C","kind":"canary","verdict":"fail","spent":true}""")), HoldoutCount = 2, HoldoutMin = 2 }));
+
+        Assert.Equal(["PRV-HOLD-001"], Rules(onlyTwoAndCanary));   // count 3, two hidden scenarios ran: the canary does not make the third
+        Assert.Empty(noItemCanary.Failures);
+        Assert.Empty(spentCanary.Failures);
     }
 
     [Fact]

@@ -23,7 +23,7 @@ public static partial class ProofChecks
         Red(facts, failures);
         Holdout(facts, failures, notRun);
         failures.AddRange(ProofPack.AcceptanceFlips(facts.Acceptance, ProofPack.Acceptance(facts)));
-        return new ProofReport(failures, notRun);
+        return new ProofReport(failures, notRun, []);
     }
 
     /// <summary>The ids of the phase's items that still need proving: every item that is not superseded.</summary>

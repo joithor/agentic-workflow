@@ -46,7 +46,7 @@ public sealed class ProveEvidenceStepTests
         {
             ["phasePacket"] = $$"""{"hash":"sha256:{{new string('b', 64)}}","dir":"{{Dir}}"}""",
             ["built"] = $$"""{"head":"{{Head}}"}""",
-            ["redTests"] = """{"tests":[{"id":"T1","outcome":"failed"}]}""",
+            ["redTests"] = """{"AC-1":["T1"]}""",
             ["beforeAfter"] = $$"""{"commit":"{{Head}}","results":[]}""",
             ["holdoutResult"] = holdout ?? $$"""{"commit":"{{Head}}","canary":"clean","results":[{"scenario":"H1","item":"AC-1","verdict":"pass"},{"scenario":"H2","item":"AC-1","verdict":"pass"}]}""",
         };
@@ -88,14 +88,17 @@ public sealed class ProveEvidenceStepTests
     }
 
     [Fact]
-    public async Task A_proof_that_holds_with_rules_not_run_still_completes_and_records_them_in_the_pack()
+    public async Task A_proof_without_the_artifact_facts_parks_the_Step_and_names_the_rules_that_could_not_run()
     {
         var rig = new Rig();
 
         var result = await rig.Step().Run(Context(Facts()), Token);   // no fact:proof: the artifact rules cannot run
 
-        Assert.Equal("complete", result.Result!.Outcome.Value);
-        Assert.Contains("PRV-ACC-001", (await rig.Area.Read(Address, "proof-pack/proof.json", Token)).Value, StringComparison.Ordinal);
+        Assert.Null(result.Result);
+        Assert.Contains("PRV-ACC-001", result.Failure, StringComparison.Ordinal);
+        Assert.Contains("PRV-SHA-001", result.Failure, StringComparison.Ordinal);
+        Assert.Empty(rig.Packets.Calls);
+        Assert.Equal(string.Empty, (await rig.Area.Read(Address, "proof-pack/proof.json", Token)).Value);
     }
 
     [Fact]
@@ -115,15 +118,34 @@ public sealed class ProveEvidenceStepTests
     }
 
     [Fact]
-    public async Task A_pack_that_aw_packets_refuses_is_incomplete_and_the_failed_checks_are_the_findings()
+    public async Task A_pack_that_aw_packets_refuses_parks_the_Step_with_its_failures_and_sends_no_findings_to_the_builder()
     {
         var rig = new Rig();
         _ = rig.Packets.Fails("/run/T-1/prove/1/proof-pack", new PacketFailure("PKT-PRF-008", "proof.json", "an item is passing without evidence", "add the evidence"));
 
         var result = await rig.Step().Run(Context(Facts(Passing)), Token);
 
-        Assert.Equal("incomplete", result.Result!.Outcome.Value);
-        Assert.Equal("PKT-PRF-008", (string?)Assert.Single(Out(result, "findings").AsArray())!["rule"]);
+        Assert.Null(result.Result);
+        Assert.Contains("PKT-PRF-008", result.Failure, StringComparison.Ordinal);
+        Assert.Contains("an item is passing without evidence", result.Failure, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_relative_packet_dir_is_read_under_the_repos_checkout_and_an_absolute_one_as_it_is()
+    {
+        var relative = new RootRecordingFiles(new Rig().Files);
+        var absolute = new RootRecordingFiles(new Rig().Files);
+        var facts = Facts(Passing);
+        facts["phasePacket"] = $$"""{"hash":"sha256:{{new string('b', 64)}}","dir":"packets/p1"}""";
+        var rig = new Rig();
+
+        var fromRelative = await new ProveEvidenceStep(relative, rig.Area, rig.Packets, rig.Checkouts).Run(Context(facts), Token);
+        var fromAbsolute = await new ProveEvidenceStep(absolute, new Rig().Area, new Rig().Packets, rig.Checkouts).Run(Context(Facts(Passing)), Token);
+
+        Assert.Equal("complete", fromRelative.Result!.Outcome.Value);
+        Assert.Equal(["/checkouts/name/packets/p1"], relative.Roots.Distinct(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal("complete", fromAbsolute.Result!.Outcome.Value);
+        Assert.Equal([Dir], absolute.Roots.Distinct(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     [Fact]

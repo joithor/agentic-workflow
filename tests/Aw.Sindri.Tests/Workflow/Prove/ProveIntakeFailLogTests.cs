@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Prove;
@@ -33,7 +34,7 @@ public sealed class ProveIntakeFailLogTests
     [Fact]
     public async Task Intake_seeds_the_four_facts_from_the_phase_packet_and_the_built_head()
     {
-        var result = await new ProveIntakeStep(Packet()).Run(BuildShipContexts.Of("step.prove.intake", IntakeFacts()), Token);
+        var result = await new ProveIntakeStep(Packet(), new InMemoryRepoCheckouts()).Run(BuildShipContexts.Of("step.prove.intake", IntakeFacts()), Token);
 
         Assert.Equal("ready", result.Result!.Outcome.Value);
         Assert.Equal(["beforeAfter", "findings", "holdoutResult", "proof"], result.Result.Outputs.Keys.Select(static k => k.Value[5..]).Order(StringComparer.Ordinal), StringComparer.Ordinal);
@@ -47,7 +48,7 @@ public sealed class ProveIntakeFailLogTests
     [Fact]
     public async Task Intake_proof_lists_each_live_item_with_its_signals_and_no_artifacts()
     {
-        var result = await new ProveIntakeStep(Packet()).Run(BuildShipContexts.Of("step.prove.intake", IntakeFacts()), Token);
+        var result = await new ProveIntakeStep(Packet(), new InMemoryRepoCheckouts()).Run(BuildShipContexts.Of("step.prove.intake", IntakeFacts()), Token);
 
         var proof = Out(result, "proof");
         Assert.Equal("abc", (string?)proof["head"]);
@@ -66,7 +67,7 @@ public sealed class ProveIntakeFailLogTests
         var facts = IntakeFacts();
         _ = facts.Remove(missing);
 
-        var result = await new ProveIntakeStep(Packet()).Run(BuildShipContexts.Of("step.prove.intake", facts), Token);
+        var result = await new ProveIntakeStep(Packet(), new InMemoryRepoCheckouts()).Run(BuildShipContexts.Of("step.prove.intake", facts), Token);
 
         Assert.Null(result.Result);
         Assert.Contains(missing, result.Failure, StringComparison.Ordinal);
@@ -78,7 +79,7 @@ public sealed class ProveIntakeFailLogTests
         var facts = IntakeFacts();
         facts["built"] = "{}";
 
-        var result = await new ProveIntakeStep(Packet()).Run(BuildShipContexts.Of("step.prove.intake", facts), Token);
+        var result = await new ProveIntakeStep(Packet(), new InMemoryRepoCheckouts()).Run(BuildShipContexts.Of("step.prove.intake", facts), Token);
 
         Assert.Contains("head", result.Failure, StringComparison.Ordinal);
     }
@@ -86,10 +87,43 @@ public sealed class ProveIntakeFailLogTests
     [Fact]
     public async Task Intake_with_no_acceptance_file_fails_the_Step_with_the_reason()
     {
-        var result = await new ProveIntakeStep(new InMemoryBriefFiles()).Run(BuildShipContexts.Of("step.prove.intake", IntakeFacts()), Token);
+        var result = await new ProveIntakeStep(new InMemoryBriefFiles(), new InMemoryRepoCheckouts()).Run(BuildShipContexts.Of("step.prove.intake", IntakeFacts()), Token);
 
         Assert.Null(result.Result);
         Assert.Contains("acceptance.json", result.Failure, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Intake_reads_a_relative_packet_dir_under_the_repos_checkout_and_an_absolute_one_as_it_is()
+    {
+        var relative = new RootRecordingFiles(Packet());
+        var absolute = new RootRecordingFiles(Packet());
+        var checkouts = new InMemoryRepoCheckouts().With("name", "/checkouts/name");
+        var facts = IntakeFacts();
+        facts["phasePacket"] = """{"hash":"sha256:aa","dir":"packets/p1"}""";
+        var context = BuildShipContexts.Of("step.prove.intake", facts) with { Repo = RepoName.From("name") };
+
+        var fromRelative = await new ProveIntakeStep(relative, checkouts).Run(context, Token);
+        var fromAbsolute = await new ProveIntakeStep(absolute, checkouts).Run(BuildShipContexts.Of("step.prove.intake", IntakeFacts()) with { Repo = RepoName.From("name") }, Token);
+
+        Assert.Equal("ready", fromRelative.Result!.Outcome.Value);
+        Assert.Equal(["/checkouts/name/packets/p1"], relative.Roots.Distinct(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal("ready", fromAbsolute.Result!.Outcome.Value);
+        Assert.Equal([Dir], absolute.Roots.Distinct(StringComparer.Ordinal), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task Intake_with_a_relative_packet_dir_and_no_checkout_fails_the_Step_and_never_reads_from_the_working_directory()
+    {
+        var files = new RootRecordingFiles(Packet());
+        var facts = IntakeFacts();
+        facts["phasePacket"] = """{"hash":"sha256:aa","dir":"packets/p1"}""";
+
+        var result = await new ProveIntakeStep(files, new InMemoryRepoCheckouts()).Run(BuildShipContexts.Of("step.prove.intake", facts) with { Repo = RepoName.From("name") }, Token);
+
+        Assert.Null(result.Result);
+        Assert.Contains("checkout", result.Failure, StringComparison.Ordinal);
+        Assert.Empty(files.Roots);
     }
 
     private static Dictionary<string, string> FailFacts(string findings, string beforeAfter, string holdout) => new(StringComparer.Ordinal)

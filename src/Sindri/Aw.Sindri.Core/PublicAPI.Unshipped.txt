@@ -12116,14 +12116,16 @@ Aw.Sindri.Core.Prove.ProofFinding.Rule.init -> void
 Aw.Sindri.Core.Prove.ProofPack
 Aw.Sindri.Core.Prove.ProofReport
 Aw.Sindri.Core.Prove.ProofReport.<Clone>$() -> Aw.Sindri.Core.Prove.ProofReport!
-Aw.Sindri.Core.Prove.ProofReport.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Prove.ProofFinding!>! Failures, out System.Collections.Generic.IReadOnlyList<string!>! NotRun) -> void
+Aw.Sindri.Core.Prove.ProofReport.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Prove.ProofFinding!>! Failures, out System.Collections.Generic.IReadOnlyList<string!>! NotRun, out System.Collections.Generic.IReadOnlyList<string!>! Unrunnable) -> void
 Aw.Sindri.Core.Prove.ProofReport.Equals(Aw.Sindri.Core.Prove.ProofReport? other) -> bool
 Aw.Sindri.Core.Prove.ProofReport.Failures.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Prove.ProofFinding!>!
 Aw.Sindri.Core.Prove.ProofReport.Failures.init -> void
 Aw.Sindri.Core.Prove.ProofReport.Holds.get -> bool
 Aw.Sindri.Core.Prove.ProofReport.NotRun.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Prove.ProofReport.NotRun.init -> void
-Aw.Sindri.Core.Prove.ProofReport.ProofReport(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Prove.ProofFinding!>! Failures, System.Collections.Generic.IReadOnlyList<string!>! NotRun) -> void
+Aw.Sindri.Core.Prove.ProofReport.ProofReport(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Prove.ProofFinding!>! Failures, System.Collections.Generic.IReadOnlyList<string!>! NotRun, System.Collections.Generic.IReadOnlyList<string!>! Unrunnable) -> void
+Aw.Sindri.Core.Prove.ProofReport.Unrunnable.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Prove.ProofReport.Unrunnable.init -> void
 const Aw.Sindri.Core.Prove.ProofFacts.DefaultHoldoutMin = 2 -> int
 override Aw.Sindri.Core.Prove.ProofFacts.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Prove.ProofFacts.GetHashCode() -> int

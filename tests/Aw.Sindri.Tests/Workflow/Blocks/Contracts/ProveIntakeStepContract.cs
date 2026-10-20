@@ -23,5 +23,5 @@ public sealed class ProveIntakeStepContract : BlockContract
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await new ProveIntakeStep(new InMemoryBriefFiles()).Run(BuildShipContexts.Of("step.prove.intake", []), cancellationToken);
+        _ = await new ProveIntakeStep(new InMemoryBriefFiles(), new InMemoryRepoCheckouts()).Run(BuildShipContexts.Of("step.prove.intake", []), cancellationToken);
 }
