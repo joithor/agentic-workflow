@@ -69,21 +69,31 @@ public sealed class ApproveRecipeRefusalTests
         await AssertNothingRecorded(r, step, refused, WorkflowErrors.RecipeChallengeStale.Code);
     }
 
-    [Theory, Trait("Lane", "unit")]
-    [InlineData("session")]
-    [InlineData("app")]
-    public async Task Caller_other_than_a_human_at_a_terminal_gets_SND_AUTH_002_and_records_nothing(string who)
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_session_gets_SND_AUTH_002_and_records_nothing()
     {
         await using var r = await Started();
         var step = await r.Shipped("sindri/workflow.step.yaml");
         var issued = (await r.Issue("approve workflow.step 3")).Value;
-        var caller = who == "session" ? A.Caller().Session().Build() : A.Caller().Human().Client(Core.Commands.ClientLabel.Ui).Build();
 
         var refused = await r.Run<ApproveRecipeRequest, ApproveRecipeResponse>(
-            new ApproveRecipeRequest(step.Id, step.Hash, new ChallengeAnswer(issued.Challenge, issued.Action)), caller);
+            new ApproveRecipeRequest(step.Id, step.Hash, new ChallengeAnswer(issued.Challenge, issued.Action)), A.Caller().Session().Build());
 
         await AssertNothingRecorded(r, step, refused, SindriErrors.AuthRefused.Code);
         Assert.Contains("ApproveRecipe is a human decision", refused.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_app_is_let_through_the_table_and_still_needs_a_challenge_to_approve()
+    {
+        await using var r = await Started();
+        var step = await r.Shipped("sindri/workflow.step.yaml");
+        var app = A.Caller().Human().Client(Core.Commands.ClientLabel.Ui).Build();
+
+        var unanswered = await r.Run<ApproveRecipeRequest, ApproveRecipeResponse>(
+            new ApproveRecipeRequest(step.Id, step.Hash, new ChallengeAnswer(ChallengeId.For(new Guid(0x77, 0, 0, new byte[8])), "approve workflow.step 2")), app);
+
+        await AssertNothingRecorded(r, step, unanswered, WorkflowErrors.RecipeChallengeStale.Code);
     }
 
     [Fact, Trait("Lane", "unit")]

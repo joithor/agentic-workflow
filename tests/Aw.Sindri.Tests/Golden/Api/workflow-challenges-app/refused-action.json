@@ -1,0 +1,7 @@
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.4",
+  "title": "SND-AUTH-002",
+  "status": 403,
+  "detail": "The app confirms only 'approve profile <hash6>', 'approve <recipe> <version>' and 'approve-all <digest6>'; 'revoke workflow.step@9ab2d40c1e77' is a human decision at a terminal",
+  "traceId": "<trace>"
+}

@@ -20,9 +20,7 @@ Aw.Sindri.Core.Auth.ProverLabel
 Aw.Sindri.Core.Auth.ProverLabel.<Clone>$() -> Aw.Sindri.Core.Auth.ProverLabel!
 Aw.Sindri.Core.Auth.ProverLabel.Allowed.get -> bool
 Aw.Sindri.Core.Auth.ProverLabel.Allowed.init -> void
-Aw.Sindri.Core.Auth.ProverLabel.Deconstruct(out bool Allowed) -> void
 Aw.Sindri.Core.Auth.ProverLabel.Equals(Aw.Sindri.Core.Auth.ProverLabel? other) -> bool
-Aw.Sindri.Core.Auth.ProverLabel.ProverLabel(bool Allowed) -> void
 Aw.Sindri.Core.Challenges.ChallengeAction
 Aw.Sindri.Core.Challenges.ChallengeAction.<Clone>$() -> Aw.Sindri.Core.Challenges.ChallengeAction!
 Aw.Sindri.Core.Challenges.ChallengeAction.ChallengeAction(string! Text) -> void
@@ -34,8 +32,6 @@ Aw.Sindri.Core.Challenges.ChallengeAnswer
 Aw.Sindri.Core.Challenges.ChallengeAnswer.<Clone>$() -> Aw.Sindri.Core.Challenges.ChallengeAnswer!
 Aw.Sindri.Core.Challenges.ChallengeAnswer.Challenge.get -> Aw.Sindri.Core.Challenges.ChallengeId
 Aw.Sindri.Core.Challenges.ChallengeAnswer.Challenge.init -> void
-Aw.Sindri.Core.Challenges.ChallengeAnswer.ChallengeAnswer(Aw.Sindri.Core.Challenges.ChallengeId Challenge, string! Typed) -> void
-Aw.Sindri.Core.Challenges.ChallengeAnswer.Deconstruct(out Aw.Sindri.Core.Challenges.ChallengeId Challenge, out string! Typed) -> void
 Aw.Sindri.Core.Challenges.ChallengeAnswer.Equals(Aw.Sindri.Core.Challenges.ChallengeAnswer? other) -> bool
 Aw.Sindri.Core.Challenges.ChallengeAnswer.Typed.get -> string!
 Aw.Sindri.Core.Challenges.ChallengeAnswer.Typed.init -> void
@@ -63,13 +59,11 @@ Aw.Sindri.Core.Challenges.IssuedChallenge
 Aw.Sindri.Core.Challenges.IssuedChallenge.<Clone>$() -> Aw.Sindri.Core.Challenges.IssuedChallenge!
 Aw.Sindri.Core.Challenges.IssuedChallenge.Action.get -> Aw.Sindri.Core.Challenges.ChallengeAction!
 Aw.Sindri.Core.Challenges.IssuedChallenge.Action.init -> void
-Aw.Sindri.Core.Challenges.IssuedChallenge.Deconstruct(out Aw.Sindri.Core.Challenges.ChallengeId Id, out Aw.Sindri.Core.Challenges.ChallengeAction! Action, out Aw.Sindri.Core.Challenges.ChallengeSubject! Subject, out System.DateTimeOffset ExpiresAt) -> void
 Aw.Sindri.Core.Challenges.IssuedChallenge.Equals(Aw.Sindri.Core.Challenges.IssuedChallenge? other) -> bool
 Aw.Sindri.Core.Challenges.IssuedChallenge.ExpiresAt.get -> System.DateTimeOffset
 Aw.Sindri.Core.Challenges.IssuedChallenge.ExpiresAt.init -> void
 Aw.Sindri.Core.Challenges.IssuedChallenge.Id.get -> Aw.Sindri.Core.Challenges.ChallengeId
 Aw.Sindri.Core.Challenges.IssuedChallenge.Id.init -> void
-Aw.Sindri.Core.Challenges.IssuedChallenge.IssuedChallenge(Aw.Sindri.Core.Challenges.ChallengeId Id, Aw.Sindri.Core.Challenges.ChallengeAction! Action, Aw.Sindri.Core.Challenges.ChallengeSubject! Subject, System.DateTimeOffset ExpiresAt) -> void
 Aw.Sindri.Core.Challenges.IssuedChallenge.Subject.get -> Aw.Sindri.Core.Challenges.ChallengeSubject!
 Aw.Sindri.Core.Challenges.IssuedChallenge.Subject.init -> void
 Aw.Sindri.Core.Commands.ActionClass
@@ -148,10 +142,8 @@ Aw.Sindri.Core.Commands.CommandRow.Class.get -> Aw.Sindri.Core.Commands.ActionCl
 Aw.Sindri.Core.Commands.CommandRow.Class.init -> void
 Aw.Sindri.Core.Commands.CommandRow.Cli.get -> Aw.Sindri.Core.Commands.CliForm!
 Aw.Sindri.Core.Commands.CommandRow.Cli.init -> void
-Aw.Sindri.Core.Commands.CommandRow.CommandRow(Aw.Sindri.Core.Ids.ActionId Action, System.Type? CommandType, string? Variant, Aw.Sindri.Core.Commands.ActionClass Class, System.Collections.Generic.IReadOnlyList<string!>! ServiceGrants, bool NeedsTerminal, bool SelfAudited, bool Destructive, bool ReadsViews, string? Shortcut, string? Method, string? Route, Aw.Sindri.Core.Commands.CliForm! Cli, string! Ui) -> void
 Aw.Sindri.Core.Commands.CommandRow.CommandType.get -> System.Type?
 Aw.Sindri.Core.Commands.CommandRow.CommandType.init -> void
-Aw.Sindri.Core.Commands.CommandRow.Deconstruct(out Aw.Sindri.Core.Ids.ActionId Action, out System.Type? CommandType, out string? Variant, out Aw.Sindri.Core.Commands.ActionClass Class, out System.Collections.Generic.IReadOnlyList<string!>! ServiceGrants, out bool NeedsTerminal, out bool SelfAudited, out bool Destructive, out bool ReadsViews, out string? Shortcut, out string? Method, out string? Route, out Aw.Sindri.Core.Commands.CliForm! Cli, out string! Ui) -> void
 Aw.Sindri.Core.Commands.CommandRow.Destructive.get -> bool
 Aw.Sindri.Core.Commands.CommandRow.Destructive.init -> void
 Aw.Sindri.Core.Commands.CommandRow.Equals(Aw.Sindri.Core.Commands.CommandRow? other) -> bool
@@ -13252,6 +13244,40 @@ Aw.Sindri.Core.Events.SetupStepChanged.Deconstruct(out Aw.Sindri.Core.Ids.Comman
 Aw.Sindri.Core.Events.SetupStepChanged.SetupStepChanged(Aw.Sindri.Core.Ids.CommandId CommandId, string! Step, string! State, string? Code = null) -> void
 Aw.Sindri.Core.Events.SetupStepChanged.Step.get -> string!
 Aw.Sindri.Core.Events.SetupStepChanged.Step.init -> void
+Aw.Sindri.Core.Auth.ProverLabel.Deconstruct(out bool Allowed, out bool MayConfirm) -> void
+Aw.Sindri.Core.Auth.ProverLabel.MayConfirm.get -> bool
+Aw.Sindri.Core.Auth.ProverLabel.MayConfirm.init -> void
+Aw.Sindri.Core.Auth.ProverLabel.ProverLabel(bool Allowed, bool MayConfirm = false) -> void
+Aw.Sindri.Core.Challenges.ChallengeAnswer.ChallengeAnswer(Aw.Sindri.Core.Challenges.ChallengeId Challenge, string! Typed = "", long? HeldMs = null) -> void
+Aw.Sindri.Core.Challenges.ChallengeAnswer.Deconstruct(out Aw.Sindri.Core.Challenges.ChallengeId Challenge, out string! Typed, out long? HeldMs) -> void
+Aw.Sindri.Core.Challenges.ChallengeAnswer.HeldMs.get -> long?
+Aw.Sindri.Core.Challenges.ChallengeAnswer.HeldMs.init -> void
+Aw.Sindri.Core.Challenges.ChallengeChannel
+Aw.Sindri.Core.Challenges.ChallengeChannel.App = 1 -> Aw.Sindri.Core.Challenges.ChallengeChannel
+Aw.Sindri.Core.Challenges.ChallengeChannel.Terminal = 0 -> Aw.Sindri.Core.Challenges.ChallengeChannel
+Aw.Sindri.Core.Challenges.ChallengeMode
+Aw.Sindri.Core.Challenges.ChallengeMode.Held = 1 -> Aw.Sindri.Core.Challenges.ChallengeMode
+Aw.Sindri.Core.Challenges.ChallengeMode.Typed = 0 -> Aw.Sindri.Core.Challenges.ChallengeMode
+Aw.Sindri.Core.Challenges.IChallenges.Issue(Aw.Sindri.Core.Challenges.ChallengeAction! action, Aw.Sindri.Core.Challenges.ChallengeSubject! subject, Aw.Sindri.Core.Challenges.ChallengeMode mode, Aw.Sindri.Core.Challenges.ChallengeChannel channel) -> Aw.Sindri.Core.Challenges.IssuedChallenge!
+Aw.Sindri.Core.Challenges.IssuedChallenge.Channel.get -> Aw.Sindri.Core.Challenges.ChallengeChannel
+Aw.Sindri.Core.Challenges.IssuedChallenge.Channel.init -> void
+Aw.Sindri.Core.Challenges.IssuedChallenge.Deconstruct(out Aw.Sindri.Core.Challenges.ChallengeId Id, out Aw.Sindri.Core.Challenges.ChallengeAction! Action, out Aw.Sindri.Core.Challenges.ChallengeSubject! Subject, out System.DateTimeOffset ExpiresAt, out Aw.Sindri.Core.Challenges.ChallengeMode Mode, out Aw.Sindri.Core.Challenges.ChallengeChannel Channel) -> void
+Aw.Sindri.Core.Challenges.IssuedChallenge.IssuedAt.get -> System.DateTimeOffset
+Aw.Sindri.Core.Challenges.IssuedChallenge.IssuedChallenge(Aw.Sindri.Core.Challenges.ChallengeId Id, Aw.Sindri.Core.Challenges.ChallengeAction! Action, Aw.Sindri.Core.Challenges.ChallengeSubject! Subject, System.DateTimeOffset ExpiresAt, Aw.Sindri.Core.Challenges.ChallengeMode Mode = Aw.Sindri.Core.Challenges.ChallengeMode.Typed, Aw.Sindri.Core.Challenges.ChallengeChannel Channel = Aw.Sindri.Core.Challenges.ChallengeChannel.Terminal) -> void
+Aw.Sindri.Core.Challenges.IssuedChallenge.Mode.get -> Aw.Sindri.Core.Challenges.ChallengeMode
+Aw.Sindri.Core.Challenges.IssuedChallenge.Mode.init -> void
+Aw.Sindri.Core.Commands.CommandRow.AppConfirm.get -> bool
+Aw.Sindri.Core.Commands.CommandRow.AppConfirm.init -> void
+Aw.Sindri.Core.Commands.CommandRow.CommandRow(Aw.Sindri.Core.Ids.ActionId Action, System.Type? CommandType, string? Variant, Aw.Sindri.Core.Commands.ActionClass Class, System.Collections.Generic.IReadOnlyList<string!>! ServiceGrants, bool NeedsTerminal, bool SelfAudited, bool Destructive, bool ReadsViews, string? Shortcut, string? Method, string? Route, Aw.Sindri.Core.Commands.CliForm! Cli, string! Ui, bool AppConfirm = false, string? Confirm = null) -> void
+Aw.Sindri.Core.Commands.CommandRow.Confirm.get -> string?
+Aw.Sindri.Core.Commands.CommandRow.Confirm.init -> void
+Aw.Sindri.Core.Commands.CommandRow.Deconstruct(out Aw.Sindri.Core.Ids.ActionId Action, out System.Type? CommandType, out string? Variant, out Aw.Sindri.Core.Commands.ActionClass Class, out System.Collections.Generic.IReadOnlyList<string!>! ServiceGrants, out bool NeedsTerminal, out bool SelfAudited, out bool Destructive, out bool ReadsViews, out string? Shortcut, out string? Method, out string? Route, out Aw.Sindri.Core.Commands.CliForm! Cli, out string! Ui, out bool AppConfirm, out string? Confirm) -> void
+static Aw.Sindri.Core.Challenges.IssuedChallenge.EarliestAnswer.get -> System.TimeSpan
+static Aw.Sindri.Core.Challenges.IssuedChallenge.MinHoldMs.get -> int
+static Aw.Sindri.Core.Commands.Authorization.CallersFor(Aw.Sindri.Core.Commands.CommandRow! row) -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Challenges.ChallengeConfirmation
+static Aw.Sindri.Core.Challenges.ChallengeConfirmation.Refusal(Aw.Sindri.Core.Challenges.IssuedChallenge! issued, Aw.Sindri.Core.Challenges.ChallengeAnswer! answer, System.DateTimeOffset now) -> Aw.Kernel.Error?
+static Aw.Sindri.Core.Commands.CallerContext.ActorOf(Aw.Sindri.Core.Commands.CallerClass caller, Aw.Sindri.Core.Commands.ClientLabel client) -> string!
 Aw.Sindri.Core.Control.IRepoLocator.Place(string! directory, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>! repos, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Control.RepoPlacement?>
 Aw.Sindri.Core.Control.RepoPlacement
 Aw.Sindri.Core.Control.RepoPlacement.<Clone>$() -> Aw.Sindri.Core.Control.RepoPlacement!
