@@ -3788,3 +3788,27 @@ static Aw.Sindri.Features.GetSetup.GetSetupRequest.operator !=(Aw.Sindri.Feature
 static Aw.Sindri.Features.GetSetup.GetSetupRequest.operator ==(Aw.Sindri.Features.GetSetup.GetSetupRequest? left, Aw.Sindri.Features.GetSetup.GetSetupRequest? right) -> bool
 static Aw.Sindri.Features.GetSetup.GetSetupResponse.operator !=(Aw.Sindri.Features.GetSetup.GetSetupResponse? left, Aw.Sindri.Features.GetSetup.GetSetupResponse? right) -> bool
 static Aw.Sindri.Features.GetSetup.GetSetupResponse.operator ==(Aw.Sindri.Features.GetSetup.GetSetupResponse? left, Aw.Sindri.Features.GetSetup.GetSetupResponse? right) -> bool
+Aw.Sindri.Features.GetRepoStatus.GetRepoStatusResponse
+override Aw.Sindri.Features.GetRepoStatus.GetRepoStatusResponse.ToString() -> string!
+static Aw.Sindri.Features.GetRepoStatus.GetRepoStatusResponse.operator !=(Aw.Sindri.Features.GetRepoStatus.GetRepoStatusResponse? left, Aw.Sindri.Features.GetRepoStatus.GetRepoStatusResponse? right) -> bool
+static Aw.Sindri.Features.GetRepoStatus.GetRepoStatusResponse.operator ==(Aw.Sindri.Features.GetRepoStatus.GetRepoStatusResponse? left, Aw.Sindri.Features.GetRepoStatus.GetRepoStatusResponse? right) -> bool
+override Aw.Sindri.Features.GetRepoStatus.GetRepoStatusResponse.GetHashCode() -> int
+Aw.Sindri.Features.GetRepoStatus.GetRepoStatusResponse.Status.get -> Aw.Sindri.Core.Profile.RepoStatus!
+override Aw.Sindri.Features.GetRepoStatus.GetRepoStatusResponse.Equals(object? obj) -> bool
+Aw.Sindri.Features.GetRepoStatus.GetRepoStatusResponse.Status.init -> void
+Aw.Sindri.Features.GetRepoStatus.GetRepoStatusRequest.Directory.get -> string!
+Aw.Sindri.Features.GetRepoStatus.GetRepoStatusResponse.Equals(Aw.Sindri.Features.GetRepoStatus.GetRepoStatusResponse? other) -> bool
+Aw.Sindri.Features.GetRepoStatus.GetRepoStatusRequest.Directory.init -> void
+Aw.Sindri.Features.GetRepoStatus.GetRepoStatusResponse.<Clone>$() -> Aw.Sindri.Features.GetRepoStatus.GetRepoStatusResponse!
+Aw.Sindri.Features.GetRepoStatus.GetRepoStatusResponse.Deconstruct(out Aw.Sindri.Core.Profile.RepoStatus! Status) -> void
+Aw.Sindri.Features.GetRepoStatus.GetRepoStatusRequest
+override Aw.Sindri.Features.GetRepoStatus.GetRepoStatusRequest.ToString() -> string!
+static Aw.Sindri.Features.GetRepoStatus.GetRepoStatusRequest.operator !=(Aw.Sindri.Features.GetRepoStatus.GetRepoStatusRequest? left, Aw.Sindri.Features.GetRepoStatus.GetRepoStatusRequest? right) -> bool
+static Aw.Sindri.Features.GetRepoStatus.GetRepoStatusRequest.operator ==(Aw.Sindri.Features.GetRepoStatus.GetRepoStatusRequest? left, Aw.Sindri.Features.GetRepoStatus.GetRepoStatusRequest? right) -> bool
+override Aw.Sindri.Features.GetRepoStatus.GetRepoStatusRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetRepoStatus.GetRepoStatusRequest.Equals(object? obj) -> bool
+Aw.Sindri.Features.GetRepoStatus.GetRepoStatusRequest.Equals(Aw.Sindri.Features.GetRepoStatus.GetRepoStatusRequest? other) -> bool
+Aw.Sindri.Features.GetRepoStatus.GetRepoStatusRequest.<Clone>$() -> Aw.Sindri.Features.GetRepoStatus.GetRepoStatusRequest!
+Aw.Sindri.Features.GetRepoStatus.GetRepoStatusRequest.Deconstruct(out string! Directory) -> void
+Aw.Sindri.Features.GetRepoStatus.GetRepoStatusResponse.GetRepoStatusResponse(Aw.Sindri.Core.Profile.RepoStatus! Status) -> void
+Aw.Sindri.Features.GetRepoStatus.GetRepoStatusRequest.GetRepoStatusRequest(string! Directory) -> void
