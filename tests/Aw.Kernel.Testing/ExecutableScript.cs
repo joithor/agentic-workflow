@@ -1,20 +1,27 @@
 using System.ComponentModel;
 using System.Diagnostics;
-using Aw.Kernel.Testing;
 
-namespace Aw.Sindri.Tests.Launch;
+namespace Aw.Kernel.Testing;
 
 /// <summary>Writes a shell script a test is about to run as a program. A fresh executable can fail to start with ETXTBSY ('text file busy') while a parallel test forks: the child inherits our write descriptor until it execs. Renaming does not help (same inode), so the script is run once, here, until it starts; after that no write descriptor is left and the code under test sees a normal executable.</summary>
-[System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
-internal static class ExecutableScript
+public static class ExecutableScript
 {
     private const int TextFileBusy = 26;   // ETXTBSY on Linux and macOS
     private const string WarmupVariable = "AW_TEST_SCRIPT_WARMUP";
 
-    public static string Write(string path, string body)
+    /// <summary>Writes <paramref name="body"/> under a shebang line and the warm-up guard, makes the file executable, runs it once and returns the path.</summary>
+    /// <param name="path">Where the script goes.</param>
+    /// <param name="body">The script after the shebang; the guard is added before it, so the warm-up run does nothing.</param>
+    /// <param name="interpreter">The shebang's program; the guard is plain POSIX test syntax, so any shell works.</param>
+    public static string Write(string path, string body, string interpreter = "/bin/sh")
     {
-        var script = "#!/bin/sh\n[ -n \"$" + WarmupVariable + "\" ] && exit 0\n" + body;
+        var script = "#!" + interpreter + "\n[ -n \"$" + WarmupVariable + "\" ] && exit 0\n" + body;
         File.WriteAllText(path, script);
+        if (OperatingSystem.IsWindows())
+        {
+            return path;   // no exec bit and no ETXTBSY there; the tests that run scripts need sh anyway
+        }
+
         File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         WarmUp(path);
         return path;
