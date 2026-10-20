@@ -14,7 +14,8 @@ namespace Aw.Context.Core.Map;
 /// </summary>
 /// <param name="store">The graph store.</param>
 /// <param name="intents">The intent store whose synced records, decisions and links every read merges in.</param>
-public sealed class MapReader(IGraphStore store, IIntentStore intents)
+/// <param name="views">The process's view cache, or null to build every view (a reader made by hand).</param>
+public sealed class MapReader(IGraphStore store, IIntentStore intents, MapViewCache? views = null)
 {
     /// <summary>The map <paramref name="scope"/>'s caller may read.</summary>
     /// <param name="scope">The profile's context section and repos, and the caller.</param>
@@ -94,8 +95,15 @@ public sealed class MapReader(IGraphStore store, IIntentStore intents)
             return layer.Error;
         }
 
-        var visible = withIntent ? Layered(layer.Value, map, scope, (draft, emptyIsError)) : MapAccess.View(map.Graph, map.Overrides, scope, pending: draft);
+        var visible = Visible(map, layer.Value, scope, (draft, emptyIsError, withIntent));
         return visible.IsError ? visible.Error : new VisibleMap(map, visible.Value.Applied) { Conflicts = Seen(layer.Value.Conflicts, visible.Value.Applied) };
+    }
+
+    // The caller's view of the snapshot: the one the process cache kept for these inputs, or built now.
+    private Result<MapView> Visible(MapSnapshot map, IntentLayer layer, ContextScope scope, (bool Draft, bool EmptyIsError, bool WithIntent) mode)
+    {
+        Result<MapView> Build() => mode.WithIntent ? Layered(layer, map, scope, (mode.Draft, mode.EmptyIsError)) : MapAccess.View(map.Graph, map.Overrides, scope, pending: mode.Draft);
+        return views is null ? Build() : views.View(map, layer, scope, string.Join(',', mode.Draft, mode.EmptyIsError, mode.WithIntent), Build);
     }
 
     /// <summary>Reads the map as the structure alone: no synced records, decisions or links. The sync walks this, so a record never links to a record's own node.</summary>

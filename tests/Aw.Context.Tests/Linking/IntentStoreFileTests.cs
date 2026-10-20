@@ -71,7 +71,7 @@ public sealed class IntentStoreFileTests : IDisposable
             _ = await insert.ExecuteNonQueryAsync(TestContext.Current.CancellationToken);
         }
 
-        var seven = await runner.Migrate(ContextDatabase.Migrations, TestContext.Current.CancellationToken);
+        var seven = await runner.Migrate([.. ContextDatabase.Migrations.Take(7)], TestContext.Current.CancellationToken);
 
         Assert.Equal(7, seven.Value.ToVersion);
         Assert.Equal("0007", ContextDatabase.Migrations[6].Version.ToString("D4", System.Globalization.CultureInfo.InvariantCulture));

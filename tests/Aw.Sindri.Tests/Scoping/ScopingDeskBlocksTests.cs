@@ -294,6 +294,29 @@ public sealed class ScopingDeskBlocksTests
         Assert.Equal(4, assembled.Coverage["lenses"]!.AsArray().Count);
     }
 
+    // A view that couldn't find an anchor says so (missingAnchors); the gather listed every asked anchor as searched and passed. Each missing anchor
+    // is now out of the row's searched anchors and a recorded limit (anchor-missing), so the check and the stop see it.
+    [Fact, Trait("Lane", "unit")]
+    public void An_anchor_a_view_could_not_find_is_a_recorded_limit_not_a_searched_anchor()
+    {
+        var facts = GatherFacts();
+        var anchors = Strings(JsonNode.Parse(facts["anchors"])!);
+        var lenses = JsonNode.Parse(facts["lensesView"])!.AsObject();
+        lenses["missingAnchors"] = new JsonArray("feature:nowhere");
+        var code = JsonNode.Parse(facts["codeView"])!.AsObject();
+        code["missingAnchors"] = new JsonArray("surface:screen/gone");
+
+        var assembled = LensGather.Assemble(lenses, code, JsonNode.Parse(facts["historyView"]), [.. anchors, "feature:nowhere", "surface:screen/gone"]);
+        var rows = assembled.Coverage["lenses"]!.AsArray().ToDictionary(static r => r!["lens"]!.GetValue<string>(), StringComparer.Ordinal);
+
+        Assert.DoesNotContain("feature:nowhere", Strings(rows["product"]!["searched"]!["anchors"]!), StringComparer.Ordinal);
+        Assert.Contains(rows["product"]!["limits"]!.AsArray(), l => l!["why"]!.GetValue<string>() == "anchor-missing" && l["not"]!.GetValue<string>() == "feature:nowhere");
+        Assert.Contains(rows["code"]!["limits"]!.AsArray(), l => l!["why"]!.GetValue<string>() == "anchor-missing" && l["not"]!.GetValue<string>() == "surface:screen/gone");
+        Assert.Contains(rows["code"]!["limits"]!.AsArray(), l => l!["not"]!.GetValue<string>() == "feature:nowhere");
+        Assert.DoesNotContain(rows["history"]!["limits"]!.AsArray(), l => l!["why"]!.GetValue<string>() == "anchor-missing");
+        Assert.NotNull(ScopeFixLines.ByName("anchor-missing"));
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task Propose_writes_each_surfaces_graph_status_from_the_context_engines_answer()
     {

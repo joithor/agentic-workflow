@@ -65,7 +65,7 @@ public sealed class BlockRuntimeInterpreterTests(BlockRuntimeDevServer server) :
     }
 
     [Fact(Timeout = 120_000)]
-    public async Task The_block_activity_is_attempted_once_and_a_thrown_Step_is_failed_with_its_type()
+    public async Task The_block_activity_is_attempted_once_and_a_thrown_Step_is_failed_with_its_type_and_message()
     {
         var ct = TestContext.Current.CancellationToken;
         var fake = new FakeBlockStep(static (_, _) => throw new InvalidOperationException("the judge fell over"));
@@ -74,7 +74,7 @@ public sealed class BlockRuntimeInterpreterTests(BlockRuntimeDevServer server) :
             _ = await WorkflowsHarness.Until(handle, static v => v.State == "route-evidence-desk");   // a retry would delay step.failed until it too had run, so one run here is one attempt
 
             Assert.Equal(1, fake.Runs);
-            Assert.Equal("failed: InvalidOperationException", (await FailedRow(sindri, ct)).Reason);
+            Assert.Equal("failed: InvalidOperationException: the judge fell over", (await FailedRow(sindri, ct)).Reason);
         });
     }
 

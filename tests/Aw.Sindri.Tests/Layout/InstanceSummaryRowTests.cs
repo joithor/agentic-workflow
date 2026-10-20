@@ -134,6 +134,9 @@ public sealed partial class InstanceSummaryRowTests
     [InlineData("parked-needs-answer-step")]
     [InlineData("escalated-gate")]
     [InlineData("done")]
+    [InlineData("failed")]
+    [InlineData("unresolved")]
+    [InlineData("cancelled")]
     [InlineData("escalated-child")]
     [InlineData("parked-mirrored-budget")]
     public void The_built_row_serializes_to_its_golden_file(string name)

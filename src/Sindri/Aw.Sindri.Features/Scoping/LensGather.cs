@@ -20,6 +20,8 @@ internal static class LensGather
         var asked = anchors.Count > 0 ? anchors : ViewAnchors(lenses);
         var version = new[] { lenses, code, history }.Select(static v => ScopeJson.Str(v, "mapVersion")).FirstOrDefault(static v => !string.IsNullOrEmpty(v)) ?? "unknown";
         var set = new[] { Product(lenses, asked), Related(lenses, asked), CodeLens(lenses, code, asked), HistoryLens(history, asked) };
+        MarkMissing(set, lenses, code, history);
+
         var entries = new JsonObject();
         var rows = new JsonArray();
         foreach (var lens in ScopeRules.Lenses)
@@ -33,6 +35,23 @@ internal static class LensGather
 
         return new LensGatherResult(entries, new JsonObject { ["lenses"] = rows });
     }
+
+    // Each lens gets the anchors the views it reads couldn't find: product and related from the lenses view, code from it and the code view, history from the history view.
+    private static void MarkMissing(LensBuilder[] set, JsonNode? lenses, JsonNode? code, JsonNode? history)
+    {
+        foreach (var built in set)
+        {
+            built.Missing(built.Lens switch
+            {
+                "code" => [.. Missing(lenses), .. Missing(code)],
+                "history" => Missing(history),
+                _ => Missing(lenses),
+            });
+        }
+    }
+
+    // The anchors a view says it couldn't find: each is a recorded limit of the lenses that view feeds, not a searched anchor.
+    private static List<string> Missing(JsonNode? view) => [.. ScopeJson.Strings(view, "missingAnchors")];
 
     private static List<string> ViewAnchors(JsonNode? lenses) =>
         [.. (ScopeJson.Arr(lenses, "anchors") is { } many ? ScopeJson.Items(many).Select(static a => ScopeJson.Str(a, "key")) : [ScopeJson.Str(lenses?["anchor"], "key")]).OfType<string>()];
