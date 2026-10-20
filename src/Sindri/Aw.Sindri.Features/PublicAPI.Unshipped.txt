@@ -3740,3 +3740,35 @@ static Aw.Sindri.Features.Plan.PlanGraphOptions.operator ==(Aw.Sindri.Features.P
 static Aw.Sindri.Features.Plan.PlanPacket.Build(Aw.Sindri.Core.Line.LineFacts! facts, Aw.Sindri.Core.Line.PacketIdentity! identity, Aw.Sindri.Features.Plan.PlanParents! parents, Aw.Sindri.Features.Plan.PlanGraphOptions! options) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFile!>!
 static Aw.Sindri.Features.Plan.PlanParents.operator !=(Aw.Sindri.Features.Plan.PlanParents? left, Aw.Sindri.Features.Plan.PlanParents? right) -> bool
 static Aw.Sindri.Features.Plan.PlanParents.operator ==(Aw.Sindri.Features.Plan.PlanParents? left, Aw.Sindri.Features.Plan.PlanParents? right) -> bool
+Aw.Sindri.Features.Design.DesignDeskRequest
+Aw.Sindri.Features.Design.DesignDeskRequest.<Clone>$() -> Aw.Sindri.Features.Design.DesignDeskRequest!
+Aw.Sindri.Features.Design.DesignDeskRequest.Block.get -> string!
+Aw.Sindri.Features.Design.DesignDeskRequest.Block.init -> void
+Aw.Sindri.Features.Design.DesignDeskRequest.Context.get -> Aw.Sindri.Core.Line.LineDeskContext!
+Aw.Sindri.Features.Design.DesignDeskRequest.Context.init -> void
+Aw.Sindri.Features.Design.DesignDeskRequest.Deconstruct(out string! Block, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Facts, out Aw.Sindri.Core.Line.LineDeskContext! Context) -> void
+Aw.Sindri.Features.Design.DesignDeskRequest.DesignDeskRequest(string! Block, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Facts, Aw.Sindri.Core.Line.LineDeskContext! Context) -> void
+Aw.Sindri.Features.Design.DesignDeskRequest.Equals(Aw.Sindri.Features.Design.DesignDeskRequest? other) -> bool
+Aw.Sindri.Features.Design.DesignDeskRequest.Facts.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Sindri.Features.Design.DesignDeskRequest.Facts.init -> void
+Aw.Sindri.Features.Plan.PlanDeskRequest
+Aw.Sindri.Features.Plan.PlanDeskRequest.<Clone>$() -> Aw.Sindri.Features.Plan.PlanDeskRequest!
+Aw.Sindri.Features.Plan.PlanDeskRequest.Block.get -> string!
+Aw.Sindri.Features.Plan.PlanDeskRequest.Block.init -> void
+Aw.Sindri.Features.Plan.PlanDeskRequest.Context.get -> Aw.Sindri.Core.Line.LineDeskContext!
+Aw.Sindri.Features.Plan.PlanDeskRequest.Context.init -> void
+Aw.Sindri.Features.Plan.PlanDeskRequest.Deconstruct(out string! Block, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Facts, out Aw.Sindri.Core.Line.LineDeskContext! Context) -> void
+Aw.Sindri.Features.Plan.PlanDeskRequest.Equals(Aw.Sindri.Features.Plan.PlanDeskRequest? other) -> bool
+Aw.Sindri.Features.Plan.PlanDeskRequest.Facts.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Sindri.Features.Plan.PlanDeskRequest.Facts.init -> void
+Aw.Sindri.Features.Plan.PlanDeskRequest.PlanDeskRequest(string! Block, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Facts, Aw.Sindri.Core.Line.LineDeskContext! Context) -> void
+override Aw.Sindri.Features.Design.DesignDeskRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Design.DesignDeskRequest.GetHashCode() -> int
+override Aw.Sindri.Features.Design.DesignDeskRequest.ToString() -> string!
+override Aw.Sindri.Features.Plan.PlanDeskRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Plan.PlanDeskRequest.GetHashCode() -> int
+override Aw.Sindri.Features.Plan.PlanDeskRequest.ToString() -> string!
+static Aw.Sindri.Features.Design.DesignDeskRequest.operator !=(Aw.Sindri.Features.Design.DesignDeskRequest? left, Aw.Sindri.Features.Design.DesignDeskRequest? right) -> bool
+static Aw.Sindri.Features.Design.DesignDeskRequest.operator ==(Aw.Sindri.Features.Design.DesignDeskRequest? left, Aw.Sindri.Features.Design.DesignDeskRequest? right) -> bool
+static Aw.Sindri.Features.Plan.PlanDeskRequest.operator !=(Aw.Sindri.Features.Plan.PlanDeskRequest? left, Aw.Sindri.Features.Plan.PlanDeskRequest? right) -> bool
+static Aw.Sindri.Features.Plan.PlanDeskRequest.operator ==(Aw.Sindri.Features.Plan.PlanDeskRequest? left, Aw.Sindri.Features.Plan.PlanDeskRequest? right) -> bool

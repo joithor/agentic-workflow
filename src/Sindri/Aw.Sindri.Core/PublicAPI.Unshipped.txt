@@ -12835,3 +12835,47 @@ static Aw.Sindri.Core.Line.LineJson.Terminated(string! text) -> string!
 static Aw.Sindri.Core.Line.LineJson.Write(System.Text.Json.Nodes.JsonNode! node) -> string!
 static Aw.Sindri.Core.Line.LineJson.Append(System.Text.Json.Nodes.JsonArray! array, System.Text.Json.Nodes.JsonNode! node) -> void
 static Aw.Sindri.Core.Line.LineJson.StringArray(System.Collections.Generic.IEnumerable<string!>! values) -> System.Text.Json.Nodes.JsonArray!
+Aw.Sindri.Core.Line.LineDeskContext
+Aw.Sindri.Core.Line.LineDeskContext.<Clone>$() -> Aw.Sindri.Core.Line.LineDeskContext!
+Aw.Sindri.Core.Line.LineDeskContext.Deconstruct(out Aw.Sindri.Core.Line.PacketIdentity? Identity, out string? ScopeHash, out string? DesignHash, out int Parallel, out int MaxStack, out string! DefaultBranch) -> void
+Aw.Sindri.Core.Line.LineDeskContext.DefaultBranch.get -> string!
+Aw.Sindri.Core.Line.LineDeskContext.DefaultBranch.init -> void
+Aw.Sindri.Core.Line.LineDeskContext.DesignHash.get -> string?
+Aw.Sindri.Core.Line.LineDeskContext.DesignHash.init -> void
+Aw.Sindri.Core.Line.LineDeskContext.Equals(Aw.Sindri.Core.Line.LineDeskContext? other) -> bool
+Aw.Sindri.Core.Line.LineDeskContext.Identity.get -> Aw.Sindri.Core.Line.PacketIdentity?
+Aw.Sindri.Core.Line.LineDeskContext.Identity.init -> void
+Aw.Sindri.Core.Line.LineDeskContext.LineDeskContext(Aw.Sindri.Core.Line.PacketIdentity? Identity = null, string? ScopeHash = null, string? DesignHash = null, int Parallel = 2, int MaxStack = 4, string! DefaultBranch = "main") -> void
+Aw.Sindri.Core.Line.LineDeskContext.MaxStack.get -> int
+Aw.Sindri.Core.Line.LineDeskContext.MaxStack.init -> void
+Aw.Sindri.Core.Line.LineDeskContext.Parallel.get -> int
+Aw.Sindri.Core.Line.LineDeskContext.Parallel.init -> void
+Aw.Sindri.Core.Line.LineDeskContext.ScopeHash.get -> string?
+Aw.Sindri.Core.Line.LineDeskContext.ScopeHash.init -> void
+Aw.Sindri.Core.Line.LineDeskResponse
+Aw.Sindri.Core.Line.LineDeskResponse.<Clone>$() -> Aw.Sindri.Core.Line.LineDeskResponse!
+Aw.Sindri.Core.Line.LineDeskResponse.Block.get -> string!
+Aw.Sindri.Core.Line.LineDeskResponse.Block.init -> void
+Aw.Sindri.Core.Line.LineDeskResponse.Deconstruct(out string! Block, out string! Outcome, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Outputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFile!>! Files, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFinding!>! Findings, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFinding!>! Warnings) -> void
+Aw.Sindri.Core.Line.LineDeskResponse.Equals(Aw.Sindri.Core.Line.LineDeskResponse? other) -> bool
+Aw.Sindri.Core.Line.LineDeskResponse.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFile!>!
+Aw.Sindri.Core.Line.LineDeskResponse.Files.init -> void
+Aw.Sindri.Core.Line.LineDeskResponse.Findings.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFinding!>!
+Aw.Sindri.Core.Line.LineDeskResponse.Findings.init -> void
+Aw.Sindri.Core.Line.LineDeskResponse.LineDeskResponse(string! Block, string! Outcome, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Outputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFile!>! Files, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFinding!>! Findings, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFinding!>! Warnings) -> void
+Aw.Sindri.Core.Line.LineDeskResponse.Outcome.get -> string!
+Aw.Sindri.Core.Line.LineDeskResponse.Outcome.init -> void
+Aw.Sindri.Core.Line.LineDeskResponse.Outputs.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Sindri.Core.Line.LineDeskResponse.Outputs.init -> void
+Aw.Sindri.Core.Line.LineDeskResponse.Warnings.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFinding!>!
+Aw.Sindri.Core.Line.LineDeskResponse.Warnings.init -> void
+override Aw.Sindri.Core.Line.LineDeskContext.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Line.LineDeskContext.GetHashCode() -> int
+override Aw.Sindri.Core.Line.LineDeskContext.ToString() -> string!
+override Aw.Sindri.Core.Line.LineDeskResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Line.LineDeskResponse.GetHashCode() -> int
+override Aw.Sindri.Core.Line.LineDeskResponse.ToString() -> string!
+static Aw.Sindri.Core.Line.LineDeskContext.operator !=(Aw.Sindri.Core.Line.LineDeskContext? left, Aw.Sindri.Core.Line.LineDeskContext? right) -> bool
+static Aw.Sindri.Core.Line.LineDeskContext.operator ==(Aw.Sindri.Core.Line.LineDeskContext? left, Aw.Sindri.Core.Line.LineDeskContext? right) -> bool
+static Aw.Sindri.Core.Line.LineDeskResponse.operator !=(Aw.Sindri.Core.Line.LineDeskResponse? left, Aw.Sindri.Core.Line.LineDeskResponse? right) -> bool
+static Aw.Sindri.Core.Line.LineDeskResponse.operator ==(Aw.Sindri.Core.Line.LineDeskResponse? left, Aw.Sindri.Core.Line.LineDeskResponse? right) -> bool

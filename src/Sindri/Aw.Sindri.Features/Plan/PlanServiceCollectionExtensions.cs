@@ -11,5 +11,6 @@ internal static class PlanServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
     internal static IServiceCollection AddPlanSlices(this IServiceCollection services) => services
-        .AddScoped<IService<PlanCheckRequest, LineCheckResponse>, PlanCheckService>();
+        .AddScoped<IService<PlanCheckRequest, LineCheckResponse>, PlanCheckService>()
+        .AddScoped<IService<PlanDeskRequest, LineDeskResponse>, PlanDeskService>();
 }

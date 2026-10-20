@@ -11,5 +11,6 @@ internal static class DesignServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
     internal static IServiceCollection AddDesignSlices(this IServiceCollection services) => services
-        .AddScoped<IService<DesignCheckRequest, LineCheckResponse>, DesignCheckService>();
+        .AddScoped<IService<DesignCheckRequest, LineCheckResponse>, DesignCheckService>()
+        .AddScoped<IService<DesignDeskRequest, LineDeskResponse>, DesignDeskService>();
 }
