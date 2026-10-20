@@ -63,8 +63,8 @@ internal sealed class AddRepoRig : IDisposable
     /// <summary>The profile file already names these repos (the admission reads it).</summary>
     internal void ProfileNames(params (string Name, string Path)[] repos)
     {
-        var profile = Core.Profile.ProfileRules.Check(new SindriProfile(1, "thor", Repos: [.. repos.Select(static r => new RepoEntry(r.Name, r.Path))])).Value;
-        Slice.Profiles.Live = new LoadedProfile(profile, ProfileHashing.Of(Aw.Kernel.Json.AwJson.Serialize(profile, SliceHarness.Json)), "/home/profile.yaml");
+        var profile = ProfileRules.Check(new SindriProfile(1, "thor", Repos: [.. repos.Select(static r => new RepoEntry(r.Name, r.Path))])).Value;
+        Slice.Profiles.Live = new LoadedProfile(profile, ProfileHashing.Of(Kernel.Json.AwJson.Serialize(profile, SliceHarness.Json)), "/home/profile.yaml");
     }
 
     internal void Enter() => _caller ??= Slice.Callers.EnterService("test");

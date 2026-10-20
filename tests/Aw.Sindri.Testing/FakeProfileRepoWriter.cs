@@ -1,7 +1,7 @@
 using Aw.Kernel;
 using Aw.Sindri.Core;
-using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Setup;
 
 namespace Aw.Sindri.Testing;
 

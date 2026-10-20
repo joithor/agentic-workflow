@@ -68,7 +68,7 @@ public sealed class AddRepoRouteTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, status);   // like every job route
         Assert.Equal("succeeded", job.GetProperty("state").GetString());
         Assert.Equal("AddRepo", job.GetProperty("kind").GetString());
-        Assert.Matches("^[0-9a-f]{16}$", job.GetProperty("key").GetString()!);
+        Assert.Matches("^[0-9a-f]{16}$", job.GetProperty("key").GetString());
         var text = await File.ReadAllTextAsync(ProfilePath, Token);
         Assert.Contains("name: \"demo\"", text, StringComparison.Ordinal);
         Assert.Contains("path: \"/work/demo\"", text, StringComparison.Ordinal);
@@ -130,7 +130,7 @@ public sealed class AddRepoRouteTests : IAsyncLifetime
     public async Task A_second_add_of_the_same_folder_while_one_runs_is_SND_JOB_409_naming_the_running_job()
     {
         var running = Core.Ids.JobId.From("JOB-" + new string('b', 32));
-        Assert.True(Host.App.Services.GetRequiredService<Features.Jobs.JobRegistry>().TryClaim(Core.Ids.JobKind.From("AddRepo"), Core.Setup.RepoFolders.KeyOf("/work/demo"), running, out _));
+        Assert.True(Host.App.Services.GetRequiredService<Features.Jobs.JobRegistry>().TryClaim(Core.Ids.JobKind.From("AddRepo"), RepoFolders.KeyOf("/work/demo"), running, out _));
 
         var (status, body) = await Add("{\"path\":\"/work/demo\"}");
 
@@ -142,7 +142,7 @@ public sealed class AddRepoRouteTests : IAsyncLifetime
     [Fact]
     public async Task A_session_is_refused_and_nothing_is_written()
     {
-        var answer = await Host.Http.Ask(Post("/sindri/setup/repos", "{\"path\":\"/work/demo\"}", (Aw.Sindri.Host.SindriHeaders.Caller, "session"), (Aw.Sindri.Host.SindriHeaders.Client, "cli")));
+        var answer = await Host.Http.Ask(Post("/sindri/setup/repos", "{\"path\":\"/work/demo\"}", (Sindri.Host.SindriHeaders.Caller, "session"), (Sindri.Host.SindriHeaders.Client, "cli")));
 
         Assert.Equal(HttpStatusCode.Forbidden, answer.Status);
         Assert.Contains("SND-AUTH-002", answer.Body, StringComparison.Ordinal);

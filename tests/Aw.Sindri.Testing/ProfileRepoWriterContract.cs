@@ -1,5 +1,5 @@
-using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Setup;
 using Xunit;
 
 namespace Aw.Sindri.Testing;

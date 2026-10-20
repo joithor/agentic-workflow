@@ -1,10 +1,10 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
-using Aw.Sindri.Testing;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Features.AddRepo;
+using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.AddRepo;
 
