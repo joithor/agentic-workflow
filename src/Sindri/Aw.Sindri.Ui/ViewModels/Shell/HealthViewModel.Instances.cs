@@ -18,13 +18,14 @@ internal sealed partial class HealthViewModel
     /// <summary>
     /// Has every instance reader read for a change. The view is read live and can lag the frame, so a reader that says it is still behind is asked
     /// again after <see cref="InstanceBackoff"/>, then twice that, then twice again (<see cref="InstanceRetries"/> times), and then left alone: the
-    /// next frame or event reads it. Only the readers still behind are asked again.
+    /// next frame or event reads it. Only the readers still behind are asked again, and none once a newer frame for the instance is waiting.
     /// </summary>
     /// <param name="url">The API's base URL.</param>
     /// <param name="change">The frame, or null to re-read all.</param>
+    /// <param name="superseded">Says whether a newer frame for the change's instance is waiting: its read is the one that counts, so this change's retries stop. Null: never.</param>
     /// <param name="cancellationToken">Cancels the reads and the waits.</param>
-    /// <returns>A task that completes when every reader caught up or the retries are used up.</returns>
-    internal async Task ReadInstances(Uri url, InstanceChange? change, CancellationToken cancellationToken)
+    /// <returns>A task that completes when every reader caught up, a newer frame took over or the retries are used up.</returns>
+    internal async Task ReadInstances(Uri url, InstanceChange? change, Func<InstanceChange, bool>? superseded, CancellationToken cancellationToken)
     {
         var behind = _instanceReaders.ToList();
         var wait = InstanceBackoff;
@@ -46,6 +47,11 @@ internal sealed partial class HealthViewModel
 
             behind = still;
             await Task.Delay(wait, clock, cancellationToken).ConfigureAwait(true);
+            if (change is not null && superseded?.Invoke(change) == true)
+            {
+                return;
+            }
+
             wait *= 2;
         }
     }

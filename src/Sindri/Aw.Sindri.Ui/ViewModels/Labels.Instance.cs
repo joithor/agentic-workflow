@@ -100,9 +100,9 @@ internal static partial class Labels
     internal const string FrameTypeLink = "Workflow type ▸";
 
     /// <summary>That link's accessible name: the visible words first, then which one it opens.</summary>
-    /// <param name="subject">"id@hash12".</param>
+    /// <param name="workflowName">The workflow's name.</param>
     /// <returns>The words.</returns>
-    internal static string FrameTypeLinkName(string subject) => $"Workflow type {subject}, open";
+    internal static string FrameTypeLinkName(string workflowName) => $"Workflow type {workflowName}, open";
 
     /// <summary>The heading of the disclosure that holds a stage's step, gates, budget and timeout.</summary>
     internal const string StageDetailsHeading = "Stage details";
