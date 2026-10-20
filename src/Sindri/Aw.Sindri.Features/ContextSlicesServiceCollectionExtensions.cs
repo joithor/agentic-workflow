@@ -26,6 +26,7 @@ internal static class ContextSlicesServiceCollectionExtensions
     {
         _ = services
             .AddScoped<ContextScopes>()
+            .AddScoped<ContextWarmup>()
             .AddScoped<IScopeProposals>(static sp => sp.GetRequiredService<IContextEngine>())
             .AddScoped<ContextChallenges>()
             .AddScoped<IScheduledService, ContextDocsRefreshService>()

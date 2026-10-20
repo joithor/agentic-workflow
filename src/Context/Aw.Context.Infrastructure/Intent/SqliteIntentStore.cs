@@ -36,7 +36,7 @@ internal sealed class SqliteIntentStore(ContextDatabase database) : IIntentStore
 
         await using (read.Value.ConfigureAwait(false))
         {
-            var stamp = await StampedCache<IntentLayer>.Stamp(read.Value, cancellationToken).ConfigureAwait(false);
+            var stamp = await StampedCache<IntentLayer>.Stamp(read.Value, StampedCache<IntentLayer>.IntentStamp, cancellationToken).ConfigureAwait(false);
             if (_layers.Get("layer", stamp) is { } held)
             {
                 return held;

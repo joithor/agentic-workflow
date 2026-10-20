@@ -14,10 +14,16 @@ internal sealed class StampedCache<T>
     private readonly Lock _gate = new();
     private readonly Dictionary<string, (long Stamp, T Value)> _held = new(StringComparer.Ordinal);
 
-    /// <summary>The change stamp as of <paramref name="session"/>'s read transaction, or null when the store has none yet.</summary>
-    internal static async ValueTask<long?> Stamp(SqliteReadSession session, CancellationToken cancellationToken)
+    /// <summary>The map's counter (migration 0008).</summary>
+    internal const string MapStamp = "SELECT seq FROM change_stamp WHERE id = 1";
+
+    /// <summary>The intent layer's counter (migration 0009).</summary>
+    internal const string IntentStamp = "SELECT seq FROM stamp_intent WHERE id = 1";
+
+    /// <summary>The counter <paramref name="query"/> reads, as of <paramref name="session"/>'s read transaction, or null when the store has none yet.</summary>
+    internal static async ValueTask<long?> Stamp(SqliteReadSession session, string query, CancellationToken cancellationToken)
     {
-        var stamp = await SqliteQueries.One(session, new SqlStatement("SELECT seq FROM change_stamp WHERE id = 1"), Graph.GraphRows.Id, cancellationToken).ConfigureAwait(false);
+        var stamp = await SqliteQueries.One(session, new SqlStatement(query), Graph.GraphRows.Id, cancellationToken).ConfigureAwait(false);
         return stamp.IsSuccess ? stamp.Value : null;
     }
 
@@ -40,6 +46,12 @@ internal sealed class StampedCache<T>
 
         lock (_gate)
         {
+            // What was kept at another stamp can't be answered again: drop it, so at most the loads of one stamp are held.
+            foreach (var stale in _held.Where(h => h.Value.Stamp != now).Select(h => h.Key).ToList())
+            {
+                _ = _held.Remove(stale);
+            }
+
             _held[key] = (now, value);
         }
     }

@@ -6,6 +6,7 @@ using Aw.Context.Infrastructure.Graph;
 using Aw.Context.Infrastructure.Intent;
 using Aw.Context.Infrastructure.Store;
 using Aw.Context.Testing.Map;
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Context.Tests.Map;
@@ -60,11 +61,24 @@ public sealed class ReadCacheTests : IDisposable
         var again = (await store.Snapshot(draft: false, MapWorld.None)).Value;
         var layer = (await intents.Layer(MapWorld.None)).Value;
         var layerAgain = (await intents.Layer(MapWorld.None)).Value;
+        await using (var connection = new SqliteConnection("Data Source=" + settings.DatabasePath))
+        {
+            await connection.OpenAsync(TestContext.Current.CancellationToken);
+            await using var insert = connection.CreateCommand();
+            insert.CommandText = "INSERT INTO intent_record (key, source, version, title, aliases, fetched_at, extraction_state) VALUES ('record:onyx/linear/SPL-1', 'onyx', 'v1', 'A record', '', '2026-10-12T09:00:00.0000000Z', 'done')";
+            _ = await insert.ExecuteNonQueryAsync(TestContext.Current.CancellationToken);
+        }
+
+        var afterSync = (await store.Snapshot(draft: false, MapWorld.None)).Value;
+        var layerAfterSync = (await intents.Layer(MapWorld.None)).Value;
         _ = await store.AppendOverrides([new MapOverride(OverrideAction.Rename, NodeKey.From("feature:tabs"), "avery", DateTimeOffset.UnixEpoch, "Tab strip")], MapWorld.None);
         var written = (await store.Snapshot(draft: false, MapWorld.None)).Value;
 
         Assert.Same(first, again);
         Assert.Same(layer, layerAgain);
+        Assert.Same(first, afterSync);   // an intent write moves only the intent layer's counter: the map isn't read again
+        Assert.NotSame(layer, layerAfterSync);
+        _ = Assert.Single(layerAfterSync.Records);
         Assert.NotSame(first, written);
         _ = Assert.Single(written!.Overrides);
     }
