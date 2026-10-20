@@ -9,4 +9,5 @@ namespace Aw.Sindri.Core.Workflow.Blocks;
 /// </summary>
 /// <param name="Reply">The reply's outcome; null when the effect replies with nothing (an engine notice signals nothing).</param>
 /// <param name="Existed">The identity was already performed (an activity retry or a re-emission): nothing was done twice.</param>
-public sealed record EffectDone(OutcomeName? Reply, bool Existed);
+/// <param name="Facts">The facts the reply carries (the transition records them through its 'produces'); each must be one the effect's descriptor lists in 'Outputs' and the reply event declares, or the dispatch is refused. Null or empty: none.</param>
+public sealed record EffectDone(OutcomeName? Reply, bool Existed, IReadOnlyDictionary<FactKey, ReplyFact>? Facts = null);
