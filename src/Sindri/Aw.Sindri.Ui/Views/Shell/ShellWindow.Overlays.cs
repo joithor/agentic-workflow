@@ -6,6 +6,7 @@ using Avalonia.VisualTree;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.ViewModels.Palette;
 using Aw.Sindri.Ui.ViewModels.Shell;
+using Aw.Sindri.Ui.Views.Approvals;
 using Aw.Sindri.Ui.Views.Item;
 using Aw.Sindri.Ui.Views.Palette;
 using Aw.Sindri.Ui.Views.Start;
@@ -42,7 +43,7 @@ internal sealed partial class ShellWindow
         return OpenSettingsByKey(e, shell);
     }
 
-    private static bool FormOpen(ShellViewModel shell) => shell.Create.IsOpen || shell.Start.IsOpen;
+    private static bool FormOpen(ShellViewModel shell) => shell.Create.IsOpen || shell.Start.IsOpen || shell.ApproveAll.IsOpen;
 
     // ⌘K opens the palette, ⌘N the Start form: one layer at a time, so the one open goes first (focus goes back to the original opener first, OnOverlayChanged).
     private static bool OpenLayerByChord(KeyEventArgs e, ShellViewModel shell)
@@ -98,7 +99,7 @@ internal sealed partial class ShellWindow
         return true;
     }
 
-    private bool OverlayOpen => Shell is { } shell && (shell.Palette.IsOpen || shell.Shortcuts.IsOpen || shell.Create.IsOpen || shell.Start.IsOpen);
+    private bool OverlayOpen => Shell is { } shell && (shell.Palette.IsOpen || shell.Shortcuts.IsOpen || shell.Create.IsOpen || shell.Start.IsOpen || shell.ApproveAll.IsOpen);
 
     // `?` is Shift+/ on most layouts; the key symbol says so on the rest.
     private static bool IsQuestionMark(KeyEventArgs e) =>
@@ -139,7 +140,7 @@ internal sealed partial class ShellWindow
     }
 
     private static bool IsOpen(object? sender, ShellViewModel shell) =>
-        sender == shell.Palette ? shell.Palette.IsOpen : sender == shell.Create ? shell.Create.IsOpen : sender == shell.Start ? shell.Start.IsOpen : shell.Shortcuts.IsOpen;
+        sender == shell.Palette ? shell.Palette.IsOpen : sender == shell.Create ? shell.Create.IsOpen : sender == shell.Start ? shell.Start.IsOpen : sender == shell.ApproveAll ? shell.ApproveAll.IsOpen : shell.Shortcuts.IsOpen;
 
     // Where focus goes when what opened the overlay is gone: the Create form falls back to the Queue page's "Create item"
     // button, the others to the ⌘K field.
@@ -160,6 +161,10 @@ internal sealed partial class ShellWindow
         else if (sender == shell.Start)
         {
             this.Get<StartDialog>("StartDialog").FocusFirst();
+        }
+        else if (sender == shell.ApproveAll)
+        {
+            this.Get<ApproveAllDialog>("ApproveAllDialog").FocusFirst();
         }
         else
         {
