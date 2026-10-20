@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using Aw.Kernel.Testing;
 using Aw.Meta.Infrastructure.Processes;
 
 namespace Aw.Meta.Tests.Cli;
@@ -68,17 +69,15 @@ public sealed class QueueGateSignalTests : IDisposable
         var config = """{"team":"t","repo":"REPO","lanes":["api"],"metaLane":"meta","gate":{"always":["repo"],"docsOnly":["**/*.md"],"scopes":{"repo":{"paths":["**"],"steps":[{"name":"long","run":["sh","-c","sleep 120 & echo $! > PIDFILE; wait"],"termGraceSeconds":2}]}}}}""";
         await File.WriteAllTextAsync(_cli.File("team.json"), config.Replace("REPO", repo, StringComparison.Ordinal).Replace("PIDFILE", pidFile, StringComparison.Ordinal), TestContext.Current.CancellationToken);
         var gh = _cli.File("gh");
-        await File.WriteAllLinesAsync(
+        _ = ExecutableScript.Write(
             gh,
+            string.Join('\n',
             [
-                "#!/bin/sh",
                 "case \"$1 $2\" in",
                 $"  \"pr view\") echo '{{\"headRefOid\":\"{head}\",\"headRefName\":\"feat\",\"isDraft\":false,\"title\":\"Add\",\"state\":\"OPEN\"}}' ;;",
                 "  *) exit 9 ;;",
                 "esac",
-            ],
-            TestContext.Current.CancellationToken);
-        File.SetUnixFileMode(gh, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            ]) + "\n");
         _cli.SetEnv("AW_META_CONFIG", _cli.File("team.json"));
         _cli.SetEnv("AW_GH", gh);
         _cli.SetEnv("AW_HEAVY", _cli.File("no-such-heavy"));

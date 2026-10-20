@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Aw.Kernel.Testing;
 
 namespace Aw.Meta.Tests.Cli;
 
@@ -28,11 +29,9 @@ public sealed class LaneCommandTests : IDisposable
             TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(Transcript, string.Empty, TestContext.Current.CancellationToken);
         var tmux = _cli.File("tmux");
-        await File.WriteAllTextAsync(
+        _ = ExecutableScript.Write(
             tmux,
-            $"#!/bin/sh\necho \"$@\" >> '{TmuxLog}'\n[ \"$1\" = -L ] && shift 2\ncase \"$1\" in display-message) echo {agent};; esac\n",
-            TestContext.Current.CancellationToken);
-        File.SetUnixFileMode(tmux, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            $"echo \"$@\" >> '{TmuxLog}'\n[ \"$1\" = -L ] && shift 2\ncase \"$1\" in display-message) echo {agent};; esac\n");
         _cli.SetEnv("AW_TMUX", tmux);
     }
 

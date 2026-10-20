@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Runtime.Versioning;
 using System.Text;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Infrastructure.Sessions;
 using Microsoft.Extensions.Time.Testing;
@@ -28,7 +29,6 @@ public sealed class PreviewTmuxCliTests : IDisposable
         var script = Path.Combine(_directory, "tmux");
         var lines = new[]
         {
-            "#!/bin/sh",
             $"if [ -f '{Marker("hang")}' ]; then : > '{Marker("started")}'; exec sleep 30; fi",
             $"if [ \"$3\" = capture-pane ] && [ -f '{Marker("hang-capture")}' ]; then : > '{Marker("capture-started")}'; exec sleep 30; fi",
             $"if [ \"$3\" = display-message ] && [ -f '{Marker("hold-display")}' ]; then : > '{Marker("display-started")}'; while [ ! -f '{Marker("go")}' ]; do sleep 0.05; done; fi",
@@ -40,8 +40,7 @@ public sealed class PreviewTmuxCliTests : IDisposable
             $"  capture-pane) cat '{Marker("capture.out")}' ;;",
             "esac",
         };
-        File.WriteAllText(script, string.Join('\n', lines) + "\n");
-        File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        _ = ExecutableScript.Write(script, string.Join('\n', lines) + "\n");
         File.WriteAllText(Marker("capture.out"), "first\nsecond\n");
         return new TmuxCli(_clock, script, _budget);
     }

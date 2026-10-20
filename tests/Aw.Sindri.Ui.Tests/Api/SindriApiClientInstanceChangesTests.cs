@@ -33,7 +33,7 @@ public sealed class SindriApiClientInstanceChangesTests
             }
         }
 
-        Assert.True(seen[0].IsOpened);
+        Assert.Null(seen[0].Change);
         Assert.Equal(new InstanceChange("ITM-1/project/1", "build", 4211), seen[1].Change);
     }
 
