@@ -21,7 +21,7 @@ public sealed record AgentEntry(AgentId Id, string Label, string Bin, string? Pr
     /// <summary>Where the entry's session id comes from; none by default. P10a's addition.</summary>
     public SessionIdMode SessionIdMode { get; init; } = SessionIdMode.None;
 
-    /// <summary>The regex a session id must match before it is used or resumed (run non-backtracking with a 100 ms timeout), or null. P10a's addition.</summary>
+    /// <summary>The regex a session id must match before it is used or resumed (run non-backtracking with a 2 s timeout), or null. P10a's addition.</summary>
     public string? SessionIdPattern { get; init; }
 
     /// <summary>How the entry takes a Step's model id (launcher L-17); none by default, as for a user-added entry. P10a's addition.</summary>
