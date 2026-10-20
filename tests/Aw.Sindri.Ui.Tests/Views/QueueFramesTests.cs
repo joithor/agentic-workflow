@@ -178,8 +178,11 @@ public sealed class QueueFramesTests : IDisposable
     {
         var (window, shell) = await OpenItem(Connected(s => !s.Queue.IsLoading), A.NewItem);
 
-        Assert.Equal(("Try the queue", "1"), (Named<TextBlock>(window, "ItemTitle").Text, Named<TextBlock>(window, "ItemVersion").Text));
-        Assert.False(Visible(window, "ItemDetails"));   // F3: who made it, the version and the run's address wait behind Details
+        Assert.Equal("Try the queue", Named<TextBlock>(window, "ItemTitle").Text);
+        Assert.False(Visible(window, "ItemVersion"));   // F3: who made it, the version and the run's address wait behind Details
+        shell.Item.DetailsOpen = true;
+        await Until(window, () => Visible(window, "ItemVersion"));
+        Assert.Equal("1", Named<TextBlock>(window, "ItemVersion").Text);
         Assert.Equal("New for 5m", Named<TextBlock>(window, "ItemStatusLine").Text);
         var actions = Named<Control>(window, "ItemActionList").GetVisualDescendants().OfType<Button>().Where(b => b.Name == "RunButton").Select(AutomationProperties.GetName).ToList();
         Assert.Equal(["Close item " + A.NewItem, "Close as cancelled " + A.NewItem], actions, StringComparer.Ordinal);
