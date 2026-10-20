@@ -39,10 +39,7 @@ internal sealed partial class ApproveAllViewModel
             return;
         }
 
-        (IsSending, IsHolding, HoldProgress) = (true, false, 0);
-        (Error, ErrorCode, Notice) = (string.Empty, string.Empty, string.Empty);
-        OnChanged(nameof(CanApprove));
-        OnChanged(nameof(IsSending));
+        MarkSending();
         var session = _session;
         Result<ApproveAllStarted> started;
         try
@@ -54,6 +51,7 @@ internal sealed partial class ApproveAllViewModel
             if (session == _session)   // a closed or reopened dialog has its own guard
             {
                 IsSending = false;
+                TypedBox.SetSending(sending: false);
                 OnChanged(nameof(IsSending));
             }
         }
@@ -75,10 +73,21 @@ internal sealed partial class ApproveAllViewModel
         await Follow(api, started.Value.JobId, session).ConfigureAwait(true);
     }
 
+    // The answer is on its way: the guard, the hold button and the typed box all say so, and the last refusal is cleared.
+    private void MarkSending()
+    {
+        IsSending = true;
+        Hold.Busy();
+        TypedBox.SetSending(sending: true);
+        (Error, ErrorCode, Notice) = (string.Empty, string.Empty, string.Empty);
+        OnChanged(nameof(CanApprove));
+        OnChanged(nameof(IsSending));
+    }
+
     // A refusal: a short hold keeps the challenge (hold again); the plan having changed reads it again; the rest used it up, so a fresh one is asked for.
     private async Task OnRefused(Uri api, Error error, int session)
     {
-        HoldText = Labels.ApproveHold(MinHoldMs);
+        Hold.Reset();
         if (string.Equals(error.Code, HoldRefusal, StringComparison.Ordinal))
         {
             Fail(error, keepPlan: true);

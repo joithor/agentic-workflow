@@ -18,17 +18,15 @@ internal sealed partial class ApproveAllViewModel : ObservableObject
 
     private static readonly TimeSpan _pollEvery = TimeSpan.FromMilliseconds(500);
     private static readonly TimeSpan _pollFor = TimeSpan.FromMinutes(2);
-    private const int DefaultHoldMs = 1500;
+    private const int DefaultHoldMs = HoldButtonViewModel.DefaultHoldMs;
     private const int ReadFailuresAllowed = 3;
 
     private readonly CatalogViewModel _catalog;
     private readonly Func<Uri?> _url;
     private readonly ISindriApi _api;
     private readonly TimeProvider _clock;
-    private readonly Func<bool> _reducedMotion;
     private AppChallengeView? _challenge;
     private ApproveAllPlan? _plan;
-    private long _holdStarted;
     private bool _asking;   // a challenge is being asked for; one at a time
     private int _session;   // which opening this is; an answer is for the one that asked
 
@@ -45,8 +43,24 @@ internal sealed partial class ApproveAllViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(api);
         ArgumentNullException.ThrowIfNull(clock);
         (_catalog, _url, _api, _clock) = (catalog, url, api, clock);
-        _reducedMotion = reducedMotion ?? (() => false);
+        Hold = new HoldButtonViewModel(Action, catalog, clock, reducedMotion) { Gate = BeginGate };
+        TypedBox = new TypedConfirmBoxViewModel(Action, catalog, clock);
+        Hold.Started += (_, _) => Live.Say(Labels.ApproveHoldStarted);
+        Hold.Cancelled += (_, _) => Notice = Labels.ApproveHoldAgain;
+        TypedBox.PropertyChanged += (_, e) =>
+        {
+            if (string.Equals(e.PropertyName, nameof(TypedConfirmBoxViewModel.Text), StringComparison.Ordinal))
+            {
+                OnChanged(nameof(CanSubmitTyped));
+            }
+        };
     }
+
+    /// <summary>The hold button the dialog is rebuilt on (the shared control: it times and draws; the dialog owns the challenge).</summary>
+    public HoldButtonViewModel Hold { get; }
+
+    /// <summary>The typed alternative, on the shared control.</summary>
+    public TypedConfirmBoxViewModel TypedBox { get; }
 
     /// <summary>The polite live region (a hold starting, being let go, the result).</summary>
     public LiveAnnouncer Live { get; } = new(Labels.ApproveAllTitle);
@@ -115,7 +129,7 @@ internal sealed partial class ApproveAllViewModel : ObservableObject
     ];
 
     /// <summary>True when the catalog says the app may approve (a cli-only row, or none, is not).</summary>
-    internal bool IsReady => _catalog.Row(Action) is { } row && CatalogReadiness.Parse(row.Ui).Kind == ControlKind.Ready;
+    internal bool IsReady => AppConfirm.IsReady(_catalog, Action);
 
     /// <summary>True while the plan is read.</summary>
     public bool IsReading => Phase == ApproveAllPhase.Reading;
