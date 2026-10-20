@@ -43,7 +43,7 @@ public sealed class SetupViewTests : FrameHost
         Assert.Equal(shell.Setup.Head, Named<TextBlock>(window, "SetupHead").Text);
         Assert.Equal(shell.Setup.Head, Heard.Wrapper(Named<Border>(window, "SetupHeadName")));
         var more = Named<Button>(window, "SetupMore");
-        Assert.Equal((true, "Show all steps"), (more.IsEffectivelyVisible, Heard.Name(more)));
+        Assert.Equal((true, "and 3 more, show all steps"), (more.IsEffectivelyVisible, Heard.Name(more)));   // the visible words first
         Assert.DoesNotContain(rows, r => Heard.Name(r).Contains("SND-", StringComparison.Ordinal));
     });
 
@@ -87,7 +87,8 @@ public sealed class SetupViewTests : FrameHost
         shell.GoTo(PageId.Setup);
         Settle(window);
 
-        var button = window.GetVisualDescendants().OfType<Button>().First(b => b.Name == "SetupActionButton" && b.IsEffectivelyVisible);   // the recipes step (the page leads with the profile, whose command waits under a hint)
+        // The page leads with the profile (the fake serves its approval row, so that is a button too); the recipes step is the one under test.
+        var button = window.GetVisualDescendants().OfType<Button>().First(b => b.Name == "SetupActionButton" && b.IsEffectivelyVisible && Heard.Name(b).StartsWith("Approve all workflows", StringComparison.Ordinal));
         Assert.Equal("Approve all workflows, Approve the recipes", Heard.Name(button));
         button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         await Until(window, () => shell.ApproveAll.Phase == ApproveAllPhase.Plan, "the approve-all dialog never opened on the plan");
@@ -108,6 +109,18 @@ public sealed class SetupViewTests : FrameHost
         Assert.Equal([.. shell.Setup.Steps.Select(s => s.Name)], [.. rows.Select(Heard.Name)], StringComparer.Ordinal);
         Assert.False(Named<Expander>(window, "SetupDetails").IsExpanded);
         Assert.Equal(shell.Setup.Head, Heard.Wrapper(Named<Border>(window, "SetupPageHeadName")));
+    });
+
+    [Fact]
+    public Task A_finished_setup_says_so_on_the_page_and_leads_with_no_step() => OnUi(async () =>
+    {
+        var (window, shell) = await OnHome("all-done");
+        shell.GoTo(PageId.Setup);
+        Settle(window);
+
+        Assert.Equal("Setup is finished.", Heard.Wrapper(Named<Border>(window, "SetupLeadName")));
+        Assert.Equal((true, false), (Visible(window, "SetupFinishedName"), Visible(window, "SetupLeadNext")));
+        Assert.Equal(shell.Setup.FinishedHint, Heard.Wrapper(Named<Border>(window, "SetupFinishedName")));
     });
 
     [Fact]

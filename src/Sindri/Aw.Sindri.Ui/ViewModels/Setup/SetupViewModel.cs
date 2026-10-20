@@ -159,7 +159,7 @@ internal sealed partial class SetupViewModel : ObservableObject
     {
         HasMore = !IsFinished && Steps.Count > CardRows;
         MoreText = IsExpanded ? Labels.SetupShowFewer : Labels.SetupMore(hidden.Count, hidden.Count(s => s.NeedsYou));
-        MoreName = IsExpanded ? Labels.SetupShowFewer : Labels.SetupShowAll;
+        MoreName = IsExpanded ? Labels.SetupShowFewer : Labels.SetupMoreName(MoreText);
         Head = Steps.Count == 0 ? string.Empty : Labels.SetupHead(Steps.Count(s => s.IsFinished), Steps.Count);
         LeadText = Lead();
     }

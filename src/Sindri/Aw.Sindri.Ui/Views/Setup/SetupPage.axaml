@@ -30,6 +30,9 @@
         <Border x:Name="SetupLeadName" AutomationProperties.Name="{Binding LeadText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
           <TextBlock Classes="eyebrow" Text="{Binding LeadText}" AutomationProperties.AccessibilityView="Raw" />
         </Border>
+        <Border x:Name="SetupFinishedName" IsVisible="{Binding IsFinished}" AutomationProperties.Name="{Binding FinishedHint}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="body muted" Text="{Binding FinishedHint}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
         <StackPanel x:Name="SetupLeadNext" Spacing="4" IsVisible="{Binding HasNext}">
           <StackPanel Spacing="4" DataContext="{Binding Next}" x:DataType="sv:SetupStepViewModel">
           <Border x:Name="SetupLeadTitle" AutomationProperties.Name="{Binding Title}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">

@@ -95,8 +95,8 @@ internal static partial class Labels
     /// <summary>The Details label of the action id.</summary>
     internal const string SetupActionField = "Action";
 
-    /// <summary>The expand control's words when the card shows only part.</summary>
-    internal const string SetupShowAll = "Show all steps";
+    /// <summary>The expand control's accessible name when the card shows only part: its visible words first, then what it does.</summary>
+    internal static string SetupMoreName(string visible) => visible + ", show all steps";
 
     /// <summary>The same control once expanded.</summary>
     internal const string SetupShowFewer = "Show fewer";
