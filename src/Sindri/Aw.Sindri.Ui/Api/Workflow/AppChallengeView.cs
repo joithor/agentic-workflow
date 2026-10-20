@@ -7,4 +7,4 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="Confirm">'held' or 'typed'.</param>
 /// <param name="MinHoldMs">For a held one, the shortest hold the server accepts.</param>
 /// <param name="TypedAlternative">For a held one, the text that redeems it instead.</param>
-internal sealed record AppChallengeView(string Challenge, string Action, DateTimeOffset ExpiresAt, string Confirm, int? MinHoldMs, string? TypedAlternative);
+internal sealed record AppChallengeView(string Challenge, string Action, DateTimeOffset ExpiresAt, string Confirm, int? MinHoldMs = null, string? TypedAlternative = null);

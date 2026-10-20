@@ -33,7 +33,7 @@ internal sealed class ChainHarness : IAsyncDisposable
     private readonly ServiceProvider _provider;
 
     public ChainHarness(Func<ILedgerStore, ILedgerStore>? ledger = null, IEndpointFile? endpoints = null, bool fixtureReadsViews = false,
-        IReadOnlyList<string>? grants = null)
+        IReadOnlyList<string>? grants = null, ProverLabel? prover = null)
     {
         FixtureGrants = grants ?? [];
         Ledger = ledger?.Invoke(H.Store) ?? H.Store;
@@ -51,6 +51,7 @@ internal sealed class ChainHarness : IAsyncDisposable
             .AddSingleton(new TemporalRuntime(new FakeTemporalServer(), H.Clock))   // P4a: stop stops the worker and the dev server
             .AddSingleton(endpoints ?? new InMemoryEndpointFile())
             .AddSingleton(new HeldHumanToken())
+            .AddSingleton(prover ?? new ProverLabel(Allowed: false))
             .AddSingleton<IHumanTokenStore>(new InMemoryHumanTokenStore())
             .AddScoped<ServeRecords>()
             .AddSingleton(new TemporalRuntime(new FakeTemporalServer(), H.Clock))   // the stop's Temporal side, with no server running
