@@ -272,8 +272,8 @@ graphify runs on a snapshot of the commit written from the filtered inventory of
 `export-ignore` does not change what is read) into a temp directory (the same shape as
 `Aw.Context.Infrastructure.Extract.GraphifySnapshot`, which is `internal` to Context, so this is a copy kept honest by a shared contract test: files copied under the file and total caps, the reserved
 `graphify-out/` and `.sindri-tmp*` paths never copied), with `extract <dir> --code-only --no-viz`, a private temp and cache
-directory inside the snapshot, a cleaned environment, a time limit, and at most 64 KB kept from each output stream. It runs
-only under a sandbox that denies the network and confines writes to the snapshot (bubblewrap on Linux,
+directory beside the snapshot (below), a cleaned environment, a time limit, and at most 64 KB kept from each output stream. It runs
+only under a sandbox that denies the network and confines writes to the snapshot and its private directory (bubblewrap on Linux,
 `sandbox-exec` on macOS, absolute paths, root-owned, never from `PATH`); with none, the layer is `unavailable`
 `SND-CODEIDX-007` and graphify never runs unsandboxed. `graph.json` is size-capped (`index.graph.maxMB`) and read with a streaming reader that stops at the node and edge caps, read as a regular
 file through no symlink, parsed with `System.Text.Json` into a strict DTO (anything unexpected is `SND-CODEIDX-008`), and
@@ -282,10 +282,14 @@ becomes a `symbols` row of kind `graph-symbol` (ref as §3, `signature` empty, `
 language no parser covers (every language but C#). Node ids and files are kept only if the file is in the snapshot's
 file list; names are scrubbed and cut like signatures. `graph.json` also has node and edge caps
 (`index.graph.maxNodes` 500,000, edges four times that; over either is `SND-CODEIDX-008`). graphify runs with a memory limit
-(`RLIMIT_AS`) as well as the time limit. The spec does not guess graphify's output: **the CI-0d spike runs the pinned graphify on a
-small TypeScript and Python fixture, records the real `graph.json` as a test fixture, and writes the DTO field names, whether
-there are call edges, whether nodes have end lines and the confidence words into this section before CI-7 starts** (the
-repo's current graphify fixture is synthetic; `docs/sindri/index.md`). Call edges become
+(`RLIMIT_AS`) as well as the time limit. What graphify emits was measured, not guessed: the CI-0d spike ran the pinned graphify (0.9.67) on a TypeScript and a Python fixture (`tests/fixtures/code-index/graphify/`, `SPIKE.md`), and the recorded `graph.json` files are the contract fixtures CI-7's tests replay. `graph.json` is NetworkX node-link JSON: top-level `directed` (false), `multigraph` (false), `graph` (an object), `hyperedges` (an array, ignored), `nodes` and `links` (the edge list is `links`). The strict DTO accepts only:
+
+- **node**: `id` (string, required), `label` (string, required), `source_file` (string, required: relative to the snapshot root with `/` separators; an absolute path under the snapshot is accepted and made relative; a node without one, or naming a path not in the snapshot's file list, is dropped), `source_location` (string `L<n>`, required: the start line; there is no end line), `community` (integer, optional), `file_type` (string, optional), `_callable` and `_callable_class` (booleans, optional). Unknown fields are ignored; a wrong type on a known field is `SND-CODEIDX-008`. There is no kind field: a node with neither `_callable` nor `_callable_class` is a file node and is not stored as a symbol; `_callable_class` is a class; the target of a `method` edge is a method; any other `_callable` node is a function. A label is the name with `()` for functions and methods (`.name()` for a method) and bare for a class or file; the stored name drops the `()` and the leading `.`.
+- **edge**: `source` and `target` (strings naming node ids, required), `relation` (required; `calls`, `contains`, `method`, `imports` and `imports_from` are known, any other value is skipped, not an error), `confidence` (`EXTRACTED` or `INFERRED`; any other word is stored as `INFERRED`), `source_file` and `source_location` (string `L<n>`; on `calls` the call site, in the caller's file), `confidence_score` (number, optional). Only `calls` edges become `edges` rows: `source` is the caller and `target` the callee, both ends must be nodes that kept their file and line, and a `calls` edge whose target is a class is a construction (stored with the class as the callee). The graph is declared undirected but every edge keeps its direction (all 13 `calls` edges in the spike ran caller to callee).
+
+On the fixtures, TypeScript's 8 known calls were all `calls` edges with a file and line at both ends (6 `EXTRACTED`, 2 `INFERRED` where the call goes through a local variable). Python resolved 3 of 5: plain-function, imported and `self.` calls, but not a method called on a local assigned from a constructor. So callers and callees for the graphify languages come from graphify, carry `basis = graphify` and the confidence word, and a Python answer can be incomplete. The fixture proves the shape and that call edges exist, not recall on a real repo.
+
+The private temp and cache directory (`TMPDIR`, `XDG_CACHE_HOME`, `UV_CACHE_DIR`, `PYTHONPYCACHEPREFIX`) lives **beside** the snapshot, not inside it, and is the one other path the sandbox binds writable: inside the snapshot graphify scans it (the spike saw 98 `.pyc` files listed as not classified). Call edges become
 `edges` rows with `basis = graphify`. Community ids are stored on the nodes for the day Context's cluster source reads them
 (§15 Q2). The version is checked against the pin in `context/code-index.lock` before every run (`SND-CODEIDX-009`).
 
@@ -449,6 +453,7 @@ index's container stays its own). Context never sees SQLite or a path of the ind
   sandbox (SB14: heavy work goes through Sindri); (2) when SB-1's `ISandbox` lands, the graphify wrapper moves onto it in one
   change and the copy goes away (§15 Q2). Until then this block carries its own wrapper (a copy) and a contract test, shared with Context's wrapper so the two cannot drift, that a
   request from inside it fails (Context's tests only compare argv strings today). The test-only sandbox seam is not reachable from a profile key or an environment variable.
+  **The graphify environment inside the sandbox.** The wrapper masks `~/.agentic-workflow` (a credential path) with an empty tmpfs, and the pinned environment lives under `$AW_STATE_DIR/cache/code-index/`, inside it by default; the CI-0d spike reproduced the failure (`bwrap: execvp .../bin/graphify: No such file or directory`). So the environment directory is bound **read-only after the mask** (`--ro-bind <env> <env>` placed after the `--tmpfs` of `~/.agentic-workflow`; on macOS a `(allow file-read*)` for that subpath after the denial), exposing only the environment directory, never its parent. The pin check of `SND-CODEIDX-009` runs against the binary at that absolute path.
 - **Roslyn parses text, nothing else.** No `MSBuildWorkspace`, no analyzer or source generator of the indexed repo is loaded,
   no `dotnet restore`. A repo's `.csproj` is read as XML for the deps layer only.
 - **Scrubbing:** every stored free-text field (bodies, signatures, deps `version` and `tags`, graph node names) is scrubbed (`Aw.Redaction`) and then cut, in that order, while the key columns (paths, symbol names, refs, `dst_name`, call-site names) are git and parser identifiers and are never scrubbed (a scrubbed ref could collide on `UNIQUE`; the deny globs keep secret-named files out), before it is stored; layer `detail`, job results and progress lines hold codes and counts only, never the stderr of git, graphify or Roslyn; and the embedded text is the scrubbed one; a literal in a signature (`string key = "AKIA..."`) does not reach disk.
@@ -614,7 +619,7 @@ Defaults are what the builders do if you say nothing.
   use what graphify finds, which is coarser. *Default:* C# first-class, everything else through graphify and marked
   lower confidence. If your work repos are mostly TypeScript, say so: a TypeScript parser (a small Node tool, pinned) would
   be a phase of its own. This one decides the plan: the TS index you have today parses TypeScript itself, so the C# build
-  would give TypeScript less than you have now unless graphify's call data (checked in CI-0a) is good enough. Please answer before CI-7.
+  would give TypeScript less than you have now unless graphify's call data (checked in CI-0d) is good enough. Please answer before CI-7. *Settled:* the owner took the default, and the CI-0d spike passed (TypeScript 8 of 8 known calls as call edges with file and line; Python 3 of 5), so no TypeScript parser phase is added.
 - **Q2. Graphify now runs in two places.** The context map already runs it to group files into features, with its own
   safety wrapper; the index will run it again on the same commit. *Default:* the index carries its own copy for now (its own
   wrapper and its own safety tests) and, once the sandbox work lands, Context's map reads the index's graph instead and its
