@@ -102,6 +102,57 @@ public sealed class InstanceChangedStreamTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task The_same_instance_gives_one_frame_and_its_child_gives_none_to_the_parents_stream()
+    {
+        await Append("workflow.transition", Row("T-1/step/1/step.2", "produce", "checks"));   // its child
+        await Append("workflow.transition", Row("T-1/step/1", "produce", "checks"));
+
+        var frames = await Stream(new StreamEventsRequest(0, Instance: InstanceAddress.From("T-1/step/1"), Types: Types(Wanted)));
+
+        Assert.Equal(["event: workflow.instance-changed\ndata: {\"instance\":\"T-1/step/1\",\"state\":\"checks\",\"cursor\":2}\n\n"], frames);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task With_the_raw_workflow_glob_the_rows_and_the_derived_frame_both_go_out()
+    {
+        await Append("workflow.started", Row("T-1/step/1", "", "produce"));
+        await Append("workflow.transition", Row("T-1/step/1", "produce", "checks"));
+
+        var frames = await Stream(new StreamEventsRequest(0, Types: Types("workflow.*," + Wanted)));
+
+        Assert.Equal(
+            ["event: workflow.started\n", "event: workflow.transition\n", "event: workflow.instance-changed\n"],
+            frames.Select(static f => f[..(f.IndexOf('\n', StringComparison.Ordinal) + 1)]), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task With_only_the_transition_glob_the_started_row_gives_no_raw_frame_but_still_the_derived_one()
+    {
+        await Append("workflow.started", Row("T-1/step/1", "", "produce"));
+
+        var frames = await Stream(new StreamEventsRequest(0, Types: Types("workflow.transition," + Wanted)));
+
+        Assert.Equal(["event: workflow.instance-changed\ndata: {\"instance\":\"T-1/step/1\",\"state\":\"produce\",\"cursor\":1}\n\n"], frames);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_burst_split_over_two_pages_gives_a_frame_per_page()
+    {
+        await Append("workflow.transition", Row("T-1/step/1", "a", "b"));
+        await Append("workflow.transition", Row("T-1/step/1", "b", "c"));
+        await Append("workflow.transition", Row("T-1/step/1", "c", "d"));
+
+        var frames = await Stream(new StreamEventsRequest(0, Max: 2, Types: Types(Wanted)));
+
+        Assert.Equal(
+            [
+                "event: workflow.instance-changed\ndata: {\"instance\":\"T-1/step/1\",\"state\":\"c\",\"cursor\":2}\n\n",
+                "event: workflow.instance-changed\ndata: {\"instance\":\"T-1/step/1\",\"state\":\"d\",\"cursor\":3}\n\n",
+            ],
+            frames);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void The_change_a_row_records_is_read_from_its_public_payload_only()
     {
         var row = Public("workflow.transition", """{"instance":"T-1/step/1","from":"a","to":"b","trigger":"answer","detail":{"reason":"free text"}}""", 7);
