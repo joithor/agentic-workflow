@@ -229,7 +229,7 @@ public sealed class StatePathOrderTests
         ["sindri/workflow.line.yaml"] = "sha256:251e34be8370d52c8b70e57ff5f52bbac5a64123ca04c9eccebe8d7a597eeea2",
         ["sindri/workflow.report.yaml"] = "sha256:864f58986b4308e16c42ba7d36f751949401a496cb9f12d93d8568a1dac4c093",
         ["sindri/workflow.reproduce.yaml"] = "sha256:690055ffdec765ac25dd7d32af75fb5036480e36e9cb2cc3397b375828a25518",
-        ["sindri/workflow.review-loop.yaml"] = "sha256:169cd2bf9d80e92fe72e977be25892fc4f7c829b1e5025f4a546f182981ca3f1",
+        ["sindri/workflow.review-loop.yaml"] = "sha256:0ebe6a73b6c9539ab23d93e762e3549a859db92cb3568faa16cca43de369f3d5",
         ["sindri/workflow.scoping.yaml"] = "sha256:456d3d6d276602fa326b63389ed604217b2111f8870edf52852da034a7fd1787",
         ["sindri/workflow.ship.yaml"] = "sha256:98d3d07fd83d23bd5a05fcdb1887aeb67d9de826451af8a8098b4098d4abd8c4",
         ["sindri/workflow.verify.yaml"] = "sha256:3f1aeae387cf74c50a02eb397f88791abb93d9bd43bc92accf7025b70e82f696",
