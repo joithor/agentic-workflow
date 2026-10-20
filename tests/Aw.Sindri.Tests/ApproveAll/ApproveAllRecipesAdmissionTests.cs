@@ -72,6 +72,22 @@ public sealed class ApproveAllRecipesAdmissionTests : IDisposable
     }
 
     [Fact]
+    public async Task A_held_answer_keeps_its_hold_time_for_recipe_approved()
+    {
+        await Approved();
+        var digest = (await _shipped.Plan(Token)).Value.Digest;
+        var issued = _slice.Challenges.Issue(ChallengeAction.ApproveAll(digest), ChallengeSubject.ForApproveAll(digest), ChallengeMode.Held, ChallengeChannel.App);
+        _slice.Clock.Advance(IssuedChallenge.EarliestAnswer);
+        var request = new ApproveAllRecipesRequest(new ChallengeAnswer(issued.Id, HeldMs: 1700));
+
+        var admitted = await Admission().Admit(request, Token);
+
+        Assert.True(admitted.IsSuccess, admitted.IsError ? admitted.Error.ToString() : null);
+        Assert.True(_kept.Take(request, out var plan));
+        Assert.Equal(1700, plan!.HeldMs);
+    }
+
+    [Fact]
     public async Task Another_text_than_the_challenge_is_refused_and_nothing_is_kept()
     {
         await Approved();
