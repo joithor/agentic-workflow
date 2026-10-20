@@ -16,7 +16,7 @@ internal sealed partial class FakeSindriApi
     private int _approveAllJobCalls;
 
     /// <summary>GET /sindri/workflow/recipes/approve-all's answer.</summary>
-    public RouteAnswer ApproveAllPlanAnswer { get; set; } = RouteAnswer.SpecShaped("recipes-approve-all", "plan");
+    public RouteAnswer ApproveAllPlanAnswer { get; set; } = RouteAnswer.Api("workflow-recipes-approve-all", "plan");
 
     /// <summary>POST /sindri/workflow/challenges/app's answer.</summary>
     public RouteAnswer AppChallengeAnswer { get; set; } = RouteAnswer.SpecShaped("challenges-app", "held");

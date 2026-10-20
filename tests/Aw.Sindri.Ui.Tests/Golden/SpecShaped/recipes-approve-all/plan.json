@@ -1,5 +1,0 @@
-{"recipes":[
- {"id":"workflow.step","displayName":"One step","version":2,"hash":"1a2b3c4d5e6f","previousApprovedHash":"0f1e2d3c4b5a","change":"updated","changeWord":"Updated","capabilities":[{"id":"step.produce","sentence":"Starts an AI agent session in a repo you added"},{"id":"effect.notify.desk","sentence":"Puts a question or notice in your Needs you list"}],"delta":{"added":[],"removed":[]},"changedBlocks":[],"children":[]},
- {"id":"workflow.item","displayName":"Work item","version":3,"hash":"9f8e7d6c5b4a","previousApprovedHash":null,"change":"new","changeWord":"New","capabilities":[],"delta":{"added":[],"removed":[]},"changedBlocks":[],"children":["workflow.step"]}],
- "ownApproval":[{"id":"workflow.ship","displayName":"Ship a change","reason":"gains-capability","sentence":"Ship a change can now open a pull request. Approve it on its own after reading it.","added":[{"id":"step.ship.open","sentence":"Opens or updates a pull request and reads its checks"}]}],
- "digest":"c41e07","empty":null,"asOf":{"cursor":9,"ledgerHead":9,"projectedAt":"2026-01-01T00:00:00.0000000Z","rebuilding":false,"stalled":false}}

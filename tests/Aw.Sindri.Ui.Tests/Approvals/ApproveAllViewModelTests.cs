@@ -21,8 +21,8 @@ public sealed class ApproveAllViewModelTests
         var dialog = await _f.Opened();
 
         Assert.Equal((ApproveAllPhase.Plan, true, "2 workflows will be approved"), (dialog.Phase, dialog.IsOpen, dialog.Heading));
-        Assert.Equal("approve-all c41e07", Assert.Single(_f.Server.Challenges).Action);
-        Assert.Equal((true, true, "approve-all c41e07"), (dialog.CanApprove, dialog.OffersHold, dialog.TypedAlternative));
+        Assert.Equal("approve-all 1c1fd4", Assert.Single(_f.Server.Challenges).Action);
+        Assert.Equal((true, true, "approve-all 1c1fd4"), (dialog.CanApprove, dialog.OffersHold, dialog.TypedAlternative));
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public sealed class ApproveAllViewModelTests
         Assert.Equal(("Work item", "New: you haven't approved it before"), (dialog.Rows[1].Name, dialog.Rows[1].Reason));
         Assert.DoesNotContain("workflow.", step.AccessibleName, StringComparison.Ordinal);
         Assert.Contains(dialog.DetailLines, l => string.Equals(l, "workflow.step · v2 · 1a2b3c4d5e6f", StringComparison.Ordinal));
-        Assert.Equal("plan c41e07", dialog.DetailLines[0]);
+        Assert.Equal("plan 1c1fd4", dialog.DetailLines[0]);
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public sealed class ApproveAllViewModelTests
     [Fact]
     public async Task An_empty_plan_says_so_and_asks_for_no_challenge()
     {
-        _f.Server.ApproveAllPlanAnswer = RouteAnswer.SpecShaped("recipes-approve-all", "empty");
+        _f.Server.ApproveAllPlanAnswer = RouteAnswer.Api("workflow-recipes-approve-all", "empty");
 
         var dialog = await _f.Opened();
 
@@ -182,12 +182,12 @@ public sealed class ApproveAllViewModelTests
     public async Task Typing_the_challenges_text_answers_with_it_and_not_with_a_time()
     {
         var dialog = await _f.Opened();
-        dialog.Typed = " approve-all c41e07 ";
+        dialog.Typed = " approve-all 1c1fd4 ";
 
         await _f.Finish(dialog.SubmitTyped());
 
         var sent = Assert.Single(_f.Server.Approvals);
-        Assert.Equal(("approve-all c41e07", null), (sent.Typed, sent.HeldMs));
+        Assert.Equal(("approve-all 1c1fd4", null), (sent.Typed, sent.HeldMs));
         Assert.Equal(ApproveAllPhase.Done, dialog.Phase);
     }
 
@@ -199,7 +199,7 @@ public sealed class ApproveAllViewModelTests
 
         await dialog.SubmitTyped();
 
-        Assert.Equal("That doesn't match. Type exactly: approve-all c41e07", dialog.Notice);
+        Assert.Equal("That doesn't match. Type exactly: approve-all 1c1fd4", dialog.Notice);
         Assert.Empty(_f.Server.Approvals);
         Assert.True(dialog.CanApprove);
     }
@@ -243,7 +243,7 @@ public sealed class ApproveAllViewModelTests
     {
         _f.Server.ApproveAllGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var dialog = await _f.Opened();
-        dialog.Typed = "approve-all c41e07";
+        dialog.Typed = "approve-all 1c1fd4";
 
         var first = dialog.SubmitTyped();
         var second = dialog.SubmitTyped();
@@ -311,12 +311,12 @@ public sealed class ApproveAllViewModelTests
     {
         var stale = _f.Server.ApproveAllGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var dialog = await _f.Opened();
-        dialog.Typed = "approve-all c41e07";
+        dialog.Typed = "approve-all 1c1fd4";
         var first = dialog.SubmitTyped();
         dialog.Close();
         await dialog.Open(Token);
         var current = _f.Server.ApproveAllGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        dialog.Typed = "approve-all c41e07";
+        dialog.Typed = "approve-all 1c1fd4";
         var second = dialog.SubmitTyped();
 
         stale.SetResult();
@@ -384,7 +384,7 @@ public sealed class ApproveAllViewModelTests
     [Fact]
     public async Task A_plan_whose_only_workflows_need_their_own_look_says_so_beside_their_list()
     {
-        var plan = JsonNode.Parse(GoldenFiles.SpecShaped("recipes-approve-all", "plan"))!.AsObject();   // why: the golden is a JSON object
+        var plan = JsonNode.Parse(GoldenFiles.Api("workflow-recipes-approve-all", "plan"))!.AsObject();   // why: the golden is a JSON object
         plan["recipes"] = new JsonArray();
         _f.Server.ApproveAllPlanAnswer = new RouteAnswer(HttpStatusCode.OK, plan.ToJsonString());
 

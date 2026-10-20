@@ -1,3 +1,0 @@
-{"recipes":[
- {"id":"workflow.ship","displayName":"Ship a change","version":2,"hash":"5d4c3b2a1f0e","previousApprovedHash":null,"change":"new","changeWord":"New","capabilities":[{"id":"step.ship.open","sentence":"Opens or updates a pull request and reads its checks"},{"id":"effect.notify.desk","sentence":"Puts a question or notice in your Needs you list"}],"delta":{"added":[],"removed":[]},"changedBlocks":[],"children":[]}],
- "ownApproval":[],"digest":"7b20de","empty":null,"asOf":{"cursor":9,"ledgerHead":9,"projectedAt":"2026-01-01T00:00:00.0000000Z","rebuilding":false,"stalled":false}}

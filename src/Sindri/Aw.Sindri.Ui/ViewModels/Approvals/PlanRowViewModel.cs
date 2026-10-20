@@ -13,7 +13,7 @@ internal sealed class PlanRowViewModel
         Name = WorkflowNames.Of(recipe.Id, recipe.DisplayName);
         Reason = Labels.ApproveReason(recipe.Change, recipe.ChangeWord);
         Capabilities = [.. recipe.Capabilities.Select(c => c.Sentence)];
-        Detail = string.Create(CultureInfo.InvariantCulture, $"{recipe.Id} · v{recipe.Version} · {Short(recipe.Hash)}");
+        Detail = string.Create(CultureInfo.InvariantCulture, $"{recipe.Id} · v{recipe.Version} · {Labels.Hash12(recipe.Hash)}");
         AccessibleName = Labels.ApproveRowName(Name, Reason);
     }
 
@@ -31,6 +31,4 @@ internal sealed class PlanRowViewModel
 
     /// <summary>The name a screen reader hears.</summary>
     public string AccessibleName { get; }
-
-    private static string Short(string hash) => hash.Length > 12 ? hash[..12] : hash;
 }

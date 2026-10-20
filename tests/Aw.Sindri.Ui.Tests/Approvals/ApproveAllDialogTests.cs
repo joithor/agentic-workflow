@@ -110,7 +110,7 @@ public sealed class ApproveAllDialogTests
     public Task Focus_goes_to_Close_when_the_outcome_appears() => OnUi(async () =>
     {
         var (window, _, model) = await Shown();
-        model.Typed = "approve-all c41e07";
+        model.Typed = "approve-all 1c1fd4";
         Assert.True(Named<TextBox>(window, "ApproveTyped").Focus());
 
         await _f.Finish(model.SubmitTyped());

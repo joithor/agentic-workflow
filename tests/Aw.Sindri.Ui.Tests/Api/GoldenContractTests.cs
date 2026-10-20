@@ -62,8 +62,8 @@ public sealed class GoldenContractTests
         ["jobs-id"] = As<JobView>,   // GET /jobs/{id}: the job sheet; the 404 is ProblemDetails
         ["jobs-id-cancel"] = As<CommandAcceptedView>,   // POST /jobs/{id}/cancel's accepted answer; the refusals are ProblemDetails
         ["launches-id"] = As<LaunchView>,   // GET /launches/{id}: the launch an Open started (Attach, the run line)
-        // The approve-all goldens are SPEC-SHAPED and PROVISIONAL (setup-once spec §8): the engine's recipes-approve-all/* are not on main yet. Replace these with them.
-        ["recipes-approve-all"] = AsApproveAll,   // GET /workflow/recipes/approve-all (the plan*, empty scenarios) and the job's result (applied, refused)
+        // The approve-all plan and result are the engine's real goldens (workflow-recipes-approve-all); the start, job and refusal bodies below stay SPEC-SHAPED (the engine has none).
+        ["workflow-recipes-approve-all"] = AsApproveAll,   // GET /workflow/recipes/approve-all (the plan*, empty scenarios) and the job's result (applied, refused): the engine's real goldens
         ["challenges-app"] = As<AppChallengeView>,   // POST /workflow/challenges/app
         ["recipes-approve-all-start"] = As<ApproveAllStarted>,   // POST /workflow/recipes/approve-all's 202
         ["approve-all-job"] = As<ApproveAllJob>,   // GET /jobs/{id} of the approval
@@ -80,7 +80,6 @@ public sealed class GoldenContractTests
         "services-name-run", "services-name-pause", "services-name-resume",   // API P6: the services calls are U4's (Services); the job calls are read below
         "sessions-id-heartbeat", "sessions-id-exit", "launch-targets", "launch-targets-probe",   // API P10a (U8): U10's session wrap's own calls and the launch-target reads, never the app's
         "workflow-instance-scoping",   // API2 (SC-K2): the scoping stop view; the app reads it in SC-U (U2)
-        "workflow-recipes-approve-all",   // setup-once F5: approve-all's plan and its job result; the app reads them in the setup card's unit
         "events-catalog",   // API P5 (E-15): the app reads each type's invalidates once it switches from re-querying every view on each event (UI lane)
     };
 
