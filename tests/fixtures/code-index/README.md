@@ -4,7 +4,7 @@ Test assets of the Sindri code index (`docs/superpowers/specs/2026-10-19-sindri-
 
 | Part | What it is for | Read by |
 |---|---|---|
-| `project/` | A small C# repo (14 files, 54 symbols) with known calls: plain, overloaded, interface-dispatch, extension, generic, local-function, lambda, nested, partial, base and library calls, so every confidence of spec 5.4 occurs | CI-4 (`CSharpParser`, `CallResolver` golden tests), CI-6 (the facade over a built fixture index) |
+| `project/` | A small C# repo (12 files, 54 symbols) with known calls: plain, overloaded, interface-dispatch, extension, generic, local-function, lambda, nested, partial, base and library calls, so every confidence of spec 5.4 occurs | CI-4 (`CSharpParser`, `CallResolver` golden tests), CI-6 (the facade over a built fixture index) |
 | `expected.json` | Every symbol (file, qualified name, kind, arity, span, signature) and every caller-to-callee edge with its confidence and ranked targets: 64 call groups, 91 edge rows (19 certain, 10 likely, 13 ambiguous, 22 unresolved). The `conventions` block states the choices the golden rests on | CI-4 golden tests |
 | `verify.mjs` | Keeps `expected.json` honest against the sources (lines hold the names, spans fit, targets exist, counts add up). `node verify.mjs` | `scripts/tests/code-index-fixture.test.sh` |
 | `hostile/` | The CI12 parse-safety files: `static/` (12 small ones: unterminated string, comment, verbatim string and directive, missing braces, garbage tokens, BOM and mixed line endings, bidi and non-ASCII identifiers, empty, comments only, usings only, self-recursion) and `generate.mjs` for those a repo cannot hold (below) | CI-4 parser-safety integration tests (spec 11), the CI12 gate |

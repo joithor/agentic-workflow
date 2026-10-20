@@ -8,6 +8,7 @@
     "methodGroupArity": "-1: a method group has no argument count, so any arity matches",
     "ranking": "same file, then same namespace, then same project directory (this fixture has no manifest, so one directory), then ordinal path, then start line",
     "noSymbol": "auto-properties, record primary-constructor members, fields and enum members are not symbols; a constructor initializer (Tile: base(side, side)) is not a call site",
+    "inherits": "one edge per base type or interface in the declaration, named by its identifier with receiver type:<Identifier> and arity 0 (type parameters not counted); one repo type of that name is certain, several (the parts of a partial type) are ambiguous, none (a library type such as IEquatable) is unresolved",
     "dedupe": "two calls with the same src, name, kind, line and target are one edge (Rectangle.Equals line 14, Calculator.Sum line 7, Pipeline.Run line 14 Select)"
   },
   "symbols": [
