@@ -74,6 +74,9 @@ internal sealed class EventStreamOpener(ILedgerReader ledger, IStreamSlots slots
         return new SseResult(pump, service, resolved, new Counted(slot, slots, caller), shutdown.Stopping);
     }
 
+    /// <summary>Where the stream starts (stub).</summary>
+    internal static long StartAt(HttpRequest http, StreamEventsRequest bound, long head) => throw new NotSupportedException();
+
     private static int StatusOf(ErrorKind kind)
     {
         if (kind == ErrorKind.Invalid)
