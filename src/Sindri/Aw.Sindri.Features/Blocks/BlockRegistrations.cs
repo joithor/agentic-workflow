@@ -100,7 +100,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(ReviewSteps.Fix)
         .AddBlockDescriptor(ReviewSteps.Recheck);
 
-    /// <summary>Registers the scoping station's Steps and the context Step inputs it names (scoping spec §9), descriptors only.</summary>
+    /// <summary>Registers the design and plan stations' Steps and the lens round's Steps they share (line spec LN-Y1), descriptors only.</summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
     private static IServiceCollection AddLineDesignBlocks(this IServiceCollection services) => services
@@ -124,6 +124,9 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PlanSteps.Review)
         .AddBlockDescriptor(PlanSteps.Freeze);
 
+    /// <summary>Registers the scoping station's Steps and the context Step inputs it names (scoping spec §9), descriptors only.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
     private static IServiceCollection AddScopingBlocks(this IServiceCollection services) => services
         .AddBlockDescriptor(ScopingSteps.Intake)
         .AddBlockDescriptor(ScopingSteps.ReadBrief)
