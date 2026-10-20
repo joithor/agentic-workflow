@@ -71,7 +71,7 @@ before:
 
 | # | Page | Key | Count in the tab | Detail sheet opens |
 |---|---|---|---|---|
-| 1 | Home (default) **(SO-19)**: a Setup card above Needs you until every setup step is done; chord `G U` and the deep link `sindri://setup` open it | `G H` | — | any row |
+| 1 | Home (default) **(SO-19)**: a Setup card above Needs you until every setup step is done or skipped (three rows and "and N more", so Needs you stays above the fold); chord `G U` and the in-app route `setup` open it (no OS scheme) | `G H` | — | any row |
 | 2 | Workflows | `G W` | open root instances | an instance (§4.2) |
 | 3 | Work | `G Q` | items | an item, in the Workflows frame (§4.7) |
 | 4 | Recipes | `G R` | recipes | a recipe (§4.3) |

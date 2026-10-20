@@ -12,7 +12,7 @@ Status:
   settings" (Settings, while the OS reduces motion) and "Looks again every 2 s" (the Not running card); §15's deps cycle
   row is decided (a `DEPS-CYCLE-001` exception). Lane decisions relayed by the orchestrator (2026-10-12): §7 and §18.1
   say WF P2 registers every engine catalog row, the desk and pause rows pending until WF P4/P5 flip them to ready and the
-  protected rows (`answer-grant`, `answer-grant-tokens`, `answer-accept`, `ApproveRecipe`) `cli-only:typed-confirmation`
+  protected rows (`answer-grant`, `answer-grant-tokens`, `answer-accept`; **(SO-20)** `ApproveRecipe` is an app confirmation) `cli-only:typed-confirmation`
   from the start, never app buttons, and the engine's queries stay off the
   catalog; §4.4, §7 and E-12 name `answer-grant-tokens` beside `answer-grant` (API §2.1, X30); §4.1's Unreadable row also
   covers a Sindri refusal after one token re-read and retry. Owner decision F6 (2026-10-12, review run 4): §8's key
@@ -168,7 +168,7 @@ Three layouts were mocked with the same fixture data (`shotgun/contact-sheet.htm
 
 | # | Page or part | Key | Opens on | Data (§10) |
 |---|---|---|---|---|
-| 1 | **Home** (Needs you, Running and With you, Queued, Health) **(SO-19)**: the Setup card sits above Needs you while any setup step is not done (key `G U`, deep link `sindri://setup`) | `G H` | Always the default | needs-you, queue, status, services |
+| 1 | **Home** (Needs you, Running and With you, Queued, Health) **(SO-19)**: the Setup card sits above Needs you while any setup step is not done or skipped (three rows and "and N more"; key `G U`, in-app route `setup`, no OS scheme) | `G H` | Always the default | needs-you, queue, status, services |
 | 1a | Home's **Needs you** panel, expanded | `G N` | the tray, the attention band | `GET /needs-you` |
 | 2 | **Queue** (all four groups) | `G Q` | — | `GET /queue` |
 | 2a | Queue filtered to Running / With you | `G R` / `G W` | Home's panel headers | the queue's `running` / `withYou` groups |

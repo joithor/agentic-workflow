@@ -32,9 +32,10 @@ Status:
 - **Revision note (2026-10-19, setup once, SO-1…SO-9):** `2026-10-19-sindri-setup-once-design.md` adds `GET /setup` and the
   `AddRepo`, `RegisterMcp` and `SetupOnyx` commands (§3.1, §3.2), the `confirm` column (§3.3), the setup events (§3.4),
   the needs-you kind `setup` with ids `setup:<step>` (§3.6), the app as a confirmation channel for `ApproveProfile`,
-  `ApproveRecipe` and `ApproveAllRecipes` (§4.1, §4.2, §6), `SND-SETUP-001…006` (§9) and `displayName` on the recipe views
+  `ApproveRecipe` and `ApproveAllRecipes` (§4.1, §4.2, §6), `SND-SETUP-001…007` (§9) and `displayName` on the recipe views
   (§3.8). Rev 2 (autoplan round 1): approve-all is a job (202), Onyx setup is two calls, the app has its own challenge
-  route. Where this text and that spec differ for those items, that spec wins.
+  route. Rev 3 (round 2): a per-row `AppConfirm` flag lets the app in to the three protected rows, the `skipped` state,
+  `DeferOnyx`, valid job keys, and approve-all skips a refused recipe and carries on. Where this text and that spec differ for those items, that spec wins.
 - This document is the written spec for review.
 
 The spec designs the surface every Sindri client uses: the `sindri` CLI, the Avalonia app (`SindriUi`), the Sindri MCP
@@ -303,7 +304,7 @@ Every list view also returns `empty`, the `EmptyText` sentence (§3.6) for its c
 | Route | Slice | Request | Response | Phase |
 |---|---|---|---|---|
 | `GET /status` | `GetStatus` (S1) | — | S1's response, plus `apiVersion`, `health` (§2.3) and `views` (§2.3: the `asOf`-shaped `projectedAt`, `cursor`, `ledgerHead`, `rebuilding`, `stalled`, `stalledAt`, `stalledType`, and `text`, the rebuilding or stalled sentence, `null` when fresh) (`dependencies`, the dependency graph with health and the impact closure of what is failing, E-29, §3.8, is not in P2: it lands with E-29, the rev-8 API follow-up after #190) | S1; extended in P1 and P2 |
-| `GET /setup` **(SO-1)** | `GetSetup` | — | `SetupView(steps, asOf)`: six steps in the order `repo`, `profile`, `recipes`, `mcp`, `map`, `onyx`, each `{id, title, state (todo\|running\|done\|failed\|needs-you), why, detail, error {code, sentence}\|null, action, progress {done, total}\|null}` (setup-once spec §7.2) | setup-once SO-A1 |
+| `GET /setup` **(SO-1)** | `GetSetup` | — | `SetupView(steps, asOf)`: six steps in the order `repo`, `profile`, `recipes`, `mcp`, `map`, `onyx`, each `{id, title, state (todo\|running\|done\|failed\|needs-you\|skipped; `skipped` is `onyx`'s only), why, detail, error {code, sentence}\|null, action, progress {done, total}\|null}` (setup-once spec §7.2) | setup-once SO-A1 |
 | `GET /ping` | `PingProcess` (S1) | — | S1's `{pid, epoch}` | S1 |
 | `GET /commands` | `ListCommands` | — | `CommandList(rows)`. Each row: <ul><li>action id (`<Command>` or `<Command>:<variant>`);</li><li>class;</li><li>allowed callers;</li><li>whether it needs a terminal;</li><li>method and route;</li><li>CLI form;</li><li>UI status: `ready`, `pending:<phase>` or `cli-only:<reason>`.</li></ul> | P1 |
 | `GET /services` | `ListServices` | — | `ServiceList(services, empty, asOf)`. Each service: <ul><li>name;</li><li>cadence;</li><li>paused;</li><li>last run (slot, outcome, code);</li><li>next slot;</li><li>`job`: the running job of the service (a manual run), or null **(provisional owner default, 2026-10-15)**.</li></ul> | P2, P6 |
@@ -358,11 +359,12 @@ They're in the catalog with class `local` and are never routes. `doctor` gains a
 | `POST /services/{name}/resume` | `ResumeService` | — | `CommandAccepted` | desk | `sindri services resume <name>` | P6 |
 | `POST /jobs/{jobId}/cancel` | `CancelJob` | — | `CommandAccepted` | job | Ctrl-C while following; `sindri jobs cancel <id>` | P6 |
 | `POST /setup/repos` **(SO-2)** | `AddRepo` | `path`, `name?` | checks `SND-SETUP-001/002` (400/409), then `JobStarted(accepted, JobId, links)` (202); job kind `AddRepo`, key = first 16 hex of sha256 of the path | desk | `sindri repo add <path>` | setup-once SO-A3 |
-| `POST /setup/mcp` **(SO-2)** | `RegisterMcp` | `repo?` | check `SND-SETUP-004` (409), then `JobStarted` (202); job kind `RegisterMcp`, key = the repo name | desk (`ServiceGrants: [setup]`) | `sindri mcp register --apply` | setup-once SO-A4 |
+| `POST /setup/mcp` **(SO-2)** | `RegisterMcp` | `repo?` | check `SND-SETUP-004` (409), then `JobStarted` (202); job kind `RegisterMcp`, key = `mcp-` plus the first 16 hex of sha256 of the repo name | desk (`ServiceGrants: [setup]`) | `sindri mcp register --apply` | setup-once SO-A4 |
 | `POST /onyx/setup` **(SO-2)** | `SetupOnyx` | — | `JobStarted` (202); job kind `SetupOnyx`, key `onyx`; the job waits for the owner's sign-up | desk | `sindri-app onyx up` | setup-once SO-A5 |
+| `POST /onyx/defer` **(SO-2)** | `DeferOnyx` | `deferred` | 200 `{deferred}`; the Onyx step becomes `skipped` (Not now) or back | desk | — | setup-once SO-A5 |
 | `POST /onyx/account` **(SO-2)** | `ConnectOnyx` | `adminEmail`, `adminPassword` (a secret type: never logged, recorded or stored in a job) | 202, the same job; `SND-SETUP-005/006` | desk | `sindri-app onyx up` | setup-once SO-A5 |
 | `POST /workflow/challenges/app` **(SO-2)** | `IssueAppChallenge` | `action` | the challenge with `confirm` (`typed`\|`held`); `human` token only, three action texts only, else `SND-AUTH-002` | desk | — | setup-once SO-A2 |
-| `POST /workflow/recipes/approve-all` **(SO-2)** | `ApproveAllRecipes` | `challenge`, `answer` (`heldMs` or `typed`) | `JobStarted` (202); job kind `ApproveAllRecipes`; the result `{approved, refused}` is on the job (the plan is `GET`, engine spec) | protected (app: held or typed) | `sindri recipe approve-all` | setup-once SO-E3 |
+| `POST /workflow/recipes/approve-all` **(SO-2)** | `ApproveAllRecipes` | `challenge`, `answer` (`heldMs` or `typed`) | `JobStarted` (202); job kind `ApproveAllRecipes`; the result `{approved, refused, skipped}` is on the job; a refusal skips that recipe and its dependents and the job carries on (the plan is `GET`, engine spec) | protected (app: held or typed) | `sindri recipe approve-all` | setup-once SO-E3 |
 | `POST /items/{itemId}/open` | `OpenItem` | `mode` (`open`, `attach` or `resume`), `target?` (`claude-code`, `codex` or `cursor`), `itemVersion` (UI E-1) | `LaunchRequested(accepted, LaunchId)` | desk | `sindri open <item> [--agent claude-code\|codex\|cursor] [--attach \| --resume]` | P10a |
 
 Notes:
@@ -445,6 +447,8 @@ catalog itself lands in P1. Every domain payload carries `commandId` (or the `se
 | `item.open-requested` | `launchId`, item, mode, target, chosenBy | `item.open-requested:<launchId>` | yes | P10 |
 | `launch.started`, `launch.failed`, `launch.probed`, `session.ended` | as UI E-1, E-3 and launcher L-1, L-10: every launch payload names the launch `launchId`; `launch.failed` carries `code`, `message` and an optional `detail` (`stage`: `host`/`backstop`; for SND-LAUNCH-012 also `reason`, `current`, `approved`); `session.ended`: `launchId`, reason (`exit`, `lost`), exit code, and the final `inputTokens`/`outputTokens` when the target's reader had a transcript | `launch.outcome:<launchId>` (`launch.started` and `launch.failed` share it), `session.ended:<launchId>` | yes | P10a (written by `service:launcher`; the engine's agent runtime uses the same events) |
 | `setup.step.changed` **(SO-4)** | `id`, `state`, `code?` | `setup.step.changed:<id>:<state>:<n>` (n = the step's earlier change events) | yes | setup-once SO-A6 (`service:setup`) |
+| `setup.consent.given` **(SO-4)** | `steps`, `profileHash` | `setup.consent.given:<profileHash>` | yes | setup-once SO-A4 |
+| `onyx.deferred` **(SO-4)** | `deferred` | `onyx.deferred:<commandId>` | yes | setup-once SO-A5 |
 | `repo.onboarded` **(SO-4)** | `repo`, `approvedHash` | `repo.onboarded:<repo>:<hash>` | yes | setup-once SO-A3 |
 | `repo.added` **(SO-4)** | `repo` (path non-public) | `repo.added:<commandId>` | yes | setup-once SO-A3 |
 | `recipe.registration.completed` **(SO-4)** | `registered`, `unchanged`, `failed` | `recipe.registration.completed:<epoch>` | yes | setup-once SO-E2 |
@@ -897,7 +901,7 @@ Agents page reads this, and the collector's `GET /sessions` (§11) carries each 
 | `job` | Read-only work, possibly long-running; writes only its own job events and, for `RunService`, the run's `service.ran` | `RunService`, `CancelJob` |
 | `decision` | A non-protected human decision (the §17.12 list) | `Decide` |
 | `desk` | A human action that changes item or process state (§17.27.2) | `StopProcess`, `RebuildViews`, `CreateItem`, `CloseItem`, `PauseService`, `ResumeService`, `OpenItem`; the engine's start, answer, handback, cancel and complete |
-| `protected` | The approval tier: a typed confirmation, bound to the content, at a terminal. **(SO-6)** Three actions (`ApproveProfile`, `ApproveRecipe`, `ApproveAllRecipes`) can also be confirmed in the app, typed or held (setup-once spec §4) | `ApproveProfile`, and the engine's `ApplyCommand:answer-grant`, `answer-accept` and `recipe approve`. Later: evolve adopt, channel promote and tier raises |
+| `protected` | The approval tier: a typed confirmation, bound to the content, at a terminal. **(SO-6)** Three actions (`ApproveProfile`, `ApproveRecipe`, `ApproveAllRecipes`) can also be confirmed in the app, typed or held, through a per-row `AppConfirm` flag that lets `Who.App` through only when the request redeems a challenge (setup-once spec §4 item 7) | `ApproveProfile`, and the engine's `ApplyCommand:answer-grant`, `answer-accept` and `recipe approve`. Later: evolve adopt, channel promote and tier raises |
 | `local` | Runs in the CLI, never through the API | `doctor`, `profile validate` |
 | `issue` | Issues a one-time value and appends no domain event (audited by `command.handled`). The only `POST`s that aren't commands (§2.5) | `IssueNonce` (any caller whose class may run a command on that instance, repo-scoped for sessions), `IssueChallenge` (`human` + terminal), and `session wrap`'s heartbeat and exit (the launch secret, §8.1) |
 
@@ -1217,7 +1221,7 @@ of **`docs/csharp/sindri.md`**. Not `docs/sindri/errors.md`, which is generated 
 | `SND-ENGINE-001` | Unavailable (503) | The Temporal server, or the SDK call to it, didn't answer (fix: `sindri doctor`; `sindri serve` starts the dev server) (E-30) | P13 |
 | `SND-ENGINE-404` | NotFound (404) | No execution in Temporal for that address (E-30) | P13 |
 | `SND-AUTH-001` | Forbidden (403) | `human` without a valid per-start token | P1 |
-| `SND-SETUP-001`…`006` **(SO-8)** | Invalid / Conflict / Forbidden | A folder that is not a usable git checkout, or is `/`, the home folder or a parent of the Sindri home (001); a repo already named or a name collision (002); an app confirmation not given (003); `RegisterMcp` for a repo the approved profile does not name (004); `ConnectOnyx` without the Onyx login (005) or with no setup waiting (006). 001, 002, 004 and 006 answer before a job is claimed. Texts in setup-once spec §7.6 | setup-once |
+| `SND-SETUP-001`…`007` **(SO-8)** | Invalid / Conflict / Forbidden | A folder that is not a usable git checkout, or is `/`, the home folder or a parent of the Sindri home (001); a repo already named or a name collision (002); an app confirmation not given (003); `RegisterMcp` for a repo the approved profile does not name (004); `ConnectOnyx` without the Onyx login (005) or with no setup waiting, or after the 30-minute wait (006); the approve-all plan or challenge before a profile is approved (007). 001, 002, 004, 006 and 007 answer before a job is claimed. Texts in setup-once spec §7.6 | setup-once |
 | `SND-AUTH-003` | Forbidden (403) | The launch secret doesn't match an open launch, or the run is taken over | P10 |
 
 - `SND-API-006` is reserved for the idempotency key (§11).
