@@ -46,7 +46,7 @@ internal sealed partial class InstanceRow : UserControl
         }
     }
 
-    // Behind a sheet (UI spec §3.2) the columns don't fit: the row keeps its id, title and state.
+    // Behind a sheet (UI spec §3.2) the columns don't fit: the row keeps its workflow, item and stage.
     private void Compact(bool compact)
     {
         if (this.FindControl<Grid>("WorkflowRowGrid") is not { } grid)
@@ -54,17 +54,19 @@ internal sealed partial class InstanceRow : UserControl
             return;
         }
 
-        var hidden = new GridLength(0);   // the hidden columns keep their place so every cell still has one
+        var hidden = new GridLength(0);   // the hidden columns keep their place
         grid.ColumnDefinitions = compact
-            ? [new ColumnDefinition(GridLength.Star), new ColumnDefinition(hidden), new ColumnDefinition(hidden), new ColumnDefinition(hidden)]
-            : [new ColumnDefinition(new GridLength(220)), new ColumnDefinition(new GridLength(150)), new ColumnDefinition(GridLength.Star), new ColumnDefinition(new GridLength(180))];
-        foreach (var name in (string[])["WorkflowRowInputs", "WorkflowRowStages", "WorkflowRowNow"])
+            ? [new ColumnDefinition(GridLength.Star), new ColumnDefinition(hidden), new ColumnDefinition(hidden)]
+            : [new ColumnDefinition(GridLength.Star), new ColumnDefinition(new GridLength(220)), new ColumnDefinition(GridLength.Star)];
+        foreach (var name in (string[])["WorkflowRowAside", "WorkflowRowNow", "WorkflowRowDetails"])
         {
             this.FindControl<Control>(name)?.IsVisible = !compact;
         }
 
         this.FindControl<Control>("WorkflowRowCompact")?.IsVisible = compact;
     }
+
+    private void OnCopy(object? sender, RoutedEventArgs e) => _ = (DataContext as InstanceRowViewModel)?.CopyAddress(CancellationToken.None);
 
     private void OnOpen(object? sender, RoutedEventArgs e) => RaiseEvent(new RoutedEventArgs(OpenEvent, this));
 }

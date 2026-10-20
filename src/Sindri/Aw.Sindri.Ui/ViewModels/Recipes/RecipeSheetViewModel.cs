@@ -3,6 +3,7 @@ using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.ViewModels.Instance;
+using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.ViewModels.Recipes;
 
@@ -55,7 +56,21 @@ internal sealed class RecipeSheetViewModel(ISindriApi api) : ObservableObject
     /// <summary>The recipe's id.</summary>
     public string Id { get; private set => Set(ref field, value); } = string.Empty;
 
-    /// <summary>The header's identity line.</summary>
+    /// <summary>The workflow's name as a person reads it: the served display name, else the id made readable; empty before a read.</summary>
+    public string Title { get; private set => Set(ref field, value); } = string.Empty;
+
+    /// <summary>True while the Details (the id, hash, version, urgency, name template and each input's key and type) show; closed until opened, and kept across re-reads.</summary>
+    public bool IsDetailsOpen { get; set => Set(ref field, value); }
+
+    /// <summary>The Details disclosure's header.</summary>
+#pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
+    public string DetailsText => Labels.RecipeDetails;
+#pragma warning restore CA1822, MA0041
+
+    /// <summary>Opens the Details, or closes them.</summary>
+    internal void ToggleDetails() => IsDetailsOpen = !IsDetailsOpen;
+
+    /// <summary>The header's identity line (in Details).</summary>
     public string Identity { get; private set => Set(ref field, value); } = string.Empty;
 
     /// <summary>The name template, or empty.</summary>
@@ -94,6 +109,7 @@ internal sealed class RecipeSheetViewModel(ISindriApi api) : ObservableObject
             Clear();
             _subject = subject;
             Id = Split(subject).Recipe;
+            Title = WorkflowNames.Of(Id, displayName: null);
             Phase = FramePhase.Loading;
         }
     }
@@ -142,6 +158,7 @@ internal sealed class RecipeSheetViewModel(ISindriApi api) : ObservableObject
     private void Show(RecipeView recipe)
     {
         Id = recipe.Id;
+        Title = WorkflowNames.Of(recipe.Id, recipe.DisplayName);
         Identity = string.Create(CultureInfo.InvariantCulture, $"{recipe.Id}@{Labels.Hash12(recipe.Hash)} · v{recipe.Version} · {Labels.UrgencyWord(recipe.Urgency)}");
         Name = recipe.Name ?? string.Empty;
         States = new RecipeStatesViewModel(recipe);
@@ -180,7 +197,7 @@ internal sealed class RecipeSheetViewModel(ISindriApi api) : ObservableObject
     private void Clear()
     {
         _generation++;
-        (Id, Identity, Name, Note, ProblemText) = (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
+        (Id, Title, Identity, Name, Note, ProblemText) = (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
         (States, Facts) = (null, null);
     }
 }

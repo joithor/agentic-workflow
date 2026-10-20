@@ -11,6 +11,7 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="OrderedBy">OrderedBy, as served.</param>
 /// <param name="States">States, as served.</param>
 /// <param name="Loops">Loops, as served.</param>
+/// <param name="DisplayName">What the recipe does, in a sentence; read as optional (an older Sindri serves none).</param>
 internal sealed record RecipeView(
     string Id,
     string Hash,
@@ -21,4 +22,5 @@ internal sealed record RecipeView(
     RecipeUrgency Urgency,
     PathOrdering OrderedBy,
     IReadOnlyList<RecipeStateView> States,
-    IReadOnlyList<RecipeLoopView> Loops);
+    IReadOnlyList<RecipeLoopView> Loops,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? DisplayName = null);
