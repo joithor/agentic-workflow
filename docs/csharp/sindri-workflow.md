@@ -1175,8 +1175,8 @@ Unit (c), as built:
 
 Engine spec rev 8.1 §3.8, §5.2, §5.5, §5.8, §6.2; UI spec E-6, E-19.
 
-- **`workflow takeover <address>`** (class `pause`: an agent session may take over, so the attach hook works) and
-  **`workflow handback <address>`** (class `desk`: a session is refused `SND-AUTH-002`) are `ApplyCommand` kinds
+- **`workflow takeover <address>`** (also `sindri takeover <item-or-address>`, a bare item being the root of its latest attempt; class `pause`: an agent session may take over, so the attach hook works) and
+  **`workflow handback <address>`** (also `sindri handback <item-or-address>`; class `desk`: a session is refused `SND-AUTH-002`) are `ApplyCommand` kinds
   `takeover` and `handback`, sent as the `takeover` and `handback` Updates with the nonce as id. Both are exempt from
   the approval check. While the workflow is still open, a takeover of an ended or already taken-over instance, and a handback of one
   that isn't taken over, are `SND-WF-003` from the validator and record nothing. Once an ended instance's workflow has
