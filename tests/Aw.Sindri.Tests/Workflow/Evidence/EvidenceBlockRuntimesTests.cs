@@ -47,6 +47,23 @@ public sealed class EvidenceBlockRuntimesTests
     }
 
     [Fact]
+    public async Task A_phase_with_only_api_evidence_reaches_done_through_evidence_all()
+    {
+        await using var provider = ShippedComposition.Compose();
+        var (recipe, context) = Read(provider, "workflow.evidence-all.yaml");
+        var entered = StateEntry.Enter(EngineFixture.At(recipe, "combine"), recipe, "combine", context);
+
+        var run = await new EvidenceCombineStep().Run(BuildShipContexts.Of("step.evidence.combine", new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["evidenceUi"] = """{"selected":false,"kind":"ui","reason":"no screen"}""",
+            ["evidenceApi"] = """{"result":"passed"}""",
+            ["evidenceDb"] = """{"selected":false,"kind":"db","reason":"no store"}""",
+        }), TestContext.Current.CancellationToken);
+
+        Assert.Equal("done", Next(entered, recipe, context, run));
+    }
+
+    [Fact]
     public async Task No_evidence_needed_ends_the_route_resolved()
     {
         await using var provider = ShippedComposition.Compose();
