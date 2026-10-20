@@ -60,7 +60,6 @@ using Aw.Sindri.Features.JobProbe;
 using Aw.Sindri.Features.Jobs;
 using Aw.Sindri.Features.Launching;
 using Aw.Sindri.Features.LensLoops;
-using Aw.Sindri.Features.Line;
 using Aw.Sindri.Features.ListCommands;
 using Aw.Sindri.Features.ListDecisions;
 using Aw.Sindri.Features.ListInstances;
@@ -163,9 +162,6 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddStationSlices();
         return services;
     }
-
-    private static IServiceCollection AddStationSlices(this IServiceCollection services) =>
-        services.AddScopingSlices().AddLineSlices().AddBuildSlices().AddShipSlices().AddLensLoops().AddProveSlices();
 
     private static IServiceCollection AddCommands(this IServiceCollection services)
     {
