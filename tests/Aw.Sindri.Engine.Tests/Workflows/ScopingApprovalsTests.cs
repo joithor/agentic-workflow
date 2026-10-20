@@ -78,7 +78,9 @@ public sealed class ScopingApprovalsTests
 
         Assert.Null(result.Failure);
         var payload = Payload(Assert.Single(await Rows(ledger)));
-        Assert.Equal((["S1", "S2"], ["AC-1", "AC-2", "AC-3"], 3, 1), (payload.Surfaces, payload.AcceptanceItems, payload.Rounds, payload.Rescopes));
+        Assert.Equal(["S1", "S2"], payload.Surfaces);
+        Assert.Equal(["AC-1", "AC-2", "AC-3"], payload.AcceptanceItems);
+        Assert.Equal((3, 1), (payload.Rounds, payload.Rescopes));
     }
 
     [Fact]

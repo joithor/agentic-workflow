@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
@@ -6,13 +7,22 @@ using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
-/// <summary>The 'scoping.approved' row the engine appends when 'step.scope.freeze' reports 'frozen'. Not built yet.</summary>
+/// <summary>
+/// The 'scoping.approved' row (scoping spec §3 'Freeze', SC3; api #503): when 'step.scope.freeze' reports 'frozen', the engine appends it under the instance's lease, since a
+/// Step has no ledger port. The row names the instance by its address and is about its item; its hash is the one the Step froze (aw-packets' hash of the run area's
+/// <c language="text">scope-packet/</c>, which stays in place), and its ids and counts are read from that frozen directory, so the row says what the packet says. The key is
+/// 'scoping.approved:&lt;packetHash&gt;', so a freeze reported again writes nothing and a re-scope that freezes a new hash appends a new row. A row that cannot be appended
+/// fails the Step: nobody sees a freeze the ledger doesn't hold.
+/// </summary>
 /// <param name="ledger">The ledger.</param>
-/// <param name="lease">The lease this process holds.</param>
-/// <param name="events">The event factory.</param>
+/// <param name="lease">The lease this process holds; the append is fenced by it.</param>
+/// <param name="events">The control plane's event factory.</param>
 /// <param name="area">The instance's run area.</param>
 internal sealed class ScopingApprovals(ILedgerStore ledger, HeldLease lease, EventFactory events, IRunArea area)
 {
+    private const string Packet = "scope-packet/";
+    private const string Rescope = "rescope";
+
     /// <summary>The Step whose 'frozen' report is an approval.</summary>
     public static BlockId Freeze { get; } = BlockId.From("step.scope.freeze");
 
@@ -22,6 +32,87 @@ internal sealed class ScopingApprovals(ILedgerStore ledger, HeldLease lease, Eve
     /// <param name="result">What it returned.</param>
     /// <param name="cancellationToken">Cancels the append.</param>
     /// <returns>The result, or a failed one when the row could not be appended.</returns>
-    public ValueTask<BlockStepResult> After(BlockId step, StepContext context, BlockStepResult result, CancellationToken cancellationToken) =>
-        throw new NotSupportedException($"{step.Value} {context.Step.Value} {result.Failure} {ledger.GetType().Name} {lease.GetType().Name} {events.GetType().Name} {area.GetType().Name}");
+    public async ValueTask<BlockStepResult> After(BlockId step, StepContext context, BlockStepResult result, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(result);
+        if (step != Freeze || result.Result is not { } done || done.Outcome.Value != "frozen")
+        {
+            return result;
+        }
+
+        if (context.Address is not { } address || Hash(done) is not { } hash)
+        {
+            return BlockStepResult.Failed($"{Freeze.Value} froze the packet, but the engine has no address or hash to record scoping.approved with");
+        }
+
+        try
+        {
+            var payload = await Payload(address, hash, cancellationToken).ConfigureAwait(false);
+            var grant = lease.Current;
+            if (grant is null)
+            {
+                return BlockStepResult.Failed("SND-LEASE-002: this process holds no lease, so scoping.approved can't be recorded");
+            }
+
+            var entry = events.Entry(EventTypes.ScopingApproved, payload, $"{EventTypes.ScopingApproved}:{hash}", address[..address.IndexOf('/', StringComparison.Ordinal)]);
+            var appended = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
+            return appended.IsError ? BlockStepResult.Failed($"scoping.approved can't be recorded: {appended.Error.Code}: {appended.Error.Message}") : result;
+        }
+        catch (JsonException e)
+        {
+            return BlockStepResult.Failed($"scoping.approved can't be recorded: the frozen packet is not readable: {e.Message}");   // boundary: the packet's files are text the owner approved
+        }
+    }
+
+    private static string? Hash(StepResult done) =>
+        done.Outputs.TryGetValue(FactKey.From("fact:scopePacket"), out var packet) && Parsed(packet) is { ValueKind: JsonValueKind.Object } obj && obj.TryGetProperty("hash", out var hash) && hash.ValueKind == JsonValueKind.String
+            ? hash.GetString()
+            : null;
+
+    // the runner stores a fact as its text, so an object output may arrive as a JSON string holding the object
+    private static JsonElement Parsed(JsonElement element)
+    {
+        if (element.ValueKind != JsonValueKind.String)
+        {
+            return element;
+        }
+
+        using var document = JsonDocument.Parse(element.GetString() ?? "null");
+        return document.RootElement.Clone();
+    }
+
+    private async Task<ScopingApproved> Payload(string address, string hash, CancellationToken cancellationToken)
+    {
+        var map = await Read(address, "scope-map.json", cancellationToken).ConfigureAwait(false);
+        var acceptance = await Read(address, "acceptance.json", cancellationToken).ConfigureAwait(false);
+        var rounds = await Read(address, "rounds.jsonl", cancellationToken).ConfigureAwait(false);
+        var lines = rounds.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return new ScopingApproved(hash, address, Ids(map, "surfaces"), Ids(acceptance, "items"), lines.Length, lines.Count(IsRescope));
+    }
+
+    private static bool IsRescope(string line)
+    {
+        using var document = JsonDocument.Parse(line);
+        return document.RootElement.ValueKind == JsonValueKind.Object && document.RootElement.TryGetProperty("trigger", out var trigger) && trigger.ValueKind == JsonValueKind.String && trigger.GetString() == Rescope;
+    }
+
+    private async Task<string> Read(string address, string name, CancellationToken cancellationToken)
+    {
+        var read = await area.Read(address, Packet + name, cancellationToken).ConfigureAwait(false);
+        return read.IsError ? throw new JsonException($"{Packet}{name}: {read.Error.Message}") : read.Value;
+    }
+
+    private static List<string> Ids(string json, string list)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return [];
+        }
+
+        using var document = JsonDocument.Parse(json);
+        return document.RootElement.ValueKind == JsonValueKind.Object && document.RootElement.TryGetProperty(list, out var items) && items.ValueKind == JsonValueKind.Array
+            ? [.. items.EnumerateArray().Where(static i => i.ValueKind == JsonValueKind.Object && i.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String).Select(static i => i.GetProperty("id").GetString()!)]   // why: the filter checked the id is a string
+            : [];
+    }
 }
