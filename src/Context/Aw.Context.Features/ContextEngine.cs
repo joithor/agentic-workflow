@@ -14,6 +14,7 @@ using Aw.Context.Core.Results;
 using Aw.Context.Core.Review;
 using Aw.Context.Core.Subgraph;
 using Aw.Context.Core.Trust;
+using Aw.Context.Features.MapHeads;
 using Aw.Context.Features.QueryContext;
 using Aw.Kernel;
 using Aw.Kernel.Services;
@@ -30,7 +31,8 @@ internal sealed class ContextEngine(
     IScrubberFactory scrubbers,
     IContextMap map,
     ContextGraph graph,
-    ContextEval eval) : IContextEngine
+    ContextEval eval,
+    IService<MapHeadsRequest, IReadOnlyList<RepoHead>> heads) : IContextEngine
 {
     public Result<ContextSettings> CheckSettings(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) =>
         SettingsReader.Read(section).Bind(read => scrubbers.For(read.ExtraPatterns)).Bind(_ => SettingsReader.Check(section, repos));   // the keys, then the patterns, then the repos
@@ -109,7 +111,7 @@ internal sealed class ContextEngine(
     public ValueTask<Result<CleanupReport>> CleanDraft(ContextScope scope, CancellationToken cancellationToken) => map.CleanDraft(scope, cancellationToken);
 
     public ValueTask<Result<IReadOnlyList<RepoHead>>> MapHeads(ContextScope scope, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("F1: MapHeads is not built yet");
+        heads.Handle(new MapHeadsRequest(scope), cancellationToken);
 
     public ValueTask<Result<ProposeResult>> Propose(ScopeProposal proposal, ContextScope scope, CancellationToken cancellationToken) =>
         map.Propose(proposal, scope, cancellationToken);

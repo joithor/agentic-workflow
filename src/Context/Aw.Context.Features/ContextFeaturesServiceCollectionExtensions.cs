@@ -34,6 +34,8 @@ using Aw.Context.Features.ImportMap;
 using Aw.Context.Features.ListNeighbors;
 using Aw.Context.Features.PreviewMap;
 using Aw.Context.Features.PreviewReviewFile;
+using Aw.Context.Core.Engine;
+using Aw.Context.Features.MapHeads;
 using Aw.Context.Features.PromoteMap;
 using Aw.Context.Features.ProposeFromScope;
 using Aw.Context.Features.PurgeMap;
@@ -92,6 +94,7 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<ListNeighborsRequest, NeighborsView>, ListNeighborsService>()
         .AddScoped<IService<FindPathRequest, PathView>, FindPathService>()
         .AddScoped<IService<BuildMapRequest, MapBuildReport>, BuildMapService>()
+        .AddMapHeads()
         .AddScoped<IService<ReviewQueueRequest, ReviewQueueView>, ReviewQueueService>()
         .AddScoped<IService<ReviewHistoryRequest, ReviewHistoryView>, ReviewHistoryService>()
         .AddScoped<IService<ReviewMapRequest, ReviewResult>, ReviewMapService>()
@@ -113,6 +116,10 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IContextLenses>(static sp => sp.GetRequiredService<ContextGraph>())
         .AddScoped<IContextEngine, ContextEngine>()
         .AddLensSlices();
+
+    // The repo heads the map watcher reads (F1).
+    private static IServiceCollection AddMapHeads(this IServiceCollection services) =>
+        services.AddScoped<IService<MapHeadsRequest, IReadOnlyList<RepoHead>>, MapHeadsService>();
 
     // The lenses and the code lens share the basis reader and the map reader's views.
     private static IServiceCollection AddLensSlices(this IServiceCollection services) => services
