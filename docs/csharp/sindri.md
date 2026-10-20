@@ -590,6 +590,15 @@ grant: no command gate, audit row or catalog row, the `CheckProfileService` patt
 - **Host (CO-2b):** each session also carries its host (`tmux`, `warp`, `terminal`, `ide`, `ssh`, `t3`, `unknown`), found from the parent chain, `/proc/net/unix` and read-only `tmux -S <socket>` calls (`docs/csharp/sindri-sessions.md`, Host detection). The `fleet.changed` payload carries the host kind only.
 - Telemetry: span `sindri.collector.pass`, gauge `sindri.sessions` (by provider and state), counters `sindri.collector.overrun` and `sindri.collector.pruned`.
 
+## Worktrees (`IWorktrees`)
+
+`Aw.Sindri.Core.Worktrees.IWorktrees` is the port the engine uses to make and remove git worktrees: the per-run worktree (engine spec §6.5, `<repo>/.claude/worktrees/sindri-<instance>-<run>`) and the phase worktree (`step.phase.seed`). `GitWorktrees` (Infrastructure) is the adapter; `FakeWorktrees` (`Aw.Sindri.Testing`) is the in-memory one, and `WorktreesContract` runs against both (unit lane for the fake, integration lane for git over a temp repo). Nothing calls it until the engine wires it in (BS-10).
+
+- `Create(WorktreeRequest(RepoRoot, BaseCommit, Branch, Path))` runs `git worktree add -b <Branch> <Path> <BaseCommit>`, or without `-b` when the branch already exists at the base. It is idempotent: the same path on the same branch with HEAD still at the base returns the existing checkout.
+- `Remove(path)` runs `git worktree remove` and `git worktree prune`. A path that is already gone succeeds, so a retried cleanup is safe.
+- **It never forces.** No `--force`, no reset, no fetch, no checkout over existing work: a different base or branch at the path is `SND-WT-002`, and a tree with uncommitted or untracked files is `SND-WT-004` and stays exactly as it is. A git failure (the command, a missing repo, an unknown sha) is `SND-WT-003`; a bad request (a ref instead of a full sha, a relative path, a path inside another worktree) is `SND-WT-001`. Removing deletes no branch.
+- The result type is `Result<Unit>` for `Remove` (the kernel has no non-generic `Result`); the codes are in the Errors table below.
+
 ## Scheduler
 
 The control plane runs the services the **approved** profile names, on their cadence. It re-reads the approval once a
@@ -699,6 +708,10 @@ There is no decision, desk, protected, job or step-report tool, and no `sindri_c
 | `SND-SESSION-003` | A test override (`AW_SESSIONS_PROC_ROOT`, `AW_SESSIONS_CLAUDE_DIR`) is set in this run: informational, one problem row beside a normal list; pruning of hook files is off and focus answers `copy` (collector CO-2a) |
 | `SND-SESSION-404` | No live session has that ref, or it is outside a session caller's repo (the same answer for both; collector CA-5, CO-3) |
 | `SND-SESSION-409` | The session at that ref is a different process than the caller looked at (`expectStartedAt` differs; collector CA-5; the preview read, CO-7a, answers it, and `FocusSession` will, CO-4a) |
+| `SND-WT-001` | A worktree request isn't valid (422): `BaseCommit` isn't a full 40-character lower-case hex sha (a ref or a short sha), `RepoRoot` or `Path` isn't absolute, the branch is empty, has a space or starts with `-`, or the path is inside another linked worktree |
+| `SND-WT-002` | The worktree path is already a worktree of another branch or at another commit, the branch is checked out in another worktree, or the branch exists at a commit other than the base: nothing is reset or moved, and the engine parks on this (409) |
+| `SND-WT-003` | git failed: the command failed, the repo is missing, the sha isn't a commit of it, or the path isn't a worktree on remove; the engine fails on this (503) |
+| `SND-WT-004` | `Remove` found uncommitted or untracked files in the worktree and left it as it is (409) |
 | `SND-SECRET-001` | A secret pointer is malformed: no scheme, an unknown scheme, or a bad target. Expected `env:NAME`, `file:/absolute/path`, `keychain:<service>/<account>` or `op:<vault>/<item>/<field>`; the message names only the scheme, never the text after it (it may be a secret pasted by mistake) |
 | `SND-SECRET-002` | A secret pointer doesn't resolve: the variable is unset or empty, the file is missing or empty, the keychain (macOS `security`, Linux `secret-tool`) or 1Password entry is missing, `security`, `secret-tool` or `op` isn't on PATH or ran past its timeout (5 s, 30 s), or `keychain:` is used on any other OS. On Linux `secret-tool` exits 1 both for a missing entry and when no D-Bus session or keyring is reachable, so `sindri serve` must run in the login session. The message names the pointer and the fix, never a value |
 | `SND-SECRET-003` | A `file:` pointer is unsafe: the file has group or other permission bits (it must be 0600 or stricter) or isn't a regular file (a symbolic link, even to a 0600 file, or a directory; only the last path segment is checked) |
