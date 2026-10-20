@@ -35,6 +35,7 @@ public sealed class GitDefaultBranchContractTests : DefaultBranchContract, IDisp
             case Standing.Unreadable:
                 repo = new ContextRepo(repo.Name, Path.Combine(Path.GetTempPath(), "aw-no-such-checkout"));
                 break;
+            case Standing.AtTip:
             default:
                 break;
         }

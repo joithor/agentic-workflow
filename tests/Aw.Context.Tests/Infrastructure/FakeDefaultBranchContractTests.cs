@@ -16,6 +16,7 @@ public sealed class FakeDefaultBranchContractTests : DefaultBranchContract
         {
             Standing.AtTip or Standing.BehindTip => fake.Reach(repo.Name, commit),
             Standing.Unreadable => fake.Unreadable(repo.Name),
+            Standing.OffDefault or Standing.NoDefaultRef => fake,
             _ => fake,
         };
     }

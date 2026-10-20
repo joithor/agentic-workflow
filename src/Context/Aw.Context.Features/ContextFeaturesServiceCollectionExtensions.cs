@@ -71,7 +71,7 @@ public static class ContextFeaturesServiceCollectionExtensions
         services.TryAddSingleton<IMergeHistory>(sp => sp.GetRequiredService<UnconfiguredBacktest>());
         services.TryAddSingleton<IAsOfDocs>(sp => sp.GetRequiredService<UnconfiguredBacktest>());
         services.TryAddSingleton<IEvalStore>(sp => sp.GetRequiredService<UnconfiguredBacktest>());
-        return services.AddContextSlices();
+        return services.AddMapHeads().AddContextSlices();
     }
 
     private static IServiceCollection AddContextSlices(this IServiceCollection services) => services
@@ -94,7 +94,6 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<ListNeighborsRequest, NeighborsView>, ListNeighborsService>()
         .AddScoped<IService<FindPathRequest, PathView>, FindPathService>()
         .AddScoped<IService<BuildMapRequest, MapBuildReport>, BuildMapService>()
-        .AddMapHeads()
         .AddScoped<IService<ReviewQueueRequest, ReviewQueueView>, ReviewQueueService>()
         .AddScoped<IService<ReviewHistoryRequest, ReviewHistoryView>, ReviewHistoryService>()
         .AddScoped<IService<ReviewMapRequest, ReviewResult>, ReviewMapService>()
