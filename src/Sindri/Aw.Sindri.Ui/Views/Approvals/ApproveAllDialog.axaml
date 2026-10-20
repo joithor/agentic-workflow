@@ -97,7 +97,7 @@
                     AutomationProperties.Name="{Binding HoldName}" AutomationProperties.HelpText="{Binding HoldText}">
               <TextBlock Classes="button" Text="{Binding HoldText}" AutomationProperties.AccessibilityView="Raw" />
             </Button>
-            <ProgressBar x:Name="ApproveFill" Minimum="0" Maximum="1" Value="{Binding HoldProgress}" IsVisible="{Binding IsHolding}" Height="4"
+            <ProgressBar x:Name="ApproveFill" Minimum="0" Maximum="1" Value="{Binding HoldProgress}" IsVisible="{Binding ShowsFill}" Height="4"
                          AutomationProperties.AccessibilityView="Raw" />
             <TextBlock Classes="caption subtle" Text="{Binding TypeCaption}" AutomationProperties.AccessibilityView="Raw" />
             <TextBlock Classes="mono" Text="{Binding TypedAlternative}" AutomationProperties.AccessibilityView="Raw" />

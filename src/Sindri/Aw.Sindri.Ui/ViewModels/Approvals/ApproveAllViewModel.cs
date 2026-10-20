@@ -25,6 +25,7 @@ internal sealed partial class ApproveAllViewModel : ObservableObject
     private readonly Func<Uri?> _url;
     private readonly ISindriApi _api;
     private readonly TimeProvider _clock;
+    private readonly Func<bool> _reducedMotion;
     private AppChallengeView? _challenge;
     private ApproveAllPlan? _plan;
     private long _holdStarted;
@@ -35,13 +36,15 @@ internal sealed partial class ApproveAllViewModel : ObservableObject
     /// <param name="url">The API now, or null when none is running.</param>
     /// <param name="api">The API.</param>
     /// <param name="clock">The clock for the hold, the challenge's expiry and the job's polling.</param>
-    internal ApproveAllViewModel(CatalogViewModel catalog, Func<Uri?> url, ISindriApi api, TimeProvider clock)
+    /// <param name="reducedMotion">True when the OS or the in-app switch asks for reduced motion: the hold shows its text count and no animated fill. None means motion is allowed.</param>
+    internal ApproveAllViewModel(CatalogViewModel catalog, Func<Uri?> url, ISindriApi api, TimeProvider clock, Func<bool>? reducedMotion = null)
     {
         ArgumentNullException.ThrowIfNull(catalog);
         ArgumentNullException.ThrowIfNull(url);
         ArgumentNullException.ThrowIfNull(api);
         ArgumentNullException.ThrowIfNull(clock);
         (_catalog, _url, _api, _clock) = (catalog, url, api, clock);
+        _reducedMotion = reducedMotion ?? (() => false);
     }
 
     /// <summary>The polite live region (a hold starting, being let go, the result).</summary>

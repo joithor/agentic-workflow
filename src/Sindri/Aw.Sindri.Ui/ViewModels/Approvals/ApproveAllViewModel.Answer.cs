@@ -6,7 +6,18 @@ namespace Aw.Sindri.Ui.ViewModels.Approvals;
 internal sealed partial class ApproveAllViewModel
 {
     /// <summary>True while the button is held.</summary>
-    public bool IsHolding { get; private set => Set(ref field, value); }
+    public bool IsHolding
+    {
+        get;
+        private set
+        {
+            Set(ref field, value);
+            OnChanged(nameof(ShowsFill));
+        }
+    }
+
+    /// <summary>True while the hold fills its bar: held, and motion is not reduced. Under reduced motion only the text count shows.</summary>
+    public bool ShowsFill => IsHolding && !_reducedMotion();
 
     /// <summary>How much of the hold is done, 0 to 1: the fill. Under reduced motion the view shows <see cref="HoldText"/> as a stepped count instead.</summary>
     public double HoldProgress { get; private set => Set(ref field, value); }
