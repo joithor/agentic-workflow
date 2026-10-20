@@ -38,5 +38,5 @@ public sealed class RecipeDisplayNamesTests
 
     [Fact]
     public void The_recipe_view_carries_the_name() =>
-        Assert.Equal("No outputs", Aw.Sindri.Testing.Views.WorkflowViewFixtures.NoOutputsRecipe().DisplayName, StringComparer.Ordinal);
+        Assert.Equal("No outputs", Testing.Views.WorkflowViewFixtures.NoOutputsRecipe().DisplayName, StringComparer.Ordinal);
 }

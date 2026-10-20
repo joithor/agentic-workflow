@@ -28,4 +28,4 @@ public sealed record RecipeView(
     PathOrdering OrderedBy,
     IReadOnlyList<RecipeStateView> States,
     IReadOnlyList<RecipeLoopView> Loops,
-    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? DisplayName = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? DisplayName = null);
