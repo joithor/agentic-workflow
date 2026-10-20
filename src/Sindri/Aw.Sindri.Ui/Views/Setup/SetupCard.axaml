@@ -52,7 +52,25 @@
       <ItemsControl x:Name="SetupCardRows" ItemsSource="{Binding CardSteps}">
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="sv:SetupStepViewModel">
-            <sw:SetupCardRow />
+          <Border Classes="item-row setup-row" Focusable="True"
+                    AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
+              <Grid ColumnDefinitions="130,*" VerticalAlignment="Top">
+                <Border Margin="0,0,8,0" VerticalAlignment="Top" AutomationProperties.Name="{Binding ChipText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                  <TextBlock Classes="body-strong mono" Text="{Binding ChipText}" AutomationProperties.AccessibilityView="Raw" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <Border AutomationProperties.Name="{Binding Title}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                    <TextBlock Classes="body-strong" Text="{Binding Title}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                  </Border>
+                  <Border AutomationProperties.Name="{Binding Why}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                    <TextBlock Classes="caption subtle" Text="{Binding Why}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                  </Border>
+                  <Panel IsVisible="{Binding ShowsActionOnCard}" Margin="0,6,0,0">
+                    <sw:SetupActionView DataContext="{Binding Action}" />
+                  </Panel>
+                </StackPanel>
+              </Grid>
+            </Border>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>

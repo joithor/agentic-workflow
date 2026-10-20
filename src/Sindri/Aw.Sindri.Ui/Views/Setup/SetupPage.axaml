@@ -81,7 +81,47 @@
         <ItemsControl x:Name="SetupStepRows" ItemsSource="{Binding Steps}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="sv:SetupStepViewModel">
-              <sw:SetupStepRow />
+              <Border Classes="item-row setup-row" Focusable="True"
+                        AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
+                  <Grid ColumnDefinitions="130,*" VerticalAlignment="Top">
+                    <Border Margin="0,0,8,0" VerticalAlignment="Top" AutomationProperties.Name="{Binding ChipText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                      <TextBlock Classes="body-strong mono" Text="{Binding ChipText}" AutomationProperties.AccessibilityView="Raw" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Spacing="2">
+                      <Border AutomationProperties.Name="{Binding Title}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                        <TextBlock Classes="body-strong" Text="{Binding Title}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                      </Border>
+                      <Border AutomationProperties.Name="{Binding Why}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                        <TextBlock Classes="caption subtle" Text="{Binding Why}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                      </Border>
+                      <Border IsVisible="{Binding HasDetail}" AutomationProperties.Name="{Binding DetailText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                        <TextBlock Classes="caption" Text="{Binding DetailText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                      </Border>
+                      <Border IsVisible="{Binding HasProgress}" AutomationProperties.Name="{Binding ProgressText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                        <TextBlock Classes="caption mono" Text="{Binding ProgressText}" AutomationProperties.AccessibilityView="Raw" />
+                      </Border>
+                      <Border IsVisible="{Binding HasError}" AutomationProperties.Name="{Binding ErrorText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                        <TextBlock Classes="caption" Text="{Binding ErrorText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                      </Border>
+                      <ItemsControl ItemsSource="{Binding Items}" IsVisible="{Binding HasItems}" Margin="0,4,0,0">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="sv:SetupItemViewModel">
+                            <Border AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
+                              <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.AccessibilityView="Raw">
+                                <TextBlock Classes="caption mono subtle" Text="{Binding ChipText}" Width="110" AutomationProperties.AccessibilityView="Raw" />
+                                <TextBlock Classes="caption" Text="{Binding Repo}" AutomationProperties.AccessibilityView="Raw" />
+                                <TextBlock Classes="caption subtle" Text="{Binding DetailText}" IsVisible="{Binding HasDetail}" AutomationProperties.AccessibilityView="Raw" />
+                              </StackPanel>
+                            </Border>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                      <Panel IsVisible="{Binding ShowsActionInList}" Margin="0,6,0,0">
+                        <sw:SetupActionView DataContext="{Binding Action}" />
+                      </Panel>
+                    </StackPanel>
+                  </Grid>
+                </Border>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>

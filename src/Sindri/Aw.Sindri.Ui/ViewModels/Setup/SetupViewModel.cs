@@ -145,11 +145,14 @@ internal sealed partial class SetupViewModel : ObservableObject
         }
 
         HasSteps = Steps.Count > 0;
-        List<SetupStepViewModel> drawn = IsFinished ? [] : IsExpanded ? byPriority : [.. byPriority.Take(CardRows)];
+        var drawn = Drawn(byPriority);
         Patch.To(CardSteps, drawn);
         Phrase([.. byPriority.Except(drawn)]);
         Shown();
     }
+
+    // Nothing once setup is finished; every step once the person asked for them; else the first three by priority.
+    private List<SetupStepViewModel> Drawn(List<SetupStepViewModel> byPriority) => IsFinished ? [] : IsExpanded ? byPriority : [.. byPriority.Take(CardRows)];
 
     // The words that go with the fold: how many it leaves (and how many of those need the person), the head, and the page's lead.
     private void Phrase(List<SetupStepViewModel> hidden)

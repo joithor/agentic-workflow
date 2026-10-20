@@ -8,6 +8,7 @@ using Aw.Sindri.Ui.Tests.Views;
 using Aw.Sindri.Ui.ViewModels.Approvals;
 using Aw.Sindri.Ui.ViewModels.Setup;
 using Aw.Sindri.Ui.ViewModels.Shell;
+using Aw.Sindri.Ui.Views.Setup;
 using Aw.Sindri.Ui.Views.Shell;
 
 namespace Aw.Sindri.Ui.Tests.Setup;
@@ -26,15 +27,16 @@ public sealed class SetupViewTests : FrameHost
         return (window, shell);
     }
 
-    private static List<Border> Rows(Window window, string frame) =>
-        [.. window.GetVisualDescendants().OfType<Border>().Where(b => b.Name == frame && b.IsEffectivelyVisible)];
+    // The step rows a list draws (the rows are templates, so they carry no names: they are found by their class inside the list).
+    private static List<Border> Rows(Window window, string list) =>
+        [.. Named<ItemsControl>(window, list).GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("setup-row") && b.IsEffectivelyVisible)];
 
     [Fact]
     public Task The_card_draws_three_rows_named_in_words_and_says_how_many_it_leaves() => OnUi(async () =>
     {
         var (window, shell) = await OnHome("extra-priority-mix");
 
-        var rows = Rows(window, "SetupCardRowFrame");
+        var rows = Rows(window, "SetupCardRows");
 
         Assert.Equal(3, rows.Count);
         Assert.Equal([.. shell.Setup.CardSteps.Select(s => s.Name)], [.. rows.Select(Heard.Name)], StringComparer.Ordinal);
@@ -58,7 +60,7 @@ public sealed class SetupViewTests : FrameHost
     {
         var (window, _) = await OnHome("extra-priority-mix");
 
-        var actions = window.GetVisualDescendants().OfType<Control>().Where(c => c.Name == "SetupCardAction" && c.IsEffectivelyVisible).ToList();
+        var actions = Named<ItemsControl>(window, "SetupCardRows").GetVisualDescendants().OfType<SetupActionView>().Where(a => a.IsEffectivelyVisible).ToList();
 
         _ = Assert.Single(actions);   // mcp needs you; its command waits under a hint, nothing else offers one
     });
@@ -70,7 +72,7 @@ public sealed class SetupViewTests : FrameHost
 
         Named<Button>(window, "SetupMore").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Settle(window);
-        var all = Rows(window, "SetupCardRowFrame").Count;
+        var all = Rows(window, "SetupCardRows").Count;
         Named<Button>(window, "SetupOpen").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
 
         Assert.Equal((6, PageId.Setup), (all, shell.CurrentPage));
@@ -102,7 +104,7 @@ public sealed class SetupViewTests : FrameHost
 
         Assert.Equal(shell.Setup.LeadText, Heard.Wrapper(Named<Border>(window, "SetupLeadName")));
         Assert.Equal("Approve the profile", Heard.Wrapper(Named<Border>(window, "SetupLeadTitle")));
-        var rows = Rows(window, "SetupStepRowFrame");
+        var rows = Rows(window, "SetupStepRows");
         Assert.Equal([.. shell.Setup.Steps.Select(s => s.Name)], [.. rows.Select(Heard.Name)], StringComparer.Ordinal);
         Assert.False(Named<Expander>(window, "SetupDetails").IsExpanded);
         Assert.Equal(shell.Setup.Head, Heard.Wrapper(Named<Border>(window, "SetupPageHeadName")));

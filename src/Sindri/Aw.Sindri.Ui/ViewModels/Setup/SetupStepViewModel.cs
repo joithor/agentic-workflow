@@ -104,7 +104,7 @@ internal sealed class SetupStepViewModel : ObservableObject
     internal bool NeedsYou => string.Equals(Step.State, "needs-you", StringComparison.Ordinal);
 
     /// <summary>True when the step is done or skipped: setup is finished when every step is.</summary>
-    internal bool IsFinished => Step.State is "done" or "skipped";
+    internal bool IsFinished => string.Equals(Step.State, "done", StringComparison.Ordinal) || string.Equals(Step.State, "skipped", StringComparison.Ordinal);
 
     /// <summary>True while Sindri works on it.</summary>
     internal bool IsRunning => string.Equals(Step.State, "running", StringComparison.Ordinal);
