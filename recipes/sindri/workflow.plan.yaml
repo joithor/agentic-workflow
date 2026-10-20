@@ -19,7 +19,7 @@ states:
     step:
       use: step.plan.graph
       inputs:
-        - { use: input.context.code, with: { anchors: { fact: fact:design } } }   # LN-CTX2: the code lens, anchored on the design's covered surfaces
+        - { use: input.context.code, with: { anchors: { fact: fact:anchors } } }   # LN-CTX2: the code lens, anchored on the design's covered surfaces (intake derives fact:anchors from the design packet)
     loop: rounds
     budget: { tokens: 300k }
     timeout: { after: 3h, then: park }
@@ -31,7 +31,7 @@ states:
     step:
       use: step.plan.exec-review
       inputs:
-        - { use: input.context.code, with: { anchors: { fact: fact:design } } }   # LN-CTX2
+        - { use: input.context.code, with: { anchors: { fact: fact:anchors } } }   # LN-CTX2
     budget: { tokens: 150k }
     timeout: { after: 2h, then: park }
     next: "Review each of {item}'s phases as its builder: executable, context, files, checkable signals."
@@ -56,7 +56,7 @@ states:
   dropped:     { kind: terminal, outcome: failed }
 transitions:
   - { from: intake, to: graph, on: step.completed, when: { outcome: loaded },
-      produces: [fact:design, fact:plan, fact:findings, fact:questions, fact:answers, fact:answerLog, fact:holdoutSets] }
+      produces: [fact:design, fact:plan, fact:findings, fact:questions, fact:answers, fact:answerLog, fact:holdoutSets, fact:anchors] }
   - { from: graph,  to: check, on: step.completed, when: { outcome: drafted }, produces: [fact:plan] }
   - { from: check,  to: graph,       on: step.completed, when: { outcome: gaps }, produces: [fact:findings] }
   - { from: check,  to: exec-review, on: step.completed, when: { outcome: pass } }
