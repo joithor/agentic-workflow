@@ -51,8 +51,11 @@ internal sealed partial class ApproveAllViewModel
         }
         finally
         {
-            IsSending = false;
-            OnChanged(nameof(IsSending));
+            if (session == _session)   // a closed or reopened dialog has its own guard
+            {
+                IsSending = false;
+                OnChanged(nameof(IsSending));
+            }
         }
 
         if (session != _session)
