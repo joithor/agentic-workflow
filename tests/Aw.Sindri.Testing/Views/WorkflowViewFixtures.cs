@@ -510,7 +510,7 @@ public static class WorkflowViewFixtures
                 [new GateLine(BlockId.From("gate.evidence.all"), "exit", null, "Every child has its evidence pack."), new GateLine(BlockId.From("gate.judge.verify"), "exit", 0.8, "The judge scores the build at least 0.8.")],
                 null, status),
             _project.Facts([.. ProjectFacts(At(10, 12, 9, 14), Fake(_project, "fact:evidence", FactStatus.InProgress, "4 of 9 packs", reference: Ref(factKey: "fact:evidence"), progress: new Progress(4, 9)))]),
-            [new ChildGroup("build", RecipeId.From("workflow.step"), 4, 9, [ws1, ws2, ws3, ws4], [], 0)],
+            [new ChildGroup("build", RecipeId.From("workflow.step"), 4, 9, [ws1, ws2, ws3, ws4], [], 0, "Step")],
             Counts(41, 3, 1));
     }
 
@@ -535,7 +535,7 @@ public static class WorkflowViewFixtures
         return Detail(_prjDocs, "Handbook", PathOrdering.Path,
             new CurrentState("build", new StepDeclaration("wait", "workflow.step", "one child per packet task"), [], null, status),
             _project.Facts([.. HandbookFacts(Fake(_project, "fact:evidence", FactStatus.InProgress, "6 of 24 packs", reference: Ref(factKey: "fact:evidence"), progress: new Progress(6, 24)))]),
-            [new ChildGroup("build", RecipeId.From("workflow.step"), 6, 24, [], rows, 4)],
+            [new ChildGroup("build", RecipeId.From("workflow.step"), 6, 24, [], rows, 4, "Step")],
             Counts(30, 0, 0));
     }
 
@@ -667,7 +667,7 @@ public static class WorkflowViewFixtures
     public static RecipeView NoOutputsRecipe() => new(
         RecipeId.From("workflow.no-outputs"), RecipeHash.From("sha256:" + "3c9d51e2".PadRight(64, '0')), 1, Name: null,
         [new RecipeInputView("fact:request", "Request", FactType.Text, "text", true, Generate: null), new RecipeInputView("fact:context", null, FactType.Text, "text", false, "context {start:date}")],
-        [], RecipeUrgency.Work, PathOrdering.Path, [new RecipeStateView("intake", 1, null), new RecipeStateView("classify", 2, null), new RecipeStateView("done", 3, null)], []);
+        [], RecipeUrgency.Work, PathOrdering.Path, [new RecipeStateView("intake", 1, null), new RecipeStateView("classify", 2, null), new RecipeStateView("done", 3, null)], [], "No outputs");
 
     /// <summary>The recipe view of one fixture recipe, by recipe id ('workflow.step'): the same declaration its instances and list rows are built from.</summary>
     /// <param name="id">A recipe id of <see cref="FixtureRecipes.All"/>.</param>

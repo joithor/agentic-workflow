@@ -17,7 +17,7 @@ public sealed class DesignEvidenceStepTests
         "acceptance.json", "contracts.json", "coverage.json", "decisions.json", "escapes.json", "index.json", "lens-rounds.jsonl", "packet.json", "runs.json", "sections.json", "signals.json", "spec.md", "style.json",
     ];
 
-    private static string Location => "/runs/" + LineStation.DesignAddress + "/design-packet";
+    private static string Location => "/run/" + LineStation.DesignAddress + "/design-packet";
 
     [Fact]
     public async Task A_sound_design_completes_with_the_candidate_packet_the_files_and_a_checked_hash()

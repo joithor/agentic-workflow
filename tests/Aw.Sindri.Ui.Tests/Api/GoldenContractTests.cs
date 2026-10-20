@@ -62,6 +62,11 @@ public sealed class GoldenContractTests
         ["jobs-id"] = As<JobView>,   // GET /jobs/{id}: the job sheet; the 404 is ProblemDetails
         ["jobs-id-cancel"] = As<CommandAcceptedView>,   // POST /jobs/{id}/cancel's accepted answer; the refusals are ProblemDetails
         ["launches-id"] = As<LaunchView>,   // GET /launches/{id}: the launch an Open started (Attach, the run line)
+        // The approve-all plan and result are the engine's real goldens (workflow-recipes-approve-all); the start, job and refusal bodies below stay SPEC-SHAPED (the engine has none).
+        ["workflow-recipes-approve-all"] = AsApproveAll,   // GET /workflow/recipes/approve-all (the plan*, empty scenarios) and the job's result (applied, refused): the engine's real goldens
+        ["challenges-app"] = As<AppChallengeView>,   // POST /workflow/challenges/app
+        ["recipes-approve-all-start"] = As<ApproveAllStarted>,   // POST /workflow/recipes/approve-all's 202
+        ["approve-all-job"] = As<ApproveAllJob>,   // GET /jobs/{id} of the approval
     };
 
     // Routes the app never calls yet: stop is Health's (U4), profile approve is protected (the app shows the CLI, §6.5), the profile route is a later page's (U2+), and the
@@ -255,6 +260,10 @@ public sealed class GoldenContractTests
     // One slug for GET and POST /requests (U3-API-5): the list-* scenarios are RequestList, the others RequestFiled.
     private static Result<object> AsRequests(byte[] body) =>
         JsonNode.Parse(body) is JsonObject node && node.ContainsKey("requests") ? As<RequestList>(body) : As<RequestFiledView>(body);
+
+    // One slug for the plan and the job's result: the result has 'approved', the plan has 'recipes'.
+    private static Result<object> AsApproveAll(byte[] body) =>
+        JsonNode.Parse(body) is JsonObject node && node.ContainsKey("approved") ? As<ApproveAllResult>(body) : As<ApproveAllPlan>(body);
 
     private static Result<object> AsStart(byte[] body) =>
         JsonNode.Parse(body) is JsonObject node && node.ContainsKey("instance") ? As<StartedView>(body) : As<StartInstanceRequest>(body);

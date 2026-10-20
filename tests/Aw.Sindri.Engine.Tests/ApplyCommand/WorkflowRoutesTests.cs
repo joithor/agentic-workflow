@@ -35,7 +35,7 @@ public sealed class WorkflowRoutesTests(DevServer server) : IClassFixture<DevSer
             (_instance + "/commands", Command("answer", "\"answer\": \"text\", \"text\": \"go on\""), "ApplyCommand:answer-text"),
             (_instance + "/commands", Command("command", "\"verb\": \"skip\""), "ApplyCommand:command"),
             (_instance + "/commands", Command("cancel", string.Empty), "ApplyCommand:cancel"),
-            (_instance + "/runs/1.1/complete", Complete(), "CompleteStep"),
+            (_instance + "/run/1.1/complete", Complete(), "CompleteStep"),
         ];
         var refused = new List<(HttpStatusCode, string?, bool)>();
         foreach (var (route, body, action) in calls)

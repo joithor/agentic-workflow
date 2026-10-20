@@ -12,11 +12,11 @@ namespace Aw.Sindri.Tests.Line;
 [Lane(TestLane.Unit)]
 public sealed class PlanFreezeStepTests
 {
-    private static string PlanLocation => "/runs/" + LineStation.PlanAddress + "/plan-packet";
+    private static string PlanLocation => "/run/" + LineStation.PlanAddress + "/plan-packet";
 
-    private static string PhaseLocation => "/runs/" + LineStation.PlanAddress + "/phase-packets/p1";
+    private static string PhaseLocation => "/run/" + LineStation.PlanAddress + "/phase-packets/p1";
 
-    private static string DesignLocation => "/runs/" + LineStation.DesignAddress + "/design-packet";
+    private static string DesignLocation => "/run/" + LineStation.DesignAddress + "/design-packet";
 
     private static async Task<(ScopingFacts Facts, LineStation Station)> Approved(Func<JsonObject, JsonObject>? editPlan = null)
     {

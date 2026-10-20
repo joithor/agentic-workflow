@@ -1,5 +1,6 @@
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Launch.Argv;
 using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Core.Workflow.Engine;
 
@@ -14,11 +15,13 @@ namespace Aw.Sindri.Core.Launches;
 /// <param name="usage">The target's usage reader.</param>
 public sealed class ReportedIdAdmission(ILaunchViews views, IAgentCatalog catalog, ILaunchUsage usage)
 {
+    internal TimeSpan PatternTimeout { get; init; } = SessionIdRules.DefaultTimeout;
+
     /// <summary>Looks the launch up.</summary>
     /// <param name="launch">The launch.</param>
     /// <param name="id">The reported id, or null when only the item is wanted.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
-    /// <returns>The item (null when the view has no row yet) and whether the id is accepted: always for a launch with no row or an entry with no pattern.</returns>
+    /// <returns>The item (null when the view has no row yet) and whether the id is accepted (always for a launch with no row or an entry with no pattern), and whether the pattern timed out on it.</returns>
     public async ValueTask<AdmittedLaunch> Admit(LaunchId launch, SessionId? id, CancellationToken cancellationToken)
     {
         var read = await views.Get(launch, cancellationToken).ConfigureAwait(false);
@@ -28,7 +31,8 @@ public sealed class ReportedIdAdmission(ILaunchViews views, IAgentCatalog catalo
         }
 
         var pattern = catalog.Resolve(row.Target)?.SessionIdPattern;
-        return new AdmittedLaunch(row.Item.Value, id is not { } reported || SessionIdCapture.Accepts(pattern, reported));
+        var outcome = id is { } reported ? SessionIdCapture.Check(pattern, reported, PatternTimeout) : PatternOutcome.Matched;
+        return new AdmittedLaunch(row.Item.Value, outcome == PatternOutcome.Matched, outcome == PatternOutcome.TimedOut);
     }
 
     /// <summary>The session's input and output tokens in all, read from the target's own transcript.</summary>

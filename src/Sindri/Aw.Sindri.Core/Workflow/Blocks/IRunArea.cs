@@ -25,9 +25,9 @@ public interface IRunArea
     /// <returns>The text, empty when the file was never written; an error when the address or the name is invalid or the file cannot be read.</returns>
     public ValueTask<Result<string>> Read(string address, string name, CancellationToken cancellationToken);
 
-    /// <summary>Where a file or directory of the instance's run area is on disk (or would be), so a tool that takes a directory, such as aw-packets, can be pointed at a packet a Step wrote with <see cref="Write"/>. Nothing is created.</summary>
+    /// <summary>The directory of a name in the instance's run area, for a tool that works on a directory (aw-packets freezes the proof pack in place). Nothing is created or read.</summary>
     /// <param name="address">The instance's address.</param>
-    /// <param name="name">The relative name of the file or directory (a packet directory such as 'design-packet').</param>
+    /// <param name="name">The relative name of the file or directory.</param>
     /// <returns>The absolute path; an error when the address or the name is invalid.</returns>
-    public Result<string> Location(string address, string name);
+    public Result<string> PathFor(string address, string name);
 }

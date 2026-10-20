@@ -22,7 +22,7 @@ public sealed class ParitySummaryBuilder
     /// <returns>The frame.</returns>
     public static ParityFrame Frame(string name = "default", long diffPixels = 3, IReadOnlyList<BoxCheck>? checks = null, IReadOnlyList<string>? known = null) =>
         new(name, new Region(0, 0, 10, 10), new Offset(5, 5), new Box(5, 5, 10, 10), Offset.Zero, new SizeDelta(0, 0),
-            diffPixels, 100, diffPixels, 0.1, IncludeAA: false, checks ?? [], known ?? [], ParityFiles.For("/runs/parity-1", name), DesignNode: null);
+            diffPixels, 100, diffPixels, 0.1, IncludeAA: false, checks ?? [], known ?? [], ParityFiles.For("/run/parity-1", name), DesignNode: null);
 
     /// <summary>Adds a frame.</summary>
     /// <param name="frame">The frame.</param>

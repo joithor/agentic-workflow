@@ -7,7 +7,7 @@ namespace Aw.Sindri.Tests.Packets;
 public sealed class InMemoryPacketFilesContractTests : PacketFilesContract
 {
     /// <inheritdoc/>
-    protected override string Directory => "/runs/T-1/scoping/1/scope-packet";
+    protected override string Directory => "/run/T-1/scoping/1/scope-packet";
 
     /// <inheritdoc/>
     protected override IPacketFiles Create() => new InMemoryPacketFiles().Put(Directory, "scope-map.json", "{\"a\":1}");

@@ -157,6 +157,7 @@ internal sealed class SessionWrapCommand(IWrapCalls calls, IChildLauncher childr
     private async Task WaitForId(LaunchId launch, DateTimeOffset start, CancellationToken token)
     {
         var ambiguous = false;
+        var timedOut = false;
         try
         {
             while (clock.GetUtcNow() - start < _idWait)
@@ -169,6 +170,7 @@ internal sealed class SessionWrapCommand(IWrapCalls calls, IChildLauncher childr
                 }
 
                 ambiguous = scan.Ambiguous;
+                timedOut |= scan.TimedOut;
                 await Task.Delay(_idPoll, clock, token).ConfigureAwait(false);
             }
         }
@@ -180,6 +182,11 @@ internal sealed class SessionWrapCommand(IWrapCalls calls, IChildLauncher childr
         {
             await errors.WriteLineAsync($"the session id could not be read: {e.Message}").ConfigureAwait(false);   // no id is recorded; the exit report still goes out
             return;
+        }
+
+        if (timedOut)
+        {
+            await errors.WriteLineAsync($"{SindriErrors.LaunchSessionIdTimedOut.Code}: the entry's session id pattern timed out, so the session id was not judged and none is recorded for this launch (fix: simplify the sessionIdPattern)").ConfigureAwait(false);
         }
 
         if (ambiguous)

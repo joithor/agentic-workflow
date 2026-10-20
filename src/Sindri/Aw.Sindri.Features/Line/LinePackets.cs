@@ -67,7 +67,7 @@ internal static partial class LinePackets
             }
         }
 
-        return area.Location(address, directory);
+        return area.PathFor(address, directory);
     }
 
     /// <summary>aw-packets' failed checks as findings, so the station's findings fact names the rule and the fix.</summary>

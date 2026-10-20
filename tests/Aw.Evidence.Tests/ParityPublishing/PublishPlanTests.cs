@@ -9,8 +9,8 @@ public sealed class PublishPlanTests
 {
     private static async Task<Core.Publishing.RunPublishPlan> Plan(string host, DbProvenance claimed)
     {
-        var files = new InMemoryRunFiles().With("/runs/run-1/summary.json", AwJson.Serialize(A.RunSummary().OnHost(host).Build(), TestJson.Options));
-        var result = await new PublishPlanService(files, TestJson.Options).Handle(new("/runs/run-1", claimed, "FRN-1"), CancellationToken.None);
+        var files = new InMemoryRunFiles().With("/run/run-1/summary.json", AwJson.Serialize(A.RunSummary().OnHost(host).Build(), TestJson.Options));
+        var result = await new PublishPlanService(files, TestJson.Options).Handle(new("/run/run-1", claimed, "FRN-1"), CancellationToken.None);
         return result.Value.Plan;
     }
 

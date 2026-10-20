@@ -19,6 +19,6 @@ public abstract class JudgeContract
 
         Expect.That(!judge.IsAvailable, "a judge that isn't wired says so, so callers record no model call");
         Expect.That(await judge.RepairSelectorAsync(new SelectorRepairRequest("open", "click open", []), CancellationToken.None) is null, "no repair");
-        Expect.That(await judge.CritiqueAsync(new VisualCritiqueRequest("/runs/r/after.png", BaselineScreenshot: null, "/runs/r"), CancellationToken.None) is null, "no critique");
+        Expect.That(await judge.CritiqueAsync(new VisualCritiqueRequest("/run/r/after.png", BaselineScreenshot: null, "/run/r"), CancellationToken.None) is null, "no critique");
     }
 }

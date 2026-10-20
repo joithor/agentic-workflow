@@ -63,7 +63,7 @@ public sealed class ParityPublishingTests
         var plan = ParityAttachments.Plan(summary, static _ => 2048);
 
         Assert.Equal(["a", "b"], plan.Select(static p => p.Frame), StringComparer.Ordinal);
-        Assert.Equal("/runs/parity-1/a-side-by-side.png", plan[0].File);
+        Assert.Equal("/run/parity-1/a-side-by-side.png", plan[0].File);
         Assert.Equal("a-side-by-side.png", plan[0].Filename);
         Assert.Equal(("image/png", 2048L, "Pixel diff: a (Figma | implementation | diff)"), (plan[0].ContentType, plan[0].Size, plan[0].Title));
         Assert.Contains("0% differing", plan[1].Expectation, StringComparison.Ordinal);
@@ -74,7 +74,7 @@ public sealed class ParityPublishingTests
     {
         var plan = ParityAttachments.Plan(A.ParitySummary().WithFrame(ParitySummaryBuilder.Frame("a")).WithFrame(ParitySummaryBuilder.Frame("b")).Build(), static _ => 1);
 
-        Assert.Equal(["/runs/parity-1/b-side-by-side.png"], ParityAttachments.Unreviewed(plan, ["/runs/parity-1/a-side-by-side.png"]));
+        Assert.Equal(["/run/parity-1/b-side-by-side.png"], ParityAttachments.Unreviewed(plan, ["/run/parity-1/a-side-by-side.png"]));
         Assert.Empty(ParityAttachments.Unreviewed(plan, [plan[0].File, plan[1].File]));
     }
 
@@ -100,7 +100,7 @@ public sealed class ParityPublishingTests
 
         Assert.Equal(
             ["curl", "-sS", "--fail", "-X", "PUT", "--data-binary", "@/runs/a.png", "-H", "Content-Type: image/png", "-H", "x-amz-acl: private", "https://uploads.example/x?sig=1"],
-            PutCommand.Build(upload, "/runs/a.png"));
+            PutCommand.Build(upload, "/run/a.png"));
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -9,7 +9,7 @@ public sealed class RunScriptRequestBuilder
     public const string ScriptPath = "/work/script.json";
 
     /// <summary>The default run directory.</summary>
-    public const string RunDirectory = "/runs/run-1";
+    public const string RunDirectory = "/run/run-1";
 
     private RunScriptRequest _request = new(ScriptPath, RunDirectory, TimeSpan.Zero);
 

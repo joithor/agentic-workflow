@@ -10,9 +10,9 @@ namespace Aw.Sindri.Tests.Line;
 [Lane(TestLane.Unit)]
 public sealed class PlanEvidenceStepTests
 {
-    private static string PlanLocation => "/runs/" + LineStation.PlanAddress + "/plan-packet";
+    private static string PlanLocation => "/run/" + LineStation.PlanAddress + "/plan-packet";
 
-    private static string PhaseLocation => "/runs/" + LineStation.PlanAddress + "/phase-packets/p1";
+    private static string PhaseLocation => "/run/" + LineStation.PlanAddress + "/phase-packets/p1";
 
     [Fact]
     public async Task A_sound_plan_completes_with_the_plan_packet_and_its_phase_packets_named()

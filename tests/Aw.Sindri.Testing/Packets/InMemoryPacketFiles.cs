@@ -7,7 +7,7 @@ namespace Aw.Sindri.Testing.Packets;
 
 /// <summary>
 /// The in-memory <see cref="IPacketFiles"/>: files put by directory and name, and, when given the in-memory run area, the files a Step wrote there
-/// (read through their <see cref="InMemoryRunArea.Location"/>), under the same name rule as the disk adapter.
+/// (read through their <see cref="InMemoryRunArea.PathFor"/>), under the same name rule as the disk adapter.
 /// </summary>
 /// <param name="area">The run area whose files are read by location, or null.</param>
 public sealed class InMemoryPacketFiles(InMemoryRunArea? area = null) : IPacketFiles

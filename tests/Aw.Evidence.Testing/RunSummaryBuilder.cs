@@ -25,7 +25,7 @@ public sealed class RunSummaryBuilder
     public RunSummaryBuilder WithStep(StepStatus status, string target = "save")
     {
         var index = _steps.Count + 1;
-        _steps.Add(new(ViewportKind.Desktop, index, StepAction.Click, target, status, string.Create(CultureInfo.InvariantCulture, $"/runs/run-1/desktop-{index}-click.png")));
+        _steps.Add(new(ViewportKind.Desktop, index, StepAction.Click, target, status, string.Create(CultureInfo.InvariantCulture, $"/run/run-1/desktop-{index}-click.png")));
         return this;
     }
 

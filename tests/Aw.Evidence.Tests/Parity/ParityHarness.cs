@@ -18,7 +18,7 @@ namespace Aw.Evidence.Tests.Parity;
 internal sealed class ParityHarness
 {
     public const string ManifestPath = "/work/manifest.json";
-    public const string RunDirectory = "/runs/parity-1";
+    public const string RunDirectory = "/run/parity-1";
 
     public ParityHarness()
     {

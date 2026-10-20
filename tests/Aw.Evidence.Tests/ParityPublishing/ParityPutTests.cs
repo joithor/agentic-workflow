@@ -11,7 +11,7 @@ public sealed class ParityPutTests
         var files = new InMemoryRunFiles().With("/work/upload.json", TestJson.Utf8(
             """{"url":"https://uploads.example/put?sig=1","headers":{"Content-Type":"image/png","x-goog-meta":"a b"}}"""));
 
-        var result = await new ParityPutService(files, TestJson.Options).Handle(new("/work/upload.json", "/runs/p/a.png"), CancellationToken.None);
+        var result = await new ParityPutService(files, TestJson.Options).Handle(new("/work/upload.json", "/run/p/a.png"), CancellationToken.None);
 
         Assert.Equal(
             ["curl", "-sS", "--fail", "-X", "PUT", "--data-binary", "@/runs/p/a.png", "-H", "Content-Type: image/png", "-H", "x-goog-meta: a b", "https://uploads.example/put?sig=1"],

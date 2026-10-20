@@ -22,11 +22,11 @@ public sealed class StepEnvironmentTests
     [Fact, Trait("Lane", "unit")]
     public void The_policys_writable_path_is_the_run_dir_when_it_names_one()
     {
-        var policy = new StepPolicy([], StepPermissionMode.ReadOnly, "/runs/ITM-1/step");
+        var policy = new StepPolicy([], StepPermissionMode.ReadOnly, "/run/ITM-1/step");
 
         var env = StepEnvironment.For(Request(new StepArgs(Model: null, policy, new StepRef("build", "agent"))));
 
-        Assert.Equal("/runs/ITM-1/step", env["AW_SINDRI_RUN_DIR"]);
+        Assert.Equal("/run/ITM-1/step", env["AW_SINDRI_RUN_DIR"]);
     }
 
     [Fact, Trait("Lane", "unit")]

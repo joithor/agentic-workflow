@@ -60,7 +60,7 @@ internal sealed class DiskRunArea(SindriSettings settings) : IRunArea
     }
 
     /// <inheritdoc/>
-    public Result<string> Location(string address, string name) => PathOf(address, name);
+    public Result<string> PathFor(string address, string name) => PathOf(address, name);
 
     private Result<string> PathOf(string address, string name)
     {

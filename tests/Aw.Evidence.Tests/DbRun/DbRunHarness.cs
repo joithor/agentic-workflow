@@ -12,7 +12,7 @@ namespace Aw.Evidence.Tests.DbRun;
 internal sealed class DbRunHarness
 {
     internal const string ScriptPath = "/work/db.json";
-    internal const string RunDirectory = "/runs/db-1";
+    internal const string RunDirectory = "/run/db-1";
     internal const string Repo = "/work/repo";
     internal const string SqliteFile = "/work/repo/data/notes.db";
 

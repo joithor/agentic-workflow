@@ -45,10 +45,10 @@ public sealed class RunScriptTests
         Assert.Equal("http://localhost:3000", summary.Host);
         Assert.Equal(ContentHash.Sha256Hex(bytes), summary.ScriptSha256);
         Assert.Equal([StepStatus.Passed, StepStatus.Passed], summary.Steps.Select(static s => s.Status));
-        Assert.Equal(["/runs/run-1/desktop-1-goto.png", "/runs/run-1/desktop-2-click.png"], summary.Steps.Select(static s => s.Screenshot), StringComparer.Ordinal);
+        Assert.Equal(["/run/run-1/desktop-1-goto.png", "/run/run-1/desktop-2-click.png"], summary.Steps.Select(static s => s.Screenshot), StringComparer.Ordinal);
         Assert.All(summary.Steps, s => Assert.True(harness.Files.Files.ContainsKey(s.Screenshot)));
-        Assert.Equal(["/runs/run-1/desktop-trace.zip"], summary.Evidence.Traces);
-        Assert.Equal(AwJson.Serialize(summary, TestJson.Options), harness.Files.Files["/runs/run-1/summary.json"]);
+        Assert.Equal(["/run/run-1/desktop-trace.zip"], summary.Evidence.Traces);
+        Assert.Equal(AwJson.Serialize(summary, TestJson.Options), harness.Files.Files["/run/run-1/summary.json"]);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -134,7 +134,7 @@ public sealed class RunScriptTests
         var request = A.RunScriptRequest().WithAppBuild("abc123").WithCache("/cache/verdicts.json");
 
         var first = (await harness.Run(request.Build())).Value.Summary;
-        var second = (await harness.Run(request.In("/runs/run-2").Build())).Value.Summary;
+        var second = (await harness.Run(request.In("/run/run-2").Build())).Value.Summary;
 
         Assert.Equal(Verdict.LooksRight, first.Visual.Verdict);
         Assert.Equal(Verdict.LooksRight, second.Visual.Verdict);
@@ -187,6 +187,6 @@ public sealed class RunScriptTests
         _ = await harness.Run(A.RunScriptRequest().Build());
 
         Assert.Equal("Agent/1", harness.Browser.Sessions.Single().Options.UserAgentOverride);
-        Assert.Equal("/runs/run-1", harness.Browser.Sessions.Single().Options.RecordDirectory);
+        Assert.Equal("/run/run-1", harness.Browser.Sessions.Single().Options.RecordDirectory);
     }
 }
