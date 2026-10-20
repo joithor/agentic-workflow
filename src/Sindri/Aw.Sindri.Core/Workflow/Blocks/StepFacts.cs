@@ -1,6 +1,5 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Aw.Sindri.Core.Checks;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Blocks;
@@ -54,15 +53,6 @@ public static class StepFacts
     public static string? Field(JsonNode? fact, string name) =>
         fact is JsonObject obj && obj[name] is JsonValue value && value.TryGetValue<string>(out var text) && !string.IsNullOrWhiteSpace(text) ? text : null;
 
-    /// <summary>The findings as the 'fact:findings' array: each is <c language="text">{ rule, message, path?, line?, detail? }</c>.</summary>
-    /// <param name="findings">The findings.</param>
-    /// <returns>The array.</returns>
-    public static JsonArray Findings(IEnumerable<RuleFinding> findings)
-    {
-        ArgumentNullException.ThrowIfNull(findings);
-        return new JsonArray([.. findings.Select(static f => (JsonNode?)Finding(f))]);
-    }
-
     /// <summary>A completed result with the given outputs.</summary>
     /// <param name="outcome">The outcome.</param>
     /// <param name="outputs">Fact key to value.</param>
@@ -70,27 +60,6 @@ public static class StepFacts
     public static BlockStepResult Done(string outcome, params (string Key, JsonNode Value)[] outputs) => BlockStepResult.Completed(
         OutcomeName.From(outcome),
         outputs.ToDictionary(static o => FactKey.From(o.Key), static o => Element(o.Value)));
-
-    private static JsonObject Finding(RuleFinding finding)
-    {
-        var node = new JsonObject { ["rule"] = finding.Rule, ["message"] = finding.Message };
-        if (finding.Path is not null)
-        {
-            node["path"] = finding.Path;
-        }
-
-        if (finding.Line is { } line)
-        {
-            node["line"] = line;
-        }
-
-        if (!string.IsNullOrEmpty(finding.Detail))
-        {
-            node["detail"] = finding.Detail;
-        }
-
-        return node;
-    }
 
     private static JsonElement Element(JsonNode node)
     {

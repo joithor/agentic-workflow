@@ -5,6 +5,7 @@ using Aw.Sindri.Features.Blocks.Step;
 using Aw.Sindri.Features.Ship;
 using Aw.Sindri.Testing.Checks;
 using Aw.Sindri.Testing.Workflow;
+using Aw.Sindri.Tests.Workflow.BuildShip;
 
 namespace Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 
@@ -24,7 +25,7 @@ public sealed class ShipGreenStepContract : BlockContract
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken)
     {
-        var rig = new Workflow.BuildShip.StepRig();
+        var rig = new StepRig();
         _ = await new ShipGreenStep(rig.Diff, rig.Changes, rig.Files, rig.Runner, new IdentityScrubber()).Run(BuildShipContexts.Of("step.ship.green", []), cancellationToken);
     }
 }

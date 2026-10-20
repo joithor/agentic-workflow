@@ -70,18 +70,18 @@ internal sealed class BuildChecksStep(IRunDiff diff, IBranchChanges changes, IPa
         failures.AddRange(BranchRules.Commits(branch.Changes));
         if (failures.Count > 0)
         {
-            return StepFacts.Done("failed", ("fact:findings", StepFacts.Findings([.. scoped, .. failures])));
+            return StepFacts.Done("failed", ("fact:findings", RuleFinding.ToFact([.. scoped, .. failures])));
         }
 
         if (scoped.Count > 0)
         {
-            return StepFacts.Done("outOfScope", ("fact:findings", StepFacts.Findings(scoped)));
+            return StepFacts.Done("outOfScope", ("fact:findings", RuleFinding.ToFact(scoped)));
         }
 
         var ran = await RunCommands(red, branch.Worktree, cancellationToken).ConfigureAwait(false);
         return ran.IsError
             ? BlockStepResult.Failed($"step.build.checks: {ran.Error.Message}")
-            : ran.Value.Count > 0 ? StepFacts.Done("failed", ("fact:findings", StepFacts.Findings(ran.Value))) : Pass(branch);
+            : ran.Value.Count > 0 ? StepFacts.Done("failed", ("fact:findings", RuleFinding.ToFact(ran.Value))) : Pass(branch);
     }
 
     // The profile's checks commands, then the red tests on the head; the findings are the ones that did not pass.

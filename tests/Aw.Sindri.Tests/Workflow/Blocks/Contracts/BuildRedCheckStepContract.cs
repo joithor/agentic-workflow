@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks.Step;
 using Aw.Sindri.Features.Build;
 using Aw.Sindri.Testing.Workflow;
+using Aw.Sindri.Tests.Workflow.BuildShip;
 
 namespace Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 
@@ -23,7 +24,7 @@ public sealed class BuildRedCheckStepContract : BlockContract
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken)
     {
-        var rig = new Workflow.BuildShip.StepRig();
+        var rig = new StepRig();
         _ = await new BuildRedCheckStep(rig.Diff, rig.Runner).Run(BuildShipContexts.Of("step.build.red-check", []), cancellationToken);
     }
 }

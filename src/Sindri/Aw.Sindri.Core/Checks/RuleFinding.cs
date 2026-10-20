@@ -1,3 +1,5 @@
+using System.Text.Json.Nodes;
+
 namespace Aw.Sindri.Core.Checks;
 
 /// <summary>One finding of a build or ship rule (line spec §7.2, §7.5): the rule that failed and where. A secret's finding names the file and line, never the match.</summary>
@@ -6,4 +8,35 @@ namespace Aw.Sindri.Core.Checks;
 /// <param name="Path">The file it concerns, or null.</param>
 /// <param name="Line">The line in that file, or null.</param>
 /// <param name="Detail">More for the reader (the tail of a failed command's output), already scrubbed; null for none.</param>
-public sealed record RuleFinding(string Rule, string Message, string? Path = null, int? Line = null, string? Detail = null);
+public sealed record RuleFinding(string Rule, string Message, string? Path = null, int? Line = null, string? Detail = null)
+{
+    /// <summary>The findings as the 'fact:findings' array: each is <c language="text">{ rule, message, path?, line?, detail? }</c>.</summary>
+    /// <param name="findings">The findings.</param>
+    /// <returns>The array.</returns>
+    public static JsonArray ToFact(IEnumerable<RuleFinding> findings)
+    {
+        ArgumentNullException.ThrowIfNull(findings);
+        return new JsonArray([.. findings.Select(static f => (JsonNode?)f.ToJson())]);
+    }
+
+    private JsonObject ToJson()
+    {
+        var node = new JsonObject { ["rule"] = Rule, ["message"] = Message };
+        if (Path is not null)
+        {
+            node["path"] = Path;
+        }
+
+        if (Line is { } line)
+        {
+            node["line"] = line;
+        }
+
+        if (!string.IsNullOrEmpty(Detail))
+        {
+            node["detail"] = Detail;
+        }
+
+        return node;
+    }
+}

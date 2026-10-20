@@ -87,6 +87,6 @@ internal sealed class BuildRedCheckStep(IRunDiff diff, RepoCommandRunner command
                 $"the red tests of item {x.Item.Id} ({string.Join(", ", x.Item.Tests)}) passed on the red commit; a test that can't fail proves nothing",
                 Detail: x.Results.First(static r => r.Run.Passed).Run.Tail))
             .ToList();
-        return vacuous.Count == 0 ? StepFacts.Done("red") : StepFacts.Done("vacuous", ("fact:findings", StepFacts.Findings(vacuous)));
+        return vacuous.Count == 0 ? StepFacts.Done("red") : StepFacts.Done("vacuous", ("fact:findings", RuleFinding.ToFact(vacuous)));
     }
 }

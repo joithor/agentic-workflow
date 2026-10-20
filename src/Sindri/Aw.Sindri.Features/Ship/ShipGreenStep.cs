@@ -65,7 +65,7 @@ internal sealed class ShipGreenStep(IRunDiff diff, IBranchChanges changes, IPack
 
     private static string? ActivePacketOf(StepContext context) => StepFacts.Field(StepFacts.Read(context, "fact:phasePacket"), "dir");
 
-    private static BlockStepResult Red(IReadOnlyList<RuleFinding> findings) => StepFacts.Done("red", ("fact:findings", StepFacts.Findings(findings)));
+    private static BlockStepResult Red(IReadOnlyList<RuleFinding> findings) => StepFacts.Done("red", ("fact:findings", RuleFinding.ToFact(findings)));
 
     private async ValueTask<BlockStepResult> Gate(string worktree, string baseSha, string head, CancellationToken cancellationToken)
     {
