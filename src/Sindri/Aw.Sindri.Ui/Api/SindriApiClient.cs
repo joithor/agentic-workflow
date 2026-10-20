@@ -69,7 +69,37 @@ internal sealed partial class SindriApiClient(HttpClient http, IHumanTokenSource
     public async IAsyncEnumerable<EventView> Events(Uri api, long after, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var path = string.Create(CultureInfo.InvariantCulture, $"/sindri/events?after={after}");
-        using var response = await Open(new Uri(api, path), cancellationToken).ConfigureAwait(false);
+        await foreach (var item in Frames(new Uri(api, path), cancellationToken).ConfigureAwait(false))
+        {
+            if (item is { } frame && AwJson.Deserialize<EventView>(System.Text.Encoding.UTF8.GetBytes(frame.Data), Json) is { IsSuccess: true } e)
+            {
+                yield return e.Value;
+            }
+        }
+    }
+
+    public async IAsyncEnumerable<InstanceStreamItem> InstanceChanges(Uri api, string? instance, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var path = $"/sindri/events?types={InstanceChange.Type}{(instance is null ? string.Empty : "&instance=" + Uri.EscapeDataString(instance))}";
+        await foreach (var item in Frames(new Uri(api, path), cancellationToken).ConfigureAwait(false))
+        {
+            if (item is not { } frame)
+            {
+                yield return new InstanceStreamItem(Change: null);
+            }
+            else if (string.Equals(frame.EventType, InstanceChange.Type, StringComparison.Ordinal)
+                && AwJson.Deserialize<InstanceChange>(System.Text.Encoding.UTF8.GetBytes(frame.Data), Json) is { IsSuccess: true } change)
+            {
+                yield return new InstanceStreamItem(change.Value);
+            }
+        }
+    }
+
+    // One event stream: null once the response is open (nothing has been sent yet), then each frame. Ends when the connection
+    // does, or at once when it didn't answer 2xx.
+    private async IAsyncEnumerable<SseItem<string>?> Frames(Uri url, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        using var response = await Open(url, cancellationToken).ConfigureAwait(false);
         if (response is null)
         {
             yield break;
@@ -83,16 +113,13 @@ internal sealed partial class SindriApiClient(HttpClient http, IHumanTokenSource
 
         await using (stream.ConfigureAwait(false))
         {
+            yield return null;
             var items = SseParser.Create(stream).EnumerateAsync(cancellationToken).GetAsyncEnumerator(cancellationToken);
             await using (items.ConfigureAwait(false))
             {
                 while (await Next(items).ConfigureAwait(false))
                 {
-                    var e = AwJson.Deserialize<EventView>(System.Text.Encoding.UTF8.GetBytes(items.Current.Data), Json);
-                    if (e.IsSuccess)
-                    {
-                        yield return e.Value;
-                    }
+                    yield return items.Current;
                 }
             }
         }

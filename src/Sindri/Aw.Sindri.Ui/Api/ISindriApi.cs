@@ -28,6 +28,17 @@ internal interface ISindriApi
     /// <returns>The events, in order.</returns>
     public IAsyncEnumerable<EventView> Events(Uri api, long after, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// GET /sindri/events?types=workflow.instance-changed[&amp;instance=ADDRESS]: the frames that say an instance's view changed. The first item says the
+    /// stream is open; it opens at the ledger head, so a change while the app was away is lost and the caller re-reads what it shows once it is open.
+    /// The frames carry no id: they never move the cursor of <see cref="Events"/>. Ends when the connection does.
+    /// </summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="instance">One instance's address, or null for every instance.</param>
+    /// <param name="cancellationToken">Ends the stream.</param>
+    /// <returns>The open signal, then the changes.</returns>
+    public IAsyncEnumerable<InstanceStreamItem> InstanceChanges(Uri api, string? instance, CancellationToken cancellationToken);
+
     /// <summary>GET /sindri/commands: the command catalog (read on connect and on a new epoch, UI spec §9.1).</summary>
     /// <param name="api">The base URL.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
