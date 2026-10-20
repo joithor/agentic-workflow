@@ -61,7 +61,7 @@ public sealed class SetupStepsTests
         var done = SetupSteps.Recipes(new RecipesFact(26, 26), profileApproved: true);
 
         Assert.Equal((SetupState.Todo, null), (none.State, none.Action));
-        Assert.Equal((SetupState.Todo, null, null, "After the profile is approved.", "Registered 26 of 26."), (early.State, early.Action, early.Progress, early.Why, early.Detail));
+        Assert.Equal((SetupState.Todo, null, null, "After the profile is approved.", "26 recipes registered."), (early.State, early.Action, early.Progress, early.Why, early.Detail));
         Assert.Equal((SetupState.NeedsYou, SetupActions.ApproveAllRecipes, new SetupProgress(20, 26), "6 recipes wait for your approval."), (waiting.State, waiting.Action, waiting.Progress, waiting.Why));
         Assert.Equal((SetupState.Done, null, new SetupProgress(26, 26)), (done.State, done.Action, done.Progress));
         Assert.Equal("1 recipe waits for your approval.", SetupSteps.Recipes(new RecipesFact(3, 2), profileApproved: true).Why);
@@ -102,6 +102,7 @@ public sealed class SetupStepsTests
         Assert.Equal(new SetupProgress(40, 100), steps[3].Progress);
         Assert.Equal("40 of 100 done.", steps[3].Detail);
         Assert.Equal("Sindri is mapping demo.", steps[2].Why);
+        Assert.Equal("Waits for an approved profile with a repo.", steps[0].Why);
         Assert.Equal(["demo"], steps[2].Items.Select(static i => i.Repo), StringComparer.Ordinal);
         Assert.Equal("SND-CONTEXT-040", steps[4].Error?.Code);
     }
@@ -121,7 +122,7 @@ public sealed class SetupStepsTests
         Assert.Equal((SetupState.Todo, SetupActions.SetupOnyx), (notSetUp.State, notSetUp.Action));
         Assert.Equal((SetupState.Todo, "Onyx is set up but stopped."), (stopped.State, stopped.Detail));
         Assert.Equal((SetupState.Skipped, null, null, "Docker isn't installed.", "Install Docker to set up Onyx: https://docs.docker.com/get-docker/"), (noDocker.State, noDocker.Error, noDocker.Action, noDocker.Why, noDocker.Detail));
-        Assert.Equal((SetupState.Skipped, null), (unknown.State, unknown.Action));
+        Assert.Equal((SetupState.Failed, null, "Sindri couldn't ask Docker about Onyx."), (unknown.State, unknown.Action, unknown.Why));
         Assert.Equal((SetupState.Skipped, null, null), (memory.State, memory.Error, memory.Action));
         Assert.Equal((SetupState.Failed, "SND-ONYX-005"), (silent.State, silent.Error?.Code));
     }

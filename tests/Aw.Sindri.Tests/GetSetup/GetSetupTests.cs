@@ -5,6 +5,7 @@ using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.GetSetup;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Tests.Server;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests.GetSetup;
@@ -14,7 +15,9 @@ public sealed class GetSetupTests
 {
     private readonly FakeTimeProvider _clock = new(new DateTimeOffset(2026, 10, 19, 9, 30, 0, TimeSpan.Zero));
 
-    private GetSetupService Service(InMemorySetupFacts facts) => new(facts, new ProjectorProgress(_clock));
+    private readonly ListLogger<GetSetupService> _log = new();
+
+    private GetSetupService Service(InMemorySetupFacts facts) => new(facts, new ProjectorProgress(_clock), _log);
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -54,15 +57,30 @@ public sealed class GetSetupTests
     {
         var facts = new ThrowingOnyx(InMemorySetupFacts.AllDone());
 
-        var result = await new GetSetupService(facts, new ProjectorProgress(_clock)).Handle(A.GetSetupRequest().Build(), Token);
+        var result = await new GetSetupService(facts, new ProjectorProgress(_clock), _log).Handle(A.GetSetupRequest().Build(), Token);
 
         Assert.True(result.IsSuccess);
         var failed = Assert.Single(result.Value.Steps, static s => s.State == SetupState.Failed);
         Assert.Equal((SetupStepId.Onyx, SindriErrors.ApiInternal.Code), (failed.Id, failed.Error?.Code));
         Assert.Equal(5, result.Value.Steps.Count(static s => s.State == SetupState.Done));
+        var line = Assert.Single(_log.Lines);
+        Assert.Contains("Onyx", line, StringComparison.Ordinal);
+        Assert.Contains(nameof(InvalidOperationException), line, StringComparison.Ordinal);
     }
 
-    private sealed class ThrowingOnyx(ISetupFacts inner) : ISetupFacts
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_source_cancelled_by_its_own_timeout_fails_only_its_step_while_the_request_is_live()
+    {
+        var facts = new ThrowingOnyx(InMemorySetupFacts.AllDone(), new TaskCanceledException("the probe timed out"));
+
+        var result = await new GetSetupService(facts, new ProjectorProgress(_clock), _log).Handle(A.GetSetupRequest().Build(), Token);
+
+        Assert.True(result.IsSuccess);
+        var failed = Assert.Single(result.Value.Steps, static s => s.State == SetupState.Failed);
+        Assert.Equal((SetupStepId.Onyx, SindriErrors.ApiInternal.Code), (failed.Id, failed.Error?.Code));
+    }
+
+    private sealed class ThrowingOnyx(ISetupFacts inner, Exception? failure = null) : ISetupFacts
     {
         public ValueTask<Result<RepoFact>> Repos(CancellationToken cancellationToken) => inner.Repos(cancellationToken);
 
@@ -74,7 +92,7 @@ public sealed class GetSetupTests
 
         public ValueTask<Result<MapFact>> Map(CancellationToken cancellationToken) => inner.Map(cancellationToken);
 
-        public ValueTask<Result<OnyxFact>> Onyx(CancellationToken cancellationToken) => throw new InvalidOperationException("docker would not start");
+        public ValueTask<Result<OnyxFact>> Onyx(CancellationToken cancellationToken) => throw failure ?? new InvalidOperationException("docker would not start");
     }
 
     [Fact, Trait("Lane", "unit")]
