@@ -160,13 +160,12 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddLaunchSlices()
             .AddLaunchTargetJob()
             .AddScoped<IRepoCheckouts, ProfileRepoCheckouts>()
-            .AddAddRepo()
             .AddStationSlices();
         return services;
     }
 
     private static IServiceCollection AddStationSlices(this IServiceCollection services) =>
-        services.AddScopingSlices().AddBuildSlices().AddShipSlices().AddLensLoops().AddProveSlices();
+        services.AddAddRepo().AddScopingSlices().AddBuildSlices().AddShipSlices().AddLensLoops().AddProveSlices();
 
     private static IServiceCollection AddCommands(this IServiceCollection services)
     {
