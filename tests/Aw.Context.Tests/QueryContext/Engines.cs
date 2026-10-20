@@ -70,7 +70,7 @@ internal static class Engines
                     new GetHistoryService(graphs, new HistoryPipeline(new LensBasisReader(repos, intents, clock), intents, new FakeFileHistory(Repos[0], new HistoryWorld("0a1b2c3d4e5f60718293a4b5c6d7e8f901234567", [])), clock), scrubbers),
                     new GetSubgraphService(graphs, new LensBasisReader(repos, intents, clock), scrubbers))),
             new ContextEval(Probes(clock), new NoBacktest(), new NoMapQuality(), new NoPurge()),
-            new Aw.Context.Features.MapHeads.MapHeadsService(repos, new Aw.Context.Testing.Extract.FakeDefaultBranch()));
+            new Features.MapHeads.MapHeadsService(repos, new FakeDefaultBranch()));
     }
 
     /// <summary>The probe runner over no probe file (the query tests never run probes).</summary>

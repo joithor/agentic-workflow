@@ -28,7 +28,7 @@ public sealed class MapHeadsTests
         }),
         _defaults);
 
-    private ValueTask<Aw.Kernel.Result<IReadOnlyList<RepoHead>>> Heads(ContextScope scope) => Service().Handle(new MapHeadsRequest(scope), None);
+    private ValueTask<Kernel.Result<IReadOnlyList<RepoHead>>> Heads(ContextScope scope) => Service().Handle(new MapHeadsRequest(scope), None);
 
     [Fact]
     public async Task Each_mapped_repo_answers_its_head_and_whether_the_default_branch_holds_it()
