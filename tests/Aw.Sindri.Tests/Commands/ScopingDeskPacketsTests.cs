@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Tests.Ledger;
@@ -55,13 +56,7 @@ public sealed class ScopingDeskPacketsTests : IDisposable
     private string Script(string name, string body)
     {
         var path = Path.Combine(_home.Path, name);
-        File.WriteAllText(path, "#!/bin/sh\n" + body + "\n");
-        if (!OperatingSystem.IsWindows())
-        {
-            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        }
-
-        return path;
+        return ExecutableScript.Write(path, body + "\n");
     }
 
     [Fact, Trait("Lane", "integration")]
