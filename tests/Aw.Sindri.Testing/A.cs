@@ -164,4 +164,8 @@ public static class A
     /// <summary>A SessionExitRequest builder with deterministic defaults.</summary>
     /// <returns>A new builder.</returns>
     public static SessionExitRequestBuilder SessionExitRequest() => new();
+
+    /// <summary>A GetSetupRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static GetSetupRequestBuilder GetSetupRequest() => new();
 }

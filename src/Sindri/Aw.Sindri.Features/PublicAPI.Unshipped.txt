@@ -3630,3 +3630,26 @@ override Aw.Sindri.Features.Scoping.PacketFile.ToString() -> string!
 static Aw.Sindri.Features.Scoping.PacketFile.operator !=(Aw.Sindri.Features.Scoping.PacketFile? left, Aw.Sindri.Features.Scoping.PacketFile? right) -> bool
 static Aw.Sindri.Features.Scoping.PacketFile.operator ==(Aw.Sindri.Features.Scoping.PacketFile? left, Aw.Sindri.Features.Scoping.PacketFile? right) -> bool
 static Aw.Sindri.Features.Commands.SindriCommandServiceCollectionExtensions.AddStopCommand<TCommand, TResult, TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Aw.Sindri.Features.GetSetup.GetSetupRequest
+Aw.Sindri.Features.GetSetup.GetSetupRequest.<Clone>$() -> Aw.Sindri.Features.GetSetup.GetSetupRequest!
+Aw.Sindri.Features.GetSetup.GetSetupRequest.Equals(Aw.Sindri.Features.GetSetup.GetSetupRequest? other) -> bool
+Aw.Sindri.Features.GetSetup.GetSetupRequest.GetSetupRequest() -> void
+Aw.Sindri.Features.GetSetup.GetSetupResponse
+Aw.Sindri.Features.GetSetup.GetSetupResponse.<Clone>$() -> Aw.Sindri.Features.GetSetup.GetSetupResponse!
+Aw.Sindri.Features.GetSetup.GetSetupResponse.AsOf.get -> System.DateTimeOffset
+Aw.Sindri.Features.GetSetup.GetSetupResponse.AsOf.init -> void
+Aw.Sindri.Features.GetSetup.GetSetupResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupStep!>! Steps, out System.DateTimeOffset AsOf) -> void
+Aw.Sindri.Features.GetSetup.GetSetupResponse.Equals(Aw.Sindri.Features.GetSetup.GetSetupResponse? other) -> bool
+Aw.Sindri.Features.GetSetup.GetSetupResponse.GetSetupResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupStep!>! Steps, System.DateTimeOffset AsOf) -> void
+Aw.Sindri.Features.GetSetup.GetSetupResponse.Steps.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupStep!>!
+Aw.Sindri.Features.GetSetup.GetSetupResponse.Steps.init -> void
+override Aw.Sindri.Features.GetSetup.GetSetupRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetSetup.GetSetupRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetSetup.GetSetupRequest.ToString() -> string!
+override Aw.Sindri.Features.GetSetup.GetSetupResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetSetup.GetSetupResponse.GetHashCode() -> int
+override Aw.Sindri.Features.GetSetup.GetSetupResponse.ToString() -> string!
+static Aw.Sindri.Features.GetSetup.GetSetupRequest.operator !=(Aw.Sindri.Features.GetSetup.GetSetupRequest? left, Aw.Sindri.Features.GetSetup.GetSetupRequest? right) -> bool
+static Aw.Sindri.Features.GetSetup.GetSetupRequest.operator ==(Aw.Sindri.Features.GetSetup.GetSetupRequest? left, Aw.Sindri.Features.GetSetup.GetSetupRequest? right) -> bool
+static Aw.Sindri.Features.GetSetup.GetSetupResponse.operator !=(Aw.Sindri.Features.GetSetup.GetSetupResponse? left, Aw.Sindri.Features.GetSetup.GetSetupResponse? right) -> bool
+static Aw.Sindri.Features.GetSetup.GetSetupResponse.operator ==(Aw.Sindri.Features.GetSetup.GetSetupResponse? left, Aw.Sindri.Features.GetSetup.GetSetupResponse? right) -> bool
