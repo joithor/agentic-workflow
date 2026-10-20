@@ -62,4 +62,13 @@ internal sealed partial class ShellViewModel
             _ = JobSheet.Open(url, subject, CancellationToken.None);
         }
     }
+
+    // The job part of reopening the sheet (ReopenSheet): the job may have ended while the sheet was closed, so it is read again before it is trusted.
+    private void OnJobSheetReopened()
+    {
+        if (IsJobSheet && Health.ApiUrl() is { } url)
+        {
+            _ = JobSheet.Refresh(url, CancellationToken.None);
+        }
+    }
 }

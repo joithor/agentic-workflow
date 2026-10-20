@@ -23,6 +23,12 @@ internal static partial class Labels
     /// <summary>The page when an answer can't be read.</summary>
     internal const string JobsUnreadable = "The job list can't be read from this Sindri.";
 
+    /// <summary>The page when the first read failed: the reason follows.</summary>
+    internal static string JobsFailed(Aw.Kernel.Error error) => "Couldn't read the jobs just now. " + InstanceRefused(error);
+
+    /// <summary>The action beside a failed read.</summary>
+    internal const string TryAgain = "Try again";
+
     /// <summary>The sheet before its first answer.</summary>
     internal const string ReadingJob = "Reading the job…";
 

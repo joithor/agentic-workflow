@@ -10,6 +10,11 @@
   <StackPanel x:Name="JobSheet" Spacing="{StaticResource Space.MD}">
     <TextBlock x:Name="JobLoading" Classes="body muted" Text="{Binding LoadingText}" IsVisible="{Binding IsLoading}" AutomationProperties.Name="{Binding LoadingText}" />
     <TextBlock x:Name="JobProblem" Classes="body" Text="{Binding ProblemText}" IsVisible="{Binding IsProblem}" TextWrapping="Wrap" AutomationProperties.Name="{Binding ProblemText}" />
+    <Expander x:Name="JobProblemDetails" Header="{Binding DetailsLabel}" IsExpanded="False" IsVisible="{Binding HasProblemCode}" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding DetailsLabel}">
+      <Border x:Name="JobProblemCode" AutomationProperties.Name="{Binding ProblemCode}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+        <TextBlock Classes="body mono" Text="{Binding ProblemCode}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+      </Border>
+    </Expander>
     <Border x:Name="JobNote" IsVisible="{Binding Note, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
             AutomationProperties.Name="{Binding Note}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
       <TextBlock Classes="body muted" Text="{Binding Note}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />

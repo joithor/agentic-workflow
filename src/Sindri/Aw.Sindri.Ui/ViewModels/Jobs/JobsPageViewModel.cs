@@ -12,10 +12,11 @@ namespace Aw.Sindri.Ui.ViewModels.Jobs;
 /// how it ended and Cancel while it runs. The sentence for an empty list is the API's. The page reads while it is the page shown, on every event
 /// (job.started, job.progress, job.finished and job.cancelled all arrive on the stream), and keeps its rows by id across reads.
 /// </summary>
-internal sealed class JobsPageViewModel : ObservableObject
+internal sealed class JobsPageViewModel : ObservableObject, IDisposable
 {
     private readonly Dictionary<string, JobRowViewModel> _rows = new(StringComparer.Ordinal);
     private int _reads;
+    private CancellationTokenSource? _shown;
     private Uri? _url;
     private readonly CatalogViewModel _catalog;
     private readonly TimeProvider _clock;
@@ -91,19 +92,21 @@ internal sealed class JobsPageViewModel : ObservableObject
     public bool IsStale { get; private set => Set(ref field, value); }
 
     /// <summary>True when the first read failed and there are no rows to show.</summary>
-    public bool IsFailed { get; private set; }
+    public bool IsFailed { get; private set => Set(ref field, value); }
 
     /// <summary>The sentence for a failed first read.</summary>
-    public string FailedText { get; private set; } = string.Empty;
+    public string FailedText { get; private set => Set(ref field, value); } = string.Empty;
 
     /// <summary>The retry action's words.</summary>
-    public string RetryText { get; } = string.Empty;
+#pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
+    public string RetryText => Labels.TryAgain;
 
     /// <summary>Reads again after a failed first read.</summary>
-    internal Task Retry(CancellationToken cancellationToken) => throw new NotSupportedException();
+#pragma warning restore CA1822, MA0041
+    internal Task Retry(CancellationToken cancellationToken) => _url is { } url ? Read(url, cancellationToken) : Task.CompletedTask;
 
     /// <summary>The catch-up read started by the last show.</summary>
-    internal Task CatchUp { get; } = Task.CompletedTask;
+    internal Task CatchUp { get; private set; } = Task.CompletedTask;
 
     /// <summary>How many lists this page has drawn (a test waits on it).</summary>
     internal int Drawn { get; private set; }
@@ -134,11 +137,38 @@ internal sealed class JobsPageViewModel : ObservableObject
                 row.Age();
             }
 
-            _ = Read(url, CancellationToken.None);
+            _shown = new CancellationTokenSource();
+            CatchUp = CatchUpRead(url, _shown.Token);
         }
         else if (!shown)
         {
             _reads++;   // a read already on its way is not wanted
+            Dispose();
+        }
+    }
+
+    /// <summary>Cancels the read the page started when it was shown.</summary>
+    public void Dispose()
+    {
+        _shown?.Cancel();
+        _shown?.Dispose();
+        _shown = null;
+    }
+
+    // The read made when the page is shown, awaited by CatchUp so nothing about it is unobserved: a leave cancels it, any other failure is drawn as a failed read.
+    private async Task CatchUpRead(Uri url, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Read(url, cancellationToken).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            // the page was left
+        }
+        catch (HttpRequestException e)
+        {
+            Fail(SindriUiErrors.Unreachable.With(e.Message));
         }
     }
 
@@ -157,14 +187,21 @@ internal sealed class JobsPageViewModel : ObservableObject
             return;
         }
 
-        var unreadable = string.Equals(list.Error.Code, SindriUiErrors.BadAnswer.Code, StringComparison.Ordinal);
+        Fail(list.Error);
+    }
+
+    private void Fail(Error error)
+    {
+        var unreadable = string.Equals(error.Code, SindriUiErrors.BadAnswer.Code, StringComparison.Ordinal);
         (IsReading, IsUnreadable, IsStale) = (false, unreadable, true);   // the last good rows stay, marked stale (screens §4.1)
+        IsFailed = !unreadable && Rows.Count == 0;   // with nothing to show, the page says so and offers to try again
+        FailedText = IsFailed ? Labels.JobsFailed(error) : string.Empty;
     }
 
     private void Show(JobList list)
     {
         Drawn++;
-        (IsReading, IsUnreadable, IsStale) = (false, false, false);
+        (IsReading, IsUnreadable, IsStale, IsFailed, FailedText) = (false, false, false, false, string.Empty);
         var rows = list.Jobs.Select(Row).ToList();
         var present = new HashSet<string>(list.Jobs.Select(j => j.Id), StringComparer.Ordinal);
         foreach (var gone in _rows.Keys.Where(k => !present.Contains(k)).ToList())

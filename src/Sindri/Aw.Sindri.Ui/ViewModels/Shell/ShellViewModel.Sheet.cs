@@ -76,6 +76,7 @@ internal sealed partial class ShellViewModel
         }
 
         (IsSheetOpen, OpenerRow, OpenerStrip, OpenerRecipeGroup, OpenerSession) = (true, null, null, null, null);
+        OnJobSheetReopened();
         Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
     }
 }

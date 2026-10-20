@@ -11,13 +11,14 @@ namespace Aw.Sindri.Ui.ViewModels.Jobs;
 /// fields under Details. It reads the job on open and again on every event while the sheet is open (the shell gates that).
 /// </summary>
 /// <param name="api">The API.</param>
-internal sealed class JobSheetViewModel(ISindriApi api) : ObservableObject
+internal sealed partial class JobSheetViewModel(ISindriApi api) : ObservableObject
 {
     private Uri? _url;
     private int _generation;
     private int _copies;
     private CatalogViewModel? _catalog;
     private TimeProvider _clock = TimeProvider.System;
+    private JobView? _last;
 
     /// <summary>The API the sheet reads.</summary>
     internal ISindriApi Api { get; } = api;
@@ -47,22 +48,6 @@ internal sealed class JobSheetViewModel(ISindriApi api) : ObservableObject
     /// <summary>True while an unreadable, unknown or refused answer is the whole sheet.</summary>
     public bool IsProblem => Phase is FramePhase.Unreadable or FramePhase.Refused or FramePhase.NotFound;
 
-#pragma warning disable CA1822, MA0041 // fixed words are properties because the view binds them
-    /// <summary>The first read pending.</summary>
-    public string LoadingText => Labels.ReadingJob;
-
-    /// <summary>The progress heading.</summary>
-    public string ProgressHeading => Labels.JobProgress;
-
-    /// <summary>The line when a job has said nothing yet.</summary>
-    public string NoProgressText => Labels.JobNoProgress;
-
-    /// <summary>The closed disclosure of what the job produced.</summary>
-    public string ResultLabel => Labels.JobResult;
-
-    /// <summary>The closed disclosure that holds the technical fields.</summary>
-    public string DetailsLabel => Labels.SheetDetails;
-#pragma warning restore CA1822, MA0041
 
     /// <summary>The kind in words ("Run service"); the id until the read draws.</summary>
     public string Heading { get; private set => Set(ref field, value); } = string.Empty;
@@ -128,16 +113,20 @@ internal sealed class JobSheetViewModel(ISindriApi api) : ObservableObject
     /// <summary>True when the terminal form is shown.</summary>
     public bool HasCli => Cli.Length > 0;
 
-    /// <summary>The terminal form's label.</summary>
-#pragma warning disable CA1822, MA0041
-    public string CliLabel => Labels.JobCliField;
-#pragma warning restore CA1822, MA0041
 
     /// <summary>A refusal's or an unreadable answer's sentence; empty otherwise.</summary>
     public string ProblemText { get; private set => Set(ref field, value); } = string.Empty;
 
     /// <summary>The code of a refused or unknown answer, for Details; empty otherwise.</summary>
-    public string ProblemCode { get; private set; } = string.Empty;
+    public string ProblemCode
+    {
+        get;
+        private set
+        {
+            Set(ref field, value);
+            OnChanged(nameof(HasProblemCode));
+        }
+    } = string.Empty;
 
     /// <summary>True when there is a code to disclose.</summary>
     public bool HasProblemCode => ProblemCode.Length > 0;
@@ -145,24 +134,20 @@ internal sealed class JobSheetViewModel(ISindriApi api) : ObservableObject
     /// <summary>The stale note: the last read failed and the fields are the last read's.</summary>
     public string Note { get; private set => Set(ref field, value); } = string.Empty;
 
-    /// <summary>"Copy", or "Copied" for a moment.</summary>
-    public string CopyLabel
-    {
-        get;
-        private set
-        {
-            Set(ref field, value);
-            OnChanged(nameof(CopyName));
-        }
-    } = Labels.Copy;
-
-    /// <summary>The Copy button's accessible name: "Copy: To cancel from a terminal", then "Copied".</summary>
-    public string CopyName => string.Equals(CopyLabel, Labels.Copied, StringComparison.Ordinal) ? Labels.Copied : Labels.Copy + ": " + Labels.JobCliField;
-
     /// <summary>Gives the sheet the catalog (the Cancel row, the clipboard) and the clock (Copy's "Copied", the ages).</summary>
     /// <param name="catalog">The command catalog.</param>
     /// <param name="clock">The clock.</param>
-    internal void Wire(CatalogViewModel catalog, TimeProvider clock) => (_catalog, _clock) = (catalog, clock);
+    internal void Wire(CatalogViewModel catalog, TimeProvider clock)
+    {
+        (_catalog, _clock) = (catalog, clock);
+        catalog.PropertyChanged += (_, e) =>
+        {
+            if (string.Equals(e.PropertyName, nameof(CatalogViewModel.Controls), StringComparison.Ordinal) && _last is { } job)
+            {
+                Cancel = CancelFor(job);   // a catalog read after the sheet drew gives a running job its Cancel
+            }
+        };
+    }
 
     /// <summary>Names the job now, before any read (a deep link, even before the app is connected).</summary>
     /// <param name="id">The job's id.</param>
@@ -201,37 +186,6 @@ internal sealed class JobSheetViewModel(ISindriApi api) : ObservableObject
         return Id.Length == 0 ? Task.CompletedTask : Read(cancellationToken);
     }
 
-    /// <summary>Copies the cancel's terminal form: "Copied" for <see cref="ControlViewModel.CopiedFor"/>.</summary>
-    /// <param name="cancellationToken">Cancels the write.</param>
-    /// <returns>A task that ends when the clipboard answered.</returns>
-    internal async Task CopyCli(CancellationToken cancellationToken)
-    {
-        if (_catalog is not { } catalog || Cli.Length == 0 || !await catalog.Clipboard.SetText(Cli, cancellationToken).ConfigureAwait(true))
-        {
-            return;
-        }
-
-        CopyLabel = Labels.Copied;
-        _ = Uncopy(++_copies, cancellationToken);
-    }
-
-    private async Task Uncopy(int copy, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await Task.Delay(ControlViewModel.CopiedFor, _clock, cancellationToken).ConfigureAwait(true);
-        }
-        catch (OperationCanceledException)
-        {
-            return;
-        }
-
-        if (copy == _copies)
-        {
-            CopyLabel = Labels.Copy;
-        }
-    }
-
     private async Task Read(CancellationToken cancellationToken)
     {
         if (_url is not { } url || Id.Length == 0)
@@ -265,7 +219,8 @@ internal sealed class JobSheetViewModel(ISindriApi api) : ObservableObject
         StateLine = string.Join(" · ", glyph + " " + word, Labels.JobWhen(running, age), "by " + Labels.JobStartedBy(job.StartedBy));
         SummaryText = job.Summary ?? string.Empty;
         OnChanged(nameof(HasSummary));
-        Cancel = job.Actions.Contains("CancelJob", StringComparer.Ordinal) ? Cancel ?? _catalog?.On("CancelJob", Heading, ct => _url is { } url ? Api.CancelJob(url, job.Id, ct) : Task.FromResult<Result<CommandAcceptedView>>(SindriUiErrors.Unreachable.With("Sindri isn't reachable yet"))) : null;
+        _last = job;
+        Cancel = job.Actions.Contains("CancelJob", StringComparer.Ordinal) ? Cancel ?? CancelFor(job) : null;
         Progress = [.. job.Progress.Select(p => p.Line)];
         ResultText = JobFields.Result(job.Result);
         Cli = job.Cli ?? string.Empty;
@@ -274,6 +229,11 @@ internal sealed class JobSheetViewModel(ISindriApi api) : ObservableObject
         Phase = FramePhase.Shown;
         OnChanged(nameof(HasNoProgress));
     }
+
+    private ControlViewModel? CancelFor(JobView job) =>
+        job.Actions.Contains("CancelJob", StringComparer.Ordinal)
+            ? _catalog?.On("CancelJob", Heading, ct => _url is { } url ? Api.CancelJob(url, job.Id, ct) : Task.FromResult<Result<CommandAcceptedView>>(SindriUiErrors.Unreachable.With("Sindri isn't reachable yet")))
+            : null;
 
     private void Failed(Error error)
     {
@@ -284,14 +244,18 @@ internal sealed class JobSheetViewModel(ISindriApi api) : ObservableObject
         }
 
         var unreadable = string.Equals(error.Code, SindriUiErrors.BadAnswer.Code, StringComparison.Ordinal);
-        ProblemText = error.Kind == ErrorKind.NotFound ? Labels.JobUnknown : unreadable ? Labels.JobsUnreadable : Labels.InstanceRefused(error);
-        Phase = error.Kind == ErrorKind.NotFound ? FramePhase.NotFound : unreadable ? FramePhase.Unreadable : FramePhase.Refused;
+        var unknown = !unreadable && error.Kind is ErrorKind.NotFound or ErrorKind.Invalid;   // an unknown id and a garbage one are the same to the reader
+        ProblemText = unknown ? Labels.JobUnknown : unreadable ? Labels.JobsUnreadable : Labels.InstanceRefused(error);
+        ProblemCode = unknown ? error.Code : string.Empty;
+        Phase = unknown ? FramePhase.NotFound : unreadable ? FramePhase.Unreadable : FramePhase.Refused;
     }
 
     private void Clear()
     {
         (Heading, StateLine, SummaryText, ProblemText, Note, ResultText, Cli) = (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
-        (Progress, Fields, Cancel) = ([], [], null);
+        (Progress, Fields, Cancel, _last) = ([], [], null, null);
+        (ProblemCode, CopyLabel) = (string.Empty, Labels.Copy);
+        _copies++;   // a pending "Copied" reset belongs to the job that was copied
         OnChanged(nameof(HasSummary));
     }
 }
