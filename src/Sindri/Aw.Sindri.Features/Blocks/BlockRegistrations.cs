@@ -54,7 +54,19 @@ internal static class BlockRegistrations
         .AddEffect<NotifyDeskEffect>()    // engine P6 unit (c)
         .AddEvent(RecipeEvents.ItemRouted)
         .AddEvent(RecipeEvents.ClaimCreated)
-        .AddEvent(RecipeEvents.NotifyDelivered);
+        .AddEvent(RecipeEvents.NotifyDelivered)
+        .AddPrEvents();
+
+    /// <summary>Registers the PR babysitter's and docs sync's events (PB spec §6.1, W25).</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    private static IServiceCollection AddPrEvents(this IServiceCollection services) => services
+        .AddEvent(RecipeEvents.PrChanged)
+        .AddEvent(RecipeEvents.PrPushed)
+        .AddEvent(RecipeEvents.PrRestacked)
+        .AddEvent(RecipeEvents.PrMergeResult)
+        .AddEvent(RecipeEvents.PrDocsMerged)
+        .AddEvent(RecipeEvents.PrStacked);
 
     /// <summary>Registers the line's blocks (the build and prove stations' and the per-phase child's).</summary>
     /// <param name="services">The service collection.</param>

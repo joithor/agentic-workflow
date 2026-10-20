@@ -258,7 +258,7 @@ reaches its rule (`RCP-TYPE-001` to `-003`, `RCP-INPUT-001`/`-002`, `RCP-NAME-00
 |---|---|
 | Fact key | `fact:<name>` or `evidence:<kind>@<base\|head>` |
 | Block id | `<gate\|step\|effect\|evidence\|input>.[<area>.]<name>`, kebab-case, at most 64 characters (`step.produce`, `gate.budget.available`; spec §3.3) |
-| Event kind | `<area>.<name>`, registered with `AddEvent` (this build: `claim.created`, `item.routed`, `notify.delivered`) |
+| Event kind | `<area>.<name>`, registered with `AddEvent` (this build: `claim.created`, `item.routed`, `notify.delivered`, and the PR babysitter's `pr.changed` (routed by item), `pr.pushed`, `pr.restacked`, `pr.mergeResult`, `pr.docsMerged`, `pr.stacked`) |
 | Duration | `<n>m`, `<n>h` or `<n>d`, at least `1m` (`RCP-DUR-001`) |
 | Tokens | An integer, or with a `k` or `M` suffix |
 | `with:` value | A literal (string, number, bool, or a list of these), `{ fact: <key> }` or `{ profile: <key> }`. Capability parameters take only literals or `{ profile }` (`RCP-CAP-007`) |
@@ -392,6 +392,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-NEXT-001` | `next` uses only recipe variables | Use only the listed variables |
 | `RCP-NEXT-002` | `next` names no approval-tier command | Leave it out |
 | `RCP-EFFECT-001` | Every effect is on the approved profile's effect allowlist. **Skipped** while no profile is approved or it has no `workflow.effects` | Add it to `workflow.effects` and approve the profile |
+| `RCP-HUMAN-001` | An effect whose descriptor says `HumanTrigger` sits only on a `command.<verb>` transition, a `step.completed` out of human-only Steps, or a transition whose `when` requires `{ fact: F, is: present }` where every transition producing F leaves only states that `command.*` transitions carrying a human-trigger effect enter | Move the effect to such a transition |
 | `RCP-RES-001` | **Information:** a resource wait has no allocator in this build | None needed; it parks with `SND-WF-010` until one lands |
 | `RCP-URG-001` | `urgency` is `incident`, `triage` or `work` | Use one of them, or remove `urgency` (the default is `work`) |
 | `RCP-OUT-001` | An output's `from` names a state of the recipe | Name one of its states |

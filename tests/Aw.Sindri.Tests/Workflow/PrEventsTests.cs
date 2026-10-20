@@ -33,7 +33,7 @@ public sealed class PrEventsTests
         Assert.NotNull(descriptor);
         Assert.Equal(producer, descriptor.Producer);
         Assert.Equal(route, descriptor.Route);
-        Assert.Equal(outcomes.Split(' '), descriptor.Outcomes.Select(o => o.Value));
-        Assert.Equal([fact], descriptor.Facts.Select(f => f.Value));
+        Assert.Equal(outcomes.Split(' '), descriptor.Outcomes.Select(o => o.Value), StringComparer.Ordinal);
+        Assert.Equal([fact], descriptor.Facts.Select(f => f.Value), StringComparer.Ordinal);
     }
 }
