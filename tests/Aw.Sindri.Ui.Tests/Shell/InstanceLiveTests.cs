@@ -81,7 +81,14 @@ public sealed class InstanceLiveTests : IDisposable
         Assert.True(condition(), what);
     }
 
-    private static async Task Settle() => await Task.Delay(100, TestContext.Current.CancellationToken);
+    // Lets the follower's continuations run without moving time: the fake clock stays where the test put it.
+    private static async Task Settle()
+    {
+        for (var i = 0; i < 200; i++)
+        {
+            await Task.Yield();
+        }
+    }
 
     [Fact]
     public async Task Frames_of_one_instance_in_a_window_are_one_re_read_with_the_newest_state()
@@ -130,6 +137,30 @@ public sealed class InstanceLiveTests : IDisposable
         }
 
         Assert.Equal(1 + HealthViewModel.InstanceRetries, FrameReads);
+    }
+
+    [Fact]
+    public async Task A_retry_is_dropped_when_a_newer_frame_for_the_instance_is_waiting()
+    {
+        _caughtUp = false;
+        await Running();
+
+        _server.PushChange(new InstanceChange(Address, "build", 10));
+        await Eventually(() => FrameReads == 1, "the first read");
+        _server.PushChange(new InstanceChange(Address, "checks", 11));
+        await Settle();   // the newer frame waits; the retry for the old state has not run yet
+        await Eventually(() => FrameReads >= 2, "the newer frame's read");
+        for (var i = 0; i < 30; i++)
+        {
+            _clock.Advance(HealthViewModel.RetryEvery);
+            await Settle();
+        }
+
+        lock (_reads)
+        {
+            _ = Assert.Single(_reads, c => c?.State == "build");
+            Assert.Equal(1 + HealthViewModel.InstanceRetries, _reads.Count(c => c?.State == "checks"));
+        }
     }
 
     [Fact]

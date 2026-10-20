@@ -13,12 +13,12 @@ internal static class WorkflowNames
 
     /// <summary>The name of a workflow.</summary>
     /// <param name="recipeId">The recipe id, as served.</param>
-    /// <param name="displayName">The served display name; null or blank from an older Sindri.</param>
+    /// <param name="displayName">The served display name; null, blank or just the recipe id from an older Sindri.</param>
     /// <returns>The display name, else the id without "workflow." and title-cased ("workflow.bug-fix" reads "Bug Fix").</returns>
     internal static string Of(string recipeId, string? displayName)
     {
         ArgumentNullException.ThrowIfNull(recipeId);
-        if (!string.IsNullOrWhiteSpace(displayName))
+        if (!string.IsNullOrWhiteSpace(displayName) && !string.Equals(displayName.Trim(), recipeId, StringComparison.Ordinal))
         {
             return displayName;
         }
