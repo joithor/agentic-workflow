@@ -6,6 +6,7 @@ using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Features.Build;
+using Aw.Sindri.Features.Prove;
 using Aw.Sindri.Features.Ship;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Workflow.Blocks.Contracts;
@@ -25,6 +26,9 @@ public sealed class BuildShipBlockRuntimesTests
     [InlineData("workflow.build.yaml", "prepare", "step.build.prepare")]
     [InlineData("workflow.ship.yaml", "return", "step.ship.return")]
     [InlineData("workflow.phase.yaml", "drift", "step.phase.drift")]
+    [InlineData("workflow.prove.yaml", "intake", "step.prove.intake")]
+    [InlineData("workflow.prove.yaml", "fail-log", "step.prove.fail-log")]
+    [InlineData("workflow.prove.yaml", "evidence-pack", "step.prove.evidence")]
     public void The_Step_opens_a_block_run_not_a_desk_task(string file, string state, string step)
     {
         using var provider = ShippedComposition.Compose();
@@ -67,6 +71,18 @@ public sealed class BuildShipBlockRuntimesTests
 
         Assert.Equal("moved", run.Result?.Outcome.Value);
         Assert.NotEqual("drift", Next(entered, recipe, context, run), StringComparer.Ordinal);   // the report is accepted and leaves drift (the bare instance holds no child inputs, so the child it enters parks for them)
+    }
+
+    [Fact]
+    public async Task A_proof_that_failed_is_logged_and_the_prove_recipe_ends_failed()
+    {
+        await using var provider = ShippedComposition.Compose();
+        var (recipe, context) = Read(provider, "workflow.prove.yaml");
+        var entered = StateEntry.Enter(EngineFixture.At(recipe, "fail-log"), recipe, "fail-log", context);
+
+        var run = await new ProveFailLogStep().Run(BuildShipContexts.Of("step.prove.fail-log", new Dictionary<string, string>(StringComparer.Ordinal) { ["findings"] = "[]", ["beforeAfter"] = "{}", ["holdoutResult"] = "{}" }), TestContext.Current.CancellationToken);
+
+        Assert.Equal("failed", Next(entered, recipe, context, run));
     }
 
     private static (Recipe Recipe, DecisionContext Context) Read(ServiceProvider provider, string file)
