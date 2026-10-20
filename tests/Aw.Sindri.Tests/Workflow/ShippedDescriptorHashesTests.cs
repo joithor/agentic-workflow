@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Host;
@@ -10,12 +8,11 @@ namespace Aw.Sindri.Tests.Workflow;
 
 /// <summary>
 /// No shipped descriptor's hash moves when a descriptor field is added (PB spec W23): a new field is written only when
-/// set, so every approval that pins a descriptor still holds. Re-pin only when a shipped block's behaviour changes on purpose.
+/// set, so every approval that pins a descriptor still holds. A block added later is not listed; re-pin a listed block
+/// only when its behaviour changes on purpose.
 /// </summary>
 public sealed class ShippedDescriptorHashesTests
 {
-    private const string Pinned = "890ce30fb59a00cb43016855e21c8de1c76204a78731c21fa395bb327689ed93";
-
     private static readonly string _stateRoot = Path.Combine(Path.GetTempPath(), "aw-sindri-descriptor-hashes-test");
 
     [Fact, Trait("Lane", "unit")]
@@ -23,12 +20,11 @@ public sealed class ShippedDescriptorHashesTests
     {
         using var provider = Composition.Compose(new ServiceCollection(), name => name == "AW_STATE_DIR" ? _stateRoot : null, new FakeTimeProvider())
             .BuildServiceProvider();
-        var lines = provider.GetRequiredService<BlockCatalog>().Blocks
-            .OrderBy(b => b.Id.Value, StringComparer.Ordinal)
-            .Select(b => $"{b.Id.Value} {PinRules.Hash(b, SliceHarness.Json).Value}");
+        var current = provider.GetRequiredService<BlockCatalog>().Blocks
+            .Where(b => ShippedDescriptorHashes.Pinned.ContainsKey(b.Id.Value))
+            .ToDictionary(b => b.Id.Value, b => PinRules.Hash(b, SliceHarness.Json).Value, StringComparer.Ordinal);
 
-        var digest = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('\n', lines))));
-
-        Assert.Equal(Pinned, digest);
+        Assert.Equal(ShippedDescriptorHashes.Pinned.Count, current.Count);
+        Assert.Equal(ShippedDescriptorHashes.Pinned.OrderBy(p => p.Key, StringComparer.Ordinal), current.OrderBy(p => p.Key, StringComparer.Ordinal));
     }
 }

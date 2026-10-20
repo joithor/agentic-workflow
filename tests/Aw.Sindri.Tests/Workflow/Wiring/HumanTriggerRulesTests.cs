@@ -11,7 +11,7 @@ public sealed class HumanTriggerRulesTests
 
     private static RecipeTransition Merge(RecipeTransition transition) => transition with { Effects = [Use("effect.test.merge")] };
 
-    private static Core.Workflow.Recipes.Recipe Of(params RecipeTransition[] transitions) => WiringRecipe.Of(
+    private static Recipe Of(params RecipeTransition[] transitions) => WiringRecipe.Of(
         "ready",
         [("ready", Active("step.produce")), ("approve", Active("step.test.approve")), ("hold", WaitForEvent("item.routed")), ("done", Terminal())],
         transitions);
