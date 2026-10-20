@@ -1,7 +1,7 @@
 # Sindri setup once: the owner sets up Sindri and Onyx, and nothing else is typed (spec amendment)
 
-**Status:** proposed, rev 4 (2026-10-19). The owner reads it before it is marked ready. It is a docs-only amendment: no
-code lands until the owner approves it and answers the open questions in §14. Lanes: api (this spec), engine, context, ui.
+**Status:** approved, rev 4 (owner, 2026-10-20: approved with the recommended answer to each question in §14). It is a
+docs-only amendment; the code lands in the phases of §13. Lanes: api (this spec), engine, context, ui.
 
 **Rev 4 (2026-10-19), /autoplan round 3, the last (§12):** the first slice is shippable (SO-A7 is split: A7a keeps
 today's Onyx default and the MCP hint, A7b drops them only once A4, A5 and U1 have merged, and the slice is recounted);
@@ -353,7 +353,7 @@ adds only the setup step that reports them.
 | Trigger | The built-in service **`context-map-refresh`** ticks every minute with no profile entry. For each repo of the approved profile (on a box whose profile pre-dates this build, only after `setup.consent.given`, §5.4) it starts a job when the repo's HEAD moved and is reachable from the default branch (`origin/HEAD`, `main`, `master`; no fetch). A repo with none of those refs makes the step `todo` with "Waits for a default branch". Backoff 5, 10, 20, 40, 60 minutes after a failure |
 | Job | Kind **`RefreshContextMap`** (key `refresh`, one at a time): a draft under the heavy lock, then a cleanup agent, then the promote. The cleanup agent: deterministic proposals are accepted; orphaned overrides are dropped; model proposals at or above 0.75 are accepted; the rest go to the model as keep or remove in batches; if the model is unavailable or **over its daily cap** they are rejected. The service then **promotes through the context engine directly**, `Who = service:context-map-refresh` |
 | The cleanup agent's limits | It runs **read-only with no tools**; its input is scrubbed by `Aw.Redaction` and its output is validated against a schema. A **per-run removal ceiling** (more than 30% of the map's entries removed, the context lane may tune the number) parks the run and raises the failure row instead of promoting. The previous map version stays one click away (a promote is a pointer move). `context.map.promoted` carries `cleanup` and the counts too |
-| Cost | The cleanup's model calls have a **cap per repo per day (40)** and **no separate machine cap** (the ceiling is 40 times the number of repos), so a repo added later is never starved by an earlier one (the context lane sets the number; Q3 asks the owner). The step's detail shows the day's use ("cleanup: 12 of 40 calls today"), and `items` say "cleanup unavailable today" for a repo over its cap; over the cap the agent is `unavailable` for that repo and rejects the guesses |
+| Cost | The cleanup's model calls have a **cap per repo per day (40)** and **no separate machine cap** (the ceiling is 40 times the number of repos), so a repo added later is never starved by an earlier one (the owner chose 40, Q3). The step's detail shows the day's use ("cleanup: 12 of 40 calls today"), and `items` say "cleanup unavailable today" for a repo over its cap; over the cap the agent is `unavailable` for that repo and rejects the guesses |
 | Manual | `sindri-app context map refresh` and `POST /sindri/context/map/refresh` (class `job`; **action `RefreshContextMap`, "Retry now"**); the context lane owns the catalog row and its goldens |
 | The owner rule | **Map promote has no manual step.** The service promote bypasses the protected `context map promote` command by design. The manual protected promote stays for a person who wants it (source: owner decision, 2026-10-19, stated with #433). Every accept the agent makes is a reversible `map_override` row with actor `service:context-map-refresh` and the Undo of API X63; the Context screen shows "changed by the agent" next to them |
 | Events | `context.map.built` (existing), **`context.map.refreshed {version, heads{repo: sha}, accepted, removed, dropped, cleanup: "agent"\|"unavailable"}`** (new; the context lane registers it), `context.map.promoted` (existing). There is no repo-registered event: the service reads the approved profile's repos each tick |
@@ -756,7 +756,7 @@ most of what #433 needed a CI for on a fresh box.
 | §3.1 profile `ci:` block, `SND-PROFILE-017…019` | **Keeps** | No collision: this spec's profile key is `setup:` and its codes are `SND-SETUP-*` |
 | §3.4 recipe approve with the capability ceiling | **Keeps** for owner-written recipes in a repo. **Conflicts** only where it says a recipe id's first approval is at the terminal: it becomes "in the app (`ApproveRecipe`, typed) or at the terminal". Shipped recipes are not CI's: they come through approve-all (§5.3) | The shipped recipes are the installed build's, approved by the owner's hold, not by a merged PR of this repo's `recipes/sindri/` |
 | §3.5 map promote from CI (`promote` entries, build at a commit over the mirror, `SND-CI-008`, CI-P5) | **Supersedes** | `RefreshContextMap` builds and promotes on a default-branch move with no forge, no checks and no mergers (§5.5). CI-P5 is dropped; `promote:` entries are removed from the `ci:` block's schema, and `SND-CI-008` is retired |
-| §3.5 "model proposals are left out of a CI promote" (O4) | **Conflicts** | The auto map's cleanup agent decides model proposals (accept at 0.75, ask the model below, reject if it cannot), so a promoted map can hold agent decisions. The agent runs read-only with a removal ceiling (§5.5). The owner decides (Q3) |
+| §3.5 "model proposals are left out of a CI promote" (O4) | **Conflicts** | The auto map's cleanup agent decides model proposals (accept at 0.75, ask the model below, reject if it cannot), so a promoted map can hold agent decisions. The agent runs read-only with a removal ceiling (§5.5). The owner decided: the agent decides (Q3) |
 | §3.6 map import from CI (CI-P8) | **Keeps**, deferred, outside setup | An authored map file is not what an auto map is. Still waits on its own questions (#433 O2) and the switch |
 | §4 class `ci`, `ServiceGrants`, separate request types, no route | **Keeps** | `service:setup` uses `ServiceGrants` on `RegisterRecipe` and `RegisterMcp` the same way, with no new class; the auto map's promote is the owner rule of §5.5, not a `ci` command |
 | §6.2 needs-you kind `failure` with `failure:ci:*`, `RetryCiApply`, the optional `link` field | **Keeps** | Different ids from `setup:<step>`; the `link` field is also available to setup rows |
@@ -1020,9 +1020,10 @@ typed from install to a working Sindri: 1 (target) on a box with a desktop, agai
 open to all six `done` or `skipped` (`setup.done`); and the time from setup done to the first work item's first
 transition (`setup.first-item`).
 
-## 14. Open questions for the owner
+## 14. Questions for the owner (decided)
 
-Each is a real decision with a recommended answer.
+**Decided (owner, 2026-10-20): the recommended answer, for every question below.** Each was a real decision; the
+question and its recommendation are kept as the record.
 
 - **Q1. Approving in the app instead of the terminal.** The profile and the recipes are approved by typing or holding in
   the app, for those three actions only; revoke, grants, accept and a manual map promote stay terminal. The app holds the
