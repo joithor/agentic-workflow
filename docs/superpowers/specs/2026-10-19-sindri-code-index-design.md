@@ -619,7 +619,7 @@ Defaults are what the builders do if you say nothing.
   use what graphify finds, which is coarser. *Default:* C# first-class, everything else through graphify and marked
   lower confidence. If your work repos are mostly TypeScript, say so: a TypeScript parser (a small Node tool, pinned) would
   be a phase of its own. This one decides the plan: the TS index you have today parses TypeScript itself, so the C# build
-  would give TypeScript less than you have now unless graphify's call data (checked in CI-0d) is good enough. Please answer before CI-7. *Settled:* the owner approved this spec with every question at its default (relayed by the meta session, 2026-10-19), and the CI-0d spike passed (TypeScript 8 of 8 known calls as call edges with file and line; Python 3 of 5), so no TypeScript parser phase is added.
+  would give TypeScript less than you have now unless graphify's call data (checked in CI-0d) is good enough. Please answer before CI-7. *Settled:* the owner approved this spec with every question at its default (relayed by the meta session, 2026-10-20), and the CI-0d spike passed (TypeScript 8 of 8 known calls as call edges with file and line; Python 3 of 5), so no TypeScript parser phase is added.
 - **Q2. Graphify now runs in two places.** The context map already runs it to group files into features, with its own
   safety wrapper; the index will run it again on the same commit. *Default:* the index carries its own copy for now (its own
   wrapper and its own safety tests) and, once the sandbox work lands, Context's map reads the index's graph instead and its
