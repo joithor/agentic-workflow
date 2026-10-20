@@ -37,8 +37,8 @@ public sealed class AgentsStepRowTests
     {
         var row = await CursorRow(r => r["launch"] = Launch(Instance, "build", 2));
 
-        Assert.Equal((true, $"on {Instance} · build · attempt 2"), (row.HasStep, row.StepText));
-        Assert.Contains($"on {Instance} · build · attempt 2", row.Name, StringComparison.Ordinal);
+        Assert.Equal((true, "On a workflow step · build · attempt 2"), (row.HasStep, row.StepText));
+        Assert.Contains("On a workflow step · build · attempt 2", row.Name, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public sealed class AgentsStepRowTests
     {
         var row = await CursorRow(r => r["launch"] = Launch(Instance, "build", 1));
 
-        Assert.Equal($"on {Instance} · build", row.StepText);
+        Assert.Equal("On a workflow step · build", row.StepText);
     }
 
     [Fact]
@@ -117,9 +117,9 @@ public sealed class AgentsStepRowTests
         row.OpenFrame();
         Assert.True(page.Press("O"));
 
-        Assert.Equal((true, 2, $"on {Instance}"), (row.HasStep, asked.Count, row.StepText));
+        Assert.Equal((true, 2, "On a workflow step"), (row.HasStep, asked.Count, row.StepText));
         Assert.All(asked, e => Assert.Equal((Instance, null), (e.Address, e.State)));
-        Assert.Equal($"on {Instance}: open {Instance}", row.StepName);
+        Assert.Equal("On a workflow step: open the run", row.StepName);
     }
 
     [Fact]
@@ -127,7 +127,7 @@ public sealed class AgentsStepRowTests
     {
         var row = await CursorRow(r => r["launch"] = Launch(Instance, "build", 2));
 
-        Assert.Equal($"on {Instance} · build · attempt 2: open {Instance} at build", row.StepName);
+        Assert.Equal("On a workflow step · build · attempt 2: open the run at build", row.StepName);
     }
 
     private static void FocusAsked(AgentsPageViewModel page, out Func<AgentFocusEventArgs?> read)

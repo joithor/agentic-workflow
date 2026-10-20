@@ -19,7 +19,7 @@ internal sealed partial class SessionSheetViewModel
 #pragma warning restore CA1822, MA0041
 
     /// <summary>The open action's accessible name: "Open ITM-…/step/1 at build".</summary>
-    public string OpenFrameName => _step is { Instance: { Length: > 0 } instance } step ? Labels.OpenStepFrameName(instance, step.State) : Labels.OpenStepFrame;
+    public string OpenFrameName => _step is { Instance.Length: > 0 } step ? Labels.OpenStepFrameName(step.State) : Labels.OpenStepFrame;
 
     /// <summary>Opens the frame of the Step the session works on; nothing without one.</summary>
     internal void OpenFrame()

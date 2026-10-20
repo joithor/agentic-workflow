@@ -44,7 +44,7 @@ public sealed class ViewsBannerTests
         banner.Show(View("rebuilding"), rebuild: null);
         banner.Show(View("rebuilding") with { Empty = "Rebuilding views (cursor 20 of 42)…" }, rebuild: null);
 
-        Assert.Equal(["Rebuilding views"], heard);
+        Assert.Equal(["Refreshing the lists"], heard);
     }
 
     [Fact]

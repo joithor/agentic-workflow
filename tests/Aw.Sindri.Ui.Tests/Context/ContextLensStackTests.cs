@@ -31,7 +31,7 @@ public sealed class ContextLensStackTests
 
         await page.Submit(Token);
 
-        Assert.Equal(Labels.ContextHead((string)golden["mapVersion"]!, 1), page.Head);
+        Assert.Equal(Labels.ContextHead(1), page.Head);
         Assert.True(page.HasHead);
     }
 
@@ -44,7 +44,7 @@ public sealed class ContextLensStackTests
 
         await page.Submit(Token);
 
-        Assert.Equal(Labels.ContextHead((string)golden["mapVersion"]!, golden["anchors"]!.AsArray().Count), page.Head);
+        Assert.Equal(Labels.ContextHead(golden["anchors"]!.AsArray().Count), page.Head);
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public sealed class ContextLensStackTests
         var key = (string)Golden("map-tabs")["anchor"]!["key"]!;
         page.AnchorText = $"{key} {key}";
         await page.Submit(Token);
-        Assert.Equal(Labels.ContextHead((string)Golden("map-tabs")["mapVersion"]!, 1), page.Head);
+        Assert.Equal(Labels.ContextHead(1), page.Head);
 
         var calls = server.ContextCalls;
         page.AnchorText = string.Join(' ', Enumerable.Range(0, 21).Select(i => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"a:{i}")));

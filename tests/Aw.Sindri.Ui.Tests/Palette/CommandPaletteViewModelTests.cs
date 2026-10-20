@@ -48,8 +48,8 @@ public sealed partial class CommandPaletteViewModelTests
         Assert.Equal(["Actions", "Go to", "Sindri"], _palette.Sections.Select(s => s.Heading), StringComparer.Ordinal);
         var actions = _palette.Entries.Where(e => e.IsAction).Select(e => e.Id).ToList();
         Assert.Equal(_catalog.Rows.Select(r => r.Action).Order(StringComparer.Ordinal), actions.Order(StringComparer.Ordinal), StringComparer.Ordinal);
-        Assert.Equal(("ready", "not in the app yet", "Copy: sindri doctor"), (Entry("RebuildViews").Status, Entry("ProbeLaunchTargets").Status, Entry("RunDoctor").Status));
-        Assert.Equal("Check launch targets again, not in the app yet", Entry("ProbeLaunchTargets").Name);
+        Assert.Equal(("ready", "coming soon", "Copy: sindri doctor"), (Entry("RebuildViews").Status, Entry("ProbeLaunchTargets").Status, Entry("RunDoctor").Status));
+        Assert.Equal("Check launch targets again, coming soon", Entry("ProbeLaunchTargets").Name);
     }
 
     // Q3: with no selected row, Actions lists the catalog grouped by status: ready, then pending, then cli-only.
@@ -72,7 +72,7 @@ public sealed partial class CommandPaletteViewModelTests
         _palette.Open();
 
         Assert.Equal(
-            ["Home G H", "Workflows G W", "Work G Q", "Recipes G R", "Context G C", "Agents G A", "System G .", "Settings ⌘,"],
+            ["Home G H", "Workflows G W", "Work G Q", "Workflow types G R", "Context G C", "Agents G A", "System G .", "Settings ⌘,"],
             _palette.Sections[1].Entries.Select(e => e.Label + " " + e.Key),
             StringComparer.Ordinal);
     }
@@ -666,8 +666,8 @@ public sealed partial class CommandPaletteViewModelTests
         Assert.Contains(_palette.Selected!.Name, _palette.Announcement, StringComparison.Ordinal);
         Assert.Contains("2 of", _palette.Announcement, StringComparison.Ordinal);
 
-        _palette.Query = "recipes";
-        Assert.Contains("Recipes", _palette.Announcement, StringComparison.Ordinal);
+        _palette.Query = "workflow types";
+        Assert.Contains("Workflow types", _palette.Announcement, StringComparison.Ordinal);
 
         _palette.Query = "zzzz";
         Assert.Equal("Nothing matches", _palette.Announcement);

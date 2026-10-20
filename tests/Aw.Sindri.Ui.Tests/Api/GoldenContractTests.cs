@@ -56,6 +56,8 @@ public sealed class GoldenContractTests
         ["context-map-review"] = AsReview,
         ["context-map-review-history"] = As<ReviewHistoryView>,
         ["context-node"] = As<NodeView>,
+        ["items-id-open"] = As<OpenAcceptedView>,   // POST /items/{id}/open: the accepted answer (the refusals are ProblemDetails)
+        ["launches-id"] = As<LaunchView>,   // GET /launches/{id}: the launch an Open started (Attach, the run line)
     };
 
     // Routes the app never calls yet: stop is Health's (U4), profile approve is protected (the app shows the CLI, §6.5), the profile route is a later page's (U2+), and the
@@ -63,13 +65,11 @@ public sealed class GoldenContractTests
     private static readonly HashSet<string> _notRead = new(StringComparer.Ordinal)
     {
         "stop", "profile-approve", "profile",
-        "needs-you", "decisions", "decisions-id", "requests",   // API P4: the app reads them in U3
         "context-eval", "context-map-proposals", "context-query", "context-code", "context-history", "context-subgraph",   // not U9's: eval, proposals (U13) and the query routes are read by the phases that call them
         "items",   // GET /items (the list) is never called; POST /items' created* goldens are read (see the loop)
         "ledger",   // API P5: the audit read is the CLI's; the app follows the stream and re-queries
         "services-name-run", "services-name-pause", "services-name-resume", "jobs-id", "jobs-id-cancel", "jobs",   // API P6: the app reads them in U4 (Services and the job panel)
-        "items-id-open", "launches-id", "sessions-id-heartbeat", "sessions-id-exit", "launch-targets", "launch-targets-probe",   // API P10a (U8): the app reads the open's answer and the launch in U6a (Open in the terminal); U10: the session wrap's own calls, never the app's
-        "workflow-recipes", "workflow-instances-start",   // the Start form's reads (U5'): the recipe list, and POST /workflow/instances' request and started answer (its refusals are ProblemDetails under workflow-instances); workflow-recipes/list pins the shape served before P12 (standing/via/stale/inputs), which differs from the spec's RecipeList (E-25), so U5' must not read inputs from it until that is decided (read GET /workflow/recipes/{id} instead)
+        "sessions-id-heartbeat", "sessions-id-exit", "launch-targets", "launch-targets-probe",   // API P10a (U8): U10's session wrap's own calls and the launch-target reads, never the app's
         "workflow-instance-scoping",   // API2 (SC-K2): the scoping stop view; the app reads it in SC-U (U2)
         "events-catalog",   // API P5 (E-15): the app reads each type's invalidates once it switches from re-querying every view on each event (UI lane)
     };

@@ -34,14 +34,26 @@ public sealed class SessionSheetTests : FrameHost
 
     private static DeepLink Link(string reference) => new(DeepLinkKind.Session, reference);
 
-    private async Task<(ShellWindow Window, ShellViewModel Shell)> Opened(string reference, double width = 1600)
+    private async Task<(ShellWindow Window, ShellViewModel Shell)> Opened(string reference, double width = 1600, bool details = true)
     {
         var (window, shell) = await Connected(width: width, height: 1000);
         shell.GoTo(PageId.Agents);
         Settle(window);
         shell.Agents.RequestOpen(new SessionOpenRequestedEventArgs(Link(reference)));
         await Until(window, () => shell.IsSheetShown && shell.AgentSheet.Phase is FramePhase.Shown or FramePhase.NotFound, "the sheet never showed its answer");
+        if (details)
+        {
+            OpenDetails(window);
+        }
+
         return (window, shell);
+    }
+
+    // The technical fields, the history and Watch the agent sit under a closed Details disclosure (F3).
+    private static void OpenDetails(Window window)
+    {
+        Named<Control>(window, "SessionSheet").GetVisualDescendants().OfType<Expander>().Single(e => e.Name == "SessionDetails").IsExpanded = true;
+        Settle(window);
     }
 
     // The Agents rows have their own controls with some of the sheet's names: look inside the sheet only.
@@ -57,6 +69,7 @@ public sealed class SessionSheetTests : FrameHost
 
         shell.Navigate(Link(Claude));   // the deep link: the Agents page and the sheet
         await Until(window, () => shell.AgentSheet.Phase == FramePhase.Shown);
+        OpenDetails(window);
         var sheet = shell.AgentSheet;
         Assert.Equal((PageId.Agents, "Session " + sheet.Heading), (shell.CurrentPage, shell.SheetName));
         Assert.Equal(shell.SheetName, Heard.Name(Named<Control>(window, "Sheet")));
@@ -67,8 +80,8 @@ public sealed class SessionSheetTests : FrameHost
             .Concat(sheet.Fields.Select(f => f.Name)).Concat(sheet.HostFields.Select(f => f.Name)).Concat(sheet.History.Select(h => h.Name));
         Assert.All(expected, name => Assert.Contains((name, AutomationControlType.Text), heard));
         Assert.All(heard.Where(h => h.Type == AutomationControlType.Text), h => Assert.False(string.IsNullOrWhiteSpace(h.Name), "a nameless text node in the sheet"));
-        Assert.Contains(heard, h => h.Type == AutomationControlType.Button && h.Name == "Copy: Focus");
-        Assert.Contains(heard, h => h.Type == AutomationControlType.Button && h.Name.StartsWith("Focus", StringComparison.Ordinal));
+        Assert.Contains(heard, h => h.Type == AutomationControlType.Button && h.Name == "Copy: Watch the agent");
+        Assert.Contains(heard, h => h.Type == AutomationControlType.Button && h.Name.StartsWith("Watch the agent", StringComparison.Ordinal));
 
         // the CO-7c host: in the tree, collapsed and empty
         var host = Named<ContentControl>(window, "LivePreviewHost");
@@ -92,7 +105,7 @@ public sealed class SessionSheetTests : FrameHost
 
         var focus = InSheet<Button>(window, "SessionFocus");
         Assert.False(focus.IsEnabled);
-        Assert.Equal("Focus, arrives in CO-4a", Heard.Name(focus));
+        Assert.Equal("Watch the agent, coming soon", Heard.Name(focus));
         Assert.Equal(shell.AgentSheet.FocusLine, Heard.Wrapper(InSheet<Border>(window, "SessionFocusLine")));
         var copy = InSheet<Button>(window, "SessionFocusCopy");
         Assert.True(copy.Focusable && copy.IsEffectivelyEnabled);
@@ -100,6 +113,23 @@ public sealed class SessionSheetTests : FrameHost
         await Until(window, () => shell.AgentSheet.CopyLabel == "Copied");
         Assert.Equal("Copied", Heard.Name(copy));
         Frame(window, "codex");
+    });
+
+    // F3: the sheet leads with the session's heading and state; the fields, the history and Watch the agent wait behind Details.
+    [Fact]
+    public Task The_technical_fields_wait_behind_a_closed_Details_disclosure() => OnUi(async () =>
+    {
+        var (window, shell) = await Opened(Claude, details: false);
+
+        var details = InSheet<Expander>(window, "SessionDetails");
+        Assert.False(details.IsExpanded);
+        Assert.Equal("Details", details.Header);
+        Assert.True(InSheet<Border>(window, "SessionHeading").IsEffectivelyVisible);
+        Assert.Equal(shell.AgentSheet.StateLine, Heard.Wrapper(InSheet<Border>(window, "SessionState")));
+        Assert.DoesNotContain(InSheet<ItemsControl>(window, "SessionFields").GetVisualDescendants().OfType<Border>(), b => b.IsEffectivelyVisible);
+        OpenDetails(window);
+        Assert.True(details.IsExpanded);
+        Assert.Contains(InSheet<ItemsControl>(window, "SessionFields").GetVisualDescendants().OfType<Border>(), b => b.IsEffectivelyVisible);
     });
 
     [Fact]

@@ -30,7 +30,7 @@ public sealed class AgentsPageViewModelTests
     {
         var counts = Golden("sessions", "fixture-three-providers")["counts"]!;
         var page = await _f.Shown(Token);
-        var expected = Labels.AgentsHead((int)counts["live"]!, (int)counts["asking"]!, (int)counts["outsideWorkflow"]!);
+        var expected = Labels.AgentsHead((int)counts["live"]!, (int)counts["asking"]!);
 
         Assert.Equal(expected, page.Head);
         page.FilterProvider("Codex");
@@ -57,7 +57,7 @@ public sealed class AgentsPageViewModelTests
         var launched = page.Groups[1];
         Assert.Equal(Labels.StartedBySindri, launched.Name);
         var row = Assert.Single(launched.Rows);
-        Assert.Equal(Labels.LaunchLine((string)Row(Golden("sessions", "fixture-three-providers"), Cursor)["launchId"]!), row.LaneText);
+        Assert.Equal(Labels.LaunchLine, row.LaneText);
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public sealed class AgentsPageViewModelTests
     {
         var page = await _f.Shown(Token);
 
-        Assert.Equal("meta · sindri/ideas", RowOf(page, Claude).LaneText);
+        Assert.Equal("Lane sindri/ideas", RowOf(page, Claude).LaneText);
         Assert.Equal(string.Empty, RowOf(page, Codex).LaneText);
     }
 
@@ -322,9 +322,9 @@ public sealed class AgentsPageViewModelTests
 
         var focus = RowOf(page, Claude).Focus;
 
-        Assert.Equal("arrives in CO-4a · sindri agents focus " + RowOf(page, Claude).Ref, focus.Line);
+        Assert.Equal("Coming soon · sindri agents focus " + RowOf(page, Claude).Ref, focus.Line);
         Assert.Equal("sindri agents focus " + RowOf(page, Claude).Ref, focus.Cli);
-        Assert.Equal("Focus, arrives in CO-4a", focus.Name);
+        Assert.Equal("Watch the agent, coming soon", focus.Name);
     }
 
     [Fact]
@@ -334,7 +334,7 @@ public sealed class AgentsPageViewModelTests
 
         var page = await ready.Shown(Token);
 
-        Assert.Equal("Focus, arrives in " + Labels.FocusSendPhase, RowOf(page, Claude).Focus.Name);
+        Assert.Equal("Watch the agent, coming soon", RowOf(page, Claude).Focus.Name);
     }
 
     [Fact]
