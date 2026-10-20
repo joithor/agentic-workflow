@@ -8,7 +8,8 @@
         "id": "workflow.incident-response",
         "hash": "sha256:5d90e1b200000000000000000000000000000000000000000000000000000000",
         "version": 4,
-        "urgency": "incident"
+        "urgency": "incident",
+        "displayName": "Incident response"
       },
       "state": "mitigate",
       "chip": {
@@ -134,7 +135,8 @@
         "id": "workflow.triage-alert",
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
         "version": 2,
-        "urgency": "triage"
+        "urgency": "triage",
+        "displayName": "Triage alert"
       },
       "state": "classify",
       "chip": {
@@ -232,7 +234,8 @@
         "id": "workflow.project",
         "hash": "sha256:a8c21e7f00000000000000000000000000000000000000000000000000000000",
         "version": 12,
-        "urgency": "work"
+        "urgency": "work",
+        "displayName": "Project"
       },
       "state": "build",
       "chip": {
@@ -373,7 +376,8 @@
         "id": "workflow.project",
         "hash": "sha256:a8c21e7f00000000000000000000000000000000000000000000000000000000",
         "version": 12,
-        "urgency": "work"
+        "urgency": "work",
+        "displayName": "Project"
       },
       "state": "design",
       "chip": {
@@ -517,7 +521,8 @@
         "id": "workflow.project",
         "hash": "sha256:a8c21e7f00000000000000000000000000000000000000000000000000000000",
         "version": 12,
-        "urgency": "work"
+        "urgency": "work",
+        "displayName": "Project"
       },
       "state": "scoping",
       "chip": {
@@ -658,7 +663,8 @@
         "id": "workflow.intake-linear",
         "hash": "sha256:0b7e44d300000000000000000000000000000000000000000000000000000000",
         "version": 1,
-        "urgency": "work"
+        "urgency": "work",
+        "displayName": "Intake linear"
       },
       "state": "poll",
       "chip": {
@@ -740,7 +746,8 @@
         "id": "workflow.intake-linear",
         "hash": "sha256:0b7e44d300000000000000000000000000000000000000000000000000000000",
         "version": 1,
-        "urgency": "work"
+        "urgency": "work",
+        "displayName": "Intake linear"
       },
       "state": "poll",
       "chip": {
@@ -822,7 +829,8 @@
         "id": "workflow.triage-alert",
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
         "version": 2,
-        "urgency": "triage"
+        "urgency": "triage",
+        "displayName": "Triage alert"
       },
       "state": "route",
       "chip": {
@@ -933,7 +941,8 @@
         "id": "workflow.triage-alert",
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
         "version": 2,
-        "urgency": "triage"
+        "urgency": "triage",
+        "displayName": "Triage alert"
       },
       "state": "done",
       "chip": {
@@ -1027,7 +1036,8 @@
         "id": "workflow.triage-alert",
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
         "version": 2,
-        "urgency": "triage"
+        "urgency": "triage",
+        "displayName": "Triage alert"
       },
       "state": "done",
       "chip": {
@@ -1121,7 +1131,8 @@
         "id": "workflow.triage-alert",
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
         "version": 2,
-        "urgency": "triage"
+        "urgency": "triage",
+        "displayName": "Triage alert"
       },
       "state": "done",
       "chip": {
@@ -1215,7 +1226,8 @@
         "id": "workflow.triage-alert",
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
         "version": 2,
-        "urgency": "triage"
+        "urgency": "triage",
+        "displayName": "Triage alert"
       },
       "state": "done",
       "chip": {

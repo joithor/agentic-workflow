@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Jobs;
 
 namespace Aw.Sindri.Features.Jobs;
 
@@ -7,7 +8,7 @@ namespace Aw.Sindri.Features.Jobs;
 /// same kind and key cannot both pass; the runner releases the claim when the job ends. It starts empty at every process start, so a dead claim never
 /// refuses a start after a restart.
 /// </summary>
-public sealed class JobRegistry
+public sealed class JobRegistry : IRunningJobs
 {
     private readonly Lock _gate = new();
     private readonly Dictionary<(string Kind, string Key), JobId> _byKey = [];
@@ -54,6 +55,15 @@ public sealed class JobRegistry
             _byJob[job.Value] = slot;
             running = job;
             return true;
+        }
+    }
+
+    /// <inheritdoc/>
+    public bool IsRunning(JobKind kind, JobKey key, out JobId running)
+    {
+        lock (_gate)
+        {
+            return _byKey.TryGetValue((kind.Value, key.Value), out running);
         }
     }
 

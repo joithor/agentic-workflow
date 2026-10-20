@@ -69,5 +69,6 @@
       "to": "mitigate",
       "cap": 3
     }
-  ]
+  ],
+  "displayName": "Incident response"
 }
