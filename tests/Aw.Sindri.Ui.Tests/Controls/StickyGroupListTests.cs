@@ -38,7 +38,7 @@ public sealed class StickyGroupListTests
         var list = new StickyGroupList
         {
             ItemsSource = source,
-            HeaderTemplate = new FuncDataTemplate<Group>((g, _) => new Border { Height = HeaderHeight, Child = new TextBlock { Text = g.Heading } }),
+            HeaderTemplate = new FuncDataTemplate<Group>((g, _) => new Border { Height = HeaderHeight, Background = Avalonia.Media.Brushes.Gray, Child = new TextBlock { Text = g.Heading } }),
             ItemTemplate = new FuncDataTemplate<string>((s, _) => new TextBlock { Text = s, Height = RowHeight }),
         };
         var window = new Window { Content = list, Width = 400, Height = 300 };
