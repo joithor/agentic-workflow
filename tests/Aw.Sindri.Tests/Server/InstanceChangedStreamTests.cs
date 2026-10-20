@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Features.StreamEvents;
@@ -114,8 +115,8 @@ public sealed class InstanceChangedStreamTests : IDisposable
 
     private static WorkflowEventPayload Row(string instance, string from, string to) => new(instance, from, to, "step.completed", Outcome: null, Run: null);
 
-    private PublicEvent Public(string type, string payload, long sequence) => new(sequence, Aw.Sindri.Core.Ids.EventId.From(new Guid(1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)), type, 1, _h.Clock.GetUtcNow(), "service:host", "local", 0,
-        Item: null, Aw.Sindri.Core.Ids.CorrelationId.From(new Guid(2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)), CausationId: null, TraceId: null, JsonDocument.Parse(payload).RootElement);
+    private PublicEvent Public(string type, string payload, long sequence) => new(sequence, EventId.From(new Guid(1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)), type, 1, _h.Clock.GetUtcNow(), "service:host", "local", 0,
+        Item: null, CorrelationId.From(new Guid(2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)), CausationId: null, TraceId: null, JsonDocument.Parse(payload).RootElement);
 
     private async Task Append<T>(string type, T payload)
     {
