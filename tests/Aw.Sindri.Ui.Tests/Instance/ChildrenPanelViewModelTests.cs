@@ -152,7 +152,7 @@ public sealed class ChildrenPanelViewModelTests
 
         Assert.Equal((true, served.More, 1), (group.HasMore, group.More, asked));
         Assert.Contains(served.More.ToString(System.Globalization.CultureInfo.InvariantCulture), group.MoreText, StringComparison.Ordinal);
-        Assert.Contains(served.Recipe, group.OpenAllName, StringComparison.Ordinal);
+        Assert.Contains(WorkflowNames.Of(served.Recipe, displayName: null), group.OpenAllName, StringComparison.Ordinal);
         Assert.False(Panel("project-build").Groups.Single().HasMore);
     }
 
