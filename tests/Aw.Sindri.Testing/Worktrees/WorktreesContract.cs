@@ -268,4 +268,80 @@ public abstract class WorktreesContract
         Expect.True(nested.IsError);
         Expect.Equal("SND-WT-001", nested.Error.Code);
     }
+
+    /// <summary>The engine's real place, inside the main checkout, is allowed.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_path_inside_the_main_checkout_is_allowed()
+    {
+        var f = await Create();
+        var request = Request(f) with { Path = Path.Combine(f.RepoRoot, ".claude", "worktrees", "run-1") };
+
+        var made = await f.Worktrees.Create(request, Token);
+        var again = await f.Worktrees.Create(request, Token);
+
+        Expect.True(made.IsSuccess && again.IsSuccess);
+        Expect.Equal(request.Path, made.Value.Path);
+    }
+
+    /// <summary>Commits made in the checkout since: a repeated Create parks instead of answering a checkout that is no longer at the base.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_head_moved_after_create_conflicts()
+    {
+        var f = await Create();
+        var made = await f.Worktrees.Create(Request(f), Token);
+        await f.Advance(made.Value.Path);
+
+        var again = await f.Worktrees.Create(Request(f), Token);
+
+        Expect.True(again.IsError);
+        Expect.Equal("SND-WT-002", again.Error.Code);
+    }
+
+    /// <summary>A detached HEAD at the path is not the branch asked for.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_detached_head_conflicts()
+    {
+        var f = await Create();
+        var made = await f.Worktrees.Create(Request(f), Token);
+        await f.Detach(made.Value.Path);
+
+        var again = await f.Worktrees.Create(Request(f), Token);
+
+        Expect.True(again.IsError);
+        Expect.Equal("SND-WT-002", again.Error.Code);
+    }
+
+    /// <summary>A worktree whose directory is gone is not answered as a checkout: the stale entry is dropped and a new one made.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_worktree_whose_directory_is_gone_is_made_again()
+    {
+        var f = await Create();
+        var made = await f.Worktrees.Create(Request(f), Token);
+        await f.DeleteDirectory(made.Value.Path);
+
+        var again = await f.Worktrees.Create(Request(f), Token);
+
+        Expect.True(again.IsSuccess);
+        Expect.Equal(f.Base, again.Value.Head);
+    }
+
+    /// <summary>Removing a worktree whose directory is gone succeeds and frees its branch.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Removing_a_worktree_whose_directory_is_gone_frees_its_branch()
+    {
+        var f = await Create();
+        var made = await f.Worktrees.Create(Request(f, branch: "sindri/shared"), Token);
+        await f.DeleteDirectory(made.Value.Path);
+
+        var removed = await f.Worktrees.Remove(made.Value.Path, Token);
+        var other = await f.Worktrees.Create(Request(f, "run-2", branch: "sindri/shared"), Token);
+
+        Expect.True(removed.IsSuccess);
+        Expect.True(other.IsSuccess);
+    }
 }

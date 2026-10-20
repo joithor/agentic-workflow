@@ -11,7 +11,7 @@ public interface IWorktrees
 {
     /// <summary>
     /// Creates the worktree on <see cref="WorktreeRequest.Branch"/> at <see cref="WorktreeRequest.BaseCommit"/>. Idempotent: the
-    /// same path and branch with the checkout still at the same base returns the existing checkout.
+    /// same path and branch with the checkout still at the same base returns the existing checkout. Commits made in it, a detached HEAD or another branch since are SND-WT-002.
     /// </summary>
     /// <param name="request">The repo, base, branch and path.</param>
     /// <param name="cancellationToken">Cancels the git calls.</param>

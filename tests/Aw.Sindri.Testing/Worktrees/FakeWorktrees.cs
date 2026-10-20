@@ -4,12 +4,17 @@ using Aw.Sindri.Core.Worktrees;
 
 namespace Aw.Sindri.Testing.Worktrees;
 
-/// <summary>The in-memory <see cref="IWorktrees"/>: repos with the commits they hold, and the worktrees made in them. Passes <see cref="WorktreesContract"/>.</summary>
+/// <summary>
+/// The in-memory <see cref="IWorktrees"/>: repos with the commits they hold, and the worktrees made in them. Passes <see cref="WorktreesContract"/>.
+/// <see cref="MakeDirty"/>, <see cref="AdvanceHead"/>, <see cref="Detach"/> and <see cref="DeleteDirectory"/> stand in for what happens in a checkout behind the
+/// port's back. It cannot model a directory that exists on disk but is not a worktree (git refuses to add there, SND-WT-003; the fake succeeds), and it
+/// compares paths as written, not resolved.
+/// </summary>
 public sealed class FakeWorktrees : IWorktrees
 {
     private readonly Dictionary<string, HashSet<string>> _repos = [];
     private readonly Dictionary<(string Repo, string Branch), string> _branches = [];   // a branch's tip; it stays after its worktree goes, as in git
-    private readonly Dictionary<string, (string Repo, WorktreeCheckout Checkout, bool Dirty)> _worktrees = [];
+    private readonly Dictionary<string, (string Repo, WorktreeCheckout Checkout, bool Dirty, bool Detached, bool Gone)> _worktrees = [];
     private readonly Lock _gate = new();
 
     /// <summary>Tells the fake which commits a repo holds; a repo or sha it was not told about fails like git does.</summary>
@@ -36,6 +41,39 @@ public sealed class FakeWorktrees : IWorktrees
         }
     }
 
+    /// <summary>Commits in the worktree at <paramref name="path"/>: its HEAD (and its branch) move on to a new commit.</summary>
+    /// <param name="path">The worktree's path.</param>
+    public void AdvanceHead(string path)
+    {
+        lock (_gate)
+        {
+            var found = _worktrees[path];
+            var head = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.ASCII.GetBytes(found.Checkout.Head + "+")))[..40];
+            _worktrees[path] = found with { Checkout = found.Checkout with { Head = head } };
+            _branches[(found.Repo, found.Checkout.Branch)] = head;
+        }
+    }
+
+    /// <summary>Detaches HEAD in the worktree at <paramref name="path"/>.</summary>
+    /// <param name="path">The worktree's path.</param>
+    public void Detach(string path)
+    {
+        lock (_gate)
+        {
+            _worktrees[path] = _worktrees[path] with { Detached = true };
+        }
+    }
+
+    /// <summary>Deletes the worktree's directory behind the port's back: the registration stays until a prune.</summary>
+    /// <param name="path">The worktree's path.</param>
+    public void DeleteDirectory(string path)
+    {
+        lock (_gate)
+        {
+            _worktrees[path] = _worktrees[path] with { Gone = true };
+        }
+    }
+
     /// <inheritdoc/>
     public ValueTask<Result<WorktreeCheckout>> Create(WorktreeRequest request, CancellationToken cancellationToken)
     {
@@ -57,6 +95,7 @@ public sealed class FakeWorktrees : IWorktrees
                 return ValueTask.FromResult<Result<Unit>>(SindriErrors.WorktreeInvalid.With("Path must be an absolute path"));
             }
 
+            Prune();
             if (_worktrees.TryGetValue(path, out var found) && found.Dirty)
             {
                 return ValueTask.FromResult<Result<Unit>>(SindriErrors.WorktreeDirty.With($"{path} has uncommitted changes"));
@@ -69,21 +108,18 @@ public sealed class FakeWorktrees : IWorktrees
 
     private Result<WorktreeCheckout> Make(WorktreeRequest request)
     {
-        if (request.Validate() is { } invalid)
+        if (Unknown(request) is { } rejected)
         {
-            return invalid;
+            return rejected;
         }
 
-        if (!_repos.TryGetValue(request.RepoRoot, out var commits) || !commits.Contains(request.BaseCommit))
-        {
-            return SindriErrors.WorktreeGitFailed.With($"{request.BaseCommit} is not a commit of {request.RepoRoot}");
-        }
+        Prune();
 
         if (_worktrees.TryGetValue(request.Path, out var existing))
         {
-            return existing.Repo == request.RepoRoot && existing.Checkout.Branch == request.Branch && existing.Checkout.Head == request.BaseCommit
+            return existing is { Detached: false } && existing.Repo == request.RepoRoot && existing.Checkout.Branch == request.Branch && existing.Checkout.Head == request.BaseCommit
                 ? existing.Checkout
-                : SindriErrors.WorktreeConflict.With($"{request.Path} is already a worktree of {existing.Checkout.Branch} at {existing.Checkout.Head}");
+                : SindriErrors.WorktreeConflict.With($"{request.Path} is already a worktree of {(existing.Detached ? "a detached HEAD" : existing.Checkout.Branch)} at {existing.Checkout.Head}");
         }
 
         if (Unusable(request) is { } problem)
@@ -93,8 +129,29 @@ public sealed class FakeWorktrees : IWorktrees
 
         _branches[(request.RepoRoot, request.Branch)] = request.BaseCommit;
         var checkout = new WorktreeCheckout(request.Path, request.BaseCommit, request.Branch);
-        _worktrees[request.Path] = (request.RepoRoot, checkout, false);
+        _worktrees[request.Path] = (request.RepoRoot, checkout, false, false, false);
         return checkout;
+    }
+
+    /// <summary>Drops the registrations whose directory is gone, as 'git worktree prune' does.</summary>
+    private void Prune()
+    {
+        foreach (var gone in _worktrees.Where(w => w.Value.Gone).Select(w => w.Key).ToList())
+        {
+            _ = _worktrees.Remove(gone);
+        }
+    }
+
+    private Error? Unknown(WorktreeRequest request)
+    {
+        if (request.Validate() is { } invalid)
+        {
+            return invalid;
+        }
+
+        return !_repos.TryGetValue(request.RepoRoot, out var commits) || !commits.Contains(request.BaseCommit)
+            ? SindriErrors.WorktreeGitFailed.With($"{request.BaseCommit} is not a commit of {request.RepoRoot}")
+            : null;
     }
 
     private Error? Unusable(WorktreeRequest request)
