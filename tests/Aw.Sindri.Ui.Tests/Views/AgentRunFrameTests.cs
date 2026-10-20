@@ -30,12 +30,12 @@ public sealed class AgentRunFrameTests : FrameHost
         shell.OpenInstance(detail.Address, detail.Id);
         await Until(window, () => shell.Instance.Phase == FramePhase.Shown && shell.Instance.Expanded?.HasLaunchLine == true);
 
-        Assert.Equal("Agent · " + AgentRunFixtures.Launch, Named<TextBlock>(window, "ExpandedRunLine").Text);
+        Assert.Equal("An agent is working on this step", Named<TextBlock>(window, "ExpandedRunLine").Text);
         Assert.Equal(Labels.LaunchOpenedIn("Warp"), Named<TextBlock>(window, "ExpandedLaunch").Text);
         Assert.True(Visible(window, "AttachPrimary"));
         Assert.False(Visible(window, "PendingChip"));
         Assert.Equal(Labels.AttachTo(detail.Address), Heard.Name(Named<Button>(window, "AttachPrimary")));
-        Assert.Contains(Named<ItemsControl>(window, "ExpandedRunEvents").GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "The session was lost. The instance moved to review-desk.");
+        Assert.Contains(Named<ItemsControl>(window, "ExpandedRunEvents").GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "The agent session was lost. The run moved to review-desk.");
         Frame(window, "agent-run", "l1-frame-");
     });
 }

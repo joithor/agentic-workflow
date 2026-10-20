@@ -9,7 +9,7 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// what the side bar did). A pulse row is tinted and pulses until seen, then its tint clears; under reduced motion it keeps
 /// a static outline and the word "new" until seen instead. A failure row keeps a steady tint, a calm row a subtle one.
 /// </summary>
-internal sealed class NeedsYouRowViewModel : ObservableObject
+internal sealed partial class NeedsYouRowViewModel : ObservableObject
 {
     private bool _seen;
     private bool _reduced;
@@ -151,7 +151,7 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
 
     private static readonly string[] _content =
     [
-        nameof(Chip), nameof(Details), nameof(ShownId), nameof(Title), nameof(Repo), nameof(Label), nameof(Reason), nameof(HasReasonLine), nameof(Cli), nameof(Age), nameof(AccessibleName),
+        nameof(Chip), nameof(Details), nameof(PrimaryDetails), nameof(MoreDetails), nameof(HasMoreDetails), nameof(ShowsCliUpFront), nameof(ShownId), nameof(Title), nameof(Repo), nameof(Label), nameof(Reason), nameof(HasReasonLine), nameof(Cli), nameof(Age), nameof(AccessibleName),
         nameof(CanOpenItem), nameof(ItemLink), nameof(ChildAnswer), nameof(Notice), nameof(HasNotice),
     ];
 

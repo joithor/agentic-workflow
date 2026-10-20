@@ -26,7 +26,7 @@ public sealed class SessionSheetStepTests
     {
         var sheet = await Opened("cursor/pid-333-100");
 
-        Assert.Equal((Instance, "build", "2"), (Field(sheet, "Instance"), Field(sheet, "Step"), Field(sheet, "Attempt")));
+        Assert.Equal((Instance, "build", "2"), (Field(sheet, "Run"), Field(sheet, "Step"), Field(sheet, "Attempt")));
         Assert.True(sheet.HasStep);
     }
 
@@ -35,7 +35,7 @@ public sealed class SessionSheetStepTests
     {
         var sheet = await Opened("claude-code/aaaaaaaa-0000-4000-8000-000000000001");
 
-        Assert.DoesNotContain(sheet.Fields, f => new[] { "Instance", "Step", "Attempt" }.Contains(f.Label, StringComparer.Ordinal));
+        Assert.DoesNotContain(sheet.Fields, f => new[] { "Run", "Step", "Attempt" }.Contains(f.Label, StringComparer.Ordinal));
         Assert.False(sheet.HasStep);
     }
 
@@ -49,7 +49,7 @@ public sealed class SessionSheetStepTests
         sheet.OpenFrame();
 
         Assert.Equal((Instance, "build"), (asked!.Address, asked.State));
-        Assert.Contains(Instance, sheet.OpenFrameName, StringComparison.Ordinal);
+        Assert.Equal("Open the run at build", sheet.OpenFrameName);
     }
 
     private static string Field(SessionSheetViewModel sheet, string label) => sheet.Fields.Single(f => f.Label == label).Value;
@@ -67,6 +67,6 @@ public sealed class SessionSheetStepTests
         sheet.OpenFrame();
 
         Assert.Equal((true, Instance, null), (sheet.HasStep, asked!.Address, asked.State));
-        Assert.EndsWith(Instance, sheet.OpenFrameName, StringComparison.Ordinal);
+        Assert.Equal("Open the run", sheet.OpenFrameName);
     }
 }

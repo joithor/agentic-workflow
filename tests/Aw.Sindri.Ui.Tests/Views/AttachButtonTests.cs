@@ -19,7 +19,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 public sealed class AttachButtonTests
 {
     private const string Address = "ITM-01JE7/project/1";
-    private const string Note = "Attach joins the live session; your first keystroke takes it over.";
+    private const string Note = "Watch the agent's terminal live. Typing takes it over.";
 
     private static Task<T> OnUi<T>(Func<T> body) =>
         HeadlessUnitTestSession.GetOrStartForAssembly(typeof(AttachButtonTests).Assembly).Dispatch(body, TestContext.Current.CancellationToken);
@@ -100,7 +100,7 @@ public sealed class AttachButtonTests
             return result;
         });
 
-        Assert.Equal($"Attach to {Address}", names.Item1);
+        Assert.Equal($"Watch the agent for {Address}", names.Item1);
         Assert.Equal($"More actions for {Address}", names.Item2);
     }
 
@@ -121,7 +121,7 @@ public sealed class AttachButtonTests
         });
 
         Assert.False(primaryShown);
-        Assert.Equal("Available with API P10a", chipText);
+        Assert.Equal("Not available in the app yet", chipText);
         Assert.True(dashed);
         Assert.False(noteShown);
     }
@@ -163,7 +163,7 @@ public sealed class AttachButtonTests
         });
 
         Assert.True(control);
-        Assert.Equal($"Attach to {Address}: available with API P10a", name);
+        Assert.Equal($"Watch the agent for {Address}: not available in the app yet", name);
         Assert.Equal(AutomationControlType.Text, type);
     }
 
