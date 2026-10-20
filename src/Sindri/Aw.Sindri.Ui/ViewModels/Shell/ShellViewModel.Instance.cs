@@ -124,6 +124,7 @@ internal sealed partial class ShellViewModel
     private void InitInstance()
     {
         Health.Follow((url, token) => IsInstanceSheet ? Instance.Refresh(url, token) : Task.CompletedTask);
+        Health.FollowInstances((url, change, token) => IsInstanceSheet ? Instance.Catch(url, change, token) : Task.FromResult(true));
         Instance.OpenRequested += (_, e) =>
         {
             Instance.Intend(e.Address, FrameIntent.OpenInitial);   // the child's frame, once read, asks for its first read action
