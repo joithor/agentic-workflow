@@ -125,7 +125,7 @@ public sealed class RepoVerbsTests : IDisposable
         await api.Frame(11, "job.progress", Progress(1, "checking"));
         await api.Frame(12, "job.finished", Finished("succeeded", "added demo"));
 
-        Assert.Equal(0, await JobRig.Finished(run));
+        Assert.Equal(0, await Finished(run));
         var text = _rig.Out.ToString().ReplaceLineEndings("\n");
         Assert.Contains("checking\n", text, StringComparison.Ordinal);
         Assert.Contains("succeeded: added demo\n", text, StringComparison.Ordinal);
@@ -142,6 +142,6 @@ public sealed class RepoVerbsTests : IDisposable
 
         await api.Frame(11, "job.finished", Finished("failed", "the profile changed", "SND-PROFILE-002"));
 
-        Assert.Equal(1, await JobRig.Finished(run));
+        Assert.Equal(1, await Finished(run));
     }
 }
