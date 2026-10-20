@@ -229,7 +229,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         DetailsText = Labels.DetailsBlock(detail.Address, Recipe, Hash12, Version);
         AddressCopy = new CopyAction(clipboard, clock, Labels.CopyAddressName(detail.Address));
         Identity = $"{WorkflowName} · {StateText}{(HasDetail ? ": " + Detail : string.Empty)} · {SinceText}";
-        Note = detail.States.Any(s => s.Terminal && string.Equals(s.State, detail.State, StringComparison.Ordinal)) ? Labels.InstanceDone : string.Empty;
+        Note = detail.States.Any(s => s.Terminal && string.Equals(s.State, detail.State, StringComparison.Ordinal)) ? Labels.InstanceFinished(StateText) : string.Empty;
         ProblemText = string.Empty;
         ShowParts(detail);
         Phase = FramePhase.Shown;

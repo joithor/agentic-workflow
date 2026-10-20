@@ -41,6 +41,17 @@ internal static partial class Labels
     /// <summary>The frame's note while its instance is done.</summary>
     internal const string InstanceDone = "This run is done.";
 
+    /// <summary>The frame's note while its instance is done: it follows the outcome word the header shows, never DONE for all.</summary>
+    /// <param name="word">The state chip word (FAILED, DIDN'T WORK OUT, CANCELLED, or any other).</param>
+    /// <returns>The words.</returns>
+    internal static string InstanceFinished(string word) => word switch
+    {
+        "FAILED" => "This run failed.",
+        "DIDN'T WORK OUT" => "This run didn't work out.",
+        "CANCELLED" => "This run was cancelled.",
+        _ => InstanceDone,
+    };
+
     /// <summary>The frame's note when a re-read no longer finds the instance it shows.</summary>
     internal const string InstanceGone = "This run is no longer available; what is shown was its last stage.";
 

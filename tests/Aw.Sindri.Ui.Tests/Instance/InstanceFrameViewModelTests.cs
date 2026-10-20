@@ -241,6 +241,14 @@ public sealed class InstanceFrameViewModelTests
         Assert.Equal((FramePhase.Unreadable, Labels.StripUnreadable, Labels.Back, FrameFocus.Back), (frame.Phase, frame.ProblemText, frame.BackText, frame.InitialFocus));
     }
 
+    [Theory]
+    [InlineData("FAILED", "This run failed.")]
+    [InlineData("DIDN'T WORK OUT", "This run didn't work out.")]
+    [InlineData("CANCELLED", "This run was cancelled.")]
+    [InlineData("DONE", "This run is done.")]
+    public void The_finished_line_follows_the_outcome_word(string word, string expected) =>
+        Assert.Equal(expected, Labels.InstanceFinished(word));
+
     [Fact]
     public async Task A_re_read_that_finds_the_instance_done_keeps_the_content_and_says_done()
     {
@@ -250,7 +258,7 @@ public sealed class InstanceFrameViewModelTests
 
         await frame.Refresh(_api, Token);
 
-        Assert.Equal((FramePhase.Shown, Labels.InstanceDone, Text(Golden("done")["current"]!["status"]!["header"]!["state"])), (frame.Phase, frame.Note, frame.StateText));
+        Assert.Equal((FramePhase.Shown, Labels.InstanceFinished(frame.StateText), Text(Golden("done")["current"]!["status"]!["header"]!["state"])), (frame.Phase, frame.Note, frame.StateText));
         Assert.NotNull(frame.Band);
         Assert.NotSame(band, frame.Band);
     }
