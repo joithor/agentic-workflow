@@ -88,6 +88,7 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
         {
             "/sindri/ping" => await PingAnswer(uri, cancellationToken),
             "/sindri/status" => await StatusAnswer(uri, after, cancellationToken),
+            "/sindri/events" when string.Equals(Query(uri, "types"), InstanceChange.Type, StringComparison.Ordinal) => await Changes(Query(uri, "instance"), cancellationToken),
             "/sindri/events" => Events(After(uri), cancellationToken),
             "/sindri/commands" => Answer(Counted(await server.Commands(uri, cancellationToken), server.Catalog)),
             "/sindri/services" => Answer(Counted(await server.Services(uri, after), server.ServiceView)),
@@ -319,6 +320,28 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
                 body.Send(Encoding.UTF8.GetBytes(string.Create(CultureInfo.InvariantCulture, $"id: {e.Sequence}\nevent: {e.Type}\ndata: {Event(e)}\n\n")));
             }
 
+            body.End();
+        }, cancellationToken);
+        return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(body) { Headers = { { "Content-Type", "text/event-stream" } } } };
+    }
+
+    // The derived stream: frames are written as the API writes them, with an event name and no "id:" line (API §5).
+    private async Task<HttpResponseMessage> Changes(string? instance, CancellationToken cancellationToken)
+    {
+        var body = new ChunkStream();
+        var items = server.InstanceChanges(new Uri("http://fake/"), instance, cancellationToken).GetAsyncEnumerator(cancellationToken);
+        var open = await items.MoveNextAsync();   // the stream is registered with the model before the response, as a connected socket is
+        _ = Task.Run(async () =>
+        {
+            for (var more = open; more; more = await items.MoveNextAsync())
+            {
+                if (items.Current.Change is { } c)
+                {
+                    body.Send(Encoding.UTF8.GetBytes(string.Create(CultureInfo.InvariantCulture, $"event: {InstanceChange.Type}\ndata: {{\"instance\":\"{c.Instance}\",\"state\":\"{c.State}\",\"cursor\":{c.Cursor}}}\n\n")));
+                }
+            }
+
+            await items.DisposeAsync();
             body.End();
         }, cancellationToken);
         return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(body) { Headers = { { "Content-Type", "text/event-stream" } } } };
