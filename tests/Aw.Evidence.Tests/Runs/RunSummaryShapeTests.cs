@@ -25,8 +25,8 @@ public sealed class RunSummaryShapeTests
 
     private static RunSummary Full() =>
         A.RunSummary().WithStep(StepStatus.Failed).WithLint(LintRule.Overlap)
-            .WithVisual(new RunVisual(Verdict.LooksOff, ["shifted"], DiffScore: 0.25, DiffImage: "/run/run-1/visual-diff.png"))
-            .WithEvidence(new RunEvidence(["/run/run-1/desktop-trace.zip"], ["/run/run-1/v.webm"])).Build() with
+            .WithVisual(new RunVisual(Verdict.LooksOff, ["shifted"], DiffScore: 0.25, DiffImage: "/runs/run-1/visual-diff.png"))
+            .WithEvidence(new RunEvidence(["/runs/run-1/desktop-trace.zip"], ["/runs/run-1/v.webm"])).Build() with
         {
             AppBuild = "abc123",
             Fixtures = "seed-1",

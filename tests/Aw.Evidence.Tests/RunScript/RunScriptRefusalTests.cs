@@ -138,11 +138,11 @@ public sealed class RunScriptRefusalTests
         Assert.Equal(ErrorKind.Unavailable, result.Error.Kind);
         Assert.False(harness.Locks.IsHeld(LockKind.QaStack));
         Assert.False(harness.Locks.IsHeld(LockKind.HeavyJob));
-        Assert.False(harness.Files.Files.ContainsKey("/run/run-1/summary.json"));
+        Assert.False(harness.Files.Files.ContainsKey("/runs/run-1/summary.json"));
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("work/script.json", "/run/run-1")]
+    [InlineData("work/script.json", "/runs/run-1")]
     [InlineData("/work/script.json", "runs/run-1")]
     [InlineData("/work/script.json", "/")]
     public async Task RunScript_needs_absolute_paths_and_a_named_run_directory(string script, string runDirectory)

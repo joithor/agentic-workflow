@@ -8,10 +8,10 @@ namespace Aw.Evidence.Tests.ParityPublishing;
 
 public sealed class ParityPlanTests
 {
-    private const string SideBySide = "/run/parity-1/default-side-by-side.png";
+    private const string SideBySide = "/runs/parity-1/default-side-by-side.png";
 
     private static InMemoryRunFiles RunWith(Provenance provenance) => new InMemoryRunFiles()
-        .With("/run/parity-1/parity.json", AwJson.Serialize(A.ParitySummary().WithProvenance(provenance).Build(), TestJson.Options))
+        .With("/runs/parity-1/parity.json", AwJson.Serialize(A.ParitySummary().WithProvenance(provenance).Build(), TestJson.Options))
         .With(SideBySide, new byte[1234]);
 
     private static ParityPlanService Service(InMemoryRunFiles files) => new(files, TestJson.Options);
@@ -21,8 +21,8 @@ public sealed class ParityPlanTests
     {
         var files = RunWith(Provenance.Seeded);
 
-        var blocked = (await Service(files).Handle(new("/run/parity-1", []), CancellationToken.None)).Value;
-        var clear = (await Service(files).Handle(new("/run/parity-1", [SideBySide]), CancellationToken.None)).Value;
+        var blocked = (await Service(files).Handle(new("/runs/parity-1", []), CancellationToken.None)).Value;
+        var clear = (await Service(files).Handle(new("/runs/parity-1", [SideBySide]), CancellationToken.None)).Value;
 
         Assert.True(blocked.ReviewBlocked);
         Assert.Equal([SideBySide], blocked.Unreviewed);
@@ -35,7 +35,7 @@ public sealed class ParityPlanTests
     [Fact, Trait("Lane", "unit")]
     public async Task ParityPlan_keeps_unknown_provenance_local()
     {
-        var result = await Service(RunWith(Provenance.Unknown)).Handle(new("/run/parity-1", []), CancellationToken.None);
+        var result = await Service(RunWith(Provenance.Unknown)).Handle(new("/runs/parity-1", []), CancellationToken.None);
 
         Assert.Equal(EvidenceErrors.PublishRefused.Code, result.Error.Code);
     }
@@ -43,7 +43,7 @@ public sealed class ParityPlanTests
     [Fact, Trait("Lane", "unit")]
     public async Task ParityPlan_needs_a_parity_json()
     {
-        var result = await Service(new InMemoryRunFiles()).Handle(new("/run/parity-1", []), CancellationToken.None);
+        var result = await Service(new InMemoryRunFiles()).Handle(new("/runs/parity-1", []), CancellationToken.None);
 
         Assert.Equal(EvidenceErrors.FileNotFound.Code, result.Error.Code);
     }

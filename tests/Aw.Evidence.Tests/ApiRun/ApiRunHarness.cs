@@ -12,7 +12,7 @@ namespace Aw.Evidence.Tests.ApiRun;
 internal sealed class ApiRunHarness
 {
     internal const string ScriptPath = "/work/api.json";
-    internal const string RunDirectory = "/run/api-1";
+    internal const string RunDirectory = "/runs/api-1";
     internal const string Repo = "/work/repo";
     internal const string Origin = "http://localhost:3000";
 

@@ -10,7 +10,7 @@ namespace Aw.Evidence.Tests.Visual;
 
 public sealed class VisualGateTests
 {
-    private const string After = "/run/run-1/desktop-2-click.png";
+    private const string After = "/runs/run-1/desktop-2-click.png";
     private const string Baseline = "/baselines/main.png";
     private static readonly FakeImageCodec _codec = new();
     private static readonly VerdictCacheContext _context = new("visual-critique/v1", "judge-default", AppBuild: "abc", "s", Fixtures: null, "desktop", "140.0");
@@ -22,7 +22,7 @@ public sealed class VisualGateTests
     private static RgbaImage WithDot() => TestImages.Draw(60, 60, static (x, y) => (x, y) == (30, 30) ? 0x000000FFu : 0xFFFFFFFFu);
 
     private static VisualGateInput Input(bool failedSteps = false, string? baseline = Baseline, VerdictCache? cache = null, VerdictCacheContext? context = null) =>
-        new(After, baseline, failedSteps, RunInstanceId.From("instance-1"), "/run/run-1", context ?? _context, cache ?? VerdictCache.Empty);
+        new(After, baseline, failedSteps, RunInstanceId.From("instance-1"), "/runs/run-1", context ?? _context, cache ?? VerdictCache.Empty);
 
     private static async Task<(VisualOutcome Outcome, InvocationLog Log)> Decide(InMemoryRunFiles files, FakeJudge judge, VisualGateInput input)
     {
@@ -41,7 +41,7 @@ public sealed class VisualGateTests
 
         Assert.Equal(Verdict.Unchanged, outcome.Verdict);
         Assert.Equal(0, outcome.DiffScore);
-        Assert.Equal("/run/run-1/visual-diff.png", outcome.DiffImage);
+        Assert.Equal("/runs/run-1/visual-diff.png", outcome.DiffImage);
         Assert.Empty(judge.CritiqueRequests);
         Assert.Empty(log.All);
     }
@@ -67,8 +67,8 @@ public sealed class VisualGateTests
         var (outcome, log) = await Decide(files, judge, Input());
 
         var request = Assert.Single(judge.CritiqueRequests);
-        Assert.Equal(("/run/run-1/crop-after.png", "/run/run-1/crop-baseline.png"), (request.AfterScreenshot, request.BaselineScreenshot));
-        Assert.Equal(49, _codec.Decode(files.Files["/run/run-1/crop-after.png"]).Value.Width);
+        Assert.Equal(("/runs/run-1/crop-after.png", "/runs/run-1/crop-baseline.png"), (request.AfterScreenshot, request.BaselineScreenshot));
+        Assert.Equal(49, _codec.Decode(files.Files["/runs/run-1/crop-after.png"]).Value.Width);
         Assert.Equal(Verdict.LooksRight, outcome.Verdict);
         Assert.Equal(1.0 / 3600, outcome.DiffScore);
         var invocation = Assert.Single(log.All);

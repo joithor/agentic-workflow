@@ -36,7 +36,7 @@ public sealed class AgentReportRouteTests
             });
         var request = new CompleteStepRequest("ignored", RunToken.For(1, 1), OutcomeName.From("done"), new Dictionary<FactKey, ReadOnlyMemory<byte>>());
         var body = JsonSerializer.Serialize(request, host.App.Services.GetRequiredService<JsonSerializerOptions>());
-        var route = "/sindri/workflow/instances/WFI-" + new string('1', 32) + "/run/1.1/complete";
+        var route = "/sindri/workflow/instances/WFI-" + new string('1', 32) + "/runs/1.1/complete";
 
         var answer = await host.Http.Ask(Post(route, body, (SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli"), (SindriHeaders.LaunchSecret, Proof)));
 

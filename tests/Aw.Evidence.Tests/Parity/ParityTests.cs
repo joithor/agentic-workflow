@@ -27,7 +27,7 @@ public sealed class ParityTests
         Assert.Equal(new Core.Geometry.Offset(5, 5), frame.ImplementationOrigin);
         string[] images = [frame.Files.Design, frame.Files.Implementation, frame.Files.Diff, frame.Files.SideBySide];
         Assert.All(images, i => Assert.True(harness.Files.Files.ContainsKey(i), i));
-        Assert.Equal(AwJson.Serialize(summary, TestJson.Options), harness.Files.Files["/run/parity-1/parity.json"]);
+        Assert.Equal(AwJson.Serialize(summary, TestJson.Options), harness.Files.Files["/runs/parity-1/parity.json"]);
         Assert.Equal(["acquire QaStack", "acquire HeavyJob", "release HeavyJob", "release QaStack"], harness.Locks.Events);
     }
 
@@ -51,13 +51,13 @@ public sealed class ParityTests
     public async Task Parity_deletes_an_earlier_parity_json_and_fails_the_run_when_the_anchor_is_missing()
     {
         var harness = new ParityHarness().WithManifest(ParityHarness.Manifest());
-        _ = harness.Files.With("/run/parity-1/parity.json", "{}"u8.ToArray());
+        _ = harness.Files.With("/runs/parity-1/parity.json", "{}"u8.ToArray());
         harness.Page.Boxes.Clear();
 
         var result = await harness.Run(ParityHarness.Request());
 
         Assert.Equal((EvidenceErrors.RunFailed.Code, "frame default: anchor testId:card not found"), (result.Error.Code, result.Error.Message));
-        Assert.False(harness.Files.Files.ContainsKey("/run/parity-1/parity.json"));
+        Assert.False(harness.Files.Files.ContainsKey("/runs/parity-1/parity.json"));
         Assert.False(harness.Locks.IsHeld(LockKind.QaStack));
     }
 

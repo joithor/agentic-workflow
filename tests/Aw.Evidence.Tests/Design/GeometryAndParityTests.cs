@@ -72,7 +72,7 @@ public sealed class GeometryAndParityTests
     {
         var frame = ManifestBuilder.Frame("empty") with { AnchorOffset = new Offset(1, 2), KnownDifferences = ["icon"], DesignNode = "1:2" };
         var comparison = new PixelComparison(3, 100, RgbaImage.Filled(1, 1, 0xFFFFFFFF), Changed: null);
-        var measurement = new ParityMeasurement(frame, new Box(4.333, 5, 12.346, 9), comparison, [], ParityFiles.For("/run/p1", "empty"));
+        var measurement = new ParityMeasurement(frame, new Box(4.333, 5, 12.346, 9), comparison, [], ParityFiles.For("/runs/p1", "empty"));
 
         var entry = measurement.ToFrame(A.Manifest().Build());
 
@@ -80,7 +80,7 @@ public sealed class GeometryAndParityTests
         Assert.Equal(new SizeDelta(2.35, -1), entry.SizeDelta);
         Assert.Equal(3, entry.DiffPercent);
         Assert.Equal(0.1, entry.Threshold);
-        Assert.Equal("/run/p1/empty-side-by-side.png", entry.Files.SideBySide);
+        Assert.Equal("/runs/p1/empty-side-by-side.png", entry.Files.SideBySide);
         Assert.Equal("1:2", entry.DesignNode);
     }
 }

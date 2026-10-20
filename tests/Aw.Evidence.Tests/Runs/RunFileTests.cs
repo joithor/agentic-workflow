@@ -58,7 +58,7 @@ public sealed class RunFileTests
         Assert.Equal("ui-evidence.parity/1", (string?)Node(json, "schema"));
         Assert.Equal("scrubbed", (string?)Node(json, "provenance"));
         Assert.Equal("b", (string?)Node(json, "frames.0.name"));
-        Assert.Equal("/run/parity-1/b-diff.png", (string?)Node(json, "frames.0.files.diff"));
+        Assert.Equal("/runs/parity-1/b-diff.png", (string?)Node(json, "frames.0.files.diff"));
         Assert.Equal(false, (bool?)Node(json, "frames.0.includeAA"));
         Assert.Equal(TestJson.Write(summary), TestJson.Write(RunFileReader.Parity(TestJson.Utf8(TestJson.Write(summary)), TestJson.Options).Value));
     }
@@ -79,8 +79,8 @@ public sealed class RunFileTests
         Assert.Empty(A.ParitySummary().Build().FailedBoxChecks());
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("/run/r1", "summary.json", "/run/r1/summary.json")]
-    [InlineData("/run/r1/", "/a.png", "/run/r1/a.png")]
+    [InlineData("/runs/r1", "summary.json", "/runs/r1/summary.json")]
+    [InlineData("/runs/r1/", "/a.png", "/runs/r1/a.png")]
     public void Run_paths_join_with_one_separator(string directory, string file, string expected) =>
         Assert.Equal(expected, Core.Files.RunPath.Combine(directory, file));
 

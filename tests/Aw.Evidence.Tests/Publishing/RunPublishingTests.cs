@@ -41,10 +41,10 @@ public sealed class RunPublishingTests
     public void The_comment_carries_the_diff_reasons_evidence_and_note_with_uploaded_urls()
     {
         var summary = A.RunSummary()
-            .WithVisual(new RunVisual(Verdict.LooksOff, ["overlap", "cut label"], 0.0123, "/run/run-1/visual-diff.png"))
-            .WithEvidence(new RunEvidence(["/run/run-1/desktop-trace.zip"], ["/run/run-1/v.webm"]))
+            .WithVisual(new RunVisual(Verdict.LooksOff, ["overlap", "cut label"], 0.0123, "/runs/run-1/visual-diff.png"))
+            .WithEvidence(new RunEvidence(["/runs/run-1/desktop-trace.zip"], ["/runs/run-1/v.webm"]))
             .Build();
-        var urls = new Dictionary<string, string>(StringComparer.Ordinal) { ["/run/run-1/desktop-1-click.png"] = "https://cdn.example/1.png" };
+        var urls = new Dictionary<string, string>(StringComparer.Ordinal) { ["/runs/run-1/desktop-1-click.png"] = "https://cdn.example/1.png" };
 
         var lines = EvidenceComment.Render(summary, "Linear upload failed — local paths only.", urls).Split('\n');
 
@@ -63,7 +63,7 @@ public sealed class RunPublishingTests
         Assert.True(plan.LinearUploadAllowed);
         Assert.Null(plan.Note);
         Assert.Equal("Publish UI evidence for run run-1? DB provenance: seeded (Linear upload allowed).", plan.Question);
-        Assert.Equal(["/run/run-1/desktop-1-click.png"], plan.Files);
+        Assert.Equal(["/runs/run-1/desktop-1-click.png"], plan.Files);
     }
 
     [Theory, Trait("Lane", "unit")]
