@@ -17,7 +17,7 @@ ok()   { PASS=$((PASS + 1)); echo "  ok   $1"; }
 fail() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }
 
 BIN="$TMPROOT/bin"; mkdir -p "$BIN"
-for t in bash sh jq grep sed awk head cat dirname basename uname mktemp find tr cut; do
+for t in bash sh jq grep sed awk head cat dirname basename uname mktemp find tr cut wc sha256sum shasum mkdir; do
   p="$(command -v "$t")" && ln -s "$p" "$BIN/$t"
 done
 fake() { printf '#!/bin/sh\n%s\n' "${2:-exit 0}" >"$BIN/$1"; chmod +x "$BIN/$1"; }
@@ -142,6 +142,14 @@ run AW_DEPS_OS=Darwin AW_FAKE_PROVIDES=tmux AW_STATE_DIR="$TMPROOT/nostate"
 grep -q "^brew install tmux$" "$LOG" && ok "macOS installs a missing tmux with brew" || fail "brew not run: $(cat "$LOG")"
 fake tmux
 
+# A code index graphify environment at the pinned version under <state>, so a real run installs nothing.
+ci_env() {
+  local d="$1/cache/code-index/graphify-$(bash "$REPO/scripts/code-index-lock.sh" get graphify-version)-$(bash "$REPO/scripts/code-index-lock.sh" get requirements-sha256 | cut -c1-12)"
+  mkdir -p "$d/bin"
+  printf '#!/bin/sh\necho graphify %s\n' "$(bash "$REPO/scripts/code-index-lock.sh" get graphify-version)" >"$d/bin/graphify"
+  chmod +x "$d/bin/graphify"
+}
+
 # 7. Temporal: a cached fetch is found in the cache layout sindri serve reads, and `temporal --version` is run.
 STATE="$TMPROOT/state"
 V="$(awk '$1=="temporal"{print $2; exit}' "$REPO/binaries.lock")"; TV="$(awk '$1=="temporal-test-server"{print $2; exit}' "$REPO/binaries.lock")"
@@ -149,6 +157,7 @@ mkdir -p "$STATE/cache/bin/temporal-$V" "$STATE/cache/bin/temporal-test-server-$
 printf '#!/bin/sh\necho "temporal version %s"\n' "$V" >"$STATE/cache/bin/temporal-$V/temporal"
 : >"$STATE/cache/bin/temporal-test-server-$TV/temporal-test-server"
 chmod +x "$STATE"/cache/bin/*/*
+ci_env "$STATE"
 fake bwrap
 run AW_DEPS_OS=Linux AW_STATE_DIR="$STATE"
 expect "temporal is found at cache/bin/temporal-<pin>/ and runs" 0 "temporal: .*/cache/bin/temporal-$V/temporal \\(temporal version $V\\)" "temporal-test-server: .*temporal-test-server-$TV"
@@ -157,6 +166,46 @@ expect "temporal is found at cache/bin/temporal-<pin>/ and runs" 0 "temporal: .*
 printf '#!/bin/sh\necho broken >&2; exit 3\n' >"$STATE/cache/bin/temporal-$V/temporal"
 run AW_DEPS_OS=Linux AW_STATE_DIR="$STATE"
 expect "a temporal that won't run fails clearly" 1 "WARN: .*temporal does not run: broken"
+
+# 9. The code index pins (context/code-index.lock): the dry run prints the graphify environment and the model pull from the lock.
+CI_LOCK="$REPO/scripts/code-index-lock.sh"
+CI_VER="$(bash "$CI_LOCK" get graphify-version)"; CI_DATE="$(bash "$CI_LOCK" get graphify-date)"
+CI_MODEL="$(bash "$CI_LOCK" get model)"; CI_ID="$(bash "$CI_LOCK" get model-digest | sed 's/^sha256://' | cut -c1-12)"
+fake ollama 'exit 0'
+run AW_DEPS_OS=Linux AW_DRY_RUN=1 AW_STATE_DIR="$TMPROOT/ci-state"
+expect "dry run prints the code index graphify and model steps from the lock" 0 \
+  "would run: uv venv .*/cache/code-index/graphify-$CI_VER-[0-9a-f]{12} && uv pip install .*--require-hashes -r .*/context/code-index-requirements.txt --exclude-newer $CI_DATE" \
+  "would run: ollama pull $CI_MODEL \\(unless ollama list shows id $CI_ID\\)"
+[ ! -e "$TMPROOT/ci-state" ] && ok "the dry run created no environment" || fail "the dry run created $TMPROOT/ci-state"
+
+# A graphify environment already at the pinned version (and the temporal cache) so the real runs below touch no network.
+CI_SHA12="$(bash "$CI_LOCK" get requirements-sha256 | cut -c1-12)"
+mkdir -p "$TMPROOT/ci-state/cache/code-index/graphify-$CI_VER-$CI_SHA12/bin"
+printf '#!/bin/sh\necho graphify %s\n' "$CI_VER" >"$TMPROOT/ci-state/cache/code-index/graphify-$CI_VER-$CI_SHA12/bin/graphify"
+chmod +x "$TMPROOT/ci-state/cache/code-index/graphify-$CI_VER-$CI_SHA12/bin/graphify"
+
+mkdir -p "$TMPROOT/ci-state/cache/bin/temporal-$V" "$TMPROOT/ci-state/cache/bin/temporal-test-server-$TV"
+printf '#!/bin/sh\necho "temporal version %s"\n' "$V" >"$TMPROOT/ci-state/cache/bin/temporal-$V/temporal"
+: >"$TMPROOT/ci-state/cache/bin/temporal-test-server-$TV/temporal-test-server"
+chmod +x "$TMPROOT"/ci-state/cache/bin/*/*
+run AW_DEPS_OS=Linux AW_DRY_RUN=1 AW_STATE_DIR="$TMPROOT/ci-state"
+expect "an installed code index graphify is recognised" 0 "code-index graphify: already installed"
+
+# 9b. The model is already pulled at the pinned digest: no pull. A different digest: pulled. The server down: a warning, not a failure.
+fake ollama "[ \"\$1\" = list ] && { echo 'NAME ID SIZE MODIFIED'; echo '$CI_MODEL $CI_ID 274 MB 1 day ago'; }; [ \"\$1\" = pull ] && echo pulled >>\"$LOG\"; exit 0"
+: >"$LOG"; run AW_DEPS_OS=Linux AW_STATE_DIR="$TMPROOT/ci-state"
+expect "a model at the pinned digest is not pulled" 0 "ollama model: already pulled \\($CI_MODEL, $CI_ID\\)"
+grep -q pulled "$LOG" && fail "pulled a model that was present" || ok "no pull when the digest matches"
+fake ollama "[ \"\$1\" = list ] && { echo 'NAME ID SIZE MODIFIED'; echo '$CI_MODEL 000000000000 274 MB 1 day ago'; }; [ \"\$1\" = pull ] && echo \"pulled \$2\" >>\"$LOG\"; exit 0"
+: >"$LOG"; run AW_DEPS_OS=Linux AW_STATE_DIR="$TMPROOT/ci-state"
+expect "a model at another digest is pulled" 0 "ollama model: pulled \\($CI_MODEL\\)"
+grep -q "pulled $CI_MODEL" "$LOG" && ok "ollama pull ran with the lock's model name" || fail "no pull: $(cat "$LOG")"
+fake ollama 'echo "connection refused" >&2; exit 1'
+run AW_DEPS_OS=Linux AW_STATE_DIR="$TMPROOT/ci-state"
+expect "an Ollama server that is down warns" 0 "the Ollama server does not answer"
+rm "$BIN/ollama"
+run AW_DEPS_OS=Linux AW_DRY_RUN=1 AW_STATE_DIR="$TMPROOT/ci-state"
+expect "no ollama skips the model with a warning" 0 "WARN: ollama not installed; skipping the embedding model $CI_MODEL"
 
 echo ""
 echo "$PASS passed, $FAIL failed"
