@@ -72,7 +72,7 @@ public sealed class ApproveAllRecipesAdmissionTests : IDisposable
     }
 
     [Fact]
-    public async Task A_held_answer_keeps_its_hold_time_for_recipe_approved()
+    public async Task A_held_answer_keeps_its_hold_time_on_the_redeemed_plan()
     {
         await Approved();
         var digest = (await _shipped.Plan(Token)).Value.Digest;
