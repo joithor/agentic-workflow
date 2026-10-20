@@ -12,7 +12,7 @@ namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// 'sindri workflow answer &lt;address&gt; [--text …|--file …] [--grant n | --grant-tokens n | --accept | --reject |
-/// --resume]', 'workflow command &lt;address&gt; &lt;verb&gt;', 'workflow cancel', 'takeover' and 'handback &lt;address&gt;', each with '[--nonce
+/// --resume]', 'workflow command &lt;address&gt; &lt;verb&gt;', 'workflow cancel', 'takeover' and 'handback &lt;address&gt;' (the last two also as 'sindri takeover|handback &lt;item-or-address&gt;'), each with '[--nonce
 /// &lt;n&gt;] [--json]' (engine spec rev 8 §5.2, §5.8, §6.3), as clients of the API: without '--nonce' the CLI asks the
 /// instance's nonce route for one, then posts the command to its commands route, where the command chain classes the
 /// caller (an agent session is refused SND-AUTH-002). Each prints the new status header and what happened (an answer:
@@ -35,6 +35,8 @@ internal sealed class ApplyCommandVerbs(RecipeDesk desk, IServiceProvider servic
     private const string TakeoverUsage = "usage: sindri workflow takeover <address> [--nonce <n>] [--json]";
 
     private const string HandbackUsage = "usage: sindri workflow handback <address> [--nonce <n>] [--json]";
+
+    private const string TakeoverShortUsage = "usage: sindri takeover <item-or-address> [--nonce <n>] [--json]";
 
     private const string HandbackShortUsage = "usage: sindri handback <item-or-address> [--nonce <n>] [--json]";
 
@@ -93,8 +95,12 @@ internal sealed class ApplyCommandVerbs(RecipeDesk desk, IServiceProvider servic
 
     internal Task<int> Cancel(string[] args, CancellationToken ct) => Bare(args, ApplyCommandKind.Cancel, CancelUsage, ct);
 
-    /// <summary>'workflow takeover &lt;address&gt;' (class pause: an agent session may take over).</summary>
-    internal Task<int> Takeover(string[] args, CancellationToken ct) => Bare(args, ApplyCommandKind.Takeover, TakeoverUsage, ct);
+    /// <summary>
+    /// 'workflow takeover &lt;address&gt;' (class pause: an agent session may take over), or its short form 'sindri takeover
+    /// &lt;item-or-address&gt;' (<paramref name="shortForm"/>; engine spec §6.3): a bare item is the root of its latest attempt.
+    /// </summary>
+    internal Task<int> Takeover(string[] args, CancellationToken ct, bool shortForm = false) =>
+        Bare(args, ApplyCommandKind.Takeover, shortForm ? TakeoverShortUsage : TakeoverUsage, ct);
 
     /// <summary>
     /// 'workflow handback &lt;address&gt;' (class desk: an agent session is refused SND-AUTH-002), or its short form
