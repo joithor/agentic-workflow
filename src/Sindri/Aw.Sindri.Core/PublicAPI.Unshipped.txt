@@ -12425,3 +12425,5 @@ Aw.Sindri.Core.Jobs.IRunningJobs.IsRunning(Aw.Sindri.Core.Ids.JobKind kind, Aw.S
 Aw.Sindri.Core.Jobs.JobConflicts
 static Aw.Sindri.Core.Jobs.JobConflicts.Running(Aw.Sindri.Core.Ids.JobKind kind, Aw.Sindri.Core.Ids.JobKey key, Aw.Sindri.Core.Ids.JobId running) -> Aw.Kernel.Error!
 Aw.Sindri.Core.Workflow.Registry.RecipeRegistryReader.RecipeRegistryReader(Aw.Sindri.Core.Workflow.Registry.IRecipeStore! store, Aw.Sindri.Core.Workflow.Registry.IRecipeApprovals! approvals, Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! catalog, System.Text.Json.JsonSerializerOptions! json, Aw.Sindri.Core.Workflow.Validation.IRecipeProfileFacts! profile, Aw.Sindri.Core.Workflow.Views.IRecipeDisplayNames? names = null) -> void
+static Aw.Sindri.Core.Workflow.Views.RecipeIdDisplayNames.Readable(Aw.Sindri.Core.Workflow.Ids.RecipeId id) -> string!
+

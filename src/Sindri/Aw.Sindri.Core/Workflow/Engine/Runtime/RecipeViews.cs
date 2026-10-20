@@ -21,7 +21,7 @@ public static class RecipeViews
         var path = StatePathOrder.Of(recipe);
         return new RecipeView(
             stamp.Id,
-            displayName ?? stamp.Id.Value,
+            displayName ?? RecipeIdDisplayNames.Readable(stamp.Id),
             stamp.Hash,
             stamp.Version,
             recipe.Name,

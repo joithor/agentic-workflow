@@ -21,7 +21,7 @@ public static class InstanceSummaries
             view.Address,
             view.Id,
             view.ItemId,
-            new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, view.Urgency, context.RecipeDisplayName ?? view.Recipe.Id.Value),
+            new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, view.Urgency, context.RecipeDisplayName ?? RecipeIdDisplayNames.Readable(view.Recipe.Id)),
             view.State,
             chip,
             view.Since,

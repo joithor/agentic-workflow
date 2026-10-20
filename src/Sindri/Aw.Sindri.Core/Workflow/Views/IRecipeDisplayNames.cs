@@ -10,6 +10,6 @@ public interface IRecipeDisplayNames
 {
     /// <summary>The display name of <paramref name="id"/>.</summary>
     /// <param name="id">The recipe's id.</param>
-    /// <returns>The name; the id itself when no name is known (a recipe from before the field, or one not registered). Never empty.</returns>
+    /// <returns>The name; the id made readable (<see cref="RecipeIdDisplayNames.Readable"/>) when no name is known (a recipe from before the field, or one not registered). Never empty.</returns>
     public string Of(RecipeId id);
 }

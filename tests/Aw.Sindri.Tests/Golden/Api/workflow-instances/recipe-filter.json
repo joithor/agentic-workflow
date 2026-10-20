@@ -9,7 +9,7 @@
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
         "version": 2,
         "urgency": "triage",
-        "displayName": "workflow.triage-alert"
+        "displayName": "Triage alert"
       },
       "state": "classify",
       "chip": {
@@ -108,7 +108,7 @@
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
         "version": 2,
         "urgency": "triage",
-        "displayName": "workflow.triage-alert"
+        "displayName": "Triage alert"
       },
       "state": "route",
       "chip": {
@@ -220,7 +220,7 @@
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
         "version": 2,
         "urgency": "triage",
-        "displayName": "workflow.triage-alert"
+        "displayName": "Triage alert"
       },
       "state": "done",
       "chip": {
@@ -315,7 +315,7 @@
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
         "version": 2,
         "urgency": "triage",
-        "displayName": "workflow.triage-alert"
+        "displayName": "Triage alert"
       },
       "state": "done",
       "chip": {
@@ -410,7 +410,7 @@
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
         "version": 2,
         "urgency": "triage",
-        "displayName": "workflow.triage-alert"
+        "displayName": "Triage alert"
       },
       "state": "done",
       "chip": {
@@ -505,7 +505,7 @@
         "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
         "version": 2,
         "urgency": "triage",
-        "displayName": "workflow.triage-alert"
+        "displayName": "Triage alert"
       },
       "state": "done",
       "chip": {

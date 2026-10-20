@@ -65,10 +65,13 @@ public sealed class WorkflowsViewModelTests
     public async Task A_group_is_named_for_its_workflow_and_counts_runs_and_never_shows_the_recipe_id()
     {
         var list = await Shown();
+        var served = GoldenFiles.Node("workflow-instances", "open")["instances"]!.AsArray()   // why: the golden is a JSON document
+            .DistinctBy(static i => (string)i!["recipe"]!["id"]!, StringComparer.Ordinal)
+            .ToDictionary(static i => (string)i!["recipe"]!["id"]!, static i => (string)i!["recipe"]!["displayName"]!, StringComparer.Ordinal);
 
         Assert.All(list.Groups, group =>
         {
-            Assert.Equal(WorkflowNames.Of(group.Recipe, displayName: null), group.Name);
+            Assert.Equal(served[group.Recipe], group.Name);   // the name the server serves; an older one serves none and the id is made readable (WorkflowNames)
             Assert.Equal(group.Rows.Count == 1 ? "1 run" : $"{group.Rows.Count} runs", group.CountText);
             Assert.Equal($"{group.Name} · {group.CountText}", group.Header);
             Assert.DoesNotContain("workflow.", group.Header, StringComparison.Ordinal);

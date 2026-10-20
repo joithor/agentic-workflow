@@ -5,7 +5,7 @@ namespace Aw.Sindri.Features.ListInstances;
 
 /// <summary>Builds the list rows at the time the list is read: the ages and timeouts come from that time, and each row's recipe carries its display name (setup-once spec §7.7).</summary>
 /// <param name="clock">The time the rows are read at.</param>
-/// <param name="names">The recipes' display names; null shows the recipe ids.</param>
+/// <param name="names">The recipes' display names; null shows the ids made readable.</param>
 internal sealed class InstanceRows(TimeProvider clock, IRecipeDisplayNames? names = null)
 {
     /// <summary>The time a list read now is as of.</summary>

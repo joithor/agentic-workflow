@@ -615,7 +615,7 @@ public sealed partial class CommandPaletteViewModelTests
     public async Task A_cli_only_entry_copies_its_cli()
     {
         _palette.Open();
-        _palette.Query = "approve";
+        _palette.Query = "approveprofile";
 
         await _palette.Run(_palette.Selected, Token);
 
@@ -641,7 +641,7 @@ public sealed partial class CommandPaletteViewModelTests
         _palette.Open();
         _palette.Query = "recipes";
 
-        await _palette.Run(_palette.Selected, Token);
+        await _palette.Run(Entry("go:Recipes"), Token);   // "Approve all recipes" (an action) also matches the query and comes first
 
         Assert.Equal([PageId.Recipes], _pages);
         Assert.Equal(["go:Recipes"], _history, StringComparer.Ordinal);

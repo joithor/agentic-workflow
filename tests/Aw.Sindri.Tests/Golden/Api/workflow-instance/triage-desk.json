@@ -9,7 +9,7 @@
     "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
     "version": 2,
     "urgency": "triage",
-    "displayName": "workflow.triage-alert"
+    "displayName": "Triage alert"
   },
   "state": "classify",
   "since": "2026-10-12T12:22:00.0000000Z",

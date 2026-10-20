@@ -107,7 +107,7 @@ public static partial class InstanceViews
             context.Parent,
             view.ItemId,
             context.Title,
-            new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, view.Urgency, context.RecipeDisplayName ?? view.Recipe.Id.Value),
+            new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, view.Urgency, context.RecipeDisplayName ?? RecipeIdDisplayNames.Readable(view.Recipe.Id)),
             view.State,
             view.Since,
             view.EngineOwned,
