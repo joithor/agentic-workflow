@@ -7353,8 +7353,8 @@ static Aw.Sindri.Core.Mcp.McpScopeFinding.operator ==(Aw.Sindri.Core.Mcp.McpScop
 static Aw.Sindri.Core.Mcp.ProviderFileRead.operator !=(Aw.Sindri.Core.Mcp.ProviderFileRead? left, Aw.Sindri.Core.Mcp.ProviderFileRead? right) -> bool
 static Aw.Sindri.Core.Mcp.ProviderFileRead.operator ==(Aw.Sindri.Core.Mcp.ProviderFileRead? left, Aw.Sindri.Core.Mcp.ProviderFileRead? right) -> bool
 static Aw.Sindri.Core.NeedsYou.NeedsYouClearing.AfterCheck(Aw.Sindri.Core.NeedsYou.NeedsYouRow? existing, Aw.Sindri.Core.Views.ProfileRow! profile, Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> Aw.Kernel.Result<Aw.Sindri.Core.NeedsYou.NeedsYouRow?>!
-static Aw.Sindri.Core.NeedsYou.NeedsYouClearing.AfterRun(Aw.Sindri.Core.NeedsYou.NeedsYouRow? existing, Aw.Sindri.Core.Views.ServiceRow! service, Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> Aw.Kernel.Result<Aw.Sindri.Core.NeedsYou.NeedsYouRow?>!
-static Aw.Sindri.Core.NeedsYou.NeedsYouClearing.FailureStands(Aw.Sindri.Core.NeedsYou.NeedsYouRow! failure, Aw.Sindri.Core.Views.ProfileRow! profile) -> bool
+static Aw.Sindri.Core.NeedsYou.NeedsYouClearing.AfterRun(Aw.Sindri.Core.NeedsYou.NeedsYouRow? existing, Aw.Sindri.Core.Views.ServiceRow! service, Aw.Sindri.Core.Text.ITextScrubber! scrubber, bool builtIn = false) -> Aw.Kernel.Result<Aw.Sindri.Core.NeedsYou.NeedsYouRow?>!
+static Aw.Sindri.Core.NeedsYou.NeedsYouClearing.FailureStands(Aw.Sindri.Core.NeedsYou.NeedsYouRow! failure, Aw.Sindri.Core.Views.ProfileRow! profile, System.Collections.Generic.IReadOnlyCollection<Aw.Sindri.Core.Ids.ServiceName>? builtIns = null) -> bool
 static Aw.Sindri.Core.NeedsYou.NeedsYouOrder.Compare(Aw.Sindri.Core.NeedsYou.NeedsYouRow! left, Aw.Sindri.Core.NeedsYou.NeedsYouRow! right) -> int
 static Aw.Sindri.Core.NeedsYou.NeedsYouOrder.Sort(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.NeedsYou.NeedsYouRow!>! rows) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.NeedsYou.NeedsYouRow!>!
 static Aw.Sindri.Core.NeedsYou.NeedsYouRow.operator !=(Aw.Sindri.Core.NeedsYou.NeedsYouRow? left, Aw.Sindri.Core.NeedsYou.NeedsYouRow? right) -> bool
@@ -7362,7 +7362,7 @@ static Aw.Sindri.Core.NeedsYou.NeedsYouRow.operator ==(Aw.Sindri.Core.NeedsYou.N
 static Aw.Sindri.Core.NeedsYou.NeedsYouRowRecord.operator !=(Aw.Sindri.Core.NeedsYou.NeedsYouRowRecord? left, Aw.Sindri.Core.NeedsYou.NeedsYouRowRecord? right) -> bool
 static Aw.Sindri.Core.NeedsYou.NeedsYouRowRecord.operator ==(Aw.Sindri.Core.NeedsYou.NeedsYouRowRecord? left, Aw.Sindri.Core.NeedsYou.NeedsYouRowRecord? right) -> bool
 static Aw.Sindri.Core.NeedsYou.NeedsYouRows.ForDecision(Aw.Sindri.Core.Views.HumanDecisionRow! decision, Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> Aw.Kernel.Result<Aw.Sindri.Core.NeedsYou.NeedsYouRow!>!
-static Aw.Sindri.Core.NeedsYou.NeedsYouRows.ForFailure(Aw.Sindri.Core.Views.ServiceRow! service, System.DateTimeOffset since, Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> Aw.Kernel.Result<Aw.Sindri.Core.NeedsYou.NeedsYouRow!>!
+static Aw.Sindri.Core.NeedsYou.NeedsYouRows.ForFailure(Aw.Sindri.Core.Views.ServiceRow! service, System.DateTimeOffset since, Aw.Sindri.Core.Text.ITextScrubber! scrubber, bool builtIn = false) -> Aw.Kernel.Result<Aw.Sindri.Core.NeedsYou.NeedsYouRow!>!
 static Aw.Sindri.Core.NeedsYou.NeedsYouRows.ForProfile(Aw.Sindri.Core.Views.ProfileRow! profile, System.DateTimeOffset since, Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> Aw.Kernel.Result<Aw.Sindri.Core.NeedsYou.NeedsYouRow?>!
 static Aw.Sindri.Core.NeedsYou.NeedsYouSubject.operator !=(Aw.Sindri.Core.NeedsYou.NeedsYouSubject? left, Aw.Sindri.Core.NeedsYou.NeedsYouSubject? right) -> bool
 static Aw.Sindri.Core.NeedsYou.NeedsYouSubject.operator ==(Aw.Sindri.Core.NeedsYou.NeedsYouSubject? left, Aw.Sindri.Core.NeedsYou.NeedsYouSubject? right) -> bool
@@ -10215,10 +10215,8 @@ Aw.Sindri.Core.Profile.LaunchSettings.Repos.get -> System.Collections.Generic.IR
 Aw.Sindri.Core.Profile.LaunchSettings.Repos.init -> void
 Aw.Sindri.Core.Profile.SindriProfile.Agents.get -> Aw.Sindri.Core.Profile.AgentSettings?
 Aw.Sindri.Core.Profile.SindriProfile.Agents.init -> void
-Aw.Sindri.Core.Profile.SindriProfile.Deconstruct(out int SchemaVersion, out string! User, out string! Tenant, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services, out Aw.Sindri.Core.Profile.ApiSettings? Api, out Aw.Sindri.Core.Profile.WorkflowSettings? Workflow, out System.Text.Json.JsonElement? Context, out Aw.Sindri.Core.Profile.IndexSettings? Index, out Aw.Sindri.Core.Profile.LaunchSettings? Launch, out Aw.Sindri.Core.Profile.AgentSettings? Agents) -> void
 Aw.Sindri.Core.Profile.SindriProfile.Launch.get -> Aw.Sindri.Core.Profile.LaunchSettings?
 Aw.Sindri.Core.Profile.SindriProfile.Launch.init -> void
-Aw.Sindri.Core.Profile.SindriProfile.SindriProfile(int SchemaVersion, string! User, string! Tenant = "local", System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos = null, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services = null, Aw.Sindri.Core.Profile.ApiSettings? Api = null, Aw.Sindri.Core.Profile.WorkflowSettings? Workflow = null, System.Text.Json.JsonElement? Context = null, Aw.Sindri.Core.Profile.IndexSettings? Index = null, Aw.Sindri.Core.Profile.LaunchSettings? Launch = null, Aw.Sindri.Core.Profile.AgentSettings? Agents = null) -> void
 const Aw.Sindri.Core.Profile.AgentSettings.DefaultSoftLimit = 0.8 -> decimal
 const Aw.Sindri.Core.Profile.AgentSettings.SoftLimitKey = "softLimit" -> string!
 override Aw.Sindri.Core.Profile.LaunchRepoSettings.Equals(object? obj) -> bool
@@ -12948,4 +12946,202 @@ static Aw.Sindri.Core.Sessions.SessionIdCapture.Check(string? pattern, Aw.Sindri
 static readonly Aw.Sindri.Core.SindriErrors.LaunchSessionIdTimedOut -> Aw.Kernel.ErrorDefinition!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext.Deconstruct(out string! Title, out Aw.Sindri.Core.Workflow.Views.ParentRef? Parent, out Aw.Sindri.Core.Workflow.Views.ViewCounts! Counts, out System.DateTimeOffset AsOf, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StepRun!>? StepRuns, out string? RecipeDisplayName) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext.InstanceDetailContext(string! Title, Aw.Sindri.Core.Workflow.Views.ParentRef? Parent, Aw.Sindri.Core.Workflow.Views.ViewCounts! Counts, System.DateTimeOffset AsOf, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StepRun!>? StepRuns = null, string? RecipeDisplayName = null) -> void
-
+Aw.Sindri.Core.Profile.SetupSettings
+Aw.Sindri.Core.Profile.SetupSettings.<Clone>$() -> Aw.Sindri.Core.Profile.SetupSettings!
+Aw.Sindri.Core.Profile.SetupSettings.Deconstruct(out string? Mcp) -> void
+Aw.Sindri.Core.Profile.SetupSettings.Equals(Aw.Sindri.Core.Profile.SetupSettings? other) -> bool
+Aw.Sindri.Core.Profile.SetupSettings.Mcp.get -> string?
+Aw.Sindri.Core.Profile.SetupSettings.Mcp.init -> void
+Aw.Sindri.Core.Profile.SetupSettings.SetupSettings(string? Mcp = null) -> void
+Aw.Sindri.Core.Profile.SindriProfile.Deconstruct(out int SchemaVersion, out string! User, out string! Tenant, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services, out Aw.Sindri.Core.Profile.ApiSettings? Api, out Aw.Sindri.Core.Profile.WorkflowSettings? Workflow, out System.Text.Json.JsonElement? Context, out Aw.Sindri.Core.Profile.IndexSettings? Index, out Aw.Sindri.Core.Profile.LaunchSettings? Launch, out Aw.Sindri.Core.Profile.AgentSettings? Agents, out Aw.Sindri.Core.Profile.SetupSettings? Setup) -> void
+Aw.Sindri.Core.Profile.SindriProfile.Setup.get -> Aw.Sindri.Core.Profile.SetupSettings?
+Aw.Sindri.Core.Profile.SindriProfile.Setup.init -> void
+Aw.Sindri.Core.Profile.SindriProfile.SindriProfile(int SchemaVersion, string! User, string! Tenant = "local", System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos = null, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services = null, Aw.Sindri.Core.Profile.ApiSettings? Api = null, Aw.Sindri.Core.Profile.WorkflowSettings? Workflow = null, System.Text.Json.JsonElement? Context = null, Aw.Sindri.Core.Profile.IndexSettings? Index = null, Aw.Sindri.Core.Profile.LaunchSettings? Launch = null, Aw.Sindri.Core.Profile.AgentSettings? Agents = null, Aw.Sindri.Core.Profile.SetupSettings? Setup = null) -> void
+Aw.Sindri.Core.Setup.MapFact.Retry.get -> Aw.Sindri.Core.Setup.MapRetry?
+Aw.Sindri.Core.Setup.MapFact.Retry.init -> void
+Aw.Sindri.Core.Setup.MapRetry
+Aw.Sindri.Core.Setup.MapRetry.<Clone>$() -> Aw.Sindri.Core.Setup.MapRetry!
+Aw.Sindri.Core.Setup.MapRetry.Deconstruct(out System.TimeSpan In, out string! Reason) -> void
+Aw.Sindri.Core.Setup.MapRetry.Equals(Aw.Sindri.Core.Setup.MapRetry? other) -> bool
+Aw.Sindri.Core.Setup.MapRetry.In.get -> System.TimeSpan
+Aw.Sindri.Core.Setup.MapRetry.In.init -> void
+Aw.Sindri.Core.Setup.MapRetry.MapRetry(System.TimeSpan In, string! Reason) -> void
+Aw.Sindri.Core.Setup.MapRetry.Reason.get -> string!
+Aw.Sindri.Core.Setup.MapRetry.Reason.init -> void
+Aw.Sindri.Core.Setup.OnyxFact.Deferred.get -> bool
+Aw.Sindri.Core.Setup.OnyxFact.Deferred.init -> void
+const Aw.Sindri.Core.Profile.SetupSettings.Auto = "auto" -> string!
+const Aw.Sindri.Core.Profile.SetupSettings.Off = "off" -> string!
+const Aw.Sindri.Core.Setup.SetupActions.RefreshContextMap = "RefreshContextMap" -> string!
+override Aw.Sindri.Core.Profile.SetupSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.SetupSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.SetupSettings.ToString() -> string!
+override Aw.Sindri.Core.Setup.MapRetry.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Setup.MapRetry.GetHashCode() -> int
+override Aw.Sindri.Core.Setup.MapRetry.ToString() -> string!
+static Aw.Sindri.Core.Profile.SetupSettings.McpAutomatic(Aw.Sindri.Core.Profile.SindriProfile! profile) -> bool
+static Aw.Sindri.Core.Profile.SetupSettings.operator !=(Aw.Sindri.Core.Profile.SetupSettings? left, Aw.Sindri.Core.Profile.SetupSettings? right) -> bool
+static Aw.Sindri.Core.Profile.SetupSettings.operator ==(Aw.Sindri.Core.Profile.SetupSettings? left, Aw.Sindri.Core.Profile.SetupSettings? right) -> bool
+static Aw.Sindri.Core.Setup.MapRetry.operator !=(Aw.Sindri.Core.Setup.MapRetry? left, Aw.Sindri.Core.Setup.MapRetry? right) -> bool
+static Aw.Sindri.Core.Setup.MapRetry.operator ==(Aw.Sindri.Core.Setup.MapRetry? left, Aw.Sindri.Core.Setup.MapRetry? right) -> bool
+Aw.Sindri.Core.Events.McpProviderOutcome
+Aw.Sindri.Core.Events.McpProviderOutcome.<Clone>$() -> Aw.Sindri.Core.Events.McpProviderOutcome!
+Aw.Sindri.Core.Events.McpProviderOutcome.Deconstruct(out string! Provider, out string! Outcome) -> void
+Aw.Sindri.Core.Events.McpProviderOutcome.Equals(Aw.Sindri.Core.Events.McpProviderOutcome? other) -> bool
+Aw.Sindri.Core.Events.McpProviderOutcome.McpProviderOutcome(string! Provider, string! Outcome) -> void
+Aw.Sindri.Core.Events.McpProviderOutcome.Outcome.get -> string!
+Aw.Sindri.Core.Events.McpProviderOutcome.Outcome.init -> void
+Aw.Sindri.Core.Events.McpProviderOutcome.Provider.get -> string!
+Aw.Sindri.Core.Events.McpProviderOutcome.Provider.init -> void
+Aw.Sindri.Core.Events.McpRegistered
+Aw.Sindri.Core.Events.McpRegistered.<Clone>$() -> Aw.Sindri.Core.Events.McpRegistered!
+Aw.Sindri.Core.Events.McpRegistered.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.McpRegistered.CommandId.init -> void
+Aw.Sindri.Core.Events.McpRegistered.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.RepoName Repo, out int Port, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.McpProviderOutcome!>! Providers) -> void
+Aw.Sindri.Core.Events.McpRegistered.Equals(Aw.Sindri.Core.Events.McpRegistered? other) -> bool
+Aw.Sindri.Core.Events.McpRegistered.McpRegistered(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.RepoName Repo, int Port, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.McpProviderOutcome!>! Providers) -> void
+Aw.Sindri.Core.Events.McpRegistered.Port.get -> int
+Aw.Sindri.Core.Events.McpRegistered.Port.init -> void
+Aw.Sindri.Core.Events.McpRegistered.Providers.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.McpProviderOutcome!>!
+Aw.Sindri.Core.Events.McpRegistered.Providers.init -> void
+Aw.Sindri.Core.Events.McpRegistered.Repo.get -> Aw.Sindri.Core.Ids.RepoName
+Aw.Sindri.Core.Events.McpRegistered.Repo.init -> void
+Aw.Sindri.Core.Events.OnyxDeferred
+Aw.Sindri.Core.Events.OnyxDeferred.<Clone>$() -> Aw.Sindri.Core.Events.OnyxDeferred!
+Aw.Sindri.Core.Events.OnyxDeferred.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.OnyxDeferred.CommandId.init -> void
+Aw.Sindri.Core.Events.OnyxDeferred.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out bool Deferred) -> void
+Aw.Sindri.Core.Events.OnyxDeferred.Deferred.get -> bool
+Aw.Sindri.Core.Events.OnyxDeferred.Deferred.init -> void
+Aw.Sindri.Core.Events.OnyxDeferred.Equals(Aw.Sindri.Core.Events.OnyxDeferred? other) -> bool
+Aw.Sindri.Core.Events.OnyxDeferred.OnyxDeferred(Aw.Sindri.Core.Ids.CommandId CommandId, bool Deferred) -> void
+Aw.Sindri.Core.Events.RecipeRegistrationCompleted
+Aw.Sindri.Core.Events.RecipeRegistrationCompleted.<Clone>$() -> Aw.Sindri.Core.Events.RecipeRegistrationCompleted!
+Aw.Sindri.Core.Events.RecipeRegistrationCompleted.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.RecipeRegistrationCompleted.CommandId.init -> void
+Aw.Sindri.Core.Events.RecipeRegistrationCompleted.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out int Registered, out int Unchanged, out int Failed) -> void
+Aw.Sindri.Core.Events.RecipeRegistrationCompleted.Equals(Aw.Sindri.Core.Events.RecipeRegistrationCompleted? other) -> bool
+Aw.Sindri.Core.Events.RecipeRegistrationCompleted.Failed.get -> int
+Aw.Sindri.Core.Events.RecipeRegistrationCompleted.Failed.init -> void
+Aw.Sindri.Core.Events.RecipeRegistrationCompleted.RecipeRegistrationCompleted(Aw.Sindri.Core.Ids.CommandId CommandId, int Registered, int Unchanged, int Failed) -> void
+Aw.Sindri.Core.Events.RecipeRegistrationCompleted.Registered.get -> int
+Aw.Sindri.Core.Events.RecipeRegistrationCompleted.Registered.init -> void
+Aw.Sindri.Core.Events.RecipeRegistrationCompleted.Unchanged.get -> int
+Aw.Sindri.Core.Events.RecipeRegistrationCompleted.Unchanged.init -> void
+Aw.Sindri.Core.Events.RepoAdded
+Aw.Sindri.Core.Events.RepoAdded.<Clone>$() -> Aw.Sindri.Core.Events.RepoAdded!
+Aw.Sindri.Core.Events.RepoAdded.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.RepoAdded.CommandId.init -> void
+Aw.Sindri.Core.Events.RepoAdded.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.RepoName Repo, out string! Path) -> void
+Aw.Sindri.Core.Events.RepoAdded.Equals(Aw.Sindri.Core.Events.RepoAdded? other) -> bool
+Aw.Sindri.Core.Events.RepoAdded.Path.get -> string!
+Aw.Sindri.Core.Events.RepoAdded.Path.init -> void
+Aw.Sindri.Core.Events.RepoAdded.Repo.get -> Aw.Sindri.Core.Ids.RepoName
+Aw.Sindri.Core.Events.RepoAdded.Repo.init -> void
+Aw.Sindri.Core.Events.RepoAdded.RepoAdded(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.RepoName Repo, string! Path) -> void
+Aw.Sindri.Core.Events.RepoAddedPublic
+Aw.Sindri.Core.Events.RepoAddedPublic.<Clone>$() -> Aw.Sindri.Core.Events.RepoAddedPublic!
+Aw.Sindri.Core.Events.RepoAddedPublic.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.RepoAddedPublic.CommandId.init -> void
+Aw.Sindri.Core.Events.RepoAddedPublic.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.RepoName Repo) -> void
+Aw.Sindri.Core.Events.RepoAddedPublic.Equals(Aw.Sindri.Core.Events.RepoAddedPublic? other) -> bool
+Aw.Sindri.Core.Events.RepoAddedPublic.Repo.get -> Aw.Sindri.Core.Ids.RepoName
+Aw.Sindri.Core.Events.RepoAddedPublic.Repo.init -> void
+Aw.Sindri.Core.Events.RepoAddedPublic.RepoAddedPublic(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.RepoName Repo) -> void
+Aw.Sindri.Core.Events.RepoOnboarded
+Aw.Sindri.Core.Events.RepoOnboarded.<Clone>$() -> Aw.Sindri.Core.Events.RepoOnboarded!
+Aw.Sindri.Core.Events.RepoOnboarded.ApprovedHash.get -> Aw.Sindri.Core.Ids.ProfileHash
+Aw.Sindri.Core.Events.RepoOnboarded.ApprovedHash.init -> void
+Aw.Sindri.Core.Events.RepoOnboarded.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.RepoOnboarded.CommandId.init -> void
+Aw.Sindri.Core.Events.RepoOnboarded.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.RepoName Repo, out Aw.Sindri.Core.Ids.ProfileHash ApprovedHash) -> void
+Aw.Sindri.Core.Events.RepoOnboarded.Equals(Aw.Sindri.Core.Events.RepoOnboarded? other) -> bool
+Aw.Sindri.Core.Events.RepoOnboarded.Repo.get -> Aw.Sindri.Core.Ids.RepoName
+Aw.Sindri.Core.Events.RepoOnboarded.Repo.init -> void
+Aw.Sindri.Core.Events.RepoOnboarded.RepoOnboarded(Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.RepoName Repo, Aw.Sindri.Core.Ids.ProfileHash ApprovedHash) -> void
+Aw.Sindri.Core.Events.SetupConsentGiven
+Aw.Sindri.Core.Events.SetupConsentGiven.<Clone>$() -> Aw.Sindri.Core.Events.SetupConsentGiven!
+Aw.Sindri.Core.Events.SetupConsentGiven.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.SetupConsentGiven.CommandId.init -> void
+Aw.Sindri.Core.Events.SetupConsentGiven.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out System.Collections.Generic.IReadOnlyList<string!>! Steps, out Aw.Sindri.Core.Ids.ProfileHash ProfileHash) -> void
+Aw.Sindri.Core.Events.SetupConsentGiven.Equals(Aw.Sindri.Core.Events.SetupConsentGiven? other) -> bool
+Aw.Sindri.Core.Events.SetupConsentGiven.ProfileHash.get -> Aw.Sindri.Core.Ids.ProfileHash
+Aw.Sindri.Core.Events.SetupConsentGiven.ProfileHash.init -> void
+Aw.Sindri.Core.Events.SetupConsentGiven.SetupConsentGiven(Aw.Sindri.Core.Ids.CommandId CommandId, System.Collections.Generic.IReadOnlyList<string!>! Steps, Aw.Sindri.Core.Ids.ProfileHash ProfileHash) -> void
+Aw.Sindri.Core.Events.SetupConsentGiven.Steps.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Events.SetupConsentGiven.Steps.init -> void
+Aw.Sindri.Core.Events.SetupStepChanged
+Aw.Sindri.Core.Events.SetupStepChanged.<Clone>$() -> Aw.Sindri.Core.Events.SetupStepChanged!
+Aw.Sindri.Core.Events.SetupStepChanged.Code.get -> string?
+Aw.Sindri.Core.Events.SetupStepChanged.Code.init -> void
+Aw.Sindri.Core.Events.SetupStepChanged.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
+Aw.Sindri.Core.Events.SetupStepChanged.CommandId.init -> void
+Aw.Sindri.Core.Events.SetupStepChanged.Equals(Aw.Sindri.Core.Events.SetupStepChanged? other) -> bool
+Aw.Sindri.Core.Events.SetupStepChanged.State.init -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouKind.Setup = 4 -> Aw.Sindri.Core.NeedsYou.NeedsYouKind
+Aw.Sindri.Core.NeedsYou.SubjectKind.Setup = 6 -> Aw.Sindri.Core.NeedsYou.SubjectKind
+const Aw.Sindri.Core.Events.ApiViews.Recipes = "recipes" -> string!
+const Aw.Sindri.Core.Events.ApiViews.Setup = "setup" -> string!
+const Aw.Sindri.Core.Events.EventTypes.McpRegistered = "mcp.registered" -> string!
+const Aw.Sindri.Core.Events.EventTypes.OnyxDeferred = "onyx.deferred" -> string!
+const Aw.Sindri.Core.Events.EventTypes.RecipeRegistrationCompleted = "recipe.registration.completed" -> string!
+const Aw.Sindri.Core.Events.EventTypes.RepoAdded = "repo.added" -> string!
+const Aw.Sindri.Core.Events.EventTypes.RepoOnboarded = "repo.onboarded" -> string!
+const Aw.Sindri.Core.Events.EventTypes.SetupConsentGiven = "setup.consent.given" -> string!
+const Aw.Sindri.Core.Events.EventTypes.SetupStepChanged = "setup.step.changed" -> string!
+override Aw.Sindri.Core.Events.McpProviderOutcome.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.McpProviderOutcome.GetHashCode() -> int
+override Aw.Sindri.Core.Events.McpProviderOutcome.ToString() -> string!
+override Aw.Sindri.Core.Events.McpRegistered.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.McpRegistered.GetHashCode() -> int
+override Aw.Sindri.Core.Events.McpRegistered.ToString() -> string!
+override Aw.Sindri.Core.Events.OnyxDeferred.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.OnyxDeferred.GetHashCode() -> int
+override Aw.Sindri.Core.Events.OnyxDeferred.ToString() -> string!
+override Aw.Sindri.Core.Events.RecipeRegistrationCompleted.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.RecipeRegistrationCompleted.GetHashCode() -> int
+override Aw.Sindri.Core.Events.RecipeRegistrationCompleted.ToString() -> string!
+override Aw.Sindri.Core.Events.RepoAdded.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.RepoAdded.GetHashCode() -> int
+override Aw.Sindri.Core.Events.RepoAdded.ToString() -> string!
+override Aw.Sindri.Core.Events.RepoAddedPublic.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.RepoAddedPublic.GetHashCode() -> int
+override Aw.Sindri.Core.Events.RepoAddedPublic.ToString() -> string!
+override Aw.Sindri.Core.Events.RepoOnboarded.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.RepoOnboarded.GetHashCode() -> int
+override Aw.Sindri.Core.Events.RepoOnboarded.ToString() -> string!
+override Aw.Sindri.Core.Events.SetupConsentGiven.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.SetupConsentGiven.GetHashCode() -> int
+override Aw.Sindri.Core.Events.SetupConsentGiven.ToString() -> string!
+override Aw.Sindri.Core.Events.SetupStepChanged.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.SetupStepChanged.GetHashCode() -> int
+override Aw.Sindri.Core.Events.SetupStepChanged.ToString() -> string!
+static Aw.Sindri.Core.Events.McpProviderOutcome.operator !=(Aw.Sindri.Core.Events.McpProviderOutcome? left, Aw.Sindri.Core.Events.McpProviderOutcome? right) -> bool
+static Aw.Sindri.Core.Events.McpProviderOutcome.operator ==(Aw.Sindri.Core.Events.McpProviderOutcome? left, Aw.Sindri.Core.Events.McpProviderOutcome? right) -> bool
+static Aw.Sindri.Core.Events.McpRegistered.operator !=(Aw.Sindri.Core.Events.McpRegistered? left, Aw.Sindri.Core.Events.McpRegistered? right) -> bool
+static Aw.Sindri.Core.Events.McpRegistered.operator ==(Aw.Sindri.Core.Events.McpRegistered? left, Aw.Sindri.Core.Events.McpRegistered? right) -> bool
+static Aw.Sindri.Core.Events.OnyxDeferred.operator !=(Aw.Sindri.Core.Events.OnyxDeferred? left, Aw.Sindri.Core.Events.OnyxDeferred? right) -> bool
+static Aw.Sindri.Core.Events.OnyxDeferred.operator ==(Aw.Sindri.Core.Events.OnyxDeferred? left, Aw.Sindri.Core.Events.OnyxDeferred? right) -> bool
+static Aw.Sindri.Core.Events.RecipeRegistrationCompleted.operator !=(Aw.Sindri.Core.Events.RecipeRegistrationCompleted? left, Aw.Sindri.Core.Events.RecipeRegistrationCompleted? right) -> bool
+static Aw.Sindri.Core.Events.RecipeRegistrationCompleted.operator ==(Aw.Sindri.Core.Events.RecipeRegistrationCompleted? left, Aw.Sindri.Core.Events.RecipeRegistrationCompleted? right) -> bool
+static Aw.Sindri.Core.Events.RepoAdded.operator !=(Aw.Sindri.Core.Events.RepoAdded? left, Aw.Sindri.Core.Events.RepoAdded? right) -> bool
+static Aw.Sindri.Core.Events.RepoAdded.operator ==(Aw.Sindri.Core.Events.RepoAdded? left, Aw.Sindri.Core.Events.RepoAdded? right) -> bool
+static Aw.Sindri.Core.Events.RepoAddedPublic.operator !=(Aw.Sindri.Core.Events.RepoAddedPublic? left, Aw.Sindri.Core.Events.RepoAddedPublic? right) -> bool
+static Aw.Sindri.Core.Events.RepoAddedPublic.operator ==(Aw.Sindri.Core.Events.RepoAddedPublic? left, Aw.Sindri.Core.Events.RepoAddedPublic? right) -> bool
+static Aw.Sindri.Core.Events.RepoOnboarded.operator !=(Aw.Sindri.Core.Events.RepoOnboarded? left, Aw.Sindri.Core.Events.RepoOnboarded? right) -> bool
+static Aw.Sindri.Core.Events.RepoOnboarded.operator ==(Aw.Sindri.Core.Events.RepoOnboarded? left, Aw.Sindri.Core.Events.RepoOnboarded? right) -> bool
+static Aw.Sindri.Core.Events.SetupConsentGiven.operator !=(Aw.Sindri.Core.Events.SetupConsentGiven? left, Aw.Sindri.Core.Events.SetupConsentGiven? right) -> bool
+static Aw.Sindri.Core.Events.SetupConsentGiven.operator ==(Aw.Sindri.Core.Events.SetupConsentGiven? left, Aw.Sindri.Core.Events.SetupConsentGiven? right) -> bool
+static Aw.Sindri.Core.Events.SetupStepChanged.operator !=(Aw.Sindri.Core.Events.SetupStepChanged? left, Aw.Sindri.Core.Events.SetupStepChanged? right) -> bool
+static Aw.Sindri.Core.Events.SetupStepChanged.operator ==(Aw.Sindri.Core.Events.SetupStepChanged? left, Aw.Sindri.Core.Events.SetupStepChanged? right) -> bool
+static readonly Aw.Sindri.Core.SindriErrors.SetupConfirmationRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.SetupFolderInvalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.SetupOnyxCredentialsMissing -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.SetupOnyxNotWaiting -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.SetupRepoExists -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.SetupRepoNotInProfile -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Events.SetupStepChanged.State.get -> string!
+Aw.Sindri.Core.Events.SetupStepChanged.Deconstruct(out Aw.Sindri.Core.Ids.CommandId CommandId, out string! Step, out string! State, out string? Code) -> void
+Aw.Sindri.Core.Events.SetupStepChanged.SetupStepChanged(Aw.Sindri.Core.Ids.CommandId CommandId, string! Step, string! State, string? Code = null) -> void
+Aw.Sindri.Core.Events.SetupStepChanged.Step.get -> string!
+Aw.Sindri.Core.Events.SetupStepChanged.Step.init -> void
