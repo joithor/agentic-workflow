@@ -22,6 +22,6 @@ public sealed record SetupSettings([property: JsonIgnore(Condition = JsonIgnoreC
     public static bool McpAutomatic(SindriProfile profile)
     {
         ArgumentNullException.ThrowIfNull(profile);
-        return true;
+        return !string.Equals(profile.Setup?.Mcp, Off, StringComparison.Ordinal);
     }
 }

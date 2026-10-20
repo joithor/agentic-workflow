@@ -50,7 +50,7 @@ public sealed class SetupEventsTests
     [Fact, Trait("Lane", "unit")]
     public void The_public_repo_added_leaves_the_path_out()
     {
-        var row = Row("repo.added", """{"commandId":"c1","repo":"web","path":"/work/web"}""");
+        var row = Row("repo.added", """{"commandId":"00000000-0000-0000-0000-000000000001","repo":"web","path":"/work/web"}""");
 
         var shown = PublicEvents.For(row, SliceHarness.Json, new PassThroughScrubber(), includeNonPublic: false).Value!;
 
@@ -61,12 +61,12 @@ public sealed class SetupEventsTests
     [Fact, Trait("Lane", "unit")]
     public void The_consent_event_names_the_steps_and_the_profile_it_was_given_for()
     {
-        var row = Row("setup.consent.given", """{"commandId":"c1","steps":["mcp","map"],"profileHash":"abc"}""");
+        var row = Row("setup.consent.given", """{"commandId":"00000000-0000-0000-0000-000000000001","steps":["mcp","map"],"profileHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}""");
 
         var shown = PublicEvents.For(row, SliceHarness.Json, new PassThroughScrubber(), includeNonPublic: false).Value!;
 
         Expect.Sequence(["mcp", "map"], shown.Payload.GetProperty("steps").EnumerateArray().Select(step => step.GetString()!));
-        Assert.Equal("abc", shown.Payload.GetProperty("profileHash").GetString());
+        Assert.Equal("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", shown.Payload.GetProperty("profileHash").GetString());
     }
 
     private LedgerEvent Row(string type, string payload)

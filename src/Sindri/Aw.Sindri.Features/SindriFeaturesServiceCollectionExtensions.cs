@@ -95,6 +95,7 @@ using Aw.Sindri.Features.SessionExit;
 using Aw.Sindri.Features.SessionHeartbeat;
 using Aw.Sindri.Features.Sessions;
 using Aw.Sindri.Features.SetupSources;
+using Aw.Sindri.Features.SetupWatch;
 using Aw.Sindri.Features.Ship;
 using Aw.Sindri.Features.ShowRecipe;
 using Aw.Sindri.Features.StartInstance;
@@ -137,6 +138,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<ServeRecords>()
             .AddScoped<IService<RegisterMcpRequest, RegisterMcpResponse>, RegisterMcpService>()
             .AddScoped<IScheduledService, HeartbeatService>()
+            .AddSetupWatch(static sp => sp.GetRequiredService<IJobRunner>().Running)
             .AddScoped<IScheduledService, JobProbeService>()   // opt-in: not a BuiltInService, so only a profile that names it schedules it
             .AddSingleton(static sp => new JobStartRecorder(sp.GetRequiredService<HeldLease>(), sp.GetRequiredService<ILedgerStore>(), sp.GetRequiredService<EventFactory>()))
             .AddSingleton(static sp => new JobEventWriter(sp.GetRequiredService<ILedgerStore>(), sp.GetRequiredService<HeldLease>(), sp.GetRequiredService<EventFactory>(),
