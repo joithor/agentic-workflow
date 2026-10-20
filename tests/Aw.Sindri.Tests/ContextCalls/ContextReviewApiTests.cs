@@ -18,6 +18,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using static Aw.Sindri.Tests.Callers.CallerRequests;
 
+using Microsoft.Extensions.Time.Testing;
+
 namespace Aw.Sindri.Tests.ContextCalls;
 
 /// <summary>
@@ -221,6 +223,41 @@ public sealed class ContextReviewApiTests : IDisposable
         Assert.Equal(HttpStatusCode.OK, promoted.Status);
         Assert.Contains("\"status\":\"current\"", status.Body, StringComparison.Ordinal);
         Assert.NotNull(recorded.Value);
+    }
+
+    // On a large draft the queue build is slow (minutes on the owner's, before #436); the confirm rebuilt it before it redeemed the
+    // challenge, so a promote typed at once could still find its 5 minutes gone. The confirm redeems first, then checks the draft.
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task A_promote_confirmed_at_once_is_not_expired_by_a_slow_queue_build()
+    {
+        var slow = false;
+        FakeTimeProvider? clock = null;
+        await using var host = await ContextHosts.Approved(_repo, sessions: false, TestContext.Current.CancellationToken, services =>
+        {
+            Wiring()(services);
+            RecordingEngine.Install(services, [], beforeQueue: () =>
+            {
+                if (slow)
+                {
+                    clock?.Advance(TimeSpan.FromMinutes(4.5));   // a slow queue build, on the clock the challenge runs on
+                }
+            });
+        });
+        clock = (FakeTimeProvider)host.App.Services.GetRequiredService<TimeProvider>();
+        Assert.True((await Run(host, "context-rebuild")).IsSuccess);
+        _ = await host.Http.Ask(Post("/sindri/context/map/review", Review("accept-deterministic"), App(host)));
+        slow = true;
+        var shown = Json((await host.Http.Ask(Post("/sindri/context/map/promote", "{}", Terminal(host)))).Body);
+        var challenge = shown.GetProperty("challenge");
+        clock.Advance(TimeSpan.FromMinutes(1));   // the human reads the prompt and types
+
+        var promoted = await host.Http.Ask(Post("/sindri/context/map/promote", JsonSerializer.Serialize(new
+        {
+            draft = shown.GetProperty("draft").GetString(),
+            answer = new { challenge = challenge.GetProperty("challenge").GetString(), typed = challenge.GetProperty("action").GetString() },
+        }), Terminal(host)));
+
+        Assert.Equal(HttpStatusCode.OK, promoted.Status);
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
