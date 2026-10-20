@@ -286,6 +286,12 @@ jobs:
         # leaves them unchanged; and `dotnet nuget verify --all` passes for every locked package (analyzers
         # included: they run in every build). The build and test steps below use this restore.
         run: bash scripts/dotnet-verify-packages.sh
+      - name: dotnet format
+        if: steps.sln.outputs.run == 'true'
+        # The same check as the meta gate's format step (~3 GB solution-wide, so one step and not parallel).
+        env:
+          SLN: ${{ steps.sln.outputs.sln }}
+        run: dotnet format "$SLN" --verify-no-changes -v q
       - name: dotnet build
         if: steps.sln.outputs.run == 'true'
         env:
@@ -354,6 +360,11 @@ jobs:
         # trimmed member or a missing source-generated type on a hook path fails here.
         # judge/dist isn't built in this job, so the TS side of the comparison is skipped here (it runs locally).
         run: AW_JUDGE_CS_BIN=artifacts/aot-judge-smoke/bin/judge bash config/lib/tests/judge-cs-hook-surface.test.sh
+      - name: Hook contract, sindri
+        if: steps.sln.outputs.run == 'true'
+        # The SessionStart nudge (config/hooks/sindri-nudge.sh) against the C# sindri: one line, silence, exit 0, read-only, bounded.
+        # Sindri is framework-dependent (no NativeAOT), so the test builds it itself.
+        run: bash config/lib/tests/sindri-cs-hook-surface.test.sh
       - name: Lane budgets per package
         if: steps.sln.outputs.run == 'true'
         # Times each test project's unit and integration lanes against the Release build

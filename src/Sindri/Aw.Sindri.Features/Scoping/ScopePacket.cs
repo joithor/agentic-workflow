@@ -21,18 +21,38 @@ internal static class ScopePacket
         [
             Json("scope-map.json", Versioned(StampedMap(facts))),
             Json("acceptance.json", Versioned(StampedAcceptance(facts))),
-            Json("coverage.json", Versioned(facts.ObjectCopy("coverage"))),
+            Json("coverage.json", Versioned(Plain(facts.ObjectCopy("coverage")))),
             Json("lenses.json", Lenses(facts["lenses"])),
-            Json("size.json", Versioned(facts.ObjectCopy("decision"))),
-            Json("questions.json", new JsonObject { ["schemaVersion"] = SchemaVersion, ["questions"] = facts["questions"]?.DeepClone() ?? new JsonArray() }),
-            Lines("answers.jsonl", ScopeJson.Items(facts["answerLog"])),
-            Json("challenge.json", Versioned(facts.ObjectCopy("challenge"))),
-            Lines("rounds.jsonl", ScopeJson.Items(facts["rounds"])),
-            Json("runs.json", new JsonObject { ["schemaVersion"] = SchemaVersion, ["runs"] = Runs(facts).DeepClone() }),
+            Json("size.json", Versioned(Plain(facts.ObjectCopy("decision")))),
+            Json("questions.json", new JsonObject { ["schemaVersion"] = SchemaVersion, ["questions"] = Plain(facts["questions"]?.DeepClone() ?? new JsonArray()) }),
+            Lines("answers.jsonl", ScopeJson.Items(facts["answerLog"]).Select(static e => Plain(e.DeepClone()))),
+            Json("challenge.json", Versioned(Plain(facts.ObjectCopy("challenge")))),
+            Lines("rounds.jsonl", ScopeJson.Items(facts["rounds"]).Select(static e => Plain(e.DeepClone()))),
+            Json("runs.json", new JsonObject { ["schemaVersion"] = SchemaVersion, ["runs"] = Plain(Runs(facts).DeepClone()) }),
             Json("sources.json", new JsonObject { ["schemaVersion"] = SchemaVersion, ["sources"] = Sources(facts["brief"]) }),
             new ScopingDeskFile($"{ScopeEvidence.PacketDirectory}/brief.md", Brief(facts["brief"]), Append: false),
         ];
         return files;
+    }
+
+    /// <summary>
+    /// The node without any 'trust' key, at every depth. Trust is stamped by code (SCP-TRUST-001), so a label a model wrote into the facts, 'owner' above all,
+    /// never reaches a packet file, where the session fence (PacketFileFencing in Host) would read it as an owner's decision.
+    /// </summary>
+    private static T Plain<T>(T node)
+        where T : JsonNode
+    {
+        if (node is JsonObject obj)
+        {
+            _ = obj.Remove("trust");
+        }
+
+        foreach (var child in ((node as JsonObject)?.Select(static p => p.Value).ToList() ?? (node as JsonArray)?.ToList() ?? []).OfType<JsonNode>())
+        {
+            _ = Plain(child);
+        }
+
+        return node;
     }
 
     private static JsonObject Versioned(JsonObject body)
@@ -52,7 +72,7 @@ internal static class ScopePacket
 
     private static JsonObject StampedMap(ScopeFacts facts)
     {
-        var map = facts.ObjectCopy("scopeMap");
+        var map = Plain(facts.ObjectCopy("scopeMap"));
         foreach (var surface in ScopeJson.Items(map, "surfaces").OfType<JsonObject>())
         {
             surface["trust"] = ScopeTrust.For($"{ScopeJson.Str(surface, "title")} {ScopeJson.Str(surface, "detail")}", [.. ScopeJson.Strings(surface, "citations")], facts);
@@ -73,7 +93,7 @@ internal static class ScopePacket
 
     private static JsonObject StampedAcceptance(ScopeFacts facts)
     {
-        var acceptance = facts.ObjectCopy("acceptance");
+        var acceptance = Plain(facts.ObjectCopy("acceptance"));
         acceptance["parent"] = null;
         foreach (var item in ScopeJson.Items(acceptance, "items").OfType<JsonObject>())
         {
@@ -115,7 +135,7 @@ internal static class ScopePacket
         var stamped = new JsonArray();
         foreach (var entry in entries)
         {
-            var copy = (JsonObject)entry.DeepClone();
+            var copy = Plain((JsonObject)entry.DeepClone());
             copy["trust"] = ScopeTrust.Untrusted;
             ScopeJson.Append(stamped, copy);
         }

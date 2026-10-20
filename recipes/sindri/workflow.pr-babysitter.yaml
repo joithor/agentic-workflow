@@ -15,7 +15,7 @@ outputs:
   - { key: fact:reworkNotes, label: "Why it goes back",     type: payload, from: watch }
 initial: watch
 states:
-  watch:  { kind: active, step: step.babysit.watch, timeout: { after: 30d, then: park },
+  watch:  { kind: active, step: step.babysit.watch, timeout: { after: 29d, then: park },
             next: "Stub for the PR babysitter: watch {item}'s pull request through CI, review and docs sync, then say what happened: merged, or back to build with notes." }
   merged: { kind: terminal, outcome: resolved }
   rework: { kind: terminal, outcome: failed }

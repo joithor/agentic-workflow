@@ -622,7 +622,7 @@ Steps of `workflow.design` and `workflow.plan` (line spec §4-§6, LN-Y1; all de
 | `step.lens.round` | block | `packs`, `lensRounds`, `changedSections` | `ready` | `lensQueue`; optional `pack` |
 | `step.lens.run` | agent | `lensQueue`, `lensRounds` | `reviewed` | `lensReport`; `subject` (required), optional `bundle` |
 | `step.lens.log` | block | `lensReport`, `lensRounds`, `lensQueue` | `next`, `clean`, `findings` | `lensRounds` on all; `lensQueue` on next; `findings` on findings |
-| `step.plan.intake` | block | `scopePacket`, `designPacket` | `loaded` | the seven seeds (`design`, `plan`, `findings`, `questions`, `answers`, `answerLog`, `holdoutSets`) |
+| `step.plan.intake` | block | `scopePacket`, `designPacket` | `loaded` | the seven seeds (`design`, `plan`, `findings`, `questions`, `answers`, `answerLog`, `holdoutSets`) and `anchors`: the anchor keys of the design's covered surfaces, read by the planner's `input.context.code` (LN-CTX2) |
 | `step.plan.graph` | agent | `scopePacket`, `design`, `plan`, `findings`, `answerLog` | `drafted` | `plan` |
 | `step.plan.check` | block | `scopePacket`, `design`, `plan` | `pass`, `gaps` | `findings` on gaps |
 | `step.plan.exec-review` | agent | `design`, `plan` | `executable`, `objections` | `findings` on objections |

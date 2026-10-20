@@ -41,6 +41,7 @@ using Aw.Sindri.Features.GetInstance;
 using Aw.Sindri.Features.GetInstanceEvents;
 using Aw.Sindri.Features.GetInstanceFact;
 using Aw.Sindri.Features.GetItem;
+using Aw.Sindri.Features.GetItemScope;
 using Aw.Sindri.Features.GetItemTimeline;
 using Aw.Sindri.Features.GetJob;
 using Aw.Sindri.Features.GetLaunch;
@@ -48,6 +49,7 @@ using Aw.Sindri.Features.GetLaunchTargets;
 using Aw.Sindri.Features.GetNeedsYou;
 using Aw.Sindri.Features.GetProfile;
 using Aw.Sindri.Features.GetQueue;
+using Aw.Sindri.Features.GetRepoStatus;
 using Aw.Sindri.Features.GetSession;
 using Aw.Sindri.Features.GetSessionPreview;
 using Aw.Sindri.Features.GetStatus;
@@ -94,6 +96,7 @@ using Aw.Sindri.Features.Scoping;
 using Aw.Sindri.Features.SessionExit;
 using Aw.Sindri.Features.SessionHeartbeat;
 using Aw.Sindri.Features.Sessions;
+using Aw.Sindri.Features.SetupWatch;
 using Aw.Sindri.Features.Ship;
 using Aw.Sindri.Features.ShowRecipe;
 using Aw.Sindri.Features.StartInstance;
@@ -135,7 +138,9 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddOnyxStatus()
             .AddScoped<ServeRecords>()
             .AddScoped<IService<RegisterMcpRequest, RegisterMcpResponse>, RegisterMcpService>()
+            .AddScoped<IService<GetRepoStatusRequest, GetRepoStatusResponse>, GetRepoStatusService>()
             .AddScoped<IScheduledService, HeartbeatService>()
+            .AddSetupWatch(static sp => sp.GetRequiredService<IJobRunner>().Running)
             .AddScoped<IScheduledService, JobProbeService>()   // opt-in: not a BuiltInService, so only a profile that names it schedules it
             .AddSingleton(static sp => new JobStartRecorder(sp.GetRequiredService<HeldLease>(), sp.GetRequiredService<ILedgerStore>(), sp.GetRequiredService<EventFactory>()))
             .AddSingleton(static sp => new JobEventWriter(sp.GetRequiredService<ILedgerStore>(), sp.GetRequiredService<HeldLease>(), sp.GetRequiredService<EventFactory>(),
@@ -202,12 +207,14 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<ListJobsRequest>, AcceptAllValidator<ListJobsRequest>>().AddQuery<ListJobsRequest, JobList, ListJobsService>();
         _ = services.AddScoped<IValidator<GetItemRequest>, AcceptAllValidator<GetItemRequest>>().AddQuery<GetItemRequest, ItemView, GetItemService>().AddScoped<LaunchTargetsReader>().AddScoped<IItemLaunchSource, ItemLaunchSource>();
         _ = services.AddScoped<IValidator<GetItemTimelineRequest>, AcceptAllValidator<GetItemTimelineRequest>>().AddQuery<GetItemTimelineRequest, TimelineResponse, GetItemTimelineService>();
+        _ = services.AddScoped<IValidator<GetItemScopeRequest>, AcceptAllValidator<GetItemScopeRequest>>().AddQuery<GetItemScopeRequest, ItemScopeResponse, GetItemScopeService>();
         _ = services.AddScoped<IValidator<GetQueueRequest>, AcceptAllValidator<GetQueueRequest>>().AddQuery<GetQueueRequest, QueueResponse, GetQueueService>();
         _ = services.AddScoped<IValidator<ExportContextMapRequest>, AcceptAllValidator<ExportContextMapRequest>>().AddQuery<ExportContextMapRequest, MapExported, ExportContextMapService>();
         _ = services.AddScoped<IValidator<GetContextMapRequest>, AcceptAllValidator<GetContextMapRequest>>().AddQuery<GetContextMapRequest, MapStatusView, GetContextMapService>();
         _ = services.AddScoped<IValidator<GetContextSourcesRequest>, AcceptAllValidator<GetContextSourcesRequest>>().AddQuery<GetContextSourcesRequest, SourcesView, GetContextSourcesService>();
         _ = services.AddScoped<IValidator<GetProfileRequest>, AcceptAllValidator<GetProfileRequest>>().AddQuery<GetProfileRequest, GetProfileResponse, GetProfileService>();
         _ = services.AddScoped<ProfileReads>();
+        _ = services.AddGetSetup();
         _ = services.AddScoped<IValidator<GetStatusRequest>, AcceptAllValidator<GetStatusRequest>>().AddQuery<GetStatusRequest, GetStatusResponse, GetStatusService>();
         _ = services.AddScoped<IValidator<ListCommandsRequest>, AcceptAllValidator<ListCommandsRequest>>().AddQuery<ListCommandsRequest, ListCommandsResponse, ListCommandsService>();
         _ = services.AddScoped<IValidator<ListItemsRequest>, AcceptAllValidator<ListItemsRequest>>().AddQuery<ListItemsRequest, ListItemsResponse, ListItemsService>();
