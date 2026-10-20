@@ -68,7 +68,7 @@ public sealed class InstanceFrameViewModelTests
     public async Task An_engine_owned_instance_names_nobody_on_the_current_attempt()
     {
         var node = Golden("item-produce");
-        node["engineOwned"] = new System.Text.Json.Nodes.JsonObject { ["kind"] = "parked", ["reason"] = "waiting" };
+        node["engineOwned"] = new JsonObject { ["kind"] = "parked", ["reason"] = "waiting" };
         _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, node.ToJsonString());
         var frame = Frame();
 
