@@ -227,6 +227,18 @@ public static class SindriErrors
     /// <summary>SND-SESSION-409: the session at that ref is a different process than the caller looked at (collector spec CA-4, CA-5, CA-9).</summary>
     public static readonly ErrorDefinition SessionConflict = new("SND-SESSION-409", ErrorKind.Conflict, "The session at that ref is a different process");
 
+    /// <summary>SND-WT-001: a worktree request is not valid: the base is not a full 40-hex sha, the repo or path is not absolute, the branch is not usable, or the path is inside another worktree.</summary>
+    public static readonly ErrorDefinition WorktreeInvalid = new("SND-WT-001", ErrorKind.Invalid, "The worktree request is not valid");
+
+    /// <summary>SND-WT-002: the worktree path (or its branch) already exists at a different base or branch; nothing is reset, so the engine parks.</summary>
+    public static readonly ErrorDefinition WorktreeConflict = new("SND-WT-002", ErrorKind.Conflict, "The worktree path or branch is already in use at a different base");
+
+    /// <summary>SND-WT-003: git failed: the command failed, the repo is missing, or the commit is unknown.</summary>
+    public static readonly ErrorDefinition WorktreeGitFailed = new("SND-WT-003", ErrorKind.Unavailable, "git could not create or remove the worktree");
+
+    /// <summary>SND-WT-004: the worktree has uncommitted or untracked files; it is left as it is, never discarded.</summary>
+    public static readonly ErrorDefinition WorktreeDirty = new("SND-WT-004", ErrorKind.Conflict, "The worktree has uncommitted changes");
+
     /// <summary>Every Sindri error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
@@ -236,5 +248,6 @@ public static class SindriErrors
         InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, StreamsFull, ViewsStalled, ItemNotFound, ItemConflict, RequestInvalid, RequestsRateLimited, DecisionNotFound, DecisionInvalid, JobNotFound, JobConflict, JobInterrupted, JobsRateLimited, ServiceNotFound, OnyxDockerUnavailable, OnyxComposeMissing, OnyxNotEnoughResources, OnyxPinsMalformed, OnyxPortTaken, OnyxNotAdmin, OnyxKeyFailed, OnyxSecretNotStored, OnyxNotReady, OnyxRemoteDocker, OnyxComposeFailed, OnyxWorkspaceUnusable, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe,
         LaunchNotFound, LaunchViewerFailed, LaunchNoViewer, LaunchAgentMissing, LaunchRepoMissing, LaunchNoSession, LaunchInterrupted, LaunchInProgress, LaunchTimedOut, LaunchBudgetReached,
         LauncherInvalid, LaunchNotApproved, LaunchFormUnsupported, AuthLaunchSecret, SessionSourceFailed, SessionsUnavailable, SessionsTestOverride, SessionNotFound, SessionConflict,
+        WorktreeInvalid, WorktreeConflict, WorktreeGitFailed, WorktreeDirty,
     ];
 }
