@@ -11,9 +11,10 @@ namespace Aw.Sindri.Features.ManifestRecipes;
 /// </summary>
 internal sealed class ManifestRecipesService(IRecipeDirectories directories, IRecipeReader reader) : IService<ManifestRecipesRequest, RecipeManifest>
 {
-    public ValueTask<Result<RecipeManifest>> Handle(ManifestRecipesRequest request, CancellationToken cancellationToken)
+    public async ValueTask<Result<RecipeManifest>> Handle(ManifestRecipesRequest request, CancellationToken cancellationToken)
     {
-        _ = (directories, reader);
-        throw new NotSupportedException("Not built yet.");
+        ArgumentNullException.ThrowIfNull(request);
+        var files = await directories.Read(request.Directory, cancellationToken).ConfigureAwait(false);
+        return files.IsError ? files.Error : RecipeManifests.Build(files.Value, reader);
     }
 }

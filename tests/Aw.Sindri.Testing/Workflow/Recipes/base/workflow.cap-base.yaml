@@ -51,3 +51,4 @@ transitions:
     on: wait.satisfied
 loops: { revisions: { cap: 3 } }
 budget: { tokens: 400k }
+displayName: Test recipe

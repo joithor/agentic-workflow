@@ -25,7 +25,7 @@ public sealed class ApproveRecipeRefusalTests
     {
         await using var r = await Started();
         var step = await r.Shipped("sindri/workflow.step.yaml");
-        var issued = (await r.Issue("approve workflow.step 2")).Value;
+        var issued = (await r.Issue("approve workflow.step 3")).Value;
 
         var refused = await Approve(r, step, issued.Challenge, "approve workflow.step");
 
@@ -37,7 +37,7 @@ public sealed class ApproveRecipeRefusalTests
     {
         await using var r = await Started();
         var step = await r.Shipped("sindri/workflow.step.yaml");
-        var other = r.Challenges.Issue(ChallengeAction.Approve(step.Id, 3), ChallengeSubject.ForRecipe(step.Hash, 2, pinsDigest: null));
+        var other = r.Challenges.Issue(ChallengeAction.Approve(step.Id, 4), ChallengeSubject.ForRecipe(step.Hash, 3, pinsDigest: null));
 
         var refused = await Approve(r, step, other.Id, other.Action.Text);
 
@@ -49,7 +49,7 @@ public sealed class ApproveRecipeRefusalTests
     {
         await using var r = await Started();
         var step = await r.Shipped("sindri/workflow.step.yaml");
-        var issued = (await r.Issue("approve workflow.step 2")).Value;
+        var issued = (await r.Issue("approve workflow.step 3")).Value;
         r.H.Clock.Advance(IssuedChallenge.Lifetime);
 
         var refused = await Approve(r, step, issued.Challenge, issued.Action);
@@ -62,7 +62,7 @@ public sealed class ApproveRecipeRefusalTests
     {
         await using var r = await Started();
         var step = await r.Shipped("sindri/workflow.step.yaml");
-        var moved = r.Challenges.Issue(ChallengeAction.Approve(step.Id, 2), ChallengeSubject.ForRecipe(RegistryData.Hash("an edited file"), 2, pinsDigest: null));
+        var moved = r.Challenges.Issue(ChallengeAction.Approve(step.Id, 3), ChallengeSubject.ForRecipe(RegistryData.Hash("an edited file"), 3, pinsDigest: null));
 
         var refused = await Approve(r, step, moved.Id, moved.Action.Text);
 
@@ -76,7 +76,7 @@ public sealed class ApproveRecipeRefusalTests
     {
         await using var r = await Started();
         var step = await r.Shipped("sindri/workflow.step.yaml");
-        var issued = (await r.Issue("approve workflow.step 2")).Value;
+        var issued = (await r.Issue("approve workflow.step 3")).Value;
         var caller = who == "session" ? A.Caller().Session().Build() : A.Caller().Human().Client(Core.Commands.ClientLabel.Ui).Build();
 
         var refused = await r.Run<ApproveRecipeRequest, ApproveRecipeResponse>(
@@ -93,14 +93,14 @@ public sealed class ApproveRecipeRefusalTests
         var step = await r.Shipped("sindri/workflow.step.yaml");
         _ = await r.Approvals.Approve(RegistryData.Approval(step), Token);
         _ = await r.Approvals.Revoke(RegistryData.Revocation(step), Token);
-        var stale = r.Challenges.Issue(ChallengeAction.Approve(step.Id, 2), ChallengeSubject.ForRecipe(step.Hash, 2, pinsDigest: null));
+        var stale = r.Challenges.Issue(ChallengeAction.Approve(step.Id, 3), ChallengeSubject.ForRecipe(step.Hash, 3, pinsDigest: null));
 
         var refused = await Approve(r, step, stale.Id, stale.Action.Text);
 
         Assert.Equal(WorkflowErrors.RecipeRevoked.Code, refused.Error.Code);
         Assert.Empty(r.Events(EventTypes.RecipeApproved));
-        _ = Assert.Single((await r.Approvals.History(step.Id, 2, step.Hash, Token)).Value);
-        Assert.Equal(WorkflowErrors.RecipeRevoked.Code, (await r.Issue("approve workflow.step 2")).Error.Code);
+        _ = Assert.Single((await r.Approvals.History(step.Id, 3, step.Hash, Token)).Value);
+        Assert.Equal(WorkflowErrors.RecipeRevoked.Code, (await r.Issue("approve workflow.step 3")).Error.Code);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -110,11 +110,11 @@ public sealed class ApproveRecipeRefusalTests
         var step = await r.Shipped("sindri/workflow.step.yaml");
         var bare = await r.Register(RegistryHarness.Parse(step) with { Id = RecipeId.From("workflow.bare"), Evals = [] });
 
-        var refused = await r.Issue("approve workflow.bare 2");
+        var refused = await r.Issue("approve workflow.bare 3");
 
         Assert.Equal(WorkflowErrors.RecipeEvalsFailing.Code, refused.Error.Code);
         Assert.Contains("declares no evals", refused.Error.Message, StringComparison.Ordinal);
-        Assert.Null((await r.Approvals.Latest(bare.Id, 2, bare.Hash, Token)).Value);
+        Assert.Null((await r.Approvals.Latest(bare.Id, 3, bare.Hash, Token)).Value);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -141,15 +141,15 @@ public sealed class ApproveRecipeRefusalTests
         var step = await r.Shipped("sindri/workflow.step.yaml");
         _ = await r.Approve(step);
         var item = await r.Shipped("sindri/workflow.item.yaml");
-        var issued = (await r.Issue("approve workflow.item 2")).Value;   // the preview pins workflow.step@<step>
-        var newer = RegistryData.Recipe("workflow.step", version: 3);
+        var issued = (await r.Issue("approve workflow.item 3")).Value;   // the preview pins workflow.step@<step>
+        var newer = RegistryData.Recipe("workflow.step", version: 4);
         _ = await r.Recipes.Add(newer, Token);
         _ = await r.Approvals.Approve(RegistryData.Approval(newer), Token);   // a second terminal approves a newer child meanwhile
 
         var refused = await Approve(r, item, issued.Challenge, issued.Action);
 
         Assert.Equal(WorkflowErrors.RecipeChallengeStale.Code, refused.Error.Code);
-        Assert.Null((await r.Approvals.Latest(item.Id, 2, item.Hash, Token)).Value);
+        Assert.Null((await r.Approvals.Latest(item.Id, 3, item.Hash, Token)).Value);
     }
 
     private static async Task<RegistryHarness> Started()

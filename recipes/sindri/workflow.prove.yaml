@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.prove
-version: 1
+version: 2
 description: "Block recipe: prove every acceptance item of one phase on its head commit: a hand test and the verify journey in the running app, the evidence route, before and after for fixes, and the hidden scenarios; ends with a frozen proof pack."
+displayName: "Prove a phase works in the running app"
 inputs:
   - { key: fact:phasePacket, label: "Phase packet",  type: packet, kind: packet }
   - { key: fact:built,       label: "Built head",    type: payload, kind: payload }

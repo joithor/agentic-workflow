@@ -22,3 +22,4 @@ states:
 transitions:
   - { from: queued, to: produce, on: wait.satisfied, effects: [effect.notify.desk] }
   - { from: produce, to: done, on: step.completed }
+displayName: Test recipe

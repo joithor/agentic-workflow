@@ -36,13 +36,13 @@ internal static class InvalidFixtureCases
             ]),
         ["RCP-CAP-003"] = new(
             FixtureSetup.CapabilityWithUnapprovedBase,
-            "RCP-CAP-003: base workflow.cap-base@b8f01b2b6c69 is registered but not approved at RCP-CAP-003.yaml:4:1 (base); approve the base at a terminal (sindri recipe approve workflow.cap-base@b8f01b2b6c69), or generate the recipe from an approved base",
+            "RCP-CAP-003: base workflow.cap-base@16d368e1cdf8 is registered but not approved at RCP-CAP-003.yaml:4:1 (base); approve the base at a terminal (sindri recipe approve workflow.cap-base@16d368e1cdf8), or generate the recipe from an approved base",
             [
                 "RCP-EFFECT-001: effect 'effect.repo.push' wasn't checked against an effect allowlist, since the profile has no workflow.effects at RCP-CAP-003.yaml:47:9 (transitions[2].effects[0].use); add workflow.effects to the profile; until then the effect is refused at run time [Skipped]",
             ]),
         ["RCP-CAP-004"] = new(
             FixtureSetup.Capability,
-            "RCP-CAP-004: hand-written recipe workflow.cap-handwritten names base workflow.cap-base@b8f01b2b6c69 at RCP-CAP-004.yaml:4:1 (base); remove base, which only Sindri's generator writes",
+            "RCP-CAP-004: hand-written recipe workflow.cap-handwritten names base workflow.cap-base@16d368e1cdf8 at RCP-CAP-004.yaml:4:1 (base); remove base, which only Sindri's generator writes",
             []),
         ["RCP-CAP-005"] = new(
             FixtureSetup.CapabilityWithBase,
@@ -96,7 +96,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-HASH-001"] = new(
             FixtureSetup.Shipped,
-            "RCP-HASH-001: hash 000000000000 doesn't match the recipe's content, whose hash is b2371052fdcf at RCP-HASH-001.yaml:16:1 (hash); set hash to sha256:b2371052fdcf9ed4a8dd9019036d5f3725abf3e5ec115746d3d47591cc72706e, or remove it",
+            "RCP-HASH-001: hash 000000000000 doesn't match the recipe's content, whose hash is 03150aee83c3 at RCP-HASH-001.yaml:16:1 (hash); set hash to sha256:03150aee83c31f5bf016922aabae8ebcc1dbc41a43c36387af0fdbf1d98757c9, or remove it",
             []),
         ["RCP-INIT-001"] = new(
             FixtureSetup.Shipped,
@@ -136,7 +136,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-SCHEMA-001"] = new(
             FixtureSetup.Shipped,
-            "RCP-SCHEMA-001: 'retries' isn't a field of a state at RCP-SCHEMA-001.yaml:10:5 (states.produce.retries); remove it; a state has kind, step, waitFor, timeout, loop, budget, next, outcome",
+            "RCP-SCHEMA-001: 'retries' isn't a field of a state at RCP-SCHEMA-001.yaml:10:5 (states.produce.retries); remove it; a state has kind, step, waitFor, timeout, loop, budget, next, outcome, why, displayName",
             []),
         ["RCP-SCHEMA-002"] = new(
             FixtureSetup.Shipped,
@@ -188,7 +188,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-VERSION-001"] = new(
             FixtureSetup.Registry,
-            "RCP-VERSION-001: workflow.version-taken version 1 is registered with hash 2bd784957be7, but this recipe's hash is a993db8e5966 at RCP-VERSION-001.yaml:3:1 (version); raise version to 2, one above the highest registered, or restore the content registered as version 1",
+            "RCP-VERSION-001: workflow.version-taken version 1 is registered with hash 2bd784957be7, but this recipe's hash is e5295ba7894c at RCP-VERSION-001.yaml:3:1 (version); raise version to 2, one above the highest registered, or restore the content registered as version 1",
             []),
         ["RCP-VERSION-002"] = new(
             FixtureSetup.Registry,
@@ -229,6 +229,22 @@ internal static class InvalidFixtureCases
         ["RCP-SCHEMA-001-produces"] = new(
             FixtureSetup.Shipped,
             "RCP-SCHEMA-001: a produces entry has no 'from' at RCP-SCHEMA-001-produces.yaml:15:88 (transitions[0].produces[0].from); add 'from': the child's output key, or write the bare key",
+            []),
+        ["RCP-DISPLAY-001"] = new(
+            FixtureSetup.Shipped,
+            "RCP-DISPLAY-001: displayName 'build one phase': it doesn't start with a capital letter (sentence case) at RCP-DISPLAY-001.yaml:4:1 (displayName); write a name in sentence case, at most 60 characters, that says what the recipe does, with no id",
+            []),
+        ["RCP-DISPLAY-002"] = new(
+            FixtureSetup.Shipped,
+            "RCP-DISPLAY-002: the why of state 'produce': 'step.produce' is an id or code name, not plain words at RCP-DISPLAY-002.yaml:12:5 (states.produce.why); write one plain sentence of at most 200 characters, with no id or code name",
+            []),
+        ["RCP-DISPLAY-003"] = new(
+            FixtureSetup.Shipped,
+            "RCP-DISPLAY-003: the displayName of state 'produce': it doesn't start with a capital letter (sentence case) at RCP-DISPLAY-003.yaml:12:5 (states.produce.displayName); write a name in sentence case, at most 60 characters, with no id",
+            []),
+        ["RCP-DISPLAY-003-label"] = new(
+            FixtureSetup.Shipped,
+            "RCP-DISPLAY-003: the label of the transition to 'done': 'step.verify' is an id or code name, not plain words at RCP-DISPLAY-003-label.yaml:16:77 (transitions[0].label); write plain words of at most 60 characters ('gaps found: draft again'), with no id or code name",
             []),
         ["RCP-URG-001"] = new(
             FixtureSetup.Shipped,

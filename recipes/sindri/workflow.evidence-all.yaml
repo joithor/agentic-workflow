@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.evidence-all
-version: 1
+version: 2
 description: "Block recipe: run the UI, API and database evidence in sequence, then combine the three summaries."
+displayName: "Run all three kinds of proof"
 inputs:
   - { key: fact:phasePacket, label: "Phase packet", type: packet, kind: packet }
   - { key: fact:built, label: "Built change", type: link, kind: link }

@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.review-loop
-version: 2
+version: 3
 description: "Block recipe: review the phase's change one lens per run, a round per iteration, to zero blocking and issue findings, at most 5 rounds, then one narrow re-check; a clean review ends through a recorded, frozen review packet."
+displayName: "Review the code until no blocking issues"
 inputs:
   - { key: fact:change, label: "Change", type: payload, kind: payload }
   - { key: fact:phasePacket, label: "Phase packet", type: packet, kind: packet }
@@ -11,27 +12,27 @@ initial: round
 states:
   round:   { kind: active, step: step.review.round, loop: rounds, timeout: { after: 1h, then: park },
              next: "Start review round {loop.rounds}/{loop.rounds.cap} on {item}'s change: queue the review lenses that apply." }
-  lens:    { kind: active, step: { use: step.lens.run, with: { subject: change, bundle: lenses } }, loop: lens-runs, timeout: { after: 2h, then: park },
+  lens:    { displayName: "Review pass", why: "One reviewer looks at the change from one angle.", kind: active, step: { use: step.lens.run, with: { subject: change, bundle: lenses } }, loop: lens-runs, timeout: { after: 2h, then: park },
              next: "Review {item}'s change through the next lens in the pack." }
   lens-log: { kind: active, step: step.review.log, timeout: { after: 1h, then: park },
              next: "Append the lens report to {item}'s review rounds and decide: next lens, clean or findings." }
-  fix:     { kind: active, step: step.review.fix, timeout: { after: 4h, then: park },
+  fix:     { displayName: "Fix the findings", why: "Fixes what the review found.", kind: active, step: step.review.fix, timeout: { after: 4h, then: park },
              next: "Fix the blocking and issue findings of round {loop.rounds}; answer the rest in writing." }
   recheck: { kind: active, step: step.review.recheck, timeout: { after: 1h, then: park },
              next: "Round cap reached: have one reviewer re-check only the fixes." }
   record:  { kind: active, step: step.review.record, timeout: { after: 1h, then: park },
              next: "Write and freeze {item}'s review result packet." }
-  clean:   { kind: terminal, outcome: resolved }
-  stuck:   { kind: terminal, outcome: unresolved }
-  wrong:   { kind: terminal, outcome: failed }
+  clean:   { displayName: "No blocking issues", kind: terminal, outcome: resolved }
+  stuck:   { displayName: "Problems remain", kind: terminal, outcome: unresolved }
+  wrong:   { displayName: "Behavior is wrong", kind: terminal, outcome: failed }
 transitions:
   - { from: round,    to: lens,     on: step.completed, when: { outcome: ready },          produces: [fact:lensQueue, fact:lensRounds] }
   - { from: lens,     to: lens-log, on: step.completed, when: { outcome: reviewed },       produces: [fact:lensReport] }
   - { from: lens-log, to: lens,     on: step.completed, when: { outcome: next },           produces: [fact:lensRounds, fact:lensQueue] }
   - { from: lens-log, to: record,   on: step.completed, when: { outcome: clean },          produces: [fact:lensRounds, fact:review] }
-  - { from: lens-log, to: fix,      on: step.completed, when: { outcome: findings },       produces: [fact:lensRounds, fact:review] }
+  - { label: "problems found: fix them", from: lens-log, to: fix,      on: step.completed, when: { outcome: findings },       produces: [fact:lensRounds, fact:review] }
   - { from: lens-log, to: wrong,    on: step.completed, when: { outcome: behaviourWrong }, produces: [fact:lensRounds, fact:review] }
-  - { from: fix,      to: round,    on: step.completed, when: { all: [ { outcome: fixed }, { loop: rounds, below: cap } ] }, produces: [fact:change] }
+  - { label: "fixed: another review pass", from: fix,      to: round,    on: step.completed, when: { all: [ { outcome: fixed }, { loop: rounds, below: cap } ] }, produces: [fact:change] }
   - { from: fix,      to: recheck,  on: step.completed, when: { all: [ { outcome: fixed }, { not: { loop: rounds, below: cap } } ] }, produces: [fact:change] }
   - { from: recheck,  to: record,   on: step.completed, when: { outcome: clean },          produces: [fact:review] }
   - { from: recheck,  to: stuck,    on: step.completed, when: { outcome: findings },       produces: [fact:review] }

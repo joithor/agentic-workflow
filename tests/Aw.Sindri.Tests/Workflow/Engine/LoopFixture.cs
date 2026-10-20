@@ -105,7 +105,7 @@ internal static class LoopFixture
             ["done"] = new(StateKind.Terminal, Step: null, WaitFor: null, Timeout: null, Loop: null, Budget: null, Next: null, OutcomeName.From("resolved")),
         };
         return new Recipe(
-            1, RecipeId.From("workflow.step"), 1, Description: null, DisplayName: "Test loops", Base: null, Urgency: "work", Name: null, Inputs: [], Outputs: [], "produce", states,
+            1, RecipeId.From("workflow.step"), 1, Description: null, Base: null, Urgency: "work", Name: null, Inputs: [], Outputs: [], "produce", states,
             [
                 new(["produce"], "checks", "step.completed", ARecipe.When(OutcomeName.From("done")), [], [], [], [new ProducedFact(FactKey.From("fact:output"), From: null)]),
                 new(["checks"], "verify", "step.completed", ARecipe.When(OutcomeName.From("passed")), [], [], [], []),
@@ -114,7 +114,7 @@ internal static class LoopFixture
                 new(["verify"], "produce", "step.completed", ARecipe.When(OutcomeName.From("rejected")), [], [], [], [new ProducedFact(FactKey.From("fact:findings"), From: null)]),
             ],
             new Dictionary<string, LoopSpec>(StringComparer.Ordinal) { [Revisions] = new(3, LoopSpec.DefaultNoProgress) },
-            new BudgetSpec(400_000), Evals: [], Hash: null);
+            new BudgetSpec(400_000), Evals: [], Hash: null, DisplayName: "Test loops");
     }
 
     private static StepUse Step(string use) => new(BlockId.From(use), new Dictionary<string, WithValue>(StringComparer.Ordinal), []);

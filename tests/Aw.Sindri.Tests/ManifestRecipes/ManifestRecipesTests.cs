@@ -143,7 +143,9 @@ public sealed class ManifestRecipesTests : IDisposable
         var manifest = RecipeManifests.Build(files, RecipeReaderTests.Reader);
 
         Assert.Equal([("workflow.a", 0), ("workflow.b", 1)], manifest.Recipes.Select(r => (r.Id.Value, r.EvalCases)));
-        Assert.Equal(manifest, RecipeManifests.Build([files[2], files[0], files[1]], RecipeReaderTests.Reader));
+        var shuffled = RecipeManifests.Build([files[2], files[0], files[1]], RecipeReaderTests.Reader);
+        Assert.Equal(manifest.Recipes, shuffled.Recipes);
+        Assert.Equal(manifest.Digest, shuffled.Digest, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

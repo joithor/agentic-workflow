@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.pr-babysitter
-version: 1
+version: 2
 description: "STUB until the PR babysitter (BD/PB spec) lands: one human-only Step stands for babysitting, docs sync and the owner's merge; the real inputs, outputs and terminals, so workflow.phase validates and runs."
+displayName: "Watch the pull request until you merge it"
 urgency: work
 inputs:
   - { key: fact:pr,          label: "Pull request",         type: link,    kind: link }

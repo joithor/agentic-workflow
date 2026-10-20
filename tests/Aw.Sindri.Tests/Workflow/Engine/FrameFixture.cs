@@ -92,7 +92,7 @@ internal static class FrameFixture
             ["done"] = new(StateKind.Terminal, Step: null, WaitFor: null, Timeout: null, Loop: null, Budget: null, Next: null, OutcomeName.From("resolved")),
         };
         return new Recipe(
-            1, RecipeId.From("workflow.frames"), 1, Description: null, DisplayName: "Test frames", Base: null, Urgency: "work", Name: null, Inputs: [], Outputs: [], "produce", states,
+            1, RecipeId.From("workflow.frames"), 1, Description: null, Base: null, Urgency: "work", Name: null, Inputs: [], Outputs: [], "produce", states,
             [
                 new(["produce"], "checks", "step.completed", ARecipe.When(OutcomeName.From("done")), [], [], [], []),
                 new(["checks"], "produce", "step.completed", ARecipe.When(OutcomeName.From("failed")), [], [], [], []),
@@ -100,7 +100,7 @@ internal static class FrameFixture
                 new(["await"], "done", "wait.satisfied", When: null, [], [], [], []),
             ],
             new Dictionary<string, LoopSpec>(StringComparer.Ordinal) { ["fix"] = new(3, LoopSpec.DefaultNoProgress) },
-            new BudgetSpec(400_000), Evals: [], Hash: null);
+            new BudgetSpec(400_000), Evals: [], Hash: null, DisplayName: "Test frames");
     }
 
     private static StepUse Step(BlockId use) => new(use, new Dictionary<string, WithValue>(StringComparer.Ordinal), []);

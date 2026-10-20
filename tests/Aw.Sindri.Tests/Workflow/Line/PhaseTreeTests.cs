@@ -80,8 +80,8 @@ public sealed partial class PhaseTreeTests
     public void Taking_the_proof_pack_from_an_unresolved_prove_is_refused_by_RCP_WIRE_003()
     {
         var text = ShippedRecipes.Read("sindri/workflow.phase.yaml").Replace(
-            "{ from: prove, to: build,   on: wait.satisfied, when: { outcome: unresolved }, produces: [{ fact: fact:buildNotes, from: fact:findings }] }",
-            "{ from: prove, to: build,   on: wait.satisfied, when: { outcome: unresolved }, produces: [{ fact: fact:buildNotes, from: fact:findings }, fact:proofPack] }",
+            "{ label: \"proof failed: back to build\", from: prove, to: build,   on: wait.satisfied, when: { outcome: unresolved }, produces: [{ fact: fact:buildNotes, from: fact:findings }] }",
+            "{ label: \"proof failed: back to build\", from: prove, to: build,   on: wait.satisfied, when: { outcome: unresolved }, produces: [{ fact: fact:buildNotes, from: fact:findings }, fact:proofPack] }",
             StringComparison.Ordinal);
         Assert.NotEqual(ShippedRecipes.Read("sindri/workflow.phase.yaml"), text, StringComparer.Ordinal);
 

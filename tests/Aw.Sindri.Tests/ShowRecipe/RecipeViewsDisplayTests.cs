@@ -46,6 +46,7 @@ public sealed class RecipeViewsDisplayTests
         var labelled = recipe with { Transitions = [recipe.Transitions[0] with { Label = "all done" }] };
 
         var label = Assert.Single(RecipeViews.Of(labelled, _stamp).TransitionLabels!);
-        Assert.Equal((["produce"], "done", "step.completed", "all done"), (label.From, label.To, label.On, label.Label));
+        Assert.Equal(["produce"], label.From, StringComparer.Ordinal);
+        Assert.Equal(("done", "step.completed", "all done"), (label.To, label.On, label.Label));
     }
 }

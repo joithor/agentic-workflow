@@ -72,7 +72,7 @@ public sealed class RecipeDisplayFieldsTests
         var json = Encoding.UTF8.GetString(CanonicalJson.Of(JsonNode.Parse(AwJson.Serialize(recipe, SliceHarness.Json))));
 
         Assert.DoesNotContain("\"why\"", json, StringComparison.Ordinal);
-        Assert.DoesNotContain("\"label\"", json, StringComparison.Ordinal);
+        Assert.False(JsonNode.Parse(json)!["transitions"]![0]!.AsObject().ContainsKey("label"));   // why: the recipe has one transition
         Assert.Contains("\"displayName\":\"Produce and finish\"", json, StringComparison.Ordinal);
         Assert.DoesNotContain("Write the draft", json, StringComparison.Ordinal);
     }
