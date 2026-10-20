@@ -22,12 +22,17 @@ internal sealed class SessionExitService(LaunchSessionEvents session) : IService
         }
 
         var reported = await session.Report(request.LaunchId, request.SessionId, cancellationToken).ConfigureAwait(false);
-        if (reported.IsError)
+        if (reported.IsError && !LaunchSessionEvents.IsPatternTimeout(reported.Error))
         {
             return reported.Error;
         }
 
         var ended = await session.End(request.LaunchId, SessionEndReason.Exit, request.ExitCode, cancellationToken).ConfigureAwait(false);
-        return ended.IsError ? ended.Error : new SessionExitResponse(request.LaunchId);
+        if (ended.IsError)
+        {
+            return ended.Error;
+        }
+
+        return reported.IsError ? reported.Error : new SessionExitResponse(request.LaunchId);   // a pattern timeout still ends the session, then says why no id was recorded
     }
 }

@@ -20,7 +20,7 @@ internal static partial class Labels
         ["ApplyCommand:handback"] = "Hand back",
         ["ApplyCommand:takeover"] = "Take over",
         ["ApproveProfile"] = "Approve profile",
-        ["ApproveAllRecipes"] = "Approve all workflows",
+        ["ApproveAllRecipes"] = ApproveAllTitle,
         ["ApproveRecipe"] = "Approve recipe",
         ["BuildContextMap"] = "Build map",
         ["RunContextBacktest"] = "Run map backtest",

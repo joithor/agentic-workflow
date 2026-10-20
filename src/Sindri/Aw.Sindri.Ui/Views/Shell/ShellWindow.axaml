@@ -15,6 +15,7 @@
         xmlns:ctxv="using:Aw.Sindri.Ui.Views.Context"
         xmlns:item="using:Aw.Sindri.Ui.Views.Item"
         xmlns:startv="using:Aw.Sindri.Ui.Views.Start"
+        xmlns:apv="using:Aw.Sindri.Ui.Views.Approvals"
         xmlns:ny="using:Aw.Sindri.Ui.Views.NeedsYou"
         x:Class="Aw.Sindri.Ui.Views.Shell.ShellWindow"
         x:DataType="shell:ShellViewModel"
@@ -346,6 +347,9 @@
     </Panel>
     <Panel x:Name="StartLayer" IsVisible="{Binding Start.IsOpen}">
       <startv:StartDialog x:Name="StartDialog" DataContext="{Binding Start}" />
+    </Panel>
+    <Panel x:Name="ApproveAllLayer" IsVisible="{Binding ApproveAll.IsOpen}">
+      <apv:ApproveAllDialog x:Name="ApproveAllDialog" DataContext="{Binding ApproveAll}" />
     </Panel>
     <Panel x:Name="ShortcutsLayer" IsVisible="{Binding Shortcuts.IsOpen}">
       <root:ShortcutsSheet x:Name="ShortcutsSheet" DataContext="{Binding Shortcuts}" />
