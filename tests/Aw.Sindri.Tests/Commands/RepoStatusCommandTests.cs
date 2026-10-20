@@ -91,7 +91,7 @@ public sealed class RepoStatusCommandTests : IDisposable
 
         Assert.Equal(0, await Run("repo", "status", "/work/demo/src", "--json"));
 
-        Assert.Contains("\"state\":\"Onboarded\"", _out.ToString().Replace(" ", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
+        Assert.Contains("\"state\":\"onboarded\"", _out.ToString().Replace(" ", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "integration")]

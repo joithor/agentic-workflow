@@ -37,6 +37,7 @@ export AW_STATE_DIR="$WORK/state"; mkdir -p "$AW_STATE_DIR"
 export AW_LOG_LEVEL=none
 unset AW_JUDGE_CHILD AW_SINDRI_CHILD AW_SINDRI_PROFILE AW_SINDRI_PORT 2> /dev/null || true
 
+# The snapshot is seeded by hand, so a change to the canonical profile JSON fails these cases loudly (an unreadable snapshot gives silence and a plain-status exit 2).
 # A scratch home holding an approved snapshot of a profile naming $2 as repo "$3" (the canonical JSON the
 # C# approvals store writes: approved/<sha256>/profile.json and approved/latest).
 approved_home() {
