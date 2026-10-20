@@ -12228,7 +12228,9 @@ static Aw.Sindri.Core.Workflow.Views.RecordedWorkflowEvent.operator !=(Aw.Sindri
 static Aw.Sindri.Core.Workflow.Views.RecordedWorkflowEvent.operator ==(Aw.Sindri.Core.Workflow.Views.RecordedWorkflowEvent? left, Aw.Sindri.Core.Workflow.Views.RecordedWorkflowEvent? right) -> bool
 static Aw.Sindri.Core.Workflow.Views.StepRun.operator !=(Aw.Sindri.Core.Workflow.Views.StepRun? left, Aw.Sindri.Core.Workflow.Views.StepRun? right) -> bool
 static Aw.Sindri.Core.Workflow.Views.StepRun.operator ==(Aw.Sindri.Core.Workflow.Views.StepRun? left, Aw.Sindri.Core.Workflow.Views.StepRun? right) -> bool
-static Aw.Sindri.Core.Workflow.Views.StepRuns.Fold(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Views.RecordedWorkflowEvent!>! events, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateCell!>! states) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StepRun!>!
+static Aw.Sindri.Core.Workflow.Views.StepRuns.Fold(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Views.RecordedWorkflowEvent!>! events, System.Collections.Generic.IReadOnlyDictionary<string!, int>! caps) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StepRun!>!
+Aw.Sindri.Core.Workflow.Views.StepRunCaps
+static Aw.Sindri.Core.Workflow.Views.StepRunCaps.Of(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateCell!>! states) -> System.Collections.Generic.IReadOnlyDictionary<string!, int>!
 const Aw.Sindri.Core.Events.InstanceChanged.Type = "workflow.instance-changed" -> string!
 Aw.Sindri.Core.Events.InstanceChanged
 Aw.Sindri.Core.Events.InstanceChanged.Cursor.get -> long

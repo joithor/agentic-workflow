@@ -17,12 +17,12 @@ public static class StepRuns
 
     /// <summary>The runs <paramref name="events"/> (the instance's, in ledger order) open and close.</summary>
     /// <param name="events">The instance's events.</param>
-    /// <param name="states">The instance's states, whose round caps give each run's max attempts.</param>
+    /// <param name="caps">The loop cap of each looped state (<see cref="StepRunCaps.Of"/>), which gives each run's max attempts.</param>
     /// <returns>One run per Step run, in start order.</returns>
-    public static IReadOnlyList<StepRun> Fold(IEnumerable<RecordedWorkflowEvent> events, IReadOnlyList<StateCell> states)
+    public static IReadOnlyList<StepRun> Fold(IEnumerable<RecordedWorkflowEvent> events, IReadOnlyDictionary<string, int> caps)
     {
         ArgumentNullException.ThrowIfNull(events);
-        ArgumentNullException.ThrowIfNull(states);
+        ArgumentNullException.ThrowIfNull(caps);
         var runs = new List<StepRun>();
         foreach (var recorded in events)
         {
@@ -33,20 +33,16 @@ public static class StepRuns
 
             if (recorded.Payload.Detail?.Delta.Frame is { Run: { } token } frame && !runs.Exists(r => string.Equals(r.Token, token, StringComparison.Ordinal)))
             {
-                runs.Add(Opened(frame, token, recorded.At, runs, states));
+                runs.Add(Opened(frame, token, recorded.At, runs, caps));
             }
         }
 
         return runs;
     }
 
-    private static StepRun Opened(FrameSummary frame, string token, DateTimeOffset at, List<StepRun> runs, IReadOnlyList<StateCell> states) =>
-        new(token, frame.State, runs.Count(r => string.Equals(r.Step, frame.State, StringComparison.Ordinal)) + 1, MaxAttemptsOf(frame.State, states),
+    private static StepRun Opened(FrameSummary frame, string token, DateTimeOffset at, List<StepRun> runs, IReadOnlyDictionary<string, int> caps) =>
+        new(token, frame.State, runs.Count(r => string.Equals(r.Step, frame.State, StringComparison.Ordinal)) + 1, caps.TryGetValue(frame.State, out var cap) ? cap : null,
             StepRunState.Running, frame.Runtime, at, EndedAt: null, DurationMs: null, Outcome: null, Tokens: null, Actor: null);
-
-    // The cap of the loop the Step's state is in: its cell's round, which every member of a loop carries. It is the allowance now, so a granted round raises it on the loop's earlier runs too.
-    private static int? MaxAttemptsOf(string state, IReadOnlyList<StateCell> states) =>
-        states.FirstOrDefault(s => string.Equals(s.State, state, StringComparison.Ordinal))?.Round?.Max;
 
     /// <summary>The run after <paramref name="recorded"/>: ended by its report, ended by the frame moving on, or as it was.</summary>
     private static StepRun Closed(StepRun run, RecordedWorkflowEvent recorded)

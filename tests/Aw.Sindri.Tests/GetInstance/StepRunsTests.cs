@@ -9,9 +9,9 @@ namespace Aw.Sindri.Tests.GetInstance;
 [Lane(TestLane.Unit)]
 public sealed class StepRunsTests
 {
-    private static readonly IReadOnlyList<StateCell> _noStates = [];
+    private static readonly IReadOnlyDictionary<string, int> _noCaps = new Dictionary<string, int>(StringComparer.Ordinal);
 
-    private static IReadOnlyList<StepRun> Fold(params RecordedWorkflowEvent[] events) => StepRuns.Fold(events, _noStates);
+    private static IReadOnlyList<StepRun> Fold(params RecordedWorkflowEvent[] events) => StepRuns.Fold(events, _noCaps);
 
     [Fact]
     public void A_run_with_no_report_is_running_with_no_end_duration_outcome_or_actor()
@@ -50,9 +50,9 @@ public sealed class StepRunsTests
     }
 
     [Fact]
-    public void A_step_run_again_is_the_next_try_and_takes_its_max_from_the_states_round_cap()
+    public void A_step_run_again_is_the_next_try_and_takes_its_max_from_the_states_cap()
     {
-        var states = new[] { Cell("verify", new Round(2, 3)), Cell("mitigate", round: null) };
+        var caps = new Dictionary<string, int>(StringComparer.Ordinal) { ["verify"] = 3 };
         var runs = StepRuns.Fold(
             [
                 Started("verify", "1.1"),
@@ -60,25 +60,9 @@ public sealed class StepRunsTests
                 Completed("mitigate", "verify", "2.1", "done", minutes: 6, next: "3.1"),
                 Completed("verify", "done", "3.1", "pass", minutes: 8),
             ],
-            states);
+            caps);
 
         Assert.Equal([("verify", 1, 3), ("mitigate", 1, null), ("verify", 2, 3)], runs.Select(static r => (r.Step, r.Attempt, r.MaxAttempts)));
-    }
-
-    [Fact]
-    public void A_finished_looped_instance_gives_every_run_the_loop_cap_from_the_cell_of_its_state_active_or_not()
-    {
-        var states = new[] { Cell("verify", new Round(2, 3)), Cell("mitigate", new Round(2, 3)), Cell("done", round: null) };
-        var runs = StepRuns.Fold(
-            [
-                Started("verify", "1.1"),
-                Completed("verify", "mitigate", "1.1", "fail", minutes: 3, next: "2.1"),
-                Completed("mitigate", "verify", "2.1", "done", minutes: 6, next: "3.1"),
-                Completed("verify", "done", "3.1", "pass", minutes: 8),
-            ],
-            states);
-
-        Assert.Equal([("verify", 3), ("mitigate", 3), ("verify", 3)], runs.Select(static r => (r.Step, r.MaxAttempts)));
     }
 
     [Fact]
@@ -134,7 +118,4 @@ public sealed class StepRunsTests
     [Fact]
     public void A_report_for_a_run_it_never_saw_open_adds_nothing() =>
         Assert.Empty(Fold(Completed("produce", "checks", "7.1", "done")));
-
-    private static StateCell Cell(string state, Round? round, params LoopPair[] loops) =>
-        new(state, Order: 1, BranchOf: null, StateGlyph.Pending, Badge: null, round, loops, Desk: false, Child: false, Children: null, Outcome: null, Terminal: false);
 }

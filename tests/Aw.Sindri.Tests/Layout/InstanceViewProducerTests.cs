@@ -115,18 +115,6 @@ public sealed class InstanceViewProducerTests
     }
 
     [Fact]
-    public void A_state_in_a_loop_but_at_neither_end_of_its_back_edge_still_carries_the_loops_round_when_it_is_not_active()
-    {
-        var states = _incident.Recipe.States.ToDictionary(static s => s.Key, static s => s.Value, StringComparer.Ordinal);
-        states["done"] = states["done"] with { Loop = "revisions" };
-        var middle = _incident with { Recipe = _incident.Recipe with { States = states } };
-
-        var cell = InstanceViews.Of(EngineFixture.At(middle.Recipe, "produce"), middle, StatusCases.Now, timeoutAt: null, new InstanceViewContext()).States.Single(static c => c.State == "done");
-
-        Assert.Equal(new Round(1, 3), cell.Round);
-    }
-
-    [Fact]
     public void A_loop_pair_counts_the_rounds_completed_so_far()
     {
         var view = Produce(i => i with { Loops = new Dictionary<string, Core.Workflow.Engine.Instances.LoopState>(StringComparer.Ordinal) { ["revisions"] = new(3, 3, Last: null) } });

@@ -39,7 +39,7 @@ public static class StateCells
             place.BranchOf,
             Glyph(place, terminal, isActive, at),
             isActive && !at.Instance.Ended ? at.Badge : null,
-            Round(state, at.Instance),   // every member of a loop shows its round and cap, not only the active state: a Step run reads its cap from any state
+            isActive ? Round(state, at.Instance) : null,
             Loops(place.State, at),
             Desk: state.Step is { } step && at.Interpreted.Catalog.Find(step.Use) is { DeskCapable: true },
             Child: state.WaitFor?.Child is not null,
