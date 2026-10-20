@@ -30,7 +30,8 @@ internal sealed class AgentLaunchRecorder(ILedgerStore ledger, HeldLease lease, 
         ArgumentNullException.ThrowIfNull(started);
         var chosen = started.ChosenSession is { } id && SessionId.TryFrom(id, out var session) ? session : (SessionId?)null;
         var viewer = new LaunchViewer("none", Label: null, started.Viewer.Kind, started.Viewer.Code, started.Viewer.Detail);
-        var payload = new LaunchStarted(request.Launch, request.Item, request.Mode, request.Agent, chosen, "sindri " + request.Item.Value, viewer, started.Attach, started.CatalogSource, started.ArgvHash);
+        var payload = new LaunchStarted(request.Launch, request.Item, request.Mode, request.Agent, chosen, "sindri " + request.Item.Value, viewer, started.Attach, started.CatalogSource, started.ArgvHash,
+            request.Instance, request.Step?.Ref.State, request.Run?.Number);
         var appended = await Append(events.Entry(EventTypes.LaunchStarted, payload, Key(request.Launch), request.Item.Value), cancellationToken).ConfigureAwait(false);
         if (!appended.AlreadyRecorded)
         {
@@ -47,7 +48,8 @@ internal sealed class AgentLaunchRecorder(ILedgerStore ledger, HeldLease lease, 
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(failed);
-        var payload = new LaunchFailed(request.Launch, request.Item, failed.Error.Code, failed.Error.Message, LaunchFailureDetail.Of(failed.Error, failed.Stage));
+        var payload = new LaunchFailed(request.Launch, request.Item, failed.Error.Code, failed.Error.Message, LaunchFailureDetail.Of(failed.Error, failed.Stage),
+            request.Instance, request.Step?.Ref.State, request.Run?.Number);
         _ = await Append(events.Entry(EventTypes.LaunchFailed, payload, Key(request.Launch), request.Item.Value), cancellationToken).ConfigureAwait(false);
     }
 

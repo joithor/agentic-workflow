@@ -10,8 +10,10 @@ namespace Aw.Sindri.Features.Prove;
 /// <summary>
 /// 'step.prove.evidence' on the block runtime (line spec §7.3): runs <see cref="ProofChecks"/> over the phase packet's files and the facts the prove station gathered. A rule that
 /// does not hold is 'incomplete' with the findings and nothing is written. Otherwise the proof pack is written to the instance's run area ('proof-pack/') and machine-frozen through
-/// aw-packets (kind proof); 'complete' carries <c language="text">proofPack = {hash, dir}</c>. A freeze aw-packets refuses is 'incomplete' with its failed checks as findings. A run area that
-/// cannot be written, a tool that cannot run, or a missing address, repo, checkout or phase file fails the Step.
+/// aw-packets (kind proof); 'complete' carries <c language="text">proofPack = {hash, dir}</c>. The Step fails (and an unrouted failure parks the instance for the owner) when a rule of
+/// <see cref="ProofChecks.Required"/> cannot run (LN7: no proof is better than a proof nothing checked), when aw-packets refuses the pack Sindri assembled (the builder cannot fix it;
+/// its failed checks are the message), when a run area cannot be written or a tool cannot run, or when the address, repo, checkout or a phase file is missing. A relative
+/// <c language="text">phasePacket.dir</c> is read under the repo's checkout.
 /// </summary>
 /// <param name="files">Reads the phase packet's files.</param>
 /// <param name="area">The instance's run area, where the pack is written.</param>
@@ -40,14 +42,20 @@ internal sealed class ProveEvidenceStep(IBriefFiles files, IRunArea area, IPacke
             return BlockStepResult.Failed($"step.prove.evidence has no checkout of {inputs.Repo.Value}: {checkout.Error.Message}");
         }
 
-        var (phase, failure) = await PhaseFiles.Load(files, inputs.Dir, cancellationToken).ConfigureAwait(false);
+        var dir = PhaseDir.Of(inputs.Dir, checkout.Value);
+        var (phase, failure) = await PhaseFiles.Load(files, dir, cancellationToken).ConfigureAwait(false);
         if (phase is null)
         {
-            return BlockStepResult.Failed($"step.prove.evidence can't load the phase packet {inputs.Dir}: {failure}");
+            return BlockStepResult.Failed($"step.prove.evidence can't load the phase packet {dir}: {failure}");
         }
 
         var facts = new ProofFacts(inputs.Head, phase.Acceptance, phase.Signals, phase.Kind, phase.HoldoutCount, StepFacts.Read(context, "fact:proof"), StepFacts.Read(context, "fact:redTests"), StepFacts.Read(context, "fact:beforeAfter"), StepFacts.Read(context, "fact:holdoutResult"));
         var report = ProofChecks.Run(facts);
+        if (report.Unrunnable.Count > 0)
+        {
+            return BlockStepResult.Failed($"step.prove.evidence can't prove the phase, so it parks it: {string.Join("; ", report.Unrunnable)}");
+        }
+
         if (!report.Holds)
         {
             return Incomplete(report.Failures.Select(static f => Finding(f.Rule, f.Item, f.Message, f.Fix)));
@@ -82,7 +90,7 @@ internal sealed class ProveEvidenceStep(IBriefFiles files, IRunArea area, IPacke
 
         return frozen.Value is { Frozen: true, Hash: { } hash }
             ? StepFacts.Done("complete", ("fact:proofPack", new JsonObject { ["hash"] = hash, ["dir"] = dir.Value }))
-            : Incomplete(frozen.Value.Failures.Select(static f => Finding(f.Rule, item: null, $"{f.Subject}: {f.Message}", f.Fix ?? "fix the packet and run the proof again")));
+            : BlockStepResult.Failed($"step.prove.evidence: aw-packets refused the proof pack Sindri assembled, which the builder can't fix: {string.Join("; ", frozen.Value.Failures.Select(static f => $"{f.Rule} {f.Subject}: {f.Message}"))}");
     }
 
     private static BlockStepResult Incomplete(IEnumerable<JsonObject> findings) =>

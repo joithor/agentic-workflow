@@ -49,19 +49,23 @@ public sealed class HostProbesTests
     public async Task A_port_in_time_wait_reads_free()
     {
         Assert.SkipWhen(OperatingSystem.IsWindows(), "TIME_WAIT binds differ on Windows, where the probe keeps exclusive use");
-        var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-        using (var client = new TcpClient())
+
+        // Another process can take the released port before the probe: try again on a fresh port, and pass when any attempt reads it free.
+        Assert.True(await AnyAttemptReadsFree(async () =>
         {
-            await client.ConnectAsync(IPAddress.Loopback, port, TestContext.Current.CancellationToken);
-            using var accepted = await listener.AcceptTcpClientAsync(TestContext.Current.CancellationToken);
-            accepted.Close();   // the server's end closes first: it is the side left in TIME_WAIT
-        }
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+            using (var client = new TcpClient())
+            {
+                await client.ConnectAsync(IPAddress.Loopback, port, TestContext.Current.CancellationToken);
+                using var accepted = await listener.AcceptTcpClientAsync(TestContext.Current.CancellationToken);
+                accepted.Close();   // the server's end closes first: it is the side left in TIME_WAIT
+            }
 
-        listener.Stop();
-
-        Assert.True(new HostProbes().Ports(port, port, port).PreferredFree);
+            listener.Stop();
+            return port;
+        }, new HostProbes()));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -117,22 +121,28 @@ public sealed class HostProbesTests
     }
 
     [Fact, Trait("Lane", "integration")]
-    public void Ports_on_a_host_without_ipv6_reads_a_free_port_free_and_a_held_port_taken()
+    public async Task Ports_on_a_host_without_ipv6_reads_a_free_port_free_and_a_held_port_taken()
     {
-        var holder = new TcpListener(IPAddress.Loopback, 0);
-        holder.Start();
-        var held = ((IPEndPoint)holder.LocalEndpoint).Port;
         var probes = new HostProbes(ipv6Available: false);
-        try
-        {
-            Assert.False(probes.Ports(held, held, held).PreferredFree);
-        }
-        finally
-        {
-            holder.Stop();
-        }
 
-        Assert.True(probes.Ports(held, held, held).PreferredFree);
+        // The held half is deterministic (the listener stays open across the probe); the free half retries on a fresh port,
+        // since another process can take the released one before the probe.
+        Assert.True(await AnyAttemptReadsFree(() =>
+        {
+            var holder = new TcpListener(IPAddress.Loopback, 0);
+            holder.Start();
+            var held = ((IPEndPoint)holder.LocalEndpoint).Port;
+            try
+            {
+                Assert.False(probes.Ports(held, held, held).PreferredFree);
+            }
+            finally
+            {
+                holder.Stop();
+            }
+
+            return Task.FromResult(held);
+        }, probes));
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -150,5 +160,23 @@ public sealed class HostProbesTests
         {
             directory.Delete(recursive: true);
         }
+    }
+
+    private const int FreeAttempts = 5;
+
+    // Each attempt binds a port, releases it (prepare) and probes it. Nothing keeps a released port free, so a taken answer
+    // may be another process winning the port: only every attempt reading taken fails the case.
+    private static async Task<bool> AnyAttemptReadsFree(Func<Task<int>> prepare, HostProbes probes)
+    {
+        for (var attempt = 0; attempt < FreeAttempts; attempt++)
+        {
+            var port = await prepare();
+            if (probes.Ports(port, port, port).PreferredFree)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -16,16 +16,28 @@ internal static partial class Labels
     internal const string SheetLane = "Lane";
 
     /// <summary>The label of the launch that started the session.</summary>
-    internal const string SheetLaunch = "Launch";
+    internal const string SheetLaunch = "Agent session";
+
+    /// <summary>The label of the workflow instance an engine launch started the session for.</summary>
+    internal const string SheetInstance = "Run";
+
+    /// <summary>The label of that instance's Step state.</summary>
+    internal const string SheetStep = "Step";
+
+    /// <summary>The label of the attempt of that Step.</summary>
+    internal const string SheetAttempt = "Attempt";
+
+    /// <summary>The visible words of the action that opens the Step's frame.</summary>
+    internal const string OpenStepFrame = "Open the run";
 
     /// <summary>The label of the time the process started.</summary>
     internal const string SheetStarted = "Started";
 
     /// <summary>The label of the time the state began.</summary>
-    internal const string SheetSince = "State since";
+    internal const string SheetSince = "In this status since";
 
     /// <summary>The label of where the state came from.</summary>
-    internal const string SheetStateSource = "State source";
+    internal const string SheetStateSource = "How this was detected";
 
     /// <summary>The label of where the session runs.</summary>
     internal const string SheetHost = "Host";
@@ -48,17 +60,14 @@ internal static partial class Labels
     /// <summary>The label of the tmux clients attached.</summary>
     internal const string SheetAttachedClients = "Attached clients";
 
-    /// <summary>The heading of the state history.</summary>
-    internal const string SheetHistory = "State history";
+    /// <summary>The heading of the status history.</summary>
+    internal const string SheetHistory = "History";
 
     /// <summary>The mark on the current state in the history.</summary>
     internal const string SheetNow = "now";
 
     /// <summary>The word after a chip whose state is a guess.</summary>
     internal const string SheetEstimated = "estimated";
-
-    /// <summary>The phase the Focus send waits for when the catalog already calls it ready.</summary>
-    internal const string SheetFocusPhase = "U11a-f";
 
     /// <summary>The sheet's sentence when the answer can't be read.</summary>
     internal const string SessionUnreadable = "This session's answer can't be read by this build of the app.";
@@ -73,8 +82,8 @@ internal static partial class Labels
     /// <returns>The words.</returns>
     internal static string SessionStale(Error error) => "Couldn't read the session just now. " + InstanceRefused(error);
 
-    /// <summary>The Focus button's accessible name when it can't run: "Focus, arrives in CO-4a".</summary>
-    /// <param name="phase">The phase that ships it.</param>
-    /// <returns>The name.</returns>
-    internal static string SheetFocusName(string phase) => Action("FocusSession") + ", " + Arrives(phase);
+    /// <summary>The accessible name of the action that opens the Step's frame.</summary>
+    /// <param name="state">The step's state, or null.</param>
+    /// <returns>The words.</returns>
+    internal static string OpenStepFrameName(string? state) => state is { Length: > 0 } ? $"{OpenStepFrame} at {state}" : OpenStepFrame;
 }

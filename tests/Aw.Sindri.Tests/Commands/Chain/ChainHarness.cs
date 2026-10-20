@@ -25,7 +25,7 @@ using Microsoft.Extensions.Logging;
 namespace Aw.Sindri.Tests.Commands.Chain;
 
 /// <summary>
-/// The real command chain (AddCommand) over in-memory ports: StopProcess, ApproveProfile and the fixture command, with
+/// The real command chains (AddCommand, and AddStopCommand for the stop) over in-memory ports: StopProcess, ApproveProfile and the fixture command, with
 /// the shell's catalog rows plus the fixture's desk row (reading views, or granted to services, when asked).
 /// </summary>
 internal sealed class ChainHarness : IAsyncDisposable
@@ -65,7 +65,7 @@ internal sealed class ChainHarness : IAsyncDisposable
             .AddSingleton<IProjectorStatus>(Progress)
             .AddSingleton<ILogger<AuditTrail>>(Log)
             .AddScoped<IValidator<FixtureCommand>, FixtureValidator>().AddCommand<FixtureCommand, CommandAccepted, FixtureService>()
-            .AddScoped<IValidator<StopProcessRequest>, AcceptAllValidator<StopProcessRequest>>().AddCommand<StopProcessRequest, StopProcessResponse, StopProcessService>()
+            .AddScoped<IValidator<StopProcessRequest>, AcceptAllValidator<StopProcessRequest>>().AddStopCommand<StopProcessRequest, StopProcessResponse, StopProcessService>()
             .AddScoped<IValidator<ApproveProfileRequest>, AcceptAllValidator<ApproveProfileRequest>>().AddCommand<ApproveProfileRequest, ApproveProfileResponse, ApproveProfileService>()
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
     }

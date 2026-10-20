@@ -6,6 +6,7 @@ using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.ViewModels.Instance;
+using Aw.Sindri.Ui.ViewModels.Workflows;
 using Microsoft.Extensions.Time.Testing;
 using ApiGlyph = Aw.Sindri.Ui.Api.Workflow.StateGlyph;
 
@@ -96,8 +97,8 @@ public sealed class ChildrenPanelViewModelTests
             n["round"] = new JsonObject { ["n"] = 1, ["max"] = 3 };
             n["agent"] = "an agent";
         });
-        Assert.Equal(("r1/3", "an agent"), (running.RoundText, running.Agent));
-        Assert.Contains("r1/3", running.Meta, StringComparison.Ordinal);
+        Assert.Equal(("round 1 of 3", "an agent"), (running.RoundText, running.Agent));
+        Assert.Contains("round 1 of 3", running.Meta, StringComparison.Ordinal);
         Assert.Contains("an agent", running.Meta, StringComparison.Ordinal);
 
         var bare = Edited("project-build", "step.5", n => n["actions"] = new JsonArray());
@@ -151,7 +152,7 @@ public sealed class ChildrenPanelViewModelTests
 
         Assert.Equal((true, served.More, 1), (group.HasMore, group.More, asked));
         Assert.Contains(served.More.ToString(System.Globalization.CultureInfo.InvariantCulture), group.MoreText, StringComparison.Ordinal);
-        Assert.Contains(served.Recipe, group.OpenAllName, StringComparison.Ordinal);
+        Assert.Contains(WorkflowNames.Of(served.Recipe, displayName: null), group.OpenAllName, StringComparison.Ordinal);
         Assert.False(Panel("project-build").Groups.Single().HasMore);
     }
 
@@ -204,16 +205,31 @@ public sealed class ChildrenPanelViewModelTests
     }
 
     [Fact]
-    public void Group_header_names_the_served_recipe()
+    public void Group_header_names_the_workflow_in_plain_words_never_its_id()
     {
         var served = FixtureInstances.Detail("project-build").Children.Single();
 
         var group = Panel("project-build").Groups.Single();
 
         Assert.Equal(served.Recipe, group.Recipe);
-        Assert.Contains(served.Recipe, group.Header, StringComparison.Ordinal);
+        Assert.DoesNotContain(served.Recipe, group.Header, StringComparison.Ordinal);
+        Assert.DoesNotContain(served.Recipe, group.OpenAllName, StringComparison.Ordinal);
+        Assert.Contains(WorkflowNames.Of(served.Recipe, displayName: null), group.Header, StringComparison.Ordinal);
         Assert.Contains(served.Done.ToString(System.Globalization.CultureInfo.InvariantCulture), group.Counts, StringComparison.Ordinal);
         Assert.Contains(served.Total.ToString(System.Globalization.CultureInfo.InvariantCulture), group.Counts, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Group_header_shows_the_served_display_name()
+    {
+        var served = FixtureInstances.Detail("project-build").Children.Single() with { DisplayName = "Build and ship a change" };
+        var detail = FixtureInstances.Detail("project-build") with { Children = [served] };
+
+        var group = new ChildrenPanelViewModel(detail, _clipboard, _clock).Groups.Single();
+
+        Assert.Contains("Build and ship a change", group.Header, StringComparison.Ordinal);
+        Assert.Contains("Build and ship a change", group.OpenAllName, StringComparison.Ordinal);
+        Assert.DoesNotContain(served.Recipe, group.Header + group.OpenAllName, StringComparison.Ordinal);
     }
 
     // The catalog the API serves, with the rows a test reclassifies.
@@ -249,7 +265,7 @@ public sealed class ChildrenPanelViewModelTests
         Assert.NotNull(before.Actions.Single(a => a.Label == grant).Protected);
         Assert.Null(before.Actions.Single(a => a.Label == takeover).Protected);
         Assert.Null(after.Actions.Single(a => a.Label == grant).Protected);
-        Assert.Equal(Labels.Arrives("U8b"), before.Actions.Single(a => a.Label == takeover).PendingChip);
+        Assert.Equal(Labels.AvailableWithU8b, before.Actions.Single(a => a.Label == takeover).PendingChip);
         Assert.Equal(Labels.Arrives("U9"), after.Actions.Single(a => a.Label == takeover).PendingChip);
     }
 }

@@ -57,6 +57,14 @@ internal sealed partial class ItemSheet : UserControl
         }
     }
 
+    private void OnCopyId(object? sender, RoutedEventArgs e)
+    {
+        if (_sheet is { } sheet)
+        {
+            _ = sheet.CopyId();
+        }
+    }
+
     private void OnCopyDecide(object? sender, RoutedEventArgs e)
     {
         if (_sheet is { } sheet && sender is Button { DataContext: ItemDecisionRow row })

@@ -27,6 +27,7 @@ internal static class LauncherServiceCollectionExtensions
             .AddSingleton<ILaunchSpend>(static sp => sp.GetRequiredService<UsageSpend>())
             .AddSingleton<ILaunchUsage>(static sp => sp.GetRequiredService<UsageSpend>())
             .AddScoped<ILaunchProbes, LaunchProbeRecorder>()
+            .AddScoped<LaunchStopEnd>()
             .AddSingleton(_ => Options(environment, settings))
             .AddSingleton<ILaunchFiles>(static sp => new LaunchFileStore(sp.GetRequiredService<LauncherOptions>()))
             .AddSingleton<ILauncher>(sp => new Launcher(Parts(sp, BuiltinHash)))
@@ -54,6 +55,18 @@ internal static class LauncherServiceCollectionExtensions
             Approved = Approved(sp),
             McpFor = McpTargetFor(sp),
             Config = () => catalog.Current,
+            EndLive = async (launch, cancellationToken) =>
+            {
+                var scope = sp.CreateAsyncScope();
+                try
+                {
+                    await scope.ServiceProvider.GetRequiredService<LaunchStopEnd>().EndIfLive(launch, cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    await scope.DisposeAsync().ConfigureAwait(false);
+                }
+            },
             Usage = name => sp.GetRequiredService<IReadOnlyDictionary<string, IUsageReader>>().GetValueOrDefault(name),
         };
     }

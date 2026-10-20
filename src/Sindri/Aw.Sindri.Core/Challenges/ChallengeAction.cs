@@ -28,4 +28,9 @@ public sealed record ChallengeAction(string Text)
     /// <param name="hash">The profile hash to approve.</param>
     /// <returns>The action.</returns>
     public static ChallengeAction ApproveProfile(ProfileHash hash) => new("approve profile " + hash.Abbreviated);
+
+    /// <summary>'approve-all &lt;digest6&gt;' (setup-once spec §5.3): one hold approves the shipped recipes of a plan.</summary>
+    /// <param name="digest">The plan's digest (six hex characters).</param>
+    /// <returns>The action.</returns>
+    public static ChallengeAction ApproveAll(string digest) => new("approve-all " + digest);
 }

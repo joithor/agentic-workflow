@@ -64,7 +64,7 @@ public sealed class TmuxSessionHostTests : SessionHostContract, IDisposable
 
         _ = await Create().Start(session, _deadline, CancellationToken.None);
 
-        Expect.Equal(Path.GetFullPath(_tmux.Scratch), (await ReadWhenWritten(marker)).Trim());
+        Expect.Equal(CanonicalPath.Of(_tmux.Scratch), (await ReadWhenWritten(marker)).Trim());
     }
 
     [Fact]
@@ -134,8 +134,7 @@ public sealed class TmuxSessionHostTests : SessionHostContract, IDisposable
     public async Task Stop_treats_only_a_session_that_is_really_gone_as_stopped(string complaint, bool gone)
     {
         var path = Path.Combine(_tmux.Scratch, "kill-fails");
-        await File.WriteAllTextAsync(path, $"#!/bin/sh\ncase \"$*\" in\n  *kill-session*) echo \"{complaint}\" >&2; exit 1 ;;\nesac\nexit 0\n", TestContext.Current.CancellationToken);
-        File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        _ = ExecutableScript.Write(path, $"case \"$*\" in\n  *kill-session*) echo \"{complaint}\" >&2; exit 1 ;;\nesac\nexit 0\n");
 
         var stopped = await new TmuxSessionHost(new TmuxHostOptions(path, "sindri-launch")).Stop(new HostRef(HostKind.Tmux, "snd-x"), CancellationToken.None);
 
@@ -146,8 +145,7 @@ public sealed class TmuxSessionHostTests : SessionHostContract, IDisposable
     public async Task One_deadline_covers_the_version_check_and_the_new_session()
     {
         var path = Path.Combine(_tmux.Scratch, "slow-tmux");
-        await File.WriteAllTextAsync(path, "#!/bin/sh\nsleep 0.6\ncase \"$*\" in\n  -V) echo 'tmux 3.4' ;;\nesac\nexit 0\n", TestContext.Current.CancellationToken);
-        File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        _ = ExecutableScript.Write(path, "sleep 0.6\ncase \"$*\" in\n  -V) echo 'tmux 3.4' ;;\nesac\nexit 0\n");
         var clock = System.Diagnostics.Stopwatch.StartNew();
 
         var result = await new TmuxSessionHost(new TmuxHostOptions(path, "sindri-launch")).Start(Session("snd-slow"), TimeSpan.FromSeconds(1), CancellationToken.None);
@@ -242,8 +240,7 @@ public sealed class TmuxSessionHostTests : SessionHostContract, IDisposable
         {
             var path = System.IO.Path.Combine(dir, "fake-tmux");
             var log = System.IO.Path.Combine(dir, "fake-tmux.log");
-            File.WriteAllText(path, $"#!/bin/sh\nprintf '%s\\n' \"$*\" >> '{log}'\ncase \"$*\" in\n  -V) echo '{banner}' ;;\n  *has-session*) exit 1 ;;\nesac\nexit 0\n");
-            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            _ = ExecutableScript.Write(path, $"printf '%s\\n' \"$*\" >> '{log}'\ncase \"$*\" in\n  -V) echo '{banner}' ;;\n  *has-session*) exit 1 ;;\nesac\nexit 0\n");
             return new FakeTmux(path, log);
         }
 

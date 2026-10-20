@@ -135,6 +135,7 @@ public sealed class StepInputWorkflowTests(SindriTimeSkippingServer server) : IC
         await Run("T-76", [ProbeInput.Id], async run =>
         {
             var task = await run.Desk.Until(static v => v.Task is not null);
+            await WaitForRunStep(run.Handle);   // the task is open before the FillInput activity has kept its text; RunStep is scheduled only after
             var texts = run.Desk.Sindri.GetRequiredService<IInjectionTexts>();
             var key = new InjectionKey(run.Handle.Id, "checks", task.Run!.Value.Value, 1);
 
@@ -153,6 +154,7 @@ public sealed class StepInputWorkflowTests(SindriTimeSkippingServer server) : IC
         await Run("T-77", [ProbeInput.Id], async run =>
         {
             var task = await run.Desk.Until(static v => v.Task is not null);
+            await WaitForRunStep(run.Handle);   // the task is open before the FillInput activity has kept its text; RunStep is scheduled only after
             var texts = run.Desk.Sindri.GetRequiredService<IInjectionTexts>();
             var key = new InjectionKey(run.Handle.Id, "checks", task.Run!.Value.Value, 1);
             Assert.NotNull(texts.Get(key));

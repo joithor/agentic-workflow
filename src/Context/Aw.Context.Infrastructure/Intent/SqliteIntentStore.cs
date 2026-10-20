@@ -16,6 +16,8 @@ namespace Aw.Context.Infrastructure.Intent;
 /// </summary>
 internal sealed class SqliteIntentStore(ContextDatabase database) : IIntentStore
 {
+    private readonly StampedCache<IntentLayer> _layers = new();
+
     private static readonly JsonSerializerOptions _keysJson = AwJson.CreateOptions(IntentJsonContext.Default);
 
     public async ValueTask<Result<IntentLayer>> Layer(CancellationToken cancellationToken)
@@ -34,13 +36,32 @@ internal sealed class SqliteIntentStore(ContextDatabase database) : IIntentStore
 
         await using (read.Value.ConfigureAwait(false))
         {
-            var records = await SqliteQueries.List(read.Value, new SqlStatement(IntentSql.Records), IntentMappers.Record, cancellationToken).ConfigureAwait(false);
-            var links = records.IsError ? records.Error : await SqliteQueries.List(read.Value, new SqlStatement(IntentSql.Links), IntentMappers.Link, cancellationToken).ConfigureAwait(false);
-            var decisions = links.IsError ? links.Error : await SqliteQueries.List(read.Value, new SqlStatement(IntentSql.Decisions), IntentMappers.Decision, cancellationToken).ConfigureAwait(false);
-            var edges = decisions.IsError ? decisions.Error : await SqliteQueries.List(read.Value, new SqlStatement(IntentSql.Edges), IntentMappers.Edge, cancellationToken).ConfigureAwait(false);
-            var conflicts = edges.IsError ? edges.Error : await SqliteQueries.List(read.Value, new SqlStatement(IntentSql.Conflicts), IntentMappers.Conflict, cancellationToken).ConfigureAwait(false);
-            return conflicts.IsError ? ContextDatabase.Translate(conflicts.Error) : new IntentLayer(records.Value, links.Value, decisions.Value, edges.Value) { Conflicts = conflicts.Value };
+            var stamp = await StampedCache<IntentLayer>.Stamp(read.Value, StampedCache<IntentLayer>.IntentStamp, cancellationToken).ConfigureAwait(false);
+            if (_layers.Get("layer", stamp) is { } held)
+            {
+                return held;
+            }
+
+            var layer = await Rows(read.Value, cancellationToken).ConfigureAwait(false);
+            if (layer.IsError)
+            {
+                return ContextDatabase.Translate(layer.Error);
+            }
+
+            _layers.Put("layer", stamp, layer.Value);
+            return layer;
         }
+    }
+
+    // The layer's rows, read in the caller's read transaction.
+    private static async ValueTask<Result<IntentLayer>> Rows(SqliteReadSession session, CancellationToken cancellationToken)
+    {
+        var records = await SqliteQueries.List(session, new SqlStatement(IntentSql.Records), IntentMappers.Record, cancellationToken).ConfigureAwait(false);
+        var links = records.IsError ? records.Error : await SqliteQueries.List(session, new SqlStatement(IntentSql.Links), IntentMappers.Link, cancellationToken).ConfigureAwait(false);
+        var decisions = links.IsError ? links.Error : await SqliteQueries.List(session, new SqlStatement(IntentSql.Decisions), IntentMappers.Decision, cancellationToken).ConfigureAwait(false);
+        var edges = decisions.IsError ? decisions.Error : await SqliteQueries.List(session, new SqlStatement(IntentSql.Edges), IntentMappers.Edge, cancellationToken).ConfigureAwait(false);
+        var conflicts = edges.IsError ? edges.Error : await SqliteQueries.List(session, new SqlStatement(IntentSql.Conflicts), IntentMappers.Conflict, cancellationToken).ConfigureAwait(false);
+        return conflicts.IsError ? conflicts.Error : new IntentLayer(records.Value, links.Value, decisions.Value, edges.Value) { Conflicts = conflicts.Value };
     }
 
     public async ValueTask<Result<IntentSourceState>> State(SourceId source, CancellationToken cancellationToken)

@@ -103,11 +103,14 @@ public static class WorkflowErrors
     /// <summary>SND-BLOCK-021: a file of the holdout store can't be read, parsed or written; the Step fails with the message, and the owner replaces the phase's hidden set.</summary>
     public static readonly ErrorDefinition HoldoutStoreUnavailable = new("SND-BLOCK-021", ErrorKind.Unavailable, "The holdout store can't be read or written");
 
+    /// <summary>SND-RECIPE-011: a recipe is not one this build ships (its 'id@hash' is not in the embedded set); approve-all names it (setup-once spec §7.6).</summary>
+    public static readonly ErrorDefinition RecipeNotShipped = new("SND-RECIPE-011", ErrorKind.Conflict, "The recipe is not one this build ships");
+
     /// <summary>Every live workflow error, for ErrorCatalogue.Validate (together with SindriErrors.All).</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
         RecipeInvalid, RecipeNotFound, RecipeNotApproved, RecipeRevoked, RecipePinDrift, RecipeVersionTaken, RecipeEvalsFailing,
-        RecipeChallengeStale, RecipeUnreadable,
+        RecipeChallengeStale, RecipeUnreadable, RecipeNotShipped,
         InstanceNotFound, TriggerNotAllowed, GateRefused, StaleRunToken, AmbiguousAddress, MalformedReport,
         NonceRefused, NoRuntime, EffectNotAllowed, EarlierAttemptLive, WorkflowChallengeStale, ItemMismatch, EffectFailed,
         StepInputNoRuntime, InjectionChanged, InputChanged, InjectionInvalid, BlockFactUnreadable, BlockProfileUnreadable, BlockRepoUnreadable, BlockRunAreaUnavailable,

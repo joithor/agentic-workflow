@@ -35,7 +35,7 @@ public sealed class ProofPackRealBinaryTests : IDisposable
             "feature",
             HoldoutCount: 1,
             proof,
-            Red: JsonNode.Parse("""{"tests":[{"id":"T1","outcome":"failed"}]}"""),
+            Red: JsonNode.Parse("""{"AC-1":["T1"],"AC-2":["T2"]}"""),
             BeforeAfter: JsonNode.Parse($$"""{"commit":"{{Head}}","results":[]}"""),
             Holdout: JsonNode.Parse($$"""{"commit":"{{Head}}","canary":"clean","results":[{"scenario":"H1","item":"AC-1","verdict":"pass"}]}"""));
     }

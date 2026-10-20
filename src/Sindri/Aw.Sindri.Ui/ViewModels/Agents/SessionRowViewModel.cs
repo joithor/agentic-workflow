@@ -91,6 +91,27 @@ internal sealed class SessionRowViewModel : ObservableObject, ISessionRef
     /// <summary>True when Sindri launched the session (it sits in the second group).</summary>
     public bool IsLaunched => Row.LaunchId is { Length: > 0 };
 
+    /// <summary>Raised when the row asks to open the frame of the Step it works on.</summary>
+    internal event EventHandler<SessionFrameRequestedEventArgs>? FrameRequested;
+
+    /// <summary>"on ITM-…/step/1 · build · attempt 2" for a session an engine launch started; empty otherwise.</summary>
+    public string StepText { get; private set => Set(ref field, value); } = string.Empty;
+
+    /// <summary>The step button's accessible name: its visible words first, then what it opens.</summary>
+    public string StepName { get; private set => Set(ref field, value); } = string.Empty;
+
+    /// <summary>True when the row names the Step it works on.</summary>
+    public bool HasStep => StepText.Length > 0;
+
+    /// <summary>Opens the frame of the Step the session works on; nothing without one.</summary>
+    internal void OpenFrame()
+    {
+        if (Row.Launch is { Instance: { Length: > 0 } instance } launch)
+        {
+            FrameRequested?.Invoke(this, new SessionFrameRequestedEventArgs(instance, launch.State));
+        }
+    }
+
     /// <summary>Everything the row draws, so a read that changes nothing leaves the row alone.</summary>
     internal string Signature { get; private set; } = string.Empty;
 
@@ -114,11 +135,13 @@ internal sealed class SessionRowViewModel : ObservableObject, ISessionRef
         (AskingText, EstimatedText) = (AskingOf(Row), EstimatedOf(Row));
         (WorktreeText, SinceText) = (Row.Worktree ?? string.Empty, Labels.Age(_clock.GetUtcNow() - Row.Since));
         (HostText, LaneText) = (HostOf(Row), LaneOf(Row));
+        StepText = Row.Launch is { } launch && launch.Instance is { Length: > 0 } ? Labels.SessionStep(launch.State, launch.Attempt) : string.Empty;
+        StepName = Row.Launch is { } named && named.Instance is { Length: > 0 } ? Labels.SessionStepName(StepText, named.State) : string.Empty;
         WhereText = string.Join(" · ", new[] { WorktreeText, HostText, LaneText }.Where(p => p.Length > 0));
-        Name = Labels.SessionName(Row.ProviderLabel, title, chip.Word.ToLowerInvariant() + (EstimatedText.Length > 0 ? " (" + EstimatedText + ")" : string.Empty), AskingText, HostText);
-        Signature = string.Join('|', Row.State, AskingText, EstimatedText, title, WorktreeText, HostText, LaneText, Row.Focus.Method);
+        Name = Labels.SessionName(Row.ProviderLabel, title, chip.Word.ToLowerInvariant() + (EstimatedText.Length > 0 ? " (" + EstimatedText + ")" : string.Empty), string.Join(", ", new[] { AskingText, StepText }.Where(p => p.Length > 0)), HostText);
+        Signature = string.Join('|', Row.State, AskingText, EstimatedText, title, WorktreeText, HostText, LaneText, StepText, Row.Focus.Method);
         Focus.Show(Row.Ref);
-        foreach (var name in (string[])[nameof(IsAsking), nameof(HasAsking), nameof(IsEstimated), nameof(HasWorktree), nameof(HasLane), nameof(IsLaunched)])
+        foreach (var name in (string[])[nameof(IsAsking), nameof(HasAsking), nameof(IsEstimated), nameof(HasWorktree), nameof(HasLane), nameof(IsLaunched), nameof(HasStep)])
         {
             OnChanged(name);
         }
@@ -131,7 +154,7 @@ internal sealed class SessionRowViewModel : ObservableObject, ISessionRef
     private static string HostOf(SessionRowView row) => row.Lane is null && row.Host.Session is { Length: > 0 } session ? row.Host.Label + " · " + session : row.Host.Label;
 
     private static string LaneOf(SessionRowView row) =>
-        row.Lane is { } lane ? Labels.LaneLine(lane.Team, lane.Lane) : row.LaunchId is { Length: > 0 } launch ? Labels.LaunchLine(launch) : string.Empty;
+        row.Lane is { } lane ? Labels.LaneLine(lane.Team, lane.Lane) : row.LaunchId is { Length: > 0 } ? Labels.LaunchLine : string.Empty;
 
     // A title as the human gave it; else where it is (repo and the id's first characters); else the id's first characters.
     private static string TitleOf(SessionRowView row)

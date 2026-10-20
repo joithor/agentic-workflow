@@ -4,11 +4,15 @@ namespace Aw.Sindri.Core.Prove;
 
 /// <summary>
 /// The proof pack's rules (line spec §7.3, PRV-*): pure decisions over <see cref="ProofFacts"/>. A rule whose inputs the facts do not carry is listed in
-/// <see cref="ProofReport.NotRun"/> (PRV-ACC-001, PRV-SHA-001 and PRV-APP-001 until the evidence Step reads the evidence artifacts; PRV-HOLD-003 until the hold-out log records its
-/// canary scan); the rest run on every call.
+/// <see cref="ProofReport.NotRun"/> (a warning: PRV-APP-001 until the evidence Step reads the evidence artifacts, PRV-HOLD-003 until the hold-out log records its canary scan), except
+/// the rules in <see cref="Required"/> (PRV-ACC-001 and PRV-SHA-001), which have no structural cover in the recipe: without 'fact:proof' they are listed in
+/// <see cref="ProofReport.Unrunnable"/> and no proof stands. The rest run on every call.
 /// </summary>
 public static partial class ProofChecks
 {
+    /// <summary>The rules that must run for a proof to stand (LN7): a proof that cannot run them is not a proof, whatever else holds.</summary>
+    public static IReadOnlyList<string> Required { get; } = ["PRV-ACC-001", "PRV-SHA-001"];
+
     /// <summary>Runs every rule.</summary>
     /// <param name="facts">The facts.</param>
     /// <returns>The failures and the rules that did not run.</returns>
@@ -17,13 +21,14 @@ public static partial class ProofChecks
         ArgumentNullException.ThrowIfNull(facts);
         var failures = new List<ProofFinding>();
         var notRun = new List<string>();
-        Artifacts(facts, failures, notRun);
+        var unrunnable = new List<string>();
+        Artifacts(facts, failures, unrunnable);
         Application(facts, notRun);
         BeforeAfter(facts, failures);
         Red(facts, failures);
         Holdout(facts, failures, notRun);
         failures.AddRange(ProofPack.AcceptanceFlips(facts.Acceptance, ProofPack.Acceptance(facts)));
-        return new ProofReport(failures, notRun);
+        return new ProofReport(failures, notRun, unrunnable);
     }
 
     /// <summary>The ids of the phase's items that still need proving: every item that is not superseded.</summary>
@@ -32,12 +37,11 @@ public static partial class ProofChecks
     public static IReadOnlyList<string> LiveItems(JsonNode acceptance) =>
         [.. (acceptance?["items"] as JsonArray ?? []).OfType<JsonObject>().Where(static i => (string?)i["status"] != "superseded").Select(static i => (string?)i["id"] ?? string.Empty)];
 
-    private static void Artifacts(ProofFacts facts, List<ProofFinding> failures, List<string> notRun)
+    private static void Artifacts(ProofFacts facts, List<ProofFinding> failures, List<string> unrunnable)
     {
         if (facts.Proof is null)
         {
-            notRun.Add("PRV-ACC-001: fact:proof (the evidence artifacts) is not among the facts the evidence Step reads");
-            notRun.Add("PRV-SHA-001: fact:proof (the evidence artifacts) is not among the facts the evidence Step reads");
+            unrunnable.AddRange(Required.Select(static rule => $"{rule}: fact:proof (the evidence artifacts) is not among the facts the evidence Step reads"));
             return;
         }
 
@@ -103,19 +107,62 @@ public static partial class ProofChecks
         LiveItems(facts.Acceptance).SelectMany(id => (facts.Signals?["signals"]?[id] as JsonArray ?? []).OfType<JsonObject>()
             .Where(static s => (string?)s["runsAt"] == "base+head").Select(s => (id, (string?)s["id"] ?? string.Empty)));
 
+    private const string RedShape = "expected {\"tests\": [id or {id, path}], \"appOnly\": {signal}} or a list of test ids";
+
+    // fact:redTests (spec A.7, §7.2): an object keyed by item id, each value a list of test ids or {tests?, appOnly?, commit?, output?}. BLD-RED-001 (the tests failed) is build's red-check.
     private static void Red(ProofFacts facts, List<ProofFinding> failures)
     {
-        var tests = (facts.Red?["tests"] as JsonArray ?? []).OfType<JsonObject>().ToList();
-        var exempt = Exempt(facts);
-        if (tests.Count == 0 && !exempt)
+        if (Exempt(facts))
         {
-            failures.Add(new ProofFinding("PRV-RED-001", Item: null, "red.json is missing: no red test was recorded for this phase", "write the failing tests first and record them"));
+            return;
         }
 
-        foreach (var test in tests.Where(static t => (string?)t["outcome"] != "failed"))
+        if (facts.Red is not JsonObject red)
         {
-            failures.Add(new ProofFinding("PRV-RED-001", Item: null, $"the red test {(string?)test["id"]} did not fail before the change, so it proves nothing", "make the test fail for the reason the item names, then build"));
+            failures.Add(new ProofFinding("PRV-RED-001", Item: null, $"red tests are recorded in the wrong shape: expected an object keyed by item id ({RedShape})", "record the failing tests per item"));
+            return;
         }
+
+        failures.AddRange(LiveItems(facts.Acceptance).Select(id => RedFinding(id, RedEntry(red[id]))).OfType<ProofFinding>());
+    }
+
+    private static ProofFinding? RedFinding(string id, RedEntryState state) => state switch
+    {
+        RedEntryState.Recorded => null,
+        RedEntryState.Missing => new ProofFinding("PRV-RED-001", id, $"{id}: no red test or app-only entry was recorded for this item", "write the failing tests first and record them, or record the app-only signal"),
+        RedEntryState.WrongShape => new ProofFinding("PRV-RED-001", id, $"{id}: the red tests are recorded in the wrong shape ({RedShape})", "record the item's red tests in the expected shape"),
+        _ => throw new ArgumentOutOfRangeException(nameof(state), state, "an unknown red entry state"),
+    };
+
+    private static RedEntryState RedEntry(JsonNode? entry) => entry switch
+    {
+        null => RedEntryState.Missing,
+        JsonArray list => TestIds(list) is { } count ? (count > 0 ? RedEntryState.Recorded : RedEntryState.Missing) : RedEntryState.WrongShape,
+        JsonObject body => RedBody(body),
+        _ => RedEntryState.WrongShape,
+    };
+
+    private static RedEntryState RedBody(JsonObject body)
+    {
+        var tests = body["tests"] is null ? 0 : body["tests"] is JsonArray list ? TestIds(list) : null;
+        var appOnly = body["appOnly"];
+        if (tests is null || appOnly is not (null or JsonObject))
+        {
+            return RedEntryState.WrongShape;
+        }
+
+        return tests > 0 || appOnly is not null ? RedEntryState.Recorded : RedEntryState.Missing;
+    }
+
+    // The number of tests a list names, or null when an element is neither an id nor an {id, path} object.
+    private static int? TestIds(JsonArray list) =>
+        list.All(static t => (t is JsonValue v && v.TryGetValue<string>(out _)) || (t is JsonObject o && o["id"] is JsonValue)) ? list.Count : null;
+
+    private enum RedEntryState
+    {
+        Recorded,
+        Missing,
+        WrongShape,
     }
 
     private static IEnumerable<JsonObject> ArtifactsOf(JsonNode proof, string id) =>

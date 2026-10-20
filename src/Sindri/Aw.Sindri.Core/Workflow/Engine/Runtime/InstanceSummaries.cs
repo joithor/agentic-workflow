@@ -16,12 +16,12 @@ public static class InstanceSummaries
     {
         ArgumentNullException.ThrowIfNull(view);
         ArgumentNullException.ThrowIfNull(context);
-        var chip = StateChip.For(view.EngineOwned, deskOpen: view.Task is not null, terminal: view.Outcome is not null, context.NotStarted || view.State == InstanceViews.StartingState);
+        var chip = StateChip.For(view.EngineOwned, deskOpen: view.Task is not null, view.Outcome, context.NotStarted || view.State == InstanceViews.StartingState);
         return new InstanceSummary(
             view.Address,
             view.Id,
             view.ItemId,
-            new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, view.Urgency),
+            new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, view.Urgency, context.RecipeDisplayName),
             view.State,
             chip,
             view.Since,

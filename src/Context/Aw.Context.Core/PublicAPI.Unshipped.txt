@@ -1599,7 +1599,9 @@ Aw.Context.Core.Map.MapPromoted.Retained.init -> void
 Aw.Context.Core.Map.MapPromoted.Version.get -> Aw.Context.Core.Map.MapVersion!
 Aw.Context.Core.Map.MapPromoted.Version.init -> void
 Aw.Context.Core.Map.MapReader
-Aw.Context.Core.Map.MapReader.MapReader(Aw.Context.Core.Map.IGraphStore! store, Aw.Context.Core.Linking.IIntentStore! intents) -> void
+Aw.Context.Core.Map.MapReader.MapReader(Aw.Context.Core.Map.IGraphStore! store, Aw.Context.Core.Linking.IIntentStore! intents, Aw.Context.Core.Map.MapViewCache? views = null) -> void
+Aw.Context.Core.Map.MapViewCache
+Aw.Context.Core.Map.MapViewCache.MapViewCache() -> void
 Aw.Context.Core.Map.MapReader.Open(Aw.Context.Core.Engine.ContextScope! scope, Aw.Context.Core.Trust.IScrubberFactory! scrubbers, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<(Aw.Context.Core.Map.VisibleMap! Map, Aw.Context.Core.Map.MapText! Text)>!>
 Aw.Context.Core.Map.MapReader.Read(Aw.Context.Core.Engine.ContextScope! scope, bool draft, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.VisibleMap!>!>
 Aw.Context.Core.Map.MapReader.ReadView(Aw.Context.Core.Engine.ContextScope! scope, bool draft, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.VisibleMap!>!>
@@ -3859,6 +3861,7 @@ static Aw.Context.Core.Review.ReviewBasis.operator !=(Aw.Context.Core.Review.Rev
 static Aw.Context.Core.Review.ReviewBasis.operator ==(Aw.Context.Core.Review.ReviewBasis? left, Aw.Context.Core.Review.ReviewBasis? right) -> bool
 static Aw.Context.Core.Review.ReviewDrafts.Visible(Aw.Context.Core.Map.MapSnapshot! draft, Aw.Context.Core.Engine.ContextScope! scope) -> Aw.Kernel.Result<(Aw.Context.Core.Map.MapView! View, Aw.Context.Core.Review.ReviewQueueView! Queue)>!
 static Aw.Context.Core.Review.ReviewPlanner.Plan(Aw.Context.Core.Review.ReviewDecision! decision, Aw.Context.Core.Review.ReviewBasis! basis, string! who, System.DateTimeOffset at) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>!>!
+static Aw.Context.Core.Review.ReviewPlanner.PlanAll(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Review.ReviewDecision!>! decisions, Aw.Context.Core.Review.ReviewBasis! basis, string! who, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> (System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Rows, System.Collections.Generic.IReadOnlyList<string!>! Skipped)
 Aw.Context.Core.Overrides.ProposalPayload.Deconstruct(out string! Run, out Aw.Context.Core.Engine.ContextRepoName Repo, out Aw.Context.Core.Graph.NodeKind Kind, out Aw.Context.Core.Graph.NodeKey? Parent, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? Evidence, out string? Quote, out int Generation) -> void
 Aw.Context.Core.Overrides.ProposalPayload.Generation.get -> int
 Aw.Context.Core.Overrides.ProposalPayload.Generation.init -> void
@@ -6000,3 +6003,52 @@ static Aw.Context.Core.Engine.ClusterLimits.operator ==(Aw.Context.Core.Engine.C
 static readonly Aw.Context.Core.ContextErrors.GraphifyLimitInvalid -> Aw.Kernel.ErrorDefinition!
 static Aw.Context.Core.Eval.Backtest.AsOfMapCache.WithLimits(string! key, Aw.Context.Core.Engine.ClusterLimits! limits) -> string!
 const Aw.Context.Core.Onyx.OnyxSettings.DedicatedAccountEmail = "sindri@example.com" -> string!
+static Aw.Context.Core.Graph.RepoScope.WithHierarchy(Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlySet<string!>! implemented) -> System.Collections.Generic.IReadOnlySet<string!>!
+Aw.Context.Core.Engine.RepoHead
+Aw.Context.Core.Engine.RepoHead.<Clone>$() -> Aw.Context.Core.Engine.RepoHead!
+Aw.Context.Core.Engine.RepoHead.Deconstruct(out Aw.Context.Core.Engine.ContextRepoName Repo, out string! Head, out bool OnDefault) -> void
+Aw.Context.Core.Engine.RepoHead.Equals(Aw.Context.Core.Engine.RepoHead? other) -> bool
+Aw.Context.Core.Engine.RepoHead.Head.get -> string!
+Aw.Context.Core.Engine.RepoHead.Head.init -> void
+Aw.Context.Core.Engine.RepoHead.OnDefault.get -> bool
+Aw.Context.Core.Engine.RepoHead.OnDefault.init -> void
+Aw.Context.Core.Engine.RepoHead.Repo.get -> Aw.Context.Core.Engine.ContextRepoName
+Aw.Context.Core.Engine.RepoHead.RepoHead(Aw.Context.Core.Engine.ContextRepoName Repo, string! Head, bool OnDefault) -> void
+Aw.Context.Core.Engine.RepoHead.Repo.init -> void
+Aw.Context.Core.Extract.IDefaultBranch
+Aw.Context.Core.Extract.IDefaultBranch.Reaches(Aw.Context.Core.Engine.ContextRepo! repo, string! commit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
+Aw.Context.Core.Facade.IContextEngine.MapHeads(Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.RepoHead!>!>!>
+Aw.Context.Core.Facade.IContextMap.CleanDraft(Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Review.CleanupReport!>!>
+Aw.Context.Core.Models.ModelPurpose.Cleanup = 4 -> Aw.Context.Core.Models.ModelPurpose
+Aw.Context.Core.Review.CleanupMode
+Aw.Context.Core.Review.CleanupMode.Agent = 1 -> Aw.Context.Core.Review.CleanupMode
+Aw.Context.Core.Review.CleanupMode.None = 0 -> Aw.Context.Core.Review.CleanupMode
+Aw.Context.Core.Review.CleanupMode.Partial = 2 -> Aw.Context.Core.Review.CleanupMode
+Aw.Context.Core.Review.CleanupMode.Unavailable = 3 -> Aw.Context.Core.Review.CleanupMode
+Aw.Context.Core.Review.CleanupPolicy
+Aw.Context.Core.Review.CleanupReport
+Aw.Context.Core.Review.CleanupReport.Accepted.get -> int
+Aw.Context.Core.Review.CleanupReport.Accepted.init -> void
+Aw.Context.Core.Review.CleanupReport.CleanupReport(int Accepted, int Removed, int Dropped, Aw.Context.Core.Review.CleanupMode Mode) -> void
+Aw.Context.Core.Review.CleanupReport.<Clone>$() -> Aw.Context.Core.Review.CleanupReport!
+Aw.Context.Core.Review.CleanupReport.Deconstruct(out int Accepted, out int Removed, out int Dropped, out Aw.Context.Core.Review.CleanupMode Mode) -> void
+Aw.Context.Core.Review.CleanupReport.Dropped.get -> int
+Aw.Context.Core.Review.CleanupReport.Dropped.init -> void
+Aw.Context.Core.Review.CleanupReport.Equals(Aw.Context.Core.Review.CleanupReport? other) -> bool
+Aw.Context.Core.Review.CleanupReport.Mode.get -> Aw.Context.Core.Review.CleanupMode
+Aw.Context.Core.Review.CleanupReport.Mode.init -> void
+Aw.Context.Core.Review.CleanupReport.Removed.get -> int
+Aw.Context.Core.Review.CleanupReport.Removed.init -> void
+const Aw.Context.Core.Review.CleanupPolicy.Batch = 40 -> int
+const Aw.Context.Core.Review.CleanupPolicy.KeepAt = 0.75 -> double
+const Aw.Context.Core.Review.CleanupPolicy.MaxTokens = 100000 -> int
+override Aw.Context.Core.Engine.RepoHead.Equals(object? obj) -> bool
+override Aw.Context.Core.Engine.RepoHead.GetHashCode() -> int
+override Aw.Context.Core.Engine.RepoHead.ToString() -> string!
+override Aw.Context.Core.Review.CleanupReport.Equals(object? obj) -> bool
+override Aw.Context.Core.Review.CleanupReport.GetHashCode() -> int
+override Aw.Context.Core.Review.CleanupReport.ToString() -> string!
+static Aw.Context.Core.Engine.RepoHead.operator !=(Aw.Context.Core.Engine.RepoHead? left, Aw.Context.Core.Engine.RepoHead? right) -> bool
+static Aw.Context.Core.Engine.RepoHead.operator ==(Aw.Context.Core.Engine.RepoHead? left, Aw.Context.Core.Engine.RepoHead? right) -> bool
+static Aw.Context.Core.Review.CleanupReport.operator !=(Aw.Context.Core.Review.CleanupReport? left, Aw.Context.Core.Review.CleanupReport? right) -> bool
+static Aw.Context.Core.Review.CleanupReport.operator ==(Aw.Context.Core.Review.CleanupReport? left, Aw.Context.Core.Review.CleanupReport? right) -> bool

@@ -173,8 +173,9 @@ $SINDRI mcp register --apply    # writes it: a human at a terminal only (a sessi
 $SINDRI mcp register --apply --providers claude,codex,cursor|all   # more than Claude Code (the default is claude alone)
 ```
 
-`scripts/sindri-app.sh` (a bare run) does the last line itself once the control plane's port is known, so the owner
-needs nothing else: it is idempotent (an entry that is already right is not written) and re-registers when the port moves.
+`scripts/sindri-app.sh` (a bare run) prints the last line, with `--repo` when it applies, once the control plane's port
+is known. It can't run it for you (`--apply` needs a terminal, and the script's watcher has none), so you run it once and
+again when the port moves; it is idempotent (an entry that is already right is not written).
 `AW_SINDRI_MCP_REPO` is passed through as `--repo`. Without it, from a linked worktree the script passes the main
 checkout's folder name as `--repo`, which works when the profile names the repo after its folder; otherwise set
 `AW_SINDRI_MCP_REPO` to the profile's name. Its `mcp` line names the `--repo` it used.
@@ -605,6 +606,15 @@ job (the engine's step lines are the job's progress), and exits 0, 1 or 2 as `so
 - the `context-rebuild` service (name it under `services:`), which runs the same build on its cadence and records
   `context.map.built`;
 - a scoping run's surfaces: `context map propose <file>` (below).
+
+### Refreshing the map with no human step
+
+`sindri context map refresh [--detach] [--json]` is a job (catalog row `RefreshContextMap`, `POST /sindri/context/map/refresh`, key `refresh`, so one at a
+time): it builds a draft, runs the cleanup agent over the review queue (strong and agent-approved proposals are kept, weak ones removed), promotes the
+draft through the engine and records `context.map.built`, `context.map.promoted` and `context.map.refreshed` (repo, version, the heads it mapped, and the
+cleanup's counts). It does not go through `map promote` or its typed confirmation: the owner decided on 2026-10-19 that this job promotes as its caller. A
+terminal, the app or the `context-map-refresh` service may start it; a session may not. Any step's error fails the job (nothing is promoted; a built draft
+stays). The summary reads `map v<N>: <kept> kept, <removed> removed`, plus `, cleanup unavailable` when no model answered.
 
 A build takes a slot of the box-wide heavy-job lock (`$AW_STATE_DIR/locks/heavy-job.lock`, `.2` for the second slot,
 `AW_HEAVY_SLOTS`; the same directory the shell tools and `ui-evidence` use). If every slot stays held for 60 seconds

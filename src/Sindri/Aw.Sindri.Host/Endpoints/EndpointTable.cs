@@ -20,6 +20,7 @@ internal static class EndpointTable
     private static RouteGroupBuilder MapQueries(RouteGroupBuilder queries)
     {
         // ---- queries: one line per slice, sorted ----
+        _ = queries.MapGetApproveAllPlan();
         _ = queries.MapGetEventCatalog();
         _ = queries.MapGetItem();
         _ = queries.MapGetJob();
@@ -27,6 +28,7 @@ internal static class EndpointTable
         _ = queries.MapGetLaunchTargets();
         _ = queries.MapListJobs();
         _ = queries.MapGetItemTimeline();
+        _ = queries.MapGetItemScope();
         _ = queries.MapGetQueue();
         _ = queries.MapGetSession();
         _ = queries.MapGetNeedsYou();
@@ -39,6 +41,7 @@ internal static class EndpointTable
         _ = queries.MapGetPacketFile();
         _ = queries.MapReadInjection();
         _ = queries.MapGetProfile();
+        _ = queries.MapGetSetup();
         _ = queries.MapGetStatus();
         _ = queries.MapListCommands();
         _ = queries.MapListItems();
@@ -97,6 +100,7 @@ internal static class EndpointTable
         _ = commands.MapProposeContextMap();
         _ = commands.MapReviewContextMap();
         _ = commands.MapStopProcess();
+        _ = commands.MapApproveAllRecipes();
         _ = commands.MapApproveRecipe();
         _ = commands.MapRevokeRecipe();
         _ = commands.MapIssueChallenge();

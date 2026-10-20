@@ -26,16 +26,12 @@ internal sealed partial class InstanceFrameViewModel
     private void ShowPanels(InstanceDetail detail)
     {
         var context = new FactViewerContext(api, clipboard, clock, () => _url, detail.Id, id => ItemRequested?.Invoke(this, new ItemOpenEventArgs(id))) { Launcher = _launcher };
-        var fresh = new FactsPanelViewModel(detail, Viewers, context);
-        if (Facts is null || !string.Equals(Facts.Signature, fresh.Signature, StringComparison.Ordinal))
-        {
-            Facts = Facts is { OpenKeys.Count: > 0 } shown ? new FactsPanelViewModel(detail, Viewers, context, shown.OpenKeys) : fresh;
-        }
-
+        ShowFacts(detail, context);
         ShowTabs(detail);
         var children = new ChildrenPanelViewModel(detail, clipboard, clock, catalog);
         if (Children is null || !string.Equals(Children.Signature, children.Signature, StringComparison.Ordinal))
         {
+            children.IsOpen = Children?.IsOpen == true;
             children.Opened += (_, e) => OpenRequested?.Invoke(this, e);
             children.ItemRequested += (_, e) => ItemRequested?.Invoke(this, e);
             children.WorkRequested += (_, _) => WorkRequested?.Invoke(this, EventArgs.Empty);
@@ -45,6 +41,19 @@ internal sealed partial class InstanceFrameViewModel
         {
             Children.Update(detail);
         }
+    }
+
+    private void ShowFacts(InstanceDetail detail, FactViewerContext context)
+    {
+        var fresh = new FactsPanelViewModel(detail, Viewers, context);
+        if (Facts is not null && string.Equals(Facts.Signature, fresh.Signature, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var wasOpen = Facts?.IsOpen == true;
+        Facts = Facts is { OpenKeys.Count: > 0 } shown ? new FactsPanelViewModel(detail, Viewers, context, shown.OpenKeys) : fresh;
+        Facts.IsOpen |= wasOpen;   // the person's choice survives a re-read
     }
 
     /// <summary>Raised when the frame asks the view to put focus on one of its parts.</summary>
@@ -125,6 +134,15 @@ internal sealed partial class InstanceFrameViewModel
     // The request is kept as well as raised: the sheet's view may not exist yet when a key opens the frame (it binds when the sheet shows).
     private void Focus(FrameFocus target, string? key)
     {
+        if (target is FrameFocus.ChildEntry or FrameFocus.ChildItem or FrameFocus.Children && Children is { } children)
+        {
+            children.IsOpen = true;   // focus can't land in a closed disclosure
+        }
+        else if (target == FrameFocus.PendingOutput && Facts is { } facts)
+        {
+            facts.IsOpen = true;
+        }
+
         WantedFocus = new FrameFocusEventArgs(target, key);
         FocusRequested?.Invoke(this, WantedFocus);
     }
@@ -141,6 +159,16 @@ internal sealed partial class InstanceFrameViewModel
         if (Tabs is null || !string.Equals(Tabs.Signature, tabs.Signature, StringComparison.Ordinal))
         {
             Tabs = tabs;
+        }
+    }
+
+    // The runs stay the same object while a re-read serves the same words, so an open list stays open.
+    private void ShowStepRuns(InstanceDetail detail)
+    {
+        var runs = StepRunsViewModel.Of(detail.StepRuns, detail.State, detail.EngineOwned is not null);
+        if (StepRuns is null || !string.Equals(StepRuns.Signature, runs.Signature, StringComparison.Ordinal))
+        {
+            StepRuns = runs;
         }
     }
 

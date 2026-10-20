@@ -12,7 +12,6 @@ namespace Aw.Sindri.Ui.ViewModels.Agents;
 internal sealed class FocusLine : ObservableObject
 {
     private readonly string _template;
-    private readonly string _phase;
     private readonly IClipboard _clipboard;
     private readonly TimeProvider _clock;
     private int _copies;
@@ -21,8 +20,6 @@ internal sealed class FocusLine : ObservableObject
     {
         (_clipboard, _clock) = (clipboard, clock);
         _template = row is { Cli.Length: > 0 } ? row.Cli : Labels.FocusCliFallback;
-        var (kind, stage) = row is null ? (ControlKind.Pending, string.Empty) : CatalogReadiness.Parse(row.Ui);
-        _phase = kind == ControlKind.Pending && stage.Length > 0 ? stage : Labels.FocusSendPhase;
         Show(reference);
     }
 
@@ -31,13 +28,13 @@ internal sealed class FocusLine : ObservableObject
     public string Label => Labels.FocusLabel;
 #pragma warning restore CA1822, MA0041
 
-    /// <summary>The button's accessible name: "Focus, arrives in CO-4a".</summary>
+    /// <summary>The button's accessible name: "Watch the agent, coming soon".</summary>
     public string Name { get; private set => Set(ref field, value); } = string.Empty;
 
     /// <summary>The CLI to run, with the row's ref in it; empty when the ref holds a control character.</summary>
     public string Cli { get; private set => Set(ref field, value); } = string.Empty;
 
-    /// <summary>The line: "arrives in CO-4a · sindri agents focus claude-code/…".</summary>
+    /// <summary>The line: "Coming soon · sindri agents focus claude-code/…".</summary>
     public string Line { get; private set => Set(ref field, value); } = string.Empty;
 
     /// <summary>"Copy", or "Copied" for a moment.</summary>
@@ -54,8 +51,8 @@ internal sealed class FocusLine : ObservableObject
     internal void Show(string reference)
     {
         Cli = reference.Any(char.IsControl) ? string.Empty : _template.Replace("<ref>", reference, StringComparison.Ordinal);
-        Line = Labels.Arrives(_phase) + " · " + Cli;
-        Name = Labels.FocusLabel + ", " + Labels.Arrives(_phase);
+        Line = Labels.FocusSoon + " · " + Cli;
+        Name = Labels.FocusName;
         OnChanged(nameof(CanCopy));
         OnChanged(nameof(CopyName));
     }

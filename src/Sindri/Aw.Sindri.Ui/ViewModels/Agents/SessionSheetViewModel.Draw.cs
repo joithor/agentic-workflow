@@ -13,16 +13,17 @@ internal sealed partial class SessionSheetViewModel
         Ref = session.Ref;
         Heading = session.ProviderLabel + " " + (session.Title ?? (session.Repo is { } repo ? repo + "/" + Id8(session.Id) : Id8(session.Id)));
         StateLine = StateWords(session);
-        Fields = Listed(
+        Fields = Listed([
             (Labels.ItemRepo, session.Repo),
             (Labels.SheetWorktree, session.Worktree),
             (Labels.SheetLane, session.Lane is { } lane ? lane.Team + " / " + lane.Lane : null),
             (Labels.SheetLaunch, session.LaunchId),
+            .. StepFields(session),
             (Labels.SheetStarted, session.StartedAt is { } started ? Labels.SheetTime(started) : null),
             (Labels.SheetSince, Labels.SheetTime(session.Since)),
             (Labels.SheetStateSource, session.StateSource),
             (Labels.CellProcess, session.Pid is { } pid ? Number(pid) : null),
-            (Labels.SheetWorkingDirectory, view.Cwd));
+            (Labels.SheetWorkingDirectory, view.Cwd)]);
         var host = session.Host;
         HostFields = Listed(
             (Labels.SheetHost, host.Label),
@@ -91,10 +92,9 @@ internal sealed partial class SessionSheetViewModel
         }
 
         var cli = focus.Cli.Replace("<ref>", Ref, StringComparison.Ordinal);
-        var phase = focus.IsPending ? focus.Stage : Labels.SheetFocusPhase;
         FocusCli = ControlViewModel.Safe(cli) && Ref.Length > 0 ? cli : string.Empty;
-        FocusLine = FocusCli.Length > 0 ? Labels.Arrives(phase) + " · " + FocusCli : string.Empty;
-        FocusName = Labels.SheetFocusName(phase);
+        FocusLine = FocusCli.Length > 0 ? Labels.FocusSoon + " · " + FocusCli : string.Empty;
+        FocusName = Labels.FocusName;
         OnChanged(nameof(IsFocusEnabled));
     }
 }

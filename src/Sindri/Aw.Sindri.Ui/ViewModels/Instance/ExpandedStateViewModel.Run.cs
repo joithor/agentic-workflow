@@ -21,14 +21,43 @@ internal sealed partial class ExpandedStateViewModel
     /// <summary>True when the Attach component shows.</summary>
     public bool HasAttach => Attach is not null;
 
-    /// <summary>"Agent · LCH-…" when an agent session runs the Step; empty otherwise.</summary>
+    /// <summary>"An agent is working on this step" when an agent session runs the Step; empty otherwise.</summary>
     public string RunLine { get; private set; } = string.Empty;
+
+    /// <summary>"Agent session LCH-…": the launch id, for Stage details; empty without a run.</summary>
+    public string RunDetail { get; private set; } = string.Empty;
 
     /// <summary>True when an agent runs the Step.</summary>
     public bool HasRun => RunLine.Length > 0;
 
     /// <summary>The run line's accessible name.</summary>
     public string RunName { get; private set; } = string.Empty;
+
+    /// <summary>Raised when the session link is followed.</summary>
+    internal event EventHandler<FrameSessionEventArgs>? SessionRequested;
+
+    /// <summary>The ref of the session running this Step, once a session row with the run's launch id is known; else null.</summary>
+    internal string? SessionRef { get; private set; }
+
+    /// <summary>True when the session link shows.</summary>
+    public bool HasSession => SessionRef is not null;
+
+    /// <summary>The session link's visible words.</summary>
+#pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
+    public string SessionLinkText => Labels.SessionLink;
+#pragma warning restore CA1822, MA0041
+
+    /// <summary>The session link's accessible name: "Session ▸ cursor/pid-333-100".</summary>
+    public string SessionLinkName => SessionRef is { } sessionRef ? Labels.SessionLinkName(sessionRef) : Labels.SessionLink;
+
+    /// <summary>Opens the session's sheet; nothing without a known session.</summary>
+    internal void OpenSession()
+    {
+        if (SessionRef is { } sessionRef)
+        {
+            SessionRequested?.Invoke(this, new FrameSessionEventArgs(sessionRef));
+        }
+    }
 
     /// <summary>The launch's state in words; empty until it is read.</summary>
     public string LaunchLine { get; private set => Set(ref field, value); } = string.Empty;
@@ -61,7 +90,7 @@ internal sealed partial class ExpandedStateViewModel
     {
         if (current.Status.Run is { } run && string.Equals(run.Runtime, "agent", StringComparison.Ordinal))
         {
-            (RunLine, RunName) = (Labels.RunLine(run.Launch), Labels.RunName(run.Launch));
+            (RunLine, RunName, RunDetail) = (Labels.RunLine, Labels.RunName(run.Launch), Labels.RunDetailLine(run.Launch));
         }
 
         var live = HasRun || (current.Step is { } step && string.Equals(step.Ref, "step.agent", StringComparison.Ordinal) && current.Status.Paused is null);
@@ -85,6 +114,9 @@ internal sealed partial class ExpandedStateViewModel
     {
         ArgumentNullException.ThrowIfNull(read);
         (_item, _itemUnreadable, _sent) = (read.Item, read.ItemUnreadable, false);   // the item is read again: its version is the new one
+        SessionRef = HasRun ? read.SessionRef : null;
+        OnChanged(nameof(HasSession));
+        OnChanged(nameof(SessionLinkName));
         LaunchLine = HasRun ? (read.Launch is { } launch ? RunWords.LaunchLine(launch) : Labels.LaunchUnreadable) : string.Empty;
         OnChanged(nameof(HasLaunchLine));
         RunEvents = RunWords.EventLines(read.Events);

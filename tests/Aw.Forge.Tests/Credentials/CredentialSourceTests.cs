@@ -1,6 +1,7 @@
 using Aw.Forge.Core;
 using Aw.Forge.Core.Credentials;
 using Aw.Forge.Infrastructure.Credentials;
+using Aw.Kernel.Testing;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Forge.Tests.Credentials;
@@ -17,9 +18,7 @@ public sealed class CredentialSourceTests : IDisposable
     private string Script(string body)
     {
         var path = Path.Combine(_dir.FullName, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"cred-{Interlocked.Increment(ref _scripts)}.sh"));
-        File.WriteAllText(path, "#!/bin/sh\n" + body + "\n");
-        Executable.Make(path);
-        return path;
+        return ExecutableScript.Write(path, body + "\n");
     }
 
     [Theory, Trait("Lane", "unit")]

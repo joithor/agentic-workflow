@@ -20,8 +20,9 @@ public static class ReviewBacklog
         ArgumentNullException.ThrowIfNull(overrides);
         var applied = OverrideApplier.Apply(draft, overrides);
         var graph = applied.Graph;
-        var nodes = graph.Nodes.Where(IsProposal).Select(n => NodeEntry(graph, n));
-        var links = graph.Edges.Where(IsSuggestion).Select(e => LinkEntry(graph, e));
+        var ends = EdgeEnds.Of(graph);
+        var nodes = graph.Nodes.Where(IsProposal).Select(n => NodeEntry(ends, n));
+        var links = graph.Edges.Where(IsSuggestion).Select(e => LinkEntry(ends, e));
         var undecided = nodes.Concat(links).ToList();
         var ordered = undecided.Where(e => e.Group == ReviewGroup.Deterministic).OrderBy(e => e.Node.Value, StringComparer.Ordinal)
             .Concat(undecided.Where(e => e.Group == ReviewGroup.Model).OrderByDescending(e => e.Impact).ThenBy(e => e.Node.Value, StringComparer.Ordinal).ThenBy(e => e.Link?.Value, StringComparer.Ordinal))
@@ -53,18 +54,55 @@ public static class ReviewBacklog
         entries.Where(e => e is { Group: ReviewGroup.Deterministic, Link: null }).GroupBy(e => e.Node.Value[..e.Node.Value.IndexOf(':', StringComparison.Ordinal)], StringComparer.Ordinal)
             .OrderBy(g => g.Key, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
 
-    private static ReviewEntry NodeEntry(GraphSnapshot graph, GraphNode node)
+    private static ReviewEntry NodeEntry(EdgeEnds ends, GraphNode node)
     {
-        var files = graph.Edges.Where(e => e.Type == EdgeType.Implements && e.To.Value == node.Key.Value).Select(e => e.From).OrderBy(k => k.Value, StringComparer.Ordinal).ToList();
-        var parent = graph.Edges.Where(e => e.Type == EdgeType.PartOf && e.From.Value == node.Key.Value).Select(e => (NodeKey?)e.To).FirstOrDefault();
-        var impact = graph.Edges.Count(e => e.From.Value == node.Key.Value || e.To.Value == node.Key.Value);
+        var key = node.Key.Value;
+        var files = (ends.Implementers.GetValueOrDefault(key) ?? []).OrderBy(k => k.Value, StringComparer.Ordinal).ToList();
+        var parent = ends.Parents.TryGetValue(key, out var up) ? up : (NodeKey?)null;
+        var impact = ends.Touching.GetValueOrDefault(key);
         var group = node.Provenance == Provenance.Deterministic ? ReviewGroup.Deterministic : ReviewGroup.Model;
         return new ReviewEntry(node.Key, Link: null, group, node.Label, node.Provenance, node.Confidence, impact, files, parent, Trust: TrustPolicy.For(node.Provenance, accepted: false));
     }
 
-    private static ReviewEntry LinkEntry(GraphSnapshot graph, GraphEdge edge)
+    // Each node's edges, read in one pass (per node, a scan of every edge made one queue build quadratic): the files that implement it,
+    // its first part-of parent, how many edges touch it (a self-loop once), and each node's label by key.
+    private sealed record EdgeEnds(Dictionary<string, List<NodeKey>> Implementers, Dictionary<string, NodeKey> Parents, Dictionary<string, int> Touching, Dictionary<string, string> Labels, Dictionary<string, string> Aliases)
     {
-        var to = graph.Resolve(edge.To)?.Label ?? edge.To.Name;
+        // The label of the node a key resolves to, as GraphSnapshot.Resolve finds it (an alias names its target; the first node with a key wins).
+        internal string? Label(NodeKey key) => Labels.GetValueOrDefault(Aliases.GetValueOrDefault(key.Value) ?? key.Value);
+
+        internal static EdgeEnds Of(GraphSnapshot graph)
+        {
+            var ends = new EdgeEnds(new(StringComparer.Ordinal), new(StringComparer.Ordinal), new(StringComparer.Ordinal),
+                graph.Nodes.DistinctBy(n => n.Key.Value, StringComparer.Ordinal).ToDictionary(n => n.Key.Value, n => n.Label, StringComparer.Ordinal),
+                graph.Aliases.DistinctBy(a => a.Alias.Value, StringComparer.Ordinal).ToDictionary(a => a.Alias.Value, a => a.Target.Value, StringComparer.Ordinal));
+            foreach (var e in graph.Edges)
+            {
+                if (e.Type == EdgeType.Implements)
+                {
+                    _ = ends.Implementers.TryAdd(e.To.Value, []);
+                    ends.Implementers[e.To.Value].Add(e.From);
+                }
+
+                if (e.Type == EdgeType.PartOf)
+                {
+                    _ = ends.Parents.TryAdd(e.From.Value, e.To);
+                }
+
+                ends.Touching[e.From.Value] = ends.Touching.GetValueOrDefault(e.From.Value) + 1;
+                if (e.To.Value != e.From.Value)
+                {
+                    ends.Touching[e.To.Value] = ends.Touching.GetValueOrDefault(e.To.Value) + 1;
+                }
+            }
+
+            return ends;
+        }
+    }
+
+    private static ReviewEntry LinkEntry(EdgeEnds ends, GraphEdge edge)
+    {
+        var to = ends.Label(edge.To) ?? edge.To.Name;
         return new ReviewEntry(edge.From, LinkIds.For(edge), ReviewGroup.Model, $"{edge.From.Name} {EdgeRules.Name(edge.Type)} {to}", edge.Provenance, edge.Confidence, 1, [edge.From], edge.To, Trust: TrustPolicy.For(edge.Provenance, accepted: false));
     }
 

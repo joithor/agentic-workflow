@@ -192,7 +192,7 @@ page's chip when it appears behind a sheet (the stage goes in the tag, never in 
 | `CHANGED` | `chip attn` | `--attn` | a recipe changed since approval | Recipes |
 | `ORPHANED` | `chip attn` | `--attn` | a map link lost its node | Context map review |
 | `DEGRADED` | `chip attn` | `--attn` | a source or service runs behind | Context sources, System |
-| `FAILED` | `chip fail` | `--error` | a service, job or check failed | needs-you row, System, sources |
+| `FAILED` | `chip fail` | `--error` | a service, job or check failed; also a workflow instance that ended with outcome `failed` | needs-you row, System, sources, Workflows, children |
 | `RUNNING` | `chip ok` | `--success` | an agent or tool is working now (whether or not a terminal exists; Attach shows that) | Home, Work, Workflows, Agents, children, inspector, engine table |
 | `ASKING` | `chip` | ink (not `--attn`, until owner Q3) | a live session is waiting on the human; glyph `◐`; the word reads `ASKING · approval · Bash` when the kind is served (Agents sessions only) | Agents, session sheet |
 | `IDLE` | `chip` | neutral | a live session that is not working and not asking; glyph `○` (Agents sessions only) | Agents, session sheet |
@@ -200,7 +200,9 @@ page's chip when it appears behind a sheet (the stage goes in the tag, never in 
 | `OK` | `chip ok` | `--success` | healthy | System services, sources |
 | `WITH YOU` | `chip` | `--ink-muted` on `--s2` | a person holds the instance (taken over) | Home, Work, Workflows, Agents |
 | `QUEUED` | `chip` | neutral | waiting for a run slot | Home, Work, children |
-| `DONE` | `chip` | neutral | finished | Workflows, children, Recipes stats |
+| `DONE` | `chip` | neutral | finished well (any outcome but the three below) | Workflows, children, Recipes stats |
+| `DIDN'T WORK OUT` | `chip attn` | `--attn` | a workflow instance that ended with outcome `unresolved` (owner, 2026-10-19) | Workflows, children |
+| `CANCELLED` | `chip` | neutral | a workflow instance that ended with outcome `cancelled` (owner, 2026-10-19) | Workflows, children |
 | `DRAFT` | `chip` | neutral | never approved | Recipes, Context map version |
 | `APPROVED` | `chip` | neutral | approved recipe | Recipes |
 | `DETERMINISTIC`, `MODEL` | `chip` | neutral | a map proposal's provenance; also MODEL for a model call with no session on Agents | Context map review, Agents |

@@ -14,8 +14,7 @@
 
     <StackPanel x:Name="RecipeBody" Spacing="{StaticResource Space.MD}" IsVisible="{Binding IsShown}">
       <StackPanel Spacing="4">
-        <TextBlock x:Name="RecipeIdentity" Classes="body-strong mono" Text="{Binding Identity}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Identity}" />
-        <TextBlock x:Name="RecipeNameTemplate" Classes="caption mono" Text="{Binding NameLine}" IsVisible="{Binding HasName}" TextWrapping="Wrap" AutomationProperties.Name="{Binding NameLine}" />
+        <TextBlock x:Name="RecipeTitle" Classes="detail-title" Text="{Binding Title}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Title}" />
         <TextBlock x:Name="RecipeNote" Classes="body-strong" Text="{Binding Note}" IsVisible="{Binding HasNote}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Note}" />
       </StackPanel>
       <Panel IsVisible="{Binding States, Converter={x:Static ObjectConverters.IsNotNull}}">
@@ -28,11 +27,9 @@
             <ItemsControl x:Name="RecipeInputs" ItemsSource="{Binding Inputs}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="rec:RecipeFactRowViewModel">
-                  <Border Margin="0,0,0,8" AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                  <Border Margin="0,0,0,8" AutomationProperties.Name="{Binding Label}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
                     <StackPanel Spacing="2" AutomationProperties.AccessibilityView="Raw">
                       <TextBlock Name="RecipeInputLabel" Classes="body-strong" Text="{Binding Label}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
-                      <TextBlock Name="RecipeInputDetail" Classes="caption mono subtle" Text="{Binding Detail}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
-                      <TextBlock Name="RecipeInputGenerate" Classes="caption mono" Text="{Binding Generate}" IsVisible="{Binding HasGenerate}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
                     </StackPanel>
                   </Border>
                 </DataTemplate>
@@ -43,10 +40,9 @@
             <ItemsControl x:Name="RecipeOutputs" ItemsSource="{Binding Outputs}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="rec:RecipeFactRowViewModel">
-                  <Border Margin="0,0,0,8" AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                  <Border Margin="0,0,0,8" AutomationProperties.Name="{Binding Label}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
                     <StackPanel Spacing="2" AutomationProperties.AccessibilityView="Raw">
                       <TextBlock Name="RecipeOutputLabel" Classes="body-strong" Text="{Binding Label}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
-                      <TextBlock Name="RecipeOutputDetail" Classes="caption mono subtle" Text="{Binding Detail}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
                     </StackPanel>
                   </Border>
                 </DataTemplate>
@@ -55,6 +51,20 @@
           </StackPanel>
         </Border>
       </Panel>
+      <!-- Everything a person does not need to read the workflow: the id, hash, version, urgency, name template, and each input's key and type. Closed until opened. -->
+      <Expander x:Name="RecipeDetails" Header="{Binding DetailsText}" IsExpanded="{Binding IsDetailsOpen, Mode=TwoWay}" AutomationProperties.Name="{Binding DetailsText}">
+        <StackPanel Spacing="4">
+          <TextBlock x:Name="RecipeIdentity" Classes="caption mono" Text="{Binding Identity}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Identity}" />
+          <TextBlock x:Name="RecipeNameTemplate" Classes="caption mono" Text="{Binding NameLine}" IsVisible="{Binding HasName}" TextWrapping="Wrap" AutomationProperties.Name="{Binding NameLine}" />
+          <ItemsControl x:Name="RecipeFactDetails" ItemsSource="{Binding Facts.Details}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <TextBlock Classes="caption mono subtle" Text="{Binding}" TextWrapping="Wrap" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Expander>
     </StackPanel>
   </StackPanel>
 </UserControl>

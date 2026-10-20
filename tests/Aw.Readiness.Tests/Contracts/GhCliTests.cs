@@ -15,13 +15,7 @@ public sealed class GhCliTests : IDisposable
     private string Script(string name, string body)
     {
         var path = Path.Combine(_dir.Path, name);
-        File.WriteAllText(path, "#!/bin/sh\n" + body + "\n");
-        if (!OperatingSystem.IsWindows())
-        {
-            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        }
-
-        return path;
+        return ExecutableScript.Write(path, body + "\n");
     }
 
     [Fact]

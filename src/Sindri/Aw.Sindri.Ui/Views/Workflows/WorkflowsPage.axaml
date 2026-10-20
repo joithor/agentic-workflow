@@ -6,8 +6,8 @@
              xmlns:vm="using:Aw.Sindri.Ui.ViewModels"
              x:Class="Aw.Sindri.Ui.Views.Workflows.WorkflowsPage"
              x:DataType="wf:WorkflowsViewModel">
-  <!-- The Workflows page (screens spec §4.2): the head with the root-wide counts and the filters, then the open root instances grouped by
-       recipe in the order the API serves them, the finished line collapsed under them, and the shared states. -->
+  <!-- The Workflows page (screens spec §4.2): the head with the root-wide counts and the filters, then the open root runs grouped by
+       workflow in the order the API serves them, the finished line collapsed under them, and the shared states. -->
   <StackPanel Spacing="{StaticResource Size.PanelGap}">
     <Grid ColumnDefinitions="Auto,*,Auto">
       <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
@@ -21,9 +21,9 @@
             <Border Classes="kbd" VerticalAlignment="Center"><TextBlock Classes="kbd" Text="N" /></Border>
           </StackPanel>
         </Button>
-        <ComboBox x:Name="RecipeFilter" ItemsSource="{Binding RecipeChoices}" SelectionChanged="OnRecipeChosen" PlaceholderText="Recipe" MinWidth="180"
-                  AutomationProperties.Name="Recipe filter" />
-        <TextBox x:Name="SubjectFilter" PlaceholderText="Subject" KeyDown="OnSubjectKey" MinWidth="160" AutomationProperties.Name="Subject filter" />
+        <ComboBox x:Name="RecipeFilter" ItemsSource="{Binding RecipeChoices}" SelectionChanged="OnRecipeChosen" PlaceholderText="{Binding RecipeFilterName}" MinWidth="180"
+                  AutomationProperties.Name="{Binding RecipeFilterName}" />
+        <TextBox x:Name="SubjectFilter" PlaceholderText="{Binding SubjectFilterName}" KeyDown="OnSubjectKey" MinWidth="160" AutomationProperties.Name="{Binding SubjectFilterName}" />
       </StackPanel>
     </Grid>
 
@@ -61,9 +61,11 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <Border x:Name="WorkflowsLegendName" Margin="16,8" AutomationProperties.Name="{Binding LegendName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-          <TextBlock x:Name="WorkflowsLegend" Classes="caption subtle" Text="{Binding LegendText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
-        </Border>
+        <Expander x:Name="WorkflowsKey" Margin="16,8" Header="{Binding LegendHeader}" IsExpanded="{Binding IsLegendOpen, Mode=TwoWay}">
+          <Border x:Name="WorkflowsLegendName" AutomationProperties.Name="{Binding LegendName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+            <TextBlock x:Name="WorkflowsLegend" Classes="caption subtle" Text="{Binding LegendText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+          </Border>
+        </Expander>
       </StackPanel>
     </Border>
   </StackPanel>

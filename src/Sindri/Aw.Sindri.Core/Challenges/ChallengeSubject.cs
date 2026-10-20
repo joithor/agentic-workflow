@@ -33,4 +33,9 @@ public sealed record ChallengeSubject(string Key, string? Digest)
     /// <param name="hash">The profile hash.</param>
     /// <returns>The subject.</returns>
     public static ChallengeSubject ForProfile(ProfileHash hash) => new("profile:" + hash.Value, Digest: null);
+
+    /// <summary>An approve-all: bound to the plan's digest, so a plan that changed since the preview is refused.</summary>
+    /// <param name="digest">The plan's digest.</param>
+    /// <returns>The subject.</returns>
+    public static ChallengeSubject ForApproveAll(string digest) => new("approve-all", digest);
 }

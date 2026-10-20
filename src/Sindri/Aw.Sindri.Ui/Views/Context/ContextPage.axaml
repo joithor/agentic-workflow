@@ -60,18 +60,26 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <Border AutomationProperties.Name="{Binding EdgesHeader}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-              <TextBlock Classes="caption subtle" Text="{Binding EdgesHeader}" />
-            </Border>
-            <ItemsControl x:Name="ContextEdges" ItemsSource="{Binding Edges}" ItemTemplate="{StaticResource LineTemplate}" />
-            <Border AutomationProperties.Name="{Binding CoverageName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-              <TextBlock Classes="caption subtle" Text="{Binding CoverageName}" />
-            </Border>
-            <ItemsControl x:Name="ContextCoverage" ItemsSource="{Binding Coverage}" ItemTemplate="{StaticResource LineTemplate}" />
-            <Border AutomationProperties.Name="{Binding SearchedName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-              <TextBlock Classes="caption subtle" Text="{Binding SearchedName}" />
-            </Border>
-            <ItemsControl x:Name="ContextSearched" ItemsSource="{Binding Searched}" ItemTemplate="{StaticResource LineTemplate}" />
+            <!-- The answer is the three bands above; the links, the coverage and what was searched are for checking it (F3), closed by default. -->
+            <Expander x:Name="ContextMore" Header="{Binding MoreLabel}" IsExpanded="False" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding MoreLabel}">
+              <StackPanel Spacing="8">
+                <Border AutomationProperties.Name="{Binding MapLine}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                  <TextBlock Classes="caption subtle" Text="{Binding MapLine}" />
+                </Border>
+                <Border AutomationProperties.Name="{Binding EdgesHeader}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                  <TextBlock Classes="caption subtle" Text="{Binding EdgesHeader}" />
+                </Border>
+                <ItemsControl x:Name="ContextEdges" ItemsSource="{Binding Edges}" ItemTemplate="{StaticResource LineTemplate}" />
+                <Border AutomationProperties.Name="{Binding CoverageName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                  <TextBlock Classes="caption subtle" Text="{Binding CoverageName}" />
+                </Border>
+                <ItemsControl x:Name="ContextCoverage" ItemsSource="{Binding Coverage}" ItemTemplate="{StaticResource LineTemplate}" />
+                <Border AutomationProperties.Name="{Binding SearchedName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                  <TextBlock Classes="caption subtle" Text="{Binding SearchedName}" />
+                </Border>
+                <ItemsControl x:Name="ContextSearched" ItemsSource="{Binding Searched}" ItemTemplate="{StaticResource LineTemplate}" />
+              </StackPanel>
+            </Expander>
           </StackPanel>
         </StackPanel>
         <fv:FileMapTree x:Name="FileMapHost" DataContext="{Binding FileMap}" />

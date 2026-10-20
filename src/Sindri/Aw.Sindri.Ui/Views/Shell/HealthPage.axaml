@@ -13,6 +13,61 @@
   <StackPanel Spacing="{StaticResource Size.PanelGap}">
     <TextBlock Classes="page-title" Text="{Binding Text.System}" AutomationProperties.Name="{Binding Text.System}" />
 
+    <!-- F3: the page leads with one sentence ("Everything is running." or what is wrong); the per-service detail waits behind Details. -->
+    <TextBlock x:Name="HealthSentence" Classes="body-strong" Text="{Binding Sentence}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Sentence}" />
+
+    <!-- Review 456-1: what the person must act on (the profile's approve command, the actions) stays up front; only per-service detail waits behind Details. -->
+    <Border Classes="panel" IsVisible="{Binding HasProfileFix}">
+      <Border Classes="section last">
+        <Border Classes="command" IsVisible="{Binding HasProfileFix}">
+          <TextBlock x:Name="ProfileFixText" Classes="mono" Text="{Binding ProfileFix}"
+                     AutomationProperties.Name="{Binding ProfileFix}" />
+        </Border>
+      </Border>
+    </Border>
+    <Border Classes="panel">
+    <!-- The catalog (§4.8): its pending rows by the phase that ships them, then the actions that stay at a terminal
+         (copy blocks). Every control comes from the control renderer; nothing here runs a command. -->
+    <Border x:Name="ActionsSection" Classes="section last" DataContext="{Binding Catalog}" x:DataType="controls:CatalogViewModel">
+      <StackPanel Spacing="{StaticResource Space.XS}">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock x:Name="ActionsEyebrow" Classes="eyebrow head-eyebrow" Text="{Binding $parent[UserControl].((shell:HealthViewModel)DataContext).Text.ActionsCard}"
+                     AutomationProperties.Name="{Binding $parent[UserControl].((shell:HealthViewModel)DataContext).Text.ActionsCard}" />
+          <TextBlock x:Name="PendingSummaryText" Grid.Column="1" Classes="body subtle" Text="{Binding PendingSummary}"
+                     AutomationProperties.Name="{Binding PendingSummary}" />
+        </Grid>
+        <ItemsControl x:Name="PendingPhases" ItemsSource="{Binding Pending}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="controls:PendingPhase">
+              <StackPanel Spacing="{StaticResource Space.XXS}" Margin="0,0,0,8">
+                <TextBlock Classes="caption subtle" Text="{Binding Heading}" AutomationProperties.Name="{Binding Heading}" />
+                <ItemsControl ItemsSource="{Binding Controls}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="controls:ControlViewModel">
+                      <ccontrols:CommandControl Margin="0,0,0,6" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <ItemsControl x:Name="CliOnlyActions" ItemsSource="{Binding CliOnly}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="controls:ControlViewModel">
+              <StackPanel Spacing="{StaticResource Space.XXS}" Margin="0,0,0,8">
+                <TextBlock Classes="caption subtle" Text="{Binding Label}" AutomationProperties.Name="{Binding Label}" />
+                <ccontrols:CommandControl />
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+
+    </Border>
+
+    <Expander x:Name="HealthDetails" Header="{Binding DetailsHeading}" IsExpanded="{Binding DetailsOpen, Mode=TwoWay}" AutomationProperties.Name="{Binding DetailsHeading}">
     <Border Classes="panel">
       <StackPanel>
         <!-- The control plane: its state is the pill's glyph and word (✓ Running, ⌛ stale, ✕ Not running). -->
@@ -82,49 +137,6 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <Border Classes="command" IsVisible="{Binding HasProfileFix}">
-              <TextBlock x:Name="ProfileFixText" Classes="mono" Text="{Binding ProfileFix}"
-                         AutomationProperties.Name="{Binding ProfileFix}" />
-            </Border>
-          </StackPanel>
-        </Border>
-
-        <!-- The catalog (§4.8): its pending rows by the phase that ships them, then the actions that stay at a terminal
-             (copy blocks). Every control comes from the control renderer; nothing here runs a command. -->
-        <Border x:Name="ActionsSection" Classes="section" DataContext="{Binding Catalog}" x:DataType="controls:CatalogViewModel">
-          <StackPanel Spacing="{StaticResource Space.XS}">
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock x:Name="ActionsEyebrow" Classes="eyebrow head-eyebrow" Text="{Binding $parent[UserControl].((shell:HealthViewModel)DataContext).Text.ActionsCard}"
-                         AutomationProperties.Name="{Binding $parent[UserControl].((shell:HealthViewModel)DataContext).Text.ActionsCard}" />
-              <TextBlock x:Name="PendingSummaryText" Grid.Column="1" Classes="body subtle" Text="{Binding PendingSummary}"
-                         AutomationProperties.Name="{Binding PendingSummary}" />
-            </Grid>
-            <ItemsControl x:Name="PendingPhases" ItemsSource="{Binding Pending}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="controls:PendingPhase">
-                  <StackPanel Spacing="{StaticResource Space.XXS}" Margin="0,0,0,8">
-                    <TextBlock Classes="caption subtle" Text="{Binding Heading}" AutomationProperties.Name="{Binding Heading}" />
-                    <ItemsControl ItemsSource="{Binding Controls}">
-                      <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="controls:ControlViewModel">
-                          <ccontrols:CommandControl Margin="0,0,0,6" />
-                        </DataTemplate>
-                      </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                  </StackPanel>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <ItemsControl x:Name="CliOnlyActions" ItemsSource="{Binding CliOnly}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="controls:ControlViewModel">
-                  <StackPanel Spacing="{StaticResource Space.XXS}" Margin="0,0,0,8">
-                    <TextBlock Classes="caption subtle" Text="{Binding Label}" AutomationProperties.Name="{Binding Label}" />
-                    <ccontrols:CommandControl />
-                  </StackPanel>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
           </StackPanel>
         </Border>
 
@@ -136,5 +148,6 @@
         </Border>
       </StackPanel>
     </Border>
+    </Expander>
   </StackPanel>
 </UserControl>

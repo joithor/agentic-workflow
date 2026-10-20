@@ -54,8 +54,7 @@ public sealed class SessionWrapSupportTests : IDisposable
     public void A_bin_on_the_path_resolves_and_a_missing_or_non_executable_one_does_not()
     {
         var tool = Path.Combine(_dir, "agent-cli");
-        File.WriteAllText(tool, "#!/bin/sh\n");
-        File.SetUnixFileMode(tool, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        _ = ExecutableScript.Write(tool, string.Empty);
         var plain = Path.Combine(_dir, "not-exec");
         File.WriteAllText(plain, "x");
         File.SetUnixFileMode(plain, UnixFileMode.UserRead | UnixFileMode.UserWrite);

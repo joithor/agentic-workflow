@@ -56,6 +56,12 @@ internal sealed partial class SessionSheetViewModel(ISindriApi api) : Observable
 
     /// <summary>The history's heading.</summary>
     public string HistoryHeading => Labels.SheetHistory;
+
+    /// <summary>The closed disclosure that holds the technical fields, the history and Watch the agent.</summary>
+    public string DetailsLabel => Labels.SheetDetails;
+
+    /// <summary>The Watch the agent button's words.</summary>
+    public string FocusLabel => Labels.FocusLabel;
 #pragma warning restore CA1822, MA0041
 
     /// <summary>The provider and the title (or repo and id): "Claude Code private title".</summary>
@@ -110,8 +116,8 @@ internal sealed partial class SessionSheetViewModel(ISindriApi api) : Observable
     /// <summary>The Focus control from the catalog; null while the catalog is unread or lists none.</summary>
     public ControlViewModel? Focus { get; private set => Set(ref field, value); }
 
-    /// <summary>The Focus button's accessible name: "Focus, arrives in CO-4a".</summary>
-    public string FocusName { get; private set => Set(ref field, value); } = Labels.Action("FocusSession");
+    /// <summary>The Watch the agent button's accessible name: "Watch the agent, coming soon".</summary>
+    public string FocusName { get; private set => Set(ref field, value); } = Labels.FocusLabel;
 
     /// <summary>The pending Focus line: the phase and the CLI filled with the ref; empty without a Focus control.</summary>
     public string FocusLine { get; private set => Set(ref field, value); } = string.Empty;
@@ -144,8 +150,8 @@ internal sealed partial class SessionSheetViewModel(ISindriApi api) : Observable
         }
     } = Labels.Copy;
 
-    /// <summary>The Copy button's accessible name: "Copy: Focus", then "Copied".</summary>
-    public string CopyName => string.Equals(CopyLabel, Labels.Copied, StringComparison.Ordinal) ? Labels.Copied : Labels.Copy + ": " + Labels.Action("FocusSession");
+    /// <summary>The Copy button's accessible name: "Copy: Watch the agent", then "Copied".</summary>
+    public string CopyName => string.Equals(CopyLabel, Labels.Copied, StringComparison.Ordinal) ? Labels.Copied : Labels.Copy + ": " + Labels.FocusLabel;
 
     /// <summary>Gives the sheet the catalog (Focus's row) and the clock (Copy's "Copied").</summary>
     /// <param name="catalog">The command catalog.</param>
@@ -278,7 +284,8 @@ internal sealed partial class SessionSheetViewModel(ISindriApi api) : Observable
     private void Clear()
     {
         (Heading, StateLine, EndedText, EndedDetail, ProblemText, Note) = (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
-        (Fields, HostFields, History, IsEnded) = ([], [], [], false);
+        (Fields, HostFields, History, IsEnded, _step) = ([], [], [], false, null);
+        OnChanged(nameof(HasStep));
     }
 
     private static string Id8(string id) => id.Length > 8 ? id[..8] : id;

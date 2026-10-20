@@ -19,7 +19,7 @@ namespace Aw.Sindri.Host.Endpoints;
 /// GET /sindri/events: the ledger's public events as a server-sent event stream (API spec §5; factory addendum §17.21). Everything
 /// that can refuse the request is decided before the first frame, as a ProblemDetails answer: a bad filter (400), a cursor past the
 /// ledger's head (400), an item filter that names no item the caller may see (404) and no free stream slot (429, SND-API-012). The cursor is the Last-Event-ID header when it holds a sequence,
-/// else ?after=, else 0 (C4). ?item= (an id or tracker alias), ?types= (globs) and ?instance= (engine spec S1-D6) filter the stream.
+/// else ?after=, else 0 (C4); a stream of only 'workflow.instance-changed' with no explicit cursor (no valid Last-Event-ID, no non-empty ?after=) opens at the ledger head instead (StartAt). ?item= (an id or tracker alias), ?types= (globs) and ?instance= (engine spec S1-D6) filter the stream.
 /// </summary>
 /// <param name="ledger">The ledger, for the head.</param>
 /// <param name="slots">The open streams.</param>
@@ -49,15 +49,17 @@ internal sealed class EventStreamOpener(ILedgerReader ledger, IStreamSlots slots
             return Refused(head.Error, StatusOf(head.Error.Kind));
         }
 
-        if (request.Value.After > head.Value)
+        var bound = request.Value with { After = StartAt(context.Request, request.Value, head.Value) };
+
+        if (bound.After > head.Value)
         {
             return Refused(
                 SindriErrors.InvalidInput.With(string.Create(CultureInfo.InvariantCulture,
-                    $"the cursor {request.Value.After} is past the ledger's head {head.Value} (fix: after={head.Value}, or leave it out)")),
+                    $"the cursor {bound.After} is past the ledger's head {head.Value} (fix: after={head.Value}, or leave it out)")),
                 StatusCodes.Status400BadRequest);
         }
 
-        var item = await ItemFilters.Resolve(request.Value.Ref, items, repos, callers, context.RequestAborted).ConfigureAwait(false);
+        var item = await ItemFilters.Resolve(bound.Ref, items, repos, callers, context.RequestAborted).ConfigureAwait(false);
         if (item.IsError)
         {
             return Refused(item.Error, StatusOf(item.Error.Kind));   // 404 SND-ITEM-404 for an item that isn't there or that a session may not see
@@ -70,8 +72,20 @@ internal sealed class EventStreamOpener(ILedgerReader ledger, IStreamSlots slots
         }
 
         StreamTelemetry.Opened(caller, slots.Open(caller));
-        var resolved = request.Value with { Ref = item.Value is { } id ? ItemRef.To(id) : null };   // the pages resolve it again, by id, from the ledger
+        var resolved = bound with { Ref = item.Value is { } id ? ItemRef.To(id) : null };   // the pages resolve it again, by id, from the ledger
         return new SseResult(pump, service, resolved, new Counted(slot, slots, caller), shutdown.Stopping);
+    }
+
+    /// <summary>
+    /// Where the stream starts. A stream of only 'workflow.instance-changed' sends no "id:" line, so an auto-reconnect names no cursor and
+    /// would replay the whole history as frames: with no explicit cursor (no Last-Event-ID, no ?after=) it opens at the head instead.
+    /// </summary>
+    internal static long StartAt(HttpRequest http, StreamEventsRequest bound, long head)
+    {
+        var derivedOnly = bound.Types is { } types && types.Globs.All(static g => string.Equals(g, InstanceChanged.Type, StringComparison.Ordinal));
+        var explicitCursor = (long.TryParse(http.Headers["Last-Event-ID"], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var last) && last >= 0)
+            || !string.IsNullOrEmpty(http.Query["after"]);
+        return derivedOnly && !explicitCursor ? head : bound.After;
     }
 
     private static int StatusOf(ErrorKind kind)

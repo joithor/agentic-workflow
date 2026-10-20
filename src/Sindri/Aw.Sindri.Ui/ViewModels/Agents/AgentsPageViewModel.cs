@@ -30,6 +30,9 @@ internal sealed partial class AgentsPageViewModel(ISindriApi api, IClipboard cli
     /// <summary>Raised when a row asks to open its session's sheet; the shell's session-sheet partial handles it.</summary>
     internal event EventHandler<SessionOpenRequestedEventArgs>? OpenRequested;
 
+    /// <summary>Raised when a row asks to open the frame of the Step its session works on; the shell opens it.</summary>
+    internal event EventHandler<SessionFrameRequestedEventArgs>? FrameRequested;
+
     /// <summary>Raised when the page should put focus on a row or its Focus line.</summary>
     internal event EventHandler<AgentFocusEventArgs>? FocusRequested;
 
@@ -168,7 +171,7 @@ internal sealed partial class AgentsPageViewModel(ISindriApi api, IClipboard cli
         var before = WalkKeys();
         (_list, IsReading, IsUnreadable, IsStale) = (list, false, false, false);
         UnavailableText = string.Empty;
-        Head = Labels.AgentsHead(list.Counts.Live, list.Counts.Asking, list.Counts.OutsideWorkflow);
+        Head = Labels.AgentsHead(list.Counts.Live, list.Counts.Asking);
         OnChanged(nameof(HasHead));
         OnChanged(nameof(HeadName));
         ObserveCounts(list.Counts.Live, list.Counts.Asking);

@@ -12,6 +12,8 @@ internal sealed partial class SessionSheetView : UserControl
         InitializeComponent();
     }
 
+    private void OnOpenFrame(object? sender, RoutedEventArgs e) => (DataContext as SessionSheetViewModel)?.OpenFrame();
+
     private void OnCopyFocus(object? sender, RoutedEventArgs e)
     {
         if (DataContext is SessionSheetViewModel sheet)

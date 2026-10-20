@@ -12,14 +12,17 @@ internal sealed class RecipeGroupViewModel(string recipe) : ObservableObject
     /// <summary>The recipe's id.</summary>
     public string Recipe { get; } = recipe;
 
+    /// <summary>The workflow's name as a person reads it: the display name the group's first row serves, else the id made readable.</summary>
+    public string Name { get; private set => Set(ref field, value); } = WorkflowNames.Of(recipe, displayName: null);
+
     /// <summary>How many rows the group holds.</summary>
     public int Count => Rows.Count;
 
+    /// <summary>"1 run", "3 runs".</summary>
+    public string CountText => Labels.RunCount(Count);
+
     /// <summary>The group's rows, in the served order.</summary>
     public ObservableCollection<InstanceRowViewModel> Rows { get; } = [];
-
-    /// <summary>The columns: the recipe's states in the order the first row serves them, then any state only a later row has.</summary>
-    public IReadOnlyList<string> Columns { get; private set => Set(ref field, value); } = [];
 
     /// <summary>True while the rows show; the human collapses a group and a re-read keeps it so.</summary>
     public bool IsExpanded { get; private set => Set(ref field, value); } = true;
@@ -27,8 +30,8 @@ internal sealed class RecipeGroupViewModel(string recipe) : ObservableObject
     /// <summary>"show all" while collapsed; empty otherwise.</summary>
     public string ShowAllText => IsExpanded ? string.Empty : Labels.ShowAll;
 
-    /// <summary>The group's header words: the recipe and its row count.</summary>
-    public string Header => $"{Recipe} {Count}";
+    /// <summary>The group's header words: the workflow's name and its run count.</summary>
+    public string Header => $"{Name} · {CountText}";
 
     /// <summary>The toggle's name for screen readers: the recipe, its count and whether the rows show.</summary>
     public string ToggleName => $"{Header}, {(IsExpanded ? Labels.GroupExpanded : Labels.GroupCollapsed)}";
@@ -39,7 +42,7 @@ internal sealed class RecipeGroupViewModel(string recipe) : ObservableObject
 #pragma warning restore CA1822, MA0041
 
     /// <summary>The Recipe button's accessible name.</summary>
-    public string RecipeLinkName => Labels.OpenRecipeName(Recipe);
+    public string RecipeLinkName => Labels.OpenRecipeName(Name);
 
     /// <summary>Opens the recipe's approved version.</summary>
     internal void OpenRecipe() => RecipeRequested?.Invoke(this, new RecipeRequestedEventArgs(Recipe));
@@ -57,14 +60,11 @@ internal sealed class RecipeGroupViewModel(string recipe) : ObservableObject
     internal void Show(IReadOnlyList<InstanceRowViewModel> rows)
     {
         Patch.To(Rows, rows);
-        Columns = [.. rows.SelectMany(r => r.Stages.Select(s => s.State)).Distinct(StringComparer.Ordinal)];
-        foreach (var row in rows)
-        {
-            row.Align(Columns);   // each cell under the head of its own state, a blank where the row has none
-        }
-
+        Name = rows.Count > 0 ? rows[0].DisplayName : Name;
         OnChanged(nameof(Count));
+        OnChanged(nameof(CountText));
         OnChanged(nameof(Header));
+        OnChanged(nameof(RecipeLinkName));
         OnChanged(nameof(ToggleName));
     }
 }

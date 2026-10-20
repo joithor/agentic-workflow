@@ -8,7 +8,7 @@ namespace Aw.Sindri.Features.Scoping;
 /// </summary>
 internal static class ScopeFixLines
 {
-    /// <summary>The four limits of the table and not-configured, in the table's order.</summary>
+    /// <summary>The four limits of the table, not-configured, and anchor-missing (an asked anchor the view couldn't find), in the table's order.</summary>
     internal static IReadOnlyList<RecordedLimit> All { get; } =
     [
         new("index-not-built", "code", "unavailable", "index-not-built", "index-not-built", "Wait for the code index (S-9)"),
@@ -16,6 +16,7 @@ internal static class ScopeFixLines
         new("commit-not-held", "code", "unavailable", "commit-not-held", "commit-not-held", "Fetch the commit into the profile repo's checkout, then regather"),
         new("not-synced", "history", "unavailable", "not-synced", "never synced", "Sindri starts the source's sync itself; rescope once it has run"),
         new("not-configured", Lens: null, "not-configured", "not-configured", "not-configured", "Name the source in the profile, then regather"),
+        new("anchor-missing", Lens: null, "missing", "anchor-missing", "anchor not in the map", "Check the anchor's key (the view's suggested anchors name close ones), then regather"),
     ];
 
     /// <summary>The limit a source of <paramref name="lens"/> with this state and reason is, or null when it matches none (a degraded source never does).</summary>
