@@ -174,7 +174,7 @@ CI_MODEL="$(bash "$CI_LOCK" get model)"; CI_ID="$(bash "$CI_LOCK" get model-dige
 fake ollama 'exit 0'
 run AW_DEPS_OS=Linux AW_DRY_RUN=1 AW_STATE_DIR="$TMPROOT/ci-state"
 expect "dry run prints the code index graphify and model steps from the lock" 0 \
-  "would run: uv venv .*/cache/code-index/graphify-$CI_VER-[0-9a-f]{12} && uv pip install .*--require-hashes -r .*/context/code-index-requirements.txt --exclude-newer $CI_DATE" \
+  "would run: uv venv .*/cache/code-index/graphify-$CI_VER-[0-9a-f]{12} --python 3.12 && uv pip install .*--require-hashes -r .*/context/code-index-requirements.txt --exclude-newer $CI_DATE" \
   "would run: ollama pull $CI_MODEL \\(unless ollama list shows id $CI_ID\\)"
 [ ! -e "$TMPROOT/ci-state" ] && ok "the dry run created no environment" || fail "the dry run created $TMPROOT/ci-state"
 
@@ -243,7 +243,7 @@ mkdir -p "$ENVDIR/lib"; : >"$ENVDIR/lib/half-built"
 uv_fake ok; : >"$LOG"; run AW_DEPS_OS=Linux AW_STATE_DIR="$S"
 expect "a half-built graphify environment is rebuilt" 0 "code-index graphify: installed \\($ENVDIR\\)"
 [ ! -e "$ENVDIR/lib/half-built" ] && ok "the half-built environment was removed first" || fail "the half-built environment is still there"
-grep -qF "uv venv --quiet $ENVDIR" "$LOG" && ok "uv venv ran on the environment path" || fail "no uv venv: $(cat "$LOG")"
+grep -qF "uv venv --quiet $ENVDIR --python 3.12" "$LOG" && ok "uv venv ran on the environment path with the lock's Python" || fail "no uv venv: $(cat "$LOG")"
 grep -qF "uv pip install --quiet --python $ENVDIR/bin/python --require-hashes -r $REPO/context/code-index-requirements.txt --exclude-newer $CI_DATE" "$LOG" \
   && ok "uv pip install ran with --require-hashes, the requirements file and the lock's date" || fail "wrong install arguments: $(cat "$LOG")"
 
@@ -260,7 +260,7 @@ expect "no uv fails the run" 1 "WARN: code-index graphify not installed \\(uv mi
 # 9e. A lock that fails its check: the code index pins are skipped and the run fails. (A copy of the tree, the lock corrupted.)
 COPY="$TMPROOT/tree"; mkdir -p "$COPY/context" "$COPY/sindri" "$COPY/config"
 cp -R "$REPO/scripts" "$COPY/scripts"; cp -R "$REPO/config/lib" "$COPY/config/lib"; cp "$REPO/binaries.lock" "$COPY/"; cp "$REPO/sindri/package.json" "$COPY/sindri/"
-cp "$REPO"/context/code-index* "$COPY/context/"; sed -i 's/^need disk-bytes.*/need disk-bytes 0/' "$COPY/context/code-index.lock"
+cp "$REPO"/context/code-index* "$COPY/context/"; sed 's/^need disk-bytes.*/need disk-bytes 0/' "$REPO/context/code-index.lock" >"$COPY/context/code-index.lock"
 S="$TMPROOT/ci-fresh5"; fresh_state "$S"; fake uv 'exit 0'; ollama_fake "$CI_ID" "$CI_ID" 0
 set +e; OUT="$(env -i PATH="$BIN" HOME="$HOME_DIR" AW_DEPS_ZLIB_H="$TMPROOT/zlib.h" AW_DEPS_OS=Linux AW_STATE_DIR="$S" bash "$COPY/scripts/install-deps.sh" 2>&1)"; RC=$?; set -e
 expect "a lock that fails its check skips the code index pins and fails" 1 "WARN: context/code-index.lock fails scripts/code-index-lock.sh check"

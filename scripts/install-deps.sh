@@ -130,19 +130,22 @@ else
   CI_VER="$(bash "$CI_LOCK" get graphify-version)"; CI_DATE="$(bash "$CI_LOCK" get graphify-date)"; CI_SHA="$(bash "$CI_LOCK" get requirements-sha256)"
   CI_ENV="${AW_STATE_DIR:-$HOME/.agentic-workflow}/cache/code-index/graphify-$CI_VER-${CI_SHA:0:12}"
   CI_REQ="$ROOT/context/code-index-requirements.txt"
+  # The requirements are compiled for Python >= 3.11 (code-index.lock); without a pin uv takes whatever it finds first, e.g. a
+  # managed 3.10, and the hash-pinned install can't resolve. uv downloads this Python when the box has none.
+  CI_PY=3.12
   if [ -x "$CI_ENV/bin/graphify" ] && [ "$("$CI_ENV/bin/graphify" --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)" = "$CI_VER" ]; then
     echo "  code-index graphify: already installed ($CI_ENV)"
   elif dry; then
-    echo "  [dry-run] would run: uv venv $CI_ENV && uv pip install --python $CI_ENV/bin/python --require-hashes -r $CI_REQ --exclude-newer $CI_DATE"
+    echo "  [dry-run] would run: uv venv $CI_ENV --python $CI_PY && uv pip install --python $CI_ENV/bin/python --require-hashes -r $CI_REQ --exclude-newer $CI_DATE"
   elif command -v uv &>/dev/null; then
     echo "  Installing graphifyy==$CI_VER into $CI_ENV (hash-pinned, dependencies age-gated to $CI_DATE)..."
     # A venv's scripts name their own path, so it is built where it lives; an earlier half-built one is removed first.
-    if { [ ! -e "$CI_ENV" ] || find "$CI_ENV" -delete; } && mkdir -p "$(dirname "$CI_ENV")" && uv venv --quiet "$CI_ENV" \
+    if { [ ! -e "$CI_ENV" ] || find "$CI_ENV" -delete; } && mkdir -p "$(dirname "$CI_ENV")" && uv venv --quiet "$CI_ENV" --python "$CI_PY" \
       && uv pip install --quiet --python "$CI_ENV/bin/python" --require-hashes -r "$CI_REQ" --exclude-newer "$CI_DATE" \
       && [ "$("$CI_ENV/bin/graphify" --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)" = "$CI_VER" ]; then
       echo "  code-index graphify: installed ($CI_ENV)"
     else
-      echo "  WARN: code-index graphify install failed; rerun after: uv venv $CI_ENV && uv pip install --python $CI_ENV/bin/python --require-hashes -r $CI_REQ --exclude-newer $CI_DATE"; FAILED=1
+      echo "  WARN: code-index graphify install failed; rerun after: uv venv $CI_ENV --python $CI_PY && uv pip install --python $CI_ENV/bin/python --require-hashes -r $CI_REQ --exclude-newer $CI_DATE"; FAILED=1
     fi
   else
     echo "  WARN: code-index graphify not installed (uv missing)"; FAILED=1
