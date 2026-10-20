@@ -6,4 +6,8 @@ public static class A
     /// <summary>A BuildCodeIndexRequest builder with deterministic defaults.</summary>
     /// <returns>A new builder.</returns>
     public static BuildCodeIndexRequestBuilder BuildCodeIndexRequest() => new();
+
+    /// <summary>A temp git repo builder: files, symlinks, a submodule entry, one commit.</summary>
+    /// <returns>A new builder.</returns>
+    public static GitRepoBuilder GitRepo() => new();
 }
