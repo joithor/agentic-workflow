@@ -41,6 +41,12 @@ internal sealed partial class ContextPageViewModel
     /// <summary>Whether there is a refusal to show.</summary>
     public bool HasProblem => Problem.Length > 0;
 
+    /// <summary>The closed disclosure's header.</summary>
+    public string MoreLabel { get; } = Labels.ContextMore;
+
+    /// <summary>The map's version, inside the disclosure; empty until a read.</summary>
+    public string MapLine { get; private set; } = string.Empty;
+
     /// <summary>The edges list's header.</summary>
     public string EdgesHeader => Labels.ContextBandHeader(Labels.ContextEdges, Edges.Count);
 
@@ -124,6 +130,7 @@ internal sealed partial class ContextPageViewModel
         if (view is null)
         {
             Head = string.Empty;
+            MapLine = string.Empty;
             Bands = [];
             Edges = [];
             Coverage = [];
@@ -133,7 +140,8 @@ internal sealed partial class ContextPageViewModel
         }
 
         var version = view.MapCommit is { Length: > 0 } commit ? $"{view.MapVersion}@{commit}" : view.MapVersion;
-        Head = Labels.ContextHead(version, view.Anchors.Count) + (view.Draft ? " · " + Labels.ContextDraftMark : string.Empty);
+        MapLine = Labels.ContextMapLine(version);
+        Head = Labels.ContextHead(view.Anchors.Count) + (view.Draft ? " · " + Labels.ContextDraftMark : string.Empty);
         var names = Names(view);
         Bands = [Intent(view), Product(view), Code(view)];
         Edges = EdgeLines(view, names);
@@ -144,6 +152,7 @@ internal sealed partial class ContextPageViewModel
 
     private void Refresh()
     {
+        OnChanged(nameof(MapLine));
         OnChanged(nameof(Head));
         OnChanged(nameof(HasHead));
         OnChanged(nameof(Bands));

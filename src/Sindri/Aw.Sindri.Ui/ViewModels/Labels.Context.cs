@@ -6,20 +6,27 @@ namespace Aw.Sindri.Ui.ViewModels;
 internal static partial class Labels
 {
     /// <summary>The page head before any map has been read.</summary>
-    internal const string ContextNoMap = "no map";
+    internal const string ContextNoMap = "No context map yet";
 
     /// <summary>The anchor box's name.</summary>
-    internal const string ContextAnchor = "Anchor";
+    internal const string ContextAnchor = "Look up";
 
     /// <summary>The anchor box's hint.</summary>
-    internal const string ContextAnchorHint = "Type an anchor key, such as feature:name";
+    internal const string ContextAnchorHint = "Type what to look up, such as feature:name";
 
-    /// <summary>The head of a read: the map's version and how many anchors it was asked about.</summary>
-    /// <param name="version">The map version as served, with its commit when it has one.</param>
+    /// <summary>The head of a read: how many topics it was asked about. The map's version is in the answer's closed disclosure, not up front.</summary>
     /// <param name="anchors">How many anchors were found.</param>
     /// <returns>The head line.</returns>
-    internal static string ContextHead(string version, int anchors) =>
-        string.Create(CultureInfo.InvariantCulture, $"map {version} \u00b7 {anchors} {(anchors == 1 ? "anchor" : "anchors")}");
+    internal static string ContextHead(int anchors) =>
+        string.Create(CultureInfo.InvariantCulture, $"{anchors} {(anchors == 1 ? "topic" : "topics")}");
+
+    /// <summary>The closed disclosure under the answer: the links, the coverage, what was searched and the map's version.</summary>
+    internal const string ContextMore = "More about this answer";
+
+    /// <summary>The map's version as the disclosure shows it.</summary>
+    /// <param name="version">The map version as served, with its commit when it has one.</param>
+    /// <returns>"Context map v3@abc1234".</returns>
+    internal static string ContextMapLine(string version) => "Context map " + version;
 
     /// <summary>A draft read's mark on the head.</summary>
     internal const string ContextDraftMark = "draft";
@@ -28,22 +35,22 @@ internal static partial class Labels
     internal const string ContextNotFound = "not found";
 
     /// <summary>The intent band's name.</summary>
-    internal const string ContextIntent = "Intent";
+    internal const string ContextIntent = "Why";
 
     /// <summary>The product band's name.</summary>
-    internal const string ContextProduct = "Product";
+    internal const string ContextProduct = "What it covers";
 
     /// <summary>The code band's name.</summary>
     internal const string ContextCode = "Code";
 
     /// <summary>The edges list's name.</summary>
-    internal const string ContextEdges = "Edges";
+    internal const string ContextEdges = "Links";
 
     /// <summary>The coverage strip's name.</summary>
-    internal const string ContextCoverage = "Coverage";
+    internal const string ContextCoverage = "How well it is backed";
 
     /// <summary>The searched sources' name.</summary>
-    internal const string ContextSearched = "Searched";
+    internal const string ContextSearched = "What was searched";
 
     /// <summary>The suggested anchors' name.</summary>
     internal const string ContextSuggestions = "Did you mean";
@@ -55,7 +62,7 @@ internal static partial class Labels
     internal const string ContextUnconfirmed = "unconfirmed";
 
     /// <summary>The word for an anchor node in a band.</summary>
-    internal const string ContextAnchorTag = "anchor";
+    internal const string ContextAnchorTag = "topic";
 
     /// <summary>The word for a model-suggested link.</summary>
     internal const string ContextModelSuggested = "model suggested";
@@ -104,5 +111,5 @@ internal static partial class Labels
     /// <summary>The box's refusal of too many anchors.</summary>
     /// <param name="max">The most anchors one read takes.</param>
     /// <returns>The refusal.</returns>
-    internal static string ContextTooMany(int max) => string.Create(CultureInfo.InvariantCulture, $"At most {max} anchors at a time");
+    internal static string ContextTooMany(int max) => string.Create(CultureInfo.InvariantCulture, $"At most {max} topics at a time");
 }

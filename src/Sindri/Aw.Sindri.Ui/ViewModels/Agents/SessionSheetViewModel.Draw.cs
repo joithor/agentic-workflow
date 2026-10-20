@@ -92,10 +92,9 @@ internal sealed partial class SessionSheetViewModel
         }
 
         var cli = focus.Cli.Replace("<ref>", Ref, StringComparison.Ordinal);
-        var phase = focus.IsPending ? focus.Stage : Labels.SheetFocusPhase;
         FocusCli = ControlViewModel.Safe(cli) && Ref.Length > 0 ? cli : string.Empty;
-        FocusLine = FocusCli.Length > 0 ? Labels.Arrives(phase) + " · " + FocusCli : string.Empty;
-        FocusName = Labels.SheetFocusName(phase);
+        FocusLine = FocusCli.Length > 0 ? Labels.FocusSoon + " · " + FocusCli : string.Empty;
+        FocusName = Labels.FocusName;
         OnChanged(nameof(IsFocusEnabled));
     }
 }

@@ -30,7 +30,7 @@ internal static partial class Labels
     internal const string Work = "Work";
 
     /// <summary>The Recipes page.</summary>
-    internal const string Recipes = "Recipes";
+    internal const string Recipes = "Workflow types";
 
     /// <summary>The Context page.</summary>
     internal const string Context = "Context";
@@ -60,7 +60,7 @@ internal static partial class Labels
     internal const string AutomaticWork = "Automatic work";
 
     /// <summary>What a view, panel or menu entry the API doesn't serve yet says (U12, §10.2).</summary>
-    internal const string NotServedYet = "not served yet";
+    internal const string NotServedYet = "coming soon";
 
     /// <summary>The ⌘K field's placeholder (functional from U1).</summary>
     internal const string Search = "Search or run a command";
