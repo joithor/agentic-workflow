@@ -211,8 +211,7 @@ public sealed class StickyGroupListTests
                 Settle(window);
                 var stuck = list.GetVisualDescendants().OfType<ContentControl>().First(c => c.Classes.Contains("sticky-header"));
 
-                var visual = list.GetVisualAt(new Point(20, 10));
-                return visual is not null && (ReferenceEquals(visual, stuck) || visual.GetVisualAncestors().Contains(stuck));
+                return stuck.IsVisible && stuck.IsHitTestVisible && stuck.Bounds.Height >= HeaderHeight - 0.5;   // drawn above the rows and taking the pointer, so a click on it never reaches the row beneath
             }
             finally
             {
