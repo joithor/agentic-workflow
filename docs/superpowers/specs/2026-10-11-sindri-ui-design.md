@@ -145,7 +145,7 @@ Three layouts were mocked with the same fixture data (`shotgun/contact-sheet.htm
   **Needs you** (full width), **Running and With you** (left) beside **Queued** (right), and a **Sindri health** strip.
 - **Caps:** Running and With you shows at most 5 rows (With you first, then running in the API's order), then "Show
   all N in Queue (`G R`)"; Queued shows 5. **The fold rule:** at 1280 × 800 and text scale 1.0, the summary line, Needs you
-  (up to 5 rows) and the tops of Running and Queued are above the fold; health is always above it in the top bar's
+  (up to 5 rows) and the tops of Running and Queued are above the fold (**SO-19:** while any setup step is unfinished the Setup card sits above Needs you as at most three rows plus "and N more", filled by priority, so Needs you still starts above the fold; re-check the mockup number when the card lands); health is always above it in the top bar's
   pill, so Home's health strip may sit just below (the mockup at 5 rows ends near 840 px). At scale 1.3 the needs-you
   cap drops to 4. At the 900 × 600 minimum the page scrolls.
 - **Needs-you cap:** Home shows at most 5 needs-you rows (all `pulse` rows first, as the API orders them), then
