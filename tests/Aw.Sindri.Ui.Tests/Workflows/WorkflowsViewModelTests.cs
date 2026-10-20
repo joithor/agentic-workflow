@@ -118,6 +118,7 @@ public sealed class WorkflowsViewModelTests
         var list = await Shown();
 
         Assert.Equal(list.RecipeChoices.Count, list.RecipeChoices.Distinct(StringComparer.Ordinal).Count());
+        Assert.All(list.RecipeChoices, c => Assert.DoesNotContain("workflow.", c, StringComparison.Ordinal));
         Assert.All(list.Groups, g => Assert.Equal(g.Recipe, list.RecipeIdOf(list.RecipeChoices[list.Groups.IndexOf(g) + 1])));
     }
 
