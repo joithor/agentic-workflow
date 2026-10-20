@@ -9,7 +9,7 @@ namespace Aw.Sindri.Core.Workflow.Validation;
 /// RCP-HUMAN-001 (PB spec W23): an effect whose descriptor says <c lang="csharp">HumanTrigger</c> acts with a human's authority, so it
 /// may sit only on a transition a human drives: (a) a 'command.&lt;verb&gt;' transition, (b) a 'step.completed' out of
 /// human-only Steps, or (c) a transition whose 'when' requires a fact present that only a state entered by (a)
-/// transitions carrying a human-trigger effect produces (the click's authority, carried). Pure.
+/// transitions carrying a human-trigger effect produces, and that is no recipe input (the click's authority, carried). Pure.
 /// </summary>
 internal sealed class HumanTriggerRules : IRecipeRules
 {
@@ -53,7 +53,7 @@ internal sealed class HumanTriggerRules : IRecipeRules
 
     private static bool HumanDriven(RecipeTransition transition, Recipe recipe, BlockCatalog catalog) =>
         transition.On.StartsWith(CommandPrefix, StringComparison.Ordinal)
-        || (string.Equals(transition.On, "step.completed", StringComparison.Ordinal) && transition.From.All(s => HumanOnly(recipe, s, catalog)))
+        || (string.Equals(transition.On, "step.completed", StringComparison.Ordinal) && transition.From.Count > 0 && transition.From.All(s => HumanOnly(recipe, s, catalog)))
         || (transition.When is { } when && RequiredPresent(when).Any(fact => Carried(fact, recipe, catalog)));
 
     private static bool HumanOnly(Recipe recipe, string state, BlockCatalog catalog) =>
@@ -76,12 +76,30 @@ internal sealed class HumanTriggerRules : IRecipeRules
         }
     }
 
-    /// <summary>True when something produces <paramref name="fact"/> and every producer leaves only states a human's command enters.</summary>
+    /// <summary>
+    /// True when <paramref name="fact"/> is not a recipe input and every state it can appear from is one only a human's command
+    /// enters: the states a transition recording it leaves (its 'produces', or an effect or gate that writes it) and the
+    /// states whose Step writes it. A fact with no such state is never carried.
+    /// </summary>
     private static bool Carried(FactKey fact, Recipe recipe, BlockCatalog catalog)
     {
-        var producers = recipe.Transitions.Where(t => t.Produces.Any(p => p.Fact == fact)).ToList();
-        return producers.Count > 0 && producers.TrueForAll(p => p.From.All(s => EnteredOnlyByHumanCommands(s, recipe, catalog)));
+        if (recipe.Inputs.Any(i => i.Key == fact))
+        {
+            return false;
+        }
+
+        var sources = recipe.Transitions.Where(t => Records(t, fact, catalog)).SelectMany(t => t.From)
+            .Concat(recipe.States.Where(s => s.Value.Step is { } step && Writes(step.Use, fact, catalog)).Select(s => s.Key))
+            .ToList();
+        return sources.Count > 0 && sources.TrueForAll(s => EnteredOnlyByHumanCommands(s, recipe, catalog));
     }
+
+    private static bool Records(RecipeTransition transition, FactKey fact, BlockCatalog catalog) =>
+        transition.Produces.Any(p => p.Fact == fact)
+        || transition.Effects.Any(e => Writes(e.Use, fact, catalog))
+        || transition.Gates.Any(g => Writes(g.Use, fact, catalog));
+
+    private static bool Writes(BlockId block, FactKey fact, BlockCatalog catalog) => catalog.Find(block)?.Outputs.Any(o => o.Fact == fact) == true;
 
     private static bool EnteredOnlyByHumanCommands(string state, Recipe recipe, BlockCatalog catalog)
     {

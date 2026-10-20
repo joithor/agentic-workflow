@@ -454,8 +454,9 @@ A block is a class with a static descriptor, registered explicitly (no assembly 
    omits it is `EngineFilled: true`. These descriptor fields are written only when set, so a descriptor without them
    keeps its hash; `ShippedBlocksTests` pins every shipped hash.
 
-   Two more optional fields are written only when set: `Runtime` (`desk`, `block` or `agent`: who runs the Step; descriptor-only
-   until DT-J, absent means today's rule) and `HumanOnly` (true or absent, never false). A Step is **human-only** when its descriptor
+   Three more optional fields are written only when set: `Runtime` (`desk`, `block` or `agent`: who runs the Step; descriptor-only
+   until DT-J, absent means today's rule), `HumanOnly` (true or absent, never false) and `HumanTrigger` (an effect that acts with a
+   human's authority, checked by `RCP-HUMAN-001`; true or absent, and a false reads as absent). A Step is **human-only** when its descriptor
    says `HumanOnly`, or when its `Runtime` is `block` and it runs on the desk (`HumanOnlySteps.Applies`). `workflow complete` on a
    human-only Step is `SND-AUTH-002` unless the caller is a human (the app or a terminal): the refusal sits in `CompleteStep`, before
    the nonce is claimed, so nothing is consumed, and a session report on an instance that can't be read is refused with that read
