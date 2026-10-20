@@ -299,4 +299,13 @@ cp "$R/global.json" "$NG/"; cp "$R/scripts/binaries-lock.sh" "$NG/scripts/"
 (cd "$WORK" && GIT_CEILING_DIRECTORIES="$WORK" bash "$NG/scripts/sindri-app.sh" --publish-only >/dev/null 2>"$WORK/err"); RC=$?
 check "not a git checkout: exit 1 with the sentence" "$RC:$(grep -c 'Sindri can only be published from a git checkout' "$WORK/err")" "1:1"
 
+# A failed `git archive` fails the publish: nothing is published and no empty recipes set is embedded.
+REALGIT="$(command -v git)"; mkdir -p "$WORK/gitfail"
+printf '#!/usr/bin/env bash\nfor a in "$@"; do [ "$a" = archive ] && { echo "fatal: archive boom" >&2; exit 128; }; done\nexec "%s" "$@"\n' "$REALGIT" > "$WORK/gitfail/git"
+chmod +x "$WORK/gitfail/git"
+BEFORE="$(builds):$(cat "$B/current")"; : > "$CALLS"
+PATH="$WORK/gitfail:$PATH" bash "$R/scripts/sindri-app.sh" --publish-only --rebuild >/dev/null 2>"$WORK/err"; RC=$?
+check "archive failure: exit 1 with the sentence" "$RC:$(grep -c 'could not stage recipes/sindri from HEAD (git archive failed)' "$WORK/err")" "1:1"
+check "archive failure: nothing is published" "$(publishes):$(builds):$(cat "$B/current")" "0:$BEFORE"
+
 exit "$fail"
