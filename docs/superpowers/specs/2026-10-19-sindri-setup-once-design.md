@@ -636,7 +636,7 @@ Each is `Golden/Api/<path>`; one body each. Hashes and ids are shortened. **Twel
 **`recipes-approve-all/plan-first-approval.json`** (a fresh box, a profile just approved: a never-approved recipe with a `step.ship.*` capability is `New` in the hold with its full capability set; `ownApproval` is empty because it has no earlier approval to gain from)
 ```json
 {"recipes":[
- {"id":"workflow.ship","displayName":"Ship a change","version":2,"hash":"5d4c3b2a1f0e","previousApprovedHash":null,"change":"new","changeWord":"New","capabilities":[{"id":"step.ship.pr","sentence":"Opens or updates a pull request and reads its checks"},{"id":"effect.notify.desk","sentence":"Puts a question or notice in your Needs you list"}],"delta":{"added":[],"removed":[]},"changedBlocks":[],"children":[]}],
+ {"id":"workflow.ship","displayName":"Ship a change","version":2,"hash":"5d4c3b2a1f0e","previousApprovedHash":null,"change":"new","changeWord":"New","capabilities":[{"id":"step.ship.open","sentence":"Opens or updates a pull request and reads its checks"},{"id":"effect.notify.desk","sentence":"Puts a question or notice in your Needs you list"}],"delta":{"added":[],"removed":[]},"changedBlocks":[],"children":[]}],
  "ownApproval":[],"digest":"7b20de","empty":null,"asOf":{"...":"..."}}
 ```
 
