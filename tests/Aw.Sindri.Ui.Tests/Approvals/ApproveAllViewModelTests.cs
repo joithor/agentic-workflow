@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
@@ -302,6 +304,135 @@ public sealed class ApproveAllViewModelTests
         await answer;
 
         Assert.Equal((false, ApproveAllPhase.Closed), (dialog.IsOpen, dialog.Phase));
+    }
+
+    [Fact]
+    public async Task A_send_from_a_closed_dialog_coming_back_does_not_clear_the_new_dialogs_guard()
+    {
+        var stale = _f.Server.ApproveAllGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var dialog = await _f.Opened();
+        dialog.Typed = "approve-all c41e07";
+        var first = dialog.SubmitTyped();
+        dialog.Close();
+        _ = await Reopen(dialog);
+        var current = _f.Server.ApproveAllGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        dialog.Typed = "approve-all c41e07";
+        var second = dialog.SubmitTyped();
+
+        stale.SetResult();
+        await first;
+        var third = dialog.SubmitTyped();
+
+        Assert.Equal((true, 2), (dialog.IsSending, _f.Server.Approvals.Count));
+        current.SetResult();
+        await _f.Finish(Task.WhenAll(second, third));
+    }
+
+    private async Task<ApproveAllViewModel> Reopen(ApproveAllViewModel dialog)
+    {
+        await dialog.Open(Token);
+        return dialog;
+    }
+
+    [Fact]
+    public async Task A_challenge_that_could_not_be_asked_for_offers_try_again_and_a_retry_gets_it()
+    {
+        _f.Server.AppChallengeAnswer = ApproveAllFixture.Unreadable;
+        var dialog = await _f.Opened();
+        Assert.Equal((ApproveAllPhase.Plan, false, true, true), (dialog.Phase, dialog.CanApprove, dialog.CanRetry, dialog.HasError));
+
+        _f.Server.AppChallengeAnswer = RouteAnswer.SpecShaped("challenges-app", "held");
+        await dialog.Retry();
+
+        Assert.Equal((true, false, false), (dialog.CanApprove, dialog.CanRetry, dialog.HasError));
+    }
+
+    [Fact]
+    public async Task A_new_challenge_that_could_not_be_had_keeps_the_refusal_that_asked_for_it_and_offers_try_again()
+    {
+        _f.Server.ApproveAllStartAnswer = ApproveAllFixture.Refusal("recipes-approve-all-start", "refused-running");
+        var dialog = await _f.Opened();
+        _f.Server.AppChallengeAnswer = ApproveAllFixture.Unreadable;
+
+        await _f.Hold(dialog);
+
+        Assert.Equal((Labels.ApproveAlreadyRunning, "SND-JOB-409", true, Labels.ApproveAskFailed), (dialog.Error, dialog.ErrorCode, dialog.CanRetry, dialog.Notice));
+    }
+
+    [Fact]
+    public async Task One_new_challenge_is_asked_for_at_a_time_and_the_ran_out_notice_goes_when_it_arrives()
+    {
+        var dialog = await _f.Opened();
+        _f.Clock.Advance(TimeSpan.FromMinutes(6));
+        var gate = _f.Server.AppChallengeGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        dialog.BeginHold();
+        dialog.BeginHold();
+        dialog.BeginHold();
+        Assert.Equal(2, _f.Server.Challenges.Count);
+        gate.SetResult();
+        await WaitUntil(() => dialog.Notice.Length == 0);
+
+        Assert.Equal((true, 2), (dialog.CanApprove, _f.Server.Challenges.Count));
+    }
+
+    [Fact]
+    public async Task Closing_lets_go_of_a_hold()
+    {
+        var dialog = await _f.Opened();
+        dialog.BeginHold();
+
+        dialog.Close();
+
+        Assert.Equal((false, 0d, false), (dialog.IsHolding, dialog.HoldProgress, dialog.ShowsFill));
+    }
+
+    [Fact]
+    public async Task A_plan_whose_only_workflows_need_their_own_look_says_so_beside_their_list()
+    {
+        var plan = JsonNode.Parse(GoldenFiles.SpecShaped("recipes-approve-all", "plan"))!.AsObject();   // why: the golden is a JSON object
+        plan["recipes"] = new JsonArray();
+        _f.Server.ApproveAllPlanAnswer = new RouteAnswer(HttpStatusCode.OK, plan.ToJsonString());
+
+        var dialog = await _f.Opened();
+
+        Assert.Equal((ApproveAllPhase.Empty, Labels.ApproveOnlyOwn, true, 0), (dialog.Phase, dialog.EmptyText, dialog.HasOwnApproval, _f.Server.Challenges.Count));
+    }
+
+    [Fact]
+    public async Task The_hold_buttons_help_text_stays_the_instructions_while_the_count_runs()
+    {
+        var dialog = await _f.Opened();
+        var before = dialog.HoldHelp;
+        dialog.BeginHold();
+        _f.Clock.Advance(TimeSpan.FromMilliseconds(750));
+
+        await dialog.Tick();
+
+        Assert.Equal((Labels.ApproveHold(1500), before, true), (dialog.HoldHelp, dialog.HoldHelp, dialog.HoldText != dialog.HoldHelp));
+    }
+
+    [Fact]
+    public async Task A_job_that_was_cancelled_says_so_in_words()
+    {
+        _f.Server.ApproveAllJobAnswer = RouteAnswer.SpecShaped("approve-all-job", "cancelled");
+        var dialog = await _f.Opened();
+
+        await _f.Hold(dialog);
+
+        Assert.Equal((ApproveAllPhase.Failed, Labels.ApproveCancelled), (dialog.Phase, dialog.Error));
+    }
+
+    [Fact]
+    public async Task A_job_still_running_after_two_minutes_ends_the_wait_with_words()
+    {
+        _f.Server.ApproveAllJobAnswer = RouteAnswer.SpecShaped("approve-all-job", "running");
+        var dialog = await _f.Opened();
+
+        await _f.Hold(dialog);
+
+        Assert.Equal((ApproveAllPhase.Failed, "SND-UI-003", Labels.ApproveStillRunning), (dialog.Phase, dialog.ErrorCode, dialog.Error));
+        Assert.True(_f.Server.JobCalls > 100);
     }
 
     // The clock does not move on its own: a wait for something the dialog does after a delay is bounded and nudges nothing.

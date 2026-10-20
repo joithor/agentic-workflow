@@ -33,6 +33,9 @@ internal sealed partial class FakeSindriApi
     /// <summary>Held open until set: the approval waits for it (the app is sending meanwhile).</summary>
     public TaskCompletionSource? ApproveAllGate { get; set; }
 
+    /// <summary>Held open until set: the challenge request waits for it (a re-ask still on its way).</summary>
+    public TaskCompletionSource? AppChallengeGate { get; set; }
+
     /// <summary>The answer the last job read gave (the handler serves the same text).</summary>
     public RouteAnswer LastJobAnswer { get; private set; } = RouteAnswer.SpecShaped("approve-all-job", "succeeded");
 
@@ -54,11 +57,11 @@ internal sealed partial class FakeSindriApi
         return Task.FromResult(Answer<ApproveAllPlan>(api, WorkflowRoutes.ApproveAll, ApproveAllPlanAnswer));
     }
 
-    public Task<Result<AppChallengeView>> IssueAppChallenge(Uri api, AppChallengeRequest request, CancellationToken cancellationToken)
+    public async Task<Result<AppChallengeView>> IssueAppChallenge(Uri api, AppChallengeRequest request, CancellationToken cancellationToken)
     {
         if (NotReceived<AppChallengeView>(api) is { } unanswered)
         {
-            return Task.FromResult(unanswered);
+            return unanswered;
         }
 
         lock (_gate)
@@ -66,7 +69,8 @@ internal sealed partial class FakeSindriApi
             _challenges.Add(request);
         }
 
-        return Task.FromResult(Answer<AppChallengeView>(api, WorkflowRoutes.AppChallenge, AppChallengeAnswer));
+        await WaitFor(AppChallengeGate, cancellationToken).ConfigureAwait(false);
+        return Answer<AppChallengeView>(api, WorkflowRoutes.AppChallenge, AppChallengeAnswer);
     }
 
     public async Task<Result<ApproveAllStarted>> ApproveAll(Uri api, ApproveAllRequest request, CancellationToken cancellationToken)

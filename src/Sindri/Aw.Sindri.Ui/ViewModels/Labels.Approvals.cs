@@ -83,6 +83,18 @@ internal static partial class Labels
     /// <summary>The job's end could not be read.</summary>
     internal const string ApproveLostTrack = "Sindri stopped answering before the approval ended. Check Health, then read the plan again.";
 
+    /// <summary>The job was cancelled.</summary>
+    internal const string ApproveCancelled = "The approval was cancelled before it finished.";
+
+    /// <summary>A plan whose only workflows need their own look.</summary>
+    internal const string ApproveOnlyOwn = "Nothing here can be approved at once. These need their own look.";
+
+    /// <summary>A fresh confirmation could not be had.</summary>
+    internal const string ApproveAskFailed = "Sindri did not give a new confirmation. Try again.";
+
+    /// <summary>The retry button.</summary>
+    internal const string ApproveTryAgain = "Try again";
+
     /// <summary>How many workflows the approval covers.</summary>
     /// <param name="count">The count.</param>
     /// <returns>"3 workflows will be approved".</returns>

@@ -117,6 +117,16 @@ internal sealed partial class ApproveAllViewModel
         return Redeem(new ApproveAllRequest(challenge.Challenge, Typed: text));
     }
 
+    /// <summary>True when no challenge could be had and a new one can be asked for (the Try again button shows).</summary>
+    public bool CanRetry => false;
+
+    /// <summary>Asks for the challenge again after it could not be had.</summary>
+    /// <returns>A task that completes when the challenge answered.</returns>
+    internal Task Retry() => throw new NotSupportedException();
+
+    /// <summary>The hold button's fixed instructions for assistive tech (the count never goes into it).</summary>
+    public string HoldHelp => HoldText;
+
     private bool Expired => _challenge is { } c && c.ExpiresAt <= _clock.GetUtcNow();
 
     private async Task Reask()
