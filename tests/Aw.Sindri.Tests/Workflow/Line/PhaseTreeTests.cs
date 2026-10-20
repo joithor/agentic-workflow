@@ -38,7 +38,7 @@ public sealed partial class PhaseTreeTests
         Assert.NotEmpty(line);
         var tokens = Backticked.Matches(line).Select(static m => m.Groups["name"].Value).ToList();
 
-        foreach (var id in Reachable("workflow.phase").Where(i => i != "workflow.pr-babysitter" || tokens.Contains("pr-babysitter", StringComparer.Ordinal)))
+        foreach (var id in Reachable("workflow.phase"))
         {
             var short1 = id["workflow.".Length..];
             Assert.Contains(short1, tokens, StringComparer.Ordinal);
@@ -88,6 +88,22 @@ public sealed partial class PhaseTreeTests
         var errors = LineTree.Errors(RecipeComposition.ReadClean(text, "workflow.phase.yaml"));
 
         Assert.Contains(errors, static e => e.Contains("RCP-WIRE-003", StringComparison.Ordinal));
+    }
+
+    /// <summary>LN-WF1 placeholder: no phase transition carries an effect until 'effect.line.report' has a runtime. LN-WF1 flips this to 'shipped' on ship to babysit and 'merged' on babysit to merged, each with line = fact:lineContext.</summary>
+    [Fact, Trait("Lane", "unit")]
+    public void LN_WF1_placeholder_no_phase_transition_carries_an_effect_yet() =>
+        Assert.All(LineTree.Recipe("workflow.phase").Transitions, static t => Assert.Empty(t.Effects));
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_stub_babysitter_parks_before_phase_gives_up_on_it_so_the_park_propagates()
+    {
+        var stub = LineTree.Recipe("workflow.pr-babysitter").States["watch"].Timeout!;
+        var phase = LineTree.Recipe("workflow.phase").States["babysit"].Timeout!;
+
+        Assert.Equal("park", stub.Then.ToString(), ignoreCase: true);
+        Assert.Equal("escalate", phase.Then.ToString(), ignoreCase: true);
+        Assert.True(stub.After.Span < phase.After.Span, $"stub {stub.After.Value} must be shorter than phase {phase.After.Value}");
     }
 
     private static string RepoRecipes()

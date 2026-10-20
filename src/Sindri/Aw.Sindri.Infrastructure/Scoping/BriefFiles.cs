@@ -47,14 +47,28 @@ internal sealed class BriefFiles : IBriefFiles
         foreach (var root in roots.Select(static r => Path.GetFullPath(r)))
         {
             var candidate = Path.GetFullPath(Path.Combine(root, path));
-            var real = Real(candidate);
-            if (Inside(root, candidate) && Inside(Real(root), real) && !BriefPaths.Denied(Path.GetRelativePath(root, candidate)) && !BriefPaths.Denied(Path.GetRelativePath(Real(root), real)))
+            if (Inside(root, candidate) && Allowed(root, candidate))
             {
                 return candidate;
             }
         }
 
         return null;
+    }
+
+    /// <summary>True when the candidate's real location is inside the root's real location and not denied; a link loop is refused like a link that leaves the root.</summary>
+    private static bool Allowed(string root, string candidate)
+    {
+        try
+        {
+            var realRoot = Real(root);
+            var real = Real(candidate);
+            return Inside(realRoot, real) && !BriefPaths.Denied(Path.GetRelativePath(root, candidate)) && !BriefPaths.Denied(Path.GetRelativePath(realRoot, real));
+        }
+        catch (IOException)
+        {
+            return false;   // boundary: a circular symbolic link has no final target
+        }
     }
 
     /// <summary>The path with every existing component followed through its link, so a symlinked directory counts as where it points.</summary>
