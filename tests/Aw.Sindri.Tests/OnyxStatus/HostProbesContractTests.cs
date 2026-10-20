@@ -7,7 +7,8 @@ using Aw.Sindri.Testing;
 namespace Aw.Sindri.Tests.OnyxStatus;
 
 // The real adapter over a temp directory and real loopback listeners. Every port the scene calls taken is held by a listener for the
-// whole case, and the "free" port is held too until the case releases it, just before the probe, so nothing else on the box can grab it between.
+// whole case. The "free" port is held until the case releases it just before the probe; after that another process, or the probe's own
+// loopback connect self-connecting on Linux, can make it read taken, so the contract cases that expect it free retry on a fresh scene.
 [Lane(TestLane.Integration)]
 public sealed class HostProbesContractTests : HostProbesContract
 {
