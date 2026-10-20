@@ -70,7 +70,7 @@ public sealed class ReviewLoopEscalationTests
     [Fact, Trait("Lane", "unit")]
     public void The_review_loop_stays_without_a_human_when_nothing_is_escalated()
     {
-        var evals = Load("workflow.review-loop.yaml").Evals.Select(static e => System.IO.Path.GetFileNameWithoutExtension(e)).ToList();
+        var evals = Load("workflow.review-loop.yaml").Evals.Select(static e => Path.GetFileNameWithoutExtension(e)).ToList();
 
         Assert.Empty(_escalationEvals.Except(evals, StringComparer.Ordinal));
     }
