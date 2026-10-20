@@ -1,8 +1,10 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Text;
+using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Views;
 
 namespace Aw.Sindri.Core.NeedsYou;
@@ -15,8 +17,11 @@ namespace Aw.Sindri.Core.NeedsYou;
 /// </summary>
 /// <param name="events">Reads the payloads through the package's AwJson options.</param>
 /// <param name="scrubber">Scrubs secrets out of the text a row stores.</param>
-internal sealed partial class NeedsYouProjection(EventFactory events, ITextScrubber scrubber) : IProjection
+/// <param name="builtIns">The services the build runs without a profile entry: a failure row of one offers RunService only and outlives a profile check.</param>
+internal sealed partial class NeedsYouProjection(EventFactory events, ITextScrubber scrubber, IEnumerable<BuiltInService> builtIns) : IProjection
 {
+    internal IReadOnlyList<ServiceName> BuiltIns { get; } = [.. builtIns.Select(static b => b.Name)];
+
     private const string DriftKey = "profile:drift";
 
     public IReadOnlyList<string> Views => [ViewNames.NeedsYou];

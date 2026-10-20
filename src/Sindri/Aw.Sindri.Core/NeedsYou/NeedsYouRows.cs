@@ -60,9 +60,11 @@ public static partial class NeedsYouRows
     /// <param name="service">The service's row.</param>
     /// <param name="since">When it started to fail.</param>
     /// <param name="scrubber">Scrubs the text.</param>
+    /// <param name="builtIn">True for a built-in service, which can't be paused: its row offers RunService only.</param>
     /// <returns>The row, or SND-CLI-003 when the service's last run didn't fail.</returns>
-    public static Result<NeedsYouRow> ForFailure(ServiceRow service, DateTimeOffset since, ITextScrubber scrubber)
+    public static Result<NeedsYouRow> ForFailure(ServiceRow service, DateTimeOffset since, ITextScrubber scrubber, bool builtIn = false)
     {
+        _ = builtIn;
         ArgumentNullException.ThrowIfNull(service);
         ArgumentNullException.ThrowIfNull(scrubber);
         if (service.LastRun is not { Outcome: ServiceOutcome.Failed } last)

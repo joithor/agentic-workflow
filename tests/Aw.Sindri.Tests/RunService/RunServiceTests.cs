@@ -247,7 +247,7 @@ public sealed class RunServiceTests
 
         foreach (var recorded in runtime.Of(EventTypes.ServiceRan))
         {
-            _ = await views.Apply([recorded], [new NeedsYouProjection(runtime.H.Events, new PassThroughScrubber()), new ServicesProjection(runtime.H.Events)], runtime.H.Clock.GetUtcNow(), Token);
+            _ = await views.Apply([recorded], [new NeedsYouProjection(runtime.H.Events, new PassThroughScrubber(), []), new ServicesProjection(runtime.H.Events)], runtime.H.Clock.GetUtcNow(), Token);
             rowsAfterEach.Add((await views.List<NeedsYouRowRecord>(ViewNames.NeedsYou, Token)).Value.Count);
         }
 
