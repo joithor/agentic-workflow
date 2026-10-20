@@ -12,6 +12,7 @@ namespace Aw.Sindri.Core.Workflow.Recipes;
 /// <param name="Id">The recipe's id, 'workflow.&lt;name&gt;'.</param>
 /// <param name="Version">The author's version number (RCP-VERSION-001/002).</param>
 /// <param name="Description">What the recipe is for.</param>
+/// <param name="DisplayName">The name the app shows instead of the id: sentence case, at most 60 characters, what the recipe does (RCP-DISPLAY-001; required, so null is a finding, not a binding error).</param>
 /// <param name="Base">The recipe a generated recipe was made from (written by Sindri's generator; RCP-CAP-004 on a hand-written one).</param>
 /// <param name="Urgency">'incident', 'triage' or 'work' (spec §3.2, UI E-21); the normalizer writes 'work' when absent, so both hash the same.</param>
 /// <param name="Name">A template (spec §3.11) for the instance's name, rendered once at start; null when the recipe doesn't name its instances.</param>
@@ -30,6 +31,7 @@ public sealed record Recipe(
     RecipeId Id,
     int Version,
     string? Description,
+    string? DisplayName,
     RecipeRef? Base,
     string Urgency,
     string? Name,

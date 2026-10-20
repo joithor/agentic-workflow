@@ -105,7 +105,7 @@ internal static class LoopFixture
             ["done"] = new(StateKind.Terminal, Step: null, WaitFor: null, Timeout: null, Loop: null, Budget: null, Next: null, OutcomeName.From("resolved")),
         };
         return new Recipe(
-            1, RecipeId.From("workflow.step"), 1, Description: null, Base: null, Urgency: "work", Name: null, Inputs: [], Outputs: [], "produce", states,
+            1, RecipeId.From("workflow.step"), 1, Description: null, DisplayName: "Test loops", Base: null, Urgency: "work", Name: null, Inputs: [], Outputs: [], "produce", states,
             [
                 new(["produce"], "checks", "step.completed", ARecipe.When(OutcomeName.From("done")), [], [], [], [new ProducedFact(FactKey.From("fact:output"), From: null)]),
                 new(["checks"], "verify", "step.completed", ARecipe.When(OutcomeName.From("passed")), [], [], [], []),

@@ -17,6 +17,7 @@ public static class ARecipe
         Id: id,
         Version: 1,
         Description: null,
+        DisplayName: "Produce and finish",
         Base: null,
         Urgency: "work",
         Name: null,

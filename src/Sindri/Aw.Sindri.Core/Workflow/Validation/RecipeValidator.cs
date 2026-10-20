@@ -15,6 +15,7 @@ public static class RecipeValidator
         new WiringRules(),
         new ChoiceRules(),
         new DeclarationRules(),
+        new DisplayRules(),
         new BlockRules(),
         new CapabilityRules(),
         new RegistryRules(),

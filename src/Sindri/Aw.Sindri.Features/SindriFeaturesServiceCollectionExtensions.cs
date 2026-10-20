@@ -17,6 +17,7 @@ using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.ApproveAll;
+using Aw.Sindri.Core.Workflow.Shipped;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ApplyCommand;
 using Aw.Sindri.Features.ApproveAllRecipes;
@@ -64,6 +65,7 @@ using Aw.Sindri.Features.ListItems;
 using Aw.Sindri.Features.ListJobs;
 using Aw.Sindri.Features.ListOutbox;
 using Aw.Sindri.Features.ListRecipes;
+using Aw.Sindri.Features.ManifestRecipes;
 using Aw.Sindri.Features.ListRequests;
 using Aw.Sindri.Features.ListServices;
 using Aw.Sindri.Features.ListSessions;
@@ -145,6 +147,8 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddSingleton<IJobRunner>(static sp => sp.GetRequiredService<JobRunner>()).AddSingleton<IJobCancellation>(static sp => sp.GetRequiredService<JobRunner>())
             .AddScoped<IService<ValidateRecipeRequest, ValidateRecipeResponse>, ValidateRecipeService>()
             .AddScoped<IService<EvalRecipeRequest, EvalRecipeResponse>, EvalRecipeService>()
+            .AddScoped<IService<EvalShippedRequest, EvalShippedResponse>, EvalShippedRecipesService>()
+            .AddScoped<IService<ManifestRecipesRequest, RecipeManifest>, ManifestRecipesService>()
             .AddScoped<IService<RecordEvalRequest, RecordEvalResponse>, RecordEvalService>()
             .AddRecipeBlocks()
             .AddRegistrySlices()

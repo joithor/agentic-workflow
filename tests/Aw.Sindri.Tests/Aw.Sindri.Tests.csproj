@@ -77,6 +77,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- A small recipe set embedded under the prefix the Host reads (aw-recipes/sindri/), so ManifestEmbeddedRecipesTests exercises the real adapter against a real assembly. -->
+    <EmbeddedResource Include="Shipped/Embedded/**/*.yaml;Shipped/Embedded/**/*.jsonl;Shipped/Embedded/README.md" LogicalName="aw-recipes/sindri/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- The v4.9.0 deployment files, small text fixtures fetched from raw.githubusercontent.com at the pinned commit (checked against context/onyx.lock by OnyxFixturesTests). -->
     <None Include="Fixtures/**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

@@ -3652,3 +3652,66 @@ override Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest.Equals(ob
 Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest.Equals(Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest? other) -> bool
 Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest.GetApproveAllPlanRequest() -> void
 override Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest.ToString() -> string!
+Aw.Sindri.Features.EvalRecipe.EvalShippedRequest
+Aw.Sindri.Features.EvalRecipe.EvalShippedRequest.<Clone>$() -> Aw.Sindri.Features.EvalRecipe.EvalShippedRequest!
+Aw.Sindri.Features.EvalRecipe.EvalShippedRequest.Equals(Aw.Sindri.Features.EvalRecipe.EvalShippedRequest? other) -> bool
+Aw.Sindri.Features.EvalRecipe.EvalShippedRequest.EvalShippedRequest() -> void
+Aw.Sindri.Features.EvalRecipe.EvalShippedResponse
+Aw.Sindri.Features.EvalRecipe.EvalShippedResponse.<Clone>$() -> Aw.Sindri.Features.EvalRecipe.EvalShippedResponse!
+Aw.Sindri.Features.EvalRecipe.EvalShippedResponse.Deconstruct(out bool Passed, out bool Empty, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval!>! Recipes) -> void
+Aw.Sindri.Features.EvalRecipe.EvalShippedResponse.Empty.get -> bool
+Aw.Sindri.Features.EvalRecipe.EvalShippedResponse.Empty.init -> void
+Aw.Sindri.Features.EvalRecipe.EvalShippedResponse.Equals(Aw.Sindri.Features.EvalRecipe.EvalShippedResponse? other) -> bool
+Aw.Sindri.Features.EvalRecipe.EvalShippedResponse.EvalShippedResponse(bool Passed, bool Empty, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval!>! Recipes) -> void
+Aw.Sindri.Features.EvalRecipe.EvalShippedResponse.Passed.get -> bool
+Aw.Sindri.Features.EvalRecipe.EvalShippedResponse.Passed.init -> void
+Aw.Sindri.Features.EvalRecipe.EvalShippedResponse.Recipes.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval!>!
+Aw.Sindri.Features.EvalRecipe.EvalShippedResponse.Recipes.init -> void
+Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval
+Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.<Clone>$() -> Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval!
+Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.Cases.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.EvalRecipe.EvalCaseResult!>!
+Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.Cases.init -> void
+Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.Deconstruct(out string! Recipe, out int? Version, out string? Hash, out string? DisplayName, out bool Passed, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.EvalRecipe.EvalCaseResult!>! Cases, out string? Error) -> void
+Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.DisplayName.get -> string?
+Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.DisplayName.init -> void
+Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.Equals(Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval? other) -> bool
+Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.Error.get -> string?
+Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.Error.init -> void
+Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.Hash.get -> string?
+Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.Hash.init -> void
+Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.Passed.get -> bool
+Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.Passed.init -> void
+Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.Recipe.get -> string!
+Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.Recipe.init -> void
+Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.ShippedRecipeEval(string! Recipe, int? Version, string? Hash, string? DisplayName, bool Passed, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.EvalRecipe.EvalCaseResult!>! Cases, string? Error = null) -> void
+Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.Version.get -> int?
+Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.Version.init -> void
+Aw.Sindri.Features.ManifestRecipes.ManifestRecipesRequest
+Aw.Sindri.Features.ManifestRecipes.ManifestRecipesRequest.<Clone>$() -> Aw.Sindri.Features.ManifestRecipes.ManifestRecipesRequest!
+Aw.Sindri.Features.ManifestRecipes.ManifestRecipesRequest.Deconstruct(out string! Directory) -> void
+Aw.Sindri.Features.ManifestRecipes.ManifestRecipesRequest.Directory.get -> string!
+Aw.Sindri.Features.ManifestRecipes.ManifestRecipesRequest.Directory.init -> void
+Aw.Sindri.Features.ManifestRecipes.ManifestRecipesRequest.Equals(Aw.Sindri.Features.ManifestRecipes.ManifestRecipesRequest? other) -> bool
+Aw.Sindri.Features.ManifestRecipes.ManifestRecipesRequest.ManifestRecipesRequest(string! Directory) -> void
+Aw.Sindri.Features.ValidateRecipe.ValidateRecipeRequest.Against.get -> string?
+Aw.Sindri.Features.ValidateRecipe.ValidateRecipeRequest.Against.init -> void
+override Aw.Sindri.Features.EvalRecipe.EvalShippedRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.EvalRecipe.EvalShippedRequest.GetHashCode() -> int
+override Aw.Sindri.Features.EvalRecipe.EvalShippedRequest.ToString() -> string!
+override Aw.Sindri.Features.EvalRecipe.EvalShippedResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.EvalRecipe.EvalShippedResponse.GetHashCode() -> int
+override Aw.Sindri.Features.EvalRecipe.EvalShippedResponse.ToString() -> string!
+override Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.Equals(object? obj) -> bool
+override Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.GetHashCode() -> int
+override Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.ToString() -> string!
+override Aw.Sindri.Features.ManifestRecipes.ManifestRecipesRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ManifestRecipes.ManifestRecipesRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ManifestRecipes.ManifestRecipesRequest.ToString() -> string!
+static Aw.Sindri.Features.EvalRecipe.EvalShippedRequest.operator !=(Aw.Sindri.Features.EvalRecipe.EvalShippedRequest? left, Aw.Sindri.Features.EvalRecipe.EvalShippedRequest? right) -> bool
+static Aw.Sindri.Features.EvalRecipe.EvalShippedRequest.operator ==(Aw.Sindri.Features.EvalRecipe.EvalShippedRequest? left, Aw.Sindri.Features.EvalRecipe.EvalShippedRequest? right) -> bool
+static Aw.Sindri.Features.EvalRecipe.EvalShippedResponse.operator !=(Aw.Sindri.Features.EvalRecipe.EvalShippedResponse? left, Aw.Sindri.Features.EvalRecipe.EvalShippedResponse? right) -> bool
+static Aw.Sindri.Features.EvalRecipe.EvalShippedResponse.operator ==(Aw.Sindri.Features.EvalRecipe.EvalShippedResponse? left, Aw.Sindri.Features.EvalRecipe.EvalShippedResponse? right) -> bool
+static Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.operator !=(Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval? left, Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval? right) -> bool
+static Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval.operator ==(Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval? left, Aw.Sindri.Features.EvalRecipe.ShippedRecipeEval? right) -> bool
+static Aw.Sindri.Features.ManifestRecipes.ManifestRecipesRequest.operator !=(Aw.Sindri.Features.ManifestRecipes.ManifestRecipesRequest? left, Aw.Sindri.Features.ManifestRecipes.ManifestRecipesRequest? right) -> bool
+static Aw.Sindri.Features.ManifestRecipes.ManifestRecipesRequest.operator ==(Aw.Sindri.Features.ManifestRecipes.ManifestRecipesRequest? left, Aw.Sindri.Features.ManifestRecipes.ManifestRecipesRequest? right) -> bool
