@@ -242,12 +242,24 @@ public sealed class InstanceFrameViewModelTests
     }
 
     [Theory]
-    [InlineData("FAILED", "This run failed.")]
-    [InlineData("DIDN'T WORK OUT", "This run didn't work out.")]
-    [InlineData("CANCELLED", "This run was cancelled.")]
-    [InlineData("DONE", "This run is done.")]
-    public void The_finished_line_follows_the_outcome_word(string word, string expected) =>
-        Assert.Equal(expected, Labels.InstanceFinished(word));
+    [InlineData("failed", "This run failed.")]
+    [InlineData("unresolved", "This run didn't work out.")]
+    [InlineData("cancelled", "This run was cancelled.")]
+    [InlineData("resolved", "This run is done.")]
+    [InlineData("alreadySatisfied", "This run is done.")]
+    [InlineData(null, "This run is done.")]
+    public async Task The_finished_line_follows_the_terminal_cells_outcome(string? outcome, string expected)
+    {
+        var node = (JsonObject)GoldenFiles.Node("workflow-instance", "done");
+        var terminal = node["states"]!.AsArray().Single(s => (bool)s!["terminal"]! && Text(s["id"]) == Text(node["state"]))!;
+        terminal["outcome"] = outcome;
+        _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, node.ToJsonString());
+        var frame = Frame();
+
+        await frame.Open(_api, Text(node["address"]), Text(node["id"]), Token);
+
+        Assert.Equal(expected, frame.Note);
+    }
 
     [Fact]
     public async Task A_re_read_that_finds_the_instance_done_keeps_the_content_and_says_done()
@@ -258,7 +270,7 @@ public sealed class InstanceFrameViewModelTests
 
         await frame.Refresh(_api, Token);
 
-        Assert.Equal((FramePhase.Shown, Labels.InstanceFinished(frame.StateText), Text(Golden("done")["current"]!["status"]!["header"]!["state"])), (frame.Phase, frame.Note, frame.StateText));
+        Assert.Equal((FramePhase.Shown, Labels.InstanceDone, Text(Golden("done")["current"]!["status"]!["header"]!["state"])), (frame.Phase, frame.Note, frame.StateText));
         Assert.NotNull(frame.Band);
         Assert.NotSame(band, frame.Band);
     }
