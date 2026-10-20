@@ -16,9 +16,8 @@ using Aw.Sindri.Infrastructure.Locks;
 using Aw.Sindri.Tests.ApiGoldens;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using static Aw.Sindri.Tests.Callers.CallerRequests;
-
 using Microsoft.Extensions.Time.Testing;
+using static Aw.Sindri.Tests.Callers.CallerRequests;
 
 namespace Aw.Sindri.Tests.ContextCalls;
 
@@ -142,7 +141,7 @@ public sealed class ContextReviewApiTests : IDisposable
             ids.Add(Json(accepted.Body).GetProperty("result").GetProperty("written")[0].GetString()!);
         }
 
-        ((Microsoft.Extensions.Time.Testing.FakeTimeProvider)host.App.Services.GetRequiredService<TimeProvider>()).Advance(TimeSpan.FromMinutes(1));   // why: the golden host's clock stands still, and an undo is ordered after what it undoes by its time
+        ((FakeTimeProvider)host.App.Services.GetRequiredService<TimeProvider>()).Advance(TimeSpan.FromMinutes(1));   // why: the golden host's clock stands still, and an undo is ordered after what it undoes by its time
         var undone = await host.Http.Ask(Post("/sindri/context/map/review", Review("undo", overrides: [.. ids]), App(host)));
         var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapReviewed, ct);
         var again = await host.Http.Ask(Post("/sindri/context/map/review", Review("undo", overrides: [.. ids]), App(host)));
