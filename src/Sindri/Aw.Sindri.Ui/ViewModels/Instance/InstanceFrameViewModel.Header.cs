@@ -1,6 +1,6 @@
-using System.Globalization;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.ViewModels.Components;
+using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.ViewModels.Instance;
 
@@ -29,17 +29,6 @@ internal sealed partial class InstanceFrameViewModel
     /// <returns>A task that completes once the clipboard answered.</returns>
     public Task CopyAddress(CancellationToken cancellationToken) => AddressCopy?.Run(Address, cancellationToken) ?? Task.CompletedTask;
 
-    // NOTE: replace with WorkflowNames once B2 merges
-    private static string WorkflowNameOf(InstanceDetail detail)
-    {
-        var served = detail.Recipe.DisplayName is { Length: > 0 } fromRecipe ? fromRecipe : detail.DisplayName;
-        if (!string.IsNullOrEmpty(served))
-        {
-            return served;
-        }
-
-        var id = detail.Recipe.Id;
-        var rest = (id.StartsWith("workflow.", StringComparison.Ordinal) ? id["workflow.".Length..] : id).Replace('-', ' ').Replace('_', ' ').Replace('.', ' ').Trim();
-        return rest.Length == 0 ? id : char.ToUpper(rest[0], CultureInfo.InvariantCulture) + rest[1..];
-    }
+    private static string WorkflowNameOf(InstanceDetail detail) =>
+        WorkflowNames.Of(detail.Recipe.Id, detail.Recipe.DisplayName is { Length: > 0 } fromRecipe ? fromRecipe : detail.DisplayName);
 }

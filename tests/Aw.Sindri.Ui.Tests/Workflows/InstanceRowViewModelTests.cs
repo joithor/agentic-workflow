@@ -130,7 +130,7 @@ public sealed class InstanceRowViewModelTests
         Assert.All(Open, served =>
         {
             var row = Row(served);
-            Assert.Equal($"{row.Subject}, {row.DisplayName}, {served.Chip.Word}, {served.State}, {row.Who}", row.AccessibleName);
+            Assert.Equal(string.Join(", ", new[] { row.Subject, row.DisplayName, served.Chip.Word, served.State, row.Who, row.MissingInputsText }.Where(p => p.Length > 0)), row.AccessibleName);
             Assert.StartsWith(row.Subject, row.AccessibleName, StringComparison.Ordinal);
             Assert.DoesNotContain(served.Address, row.AccessibleName, StringComparison.Ordinal);
             Assert.Equal($"Open {row.Subject}, {row.DisplayName}", row.OpenName);
@@ -210,6 +210,16 @@ public sealed class InstanceRowViewModelTests
         Assert.Contains("FAILED", failed.AccessibleName, StringComparison.Ordinal);
         Assert.DoesNotContain("In progress", failed.AccessibleName, StringComparison.Ordinal);
         Assert.False(failed.AccessibleName.EndsWith(", ", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_name_counts_the_missing_inputs_when_there_are_any()
+    {
+        var served = FixtureInstances.List("preview-missing-input").Instances[0];
+        var row = Row(served);
+
+        Assert.True(row.HasMissingInputs);
+        Assert.EndsWith(", " + row.MissingInputsText, row.AccessibleName, StringComparison.Ordinal);
     }
 
     [Fact]
