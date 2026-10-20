@@ -3680,3 +3680,63 @@ static Aw.Sindri.Features.Design.DesignCheckRequest.operator !=(Aw.Sindri.Featur
 static Aw.Sindri.Features.Design.DesignCheckRequest.operator ==(Aw.Sindri.Features.Design.DesignCheckRequest? left, Aw.Sindri.Features.Design.DesignCheckRequest? right) -> bool
 static Aw.Sindri.Features.Plan.PlanCheckRequest.operator !=(Aw.Sindri.Features.Plan.PlanCheckRequest? left, Aw.Sindri.Features.Plan.PlanCheckRequest? right) -> bool
 static Aw.Sindri.Features.Plan.PlanCheckRequest.operator ==(Aw.Sindri.Features.Plan.PlanCheckRequest? left, Aw.Sindri.Features.Plan.PlanCheckRequest? right) -> bool
+Aw.Sindri.Features.ResolveParents.ResolveParentsRequest
+Aw.Sindri.Features.ResolveParents.ResolveParentsRequest.<Clone>$() -> Aw.Sindri.Features.ResolveParents.ResolveParentsRequest!
+Aw.Sindri.Features.ResolveParents.ResolveParentsRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Parents) -> void
+Aw.Sindri.Features.ResolveParents.ResolveParentsRequest.Equals(Aw.Sindri.Features.ResolveParents.ResolveParentsRequest? other) -> bool
+Aw.Sindri.Features.ResolveParents.ResolveParentsRequest.Parents.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.ResolveParents.ResolveParentsRequest.Parents.init -> void
+Aw.Sindri.Features.ResolveParents.ResolveParentsRequest.ResolveParentsRequest(System.Collections.Generic.IReadOnlyList<string!>! Parents) -> void
+Aw.Sindri.Features.ResolveParents.ResolveParentsResponse
+Aw.Sindri.Features.ResolveParents.ResolveParentsResponse.<Clone>$() -> Aw.Sindri.Features.ResolveParents.ResolveParentsResponse!
+Aw.Sindri.Features.ResolveParents.ResolveParentsResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Packets.FrozenPacket!>! Frozen) -> void
+Aw.Sindri.Features.ResolveParents.ResolveParentsResponse.Equals(Aw.Sindri.Features.ResolveParents.ResolveParentsResponse? other) -> bool
+Aw.Sindri.Features.ResolveParents.ResolveParentsResponse.Frozen.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Packets.FrozenPacket!>!
+Aw.Sindri.Features.ResolveParents.ResolveParentsResponse.Frozen.init -> void
+Aw.Sindri.Features.ResolveParents.ResolveParentsResponse.ResolveParentsResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Packets.FrozenPacket!>! Frozen) -> void
+override Aw.Sindri.Features.ResolveParents.ResolveParentsRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ResolveParents.ResolveParentsRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ResolveParents.ResolveParentsRequest.ToString() -> string!
+override Aw.Sindri.Features.ResolveParents.ResolveParentsResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ResolveParents.ResolveParentsResponse.GetHashCode() -> int
+override Aw.Sindri.Features.ResolveParents.ResolveParentsResponse.ToString() -> string!
+static Aw.Sindri.Features.ResolveParents.ResolveParentsRequest.operator !=(Aw.Sindri.Features.ResolveParents.ResolveParentsRequest? left, Aw.Sindri.Features.ResolveParents.ResolveParentsRequest? right) -> bool
+static Aw.Sindri.Features.ResolveParents.ResolveParentsRequest.operator ==(Aw.Sindri.Features.ResolveParents.ResolveParentsRequest? left, Aw.Sindri.Features.ResolveParents.ResolveParentsRequest? right) -> bool
+static Aw.Sindri.Features.ResolveParents.ResolveParentsResponse.operator !=(Aw.Sindri.Features.ResolveParents.ResolveParentsResponse? left, Aw.Sindri.Features.ResolveParents.ResolveParentsResponse? right) -> bool
+static Aw.Sindri.Features.ResolveParents.ResolveParentsResponse.operator ==(Aw.Sindri.Features.ResolveParents.ResolveParentsResponse? left, Aw.Sindri.Features.ResolveParents.ResolveParentsResponse? right) -> bool
+Aw.Sindri.Features.Design.DesignPacket
+Aw.Sindri.Features.Plan.PlanGraph
+Aw.Sindri.Features.Plan.PlanGraphOptions
+Aw.Sindri.Features.Plan.PlanGraphOptions.<Clone>$() -> Aw.Sindri.Features.Plan.PlanGraphOptions!
+Aw.Sindri.Features.Plan.PlanGraphOptions.Deconstruct(out int Parallel, out int MaxStack, out string! DefaultBranch) -> void
+Aw.Sindri.Features.Plan.PlanGraphOptions.DefaultBranch.get -> string!
+Aw.Sindri.Features.Plan.PlanGraphOptions.DefaultBranch.init -> void
+Aw.Sindri.Features.Plan.PlanGraphOptions.Equals(Aw.Sindri.Features.Plan.PlanGraphOptions? other) -> bool
+Aw.Sindri.Features.Plan.PlanGraphOptions.MaxStack.get -> int
+Aw.Sindri.Features.Plan.PlanGraphOptions.MaxStack.init -> void
+Aw.Sindri.Features.Plan.PlanGraphOptions.Parallel.get -> int
+Aw.Sindri.Features.Plan.PlanGraphOptions.Parallel.init -> void
+Aw.Sindri.Features.Plan.PlanGraphOptions.PlanGraphOptions(int Parallel = 2, int MaxStack = 4, string! DefaultBranch = "main") -> void
+Aw.Sindri.Features.Plan.PlanPacket
+Aw.Sindri.Features.Plan.PlanParents
+Aw.Sindri.Features.Plan.PlanParents.<Clone>$() -> Aw.Sindri.Features.Plan.PlanParents!
+Aw.Sindri.Features.Plan.PlanParents.Deconstruct(out string! Design, out string! Scope) -> void
+Aw.Sindri.Features.Plan.PlanParents.Design.get -> string!
+Aw.Sindri.Features.Plan.PlanParents.Design.init -> void
+Aw.Sindri.Features.Plan.PlanParents.Equals(Aw.Sindri.Features.Plan.PlanParents? other) -> bool
+Aw.Sindri.Features.Plan.PlanParents.PlanParents(string! Design, string! Scope) -> void
+Aw.Sindri.Features.Plan.PlanParents.Scope.get -> string!
+Aw.Sindri.Features.Plan.PlanParents.Scope.init -> void
+override Aw.Sindri.Features.Plan.PlanGraphOptions.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Plan.PlanGraphOptions.GetHashCode() -> int
+override Aw.Sindri.Features.Plan.PlanGraphOptions.ToString() -> string!
+override Aw.Sindri.Features.Plan.PlanParents.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Plan.PlanParents.GetHashCode() -> int
+override Aw.Sindri.Features.Plan.PlanParents.ToString() -> string!
+static Aw.Sindri.Features.Design.DesignPacket.Build(Aw.Sindri.Core.Line.LineFacts! facts, Aw.Sindri.Core.Line.PacketIdentity! identity, string! scopeHash) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFile!>!
+static Aw.Sindri.Features.Plan.PlanGraph.Derive(string! tasksJson, Aw.Sindri.Features.Plan.PlanGraphOptions! options) -> string?
+static Aw.Sindri.Features.Plan.PlanGraphOptions.operator !=(Aw.Sindri.Features.Plan.PlanGraphOptions? left, Aw.Sindri.Features.Plan.PlanGraphOptions? right) -> bool
+static Aw.Sindri.Features.Plan.PlanGraphOptions.operator ==(Aw.Sindri.Features.Plan.PlanGraphOptions? left, Aw.Sindri.Features.Plan.PlanGraphOptions? right) -> bool
+static Aw.Sindri.Features.Plan.PlanPacket.Build(Aw.Sindri.Core.Line.LineFacts! facts, Aw.Sindri.Core.Line.PacketIdentity! identity, Aw.Sindri.Features.Plan.PlanParents! parents, Aw.Sindri.Features.Plan.PlanGraphOptions! options) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFile!>!
+static Aw.Sindri.Features.Plan.PlanParents.operator !=(Aw.Sindri.Features.Plan.PlanParents? left, Aw.Sindri.Features.Plan.PlanParents? right) -> bool
+static Aw.Sindri.Features.Plan.PlanParents.operator ==(Aw.Sindri.Features.Plan.PlanParents? left, Aw.Sindri.Features.Plan.PlanParents? right) -> bool

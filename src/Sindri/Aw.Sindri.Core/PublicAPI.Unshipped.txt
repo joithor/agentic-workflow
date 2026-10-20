@@ -12771,3 +12771,61 @@ static Aw.Sindri.Core.Line.LineJson.Strings(System.Text.Json.Nodes.JsonNode? arr
 static Aw.Sindri.Core.Line.LineJson.Strings(System.Text.Json.Nodes.JsonNode? node, string! name) -> System.Collections.Generic.IEnumerable<string!>!
 static Aw.Sindri.Core.Line.LineRule.operator !=(Aw.Sindri.Core.Line.LineRule? left, Aw.Sindri.Core.Line.LineRule? right) -> bool
 static Aw.Sindri.Core.Line.LineRule.operator ==(Aw.Sindri.Core.Line.LineRule? left, Aw.Sindri.Core.Line.LineRule? right) -> bool
+Aw.Sindri.Core.Line.LineErrors
+Aw.Sindri.Core.Line.LineFile
+Aw.Sindri.Core.Line.LineFile.<Clone>$() -> Aw.Sindri.Core.Line.LineFile!
+Aw.Sindri.Core.Line.LineFile.Content.get -> string!
+Aw.Sindri.Core.Line.LineFile.Content.init -> void
+Aw.Sindri.Core.Line.LineFile.Deconstruct(out string! Path, out string! Content) -> void
+Aw.Sindri.Core.Line.LineFile.Equals(Aw.Sindri.Core.Line.LineFile? other) -> bool
+Aw.Sindri.Core.Line.LineFile.LineFile(string! Path, string! Content) -> void
+Aw.Sindri.Core.Line.LineFile.Path.get -> string!
+Aw.Sindri.Core.Line.LineFile.Path.init -> void
+Aw.Sindri.Core.Line.LinePacketIndex
+Aw.Sindri.Core.Line.PacketIdentity
+Aw.Sindri.Core.Line.PacketIdentity.<Clone>$() -> Aw.Sindri.Core.Line.PacketIdentity!
+Aw.Sindri.Core.Line.PacketIdentity.BaseSha.get -> string!
+Aw.Sindri.Core.Line.PacketIdentity.BaseSha.init -> void
+Aw.Sindri.Core.Line.PacketIdentity.Deconstruct(out string! Packet, out string! Repo, out string! BaseSha) -> void
+Aw.Sindri.Core.Line.PacketIdentity.Equals(Aw.Sindri.Core.Line.PacketIdentity? other) -> bool
+Aw.Sindri.Core.Line.PacketIdentity.Packet.get -> string!
+Aw.Sindri.Core.Line.PacketIdentity.Packet.init -> void
+Aw.Sindri.Core.Line.PacketIdentity.PacketIdentity(string! Packet, string! Repo, string! BaseSha) -> void
+Aw.Sindri.Core.Line.PacketIdentity.Repo.get -> string!
+Aw.Sindri.Core.Line.PacketIdentity.Repo.init -> void
+Aw.Sindri.Core.Packets.FrozenPacket
+Aw.Sindri.Core.Packets.FrozenPacket.<Clone>$() -> Aw.Sindri.Core.Packets.FrozenPacket!
+Aw.Sindri.Core.Packets.FrozenPacket.By.get -> Aw.Sindri.Core.Packets.PacketFreezer
+Aw.Sindri.Core.Packets.FrozenPacket.By.init -> void
+Aw.Sindri.Core.Packets.FrozenPacket.Deconstruct(out string! Hash, out string! Packet, out string! Kind, out Aw.Sindri.Core.Packets.PacketFreezer By) -> void
+Aw.Sindri.Core.Packets.FrozenPacket.Equals(Aw.Sindri.Core.Packets.FrozenPacket? other) -> bool
+Aw.Sindri.Core.Packets.FrozenPacket.FrozenPacket(string! Hash, string! Packet, string! Kind, Aw.Sindri.Core.Packets.PacketFreezer By) -> void
+Aw.Sindri.Core.Packets.FrozenPacket.Hash.get -> string!
+Aw.Sindri.Core.Packets.FrozenPacket.Hash.init -> void
+Aw.Sindri.Core.Packets.FrozenPacket.Kind.get -> string!
+Aw.Sindri.Core.Packets.FrozenPacket.Kind.init -> void
+Aw.Sindri.Core.Packets.FrozenPacket.Packet.get -> string!
+Aw.Sindri.Core.Packets.FrozenPacket.Packet.init -> void
+Aw.Sindri.Core.Packets.IFrozenPackets
+Aw.Sindri.Core.Packets.IFrozenPackets.Find(string! hash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Packets.FrozenPacket?>!>
+override Aw.Sindri.Core.Line.LineFile.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Line.LineFile.GetHashCode() -> int
+override Aw.Sindri.Core.Line.LineFile.ToString() -> string!
+override Aw.Sindri.Core.Line.PacketIdentity.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Line.PacketIdentity.GetHashCode() -> int
+override Aw.Sindri.Core.Line.PacketIdentity.ToString() -> string!
+override Aw.Sindri.Core.Packets.FrozenPacket.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Packets.FrozenPacket.GetHashCode() -> int
+override Aw.Sindri.Core.Packets.FrozenPacket.ToString() -> string!
+static Aw.Sindri.Core.Line.LineErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static Aw.Sindri.Core.Line.LineFile.operator !=(Aw.Sindri.Core.Line.LineFile? left, Aw.Sindri.Core.Line.LineFile? right) -> bool
+static Aw.Sindri.Core.Line.LineFile.operator ==(Aw.Sindri.Core.Line.LineFile? left, Aw.Sindri.Core.Line.LineFile? right) -> bool
+static Aw.Sindri.Core.Line.LinePacketIndex.Parents(string! indexJson) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Line.PacketIdentity.operator !=(Aw.Sindri.Core.Line.PacketIdentity? left, Aw.Sindri.Core.Line.PacketIdentity? right) -> bool
+static Aw.Sindri.Core.Line.PacketIdentity.operator ==(Aw.Sindri.Core.Line.PacketIdentity? left, Aw.Sindri.Core.Line.PacketIdentity? right) -> bool
+static Aw.Sindri.Core.Packets.FrozenPacket.operator !=(Aw.Sindri.Core.Packets.FrozenPacket? left, Aw.Sindri.Core.Packets.FrozenPacket? right) -> bool
+static Aw.Sindri.Core.Packets.FrozenPacket.operator ==(Aw.Sindri.Core.Packets.FrozenPacket? left, Aw.Sindri.Core.Packets.FrozenPacket? right) -> bool
+static readonly Aw.Sindri.Core.Line.LineErrors.PacketMismatch -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.Line.LineErrors.PhaseBlocked -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.Line.LineErrors.SetupMissing -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.Line.LineErrors.WrongRecipe -> Aw.Kernel.ErrorDefinition!
