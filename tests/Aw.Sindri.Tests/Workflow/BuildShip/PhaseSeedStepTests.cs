@@ -62,16 +62,16 @@ public sealed class PhaseSeedStepTests
     }
 
     [Fact]
-    public async Task Reuses_the_workspace_the_instance_holds_without_making_another()
+    public async Task A_retried_seed_returns_the_same_workspace_and_makes_no_second_worktree()
     {
         var worktrees = Repo();
 
-        var result = await Step(worktrees).Run(Context(static f => f["workspace"] = "\"/work/held\""), Token);
+        var first = await Step(worktrees).Run(Context(), Token);
+        var retry = await Step(worktrees).Run(Context(), Token);   // a worker crash or a Temporal retry runs the Step again for the same instance
 
-        Assert.Equal("seeded", result.Result!.Outcome.Value);
-        Assert.Equal("/work/held", (string?)Out(result, "workspace"));
-        var made = await worktrees.Create(new WorktreeRequest(Checkout, Base, "sindri/L-1/p2", Path), Token);   // nothing was made at the path, so this creates it fresh
-        Assert.Equal(Path, made.Value.Path);
+        Assert.Equal("seeded", retry.Result!.Outcome.Value);
+        Assert.Equal(Out(first, "workspace").ToJsonString(), Out(retry, "workspace").ToJsonString());
+        Assert.Equal(Path, (string?)Out(retry, "workspace"));
     }
 
     [Fact]

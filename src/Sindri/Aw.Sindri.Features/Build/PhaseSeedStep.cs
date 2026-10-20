@@ -8,8 +8,7 @@ using Aw.Sindri.Core.Worktrees;
 namespace Aw.Sindri.Features.Build;
 
 /// <summary>
-/// 'step.phase.seed' on the block runtime (line spec §7.1): creates the phase's branch <c language="text">sindri/&lt;line&gt;/&lt;phase&gt;</c> and its worktree at the base the line chose, only
-/// when the instance holds no 'fact:workspace', and seeds the round-1 value of every fact a later wait reads. SND-WT-002 (the path or branch is in use at another base) stops the Step with
+/// 'step.phase.seed' on the block runtime (line spec §7.1): creates the phase's branch <c language="text">sindri/&lt;line&gt;/&lt;phase&gt;</c> and its worktree at the base the line chose, and seeds the round-1 value of every fact a later wait reads. A retried run (a worker crash, a Temporal retry) asks `Create` again, which is idempotent over the same path, branch and base, so it returns the same 'fact:workspace'. SND-WT-002 (the path or branch is in use at another base) stops the Step with
 /// nothing reset, so the instance parks for the owner; SND-WT-003 (git failed) fails it.
 /// </summary>
 /// <param name="worktrees">Makes the worktree.</param>
@@ -27,11 +26,6 @@ internal sealed class PhaseSeedStep(IWorktrees worktrees, IRepoCheckouts checkou
         if (StepFacts.Missing(context, "fact:phasePacket", "fact:lineContext") is { Count: > 0 } missing)
         {
             return BlockStepResult.Failed($"step.phase.seed needs {string.Join(", ", missing)}, which the instance does not hold");
-        }
-
-        if (StepFacts.Text(context, "fact:workspace") is { Length: > 0 } held)
-        {
-            return Seeded(held);   // the instance owns its worktree already: nothing is made twice
         }
 
         var (request, failure) = await Request(context, cancellationToken).ConfigureAwait(false);
