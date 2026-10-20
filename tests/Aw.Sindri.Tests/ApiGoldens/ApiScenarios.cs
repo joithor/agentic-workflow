@@ -37,6 +37,7 @@ internal static class ApiScenarios
         ["Streams"] = StreamScenarios.All,
         ["Jobs"] = [.. JobScenarios.All, .. JobScopeScenarios.All],
         ["Launches"] = [.. LaunchScenarios.All, .. WrapSessionScenarios.All],
+        ["Setup"] = SetupScenarios.All,
         ["Recipes"] = ApproveAllScenarios.All,
     };
 
@@ -50,6 +51,8 @@ internal static class ApiScenarios
     public static async Task<GoldenHost> Start(string slug, string scenario, CancellationToken ct) =>
         ContextApiScenarios.Handles(slug)
             ? await ContextApiScenarios.Start(slug, scenario, ct)
+            : SetupScenarios.Handles(slug, scenario)
+            ? await SetupScenarios.Start(scenario, ct)
             : JobScenarios.Handles(slug, scenario) || JobScopeScenarios.Handles(slug, scenario)
             ? await Jobs.JobHost.Start(ct, pump: false)
             : LaunchScenarios.Handles(slug, scenario)
@@ -106,15 +109,16 @@ internal static class ApiScenarios
         : RequestScenarios.Handles(slug, scenario) ? () => RequestScenarios.Body(host, slug, scenario, ct)
         : StreamScenarios.Handles(slug, scenario) ? () => StreamScenarios.Body(host, slug, scenario, ct)
         : ViewScenarios.Handles(slug, scenario) ? () => ViewScenarios.Body(host, slug, scenario, ct)
+        : SetupScenarios.Handles(slug, scenario) ? () => SetupScenarios.Body(host, slug, scenario, ct)
         : JobScenarios.Handles(slug, scenario) ? () => JobScenarios.Body(host, slug, scenario, ct)
         : JobScopeScenarios.Handles(slug, scenario) ? () => JobScopeScenarios.Body(host, slug, scenario, ct)
         : LaunchScenarios.Handles(slug, scenario) ? () => LaunchScenarios.Body(host, slug, scenario, ct)
-        : ApproveAllScenarios.Handles(slug, scenario) ? () => ApproveAllScenarios.Body(host, slug, scenario, ct)
         : SessionBody(host, slug, scenario, ct);
 
-    /// <summary>The body of a collector (sessions) or wrap (launch) session scenario, else null.</summary>
+    /// <summary>The body of an approve-all (recipes), collector (sessions) or wrap (launch) session scenario, else null.</summary>
     private static Func<Task<string>>? SessionBody(GoldenHost host, string slug, string scenario, CancellationToken ct) =>
-        SessionScenarios.Handles(slug, scenario) ? () => SessionScenarios.Body(host, slug, scenario, ct)
+        ApproveAllScenarios.Handles(slug, scenario) ? () => ApproveAllScenarios.Body(host, slug, scenario, ct)
+        : SessionScenarios.Handles(slug, scenario) ? () => SessionScenarios.Body(host, slug, scenario, ct)
         : WrapSessionScenarios.Handles(slug, scenario) ? () => WrapSessionScenarios.Body(host, slug, scenario, ct)
         : null;
 

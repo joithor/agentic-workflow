@@ -74,6 +74,7 @@ public sealed class GoldenContractTests
     private static readonly HashSet<string> _notRead = new(StringComparer.Ordinal)
     {
         "stop", "profile-approve", "profile",
+        "setup",   // GET /setup (the setup list): the app draws its Setup card from it in a later phase
         "context-eval", "context-map-proposals", "context-query", "context-code", "context-history", "context-subgraph",   // not U9's: eval, proposals (U13) and the query routes are read by the phases that call them
         "items",   // GET /items (the list) is never called; POST /items' created* goldens are read (see the loop)
         "ledger",   // API P5: the audit read is the CLI's; the app follows the stream and re-queries
