@@ -30,6 +30,19 @@ check "selfcheck passes" "$rc" "0"
 node "$FX/selfcheck.mjs" extra >/dev/null 2>&1; check "selfcheck: an unknown argument exits 2" "$?" "2"
 node "$FX/selfcheck.mjs" diff-scope >/dev/null 2>&1; check "selfcheck diff-scope with no arguments exits 2" "$?" "2"
 
+# A loaded gate gives new pipes one 4 KB page (fs.pipe-user-pages-soft): the selfcheck must still print every line, not
+# drop what it hasn't flushed when it exits. Linux only (F_SETPIPE_SZ), and needs python3.
+if [ "$(uname -s)" = Linux ] && command -v python3 >/dev/null; then
+  tail1="$(python3 -I -c '
+import fcntl, os, subprocess, sys, time
+r, w = os.pipe(); fcntl.fcntl(w, 1031, 4096)
+p = subprocess.Popen(["node", sys.argv[1]], stdout=w, stderr=w); os.close(w); time.sleep(1)
+out = b"".join(iter(lambda: os.read(r, 65536), b"")); p.wait()
+print(out.decode().rstrip().splitlines()[-1])' "$FX/selfcheck.mjs")"
+  if [[ "$tail1" =~ ^[0-9]+/[0-9]+\ checks\ pass$ ]]; then echo "ok - through a 4 KB pipe with a slow reader the selfcheck prints every line"; else
+    echo "not ok - through a 4 KB pipe the selfcheck's output was cut: last line '$tail1'"; fail=1; fi
+fi
+
 # --- each check can fail: break a copy of the fixture (line and scoping side by side) ---
 # sedi <script> <file>...: an in-place sed that works with GNU and BSD sed alike (CI runs on macOS).
 sedi() { local script="$1" f; shift; for f in "$@"; do sed "$script" "$f" > "$f.sedi" && mv "$f.sedi" "$f" || return 1; done; }
