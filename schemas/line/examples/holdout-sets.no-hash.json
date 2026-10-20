@@ -1,0 +1,12 @@
+[
+  {
+    "phase": "p1",
+    "scenarioIds": [
+      "h1"
+    ],
+    "itemIds": [
+      "AC-1"
+    ],
+    "count": 1
+  }
+]
