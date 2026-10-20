@@ -47,4 +47,21 @@ public sealed class BriefFilesContractTests : BriefFilesContract, IDisposable
 
         Assert.Equal(ScopingErrors.BriefPathRefused.Code, read.Error.Code);
     }
+
+    [Fact]
+    public async Task A_circular_symbolic_link_is_refused_and_the_other_files_still_read()
+    {
+        var reader = Create(new Dictionary<string, string>(StringComparer.Ordinal) { ["ok.md"] = "fine" }, out var root);
+        _ = File.CreateSymbolicLink(Path.Combine(root, "a.md"), Path.Combine(root, "b.md"));
+        _ = File.CreateSymbolicLink(Path.Combine(root, "b.md"), Path.Combine(root, "a.md"));
+        _ = File.CreateSymbolicLink(Path.Combine(root, "self.md"), Path.Combine(root, "self.md"));
+
+        var loop = await reader.Read("a.md", [root], TestContext.Current.CancellationToken);
+        var self = await reader.Read("self.md", [root], TestContext.Current.CancellationToken);
+        var ok = await reader.Read("ok.md", [root], TestContext.Current.CancellationToken);
+
+        Assert.Equal(ScopingErrors.BriefPathRefused.Code, loop.Error.Code);
+        Assert.Equal(ScopingErrors.BriefPathRefused.Code, self.Error.Code);
+        Assert.Equal("fine", ok.Value.Text);
+    }
 }
