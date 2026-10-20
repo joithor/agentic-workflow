@@ -71,7 +71,7 @@ public sealed class GitRepoBuilder : Builder<GitRepoBuilder, TempGitRepo>
             _ = GitRunner.Run(source.Path, "clone", "-q", "--bare", source.Path, origin);
             _ = GitRunner.Run(origin, "config", "uploadpack.allowFilter", "true");
             _ = GitRunner.Run(origin, "config", "uploadpack.allowAnySHA1InWant", "true");
-            _ = GitRunner.Run(clone, "clone", "-q", "--no-checkout", "--filter=blob:none", "--no-local", "file://" + origin, clone);
+            _ = GitRunner.Run(clone, "-c", "protocol.file.allow=always", "clone", "-q", "--no-checkout", "--filter=blob:none", "--no-local", "file://" + origin, clone);
             return new TempGitRepo(clone, origin);
         }
         catch (Exception)

@@ -19,7 +19,7 @@ internal static class GitRunner
 
         start.Environment["GIT_CONFIG_GLOBAL"] = "/dev/null";
         start.Environment["GIT_CONFIG_NOSYSTEM"] = "1";
-        foreach (var arg in (string[])["-C", directory, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "commit.gpgsign=false", "-c", "protocol.file.allow=always", .. args])
+        foreach (var arg in (string[])["-C", directory, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "commit.gpgsign=false", .. args])
         {
             start.ArgumentList.Add(arg);
         }
