@@ -53,6 +53,11 @@ internal sealed class PlanFreezeStep(IPackets packets, IRepoCheckouts checkouts)
 
     private async ValueTask<BlockStepResult> Freeze(List<Target> targets, string checkout, CancellationToken cancellationToken)
     {
+        if (await Verify(targets, checkout, cancellationToken).ConfigureAwait(false) is { } stale)
+        {
+            return stale;
+        }
+
         var frozen = new JsonArray();
         var planHash = string.Empty;
         foreach (var target in targets)
@@ -84,23 +89,30 @@ internal sealed class PlanFreezeStep(IPackets packets, IRepoCheckouts checkouts)
         return StepFacts.Done("frozen", ("fact:planPacket", planFact), ("fact:phasePackets", frozen));
     }
 
-    private async ValueTask<(BlockStepResult? Stop, string? Hash)> FreezeOne(Target target, string checkout, CancellationToken cancellationToken)
+    // Every packet still hashes to what the evidence checked, before the first freeze: a freeze is write-once, so a mismatch found after one would leave a half-frozen set.
+    private async ValueTask<BlockStepResult?> Verify(List<Target> targets, string checkout, CancellationToken cancellationToken)
     {
-        var packet = new PacketRef(target.Kind, target.Directory, checkout);
-        if (target.Hash is { } expected)
+        foreach (var target in targets.Where(static t => t.Hash is not null))
         {
-            var computed = await packets.Hash(packet, cancellationToken).ConfigureAwait(false);
+            var expected = target.Hash ?? string.Empty;
+            var computed = await packets.Hash(new PacketRef(target.Kind, target.Directory, checkout), cancellationToken).ConfigureAwait(false);
             if (computed.IsError)
             {
-                return (BlockStepResult.Failed($"{Id.Value}: aw-packets could not hash the {target.Label}: {computed.Error.Message}"), null);
+                return BlockStepResult.Failed($"{Id.Value}: aw-packets could not hash the {target.Label}: {computed.Error.Message}");
             }
 
             if (!string.Equals(computed.Value, expected, StringComparison.Ordinal))
             {
-                return (LinePackets.Gaps("mismatch", [LinePackets.Finding("SND-LINE-001", $"the {target.Label} hashes to {computed.Value} now, not the {expected} the evidence checked", "Run the evidence again; a packet is never edited.")]), null);
+                return LinePackets.Gaps("mismatch", [LinePackets.Finding("SND-LINE-001", $"the {target.Label} hashes to {computed.Value} now, not the {expected} the evidence checked", "Run the evidence again; a packet is never edited.")]);
             }
         }
 
+        return null;
+    }
+
+    private async ValueTask<(BlockStepResult? Stop, string? Hash)> FreezeOne(Target target, string checkout, CancellationToken cancellationToken)
+    {
+        var packet = new PacketRef(target.Kind, target.Directory, checkout);
         var result = await packets.Freeze(packet, PacketFreezer.Owner, cancellationToken).ConfigureAwait(false);
         if (result.IsError)
         {
