@@ -17,11 +17,21 @@
       <StackPanel Spacing="4">
         <TextBlock x:Name="InstanceTitle" Classes="detail-title" Text="{Binding Title}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Title}" />
         <WrapPanel Orientation="Horizontal">
-          <TextBlock x:Name="InstanceIdentity" Classes="caption mono subtle" Text="{Binding Identity}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"
+          <TextBlock x:Name="InstanceIdentity" Classes="body muted" Text="{Binding Identity}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"
                      AutomationProperties.Name="{Binding Identity}" />
           <Button x:Name="InstanceRecipe" Content="{Binding RecipeLinkText}" IsVisible="{Binding HasRecipeLink}" Click="OnRecipe" AutomationProperties.Name="{Binding RecipeLinkName}" />
         </WrapPanel>
         <TextBlock x:Name="InstanceNote" Classes="body-strong" Text="{Binding Note}" IsVisible="{Binding HasNote}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Note}" />
+        <!-- The ids: the address, the workflow id and hash, the version. Closed; Copy is the one action. -->
+        <Expander x:Name="InstanceDetails" Header="{Binding DetailsHeading}" IsExpanded="False">
+          <StackPanel Spacing="4">
+            <TextBlock x:Name="InstanceDetailsText" Classes="caption mono subtle" Text="{Binding DetailsText}" TextWrapping="Wrap" />
+            <Button x:Name="InstanceCopyAddress" Classes="copy" HorizontalAlignment="Left" Content="{Binding AddressCopy.Label}" Click="OnCopyAddress"
+                    AutomationProperties.Name="{Binding CopyAddressName}" />
+            <TextBlock x:Name="InstanceCopyAnnouncement" Classes="caption live-region" Classes.live="{Binding AddressCopy.IsAnnouncing}" Width="0" Opacity="0"
+                       IsHitTestVisible="False" Text="{Binding AddressCopy.Announcement}" />
+          </StackPanel>
+        </Expander>
       </StackPanel>
       <WrapPanel x:Name="InstanceSubject" Orientation="Horizontal" IsVisible="{Binding Subject, Converter={x:Static ObjectConverters.IsNotNull}}">
         <TextBlock Classes="caption subtle" Text="{Binding SubjectText}" VerticalAlignment="Center" Margin="0,0,8,0" />

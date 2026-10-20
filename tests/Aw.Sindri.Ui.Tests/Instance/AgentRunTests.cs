@@ -23,8 +23,11 @@ public sealed class AgentRunTests
     {
         var expanded = Expanded(AgentRunFixtures.Status());
 
-        Assert.Equal((true, "Agent · " + AgentRunFixtures.Launch), (expanded.HasRun, expanded.RunLine));
+        Assert.Equal((true, "An agent is working on this step"), (expanded.HasRun, expanded.RunLine));
         Assert.Contains(AgentRunFixtures.Launch, expanded.RunName, StringComparison.Ordinal);
+        Assert.DoesNotContain(AgentRunFixtures.Launch, expanded.RunLine, StringComparison.Ordinal);   // the launch id is for Details
+        Assert.Equal("Agent session " + AgentRunFixtures.Launch, expanded.RunDetail);
+        Assert.True(expanded.HasStageDetails);
         Assert.Equal((true, Labels.AttachChecking), (expanded.HasAttach, expanded.Attach!.PendingChip));
         Assert.Equal([StatusVerb.Takeover, StatusVerb.Cancel], expanded.Commands.Select(c => c.Verb));
     }
@@ -117,7 +120,7 @@ public sealed class AgentRunTests
         expanded.ShowRun(new AgentRunRead(Launch: null, running, [], ItemUnreadable: false));
         Assert.Equal((true, Labels.AttachNoLiveSession), (expanded.Attach!.IsPending, expanded.Attach.PendingChip));
         Assert.DoesNotContain("P10a", expanded.Attach.PendingChipName, StringComparison.Ordinal);
-        Assert.EndsWith(": no live session to attach to", expanded.Attach.PendingChipName, StringComparison.Ordinal);
+        Assert.EndsWith(": the agent isn't running, so there's nothing to watch", expanded.Attach.PendingChipName, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -132,8 +135,8 @@ public sealed class AgentRunTests
     }
 
     [Theory]
-    [InlineData("launch", "The agent's launch failed")]
-    [InlineData("lost", "The session was lost")]
+    [InlineData("launch", "The agent couldn't start")]
+    [InlineData("lost", "The agent session was lost")]
     [InlineData("exit", "The agent exited")]
     [InlineData("limit", "The agent hit its limit")]
     public void A_failed_agent_step_reads_its_reason_and_where_it_went(string reason, string sentence)
@@ -141,7 +144,7 @@ public sealed class AgentRunTests
         var event1 = new InstanceEventRow(9, "workflow.transition", A.Noon, new InstanceEventFields(From: "produce", To: "produce-desk", Trigger: "step.failed", Reason: reason));
         var unplaced = new InstanceEventRow(10, "workflow.transition", A.Noon, new InstanceEventFields(Trigger: "step.failed", Reason: reason));
 
-        Assert.Equal([sentence + ". The instance moved to produce-desk."], RunWords.EventLines([event1]));
+        Assert.Equal([sentence + ". The run moved to produce-desk."], RunWords.EventLines([event1]));
         Assert.Equal([sentence + "."], RunWords.EventLines([unplaced]));
     }
 
@@ -153,6 +156,6 @@ public sealed class AgentRunTests
         expanded.ShowRun(new AgentRunRead(Launch: null, Item: null, [new InstanceEventRow(9, "workflow.transition", A.Noon, new InstanceEventFields(To: "park", Trigger: "step.failed", Reason: "lost"))], ItemUnreadable: false));
 
         Assert.Equal((true, 1), (expanded.HasRunEvents, expanded.RunEvents.Count));
-        Assert.Equal("The session was lost. The instance moved to park.", expanded.RunEvents[0]);
+        Assert.Equal("The agent session was lost. The run moved to park.", expanded.RunEvents[0]);
     }
 }

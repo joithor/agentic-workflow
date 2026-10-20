@@ -118,7 +118,7 @@ public sealed class CommandPaletteTests : IDisposable
         var names = EntryNames(window);
         Assert.All(shell.Health.Catalog.Controls, c => Assert.Single(names, n => n.StartsWith(c.Label + ", ", StringComparison.Ordinal)));
         Assert.Contains("Run doctor, Copy: sindri doctor", names, StringComparer.Ordinal);
-        Assert.Contains("Check launch targets again, not in the app yet", names, StringComparer.Ordinal);
+        Assert.Contains("Check launch targets again, coming soon", names, StringComparer.Ordinal);
         Assert.Equal(["Actions", "Go to", "Sindri"], Named<ItemsControl>(window, "PaletteSections").GetVisualDescendants().OfType<TextBlock>()
             .Where(t => t.Classes.Contains("palette-heading")).Select(t => t.Text ?? string.Empty), StringComparer.Ordinal);
         Frame(window, "palette");
@@ -158,7 +158,7 @@ public sealed class CommandPaletteTests : IDisposable
         Settle(window);
         Assert.True(shell.Palette.IsOpen);
 
-        window.KeyTextInput("workflows");   // the Workflows page entry (a bare "go" now also matches workflow copy blocks)
+        window.KeyTextInput("go:workflows");   // the Workflows page entry by id (the label "Workflow types" also matches a bare "workflows")
         Settle(window);
         Press(window, Key.Down, PhysicalKey.ArrowDown);
         Assert.Equal("go:Workflows", shell.Palette.Selected?.Id);
