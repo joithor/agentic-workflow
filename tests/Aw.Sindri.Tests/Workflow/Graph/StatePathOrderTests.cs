@@ -207,15 +207,15 @@ public sealed class StatePathOrderTests
     /// <summary>Every shipped recipe's hash, pinned before DT-C changed how a produces entry is read (a bare key must keep writing as a string).</summary>
     public static IReadOnlyDictionary<string, string> PinnedHashes { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
     {
-        ["sindri/workflow.phase.yaml"] = "sha256:c55cde86cbd24a92232a5ccc1d3db88ad071ff2c4dcf870cc3d5c2dfa454ab04",
-        ["sindri/workflow.pr-babysitter.yaml"] = "sha256:71df598e2944f7c2e6a2a794c98ec66aa7a5393ed54e76ced3ebe726dc795b56",
+        ["sindri/workflow.phase.yaml"] = "sha256:9dcd522fd1e4b522df40cd16321b06345735aa0944be87b7e1d18d501ee2d8c1",
+        ["sindri/workflow.pr-babysitter.yaml"] = "sha256:3b4a025d22c0b3c8b91bd367e3855411af26b60f2b0cf4ef7546fadca1793ea8",
         ["sindri/workflow.build.yaml"] = "sha256:6258c24d09d2c1628f6c98fe1705afa8cc87b6593a3b72721350cd0bfe42b213",
         ["sindri/workflow.prove.yaml"] = "sha256:97beb81cfd2a26a4508882e5825735e46783447245796d09f404cd4459e0f234",
         ["sindri/workflow.item.yaml"] = "sha256:fbd360859893f44e3d8c2bd83de7ee8edd760fb66f5541c99f5edb0e89406176",
         ["sindri/workflow.step.yaml"] = "sha256:d39861bd12222fcc4b74432567eabfd7b58660c4b8d714be71528b6a1353ba2a",
         ["sindri/workflow.docs-sync.yaml"] = "sha256:33b9656625a8f7c66900e204373f73738e9686aa4ded35ca6d5cf67774ccb843",
         ["sindri/workflow.design.yaml"] = "sha256:6b9054d64658fcf5f3cef52ef00216de1cff6bb93d16b39c99691372332accf0",
-        ["sindri/workflow.plan.yaml"] = "sha256:b14be5fc086829b6a691283608cbdd59d73c3c67e478c4d6026ad90d140d5a48",
+        ["sindri/workflow.plan.yaml"] = "sha256:f9e3d3c2172473323c5ad31973fea2b103add1e9fd8b49021789d0d872d032a9",
         ["sindri/workflow.evidence-all.yaml"] = "sha256:873ee4074b44f71c42831fbed0aee98aef0f7ef67d73e19f659350ec0f56ec5c",
         ["sindri/workflow.evidence-api.yaml"] = "sha256:cd823452515c8fb625f992b11835f0dddce3cfc928b8b397aa6e6f4cf259a3b7",
         ["sindri/workflow.evidence-db.yaml"] = "sha256:accbf4d844a64d9e9edec2622105bab9b066332e040089dfd1310628219749eb",
@@ -229,7 +229,7 @@ public sealed class StatePathOrderTests
         ["sindri/workflow.line.yaml"] = "sha256:0c8a67092e1dcbf4223c5e191c0a3601dba7743fc510fc3b642dce97d43d7a69",
         ["sindri/workflow.report.yaml"] = "sha256:8871919bc3996d208933a980c94099a0c81a635a469b325183f19f69c930ee2a",
         ["sindri/workflow.reproduce.yaml"] = "sha256:6fd78a6cb6df1630470cfb8dc53c4424986bf578433bad20af1113e54801ed75",
-        ["sindri/workflow.review-loop.yaml"] = "sha256:eae23f41d2c14c1195f7c402f8a3d0d3030ca2e820eccbb835f88247aeaa621e",
+        ["sindri/workflow.review-loop.yaml"] = "sha256:ab51822add22ad1c7e687b94b65db598751f717bccafb3924fdff91d4d15ff91",
         ["sindri/workflow.scoping.yaml"] = "sha256:1ec44110213674cadb835cf53afd51060b0d88927c442b6c07822bb1f2b48e35",
         ["sindri/workflow.ship.yaml"] = "sha256:b27c9266a87b59a38ad9bafdf9babad912807d797117058c72a4cc8cada981aa",
         ["sindri/workflow.verify.yaml"] = "sha256:0d2648f7de735d4bde51db33d7f659ffbde2106d2062d8b0261b0e41507ee13a",
