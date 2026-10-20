@@ -106,7 +106,7 @@ public sealed class LoopbackFileServer : IDisposable
     }
 
     private static bool IsAddressInUse(HttpListenerException exception) =>
-        exception.ErrorCode is 98 or 48 or 32 or 183   // EADDRINUSE on Linux and macOS; sharing violation and already exists on Windows
+        exception.ErrorCode is 98 or 48 or 10048 or 32 or 183   // EADDRINUSE on Linux and macOS, SocketError.AddressAlreadyInUse (the managed listener's code); sharing violation and already exists on Windows
         || exception.Message.Contains("in use", StringComparison.OrdinalIgnoreCase);
 
     private async Task Serve()
