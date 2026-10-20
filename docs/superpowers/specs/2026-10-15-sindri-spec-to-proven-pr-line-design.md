@@ -1,6 +1,6 @@
 # Sindri spec-to-proven-PR line: the line contract, design, plan and the per-phase child
 
-**Status:** design, revision 2.8, a sync to #388's recipes (§14.8) (after /autoplan pass 1, a narrow re-check, #263's asks, #258 rev 3.2's scope graphs, the #308 review rulings, the #309 /autoplan follow-up and its rounds 2 and 3, §14) (draft; not built until every station is specced, LN1) · **Date:** 2026-10-15 ·
+**Status:** design, revision 2.8, a sync to #388's recipes (§14.8; three /autoplan rounds; owner-approved 2026-10-20) (after /autoplan pass 1, a narrow re-check, #263's asks, #258 rev 3.2's scope graphs, the #308 review rulings, the #309 /autoplan follow-up and its rounds 2 and 3, §14) (draft; not built until every station is specced, LN1) · **Date:** 2026-10-15 ·
 **Owner decisions:** 2026-10-15 and 2026-10-16 (§1) · **Builds on:** the scoping station spec
 `2026-10-15-sindri-scoping-station-design.md` (SC, #258), rev 3.6, branch `docs/sindri-scoping-station`; the
 decision-tree recipes spec `2026-10-15-sindri-decision-tree-recipes-design.md` (DT, #240), rev 4; the parked PR
@@ -1020,7 +1020,7 @@ not checked against the recipe files by any test; they match the recipes as ship
 | Y1-2 | Appendix B.1, C.1, C.2 | Eval case `happy-assumed` is `assumed-happy` (the shipped happy path of each recipe is named `*-happy`); added the shipped cases `design/evidence-incomplete`, `design/revise-after-caps`, `plan/evidence-incomplete`, `plan/no-questions`; the `evals:` lists name the same nine cases as each recipe file (B.1's order here; the recipe files sort them) |
 | Y1-2b | §6.1, Appendix B.1 | Cap counts: a loop with cap N allows N entries and parks the next one, so `revisions` parks on the sixth entry to `stop` (was "fifth"); B.1 names the loop and notes that evals record every cap park as `rounds`; `revise-after-caps` parks on the `lens` cap and continues on the owner's grant; `check-gaps-twice` parks no-progress; `freeze-mismatch` spells out its walk |
 | Y1-2c | Appendix C.1, C.2 | Inputs carry `kind:` as the shipped recipes do |
-| Y1-3 | Header, status line | Revision 2.8 (sync to #388); this table |
+| Y1-3 | Header, status line | Revision 2.8 (sync to #388); this table. Reviewed in three /autoplan rounds (#509) and approved by the owner on 2026-10-20 |
 
 ## 15. Open questions
 
