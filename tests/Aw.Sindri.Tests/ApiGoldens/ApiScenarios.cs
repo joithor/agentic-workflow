@@ -37,7 +37,7 @@ internal static class ApiScenarios
         ["Streams"] = StreamScenarios.All,
         ["Jobs"] = [.. JobScenarios.All, .. JobScopeScenarios.All],
         ["Launches"] = [.. LaunchScenarios.All, .. WrapSessionScenarios.All],
-        ["Setup"] = SetupScenarios.All,
+        ["Setup"] = [.. SetupScenarios.All, .. SetupRepoScenarios.All],
         ["Recipes"] = ApproveAllScenarios.All,
     };
 
@@ -53,6 +53,8 @@ internal static class ApiScenarios
             ? await ContextApiScenarios.Start(slug, scenario, ct)
             : SetupScenarios.Handles(slug, scenario)
             ? await SetupScenarios.Start(scenario, ct)
+            : SetupRepoScenarios.Handles(slug, scenario)
+            ? await SetupRepoScenarios.Start(scenario, ct)
             : JobScenarios.Handles(slug, scenario) || JobScopeScenarios.Handles(slug, scenario)
             ? await Jobs.JobHost.Start(ct, pump: false)
             : LaunchScenarios.Handles(slug, scenario)
@@ -118,6 +120,7 @@ internal static class ApiScenarios
     /// <summary>The body of an approve-all (recipes), collector (sessions) or wrap (launch) session scenario, else null.</summary>
     private static Func<Task<string>>? SessionBody(GoldenHost host, string slug, string scenario, CancellationToken ct) =>
         ApproveAllScenarios.Handles(slug, scenario) ? () => ApproveAllScenarios.Body(host, slug, scenario, ct)
+        : SetupRepoScenarios.Handles(slug, scenario) ? () => SetupRepoScenarios.Body(host, scenario)
         : SessionScenarios.Handles(slug, scenario) ? () => SessionScenarios.Body(host, slug, scenario, ct)
         : WrapSessionScenarios.Handles(slug, scenario) ? () => WrapSessionScenarios.Body(host, slug, scenario, ct)
         : null;

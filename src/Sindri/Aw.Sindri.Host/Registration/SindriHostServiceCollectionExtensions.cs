@@ -1,6 +1,7 @@
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Onyx;
+using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Host.Catalog;
 using Aw.Sindri.Host.Onyx;
 using Aw.Sindri.Host.Server;
@@ -18,6 +19,7 @@ internal static class SindriHostServiceCollectionExtensions
         .AddSingleton<IShutdown>(static sp => sp.GetRequiredService<ProcessShutdown>())
         .AddSingleton<IExitCode, ProcessExitCode>()
         .AddSingleton<ICommandCatalog, CommandCatalog>()
+        .AddSingleton<IShippedEffects, EmbeddedShippedEffects>()   // the default profile allows the effects the embedded recipes declare (setup-once §5.1)
         .AddSingleton<Projector>()
         .AddSingleton<ScheduleInputs>()
         .AddSingleton<IOnyxProgress>(static _ => new ConsoleOnyxProgress(Console.Error));   // `onyx up`'s lines and dots on standard error
