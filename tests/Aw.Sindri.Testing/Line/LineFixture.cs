@@ -9,21 +9,21 @@ namespace Aw.Sindri.Testing.Line;
 /// design packet's under 'design/' for the plan, a style or lens pack under 'pack/', and the repo files a contract edit quotes under 'repo/'.
 /// Embedded from tests/fixtures/line, so no test reads a file.
 /// </summary>
-public sealed class LineFacts : Dictionary<string, string>
+public sealed class LineFixture : Dictionary<string, string>
 {
     private const string Gold = "line-gold/";
 
     /// <summary>An empty fact set with ordinal keys.</summary>
-    public LineFacts()
+    public LineFixture()
         : base(StringComparer.Ordinal)
     {
     }
 
     /// <summary>The gold design packet with the scope packet beside it, the plain style pack, the design-five lens pack and the decision a contract edit quotes.</summary>
     /// <returns>A fresh, editable copy.</returns>
-    public static LineFacts Design()
+    public static LineFixture Design()
     {
-        var facts = new LineFacts();
+        var facts = new LineFixture();
         facts.Load("design/expiry/", string.Empty);
         facts.Load("scope/expiry/", "scope/");
         facts["pack/style.json"] = Read("line-packs/style/plain/pack.json");
@@ -34,9 +34,9 @@ public sealed class LineFacts : Dictionary<string, string>
 
     /// <summary>The gold plan packet with the design packet under 'design/' and a passing aw-packets validation.</summary>
     /// <returns>A fresh, editable copy.</returns>
-    public static LineFacts Plan()
+    public static LineFixture Plan()
     {
-        var facts = new LineFacts();
+        var facts = new LineFixture();
         facts.Load("plan/expiry/", string.Empty);
         facts.Load("design/expiry/", "design/");
         facts["validation.json"] = "{\"passed\":true,\"failures\":[]}";
@@ -55,7 +55,7 @@ public sealed class LineFacts : Dictionary<string, string>
     /// <param name="key">The fact.</param>
     /// <param name="edit">Receives the parsed JSON; change it in place.</param>
     /// <returns>The same facts, for chaining.</returns>
-    public LineFacts Edit(string key, Action<JsonNode> edit)
+    public LineFixture Edit(string key, Action<JsonNode> edit)
     {
         ArgumentNullException.ThrowIfNull(edit);
         var node = JsonNode.Parse(this[key])!;
@@ -68,7 +68,7 @@ public sealed class LineFacts : Dictionary<string, string>
     /// <param name="key">The fact.</param>
     /// <param name="rewrite">Gets the text, returns the new text.</param>
     /// <returns>The same facts, for chaining.</returns>
-    public LineFacts EditText(string key, Func<string, string> rewrite)
+    public LineFixture EditText(string key, Func<string, string> rewrite)
     {
         ArgumentNullException.ThrowIfNull(rewrite);
         this[key] = rewrite(this[key]);
@@ -78,7 +78,7 @@ public sealed class LineFacts : Dictionary<string, string>
     /// <summary>Removes one fact, as a directory that does not hold it.</summary>
     /// <param name="key">The fact.</param>
     /// <returns>The same facts, for chaining.</returns>
-    public LineFacts Without(string key)
+    public LineFixture Without(string key)
     {
         _ = Remove(key);
         return this;
@@ -87,7 +87,7 @@ public sealed class LineFacts : Dictionary<string, string>
     private void Load(string directory, string prefix)
     {
         var root = Gold + directory;
-        foreach (var name in typeof(LineFacts).Assembly.GetManifestResourceNames().Where(n => n.StartsWith(root, StringComparison.Ordinal)))
+        foreach (var name in typeof(LineFixture).Assembly.GetManifestResourceNames().Where(n => n.StartsWith(root, StringComparison.Ordinal)))
         {
             this[prefix + name[root.Length..]] = Read(name);
         }
@@ -95,7 +95,7 @@ public sealed class LineFacts : Dictionary<string, string>
 
     private static string Read(string resource)
     {
-        using var stream = typeof(LineFacts).Assembly.GetManifestResourceStream(resource)!;
+        using var stream = typeof(LineFixture).Assembly.GetManifestResourceStream(resource)!;
         using var reader = new StreamReader(stream, Encoding.UTF8);
         return reader.ReadToEnd();
     }

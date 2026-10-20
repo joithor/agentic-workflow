@@ -12728,3 +12728,46 @@ static Aw.Sindri.Core.Line.LineFinding.operator !=(Aw.Sindri.Core.Line.LineFindi
 static Aw.Sindri.Core.Line.LineFinding.operator ==(Aw.Sindri.Core.Line.LineFinding? left, Aw.Sindri.Core.Line.LineFinding? right) -> bool
 static Aw.Sindri.Core.Line.LineRuleResult.operator !=(Aw.Sindri.Core.Line.LineRuleResult? left, Aw.Sindri.Core.Line.LineRuleResult? right) -> bool
 static Aw.Sindri.Core.Line.LineRuleResult.operator ==(Aw.Sindri.Core.Line.LineRuleResult? left, Aw.Sindri.Core.Line.LineRuleResult? right) -> bool
+Aw.Sindri.Core.Line.LineChecks
+Aw.Sindri.Core.Line.LineFacts
+Aw.Sindri.Core.Line.LineFacts.Has(string! name) -> bool
+Aw.Sindri.Core.Line.LineFacts.Json(string! name) -> System.Text.Json.Nodes.JsonNode?
+Aw.Sindri.Core.Line.LineFacts.LineFacts(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! files) -> void
+Aw.Sindri.Core.Line.LineFacts.Missing(params string![]! names) -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Line.LineFacts.Names.get -> System.Collections.Generic.IEnumerable<string!>!
+Aw.Sindri.Core.Line.LineFacts.Text(string! name) -> string!
+Aw.Sindri.Core.Line.LineFacts.Unparseable(string! name) -> string?
+Aw.Sindri.Core.Line.LineJson
+Aw.Sindri.Core.Line.LineRule
+Aw.Sindri.Core.Line.LineRule.<Clone>$() -> Aw.Sindri.Core.Line.LineRule!
+Aw.Sindri.Core.Line.LineRule.Body.get -> System.Action<Aw.Sindri.Core.Line.LineFacts!, Aw.Sindri.Core.Line.LineSink!>!
+Aw.Sindri.Core.Line.LineRule.Body.init -> void
+Aw.Sindri.Core.Line.LineRule.Deconstruct(out string! Name, out Aw.Sindri.Core.Line.LineStage From, out System.Action<Aw.Sindri.Core.Line.LineFacts!, Aw.Sindri.Core.Line.LineSink!>! Body) -> void
+Aw.Sindri.Core.Line.LineRule.Equals(Aw.Sindri.Core.Line.LineRule? other) -> bool
+Aw.Sindri.Core.Line.LineRule.From.get -> Aw.Sindri.Core.Line.LineStage
+Aw.Sindri.Core.Line.LineRule.From.init -> void
+Aw.Sindri.Core.Line.LineRule.LineRule(string! Name, Aw.Sindri.Core.Line.LineStage From, System.Action<Aw.Sindri.Core.Line.LineFacts!, Aw.Sindri.Core.Line.LineSink!>! Body) -> void
+Aw.Sindri.Core.Line.LineRule.Name.get -> string!
+Aw.Sindri.Core.Line.LineRule.Name.init -> void
+Aw.Sindri.Core.Line.LineSink
+Aw.Sindri.Core.Line.LineSink.Fail(string? item, string! message, string! fix) -> void
+Aw.Sindri.Core.Line.LineSink.Findings.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFinding!>!
+Aw.Sindri.Core.Line.LineSink.LineSink(string! rule, Aw.Sindri.Core.Line.LineFacts! facts) -> void
+Aw.Sindri.Core.Line.LineSink.Missing.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Line.LineSink.Need(params string![]! names) -> bool
+Aw.Sindri.Core.Line.LineSink.Warn(string? item, string! message, string! fix) -> void
+override Aw.Sindri.Core.Line.LineRule.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Line.LineRule.GetHashCode() -> int
+override Aw.Sindri.Core.Line.LineRule.ToString() -> string!
+static Aw.Sindri.Core.Line.LineChecks.Run(string! station, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineRule!>! rules, Aw.Sindri.Core.Line.LineFacts! facts, Aw.Sindri.Core.Line.LineStage stage) -> Aw.Sindri.Core.Line.LineCheckResponse!
+static Aw.Sindri.Core.Line.LineJson.Arr(System.Text.Json.Nodes.JsonNode? node, string! name) -> System.Text.Json.Nodes.JsonArray?
+static Aw.Sindri.Core.Line.LineJson.Bool(System.Text.Json.Nodes.JsonNode? node, string! name) -> bool?
+static Aw.Sindri.Core.Line.LineJson.Items(System.Text.Json.Nodes.JsonNode? array) -> System.Collections.Generic.IEnumerable<System.Text.Json.Nodes.JsonNode!>!
+static Aw.Sindri.Core.Line.LineJson.Items(System.Text.Json.Nodes.JsonNode? node, string! name) -> System.Collections.Generic.IEnumerable<System.Text.Json.Nodes.JsonNode!>!
+static Aw.Sindri.Core.Line.LineJson.Number(System.Text.Json.Nodes.JsonNode? node, string! name) -> int?
+static Aw.Sindri.Core.Line.LineJson.Obj(System.Text.Json.Nodes.JsonNode? node, string! name) -> System.Text.Json.Nodes.JsonObject?
+static Aw.Sindri.Core.Line.LineJson.Str(System.Text.Json.Nodes.JsonNode? node, string! name) -> string?
+static Aw.Sindri.Core.Line.LineJson.Strings(System.Text.Json.Nodes.JsonNode? array) -> System.Collections.Generic.IEnumerable<string!>!
+static Aw.Sindri.Core.Line.LineJson.Strings(System.Text.Json.Nodes.JsonNode? node, string! name) -> System.Collections.Generic.IEnumerable<string!>!
+static Aw.Sindri.Core.Line.LineRule.operator !=(Aw.Sindri.Core.Line.LineRule? left, Aw.Sindri.Core.Line.LineRule? right) -> bool
+static Aw.Sindri.Core.Line.LineRule.operator ==(Aw.Sindri.Core.Line.LineRule? left, Aw.Sindri.Core.Line.LineRule? right) -> bool
