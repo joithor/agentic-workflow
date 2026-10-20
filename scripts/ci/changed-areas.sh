@@ -87,6 +87,8 @@ classify_changes() {
       tests/fixtures/launcher/*|config/launcher/*|schemas/launcher.schema.json) bash=true ;;
       # scripts/tests/scoping-fixture.test.sh and line-fixture.test.sh build their fixture's history and run its self-check (dotnet comes from tests/*)
       tests/fixtures/scoping/*|tests/fixtures/line/*) dotnet=true; bash=true ;;
+      # scripts/tests/code-index-fixture.test.sh runs the code-index fixture checks (dotnet comes from tests/*)
+      tests/fixtures/code-index/*) bash=true ;;
       docs/csharp/sindri-profile.md|docs/csharp/sindri-launcher.md) bash=true ;;
       # check-fleet.mjs (and its suite) validate the fleet state schema's fixtures and the /proc-shaped sessions tree; both sit under tests/ (dotnet) too
       # config/hooks/tests/fleet-state.test.sh feeds the hook the real payloads under tests/fixtures/fleet-input/

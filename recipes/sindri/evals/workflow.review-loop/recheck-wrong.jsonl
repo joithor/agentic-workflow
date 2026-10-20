@@ -19,4 +19,5 @@
 {"trigger":{"kind":"step.completed","outcome":"reviewed","outputs":{"fact:lensReport":{"lens":"correctness","findings":[]}}},"expect":{"state":"lens-log"}}
 {"trigger":{"kind":"step.completed","outcome":"findings","outputs":{"fact:lensRounds":[{"lens":"correctness"}],"fact:review":{"blocking":2}}},"expect":{"state":"fix"}}
 {"trigger":{"kind":"step.completed","outcome":"fixed","outputs":{"fact:change":{"head":"zzz999"}}},"expect":{"state":"recheck"}}
-{"trigger":{"kind":"step.completed","outcome":"behaviourWrong","outputs":{"fact:review":{"blocking":1,"behaviour":"wrong"}}},"expect":{"state":"wrong","outcome":"failed"}}
+{"trigger":{"kind":"step.completed","outcome":"behaviourWrong","outputs":{"fact:review":{"blocking":1,"behaviour":"wrong"}}},"expect":{"state":"record"}}
+{"trigger":{"kind":"step.completed","outcome":"recordedWrong","outputs":{"fact:review":{"blocking":1,"behaviour":"wrong","packet":"frozen"}}},"expect":{"state":"wrong","outcome":"failed"}}
