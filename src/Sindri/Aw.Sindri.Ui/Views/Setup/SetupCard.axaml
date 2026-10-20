@@ -1,0 +1,65 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sv="using:Aw.Sindri.Ui.ViewModels.Setup"
+             xmlns:sw="using:Aw.Sindri.Ui.Views.Setup"
+             xmlns:controls="using:Aw.Sindri.Ui.Views.Controls"
+             xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
+             x:Class="Aw.Sindri.Ui.Views.Setup.SetupCard"
+             x:DataType="sv:SetupViewModel">
+  <!-- The Setup card on Home (setup-once spec §5.7), above Needs you until every step is done or skipped: at most three rows filled by priority (needs you, failed, working,
+       not started), then "and N more", which says how many of those need you. One press shows them all. When Sindri isn't running it says so, with the launcher command to copy
+       and no Start button: the app never starts the control plane from inside the window. -->
+  <Border x:Name="SetupPanel" Classes="panel" AutomationProperties.Name="{Binding CardHeading}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
+    <StackPanel>
+      <Border Classes="phead">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Classes="eyebrow" Text="{Binding CardHeading}" AutomationProperties.Name="{Binding CardHeading}" />
+            <Border x:Name="SetupHeadName" IsVisible="{Binding IsCardVisible}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Head}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+              <TextBlock x:Name="SetupHead" Classes="caption subtle" Text="{Binding Head}" AutomationProperties.AccessibilityView="Raw" />
+            </Border>
+            <StackPanel x:Name="SetupStale" Orientation="Horizontal" Spacing="4" IsVisible="{Binding IsStale}">
+              <icons:StateIcon Glyph="Stale" VerticalAlignment="Center" />
+              <TextBlock Classes="caption subtle" Text="{Binding StaleText}" VerticalAlignment="Center" />
+            </StackPanel>
+          </StackPanel>
+          <Button x:Name="SetupOpen" Grid.Column="1" Classes="copy" Click="OnOpen" IsVisible="{Binding IsCardVisible}" AutomationProperties.Name="{Binding OpenName}">
+            <TextBlock Classes="caption" Text="{Binding OpenText}" />
+          </Button>
+        </Grid>
+      </Border>
+
+      <StackPanel x:Name="SetupNotRunning" Margin="16,8" Spacing="6" IsVisible="{Binding IsNotRunning}">
+        <Border x:Name="SetupNotRunningName" AutomationProperties.Name="{Binding NotRunningText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="body-strong" Text="{Binding NotRunningText}" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <Border x:Name="SetupStartItName" AutomationProperties.Name="{Binding StartItText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="caption subtle" Text="{Binding StartItText}" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <controls:CommandControl x:Name="SetupLauncher" DataContext="{Binding Launcher}" />
+        <Border x:Name="SetupReconnectsName" AutomationProperties.Name="{Binding ReconnectsText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="caption subtle" Text="{Binding ReconnectsText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+      </StackPanel>
+
+      <StackPanel x:Name="SetupFailed" Margin="16,8" Spacing="8" IsVisible="{Binding IsFailed}">
+        <Border x:Name="SetupFailedName" AutomationProperties.Name="{Binding FailedText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="caption quiet" Text="{Binding FailedText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <Button x:Name="SetupRetry" Content="{Binding RetryText}" Click="OnRetry" HorizontalAlignment="Left" AutomationProperties.Name="{Binding RetryText}" />
+      </StackPanel>
+
+      <ItemsControl x:Name="SetupCardRows" ItemsSource="{Binding CardSteps}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="sv:SetupStepViewModel">
+            <sw:SetupCardRow />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Button x:Name="SetupMore" HorizontalAlignment="Left" Classes="copy" Click="OnMore" IsVisible="{Binding HasMore}" AutomationProperties.Name="{Binding MoreName}" Margin="16,6">
+        <TextBlock Classes="caption" Text="{Binding MoreText}" />
+      </Button>
+      <TextBlock x:Name="SetupAnnouncement" Classes="caption live-region" Classes.live="{Binding Live.IsAnnouncing}" Width="0" Opacity="0" IsHitTestVisible="False" Text="{Binding Live.Announcement}" />
+    </StackPanel>
+  </Border>
+</UserControl>

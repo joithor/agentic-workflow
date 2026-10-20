@@ -1,21 +1,29 @@
-#pragma warning disable MA0041 // red-phase stub: members throw until the implementation commit
 namespace Aw.Sindri.Ui.ViewModels.Setup;
 
 /// <summary>One repo's line inside a step that counts repos: its name, its state as a glyph and a word, and what is true now.</summary>
 internal sealed class SetupItemViewModel
 {
+    internal SetupItemViewModel(string repo, string state, string? detail)
+    {
+        var (glyph, word) = Labels.SetupChip(state, waiting: false);
+        Repo = repo;
+        ChipText = glyph + " " + word;
+        DetailText = detail ?? string.Empty;
+        Name = repo + ", " + word.ToLowerInvariant() + (DetailText.Length > 0 ? ". " + DetailText : string.Empty);
+    }
+
     /// <summary>The repo's name.</summary>
-    public string Repo => throw new NotSupportedException();
+    public string Repo { get; }
 
     /// <summary>The state: glyph and word.</summary>
-    public string ChipText => throw new NotSupportedException();
+    public string ChipText { get; }
 
     /// <summary>What is true now, or empty.</summary>
-    public string DetailText => throw new NotSupportedException();
+    public string DetailText { get; }
 
     /// <summary>True when there is something to say.</summary>
-    public bool HasDetail => throw new NotSupportedException();
+    public bool HasDetail => DetailText.Length > 0;
 
     /// <summary>The line's accessible name: "demo, working".</summary>
-    public string Name => throw new NotSupportedException();
+    public string Name { get; }
 }

@@ -9,6 +9,7 @@
              xmlns:rows="using:Aw.Sindri.Ui.Views.Queue"
              xmlns:wfv="using:Aw.Sindri.Ui.Views.Workflows"
              xmlns:wfvm="using:Aw.Sindri.Ui.ViewModels.Workflows"
+             xmlns:setupv="using:Aw.Sindri.Ui.Views.Setup"
              x:Class="Aw.Sindri.Ui.Views.Shell.HomePage"
              x:DataType="shell:ShellViewModel">
   <!-- Home (UI spec §3.2, §4.2): four panels in a fixed order. Each panel is a header row (the eyebrow over a hairline,
@@ -16,6 +17,11 @@
        "Show all N in Queue"; each group's own empty sentence, E-18); Needs you is the served list (U3'). The health strip is the status as labelled cells and opens Health. -->
   <StackPanel Spacing="{StaticResource Size.PanelGap}">
     <TextBlock Classes="page-title" Text="{Binding Text.Home}" AutomationProperties.Name="{Binding Text.Home}" />
+
+    <!-- The Setup card (setup-once spec §5.7): above Needs you until every step is done or skipped. -->
+    <Panel x:Name="SetupCardHost" IsVisible="{Binding Setup.IsCardShown}">
+      <setupv:SetupCard x:Name="SetupCard" DataContext="{Binding Setup}" />
+    </Panel>
 
     <Border x:Name="NeedsYouPanel" Classes="panel" PointerEntered="OnNeedsYouPanelEntered" PointerExited="OnNeedsYouPanelExited" AutomationProperties.Name="{Binding Text.NeedsYouPanel}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
       <StackPanel>

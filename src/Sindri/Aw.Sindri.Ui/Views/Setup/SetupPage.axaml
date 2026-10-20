@@ -1,0 +1,117 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sv="using:Aw.Sindri.Ui.ViewModels.Setup"
+             xmlns:sw="using:Aw.Sindri.Ui.Views.Setup"
+             xmlns:controls="using:Aw.Sindri.Ui.Views.Controls"
+             xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
+             x:Class="Aw.Sindri.Ui.Views.Setup.SetupPage"
+             x:DataType="sv:SetupViewModel">
+  <!-- The Setup page (setup-once spec §5.7): it leads with the one step that needs the person (its title, why, and the one action), then lists every step in order. Ids and codes wait
+       in a closed Details at the end. Every named line is a Border wrapper (a TextBlock's peer ignores AutomationProperties.Name). -->
+  <StackPanel Spacing="{StaticResource Size.PanelGap}">
+    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+      <TextBlock Classes="page-title" Text="{Binding Title}" AutomationProperties.Name="{Binding Title}" />
+      <Border x:Name="SetupPageHeadName" AutomationProperties.Name="{Binding Head}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text" VerticalAlignment="Center">
+        <TextBlock x:Name="SetupPageHead" Classes="caption subtle" Text="{Binding Head}" AutomationProperties.AccessibilityView="Raw" />
+      </Border>
+    </StackPanel>
+    <Border x:Name="SetupPurposeName" AutomationProperties.Name="{Binding Purpose}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+      <TextBlock Classes="body muted" Text="{Binding Purpose}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+    </Border>
+
+    <StackPanel x:Name="SetupPageStale" Orientation="Horizontal" Spacing="4" IsVisible="{Binding IsStale}">
+      <icons:StateIcon Glyph="Stale" VerticalAlignment="Center" />
+      <TextBlock Classes="caption subtle" Text="{Binding StaleText}" VerticalAlignment="Center" />
+    </StackPanel>
+
+    <Border x:Name="SetupLeadPanel" Classes="panel" IsVisible="{Binding LeadText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+            AutomationProperties.Name="{Binding LeadText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
+      <StackPanel Margin="16,12" Spacing="6">
+        <Border x:Name="SetupLeadName" AutomationProperties.Name="{Binding LeadText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="eyebrow" Text="{Binding LeadText}" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <StackPanel x:Name="SetupLeadNext" Spacing="4" IsVisible="{Binding HasNext}">
+          <StackPanel Spacing="4" DataContext="{Binding Next}" x:DataType="sv:SetupStepViewModel">
+          <Border x:Name="SetupLeadTitle" AutomationProperties.Name="{Binding Title}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+            <TextBlock Classes="body-strong" Text="{Binding Title}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+          </Border>
+          <Border x:Name="SetupLeadWhy" AutomationProperties.Name="{Binding Why}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+            <TextBlock Classes="body muted" Text="{Binding Why}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+          </Border>
+          <Panel IsVisible="{Binding HasAction}" Margin="0,6,0,0">
+            <sw:SetupActionView x:Name="SetupLeadAction" DataContext="{Binding Action}" />
+          </Panel>
+          </StackPanel>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <Border x:Name="SetupPagePanel" Classes="panel" AutomationProperties.Name="{Binding AllStepsText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
+      <StackPanel>
+        <Border Classes="phead">
+          <TextBlock Classes="eyebrow" Text="{Binding AllStepsText}" AutomationProperties.Name="{Binding AllStepsText}" />
+        </Border>
+        <Border x:Name="SetupReadingName" Margin="16,8" IsVisible="{Binding IsReading}" AutomationProperties.Name="{Binding ReadingText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="caption quiet" Text="{Binding ReadingText}" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <Border x:Name="SetupNotServedName" Margin="16,8" IsVisible="{Binding IsNotServed}" AutomationProperties.Name="{Binding NotServedText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="caption quiet" Text="{Binding NotServedText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <Border x:Name="SetupUnreadableName" Margin="16,8" IsVisible="{Binding IsUnreadable}" AutomationProperties.Name="{Binding UnreadableText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="caption quiet" Text="{Binding UnreadableText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <StackPanel x:Name="SetupPageNotRunning" Margin="16,8" Spacing="6" IsVisible="{Binding IsNotRunning}">
+          <Border x:Name="SetupPageNotRunningName" AutomationProperties.Name="{Binding NotRunningText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+            <TextBlock Classes="body-strong" Text="{Binding NotRunningText}" AutomationProperties.AccessibilityView="Raw" />
+          </Border>
+          <Border AutomationProperties.Name="{Binding StartItText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+            <TextBlock Classes="caption subtle" Text="{Binding StartItText}" AutomationProperties.AccessibilityView="Raw" />
+          </Border>
+          <controls:CommandControl x:Name="SetupPageLauncher" DataContext="{Binding Launcher}" />
+          <Border AutomationProperties.Name="{Binding ReconnectsText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+            <TextBlock Classes="caption subtle" Text="{Binding ReconnectsText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+          </Border>
+        </StackPanel>
+        <StackPanel x:Name="SetupPageFailed" Margin="16,8" Spacing="8" IsVisible="{Binding IsFailed}">
+          <Border x:Name="SetupPageFailedName" AutomationProperties.Name="{Binding FailedText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+            <TextBlock Classes="caption quiet" Text="{Binding FailedText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+          </Border>
+          <Button x:Name="SetupPageRetry" Content="{Binding RetryText}" Click="OnRetry" HorizontalAlignment="Left" AutomationProperties.Name="{Binding RetryText}" />
+        </StackPanel>
+        <ItemsControl x:Name="SetupStepRows" ItemsSource="{Binding Steps}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="sv:SetupStepViewModel">
+              <sw:SetupStepRow />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+
+    <!-- The ids and codes (F3): closed by default. -->
+    <Expander x:Name="SetupDetails" Header="{Binding DetailsText}" IsExpanded="False" HorizontalAlignment="Stretch" IsVisible="{Binding HasSteps}" AutomationProperties.Name="{Binding DetailsText}">
+      <ItemsControl x:Name="SetupDetailRows" ItemsSource="{Binding Steps}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="sv:SetupStepViewModel">
+            <StackPanel Margin="0,0,0,8" Spacing="1">
+              <TextBlock Classes="caption" Text="{Binding Title}" AutomationProperties.AccessibilityView="Raw" />
+              <ItemsControl ItemsSource="{Binding Fields}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="sv:SetupFieldViewModel">
+                    <Border AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                      <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.AccessibilityView="Raw">
+                        <TextBlock Classes="caption subtle" Text="{Binding Label}" Width="90" AutomationProperties.AccessibilityView="Raw" />
+                        <TextBlock Classes="caption mono" Text="{Binding Value}" AutomationProperties.AccessibilityView="Raw" />
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Expander>
+    <TextBlock x:Name="SetupPageAnnouncement" Classes="caption live-region" Classes.live="{Binding Live.IsAnnouncing}" Width="0" Opacity="0" IsHitTestVisible="False" Text="{Binding Live.Announcement}" />
+  </StackPanel>
+</UserControl>

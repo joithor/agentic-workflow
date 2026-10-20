@@ -6,6 +6,7 @@ using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.Tests.Views;
 using Aw.Sindri.Ui.ViewModels.Approvals;
+using Aw.Sindri.Ui.ViewModels.Setup;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Shell;
 
@@ -117,7 +118,7 @@ public sealed class SetupViewTests : FrameHost
 
         OpenDisclosures(window);
 
-        Assert.Contains(window.GetVisualDescendants().OfType<Border>(), b => b.Name == "SetupField" && Heard.Name(b) == "Error code: SND-CONTEXT-042");
+        Assert.Contains(window.GetVisualDescendants().OfType<Border>(), b => b.DataContext is SetupFieldViewModel && Heard.Name(b) == "Error code: SND-CONTEXT-042");
     });
 
     [Fact]
@@ -127,7 +128,7 @@ public sealed class SetupViewTests : FrameHost
         shell.GoTo(PageId.Setup);
         Settle(window);
 
-        var lines = window.GetVisualDescendants().OfType<Border>().Where(b => b.Name == "SetupStepItem" && b.IsEffectivelyVisible).Select(Heard.Name).ToList();
+        var lines = window.GetVisualDescendants().OfType<Border>().Where(b => b.DataContext is SetupItemViewModel && b.IsEffectivelyVisible).Select(Heard.Name).ToList();
 
         Assert.Contains("demo, working", lines, StringComparer.Ordinal);
     });

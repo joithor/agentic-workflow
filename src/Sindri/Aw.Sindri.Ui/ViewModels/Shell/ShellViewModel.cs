@@ -76,7 +76,8 @@ internal sealed partial class ShellViewModel : ObservableObject
         InitNeedsYou(clipboard);
         Strip = new WorkflowsStripViewModel(clipboard, clock);
         InitStrip();
-        Setup = new SetupViewModel(api, Health.Catalog, clock, opensInApp: _ => false);
+        Setup = new SetupViewModel(api, Health.Catalog, clock, OpensInApp);
+        InitSetup();
         Workflows = new WorkflowsViewModel(api, clipboard, clock);
         InitWorkflows();
         Start = InitStart(api, window ??= WindowPorts.None);

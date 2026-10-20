@@ -41,7 +41,7 @@ internal sealed partial class ShellViewModel
             return;
         }
 
-        NeedsYou.Update(feed, HomeFilter == HomeFilter.Decisions ? row => row.DecisionId is not null : null);
+        NeedsYou.Update(feed, ShownOnHome);
         FollowDecision();
     }
 

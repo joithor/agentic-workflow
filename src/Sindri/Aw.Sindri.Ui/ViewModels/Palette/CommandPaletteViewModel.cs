@@ -21,7 +21,7 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
     private static readonly (PageId Page, string Key)[] _pages =
     [
         (PageId.Home, "G H"), (PageId.Workflows, "G W"), (PageId.Work, "G Q"), (PageId.Recipes, "G R"), (PageId.Context, "G C"), (PageId.Agents, "G A"),
-        (PageId.System, "G ."), (PageId.Jobs, "G J"), (PageId.Settings, "⌘,"),
+        (PageId.System, "G ."), (PageId.Jobs, "G J"), (PageId.Setup, "G U"), (PageId.Settings, "⌘,"),
     ];
 
     private readonly CatalogViewModel _catalog;

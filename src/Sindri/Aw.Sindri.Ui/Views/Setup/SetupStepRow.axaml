@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sv="using:Aw.Sindri.Ui.ViewModels.Setup"
+             xmlns:sw="using:Aw.Sindri.Ui.Views.Setup"
+             x:Class="Aw.Sindri.Ui.Views.Setup.SetupStepRow"
+             x:DataType="sv:SetupStepViewModel">
+  <!-- One step on the Setup page: state, title and why; what it did or is doing; how far; why it failed; a line for each repo; and its action unless the page leads with it. Codes and ids are not here: they wait in the page's Details. -->
+  <Border x:Name="SetupStepRowFrame" Classes="item-row" Focusable="True"
+          AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
+    <Grid ColumnDefinitions="130,*" VerticalAlignment="Top">
+      <Border x:Name="SetupStepChip" Margin="0,0,8,0" VerticalAlignment="Top" AutomationProperties.Name="{Binding ChipText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+        <TextBlock Classes="body-strong mono" Text="{Binding ChipText}" AutomationProperties.AccessibilityView="Raw" />
+      </Border>
+      <StackPanel Grid.Column="1" Spacing="2">
+        <Border x:Name="SetupStepTitle" AutomationProperties.Name="{Binding Title}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="body-strong" Text="{Binding Title}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <Border x:Name="SetupStepWhy" AutomationProperties.Name="{Binding Why}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="caption subtle" Text="{Binding Why}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <Border x:Name="SetupStepDetail" IsVisible="{Binding HasDetail}" AutomationProperties.Name="{Binding DetailText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="caption" Text="{Binding DetailText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <Border x:Name="SetupStepProgress" IsVisible="{Binding HasProgress}" AutomationProperties.Name="{Binding ProgressText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="caption mono" Text="{Binding ProgressText}" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <Border x:Name="SetupStepError" IsVisible="{Binding HasError}" AutomationProperties.Name="{Binding ErrorText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="caption" Text="{Binding ErrorText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <ItemsControl x:Name="SetupStepItems" ItemsSource="{Binding Items}" IsVisible="{Binding HasItems}" Margin="0,4,0,0">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="sv:SetupItemViewModel">
+              <Border AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
+                <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.AccessibilityView="Raw">
+                  <TextBlock Classes="caption mono subtle" Text="{Binding ChipText}" Width="110" AutomationProperties.AccessibilityView="Raw" />
+                  <TextBlock Classes="caption" Text="{Binding Repo}" AutomationProperties.AccessibilityView="Raw" />
+                  <TextBlock Classes="caption subtle" Text="{Binding DetailText}" IsVisible="{Binding HasDetail}" AutomationProperties.AccessibilityView="Raw" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Panel IsVisible="{Binding ShowsActionInList}" Margin="0,6,0,0">
+          <sw:SetupActionView x:Name="SetupStepAction" DataContext="{Binding Action}" />
+        </Panel>
+      </StackPanel>
+    </Grid>
+  </Border>
+</UserControl>

@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sv="using:Aw.Sindri.Ui.ViewModels.Setup"
+             xmlns:sw="using:Aw.Sindri.Ui.Views.Setup"
+             x:Class="Aw.Sindri.Ui.Views.Setup.SetupCardRow"
+             x:DataType="sv:SetupStepViewModel">
+  <!-- One step on Home's Setup card: its state as a glyph and a word, its title, and why it is in that state. Only the next step, the one that needs the person, carries its action:
+       one primary thing. The row's name is its title, state and why; every named line is a Border wrapper (a TextBlock's peer ignores AutomationProperties.Name). -->
+  <Border x:Name="SetupCardRowFrame" Classes="item-row" Focusable="True"
+          AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
+    <Grid ColumnDefinitions="130,*" VerticalAlignment="Top">
+      <Border x:Name="SetupCardChip" Margin="0,0,8,0" VerticalAlignment="Top" AutomationProperties.Name="{Binding ChipText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+        <TextBlock Classes="body-strong mono" Text="{Binding ChipText}" AutomationProperties.AccessibilityView="Raw" />
+      </Border>
+      <StackPanel Grid.Column="1" Spacing="2">
+        <Border x:Name="SetupCardTitle" AutomationProperties.Name="{Binding Title}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="body-strong" Text="{Binding Title}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <Border x:Name="SetupCardWhy" AutomationProperties.Name="{Binding Why}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Classes="caption subtle" Text="{Binding Why}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <Panel IsVisible="{Binding ShowsActionOnCard}" Margin="0,6,0,0">
+          <sw:SetupActionView x:Name="SetupCardAction" DataContext="{Binding Action}" />
+        </Panel>
+      </StackPanel>
+    </Grid>
+  </Border>
+</UserControl>

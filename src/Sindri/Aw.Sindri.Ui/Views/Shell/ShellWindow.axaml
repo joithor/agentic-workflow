@@ -12,6 +12,7 @@
         xmlns:rv="using:Aw.Sindri.Ui.Views.Recipes"
         xmlns:agv="using:Aw.Sindri.Ui.Views.Agents"
         xmlns:jv="using:Aw.Sindri.Ui.Views.Jobs"
+        xmlns:setupv="using:Aw.Sindri.Ui.Views.Setup"
         xmlns:ctxv="using:Aw.Sindri.Ui.Views.Context"
         xmlns:item="using:Aw.Sindri.Ui.Views.Item"
         xmlns:startv="using:Aw.Sindri.Ui.Views.Start"
@@ -214,6 +215,7 @@
                   </StackPanel>
                 </Panel>
                 <Panel IsVisible="{Binding IsJobs}"><jv:JobsPage x:Name="JobsPage" DataContext="{Binding Jobs}" /></Panel>
+                <Panel IsVisible="{Binding IsSetup}"><setupv:SetupPage x:Name="SetupPage" DataContext="{Binding Setup}" /></Panel>
                 <!-- Settings (⌘,): SindriApp puts Settings' view here at start-up; the placeholder shows where nothing does (view tests). -->
                 <ContentControl x:Name="SettingsSlot" IsVisible="{Binding IsSettings}">
                   <views:PlaceholderPage Title="{Binding Text.Settings}" />
