@@ -48,7 +48,7 @@ internal sealed class PlanFreezeStep(IPackets packets, IRepoCheckouts checkouts)
     [
         new(PacketKind.Design, "design packet", design.Directory, design.Hash, Phase: null),
         new(PacketKind.Plan, "plan packet", plan.Directory, plan.Hash, Phase: null),
-        .. phases.Select(static p => new Target(PacketKind.Phase, "phase packet " + LineJson.Str(p, "phase"), LineJson.Str(p, "dir") ?? string.Empty, Hash: null, p)),
+        .. phases.Select(static p => new Target(PacketKind.Phase, "phase packet " + LineJson.Str(p, "phase"), LineJson.Str(p, "dir") ?? string.Empty, LineJson.Str(p, "hash"), p)),
     ];
 
     private async ValueTask<BlockStepResult> Freeze(List<Target> targets, string checkout, CancellationToken cancellationToken)
@@ -63,13 +63,18 @@ internal sealed class PlanFreezeStep(IPackets packets, IRepoCheckouts checkouts)
                 return stop;
             }
 
+            if (hash is null)
+            {
+                return BlockStepResult.Failed($"{Id.Value}: aw-packets froze the {target.Label} but reported no hash");
+            }
+
             if (target.Phase is { } phase)
             {
                 LineJson.Append(frozen, new JsonObject { ["phase"] = LineJson.Str(phase, "phase"), ["id"] = LineJson.Str(phase, "id"), ["hash"] = hash, ["dir"] = target.Directory });
             }
             else if (target.Kind == PacketKind.Plan)
             {
-                planHash = hash ?? string.Empty;
+                planHash = hash;
             }
         }
 

@@ -25,7 +25,11 @@ internal sealed class DesignEvidenceStep(IPackets packets, IRunArea area, IRepoC
     {
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();
-        var scope = StepFacts.Read(context, "fact:scope");
+        if (StepFacts.Read(context, "fact:scope") is not { } scope)
+        {
+            return BlockStepResult.Failed($"{Id.Value} needs fact:scope");
+        }
+
         var design = StepFacts.Read(context, "fact:design");
         var rounds = StepFacts.Read(context, "fact:lensRounds");
         var report = DesignChecks.Run(scope, design, rounds, StepFacts.Read(context, "fact:accepted"), evidence: true);
@@ -34,7 +38,7 @@ internal sealed class DesignEvidenceStep(IPackets packets, IRunArea area, IRepoC
             return LinePackets.Gaps("incomplete", report.Failures);
         }
 
-        if (context.Address is not { } address || LinePackets.RepoSlug(context) is not { } slug || context.Repo is not { } repo || scope is null || design is null)
+        if (context.Address is not { } address || LinePackets.RepoSlug(context) is not { } slug || context.Repo is not { } repo || design is null)
         {
             return BlockStepResult.Failed($"{Id.Value} needs the instance's address and repo and fact:scope and fact:design");
         }

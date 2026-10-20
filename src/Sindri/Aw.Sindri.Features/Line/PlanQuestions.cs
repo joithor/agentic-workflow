@@ -8,12 +8,10 @@ namespace Aw.Sindri.Features.Line;
 /// <summary>
 /// The plan station's question builder (line spec §6.1, 'questions'): the design's open decisions, as #258's question form. A decision 'D3' becomes the
 /// question 'Q3' and its option 'D3.a' the option 'Q3.a', so the same number finds the decision again when the answer comes back. A decision the answer log
-/// already answers is not asked twice; at most five go in one round (the form's cap), in decision order.
+/// already answers is not asked twice; every other open decision goes on the form, in decision order (paging a long form is the interview Step's job).
 /// </summary>
 internal static class PlanQuestions
 {
-    private const int RoundCap = 5;
-
     /// <summary>The question id of a decision id ('D3' gives 'Q3'), or null when the id is not D followed by a number.</summary>
     internal static string? QuestionId(string? decisionId) =>
         decisionId is { Length: > 1 } && decisionId[0] == 'D' && decisionId.Skip(1).All(char.IsAsciiDigit) ? "Q" + decisionId[1..] : null;
@@ -34,7 +32,7 @@ internal static class PlanQuestions
                 return asked.Error;
             }
 
-            if (questions.Count < RoundCap && !answered.Contains(LineJson.Str(asked.Value, "id") ?? string.Empty))
+            if (!answered.Contains(LineJson.Str(asked.Value, "id") ?? string.Empty))
             {
                 LineJson.Append(questions, asked.Value);
             }

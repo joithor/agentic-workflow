@@ -8,7 +8,7 @@ namespace Aw.Sindri.Features.Line;
 
 /// <summary>
 /// A design or plan station Step the block runtime runs (line spec §4.1, §6.1): the context's facts become <see cref="LineFacts"/> (JSON by key, without the
-/// 'fact:' prefix), the subclass decides, and the verdict's facts become typed facts again. A fact the descriptor reads and the instance does not hold,
+/// 'fact:' prefix), the subclass decides, and the verdict's facts become typed facts again.
 /// The runner has failed the Step already when a fact its descriptor reads is missing; a fact read as a structure that is not JSON fails it here: a check that read garbage as empty must never pass.
 /// </summary>
 /// <param name="step">The Step's id.</param>

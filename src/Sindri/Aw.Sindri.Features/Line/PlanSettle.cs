@@ -11,6 +11,9 @@ namespace Aw.Sindri.Features.Line;
 /// </summary>
 internal static class PlanSettle
 {
+    // A revision with no words still has to read as a revision to the design intake, which looks for decisions or notes.
+    private const string NoRevisionText = "owner asked for a revision, no text";
+
     /// <summary>Settles the latest batch.</summary>
     /// <param name="design">The 'fact:design' tree.</param>
     /// <param name="answers">The 'fact:answers' tree.</param>
@@ -28,9 +31,9 @@ internal static class PlanSettle
             {
                 planNote |= kind == NoteKind.Plan;
                 designNote |= kind == NoteKind.Design;
-                if (kind == NoteKind.Design && entry.Text is { Length: > 0 } text)
+                if (kind == NoteKind.Design)
                 {
-                    notes.Add(text);
+                    notes.Add(entry.Text is { Length: > 0 } text ? text : NoRevisionText);
                 }
 
                 continue;
@@ -54,8 +57,8 @@ internal static class PlanSettle
     }
 
     private static NoteKind Note(string question) =>
-        question.StartsWith("Q-revise-plan", StringComparison.Ordinal) || question.StartsWith("Q-plan", StringComparison.Ordinal) ? NoteKind.Plan
-        : question.StartsWith("Q-revise", StringComparison.Ordinal) || question.StartsWith("Q-design", StringComparison.Ordinal) ? NoteKind.Design
+        string.Equals(question, "Q-revise-plan", StringComparison.Ordinal) ? NoteKind.Plan
+        : string.Equals(question, "Q-revise-design", StringComparison.Ordinal) ? NoteKind.Design
         : NoteKind.None;
 
     // null: the answer keeps the assumption. A node: the decision it changes.

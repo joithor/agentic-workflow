@@ -64,7 +64,7 @@ internal sealed class PlanSeal(IPackets packets, IRunArea area, (string Address,
 
         var checkedPhase = await Check(PacketKind.Phase, PhasePackets.Directory(id), made.Value, cancellationToken).ConfigureAwait(false);
         return checkedPhase.Packet is { } packet
-            ? (null, new JsonObject { ["phase"] = id, ["id"] = PhasePackets.Id(input.Scope, id), ["dir"] = packet.Directory })
+            ? (null, new JsonObject { ["phase"] = id, ["id"] = PhasePackets.Id(input.Scope, id), ["dir"] = packet.Directory, ["hash"] = packet.Hash })
             : (checkedPhase.Stop, null);
     }
 
