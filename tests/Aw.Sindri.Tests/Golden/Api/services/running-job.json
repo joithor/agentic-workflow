@@ -1,6 +1,14 @@
 {
   "services": [
     {
+      "name": "context-map-refresh",
+      "every": "1m",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null
+    },
+    {
       "name": "context-sync-gaps",
       "every": "1m",
       "paused": false,
