@@ -67,7 +67,16 @@ internal sealed partial class SetupViewModel
             (IsFailed, FailedText) = (true, Labels.SetupFailed(error));
         }
 
-        Shown();
+        Fold();
+    }
+
+    // The first time the list shows and no step opens by itself, the first one still to do opens: a first run starts at its first step.
+    private void OpenTheFirstStep()
+    {
+        if (!_hasRead && Steps.All(s => !s.IsOpen) && Steps.FirstOrDefault(s => !s.IsFinished) is { } first)
+        {
+            first.IsOpen = true;
+        }
     }
 
     private void Show(SetupView view)
@@ -80,14 +89,14 @@ internal sealed partial class SetupViewModel
             {
                 if (kept.Update(step) && _hasRead)
                 {
-                    said.Add(Labels.SetupChanged(kept.Title, kept.StateWord));
+                    said.Add(Labels.SetupChanged(kept.Title, kept.ChipWord));
                 }
 
                 served.Add(kept);
             }
             else
             {
-                var row = new SetupStepViewModel(step, ActionOf);
+                var row = new SetupStepViewModel(step, served.Count + 1, ActionOf);
                 _rows[step.Id] = row;
                 served.Add(row);
             }
@@ -101,6 +110,7 @@ internal sealed partial class SetupViewModel
 
         Patch.To(Steps, served);
         (IsReading, IsNotServed, IsUnreadable, IsStale, IsFailed, IsNotRunning, FailedText) = (false, false, false, false, false, false, string.Empty);
+        OpenTheFirstStep();
         _hasRead = true;
         Fold();
         if (said.Count > 0)

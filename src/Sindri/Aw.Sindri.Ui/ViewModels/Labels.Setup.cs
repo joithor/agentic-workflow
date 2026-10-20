@@ -1,10 +1,11 @@
 using System.Collections.Frozen;
 using System.Globalization;
 using Aw.Kernel;
+using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.ViewModels;
 
-/// <summary>The app's own copy (<see cref="Labels"/>, continued): the Setup card on Home and the Setup page (setup-once spec §5.7). Plain words: a step is a step, a recipe is a workflow, a code waits in Details.</summary>
+/// <summary>The app's own copy (<see cref="Labels"/>, continued): the setup checklist, the first section of Settings, and Home's one line (setup spec §6). Plain words: a step is a step, a recipe is a workflow, a code waits in Details.</summary>
 internal static partial class Labels
 {
     // A step's action by its catalog id: the words before it is done, and the words once it is ("another", "again").
@@ -15,28 +16,43 @@ internal static partial class Labels
         ["ApproveAllRecipes"] = ("Approve all workflows", "Approve again"),
         ["RegisterMcp"] = ("Connect your agents", "Connect again"),
         ["SetupOnyx"] = ("Set up Onyx", "Set up again"),
+        ["RefreshContextMap"] = ("Retry", "Retry"),
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
-    /// <summary>The page's name (it is not a tab: the card's link, G U and the palette open it).</summary>
-    internal const string SetupPage = "Setup";
+    // The app's titles, keyed by step id: the API's own are its plain default, the app owns the words people read.
+    private static readonly FrozenDictionary<string, string> _setupTitles = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["repo"] = "Add your repository",
+        ["profile"] = "Approve your settings",
+        ["recipes"] = "Approve the workflows",
+        ["mcp"] = "Connect your coding agents",
+        ["map"] = "Build the product map",
+        ["onyx"] = "Connect Linear and Slack (Onyx)",
+    }.ToFrozenDictionary(StringComparer.Ordinal);
 
-    /// <summary>The page's one-line purpose.</summary>
-    internal const string SetupPurpose = "Get Sindri ready to work on your repos. Each step says what it needs from you.";
+    /// <summary>The checklist's lead while a step is open.</summary>
+    internal const string SetupLead = "Set up Sindri";
 
-    /// <summary>The card's heading.</summary>
-    internal const string SetupCardHeading = "Set up Sindri";
+    /// <summary>The lead once every step is done or skipped.</summary>
+    internal const string SetupLeadDone = "Sindri is set up";
 
-    /// <summary>The card's link to the page.</summary>
-    internal const string SetupOpen = "Open setup";
+    /// <summary>The one line under the lead (hidden once setup is finished).</summary>
+    internal const string SetupSubline = "Six steps. Sindri does most of them for you; you decide the ones that give it access.";
 
-    /// <summary>The link's accessible name: its visible words first.</summary>
-    internal const string SetupOpenName = "Open setup, all the steps";
+    /// <summary>The line that says what the person already ran.</summary>
+    internal const string SetupRunLine = "You've run";
 
-    /// <summary>The card and page before the first answer.</summary>
+    /// <summary>The command that line names.</summary>
+    internal const string SetupRunCommand = "./setup.sh --with-sindri";
+
+    /// <summary>Home's one line while any step is open.</summary>
+    internal const string SetupHomeLine = "Finish setting up Sindri";
+
+    /// <summary>The checklist before the first answer.</summary>
     internal const string ReadingSetup = "Reading setup…";
 
     /// <summary>When Sindri has no setup list (an older Sindri).</summary>
-    internal const string SetupNotServed = "This Sindri has no setup list yet.";
+    internal const string SetupNotServed = "Setup isn't available in this build yet.";
 
     /// <summary>When the answer can't be read.</summary>
     internal const string SetupUnreadable = "The setup list can't be read from this Sindri.";
@@ -44,8 +60,8 @@ internal static partial class Labels
     /// <summary>When the first read failed: the reason follows.</summary>
     internal static string SetupFailed(Error error) => "Couldn't read setup just now. " + InstanceRefused(error);
 
-    /// <summary>When Sindri isn't running (the card has no Start button: the app never starts it from inside the window).</summary>
-    internal const string SetupNotRunning = "Sindri isn't running.";
+    /// <summary>When Sindri isn't running (there is no Start button: the app never starts it from inside the window).</summary>
+    internal const string SetupNotRunning = "Sindri isn't running";
 
     /// <summary>The line over the launcher command.</summary>
     internal const string SetupStartIt = "Start it from a terminal:";
@@ -56,29 +72,8 @@ internal static partial class Labels
     /// <summary>The launcher command the daily path uses.</summary>
     internal const string SetupLauncher = "sindri-app";
 
-    /// <summary>The page's lead when every step is done or skipped.</summary>
-    internal const string SetupFinished = "Setup is finished.";
-
-    /// <summary>The line under it.</summary>
-    internal const string SetupFinishedHint = "Every step is done or skipped.";
-
-    /// <summary>The heading over the steps in order.</summary>
-    internal const string SetupAllSteps = "All the steps";
-
     /// <summary>The disclosure that holds ids and codes.</summary>
     internal const string SetupDetails = "Details";
-
-    /// <summary>The page's lead eyebrow for a step that needs the person.</summary>
-    internal const string SetupLeadYou = "Your next step";
-
-    /// <summary>The lead for a step that stopped.</summary>
-    internal const string SetupLeadFailed = "This stopped";
-
-    /// <summary>The lead for a step Sindri is working on.</summary>
-    internal const string SetupLeadRunning = "Sindri is working on this";
-
-    /// <summary>The lead for a step that has not started.</summary>
-    internal const string SetupLeadTodo = "Next";
 
     /// <summary>The hint over a copyable command.</summary>
     internal const string SetupCliHint = "Or run this in a terminal:";
@@ -95,46 +90,77 @@ internal static partial class Labels
     /// <summary>The Details label of the action id.</summary>
     internal const string SetupActionField = "Action";
 
-    /// <summary>The expand control's accessible name when the card shows only part: its visible words first, then what it does.</summary>
-    internal static string SetupMoreName(string visible) => visible + ", show all steps";
+    /// <summary>The map's note after Retry started a new build.</summary>
+    internal const string SetupMapAgain = "Building the map again.";
 
-    /// <summary>The same control once expanded.</summary>
-    internal const string SetupShowFewer = "Show fewer";
+    /// <summary>The map's note when a build was already running (the 409 with its running job).</summary>
+    internal const string SetupMapAlready = "Already building the map.";
 
-    /// <summary>"2 of 6 done".</summary>
-    internal static string SetupHead(int done, int total) => string.Create(CultureInfo.InvariantCulture, $"{done} of {total} done");
+    /// <summary>The map's note when Retry could not start one.</summary>
+    internal const string SetupMapRetryFailed = "Couldn't start the map again. Try again in a moment.";
 
-    /// <summary>"and 3 more", and how many of those are waiting for the person.</summary>
-    internal static string SetupMore(int hidden, int needYou) => needYou switch
-    {
-        0 => string.Create(CultureInfo.InvariantCulture, $"and {hidden} more"),
-        1 => string.Create(CultureInfo.InvariantCulture, $"and {hidden} more, 1 needs you"),
-        _ => string.Create(CultureInfo.InvariantCulture, $"and {hidden} more, {needYou} need you"),
-    };
+    /// <summary>"2 of 6 done", or "All 6 done".</summary>
+    internal static string SetupCount(int done, int total) =>
+        done == total && total > 0 ? string.Create(CultureInfo.InvariantCulture, $"All {total} done") : string.Create(CultureInfo.InvariantCulture, $"{done} of {total} done");
 
     /// <summary>"40 of 100" for a counted step.</summary>
     internal static string SetupProgress(int done, int total) => string.Create(CultureInfo.InvariantCulture, $"{done} of {total}");
 
-    /// <summary>A step's state as the glyph and the word shown beside it. A word this build doesn't know renders as itself.</summary>
+    /// <summary>The app's title for a step; a step this build doesn't know keeps the API's.</summary>
+    /// <param name="id">The step's id.</param>
+    /// <param name="served">The API's own title.</param>
+    /// <returns>The title.</returns>
+    internal static string SetupTitle(string id, string served) => _setupTitles.TryGetValue(id, out var title) ? title : served;
+
+    /// <summary>A step's state as the chip draws it: one of five words with its tone. A word this build doesn't know shows as itself on the To do chip.</summary>
     /// <param name="state">The state as served.</param>
-    /// <param name="waiting">True for a "todo" step with no action: it waits on another step.</param>
-    /// <returns>The glyph and the word.</returns>
-    internal static (string Glyph, string Word) SetupChip(string state, bool waiting) => state switch
+    /// <returns>The chip's word, the word the row says, and the tone.</returns>
+    internal static (string Word, string Said, ChipTone Tone) SetupChip(string state) => state switch
     {
-        "needs-you" => ("◆", "YOUR TURN"),
-        "failed" => ("✕", "FAILED"),
-        "running" => ("●", "WORKING"),
-        "done" => ("✓", "DONE"),
-        "skipped" => ("○", "SKIPPED"),
-        "todo" => ("○", waiting ? "WAITING" : "NOT STARTED"),
-        _ => ("○", state.ToUpperInvariant()),
+        "needs-you" => ("Needs you", "Needs you", ChipTone.Attn),
+        "failed" => ("Failed", "Failed", ChipTone.Fail),
+        "running" => ("Working", "Working", ChipTone.Neutral),
+        "done" => ("Done", "Done", ChipTone.Ok),
+        "skipped" => ("Skipped", "Skipped", ChipTone.Neutral),
+        "todo" => ("To do", "To do", ChipTone.Neutral),
+        _ => (state, "To do", ChipTone.Neutral),
     };
 
-    /// <summary>What the live region says when a step changes: "Approve the recipes: done".</summary>
+    /// <summary>The line under a step's title: the app's own words for the state the step is in, or what it did once it is done; the API's sentence for a state the app has no words for.</summary>
+    /// <param name="id">The step's id.</param>
+    /// <param name="state">The state as served.</param>
+    /// <param name="waiting">True for a "todo" step with no action: it waits on another step.</param>
+    /// <param name="served">The API's sentence.</param>
+    /// <param name="detail">What the step did or is doing, or null.</param>
+    /// <returns>The line.</returns>
+    internal static string SetupSubFor(string id, string state, bool waiting, string served, string? detail) => (id, state) switch
+    {
+        (_, "done" or "skipped") when !string.IsNullOrEmpty(detail) => detail,
+        ("repo", "todo" or "needs-you") => "Sindri works inside a repository you choose. Pick its top folder.",
+        ("profile", "todo") when waiting => "Waits for a repository.",
+        ("profile", "needs-you") => "Your settings changed. Sindri works only inside what you approve here.",
+        ("profile", "done") => "Sindri works only inside what you approved.",
+        ("recipes", "todo") when waiting => "Waits for your settings.",
+        ("recipes", "needs-you") => "The workflows are loaded and waiting. Read what each may do, then approve them all at once.",
+        ("recipes", "done") => "All the workflows can run.",
+        ("mcp", "todo") when waiting => "Waits for your settings.",
+        ("mcp", "running") => "Sindri is adding itself to this repository for Claude Code, Codex and Cursor.",
+        ("mcp", "done") => "Claude Code, Codex and Cursor can reach Sindri in this repository.",
+        ("map", "todo") when waiting => "Waits for your settings.",
+        ("map", "running") => "Sindri reads your code and builds a map of it. It builds itself and keeps up to date.",
+        ("map", "done") => "The map is up to date with your code.",
+        ("map", "failed") => "The map could not be built.",
+        ("onyx", "todo") => "Onyx lets Sindri read your tickets and chats. Sign in once.",
+        ("onyx", "needs-you") => "Sign in to Onyx once. Your password is used for this step only.",
+        ("onyx", "done") => "Sindri can read your Linear and Slack context.",
+        _ => served,
+    };
+
+    /// <summary>What the live region says when a step changes: "Approve the workflows: done".</summary>
     internal static string SetupChanged(string title, string word) => title + ": " + word.ToLowerInvariant();
 
-    /// <summary>A step's accessible name: its title, its state and why.</summary>
-    internal static string SetupStepName(string title, string word, string why) => title + ", " + word.ToLowerInvariant() + ". " + why;
+    /// <summary>A step row's accessible name: its title, its state and what is under it.</summary>
+    internal static string SetupStepName(string title, string word, string sub) => title + ", " + word.ToLowerInvariant() + ". " + sub;
 
     /// <summary>The words of a step's action. A step that is already done offers it again, or another.</summary>
     /// <param name="action">The catalog action id.</param>
@@ -143,7 +169,7 @@ internal static partial class Labels
     internal static string SetupActionLabel(string action, bool done) =>
         _setupActions.TryGetValue(action, out var words) ? (done ? words.Again : words.First) : Action(action);
 
-    /// <summary>The terminal form of a step's action when the catalog serves none (setup-once spec §7.4).</summary>
+    /// <summary>The terminal form of a step's action when the catalog serves none.</summary>
     /// <param name="action">The catalog action id.</param>
     /// <returns>The command, or empty for an action this build doesn't know.</returns>
     internal static string SetupCli(string action) => action switch
@@ -153,6 +179,7 @@ internal static partial class Labels
         "ApproveAllRecipes" => "sindri-app recipe approve-all",
         "RegisterMcp" => "sindri-app mcp register --apply",
         "SetupOnyx" => "sindri-app onyx up",
+        "RefreshContextMap" => "sindri context map refresh",
         _ => string.Empty,
     };
 }

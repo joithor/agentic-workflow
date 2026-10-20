@@ -4,10 +4,10 @@ using Aw.Sindri.Ui.ViewModels.Setup;
 
 namespace Aw.Sindri.Ui.Views.Setup;
 
-/// <summary>The Setup page: a click only calls the view model.</summary>
-internal sealed partial class SetupPage : UserControl
+/// <summary>The setup checklist: a click only calls the view model.</summary>
+internal sealed partial class SetupChecklist : UserControl
 {
-    public SetupPage()
+    public SetupChecklist()
     {
         InitializeComponent();
     }

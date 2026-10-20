@@ -34,7 +34,7 @@ internal sealed partial class ShellViewModel : ObservableObject
     private static readonly string[] _pageProperties =
     [
         nameof(CurrentPage), nameof(PageName), nameof(SelectedNav), nameof(IsHome), nameof(IsWorkflows), nameof(IsWork), nameof(IsRecipes), nameof(IsContext),
-        nameof(IsAgents), nameof(IsSystem), nameof(IsJobs), nameof(IsSetup), nameof(IsSettings), nameof(IsNotRunningPanel), nameof(IsPageVisible),
+        nameof(IsAgents), nameof(IsSystem), nameof(IsJobs), nameof(IsSettings), nameof(IsNotRunningPanel), nameof(IsPageVisible),
     ];
 
     private readonly Preferences _store;
@@ -224,6 +224,11 @@ internal sealed partial class ShellViewModel : ObservableObject
     internal void ShowPage(PageId page, HomeFilter filter)
     {
         SetHomeFilter(filter);
+        if (page == PageId.Settings)
+        {
+            Setup.RevealChecklist();   // every way into Settings (the rail, ⌘,, G U, the setup link, Home's line) shows the checklist, its first section
+        }
+
         if (page == CurrentPage)
         {
             return;

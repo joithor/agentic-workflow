@@ -31,8 +31,9 @@ internal sealed class SetupFixture
     internal SetupFixture(string catalog = "catalog")
     {
         Catalog = new CatalogViewModel(Clipboard, Clock);
-        Server.Catalog = RouteAnswer.Api("commands", catalog);
-        Catalog.Show(Url, Server, AwJson.Deserialize<CommandList>(System.Text.Encoding.UTF8.GetBytes(GoldenFiles.Api("commands", catalog)), SindriApiClient.Json).Value);
+        var extra = IsExtra(catalog);   // "extra-" catalogs are the app's own (SpecShaped), for a catalog the API has no golden for
+        Server.Catalog = extra ? RouteAnswer.SpecShaped("commands", catalog) : RouteAnswer.Api("commands", catalog);
+        Catalog.Show(Url, Server, AwJson.Deserialize<CommandList>(System.Text.Encoding.UTF8.GetBytes(extra ? GoldenFiles.SpecShaped("commands", catalog) : GoldenFiles.Api("commands", catalog)), SindriApiClient.Json).Value);
     }
 
     internal void Serve(string scenario) => Server.SetupAnswer = Answer(scenario);

@@ -71,9 +71,10 @@ public sealed class SetupActionTests
     [Fact]
     public async Task An_action_the_catalog_does_not_list_shows_the_spec_command()
     {
-        _f.Serve("first-run");
+        var f = new SetupFixture("extra-approve-all-ready");   // this catalog has no AddRepo row
+        f.Serve("first-run");
 
-        var action = Step(await _f.Read(Token), "repo").Action!;
+        var action = Step(await f.Read(Token), "repo").Action!;
 
         Assert.Equal(("Add a repo", "sindri-app repo add <path>", false), (action.Label, action.Cli?.Cli, action.IsInApp));
     }

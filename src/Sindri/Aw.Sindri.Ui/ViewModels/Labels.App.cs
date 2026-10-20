@@ -46,7 +46,7 @@ internal static partial class Labels
         DeepLinkKind.System => "System",
         DeepLinkKind.Service => "Service",
         DeepLinkKind.Job => "Job",
-        DeepLinkKind.HomeNeedsYou or DeepLinkKind.NeedsYou or DeepLinkKind.Item or DeepLinkKind.Decision => string.Empty,
+        DeepLinkKind.HomeNeedsYou or DeepLinkKind.NeedsYou or DeepLinkKind.Item or DeepLinkKind.Decision or DeepLinkKind.Setup => string.Empty,
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, message: null),
     };
 
@@ -63,7 +63,6 @@ internal static partial class Labels
         PageId.Agents => Agents,
         PageId.System => System,
         PageId.Jobs => JobsPage,
-        PageId.Setup => SetupPage,
         PageId.Settings => Settings,
         _ => throw new ArgumentOutOfRangeException(nameof(page), page, message: null),
     };
@@ -85,7 +84,7 @@ internal static partial class Labels
         PageId.Work => ArrivesWork,
         PageId.Recipes => ArrivesRecipes,
         PageId.Context => ArrivesContext,
-        PageId.Home or PageId.Workflows or PageId.Agents or PageId.System or PageId.Jobs or PageId.Setup or PageId.Settings => null,
+        PageId.Home or PageId.Workflows or PageId.Agents or PageId.System or PageId.Jobs or PageId.Settings => null,
         _ => throw new ArgumentOutOfRangeException(nameof(page), page, message: null),
     };
 

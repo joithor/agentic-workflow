@@ -1,13 +1,13 @@
 namespace Aw.Sindri.Ui.ViewModels.Setup;
 
-/// <summary>One repo's line inside a step that counts repos: its name, its state as a glyph and a word, and what is true now.</summary>
+/// <summary>One repo's line inside a step that counts repos: its name, its state in a word, and what is true now.</summary>
 internal sealed class SetupItemViewModel
 {
     internal SetupItemViewModel(string repo, string state, string? detail)
     {
-        var (glyph, word) = Labels.SetupChip(state, waiting: false);
+        var (_, word, _) = Labels.SetupChip(state);
         Repo = repo;
-        ChipText = glyph + " " + word;
+        ChipText = word;
         DetailText = detail ?? string.Empty;
         Name = repo + ", " + word.ToLowerInvariant() + (DetailText.Length > 0 ? ". " + DetailText : string.Empty);
     }
@@ -15,7 +15,7 @@ internal sealed class SetupItemViewModel
     /// <summary>The repo's name.</summary>
     public string Repo { get; }
 
-    /// <summary>The state: glyph and word.</summary>
+    /// <summary>The state in a word.</summary>
     public string ChipText { get; }
 
     /// <summary>What is true now, or empty.</summary>

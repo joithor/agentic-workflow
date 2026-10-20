@@ -102,6 +102,8 @@ internal sealed partial class HomePage : UserControl
         }
     }
 
+    private void OnSetupLink(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.Setup.RequestChecklist();
+
     private void OnStart(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.OpenStart();
 
     private void OnWorkflowsMore(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.Strip.OpenWorkflows();

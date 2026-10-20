@@ -7,14 +7,15 @@ using Aw.Sindri.Ui.ViewModels.Controls;
 namespace Aw.Sindri.Ui.ViewModels.Setup;
 
 /// <summary>
-/// The setup list behind the card on Home and the Setup page (setup-once spec §5.7): the six steps in words, the next one that needs the person, and the card's fold, which draws
-/// three rows filled by priority (needs you, failed, running, todo, then done) and says how many it leaves. The list is read on connect and with every event, and the steps are
-/// kept by id across reads. It decides nothing: states, sentences and actions are the API's; what the app adds is words, order and the fold.
+/// The setup checklist, the first section of Settings, and Home's one line while any step is open (setup spec §2.4): the six steps in the app's own words, the progress strip, and
+/// which rows are open. The list is read on connect and with every event, and the steps are kept by id across reads. It decides nothing: states, sentences and actions are the
+/// API's; what the app adds is words, order, and the one button the map shows when it failed.
 /// </summary>
 internal sealed partial class SetupViewModel : ObservableObject
 {
-    /// <summary>The rows the card draws (setup-once spec §5.7).</summary>
-    internal const int CardRows = 3;
+    private const string MapStep = "map";
+    private const string MapRefresh = "RefreshContextMap";
+    private const string RunningRefusal = "SND-JOB-409";
 
     private readonly Dictionary<string, SetupStepViewModel> _rows = new(StringComparer.Ordinal);
     private readonly ISindriApi _api;
@@ -23,6 +24,7 @@ internal sealed partial class SetupViewModel : ObservableObject
     private readonly Func<string, bool> _opensInApp;
     private int _reads;
     private bool _hasRead;
+    private bool _refreshing;
     private Uri? _url;
 
     /// <summary>The list over its ports.</summary>
@@ -39,88 +41,38 @@ internal sealed partial class SetupViewModel : ObservableObject
     /// <summary>Raised when a step's button asks the shell to open an action in the app.</summary>
     internal event EventHandler<SetupActionEventArgs>? ActionRequested;
 
-    /// <summary>Raised when the card's link asks for the Setup page.</summary>
-    internal event EventHandler? PageRequested;
-
     /// <summary>Raised when Home's line asks for the checklist.</summary>
     internal event EventHandler? ChecklistRequested;
 
-    /// <summary>Raised when the checklist should come into view (Settings was opened by a link, G U or the line).</summary>
+    /// <summary>Raised when the checklist should come into view (Settings was opened by a link, G U, ⌘, or the line).</summary>
     internal event EventHandler? RevealRequested;
-
-    /// <summary>The lead over the checklist.</summary>
-    public string Lead { get; private set; } = string.Empty;
-
-    /// <summary>"2 of 6 done".</summary>
-    public string CountText { get; private set; } = string.Empty;
-
-    /// <summary>True while the one-line sub shows (hidden once setup is finished).</summary>
-    public bool HasSub { get; private set; }
-
-    /// <summary>One segment per step.</summary>
-    public IReadOnlyList<SetupSegment> Segments { get; private set; } = [];
-
-    /// <summary>True when Home shows its one line.</summary>
-    public bool IsHomeLineShown { get; private set; }
-
-    /// <summary>Home's line.</summary>
-    public string HomeLineText { get; private set; } = string.Empty;
-
-    /// <summary>Asks for the checklist.</summary>
-    internal void RequestChecklist() => throw new NotSupportedException(ChecklistRequested is null ? "none" : "some");
-
-    /// <summary>Asks for the checklist to come into view.</summary>
-    internal void RevealChecklist() => RevealRequested?.Invoke(this, EventArgs.Empty);
-
-    /// <summary>Starts the map refresh again.</summary>
-    /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>A task that completes when the answer is shown.</returns>
-    internal Task RefreshMap(CancellationToken cancellationToken) => throw new NotSupportedException();
 
     /// <summary>The steps in the order served.</summary>
     public ObservableCollection<SetupStepViewModel> Steps { get; } = [];
 
-    /// <summary>The rows the card draws: three by priority, or every step once the person asks for them all.</summary>
-    public ObservableCollection<SetupStepViewModel> CardSteps { get; } = [];
-
-    /// <summary>The step the page leads with: the first that needs the person, else the first that failed, else the first Sindri is working on, else the first not started; null when setup is finished.</summary>
-    public SetupStepViewModel? Next { get; private set => Set(ref field, value); }
-
-    /// <summary>The ids of the steps the card draws; empty while it is not shown. Home hides a setup row for a step the card draws.</summary>
-    internal IReadOnlySet<string> DrawnIds { get; private set; } = new HashSet<string>(StringComparer.Ordinal);
-
     /// <summary>The polite live region: a step changing is said once.</summary>
-    public LiveAnnouncer Live { get; } = new(Labels.SetupPage);
+    public LiveAnnouncer Live { get; } = new(Labels.Settings);
 
     /// <summary>The launcher command with Copy, for when Sindri isn't running.</summary>
     public ControlViewModel Launcher { get; }
 
-    /// <summary>"2 of 6 done"; empty until the first list.</summary>
-    public string Head { get; private set => Set(ref field, value); } = string.Empty;
+    /// <summary>The lead over the checklist: "Set up Sindri", or "Sindri is set up"; empty until the first list.</summary>
+    public string Lead { get; private set => Set(ref field, value); } = string.Empty;
 
-    /// <summary>The page's lead: what the next step is to the person, or that setup is finished; empty until the first list.</summary>
-    public string LeadText { get; private set => Set(ref field, value); } = string.Empty;
+    /// <summary>"2 of 6 done", or "All 6 done"; empty until the first list.</summary>
+    public string CountText { get; private set => Set(ref field, value); } = string.Empty;
 
-    /// <summary>"and 3 more" (and how many need you), or "Show fewer" once expanded.</summary>
-    public string MoreText { get; private set => Set(ref field, value); } = string.Empty;
+    /// <summary>True while the one-line sub shows (hidden once setup is finished).</summary>
+    public bool HasSub { get; private set => Set(ref field, value); }
 
-    /// <summary>The expand control's accessible name.</summary>
-    public string MoreName { get; private set => Set(ref field, value); } = string.Empty;
-
-    /// <summary>True when the card leaves steps out (or shows them all after a press).</summary>
-    public bool HasMore { get; private set => Set(ref field, value); }
-
-    /// <summary>True once the person asked for every step on the card.</summary>
-    public bool IsExpanded { get; private set => Set(ref field, value); }
+    /// <summary>One segment per step: done, working or still to do.</summary>
+    public IReadOnlyList<SetupSegment> Segments { get; private set => Set(ref field, value); } = [];
 
     /// <summary>True when every step is done or skipped.</summary>
     public bool IsFinished { get; private set => Set(ref field, value); }
 
-    /// <summary>True when the card has steps to draw: read, not finished, and a list this build can use.</summary>
-    public bool IsCardVisible { get; private set => Set(ref field, value); }
-
-    /// <summary>True when the card takes room on Home: its steps, or why there are none to show (Sindri isn't running, a failed read).</summary>
-    public bool IsCardShown => IsCardVisible || IsNotRunning || IsFailed;
+    /// <summary>True when Home shows its one line: there are steps, and one is still open. Home then hides the setup rows of Needs you, which the line stands for.</summary>
+    public bool IsHomeLineShown { get; private set => Set(ref field, value); }
 
     /// <summary>True until the first answer.</summary>
     public bool IsReading { get; private set => Set(ref field, value); } = true;
@@ -146,18 +98,11 @@ internal sealed partial class SetupViewModel : ObservableObject
     /// <summary>True once the list has steps.</summary>
     public bool HasSteps { get; private set => Set(ref field, value); }
 
-    /// <summary>True when the page leads with a step.</summary>
-    public bool HasNext => Next is not null;
+    /// <summary>Asks the shell for Settings at the checklist (Home's line).</summary>
+    internal void RequestChecklist() => ChecklistRequested?.Invoke(this, EventArgs.Empty);
 
-    /// <summary>Shows every step on the card, or folds it back to three.</summary>
-    internal void ToggleMore()
-    {
-        IsExpanded = !IsExpanded;
-        Fold();
-    }
-
-    /// <summary>Asks the shell for the Setup page.</summary>
-    internal void RequestOpenPage() => PageRequested?.Invoke(this, EventArgs.Empty);
+    /// <summary>Asks the checklist to come into view.</summary>
+    internal void RevealChecklist() => RevealRequested?.Invoke(this, EventArgs.Empty);
 
     /// <summary>Asks again, for every step, whether the app can do its action now.</summary>
     internal void Rederive()
@@ -168,72 +113,91 @@ internal sealed partial class SetupViewModel : ObservableObject
         }
     }
 
-    // The card's rows by priority (needs you, failed, running, todo, done; step order within each), the next step, and the words that go with them.
+    /// <summary>Starts the map's refresh again (Retry on a failed map). One press sends once: the row shows as working until the next read, a refresh that is already running counts as running, and any other refusal is said in a sentence.</summary>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>A task that completes when the answer is shown.</returns>
+    internal async Task RefreshMap(CancellationToken cancellationToken)
+    {
+        if (_refreshing || _url is not { } url || !_rows.TryGetValue(MapStep, out var map))
+        {
+            return;
+        }
+
+        _refreshing = true;
+        try
+        {
+            var started = await _api.RefreshContextMap(url, cancellationToken).ConfigureAwait(true);
+            if (started.IsSuccess)
+            {
+                map.ShowWorking(Labels.SetupMapAgain);
+            }
+            else if (string.Equals(started.Error.Code, RunningRefusal, StringComparison.Ordinal))
+            {
+                map.ShowWorking(Labels.SetupMapAlready);   // 409 with the running job: the same refresh is already going
+            }
+            else
+            {
+                map.Say(Labels.SetupMapRetryFailed);
+            }
+        }
+        finally
+        {
+            _refreshing = false;
+        }
+
+        Fold();
+    }
+
+    // Everything that follows from the steps: finished or not, the count and the strip, and whether Home shows its line.
     private void Fold()
     {
-        List<SetupStepViewModel> byPriority = [.. Steps.Select((s, i) => (Step: s, Order: i)).OrderBy(x => x.Step.Rank).ThenBy(x => x.Order).Select(x => x.Step)];
         IsFinished = Steps.Count > 0 && Steps.All(s => s.IsFinished);
-        Next = IsFinished ? null : byPriority.FirstOrDefault(s => !s.IsFinished);
-        foreach (var row in Steps)
-        {
-            row.IsNext = ReferenceEquals(row, Next);
-        }
-
         HasSteps = Steps.Count > 0;
-        var drawn = Drawn(byPriority);
-        Patch.To(CardSteps, drawn);
-        Phrase([.. byPriority.Except(drawn)]);
-        Shown();
+        CountText = HasSteps ? Labels.SetupCount(Steps.Count(s => s.IsFinished), Steps.Count) : string.Empty;
+        OnChanged(nameof(HomeLineName));
+        Lead = !HasSteps ? string.Empty : IsFinished ? Labels.SetupLeadDone : Labels.SetupLead;
+        HasSub = HasSteps && !IsFinished;
+        Segments = [.. Steps.Select(s => new SetupSegment(s.SegmentKind))];
+        IsHomeLineShown = !IsReading && !IsNotServed && !IsUnreadable && HasSteps && !IsFinished;
     }
 
-    // Nothing once setup is finished; every step once the person asked for them; else the first three by priority.
-    private List<SetupStepViewModel> Drawn(List<SetupStepViewModel> byPriority) => IsFinished ? [] : IsExpanded ? byPriority : [.. byPriority.Take(CardRows)];
-
-    // The words that go with the fold: how many it leaves (and how many of those need the person), the head, and the page's lead.
-    private void Phrase(List<SetupStepViewModel> hidden)
-    {
-        HasMore = !IsFinished && Steps.Count > CardRows;
-        MoreText = IsExpanded ? Labels.SetupShowFewer : Labels.SetupMore(hidden.Count, hidden.Count(s => s.NeedsYou));
-        MoreName = IsExpanded ? Labels.SetupShowFewer : Labels.SetupMoreName(MoreText);
-        Head = Steps.Count == 0 ? string.Empty : Labels.SetupHead(Steps.Count(s => s.IsFinished), Steps.Count);
-        LeadText = LeadOld();
-    }
-
-    private string LeadOld() => Steps.Count == 0 ? string.Empty : IsFinished ? Labels.SetupFinished : Next switch
-    {
-        { NeedsYou: true } => Labels.SetupLeadYou,
-        { IsFailed: true } => Labels.SetupLeadFailed,
-        { IsRunning: true } => Labels.SetupLeadRunning,
-        _ => Labels.SetupLeadTodo,
-    };
-
-    // Everything that follows from what is drawn: the card's visibility, and the ids Home hides rows for (announced only when the set changed).
-    private void Shown()
-    {
-        IsCardVisible = !IsReading && !IsNotServed && !IsUnreadable && !IsFinished && Steps.Count > 0;
-        var drawn = IsCardVisible ? new HashSet<string>(CardSteps.Select(s => s.Id), StringComparer.Ordinal) : new HashSet<string>(StringComparer.Ordinal);
-        if (!drawn.SetEquals(DrawnIds))
-        {
-            DrawnIds = drawn;
-            OnChanged(nameof(DrawnIds));
-        }
-
-        OnChanged(nameof(IsCardShown));
-        OnChanged(nameof(HasNext));
-    }
-
-    // A step's action: an app button when the shell says the app can do it, else the command to copy; none for an action nothing here knows. A kept action stays while nothing about it
-    // changed, so a Copy in flight is not reset.
+    // A step's action: an app button when the app can do it, else the command to copy; none for an action nothing here knows. A kept action stays while nothing about it changed, so a
+    // Copy in flight is not reset.
     private SetupActionViewModel? ActionOf(SetupStepView step, SetupActionViewModel? kept)
     {
-        var action = step.Action!;   // why: only called for a step with an action
-        var inApp = _opensInApp(action);
-        if (kept is not null && kept.Matches(step, inApp))
+        if (Offered(step) is not { } action)
+        {
+            return null;
+        }
+
+        var inApp = _opensInApp(action) || OpensHere(action);
+        if (kept is not null && kept.Matches(action, step, inApp))
         {
             return kept;
         }
 
-        return Knows(action, inApp) ? new SetupActionViewModel(step, inApp, _catalog, _clock, a => ActionRequested?.Invoke(this, new SetupActionEventArgs(a))) : null;
+        return Knows(action, inApp) ? new SetupActionViewModel(action, step, inApp, _catalog, _clock, Open) : null;
+    }
+
+    // The map has no button until it failed; then Retry is the catalog's refresh (a retry of the build, never a service run). Every other step offers what the API serves.
+    private static string? Offered(SetupStepView step) =>
+        string.Equals(step.Id, MapStep, StringComparison.Ordinal)
+            ? string.Equals(step.State, "failed", StringComparison.Ordinal) ? MapRefresh : null
+            : step.Action is { Length: > 0 } served ? served : null;
+
+    // The refresh is the app's own button when the catalog lists it as ready.
+    private bool OpensHere(string action) => string.Equals(action, MapRefresh, StringComparison.Ordinal) && _catalog.For(action) is { IsReady: true };
+
+    private void Open(string action)
+    {
+        if (string.Equals(action, MapRefresh, StringComparison.Ordinal))
+        {
+            _ = RefreshMap(CancellationToken.None);
+        }
+        else
+        {
+            ActionRequested?.Invoke(this, new SetupActionEventArgs(action));
+        }
     }
 
     private bool Knows(string action, bool inApp) => inApp || _catalog.Row(action) is not null || Labels.SetupCli(action).Length > 0;
