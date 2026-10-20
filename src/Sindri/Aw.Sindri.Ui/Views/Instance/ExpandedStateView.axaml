@@ -34,10 +34,14 @@
               IsVisible="{Binding Child, Converter={x:Static ObjectConverters.IsNotNull}}" AutomationProperties.Name="{Binding Child.Name}" />
       <Button x:Name="ExpandedAnswerInChild" Content="{Binding AnswerInChildText}" Click="OnAnswerInChild" HorizontalAlignment="Left"
               IsVisible="{Binding AnswersInChild}" AutomationProperties.Name="{Binding AnswerInChildName}" />
-      <Border x:Name="ExpandedRun" HorizontalAlignment="Left" IsVisible="{Binding HasRun}" AutomationProperties.Name="{Binding RunName}"
-              AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-        <TextBlock x:Name="ExpandedRunLine" Classes="caption mono" Text="{Binding RunLine}" AutomationProperties.AccessibilityView="Raw" />
-      </Border>
+      <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding HasRun}">
+        <Border x:Name="ExpandedRun" VerticalAlignment="Center" AutomationProperties.Name="{Binding RunName}"
+                AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock x:Name="ExpandedRunLine" Classes="caption mono" Text="{Binding RunLine}" AutomationProperties.AccessibilityView="Raw" />
+        </Border>
+        <Button x:Name="ExpandedSession" Classes="row-title" Content="{Binding SessionLinkText}" Click="OnSession" IsVisible="{Binding HasSession}"
+                AutomationProperties.Name="{Binding SessionLinkName}" />
+      </StackPanel>
       <TextBlock x:Name="ExpandedLaunch" Classes="caption" Text="{Binding LaunchLine}" IsVisible="{Binding HasLaunchLine}" TextWrapping="Wrap"
                  AutomationProperties.Name="{Binding LaunchLine}" />
       <Panel x:Name="ExpandedAttachPanel" HorizontalAlignment="Left" IsVisible="{Binding HasAttach}">

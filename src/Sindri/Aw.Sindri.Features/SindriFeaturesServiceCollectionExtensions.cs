@@ -53,6 +53,7 @@ using Aw.Sindri.Features.Items;
 using Aw.Sindri.Features.JobProbe;
 using Aw.Sindri.Features.Jobs;
 using Aw.Sindri.Features.Launching;
+using Aw.Sindri.Features.LensLoops;
 using Aw.Sindri.Features.ListCommands;
 using Aw.Sindri.Features.ListDecisions;
 using Aw.Sindri.Features.ListInstances;
@@ -153,6 +154,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScopingSlices()
             .AddBuildSlices()
             .AddShipSlices()
+            .AddLensLoops()
             .AddProveSlices();
         return services;
     }
@@ -176,7 +178,7 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<RebuildViewsRequest>, AcceptAllValidator<RebuildViewsRequest>>().AddCommand<RebuildViewsRequest, CommandAccepted, RebuildViewsService>();
         _ = services.AddScoped<IValidator<ImportContextMapRequest>, AcceptAllValidator<ImportContextMapRequest>>().AddCommand<ImportContextMapRequest, ImportContextMapResponse, ImportContextMapService>();
         _ = services.AddScoped<IValidator<ApproveProfileRequest>, AcceptAllValidator<ApproveProfileRequest>>().AddCommand<ApproveProfileRequest, ApproveProfileResponse, ApproveProfileService>().AddScoped<ProfileChecks>();
-        _ = services.AddScoped<IValidator<StopProcessRequest>, AcceptAllValidator<StopProcessRequest>>().AddCommand<StopProcessRequest, StopProcessResponse, StopProcessService>();
+        _ = services.AddScoped<IValidator<StopProcessRequest>, AcceptAllValidator<StopProcessRequest>>().AddStopCommand<StopProcessRequest, StopProcessResponse, StopProcessService>();   // never behind the gate: a stop cancels its holder
         return services;
     }
 

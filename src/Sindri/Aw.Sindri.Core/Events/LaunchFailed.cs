@@ -11,7 +11,11 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="Code">The catalogue code (SND-LAUNCH-…, or the engine's SND-WF-… when it refused the takeover).</param>
 /// <param name="Message">The error's message, with its fix.</param>
 /// <param name="Detail">Where the launch stopped and the facts the error carried (launcher L-1, L-3), or null.</param>
-public sealed record LaunchFailed([property: JsonPropertyName("launchId")] LaunchId Launch, ItemId Item, string Code, string Message, LaunchFailureDetail? Detail = null)
+/// <param name="Instance">The workflow instance an engine launch belongs to, or null (attended and click launches, and events recorded before this field).</param>
+/// <param name="State">The Step's state id in that instance, or null.</param>
+/// <param name="Attempt">The Step run's number ('{entry}.{n}' → n), or null.</param>
+public sealed record LaunchFailed([property: JsonPropertyName("launchId")] LaunchId Launch, ItemId Item, string Code, string Message, LaunchFailureDetail? Detail = null,
+    InstanceAddress? Instance = null, string? State = null, int? Attempt = null)
 {
     /// <summary>Where the launch stopped ('host' or 'backstop'), or null for a failure before the launcher ran.</summary>
     [JsonIgnore]

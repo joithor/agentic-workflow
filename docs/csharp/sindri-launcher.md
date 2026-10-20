@@ -178,3 +178,7 @@ viewers, detection, `launch init` and `show`) and `Aw.Sindri.Features/Launching`
   `launcher:adoption` (opens of the last 30 days by viewer and agent).
 - **`profile approve`** previews, for each added or changed `agents.<id>.stepArgvHash`, the entry on this box that has the hash, or "no entry on this box
   has the hash" (L-16).
+
+## Stop ends the session
+
+`Launcher.Stop` kills the tmux session (one already gone counts as stopped), and only then records `session.ended` with reason `exit` (exit code null) through `LaunchStopEnd`, so the launch stops being live at once and the 120 s silence sweep never marks it `lost`. It records nothing when the host stop failed (the agent may still run: its heartbeat or the sweep decides), when the launch's row isn't live (never started, failed, or already ended), or when the sweep ended it first.
