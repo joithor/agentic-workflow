@@ -11,5 +11,6 @@ internal static class ShipServiceCollectionExtensions
     /// <returns>The same collection.</returns>
     internal static IServiceCollection AddShipSlices(this IServiceCollection services) => services
         .AddBlockRuntime<ShipFreezeStep>()
+        .AddBlockRuntime<ShipGreenStep>()
         .AddBlockRuntime<ShipReturnStep>();
 }

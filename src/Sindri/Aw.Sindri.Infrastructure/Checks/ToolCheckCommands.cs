@@ -1,4 +1,5 @@
 using Aw.Kernel;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Checks;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Infrastructure.Processes;
@@ -6,13 +7,30 @@ using Aw.Sindri.Infrastructure.Processes;
 namespace Aw.Sindri.Infrastructure.Checks;
 
 /// <summary><see cref="ICheckCommands"/> over <see cref="IToolRunner"/>: the command runs in the worktree, and what it printed is scrubbed and cut to its tail before anyone sees it.</summary>
-internal sealed class ToolCheckCommands : ICheckCommands
+/// <param name="runner">Runs the program.</param>
+/// <param name="scrubber">Takes secrets out of what it printed.</param>
+/// <param name="clock">Times the run.</param>
+internal sealed class ToolCheckCommands(IToolRunner runner, ITextScrubber scrubber, TimeProvider clock) : ICheckCommands
 {
-    public ToolCheckCommands(IToolRunner runner, ITextScrubber scrubber, TimeProvider clock)
+    public async ValueTask<Result<CheckRun>> Run(CheckInvocation command, string workingDirectory, CancellationToken cancellationToken)
     {
-        _ = (runner, scrubber, clock);
-    }
+        ArgumentNullException.ThrowIfNull(command);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (command.Argv.Count == 0 || string.IsNullOrWhiteSpace(command.Argv[0]))
+        {
+            return SindriErrors.InvalidInput.With($"the command '{command.Name}' names no program to run");
+        }
 
-    public ValueTask<Result<CheckRun>> Run(CheckInvocation command, string workingDirectory, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("red");
+        var options = new ToolRunOptions(WorkingDirectory: workingDirectory);
+        var started = clock.GetTimestamp();
+        var run = await Task.Run(() => runner.Run(command.Argv[0], [.. command.Argv.Skip(1)], command.Timeout, options, cancellationToken), CancellationToken.None).ConfigureAwait(false);   // the runner blocks until the tool ends; it kills the tool on cancel
+        var took = clock.GetElapsedTime(started);
+        return run.Outcome switch
+        {
+            ToolOutcome.Cancelled => throw new OperationCanceledException(cancellationToken),
+            ToolOutcome.Missing => SindriErrors.InvalidInput.With($"'{command.Argv[0]}' (the command '{command.Name}') can't be started: no such program, or no such directory {workingDirectory}"),
+            ToolOutcome.TimedOut => CheckRun.Of(-1, timedOut: true, took, string.Empty),
+            _ => CheckRun.Of(run.ExitCode, timedOut: false, took, scrubber.Scrub(run.Output + run.Error)),
+        };
+    }
 }
