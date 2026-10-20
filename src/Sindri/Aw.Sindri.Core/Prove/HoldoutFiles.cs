@@ -42,7 +42,7 @@ public static class HoldoutFiles
         {
             var root = JsonNode.Parse(text);
             var scenarios = (root?["scenarios"] as JsonArray ?? []).OfType<JsonObject>().Select(Scenario).ToList();
-            return (string?)root?["phase"] is { Length: > 0 } phase && scenarios.Count > 0 && scenarios.All(static s => s.Id.Length > 0)
+            return (string?)root?["phase"] is { Length: > 0 } phase && scenarios.Count > 0 && scenarios.TrueForAll(static s => s.Key.Length > 0)
                 ? new HoldoutSet(phase, scenarios, Hash(text))
                 : Unreadable(SetName, "it names no phase or no scenario with an id");
         }
@@ -96,12 +96,12 @@ public static class HoldoutFiles
     }
 
     /// <summary>The text of a spent file.</summary>
-    /// <param name="ids">The marked ids.</param>
+    /// <param name="marked">The marked scenarios' keys.</param>
     /// <returns>The JSON text, ids sorted.</returns>
-    public static string SpentJson(IEnumerable<string> ids)
+    public static string SpentJson(IEnumerable<string> marked)
     {
-        ArgumentNullException.ThrowIfNull(ids);
-        return new JsonObject { ["schemaVersion"] = 1, ["spent"] = new JsonArray([.. ids.Order(StringComparer.Ordinal).Select(static i => (JsonNode?)JsonValue.Create(i))]) }.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+        ArgumentNullException.ThrowIfNull(marked);
+        return new JsonObject { ["schemaVersion"] = 1, ["spent"] = new JsonArray([.. marked.Order(StringComparer.Ordinal).Select(static i => (JsonNode?)JsonValue.Create(i))]) }.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
     }
 
     /// <summary>The error for a file of the store that can't be read.</summary>

@@ -6,7 +6,7 @@ namespace Aw.Sindri.Core.Prove;
 /// The hidden-scenario store (line spec §9.1): <c language="text">$AW_SINDRI_HOME/holdout/&lt;line&gt;/&lt;phase&gt;/</c>, outside every repo, worktree and run area, with <c language="text">set.json</c>,
 /// <c language="text">seal.json</c> (both written by step.plan.holdout) and <c language="text">spent.json</c> (written here, the scenarios that no longer count as hidden). This port is
 /// what the hold-out log and the proof rules need; writing a set belongs to the author Step. A line or phase key that is not one safe path segment is an invalid input;
-/// a phase with no set is <c>SND-BLOCK-020</c>; a file that can't be read or parsed, or the store not writable, is <c>SND-BLOCK-021</c>.
+/// a phase with no set is <c language="text">SND-BLOCK-020</c>; a file that can't be read or parsed, or the store not writable, is <c language="text">SND-BLOCK-021</c>.
 /// </summary>
 public interface IHoldoutStore
 {

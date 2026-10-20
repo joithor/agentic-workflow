@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Kernel.Ids;
 using Aw.Redaction;
+using Aw.Sindri.Core.Prove;
 using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Control;
@@ -21,6 +22,7 @@ using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Registry;
+using Aw.Sindri.Infrastructure.Prove;
 using Aw.Sindri.Infrastructure.Auth;
 using Aw.Sindri.Infrastructure.Challenges;
 using Aw.Sindri.Infrastructure.Control;
@@ -64,7 +66,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
 
     private static IServiceCollection AddScopingInfrastructure(this IServiceCollection services, Func<string, string?> environment) =>
         services.AddSingleton<IPackets>(_ => new AwPacketsTool(new ProcessToolRunner(), environment))
-            .AddSingleton<IScopePacketStore>(sp => new ScopePacketStore(sp.GetRequiredService<SindriSettings>(), sp.GetRequiredService<IPackets>())).AddSingleton<IBriefFiles, BriefFiles>().AddSingleton<IRunArea, DiskRunArea>();
+            .AddSingleton<IScopePacketStore>(sp => new ScopePacketStore(sp.GetRequiredService<SindriSettings>(), sp.GetRequiredService<IPackets>())).AddSingleton<IBriefFiles, BriefFiles>().AddSingleton<IRunArea, DiskRunArea>().AddSingleton<IHoldoutStore, DiskHoldoutStore>();
 
     private static IServiceCollection AddSindriAdapters(this IServiceCollection services, Func<string, string?> environment)
     {
