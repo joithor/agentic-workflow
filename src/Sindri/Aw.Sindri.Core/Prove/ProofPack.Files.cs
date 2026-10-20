@@ -100,7 +100,6 @@ public static partial class ProofPack
     {
         var file = facts.Red as JsonObject is { } red ? (JsonObject)red.DeepClone() : [];
         file["schemaVersion"] = 1;
-        file["tests"] ??= new JsonArray();
         return file;
     }
 
@@ -114,7 +113,7 @@ public static partial class ProofPack
     private static JsonObject Holdout(ProofFacts facts)
     {
         var results = new JsonArray();
-        foreach (var result in (facts.Holdout?["results"] as JsonArray ?? []).OfType<JsonObject>())
+        foreach (var result in ProofChecks.HiddenResults(facts.Holdout))
         {
             var kept = Project(result, "scenario", "item", "verdict");
             kept["spent"] = (bool?)result["spent"] == true;

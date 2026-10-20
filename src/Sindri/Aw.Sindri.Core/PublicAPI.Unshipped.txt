@@ -12170,3 +12170,4 @@ override Aw.Sindri.Core.Prove.ProofPackOrigin.ToString() -> string!
 static Aw.Sindri.Core.Prove.ProofPack.Files(Aw.Sindri.Core.Prove.ProofFacts! facts, Aw.Sindri.Core.Prove.ProofReport! report, Aw.Sindri.Core.Prove.ProofPackOrigin! origin) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 static Aw.Sindri.Core.Prove.ProofPackOrigin.operator !=(Aw.Sindri.Core.Prove.ProofPackOrigin? left, Aw.Sindri.Core.Prove.ProofPackOrigin? right) -> bool
 static Aw.Sindri.Core.Prove.ProofPackOrigin.operator ==(Aw.Sindri.Core.Prove.ProofPackOrigin? left, Aw.Sindri.Core.Prove.ProofPackOrigin? right) -> bool
+static Aw.Sindri.Core.Prove.ProofChecks.Required.get -> System.Collections.Generic.IReadOnlyList<string!>!

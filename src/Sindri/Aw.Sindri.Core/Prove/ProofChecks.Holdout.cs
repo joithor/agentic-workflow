@@ -7,7 +7,7 @@ public static partial class ProofChecks
 {
     private static void Holdout(ProofFacts facts, List<ProofFinding> failures, List<string> notRun)
     {
-        var results = (facts.Holdout?["results"] as JsonArray ?? []).OfType<JsonObject>().ToList();
+        var results = HiddenResults(facts.Holdout);
         if (facts.HoldoutCount is not { } count)
         {
             notRun.Add("PRV-HOLD-001: the phase packet's holdout.json does not say how many hidden scenarios there are");
@@ -35,6 +35,15 @@ public static partial class ProofChecks
                 break;
         }
     }
+
+    /// <summary>
+    /// The hidden scenarios' results of a holdoutResult: the canary's is left out. A canary result has <c language="text">kind</c> 'canary' or no <c language="text">item</c> (the canary scenario shows no
+    /// visible item, BS-6's <c language="text">HoldoutScenario.CanaryKind</c>); it is neither counted among the scenarios that ran nor judged nor spent. holdout.json's <c language="text">count</c> does not count it either.
+    /// </summary>
+    /// <param name="holdout">fact:holdoutResult.</param>
+    /// <returns>The results of the hidden scenarios.</returns>
+    internal static List<JsonObject> HiddenResults(JsonNode? holdout) =>
+        [.. (holdout?["results"] as JsonArray ?? []).OfType<JsonObject>().Where(static r => (string?)r["kind"] != "canary" && r["item"] is not null)];
 
     private static void Ran(ProofFacts facts, List<JsonObject> results, int count, List<ProofFinding> failures)
     {

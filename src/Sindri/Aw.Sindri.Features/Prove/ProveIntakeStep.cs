@@ -22,7 +22,6 @@ internal sealed class ProveIntakeStep(IBriefFiles files, IRepoCheckouts checkout
     {
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();
-        _ = checkouts;
         var dir = StepFacts.Read(context, "fact:phasePacket") is JsonObject packet && packet["dir"] is JsonValue d && d.TryGetValue<string>(out var text) ? text : null;
         var head = StepFacts.Head(StepFacts.Read(context, "fact:built"));
         if (dir is null || head is null)
@@ -30,6 +29,13 @@ internal sealed class ProveIntakeStep(IBriefFiles files, IRepoCheckouts checkout
             return BlockStepResult.Failed("step.prove.intake needs fact:phasePacket (with its dir) and fact:built (with its head)");
         }
 
+        var (resolved, unresolved) = await Resolve(context, dir, cancellationToken).ConfigureAwait(false);
+        if (resolved is null)
+        {
+            return BlockStepResult.Failed(unresolved!); // why: a null directory comes with its reason
+        }
+
+        dir = resolved;
         var (acceptance, acceptanceFailure) = await ReadJson(dir, "acceptance.json", cancellationToken).ConfigureAwait(false);
         var (signals, signalsFailure) = await ReadJson(dir, "signals.json", cancellationToken).ConfigureAwait(false);
         if (acceptanceFailure is not null || signalsFailure is not null)
@@ -44,6 +50,23 @@ internal sealed class ProveIntakeStep(IBriefFiles files, IRepoCheckouts checkout
             ("fact:proof", new JsonObject { ["head"] = head, ["items"] = items }),
             ("fact:holdoutResult", Empty(head)),
             ("fact:beforeAfter", Empty(head)));
+    }
+
+    // A relative directory is read under the repo's checkout, never under serve's working directory; an absolute one is read as it is.
+    private async ValueTask<(string? Dir, string? Failure)> Resolve(StepContext context, string dir, CancellationToken cancellationToken)
+    {
+        if (Path.IsPathRooted(dir))
+        {
+            return (dir, null);
+        }
+
+        if (context.Repo is not { } repo)
+        {
+            return (null, $"step.prove.intake needs the instance's repo to read the relative phase packet {dir}");
+        }
+
+        var checkout = await checkouts.Of(repo, cancellationToken).ConfigureAwait(false);
+        return checkout.IsError ? (null, $"step.prove.intake has no checkout of {repo.Value} to read the phase packet {dir} from: {checkout.Error.Message}") : (PhaseDir.Of(dir, checkout.Value), null);
     }
 
     private static JsonObject Empty(string head) => new() { ["commit"] = head, ["results"] = new JsonArray() };
