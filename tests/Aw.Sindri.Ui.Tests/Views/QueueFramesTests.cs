@@ -170,7 +170,7 @@ public sealed class QueueFramesTests : IDisposable
         var page = Named<Control>(window, "QueuePage");
         Assert.DoesNotContain(page.GetVisualDescendants().OfType<Control>(), c => c.Name == "IdText");
         var header = page.GetVisualDescendants().OfType<Grid>().First(g => g.Name == "QueueHeader");
-        Assert.Equal(["TITLE", "REPO", "STATUS", "STAGE", "AGE"], header.Children.OfType<TextBlock>().Select(t => t.Text));
+        Assert.Equal(["TITLE", "REPO", "STATUS", "STAGE", "AGE"], header.Children.OfType<TextBlock>().Select(t => t.Text), StringComparer.Ordinal);
         Assert.Equal(0, Grid.GetColumn(header.Children.OfType<TextBlock>().First()));
     });
 

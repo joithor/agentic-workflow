@@ -37,8 +37,8 @@ public sealed class RowSheetViewModelTests
     {
         var row = new NeedsYouRowViewModel(NeedsYouRows.Profile(new NeedsYouSubject("profile", "3f1c09")), seen: false, reducedMotion: false, arrived: false, new FakeTimeProvider(A.Noon));
 
-        Assert.Equal(["Changed"], row.PrimaryDetails.Select(d => d.Label));
-        Assert.Equal(["Fingerprint", "To approve, run"], row.MoreDetails.Select(d => d.Label));
+        Assert.Equal(["Changed"], row.PrimaryDetails.Select(d => d.Label), StringComparer.Ordinal);
+        Assert.Equal(["Fingerprint", "To approve, run"], row.MoreDetails.Select(d => d.Label), StringComparer.Ordinal);
         Assert.Equal((true, false, "Details"), (row.HasMoreDetails, row.DetailsOpen, row.MoreHeading));
         Assert.False(row.ShowsCliUpFront);
     }
