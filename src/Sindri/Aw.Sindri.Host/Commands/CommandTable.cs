@@ -110,6 +110,7 @@ internal static class CommandTable
             ["queue" or "items" or "item", ..] => await new ItemVerbs(client, output, (launch, c) => start.EnsureRunning(launch, c)).Run(args, ct).ConfigureAwait(false),
             ["request" or "requests" or "decisions" or "decide" or "needs-you", ..] => await new RequestVerbs(client, output, (launch, c) => start.EnsureRunning(launch, c)).Run(args, ct).ConfigureAwait(false),
             ["agents", .. var rest] => await new AgentsVerbs(client, output).Run(rest, ct).ConfigureAwait(false),
+            ["setup", .. var rest] => await new SetupVerbs(client, output).Run(rest, ct).ConfigureAwait(false),
             ["ledger", .. var rest] => await new LedgerVerbs(client, output, (launch, c) => start.EnsureRunning(launch, c)).Run(rest, ct).ConfigureAwait(false),
             ["services" or "jobs", ..] => await JobCommands.Run(args, (client, output), start.EnsureRunning, services.GetRequiredService<TimeProvider>(), (ct, interrupt.Again)).ConfigureAwait(false),
             ["launch" or "session", ..] => await LaunchOrSession(args, client, (output, environment), services, (ct, interrupt.Again)).ConfigureAwait(false),
@@ -201,6 +202,7 @@ internal static class CommandTable
         {
             ["context", "sources", "sync", .. var rest] => await new ContextJobVerbs(client, output, new JobFollower(client, output, services.GetRequiredService<TimeProvider>())).Run(["sources", "sync", .. rest], signals.Interrupt, signals.Again).ConfigureAwait(false),
             ["context", "map", "build", .. var rest] => await new ContextJobVerbs(client, output, new JobFollower(client, output, services.GetRequiredService<TimeProvider>())).Run(["map", "build", .. rest], signals.Interrupt, signals.Again).ConfigureAwait(false),
+            ["context", "map", "refresh", .. var rest] => await new ContextJobVerbs(client, output, new JobFollower(client, output, services.GetRequiredService<TimeProvider>())).Run(["map", "refresh", .. rest], signals.Interrupt, signals.Again).ConfigureAwait(false),
             ["context", "show" or "neighbors" or "path", ..] => await new ContextGraphVerbs(client, output).Run(args[1..], signals.Interrupt).ConfigureAwait(false),
             ["context", "eval", "backtest", .. var rest] => await new ContextJobVerbs(client, output, new JobFollower(client, output, services.GetRequiredService<TimeProvider>())).Run(["eval", "backtest", .. rest], signals.Interrupt, signals.Again).ConfigureAwait(false),
             ["context", "eval", .. var rest] => await new ContextEvalVerbs(client, output, services.GetRequiredService<IContextEngine>()).Run(rest, signals.Interrupt).ConfigureAwait(false),
