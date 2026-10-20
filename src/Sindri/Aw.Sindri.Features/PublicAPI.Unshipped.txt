@@ -3754,3 +3754,27 @@ static Aw.Sindri.Features.Design.DesignDeskRequest.operator ==(Aw.Sindri.Feature
 static Aw.Sindri.Features.Plan.PlanDeskRequest.operator !=(Aw.Sindri.Features.Plan.PlanDeskRequest? left, Aw.Sindri.Features.Plan.PlanDeskRequest? right) -> bool
 static Aw.Sindri.Features.Plan.PlanDeskRequest.operator ==(Aw.Sindri.Features.Plan.PlanDeskRequest? left, Aw.Sindri.Features.Plan.PlanDeskRequest? right) -> bool
 static Aw.Sindri.Features.Plan.PlanPacket.Build(Aw.Sindri.Core.Line.LineFacts! facts, Aw.Sindri.Core.Line.PacketIdentity! identity, Aw.Sindri.Features.Plan.PlanParents! parents, Aw.Sindri.Core.Line.PlanGraphOptions! options) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFile!>!
+Aw.Sindri.Features.Design.DesignShowRequest
+Aw.Sindri.Features.Design.DesignShowRequest.<Clone>$() -> Aw.Sindri.Features.Design.DesignShowRequest!
+Aw.Sindri.Features.Design.DesignShowRequest.Deconstruct(out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Facts) -> void
+Aw.Sindri.Features.Design.DesignShowRequest.DesignShowRequest(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Facts) -> void
+Aw.Sindri.Features.Design.DesignShowRequest.Equals(Aw.Sindri.Features.Design.DesignShowRequest? other) -> bool
+Aw.Sindri.Features.Design.DesignShowRequest.Facts.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Sindri.Features.Design.DesignShowRequest.Facts.init -> void
+Aw.Sindri.Features.Design.GetInstanceDesignStopRequest
+Aw.Sindri.Features.Design.GetInstanceDesignStopRequest.<Clone>$() -> Aw.Sindri.Features.Design.GetInstanceDesignStopRequest!
+Aw.Sindri.Features.Design.GetInstanceDesignStopRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance) -> void
+Aw.Sindri.Features.Design.GetInstanceDesignStopRequest.Equals(Aw.Sindri.Features.Design.GetInstanceDesignStopRequest? other) -> bool
+Aw.Sindri.Features.Design.GetInstanceDesignStopRequest.GetInstanceDesignStopRequest(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance) -> void
+Aw.Sindri.Features.Design.GetInstanceDesignStopRequest.Instance.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
+Aw.Sindri.Features.Design.GetInstanceDesignStopRequest.Instance.init -> void
+override Aw.Sindri.Features.Design.DesignShowRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Design.DesignShowRequest.GetHashCode() -> int
+override Aw.Sindri.Features.Design.DesignShowRequest.ToString() -> string!
+override Aw.Sindri.Features.Design.GetInstanceDesignStopRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Design.GetInstanceDesignStopRequest.GetHashCode() -> int
+override Aw.Sindri.Features.Design.GetInstanceDesignStopRequest.ToString() -> string!
+static Aw.Sindri.Features.Design.DesignShowRequest.operator !=(Aw.Sindri.Features.Design.DesignShowRequest? left, Aw.Sindri.Features.Design.DesignShowRequest? right) -> bool
+static Aw.Sindri.Features.Design.DesignShowRequest.operator ==(Aw.Sindri.Features.Design.DesignShowRequest? left, Aw.Sindri.Features.Design.DesignShowRequest? right) -> bool
+static Aw.Sindri.Features.Design.GetInstanceDesignStopRequest.operator !=(Aw.Sindri.Features.Design.GetInstanceDesignStopRequest? left, Aw.Sindri.Features.Design.GetInstanceDesignStopRequest? right) -> bool
+static Aw.Sindri.Features.Design.GetInstanceDesignStopRequest.operator ==(Aw.Sindri.Features.Design.GetInstanceDesignStopRequest? left, Aw.Sindri.Features.Design.GetInstanceDesignStopRequest? right) -> bool

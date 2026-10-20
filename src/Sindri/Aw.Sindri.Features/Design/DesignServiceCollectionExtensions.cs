@@ -12,5 +12,8 @@ internal static class DesignServiceCollectionExtensions
     /// <returns>The same collection.</returns>
     internal static IServiceCollection AddDesignSlices(this IServiceCollection services) => services
         .AddScoped<IService<DesignCheckRequest, LineCheckResponse>, DesignCheckService>()
-        .AddScoped<IService<DesignDeskRequest, LineDeskResponse>, DesignDeskService>();
+        .AddScoped<IService<DesignDeskRequest, LineDeskResponse>, DesignDeskService>()
+        .AddScoped<IService<DesignShowRequest, DesignStopView>, DesignShowService>()
+        .AddScoped<PlanInstances>()
+        .AddScoped<IService<GetInstanceDesignStopRequest, DesignStopView>, GetInstanceDesignStopService>();
 }

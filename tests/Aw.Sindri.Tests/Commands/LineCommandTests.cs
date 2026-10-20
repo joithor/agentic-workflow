@@ -288,4 +288,64 @@ public sealed class LineCommandTests : IDisposable
         Assert.Equal(2, await Run("line"));
         Assert.Contains("usage: sindri line desk", _error.ToString(), StringComparison.Ordinal);
     }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Design_show_reads_a_design_packet_and_names_the_plan_sections_it_does_not_have_yet()
+    {
+        await Put(LineFixture.Design());
+
+        Assert.Equal(0, await Run("design", "show", "--facts", Facts, "--json"));
+
+        var view = JsonNode.Parse(_out.ToString())!;
+        Assert.Equal(3, view["decisions"]!.AsArray().Count);
+        Assert.Equal(["graph", "trace"], view["notYet"]!.AsArray().Select(n => (string?)n), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Plan_show_with_the_design_beside_it_is_the_full_stop_view()
+    {
+        var gold = LineFixture.Plan();
+        var plan = new LineFixture();
+        var design = new LineFixture();
+        foreach (var (key, text) in gold)
+        {
+            (key.StartsWith("design/", StringComparison.Ordinal) ? design : plan)[key.StartsWith("design/", StringComparison.Ordinal) ? key[7..] : key] = text;
+        }
+
+        await Put(plan);
+        var designDirectory = Path.Combine(_home.Path, "design");
+        await Put(design, designDirectory);
+
+        Assert.Equal(0, await Run("plan", "show", "--facts", Facts, "--design", designDirectory, "--json"));
+
+        var view = JsonNode.Parse(_out.ToString())!;
+        Assert.Empty(view["notYet"]!.AsArray());
+        Assert.Equal(4, (int)view["graph"]!["prCount"]!);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Show_in_text_has_the_seven_sections_in_the_order_the_owner_reads_them()
+    {
+        await Put(LineFixture.Plan());
+
+        Assert.Equal(0, await Run("plan", "show", "--facts", Facts));
+
+        var text = _out.ToString();
+        string[] headings = ["Accepted risks", "Models", "Decisions", "Acceptance", "Plan graph", "Trace", "Coverage", "Spec", "Contract edits", "Lens rounds"];
+        Assert.Equal(headings.Order(Comparer<string>.Create((a, b) => text.IndexOf(a, StringComparison.Ordinal).CompareTo(text.IndexOf(b, StringComparison.Ordinal)))), headings, StringComparer.Ordinal);
+        Assert.All(headings, h => Assert.Contains(h, text, StringComparison.Ordinal));
+        Assert.Contains("D3 (answered, chose D3.a, recommended D3.a)", text, StringComparison.Ordinal);
+        Assert.Contains("P2 [S, feature] stack 1, wave 2, base dependency-head P1", text, StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "integration")]
+    [InlineData("design")]
+    [InlineData("plan")]
+    public async Task Show_with_serve_down_exits_2_with_SND_API_001_and_a_facts_dir_is_needed_otherwise(string station)
+    {
+        Assert.Equal(2, await Run(station, "show", "J-1"));
+        Assert.Contains("SND-API-001", _error.ToString(), StringComparison.Ordinal);
+        Assert.Equal(2, await Run(station, "show"));
+        Assert.Contains($"usage: sindri {station} show", _error.ToString(), StringComparison.Ordinal);
+    }
 }
