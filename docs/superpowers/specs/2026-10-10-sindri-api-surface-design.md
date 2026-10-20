@@ -32,8 +32,9 @@ Status:
 - **Revision note (2026-10-19, setup once, SO-1…SO-9):** `2026-10-19-sindri-setup-once-design.md` adds `GET /setup` and the
   `AddRepo`, `RegisterMcp` and `SetupOnyx` commands (§3.1, §3.2), the `confirm` column (§3.3), the setup events (§3.4),
   the needs-you kind `setup` with ids `setup:<step>` (§3.6), the app as a confirmation channel for `ApproveProfile`,
-  `ApproveRecipe` and `ApproveAllRecipes` (§4.1, §4.2, §6), `SND-SETUP-001…005` (§9) and `displayName` on the recipe views
-  (§3.8). Where this text and that spec differ for those items, that spec wins.
+  `ApproveRecipe` and `ApproveAllRecipes` (§4.1, §4.2, §6), `SND-SETUP-001…006` (§9) and `displayName` on the recipe views
+  (§3.8). Rev 2 (autoplan round 1): approve-all is a job (202), Onyx setup is two calls, the app has its own challenge
+  route. Where this text and that spec differ for those items, that spec wins.
 - This document is the written spec for review.
 
 The spec designs the surface every Sindri client uses: the `sindri` CLI, the Avalonia app (`SindriUi`), the Sindri MCP
@@ -356,9 +357,12 @@ They're in the catalog with class `local` and are never routes. `doctor` gains a
 | `POST /services/{name}/pause` | `PauseService` | — | `CommandAccepted` | desk | `sindri services pause <name>` | P6 |
 | `POST /services/{name}/resume` | `ResumeService` | — | `CommandAccepted` | desk | `sindri services resume <name>` | P6 |
 | `POST /jobs/{jobId}/cancel` | `CancelJob` | — | `CommandAccepted` | job | Ctrl-C while following; `sindri jobs cancel <id>` | P6 |
-| `POST /setup/repos` **(SO-2)** | `AddRepo` | `path`, `name?` | `JobStarted(accepted, JobId, links)` (202) | desk | `sindri repo add <path>` | setup-once SO-A3 |
-| `POST /setup/mcp` **(SO-2)** | `RegisterMcp` | `repo?` | `JobStarted` (202) | desk (`ServiceGrants: [setup]`) | `sindri mcp register --apply` | setup-once SO-A4 |
-| `POST /setup/onyx` **(SO-2)** | `SetupOnyx` | `adminEmail`, `adminPassword` (never logged or recorded) | `JobStarted` (202) | desk | `sindri-app onyx up` | setup-once SO-A5 |
+| `POST /setup/repos` **(SO-2)** | `AddRepo` | `path`, `name?` | checks `SND-SETUP-001/002` (400/409), then `JobStarted(accepted, JobId, links)` (202); job kind `AddRepo`, key = first 16 hex of sha256 of the path | desk | `sindri repo add <path>` | setup-once SO-A3 |
+| `POST /setup/mcp` **(SO-2)** | `RegisterMcp` | `repo?` | check `SND-SETUP-004` (409), then `JobStarted` (202); job kind `RegisterMcp`, key = the repo name | desk (`ServiceGrants: [setup]`) | `sindri mcp register --apply` | setup-once SO-A4 |
+| `POST /onyx/setup` **(SO-2)** | `SetupOnyx` | — | `JobStarted` (202); job kind `SetupOnyx`, key `onyx`; the job waits for the owner's sign-up | desk | `sindri-app onyx up` | setup-once SO-A5 |
+| `POST /onyx/account` **(SO-2)** | `ConnectOnyx` | `adminEmail`, `adminPassword` (a secret type: never logged, recorded or stored in a job) | 202, the same job; `SND-SETUP-005/006` | desk | `sindri-app onyx up` | setup-once SO-A5 |
+| `POST /workflow/challenges/app` **(SO-2)** | `IssueAppChallenge` | `action` | the challenge with `confirm` (`typed`\|`held`); `human` token only, three action texts only, else `SND-AUTH-002` | desk | — | setup-once SO-A2 |
+| `POST /workflow/recipes/approve-all` **(SO-2)** | `ApproveAllRecipes` | `challenge`, `answer` (`heldMs` or `typed`) | `JobStarted` (202); job kind `ApproveAllRecipes`; the result `{approved, refused}` is on the job (the plan is `GET`, engine spec) | protected (app: held or typed) | `sindri recipe approve-all` | setup-once SO-E3 |
 | `POST /items/{itemId}/open` | `OpenItem` | `mode` (`open`, `attach` or `resume`), `target?` (`claude-code`, `codex` or `cursor`), `itemVersion` (UI E-1) | `LaunchRequested(accepted, LaunchId)` | desk | `sindri open <item> [--agent claude-code\|codex\|cursor] [--attach \| --resume]` | P10a |
 
 Notes:
@@ -375,7 +379,7 @@ Notes:
   - `CloseItem` sends the version the human saw.
   - Conflicts are settled by fact keys (§2.1).
 - **The engine spec owns the instance commands**, together with their routes and the verbs `sindri workflow …`, which
-  keep `sindri handback` as the short alias from §9.3:
+  keep `sindri handback` as the short alias from §9.3 **(SO-18)** and `sindri takeover <item-or-address>` as its counterpart (added by #448):
   - `StartInstance`;
   - `ApplyCommand` (answer, with an optional `grant` or `accept`; takeover; handback; cancel);
   - `CompleteStep`;
@@ -440,10 +444,11 @@ catalog itself lands in P1. Every domain payload carries `commandId` (or the `se
 | `item.linked` | item, record key, alias | `item.linked:<itemId>:<record>` | yes | context Phase 6 only (`service:context-sync`); a `CreateItem` with `link` stores it on `item.created` and gives no alias, so `GET /items/<tracker key>` resolves only after a later `item.linked` |
 | `item.open-requested` | `launchId`, item, mode, target, chosenBy | `item.open-requested:<launchId>` | yes | P10 |
 | `launch.started`, `launch.failed`, `launch.probed`, `session.ended` | as UI E-1, E-3 and launcher L-1, L-10: every launch payload names the launch `launchId`; `launch.failed` carries `code`, `message` and an optional `detail` (`stage`: `host`/`backstop`; for SND-LAUNCH-012 also `reason`, `current`, `approved`); `session.ended`: `launchId`, reason (`exit`, `lost`), exit code, and the final `inputTokens`/`outputTokens` when the target's reader had a transcript | `launch.outcome:<launchId>` (`launch.started` and `launch.failed` share it), `session.ended:<launchId>` | yes | P10a (written by `service:launcher`; the engine's agent runtime uses the same events) |
-| `setup.step.changed` **(SO-4)** | `id`, `state`, `code?` | `setup.step.changed:<id>:<state>:<ledger head>` | yes | setup-once SO-A6 (`service:setup`) |
+| `setup.step.changed` **(SO-4)** | `id`, `state`, `code?` | `setup.step.changed:<id>:<state>:<n>` (n = the step's earlier change events) | yes | setup-once SO-A6 (`service:setup`) |
+| `repo.onboarded` **(SO-4)** | `repo`, `approvedHash` | `repo.onboarded:<repo>:<hash>` | yes | setup-once SO-A3 |
 | `repo.added` **(SO-4)** | `repo` (path non-public) | `repo.added:<commandId>` | yes | setup-once SO-A3 |
-| `recipe.registration.completed` **(SO-4)** | `registered`, `unchanged` | `recipe.registration.completed:<epoch>` | yes | setup-once SO-E2 |
-| `mcp.registered` **(SO-4)** | `repo`, `providers[{provider, outcome}]` | `mcp.registered:<commandId>` | yes | setup-once SO-A4 |
+| `recipe.registration.completed` **(SO-4)** | `registered`, `unchanged`, `failed` | `recipe.registration.completed:<epoch>` | yes | setup-once SO-E2 |
+| `mcp.registered` **(SO-4)** | `repo`, `port`, `providers[{provider, outcome}]` | `mcp.registered:<commandId>` | yes | setup-once SO-A4 |
 | `session.usage` | `launchId`, `sample`, `target`, `model` (the one with the most tokens; null when the reader named none), `inputTokens`, `outputTokens` (cumulative for the launch) | `session.usage:<launchId>:<n>` | no | P10a (E-28; sampled every 60 s while the session is live by the target's usage reader; the final totals are on `session.ended`) |
 
 **How a request becomes a decision** (one domain event per command):
@@ -469,7 +474,7 @@ action id, for example `ApplyCommand:answer-resume` (an open park serves one `an
 | Concern | Owner | The other spec's part |
 |---|---|---|
 | Instances: their states, park reasons, takeover, handback, answering a park (`grant`, `accept`), timers, `CompleteStep` | **Engine**: `StartInstance`, `ApplyCommand`, `CompleteStep`, `GetInstance`, `ListInstances`; engine P4 and P5 | This spec gives their catalog rows a class and allowed callers:<ul><li>start, answer, handback, cancel and complete are `desk`;</li><li>answer with `grant` or `accept` is `protected` (terminal);</li><li>takeover is `pause` (§4.1).</li></ul> |
-| The verbs `sindri workflow start`, `answer`, `takeover`, `handback`, `cancel` and `complete`, plus the `sindri handback` alias | **Engine** | — |
+| The verbs `sindri workflow start`, `answer`, `takeover`, `handback`, `cancel` and `complete`, plus the `sindri handback` and `sindri takeover <item-or-address>` short forms **(SO-18)** | **Engine** | — |
 | One "needs you" list | **This spec**: `GET /needs-you`, with engine parks as kind `park` | The engine's `workflow list --needs-me` reads `GET /needs-you` (engine §6.3) |
 | Item rows, the queue, requests and decisions | **This spec** | The engine emits the events these views fold. Once S2 runs, an item's `state` reflects its instance state |
 | The item filter on `/sindri/events` (engine S1-D6) | **This spec**, in P5 | The engine's `workflow events` uses it. If engine P4 merges first, it adds the filter and P5 keeps it |
@@ -541,7 +546,7 @@ How items move through the states:
 | Field | What it holds |
 |---|---|
 | `id` | A stable id, such as `decision:DEC-…` or `failure:service:heartbeat`. The UI keys focus and the "seen" pulse on it |
-| `kind` | `decision`, `park`, `failure`, `profile` or `setup` **(SO-5)**. A `setup` row's id is `setup:<step>` (`repo`, `profile`, `recipes`, `mcp`, `map`, `onyx`; the projection emits `repo`, `recipes`, `mcp` and `onyx`), subject `{setup, <step>}`, `primaryAction` the step's action; cleared when the step is `done` or `running` |
+| `kind` | `decision`, `park`, `failure`, `profile` or `setup` **(SO-5)**. A `setup` row's id is `setup:<step>` (`repo`, `profile`, `recipes`, `mcp`, `map`, `onyx`; the projection emits `repo`, `recipes` and `mcp` only: the profile uses `profile:drift`, the map `failure:service:context-map-refresh`, Onyx `failure:service:onyx`), subject `{setup, <step>}`, `primaryAction` the step's action; cleared when the step is `done` or `running` |
 | `subject` | `{kind, id}`: a reference to an item, decision, instance, job, service or profile. A `profile` row's subject is `{profile, <live hash>}` (owner decision, 2026-10-14) |
 | `title`, `reason` | Scrubbed text |
 | `repo?` | The repo the row belongs to |
@@ -551,7 +556,7 @@ How items move through the states:
 | `notice` | The sentence that says so, served by the API (`recorded; acted on once the workflow engine runs`) so no client keeps its own copy; `null` when `recordedOnly` is false. A `DecisionView` voided by closing its item carries the voided sentence (`voided: the item was closed`) in `notice` and `cleared` |
 | `answerKind` | For `park` rows: `text`, `resume`, `grant`, `grantTokens`, `accept` (with reject), or `cancel-only`, taken from the engine's resume action (engine §5.8), so the app shows the right control |
 | `via?` | `"child"` when `cli` points at a child that decides the answer; omitted otherwise |
-| `primaryAction` | A catalog action id (no P4 row is `cli-only`, so none serves `copy:<cli>`). Per kind: <ul><li>`decision` → `Decide`;</li><li>`park` → the engine's action id;</li><li>`failure` → `RunService` (served since P6, with `cli` `sindri services run <name>`), or **null** for a failure of a service this build doesn't have (`SND-SVC-404`: `actions` is `[PauseService]` and `cli` is `sindri profile validate`; golden `needs-you/unknown-service`);</li><li>`profile` → `ApproveProfile` (protected; **(SO-5)** confirmable in the app by typing, so the app calls it; the `cli` stays as the terminal fallback);<br>`setup` → the step's action (`AddRepo`, `ApproveAllRecipes`, `RegisterMcp`, `SetupOnyx`).</li></ul> |
+| `primaryAction` | A catalog action id (no P4 row is `cli-only`, so none serves `copy:<cli>`). Per kind: <ul><li>`decision` → `Decide`;</li><li>`park` → the engine's action id;</li><li>`failure` → `RunService` (served since P6, with `cli` `sindri services run <name>`), or **null** for a failure of a service this build doesn't have (`SND-SVC-404`: `actions` is `[PauseService]` and `cli` is `sindri profile validate`; golden `needs-you/unknown-service`);</li><li>`profile` → `ApproveProfile` (protected; **(SO-5)** confirmable in the app by typing, so the app calls it; the `cli` stays as the terminal fallback);<br>`setup` → the step's action (`AddRepo`, `ApproveAllRecipes`, `RegisterMcp`).</li></ul> |
 | `cli` | The CLI form |
 
 **Rows by kind.** A filed request appears **once**, as its `decision` row; there is no separate request row.
@@ -1032,7 +1037,9 @@ mistakes. That's the repo's threat model: gates guard against honest mistakes, n
 
 **Protected actions in the UI (SO-7)** show the CLI command to copy (`cli-only:typed-confirmation`), because the app has no
 terminal until passkeys exist, **except three**: `ApproveProfile` and `ApproveRecipe` are typed in the app and
-`ApproveAllRecipes` is held, each against the same server challenge as the terminal's (setup-once spec §4).
+`ApproveAllRecipes` is held (a typed answer is accepted too), each against a server challenge issued by the separate app
+route `POST /workflow/challenges/app` (`human` token only; the terminal route's rule is unchanged), bound to the same content
+as the terminal's (setup-once spec §4).
 
 **The `human` token (P1).** The app is a full desk client, so the header alone is too thin. On each start `serve`
 mints `auth/human.token` (0600) under `$AW_SINDRI_HOME`; the CLI and the app read it and send it as `X-Sindri-Token`.
@@ -1210,7 +1217,7 @@ of **`docs/csharp/sindri.md`**. Not `docs/sindri/errors.md`, which is generated 
 | `SND-ENGINE-001` | Unavailable (503) | The Temporal server, or the SDK call to it, didn't answer (fix: `sindri doctor`; `sindri serve` starts the dev server) (E-30) | P13 |
 | `SND-ENGINE-404` | NotFound (404) | No execution in Temporal for that address (E-30) | P13 |
 | `SND-AUTH-001` | Forbidden (403) | `human` without a valid per-start token | P1 |
-| `SND-SETUP-001`…`005` **(SO-8)** | Invalid / Conflict / Forbidden | A folder that is not a usable git checkout (001); a repo already named or a name collision (002); an app confirmation not given (003); `RegisterMcp` for a repo the approved profile does not name (004); `SetupOnyx` without the Onyx login (005). Texts in setup-once spec §7.6 | setup-once |
+| `SND-SETUP-001`…`006` **(SO-8)** | Invalid / Conflict / Forbidden | A folder that is not a usable git checkout, or is `/`, the home folder or a parent of the Sindri home (001); a repo already named or a name collision (002); an app confirmation not given (003); `RegisterMcp` for a repo the approved profile does not name (004); `ConnectOnyx` without the Onyx login (005) or with no setup waiting (006). 001, 002, 004 and 006 answer before a job is claimed. Texts in setup-once spec §7.6 | setup-once |
 | `SND-AUTH-003` | Forbidden (403) | The launch secret doesn't match an open launch, or the run is taken over | P10 |
 
 - `SND-API-006` is reserved for the idempotency key (§11).

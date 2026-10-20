@@ -168,7 +168,7 @@ Three layouts were mocked with the same fixture data (`shotgun/contact-sheet.htm
 
 | # | Page or part | Key | Opens on | Data (§10) |
 |---|---|---|---|---|
-| 1 | **Home** (Needs you, Running and With you, Queued, Health) | `G H` | Always the default | needs-you, queue, status, services |
+| 1 | **Home** (Needs you, Running and With you, Queued, Health) **(SO-19)**: the Setup card sits above Needs you while any setup step is not done (key `G U`, deep link `sindri://setup`) | `G H` | Always the default | needs-you, queue, status, services |
 | 1a | Home's **Needs you** panel, expanded | `G N` | the tray, the attention band | `GET /needs-you` |
 | 2 | **Queue** (all four groups) | `G Q` | — | `GET /queue` |
 | 2a | Queue filtered to Running / With you | `G R` / `G W` | Home's panel headers | the queue's `running` / `withYou` groups |
@@ -513,8 +513,10 @@ absolute path (unverified), from a `sindri` started in a terminal and from one s
 - Run agent text, show it as anything but plain text, or put item text in a launch command.
 - Make a decision on an agent's behalf: the app acts only on a human click or key, never on a stream event, a
   single-instance message or a deep link (those only navigate).
-- Approve a `protected` action: grants, accepts, recipe approvals, profile approval and map-review apply are copy-the-CLI
-  only (`cli-only:typed-confirmation`).
+- Approve a `protected` action: grants, accepts and map-review apply are copy-the-CLI only
+  (`cli-only:typed-confirmation`). **(SO-20)** Three are the exception, typed or held in the app against a server challenge:
+  `ApproveProfile`, `ApproveRecipe` (typed) and `ApproveAllRecipes` (held, a typed answer accepted); a stream event, a
+  deep link or a single-instance message still never approves anything (setup-once spec §4).
 - Resume a session that may still be running, or start two processes on one session.
 - Start the control plane from inside the window (bare `sindri` does that), or start an agent without a click.
 
@@ -595,8 +597,9 @@ renders a button once that phase ships; until then the catalog says `pending:<ph
 | Accept (gate) | Escalated gate | `ApplyCommand:answer-accept` | protected | `cli-only:typed-confirmation` |
 | Cancel instance | Park, item | `ApplyCommand:cancel` | desk (destructive) | `pending:WF-P4` → ready |
 | Complete (desk task) | Item, park (task) | `CompleteStep` | desk | `pending:WF-P4` → ready (E-9); the file picks show the files' names and sizes and ask once before sending |
-| Approve recipe (drift) | Park `spec-conflict: drift` | `ApproveRecipe` (`recipe approve`) | protected | `cli-only:typed-confirmation` |
-| Approve profile | Needs you `profile`, Health | `ApproveProfile` | protected | `cli-only:typed-confirmation` |
+| Approve recipe (drift) **(SO-20)** | Park `spec-conflict: drift`, Recipes | `ApproveRecipe` (`recipe approve`) | protected | `ready`: typed in the app (`confirm: typed`) |
+| Approve profile **(SO-20)** | Needs you `profile`, Health, the Setup card | `ApproveProfile` | protected | `ready`: typed in the app (`confirm: typed`) |
+| Approve all recipes **(SO-20)** | The Setup card, Recipes | `ApproveAllRecipes` | protected | `ready`: held, or typed (`confirm: held`) |
 | Rebuild views | Stalled banner, Health | `RebuildViews` | desk | `pending:P2` → ready |
 | Run now / Run again | Services, `failure` row | `RunService` | job | `pending:P6` → ready |
 | Pause / Resume service | Services | `PauseService` · `ResumeService` | desk | `pending:P6` → ready |
@@ -608,7 +611,7 @@ renders a button once that phase ships; until then the catalog says `pending:<ph
 `answer-resume`, `answer-reject` and `answer-text` are defined by E-12; until then the fail-closed rule would make them
 `protected`. WF P2 registers every engine catalog row: the desk and pause rows as `pending:WF-P4` or `pending:WF-P5`, which WF
 P4 and P5 flip to ready, and the protected rows (`answer-grant`, `answer-grant-tokens`, `answer-accept`,
-`ApproveRecipe`) as `cli-only:typed-confirmation` from the start; they never become app buttons. The engine's queries (`ShowRecipe`, `ListRecipes`, `GetInstance` and the rest) have no catalog rows: the
+`ApproveRecipe`) as `cli-only:typed-confirmation` from the start; they never become app buttons. **(SO-20)** `ApproveRecipe` is no longer in that list: it, `ApproveProfile` and `ApproveAllRecipes` are the three app confirmations (setup-once spec §4). The engine's queries (`ShowRecipe`, `ListRecipes`, `GetInstance` and the rest) have no catalog rows: the
 app reads them as plain GETs, with no catalog gating.
 
 Before the engine (S2) the app shows no engine controls: parks don't exist, and launching takes nothing over.
@@ -1123,7 +1126,7 @@ approved.
 | E-1…E-5, E-11 | API P10a | U6a |
 | E-6 (WF trigger), E-19 (`StartInstance` starts taken over), P10b | WF P5 edit, API P10b | U6b |
 | X23 (the nonce POST's class) | WF P4 | U5 |
-| E-9, E-13, and E-12's engine rows | WF P2 registers every engine catalog row: desk and pause rows pending, which WF P4 and P5 flip to ready; the protected rows `cli-only:typed-confirmation` from the start | U5 |
+| E-9, E-13, and E-12's engine rows | WF P2 registers every engine catalog row: desk and pause rows pending, which WF P4 and P5 flip to ready; the protected rows `cli-only:typed-confirmation` from the start, except **(SO-20)** `ApproveRecipe`, `ApproveProfile` and `ApproveAllRecipes`, which flip to `ready` with the setup-once phase SO-A2 | U5 |
 | E-10 | the API spec's phase table | — |
 
 **E-17.** Each API phase's integration tests write response bodies as golden JSON under
