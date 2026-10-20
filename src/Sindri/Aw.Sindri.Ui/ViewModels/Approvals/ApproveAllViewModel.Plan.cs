@@ -94,6 +94,11 @@ internal sealed partial class ApproveAllViewModel
         Fill(read.Value);
         if (read.Value.Recipes.Count == 0)
         {
+            if (EmptyText.Length == 0)
+            {
+                EmptyText = HasOwnApproval ? Labels.ApproveOnlyOwn : Labels.ApproveNothingWaiting;   // never a blank, nameless line
+            }
+
             Phase = ApproveAllPhase.Empty;
             return;
         }

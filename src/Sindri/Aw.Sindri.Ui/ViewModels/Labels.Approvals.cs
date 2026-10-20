@@ -89,6 +89,9 @@ internal static partial class Labels
     /// <summary>A plan whose only workflows need their own look.</summary>
     internal const string ApproveOnlyOwn = "Nothing here can be approved at once. These need their own look.";
 
+    /// <summary>Nothing waits for approval and the server gave no sentence for it.</summary>
+    internal const string ApproveNothingWaiting = "Nothing is waiting for your approval.";
+
     /// <summary>A fresh confirmation could not be had.</summary>
     internal const string ApproveAskFailed = "Sindri did not give a new confirmation. Try again.";
 
