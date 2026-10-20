@@ -83,7 +83,7 @@ internal sealed partial class ShellWindow
     }
 
     // Esc closes the sheet over the page first, then the inbox (back to Home).
-    private static bool EscapeSheetOrInbox(ViewModels.Shell.ShellViewModel shell)
+    private static bool EscapeSheetOrInbox(ShellViewModel shell)
     {
         if (shell.IsSheetShown)
         {
