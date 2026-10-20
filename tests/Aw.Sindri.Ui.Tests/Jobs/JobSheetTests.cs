@@ -156,4 +156,55 @@ public sealed class JobSheetTests
 
         Assert.Equal(0, _f.Server.JobCalls);
     }
+
+    [Fact]
+    public async Task A_garbage_job_id_says_the_plain_unknown_sentence_with_the_code_in_Details()
+    {
+        _f.Server.JobAnswers[Id] = RouteAnswer.Problem("jobs-id", "bad-id");
+        var sheet = _f.Sheet();
+
+        await sheet.Open(Url, Id, Token);
+
+        Assert.Equal((FramePhase.NotFound, Labels.JobUnknown), (sheet.Phase, sheet.ProblemText));
+        Assert.Contains("SND-CLI-003", sheet.ProblemCode, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task An_unknown_job_keeps_its_code_out_of_the_sentence()
+    {
+        var sheet = _f.Sheet();
+
+        await sheet.Open(Url, Id, Token);
+
+        Assert.DoesNotContain("SND-", sheet.ProblemText, StringComparison.Ordinal);
+        Assert.True(sheet.HasProblemCode);
+    }
+
+    [Fact]
+    public async Task A_sheet_opened_before_the_catalog_arrived_gets_its_Cancel_when_it_does()
+    {
+        var f = new JobsFixture(catalog: false);
+        f.ServeJob("running");
+        var sheet = f.Sheet();
+        await sheet.Open(Url, Id, Token);
+        Assert.Null(sheet.Cancel);
+
+        f.ShowCatalog();
+
+        Assert.Equal("Cancel job", sheet.Cancel?.Label);
+    }
+
+    [Fact]
+    public async Task Copied_does_not_carry_over_to_another_job()
+    {
+        _f.ServeJob("running");
+        var sheet = _f.Sheet();
+        await sheet.Open(Url, Id, Token);
+        await sheet.CopyCli(Token);
+        Assert.Equal(Labels.Copied, sheet.CopyLabel);
+
+        sheet.Show("JOB-2");
+
+        Assert.Equal(Labels.Copy, sheet.CopyLabel);
+    }
 }

@@ -252,4 +252,50 @@ public sealed class JobsPageTests
         Assert.DoesNotContain("JOB-", page.Rows[0].TitleText, StringComparison.Ordinal);
         Assert.DoesNotContain("JOB-", page.Rows[0].Name, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task A_failed_first_read_says_so_in_words_and_offers_Try_again()
+    {
+        _f.Server.JobsAnswer = RouteAnswer.Problem(System.Net.HttpStatusCode.ServiceUnavailable, "SND-API-011", "The views have not caught up");
+        var page = _f.Page();
+        page.SetShown(shown: true);
+
+        await page.Refresh(Url, Token);
+
+        Assert.Equal((false, true, 0), (page.IsReading, page.IsFailed, page.Rows.Count));
+        Assert.StartsWith("Couldn't read the jobs just now.", page.FailedText, StringComparison.Ordinal);
+        Assert.Equal("Try again", page.RetryText);
+    }
+
+    [Fact]
+    public async Task Try_again_reads_the_list_and_clears_the_sentence()
+    {
+        _f.Server.JobsAnswer = RouteAnswer.Problem(System.Net.HttpStatusCode.ServiceUnavailable, "SND-API-011", "The views have not caught up");
+        var page = _f.Page();
+        page.SetShown(shown: true);
+        await page.Refresh(Url, Token);
+        _f.Server.JobsAnswer = RouteAnswer.Api("jobs", "running");
+
+        await page.Retry(Token);
+
+        Assert.Equal((false, 1), (page.IsFailed, page.Rows.Count));
+    }
+
+    [Fact]
+    public async Task The_catch_up_read_runs_on_the_pages_token_which_is_cancelled_when_the_page_is_left()
+    {
+        var page = _f.Page();
+        page.SetShown(shown: true);
+        await page.Refresh(Url, Token);
+        page.SetShown(shown: false);
+        var before = _f.Server.JobsCalls;
+
+        page.SetShown(shown: true);
+        await page.CatchUp;
+
+        Assert.Equal(before + 1, _f.Server.JobsCalls);
+        Assert.True(_f.Server.LastJobsToken.CanBeCanceled);
+        page.SetShown(shown: false);
+        Assert.True(_f.Server.LastJobsToken.IsCancellationRequested);
+    }
 }

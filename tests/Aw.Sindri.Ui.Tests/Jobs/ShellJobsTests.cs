@@ -146,4 +146,20 @@ public sealed class ShellJobsTests
 
         Assert.Equal(before, _server.JobCalls);
     }, Token);
+
+    [Fact]
+    public Task Reopening_the_sheet_re_reads_a_job_that_ended_while_it_was_closed() => UiThread.Run(async () =>
+    {
+        _server.JobAnswers[Id] = RouteAnswer.Api("jobs-id", "running");
+        var shell = await Shell(connect: true);
+        shell.Navigate(Link("job/" + Id));
+        await Until(() => shell.JobSheet.Phase == FramePhase.Shown && shell.JobSheet.Cancel is not null);
+        shell.CloseSheet();
+        _server.JobAnswers[Id] = RouteAnswer.Api("jobs-id", "result");
+
+        shell.ReopenSheet();
+        await Until(() => shell.JobSheet.Cancel is null);
+
+        Assert.StartsWith("✓ DONE", shell.JobSheet.StateLine, StringComparison.Ordinal);
+    }, Token);
 }

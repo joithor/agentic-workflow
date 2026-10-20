@@ -136,6 +136,12 @@ internal sealed class JobSheetViewModel(ISindriApi api) : ObservableObject
     /// <summary>A refusal's or an unreadable answer's sentence; empty otherwise.</summary>
     public string ProblemText { get; private set => Set(ref field, value); } = string.Empty;
 
+    /// <summary>The code of a refused or unknown answer, for Details; empty otherwise.</summary>
+    public string ProblemCode { get; private set; } = string.Empty;
+
+    /// <summary>True when there is a code to disclose.</summary>
+    public bool HasProblemCode => ProblemCode.Length > 0;
+
     /// <summary>The stale note: the last read failed and the fields are the last read's.</summary>
     public string Note { get; private set => Set(ref field, value); } = string.Empty;
 

@@ -90,6 +90,21 @@ internal sealed class JobsPageViewModel : ObservableObject
     /// <summary>True while the rows shown are the last good ones (a read failed).</summary>
     public bool IsStale { get; private set => Set(ref field, value); }
 
+    /// <summary>True when the first read failed and there are no rows to show.</summary>
+    public bool IsFailed { get; private set; }
+
+    /// <summary>The sentence for a failed first read.</summary>
+    public string FailedText { get; private set; } = string.Empty;
+
+    /// <summary>The retry action's words.</summary>
+    public string RetryText { get; } = string.Empty;
+
+    /// <summary>Reads again after a failed first read.</summary>
+    internal Task Retry(CancellationToken cancellationToken) => throw new NotSupportedException();
+
+    /// <summary>The catch-up read started by the last show.</summary>
+    internal Task CatchUp { get; } = Task.CompletedTask;
+
     /// <summary>How many lists this page has drawn (a test waits on it).</summary>
     internal int Drawn { get; private set; }
 

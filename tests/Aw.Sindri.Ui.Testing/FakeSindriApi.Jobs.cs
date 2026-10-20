@@ -29,6 +29,9 @@ internal sealed partial class FakeSindriApi
     /// <summary>The query of the latest list read; null before the first.</summary>
     public JobQuery? LastJobsQuery { get; private set; }
 
+    /// <summary>The cancellation token the last list read was given.</summary>
+    public CancellationToken LastJobsToken { get; private set; }
+
     /// <summary>Every job a cancel was sent for, in order.</summary>
     public IReadOnlyList<string> CancelledJobs { get { lock (_gate) { return [.. _cancelled]; } } }
 
@@ -41,6 +44,7 @@ internal sealed partial class FakeSindriApi
     {
         _ = Interlocked.Increment(ref _jobsCalls);
         LastJobsQuery = query;
+        LastJobsToken = cancellationToken;
         return Task.FromResult(Answer<JobList>(api, JobRoutes.List(query), JobsAnswer));
     }
 
