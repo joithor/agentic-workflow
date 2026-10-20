@@ -5,7 +5,11 @@
 # (`sindri-app status`, `sindri-app stop`, `sindri-app item add …`).
 #
 #   sindri-app [--rebuild] [<sindri arguments>...]
-#   --rebuild  publish again although the build matches the source
+#   sindri-app --publish-only [--rebuild]
+#   --rebuild       publish again although the build matches the source
+#   --publish-only  the publish steps only (the PATH link, SDK, temporal, publish): sindri is not run and no MCP hint is
+#                   printed. A leading flag, optionally followed by --rebuild; any other argument is exit 2. Exit 0 when
+#                   published or current, 1 when the publish failed. This is what setup.sh calls (setup-once spec §9).
 #
 # A side name: the TypeScript `sindri` (~/.local/bin/sindri, its launchd jobs and the nudge hook) stays as it is until the
 # switch (AGENTS.md "C# build"), and nothing in the providers or launchd runs this. The one caller in setup.sh is the Onyx step
@@ -21,6 +25,10 @@
 # that exists for the stamp is never published again, only made current.
 # The file list is scripts/lib/sindri-build-inputs.sh, shared with src/Sindri/aot-smoke/run.sh. The host publish runs on a copy of those files (as the smoke scripts do, so the checkout's lock files never change),
 # under the box-wide heavy-job slot (`heavy --expensive`) when it exists ($AW_STATE_DIR/bin-r1b/heavy), one publish at a time per state dir.
+# The shipped recipes: the publish stages `git archive HEAD recipes/sindri` into the build copy (deleting the copy's
+# directory first) and the host build embeds that directory (AwRecipesDir, Aw.Sindri.Host.csproj), so an edited or untracked
+# working-tree recipe is never embedded. The stamp carries the commit and the git tree hash of recipes/sindri at HEAD, and
+# the build dir holds them in `build-info`. A dirty tree publishes and says so; a tree that is not a git checkout does not.
 # Progress goes to stderr, so stdout is only sindri's (`sindri-app status --json` stays parseable).
 #
 # Every run also: installs the .NET SDK global.json pins into $DOTNET_ROOT (default: where the pinned SDK is found, else ~/.dotnet) when missing, with
@@ -53,7 +61,12 @@ say() { echo "sindri-app: $*" >&2; }
 die() { say "$*"; exit 1; }
 
 rebuild=0
-if [ "${1:-}" = --rebuild ]; then rebuild=1; shift; fi
+publish_only=0
+if [ "${1:-}" = --publish-only ]; then
+  publish_only=1; shift
+  if [ "${1:-}" = --rebuild ]; then rebuild=1; shift; fi
+  if [ $# -gt 0 ]; then say "--publish-only takes only --rebuild after it, not '$1'"; exit 2; fi
+elif [ "${1:-}" = --rebuild ]; then rebuild=1; shift; fi
 
 state="${AW_STATE_DIR:-$HOME/.agentic-workflow}"
 base="$state/bin/sindri-app"
@@ -108,6 +121,10 @@ case "$(uname -s)/$(uname -m)" in
   Linux/aarch64|Linux/arm64) platform=linux-arm64 ;; Linux/x86_64) platform=linux-x64 ;;
   *) die "unsupported platform $(uname -s)/$(uname -m)" ;;
 esac
+# The commit and the recipes tree at HEAD: part of the stamp, and what the staged recipes are (the embedded set is HEAD's).
+commit="$(git -C "$root" rev-parse --verify -q HEAD 2>/dev/null || true)"
+[ -n "$commit" ] || die "Sindri can only be published from a git checkout"
+recipes_tree="$(git -C "$root" rev-parse --verify -q HEAD:recipes/sindri 2>/dev/null || true)"
 sha256() { shasum -a 256 2>/dev/null || sha256sum; }
 mkdir -p "$base" "$cache"
 base="$(cd "$base" && pwd -P)"   # the resolved path: a running plane's command line shows it (in_use)
@@ -120,7 +137,7 @@ source "$here/lib/sindri-build-inputs.sh"
 git -C "$root" ls-files -z --cached --others --exclude-standard -- "${SINDRI_BUILD_PATHSPECS[@]}" context \
   | while IFS= read -r -d '' f; do if [ -f "$root/$f" ]; then printf '%s\n' "$f"; fi; done | LC_ALL=C sort -u > "$inputs"
 [ -s "$inputs" ] || die "no build inputs found under $root"
-stamp="$( { printf '%s\n' "$sdk" "$platform"; cat "$inputs"; (cd "$root" && git hash-object --stdin-paths < "$inputs"); } | sha256 | cut -c1-16)"
+stamp="$( { printf '%s\n' "$sdk" "$platform" "$commit" "$recipes_tree"; cat "$inputs"; (cd "$root" && git hash-object --stdin-paths < "$inputs"); } | sha256 | cut -c1-16)"
 current="$(cat "$base/current" 2>/dev/null || true)"
 built() { [ -x "$base/$1/sindri" ] && [ -x "$base/$1/sindri-ui" ]; }
 # A build a running control plane executes is never replaced or pruned: the pid in control.json, alive, whose command line
@@ -182,16 +199,24 @@ else
     tree="$(mktemp -d "$cache/tree.XXXXXX")"
     (cd "$root" && tar -cf - -T "$inputs") | tar -xf - -C "$tree"
     rm -rf "$stage"
+    # The shipped recipes are HEAD's: the copy's directory is replaced by the archive, so an edited or untracked
+    # working-tree recipe is never embedded.
+    rm -rf "$tree/recipes/sindri"
+    if [ -n "$recipes_tree" ]; then git -C "$root" archive HEAD recipes/sindri | tar -xf - -C "$tree"; fi
+    if [ -n "$(git -C "$root" status --porcelain 2>/dev/null)" ]; then
+      say "the working tree has uncommitted changes; the embedded recipes are HEAD's, and the rest of the build is the working tree's"
+    fi
     say "publishing sindri (framework-dependent) and sindri-ui (NativeAOT, $platform), build $stamp; log: $log"
     # From inside the copy (host) and the checkout (UI), so global.json's SDK pin applies whatever the caller's cwd.
     (cd "$tree" && ${pre[@]+"${pre[@]}"} dotnet publish "src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj" -c Release --no-self-contained \
-      -o "$stage") </dev/null >>"$log" 2>&1 || { tail -20 "$log" >&2; die "publishing sindri failed"; }
+      -p:AwRecipesDir="$tree/recipes/sindri" -o "$stage") </dev/null >>"$log" 2>&1 || { tail -20 "$log" >&2; die "publishing sindri failed"; }
     (cd "$root" && ${pre[@]+"${pre[@]}"} bash "$root/src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh" "$stage") </dev/null >>"$log" 2>&1 \
       || { tail -20 "$log" >&2; die "publishing sindri-ui failed"; }
     # The copy is done with: the final exec skips EXIT traps, so it goes here.
     rm -rf "$tree"; tree=""
     [ -x "$stage/sindri" ] || die "the publish left no sindri in $stage"
     [ -x "$stage/sindri-ui" ] || die "the publish left no sindri-ui in $stage"
+    printf 'commit=%s\nrecipes-tree=%s\n' "$commit" "$recipes_tree" > "$stage/build-info"
     rm -rf "$base/$stamp"
     mv "$stage" "$base/$stamp"
     make_current "$stamp"
@@ -206,6 +231,7 @@ else
 fi
 
 rm -f "$inputs"
+if [ "$publish_only" = 1 ]; then exit 0; fi
 
 # 6. The MCP registration command, printed once the plane is up (a background watcher: the exec below replaces this shell).
 mcp_repo="${AW_SINDRI_MCP_REPO:-}"

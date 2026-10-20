@@ -41,6 +41,15 @@
     <PackageReference Include="ModelContextProtocol.AspNetCore" />
   </ItemGroup>
 
+  <!-- The shipped recipes (setup-once spec §5.3): every file of the directory AwRecipesDir names is embedded as
+       aw-recipes/sindri/<path relative to it>, '/' separated, README.md excluded. scripts/sindri-app.sh stages `git archive
+       HEAD recipes/sindri` into its build copy and passes that directory; an ordinary build leaves AwRecipesDir empty and
+       embeds nothing (an empty set is legal). The reader is the engine's IEmbeddedRecipes. -->
+  <ItemGroup Condition="'$(AwRecipesDir)' != '' And Exists('$(AwRecipesDir)')">
+    <EmbeddedResource Include="$(AwRecipesDir)/**/*" Exclude="$(AwRecipesDir)/README.md"
+                      LogicalName="aw-recipes/sindri/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)" />
+  </ItemGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="Aw.Sindri.Tests" />
     <InternalsVisibleTo Include="Aw.Sindri.Engine.Tests" />

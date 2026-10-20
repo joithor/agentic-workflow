@@ -5,7 +5,7 @@ using Aw.Sindri.Tests.Ledger;
 namespace Aw.Sindri.Tests.Publish;
 
 /// <summary>
-/// What the Host project embeds as recipes (setup-once spec §5.3): the files of the staged directory <c>AwRecipesDir</c> and nothing else.
+/// What the Host project embeds as recipes (setup-once spec section 5.3): the files of the staged directory <c xml:lang="en">AwRecipesDir</c> and nothing else.
 /// MSBuild evaluates the project (no compile), so the names are the ones the assembly would carry.
 /// </summary>
 public sealed class EmbeddedRecipesBuildTests
@@ -14,9 +14,7 @@ public sealed class EmbeddedRecipesBuildTests
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
     public void An_ordinary_build_embeds_no_recipes()
-    {
-        Assert.Empty(RecipeResources(stagedDir: null));
-    }
+        => Assert.Empty(RecipeResources(stagedDir: null, TestContext.Current.CancellationToken));
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
     public void An_empty_staged_directory_embeds_nothing()
@@ -25,7 +23,7 @@ public sealed class EmbeddedRecipesBuildTests
         var staged = Path.Combine(home.Path, "recipes", "sindri");
         _ = Directory.CreateDirectory(staged);
 
-        Assert.Empty(RecipeResources(staged));
+        Assert.Empty(RecipeResources(staged, TestContext.Current.CancellationToken));
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
@@ -44,7 +42,7 @@ public sealed class EmbeddedRecipesBuildTests
                 Prefix + "evals/workflow.line/happy.jsonl",
                 Prefix + "workflow.line.yaml",
             ],
-            RecipeResources(staged));
+            RecipeResources(staged, TestContext.Current.CancellationToken));
     }
 
     private static void Write(string root, string relative)
@@ -54,7 +52,7 @@ public sealed class EmbeddedRecipesBuildTests
         File.WriteAllText(path, "x\n");
     }
 
-    private static string[] RecipeResources(string? stagedDir)
+    private static string[] RecipeResources(string? stagedDir, CancellationToken cancellation)
     {
         var start = new ProcessStartInfo("dotnet") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
         start.ArgumentList.Add("msbuild");
@@ -66,17 +64,16 @@ public sealed class EmbeddedRecipesBuildTests
         }
 
         using var process = Process.Start(start)!;   // why: the program is dotnet, which evaluates the project
-        var output = process.StandardOutput.ReadToEndAsync(TestContext.Current.CancellationToken);
-        var error = process.StandardError.ReadToEndAsync(TestContext.Current.CancellationToken);
+        var output = process.StandardOutput.ReadToEndAsync(cancellation);
+        var error = process.StandardError.ReadToEndAsync(cancellation);
         process.WaitForExit();
         Assert.True(process.ExitCode == 0, output.Result + error.Result);
 
         using var document = JsonDocument.Parse(output.Result);
-        return document.RootElement.GetProperty("Items").GetProperty("EmbeddedResource").EnumerateArray()
+        return [.. document.RootElement.GetProperty("Items").GetProperty("EmbeddedResource").EnumerateArray()
             .Select(item => item.TryGetProperty("LogicalName", out var name) ? name.GetString() ?? "" : "")
             .Where(name => name.StartsWith("aw-recipes/", StringComparison.Ordinal))
-            .Order(StringComparer.Ordinal)
-            .ToArray();
+            .Order(StringComparer.Ordinal)];
     }
 
     private static string RepoRoot()

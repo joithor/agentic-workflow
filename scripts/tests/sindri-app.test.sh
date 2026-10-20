@@ -241,6 +241,7 @@ echo '{}' > "$R/recipes/sindri/evals/a/happy.jsonl"
 git -C "$R" -c user.email=t@t -c user.name=t add -A >/dev/null 2>&1
 git -C "$R" -c user.email=t@t -c user.name=t commit -qm recipes >/dev/null 2>&1
 export AW_SINDRI_APP_NO_LINK=1
+export AW_STATE_DIR="$WORK/a7state"; B="$AW_STATE_DIR/bin/sindri-app"; C="$AW_STATE_DIR/cache/sindri-app-build"
 unset AW_SINDRI_APP_NO_MCP
 
 : > "$CALLS"
