@@ -29,11 +29,21 @@ internal sealed partial class AgentsPageViewModel
     /// <summary>The repo the list is narrowed to; null for all.</summary>
     public string? RepoFilter { get; private set => Set(ref field, value); }
 
+    /// <summary>The provider filter's accessible name: its shown choice first.</summary>
+    public string ProviderFilterName => Labels.FilterName(ProviderFilter ?? Labels.AllProviders, "provider");
+
+    /// <summary>The state filter's accessible name: its shown choice first.</summary>
+    public string StateFilterName => Labels.FilterName(StateFilter ?? Labels.AllStates, "status");
+
+    /// <summary>The repo filter's accessible name: its shown choice first.</summary>
+    public string RepoFilterName => Labels.FilterName(RepoFilter ?? Labels.AllRepos, "repo");
+
     /// <summary>Narrows the list to one provider (a choice), or to all.</summary>
     /// <param name="choice">A provider label, or the "all" choice, or null.</param>
     internal void FilterProvider(string? choice)
     {
         ProviderFilter = Chosen(choice, Labels.AllProviders);
+        OnChanged(nameof(ProviderFilterName));
         Redraw();
     }
 
@@ -42,6 +52,7 @@ internal sealed partial class AgentsPageViewModel
     internal void FilterState(string? choice)
     {
         StateFilter = Chosen(choice, Labels.AllStates);
+        OnChanged(nameof(StateFilterName));
         Redraw();
     }
 
@@ -50,6 +61,7 @@ internal sealed partial class AgentsPageViewModel
     internal void FilterRepo(string? choice)
     {
         RepoFilter = Chosen(choice, Labels.AllRepos);
+        OnChanged(nameof(RepoFilterName));
         Redraw();
     }
 
