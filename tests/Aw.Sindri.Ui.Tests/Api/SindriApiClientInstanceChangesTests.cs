@@ -44,15 +44,17 @@ public sealed class SindriApiClientInstanceChangesTests
         var handler = new FakeSindriHandler(server);
         var client = new SindriApiClient(new HttpClient(handler), _token, TimeProvider.System);
 
+        IReadOnlyList<string?> asked = [];
         await foreach (var _ in client.InstanceChanges(_api, "ITM-1/project/1", Token))
         {
+            asked = server.ChangeQueries;
             server.Drop();
         }
 
         var request = Assert.Single(handler.Requests);
         Assert.Equal("/sindri/events", request.Path);
         Assert.Equal("?types=workflow.instance-changed&instance=ITM-1%2Fproject%2F1", request.Query);
-        Assert.Equal(["ITM-1/project/1"], server.ChangeQueries);
+        Assert.Equal(["ITM-1/project/1"], asked);
     }
 
     [Fact]

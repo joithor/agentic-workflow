@@ -10,5 +10,15 @@ internal sealed partial class WorkflowsViewModel
     /// <param name="change">The frame, or null to re-read.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>False when the row of that instance still isn't in the frame's state; true when it is, or when no row shows it.</returns>
-    internal Task<bool> Catch(Uri url, InstanceChange? change, CancellationToken cancellationToken) => throw new NotSupportedException();
+    internal async Task<bool> Catch(Uri url, InstanceChange? change, CancellationToken cancellationToken)
+    {
+        await Refresh(url, cancellationToken).ConfigureAwait(true);
+        if (change is null)
+        {
+            return true;
+        }
+
+        var row = Groups.SelectMany(g => g.Rows).Concat(DoneRows).FirstOrDefault(r => string.Equals(r.Address, change.Instance, StringComparison.Ordinal));
+        return row is null || string.Equals(row.StateWord, change.State, StringComparison.Ordinal);   // no row: a child, or one the filters leave out; nothing to wait for
+    }
 }

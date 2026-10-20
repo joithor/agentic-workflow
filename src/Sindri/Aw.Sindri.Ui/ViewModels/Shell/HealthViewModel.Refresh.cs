@@ -15,14 +15,6 @@ internal sealed partial class HealthViewModel
     /// <param name="view">Reads the view from the API's base URL.</param>
     internal void Follow(Func<Uri, CancellationToken, Task> view) => _views.Add(view);
 
-    /// <summary>
-    /// Adds a reader of instance changes: told of a 'workflow.instance-changed' frame (after coalescing) it re-reads what it shows of that instance, and says whether
-    /// the view caught up with the frame's state (false: still behind, read it again shortly). Told of none (null) it re-reads everything it shows of instances,
-    /// which the follower asks for each time the instance stream has opened.
-    /// </summary>
-    /// <param name="reader">Reads from the API's base URL for a change, or for all.</param>
-    internal void FollowInstances(Func<Uri, InstanceChange?, CancellationToken, Task<bool>> reader) => throw new NotSupportedException();
-
     /// <summary>Re-reads every followed view, in the order they were added.</summary>
     /// <param name="url">The API's base URL.</param>
     /// <param name="cancellationToken">Cancels the reads.</param>
