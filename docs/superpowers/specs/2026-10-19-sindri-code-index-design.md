@@ -42,7 +42,7 @@ rest of Sindri reads it.
 | CI8 | **Reads never wait for a build.** A build writes a new database file under a new name and publishes it by atomically replacing a small pointer file (§4.1); readers open the file the pointer names read-only, and never see a path reused under them, so they see the whole old index or the whole new one. The index keeps one commit per repo (§4.3) | A build of a big repo takes minutes under the heavy-job lock; the station's gather step must not stall on it |
 | CI9 | **Repo text is untrusted, always.** Names, signatures, paths and bodies are fenced and escaped on the way out; bodies are scrubbed (`Aw.Redaction`) before they are stored; deny globs are enforced at ingest and again at read. Agent sessions read through the same repo scope as the context lenses | CTX §7 egress rules; the TS index's `<untrusted>` fence |
 | CI10 | **No byte or state compatibility with the TS index.** New schema, new files under a new directory, no migration; the TS index keeps running until the switch and the two never share a file | AGENTS.md "C# build"; the owner's rule for every port |
-| CI12 | **Roslyn parses untrusted text inside the host, so it is bounded.** Every syntax walker checks `RuntimeHelpers.EnsureSufficientExecutionStack()` and a depth cap, a file's parse has a time limit, and the parse runs on a thread with a fixed large stack; a file that trips any of them is stored as `parsed = 0` and counted `too-deep`, never an error. A stack overflow cannot be caught in .NET and would take down the control plane, so if the CI-4 fixtures (a 100,000-term `a+b+...`, deeply nested parentheses and generics) crash under these guards, the parse moves to a child worker process before CI-6 | Security review of round 1: one hostile file must not stop `serve` or crash-loop on the 1-minute tick |
+| CI12 | **Roslyn parses untrusted text inside the host, so it is bounded.** Every syntax walker checks `RuntimeHelpers.EnsureSufficientExecutionStack()` and a depth cap, a file's parse has a time limit, and the parse runs on a thread with a fixed large stack; a file that trips any of them is stored as `parsed = 0` and counted `too-deep`, never an error. A stack overflow cannot be caught in .NET and a thread cannot be aborted, so the build writes the blob id it is about to parse to `<repo>.inflight` before each file and deletes it after; a start that finds one quarantines that blob (`parsed = 0`, `too-deep`) and the 1-minute tick can never crash-loop on one file. **Gate:** the CI-4 PR does not merge unless the hostile-parse fixtures (CI-0c: a 100,000-term `a+b+...`, deeply nested parentheses and generics) pass under these guards in the host; if they cannot, CI-4 moves the parse to a child worker process before it merges | Security review of round 1: one hostile file must not stop `serve` or crash-loop on the 1-minute tick |
 | CI11 | **Shape signals, the pre-commit overlay, the spool and `evolve`'s identifier gate are not part of this block.** They are consumers of an index and are their own work; the block exposes `Similar` (§7) so they can be rebuilt on it | They are record-only today and bound to the frozen hook contract (spec §4c). Mixing them in would make this spec the size of the TS package |
 
 ## 2. Goals, non-goals, anti-goals
@@ -58,6 +58,17 @@ rest of Sindri reads it.
   callers" is never shown as "no callers".
 - Sized for the owner's repos: a first build of a 200 MB tracked tree finishes in the background without holding more than
   one heavy-job slot, and a build after one merge touches only the changed files.
+
+**Targets** (measured and reported, not gated; a miss goes to the owner, nothing happens automatically)
+
+| Measure | Target |
+|---|---|
+| First build of this repo's C# (structure layer) | under 10 minutes, one heavy slot |
+| Build after one merge (structure) | under 1 minute |
+| A quiet 1-minute tick | under 200 ms per repo, no parsing |
+| Time from a commit on main to a published index | under 2 minutes after the tick plus the build |
+| Call sites left unresolved / left ambiguous | shown on Health per repo; no cut-off until the quality probe has numbers |
+| `callers` / `callees` precision and recall (50 hand-marked pairs) | reported from CI-4 on; the owner decides from them (Q3) |
 
 **Non-goals**
 - Semantic call resolution through the compiler (Roslyn `SemanticModel`, `dotnet build` of the target repo). The build never
@@ -105,9 +116,11 @@ renaming that over the pointer file `<repo>.current` (a one-line text file, the 
 where a database file cannot be renamed over while open). Before publishing, the build runs `PRAGMA quick_check(1)`,
 `wal_checkpoint(TRUNCATE)`, `journal_mode=DELETE`, closes, and deletes any `-wal` and `-shm` beside it, so a published file
 is immutable and has no sidecars. Readers read the pointer, then open that file `mode=ro`; a missing pointer is "no index".
-Superseded files and leftover `<repo>.*.db*` that no pointer names are deleted when older than 10 minutes (readers hold a
-file only for one call), at the start and end of each build; the heavy lock means no two builds of a repo run. Files are
-created 0600 explicitly.
+Superseded files and leftover `<repo>.*.db*` are deleted when no pointer names them, they are not the build file the running build
+recorded in `<repo>.building`, and they are older than 10 minutes (readers hold a file only for one call), at the start and end of each build; the heavy lock means no two builds of a repo run. Files are
+created 0600 explicitly. A repo name is `[A-Za-z0-9._-]{1,64}` (refused otherwise, `SND-CODEIDX-001`) before it goes into any file name,
+and the pointer is opened without following symlinks and must match a ULID, else the index is `damaged`. An incremental build and an
+embeddings continuation each copy the current file once (the cost of immutable files; a large index is hundreds of MB).
 The index is derived data: a different `user_version` is rebuilt from scratch, never migrated (CI10).
 
 ### 4.2 Schema (version 1)
@@ -131,11 +144,11 @@ CREATE TABLE edges (
   dst INTEGER NULL REFERENCES symbols(id) ON DELETE SET NULL,                                 -- null: the callee is not in this repo or not resolved
   dst_name TEXT NOT NULL,                                                                     -- always kept, so an unresolved call still reads
   kind TEXT NOT NULL, basis TEXT NOT NULL, confidence TEXT NOT NULL, line INTEGER NOT NULL,
-  candidates INTEGER NOT NULL,                                                                -- how many symbols the name matched, kept even when only 8 edges are
-  UNIQUE (src, dst_name, kind, basis, line, dst));
+  candidates INTEGER NOT NULL);                                                               -- how many symbols the name matched, kept even when only 8 edges are
+CREATE UNIQUE INDEX edges_uq ON edges(src, dst_name, kind, basis, line, IFNULL(dst, 0));   -- NULL dst included
 CREATE TABLE call_sites (                                                                      -- raw syntax calls, so edges can be re-resolved without re-parsing
-  src INTEGER NOT NULL REFERENCES symbols(id) ON DELETE CASCADE, name TEXT NOT NULL, arity INTEGER NOT NULL,
-  receiver TEXT NOT NULL, line INTEGER NOT NULL);                                              -- receiver: this | base | type:<name> | other
+  src INTEGER NOT NULL REFERENCES symbols(id) ON DELETE CASCADE, kind TEXT NOT NULL,         -- calls | inherits
+  name TEXT NOT NULL, arity INTEGER NOT NULL, receiver TEXT NOT NULL, line INTEGER NOT NULL);                                              -- receiver: this | base | type:<name> | other
 CREATE INDEX call_sites_name ON call_sites(name);
 CREATE INDEX edges_src ON edges(src); CREATE INDEX edges_dst ON edges(dst); CREATE INDEX edges_name ON edges(dst_name);
 CREATE TABLE bands  (key TEXT NOT NULL, symbol_id INTEGER NOT NULL REFERENCES symbols(id) ON DELETE CASCADE,
@@ -149,7 +162,7 @@ CREATE TABLE graph_nodes (id TEXT PRIMARY KEY, file TEXT NULL, name TEXT NULL, l
 CREATE TABLE graph_edges (src TEXT NOT NULL, dst TEXT NOT NULL, relation TEXT NOT NULL, confidence TEXT NOT NULL);
 ```
 
-`edges` is rebuilt from `call_sites` after every structure write (one set-based pass over all call sites, so a callee that
+The `edges` rows with `basis = syntax` are rebuilt from `call_sites` after every structure write, and the `basis = graphify` rows are re-merged from `graph_edges` in the same pass, so a structure change never drops graph edges and the graph stamp can stay the commit (one set-based pass over all call sites, so a callee that
 moved, appeared or vanished in a changed file corrects the edges of callers in files that were not re-parsed); an edge
 whose `dst` was set null by a cascade is re-resolved, never left `certain`. `bodies` is a separate table so no read path loads text by accident, and so the text can be dropped once the embeddings layer
 has used it (§15 Q7). `graph_nodes` and `graph_edges` keep graphify's output as it came, trimmed to the fields below; the
@@ -208,12 +221,12 @@ case-insensitive; additions only, as in the TS index) is skipped as `denied`, a 
 The sum of kept sizes over `index.maxTotalMB` stops the build with `SND-CODEIDX-003` before any content is read. Contents
 come from one long-lived `git cat-file --batch` process per build, fed blob ids; no file is read from the working tree, so
 there is no symlink or race to defend against, and a path swapped after the commit does not matter. The git calls clear the
-hook environment variables (`GIT_DIR` and the like) the way `Aw.Context.Infrastructure.Git.GitCli` does (that class is
+environment variables `GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE`, `GIT_OBJECT_DIRECTORY`, `GIT_ALTERNATE_OBJECT_DIRECTORIES`, `GIT_NAMESPACE`, `GIT_CEILING_DIRECTORIES`, `GIT_COMMON_DIR` and every `GIT_CONFIG_*` the way `Aw.Context.Infrastructure.Git.GitCli` does (that class is
 `internal` to Context, so CodeIndex has its own thin copy with a shared contract test), and add: `GIT_OPTIONAL_LOCKS=0` (no index lock
 in the owner's checkout), `--no-replace-objects` (a replace ref in the repo must not swap what a blob id means),
-`GIT_NO_LAZY_FETCH=1` (a partial clone's missing blob is a `missing` skip and a layer note, never a network fetch),
-`GIT_CONFIG_NOSYSTEM=1`, `-c core.fsmonitor=false -c core.hooksPath=/dev/null -c protocol.allow=never`, and never
-`safe.directory=*`; a repo git refuses as unsafe is `SND-CODEIDX-002`. Roslyn's depth and time guards are CI12.
+`-c protocol.allow=never` plus `GIT_NO_LAZY_FETCH=1` where git knows it (git 2.44 and later; this box has 2.43, which ignores it, so `protocol.allow=never` is the guard and a contract test with a promisor-repo fixture proves a missing blob is a `missing` skip and a layer note, never a network fetch),
+`GIT_CONFIG_NOSYSTEM=1`, `GIT_CONFIG_GLOBAL=/dev/null`, `-c core.fsmonitor=false -c core.hooksPath=/dev/null`, and never
+`safe.directory=*`; a repo git refuses as unsafe is `SND-CODEIDX-002`. Roslyn's depth and time guards are CI12. Every path from `ls-tree` is validated at inventory: a component that is empty, `..`, `.git` (any case), contains a backslash or NUL, or an absolute path is skipped as `unsafe-path`, and every write of the graphify snapshot asserts the resolved path is under the snapshot root. Fixed ceilings live in `CodeIndexRules`: 100,000 files, 5,000 symbols and 20,000 call sites per file, a 2 GB index file, a 2-hour build; passing one fails that file or the build with a count, never a hang.
 
 ### 5.2 Incremental planning (`BuildPlanner`, Core, pure)
 
@@ -247,7 +260,7 @@ function with a table of cases; the TS `writeStructure` has the same idea, writt
 Syntax gives `(caller, name, arity, line)`. The resolver looks the name up in the repo's symbols:
 exactly one candidate of that arity gives `certain` when the call is on `this`, an unqualified name in the same type, or a
 type name that matches the candidate's container, and `likely` otherwise; several candidates give one `ambiguous` edge per
-candidate, ranked by closeness (same file, then same namespace or an imported one, then same project, then path order;
+candidate, ranked by closeness (same file, then same namespace, then same project directory (the nearest manifest), then path order; all derivable from stored rows;
 at most 8; `candidates` keeps the true count, so `Handle` with 300 matches reads "1 of 300", not a guess); none gives an `unresolved` edge with `dst = NULL`
 (a call into a library, or generated code). Graphify edges (§5.5) are merged in as `basis = graphify`, never replacing a
 syntax edge for the same pair. `Callers` can follow `inherits` edges from an interface or base member to its implementations when asked (`includeImplementations`), because dispatch through an interface is the common case in this repo. A reader asking for callers gets the confidence with every row and a count of unresolved
@@ -262,13 +275,13 @@ graphify runs on a snapshot of the commit written from the filtered inventory of
 directory inside the snapshot, a cleaned environment, a time limit, and at most 64 KB kept from each output stream. It runs
 only under a sandbox that denies the network and confines writes to the snapshot (bubblewrap on Linux,
 `sandbox-exec` on macOS, absolute paths, root-owned, never from `PATH`); with none, the layer is `unavailable`
-`SND-CODEIDX-007` and graphify never runs unsandboxed. `graph.json` is size-capped (`index.graphMaxMB`), read as a regular
+`SND-CODEIDX-007` and graphify never runs unsandboxed. `graph.json` is size-capped (`index.graph.maxMB`) and read with a streaming reader that stops at the node and edge caps, read as a regular
 file through no symlink, parsed with `System.Text.Json` into a strict DTO (anything unexpected is `SND-CODEIDX-008`), and
 treated as untrusted. Nodes with a file and line are matched to `symbols` by file and the enclosing span; an unmatched node
 becomes a `symbols` row of kind `graph-symbol` (ref as §3, `signature` empty, `end_line` = its line, no clone rows) when graphify's file is a
 language no parser covers (every language but C#). Node ids and files are kept only if the file is in the snapshot's
 file list; names are scrubbed and cut like signatures. `graph.json` also has node and edge caps
-(`index.graphMaxNodes` 500,000, edges 2,000,000; over either is `SND-CODEIDX-008`). graphify runs with a memory limit
+(`index.graph.maxNodes` 500,000, edges four times that; over either is `SND-CODEIDX-008`). graphify runs with a memory limit
 (`RLIMIT_AS`) as well as the time limit. The spec does not guess graphify's output: **the CI-0a spike runs the pinned graphify on a
 small TypeScript and Python fixture, records the real `graph.json` as a test fixture, and writes the DTO field names, whether
 there are call edges, whether nodes have end lines and the confidence words into this section before CI-7 starts** (the
@@ -333,7 +346,7 @@ indexed from a feature branch, and the Health row says why ("checkout is not on 
 
 1. Scope: no approved profile is a quiet run (not a failed run).
 2. Heads: `IRepoHeads` for the profile's repos (a few `git` calls per repo; nothing is built or parsed on a quiet tick).
-3. Recorded heads: **the index's own stored state**, one read of `view_code_index` (the commit of the newest `codeindex.built` per repo), cross-checked with `ICodeIndex.Heads` (the pointer and file header). A missing, damaged or `user_version`-mismatched index counts as no recorded head, so a deleted file rebuilds. The jobs view is read only for the ended-attempts list of a repo whose last attempt failed (by key, at most 10), never listed whole.
+3. Recorded heads: **`ICodeIndex.Heads` is authoritative** (the pointer and file header, no git: a few small reads); `view_code_index` is for display only, so a stalled projector can never cause a rebuild of the same commit. A missing, damaged or `user_version`-mismatched index counts as no recorded head, so a deleted file rebuilds. Attempts: the newest 10 ended jobs of the key per repo (a bounded read by key and kind, never the whole list), fed to `Decide` for backoff and to `IndexContinuationDecision` (§6.3).
 4. For each repo: `MainMoveDecision.Decide(...)`; on `Start`, run the `BuildCodeIndexRequest(repo, commit)` command chain as
    `service:code-index-main-move` (gate, audit, authorization, `command.handled`; never the runner directly). `SND-JOB-409`
    with `runningJob` is a quiet run; another refusal fails the run.
@@ -345,8 +358,10 @@ indexed from a feature branch, and the Health row says why ("checkout is not on 
 
 A job that ends with embeddings `pending` records `layersPending: ["embeddings"]` in its result. The service then calls
 `Decide` with that repo's recorded head withheld (null), so a continuation is the same function with a different input,
-not a second path. A continuation that embedded something may start again after 2 minutes; one that embedded nothing, and a
-`deferred: heavy-busy` job, wait 10 minutes, and none runs after 3 in a row that embedded nothing. (A large repo's first
+not a second path. When to withhold it is its own small pure function in `CodeIndex.Core`, `IndexContinuationDecision` (inputs: the repo's newest
+jobs, their results' `layersPending`, `embedded` counts and `deferred` flag, and the clock): after a job that embedded something it says
+"continue" from 2 minutes later; after one that embedded nothing, and after a `deferred: heavy-busy` job (which publishes nothing and writes no
+`codeindex.built`), from 10 minutes later; after 3 in a row that embedded nothing, never until the head moves. (A large repo's first
 build takes about ten continuations; Health shows the percentage.) A layer that was `unavailable` for a fixable cause
 (`SND-CODEIDX-007` to `009`: graphify, sandbox, Ollama or pin missing) is probed at most every 10 minutes (`ICodeIndex.ProbeLayers`:
 the same lock check the build does, no work) and, when it has become available, starts a layers-only continuation, so
@@ -360,7 +375,8 @@ and returns `Result<T>` (`Aw.Kernel`). Reads open the repo's file read-only and 
 
 | Call | Answers | Used by |
 |---|---|---|
-| `Status(scope)` | per repo: `state` (`missing`, `building`, `ok`, `stale`, `damaged`, `waiting`), `commit`, `builtAt`, `layers[]` (status, code, detail), counts (files, symbols, edges) | Health, doctor, the code lens' `searched.code-index` row |
+| `Build(scope, repo, commit, progress)` | the build slice (§5.7): the only write; called by Sindri's `BuildCodeIndexService` | the job |
+| `Status(scope)` | per repo, **from the files only**: `state` (`missing`, `ok`, `damaged`; `stale` once Sindri compares the commit with the checkout's head), `building` and `waiting` are overlaid by Sindri from its jobs and service state, `commit`, `commit`, `builtAt`, `layers[]` (status, code, detail), counts (files, symbols, edges) | Health, doctor, the code lens' `searched.code-index` row |
 | `Heads(scope)` | per repo: the commit the index describes, from stored state only (no git, no live probe), or none when the file is missing or damaged | the service's recorded heads (§6.2); doctor |
 | `ProbeLayers(scope)` | per repo: which unavailable layers can now be built (lock and tool check, no work) | §6.3 |
 | `FindSymbols(scope, SymbolQuery)` | by exact name, `path`, `path#name` or ref; `prefix` search; ordered, at most 200; each hit with ref, kind, span, signature, exported | S-9 `symbol` shape; `context query --symbol` |
@@ -395,6 +411,7 @@ index's container stays its own). Context never sees SQLite or a path of the ind
 | as-of commit (a map version's) differs from the index's | `stale`, with both commits named; the lens marks the rows `asOfMismatch` |
 | file damaged or unreadable pages | `damaged`, `SND-CODEIDX-010`, and the next tick deletes and rebuilds it |
 | graph layer unavailable | structure-only callers and callees (`basis = syntax`), the answer says `graph: unavailable`; the lens source is `degraded` |
+| _lens mapping_ | block state to `SearchedState` (code): `ok` to ok; `stale` or a layer missing to degraded (`stale` / the layer's `SND-CODEIDX`); `missing`, `damaged`, `building` (no old index) to unavailable (`index-not-built` / `-010` / `index-building`); no `index:` section or embeddings and graph both off to not-configured. `Degraded` is documented as "last run failed" today; its comment widens to "answered from an older or partial index" in S-9a |
 | `waiting` (a repo whose build is deferred or in backoff) | the old index, if any, `stale`; Health says "waiting for a free build slot" or "retrying in N min" |
 | a repo outside the caller's scope, or no such repo | the same `SND-CODEIDX-013`/`-011` not-found as a repo with no index; `Status` lists only the caller's repos, so a session learns nothing about others |
 
@@ -433,9 +450,10 @@ index's container stays its own). Context never sees SQLite or a path of the ind
   request from inside it fails (Context's tests only compare argv strings today). The test-only sandbox seam is not reachable from a profile key or an environment variable.
 - **Roslyn parses text, nothing else.** No `MSBuildWorkspace`, no analyzer or source generator of the indexed repo is loaded,
   no `dotnet restore`. A repo's `.csproj` is read as XML for the deps layer only.
-- **Scrubbing:** bodies, signatures, graph names and `dst_name` are scrubbed (`Aw.Redaction`) before they are stored, and the embedded text is the scrubbed one; a literal in a signature (`string key = "AKIA..."`) does not reach disk.
+- **Scrubbing:** every stored text field (bodies, signatures, names, refs, `dst_name`, call-site fields, deps `version` and `tags`, graph names) is scrubbed (`Aw.Redaction`) and then cut, in that order, before it is stored; layer `detail`, job results and progress lines hold codes and counts only, never the stderr of git, graphify or Roslyn; and the embedded text is the scrubbed one; a literal in a signature (`string key = "AKIA..."`) does not reach disk.
 - **Egress:** the facade returns repo text marked untrusted; sessions read only their own repo's index, enforced in Sindri's
-  query handlers as for `context lenses`, not by the caller's arguments.
+  query handlers as for `context lenses`, not by the caller's arguments; the repo inside a ref (`<repo>:<path>#...`) is scope-checked the same way, a mismatch
+  answers the uniform not-found, and every query is parameterized (a ref is parsed into parts, never concatenated into SQL or a path).
 - **Disk:** the state directory holds source text (bodies, until embedded). Keep `$AW_SINDRI_HOME` out of cloud sync and
   backups you do not control (the TS index says the same).
 
@@ -443,10 +461,10 @@ index's container stays its own). Context never sees SQLite or a path of the ind
 
 | Surface | What | Notes |
 |---|---|---|
-| Jobs (CLI and the app's job panel) | `sindri jobs` lists a row per build: `code index · <repo> · @abcdef0`, state, elapsed, the progress line, the summary or code; the app shows the same in the job panel reached from Services | the app has no list of all jobs today (only that panel), so CI-10 adds the kind's label to the panel and does not build a jobs list; the owner sees builds in `sindri jobs` and on the Health card |
+| Jobs (CLI) | `sindri jobs` lists a row per build: `code index · <repo> · @abcdef0`, state, elapsed, the progress line, the summary or code | the app has no job view today (`docs/csharp/sindri-ui.md` says `job/` links open a "not served yet" placeholder), so this block builds none: the owner sees builds in `sindri jobs` and on the Health card, and a job view is the UI lane's own work |
 | Health | a `Code index` card: per repo the commit, age, layer words (`structure ok · graph ok · embeddings pending 31%`), the unresolved and ambiguous call shares, or "checkout is not on main" / "first build queued" / "waiting for a free build slot" / "retrying in N min" / "index damaged, rebuilding" | reads `view_code_index` and `Status`. The shipped Health page is a fixed table of status parts, so this is its own UI slice (CI-10, with the `ISindriApi` method and labels): a stale or unavailable layer is a warning word on the card and never changes the overall pill; a state is always a word, never colour alone |
 | Context screens | the file map's `symbols` column (S-9) and the code lens's callers and callees panels | the mockup `docs/superpowers/specs/2026-10-13-sindri-ui-screens-design/mockups/context-filemap.html` has only a disabled "symbols · index not built" lens checkbox, not a column; S-9 adds the column design to that mockup and the screen. An unresolved-call count reads "N calls not resolved", and an as-of mismatch reads "from <short commit>, not <asked commit>" |
-| CLI (read only) | `sindri code-index status [--json]`, `sindri code-index symbols <query> [--repo R] [--json]`, `callers <ref>`, `callees <ref>` | reads go through the running control plane like the workflow reads (exit 1 `SND-API-001` when it is down, never starting it); exit 0 ok (a stale-but-served answer is ok and says `stale` on its first line), 1 attention (missing index, serve down, `status` with any repo not `ok`), 2 error (including `SND-CODEIDX-011`/`-012`). `--json` on every command; `callers`/`callees` take `--depth 1..3` (default 1) and `--repo R`. No `build`, no `setup` (CI1, CI6). Text is repo text: fenced when a session calls it |
+| CLI (read only) | `sindri code-index status [--json]`, `sindri code-index symbols <query> [--repo R] [--json]`, `callers <ref>`, `callees <ref>` | `status` takes `--repo R`; reads go through the running control plane like the workflow reads (exit 1 `SND-API-001` when it is down, never starting it); exit 0 ok (for `symbols`, `callers`, `callees` a stale-but-served answer is ok and says `stale` on its first line; for `status`, any repo not `ok` is 1), 1 attention (missing index, serve down), 2 error (including `SND-CODEIDX-011`/`-012`). `--json` on every command; `callers`/`callees` take `--depth 1..3` (default 1) and `--repo R`. No `build`, no `setup` (CI1, CI6). Text is repo text: fenced when a session calls it |
 | HTTP | `GET /sindri/code-index/status`, `/symbols`, `/callers`, `/callees` (query class, repo-scoped for sessions) | catalog rows and goldens in the same PR as the handler |
 | MCP / blocks | none in version 1; read blocks `code.callers` and `code.symbols` for Steps are a later row of the blocks-over-MCP list | keeps the tool list fixed (BM) |
 
@@ -497,11 +515,11 @@ Area `SND-CODEIDX` (new; free: the TS `SND-INDEX-*` codes stay documented until 
 | `SND-CODEIDX-001` | Invalid | the `index:` section has a bad key or value (the message starts with the key path) | edit the profile, `sindri profile validate` |
 | `SND-CODEIDX-002` | NotFound | the repo path is not a git repo, or the commit is not in it | check the repo's path in the profile |
 | `SND-CODEIDX-003` | Invalid | the tracked input is over `index.maxTotalMB` | add generated or vendored paths to `index.denyPaths`, or raise the cap |
-| `SND-CODEIDX-004` | Unavailable | every heavy-job slot stayed busy past the wait (the job ends `deferred`, not Failed) | none needed; the service retries after 10 minutes |
+| `SND-CODEIDX-004` | Unavailable | every heavy-job slot stayed busy past the wait (returned only as the job's result code, never as an error to a caller; the job ends `deferred`, not Failed) | none needed; the service retries after 10 minutes |
 | `SND-CODEIDX-005` | Invalid | the embedding URL is not loopback, or the model is a cloud model | set `index.embeddings.url` to `http://127.0.0.1:11434` or turn embeddings off |
 | `SND-CODEIDX-006` | Unavailable | the embedding server failed or answered in an unexpected shape (a layer code) | start Ollama; `sindri doctor` shows the pin |
 | `SND-CODEIDX-007` | Unavailable | no network sandbox for graphify (a layer code) | Linux: install bubblewrap (`./setup.sh`); or set `index.graph.enabled: false` |
-| `SND-CODEIDX-008` | Unavailable | graphify is missing, failed, timed out, or wrote no usable or too large graph (more than `graphMaxMB`, `graphMaxNodes` or the edge cap) (a layer code) | `./setup.sh` installs the pin; raise `index.graphMaxMB` for a big graph |
+| `SND-CODEIDX-008` | Unavailable | graphify is missing, failed, timed out, or wrote no usable or too large graph (more than `graph.maxMB`, `graph.maxNodes` or the edge cap) (a layer code) | `./setup.sh` installs the pin; raise `index.graph.maxMB` for a big graph |
 | `SND-CODEIDX-009` | Unavailable | a tool or model does not match `context/code-index.lock` (a layer code) | `./setup.sh` re-installs the pin |
 | `SND-CODEIDX-010` | Unavailable | the index file is damaged; it is deleted and rebuilt on the next tick | none |
 | `SND-CODEIDX-011` | NotFound | the symbol ref names no symbol in this index | `sindri code-index symbols <name>` |
@@ -525,8 +543,8 @@ validation. A repo entry's `index:` unions its `denyPaths` and `utilityGlobs` wi
 | `maxTotalMB` | 200 | larger input stops the build (`SND-CODEIDX-003`) |
 | `embeddings.enabled` / `.url` / `.model` | true / `http://127.0.0.1:11434` / the lock's model | loopback only; a cloud model is refused |
 | `graph.enabled` | true | off leaves the graph layer `disabled` |
-| `graphMaxMB` | 256 | largest `graph.json` read |
-| `graphMaxNodes` | 500000 | most graph nodes read (edges: four times that) |
+| `graph.maxMB` | 256 | largest `graph.json` read |
+| `graph.maxNodes` | 500000 | most graph nodes read (edges: four times that) |
 
 `maxAgeHours` is gone: freshness is the head, not a clock. `docs/csharp/sindri-profile.md` lists every key
 (`scripts/check-profile-doc.mjs` enforces it).
@@ -545,22 +563,24 @@ unit that needs them; every earlier unit is independent of it. CI-9 may start on
 
 | Phase | Unit | Depends on | Observable signal |
 |---|---|---|---|
-| **CI-0a** | Pins: `context/code-index.lock` (graphify version and date, Ollama model name and digest, disk need), `scripts/code-index-lock.sh check` and its bash test, and `scripts/install-deps.sh` reading it (graphify into its own environment from the hash-pinned requirements with `uv`; a new `ollama pull` step for the model; the graphify row must equal `sindri/package.json`'s pin), modelled on `scripts/onyx-lock.sh` and its tests. **Also the graphify spike** (§5.5): the pinned graphify on a small TypeScript and Python fixture, the real `graph.json` recorded as a fixture, and §5.5 filled in from it | none | `./setup.sh --dry-run` prints the graphify and model steps from the lock; `bash scripts/tests/code-index-lock.test.sh` passes (shape, and the lock-vs-`package.json` parity); the recorded `graph.json` and the §5.5 text are in the PR |
+| **CI-0a** | Pins: `context/code-index.lock` (graphify version and date, Ollama model name and digest, disk need), `scripts/code-index-lock.sh check` and its bash test, and `scripts/install-deps.sh` reading it (graphify into its own environment from the hash-pinned requirements with `uv`; a new `ollama pull` step for the model; the graphify row must equal `sindri/package.json`'s pin), modelled on `scripts/onyx-lock.sh` and its tests | none | `./setup.sh --dry-run` prints the graphify and model steps from the lock; `bash scripts/tests/code-index-lock.test.sh` passes (shape, and the lock-vs-`package.json` parity) |
+| **CI-0d** | The graphify spike (§5.5): the pinned graphify on a small TypeScript and Python fixture, the real `graph.json` recorded as a fixture, §5.5 filled in from it, and a written go/no-go with pass criteria: **pass** means the TypeScript fixture's known calls appear as call edges whose both ends carry a file and line; otherwise TypeScript and the other graphify-only languages answer `unavailable` for callers and callees and Q1 is settled with the owner in this PR | CI-0a | the recorded `graph.json`, the §5.5 text and the verdict are in the PR |
 | **CI-0b** | Profile keys: `IndexSettings` (in `Aw.Sindri.Core`) grows the §13 keys with the profile's own validation, nested records marked unknown-key-rejecting, and `docs/csharp/sindri-profile.md` | none | `sindri profile validate` accepts the new keys and rejects a bad one with its key path |
-| **CI-0c** | Test assets: the fixture C# project with known calls (`tests/fixtures/code-index/`), the hostile-parse files (CI12), the 50-pair labeled sample for the quality probe (marked by the lane, reviewed by the owner), and the temp-repo builder (`git init`, commits, symlinks, a submodule entry, a swapped path) in `Aw.CodeIndex.Testing`, which lands once CI-1's PR opens | the fixtures: none; the builder: CI-1 (its Testing project) | the builder makes a repo the tests can read; none in the app |
-| **CI-1** | Package scaffold (`/new-package`: `Aw.CodeIndex.Core · Features · Infrastructure`, tests, testing, `deps.yaml` node and edges, `docs/csharp/code-index.md` stub); Core contracts: records, ports (`IRepoSnapshot`, `IIndexStore`, `ISymbolParser`, `IGraphRunner`, `IEmbedder`, `IRepoHeads`, `IHeavyJobLock`, `IBodyScrubber`), `CodeIndexSettings`, `CodeIndexErrors`, the facade interface; the `deps.yaml` project edge turns `current` when Features first references Core, the compose edge in CI-9; the Roslyn pin comment and `AwAotCompatible=false` for Infrastructure | none | `node scripts/check-deps.mjs` passes with the new node; `dotnet test` shows the one red test the scaffold leaves |
+| **CI-0c** | Test assets: the fixture C# project with known calls (`tests/fixtures/code-index/`), the hostile-parse files (CI12) and the 50-pair labeled sample for the quality probe (marked by the lane, reviewed by the owner) | none | the builder makes a repo the tests can read; none in the app |
+| **CI-1** | Package scaffold (`/new-package`: `Aw.CodeIndex.Core · Features · Infrastructure`, tests, testing, `deps.yaml` node and edges, `docs/csharp/code-index.md` stub); Core contracts: records, ports (`IRepoSnapshot`, `IIndexStore`, `ISymbolParser`, `IGraphRunner`, `IEmbedder`, `IRepoHeads`, `IHeavyJobLock`, `IBodyScrubber`), `CodeIndexSettings`, `CodeIndexErrors`, the facade interface (including `Build`); the temp-repo builder (`git init`, commits, symlinks, a submodule entry, a swapped path, a promisor-clone fixture) in `Aw.CodeIndex.Testing`; the `deps.yaml` project edge turns `current` when Features first references Core, the compose edge in CI-9; the Roslyn pin comment and `AwAotCompatible=false` for Infrastructure | none | `node scripts/check-deps.mjs` passes with the new node; `dotnet test` shows the one red test the scaffold leaves |
 | **CI-2** | `GitRepoSnapshot` and `InputRules` (ls-tree, cat-file batch, deny globs, caps, symlink and submodule skip, hook env cleared); `FakeRepoSnapshot` and `RepoSnapshotContract` | CI-1 | the contract tests run against a temp repo and the fake; none in the app |
 | **CI-3** | `SqliteIndexStore`: schema v1, writes, atomic swap, sweep, damage detection, user_version rebuild; `FakeIndexStore`, `IndexStoreContract`; `BuildPlanner` (pure) | CI-1 | a store contract run on a real temp file, including a killed build that leaves the live file intact; none in the app |
-| **CI-4** | `CSharpParser` (Roslyn syntax: symbols, spans, signatures, complexity, shape hash, call sites) and `CallResolver` (pure) with fixture files | CI-1 | golden symbols and edges for a fixture project, including each confidence and the hostile-parse files; the precision and recall of the resolver on the 50-pair sample are printed (reported, not gated) so the weak spots show before CI-6; none in the app |
+| **CI-4** | `CSharpParser` (Roslyn syntax: symbols, spans, signatures, complexity, shape hash, call sites) and `CallResolver` (pure) with fixture files; a separate Roslyn version for CodeIndex.Infrastructure (`VersionOverride`: the central 5.9.0 serves `Aw.Analyzers`, which must stay on the SDK's compiler); the CI12 guards and crash quarantine | CI-1, CI-0c | golden symbols and edges for a fixture project, including each confidence and the hostile-parse files; the precision and recall of the resolver on the 50-pair sample are printed (reported, not gated) so the weak spots show before CI-6; none in the app |
 | **CI-5** | Clones and deps: tokenizer, MinHash/LSH (`Clones`), `Similar` logic, manifest readers (`package.json`, `.csproj`, `Directory.Packages.props`) | CI-1 | known vectors and a near-duplicate pair found; none in the app |
-| **CI-6** | `BuildCodeIndex` slice (structure, clones, deps) over the fakes and real store: heavy slot, incremental plan, progress lines, cancel, report; the facade reads that need only these layers (`Status`, `FindSymbols`, `FileSymbols`, `Callers`, `Callees`, `Similar`) | CI-2, CI-3, CI-4, CI-5 merged (its Core and Features parts start on CI-1's fakes before they do) | a heavy-lane build of this repo that prints the report (files, symbols, edges, ms), and `Callers` on a known method in the output of a small test host; first thing a person can run, still not in the app |
-| **CI-7** | `GraphRunner` (graphify, sandboxed, pin check, snapshot, strict `graph.json` parse, merge into `edges`); `FakeGraphRunner`, contract; (pins from CI-0a) | CI-0a, CI-1 (contract); CI-6 to merge | heavy lane: graphify at the pin on a fixture repo yields call edges, a request from inside the sandbox is denied |
-| **CI-8** | `OllamaEmbedder` (loopback, redirect refusal, digest check, batches, resume), the embeddings layer and `Neighbors`; fake and contract | CI-1 (contract); CI-6 to merge | heavy lane: real Ollama at the pinned model; `Neighbors` ranks a known near-duplicate first |
-| **CI-9** | Sindri job and service: `BuildCodeIndex` registered as a job (`index:<repo>`), `code-index-main-move` (built-in, 1 min), `codeindex.built` event, catalog rows, the `view_code_index` projector; `SindriFeatures` and Host registration (compose edge flips to `current`), the `BuildCodeIndexRequest`/`Result` records and `BuildCodeIndexService` wrapper, the `IHeavyJobLock` adapter, the event's payload record, key and `ApiViews` name | CI-6; the context lane's `MainMoveDecision` and `IRepoHeads` (merged) | **In the running app:** commit to a registered repo's main; within two minutes a `BuildCodeIndex` job is in `sindri jobs` (and the Services job panel), runs, and ends `succeeded` with the repo and commit; a second commit builds incrementally; a checkout on a feature branch starts nothing |
-| **CI-10** | Surfaces: HTTP routes and goldens, `sindri code-index status|symbols|callers|callees`, Health card (its UI slice and `ISindriApi` method), doctor rows, pending-layer continuation and layer recovery (§6.3), the failed-job backoff and the needs-you row proven end to end | CI-9 | **In the running app:** Health shows "Code index: repo @ abcdef0, 3 min old, structure ok · graph ok · embeddings pending 31%"; `sindri code-index callers <ref>` answers; breaking graphify on purpose (wrong pin) shows `graph unavailable` and the job still succeeds; three failed jobs in a row raise `failure:service:code-index-main-move` |
-| **CI-11** | Proof: `scripts/owner-check.sh code-index`, the heavy-lane suite wired to the nightly, `docs/csharp/code-index.md`, `docs/sindri/index.md` (the C# note), the error table in `docs/csharp/sindri.md`, the README X-row; the `code-index` stage added to `scripts/owner-check.sh` and its test | CI-7, CI-8, CI-10 | **In the running app:** `scripts/owner-check.sh code-index up` runs the §11 end-to-end on a scratch home; `sindri doctor` is all ok on the owner's box |
-| **S-9a** | The Context side on a fake: `ICodeSymbolSource` in Context's Core with its fake and contract, the lens and file-map changes and their goldens | CI-1 (the interface only) | goldens in the Context tests with the fake; none in the app |
-| **S-9** | **Final phase, the context lane:** `CodeIndexSymbolSource` in Sindri's Host over the real facade (S-9a's port); the code lens fills `callers` and `callees`; the `code-index` source row goes live; file map `symbols` column and `coverage.code.level` from `file` to `symbol`; symbol-level `implements`; `context query --symbol path:name` | CI-10 (and CI-6's facade at least) | **In the running app:** `sindri context lenses <anchor> --json` and `GET /sindri/context/code` show real `callers` and `callees` with `basis` and `confidence` and `searched.code-index: ok`; the file map shows symbols; `context query --symbol` on a C# symbol returns the features it implements (the TypeScript example of CTX Phase 9, `src/layout/SplitPane.ts:setOrientation`, is the signal only if the CI-0a spike shows graphify call and containment data for TypeScript; otherwise that path answers `unavailable` for its language and CTX Phase 9's signal is amended with the owner's Q1 answer); a scoping run no longer records `index-not-built` |
+| **CI-6** | `BuildCodeIndex` slice (structure; clones and deps register into it when CI-5 merges, which does not hold CI-6 back) over the fakes and real store: heavy slot, incremental plan, progress lines, cancel, report; the facade `Build` and the reads that need only these layers (`Status`, `FindSymbols`, `FileSymbols`, `Callers`, `Callees`; `Similar` after CI-5) | CI-2, CI-3, CI-4 merged (its Core and Features parts start on CI-1's fakes before they do) | a heavy-lane test that builds this repo and prints the report (files, symbols, edges, shares, ms) and asserts `Callers` on a known method; no separate host; first thing a person can run, still not in the app |
+| **CI-7** | `GraphRunner` (graphify, sandboxed, pin check, snapshot, strict `graph.json` parse, merge into `edges`); `FakeGraphRunner`, contract; (pins from CI-0a) | CI-0a, CI-1 (contract); CI-6 to merge | heavy lane: graphify at the pin on a fixture repo yields call edges, a request from inside the sandbox is denied; the heavy-run output is pasted in the PR |
+| **CI-8** | `OllamaEmbedder` (loopback, redirect refusal, digest check, batches, resume), the embeddings layer and `Neighbors`; fake and contract | CI-1 (contract); CI-6 to merge | heavy lane: real Ollama at the pinned model; `Neighbors` ranks a known near-duplicate first; the heavy-run output is pasted in the PR |
+| **CI-9** | Sindri job and service: `BuildCodeIndex` registered as a job (`index:<repo>`), `code-index-main-move` (built-in, 1 min), `codeindex.built` event, catalog rows, the `view_code_index` projector; `SindriFeatures` and Host registration (compose edge flips to `current`), the `BuildCodeIndexRequest`/`Result` records and `BuildCodeIndexService` wrapper, the `IHeavyJobLock` adapter, the event's payload record, key and `ApiViews` name | CI-6; the context lane's `MainMoveDecision` and `IRepoHeads` (merged) | **In the running app:** commit to a registered repo's main; within two minutes a `BuildCodeIndex` job is in `sindri jobs` , runs, and ends `succeeded` with the repo and commit; a second commit builds incrementally; a checkout on a feature branch starts nothing |
+| **CI-10a** | Reads: HTTP routes and goldens, `sindri code-index status|symbols|callers|callees`, scope checks | CI-9 | **In the running app:** `sindri code-index callers <ref>` answers over a built index; a session gets the uniform not-found for another repo |
+| **CI-10b** | Health and recovery: the Health card (its UI slice, `ISindriApi` method, words keyed by the §7.3 state, text-fit canary and accessible names), doctor rows, `IndexContinuationDecision` wiring and layer recovery (§6.3), the failed-job backoff and the needs-you row proven end to end | CI-10a, CI-7, CI-8 (so its signal shows real graph and embeddings states) | **In the running app:** Health shows "Code index: repo @ abcdef0, 3 min old, structure ok · graph ok · embeddings pending 31%"; `sindri code-index callers <ref>` answers; breaking graphify on purpose (wrong pin) shows `graph unavailable` and the job still succeeds; three failed jobs in a row raise `failure:service:code-index-main-move` |
+| **CI-11** | Proof: `scripts/owner-check.sh code-index`, the heavy-lane suite wired to the nightly, `docs/csharp/code-index.md`, `docs/sindri/index.md` (the C# note), the error table in `docs/csharp/sindri.md`, the README X-row; the `code-index` stage added to `scripts/owner-check.sh` and its test | CI-7, CI-8, CI-10a (its docs and owner-check parts open on main; the Health parts rebase on CI-10b) | **In the running app:** `scripts/owner-check.sh code-index up` runs the §11 end-to-end on a scratch home; `sindri doctor` is all ok on the owner's box |
+| **S-9a** | The Context side on a fake: `ICodeSymbolSource` in Context's Core with its fake and contract, the lens and file-map changes and their goldens, the `Degraded` comment, and the file-map `symbols` column designed in `mockups/context-filemap.html` with its empty states (not built, building, stale, as-of mismatch) | CI-1 (the interface only) | goldens in the Context tests with the fake; none in the app |
+| **S-9** | **Final phase, the context lane:** `CodeIndexSymbolSource` in Sindri's Host over the real facade (S-9a's port); the code lens fills `callers` and `callees`; the `code-index` source row goes live; file map `symbols` column and `coverage.code.level` from `file` to `symbol`; symbol-level `implements`; `context query --symbol path:name` | CI-10a (S-9 stacks on it; S-9a is its half) | **In the running app:** `sindri context lenses <anchor> --json` and `GET /sindri/context/code` show real `callers` and `callees` with `basis` and `confidence` and `searched.code-index: ok`; the file map shows symbols; `context query --symbol` on a C# symbol returns the features it implements (the TypeScript example of CTX Phase 9, `src/layout/SplitPane.ts:setOrientation`, is the signal only if the CI-0a spike shows graphify call and containment data for TypeScript; otherwise that path answers `unavailable` for its language and CTX Phase 9's signal is amended with the owner's Q1 answer); a scoping run no longer records `index-not-built` |
 
 ### 14.1 The lane plan
 
@@ -569,20 +589,20 @@ each unit.
 
 | Wave | Lane A | Lane B | Lane C | Lane D |
 |---|---|---|---|---|
-| 0 | **CI-1** scaffold and contracts | **CI-0a** pins and install | **CI-0b** profile keys | **CI-0c** test assets |
+| 0 | **CI-1** scaffold and contracts | **CI-0a** pins and install | **CI-0b** profile keys, then **CI-0d** the graphify spike | **CI-0c** test assets |
 | 1 | **CI-2** snapshot | **CI-3** store and planner | **CI-4** Roslyn parser and resolver | **CI-5** clones and deps |
-| 2 | **CI-6** build slice (starts on CI-1's fakes; real adapters join as CI-2 to CI-5 merge) | **CI-7** graph layer (on the CI-0a pins) | **CI-8** embeddings layer | the context lane's `MainMoveDecision` merges; D starts **S-9a** (the row above) |
-| 3 | **CI-9** job and service | **CI-10** surfaces (stacks on CI-9) | **CI-11** install and proof | D finishes **S-9** (adapter in Host over the real facade, the signals above) |
+| 2 | **CI-6** build slice (starts on CI-1's fakes; real adapters join as CI-2 to CI-4 merge; CI-5's layers plug in later) | **CI-7** graph layer (on the CI-0a pins) | **CI-8** embeddings layer | D starts **S-9a** (the row above; it needs only CI-1, not the context lane's trigger) |
+| 3 | **CI-9** job and service, then **CI-11** install and proof | **CI-10a** reads (stacks on CI-9) | **CI-10b** Health and recovery (stacks on CI-10a) | D finishes **S-9** (adapter in Host over the real facade, the signals above; stacks on CI-10a) |
 
 Wave 0 keeps all four lanes busy while the scaffold lands: CI-0a, CI-0b and CI-0c touch no CodeIndex code, so they run beside CI-1 and merge in any order; CI-2 to CI-5 open as soon as CI-1 opens (they stack on it). Dependencies that decide the order: CI-6 needs the four wave-1 units; CI-7 and CI-8 need only the CI-1 contract to be
-built and the CI-6 slice to merge; CI-9 needs CI-6 and the shared trigger (merged); no stack is deeper than three open PRs: CI-10 stacks on CI-9, CI-11's owner-check and doc parts open on main and rebase once CI-10 merges; CI-10 needs CI-9; CI-11 needs the adapters and
-CI-10; S-9's adapter needs CI-10. S-9 stays the final phase because its observable result needs the real data; its
+built and the CI-6 slice to merge; CI-9 needs CI-6 and the shared trigger (merged); no stack is deeper than three open PRs: CI-10 stacks on CI-9, CI-11's owner-check and doc parts open on main and rebase once CI-10 merges; CI-10a needs CI-9, CI-10b needs CI-10a, CI-7 and CI-8; CI-11 needs the adapters and
+CI-10a; S-9's adapter needs CI-10a. S-9 stays the final phase because its observable result needs the real data; its
 Context-side half (S-9a) depends only on the CI-1 interface and runs in parallel with wave 2. If the context lane's shared
 trigger is late, CI-9 starts on a local stub of `MainMoveDecision` behind the same signature and swaps it in when it merges.
 
 Stage rules from the owner (2026-10-12, 2026-10-18, memory): each phase ships as one PR, layered commits; a lane's gate runs
 the build and the unit lane of the projects it touched, and the merges go through the meta's batch; Sindri PRs that add
-catalog rows or action ids also run `Aw.Sindri.Ui.Tests` in their own gate (CI-9, CI-10).
+catalog rows or action ids also run `Aw.Sindri.Ui.Tests` in their own gate (CI-9, CI-10a, CI-10b).
 
 ## 15. Open questions for the owner (plain words)
 
@@ -603,12 +623,11 @@ Defaults are what the builders do if you say nothing.
   from the numbers whether to put them in the bars.
 - **Q10. Clones, dependencies and embeddings have no reader in version 1.** The code lens needs symbols, callers and callees; clone
   detection, dependency rows and vectors wait for later consumers (CI11), and together they are about a third of the units (CI-5, CI-8). *Default:* build
-  them, in the last wave, so they cost the callers and callees nothing; drop them if the schedule slips.
+  them, in the last wave and out of CI-6's way, so they cost the callers and callees nothing; drop them if the schedule slips.
 - **Q4. Do we build embeddings at all in version 1?** Callers and callees do not need them. They serve "find code like this"
-  (the context spec's `code` source) and cost an Ollama model on the box and a longer first build (a large repo takes about ten background continuations, an hour or two). *Default:* build them (CI-8),
-  but they can be dropped from the plan without touching the rest.
+  (the context spec's `code` source) and cost an Ollama model on the box and a longer first build (a large repo takes about ten background continuations, an hour or two). *Default:* build them (CI-8), but they can be dropped from the plan without touching the rest. Decided together with Q10.
 - **Q5. Who pulls the Ollama model?** The background job must never download. *Default:* `./setup.sh` pulls the pinned model
-  and installs the pinned graphify (CI-11); the build only checks. A box set up before this lands shows "embeddings
+  and installs the pinned graphify (CI-0a); the build only checks. A box set up before this lands shows "embeddings
   unavailable, run ./setup.sh" in Health.
 - **Q6. A repo whose checkout is on a feature branch main does not contain is never indexed** (your F1 rule). The index of
   that repo stays at its last main commit, marked stale, and Health says why. Is that what you want when you are working
