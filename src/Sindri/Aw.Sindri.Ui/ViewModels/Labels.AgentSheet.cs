@@ -69,9 +69,6 @@ internal static partial class Labels
     /// <summary>The word after a chip whose state is a guess.</summary>
     internal const string SheetEstimated = "estimated";
 
-    /// <summary>The disclosure that holds the session's technical fields, its history and Watch the agent. Closed by default.</summary>
-    internal const string SheetDetails = "Details";
-
     /// <summary>The sheet's sentence when the answer can't be read.</summary>
     internal const string SessionUnreadable = "This session's answer can't be read by this build of the app.";
 
