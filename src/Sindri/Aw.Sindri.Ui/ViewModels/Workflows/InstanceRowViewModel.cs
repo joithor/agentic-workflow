@@ -111,10 +111,10 @@ internal sealed class InstanceRowViewModel : ObservableObject
 
     /// <summary>The Copy button's words.</summary>
     public string CopyText => Labels.Copy;
-#pragma warning restore CA1822, MA0041
 
     /// <summary>The Copy button's accessible name: the visible word, then what it copies.</summary>
     public string CopyName => $"{Labels.Copy} {Labels.RunAddressHeading.ToLowerInvariant()}";
+#pragma warning restore CA1822, MA0041
 
     /// <summary>Opens the Details, or closes them.</summary>
     internal void ToggleDetails() => IsDetailsOpen = !IsDetailsOpen;

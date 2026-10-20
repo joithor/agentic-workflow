@@ -39,18 +39,11 @@ internal static class WorkflowNames
         var spaced = new StringBuilder();
         foreach (var c in bare)
         {
-            if (c is '_' or '-' or '.')
-            {
-                _ = spaced.Append(' ');
-            }
-            else if (char.IsUpper(c) && spaced.Length > 0 && spaced[^1] != ' ')
-            {
-                _ = spaced.Append(' ').Append(char.ToLowerInvariant(c));
-            }
-            else
-            {
-                _ = spaced.Append(c);
-            }
+            _ = c is '_' or '-' or '.'
+                ? spaced.Append(' ')
+                : char.IsUpper(c) && spaced.Length > 0 && spaced[^1] != ' '
+                    ? spaced.Append(' ').Append(char.ToLowerInvariant(c))
+                    : spaced.Append(c);
         }
 
         var text = spaced.ToString().Trim();
