@@ -248,7 +248,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     {
         Pill.Show(State, clock.GetUtcNow() - (_projectedAt ?? _heard), _failedRefreshes >= NotRespondingAfter, _health);
         StripName = Pill.IsDataStale ? HealthLine + " · " + Labels.Stale : HealthLine;
-        Sentence = Labels.HealthSentence(State, Pill.IsHealthy, Pill.Problems);
+        Sentence = SentenceFor(State, Pill.IsHealthy, Pill.Problems);
     }
 
     // §4.1 Stale: "After 3 failed refreshes: Sindri not responding: run sindri doctor".

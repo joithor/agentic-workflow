@@ -94,20 +94,26 @@ internal static partial class Labels
     /// <summary>The System page's disclosure heading: the control plane, services, profile, commands and last event.</summary>
     internal const string SystemDetails = "Details";
 
-    /// <summary>The one sentence the System page and Home's health strip lead with: how Sindri is, or what is wrong.</summary>
-    /// <param name="state">The shell's state.</param>
-    /// <param name="healthy">True when the status says healthy (or says nothing yet).</param>
-    /// <param name="problems">What the status names as wrong, in words; empty for none.</param>
+    /// <summary>The System page's sentence while everything is running.</summary>
+    internal const string AllRunning = "Everything is running.";
+
+    /// <summary>The sentence when Sindri runs but the status names no problem in words.</summary>
+    internal const string RunningNeedsALook = "Sindri is running, but something needs a look.";
+
+    /// <summary>The sentence when Sindri has stopped answering.</summary>
+    internal const string StoppedAnswering = "Sindri has stopped answering, so what you see may be out of date.";
+
+    /// <summary>The sentence when Sindri isn't running.</summary>
+    internal const string SindriNotRunning = "Sindri isn't running.";
+
+    /// <summary>The sentence when the app can't read Sindri's answer.</summary>
+    internal const string CantReadAnswer = "Sindri is running, but this app can't read its answer.";
+
+    /// <summary>The sentence when Sindri and the app speak different versions.</summary>
+    internal const string DifferentVersions = "Sindri and this app are different versions.";
+
+    /// <summary>The sentence naming what needs a look.</summary>
+    /// <param name="problems">What the status names as wrong, in words.</param>
     /// <returns>The sentence.</returns>
-    internal static string HealthSentence(Shell.ShellState state, bool healthy, string problems) => state switch
-    {
-        Shell.ShellState.Normal when healthy => "Everything is running.",
-        Shell.ShellState.Normal => problems.Length > 0 ? "Something needs a look: " + problems + "." : "Sindri is running, but something needs a look.",
-        Shell.ShellState.Stale => "Sindri has stopped answering, so what you see may be out of date.",
-        Shell.ShellState.NotRunning => "Sindri isn't running.",
-        Shell.ShellState.Unreadable => "Sindri is running, but this app can't read its answer.",
-        Shell.ShellState.VersionMismatch => "Sindri and this app are different versions.",
-        Shell.ShellState.Connecting => Connecting,
-        _ => throw new ArgumentOutOfRangeException(nameof(state), state, message: null),
-    };
+    internal static string NeedsALook(string problems) => "Something needs a look: " + problems + ".";
 }
