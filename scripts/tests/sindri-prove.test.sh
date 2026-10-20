@@ -120,6 +120,14 @@ check "accepts_a_proof_folder: not another state folder" "$rc" "2"
 prove "$STATE/proof/home" status >/dev/null 2>&1 </dev/null; rc=$?
 check "accepts_a_proof_folder: not a proof folder without a repo slug" "$rc" "2"
 
+# --- marks_only_a_temp_home_as_scratch ---
+[ -f "$T/run1/home/.prover-scratch" ] && marked=yes || marked=no
+check "marks_only_a_temp_home_as_scratch: a temp home carries the marker" "$marked" "yes"
+[ -e "$STATE/jthorare-agentic-workflow/proof/sindri-api-p1/home/.prover-scratch" ] && marked=yes || marked=no
+check "marks_only_a_temp_home_as_scratch: a proof folder is not marked" "$marked" "no"
+[ -e "$STATE/sindri-app/.prover-scratch" ] && marked=yes || marked=no
+check "marks_only_a_temp_home_as_scratch: the refused default home is not touched" "$marked" "no"
+
 H="$T/home"
 mkdir -p "$H/auth"
 
