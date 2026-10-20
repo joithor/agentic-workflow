@@ -93,7 +93,9 @@ public sealed class ContextPageWindowTests
                 await shell.Context.Submit(Token);
                 Dispatcher.UIThread.RunJobs();
                 window.UpdateLayout();
-
+                window.GetVisualDescendants().OfType<Expander>().Single(e => string.Equals(e.Name, "ContextMore", StringComparison.Ordinal)).IsExpanded = true;   // the links, coverage and searched lines wait behind "More about this answer"
+                Dispatcher.UIThread.RunJobs();
+                window.UpdateLayout();
                 var heard = Heard.Tree(window).Select(n => n.Name).ToList();
                 var expected = shell.Context.Bands.SelectMany(b => b.Lines.Select(l => l.Text)).Concat(shell.Context.Edges.Select(l => l.Text)).Concat(shell.Context.Coverage.Select(l => l.Text));
                 Assert.All(expected, text => Assert.Contains(heard, h => string.Equals(h, text, StringComparison.Ordinal)));

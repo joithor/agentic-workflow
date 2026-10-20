@@ -15,7 +15,7 @@ internal static partial class Labels
         ["ApplyCommand:answer-reject"] = "Reject",
         ["ApplyCommand:answer-resume"] = "Resume",
         ["ApplyCommand:answer-text"] = "Answer",
-        ["ApplyCommand:cancel"] = "Cancel instance",
+        ["ApplyCommand:cancel"] = "Cancel run",
         ["ApplyCommand:command"] = "Send workflow command",
         ["ApplyCommand:handback"] = "Hand back",
         ["ApplyCommand:takeover"] = "Take over",

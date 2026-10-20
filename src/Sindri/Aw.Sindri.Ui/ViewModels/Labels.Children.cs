@@ -7,13 +7,13 @@ namespace Aw.Sindri.Ui.ViewModels;
 internal static partial class Labels
 {
     /// <summary>The panel's heading.</summary>
-    internal const string ChildrenHeading = "CHILDREN";
+    internal const string ChildrenHeading = "Child runs";
 
     /// <summary>The words of a recipe that declares no children.</summary>
-    internal const string NoChildren = "This recipe declares no children.";
+    internal const string NoChildren = "This workflow has no child runs.";
 
     /// <summary>The words of a recipe that marks a child state, before any child has started.</summary>
-    internal const string NoChildrenYet = "No children yet.";
+    internal const string NoChildrenYet = "No child runs yet.";
 
     /// <summary>What follows a park that the engine mirrors from a child to its parent.</summary>
     internal const string MirroredHere = "mirrored here";
@@ -43,12 +43,12 @@ internal static partial class Labels
     /// <summary>A child's loop round.</summary>
     /// <param name="round">The served round.</param>
     /// <returns>"r1/3".</returns>
-    internal static string RoundOf(Round round) => string.Create(CultureInfo.InvariantCulture, $"r{round.N}/{round.Max}");
+    internal static string RoundOf(Round round) => string.Create(CultureInfo.InvariantCulture, $"round {round.N} of {round.Max}");
 
     /// <summary>The panel's accessible name.</summary>
     /// <param name="address">The instance.</param>
     /// <returns>The words.</returns>
-    internal static string ChildrenName(string address) => $"Children of {address}";
+    internal static string ChildrenName(string address) => $"Child runs of {address}";
 
     /// <summary>A workstream's heading.</summary>
     /// <param name="stream">The stream's id.</param>

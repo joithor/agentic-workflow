@@ -59,6 +59,10 @@
     <Setter Property="CornerRadius" Value="{StaticResource Radius.SM}" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
+  <!-- The bar's tight step (TopBar.Counts.cs): narrower tabs, before the brand word gives way. -->
+  <Style Selector="ListBox.nav.tight > ListBoxItem">
+    <Setter Property="Padding" Value="2,0" />
+  </Style>
   <Style Selector="ListBox.nav > ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
   </Style>

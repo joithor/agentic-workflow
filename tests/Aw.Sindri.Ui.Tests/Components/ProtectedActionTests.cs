@@ -58,7 +58,7 @@ public sealed class ProtectedActionTests
         var vm = Make();
 
         Assert.True(vm.IsOpenInAgentPending);
-        Assert.Equal("Available with API P10a", vm.OpenInAgentChip);
+        Assert.Equal("Not available in the app yet", vm.OpenInAgentChip);
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public sealed class ProtectedActionTests
 
         Assert.Equal($"Accept {Subject}", vm.ButtonName);
         Assert.Equal($"Copy: {Cli}", vm.CopyName);
-        Assert.Equal($"Open in an agent: {Subject}, available with API P10a", vm.OpenInAgentName);
+        Assert.Equal($"Open in an agent: {Subject}, not available in the app yet", vm.OpenInAgentName);
     }
 
     [Fact]

@@ -42,7 +42,7 @@ public sealed class SessionSheetViewModelTests
         var sheet = await Opened(ClaudeRef);
 
         Assert.Equal((FramePhase.Shown, ClaudeRef, ClaudeRef, 1), (sheet.Phase, sheet.Ref, _server.LastSessionRef, _server.SessionCalls));
-        Assert.Equal(("Claude Code private title", "● RUNNING"), (sheet.Heading, sheet.StateLine));
+        Assert.Equal(("Claude Code private title", "● WORKING"), (sheet.Heading, sheet.StateLine));
     }
 
     [Fact]
@@ -61,7 +61,7 @@ public sealed class SessionSheetViewModelTests
     {
         var sheet = await Opened(CodexRef);
 
-        Assert.Equal(("Codex web/bbbbbbbb", "◐ ASKING · approval · Bash"), (sheet.Heading, sheet.StateLine));
+        Assert.Equal(("Codex web/bbbbbbbb", "◐ ASKING YOU · approval · Bash"), (sheet.Heading, sheet.StateLine));
         Assert.Equal(["Host", "Terminal"], sheet.HostFields.Select(f => f.Label), StringComparer.Ordinal);
         Assert.Equal(("Warp", "warp", "/work/web"), (Value(sheet.HostFields, "Host"), Value(sheet.HostFields, "Terminal"), Value(sheet.Fields, "Working directory")));
         Assert.DoesNotContain(sheet.Fields, f => new[] { "Worktree", "Lane" }.Contains(f.Label, StringComparer.Ordinal));
@@ -73,9 +73,9 @@ public sealed class SessionSheetViewModelTests
     {
         var sheet = await Opened(ClaudeRef);
 
-        Assert.Equal(["○ IDLE", "◐ ASKING", "● RUNNING"], sheet.History.Select(h => h.Chip.Text), StringComparer.Ordinal);
+        Assert.Equal(["○ IDLE", "◐ ASKING YOU", "● WORKING"], sheet.History.Select(h => h.Chip.Text), StringComparer.Ordinal);
         Assert.Equal([false, false, true], sheet.History.Select(h => h.IsNow));
-        Assert.Equal("◐ ASKING · approval · 2026-10-16 11:59:00 UTC · hook", sheet.History[1].Name);
+        Assert.Equal("◐ ASKING YOU · approval · 2026-10-16 11:59:00 UTC · hook", sheet.History[1].Name);
         Assert.EndsWith("· now · record", sheet.History[2].Detail, StringComparison.Ordinal);
         Assert.True(sheet.HasHistory);
     }
@@ -160,7 +160,7 @@ public sealed class SessionSheetViewModelTests
 
         Assert.True(sheet.Focus?.IsPending);
         Assert.Equal("sindri agents focus " + CodexRef, sheet.FocusCli);
-        Assert.Equal("arrives in CO-4a · sindri agents focus " + CodexRef, sheet.FocusLine);
+        Assert.Equal("Coming soon · sindri agents focus " + CodexRef, sheet.FocusLine);
         Assert.False(sheet.IsFocusEnabled);
     }
 

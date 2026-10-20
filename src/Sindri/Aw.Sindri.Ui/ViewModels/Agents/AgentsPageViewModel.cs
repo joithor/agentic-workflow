@@ -171,7 +171,7 @@ internal sealed partial class AgentsPageViewModel(ISindriApi api, IClipboard cli
         var before = WalkKeys();
         (_list, IsReading, IsUnreadable, IsStale) = (list, false, false, false);
         UnavailableText = string.Empty;
-        Head = Labels.AgentsHead(list.Counts.Live, list.Counts.Asking, list.Counts.OutsideWorkflow);
+        Head = Labels.AgentsHead(list.Counts.Live, list.Counts.Asking);
         OnChanged(nameof(HasHead));
         OnChanged(nameof(HeadName));
         ObserveCounts(list.Counts.Live, list.Counts.Asking);

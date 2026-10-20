@@ -39,7 +39,7 @@ public sealed class ChildStateTests
 
         var pointer = Of(status).Child!;
 
-        Assert.Equal($"child {status.Child!.Address} · parked: no-progress", pointer.Text);
+        Assert.Equal($"Child run {status.Child!.Address} · parked: no-progress", pointer.Text);
         Assert.DoesNotContain(Mark, pointer.Text, StringComparison.Ordinal);
     }
 
