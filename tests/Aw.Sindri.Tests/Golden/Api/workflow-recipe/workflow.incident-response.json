@@ -1,6 +1,5 @@
 {
   "id": "workflow.incident-response",
-  "displayName": "Incident response",
   "hash": "sha256:5d90e1b200000000000000000000000000000000000000000000000000000000",
   "version": 4,
   "name": null,
@@ -70,5 +69,6 @@
       "to": "mitigate",
       "cap": 3
     }
-  ]
+  ],
+  "displayName": "Incident response"
 }

@@ -6,45 +6,37 @@ using Aw.Sindri.Tests.GetInstance;
 
 namespace Aw.Sindri.Tests.ApproveAll;
 
-/// <summary>Every view that names a recipe carries its display name beside the id (setup-once spec §7.7); with none known the id is made readable, never served raw.</summary>
+/// <summary>Every view that names a recipe carries its display name beside the id (setup-once spec §7.7); with none known it serves null and the app makes the id readable.</summary>
 [Lane(TestLane.Unit)]
 public sealed class RecipeDisplayNamesTests
 {
     private static readonly InstanceView _view = StatusCases.View("done");
 
-    [Theory]
-    [InlineData("workflow.step", "Step")]
-    [InlineData("workflow.dev-desk-round-trip", "Dev desk round trip")]
-    [InlineData("workflow.ship", "Ship")]
-    public void An_unnamed_recipe_is_its_id_made_readable(string id, string expected) =>
-        Assert.Equal(expected, new RecipeIdDisplayNames().Of(RecipeId.From(id)), StringComparer.Ordinal);
+    [Fact]
+    public void Until_the_engine_knows_names_none_is_served() =>
+        Assert.Null(new NoRecipeDisplayNames().Of(RecipeId.From("workflow.step")));
 
     [Fact]
     public void The_detail_and_the_list_row_carry_the_name_the_caller_knows()
     {
-        var counts = new ViewCounts(0, 0, 0, Context: null);
-
-        var detail = InstanceViews.Detail(_view, new InstanceDetailContext("t", Parent: null, counts, StatusCases.Now, RecipeDisplayName: "One step"));
+        var detail = InstanceViews.Detail(_view, new InstanceDetailContext("t", Parent: null, new ViewCounts(0, 0, 0, Context: null), StatusCases.Now, RecipeDisplayName: "One step"));
         var row = InstanceSummaries.Of(_view, new InstanceSummaryContext(StatusCases.Now, RecipeDisplayName: "One step"));
 
         Assert.Equal(("One step", "One step"), (detail.Recipe.DisplayName, row.Recipe.DisplayName));
     }
 
     [Fact]
-    public void The_detail_and_the_list_row_fall_back_to_the_readable_id()
+    public void With_no_name_known_the_detail_and_the_row_serve_null_not_the_id()
     {
         var detail = InstanceViews.Detail(_view, new InstanceDetailContext("t", Parent: null, new ViewCounts(0, 0, 0, Context: null), StatusCases.Now));
         var row = InstanceSummaries.Of(_view, new InstanceSummaryContext(StatusCases.Now));
 
-        Assert.Equal(RecipeIdDisplayNames.Readable(_view.Recipe.Id), detail.Recipe.DisplayName, StringComparer.Ordinal);
-        Assert.Equal(detail.Recipe.DisplayName, row.Recipe.DisplayName, StringComparer.Ordinal);
+        Assert.Null(detail.Recipe.DisplayName);
+        Assert.Null(row.Recipe.DisplayName);
+        Assert.DoesNotContain("displayName", System.Text.Json.JsonSerializer.Serialize(detail.Recipe), StringComparison.Ordinal);
     }
 
     [Fact]
-    public void The_recipe_view_carries_the_name()
-    {
-        var recipe = Testing.Views.WorkflowViewFixtures.NoOutputsRecipe();
-
-        Assert.Equal("No outputs", recipe.DisplayName, StringComparer.Ordinal);
-    }
+    public void The_recipe_view_carries_the_name() =>
+        Assert.Equal("No outputs", Aw.Sindri.Testing.Views.WorkflowViewFixtures.NoOutputsRecipe().DisplayName, StringComparer.Ordinal);
 }

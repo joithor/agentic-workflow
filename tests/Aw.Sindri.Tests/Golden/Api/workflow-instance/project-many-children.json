@@ -305,7 +305,6 @@
     {
       "state": "build",
       "recipe": "workflow.step",
-      "displayName": "Step",
       "done": 6,
       "total": 24,
       "workstreams": [],
@@ -713,7 +712,8 @@
           ]
         }
       ],
-      "more": 4
+      "more": 4,
+      "displayName": "Step"
     }
   ],
   "counts": {

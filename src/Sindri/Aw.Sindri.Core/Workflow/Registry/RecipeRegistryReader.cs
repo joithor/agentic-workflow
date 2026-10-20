@@ -168,7 +168,7 @@ public sealed class RecipeRegistryReader(IRecipeStore store, IRecipeApprovals ap
 
         var (standing, stale) = Stand(parsed.Value, latest.Value, revoked.Value, current);
         var order = StatePathOrder.Of(parsed.Value);
-        return new RecipeSummary(recipe.Id, (names ?? RecipeIdDisplayNames.Instance).Of(recipe.Id), recipe.Version, recipe.Hash, standing, latest.Value?.Via, stale, parsed.Value.Inputs, parsed.Value.Urgency, parsed.Value.Outputs, order.OrderedBy, order.States, order.Loops, parsed.Value.Name);
+        return new RecipeSummary(recipe.Id, recipe.Version, recipe.Hash, standing, latest.Value?.Via, stale, parsed.Value.Inputs, parsed.Value.Urgency, parsed.Value.Outputs, order.OrderedBy, order.States, order.Loops, parsed.Value.Name, names?.Of(recipe.Id));
     }
 
     /// <summary>

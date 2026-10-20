@@ -1,6 +1,5 @@
 {
   "id": "workflow.step",
-  "displayName": "Step",
   "hash": "sha256:1c1173a162a77736c33620e985d6d75473cf3755963adc5c46eb9049434f5276",
   "version": 2,
   "name": null,
@@ -52,5 +51,6 @@
       "to": "produce",
       "cap": 3
     }
-  ]
+  ],
+  "displayName": "Step"
 }

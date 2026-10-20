@@ -1,6 +1,5 @@
 {
   "id": "workflow.intake-linear",
-  "displayName": "Intake linear",
   "hash": "sha256:0b7e44d300000000000000000000000000000000000000000000000000000000",
   "version": 1,
   "name": null,
@@ -34,5 +33,6 @@
       "branchOf": null
     }
   ],
-  "loops": []
+  "loops": [],
+  "displayName": "Intake linear"
 }

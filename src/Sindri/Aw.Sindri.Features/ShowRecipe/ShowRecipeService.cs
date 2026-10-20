@@ -15,7 +15,7 @@ namespace Aw.Sindri.Features.ShowRecipe;
 /// <param name="planner">Finds the registered version a hash names.</param>
 /// <param name="approved">Resolves an id to its approved version.</param>
 /// <param name="json">Reads the stored recipe.</param>
-/// <param name="names">The recipe's display name for the view (null shows the id made readable).</param>
+/// <param name="names">The recipe's display name for the view (null serves none).</param>
 internal sealed class ShowRecipeService(RecipeApprovalPlanner planner, IApprovedRecipes approved, JsonSerializerOptions json, IRecipeDisplayNames? names = null) : IService<ShowRecipeRequest, RecipeView>
 {
     public async ValueTask<Result<RecipeView>> Handle(ShowRecipeRequest request, CancellationToken cancellationToken)

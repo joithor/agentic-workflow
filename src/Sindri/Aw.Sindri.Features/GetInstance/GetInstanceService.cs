@@ -23,7 +23,7 @@ namespace Aw.Sindri.Features.GetInstance;
 /// <param name="repos">Where each item belongs, from the ledger.</param>
 /// <param name="callers">The caller, whose repo scope decides what it may read.</param>
 /// <param name="clock">The time the status text and the 'asOf' are read at.</param>
-/// <param name="names">The recipe's display name for the view (null shows the id made readable).</param>
+/// <param name="names">The recipe's display name for the view (null serves none).</param>
 internal sealed class GetInstanceService(IInstanceDirectory directory, IInstanceReader runtime, IViewReader views, IItemRepos repos, ICallerContextAccessor callers, TimeProvider clock, IRecipeDisplayNames? names = null)
     : IService<GetInstanceRequest, InstanceDetail>
 {

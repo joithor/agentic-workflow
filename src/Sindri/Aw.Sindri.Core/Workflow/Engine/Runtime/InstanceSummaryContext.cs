@@ -4,5 +4,5 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// <param name="Now">The time the row is read at; the composer never reads a clock.</param>
 /// <param name="NotStarted">True for a child that has not run yet (its chip reads QUEUED); an instance that is still starting reads so too.</param>
 /// <param name="ItemTitle">The title of the item the instance is on, when the subject is that item; null shows the item's id.</param>
-/// <param name="RecipeDisplayName">The recipe's display name; null shows the id made readable.</param>
+/// <param name="RecipeDisplayName">The recipe's display name; null serves none.</param>
 public sealed record InstanceSummaryContext(DateTimeOffset Now, bool NotStarted = false, string? ItemTitle = null, string? RecipeDisplayName = null);

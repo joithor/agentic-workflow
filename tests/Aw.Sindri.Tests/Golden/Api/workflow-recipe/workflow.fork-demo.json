@@ -1,6 +1,5 @@
 {
   "id": "workflow.fork-demo",
-  "displayName": "Fork demo",
   "hash": "sha256:1f08c6a900000000000000000000000000000000000000000000000000000000",
   "version": 1,
   "name": null,
@@ -44,5 +43,6 @@
       "branchOf": null
     }
   ],
-  "loops": []
+  "loops": [],
+  "displayName": "Fork demo"
 }
