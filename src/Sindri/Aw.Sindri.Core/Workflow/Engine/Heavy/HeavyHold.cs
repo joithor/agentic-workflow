@@ -16,6 +16,20 @@ public static class HeavyHold
     /// <param name="inPhase">Whether its heavy wait was granted (a durable fact of its history): a Step that follows must hold a slot again after a release or a restart.</param>
     /// <param name="leased">Whether a lease may be held for it (a Take was issued and not released).</param>
     /// <returns>The move.</returns>
-    public static HeavyMove Of(WorkflowInstance instance, Recipe recipe, bool inPhase, bool leased) =>
-        throw new NotSupportedException("LN-WF3: the heavy rule is not written yet");
+    public static HeavyMove Of(WorkflowInstance instance, Recipe recipe, bool inPhase, bool leased)
+    {
+        ArgumentNullException.ThrowIfNull(instance);
+        ArgumentNullException.ThrowIfNull(recipe);
+        if (instance.Ended || instance.Suspension is not null || instance.Frame.Run is { Runtime: StepRuntime.Desk })
+        {
+            return leased ? HeavyMove.Release : HeavyMove.None;
+        }
+
+        if (instance.Frame.Run is not null)
+        {
+            return inPhase ? HeavyMove.Ensure : HeavyMove.None;
+        }
+
+        return recipe.States.TryGetValue(instance.Frame.State, out var state) && state.WaitFor?.Resource == ResourceKind.Heavy ? HeavyMove.Acquire : HeavyMove.None;
+    }
 }

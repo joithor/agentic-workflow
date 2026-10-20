@@ -192,7 +192,7 @@ internal sealed partial class RecipeWorkflow
         WorkflowEventType.Shifted => EventTypes.WorkflowShifted,
         WorkflowEventType.Notified => EventTypes.WorkflowNotified,
         WorkflowEventType.Expired => EventTypes.WorkflowExpired,
-        WorkflowEventType.Heavy => EventTypes.WorkflowTransition,   // red: LN-WF3 maps it to workflow.heavy
+        WorkflowEventType.Heavy => EventTypes.WorkflowHeavy,
 
         // why: spec 5.7 names a dispatch refusal 'outbox.refused', written by P6's recheck; P4 runs no effects, so there is no kind to emit yet
         WorkflowEventType.EffectRefused => throw new NotSupportedException("an effect refusal is mirrored from P6 (outbox.refused)"),
