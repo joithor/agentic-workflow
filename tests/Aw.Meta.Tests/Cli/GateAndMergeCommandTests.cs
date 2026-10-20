@@ -61,7 +61,7 @@ public sealed class GateAndMergeCommandTests : IDisposable
         Git(_repo, "checkout", "--quiet", "main");
         await File.WriteAllTextAsync(_cli.File("team.json"), _config.Replace("REPO", _repo, StringComparison.Ordinal), TestContext.Current.CancellationToken);
         _cli.SetEnv("AW_META_CONFIG", _cli.File("team.json"));
-        await WriteGh(draft: false);
+        WriteGh(draft: false);
     }
 
     private static string HeadSha(string directory)
@@ -73,7 +73,7 @@ public sealed class GateAndMergeCommandTests : IDisposable
         return sha;
     }
 
-    private Task WriteGh(bool draft)
+    private void WriteGh(bool draft)
     {
         var script = _cli.File("gh");
         var view = string.Concat("""'{"headRefOid":""", "\"", _head, "\"", ""","headRefName":"feat","isDraft":""", draft ? "true" : "false", ""","title":"Add feature","state":"OPEN"}'""");
@@ -91,7 +91,6 @@ public sealed class GateAndMergeCommandTests : IDisposable
             ]) + "\n");
         _cli.SetEnv("AW_GH", script);
         _cli.SetEnv("AW_HEAVY", _cli.File("no-such-heavy"));
-        return Task.CompletedTask;
     }
 
     [Fact, Trait("Lane", "integration")]

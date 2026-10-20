@@ -1,4 +1,5 @@
 using Aw.Kernel.Testing;
+
 namespace Aw.Evidence.Tests.Infrastructure;
 
 /// <summary>An executable bash script standing in for a real program (docker), written into a temp directory.</summary>

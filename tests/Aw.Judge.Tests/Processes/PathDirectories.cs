@@ -1,4 +1,5 @@
 using Aw.Kernel.Testing;
+
 namespace Aw.Judge.Tests.Processes;
 
 /// <summary>Two temporary PATH directories, deleted on dispose; the PATH value lists them with an empty entry between.</summary>

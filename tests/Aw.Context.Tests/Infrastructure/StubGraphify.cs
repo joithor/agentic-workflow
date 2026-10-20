@@ -29,7 +29,7 @@ internal sealed class StubGraphify : IDisposable
         Options = GraphifyOptions.Default with { Binary = script, Sandbox = static (_, command, _) => RunThroughShell(command) };
     }
 
-    /// <summary>Reads the script with sh instead of exec'ing it: Linux refuses to exec a file a concurrent fork still holds open for writing (ETXTBSY), which made runs flake.</summary>
+    /// <summary>Runs the stub script through sh, as the pass-through sandbox of a machine without bwrap would.</summary>
     /// <param name="command">The command whose first element is the stub script.</param>
     public static IReadOnlyList<string> RunThroughShell(IReadOnlyList<string> command) => ["/bin/sh", .. command];
 
