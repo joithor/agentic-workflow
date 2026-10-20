@@ -20,7 +20,9 @@ public sealed class InstanceRowInputsTests
 
     private static List<(string Name, AutomationControlType Type)> Heard_(Ui.Api.Workflow.InstanceSummary served)
     {
-        var row = new InstanceRow { DataContext = new InstanceRowViewModel(served, new FakeClipboard(), new FakeTimeProvider(A.Noon)) };
+        var vm = new InstanceRowViewModel(served, new FakeClipboard(), new FakeTimeProvider(A.Noon));
+        vm.ToggleDetails();   // the inputs sit in the row's Details
+        var row = new InstanceRow { DataContext = vm };
         var window = new Window { Content = row, Width = 1300, Height = 200 };
         window.Show();
         Dispatcher.UIThread.RunJobs();
@@ -63,11 +65,15 @@ public sealed class InstanceRowInputsTests
 
         var reached = await OnUi(() =>
         {
-            var row = new InstanceRow { DataContext = new InstanceRowViewModel(withInputs with { Inputs = [] }, new FakeClipboard(), new FakeTimeProvider(A.Noon)) };
+            var first = new InstanceRowViewModel(withInputs with { Inputs = [] }, new FakeClipboard(), new FakeTimeProvider(A.Noon));
+            first.ToggleDetails();
+            var row = new InstanceRow { DataContext = first };
             var window = new Window { Content = row, Width = 1300, Height = 200 };
             window.Show();
             Dispatcher.UIThread.RunJobs();
-            row.DataContext = new InstanceRowViewModel(withInputs, new FakeClipboard(), new FakeTimeProvider(A.Noon));
+            var opened = new InstanceRowViewModel(withInputs, new FakeClipboard(), new FakeTimeProvider(A.Noon));
+            opened.ToggleDetails();
+            row.DataContext = opened;
             Dispatcher.UIThread.RunJobs();
             var inputs = row.GetVisualDescendants().OfType<Border>().First(b => b.Name == "WorkflowRowInputs");
             var peer = ControlAutomationPeer.CreatePeerForElement(inputs);

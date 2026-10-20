@@ -26,11 +26,11 @@ public sealed class StageTagTests
     }
 
     [Fact]
-    public void Desk_reads_dot_desk()
+    public void A_desk_stage_reads_waiting_for_you()
     {
         var row = Row(c => c.Desk && c.Badge is null);
 
-        Assert.EndsWith(" · desk", StageTag.For(row), StringComparison.Ordinal);
+        Assert.EndsWith(" · waiting for you", StageTag.For(row), StringComparison.Ordinal);
     }
 
     [Fact]

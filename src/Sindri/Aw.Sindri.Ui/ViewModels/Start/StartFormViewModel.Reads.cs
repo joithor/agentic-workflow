@@ -1,6 +1,7 @@
 using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
+using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.ViewModels.Start;
 
@@ -140,7 +141,7 @@ internal sealed partial class StartFormViewModel
         .. list.Recipes.Where(r => string.Equals(r.Standing, "approved", StringComparison.Ordinal))
             .GroupBy(r => r.Id, StringComparer.Ordinal)
             .Select(g => g.MaxBy(r => r.Version)!)   // why: a group has at least one row
-            .Select(r => new RecipeChoice(r.Id, r.Version, Labels.StartRecipeLine(r.Id, r.Version))),
+            .Select(r => new RecipeChoice(r.Id, r.Version, Labels.StartRecipeLine(WorkflowNames.Of(r.Id, r.DisplayName)))),
     ];
 
     private static List<ItemChoice> Itemised(QueueView queue) =>
