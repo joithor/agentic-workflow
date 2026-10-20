@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jthorare/agentic-workflow/schemas/line/red-tests.json",
+  "title": "The red tests (fact:redTests)",
+  "description": "Line spec A.7: \"per item, its test ids and file paths or appOnly with the signal, the red commit, and the failing run's output trimmed to 4,000 characters\".",
+  "type": "object",
+  "properties": {
+    "redCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{7,64}$"
+    },
+    "output": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tests": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "path": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "id",
+                "path"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "appOnly": {
+            "type": "object",
+            "properties": {
+              "signal": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "signal"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "item"
+        ],
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "required": [
+              "tests"
+            ]
+          },
+          {
+            "required": [
+              "appOnly"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "redCommit",
+    "output",
+    "items"
+  ],
+  "additionalProperties": false
+}
