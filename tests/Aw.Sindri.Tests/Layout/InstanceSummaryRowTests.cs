@@ -28,7 +28,7 @@ public sealed partial class InstanceSummaryRowTests
         Assert.Equal(view.Address, row.Address);
         Assert.Equal(view.Id, row.Id);
         Assert.Equal(view.ItemId, row.ItemId);
-        Assert.Equal(new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, view.Urgency), row.Recipe);
+        Assert.Equal(new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, view.Urgency, DisplayName: null), row.Recipe);
         Assert.Equal(view.State, row.State);
         Assert.Equal(new StateChip("DECISION", ChipTone.Attn), row.Chip);
         Assert.Equal(view.Since, row.Since);

@@ -5,6 +5,8 @@ using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Workflow.ApproveAll;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
@@ -28,17 +30,19 @@ namespace Aw.Sindri.Features.IssueChallenge;
 /// <param name="profiles">The live profile, for 'approve profile'.</param>
 /// <param name="directory">Resolves an instance's address, for a protected answer.</param>
 /// <param name="runtime">Reads the instance as it is now, for a protected answer.</param>
+/// <param name="approveAll">Reads the approve-all plan, for 'approve-all &lt;digest6&gt;'.</param>
 internal sealed partial class IssueChallengeService(RecipeApprovalPlanner approvals, RecipeRevokePlanner revokes, IChallenges challenges, IProfileSource profiles,
-    IInstanceDirectory directory, IInstanceRuntime runtime)
+    IInstanceDirectory directory, IInstanceRuntime runtime, ApproveAllPlanReader? approveAll = null)
     : IService<IssueChallengeRequest, IssueChallengeResponse>
 {
-    private const string Forms = "'approve <recipe> <version>', 'revoke <recipe>@<hash>', 'approve profile <hash6>', 'grant <n> <address>', 'grant-tokens <n> <address>' or 'accept <address>'";
+    private const string Forms = "'approve <recipe> <version>', 'revoke <recipe>@<hash>', 'approve profile <hash6>', 'approve-all <digest6>', 'grant <n> <address>', 'grant-tokens <n> <address>' or 'accept <address>'";
 
     public async ValueTask<Result<IssueChallengeResponse>> Handle(IssueChallengeRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         var text = request.Action.Trim();
         return ProfileForm.Match(text) is { Success: true } profile ? await Profile(profile.Groups["hash"].Value, cancellationToken).ConfigureAwait(false)
+            : ApproveAllForm.Match(text) is { Success: true } all ? await ApproveAll(all.Groups["digest"].Value, cancellationToken).ConfigureAwait(false)
             : ApproveForm.Match(text) is { Success: true } approve ? await Approve(text, approve, cancellationToken).ConfigureAwait(false)
             : ApproveByHashForm.Match(text) is { Success: true } byHash ? await ApproveByHash(text, byHash, cancellationToken).ConfigureAwait(false)
             : RevokeForm.Match(text) is { Success: true } revoke ? await Revoke(text, revoke, cancellationToken).ConfigureAwait(false)
@@ -126,6 +130,25 @@ internal sealed partial class IssueChallengeService(RecipeApprovalPlanner approv
 
     private static Error Unknown(string text) => SindriErrors.InvalidInput.With($"'{text}' isn't an action a challenge is issued for; use {Forms}");
 
+    /// <summary>An approve-all's challenge (setup-once spec §4 item 1): bound to the plan's digest, with the plan as its preview. Refused before a profile is approved (SND-SETUP-007), when nothing waits, or when the digest is not the plan's.</summary>
+    private async ValueTask<Result<IssueChallengeResponse>> ApproveAll(string digest, CancellationToken cancellationToken)
+    {
+        if (approveAll is null)
+        {
+            return Unknown("approve-all " + digest);
+        }
+
+        var plan = await approveAll.Read(cancellationToken).ConfigureAwait(false);
+        if (plan.IsError)
+        {
+            return plan.Error;
+        }
+
+        return plan.Value.NothingToHold ? SindriErrors.InvalidInput.With("There is nothing for one hold to approve (a recipe that needs its own approval is approved one at a time).")
+            : !string.Equals(plan.Value.Digest, digest, StringComparison.Ordinal) ? WorkflowErrors.RecipeChallengeStale.With($"{digest} isn't the plan's digest ({plan.Value.Digest}); read the plan again")
+            : Issued(challenges.Issue(ChallengeAction.ApproveAll(digest), ChallengeSubject.ForApproveAll(digest)), approve: null, revoke: null) with { ApproveAll = plan.Value };
+    }
+
     private async ValueTask<Result<IssueChallengeResponse>> Profile(string hash6, CancellationToken cancellationToken)
     {
         var live = await profiles.Load(cancellationToken).ConfigureAwait(false);
@@ -142,6 +165,9 @@ internal sealed partial class IssueChallengeService(RecipeApprovalPlanner approv
 
     private static IssueChallengeResponse Issued(IssuedChallenge issued, ApprovalPreview? approve, RevokePreview? revoke) =>
         new(issued.Id, issued.Action.Text, issued.ExpiresAt, approve, revoke);
+
+    [GeneratedRegex(@"^approve-all (?<digest>[0-9a-f]{6})\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex ApproveAllForm { get; }
 
     [GeneratedRegex(@"^approve profile (?<hash>[0-9a-f]{6})\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex ProfileForm { get; }

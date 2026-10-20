@@ -2580,7 +2580,6 @@ override Aw.Sindri.Features.ContextCalls.BacktestArmScore.GetHashCode() -> int
 override Aw.Sindri.Features.ContextCalls.BacktestArmScore.ToString() -> string!
 static Aw.Sindri.Features.ContextCalls.BacktestArmScore.operator !=(Aw.Sindri.Features.ContextCalls.BacktestArmScore? left, Aw.Sindri.Features.ContextCalls.BacktestArmScore? right) -> bool
 static Aw.Sindri.Features.ContextCalls.BacktestArmScore.operator ==(Aw.Sindri.Features.ContextCalls.BacktestArmScore? left, Aw.Sindri.Features.ContextCalls.BacktestArmScore? right) -> bool
-
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Deconstruct(out string? From, out string? To, out string? Trigger, out string? Outcome, out string? Run, out string? Via, out string? Decision) -> void
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.InstanceEventFields(string? From = null, string? To = null, string? Trigger = null, string? Outcome = null, string? Run = null, string? Via = null, string? Decision = null) -> void
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Via.get -> string?
@@ -3040,7 +3039,6 @@ override Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.GetHashCode() -> 
 override Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.ToString() -> string!
 static Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? left, Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? right) -> bool
 static Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? left, Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? right) -> bool
-
 Aw.Sindri.Features.Scoping.ScopeFinding
 Aw.Sindri.Features.Scoping.ScopeFinding.<Clone>$() -> Aw.Sindri.Features.Scoping.ScopeFinding!
 Aw.Sindri.Features.Scoping.ScopeFinding.Deconstruct(out string! Rule, out string? Item, out string! Message, out string! Fix, out Aw.Sindri.Features.Scoping.ScopeSeverity Severity) -> void
@@ -3630,3 +3628,27 @@ override Aw.Sindri.Features.Scoping.PacketFile.ToString() -> string!
 static Aw.Sindri.Features.Scoping.PacketFile.operator !=(Aw.Sindri.Features.Scoping.PacketFile? left, Aw.Sindri.Features.Scoping.PacketFile? right) -> bool
 static Aw.Sindri.Features.Scoping.PacketFile.operator ==(Aw.Sindri.Features.Scoping.PacketFile? left, Aw.Sindri.Features.Scoping.PacketFile? right) -> bool
 static Aw.Sindri.Features.Commands.SindriCommandServiceCollectionExtensions.AddStopCommand<TCommand, TResult, TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+override Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest.GetHashCode() -> int
+static Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest.operator ==(Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest? left, Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest? right) -> bool
+Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest
+static Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest.operator ==(Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest? left, Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest? right) -> bool
+Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest.Equals(Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest? other) -> bool
+Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest.<Clone>$() -> Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest!
+Aw.Sindri.Features.IssueChallenge.IssueChallengeResponse.ApproveAll.init -> void
+Aw.Sindri.Features.Jobs.JobRegistry.IsRunning(Aw.Sindri.Core.Ids.JobKind kind, Aw.Sindri.Core.Ids.JobKey key, out Aw.Sindri.Core.Ids.JobId running) -> bool
+Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest
+override Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest.ToString() -> string!
+static Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest.operator !=(Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest? left, Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest? right) -> bool
+Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest.<Clone>$() -> Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest!
+Aw.Sindri.Features.IssueChallenge.IssueChallengeResponse.ApproveAll.get -> Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan?
+static Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest.operator !=(Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest? left, Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest? right) -> bool
+override Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest.Equals(object? obj) -> bool
+Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest.Deconstruct(out Aw.Sindri.Core.Challenges.ChallengeAnswer! Answer) -> void
+Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest.ApproveAllRecipesRequest(Aw.Sindri.Core.Challenges.ChallengeAnswer! Answer) -> void
+Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest.Answer.init -> void
+Aw.Sindri.Features.ApproveAllRecipes.ApproveAllRecipesRequest.Answer.get -> Aw.Sindri.Core.Challenges.ChallengeAnswer!
+override Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest.Equals(object? obj) -> bool
+Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest.Equals(Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest? other) -> bool
+Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest.GetApproveAllPlanRequest() -> void
+override Aw.Sindri.Features.GetApproveAllPlan.GetApproveAllPlanRequest.ToString() -> string!
