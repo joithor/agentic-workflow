@@ -19,9 +19,10 @@ namespace Aw.Sindri.Features.GetNeedsYou;
 /// <param name="status">How fresh the views are.</param>
 /// <param name="callers">The caller, whose repo scope applies.</param>
 /// <param name="onyx">The managed Onyx's notice (not set up, or serve could not start it); it is a repo-less row, shown to a human caller only.</param>
+/// <param name="setup">The setup rows that are computed (the repo step's failure).</param>
 /// <param name="scrubber">Scrubs the notice's text.</param>
 /// <param name="clock">Stamps the notice's row.</param>
-internal sealed class GetNeedsYouService(IViewReader views, IProjectorStatus status, ICallerContextAccessor callers, IOnyxNotices onyx, ITextScrubber scrubber, TimeProvider clock) : IService<GetNeedsYouRequest, GetNeedsYouResponse>
+internal sealed class GetNeedsYouService(IViewReader views, IProjectorStatus status, ICallerContextAccessor callers, IOnyxNotices onyx, SetupNotices setup, ITextScrubber scrubber, TimeProvider clock) : IService<GetNeedsYouRequest, GetNeedsYouResponse>
 {
     public async ValueTask<Result<GetNeedsYouResponse>> Handle(GetNeedsYouRequest request, CancellationToken cancellationToken)
     {
@@ -38,7 +39,7 @@ internal sealed class GetNeedsYouService(IViewReader views, IProjectorStatus sta
             return records.Error;
         }
 
-        var rows = NeedsYouOrder.Sort([.. records.Value.Select(static r => r.Row).Where(r => ItemScope.VisibleOrRepoless(caller, r.Repo)), .. await OnyxRows(caller, cancellationToken).ConfigureAwait(false)]);
+        var rows = NeedsYouOrder.Sort([.. records.Value.Select(static r => r.Row).Where(r => ItemScope.VisibleOrRepoless(caller, r.Repo)), .. await OnyxRows(caller, cancellationToken).ConfigureAwait(false), .. await SetupRows(caller, cancellationToken).ConfigureAwait(false)]);
         var empty = current.Text;
         if (empty is null && rows.Count == 0)
         {
@@ -53,6 +54,10 @@ internal sealed class GetNeedsYouService(IViewReader views, IProjectorStatus sta
 
         return new GetNeedsYouResponse(rows, empty, current.AsOf);
     }
+
+    // The setup rows that are computed, not folded: the human's to act on, so a session doesn't see them.
+    private async ValueTask<IReadOnlyList<NeedsYouRow>> SetupRows(CallerContext caller, CancellationToken cancellationToken) =>
+        caller.Class == CallerClass.Human && await setup.Repo(cancellationToken).ConfigureAwait(false) is { } row ? [row] : [];
 
     // The managed Onyx's row: it is the human's to act on, so a session doesn't see it.
     private async ValueTask<IReadOnlyList<NeedsYouRow>> OnyxRows(CallerContext caller, CancellationToken cancellationToken)
