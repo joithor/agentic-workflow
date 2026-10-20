@@ -20,10 +20,13 @@ internal static class ScopingServiceCollectionExtensions
         .AddBlockRuntime<ChallengeLogStep>()
         .AddBlockRuntime<ScopeAnchorStep>()
         .AddBlockRuntime<ScopeCheckStep>()
+        .AddBlockRuntime<ScopeEvidenceStep>()
         .AddBlockRuntime<ScopeGatherStep>()
         .AddBlockRuntime<ScopeIntakeStep>()
         .AddBlockRuntime<ScopeProposeStep>()
         .AddBlockRuntime<ScopeReadBriefStep>()
+        .AddBlockRuntime<ScopeReadChangeStep>()
+        .AddBlockRuntime<ScopeReadTrackerStep>()
         .AddBlockRuntime<ScopeReanchorStep>()
         .AddBlockRuntime<ScopeWithdrawStep>();
 }

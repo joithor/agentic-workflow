@@ -14,7 +14,7 @@ public sealed class ScopingErrorsTests
     [Fact, Trait("Lane", "unit")]
     public void The_live_codes_are_001_002_004_006_007_and_008_and_003_is_retired_and_never_live()
     {
-        Assert.Equal(["SND-SCOPING-001", "SND-SCOPING-002", "SND-SCOPING-004", "SND-SCOPING-006", "SND-SCOPING-007", "SND-SCOPING-008"], ScopingErrors.All.Select(e => e.Code), StringComparer.Ordinal);
+        Assert.Equal(["SND-SCOPING-001", "SND-SCOPING-002", "SND-SCOPING-004", "SND-SCOPING-005", "SND-SCOPING-006", "SND-SCOPING-007", "SND-SCOPING-008"], ScopingErrors.All.Select(e => e.Code), StringComparer.Ordinal);
         Assert.Equal(["SND-SCOPING-003"], ScopingErrors.Retired);
     }
 
@@ -22,6 +22,7 @@ public sealed class ScopingErrorsTests
     [InlineData("SND-SCOPING-001", ErrorKind.Invalid)]
     [InlineData("SND-SCOPING-002", ErrorKind.Invalid)]
     [InlineData("SND-SCOPING-004", ErrorKind.Invalid)]
+    [InlineData("SND-SCOPING-005", ErrorKind.Invalid)]
     [InlineData("SND-SCOPING-006", ErrorKind.NotFound)]
     [InlineData("SND-SCOPING-007", ErrorKind.Conflict)]
     [InlineData("SND-SCOPING-008", ErrorKind.Unavailable)]
