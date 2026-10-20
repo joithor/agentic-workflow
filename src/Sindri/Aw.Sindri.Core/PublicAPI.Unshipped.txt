@@ -12205,3 +12205,32 @@ static Aw.Sindri.Core.Setup.SetupSteps.Profile(Aw.Sindri.Core.Setup.ProfileFact!
 static Aw.Sindri.Core.Setup.SetupSteps.Recipes(Aw.Sindri.Core.Setup.RecipesFact! fact) -> Aw.Sindri.Core.Setup.SetupStep!
 static Aw.Sindri.Core.Setup.SetupSteps.Repo(Aw.Sindri.Core.Setup.RepoFact! fact) -> Aw.Sindri.Core.Setup.SetupStep!
 static Aw.Sindri.Core.Setup.SetupSteps.Unreadable(Aw.Sindri.Core.Setup.SetupStepId id, string! code) -> Aw.Sindri.Core.Setup.SetupStep!
+Aw.Sindri.Core.Onyx.OnyxStatusReader
+Aw.Sindri.Core.Onyx.OnyxStatusReader.OnyxStatusReader(Aw.Sindri.Core.Onyx.IOnyxPinsSource! pinsSource, Aw.Sindri.Core.Onyx.OnyxFacts! facts, Aw.Sindri.Core.Onyx.IOnyxHealth! health, Aw.Sindri.Core.Onyx.IOnyxWorkspace! workspace) -> void
+Aw.Sindri.Core.Onyx.OnyxStatusReader.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Onyx.OnyxStatusReport!>!>
+Aw.Sindri.Core.Onyx.OnyxStatusReport
+Aw.Sindri.Core.Onyx.OnyxStatusReport.<Clone>$() -> Aw.Sindri.Core.Onyx.OnyxStatusReport!
+Aw.Sindri.Core.Onyx.OnyxStatusReport.Checks.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.PreflightCheck!>!
+Aw.Sindri.Core.Onyx.OnyxStatusReport.Checks.init -> void
+Aw.Sindri.Core.Onyx.OnyxStatusReport.Deconstruct(out Aw.Sindri.Core.Onyx.OnyxState State, out string! PinnedVersion, out string! PinnedCommit, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.PreflightCheck!>! Checks, out int Port, out int ExitCode, out string? Url, out string? RunningVersion) -> void
+Aw.Sindri.Core.Onyx.OnyxStatusReport.Equals(Aw.Sindri.Core.Onyx.OnyxStatusReport? other) -> bool
+Aw.Sindri.Core.Onyx.OnyxStatusReport.ExitCode.get -> int
+Aw.Sindri.Core.Onyx.OnyxStatusReport.ExitCode.init -> void
+Aw.Sindri.Core.Onyx.OnyxStatusReport.OnyxStatusReport(Aw.Sindri.Core.Onyx.OnyxState State, string! PinnedVersion, string! PinnedCommit, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.PreflightCheck!>! Checks, int Port, int ExitCode, string? Url, string? RunningVersion) -> void
+Aw.Sindri.Core.Onyx.OnyxStatusReport.PinnedCommit.get -> string!
+Aw.Sindri.Core.Onyx.OnyxStatusReport.PinnedCommit.init -> void
+Aw.Sindri.Core.Onyx.OnyxStatusReport.PinnedVersion.get -> string!
+Aw.Sindri.Core.Onyx.OnyxStatusReport.PinnedVersion.init -> void
+Aw.Sindri.Core.Onyx.OnyxStatusReport.Port.get -> int
+Aw.Sindri.Core.Onyx.OnyxStatusReport.Port.init -> void
+Aw.Sindri.Core.Onyx.OnyxStatusReport.RunningVersion.get -> string?
+Aw.Sindri.Core.Onyx.OnyxStatusReport.RunningVersion.init -> void
+Aw.Sindri.Core.Onyx.OnyxStatusReport.State.get -> Aw.Sindri.Core.Onyx.OnyxState
+Aw.Sindri.Core.Onyx.OnyxStatusReport.State.init -> void
+Aw.Sindri.Core.Onyx.OnyxStatusReport.Url.get -> string?
+Aw.Sindri.Core.Onyx.OnyxStatusReport.Url.init -> void
+override Aw.Sindri.Core.Onyx.OnyxStatusReport.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.OnyxStatusReport.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.OnyxStatusReport.ToString() -> string!
+static Aw.Sindri.Core.Onyx.OnyxStatusReport.operator !=(Aw.Sindri.Core.Onyx.OnyxStatusReport? left, Aw.Sindri.Core.Onyx.OnyxStatusReport? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxStatusReport.operator ==(Aw.Sindri.Core.Onyx.OnyxStatusReport? left, Aw.Sindri.Core.Onyx.OnyxStatusReport? right) -> bool
