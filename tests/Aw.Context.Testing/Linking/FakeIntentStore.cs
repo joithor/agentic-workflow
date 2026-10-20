@@ -11,6 +11,7 @@ namespace Aw.Context.Testing.Linking;
 public sealed class FakeIntentStore : IIntentStore
 {
     private readonly Dictionary<string, IntentRecord> _records = new(StringComparer.Ordinal);
+    private IntentLayer? _layer;
     private readonly Dictionary<string, List<IntentLink>> _links = new(StringComparer.Ordinal);
     private readonly Dictionary<string, (string? Cursor, DateTimeOffset? LastSync, string? LastError)> _cursors = new(StringComparer.Ordinal);
 
@@ -57,7 +58,7 @@ public sealed class FakeIntentStore : IIntentStore
             return ValueTask.FromResult<Result<IntentLayer>>(failure);
         }
 
-        return Done(() => new IntentLayer(
+        return Done(() => _layer ??= new IntentLayer(
             [.. _records.Values.OrderBy(r => r.Key.Value, StringComparer.Ordinal)],
             [.. _links.Values.SelectMany(l => l).OrderBy(l => l.Record.Value, StringComparer.Ordinal).ThenBy(l => l.Target.Value, StringComparer.Ordinal).ThenBy(l => l.Rule)],
             [.. _decisions.Values.SelectMany(d => d).OrderBy(d => d.ToKey().Value, StringComparer.Ordinal)],
@@ -81,6 +82,7 @@ public sealed class FakeIntentStore : IIntentStore
     /// <inheritdoc/>
     public ValueTask<Result<IntentCommit>> CommitPage(IntentPage page, CancellationToken cancellationToken)
     {
+        _layer = null;   // the store keeps its layer until a write, as SQLite keeps it until the change stamp moves
         ArgumentNullException.ThrowIfNull(page);
         return Attempt(() =>
         {
@@ -135,6 +137,7 @@ public sealed class FakeIntentStore : IIntentStore
 
     public ValueTask<Result<Unit>> SaveDecisions(DecisionBatch batch, CancellationToken cancellationToken)
     {
+        _layer = null;   // the store keeps its layer until a write, as SQLite keeps it until the change stamp moves
         ArgumentNullException.ThrowIfNull(batch);
         if (EmptyBatchFailure is { } failure && batch.Decisions.Count == 0)
         {
@@ -177,6 +180,7 @@ public sealed class FakeIntentStore : IIntentStore
 
     public ValueTask<Result<Unit>> Requeue(RecordKey record, string version, CancellationToken cancellationToken)
     {
+        _layer = null;   // the store keeps its layer until a write, as SQLite keeps it until the change stamp moves
         if (RequeueFailure is { } failure)
         {
             return ValueTask.FromResult<Result<Unit>>(failure);
@@ -195,6 +199,7 @@ public sealed class FakeIntentStore : IIntentStore
 
     public ValueTask<Result<Unit>> SaveConflict(DecisionConflict conflict, CancellationToken cancellationToken)
     {
+        _layer = null;   // the store keeps its layer until a write, as SQLite keeps it until the change stamp moves
         ArgumentNullException.ThrowIfNull(conflict);
         if (SaveConflictFailure is { } failure)
         {

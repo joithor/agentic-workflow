@@ -199,7 +199,8 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
     private int Append(IReadOnlyList<MapOverride> overrides)
     {
         var added = 0;
-        foreach (var o in overrides.Where(o => !_overrides.Exists(e => e.ToId() == o.ToId())))
+        var held = _overrides.Select(e => e.ToId().Value).ToHashSet(StringComparer.Ordinal);   // a set: a 50k-row append compared every pair
+        foreach (var o in overrides.Where(o => held.Add(o.ToId().Value)))
         {
             _overrides.Add(o);
             added++;

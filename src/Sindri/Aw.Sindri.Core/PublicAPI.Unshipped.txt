@@ -5752,9 +5752,12 @@ const Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.LegacyFix = "register the cur
 const Aw.Sindri.Core.Workflow.Recipes.Urgencies.Default = "work" -> string!
 const Aw.Sindri.Core.Workflow.Views.InstanceList.EmptyText = "No workflows are open." -> string!
 const Aw.Sindri.Core.Workflow.Views.InstanceList.NoMatchText = "No workflows match." -> string!
+const Aw.Sindri.Core.Workflow.Views.StateChip.Cancelled = "CANCELLED" -> string!
 const Aw.Sindri.Core.Workflow.Views.StateChip.Decision = "DECISION" -> string!
+const Aw.Sindri.Core.Workflow.Views.StateChip.DidntWorkOut = "DIDN'T WORK OUT" -> string!
 const Aw.Sindri.Core.Workflow.Views.StateChip.Done = "DONE" -> string!
 const Aw.Sindri.Core.Workflow.Views.StateChip.Escalated = "ESCALATED" -> string!
+const Aw.Sindri.Core.Workflow.Views.StateChip.Failed = "FAILED" -> string!
 const Aw.Sindri.Core.Workflow.Views.StateChip.Parked = "PARKED" -> string!
 const Aw.Sindri.Core.Workflow.Views.StateChip.Queued = "QUEUED" -> string!
 const Aw.Sindri.Core.Workflow.Views.StateChip.Running = "RUNNING" -> string!
@@ -8070,7 +8073,8 @@ static Aw.Sindri.Core.Workflow.Views.Round.operator !=(Aw.Sindri.Core.Workflow.V
 static Aw.Sindri.Core.Workflow.Views.Round.operator ==(Aw.Sindri.Core.Workflow.Views.Round? left, Aw.Sindri.Core.Workflow.Views.Round? right) -> bool
 static Aw.Sindri.Core.Workflow.Views.StateCell.operator !=(Aw.Sindri.Core.Workflow.Views.StateCell? left, Aw.Sindri.Core.Workflow.Views.StateCell? right) -> bool
 static Aw.Sindri.Core.Workflow.Views.StateCell.operator ==(Aw.Sindri.Core.Workflow.Views.StateCell? left, Aw.Sindri.Core.Workflow.Views.StateCell? right) -> bool
-static Aw.Sindri.Core.Workflow.Views.StateChip.For(Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? engineOwned, bool deskOpen, bool terminal, bool notStarted = false) -> Aw.Sindri.Core.Workflow.Views.StateChip!
+static Aw.Sindri.Core.Workflow.Views.StateChip.For(Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? engineOwned, bool deskOpen, Aw.Sindri.Core.Workflow.Ids.OutcomeName? outcome, bool notStarted = false) -> Aw.Sindri.Core.Workflow.Views.StateChip!
+static Aw.Sindri.Core.Workflow.Views.StateChip.IsFinished(string! word) -> bool
 static Aw.Sindri.Core.Workflow.Views.StateChip.operator !=(Aw.Sindri.Core.Workflow.Views.StateChip? left, Aw.Sindri.Core.Workflow.Views.StateChip? right) -> bool
 static Aw.Sindri.Core.Workflow.Views.StateChip.operator ==(Aw.Sindri.Core.Workflow.Views.StateChip? left, Aw.Sindri.Core.Workflow.Views.StateChip? right) -> bool
 static Aw.Sindri.Core.Workflow.Views.StatusAnswer.operator !=(Aw.Sindri.Core.Workflow.Views.StatusAnswer? left, Aw.Sindri.Core.Workflow.Views.StatusAnswer? right) -> bool

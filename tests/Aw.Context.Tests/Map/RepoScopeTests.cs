@@ -1,5 +1,7 @@
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
+using Aw.Context.Testing.Graph;
 using Aw.Context.Testing.Map;
 
 namespace Aw.Context.Tests.Map;
@@ -17,6 +19,34 @@ public sealed class RepoScopeTests
         Assert.Equal(FixtureMap.ScopedEdges, scoped.Edges.Count);
         _ = Assert.Single(scoped.Aliases);
         Assert.Empty(scoped.Decisions);
+    }
+
+    // A person adds a feature and files the repo's screen under it; the screen holds an action. A session in that repo sees the feature (an ancestor
+    // of its screen) and the action (inside its screen), and so a lens on the feature or a question naming the action finds them. Another repo's
+    // screen under the same feature stays out: an ancestor brings itself, not its other children.
+    [Fact, Trait("Lane", "unit")]
+    public void A_session_sees_the_part_of_ancestors_of_its_nodes_and_what_they_contain_but_not_a_shared_features_other_children()
+    {
+        var graph = new GraphBuilder()
+            .Node("code:src/a/Schedule.tsx", "Schedule.tsx")
+            .Node("surface:screen/schedule", "Schedule screen", Provenance.Deterministic)
+            .Node("feature:self-scheduling", "Self scheduling")
+            .Node("action:schedule/book-shift", "Book a shift", Provenance.Model, 0.8)
+            .Node("surface:screen/roster", "Roster screen", Provenance.Deterministic)
+            .Node("code:src/b/Roster.tsx", "Roster.tsx")
+            .Edge("code:src/a/Schedule.tsx", EdgeType.Implements, "surface:screen/schedule", evidence: "repo:web/src/a/Schedule.tsx")
+            .Edge("surface:screen/schedule", EdgeType.PartOf, "feature:self-scheduling")
+            .Edge("action:schedule/book-shift", EdgeType.PartOf, "surface:screen/schedule")
+            .Edge("code:src/b/Roster.tsx", EdgeType.Implements, "surface:screen/roster", evidence: "repo:mobile/src/b/Roster.tsx")
+            .Edge("surface:screen/roster", EdgeType.PartOf, "feature:self-scheduling")
+            .Build();
+
+        var scoped = graph.ScopedTo(Context.Core.Engine.ContextRepoName.From("web"));
+
+        Assert.Equal(["action:schedule/book-shift", "code:src/a/Schedule.tsx", "feature:self-scheduling", "surface:screen/schedule"], scoped.Nodes.Select(n => n.Key.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.DoesNotContain(scoped.Edges, e => e.From.Value == "surface:screen/roster");
+        Assert.Equal(["action:schedule/book-shift"], AnchorMatch.FromText(scoped, "how do I book a shift?").Anchors.Select(k => k.Value), StringComparer.Ordinal);
+        Assert.Equal("feature:self-scheduling", AnchorMatch.Resolve(scoped, "Self scheduling").Value.Key.Value, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
