@@ -1,0 +1,6 @@
+#nullable enable
+Aw.CodeIndex.Core.CodeIndexCoreServiceCollectionExtensions
+Aw.CodeIndex.Core.CodeIndexErrors
+static Aw.CodeIndex.Core.CodeIndexCoreServiceCollectionExtensions.AddCodeIndexCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.CodeIndex.Core.CodeIndexErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static readonly Aw.CodeIndex.Core.CodeIndexErrors.Invalid -> Aw.Kernel.ErrorDefinition!

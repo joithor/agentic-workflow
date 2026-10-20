@@ -1,0 +1,21 @@
+#nullable enable
+Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexRequest
+Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexRequest.<Clone>$() -> Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexRequest!
+Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexRequest.BuildCodeIndexRequest() -> void
+Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexRequest.Equals(Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexRequest? other) -> bool
+Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexResponse
+Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexResponse.<Clone>$() -> Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexResponse!
+Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexResponse.BuildCodeIndexResponse() -> void
+Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexResponse.Equals(Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexResponse? other) -> bool
+Aw.CodeIndex.Features.CodeIndexFeaturesServiceCollectionExtensions
+override Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexRequest.Equals(object? obj) -> bool
+override Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexRequest.GetHashCode() -> int
+override Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexRequest.ToString() -> string!
+override Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexResponse.Equals(object? obj) -> bool
+override Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexResponse.GetHashCode() -> int
+override Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexResponse.ToString() -> string!
+static Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexRequest.operator !=(Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexRequest? left, Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexRequest? right) -> bool
+static Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexRequest.operator ==(Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexRequest? left, Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexRequest? right) -> bool
+static Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexResponse.operator !=(Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexResponse? left, Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexResponse? right) -> bool
+static Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexResponse.operator ==(Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexResponse? left, Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexResponse? right) -> bool
+static Aw.CodeIndex.Features.CodeIndexFeaturesServiceCollectionExtensions.AddCodeIndexFeatures(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
