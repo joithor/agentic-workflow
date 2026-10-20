@@ -64,7 +64,7 @@ public sealed class GetSetupTests
         Assert.Equal((SetupStepId.Onyx, SindriErrors.ApiInternal.Code), (failed.Id, failed.Error?.Code));
         Assert.Equal(5, result.Value.Steps.Count(static s => s.State == SetupState.Done));
         var line = Assert.Single(_log.Lines);
-        Assert.Contains("Onyx", line, StringComparison.Ordinal);
+        Assert.Contains("onyx", line, StringComparison.Ordinal);
         Assert.Contains(nameof(InvalidOperationException), line, StringComparison.Ordinal);
     }
 
