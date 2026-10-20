@@ -980,8 +980,10 @@ An instance's served view (`GET /workflow/instances/{address}`) is read from Tem
 `GET /events?types=workflow.instance-changed[&instance=<address>]`.
 
 - **Frame.** `event: workflow.instance-changed`, no `id` line (the cursor stays at the last real row), `data: {"instance":"T-1/step/1","state":"checks","cursor":4211}`: the
-  address, the state the instance is in after the change, and the ledger sequence of the change. A re-read whose view `asOf` is lower than
-  `cursor` is stale.
+  address, the state the instance is in after the change, and the ledger sequence of the change. The frame's `state` is the authoritative new state.
+  The view carries no ledger sequence (its `asOf` is a read time), and the row is mirrored before a query can see the workflow's new state, so
+  the frame can arrive first. A client re-queries on a frame; if the view's `state` is not yet the frame's `state`, it retries a few times with a short,
+  bounded backoff (for example 100, 200 and 400 ms), then shows what it has until the next frame.
 - **Source.** The rows the instance mirrored that change its view: `workflow.started`, `.transition`, `.refused`, `.shifted`, `.notified`
   and `.expired` (a state change, a step run starting or ending, an outcome, a takeover or handback). `workflow.injection` records a
   plan and is not one. The payload is `instance` and `to` of the row's public record; no agent text.
@@ -989,6 +991,11 @@ An instance's served view (`GET /workflow/instances/{address}`) is read from Tem
   `workflow.*` rows are sent only if the caller's other globs match them.
 - **Coalescing.** One frame per instance per page read (at most 100 rows): a burst, or a replay from an old cursor, is one frame at the newest row. The
   client's own 250 ms window (`status --follow`) sits on top.
+- **Open at the head.** A stream that names only `workflow.instance-changed` sends no `id:` line, so an auto-reconnect names no cursor. With no `after` and no
+  `Last-Event-ID` such a request opens at the current ledger head instead of 0; an explicit `after=` (0 included) is honored. A client re-queries the
+  instances it shows on every (re)connect, since frames sent while it was away are lost. A stream that also names a ledger type keeps the usual cursor rule.
+  An `instance=` address that was never started gives a silent empty stream (the filter is by key, not an existence check). With `instance=` and another
+  type, rows of other instances are dropped.
 - **Never stored.** It is derived on the way out, not appended, so a views rebuild (which writes only the non-public `views.rebuilt`) emits nothing and
   a reconnect resumes by the last real row's `id`. A disconnect between a row and its derived frame loses the frame; a reconnecting client re-queries first.
 - **Not in the catalog.** `GET /events/catalog` lists ledger types, so it has no row; a consumer treats the name as `invalidates: [instance(address)]`.
