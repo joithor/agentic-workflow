@@ -27,7 +27,7 @@ public sealed class StripRowViewModelTests
 
         var vm = Of(row);
 
-        Assert.Equal((row.Chip, row.Subject.Label, row.Recipe.Id, StageTag.For(row), row.Now), (vm.Chip, vm.Subject, vm.Recipe, vm.Stage, vm.Now));
+        Assert.Equal((row.Chip, row.Subject.Label, WorkflowNames.Of(row.Recipe.Id, row.Recipe.DisplayName), StageTag.For(row), row.Now), (vm.Chip, vm.Subject, vm.Workflow, vm.Stage, vm.Now));
         Assert.Equal(Labels.RowAge(_clock.GetUtcNow() - row.Since), vm.Age);
     }
 
@@ -105,12 +105,15 @@ public sealed class StripRowViewModelTests
     }
 
     [Fact]
-    public void Row_id_and_name_are_label_plus_address()
+    public void Row_name_is_the_workflow_and_the_subject_and_the_address_stays_the_rows_key()
     {
         var row = Where(r => r.Subject.Label.Length > 0 && r.Recipe.Urgency != RecipeUrgency.Incident);
 
         var vm = Of(row);
 
-        Assert.Equal((row.Address, $"{row.Subject.Label} {row.Address}"), (vm.Address, vm.AccessibleName));
+        Assert.Equal((row.Address, $"{vm.Workflow}, {row.Subject.Label}"), (vm.Address, vm.AccessibleName));
+        Assert.DoesNotContain(row.Address, vm.AccessibleName, StringComparison.Ordinal);
+        Assert.DoesNotContain(row.Address, vm.AnswerName, StringComparison.Ordinal);
+        Assert.Equal($"Answer, {vm.Subject}", vm.AnswerName);
     }
 }

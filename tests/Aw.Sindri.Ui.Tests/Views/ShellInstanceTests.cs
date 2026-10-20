@@ -72,12 +72,15 @@ public sealed class ShellInstanceTests : FrameHost
     });
 
     [Fact]
-    public Task Behind_a_sheet_the_list_reflows_to_id_title_state() => OnUi(async () =>
+    public Task Behind_a_sheet_the_list_reflows_to_workflow_title_state() => OnUi(async () =>
     {
         var (window, shell) = await Connected(s => s.Workflows.Groups.Count > 0, width: 1300, height: 900);
         shell.GoTo(PageId.Workflows);
         Settle(window);
         Assert.False(Visible(window, "WorkflowRowCompact"));
+        Assert.False(Visible(window, "WorkflowRowInputs"));   // closed Details: a wide page shows the same primary line
+        shell.Workflows.Groups.SelectMany(g => g.Rows).First().ToggleDetails();
+        Settle(window);
         Assert.True(Visible(window, "WorkflowRowInputs"));
 
         shell.Navigate(new DeepLink(DeepLinkKind.Workflow, Address()));
@@ -85,7 +88,8 @@ public sealed class ShellInstanceTests : FrameHost
 
         var row = shell.Workflows.Groups.SelectMany(g => g.Rows).First();
         var compact = window.GetVisualDescendants().OfType<TextBlock>().First(t => t.Name == "WorkflowRowCompact" && t.IsEffectivelyVisible);
-        Assert.Contains(row.Address, compact.Text, StringComparison.Ordinal);
+        Assert.Contains(row.DisplayName, compact.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain(row.Address, compact.Text, StringComparison.Ordinal);
         Assert.Contains(row.StateWord, compact.Text, StringComparison.Ordinal);
         Assert.False(Visible(window, "WorkflowRowInputs"));
         Assert.False(Visible(window, "WorkflowRowStages"));

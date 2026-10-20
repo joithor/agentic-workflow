@@ -31,13 +31,37 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
     /// <summary>The recipes the list has shown, kept while one is chosen so the filter can go back.</summary>
     public ObservableCollection<string> KnownRecipes { get; } = [];
 
-    /// <summary>The recipe filter's choices: all recipes, then each known recipe.</summary>
+    /// <summary>The workflow-type filter's choices, by name: all workflow types, then each known one.</summary>
     public ObservableCollection<string> RecipeChoices { get; } = [];
 
 #pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
     /// <summary>The stale note's words.</summary>
     public string StaleText => Labels.Stale;
 #pragma warning restore CA1822, MA0041
+
+#pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
+    /// <summary>The workflow-type filter's name.</summary>
+    public string RecipeFilterName => Labels.RecipeFilter;
+
+    /// <summary>The item filter's name.</summary>
+    public string SubjectFilterName => Labels.SubjectFilter;
+#pragma warning restore CA1822, MA0041
+
+    /// <summary>True while the key and shortcuts line shows; closed until opened.</summary>
+    public bool IsLegendOpen { get; set => Set(ref field, value); }
+
+    /// <summary>The key disclosure's header.</summary>
+#pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
+    public string LegendHeader => Labels.KeyHeader;
+#pragma warning restore CA1822, MA0041
+
+    /// <summary>Opens the key and shortcuts line, or closes it.</summary>
+    internal void ToggleLegend() => IsLegendOpen = !IsLegendOpen;
+
+    /// <summary>The recipe id a filter choice stands for.</summary>
+    /// <param name="choice">A choice from <see cref="RecipeChoices"/>.</param>
+    /// <returns>The recipe id, or null for "All workflow types" or a name no group has.</returns>
+    internal string? RecipeIdOf(string choice) => Groups.FirstOrDefault(g => string.Equals(g.Name, choice, StringComparison.Ordinal))?.Recipe;
 
     /// <summary>The legend line at the foot of the list (screens §4.2): the marks the rows draw, then the page's keys.</summary>
     public string LegendText { get; } = WorkflowsLegend.Text;
@@ -207,7 +231,7 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
         if (RecipeFilter is null && SubjectFilter is null)
         {
             ReplaceIfChanged(KnownRecipes, [.. shown.Select(g => g.Recipe)]);
-            ReplaceIfChanged(RecipeChoices, [Labels.AllRecipes, .. KnownRecipes]);
+            ReplaceIfChanged(RecipeChoices, [Labels.AllRecipes, .. shown.Select(g => g.Name)]);
         }
 
         Reselect(before);

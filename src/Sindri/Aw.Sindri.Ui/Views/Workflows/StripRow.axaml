@@ -20,7 +20,7 @@
       </Button>
       <!-- Wide: the recipe, the stage tag, the badge and the served "now" sentence sit on the row's line. Narrow page (UI spec §3.2): they drop to a second line. -->
       <WrapPanel x:Name="StripDetail" Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0">
-        <TextBlock Classes="caption subtle mono" Text="{Binding Recipe}" Margin="0,0,8,0" AutomationProperties.Name="{Binding Recipe}" />
+        <TextBlock Classes="caption subtle" Text="{Binding Workflow}" Margin="0,0,8,0" AutomationProperties.Name="{Binding Workflow}" />
         <TextBlock Classes="caption subtle mono" Text="{Binding Stage}" Margin="0,0,8,0" AutomationProperties.Name="{Binding Stage}" />
         <TextBlock x:Name="StripBadge" Classes="caption" Text="{Binding Badge}" IsVisible="{Binding HasBadge}" Margin="0,0,8,0" AutomationProperties.Name="{Binding Badge}" />
         <TextBlock x:Name="StripNow" Classes="caption subtle" Text="{Binding Now}" AutomationProperties.Name="{Binding Now}" />

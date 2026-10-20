@@ -43,31 +43,36 @@ public sealed class WorkflowsFramesTests : FrameHost
         var locks = window.GetVisualDescendants().OfType<Ui.Views.Components.ProtectedActionButton>().Where(b => b.Name == "WorkflowProtected" && b.IsEffectivelyVisible).ToList();
         var locked = FixtureInstances.List("open").Instances.Single(r => r.Answer is not null && string.Equals(r.Answer.Class, "protected", StringComparison.Ordinal));
         Assert.Equal(locked.Answer!.Cli, ((ViewModels.Components.ProtectedActionViewModel)Assert.Single(locks).DataContext!).Cli);   // the one lock sits on the Locked row
+        Assert.False(Visible(window, "WorkflowsLegend"));   // the key sits behind its toggle until asked for
+        shell.Workflows.ToggleLegend();
+        Settle(window);
         Assert.Equal((true, shell.Workflows.LegendText), (Visible(window, "WorkflowsLegend"), Named<TextBlock>(window, "WorkflowsLegend").Text));
         Assert.Equal(shell.Workflows.Groups.Count, window.GetVisualDescendants().OfType<Button>().Count(t => t.Name == "WorkflowGroupToggle"));
         var recipeButtons = window.GetVisualDescendants().OfType<Button>().Where(b => b.Name == "WorkflowGroupRecipe" && b.IsEffectivelyVisible).ToList();
         Expect.Sequence(shell.Workflows.Groups.Select(g => g.RecipeLinkName), recipeButtons.Select(Heard.Name));   // reached and named, by the peer
         Assert.All(recipeButtons, b => Assert.StartsWith(b.Content!.ToString()![..^2], Heard.Name(b), StringComparison.Ordinal));
+        PrimaryOnly(window, shell);
         AssistiveNames(window, shell);
-        StateColumns(window, shell);
         Frame(window, "u8-workflows-open", Prefix);
     });
 
-    // A recipe with many states stays readable: every state has the same fixed width under its head and in each row, a head and a cell are one line
-    // (a long name is cut with an ellipsis, never wrapped mid-word) and carry the full words as their tooltip, and the grid scrolls sideways.
-    private static void StateColumns(Window window, ShellViewModel shell)
+    // The row leads with the workflow, the item and who is on it; the address never shows, and the per-stage cells wait behind the row's Details.
+    private static void PrimaryOnly(Window window, ShellViewModel shell)
     {
-        var group = shell.Workflows.Groups[0];
-        var scope = window.GetVisualDescendants().OfType<Ui.Views.Workflows.RecipeGroup>().First(g => ReferenceEquals(g.DataContext, group));
-        var heads = scope.GetVisualDescendants().OfType<Border>().Where(b => b.Name == "WorkflowColumnHead" && b.IsEffectivelyVisible).ToList();
-        Assert.Equal(group.Columns.Count, heads.Count);
-        Assert.All(heads, h => Assert.Equal((h.DataContext, TextWrapping.NoWrap), (ToolTip.GetTip(h), h.GetVisualDescendants().OfType<TextBlock>().Single().TextWrapping)));
-        Assert.All(heads, h => Assert.Equal((string)h.DataContext!, Heard.Wrapper(h)));
-        var cells = scope.GetVisualDescendants().OfType<Border>().Where(b => b.Name == "WorkflowStageCell" && b.IsEffectivelyVisible).ToList();
-        Assert.NotEmpty(cells);
-        Assert.All(cells, c => Assert.Equal((heads[0].Bounds.Width, TextWrapping.NoWrap), (c.Bounds.Width, c.GetVisualDescendants().OfType<TextBlock>().Single().TextWrapping)));
-        Assert.All(heads, h => Assert.Equal(heads[0].Bounds.Width, h.Bounds.Width));
-        Assert.NotNull(window.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault(s => s.Name == "WorkflowGroupScroll" && s.HorizontalScrollBarVisibility == Avalonia.Controls.Primitives.ScrollBarVisibility.Auto));
+        var row = shell.Workflows.Groups[0].Rows[0];
+        var frame = window.GetVisualDescendants().OfType<Border>().First(b => b.Name == "WorkflowRowFrame" && ReferenceEquals(b.DataContext, row));
+        var texts = frame.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible).Select(t => t.Text ?? string.Empty).ToList();
+        Assert.Contains(row.DisplayName, texts);
+        Assert.Contains(row.Subject, texts);
+        Assert.Contains(row.Who, texts);
+        Assert.DoesNotContain(texts, t => t.Contains(row.Address, StringComparison.Ordinal) || t.Contains("workflow.", StringComparison.Ordinal));
+        Assert.Empty(frame.GetVisualDescendants().OfType<Border>().Where(b => b.Name is "WorkflowRowInputs" or "WorkflowRowStages" && b.IsEffectivelyVisible));
+        Assert.Empty(window.GetVisualDescendants().OfType<Border>().Where(b => b.Name == "WorkflowColumnHead"));
+
+        row.ToggleDetails();
+        Settle(window);
+        Assert.Equal(2, frame.GetVisualDescendants().OfType<Border>().Count(b => b.Name is "WorkflowRowInputs" or "WorkflowRowStages" && b.IsEffectivelyVisible));
+        Assert.True(frame.GetVisualDescendants().OfType<TextBlock>().Any(t => t.IsEffectivelyVisible && t.Text == row.Recipe));   // the id is in Details
     }
 
     // What assistive tech hears, from each control's automation peer (a TextBlock's peer ignores a Name, so these sit on wrappers): review run 2, W5 and W6.
@@ -85,7 +90,7 @@ public sealed class WorkflowsFramesTests : FrameHost
         Assert.Equal(row.InputsName, Heard.Wrapper(inputs));
         Assert.All(row.Inputs.Select(i => i.Name), name => Assert.Contains(name, row.InputsName, StringComparison.Ordinal));
         var title = window.GetVisualDescendants().OfType<Button>().First(b => b.Name == "WorkflowRowOpen" && b.IsEffectivelyVisible && ReferenceEquals(b.DataContext, row));
-        Assert.Equal(Labels.OpenInstanceName(row.Subject, row.Address), Heard.Name(title));
+        Assert.Equal(row.OpenName, Heard.Name(title));
         Assert.Contains(row.Subject, Heard.Name(title), StringComparison.Ordinal);
 
         // The row's cells are children of the row in the automation tree, which is where AT-SPI reads them (L2)

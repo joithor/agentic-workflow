@@ -106,7 +106,7 @@ internal sealed partial class WorkflowsPage : UserControl
     {
         if (List is { } list && sender is ComboBox { SelectedItem: string chosen })
         {
-            var recipe = string.Equals(chosen, Labels.AllRecipes, StringComparison.Ordinal) ? null : chosen;
+            var recipe = list.RecipeIdOf(chosen);   // a choice is a workflow's name; null for "All workflow types"
             if (!string.Equals(recipe, list.RecipeFilter, StringComparison.Ordinal))
             {
                 _ = list.FilterRecipe(recipe, CancellationToken.None);

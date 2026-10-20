@@ -71,7 +71,7 @@ public sealed class InstanceRowViewModelTests
                 var (cell, stage) = p;
                 Assert.StartsWith(Mark(cell.Glyph), stage.Text, StringComparison.Ordinal);
                 Assert.Equal(cell.Round is { } r ? string.Create(CultureInfo.InvariantCulture, $"r{r.N}/{r.Max}") : string.Empty, Between(stage, "r"), StringComparer.Ordinal);
-                Assert.Equal(cell.Desk, stage.Detail.Contains("desk", StringComparison.Ordinal));
+                Assert.Equal(cell.Desk, stage.Detail.Contains("waiting for you", StringComparison.Ordinal));
                 Assert.Equal(cell.Child && cell.Children is null, stage.Detail.Contains("child", StringComparison.Ordinal));
                 Assert.Equal(cell.Children is { } c ? string.Create(CultureInfo.InvariantCulture, $"{c.Done}/{c.Total}") : string.Empty, Between(stage, "n"), StringComparer.Ordinal);
             });
@@ -125,18 +125,66 @@ public sealed class InstanceRowViewModelTests
     public void Chip_is_the_served_chip() => Assert.All(Open, served => Assert.Equal(served.Chip, Row(served).Chip));
 
     [Fact]
-    public void The_name_carries_the_state_and_the_chip_and_the_current_cell_says_current()
+    public void The_name_carries_the_workflow_the_subject_the_stage_and_who_is_on_it_but_no_address()
     {
         Assert.All(Open, served =>
         {
             var row = Row(served);
-            Assert.Contains(served.State, row.AccessibleName, StringComparison.Ordinal);
-            Assert.Contains(served.Chip.Word, row.AccessibleName, StringComparison.Ordinal);
-            Assert.Contains(row.Subject, row.AccessibleName, StringComparison.Ordinal);
+            Assert.Equal($"{row.DisplayName}, {row.Subject}, {served.State}, {row.Who}", row.AccessibleName);
+            Assert.DoesNotContain(served.Address, row.AccessibleName, StringComparison.Ordinal);
+            Assert.Equal($"Open {row.Subject}, {row.DisplayName}", row.OpenName);
+            Assert.DoesNotContain(served.Address, row.OpenName, StringComparison.Ordinal);
+            Assert.DoesNotContain(served.Address, row.Compact, StringComparison.Ordinal);
+            Assert.Equal($"{row.DisplayName} · {served.State}", row.Compact);
+        });
+    }
+
+    [Fact]
+    public void The_current_cell_says_current_and_the_others_do_not()
+    {
+        Assert.All(Open, served =>
+        {
+            var row = Row(served);
             var current = row.Stages.Single(s => s.State == served.State);
             Assert.EndsWith(", " + Labels.StageCurrent, current.Name, StringComparison.Ordinal);
             Assert.All(row.Stages.Where(s => s.State != served.State), s => Assert.DoesNotContain(Labels.StageCurrent, s.Name, StringComparison.Ordinal));
-            Assert.Equal(Labels.OpenInstanceName(row.Subject, served.Address), row.OpenName);
         });
+    }
+
+    [Fact]
+    public void The_display_name_is_the_served_one_and_otherwise_the_recipe_id_made_readable()
+    {
+        var served = Open[0];
+
+        var plain = Row(served with { Recipe = served.Recipe with { Id = "workflow.bug-fix", DisplayName = null } });
+        var named = Row(served with { Recipe = served.Recipe with { Id = "workflow.bug-fix", DisplayName = "Find, fix and prove a bug" } });
+
+        Assert.Equal(("Bug Fix", "Find, fix and prove a bug"), (plain.DisplayName, named.DisplayName));
+        Assert.Equal("workflow.bug-fix", named.Recipe);   // the id stays available for Details and the filter
+    }
+
+    [Fact]
+    public void Who_is_on_it_is_said_in_plain_words()
+    {
+        var who = Open.Select(served => (Served: served, Who: Row(served).Who)).ToList();
+
+        Assert.All(who.Where(w => w.Served.EngineOwned is { Kind: EngineOwnedKind.TakenOver }), w => Assert.Equal("You took it over", w.Who));
+        Assert.All(who.Where(w => w.Served.EngineOwned is { Kind: EngineOwnedKind.Escalated or EngineOwnedKind.Parked }), w => Assert.Equal("Paused: needs a decision", w.Who));
+        Assert.All(who.Where(w => w.Served.EngineOwned is null && (w.Served.Answer is not null || InstanceRules.CompletesAtDesk(w.Served))), w => Assert.Equal("Waiting for you", w.Who));
+        Assert.All(who.Where(w => w.Served.EngineOwned is null && w.Served.Answer is null && !InstanceRules.CompletesAtDesk(w.Served)), w => Assert.Equal("In progress", w.Who));
+        Assert.Contains(who, w => w.Who == "Paused: needs a decision");
+    }
+
+    [Fact]
+    public void Details_are_closed_until_the_row_opens_them()
+    {
+        var row = Row(Open[0]);
+        Assert.False(row.IsDetailsOpen);
+
+        row.ToggleDetails();
+        Assert.True(row.IsDetailsOpen);
+
+        row.ToggleDetails();
+        Assert.False(row.IsDetailsOpen);
     }
 }

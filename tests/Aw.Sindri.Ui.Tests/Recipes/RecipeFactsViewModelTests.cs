@@ -4,6 +4,7 @@ using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Recipes;
+using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.Tests.Recipes;
 
@@ -33,12 +34,20 @@ public sealed class RecipeFactsViewModelTests
     }
 
     [Fact]
+    public void Headings_say_what_the_workflow_needs_and_produces()
+    {
+        var facts = Facts("workflow.no-outputs");
+
+        Assert.Equal(("What it needs", "What it produces", "This workflow doesn't produce anything."), (facts.InputsHeading, facts.OutputsHeading, facts.NoOutputsText));
+    }
+
+    [Fact]
     public void Null_label_reads_the_key()
     {
         var served = Golden("workflow.no-outputs")["inputs"]!.AsArray().Single(i => i!["label"] is null)!;
         var row = Facts("workflow.no-outputs").Inputs.Single(i => i.Detail.StartsWith(Text(served["key"]), StringComparison.Ordinal));
 
-        Assert.Equal(Text(served["key"]), row.Label);
+        Assert.Equal(WorkflowNames.InputName(Text(served["key"])), row.Label);   // the key in plain words; the key itself is in the detail line
     }
 
     [Fact]

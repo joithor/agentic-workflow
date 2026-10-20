@@ -14,10 +14,11 @@ internal sealed class InstanceRowViewModel : ObservableObject
     private const string CancelCommand = "ApplyCommand:cancel";
 
     private readonly InstanceSummary _row;
+    private readonly IClipboard _clipboard;
 
     internal InstanceRowViewModel(InstanceSummary row, IClipboard clipboard, TimeProvider clock)
     {
-        _row = row;
+        (_row, _clipboard) = (row, clipboard);
         var blocked = row.Inputs.Any(i => i is { Required: true, Present: false });
         Inputs = [.. row.Inputs.Select(i => new InputCellViewModel(i))];
         Stages = [.. row.States.Select(s =>
@@ -35,7 +36,6 @@ internal sealed class InstanceRowViewModel : ObservableObject
             Protected = new ProtectedActionViewModel(new ProtectedAction(Labels.AnswerVerb(answer.Kind), answer.Cli, row.Address), clipboard, clock);
         }
 
-        Cells = Stages;
         CanAnswerAtDesk = row.Answer is null && InstanceRules.CompletesAtDesk(row);
         CanCancel = row.Actions.Contains(CancelCommand, StringComparer.Ordinal);
     }
@@ -49,11 +49,22 @@ internal sealed class InstanceRowViewModel : ObservableObject
     /// <summary>The state the instance is in, as served.</summary>
     public string StateWord => _row.State;
 
-    /// <summary>The compact line a narrow page shows instead of the columns: the id and the state.</summary>
-    public string Compact => $"{_row.Address} · {_row.State}";
+    /// <summary>The compact line a narrow page shows instead of the columns: the workflow and the stage.</summary>
+    public string Compact => $"{DisplayName} · {_row.State}";
 
-    /// <summary>The recipe's id, as served.</summary>
+    /// <summary>The recipe's id, as served (Details, and what the workflow filter sends).</summary>
     public string Recipe => _row.Recipe.Id;
+
+    /// <summary>The workflow's name as a person reads it: the served display name, else the id made readable.</summary>
+    public string DisplayName => WorkflowNames.Of(_row.Recipe.Id, _row.Recipe.DisplayName);
+
+    /// <summary>The stage the run is in, with its round, children and loop partner ("mitigate r1/3 ⇄ verify").</summary>
+    public string Stage => StageTag.For(_row);
+
+    /// <summary>Who is on the run, in plain words: you (taken over), paused for a decision, waiting for you, or in progress.</summary>
+    public string Who => _row.EngineOwned is { } owned
+        ? owned.Kind == EngineOwnedKind.TakenOver ? Labels.WhoYouTookOver : Labels.WhoPaused
+        : _row.Answer is not null || InstanceRules.CompletesAtDesk(_row) ? Labels.WhoWaitingForYou : Labels.WhoInProgress;
 
     /// <summary>The subject: its served label, or its key when it has none.</summary>
     public string Subject => _row.Subject.Label.Length > 0 ? _row.Subject.Label : _row.Subject.Key;
@@ -70,9 +81,6 @@ internal sealed class InstanceRowViewModel : ObservableObject
     /// <summary>A cell per state, in the served order.</summary>
     public IReadOnlyList<StageCellViewModel> Stages { get; }
 
-    /// <summary>The cells under the group's column heads, one per column in the group's order (a blank where this row has no such state).</summary>
-    public IReadOnlyList<StageCellViewModel> Cells { get; private set => Set(ref field, value); }
-
     /// <summary>True when the row declares inputs; with none the inputs column has nothing to name and stays out of the control view.</summary>
     public bool HasInputs => Inputs.Count > 0;
 
@@ -82,16 +90,45 @@ internal sealed class InstanceRowViewModel : ObservableObject
     /// <summary>What a screen reader hears for the stages column: the cells' names in one.</summary>
     public string StagesName => string.Join(", ", Stages.Select(c => c.Name));
 
-    /// <summary>Lines the cells up under the group's columns.</summary>
-    /// <param name="columns">The group's columns.</param>
-    internal void Align(IReadOnlyList<string> columns) =>
-        Cells = [.. columns.Select(column => Stages.FirstOrDefault(s => string.Equals(s.State, column, StringComparison.Ordinal)) ?? StageCellViewModel.Missing(column))];
+    /// <summary>True while the row's Details show (the inputs, every stage, the workflow type's id and the run's address); closed until opened.</summary>
+    public bool IsDetailsOpen { get; set => Set(ref field, value); }
 
-    /// <summary>The title button's accessible name.</summary>
-    public string OpenName => Labels.OpenInstanceName(Subject, _row.Address);
+    /// <summary>The Details disclosure's header.</summary>
+#pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
+    public string DetailsText => Labels.RowDetails;
 
-    /// <summary>The name screen readers hear: the subject and the address, then the state and the chip's word.</summary>
-    public string AccessibleName => $"{Subject} {_row.Address}, {_row.State}, {_row.Chip.Word}";
+    /// <summary>The stages line's heading in Details.</summary>
+    public string StagesHeading => Labels.StagesHeading;
+
+    /// <summary>The inputs line's heading in Details.</summary>
+    public string InputsHeading => Labels.InputsDetailsHeading;
+
+    /// <summary>The workflow type id line's heading in Details.</summary>
+    public string RecipeHeading => Labels.WorkflowTypeIdHeading;
+
+    /// <summary>The run address line's heading in Details.</summary>
+    public string AddressHeading => Labels.RunAddressHeading;
+
+    /// <summary>The Copy button's words.</summary>
+    public string CopyText => Labels.Copy;
+#pragma warning restore CA1822, MA0041
+
+    /// <summary>The Copy button's accessible name: the visible word, then what it copies.</summary>
+    public string CopyName => $"{Labels.Copy} {Labels.RunAddressHeading.ToLowerInvariant()}";
+
+    /// <summary>Opens the Details, or closes them.</summary>
+    internal void ToggleDetails() => IsDetailsOpen = !IsDetailsOpen;
+
+    /// <summary>Puts the run's address on the clipboard.</summary>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    /// <returns>A task that completes when the clipboard was asked.</returns>
+    internal Task CopyAddress(CancellationToken cancellationToken) => _clipboard.SetText(_row.Address, cancellationToken);
+
+    /// <summary>The title button's accessible name: the visible title first, then the workflow.</summary>
+    public string OpenName => Labels.OpenRunName(Subject, DisplayName);
+
+    /// <summary>The name screen readers hear: the workflow, the item, the stage and who is on it. The address is in Details.</summary>
+    public string AccessibleName => $"{DisplayName}, {Subject}, {_row.State}, {Who}";
 
     /// <summary>Where Enter and a click go: the instance in the Workflows frame.</summary>
     public DeepLink Link => new(DeepLinkKind.Workflow, _row.Address);
@@ -115,7 +152,7 @@ internal sealed class InstanceRowViewModel : ObservableObject
     public bool IsStale { get; private set => Set(ref field, value); }
 
     /// <summary>Everything the row draws: two rows with the same signature look the same.</summary>
-    internal string Signature => string.Join('|', Address, Subject, Chip, Now, string.Join(',', Inputs.Select(i => i.Name)), string.Join(',', Stages.Select(s => s.Name)), StateWord, Chip.Word, Protected?.Cli, ChildAnswer?.Target, ChildAnswer?.Intent, CanAnswerAtDesk, CanCancel);
+    internal string Signature => string.Join('|', Address, DisplayName, Who, Subject, Chip, Now, string.Join(',', Inputs.Select(i => i.Name)), string.Join(',', Stages.Select(s => s.Name)), StateWord, Chip.Word, Protected?.Cli, ChildAnswer?.Target, ChildAnswer?.Intent, CanAnswerAtDesk, CanCancel);
 
     /// <summary>Sets what the list knows of the row.</summary>
     /// <param name="stale">The views are stalled or rebuilding.</param>
