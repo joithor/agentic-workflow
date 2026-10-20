@@ -233,6 +233,20 @@ public sealed class SessionWrapTests : IDisposable
     }
 
     [Fact]
+    public async Task A_session_id_pattern_that_times_out_is_named_on_stderr()
+    {
+        _ids.Script = static _ => new SessionIdScan(Id: null, Ambiguous: false, TimedOut: true);
+        var run = Command().Run(Args, TestContext.Current.CancellationToken);
+        await Until(() => _calls.Beats.Count == 1);
+
+        await Run(TimeSpan.FromSeconds(65));
+        _ = await Finish(run, 0);
+
+        Expect.True(_calls.Exits.Single().Session is null);
+        Expect.True(_errors.ToString().Contains("SND-LAUNCH-015", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task Without_a_launch_secret_the_agent_runs_and_nothing_is_called()
     {
         _ = _env.Remove("AW_SINDRI_LAUNCH_SECRET");
