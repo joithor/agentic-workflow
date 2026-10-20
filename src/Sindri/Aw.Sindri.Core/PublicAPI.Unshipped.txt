@@ -10603,8 +10603,6 @@ Aw.Sindri.Core.Launches.AdmittedLaunch
 Aw.Sindri.Core.Launches.AdmittedLaunch.<Clone>$() -> Aw.Sindri.Core.Launches.AdmittedLaunch!
 Aw.Sindri.Core.Launches.AdmittedLaunch.Accepted.get -> bool
 Aw.Sindri.Core.Launches.AdmittedLaunch.Accepted.init -> void
-Aw.Sindri.Core.Launches.AdmittedLaunch.AdmittedLaunch(string? Item, bool Accepted) -> void
-Aw.Sindri.Core.Launches.AdmittedLaunch.Deconstruct(out string? Item, out bool Accepted) -> void
 Aw.Sindri.Core.Launches.AdmittedLaunch.Equals(Aw.Sindri.Core.Launches.AdmittedLaunch? other) -> bool
 Aw.Sindri.Core.Launches.AdmittedLaunch.Item.get -> string?
 Aw.Sindri.Core.Launches.AdmittedLaunch.Item.init -> void
@@ -10626,11 +10624,9 @@ Aw.Sindri.Core.Sessions.SessionIdScan
 Aw.Sindri.Core.Sessions.SessionIdScan.<Clone>$() -> Aw.Sindri.Core.Sessions.SessionIdScan!
 Aw.Sindri.Core.Sessions.SessionIdScan.Ambiguous.get -> bool
 Aw.Sindri.Core.Sessions.SessionIdScan.Ambiguous.init -> void
-Aw.Sindri.Core.Sessions.SessionIdScan.Deconstruct(out Aw.Sindri.Core.Ids.SessionId? Id, out bool Ambiguous) -> void
 Aw.Sindri.Core.Sessions.SessionIdScan.Equals(Aw.Sindri.Core.Sessions.SessionIdScan? other) -> bool
 Aw.Sindri.Core.Sessions.SessionIdScan.Id.get -> Aw.Sindri.Core.Ids.SessionId?
 Aw.Sindri.Core.Sessions.SessionIdScan.Id.init -> void
-Aw.Sindri.Core.Sessions.SessionIdScan.SessionIdScan(Aw.Sindri.Core.Ids.SessionId? Id, bool Ambiguous) -> void
 override Aw.Sindri.Core.Sessions.SessionIdScan.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Sessions.SessionIdScan.GetHashCode() -> int
 override Aw.Sindri.Core.Sessions.SessionIdScan.ToString() -> string!
@@ -12637,6 +12633,23 @@ static Aw.Sindri.Core.Workflow.Views.RecordedFrame.operator ==(Aw.Sindri.Core.Wo
 static Aw.Sindri.Core.Workflow.Views.RecordedWorkflowEvent.operator !=(Aw.Sindri.Core.Workflow.Views.RecordedWorkflowEvent? left, Aw.Sindri.Core.Workflow.Views.RecordedWorkflowEvent? right) -> bool
 static Aw.Sindri.Core.Workflow.Views.RecordedWorkflowEvent.operator ==(Aw.Sindri.Core.Workflow.Views.RecordedWorkflowEvent? left, Aw.Sindri.Core.Workflow.Views.RecordedWorkflowEvent? right) -> bool
 static Aw.Sindri.Core.Workflow.Views.StepRuns.Fold(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Views.RecordedWorkflowEvent!>! events, System.Collections.Generic.IReadOnlyDictionary<string!, int>! caps) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StepRun!>!
+Aw.Sindri.Core.Launch.Argv.PatternOutcome
+Aw.Sindri.Core.Launch.Argv.PatternOutcome.Matched = 0 -> Aw.Sindri.Core.Launch.Argv.PatternOutcome
+Aw.Sindri.Core.Launch.Argv.PatternOutcome.NoMatch = 1 -> Aw.Sindri.Core.Launch.Argv.PatternOutcome
+Aw.Sindri.Core.Launch.Argv.PatternOutcome.TimedOut = 2 -> Aw.Sindri.Core.Launch.Argv.PatternOutcome
+Aw.Sindri.Core.Launches.AdmittedLaunch.AdmittedLaunch(string? Item, bool Accepted, bool TimedOut = false) -> void
+Aw.Sindri.Core.Launches.AdmittedLaunch.Deconstruct(out string? Item, out bool Accepted, out bool TimedOut) -> void
+Aw.Sindri.Core.Launches.AdmittedLaunch.TimedOut.get -> bool
+Aw.Sindri.Core.Launches.AdmittedLaunch.TimedOut.init -> void
+Aw.Sindri.Core.Sessions.SessionIdScan.Deconstruct(out Aw.Sindri.Core.Ids.SessionId? Id, out bool Ambiguous, out bool TimedOut) -> void
+Aw.Sindri.Core.Sessions.SessionIdScan.SessionIdScan(Aw.Sindri.Core.Ids.SessionId? Id, bool Ambiguous, bool TimedOut = false) -> void
+Aw.Sindri.Core.Sessions.SessionIdScan.TimedOut.get -> bool
+Aw.Sindri.Core.Sessions.SessionIdScan.TimedOut.init -> void
+static Aw.Sindri.Core.Launch.Argv.SessionIdRules.Check(Aw.Sindri.Core.Launch.AgentEntry! entry, Aw.Sindri.Core.Ids.SessionId? id) -> Aw.Sindri.Core.Launch.Argv.PatternOutcome
+static Aw.Sindri.Core.Launch.Argv.SessionIdRules.Test(string! pattern, string! text) -> Aw.Sindri.Core.Launch.Argv.PatternOutcome
+static Aw.Sindri.Core.Launches.LaunchSessionEvents.IsPatternTimeout(Aw.Kernel.Error! error) -> bool
+static Aw.Sindri.Core.Sessions.SessionIdCapture.Check(string? pattern, Aw.Sindri.Core.Ids.SessionId id) -> Aw.Sindri.Core.Launch.Argv.PatternOutcome
+static readonly Aw.Sindri.Core.SindriErrors.LaunchSessionIdTimedOut -> Aw.Kernel.ErrorDefinition!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext.Deconstruct(out string! Title, out Aw.Sindri.Core.Workflow.Views.ParentRef? Parent, out Aw.Sindri.Core.Workflow.Views.ViewCounts! Counts, out System.DateTimeOffset AsOf, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StepRun!>? StepRuns, out string? RecipeDisplayName) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext.InstanceDetailContext(string! Title, Aw.Sindri.Core.Workflow.Views.ParentRef? Parent, Aw.Sindri.Core.Workflow.Views.ViewCounts! Counts, System.DateTimeOffset AsOf, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StepRun!>? StepRuns = null, string? RecipeDisplayName = null) -> void
 
