@@ -56,6 +56,28 @@ public sealed class InstanceFrameViewModelTests
     }
 
     [Fact]
+    public async Task The_served_Step_runs_show_as_the_current_attempt_and_a_list_of_runs()
+    {
+        var frame = await Opened("item-produce");
+
+        Assert.Equal("Attempt 2 of 3, with you", frame.StepRuns!.CurrentLine);
+        Assert.Equal(2, frame.StepRuns.Rows.Count);
+    }
+
+    [Fact]
+    public async Task A_server_that_serves_no_Step_runs_draws_none()
+    {
+        var node = Golden("item-produce");
+        _ = node.AsObject().Remove("stepRuns");
+        _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, node.ToJsonString());
+        var frame = Frame();
+
+        await frame.Open(_api, Text(node["address"]), Text(node["id"]), Token);
+
+        Assert.Equal((FramePhase.Shown, false), (frame.Phase, frame.StepRuns!.HasRows));
+    }
+
+    [Fact]
     public async Task Opened_from_a_row_reads_by_id_with_no_lookup()
     {
         var frame = await Opened("project-build");

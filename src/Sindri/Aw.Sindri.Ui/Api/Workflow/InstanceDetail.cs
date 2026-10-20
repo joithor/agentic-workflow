@@ -39,6 +39,6 @@ internal sealed record InstanceDetail(
     IReadOnlyList<ChildGroup> Children,
     ViewCounts Counts,
     IReadOnlyList<string> Actions,
-    IReadOnlyList<StepRun> StepRuns,
+    IReadOnlyList<StepRun>? StepRuns,
     DateTimeOffset AsOf,
     [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? DisplayName = null);
