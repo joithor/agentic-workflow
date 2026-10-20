@@ -41,14 +41,13 @@ internal sealed class StepRunsViewModel
     /// <returns>The view model; empty without runs.</returns>
     internal static StepRunsViewModel Of(IReadOnlyList<StepRun>? runs, string currentState, bool engineOwned = false)
     {
-        _ = engineOwned;
         if (runs is not { Count: > 0 })
         {
             return new StepRunsViewModel(string.Empty, []);
         }
 
         var open = runs.LastOrDefault(r => IsOpen(r) && string.Equals(r.Step, currentState, StringComparison.Ordinal));
-        var line = open is null ? string.Empty : Join(", ", Labels.AttemptWords(open.Attempt, open.MaxAttempts), Who(open));
+        var line = open is null ? string.Empty : Join(", ", Labels.AttemptWords(open.Attempt, open.MaxAttempts), engineOwned ? string.Empty : Who(open));
         return new StepRunsViewModel(line, [.. runs.Select(Row)]);
     }
 
@@ -65,14 +64,14 @@ internal sealed class StepRunsViewModel
         return new StepRunRowViewModel(text, name);
     }
 
-    // The closing actor in words; a run with none recorded (an open one, or an older row) falls back to how it runs. Unknown says nothing.
+    // The closing actor in words. Only an open run falls back to how it runs; a closed run whose actor is not a person or an agent says nothing.
     private static string Who(StepRun run)
     {
         var open = IsOpen(run);
         var actor = run.Actor ?? string.Empty;
         var you = actor.StartsWith("human", StringComparison.Ordinal);
         var agent = actor.StartsWith("agent", StringComparison.Ordinal) || actor.StartsWith("session", StringComparison.Ordinal);
-        if (!you && !agent)
+        if (!you && !agent && open)
         {
             you = string.Equals(run.Runtime, "desk", StringComparison.Ordinal);
             agent = string.Equals(run.Runtime, "agent", StringComparison.Ordinal);

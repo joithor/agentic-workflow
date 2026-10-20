@@ -165,7 +165,7 @@ internal sealed partial class InstanceFrameViewModel
     // The runs stay the same object while a re-read serves the same words, so an open list stays open.
     private void ShowStepRuns(InstanceDetail detail)
     {
-        var runs = StepRunsViewModel.Of(detail.StepRuns, detail.State);
+        var runs = StepRunsViewModel.Of(detail.StepRuns, detail.State, detail.EngineOwned is not null);
         if (StepRuns is null || !string.Equals(StepRuns.Signature, runs.Signature, StringComparison.Ordinal))
         {
             StepRuns = runs;
