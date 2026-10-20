@@ -14,7 +14,7 @@ internal sealed partial class HealthViewModel
     public string Sentence { get; private set => Set(ref field, value); } = Labels.Connecting;
 
     /// <summary>The Details expander's heading.</summary>
-    public string DetailsHeading => Labels.SystemDetails;
+    public string DetailsHeading { get; } = Labels.SystemDetails;
 
     /// <summary>True while the Details expander is open; closed until asked for.</summary>
     public bool DetailsOpen { get; set => Set(ref field, value); }
