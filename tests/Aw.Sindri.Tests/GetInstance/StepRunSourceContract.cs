@@ -1,5 +1,4 @@
 using Aw.Sindri.Core.Workflow.Engine;
-using Aw.Sindri.Core.Workflow.Views;
 
 namespace Aw.Sindri.Tests.GetInstance;
 
@@ -18,7 +17,7 @@ public abstract class StepRunSourceContract
     /// <summary>A source holding <paramref name="rows"/> in the given (ledger) order.</summary>
     /// <param name="rows">Each event with the instance that mirrored it.</param>
     /// <returns>The source under test.</returns>
-    protected abstract ValueTask<StepRunRead> Create(IReadOnlyList<(InstanceAddress Address, RecordedWorkflowEvent Event)> rows);
+    protected abstract ValueTask<StepRunRead> Create(IReadOnlyList<(InstanceAddress Address, StepRunRow Row)> rows);
 
     /// <summary>A source whose ledger can't be read.</summary>
     /// <returns>The source under test.</returns>
@@ -37,7 +36,7 @@ public abstract class StepRunSourceContract
 
         var read = await source(Mine, TestContext.Current.CancellationToken);
 
-        Assert.Equal("produce checks", string.Join(' ', read.Value.Select(static e => e.Payload.To)));
+        Assert.Equal("produce checks", string.Join(' ', read.Value.Select(static e => e.Frame?.State)));
     }
 
     [Fact]

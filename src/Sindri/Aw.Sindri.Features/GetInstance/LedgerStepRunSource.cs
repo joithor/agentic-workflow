@@ -34,7 +34,7 @@ internal sealed class LedgerStepRunSource(ILedgerReader ledger, EventFactory eve
                 var payload = events.Payload<WorkflowEventPayload>(recorded);
                 if (payload.IsSuccess)
                 {
-                    found.Add(new RecordedWorkflowEvent(recorded.Envelope.Type, recorded.Envelope.OccurredAt, recorded.Envelope.Actor, payload.Value));
+                    found.Add(StepRunEventMap.Of(recorded.Envelope.Type, recorded.Envelope.OccurredAt, recorded.Envelope.Actor, payload.Value));
                 }
             }
 

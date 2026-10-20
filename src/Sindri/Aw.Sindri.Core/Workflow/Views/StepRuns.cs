@@ -1,4 +1,3 @@
-using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 
 namespace Aw.Sindri.Core.Workflow.Views;
@@ -31,7 +30,7 @@ public static class StepRuns
                 runs[i] = Closed(runs[i], recorded);
             }
 
-            if (recorded.Payload.Detail?.Delta.Frame is { Run: { } token } frame && !runs.Exists(r => string.Equals(r.Token, token, StringComparison.Ordinal)))
+            if (recorded.Frame is { Run: { } token } frame && !runs.Exists(r => string.Equals(r.Token, token, StringComparison.Ordinal)))
             {
                 runs.Add(Opened(frame, token, recorded.At, runs, caps));
             }
@@ -40,7 +39,7 @@ public static class StepRuns
         return runs;
     }
 
-    private static StepRun Opened(FrameSummary frame, string token, DateTimeOffset at, List<StepRun> runs, IReadOnlyDictionary<string, int> caps) =>
+    private static StepRun Opened(RecordedFrame frame, string token, DateTimeOffset at, List<StepRun> runs, IReadOnlyDictionary<string, int> caps) =>
         new(token, frame.State, runs.Count(r => string.Equals(r.Step, frame.State, StringComparison.Ordinal)) + 1, caps.TryGetValue(frame.State, out var cap) ? cap : null,
             StepRunState.Running, frame.Runtime, at, EndedAt: null, DurationMs: null, Outcome: null, Tokens: null, Actor: null);
 
@@ -52,37 +51,35 @@ public static class StepRuns
             return run;
         }
 
-        var payload = recorded.Payload;
-        var actor = payload.Detail?.TriggerActor ?? recorded.Actor;
-        if (IsReportOn(payload, run))
+        var actor = recorded.TriggerActor ?? recorded.Actor;
+        if (IsReportOn(recorded, run))
         {
             return Reported(run, recorded, actor);
         }
 
-        return payload.Detail?.Delta.Frame is { } frame && !string.Equals(frame.Run, run.Token, StringComparison.Ordinal)
-            ? Ended(run, MovedOn(payload), recorded.At, actor)
+        return recorded.Frame is { } frame && !string.Equals(frame.Run, run.Token, StringComparison.Ordinal)
+            ? Ended(run, MovedOn(recorded), recorded.At, actor)
             : run;
     }
 
-    private static bool IsReportOn(WorkflowEventPayload payload, StepRun run) =>
-        (string.Equals(payload.Trigger, TriggerNames.StepCompleted, StringComparison.Ordinal) || string.Equals(payload.Trigger, TriggerNames.StepFailed, StringComparison.Ordinal))
-        && string.Equals(payload.Run, run.Token, StringComparison.Ordinal);
+    private static bool IsReportOn(RecordedWorkflowEvent recorded, StepRun run) =>
+        (string.Equals(recorded.Trigger, TriggerNames.StepCompleted, StringComparison.Ordinal) || string.Equals(recorded.Trigger, TriggerNames.StepFailed, StringComparison.Ordinal))
+        && string.Equals(recorded.Run, run.Token, StringComparison.Ordinal);
 
     private static StepRun Reported(StepRun run, RecordedWorkflowEvent recorded, string actor)
     {
-        var payload = recorded.Payload;
-        var failed = string.Equals(payload.Trigger, TriggerNames.StepFailed, StringComparison.Ordinal);
+        var failed = string.Equals(recorded.Trigger, TriggerNames.StepFailed, StringComparison.Ordinal);
         var refused = string.Equals(recorded.Type, Refused, StringComparison.Ordinal);
         var ended = Ended(run, failed ? StepRunState.Failed : refused ? StepRunState.Refused : StepRunState.Passed, recorded.At, actor);
         return ended with
         {
-            Outcome = failed ? null : payload.Outcome,
-            Tokens = payload.Tokens ?? payload.Detail?.Tokens,
+            Outcome = failed ? null : recorded.Outcome,
+            Tokens = recorded.Tokens,
         };
     }
 
-    private static StepRunState MovedOn(WorkflowEventPayload payload) =>
-        string.Equals(payload.Trigger, TriggerNames.Cancel, StringComparison.Ordinal) ? StepRunState.Cancelled : StepRunState.Abandoned;
+    private static StepRunState MovedOn(RecordedWorkflowEvent recorded) =>
+        string.Equals(recorded.Trigger, TriggerNames.Cancel, StringComparison.Ordinal) ? StepRunState.Cancelled : StepRunState.Abandoned;
 
     private static StepRun Ended(StepRun run, StepRunState state, DateTimeOffset at, string actor) =>
         run with { State = state, EndedAt = at, DurationMs = (long)(at - run.StartedAt).TotalMilliseconds, Actor = actor };
