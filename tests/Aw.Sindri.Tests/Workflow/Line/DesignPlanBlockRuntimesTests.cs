@@ -50,7 +50,7 @@ public sealed class DesignPlanBlockRuntimesTests
     [Theory]
     [InlineData("""[{"question":"Q1","pick":"a"}]""", "assumed", "stop")]
     [InlineData("""[{"question":"Q1","pick":"b"}]""", "changed", "redesign")]
-    [InlineData("""[{"question":"Q-plan","other":"Split P1."}]""", "replan", "graph")]
+    [InlineData("""[{"question":"Q-revise-plan","other":"Split P1."}]""", "replan", "graph")]
     public async Task Settle_moves_the_plan_to_the_stop_back_to_design_or_back_to_the_graph(string answers, string outcome, string next)
     {
         await using var provider = ShippedComposition.Compose();

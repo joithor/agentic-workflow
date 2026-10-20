@@ -27,6 +27,7 @@ public sealed class PlanEvidenceStepTests
         Assert.Equal(InMemoryPackets.HashOf(new PacketRef(PacketKind.Plan, PlanLocation)), (string?)packet["hash"]);
         Assert.Equal(PlanLocation, (string?)packet["dir"]);
         Assert.Equal(("P1", "expiry-p1", PhaseLocation), ((string?)packet["phases"]![0]!["phase"], (string?)packet["phases"]![0]!["id"], (string?)packet["phases"]![0]!["dir"]));
+        Assert.Equal(InMemoryPackets.HashOf(new PacketRef(PacketKind.Phase, PhaseLocation)), (string?)packet["phases"]![0]!["hash"]);
         var kinds = station.Packets.Calls.Where(static c => c.Verb == "validate" && c.Packet.Kind != PacketKind.Design).Select(static c => (c.Packet.Kind, c.Packet.Repo)).ToList();
         Assert.Equal([(PacketKind.Plan, LineStation.Checkout), (PacketKind.Phase, LineStation.Checkout)], kinds);
     }

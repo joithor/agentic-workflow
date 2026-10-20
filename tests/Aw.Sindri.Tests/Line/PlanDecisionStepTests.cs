@@ -71,11 +71,11 @@ public sealed class PlanDecisionStepTests
     }
 
     [Fact]
-    public async Task Questions_asks_at_most_five_a_round_in_decision_order()
+    public async Task Questions_asks_every_open_decision_in_decision_order_however_many_there_are()
     {
-        var result = await Questions(Design(Decision(1), Decision(2), Decision(3), Decision(4), Decision(5), Decision(6)));
+        var result = await Questions(Design(Decision(1), Decision(2), Decision(3), Decision(4), Decision(5), Decision(6), Decision(7)));
 
-        Assert.Equal(["Q1", "Q2", "Q3", "Q4", "Q5"], Ids(result), StringComparer.Ordinal);
+        Assert.Equal(["Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7"], Ids(result), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -132,15 +132,36 @@ public sealed class PlanDecisionStepTests
     [Fact]
     public async Task Settle_with_a_design_note_is_changed_and_with_a_plan_note_is_replan_and_design_wins()
     {
-        var design = await Settle(Design(Decision(1)), """[{"question":"Q-design0","other":"Cover the reminder."}]""");
-        var plan = await Settle(Design(Decision(1)), """[{"question":"Q-plan","other":"Split P1."}]""");
-        var both = await Settle(Design(Decision(1)), """[{"question":"Q-plan","other":"Split P1."},{"question":"Q-revise-design","other":"Cover it."}]""");
+        var design = await Settle(Design(Decision(1)), """[{"question":"Q-revise-design","other":"Cover the reminder."}]""");
+        var plan = await Settle(Design(Decision(1)), """[{"question":"Q-revise-plan","other":"Split P1."}]""");
+        var both = await Settle(Design(Decision(1)), """[{"question":"Q-revise-plan","other":"Split P1."},{"question":"Q-revise-design","other":"Cover it."}]""");
 
         Assert.Equal("changed", design.Result!.Outcome.Value);
         Assert.Equal("Cover the reminder.", (string)Out(design, "designRevision")["notes"]![0]!);
         Assert.Equal("replan", plan.Result!.Outcome.Value);
         Assert.Empty(plan.Result.Outputs);
         Assert.Equal("changed", both.Result!.Outcome.Value);
+    }
+
+    [Fact]
+    public async Task Settle_with_a_design_revision_and_no_text_still_carries_a_note_so_it_is_a_revision()
+    {
+        var result = await Settle(Design(Decision(1)), """[{"question":"Q-revise-design"}]""");
+
+        Assert.Equal("changed", result.Result!.Outcome.Value);
+        Assert.Equal(["owner asked for a revision, no text"], Out(result, "designRevision")["notes"]!.AsArray().Select(static n => (string)n!));
+    }
+
+    [Theory]
+    [InlineData("Q-planX")]
+    [InlineData("Q-design0")]
+    [InlineData("Q-revise-planning")]
+    public async Task Settle_matches_the_two_revise_ids_exactly_so_any_other_id_is_a_decision_answer_and_fails(string id)
+    {
+        var result = await Settle(Design(Decision(1)), $$"""[{"question":"{{id}}","other":"x"}]""");
+
+        Assert.Null(result.Result);
+        Assert.Contains("matches no decision", result.Failure, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -151,6 +151,19 @@ public sealed class DesignEvidenceStepTests
     }
 
     [Fact]
+    public async Task A_missing_scope_fact_fails_the_Step_before_any_check_runs()
+    {
+        var station = new LineStation();
+        var facts = await station.DesignFacts();
+        _ = facts.Remove("scope");
+
+        var result = await station.DesignEvidence().Run(LineStation.Context("step.design.evidence", LineStation.DesignAddress, facts), TestContext.Current.CancellationToken);
+
+        Assert.Null(result.Result);
+        Assert.Contains("fact:scope", result.Failure, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task A_repo_with_no_checkout_fails_the_Step()
     {
         var station = new LineStation();

@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Packets;
 using Aw.Sindri.Testing.Packets;
@@ -77,6 +78,34 @@ public sealed class PlanFreezeStepTests
     }
 
     [Fact]
+    public async Task A_phase_packet_that_hashes_to_something_else_than_the_evidence_checked_is_mismatch_and_nothing_is_frozen()
+    {
+        var (facts, station) = await Approved();
+        var packet = JsonNode.Parse(facts["planPacket"])!;
+        packet["phases"]![0]!["hash"] = "sha256:" + new string('0', 64);
+        facts["planPacket"] = packet.ToJsonString();
+
+        var result = await Freeze(station, facts);
+
+        Assert.Equal("mismatch", result.Result!.Outcome.Value);
+        var finding = JsonNode.Parse(LineStation.Fact(result, "findings"))![0]!;
+        Assert.Equal("SND-LINE-001", (string?)finding["rule"]);
+        Assert.Contains("phase packet P1", (string?)finding["message"], StringComparison.Ordinal);
+        Assert.DoesNotContain(station.Packets.Calls, static c => c.Verb == "freeze");
+    }
+
+    [Fact]
+    public async Task A_freeze_that_reports_frozen_with_no_hash_fails_the_Step_instead_of_recording_an_empty_hash()
+    {
+        var (facts, station) = await Approved();
+
+        var result = await new PlanFreezeStep(new HashlessFreezes(station.Packets), station.Checkouts).Run(LineStation.Context("step.plan.freeze", LineStation.PlanAddress, facts), TestContext.Current.CancellationToken);
+
+        Assert.Null(result.Result);
+        Assert.Contains("no hash", result.Failure, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task A_packet_that_fails_its_checks_at_the_freeze_is_mismatch_with_the_rule()
     {
         var (facts, station) = await Approved();
@@ -138,5 +167,15 @@ public sealed class PlanFreezeStepTests
 
         Assert.Null(result.Result);
         Assert.Contains("design.packet", result.Failure, StringComparison.Ordinal);
+    }
+
+    private sealed class HashlessFreezes(IPackets inner) : IPackets
+    {
+        public ValueTask<Result<PacketValidation>> Validate(PacketRef packet, CancellationToken cancellationToken) => inner.Validate(packet, cancellationToken);
+
+        public ValueTask<Result<string>> Hash(PacketRef packet, CancellationToken cancellationToken) => inner.Hash(packet, cancellationToken);
+
+        public async ValueTask<Result<PacketFreeze>> Freeze(PacketRef packet, PacketFreezer by, CancellationToken cancellationToken) =>
+            (await inner.Freeze(packet, by, cancellationToken).ConfigureAwait(false)).Map(static f => f with { Hash = null });
     }
 }

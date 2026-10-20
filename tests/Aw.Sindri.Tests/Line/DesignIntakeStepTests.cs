@@ -59,6 +59,16 @@ public sealed class DesignIntakeStepTests
     }
 
     [Fact]
+    public async Task A_revision_with_only_a_default_note_is_still_revise()
+    {
+        const string revision = """{"decisions":[],"notes":["owner asked for a revision, no text"]}""";
+
+        var result = await Run(new LineStation(), revision: revision);
+
+        Assert.Equal("revise", result.Result!.Outcome.Value);
+    }
+
+    [Fact]
     public async Task A_scope_packet_that_hashes_to_something_else_fails_the_Step_naming_both_hashes()
     {
         var other = LineStation.ScopePacket.Replace("sha256:", "sha256:00", StringComparison.Ordinal);
