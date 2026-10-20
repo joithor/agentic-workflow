@@ -22,15 +22,16 @@ namespace Aw.Sindri.Tests.Workflow.Lens;
 public sealed class LensLoopBlockRuntimesTests
 {
     [Fact]
-    public async Task Review_lens_log_stays_at_the_desk_because_its_descriptor_does_not_read_the_queue()
+    public async Task Review_lens_log_runs_as_a_block_now_that_its_descriptor_reads_the_queue()
     {
         await using var provider = ShippedComposition.Compose();
         var (recipe, context) = Recipe(provider, "sindri/workflow.review-loop.yaml");
 
         var entered = StateEntry.Enter(EngineFixture.At(recipe, "lens-log"), recipe, "lens-log", context);
 
-        Assert.Equal(StepRuntime.Desk, entered.Frame.Run?.Runtime);   // 'step.review.log' reads lensReport and lensRounds only: it cannot know whether a lens is still queued (docs/csharp/sindri-workflow.md)
-        Assert.DoesNotContain(BlockId.From("step.review.log"), context.Runtimes.Keys);
+        Assert.Equal(StepRuntime.Block, entered.Frame.Run?.Runtime);
+        Assert.Contains(BlockId.From("step.review.log"), context.Runtimes.Keys);
+        Assert.Contains(FactKey.From("fact:lensQueue"), provider.GetRequiredService<BlockCatalog>().Find(BlockId.From("step.review.log"))!.Inputs);
     }
 
     [Fact]

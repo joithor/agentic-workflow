@@ -95,6 +95,7 @@ internal static class BlockRegistrations
     private static IServiceCollection AddReviewBlocks(this IServiceCollection services) => services
         .AddBlockDescriptor(ReviewSteps.Round)
         .AddBlockDescriptor(LensSteps.Run)
+        .AddBlockDescriptor(LensSteps.Ask)
         .AddBlockDescriptor(ReviewSteps.Log)
         .AddBlockDescriptor(ReviewSteps.Record)
         .AddBlockDescriptor(ReviewSteps.Fix)
