@@ -62,7 +62,7 @@ public sealed class ApproveAllDialogTests
         var on = CenterOf(window, hold);
 
         IInputElement? captured = null;
-        hold.AddHandler(InputElement.PointerPressedEvent, (_, e) => captured = e.Pointer.Captured, RoutingStrategies.Tunnel, handledEventsToo: true);   // after the dialog's own
+        hold.AddHandler(InputElement.PointerPressedEvent, (_, e) => captured = e.Pointer.Captured, RoutingStrategies.Bubble, handledEventsToo: true);   // the bubble phase comes after the dialog's tunnel handler
         window.MouseDown(on, MouseButton.Left);
         Assert.True(model.IsHolding);
         Assert.Same(hold, captured);

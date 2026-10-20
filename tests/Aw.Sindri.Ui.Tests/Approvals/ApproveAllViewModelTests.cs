@@ -235,7 +235,7 @@ public sealed class ApproveAllViewModelTests
         dialog.BeginHold();
         await WaitUntil(() => _f.Server.Challenges.Count == 2);
 
-        Assert.Equal((false, Labels.ApproveExpired), (dialog.IsHolding, dialog.Notice));
+        Assert.Equal((false, string.Empty, true), (dialog.IsHolding, dialog.Notice, dialog.CanApprove));   // the fresh challenge is here, so "that took too long" is over
     }
 
     [Fact]
