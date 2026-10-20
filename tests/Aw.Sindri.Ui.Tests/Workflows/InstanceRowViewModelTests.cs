@@ -130,7 +130,8 @@ public sealed class InstanceRowViewModelTests
         Assert.All(Open, served =>
         {
             var row = Row(served);
-            Assert.Equal($"{row.DisplayName}, {row.Subject}, {served.State}, {row.Who}", row.AccessibleName);
+            Assert.Equal($"{row.Subject}, {row.DisplayName}, {served.Chip.Word}, {served.State}, {row.Who}", row.AccessibleName);
+            Assert.StartsWith(row.Subject, row.AccessibleName, StringComparison.Ordinal);
             Assert.DoesNotContain(served.Address, row.AccessibleName, StringComparison.Ordinal);
             Assert.Equal($"Open {row.Subject}, {row.DisplayName}", row.OpenName);
             Assert.DoesNotContain(served.Address, row.OpenName, StringComparison.Ordinal);
@@ -186,5 +187,42 @@ public sealed class InstanceRowViewModelTests
 
         row.ToggleDetails();
         Assert.False(row.IsDetailsOpen);
+    }
+
+    private static InstanceSummary Finished(string word, ChipTone tone)
+    {
+        var served = Open[0];
+        return served with
+        {
+            EngineOwned = null,
+            Answer = null,
+            Chip = new StateChip(word, tone),
+            States = [.. served.States.Select(s => string.Equals(s.State, served.State, StringComparison.Ordinal) ? s with { Terminal = true } : s)],
+        };
+    }
+
+    [Fact]
+    public void A_finished_run_names_nobody_and_the_chip_word_is_in_its_name()
+    {
+        var failed = Row(Finished("FAILED", ChipTone.Fail));
+
+        Assert.Equal(string.Empty, failed.Who);
+        Assert.Contains("FAILED", failed.AccessibleName, StringComparison.Ordinal);
+        Assert.DoesNotContain("In progress", failed.AccessibleName, StringComparison.Ordinal);
+        Assert.False(failed.AccessibleName.EndsWith(", ", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Missing_inputs_are_counted_up_front_and_only_when_any_is_missing()
+    {
+        var served = FixtureInstances.List("preview-missing-input").Instances[0];
+        var missing = served.Inputs.Count(i => !i.Present);
+        Assert.True(missing > 0);
+
+        Assert.Equal(missing == 1 ? "1 input missing" : string.Create(CultureInfo.InvariantCulture, $"{missing} inputs missing"), Row(served).MissingInputsText);
+        Assert.True(Row(served).HasMissingInputs);
+
+        var none = Row(served with { Inputs = [.. served.Inputs.Select(i => i with { Present = true })] });
+        Assert.Equal((string.Empty, false), (none.MissingInputsText, none.HasMissingInputs));
     }
 }

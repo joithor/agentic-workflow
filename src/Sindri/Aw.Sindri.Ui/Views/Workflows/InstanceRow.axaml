@@ -31,7 +31,8 @@
         <StackPanel x:Name="WorkflowRowAside" Grid.Column="1" Spacing="4" Margin="0,0,8,0">
           <ctl:StateChipView x:Name="WorkflowRowChip" Chip="{Binding Chip}" HorizontalAlignment="Left" />
           <TextBlock x:Name="WorkflowRowStage" Classes="caption" Text="{Binding Stage}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
-          <TextBlock x:Name="WorkflowRowWho" Classes="caption subtle" Text="{Binding Who}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+          <TextBlock x:Name="WorkflowRowWho" Classes="caption subtle" Text="{Binding Who}" TextWrapping="Wrap" IsVisible="{Binding Who, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" AutomationProperties.AccessibilityView="Raw" />
+          <TextBlock x:Name="WorkflowRowMissing" Classes="caption" Text="{Binding MissingInputsText}" IsVisible="{Binding HasMissingInputs}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
         </StackPanel>
         <TextBlock x:Name="WorkflowRowNow" Grid.Column="2" Classes="caption subtle" Text="{Binding Now}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
                    AutomationProperties.Name="{Binding Now}" />

@@ -111,6 +111,11 @@ internal static partial class Labels
     /// <summary>Who is on a run that is moving on its own.</summary>
     internal const string WhoInProgress = "In progress";
 
+    /// <summary>The up-front line of a run with inputs still missing.</summary>
+    /// <param name="count">How many declared inputs are missing.</param>
+    /// <returns>"1 input missing", "3 inputs missing".</returns>
+    internal static string InputsMissing(int count) => count == 1 ? "1 input missing" : string.Create(CultureInfo.InvariantCulture, $"{count} inputs missing");
+
     /// <summary>The row's disclosure.</summary>
     internal const string RowDetails = "Details";
 

@@ -21,6 +21,8 @@ internal sealed class InstanceRowViewModel : ObservableObject
         (_row, _clipboard) = (row, clipboard);
         var blocked = row.Inputs.Any(i => i is { Required: true, Present: false });
         Inputs = [.. row.Inputs.Select(i => new InputCellViewModel(i))];
+        var missing = row.Inputs.Count(i => !i.Present);
+        MissingInputsText = missing > 0 ? Labels.InputsMissing(missing) : string.Empty;
         Stages = [.. row.States.Select(s =>
         {
             var current = string.Equals(s.State, row.State, StringComparison.Ordinal);
@@ -61,10 +63,18 @@ internal sealed class InstanceRowViewModel : ObservableObject
     /// <summary>The stage the run is in, with its round, children and loop partner ("mitigate r1/3 ⇄ verify").</summary>
     public string Stage => StageTag.For(_row);
 
-    /// <summary>Who is on the run, in plain words: you (taken over), paused for a decision, waiting for you, or in progress.</summary>
-    public string Who => _row.EngineOwned is { } owned
+    /// <summary>Who is on the run, in plain words: you (taken over), paused for a decision, waiting for you, or in progress; nobody once it finished (the chip says how).</summary>
+    public string Who => IsFinished ? string.Empty : _row.EngineOwned is { } owned
         ? owned.Kind == EngineOwnedKind.TakenOver ? Labels.WhoYouTookOver : Labels.WhoPaused
         : _row.Answer is not null || InstanceRules.CompletesAtDesk(_row) ? Labels.WhoWaitingForYou : Labels.WhoInProgress;
+
+    /// <summary>"2 inputs missing" while any declared input is missing; empty otherwise.</summary>
+    public string MissingInputsText { get; }
+
+    /// <summary>True when any declared input is missing, so the row says so up front.</summary>
+    public bool HasMissingInputs => MissingInputsText.Length > 0;
+
+    private bool IsFinished => _row.States.Any(c => c.Terminal && string.Equals(c.State, _row.State, StringComparison.Ordinal));
 
     /// <summary>The subject: its served label, or its key when it has none.</summary>
     public string Subject => _row.Subject.Label.Length > 0 ? _row.Subject.Label : _row.Subject.Key;
@@ -127,8 +137,8 @@ internal sealed class InstanceRowViewModel : ObservableObject
     /// <summary>The title button's accessible name: the visible title first, then the workflow.</summary>
     public string OpenName => Labels.OpenRunName(Subject, DisplayName);
 
-    /// <summary>The name screen readers hear: the workflow, the item, the stage and who is on it. The address is in Details.</summary>
-    public string AccessibleName => $"{DisplayName}, {Subject}, {_row.State}, {Who}";
+    /// <summary>The name screen readers hear: the item (the visible title), the workflow, the served chip word, the stage and who is on it. The address is in Details.</summary>
+    public string AccessibleName => string.Join(", ", new[] { Subject, DisplayName, _row.Chip.Word, _row.State, Who }.Where(p => p.Length > 0));
 
     /// <summary>Where Enter and a click go: the instance in the Workflows frame.</summary>
     public DeepLink Link => new(DeepLinkKind.Workflow, _row.Address);
@@ -152,7 +162,7 @@ internal sealed class InstanceRowViewModel : ObservableObject
     public bool IsStale { get; private set => Set(ref field, value); }
 
     /// <summary>Everything the row draws: two rows with the same signature look the same.</summary>
-    internal string Signature => string.Join('|', Address, DisplayName, Who, Subject, Chip, Now, string.Join(',', Inputs.Select(i => i.Name)), string.Join(',', Stages.Select(s => s.Name)), StateWord, Chip.Word, Protected?.Cli, ChildAnswer?.Target, ChildAnswer?.Intent, CanAnswerAtDesk, CanCancel);
+    internal string Signature => string.Join('|', Address, DisplayName, Who, MissingInputsText, Subject, Chip, Now, string.Join(',', Inputs.Select(i => i.Name)), string.Join(',', Stages.Select(s => s.Name)), StateWord, Chip.Word, Protected?.Cli, ChildAnswer?.Target, ChildAnswer?.Intent, CanAnswerAtDesk, CanCancel);
 
     /// <summary>Sets what the list knows of the row.</summary>
     /// <param name="stale">The views are stalled or rebuilding.</param>
