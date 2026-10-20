@@ -41,9 +41,18 @@ public sealed class TempGitRepo : IDisposable
     }
 
     /// <summary>Runs git in the repo and returns its exit code, output and error.</summary>
-    public async Task<(int Exit, string Output, string Error)> Run(params string[] args)
+    public Task<(int Exit, string Output, string Error)> Run(params string[] args) => RunIn(Path, args);
+
+    /// <summary>Runs git in <paramref name="directory"/> (a worktree of the repo, say) and asserts it exits 0.</summary>
+    public static async Task GitIn(string directory, params string[] args)
     {
-        var start = new ProcessStartInfo("git", ["-C", Path, .. args]) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+        var (exit, _, error) = await RunIn(directory, args);
+        Assert.True(exit == 0, $"git {string.Join(' ', args)}: {error}");
+    }
+
+    private static async Task<(int Exit, string Output, string Error)> RunIn(string directory, string[] args)
+    {
+        var start = new ProcessStartInfo("git", ["-C", directory, .. args]) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
         start.Environment["GIT_CONFIG_GLOBAL"] = "/dev/null";
         start.Environment["GIT_CONFIG_NOSYSTEM"] = "1";
         using var git = Process.Start(start)!;   // why: Start returns a process for a command it found
