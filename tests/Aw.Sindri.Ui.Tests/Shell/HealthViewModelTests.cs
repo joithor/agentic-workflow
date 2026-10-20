@@ -56,6 +56,32 @@ public sealed class HealthViewModelTests : IDisposable
         Assert.False(_vm.IsRunning);
     }
 
+    // F3/F4: the System page leads with one sentence, and the per-service detail waits behind Details.
+    [Fact]
+    public async Task Not_running_leads_with_one_plain_sentence()
+    {
+        Start();
+
+        await Eventually(() => _vm.Headline == "Not running", "headline");
+        Assert.Equal("Sindri isn't running.", _vm.Sentence);
+    }
+
+    [Fact]
+    public async Task A_running_control_plane_says_everything_is_running()
+    {
+        _records.Write(A.Record());
+        Start();
+
+        await Eventually(() => _vm.IsRunning, "running");
+        Assert.Equal("Everything is running.", _vm.Sentence);
+    }
+
+    [Fact]
+    public void The_details_are_closed_until_asked_for()
+    {
+        Assert.False(_vm.DetailsOpen);
+    }
+
     // API §6, §3.6 and the orchestrator's decision (PR #184): a call refused even after its one retry (SND-AUTH-001, a
     // missing or stale token) is the Unreadable banner with Sindri's code and detail as they are, never "nothing
     // answered"; the app keeps looking every 2 s, reading the token again, so it recovers with no restart.

@@ -118,6 +118,12 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     /// <summary>The timeline entries read so far, in the API's order.</summary>
     public ObservableCollection<TimelineRow> Timeline { get; } = [];
 
+    /// <summary>One sentence for where the item stands ("Running for 2h 56m"); the sheet's one status line.</summary>
+    public string StatusLine { get; private set => Set(ref field, value); } = string.Empty;
+
+    /// <summary>True while the Details expander is open; closed until asked for.</summary>
+    public bool DetailsOpen { get; set => Set(ref field, value); }
+
     /// <summary>The Load more button's accessible name: "Load more timeline for ITM-…".</summary>
     public string LoadMoreName => Labels.LoadMoreFor(ItemId);
 
@@ -139,6 +145,7 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
 
         (Title, Repo, StateWord, Step) = (item.Title, item.Repo ?? string.Empty, Labels.ItemState(item.State), item.Step ?? string.Empty);
         (VersionText, Age, CreatedBy) = (Labels.Version(item.Version), Labels.Age(clock.GetUtcNow() - item.Since), item.CreatedBy);
+        StatusLine = Labels.StatusFor(StateWord, Age);
         (WaitingOn, Instance) = (item.WaitingOn ?? string.Empty, item.Instance ?? string.Empty);
         (Body, Link) = (item.Body ?? string.Empty, item.Link ?? string.Empty);
         OnChanged(nameof(HasWaitingOn));
@@ -216,6 +223,7 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
         (_pages, Next, HasItem, IsNotFound, IsStale) = (0, null, false, false, false);
         (Title, Repo, StateWord, VersionText, Age, Step, CreatedBy, WaitingOn, Instance) =
             (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
+        StatusLine = string.Empty;
         Timeline.Clear();
         Actions.Clear();
         OnChanged(nameof(HasActions));

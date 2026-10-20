@@ -10,6 +10,12 @@ internal sealed partial class HealthViewModel
     /// </summary>
     public string SendingAnnouncement { get; private set => Set(ref field, value); } = Labels.Refresh;
 
+    /// <summary>One sentence for how Sindri is ("Everything is running."); the System page leads with it and Home's strip repeats it.</summary>
+    public string Sentence { get; private set => Set(ref field, value); } = Labels.Connecting;
+
+    /// <summary>True while the Details expander is open; closed until asked for.</summary>
+    public bool DetailsOpen { get; set => Set(ref field, value); }
+
     /// <summary>Home's health strip's accessible name (R3): the health line, then "stale" while the views are stale.</summary>
     public string StripName { get; private set => Set(ref field, value); } = Labels.Connecting;
 

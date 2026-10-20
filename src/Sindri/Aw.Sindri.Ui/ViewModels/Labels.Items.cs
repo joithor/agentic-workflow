@@ -165,4 +165,13 @@ internal static partial class Labels
         < 86400 => string.Create(CultureInfo.InvariantCulture, $"{(int)age.TotalHours}h {age.Minutes}m"),
         _ => string.Create(CultureInfo.InvariantCulture, $"{(int)age.TotalDays}d"),
     };
+
+    /// <summary>The item sheet's disclosure heading: who made it, the version and the run's address.</summary>
+    internal const string SheetDetails = "Details";
+
+    /// <summary>The sheet's one status sentence: the state as a word and how long the item has been in it.</summary>
+    /// <param name="state">The state as a word ("Running").</param>
+    /// <param name="age">The age as the rows show it ("2h 56m").</param>
+    /// <returns>"Running for 2h 56m".</returns>
+    internal static string StatusFor(string state, string age) => state + " for " + age;
 }

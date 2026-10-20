@@ -35,12 +35,24 @@ public sealed class ItemSheetViewModelTests
 
         await sheet.Open(_api, A.NewItem, Token);
 
-        Assert.Equal((A.NewItem, "Try the queue", "agentic-workflow", "New", "version 1", "5m"), (sheet.ItemId, sheet.Title, sheet.Repo, sheet.StateWord, sheet.VersionText, sheet.Age));
+        Assert.Equal((A.NewItem, "Try the queue", "agentic-workflow", "New", "1", "5m"), (sheet.ItemId, sheet.Title, sheet.Repo, sheet.StateWord, sheet.VersionText, sheet.Age));
         Assert.Equal(("human:cli", false, false), (sheet.CreatedBy, sheet.HasWaitingOn, sheet.IsNotFound));
         Assert.Equal(["item.created", "item.linked"], sheet.Timeline.Take(2).Select(e => e.Type), StringComparer.Ordinal);
         Assert.Equal(100, sheet.Timeline.Count);
         Assert.Equal(("11:55:00", "human:cli", "Created “Try the queue” in agentic-workflow"), (sheet.Timeline[0].Time, sheet.Timeline[0].Actor, sheet.Timeline[0].Line));
         Assert.True(sheet.HasMore);
+    }
+
+    // F3/F4 (owner example): the sheet's sidebar leads with the title and one status sentence; who made it, the version and the
+    // run's address wait behind Details, closed until asked for.
+    [Fact]
+    public async Task The_sheet_leads_with_a_status_sentence_and_keeps_the_bookkeeping_in_closed_details()
+    {
+        var sheet = await Sheet();
+
+        await sheet.Open(_api, A.NewItem, Token);
+
+        Assert.Equal(("New for 5m", false), (sheet.StatusLine, sheet.DetailsOpen));
     }
 
     // L1: the timeline is patched by sequence, so a refresh keeps the rows (and the focus on one) as they were.
@@ -124,7 +136,7 @@ public sealed class ItemSheetViewModelTests
         await sheet.Refresh(_api, Token);
 
         Assert.Equal([(A.NewItem, new Ui.Api.CloseItemRequest("done", 1))], _server.Closed);
-        Assert.Equal(("Done", "version 2", 1), (sheet.StateWord, sheet.VersionText, sheet.Actions.Count));   // L8: the control shows its outcome first
+        Assert.Equal(("Done", "2", 1), (sheet.StateWord, sheet.VersionText, sheet.Actions.Count));   // L8: the control shows its outcome first
         _clock.Advance(ControlViewModel.AcceptedFor);
         Assert.Empty(sheet.Actions);
     }
@@ -145,7 +157,7 @@ public sealed class ItemSheetViewModelTests
 
         Assert.Equal([(A.NewItem, new Ui.Api.CloseItemRequest("cancelled", 1))], _server.Closed);
         Assert.Equal(("SND-ITEM-409", A.Detail("items-id-close", "stale-version"), true), (sheet.ProblemCode, sheet.ProblemDetail, sheet.HasProblem));
-        Assert.Equal(("Done", "version 2"), (sheet.StateWord, sheet.VersionText));
+        Assert.Equal(("Done", "2"), (sheet.StateWord, sheet.VersionText));
         Assert.Equal(2, _server.ItemCalls);
     }
 
@@ -418,7 +430,7 @@ public sealed class ItemSheetViewModelTests
 
         await sheet.Refresh(_api, Token);
 
-        Assert.Equal((false, "Done", "version 2"), (sheet.IsStale, sheet.StateWord, sheet.VersionText));
+        Assert.Equal((false, "Done", "2"), (sheet.IsStale, sheet.StateWord, sheet.VersionText));
     }
 
     // L15 (testing-2): a refresh re-reads every page Load more showed, from the first, so it never shrinks the timeline.

@@ -178,7 +178,9 @@ public sealed class QueueFramesTests : IDisposable
     {
         var (window, shell) = await OpenItem(Connected(s => !s.Queue.IsLoading), A.NewItem);
 
-        Assert.Equal(("Try the queue", "version 1"), (Named<TextBlock>(window, "ItemTitle").Text, Named<TextBlock>(window, "ItemVersion").Text));
+        Assert.Equal(("Try the queue", "1"), (Named<TextBlock>(window, "ItemTitle").Text, Named<TextBlock>(window, "ItemVersion").Text));
+        Assert.False(Visible(window, "ItemDetails"));   // F3: who made it, the version and the run's address wait behind Details
+        Assert.Equal("New for 5m", Named<TextBlock>(window, "ItemStatusLine").Text);
         var actions = Named<Control>(window, "ItemActionList").GetVisualDescendants().OfType<Button>().Where(b => b.Name == "RunButton").Select(AutomationProperties.GetName).ToList();
         Assert.Equal(["Close item " + A.NewItem, "Close as cancelled " + A.NewItem], actions, StringComparer.Ordinal);
         Assert.True(Visible(window, "LoadMoreButton"));
@@ -385,7 +387,7 @@ public sealed class QueueFramesTests : IDisposable
         Assert.Equal("ITM-0192a1b2c3d4e5f6a7b8c9d0e1f2a306", shell.Create.CreatedId);
     });
 
-    // §4.5 (owner, 2026-10-12): a parked item shows in Waiting on you with a "parked" badge, from its state.
+    // §4.5 (owner, 2026-10-12): a parked item shows in Waiting on you with a "paused" badge, from its state.
     [Fact]
     public Task A_parked_item_shows_its_badge_in_waiting_on_you() => OnUi(async () =>
     {
@@ -396,7 +398,7 @@ public sealed class QueueFramesTests : IDisposable
 
         var badges = Named<Control>(window, "QueuePage").GetVisualDescendants().OfType<TextBlock>()
             .Where(t => t.Name == "BadgeText" && t.IsEffectivelyVisible).Select(t => t.Text).ToList();
-        Assert.Equal(["parked"], badges, StringComparer.Ordinal);
+        Assert.Equal(["paused"], badges, StringComparer.Ordinal);
         Frame(window, "queue-parked");
     });
 

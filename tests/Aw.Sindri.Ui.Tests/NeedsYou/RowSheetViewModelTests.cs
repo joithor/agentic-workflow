@@ -25,7 +25,7 @@ public sealed class RowSheetViewModelTests
         var details = ProfileDetails.Build(entry);
 
         Assert.Equal(
-            [("Changed", "1 key path changed: services.scorer.every"), ("Profile hash", "3f1c09"), ("Approve with", "sindri profile approve 3f1c09")],
+            [("Changed", "1 key path changed: services.scorer.every"), ("Fingerprint", "3f1c09"), ("To approve, run", "sindri profile approve 3f1c09")],
             details.Select(d => (d.Label, d.Value)));
         Assert.Equal("sindri profile approve 3f1c09", entry.Cli);
     }
@@ -35,7 +35,7 @@ public sealed class RowSheetViewModelTests
     {
         var details = ProfileDetails.Build(NeedsYouRows.Profile());
 
-        Assert.DoesNotContain(details, d => d.Label == "Profile hash");
+        Assert.DoesNotContain(details, d => d.Label == "Fingerprint");
     }
 
     [Fact]

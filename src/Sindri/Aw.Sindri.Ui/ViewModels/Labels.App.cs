@@ -90,4 +90,24 @@ internal static partial class Labels
     /// <param name="scale">The scale (1.0 is 100%).</param>
     /// <returns>The words.</returns>
     internal static string Percent(double scale) => string.Create(CultureInfo.InvariantCulture, $"{Math.Round(scale * 100, MidpointRounding.AwayFromZero):0}%");
+
+    /// <summary>The System page's disclosure heading: the control plane, services, profile, commands and last event.</summary>
+    internal const string SystemDetails = "Details";
+
+    /// <summary>The one sentence the System page and Home's health strip lead with: how Sindri is, or what is wrong.</summary>
+    /// <param name="state">The shell's state.</param>
+    /// <param name="healthy">True when the status says healthy (or says nothing yet).</param>
+    /// <param name="problems">What the status names as wrong, in words; empty for none.</param>
+    /// <returns>The sentence.</returns>
+    internal static string HealthSentence(Shell.ShellState state, bool healthy, string problems) => state switch
+    {
+        Shell.ShellState.Normal when healthy => "Everything is running.",
+        Shell.ShellState.Normal => problems.Length > 0 ? "Something needs a look: " + problems + "." : "Sindri is running, but something needs a look.",
+        Shell.ShellState.Stale => "Sindri has stopped answering, so what you see may be out of date.",
+        Shell.ShellState.NotRunning => "Sindri isn't running.",
+        Shell.ShellState.Unreadable => "Sindri is running, but this app can't read its answer.",
+        Shell.ShellState.VersionMismatch => "Sindri and this app are different versions.",
+        Shell.ShellState.Connecting => Connecting,
+        _ => throw new ArgumentOutOfRangeException(nameof(state), state, message: null),
+    };
 }
