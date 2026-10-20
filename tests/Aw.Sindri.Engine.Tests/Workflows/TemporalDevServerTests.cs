@@ -44,8 +44,7 @@ public sealed class TemporalDevServerTests : IDisposable
     {
         var ct = TestContext.Current.CancellationToken;
         var slow = Path.Combine(_home.Path, "slow-temporal.sh");
-        await File.WriteAllTextAsync(slow, $"#!/bin/sh\nsleep 4\nexec \"{PinnedTemporal.Path()}\" \"$@\"\n", ct);   // the pinned CLI, 4 s after the process starts: a cold box
-        File.SetUnixFileMode(slow, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        _ = ExecutableScript.Write(slow, $"sleep 4\nexec \"{PinnedTemporal.Path()}\" \"$@\"\n");   // the pinned CLI, 4 s after the process starts: a cold box
         var server = new TemporalDevServer();
 
         var running = await server.StartAsync(new TemporalServerStart(slow, _home.Path), ct);

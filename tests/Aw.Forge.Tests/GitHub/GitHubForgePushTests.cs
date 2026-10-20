@@ -4,6 +4,7 @@ using Aw.Forge.Infrastructure.Credentials;
 using Aw.Forge.Infrastructure.Git;
 using Aw.Forge.Infrastructure.GitHub;
 using Aw.Kernel;
+using Aw.Kernel.Testing;
 using Aw.Redaction;
 
 namespace Aw.Forge.Tests.GitHub;
@@ -25,16 +26,13 @@ public sealed class GitHubForgePushTests : IDisposable
     {
         var recorded = Path.Combine(_dir.FullName, "push.txt");
         var shim = Path.Combine(_dir.FullName, "git-shim.sh");
-        await File.WriteAllTextAsync(
+        _ = ExecutableScript.Write(
             shim,
-            "#!/bin/sh\n"
-            + "case \"$*\" in\n"
+            "case \"$*\" in\n"
             + "  *--git-common-dir*) echo \"" + _dir.FullName + "/common\" ;;\n"
             + "  *--no-verify*) { echo \"count=$GIT_CONFIG_COUNT\"; echo \"key=$GIT_CONFIG_KEY_0\"; echo \"value=$GIT_CONFIG_VALUE_0\"; echo \"args=$*\"; } > \"" + recorded + "\" ;;\n"
             + "esac\n"
-            + "exit 0\n",
-            TestContext.Current.CancellationToken);
-        Executable.Make(shim);
+            + "exit 0\n");
         var credentials = new StubCredentials(Secret);
         var forge = new GitHubForge(
             new GitHubApi(new HttpClient(new StubHandler()), credentials, new ForgeHosts(["github.com"])),

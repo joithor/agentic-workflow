@@ -20,8 +20,8 @@ public sealed class ProcessClaudeCliContractTests : ClaudeCliContract, IDisposab
     {
         var onPath = System.IO.Directory.CreateDirectory(Path.Combine(_root.FullName, "on-path")).FullName;
         var work = System.IO.Directory.CreateDirectory(Path.Combine(_root.FullName, "work")).FullName;
-        await Script(Path.Combine(onPath, "claude"), $"#!/bin/sh\necho path >> '{Log}'\n");
-        await Script(Path.Combine(work, "claude"), $"#!/bin/sh\necho cwd >> '{Log}'\n");
+        _ = ExecutableScript.Write(Path.Combine(onPath, "claude"), $"echo path >> '{Log}'\n");
+        _ = ExecutableScript.Write(Path.Combine(work, "claude"), $"echo cwd >> '{Log}'\n");
         await File.WriteAllTextAsync(Path.Combine(onPath, "not-exec"), "x", TestContext.Current.CancellationToken);
         var settings = new McpSettings("claude", _root.FullName, ClaudeConfigDir: null, CodexHome: null) { SearchPath = ["relative", onPath] };
 
@@ -41,24 +41,11 @@ public sealed class ProcessClaudeCliContractTests : ClaudeCliContract, IDisposab
         Assert.Equal(["/a", "/b"], settings.SearchPath);
     }
 
-    private static async Task Script(string path, string text)
-    {
-        await File.WriteAllTextAsync(path, text, TestContext.Current.CancellationToken);
-        if (!OperatingSystem.IsWindows())
-        {
-            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        }
-    }
-
     [Fact]
     public async Task A_run_over_its_budget_is_killed_and_reads_124()
     {
         var stub = Path.Combine(_root.FullName, "slow-claude");
-        await File.WriteAllTextAsync(stub, "#!/bin/sh\nsleep 30\n", TestContext.Current.CancellationToken);
-        if (!OperatingSystem.IsWindows())
-        {
-            File.SetUnixFileMode(stub, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        }
+        _ = ExecutableScript.Write(stub, "sleep 30\n");
 
         var cli = new ProcessClaudeCli(new McpSettings(stub, _root.FullName, ClaudeConfigDir: null, CodexHome: null) { ClaudeBudget = TimeSpan.FromSeconds(1) });
         var started = System.Diagnostics.Stopwatch.StartNew();
@@ -76,11 +63,7 @@ public sealed class ProcessClaudeCliContractTests : ClaudeCliContract, IDisposab
         {
             var errorFile = Path.Combine(_root.FullName, "stderr.txt");
             File.WriteAllText(errorFile, error);
-            File.WriteAllText(stub, $"#!/bin/sh\nfor a in \"$@\"; do printf '%s\\n' \"$a\"; done >> '{Log}'\nprintf '%s\\n%s\\n' '{Marker}' \"$(pwd -P)\" >> '{Log}'\ncat '{errorFile}' >&2\nexit " + code.ToString(System.Globalization.CultureInfo.InvariantCulture) + "\n");
-            if (!OperatingSystem.IsWindows())
-            {
-                File.SetUnixFileMode(stub, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-            }
+            _ = ExecutableScript.Write(stub, $"for a in \"$@\"; do printf '%s\\n' \"$a\"; done >> '{Log}'\nprintf '%s\\n%s\\n' '{Marker}' \"$(pwd -P)\" >> '{Log}'\ncat '{errorFile}' >&2\nexit " + code.ToString(System.Globalization.CultureInfo.InvariantCulture) + "\n");
         }
 
         return new ProcessClaudeCli(new McpSettings(stub, _root.FullName, ClaudeConfigDir: null, CodexHome: null));
