@@ -8070,7 +8070,7 @@ static Aw.Sindri.Core.Workflow.Views.Round.operator !=(Aw.Sindri.Core.Workflow.V
 static Aw.Sindri.Core.Workflow.Views.Round.operator ==(Aw.Sindri.Core.Workflow.Views.Round? left, Aw.Sindri.Core.Workflow.Views.Round? right) -> bool
 static Aw.Sindri.Core.Workflow.Views.StateCell.operator !=(Aw.Sindri.Core.Workflow.Views.StateCell? left, Aw.Sindri.Core.Workflow.Views.StateCell? right) -> bool
 static Aw.Sindri.Core.Workflow.Views.StateCell.operator ==(Aw.Sindri.Core.Workflow.Views.StateCell? left, Aw.Sindri.Core.Workflow.Views.StateCell? right) -> bool
-static Aw.Sindri.Core.Workflow.Views.StateChip.For(Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? engineOwned, bool deskOpen, bool terminal, bool notStarted = false) -> Aw.Sindri.Core.Workflow.Views.StateChip!
+static Aw.Sindri.Core.Workflow.Views.StateChip.For(Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? engineOwned, bool deskOpen, Aw.Sindri.Core.Workflow.Ids.OutcomeName? outcome, bool notStarted = false) -> Aw.Sindri.Core.Workflow.Views.StateChip!
 static Aw.Sindri.Core.Workflow.Views.StateChip.operator !=(Aw.Sindri.Core.Workflow.Views.StateChip? left, Aw.Sindri.Core.Workflow.Views.StateChip? right) -> bool
 static Aw.Sindri.Core.Workflow.Views.StateChip.operator ==(Aw.Sindri.Core.Workflow.Views.StateChip? left, Aw.Sindri.Core.Workflow.Views.StateChip? right) -> bool
 static Aw.Sindri.Core.Workflow.Views.StatusAnswer.operator !=(Aw.Sindri.Core.Workflow.Views.StatusAnswer? left, Aw.Sindri.Core.Workflow.Views.StatusAnswer? right) -> bool

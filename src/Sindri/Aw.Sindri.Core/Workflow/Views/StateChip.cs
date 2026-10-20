@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Views;
 
@@ -32,17 +33,17 @@ public sealed record StateChip(string Word, ChipTone Tone)
     /// <summary>The chip of an instance: an engine-owned badge decides first, then an open desk answer, then not started, terminal and running.</summary>
     /// <param name="engineOwned">The engine-owned badge, if any; a taken-over instance arrives here as the "taken-over" badge (the plan's "takenOver" flag).</param>
     /// <param name="deskOpen">Whether a desk answer is open.</param>
-    /// <param name="terminal">Whether the state is final.</param>
+    /// <param name="outcome">The terminal outcome, or null while the instance has not ended.</param>
     /// <param name="notStarted">Whether the instance hasn't started: it sits at its recipe's first state, waiting for a slot.</param>
     /// <returns>The chip.</returns>
-    public static StateChip For(EngineOwnedBadge? engineOwned, bool deskOpen, bool terminal, bool notStarted = false) => engineOwned?.Kind switch
+    public static StateChip For(EngineOwnedBadge? engineOwned, bool deskOpen, OutcomeName? outcome, bool notStarted = false) => engineOwned?.Kind switch
     {
         EngineOwnedKind.Parked => new StateChip(Parked, ChipTone.Attn),
         EngineOwnedKind.Escalated => new StateChip(Escalated, ChipTone.Attn),
         EngineOwnedKind.TakenOver => new StateChip(WithYou, ChipTone.Neutral),
         _ when deskOpen => new StateChip(Decision, ChipTone.Attn),
         _ when notStarted => new StateChip(Queued, ChipTone.Neutral),
-        _ when terminal => new StateChip(Done, ChipTone.Neutral),
+        _ when outcome is not null => new StateChip(Done, ChipTone.Neutral),
         _ => new StateChip(Running, ChipTone.Ok),
     };
 }

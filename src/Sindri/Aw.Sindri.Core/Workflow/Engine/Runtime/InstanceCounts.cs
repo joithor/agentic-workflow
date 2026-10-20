@@ -18,7 +18,7 @@ public static class InstanceCounts
         int open = 0, needsYou = 0, withYou = 0, running = 0, done = 0;
         foreach (var view in views)
         {
-            var chip = StateChip.For(view.EngineOwned, deskOpen: view.Task is not null, terminal: view.Outcome is not null, view.State == InstanceViews.StartingState);
+            var chip = StateChip.For(view.EngineOwned, deskOpen: view.Task is not null, view.Outcome, view.State == InstanceViews.StartingState);
             switch (chip.Word)
             {
                 case StateChip.Done:
