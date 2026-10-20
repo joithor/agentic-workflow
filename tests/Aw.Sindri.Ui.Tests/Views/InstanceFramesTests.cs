@@ -24,7 +24,7 @@ public sealed class InstanceFramesTests : FrameHost
 
     private static InstanceDetail Detail(string scenario) => FixtureInstances.Detail(scenario);
 
-    private async Task<(Window Window, ShellViewModel Shell)> Opened(string scenario, FramePhase phase = FramePhase.Shown, RouteAnswer? served = null)
+    private async Task<(Window Window, ShellViewModel Shell)> Opened(string scenario, FramePhase phase = FramePhase.Shown, RouteAnswer? served = null, bool disclosures = true)
     {
         var (window, shell) = await Connected(width: 1600, height: 1000);
         if (served is not null)
@@ -35,6 +35,11 @@ public sealed class InstanceFramesTests : FrameHost
         shell.OpenInstance(Detail(scenario).Address, Detail(scenario).Id);
         await Until(window, () => shell.Instance.Phase == phase);
         Settle(window);
+        if (disclosures)
+        {
+            OpenDisclosures(window);
+        }
+
         return (window, shell);
     }
 
@@ -56,9 +61,11 @@ public sealed class InstanceFramesTests : FrameHost
     [Fact]
     public Task u8_frame_project_build() => OnUi(async () =>
     {
-        var (window, shell) = await Opened("project-build");
+        var (window, shell) = await Opened("project-build", disclosures: false);
 
         var detail = Detail("project-build");
+        Assert.False(Visible(window, "ExpandedBudget"));   // stage details are closed until asked for
+        OpenDisclosures(window);
         Assert.Equal(detail.States.Count, Texts(window, "StateNodeText").Count);
         Assert.Equal(detail.Current.Status.Next, Named<TextBlock>(window, "ExpandedNext").Text);
         Assert.Equal(shell.Instance.Identity, Named<TextBlock>(window, "InstanceIdentity").Text);

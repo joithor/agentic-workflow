@@ -21,6 +21,7 @@ public sealed class ChildrenFramesTests : FrameHost
         shell.OpenInstance(detail.Address, detail.Id);
         await Until(window, () => shell.Instance.Children is not null && shell.Instance.Address == detail.Address);
         Settle(window);
+        OpenDisclosures(window);
         return (window, shell);
     }
 
