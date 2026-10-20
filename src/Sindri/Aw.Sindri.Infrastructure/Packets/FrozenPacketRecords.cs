@@ -24,7 +24,7 @@ internal sealed class FrozenPacketRecords(string packetsRoot) : IFrozenPackets
 
         try
         {
-            return ValueTask.FromResult<Result<FrozenPacket?>>(Results.Success(Read(hash)));
+            return ValueTask.FromResult(Results.Success(Read(hash)));
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
