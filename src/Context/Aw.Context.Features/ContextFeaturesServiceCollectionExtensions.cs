@@ -18,6 +18,7 @@ using Aw.Context.Features.ApplyReviewFile;
 using Aw.Context.Features.BuildMap;
 using Aw.Context.Features.CheckMap;
 using Aw.Context.Features.CheckRetention;
+using Aw.Context.Features.CleanMap;
 using Aw.Context.Features.EvalMap;
 using Aw.Context.Features.EvalProbes;
 using Aw.Context.Features.EvalPurge;
@@ -98,7 +99,7 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<ExportReviewRequest, ReviewExported>, ExportReviewService>()
         .AddScoped<IService<PreviewReviewFileRequest, ReviewFilePreview>, PreviewReviewFileService>()
         .AddScoped<IService<ApplyReviewFileRequest, ReviewResult>, ApplyReviewFileService>()
-        .AddScoped<IService<PromoteMapRequest, MapPromoted>, PromoteMapService>()
+        .AddPromoteSlices()
         .AddScoped<IService<ProposeFromScopeRequest, ProposeResult>, ProposeFromScopeService>()
         .AddScoped<IService<GetProposalsRequest, ProposalsView>, GetProposalsService>()
         .AddScoped<IService<GetFileMapRequest, FileMapView>, GetFileMapService>()
@@ -127,6 +128,10 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<LexicalTestsRule>()
         .AddScoped<LexicalSchemaRule>()
         .AddScoped<IContextCode>(static sp => sp.GetRequiredService<ContextGraph>());
+
+    private static IServiceCollection AddPromoteSlices(this IServiceCollection services) => services
+        .AddScoped<IService<PromoteMapRequest, MapPromoted>, PromoteMapService>()
+        .AddScoped<IService<CleanMapRequest, CleanupReport>, CleanMapService>();
 
     private static IServiceCollection AddHistory(this IServiceCollection services) => services
         .AddScoped<IService<GetHistoryRequest, HistoryView>, GetHistoryService>()
