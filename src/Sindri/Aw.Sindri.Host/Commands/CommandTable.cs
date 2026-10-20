@@ -7,7 +7,6 @@ using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Profile;
 
-using Aw.Sindri.Host.Commands.Line;
 using Aw.Sindri.Host.Commands.Probe;
 
 namespace Aw.Sindri.Host.Commands;

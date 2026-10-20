@@ -7,9 +7,10 @@ using Aw.Sindri.Core.Packets;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Features.Design;
 using Aw.Sindri.Features.Plan;
+using Aw.Sindri.Host.Commands.Line;
 using Aw.Sindri.Host.Commands.Scoping;
 
-namespace Aw.Sindri.Host.Commands.Line;
+namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// The line's local verbs (line spec Appendix D, LN-API4): 'design check', 'plan check' and 'line desk'. With --facts they run in this process over a directory of packet

@@ -10,9 +10,10 @@ using Aw.Sindri.Core.Line;
 using Aw.Sindri.Core.Packets;
 using Aw.Sindri.Features.Design;
 using Aw.Sindri.Features.Plan;
+using Aw.Sindri.Host.Commands.Line;
 using Aw.Sindri.Host.Commands.Scoping;
 
-namespace Aw.Sindri.Host.Commands.Line;
+namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// 'sindri line desk &lt;block&gt; --facts &lt;dir&gt; --out &lt;dir&gt;': a line block Step's code run at the desk, as 'scoping desk' runs a scoping one (line spec Appendix D). It writes the
