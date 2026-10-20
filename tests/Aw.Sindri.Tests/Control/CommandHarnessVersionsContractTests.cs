@@ -31,6 +31,6 @@ public sealed class CommandHarnessVersionsContractTests : HarnessVersionsContrac
     private string Script(string body)
     {
         var path = Path.Combine(_home.Path, string.Create(CultureInfo.InvariantCulture, $"tool-{++_next}"));
-        return Launch.ExecutableScript.Write(path, body + "\n");
+        return ExecutableScript.Write(path, body + "\n");
     }
 }

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using Aw.Kernel.Testing;
 
 namespace Aw.Sindri.Tests.Workflows.Spike;
 
@@ -61,7 +62,7 @@ internal static class ServerGuard
         var directory = Path.Combine(Path.GetTempPath(), "aw-sindri-test-guard");
         _ = Directory.CreateDirectory(directory);
         Sweep(directory);
-        var script = new StringBuilder("#!/bin/sh\n");
+        var script = new StringBuilder();
         _ = script.Append(CultureInfo.InvariantCulture, $"/bin/sh -c '{Watchdog.Replace("'", "'\\''", StringComparison.Ordinal)}' aw-test-guard {ownerPid} $$ </dev/null >/dev/null 2>&1 &\n");
         _ = script.Append(CultureInfo.InvariantCulture, $"exec '{executable.Replace("'", "'\\''", StringComparison.Ordinal)}' \"$@\"\n");
         var name = string.Create(CultureInfo.InvariantCulture, $"{ownerPid}-{Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(executable)))[..12]}.sh");
@@ -71,8 +72,7 @@ internal static class ServerGuard
         var staging = Path.Combine(directory, name + "." + Path.GetRandomFileName());
         try
         {
-            File.WriteAllText(staging, script.ToString());
-            File.SetUnixFileMode(staging, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            _ = ExecutableScript.Write(staging, script.ToString());   // warm-exec: the guard exits before the watchdog and before Temporal, and no write descriptor is left to rename
             File.Move(staging, path, overwrite: true);
         }
         catch

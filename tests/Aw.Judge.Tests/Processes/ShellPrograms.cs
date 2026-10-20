@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using Aw.Judge.Testing;
+using Aw.Kernel.Testing;
 
 namespace Aw.Judge.Tests.Processes;
 
@@ -20,9 +21,9 @@ internal sealed class ShellPrograms : IDisposable
     public string Install(string name, FakeProgram program) =>
         program.FailsToStart ? InstallFile(name, "not a program\n") : InstallScript(name, Script(program));
 
-    public string InstallScript(string name, string body) => InstallFile(name, "#!/bin/sh\n" + body);
+    public string InstallScript(string name, string body) => ExecutableScript.Write(System.IO.Path.Combine(Directory, name), body);
 
-    // An executable file; without a '#!' line the system refuses to run it (ENOEXEC).
+    // An executable file that is not a script worth warming up; without a '#!' line the system refuses to run it (ENOEXEC).
     private string InstallFile(string name, string content)
     {
         var file = System.IO.Path.Combine(Directory, name);

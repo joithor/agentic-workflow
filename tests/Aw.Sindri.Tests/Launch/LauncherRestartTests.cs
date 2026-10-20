@@ -23,8 +23,7 @@ public sealed class LauncherRestartTests : IDisposable
     public LauncherRestartTests()
     {
         _wrap = Path.Combine(_tmux.Scratch, "wrap.sh");   // stands in for 'sindri session wrap': it just stays alive; written before any process of this class starts, so no fork of ours holds it open
-        File.WriteAllText(_wrap, "#!/bin/sh\nsleep 60\n");
-        File.SetUnixFileMode(_wrap, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        _ = ExecutableScript.Write(_wrap, "sleep 60\n");
     }
 
     public void Dispose()
