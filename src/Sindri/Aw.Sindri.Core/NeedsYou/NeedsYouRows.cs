@@ -64,7 +64,6 @@ public static partial class NeedsYouRows
     /// <returns>The row, or SND-CLI-003 when the service's last run didn't fail.</returns>
     public static Result<NeedsYouRow> ForFailure(ServiceRow service, DateTimeOffset since, ITextScrubber scrubber, bool builtIn = false)
     {
-        _ = builtIn;
         ArgumentNullException.ThrowIfNull(service);
         ArgumentNullException.ThrowIfNull(scrubber);
         if (service.LastRun is not { Outcome: ServiceOutcome.Failed } last)
@@ -95,7 +94,7 @@ public static partial class NeedsYouRows
             Notice: null,
             AnswerKind: null,
             unknown ? null : _runService,
-            unknown ? [_pauseService] : [_runService, _pauseService],
+            unknown ? [_pauseService] : builtIn ? [_runService] : [_runService, _pauseService],   // a built-in can't be paused
             cli.Value.Text);
     }
 

@@ -45,9 +45,9 @@ public static class NeedsYouClearing
     /// <returns>True to keep the row.</returns>
     public static bool FailureStands(NeedsYouRow failure, ProfileRow profile, IReadOnlyCollection<ServiceName>? builtIns = null)
     {
-        _ = builtIns;
         ArgumentNullException.ThrowIfNull(failure);
         ArgumentNullException.ThrowIfNull(profile);
-        return profile.Approved is null || profile.ApprovedServices.Any(s => string.Equals(failure.Subject.Id.Value, s.Value, StringComparison.Ordinal));
+        var named = profile.ApprovedServices.Concat(builtIns ?? []);
+        return profile.Approved is null || named.Any(s => string.Equals(failure.Subject.Id.Value, s.Value, StringComparison.Ordinal));
     }
 }
