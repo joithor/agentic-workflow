@@ -32,11 +32,11 @@ public sealed class RecipeFramesTests : FrameHost
     {
         var heard = Tree(window);
         var expected = recipe.States!.Nodes.Concat(recipe.States.Nodes.SelectMany(n => n.Branches)).Select(n => n.Name)
-            .Concat(recipe.Facts!.Inputs.Select(i => i.Name)).Concat(recipe.Facts.Outputs.Select(o => o.Name));
+            .Concat(recipe.Facts!.Inputs.Select(i => i.Label)).Concat(recipe.Facts.Outputs.Select(o => o.Label));
         Assert.All(expected, name => Assert.Contains((name, AutomationControlType.Text), heard));
         Assert.All(Heard.Tree(Named<Control>(window, "RecipeStates")).Where(node => node.Type == AutomationControlType.Text), node => Assert.False(string.IsNullOrEmpty(node.Name), "a nameless text node in the band"));   // a live accessibility dump showed a bare TextBlock after the last state
         Assert.DoesNotContain(window.GetVisualDescendants().OfType<TextBlock>(), t => t.Name == "RecipeStateLink" && t.IsEffectivelyVisible && string.IsNullOrEmpty(t.Text));   // an empty link is not drawn at all
-        Assert.False(Visible(window, "RecipeTitle"), "the id is shown once, in the header's id@hash12");
+        Assert.Equal(recipe.Title, Named<TextBlock>(window, "RecipeTitle").Text);   // the sheet leads with the workflow's name; the id@hash12 waits in Details
     }
 
     [Fact]
@@ -46,6 +46,8 @@ public sealed class RecipeFramesTests : FrameHost
 
         // desk-round-trip: a loop between neighbours, with its cap
         await Open(window, shell, "workflow.dev-desk-round-trip");
+        shell.Recipe.ToggleDetails();   // the identity line sits in Details
+        Settle(window);
         Assert.Equal(shell.Recipe.Identity, Named<TextBlock>(window, "RecipeIdentity").Text);
         Assert.Contains(Named<TextBlock>(window, "RecipeStateLink").Text, shell.Recipe.States!.Nodes.Select(n => n.Link), StringComparer.Ordinal);
         Assert.Equal(shell.Recipe.States.Nodes.Count, window.GetVisualDescendants().OfType<TextBlock>().Count(t => t.Name == "RecipeStateText" && t.IsEffectivelyVisible));

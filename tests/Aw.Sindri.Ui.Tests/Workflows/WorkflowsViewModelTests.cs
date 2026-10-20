@@ -62,15 +62,63 @@ public sealed class WorkflowsViewModelTests
     }
 
     [Fact]
-    public async Task Each_groups_columns_are_its_rows_states_in_order()
+    public async Task A_group_is_named_for_its_workflow_and_counts_runs_and_never_shows_the_recipe_id()
     {
         var list = await Shown();
 
-        foreach (var group in list.Groups)
+        Assert.All(list.Groups, group =>
         {
-            var first = Served("open").First(r => Recipe(r!) == group.Recipe)!;
-            Expect.Sequence(first["states"]!.AsArray().Select(s => Text(s!["id"])), group.Columns);
+            Assert.Equal(WorkflowNames.Of(group.Recipe, displayName: null), group.Name);
+            Assert.Equal(group.Rows.Count == 1 ? "1 run" : $"{group.Rows.Count} runs", group.CountText);
+            Assert.Equal($"{group.Name} · {group.CountText}", group.Header);
+            Assert.DoesNotContain("workflow.", group.Header, StringComparison.Ordinal);
+            Assert.DoesNotContain("workflow.", group.ToggleName, StringComparison.Ordinal);
+        });
+        Assert.Contains(list.Groups, g => g.Rows.Count > 1);
+    }
+
+    [Fact]
+    public async Task A_served_display_name_names_the_group()
+    {
+        var body = GoldenFiles.Node("workflow-instances", "open");
+        var first = body["instances"]!.AsArray()[0]!;
+        first["recipe"]!["displayName"] = "Build and ship a change";
+        _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, body.ToJsonString());
+
+        var list = await Shown();
+
+        Assert.Equal("Build and ship a change", list.Groups.First(g => g.Recipe == Recipe(first)).Name);
+    }
+
+    [Fact]
+    public async Task The_workflow_filter_lists_workflows_by_name_and_maps_a_choice_back_to_its_id()
+    {
+        var list = await Shown();
+
+        Expect.Sequence([Labels.AllRecipes, .. list.Groups.Select(g => g.Name)], list.RecipeChoices);
+        Assert.All(list.Groups, g => Assert.Equal(g.Recipe, list.RecipeIdOf(g.Name)));
+        Assert.Null(list.RecipeIdOf(Labels.AllRecipes));
+        Assert.Equal(("All workflow types", "Workflow type", "Item"), (Labels.AllRecipes, Labels.RecipeFilter, Labels.SubjectFilter));
+    }
+
+    [Fact]
+    public async Task Two_workflows_with_one_display_name_are_told_apart_in_the_filter_and_map_back_exactly()
+    {
+        var body = GoldenFiles.Node("workflow-instances", "open");
+        var rows = body["instances"]!.AsArray();
+        var ids = rows.Select(r => Recipe(r!)).Distinct(StringComparer.Ordinal).Take(2).ToList();
+        Assert.Equal(2, ids.Count);
+        foreach (var row in rows)
+        {
+            row!["recipe"]!["displayName"] = "Same name";
         }
+
+        _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, body.ToJsonString());
+
+        var list = await Shown();
+
+        Assert.Equal(list.RecipeChoices.Count, list.RecipeChoices.Distinct(StringComparer.Ordinal).Count());
+        Assert.All(list.Groups, g => Assert.Equal(g.Recipe, list.RecipeIdOf(list.RecipeChoices[list.Groups.IndexOf(g) + 1])));
     }
 
     [Fact]
@@ -266,26 +314,6 @@ public sealed class WorkflowsViewModelTests
     }, Token);
 
     [Fact]
-    public async Task Every_rows_cells_sit_under_the_groups_column_heads()
-    {
-        var body = GoldenFiles.Node("workflow-instances", "open");
-        var rows = body["instances"]!.AsArray();
-        var group = rows.GroupBy(r => Recipe(r!), StringComparer.Ordinal).First(g => g.Skip(1).Any()).ToList();
-        var shortened = group[1]!;
-        var dropped = Text(shortened["states"]!.AsArray()[0]!["id"]);
-        shortened["states"]!.AsArray().RemoveAt(0);   // a row on another hash: one state fewer
-        _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, body.ToJsonString());
-
-        var list = await Shown();
-
-        var served = list.Groups.First(g => string.Equals(g.Recipe, Recipe(shortened), StringComparison.Ordinal));
-        Assert.Contains(dropped, served.Columns, StringComparer.Ordinal);
-        Assert.All(served.Rows, row => Expect.Sequence(served.Columns, row.Cells.Select(c => c.State)));
-        var short1 = served.Rows.First(r => string.Equals(r.Address, Text(shortened["address"]), StringComparison.Ordinal));
-        Assert.Contains(short1.Cells, c => string.Equals(c.State, dropped, StringComparison.Ordinal) && c.Text.Length == 0);
-    }
-
-    [Fact]
     public async Task Recipe_link_opens_the_approved_recipe()
     {
         var list = await Shown();
@@ -297,6 +325,8 @@ public sealed class WorkflowsViewModelTests
 
         Expect.Sequence([group.Recipe], asked);   // a bare id: the approved version
         Assert.StartsWith(Labels.RecipeLink[..^2], group.RecipeLinkName, StringComparison.Ordinal);
-        Assert.Contains(group.Recipe, group.RecipeLinkName, StringComparison.Ordinal);
+        Assert.Contains(group.Name, group.RecipeLinkName, StringComparison.Ordinal);
+        Assert.DoesNotContain("workflow.", group.RecipeLinkName, StringComparison.Ordinal);
+        Assert.Equal("How it works ▸", Labels.RecipeLink);
     }
 }

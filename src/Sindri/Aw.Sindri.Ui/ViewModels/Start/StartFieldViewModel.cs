@@ -23,7 +23,7 @@ internal sealed class StartFieldViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(files);
         _files = files;
         Key = input.Key;
-        Label = string.IsNullOrWhiteSpace(input.Label) ? input.Key : input.Label;
+        Label = string.IsNullOrWhiteSpace(input.Label) ? Workflows.WorkflowNames.InputName(input.Key) : input.Label;
         Kind = input.Type switch
         {
             FactType.Text => StartFieldKind.Text,

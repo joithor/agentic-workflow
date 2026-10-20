@@ -30,10 +30,10 @@ internal static partial class Labels
     internal const string AnswerInChildPanelName = AnswerInChild + ", moves to the Children panel";
 
     /// <summary>What the strip says while the workflow list route is not served yet (screens §4.8).</summary>
-    internal const string ArrivesWorkflowStrip = "arrives with API P11";
+    internal const string ArrivesWorkflowStrip = "The workflow list isn't available from this Sindri yet.";
 
     /// <summary>What the strip says when the workflow list answers in a shape this build can't read (an older Sindri; screens §4.8, until API P11).</summary>
-    internal const string StripUnreadable = "The workflow list can't be read from this Sindri yet (arrives with API P11).";
+    internal const string StripUnreadable = "This Sindri answered in a form this app can't read yet. Updating either one usually fixes it.";
 
     /// <summary>The strip's overflow row: "… 3 more".</summary>
     /// <param name="count">How many open rows are not shown.</param>
@@ -44,6 +44,17 @@ internal static partial class Labels
     /// <param name="address">The instance's address.</param>
     /// <returns>The words.</returns>
     internal static string StripDone(string address) => $"{address} done";
+
+    /// <summary>The Home strip row's name: the workflow, then the item.</summary>
+    /// <param name="workflow">The workflow's display name.</param>
+    /// <param name="subject">The item's title.</param>
+    /// <returns>The name.</returns>
+    internal static string StripRowName(string workflow, string subject) => $"{subject}, {workflow}";
+
+    /// <summary>The Home strip's answer button name: the visible word, then the item.</summary>
+    /// <param name="subject">The item's title.</param>
+    /// <returns>The name.</returns>
+    internal static string AnswerName(string subject) => $"{Answer}, {subject}";
 
     /// <summary>The verb of a protected answer's lock button ("Accept", "Grant rounds").</summary>
     /// <param name="kind">How the answer is given.</param>

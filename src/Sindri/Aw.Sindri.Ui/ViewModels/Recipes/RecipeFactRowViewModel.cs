@@ -8,7 +8,4 @@ internal sealed record RecipeFactRowViewModel(string Label, string Detail, strin
 {
     /// <summary>True when the recipe serves a generate template.</summary>
     public bool HasGenerate => Generate.Length > 0;
-
-    /// <summary>The words screen readers hear: every visible line.</summary>
-    public string Name => string.Join(", ", new[] { Label, Detail }.Concat(HasGenerate ? [Generate] : []));
 }
