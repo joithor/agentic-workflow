@@ -101,6 +101,8 @@ internal sealed partial class ApproveAllDialog : UserControl
 
     private void OnTyped(object? sender, RoutedEventArgs e) => _ = (DataContext as ApproveAllViewModel)?.SubmitTyped();
 
+    private void OnRetry(object? sender, RoutedEventArgs e) => _ = (DataContext as ApproveAllViewModel)?.Retry();
+
     private void OnClose(object? sender, RoutedEventArgs e) => (DataContext as ApproveAllViewModel)?.Close();
 
     private void OnScrim(object? sender, PointerPressedEventArgs e) => (DataContext as ApproveAllViewModel)?.Close();

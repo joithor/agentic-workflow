@@ -52,8 +52,12 @@ internal sealed partial class ApproveAllViewModel
 
         if (Expired)
         {
-            Notice = Labels.ApproveExpired;
-            _ = Reask();
+            if (!_asking)   // one new challenge at a time
+            {
+                Notice = Labels.ApproveExpired;
+                _ = Reask();
+            }
+
             return;
         }
 
@@ -110,6 +114,11 @@ internal sealed partial class ApproveAllViewModel
 
         if (Expired)
         {
+            if (_asking)
+            {
+                return Task.CompletedTask;
+            }
+
             Notice = Labels.ApproveExpired;
             return Reask();
         }
@@ -118,14 +127,24 @@ internal sealed partial class ApproveAllViewModel
     }
 
     /// <summary>True when no challenge could be had and a new one can be asked for (the Try again button shows).</summary>
-    public bool CanRetry => _session < 0;
+    public bool CanRetry => Phase == ApproveAllPhase.Plan && _plan is not null && _challenge is null && !_asking && !IsSending && Rows.Count > 0
+        && !string.Equals(ErrorCode, SessionRefusal, StringComparison.Ordinal);   // an agent session is refused every time: asking again helps nobody
 
     /// <summary>Asks for the challenge again after it could not be had.</summary>
     /// <returns>A task that completes when the challenge answered.</returns>
-    internal Task Retry() => throw new NotSupportedException();
+    internal Task Retry()
+    {
+        if (!CanRetry)
+        {
+            return Task.CompletedTask;
+        }
+
+        (Error, ErrorCode, Notice) = (string.Empty, string.Empty, string.Empty);
+        return Reask();
+    }
 
     /// <summary>The hold button's fixed instructions for assistive tech (the count never goes into it).</summary>
-    public string HoldHelp => HoldText;
+    public string HoldHelp => Labels.ApproveHold(MinHoldMs);
 
     private bool Expired => _challenge is { } c && c.ExpiresAt <= _clock.GetUtcNow();
 

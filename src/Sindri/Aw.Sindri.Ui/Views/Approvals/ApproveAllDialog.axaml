@@ -92,6 +92,10 @@
             <TextBlock Classes="caption" Text="{Binding Notice}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
           </Border>
 
+          <Button x:Name="ApproveRetry" Classes="command-control" IsVisible="{Binding CanRetry}" Click="OnRetry" AutomationProperties.Name="{Binding RetryLabel}">
+            <TextBlock Classes="button" Text="{Binding RetryLabel}" AutomationProperties.AccessibilityView="Raw" />
+          </Button>
+
           <StackPanel x:Name="ApproveConfirm" Spacing="8" IsVisible="{Binding CanApprove}">
             <Button x:Name="ApproveHold" Classes="command-control primary" IsVisible="{Binding OffersHold}" HorizontalAlignment="Stretch"
                     AutomationProperties.Name="{Binding HoldName}" AutomationProperties.HelpText="{Binding HoldText}">

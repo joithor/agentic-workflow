@@ -29,6 +29,7 @@ internal sealed partial class ApproveAllViewModel : ObservableObject
     private AppChallengeView? _challenge;
     private ApproveAllPlan? _plan;
     private long _holdStarted;
+    private bool _asking;   // a challenge is being asked for; one at a time
     private int _session;   // which opening this is; an answer is for the one that asked
 
     /// <summary>The dialog over its ports.</summary>
@@ -83,6 +84,9 @@ internal sealed partial class ApproveAllViewModel : ObservableObject
 
     /// <summary>The heading over what was not approved.</summary>
     public string NotApprovedHeading => Labels.ApproveNotApproved;
+
+    /// <summary>The retry button's word.</summary>
+    public string RetryLabel => Labels.ApproveTryAgain;
 
     /// <summary>The heading over what waits on those.</summary>
     public string WaitingHeading => Labels.ApproveWaiting;
@@ -183,7 +187,7 @@ internal sealed partial class ApproveAllViewModel : ObservableObject
     private int Restart()
     {
         _session++;
-        (_challenge, _plan, IsSending) = (null, null, false);
+        (_challenge, _plan, IsSending, _asking) = (null, null, false, false);
         ResetPlanState();
         ResetAnswerState();
         return _session;

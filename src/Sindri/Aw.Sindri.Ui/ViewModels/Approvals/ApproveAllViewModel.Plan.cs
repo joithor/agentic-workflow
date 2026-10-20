@@ -120,7 +120,26 @@ internal sealed partial class ApproveAllViewModel
             return;
         }
 
-        var asked = await _api.IssueAppChallenge(api, new AppChallengeRequest(ActionText(plan)), cancellationToken).ConfigureAwait(true);
+        if (_asking)
+        {
+            return;
+        }
+
+        _asking = true;
+        OnChanged(nameof(CanRetry));
+        Result<AppChallengeView> asked;
+        try
+        {
+            asked = await _api.IssueAppChallenge(api, new AppChallengeRequest(ActionText(plan)), cancellationToken).ConfigureAwait(true);
+        }
+        finally
+        {
+            if (session == _session)
+            {
+                _asking = false;
+            }
+        }
+
         if (session != _session)
         {
             return;
@@ -129,16 +148,34 @@ internal sealed partial class ApproveAllViewModel
         if (asked.IsError)
         {
             _challenge = null;
-            Fail(asked.Error, keepPlan: true);
+            AskFailed(asked.Error);
             return;
         }
 
         _challenge = asked.Value;
         TypedAlternative = asked.Value.TypedAlternative ?? asked.Value.Action;
         MinHoldMs = asked.Value.MinHoldMs ?? DefaultHoldMs;
+        Notice = string.Empty;   // "that took too long" is over once the fresh challenge is here
         OnChanged(nameof(CanApprove));
+        OnChanged(nameof(CanRetry));
         OnChanged(nameof(OffersHold));
+        OnChanged(nameof(HoldHelp));
+        OnChanged(nameof(HoldName));
         Live.Say(Labels.ApproveReady);
+    }
+
+    // No challenge could be had. A refusal already on show stays (it is why the challenge was asked for); the failure is then a line beside it.
+    private void AskFailed(Error error)
+    {
+        if (HasError)
+        {
+            Notice = Labels.ApproveAskFailed;
+            OnChanged(nameof(CanApprove));
+            OnChanged(nameof(CanRetry));
+            return;
+        }
+
+        Fail(error, keepPlan: true);
     }
 
     private static ApproveAllLine OwnLine(OwnApprovalRecipe own) =>
@@ -158,6 +195,7 @@ internal sealed partial class ApproveAllViewModel
         };
         Phase = keepPlan ? Phase : ApproveAllPhase.Failed;
         OnChanged(nameof(CanApprove));
+        OnChanged(nameof(CanRetry));
     }
 
     private void ResetPlanState()
