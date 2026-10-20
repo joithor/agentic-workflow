@@ -48,6 +48,7 @@ using Aw.Sindri.Features.GetLaunchTargets;
 using Aw.Sindri.Features.GetNeedsYou;
 using Aw.Sindri.Features.GetProfile;
 using Aw.Sindri.Features.GetQueue;
+using Aw.Sindri.Features.GetRepoStatus;
 using Aw.Sindri.Features.GetSession;
 using Aw.Sindri.Features.GetSessionPreview;
 using Aw.Sindri.Features.GetStatus;
@@ -135,6 +136,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddOnyxStatus()
             .AddScoped<ServeRecords>()
             .AddScoped<IService<RegisterMcpRequest, RegisterMcpResponse>, RegisterMcpService>()
+            .AddScoped<IService<GetRepoStatusRequest, GetRepoStatusResponse>, GetRepoStatusService>()
             .AddScoped<IScheduledService, HeartbeatService>()
             .AddSetupWatch(static sp => sp.GetRequiredService<IJobRunner>().Running)
             .AddScoped<IScheduledService, JobProbeService>()   // opt-in: not a BuiltInService, so only a profile that names it schedules it
