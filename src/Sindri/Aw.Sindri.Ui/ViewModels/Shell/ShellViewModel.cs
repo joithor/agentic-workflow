@@ -9,6 +9,7 @@ using Aw.Sindri.Ui.ViewModels.NeedsYou;
 using Aw.Sindri.Ui.ViewModels.Palette;
 using Aw.Sindri.Ui.ViewModels.Queue;
 using Aw.Sindri.Ui.ViewModels.Recipes;
+using Aw.Sindri.Ui.ViewModels.Setup;
 using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
@@ -33,7 +34,7 @@ internal sealed partial class ShellViewModel : ObservableObject
     private static readonly string[] _pageProperties =
     [
         nameof(CurrentPage), nameof(PageName), nameof(SelectedNav), nameof(IsHome), nameof(IsWorkflows), nameof(IsWork), nameof(IsRecipes), nameof(IsContext),
-        nameof(IsAgents), nameof(IsSystem), nameof(IsJobs), nameof(IsSettings), nameof(IsNotRunningPanel), nameof(IsPageVisible),
+        nameof(IsAgents), nameof(IsSystem), nameof(IsJobs), nameof(IsSetup), nameof(IsSettings), nameof(IsNotRunningPanel), nameof(IsPageVisible),
     ];
 
     private readonly Preferences _store;
@@ -75,6 +76,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         InitNeedsYou(clipboard);
         Strip = new WorkflowsStripViewModel(clipboard, clock);
         InitStrip();
+        Setup = new SetupViewModel(api, Health.Catalog, clock, opensInApp: _ => false);
         Workflows = new WorkflowsViewModel(api, clipboard, clock);
         InitWorkflows();
         Start = InitStart(api, window ??= WindowPorts.None);

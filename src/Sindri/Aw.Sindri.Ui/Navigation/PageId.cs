@@ -27,6 +27,9 @@ internal enum PageId
     /// <summary>The background jobs Sindri ran (API P6). Not a tab: G J, the palette and System's Jobs link open it.</summary>
     Jobs,
 
+    /// <summary>The setup steps (setup-once spec §5.7). Not a tab: the Setup card's link, G U and the palette open it.</summary>
+    Setup,
+
     /// <summary>Local preferences only (⌘,).</summary>
     Settings,
 }
