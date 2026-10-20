@@ -12829,3 +12829,9 @@ static readonly Aw.Sindri.Core.Line.LineErrors.PacketMismatch -> Aw.Kernel.Error
 static readonly Aw.Sindri.Core.Line.LineErrors.PhaseBlocked -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Line.LineErrors.SetupMissing -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Line.LineErrors.WrongRecipe -> Aw.Kernel.ErrorDefinition!
+static Aw.Sindri.Core.Line.LineJson.Hash(string! text) -> string!
+static Aw.Sindri.Core.Line.LineJson.Rewritten(string! original, System.Text.Json.Nodes.JsonNode! edited) -> string!
+static Aw.Sindri.Core.Line.LineJson.Terminated(string! text) -> string!
+static Aw.Sindri.Core.Line.LineJson.Write(System.Text.Json.Nodes.JsonNode! node) -> string!
+static Aw.Sindri.Core.Line.LineJson.Append(System.Text.Json.Nodes.JsonArray! array, System.Text.Json.Nodes.JsonNode! node) -> void
+static Aw.Sindri.Core.Line.LineJson.StringArray(System.Collections.Generic.IEnumerable<string!>! values) -> System.Text.Json.Nodes.JsonArray!

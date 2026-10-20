@@ -1,3 +1,8 @@
+using System.Buffers;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace Aw.Sindri.Core.Line;
@@ -60,4 +65,73 @@ public static class LineJson
     /// <returns>The strings.</returns>
     public static IEnumerable<string> Strings(JsonNode? array) =>
         Items(array).Select(static n => n is JsonValue v && v.TryGetValue<string>(out var s) ? s : null).OfType<string>();
+
+    /// <summary>The tree as the text a packet file holds: UTF-8 JSON, two-space indented, relaxed escaping, ending with a newline.</summary>
+    /// <param name="node">The tree.</param>
+    /// <returns>The text.</returns>
+    public static string Write(JsonNode node)
+    {
+        ArgumentNullException.ThrowIfNull(node);
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer, new JsonWriterOptions { Indented = true, NewLine = "\n", Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping }))
+        {
+            node.WriteTo(writer);
+        }
+
+        return Encoding.UTF8.GetString(buffer.WrittenSpan) + "\n";
+    }
+
+    /// <summary>The text of a file whose tree was edited: the original when the edit changed nothing (so its bytes, and every hash over them, stay), else the tree written.</summary>
+    /// <param name="original">The text the tree was read from.</param>
+    /// <param name="edited">The edited tree.</param>
+    /// <returns>The text to keep.</returns>
+    public static string Rewritten(string original, JsonNode edited)
+    {
+        ArgumentNullException.ThrowIfNull(original);
+        ArgumentNullException.ThrowIfNull(edited);
+        try
+        {
+            return JsonNode.DeepEquals(JsonNode.Parse(original), edited) ? original : Write(edited);
+        }
+        catch (JsonException)
+        {
+            return Write(edited);   // boundary: the original was not JSON, so there is nothing to keep
+        }
+    }
+
+    /// <summary>A text with exactly one trailing newline, as every packet file ends.</summary>
+    /// <param name="text">The text.</param>
+    /// <returns>The same text, newline-terminated.</returns>
+    public static string Terminated(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        return text.EndsWith('\n') ? text : text + "\n";
+    }
+
+    /// <summary>The 'sha256:' hash of a file's bytes (the convention index.json's acceptance chain uses).</summary>
+    /// <param name="text">The file's text.</param>
+    /// <returns>The hash.</returns>
+    public static string Hash(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        return "sha256:" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
+    }
+
+    /// <summary>Adds a node to an array (the non-generic overload: the generic one is reflection-based and not trimmable).</summary>
+    /// <param name="array">The array.</param>
+    /// <param name="node">The node to add.</param>
+    public static void Append(JsonArray array, JsonNode node)
+    {
+        ArgumentNullException.ThrowIfNull(array);
+        array.Add(node);
+    }
+
+    /// <summary>A string array as a JSON array.</summary>
+    /// <param name="values">The strings.</param>
+    /// <returns>The array.</returns>
+    public static JsonArray StringArray(IEnumerable<string> values)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+        return new JsonArray([.. values.Select(static v => (JsonNode?)JsonValue.Create(v))]);
+    }
 }

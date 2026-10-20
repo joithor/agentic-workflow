@@ -93,7 +93,7 @@ public sealed class DesignPacketTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void An_item_the_writer_added_is_untrusted_and_an_item_the_owner_answered_keeps_its_trust()
+    public void An_item_the_writer_added_is_untrusted_and_a_scope_item_keeps_the_trust_the_scope_gave_it()
     {
         var facts = LineFixture.Design().Edit("acceptance.json", n =>
         {
@@ -104,8 +104,7 @@ public sealed class DesignPacketTests
         var acceptance = JsonNode.Parse(Built(facts)["acceptance.json"])!;
 
         Assert.Equal("untrusted", (string?)acceptance["items"]![10]!["trust"]);
-        Assert.Equal("untrusted", (string?)acceptance["items"]![5]!["trust"]);
-        Assert.Equal("owner", (string?)JsonNode.Parse(LineFixture.Design()["acceptance.json"])!["items"]![5]!["trust"]);
+        Assert.Equal("owner", (string?)acceptance["items"]![5]!["trust"]);
     }
 
     [Fact, Trait("Lane", "unit")]
