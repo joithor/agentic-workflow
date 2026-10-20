@@ -97,6 +97,12 @@ internal static partial class Labels
     /// <summary>The System page's sentence while everything is running.</summary>
     internal const string AllRunning = "Everything is running.";
 
+    /// <summary>The sentence while the status carries no health data yet.</summary>
+    internal const string CheckingHealth = "Checking…";
+
+    /// <summary>The sentence while the profile waits for the person's approval.</summary>
+    internal const string ProfileNeedsApproval = "The profile needs your approval.";
+
     /// <summary>The sentence when Sindri runs but the status names no problem in words.</summary>
     internal const string RunningNeedsALook = "Sindri is running, but something needs a look.";
 

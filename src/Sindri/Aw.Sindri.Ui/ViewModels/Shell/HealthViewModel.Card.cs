@@ -14,8 +14,10 @@ internal sealed partial class HealthViewModel
     public string Sentence { get; private set => Set(ref field, value); } = Labels.Connecting;
 
     // One sentence for how Sindri is, by the shell's state; it lives here because Labels doesn't depend on the Shell namespace.
-    private static string SentenceFor(ShellState state, bool healthy, string problems) => state switch
+    private static string SentenceFor(ShellState state, bool hasHealth, bool healthy, string problems, bool profileFix) => state switch
     {
+        ShellState.Normal when !hasHealth => Labels.CheckingHealth,
+        ShellState.Normal when healthy && profileFix => Labels.ProfileNeedsApproval,
         ShellState.Normal when healthy => Labels.AllRunning,
         ShellState.Normal => problems.Length > 0 ? Labels.NeedsALook(problems) : Labels.RunningNeedsALook,
         ShellState.Stale => Labels.StoppedAnswering,
