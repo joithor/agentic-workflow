@@ -362,10 +362,10 @@ intake ─► graph ─► check ─► exec-review ─► holdout ─► eviden
 | `stop` | `step.plan.review` | desk, human-only, fixed form (W2) | Stop 2, part two: approve, revise design (notes), revise plan (notes), drop |
 | `freeze` | `step.plan.freeze` | block, I/O | Re-runs every check; freezes, in order, the design packet, the plan packet and each phase packet (`aw-packets freeze`); seals the holdout sets; writes `design.approved` and `plan.approved` ledger rows (ids and counts only); proposes the approved design's surfaces and stores stop 2's answers in the context map (LN-CTX1). A check that fails after the approve is `mismatch`: back to `evidence`, and stop 2's view opens on a "freeze refused" banner naming the rule (LN-UI2) |
 
-Terminals: `planned` (`resolved`: `fact:planPacket`, `fact:phasePackets`; `freeze` freezes the candidate design packet in place, under the hash the parent passed in), `redesign`
+Terminals: `planned` (`resolved`: `fact:planPacket`, `fact:phasePackets`; the design packet is not an output: the parent holds it from the design child), `redesign`
 (`unresolved`: `fact:designRevision`, produced by `settle` on every path to it), `dropped` (`failed`). Loops: `rounds`
-5 (`graph`), `refreeze` 2, as in #258, and `revisions` 5 on `stop`, which caps the owner's revise cycle `stop → record →
-settle → stop` (a desk Step is no exemption from `RCP-LOOP-001`): a loop with cap N allows N entries, so the sixth entry to `stop` parks, and the owner grants another.
+5 (`graph`), `refreeze` 2, as in #258, and `revisions` 5 on `stop`, which counts every entry to `stop`: the owner's revise cycles `stop → record →
+settle → stop`, and the returns after a `revisePlan` or a freeze `mismatch` (a desk Step is no exemption from `RCP-LOOP-001`): a loop with cap N allows N entries, so the sixth entry to `stop` parks, and the owner grants another.
 Every timeout parks; `decide` and `stop` park after 2 and 7 days.
 
 ### 6.2 The graph
@@ -1011,13 +1011,14 @@ Fixes to match what #308 built (`schemas/packets/*.schema.json`, `LineContext.cs
 ### 14.8 Rev 2.8, sync to the shipped LN-Y1 recipes (#388)
 
 No design change: the text follows what #388 shipped and was reviewed against. The spec's recipe copies in Appendix C are
-not checked against the recipe files by any test; the recipe files win where they differ.
+not checked against the recipe files by any test; they match the recipes as shipped by #388 (merged in batch #389, main
+`f7ac779`), and the recipe files win where they differ.
 
 | Id | Where | What changed |
 |---|---|---|
-| Y1-1 | §6.1 plan walk and terminals, Appendix B.1, C.2 | The plan's resolved terminal is `planned`, not `approved` (`workflow.plan.yaml`), and it lists the recipe's outputs (`fact:planPacket`, `fact:phasePackets`); the design packet is frozen in place, not output. The ledger rows `design.approved` and `plan.approved` (§11) are unchanged and are still written by `step.plan.freeze` after the owner's `approve` at `stop`: they name the owner's act, the terminal names the recipe's end. Proof that the owner approved is the ledger row, never a state name. No surface shows a terminal's id: a run that ends shows its outcome word (Done) |
-| Y1-2 | Appendix B.1, C.1, C.2 | Eval case `happy-assumed` is `assumed-happy` (the shipped happy path of each recipe is named `*-happy`); added the shipped cases `design/evidence-incomplete`, `design/revise-after-caps`, `plan/evidence-incomplete`, `plan/no-questions`; the `evals:` lists name the recipe files' nine cases each (the recipes list them alphabetically) |
-| Y1-2b | §6.1, Appendix B.1 | Cap counts: a loop with cap N parks its N+1th entry, so `revisions` parks on the sixth entry to `stop` (was "fifth"); B.1 names the loop and notes that evals record every cap park as `rounds`; `revise-after-caps` parks on the `lens` cap and continues on the owner's grant; `check-gaps-twice` parks no-progress; `freeze-mismatch` spells out its walk |
+| Y1-1 | §6.1 plan walk and terminals, Appendix B.1, C.2 | The plan's resolved terminal is `planned`, not `approved` (`workflow.plan.yaml`), and it lists the recipe's outputs (`fact:planPacket`, `fact:phasePackets`); the design packet is not an output (the parent holds it from the design child). The ledger rows `design.approved` and `plan.approved` (§11) are unchanged and are still written by `step.plan.freeze` after the owner's `approve` at `stop`: they name the owner's act, the terminal names the recipe's end. The rows are written only on `freeze`'s `frozen` outcome (by the freeze runtime, not built yet: a forward contract), so a refused freeze (`mismatch`) leaves none. Proof that the owner approved is `stop` completing with `approve`, recorded by those rows; never a state name. The instance list's chip and row sentence show the outcome, not the terminal id; the instance header, the states band and the recipe sheet do name the state, so `planned` is visible there and means the plan is frozen, not that it awaits approval |
+| Y1-2 | Appendix B.1, C.1, C.2 | Eval case `happy-assumed` is `assumed-happy` (the shipped happy path of each recipe is named `*-happy`); added the shipped cases `design/evidence-incomplete`, `design/revise-after-caps`, `plan/evidence-incomplete`, `plan/no-questions`; the `evals:` lists name the same nine cases as each recipe file (B.1's order here; the recipe files sort them) |
+| Y1-2b | §6.1, Appendix B.1 | Cap counts: a loop with cap N allows N entries and parks the next one, so `revisions` parks on the sixth entry to `stop` (was "fifth"); B.1 names the loop and notes that evals record every cap park as `rounds`; `revise-after-caps` parks on the `lens` cap and continues on the owner's grant; `check-gaps-twice` parks no-progress; `freeze-mismatch` spells out its walk |
 | Y1-2c | Appendix C.1, C.2 | Inputs carry `kind:` as the shipped recipes do |
 | Y1-3 | Header, status line | Revision 2.8 (sync to #388); this table |
 
@@ -1338,7 +1339,7 @@ evals: [evals/workflow.design/fresh-happy.jsonl, evals/workflow.design/check-gap
         evals/workflow.design/revise-after-caps.jsonl]
 ```
 
-A `revise` from `lens-desk` re-enters `round` at its cap, which parks; the owner grants the round with `sindri workflow
+A `revise` from `lens-desk` goes through `revise` and `check` back to `round`, which is at its cap and parks; the owner grants the round with `sindri workflow
 answer <address> --grant` (#258's `revise-after-caps` pattern).
 
 ### C.2 `workflow.plan`
