@@ -22,6 +22,27 @@ internal sealed class SetupStepViewModel : ObservableObject
         Derive();
     }
 
+    /// <summary>The step's place in the checklist, from 1.</summary>
+    public int Number { get; private set; }
+
+    /// <summary>True while the row is open.</summary>
+    public bool IsOpen { get; set; }
+
+    /// <summary>The state word.</summary>
+    public string ChipWord { get; private set; } = string.Empty;
+
+    /// <summary>The state chip.</summary>
+    public Aw.Sindri.Ui.Api.Workflow.StateChip Chip { get; private set; } = new(string.Empty, Aw.Sindri.Ui.Api.Workflow.ChipTone.Neutral);
+
+    /// <summary>The line under the title.</summary>
+    public string Sub { get; private set; } = string.Empty;
+
+    /// <summary>What the app says about the step's own button (a retry in flight).</summary>
+    public string Note { get; private set; } = string.Empty;
+
+    /// <summary>The fraction of a counted step, 0 to 1.</summary>
+    public double ProgressFraction { get; private set; }
+
     /// <summary>The step as last served.</summary>
     internal SetupStepView Step { get; private set; }
 

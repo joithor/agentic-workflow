@@ -26,6 +26,12 @@ internal sealed class SetupActionViewModel
         }
     }
 
+    /// <summary>The terminal copy of a protected action, or null.</summary>
+    public Components.ProtectedActionViewModel? Protected { get; private set; }
+
+    /// <summary>True when the action is protected and shows as terminal copy.</summary>
+    public bool HasProtected => Protected is not null;
+
     /// <summary>The catalog action id.</summary>
     public string Action { get; }
 

@@ -42,6 +42,41 @@ internal sealed partial class SetupViewModel : ObservableObject
     /// <summary>Raised when the card's link asks for the Setup page.</summary>
     internal event EventHandler? PageRequested;
 
+    /// <summary>Raised when Home's line asks for the checklist.</summary>
+    internal event EventHandler? ChecklistRequested;
+
+    /// <summary>Raised when the checklist should come into view (Settings was opened by a link, G U or the line).</summary>
+    internal event EventHandler? RevealRequested;
+
+    /// <summary>The lead over the checklist.</summary>
+    public string Lead { get; private set; } = string.Empty;
+
+    /// <summary>"2 of 6 done".</summary>
+    public string CountText { get; private set; } = string.Empty;
+
+    /// <summary>True while the one-line sub shows (hidden once setup is finished).</summary>
+    public bool HasSub { get; private set; }
+
+    /// <summary>One segment per step.</summary>
+    public IReadOnlyList<SetupSegment> Segments { get; private set; } = [];
+
+    /// <summary>True when Home shows its one line.</summary>
+    public bool IsHomeLineShown { get; private set; }
+
+    /// <summary>Home's line.</summary>
+    public string HomeLineText { get; private set; } = string.Empty;
+
+    /// <summary>Asks for the checklist.</summary>
+    internal void RequestChecklist() => throw new NotSupportedException(ChecklistRequested is null ? "none" : "some");
+
+    /// <summary>Asks for the checklist to come into view.</summary>
+    internal void RevealChecklist() => RevealRequested?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>Starts the map refresh again.</summary>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>A task that completes when the answer is shown.</returns>
+    internal Task RefreshMap(CancellationToken cancellationToken) => throw new NotSupportedException();
+
     /// <summary>The steps in the order served.</summary>
     public ObservableCollection<SetupStepViewModel> Steps { get; } = [];
 
@@ -161,10 +196,10 @@ internal sealed partial class SetupViewModel : ObservableObject
         MoreText = IsExpanded ? Labels.SetupShowFewer : Labels.SetupMore(hidden.Count, hidden.Count(s => s.NeedsYou));
         MoreName = IsExpanded ? Labels.SetupShowFewer : Labels.SetupMoreName(MoreText);
         Head = Steps.Count == 0 ? string.Empty : Labels.SetupHead(Steps.Count(s => s.IsFinished), Steps.Count);
-        LeadText = Lead();
+        LeadText = LeadOld();
     }
 
-    private string Lead() => Steps.Count == 0 ? string.Empty : IsFinished ? Labels.SetupFinished : Next switch
+    private string LeadOld() => Steps.Count == 0 ? string.Empty : IsFinished ? Labels.SetupFinished : Next switch
     {
         { NeedsYou: true } => Labels.SetupLeadYou,
         { IsFailed: true } => Labels.SetupLeadFailed,

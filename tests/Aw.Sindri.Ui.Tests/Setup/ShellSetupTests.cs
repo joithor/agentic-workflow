@@ -8,7 +8,7 @@ using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Ui.Tests.Setup;
 
-/// <summary>The Setup card and page in the shell: read on connect and with every event, G U opens the page, the card's button opens the approve-all dialog, and Home hides a setup row for a step the card draws.</summary>
+/// <summary>The setup checklist in the shell: read on connect and with every event, G U, the `setup` link and Home's line open Settings at the checklist, a row's button opens the approve-all dialog, and Home hides the setup rows while the line stands for them.</summary>
 [Lane(TestLane.Unit)]
 public sealed class ShellSetupTests
 {
@@ -46,40 +46,46 @@ public sealed class ShellSetupTests
     }, Token);
 
     [Fact]
-    public Task G_U_goes_to_the_Setup_page() => UiThread.Run(async () =>
+    public Task G_U_opens_Settings_at_the_checklist() => UiThread.Run(async () =>
     {
         var shell = await Connected();
+        var reveals = 0;
+        shell.Setup.RevealRequested += (_, _) => reveals++;
 
         _ = shell.PressKey("G");
         _ = shell.PressKey("U");
 
-        Assert.Equal((PageId.Setup, true, "Setup"), (shell.CurrentPage, shell.IsSetup, shell.PageName));
+        Assert.Equal((PageId.Settings, true, 1), (shell.CurrentPage, shell.IsSettings, reveals));
     }, Token);
 
     [Fact]
-    public Task Setup_is_a_page_but_not_a_tab() => UiThread.Run(async () =>
+    public Task The_setup_deep_link_opens_Settings_at_the_checklist() => UiThread.Run(async () =>
     {
         var shell = await Connected();
+        var reveals = 0;
+        shell.Setup.RevealRequested += (_, _) => reveals++;
+        shell.GoTo(PageId.Settings);
 
-        shell.GoTo(PageId.Setup);
+        Assert.True(DeepLink.TryParse("setup", out var link));
+        shell.Navigate(link!);
 
-        Assert.Contains(PageId.Setup, shell.Pages);
-        Assert.DoesNotContain(shell.Navigation, n => n.Page == PageId.Setup);
-        Assert.Null(shell.SelectedNav);
+        Assert.Equal((PageId.Settings, 2, "setup"), (shell.CurrentPage, reveals, link!.ToString()));   // already on Settings: it still scrolls to the checklist
     }, Token);
 
     [Fact]
-    public Task The_card_opens_the_page() => UiThread.Run(async () =>
+    public Task The_line_on_Home_opens_Settings_at_the_checklist() => UiThread.Run(async () =>
     {
         var shell = await Connected();
+        var reveals = 0;
+        shell.Setup.RevealRequested += (_, _) => reveals++;
 
-        shell.Setup.RequestOpenPage();
+        shell.Setup.RequestChecklist();
 
-        Assert.Equal(PageId.Setup, shell.CurrentPage);
+        Assert.Equal((PageId.Settings, 1), (shell.CurrentPage, reveals));
     }, Token);
 
     [Fact]
-    public Task The_approve_all_button_on_the_card_opens_the_dialog_and_approves_nothing() => UiThread.Run(async () =>
+    public Task The_approve_all_button_in_its_row_opens_the_dialog_and_approves_nothing() => UiThread.Run(async () =>
     {
         var list = SetupFixture.With("profile-needs-approval", "recipes", "needs-you", "ApproveAllRecipes");
         _server.SetupAnswer = new RouteAnswer(System.Net.HttpStatusCode.OK, list.ToJsonString());
@@ -94,23 +100,14 @@ public sealed class ShellSetupTests
     }, Token);
 
     [Fact]
-    public Task Home_hides_a_setup_row_for_a_step_the_card_draws_and_keeps_the_rest() => UiThread.Run(async () =>
+    public Task Home_hides_every_setup_row_while_a_step_is_open_and_shows_them_again_when_setup_is_finished() => UiThread.Run(async () =>
     {
         _server.NeedsYouView = RouteAnswer.SpecShaped("needs-you", "extra-setup-rows");
         var shell = await Connected();
-        await ShellWait.Until(shell, () => shell.NeedsYou.Seen.Rows.Count > 0 || shell.Setup.DrawnIds.Count > 0, Token);
+        await ShellWait.Until(shell, () => shell.Setup.IsHomeLineShown, Token);
+        Assert.Empty(shell.NeedsYou.Rows);   // the line stands for them
 
-        Assert.Equal(["map", "mcp", "profile"], shell.Setup.DrawnIds.Order(StringComparer.Ordinal), StringComparer.Ordinal);
-        Assert.Equal(["setup:recipes"], shell.NeedsYou.Rows.Select(r => r.Id), StringComparer.Ordinal);   // mcp is on the card, recipes is behind "and 3 more"
-    }, Token);
-
-    [Fact]
-    public Task A_row_comes_back_to_Home_when_the_card_folds_the_step_away() => UiThread.Run(async () =>
-    {
-        _server.NeedsYouView = RouteAnswer.SpecShaped("needs-you", "extra-setup-rows");
-        var shell = await Connected();
         _server.SetupAnswer = RouteAnswer.Api("setup", "all-done");
-
         await shell.Health.RefreshViews(new Uri("http://127.0.0.1:7410/"), Token);
         await ShellWait.Until(shell, () => shell.NeedsYou.Rows.Count == 2, Token);
 

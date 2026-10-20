@@ -6,7 +6,7 @@ using static Aw.Sindri.Ui.Tests.Setup.SetupFixture;
 
 namespace Aw.Sindri.Ui.Tests.Setup;
 
-/// <summary>The Setup list as the card and the page read it: the six steps in words, the next one that needs the person, the three-row fold by priority, and what is shown for a list that can't be read.</summary>
+/// <summary>The setup checklist as Settings reads it: six steps in the app's own titles and the five state words, the rows that open by themselves, the progress strip, Home's one line, and what is shown for a list that can't be read.</summary>
 [Lane(TestLane.Unit)]
 public sealed class SetupViewModelTests
 {
@@ -16,240 +16,212 @@ public sealed class SetupViewModelTests
 
     private static string[] Ids(IEnumerable<SetupStepViewModel> steps) => [.. steps.Select(s => s.Id)];
 
+    private static SetupStepViewModel Step(SetupViewModel setup, string id) => setup.Steps.Single(s => s.Id == id);
+
     [Fact]
-    public async Task A_fresh_box_lists_the_six_steps_in_their_fixed_order_with_the_first_one_the_next()
+    public async Task First_run_opens_the_first_step_and_shows_to_do_for_the_rest()
     {
         _f.Serve("first-run");
 
         var setup = await _f.Read(Token);
 
         Assert.Equal(["repo", "profile", "recipes", "mcp", "map", "onyx"], Ids(setup.Steps));
-        Assert.Equal(("repo", "0 of 6 done", false, false), (setup.Next?.Id, setup.Head, setup.IsReading, setup.IsFinished));
-        Assert.True(setup.IsCardVisible);
+        Assert.Equal(["Needs you", "To do", "To do", "To do", "To do", "To do"], setup.Steps.Select(s => s.ChipWord), StringComparer.Ordinal);
+        Assert.Equal([true, false, false, false, false, false], setup.Steps.Select(s => s.IsOpen));
+        Assert.Equal(("Set up Sindri", "0 of 6 done", true), (setup.Lead, setup.CountText, setup.HasSub));
     }
 
     [Fact]
-    public async Task Each_step_reads_as_a_glyph_and_a_word_its_title_and_why()
+    public async Task The_steps_carry_the_apps_own_titles_in_order()
     {
         _f.Serve("first-run");
 
-        var steps = (await _f.Read(Token)).Steps;
+        var setup = await _f.Read(Token);
 
-        Assert.Equal(("Add your repo", "◆ YOUR TURN", "Pick the folder of a repo to start."), (steps[0].Title, steps[0].ChipText, steps[0].Why));
-        Assert.Equal(("○ WAITING", "Waits for your first repo."), (steps[1].ChipText, steps[1].Why));
-        Assert.Equal("○ NOT STARTED", steps[5].ChipText);   // a not-started Onyx waits for nothing and keeps its action
-        Assert.Equal("Add your repo, your turn. Pick the folder of a repo to start.", steps[0].Name);
+        Assert.Equal(
+            ["Add your repository", "Approve your settings", "Approve the workflows", "Connect your coding agents", "Build the product map", "Connect Linear and Slack (Onyx)"],
+            setup.Steps.Select(s => s.Title),
+            StringComparer.Ordinal);
+        Assert.Equal([1, 2, 3, 4, 5, 6], setup.Steps.Select(s => s.Number));
+    }
+
+    [Fact]
+    public async Task Each_state_reads_as_one_of_the_five_words_and_a_step_this_build_does_not_know_keeps_its_own_word()
+    {
+        _f.Serve(With("failed", "onyx", "paused"));
+
+        var setup = await _f.Read(Token);
+
+        Assert.Equal(["Done", "Done", "Done", "Done", "Failed", "To do"], [.. setup.Steps.Select(s => s.ChipWord).Take(5), Step(setup, "onyx").ChipWord], StringComparer.Ordinal);
+        Assert.Equal("paused", Step(setup, "onyx").Chip.Word);   // unknown: the To do chip, with the served word
+        Assert.Equal("Working", Step(await ReadWith("running-progress"), "map").ChipWord);
+        Assert.Equal("Skipped", Step(await ReadWith("onyx-no-docker"), "onyx").ChipWord);
+    }
+
+    private async Task<SetupViewModel> ReadWith(string scenario)
+    {
+        _f.Serve(scenario);
+        return await _f.Read(Token);
+    }
+
+    [Fact]
+    public async Task A_step_that_needs_you_or_failed_opens_by_itself_and_the_others_stay_closed()
+    {
+        var failed = await ReadWith("failed");
+        var profile = await ReadWith("profile-needs-approval");
+
+        Assert.Equal(["map"], Ids(failed.Steps.Where(s => s.IsOpen)), StringComparer.Ordinal);
+        Assert.Equal(["profile"], Ids(profile.Steps.Where(s => s.IsOpen)), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task Opening_a_row_never_closes_another_and_the_persons_choice_survives_a_read()
+    {
+        var setup = await ReadWith("profile-needs-approval");
+        Step(setup, "recipes").IsOpen = true;
+        Step(setup, "profile").IsOpen = false;
+
+        await setup.Refresh(Url, Token);
+
+        Assert.Equal(["recipes"], Ids(setup.Steps.Where(s => s.IsOpen)), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_step_that_moves_into_needs_you_opens_again_without_closing_the_others()
+    {
+        var setup = await ReadWith("running-progress");
+        Step(setup, "repo").IsOpen = true;
+        _f.Serve(With("running-progress", "map", "failed"));
+
+        await setup.Refresh(Url, Token);
+
+        Assert.Equal(["repo", "map"], Ids(setup.Steps.Where(s => s.IsOpen)), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_done_row_shows_what_it_did_and_a_waiting_row_why()
+    {
+        var setup = await ReadWith("failed");
+
+        Assert.Equal("26 recipes.", Step(setup, "recipes").Sub);   // done: the served detail
+        Assert.Equal("The last try at building the map didn't finish.", Step(setup, "map").ErrorText);
+        Assert.Equal("Waits for a repository.", Step(await ReadWith("first-run"), "profile").Sub);
+    }
+
+    [Fact]
+    public async Task The_progress_strip_has_one_segment_per_step_done_working_or_open()
+    {
+        var done = await ReadWith("running-progress");
+        var first = await ReadWith("first-run");
+
+        Assert.Equal(["done", "done", "done", "done", "working", "done"], done.Segments.Select(s => s.Kind), StringComparer.Ordinal);
+        Assert.Equal("5 of 6 done", done.CountText);
+        Assert.Equal(["todo", "todo", "todo", "todo", "todo", "todo"], first.Segments.Select(s => s.Kind), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task Home_shows_one_line_while_any_step_is_open_and_none_when_setup_is_finished()
+    {
+        var open = await ReadWith("profile-needs-approval");
+        var skipped = await ReadWith("onyx-no-docker");
+        var finished = await ReadWith("all-done");
+
+        Assert.Equal((true, "Finish setting up Sindri"), (open.IsHomeLineShown, open.HomeLineText));
+        Assert.Equal((false, false), (skipped.IsHomeLineShown, finished.IsHomeLineShown));   // skipped counts as finished
+        Assert.Equal(("Sindri is set up", "All 6 done", false), (finished.Lead, finished.CountText, finished.HasSub));
+    }
+
+    [Fact]
+    public async Task A_step_that_reopens_brings_the_line_back()
+    {
+        var setup = await ReadWith("all-done");
+        _f.Serve(With("all-done", "map", "running"));
+
+        await setup.Refresh(Url, Token);
+
+        Assert.Equal((false, true), (setup.IsFinished, setup.IsHomeLineShown));
+    }
+
+    [Fact]
+    public async Task The_line_opens_the_checklist()
+    {
+        var setup = await ReadWith("first-run");
+        var asked = 0;
+        setup.ChecklistRequested += (_, _) => asked++;
+
+        setup.RequestChecklist();
+
+        Assert.Equal(1, asked);
     }
 
     [Fact]
     public async Task Ids_and_codes_wait_in_Details_and_never_in_the_words_up_front()
     {
-        _f.Serve("failed");
+        var map = Step(await ReadWith("failed"), "map");
 
-        var map = (await _f.Read(Token)).Steps.Single(s => s.Id == "map");
-
-        Assert.Equal(("✕ FAILED", "The last try at building the map didn't finish."), (map.ChipText, map.ErrorText));
-        Assert.DoesNotContain("SND-", map.Name + map.Why + map.ErrorText + map.ChipText, StringComparison.Ordinal);
+        Assert.DoesNotContain("SND-", map.Name + map.Sub + map.ErrorText + map.Chip.Word, StringComparison.Ordinal);
         Assert.Contains(map.Fields, f => f is ("Error code", "SND-CONTEXT-042"));
         Assert.Contains(map.Fields, f => f is ("Step", "map"));
-        Assert.Contains(map.Fields, f => f is ("State", "failed"));
     }
 
     [Fact]
     public async Task A_counted_step_shows_how_far_it_is_and_a_repo_step_one_line_per_repo()
     {
-        _f.Serve("running-progress");
+        var map = Step(await ReadWith("running-progress"), "map");
 
-        var map = (await _f.Read(Token)).Steps.Single(s => s.Id == "map");
-
-        Assert.Equal(("● WORKING", "40 of 100", "40 of 100 done."), (map.ChipText, map.ProgressText, map.DetailText));
+        Assert.Equal(("Working", "40 of 100", 0.4), (map.ChipWord, map.ProgressText, map.ProgressFraction));
         var line = Assert.Single(map.Items);
-        Assert.Equal(("demo", "● WORKING"), (line.Repo, line.ChipText));
-        Assert.Equal("demo, working", line.Name);
-    }
-
-    [Fact]
-    public async Task The_card_draws_three_rows_filled_by_priority_then_says_how_many_it_leaves()
-    {
-        _f.Serve("extra-priority-mix");
-
-        var setup = await _f.Read(Token);
-
-        Assert.Equal(["mcp", "profile", "map"], Ids(setup.CardSteps));   // needs you, then failed, then running
-        Assert.Equal(("and 3 more", true), (setup.MoreText, setup.HasMore));
-        Assert.Equal(["map", "mcp", "profile"], setup.DrawnIds.Order(StringComparer.Ordinal), StringComparer.Ordinal);
-    }
-
-    [Fact]
-    public async Task Three_running_steps_and_a_failed_Onyx_draw_the_failure_first_and_never_hide_it()
-    {
-        _f.Serve("extra-three-running-onyx-failed");
-
-        var setup = await _f.Read(Token);
-
-        Assert.Equal(["onyx", "recipes", "mcp"], Ids(setup.CardSteps));
-        Assert.Equal("and 3 more", setup.MoreText);
-    }
-
-    [Fact]
-    public async Task The_more_line_says_how_many_of_the_steps_it_hides_need_the_person()
-    {
-        _f.Serve(AllNeedYou());
-        var setup = await _f.Read(Token);
-
-        Assert.Equal(["repo", "profile", "recipes"], Ids(setup.CardSteps));
-        Assert.Equal("and 3 more, 2 need you", setup.MoreText);
-    }
-
-    private static System.Text.Json.Nodes.JsonNode AllNeedYou()
-    {
-        var list = Golden("first-run");
-        foreach (var step in list["steps"]!.AsArray())
-        {
-            step!["state"] = (string)step["id"]! == "onyx" ? "todo" : "needs-you";
-        }
-
-        return list;
-    }
-
-    [Fact]
-    public async Task A_press_on_the_more_line_shows_every_step_and_another_folds_it_again()
-    {
-        _f.Serve("extra-priority-mix");
-        var setup = await _f.Read(Token);
-
-        setup.ToggleMore();
-        var open = (Ids(setup.CardSteps).Length, setup.IsExpanded, setup.MoreText);
-        setup.ToggleMore();
-
-        Assert.Equal((6, true, "Show fewer"), open);
-        Assert.Equal((3, false), (setup.CardSteps.Count, setup.IsExpanded));
-    }
-
-    [Fact]
-    public async Task Waiting_steps_fill_the_card_in_step_order_after_the_one_that_needs_the_person()
-    {
-        _f.Serve("profile-needs-approval");
-
-        var setup = await _f.Read(Token);
-
-        Assert.Equal(["profile", "recipes", "mcp"], Ids(setup.CardSteps));   // needs you, then the todo steps in step order
-    }
-
-    [Fact]
-    public async Task The_next_step_is_the_first_that_needs_the_person_with_its_action()
-    {
-        _f.Serve("profile-needs-approval");
-
-        var setup = await _f.Read(Token);
-
-        Assert.Equal(("profile", "ApproveProfile"), (setup.Next?.Id, setup.Next?.Action?.Action));
-        Assert.Equal("Review and approve", setup.Next?.Action?.Label);
-    }
-
-    [Fact]
-    public async Task A_failed_step_leads_when_nothing_needs_the_person()
-    {
-        _f.Serve("failed");
-
-        var setup = await _f.Read(Token);
-
-        Assert.Equal("map", setup.Next?.Id);
-        Assert.Equal("This stopped", setup.LeadText);
-    }
-
-    [Theory]
-    [InlineData("all-done")]
-    [InlineData("onyx-no-docker")]
-    public async Task Setup_is_finished_when_every_step_is_done_or_skipped_and_the_card_goes(string scenario)
-    {
-        _f.Serve(scenario);
-
-        var setup = await _f.Read(Token);
-
-        Assert.Equal((true, false, null, "Setup is finished."), (setup.IsFinished, setup.IsCardVisible, setup.Next, setup.LeadText));
-        Assert.Empty(setup.DrawnIds);
-    }
-
-    [Fact]
-    public async Task A_step_that_reopens_brings_the_card_back()
-    {
-        _f.Serve("all-done");
-        var setup = await _f.Read(Token);
-        _f.Serve(With("all-done", "map", "running"));
-
-        await setup.Refresh(Url, Token);
-
-        Assert.Equal((false, true), (setup.IsFinished, setup.IsCardVisible));
+        Assert.Equal(("demo", "Working"), (line.Repo, line.ChipText));
     }
 
     [Fact]
     public async Task A_repeat_read_keeps_each_step_and_changes_it_in_place()
     {
-        _f.Serve("first-run");
-        var setup = await _f.Read(Token);
+        var setup = await ReadWith("first-run");
         var repo = setup.Steps[0];
         _f.Serve("profile-needs-approval");
 
         await setup.Refresh(Url, Token);
 
         Assert.Same(repo, setup.Steps[0]);
-        Assert.Equal("✓ DONE", repo.ChipText);
-    }
-
-    [Fact]
-    public async Task A_state_this_build_does_not_know_renders_as_itself()
-    {
-        _f.Serve(With("first-run", "map", "paused"));
-
-        var map = (await _f.Read(Token)).Steps.Single(s => s.Id == "map");
-
-        Assert.Equal("○ PAUSED", map.ChipText);
+        Assert.Equal("Done", repo.ChipWord);
     }
 
     [Fact]
     public async Task A_change_after_the_first_read_is_announced_once_in_words()
     {
-        _f.Serve("first-run");
-        var setup = await _f.Read(Token);
+        var setup = await ReadWith("first-run");
         Assert.False(setup.Live.IsAnnouncing);
 
         _f.Serve("profile-needs-approval");
         await setup.Refresh(Url, Token);
 
-        Assert.Equal((true, "Add your repo: done. Approve the profile: your turn"), (setup.Live.IsAnnouncing, setup.Live.Announcement));
+        Assert.Equal((true, "Add your repository: done. Approve your settings: needs you"), (setup.Live.IsAnnouncing, setup.Live.Announcement));
     }
 
     [Fact]
-    public async Task The_first_read_announces_nothing()
-    {
-        _f.Serve("failed");
-
-        var setup = await _f.Read(Token);
-
-        Assert.False(setup.Live.IsAnnouncing);
-    }
+    public async Task The_first_read_announces_nothing() => Assert.False((await ReadWith("failed")).Live.IsAnnouncing);
 
     [Fact]
-    public async Task Before_the_first_answer_the_card_is_reading_and_hidden()
+    public async Task Before_the_first_answer_the_checklist_is_reading()
     {
         _f.Serve("first-run");
         var setup = _f.Setup();
 
-        Assert.Equal((true, false), (setup.IsReading, setup.IsCardVisible));
+        Assert.Equal((true, false, false), (setup.IsReading, setup.HasSteps, setup.IsHomeLineShown));
         await setup.Refresh(Url, Token);
-        Assert.Equal((false, true), (setup.IsReading, setup.IsCardVisible));
+        Assert.Equal((false, true), (setup.IsReading, setup.HasSteps));
     }
 
     [Fact]
-    public async Task A_sindri_without_the_route_says_so_and_draws_no_card()
+    public async Task A_sindri_without_the_route_says_setup_is_not_in_this_build_and_Home_shows_no_line()
     {
         _f.Server.SetupAnswer = RouteAnswer.Problem(HttpStatusCode.NotFound, "SND-API-004", "The API answered without an error code");
 
         var setup = await _f.Read(Token);
 
-        Assert.Equal((true, false, false), (setup.IsNotServed, setup.IsCardVisible, setup.IsReading));
-        Assert.Equal("This Sindri has no setup list yet.", setup.NotServedText);
+        Assert.Equal((true, false, false), (setup.IsNotServed, setup.IsHomeLineShown, setup.IsReading));
+        Assert.Equal("Setup isn't available in this build yet.", setup.NotServedText);
     }
 
     [Fact]
@@ -259,19 +231,19 @@ public sealed class SetupViewModelTests
 
         var setup = await _f.Read(Token);
 
-        Assert.Equal((true, false), (setup.IsUnreadable, setup.IsCardVisible));
+        Assert.Equal((true, false), (setup.IsUnreadable, setup.IsHomeLineShown));
     }
 
     [Fact]
-    public async Task When_nothing_answers_the_card_says_sindri_is_not_running_with_the_launcher_to_copy()
+    public async Task When_nothing_answers_the_checklist_says_sindri_is_not_running_with_the_launcher_to_copy()
     {
         _f.Server.GoDown();
 
         var setup = await _f.Read(Token);
 
-        Assert.Equal((true, false), (setup.IsNotRunning, setup.IsFailed));
-        Assert.Equal(("Sindri isn't running.", "sindri-app", "The app reconnects on its own when Sindri starts."), (setup.NotRunningText, setup.Launcher?.Cli, setup.ReconnectsText));
-        await setup.Launcher!.Copy(Token);
+        Assert.Equal((true, false, false), (setup.IsNotRunning, setup.IsFailed, setup.IsHomeLineShown));
+        Assert.Equal(("Sindri isn't running", "sindri-app", "The app reconnects on its own when Sindri starts."), (setup.NotRunningText, setup.Launcher.Cli, setup.ReconnectsText));
+        await setup.Launcher.Copy(Token);
         Assert.Equal("sindri-app", _f.Clipboard.Text);
     }
 
@@ -292,8 +264,7 @@ public sealed class SetupViewModelTests
     [Fact]
     public async Task A_failed_later_read_keeps_the_steps_and_marks_them_stale()
     {
-        _f.Serve("first-run");
-        var setup = await _f.Read(Token);
+        var setup = await ReadWith("first-run");
         _f.Server.GoDown();
 
         await setup.Refresh(Url, Token);
