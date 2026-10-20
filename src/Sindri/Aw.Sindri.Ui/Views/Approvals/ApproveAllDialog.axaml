@@ -98,7 +98,7 @@
 
           <StackPanel x:Name="ApproveConfirm" Spacing="8" IsVisible="{Binding CanApprove}">
             <Button x:Name="ApproveHold" Classes="command-control primary" IsVisible="{Binding OffersHold}" HorizontalAlignment="Stretch"
-                    AutomationProperties.Name="{Binding HoldName}" AutomationProperties.HelpText="{Binding HoldText}">
+                    AutomationProperties.Name="{Binding HoldName}" AutomationProperties.HelpText="{Binding HoldHelp}">
               <TextBlock Classes="button" Text="{Binding HoldText}" AutomationProperties.AccessibilityView="Raw" />
             </Button>
             <ProgressBar x:Name="ApproveFill" Minimum="0" Maximum="1" Value="{Binding HoldProgress}" IsVisible="{Binding ShowsFill}" Height="4"
