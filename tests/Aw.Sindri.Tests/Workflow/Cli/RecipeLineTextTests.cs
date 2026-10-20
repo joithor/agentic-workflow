@@ -13,12 +13,12 @@ public sealed class RecipeLineTextTests
     private static readonly RecipeHash _hash = RecipeHash.From("sha256:" + new string('a', 64));
 
     private static RecipeView View(IReadOnlyList<RecipeInputView> inputs, IReadOnlyList<RecipeOutputView> outputs, RecipeUrgency urgency = RecipeUrgency.Work, string? name = null) =>
-        new(RecipeId.From("workflow.t"), _hash, 1, name, inputs, outputs, urgency, PathOrdering.Path,
+        new(RecipeId.From("workflow.t"), "workflow.t", _hash, 1, name, inputs, outputs, urgency, PathOrdering.Path,
             [new RecipeStateView("a", Order: 1, BranchOf: null), new RecipeStateView("b", Order: null, BranchOf: "a"), new RecipeStateView("done", Order: 2, BranchOf: null), new RecipeStateView("orphan", Order: null, BranchOf: null)],
             [new RecipeLoopView("rounds", "a", "a", Cap: 3)]);
 
     private static RecipeSummary Summary(IReadOnlyList<RecipeInput> inputs) =>
-        new(RecipeId.From("workflow.t"), 1, _hash, RecipeStanding.Unapproved, Via: null, [], inputs, "work", [], "path", [], []);
+        new(RecipeId.From("workflow.t"), "workflow.t", 1, _hash, RecipeStanding.Unapproved, Via: null, [], inputs, "work", [], "path", [], []);
 
     [Fact, Trait("Lane", "unit")]
     public void Show_lists_the_id_urgency_name_each_input_each_output_then_the_path_order()

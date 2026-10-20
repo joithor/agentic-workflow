@@ -8,7 +8,8 @@
     "id": "workflow.triage-alert",
     "hash": "sha256:d41f2a0700000000000000000000000000000000000000000000000000000000",
     "version": 2,
-    "urgency": "triage"
+    "urgency": "triage",
+    "displayName": "workflow.triage-alert"
   },
   "state": "done",
   "since": "2026-10-12T11:58:00.0000000Z",

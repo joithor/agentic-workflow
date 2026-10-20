@@ -29,7 +29,7 @@ public sealed record RecipeShape(string Id, int Version, string HashPrefix, Reci
     public ShapeState State(string id) => States.Single(s => s.Id == id);
 
     /// <summary>The stamp every instance of this recipe carries.</summary>
-    public InstanceRecipe Stamp => new(RecipeId.From(Id), RecipeHash.From("sha256:" + HashPrefix.PadRight(64, '0')), Version, Urgency);
+    public InstanceRecipe Stamp => new(RecipeId.From(Id), RecipeHash.From("sha256:" + HashPrefix.PadRight(64, '0')), Version, Urgency, Id);
 
     /// <summary>The state cells, path order, with <paramref name="current"/> active and earlier states done.</summary>
     /// <param name="current">The current state.</param>
@@ -96,7 +96,7 @@ public sealed record RecipeShape(string Id, int Version, string HashPrefix, Reci
     /// <summary>The recipe's view (E-22).</summary>
     /// <returns>The view.</returns>
     public RecipeView View() => new(
-        Stamp.Id, Stamp.Hash, Version, Name,
+        Stamp.Id, Id, Stamp.Hash, Version, Name,
         [.. Inputs.Select(i => new RecipeInputView(i.Key, i.Label, i.Type, i.Kind, i.Generate is null, i.Generate))],
         [.. Outputs.Select(o => new RecipeOutputView(o.Key, o.Label, o.Type, o.From))],
         Urgency, States.Any(s => s.BranchOf is not null) ? PathOrdering.TransitionList : PathOrdering.Path, [.. States.Select(s => new RecipeStateView(s.Id, s.Order, s.BranchOf))], [.. Loops.Select(l => new RecipeLoopView(l.Name, l.From, l.To, l.Max))]);

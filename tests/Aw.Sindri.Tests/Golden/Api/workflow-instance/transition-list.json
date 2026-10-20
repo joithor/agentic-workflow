@@ -8,7 +8,8 @@
     "id": "workflow.fork-demo",
     "hash": "sha256:1f08c6a900000000000000000000000000000000000000000000000000000000",
     "version": 1,
-    "urgency": "work"
+    "urgency": "work",
+    "displayName": "workflow.fork-demo"
   },
   "state": "right",
   "since": "2026-10-12T12:00:00.0000000Z",

@@ -23,7 +23,8 @@ namespace Aw.Sindri.Features.GetInstance;
 /// <param name="repos">Where each item belongs, from the ledger.</param>
 /// <param name="callers">The caller, whose repo scope decides what it may read.</param>
 /// <param name="clock">The time the status text and the 'asOf' are read at.</param>
-internal sealed class GetInstanceService(IInstanceDirectory directory, IInstanceReader runtime, IViewReader views, IItemRepos repos, ICallerContextAccessor callers, TimeProvider clock)
+/// <param name="names">The recipe's display name for the view (null shows the recipe id).</param>
+internal sealed class GetInstanceService(IInstanceDirectory directory, IInstanceReader runtime, IViewReader views, IItemRepos repos, ICallerContextAccessor callers, TimeProvider clock, IRecipeDisplayNames? names = null)
     : IService<GetInstanceRequest, InstanceDetail>
 {
     public async ValueTask<Result<InstanceDetail>> Handle(GetInstanceRequest request, CancellationToken cancellationToken)
@@ -59,7 +60,7 @@ internal sealed class GetInstanceService(IInstanceDirectory directory, IInstance
         }
 
         var parent = await Parent(view.Value, cancellationToken).ConfigureAwait(false);
-        return InstanceViews.Detail(view.Value, new InstanceDetailContext(title, parent, counts.Value, clock.GetUtcNow()));
+        return InstanceViews.Detail(view.Value, new InstanceDetailContext(title, parent, counts.Value, clock.GetUtcNow(), names?.Of(view.Value.Recipe.Id)));
     }
 
     /// <summary>The title of the item the instance is on; its address when it has none or the view has no row.</summary>

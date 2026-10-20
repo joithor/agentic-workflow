@@ -160,6 +160,21 @@
       "shortcut": null
     },
     {
+      "action": "ApproveAllRecipes",
+      "class": "job",
+      "allowedCallers": [
+        "human+terminal"
+      ],
+      "terminal": true,
+      "method": "POST",
+      "route": "/sindri/workflow/recipes/approve-all",
+      "cli": "sindri recipe approve-all",
+      "ui": "cli-only:typed-confirmation",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
       "action": "ApproveProfile",
       "class": "protected",
       "allowedCallers": [

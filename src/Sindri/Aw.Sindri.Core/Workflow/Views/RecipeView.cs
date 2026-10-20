@@ -6,6 +6,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 
 /// <summary>The recipe view: the recipe's stamp (id, hash, version; the same one an instance carries in `recipe`), served now ahead of the engine's full body, and the E-22 additions (inputs, outputs, urgency, path-ordered states and loops).</summary>
 /// <param name="Id">The recipe id.</param>
+/// <param name="DisplayName">The name shown instead of the id (setup-once spec §7.7).</param>
 /// <param name="Hash">The recipe hash, sha256: and 64 hex digits.</param>
 /// <param name="Version">The recipe version.</param>
 /// <param name="Name">The recipe's name template as written, or null (spec section 3.11).</param>
@@ -18,6 +19,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record RecipeView(
     RecipeId Id,
+    string DisplayName,
     RecipeHash Hash,
     int Version,
     string? Name,

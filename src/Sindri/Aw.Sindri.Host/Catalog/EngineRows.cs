@@ -1,6 +1,7 @@
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Features.ApplyCommand;
+using Aw.Sindri.Features.ApproveAllRecipes;
 using Aw.Sindri.Features.ApproveRecipe;
 using Aw.Sindri.Features.CompleteStep;
 using Aw.Sindri.Features.IssueChallenge;
@@ -28,6 +29,9 @@ internal static class EngineRows
         // ---- P2: the registry (bound) ----
         Bound("RegisterRecipe", typeof(RegisterRecipeRequest), ActionClass.Desk, "POST /sindri/workflow/recipes", "sindri recipe register <file>") with { Ui = "ready" },
         Protected("ApproveRecipe", "POST /sindri/workflow/recipes/{id}@{hash}/approve", "sindri recipe approve <recipe>", "WF-P2") with { CommandType = typeof(ApproveRecipeRequest), Ui = TypedConfirmation },
+        // A job (202, key 'approve-all', ARCH-CQRS-003: class 'job') that only a human at a terminal may start and only by redeeming its challenge; a session is SND-AUTH-002.
+        // The app's held confirmation waits for the AppConfirm flag (setup-once spec §4 item 7, SO-A2).
+        JobRows.Job("ApproveAllRecipes", typeof(ApproveAllRecipesRequest), "/sindri/workflow/recipes/approve-all", "sindri recipe approve-all") with { NeedsTerminal = true, Ui = TypedConfirmation },
         Protected("RevokeRecipe", "POST /sindri/workflow/recipes/{id}@{hash}/revoke", "sindri recipe revoke <recipe>", "WF-P2") with { CommandType = typeof(RevokeRecipeRequest), Ui = TypedConfirmation },
         Protected("IssueChallenge", "POST /sindri/workflow/challenges", "sindri recipe approve <recipe>", "WF-P2") with { CommandType = typeof(IssueChallengeRequest), Class = ActionClass.Issue, Ui = "ready" },
 

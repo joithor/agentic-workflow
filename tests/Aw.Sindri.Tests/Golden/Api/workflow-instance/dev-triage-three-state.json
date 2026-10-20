@@ -8,7 +8,8 @@
     "id": "workflow.dev-triage-three-state",
     "hash": "sha256:94c0c28e21ca37b9f9ad16233e33c9620b70e940c0fc19f3fb14cc9dfc51f002",
     "version": 2,
-    "urgency": "triage"
+    "urgency": "triage",
+    "displayName": "workflow.dev-triage-three-state"
   },
   "state": "desk",
   "since": "2026-10-12T12:00:00.0000000Z",

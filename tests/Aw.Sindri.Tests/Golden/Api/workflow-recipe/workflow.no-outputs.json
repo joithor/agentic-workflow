@@ -1,5 +1,6 @@
 {
   "id": "workflow.no-outputs",
+  "displayName": "workflow.no-outputs",
   "hash": "sha256:3c9d51e200000000000000000000000000000000000000000000000000000000",
   "version": 1,
   "name": null,

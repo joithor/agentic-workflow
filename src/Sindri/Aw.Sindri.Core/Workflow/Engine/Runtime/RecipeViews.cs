@@ -12,14 +12,16 @@ public static class RecipeViews
     /// </summary>
     /// <param name="recipe">The recipe as registered.</param>
     /// <param name="stamp">Its id, version and hash.</param>
+    /// <param name="displayName">The name shown instead of the id; null shows the id.</param>
     /// <returns>The view.</returns>
-    public static RecipeView Of(Recipe recipe, RecipeVersion stamp)
+    public static RecipeView Of(Recipe recipe, RecipeVersion stamp, string? displayName = null)
     {
         ArgumentNullException.ThrowIfNull(recipe);
         ArgumentNullException.ThrowIfNull(stamp);
         var path = StatePathOrder.Of(recipe);
         return new RecipeView(
             stamp.Id,
+            displayName ?? stamp.Id.Value,
             stamp.Hash,
             stamp.Version,
             recipe.Name,

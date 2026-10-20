@@ -8,7 +8,8 @@
     "id": "workflow.incident-response",
     "hash": "sha256:5d90e1b200000000000000000000000000000000000000000000000000000000",
     "version": 4,
-    "urgency": "incident"
+    "urgency": "incident",
+    "displayName": "workflow.incident-response"
   },
   "state": "mitigate",
   "since": "2026-10-12T11:02:00.0000000Z",
