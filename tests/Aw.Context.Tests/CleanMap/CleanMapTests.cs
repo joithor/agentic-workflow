@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
@@ -5,6 +6,7 @@ using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Models;
 using Aw.Context.Core.Overrides;
+using Aw.Context.Core.Results;
 using Aw.Context.Core.Review;
 using Aw.Context.Features.CleanMap;
 using Aw.Context.Testing.Engine;
@@ -12,7 +14,6 @@ using Aw.Context.Testing.Graph;
 using Aw.Context.Testing.Map;
 using Aw.Context.Tests.Map;
 using Aw.Context.Tests.Review;
-using Aw.Kernel.Testing;
 
 namespace Aw.Context.Tests.CleanMap;
 
@@ -24,15 +25,15 @@ public sealed partial class CleanMapTests : IDisposable
 
     public void Dispose() => _world.Dispose();
 
-    [GeneratedRegex(@"^(n\d+): (.*)$", RegexOptions.Multiline)]
-    private static partial Regex AskedLine();
+    [GeneratedRegex(@"^(?<id>n\d+): (?<text>.*)$", RegexOptions.CultureInvariant | RegexOptions.Multiline | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex AskedLine { get; }
 
     private async Task Seed(GraphSnapshot graph, params MapOverride[] overrides) =>
         Assert.True((await _world.Store.SaveDraft(new MapImport(ContextRepoName.From(FixtureMap.Repo), "abc123", graph, overrides), _world.Clock.GetUtcNow(), MapWorld.None)).IsSuccess);
 
     // Keeps the entries whose label holds 'Keep', removes the rest, whatever the order and ids the prompt uses.
     private static string KeepTheKeepers(ModelRequest request) =>
-        "[" + string.Join(',', AskedLine().Matches(request.Prompt).Select(m => $"{{\"id\":\"{m.Groups[1].Value}\",\"keep\":{(m.Groups[2].Value.Contains("Keep", StringComparison.Ordinal) ? "true" : "false")}}}")) + "]";
+        "[" + string.Join(',', AskedLine.Matches(request.Prompt).Select(m => $"{{\"id\":\"{m.Groups["id"].Value}\",\"keep\":{(m.Groups["text"].Value.Contains("Keep", StringComparison.Ordinal) ? "true" : "false")}}}")) + "]";
 
     private static GraphBuilder Mixed() => new GraphBuilder()
         .Node("surface:command/split", "Split pane", Provenance.Deterministic)
@@ -140,7 +141,7 @@ public sealed partial class CleanMapTests : IDisposable
         var weak = new GraphBuilder();
         for (var i = 0; i < 80; i++)
         {
-            _ = weak.Node($"feature:w{i:d2}", $"Keep {i:d2}", Provenance.Model, 0.4);
+            _ = weak.Node(string.Create(CultureInfo.InvariantCulture, $"feature:w{i:d2}"), string.Create(CultureInfo.InvariantCulture, $"Keep {i:d2}"), Provenance.Model, 0.4);
         }
 
         await Seed(weak.Build());
@@ -200,7 +201,8 @@ public sealed partial class CleanMapTests : IDisposable
 
         Assert.True(promoted.IsSuccess, promoted.IsError ? promoted.Error.Message : null);
         var current = (await _world.Store.Snapshot(draft: false, MapWorld.None)).Value!;
-        Assert.DoesNotContain(current.Graph.Nodes, n => n.Key.Value == "feature:weak");
-        Assert.Contains(current.Graph.Nodes, n => n.Key.Value == "feature:keep");
+        var applied = MapAccess.View(current.Graph, current.Overrides, _scope, pending: false).Value.Applied;   // a reject is a row, applied when the map is read
+        Assert.DoesNotContain(applied.Nodes, n => n.Key.Value == "feature:weak");
+        Assert.Contains(applied.Nodes, n => n.Key.Value == "feature:keep");
     }
 }
