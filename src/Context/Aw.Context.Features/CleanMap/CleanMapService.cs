@@ -51,30 +51,33 @@ internal sealed class CleanMapService(IGraphStore store, IScrubberFactory scrubb
             ? (new Dictionary<string, bool>(StringComparer.Ordinal), CleanupMode.None)
             : await Judge(weak, built.Value.Egress, request.MaxTokens, cancellationToken).ConfigureAwait(false);
 
-        var who = ReviewDrafts.Who(request.Scope.Caller, user);
+        return await Settle(request.Scope, first, verdicts, mode, cancellationToken).ConfigureAwait(false);
+    }
+
+    // Decides the queue pass after pass (a rejected node takes its links with it, so the queue is read again) until nothing is left.
+    private async ValueTask<Result<CleanupReport>> Settle(
+        ContextScope scope, Result<(MapSnapshot Draft, MapView View, ReviewQueueView Queue)> first, Dictionary<string, bool> verdicts, CleanupMode mode, CancellationToken cancellationToken)
+    {
+        var who = ReviewDrafts.Who(scope.Caller, user);
         int accepted = 0, removed = 0, dropped = 0;
         for (var pass = 0; pass < MaxPasses; pass++)
         {
-            var read = pass == 0 ? first : await Read(request.Scope, cancellationToken).ConfigureAwait(false);
+            var read = pass == 0 ? first : await Read(scope, cancellationToken).ConfigureAwait(false);
             if (read.IsError)
             {
                 return read.Error;
             }
 
-            var (draft, view, queue) = read.Value;
+            var (_, view, queue) = read.Value;
             if (queue.Undecided == 0)
             {
                 return new CleanupReport(accepted, removed, dropped, mode);
             }
 
-            var decisions = Decisions(queue, verdicts);
-            var (rows, _) = ReviewPlanner.PlanAll(decisions, new ReviewBasis(view.Graph, view.Overrides), who, clock.GetUtcNow(), cancellationToken);
-            if (rows.Count == 0)
-            {
-                return ContextErrors.PromoteRefused.With($"the cleanup of draft {queue.Draft} decided nothing with {queue.Undecided.ToString(CultureInfo.InvariantCulture)} items left (fix: decide them with 'sindri context map review')");
-            }
-
-            var added = await store.AppendOverrides(rows, cancellationToken).ConfigureAwait(false);
+            var (rows, _) = ReviewPlanner.PlanAll(Decisions(queue, verdicts), new ReviewBasis(view.Graph, view.Overrides), who, clock.GetUtcNow(), cancellationToken);
+            var added = rows.Count == 0
+                ? ContextErrors.PromoteRefused.With($"the cleanup of draft {queue.Draft} decided nothing with {queue.Undecided.ToString(CultureInfo.InvariantCulture)} items left (fix: decide them with 'sindri context map review')")
+                : await store.AppendOverrides(rows, cancellationToken).ConfigureAwait(false);
             if (added.IsError)
             {
                 return added.Error;
@@ -83,7 +86,6 @@ internal sealed class CleanMapService(IGraphStore store, IScrubberFactory scrubb
             accepted += rows.Count(r => r.Action == OverrideAction.Accept);
             removed += rows.Count(r => r.Action == OverrideAction.Reject);
             dropped += rows.Count(r => r.Action == OverrideAction.Undo);
-            _ = draft;
         }
 
         return ContextErrors.PromoteRefused.With("the cleanup did not settle the review queue (fix: decide the rest with 'sindri context map review')");
@@ -116,18 +118,14 @@ internal sealed class CleanMapService(IGraphStore store, IScrubberFactory scrubb
 
         foreach (var e in queue.Entries)
         {
-            switch (e.Group)
+            if (e is { Group: ReviewGroup.Orphaned, Override: { } id })
             {
-                case ReviewGroup.Orphaned when e.Override is { } id:
-                    decisions.Add(new ReviewDecision(ReviewVerb.Drop, Undoes: id));
-                    break;
-                case ReviewGroup.Model:
-                    var keep = !IsWeak(e) || verdicts.GetValueOrDefault(Key(e));
-                    var verb = keep ? ReviewVerb.Accept : ReviewVerb.Reject;
-                    decisions.Add(e.Link is { } link ? new ReviewDecision(verb, Link: link) : new ReviewDecision(verb, Node: e.Node));
-                    break;
-                default:
-                    break;
+                decisions.Add(new ReviewDecision(ReviewVerb.Drop, Undoes: id));
+            }
+            else if (e.Group == ReviewGroup.Model)
+            {
+                var verb = !IsWeak(e) || verdicts.GetValueOrDefault(Key(e)) ? ReviewVerb.Accept : ReviewVerb.Reject;
+                decisions.Add(e.Link is { } link ? new ReviewDecision(verb, Link: link) : new ReviewDecision(verb, Node: e.Node));
             }
         }
 
