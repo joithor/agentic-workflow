@@ -219,6 +219,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         var header = detail.Current.Status.Header;
         var local = TimeZoneInfo.ConvertTime(header.Since, clock.LocalTimeZone);
         Address = detail.Address;
+        _state = detail.State;
         (Title, Recipe, Hash12, Version) = (detail.Title, detail.Recipe.Id, header.Hash12, string.Create(CultureInfo.InvariantCulture, $"v{header.Version}"));
         (StateText, Detail) = (header.State, header.Detail ?? string.Empty);
         OnChanged(nameof(RecipeSubject));
