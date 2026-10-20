@@ -14,6 +14,12 @@ internal static partial class Labels
     /// <summary>An ended session with no known way back.</summary>
     internal const string NoResumeCommand = "no resume command";
 
+    /// <summary>A filter's accessible name: the choice it shows leads, then what it filters.</summary>
+    /// <param name="choice">The choice shown.</param>
+    /// <param name="what">What the filter narrows by ("provider").</param>
+    /// <returns>"All providers, filter by provider".</returns>
+    internal static string FilterName(string choice, string what) => $"{choice}, filter by {what}";
+
     /// <summary>The first choice of the provider filter.</summary>
     internal const string AllProviders = "All providers";
 

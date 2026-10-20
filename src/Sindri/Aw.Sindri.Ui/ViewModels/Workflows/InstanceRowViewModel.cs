@@ -138,7 +138,7 @@ internal sealed class InstanceRowViewModel : ObservableObject
     public string OpenName => Labels.OpenRunName(Subject, DisplayName);
 
     /// <summary>The name screen readers hear: the item (the visible title), the workflow, the served chip word, the stage and who is on it. The address is in Details.</summary>
-    public string AccessibleName => string.Join(", ", new[] { Subject, DisplayName, _row.Chip.Word, _row.State, Who }.Where(p => p.Length > 0));
+    public string AccessibleName => string.Join(", ", new[] { Subject, DisplayName, _row.Chip.Word, _row.State, Who, MissingInputsText }.Where(p => p.Length > 0));
 
     /// <summary>Where Enter and a click go: the instance in the Workflows frame.</summary>
     public DeepLink Link => new(DeepLinkKind.Workflow, _row.Address);
