@@ -153,6 +153,13 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         return Address.Length == 0 ? Task.CompletedTask : Read(cancellationToken);
     }
 
+    /// <summary>Re-reads the instance shown when a change names it (or for any change when <paramref name="change"/> is null).</summary>
+    /// <param name="url">The API's base URL.</param>
+    /// <param name="change">The frame, or null to re-read whatever is shown.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>False when the view still isn't in the frame's state; true when it is, or when the change isn't about this frame.</returns>
+    internal Task<bool> Catch(Uri url, InstanceChange? change, CancellationToken cancellationToken) => throw new NotSupportedException();
+
     private async Task Read(CancellationToken cancellationToken)
     {
         if (_url is not { } url)
