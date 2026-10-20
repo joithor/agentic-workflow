@@ -3,11 +3,14 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Features.GetItemScope;
+using Aw.Sindri.Features.Items;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Items;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Aw.Sindri.Tests.GetItemScope;
 
@@ -22,18 +25,19 @@ public sealed class GetItemScopeTests
 
     private readonly ItemQueryHarness _q = new();
     private readonly PacketsByInstance _store = new();
+    private LeaseGrant? _grant;
 
-    private static GetItemScopeService Service() => new();
+    private GetItemScopeService Service() => new(new ViewItemResolver(_q.Views.Views), _q.Views.Slice.Callers, _q.Views.Slice.Store, _q.Views.Slice.Events, _store, NullLogger<GetItemScopeService>.Instance);
 
     private static WorkflowInstanceId Instance(string address) => WorkflowInstanceId.Of(InstanceAddress.From(address));
 
     private async Task Approve(char item, string address, string hash)
     {
-        var grant = await _q.Views.Slice.HoldLease();
+        _grant ??= await _q.Views.Slice.HoldLease();
         _q.Views.Slice.Clock.Advance(TimeSpan.FromMinutes(1));
         var payload = new ScopingApproved(hash, address, ["S1"], ["AC-1"], Rounds: 1, Rescopes: 0);
         var key = "scoping.approved:" + hash;
-        _ = (await _q.Views.Slice.Store.Append(_q.Views.Slice.Events.Entry(EventTypes.ScopingApproved, payload, key, ItemQueryHarness.Id(item).Value), grant, ItemQueryHarness.Token)).Value;
+        _ = (await _q.Views.Slice.Store.Append(_q.Views.Slice.Events.Entry(EventTypes.ScopingApproved, payload, key, ItemQueryHarness.Id(item).Value), _grant, ItemQueryHarness.Token)).Value;
     }
 
     private static string Lenses(string code, string product, string related, string history) =>
@@ -53,7 +57,7 @@ public sealed class GetItemScopeTests
         await Approve('1', address, hash);
     }
 
-    private static async Task<Result<ItemScopeResponse>> Ask(char item = '1') =>
+    private async Task<Result<ItemScopeResponse>> Ask(char item = '1') =>
         await Service().Handle(A.GetItemScopeRequest().WithItem(ItemRef.To(ItemQueryHarness.Id(item))).Build(), ItemQueryHarness.Token);
 
     [Fact]
