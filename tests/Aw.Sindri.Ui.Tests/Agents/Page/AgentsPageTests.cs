@@ -24,6 +24,8 @@ public sealed class AgentsPageTests : FrameHost
         Dispatcher.UIThread.RunJobs();
     }
 
+    private static readonly HashSet<string> _focusNames = new(["SessionFocusLine", "SessionFocusButton", "SessionFocusCopy"], StringComparer.Ordinal);
+
     private static List<Border> Rows(Window window) =>
         [.. window.GetVisualDescendants().OfType<Border>().Where(b => b.Name == "SessionRowFrame" && b.IsEffectivelyVisible)];
 
@@ -140,8 +142,9 @@ public sealed class AgentsPageTests : FrameHost
         Assert.Equal(new DeepLink(DeepLinkKind.Session, selected), opened!.Link);
     });
 
+    // F3: a row draws no Focus button or CLI line of its own (Watch the agent lives on the session's sheet, under Details); O on a row with no Step puts keyboard focus on the row.
     [Fact]
-    public Task O_moves_focus_to_the_pending_focus_line() => OnUi(async () =>
+    public Task O_moves_focus_to_the_row_which_draws_no_focus_line() => OnUi(async () =>
     {
         var (window, shell) = await OnAgents();
         Press(window, Key.J);
@@ -150,9 +153,9 @@ public sealed class AgentsPageTests : FrameHost
         Press(window, Key.O);
         Settle(window);
 
-        var line = Named<Border>(window, "SessionFocusLine");
-        Assert.Contains(Rows(window).Select(r => r.GetVisualDescendants().OfType<Border>().First(b => b.Name == "SessionFocusLine")), b => b.IsKeyboardFocusWithin);
-        Assert.Contains("arrives in", line.GetValue(Avalonia.Automation.AutomationProperties.NameProperty), StringComparison.Ordinal);
+        var rows = Rows(window);
+        Assert.Contains(rows, b => b.IsKeyboardFocusWithin);
+        Assert.All(rows, r => Assert.DoesNotContain(r.GetVisualDescendants().OfType<Control>(), c => c.IsEffectivelyVisible && _focusNames.Contains(c.Name ?? string.Empty)));
         Assert.NotNull(shell.Agents.SelectedKey);
     });
 
@@ -180,5 +183,19 @@ public sealed class AgentsPageTests : FrameHost
         Assert.Equal(Labels.AllStates, Named<ComboBox>(window, "StateFilter").SelectedItem);
         Assert.Equal(Labels.AllRepos, Named<ComboBox>(window, "RepoFilter").SelectedItem);
         Assert.Null(shell.Agents.ProviderFilter);
+    });
+
+    // WCAG 2.5.3: a combo shows its choice, so its name starts with it.
+    [Fact]
+    public Task The_filter_names_start_with_the_choice_they_show() => OnUi(async () =>
+    {
+        var (window, shell) = await OnAgents();
+
+        Assert.StartsWith(Labels.AllProviders, Heard.Name(Named<ComboBox>(window, "ProviderFilter")), StringComparison.Ordinal);
+        Assert.StartsWith(Labels.AllStates, Heard.Name(Named<ComboBox>(window, "StateFilter")), StringComparison.Ordinal);
+        Assert.StartsWith(Labels.AllRepos, Heard.Name(Named<ComboBox>(window, "RepoFilter")), StringComparison.Ordinal);
+        shell.Agents.FilterState("running");
+        Dispatcher.UIThread.RunJobs();
+        Assert.StartsWith("running", Heard.Name(Named<ComboBox>(window, "StateFilter")), StringComparison.Ordinal);
     });
 }

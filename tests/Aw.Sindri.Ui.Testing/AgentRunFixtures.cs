@@ -6,9 +6,8 @@ using Aw.Sindri.Ui.Api.Workflow;
 namespace Aw.Sindri.Ui.Testing;
 
 /// <summary>
-/// The agent run the app draws, for the unit lane. The status is a copy of engine P8's golden, tests/Aw.Sindri.Tests/Golden/Api/workflow-status/agent-run.json
-/// on branch feat/sindri-wf-p8-agent-runtime (not on main yet, so it is not in the api golden set); the live-session item is the API's Golden/Api/items-id/live-session.json.
-/// Replace the status with the golden once P8 is on main.
+/// The agent run the app draws, for the unit lane. The status is engine P8's golden, tests/Aw.Sindri.Tests/Golden/Api/workflow-status/agent-run.json (the one
+/// the API tests pin, so the app and the engine cannot drift); the live-session item is the API's Golden/Api/items-id/live-session.json.
 /// </summary>
 internal static class AgentRunFixtures
 {
@@ -21,11 +20,9 @@ internal static class AgentRunFixtures
     /// <summary>The launch id OpenItem's requested golden answers with.</summary>
     internal const string Requested = "LCH-00000000000000000000000000000015";
 
-    private const string StatusJson = """{"header":{"address":"ITM-01JM3/step/1","recipe":"workflow.step","hash12":"1c1173a162a7","version":2,"state":"produce","detail":"agent running","since":"2026-10-12T12:10:00.0000000Z","ageSeconds":960}, "next":"An agent session is working on produce. It reports when it is done; take it over to work on it yourself.", "answer":null,"child":null,"drift":null,"inputs":[],"timeout":null,"budget":null,"paused":null, "commands":[ {"verb":"takeover","actionId":"ApplyCommand:takeover","class":"pause","cli":"sindri workflow takeover ITM-01JM3/step/1","confirm":null}, {"verb":"cancel","actionId":"ApplyCommand:cancel","class":"desk","cli":"sindri workflow cancel ITM-01JM3/step/1","confirm":"Cancel ITM-01JM3/step/1? 1 running step stops; 0 children are cancelled."}], "text":"ITM-01JM3/step/1  workflow.step@1c1173a162a7  v2  produce: agent running  since 12:10 (16m)\n  run       agent LCH-01JM3A4B5C6D7E8F\n", "run":{"runtime":"agent","launch":"LCH-01JM3A4B5C6D7E8F"}}""";
-
     /// <summary>The status of an instance an agent session runs.</summary>
     /// <returns>The status as P8 serves it.</returns>
-    internal static StatusFields Status() => Read<StatusFields>(StatusJson);
+    internal static StatusFields Status() => Golden<StatusFields>("workflow-status", "agent-run");
 
     /// <summary>The same status with no run, as a server before P8 serves it.</summary>
     /// <returns>The status without the run.</returns>

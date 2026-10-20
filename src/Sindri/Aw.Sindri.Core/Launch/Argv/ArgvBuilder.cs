@@ -17,10 +17,12 @@ public static class ArgvBuilder
     /// <param name="mode">Open or Resume (Attach starts no process and is refused).</param>
     /// <param name="inputs">The expansion inputs.</param>
     /// <returns>
-    /// The arguments; an unattended Open (a Step) ends with the model and policy form arguments (SND-LAUNCH-013 when the entry's form can't express them, and nothing starts). SND-LAUNCH-006 for Resume on an entry without a resume template; SND-REQ-001 for a relative repo path, Attach, or a session id the
+    /// The arguments; an unattended Open (a Step) ends with the model and policy form arguments (SND-LAUNCH-013 when the entry's form can't express them, and nothing starts). SND-LAUNCH-006 for Resume on an entry without a resume template; SND-LAUNCH-015 when the entry's pattern times out on the session id (a Resume with a timed-out id is refused, not opened fresh); SND-REQ-001 for a relative repo path, Attach, or a session id the
     /// entry's pattern rejects where the template needs it. A Resume with no usable session id falls back to the open argv.
     /// </returns>
-    public static Result<IReadOnlyList<string>> Build(AgentEntry entry, LaunchMode mode, ArgvInputs inputs)
+    public static Result<IReadOnlyList<string>> Build(AgentEntry entry, LaunchMode mode, ArgvInputs inputs) => Build(entry, mode, inputs, SessionIdRules.DefaultTimeout);
+
+    internal static Result<IReadOnlyList<string>> Build(AgentEntry entry, LaunchMode mode, ArgvInputs inputs, TimeSpan patternTimeout)
     {
         ArgumentNullException.ThrowIfNull(entry);
         ArgumentNullException.ThrowIfNull(inputs);
@@ -29,8 +31,14 @@ public static class ArgvBuilder
             return refused;
         }
 
-        var resume = mode == LaunchMode.Resume && SessionIdRules.IsUsable(entry, inputs.SessionId);
-        if (!resume && BadPreChosen(entry, inputs))
+        var outcome = SessionIdRules.Check(entry, inputs.SessionId, patternTimeout);
+        var resume = mode == LaunchMode.Resume && outcome == PatternOutcome.Matched;
+        if (TimedOut(entry, mode, inputs, outcome) is { } timedOut)
+        {
+            return timedOut;
+        }
+
+        if (!resume && BadPreChosen(entry, inputs, outcome))
         {
             return SindriErrors.RequestInvalid.With($"the session id doesn't match {entry.Id.Value}'s sessionIdPattern (fix: pass a fresh id)");
         }
@@ -61,6 +69,11 @@ public static class ArgvBuilder
         return mode == LaunchMode.Resume && entry.Resume is null ? SindriErrors.LaunchNoSession.With($"{entry.Id.Value} has no resume command") : null;
     }
 
-    private static bool BadPreChosen(AgentEntry entry, ArgvInputs inputs) =>
-        entry.SessionIdMode == SessionIdMode.PreChosenUuid && inputs.SessionId is not null && !SessionIdRules.IsUsable(entry, inputs.SessionId);
+    private static Error? TimedOut(AgentEntry entry, LaunchMode mode, ArgvInputs inputs, PatternOutcome outcome) =>
+        outcome == PatternOutcome.TimedOut && (mode == LaunchMode.Resume || BadPreChosen(entry, inputs, outcome))
+            ? SindriErrors.LaunchSessionIdTimedOut.With($"{entry.Id.Value}'s sessionIdPattern timed out on the session id, so it is refused unjudged, not as a mismatch (fix: simplify the pattern, or retry when the box is less loaded)")
+            : null;
+
+    private static bool BadPreChosen(AgentEntry entry, ArgvInputs inputs, PatternOutcome outcome) =>
+        entry.SessionIdMode == SessionIdMode.PreChosenUuid && inputs.SessionId is not null && outcome != PatternOutcome.Matched;
 }

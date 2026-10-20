@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
@@ -31,13 +32,52 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
     /// <summary>The recipes the list has shown, kept while one is chosen so the filter can go back.</summary>
     public ObservableCollection<string> KnownRecipes { get; } = [];
 
-    /// <summary>The recipe filter's choices: all recipes, then each known recipe.</summary>
+    /// <summary>The workflow-type filter's choices, by name: all workflow types, then each known one.</summary>
     public ObservableCollection<string> RecipeChoices { get; } = [];
+
+    private Dictionary<string, string> _choiceIds = new(StringComparer.Ordinal);
 
 #pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
     /// <summary>The stale note's words.</summary>
     public string StaleText => Labels.Stale;
 #pragma warning restore CA1822, MA0041
+
+#pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
+    /// <summary>The workflow-type filter's name.</summary>
+    public string RecipeFilterName => Labels.RecipeFilter;
+
+    /// <summary>The item filter's name.</summary>
+    public string SubjectFilterName => Labels.SubjectFilter;
+#pragma warning restore CA1822, MA0041
+
+    /// <summary>True while the key and shortcuts line shows; closed until opened.</summary>
+    public bool IsLegendOpen { get; set => Set(ref field, value); }
+
+    /// <summary>The key disclosure's header.</summary>
+#pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
+    public string LegendHeader => Labels.KeyHeader;
+#pragma warning restore CA1822, MA0041
+
+    /// <summary>Opens the key and shortcuts line, or closes it.</summary>
+    internal void ToggleLegend() => IsLegendOpen = !IsLegendOpen;
+
+    /// <summary>The recipe id a filter choice stands for.</summary>
+    /// <param name="choice">A choice from <see cref="RecipeChoices"/>.</param>
+    /// <returns>The recipe id, or null for "All workflow types" or a name no group has.</returns>
+    internal string? RecipeIdOf(string choice) => _choiceIds.GetValueOrDefault(choice);
+
+    // Each choice stands for one recipe id; two workflows with one display name get their readable id (then a number) appended, never the raw id.
+    private static Dictionary<string, string> ChoicesFor(IReadOnlyList<RecipeGroupViewModel> groups)
+    {
+        var byName = groups.GroupBy(g => g.Name, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
+        var named = groups.Select(g => (g.Recipe, Choice: byName[g.Name] > 1 ? $"{g.Name} ({WorkflowNames.Of(g.Recipe, displayName: null)})" : g.Name)).ToList();
+        var taken = named.GroupBy(n => n.Choice, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
+        var seen = new Dictionary<string, int>(StringComparer.Ordinal);
+        return named.ToDictionary(
+            n => taken[n.Choice] > 1 ? string.Create(CultureInfo.InvariantCulture, $"{n.Choice} ({seen[n.Choice] = seen.GetValueOrDefault(n.Choice) + 1})") : n.Choice,
+            n => n.Recipe,
+            StringComparer.Ordinal);
+    }
 
     /// <summary>The legend line at the foot of the list (screens §4.2): the marks the rows draw, then the page's keys.</summary>
     public string LegendText { get; } = WorkflowsLegend.Text;
@@ -207,7 +247,8 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
         if (RecipeFilter is null && SubjectFilter is null)
         {
             ReplaceIfChanged(KnownRecipes, [.. shown.Select(g => g.Recipe)]);
-            ReplaceIfChanged(RecipeChoices, [Labels.AllRecipes, .. KnownRecipes]);
+            _choiceIds = ChoicesFor(shown);
+            ReplaceIfChanged(RecipeChoices, [Labels.AllRecipes, .. _choiceIds.Keys]);
         }
 
         Reselect(before);
@@ -251,41 +292,5 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
         var kept = old is not null && string.Equals(old.Signature, row.Signature, StringComparison.Ordinal) ? old : row;
         kept.SetStale(IsStale);
         return kept;
-    }
-
-    private async Task ReadDone(CancellationToken cancellationToken)
-    {
-        if (Url is not { } url)
-        {
-            return;
-        }
-
-        var read = ++_doneReads;
-        var all = await api.Instances(url, new InstanceQuery(Root: true, Recipe: RecipeFilter, Subject: SubjectFilter), cancellationToken).ConfigureAwait(true);
-        if (read != _doneReads || !IsDoneExpanded)
-        {
-            return;   // newer, or the line was collapsed while this was on its way
-        }
-
-        if (all.IsSuccess)
-        {
-            var before = WalkAddresses();
-            var finished = all.Value.Instances.Where(r => r.States.Any(s => s.Terminal && string.Equals(s.State, r.State, StringComparison.Ordinal))).Select(r => new InstanceRowViewModel(r, clipboard, clock)).ToList();
-            finished.ForEach(r => r.SetStale(IsStale));
-            DoneRows.Clear();
-            finished.ForEach(DoneRows.Add);
-            Reselect(before);
-        }
-    }
-
-    private void MarkUnreadable()
-    {
-        IsUnreadable = true;
-        OnChanged(nameof(UnreadableText));
-        // The last good data stays, marked stale (screens §4.1): the next readable answer rebuilds nothing the human was on.
-        foreach (var row in _rows.Values.Concat(DoneRows))
-        {
-            row.SetStale(stale: true);
-        }
     }
 }

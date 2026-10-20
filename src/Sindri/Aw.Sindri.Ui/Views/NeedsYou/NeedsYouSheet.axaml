@@ -15,7 +15,7 @@
     <TextBlock Classes="body muted" Text="{Binding Label}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Label}" />
     <TextBlock x:Name="SheetRowReason" Classes="body" Text="{Binding Reason}" IsVisible="{Binding HasReasonLine}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Reason}" />
     <TextBlock Classes="caption subtle" Text="{Binding Notice}" IsVisible="{Binding HasNotice}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Notice}" />
-    <ItemsControl x:Name="SheetRowDetails" ItemsSource="{Binding Details}" IsVisible="{Binding Details.Count}">
+    <ItemsControl x:Name="SheetRowDetails" ItemsSource="{Binding PrimaryDetails}" IsVisible="{Binding PrimaryDetails.Count}">
       <ItemsControl.ItemTemplate>
         <DataTemplate x:DataType="ny:SheetDetail">
           <StackPanel Spacing="2" Margin="0,0,0,6">
@@ -26,6 +26,19 @@
         </DataTemplate>
       </ItemsControl.ItemTemplate>
     </ItemsControl>
-    <TextBlock x:Name="SheetRowCli" Classes="mono" Text="{Binding Cli}" IsVisible="{Binding Cli, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Cli}" />
+    <TextBlock x:Name="SheetRowCli" Classes="mono" Text="{Binding Cli}" IsVisible="{Binding ShowsCliUpFront}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Cli}" />
+    <!-- Review 456-4: a hash and the approve command are bookkeeping; they wait behind Details, closed until asked for. -->
+    <Expander x:Name="SheetRowMoreDetails" Header="{Binding MoreHeading}" IsExpanded="{Binding DetailsOpen, Mode=TwoWay}" IsVisible="{Binding HasMoreDetails}" AutomationProperties.Name="{Binding MoreHeading}">
+      <ItemsControl ItemsSource="{Binding MoreDetails}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="ny:SheetDetail">
+            <StackPanel Spacing="2" Margin="0,0,0,6">
+              <TextBlock Classes="caption subtle" Text="{Binding Label}" />
+              <TextBlock Classes="mono" Text="{Binding Value}" TextWrapping="Wrap" />
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Expander>
   </StackPanel>
 </UserControl>

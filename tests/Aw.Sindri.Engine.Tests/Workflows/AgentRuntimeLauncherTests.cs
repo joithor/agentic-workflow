@@ -184,9 +184,7 @@ public sealed class AgentRuntimeLauncherTests : IDisposable
     private string Stub(string name)
     {
         var path = Path.Combine(_dir, name);
-        File.WriteAllText(path, $"#!/bin/sh\necho \"$@\" > \"{_dir}/$AW_SINDRI_LAUNCH.args\"\nexec sleep 300\n");
-        File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        return path;
+        return ExecutableScript.Write(path, $"echo \"$@\" > \"{_dir}/$AW_SINDRI_LAUNCH.args\"\nexec sleep 300\n");
     }
 
     private void WriteLauncher(string? host = null, string? claudeBin = null, string[]? aiderOpen = null)
@@ -203,8 +201,7 @@ public sealed class AgentRuntimeLauncherTests : IDisposable
         }
 
         var wrap = Path.Combine(_dir, "sindri");   // 'session wrap --launch <id> -- <argv...>' without the wrap: run the agent
-        File.WriteAllText(wrap, "#!/bin/sh\nwhile [ \"$1\" != \"--\" ]; do shift; done\nshift\nexec \"$@\"\n");
-        File.SetUnixFileMode(wrap, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        _ = ExecutableScript.Write(wrap, "while [ \"$1\" != \"--\" ]; do shift; done\nshift\nexec \"$@\"\n");
         var document = new Dictionary<string, object>(StringComparer.Ordinal) { ["schema"] = 1, ["agents"] = agents };
         if (host is not null)
         {

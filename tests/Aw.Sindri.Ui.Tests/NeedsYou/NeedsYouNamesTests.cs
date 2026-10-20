@@ -51,7 +51,8 @@ public sealed class NeedsYouNamesTests
         var name = new StripRowViewModel(incident, new FakeClipboard(), _clock).AccessibleName;
         var other = new StripRowViewModel(plain, new FakeClipboard(), _clock).AccessibleName;
 
-        Assert.StartsWith("incident, ", name, StringComparison.Ordinal);
+        Assert.StartsWith(incident.Subject.Label, name, StringComparison.Ordinal);
+        Assert.EndsWith(", incident", name, StringComparison.Ordinal);
         Assert.DoesNotContain("incident", other, StringComparison.Ordinal);
     }
 }

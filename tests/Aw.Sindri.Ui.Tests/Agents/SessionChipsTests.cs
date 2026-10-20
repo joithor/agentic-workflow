@@ -8,8 +8,8 @@ namespace Aw.Sindri.Ui.Tests.Agents;
 public sealed class SessionChipsTests
 {
     [Theory]
-    [InlineData("running", "●", "RUNNING")]
-    [InlineData("asking", "◐", "ASKING")]
+    [InlineData("running", "●", "WORKING")]
+    [InlineData("asking", "◐", "ASKING YOU")]
     [InlineData("idle", "○", "IDLE")]
     [InlineData("unknown", "○", "UNKNOWN")]
     public void Each_state_maps_to_its_glyph_and_word(string state, string glyph, string word)

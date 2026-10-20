@@ -21,8 +21,11 @@ internal sealed partial class ExpandedStateViewModel
     /// <summary>True when the Attach component shows.</summary>
     public bool HasAttach => Attach is not null;
 
-    /// <summary>"Agent · LCH-…" when an agent session runs the Step; empty otherwise.</summary>
+    /// <summary>"An agent is working on this step" when an agent session runs the Step; empty otherwise.</summary>
     public string RunLine { get; private set; } = string.Empty;
+
+    /// <summary>"Agent session LCH-…": the launch id, for Stage details; empty without a run.</summary>
+    public string RunDetail { get; private set; } = string.Empty;
 
     /// <summary>True when an agent runs the Step.</summary>
     public bool HasRun => RunLine.Length > 0;
@@ -87,7 +90,7 @@ internal sealed partial class ExpandedStateViewModel
     {
         if (current.Status.Run is { } run && string.Equals(run.Runtime, "agent", StringComparison.Ordinal))
         {
-            (RunLine, RunName) = (Labels.RunLine(run.Launch), Labels.RunName(run.Launch));
+            (RunLine, RunName, RunDetail) = (Labels.RunLine, Labels.RunName(run.Launch), Labels.RunDetailLine(run.Launch));
         }
 
         var live = HasRun || (current.Step is { } step && string.Equals(step.Ref, "step.agent", StringComparison.Ordinal) && current.Status.Paused is null);

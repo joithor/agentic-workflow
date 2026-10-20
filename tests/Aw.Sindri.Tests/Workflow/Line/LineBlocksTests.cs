@@ -8,7 +8,7 @@ namespace Aw.Sindri.Tests.Workflow.Line;
 public sealed class LineBlocksTests
 {
     private const string Seeds = "fact:scope,fact:packs,fact:design,fact:findings,fact:lensRounds,fact:changedSections,fact:answers,fact:accepted";
-    private const string PlanSeeds = "fact:design,fact:plan,fact:findings,fact:questions,fact:answers,fact:answerLog,fact:holdoutSets";
+    private const string PlanSeeds = "fact:design,fact:plan,fact:findings,fact:questions,fact:answers,fact:answerLog,fact:holdoutSets,fact:anchors";
 
     private static BlockDescriptor? Find(string id) => FixtureCatalog.Shipped().Find(BlockId.From(id));
 

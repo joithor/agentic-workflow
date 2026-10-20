@@ -25,6 +25,7 @@ not in the profile: they live in `launcher.json` (`docs/csharp/sindri-launcher.m
 | `index` | `IndexSettings` | no | none | Deny paths for every repo's map extraction |
 | `launch` | `LaunchSettings` | no | none | The launch targets and the confirm window (UI spec E-4). Left out of the canonical JSON when absent, so a profile without it keeps its approved hash |
 | `agents` | `AgentSettings` | no | none | Per-agent budgets and the argv hashes unattended Steps may run (screens spec E-28, launcher L-11). Left out of the canonical JSON when absent |
+| `setup` | `SetupSettings` | no | none | What Sindri does on its own while the owner sets it up once (setup-once spec §7.1). Left out of the canonical JSON when absent, so a profile without it keeps its approved hash |
 
 ### `repos[]`
 
@@ -95,6 +96,12 @@ What the line's build and ship stations run in the phase worktree (line spec §7
 | `run` | string[] | yes |  | The program and its arguments, never a shell string; none blank (`workflow.build.commands[i].run`). It runs with the phase worktree as its working directory. On `red` the item's test ids are appended |
 | `timeout` | duration (`30m`, `2h`) | no | the Step's own bound | The longest the command may run (`workflow.build.commands[i].timeout`) |
 | `on` | `red`, `checks` or `green` | no | `checks` | Where it runs: `red` is `step.build.red-check` (the red tests, which must fail), `checks` is `step.build.checks`, `green` is `step.ship.green` (`workflow.build.commands[i].on`) |
+
+### `setup`
+
+| Key | Type | Required | Default | Meaning |
+|---|---|---|---|---|
+| `mcp` | `auto` or `off` | no | `auto` | `auto` lets Sindri register its MCP server in each repo of the approved profile on its own (local scope, once consent is given); `off` stops that, and the "Connect your agents" button and `sindri mcp register --apply` still work. Any other value is refused before approval (`setup.mcp`) |
 
 ### `index`
 
