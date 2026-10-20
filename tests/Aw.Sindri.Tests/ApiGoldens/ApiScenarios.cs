@@ -31,7 +31,7 @@ internal static class ApiScenarios
         ["Context"] = ContextApiScenarios.Rows,
         ["Views"] = ViewScenarios.All,
         ["Sessions"] = SessionScenarios.All,
-        ["Items"] = ItemScenarios.All,
+        ["Items"] = [.. ItemScenarios.All, .. ItemScopeScenarios.All],
         ["Parks"] = ParkScenarios.All,
         ["Requests"] = RequestScenarios.All,
         ["Streams"] = StreamScenarios.All,
@@ -56,6 +56,8 @@ internal static class ApiScenarios
             ? await LaunchScenarios.Start(scenario, ct)
             : ApproveAllScenarios.Handles(slug, scenario)
             ? await ApproveAllScenarios.Start(scenario, ct)
+            : ItemScopeScenarios.Handles(slug, scenario)
+            ? await ItemScopeScenarios.Start(ct)
             : WrapSessionScenarios.Handles(slug, scenario)
             ? await GoldenHost.Start(temporary: true, ct, ItemScenarios.ProfileYaml)
             : await GoldenHost.Start(temporary: !NeedsNonTemporaryHome(slug, scenario), ct, ProfileYaml(slug, scenario));

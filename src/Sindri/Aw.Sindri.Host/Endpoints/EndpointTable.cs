@@ -28,6 +28,7 @@ internal static class EndpointTable
         _ = queries.MapGetLaunchTargets();
         _ = queries.MapListJobs();
         _ = queries.MapGetItemTimeline();
+        _ = queries.MapGetItemScope();
         _ = queries.MapGetQueue();
         _ = queries.MapGetSession();
         _ = queries.MapGetNeedsYou();
