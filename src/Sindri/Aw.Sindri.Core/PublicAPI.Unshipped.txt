@@ -12118,6 +12118,103 @@ Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.NeedsRepo.get -> bool
 Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.NeedsRepo.init -> void
 Aw.Sindri.Core.Workflow.Blocks.BlockStepRuntimes.NeedsRepo(Aw.Sindri.Core.Workflow.Ids.BlockId step) -> bool
 Aw.Sindri.Core.Workflow.Blocks.IRepoStep
+Aw.Sindri.Core.Prove.ProofChecks
+Aw.Sindri.Core.Prove.ProofFacts
+Aw.Sindri.Core.Prove.ProofFacts.<Clone>$() -> Aw.Sindri.Core.Prove.ProofFacts!
+Aw.Sindri.Core.Prove.ProofFacts.Acceptance.get -> System.Text.Json.Nodes.JsonNode!
+Aw.Sindri.Core.Prove.ProofFacts.Acceptance.init -> void
+Aw.Sindri.Core.Prove.ProofFacts.BeforeAfter.get -> System.Text.Json.Nodes.JsonNode?
+Aw.Sindri.Core.Prove.ProofFacts.BeforeAfter.init -> void
+Aw.Sindri.Core.Prove.ProofFacts.Deconstruct(out string! Head, out System.Text.Json.Nodes.JsonNode! Acceptance, out System.Text.Json.Nodes.JsonNode? Signals, out string! PhaseKind, out int? HoldoutCount, out System.Text.Json.Nodes.JsonNode? Proof, out System.Text.Json.Nodes.JsonNode? Red, out System.Text.Json.Nodes.JsonNode? BeforeAfter, out System.Text.Json.Nodes.JsonNode? Holdout, out int HoldoutMin) -> void
+Aw.Sindri.Core.Prove.ProofFacts.Equals(Aw.Sindri.Core.Prove.ProofFacts? other) -> bool
+Aw.Sindri.Core.Prove.ProofFacts.Head.get -> string!
+Aw.Sindri.Core.Prove.ProofFacts.Head.init -> void
+Aw.Sindri.Core.Prove.ProofFacts.Holdout.get -> System.Text.Json.Nodes.JsonNode?
+Aw.Sindri.Core.Prove.ProofFacts.Holdout.init -> void
+Aw.Sindri.Core.Prove.ProofFacts.HoldoutCount.get -> int?
+Aw.Sindri.Core.Prove.ProofFacts.HoldoutCount.init -> void
+Aw.Sindri.Core.Prove.ProofFacts.HoldoutMin.get -> int
+Aw.Sindri.Core.Prove.ProofFacts.HoldoutMin.init -> void
+Aw.Sindri.Core.Prove.ProofFacts.PhaseKind.get -> string!
+Aw.Sindri.Core.Prove.ProofFacts.PhaseKind.init -> void
+Aw.Sindri.Core.Prove.ProofFacts.Proof.get -> System.Text.Json.Nodes.JsonNode?
+Aw.Sindri.Core.Prove.ProofFacts.Proof.init -> void
+Aw.Sindri.Core.Prove.ProofFacts.ProofFacts(string! Head, System.Text.Json.Nodes.JsonNode! Acceptance, System.Text.Json.Nodes.JsonNode? Signals, string! PhaseKind, int? HoldoutCount, System.Text.Json.Nodes.JsonNode? Proof, System.Text.Json.Nodes.JsonNode? Red, System.Text.Json.Nodes.JsonNode? BeforeAfter, System.Text.Json.Nodes.JsonNode? Holdout, int HoldoutMin = 2) -> void
+Aw.Sindri.Core.Prove.ProofFacts.Red.get -> System.Text.Json.Nodes.JsonNode?
+Aw.Sindri.Core.Prove.ProofFacts.Red.init -> void
+Aw.Sindri.Core.Prove.ProofFacts.Signals.get -> System.Text.Json.Nodes.JsonNode?
+Aw.Sindri.Core.Prove.ProofFacts.Signals.init -> void
+Aw.Sindri.Core.Prove.ProofFinding
+Aw.Sindri.Core.Prove.ProofFinding.<Clone>$() -> Aw.Sindri.Core.Prove.ProofFinding!
+Aw.Sindri.Core.Prove.ProofFinding.Deconstruct(out string! Rule, out string? Item, out string! Message, out string! Fix) -> void
+Aw.Sindri.Core.Prove.ProofFinding.Equals(Aw.Sindri.Core.Prove.ProofFinding? other) -> bool
+Aw.Sindri.Core.Prove.ProofFinding.Fix.get -> string!
+Aw.Sindri.Core.Prove.ProofFinding.Fix.init -> void
+Aw.Sindri.Core.Prove.ProofFinding.Item.get -> string?
+Aw.Sindri.Core.Prove.ProofFinding.Item.init -> void
+Aw.Sindri.Core.Prove.ProofFinding.Message.get -> string!
+Aw.Sindri.Core.Prove.ProofFinding.Message.init -> void
+Aw.Sindri.Core.Prove.ProofFinding.ProofFinding(string! Rule, string? Item, string! Message, string! Fix) -> void
+Aw.Sindri.Core.Prove.ProofFinding.Rule.get -> string!
+Aw.Sindri.Core.Prove.ProofFinding.Rule.init -> void
+Aw.Sindri.Core.Prove.ProofPack
+Aw.Sindri.Core.Prove.ProofReport
+Aw.Sindri.Core.Prove.ProofReport.<Clone>$() -> Aw.Sindri.Core.Prove.ProofReport!
+Aw.Sindri.Core.Prove.ProofReport.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Prove.ProofFinding!>! Failures, out System.Collections.Generic.IReadOnlyList<string!>! NotRun, out System.Collections.Generic.IReadOnlyList<string!>! Unrunnable) -> void
+Aw.Sindri.Core.Prove.ProofReport.Equals(Aw.Sindri.Core.Prove.ProofReport? other) -> bool
+Aw.Sindri.Core.Prove.ProofReport.Failures.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Prove.ProofFinding!>!
+Aw.Sindri.Core.Prove.ProofReport.Failures.init -> void
+Aw.Sindri.Core.Prove.ProofReport.Holds.get -> bool
+Aw.Sindri.Core.Prove.ProofReport.NotRun.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Prove.ProofReport.NotRun.init -> void
+Aw.Sindri.Core.Prove.ProofReport.ProofReport(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Prove.ProofFinding!>! Failures, System.Collections.Generic.IReadOnlyList<string!>! NotRun, System.Collections.Generic.IReadOnlyList<string!>! Unrunnable) -> void
+Aw.Sindri.Core.Prove.ProofReport.Unrunnable.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Prove.ProofReport.Unrunnable.init -> void
+const Aw.Sindri.Core.Prove.ProofFacts.DefaultHoldoutMin = 2 -> int
+override Aw.Sindri.Core.Prove.ProofFacts.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Prove.ProofFacts.GetHashCode() -> int
+override Aw.Sindri.Core.Prove.ProofFacts.ToString() -> string!
+override Aw.Sindri.Core.Prove.ProofFinding.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Prove.ProofFinding.GetHashCode() -> int
+override Aw.Sindri.Core.Prove.ProofFinding.ToString() -> string!
+override Aw.Sindri.Core.Prove.ProofReport.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Prove.ProofReport.GetHashCode() -> int
+override Aw.Sindri.Core.Prove.ProofReport.ToString() -> string!
+static Aw.Sindri.Core.Prove.ProofChecks.LiveItems(System.Text.Json.Nodes.JsonNode! acceptance) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Prove.ProofChecks.Run(Aw.Sindri.Core.Prove.ProofFacts! facts) -> Aw.Sindri.Core.Prove.ProofReport!
+static Aw.Sindri.Core.Prove.ProofFacts.operator !=(Aw.Sindri.Core.Prove.ProofFacts? left, Aw.Sindri.Core.Prove.ProofFacts? right) -> bool
+static Aw.Sindri.Core.Prove.ProofFacts.operator ==(Aw.Sindri.Core.Prove.ProofFacts? left, Aw.Sindri.Core.Prove.ProofFacts? right) -> bool
+static Aw.Sindri.Core.Prove.ProofFinding.operator !=(Aw.Sindri.Core.Prove.ProofFinding? left, Aw.Sindri.Core.Prove.ProofFinding? right) -> bool
+static Aw.Sindri.Core.Prove.ProofFinding.operator ==(Aw.Sindri.Core.Prove.ProofFinding? left, Aw.Sindri.Core.Prove.ProofFinding? right) -> bool
+static Aw.Sindri.Core.Prove.ProofPack.Acceptance(Aw.Sindri.Core.Prove.ProofFacts! facts) -> System.Text.Json.Nodes.JsonNode!
+static Aw.Sindri.Core.Prove.ProofPack.AcceptanceFlips(System.Text.Json.Nodes.JsonNode! before, System.Text.Json.Nodes.JsonNode! after) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Prove.ProofFinding!>!
+static Aw.Sindri.Core.Prove.ProofPack.FileNames.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Prove.ProofPack.Sha256(string! text) -> string!
+static Aw.Sindri.Core.Prove.ProofReport.operator !=(Aw.Sindri.Core.Prove.ProofReport? left, Aw.Sindri.Core.Prove.ProofReport? right) -> bool
+static Aw.Sindri.Core.Prove.ProofReport.operator ==(Aw.Sindri.Core.Prove.ProofReport? left, Aw.Sindri.Core.Prove.ProofReport? right) -> bool
+Aw.Sindri.Core.Workflow.Blocks.IRunArea.PathFor(string! address, string! name) -> Aw.Kernel.Result<string!>!
+Aw.Sindri.Core.Prove.ProofPackOrigin
+Aw.Sindri.Core.Prove.ProofPackOrigin.<Clone>$() -> Aw.Sindri.Core.Prove.ProofPackOrigin!
+Aw.Sindri.Core.Prove.ProofPackOrigin.AcceptanceHash.get -> string!
+Aw.Sindri.Core.Prove.ProofPackOrigin.AcceptanceHash.init -> void
+Aw.Sindri.Core.Prove.ProofPackOrigin.BaseSha.get -> string!
+Aw.Sindri.Core.Prove.ProofPackOrigin.BaseSha.init -> void
+Aw.Sindri.Core.Prove.ProofPackOrigin.Deconstruct(out string! Slug, out string! Repo, out string! BaseSha, out string! PacketHash, out string! AcceptanceHash) -> void
+Aw.Sindri.Core.Prove.ProofPackOrigin.Equals(Aw.Sindri.Core.Prove.ProofPackOrigin? other) -> bool
+Aw.Sindri.Core.Prove.ProofPackOrigin.PacketHash.get -> string!
+Aw.Sindri.Core.Prove.ProofPackOrigin.PacketHash.init -> void
+Aw.Sindri.Core.Prove.ProofPackOrigin.ProofPackOrigin(string! Slug, string! Repo, string! BaseSha, string! PacketHash, string! AcceptanceHash) -> void
+Aw.Sindri.Core.Prove.ProofPackOrigin.Repo.get -> string!
+Aw.Sindri.Core.Prove.ProofPackOrigin.Repo.init -> void
+Aw.Sindri.Core.Prove.ProofPackOrigin.Slug.get -> string!
+Aw.Sindri.Core.Prove.ProofPackOrigin.Slug.init -> void
+override Aw.Sindri.Core.Prove.ProofPackOrigin.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Prove.ProofPackOrigin.GetHashCode() -> int
+override Aw.Sindri.Core.Prove.ProofPackOrigin.ToString() -> string!
+static Aw.Sindri.Core.Prove.ProofPack.Files(Aw.Sindri.Core.Prove.ProofFacts! facts, Aw.Sindri.Core.Prove.ProofReport! report, Aw.Sindri.Core.Prove.ProofPackOrigin! origin) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+static Aw.Sindri.Core.Prove.ProofPackOrigin.operator !=(Aw.Sindri.Core.Prove.ProofPackOrigin? left, Aw.Sindri.Core.Prove.ProofPackOrigin? right) -> bool
+static Aw.Sindri.Core.Prove.ProofPackOrigin.operator ==(Aw.Sindri.Core.Prove.ProofPackOrigin? left, Aw.Sindri.Core.Prove.ProofPackOrigin? right) -> bool
+static Aw.Sindri.Core.Prove.ProofChecks.Required.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static readonly Aw.Sindri.Core.SindriErrors.WorktreeInvalid -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.WorktreeConflict -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.WorktreeGitFailed -> Aw.Kernel.ErrorDefinition!

@@ -78,4 +78,20 @@ public abstract class RunAreaContract
     [Fact]
     public async Task An_address_that_is_not_one_is_refused() =>
         Expect.True((await Create().Write("../../etc", "rounds.jsonl", "x", append: true, Token)).IsError);
+
+    /// <summary>The path of a name ends with the name, differs by instance, and a name that climbs out has none.</summary>
+    [Fact]
+    public void A_path_names_the_directory_of_a_name_per_instance_and_refuses_a_name_that_climbs_out()
+    {
+        var area = Create();
+
+        var one = area.PathFor(Address, "proof-pack");
+        var two = area.PathFor("T-2/scoping/1", "proof-pack");
+
+        Expect.True(one.IsSuccess && two.IsSuccess);
+        Expect.True(one.Value.EndsWith("proof-pack", StringComparison.Ordinal));
+        Expect.True(one.Value != two.Value);
+        Expect.True(area.PathFor(Address, "../x").IsError);
+        Expect.True(area.PathFor("../../etc", "proof-pack").IsError);
+    }
 }
