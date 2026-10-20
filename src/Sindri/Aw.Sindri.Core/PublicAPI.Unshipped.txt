@@ -12159,3 +12159,110 @@ static Aw.Sindri.Core.Profile.BuildCommand.operator !=(Aw.Sindri.Core.Profile.Bu
 static Aw.Sindri.Core.Profile.BuildCommand.operator ==(Aw.Sindri.Core.Profile.BuildCommand? left, Aw.Sindri.Core.Profile.BuildCommand? right) -> bool
 static Aw.Sindri.Core.Profile.BuildSettings.operator !=(Aw.Sindri.Core.Profile.BuildSettings? left, Aw.Sindri.Core.Profile.BuildSettings? right) -> bool
 static Aw.Sindri.Core.Profile.BuildSettings.operator ==(Aw.Sindri.Core.Profile.BuildSettings? left, Aw.Sindri.Core.Profile.BuildSettings? right) -> bool
+Aw.Sindri.Core.Checks.AddedLine
+Aw.Sindri.Core.Checks.AddedLine.<Clone>$() -> Aw.Sindri.Core.Checks.AddedLine!
+Aw.Sindri.Core.Checks.AddedLine.AddedLine(string! Path, int Line, string! Text) -> void
+Aw.Sindri.Core.Checks.AddedLine.Deconstruct(out string! Path, out int Line, out string! Text) -> void
+Aw.Sindri.Core.Checks.AddedLine.Equals(Aw.Sindri.Core.Checks.AddedLine? other) -> bool
+Aw.Sindri.Core.Checks.AddedLine.Line.get -> int
+Aw.Sindri.Core.Checks.AddedLine.Line.init -> void
+Aw.Sindri.Core.Checks.AddedLine.Path.get -> string!
+Aw.Sindri.Core.Checks.AddedLine.Path.init -> void
+Aw.Sindri.Core.Checks.AddedLine.Text.get -> string!
+Aw.Sindri.Core.Checks.AddedLine.Text.init -> void
+Aw.Sindri.Core.Checks.BranchChanges
+Aw.Sindri.Core.Checks.BranchChanges.<Clone>$() -> Aw.Sindri.Core.Checks.BranchChanges!
+Aw.Sindri.Core.Checks.BranchChanges.AddedLines.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.AddedLine!>!
+Aw.Sindri.Core.Checks.BranchChanges.AddedLines.init -> void
+Aw.Sindri.Core.Checks.BranchChanges.BranchChanges(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.ChangedFile!>! Files, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.AddedLine!>! AddedLines, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.ChangedCommit!>! Commits) -> void
+Aw.Sindri.Core.Checks.BranchChanges.Commits.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.ChangedCommit!>!
+Aw.Sindri.Core.Checks.BranchChanges.Commits.init -> void
+Aw.Sindri.Core.Checks.BranchChanges.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.ChangedFile!>! Files, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.AddedLine!>! AddedLines, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.ChangedCommit!>! Commits) -> void
+Aw.Sindri.Core.Checks.BranchChanges.Equals(Aw.Sindri.Core.Checks.BranchChanges? other) -> bool
+Aw.Sindri.Core.Checks.BranchChanges.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.ChangedFile!>!
+Aw.Sindri.Core.Checks.BranchChanges.Files.init -> void
+Aw.Sindri.Core.Checks.ChangeKind
+Aw.Sindri.Core.Checks.ChangeKind.Added = 1 -> Aw.Sindri.Core.Checks.ChangeKind
+Aw.Sindri.Core.Checks.ChangeKind.Deleted = 3 -> Aw.Sindri.Core.Checks.ChangeKind
+Aw.Sindri.Core.Checks.ChangeKind.Modified = 2 -> Aw.Sindri.Core.Checks.ChangeKind
+Aw.Sindri.Core.Checks.ChangedCommit
+Aw.Sindri.Core.Checks.ChangedCommit.<Clone>$() -> Aw.Sindri.Core.Checks.ChangedCommit!
+Aw.Sindri.Core.Checks.ChangedCommit.ChangedCommit(string! Sha, string! Subject, bool IsMerge) -> void
+Aw.Sindri.Core.Checks.ChangedCommit.Deconstruct(out string! Sha, out string! Subject, out bool IsMerge) -> void
+Aw.Sindri.Core.Checks.ChangedCommit.Equals(Aw.Sindri.Core.Checks.ChangedCommit? other) -> bool
+Aw.Sindri.Core.Checks.ChangedCommit.IsMerge.get -> bool
+Aw.Sindri.Core.Checks.ChangedCommit.IsMerge.init -> void
+Aw.Sindri.Core.Checks.ChangedCommit.Sha.get -> string!
+Aw.Sindri.Core.Checks.ChangedCommit.Sha.init -> void
+Aw.Sindri.Core.Checks.ChangedCommit.Subject.get -> string!
+Aw.Sindri.Core.Checks.ChangedCommit.Subject.init -> void
+Aw.Sindri.Core.Checks.ChangedFile
+Aw.Sindri.Core.Checks.ChangedFile.<Clone>$() -> Aw.Sindri.Core.Checks.ChangedFile!
+Aw.Sindri.Core.Checks.ChangedFile.ChangedFile(string! Path, Aw.Sindri.Core.Checks.ChangeKind Kind) -> void
+Aw.Sindri.Core.Checks.ChangedFile.Deconstruct(out string! Path, out Aw.Sindri.Core.Checks.ChangeKind Kind) -> void
+Aw.Sindri.Core.Checks.ChangedFile.Equals(Aw.Sindri.Core.Checks.ChangedFile? other) -> bool
+Aw.Sindri.Core.Checks.ChangedFile.Kind.get -> Aw.Sindri.Core.Checks.ChangeKind
+Aw.Sindri.Core.Checks.ChangedFile.Kind.init -> void
+Aw.Sindri.Core.Checks.ChangedFile.Path.get -> string!
+Aw.Sindri.Core.Checks.ChangedFile.Path.init -> void
+Aw.Sindri.Core.Checks.CheckInvocation
+Aw.Sindri.Core.Checks.CheckInvocation.<Clone>$() -> Aw.Sindri.Core.Checks.CheckInvocation!
+Aw.Sindri.Core.Checks.CheckInvocation.Argv.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Checks.CheckInvocation.Argv.init -> void
+Aw.Sindri.Core.Checks.CheckInvocation.CheckInvocation(string! Name, System.Collections.Generic.IReadOnlyList<string!>! Argv, System.TimeSpan Timeout) -> void
+Aw.Sindri.Core.Checks.CheckInvocation.Deconstruct(out string! Name, out System.Collections.Generic.IReadOnlyList<string!>! Argv, out System.TimeSpan Timeout) -> void
+Aw.Sindri.Core.Checks.CheckInvocation.Equals(Aw.Sindri.Core.Checks.CheckInvocation? other) -> bool
+Aw.Sindri.Core.Checks.CheckInvocation.Name.get -> string!
+Aw.Sindri.Core.Checks.CheckInvocation.Name.init -> void
+Aw.Sindri.Core.Checks.CheckInvocation.Timeout.get -> System.TimeSpan
+Aw.Sindri.Core.Checks.CheckInvocation.Timeout.init -> void
+Aw.Sindri.Core.Checks.CheckRun
+Aw.Sindri.Core.Checks.CheckRun.<Clone>$() -> Aw.Sindri.Core.Checks.CheckRun!
+Aw.Sindri.Core.Checks.CheckRun.CheckRun(int ExitCode, bool TimedOut, System.TimeSpan Duration, string! Tail) -> void
+Aw.Sindri.Core.Checks.CheckRun.Deconstruct(out int ExitCode, out bool TimedOut, out System.TimeSpan Duration, out string! Tail) -> void
+Aw.Sindri.Core.Checks.CheckRun.Duration.get -> System.TimeSpan
+Aw.Sindri.Core.Checks.CheckRun.Duration.init -> void
+Aw.Sindri.Core.Checks.CheckRun.Equals(Aw.Sindri.Core.Checks.CheckRun? other) -> bool
+Aw.Sindri.Core.Checks.CheckRun.ExitCode.get -> int
+Aw.Sindri.Core.Checks.CheckRun.ExitCode.init -> void
+Aw.Sindri.Core.Checks.CheckRun.Passed.get -> bool
+Aw.Sindri.Core.Checks.CheckRun.Tail.get -> string!
+Aw.Sindri.Core.Checks.CheckRun.Tail.init -> void
+Aw.Sindri.Core.Checks.CheckRun.TimedOut.get -> bool
+Aw.Sindri.Core.Checks.CheckRun.TimedOut.init -> void
+Aw.Sindri.Core.Checks.IBranchChanges
+Aw.Sindri.Core.Checks.IBranchChanges.Between(string! worktree, string! baseSha, string! head, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Checks.BranchChanges!>!>
+Aw.Sindri.Core.Checks.ICheckCommands
+Aw.Sindri.Core.Checks.ICheckCommands.Run(Aw.Sindri.Core.Checks.CheckInvocation! command, string! workingDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Checks.CheckRun!>!>
+const Aw.Sindri.Core.Checks.CheckRun.TailLimit = 4000 -> int
+override Aw.Sindri.Core.Checks.AddedLine.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Checks.AddedLine.GetHashCode() -> int
+override Aw.Sindri.Core.Checks.AddedLine.ToString() -> string!
+override Aw.Sindri.Core.Checks.BranchChanges.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Checks.BranchChanges.GetHashCode() -> int
+override Aw.Sindri.Core.Checks.BranchChanges.ToString() -> string!
+override Aw.Sindri.Core.Checks.ChangedCommit.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Checks.ChangedCommit.GetHashCode() -> int
+override Aw.Sindri.Core.Checks.ChangedCommit.ToString() -> string!
+override Aw.Sindri.Core.Checks.ChangedFile.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Checks.ChangedFile.GetHashCode() -> int
+override Aw.Sindri.Core.Checks.ChangedFile.ToString() -> string!
+override Aw.Sindri.Core.Checks.CheckInvocation.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Checks.CheckInvocation.GetHashCode() -> int
+override Aw.Sindri.Core.Checks.CheckInvocation.ToString() -> string!
+override Aw.Sindri.Core.Checks.CheckRun.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Checks.CheckRun.GetHashCode() -> int
+override Aw.Sindri.Core.Checks.CheckRun.ToString() -> string!
+static Aw.Sindri.Core.Checks.AddedLine.operator !=(Aw.Sindri.Core.Checks.AddedLine? left, Aw.Sindri.Core.Checks.AddedLine? right) -> bool
+static Aw.Sindri.Core.Checks.AddedLine.operator ==(Aw.Sindri.Core.Checks.AddedLine? left, Aw.Sindri.Core.Checks.AddedLine? right) -> bool
+static Aw.Sindri.Core.Checks.BranchChanges.operator !=(Aw.Sindri.Core.Checks.BranchChanges? left, Aw.Sindri.Core.Checks.BranchChanges? right) -> bool
+static Aw.Sindri.Core.Checks.BranchChanges.operator ==(Aw.Sindri.Core.Checks.BranchChanges? left, Aw.Sindri.Core.Checks.BranchChanges? right) -> bool
+static Aw.Sindri.Core.Checks.ChangedCommit.operator !=(Aw.Sindri.Core.Checks.ChangedCommit? left, Aw.Sindri.Core.Checks.ChangedCommit? right) -> bool
+static Aw.Sindri.Core.Checks.ChangedCommit.operator ==(Aw.Sindri.Core.Checks.ChangedCommit? left, Aw.Sindri.Core.Checks.ChangedCommit? right) -> bool
+static Aw.Sindri.Core.Checks.ChangedFile.operator !=(Aw.Sindri.Core.Checks.ChangedFile? left, Aw.Sindri.Core.Checks.ChangedFile? right) -> bool
+static Aw.Sindri.Core.Checks.ChangedFile.operator ==(Aw.Sindri.Core.Checks.ChangedFile? left, Aw.Sindri.Core.Checks.ChangedFile? right) -> bool
+static Aw.Sindri.Core.Checks.CheckInvocation.operator !=(Aw.Sindri.Core.Checks.CheckInvocation? left, Aw.Sindri.Core.Checks.CheckInvocation? right) -> bool
+static Aw.Sindri.Core.Checks.CheckInvocation.operator ==(Aw.Sindri.Core.Checks.CheckInvocation? left, Aw.Sindri.Core.Checks.CheckInvocation? right) -> bool
+static Aw.Sindri.Core.Checks.CheckRun.Of(int exitCode, bool timedOut, System.TimeSpan duration, string! output) -> Aw.Sindri.Core.Checks.CheckRun!
+static Aw.Sindri.Core.Checks.CheckRun.operator !=(Aw.Sindri.Core.Checks.CheckRun? left, Aw.Sindri.Core.Checks.CheckRun? right) -> bool
+static Aw.Sindri.Core.Checks.CheckRun.operator ==(Aw.Sindri.Core.Checks.CheckRun? left, Aw.Sindri.Core.Checks.CheckRun? right) -> bool

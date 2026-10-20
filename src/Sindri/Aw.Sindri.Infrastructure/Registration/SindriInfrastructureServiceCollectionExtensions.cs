@@ -9,6 +9,7 @@ using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Locks;
 using Aw.Sindri.Core.Mcp;
 using Aw.Sindri.Core.Onyx;
+using Aw.Sindri.Core.Checks;
 using Aw.Sindri.Core.Packets;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
@@ -31,6 +32,7 @@ using Aw.Sindri.Infrastructure.Locks;
 using Aw.Sindri.Infrastructure.Mcp;
 using Aw.Sindri.Infrastructure.Notifications;
 using Aw.Sindri.Infrastructure.Onyx;
+using Aw.Sindri.Infrastructure.Checks;
 using Aw.Sindri.Infrastructure.Packets;
 using Aw.Sindri.Infrastructure.Processes;
 using Aw.Sindri.Infrastructure.Profile;
@@ -60,7 +62,8 @@ public static class SindriInfrastructureServiceCollectionExtensions
 
     /// <summary>Engine P8: the diff signal of an agent run (git) and an agent session's end and spend (the ledger).</summary>
     private static IServiceCollection AddAgentRuntimeAdapters(this IServiceCollection services) =>
-        services.AddSingleton<IRunDiff, GitRunDiff>().AddSingleton<IAgentSessions, LedgerAgentSessions>();
+        services.AddSingleton<IRunDiff, GitRunDiff>().AddSingleton<IBranchChanges, GitBranchChanges>().AddSingleton<IAgentSessions, LedgerAgentSessions>()
+            .AddSingleton<ICheckCommands>(sp => new ToolCheckCommands(new ProcessToolRunner(), sp.GetRequiredService<ITextScrubber>(), sp.GetRequiredService<TimeProvider>()));
 
     private static IServiceCollection AddScopingInfrastructure(this IServiceCollection services, Func<string, string?> environment) =>
         services.AddSingleton<IPackets>(_ => new AwPacketsTool(new ProcessToolRunner(), environment)).AddSingleton<IPacketFiles, DiskPacketFiles>()
