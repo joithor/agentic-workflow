@@ -973,6 +973,26 @@ data: {"sequence":4211,"id":"0192…","type":"item.state-changed","schemaVersion
 - P5 also connects it: the projector and the stream both wait on it, so they wake within milliseconds.
 - The 1 s poll stays as the fallback.
 
+### 5.6 `workflow.instance-changed`
+
+An instance's served view (`GET /workflow/instances/{address}`) is read from Temporal, so no projection folds it and there is no ledger row for
+"the view changed". A client that follows one instance asks the stream for the derived frame by name, so it re-queries instead of polling:
+`GET /events?types=workflow.instance-changed[&instance=<address>]`.
+
+- **Frame.** `event: workflow.instance-changed`, no `id` line (the cursor stays at the last real row), `data: {"instance":"T-1/step/1","state":"checks","cursor":4211}`: the
+  address, the state the instance is in after the change, and the ledger sequence of the change. A re-read whose view `asOf` is lower than
+  `cursor` is stale.
+- **Source.** The rows the instance mirrored that change its view: `workflow.started`, `.transition`, `.refused`, `.shifted`, `.notified`
+  and `.expired` (a state change, a step run starting or ending, an outcome, a takeover or handback). `workflow.injection` records a
+  plan and is not one. The payload is `instance` and `to` of the row's public record; no agent text.
+- **Opt in.** Only a request that names the type gets it; a stream with no `types`, or `workflow.*`, sends the raw rows as before. When it is named, the raw
+  `workflow.*` rows are sent only if the caller's other globs match them.
+- **Coalescing.** One frame per instance per page read (at most 100 rows): a burst, or a replay from an old cursor, is one frame at the newest row. The
+  client's own 250 ms window (`status --follow`) sits on top.
+- **Never stored.** It is derived on the way out, not appended, so a views rebuild (which writes only the non-public `views.rebuilt`) emits nothing and
+  a reconnect resumes by the last real row's `id`. A disconnect between a row and its derived frame loses the frame; a reconnecting client re-queries first.
+- **Not in the catalog.** `GET /events/catalog` lists ledger types, so it has no row; a consumer treats the name as `invalidates: [instance(address)]`.
+
 ## 6. Auth, v0
 
 v0 is local-only. The loopback binding and S1's `LoopbackGuard` are the only network controls. There are **no tokens,
