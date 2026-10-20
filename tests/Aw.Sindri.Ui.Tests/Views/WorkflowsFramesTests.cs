@@ -61,9 +61,9 @@ public sealed class WorkflowsFramesTests : FrameHost
         var row = shell.Workflows.Groups[0].Rows[0];
         var frame = window.GetVisualDescendants().OfType<Border>().First(b => string.Equals(b.Name, "WorkflowRowFrame", StringComparison.Ordinal) && ReferenceEquals(b.DataContext, row));
         var texts = frame.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible).Select(t => t.Text ?? string.Empty).ToList();
-        Assert.Contains(row.DisplayName, texts);
-        Assert.Contains(row.Subject, texts);
-        Assert.Contains(row.Who, texts);
+        Assert.Contains(texts, t => string.Equals(t, row.DisplayName, StringComparison.Ordinal));
+        Assert.Contains(texts, t => string.Equals(t, row.Subject, StringComparison.Ordinal));
+        Assert.Contains(texts, t => string.Equals(t, row.Who, StringComparison.Ordinal));
         Assert.DoesNotContain(texts, t => t.Contains(row.Address, StringComparison.Ordinal) || t.Contains("workflow.", StringComparison.Ordinal));
         Assert.DoesNotContain(frame.GetVisualDescendants().OfType<Border>(), b => (string.Equals(b.Name, "WorkflowRowInputs", StringComparison.Ordinal) || string.Equals(b.Name, "WorkflowRowStages", StringComparison.Ordinal)) && b.IsEffectivelyVisible);
         Assert.DoesNotContain(window.GetVisualDescendants().OfType<Border>(), b => string.Equals(b.Name, "WorkflowColumnHead", StringComparison.Ordinal));
