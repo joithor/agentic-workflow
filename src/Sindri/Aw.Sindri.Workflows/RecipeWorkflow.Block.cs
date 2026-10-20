@@ -143,11 +143,19 @@ internal sealed partial class RecipeWorkflow
             return BlockStepTriggers.Failed(step.Use, open.Token, failed.InnerException switch
             {
                 TimeoutFailureException => "timeout",
-                ApplicationFailureException application => "failed: " + (application.ErrorType ?? "error"),
+                ApplicationFailureException application => Reason(application),
                 { } other => "failed: " + other.GetType().Name,
                 null => "failed",
             });
         }
+    }
+
+    // The Step's exception type and its message (cut to 200 characters), so the park reason names the cause ("failed: InvalidOperationException" hid
+    // "The scoping schema 'seeds' is not embedded").
+    private static string Reason(ApplicationFailureException failure)
+    {
+        var detail = failure.Message is { Length: > 200 } text ? text[..200] + "…" : failure.Message;
+        return "failed: " + (failure.ErrorType ?? "error") + (string.IsNullOrWhiteSpace(detail) ? string.Empty : ": " + detail);
     }
 
     // Synchronous on purpose: CancelAsync would run the token's callbacks off the workflow scheduler, which Temporal fails the task for.
