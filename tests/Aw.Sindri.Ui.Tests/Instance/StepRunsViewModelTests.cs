@@ -62,7 +62,7 @@ public sealed class StepRunsViewModelTests
     [InlineData("something-new", "Something new")]
     public void Every_state_is_a_plain_word_and_an_unknown_one_is_made_readable(string state, string word)
     {
-        var view = StepRunsViewModel.Of([Run("check", 1, max: null, state: state, durationMs: 120_000)], "check");
+        var view = StepRunsViewModel.Of([Run("check", 1, max: null, state: state, durationMs: 120_000, actor: "human:cli")], "check");
 
         Assert.Equal($"Check · Attempt 1 · {word} · 2 min · by you", view.Rows[0].Text);
     }
@@ -79,11 +79,49 @@ public sealed class StepRunsViewModelTests
     }
 
     [Fact]
-    public void A_closed_run_with_no_recorded_actor_falls_back_to_how_it_ran()
+    public void A_closed_run_with_no_recorded_actor_says_nobody_closed_it()
     {
         var view = StepRunsViewModel.Of([Run("check", 1, max: null, state: "passed", runtime: "agent", durationMs: 60_000)], "x");
 
+        Assert.EndsWith("1 min", view.Rows[0].Text, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("system:timer")]
+    [InlineData("timer")]
+    public void A_closed_run_with_an_unrecognised_actor_has_no_by_part(string actor)
+    {
+        var view = StepRunsViewModel.Of([Run("check", 1, max: null, state: "failed", runtime: "desk", durationMs: 60_000, actor: actor)], "x");
+
+        Assert.DoesNotContain("by ", view.Rows[0].Text, StringComparison.Ordinal);
+        Assert.DoesNotContain("by ", view.Rows[0].Name, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_closed_run_closed_by_a_session_reads_by_an_agent()
+    {
+        var view = StepRunsViewModel.Of([Run("check", 1, max: null, state: "passed", runtime: "desk", durationMs: 60_000, actor: "session:abc")], "x");
+
         Assert.EndsWith("by an agent", view.Rows[0].Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void An_open_run_with_no_runtime_and_no_actor_names_nobody()
+    {
+        var view = StepRunsViewModel.Of([Run("check", 1, 3, "running", runtime: null)], "check");
+
+        Assert.Equal("Attempt 1 of 3", view.CurrentLine);
+        Assert.Equal("Check · Attempt 1 of 3 · Running", view.Rows[0].Text);
+    }
+
+    [Theory]
+    [InlineData("desk")]
+    [InlineData("agent")]
+    public void An_instance_the_engine_owns_drops_with_whom_from_the_run_line(string runtime)
+    {
+        var view = StepRunsViewModel.Of([Run("produce", 2, 3, "running", runtime: runtime)], "produce", engineOwned: true);
+
+        Assert.Equal("Attempt 2 of 3", view.CurrentLine);
     }
 
     [Theory]

@@ -65,6 +65,19 @@ public sealed class InstanceFrameViewModelTests
     }
 
     [Fact]
+    public async Task An_engine_owned_instance_names_nobody_on_the_current_attempt()
+    {
+        var node = Golden("item-produce");
+        node["engineOwned"] = new System.Text.Json.Nodes.JsonObject { ["kind"] = "parked", ["reason"] = "waiting" };
+        _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, node.ToJsonString());
+        var frame = Frame();
+
+        await frame.Open(_api, Text(node["address"]), Text(node["id"]), Token);
+
+        Assert.Equal("Attempt 2 of 3", frame.StepRuns!.CurrentLine);
+    }
+
+    [Fact]
     public async Task A_server_that_serves_no_Step_runs_draws_none()
     {
         var node = Golden("item-produce");

@@ -37,9 +37,11 @@ internal sealed class StepRunsViewModel
     /// <summary>Reads the served runs.</summary>
     /// <param name="runs">The runs as served; null from a server that predates them.</param>
     /// <param name="currentState">The instance's current state.</param>
+    /// <param name="engineOwned">True when the engine owns the instance (parked, escalated or taken over); nobody is "with" the run then.</param>
     /// <returns>The view model; empty without runs.</returns>
-    internal static StepRunsViewModel Of(IReadOnlyList<StepRun>? runs, string currentState)
+    internal static StepRunsViewModel Of(IReadOnlyList<StepRun>? runs, string currentState, bool engineOwned = false)
     {
+        _ = engineOwned;
         if (runs is not { Count: > 0 })
         {
             return new StepRunsViewModel(string.Empty, []);
