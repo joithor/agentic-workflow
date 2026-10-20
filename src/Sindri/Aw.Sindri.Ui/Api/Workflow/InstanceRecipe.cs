@@ -5,7 +5,7 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="Hash">Hash, as served.</param>
 /// <param name="Version">The recipe author's version.</param>
 /// <param name="Urgency">Urgency, as served.</param>
-/// <param name="DisplayName">What the recipe does, in a sentence; read as optional (an older Sindri serves none).</param>
+/// <param name="DisplayName">The workflow's display name (sentence case, at most 60 characters); null from a server older than the contract.</param>
 internal sealed record InstanceRecipe(
     string Id,
     string Hash,
