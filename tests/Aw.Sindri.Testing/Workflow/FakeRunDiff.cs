@@ -43,7 +43,7 @@ public sealed class FakeRunDiff : IRunDiff
 
     /// <inheritdoc/>
     public ValueTask<Result<IReadOnlyList<string>>> ChangedPaths(string worktree, string baseCommit, CancellationToken cancellationToken) =>
-        ValueTask.FromResult<Result<IReadOnlyList<string>>>(_changed.TryGetValue(worktree, out var paths) ? Results.Success<IReadOnlyList<string>>([.. paths]) : Missing(worktree));
+        ValueTask.FromResult(_changed.TryGetValue(worktree, out var paths) ? Results.Success<IReadOnlyList<string>>([.. paths]) : Missing(worktree));
 
     private static Error Missing(string worktree) => WorkflowErrors.EffectFailed.With($"{worktree} is not a worktree");
 }
