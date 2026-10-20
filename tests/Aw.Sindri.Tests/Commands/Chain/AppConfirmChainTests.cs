@@ -1,7 +1,7 @@
 using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Core.Commands;
-using Aw.Sindri.Testing;
 using Aw.Sindri.Features.ApproveProfile;
+using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.Commands.Chain;
 

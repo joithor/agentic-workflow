@@ -22,7 +22,7 @@ internal sealed class AuthorizingService<TRequest, TResponse>(IService<TRequest,
     : Decorated<TRequest, TResponse>(inner)
     where TRequest : notnull
 {
-    private const string ProverActor = "human:prover";
+    private static readonly string _proverActor = CallerContext.ActorOf(CallerClass.Human, ClientLabel.Prover);
 
     /// <summary>The service it wraps (for the chain-order test).</summary>
     internal IService<TRequest, TResponse> Next => Inner;
@@ -38,7 +38,7 @@ internal sealed class AuthorizingService<TRequest, TResponse>(IService<TRequest,
 
     /// <summary>The prover is honoured on an AppConfirm row only in a marked scratch home; the owner's default home never carries the marker.</summary>
     private Error? ProverRefusal(CommandRow row) =>
-        row.AppConfirm && callers.Current is { } caller && string.Equals(caller.Actor, ProverActor, StringComparison.Ordinal) && prover is not { MayConfirm: true }
+        row.AppConfirm && callers.Current is { } caller && string.Equals(caller.Actor, _proverActor, StringComparison.Ordinal) && prover is not { MayConfirm: true }
             ? SindriErrors.AuthRefused.With($"{row.Action.Value} is a human decision, and the prover confirms it only in a scratch home it created: {row.Cli.Text}")
             : null;
 

@@ -22,7 +22,7 @@ public sealed class IssueAppChallengeTests
 
     private async Task<string> Digest() => (await _shipped.Plan(Token)).Value.Digest;
 
-    private Aw.Kernel.Result<IssuedChallenge> Redeem(ChallengeAnswer answer, ChallengeAction action, ChallengeSubject subject) =>
+    private Kernel.Result<IssuedChallenge> Redeem(ChallengeAnswer answer, ChallengeAction action, ChallengeSubject subject) =>
         _slice.Challenges.Redeem(answer, action, subject, WorkflowErrors.RecipeChallengeStale);
 
     [Fact]

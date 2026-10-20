@@ -76,7 +76,7 @@ public sealed class RefuseBeforeWritingTests
         var kept = new RedeemedPlans();
         _ = await h.Profiles.Save(SliceHarness.Profile(), Token);
         using var caller = h.Callers.EnterService("test");
-        var admission = new ApproveAllRecipesAdmission(new Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllPlanReader(h.Profiles, shipped), refusing, jobs, kept, h.Callers);
+        var admission = new ApproveAllRecipesAdmission(new Core.Workflow.ApproveAll.ApproveAllPlanReader(h.Profiles, shipped), refusing, jobs, kept, h.Callers);
         var request = new ApproveAllRecipesRequest(new ChallengeAnswer(_missing, "approve-all 000000"));
         var eventsBefore = h.Store.Events.Count;
 
