@@ -166,7 +166,7 @@ public sealed class InstanceRowViewModelTests
     [Fact]
     public void Who_is_on_it_is_said_in_plain_words()
     {
-        var who = Open.Select(served => (Served: served, Who: Row(served).Who)).ToList();
+        var who = Open.Select(served => (Served: served, Row(served).Who)).ToList();
 
         Assert.All(who.Where(w => w.Served.EngineOwned is { Kind: EngineOwnedKind.TakenOver }), w => Assert.Equal("You took it over", w.Who));
         Assert.All(who.Where(w => w.Served.EngineOwned is { Kind: EngineOwnedKind.Escalated or EngineOwnedKind.Parked }), w => Assert.Equal("Paused: needs a decision", w.Who));

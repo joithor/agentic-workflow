@@ -2,7 +2,6 @@ using System.Net;
 using System.Text.Json.Nodes;
 using Avalonia.Automation.Peers;
 using Avalonia.Controls;
-using Avalonia.Media;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
@@ -29,7 +28,7 @@ public sealed class WorkflowsFramesTests : FrameHost
     }
 
     private static List<Border> Rows(Window window) =>
-        [.. window.GetVisualDescendants().OfType<Border>().Where(b => b.Name == "WorkflowRowFrame" && b.IsEffectivelyVisible)];
+        [.. window.GetVisualDescendants().OfType<Border>().Where(b => string.Equals(b.Name, "WorkflowRowFrame", StringComparison.Ordinal) && b.IsEffectivelyVisible)];
 
     private static string Address(Border frame) => ((InstanceRowViewModel)frame.DataContext!).Address;
 
@@ -60,19 +59,19 @@ public sealed class WorkflowsFramesTests : FrameHost
     private static void PrimaryOnly(Window window, ShellViewModel shell)
     {
         var row = shell.Workflows.Groups[0].Rows[0];
-        var frame = window.GetVisualDescendants().OfType<Border>().First(b => b.Name == "WorkflowRowFrame" && ReferenceEquals(b.DataContext, row));
+        var frame = window.GetVisualDescendants().OfType<Border>().First(b => string.Equals(b.Name, "WorkflowRowFrame", StringComparison.Ordinal) && ReferenceEquals(b.DataContext, row));
         var texts = frame.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible).Select(t => t.Text ?? string.Empty).ToList();
         Assert.Contains(row.DisplayName, texts);
         Assert.Contains(row.Subject, texts);
         Assert.Contains(row.Who, texts);
         Assert.DoesNotContain(texts, t => t.Contains(row.Address, StringComparison.Ordinal) || t.Contains("workflow.", StringComparison.Ordinal));
-        Assert.Empty(frame.GetVisualDescendants().OfType<Border>().Where(b => b.Name is "WorkflowRowInputs" or "WorkflowRowStages" && b.IsEffectivelyVisible));
-        Assert.Empty(window.GetVisualDescendants().OfType<Border>().Where(b => b.Name == "WorkflowColumnHead"));
+        Assert.DoesNotContain(frame.GetVisualDescendants().OfType<Border>(), b => (string.Equals(b.Name, "WorkflowRowInputs", StringComparison.Ordinal) || string.Equals(b.Name, "WorkflowRowStages", StringComparison.Ordinal)) && b.IsEffectivelyVisible);
+        Assert.DoesNotContain(window.GetVisualDescendants().OfType<Border>(), b => string.Equals(b.Name, "WorkflowColumnHead", StringComparison.Ordinal));
 
         row.ToggleDetails();
         Settle(window);
-        Assert.Equal(2, frame.GetVisualDescendants().OfType<Border>().Count(b => b.Name is "WorkflowRowInputs" or "WorkflowRowStages" && b.IsEffectivelyVisible));
-        Assert.True(frame.GetVisualDescendants().OfType<TextBlock>().Any(t => t.IsEffectivelyVisible && t.Text == row.Recipe));   // the id is in Details
+        Assert.Equal(2, frame.GetVisualDescendants().OfType<Border>().Count(b => (string.Equals(b.Name, "WorkflowRowInputs", StringComparison.Ordinal) || string.Equals(b.Name, "WorkflowRowStages", StringComparison.Ordinal)) && b.IsEffectivelyVisible));
+        Assert.Contains(frame.GetVisualDescendants().OfType<TextBlock>(), t => t.IsEffectivelyVisible && string.Equals(t.Text, row.Recipe, StringComparison.Ordinal));   // the id is in Details
     }
 
     // What assistive tech hears, from each control's automation peer (a TextBlock's peer ignores a Name, so these sit on wrappers): review run 2, W5 and W6.
@@ -94,7 +93,7 @@ public sealed class WorkflowsFramesTests : FrameHost
         Assert.Contains(row.Subject, Heard.Name(title), StringComparison.Ordinal);
 
         // The row's cells are children of the row in the automation tree, which is where AT-SPI reads them (L2)
-        var frame = window.GetVisualDescendants().OfType<Border>().First(b => b.Name == "WorkflowRowFrame" && ReferenceEquals(b.DataContext, row));
+        var frame = window.GetVisualDescendants().OfType<Border>().First(b => string.Equals(b.Name, "WorkflowRowFrame", StringComparison.Ordinal) && ReferenceEquals(b.DataContext, row));
         var reached = Heard.Tree(frame);
         Assert.Contains((row.StagesName, AutomationControlType.Text), reached);
         Assert.Contains((row.InputsName, AutomationControlType.Text), reached);
