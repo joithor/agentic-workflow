@@ -26,17 +26,17 @@ internal sealed class ApproveAllFixture
     internal static CancellationToken Token => TestContext.Current.CancellationToken;
 
     /// <summary>A dialog over the catalog as served.</summary>
-    internal async Task<ApproveAllViewModel> Dialog()
+    internal async Task<ApproveAllViewModel> Dialog(bool reducedMotion = false)
     {
         var catalog = new CatalogViewModel(new FakeClipboard(), Clock);
         catalog.Show(Api, Server, (await Server.Commands(Api, Token)).Value);
-        return new ApproveAllViewModel(catalog, () => Api, Server, Clock);
+        return new ApproveAllViewModel(catalog, () => Api, Server, Clock, () => reducedMotion);
     }
 
     /// <summary>A dialog opened on the plan, with its challenge.</summary>
-    internal async Task<ApproveAllViewModel> Opened()
+    internal async Task<ApproveAllViewModel> Opened(bool reducedMotion = false)
     {
-        var dialog = await Dialog();
+        var dialog = await Dialog(reducedMotion);
         await dialog.Open(Token);
         return dialog;
     }

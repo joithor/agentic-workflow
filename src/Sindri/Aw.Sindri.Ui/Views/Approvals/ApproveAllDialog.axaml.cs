@@ -95,7 +95,7 @@ internal sealed partial class ApproveAllDialog : UserControl
     // One step of the fill; the timer stops when the hold is over (let go, or the answer went).
     private async Task Step(ApproveAllViewModel dialog)
     {
-        await dialog.Tick();
+        await dialog.Tick().ConfigureAwait(true);
         _fill.IsEnabled = dialog.IsHolding;
     }
 

@@ -150,8 +150,8 @@ internal sealed partial class ShellWindow
         return e.Key is >= Key.A and <= Key.Z && e.KeyModifiers == KeyModifiers.None ? e.Key.ToString() : null;
     }
 
-    // Esc's U2 layers, above the sheet (§8 "the topmost layer"): the Start form, the create form, then a destructive control's question.
-    private bool EscapeItemLayer(ViewModels.Shell.ShellViewModel shell)
+    // The forms and dialogs over the shell: the approve-all dialog, the Start form, then the create form.
+    private static bool EscapeForm(ViewModels.Shell.ShellViewModel shell)
     {
         if (shell.ApproveAll.IsOpen)
         {
@@ -165,9 +165,20 @@ internal sealed partial class ShellWindow
             return true;
         }
 
-        if (shell.Create.IsOpen)
+        if (!shell.Create.IsOpen)
         {
-            shell.Create.Close();
+            return false;
+        }
+
+        shell.Create.Close();
+        return true;
+    }
+
+    // Esc's U2 layers, above the sheet (§8 "the topmost layer"): the Start form, the create form, then a destructive control's question.
+    private bool EscapeItemLayer(ViewModels.Shell.ShellViewModel shell)
+    {
+        if (EscapeForm(shell))
+        {
             return true;
         }
 

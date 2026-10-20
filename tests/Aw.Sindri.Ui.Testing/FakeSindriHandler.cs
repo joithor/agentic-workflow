@@ -16,7 +16,7 @@ namespace Aw.Sindri.Ui.Testing;
 /// goldens' shape (UI spec E-17).
 /// </summary>
 /// <param name="server">The model.</param>
-internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandler
+internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandler
 {
     /// <summary>The requests seen, in order: the path and the headers the app's identity rests on (API §6).</summary>
     public IReadOnlyList<SeenRequest> Requests => [.. _requests];
@@ -105,13 +105,7 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
             "/sindri/requests" when request.Method == HttpMethod.Get => Answer(Counted(await server.Requests(uri, Query(uri, "state"), Query(uri, "item"), after, cancellationToken), server.RequestsAnswer(Query(uri, "item")))),
             // LANE ANCHOR U3': add the Needs you routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately above this marker, never between the markers.
             // LANE ANCHOR U8: add the workflow command routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately below this marker, never between the markers.
-            "/sindri/workflow/recipes/approve-all" when request.Method == HttpMethod.Get => Answer(Counted(await server.ApproveAllPlan(uri, cancellationToken), server.ApproveAllPlanAnswer)),
-            "/sindri/workflow/recipes/approve-all" when request.Method == HttpMethod.Post =>
-                Answer(Counted(await server.ApproveAll(uri, await Body<ApproveAllRequest>(request, cancellationToken), cancellationToken), server.ApproveAllStartAnswer)),
-            "/sindri/workflow/challenges/app" when request.Method == HttpMethod.Post =>
-                Answer(Counted(await server.IssueAppChallenge(uri, await Body<AppChallengeRequest>(request, cancellationToken), cancellationToken), server.AppChallengeAnswer)),
-            var path when request.Method == HttpMethod.Get && path.StartsWith("/sindri/jobs/", StringComparison.Ordinal) =>
-                Answer(Counted(await server.ApproveAllJob(uri, Uri.UnescapeDataString(path["/sindri/jobs/".Length..]), cancellationToken), server.LastJobAnswer)),
+            var path when IsApproval(request, path) => await ApprovalRoute(request, path, cancellationToken),
             "/sindri/workflow/recipes" when request.Method == HttpMethod.Get => Answer(Counted(await server.Recipes(uri, cancellationToken), server.RecipeListAnswer)),
             "/sindri/workflow/instances" when request.Method == HttpMethod.Post =>
                 Answer(Counted(await server.StartInstance(uri, await Body<StartInstanceRequest>(request, cancellationToken), cancellationToken), server.StartAnswer)),

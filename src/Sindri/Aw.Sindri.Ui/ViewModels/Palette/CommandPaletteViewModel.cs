@@ -177,16 +177,9 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
                 Close();
                 _goTo(PageId.System);
                 break;
-            case { Control.Action: "CreateItem" }:
-                CreateItem?.Invoke();   // the form's own control sends it; it opens first, so the window hands the palette's opener on to it
-                Close();
-                break;
-            case { Control.Action: "StartInstance" }:
-                StartWorkflow?.Invoke();   // the form sends it; it opens first, so the window hands the palette's opener on to it
-                Close();
-                break;
-            case { Control.Action: "ApproveAllRecipes" }:
-                ApproveAll?.Invoke();   // the dialog asks for the hold or the typed text; the palette sends nothing
+            case { Control.Action: "CreateItem" or "StartInstance" or "ApproveAllRecipes" }:
+                // The form's or dialog's own control sends it; it opens first, so the window hands the palette's opener on to it.
+                OpenerOf(entry.Control.Action)?.Invoke();
                 Close();
                 break;
             default:
@@ -195,6 +188,13 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
                 break;
         }
     }
+
+    private Action? OpenerOf(string action) => action switch
+    {
+        "CreateItem" => CreateItem,
+        "StartInstance" => StartWorkflow,
+        _ => ApproveAll,
+    };
 
     private List<PaletteSection> Build()
     {

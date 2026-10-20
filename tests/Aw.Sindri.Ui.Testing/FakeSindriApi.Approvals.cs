@@ -12,7 +12,6 @@ internal sealed partial class FakeSindriApi
 {
     private readonly List<AppChallengeRequest> _challenges = [];
     private readonly List<ApproveAllRequest> _approvals = [];
-    private readonly Queue<RouteAnswer> _jobAnswers = new();
     private int _planCalls;
     private int _jobCalls;
 
@@ -29,7 +28,7 @@ internal sealed partial class FakeSindriApi
     public RouteAnswer ApproveAllJobAnswer { get; set; } = RouteAnswer.SpecShaped("approve-all-job", "succeeded");
 
     /// <summary>The job answers handed out one per read, in order, before <see cref="ApproveAllJobAnswer"/> (a job that runs a while).</summary>
-    public Queue<RouteAnswer> JobAnswers => _jobAnswers;
+    public Queue<RouteAnswer> JobAnswers { get; } = new();
 
     /// <summary>Held open until set: the approval waits for it (the app is sending meanwhile).</summary>
     public TaskCompletionSource? ApproveAllGate { get; set; }
@@ -91,7 +90,7 @@ internal sealed partial class FakeSindriApi
         _ = Interlocked.Increment(ref _jobCalls);
         lock (_gate)
         {
-            LastJobAnswer = _jobAnswers.Count > 0 ? _jobAnswers.Dequeue() : ApproveAllJobAnswer;
+            LastJobAnswer = JobAnswers.Count > 0 ? JobAnswers.Dequeue() : ApproveAllJobAnswer;
         }
 
         return Task.FromResult(Answer<ApproveAllJob>(api, WorkflowRoutes.Job(id), LastJobAnswer));

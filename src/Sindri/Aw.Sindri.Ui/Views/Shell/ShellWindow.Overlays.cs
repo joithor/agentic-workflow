@@ -6,9 +6,9 @@ using Avalonia.VisualTree;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.ViewModels.Palette;
 using Aw.Sindri.Ui.ViewModels.Shell;
+using Aw.Sindri.Ui.Views.Approvals;
 using Aw.Sindri.Ui.Views.Item;
 using Aw.Sindri.Ui.Views.Palette;
-using Aw.Sindri.Ui.Views.Approvals;
 using Aw.Sindri.Ui.Views.Start;
 
 namespace Aw.Sindri.Ui.Views.Shell;

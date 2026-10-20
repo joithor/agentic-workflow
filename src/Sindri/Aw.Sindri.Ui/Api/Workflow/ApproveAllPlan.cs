@@ -8,5 +8,4 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="OwnApproval">Previously approved workflows that gained a capability: each is approved on its own, never in this approval.</param>
 /// <param name="Digest">The plan's digest; the challenge is 'approve-all' and its first six characters.</param>
 /// <param name="Empty">The sentence when both lists are empty; null otherwise.</param>
-/// <param name="AsOf">How fresh the answer is.</param>
-internal sealed record ApproveAllPlan(IReadOnlyList<PlanRecipe> Recipes, IReadOnlyList<OwnApprovalRecipe> OwnApproval, string Digest, string? Empty, AsOfView? AsOf);
+internal sealed record ApproveAllPlan(IReadOnlyList<PlanRecipe> Recipes, IReadOnlyList<OwnApprovalRecipe> OwnApproval, string Digest, string? Empty);

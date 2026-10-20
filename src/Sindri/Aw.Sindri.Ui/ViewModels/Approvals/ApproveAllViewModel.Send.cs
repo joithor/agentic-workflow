@@ -189,7 +189,7 @@ internal sealed partial class ApproveAllViewModel
         var read = await _api.ApproveAllPlan(api, CancellationToken.None).ConfigureAwait(true);
         if (session == _session && read.IsSuccess)
         {
-            OwnApproval = [.. read.Value.OwnApproval.Select(o => OwnLine(o))];
+            OwnApproval = [.. read.Value.OwnApproval.Select(OwnLine)];
             OnChanged(nameof(HasOwnApproval));
         }
     }

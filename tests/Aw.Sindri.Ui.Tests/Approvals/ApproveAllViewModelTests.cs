@@ -19,7 +19,7 @@ public sealed class ApproveAllViewModelTests
         var dialog = await _f.Opened();
 
         Assert.Equal((ApproveAllPhase.Plan, true, "2 workflows will be approved"), (dialog.Phase, dialog.IsOpen, dialog.Heading));
-        Assert.Equal(["approve-all c41e07"], _f.Server.Challenges.Select(c => c.Action));
+        Assert.Equal("approve-all c41e07", Assert.Single(_f.Server.Challenges).Action);
         Assert.Equal((true, true, "approve-all c41e07"), (dialog.CanApprove, dialog.OffersHold, dialog.TypedAlternative));
     }
 
@@ -33,7 +33,7 @@ public sealed class ApproveAllViewModelTests
         Assert.Equal(["Starts an AI agent session in a repo you added", "Puts a question or notice in your Needs you list"], step.Capabilities);
         Assert.Equal(("Work item", "New: you haven't approved it before"), (dialog.Rows[1].Name, dialog.Rows[1].Reason));
         Assert.DoesNotContain("workflow.", step.AccessibleName, StringComparison.Ordinal);
-        Assert.Contains("workflow.step · v2 · 1a2b3c4d5e6f", dialog.DetailLines);
+        Assert.Contains(dialog.DetailLines, l => string.Equals(l, "workflow.step · v2 · 1a2b3c4d5e6f", StringComparison.Ordinal));
         Assert.Equal("plan c41e07", dialog.DetailLines[0]);
     }
 
@@ -56,6 +56,20 @@ public sealed class ApproveAllViewModelTests
 
         Assert.Equal((ApproveAllPhase.Empty, "Every recipe is approved.", false), (dialog.Phase, dialog.EmptyText, dialog.CanApprove));
         Assert.Empty(_f.Server.Challenges);
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public async Task The_hold_fills_its_bar_only_when_motion_is_not_reduced(bool reduced, bool fills)
+    {
+        var dialog = await _f.Opened(reducedMotion: reduced);
+
+        dialog.BeginHold();
+
+        Assert.Equal((true, fills, true), (dialog.IsHolding, dialog.ShowsFill, dialog.HoldText.Length > 0));
+        dialog.CancelHold();
+        Assert.False(dialog.ShowsFill);
     }
 
     [Fact]
@@ -114,7 +128,7 @@ public sealed class ApproveAllViewModelTests
         _f.Clock.Advance(TimeSpan.FromMilliseconds(1600));
 
         var answer = dialog.Tick();
-        await WaitUntil(() => _f.Server.JobCalls >= 2);
+        await WaitUntil(() => string.Equals(dialog.Progress, "Approving One step", StringComparison.Ordinal));
 
         Assert.Equal((ApproveAllPhase.Applying, "Approving One step"), (dialog.Phase, dialog.Progress));
         dialog.Close();
@@ -159,7 +173,7 @@ public sealed class ApproveAllViewModelTests
 
         Assert.Equal((ApproveAllPhase.Plan, "SND-SETUP-003", true, false), (dialog.Phase, dialog.ErrorCode, dialog.CanApprove, dialog.IsSending));
         Assert.StartsWith("Confirmation not given", dialog.Error, StringComparison.Ordinal);
-        Assert.Single(_f.Server.Challenges);
+        _ = Assert.Single(_f.Server.Challenges);
     }
 
     [Fact]
@@ -234,7 +248,7 @@ public sealed class ApproveAllViewModelTests
         _f.Server.ApproveAllGate.SetResult();
         await _f.Finish(Task.WhenAll(first, second));
 
-        Assert.Single(_f.Server.Approvals);
+        _ = Assert.Single(_f.Server.Approvals);
     }
 
     [Fact]

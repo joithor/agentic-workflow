@@ -105,7 +105,7 @@ internal sealed partial class ApproveAllViewModel
     private void Fill(ApproveAllPlan plan)
     {
         Rows = [.. plan.Recipes.Select(r => new PlanRowViewModel(r))];
-        OwnApproval = [.. plan.OwnApproval.Select(o => OwnLine(o))];
+        OwnApproval = [.. plan.OwnApproval.Select(OwnLine)];
         EmptyText = plan.Empty ?? string.Empty;
         Heading = Labels.ApprovePlanHeading(plan.Recipes.Count);
         DetailLines = [.. Rows.Select(r => r.Detail).Prepend("plan " + plan.Digest)];
