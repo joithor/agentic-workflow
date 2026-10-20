@@ -11,8 +11,16 @@ public static class ProfileRules
     /// <summary>Checks <paramref name="profile"/> and returns it with defaults applied (sorted services and repos).</summary>
     /// <param name="profile">The deserialized profile.</param>
     /// <returns>The canonical profile, or SND-PROFILE-002 naming the key path and the fix.</returns>
-    public static Result<SindriProfile> Check(SindriProfile profile)
+    public static Result<SindriProfile> Check(SindriProfile profile) => Check(profile, box: null);
+
+    /// <summary>Checks <paramref name="profile"/> against what the box allows, and returns it with defaults applied.</summary>
+    /// <param name="profile">The deserialized profile.</param>
+    /// <param name="box">The box's limits (the heavy-slot cap), or null to check the profile alone.</param>
+    /// <returns>The canonical profile, or SND-PROFILE-002 naming the key path and the fix.</returns>
+    public static Result<SindriProfile> Check(SindriProfile profile, BoxLimits? box)
     {
+        ArgumentNullException.ThrowIfNull(profile);
+        _ = box;   // red: the line rules come with the green commit
         if (profile.SchemaVersion != SindriProfile.CurrentSchemaVersion)
         {
             return Invalid("schemaVersion", string.Create(CultureInfo.InvariantCulture,

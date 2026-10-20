@@ -83,7 +83,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IViewStore, SqliteViewStore>()
             .AddSingleton<IViewReader, SqliteViewReader>()
             .AddSingleton<IJobViews, SqliteJobViews>().AddSingleton<IServicePauses, ViewServicePauses>()
-            .AddSingleton<IProfileSource, YamlProfileSource>()
+            .AddSingleton<IProfileSource>(sp => new YamlProfileSource(sp.GetRequiredService<SindriSettings>(), sp.GetRequiredService<JsonSerializerOptions>(), () => HeavyCap.Read(environment, sp.GetRequiredService<SindriSettings>().StateDirectory)))
             .AddSingleton<IApprovals, FileApprovals>()
             .AddSingleton<IApprovedProfile>(static sp => sp.GetRequiredService<IApprovals>())
             .AddSingleton<IEndpointFile, FileEndpoint>()

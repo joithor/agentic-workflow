@@ -11863,8 +11863,6 @@ static Aw.Sindri.Core.Sessions.PaneRead.Captured(int panePid, byte[]! capture) -
 Aw.Sindri.Core.Mcp.ProviderResult.Detail.get -> string!
 Aw.Sindri.Core.Mcp.ProviderResult.Detail.init -> void
 static Aw.Sindri.Core.Mcp.McpRegistration.Url(int port) -> string!
-Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold, out System.Collections.Generic.IReadOnlyList<string!>? Effects, out string? DispatchDelay, out Aw.Sindri.Core.Profile.JudgeSettings? Judge, out Aw.Sindri.Core.Profile.WorkflowAgentSettings? Agent, out Aw.Sindri.Core.Profile.ForgeSettings? Forge, out Aw.Sindri.Core.Profile.RouteSettings? Route) -> void
-Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null, System.Collections.Generic.IReadOnlyList<string!>? Effects = null, string? DispatchDelay = null, Aw.Sindri.Core.Profile.JudgeSettings? Judge = null, Aw.Sindri.Core.Profile.WorkflowAgentSettings? Agent = null, Aw.Sindri.Core.Profile.ForgeSettings? Forge = null, Aw.Sindri.Core.Profile.RouteSettings? Route = null) -> void
 Aw.Sindri.Core.Scoping.IScopePacketStore
 Aw.Sindri.Core.Scoping.IScopePacketStore.Hash(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId instance, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
 Aw.Sindri.Core.Scoping.IScopePacketStore.ReadFile(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId instance, string! name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
@@ -13391,3 +13389,264 @@ static Aw.Sindri.Core.Line.OwnerDecision.operator !=(Aw.Sindri.Core.Line.OwnerDe
 static Aw.Sindri.Core.Line.OwnerDecision.operator ==(Aw.Sindri.Core.Line.OwnerDecision? left, Aw.Sindri.Core.Line.OwnerDecision? right) -> bool
 static Aw.Sindri.Core.Line.OwnerDecisionsIngested.operator !=(Aw.Sindri.Core.Line.OwnerDecisionsIngested? left, Aw.Sindri.Core.Line.OwnerDecisionsIngested? right) -> bool
 static Aw.Sindri.Core.Line.OwnerDecisionsIngested.operator ==(Aw.Sindri.Core.Line.OwnerDecisionsIngested? left, Aw.Sindri.Core.Line.OwnerDecisionsIngested? right) -> bool
+Aw.Sindri.Core.Profile.BoxLimits
+Aw.Sindri.Core.Profile.BoxLimits.<Clone>$() -> Aw.Sindri.Core.Profile.BoxLimits!
+Aw.Sindri.Core.Profile.BoxLimits.BoxLimits(int HeavySlots) -> void
+Aw.Sindri.Core.Profile.BoxLimits.Deconstruct(out int HeavySlots) -> void
+Aw.Sindri.Core.Profile.BoxLimits.Equals(Aw.Sindri.Core.Profile.BoxLimits? other) -> bool
+Aw.Sindri.Core.Profile.BoxLimits.HeavySlots.get -> int
+Aw.Sindri.Core.Profile.BoxLimits.HeavySlots.init -> void
+Aw.Sindri.Core.Profile.BudgetSettings
+Aw.Sindri.Core.Profile.BudgetSettings.<Clone>$() -> Aw.Sindri.Core.Profile.BudgetSettings!
+Aw.Sindri.Core.Profile.BudgetSettings.BudgetSettings(long? Tokens = null, int? Turns = null, int? WallMinutes = null) -> void
+Aw.Sindri.Core.Profile.BudgetSettings.Deconstruct(out long? Tokens, out int? Turns, out int? WallMinutes) -> void
+Aw.Sindri.Core.Profile.BudgetSettings.Equals(Aw.Sindri.Core.Profile.BudgetSettings? other) -> bool
+Aw.Sindri.Core.Profile.BudgetSettings.Tokens.get -> long?
+Aw.Sindri.Core.Profile.BudgetSettings.Tokens.init -> void
+Aw.Sindri.Core.Profile.BudgetSettings.Turns.get -> int?
+Aw.Sindri.Core.Profile.BudgetSettings.Turns.init -> void
+Aw.Sindri.Core.Profile.BudgetSettings.WallMinutes.get -> int?
+Aw.Sindri.Core.Profile.BudgetSettings.WallMinutes.init -> void
+Aw.Sindri.Core.Profile.BuildSettings
+Aw.Sindri.Core.Profile.BuildSettings.<Clone>$() -> Aw.Sindri.Core.Profile.BuildSettings!
+Aw.Sindri.Core.Profile.BuildSettings.BuildSettings(System.Collections.Generic.IReadOnlyList<string!>? Commands = null) -> void
+Aw.Sindri.Core.Profile.BuildSettings.Commands.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Profile.BuildSettings.Commands.init -> void
+Aw.Sindri.Core.Profile.BuildSettings.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? Commands) -> void
+Aw.Sindri.Core.Profile.BuildSettings.Equals(Aw.Sindri.Core.Profile.BuildSettings? other) -> bool
+Aw.Sindri.Core.Profile.DesignModels
+Aw.Sindri.Core.Profile.DesignModels.<Clone>$() -> Aw.Sindri.Core.Profile.DesignModels!
+Aw.Sindri.Core.Profile.DesignModels.Deconstruct(out string? Writer, out string? Lens) -> void
+Aw.Sindri.Core.Profile.DesignModels.DesignModels(string? Writer = null, string? Lens = null) -> void
+Aw.Sindri.Core.Profile.DesignModels.Equals(Aw.Sindri.Core.Profile.DesignModels? other) -> bool
+Aw.Sindri.Core.Profile.DesignModels.Lens.get -> string?
+Aw.Sindri.Core.Profile.DesignModels.Lens.init -> void
+Aw.Sindri.Core.Profile.DesignModels.Writer.get -> string?
+Aw.Sindri.Core.Profile.DesignModels.Writer.init -> void
+Aw.Sindri.Core.Profile.DesignSettings
+Aw.Sindri.Core.Profile.DesignSettings.<Clone>$() -> Aw.Sindri.Core.Profile.DesignSettings!
+Aw.Sindri.Core.Profile.DesignSettings.Deconstruct(out Aw.Sindri.Core.Profile.DesignModels? Models) -> void
+Aw.Sindri.Core.Profile.DesignSettings.DesignSettings(Aw.Sindri.Core.Profile.DesignModels? Models = null) -> void
+Aw.Sindri.Core.Profile.DesignSettings.Equals(Aw.Sindri.Core.Profile.DesignSettings? other) -> bool
+Aw.Sindri.Core.Profile.DesignSettings.Models.get -> Aw.Sindri.Core.Profile.DesignModels?
+Aw.Sindri.Core.Profile.DesignSettings.Models.init -> void
+Aw.Sindri.Core.Profile.DocsSettings
+Aw.Sindri.Core.Profile.DocsSettings.<Clone>$() -> Aw.Sindri.Core.Profile.DocsSettings!
+Aw.Sindri.Core.Profile.DocsSettings.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? Globs) -> void
+Aw.Sindri.Core.Profile.DocsSettings.DocsSettings(System.Collections.Generic.IReadOnlyList<string!>? Globs = null) -> void
+Aw.Sindri.Core.Profile.DocsSettings.Equals(Aw.Sindri.Core.Profile.DocsSettings? other) -> bool
+Aw.Sindri.Core.Profile.DocsSettings.Globs.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Profile.DocsSettings.Globs.init -> void
+Aw.Sindri.Core.Profile.LensPackSettings
+Aw.Sindri.Core.Profile.LensPackSettings.<Clone>$() -> Aw.Sindri.Core.Profile.LensPackSettings!
+Aw.Sindri.Core.Profile.LensPackSettings.Deconstruct(out Aw.Sindri.Core.Profile.PackChoice? Design, out Aw.Sindri.Core.Profile.PackChoice? Review) -> void
+Aw.Sindri.Core.Profile.LensPackSettings.Design.get -> Aw.Sindri.Core.Profile.PackChoice?
+Aw.Sindri.Core.Profile.LensPackSettings.Design.init -> void
+Aw.Sindri.Core.Profile.LensPackSettings.Equals(Aw.Sindri.Core.Profile.LensPackSettings? other) -> bool
+Aw.Sindri.Core.Profile.LensPackSettings.LensPackSettings(Aw.Sindri.Core.Profile.PackChoice? Design = null, Aw.Sindri.Core.Profile.PackChoice? Review = null) -> void
+Aw.Sindri.Core.Profile.LensPackSettings.Review.get -> Aw.Sindri.Core.Profile.PackChoice?
+Aw.Sindri.Core.Profile.LensPackSettings.Review.init -> void
+Aw.Sindri.Core.Profile.LineSettings
+Aw.Sindri.Core.Profile.LineSettings.<Clone>$() -> Aw.Sindri.Core.Profile.LineSettings!
+Aw.Sindri.Core.Profile.LineSettings.Deconstruct(out int? Parallel, out int? MaxOpenPrs, out int? MaxStack) -> void
+Aw.Sindri.Core.Profile.LineSettings.Equals(Aw.Sindri.Core.Profile.LineSettings? other) -> bool
+Aw.Sindri.Core.Profile.LineSettings.LineSettings(int? Parallel = null, int? MaxOpenPrs = null, int? MaxStack = null) -> void
+Aw.Sindri.Core.Profile.LineSettings.MaxOpenPrs.get -> int?
+Aw.Sindri.Core.Profile.LineSettings.MaxOpenPrs.init -> void
+Aw.Sindri.Core.Profile.LineSettings.MaxStack.get -> int?
+Aw.Sindri.Core.Profile.LineSettings.MaxStack.init -> void
+Aw.Sindri.Core.Profile.LineSettings.Parallel.get -> int?
+Aw.Sindri.Core.Profile.LineSettings.Parallel.init -> void
+Aw.Sindri.Core.Profile.PackChoice
+Aw.Sindri.Core.Profile.PackChoice.<Clone>$() -> Aw.Sindri.Core.Profile.PackChoice!
+Aw.Sindri.Core.Profile.PackChoice.Deconstruct(out string? Default, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Repos) -> void
+Aw.Sindri.Core.Profile.PackChoice.Default.get -> string?
+Aw.Sindri.Core.Profile.PackChoice.Default.init -> void
+Aw.Sindri.Core.Profile.PackChoice.Equals(Aw.Sindri.Core.Profile.PackChoice? other) -> bool
+Aw.Sindri.Core.Profile.PackChoice.PackChoice(string? Default = null, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Repos = null) -> void
+Aw.Sindri.Core.Profile.PackChoice.Repos.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
+Aw.Sindri.Core.Profile.PackChoice.Repos.init -> void
+Aw.Sindri.Core.Profile.PackSettings
+Aw.Sindri.Core.Profile.PackSettings.<Clone>$() -> Aw.Sindri.Core.Profile.PackSettings!
+Aw.Sindri.Core.Profile.PackSettings.Deconstruct(out Aw.Sindri.Core.Profile.PackChoice? Style, out Aw.Sindri.Core.Profile.LensPackSettings? Lenses, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Pins) -> void
+Aw.Sindri.Core.Profile.PackSettings.Equals(Aw.Sindri.Core.Profile.PackSettings? other) -> bool
+Aw.Sindri.Core.Profile.PackSettings.Lenses.get -> Aw.Sindri.Core.Profile.LensPackSettings?
+Aw.Sindri.Core.Profile.PackSettings.Lenses.init -> void
+Aw.Sindri.Core.Profile.PackSettings.PackSettings(Aw.Sindri.Core.Profile.PackChoice? Style = null, Aw.Sindri.Core.Profile.LensPackSettings? Lenses = null, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Pins = null) -> void
+Aw.Sindri.Core.Profile.PackSettings.Pins.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
+Aw.Sindri.Core.Profile.PackSettings.Pins.init -> void
+Aw.Sindri.Core.Profile.PackSettings.Style.get -> Aw.Sindri.Core.Profile.PackChoice?
+Aw.Sindri.Core.Profile.PackSettings.Style.init -> void
+Aw.Sindri.Core.Profile.PlanSettings
+Aw.Sindri.Core.Profile.PlanSettings.<Clone>$() -> Aw.Sindri.Core.Profile.PlanSettings!
+Aw.Sindri.Core.Profile.PlanSettings.Deconstruct(out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.SizeSettings!>? Sizes, out string? MaxPhaseSize) -> void
+Aw.Sindri.Core.Profile.PlanSettings.Equals(Aw.Sindri.Core.Profile.PlanSettings? other) -> bool
+Aw.Sindri.Core.Profile.PlanSettings.MaxPhaseSize.get -> string?
+Aw.Sindri.Core.Profile.PlanSettings.MaxPhaseSize.init -> void
+Aw.Sindri.Core.Profile.PlanSettings.PlanSettings(System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.SizeSettings!>? Sizes = null, string? MaxPhaseSize = null) -> void
+Aw.Sindri.Core.Profile.PlanSettings.Sizes.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.SizeSettings!>?
+Aw.Sindri.Core.Profile.PlanSettings.Sizes.init -> void
+Aw.Sindri.Core.Profile.ProveSettings
+Aw.Sindri.Core.Profile.ProveSettings.<Clone>$() -> Aw.Sindri.Core.Profile.ProveSettings!
+Aw.Sindri.Core.Profile.ProveSettings.Deconstruct(out int? HoldoutMin) -> void
+Aw.Sindri.Core.Profile.ProveSettings.Equals(Aw.Sindri.Core.Profile.ProveSettings? other) -> bool
+Aw.Sindri.Core.Profile.ProveSettings.HoldoutMin.get -> int?
+Aw.Sindri.Core.Profile.ProveSettings.HoldoutMin.init -> void
+Aw.Sindri.Core.Profile.ProveSettings.ProveSettings(int? HoldoutMin = null) -> void
+Aw.Sindri.Core.Profile.ReviewModels
+Aw.Sindri.Core.Profile.ReviewModels.<Clone>$() -> Aw.Sindri.Core.Profile.ReviewModels!
+Aw.Sindri.Core.Profile.ReviewModels.Deconstruct(out string? Lens) -> void
+Aw.Sindri.Core.Profile.ReviewModels.Equals(Aw.Sindri.Core.Profile.ReviewModels? other) -> bool
+Aw.Sindri.Core.Profile.ReviewModels.Lens.get -> string?
+Aw.Sindri.Core.Profile.ReviewModels.Lens.init -> void
+Aw.Sindri.Core.Profile.ReviewModels.ReviewModels(string? Lens = null) -> void
+Aw.Sindri.Core.Profile.ReviewSettings
+Aw.Sindri.Core.Profile.ReviewSettings.<Clone>$() -> Aw.Sindri.Core.Profile.ReviewSettings!
+Aw.Sindri.Core.Profile.ReviewSettings.Deconstruct(out Aw.Sindri.Core.Profile.ReviewModels? Models) -> void
+Aw.Sindri.Core.Profile.ReviewSettings.Equals(Aw.Sindri.Core.Profile.ReviewSettings? other) -> bool
+Aw.Sindri.Core.Profile.ReviewSettings.Models.get -> Aw.Sindri.Core.Profile.ReviewModels?
+Aw.Sindri.Core.Profile.ReviewSettings.Models.init -> void
+Aw.Sindri.Core.Profile.ReviewSettings.ReviewSettings(Aw.Sindri.Core.Profile.ReviewModels? Models = null) -> void
+Aw.Sindri.Core.Profile.ShipSettings
+Aw.Sindri.Core.Profile.ShipSettings.<Clone>$() -> Aw.Sindri.Core.Profile.ShipSettings!
+Aw.Sindri.Core.Profile.ShipSettings.Deconstruct(out bool? Draft) -> void
+Aw.Sindri.Core.Profile.ShipSettings.Draft.get -> bool?
+Aw.Sindri.Core.Profile.ShipSettings.Draft.init -> void
+Aw.Sindri.Core.Profile.ShipSettings.Equals(Aw.Sindri.Core.Profile.ShipSettings? other) -> bool
+Aw.Sindri.Core.Profile.ShipSettings.ShipSettings(bool? Draft = null) -> void
+Aw.Sindri.Core.Profile.SizeSettings
+Aw.Sindri.Core.Profile.SizeSettings.<Clone>$() -> Aw.Sindri.Core.Profile.SizeSettings!
+Aw.Sindri.Core.Profile.SizeSettings.Budget.get -> Aw.Sindri.Core.Profile.BudgetSettings?
+Aw.Sindri.Core.Profile.SizeSettings.Budget.init -> void
+Aw.Sindri.Core.Profile.SizeSettings.Deconstruct(out int? Files, out int? Items, out Aw.Sindri.Core.Profile.BudgetSettings? Budget) -> void
+Aw.Sindri.Core.Profile.SizeSettings.Equals(Aw.Sindri.Core.Profile.SizeSettings? other) -> bool
+Aw.Sindri.Core.Profile.SizeSettings.Files.get -> int?
+Aw.Sindri.Core.Profile.SizeSettings.Files.init -> void
+Aw.Sindri.Core.Profile.SizeSettings.Items.get -> int?
+Aw.Sindri.Core.Profile.SizeSettings.Items.init -> void
+Aw.Sindri.Core.Profile.SizeSettings.SizeSettings(int? Files = null, int? Items = null, Aw.Sindri.Core.Profile.BudgetSettings? Budget = null) -> void
+Aw.Sindri.Core.Profile.StepsSettings
+Aw.Sindri.Core.Profile.StepsSettings.<Clone>$() -> Aw.Sindri.Core.Profile.StepsSettings!
+Aw.Sindri.Core.Profile.StepsSettings.Deconstruct(out string? LongMax) -> void
+Aw.Sindri.Core.Profile.StepsSettings.Equals(Aw.Sindri.Core.Profile.StepsSettings? other) -> bool
+Aw.Sindri.Core.Profile.StepsSettings.LongMax.get -> string?
+Aw.Sindri.Core.Profile.StepsSettings.LongMax.init -> void
+Aw.Sindri.Core.Profile.StepsSettings.StepsSettings(string? LongMax = null) -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Build.get -> Aw.Sindri.Core.Profile.BuildSettings?
+Aw.Sindri.Core.Profile.WorkflowSettings.Build.init -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold, out System.Collections.Generic.IReadOnlyList<string!>? Effects, out string? DispatchDelay, out Aw.Sindri.Core.Profile.JudgeSettings? Judge, out Aw.Sindri.Core.Profile.WorkflowAgentSettings? Agent, out Aw.Sindri.Core.Profile.ForgeSettings? Forge, out Aw.Sindri.Core.Profile.RouteSettings? Route, out Aw.Sindri.Core.Profile.PackSettings? Packs, out Aw.Sindri.Core.Profile.LineSettings? Line, out Aw.Sindri.Core.Profile.PlanSettings? Plan, out Aw.Sindri.Core.Profile.ProveSettings? Prove, out Aw.Sindri.Core.Profile.BuildSettings? Build, out Aw.Sindri.Core.Profile.ShipSettings? Ship, out Aw.Sindri.Core.Profile.DesignSettings? Design, out Aw.Sindri.Core.Profile.ReviewSettings? Review, out Aw.Sindri.Core.Profile.StepsSettings? Steps, out Aw.Sindri.Core.Profile.DocsSettings? Docs) -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Design.get -> Aw.Sindri.Core.Profile.DesignSettings?
+Aw.Sindri.Core.Profile.WorkflowSettings.Design.init -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Docs.get -> Aw.Sindri.Core.Profile.DocsSettings?
+Aw.Sindri.Core.Profile.WorkflowSettings.Docs.init -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Line.get -> Aw.Sindri.Core.Profile.LineSettings?
+Aw.Sindri.Core.Profile.WorkflowSettings.Line.init -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Packs.get -> Aw.Sindri.Core.Profile.PackSettings?
+Aw.Sindri.Core.Profile.WorkflowSettings.Packs.init -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Plan.get -> Aw.Sindri.Core.Profile.PlanSettings?
+Aw.Sindri.Core.Profile.WorkflowSettings.Plan.init -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Prove.get -> Aw.Sindri.Core.Profile.ProveSettings?
+Aw.Sindri.Core.Profile.WorkflowSettings.Prove.init -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Review.get -> Aw.Sindri.Core.Profile.ReviewSettings?
+Aw.Sindri.Core.Profile.WorkflowSettings.Review.init -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Ship.get -> Aw.Sindri.Core.Profile.ShipSettings?
+Aw.Sindri.Core.Profile.WorkflowSettings.Ship.init -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Steps.get -> Aw.Sindri.Core.Profile.StepsSettings?
+Aw.Sindri.Core.Profile.WorkflowSettings.Steps.init -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null, System.Collections.Generic.IReadOnlyList<string!>? Effects = null, string? DispatchDelay = null, Aw.Sindri.Core.Profile.JudgeSettings? Judge = null, Aw.Sindri.Core.Profile.WorkflowAgentSettings? Agent = null, Aw.Sindri.Core.Profile.ForgeSettings? Forge = null, Aw.Sindri.Core.Profile.RouteSettings? Route = null, Aw.Sindri.Core.Profile.PackSettings? Packs = null, Aw.Sindri.Core.Profile.LineSettings? Line = null, Aw.Sindri.Core.Profile.PlanSettings? Plan = null, Aw.Sindri.Core.Profile.ProveSettings? Prove = null, Aw.Sindri.Core.Profile.BuildSettings? Build = null, Aw.Sindri.Core.Profile.ShipSettings? Ship = null, Aw.Sindri.Core.Profile.DesignSettings? Design = null, Aw.Sindri.Core.Profile.ReviewSettings? Review = null, Aw.Sindri.Core.Profile.StepsSettings? Steps = null, Aw.Sindri.Core.Profile.DocsSettings? Docs = null) -> void
+override Aw.Sindri.Core.Profile.BoxLimits.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.BoxLimits.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.BoxLimits.ToString() -> string!
+override Aw.Sindri.Core.Profile.BudgetSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.BudgetSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.BudgetSettings.ToString() -> string!
+override Aw.Sindri.Core.Profile.BuildSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.BuildSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.BuildSettings.ToString() -> string!
+override Aw.Sindri.Core.Profile.DesignModels.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.DesignModels.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.DesignModels.ToString() -> string!
+override Aw.Sindri.Core.Profile.DesignSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.DesignSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.DesignSettings.ToString() -> string!
+override Aw.Sindri.Core.Profile.DocsSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.DocsSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.DocsSettings.ToString() -> string!
+override Aw.Sindri.Core.Profile.LensPackSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.LensPackSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.LensPackSettings.ToString() -> string!
+override Aw.Sindri.Core.Profile.LineSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.LineSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.LineSettings.ToString() -> string!
+override Aw.Sindri.Core.Profile.PackChoice.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.PackChoice.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.PackChoice.ToString() -> string!
+override Aw.Sindri.Core.Profile.PackSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.PackSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.PackSettings.ToString() -> string!
+override Aw.Sindri.Core.Profile.PlanSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.PlanSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.PlanSettings.ToString() -> string!
+override Aw.Sindri.Core.Profile.ProveSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.ProveSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.ProveSettings.ToString() -> string!
+override Aw.Sindri.Core.Profile.ReviewModels.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.ReviewModels.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.ReviewModels.ToString() -> string!
+override Aw.Sindri.Core.Profile.ReviewSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.ReviewSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.ReviewSettings.ToString() -> string!
+override Aw.Sindri.Core.Profile.ShipSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.ShipSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.ShipSettings.ToString() -> string!
+override Aw.Sindri.Core.Profile.SizeSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.SizeSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.SizeSettings.ToString() -> string!
+override Aw.Sindri.Core.Profile.StepsSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.StepsSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.StepsSettings.ToString() -> string!
+static Aw.Sindri.Core.Profile.BoxLimits.operator !=(Aw.Sindri.Core.Profile.BoxLimits? left, Aw.Sindri.Core.Profile.BoxLimits? right) -> bool
+static Aw.Sindri.Core.Profile.BoxLimits.operator ==(Aw.Sindri.Core.Profile.BoxLimits? left, Aw.Sindri.Core.Profile.BoxLimits? right) -> bool
+static Aw.Sindri.Core.Profile.BudgetSettings.operator !=(Aw.Sindri.Core.Profile.BudgetSettings? left, Aw.Sindri.Core.Profile.BudgetSettings? right) -> bool
+static Aw.Sindri.Core.Profile.BudgetSettings.operator ==(Aw.Sindri.Core.Profile.BudgetSettings? left, Aw.Sindri.Core.Profile.BudgetSettings? right) -> bool
+static Aw.Sindri.Core.Profile.BuildSettings.operator !=(Aw.Sindri.Core.Profile.BuildSettings? left, Aw.Sindri.Core.Profile.BuildSettings? right) -> bool
+static Aw.Sindri.Core.Profile.BuildSettings.operator ==(Aw.Sindri.Core.Profile.BuildSettings? left, Aw.Sindri.Core.Profile.BuildSettings? right) -> bool
+static Aw.Sindri.Core.Profile.DesignModels.operator !=(Aw.Sindri.Core.Profile.DesignModels? left, Aw.Sindri.Core.Profile.DesignModels? right) -> bool
+static Aw.Sindri.Core.Profile.DesignModels.operator ==(Aw.Sindri.Core.Profile.DesignModels? left, Aw.Sindri.Core.Profile.DesignModels? right) -> bool
+static Aw.Sindri.Core.Profile.DesignSettings.operator !=(Aw.Sindri.Core.Profile.DesignSettings? left, Aw.Sindri.Core.Profile.DesignSettings? right) -> bool
+static Aw.Sindri.Core.Profile.DesignSettings.operator ==(Aw.Sindri.Core.Profile.DesignSettings? left, Aw.Sindri.Core.Profile.DesignSettings? right) -> bool
+static Aw.Sindri.Core.Profile.DocsSettings.operator !=(Aw.Sindri.Core.Profile.DocsSettings? left, Aw.Sindri.Core.Profile.DocsSettings? right) -> bool
+static Aw.Sindri.Core.Profile.DocsSettings.operator ==(Aw.Sindri.Core.Profile.DocsSettings? left, Aw.Sindri.Core.Profile.DocsSettings? right) -> bool
+static Aw.Sindri.Core.Profile.LensPackSettings.operator !=(Aw.Sindri.Core.Profile.LensPackSettings? left, Aw.Sindri.Core.Profile.LensPackSettings? right) -> bool
+static Aw.Sindri.Core.Profile.LensPackSettings.operator ==(Aw.Sindri.Core.Profile.LensPackSettings? left, Aw.Sindri.Core.Profile.LensPackSettings? right) -> bool
+static Aw.Sindri.Core.Profile.LineSettings.operator !=(Aw.Sindri.Core.Profile.LineSettings? left, Aw.Sindri.Core.Profile.LineSettings? right) -> bool
+static Aw.Sindri.Core.Profile.LineSettings.operator ==(Aw.Sindri.Core.Profile.LineSettings? left, Aw.Sindri.Core.Profile.LineSettings? right) -> bool
+static Aw.Sindri.Core.Profile.PackChoice.operator !=(Aw.Sindri.Core.Profile.PackChoice? left, Aw.Sindri.Core.Profile.PackChoice? right) -> bool
+static Aw.Sindri.Core.Profile.PackChoice.operator ==(Aw.Sindri.Core.Profile.PackChoice? left, Aw.Sindri.Core.Profile.PackChoice? right) -> bool
+static Aw.Sindri.Core.Profile.PackSettings.operator !=(Aw.Sindri.Core.Profile.PackSettings? left, Aw.Sindri.Core.Profile.PackSettings? right) -> bool
+static Aw.Sindri.Core.Profile.PackSettings.operator ==(Aw.Sindri.Core.Profile.PackSettings? left, Aw.Sindri.Core.Profile.PackSettings? right) -> bool
+static Aw.Sindri.Core.Profile.PlanSettings.operator !=(Aw.Sindri.Core.Profile.PlanSettings? left, Aw.Sindri.Core.Profile.PlanSettings? right) -> bool
+static Aw.Sindri.Core.Profile.PlanSettings.operator ==(Aw.Sindri.Core.Profile.PlanSettings? left, Aw.Sindri.Core.Profile.PlanSettings? right) -> bool
+static Aw.Sindri.Core.Profile.ProfileRules.Check(Aw.Sindri.Core.Profile.SindriProfile! profile, Aw.Sindri.Core.Profile.BoxLimits? box) -> Aw.Kernel.Result<Aw.Sindri.Core.Profile.SindriProfile!>!
+static Aw.Sindri.Core.Profile.ProveSettings.operator !=(Aw.Sindri.Core.Profile.ProveSettings? left, Aw.Sindri.Core.Profile.ProveSettings? right) -> bool
+static Aw.Sindri.Core.Profile.ProveSettings.operator ==(Aw.Sindri.Core.Profile.ProveSettings? left, Aw.Sindri.Core.Profile.ProveSettings? right) -> bool
+static Aw.Sindri.Core.Profile.ReviewModels.operator !=(Aw.Sindri.Core.Profile.ReviewModels? left, Aw.Sindri.Core.Profile.ReviewModels? right) -> bool
+static Aw.Sindri.Core.Profile.ReviewModels.operator ==(Aw.Sindri.Core.Profile.ReviewModels? left, Aw.Sindri.Core.Profile.ReviewModels? right) -> bool
+static Aw.Sindri.Core.Profile.ReviewSettings.operator !=(Aw.Sindri.Core.Profile.ReviewSettings? left, Aw.Sindri.Core.Profile.ReviewSettings? right) -> bool
+static Aw.Sindri.Core.Profile.ReviewSettings.operator ==(Aw.Sindri.Core.Profile.ReviewSettings? left, Aw.Sindri.Core.Profile.ReviewSettings? right) -> bool
+static Aw.Sindri.Core.Profile.ShipSettings.operator !=(Aw.Sindri.Core.Profile.ShipSettings? left, Aw.Sindri.Core.Profile.ShipSettings? right) -> bool
+static Aw.Sindri.Core.Profile.ShipSettings.operator ==(Aw.Sindri.Core.Profile.ShipSettings? left, Aw.Sindri.Core.Profile.ShipSettings? right) -> bool
+static Aw.Sindri.Core.Profile.SizeSettings.operator !=(Aw.Sindri.Core.Profile.SizeSettings? left, Aw.Sindri.Core.Profile.SizeSettings? right) -> bool
+static Aw.Sindri.Core.Profile.SizeSettings.operator ==(Aw.Sindri.Core.Profile.SizeSettings? left, Aw.Sindri.Core.Profile.SizeSettings? right) -> bool
+static Aw.Sindri.Core.Profile.StepsSettings.operator !=(Aw.Sindri.Core.Profile.StepsSettings? left, Aw.Sindri.Core.Profile.StepsSettings? right) -> bool
+static Aw.Sindri.Core.Profile.StepsSettings.operator ==(Aw.Sindri.Core.Profile.StepsSettings? left, Aw.Sindri.Core.Profile.StepsSettings? right) -> bool
+Aw.Sindri.Core.Profile.LineProfile
+static Aw.Sindri.Core.Profile.LineProfile.DocsGlobs(Aw.Sindri.Core.Profile.SindriProfile! profile) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Profile.LineProfile.Draft(Aw.Sindri.Core.Profile.SindriProfile! profile) -> bool
+static Aw.Sindri.Core.Profile.LineProfile.HoldoutMin(Aw.Sindri.Core.Profile.SindriProfile! profile) -> int
+static Aw.Sindri.Core.Profile.LineProfile.LongMax(Aw.Sindri.Core.Profile.SindriProfile! profile) -> string!
+static Aw.Sindri.Core.Profile.LineProfile.MaxOpenPrs(Aw.Sindri.Core.Profile.SindriProfile! profile) -> int
+static Aw.Sindri.Core.Profile.LineProfile.MaxPhaseSize(Aw.Sindri.Core.Profile.SindriProfile! profile) -> string!
+static Aw.Sindri.Core.Profile.LineProfile.MaxStack(Aw.Sindri.Core.Profile.SindriProfile! profile) -> int
+static Aw.Sindri.Core.Profile.LineProfile.Parallel(Aw.Sindri.Core.Profile.SindriProfile! profile) -> int
+static Aw.Sindri.Core.Profile.LineProfile.SizesFile(Aw.Sindri.Core.Profile.SindriProfile! profile) -> string!
