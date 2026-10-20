@@ -1,4 +1,5 @@
 using Aw.Kernel.Data;
+using Microsoft.Data.Sqlite;
 
 namespace Aw.Context.Infrastructure.Store;
 
@@ -23,7 +24,7 @@ internal sealed class StampedCache<T>
     /// <summary>The counter <paramref name="query"/> reads, as of <paramref name="session"/>'s read transaction, or null when the store has none yet.</summary>
     internal static async ValueTask<long?> Stamp(SqliteReadSession session, string query, CancellationToken cancellationToken)
     {
-        var stamp = await SqliteQueries.One(session, new SqlStatement(query), Graph.GraphRows.Id, cancellationToken).ConfigureAwait(false);
+        var stamp = await SqliteQueries.One(session, new SqlStatement(query), StampMapper.Instance, cancellationToken).ConfigureAwait(false);
         return stamp.IsSuccess ? stamp.Value : null;
     }
 
@@ -54,5 +55,13 @@ internal sealed class StampedCache<T>
 
             _held[key] = (now, value);
         }
+    }
+
+    // why: Store sits below Graph (Graph's store reads through it), so the counter has its own mapper rather than Graph's (ARCH-CYCLE-001)
+    private sealed class StampMapper : IRowMapper<long>
+    {
+        internal static readonly StampMapper Instance = new();
+
+        public long Map(SqliteDataReader reader) => reader.GetInt64(0);
     }
 }
