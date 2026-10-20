@@ -88,3 +88,10 @@ evals:
   - evals/workflow.phase/cancelled.jsonl
   - evals/workflow.phase/babysit-stuck.jsonl
   - evals/workflow.phase/child-parks.jsonl
+  - evals/workflow.phase/reprove-cap.jsonl
+  - evals/workflow.phase/ship-fails.jsonl
+  - evals/workflow.phase/review-unresolved.jsonl
+  - evals/workflow.phase/babysit-cancelled.jsonl
+  - evals/workflow.phase/prove-cancelled.jsonl
+  - evals/workflow.phase/review-cancelled.jsonl
+  - evals/workflow.phase/ship-cancelled.jsonl
