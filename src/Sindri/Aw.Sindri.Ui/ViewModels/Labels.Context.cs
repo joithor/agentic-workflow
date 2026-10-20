@@ -62,7 +62,7 @@ internal static partial class Labels
     internal const string ContextUnconfirmed = "unconfirmed";
 
     /// <summary>The word for an anchor node in a band.</summary>
-    internal const string ContextAnchorTag = "anchor";
+    internal const string ContextAnchorTag = "topic";
 
     /// <summary>The word for a model-suggested link.</summary>
     internal const string ContextModelSuggested = "model suggested";
@@ -111,5 +111,5 @@ internal static partial class Labels
     /// <summary>The box's refusal of too many anchors.</summary>
     /// <param name="max">The most anchors one read takes.</param>
     /// <returns>The refusal.</returns>
-    internal static string ContextTooMany(int max) => string.Create(CultureInfo.InvariantCulture, $"At most {max} anchors at a time");
+    internal static string ContextTooMany(int max) => string.Create(CultureInfo.InvariantCulture, $"At most {max} topics at a time");
 }

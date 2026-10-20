@@ -34,6 +34,10 @@ public sealed class PlainWordsTests
             [Labels.ContextAnchor, Labels.ContextAnchorHint, Labels.ContextNoMap, Labels.ContextHead(1), Labels.ContextHead(4), Labels.ContextIntent, Labels.ContextProduct, Labels.ContextEdges, Labels.ContextCoverage, Labels.ContextSearched, Labels.ContextMore]);
 
     [Fact]
+    public void The_context_page_calls_an_anchor_a_topic_everywhere_it_is_read() =>
+        Assert.Equal(("topic", "At most 20 topics at a time"), (Labels.ContextAnchorTag, Labels.ContextTooMany(20)));
+
+    [Fact]
     public void The_shortcut_sheet_names_pages_and_actions_in_plain_words()
     {
         var go = Labels.FixedKeys.Single(k => k.Keys.StartsWith("G then", StringComparison.Ordinal));

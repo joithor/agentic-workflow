@@ -120,6 +120,21 @@ public sealed partial class CommandPaletteViewModelTests
         Assert.All(_palette.Entries.Where(e => e.Control?.IsPending == true), e => Assert.False(e.IsEnabled));
     }
 
+    // A pending row says "coming soon" in its status and its accessible name; no phase code reaches the screen.
+    [Fact]
+    public void Pending_entries_say_coming_soon_with_no_phase_code()
+    {
+        _palette.Open();
+        var pending = _palette.Entries.Where(e => e.Control?.IsPending == true).ToList();
+
+        Assert.NotEmpty(pending);
+        Assert.All(pending, e =>
+        {
+            Assert.Equal("coming soon", e.Status);
+            Assert.DoesNotContain("arrives", e.Name, StringComparison.Ordinal);
+        });
+    }
+
     // Q4: Stop Sindri goes to Health, where it lives (§4.8); it is never sent from the palette.
     [Fact]
     public async Task Stop_sindri_goes_to_health_and_closes()
