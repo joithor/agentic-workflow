@@ -78,4 +78,16 @@ public sealed class PauseServiceTests
 
         Expect.Equal(2, _h.Store.Events.Count(e => string.Equals(e.Envelope.Type, "service.paused", StringComparison.Ordinal)));
     }
+
+    [Fact]
+    public async Task The_setup_built_in_cannot_be_paused_because_the_profile_has_no_entry_for_it()
+    {
+        await Approve();
+        using var entered = Human();
+
+        var result = await Service().Handle(A.PauseServiceRequest().ForService(ServiceName.From("setup")).Build(), Token);
+
+        Expect.Equal(SindriErrors.ServiceNotFound.Code, result.Error.Code);
+        Assert.Empty(_h.Store.Events);
+    }
 }
