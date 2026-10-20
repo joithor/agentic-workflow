@@ -36,7 +36,7 @@ public sealed class RecipeFramesTests : FrameHost
         Assert.All(expected, name => Assert.Contains((name, AutomationControlType.Text), heard));
         Assert.All(Heard.Tree(Named<Control>(window, "RecipeStates")).Where(node => node.Type == AutomationControlType.Text), node => Assert.False(string.IsNullOrEmpty(node.Name), "a nameless text node in the band"));   // a live accessibility dump showed a bare TextBlock after the last state
         Assert.DoesNotContain(window.GetVisualDescendants().OfType<TextBlock>(), t => t.Name == "RecipeStateLink" && t.IsEffectivelyVisible && string.IsNullOrEmpty(t.Text));   // an empty link is not drawn at all
-        Assert.False(Visible(window, "RecipeTitle"), "the id is shown once, in the header's id@hash12");
+        Assert.Equal(recipe.Title, Named<TextBlock>(window, "RecipeTitle").Text);   // the sheet leads with the workflow's name; the id@hash12 waits in Details
     }
 
     [Fact]
