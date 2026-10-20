@@ -103,7 +103,7 @@ internal sealed class CoverageStrip : Button
     {
         Width = BarWidth,
         Height = BarHeight,
-        CornerRadius = Resource<CornerRadius>("Radius.XS", new CornerRadius(4)),
+        CornerRadius = Resource<CornerRadius>("Radius.XS", new(4)),
         Background = level switch
         {
             CoverageLevel.Searched => Brush("Brush.Ink"),
