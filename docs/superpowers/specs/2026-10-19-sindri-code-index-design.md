@@ -1,6 +1,6 @@
 # The Sindri code index block: symbols, callers and callees, built in the background when main moves
 
-**Status:** design, revision 2 (autoplan round 1), for the owner's review · **Date:** 2026-10-19 · **Owner decisions:** 2026-10-19 (§1: CI1, CI2,
+**Status:** **approved by the owner on 2026-10-20, every §15 default as written**; revision 3 amends §5.5, §9 and §15 Q1 from the CI-0d graphify spike (`tests/fixtures/code-index/graphify/SPIKE.md`), **approved by the owner on 2026-10-20** (both relayed by sindri-meta) · **Date:** 2026-10-19 · **Owner decisions:** 2026-10-19 (§1: CI1, CI2,
 CI4; the shared trigger is the owner's F1) · **Builds on:** the first Sindri design `2026-10-07-sindri-design.md` (D), §6.2
 (the TypeScript index this replaces), the factory addendum `2026-10-09-sindri-factory-addendum.md` §17.29.4 step 4 (the code
 index block is its own block), the context retrieval spec `2026-10-10-sindri-context-retrieval-design.md` (CTX), Phase 9 and
@@ -8,7 +8,7 @@ S-9, the scoping station spec `2026-10-15-sindri-scoping-station-design.md` (SC)
 surface spec `2026-10-10-sindri-api-surface-design.md` (API), the sandbox spec `2026-10-18-sindri-sandbox-design.md` (SB),
 `docs/csharp/sindri-context.md`, `docs/csharp/sindri.md`, `docs/sindri/index.md` (what the TS index does today) ·
 **Lane:** the ideas lane writes it; the context lane owns S-9 and the shared trigger; the API lane owns the job runtime ·
-**Next:** the owner reads it and answers §15; then /specToProvenPR takes §14's phases to PRs.
+**Next:** /specToProvenPR takes §14's phases to PRs.
 
 ## 0. Why
 
