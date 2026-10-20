@@ -21,17 +21,18 @@ namespace Aw.Sindri.Tests.ContextCalls;
 /// Wraps the host's real context engine and records, for each query, the engine caller Sindri built and the span the call
 /// ran inside, so a test can show an MCP call took the same query chain as the HTTP route.
 /// </summary>
-internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller Caller, string? Span)> calls, Func<Context.Core.Eval.Backtest.BacktestRequest, CancellationToken, ValueTask<Result<Context.Core.Eval.Backtest.BacktestRun>>>? backtest = null) : IContextEngine
+internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller Caller, string? Span)> calls, Func<Context.Core.Eval.Backtest.BacktestRequest, CancellationToken, ValueTask<Result<Context.Core.Eval.Backtest.BacktestRun>>>? backtest = null, Action? beforeQueue = null) : IContextEngine
 {
     /// <summary>Replaces the registered engine with one that records into <paramref name="calls"/>.</summary>
     /// <param name="services">The host's services.</param>
     /// <param name="calls">Receives each recorded call.</param>
     /// <param name="backtest">Answers EvalBacktest instead of the real engine (a backtest needs a git history and a brief source), or null.</param>
-    public static void Install(IServiceCollection services, List<(ContextCaller Caller, string? Span)> calls, Func<Context.Core.Eval.Backtest.BacktestRequest, CancellationToken, ValueTask<Result<Context.Core.Eval.Backtest.BacktestRun>>>? backtest = null)
+    /// <param name="beforeQueue">Runs before each review-queue read (a test moves the clock there to stand for a slow queue build), or null.</param>
+    public static void Install(IServiceCollection services, List<(ContextCaller Caller, string? Span)> calls, Func<Context.Core.Eval.Backtest.BacktestRequest, CancellationToken, ValueTask<Result<Context.Core.Eval.Backtest.BacktestRun>>>? backtest = null, Action? beforeQueue = null)
     {
         var original = services.Last(d => d.ServiceType == typeof(IContextEngine));
         _ = services.Remove(original);
-        services.Add(new ServiceDescriptor(typeof(IContextEngine), sp => new RecordingEngine(Resolve(original, sp), calls, backtest), original.Lifetime));
+        services.Add(new ServiceDescriptor(typeof(IContextEngine), sp => new RecordingEngine(Resolve(original, sp), calls, backtest, beforeQueue), original.Lifetime));
     }
 
     public Result<ContextSettings> CheckSettings(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) => inner.CheckSettings(section, repos);
@@ -85,7 +86,11 @@ internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller 
     public ValueTask<Result<MapBuildReport>> BuildMap(IProgress<string>? progress, ContextScope scope, CancellationToken cancellationToken) =>
         inner.BuildMap(progress, scope, cancellationToken);
 
-    public ValueTask<Result<ReviewQueueView>> ReviewQueue(int? limit, ContextScope scope, CancellationToken cancellationToken) => inner.ReviewQueue(limit, scope, cancellationToken);
+    public ValueTask<Result<ReviewQueueView>> ReviewQueue(int? limit, ContextScope scope, CancellationToken cancellationToken)
+    {
+        beforeQueue?.Invoke();
+        return inner.ReviewQueue(limit, scope, cancellationToken);
+    }
 
     public ValueTask<Result<ReviewResult>> ApplyReview(ReviewDecision decision, ContextScope scope, CancellationToken cancellationToken) =>
         inner.ApplyReview(decision, scope, cancellationToken);

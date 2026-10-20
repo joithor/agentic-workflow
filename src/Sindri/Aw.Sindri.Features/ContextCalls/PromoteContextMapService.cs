@@ -29,6 +29,13 @@ internal sealed class PromoteContextMapService(ContextScopes scopes, IContextEng
             return scope.Error;
         }
 
+        // An answer is redeemed first, against the draft the human saw: the queue build below is slow on a large draft, and its minutes would
+        // otherwise count against the challenge's five. Then the draft must still be the latest with nothing to decide.
+        if (request is { Draft: { } confirmed, Answer: not null } && Refuse(request, confirmed) is { } refused)
+        {
+            return refused;
+        }
+
         var ready = await Ready(scope.Value, cancellationToken).ConfigureAwait(false);
         if (ready.IsError)
         {
@@ -36,11 +43,9 @@ internal sealed class PromoteContextMapService(ContextScopes scopes, IContextEng
         }
 
         var draft = ready.Value;
-        var action = new ChallengeAction("promote map " + Tag(draft));
-        var subject = new ChallengeSubject("promote:" + draft, Digest: null);
         if (request.Draft is null)
         {
-            return new PromoteContextMapResponse(draft, Promoted: null, Sequence: null, challenges.Issue(action, subject));
+            return new PromoteContextMapResponse(draft, Promoted: null, Sequence: null, challenges.Issue(Action(draft), Subject(draft)));
         }
 
         if (!string.Equals(request.Draft, draft, StringComparison.Ordinal))
@@ -48,9 +53,15 @@ internal sealed class PromoteContextMapService(ContextScopes scopes, IContextEng
             return ContextErrors.PromoteRefused.With($"the latest draft is {draft}, not {request.Draft}, which you confirmed (fix: run 'sindri context map promote' again)");
         }
 
-        var refused = challenges.Refuse(request.Answer, action, subject, "sindri context map promote");
-        return refused is not null ? refused : await Promote(draft, scope.Value, cancellationToken).ConfigureAwait(false);
+        // With no answer the refusal comes after the draft check, so a stale draft is named first.
+        return request.Answer is null && Refuse(request, draft) is { } unanswered ? unanswered : await Promote(draft, scope.Value, cancellationToken).ConfigureAwait(false);
     }
+
+    private Error? Refuse(PromoteContextMapRequest request, string draft) => challenges.Refuse(request.Answer, Action(draft), Subject(draft), "sindri context map promote");
+
+    private static ChallengeAction Action(string draft) => new("promote map " + Tag(draft));
+
+    private static ChallengeSubject Subject(string draft) => new("promote:" + draft, Digest: null);
 
     // 'v14' of 'v14@7c3e1a2'; a draft opened from a map with no commit is just 'v14'.
     private static string Tag(string draft) => draft.Split('@')[0];
