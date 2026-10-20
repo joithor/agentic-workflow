@@ -128,6 +128,13 @@
 
       <Expander x:Name="ItemDetailsExpander" Header="{Binding Text.Details}" IsExpanded="{Binding DetailsOpen, Mode=TwoWay}" AutomationProperties.Name="{Binding Text.Details}">
         <StackPanel x:Name="ItemDetails" Spacing="4">
+          <Grid Classes="row" ColumnDefinitions="110,*,Auto">
+            <TextBlock Classes="caption subtle row-label" Text="{Binding Text.ItemIdLabel}" />
+            <TextBlock x:Name="ItemIdText" Grid.Column="1" Classes="mono" Text="{Binding ItemId}" TextTrimming="CharacterEllipsis" AutomationProperties.Name="{Binding ItemId}" />
+            <Button x:Name="ItemCopyId" Grid.Column="2" Classes="copy" Click="OnCopyId" AutomationProperties.Name="{Binding Text.CopyItemId}">
+              <TextBlock Classes="caption" Text="{Binding Text.CopyItemId}" />
+            </Button>
+          </Grid>
           <Grid Classes="row" ColumnDefinitions="110,*">
             <TextBlock Classes="caption subtle row-label" Text="{Binding Text.CreatedBy}" />
             <TextBlock x:Name="ItemCreatedBy" Grid.Column="1" Classes="mono" Text="{Binding CreatedBy}" AutomationProperties.Name="{Binding CreatedBy}" />

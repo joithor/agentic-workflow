@@ -30,8 +30,13 @@ internal static partial class Labels
         ["queued"] = "Queued",
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
-    /// <summary>The Queue table's column headings (queue.html).</summary>
-    internal const string ColumnItem = "ID";
+    /// <summary>The item sheet's Details line for the item's id.</summary>
+    internal const string ItemIdLabel = "Item id";
+
+    /// <summary>The Copy button next to the item's id.</summary>
+    internal const string CopyItemId = "Copy";
+
+    /// <summary>The Queue table's column headings (queue.html); the title leads, the raw id is in the sheet's Details.</summary>
 
     /// <summary>The title column.</summary>
     internal const string ColumnTitle = "TITLE";

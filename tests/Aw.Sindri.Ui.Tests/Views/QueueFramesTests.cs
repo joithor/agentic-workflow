@@ -159,6 +159,21 @@ public sealed class QueueFramesTests : IDisposable
         Frame(window, "queue-loading");
     });
 
+    // Review 456-3: the title leads each row; the raw id is neither a column nor a header.
+    [Fact]
+    public Task The_queue_leads_with_the_title_and_draws_no_raw_id_column() => OnUi(async () =>
+    {
+        var (window, shell) = await Connected(s => !s.Queue.IsLoading);
+        shell.GoTo(PageId.Work);
+        Settle(window);
+
+        var page = Named<Control>(window, "QueuePage");
+        Assert.DoesNotContain(page.GetVisualDescendants().OfType<Control>(), c => c.Name == "IdText");
+        var header = page.GetVisualDescendants().OfType<Grid>().First(g => g.Name == "QueueHeader");
+        Assert.Equal(["TITLE", "REPO", "STATUS", "STAGE", "AGE"], header.Children.OfType<TextBlock>().Select(t => t.Text));
+        Assert.Equal(0, Grid.GetColumn(header.Children.OfType<TextBlock>().First()));
+    });
+
     // §3.2: Running and With you (With you first, at most five, then Show all) beside Queued.
     [Fact]
     public Task Homes_queue_panels_cap_their_rows() => OnUi(async () =>
@@ -179,10 +194,13 @@ public sealed class QueueFramesTests : IDisposable
         var (window, shell) = await OpenItem(Connected(s => !s.Queue.IsLoading), A.NewItem);
 
         Assert.Equal("Try the queue", Named<TextBlock>(window, "ItemTitle").Text);
+        Assert.False(Visible(window, "ItemIdText"));   // 456-3: the raw id waits behind Details too, with Copy
         Assert.False(Visible(window, "ItemVersion"));   // F3: who made it, the version and the run's address wait behind Details
         shell.Item.DetailsOpen = true;
         await Until(window, () => Visible(window, "ItemVersion"));
         Assert.Equal("1", Named<TextBlock>(window, "ItemVersion").Text);
+        Assert.Equal(A.NewItem, Named<TextBlock>(window, "ItemIdText").Text);
+        Assert.True(Visible(window, "ItemCopyId"));
         Assert.Equal("New for 5m", Named<TextBlock>(window, "ItemStatusLine").Text);
         var actions = Named<Control>(window, "ItemActionList").GetVisualDescendants().OfType<Button>().Where(b => b.Name == "RunButton").Select(AutomationProperties.GetName).ToList();
         Assert.Equal(["Close item " + A.NewItem, "Close as cancelled " + A.NewItem], actions, StringComparer.Ordinal);

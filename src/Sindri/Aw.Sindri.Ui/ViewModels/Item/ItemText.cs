@@ -9,8 +9,11 @@ internal sealed class ItemText
     /// <summary>Create item, the button's label (the catalog's label for CreateItem).</summary>
     public string CreateItem { get; } = Labels.Action("CreateItem");
 
-    /// <summary><see cref="Labels.ColumnItem"/>.</summary>
-    public string ColumnItem { get; } = Labels.ColumnItem;
+    /// <summary><see cref="Labels.ItemIdLabel"/>.</summary>
+    public string ItemIdLabel { get; } = Labels.ItemIdLabel;
+
+    /// <summary><see cref="Labels.CopyItemId"/>.</summary>
+    public string CopyItemId { get; } = Labels.CopyItemId;
 
     /// <summary><see cref="Labels.ColumnTitle"/>.</summary>
     public string ColumnTitle { get; } = Labels.ColumnTitle;

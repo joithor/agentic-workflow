@@ -28,6 +28,16 @@ internal sealed partial class ItemSheetViewModel(ISindriApi api, CatalogViewMode
     private long _conflictVersion;
     private int _pages;
 
+    /// <summary>Copies the item's id to the clipboard (Details: the id is never up front).</summary>
+    /// <returns>A task that completes once the clipboard answered.</returns>
+    internal async Task CopyId()
+    {
+        if (ItemId.Length > 0)
+        {
+            _ = await catalog.Clipboard.SetText(ItemId, CancellationToken.None).ConfigureAwait(true);
+        }
+    }
+
     /// <summary>The item's decisions and requests (U3' T8).</summary>
     internal ItemNeedsViewModel Needs { get; } = ItemNeedsViewModel.Create(api, decisions ?? new DecisionSender(api), catalog);
 

@@ -55,6 +55,21 @@ public sealed class ItemSheetViewModelTests
         Assert.Equal(("New for 5m", false), (sheet.StatusLine, sheet.DetailsOpen));
     }
 
+    // Review 456-3: the queue no longer draws the raw id; the sheet's Details carries it with Copy.
+    [Fact]
+    public async Task Copy_id_puts_the_items_id_on_the_clipboard()
+    {
+        var clipboard = new FakeClipboard();
+        var catalog = new CatalogViewModel(clipboard, _clock);
+        catalog.Show(_api, _server, (await _server.Commands(_api, Token)).Value);
+        var sheet = new ItemSheetViewModel(_server, catalog, _clock);
+        await sheet.Open(_api, A.NewItem, Token);
+
+        await sheet.CopyId();
+
+        Assert.Equal(A.NewItem, clipboard.Text);
+    }
+
     // L1: the timeline is patched by sequence, so a refresh keeps the rows (and the focus on one) as they were.
     [Fact]
     public async Task A_refresh_keeps_the_timeline_rows_it_already_shows()
