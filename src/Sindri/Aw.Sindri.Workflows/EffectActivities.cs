@@ -132,13 +132,14 @@ internal sealed class EffectActivities(
             throw new InvalidOperationException(Scrubbed($"{done.Error.Code}: {done.Error.Message}"));   // retried: the block's existence check makes the repeat harmless
         }
 
+        RefuseUndeclaredFacts(run, done.Value);
         var row = new EffectRow(identity, run.CommandId, run.Command.Effect, run.Command.Origin, EffectState.Dispatched, InstanceAddress.From(run.WorkflowId),
             Reason: done.Value.Existed ? "already sent" : null);
         var dispatched = Keyed(events.Entry(OutboxEvents.Dispatched, row, $"workflow:{run.WorkflowId}:effect:{identity}:dispatched", run.Item));
         var at = await Append(dispatched, cancel).ConfigureAwait(false);
         if (done.Value.Reply is { } outcome)
         {
-            _ = await Append(Reply(run, outcome, dispatched.Envelope.Id), cancel).ConfigureAwait(false);
+            _ = await Append(Reply(run, outcome, dispatched.Envelope.Id, done.Value.Facts), cancel).ConfigureAwait(false);
         }
 
         return new EffectRunResult(at.Sequence, done.Value.Reply?.Value, done.Value.Existed || at.AlreadyRecorded);
@@ -163,9 +164,9 @@ internal sealed class EffectActivities(
     /// The reply event a block's <paramref name="outcome"/> names (spec §2, §12): the one causation-routed event that
     /// declares it, from that event's producer, caused by the dispatched row so the bridge routes it to this instance only.
     /// </summary>
-    private LedgerEntry Reply(EffectRun run, OutcomeName outcome, Guid causation)
+    private LedgerEntry Reply(EffectRun run, OutcomeName outcome, Guid causation, IReadOnlyDictionary<FactKey, FactValue>? facts)
     {
-        var replies = catalog.Events.Where(e => e.Route == EventRoute.Causation && e.Outcomes.Contains(outcome)).ToList();
+        var replies = RepliesTo(outcome);
         if (replies is not [{ } reply])
         {
             throw new ApplicationFailureException(
@@ -173,8 +174,39 @@ internal sealed class EffectActivities(
                 errorType: WorkflowErrors.EffectFailed.Code, nonRetryable: true);
         }
 
-        var entry = Keyed(events.Entry(reply.Kind.Value, new EffectReply(outcome.Value, run.Command.Identity.Text), $"workflow:{run.WorkflowId}:effect:{run.Command.Identity.Text}:reply", run.Item));
+        var entry = Keyed(events.Entry(reply.Kind.Value, new EffectReply(outcome.Value, run.Command.Identity.Text, ReplyFactsOf(facts)), $"workflow:{run.WorkflowId}:effect:{run.Command.Identity.Text}:reply", run.Item));
         return entry with { Envelope = entry.Envelope with { Actor = reply.Producer, CausationId = causation } };
+    }
+
+    private List<EventDescriptor> RepliesTo(OutcomeName outcome) =>
+        [.. catalog.Events.Where(e => e.Route == EventRoute.Causation && e.Outcomes.Contains(outcome))];
+
+    private static Dictionary<string, FactValue>? ReplyFactsOf(IReadOnlyDictionary<FactKey, FactValue>? facts) =>
+        facts is { Count: > 0 } ? facts.ToDictionary(static f => f.Key.Value, static f => f.Value, StringComparer.Ordinal) : null;
+
+    /// <summary>
+    /// A reply's facts are recorded only through the transition's 'produces' (forge wiring brief item 3), and only the ones the effect's
+    /// descriptor lists in 'Outputs' and its reply event declares: anything else is refused here, before any row is written, naming the
+    /// facts, so the delivery's declared-facts filter never drops one silently. An instance that began before the 'forge-reply-facts'
+    /// marker takes no reply facts.
+    /// </summary>
+    private void RefuseUndeclaredFacts(EffectRun run, EffectDone done)
+    {
+        if (done.Facts is not { Count: > 0 } facts)
+        {
+            return;
+        }
+
+        var declared = catalog.Find(run.Command.Effect)?.Outputs.Select(static o => o.Fact).ToHashSet() ?? [];
+        var received = done.Reply is { } outcome && RepliesTo(outcome) is [{ } reply] ? reply.Facts.ToHashSet() : [];
+        var refused = facts.Keys.Where(k => !run.ReplyFacts || !declared.Contains(k) || !received.Contains(k)).Select(static k => k.Value).Order(StringComparer.Ordinal).ToList();
+        if (refused.Count > 0)
+        {
+            var why = run.ReplyFacts ? "the effect's descriptor must list each in Outputs and the reply event declare it" : "this instance began before the forge-reply-facts marker";
+            throw new ApplicationFailureException(
+                $"{run.Command.Effect.Value} replied with {string.Join(", ", refused)}, which it may not carry: {why}",
+                errorType: WorkflowErrors.EffectFailed.Code, nonRetryable: true);
+        }
     }
 
     /// <summary><paramref name="entry"/> with an envelope id derived from its idempotency key, so a repeat names the row already written.</summary>
