@@ -576,6 +576,8 @@ map v13 (draft, a41b07d) · 46 proposals · 3 orphaned links
 
 ### 8.7a Publishing a refreshed map (owner decision, 2026-10-20: the map and the code index publish together)
 
+*Approved by the owner on 2026-10-20 with every default as written (15-minute wait, setting 0 to 240; a manual promote does not wait; a go-ahead shows on Health and map status, no needs-you row; each repo's commit kept per map version; the first map and a repo's first index do not wait), relayed by sindri-meta.*
+
 The decision and its numbers are the code index spec's (`2026-10-19-sindri-code-index-design.md`, revision 4, CI13 and §6.4: the pure
 `MapPublishDecision`, its inputs and outputs, the wait bound, the supersede rules, the words and events). This subsection is the
 map side's contract of record: what the store holds and what each actor may do. (`docs/csharp/sindri-context.md` is the as-built
