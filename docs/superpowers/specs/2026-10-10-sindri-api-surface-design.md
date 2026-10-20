@@ -686,7 +686,7 @@ The view's top level adds `orderedBy`: `"path"`, or `"transition-list"` when the
 |---|---|
 | `token` | The run token, `{entry}.{n}` |
 | `step` | The Step's state id. The view carries no display name for a Step, so none is served |
-| `attempt`, `maxAttempts?` | `attempt` is the nth run of the same Step in this instance, from 1. `maxAttempts` is the loop cap of that Step's state: the round allowance `states[].round.max` shows while the state is the active one (so it moves with a round grant), else the recipe's cap from `states[].loops[].max`, which every looped state carries; `null` when the state is in no loop |
+| `attempt`, `maxAttempts?` | `attempt` is the nth run of the same Step in this instance, from 1. `maxAttempts` is the cap of the loop the Step's state is in, from the recipe's own `loop` membership (so a state at neither end of the back edge has it too): the allowance the instance holds for the loop while its active state is in that loop (a granted round raises it, on every run of the loop's states, past ones too), else the recipe's cap. It is not read from `states[].round`, which stays the current state's alone. `null` when the state is in no loop, or when the instance's recipe can't be read at the time |
 | `state` | `running` (no closing row yet, also while the instance is parked, taken over or escalated), `passed`, `failed`, `refused` (its report was refused by a gate or evidence check; a later override keeps it `refused`), `cancelled` or `abandoned` (the instance moved to another frame with no report on the run) |
 | `runtime?` | `desk` or `agent`, from the frame that opened the run |
 | `startedAt`, `endedAt?`, `durationMs?` | The ledger times of the opening and closing rows; the last two are `null` while `running` |
