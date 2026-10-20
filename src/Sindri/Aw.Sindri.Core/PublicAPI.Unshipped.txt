@@ -2354,11 +2354,13 @@ Aw.Sindri.Core.Workflow.Blocks.EffectContext.Text.get -> string?
 Aw.Sindri.Core.Workflow.Blocks.EffectContext.Text.init -> void
 Aw.Sindri.Core.Workflow.Blocks.EffectDone
 Aw.Sindri.Core.Workflow.Blocks.EffectDone.<Clone>$() -> Aw.Sindri.Core.Workflow.Blocks.EffectDone!
-Aw.Sindri.Core.Workflow.Blocks.EffectDone.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.OutcomeName? Reply, out bool Existed) -> void
-Aw.Sindri.Core.Workflow.Blocks.EffectDone.EffectDone(Aw.Sindri.Core.Workflow.Ids.OutcomeName? Reply, bool Existed) -> void
+Aw.Sindri.Core.Workflow.Blocks.EffectDone.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.OutcomeName? Reply, out bool Existed, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>? Facts) -> void
+Aw.Sindri.Core.Workflow.Blocks.EffectDone.EffectDone(Aw.Sindri.Core.Workflow.Ids.OutcomeName? Reply, bool Existed, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>? Facts = null) -> void
 Aw.Sindri.Core.Workflow.Blocks.EffectDone.Equals(Aw.Sindri.Core.Workflow.Blocks.EffectDone? other) -> bool
 Aw.Sindri.Core.Workflow.Blocks.EffectDone.Existed.get -> bool
 Aw.Sindri.Core.Workflow.Blocks.EffectDone.Existed.init -> void
+Aw.Sindri.Core.Workflow.Blocks.EffectDone.Facts.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>?
+Aw.Sindri.Core.Workflow.Blocks.EffectDone.Facts.init -> void
 Aw.Sindri.Core.Workflow.Blocks.EffectDone.Reply.get -> Aw.Sindri.Core.Workflow.Ids.OutcomeName?
 Aw.Sindri.Core.Workflow.Blocks.EffectDone.Reply.init -> void
 Aw.Sindri.Core.Workflow.Blocks.EngineFilledOutputs
@@ -2881,10 +2883,12 @@ Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.Text.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.Text.init -> void
 Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply
 Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply!
-Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.Deconstruct(out string! Outcome, out string! Effect) -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.Deconstruct(out string! Outcome, out string! Effect, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Engine.FactValue!>? Facts) -> void
 Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.Effect.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.Effect.init -> void
-Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.EffectReply(string! Outcome, string! Effect) -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.Facts.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Engine.FactValue!>?
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.Facts.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.EffectReply(string! Outcome, string! Effect, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Engine.FactValue!>? Facts = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.Equals(Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply? other) -> bool
 Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.Outcome.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Effects.EffectReply.Outcome.init -> void
