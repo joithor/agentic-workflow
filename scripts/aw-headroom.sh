@@ -226,13 +226,13 @@ ensure_proxy() {
 # EXIT trap of a wrapped run: leave the session list and stop the proxy when no other session is left. The check and the
 # kill happen under the lock a joining session registers under, so a new session is never left on a proxy that is killed.
 cleanup() {
-  [ -n "${RUN_DIR:-}" ] || return 0
-  if lock_acquire "$RUN_DIR"; then
-    rm -f "$RUN_DIR/users/$$"
-    if [ "${AW_HEADROOM_KEEP:-0}" != "1" ] && [ "$(live_users "$RUN_DIR")" -eq 0 ]; then kill_proxy "$RUN_PROVIDER"; fi
+  [ -n "${run_dir_g:-}" ] || return 0
+  if lock_acquire "$run_dir_g"; then
+    rm -f "$run_dir_g/users/$$"
+    if [ "${AW_HEADROOM_KEEP:-0}" != "1" ] && [ "$(live_users "$run_dir_g")" -eq 0 ]; then kill_proxy "$run_provider_g"; fi
     lock_release
   else
-    rm -f "$RUN_DIR/users/$$"
+    rm -f "$run_dir_g/users/$$"
   fi
 }
 
@@ -242,7 +242,7 @@ run_wrapped() {
   if ! command -v "$tool" >/dev/null 2>&1; then warn "$tool is not on PATH"; return 127; fi
   upstream="$(upstream_of "$provider")"
   port="$(port_of "$provider")"; d="$(pdir "$provider")"
-  RUN_PROVIDER="$provider"; RUN_DIR="$d"
+  run_provider_g="$provider"; run_dir_g="$d"
   mkdir -p "$d/users" || ok=0
   if [ "$ok" = 1 ] && lock_acquire "$d"; then
     : >"$d/users/$$"             # registered before the health decision, under the lock a stopping session takes
