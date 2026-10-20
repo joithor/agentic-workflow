@@ -158,6 +158,20 @@
       ]
     },
     {
+      "type": "mcp.registered",
+      "keyShape": "mcp.registered:<commandId>",
+      "invalidates": [
+        "setup"
+      ]
+    },
+    {
+      "type": "onyx.deferred",
+      "keyShape": "onyx.deferred:<commandId>",
+      "invalidates": [
+        "setup"
+      ]
+    },
+    {
       "type": "process.started",
       "keyShape": "process.started:<epoch>",
       "invalidates": [
@@ -188,6 +202,28 @@
         "status",
         "profile",
         "needs-you"
+      ]
+    },
+    {
+      "type": "recipe.registration.completed",
+      "keyShape": "recipe.registration.completed:<epoch>",
+      "invalidates": [
+        "setup",
+        "recipes"
+      ]
+    },
+    {
+      "type": "repo.added",
+      "keyShape": "repo.added:<commandId>",
+      "invalidates": [
+        "setup"
+      ]
+    },
+    {
+      "type": "repo.onboarded",
+      "keyShape": "repo.onboarded:<repo>:<hash>",
+      "invalidates": [
+        "setup"
       ]
     },
     {
@@ -243,6 +279,20 @@
         "item",
         "items",
         "timeline"
+      ]
+    },
+    {
+      "type": "setup.consent.given",
+      "keyShape": "setup.consent.given:<profileHash>",
+      "invalidates": [
+        "setup"
+      ]
+    },
+    {
+      "type": "setup.step.changed",
+      "keyShape": "setup.step.changed:<id>:<state>:<n>",
+      "invalidates": [
+        "setup"
       ]
     }
   ]

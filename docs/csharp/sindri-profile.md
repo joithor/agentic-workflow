@@ -25,6 +25,7 @@ not in the profile: they live in `launcher.json` (`docs/csharp/sindri-launcher.m
 | `index` | `IndexSettings` | no | none | Deny paths for every repo's map extraction |
 | `launch` | `LaunchSettings` | no | none | The launch targets and the confirm window (UI spec E-4). Left out of the canonical JSON when absent, so a profile without it keeps its approved hash |
 | `agents` | `AgentSettings` | no | none | Per-agent budgets and the argv hashes unattended Steps may run (screens spec E-28, launcher L-11). Left out of the canonical JSON when absent |
+| `setup` | `SetupSettings` | no | none | What Sindri does on its own while the owner sets it up once (setup-once spec §7.1). Left out of the canonical JSON when absent, so a profile without it keeps its approved hash |
 
 ### `repos[]`
 
@@ -82,6 +83,12 @@ What the router stub does with an item it routes (workflow engine spec §12). Re
 | Key | Type | Required | Default | Meaning |
 |---|---|---|---|---|
 | `startable` | `all` or `none` | no | `all` | `all` lets every routed item start; `none` stops them at the router (the gate fails and the item parks). Any other value is refused before approval (`workflow.route.startable`) |
+
+### `setup`
+
+| Key | Type | Required | Default | Meaning |
+|---|---|---|---|---|
+| `mcp` | `auto` or `off` | no | `auto` | `auto` lets Sindri register its MCP server in each repo of the approved profile on its own (local scope, once consent is given); `off` stops that, and the "Connect your agents" button and `sindri mcp register --apply` still work. Any other value is refused before approval (`setup.mcp`) |
 
 ### `index`
 

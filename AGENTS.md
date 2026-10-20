@@ -96,7 +96,7 @@ dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-
 dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=integration" --ignore-exit-code 8   # Temp SQLite files, WebApplicationFactory (< 60 s per package)
 dotnet test --solution AgenticWorkflow.slnx --filter-not-trait "Lane=heavy" --ignore-exit-code 8     # Everything except containers, browsers and index builds
 node scripts/ci/lane-budgets.mjs        # After a Release build: each package's unit/integration lane wall clock vs its budget (LANE-PKG-001)
-dotnet format --verify-no-changes       # Style and analyzer fixes are applied (CI and pre-commit)
+dotnet format --verify-no-changes       # Style and analyzer fixes are applied (CI and the meta gate; no pre-commit hook runs it)
 scripts/dotnet-verify-packages.sh       # Lock files present and unchanged, signature-verified locked restore, dotnet nuget verify --all
 # Add a package: /new-package (node scripts/scaffold/new-package.mjs; contract docs/csharp/scaffolds/new-package.md)
 # Add a use case: /new-slice (node scripts/scaffold/new-slice.mjs; contract docs/csharp/scaffolds/new-slice.md) — test, request and response, service, endpoint, registration
@@ -179,6 +179,7 @@ bash scripts/tests/check-rules.test.sh
 bash scripts/tests/check-launcher.test.sh   # launcher.json schema, fixtures, built-ins and argvHash goldens (node scripts/check-launcher.mjs; Ajv is a dev dependency of scripts/)
 bash scripts/tests/check-fleet.test.sh      # fleet state schema, its valid and invalid fixtures, and the /proc-shaped sessions tree (node scripts/check-fleet.mjs; Ajv as above)
 bash scripts/tests/check-scoping-schemas.test.sh # schemas/scoping/: every schema compiles, its examples get their verdicts, seeds.json matches the recipe's intake (node scripts/check-scoping-schemas.mjs; Ajv as above)
+bash scripts/tests/check-line-schemas.test.sh    # schemas/line/: every report schema compiles, its examples get their verdicts (node scripts/check-line-schemas.mjs; Ajv as above)
 bash scripts/tests/check-profile-doc.test.sh # docs/csharp/sindri-profile.md names every SindriProfile key (node scripts/check-profile-doc.mjs)
 bash scripts/tests/scaffold.test.sh
 bash scripts/tests/check-env-example.test.sh
@@ -210,6 +211,7 @@ bash scripts/tests/test-tmux.test.sh
 bash scripts/tests/sindri-smoke-normalize.test.sh
 bash scripts/tests/scoping-fixture.test.sh
 bash scripts/tests/line-fixture.test.sh
+bash scripts/tests/code-index-fixture.test.sh  # the code-index fixtures (tests/fixtures/code-index): verify.mjs, the sample check, the hostile generator
 bash scripts/tests/meta-launch.test.sh      # Linux and macOS (golden transcript; needs cc on macOS)
 bash scripts/tests/meta-version.test.sh     # the installed aw-meta's version and the launcher's staleness warning (Linux and macOS)
 bash scripts/tests/install-meta.test.sh
@@ -223,15 +225,17 @@ bash config/hooks/tests/sindri-nudge.test.sh
 bash config/hooks/tests/fleet-state.test.sh   # the aw:fleet hook: every Claude event's state file against the schema, PostToolUse before jq, refusals, modes, under 100 ms (real payloads in tests/fixtures/fleet-input/)
 bash scripts/tests/install-fleet.test.sh      # install-fleet.sh install and --uninstall (only # aw:fleet entries), setup.sh --with-fleet --dry-run
 bash scripts/tests/install-headroom.test.sh   # aw-headroom.sh and install-headroom.sh: upstream detection order, no loop, fake headroom/claude/codex, dry run writes nothing, no MCP, token never printed
+bash scripts/tests/install-tldraw.test.sh     # install-tldraw.sh: brew cask on macOS, the pinned AppImage on Linux (sha256 refusal), the agent-skills marker check, fail-open, --no-tldraw
 bash config/hooks/tests/failopen.test.sh
 bash config/hooks/tests/meta-hooks.test.sh
-for t in config/lib/tests/*.test.sh; do bash "$t" || echo "FAILED: $t"; done  # merge-hook, levers, installers, and judge-cs-hook-surface (the hook contract: real hooks vs the C# judge, and the TS judge when judge/dist is built; needs dotnet)
+for t in config/lib/tests/*.test.sh; do bash "$t" || echo "FAILED: $t"; done  # merge-hook, levers, installers, judge-cs-hook-surface (the hook contract: real hooks vs the C# judge, and the TS judge when judge/dist is built; needs dotnet) and sindri-cs-hook-surface (the sindri-nudge SessionStart hook vs the C# `sindri repo status --nudge`: one line, silence, exit 0, read-only, bounded; builds the Sindri host, needs dotnet)
 
 # Levers and probe (default provider: claude)
 scripts/install-<lever>.sh --provider claude|codex|cursor
 scripts/probe.sh [--provider claude|codex|cursor] on|off|status
 scripts/install-scorer.sh               # Build scorer, install CLI + launchd job
 scripts/install-headroom.sh --provider claude|codex   # headroom as a proxy wrapper only (no MCP server): installs the CLI when missing and the `aw-headroom` launcher; setup.sh runs it per provider (Cursor: skipped), fail-open
+scripts/install-tldraw.sh [--dry-run]   # tldraw offline, the canvas agents drive for diagrams: brew cask on macOS, the pinned AppImage on Linux; prints the app's Develop → Install Agent Skills step until a provider has its skill (setup.sh runs it; skip with --no-tldraw), fail-open
 aw-headroom claude|codex [args]         # Run the tool through a loopback headroom proxy chained in front of its current upstream (e.g. EasyCLIProxyAPI); nothing on disk is edited; `aw-headroom upstream|status|stop`
 sindri doctor                           # Sindri health checks (ok / warn / fail + fix)
 sindri index setup && sindri index build    # code index (Ollama + graphify, offline)

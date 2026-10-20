@@ -25,4 +25,10 @@ public sealed class FakeRepoLocator : IRepoLocator
     /// <inheritdoc/>
     public ValueTask<RepoName?> Locate(string directory, IReadOnlyList<RepoEntry> repos, CancellationToken cancellationToken) =>
         ValueTask.FromResult(_checkouts.TryGetValue(directory, out var checkout) ? RepoScope.Longest(checkout, repos) : null);
+
+    /// <inheritdoc/>
+    public ValueTask<RepoPlacement?> Place(string directory, IReadOnlyList<RepoEntry> repos, CancellationToken cancellationToken) =>
+        ValueTask.FromResult(_checkouts.TryGetValue(directory, out var checkout)
+            ? new RepoPlacement(checkout, repos.FirstOrDefault(r => r.Path == checkout && RepoName.TryFrom(r.Name, out _)) is { } entry ? RepoName.From(entry.Name) : null)
+            : null);
 }

@@ -40,4 +40,18 @@ public sealed class NeedsYouRowIdTests
         Assert.True(NeedsYouRowId.TryParse("failure:service:heartbeat", provider: null, out _));
         Assert.False(NeedsYouRowId.TryParse("decision:DEC-XYZ", provider: null, out _));
     }
+
+    // setup-once spec §7.3: the profile, the map and Onyx have rows of their own kinds, so 'setup:' takes only the three steps that have none
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("setup:repo", true)]
+    [InlineData("setup:recipes", true)]
+    [InlineData("setup:mcp", true)]
+    [InlineData("setup:profile", false)]
+    [InlineData("setup:map", false)]
+    [InlineData("setup:onyx", false)]
+    [InlineData("setup:", false)]
+    [InlineData("setup:repo2", false)]
+    [InlineData("setup:repo\n", false)]
+    public void A_setup_row_id_names_repo_recipes_or_mcp_only(string text, bool valid) =>
+        Assert.Equal(valid, NeedsYouRowId.TryParse(text, provider: null, out _));
 }
