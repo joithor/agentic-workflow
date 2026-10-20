@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api.Workflow;
+using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Instance;
@@ -76,7 +77,8 @@ public sealed class InstanceFrameViewModelTests
         Assert.NotEqual((int)node["recipe"]!["version"]!, served);
         var word = "v" + served.ToString(System.Globalization.CultureInfo.InvariantCulture);
         Assert.Equal(word, frame.Version);
-        Assert.Contains($"· {word} ·", frame.Identity, StringComparison.Ordinal);
+        Assert.Contains(word, frame.DetailsText, StringComparison.Ordinal);
+        Assert.DoesNotContain(word, frame.Identity, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -93,7 +95,11 @@ public sealed class InstanceFrameViewModelTests
         Assert.Equal(
             (Text(golden["address"]), Text(golden["title"]), Text(golden["recipe"]!["id"]), Text(header["hash12"]), $"v{header["version"]}", Text(header["state"]), SinceOf(scenario)),
             (frame.Address, frame.Title, frame.Recipe, frame.Hash12, frame.Version, frame.StateText, frame.SinceText));
-        Assert.Contains(frame.Recipe + "@" + frame.Hash12, frame.Identity, StringComparison.Ordinal);
+        Assert.Contains(frame.Recipe + "@" + frame.Hash12, frame.DetailsText, StringComparison.Ordinal);
+        Assert.Contains(frame.Address, frame.DetailsText, StringComparison.Ordinal);
+        Assert.DoesNotContain(frame.Address, frame.Identity, StringComparison.Ordinal);   // the address is for Details, never the headline
+        Assert.DoesNotContain(frame.Recipe, frame.Identity, StringComparison.Ordinal);
+        Assert.StartsWith(frame.WorkflowName, frame.Identity, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -109,8 +115,8 @@ public sealed class InstanceFrameViewModelTests
 
         frame.OpenRecipe();
 
-        Assert.Equal(($"{id}@{hash12}", true, Labels.RecipeLink), (frame.RecipeSubject, frame.HasRecipeLink, frame.RecipeLinkText));
-        Assert.StartsWith(Labels.RecipeLink[..^2], frame.RecipeLinkName, StringComparison.Ordinal);   // the visible word leads the name
+        Assert.Equal(($"{id}@{hash12}", true, "Workflow type ▸"), (frame.RecipeSubject, frame.HasRecipeLink, frame.RecipeLinkText));
+        Assert.StartsWith("Workflow type", frame.RecipeLinkName, StringComparison.Ordinal);   // the visible word leads the name
         Assert.Contains($"{id}@{hash12}", frame.RecipeLinkName, StringComparison.Ordinal);
         Expect.Sequence([$"{id}@{hash12}"], asked);
         Assert.StartsWith(hash12, Text(golden["recipe"]!["hash"])["sha256:".Length..], StringComparison.Ordinal);   // the pinned version is the one the recipe golden serves
@@ -126,6 +132,36 @@ public sealed class InstanceFrameViewModelTests
         frame.OpenRecipe();
 
         Assert.Equal((false, string.Empty, 0), (frame.HasRecipeLink, frame.RecipeSubject, asked));
+    }
+
+    [Fact]
+    public async Task Workflow_name_is_the_served_display_name_else_the_recipe_id_title_cased()
+    {
+        var node = Golden("project-build");
+        var id = Text(node["recipe"]!["id"]);
+        _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, node.ToJsonString());
+        var older = Frame();
+        await older.Open(_api, Text(node["address"]), Text(node["id"]), Token);
+        node["recipe"]!["displayName"] = "Build a project";
+        _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, node.ToJsonString());
+        var served = Frame();
+        await served.Open(_api, Text(node["address"]), Text(node["id"]), Token);
+
+        Assert.Equal(("Build a project", true), (served.WorkflowName, served.Identity.StartsWith("Build a project", StringComparison.Ordinal)));
+        Assert.DoesNotContain("workflow.", older.WorkflowName, StringComparison.Ordinal);
+        Assert.False(char.IsLower(older.WorkflowName[0]));
+        Assert.Contains(id, older.DetailsText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Child_runs_stay_closed_until_a_key_wants_focus_on_them()
+    {
+        var frame = await Opened("project-build");
+        Assert.False(frame.Children!.IsOpen);
+
+        frame.Intend(frame.Address, FrameIntent.FocusChildren);
+
+        Assert.True(frame.Children.IsOpen);   // focus can't land in a closed disclosure
     }
 
     [Fact]

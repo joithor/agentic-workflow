@@ -204,9 +204,9 @@ public sealed class AgentAttachTests
         await frame.Open(_api, detail.Address, detail.Id, Token);
 
         var expanded = frame.Expanded!;
-        Assert.Equal("Agent · " + AgentRunFixtures.Launch, expanded.RunLine);
+        Assert.Equal("An agent is working on this step", expanded.RunLine);
         Assert.Equal(Labels.LaunchOpenedIn("Warp"), expanded.LaunchLine);
-        Assert.Equal(["via agent · 900 tokens", "The agent exited. The instance moved to review-desk."], expanded.RunEvents);
+        Assert.Equal(["via agent · 900 tokens", "The agent exited. The run moved to review-desk."], expanded.RunEvents);
     }
 
     [Fact]
@@ -221,7 +221,7 @@ public sealed class AgentAttachTests
         await frame.Open(_api, detail.Address, detail.Id, Token);
 
         Assert.Equal((false, false), (frame.Expanded!.HasRun, frame.Expanded.HasAttach));
-        Assert.Equal(["via agent · 900 tokens", "The agent exited. The instance moved to review-desk."], frame.Expanded.RunEvents);
+        Assert.Equal(["via agent · 900 tokens", "The agent exited. The run moved to review-desk."], frame.Expanded.RunEvents);
     }
 
     [Fact]

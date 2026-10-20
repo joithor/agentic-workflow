@@ -7,8 +7,9 @@
        who and when, the progress, where it came from. View opens the fact's viewer under its row and keeps focus on its own button. A pending
        output a desk step completes shows what it awaits and the CLI that completes it with a Copy; the form itself arrives with U8b. -->
   <Border x:Name="FactsBlock" Classes="frame-panel" AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
+    <Expander x:Name="FactsDisclosure" Header="{Binding Heading}" IsExpanded="{Binding IsOpen, Mode=TwoWay}">
     <StackPanel Spacing="8">
-      <TextBlock Classes="eyebrow" Text="{Binding Heading}" />
+      <TextBlock x:Name="FactsHint" Classes="caption subtle" Text="{Binding Hint}" TextWrapping="Wrap" />
       <TextBlock x:Name="FactsEmpty" Classes="body muted" Text="{Binding EmptyText}" IsVisible="{Binding !HasRows}" />
       <ItemsControl x:Name="FactRows" ItemsSource="{Binding Rows}">
         <ItemsControl.ItemTemplate>
@@ -21,7 +22,7 @@
                 <StackPanel Grid.Column="1" Spacing="2">
                   <WrapPanel Orientation="Horizontal">
                     <TextBlock Name="FactLabel" Classes="body-strong" Text="{Binding Label}" Margin="0,0,8,0" AutomationProperties.Name="{Binding Label}" />
-                    <TextBlock Name="FactKey" Classes="caption mono subtle" Text="{Binding Key}" VerticalAlignment="Center" />
+                    <TextBlock Name="FactKey" Classes="caption mono subtle" Text="{Binding Key}" IsVisible="{Binding IsViewing}" VerticalAlignment="Center" />
                   </WrapPanel>
                   <TextBlock Name="FactSummary" Classes="body" Text="{Binding Summary}" TextWrapping="Wrap" />
                   <TextBlock Name="FactMeta" Classes="caption subtle" Text="{Binding Meta}" TextWrapping="Wrap"
@@ -50,5 +51,6 @@
         </ItemsControl.ItemTemplate>
       </ItemsControl>
     </StackPanel>
+    </Expander>
   </Border>
 </UserControl>
