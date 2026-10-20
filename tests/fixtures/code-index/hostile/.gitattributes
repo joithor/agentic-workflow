@@ -1,0 +1,2 @@
+# Byte-exact on purpose: the parser is tested on a BOM and mixed line endings, which autocrlf would rewrite.
+static/bom-mixed-endings.cs -text
