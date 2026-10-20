@@ -57,10 +57,10 @@ internal static partial class Labels
     internal static string StreamTitle(string stream, string label) => $"{stream} {label}";
 
     /// <summary>The accessible name of the link that lists a group's children in Work.</summary>
-    /// <param name="recipe">The group's recipe.</param>
+    /// <param name="workflow">The group's workflow display name.</param>
     /// <param name="address">The instance.</param>
     /// <returns>The words.</returns>
-    internal static string OpenAllInWorkName(string recipe, string address) => $"Open all {recipe} children of {address} in Work";
+    internal static string OpenAllInWorkName(string workflow, string address) => $"Open all {workflow} children of {address} in Work";
 
     /// <summary>The accessible name of a child action that is not sent from here.</summary>
     /// <param name="label">The action's label.</param>
