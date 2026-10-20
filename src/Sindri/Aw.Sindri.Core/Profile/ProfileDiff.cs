@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Aw.Sindri.Core.Profile;
 
 /// <summary>Which settings changed between two profiles, as key paths, for 'profile approve' to show before it records anything.</summary>
@@ -123,7 +125,7 @@ public static class ProfileDiff
             ("workflow.effects", Joined(workflow?.Effects)),
             ("workflow.dispatchDelay", workflow?.DispatchDelay),
         ];
-        return keys.Concat(Runtimes(workflow)).Concat(Forge(workflow?.Forge)).Where(static k => k.Value is not null).Select(static k => (k.Key, k.Value!));   // why: the nulls are filtered out just before
+        return keys.Concat(Runtimes(workflow)).Concat(Forge(workflow?.Forge)).Concat(Pr(workflow?.Pr)).Concat(Docs(workflow?.Docs)).Where(static k => k.Value is not null).Select(static k => (k.Key, k.Value!));   // why: the nulls are filtered out just before
     }
 
     private static string? Joined(IReadOnlyList<string>? values) => values is null ? null : string.Join(", ", values);
@@ -140,5 +142,28 @@ public static class ProfileDiff
         ("workflow.forge.adapter", forge?.Adapter),
         ("workflow.forge.hosts", Joined(forge?.Hosts)),
         ("workflow.forge.credential", forge?.Credential),
+    ];
+
+    private static (string Key, string? Value)[] Pr(PrSettings? pr) =>
+    [
+        ("workflow.pr.bots", Joined(pr?.Bots)),
+        ("workflow.pr.autofixCap", pr?.AutofixCap?.ToString(CultureInfo.InvariantCulture)),
+        ("workflow.pr.pollInterval", pr?.PollInterval),
+        ("workflow.pr.remindAfter", pr?.RemindAfter),
+        .. PrChoices(pr),
+    ];
+
+    private static (string Key, string? Value)[] PrChoices(PrSettings? pr) =>
+    [
+        ("workflow.pr.replies", pr?.Replies),
+        ("workflow.pr.mergeMethod", pr?.MergeMethod),
+        ("workflow.pr.heldBlocksMerge", pr?.HeldBlocksMerge?.ToString(CultureInfo.InvariantCulture)),
+        ("workflow.pr.docsMergeWait", pr?.DocsMergeWait),
+    ];
+
+    private static (string Key, string? Value)[] Docs(DocsSettings? docs) =>
+    [
+        ("workflow.docs.sync", docs?.Sync),
+        ("workflow.docs.globs", Joined(docs?.Globs)),
     ];
 }
