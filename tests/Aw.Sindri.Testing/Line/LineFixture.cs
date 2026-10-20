@@ -43,6 +43,11 @@ public sealed class LineFixture : Dictionary<string, string>
         return facts;
     }
 
+    /// <summary>One of schemas/line/examples' design examples (design.minimal, design.decision …) as the JSON text of fact:design.</summary>
+    /// <param name="name">The example's name without '.json'.</param>
+    /// <returns>The JSON text.</returns>
+    public static string DesignExample(string name) => Read("line-schemas/" + name + ".json");
+
     /// <summary>The gold design's spec rendered in the formal style.</summary>
     /// <returns>The markdown.</returns>
     public static string FormalSpec() => Read(Gold + "design/expiry.formal.spec.md");

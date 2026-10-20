@@ -24,12 +24,6 @@ public sealed class GetInstanceDesignStopServiceTests
 {
     private const string Item = "ITM-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
-    private static readonly (string Member, string File)[] _designFiles =
-    [
-        ("spec", "spec.md"), ("sections", "sections.json"), ("coverage", "coverage.json"), ("decisions", "decisions.json"), ("acceptance", "acceptance.json"), ("signals", "signals.json"),
-        ("contracts", "contracts.json"), ("lensRounds", "lens-rounds.jsonl"), ("style", "style.json"), ("escapes", "escapes.json"), ("runs", "runs.json"),
-    ];
-
     private sealed class Contents(IReadOnlyDictionary<string, string> bySha) : IFactContents
     {
         public ValueTask<Result<ReadOnlyMemory<byte>>> Read(FactValue fact, CancellationToken cancellationToken) =>
@@ -41,19 +35,55 @@ public sealed class GetInstanceDesignStopServiceTests
         public string Scrub(string text) => text.Replace("sk-live-123", "[redacted]", StringComparison.Ordinal);
     }
 
-    /// <summary>The instance's facts as the plan station's Steps write them: fact:design an object with one member per design packet file, fact:plan the task plan, fact:holdoutSets the hidden sets by hash.</summary>
+    /// <summary>The instance's facts as the plan station's Steps write them: fact:design as schemas/line/design.json has it (sections, coverage, decisions, signals and contracts as arrays), fact:plan the task plan, fact:holdoutSets the hidden sets by hash, fact:lensRounds the lens log.</summary>
     internal static Dictionary<string, string> Facts(LineFixture gold)
     {
-        var design = new JsonObject();
-        foreach (var (member, file) in _designFiles)
+        var lensRounds = new JsonArray([.. gold["design/lens-rounds.jsonl"].Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(static l => JsonNode.Parse(l))]);
+        return new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            var text = gold["design/" + file];
-            design[member] = file.EndsWith(".md", StringComparison.Ordinal) ? JsonValue.Create(text)
-                : file.EndsWith(".jsonl", StringComparison.Ordinal) ? new JsonArray([.. text.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(static l => JsonNode.Parse(l))])
-                : JsonNode.Parse(text);
-        }
+            ["design"] = DesignFact(gold),
+            ["plan"] = gold["tasks.json"],
+            ["holdoutSets"] = gold["holdout.json"],
+            ["lensRounds"] = lensRounds.ToJsonString(),
+        };
+    }
 
-        return new Dictionary<string, string>(StringComparer.Ordinal) { ["design"] = design.ToJsonString(), ["plan"] = gold["tasks.json"], ["holdoutSets"] = gold["holdout.json"] };
+    private static string DesignFact(LineFixture gold)
+    {
+        var sections = ((JsonArray)JsonNode.Parse(gold["design/sections.json"])!["sections"]!).Select(static s => (JsonNode)new JsonObject
+        {
+            ["id"] = (string?)s!["id"],
+            ["title"] = (string?)s["heading"],
+            ["covers"] = s["covers"]!.DeepClone(),
+            ["cites"] = s["cites"]!.DeepClone(),
+            ["assumes"] = s["assumes"]!.AsArray().Count > 0 ? (string?)s["assumes"]![0] : null,
+        }).ToArray();
+        var coverage = JsonNode.Parse(gold["design/coverage.json"])!;
+        var rows = coverage["surfaces"]!.AsArray().Select(static c => (JsonNode)new JsonObject { ["surface"] = (string?)c!["id"], ["sections"] = c["sections"]!.DeepClone() })
+            .Concat(coverage["excluded"]!.AsArray().Select(static c => (JsonNode)new JsonObject { ["surface"] = (string?)c!["id"], ["excluded"] = (string?)c["reason"] })).ToArray();
+        var decisions = ((JsonArray)JsonNode.Parse(gold["design/decisions.json"])!["decisions"]!).Select(static d => { var copy = (JsonObject)d!.DeepClone(); _ = copy.Remove("chosen"); return (JsonNode)copy; }).ToArray();
+        var signals = JsonNode.Parse(gold["design/signals.json"])!["signals"]!.AsObject().Select(static p => (JsonNode)new JsonObject
+        {
+            ["item"] = p.Key,
+            ["signals"] = new JsonArray(p.Value!.AsArray().Select(static s => (JsonNode)new JsonObject { ["kind"] = (string?)s!["kind"], ["statement"] = (string?)s["statement"], ["runs"] = (string?)s["runsAt"] }).ToArray()),
+        }).ToArray();
+        var contracts = ((JsonArray)JsonNode.Parse(gold["design/contracts.json"])!["edits"]!).Select(static e => (JsonNode)new JsonObject
+        {
+            ["file"] = (string?)e!["target"]!["file"],
+            ["heading"] = (string?)e["target"]!["heading"],
+            ["quote"] = (string?)e["quote"],
+            ["edit"] = (string?)e["change"],
+            ["row"] = (int)e["row"]!,
+            ["lane"] = (string?)e["lane"],
+        }).ToArray();
+        return new JsonObject
+        {
+            ["sections"] = new JsonArray(sections),
+            ["coverage"] = new JsonArray(rows),
+            ["decisions"] = new JsonArray(decisions),
+            ["signals"] = new JsonArray(signals),
+            ["contracts"] = new JsonArray(contracts),
+        }.ToJsonString();
     }
 
     private static (InstanceView View, Contents Contents) Instance(string recipe, Dictionary<string, string> facts)
@@ -81,15 +111,36 @@ public sealed class GetInstanceDesignStopServiceTests
     }
 
     [Fact]
-    public async Task A_plan_instances_facts_become_the_same_view_as_the_files_do()
+    public async Task A_plan_instances_facts_become_the_view_the_files_give_where_the_facts_hold_them()
     {
         var gold = LineFixture.Plan();
 
         var result = await Read("workflow.plan", Facts(gold));
+        var files = await DesignStopViewTests.Show(gold);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(DesignStopViewTests.Serialized(await DesignStopViewTests.Show(gold)), DesignStopViewTests.Serialized(result.Value));
-        Golden.Match(DesignStopViewTests.Serialized(result.Value), typeof(GetInstanceDesignStopServiceTests).Assembly, "Golden/Api/workflow-instance-design-stop/gold-stop.json", Normalization.None);
+        Assert.Equal(["models", "acceptance", "escapes", "spec"], result.Value.NotYet, StringComparer.Ordinal);   // no instance fact holds them yet
+        Assert.Equal(System.Text.Json.JsonSerializer.Serialize(files.Graph), System.Text.Json.JsonSerializer.Serialize(result.Value.Graph));
+        Assert.Equal(System.Text.Json.JsonSerializer.Serialize(files.LensRounds), System.Text.Json.JsonSerializer.Serialize(result.Value.LensRounds));
+        Assert.Equal(files.Decisions.Select(static d => (d.Decision, d.Recommended, d.Options.Count)), result.Value.Decisions.Select(static d => (d.Decision, d.Recommended, d.Options.Count)));
+        Assert.Equal(files.Trace.Select(static t => (t.Item, t.Phase, t.Signals.Count)), result.Value.Trace.Select(static t => (t.Item, t.Phase, t.Signals.Count)));
+        Assert.Equal(files.Coverage.Select(static c => (c.Scope, string.Join(',', c.Sections), c.Excluded)), result.Value.Coverage.Select(static c => (c.Scope, string.Join(',', c.Sections), c.Excluded)));
+        Assert.Equal("D3.a", result.Value.Spec.Assumes.Single(static a => a.Section == "sec-2.2").Option);
+        Assert.Equal(("X1", 1, "docs"), (result.Value.Contracts[0].Edit, result.Value.Contracts[0].Row, result.Value.Contracts[0].Lane));
+    }
+
+    [Fact]
+    public async Task The_designs_example_in_schemas_line_reads_into_the_view()
+    {
+        var decision = await Read("workflow.plan", new Dictionary<string, string>(StringComparer.Ordinal) { ["design"] = LineFixture.DesignExample("design.decision") });
+        var minimal = await Read("workflow.plan", new Dictionary<string, string>(StringComparer.Ordinal) { ["design"] = LineFixture.DesignExample("design.minimal") });
+
+        var d3 = Assert.Single(decision.Value.Decisions);
+        Assert.Equal(("D3", "open", "D3.a", null), (d3.Decision, d3.Status, d3.Recommended, d3.Chosen));
+        Assert.Equal(["sec-4.2", "sec-6"], d3.Affects, StringComparer.Ordinal);
+        Assert.Contains(new StopAssumes("sec-4.2", "D3", "D3.a"), decision.Value.Spec.Assumes);
+        Assert.Contains(minimal.Value.NotYet, n => n == "decisions");
+        Assert.Empty(minimal.Value.Spec.Assumes);
     }
 
     [Fact]
@@ -137,11 +188,11 @@ public sealed class GetInstanceDesignStopServiceTests
     [Fact]
     public async Task Secrets_in_a_fact_are_scrubbed_before_the_view_is_built()
     {
-        var gold = LineFixture.Plan().EditText("design/spec.md", t => t.Replace("A member who shares a note", "A member who shares a note with sk-live-123", StringComparison.Ordinal));
+        var gold = LineFixture.Plan().EditText("design/decisions.json", t => t.Replace("Which expiry choices", "Which sk-live-123 choices", StringComparison.Ordinal));
 
         var result = await Read("workflow.plan", Facts(gold));
 
-        Assert.DoesNotContain("sk-live-123", result.Value.Spec.Text, StringComparison.Ordinal);
-        Assert.Contains("[redacted]", result.Value.Spec.Text, StringComparison.Ordinal);
+        Assert.DoesNotContain("sk-live-123", result.Value.Decisions[0].Question, StringComparison.Ordinal);
+        Assert.Contains("[redacted]", result.Value.Decisions[0].Question, StringComparison.Ordinal);
     }
 }

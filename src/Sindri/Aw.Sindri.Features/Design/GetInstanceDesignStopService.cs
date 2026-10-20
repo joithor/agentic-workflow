@@ -18,7 +18,7 @@ namespace Aw.Sindri.Features.Design;
 internal sealed class GetInstanceDesignStopService(PlanInstances instances, IFactContents contents, ITextScrubber scrubber)
     : IService<GetInstanceDesignStopRequest, DesignStopView>
 {
-    private static readonly string[] _keys = ["design", "plan", "holdoutSets", "freezeRefused"];
+    private static readonly string[] _keys = ["design", "plan", "holdoutSets", "freezeRefused", "lensRounds"];
 
     public async ValueTask<Result<DesignStopView>> Handle(GetInstanceDesignStopRequest request, CancellationToken cancellationToken)
     {
