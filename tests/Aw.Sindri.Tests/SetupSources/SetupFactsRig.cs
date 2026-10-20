@@ -29,7 +29,7 @@ internal sealed class SetupFactsRig : IAsyncDisposable
         _scope = Registry.Services.CreateAsyncScope();
         Facts = new SetupFacts(
             new ProfileSetupReader(Profiles, Profiles),
-            _scope.ServiceProvider.GetRequiredService<Aw.Sindri.Core.Workflow.Registry.RecipeRegistryReader>(),
+            _scope.ServiceProvider.GetRequiredService<Core.Workflow.Registry.RecipeRegistryReader>(),
             new OnyxStatusReader(Onyx.Pins, new OnyxFacts(Onyx.Runtime, Onyx.Probes, new FakeSindriHome(OnyxUpRig.Home)), Onyx.Health, Onyx.Workspace),
             new McpSetupReader(Profiles, Host),
             new MapSetupReader(Profiles, Engine.Proxy, Jobs));
@@ -58,7 +58,7 @@ internal sealed class SetupFactsRig : IAsyncDisposable
     {
         RepoEntry[] entries = [.. Enumerable.Range(1, repos).Select(static i => new RepoEntry(i == 1 ? "demo" : "demo" + i.ToString(CultureInfo.InvariantCulture), i == 1 ? Checkout : "/work/demo" + i.ToString(CultureInfo.InvariantCulture)))];
         var profile = ProfileRules.Check(new SindriProfile(1, "thor", Repos: entries)).Value;
-        return new LoadedProfile(profile, ProfileHashing.Of(AwJson.Serialize(profile, Aw.Sindri.Tests.SliceHarness.Json)), "/home/profile.yaml");
+        return new LoadedProfile(profile, ProfileHashing.Of(AwJson.Serialize(profile, SliceHarness.Json)), "/home/profile.yaml");
     }
 
     /// <summary>Makes <paramref name="profile"/> both the live file and the approved one.</summary>
@@ -78,7 +78,7 @@ internal sealed class SetupFactsRig : IAsyncDisposable
             static c => c.Checkout,
             static c => new { mcpServers = new { sindri = new { type = "http", url = "http://127.0.0.1:7480/sindri/mcp", headers = new Dictionary<string, string>(StringComparer.Ordinal) { ["X-Sindri-Repo"] = c.Repo } } } },
             StringComparer.Ordinal);
-        Host.Files[Host.UserConfigPath(Aw.Sindri.Core.Mcp.ProviderFile.Claude)] = JsonSerializer.Serialize(new { projects });
+        Host.Files[Host.UserConfigPath(Core.Mcp.ProviderFile.Claude)] = JsonSerializer.Serialize(new { projects });
     }
 
     /// <summary>Puts a build job into the jobs view.</summary>

@@ -71,7 +71,7 @@ public sealed class SetupFactsTests
     {
         await using var rig = new SetupFactsRig();
         await rig.Approve(SetupFactsRig.ProfileWithRepos());
-        var claude = rig.Host.UserConfigPath(Aw.Sindri.Core.Mcp.ProviderFile.Claude);
+        var claude = rig.Host.UserConfigPath(Core.Mcp.ProviderFile.Claude);
 
         rig.Host.Files[claude] = """{"mcpServers":{"sindri":{"url":"http://127.0.0.1:7480/sindri/mcp"}}}""";
         var userWide = (await rig.Facts.Mcp(Token)).Value.Registered;

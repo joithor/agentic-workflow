@@ -9,7 +9,7 @@ namespace Aw.Sindri.Tests.SetupSources;
 public class MapEngineProxy : DispatchProxy
 {
     /// <summary>What the status answers.</summary>
-    public Result<MapStatusView> Answer { get; set; } = Aw.Context.Core.ContextErrors.NoMap.With("no map in this test");
+    public Result<MapStatusView> Answer { get; set; } = Context.Core.ContextErrors.NoMap.With("no map in this test");
 
     /// <summary>How many times it was asked.</summary>
     public int Calls { get; private set; }
