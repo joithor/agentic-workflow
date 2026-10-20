@@ -11,7 +11,7 @@ public sealed class SetupRouteTests
     private static readonly string[] _order = ["repo", "profile", "recipes", "mcp", "map", "onyx"];
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task The_route_answers_the_six_steps_in_order_and_the_profile_step_follows_the_approval()
+    public async Task The_route_answers_the_six_steps_in_order_and_the_profile_waits_for_a_first_repo()
     {
         await using var host = await GoldenHost.Start(temporary: true, TestContext.Current.CancellationToken);
 
@@ -21,8 +21,10 @@ public sealed class SetupRouteTests
 
         Assert.Equal(_order, before.Select(static s => s.Id), StringComparer.Ordinal);
         Assert.Equal(_order, after.Select(static s => s.Id), StringComparer.Ordinal);
-        Assert.Equal(("needs-you", "ApproveProfile"), (before[1].State, before[1].Action));
-        Assert.Equal(("done", null), (after[1].State, after[1].Action));
+        // the served profile names no repo, so its step waits for a first repo before and after the approval, and the recipes wait for the approved profile
+        Assert.Equal(("needs-you", "AddRepo", "todo", null), (before[0].State, before[0].Action, before[1].State, before[1].Action));
+        Assert.Equal(("todo", null), (before[2].State, before[2].Action));
+        Assert.Equal(("todo", null), (after[1].State, after[1].Action));
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]

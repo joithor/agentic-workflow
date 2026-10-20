@@ -111,7 +111,7 @@ public sealed class SetupFactsTests
     [Fact, Trait("Lane", "unit")]
     public async Task Mcp_counts_a_repo_registered_only_when_every_installed_provider_has_it_and_lists_where()
     {
-        var host = new Aw.Sindri.Testing.FakeProviderHost();
+        var host = new Testing.FakeProviderHost();
         var withAll = new SetupFactsRig(host);
         await using (withAll)
         {
