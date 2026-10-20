@@ -13,6 +13,7 @@ internal sealed partial class ShellViewModel
     private void InitWorkflows()
     {
         Health.Follow(Workflows.Refresh);
+        Health.FollowInstances(Workflows.Catch);
         Workflows.OpenRequested += (_, e) =>
         {
             if (e.Link.Subject is { } address)

@@ -33,6 +33,12 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     /// <summary>The shortest time between two re-reads of a view after events (§9.2: one refresh per view per 250 ms).</summary>
     internal static readonly TimeSpan RefreshEvery = TimeSpan.FromMilliseconds(250);
 
+    /// <summary>How many more times a view that lags an instance change's state is read (after the first read), each after twice the wait before: <see cref="InstanceBackoff"/>, then double, then double.</summary>
+    internal const int InstanceRetries = 3;
+
+    /// <summary>The wait before the first retry of a lagging view.</summary>
+    internal static readonly TimeSpan InstanceBackoff = TimeSpan.FromMilliseconds(200);
+
     // How often "updated Ns ago" is re-worded.
     private static readonly TimeSpan _tick = TimeSpan.FromSeconds(1);
 
