@@ -109,10 +109,10 @@ public sealed class PlanEvidenceStepTests
             return plan;
         }, holdout: $$"""[{"phase":"P1","count":3,"hash":"{{LineStation.SetHash}}","canary":true},{"phase":"P2","count":3,"hash":"{{LineStation.SetHash}}","canary":true},{"phase":"P3","count":3,"hash":"{{LineStation.SetHash}}","canary":true}]""");
 
-        Assert.True(run.Result?.Outcome.Value == "complete", run.Failure ?? (run.Result is null ? "" : LineStation.Fact(run, "findings")));
+        Assert.True(run.Result?.Outcome.Value == "complete", run.Failure ?? (run.Result is null || run.Result.Outcome.Value == "complete" ? "" : LineStation.Fact(run, "findings")));
         var graph = JsonNode.Parse(await station.PlanFile("plan-packet/graph.json"))!["phases"]!.AsArray();
         Assert.Equal([1, 2, 3], graph.Select(static g => (int)g!["wave"]!));
-        Assert.Equal([1, 1, 1], graph.Select(static g => (int)g!["stack"]!));
+        Assert.Equal([1, 1, 2], graph.Select(static g => (int)g!["stack"]!));   // P3 follows P1, which P2 already continues, so it opens the next stack
         Assert.Equal(("dependency-head", "P1", true), ((string?)graph[2]!["base"]!["rule"], (string?)graph[2]!["base"]!["ref"], (bool?)graph[2]!["waitsForMerge"]));
     }
 
@@ -141,7 +141,7 @@ public sealed class PlanEvidenceStepTests
             return plan;
         }, holdout: $$"""[{"phase":"P1","count":3,"hash":"{{LineStation.SetHash}}","canary":true},{"phase":"P2","count":3,"hash":"{{LineStation.SetHash}}","canary":true},{"phase":"P3","count":3,"hash":"{{LineStation.SetHash}}","canary":true}]""");
 
-        Assert.True(run.Result?.Outcome.Value == "complete", run.Failure ?? (run.Result is null ? "" : LineStation.Fact(run, "findings")));
+        Assert.True(run.Result?.Outcome.Value == "complete", run.Failure ?? (run.Result is null || run.Result.Outcome.Value == "complete" ? "" : LineStation.Fact(run, "findings")));
         var graph = JsonNode.Parse(await station.PlanFile("plan-packet/graph.json"))!["phases"]!.AsArray();
         Assert.Equal([1, 1, 2], graph.Select(static g => (int)g!["stack"]!));
     }

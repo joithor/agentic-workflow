@@ -1,8 +1,8 @@
 using Aw.Kernel.Testing;
-using Aw.Sindri.Testing;
 using Aw.Sindri.Core.Packets;
 using Aw.Sindri.Infrastructure;
 using Aw.Sindri.Infrastructure.Packets;
+using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Packets;
 using Aw.Sindri.Tests.Ledger;
 
@@ -29,14 +29,14 @@ public sealed class DiskPacketFilesContractTests : PacketFilesContract, IDisposa
 
     /// <summary>A directory outside Sindri's home is refused, even for a file that exists.</summary>
     /// <returns>The test.</returns>
-    [Xunit.Fact]
+    [Fact]
     public async Task A_directory_outside_the_home_is_refused()
     {
         using var other = new TempHome();
-        await File.WriteAllTextAsync(Path.Combine(other.Path, "scope-map.json"), "{}", Xunit.TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Path.Combine(other.Path, "scope-map.json"), "{}", TestContext.Current.CancellationToken);
 
-        Expect.True((await Files().Read(other.Path, "scope-map.json", Xunit.TestContext.Current.CancellationToken)).IsError);
-        Expect.True((await Files().Read("relative/dir", "scope-map.json", Xunit.TestContext.Current.CancellationToken)).IsError);
+        Expect.True((await Files().Read(other.Path, "scope-map.json", TestContext.Current.CancellationToken)).IsError);
+        Expect.True((await Files().Read("relative/dir", "scope-map.json", TestContext.Current.CancellationToken)).IsError);
     }
 
     private DiskPacketFiles Files() => new(new SindriSettings(_home.Path, Path.Combine(_home.Path, "profile.yaml")));
