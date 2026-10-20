@@ -17,7 +17,6 @@ using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.ApproveAll;
-using Aw.Sindri.Core.Workflow.Shipped;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ApplyCommand;
 using Aw.Sindri.Features.ApproveAllRecipes;
@@ -33,7 +32,6 @@ using Aw.Sindri.Features.CompleteStep;
 using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Features.CreateItem;
 using Aw.Sindri.Features.Decide;
-using Aw.Sindri.Features.EvalRecipe;
 using Aw.Sindri.Features.FileRequest;
 using Aw.Sindri.Features.GetApproveAllPlan;
 using Aw.Sindri.Features.GetEventCatalog;
@@ -70,7 +68,6 @@ using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Features.ListRequests;
 using Aw.Sindri.Features.ListServices;
 using Aw.Sindri.Features.ListSessions;
-using Aw.Sindri.Features.ManifestRecipes;
 using Aw.Sindri.Features.OnyxAccount;
 using Aw.Sindri.Features.OnyxDown;
 using Aw.Sindri.Features.OnyxEnsure;
@@ -83,7 +80,6 @@ using Aw.Sindri.Features.Prove;
 using Aw.Sindri.Features.ReadInjection;
 using Aw.Sindri.Features.ReadLedger;
 using Aw.Sindri.Features.RebuildViews;
-using Aw.Sindri.Features.RecordEval;
 using Aw.Sindri.Features.RecordHeartbeat;
 using Aw.Sindri.Features.RegisterMcp;
 using Aw.Sindri.Features.RegisterRecipe;
@@ -105,7 +101,6 @@ using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Features.StreamEvents;
 using Aw.Sindri.Features.SweepLostSessions;
 using Aw.Sindri.Features.ValidateProfile;
-using Aw.Sindri.Features.ValidateRecipe;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -150,11 +145,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddSingleton(static sp => new JobRecovery(sp.GetRequiredService<IJobViews>(), sp.GetRequiredService<ILedgerReader>(), sp.GetRequiredService<IProjectorStatus>(),
                 sp.GetRequiredService<HeldLease>(), sp.GetRequiredService<JobEventWriter>(), sp.GetRequiredService<JobRegistry>()))
             .AddSingleton<IJobRunner>(static sp => sp.GetRequiredService<JobRunner>()).AddSingleton<IJobCancellation>(static sp => sp.GetRequiredService<JobRunner>())
-            .AddScoped<IService<ValidateRecipeRequest, ValidateRecipeResponse>, ValidateRecipeService>()
-            .AddScoped<IService<EvalRecipeRequest, EvalRecipeResponse>, EvalRecipeService>()
-            .AddScoped<IService<EvalShippedRequest, EvalShippedResponse>, EvalShippedRecipesService>()
-            .AddScoped<IService<ManifestRecipesRequest, RecipeManifest>, ManifestRecipesService>()
-            .AddScoped<IService<RecordEvalRequest, RecordEvalResponse>, RecordEvalService>()
+            .AddRecipeTools()
             .AddRecipeBlocks()
             .AddRegistrySlices()
             .AddContextSlices()
