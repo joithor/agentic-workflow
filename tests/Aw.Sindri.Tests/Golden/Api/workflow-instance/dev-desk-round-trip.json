@@ -8,7 +8,8 @@
     "id": "workflow.dev-desk-round-trip",
     "hash": "sha256:459f0bb87b5ab29e00fe744561f13e95e8a5819debcd065a1c52b0ad3aba27ac",
     "version": 2,
-    "urgency": "work"
+    "urgency": "work",
+    "displayName": "Dev desk round trip"
   },
   "state": "export",
   "since": "2026-10-12T12:00:00.0000000Z",
@@ -205,5 +206,6 @@
     "ApplyCommand:takeover",
     "ApplyCommand:cancel"
   ],
+  "stepRuns": [],
   "asOf": "2026-10-12T12:26:00.0000000Z"
 }

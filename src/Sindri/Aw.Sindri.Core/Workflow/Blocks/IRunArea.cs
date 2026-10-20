@@ -24,4 +24,10 @@ public interface IRunArea
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The text, empty when the file was never written; an error when the address or the name is invalid or the file cannot be read.</returns>
     public ValueTask<Result<string>> Read(string address, string name, CancellationToken cancellationToken);
+
+    /// <summary>The directory of a name in the instance's run area, for a tool that works on a directory (aw-packets freezes the proof pack in place). Nothing is created or read.</summary>
+    /// <param name="address">The instance's address.</param>
+    /// <param name="name">The relative name of the file or directory.</param>
+    /// <returns>The absolute path; an error when the address or the name is invalid.</returns>
+    public Result<string> PathFor(string address, string name);
 }

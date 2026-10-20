@@ -28,8 +28,8 @@ namespace Aw.Sindri.Features.ListInstances;
 /// <param name="itemViews">The 'items' view, read by key for the titles of the items the instances are on.</param>
 /// <param name="repos">Where each item belongs, from the ledger: a session lists only its own repo's instances.</param>
 /// <param name="callers">The caller, whose repo scope decides which instances and item titles it may see.</param>
-/// <param name="clock">The time the rows are read at: their ages and timeouts are worked out from it, not from when the workflow last ran.</param>
-internal sealed partial class ListInstancesService(IInstanceDirectory directory, IWorkflowInstances instances, EndedInstanceViews runtime, IViewReader itemViews, IItemRepos repos, ICallerContextAccessor callers, TimeProvider clock) : IService<ListInstancesRequest, InstanceList>
+/// <param name="rowBuilder">Builds the rows at the time the list is read: their ages and timeouts are worked out from it, not from when the workflow last ran, and each carries its recipe's display name.</param>
+internal sealed partial class ListInstancesService(IInstanceDirectory directory, IWorkflowInstances instances, EndedInstanceViews runtime, IViewReader itemViews, IItemRepos repos, ICallerContextAccessor callers, InstanceRows rowBuilder) : IService<ListInstancesRequest, InstanceList>
 {
     public async ValueTask<Result<InstanceList>> Handle(ListInstancesRequest request, CancellationToken cancellationToken)
     {
@@ -188,9 +188,9 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
     /// <summary>The list: the rows in the API order (§3.8: one order on every list path), each built by <see cref="InstanceSummaries.Of"/>.</summary>
     private InstanceList Listed(List<InstanceView> views, ListCounts counts, ItemTitles titles, string? empty)
     {
-        var now = clock.GetUtcNow();
-        var rows = views.Order(new InstanceOrder(titles)).Select(v => InstanceSummaries.Of(v, new InstanceSummaryContext(now, ItemTitle: titles.For(v)))).ToList();
-        return new InstanceList(rows, counts, rows.Count == 0 ? empty : null, now);
+        var now = rowBuilder.Now();
+        var list = views.Order(new InstanceOrder(titles)).Select(v => rowBuilder.Row(v, titles, now)).ToList();
+        return new InstanceList(list, counts, list.Count == 0 ? empty : null, now);
     }
 
     /// <summary>

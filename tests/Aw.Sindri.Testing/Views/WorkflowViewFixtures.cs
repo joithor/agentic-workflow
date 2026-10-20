@@ -455,8 +455,8 @@ public static class WorkflowViewFixtures
     // ---- the instance views (E-20) -----------------------------------------------------------------------------------
 
     private static InstanceDetail Detail(InstanceSummary row, string title, PathOrdering ordering, CurrentState current, IReadOnlyList<FactRow> facts,
-        IReadOnlyList<ChildGroup> children, ViewCounts counts, ParentRef? parent = null) =>
-        new(row.Address, row.Id, parent, row.ItemId, title, row.Recipe, row.State, row.Since, row.EngineOwned, row.Subject, ordering, row.States, current, facts, children, counts, row.Actions, Now);
+        IReadOnlyList<ChildGroup> children, ViewCounts counts, ParentRef? parent = null, IReadOnlyList<StepRun>? stepRuns = null) =>
+        new(row.Address, row.Id, parent, row.ItemId, title, row.Recipe, row.State, row.Since, row.EngineOwned, row.Subject, ordering, row.States, current, facts, children, counts, row.Actions, stepRuns ?? [], Now);
 
     private static FactRow Fake(RecipeShape recipe, string key, FactStatus status, string summary, DateTimeOffset? at = null, string? by = null, FactRef? reference = null, Progress? progress = null, FactPending? pending = null) =>
         recipe.Fact(key, status, summary, at, by, reference, progress, pending);
@@ -510,7 +510,7 @@ public static class WorkflowViewFixtures
                 [new GateLine(BlockId.From("gate.evidence.all"), "exit", null, "Every child has its evidence pack."), new GateLine(BlockId.From("gate.judge.verify"), "exit", 0.8, "The judge scores the build at least 0.8.")],
                 null, status),
             _project.Facts([.. ProjectFacts(At(10, 12, 9, 14), Fake(_project, "fact:evidence", FactStatus.InProgress, "4 of 9 packs", reference: Ref(factKey: "fact:evidence"), progress: new Progress(4, 9)))]),
-            [new ChildGroup("build", RecipeId.From("workflow.step"), 4, 9, [ws1, ws2, ws3, ws4], [], 0)],
+            [new ChildGroup("build", RecipeId.From("workflow.step"), 4, 9, [ws1, ws2, ws3, ws4], [], 0, "Step")],
             Counts(41, 3, 1));
     }
 
@@ -535,7 +535,7 @@ public static class WorkflowViewFixtures
         return Detail(_prjDocs, "Handbook", PathOrdering.Path,
             new CurrentState("build", new StepDeclaration("wait", "workflow.step", "one child per packet task"), [], null, status),
             _project.Facts([.. HandbookFacts(Fake(_project, "fact:evidence", FactStatus.InProgress, "6 of 24 packs", reference: Ref(factKey: "fact:evidence"), progress: new Progress(6, 24)))]),
-            [new ChildGroup("build", RecipeId.From("workflow.step"), 6, 24, [], rows, 4)],
+            [new ChildGroup("build", RecipeId.From("workflow.step"), 6, 24, [], rows, 4, "Step")],
             Counts(30, 0, 0));
     }
 
@@ -594,7 +594,11 @@ public static class WorkflowViewFixtures
                 new DeskForm(RunToken.From("3.1"), [new DeskOutput("fact:output", FactType.File, true)], ["output.file"], Act("CompleteStep")), status),
             _step.Facts(Produced(_step, "fact:spec", "spec.md", At(10, 12, 12, 20), "service:item", Ref(name: "spec.md", hash: Hash("1c0e5a77")))),
             [], Counts(6, 0, 0),
-            new ParentRef(WorkflowInstanceId.Of(InstanceAddress.From("ITM-01JE7/item/1")), InstanceAddress.From("ITM-01JE7/item/1"), "ITM-01JE7 · Add needs-you ack route", null, null));
+            new ParentRef(WorkflowInstanceId.Of(InstanceAddress.From("ITM-01JE7/item/1")), InstanceAddress.From("ITM-01JE7/item/1"), "ITM-01JE7 · Add needs-you ack route", null, null),
+            [
+                new StepRun("1.1", "produce", Attempt: 1, MaxAttempts: 3, StepRunState.Refused, StepRuntime.Desk, Today(10, 5), Today(10, 50), DurationMs: 2_700_000, Outcome: "done", Tokens: null, Actor: "human:cli"),
+                new StepRun("3.1", "produce", Attempt: 2, MaxAttempts: 3, StepRunState.Running, StepRuntime.Desk, Today(12, 20), EndedAt: null, DurationMs: null, Outcome: null, Tokens: null, Actor: null),
+            ]);
     }
 
     /// <summary>The desk-round-trip dev recipe, desk open on its export (round 1 of 2): the P11 signal fixture.</summary>
@@ -663,7 +667,7 @@ public static class WorkflowViewFixtures
     public static RecipeView NoOutputsRecipe() => new(
         RecipeId.From("workflow.no-outputs"), RecipeHash.From("sha256:" + "3c9d51e2".PadRight(64, '0')), 1, Name: null,
         [new RecipeInputView("fact:request", "Request", FactType.Text, "text", true, Generate: null), new RecipeInputView("fact:context", null, FactType.Text, "text", false, "context {start:date}")],
-        [], RecipeUrgency.Work, PathOrdering.Path, [new RecipeStateView("intake", 1, null), new RecipeStateView("classify", 2, null), new RecipeStateView("done", 3, null)], []);
+        [], RecipeUrgency.Work, PathOrdering.Path, [new RecipeStateView("intake", 1, null), new RecipeStateView("classify", 2, null), new RecipeStateView("done", 3, null)], [], "No outputs");
 
     /// <summary>The recipe view of one fixture recipe, by recipe id ('workflow.step'): the same declaration its instances and list rows are built from.</summary>
     /// <param name="id">A recipe id of <see cref="FixtureRecipes.All"/>.</param>
