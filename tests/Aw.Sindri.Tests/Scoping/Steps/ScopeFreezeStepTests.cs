@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Packets;
 using Aw.Sindri.Core.Workflow.Blocks;
@@ -97,5 +98,28 @@ public sealed class ScopeFreezeStepTests
 
         Assert.Null(missing.Result);
         Assert.Null(noAddress.Result);
+    }
+
+    [Fact]
+    public async Task A_freeze_that_records_another_hash_than_the_one_the_owner_saw_is_a_mismatch_not_a_frozen()
+    {
+        var other = "sha256:" + new string('c', 64);
+        var step = new ScopeFreezeStep(_area, new FreezesAs(_packets, other));
+
+        var result = await step.Run(ScopingStepContexts.Of("step.scope.freeze", Facts()), Token);
+
+        Assert.Equal("mismatch", result.Result!.Outcome.Value);
+        Assert.Contains(other, Out(result, "findings").ToJsonString(), StringComparison.Ordinal);
+    }
+
+    /// <summary>Hashes as the inner fake does and freezes under another hash, as a packet edited between the two calls would.</summary>
+    private sealed class FreezesAs(InMemoryPackets inner, string hash) : IPackets
+    {
+        public ValueTask<Result<PacketValidation>> Validate(PacketRef packet, CancellationToken cancellationToken) => inner.Validate(packet, cancellationToken);
+
+        public ValueTask<Result<string>> Hash(PacketRef packet, CancellationToken cancellationToken) => inner.Hash(packet, cancellationToken);
+
+        public ValueTask<Result<PacketFreeze>> Freeze(PacketRef packet, PacketFreezer by, CancellationToken cancellationToken) =>
+            ValueTask.FromResult<Result<PacketFreeze>>(new PacketFreeze(Frozen: true, hash, by, AlreadyFrozen: false, AlreadyFrozenBy: null, Failures: []));
     }
 }

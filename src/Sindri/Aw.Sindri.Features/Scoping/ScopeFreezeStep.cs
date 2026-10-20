@@ -70,8 +70,13 @@ internal sealed class ScopeFreezeStep(IRunArea area, IPackets packets) : IBlockS
             return BlockStepResult.Failed($"{Id.Value} can't freeze the scope packet with aw-packets: {frozen.Error.Message}");
         }
 
-        return frozen.Value is { Frozen: true, Hash: { } frozenHash }
-            ? StepFacts.Done("frozen", ("fact:scopePacket", new JsonObject { ["hash"] = frozenHash, ["dir"] = packet.Directory }))
+        if (frozen.Value is { Frozen: true, Hash: { } frozenHash } && !string.Equals(frozenHash, recorded, StringComparison.Ordinal))
+        {
+            return Mismatch([Finding("SCP-FREEZE-001", $"aw-packets froze {frozenHash}, not the {recorded} the owner saw: the packet changed while it was frozen", "Run the evidence step again and approve the packet it assembles.")]);
+        }
+
+        return frozen.Value is { Frozen: true, Hash: { } sameHash }
+            ? StepFacts.Done("frozen", ("fact:scopePacket", new JsonObject { ["hash"] = sameHash, ["dir"] = packet.Directory }))
             : Mismatch(new JsonArray([.. frozen.Value.Failures.Select(static f => Finding(f.Rule, f.Message, f.Fix ?? "Fix the packet and approve it again.", f.Subject))]));
     }
 
