@@ -1,4 +1,9 @@
 using System.Globalization;
+using System.Text.Json;
+using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Features.ContextCalls;
+using Aw.Sindri.Tests.Workflow.Blocks.Input;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Validation;
 using Aw.Sindri.Testing.Workflow;
@@ -47,5 +52,25 @@ public sealed class DesignPlanRecipeTests
         var names = Read(id).Recipe.Evals.Select(static e => Path.GetFileNameWithoutExtension(e));
 
         Assert.Equal(cases.Split(';').Order(StringComparer.Ordinal), names.Order(StringComparer.Ordinal), StringComparer.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("graph")]
+    [InlineData("exec-review")]
+    public async Task The_planners_code_input_resolves_fact_anchors_to_the_anchors_it_searches_around(string state)
+    {
+        var use = Assert.Single(Read("workflow.plan").Recipe.States[state].Step!.Inputs);
+        var anchors = Assert.IsType<FactKey>(use.With["anchors"].Fact);
+        var memory = new ContextInputFixtures.MemoryFacts();
+        var stored = memory.Put("[\"feature:sharing\",\"file:src/links/Link.cs\"]");
+        var argument = JsonSerializer.SerializeToElement(new { @ref = stored.Ref, sha256 = stored.Sha256 });
+        var context = new StepInputContext(use.Use, BlockId.From($"step.plan.{state}"),
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["anchors"] = argument },
+            new Dictionary<FactKey, JsonElement>());
+
+        var resolved = await new ContextInputFacts(memory).Resolve(context, TestContext.Current.CancellationToken);
+
+        Assert.Equal("fact:anchors", anchors.Value);
+        Assert.Equal(["feature:sharing", "file:src/links/Link.cs"], ContextInputArguments.Anchors(resolved.Value, notes: []));
     }
 }
