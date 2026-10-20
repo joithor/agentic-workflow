@@ -1,6 +1,9 @@
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Packets;
+using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Features.Line;
+using Aw.Sindri.Testing.Packets;
 using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Tests.Scoping.Steps;
 
@@ -12,7 +15,7 @@ public sealed class DesignIntakeStepTests
 {
     private static readonly string[] _seeds = ["accepted", "answers", "changedSections", "design", "findings", "lensRounds", "packs", "scope"];
 
-    private static async Task<Core.Workflow.Blocks.BlockStepResult> Run(LineStation station, string? scopePacket = null, string revision = "First pass: no revision yet.") =>
+    private static async Task<BlockStepResult> Run(LineStation station, string? scopePacket = null, string revision = "First pass: no revision yet.") =>
         await station.DesignIntake().Run(
             LineStation.Context("step.design.intake", LineStation.DesignAddress, new ScopingFacts { ["scopePacket"] = scopePacket ?? LineStation.ScopePacket, ["designRevision"] = revision }),
             TestContext.Current.CancellationToken);
@@ -81,9 +84,9 @@ public sealed class DesignIntakeStepTests
     public async Task A_scope_packet_missing_a_file_fails_the_Step()
     {
         var station = new LineStation();
-        var files = new Aw.Sindri.Testing.Packets.InMemoryPacketFiles().Put(LineStation.ScopeDirectory, "scope-map.json", "{}");
+        var files = new InMemoryPacketFiles().Put(LineStation.ScopeDirectory, "scope-map.json", "{}");
 
-        var result = await new Aw.Sindri.Features.Line.DesignIntakeStep(station.Packets, files).Run(
+        var result = await new DesignIntakeStep(station.Packets, files).Run(
             LineStation.Context("step.design.intake", LineStation.DesignAddress, new ScopingFacts { ["scopePacket"] = LineStation.ScopePacket, ["designRevision"] = "x" }),
             TestContext.Current.CancellationToken);
 
@@ -103,5 +106,5 @@ public sealed class DesignIntakeStepTests
         Assert.Contains("not a readable packet", result.Failure, StringComparison.Ordinal);
     }
 
-    private static string ScopeHash() => Aw.Sindri.Testing.Packets.InMemoryPackets.HashOf(new PacketRef(PacketKind.Scoping, LineStation.ScopeDirectory));
+    private static string ScopeHash() => InMemoryPackets.HashOf(new PacketRef(PacketKind.Scoping, LineStation.ScopeDirectory));
 }

@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Packets;
+using Aw.Sindri.Features.Line;
 using Aw.Sindri.Testing.Packets;
 using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Tests.Scoping.Steps;
@@ -90,7 +91,7 @@ public sealed class PlanIntakeStepTests
         var packet = JsonNode.Parse(LineStation.Fact(evidence, "designPacket"))!;
         var files = new InMemoryPacketFiles().Put(LineStation.ScopeDirectory, "scope-map.json", "{}");
 
-        var result = await new Aw.Sindri.Features.Line.PlanIntakeStep(station.Packets, files).Run(
+        var result = await new PlanIntakeStep(station.Packets, files).Run(
             LineStation.Context("step.plan.intake", LineStation.PlanAddress, new ScopingFacts { ["scopePacket"] = LineStation.ScopePacket, ["designPacket"] = packet.ToJsonString() }),
             TestContext.Current.CancellationToken);
 

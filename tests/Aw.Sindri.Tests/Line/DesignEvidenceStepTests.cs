@@ -3,6 +3,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Packets;
 using Aw.Sindri.Features.Line;
 using Aw.Sindri.Testing.Packets;
+using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Tests.Scoping.Steps;
 
 namespace Aw.Sindri.Tests.Line;
@@ -155,7 +156,7 @@ public sealed class DesignEvidenceStepTests
         var station = new LineStation();
         var facts = await station.DesignFacts();
 
-        var result = await new DesignEvidenceStep(station.Packets, station.Area, new Aw.Sindri.Testing.Scoping.InMemoryRepoCheckouts()).Run(
+        var result = await new DesignEvidenceStep(station.Packets, station.Area, new InMemoryRepoCheckouts()).Run(
             LineStation.Context("step.design.evidence", LineStation.DesignAddress, facts), TestContext.Current.CancellationToken);
 
         Assert.Null(result.Result);
@@ -168,7 +169,7 @@ public sealed class DesignEvidenceStepTests
         var station = new LineStation();
         var evidence = await station.DesignEvidenceRun();
         var intake = await station.PlanIntake().Run(
-            LineStation.Context("step.plan.intake", LineStation.PlanAddress, new Aw.Sindri.Testing.Scoping.ScopingFacts { ["scopePacket"] = LineStation.ScopePacket, ["designPacket"] = LineStation.Fact(evidence, "designPacket") }),
+            LineStation.Context("step.plan.intake", LineStation.PlanAddress, new ScopingFacts { ["scopePacket"] = LineStation.ScopePacket, ["designPacket"] = LineStation.Fact(evidence, "designPacket") }),
             TestContext.Current.CancellationToken);
 
         var design = JsonNode.Parse(LineStation.Fact(intake, "design"))!;
