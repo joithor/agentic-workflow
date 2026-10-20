@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Aw.Kernel.Testing;
 
 namespace Aw.Meta.Tests.Cli;
 
@@ -60,7 +61,7 @@ public sealed class GateAndMergeCommandTests : IDisposable
         Git(_repo, "checkout", "--quiet", "main");
         await File.WriteAllTextAsync(_cli.File("team.json"), _config.Replace("REPO", _repo, StringComparison.Ordinal), TestContext.Current.CancellationToken);
         _cli.SetEnv("AW_META_CONFIG", _cli.File("team.json"));
-        await WriteGh(draft: false);
+        WriteGh(draft: false);
     }
 
     private static string HeadSha(string directory)
@@ -72,24 +73,22 @@ public sealed class GateAndMergeCommandTests : IDisposable
         return sha;
     }
 
-    private async Task WriteGh(bool draft)
+    private void WriteGh(bool draft)
     {
         var script = _cli.File("gh");
         var view = string.Concat("""'{"headRefOid":""", "\"", _head, "\"", ""","headRefName":"feat","isDraft":""", draft ? "true" : "false", ""","title":"Add feature","state":"OPEN"}'""");
         var list = string.Concat("""'[{"number":7,"state":"OPEN","isDraft":false,"headRefOid":""", "\"", _head, "\"", ""","mergeable":"MERGEABLE","title":"Add feature"}]'""");
-        await File.WriteAllLinesAsync(
+        _ = ExecutableScript.Write(
             script,
+            string.Join('\n',
             [
-                "#!/bin/sh",
                 "case \"$1 $2\" in",
                 "  \"pr view\") echo " + view + " ;;",
                 "  \"pr merge\") exit 0 ;;",
                 "  \"pr list\") echo " + list + " ;;",
                 "  *) echo \"unexpected gh $*\" >&2; exit 9 ;;",
                 "esac",
-            ],
-            TestContext.Current.CancellationToken);
-        File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            ]) + "\n");
         _cli.SetEnv("AW_GH", script);
         _cli.SetEnv("AW_HEAVY", _cli.File("no-such-heavy"));
     }

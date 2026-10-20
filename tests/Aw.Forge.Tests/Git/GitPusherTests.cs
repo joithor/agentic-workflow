@@ -1,6 +1,7 @@
 using Aw.Forge.Core;
 using Aw.Forge.Core.Pulls;
 using Aw.Forge.Infrastructure.Git;
+using Aw.Kernel.Testing;
 using Aw.Redaction;
 
 namespace Aw.Forge.Tests.Git;
@@ -106,8 +107,7 @@ public sealed class GitPusherTests : IDisposable
     {
         await Arrange();
         var hook = Path.Combine(Work, ".git", "hooks", "pre-push");
-        await File.WriteAllTextAsync(hook, "#!/bin/sh\necho hook ran > \"" + Path.Combine(_root.FullName, "hook-ran") + "\"\nexit 1\n", TestContext.Current.CancellationToken);
-        Executable.Make(hook);
+        _ = ExecutableScript.Write(hook, "echo hook ran > \"" + Path.Combine(_root.FullName, "hook-ran") + "\"\nexit 1\n");
 
         var result = await _pusher.Push(Request(_first!, lease: null), authorizationHeader: null, TestContext.Current.CancellationToken);
 
@@ -151,8 +151,7 @@ public sealed class GitPusherTests : IDisposable
         _ = Directory.CreateDirectory(Path.GetDirectoryName(hook)!);
         // A pre-receive hook on the remote runs inside the push (a file:// remote, so git's own environment reaches it): it records
         // the header git was given and prints it to the push's stderr before refusing, the worst case for an echo.
-        await File.WriteAllTextAsync(hook, "#!/bin/sh\necho \"$GIT_CONFIG_VALUE_0\" > \"" + seen + "\"\necho \"remote saw: $GIT_CONFIG_VALUE_0\" >&2\nexit 1\n", TestContext.Current.CancellationToken);
-        Executable.Make(hook);
+        _ = ExecutableScript.Write(hook, "echo \"$GIT_CONFIG_VALUE_0\" > \"" + seen + "\"\necho \"remote saw: $GIT_CONFIG_VALUE_0\" >&2\nexit 1\n");
 
         var result = await _pusher.Push(Request(_first!, lease: null, remote: new Uri(Remote).AbsoluteUri), header, TestContext.Current.CancellationToken);
 
