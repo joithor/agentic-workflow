@@ -38,19 +38,28 @@ public sealed class LaunchSessionEvents(ILaunchFiles files, LaunchLiveness liven
     public async ValueTask<Result<Unit>> Beat(LaunchId launch, SessionId? reported, CancellationToken cancellationToken)
     {
         var reports = await Report(launch, reported, cancellationToken).ConfigureAwait(false);
-        if (reports.IsSuccess)
+        if (reports.IsSuccess || IsPatternTimeout(reports.Error))
         {
-            liveness.Beat(launch, clock.GetUtcNow());   // after the report: a heartbeat that comes back as an error doesn't restart the silence clock
+            liveness.Beat(launch, clock.GetUtcNow());   // after the report: a heartbeat that comes back as an error doesn't restart the silence clock; a pattern timeout says nothing about the agent
         }
 
         return reports;
+    }
+
+    /// <summary>Whether <paramref name="error"/> says only that the session id pattern timed out (the launch itself is fine).</summary>
+    /// <param name="error">The error from <see cref="Report"/>.</param>
+    /// <returns>True for SND-LAUNCH-015.</returns>
+    public static bool IsPatternTimeout(Error error)
+    {
+        ArgumentNullException.ThrowIfNull(error);
+        return string.Equals(error.Code, SindriErrors.LaunchSessionIdTimedOut.Code, StringComparison.Ordinal);
     }
 
     /// <summary>Records the agent's session id as 'launch.session-reported', once, when the entry's pattern accepts it.</summary>
     /// <param name="launch">The launch.</param>
     /// <param name="reported">The agent's session id, or null.</param>
     /// <param name="cancellationToken">Cancels the append.</param>
-    /// <returns>Success, or why the ledger refused.</returns>
+    /// <returns>Success, SND-LAUNCH-015 when the entry's pattern timed out on the id (nothing is recorded), or why the ledger refused.</returns>
     public async ValueTask<Result<Unit>> Report(LaunchId launch, SessionId? reported, CancellationToken cancellationToken)
     {
         if (reported is not { } id || liveness.IsReported(launch))
@@ -64,6 +73,11 @@ public sealed class LaunchSessionEvents(ILaunchFiles files, LaunchLiveness liven
         }
 
         var admitted = await admission.Admit(launch, id, cancellationToken).ConfigureAwait(false);
+        if (admitted.TimedOut)
+        {
+            return SindriErrors.LaunchSessionIdTimedOut.With("the entry's sessionIdPattern timed out on the reported session id, so no id is recorded (the heartbeat still counts)");
+        }
+
         if (!admitted.Accepted)
         {
             return Unit.Value;   // the entry's pattern refuses it: the heartbeat still counts, the id isn't recorded

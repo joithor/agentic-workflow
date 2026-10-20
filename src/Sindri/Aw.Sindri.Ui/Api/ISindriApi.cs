@@ -7,7 +7,7 @@ using Aw.Sindri.Ui.Api.Workflow;
 namespace Aw.Sindri.Ui.Api;
 
 /// <summary>Sindri's HTTP API as the app uses it (docs/csharp/sindri.md). Every call names the base URL from control.json.</summary>
-internal interface ISindriApi
+internal partial interface ISindriApi
 {
     /// <summary>GET /sindri/ping.</summary>
     /// <param name="api">The base URL.</param>
