@@ -24,7 +24,7 @@ public sealed class HumanTriggerRulesTests
         var lines = CheckHumanTrigger(recipe, _at).Lines();
 
         Assert.Equal(
-            ["RCP-HUMAN-001: effect 'effect.test.merge' acts with a human's authority, but transitions[0] (ready -> done on step.completed) isn't a human's act at r.yaml:1:1 (transitions[0].effects[0].use); put it on a command.<verb> transition, a step.completed out of a human-only Step, or a transition that requires a fact only such a transition produces"],
+            ["RCP-HUMAN-001: effect 'effect.test.merge' acts with a human's authority, but transitions[0] (ready -> done on step.completed) isn't a human's act at r.yaml:3:7 (transitions[0].effects[0].use); put it on a command.<verb> transition, a step.completed out of a human-only Step, or a transition that requires a fact only such a transition produces"],
             lines);
     }
 
