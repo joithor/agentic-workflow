@@ -35,11 +35,16 @@ internal sealed class SetupFixture
         Catalog.Show(Url, Server, AwJson.Deserialize<CommandList>(System.Text.Encoding.UTF8.GetBytes(GoldenFiles.Api("commands", catalog)), SindriApiClient.Json).Value);
     }
 
-    internal void Serve(string scenario) => Server.SetupAnswer = RouteAnswer.SpecShaped("setup", scenario);
+    internal void Serve(string scenario) => Server.SetupAnswer = Answer(scenario);
 
     internal void Serve(JsonNode list) => Server.SetupAnswer = new RouteAnswer(HttpStatusCode.OK, list.ToJsonString());
 
-    internal static JsonNode Golden(string scenario) => JsonNode.Parse(GoldenFiles.SpecShaped("setup", scenario))!; // why: the golden is a JSON document
+    /// <summary>The route answer for a setup scenario: Sindri'"'"'s own golden, or for an "extra-" one the app'"'"'s own (a shape the API has no golden for, such as three running steps and a failed Onyx).</summary>
+    internal static RouteAnswer Answer(string scenario) => IsExtra(scenario) ? RouteAnswer.SpecShaped("setup", scenario) : RouteAnswer.Api("setup", scenario);
+
+    internal static JsonNode Golden(string scenario) => JsonNode.Parse(IsExtra(scenario) ? GoldenFiles.SpecShaped("setup", scenario) : GoldenFiles.Api("setup", scenario))!; // why: the golden is a JSON document
+
+    private static bool IsExtra(string scenario) => scenario.StartsWith("extra-", StringComparison.Ordinal);
 
     /// <summary>The golden with one step changed: its state and, when given, its action.</summary>
     internal static JsonNode With(string scenario, string step, string state, string? action = null)

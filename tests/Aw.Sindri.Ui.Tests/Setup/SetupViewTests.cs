@@ -20,7 +20,7 @@ public sealed class SetupViewTests : FrameHost
 {
     private async Task<(ShellWindow Window, ShellViewModel Shell)> OnHome(string scenario)
     {
-        Server.SetupAnswer = RouteAnswer.SpecShaped("setup", scenario);
+        Server.SetupAnswer = SetupFixture.Answer(scenario);
         var (window, shell) = await Connected(s => s.Setup.Steps.Count > 0);
         shell.GoTo(PageId.Home);
         Settle(window);
@@ -87,7 +87,7 @@ public sealed class SetupViewTests : FrameHost
         shell.GoTo(PageId.Setup);
         Settle(window);
 
-        var button = Named<Button>(window, "SetupActionButton");
+        var button = window.GetVisualDescendants().OfType<Button>().First(b => b.Name == "SetupActionButton" && b.IsEffectivelyVisible);   // the recipes step (the page leads with the profile, whose command waits under a hint)
         Assert.Equal("Approve all workflows, Approve the recipes", Heard.Name(button));
         button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         await Until(window, () => shell.ApproveAll.Phase == ApproveAllPhase.Plan, "the approve-all dialog never opened on the plan");

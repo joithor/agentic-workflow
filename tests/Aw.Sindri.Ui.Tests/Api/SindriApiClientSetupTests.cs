@@ -17,7 +17,7 @@ public sealed class SindriApiClientSetupTests
     [Fact]
     public async Task Setup_is_a_get_of_the_setup_route_made_as_the_human_from_the_ui_with_the_token()
     {
-        var canned = new Canned(HttpStatusCode.OK, GoldenFiles.SpecShaped("setup", "first-run"));
+        var canned = new Canned(HttpStatusCode.OK, GoldenFiles.Api("setup", "first-run"));
         var client = new SindriApiClient(new HttpClient(canned), new InMemoryHumanToken("tok-1"), TimeProvider.System);
 
         var view = await client.Setup(_api, Token);

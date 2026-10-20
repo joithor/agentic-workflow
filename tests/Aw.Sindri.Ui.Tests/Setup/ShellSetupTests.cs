@@ -17,7 +17,7 @@ public sealed class ShellSetupTests
     {
         Catalog = RouteAnswer.SpecShaped("commands", "extra-approve-all-ready"),
         NeedsYouView = RouteAnswer.Api("needs-you", "empty"),
-        SetupAnswer = RouteAnswer.SpecShaped("setup", "extra-priority-mix"),
+        SetupAnswer = SetupFixture.Answer("extra-priority-mix"),
     };
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -109,7 +109,7 @@ public sealed class ShellSetupTests
     {
         _server.NeedsYouView = RouteAnswer.SpecShaped("needs-you", "extra-setup-rows");
         var shell = await Connected();
-        _server.SetupAnswer = RouteAnswer.SpecShaped("setup", "all-done");
+        _server.SetupAnswer = RouteAnswer.Api("setup", "all-done");
 
         await shell.Health.RefreshViews(new Uri("http://127.0.0.1:7410/"), Token);
         await ShellWait.Until(shell, () => shell.NeedsYou.Rows.Count == 2, Token);

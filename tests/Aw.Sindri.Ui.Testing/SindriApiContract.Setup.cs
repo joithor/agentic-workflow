@@ -9,9 +9,9 @@ public abstract partial class SindriApiContract
     [Fact]
     public async Task Setup_answers_the_six_steps_in_the_served_order()
     {
-        var golden = System.Text.Json.Nodes.JsonNode.Parse(GoldenFiles.SpecShaped("setup", "first-run"))!; // why: the golden is a JSON document
+        var golden = GoldenFiles.Node("setup", "first-run");
 
-        var view = (await Reach(new FakeSindriApi { SetupAnswer = RouteAnswer.SpecShaped("setup", "first-run") }).Setup(_api, Token)).Value;
+        var view = (await Reach(new FakeSindriApi { SetupAnswer = RouteAnswer.Api("setup", "first-run") }).Setup(_api, Token)).Value;
 
         Expect.Sequence(golden["steps"]!.AsArray().Select(s => (string)s!["id"]!), view.Steps.Select(s => s.Id));
         Expect.Sequence(["repo", "profile", "recipes", "mcp", "map", "onyx"], view.Steps.Select(s => s.Id));
@@ -22,7 +22,7 @@ public abstract partial class SindriApiContract
     [Fact]
     public async Task Setup_reads_progress_and_the_repo_lines_of_a_running_step()
     {
-        var server = new FakeSindriApi { SetupAnswer = RouteAnswer.SpecShaped("setup", "running-progress") };
+        var server = new FakeSindriApi { SetupAnswer = RouteAnswer.Api("setup", "running-progress") };
 
         var map = (await Reach(server).Setup(_api, Token)).Value.Steps.Single(s => s.Id == "map");
 
@@ -33,7 +33,7 @@ public abstract partial class SindriApiContract
     [Fact]
     public async Task Setup_reads_a_failed_steps_code_and_sentence()
     {
-        var server = new FakeSindriApi { SetupAnswer = RouteAnswer.SpecShaped("setup", "failed") };
+        var server = new FakeSindriApi { SetupAnswer = RouteAnswer.Api("setup", "failed") };
 
         var map = (await Reach(server).Setup(_api, Token)).Value.Steps.Single(s => s.Id == "map");
 
@@ -43,7 +43,7 @@ public abstract partial class SindriApiContract
     [Fact]
     public async Task Setup_reads_a_skipped_onyx_with_its_reason()
     {
-        var server = new FakeSindriApi { SetupAnswer = RouteAnswer.SpecShaped("setup", "onyx-no-docker") };
+        var server = new FakeSindriApi { SetupAnswer = RouteAnswer.Api("setup", "onyx-no-docker") };
 
         var onyx = (await Reach(server).Setup(_api, Token)).Value.Steps.Single(s => s.Id == "onyx");
 
