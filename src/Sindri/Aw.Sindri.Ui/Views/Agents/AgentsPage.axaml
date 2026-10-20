@@ -18,11 +18,11 @@
       </StackPanel>
       <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
         <ComboBox x:Name="ProviderFilter" ItemsSource="{Binding ProviderChoices}" SelectedIndex="0" IsEnabled="{Binding FiltersEnabled}" SelectionChanged="OnProviderChosen"
-                  MinWidth="150" AutomationProperties.Name="Provider filter" />
+                  MinWidth="150" AutomationProperties.Name="{Binding ProviderFilterName}" />
         <ComboBox x:Name="StateFilter" ItemsSource="{Binding StateChoices}" SelectedIndex="0" IsEnabled="{Binding FiltersEnabled}" SelectionChanged="OnStateChosen"
-                  MinWidth="130" AutomationProperties.Name="State filter" />
+                  MinWidth="130" AutomationProperties.Name="{Binding StateFilterName}" />
         <ComboBox x:Name="RepoFilter" ItemsSource="{Binding RepoChoices}" SelectedIndex="0" IsEnabled="{Binding FiltersEnabled}" SelectionChanged="OnRepoChosen"
-                  MinWidth="130" AutomationProperties.Name="Repo filter" />
+                  MinWidth="130" AutomationProperties.Name="{Binding RepoFilterName}" />
       </StackPanel>
     </Grid>
 

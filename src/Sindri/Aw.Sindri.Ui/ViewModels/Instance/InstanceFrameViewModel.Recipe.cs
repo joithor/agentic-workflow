@@ -19,8 +19,8 @@ internal sealed partial class InstanceFrameViewModel
     public string RecipeLinkText => Labels.FrameTypeLink;
 #pragma warning restore CA1822, MA0041
 
-    /// <summary>The link's accessible name: it leads with the visible word and names the pinned version.</summary>
-    public string RecipeLinkName => Labels.FrameTypeLinkName(RecipeSubject);
+    /// <summary>The link's accessible name: it leads with the visible word and names the workflow (the pinned version opens, but is for Details).</summary>
+    public string RecipeLinkName => Labels.FrameTypeLinkName(WorkflowName);
 
     /// <summary>Opens the recipe sheet on the version this instance runs.</summary>
     internal void OpenRecipe()

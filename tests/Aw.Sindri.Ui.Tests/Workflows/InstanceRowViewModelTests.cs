@@ -215,7 +215,7 @@ public sealed class InstanceRowViewModelTests
     [Fact]
     public void The_name_counts_the_missing_inputs_when_there_are_any()
     {
-        var served = Open.First(i => i.Inputs.Any(x => !x.Present));
+        var served = FixtureInstances.List("preview-missing-input").Instances[0];
         var row = Row(served);
 
         Assert.True(row.HasMissingInputs);
