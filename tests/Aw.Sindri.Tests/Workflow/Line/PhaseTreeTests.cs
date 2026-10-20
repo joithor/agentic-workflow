@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Testing.Workflow;
 
 namespace Aw.Sindri.Tests.Workflow.Line;
@@ -38,7 +39,7 @@ public sealed partial class PhaseTreeTests
         Assert.NotEmpty(line);
         var tokens = Backticked.Matches(line).Select(static m => m.Groups["name"].Value).ToList();
 
-        foreach (var id in Reachable("workflow.phase").Where(i => i != "workflow.pr-babysitter" || tokens.Contains("pr-babysitter", StringComparer.Ordinal)))
+        foreach (var id in Reachable("workflow.phase"))
         {
             var short1 = id["workflow.".Length..];
             Assert.Contains(short1, tokens, StringComparer.Ordinal);
@@ -88,6 +89,37 @@ public sealed partial class PhaseTreeTests
         var errors = LineTree.Errors(RecipeComposition.ReadClean(text, "workflow.phase.yaml"));
 
         Assert.Contains(errors, static e => e.Contains("RCP-WIRE-003", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Phase_reports_shipped_and_merged_to_the_line_on_the_two_transitions_that_reach_them()
+    {
+        var phase = LineTree.Recipe("workflow.phase");
+
+        Assert.Equal("shipped", ReportStatus(Assert.Single(phase.Transitions, static t => t.From[0] == "ship" && t.To == "babysit")));
+        Assert.Equal("merged", ReportStatus(Assert.Single(phase.Transitions, static t => t.From[0] == "babysit" && t.To == "merged")));
+        Assert.All(
+            phase.Transitions.Where(static t => !(t.From[0] == "ship" && t.To == "babysit") && !(t.From[0] == "babysit" && t.To == "merged")),
+            static t => Assert.Empty(t.Effects));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_stub_babysitter_parks_before_phase_gives_up_on_it_so_the_park_propagates()
+    {
+        var stub = LineTree.Recipe("workflow.pr-babysitter").States["watch"].Timeout!;
+        var phase = LineTree.Recipe("workflow.phase").States["babysit"].Timeout!;
+
+        Assert.Equal("park", stub.Then.ToString(), ignoreCase: true);
+        Assert.Equal("escalate", phase.Then.ToString(), ignoreCase: true);
+        Assert.True(stub.After.Span < phase.After.Span, $"stub {stub.After.Value} must be shorter than phase {phase.After.Value}");
+    }
+
+    private static string ReportStatus(RecipeTransition transition)
+    {
+        var effect = Assert.Single(transition.Effects);
+        Assert.Equal("effect.line.report", effect.Use.Value);
+        Assert.Equal("fact:lineContext", effect.With["line"].Fact!.Value.Value);
+        return effect.With["status"].Literal!.Value.GetString()!;
     }
 
     private static string RepoRecipes()
