@@ -35,6 +35,8 @@ internal sealed class ProcessChallenges(TimeProvider clock, IIdGenerator ids) : 
         return issued;
     }
 
+    public IssuedChallenge Issue(ChallengeAction action, ChallengeSubject subject, ChallengeMode mode, ChallengeChannel channel) => throw new NotSupportedException();
+
     public Result<IssuedChallenge> Redeem(ChallengeAnswer answer, ChallengeAction expected, ChallengeSubject current, ErrorDefinition stale)
     {
         ArgumentNullException.ThrowIfNull(answer);

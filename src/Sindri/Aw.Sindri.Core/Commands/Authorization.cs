@@ -4,7 +4,7 @@ namespace Aw.Sindri.Core.Commands;
 
 /// <summary>
 /// The authorization table (API spec §4.2) as data: which caller may run which action class. Pure; the command chain's
-/// AuthorizingService asks it, and the command list renders <see cref="CallersFor"/>. A row that needs a terminal
+/// AuthorizingService asks it, and the command list renders <see cref="CallersFor(CommandRow)"/>. A row that needs a terminal
 /// narrows any class to a human at one; a desk row may name the in-process services it grants ('service:host' →
 /// StopProcess). 'step-report' is a launched session's (its launch secret is checked by the service, API spec §8.1), and 'local' never runs through the API, so it refuses everyone.
 /// </summary>
@@ -60,6 +60,15 @@ public static class Authorization
         (Who Who, string Name)[] named = [(Who.Terminal, "human+terminal"), (Who.App, "human"), (Who.Session, "session"), (Who.Service, "service")];
         var granted = actionClass == ActionClass.Desk ? grants.Select(static g => ServicePrefix + g) : [];
         return [.. named.Where(n => allowed.HasFlag(n.Who)).Select(static n => n.Name), .. granted];
+    }
+
+    /// <summary>Who may run <paramref name="row"/>, as the command list shows it.</summary>
+    /// <param name="row">The catalog row.</param>
+    /// <returns>The callers.</returns>
+    public static IReadOnlyList<string> CallersFor(CommandRow row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        return CallersFor(row.Class, row.ServiceGrants);
     }
 
     private static Who Allowed(ActionClass actionClass) => _table.GetValueOrDefault(actionClass, Who.None);

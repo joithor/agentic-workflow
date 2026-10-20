@@ -975,8 +975,6 @@ Aw.Sindri.Features.ListCommands.CommandListRow.Class.get -> Aw.Sindri.Core.Comma
 Aw.Sindri.Features.ListCommands.CommandListRow.Class.init -> void
 Aw.Sindri.Features.ListCommands.CommandListRow.Cli.get -> string!
 Aw.Sindri.Features.ListCommands.CommandListRow.Cli.init -> void
-Aw.Sindri.Features.ListCommands.CommandListRow.CommandListRow(Aw.Sindri.Core.Ids.ActionId Action, Aw.Sindri.Core.Commands.ActionClass Class, System.Collections.Generic.IReadOnlyList<string!>! AllowedCallers, bool Terminal, string? Method, string? Route, string! Cli, string! Ui, bool Destructive, bool ReadsViews, string? Shortcut) -> void
-Aw.Sindri.Features.ListCommands.CommandListRow.Deconstruct(out Aw.Sindri.Core.Ids.ActionId Action, out Aw.Sindri.Core.Commands.ActionClass Class, out System.Collections.Generic.IReadOnlyList<string!>! AllowedCallers, out bool Terminal, out string? Method, out string? Route, out string! Cli, out string! Ui, out bool Destructive, out bool ReadsViews, out string? Shortcut) -> void
 Aw.Sindri.Features.ListCommands.CommandListRow.Destructive.get -> bool
 Aw.Sindri.Features.ListCommands.CommandListRow.Destructive.init -> void
 Aw.Sindri.Features.ListCommands.CommandListRow.Equals(Aw.Sindri.Features.ListCommands.CommandListRow? other) -> bool
@@ -3788,3 +3786,25 @@ static Aw.Sindri.Features.GetSetup.GetSetupRequest.operator !=(Aw.Sindri.Feature
 static Aw.Sindri.Features.GetSetup.GetSetupRequest.operator ==(Aw.Sindri.Features.GetSetup.GetSetupRequest? left, Aw.Sindri.Features.GetSetup.GetSetupRequest? right) -> bool
 static Aw.Sindri.Features.GetSetup.GetSetupResponse.operator !=(Aw.Sindri.Features.GetSetup.GetSetupResponse? left, Aw.Sindri.Features.GetSetup.GetSetupResponse? right) -> bool
 static Aw.Sindri.Features.GetSetup.GetSetupResponse.operator ==(Aw.Sindri.Features.GetSetup.GetSetupResponse? left, Aw.Sindri.Features.GetSetup.GetSetupResponse? right) -> bool
+Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest
+Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest.<Clone>$() -> Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest!
+Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest.Action.get -> string!
+Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest.Action.init -> void
+Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest.Deconstruct(out string! Action) -> void
+Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest.Equals(Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest? other) -> bool
+Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest.IssueAppChallengeRequest(string! Action) -> void
+Aw.Sindri.Features.IssueChallenge.IssueChallengeResponse.Confirm.get -> string?
+Aw.Sindri.Features.IssueChallenge.IssueChallengeResponse.Confirm.init -> void
+Aw.Sindri.Features.IssueChallenge.IssueChallengeResponse.MinHoldMs.get -> int?
+Aw.Sindri.Features.IssueChallenge.IssueChallengeResponse.MinHoldMs.init -> void
+Aw.Sindri.Features.IssueChallenge.IssueChallengeResponse.TypedAlternative.get -> string?
+Aw.Sindri.Features.IssueChallenge.IssueChallengeResponse.TypedAlternative.init -> void
+Aw.Sindri.Features.ListCommands.CommandListRow.CommandListRow(Aw.Sindri.Core.Ids.ActionId Action, Aw.Sindri.Core.Commands.ActionClass Class, System.Collections.Generic.IReadOnlyList<string!>! AllowedCallers, bool Terminal, string? Method, string? Route, string! Cli, string! Ui, bool Destructive, bool ReadsViews, string? Shortcut, string? Confirm = null) -> void
+Aw.Sindri.Features.ListCommands.CommandListRow.Confirm.get -> string?
+Aw.Sindri.Features.ListCommands.CommandListRow.Confirm.init -> void
+Aw.Sindri.Features.ListCommands.CommandListRow.Deconstruct(out Aw.Sindri.Core.Ids.ActionId Action, out Aw.Sindri.Core.Commands.ActionClass Class, out System.Collections.Generic.IReadOnlyList<string!>! AllowedCallers, out bool Terminal, out string? Method, out string? Route, out string! Cli, out string! Ui, out bool Destructive, out bool ReadsViews, out string? Shortcut, out string? Confirm) -> void
+override Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest.GetHashCode() -> int
+override Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest.ToString() -> string!
+static Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest.operator !=(Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest? left, Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest? right) -> bool
+static Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest.operator ==(Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest? left, Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest? right) -> bool

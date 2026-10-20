@@ -27,6 +27,9 @@ public sealed class InMemoryChallenges(TimeProvider clock) : IChallenges
     }
 
     /// <inheritdoc/>
+    public IssuedChallenge Issue(ChallengeAction action, ChallengeSubject subject, ChallengeMode mode, ChallengeChannel channel) => throw new NotSupportedException();
+
+    /// <inheritdoc/>
     public Result<IssuedChallenge> Redeem(ChallengeAnswer answer, ChallengeAction expected, ChallengeSubject current, ErrorDefinition stale)
     {
         ArgumentNullException.ThrowIfNull(answer);

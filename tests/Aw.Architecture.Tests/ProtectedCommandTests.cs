@@ -52,9 +52,10 @@ public sealed class ProtectedCommandTests
     [Fact]
     public void No_client_references_a_protected_request_or_route()
     {
-        var rows = HostIntrospection.Catalog().Rows.Where(r => r.Class == ActionClass.Protected).ToList();
+        // The three AppConfirm rows are the app's to send (setup-once spec §4 item 7, SO-12); every other protected row stays the terminal's.
+        var rows = HostIntrospection.Catalog().Rows.Where(r => r.Class == ActionClass.Protected && !r.AppConfirm).ToList();
         var types = rows.Select(r => r.CommandType?.FullName).OfType<string>().Append(typeof(ChallengeAnswer).FullName).ToHashSet(StringComparer.Ordinal);
-        var routes = ProtectedOnlyRoutes(HostIntrospection.Catalog().Rows).SelectMany(r => new[] { r, r.Replace("/sindri", string.Empty, StringComparison.Ordinal) }).ToHashSet(StringComparer.Ordinal);
+        var routes = ProtectedOnlyRoutes(HostIntrospection.Catalog().Rows.Where(r => !r.AppConfirm)).SelectMany(r => new[] { r, r.Replace("/sindri", string.Empty, StringComparison.Ordinal) }).ToHashSet(StringComparer.Ordinal);
 
         var found = Production.Architecture.Types
             .Where(t => IsClient(t.Assembly.Name) || InMcp(t.Namespace.FullName))
@@ -64,6 +65,32 @@ public sealed class ProtectedCommandTests
 
         Assert.True(found.Count == 0, string.Join(Environment.NewLine, found)
             + ". Fix: a protected action is typed at a terminal; the app shows the CLI form to copy (engine spec §4.2, UI spec E-9)");
+    }
+
+    [Fact]
+    public void The_app_references_the_app_challenge_route_and_never_the_terminal_one()
+    {
+        var rows = HostIntrospection.Catalog().Rows;
+        var terminal = rows.Single(r => r.Action.Value == "IssueChallenge").Route!;
+        var app = rows.Single(r => r.Action.Value == "IssueAppChallenge").Route!;
+        var strings = Production.Assemblies.Where(a => IsClient(a.GetName().Name ?? string.Empty)).SelectMany(Strings).ToList();
+
+        Assert.DoesNotContain(strings, s => s == terminal || s == terminal.Replace("/sindri", string.Empty, StringComparison.Ordinal));
+        Assert.NotEqual(terminal, app);
+        Assert.StartsWith(terminal + "/", app, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void No_MCP_type_references_the_app_challenge_request()
+    {
+        var request = typeof(Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest).FullName;
+
+        var found = Production.Architecture.Types
+            .Where(t => InMcp(t.Namespace.FullName))
+            .SelectMany(t => t.Dependencies.Where(d => d.Target.FullName == request).Select(d => $"{t.FullName} uses {d.Target.FullName}"))
+            .ToList();
+
+        Assert.True(found.Count == 0, string.Join(Environment.NewLine, found) + ". Fix: the MCP endpoint stamps a session, and a session never confirms (setup-once spec §4)");
     }
 
     /// <summary>

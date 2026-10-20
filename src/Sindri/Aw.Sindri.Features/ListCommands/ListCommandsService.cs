@@ -21,7 +21,7 @@ internal sealed class ListCommandsService(ICommandCatalog catalog) : IService<Li
 
     private static CommandListRow Listed(CommandRow row) =>
         new(row.Action, row.Class, Callers(row), row.NeedsTerminal, row.Method, row.Route, row.Cli.Text, row.Ui, row.Destructive,
-            row.ReadsViews, row.Shortcut);
+            row.ReadsViews, row.Shortcut, row.Confirm);
 
     private static IReadOnlyList<string> Callers(CommandRow row)
     {
