@@ -5,7 +5,6 @@ using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels.Approvals;
 using Aw.Sindri.Ui.Views.Approvals;
 

@@ -314,7 +314,7 @@ public sealed class ApproveAllViewModelTests
         dialog.Typed = "approve-all c41e07";
         var first = dialog.SubmitTyped();
         dialog.Close();
-        _ = await Reopen(dialog);
+        await dialog.Open(Token);
         var current = _f.Server.ApproveAllGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         dialog.Typed = "approve-all c41e07";
         var second = dialog.SubmitTyped();
@@ -326,12 +326,6 @@ public sealed class ApproveAllViewModelTests
         Assert.Equal((true, 2), (dialog.IsSending, _f.Server.Approvals.Count));
         current.SetResult();
         await _f.Finish(Task.WhenAll(second, third));
-    }
-
-    private async Task<ApproveAllViewModel> Reopen(ApproveAllViewModel dialog)
-    {
-        await dialog.Open(Token);
-        return dialog;
     }
 
     [Fact]
