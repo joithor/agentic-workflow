@@ -16,7 +16,7 @@ public sealed class ReviewLogStepContract : BlockContract
 
     protected override BlockDescriptor Descriptor => ReviewSteps.Log;
 
-    protected override string ExpectedHash => "sha256:3075ca0319cae4a21e4ae63d0b31ea773a527a9aa23e8a332fa249eefb6429d9";
+    protected override string ExpectedHash => "sha256:6e7eaa86437ee3614f80f5f5d53882b16750baee43bdcd74d84d11b4b81d36f7";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

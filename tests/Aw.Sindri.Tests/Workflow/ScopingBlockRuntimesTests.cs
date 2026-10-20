@@ -48,7 +48,7 @@ public sealed class ScopingBlockRuntimesTests
         using var provider = ShippedComposition.Compose();
         var (recipe, context) = Scoping(provider);
 
-        var scoping = context.Runtimes.Keys.Select(static k => k.Value).Where(static k => !k.StartsWith("step.lens.", StringComparison.Ordinal));   // the lens loop's block Step is the design recipe's
+        var scoping = context.Runtimes.Keys.Select(static k => k.Value).Where(static k => !k.StartsWith("step.lens.", StringComparison.Ordinal) && !k.StartsWith("step.review.", StringComparison.Ordinal));   // the lens loops' block Steps are the design and review recipes'
         Assert.Equal(_registered, scoping.Order(StringComparer.Ordinal), StringComparer.Ordinal);
         var used = recipe.States.Values.Select(static s => s.Step?.Use.Value).OfType<string>().ToHashSet(StringComparer.Ordinal);
         Assert.Empty(_registered.Where(static id => id.StartsWith("step.scope.", StringComparison.Ordinal) || string.Equals(id, "step.brief.seed", StringComparison.Ordinal) || string.Equals(id, "step.interview.record", StringComparison.Ordinal)).Except(used.Concat(["step.brief.seed", "step.scope.anchor"]), StringComparer.Ordinal));   // brief.seed and anchor are the idea child's (workflow.idea-to-brief), not this recipe's
