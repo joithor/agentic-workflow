@@ -135,7 +135,7 @@ public sealed class WorkflowsStripFramesTests : FrameHost
             Assert.Equal((AccessibilityView.Control, "ListItem"), (AutomationProperties.GetAccessibilityView(frame), AutomationProperties.GetControlTypeOverride(frame)?.ToString()));
             foreach (var button in frame.GetVisualDescendants().OfType<Button>().Where(b => b.IsEffectivelyVisible))
             {
-                Assert.EndsWith(row.Address, AutomationProperties.GetName(button), StringComparison.Ordinal);
+                Assert.DoesNotContain(row.Address, AutomationProperties.GetName(button), StringComparison.Ordinal);
             }
         }
 

@@ -32,7 +32,7 @@ public sealed class RecipeFramesTests : FrameHost
     {
         var heard = Tree(window);
         var expected = recipe.States!.Nodes.Concat(recipe.States.Nodes.SelectMany(n => n.Branches)).Select(n => n.Name)
-            .Concat(recipe.Facts!.Inputs.Select(i => i.Name)).Concat(recipe.Facts.Outputs.Select(o => o.Name));
+            .Concat(recipe.Facts!.Inputs.Select(i => i.Label)).Concat(recipe.Facts.Outputs.Select(o => o.Label));
         Assert.All(expected, name => Assert.Contains((name, AutomationControlType.Text), heard));
         Assert.All(Heard.Tree(Named<Control>(window, "RecipeStates")).Where(node => node.Type == AutomationControlType.Text), node => Assert.False(string.IsNullOrEmpty(node.Name), "a nameless text node in the band"));   // a live accessibility dump showed a bare TextBlock after the last state
         Assert.DoesNotContain(window.GetVisualDescendants().OfType<TextBlock>(), t => t.Name == "RecipeStateLink" && t.IsEffectivelyVisible && string.IsNullOrEmpty(t.Text));   // an empty link is not drawn at all

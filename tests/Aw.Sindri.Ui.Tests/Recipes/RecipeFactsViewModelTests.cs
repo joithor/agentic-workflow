@@ -58,7 +58,7 @@ public sealed class RecipeFactsViewModelTests
 
         var generated = facts.Inputs.Single(i => i.HasGenerate);
         Assert.Equal(Labels.GenerateLine(template), generated.Generate);
-        Assert.Contains(generated.Generate, generated.Name, StringComparison.Ordinal);
+        Assert.Contains(generated.Generate, facts.Details);   // in Details, not the row
         Assert.Equal(1, facts.Inputs.Count(i => i.HasGenerate));
     }
 
