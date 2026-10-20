@@ -102,6 +102,26 @@ public sealed class WorkflowsViewModelTests
     }
 
     [Fact]
+    public async Task Two_workflows_with_one_display_name_are_told_apart_in_the_filter_and_map_back_exactly()
+    {
+        var body = GoldenFiles.Node("workflow-instances", "open");
+        var rows = body["instances"]!.AsArray();
+        var ids = rows.Select(r => Recipe(r!)).Distinct(StringComparer.Ordinal).Take(2).ToList();
+        Assert.Equal(2, ids.Count);
+        foreach (var row in rows)
+        {
+            row!["recipe"]!["displayName"] = "Same name";
+        }
+
+        _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, body.ToJsonString());
+
+        var list = await Shown();
+
+        Assert.Equal(list.RecipeChoices.Count, list.RecipeChoices.Distinct(StringComparer.Ordinal).Count());
+        Assert.All(list.Groups, g => Assert.Equal(g.Recipe, list.RecipeIdOf(list.RecipeChoices[list.Groups.IndexOf(g) + 1])));
+    }
+
+    [Fact]
     public async Task Head_reads_open_need_you_with_you_from_counts()
     {
         var list = await Shown();
