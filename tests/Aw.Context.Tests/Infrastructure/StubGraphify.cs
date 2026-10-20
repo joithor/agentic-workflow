@@ -1,4 +1,5 @@
 using Aw.Context.Infrastructure.Extract;
+using Aw.Kernel.Testing;
 
 namespace Aw.Context.Tests.Infrastructure;
 
@@ -15,20 +16,15 @@ internal sealed class StubGraphify : IDisposable
     {
         RanMarker = Path.Combine(_folder, "ran");
         var script = Path.Combine(_folder, "graphify");
-        File.WriteAllLines(script,
+        _ = ExecutableScript.Write(script, string.Join('\n',
         [
-            "#!/bin/sh",
             $"if [ \"$1\" = \"--version\" ]; then echo \"graphify {version}\"; exit 0; fi",
             .. hangs ? (string[])["sleep 300"] : [],   // a run that never ends: the caller's deadline has to cut it
             $"echo \"$HOME|$TMPDIR|$(stat -c %a \"$HOME\" 2>/dev/null || stat -f %Lp \"$HOME\")\" > \"{RanMarker}\"",
             "root=\"$2\"",
             "mkdir -p \"$root/graphify-out\"",
             "printf '{\"nodes\":[{\"id\":\"a\",\"community\":0,\"source_file\":\"%s/src/a.ts\"},{\"id\":\"b\",\"community\":0,\"source_file\":\"%s/src/b.ts\"}],\"links\":[]}' \"$root\" \"$root\" > \"$root/graphify-out/graph.json\"",
-        ]);
-        if (!OperatingSystem.IsWindows())
-        {
-            File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        }
+        ]) + "\n");
 
         Options = GraphifyOptions.Default with { Binary = script, Sandbox = static (_, command, _) => RunThroughShell(command) };
     }
