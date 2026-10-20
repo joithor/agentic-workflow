@@ -45,7 +45,7 @@ exit 1
 SND-PROFILE-004 approving needs an interactive terminal: run it yourself and type the action the challenge asks for
 exit 2
 ## sindri profile approve HASH (session, terminal)
-SND-AUTH-002 ApproveProfile is a human decision. Ask the human to run it in a terminal: sindri profile approve [<hash>] (this CLI ran as a session: CLAUDECODE is set)
+SND-AUTH-002 ApproveProfile is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri profile approve [<hash>] (this CLI ran as a session: CLAUDECODE is set)
 exit 2
 ## sindri profile approve HASH (human, terminal)
 Type 'approve profile HASH6' to approve it: approve profile HASH6

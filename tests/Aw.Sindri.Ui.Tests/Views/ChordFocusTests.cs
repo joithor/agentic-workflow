@@ -141,6 +141,11 @@ public sealed class ChordFocusTests : IDisposable
         Dispatcher.UIThread.RunJobs();
         window.KeyTextInput("workflows");
         Dispatcher.UIThread.RunJobs();
+        for (var step = 0; shell.Palette.Selected?.Page != PageId.Workflows && step < 10; step++)
+        {
+            shell.Palette.Move(1);   // "Approve all workflows" matches the query too and now comes first
+        }
+
         var raised = 0;
         var names = new List<string?>();
         window.AddHandler(InputElement.GotFocusEvent, (_, e) =>
