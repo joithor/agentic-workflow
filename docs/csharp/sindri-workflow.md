@@ -515,6 +515,8 @@ what a report must carry, on which outcomes; "every outcome" outputs are on all 
 
 Descriptor-only too (`ScopingSteps` in `Aw.Sindri.Features/Blocks/`; the three context inputs are real runtimes, see "The context inputs (S-LB2)"); the recipes are `workflow.scoping` and `workflow.idea-to-brief` (scoping spec §6, §9). Every Step is desk-capable. An agent Step reaches only `Tools` (the read-only rule is W9's, enforced at launch).
 
+The table also lists the ship and phase Steps. Three of them have block runtimes (BS-3): `step.ship.return` (`ShipReturnStep`) and `step.phase.drift` (`PhaseDriftStep`, which compares HEAD with `built.head`), and `step.build.prepare` of the build station (`BuildPrepareStep`, which checks the workspace is clean). The other rows are descriptor-only.
+
 | Step | Runtime | Inputs | Outcomes | Outputs |
 |---|---|---|---|---|
 | `step.scope.intake` | block | `scopeInput` | `brief`, `tracker`, `idea`, `change` | the eight seeds (`scopeMap`, `acceptance`, `findings`, `answers`, `answerLog`, `challenge`, `questions`, `openQuestions`) on all four |
@@ -597,7 +599,7 @@ Outcomes of `step.lens.log`: `next` while the queue is not empty (writes `lensRo
 
 ### Block catalog (line stations: build and prove)
 
-Descriptor-only (`BuildSteps`, `ProveSteps` in `Aw.Sindri.Features/Blocks/Step/`); the recipes are `workflow.build` and `workflow.prove` (line spec §7.2, §7.3, Appendix C.3 and C.4). Every Step is desk-capable.
+`step.build.prepare` has a block runtime (BS-3); the rest is descriptor-only (`BuildSteps`, `ProveSteps` in `Aw.Sindri.Features/Blocks/Step/`); the recipes are `workflow.build` and `workflow.prove` (line spec §7.2, §7.3, Appendix C.3 and C.4). Every Step is desk-capable.
 
 | Step | Runtime | Outcomes | Outputs |
 |---|---|---|---|
@@ -1175,8 +1177,8 @@ Unit (c), as built:
 
 Engine spec rev 8.1 §3.8, §5.2, §5.5, §5.8, §6.2; UI spec E-6, E-19.
 
-- **`workflow takeover <address>`** (class `pause`: an agent session may take over, so the attach hook works) and
-  **`workflow handback <address>`** (class `desk`: a session is refused `SND-AUTH-002`) are `ApplyCommand` kinds
+- **`workflow takeover <address>`** (also `sindri takeover <item-or-address>`, a bare item being the root of its latest attempt; class `pause`: an agent session may take over, so the attach hook works) and
+  **`workflow handback <address>`** (also `sindri handback <item-or-address>`; class `desk`: a session is refused `SND-AUTH-002`) are `ApplyCommand` kinds
   `takeover` and `handback`, sent as the `takeover` and `handback` Updates with the nonce as id. Both are exempt from
   the approval check. While the workflow is still open, a takeover of an ended or already taken-over instance, and a handback of one
   that isn't taken over, are `SND-WF-003` from the validator and record nothing. Once an ended instance's workflow has

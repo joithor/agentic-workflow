@@ -80,6 +80,8 @@ internal static class StatusCases
         "parked-no-runtime" => Case(Park(ParkReason.NoRuntime, kind: null, "step.test.agent"), Ago(2)),
         "parked-rounds-with-drift" => Case(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds") with { PendingPark = Suspended(ParkReason.SpecConflict, ParkKind.Drift, "step.produce") }, Ago(30)),
         "cancelled" => Case(Ended("cancelled", "cancelled"), Ago(1)),
+        "failed" => Case(Ended("failed", "failed"), Ago(1)),
+        "unresolved" => Case(Ended("unresolved", "unresolved"), Ago(1)),
         "parked-rounds-with-approved-drift" => Case(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds") with { PendingPark = Suspended(ParkReason.SpecConflict, ParkKind.Drift, "step.produce") with { Approved = true } }, Ago(30)),
         "parked-rounds-with-later-drift" => Case(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds") with
         {
