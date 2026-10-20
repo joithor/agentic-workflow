@@ -67,6 +67,14 @@ internal sealed partial class ExpandedStateViewModel : ObservableObject
     /// <summary>True when the state has a step.</summary>
     public bool HasStep => StepLine.Length > 0;
 
+#pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
+    /// <summary>The heading of the stage's closed details.</summary>
+    public string DetailsHeading => Labels.StageDetailsHeading;
+#pragma warning restore CA1822, MA0041
+
+    /// <summary>True when the stage has anything for its details: a step, gates, budget, timeout or an agent session.</summary>
+    public bool HasStageDetails => HasStep || HasGates || HasBudget || HasTimeout || HasRun;
+
     /// <summary>The exit gates, in served order.</summary>
     public IReadOnlyList<string> Gates { get; }
 

@@ -141,8 +141,6 @@ public sealed class ChordFocusTests : IDisposable
         Dispatcher.UIThread.RunJobs();
         window.KeyTextInput("workflows");
         Dispatcher.UIThread.RunJobs();
-        window.KeyPress(Key.Down, RawInputModifiers.None, PhysicalKey.ArrowDown, keySymbol: null);
-        Dispatcher.UIThread.RunJobs();
         var raised = 0;
         var names = new List<string?>();
         window.AddHandler(InputElement.GotFocusEvent, (_, e) =>

@@ -6,7 +6,7 @@ namespace Aw.Sindri.Ui.ViewModels;
 internal static partial class Labels
 {
     /// <summary>The group of sessions no workflow owns (CO12).</summary>
-    internal const string OutsideWorkflow = "Outside a workflow";
+    internal const string OutsideWorkflow = "Not part of a workflow";
 
     /// <summary>The group of sessions Sindri launched, until recipe states group them (Q1).</summary>
     internal const string StartedBySindri = "Started by Sindri";
@@ -34,15 +34,13 @@ internal static partial class Labels
     /// <summary>The head: "Agents  N live · M asking · K outside a workflow" (the title is the page's own).</summary>
     /// <param name="live">Live sessions.</param>
     /// <param name="asking">Sessions waiting on the human.</param>
-    /// <param name="outside">Sessions outside a workflow.</param>
     /// <returns>The counts line.</returns>
-    internal static string AgentsHead(int live, int asking, int outside) =>
-        string.Create(CultureInfo.InvariantCulture, $"{live} live · {asking} asking · {outside} outside a workflow");
+    internal static string AgentsHead(int live, int asking) => AgentsCounts(live, asking);
 
     /// <summary>The live region's text when the counts change, and the tray's line: "N agents · M asking".</summary>
     /// <param name="live">Live sessions.</param>
     /// <param name="asking">Sessions waiting on the human.</param>
     /// <returns>The line.</returns>
     internal static string AgentsCounts(int live, int asking) =>
-        string.Create(CultureInfo.InvariantCulture, $"{live} {(live == 1 ? "agent" : "agents")} · {asking} asking");
+        string.Create(CultureInfo.InvariantCulture, $"{live} {(live == 1 ? "agent" : "agents")} · {asking} asking you");
 }

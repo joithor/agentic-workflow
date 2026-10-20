@@ -16,11 +16,11 @@ internal sealed partial class InstanceFrameViewModel
 
     /// <summary>The link's words.</summary>
 #pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
-    public string RecipeLinkText => Labels.RecipeLink;
+    public string RecipeLinkText => Labels.FrameTypeLink;
 #pragma warning restore CA1822, MA0041
 
-    /// <summary>The link's accessible name: it leads with the visible word and names the pinned version.</summary>
-    public string RecipeLinkName => Labels.OpenRecipeName(RecipeSubject);
+    /// <summary>The link's accessible name: it leads with the visible word and names the workflow (the pinned version opens, but is for Details).</summary>
+    public string RecipeLinkName => Labels.FrameTypeLinkName(WorkflowName);
 
     /// <summary>Opens the recipe sheet on the version this instance runs.</summary>
     internal void OpenRecipe()

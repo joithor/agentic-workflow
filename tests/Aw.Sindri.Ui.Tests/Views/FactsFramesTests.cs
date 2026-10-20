@@ -22,6 +22,7 @@ public sealed class FactsFramesTests : FrameHost
         shell.OpenInstance(detail.Address, detail.Id);
         await Until(window, () => shell.Instance.Facts is not null);
         Settle(window);
+        OpenDisclosures(window);
         return (window, shell);
     }
 
