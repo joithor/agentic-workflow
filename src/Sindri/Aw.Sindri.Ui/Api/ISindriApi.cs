@@ -7,7 +7,7 @@ using Aw.Sindri.Ui.Api.Workflow;
 namespace Aw.Sindri.Ui.Api;
 
 /// <summary>Sindri's HTTP API as the app uses it (docs/csharp/sindri.md). Every call names the base URL from control.json.</summary>
-internal interface ISindriApi
+internal partial interface ISindriApi
 {
     /// <summary>GET /sindri/ping.</summary>
     /// <param name="api">The base URL.</param>
@@ -174,33 +174,6 @@ internal interface ISindriApi
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The started (or existing) instance, the API's refusal (SND-WF-012, SND-WF-014, SND-RECIPE-001/005/006, SND-CLI-003) as served, or SND-UI-002/003.</returns>
     public Task<Result<StartedView>> StartInstance(Uri api, StartInstanceRequest request, CancellationToken cancellationToken);
-
-    /// <summary>GET /sindri/workflow/recipes/approve-all: the plan one approval covers (ordered, a reason each, a digest).</summary>
-    /// <param name="api">The base URL.</param>
-    /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>The plan, the API's refusal (SND-SETUP-007 before a profile is approved), or SND-UI-002/003.</returns>
-    public Task<Result<ApproveAllPlan>> ApproveAllPlan(Uri api, CancellationToken cancellationToken);
-
-    /// <summary>POST /sindri/workflow/challenges/app: the challenge for 'approve-all &lt;digest6&gt;'. A human token only; sent once.</summary>
-    /// <param name="api">The base URL.</param>
-    /// <param name="request">The action text.</param>
-    /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>The challenge, SND-AUTH-002 for an agent session, SND-SETUP-007, or SND-UI-002/003.</returns>
-    public Task<Result<AppChallengeView>> IssueAppChallenge(Uri api, AppChallengeRequest request, CancellationToken cancellationToken);
-
-    /// <summary>POST /sindri/workflow/recipes/approve-all: redeems the challenge and starts the approval job. Sent once, never retried by the app.</summary>
-    /// <param name="api">The base URL.</param>
-    /// <param name="request">The challenge and the answer (held or typed).</param>
-    /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>The started job, SND-SETUP-003 (hold again), SND-RECIPE-009 (the plan changed), SND-JOB-409, SND-AUTH-002, or SND-UI-002/003.</returns>
-    public Task<Result<ApproveAllStarted>> ApproveAll(Uri api, ApproveAllRequest request, CancellationToken cancellationToken);
-
-    /// <summary>GET /sindri/jobs/{id}: how far the approval job is and what it did.</summary>
-    /// <param name="api">The base URL.</param>
-    /// <param name="id">The job.</param>
-    /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>The job, the API's refusal, or SND-UI-002/003.</returns>
-    public Task<Result<ApproveAllJob>> ApproveAllJob(Uri api, string id, CancellationToken cancellationToken);
 
     // LANE ANCHOR U9: the context reads and the review send, one method each (the client's are in SindriApiClient.Context.cs, the routes in ContextRoutes); U9e adds Subgraph. Insert immediately below this marker, never between the markers.
 
