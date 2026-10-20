@@ -207,7 +207,7 @@ public sealed class StatePathOrderTests
     /// <summary>Every shipped recipe's hash, pinned before DT-C changed how a produces entry is read (a bare key must keep writing as a string).</summary>
     public static IReadOnlyDictionary<string, string> PinnedHashes { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
     {
-        ["sindri/workflow.phase.yaml"] = "sha256:21f17261a13304f5133d02adfadf92b442c7054469524207becaeb293881302a",
+        ["sindri/workflow.phase.yaml"] = "sha256:253ce29641ef0023f8d298a7b9ed3bbedb18be0b90f83ce5da4342b5298625f4",
         ["sindri/workflow.pr-babysitter.yaml"] = "sha256:03bcd8c465f70a112f3f565933918a585f6384caa92b5788639bde835f574211",
         ["sindri/workflow.build.yaml"] = "sha256:575430facdb0cb6187380210f609390c457b24119f0eb7173a16404dc832a284",
         ["sindri/workflow.prove.yaml"] = "sha256:d0421eb0db5c89641e4dce65ba96bfc3943391692e9083c603026d8bdd2d50e0",

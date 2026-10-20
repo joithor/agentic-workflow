@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Testing.Workflow;
 
 namespace Aw.Sindri.Tests.Workflow.Line;
@@ -91,17 +90,10 @@ public sealed partial class PhaseTreeTests
         Assert.Contains(errors, static e => e.Contains("RCP-WIRE-003", StringComparison.Ordinal));
     }
 
+    /// <summary>LN-WF1 placeholder: no phase transition carries an effect until 'effect.line.report' has a runtime. LN-WF1 flips this to 'shipped' on ship to babysit and 'merged' on babysit to merged, each with line = fact:lineContext.</summary>
     [Fact, Trait("Lane", "unit")]
-    public void Phase_reports_shipped_and_merged_to_the_line_on_the_two_transitions_that_reach_them()
-    {
-        var phase = LineTree.Recipe("workflow.phase");
-
-        Assert.Equal("shipped", ReportStatus(Assert.Single(phase.Transitions, static t => t.From[0] == "ship" && t.To == "babysit")));
-        Assert.Equal("merged", ReportStatus(Assert.Single(phase.Transitions, static t => t.From[0] == "babysit" && t.To == "merged")));
-        Assert.All(
-            phase.Transitions.Where(static t => !(t.From[0] == "ship" && t.To == "babysit") && !(t.From[0] == "babysit" && t.To == "merged")),
-            static t => Assert.Empty(t.Effects));
-    }
+    public void LN_WF1_placeholder_no_phase_transition_carries_an_effect_yet() =>
+        Assert.All(LineTree.Recipe("workflow.phase").Transitions, static t => Assert.Empty(t.Effects));
 
     [Fact, Trait("Lane", "unit")]
     public void The_stub_babysitter_parks_before_phase_gives_up_on_it_so_the_park_propagates()
@@ -112,14 +104,6 @@ public sealed partial class PhaseTreeTests
         Assert.Equal("park", stub.Then.ToString(), ignoreCase: true);
         Assert.Equal("escalate", phase.Then.ToString(), ignoreCase: true);
         Assert.True(stub.After.Span < phase.After.Span, $"stub {stub.After.Value} must be shorter than phase {phase.After.Value}");
-    }
-
-    private static string ReportStatus(RecipeTransition transition)
-    {
-        var effect = Assert.Single(transition.Effects);
-        Assert.Equal("effect.line.report", effect.Use.Value);
-        Assert.Equal("fact:lineContext", effect.With["line"].Fact!.Value.Value);
-        return effect.With["status"].Literal!.Value.GetString()!;
     }
 
     private static string RepoRecipes()
