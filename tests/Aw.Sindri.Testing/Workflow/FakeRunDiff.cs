@@ -9,14 +9,25 @@ public sealed class FakeRunDiff : IRunDiff
 {
     private readonly Dictionary<string, (string Head, bool Dirty)> _worktrees = new(StringComparer.Ordinal);
 
+    private readonly Dictionary<string, SortedSet<string>> _changed = new(StringComparer.Ordinal);
+
     /// <summary>Makes <paramref name="worktree"/> exist at <paramref name="head"/>, clean.</summary>
     /// <param name="worktree">The path.</param>
     /// <param name="head">Its HEAD.</param>
-    public void Add(string worktree, string head = "c1") => _worktrees[worktree] = (head, false);
+    public void Add(string worktree, string head = "c1")
+    {
+        _worktrees[worktree] = (head, false);
+        _changed[worktree] = new SortedSet<string>(StringComparer.Ordinal);
+    }
 
-    /// <summary>Leaves an uncommitted change in <paramref name="worktree"/>.</summary>
+    /// <summary>Leaves an uncommitted change in <paramref name="worktree"/>, in the given paths.</summary>
     /// <param name="worktree">The path.</param>
-    public void Touch(string worktree) => _worktrees[worktree] = (_worktrees[worktree].Head, true);
+    /// <param name="paths">The changed paths, relative to the worktree; the fake keeps them as changed against any base.</param>
+    public void Touch(string worktree, params string[] paths)
+    {
+        _worktrees[worktree] = (_worktrees[worktree].Head, true);
+        _changed[worktree].UnionWith(paths);
+    }
 
     /// <summary>Commits in <paramref name="worktree"/>: a new HEAD, clean.</summary>
     /// <param name="worktree">The path.</param>
@@ -29,6 +40,10 @@ public sealed class FakeRunDiff : IRunDiff
     /// <inheritdoc/>
     public ValueTask<Result<bool>> IsEmpty(string worktree, string startHead, CancellationToken cancellationToken) =>
         ValueTask.FromResult<Result<bool>>(_worktrees.TryGetValue(worktree, out var found) ? !found.Dirty && string.Equals(found.Head, startHead, StringComparison.Ordinal) : Missing(worktree));
+
+    /// <inheritdoc/>
+    public ValueTask<Result<IReadOnlyList<string>>> ChangedPaths(string worktree, string baseCommit, CancellationToken cancellationToken) =>
+        ValueTask.FromResult<Result<IReadOnlyList<string>>>(_changed.TryGetValue(worktree, out var paths) ? Results.Success<IReadOnlyList<string>>([.. paths]) : Missing(worktree));
 
     private static Error Missing(string worktree) => WorkflowErrors.EffectFailed.With($"{worktree} is not a worktree");
 }

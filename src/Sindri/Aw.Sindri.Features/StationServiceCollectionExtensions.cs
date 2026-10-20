@@ -1,4 +1,5 @@
 using Aw.Sindri.Features.Build;
+using Aw.Sindri.Features.Docs;
 using Aw.Sindri.Features.Evidence;
 using Aw.Sindri.Features.LensLoops;
 using Aw.Sindri.Features.Prove;
@@ -15,5 +16,5 @@ internal static class StationServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
     internal static IServiceCollection AddStationSlices(this IServiceCollection services) =>
-        services.AddScopingSlices().AddBuildSlices().AddShipSlices().AddLensLoops().AddProveSlices().AddEvidenceSlices();
+        services.AddScopingSlices().AddBuildSlices().AddShipSlices().AddLensLoops().AddProveSlices().AddEvidenceSlices().AddDocsSlices();
 }
