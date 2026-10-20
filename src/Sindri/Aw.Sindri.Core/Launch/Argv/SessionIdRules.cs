@@ -65,7 +65,7 @@ public static class SessionIdRules
         }
         catch (RegexMatchTimeoutException)
         {
-            return PatternOutcome.NoMatch;   // red: a timeout is still read as a mismatch
+            return PatternOutcome.TimedOut;
         }
     }
 
