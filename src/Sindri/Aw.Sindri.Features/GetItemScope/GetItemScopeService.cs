@@ -94,14 +94,26 @@ internal sealed partial class GetItemScopeService(IItemResolver items, ICallerCo
 
         var instance = WorkflowInstanceId.Of(address);
         var hash = await packets.Hash(instance, cancellationToken).ConfigureAwait(false);
-        if (hash.IsError || !string.Equals(hash.Value, approval.Value.PacketHash, StringComparison.Ordinal))
+        if (hash.IsError)
         {
-            LogUnreadable(item, row.Sequence, hash.IsError ? "its packet is not in the run area" : "its packet no longer hashes to the approved hash");
+            LogUnreadable(item, row.Sequence, string.Equals(hash.Error.Code, SindriErrors.ItemNotFound.Code, StringComparison.Ordinal) ? "its packet is not in the run area" : "its packet could not be hashed");
+            return null;
+        }
+
+        if (!string.Equals(hash.Value, approval.Value.PacketHash, StringComparison.Ordinal))
+        {
+            LogUnreadable(item, row.Sequence, "its packet no longer hashes to the approved hash");
             return null;
         }
 
         var text = await packets.ReadFile(instance, "lenses.json", cancellationToken).ConfigureAwait(false);
-        if (text.IsError || LensRead.Of(text.Value) is not { } lenses)
+        if (text.IsError)
+        {
+            LogUnreadable(item, row.Sequence, "its lenses.json cannot be read");
+            return null;
+        }
+
+        if (LensRead.Of(text.Value) is not { } lenses)
         {
             LogUnreadable(item, row.Sequence, "its lenses.json does not read");
             return null;
