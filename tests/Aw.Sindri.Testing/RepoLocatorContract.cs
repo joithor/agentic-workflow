@@ -61,4 +61,33 @@ public abstract class RepoLocatorContract
         Expect.Equal(expected: null, elsewhere);
         Expect.Equal(expected: null, outside);
     }
+
+    /// <summary>A worktree is placed at its own top level and matched to the entry of its main checkout.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_worktree_is_placed_on_the_entry_of_its_main_checkout()
+    {
+        var (main, inWorktree) = await RepoWithWorktree();
+
+        var placed = await Create().Place(inWorktree, [new RepoEntry("demo", main)], Token);
+
+        Expect.Equal(RepoName.From("demo"), placed?.Repo);
+        Expect.Equal(expected: true, placed is not null);
+    }
+
+    /// <summary>A repository no entry names is placed with no repo; a directory outside git is not placed.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_repo_no_entry_names_is_placed_without_a_repo_and_outside_git_is_not_placed()
+    {
+        var (main, inWorktree) = await RepoWithWorktree();
+        var locator = Create();
+
+        var elsewhere = await locator.Place(inWorktree, [new RepoEntry("other", main + "-other")], Token);
+        var outside = await locator.Place(await OutsideGit(), [new RepoEntry("demo", main)], Token);
+
+        Expect.Equal(expected: true, elsewhere is not null);
+        Expect.Equal(expected: null, elsewhere?.Repo);
+        Expect.Equal(expected: null, outside);
+    }
 }
