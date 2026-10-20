@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
@@ -65,13 +66,17 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
     /// <returns>The recipe id, or null for "All workflow types" or a name no group has.</returns>
     internal string? RecipeIdOf(string choice) => _choiceIds.GetValueOrDefault(choice);
 
-    // Each choice stands for one recipe id; two workflows with one display name get their readable id (then the raw id) appended.
+    // Each choice stands for one recipe id; two workflows with one display name get their readable id (then a number) appended, never the raw id.
     private static Dictionary<string, string> ChoicesFor(IReadOnlyList<RecipeGroupViewModel> groups)
     {
         var byName = groups.GroupBy(g => g.Name, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
         var named = groups.Select(g => (g.Recipe, Choice: byName[g.Name] > 1 ? $"{g.Name} ({WorkflowNames.Of(g.Recipe, displayName: null)})" : g.Name)).ToList();
         var taken = named.GroupBy(n => n.Choice, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
-        return named.ToDictionary(n => taken[n.Choice] > 1 ? $"{n.Choice} ({n.Recipe})" : n.Choice, n => n.Recipe, StringComparer.Ordinal);
+        var seen = new Dictionary<string, int>(StringComparer.Ordinal);
+        return named.ToDictionary(
+            n => taken[n.Choice] > 1 ? string.Create(CultureInfo.InvariantCulture, $"{n.Choice} ({seen[n.Choice] = seen.GetValueOrDefault(n.Choice) + 1})") : n.Choice,
+            n => n.Recipe,
+            StringComparer.Ordinal);
     }
 
     /// <summary>The legend line at the foot of the list (screens §4.2): the marks the rows draw, then the page's keys.</summary>
