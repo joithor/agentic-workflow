@@ -109,21 +109,21 @@ public sealed class ApproveAllViewModelTests
     [Fact]
     public async Task Holding_for_the_whole_time_answers_with_the_time_held_and_follows_the_job_to_its_end()
     {
-        _f.Server.JobAnswers.Enqueue(RouteAnswer.SpecShaped("approve-all-job", "running"));
+        _f.Server.ApproveAllJobAnswers.Enqueue(RouteAnswer.SpecShaped("approve-all-job", "running"));
         var dialog = await _f.Opened();
 
         await _f.Hold(dialog);
 
         var sent = Assert.Single(_f.Server.Approvals);
         Assert.Equal(("CHL-0000000000000000000000000000000a", true, null), (sent.Challenge, sent.HeldMs >= 1500, sent.Typed));
-        Assert.Equal((ApproveAllPhase.Done, "2 workflows approved", 2), (dialog.Phase, dialog.Outcome, _f.Server.JobCalls));
+        Assert.Equal((ApproveAllPhase.Done, "2 workflows approved", 2), (dialog.Phase, dialog.Outcome, _f.Server.ApproveAllJobCalls));
         Assert.Equal(("Done", false, false), (dialog.CloseLabel, dialog.HasRefused, dialog.HasSkipped));
     }
 
     [Fact]
     public async Task While_the_job_runs_the_dialog_shows_the_workflow_in_hand()
     {
-        _f.Server.JobAnswers.Enqueue(RouteAnswer.SpecShaped("approve-all-job", "running"));
+        _f.Server.ApproveAllJobAnswers.Enqueue(RouteAnswer.SpecShaped("approve-all-job", "running"));
         _f.Server.ApproveAllJobAnswer = RouteAnswer.SpecShaped("approve-all-job", "running");
         var dialog = await _f.Opened();
         dialog.BeginHold();
@@ -286,7 +286,7 @@ public sealed class ApproveAllViewModelTests
 
         await _f.Hold(dialog);
 
-        Assert.Equal((ApproveAllPhase.Failed, Labels.ApproveLostTrack, 3), (dialog.Phase, dialog.Error, _f.Server.JobCalls));
+        Assert.Equal((ApproveAllPhase.Failed, Labels.ApproveLostTrack, 3), (dialog.Phase, dialog.Error, _f.Server.ApproveAllJobCalls));
     }
 
     [Fact]
@@ -297,7 +297,7 @@ public sealed class ApproveAllViewModelTests
         dialog.BeginHold();
         _f.Clock.Advance(TimeSpan.FromMilliseconds(1600));
         var answer = dialog.Tick();
-        await WaitUntil(() => _f.Server.JobCalls >= 1);
+        await WaitUntil(() => _f.Server.ApproveAllJobCalls >= 1);
 
         dialog.Close();
         _f.Clock.Advance(TimeSpan.FromSeconds(1));
@@ -426,7 +426,7 @@ public sealed class ApproveAllViewModelTests
         await _f.Hold(dialog);
 
         Assert.Equal((ApproveAllPhase.Failed, "SND-UI-003", Labels.ApproveStillRunning), (dialog.Phase, dialog.ErrorCode, dialog.Error));
-        Assert.True(_f.Server.JobCalls > 100);
+        Assert.True(_f.Server.ApproveAllJobCalls > 100);
     }
 
     // The clock does not move on its own: a wait for something the dialog does after a delay is bounded and nudges nothing.

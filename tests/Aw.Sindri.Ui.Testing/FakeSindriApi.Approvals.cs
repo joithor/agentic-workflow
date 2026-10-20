@@ -13,7 +13,7 @@ internal sealed partial class FakeSindriApi
     private readonly List<AppChallengeRequest> _challenges = [];
     private readonly List<ApproveAllRequest> _approvals = [];
     private int _planCalls;
-    private int _jobCalls;
+    private int _approveAllJobCalls;
 
     /// <summary>GET /sindri/workflow/recipes/approve-all's answer.</summary>
     public RouteAnswer ApproveAllPlanAnswer { get; set; } = RouteAnswer.SpecShaped("recipes-approve-all", "plan");
@@ -24,11 +24,11 @@ internal sealed partial class FakeSindriApi
     /// <summary>POST /sindri/workflow/recipes/approve-all's answer.</summary>
     public RouteAnswer ApproveAllStartAnswer { get; set; } = RouteAnswer.SpecShaped("recipes-approve-all-start", "started");
 
-    /// <summary>What the job read answers once <see cref="JobAnswers"/> has none left to give.</summary>
+    /// <summary>What the job read answers once <see cref="ApproveAllJobAnswers"/> has none left to give.</summary>
     public RouteAnswer ApproveAllJobAnswer { get; set; } = RouteAnswer.SpecShaped("approve-all-job", "succeeded");
 
     /// <summary>The job answers handed out one per read, in order, before <see cref="ApproveAllJobAnswer"/> (a job that runs a while).</summary>
-    public Queue<RouteAnswer> JobAnswers { get; } = new();
+    public Queue<RouteAnswer> ApproveAllJobAnswers { get; } = new();
 
     /// <summary>Held open until set: the approval waits for it (the app is sending meanwhile).</summary>
     public TaskCompletionSource? ApproveAllGate { get; set; }
@@ -49,7 +49,7 @@ internal sealed partial class FakeSindriApi
     public int PlanCalls => Volatile.Read(ref _planCalls);
 
     /// <summary>How many times the job was read.</summary>
-    public int JobCalls => Volatile.Read(ref _jobCalls);
+    public int ApproveAllJobCalls => Volatile.Read(ref _approveAllJobCalls);
 
     public Task<Result<ApproveAllPlan>> ApproveAllPlan(Uri api, CancellationToken cancellationToken)
     {
@@ -91,10 +91,10 @@ internal sealed partial class FakeSindriApi
 
     public Task<Result<ApproveAllJob>> ApproveAllJob(Uri api, string id, CancellationToken cancellationToken)
     {
-        _ = Interlocked.Increment(ref _jobCalls);
+        _ = Interlocked.Increment(ref _approveAllJobCalls);
         lock (_gate)
         {
-            LastJobAnswer = JobAnswers.Count > 0 ? JobAnswers.Dequeue() : ApproveAllJobAnswer;
+            LastJobAnswer = ApproveAllJobAnswers.Count > 0 ? ApproveAllJobAnswers.Dequeue() : ApproveAllJobAnswer;
         }
 
         return Task.FromResult(Answer<ApproveAllJob>(api, WorkflowRoutes.Job(id), LastJobAnswer));
