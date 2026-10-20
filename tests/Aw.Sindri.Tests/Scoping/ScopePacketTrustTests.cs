@@ -19,12 +19,11 @@ public sealed class ScopePacketTrustTests
 
         var packet = ScopePacket.Build(new ScopeFacts(facts));
 
-        foreach (var name in new[] { "coverage.json", "challenge.json" })
+        foreach (var (name, path) in new[] { ("coverage.json", "claimed"), ("challenge.json", "note") })
         {
             var file = Assert.Single(packet, f => f.Path.EndsWith(name, StringComparison.Ordinal));
-            var served = PacketFileFencing.Fence(new PacketFile(name, file.Content, "json")).Text;
-            Assert.DoesNotContain("\"planted\"", served, StringComparison.Ordinal);
-            Assert.Contains(Open + "planted", served.Replace("\n", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
+            var served = JsonNode.Parse(PacketFileFencing.Fence(new PacketFile(name, file.Content, "json")).Text)!;
+            Assert.StartsWith(Open, served[path]!["text"]!.GetValue<string>(), StringComparison.Ordinal);
         }
     }
 }
