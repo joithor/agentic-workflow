@@ -7,7 +7,7 @@ using Aw.Sindri.Testing.Workflow;
 
 namespace Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 
-/// <summary>The prepare Step of the line's build station, descriptor-only (no runtime until its phase): it hashes, kinds, registers once and resolves nothing.</summary>
+/// <summary>The prepare Step of the line's build station (a block runtime: it checks the workspace and seeds the build's facts): it hashes, kinds, registers once and resolves nothing.</summary>
 [Lane(TestLane.Unit)]
 public sealed class BuildPrepareStepContract : BlockContract
 {
