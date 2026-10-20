@@ -22,6 +22,7 @@ using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Registry;
+using Aw.Sindri.Core.Worktrees;
 using Aw.Sindri.Infrastructure.Auth;
 using Aw.Sindri.Infrastructure.Challenges;
 using Aw.Sindri.Infrastructure.Control;
@@ -42,6 +43,7 @@ using Aw.Sindri.Infrastructure.Sessions;
 using Aw.Sindri.Infrastructure.Text;
 using Aw.Sindri.Infrastructure.Views;
 using Aw.Sindri.Infrastructure.Workflow;
+using Aw.Sindri.Infrastructure.Worktrees;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Infrastructure.Registration;
@@ -100,6 +102,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IRecipeApprovals, SqliteRecipeApprovals>()
             .AddSingleton<IWorkflowClaims, SqliteWorkflowClaims>()   // engine P6 unit (d): workflow_claims in ledger.db
             .AddSingleton<IClaimRefs, GitClaimRefs>()                // engine P6 unit (d): the claim's marker ref
+            .AddSingleton<IWorktrees, GitWorktrees>()               // per-run and phase worktrees (engine spec §6.5); nothing calls it until BS-10
             .AddSingleton<IChallenges, ProcessChallenges>()
             .AddSingleton(sp => HeavyLockSettings.Read(environment, sp.GetRequiredService<SindriSettings>().StateDirectory))
             .AddSingleton<IHeavySlots, DirectoryHeavySlots>()

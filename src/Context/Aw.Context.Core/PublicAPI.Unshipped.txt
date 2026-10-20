@@ -1599,7 +1599,9 @@ Aw.Context.Core.Map.MapPromoted.Retained.init -> void
 Aw.Context.Core.Map.MapPromoted.Version.get -> Aw.Context.Core.Map.MapVersion!
 Aw.Context.Core.Map.MapPromoted.Version.init -> void
 Aw.Context.Core.Map.MapReader
-Aw.Context.Core.Map.MapReader.MapReader(Aw.Context.Core.Map.IGraphStore! store, Aw.Context.Core.Linking.IIntentStore! intents) -> void
+Aw.Context.Core.Map.MapReader.MapReader(Aw.Context.Core.Map.IGraphStore! store, Aw.Context.Core.Linking.IIntentStore! intents, Aw.Context.Core.Map.MapViewCache? views = null) -> void
+Aw.Context.Core.Map.MapViewCache
+Aw.Context.Core.Map.MapViewCache.MapViewCache() -> void
 Aw.Context.Core.Map.MapReader.Open(Aw.Context.Core.Engine.ContextScope! scope, Aw.Context.Core.Trust.IScrubberFactory! scrubbers, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<(Aw.Context.Core.Map.VisibleMap! Map, Aw.Context.Core.Map.MapText! Text)>!>
 Aw.Context.Core.Map.MapReader.Read(Aw.Context.Core.Engine.ContextScope! scope, bool draft, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.VisibleMap!>!>
 Aw.Context.Core.Map.MapReader.ReadView(Aw.Context.Core.Engine.ContextScope! scope, bool draft, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.VisibleMap!>!>
@@ -6001,3 +6003,4 @@ static Aw.Context.Core.Engine.ClusterLimits.operator ==(Aw.Context.Core.Engine.C
 static readonly Aw.Context.Core.ContextErrors.GraphifyLimitInvalid -> Aw.Kernel.ErrorDefinition!
 static Aw.Context.Core.Eval.Backtest.AsOfMapCache.WithLimits(string! key, Aw.Context.Core.Engine.ClusterLimits! limits) -> string!
 const Aw.Context.Core.Onyx.OnyxSettings.DedicatedAccountEmail = "sindri@example.com" -> string!
+static Aw.Context.Core.Graph.RepoScope.WithHierarchy(Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlySet<string!>! implemented) -> System.Collections.Generic.IReadOnlySet<string!>!

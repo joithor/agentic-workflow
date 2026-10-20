@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Review;
@@ -9,10 +10,14 @@ using Aw.Sindri.Features.ContextCalls;
 namespace Aw.Sindri.Host.Text;
 
 /// <summary>Plain text for the review verbs: words, never colour, so NO_COLOR and pipes read the same.</summary>
-internal static class ContextReviewText
+internal static partial class ContextReviewText
 {
     // How many written override ids a result spells out (an apply-file or a multi-undo stays readable); a bulk accept past it gets a pointer instead.
     private const int ListedIds = 50;
+
+    // How many skipped entries a result lists one per line; past it they're counted per reason, with this many ids as examples.
+    private const int ListedSkips = 10;
+    private const int SkipExamples = 5;
 
     private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
 
@@ -77,13 +82,39 @@ internal static class ContextReviewText
             _ = text.AppendLine(Invariant($"  the newest {ReviewLimits.Max}: sindri context map review --history --limit {ReviewLimits.Max}; every id: add --json to this command"));
         }
 
-        foreach (var skipped in result.Skipped)
+        if (result.Skipped.Count <= ListedSkips)
         {
-            _ = text.Append("  skipped: ").AppendLine(skipped);
+            foreach (var skipped in result.Skipped)
+            {
+                _ = text.Append("  skipped: ").AppendLine(skipped);
+            }
+        }
+        else
+        {
+            Summarize(text, result.Skipped);
         }
 
         return text.ToString();
     }
+
+    // A bulk apply skips thousands (links of a feature the same file rejected): one line per reason, the reason being the line with its
+    // ids blanked, counted, with the first few ids; a reason with one entry keeps its line. --json carries every entry.
+    private static void Summarize(StringBuilder text, IReadOnlyList<string> skipped)
+    {
+        foreach (var reason in skipped.GroupBy(static s => Ids.Replace(s, "…"), StringComparer.Ordinal).OrderByDescending(static g => g.Count()).ThenBy(static g => g.Key, StringComparer.Ordinal))
+        {
+            var count = reason.Count();
+            _ = count == 1
+                ? text.AppendLine(Invariant($"  skipped 1: {reason.First()}"))
+                : text.AppendLine(Invariant($"  skipped {count}: {reason.Key}; e.g. {string.Join(", ", reason.Take(SkipExamples).Select(static s => Ids.Match(s).Value.TrimEnd(':')))}"));
+        }
+
+        _ = text.AppendLine("  every skipped entry: add --json to this command");
+    }
+
+    // A node key or link id in a skipped line ('feature:tabs', 'edge:0123…'); 'fix: …' isn't one, a space follows its colon.
+    [GeneratedRegex(@"\b[a-z][a-z0-9-]*:[^\s,()']+", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex Ids { get; }
 
     internal static string Review(ReviewContextMapResponse response) => response.Result is { } result
         ? Result("review", result) + (response.Sequence is { } seq ? Invariant($"recorded as event {seq}\n") : string.Empty)

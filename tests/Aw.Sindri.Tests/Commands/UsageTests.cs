@@ -17,6 +17,12 @@ public sealed class UsageTests
     public void Help_lists_every_workflow_verb(string verb) =>
         Assert.Single(Lines(), l => l.StartsWith($"sindri workflow {verb} ", StringComparison.Ordinal));
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("takeover")]
+    [InlineData("handback")]
+    public void Help_lists_the_short_form_of_takeover_and_handback(string verb) =>
+        Assert.Single(Lines(), l => l.StartsWith($"sindri {verb} <item-or-address>", StringComparison.Ordinal));
+
     [Fact, Trait("Lane", "unit")]
     public void Help_describes_mcp_register_for_all_three_providers_with_the_providers_flag()
     {

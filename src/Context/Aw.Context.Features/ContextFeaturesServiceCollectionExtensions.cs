@@ -102,6 +102,7 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<ProposeFromScopeRequest, ProposeResult>, ProposeFromScopeService>()
         .AddScoped<IService<GetProposalsRequest, ProposalsView>, GetProposalsService>()
         .AddScoped<IService<GetFileMapRequest, FileMapView>, GetFileMapService>()
+        .AddSingleton<MapViewCache>()
         .AddScoped<MapReader>()
         .AddScoped<MapAdmin>()
         .AddScoped<MapReview>()

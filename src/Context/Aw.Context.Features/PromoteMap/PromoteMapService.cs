@@ -65,13 +65,18 @@ internal sealed class PromoteMapService(IGraphStore store, TimeProvider clock) :
     private async ValueTask<Result<int>> WithAcceptedProposals(MapSnapshot draft, MapView view, CancellationToken cancellationToken)
     {
         var proposed = OverrideLog.Active(view.Overrides).Where(o => o.Action == OverrideAction.Propose).Select(o => o.Target.Value).ToHashSet(StringComparer.Ordinal);
-        var nodes = view.Applied.Nodes.Where(n => proposed.Contains(n.Key.Value) && view.Graph.Resolve(n.Key) is null).ToList();
+        // Indexed once (per node a Resolve, per edge a scan of every edge, made a promote proposals × graph): a key resolves when it, or the
+        // target its alias names, is a node of the graph; an edge is new when no edge of the graph states the same fact.
+        var aliases = view.Graph.Aliases.DistinctBy(a => a.Alias.Value, StringComparer.Ordinal).ToDictionary(a => a.Alias.Value, a => a.Target.Value, StringComparer.Ordinal);
+        var keys = view.Graph.Nodes.Select(n => n.Key.Value).ToHashSet(StringComparer.Ordinal);
+        var facts = view.Graph.Edges.Select(e => (e.From.Value, e.To.Value, e.Type)).ToHashSet();
+        var nodes = view.Applied.Nodes.Where(n => proposed.Contains(n.Key.Value) && !keys.Contains(aliases.GetValueOrDefault(n.Key.Value) ?? n.Key.Value)).ToList();
         if (nodes.Count == 0 && !view.Filtered)
         {
             return draft.Version.Number;
         }
 
-        var edges = view.Applied.Edges.Where(e => proposed.Contains(e.From.Value) && !view.Graph.Edges.Any(e.SameFact));
+        var edges = view.Applied.Edges.Where(e => proposed.Contains(e.From.Value) && !facts.Contains((e.From.Value, e.To.Value, e.Type)));
         var joined = view.Graph with { Nodes = [.. view.Graph.Nodes, .. nodes], Edges = [.. view.Graph.Edges, .. edges] };
         var undo = view.UndoCutDecisions(draft.Overrides, clock.GetUtcNow());
         var saved = await store.ReplaceDraft(draft.Version.Number, new MapImport(draft.Version.Repo, draft.Version.Commit, joined, undo), draft.Version.Created, cancellationToken).ConfigureAwait(false);

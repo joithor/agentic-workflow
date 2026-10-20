@@ -18,6 +18,13 @@ internal static class ContextInputSections
     /// <summary>The most bytes of text, and of typed result, one input hands over; three inputs stay under the plan cap.</summary>
     internal const int Budget = 120 * 1024;
 
+    /// <summary>
+    /// The most bytes of a typed result kept: the Step input runner's own cap for one (StepInputRunner.SectionCap). A typed result is read by a code
+    /// Step, not put in a prompt, so the text's budget doesn't bound it: a large map's lenses view is over 120 KiB as JSON, and dropping it left the
+    /// gather with no lenses view.
+    /// </summary>
+    internal const int ResultBudget = 256 * 1024;
+
     /// <summary>The honest section for an input that could not read its lens.</summary>
     /// <param name="section">The section name.</param>
     /// <param name="what">What was asked ("context lenses").</param>
@@ -38,8 +45,8 @@ internal static class ContextInputSections
     internal static InjectionSections Filled<T>(string section, string text, IReadOnlyList<string> notes, T view, JsonSerializerOptions json)
     {
         var result = JsonSerializer.SerializeToElement(view, (JsonTypeInfo<T>)json.GetTypeInfo(typeof(T)));
-        var left = Encoding.UTF8.GetByteCount(result.GetRawText()) > Budget;
-        var body = Notes(notes) + Bound(text) + (left ? "[the typed result is over 120 KiB and is left out]\n" : string.Empty);
+        var left = Encoding.UTF8.GetByteCount(result.GetRawText()) > ResultBudget;
+        var body = Notes(notes) + Bound(text) + (left ? "[the typed result is over 256 KiB and is left out]\n" : string.Empty);
         return new(new Dictionary<string, string>(StringComparer.Ordinal) { [section] = body }, left ? null : result);
     }
 

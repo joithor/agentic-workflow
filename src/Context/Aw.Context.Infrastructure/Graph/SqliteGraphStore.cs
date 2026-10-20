@@ -17,6 +17,8 @@ internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSet
 {
     private const int BatchSize = 500;
 
+    private readonly StampedCache<MapSnapshot> _snapshots = new();
+
     public async ValueTask<Result<MapVersion?>> Current(CancellationToken cancellationToken)
     {
         var versions = await Versions(cancellationToken).ConfigureAwait(false);
@@ -51,7 +53,15 @@ internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSet
 
         await using (session.ConfigureAwait(false))
         {
+            var key = draft ? "draft" : "current";
+            var stamp = await StampedCache<MapSnapshot>.Stamp(session, StampedCache<MapSnapshot>.MapStamp, cancellationToken).ConfigureAwait(false);
+            if (_snapshots.Get(key, stamp) is { } held)
+            {
+                return held;
+            }
+
             var snapshot = await SnapshotIn(session, v => v.Status == (draft ? MapVersionStatus.Draft : MapVersionStatus.Current), cancellationToken).ConfigureAwait(false);
+            _snapshots.Put(key, stamp, snapshot.IsSuccess ? snapshot.Value : null);
             return snapshot.IsError ? ContextDatabase.Translate(snapshot.Error) : snapshot;
         }
     }
@@ -66,7 +76,15 @@ internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSet
 
         await using (session.ConfigureAwait(false))
         {
+            var key = "v" + version.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var stamp = await StampedCache<MapSnapshot>.Stamp(session, StampedCache<MapSnapshot>.MapStamp, cancellationToken).ConfigureAwait(false);
+            if (_snapshots.Get(key, stamp) is { } held)
+            {
+                return held;
+            }
+
             var snapshot = await SnapshotIn(session, v => v.Number == version && v.Status is MapVersionStatus.Current or MapVersionStatus.Retained, cancellationToken).ConfigureAwait(false);
+            _snapshots.Put(key, stamp, snapshot.IsSuccess ? snapshot.Value : null);
             return snapshot.IsError ? ContextDatabase.Translate(snapshot.Error) : snapshot;
         }
     }

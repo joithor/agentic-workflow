@@ -135,7 +135,8 @@ public sealed class ScopingPureStepTests
         var result = await Run(new ScopeGatherStep(), "step.scope.gather", new ScopingFacts { ["anchors"] = ScopingFacts.Expiry()["anchors"] });
 
         Assert.Null(result.Result);
-        Assert.Contains("lensesView", result.Failure, StringComparison.Ordinal);
+        Assert.Contains("input.context.lenses", result.Failure, StringComparison.Ordinal);   // as a block it names its input, not the desk helper's --lenses
+        Assert.DoesNotContain("--lenses", result.Failure, StringComparison.Ordinal);
     }
 
     [Fact]

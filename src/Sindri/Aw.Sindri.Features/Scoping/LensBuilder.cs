@@ -6,6 +6,8 @@ namespace Aw.Sindri.Features.Scoping;
 /// <summary>One lens being assembled: its found nodes and items numbered L-&lt;lens&gt;-&lt;n&gt;, its edges among them and the anchors, and the sources it searched.</summary>
 internal sealed class LensBuilder(string lens, IReadOnlyList<string> anchors)
 {
+    private readonly HashSet<string> _missing = new(StringComparer.Ordinal);
+
     private const int BandCap = 100;
     private readonly List<JsonObject> _nodes = [];
     private readonly List<JsonObject> _items = [];
@@ -155,6 +157,9 @@ internal sealed class LensBuilder(string lens, IReadOnlyList<string> anchors)
         };
     }
 
+    /// <summary>Records the asked anchors the view couldn't find: they leave the row's searched anchors and each is an anchor-missing limit.</summary>
+    internal void Missing(IEnumerable<string> missing) => _missing.UnionWith(missing.Where(m => anchors.Contains(m, StringComparer.Ordinal)));
+
     /// <summary>The lens's row in the coverage fact: its state follows what was found and what was recorded as a limit.</summary>
     internal JsonObject Row(string mapVersion, int depth, IReadOnlyList<string> hops)
     {
@@ -169,13 +174,18 @@ internal sealed class LensBuilder(string lens, IReadOnlyList<string> anchors)
             }
         }
 
+        foreach (var missing in anchors.Where(_missing.Contains))
+        {
+            ScopeJson.Append(limits, new JsonObject { ["not"] = missing, ["why"] = "anchor-missing" });
+        }
+
         return new JsonObject
         {
             ["lens"] = Lens,
             ["state"] = Total > 0 ? "found" : limits.Count > 0 ? "not-searched" : "nothing-found",
             ["searched"] = new JsonObject
             {
-                ["anchors"] = ScopeJson.ToArray(anchors),
+                ["anchors"] = ScopeJson.ToArray(anchors.Where(a => !_missing.Contains(a))),
                 ["sources"] = new JsonArray([.. _sources.Select(static s => s.DeepClone())]),
                 ["mapVersion"] = mapVersion,
                 ["depth"] = depth,
