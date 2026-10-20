@@ -10,7 +10,7 @@ using Aw.Sindri.Features.GetItemScope;
 using Aw.Sindri.Features.Items;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Items;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 
 namespace Aw.Sindri.Tests.GetItemScope;
 
@@ -25,9 +25,10 @@ public sealed class GetItemScopeTests
 
     private readonly ItemQueryHarness _q = new();
     private readonly PacketsByInstance _store = new();
+    private readonly CapturingLogger _log = new();
     private LeaseGrant? _grant;
 
-    private GetItemScopeService Service() => new(new ViewItemResolver(_q.Views.Views), _q.Views.Slice.Callers, _q.Views.Slice.Store, _q.Views.Slice.Events, _store, NullLogger<GetItemScopeService>.Instance);
+    private GetItemScopeService Service() => new(new ViewItemResolver(_q.Views.Views), _q.Views.Slice.Callers, _q.Views.Slice.Store, _q.Views.Slice.Events, _store, _log);
 
     private static WorkflowInstanceId Instance(string address) => WorkflowInstanceId.Of(InstanceAddress.From(address));
 
@@ -162,6 +163,7 @@ public sealed class GetItemScopeTests
 
         Assert.True(answer.IsSuccess);
         Assert.Null(answer.Value.Scope);
+        ExpectOneWarning("its packet no longer hashes to the approved hash");
     }
 
     [Fact]
@@ -175,6 +177,70 @@ public sealed class GetItemScopeTests
 
         Assert.True(answer.IsSuccess);
         Assert.Null(answer.Value.Scope);
+        ExpectOneWarning("its packet is not in the run area");
+    }
+
+    [Theory]
+    [InlineData("not json at all")]
+    [InlineData("[]")]
+    [InlineData("""{"code":{"anchors":[],"mapVersion":"v7@abc1234"}}""")]   // a lens is missing
+    [InlineData("""{"code":{"anchors":[],"mapVersion":"7@abc1234"},"product":{"anchors":[],"mapVersion":"v7@abc1234"},"related":{"anchors":[],"mapVersion":"v7@abc1234"},"history":{"anchors":[],"mapVersion":"v7@abc1234"}}""")]
+    [InlineData("""{"code":{"anchors":[],"mapVersion":"v7"},"product":{"anchors":[],"mapVersion":"v7@abc1234"},"related":{"anchors":[],"mapVersion":"v7@abc1234"},"history":{"anchors":[],"mapVersion":"v7@abc1234"}}""")]
+    [InlineData("""{"code":{"anchors":[],"mapVersion":"v7@"},"product":{"anchors":[],"mapVersion":"v7@abc1234"},"related":{"anchors":[],"mapVersion":"v7@abc1234"},"history":{"anchors":[],"mapVersion":"v7@abc1234"}}""")]
+    [InlineData("""{"code":{"anchors":[],"mapVersion":"v7@abc1234"},"product":{"anchors":[],"mapVersion":null},"related":{"anchors":[],"mapVersion":"v7@abc1234"},"history":{"anchors":[],"mapVersion":"v7@abc1234"}}""")]
+    public async Task A_lenses_file_that_does_not_read_has_no_scope_and_one_warning(string lenses)
+    {
+        await _q.Item('1', "Ship it", "demo");
+        await Frozen(Address, _hash, lenses);
+        using var entered = _q.Human();
+
+        var answer = await Ask();
+
+        Assert.True(answer.IsSuccess, answer.IsError ? answer.Error.ToString() : null);
+        Assert.Null(answer.Value.Scope);
+        ExpectOneWarning("its lenses.json does not read");
+    }
+
+    [Fact]
+    public async Task A_lenses_file_that_cannot_be_read_has_no_scope_and_one_warning()
+    {
+        await _q.Item('1', "Ship it", "demo");
+        await Frozen(Address, _hash, Lenses("v7@abc1234:feature:a", "v7@abc1234:", "v7@abc1234:", "v7@abc1234:"));
+        _store.FailReads = true;
+        using var entered = _q.Human();
+
+        var answer = await Ask();
+
+        Assert.True(answer.IsSuccess);
+        Assert.Null(answer.Value.Scope);
+        ExpectOneWarning("its lenses.json cannot be read");
+    }
+
+    [Fact]
+    public async Task A_hash_that_cannot_be_computed_is_named_a_hash_failure()
+    {
+        await _q.Item('1', "Ship it", "demo");
+        await Frozen(Address, _hash, Lenses("v7@abc1234:feature:a", "v7@abc1234:", "v7@abc1234:", "v7@abc1234:"));
+        _store.FailHash = true;
+        using var entered = _q.Human();
+
+        var answer = await Ask();
+
+        Assert.True(answer.IsSuccess);
+        Assert.Null(answer.Value.Scope);
+        ExpectOneWarning("its packet could not be hashed");
+    }
+
+    [Fact]
+    public async Task A_scope_that_reads_logs_nothing()
+    {
+        await _q.Item('1', "Ship it", "demo");
+        await Frozen(Address, _hash, Lenses("v7@abc1234:feature:a", "v7@abc1234:", "v7@abc1234:", "v7@abc1234:"));
+        using var entered = _q.Human();
+
+        _ = await Ask();
+
+        Expect.Equal(0, _log.Lines.Count);
     }
 
     [Fact]
@@ -201,17 +267,42 @@ public sealed class GetItemScopeTests
         Expect.Equal("SND-ITEM-404", answer.Error.Code);
     }
 
+    /// <summary>Exactly one warning, with only the item id, the ledger row and the reason: no hash, path or lens text.</summary>
+    private void ExpectOneWarning(string reason)
+    {
+        var line = Expect.Only(_log.Lines);
+        var item = ItemQueryHarness.Id('1').Value;
+        Assert.Matches($@"^Warning item-scope: {item} has an approved scoping packet \(ledger row [0-9]+\) but {System.Text.RegularExpressions.Regex.Escape(reason)}; answering no scope$", line);
+    }
+
+    private sealed class CapturingLogger : ILogger<GetItemScopeService>
+    {
+        internal List<string> Lines { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) =>
+            Lines.Add($"{logLevel} {formatter(state, exception)}");
+    }
+
     /// <summary>Run areas by instance: the packet's hash and its lenses.json.</summary>
     private sealed class PacketsByInstance : IScopePacketStore
     {
         private readonly Dictionary<WorkflowInstanceId, (string Hash, string Lenses)> _packets = [];
 
+        public bool FailReads { get; set; }
+
+        public bool FailHash { get; set; }
+
         public void Put(WorkflowInstanceId instance, string hash, string lenses) => _packets[instance] = (hash, lenses);
 
         public ValueTask<Result<string>> Hash(WorkflowInstanceId instance, CancellationToken cancellationToken) =>
-            ValueTask.FromResult<Result<string>>(_packets.TryGetValue(instance, out var packet) ? packet.Hash : SindriErrors.ItemNotFound.With("no packet"));
+            ValueTask.FromResult<Result<string>>(FailHash ? ScopingErrors.PacketToolFailed.With("aw-packets timed out") : _packets.TryGetValue(instance, out var packet) ? packet.Hash : SindriErrors.ItemNotFound.With("no packet"));
 
         public ValueTask<Result<string>> ReadFile(WorkflowInstanceId instance, string name, CancellationToken cancellationToken) =>
-            ValueTask.FromResult<Result<string>>(_packets.TryGetValue(instance, out var packet) && name == "lenses.json" ? packet.Lenses : SindriErrors.ItemNotFound.With("no file"));
+            ValueTask.FromResult<Result<string>>(!FailReads && _packets.TryGetValue(instance, out var packet) && name == "lenses.json" ? packet.Lenses : SindriErrors.ItemNotFound.With("no file"));
     }
 }
