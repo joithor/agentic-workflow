@@ -26,6 +26,12 @@ Skill text refers to MCP tools as `mcp: <server>/<tool>`; map that to your host'
 | `xcodebuildmcp` | iOS Simulator control — build, launch, snapshot_ui, screenshot, tap, swipe | Manual iOS testing |
 | `prism-mcp` | Persistent memory, semantic search, conversation visualization (Mind Palace) | Manual context passing between sessions |
 
+### headroom is a proxy, not an MCP server
+
+`headroom` is not registered anywhere (it stays in `AW_MCP_RETIRED` in `setup.sh`, so a leftover `headroom mcp serve` entry is
+removed). It comes back only as the `aw-headroom claude|codex` launcher (`scripts/install-headroom.sh`), a loopback proxy chained in
+front of the tool's own upstream.
+
 ### Per-repo servers
 
 Not registered by `setup.sh`, and absent from most sessions.

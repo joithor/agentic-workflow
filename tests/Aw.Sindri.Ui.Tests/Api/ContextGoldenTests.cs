@@ -106,13 +106,19 @@ public sealed class ContextGoldenTests
     [Fact]
     public void Item_membership_comes_from_the_list_it_is_in()
     {
-        var served = GoldenFiles.Node("context-lenses", "session-set-other-repo")["bands"]!["product"]!;
-        var product = Read<LensesView>("context-lenses", "session-set-other-repo").Bands.Product;
+        // why: the golden's session sees its ancestors as its own nodes, so it serves no neighbor; one is added to read a reach's path
+        var node = JsonNode.Parse(GoldenFiles.Api("context-lenses", "session-set-other-repo"))!;
+        var served = node["bands"]!["product"]!;
+        var neighbor = served["own"]![0]!.DeepClone();
+        neighbor["depth"] = 1;
+        neighbor["path"] = new JsonArray("part-of feature:tabs.tab-manager");
+        served["neighbors"]!.AsArray().Add(neighbor);
+        var product = Read<LensesView>(node.ToJsonString()).Bands.Product;
 
         Assert.Equal(served["own"]!.AsArray().Count, product.Own.Count);
         Assert.Equal(served["neighbors"]!.AsArray().Count, product.Neighbors.Count);
         Assert.Equal(served["affects"]!.AsArray().Count, product.Affects.Count);
-        Assert.Equal(served["neighbors"]![0]!["path"]!.AsArray().Select(p => (string)p!), product.Neighbors[0].Path, StringComparer.Ordinal);
+        Assert.Equal(["part-of feature:tabs.tab-manager"], product.Neighbors[0].Path, StringComparer.Ordinal);
     }
 
     [Fact]
