@@ -40,7 +40,44 @@ internal sealed class StepRunsViewModel
     /// <returns>The view model; empty without runs.</returns>
     internal static StepRunsViewModel Of(IReadOnlyList<StepRun>? runs, string currentState)
     {
-        _ = (runs, currentState);
-        return new StepRunsViewModel(string.Empty, []);
+        if (runs is not { Count: > 0 })
+        {
+            return new StepRunsViewModel(string.Empty, []);
+        }
+
+        var open = runs.LastOrDefault(r => IsOpen(r) && string.Equals(r.Step, currentState, StringComparison.Ordinal));
+        var line = open is null ? string.Empty : Join(", ", Labels.AttemptWords(open.Attempt, open.MaxAttempts), Who(open));
+        return new StepRunsViewModel(line, [.. runs.Select(Row)]);
     }
+
+    private static bool IsOpen(StepRun run) => string.Equals(run.State, "running", StringComparison.Ordinal);
+
+    private static StepRunRowViewModel Row(StepRun run)
+    {
+        var step = Labels.ReadableWord(run.Step);
+        var attempt = Labels.AttemptWords(run.Attempt, run.MaxAttempts);
+        var state = Labels.RunStateWord(run.State);
+        var took = run.DurationMs is { } ms ? Labels.RunDuration(ms) : string.Empty;
+        var text = Join(" · ", step, attempt, state, took, Who(run));
+        var name = Join(", ", step, attempt.ToLowerInvariant(), state.ToLowerInvariant(), took.Length > 0 ? "took " + took : string.Empty, Who(run));
+        return new StepRunRowViewModel(text, name);
+    }
+
+    // The closing actor in words; a run with none recorded (an open one, or an older row) falls back to how it runs. Unknown says nothing.
+    private static string Who(StepRun run)
+    {
+        var open = IsOpen(run);
+        var actor = run.Actor ?? string.Empty;
+        var you = actor.StartsWith("human", StringComparison.Ordinal);
+        var agent = actor.StartsWith("agent", StringComparison.Ordinal) || actor.StartsWith("session", StringComparison.Ordinal);
+        if (!you && !agent)
+        {
+            you = string.Equals(run.Runtime, "desk", StringComparison.Ordinal);
+            agent = string.Equals(run.Runtime, "agent", StringComparison.Ordinal);
+        }
+
+        return you ? (open ? Labels.RunWithYou : Labels.RunByYou) : agent ? (open ? Labels.RunWithAgent : Labels.RunByAgent) : string.Empty;
+    }
+
+    private static string Join(string separator, params string[] parts) => string.Join(separator, parts.Where(p => p.Length > 0));
 }

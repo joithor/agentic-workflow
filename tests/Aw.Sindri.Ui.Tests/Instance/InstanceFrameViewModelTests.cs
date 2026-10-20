@@ -74,7 +74,8 @@ public sealed class InstanceFrameViewModelTests
 
         await frame.Open(_api, Text(node["address"]), Text(node["id"]), Token);
 
-        Assert.Equal((FramePhase.Shown, false), (frame.Phase, frame.StepRuns!.HasRows));
+        Assert.Equal((FramePhase.Shown, string.Empty), (frame.Phase, frame.ProblemText));
+        Assert.False(frame.StepRuns!.HasRows);
     }
 
     [Fact]
