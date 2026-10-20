@@ -10188,10 +10188,8 @@ Aw.Sindri.Core.Profile.LaunchSettings.Repos.get -> System.Collections.Generic.IR
 Aw.Sindri.Core.Profile.LaunchSettings.Repos.init -> void
 Aw.Sindri.Core.Profile.SindriProfile.Agents.get -> Aw.Sindri.Core.Profile.AgentSettings?
 Aw.Sindri.Core.Profile.SindriProfile.Agents.init -> void
-Aw.Sindri.Core.Profile.SindriProfile.Deconstruct(out int SchemaVersion, out string! User, out string! Tenant, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services, out Aw.Sindri.Core.Profile.ApiSettings? Api, out Aw.Sindri.Core.Profile.WorkflowSettings? Workflow, out System.Text.Json.JsonElement? Context, out Aw.Sindri.Core.Profile.IndexSettings? Index, out Aw.Sindri.Core.Profile.LaunchSettings? Launch, out Aw.Sindri.Core.Profile.AgentSettings? Agents) -> void
 Aw.Sindri.Core.Profile.SindriProfile.Launch.get -> Aw.Sindri.Core.Profile.LaunchSettings?
 Aw.Sindri.Core.Profile.SindriProfile.Launch.init -> void
-Aw.Sindri.Core.Profile.SindriProfile.SindriProfile(int SchemaVersion, string! User, string! Tenant = "local", System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos = null, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services = null, Aw.Sindri.Core.Profile.ApiSettings? Api = null, Aw.Sindri.Core.Profile.WorkflowSettings? Workflow = null, System.Text.Json.JsonElement? Context = null, Aw.Sindri.Core.Profile.IndexSettings? Index = null, Aw.Sindri.Core.Profile.LaunchSettings? Launch = null, Aw.Sindri.Core.Profile.AgentSettings? Agents = null) -> void
 const Aw.Sindri.Core.Profile.AgentSettings.DefaultSoftLimit = 0.8 -> decimal
 const Aw.Sindri.Core.Profile.AgentSettings.SoftLimitKey = "softLimit" -> string!
 override Aw.Sindri.Core.Profile.LaunchRepoSettings.Equals(object? obj) -> bool
@@ -12913,4 +12911,41 @@ static Aw.Sindri.Core.Sessions.SessionIdCapture.Check(string? pattern, Aw.Sindri
 static readonly Aw.Sindri.Core.SindriErrors.LaunchSessionIdTimedOut -> Aw.Kernel.ErrorDefinition!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext.Deconstruct(out string! Title, out Aw.Sindri.Core.Workflow.Views.ParentRef? Parent, out Aw.Sindri.Core.Workflow.Views.ViewCounts! Counts, out System.DateTimeOffset AsOf, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StepRun!>? StepRuns, out string? RecipeDisplayName) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext.InstanceDetailContext(string! Title, Aw.Sindri.Core.Workflow.Views.ParentRef? Parent, Aw.Sindri.Core.Workflow.Views.ViewCounts! Counts, System.DateTimeOffset AsOf, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StepRun!>? StepRuns = null, string? RecipeDisplayName = null) -> void
-
+Aw.Sindri.Core.Profile.SetupSettings
+Aw.Sindri.Core.Profile.SetupSettings.<Clone>$() -> Aw.Sindri.Core.Profile.SetupSettings!
+Aw.Sindri.Core.Profile.SetupSettings.Deconstruct(out string? Mcp) -> void
+Aw.Sindri.Core.Profile.SetupSettings.Equals(Aw.Sindri.Core.Profile.SetupSettings? other) -> bool
+Aw.Sindri.Core.Profile.SetupSettings.Mcp.get -> string?
+Aw.Sindri.Core.Profile.SetupSettings.Mcp.init -> void
+Aw.Sindri.Core.Profile.SetupSettings.SetupSettings(string? Mcp = null) -> void
+Aw.Sindri.Core.Profile.SindriProfile.Deconstruct(out int SchemaVersion, out string! User, out string! Tenant, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services, out Aw.Sindri.Core.Profile.ApiSettings? Api, out Aw.Sindri.Core.Profile.WorkflowSettings? Workflow, out System.Text.Json.JsonElement? Context, out Aw.Sindri.Core.Profile.IndexSettings? Index, out Aw.Sindri.Core.Profile.LaunchSettings? Launch, out Aw.Sindri.Core.Profile.AgentSettings? Agents, out Aw.Sindri.Core.Profile.SetupSettings? Setup) -> void
+Aw.Sindri.Core.Profile.SindriProfile.Setup.get -> Aw.Sindri.Core.Profile.SetupSettings?
+Aw.Sindri.Core.Profile.SindriProfile.Setup.init -> void
+Aw.Sindri.Core.Profile.SindriProfile.SindriProfile(int SchemaVersion, string! User, string! Tenant = "local", System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos = null, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services = null, Aw.Sindri.Core.Profile.ApiSettings? Api = null, Aw.Sindri.Core.Profile.WorkflowSettings? Workflow = null, System.Text.Json.JsonElement? Context = null, Aw.Sindri.Core.Profile.IndexSettings? Index = null, Aw.Sindri.Core.Profile.LaunchSettings? Launch = null, Aw.Sindri.Core.Profile.AgentSettings? Agents = null, Aw.Sindri.Core.Profile.SetupSettings? Setup = null) -> void
+Aw.Sindri.Core.Setup.MapFact.Retry.get -> Aw.Sindri.Core.Setup.MapRetry?
+Aw.Sindri.Core.Setup.MapFact.Retry.init -> void
+Aw.Sindri.Core.Setup.MapRetry
+Aw.Sindri.Core.Setup.MapRetry.<Clone>$() -> Aw.Sindri.Core.Setup.MapRetry!
+Aw.Sindri.Core.Setup.MapRetry.Deconstruct(out System.TimeSpan In, out string! Reason) -> void
+Aw.Sindri.Core.Setup.MapRetry.Equals(Aw.Sindri.Core.Setup.MapRetry? other) -> bool
+Aw.Sindri.Core.Setup.MapRetry.In.get -> System.TimeSpan
+Aw.Sindri.Core.Setup.MapRetry.In.init -> void
+Aw.Sindri.Core.Setup.MapRetry.MapRetry(System.TimeSpan In, string! Reason) -> void
+Aw.Sindri.Core.Setup.MapRetry.Reason.get -> string!
+Aw.Sindri.Core.Setup.MapRetry.Reason.init -> void
+Aw.Sindri.Core.Setup.OnyxFact.Deferred.get -> bool
+Aw.Sindri.Core.Setup.OnyxFact.Deferred.init -> void
+const Aw.Sindri.Core.Profile.SetupSettings.Auto = "auto" -> string!
+const Aw.Sindri.Core.Profile.SetupSettings.Off = "off" -> string!
+const Aw.Sindri.Core.Setup.SetupActions.RefreshContextMap = "RefreshContextMap" -> string!
+override Aw.Sindri.Core.Profile.SetupSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.SetupSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.SetupSettings.ToString() -> string!
+override Aw.Sindri.Core.Setup.MapRetry.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Setup.MapRetry.GetHashCode() -> int
+override Aw.Sindri.Core.Setup.MapRetry.ToString() -> string!
+static Aw.Sindri.Core.Profile.SetupSettings.McpAutomatic(Aw.Sindri.Core.Profile.SindriProfile! profile) -> bool
+static Aw.Sindri.Core.Profile.SetupSettings.operator !=(Aw.Sindri.Core.Profile.SetupSettings? left, Aw.Sindri.Core.Profile.SetupSettings? right) -> bool
+static Aw.Sindri.Core.Profile.SetupSettings.operator ==(Aw.Sindri.Core.Profile.SetupSettings? left, Aw.Sindri.Core.Profile.SetupSettings? right) -> bool
+static Aw.Sindri.Core.Setup.MapRetry.operator !=(Aw.Sindri.Core.Setup.MapRetry? left, Aw.Sindri.Core.Setup.MapRetry? right) -> bool
+static Aw.Sindri.Core.Setup.MapRetry.operator ==(Aw.Sindri.Core.Setup.MapRetry? left, Aw.Sindri.Core.Setup.MapRetry? right) -> bool
