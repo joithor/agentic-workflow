@@ -4,6 +4,7 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Ports;
 using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Core.Views;
+using Microsoft.Extensions.Logging;
 
 namespace Aw.Sindri.Features.GetSetup;
 
@@ -13,17 +14,18 @@ namespace Aw.Sindri.Features.GetSetup;
 /// </summary>
 /// <param name="facts">The sources.</param>
 /// <param name="status">How fresh the views are.</param>
-internal sealed class GetSetupService(ISetupFacts facts, IProjectorStatus status) : IService<GetSetupRequest, GetSetupResponse>
+/// <param name="logger">Where a source that threw is recorded.</param>
+internal sealed partial class GetSetupService(ISetupFacts facts, IProjectorStatus status, ILogger<GetSetupService> logger) : IService<GetSetupRequest, GetSetupResponse>
 {
     public async ValueTask<Result<GetSetupResponse>> Handle(GetSetupRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var repo = await Read(facts.Repos, cancellationToken).ConfigureAwait(false);
-        var profile = await Read(facts.Profile, cancellationToken).ConfigureAwait(false);
-        var recipes = await Read(facts.Recipes, cancellationToken).ConfigureAwait(false);
-        var mcp = await Read(facts.Mcp, cancellationToken).ConfigureAwait(false);
-        var map = await Read(facts.Map, cancellationToken).ConfigureAwait(false);
-        var onyx = await Read(facts.Onyx, cancellationToken).ConfigureAwait(false);
+        var repo = await Read("repo", facts.Repos, cancellationToken).ConfigureAwait(false);
+        var profile = await Read("profile", facts.Profile, cancellationToken).ConfigureAwait(false);
+        var recipes = await Read("recipes", facts.Recipes, cancellationToken).ConfigureAwait(false);
+        var mcp = await Read("mcp", facts.Mcp, cancellationToken).ConfigureAwait(false);
+        var map = await Read("map", facts.Map, cancellationToken).ConfigureAwait(false);
+        var onyx = await Read("onyx", facts.Onyx, cancellationToken).ConfigureAwait(false);
         var profileApproved = profile.IsSuccess && profile.Value.Presence is ProfilePresence.Approved or ProfilePresence.Drifted;
         SetupStep[] steps =
         [
@@ -40,16 +42,21 @@ internal sealed class GetSetupService(ISetupFacts facts, IProjectorStatus status
     private static SetupStep Step<T>(SetupStepId id, Result<T> read, Func<T, SetupStep> decide) =>
         read.IsError ? SetupSteps.Unreadable(id, read.Error.Code) : decide(read.Value);
 
-    // A source that throws fails only its own step, like one that returns an error: the answer is never a 500.
-    private static async ValueTask<Result<T>> Read<T>(Func<CancellationToken, ValueTask<Result<T>>> source, CancellationToken cancellationToken)
+    // Boundary: a source that throws fails only its own step, like one that returns an error: the answer is never a 500.
+    // Only the request's own cancellation passes; a source's inner timeout (a TaskCanceledException on a live token) fails its step.
+    private async ValueTask<Result<T>> Read<T>(string step, Func<CancellationToken, ValueTask<Result<T>>> source, CancellationToken cancellationToken)
     {
         try
         {
             return await source(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception e) when (e is not OperationCanceledException)
+        catch (Exception e) when (e is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
+            LogSourceFailed(logger, step, e.GetType().Name);
             return SindriErrors.ApiInternal.With("a setup source failed");
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "setup: the {Step} source threw {ExceptionType}; that step is reported failed")]
+    private static partial void LogSourceFailed(ILogger logger, string step, string exceptionType);
 }

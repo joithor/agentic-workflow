@@ -66,7 +66,7 @@ public static class SetupSteps
 
         if (!profileApproved)
         {
-            return new SetupStep(SetupStepId.Recipes, RecipesTitle, SetupState.Todo, "After the profile is approved.", string.Create(CultureInfo.InvariantCulture, $"Registered {fact.Total} of {fact.Total}."), Error: null, Action: null, Progress: null);
+            return new SetupStep(SetupStepId.Recipes, RecipesTitle, SetupState.Todo, "After the profile is approved.", Counted(fact.Total, "recipe", "recipes") + " registered.", Error: null, Action: null, Progress: null);
         }
 
         var progress = new SetupProgress(fact.Approved, fact.Total);
@@ -119,13 +119,13 @@ public static class SetupSteps
             MapPhase.Failed => new SetupStep(SetupStepId.Map, MapTitle, SetupState.Failed, "The last try at building the map didn't finish.", Detail: null,
                 new SetupError(fact.FailureCode ?? "SND-CONTEXT-042", "The last try at building the map didn't finish."), Action: null, Progress: null),
             MapPhase.NotBuilt => new SetupStep(SetupStepId.Map, MapTitle, SetupState.Todo, "The map isn't built yet. Sindri builds it on its own.", Detail: null, Error: null, Action: null, Progress: null),
-            MapPhase.Waiting => new SetupStep(SetupStepId.Map, MapTitle, SetupState.Todo, "Waits for a repo.", Detail: null, Error: null, Action: null, Progress: null),
+            MapPhase.Waiting => new SetupStep(SetupStepId.Map, MapTitle, SetupState.Todo, "Waits for an approved profile with a repo.", Detail: null, Error: null, Action: null, Progress: null),
             _ => throw new ArgumentOutOfRangeException(nameof(fact), fact.Phase, "Not a map phase"),
         };
         return step with { Items = fact.Items.Lines };
     }
 
-    /// <summary>The Onyx step: done when the pinned Onyx answers; skipped when this machine can't run it (no Docker, or a failed check); failed when it runs and doesn't answer.</summary>
+    /// <summary>The Onyx step: done when the pinned Onyx answers; skipped when this machine can't run it (no Docker, or a failed check); failed when it runs and doesn't answer or Docker can't be asked.</summary>
     /// <param name="fact">Where Onyx stands.</param>
     /// <returns>The step.</returns>
     public static SetupStep Onyx(OnyxFact fact)
@@ -138,9 +138,15 @@ public static class SetupSteps
                 : new SetupStep(SetupStepId.Onyx, OnyxTitle, SetupState.Done, "Onyx is running and Sindri can search it.", "Onyx is up and answering.", Error: null, Action: null, Progress: null);
         }
 
-        if (fact.State == OnyxState.Unknown || fact.BlockedByCode is not null)
+        if (fact.State == OnyxState.Unknown && fact.BlockedByCode is null)
         {
-            var code = fact.BlockedByCode ?? "SND-ONYX-001";
+            // Every preflight check passed, yet Docker could not say whether Onyx runs: that is a failed read, not a missing Docker.
+            return new SetupStep(SetupStepId.Onyx, OnyxTitle, SetupState.Failed, "Sindri couldn't ask Docker about Onyx.", Detail: null, new SetupError("SND-ONYX-011", "Sindri couldn't ask Docker about Onyx."), Action: null, Progress: null);
+        }
+
+        if (fact.BlockedByCode is not null)
+        {
+            var code = fact.BlockedByCode;
             return code == "SND-ONYX-001"
                 ? new SetupStep(SetupStepId.Onyx, OnyxTitle, SetupState.Skipped, "Docker isn't installed.", "Install Docker to set up Onyx: " + DockerLink, Error: null, Action: null, Progress: null)
                 : new SetupStep(SetupStepId.Onyx, OnyxTitle, SetupState.Skipped, OnyxSentence(code), "Fix that and Sindri will offer Onyx again.", Error: null, Action: null, Progress: null);

@@ -6,7 +6,7 @@ namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// 'sindri setup [--json]': where "set up Sindri once" stands, a client of GET /sindri/setup. It reads the route and never starts the control plane (API spec §7), and it only reports:
-/// every control that moves a step forward is the app's. Exit 0 when every step is done; 1 when a step is still to do, waits for you or failed, or when Sindri isn't running (SND-API-001);
+/// every control that moves a step forward is the app's. Exit 0 when every step is done or skipped; 1 when a step is still to do, waits for you or failed, or when Sindri isn't running (SND-API-001);
 /// 2 on usage or any other error.
 /// </summary>
 /// <param name="client">The API client.</param>
