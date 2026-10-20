@@ -131,8 +131,9 @@ public sealed class ContextControlsRenderingTests
         {
             Assert.True(frame.Near(x, 97, Token("Surface1")), "port: " + frame.Describe(x, 97));
             Assert.True(frame.Near(x, 100, Token("Surface1")), "the line stops under the port");
-            Assert.True(frame.Near(x, 95, Token("Wire"), 20) || frame.Near(x, 94, Token("Wire"), 20), "the port's outline");
-            Assert.True(frame.Near(x, 88, Token("Canvas")), "nothing beyond the port");
+            Assert.True(frame.Near(x, 95, Token("Wire"), 10), "the port's top outline: " + frame.Describe(x, 95));
+            Assert.True(frame.Near(x, 94, Token("Canvas")), "nothing outside the outline: " + frame.Describe(x, 94));
+            Assert.True(frame.Near(x, 104, Token("Wire"), 10), "the port's bottom outline: " + frame.Describe(x, 104));
         }
 
         window.Close();

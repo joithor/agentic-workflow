@@ -108,4 +108,36 @@ public sealed class EdgeRouteTests
         Assert.Equal(200, mid.X, 6);
         Assert.Equal(150, mid.Y, 6);
     }
+
+    [Fact]
+    public void The_distance_to_a_straight_edge_is_to_the_nearest_point_of_it()
+    {
+        var route = EdgeRoute.Straight(new Point(0, 0), new Point(100, 0));
+
+        Assert.Equal(10, route.DistanceTo(new Point(50, 10)), 6);
+        Assert.Equal(0, route.DistanceTo(new Point(30, 0)), 6);
+        Assert.Equal(5, route.DistanceTo(new Point(-3, 4)), 6);
+        Assert.Equal(5, route.DistanceTo(new Point(103, -4)), 6);
+    }
+
+    [Fact]
+    public void The_distance_follows_a_rounded_corner_not_the_sharp_one()
+    {
+        var route = EdgeRoute.Elbow([new Point(100, 100), new Point(100, 150), new Point(300, 150)]);
+
+        // the arc's middle, 12 px of radius around (112, 138), cuts the corner at (100, 150)
+        Assert.True(route.DistanceTo(new Point(103.515, 146.485)) < 0.2);
+        Assert.True(route.DistanceTo(new Point(100, 150)) > 3.5);
+    }
+
+    [Fact]
+    public void The_distance_follows_a_curve_through_its_middle()
+    {
+        var route = EdgeRoute.Curve(new Point(100, 200), new Point(300, 600));
+
+        Assert.True(route.DistanceTo(route.Midpoint()) < 0.5);
+        Assert.True(route.DistanceTo(new Point(100, 200)) < 0.001);
+        Assert.True(route.DistanceTo(new Point(300, 600)) < 0.001);
+        Assert.True(route.DistanceTo(new Point(200, 300)) > 20);
+    }
 }

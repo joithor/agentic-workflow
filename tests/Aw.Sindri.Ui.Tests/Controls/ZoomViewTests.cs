@@ -70,13 +70,13 @@ public sealed class ZoomViewTests
     }
 
     [Fact]
-    public void Fit_at_900_wide_is_the_floor_clamped_and_leaves_the_right_edge_to_pan()
+    public void Fit_on_a_stage_too_small_for_the_floor_starts_at_the_left_edge_and_leaves_the_right_side_to_pan()
     {
-        var fit = ZoomView.Fit(new Size(900, 400), _world);
+        var fit = ZoomView.Fit(new Size(800, 400), _world);
 
         Assert.Equal(0.62, fit.Scale, 6);
         Assert.Equal(0, fit.X);
-        Assert.True((_world.Width * fit.Scale) > 900, "the world is wider than the stage at the floor, so the right side pans");
+        Assert.True((_world.Width * fit.Scale) > 800, "the world is wider than the stage at the floor, so the right side pans");
     }
 
     [Fact]
