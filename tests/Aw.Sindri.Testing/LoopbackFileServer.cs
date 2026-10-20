@@ -9,7 +9,9 @@ namespace Aw.Sindri.Testing;
 /// </summary>
 public sealed class LoopbackFileServer : IDisposable
 {
-    private readonly HttpListener _listener = new();
+    private const int StartAttempts = 5;
+
+    private readonly HttpListener _listener;
     private readonly CancellationTokenSource _stop = new();
     private readonly Task _loop;
     private readonly List<string> _requests = [];
@@ -19,10 +21,34 @@ public sealed class LoopbackFileServer : IDisposable
     public LoopbackFileServer(IReadOnlyDictionary<string, byte[]> files)
     {
         Files = new Dictionary<string, byte[]>(files, StringComparer.Ordinal);
-        var port = FreePort();
-        BaseUri = new Uri($"http://127.0.0.1:{port.ToString(System.Globalization.CultureInfo.InvariantCulture)}/");
-        _listener.Prefixes.Add(BaseUri.AbsoluteUri);
-        _listener.Start();
+        // FreePort releases the port before the listener binds it, and another process can take it in that window: try again on a
+        // fresh port with a new listener (one whose Start failed can't be reused), and give up on the last attempt or any other failure.
+        for (var attempt = 1; ; attempt++)
+        {
+            var port = FreePort();
+            var uri = new Uri($"http://127.0.0.1:{port.ToString(System.Globalization.CultureInfo.InvariantCulture)}/");
+            var listener = new HttpListener();
+            listener.Prefixes.Add(uri.AbsoluteUri);
+            try
+            {
+                listener.Start();
+            }
+            catch (HttpListenerException exception) when (attempt < StartAttempts && IsAddressInUse(exception))
+            {
+                listener.Close();
+                continue;
+            }
+            catch
+            {
+                listener.Close();
+                throw;
+            }
+
+            _listener = listener;
+            BaseUri = uri;
+            break;
+        }
+
         _loop = Task.Run(Serve, _stop.Token);
     }
 
@@ -78,6 +104,10 @@ public sealed class LoopbackFileServer : IDisposable
         probe.Start();
         return ((IPEndPoint)probe.LocalEndpoint).Port;
     }
+
+    private static bool IsAddressInUse(HttpListenerException exception) =>
+        exception.ErrorCode is 98 or 48 or 32 or 183   // EADDRINUSE on Linux and macOS; sharing violation and already exists on Windows
+        || exception.Message.Contains("in use", StringComparison.OrdinalIgnoreCase);
 
     private async Task Serve()
     {
