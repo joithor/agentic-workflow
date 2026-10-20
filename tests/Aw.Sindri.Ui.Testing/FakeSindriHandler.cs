@@ -116,6 +116,7 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
             // LANE ANCHOR U11a: the session reads, as arms above the workflow-read arm. Insert immediately below this marker, never between the markers.
             { } path when request.Method == HttpMethod.Get && (path == "/sindri/sessions" || path.StartsWith("/sindri/sessions/", StringComparison.Ordinal)) => await Sessions(uri, cancellationToken),
             { } path when path == "/sindri/jobs" || path.StartsWith("/sindri/jobs/", StringComparison.Ordinal) => await Jobs(request, cancellationToken),
+            "/sindri/setup" when request.Method == HttpMethod.Get => Answer(Counted(await server.Setup(uri, cancellationToken), server.SetupAnswer)),
             { } path when request.Method == HttpMethod.Get && path.StartsWith("/sindri/workflow/", StringComparison.Ordinal) => await Workflow(uri, cancellationToken),
             _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
         };

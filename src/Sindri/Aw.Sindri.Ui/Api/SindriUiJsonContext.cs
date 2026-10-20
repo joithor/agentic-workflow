@@ -65,4 +65,5 @@ namespace Aw.Sindri.Ui.Api;
 [JsonSerializable(typeof(Workflow.ApproveAllJob))]
 [JsonSerializable(typeof(Jobs.JobList))]
 [JsonSerializable(typeof(Jobs.JobView))]
+[JsonSerializable(typeof(Setup.SetupView))]
 internal sealed partial class SindriUiJsonContext : JsonSerializerContext;
