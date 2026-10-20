@@ -30,7 +30,8 @@ internal sealed class ToolCheckCommands(IToolRunner runner, ITextScrubber scrubb
             ToolOutcome.Cancelled => throw new OperationCanceledException(cancellationToken),
             ToolOutcome.Missing => SindriErrors.InvalidInput.With($"'{command.Argv[0]}' (the command '{command.Name}') can't be started: no such program, or no such directory {workingDirectory}"),
             ToolOutcome.TimedOut => CheckRun.Of(-1, timedOut: true, took, string.Empty),
-            _ => CheckRun.Of(run.ExitCode, timedOut: false, took, scrubber.Scrub(run.Output + run.Error)),
+            ToolOutcome.Exited => CheckRun.Of(run.ExitCode, timedOut: false, took, scrubber.Scrub(run.Output + run.Error)),
+            _ => throw new InvalidOperationException("unknown tool outcome"),
         };
     }
 }

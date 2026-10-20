@@ -5,7 +5,7 @@ namespace Aw.Sindri.Core.Checks;
 /// <summary>A planned command and how its run ended.</summary>
 /// <param name="Planned">What ran.</param>
 /// <param name="Run">How it ended.</param>
-public sealed record CommandResult(PlannedCommand Planned, CheckRun Run)
+public sealed record CheckResult(PlannedCommand Planned, CheckRun Run)
 {
     /// <summary>The command's name.</summary>
     public string Name => Planned.Command.Name;

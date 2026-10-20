@@ -107,7 +107,7 @@ public sealed class BuildChecksStepTests
 
         Assert.Equal("failed", result.Result!.Outcome.Value);
         var findings = StepRig.Out(result, "findings").AsArray();
-        Assert.Equal(["BLD-COMMAND-001", "BLD-RED-002"], findings.Select(static f => (string?)f!["rule"]));
+        Assert.Equal(["BLD-COMMAND-001", "BLD-RED-002"], findings.Select(static f => (string?)f!["rule"]), StringComparer.Ordinal);
         Assert.Equal("error TS2322", (string?)findings[0]!["detail"]);
         Assert.Equal((1, 1), (rig.Slots.Taken, rig.Slots.Released));
     }
@@ -120,7 +120,7 @@ public sealed class BuildChecksStepTests
         var result = await Step(rig).Run(Context(), Token);
 
         Assert.Equal("failed", result.Result!.Outcome.Value);
-        Assert.Equal(["BLD-SCOPE-001", "BLD-SECRET-001"], StepRig.Out(result, "findings").AsArray().Select(static f => (string?)f!["rule"]));
+        Assert.Equal(["BLD-SCOPE-001", "BLD-SECRET-001"], StepRig.Out(result, "findings").AsArray().Select(static f => (string?)f!["rule"]), StringComparer.Ordinal);
     }
 
     [Fact]

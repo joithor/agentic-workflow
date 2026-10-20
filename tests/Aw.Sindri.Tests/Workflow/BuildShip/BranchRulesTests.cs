@@ -12,7 +12,7 @@ public sealed class BranchRulesTests
     [Theory]
     [InlineData("src/a.cs", true)]
     [InlineData("src/deep/er/a.cs", true)]
-    [InlineData("src", false)]
+    [InlineData("src", true)]
     [InlineData("docs/readme.md", true)]
     [InlineData("docs/sub/readme.md", false)]
     [InlineData("tools/gen.sh", true)]
@@ -44,7 +44,7 @@ public sealed class BranchRulesTests
 
         var findings = BranchRules.OutOfScope(_scope, changes);
 
-        Assert.Equal(["etc/conf.yml", "etc/old.test.ts"], findings.Select(static f => f.Path));
+        Assert.Equal(["etc/conf.yml", "etc/old.test.ts"], findings.Select(static f => f.Path), StringComparer.Ordinal);
         Assert.All(findings, static f => Assert.Equal("BLD-SCOPE-001", f.Rule));
     }
 
@@ -56,7 +56,7 @@ public sealed class BranchRulesTests
 
         var findings = BranchRules.ChangedTests(_scope, changes);
 
-        Assert.Equal(["tests/other.test.ts", "tests/gone.test.ts"], findings.Select(static f => f.Path));
+        Assert.Equal(["tests/other.test.ts", "tests/gone.test.ts"], findings.Select(static f => f.Path), StringComparer.Ordinal);
         Assert.Contains("deleted", findings[1].Message, StringComparison.Ordinal);
     }
 

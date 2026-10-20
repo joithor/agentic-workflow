@@ -23,7 +23,8 @@ public sealed class ToolCheckCommandsTests
         _ = await commands.Run(new CheckInvocation("unit", ["dotnet", "test", "--filter", "A B"], TimeSpan.FromMinutes(5)), "/work/p1", Token);
 
         var call = Assert.Single(runner.Calls);
-        Assert.Equal(("dotnet", ["test", "--filter", "A B"], TimeSpan.FromMinutes(5)), (call.FileName, call.Arguments, call.Timeout));
+        Assert.Equal(("dotnet", TimeSpan.FromMinutes(5)), (call.FileName, call.Timeout));
+        Assert.Equal(["test", "--filter", "A B"], call.Arguments);
         Assert.Equal("/work/p1", Assert.Single(runner.WorkingDirectories));
     }
 

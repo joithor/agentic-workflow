@@ -41,13 +41,13 @@ public sealed class RepoCommandRunner(IApprovedProfile profile, ICheckCommands c
     /// <param name="fallbackTimeout">The timeout of a command whose profile entry sets none.</param>
     /// <param name="cancellationToken">Cancels the batch: the running command is killed and the call throws.</param>
     /// <returns>How each ended; an error when the slot stayed busy or a command could not be started.</returns>
-    public async ValueTask<Result<IReadOnlyList<CommandResult>>> Run(
+    public async ValueTask<Result<IReadOnlyList<CheckResult>>> Run(
         string holder, IReadOnlyList<PlannedCommand> plan, string workingDirectory, TimeSpan fallbackTimeout, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(plan);
         if (plan.Count == 0)
         {
-            return Results.Success<IReadOnlyList<CommandResult>>([]);
+            return Results.Success<IReadOnlyList<CheckResult>>([]);
         }
 
         // Until the engine grants a recipe-level slot wait (LN-WF3, `waitFor: { resource: heavy }`), the Step takes its own slot here. When LN-WF3 lands this must go: the instance
@@ -69,9 +69,9 @@ public sealed class RepoCommandRunner(IApprovedProfile profile, ICheckCommands c
         }
     }
 
-    private async ValueTask<Result<IReadOnlyList<CommandResult>>> RunAll(IReadOnlyList<PlannedCommand> plan, string workingDirectory, TimeSpan fallbackTimeout, CancellationToken cancellationToken)
+    private async ValueTask<Result<IReadOnlyList<CheckResult>>> RunAll(IReadOnlyList<PlannedCommand> plan, string workingDirectory, TimeSpan fallbackTimeout, CancellationToken cancellationToken)
     {
-        var results = new List<CommandResult>(plan.Count);
+        var results = new List<CheckResult>(plan.Count);
         foreach (var planned in plan)
         {
             var timeout = planned.Command.Timeout is { } text && RecipeDuration.TryFrom(text, out var parsed) ? parsed.Span : fallbackTimeout;
@@ -82,7 +82,7 @@ public sealed class RepoCommandRunner(IApprovedProfile profile, ICheckCommands c
                 return run.Error;
             }
 
-            results.Add(new CommandResult(planned, run.Value));
+            results.Add(new CheckResult(planned, run.Value));
         }
 
         return results;

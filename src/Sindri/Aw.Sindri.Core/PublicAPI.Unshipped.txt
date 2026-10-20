@@ -12267,17 +12267,16 @@ static Aw.Sindri.Core.Checks.CheckRun.Of(int exitCode, bool timedOut, System.Tim
 static Aw.Sindri.Core.Checks.CheckRun.operator !=(Aw.Sindri.Core.Checks.CheckRun? left, Aw.Sindri.Core.Checks.CheckRun? right) -> bool
 static Aw.Sindri.Core.Checks.CheckRun.operator ==(Aw.Sindri.Core.Checks.CheckRun? left, Aw.Sindri.Core.Checks.CheckRun? right) -> bool
 Aw.Sindri.Core.Checks.BranchRules
-Aw.Sindri.Core.Checks.CommandResult
-Aw.Sindri.Core.Checks.CommandResult.<Clone>$() -> Aw.Sindri.Core.Checks.CommandResult!
-Aw.Sindri.Core.Checks.CommandResult.CommandResult(Aw.Sindri.Core.Checks.PlannedCommand! Planned, Aw.Sindri.Core.Checks.CheckRun! Run) -> void
-Aw.Sindri.Core.Checks.CommandResult.Deconstruct(out Aw.Sindri.Core.Checks.PlannedCommand! Planned, out Aw.Sindri.Core.Checks.CheckRun! Run) -> void
-Aw.Sindri.Core.Checks.CommandResult.Equals(Aw.Sindri.Core.Checks.CommandResult? other) -> bool
-Aw.Sindri.Core.Checks.CommandResult.Name.get -> string!
-Aw.Sindri.Core.Checks.CommandResult.Planned.get -> Aw.Sindri.Core.Checks.PlannedCommand!
-Aw.Sindri.Core.Checks.CommandResult.Planned.init -> void
-Aw.Sindri.Core.Checks.CommandResult.Run.get -> Aw.Sindri.Core.Checks.CheckRun!
-Aw.Sindri.Core.Checks.CommandResult.Run.init -> void
-Aw.Sindri.Core.Checks.CommandResult.Summary.get -> string!
+Aw.Sindri.Core.Checks.CheckResult
+Aw.Sindri.Core.Checks.CheckResult.<Clone>$() -> Aw.Sindri.Core.Checks.CheckResult!
+Aw.Sindri.Core.Checks.CheckResult.Deconstruct(out Aw.Sindri.Core.Checks.PlannedCommand! Planned, out Aw.Sindri.Core.Checks.CheckRun! Run) -> void
+Aw.Sindri.Core.Checks.CheckResult.Equals(Aw.Sindri.Core.Checks.CheckResult? other) -> bool
+Aw.Sindri.Core.Checks.CheckResult.Name.get -> string!
+Aw.Sindri.Core.Checks.CheckResult.Planned.get -> Aw.Sindri.Core.Checks.PlannedCommand!
+Aw.Sindri.Core.Checks.CheckResult.Planned.init -> void
+Aw.Sindri.Core.Checks.CheckResult.Run.get -> Aw.Sindri.Core.Checks.CheckRun!
+Aw.Sindri.Core.Checks.CheckResult.Run.init -> void
+Aw.Sindri.Core.Checks.CheckResult.Summary.get -> string!
 Aw.Sindri.Core.Checks.PhaseScope
 Aw.Sindri.Core.Checks.PhaseScope.<Clone>$() -> Aw.Sindri.Core.Checks.PhaseScope!
 Aw.Sindri.Core.Checks.PhaseScope.AllowedFiles.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -12301,7 +12300,7 @@ Aw.Sindri.Core.Checks.PlannedCommand.PlannedCommand(Aw.Sindri.Core.Profile.Build
 Aw.Sindri.Core.Checks.RepoCommandRunner
 Aw.Sindri.Core.Checks.RepoCommandRunner.For(string! stage, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.BuildCommand!>!>!>
 Aw.Sindri.Core.Checks.RepoCommandRunner.RepoCommandRunner(Aw.Sindri.Core.Profile.IApprovedProfile! profile, Aw.Sindri.Core.Checks.ICheckCommands! commands, Aw.Sindri.Core.Locks.IHeavySlots! slots) -> void
-Aw.Sindri.Core.Checks.RepoCommandRunner.Run(string! holder, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.PlannedCommand!>! plan, string! workingDirectory, System.TimeSpan fallbackTimeout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.CommandResult!>!>!>
+Aw.Sindri.Core.Checks.RepoCommandRunner.Run(string! holder, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.PlannedCommand!>! plan, string! workingDirectory, System.TimeSpan fallbackTimeout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.CheckResult!>!>!>
 Aw.Sindri.Core.Checks.RuleFinding
 Aw.Sindri.Core.Checks.RuleFinding.<Clone>$() -> Aw.Sindri.Core.Checks.RuleFinding!
 Aw.Sindri.Core.Checks.RuleFinding.Deconstruct(out string! Rule, out string! Message, out string? Path, out int? Line, out string? Detail) -> void
@@ -12324,9 +12323,9 @@ const Aw.Sindri.Core.Checks.BranchRules.Commit = "BLD-COMMIT-001" -> string!
 const Aw.Sindri.Core.Checks.BranchRules.Scope = "BLD-SCOPE-001" -> string!
 const Aw.Sindri.Core.Checks.BranchRules.Secret = "BLD-SECRET-001" -> string!
 const Aw.Sindri.Core.Checks.BranchRules.Test = "BLD-TEST-001" -> string!
-override Aw.Sindri.Core.Checks.CommandResult.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Checks.CommandResult.GetHashCode() -> int
-override Aw.Sindri.Core.Checks.CommandResult.ToString() -> string!
+override Aw.Sindri.Core.Checks.CheckResult.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Checks.CheckResult.GetHashCode() -> int
+override Aw.Sindri.Core.Checks.CheckResult.ToString() -> string!
 override Aw.Sindri.Core.Checks.PhaseScope.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Checks.PhaseScope.GetHashCode() -> int
 override Aw.Sindri.Core.Checks.PhaseScope.ToString() -> string!
@@ -12340,8 +12339,8 @@ static Aw.Sindri.Core.Checks.BranchRules.ChangedTests(Aw.Sindri.Core.Checks.Phas
 static Aw.Sindri.Core.Checks.BranchRules.CommitType(string! subject) -> string?
 static Aw.Sindri.Core.Checks.BranchRules.Commits(Aw.Sindri.Core.Checks.BranchChanges! changes) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.RuleFinding!>!
 static Aw.Sindri.Core.Checks.BranchRules.OutOfScope(Aw.Sindri.Core.Checks.PhaseScope! scope, Aw.Sindri.Core.Checks.BranchChanges! changes) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.RuleFinding!>!
-static Aw.Sindri.Core.Checks.CommandResult.operator !=(Aw.Sindri.Core.Checks.CommandResult? left, Aw.Sindri.Core.Checks.CommandResult? right) -> bool
-static Aw.Sindri.Core.Checks.CommandResult.operator ==(Aw.Sindri.Core.Checks.CommandResult? left, Aw.Sindri.Core.Checks.CommandResult? right) -> bool
+static Aw.Sindri.Core.Checks.CheckResult.operator !=(Aw.Sindri.Core.Checks.CheckResult? left, Aw.Sindri.Core.Checks.CheckResult? right) -> bool
+static Aw.Sindri.Core.Checks.CheckResult.operator ==(Aw.Sindri.Core.Checks.CheckResult? left, Aw.Sindri.Core.Checks.CheckResult? right) -> bool
 static Aw.Sindri.Core.Checks.PhaseScope.From(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! files) -> Aw.Kernel.Result<Aw.Sindri.Core.Checks.PhaseScope!>!
 static Aw.Sindri.Core.Checks.PhaseScope.operator !=(Aw.Sindri.Core.Checks.PhaseScope? left, Aw.Sindri.Core.Checks.PhaseScope? right) -> bool
 static Aw.Sindri.Core.Checks.PhaseScope.operator ==(Aw.Sindri.Core.Checks.PhaseScope? left, Aw.Sindri.Core.Checks.PhaseScope? right) -> bool
@@ -12353,3 +12352,4 @@ static Aw.Sindri.Core.Checks.ScopeGlobs.Allows(System.Collections.Generic.IReadO
 static Aw.Sindri.Core.Checks.SecretScan.Findings(string! rule, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.AddedLine!>! lines, Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.RuleFinding!>!
 static Aw.Sindri.Core.Checks.TestPaths.IsTest(string! path) -> bool
 static Aw.Sindri.Core.Workflow.Blocks.StepFacts.Findings(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Checks.RuleFinding!>! findings) -> System.Text.Json.Nodes.JsonArray!
+Aw.Sindri.Core.Checks.CheckResult.CheckResult(Aw.Sindri.Core.Checks.PlannedCommand! Planned, Aw.Sindri.Core.Checks.CheckRun! Run) -> void

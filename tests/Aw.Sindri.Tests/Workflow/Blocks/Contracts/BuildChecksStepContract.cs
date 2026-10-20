@@ -2,19 +2,29 @@ using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks.Step;
+using Aw.Sindri.Features.Build;
+using Aw.Sindri.Testing.Checks;
 using Aw.Sindri.Testing.Workflow;
 
 namespace Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 
-/// <summary>The checks Step of the line's build station, descriptor-only (no runtime until its phase): it hashes, kinds, registers once and resolves nothing.</summary>
+/// <summary>The checks Step of the line's build station on the block runtime: it hashes, kinds, registers once, resolves under its kind and honours cancellation.</summary>
 [Lane(TestLane.Unit)]
-public sealed class BuildChecksStepContract : DescriptorContract
+public sealed class BuildChecksStepContract : BlockContract
 {
+    protected override Type Block => typeof(BuildChecksStep);
+
     protected override BlockDescriptor Descriptor => BuildSteps.Checks;
 
-    protected override string ExpectedHash => "sha256:171c1123fe813da6126e98891424fd0bb26309a2eb3d49e150d522267b62f90f";
+    protected override string ExpectedHash => "sha256:02b25d912516f68f3df0acffd09f0be07a67d8973b0b70316bb1096914f66c31";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
+
+    protected override async Task InvokeAsync(CancellationToken cancellationToken)
+    {
+        var rig = new Workflow.BuildShip.StepRig();
+        _ = await new BuildChecksStep(rig.Diff, rig.Changes, rig.Files, rig.Runner, new IdentityScrubber()).Run(BuildShipContexts.Of("step.build.checks", []), cancellationToken);
+    }
 }

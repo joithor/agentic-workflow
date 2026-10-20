@@ -18,8 +18,8 @@ public sealed class RepoCommandRunnerTests
         var checks = await rig.Runner.For(BuildCommand.Checks, Token);
         var green = await rig.Runner.For(BuildCommand.Green, Token);
 
-        Assert.Equal(["typecheck", "unit"], checks.Value.Select(static c => c.Name));
-        Assert.Equal(["full"], green.Value.Select(static c => c.Name));
+        Assert.Equal(["typecheck", "unit"], checks.Value.Select(static c => c.Name), StringComparer.Ordinal);
+        Assert.Equal(["full"], green.Value.Select(static c => c.Name), StringComparer.Ordinal);
     }
 
     [Fact]

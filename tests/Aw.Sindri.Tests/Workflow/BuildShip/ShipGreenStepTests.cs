@@ -34,7 +34,7 @@ public sealed class ShipGreenStepTests
         Assert.Equal("green", result.Result!.Outcome.Value);
         var green = StepRig.Out(result, "green");
         Assert.Equal(("h1", "b0"), ((string?)green["head"], (string?)green["base"]));
-        Assert.Equal(["full", "lint"], green["commands"]!.AsArray().Select(static c => (string?)c!["name"]));
+        Assert.Equal(["full", "lint"], green["commands"]!.AsArray().Select(static c => (string?)c!["name"]), StringComparer.Ordinal);
         Assert.Equal((1, 1), (rig.Slots.Taken, rig.Slots.Released));
     }
 

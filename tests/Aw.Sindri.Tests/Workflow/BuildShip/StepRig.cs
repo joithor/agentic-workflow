@@ -84,7 +84,7 @@ internal sealed class StepRig
         {
             if (Busy)
             {
-                return ValueTask.FromResult<Result<HeavySlotTaken>>(new HeavySlotTaken(null, "slot 1/1 held by someone"));
+                return ValueTask.FromResult<Result<HeavySlotTaken>>(new HeavySlotTaken(Lease: null, Busy: "slot 1/1 held by someone"));
             }
 
             Taken++;
