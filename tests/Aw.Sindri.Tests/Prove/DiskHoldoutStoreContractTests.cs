@@ -20,7 +20,14 @@ public sealed class DiskHoldoutStoreContractTests : HoldoutStoreContract, IDispo
     protected override void Seed(IHoldoutStore store, string line, string phase, string? setText, string? sealText)
     {
         var dir = ((DiskHoldoutStore)store).Directory(line, phase);
-        _ = Directory.CreateDirectory(dir);
+        if (OperatingSystem.IsWindows())
+        {
+            _ = Directory.CreateDirectory(dir);
+        }
+        else
+        {
+            _ = Directory.CreateDirectory(dir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);   // the author Step makes it owner-only; the store leaves an existing directory as it is
+        }
         if (setText is not null)
         {
             File.WriteAllText(Path.Combine(dir, HoldoutFiles.SetName), setText);

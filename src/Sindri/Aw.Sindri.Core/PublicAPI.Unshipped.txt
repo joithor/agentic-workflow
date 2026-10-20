@@ -12228,6 +12228,7 @@ override Aw.Sindri.Core.Prove.HoldoutSeal.ToString() -> string!
 override Aw.Sindri.Core.Prove.HoldoutSet.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Prove.HoldoutSet.GetHashCode() -> int
 override Aw.Sindri.Core.Prove.HoldoutSet.ToString() -> string!
+static Aw.Sindri.Core.Prove.HoldoutFiles.IsKey(string? key) -> bool
 static Aw.Sindri.Core.Prove.HoldoutFiles.Hash(string! setText) -> string!
 static Aw.Sindri.Core.Prove.HoldoutFiles.ParseSeal(string! text) -> Aw.Kernel.Result<Aw.Sindri.Core.Prove.HoldoutSeal!>!
 static Aw.Sindri.Core.Prove.HoldoutFiles.ParseSet(string! text) -> Aw.Kernel.Result<Aw.Sindri.Core.Prove.HoldoutSet!>!

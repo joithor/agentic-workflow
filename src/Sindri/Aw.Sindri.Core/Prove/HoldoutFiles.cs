@@ -23,6 +23,11 @@ public static class HoldoutFiles
     /// <summary>The name of the spent marks.</summary>
     public const string SpentName = "spent.json";
 
+    /// <summary>Whether text is one safe path segment: letters, digits, '.', '_' and '-', not starting with '.'.</summary>
+    /// <param name="key">A line slug or phase key.</param>
+    /// <returns>True when it can name a directory of the store.</returns>
+    public static bool IsKey(string? key) => !string.IsNullOrEmpty(key) && key[0] != '.' && key.All(static c => char.IsAsciiLetterOrDigit(c) || c is '.' or '_' or '-');
+
     /// <summary>The hash a seal names for a set file.</summary>
     /// <param name="setText">The set file's text.</param>
     /// <returns>'sha256:' and the hex digest of the UTF-8 bytes.</returns>
