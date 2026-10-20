@@ -30,9 +30,7 @@ internal sealed class ViewerFixture : IDisposable
     public string Script(string name, string body)
     {
         var path = Path.Combine(Dir, name);
-        File.WriteAllText(path, "#!/bin/sh\n" + body + "\n");
-        File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        return path;
+        return ExecutableScript.Write(path, body + "\n");
     }
 
     /// <summary>Awaits the task while moving the fake clock 250 ms at a time (the observation window's poll), with real pauses so processes can run. While <paramref name="hold"/> says true the clock does not move.</summary>
