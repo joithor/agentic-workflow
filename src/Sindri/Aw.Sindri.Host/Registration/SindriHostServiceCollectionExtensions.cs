@@ -38,6 +38,7 @@ internal static class SindriHostServiceCollectionExtensions
         .AddHostedService<SessionUsageHost>()
         .AddHostedService<ProfileWatch>()
         .AddHostedService<SessionCollectorHost>()
+        .AddHostedService<ContextWarmHost>()
         .AddHostedService<LauncherHost>()
         .AddHostedService<LeaseRenewer>();
 }

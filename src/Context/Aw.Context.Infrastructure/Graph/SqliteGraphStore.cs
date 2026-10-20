@@ -54,7 +54,7 @@ internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSet
         await using (session.ConfigureAwait(false))
         {
             var key = draft ? "draft" : "current";
-            var stamp = await StampedCache<MapSnapshot>.Stamp(session, cancellationToken).ConfigureAwait(false);
+            var stamp = await StampedCache<MapSnapshot>.Stamp(session, StampedCache<MapSnapshot>.MapStamp, cancellationToken).ConfigureAwait(false);
             if (_snapshots.Get(key, stamp) is { } held)
             {
                 return held;
@@ -77,7 +77,7 @@ internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSet
         await using (session.ConfigureAwait(false))
         {
             var key = "v" + version.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            var stamp = await StampedCache<MapSnapshot>.Stamp(session, cancellationToken).ConfigureAwait(false);
+            var stamp = await StampedCache<MapSnapshot>.Stamp(session, StampedCache<MapSnapshot>.MapStamp, cancellationToken).ConfigureAwait(false);
             if (_snapshots.Get(key, stamp) is { } held)
             {
                 return held;
