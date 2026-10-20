@@ -671,9 +671,28 @@ The view's top level adds `orderedBy`: `"path"`, or `"transition-list"` when the
   "children": [ /* ChildGroup, below */ ],
   "counts": { "timeline": 41, "decisions": 3, "requests": 1, "context": 14 },   // context: null until CTX serves the lenses
   "actions": [ "ApplyCommand:takeover", "ApplyCommand:cancel" ],
+  "stepRuns": [                     // one per Step run, in start order; [] when the instance has none yet
+    { "token": "3.1", "step": "verify", "attempt": 2, "maxAttempts": 3, "state": "passed", "runtime": "agent",
+      "startedAt": "2026-10-14T09:14:00Z", "endedAt": "2026-10-14T09:31:20Z", "durationMs": 1040000,
+      "outcome": "pass", "tokens": 18200, "actor": "agent:session" }
+  ],
   "asOf": "…"
 }
 ```
+
+**`StepRun` (`stepRuns[]`).** The engine keeps no per-run record: the read folds the instance's own ledger rows (the same rows `GET /workflow/instances/{id}/events` serves) with `StepRuns.Fold`, a pure function of those rows, so it gives the same runs however often or whenever it is read. A frame that opens a run token starts a run; a `step.completed` or `step.failed` row carrying the token ends it; a frame that moves on without a report ends it `abandoned` (`cancelled` for a cancel). A park, a takeover or an escalation leaves the frame as it was, so the run stays `running` while the instance is suspended. A read whose ledger can't be read fails like the counts do.
+
+| Field | What it holds |
+|---|---|
+| `token` | The run token, `{entry}.{n}` |
+| `step` | The Step's state id. The view carries no display name for a Step, so none is served |
+| `attempt`, `maxAttempts?` | `attempt` is the nth run of the same Step in this instance, from 1. `maxAttempts` is the cap of the loop the Step's state is in, from the recipe's own `loop` membership (so a state at neither end of the back edge has it too): the allowance the instance holds for the loop while its active state is in that loop (a granted round raises it on every run of the loop's states, past ones too, but only while the instance is in the loop), else the recipe's cap, so an ended instance shows the recipe's cap even after a grant. It is not read from `states[].round`, which stays the current state's alone. `null` when the state is in no loop, or when the instance's recipe can't be read at the time |
+| `state` | `running` (no closing row yet, also while the instance is parked, taken over or escalated), `passed`, `failed`, `refused` (its report was refused by a gate or evidence check; a later override keeps it `refused`), `cancelled` or `abandoned` (the instance moved to another frame with no report on the run) |
+| `runtime?` | `desk` or `agent`, from the frame that opened the run |
+| `startedAt`, `endedAt?`, `durationMs?` | The ledger times of the opening and closing rows; the last two are `null` while `running` |
+| `outcome?` | The reported outcome name; `null` while running, on a failure, a cancel or an abandon; a refused report keeps the outcome it reported |
+| `tokens?` | The tokens the closing report recorded (an agent run); `null` when none (a failed run's tokens are not recorded yet) |
+| `actor?` | Who fired the closing trigger (`agent:session`, `human:…`); `null` while running: no row names who opened the run |
 
 **`StatusFields` (E-23).** The WF §6.4 layout as fields. The CLI prints its text form from the **same renderer**, and
 `text` carries that form unchanged, so the app and `sindri workflow status` cannot disagree; a golden test renders
@@ -972,6 +991,33 @@ data: {"sequence":4211,"id":"0192…","type":"item.state-changed","schemaVersion
   committed `Append`.
 - P5 also connects it: the projector and the stream both wait on it, so they wake within milliseconds.
 - The 1 s poll stays as the fallback.
+
+### 5.6 `workflow.instance-changed`
+
+An instance's served view (`GET /workflow/instances/{address}`) is read from Temporal, so no projection folds it and there is no ledger row for
+"the view changed". A client that follows one instance asks the stream for the derived frame by name, so it re-queries instead of polling:
+`GET /events?types=workflow.instance-changed[&instance=<address>]`.
+
+- **Frame.** `event: workflow.instance-changed`, no `id` line (the cursor stays at the last real row), `data: {"instance":"T-1/step/1","state":"checks","cursor":4211}`: the
+  address, the state the instance is in after the change, and the ledger sequence of the change. The frame's `state` is the authoritative new state.
+  The view carries no ledger sequence (its `asOf` is a read time), and the row is mirrored before a query can see the workflow's new state, so
+  the frame can arrive first. A client re-queries on a frame; if the view's `state` is not yet the frame's `state`, it retries a few times with a short,
+  bounded backoff (for example 100, 200 and 400 ms), then shows what it has until the next frame.
+- **Source.** The rows the instance mirrored that change its view: `workflow.started`, `.transition`, `.refused`, `.shifted`, `.notified`
+  and `.expired` (a state change, a step run starting or ending, an outcome, a takeover or handback). `workflow.injection` records a
+  plan and is not one. The payload is `instance` and `to` of the row's public record; no agent text.
+- **Opt in.** Only a request that names the type gets it; a stream with no `types`, or `workflow.*`, sends the raw rows as before. When it is named, the raw
+  `workflow.*` rows are sent only if the caller's other globs match them.
+- **Coalescing.** One frame per instance per page read (at most 100 rows): a burst, or a replay from an old cursor, is one frame at the newest row. The
+  client's own 250 ms window (`status --follow`) sits on top.
+- **Open at the head.** A stream that names only `workflow.instance-changed` sends no `id:` line, so an auto-reconnect names no cursor. With no `after` and no
+  `Last-Event-ID` such a request opens at the current ledger head instead of 0; an explicit `after=` (0 included) is honored. On every (re)connect a client opens
+  the stream first and then re-queries the instances it shows, since frames sent while it was away are lost (re-querying first leaves a gap). A stream that also names a ledger type keeps the usual cursor rule.
+  An `instance=` address that was never started gives a silent empty stream (the filter is by key, not an existence check). With `instance=` and another
+  type, rows of other instances are dropped.
+- **Never stored.** It is derived on the way out, not appended, so a views rebuild (which writes only the non-public `views.rebuilt`) emits nothing and
+  a reconnect resumes by the last real row's `id`. A disconnect between a row and its derived frame loses the frame; a reconnecting client re-queries once the stream is open.
+- **Not in the catalog.** `GET /events/catalog` lists ledger types, so it has no row; a consumer treats the name as `invalidates: [instance(address)]`.
 
 ## 6. Auth, v0
 

@@ -49,7 +49,7 @@ internal sealed class PaletteEntry : ObservableObject
         { IsAccepted: true } => Control.Outcome,
         { IsFailed: true } => Control.ErrorCode,
         { IsReady: true } => Runs ? Labels.Ready : NotRun,   // a ready row is called ready only when Enter does something with it
-        { IsPending: true } => Labels.Arrives(Control.Stage),
+        { IsPending: true } => Labels.NotInApp,
         { CopyLabel: Labels.Copied } => Labels.Copied,
         _ => Labels.CopyCli(Control.Cli),
     };

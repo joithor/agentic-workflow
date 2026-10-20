@@ -8,6 +8,7 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="Workstreams">Workstreams, as served.</param>
 /// <param name="Rows">Rows, as served.</param>
 /// <param name="More">More, as served.</param>
+/// <param name="DisplayName">The children's workflow display name; null from a server older than the contract.</param>
 internal sealed record ChildGroup(
     string State,
     string Recipe,
@@ -15,4 +16,5 @@ internal sealed record ChildGroup(
     int Total,
     IReadOnlyList<Workstream> Workstreams,
     IReadOnlyList<ChildRow> Rows,
-    int More);
+    int More,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? DisplayName = null);

@@ -14,23 +14,32 @@ internal static partial class Labels
     /// <summary>An ended session with no known way back.</summary>
     internal const string NoResumeCommand = "no resume command";
 
+    /// <summary>A filter's accessible name: the choice it shows leads, then what it filters.</summary>
+    /// <param name="choice">The choice shown.</param>
+    /// <param name="what">What the filter narrows by ("provider").</param>
+    /// <returns>"All providers, filter by provider".</returns>
+    internal static string FilterName(string choice, string what) => $"{choice}, filter by {what}";
+
     /// <summary>The first choice of the provider filter.</summary>
     internal const string AllProviders = "All providers";
 
     /// <summary>The first choice of the state filter.</summary>
-    internal const string AllStates = "All states";
+    internal const string AllStates = "Any status";
 
     /// <summary>The first choice of the repo filter.</summary>
     internal const string AllRepos = "All repos";
 
     /// <summary>The Focus control's label (the catalog's action word).</summary>
-    internal const string FocusLabel = "Focus";
+    internal const string FocusLabel = "Watch the agent";
 
     /// <summary>The CLI line Focus shows until the send is wired, when the catalog row is missing.</summary>
     internal const string FocusCliFallback = "sindri agents focus <ref>";
 
-    /// <summary>The phase that wires the Focus send once the catalog row says it is ready.</summary>
-    internal const string FocusSendPhase = "U11a-f";
+    /// <summary>What the pending Watch the agent button says it is, instead of a phase code.</summary>
+    internal const string FocusSoon = "Coming soon";
+
+    /// <summary>The pending Watch the agent button's accessible name: its words, then why it is dead.</summary>
+    internal static readonly string FocusName = FocusLabel + ", " + FocusSoon.ToLowerInvariant();
 
     /// <summary>The recently ended fold's header with its count.</summary>
     /// <param name="count">How many ended.</param>
@@ -43,16 +52,14 @@ internal static partial class Labels
     /// <returns>The words.</returns>
     internal static string GroupHeader(string group, int count) => string.Create(CultureInfo.InvariantCulture, $"{group} ({count})");
 
-    /// <summary>A launched session's line.</summary>
-    /// <param name="launchId">The launch id as served.</param>
-    /// <returns>The words.</returns>
-    internal static string LaunchLine(string launchId) => "launch " + launchId;
+    /// <summary>A launched session's line, in place of its launch id (the id is on the session's sheet, under Details).</summary>
+    internal const string LaunchLine = "Agent session";
 
-    /// <summary>A lane's line: "meta · sindri/ideas".</summary>
+    /// <summary>A lane's line: "Lane sindri/ideas".</summary>
     /// <param name="team">The team.</param>
     /// <param name="lane">The lane.</param>
     /// <returns>The words.</returns>
-    internal static string LaneLine(string team, string lane) => "meta · " + team + "/" + lane;
+    internal static string LaneLine(string team, string lane) => "Lane " + team + "/" + lane;
 
     /// <summary>What a waiting session waits on: "approval · Bash".</summary>
     /// <param name="reason">The served reason.</param>
@@ -75,19 +82,17 @@ internal static partial class Labels
     internal static string SessionName(string provider, string title, string state, string detail, string host) =>
         string.Join(", ", new[] { provider, title, state, detail, host }.Where(p => p.Length > 0));
 
-    /// <summary>The Step an engine launch started a session for: "on ITM-…/step/1 · build", with "· attempt 2" above the first attempt.</summary>
-    /// <param name="instance">The instance address.</param>
+    /// <summary>The step an engine launch started a session for: "On a workflow step · build", with "· attempt 2" above the first attempt. The run's address is never up front.</summary>
     /// <param name="state">The Step's state, or null.</param>
     /// <param name="attempt">The attempt, or null.</param>
     /// <returns>The words.</returns>
-    internal static string SessionStep(string instance, string? state, int? attempt) =>
-        string.Join(" · ", new[] { "on " + instance, state ?? string.Empty, attempt is > 1 ? "attempt " + attempt.Value.ToString(CultureInfo.InvariantCulture) : string.Empty }.Where(p => p.Length > 0));
+    internal static string SessionStep(string? state, int? attempt) =>
+        string.Join(" · ", new[] { "On a workflow step", state ?? string.Empty, attempt is > 1 ? "attempt " + attempt.Value.ToString(CultureInfo.InvariantCulture) : string.Empty }.Where(p => p.Length > 0));
 
-    /// <summary>The step button's accessible name: its visible words, then what it opens ("on ITM-…/step/1 · build: open ITM-…/step/1 at build").</summary>
+    /// <summary>The step button's accessible name: its visible words, then what it opens ("On a workflow step · build: open the run at build").</summary>
     /// <param name="visible">The button's visible words.</param>
-    /// <param name="instance">The instance address.</param>
     /// <param name="state">The Step's state, or null.</param>
     /// <returns>The words.</returns>
-    internal static string SessionStepName(string visible, string instance, string? state) =>
-        state is { Length: > 0 } ? $"{visible}: open {instance} at {state}" : $"{visible}: open {instance}";
+    internal static string SessionStepName(string visible, string? state) =>
+        state is { Length: > 0 } ? $"{visible}: open the run at {state}" : $"{visible}: open the run";
 }

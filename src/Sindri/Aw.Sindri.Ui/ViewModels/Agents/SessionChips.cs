@@ -10,8 +10,8 @@ internal static class SessionChips
     /// <returns>The glyph and the word.</returns>
     internal static SessionChip For(string state) => state switch
     {
-        "running" => new("●", "RUNNING"),
-        "asking" => new("◐", "ASKING"),
+        "running" => new("●", "WORKING"),
+        "asking" => new("◐", "ASKING YOU"),
         "idle" => new("○", "IDLE"),
         "unknown" => new("○", "UNKNOWN"),
         _ => new("○", state.ToUpperInvariant()),
