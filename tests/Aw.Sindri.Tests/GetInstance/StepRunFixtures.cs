@@ -34,8 +34,8 @@ internal static class StepRunFixtures
         new("workflow.transition", At(minutes), "service:workflow", new WorkflowEventPayload(Id, from, to, kind, Outcome: null, Run: null, Detail("human:owner", new FrameSummary(to, Entry: 9, Run: null, Child: null))));
 
     /// <summary>A park: the frame stays as it was (the delta carries none).</summary>
-    public static RecordedWorkflowEvent Parked(string state, int minutes) =>
-        new("workflow.transition", At(minutes), "service:workflow", new WorkflowEventPayload(Id, state, state, "deadline", Outcome: null, Run: null, Detail("service:timer", frame: null)));
+    public static RecordedWorkflowEvent Parked(string state, int minutes, string kind = "deadline") =>
+        new("workflow.transition", At(minutes), "service:workflow", new WorkflowEventPayload(Id, state, state, kind, Outcome: null, Run: null, Detail("service:timer", frame: null)));
 
     private static FrameSummary Frame(string step, string token, StepRuntime runtime) =>
         new(step, int.Parse(token[..token.IndexOf('.', StringComparison.Ordinal)], System.Globalization.CultureInfo.InvariantCulture), token, Child: null, runtime);

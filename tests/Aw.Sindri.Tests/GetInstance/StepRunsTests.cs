@@ -66,6 +66,30 @@ public sealed class StepRunsTests
     }
 
     [Fact]
+    public void A_finished_looped_instance_gives_every_run_the_loop_cap_though_no_state_is_active_with_a_round()
+    {
+        var states = new[] { Cell("verify", round: null, new LoopPair("mitigate", 1, 3)), Cell("mitigate", round: null, new LoopPair("verify", 1, 3)), Cell("done", round: null) };
+        var runs = StepRuns.Fold(
+            [
+                Started("verify", "1.1"),
+                Completed("verify", "mitigate", "1.1", "fail", minutes: 3, next: "2.1"),
+                Completed("mitigate", "verify", "2.1", "done", minutes: 6, next: "3.1"),
+                Completed("verify", "done", "3.1", "pass", minutes: 8),
+            ],
+            states);
+
+        Assert.Equal([("verify", 3), ("mitigate", 3), ("verify", 3)], runs.Select(static r => (r.Step, r.MaxAttempts)));
+    }
+
+    [Fact]
+    public void A_takeover_or_an_escalation_leaves_the_run_running_because_the_frame_is_untouched()
+    {
+        var run = Assert.Single(Fold(Started("produce", "1.1"), Parked("produce", minutes: 30, kind: "takeover"), Parked("produce", minutes: 40, kind: "escalate")));
+
+        Assert.Equal((StepRunState.Running, null), (run.State, run.EndedAt));
+    }
+
+    [Fact]
     public void A_refused_report_marks_its_run_refused_and_the_re_run_opens_beside_it()
     {
         var runs = Fold(
@@ -111,6 +135,6 @@ public sealed class StepRunsTests
     public void A_report_for_a_run_it_never_saw_open_adds_nothing() =>
         Assert.Empty(Fold(Completed("produce", "checks", "7.1", "done")));
 
-    private static StateCell Cell(string state, Round? round) =>
-        new(state, Order: 1, BranchOf: null, StateGlyph.Pending, Badge: null, round, [], Desk: false, Child: false, Children: null, Outcome: null, Terminal: false);
+    private static StateCell Cell(string state, Round? round, params LoopPair[] loops) =>
+        new(state, Order: 1, BranchOf: null, StateGlyph.Pending, Badge: null, round, loops, Desk: false, Child: false, Children: null, Outcome: null, Terminal: false);
 }
