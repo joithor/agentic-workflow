@@ -11,6 +11,8 @@ namespace Aw.Sindri.Core.Commands;
 public static class Authorization
 {
     private const string ServicePrefix = "service:";
+    private const string HumanAtTerminal = "human+terminal";
+    private const string HumanInApp = "human";
 
     private static readonly Dictionary<ActionClass, Who> _table = new()
     {
@@ -44,8 +46,9 @@ public static class Authorization
     {
         ArgumentNullException.ThrowIfNull(row);
         var who = WhoIs(caller);
-        var allowed = ((Allowed(actionClass) & who) != Who.None || Granted(actionClass, caller, row))
-            && (!row.NeedsTerminal || who == Who.Terminal);
+        var app = row.AppConfirm ? Who.App : Who.None;   // the three rows the app confirms (setup-once spec §4 item 7): the handler redeems the challenge before its first write
+        var allowed = (((Allowed(actionClass) | app) & who) != Who.None || Granted(actionClass, caller, row))
+            && (!row.NeedsTerminal || who == Who.Terminal || (who == Who.App && row.AppConfirm));
         return new AuthorizationDecision(caller?.Actor ?? "none", allowed ? null : Refusal(row));
     }
 
@@ -57,7 +60,7 @@ public static class Authorization
     {
         ArgumentNullException.ThrowIfNull(grants);
         var allowed = Allowed(actionClass);
-        (Who Who, string Name)[] named = [(Who.Terminal, "human+terminal"), (Who.App, "human"), (Who.Session, "session"), (Who.Service, "service")];
+        (Who Who, string Name)[] named = [(Who.Terminal, HumanAtTerminal), (Who.App, HumanInApp), (Who.Session, "session"), (Who.Service, "service")];
         var granted = actionClass == ActionClass.Desk ? grants.Select(static g => ServicePrefix + g) : [];
         return [.. named.Where(n => allowed.HasFlag(n.Who)).Select(static n => n.Name), .. granted];
     }
@@ -68,7 +71,13 @@ public static class Authorization
     public static IReadOnlyList<string> CallersFor(CommandRow row)
     {
         ArgumentNullException.ThrowIfNull(row);
-        return CallersFor(row.Class, row.ServiceGrants);
+        var callers = CallersFor(row.Class, row.ServiceGrants);
+        if (row.AppConfirm)
+        {
+            return [HumanAtTerminal, HumanInApp];   // a flagged row is a human's, at a terminal or in the app, and nobody else's
+        }
+
+        return row.NeedsTerminal ? [.. callers.Where(static c => string.Equals(c, HumanAtTerminal, StringComparison.Ordinal))] : callers;
     }
 
     private static Who Allowed(ActionClass actionClass) => _table.GetValueOrDefault(actionClass, Who.None);
@@ -92,7 +101,7 @@ public static class Authorization
 
     private static Error Refusal(CommandRow row)
     {
-        var where = row.Class == ActionClass.Protected || row.NeedsTerminal ? "in a terminal" : "in a terminal or the Sindri app";
+        var where = (row.Class == ActionClass.Protected || row.NeedsTerminal) && !row.AppConfirm ? "in a terminal" : "in a terminal or the Sindri app";
         return SindriErrors.AuthRefused.With($"{row.Action.Value} is a human decision. Ask the human to run it {where}: {row.Cli.Text}");
     }
 }

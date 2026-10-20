@@ -104,7 +104,7 @@ public abstract class ChallengesContract
     private static IssuedChallenge IssueFor(IChallenges challenges, ChallengeMode mode, ChallengeChannel channel = ChallengeChannel.App) =>
         challenges.Issue(_approve, _subject, mode, channel);
 
-    private static string Code(Aw.Kernel.Result<IssuedChallenge> redeemed) => redeemed.IsError ? redeemed.Error.Code : "ok";
+    private static string Code(Kernel.Result<IssuedChallenge> redeemed) => redeemed.IsError ? redeemed.Error.Code : "ok";
 
     /// <summary>An app challenge records its mode, its channel and when it was issued; the older Issue is a typed terminal one.</summary>
     [Fact]
@@ -146,13 +146,14 @@ public abstract class ChallengesContract
     {
         var challenges = Create();
         var held = IssueFor(challenges, ChallengeMode.Held);
-        var typed = IssueFor(challenges, ChallengeMode.Typed);
+        var typed = challenges.Issue(ChallengeAction.Approve(RecipeId.From("workflow.step"), 2), _subject, ChallengeMode.Typed, ChallengeChannel.App);
         Clock.Advance(_slipGuard - TimeSpan.FromTicks(1));
 
         Expect.Equal("SND-SETUP-003", Code(challenges.Redeem(new ChallengeAnswer(held.Id, HeldMs: 5000), _approve, _subject, WorkflowErrors.RecipeChallengeStale)));
-        Expect.Equal("SND-SETUP-003", Code(challenges.Redeem(new ChallengeAnswer(typed.Id, _approve.Text), _approve, _subject, WorkflowErrors.RecipeChallengeStale)));
+        Expect.Equal("SND-SETUP-003", Code(challenges.Redeem(new ChallengeAnswer(typed.Id, typed.Action.Text), typed.Action, _subject, WorkflowErrors.RecipeChallengeStale)));
         Clock.Advance(TimeSpan.FromTicks(1));
-        Expect.Equal("ok", Code(challenges.Redeem(new ChallengeAnswer(typed.Id, _approve.Text), _approve, _subject, WorkflowErrors.RecipeChallengeStale)));
+        Expect.Equal("ok", Code(challenges.Redeem(new ChallengeAnswer(typed.Id, typed.Action.Text), typed.Action, _subject, WorkflowErrors.RecipeChallengeStale)));
+        Expect.Equal("ok", Code(challenges.Redeem(new ChallengeAnswer(held.Id, HeldMs: 5000), _approve, _subject, WorkflowErrors.RecipeChallengeStale)));
     }
 
     /// <summary>A typed challenge is never redeemed by a hold; the refusal leaves it open for the typed text.</summary>

@@ -13166,3 +13166,5 @@ Aw.Sindri.Core.Commands.CommandRow.Deconstruct(out Aw.Sindri.Core.Ids.ActionId A
 static Aw.Sindri.Core.Challenges.IssuedChallenge.EarliestAnswer.get -> System.TimeSpan
 static Aw.Sindri.Core.Challenges.IssuedChallenge.MinHoldMs.get -> int
 static Aw.Sindri.Core.Commands.Authorization.CallersFor(Aw.Sindri.Core.Commands.CommandRow! row) -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Challenges.ChallengeConfirmation
+static Aw.Sindri.Core.Challenges.ChallengeConfirmation.Refusal(Aw.Sindri.Core.Challenges.IssuedChallenge! issued, Aw.Sindri.Core.Challenges.ChallengeAnswer! answer, System.DateTimeOffset now) -> Aw.Kernel.Error?

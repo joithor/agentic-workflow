@@ -107,7 +107,7 @@ public sealed class AppConfirmRoutesTests
         var challenge = await host.Http.Ask(Post(AppChallenge, """{"action":"approve-all c41e07"}""", Session));
         var profile = await host.Http.Ask(Post("/sindri/profile/approve", $$"""{"hash":"{{hash}}"}""", Session));
         var all = await host.Http.Ask(Post(PlanRoute, """{"challenge":"CHL-00000000000000000000000000000000","heldMs":5000}""", Session));
-        var recipe = await host.Http.Ask(Post("/sindri/workflow/recipes/workflow.step@1a2b3c4d5e6f/approve", """{"answer":{"challenge":"CHL-00000000000000000000000000000000","typed":"x"}}""", Session));
+        var recipe = await host.Http.Ask(Post("/sindri/workflow/recipes/workflow.step@" + new string('a', 64) + "/approve", """{"challenge":"CHL-00000000000000000000000000000000","typed":"x"}""", Session));
 
         Assert.Equal([(HttpStatusCode.Forbidden, "SND-AUTH-002")], new[] { challenge, profile, all, recipe }.Select(static a => (a.Status, a.Code)).Distinct().ToArray());
     }

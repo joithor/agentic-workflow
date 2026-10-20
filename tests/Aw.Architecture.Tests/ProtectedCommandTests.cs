@@ -75,15 +75,15 @@ public sealed class ProtectedCommandTests
         var app = rows.Single(r => r.Action.Value == "IssueAppChallenge").Route!;
         var strings = Production.Assemblies.Where(a => IsClient(a.GetName().Name ?? string.Empty)).SelectMany(Strings).ToList();
 
-        Assert.DoesNotContain(strings, s => s == terminal || s == terminal.Replace("/sindri", string.Empty, StringComparison.Ordinal));
-        Assert.NotEqual(terminal, app);
+        Assert.DoesNotContain(strings, s => string.Equals(s, terminal, StringComparison.Ordinal) || string.Equals(s, terminal.Replace("/sindri", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal));
+        Assert.NotEqual(terminal, app, StringComparer.Ordinal);
         Assert.StartsWith(terminal + "/", app, StringComparison.Ordinal);
     }
 
     [Fact]
     public void No_MCP_type_references_the_app_challenge_request()
     {
-        var request = typeof(Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest).FullName;
+        var request = typeof(Sindri.Features.IssueChallenge.IssueAppChallengeRequest).FullName;
 
         var found = Production.Architecture.Types
             .Where(t => InMcp(t.Namespace.FullName))

@@ -1,9 +1,9 @@
-using Aw.Kernel.Testing;
 using Aw.Kernel.Services;
-using Aw.Sindri.Testing;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Features.Commands;
 using Aw.Sindri.Features.IssueChallenge;
+using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.ApproveRecipe;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -37,6 +37,7 @@ public sealed class IssueAppRecipeChallengeTests
     public async Task A_session_is_refused_before_the_handler()
     {
         await using var registry = Harness();
+        _ = await registry.H.HoldLease();   // why: the refusal's audit row needs the lease
 
         var issued = await registry.Run<IssueAppChallengeRequest, IssueChallengeResponse>(new IssueAppChallengeRequest("approve workflow.step 2"), A.Caller().Session().Build());
 
@@ -47,6 +48,7 @@ public sealed class IssueAppRecipeChallengeTests
     public async Task A_service_is_refused_before_the_handler()
     {
         await using var registry = Harness();
+        _ = await registry.H.HoldLease();   // why: the refusal's audit row needs the lease
 
         var issued = await registry.Run<IssueAppChallengeRequest, IssueChallengeResponse>(new IssueAppChallengeRequest("approve workflow.step 2"), A.Caller().Service("jobs").Build());
 
