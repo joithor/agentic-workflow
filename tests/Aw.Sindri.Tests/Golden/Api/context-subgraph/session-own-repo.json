@@ -127,6 +127,32 @@
       ],
       "neighbors": [
         {
+          "node": "surface:command/switch-tab",
+          "label": "Switch tab (command)",
+          "kind": "surface",
+          "provenance": "human",
+          "confidence": 1,
+          "confirmed": true,
+          "trust": "trusted",
+          "depth": 1,
+          "path": [
+            "part-of-by surface:command/switch-tab"
+          ]
+        },
+        {
+          "node": "surface:command/group-tabs",
+          "label": "Group tabs (command)",
+          "kind": "surface",
+          "provenance": "human",
+          "confidence": 1,
+          "confirmed": true,
+          "trust": "trusted",
+          "depth": 1,
+          "path": [
+            "part-of-by surface:command/group-tabs"
+          ]
+        },
+        {
           "node": "action:tab-manager.restore-layout",
           "label": "Restore a tab's pane layout",
           "kind": "action",
@@ -136,8 +162,8 @@
           "trust": "trusted",
           "depth": 2,
           "path": [
-            "implements-by code:src/tabs/TabManager.ts",
-            "implements action:tab-manager.restore-layout"
+            "part-of-by surface:command/switch-tab",
+            "on-by action:tab-manager.restore-layout"
           ]
         }
       ],
@@ -145,8 +171,8 @@
       "counts": {
         "own": 2,
         "affects": 0,
-        "neighbors": 1,
-        "edges": 1
+        "neighbors": 3,
+        "edges": 4
       },
       "edges": [
         {
@@ -155,6 +181,33 @@
           "type": "part-of",
           "provenance": "human",
           "link": "edge:bfde89d5c565ec81",
+          "confirmed": true,
+          "confidence": 1
+        },
+        {
+          "from": "surface:command/group-tabs",
+          "to": "feature:tabs.tab-groups",
+          "type": "part-of",
+          "provenance": "human",
+          "link": "edge:2262bc3d8f1df276",
+          "confirmed": true,
+          "confidence": 1
+        },
+        {
+          "from": "surface:command/switch-tab",
+          "to": "feature:tabs.tab-manager",
+          "type": "part-of",
+          "provenance": "human",
+          "link": "edge:e77c6359aafbc814",
+          "confirmed": true,
+          "confidence": 1
+        },
+        {
+          "from": "action:tab-manager.restore-layout",
+          "to": "surface:command/switch-tab",
+          "type": "on",
+          "provenance": "human",
+          "link": "edge:9b9cd5139939b8bd",
           "confirmed": true,
           "confidence": 1
         }
