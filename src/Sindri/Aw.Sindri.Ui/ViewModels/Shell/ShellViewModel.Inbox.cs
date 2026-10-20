@@ -39,6 +39,7 @@ internal sealed partial class ShellViewModel
 
         Queue.ClearSelection();
         Strip.Deselect();
+        NeedsYou.PointerOver = false;   // the pointer that held Home's list is not over the inbox's: a hide gives no exit
         if (rowId is not null)
         {
             NeedsYou.Select(rowId);
@@ -59,6 +60,7 @@ internal sealed partial class ShellViewModel
         }
 
         IsNeedsYouInbox = false;
+        NeedsYou.PointerOver = false;   // likewise the inbox's hold: leaving gives no exit
         Changed(_inboxProperties);
         return true;
     }

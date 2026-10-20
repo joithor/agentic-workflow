@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Specialized;
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Layout;
@@ -40,6 +41,7 @@ internal sealed class StickyGroupList : UserControl
         _scroll.Content = _stack;
         _sticky.RenderTransform = _push;
         _sticky.Classes.Add("sticky-header");
+        AutomationProperties.SetAccessibilityView(_sticky, AccessibilityView.Raw);   // the real header, below it, is what is read
         Content = new Panel { ClipToBounds = true, Children = { _scroll, _sticky } };
         _scroll.ScrollChanged += (_, _) => FollowScroll();
     }
