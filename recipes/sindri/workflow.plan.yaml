@@ -1,6 +1,6 @@
 schema: 1
 id: workflow.plan
-version: 1
+version: 2
 description: "Station 3 of the line: the phase graph for a candidate design, its executability review and hidden scenarios, then the owner's after-design stop, which freezes the design, the plan and every phase packet together."
 urgency: work
 inputs:
@@ -14,12 +14,27 @@ initial: intake
 states:
   intake:      { kind: active, step: step.plan.intake, timeout: { after: 1h, then: park },
                  next: "Load {item}'s candidate design and frozen scope packets." }
-  graph:       { kind: active, step: step.plan.graph, loop: rounds, budget: { tokens: 300k }, timeout: { after: 3h, then: park },
-                 next: "Draft {item}'s phase graph (round {loop.rounds}/{loop.rounds.cap})." }
+  graph:
+    kind: active
+    step:
+      use: step.plan.graph
+      inputs:
+        - { use: input.context.code, with: { anchors: { fact: fact:design } } }   # LN-CTX2: the code lens, anchored on the design's covered surfaces
+    loop: rounds
+    budget: { tokens: 300k }
+    timeout: { after: 3h, then: park }
+    next: "Draft {item}'s phase graph (round {loop.rounds}/{loop.rounds.cap})."
   check:       { kind: active, step: step.plan.check, timeout: { after: 1h, then: park },
                  next: "Run the plan checks and aw-packets validate on {item}'s graph." }
-  exec-review: { kind: active, step: step.plan.exec-review, budget: { tokens: 150k }, timeout: { after: 2h, then: park },
-                 next: "Review each of {item}'s phases as its builder: executable, context, files, checkable signals." }
+  exec-review:
+    kind: active
+    step:
+      use: step.plan.exec-review
+      inputs:
+        - { use: input.context.code, with: { anchors: { fact: fact:design } } }   # LN-CTX2
+    budget: { tokens: 150k }
+    timeout: { after: 2h, then: park }
+    next: "Review each of {item}'s phases as its builder: executable, context, files, checkable signals."
   holdout:     { kind: active, step: step.plan.holdout, budget: { tokens: 200k }, timeout: { after: 2h, then: park },
                  next: "Write {item}'s hidden scenarios into the holdout store." }
   evidence:    { kind: active, step: step.plan.evidence, timeout: { after: 1h, then: park },
