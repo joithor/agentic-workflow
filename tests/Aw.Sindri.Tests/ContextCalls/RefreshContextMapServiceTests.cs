@@ -43,7 +43,9 @@ public sealed class RefreshContextMapServiceTests
         Assert.True(result.IsSuccess, result.IsError ? result.Error.Code : null);
         Assert.Equal(["MapHeads", "BuildMap", "ReviewQueue", "CleanDraft", "Promote"], _engine.Log);
         Assert.Equal([EventTypes.ContextMapBuilt, EventTypes.ContextMapPromoted, EventTypes.ContextMapRefreshed], Types());
-        Assert.Equal(new RefreshContextMapResult("app", 2, new Dictionary<string, string> { ["app"] = "abc123" }, 5, 2, 1, "agent"), result.Value);
+        var refreshed = result.Value;
+        Assert.Equal(("app", 2, 5, 2, 1, "agent"), (refreshed.Repo, refreshed.Version, refreshed.Accepted, refreshed.Removed, refreshed.Dropped, refreshed.Cleanup));
+        Assert.Equal(new Dictionary<string, string>(StringComparer.Ordinal) { ["app"] = "abc123" }, refreshed.Heads);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -86,7 +88,7 @@ public sealed class RefreshContextMapServiceTests
         var result = await Run();
 
         Assert.Equal(ContextErrors.SessionsDisabled.Code, result.Error.Code);
-        Assert.DoesNotContain("Promote", _engine.Log);
+        Assert.DoesNotContain("Promote", _engine.Log, StringComparer.Ordinal);
         Assert.Equal([EventTypes.ContextMapBuilt], Types());
     }
 

@@ -1,10 +1,9 @@
 using Aw.Context.Testing.Fixtures;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Features.ContextCalls;
-using Aw.Sindri.Core.Jobs;
-using Aw.Sindri.Tests.ApiGoldens;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Tests.ContextCalls;

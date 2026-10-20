@@ -35,15 +35,12 @@ internal sealed class ContextJobVerbs(ControlPlaneClient client, Output output, 
         var line = Parse(args[2..], sync ? 1 : 0);
         if (line is null)
         {
-            return await output.Error(SindriErrors.InvalidInput.With($"'context {string.Join(' ', args)}' isn't this command: {(sync ? SyncUsage : refresh ? RefreshUsage : BuildUsage)}")).ConfigureAwait(false);
+            return await output.Error(SindriErrors.InvalidInput.With($"'context {string.Join(' ', args)}' isn't this command: {(sync ? SyncUsage : UsageOf(refresh))}")).ConfigureAwait(false);
         }
 
         if (refresh)
         {
-            var begun = await client.Post<RefreshContextMapRequest, JobStartedResponse>("/sindri/context/map/refresh", new RefreshContextMapRequest(), interrupt).ConfigureAwait(false);
-            return begun.IsError
-                ? await output.Error(begun.Error).ConfigureAwait(false)
-                : await Followed(begun.Value, (line.Detach, line.Json), interrupt, again, RefreshTable).ConfigureAwait(false);
+            return await Refresh((line.Detach, line.Json), interrupt, again).ConfigureAwait(false);
         }
 
         // Ctrl-C ends the start POST (as 'services run'; nothing else bounds a hung start): the job may already exist on the server, which `sindri jobs` shows
@@ -56,6 +53,17 @@ internal sealed class ContextJobVerbs(ControlPlaneClient client, Output output, 
         }
 
         return await Followed(started.Value, (line.Detach, line.Json), interrupt, again, sync ? null : BuildTable).ConfigureAwait(false);
+    }
+
+    private static string UsageOf(bool refresh) => refresh ? RefreshUsage : BuildUsage;
+
+    /// <summary>'context map refresh [--detach] [--json]': the refresh job (owner F1).</summary>
+    private async Task<int> Refresh((bool Detach, bool Json) flags, CancellationToken interrupt, CancellationToken again)
+    {
+        var begun = await client.Post<RefreshContextMapRequest, JobStartedResponse>("/sindri/context/map/refresh", new RefreshContextMapRequest(), interrupt).ConfigureAwait(false);
+        return begun.IsError
+            ? await output.Error(begun.Error).ConfigureAwait(false)
+            : await Followed(begun.Value, flags, interrupt, again, RefreshTable).ConfigureAwait(false);
     }
 
     /// <summary>'context eval backtest [--arms a,b|all] [--since D] [--until D] [--limit N] [--detach] [--json]': the backtest job (context spec §9.1).</summary>

@@ -88,7 +88,7 @@ internal sealed class PromoteContextMapService(ContextScopes scopes, IContextEng
             return promoted.Error;
         }
 
-        var appended = await ContextMapEvents.Promoted(ledger, events, grant, promoted.Value, cancellationToken).ConfigureAwait(false);
+        var appended = await new ContextMapEvents(ledger, events, grant).Promoted(promoted.Value, cancellationToken).ConfigureAwait(false);
         return appended.IsError ? appended.Error : new PromoteContextMapResponse(draft, promoted.Value, appended.Value.Sequence);
     }
 }

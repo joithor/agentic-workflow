@@ -48,7 +48,7 @@ internal sealed class BuildContextMapService(ContextScopes scopes, IContextEngin
         }
 
         var report = built.Value;
-        var recorded = await ContextMapEvents.Built(ledger, events, grant, report, slot, cancellationToken).ConfigureAwait(false);
+        var recorded = await new ContextMapEvents(ledger, events, grant).Built(report, slot, cancellationToken).ConfigureAwait(false);
         return recorded.IsError
             ? recorded.Error
             : new BuildContextMapResult(recorded.Value.Repo, recorded.Value.Draft, recorded.Value.Proposed, [.. report.Degraded.Take(MaxDegraded)]);

@@ -1,5 +1,8 @@
 using System.Globalization;
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
+using Aw.Context.Core.Map;
+using Aw.Context.Core.Review;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
@@ -46,62 +49,73 @@ internal sealed class RefreshContextMapService(ContextScopes scopes, IContextEng
             return heads.Error;
         }
 
-        var slot = clock.GetUtcNow();
-        progress?.Report("building");
-        var built = await engine.BuildMap(progress, scope.Value, cancellationToken).ConfigureAwait(false);
+        var recorder = new ContextMapEvents(ledger, events, grant);
+        var built = await Build(recorder, progress, scope.Value, cancellationToken).ConfigureAwait(false);
         if (built.IsError)
         {
             return built.Error;
         }
 
-        var recorded = await ContextMapEvents.Built(ledger, events, grant, built.Value, slot, cancellationToken).ConfigureAwait(false);
-        if (recorded.IsError)
+        var settled = await CleanAndPromote(recorder, progress, scope.Value, cancellationToken).ConfigureAwait(false);
+        if (settled.IsError)
         {
-            return recorded.Error;
+            return settled.Error;
         }
 
-        var queue = await engine.ReviewQueue(limit: null, scope.Value, cancellationToken).ConfigureAwait(false);
+        var (version, report) = settled.Value;
+        var result = new RefreshContextMapResult(version.Repo.Value, version.Number,
+            heads.Value.ToDictionary(static h => h.Repo.Value, static h => h.Head, StringComparer.Ordinal),
+            report.Accepted, report.Removed, report.Dropped, Mode(report.Mode));
+        var refreshed = await recorder.Refreshed(result, cancellationToken).ConfigureAwait(false);
+        return refreshed.IsError ? refreshed.Error : result;
+    }
+
+    private async ValueTask<Result<Unit>> Build(ContextMapEvents recorder, IProgress<string>? progress, ContextScope scope, CancellationToken cancellationToken)
+    {
+        var slot = clock.GetUtcNow();
+        progress?.Report("building");
+        var built = await engine.BuildMap(progress, scope, cancellationToken).ConfigureAwait(false);
+        if (built.IsError)
+        {
+            return built.Error;
+        }
+
+        var recorded = await recorder.Built(built.Value, slot, cancellationToken).ConfigureAwait(false);
+        return recorded.IsError ? recorded.Error : Unit.Value;
+    }
+
+    private async ValueTask<Result<(MapVersion Version, CleanupReport Report)>> CleanAndPromote(ContextMapEvents recorder, IProgress<string>? progress, ContextScope scope, CancellationToken cancellationToken)
+    {
+        var queue = await engine.ReviewQueue(limit: null, scope, cancellationToken).ConfigureAwait(false);
         if (queue.IsError)
         {
             return queue.Error;
         }
 
         progress?.Report(string.Create(CultureInfo.InvariantCulture, $"cleaning up: {queue.Value.Undecided} to decide"));
-        var cleaned = await engine.CleanDraft(scope.Value, cancellationToken).ConfigureAwait(false);
+        var cleaned = await engine.CleanDraft(scope, cancellationToken).ConfigureAwait(false);
         if (cleaned.IsError)
         {
             return cleaned.Error;
         }
 
         progress?.Report("promoting");
-        var promoted = await engine.Promote(scope.Value, cancellationToken).ConfigureAwait(false);
+        var promoted = await engine.Promote(scope, cancellationToken).ConfigureAwait(false);
         if (promoted.IsError)
         {
             return promoted.Error;
         }
 
-        var appended = await ContextMapEvents.Promoted(ledger, events, grant, promoted.Value, cancellationToken).ConfigureAwait(false);
-        if (appended.IsError)
-        {
-            return appended.Error;
-        }
-
-        var version = promoted.Value.Version;
-        var report = cleaned.Value;
-        var result = new RefreshContextMapResult(version.Repo.Value, version.Number,
-            heads.Value.ToDictionary(static h => h.Repo.Value, static h => h.Head, StringComparer.Ordinal),
-            report.Accepted, report.Removed, report.Dropped, Mode(report.Mode));
-        var payload = new ContextMapRefreshed(result.Repo, result.Version, result.Heads, result.Accepted, result.Removed, result.Dropped, result.Cleanup);
-        var key = string.Create(CultureInfo.InvariantCulture, $"{EventTypes.ContextMapRefreshed}:{result.Repo}:v{result.Version}");
-        var refreshed = await ledger.Append(events.Entry(EventTypes.ContextMapRefreshed, payload, key), grant, cancellationToken).ConfigureAwait(false);
-        return refreshed.IsError ? refreshed.Error : result;
+        var appended = await recorder.Promoted(promoted.Value, cancellationToken).ConfigureAwait(false);
+        return appended.IsError ? appended.Error : (promoted.Value.Version, cleaned.Value);
     }
 
-    private static string Mode(Context.Core.Review.CleanupMode mode) => mode switch
+    private static string Mode(CleanupMode mode) => mode switch
     {
-        Context.Core.Review.CleanupMode.None => "none",
-        Context.Core.Review.CleanupMode.Agent => "agent",
-        Context.Core.Review.CleanupMode.Partial => "partial",
-        _ => "unavailable",
+        CleanupMode.None => "none",
+        CleanupMode.Agent => "agent",
+        CleanupMode.Partial => "partial",
+        CleanupMode.Unavailable => "unavailable",
+        _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, message: null),
     };
 }
