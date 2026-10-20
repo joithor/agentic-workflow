@@ -51,5 +51,6 @@
       "to": "produce",
       "cap": 3
     }
-  ]
+  ],
+  "displayName": "Step"
 }

@@ -22,9 +22,9 @@ namespace Aw.Sindri.Features.GetInstance;
 /// <param name="views">The items, timeline, decisions and requests views.</param>
 /// <param name="repos">Where each item belongs, from the ledger.</param>
 /// <param name="callers">The caller, whose repo scope decides what it may read.</param>
-/// <param name="clock">The time the status text and the 'asOf' are read at.</param>
 /// <param name="stepRuns">The instance's Step runs, folded from its ledger events.</param>
-internal sealed class GetInstanceService(IInstanceDirectory directory, IInstanceReader runtime, IViewReader views, IItemRepos repos, ICallerContextAccessor callers, TimeProvider clock, StepRunReader stepRuns)
+/// <param name="contexts">Builds the detail context at the time of the read, with the recipe's display name (null serves none).</param>
+internal sealed class GetInstanceService(IInstanceDirectory directory, IInstanceReader runtime, IViewReader views, IItemRepos repos, ICallerContextAccessor callers, DetailContexts contexts, StepRunReader stepRuns)
     : IService<GetInstanceRequest, InstanceDetail>
 {
     public async ValueTask<Result<InstanceDetail>> Handle(GetInstanceRequest request, CancellationToken cancellationToken)
@@ -66,7 +66,7 @@ internal sealed class GetInstanceService(IInstanceDirectory directory, IInstance
             return runs.Error;
         }
 
-        return InstanceViews.Detail(view.Value, new InstanceDetailContext(title, parent, counts.Value, clock.GetUtcNow(), runs.Value));
+        return InstanceViews.Detail(view.Value, contexts.Of(title, parent, counts.Value, view.Value.Recipe.Id, runs.Value));
     }
 
     /// <summary>The title of the item the instance is on; its address when it has none or the view has no row.</summary>

@@ -12,8 +12,9 @@ public static class RecipeViews
     /// </summary>
     /// <param name="recipe">The recipe as registered.</param>
     /// <param name="stamp">Its id, version and hash.</param>
+    /// <param name="displayName">The name shown instead of the id; null shows the id.</param>
     /// <returns>The view.</returns>
-    public static RecipeView Of(Recipe recipe, RecipeVersion stamp)
+    public static RecipeView Of(Recipe recipe, RecipeVersion stamp, string? displayName = null)
     {
         ArgumentNullException.ThrowIfNull(recipe);
         ArgumentNullException.ThrowIfNull(stamp);
@@ -28,7 +29,8 @@ public static class RecipeViews
             Urgencies.IsKnown(recipe.Urgency) ? Urgencies.Parse(recipe.Urgency) : RecipeUrgency.Work,
             path.OrderedBy == "transition-list" ? PathOrdering.TransitionList : PathOrdering.Path,
             [.. path.States.Select(static s => new RecipeStateView(s.State, s.Order, s.BranchOf))],
-            [.. path.Loops.Where(l => l.Name is { } name && recipe.Loops.ContainsKey(name)).Select(l => new RecipeLoopView(l.Name, l.From, l.To, recipe.Loops[l.Name!].Cap))]);   // why: the Where kept only the named ones
+            [.. path.Loops.Where(l => l.Name is { } name && recipe.Loops.ContainsKey(name)).Select(l => new RecipeLoopView(l.Name, l.From, l.To, recipe.Loops[l.Name!].Cap))],   // why: the Where kept only the named ones
+            displayName);
     }
 
     private static FactType Declared(string? type) => FactTypes.Parse(type ?? Recipes.FactTypes.Default);
