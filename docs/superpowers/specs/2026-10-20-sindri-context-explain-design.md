@@ -1,6 +1,6 @@
 # Sindri context "explain": the "Why this matters" summary for a map anchor
 
-Status: draft for the owner's read (2026-10-20). Asked by the ideas lane for the F3 context map (the owner approved the
+Status: **approved by the owner on 2026-10-20, every default in §7 as written** (relayed by sindri-meta). Asked by the ideas lane for the F3 context map (the owner approved the
 pinned "Why this matters" card; UI spec `~/.agentic-workflow/mockups/f3/specs/context.md` §2 row 2b, §4 "Why this matters
 text"). Builds on the context retrieval spec (`2026-10-10-sindri-context-retrieval-design.md` §7 trust, §8.9 lenses) and F1
 (#494: the map refreshes itself).
@@ -90,6 +90,8 @@ Two builders: X1 Core/Store and X1 slice in parallel on the red contracts, then 
 X2's goldens.
 
 ## 7. Open questions for the owner (plain words; defaults are what we do if you say nothing)
+
+**Owner answers (2026-10-20): all defaults as written.** The card writes its summary by itself on first open; up to 10 summaries carry over after a refresh while under 70% of the ~15-a-day budget; the owner reads 5 real summaries first and at least 3 must be useful, else one prompt rework and a second read, then stop; agent sessions never read summaries; carry-over and failure memory stay in version 1.
 
 - **Q1. Write it automatically when the card is shown?** (A reviewer asked for the button only, since opening a card spends part of the day's allowance.) *Default:* yes, the first time you open a map for something
   that has no summary, Sindri writes one in the background (a few seconds) and the card fills in. The alternative is a
