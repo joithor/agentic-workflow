@@ -7,5 +7,5 @@ namespace Aw.Sindri.Ui.Api;
 internal sealed partial class SindriApiClient
 {
     /// <inheritdoc />
-    public Task<Result<SetupView>> Setup(Uri api, CancellationToken cancellationToken) => throw new NotSupportedException(SetupRoutes.Read);
+    public Task<Result<SetupView>> Setup(Uri api, CancellationToken cancellationToken) => Get<SetupView>(api, SetupRoutes.Read, cancellationToken, view: true);
 }
