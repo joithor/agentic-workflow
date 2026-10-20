@@ -51,6 +51,7 @@ internal sealed class CoverageStrip : Button
         _rest.Classes.Add("caption");
         var words = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, VerticalAlignment = VerticalAlignment.Center, Children = { _lead, _rest } };
         Content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, Children = { _bars, words } };
+        ActualThemeVariantChanged += (_, _) => Rebuild();   // the bar brushes were resolved for the old variant
         Flyout = new Flyout { Content = _rows, Placement = PlacementMode.BottomEdgeAlignedRight };
     }
 

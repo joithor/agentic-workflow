@@ -8,7 +8,7 @@ namespace Aw.Sindri.Ui.Tests.Controls;
 [Lane(TestLane.Unit)]
 public sealed class ZoomViewTests
 {
-    private static readonly Size _world = new(1360, 872);
+    private static readonly Rect _world = new(0, 0, 1360, 872);
 
     [Theory]
     [InlineData(0.1, 0.62)]
@@ -83,7 +83,7 @@ public sealed class ZoomViewTests
     public void Fit_of_an_empty_stage_or_world_is_the_identity()
     {
         Assert.Equal(ZoomView.Identity, ZoomView.Fit(new Size(0, 0), _world));
-        Assert.Equal(ZoomView.Identity, ZoomView.Fit(new Size(800, 600), new Size(0, 0)));
+        Assert.Equal(ZoomView.Identity, ZoomView.Fit(new Size(800, 600), new Rect(0, 0, 0, 0)));
     }
 
     [Fact]
@@ -175,5 +175,52 @@ public sealed class ZoomViewTests
         Assert.Equal(0.81, mid.Scale, 6);
         Assert.Equal(50, mid.X, 6);
         Assert.Equal(20, mid.Y, 6);
+    }
+
+    private static readonly ZoomRange _wide = new(0.30, 1.50);
+
+    [Fact]
+    public void A_stage_can_have_its_own_zoom_range()
+    {
+        Assert.Equal(0.3, ZoomView.Clamp(0.1, _wide), 6);
+        Assert.Equal(1.5, ZoomView.Clamp(9, _wide), 6);
+        Assert.Equal(1.5, new ZoomView(1, 0, 0).ZoomAt(new Point(10, 10), 10, _wide).Scale, 6);
+        Assert.Equal(0.3, new ZoomView(1, 0, 0).ZoomAt(new Point(10, 10), 0.01, _wide).Scale, 6);
+    }
+
+    [Fact]
+    public void The_default_range_is_62_to_100_percent() => Assert.Equal(new ZoomRange(0.62, 1.0), ZoomRange.Default);
+
+    [Fact]
+    public void Fit_can_scale_up_when_the_range_allows()
+    {
+        var fit = ZoomView.Fit(new Size(800, 600), new Rect(0, 0, 400, 300), _wide);
+
+        Assert.Equal(1.5, fit.Scale, 6);
+        Assert.Equal(100, fit.X, 6);
+        Assert.Equal(75, fit.Y, 6);
+    }
+
+    [Fact]
+    public void Fit_follows_a_world_that_does_not_start_at_the_origin()
+    {
+        var fit = ZoomView.Fit(new Size(1000, 500), new Rect(-200, -100, 2000, 1000), _wide);
+
+        Assert.Equal(0.5, fit.Scale, 6);
+        Assert.Equal(100, fit.X, 6);
+        Assert.Equal(50, fit.Y, 6);
+        var corner = new Point((-200 * fit.Scale) + fit.X, (-100 * fit.Scale) + fit.Y);
+        Assert.Equal(new Point(0, 0), corner);
+    }
+
+    [Fact]
+    public void Keeping_the_world_on_the_stage_counts_from_where_the_world_starts()
+    {
+        var stage = new Size(800, 600);
+        var world = new Rect(-1000, 0, 1360, 872);
+
+        Assert.Equal(new ZoomView(1, 0, 0), new ZoomView(1, 0, 0).Kept(stage, world));
+        var far = new ZoomView(1, 0, 0).PanBy(-5000, 0).Kept(stage, world);
+        Assert.Equal(120 - 1360, far.X + (world.X * far.Scale), 6);
     }
 }

@@ -97,7 +97,24 @@ internal sealed class ContextEdgesControl : Control, ICustomHitTest
     public override void Render(DrawingContext context)
     {
         var (wire, hi, card) = (Brush("Brush.Wire"), Brush("Brush.WireHi"), Brush("Brush.Surface1"));
-        var ports = new HashSet<Point>();
+        var ports = DrawStrokes(context, wire, hi);
+
+        // The ports go on after every stroke, so no later edge paints over one.
+        foreach (var (at, (lit, dim)) in ports)
+        {
+            using (dim ? context.PushOpacity(DimmedOpacity) : default)
+            {
+                var half = (PortSize - 1) / 2;
+                context.DrawRectangle(card, new Pen(lit ? hi : wire, 1), new Rect(at.X - half, at.Y - half, PortSize - 1, PortSize - 1), PortRadius, PortRadius);
+            }
+        }
+    }
+
+    // Every edge's stroke; returns the ports. A port is shared by every edge that ends on it: it is lit when any of them is, and
+    // dimmed only when all of them are.
+    private Dictionary<Point, (bool Lit, bool Dimmed)> DrawStrokes(DrawingContext context, IBrush wire, IBrush hi)
+    {
+        var ports = new Dictionary<Point, (bool Lit, bool Dimmed)>();
         foreach (var (edge, geometry) in _built)
         {
             var lit = Highlighted.Contains(edge.Key) || string.Equals(edge.Key, Hovered, StringComparison.Ordinal);
@@ -106,15 +123,15 @@ internal sealed class ContextEdgesControl : Control, ICustomHitTest
             {
                 var pen = new Pen(lit ? hi : wire, Stroke, edge.Dashed ? new DashStyle(_dash, 0) : null, PenLineCap.Flat);
                 context.DrawGeometry(brush: null, pen, geometry);
-                foreach (var end in new[] { edge.Route.Start, edge.Route.End })
-                {
-                    if (ports.Add(end))
-                    {
-                        context.DrawRectangle(card, new Pen(wire, 1), new Rect(end.X - ((PortSize - 1) / 2), end.Y - ((PortSize - 1) / 2), PortSize - 1, PortSize - 1), PortRadius, PortRadius);
-                    }
-                }
+            }
+
+            foreach (var end in new[] { edge.Route.Start, edge.Route.End })
+            {
+                ports[end] = ports.TryGetValue(end, out var seen) ? (seen.Lit || lit, seen.Dimmed && dim) : (lit, dim);
             }
         }
+
+        return ports;
     }
 
     /// <inheritdoc/>

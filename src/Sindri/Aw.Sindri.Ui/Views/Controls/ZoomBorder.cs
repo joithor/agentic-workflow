@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
@@ -11,30 +12,39 @@ namespace Aw.Sindri.Ui.Views.Controls;
 /// <summary>
 /// The context map's pannable, zoomable stage (F3 spec 1 §2): it holds the world as its child and moves it with a matrix.
 /// A drag on empty canvas pans, the wheel pans, Ctrl or Cmd with the wheel zooms around the cursor, and the scale stays
-/// between 62 % and 100 %. The step and fit moves animate over Motion.Base, which is zero under reduced motion. A 22 px dotted
-/// grid fills the stage behind the world and moves with it.
+/// inside <see cref="MinZoom"/> and <see cref="MaxZoom"/> (62 % to 100 % unless the page says otherwise). The step and fit moves
+/// animate over Motion.Base, which is zero under reduced motion. A 22 px dotted grid fills the stage behind the world and moves
+/// with it.
 /// </summary>
-internal sealed class ZoomBorder : Border
+internal sealed partial class ZoomBorder : Border
 {
     /// <summary>The view: scale and offset of the world.</summary>
     internal static readonly DirectProperty<ZoomBorder, ZoomView> ViewProperty =
         AvaloniaProperty.RegisterDirect<ZoomBorder, ZoomView>(nameof(View), z => z.View);
 
-    /// <summary>The world's size, which <see cref="Fit"/> fits to the stage.</summary>
-    internal static readonly StyledProperty<Size> WorldSizeProperty = AvaloniaProperty.Register<ZoomBorder, Size>(nameof(WorldSize), new Size(1360, 872));
+    /// <summary>The world's rectangle (origin included), which <see cref="Fit"/> fits to the stage.</summary>
+    internal static readonly StyledProperty<Rect> WorldBoundsProperty = AvaloniaProperty.Register<ZoomBorder, Rect>(nameof(WorldBounds), new Rect(0, 0, 1360, 872));
+
+    /// <summary>The smallest scale.</summary>
+    internal static readonly StyledProperty<double> MinZoomProperty = AvaloniaProperty.Register<ZoomBorder, double>(nameof(MinZoom), ZoomRange.Default.Min);
+
+    /// <summary>The largest scale.</summary>
+    internal static readonly StyledProperty<double> MaxZoomProperty = AvaloniaProperty.Register<ZoomBorder, double>(nameof(MaxZoom), ZoomRange.Default.Max);
 
     private const double WheelStep = 40;
     private const double ZoomStep = 1.2;
     private const double ClickSlop = 3;
     private const double DotPitch = 22;
 
-    private (ZoomView From, ZoomView To, TimeSpan? Start, TimeSpan Length)? _move;
-    private (Point Pointer, ZoomView View, bool Moved)? _drag;
+    private (ZoomView From, ZoomView To, TimeSpan? Start, TimeSpan Length, int Id)? _move;
     private DrawingBrush? _dots;
+    private int _moves;
 
     static ZoomBorder()
     {
-        _ = WorldSizeProperty.Changed.AddClassHandler<ZoomBorder>((z, _) => z.Keep());
+        _ = WorldBoundsProperty.Changed.AddClassHandler<ZoomBorder>((z, _) => z.Keep());
+        _ = MinZoomProperty.Changed.AddClassHandler<ZoomBorder>((z, _) => z.Keep());
+        _ = MaxZoomProperty.Changed.AddClassHandler<ZoomBorder>((z, _) => z.Keep());
     }
 
     /// <summary>Initializes a new instance of the <see cref="ZoomBorder"/> class.</summary>
@@ -43,6 +53,12 @@ internal sealed class ZoomBorder : Border
         ClipToBounds = true;
         Focusable = false;
         Background = Brushes.Transparent;
+        AutomationProperties.SetName(this, "Pannable map");
+        ActualThemeVariantChanged += (_, _) =>
+        {
+            _dots = null;   // its dot colour was resolved for the old variant
+            Apply(View);
+        };
     }
 
     /// <summary>Raised when the pointer is pressed and released on empty canvas without moving (a click, which closes the inspector).</summary>
@@ -51,29 +67,76 @@ internal sealed class ZoomBorder : Border
     /// <summary>Gets the current view.</summary>
     internal ZoomView View { get; private set; } = ZoomView.Identity;
 
-    /// <summary>Gets or sets the world's size.</summary>
-    internal Size WorldSize
+    /// <summary>Gets or sets the world's rectangle.</summary>
+    internal Rect WorldBounds
     {
-        get => GetValue(WorldSizeProperty);
-        set => SetValue(WorldSizeProperty, value);
+        get => GetValue(WorldBoundsProperty);
+        set => SetValue(WorldBoundsProperty, value);
+    }
+
+    /// <summary>Gets or sets the smallest scale.</summary>
+    internal double MinZoom
+    {
+        get => GetValue(MinZoomProperty);
+        set => SetValue(MinZoomProperty, value);
+    }
+
+    /// <summary>Gets or sets the largest scale.</summary>
+    internal double MaxZoom
+    {
+        get => GetValue(MaxZoomProperty);
+        set => SetValue(MaxZoomProperty, value);
     }
 
     /// <summary>Gets a value indicating whether a zoom transition is running.</summary>
     internal bool IsMoving => _move is not null;
 
+    private ZoomRange Range => new(MinZoom, MaxZoom);
+
+    private Point Middle => new(Bounds.Width / 2, Bounds.Height / 2);
+
     /// <summary>Zooms in one step around the middle of the stage.</summary>
-    internal void ZoomIn() => MoveTo(View.ZoomAt(Middle, ZoomStep));
+    internal void ZoomIn() => MoveTo(View.ZoomAt(Middle, ZoomStep, Range));
 
     /// <summary>Zooms out one step around the middle of the stage.</summary>
-    internal void ZoomOut() => MoveTo(View.ZoomAt(Middle, 1 / ZoomStep));
+    internal void ZoomOut() => MoveTo(View.ZoomAt(Middle, 1 / ZoomStep, Range));
 
-    /// <summary>Shows all of the world (clamped at the 62 % floor).</summary>
-    internal void Fit() => MoveTo(ZoomView.Fit(Bounds.Size, WorldSize));
+    /// <summary>Shows all of the world (clamped to the zoom range).</summary>
+    internal void Fit() => FitBounds(WorldBounds);
+
+    /// <summary>Shows a rectangle of the world (clamped to the zoom range), whatever its origin.</summary>
+    /// <param name="bounds">The rectangle, in world coordinates.</param>
+    internal void FitBounds(Rect bounds) => MoveTo(ZoomView.Fit(Bounds.Size, bounds, Range));
 
     /// <summary>Pans the least that brings a world rectangle fully into view, clear of the inspector over the right edge.</summary>
     /// <param name="target">The rectangle, in world coordinates.</param>
     /// <param name="rightInset">Width of the panel over the stage's right edge.</param>
     internal void Reveal(Rect target, double rightInset = 0) => MoveTo(View.Reveal(target, Bounds.Size, rightInset));
+
+    /// <summary>The zoom keys, one entry point for every page that hosts a stage: plus or equals zooms in, minus out, 0 fits.</summary>
+    /// <param name="key">The key pressed.</param>
+    /// <returns>True when the key was a zoom key and the stage acted on it.</returns>
+    internal bool HandleZoomKey(Key key)
+    {
+        if (key is Key.OemPlus or Key.Add)
+        {
+            ZoomIn();
+        }
+        else if (key is Key.OemMinus or Key.Subtract)
+        {
+            ZoomOut();
+        }
+        else if (key is Key.D0 or Key.NumPad0)
+        {
+            Fit();
+        }
+        else
+        {
+            return false;
+        }
+
+        return true;
+    }
 
     /// <summary>Puts the view where an unfinished transition was going, now.</summary>
     internal void Settle()
@@ -94,67 +157,26 @@ internal sealed class ZoomBorder : Border
     }
 
     /// <inheritdoc/>
-    protected override void OnPointerPressed(PointerPressedEventArgs e)
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        base.OnPointerPressed(e);
-        if (e.Handled || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
-        {
-            return;
-        }
-
         Settle();
-        _drag = (e.GetPosition(this), View, false);
-        e.Pointer.Capture(this);
-        e.Handled = true;
+        base.OnDetachedFromVisualTree(e);
     }
 
     /// <inheritdoc/>
-    protected override void OnPointerMoved(PointerEventArgs e)
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
-        base.OnPointerMoved(e);
-        if (_drag is { } drag)
+        base.OnPropertyChanged(change);
+        if (change.Property == BoundsProperty && change.GetOldValue<Rect>().Size.Width * change.GetOldValue<Rect>().Size.Height <= 0)
         {
-            var delta = e.GetPosition(this) - drag.Pointer;
-            _drag = drag with { Moved = drag.Moved || Math.Abs(delta.X) + Math.Abs(delta.Y) > ClickSlop };
-            Apply(drag.View.PanBy(delta.X, delta.Y).Kept(Bounds.Size, WorldSize));
+            Keep();   // the first real size: a world set before layout is checked now
         }
     }
 
-    /// <inheritdoc/>
-    protected override void OnPointerReleased(PointerReleasedEventArgs e)
-    {
-        base.OnPointerReleased(e);
-        if (_drag is { } drag)
-        {
-            _drag = null;
-            e.Pointer.Capture(control: null);
-            if (!drag.Moved)
-            {
-                EmptyClicked?.Invoke(this, EventArgs.Empty);
-            }
-        }
-    }
+    // The view with the world kept on the stage; before the stage has a size there is nothing to keep it on.
+    private ZoomView Kept(ZoomView view) => Bounds.Width <= 0 || Bounds.Height <= 0 ? view : view.Kept(Bounds.Size, WorldBounds);
 
-    /// <inheritdoc/>
-    protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
-    {
-        base.OnPointerWheelChanged(e);
-        Settle();
-        if ((e.KeyModifiers & (KeyModifiers.Control | KeyModifiers.Meta)) != KeyModifiers.None)
-        {
-            Apply(View.ZoomAt(e.GetPosition(this), Math.Pow(1.1, e.Delta.Y)).Kept(Bounds.Size, WorldSize));
-        }
-        else
-        {
-            Apply(View.PanBy(-e.Delta.X * WheelStep, e.Delta.Y * WheelStep).Kept(Bounds.Size, WorldSize));
-        }
-
-        e.Handled = true;
-    }
-
-    private Point Middle => new(Bounds.Width / 2, Bounds.Height / 2);
-
-    private void Keep() => Apply(View.Kept(Bounds.Size, WorldSize));
+    private void Keep() => Apply(Kept(View));
 
     // The move to a view: at once under reduced motion or with nothing to draw frames on, else over Motion.Base.
     private void MoveTo(ZoomView target)
@@ -167,13 +189,15 @@ internal sealed class ZoomBorder : Border
             return;
         }
 
-        _move = (View, target, null, length);
-        top.RequestAnimationFrame(Frame);
+        var id = ++_moves;
+        _move = (View, target, null, length, id);
+        top.RequestAnimationFrame(now => Frame(now, id));
     }
 
-    private void Frame(TimeSpan now)
+    // One chain of frames per move: a callback from a move that was settled or replaced finds another id and stops.
+    private void Frame(TimeSpan now, int id)
     {
-        if (_move is not { } move)
+        if (_move is not { } move || move.Id != id)
         {
             return;
         }
@@ -187,9 +211,8 @@ internal sealed class ZoomBorder : Border
         }
 
         _move = move with { Start = start };
-        var eased = 1 - Math.Pow(1 - t, 3);
-        Apply(ZoomView.Lerp(move.From, move.To, eased));
-        TopLevel.GetTopLevel(this)?.RequestAnimationFrame(Frame);
+        Apply(ZoomView.Lerp(move.From, move.To, 1 - Math.Pow(1 - t, 3)));
+        TopLevel.GetTopLevel(this)?.RequestAnimationFrame(next => Frame(next, id));
     }
 
     private void Apply(ZoomView view)
@@ -197,14 +220,15 @@ internal sealed class ZoomBorder : Border
         var changed = view != View;
         var old = View;
         View = view;
+        var matrix = new Matrix(view.Scale, 0, 0, view.Scale, view.X, view.Y);
         if (Child is { } world)
         {
             world.RenderTransformOrigin = RelativePoint.TopLeft;
-            world.RenderTransform = new ImmutableTransform(new Matrix(view.Scale, 0, 0, view.Scale, view.X, view.Y));
+            world.RenderTransform = new ImmutableTransform(matrix);
         }
 
         _dots ??= Dots();
-        _dots.Transform = new ImmutableTransform(new Matrix(view.Scale, 0, 0, view.Scale, view.X, view.Y));
+        _dots.Transform = new ImmutableTransform(matrix);
         Background = _dots;
         if (changed)
         {

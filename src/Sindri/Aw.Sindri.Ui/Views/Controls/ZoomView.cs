@@ -8,42 +8,41 @@ namespace Aw.Sindri.Ui.Views.Controls;
 /// the math the <see cref="ZoomBorder"/> applies. Pure, so the clamp, the zoom around the cursor, the fit and the pan into
 /// view are tested without a window.
 /// </summary>
-/// <param name="Scale">World to screen scale, between <see cref="Min"/> and <see cref="Max"/>.</param>
+/// <param name="Scale">World to screen scale, inside the stage's <see cref="ZoomRange"/>.</param>
 /// <param name="X">Screen x of the world's origin.</param>
 /// <param name="Y">Screen y of the world's origin.</param>
 [StructLayout(LayoutKind.Auto)]
 internal readonly record struct ZoomView(double Scale, double X, double Y)
 {
-    /// <summary>The smallest scale: the 62 % floor, so a node's words stay readable at 900 px.</summary>
-    internal const double Min = 0.62;
-
-    /// <summary>The largest scale: the map is never drawn bigger than it was laid out.</summary>
-    internal const double Max = 1.0;
-
     // Less than this much of the world left on the stage and a pan stops: the map can be dragged aside, never lost.
     private const double KeepVisible = 120;
 
     /// <summary>Gets the view at the layout's own size, in the stage's corner.</summary>
     internal static ZoomView Identity => new(1, 0, 0);
 
-    /// <summary>The scale <paramref name="scale"/> held inside the zoom range.</summary>
+    /// <summary>The scale held inside a range.</summary>
     /// <param name="scale">A wanted scale.</param>
-    /// <returns>The scale, no smaller than <see cref="Min"/> and no larger than <see cref="Max"/>.</returns>
-    internal static double Clamp(double scale) => Math.Clamp(scale, Min, Max);
+    /// <param name="range">The allowed scales; the context map's when null.</param>
+    /// <returns>The clamped scale.</returns>
+    internal static double Clamp(double scale, ZoomRange? range = null) => (range ?? ZoomRange.Default).Clamp(scale);
 
     /// <summary>The fit of a world on a stage: the scale that shows all of it (clamped), centred where it is smaller than the stage.</summary>
     /// <param name="stage">The stage's size.</param>
-    /// <param name="world">The world's size.</param>
+    /// <param name="world">The world's rectangle, origin included.</param>
+    /// <param name="range">The allowed scales; the context map's when null.</param>
     /// <returns>The view. Where the clamp keeps the world wider than the stage, it starts at the left edge and the right side pans.</returns>
-    internal static ZoomView Fit(Size stage, Size world)
+    internal static ZoomView Fit(Size stage, Rect world, ZoomRange? range = null)
     {
         if (world.Width <= 0 || world.Height <= 0 || stage.Width <= 0 || stage.Height <= 0)
         {
             return Identity;
         }
 
-        var scale = Clamp(Math.Min(stage.Width / world.Width, stage.Height / world.Height));
-        return new ZoomView(scale, Math.Max(0, (stage.Width - (world.Width * scale)) / 2), Math.Max(0, (stage.Height - (world.Height * scale)) / 2));
+        var scale = Clamp(Math.Min(stage.Width / world.Width, stage.Height / world.Height), range);
+        return new ZoomView(
+            scale,
+            Math.Max(0, (stage.Width - (world.Width * scale)) / 2) - (world.X * scale),
+            Math.Max(0, (stage.Height - (world.Height * scale)) / 2) - (world.Y * scale));
     }
 
     /// <summary>Linear blend of two views, for the zoom transition.</summary>
@@ -62,10 +61,11 @@ internal readonly record struct ZoomView(double Scale, double X, double Y)
     /// <summary>The view after zooming by <paramref name="factor"/> with <paramref name="cursor"/> staying on the same world point.</summary>
     /// <param name="cursor">The stage point that stays put.</param>
     /// <param name="factor">The wanted scale factor (above 1 zooms in); the result is clamped.</param>
+    /// <param name="range">The allowed scales; the context map's when null.</param>
     /// <returns>The new view.</returns>
-    internal ZoomView ZoomAt(Point cursor, double factor)
+    internal ZoomView ZoomAt(Point cursor, double factor, ZoomRange? range = null)
     {
-        var scale = Clamp(Scale * factor);
+        var scale = Clamp(Scale * factor, range);
         var world = ToWorld(cursor);
         return new ZoomView(scale, cursor.X - (world.X * scale), cursor.Y - (world.Y * scale));
     }
@@ -78,13 +78,16 @@ internal readonly record struct ZoomView(double Scale, double X, double Y)
 
     /// <summary>The view with the world kept at least partly on the stage.</summary>
     /// <param name="stage">The stage's size.</param>
-    /// <param name="world">The world's size.</param>
+    /// <param name="world">The world's rectangle, origin included.</param>
     /// <returns>The nearest view that leaves 120 px of the world visible on each axis.</returns>
-    internal ZoomView Kept(Size stage, Size world) => this with
+    internal ZoomView Kept(Size stage, Rect world)
     {
-        X = Math.Clamp(X, KeepVisible - (world.Width * Scale), Math.Max(KeepVisible - (world.Width * Scale), stage.Width - KeepVisible)),
-        Y = Math.Clamp(Y, KeepVisible - (world.Height * Scale), Math.Max(KeepVisible - (world.Height * Scale), stage.Height - KeepVisible)),
-    };
+        var (width, height) = (world.Width * Scale, world.Height * Scale);
+        var (left, top) = (world.X * Scale, world.Y * Scale);
+        var x = Math.Clamp(X + left, KeepVisible - width, Math.Max(KeepVisible - width, stage.Width - KeepVisible)) - left;
+        var y = Math.Clamp(Y + top, KeepVisible - height, Math.Max(KeepVisible - height, stage.Height - KeepVisible)) - top;
+        return this with { X = x, Y = y };
+    }
 
     /// <summary>The smallest pan that brings a world rectangle fully into the stage, clear of what covers its right side.</summary>
     /// <param name="target">The rectangle, in world coordinates.</param>

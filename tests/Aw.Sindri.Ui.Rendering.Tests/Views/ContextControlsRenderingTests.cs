@@ -140,6 +140,38 @@ public sealed class ContextControlsRenderingTests
         return true;
     });
 
+    // C3: a port belongs to every edge that ends on it.
+    [Fact]
+    public async Task A_port_shared_with_a_lit_edge_is_lit_and_not_dimmed_by_the_dimmed_one() => await OnUi(() =>
+    {
+        var edges = Edges(
+            new MapEdge("dim", EdgeRoute.Straight(new Point(20, 100), new Point(220, 100)), Dashed: false),
+            new MapEdge("lit", EdgeRoute.Straight(new Point(20, 100), new Point(20, 200)), Dashed: false));
+        edges.Dimmed = new HashSet<string>(StringComparer.Ordinal) { "dim" };
+        edges.Highlighted = new HashSet<string>(StringComparer.Ordinal) { "lit" };
+        var window = Stage(edges);
+        var frame = Capture(window, "ports-shared");
+
+        Assert.True(frame.Near(20, 95, Token("WireHi"), 10), "the shared port's outline: " + frame.Describe(20, 95));
+        Assert.True(frame.Near(20, 97, Token("Surface1")), "the lit edge does not paint over the port: " + frame.Describe(20, 97));
+        window.Close();
+        return true;
+    });
+
+    // C3: a port whose edges are all dimmed is dimmed too.
+    [Fact]
+    public async Task A_port_of_a_dimmed_edge_alone_is_dimmed() => await OnUi(() =>
+    {
+        var edges = Edges(Line("dim", 100));
+        edges.Dimmed = new HashSet<string>(StringComparer.Ordinal) { "dim" };
+        var window = Stage(edges);
+        var frame = Capture(window, "ports-dimmed");
+
+        Assert.False(frame.Near(20, 95, Token("Wire"), 6), "dimmed outline: " + frame.Describe(20, 95));
+        window.Close();
+        return true;
+    });
+
     [Fact]
     public async Task The_dot_grid_is_22_px_in_HairlineStrong_and_moves_with_the_view() => await OnUi(() =>
     {

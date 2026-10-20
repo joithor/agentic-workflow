@@ -117,4 +117,19 @@ public sealed class CoverageStripTests
         window.Close();
         return true;
     });
+
+    // C9
+    [Fact]
+    public async Task A_change_of_theme_variant_rebuilds_the_bars() => await OnUi(() =>
+    {
+        var (window, strip) = Show();
+        var before = strip.GetVisualDescendants().OfType<Border>().Where(b => b.Width == 34).ElementAt(2).Background;
+
+        window.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Light;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.NotSame(before, strip.GetVisualDescendants().OfType<Border>().Where(b => b.Width == 34).ElementAt(2).Background);
+        window.Close();
+        return true;
+    });
 }
