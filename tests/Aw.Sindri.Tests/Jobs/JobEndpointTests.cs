@@ -120,7 +120,7 @@ public sealed class JobEndpointTests
         var run = await Post(host, $"/sindri/services/{builtIn}/run");
 
         Assert.Contains(builtIn, list, StringComparer.Ordinal);
-        Assert.NotEqual(HttpStatusCode.NotFound, run.Status);
+        Assert.Equal(HttpStatusCode.OK, run.Status);
         Assert.NotEqual("SND-SVC-404", run.Code, StringComparer.Ordinal);
     }
 

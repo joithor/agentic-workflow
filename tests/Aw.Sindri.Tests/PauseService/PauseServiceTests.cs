@@ -3,6 +3,8 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features.PauseService;
 using Aw.Sindri.Testing;
 
@@ -16,7 +18,7 @@ public sealed class PauseServiceTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private PauseServiceService Service() => new(_h.Profiles, _h.Store, _h.Held, _h.Events, _h.Callers);
+    private PauseServiceService Service() => new(_h.Profiles, _h.Store, _h.Held, _h.Events, _h.Callers, [new BuiltInService(ServiceName.From("setup"), new Cadence(TimeSpan.FromMinutes(1)))]);
 
     private async Task Approve()
     {
@@ -88,6 +90,18 @@ public sealed class PauseServiceTests
         var result = await Service().Handle(A.PauseServiceRequest().ForService(ServiceName.From("setup")).Build(), Token);
 
         Expect.Equal(SindriErrors.ServiceNotFound.Code, result.Error.Code);
+        Expect.Equal("setup is a built-in service and can't be paused or resumed.", result.Error.Message);
         Assert.Empty(_h.Store.Events);
+    }
+
+    [Fact]
+    public async Task A_name_that_is_neither_keeps_the_profile_wording()
+    {
+        await Approve();
+        using var entered = Human();
+
+        var result = await Service().Handle(A.PauseServiceRequest().ForService(ServiceName.From("ghost")).Build(), Token);
+
+        Expect.Equal("The approved profile has no service 'ghost' (fix: sindri services)", result.Error.Message);
     }
 }
