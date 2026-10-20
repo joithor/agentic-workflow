@@ -34,7 +34,7 @@ NetworkX node-link JSON: `{"directed": false, "multigraph": false, "graph": {}, 
 | relation | from -> to | seen |
 |---|---|---|
 | `calls` | caller -> callee (a function, a method, or a class for `new X()` / `X()`) | TS 9, Py 4 |
-| `contains` | file -> its top-level function or class | TS 6, Py 6 |
+| `contains` | file -> its top-level function or class | TS 6, Py 4 |
 | `method` | class -> its method | TS 3, Py 4 |
 | `imports` | file -> the imported symbol | TS 3, Py 1 |
 | `imports_from` | file -> the imported file | TS 2, Py 1 |
@@ -74,7 +74,7 @@ therefore stay available from graphify, and **Q1 needs no owner decision**. Cave
 - Two of the eight TS edges are `INFERRED` (0.8): the call goes through a local variable. They are right here; the store should keep the confidence word.
 - Python receivers through locals are not resolved (3/5). Python callers/callees from graphify are partial; the parsers do not cover Python (§5.3), so for Python the layer
   answers what graphify found and the answer should carry `basis = graphify` so a reader can see its source.
-- The fixture is small (11 and 5 calls). It proves the shape and that call edges exist, not their recall on a real repo.
+- The fixture is small (TypeScript: 9 `calls` edges, 8 of them expected; Python: 4 `calls` edges against 5 expected, 3 of them found). It proves the shape and that call edges exist, not their recall on a real repo.
 
 ## Findings CI-7 and the spec must absorb
 
@@ -111,5 +111,9 @@ therefore stay available from graphify, and **Q1 needs no owner decision**. Cave
 > Python resolved 3 of 5: plain-function, imported and `self.` calls, but not a method called on a local assigned from a constructor. So callers and callees for TypeScript and
 > Python come from graphify and are marked `basis = graphify` with the confidence word, and a Python answer can be incomplete; the CI-7 contract test replays the recorded
 > files.
+>
+> **Sandbox and the graphify environment.** The sandbox masks `~/.agentic-workflow` (its credential list) with an empty tmpfs, and the pinned graphify environment lives under
+> `$AW_STATE_DIR/cache/code-index/`, which is inside it by default. The spike reproduced the failure: `bwrap: execvp .../bin/graphify: No such file or directory`. So the pinned
+> graphify environment is bound **read-only inside the sandbox after the mask** (`--ro-bind <env> <env>` placed after the `--tmpfs` of `~/.agentic-workflow`, with only the
+> environment directory exposed, never its parent). The version check of `SND-CODEIDX-009` runs against the binary at that absolute path.
 
-(Also for §9 and CI-6: the graphify environment must be reachable inside the sandbox; see finding 1.)

@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const dir = process.argv[2] ?? dirname(fileURLToPath(import.meta.url));
 const expected = JSON.parse(readFileSync(join(dir, "expected-calls.json"), "utf8"));
-let exitCode = 0;
+let unexpectedMiss = false;
 for (const [language, calls] of Object.entries(expected)) {
   const graph = JSON.parse(readFileSync(join(dir, language, "graph.json.recorded"), "utf8"));
   const byId = new Map(graph.nodes.map((n) => [n.id, n]));
@@ -26,9 +26,10 @@ for (const [language, calls] of Object.entries(expected)) {
     });
     if (edge) found++;
     const ends = edge && hasPlace(byId.get(edge.source)) && hasPlace(byId.get(edge.target)) ? "file+line on both ends" : "-";
-    console.log(`  ${edge ? "found  " : "MISSING"} ${c.caller} -> ${c.callee}  ${edge ? `${edge.confidence} at ${edge.source_file}:${edge.source_location}; ${ends}` : ""}`);
+    if (!edge && !c.knownMiss) unexpectedMiss = true;
+    console.log(`  ${edge ? "found  " : c.knownMiss ? "KNOWN MISS" : "MISSING"} ${c.caller} -> ${c.callee}  ${edge ? `${edge.confidence} at ${edge.source_file}:${edge.source_location}; ${ends}` : ""}`);
   }
   console.log(`  ${found}/${calls.length}`);
-  if (found !== calls.length) exitCode = 1;
 }
-process.exit(exitCode);
+// Exit 0 when only the calls marked knownMiss are missing, 1 on any other miss.
+process.exit(unexpectedMiss ? 1 : 0);
