@@ -135,8 +135,8 @@ internal sealed class SessionRowViewModel : ObservableObject, ISessionRef
         (AskingText, EstimatedText) = (AskingOf(Row), EstimatedOf(Row));
         (WorktreeText, SinceText) = (Row.Worktree ?? string.Empty, Labels.Age(_clock.GetUtcNow() - Row.Since));
         (HostText, LaneText) = (HostOf(Row), LaneOf(Row));
-        StepText = Row.Launch is { Instance: { Length: > 0 } instance } launch ? Labels.SessionStep(instance, launch.State, launch.Attempt) : string.Empty;
-        StepName = Row.Launch is { Instance: { Length: > 0 } opens } named ? Labels.SessionStepName(StepText, opens, named.State) : string.Empty;
+        StepText = Row.Launch is { } launch && launch.Instance is { Length: > 0 } ? Labels.SessionStep(launch.State, launch.Attempt) : string.Empty;
+        StepName = Row.Launch is { } named && named.Instance is { Length: > 0 } ? Labels.SessionStepName(StepText, named.State) : string.Empty;
         WhereText = string.Join(" · ", new[] { WorktreeText, HostText, LaneText }.Where(p => p.Length > 0));
         Name = Labels.SessionName(Row.ProviderLabel, title, chip.Word.ToLowerInvariant() + (EstimatedText.Length > 0 ? " (" + EstimatedText + ")" : string.Empty), string.Join(", ", new[] { AskingText, StepText }.Where(p => p.Length > 0)), HostText);
         Signature = string.Join('|', Row.State, AskingText, EstimatedText, title, WorktreeText, HostText, LaneText, StepText, Row.Focus.Method);
@@ -154,7 +154,7 @@ internal sealed class SessionRowViewModel : ObservableObject, ISessionRef
     private static string HostOf(SessionRowView row) => row.Lane is null && row.Host.Session is { Length: > 0 } session ? row.Host.Label + " · " + session : row.Host.Label;
 
     private static string LaneOf(SessionRowView row) =>
-        row.Lane is { } lane ? Labels.LaneLine(lane.Team, lane.Lane) : row.LaunchId is { Length: > 0 } launch ? Labels.LaunchLine(launch) : string.Empty;
+        row.Lane is { } lane ? Labels.LaneLine(lane.Team, lane.Lane) : row.LaunchId is { Length: > 0 } ? Labels.LaunchLine : string.Empty;
 
     // A title as the human gave it; else where it is (repo and the id's first characters); else the id's first characters.
     private static string TitleOf(SessionRowView row)

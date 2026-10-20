@@ -3,6 +3,7 @@ using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Components;
 using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.ViewModels.Facts;
 
@@ -76,7 +77,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
     /// <summary>"since 09:14 (3h 12m)".</summary>
     public string SinceText { get; private set => Set(ref field, value); } = string.Empty;
 
-    /// <summary>The header's identity line: recipe@hash, version, state (with its detail) and since.</summary>
+    /// <summary>The header's line under the title: the workflow's name, the stage (with its detail) and since.</summary>
     public string Identity { get; private set => Set(ref field, value); } = string.Empty;
 
     /// <summary>The subject line; null before a read.</summary>
@@ -224,8 +225,12 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         OnChanged(nameof(HasRecipeLink));
         OnChanged(nameof(RecipeLinkName));
         SinceText = $"since {local.ToString("HH:mm", CultureInfo.InvariantCulture)} ({Labels.Duration(header.AgeSeconds)})";
-        Identity = $"{Recipe}@{Hash12} · {Version} · {StateText}{(HasDetail ? ": " + Detail : string.Empty)} · {SinceText}";
-        Note = detail.States.Any(s => s.Terminal && string.Equals(s.State, detail.State, StringComparison.Ordinal)) ? Labels.InstanceDone : string.Empty;
+        WorkflowName = WorkflowNameOf(detail);
+        DetailsText = Labels.DetailsBlock(detail.Address, Recipe, Hash12, Version);
+        AddressCopy = new CopyAction(clipboard, clock, Labels.CopyAddressName(detail.Address));
+        Identity = $"{WorkflowName} · {StateText}{(HasDetail ? ": " + Detail : string.Empty)} · {SinceText}";
+        var terminal = detail.States.FirstOrDefault(s => s.Terminal && string.Equals(s.State, detail.State, StringComparison.Ordinal));
+        Note = terminal is null ? string.Empty : Labels.InstanceFinished(terminal.Outcome);
         ProblemText = string.Empty;
         ShowParts(detail);
         Phase = FramePhase.Shown;
@@ -266,6 +271,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
     {
         _generation++;
         (Title, Recipe, Hash12, Version, StateText, Detail, SinceText, Identity, ProblemText, Note) = (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
+        (WorkflowName, DetailsText, AddressCopy) = (string.Empty, string.Empty, null);
         (Subject, Band, Expanded) = (null, null, null);
         ClearPanels();
         (_eventsFor, _eventRows) = (null, []);

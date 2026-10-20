@@ -130,6 +130,6 @@ public sealed class ShellSessionSheetTests
         shell.Navigate(Link("session/" + Ref));
         await Until(() => shell.AgentSheet.Phase == FramePhase.Shown);
 
-        Assert.Equal("arrives in CO-4a · sindri agents focus " + Ref, shell.AgentSheet.FocusLine);
+        Assert.Equal("Coming soon · sindri agents focus " + Ref, shell.AgentSheet.FocusLine);
     }, Token);
 }

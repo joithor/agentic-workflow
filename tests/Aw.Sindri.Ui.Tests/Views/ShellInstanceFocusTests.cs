@@ -114,6 +114,7 @@ public sealed class ShellInstanceFocusTests : FrameHost
     {
         var (window, shell, address) = await OpenedFromTheWorkflowsRow("project-build");
         var child = shell.Instance.Children!.Groups.Single().Streams[0].Rows[0];
+        OpenDisclosures(window);   // the children wait behind a closed disclosure
         Click(Buttons(window, "ChildRowOpen")[0]);
         await Until(window, () => string.Equals(shell.Instance.Address, child.Address, StringComparison.Ordinal) && shell.Instance.Phase != FramePhase.Loading);
         await Until(window, () => FocusedButton(window) is { } held && Named<Control>(window, "InstanceFrame").IsVisualAncestorOf(held), "focus is not in the child's frame");

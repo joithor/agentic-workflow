@@ -42,13 +42,13 @@ public sealed partial class CommandPaletteViewModelTests
 
         var challenge = Entry("IssueChallenge");
 
-        Assert.Equal((false, "not in the app yet"), (challenge.IsEnabled, challenge.Status));
+        Assert.Equal((false, "coming soon"), (challenge.IsEnabled, challenge.Status));
         Assert.Equal("ready", Entry("RebuildViews").Status);
         Assert.Equal("ready", Entry("StopProcess").Status);   // it goes to Health, where its confirm lives
     }
 
     // arch-0: U2 ships Create item, so the palette runs it (closing itself and opening the form); the item sheet's close
-    // actions need the version the sheet shows, so the palette says where they live. Nothing U2 ships reads "not in the app yet".
+    // actions need the version the sheet shows, so the palette says where they live. Nothing U2 ships reads "coming soon".
     [Fact]
     public async Task Create_item_opens_the_form_and_the_close_actions_point_at_the_sheet()
     {

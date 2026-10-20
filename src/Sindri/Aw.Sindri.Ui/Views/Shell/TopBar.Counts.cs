@@ -21,8 +21,15 @@ internal sealed partial class TopBar
         }
     }
 
-    // The navigation's width with its counts, which is what every step but the last measures.
-    private double NavigationWidthWithCounts => NavSegments.DesiredSize.Width + (_fit == Fit.NoCounts ? CountsWidth : 0);
+    // The navigation's width with its counts and its full tab padding, which is what every step measures from.
+    private double NavigationWidthWithCounts => NavSegments.DesiredSize.Width + (_fit == Fit.NoCounts ? CountsWidth : 0) + (_fit >= Fit.TightNav ? TightSaving : 0);
+
+    // What the tight step's narrower tab padding gives back: both sides of every tab.
+    private double TightSaving => NavigationList.ItemCount * 2 * (TabPadding - TightTabPadding);
+
+    // The tabs' horizontal padding (ShellStyles: ListBox.nav > ListBoxItem) and the tight step's.
+    private const double TabPadding = 7;
+    private const double TightTabPadding = 2;
 
     // The count sits after its label in a stack spaced by 6.
     private const double SpacingBeforeCount = 6;
