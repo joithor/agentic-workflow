@@ -37,7 +37,7 @@ public sealed class PhaseSeedStepTests
         return BuildShipContexts.Of("step.phase.seed", facts) with { Repo = RepoName.From("name") };
     }
 
-    private static JsonNode Out(BlockStepResult result, string key) => JsonNode.Parse(result.Result!.Outputs[Aw.Sindri.Core.Workflow.Ids.FactKey.From("fact:" + key)].GetRawText())!;
+    private static JsonNode Out(BlockStepResult result, string key) => JsonNode.Parse(result.Result!.Outputs[Core.Workflow.Ids.FactKey.From("fact:" + key)].GetRawText())!;
 
     [Fact]
     public async Task Creates_the_phase_worktree_on_its_branch_at_the_line_base_when_there_is_no_workspace()
