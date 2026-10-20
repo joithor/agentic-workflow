@@ -1,6 +1,6 @@
 namespace Aw.Sindri.Ui.Api.Workflow;
 
-/// <summary>GET /sindri/jobs/{id}, as far as the approval reads it: where the job is, its last line and, once it ended, its result.</summary>
+/// <summary>Approve-all's own narrow read of GET /sindri/jobs/{id}: where the job is, its last line and, once it ended, its result. The general jobs client is the jobs unit's; the two are merged after both land.</summary>
 /// <param name="Id">The job.</param>
 /// <param name="State">'running', 'waiting', 'succeeded', 'failed' or 'cancelled'.</param>
 /// <param name="Summary">Served words for the end; null before.</param>
