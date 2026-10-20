@@ -2,6 +2,7 @@ using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks.Effect;
 using Aw.Sindri.Features.Blocks.Evidence;
 using Aw.Sindri.Features.Blocks.Gate;
+using Aw.Sindri.Features.Blocks.Input;
 using Aw.Sindri.Features.Blocks.Step;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -183,5 +184,41 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(DocsSteps.Scope)
         .AddBlockDescriptor(DocsSteps.Update)
         .AddBlockDescriptor(DocsSteps.Check)
-        .AddBlockDescriptor(DocsSteps.OpenPr);
+        .AddPrBlocks();
+
+    /// <summary>Registers the PR babysitter's Steps, gates, effects and Step inputs, and the re-proof child's Steps (PB spec §10.1), descriptors only.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    private static IServiceCollection AddPrBlocks(this IServiceCollection services) => services
+        .AddBlockDescriptor(PrSteps.Intake)
+        .AddBlockDescriptor(PrSteps.Snapshot)
+        .AddBlockDescriptor(PrSteps.ReadyCheck)
+        .AddBlockDescriptor(PrSteps.NextComment)
+        .AddBlockDescriptor(PrSteps.HeldComment)
+        .AddBlockDescriptor(PrSteps.CiFix)
+        .AddBlockDescriptor(PrSteps.FixComment)
+        .AddBlockDescriptor(PrSteps.ReplyDraft)
+        .AddBlockDescriptor(PrSteps.OwnerComment)
+        .AddBlockDescriptor(PrSteps.ReworkNotes)
+        .AddBlockDescriptor(PrSteps.DocsDecide)
+        .AddBlockDescriptor(PrSteps.DocsMergeDecide)
+        .AddBlockDescriptor(RecheckSteps.Plan)
+        .AddBlockDescriptor(RecheckSteps.RerunScripts)
+        .AddBlockDescriptor(RecheckSteps.Log)
+        .AddBlockDescriptor(PrGates.RevisionBound)
+        .AddBlockDescriptor(PrGates.BaseIsDefault)
+        .AddBlockDescriptor(PrGates.AutofixCap)
+        .AddBlockDescriptor(PrGates.DiffScope)
+        .AddBlockDescriptor(PrGates.SecretScan)
+        .AddBlockDescriptor(PrEffects.Push)
+        .AddBlockDescriptor(PrEffects.Reply)
+        .AddBlockDescriptor(PrEffects.Record)
+        .AddBlockDescriptor(PrEffects.RerunChecks)
+        .AddBlockDescriptor(PrEffects.Restack)
+        .AddBlockDescriptor(PrEffects.CreateStacked)
+        .AddBlockDescriptor(PrEffects.Merge)
+        .AddBlockDescriptor(PrEffects.MergeDocs)
+        .AddBlockDescriptor(PrInputs.Context)
+        .AddBlockDescriptor(PrInputs.PhasePacket)
+        .AddBlockDescriptor(PrInputs.HandoffNote);
 }

@@ -16,7 +16,7 @@ public sealed class PrSettingsTests
     [Fact, Trait("Lane", "unit")]
     public void A_full_pr_block_and_a_docs_block_are_accepted()
     {
-        var pr = new PrSettings(["dependabot[bot]"], 5, "60s", "14d", "post", "rebase", true, "30m");
+        var pr = new PrSettings(Bots: ["dependabot[bot]"], AutofixCap: 5, PollInterval: "60s", RemindAfter: "14d", Replies: "post", MergeMethod: "rebase", HeldBlocksMerge: true, DocsMergeWait: "30m");
 
         Assert.True(ProfileRules.Check(With(pr)).IsSuccess);
         Assert.True(ProfileRules.Check(With(new DocsSettings("off", ["docs/**", "*.md"]))).IsSuccess);
@@ -32,7 +32,7 @@ public sealed class PrSettingsTests
     [InlineData(null, null, null, null, "fast-forward", "workflow.pr.mergeMethod")]
     public void A_bad_pr_key_is_refused_naming_the_key(int? cap, string? poll, string? remind, string? replies, string? method, string key)
     {
-        var error = ProfileRules.Check(With(new PrSettings(null, cap, poll, remind, replies, method))).Error;
+        var error = ProfileRules.Check(With(new PrSettings(AutofixCap: cap, PollInterval: poll, RemindAfter: remind, Replies: replies, MergeMethod: method))).Error;
 
         Assert.Contains(key, error.Message, StringComparison.Ordinal);
     }
@@ -53,7 +53,7 @@ public sealed class PrSettingsTests
 
         Assert.Equal(
             ["workflow.pr.autofixCap", "workflow.pr.bots", "workflow.pr.heldBlocksMerge", "workflow.pr.mergeMethod"],
-            ProfileDiff.Between(live, With(new PrSettings(["a[bot]"], 4, MergeMethod: "merge", HeldBlocksMerge: true))));
+            ProfileDiff.Between(live, With(new PrSettings(Bots: ["a[bot]"], AutofixCap: 4, MergeMethod: "merge", HeldBlocksMerge: true))));
         Assert.Equal(["workflow.docs.globs", "workflow.docs.sync"], ProfileDiff.Between(live, With(new DocsSettings("off", ["docs/**"]))));
     }
 

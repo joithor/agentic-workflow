@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Aw.Sindri.Core.Profile;
 
 /// <summary>Which settings changed between two profiles, as key paths, for 'profile approve' to show before it records anything.</summary>
@@ -147,7 +145,7 @@ public static class ProfileDiff
     private static (string Key, string? Value)[] Pr(PrSettings? pr) =>
     [
         ("workflow.pr.bots", Joined(pr?.Bots)),
-        ("workflow.pr.autofixCap", pr?.AutofixCap?.ToString(CultureInfo.InvariantCulture)),
+        ("workflow.pr.autofixCap", pr?.AutofixCap?.ToString(System.Globalization.CultureInfo.InvariantCulture)),
         ("workflow.pr.pollInterval", pr?.PollInterval),
         ("workflow.pr.remindAfter", pr?.RemindAfter),
         .. PrChoices(pr),
@@ -157,7 +155,7 @@ public static class ProfileDiff
     [
         ("workflow.pr.replies", pr?.Replies),
         ("workflow.pr.mergeMethod", pr?.MergeMethod),
-        ("workflow.pr.heldBlocksMerge", pr?.HeldBlocksMerge?.ToString(CultureInfo.InvariantCulture)),
+        ("workflow.pr.heldBlocksMerge", pr?.HeldBlocksMerge?.ToString(System.Globalization.CultureInfo.InvariantCulture)),
         ("workflow.pr.docsMergeWait", pr?.DocsMergeWait),
     ];
 
