@@ -12,7 +12,7 @@ public sealed class ReviewFixStepContract : DescriptorContract
 {
     protected override BlockDescriptor Descriptor => ReviewSteps.Fix;
 
-    protected override string ExpectedHash => "sha256:2f7555fa9c8310962a5ffd532a06c14bdb335c2b131296f54108e0aeb3c35aab";
+    protected override string ExpectedHash => "sha256:ad46d710894d7130254532f20eff470fe1673ea0359519d41671f0522196aae8";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

@@ -15,7 +15,7 @@ public sealed class ReviewLoopEscalationTests
     private static Recipe Load(string file) => RecipeComposition.ReadClean(ShippedRecipes.Read($"sindri/{file}"), file).Recipe;
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("workflow.review-loop.yaml", "fix")]
+    [InlineData("workflow.review-loop.yaml", "resolve")]
     [InlineData("workflow.design.yaml", "revise")]
     public void The_ask_state_is_the_only_human_wait_and_the_fixer_gets_the_answer(string file, string fixer)
     {
@@ -52,6 +52,7 @@ public sealed class ReviewLoopEscalationTests
 
         Assert.Contains(recipe.Transitions, static t => t.From.Contains("lens-log", StringComparer.Ordinal) && t.To == "ask");
         Assert.Contains(recipe.Transitions, static t => t.From.Contains("fix", StringComparer.Ordinal) && t.To == "ask");
+        Assert.Contains(recipe.Transitions, static t => t.From.Contains("resolve", StringComparer.Ordinal) && t.To == "ask");
         Assert.Equal("asks", recipe.States["ask"].Loop);
         Assert.True(recipe.Loops["asks"].Cap > 0);
     }

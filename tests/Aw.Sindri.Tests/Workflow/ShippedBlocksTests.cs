@@ -44,7 +44,7 @@ public sealed class ShippedBlocksTests
                 "step.plan.holdout", "step.plan.intake", "step.plan.questions", "step.plan.review", "step.plan.settle",
                 "step.produce", "step.prove.before-after", "step.prove.evidence", "step.prove.fail-log", "step.prove.holdout",
                 "step.prove.holdout-log", "step.prove.intake", "step.report.write", "step.reproduce.test-check", "step.reproduce.ui-check",
-                "step.review.fix", "step.review.log", "step.review.recheck", "step.review.record", "step.review.round",
+                "step.review.apply-answer", "step.review.fix", "step.review.log", "step.review.recheck", "step.review.record", "step.review.round",
                 "step.rootcause.investigate", "step.scope.anchor", "step.scope.challenge", "step.scope.challenge-log",
                 "step.scope.check", "step.scope.draft", "step.scope.evidence", "step.scope.freeze", "step.scope.gather",
                 "step.scope.intake", "step.scope.propose", "step.scope.read-brief", "step.scope.read-change", "step.scope.read-tracker",

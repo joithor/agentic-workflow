@@ -8,9 +8,9 @@ namespace Aw.Sindri.Features.Blocks.Step;
 /// </summary>
 internal static class ReviewSteps
 {
-    /// <summary>'step.review.round': starts a review round; queues the review pack's lenses that apply to the changed paths, in pack order, seeds the round's log and clears the owner's answers (a fixer reads only the answers given since the round began). 'ready', or 'noLens' when no lens applies (the queue would be empty; the loop ends stuck for the owner).</summary>
+    /// <summary>'step.review.round': starts a review round; queues the review pack's lenses that apply to the changed paths, in pack order and seeds the round's log. 'ready', or 'noLens' when no lens applies (the queue would be empty; the loop ends stuck for the owner).</summary>
     public static BlockDescriptor Round { get; } = BlockStep("step.review.round", Capability.None)
-        .Reads("fact:change", "fact:phasePacket").Reports("ready", "noLens").Writes(On("fact:lensQueue", "ready"), On("fact:lensRounds", "ready"), On("fact:answers", "ready"));
+        .Reads("fact:change", "fact:phasePacket").Reports("ready", "noLens").Writes(On("fact:lensQueue", "ready"), On("fact:lensRounds", "ready"));
 
     /// <summary>
     /// 'step.review.log': appends the lens report to the round's log. 'next' while the queue is not empty; at the round's end 'clean' (zero blocking and zero issue),
@@ -26,10 +26,17 @@ internal static class ReviewSteps
         .Reads("fact:change", "fact:review", "fact:lensRounds").Reports("recorded", "recordedWrong").Writes(On("fact:review", "recorded", "recordedWrong"));
 
     /// <summary>
-    /// 'step.review.fix': fixes the findings, using the owner's 'fact:answers' to an earlier escalation; 'fixed' with the new 'fact:change'. 'needsOwner' with a typed 'fact:escalation' when the
-    /// fix is ambiguous or needs a product decision (owner, 2026-10-19): the fixer's one way to a human.
+    /// 'step.review.fix': fixes the findings; 'fixed' with the new 'fact:change'. 'needsOwner' with a typed 'fact:escalation' when the fix is ambiguous or needs a product decision
+    /// (owner, 2026-10-19): the fixer's one way to a human.
     /// </summary>
-    public static BlockDescriptor Fix { get; } = AgentStep("step.review.fix", Capability.Tools | Capability.WriteScope).Reads("fact:change", "fact:review", "fact:answers")
+    public static BlockDescriptor Fix { get; } = AgentStep("step.review.fix", Capability.Tools | Capability.WriteScope).Reads("fact:change", "fact:review")
+        .Reports("fixed", "needsOwner").Writes(On("fact:change", "fixed"), On("fact:escalation", "needsOwner"));
+
+    /// <summary>
+    /// 'step.review.apply-answer': after an escalation, fixes the findings the way the owner's 'fact:answers' say; 'fixed' with the new 'fact:change'. 'needsOwner' with a new typed
+    /// 'fact:escalation' when the answer leaves another question (the loop caps the asks).
+    /// </summary>
+    public static BlockDescriptor ApplyAnswer { get; } = AgentStep("step.review.apply-answer", Capability.Tools | Capability.WriteScope).Reads("fact:change", "fact:review", "fact:escalation", "fact:answers")
         .Reports("fixed", "needsOwner").Writes(On("fact:change", "fixed"), On("fact:escalation", "needsOwner"));
 
     /// <summary>'step.review.recheck': reviews the fixed head; as 'step.lens.run' does per lens, reporting the round's verdict.</summary>
