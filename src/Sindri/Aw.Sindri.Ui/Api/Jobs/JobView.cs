@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Aw.Sindri.Ui.Api.Jobs;
 
-/// <summary>GET /sindri/jobs/{id} (API P6): one job with its last progress lines and result.</summary>
+/// <summary>GET /sindri/jobs/{id} (API P6): one job with its last progress lines and result. The answer's asOf is not read: the status carries the freshness the app shows.</summary>
 /// <param name="Id">The job (JOB-…).</param>
 /// <param name="Kind">The catalog action that started it, as served.</param>
 /// <param name="Key">Its idempotency key within the kind.</param>
@@ -21,7 +21,6 @@ namespace Aw.Sindri.Ui.Api.Jobs;
 /// <param name="CancelledBy">Who cancelled it, or null.</param>
 /// <param name="Actions">The actions allowed now: "CancelJob" while it runs, none after.</param>
 /// <param name="Cli">The CLI form of the cancel, or null.</param>
-/// <param name="AsOf">How fresh the answer is.</param>
 internal sealed record JobView(
     string Id,
     string Kind,
@@ -40,5 +39,4 @@ internal sealed record JobView(
     JsonElement? Result,
     string? CancelledBy,
     IReadOnlyList<string> Actions,
-    string? Cli,
-    AsOfView AsOf);
+    string? Cli);
