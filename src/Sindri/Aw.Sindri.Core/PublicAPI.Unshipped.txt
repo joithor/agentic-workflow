@@ -12183,3 +12183,11 @@ static Aw.Sindri.Core.Events.InstanceChanged.operator !=(Aw.Sindri.Core.Events.I
 static Aw.Sindri.Core.Events.InstanceChanged.operator ==(Aw.Sindri.Core.Events.InstanceChanged? left, Aw.Sindri.Core.Events.InstanceChanged? right) -> bool
 Aw.Sindri.Core.Events.InstanceChanged.Deconstruct(out string! Instance, out string! State, out long Cursor) -> void
 static Aw.Sindri.Core.Events.InstanceChanged.Changing.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Scheduling.MainMoveAction
+Aw.Sindri.Core.Scheduling.MainMoveAction.BackoffNotDue = 2 -> Aw.Sindri.Core.Scheduling.MainMoveAction
+Aw.Sindri.Core.Scheduling.MainMoveAction.JobRunning = 1 -> Aw.Sindri.Core.Scheduling.MainMoveAction
+Aw.Sindri.Core.Scheduling.MainMoveAction.Nothing = 0 -> Aw.Sindri.Core.Scheduling.MainMoveAction
+Aw.Sindri.Core.Scheduling.MainMoveAction.Start = 3 -> Aw.Sindri.Core.Scheduling.MainMoveAction
+Aw.Sindri.Core.Scheduling.MainMoveDecision
+static Aw.Sindri.Core.Scheduling.MainMoveDecision.Decide(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! onDefaultHeads, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? lastSucceededHeads, bool running, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.SyncAttempt!>! finishedNewestFirst, System.DateTimeOffset now) -> Aw.Sindri.Core.Scheduling.MainMoveAction
+static Aw.Sindri.Core.Scheduling.MainMoveDecision.FailedInARow(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.SyncAttempt!>! finishedNewestFirst) -> int
