@@ -171,7 +171,8 @@ internal sealed partial class ApproveAllViewModel
     {
         if (job.Result is not { } result)
         {
-            Fail(new Error(job.Code ?? "SND-UI-003", ErrorKind.Unavailable, job.Summary ?? Labels.ApproveLostTrack));
+            var words = job.State.Equals("cancelled", StringComparison.Ordinal) ? Labels.ApproveCancelled : job.Summary ?? Labels.ApproveLostTrack;
+            Fail(new Error(job.Code ?? "SND-UI-003", ErrorKind.Unavailable, words));
             return;
         }
 
