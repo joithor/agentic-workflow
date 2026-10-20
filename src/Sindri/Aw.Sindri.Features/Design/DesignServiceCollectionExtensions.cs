@@ -14,6 +14,5 @@ internal static class DesignServiceCollectionExtensions
         .AddScoped<IService<DesignCheckRequest, LineCheckResponse>, DesignCheckService>()
         .AddScoped<IService<DesignDeskRequest, LineDeskResponse>, DesignDeskService>()
         .AddScoped<IService<DesignShowRequest, DesignStopView>, DesignShowService>()
-        .AddScoped<PlanInstances>()
-        .AddScoped<IService<GetInstanceDesignStopRequest, DesignStopView>, GetInstanceDesignStopService>();
+        .AddScoped<PlanInstances>();
 }
