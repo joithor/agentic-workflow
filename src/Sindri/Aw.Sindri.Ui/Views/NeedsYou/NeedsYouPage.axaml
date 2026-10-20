@@ -71,8 +71,8 @@
                   <icons:StateIcon Glyph="Profile" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource Brush.Attention}" />
                 </Border>
                 <StackPanel Grid.Column="1" Spacing="2">
-                  <TextBlock x:Name="NeedsYouCardTitle" Classes="detail-title" Text="{Binding Selected.Title}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
-                  <Button x:Name="NeedsYouCardItem" Classes="row-title" Click="OnItem" IsVisible="{Binding Selected.CanOpenItem}" HorizontalAlignment="Left"
+                  <TextBlock x:Name="NeedsYouCardTitle" Classes="detail-title" Text="{Binding Card.Title}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                  <Button x:Name="NeedsYouCardItem" Classes="row-title" Click="OnItem" IsVisible="{Binding Card.CanOpenItem}" HorizontalAlignment="Left"
                           AutomationProperties.Name="{Binding OpenItemWord}">
                     <TextBlock Classes="caption muted" Text="{Binding OpenItemWord}" AutomationProperties.AccessibilityView="Raw" />
                   </Button>
@@ -86,6 +86,9 @@
                 <TextBlock x:Name="NeedsYouCardKind" Grid.Column="2" Classes="eyebrow attention" Text="{Binding KindWord}" VerticalAlignment="Top" AutomationProperties.AccessibilityView="Raw" />
               </Grid>
               <Border Classes="hairline" />
+              <!-- The row under the card left the list: the card keeps its text and its controls go quiet until the user moves (J, K or a click). -->
+              <TextBlock x:Name="NeedsYouClearedLine" Classes="caption attention" Text="{Binding ClearedText}" IsVisible="{Binding IsCleared}" Margin="20,8"
+                         AutomationProperties.LiveSetting="Polite" />
               <Border x:Name="NeedsYouWhy" Classes="card-section tinted">
                 <StackPanel Spacing="4">
                   <TextBlock Classes="eyebrow" Text="{Binding WhyCaption}" />
@@ -99,7 +102,7 @@
                   <TextBlock x:Name="NeedsYouRequestText" Classes="body" Text="{Binding Question}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Question}" />
                 </StackPanel>
               </Border>
-              <ItemsControl x:Name="NeedsYouCardDetails" ItemsSource="{Binding Selected.PrimaryDetails}" IsVisible="{Binding Selected.PrimaryDetails.Count}">
+              <ItemsControl x:Name="NeedsYouCardDetails" ItemsSource="{Binding Card.PrimaryDetails}" IsVisible="{Binding Card.PrimaryDetails.Count}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="ny:SheetDetail">
                     <Border Classes="card-section">
@@ -112,12 +115,12 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <Border x:Name="NeedsYouCardCliBox" Classes="card-section" IsVisible="{Binding Selected.ShowsCliUpFront}">
-                <TextBlock x:Name="NeedsYouCardCli" Classes="mono" Text="{Binding Selected.Cli}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Selected.Cli}" />
+              <Border x:Name="NeedsYouCardCliBox" Classes="card-section" IsVisible="{Binding Card.ShowsCliUpFront}">
+                <TextBlock x:Name="NeedsYouCardCli" Classes="mono" Text="{Binding Card.Cli}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Card.Cli}" />
               </Border>
-              <Expander x:Name="NeedsYouCardMore" Header="{Binding Selected.MoreHeading}" IsExpanded="{Binding Selected.DetailsOpen, Mode=TwoWay}" IsVisible="{Binding Selected.HasMoreDetails}"
-                        Margin="20,0" AutomationProperties.Name="{Binding Selected.MoreHeading}">
-                <ItemsControl ItemsSource="{Binding Selected.MoreDetails}">
+              <Expander x:Name="NeedsYouCardMore" Header="{Binding Card.MoreHeading}" IsExpanded="{Binding Card.DetailsOpen, Mode=TwoWay}" IsVisible="{Binding Card.HasMoreDetails}"
+                        Margin="20,0" AutomationProperties.Name="{Binding Card.MoreHeading}">
+                <ItemsControl ItemsSource="{Binding Card.MoreDetails}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="ny:SheetDetail">
                       <StackPanel Spacing="2" Margin="0,0,0,6">
@@ -129,7 +132,7 @@
                 </ItemsControl>
               </Expander>
               <!-- Until the action bar (slice 2) the card carries the row's own controls, as Home's row does: a link to a row still answers it. -->
-              <ItemsControl x:Name="NeedsYouCardControls" ItemsSource="{Binding Selected.Controls}" Margin="20,8">
+              <ItemsControl x:Name="NeedsYouCardControls" ItemsSource="{Binding Card.Controls}" IsEnabled="{Binding !IsCleared}" Margin="20,8">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
                     <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="6" />
@@ -146,7 +149,7 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <Border x:Name="NeedsYouFooter" Classes="card-footer">
+              <Border x:Name="NeedsYouFooter" Classes="card-footer" AutomationProperties.Name="{Binding FooterName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
                 <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
                   <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <icons:StateIcon Glyph="Stale" Foreground="{DynamicResource Brush.Attention}" VerticalAlignment="Center" />

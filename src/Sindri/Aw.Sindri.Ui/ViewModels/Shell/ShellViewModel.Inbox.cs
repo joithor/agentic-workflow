@@ -40,12 +40,14 @@ internal sealed partial class ShellViewModel
         Queue.ClearSelection();
         Strip.Deselect();
         NeedsYou.PointerOver = false;   // the pointer that held Home's list is not over the inbox's: a hide gives no exit
+        IsNeedsYouInbox = true;
+        UpdateNeedsYou();   // without Home's filter
         if (rowId is not null)
         {
             NeedsYou.Select(rowId);
         }
 
-        IsNeedsYouInbox = true;
+        Inbox.Active = true;
         Inbox.SelectFirst();
         Changed(_inboxProperties);
     }
@@ -60,7 +62,9 @@ internal sealed partial class ShellViewModel
         }
 
         IsNeedsYouInbox = false;
+        Inbox.Active = false;
         NeedsYou.PointerOver = false;   // likewise the inbox's hold: leaving gives no exit
+        UpdateNeedsYou();   // Home's filter again
         Changed(_inboxProperties);
         return true;
     }

@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 using Aw.Sindri.Ui.ViewModels;
 
 namespace Aw.Sindri.Ui.Views.Controls;
@@ -30,7 +31,7 @@ internal sealed class StickyGroupList : UserControl
 
     private readonly ScrollViewer _scroll = new() { HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled };
     private readonly StackPanel _stack = new();
-    private readonly ContentControl _sticky = new() { VerticalAlignment = VerticalAlignment.Top, IsHitTestVisible = false };
+    private readonly ContentControl _sticky = new() { VerticalAlignment = VerticalAlignment.Top };
     private readonly TranslateTransform _push = new();
     private readonly Dictionary<object, Block> _blocks = new(ReferenceEqualityComparer.Instance);
     private readonly List<object> _order = [];
@@ -75,7 +76,27 @@ internal sealed class StickyGroupList : UserControl
 
     /// <summary>Scrolls a row fully into view below the sticky header (never under it).</summary>
     /// <param name="row">A row of the list.</param>
-    internal static void EnsureVisible(Control row) => _ = row;
+    internal static void EnsureVisible(Control row) => row.FindAncestorOfType<StickyGroupList>()?.Reveal(row);
+
+    // The row's top clears the header height, its bottom the viewport's: the focus's own bring-into-view lines the row up with the viewport's top, under the header.
+    private void Reveal(Control row)
+    {
+        if (row.TranslatePoint(default, _stack) is not { } at)
+        {
+            return;
+        }
+
+        var header = _order.Count > 0 ? _blocks[_order[0]].Header.Bounds.Height : 0;
+        var offset = _scroll.Offset.Y;
+        if (at.Y < offset + header)
+        {
+            ScrollTo(Math.Max(0, at.Y - header));
+        }
+        else if (at.Y + row.Bounds.Height > offset + _scroll.Viewport.Height)
+        {
+            ScrollTo(at.Y + row.Bounds.Height - _scroll.Viewport.Height);
+        }
+    }
 
     /// <summary>Scrolls the list; the sticky header follows.</summary>
     /// <param name="offset">The vertical offset.</param>

@@ -14,6 +14,8 @@ internal sealed class NeedsYouPageViewModel : ObservableObject
     private readonly NeedsYouViewModel _list;
     private readonly TimeProvider _clock;
     private readonly IClipboard _clipboard;
+    private NeedsYouRowViewModel? _lastRow;   // the row the card last showed as selected
+    private NeedsYouRowViewModel? _cleared;   // that row, once it left the list under the card, until the user moves on
 
     internal NeedsYouPageViewModel(NeedsYouViewModel list, TimeProvider clock, IClipboard clipboard)
     {
@@ -22,6 +24,7 @@ internal sealed class NeedsYouPageViewModel : ObservableObject
         _clipboard = clipboard;
         _list.PropertyChanged += OnListChanged;
         Rebuild();
+        _lastRow = Selected;
     }
 
     /// <summary>Raised when the breadcrumb asks to go back to Home.</summary>
@@ -98,43 +101,40 @@ internal sealed class NeedsYouPageViewModel : ObservableObject
     public NeedsYouRowViewModel? Selected => _list.SelectedId is { } id ? _list.Seen.Rows.FirstOrDefault(r => string.Equals(r.Id, id, StringComparison.Ordinal)) : null;
 
     /// <summary>The row the card shows: the selected one, or the one that cleared until the user moves on.</summary>
-    public NeedsYouRowViewModel? Card => Selected;
+    public NeedsYouRowViewModel? Card => _cleared ?? Selected;
 
     /// <summary>True while the card shows a row that has cleared.</summary>
-    public bool IsCleared => false;
+    public bool IsCleared => _cleared is not null;
 
     /// <summary>The cleared card's line.</summary>
-    public string ClearedText => "";
+    public string ClearedText => _cleared is { } row ? Labels.Cleared(row.ShownId.Length > 0 ? row.ShownId : row.Id) : "";
 
     /// <summary>The footer's accessible name: both its words.</summary>
-    public string FooterName => "";
-
-    /// <summary>True while the inbox shows: rows that arrive later get a selection.</summary>
-    internal bool Active { get; set; }
+    public string FooterName => FooterRight.Length > 0 ? FooterLeft + ", " + FooterRight : FooterLeft;
 
     /// <summary>True when a row is selected: the card shows.</summary>
-    public bool HasSelected => Selected is not null;
+    public bool HasSelected => Card is not null;
 
     /// <summary>The card's kind word, at the right of its head.</summary>
-    public string KindWord => Selected?.Entry is { } entry ? KindWordOf(entry) : "";
+    public string KindWord => Card?.Entry is { } entry ? KindWordOf(entry) : "";
 
     /// <summary>The card's accessible name: the kind word and the title.</summary>
-    public string CardName => Selected is { } row ? Labels.NeedsYouCardName(KindWord, row.Title) : "";
+    public string CardName => Card is { } row ? Labels.NeedsYouCardName(KindWord, row.Title) : "";
 
     /// <summary>The reference the head shows in grey and copies: the id the row shows, else its own.</summary>
-    public string Reference => Selected is { } row ? (row.ShownId.Length > 0 ? row.ShownId : row.Id) : "";
+    public string Reference => Card is { } row ? (row.ShownId.Length > 0 ? row.ShownId : row.Id) : "";
 
     /// <summary>The first section: why the request needs the user, as the row serves it.</summary>
-    public string Why => Selected?.Entry is { } entry ? (entry.Reason.Length > 0 ? entry.Reason : entry.Label) : "";
+    public string Why => Card?.Entry is { } entry ? (entry.Reason.Length > 0 ? entry.Reason : entry.Label) : "";
 
     /// <summary>What a decision asks; empty for any other row.</summary>
-    public string Question => Selected?.Entry.Question ?? "";
+    public string Question => Card?.Entry.Question ?? "";
 
     /// <summary>The card's footer, left: what the row waits for.</summary>
     public string FooterLeft { get; } = Labels.NeedsYouFootWaiting;
 
     /// <summary>The card's footer, right: how long it has waited; empty when the row serves no time.</summary>
-    public string FooterRight => Selected?.Entry is { Since: var since } && since != default ? Labels.NeedsYouFootRight(Labels.NeedsYouWaited(_clock.GetUtcNow() - since)) : "";
+    public string FooterRight => Card?.Entry is { Since: var since } && since != default ? Labels.NeedsYouFootRight(Labels.NeedsYouWaited(_clock.GetUtcNow() - since)) : "";
 
     /// <summary>Selects the first row of the first group when none is selected (or the selected one is gone).</summary>
     internal void SelectFirst()
@@ -157,7 +157,7 @@ internal sealed class NeedsYouPageViewModel : ObservableObject
         }
 
         var at = rows.FindIndex(r => string.Equals(r.Id, _list.SelectedId, StringComparison.Ordinal));
-        _list.Select(rows[at < 0 ? 0 : Math.Clamp(at + step, 0, rows.Count - 1)].Id);
+        Leave(rows[at < 0 ? 0 : Math.Clamp(at + step, 0, rows.Count - 1)].Id);
         return true;
     }
 
@@ -168,7 +168,7 @@ internal sealed class NeedsYouPageViewModel : ObservableObject
 
     /// <summary>Selects a row (a click or focus on it).</summary>
     /// <param name="id">The row's id.</param>
-    internal void Select(string id) => _list.Select(id);
+    internal void Select(string id) => Leave(id);
 
     /// <summary>Goes back to Home (the breadcrumb).</summary>
     internal void Leave() => LeaveRequested?.Invoke(this, EventArgs.Empty);
@@ -210,7 +210,7 @@ internal sealed class NeedsYouPageViewModel : ObservableObject
 
     private static readonly string[] _cardProperties =
     [
-        nameof(Selected), nameof(HasSelected), nameof(KindWord), nameof(CardName), nameof(Reference), nameof(Why), nameof(Question), nameof(FooterRight),
+        nameof(Selected), nameof(Card), nameof(IsCleared), nameof(ClearedText), nameof(FooterName), nameof(HasSelected), nameof(KindWord), nameof(CardName), nameof(Reference), nameof(Why), nameof(Question), nameof(FooterRight),
     ];
 
     private static readonly string[] _listProperties =
@@ -225,12 +225,44 @@ internal sealed class NeedsYouPageViewModel : ObservableObject
             Rebuild();
             Report(_listProperties);
             Report(_cardProperties);
+            if (Active && _list.SelectedId is null && _cleared is null)
+            {
+                SelectFirst();   // an inbox opened empty gets its first row when rows arrive
+            }
         }
         else if (string.Equals(e.PropertyName, nameof(NeedsYouViewModel.SelectedId), StringComparison.Ordinal))
         {
+            FollowSelection();
             Report(_cardProperties);
         }
     }
+
+    // The user picks a row (a click, J, K): the cleared card, if any, gives way even when the pick is the row already selected.
+    private void Leave(string id)
+    {
+        _cleared = null;
+        _list.Select(id);
+        _lastRow = Selected ?? _lastRow;
+        Report(_cardProperties);
+    }
+
+    // The list moved the selection on its own because the row under the card left: the card keeps that row, cleared, until the user moves.
+    private void FollowSelection()
+    {
+        if (!_list.SelectionMovedOnItsOwn)
+        {
+            _cleared = null;
+        }
+        else if (_lastRow is not null && !_list.Seen.Rows.Contains(_lastRow))
+        {
+            _cleared = _lastRow;
+        }
+
+        _lastRow = Selected ?? _lastRow;
+    }
+
+    /// <summary>True while the inbox shows: rows that arrive later get a selection.</summary>
+    internal bool Active { get; set; }
 
     private void Report(string[] names)
     {

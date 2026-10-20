@@ -9,7 +9,7 @@
   <Grid RowDefinitions="Auto,1">
     <Border x:Name="InboxRowFrame" Classes="inbox-row needs-you-row" Classes.selected="{Binding IsSelected}" Classes.pulsing="{Binding IsPulsing}" Classes.steady="{Binding IsSteady}" Classes.subtle="{Binding IsSubtle}"
             Classes.slides-in="{Binding SlidesIn}" Classes.stale="{Binding IsStale}" Focusable="True"
-            AutomationProperties.Name="{Binding AccessibleName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
+            AutomationProperties.Name="{Binding InboxName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" VerticalAlignment="Center">
         <Border x:Name="InboxRowTile" Classes="kind-tile" VerticalAlignment="Top">
           <icons:StateIcon Glyph="Profile" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource Brush.Attention}" />

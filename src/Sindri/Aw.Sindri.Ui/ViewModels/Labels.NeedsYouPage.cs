@@ -15,13 +15,13 @@ internal static partial class Labels
     internal const string NeedsYouCrumbSeparator = ">";
 
     /// <summary>The breadcrumb button's accessible name.</summary>
-    internal const string NeedsYouCrumbHomeName = "Back to Home";
+    internal const string NeedsYouCrumbHomeName = "Home, back to Home";
 
     /// <summary>The header's count.</summary>
     /// <param name="waiting">How many rows wait for the user.</param>
     /// <param name="runs">How many of them are paused runs.</param>
     /// <returns>The words.</returns>
-    internal static string NeedsYouWaiting(int waiting, int runs) => string.Create(CultureInfo.InvariantCulture, $"{waiting} waiting, {runs} runs");
+    internal static string NeedsYouWaiting(int waiting, int runs) => string.Create(CultureInfo.InvariantCulture, $"{waiting} waiting, {runs} {(runs == 1 ? "run" : "runs")}");
 
     /// <summary>The heading of the desk tasks.</summary>
     internal const string NeedsYouGroupApprovals = "Your approvals";
@@ -64,6 +64,9 @@ internal static partial class Labels
 
     /// <summary>The card's kind word for a failure.</summary>
     internal const string NeedsYouKindFailure = "Something failed";
+
+    /// <summary>The word a selected inbox row adds to its accessible name.</summary>
+    internal const string NeedsYouSelectedWord = "selected";
 
     /// <summary>The pill that holds new rows back while the user reads.</summary>
     /// <param name="count">How many new rows are held.</param>

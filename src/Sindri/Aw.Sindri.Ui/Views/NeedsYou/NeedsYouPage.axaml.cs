@@ -2,7 +2,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Aw.Sindri.Ui.Views.Controls;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
 
 namespace Aw.Sindri.Ui.Views.NeedsYou;
@@ -41,7 +43,14 @@ internal sealed partial class NeedsYouPage : UserControl
             return false;
         }
 
-        return row.IsKeyboardFocusWithin || row.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => string.Equals(b.Name, "InboxRowFrame", StringComparison.Ordinal))?.Focus(NavigationMethod.Tab) == true;
+        var frame = row.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => string.Equals(b.Name, "InboxRowFrame", StringComparison.Ordinal));
+        var focused = row.IsKeyboardFocusWithin || frame?.Focus(NavigationMethod.Tab) == true;
+        if (focused && frame is not null)
+        {
+            Dispatcher.UIThread.Post(() => StickyGroupList.EnsureVisible(frame), DispatcherPriority.Loaded);   // below the sticky header, not under it
+        }
+
+        return focused;
     }
 
     /// <inheritdoc />
