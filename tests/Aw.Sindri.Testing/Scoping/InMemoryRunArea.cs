@@ -40,6 +40,9 @@ public sealed class InMemoryRunArea : IRunArea
         return ValueTask.FromResult<Result<string>>(Check(address, name) is { } refused ? refused : _files.GetValueOrDefault((address, name), string.Empty));
     }
 
+    /// <inheritdoc/>
+    public Result<string> PathFor(string address, string name) => Check(address, name) is { } refused ? refused : "/run/" + address + "/" + name;
+
     private static Error? Check(string address, string name) =>
         !RunAreaNames.IsValid(name) ? SindriErrors.InvalidInput.With($"'{name}' is not a run area file name")
         : !InstanceAddress.TryFrom(address, out _) ? SindriErrors.InvalidInput.With($"'{address}' is not an instance address")
