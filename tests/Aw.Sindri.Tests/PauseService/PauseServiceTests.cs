@@ -95,6 +95,19 @@ public sealed class PauseServiceTests
     }
 
     [Fact]
+    public async Task A_profile_service_named_like_a_built_in_can_be_paused()
+    {
+        await Approve();
+        using var entered = Human();
+        var service = new PauseServiceService(_h.Profiles, _h.Store, _h.Held, _h.Events, _h.Callers, [new BuiltInService(ServiceName.From("heartbeat"), new Cadence(TimeSpan.FromMinutes(1)))]);
+
+        var result = await service.Handle(A.PauseServiceRequest().Build(), Token);   // heartbeat is in the approved profile
+
+        Assert.True(result.IsSuccess, result.IsError ? result.Error.ToString() : null);
+        _ = Assert.Single(_h.Store.Events);
+    }
+
+    [Fact]
     public async Task A_name_that_is_neither_keeps_the_profile_wording()
     {
         await Approve();
