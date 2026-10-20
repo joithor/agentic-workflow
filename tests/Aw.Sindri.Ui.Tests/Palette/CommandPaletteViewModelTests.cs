@@ -615,7 +615,7 @@ public sealed partial class CommandPaletteViewModelTests
     public async Task A_cli_only_entry_copies_its_cli()
     {
         _palette.Open();
-        _palette.Query = "approve";
+        _palette.Query = "approveprofile";
 
         await _palette.Run(_palette.Selected, Token);
 

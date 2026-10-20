@@ -12,7 +12,7 @@ public sealed class WorkflowErrorsTests
         Assert.True(ErrorCatalogue.Validate([.. SindriErrors.All, .. WorkflowErrors.All]).IsSuccess);
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("SND-RECIPE", 10)]
+    [InlineData("SND-RECIPE", 11)]
     [InlineData("SND-WF", 19)]
     [InlineData("SND-BLOCK", 4)]
     public void Every_code_of_an_area_is_live_or_retired_and_none_is_both(string area, int last)
