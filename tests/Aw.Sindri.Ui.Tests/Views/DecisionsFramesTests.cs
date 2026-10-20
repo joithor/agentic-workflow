@@ -136,19 +136,23 @@ public sealed class DecisionsFramesTests : FrameHost
     public Task The_profile_sheet_keeps_the_hash_and_the_served_cli_behind_closed_Details() => OnUi(async () =>
     {
         var (window, shell) = await Connected(width: 1400);
-        shell.ShowNeedsYou(new NeedsYouFeed([NeedsYouRows.Profile()], ""));
+        shell.ShowNeedsYou(new NeedsYouFeed([NeedsYouRows.Profile(new NeedsYouSubject("profile", "3f1c09"))], ""));
 
         shell.Navigate(new DeepLink(DeepLinkKind.NeedsYou, "profile:drift"));
         Settle(window);
 
+        var row = shell.NeedsYou.Rows.Single();
         Assert.False(Visible(window, "SheetRowCli"));
-        Assert.False(Visible(window, "SheetRowMoreDetails"));
+        Assert.True(Visible(window, "SheetRowMoreDetails"));   // the Details heading shows, closed
+        Assert.False(row.DetailsOpen);
+        var details = window.GetVisualDescendants().OfType<Expander>().Single(e => e.Name == "SheetRowMoreDetails");
+        Assert.DoesNotContain(details.GetVisualDescendants().OfType<TextBlock>(), t => t.IsEffectivelyVisible && (t.Text == row.Cli || t.Text == "3f1c09"));
         Frame(window, "profile-sheet");
 
-        shell.NeedsYou.Rows.Single().DetailsOpen = true;
+        row.DetailsOpen = true;
         Settle(window);
 
-        Assert.True(Visible(window, "SheetRowMoreDetails"));
-        Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), t => t.IsEffectivelyVisible && t.Text == shell.NeedsYou.Rows.Single().Cli);
+        Assert.Contains(details.GetVisualDescendants().OfType<TextBlock>(), t => t.IsEffectivelyVisible && t.Text == row.Cli);
+        Assert.Contains(details.GetVisualDescendants().OfType<TextBlock>(), t => t.IsEffectivelyVisible && t.Text == "3f1c09");
     });
 }
