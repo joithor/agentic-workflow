@@ -21,7 +21,8 @@ internal sealed class ProfileSetupReader(IProfileSource live, IApprovedProfile a
             return loaded.Error.Code == SindriErrors.ProfileMissing.Code ? new RepoFact(0) : loaded.Error;
         }
 
-        return new RepoFact(loaded.Value.Profile.Repos?.Count ?? 0);
+        var repos = loaded.Value.Profile.Repos ?? [];
+        return new RepoFact(repos.Count) { Items = new SetupItems([.. repos.Select(static r => new SetupItem(r.Name, SetupState.Done, Detail: null))]) };
     }
 
     internal async ValueTask<Result<ProfileFact>> Presence(CancellationToken cancellationToken)

@@ -17,7 +17,7 @@ internal static class SetupScenarios
     /// <summary>The (slug, scenario) pairs of this class.</summary>
     public static IReadOnlyList<(string Slug, string Scenario)> All { get; } =
     [
-        ("setup", "fresh"), ("setup", "profile-needs-approval"), ("setup", "running-progress"), ("setup", "failed"), ("setup", "all-done"),
+        ("setup", "first-run"), ("setup", "profile-needs-approval"), ("setup", "running-progress"), ("setup", "failed"), ("setup", "all-done"), ("setup", "onyx-no-docker"),
     ];
 
     /// <summary>Whether <paramref name="slug"/> and <paramref name="scenario"/> belong to this class.</summary>
@@ -43,28 +43,24 @@ internal static class SetupScenarios
     {
         "profile-needs-approval" => new InMemorySetupFacts
         {
-            RepoAnswer = new RepoFact(1),
+            RepoAnswer = InMemorySetupFacts.OneRepo,
             ProfileAnswer = new ProfileFact(ProfilePresence.Unapproved),
             RecipesAnswer = new RecipesFact(26, 0),
         },
-        "running-progress" => new InMemorySetupFacts
-        {
-            RepoAnswer = new RepoFact(1),
-            ProfileAnswer = new ProfileFact(ProfilePresence.Approved),
-            RecipesAnswer = new RecipesFact(26, 26),
-            McpAnswer = new McpFact(1, 1),
-            MapAnswer = new MapFact(MapPhase.Building, new SetupProgress(40, 100)),
-        },
-        "failed" => new InMemorySetupFacts
-        {
-            RepoAnswer = new RepoFact(1),
-            ProfileAnswer = new ProfileFact(ProfilePresence.Approved),
-            RecipesAnswer = new RecipesFact(26, 26),
-            McpAnswer = new McpFact(1, 1),
-            MapAnswer = new MapFact(MapPhase.Built),
-            OnyxAnswer = new OnyxFact(OnyxState.NotSetUp, Unreachable: false, BlockedByCode: "SND-ONYX-001"),
-        },
+        "running-progress" => Done(map: new MapFact(MapPhase.Building, new SetupProgress(40, 100)) { Items = Lines(SetupState.Running) }),
+        "failed" => Done(map: new MapFact(MapPhase.Failed, FailureCode: "SND-CONTEXT-042") { Items = Lines(SetupState.Failed) }),
+        "onyx-no-docker" => Done(onyx: new OnyxFact(OnyxState.NotSetUp, Unreachable: false, BlockedByCode: "SND-ONYX-001")),
         "all-done" => InMemorySetupFacts.AllDone(),
-        _ => new InMemorySetupFacts(),
+        _ => new InMemorySetupFacts { RecipesAnswer = new RecipesFact(26, 0) },
     };
+
+    private static SetupItems Lines(SetupState state) => new([new SetupItem("demo", state, Detail: null)]);
+
+    private static InMemorySetupFacts Done(MapFact? map = null, OnyxFact? onyx = null)
+    {
+        var facts = InMemorySetupFacts.AllDone();
+        facts.MapAnswer = map ?? facts.MapAnswer;
+        facts.OnyxAnswer = onyx ?? facts.OnyxAnswer;
+        return facts;
+    }
 }

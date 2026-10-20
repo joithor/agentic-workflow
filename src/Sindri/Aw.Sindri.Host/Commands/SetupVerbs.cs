@@ -29,7 +29,7 @@ internal sealed class SetupVerbs(ControlPlaneClient client, Output output)
             return await output.Error(answer.Error).ConfigureAwait(false);
         }
 
-        var code = answer.Value.Value.Steps.All(static s => s.State == SetupState.Done) ? 0 : 1;
+        var code = answer.Value.Value.Steps.All(static s => s.State is SetupState.Done or SetupState.Skipped) ? 0 : 1;
         return args.Length > 0
             ? await output.Raw(answer.Value.Body, code).ConfigureAwait(false)
             : await output.Text(SetupText.Render(answer.Value.Value), code).ConfigureAwait(false);

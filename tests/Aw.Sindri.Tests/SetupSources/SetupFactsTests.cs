@@ -97,6 +97,50 @@ public sealed class SetupFactsTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Mcp_with_no_provider_installed_names_none_and_registers_nothing()
+    {
+        await using var rig = new SetupFactsRig();
+        _ = rig.Host.WithoutProvider(Core.Mcp.ProviderFile.Claude);
+        await rig.Approve(SetupFactsRig.ProfileWithRepos());
+
+        var fact = (await rig.Facts.Mcp(Token)).Value;
+
+        Assert.Equal((1, 0, string.Empty), (fact.Repos, fact.Registered, fact.Providers));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Mcp_counts_a_repo_registered_only_when_every_installed_provider_has_it_and_lists_where()
+    {
+        var host = new Aw.Sindri.Testing.FakeProviderHost();
+        var withAll = new SetupFactsRig(host);
+        await using (withAll)
+        {
+            await withAll.Approve(SetupFactsRig.ProfileWithRepos());
+            withAll.ClaudeHas((SetupFactsRig.Checkout, "demo"));
+            host.Files[SetupFactsRig.Checkout + "/.cursor/mcp.json"] = """{"mcpServers":{"sindri":{"url":"http://127.0.0.1:7480/sindri/mcp","headers":{"X-Sindri-Repo":"demo"}}}}""";
+            var partial = (await withAll.Facts.Mcp(Token)).Value;
+            host.Files[SetupFactsRig.Checkout + "/.codex/config.toml"] = "[mcp_servers.sindri]\nurl = \"http://127.0.0.1:7480/sindri/mcp\"\nhttp_headers = { \"X-Sindri-Repo\" = \"demo\" }\n";
+            var all = (await withAll.Facts.Mcp(Token)).Value;
+
+            Assert.Equal(("Claude Code, Codex, Cursor", 0, "Claude Code, Cursor"), (partial.Providers, partial.Registered, partial.Items.Lines[0].Detail));
+            Assert.Equal((1, "Claude Code, Codex, Cursor", SetupState.Done), (all.Registered, all.Items.Lines[0].Detail, all.Items.Lines[0].State));
+        }
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Repos_and_the_map_carry_one_line_per_repo_of_the_profile()
+    {
+        await using var rig = new SetupFactsRig();
+        await rig.Approve(SetupFactsRig.ProfileWithRepos(2));
+
+        var repos = (await rig.Facts.Repos(Token)).Value;
+        var map = (await rig.Facts.Map(Token)).Value;
+
+        Assert.Equal(["demo", "demo2"], repos.Items.Lines.Select(static i => i.Repo), StringComparer.Ordinal);
+        Assert.Equal(["demo", "demo2"], map.Items.Lines.Select(static i => i.Repo), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Map_waits_for_an_approved_profile_with_a_repo_and_never_asks_the_engine_before()
     {
         await using var rig = new SetupFactsRig();

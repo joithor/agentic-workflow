@@ -22,8 +22,9 @@ internal sealed class SetupFactsRig : IAsyncDisposable
     private readonly AsyncServiceScope _scope;
     private int _jobs;
 
-    internal SetupFactsRig()
+    internal SetupFactsRig(FakeProviderHost? host = null)
     {
+        Host = host ?? new FakeProviderHost().WithoutProvider(Core.Mcp.ProviderFile.Codex).WithoutProvider(Core.Mcp.ProviderFile.Cursor);
         Engine = MapEngineProxy.Create();
         Registry = new RegistryHarness();
         _scope = Registry.Services.CreateAsyncScope();
@@ -37,7 +38,7 @@ internal sealed class SetupFactsRig : IAsyncDisposable
 
     internal InMemoryProfiles Profiles { get; } = new();
 
-    internal FakeProviderHost Host { get; } = new();
+    internal FakeProviderHost Host { get; }
 
     internal InMemoryJobViews Jobs { get; } = new();
 

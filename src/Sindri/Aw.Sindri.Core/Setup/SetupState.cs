@@ -25,4 +25,8 @@ public enum SetupState
     /// <summary>Waiting for the human.</summary>
     [JsonStringEnumMemberName("needs-you")]
     NeedsYou,
+
+    /// <summary>Only Onyx has it: it can't be set up on this machine (Docker is missing or fails its checks), which counts as finished.</summary>
+    [JsonStringEnumMemberName("skipped")]
+    Skipped,
 }

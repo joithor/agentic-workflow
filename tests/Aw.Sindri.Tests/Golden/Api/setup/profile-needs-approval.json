@@ -4,19 +4,25 @@
       "id": "repo",
       "title": "Add your repo",
       "state": "done",
-      "why": "Sindri works on the code you point it at, so it needs at least one repository.",
-      "detail": "1 repository added.",
+      "why": "A repo is in your profile.",
+      "detail": "demo",
       "error": null,
       "action": null,
       "progress": null,
-      "items": []
+      "items": [
+        {
+          "repo": "demo",
+          "state": "done",
+          "detail": null
+        }
+      ]
     },
     {
       "id": "profile",
       "title": "Approve the profile",
       "state": "needs-you",
-      "why": "Your profile says what Sindri may do on this machine, and nothing runs until you approve it.",
-      "detail": "Your profile is ready for you to read and approve.",
+      "why": "You added demo. Sindri waits for you to approve the profile before it uses it.",
+      "detail": null,
       "error": null,
       "action": "ApproveProfile",
       "progress": null,
@@ -25,23 +31,20 @@
     {
       "id": "recipes",
       "title": "Approve the recipes",
-      "state": "needs-you",
-      "why": "Workflows are the step-by-step recipes Sindri follows, and each one needs your approval before it can run.",
-      "detail": "26 workflows waiting for approval.",
+      "state": "todo",
+      "why": "After the profile is approved.",
+      "detail": "Registered 26 of 26.",
       "error": null,
-      "action": "ApproveAllRecipes",
-      "progress": {
-        "done": 0,
-        "total": 26
-      },
+      "action": null,
+      "progress": null,
       "items": []
     },
     {
       "id": "mcp",
       "title": "Connect your agents",
       "state": "todo",
-      "why": "Registering Sindri with your agent, for each repo only, lets the agent ask Sindri for context and report back.",
-      "detail": "Add your repo and approve your profile first.",
+      "why": "Waits for an approved profile with a repo.",
+      "detail": null,
       "error": null,
       "action": null,
       "progress": null,
@@ -51,8 +54,8 @@
       "id": "map",
       "title": "Build the map",
       "state": "todo",
-      "why": "The map is how Sindri knows how your code, tickets and decisions connect, so what it tells an agent is relevant.",
-      "detail": "Sindri builds the map once your repo is added and your profile is approved.",
+      "why": "Waits for a repo.",
+      "detail": null,
       "error": null,
       "action": null,
       "progress": null,
@@ -62,7 +65,7 @@
       "id": "onyx",
       "title": "Set up Onyx",
       "state": "todo",
-      "why": "Onyx is the search Sindri uses to find your business context, such as decisions and tickets.",
+      "why": "Docker is ready. Set up Onyx when you want search.",
       "detail": "Onyx isn't set up yet.",
       "error": null,
       "action": "SetupOnyx",

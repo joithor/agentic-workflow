@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using Aw.Kernel.Json;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.GetSetup;
@@ -49,26 +50,37 @@ public sealed class CliSetupTests : IDisposable
     {
         var api = new Api(HttpStatusCode.OK, Body(
             SetupSteps.Repo(new RepoFact(1)),
-            SetupSteps.Profile(new ProfileFact(ProfilePresence.Unapproved)),
-            SetupSteps.Recipes(new RecipesFact(26, 20)),
+            SetupSteps.Profile(new ProfileFact(ProfilePresence.Unapproved), new RepoFact(1)),
+            SetupSteps.Recipes(new RecipesFact(26, 20), profileApproved: true),
             SetupSteps.Map(new MapFact(MapPhase.Failed, FailureCode: "SND-CONTEXT-040"))));
 
         var code = await Verbs(_up, api).Run([], Token);
 
         Assert.Equal((1, "/sindri/setup"), (code, api.Path));
         Assert.Equal(
-            "done      Add your repo: 1 repository added.\n"
-            + "needs-you Approve the profile: Your profile is ready for you to read and approve.\n"
-            + "needs-you Approve the recipes: 6 workflows waiting for approval. (20 of 26)\n"
+            "done      Add your repo: 1 repository\n"
+            + "needs-you Approve the profile: Sindri waits for you to approve the profile before it uses it.\n"
+            + "needs-you Approve the recipes: 6 recipes wait for your approval. (20 of 26)\n"
             + "failed    Build the map: The last try at building the map didn't finish.\n"
             + "1 of 4 steps done.\n",
             _out.ToString().ReplaceLineEndings("\n"));
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Setup_exits_0_when_every_step_is_done_or_skipped_and_says_how_to_unskip()
+    {
+        var api = new Api(HttpStatusCode.OK, Body(SetupSteps.Repo(new RepoFact(1)), SetupSteps.Onyx(new OnyxFact(OnyxState.NotSetUp, Unreachable: false, BlockedByCode: "SND-ONYX-001"))));
+
+        var code = await Verbs(_up, api).Run([], Token);
+
+        Assert.Equal(0, code);
+        Assert.Contains("skipped   Set up Onyx: Docker isn't installed. Install Docker to set up Onyx: https://docs.docker.com/get-docker/\n", _out.ToString().ReplaceLineEndings("\n"), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Setup_exits_0_when_every_step_is_done()
     {
-        var api = new Api(HttpStatusCode.OK, Body(SetupSteps.Repo(new RepoFact(1)), SetupSteps.Profile(new ProfileFact(ProfilePresence.Approved))));
+        var api = new Api(HttpStatusCode.OK, Body(SetupSteps.Repo(new RepoFact(1)), SetupSteps.Profile(new ProfileFact(ProfilePresence.Approved), new RepoFact(1))));
 
         var code = await Verbs(_up, api).Run([], Token);
 

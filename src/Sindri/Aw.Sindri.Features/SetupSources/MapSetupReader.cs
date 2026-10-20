@@ -23,6 +23,27 @@ internal sealed class MapSetupReader(IApprovedProfile approvals, IContextEngine 
 
     internal async ValueTask<Result<MapFact>> Read(CancellationToken cancellationToken)
     {
+        var fact = await Phase(cancellationToken).ConfigureAwait(false);
+        if (fact.IsError)
+        {
+            return fact;
+        }
+
+        var approved = await approvals.Latest(cancellationToken).ConfigureAwait(false);
+        var state = fact.Value.Phase switch
+        {
+            MapPhase.Built => SetupState.Done,
+            MapPhase.Building => SetupState.Running,
+            MapPhase.Failed => SetupState.Failed,
+            MapPhase.Waiting or MapPhase.NotBuilt => SetupState.Todo,
+            _ => throw new InvalidOperationException("Not a map phase"),
+        };
+        var repos = approved.IsSuccess ? approved.Value?.Profile.Repos ?? [] : [];
+        return fact.Value with { Items = new SetupItems([.. repos.Select(r => new SetupItem(r.Name, state, Detail: null))]) };
+    }
+
+    private async ValueTask<Result<MapFact>> Phase(CancellationToken cancellationToken)
+    {
         var approved = await approvals.Latest(cancellationToken).ConfigureAwait(false);
         if (approved.IsError)
         {

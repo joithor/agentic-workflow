@@ -18,7 +18,7 @@ public sealed class InMemorySetupFacts : ISetupFacts
     public Result<RecipesFact> RecipesAnswer { get; set; } = new RecipesFact(0, 0);
 
     /// <summary>Gets or sets the MCP registration's answer.</summary>
-    public Result<McpFact> McpAnswer { get; set; } = new McpFact(0, 0);
+    public Result<McpFact> McpAnswer { get; set; } = new McpFact(0, 0, "Claude Code");
 
     /// <summary>Gets or sets the map's answer.</summary>
     public Result<MapFact> MapAnswer { get; set; } = new MapFact(MapPhase.Waiting);
@@ -26,15 +26,18 @@ public sealed class InMemorySetupFacts : ISetupFacts
     /// <summary>Gets or sets Onyx's answer.</summary>
     public Result<OnyxFact> OnyxAnswer { get; set; } = new OnyxFact(OnyxState.NotSetUp, Unreachable: false, BlockedByCode: null);
 
+    /// <summary>The profile names one repo, demo.</summary>
+    public static RepoFact OneRepo { get; } = new(1) { Items = new SetupItems([new SetupItem("demo", SetupState.Done, Detail: null)]) };
+
     /// <summary>Everything done: a repo, an approved profile, every recipe approved, the registration made, the map built and Onyx up.</summary>
     /// <returns>The fake.</returns>
     public static InMemorySetupFacts AllDone() => new()
     {
-        RepoAnswer = new RepoFact(1),
+        RepoAnswer = OneRepo,
         ProfileAnswer = new ProfileFact(ProfilePresence.Approved),
         RecipesAnswer = new RecipesFact(26, 26),
-        McpAnswer = new McpFact(1, 1),
-        MapAnswer = new MapFact(MapPhase.Built),
+        McpAnswer = new McpFact(1, 1, "Claude Code") { Items = new SetupItems([new SetupItem("demo", SetupState.Done, "Claude Code")]) },
+        MapAnswer = new MapFact(MapPhase.Built) { Items = new SetupItems([new SetupItem("demo", SetupState.Done, Detail: null)]) },
         OnyxAnswer = new OnyxFact(OnyxState.Running, Unreachable: false, BlockedByCode: null),
     };
 

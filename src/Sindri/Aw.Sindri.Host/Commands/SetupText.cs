@@ -14,7 +14,7 @@ internal static class SetupText
         var text = new StringBuilder();
         foreach (var step in setup.Steps)
         {
-            _ = text.Append(State(step.State).PadRight(9)).Append(' ').Append(step.Title).Append(": ").Append(step.Detail);
+            _ = text.Append(State(step.State).PadRight(9)).Append(' ').Append(step.Title).Append(": ").Append(Say(step));
             if (step.Progress is { } progress && step.State != SetupState.Done)
             {
                 _ = text.Append(string.Create(CultureInfo.InvariantCulture, $" ({progress.Done} of {progress.Total})"));
@@ -23,9 +23,18 @@ internal static class SetupText
             _ = text.Append('\n');
         }
 
-        var done = setup.Steps.Count(static s => s.State == SetupState.Done);
+        var done = setup.Steps.Count(static s => s.State is SetupState.Done or SetupState.Skipped);
         return text.Append(string.Create(CultureInfo.InvariantCulture, $"{done} of {setup.Steps.Count} steps done.\n")).ToString();
     }
+
+    // A finished step says what it did; one that is open says why; a skipped one says why and what to do about it.
+    private static string Say(SetupStep step) => step.State switch
+    {
+        SetupState.Done => step.Detail ?? step.Why,
+        SetupState.Skipped => step.Detail is null ? step.Why : step.Why + " " + step.Detail,
+        SetupState.Todo or SetupState.Running or SetupState.Failed or SetupState.NeedsYou => step.Why,
+        _ => throw new ArgumentOutOfRangeException(nameof(step), step.State, "Not a setup state"),
+    };
 
     /// <summary>The state as the API writes it.</summary>
     internal static string State(SetupState state) => state switch
@@ -35,6 +44,7 @@ internal static class SetupText
         SetupState.Done => "done",
         SetupState.Failed => "failed",
         SetupState.NeedsYou => "needs-you",
+        SetupState.Skipped => "skipped",
         _ => throw new ArgumentOutOfRangeException(nameof(state), state, "Not a setup state"),
     };
 }

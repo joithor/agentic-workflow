@@ -4,4 +4,8 @@ namespace Aw.Sindri.Core.Setup;
 /// <param name="Phase">The phase.</param>
 /// <param name="Progress">How far a running build is, when its progress lines say so; else null.</param>
 /// <param name="FailureCode">The error code of the failed build, or null.</param>
-public sealed record MapFact(MapPhase Phase, SetupProgress? Progress = null, string? FailureCode = null);
+public sealed record MapFact(MapPhase Phase, SetupProgress? Progress = null, string? FailureCode = null)
+{
+    /// <summary>One line per repo of the approved profile, in the state the map is in.</summary>
+    public SetupItems Items { get; init; } = SetupItems.None;
+}

@@ -1,4 +1,6 @@
+using Aw.Kernel;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Ports;
 using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.GetSetup;
@@ -30,22 +32,49 @@ public sealed class GetSetupTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Titles_are_the_fixed_words_and_items_are_listed_empty_until_a_step_counts_repos()
+    public async Task Titles_are_the_fixed_words_and_the_steps_that_count_repos_carry_a_line_each()
     {
         var steps = (await Service(InMemorySetupFacts.AllDone()).Handle(A.GetSetupRequest().Build(), Token)).Value.Steps;
 
         Assert.Equal(["Add your repo", "Approve the profile", "Approve the recipes", "Connect your agents", "Build the map", "Set up Onyx"], steps.Select(static s => s.Title), StringComparer.Ordinal);
-        Assert.All(steps, static s => Assert.Empty(s.Items));
+        Assert.Equal([1, 0, 0, 1, 1, 0], steps.Select(static s => s.Items.Count));
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_fresh_box_has_every_step_still_to_do_and_the_answer_is_never_an_error()
+    public async Task A_fresh_box_asks_for_a_repo_and_everything_else_waits()
     {
-        var result = await Service(new InMemorySetupFacts()).Handle(A.GetSetupRequest().Build(), Token);
+        var steps = (await Service(new InMemorySetupFacts { RecipesAnswer = new RecipesFact(26, 0) }).Handle(A.GetSetupRequest().Build(), Token)).Value.Steps;
+
+        Assert.Equal([SetupState.NeedsYou, SetupState.Todo, SetupState.Todo, SetupState.Todo, SetupState.Todo, SetupState.Todo], steps.Select(static s => s.State));
+        Assert.Equal([SetupActions.AddRepo, null, null, null, null, SetupActions.SetupOnyx], steps.Select(static s => s.Action), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_source_that_throws_fails_only_its_own_step_and_the_answer_is_still_served()
+    {
+        var facts = new ThrowingOnyx(InMemorySetupFacts.AllDone());
+
+        var result = await new GetSetupService(facts, new ProjectorProgress(_clock)).Handle(A.GetSetupRequest().Build(), Token);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(6, result.Value.Steps.Count);
-        Assert.All(result.Value.Steps, static s => Assert.Equal(SetupState.Todo, s.State));
+        var failed = Assert.Single(result.Value.Steps, static s => s.State == SetupState.Failed);
+        Assert.Equal((SetupStepId.Onyx, SindriErrors.ApiInternal.Code), (failed.Id, failed.Error?.Code));
+        Assert.Equal(5, result.Value.Steps.Count(static s => s.State == SetupState.Done));
+    }
+
+    private sealed class ThrowingOnyx(ISetupFacts inner) : ISetupFacts
+    {
+        public ValueTask<Result<RepoFact>> Repos(CancellationToken cancellationToken) => inner.Repos(cancellationToken);
+
+        public ValueTask<Result<ProfileFact>> Profile(CancellationToken cancellationToken) => inner.Profile(cancellationToken);
+
+        public ValueTask<Result<RecipesFact>> Recipes(CancellationToken cancellationToken) => inner.Recipes(cancellationToken);
+
+        public ValueTask<Result<McpFact>> Mcp(CancellationToken cancellationToken) => inner.Mcp(cancellationToken);
+
+        public ValueTask<Result<MapFact>> Map(CancellationToken cancellationToken) => inner.Map(cancellationToken);
+
+        public ValueTask<Result<OnyxFact>> Onyx(CancellationToken cancellationToken) => throw new InvalidOperationException("docker would not start");
     }
 
     [Fact, Trait("Lane", "unit")]
