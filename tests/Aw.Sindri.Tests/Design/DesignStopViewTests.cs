@@ -134,7 +134,7 @@ public sealed class DesignStopViewTests
     {
         var view = await Show(LineFixture.Plan());
 
-        Assert.Equal(22, view.Coverage.Count);
+        Assert.Equal(23, view.Coverage.Count);
         Assert.Equal(("S1", "feature:sharing", "sec-1"), (view.Coverage[0].Scope, view.Coverage[0].Key, view.Coverage[0].Sections[0]));
         var excluded = Assert.Single(view.Coverage, c => c.Excluded is not null);
         Assert.Equal("S14", excluded.Scope);
