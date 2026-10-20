@@ -20,34 +20,42 @@ public sealed class FakeProfileRepoWriter : IProfileRepoWriter
     /// <summary>Gets or sets an error Append returns instead of writing.</summary>
     public Error? Fails { get; set; }
 
+    /// <summary>Gets or sets what runs right after a repo is written, before Append answers: a tick or another add landing in the window before the caller records its event.</summary>
+    public Func<RepoEntry, Task>? AfterAppend { get; set; }
+
     /// <inheritdoc/>
-    public ValueTask<Result<RepoAppended>> Append(RepoEntry repo, IReadOnlyCollection<string> defaultEffects, CancellationToken cancellationToken)
+    public async ValueTask<Result<RepoAppended>> Append(RepoEntry repo, IReadOnlyCollection<string> defaultEffects, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(repo);
         ArgumentNullException.ThrowIfNull(defaultEffects);
         if (Fails is { } error)
         {
-            return ValueTask.FromResult<Result<RepoAppended>>(error);
+            return error;
         }
 
         if (_repos.Exists(r => r.Name == repo.Name && r.Path == repo.Path))
         {
-            return ValueTask.FromResult<Result<RepoAppended>>(RepoAppended.AlreadyThere);
+            return RepoAppended.AlreadyThere;
         }
 
         if (_repos.Exists(r => string.Equals(r.Name, repo.Name, StringComparison.OrdinalIgnoreCase) || r.Path == repo.Path))
         {
-            return ValueTask.FromResult<Result<RepoAppended>>(SindriErrors.SetupRepoExists.With("another repo has that name or folder (fix: pick another folder, or give a different name)"));
+            return SindriErrors.SetupRepoExists.With("another repo has that name or folder (fix: pick another folder, or give a different name)");
         }
 
         _repos.Add(repo);
-        if (_created)
+        var outcome = _created ? RepoAppended.Appended : RepoAppended.Created;
+        if (!_created)
         {
-            return ValueTask.FromResult<Result<RepoAppended>>(RepoAppended.Appended);
+            _created = true;
+            CreatedWith = [.. defaultEffects];
         }
 
-        _created = true;
-        CreatedWith = [.. defaultEffects];
-        return ValueTask.FromResult<Result<RepoAppended>>(RepoAppended.Created);
+        if (AfterAppend is { } after)
+        {
+            await after(repo).ConfigureAwait(false);
+        }
+
+        return outcome;
     }
 }

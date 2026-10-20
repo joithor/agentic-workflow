@@ -7,7 +7,7 @@ namespace Aw.Sindri.Core.Setup;
 
 /// <summary>
 /// The re-run rule of AddRepo (setup-once spec §5.1): a profile entry whose 'repo.added' is missing (a crash between the profile write and the event) gets the event appended. The ledger is searched first, so a repo added
-/// the ordinary way is never given a second one, and the event is keyed by the repo's name, so doing this twice records it once. A repo that has its event is remembered, so the setup service's tick does not read the ledger for it again.
+/// the ordinary way is never given a second one, and the event has the same key as the add job's (one per repo name), so a tick or another add landing between the profile write and the job's append cannot give a repo two. A repo that has its event is remembered, so the setup service's tick does not read the ledger for it again.
 /// </summary>
 /// <param name="recorder">Appends the event.</param>
 /// <param name="reader">Looks for earlier ones.</param>
@@ -51,7 +51,7 @@ public sealed class RepoAddedBackfill(RepoEvents recorder, ILedgerReader reader,
 
     private async ValueTask<bool> Append(RepoEntry entry, CancellationToken cancellationToken)
     {
-        var appended = await recorder.Added(RepoName.From(entry.Name), entry.Path, "repo.added:backfill:" + entry.Name, cancellationToken).ConfigureAwait(false);
+        var appended = await recorder.Added(RepoName.From(entry.Name), entry.Path, cancellationToken).ConfigureAwait(false);
         if (appended.IsSuccess)
         {
             git.Invalidate();

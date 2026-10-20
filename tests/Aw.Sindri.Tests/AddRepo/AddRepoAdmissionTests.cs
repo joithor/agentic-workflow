@@ -143,7 +143,7 @@ public sealed class AddRepoAdmissionTests : IDisposable
 
         Assert.Equal("SND-SETUP-002", admitted.Error.Code);
         var added = Assert.Single(_rig.Slice.Store.Events, static e => e.Envelope.Type == EventTypes.RepoAdded);
-        Assert.Equal("repo.added:backfill:demo", added.IdempotencyKey);
+        Assert.Equal("repo.added:demo", added.IdempotencyKey);
     }
 
     [Fact]

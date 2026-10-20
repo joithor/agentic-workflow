@@ -13204,8 +13204,6 @@ Aw.Sindri.Core.Setup.RepoAddedBackfill.Ensure(Aw.Sindri.Core.Profile.RepoEntry! 
 Aw.Sindri.Core.Setup.RepoAddedBackfill.Ensure(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>! entries, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 Aw.Sindri.Core.Setup.RepoAddedBackfill.RepoAddedBackfill(Aw.Sindri.Core.Setup.RepoEvents! recorder, Aw.Sindri.Core.Ledger.ILedgerReader! reader, Aw.Sindri.Core.Events.EventFactory! events, Aw.Sindri.Core.Setup.RepoGitCache! git, Aw.Sindri.Core.Setup.KnownRepoEvents! known) -> void
 Aw.Sindri.Core.Setup.RepoEvents
-Aw.Sindri.Core.Setup.RepoEvents.Added(Aw.Sindri.Core.Ids.RepoName repo, string! path, string! key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
-Aw.Sindri.Core.Setup.RepoEvents.KeyOfThisCommand() -> string?
 Aw.Sindri.Core.Setup.RepoEvents.RepoEvents(Aw.Sindri.Core.Lease.HeldLease! held, Aw.Sindri.Core.Ledger.ILedgerStore! ledger, Aw.Sindri.Core.Events.EventFactory! events, Aw.Sindri.Core.Commands.ICallerContextAccessor! callers) -> void
 Aw.Sindri.Core.Setup.RepoGitCache
 Aw.Sindri.Core.Setup.RepoGitCache.Invalidate() -> void
@@ -13252,3 +13250,5 @@ static Aw.Sindri.Core.Profile.RepoStatus.operator ==(Aw.Sindri.Core.Profile.Repo
 static Aw.Sindri.Core.Profile.RepoStatusRules.ExitCode(Aw.Sindri.Core.Profile.RepoStatus! status) -> int
 static Aw.Sindri.Core.Profile.RepoStatusRules.NudgeLine(Aw.Sindri.Core.Profile.RepoStatus! status) -> string!
 static Aw.Sindri.Core.Profile.RepoStatusRules.Text(Aw.Sindri.Core.Profile.RepoStatus! status) -> string!
+Aw.Sindri.Core.Setup.RepoEvents.Added(Aw.Sindri.Core.Ids.RepoName repo, string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+static Aw.Sindri.Core.Setup.RepoEvents.KeyOf(Aw.Sindri.Core.Ids.RepoName repo) -> string!

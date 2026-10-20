@@ -179,4 +179,30 @@ public sealed class YamlProfileRepoWriterTests : IDisposable
             Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(ProfilePath));
         }
     }
+
+    [Fact]
+    public async Task A_file_with_windows_line_endings_keeps_them()
+    {
+        _ = Put("schemaVersion: 1\r\nuser: thor\r\nrepos:\r\n  - name: first\r\n    path: /work/first\r\n");
+
+        _ = await Writer().Append(new RepoEntry("second", "/work/second"), _effects, Token);
+
+        var text = await File.ReadAllTextAsync(ProfilePath, Token);
+        Assert.DoesNotContain("\n", text.Replace("\r\n", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
+        Assert.StartsWith("schemaVersion: 1\r\nuser: thor\r\nrepos:\r\n  - name: first\r\n    path: /work/first\r\n", text, StringComparison.Ordinal);
+        Assert.Equal(["first", "second"], Load().Profile.Repos!.Select(static r => r.Name), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_write_that_the_system_refuses_says_so_with_the_reason_and_not_that_the_profile_is_missing()
+    {
+        _ = Directory.CreateDirectory(ProfilePath);   // a folder where the file should be: the move onto it fails
+
+        var done = await Writer().Append(new RepoEntry("demo", "/work/demo"), _effects, Token);
+
+        Assert.Equal("SND-PROFILE-002", done.Error.Code);
+        Assert.Contains("can't be written:", done.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("fix: make the file and its folder writable", done.Error.Message, StringComparison.Ordinal);
+        Assert.Empty(Directory.GetFiles(_dir, "*.tmp"));
+    }
 }

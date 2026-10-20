@@ -49,7 +49,7 @@ public sealed class SetupServiceTests : IDisposable
         _ = await Tick(service);
 
         var added = Assert.Single(_rig.Slice.Store.Events, static e => e.Envelope.Type == EventTypes.RepoAdded);
-        Assert.Equal("repo.added:backfill:demo", added.IdempotencyKey);
+        Assert.Equal("repo.added:demo", added.IdempotencyKey);
     }
 
     [Fact, Trait("Lane", "unit")]

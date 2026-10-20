@@ -65,13 +65,13 @@ internal sealed class YamlProfileRepoWriter(SindriSettings settings) : IProfileR
         }
 
         BeforeWrite?.Invoke(path, attempt);
-        var written = Write(path, read.Value, after);
+        var (written, reason) = Write(path, read.Value, after);
         if (written == Written.Conflict)
         {
             return null;
         }
 
-        return written == Written.Done ? planned.Value.Outcome : SindriErrors.ProfileMissing.With($"{path} can't be written");
+        return written == Written.Done ? planned.Value.Outcome : SindriErrors.ProfileInvalid.With($"{path} can't be written: {reason} (fix: make the file and its folder writable, then add the folder again)");
     }
 
     private static Result<string?> Read(string path)
@@ -117,7 +117,7 @@ internal sealed class YamlProfileRepoWriter(SindriSettings settings) : IProfileR
     private static bool Holds(string yaml, RepoEntry repo) =>
         YamlToJson.TryConvert(yaml, out var json) is null && ProfileRepoText.Match(json, repo.Name, repo.Path) == RepoMatch.Same;
 
-    private static Written Write(string path, string? expected, string text)
+    private static (Written Result, string? Reason) Write(string path, string? expected, string text)
     {
         var temporary = $"{path}.{Guid.NewGuid():N}.tmp";
         try
@@ -132,19 +132,19 @@ internal sealed class YamlProfileRepoWriter(SindriSettings settings) : IProfileR
             var now = File.Exists(path) ? File.ReadAllText(path) : null;
             if (!string.Equals(now, expected, StringComparison.Ordinal))
             {
-                return Written.Conflict;   // the file changed since it was read
+                return (Written.Conflict, null);   // the file changed since it was read
             }
 
             File.Move(temporary, path, overwrite: expected is not null);
-            return Written.Done;
+            return (Written.Done, null);
         }
         catch (IOException) when (expected is null && File.Exists(path))
         {
-            return Written.Conflict;   // someone created it between the check and the move
+            return (Written.Conflict, null);   // someone created it between the check and the move
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return Written.Failed;
+            return (Written.Failed, e.Message);
         }
         finally
         {

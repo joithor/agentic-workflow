@@ -60,7 +60,7 @@ internal sealed class AddRepoService(ResolvedRepos resolved, IRepoInspector insp
     private async ValueTask<Result<AddedRepo>> Record(ResolvedRepo repo, string checkout, bool created, CancellationToken cancellationToken)
     {
         jobs.Current?.Progress.Report("added to the profile");
-        var appended = await recorder.Added(repo.Name, checkout, recorder.KeyOfThisCommand() ?? ("repo.added:" + repo.Name.Value), cancellationToken).ConfigureAwait(false);
+        var appended = await recorder.Added(repo.Name, checkout, cancellationToken).ConfigureAwait(false);
         git.Invalidate();
         return appended.IsError ? appended.Error : new AddedRepo(repo.Name, created);
     }

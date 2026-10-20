@@ -51,7 +51,7 @@ public sealed class AddRepoServiceTests : IDisposable
         Assert.Equal([("demo", "/work/demo")], _rig.Writer.Repos.Select(static r => (r.Name, r.Path)));
         Assert.Equal(["checking", "added to the profile"], _lines.Seen);
         var recorded = Assert.Single(_rig.Slice.Store.Events, static e => e.Envelope.Type == EventTypes.RepoAdded);
-        Assert.Equal("repo.added:" + _rig.Slice.Callers.Current!.CommandId.Value, recorded.IdempotencyKey);
+        Assert.Equal("repo.added:demo", recorded.IdempotencyKey);
         var payload = _rig.Slice.Events.Payload<RepoAdded>(recorded).Value;
         Assert.Equal(("demo", "/work/demo"), (payload.Repo.Value, payload.Path));
     }

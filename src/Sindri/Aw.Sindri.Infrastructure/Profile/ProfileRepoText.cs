@@ -23,6 +23,7 @@ internal static class ProfileRepoText
     /// <returns>The new text, or null when the file's 'repos:' has a layout this edit leaves alone.</returns>
     internal static string? Add(string text, string name, string path)
     {
+        var eol = text.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";   // the file keeps the line ending it has
         var lines = new List<string>(text.ReplaceLineEndings("\n").Split('\n'));
         if (lines.Count > 0 && lines[^1].Length == 0)
         {
@@ -34,7 +35,7 @@ internal static class ProfileRepoText
         {
             lines.Add("repos:");
             lines.AddRange(Entry(name, path, 2));
-            return string.Join('\n', lines) + "\n";
+            return string.Join(eol, lines) + eol;
         }
 
         var rest = Rest(lines[repos]);
@@ -50,7 +51,7 @@ internal static class ProfileRepoText
 
         var end = BlockEnd(lines, repos);
         lines.InsertRange(end, Entry(name, path, ItemIndent(lines, repos, end)));
-        return string.Join('\n', lines) + "\n";
+        return string.Join(eol, lines) + eol;
     }
 
     /// <summary>How the profile's repos meet a new entry: the same one, another with its name or path, or none.</summary>
