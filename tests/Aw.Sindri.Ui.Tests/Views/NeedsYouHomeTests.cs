@@ -157,7 +157,7 @@ public sealed class NeedsYouHomeTests : IDisposable
     {
         var (window, shell) = await WithRows(2);
 
-        shell.Navigate(new DeepLink(DeepLinkKind.NeedsYou, "park:ITM-1"));
+        shell.NavigateToRowSheet(new DeepLink(DeepLinkKind.NeedsYou, "park:ITM-1"));
         Settle(window);
 
         Assert.True(Named<Control>(window, "NeedsYouSheet").IsEffectivelyVisible);
@@ -241,7 +241,7 @@ public sealed class NeedsYouHomeTests : IDisposable
     {
         var (window, shell) = await Connected(width: 1400);
         shell.ShowNeedsYou(new ViewModels.NeedsYou.NeedsYouFeed([NeedsYouRows.Failure()], ""));
-        shell.Navigate(new DeepLink(DeepLinkKind.NeedsYou, "failure:service:index"));
+        shell.NavigateToRowSheet(new DeepLink(DeepLinkKind.NeedsYou, "failure:service:index"));
         Settle(window);
 
         window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);

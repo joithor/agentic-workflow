@@ -78,7 +78,7 @@ public sealed class NeedsYouFramesTests : FrameHost
     {
         var (window, shell) = await Connected(s => s.NeedsYou.Count > 0);
         var failure = shell.NeedsYou.Rows.First(r => r.Details.Count > 0);
-        shell.Navigate(new DeepLink(DeepLinkKind.NeedsYou, failure.Id));
+        shell.NavigateToRowSheet(new DeepLink(DeepLinkKind.NeedsYou, failure.Id));
         Settle(window);
 
         var details = Named<ItemsControl>(window, "SheetRowDetails").GetVisualDescendants().OfType<StackPanel>().Where(p => p.DataContext is ViewModels.NeedsYou.SheetDetail).ToList();
@@ -195,9 +195,9 @@ public sealed class NeedsYouFramesTests : FrameHost
 
         Assert.True(Visible(window, "NeedsYouInbox"));
         Assert.False(Visible(window, "NeedsYouPanel"));
-        Assert.Equal(["Agent decisions", "Workflow and settings approvals", "Something failed"], Named<ItemsControl>(window, "NeedsYouGroups").GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == "NeedsYouGroupHeading").Select(t => t.Text));
+        Assert.Equal(["Agent decisions", "Workflow and settings approvals", "Something failed"], Named<ItemsControl>(window, "NeedsYouGroups").GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == "NeedsYouGroupHeading").Select(t => t.Text), StringComparer.Ordinal);
         Assert.True(Visible(window, "NeedsYouCard"));
-        Assert.Equal(shell.Inbox.Selected!.Title, Named<TextBlock>(window, "NeedsYouCardTitle").Text);
+        Assert.Equal(shell.Inbox.Selected?.Title, Named<TextBlock>(window, "NeedsYouCardTitle").Text);
         Assert.Equal(shell.Inbox.FooterLeft, Named<TextBlock>(window, "NeedsYouFooterLeft").Text);
         Assert.True(Named<Control>(window, "NeedsYouInbox").Bounds.Width <= window.ClientSize.Width, "the inbox scrolls sideways");
         Frame(window, frame);

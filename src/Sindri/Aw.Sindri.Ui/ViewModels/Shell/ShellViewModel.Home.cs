@@ -162,6 +162,11 @@ internal sealed partial class ShellViewModel
             return false;
         }
 
+        if (IsNeedsYouInbox)
+        {
+            return InboxKeyPressed(key);
+        }
+
         return string.Equals(key, "J", StringComparison.Ordinal) || string.Equals(key, "K", StringComparison.Ordinal) ? MoveOnHome(string.Equals(key, "J", StringComparison.Ordinal) ? 1 : -1) : named is { } k && NeedsYou.SelectedId is not null && NeedsYou.Press(k);
     }
 
