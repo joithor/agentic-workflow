@@ -14,6 +14,7 @@ using Aw.Context.Core.Results;
 using Aw.Context.Core.Review;
 using Aw.Context.Core.Subgraph;
 using Aw.Context.Features.Adjudicate;
+using Aw.Context.Features.CleanMap;
 using Aw.Context.Features.ApplyReviewFile;
 using Aw.Context.Features.BuildMap;
 using Aw.Context.Features.CheckMap;
@@ -99,6 +100,7 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<PreviewReviewFileRequest, ReviewFilePreview>, PreviewReviewFileService>()
         .AddScoped<IService<ApplyReviewFileRequest, ReviewResult>, ApplyReviewFileService>()
         .AddScoped<IService<PromoteMapRequest, MapPromoted>, PromoteMapService>()
+        .AddScoped<IService<CleanMapRequest, CleanupReport>, CleanMapService>()
         .AddScoped<IService<ProposeFromScopeRequest, ProposeResult>, ProposeFromScopeService>()
         .AddScoped<IService<GetProposalsRequest, ProposalsView>, GetProposalsService>()
         .AddScoped<IService<GetFileMapRequest, FileMapView>, GetFileMapService>()

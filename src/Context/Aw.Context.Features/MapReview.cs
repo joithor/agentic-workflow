@@ -2,6 +2,7 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Review;
 using Aw.Context.Features.ApplyReviewFile;
+using Aw.Context.Features.CleanMap;
 using Aw.Context.Features.ExportReview;
 using Aw.Context.Features.PreviewReviewFile;
 using Aw.Context.Features.PromoteMap;
@@ -21,7 +22,8 @@ internal sealed class MapReview(
     IService<ExportReviewRequest, ReviewExported> exportReview,
     IService<PreviewReviewFileRequest, ReviewFilePreview> previewFile,
     IService<ApplyReviewFileRequest, ReviewResult> applyFile,
-    IService<PromoteMapRequest, MapPromoted> promote)
+    IService<PromoteMapRequest, MapPromoted> promote,
+    IService<CleanMapRequest, CleanupReport> clean)
 {
     public ValueTask<Result<ReviewQueueView>> ReviewQueue(int? limit, ContextScope scope, CancellationToken cancellationToken) =>
         queue.Handle(new ReviewQueueRequest(scope, limit), cancellationToken);
@@ -43,4 +45,7 @@ internal sealed class MapReview(
 
     public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken) =>
         promote.Handle(new PromoteMapRequest(scope), cancellationToken);
+
+    public ValueTask<Result<CleanupReport>> CleanDraft(ContextScope scope, CancellationToken cancellationToken) =>
+        clean.Handle(new CleanMapRequest(scope), cancellationToken);
 }
