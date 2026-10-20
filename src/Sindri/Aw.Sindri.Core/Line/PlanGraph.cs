@@ -1,8 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Aw.Sindri.Core.Line;
 
-namespace Aw.Sindri.Features.Plan;
+namespace Aw.Sindri.Core.Line;
 
 /// <summary>graph.json, derived by code from tasks.json (line spec §6.2, §8.3): each phase's stack, wave and base rule, the waves at the profile's parallel, the critical path and the PR count.</summary>
 public static class PlanGraph

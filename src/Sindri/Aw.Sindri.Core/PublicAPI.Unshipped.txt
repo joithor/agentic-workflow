@@ -12883,3 +12883,21 @@ Aw.Sindri.Core.Line.LineDesk
 static Aw.Sindri.Core.Line.LineDesk.Check(string! block, Aw.Sindri.Core.Line.LineCheckResponse! response) -> Aw.Sindri.Core.Line.LineDeskResponse!
 static Aw.Sindri.Core.Line.LineDesk.Complete(string! block, Aw.Sindri.Core.Line.LineCheckResponse! response, string! directory, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFile!>! files) -> Aw.Sindri.Core.Line.LineDeskResponse!
 static Aw.Sindri.Core.Line.LineDesk.Incomplete(string! block, Aw.Sindri.Core.Line.LineCheckResponse! response) -> Aw.Sindri.Core.Line.LineDeskResponse!
+Aw.Sindri.Core.Line.PlanGraph
+Aw.Sindri.Core.Line.PlanGraphOptions
+Aw.Sindri.Core.Line.PlanGraphOptions.<Clone>$() -> Aw.Sindri.Core.Line.PlanGraphOptions!
+Aw.Sindri.Core.Line.PlanGraphOptions.Deconstruct(out int Parallel, out int MaxStack, out string! DefaultBranch) -> void
+Aw.Sindri.Core.Line.PlanGraphOptions.DefaultBranch.get -> string!
+Aw.Sindri.Core.Line.PlanGraphOptions.DefaultBranch.init -> void
+Aw.Sindri.Core.Line.PlanGraphOptions.Equals(Aw.Sindri.Core.Line.PlanGraphOptions? other) -> bool
+Aw.Sindri.Core.Line.PlanGraphOptions.MaxStack.get -> int
+Aw.Sindri.Core.Line.PlanGraphOptions.MaxStack.init -> void
+Aw.Sindri.Core.Line.PlanGraphOptions.Parallel.get -> int
+Aw.Sindri.Core.Line.PlanGraphOptions.Parallel.init -> void
+Aw.Sindri.Core.Line.PlanGraphOptions.PlanGraphOptions(int Parallel = 2, int MaxStack = 4, string! DefaultBranch = "main") -> void
+override Aw.Sindri.Core.Line.PlanGraphOptions.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Line.PlanGraphOptions.GetHashCode() -> int
+override Aw.Sindri.Core.Line.PlanGraphOptions.ToString() -> string!
+static Aw.Sindri.Core.Line.PlanGraph.Derive(string! tasksJson, Aw.Sindri.Core.Line.PlanGraphOptions! options) -> string?
+static Aw.Sindri.Core.Line.PlanGraphOptions.operator !=(Aw.Sindri.Core.Line.PlanGraphOptions? left, Aw.Sindri.Core.Line.PlanGraphOptions? right) -> bool
+static Aw.Sindri.Core.Line.PlanGraphOptions.operator ==(Aw.Sindri.Core.Line.PlanGraphOptions? left, Aw.Sindri.Core.Line.PlanGraphOptions? right) -> bool

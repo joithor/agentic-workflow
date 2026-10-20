@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Features.Plan;
+namespace Aw.Sindri.Core.Line;
 
 /// <summary>The profile values graph.json is derived with.</summary>
 /// <param name="Parallel">workflow.line.parallel: how many phases a wave runs at once.</param>
