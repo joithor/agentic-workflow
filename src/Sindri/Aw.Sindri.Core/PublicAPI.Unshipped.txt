@@ -12019,6 +12019,8 @@ Aw.Sindri.Core.Onyx.IOnyxSession.RevokeTokens(string! name, System.Threading.Can
 Aw.Sindri.Core.Onyx.OnyxAccounts
 const Aw.Sindri.Core.Onyx.OnyxAccounts.DedicatedEmail = "sindri@example.com" -> string!
 const Aw.Sindri.Core.Onyx.OnyxAccounts.LegacyEmail = "sindri@sindri.app" -> string!
+Aw.Sindri.Core.Packets.IPacketFiles
+Aw.Sindri.Core.Packets.IPacketFiles.Read(string! directory, string! name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
 Aw.Sindri.Core.Packets.IPackets
 Aw.Sindri.Core.Packets.IPackets.Freeze(Aw.Sindri.Core.Packets.PacketRef! packet, Aw.Sindri.Core.Packets.PacketFreezer by, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Packets.PacketFreeze!>!>
 Aw.Sindri.Core.Packets.IPackets.Hash(Aw.Sindri.Core.Packets.PacketRef! packet, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
