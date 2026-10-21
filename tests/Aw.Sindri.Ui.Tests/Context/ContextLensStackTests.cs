@@ -146,7 +146,7 @@ public sealed class ContextLensStackTests
 
         await page.Submit(Token);
 
-        Assert.Single(page.Map!.Nodes, n => n.Label == Labels.ContextTruncated);
+        _ = Assert.Single(page.Map!.Nodes, n => n.Label == Labels.ContextTruncated);
     }
 
     [Fact]

@@ -15,6 +15,10 @@ namespace Aw.Sindri.Ui.Tests.Context;
 [Lane(TestLane.Unit)]
 public sealed class ContextMapViewModelTests
 {
+    private static readonly HashSet<string> _quiet = new(["part-of", "on"], StringComparer.Ordinal);
+    private static readonly HashSet<string> _loud = new(["implements", "decides", "mentions", "conflicts"], StringComparer.Ordinal);
+    private static readonly string[] _letters = ["A", "B", "C"];
+
     private static ContextMapViewModel Map(Action<JsonNode>? edit = null)
     {
         var node = GoldenFiles.Node("context-lenses", "map-tabs");
@@ -100,8 +104,8 @@ public sealed class ContextMapViewModelTests
         var map = Map();
 
         Assert.Equal(map.Edges.Count, map.Pills.Count);
-        Assert.All(map.Pills.Where(p => p.Edge.Type is "part-of" or "on"), p => Assert.False(p.Always));
-        Assert.All(map.Pills.Where(p => p.Edge.Type is "implements" or "decides" or "mentions" or "conflicts"), p => Assert.True(p.Always));
+        Assert.All(map.Pills.Where(p => _quiet.Contains(p.Edge.Type)), p => Assert.False(p.Always));
+        Assert.All(map.Pills.Where(p => _loud.Contains(p.Edge.Type)), p => Assert.True(p.Always));
     }
 
     [Fact]
@@ -109,7 +113,7 @@ public sealed class ContextMapViewModelTests
     {
         var map = Map();
 
-        Assert.Equal([Labels.ContextMapBandIntent, Labels.ContextMapBandProduct, Labels.ContextMapBandCode], map.Bands.Select(b => b.Title));
+        Assert.Equal([Labels.ContextMapBandIntent, Labels.ContextMapBandProduct, Labels.ContextMapBandCode], map.Bands.Select(b => b.Title), StringComparer.Ordinal);
         Assert.Equal(map.Bands[0].Title + ". " + map.Bands[0].Meta, map.Bands[0].Name);
         Assert.Equal((1360d, 872d), (map.WorldWidth, map.WorldHeight));
     }
@@ -131,12 +135,12 @@ public sealed class ContextMapViewModelTests
     {
         var map = Map();
 
-        Assert.Equal([Labels.ContextMapAreaIntent, Labels.ContextMapAreaProduct, Labels.ContextMapAreaCode, Labels.ContextMapAreaNames], map.CoverageAreas.Select(a => a.Name));
+        Assert.Equal([Labels.ContextMapAreaIntent, Labels.ContextMapAreaProduct, Labels.ContextMapAreaCode, Labels.ContextMapAreaNames], map.CoverageAreas.Select(a => a.Name), StringComparer.Ordinal);
         Assert.Equal([CoverageLevel.Limited, CoverageLevel.Searched, CoverageLevel.Limited, CoverageLevel.NotAvailable], map.CoverageAreas.Select(a => a.Level));
         Assert.Equal(Labels.ContextMapCoverageLead(1, 4), map.CoverageLead);
         Assert.Equal(Labels.ContextMapCoverageRest([Labels.ContextMapAreaIntent, Labels.ContextMapAreaCode]), map.CoverageRest);
         Assert.Equal(Labels.ContextMapNamesDetail, map.CoverageAreas[3].Detail);
-        Assert.Equal([Labels.ContextMapLimited, Labels.ContextMapSearched, Labels.ContextMapLimited, Labels.ContextMapNotAvailable], map.CoverageAreas.Select(a => a.LevelWord));
+        Assert.Equal([Labels.ContextMapLimited, Labels.ContextMapSearched, Labels.ContextMapLimited, Labels.ContextMapNotAvailable], map.CoverageAreas.Select(a => a.LevelWord), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -158,7 +162,7 @@ public sealed class ContextMapViewModelTests
     [InlineData(1, "A is limited.")]
     [InlineData(2, "A and B are limited.")]
     [InlineData(3, "A, B and C are limited.")]
-    public void The_sentence_names_the_limited_areas(int count, string words) => Assert.Equal(words, Labels.ContextMapCoverageRest(new[] { "A", "B", "C" }[..count]));
+    public void The_sentence_names_the_limited_areas(int count, string words) => Assert.Equal(words, Labels.ContextMapCoverageRest(_letters[..count]));
 
     [Fact]
     public void A_band_cut_short_adds_the_more_not_shown_chip()

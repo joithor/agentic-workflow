@@ -1,12 +1,13 @@
-using Avalonia;
+using System.Globalization;
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
-using Aw.Sindri.Ui.ViewModels.Context;
+using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Context.Map;
 using Aw.Sindri.Ui.Views.Controls;
 using Aw.Sindri.Ui.Views.Shell;
@@ -21,6 +22,8 @@ namespace Aw.Sindri.Ui.Tests.Views;
 [Lane(TestLane.Integration)]
 public sealed class ContextMapFramesTests : FrameHost
 {
+    private static readonly string[] _zoomButtons = ["ZoomOutButton", "ZoomInButton", "ZoomFitButton"];
+
     private static string Anchor => (string)GoldenFiles.Node("context-lenses", "map-tabs")["anchor"]!["key"]!;
 
     private async Task<(ShellWindow Window, ShellViewModel Shell)> Open(double width, double height)
@@ -91,7 +94,7 @@ public sealed class ContextMapFramesTests : FrameHost
         var scale = Named<ZoomBorder>(window, "ContextCanvas").View.Scale;
         Assert.InRange(scale, 0.62, 1.0);
         var pages = Named<ScrollViewer>(window, "Pages");
-        Assert.True(pages.Extent.Width <= pages.Viewport.Width + 0.5, $"{pages.Extent.Width} > {pages.Viewport.Width}");
+        Assert.True(pages.Extent.Width <= pages.Viewport.Width + 0.5, string.Create(CultureInfo.InvariantCulture, $"{pages.Extent.Width} > {pages.Viewport.Width}"));
         Frame(window, "context-map-900", "f3-");
     });
 
@@ -127,6 +130,6 @@ public sealed class ContextMapFramesTests : FrameHost
 
         Assert.True(smaller <= canvas.View.Scale);
         Assert.Equal(Labels.ContextMapZoomPct(canvas.View.Scale), Named<TextBlock>(window, "ZoomValue").Text);
-        Assert.Equal([Labels.ContextMapZoomOut, Labels.ContextMapZoomIn, Labels.ContextMapZoomFit], new[] { "ZoomOutButton", "ZoomInButton", "ZoomFitButton" }.Select(n => AutomationProperties.GetName(Named<Button>(window, n))));
+        Assert.Equal([Labels.ContextMapZoomOut, Labels.ContextMapZoomIn, Labels.ContextMapZoomFit], _zoomButtons.Select(n => AutomationProperties.GetName(Named<Button>(window, n))), StringComparer.Ordinal);
     });
 }
