@@ -14229,3 +14229,14 @@ static Aw.Sindri.Core.Profile.RepoStatus.operator ==(Aw.Sindri.Core.Profile.Repo
 static Aw.Sindri.Core.Profile.RepoStatusRules.ExitCode(Aw.Sindri.Core.Profile.RepoStatus! status) -> int
 static Aw.Sindri.Core.Profile.RepoStatusRules.NudgeLine(Aw.Sindri.Core.Profile.RepoStatus! status) -> string!
 static Aw.Sindri.Core.Profile.RepoStatusRules.Text(Aw.Sindri.Core.Profile.RepoStatus! status) -> string!
+Aw.Sindri.Core.Workflow.Blocks.StepContext.HeavySlotHeld.get -> bool
+Aw.Sindri.Core.Workflow.Blocks.StepContext.HeavySlotHeld.init -> void
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyHold
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove.Acquire = 1 -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove.Ensure = 2 -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove.None = 0 -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove.Release = 3 -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType.Heavy = 8 -> Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType
+static Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyHold.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, bool inPhase, bool leased) -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+const Aw.Sindri.Core.Events.EventTypes.WorkflowHeavy = "workflow.heavy" -> string!
