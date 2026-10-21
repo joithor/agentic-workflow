@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Aw.Sindri.Core.Workflow.Engine.Effects;
 
 /// <summary>
@@ -7,4 +9,8 @@ namespace Aw.Sindri.Core.Workflow.Engine.Effects;
 /// </summary>
 /// <param name="Outcome">The reply's outcome ('delivered', 'created', 'claimExists').</param>
 /// <param name="Effect">The effect identity it answers.</param>
-public sealed record EffectReply(string Outcome, string Effect);
+/// <param name="Facts">The facts the effect's reply carries, by fact key (the waiting frame receives them as the wait's facts); written only when there are some, so a reply without facts is the payload it always was.</param>
+public sealed record EffectReply(
+    string Outcome,
+    string Effect,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyDictionary<string, FactValue>? Facts = null);
