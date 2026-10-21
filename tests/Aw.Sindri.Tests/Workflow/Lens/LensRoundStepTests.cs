@@ -15,7 +15,7 @@ public sealed class LensRoundStepTests
 
     private static LensPack Design(params PackLens[] lenses) => new(LensPackId.From("design-five"), Hash, LensPackKind.Design, lenses);
 
-    private static PackLens Always(string id) => new(id, id, "prompt", LensWhen.Always);
+    private static PackLens Always(string id) => new(LensId.From(id), id, "prompt", LensWhen.Always);
 
     private static async Task<BlockStepResult> Run(FakeLensPacks packs, string rounds, string? scope = null)
     {
@@ -49,9 +49,9 @@ public sealed class LensRoundStepTests
 
         _ = await Run(packs, "[]");
 
-        var asked = Assert.Single(packs.Asked);
-        Assert.Equal(LensPackKind.Design, asked.Kind);
-        Assert.Equal("web", asked.Repo?.Value);
+        var (kind, repo) = Assert.Single(packs.Asked);
+        Assert.Equal(LensPackKind.Design, kind);
+        Assert.Equal("web", repo?.Value);
     }
 
     [Fact]

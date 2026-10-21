@@ -49,7 +49,7 @@ public sealed class BuiltInLensPacksTests
             var pack = await new ProfileLensPacks(new NoProfile(id), source).Resolve(kind, repo: null, Token);
 
             Assert.True(pack.Value.Lenses.Count is > 0 and <= LensPack.MaxLenses, id);
-            Assert.All(pack.Value.Lenses, l => Assert.False(string.IsNullOrWhiteSpace(l.Prompt), $"{id}/{l.Id}"));
+            Assert.All(pack.Value.Lenses, l => Assert.False(string.IsNullOrWhiteSpace(l.Prompt), $"{id}/{l.Id.Value}"));
         }
     }
 
