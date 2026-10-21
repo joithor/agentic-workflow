@@ -23,7 +23,6 @@ using Aw.Sindri.Features.ApproveAllRecipes;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.ApproveRecipe;
 using Aw.Sindri.Features.Blocks;
-using Aw.Sindri.Features.Build;
 using Aw.Sindri.Features.CancelJob;
 using Aw.Sindri.Features.CheckProfile;
 using Aw.Sindri.Features.CloseItem;
@@ -58,7 +57,6 @@ using Aw.Sindri.Features.Items;
 using Aw.Sindri.Features.JobProbe;
 using Aw.Sindri.Features.Jobs;
 using Aw.Sindri.Features.Launching;
-using Aw.Sindri.Features.LensLoops;
 using Aw.Sindri.Features.ListCommands;
 using Aw.Sindri.Features.ListDecisions;
 using Aw.Sindri.Features.ListInstances;
@@ -77,7 +75,6 @@ using Aw.Sindri.Features.OnyxUp;
 using Aw.Sindri.Features.OpenItem;
 using Aw.Sindri.Features.PauseService;
 using Aw.Sindri.Features.PingProcess;
-using Aw.Sindri.Features.Prove;
 using Aw.Sindri.Features.ReadInjection;
 using Aw.Sindri.Features.ReadLedger;
 using Aw.Sindri.Features.RebuildViews;
@@ -95,7 +92,6 @@ using Aw.Sindri.Features.SessionExit;
 using Aw.Sindri.Features.SessionHeartbeat;
 using Aw.Sindri.Features.Sessions;
 using Aw.Sindri.Features.SetupWatch;
-using Aw.Sindri.Features.Ship;
 using Aw.Sindri.Features.ShowRecipe;
 using Aw.Sindri.Features.StartInstance;
 using Aw.Sindri.Features.StartProcess;
@@ -160,12 +156,10 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddLaunchSlices()
             .AddLaunchTargetJob()
             .AddScoped<IRepoCheckouts, ProfileRepoCheckouts>()
+            .AddAddRepo()
             .AddStationSlices();
         return services;
     }
-
-    private static IServiceCollection AddStationSlices(this IServiceCollection services) =>
-        services.AddAddRepo().AddScopingSlices().AddLineSlices().AddBuildSlices().AddShipSlices().AddLensLoops().AddProveSlices();
 
     private static IServiceCollection AddCommands(this IServiceCollection services)
     {
