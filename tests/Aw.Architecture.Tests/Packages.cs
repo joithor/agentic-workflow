@@ -49,6 +49,9 @@ internal static class Packages
         "Aw.Forge.Core",
         "Aw.Forge.Infrastructure",
         "Aw.Forge.Host",
+        "Aw.CodeIndex.Core",
+        "Aw.CodeIndex.Features",
+        "Aw.CodeIndex.Infrastructure",
     ];
 
     /// <summary>
