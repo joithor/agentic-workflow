@@ -10781,6 +10781,7 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentSessions
 Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentSessions.Usage(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<long>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentSessions.Watch(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState!>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.IRunDiff
+Aw.Sindri.Core.Workflow.Engine.Runtime.IRunDiff.ChangedPaths(string! worktree, string! baseCommit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.IRunDiff.Head(string! worktree, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.IRunDiff.IsEmpty(string! worktree, string! startHead, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
 Aw.Sindri.Core.Launches.ILaunchUsage

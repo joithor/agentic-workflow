@@ -105,6 +105,8 @@ public abstract class AgentRuntimeTestBase : IDisposable
             Interlocked.Increment(ref _reads) == 1 ? throw new InvalidOperationException("the worker died") : inner.Head(worktree, cancellationToken);
 
         public ValueTask<Result<bool>> IsEmpty(string worktree, string startHead, CancellationToken cancellationToken) => inner.IsEmpty(worktree, startHead, cancellationToken);
+
+        public ValueTask<Result<IReadOnlyList<string>>> ChangedPaths(string worktree, string baseCommit, CancellationToken cancellationToken) => inner.ChangedPaths(worktree, baseCommit, cancellationToken);
     }
 
     internal sealed record ItemInfo(string Key, string Id, string Repo);
