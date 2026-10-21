@@ -195,7 +195,7 @@ public sealed class InstanceViewLayoutTests
         var steps = StatusCases.View("desk-task").Steps;
 
         Assert.Equal(["produce", "checks", "verify"], steps.Select(static s => s.State), StringComparer.Ordinal);
-        Assert.Equal([["fact:output"], ["fact:findings"], ["fact:findings"]], steps.Select(static s => s.Produces.Select(static p => p.FactKey!).ToArray()));
+        Assert.Equal([["fact:output"], ["fact:findings"], ["fact:findings"]], steps.Select(static s => s.Produces.Select(static p => p.FactKey).ToArray()));
     }
 
     [Fact]

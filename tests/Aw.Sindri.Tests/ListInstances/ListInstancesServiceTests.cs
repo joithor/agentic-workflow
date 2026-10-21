@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ListInstances;
 using Aw.Sindri.Testing;
@@ -124,7 +125,7 @@ public sealed class ListInstancesServiceTests
     }
 
     private static InstanceView Line(string name, string address) =>
-        View(name, address) with { Recipe = View(name, address).Recipe with { Id = Aw.Sindri.Core.Workflow.Ids.RecipeId.From("workflow.line") } };
+        View(name, address) with { Recipe = View(name, address).Recipe with { Id = RecipeId.From("workflow.line") } };
 
     private static async Task<(InstanceList List, FixedReader Reader)> RunLines(InstanceView[] all, params InstanceView[] listed)
     {
