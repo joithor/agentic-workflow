@@ -100,8 +100,8 @@
 
       <!-- The stage: the page scrolls, so the stage is given the height the window leaves (ContextPage.axaml.cs). -->
       <Panel x:Name="ContextStageHost" Grid.Row="1" MinHeight="420">
-        <Panel x:Name="LensStackHost">
-          <mv:ContextMapView x:Name="ContextStack" IsVisible="{Binding MapVisible}" />
+        <Panel x:Name="LensStackHost" IsVisible="{Binding MapVisible}">
+          <mv:ContextMapView x:Name="ContextStack" />
         </Panel>
         <Border x:Name="ContextFilesPanel" IsVisible="{Binding ShowFiles}" Background="{DynamicResource Brush.Surface1}" CornerRadius="{StaticResource Radius.MD}" Padding="16">
           <fv:FileMapTree x:Name="FileMapHost" DataContext="{Binding FileMap}" />

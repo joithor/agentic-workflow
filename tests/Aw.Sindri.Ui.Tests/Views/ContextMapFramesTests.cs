@@ -32,7 +32,7 @@ public sealed class ContextMapFramesTests : FrameHost
         shell.GoTo(PageId.Context);
         shell.Context.AnchorText = Anchor;
         await shell.Context.Submit(Token);
-        await Until(window, () => Named<ContextMapWorld>(window, "ContextWorld").NodeViews.Count > 0 && Named<ZoomBorder>(window, "ContextCanvas").Bounds.Width > 0, "the map never drew");
+        await Until(window, () => window.GetVisualDescendants().OfType<ContextMapWorld>().FirstOrDefault() is { NodeViews.Count: > 0 } && window.GetVisualDescendants().OfType<ZoomBorder>().FirstOrDefault() is { Bounds.Width: > 0 }, "the map never drew");
         Settle(window);
         return (window, shell);
     }

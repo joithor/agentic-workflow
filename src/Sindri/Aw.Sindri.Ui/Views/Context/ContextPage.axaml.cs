@@ -118,7 +118,7 @@ internal sealed partial class ContextPage : UserControl
 
     private static Grid Row(MapAnchorViewModel anchor)
     {
-        var tick = new Views.Icons.StateIcon { Icon = "Ok", VerticalAlignment = VerticalAlignment.Center };
+        var tick = new Icons.StateIcon { Icon = "Ok", VerticalAlignment = VerticalAlignment.Center };
         var label = new TextBlock { Text = anchor.Label, VerticalAlignment = VerticalAlignment.Center, TextTrimming = Avalonia.Media.TextTrimming.CharacterEllipsis };
         label.Classes.Add("body");
         var kind = new TextBlock { Text = anchor.KindWord.ToLowerInvariant(), VerticalAlignment = VerticalAlignment.Center };
