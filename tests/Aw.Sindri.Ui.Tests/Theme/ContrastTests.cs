@@ -55,6 +55,17 @@ public sealed partial class ContrastTests
         { "WireHi", "Surface1", 5.9, NonText },
         { "RingAnchor", "Canvas", 14.3, NonText },
         { "RingAnchor", "Surface1", 13.0, NonText },
+        // The workflow run's "you took over" status (F3 workflows spec §2 "Tokens"): violet glyph and word on its soft pair.
+        { "Violet", "VioletSoft", 6.8, TextAa },
+        { "Violet", "Surface1", 7.0, TextAa },
+        { "Violet", "Surface2", 6.7, TextAa },
+        // The other status pairs the Workflows page draws on a card (Surface2) and in a drawer (Surface1).
+        { "PrimaryHover", "PrimarySoft", 5.6, TextAa },   // running
+        { "Attention", "Surface2", 8.2, TextAa },
+        { "Error", "Surface2", 5.3, TextAa },
+        { "Success", "Surface2", 5.8, TextAa },
+        { "InkMuted", "Surface3", 12.1, TextAa },   // cancelled
+        { "InkSubtle", "Surface3", 5.4, TextAa },   // not started
     };
 
     [Theory]
