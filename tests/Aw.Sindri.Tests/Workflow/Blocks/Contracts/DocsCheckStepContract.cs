@@ -16,7 +16,7 @@ public sealed class DocsCheckStepContract : BlockContract
 
     protected override BlockDescriptor Descriptor => DocsSteps.Check;
 
-    protected override string ExpectedHash => "sha256:c62217b7dd6c9cb27178d62981325f6d3d1c39319a0f0ec7185ee00cd33da719";
+    protected override string ExpectedHash => "sha256:86370439930195d2543e6d57da90e5e73281bde43e0f78c1c42b97929a2dc43d";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

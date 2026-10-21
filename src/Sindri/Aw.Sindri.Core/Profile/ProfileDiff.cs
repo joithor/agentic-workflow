@@ -123,7 +123,7 @@ public static class ProfileDiff
             ("workflow.effects", Joined(workflow?.Effects)),
             ("workflow.dispatchDelay", workflow?.DispatchDelay),
         ];
-        return keys.Concat(Runtimes(workflow)).Concat(Forge(workflow?.Forge)).Concat(LineKeys(workflow)).Where(static k => k.Value is not null).Select(static k => (k.Key, k.Value!));   // why: the nulls are filtered out just before
+        return keys.Concat(Runtimes(workflow)).Concat(Forge(workflow?.Forge)).Concat(LineKeys(workflow)).Concat(Pr(workflow?.Pr)).Concat(DocsSync(workflow?.Docs)).Where(static k => k.Value is not null).Select(static k => (k.Key, k.Value!));   // why: the nulls are filtered out just before
     }
 
     /// <summary>The line's keys (line spec LN-WF9): every one is a re-approval, so each key the profile sets has a path.</summary>
@@ -199,5 +199,27 @@ public static class ProfileDiff
         ("workflow.forge.adapter", forge?.Adapter),
         ("workflow.forge.hosts", Joined(forge?.Hosts)),
         ("workflow.forge.credential", forge?.Credential),
+    ];
+
+    private static (string Key, string? Value)[] Pr(PrSettings? pr) =>
+    [
+        ("workflow.pr.bots", Joined(pr?.Bots)),
+        ("workflow.pr.autofixCap", pr?.AutofixCap?.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+        ("workflow.pr.pollInterval", pr?.PollInterval),
+        ("workflow.pr.remindAfter", pr?.RemindAfter),
+        .. PrChoices(pr),
+    ];
+
+    private static (string Key, string? Value)[] PrChoices(PrSettings? pr) =>
+    [
+        ("workflow.pr.replies", pr?.Replies),
+        ("workflow.pr.mergeMethod", pr?.MergeMethod),
+        ("workflow.pr.heldBlocksMerge", pr?.HeldBlocksMerge?.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+        ("workflow.pr.docsMergeWait", pr?.DocsMergeWait),
+    ];
+
+    private static (string Key, string? Value)[] DocsSync(DocsSettings? docs) =>
+    [
+        ("workflow.docs.sync", docs?.Sync),
     ];
 }
