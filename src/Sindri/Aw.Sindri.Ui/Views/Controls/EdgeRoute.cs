@@ -40,6 +40,14 @@ internal sealed record EdgeRoute(Point Start, IReadOnlyList<RouteStep> Steps)
         return new EdgeRoute(from, [new RouteStep(RouteStepKind.Cubic, to, Control1: new Point(from.X, from.Y + handle), Control2: new Point(to.X, to.Y - handle))]);
     }
 
+    /// <summary>The cubic between two ports: it leaves each along its side's outward normal, the handles half the distance long, from 40 to 110 px.</summary>
+    /// <param name="from">The start port.</param>
+    /// <param name="fromSide">The side of the source node the start port is on.</param>
+    /// <param name="to">The end port.</param>
+    /// <param name="toSide">The side of the target node the end port is on.</param>
+    /// <returns>The route.</returns>
+    internal static EdgeRoute Between(Point from, PortSide fromSide, Point to, PortSide toSide) => throw new NotSupportedException();
+
     /// <summary>A line through corner points with each corner rounded by an arc.</summary>
     /// <param name="points">The start, the corners and the end, in order (two or more).</param>
     /// <param name="radius">The corner radius; a short side shrinks it to half that side.</param>

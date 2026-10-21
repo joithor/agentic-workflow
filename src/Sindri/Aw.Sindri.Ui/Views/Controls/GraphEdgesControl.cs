@@ -13,22 +13,22 @@ namespace Aw.Sindri.Ui.Views.Controls;
 /// 8 4 when suggested, a 10 px port with a 3 px radius at each end, WireHi for edges around the hovered or selected node, and
 /// a 12 px wide hit stroke so a thin line is easy to hover. Edges it is told are dimmed draw at 42 %.
 /// </summary>
-internal sealed class ContextEdgesControl : Control, ICustomHitTest
+internal sealed class GraphEdgesControl : Control, ICustomHitTest
 {
     /// <summary>The edges to draw.</summary>
     internal static readonly StyledProperty<IReadOnlyList<MapEdge>> EdgesProperty =
-        AvaloniaProperty.Register<ContextEdgesControl, IReadOnlyList<MapEdge>>(nameof(Edges), []);
+        AvaloniaProperty.Register<GraphEdgesControl, IReadOnlyList<MapEdge>>(nameof(Edges), []);
 
     /// <summary>The keys of the edges drawn in WireHi.</summary>
     internal static readonly StyledProperty<IReadOnlySet<string>> HighlightedProperty =
-        AvaloniaProperty.Register<ContextEdgesControl, IReadOnlySet<string>>(nameof(Highlighted), new HashSet<string>(StringComparer.Ordinal));
+        AvaloniaProperty.Register<GraphEdgesControl, IReadOnlySet<string>>(nameof(Highlighted), new HashSet<string>(StringComparer.Ordinal));
 
     /// <summary>The keys of the edges drawn dimmed.</summary>
     internal static readonly StyledProperty<IReadOnlySet<string>> DimmedProperty =
-        AvaloniaProperty.Register<ContextEdgesControl, IReadOnlySet<string>>(nameof(Dimmed), new HashSet<string>(StringComparer.Ordinal));
+        AvaloniaProperty.Register<GraphEdgesControl, IReadOnlySet<string>>(nameof(Dimmed), new HashSet<string>(StringComparer.Ordinal));
 
     /// <summary>The key of the edge under the pointer, or null.</summary>
-    internal static readonly StyledProperty<string?> HoveredProperty = AvaloniaProperty.Register<ContextEdgesControl, string?>(nameof(Hovered));
+    internal static readonly StyledProperty<string?> HoveredProperty = AvaloniaProperty.Register<GraphEdgesControl, string?>(nameof(Hovered));
 
     private const double Stroke = 2;
     private const double HitWidth = 12;
@@ -40,10 +40,10 @@ internal sealed class ContextEdgesControl : Control, ICustomHitTest
 
     private IReadOnlyList<(MapEdge Edge, StreamGeometry Geometry)> _built = [];
 
-    static ContextEdgesControl()
+    static GraphEdgesControl()
     {
-        AffectsRender<ContextEdgesControl>(HighlightedProperty, DimmedProperty, HoveredProperty);
-        _ = EdgesProperty.Changed.AddClassHandler<ContextEdgesControl>((c, _) => c.Rebuild());
+        AffectsRender<GraphEdgesControl>(HighlightedProperty, DimmedProperty, HoveredProperty);
+        _ = EdgesProperty.Changed.AddClassHandler<GraphEdgesControl>((c, _) => c.Rebuild());
     }
 
     /// <summary>Gets or sets the edges to draw.</summary>
