@@ -29,6 +29,9 @@ public sealed record ContextSettings
     /// <summary>The per-query deadline.</summary>
     public TimeSpan Deadline { get; init; } = TimeSpan.FromSeconds(4);
 
+    /// <summary>The code lens's lexical search deadline: one git grep per implementing file and data thing, run in turn, so it gets longer than a query.</summary>
+    public TimeSpan CodeDeadline { get; init; } = TimeSpan.FromSeconds(60);
+
     /// <summary>The largest token budget a request may ask for.</summary>
     public int MaxBudget { get; init; } = 32_000;
 
