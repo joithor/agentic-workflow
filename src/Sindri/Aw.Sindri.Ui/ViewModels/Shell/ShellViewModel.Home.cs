@@ -76,10 +76,24 @@ internal sealed partial class ShellViewModel
         {
             OpenApproveAll();
         }
-        else if (request.Action.OptionId.Length > 0 && NeedsYou.Row(request.RowId) is { } row)
+        else if (request.Action.OptionId.Length > 0)
+        {
+            AnswerDecision(request.RowId, request.Action.OptionId, note: null);
+        }
+    }
+
+    // A decision answered from a key, a button or the inbox's action bar: the sheet takes the option (and the note, when the bar has one) and sends them once.
+    private void AnswerDecision(string rowId, string optionId, string? note)
+    {
+        if (NeedsYou.Row(rowId) is { } row)
         {
             Decision.Show(row);
-            _ = Decision.Choose(request.Action.OptionId);
+            if (note is not null)
+            {
+                Decision.Note = note;
+            }
+
+            _ = Decision.Choose(optionId);
         }
     }
 

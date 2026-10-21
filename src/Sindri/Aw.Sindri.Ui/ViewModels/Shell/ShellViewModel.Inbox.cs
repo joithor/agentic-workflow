@@ -1,3 +1,4 @@
+using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
@@ -69,10 +70,11 @@ internal sealed partial class ShellViewModel
         return true;
     }
 
-    private NeedsYouPageViewModel InitInbox(IClipboard clipboard)
+    private NeedsYouPageViewModel InitInbox(ISindriApi api, IClipboard clipboard)
     {
-        var inbox = new NeedsYouPageViewModel(NeedsYou, _clock, clipboard);
+        var inbox = new NeedsYouPageViewModel(NeedsYou, _clock, clipboard, new DeskReporter(api, Health.ApiUrl));
         inbox.LeaveRequested += (_, _) => LeaveNeedsYouInbox();
+        inbox.Bar.DecisionRequested += (_, e) => AnswerDecision(e.RowId, e.OptionId, e.Note);
         inbox.ItemRequested += (_, e) =>
         {
             if (NeedsYou.Row(e.RowId)?.ItemLink is { } link)
@@ -83,15 +85,34 @@ internal sealed partial class ShellViewModel
         return inbox;
     }
 
-    // J and K walk the inbox in its own order, never Home's capped list behind it; no other Home key acts while it shows.
+    // J and K walk the inbox in its own order, never Home's capped list behind it; A, D and Enter act on the selected request through the action bar
+    // (a key never sends a protected action: the bar copies its command); no other Home key acts while it shows.
     private bool InboxKeyPressed(string key)
     {
-        if (!IsNeedsYouInbox || key is not ("J" or "K"))
+        if (!IsNeedsYouInbox)
         {
             return false;
         }
 
-        _ = Inbox.Move(key == "J" ? 1 : -1);
-        return true;
+        switch (key)
+        {
+            case "J" or "K":
+                _ = Inbox.Move(key == "J" ? 1 : -1);
+                return true;
+            case "A":
+                _ = Inbox.Bar.PressApprove();
+                return true;
+            case "D":
+                _ = Inbox.Bar.PressSendBack();
+                return true;
+            case "X" when Inbox.Selected is { Entry.DecisionId: not null }:
+                _ = Inbox.Bar.PressSendBack();   // X stays as an alias of D on a decision row
+                return true;
+            case "Enter":
+                Inbox.FocusCard();
+                return true;
+            default:
+                return false;
+        }
     }
 }

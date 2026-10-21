@@ -17,8 +17,6 @@ public sealed class NeedsYouBarViewModelTests
     private readonly FakeSindriApi _server = new();
     private readonly List<NeedsYouDecisionEventArgs> _decisions = [];
 
-    private static CancellationToken Token => TestContext.Current.CancellationToken;
-
     private async Task<NeedsYouBarViewModel> Bar(NeedsYouEntry entry, bool read = false)
     {
         var bar = new NeedsYouBarViewModel(new DeskReporter(_server, () => _api), _clipboard, _clock);
@@ -101,7 +99,7 @@ public sealed class NeedsYouBarViewModelTests
         _server.CompleteGate.SetResult();
         await first;
 
-        Assert.Single(_server.CompleteCalls);
+        _ = Assert.Single(_server.CompleteCalls);
     }
 
     [Fact]
