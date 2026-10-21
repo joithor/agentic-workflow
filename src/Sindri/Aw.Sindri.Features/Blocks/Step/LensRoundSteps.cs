@@ -15,8 +15,11 @@ internal static class LensRoundSteps
         .Reads("fact:packs", "fact:lensRounds", "fact:changedSections").Reports("ready")
         .Writes(On("fact:lensQueue", "ready"));
 
-    /// <summary>'step.lens.log': appends the report to the lens rounds; 'next' (a lens is still queued), 'clean' or 'findings'.</summary>
+    /// <summary>
+    /// 'step.lens.log': appends the report to the lens rounds; 'next' (a lens is still queued), 'clean' or 'findings'. 'needsOwner' instead of 'findings' when a stopping finding carries
+    /// a typed escalation (owner, 2026-10-19): the same findings, and the question as 'fact:escalation'. Nothing else reaches a human.
+    /// </summary>
     public static BlockDescriptor Log { get; } = BlockStep("step.lens.log", Capability.None)
-        .Reads("fact:lensReport", "fact:lensRounds", "fact:lensQueue").Reports("next", "clean", "findings")
-        .Writes(Every("fact:lensRounds"), On("fact:lensQueue", "next"), On("fact:findings", "findings"));
+        .Reads("fact:lensReport", "fact:lensRounds", "fact:lensQueue").Reports("next", "clean", "findings", "needsOwner")
+        .Writes(Every("fact:lensRounds"), On("fact:lensQueue", "next"), On("fact:findings", "findings", "needsOwner"), On("fact:escalation", "needsOwner"));
 }
