@@ -14331,3 +14331,44 @@ Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove.Release = 3 -> Aw.Sindri.Core.Wor
 Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType.Heavy = 8 -> Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType
 static Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyHold.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, bool inPhase, bool leased) -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
 const Aw.Sindri.Core.Events.EventTypes.WorkflowHeavy = "workflow.heavy" -> string!
+Aw.Sindri.Core.Review.ReviewFacts
+Aw.Sindri.Core.Review.ReviewFacts.<Clone>$() -> Aw.Sindri.Core.Review.ReviewFacts!
+Aw.Sindri.Core.Review.ReviewFacts.Deconstruct(out string! Head, out System.Text.Json.Nodes.JsonNode! Review, out System.Text.Json.Nodes.JsonNode? LensRounds) -> void
+Aw.Sindri.Core.Review.ReviewFacts.Equals(Aw.Sindri.Core.Review.ReviewFacts? other) -> bool
+Aw.Sindri.Core.Review.ReviewFacts.Head.get -> string!
+Aw.Sindri.Core.Review.ReviewFacts.Head.init -> void
+Aw.Sindri.Core.Review.ReviewFacts.LensRounds.get -> System.Text.Json.Nodes.JsonNode?
+Aw.Sindri.Core.Review.ReviewFacts.LensRounds.init -> void
+Aw.Sindri.Core.Review.ReviewFacts.ReviewFacts(string! Head, System.Text.Json.Nodes.JsonNode! Review, System.Text.Json.Nodes.JsonNode? LensRounds) -> void
+Aw.Sindri.Core.Review.ReviewFacts.Review.get -> System.Text.Json.Nodes.JsonNode!
+Aw.Sindri.Core.Review.ReviewFacts.Review.init -> void
+Aw.Sindri.Core.Review.ReviewPack
+Aw.Sindri.Core.Review.ReviewPackOrigin
+Aw.Sindri.Core.Review.ReviewPackOrigin.AcceptanceHash.get -> string!
+Aw.Sindri.Core.Review.ReviewPackOrigin.AcceptanceHash.init -> void
+Aw.Sindri.Core.Review.ReviewPackOrigin.BaseSha.get -> string!
+Aw.Sindri.Core.Review.ReviewPackOrigin.BaseSha.init -> void
+Aw.Sindri.Core.Review.ReviewPackOrigin.<Clone>$() -> Aw.Sindri.Core.Review.ReviewPackOrigin!
+Aw.Sindri.Core.Review.ReviewPackOrigin.Deconstruct(out string! Slug, out string! Repo, out string! BaseSha, out string! PacketHash, out string! AcceptanceHash) -> void
+Aw.Sindri.Core.Review.ReviewPackOrigin.Equals(Aw.Sindri.Core.Review.ReviewPackOrigin? other) -> bool
+Aw.Sindri.Core.Review.ReviewPackOrigin.PacketHash.get -> string!
+Aw.Sindri.Core.Review.ReviewPackOrigin.PacketHash.init -> void
+Aw.Sindri.Core.Review.ReviewPackOrigin.Repo.get -> string!
+Aw.Sindri.Core.Review.ReviewPackOrigin.Repo.init -> void
+Aw.Sindri.Core.Review.ReviewPackOrigin.ReviewPackOrigin(string! Slug, string! Repo, string! BaseSha, string! PacketHash, string! AcceptanceHash) -> void
+Aw.Sindri.Core.Review.ReviewPackOrigin.Slug.get -> string!
+Aw.Sindri.Core.Review.ReviewPackOrigin.Slug.init -> void
+override Aw.Sindri.Core.Review.ReviewFacts.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Review.ReviewFacts.GetHashCode() -> int
+override Aw.Sindri.Core.Review.ReviewFacts.ToString() -> string!
+override Aw.Sindri.Core.Review.ReviewPackOrigin.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Review.ReviewPackOrigin.GetHashCode() -> int
+override Aw.Sindri.Core.Review.ReviewPackOrigin.ToString() -> string!
+static Aw.Sindri.Core.Review.ReviewFacts.operator !=(Aw.Sindri.Core.Review.ReviewFacts? left, Aw.Sindri.Core.Review.ReviewFacts? right) -> bool
+static Aw.Sindri.Core.Review.ReviewFacts.operator ==(Aw.Sindri.Core.Review.ReviewFacts? left, Aw.Sindri.Core.Review.ReviewFacts? right) -> bool
+static Aw.Sindri.Core.Review.ReviewPack.FileNames.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Review.ReviewPack.Files(Aw.Sindri.Core.Review.ReviewFacts! facts, Aw.Sindri.Core.Review.ReviewPackOrigin! origin) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+static Aw.Sindri.Core.Review.ReviewPackOrigin.operator !=(Aw.Sindri.Core.Review.ReviewPackOrigin? left, Aw.Sindri.Core.Review.ReviewPackOrigin? right) -> bool
+static Aw.Sindri.Core.Review.ReviewPackOrigin.operator ==(Aw.Sindri.Core.Review.ReviewPackOrigin? left, Aw.Sindri.Core.Review.ReviewPackOrigin? right) -> bool
+static Aw.Sindri.Core.Review.ReviewPack.Problems(Aw.Sindri.Core.Review.ReviewFacts! facts) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Review.ReviewPack.Verdict(System.Text.Json.Nodes.JsonNode! review) -> string?

@@ -6,6 +6,9 @@
              xmlns:fv="using:Aw.Sindri.Ui.Views.Context.FileMap"
              xmlns:nv="using:Aw.Sindri.Ui.Views.Context.Node"
              xmlns:sv="using:Aw.Sindri.Ui.Views.Context.Sources"
+             xmlns:mv="using:Aw.Sindri.Ui.Views.Context.Map"
+             xmlns:ctl="using:Aw.Sindri.Ui.Views.Controls"
+             xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
              x:DataType="ctx:ContextPageViewModel">
 
   <UserControl.Resources>
@@ -16,79 +19,107 @@
     </DataTemplate>
   </UserControl.Resources>
 
-  <!-- The Context page (screens spec §4.4): the head with the anchor box, the lens stack and files lens on the left, the review queue,
-       the node card and the sources on the right. U9a0 draws the skeleton; each host below is a seam its stage fills (U9a the stack,
-       U9c the review, U9d the files, U9b the node card and sources). -->
-  <StackPanel Spacing="{StaticResource Size.PanelGap}">
+  <UserControl.Styles>
+    <!-- The segmented choices of the control row: a Surface2 track, the chosen segment on Surface3, 30 px high. -->
+    <Style Selector="RadioButton.segment">
+      <Setter Property="Height" Value="{StaticResource Size.Control}" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="CornerRadius" Value="{StaticResource Radius.MD}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <ContentPresenter x:Name="PART_ContentPresenter" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" Padding="{TemplateBinding Padding}"
+                            Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="RadioButton.segment:checked /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface3}" />
+    </Style>
+  </UserControl.Styles>
+
+  <!-- The Context page (F3 spec 1 §2): the head, a control row (starting points, as of, Map or Files, coverage), and the stage, which
+       is the pannable map. The hosts below are the seams the later stages fill: the lens stack is the stage, the node card and the
+       sources are the inspector, the review and the file map are the Files view. -->
+  <Grid RowDefinitions="Auto,Auto,*" RowSpacing="{StaticResource Size.PanelGap}">
     <Grid ColumnDefinitions="Auto,*,Auto">
       <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
         <TextBlock x:Name="ContextTitle" Classes="page-title" Text="{Binding Title}" />
         <TextBlock x:Name="ContextHead" Classes="caption subtle" Text="{Binding Head}" IsVisible="{Binding HasHead}" VerticalAlignment="Center" />
       </StackPanel>
-      <TextBox x:Name="AnchorBox" Grid.Column="2" KeyDown="OnAnchorKey" MinWidth="280" Text="{Binding AnchorText, Mode=TwoWay}" PlaceholderText="{Binding AnchorHint}"
-               AutomationProperties.Name="{Binding AnchorLabel}" />
+      <Border x:Name="ContextDraftTag" Grid.Column="2" IsVisible="{Binding IsDraft}" Background="{DynamicResource Brush.Surface2}" CornerRadius="{StaticResource Radius.Pill}" Padding="10,2" VerticalAlignment="Center"
+              AutomationProperties.Name="{Binding DraftTag}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+        <TextBlock Classes="caption" Text="{Binding DraftTag}" />
+      </Border>
     </Grid>
-    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource Size.PanelGap}">
-      <StackPanel Spacing="{StaticResource Size.PanelGap}">
-        <StackPanel x:Name="LensStackHost" Spacing="8">
-          <Border x:Name="ContextProblem" IsVisible="{Binding HasProblem}" AutomationProperties.Name="{Binding Problem}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-            <TextBlock Text="{Binding Problem}" TextWrapping="Wrap" />
-          </Border>
-          <StackPanel x:Name="ContextChoices" IsVisible="{Binding HasChoices}">
-            <Border AutomationProperties.Name="{Binding ChoicesName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-              <TextBlock Classes="caption subtle" Text="{Binding ChoicesName}" />
-            </Border>
-            <ItemsControl ItemsSource="{Binding Choices}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="x:String">
-                  <Button Content="{Binding}" Click="OnPick" AutomationProperties.Name="{Binding}" />
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </StackPanel>
-          <ItemsControl x:Name="ContextMissing" ItemsSource="{Binding Missing}" ItemTemplate="{StaticResource LineTemplate}" />
-          <StackPanel x:Name="ContextStack" IsVisible="{Binding HasStack}" Spacing="8">
-            <ItemsControl ItemsSource="{Binding Bands}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="ctx:ContextBandViewModel">
-                  <StackPanel Margin="0,0,0,8">
-                    <Border AutomationProperties.Name="{Binding Header}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-                      <TextBlock Classes="caption subtle" Text="{Binding Header}" />
-                    </Border>
-                    <ItemsControl ItemsSource="{Binding Lines}" ItemTemplate="{StaticResource LineTemplate}" />
-                  </StackPanel>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <!-- The answer is the three bands above; the links, the coverage and what was searched are for checking it (F3), closed by default. -->
-            <Expander x:Name="ContextMore" Header="{Binding MoreLabel}" IsExpanded="False" HorizontalAlignment="Stretch" AutomationProperties.Name="{Binding MoreLabel}">
-              <StackPanel Spacing="8">
-                <Border AutomationProperties.Name="{Binding MapLine}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-                  <TextBlock Classes="caption subtle" Text="{Binding MapLine}" />
-                </Border>
-                <Border AutomationProperties.Name="{Binding EdgesHeader}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-                  <TextBlock Classes="caption subtle" Text="{Binding EdgesHeader}" />
-                </Border>
-                <ItemsControl x:Name="ContextEdges" ItemsSource="{Binding Edges}" ItemTemplate="{StaticResource LineTemplate}" />
-                <Border AutomationProperties.Name="{Binding CoverageName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-                  <TextBlock Classes="caption subtle" Text="{Binding CoverageName}" />
-                </Border>
-                <ItemsControl x:Name="ContextCoverage" ItemsSource="{Binding Coverage}" ItemTemplate="{StaticResource LineTemplate}" />
-                <Border AutomationProperties.Name="{Binding SearchedName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-                  <TextBlock Classes="caption subtle" Text="{Binding SearchedName}" />
-                </Border>
-                <ItemsControl x:Name="ContextSearched" ItemsSource="{Binding Searched}" ItemTemplate="{StaticResource LineTemplate}" />
-              </StackPanel>
-            </Expander>
-          </StackPanel>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" MinHeight="{StaticResource Size.TopBar}">
+      <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,16,8">
+          <TextBlock Classes="eyebrow" Text="{Binding StartsAtLabel}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+          <TextBox x:Name="AnchorBox" KeyDown="OnAnchorKey" MinWidth="220" Text="{Binding AnchorText, Mode=TwoWay}" PlaceholderText="{Binding AnchorHint}"
+                   AutomationProperties.Name="{Binding AnchorLabel}" />
+          <Button x:Name="StartingPoints" IsVisible="{Binding HasStack}" VerticalAlignment="Center">
+            <TextBlock x:Name="StartingPointsText" Classes="button" AutomationProperties.AccessibilityView="Raw" />
+          </Button>
         </StackPanel>
-        <fv:FileMapTree x:Name="FileMapHost" DataContext="{Binding FileMap}" />
-      </StackPanel>
-      <StackPanel Grid.Column="1" Spacing="{StaticResource Size.PanelGap}" MinWidth="320">
-        <rv:MapReviewPanel x:Name="ReviewHost" DataContext="{Binding Review}" />
-        <nv:NodeCard x:Name="NodeHost" DataContext="{Binding Node}" />
-        <sv:SourcesPanel x:Name="SourcesHost" DataContext="{Binding Sources}" />
-      </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,16,8">
+          <TextBlock Classes="eyebrow" Text="{Binding AsOfLabel}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+          <Border x:Name="ContextAsOf" Background="{DynamicResource Brush.Surface2}" CornerRadius="{StaticResource Radius.MD}" Padding="2">
+            <StackPanel Orientation="Horizontal">
+              <RadioButton x:Name="AsOfPinned" GroupName="AsOf" Classes="segment" IsEnabled="False" IsChecked="False" Content="{Binding AsOfPinned}" ToolTip.Tip="{Binding AsOfPinnedHint}" ToolTip.ShowOnDisabled="True" AutomationProperties.Name="{Binding AsOfPinned}" />
+              <RadioButton x:Name="AsOfLive" GroupName="AsOf" Classes="segment" IsChecked="True" Content="{Binding AsOfLive}" ToolTip.Tip="{Binding AsOfLiveHint}" AutomationProperties.Name="{Binding AsOfLive}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+        <Border x:Name="ContextViewSwitch" Background="{DynamicResource Brush.Surface2}" CornerRadius="{StaticResource Radius.MD}" Padding="2" Margin="0,0,16,8" VerticalAlignment="Center"
+                AutomationProperties.Name="{Binding ViewName}">
+          <StackPanel Orientation="Horizontal">
+            <RadioButton x:Name="ViewMapButton" GroupName="ContextView" Classes="segment" IsChecked="{Binding ShowMap, Mode=TwoWay}" Content="{Binding ViewMapWord}" AutomationProperties.Name="{Binding ViewMapWord}" />
+            <RadioButton x:Name="ViewFilesButton" GroupName="ContextView" Classes="segment" IsChecked="{Binding ShowFiles, Mode=TwoWay}" Content="{Binding ViewFilesWord}" AutomationProperties.Name="{Binding ViewFilesWord}" />
+          </StackPanel>
+        </Border>
+      </WrapPanel>
+      <ctl:CoverageStrip x:Name="ContextCoverageStrip" Grid.Column="1" IsVisible="{Binding HasStack}" VerticalAlignment="Center" Margin="0,0,0,8" />
     </Grid>
-  </StackPanel>
+
+    <Grid Grid.Row="2" RowDefinitions="Auto,*" RowSpacing="8">
+      <StackPanel Spacing="8">
+        <Border x:Name="ContextProblem" IsVisible="{Binding HasProblem}" AutomationProperties.Name="{Binding Problem}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+          <TextBlock Text="{Binding Problem}" TextWrapping="Wrap" />
+        </Border>
+        <StackPanel x:Name="ContextChoices" IsVisible="{Binding HasChoices}">
+          <Border AutomationProperties.Name="{Binding ChoicesName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+            <TextBlock Classes="caption subtle" Text="{Binding ChoicesName}" />
+          </Border>
+          <ItemsControl ItemsSource="{Binding Choices}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <Button Content="{Binding}" Click="OnPick" AutomationProperties.Name="{Binding}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+        <ItemsControl x:Name="ContextMissing" ItemsSource="{Binding Missing}" ItemTemplate="{StaticResource LineTemplate}" />
+      </StackPanel>
+
+      <!-- The stage: the page scrolls, so the stage is given the height the window leaves (ContextPage.axaml.cs). -->
+      <Panel x:Name="ContextStageHost" Grid.Row="1" MinHeight="420">
+        <Panel x:Name="LensStackHost" IsVisible="{Binding MapVisible}">
+          <mv:ContextMapView x:Name="ContextStack" />
+        </Panel>
+        <Border x:Name="ContextFilesPanel" IsVisible="{Binding ShowFiles}" Background="{DynamicResource Brush.Surface1}" CornerRadius="{StaticResource Radius.MD}" Padding="16">
+          <fv:FileMapTree x:Name="FileMapHost" DataContext="{Binding FileMap}" />
+        </Border>
+        <Border x:Name="ContextInspector" IsVisible="False" HorizontalAlignment="Right" Width="480" Background="{DynamicResource Brush.Surface1}" BorderBrush="{DynamicResource Brush.Hairline}" BorderThickness="1,0,0,0">
+          <StackPanel Spacing="{StaticResource Size.PanelGap}">
+            <rv:MapReviewPanel x:Name="ReviewHost" DataContext="{Binding Review}" />
+            <nv:NodeCard x:Name="NodeHost" DataContext="{Binding Node}" />
+            <sv:SourcesPanel x:Name="SourcesHost" DataContext="{Binding Sources}" />
+          </StackPanel>
+        </Border>
+      </Panel>
+    </Grid>
+  </Grid>
 </UserControl>

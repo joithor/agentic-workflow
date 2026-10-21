@@ -68,7 +68,7 @@ public sealed class ContextPageWindowTests
     }
 
     [Fact]
-    public async Task Typing_an_anchor_draws_the_stack_and_every_line_reaches_the_automation_tree()
+    public async Task Typing_an_anchor_draws_the_map_and_every_node_band_and_label_reaches_the_automation_tree()
     {
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(Token);
         _ = await HeadlessUnitTestSession.GetOrStartForAssembly(typeof(ContextPageWindowTests).Assembly).Dispatch(async () =>
@@ -93,11 +93,9 @@ public sealed class ContextPageWindowTests
                 await shell.Context.Submit(Token);
                 Dispatcher.UIThread.RunJobs();
                 window.UpdateLayout();
-                window.GetVisualDescendants().OfType<Expander>().Single(e => string.Equals(e.Name, "ContextMore", StringComparison.Ordinal)).IsExpanded = true;   // the links, coverage and searched lines wait behind "More about this answer"
-                Dispatcher.UIThread.RunJobs();
-                window.UpdateLayout();
                 var heard = Heard.Tree(window).Select(n => n.Name).ToList();
-                var expected = shell.Context.Bands.SelectMany(b => b.Lines.Select(l => l.Text)).Concat(shell.Context.Edges.Select(l => l.Text)).Concat(shell.Context.Coverage.Select(l => l.Text));
+                var map = shell.Context.Map!;
+                var expected = map.Nodes.Select(n => n.Name).Concat(map.Bands.Select(b => b.Name)).Concat(map.Pills.Where(p => p.Always).Select(p => p.Text));
                 Assert.All(expected, text => Assert.Contains(heard, h => string.Equals(h, text, StringComparison.Ordinal)));
             }
             finally
