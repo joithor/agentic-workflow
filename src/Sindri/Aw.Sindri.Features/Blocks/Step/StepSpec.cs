@@ -60,6 +60,12 @@ internal sealed class StepSpec
     /// <returns>The output.</returns>
     public static OutputSpec Every(string fact) => new(FactKey.From(fact), RequiredOn: [], Every: true);
 
+    /// <summary>A text 'with:' parameter (a literal, a fact or a profile key).</summary>
+    /// <param name="name">The parameter's name.</param>
+    /// <param name="required">Whether a recipe must give it.</param>
+    /// <returns>The parameter.</returns>
+    public static ParameterSpec Text(string name, bool required = false) => new(name, ParameterType.Text, required, IsCapabilityField: false);
+
     /// <summary>The facts the Step reads.</summary>
     /// <param name="facts">The fact keys.</param>
     /// <returns>The builder.</returns>
