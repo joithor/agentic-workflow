@@ -1,9 +1,7 @@
 using System.Globalization;
 using Aw.Kernel;
 using Aw.Sindri.Core.Locks;
-using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow;
-using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Checks;
 
@@ -26,24 +24,23 @@ public sealed class RepoCommandRunner(IBuildCommandSource source, ICheckCommands
     /// <returns>The time the slot wait and every command share.</returns>
     public static TimeSpan BudgetFor(TimeSpan maxDuration) => maxDuration > _reportMargin ? maxDuration - _reportMargin : TimeSpan.Zero;
 
-    /// <summary>The commands the approved profile lists for a stage, in the profile's order.</summary>
-    /// <param name="stage">'red', 'checks' or 'green' (<see cref="BuildCommand.Where"/>).</param>
+    /// <summary>The commands the approved profile lists, in the profile's order.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
-    /// <returns>The commands; none when no profile is approved or it lists none for the stage.</returns>
-    public ValueTask<Result<IReadOnlyList<BuildCommand>>> For(string stage, CancellationToken cancellationToken) => source.For(stage, cancellationToken);
+    /// <returns>The commands; none when no profile is approved or it lists none.</returns>
+    public ValueTask<Result<CommandSet>> For(CancellationToken cancellationToken) => source.Read(cancellationToken);
 
-    /// <summary>Runs every planned command in order, in <paramref name="workingDirectory"/>, under one heavy slot. A failing command does not stop the rest.</summary>
+    /// <summary>Runs every command in order, in <paramref name="workingDirectory"/>, under one heavy slot. A failing command does not stop the rest.</summary>
     /// <param name="holder">Who holds the slot, for the lock's owner file ('sindri step.build.checks').</param>
-    /// <param name="plan">The commands and the arguments added to each.</param>
+    /// <param name="set">The commands, and the longest each may run.</param>
     /// <param name="workingDirectory">The phase worktree.</param>
     /// <param name="budget">The time the slot wait and every command share (<see cref="BudgetFor"/>); a command gets what is left of it.</param>
     /// <param name="cancellationToken">Cancels the batch: the running command is killed and the call throws.</param>
     /// <returns>How each ended; an error when the slot stayed busy, the budget ran out or a command could not be started.</returns>
     public async ValueTask<Result<IReadOnlyList<CheckResult>>> Run(
-        string holder, IReadOnlyList<PlannedCommand> plan, string workingDirectory, TimeSpan budget, CancellationToken cancellationToken)
+        string holder, CommandSet set, string workingDirectory, TimeSpan budget, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(plan);
-        if (plan.Count == 0)
+        ArgumentNullException.ThrowIfNull(set);
+        if (set.Commands.Count == 0)
         {
             return Results.Success<IReadOnlyList<CheckResult>>([]);
         }
@@ -66,7 +63,7 @@ public sealed class RepoCommandRunner(IBuildCommandSource source, ICheckCommands
 
         await using (lease.ConfigureAwait(false))
         {
-            return await RunAll(plan, workingDirectory, new Allowance(deadline, budget), cancellationToken).ConfigureAwait(false);
+            return await RunAll(set, workingDirectory, new Allowance(deadline, budget), cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -75,31 +72,31 @@ public sealed class RepoCommandRunner(IBuildCommandSource source, ICheckCommands
     private static Error OutOfBudget(Allowance allowance, string what) =>
         WorkflowErrors.EffectFailed.With($"the Step's budget of {Minutes(allowance.Budget)} min ran out {what}");
 
-    private async ValueTask<Result<IReadOnlyList<CheckResult>>> RunAll(IReadOnlyList<PlannedCommand> plan, string workingDirectory, Allowance allowance, CancellationToken cancellationToken)
+    private async ValueTask<Result<IReadOnlyList<CheckResult>>> RunAll(CommandSet set, string workingDirectory, Allowance allowance, CancellationToken cancellationToken)
     {
-        var results = new List<CheckResult>(plan.Count);
-        foreach (var planned in plan)
+        var results = new List<CheckResult>(set.Commands.Count);
+        foreach (var command in set.Commands)
         {
             var left = allowance.Deadline - clock.GetUtcNow();
             if (left <= TimeSpan.Zero)
             {
-                return OutOfBudget(allowance, $"before '{planned.Command.Name}' could start ({results.Count} of {plan.Count} commands ran)");
+                return OutOfBudget(allowance, $"before '{command.Name}' could start ({results.Count} of {set.Commands.Count} commands ran)");
             }
 
-            var own = planned.Command.Timeout is { } text && RecipeDuration.TryFrom(text, out var parsed) && parsed.Span < left ? parsed.Span : (TimeSpan?)null;
-            var invocation = new CheckInvocation(planned.Command.Name, [.. planned.Command.Run, .. planned.ExtraArguments], own ?? left);
+            var own = set.Each < left;
+            var invocation = new CheckInvocation(command.Name, command.Run, own ? set.Each : left);
             var run = await commands.Run(invocation, workingDirectory, cancellationToken).ConfigureAwait(false);
             if (run.IsError)
             {
                 return run.Error;
             }
 
-            if (own is null && run.Value.TimedOut)
+            if (!own && run.Value.TimedOut)
             {
-                return OutOfBudget(allowance, $"while '{planned.Command.Name}' was running ({results.Count} of {plan.Count} commands ran before it){TailOf(run.Value)}");
+                return OutOfBudget(allowance, $"while '{command.Name}' was running ({results.Count} of {set.Commands.Count} commands ran before it){TailOf(run.Value)}");
             }
 
-            results.Add(new CheckResult(planned, run.Value));
+            results.Add(new CheckResult(command, run.Value));
         }
 
         return results;

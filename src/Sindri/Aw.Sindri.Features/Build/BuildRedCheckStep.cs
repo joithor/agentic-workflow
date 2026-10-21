@@ -1,5 +1,4 @@
 using Aw.Sindri.Core.Checks;
-using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -7,13 +6,13 @@ using Aw.Sindri.Core.Workflow.Ids;
 namespace Aw.Sindri.Features.Build;
 
 /// <summary>
-/// 'step.build.red-check' on the block runtime (line spec §7.2, BLD-RED-001): every red test of every item must FAIL on the red commit, before any code. For each item the profile's
-/// <c language="text">on: red</c> commands run in the phase worktree with the item's test ids appended; an item whose command exits 0 is 'vacuous' (a finding names it) and the build goes back to 'red'.
-/// A command that runs out of time, a worktree off the red commit or with uncommitted files, no red commit in the facts, no red command in the profile or no test to run fails the Step instead, so the instance parks. The commands run under one
-/// heavy slot. An item with only an 'appOnly' signal has no test and is not run.
+/// 'step.build.red-check' on the block runtime (line spec §7.2, BLD-RED-001): the red tests must FAIL on the red commit, before any code. The profile's
+/// <c language="text">workflow.build.commands</c> all run once in the phase worktree on that commit (decision A); at least one must fail ('red'). When every command passes the tests can't fail: 'vacuous' (a finding names the
+/// items and their tests) and the build goes back to 'red'. A command that runs out of time, a worktree off the red commit or with uncommitted files, no red commit in the facts, no command in the profile or no test to run
+/// fails the Step instead, so the instance parks. The commands run under one heavy slot.
 /// </summary>
 /// <param name="diff">Reads the worktree's head.</param>
-/// <param name="commands">Reads the profile's red commands and runs them under a heavy slot.</param>
+/// <param name="commands">Reads the profile's commands and runs them under a heavy slot.</param>
 internal sealed class BuildRedCheckStep(IRunDiff diff, RepoCommandRunner commands) : IBlockStep, IBlockStepId
 {
     /// <inheritdoc/>
@@ -35,10 +34,10 @@ internal sealed class BuildRedCheckStep(IRunDiff diff, RepoCommandRunner command
             return BlockStepResult.Failed("step.build.red-check found no test to run in fact:redTests ({ items: { <item>: { tests: [ids] } } })");
         }
 
-        var listed = await commands.For(BuildCommand.Red, cancellationToken).ConfigureAwait(false);
-        if (listed.IsError || listed.Value.Count == 0)
+        var listed = await commands.For(cancellationToken).ConfigureAwait(false);
+        if (listed.IsError || listed.Value.Commands.Count == 0)
         {
-            return BlockStepResult.Failed(listed.IsError ? listed.Error.Message : "step.build.red-check needs a command with 'on: red' in the profile's workflow.build.commands (fix: add the repo's test command; the item's test ids are appended to it)");
+            return BlockStepResult.Failed(listed.IsError ? listed.Error.Message : "step.build.red-check needs the profile's workflow.build.commands (fix: add the repo's build and test commands; at least one must fail on the red commit)");
         }
 
         return await CheckHead(red, worktree, cancellationToken).ConfigureAwait(false) is { } off
@@ -71,10 +70,9 @@ internal sealed class BuildRedCheckStep(IRunDiff diff, RepoCommandRunner command
             : clean.Value ? null : BlockStepResult.Failed($"step.build.red-check: the worktree {worktree} has uncommitted or untracked files (fix: commit or discard them, then resume)");
     }
 
-    private async ValueTask<BlockStepResult> Check(RedTests red, IReadOnlyList<BuildCommand> redCommands, string worktree, CancellationToken cancellationToken)
+    private async ValueTask<BlockStepResult> Check(RedTests red, CommandSet set, string worktree, CancellationToken cancellationToken)
     {
-        var plan = red.Items.SelectMany(item => redCommands.Select(command => new PlannedCommand(command, item.Tests))).ToList();
-        var ran = await commands.Run("sindri step.build.red-check", plan, worktree, CommandStepLimits.BuildBudget, cancellationToken).ConfigureAwait(false);
+        var ran = await commands.Run("sindri step.build.red-check", set, worktree, CommandStepLimits.BuildBudget, cancellationToken).ConfigureAwait(false);
         if (ran.IsError)
         {
             return BlockStepResult.Failed($"step.build.red-check: {ran.Error.Message}");
@@ -82,17 +80,16 @@ internal sealed class BuildRedCheckStep(IRunDiff diff, RepoCommandRunner command
 
         if (ran.Value.FirstOrDefault(static r => r.Run.TimedOut) is { } slow)
         {
-            return BlockStepResult.Failed($"step.build.red-check: {slow.Summary}, so the red tests can't be judged (fix: raise its timeout in workflow.build.commands)");
+            return BlockStepResult.Failed($"step.build.red-check: {slow.Summary}, so the red tests can't be judged (fix: raise workflow.steps.longMax)");
         }
 
-        var vacuous = red.Items
-            .Select((item, i) => (Item: item, Results: ran.Value.Skip(i * redCommands.Count).Take(redCommands.Count).ToList()))
-            .Where(static x => x.Results.Exists(static r => r.Run.Passed))
-            .Select(static x => new RuleFinding(
-                "BLD-RED-001",
-                $"the red tests of item {x.Item.Id} ({string.Join(", ", x.Item.Tests)}) passed on the red commit; a test that can't fail proves nothing",
-                Detail: x.Results.First(static r => r.Run.Passed).Run.Tail))
-            .ToList();
-        return vacuous.Count == 0 ? StepFacts.Done("red") : StepFacts.Done("vacuous", ("fact:findings", RuleFinding.ToFact(vacuous)));
+        if (ran.Value.Any(static r => !r.Run.Passed))
+        {
+            return StepFacts.Done("red");
+        }
+
+        var tests = string.Join("; ", red.Items.Select(static item => $"item {item.Id} ({string.Join(", ", item.Tests)})"));
+        var vacuous = new RuleFinding("BLD-RED-001", $"every command passed on the red commit, so the red tests of {tests} can't fail; a test that can't fail proves nothing", Detail: ran.Value[^1].Run.Tail);
+        return StepFacts.Done("vacuous", ("fact:findings", RuleFinding.ToFact([vacuous])));
     }
 }

@@ -1,13 +1,12 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Checks;
-using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Build;
 
 namespace Aw.Sindri.Tests.Workflow.BuildShip;
 
-/// <summary>'step.build.checks' on the block runtime (line spec §7.2): the scope gate and the BLD-* rules over the measured diff, then the repo's commands and the red tests on the head.</summary>
+/// <summary>'step.build.checks' on the block runtime (line spec §7.2): the scope gate and the BLD-* rules over the measured diff, then every one of the repo's commands on the head (decision A: all run, all must pass).</summary>
 [Lane(TestLane.Unit)]
 public sealed class BuildChecksStepTests
 {
@@ -15,15 +14,14 @@ public sealed class BuildChecksStepTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static StepContext Context(string redTests = """{"items":{"A1":{"tests":["T1"]}}}""") => StepRig.Context("step.build.checks", new Dictionary<string, string>(StringComparer.Ordinal)
+    private static StepContext Context() => StepRig.Context("step.build.checks", new Dictionary<string, string>(StringComparer.Ordinal)
     {
         ["workspace"] = $"\"{StepRig.Tree}\"",
         ["activePacket"] = $$"""{"hash":"sha256:x","dir":"{{StepRig.PacketDir}}","repo":"{{StepRig.Tree}}"}""",
         ["built"] = """{"head":"claimed"}""",
-        ["redTests"] = redTests,
     });
 
-    private static StepRig Rig() => new(StepRig.Cmd("typecheck", BuildCommand.Checks), StepRig.Cmd("unit", BuildCommand.Checks), StepRig.Cmd("red-tests", BuildCommand.Red));
+    private static StepRig Rig() => new("typecheck", "unit --lane \"fast one\"");
 
     private static BuildChecksStep Step(StepRig rig) => new(rig.Diff, rig.Changes, rig.Files, rig.Runner, new Mask());
 
@@ -33,7 +31,7 @@ public sealed class BuildChecksStepTests
     public async Task A_clean_branch_passes_and_the_measured_head_not_the_claimed_one_is_built_and_the_change()
     {
         var rig = Rig().Branch([Added("src/a.cs"), Added("tests/a.test.ts"), Added("docs/x.md")]);
-        _ = rig.Commands.Answer("typecheck", StepRig.Pass()).Answer("unit", StepRig.Pass()).Answer("red-tests", StepRig.Pass());
+        _ = rig.Commands.Answer("typecheck", StepRig.Pass()).Answer("unit --lane \"fast one\"", StepRig.Pass());
 
         var result = await Step(rig).Run(Context(), Token);
 
@@ -42,7 +40,7 @@ public sealed class BuildChecksStepTests
         Assert.Equal("b0", (string?)StepRig.Out(result, "built")["base"]);
         Assert.Equal("feat", (string?)StepRig.Out(result, "built")["commits"]![0]!["type"]);
         Assert.Equal((StepRig.Tree, "b0", "h1"), ((string?)StepRig.Out(result, "change")["repo"], (string?)StepRig.Out(result, "change")["base"], (string?)StepRig.Out(result, "change")["head"]));
-        Assert.Equal([["typecheck", "run"], ["unit", "run"], ["red-tests", "run", "T1"]], rig.Commands.Calls.Select(static c => c.Command.Argv.ToArray()));   // the red tests must pass on the head (BLD-RED-002)
+        Assert.Equal([["typecheck"], ["unit", "--lane", "fast one"]], rig.Commands.Calls.Select(static c => c.Command.Argv.ToArray()));   // every command runs on the head, quotes group
         Assert.Equal((1, 1), (rig.Slots.Taken, rig.Slots.Released));
     }
 
@@ -98,17 +96,19 @@ public sealed class BuildChecksStepTests
     }
 
     [Fact]
-    public async Task A_failing_command_fails_with_its_tail_and_a_failing_red_test_on_the_head_is_BLD_RED_002()
+    public async Task Every_failing_command_is_a_finding_with_its_tail_and_the_rest_still_run()
     {
         var rig = Rig().Branch([Added("src/a.cs")]);
-        _ = rig.Commands.Answer("typecheck", StepRig.Fail("error TS2322")).Answer("unit", StepRig.Pass()).Answer("red-tests", StepRig.Fail("T1 still fails"));
+        _ = rig.Commands.Answer("typecheck", StepRig.Fail("error TS2322")).Answer("unit --lane \"fast one\"", StepRig.Fail("T1 still fails"));
 
         var result = await Step(rig).Run(Context(), Token);
 
         Assert.Equal("failed", result.Result!.Outcome.Value);
         var findings = StepRig.Out(result, "findings").AsArray();
-        Assert.Equal(["BLD-COMMAND-001", "BLD-RED-002"], findings.Select(static f => (string?)f!["rule"]), StringComparer.Ordinal);
+        Assert.Equal(["BLD-COMMAND-001", "BLD-COMMAND-001"], findings.Select(static f => (string?)f!["rule"]), StringComparer.Ordinal);
+        Assert.Equal(["typecheck exited 1", "unit --lane \"fast one\" exited 1"], findings.Select(static f => (string?)f!["message"]), StringComparer.Ordinal);
         Assert.Equal("error TS2322", (string?)findings[0]!["detail"]);
+        Assert.Equal(2, rig.Commands.Calls.Count);
         Assert.Equal((1, 1), (rig.Slots.Taken, rig.Slots.Released));
     }
 
@@ -161,7 +161,7 @@ public sealed class BuildChecksStepTests
     [Fact]
     public async Task A_batch_longer_than_the_Steps_budget_fails_the_Step_inside_it_with_the_budget_named()
     {
-        var rig = new StepRig(StepRig.Cmd("a", BuildCommand.Checks), StepRig.Cmd("b", BuildCommand.Checks), StepRig.Cmd("c", BuildCommand.Checks), StepRig.Cmd("d", BuildCommand.Checks)).Branch([Added("src/a.cs")]);
+        var rig = new StepRig("a", "b", "c", "d").Branch([Added("src/a.cs")]);
         foreach (var name in new[] { "a", "b", "c", "d" })
         {
             _ = rig.Commands.Answer(name, _ =>
@@ -183,7 +183,7 @@ public sealed class BuildChecksStepTests
     {
         var bad = Rig().Branch([Added($"etc/{Secret}.yml")], commits: [new ChangedCommit("h1aaaaaaaa", $"oops {Secret}", IsMerge: false)]);
         var good = Rig().Branch([Added("src/a.cs")], commits: [new ChangedCommit("h1aaaaaaaa", $"feat: add {Secret}", IsMerge: false)]);
-        _ = good.Commands.Answer("typecheck", StepRig.Pass()).Answer("unit", StepRig.Pass()).Answer("red-tests", StepRig.Pass());
+        _ = good.Commands.Answer("typecheck", StepRig.Pass()).Answer("unit --lane \"fast one\"", StepRig.Pass());
 
         var failed = await Step(bad).Run(Context(), Token);
         var passed = await Step(good).Run(Context(), Token);

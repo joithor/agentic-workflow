@@ -1,13 +1,12 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Checks;
-using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Ship;
 
 namespace Aw.Sindri.Tests.Workflow.BuildShip;
 
-/// <summary>'step.ship.green' on the block runtime (line spec §7.5, SHIP-SECRET-001): the secret scan, then the profile's green commands under one heavy slot.</summary>
+/// <summary>'step.ship.green' on the block runtime (line spec §7.5, SHIP-SECRET-001): the secret scan, then every one of the profile's commands under one heavy slot (all run, all must pass).</summary>
 [Lane(TestLane.Unit)]
 public sealed class ShipGreenStepTests
 {
@@ -26,22 +25,22 @@ public sealed class ShipGreenStepTests
     [Fact]
     public async Task Green_commands_that_pass_report_green_with_the_head_the_base_and_each_commands_exit()
     {
-        var rig = new StepRig(StepRig.Cmd("full", BuildCommand.Green), StepRig.Cmd("lint", BuildCommand.Green), StepRig.Cmd("typecheck", BuildCommand.Checks)).Branch([new ChangedFile("src/a.cs", ChangeKind.Added)]);
-        _ = rig.Commands.Answer("full", StepRig.Pass()).Answer("lint", StepRig.Pass());
+        var rig = new StepRig("full", "lint", "typecheck").Branch([new ChangedFile("src/a.cs", ChangeKind.Added)]);
+        _ = rig.Commands.Answer("full", StepRig.Pass()).Answer("lint", StepRig.Pass()).Answer("typecheck", StepRig.Pass());
 
         var result = await Step(rig).Run(Context(), Token);
 
         Assert.Equal("green", result.Result!.Outcome.Value);
         var green = StepRig.Out(result, "green");
         Assert.Equal(("h1", "b0"), ((string?)green["head"], (string?)green["base"]));
-        Assert.Equal(["full", "lint"], green["commands"]!.AsArray().Select(static c => (string?)c!["name"]), StringComparer.Ordinal);
+        Assert.Equal(["full", "lint", "typecheck"], green["commands"]!.AsArray().Select(static c => (string?)c!["name"]), StringComparer.Ordinal);
         Assert.Equal((1, 1), (rig.Slots.Taken, rig.Slots.Released));
     }
 
     [Fact]
     public async Task A_secret_on_an_added_line_is_red_names_the_file_and_line_and_runs_nothing()
     {
-        var rig = new StepRig(StepRig.Cmd("full", BuildCommand.Green)).Branch([new ChangedFile("src/a.cs", ChangeKind.Added)], [new AddedLine("src/a.cs", 3, Secret)]);
+        var rig = new StepRig("full").Branch([new ChangedFile("src/a.cs", ChangeKind.Added)], [new AddedLine("src/a.cs", 3, Secret)]);
 
         var result = await Step(rig).Run(Context(), Token);
 
@@ -56,8 +55,8 @@ public sealed class ShipGreenStepTests
     [Fact]
     public async Task A_failing_or_timed_out_command_is_red_with_its_tail()
     {
-        var rig = new StepRig(StepRig.Cmd("full", BuildCommand.Green), StepRig.Cmd("lint", BuildCommand.Green)).Branch([]);
-        _ = rig.Commands.Answer("full", StepRig.Fail("2 failed")).Answer("lint", CheckRun.Of(-1, timedOut: true, TimeSpan.FromMinutes(90), string.Empty));
+        var rig = new StepRig(TimeSpan.FromMinutes(30), "full", "lint").Branch([]);   // longMax 30 min: the timed-out one ran past its own limit, not the Step's budget
+        _ = rig.Commands.Answer("full", StepRig.Fail("2 failed")).Answer("lint", CheckRun.Of(-1, timedOut: true, TimeSpan.FromMinutes(30), string.Empty));
 
         var result = await Step(rig).Run(Context(), Token);
 
@@ -69,7 +68,7 @@ public sealed class ShipGreenStepTests
     }
 
     [Fact]
-    public async Task A_profile_with_no_green_command_greens_with_an_empty_command_list_so_nothing_ran_is_visible()
+    public async Task A_profile_with_no_commands_greens_with_an_empty_command_list_so_nothing_ran_is_visible()
     {
         var rig = new StepRig().Branch([]);
 
@@ -93,7 +92,7 @@ public sealed class ShipGreenStepTests
     [Fact]
     public async Task A_dirty_tree_is_red_with_a_SHIP_TREE_001_finding_and_runs_nothing()
     {
-        var rig = new StepRig(StepRig.Cmd("full", BuildCommand.Green)).Branch([]);
+        var rig = new StepRig("full").Branch([]);
         rig.Diff.Touch(StepRig.Tree);
 
         var result = await Step(rig).Run(Context(), Token);
@@ -107,7 +106,7 @@ public sealed class ShipGreenStepTests
     [Fact]
     public async Task A_batch_longer_than_the_Steps_budget_fails_the_Step_inside_it_with_the_budget_named()
     {
-        var rig = new StepRig(StepRig.Cmd("a", BuildCommand.Green), StepRig.Cmd("b", BuildCommand.Green), StepRig.Cmd("c", BuildCommand.Green), StepRig.Cmd("d", BuildCommand.Green), StepRig.Cmd("e", BuildCommand.Green), StepRig.Cmd("f", BuildCommand.Green)).Branch([]);
+        var rig = new StepRig("a", "b", "c", "d", "e", "f").Branch([]);
         foreach (var name in new[] { "a", "b", "c", "d", "e", "f" })
         {
             _ = rig.Commands.Answer(name, _ =>

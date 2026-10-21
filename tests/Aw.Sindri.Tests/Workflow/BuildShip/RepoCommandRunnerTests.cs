@@ -1,40 +1,40 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Checks;
-using Aw.Sindri.Core.Profile;
 
 namespace Aw.Sindri.Tests.Workflow.BuildShip;
 
-/// <summary>The repo's commands for a Step (line spec LN-WF9): picked by stage from the approved profile, and run under one heavy slot that is released on every path.</summary>
+/// <summary>The repo's commands for a Step (line spec LN-WF9, decision A): all of the profile's, each limited to workflow.steps.longMax, run under one heavy slot that is released on every path.</summary>
 [Lane(TestLane.Unit)]
 public sealed class RepoCommandRunnerTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
+    private static readonly CommandSet _none = new([], TimeSpan.FromHours(2));
+
     [Fact]
-    public async Task A_stage_gets_its_commands_in_the_profiles_order_and_the_default_stage_is_checks()
+    public async Task The_commands_come_in_the_sources_order_split_into_argv_with_the_per_command_limit()
     {
-        var rig = new StepRig(StepRig.Cmd("typecheck", BuildCommand.Checks), new BuildCommand("unit", ["u"]), StepRig.Cmd("red-tests", BuildCommand.Red), StepRig.Cmd("full", BuildCommand.Green));
+        var rig = new StepRig(TimeSpan.FromMinutes(90), "typecheck", "unit --filter \"a b\"");
 
-        var checks = await rig.Runner.For(BuildCommand.Checks, Token);
-        var green = await rig.Runner.For(BuildCommand.Green, Token);
+        var set = await rig.Runner.For(Token);
 
-        Assert.Equal(["typecheck", "unit"], checks.Value.Select(static c => c.Name), StringComparer.Ordinal);
-        Assert.Equal(["full"], green.Value.Select(static c => c.Name), StringComparer.Ordinal);
+        Assert.Equal(["typecheck", "unit --filter \"a b\""], set.Value.Commands.Select(static c => c.Name), StringComparer.Ordinal);
+        Assert.Equal(["unit", "--filter", "a b"], set.Value.Commands[1].Run);
+        Assert.Equal(TimeSpan.FromMinutes(90), set.Value.Each);
     }
 
     [Fact]
-    public async Task A_batch_runs_in_the_worktree_with_the_extra_arguments_and_one_slot_taken_and_released()
+    public async Task A_batch_runs_in_the_worktree_with_one_slot_taken_and_released_and_each_command_gets_the_per_command_limit()
     {
         var rig = new StepRig();
-        _ = rig.Commands.Answer("a", StepRig.Pass()).Answer("b", StepRig.Fail());
-        PlannedCommand[] plan = [new(new BuildCommand("a", ["a", "x"]), ["t1", "t2"]), new(new BuildCommand("b", ["b"], Timeout: "2h"), [])];
+        _ = rig.Commands.Answer("a x", StepRig.Pass()).Answer("b", StepRig.Fail());
 
-        var ran = await rig.Runner.Run("holder", plan, StepRig.Tree, TimeSpan.FromHours(4), Token);
+        var ran = await rig.Runner.Run("holder", StubCommandSource.Set(TimeSpan.FromHours(2), "a x", "b"), StepRig.Tree, TimeSpan.FromHours(4), Token);
 
         Assert.Equal([true, false], ran.Value.Select(static r => r.Run.Passed));   // a failing command does not stop the batch
         Assert.Equal((1, 1), (rig.Slots.Taken, rig.Slots.Released));
-        Assert.Equal(["a", "x", "t1", "t2"], rig.Commands.Calls[0].Command.Argv);
-        Assert.Equal((TimeSpan.FromHours(4), StepRig.Tree), (rig.Commands.Calls[0].Command.Timeout, rig.Commands.Calls[0].WorkingDirectory));
+        Assert.Equal(["a", "x"], rig.Commands.Calls[0].Command.Argv);
+        Assert.Equal((TimeSpan.FromHours(2), StepRig.Tree), (rig.Commands.Calls[0].Command.Timeout, rig.Commands.Calls[0].WorkingDirectory));
         Assert.Equal(TimeSpan.FromHours(2), rig.Commands.Calls[1].Command.Timeout);
     }
 
@@ -44,7 +44,7 @@ public sealed class RepoCommandRunnerTests
         var rig = new StepRig();
         _ = rig.Commands.Answer("a", _ => throw new OperationCanceledException());
 
-        _ = await Assert.ThrowsAsync<OperationCanceledException>(async () => await rig.Runner.Run("h", [new PlannedCommand(new BuildCommand("a", ["a"]), [])], StepRig.Tree, TimeSpan.FromMinutes(1), Token));
+        _ = await Assert.ThrowsAsync<OperationCanceledException>(async () => await rig.Runner.Run("h", Plan(1, "a"), StepRig.Tree, TimeSpan.FromMinutes(1), Token));
 
         Assert.Equal((1, 1), (rig.Slots.Taken, rig.Slots.Released));
     }
@@ -55,7 +55,7 @@ public sealed class RepoCommandRunnerTests
         var rig = new StepRig();
         rig.Slots.Busy = true;
 
-        var ran = await rig.Runner.Run("h", [new PlannedCommand(new BuildCommand("a", ["a"]), [])], StepRig.Tree, TimeSpan.FromMinutes(1), Token);
+        var ran = await rig.Runner.Run("h", Plan(1, "a"), StepRig.Tree, TimeSpan.FromMinutes(1), Token);
 
         Assert.True(ran.IsError);
         Assert.Contains("held by someone", ran.Error.Message, StringComparison.Ordinal);
@@ -67,7 +67,7 @@ public sealed class RepoCommandRunnerTests
     {
         var rig = new StepRig();
 
-        var ran = await rig.Runner.Run("h", [], StepRig.Tree, TimeSpan.FromMinutes(1), Token);
+        var ran = await rig.Runner.Run("h", _none, StepRig.Tree, TimeSpan.FromMinutes(1), Token);
 
         Assert.Empty(ran.Value);
         Assert.Equal(0, rig.Slots.Taken);
@@ -78,13 +78,15 @@ public sealed class RepoCommandRunnerTests
     {
         var rig = new StepRig();
 
-        var ran = await rig.Runner.Run("h", [new PlannedCommand(new BuildCommand("missing", ["missing"]), [])], StepRig.Tree, TimeSpan.FromMinutes(1), Token);
+        var ran = await rig.Runner.Run("h", Plan(1, "missing"), StepRig.Tree, TimeSpan.FromMinutes(1), Token);
 
         Assert.True(ran.IsError);
         Assert.Equal((1, 1), (rig.Slots.Taken, rig.Slots.Released));
     }
 
-    private static PlannedCommand[] Plan(int count) => [.. Enumerable.Range(0, count).Select(static i => new PlannedCommand(new BuildCommand(Name(i), [Name(i)]), []))];
+    private static CommandSet Plan(int count) => StubCommandSource.Set(TimeSpan.FromHours(2), [.. Enumerable.Range(0, count).Select(Name)]);
+
+    private static CommandSet Plan(int count, string name) => StubCommandSource.Set(TimeSpan.FromHours(2), [.. Enumerable.Repeat(name, count)]);
 
     private static string Name(int i) => "c" + i.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
@@ -173,13 +175,12 @@ public sealed class RepoCommandRunnerTests
     }
 
     [Fact]
-    public async Task A_command_that_ran_past_its_own_shorter_timeout_stays_an_answer()
+    public async Task A_command_that_ran_past_the_per_command_limit_inside_the_budget_stays_an_answer()
     {
         var rig = new StepRig();
         _ = rig.Commands.Answer("c0", CheckRun.Of(-1, timedOut: true, TimeSpan.FromMinutes(1), string.Empty));
-        PlannedCommand[] plan = [new(new BuildCommand("c0", ["c0"], Timeout: "1m"), [])];
 
-        var ran = await rig.Runner.Run("h", plan, StepRig.Tree, TimeSpan.FromMinutes(20), Token);
+        var ran = await rig.Runner.Run("h", StubCommandSource.Set(TimeSpan.FromMinutes(1), "c0"), StepRig.Tree, TimeSpan.FromMinutes(20), Token);
 
         Assert.True(ran.Value.Single().Run.TimedOut);
     }

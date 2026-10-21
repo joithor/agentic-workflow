@@ -1,7 +1,6 @@
 using System.Text.Json.Nodes;
 using Aw.Sindri.Core.Checks;
 using Aw.Sindri.Core.Packets;
-using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -11,7 +10,7 @@ namespace Aw.Sindri.Features.Ship;
 
 /// <summary>
 /// 'step.ship.green' on the block runtime (line spec §7.5, DTC5): the local GREEN gate on the worktree's head. First the secret scan over the lines added since the phase packet's base
-/// (SHIP-SECRET-001: a hit is 'red', names the file and line, and runs nothing); then the profile's <c language="text">on: green</c> commands under one heavy slot. A command that fails or runs out of time
+/// (SHIP-SECRET-001: a hit is 'red', names the file and line, and runs nothing); then every one of the profile's <c language="text">workflow.build.commands</c> under one heavy slot (decision A: all run, all must pass). A command that fails or runs out of time
 /// is 'red'. 'green' writes <c language="text">{ head, base, commands: [{ name, exitCode, seconds }] }</c> as 'fact:green'; a profile with no green command still greens, and the empty
 /// list in the fact says nothing ran.
 /// </summary>
@@ -84,13 +83,13 @@ internal sealed class ShipGreenStep(IRunDiff diff, IBranchChanges changes, IPack
 
     private async ValueTask<BlockStepResult> Gate(string worktree, string baseSha, string head, CancellationToken cancellationToken)
     {
-        var listed = await commands.For(BuildCommand.Green, cancellationToken).ConfigureAwait(false);
+        var listed = await commands.For(cancellationToken).ConfigureAwait(false);
         if (listed.IsError)
         {
             return BlockStepResult.Failed($"step.ship.green: {listed.Error.Message}");
         }
 
-        var ran = await commands.Run("sindri step.ship.green", [.. listed.Value.Select(static c => new PlannedCommand(c, []))], worktree, CommandStepLimits.GreenBudget, cancellationToken).ConfigureAwait(false);
+        var ran = await commands.Run("sindri step.ship.green", listed.Value, worktree, CommandStepLimits.GreenBudget, cancellationToken).ConfigureAwait(false);
         if (ran.IsError)
         {
             return BlockStepResult.Failed($"step.ship.green: {ran.Error.Message}");

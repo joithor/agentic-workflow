@@ -2,12 +2,9 @@ using System.Text.Json.Nodes;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Checks;
-using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Locks;
-using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Checks;
 using Aw.Sindri.Testing.Packets;
 using Aw.Sindri.Testing.Workflow;
@@ -17,7 +14,7 @@ using Microsoft.Extensions.Time.Testing;
 namespace Aw.Sindri.Tests.Workflow.BuildShip;
 
 /// <summary>
-/// The fakes a build or ship Step runs over: an approved profile with the given commands, command runs by name, one worktree, a phase packet (base 'b0', allowed 'src/**' and 'new: docs/x.md',
+/// The fakes a build or ship Step runs over: the profile's commands (command lines), command runs by command line, one worktree, a phase packet (base 'b0', allowed 'src/**' and 'new: docs/x.md',
 /// 'testChange' for tests/old.test.ts), the branch's changes and a heavy lock that counts its takes and releases.
 /// </summary>
 internal sealed class StepRig
@@ -25,7 +22,12 @@ internal sealed class StepRig
     internal const string Tree = "/work/p1";
     internal const string PacketDir = "/packets/p1";
 
-    internal StepRig(params BuildCommand[] profileCommands)
+    internal StepRig(params string[] profileCommands)
+        : this(TimeSpan.FromHours(2), profileCommands)
+    {
+    }
+
+    internal StepRig(TimeSpan each, params string[] profileCommands)
     {
         Clock = new FakeTimeProvider(KnownInstants.Epoch);
         Slots = new CountingSlots();
@@ -38,7 +40,7 @@ internal sealed class StepRig
             ["packet.json"] = """{"id":"p1","baseSha":"b0"}""",
             ["phase.json"] = """{"allowedFiles":["src/**","new: docs/x.md"],"testChange":[{"path":"tests/old.test.ts","reason":"renamed"}]}""",
         });
-        Runner = new RepoCommandRunner(new StubCommandSource(profileCommands), Commands, Slots, Clock);
+        Runner = new RepoCommandRunner(new StubCommandSource(profileCommands, each), Commands, Slots, Clock);
     }
 
     internal FakeTimeProvider Clock { get; }
@@ -58,8 +60,6 @@ internal sealed class StepRig
     internal static CheckRun Pass(string tail = "ok") => CheckRun.Of(0, timedOut: false, TimeSpan.FromSeconds(2), tail);
 
     internal static CheckRun Fail(string tail = "1 failed") => CheckRun.Of(1, timedOut: false, TimeSpan.FromSeconds(2), tail);
-
-    internal static BuildCommand Cmd(string name, string stage) => new(name, [name, "run"], On: stage);
 
     /// <summary>The branch from b0 to h1 changed these paths and added these lines, in these commits.</summary>
     internal StepRig Branch(ChangedFile[] files, AddedLine[]? lines = null, ChangedCommit[]? commits = null)

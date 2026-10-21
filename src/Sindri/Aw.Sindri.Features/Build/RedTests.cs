@@ -11,9 +11,6 @@ namespace Aw.Sindri.Features.Build;
 /// <param name="Items">The items that have tests, in the fact's order.</param>
 internal sealed record RedTests(string? Commit, IReadOnlyList<RedItem> Items)
 {
-    /// <summary>Every test id of every item, in order.</summary>
-    internal IReadOnlyList<string> AllTests => [.. Items.SelectMany(static i => i.Tests)];
-
     internal static RedTests From(JsonNode? fact)
     {
         var items = fact is JsonObject obj && obj["items"] is JsonObject map

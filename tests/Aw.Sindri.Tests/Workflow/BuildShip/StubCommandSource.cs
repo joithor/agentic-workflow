@@ -4,10 +4,13 @@ using Aw.Sindri.Core.Profile;
 
 namespace Aw.Sindri.Tests.Workflow.BuildShip;
 
-/// <summary>The repo's commands, as the test lists them, whatever stage each names.</summary>
-/// <param name="commands">The commands.</param>
-internal sealed class StubCommandSource(IReadOnlyList<BuildCommand> commands) : IBuildCommandSource
+/// <summary>The repo's commands, as the test lists them: command lines the way the profile writes them.</summary>
+/// <param name="lines">The command lines.</param>
+/// <param name="each">The longest one may run.</param>
+internal sealed class StubCommandSource(string[] lines, TimeSpan each) : IBuildCommandSource
 {
-    public ValueTask<Result<IReadOnlyList<BuildCommand>>> For(string stage, CancellationToken cancellationToken) =>
-        ValueTask.FromResult(Results.Success<IReadOnlyList<BuildCommand>>([.. commands.Where(c => string.Equals(c.Where, stage, StringComparison.Ordinal))]));
+    internal static CommandSet Set(TimeSpan each, params string[] lines) =>
+        new([.. lines.Select(static line => CommandLine.TryParse(line, out var argv, out _) ? new BuildCommand(line, argv) : throw new ArgumentException($"'{line}' does not split", nameof(lines)))], each);
+
+    public ValueTask<Result<CommandSet>> Read(CancellationToken cancellationToken) => ValueTask.FromResult<Result<CommandSet>>(Set(each, lines));
 }

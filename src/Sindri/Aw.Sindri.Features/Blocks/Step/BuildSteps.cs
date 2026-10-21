@@ -20,7 +20,7 @@ internal static class BuildSteps
     public static BlockDescriptor Red { get; } = AgentStep("step.build.red", Capability.Tools | Capability.WriteScope)
         .Reads("fact:activePacket", "fact:buildNotes", "fact:redTests", "fact:findings").Reports("written").Writes(On("fact:redTests", "written"));
 
-    /// <summary>'step.build.red-check': runs the red tests on the red commit; 'red' when every one fails, 'vacuous' (with findings) when one passes.</summary>
+    /// <summary>'step.build.red-check': runs the repo's commands on the red commit; 'red' when at least one fails, 'vacuous' (with a finding) when every one passes.</summary>
     public static BlockDescriptor RedCheck { get; } = BlockStep("step.build.red-check", Capability.Tools)
         .Reads("fact:redTests", "fact:activePacket").Reports("red", "vacuous").Long(CommandStepLimits.BuildMaxDuration).Writes(On("fact:findings", "vacuous"));
 
@@ -29,9 +29,9 @@ internal static class BuildSteps
         .Reads("fact:activePacket", "fact:redTests", "fact:buildNotes", "fact:findings", "fact:answers").Reports("built", "blocked")
         .Writes(On("fact:built", "built"), On("fact:findings", "blocked"));
 
-    /// <summary>'step.build.checks': the scope gate, the build rules and the repo's commands; 'pass' with the built head and the change, 'failed' or 'outOfScope' with findings.</summary>
+    /// <summary>'step.build.checks': the scope gate, the build rules and every one of the repo's commands (all must pass); 'pass' with the built head and the change, 'failed' or 'outOfScope' with findings.</summary>
     public static BlockDescriptor Checks { get; } = BlockStep("step.build.checks", Capability.Tools)
-        .Reads("fact:activePacket", "fact:built", "fact:redTests", "fact:workspace").Reports("pass", "failed", "outOfScope").Long(CommandStepLimits.BuildMaxDuration)
+        .Reads("fact:activePacket", "fact:built", "fact:workspace").Reports("pass", "failed", "outOfScope").Long(CommandStepLimits.BuildMaxDuration)
         .Writes(On("fact:built", "pass"), On("fact:change", "pass"), On("fact:findings", "failed", "outOfScope"));
 
     /// <summary>'step.build.scope-desk': the owner's call on a file outside the allowed ones, human-only: allow, revert or stop.</summary>
