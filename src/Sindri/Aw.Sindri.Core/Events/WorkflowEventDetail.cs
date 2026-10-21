@@ -65,7 +65,27 @@ public sealed record WorkflowEventDetail(
     /// <param name="after">The instance after the row.</param>
     /// <param name="recipe">Its recipe, which names the state's loop.</param>
     /// <returns>The detail the ledger row carries.</returns>
-    public WorkflowEventDetail WithRunOpening(WorkflowInstance after, Recipe recipe) => throw new NotSupportedException();
+    public WorkflowEventDetail WithRunOpening(WorkflowInstance after, Recipe recipe)
+    {
+        ArgumentNullException.ThrowIfNull(after);
+        ArgumentNullException.ThrowIfNull(recipe);
+        if (Delta.Frame is not { Run: not null } frame || after.Frame.Run is not { } open)
+        {
+            return this;
+        }
+
+        var loop = recipe.States.TryGetValue(after.Frame.State, out var state) && state.Loop is { } name && after.Loops.TryGetValue(name, out var counter) ? counter : null;
+        var opened = frame with { Actor = OpenerOf(after, open), Attempt = loop?.Round, MaxAttempts = loop?.Allowed };
+        return this with { Delta = Delta with { Frame = opened } };
+    }
+
+    // The agent's launch id (the session is not started yet when the row is written; the id is a pure function of the instance and the run), 'block', or the human desk.
+    private string OpenerOf(WorkflowInstance after, OpenRun open) => open.Runtime switch
+    {
+        StepRuntime.Agent => AgentLaunches.LaunchIdFor(after.Id, open.Token).Value,
+        StepRuntime.Block => "block",
+        _ => TriggerActor.StartsWith("human:", StringComparison.Ordinal) ? TriggerActor : "human",
+    };
 
     /// <summary>
     /// The detail of a row mirrored without a decision: a desk timeout's park, or a held event's expiry. It names the trigger

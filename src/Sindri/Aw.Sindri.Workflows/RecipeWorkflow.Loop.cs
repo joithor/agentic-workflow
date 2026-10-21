@@ -182,7 +182,7 @@ internal sealed partial class RecipeWorkflow
         },
         before.Frame.Run?.Token.Value,
         trigger.Actor,
-        Detail: Located(WorkflowEventDetail.Of(change.Event, trigger), change.After),
+        Detail: Located(WorkflowEventDetail.Of(change.Event, trigger).WithRunOpening(change.After, _context!.Recipe), change.After),   // why: a decision is recorded only after Begin set the context
         Causation: (trigger as OpenRequested)?.Launch);
 
     internal static string TypeOf(WorkflowEventType type) => type switch
