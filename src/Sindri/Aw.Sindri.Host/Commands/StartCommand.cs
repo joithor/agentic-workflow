@@ -17,8 +17,8 @@ internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLaunch
     /// <summary>Gets a step that runs after the banner and before the control plane is looked for or started: the first-run Onyx offer, for bare 'sindri' at a terminal.</summary>
     internal Func<CancellationToken, Task>? BeforeStart { get; init; }
 
-    /// <summary>How long a start waits for the control plane to answer.</summary>
-    internal static readonly TimeSpan Budget = TimeSpan.FromSeconds(10);
+    /// <summary>How long a start waits for the control plane to answer: a loaded box (CI, a cold disk) can take well over 10 s to bind. A serve that exited ends the wait at once, so a long budget never hides a dead one.</summary>
+    internal static readonly TimeSpan Budget = TimeSpan.FromSeconds(30);
 
     /// <summary>How often the start wait probes.</summary>
     internal static readonly TimeSpan Poll = TimeSpan.FromMilliseconds(200);
