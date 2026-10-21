@@ -100,13 +100,17 @@ public sealed class ManifestRecipesTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
-    public async Task A_recipe_without_a_display_name_is_listed_with_none()
+    public async Task A_recipe_without_a_display_name_is_listed_with_none_and_as_invalid_so_there_is_no_digest()
     {
         Write("workflow.plain.yaml", SampleRecipes.Recipe("plain", displayName: null));
 
-        var entry = Assert.Single((await Manifest()).Recipes);
+        var manifest = await Manifest();
 
-        Assert.Null(entry.DisplayName);
+        Assert.Null(Assert.Single(manifest.Recipes).DisplayName);
+        var invalid = Assert.Single(manifest.Invalid);
+        Assert.Equal("workflow.plain.yaml", invalid.File);
+        Assert.StartsWith("RCP-DISPLAY-001:", invalid.Finding, StringComparison.Ordinal);
+        Assert.Null(manifest.Digest);
     }
 
     [Fact, Trait("Lane", "integration")]

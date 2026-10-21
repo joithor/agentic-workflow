@@ -26,7 +26,7 @@ states:
   plan: { displayName: "Plan", why: "Splits the design into buildable pull-request-sized phases.", kind: wait, timeout: { after: 30d, then: park },
              waitFor: { child: { recipe: workflow.plan, onParked: propagate, inputs: { "fact:scopePacket": { fact: fact:scopePacket }, "fact:designPacket": { fact: fact:designPacket } } } },
              next: "Waiting for {child}: {item}'s plan graph, ending at your after-design stop." }
-  phase: { displayName: "Build one phase", why: "Builds, proves, reviews and opens the pull request for one phase, then waits for your merge.", kind: wait, timeout: { after: 14d, then: park },
+  phase: { displayName: "Build, prove and ship one phase", why: "Builds, proves, reviews and opens the pull request for one phase, then waits for your merge.", kind: wait, timeout: { after: 14d, then: park },
              waitFor: { child: { recipe: workflow.phase, onParked: propagate, inputs: { "fact:phasePacket": { fact: fact:phasePackets }, "fact:lineContext": { fact: fact:lineContext } } } },
              next: "Waiting for {child}: building, proving and shipping {item}'s phase, ending at your merge stop." }
   done:    { displayName: "Merged", kind: terminal, outcome: resolved }

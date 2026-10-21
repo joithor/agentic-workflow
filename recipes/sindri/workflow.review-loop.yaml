@@ -2,7 +2,7 @@ schema: 1
 id: workflow.review-loop
 version: 3
 description: "Block recipe: review the phase's change one lens per run, a round per iteration, to zero blocking and issue findings, at most 5 rounds, then one narrow re-check; a review, clean or behaviour-wrong, ends through a recorded, frozen review packet; no lens applying ends stuck."
-displayName: "Review the code until no blocking issues"
+displayName: "Review the code until no blocking issues remain"
 inputs:
   - { key: fact:change, label: "Change", type: payload, kind: payload }
   - { key: fact:phasePacket, label: "Phase packet", type: packet, kind: packet }

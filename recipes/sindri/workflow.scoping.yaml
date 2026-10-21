@@ -83,7 +83,7 @@ states:
                   next: "Check {item}'s evidence and assemble the packet: citations, four coverage rows, a failing acceptance list, a clean challenge." }
   stop:         { displayName: "Approve the scope", why: "Last chance to change the scope before it is locked in.", kind: active, step: step.scope.review, timeout: { after: 7d, then: park },
                   next: "Your stop: read the scope packet (`sindri scoping show {instance}` or the stop view), then answer the stop's form: approve, revise with notes, or drop." }
-  freeze:       { displayName: "Lock in the scope", why: "Makes the approved scope tamper-proof for later stages.", kind: active, step: step.scope.freeze, loop: refreeze, timeout: { after: 1h, then: park },
+  freeze:       { displayName: "Lock in the scope", why: "Locks the approved scope so later stages build exactly what you approved.", kind: active, step: step.scope.freeze, loop: refreeze, timeout: { after: 1h, then: park },
                   next: "Re-check {item}'s packet, confirm its hash, and freeze it." }
   withdraw:     { kind: active, step: step.scope.withdraw, timeout: { after: 1h, then: park },
                   next: "Withdraw {item}'s undecided map proposals." }

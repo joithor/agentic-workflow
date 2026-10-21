@@ -33,6 +33,7 @@ case "$2" in
       for f in "$dir"/*.yaml; do read -r id v h <<< "$(entry "$f")"; echo "$id@$v -> $h"; done
     fi ;;
   validate)
+    if [ -n "${AW_STUB_VALIDATE_RC:-}" ]; then echo "stub: the tool broke" >&2; exit "$AW_STUB_VALIDATE_RC"; fi
     read -r id v h <<< "$(entry "$3")"
     if grep -q "\"id\":\"$id\",\"version\":$v,\"hash\":\"" "$5" && ! grep -q "\"id\":\"$id\",\"version\":$v,\"hash\":\"$h\"" "$5"; then
       echo "RCP-VERSION-001: $id version $v is registered with another hash"; exit 1
@@ -86,6 +87,15 @@ run "a new recipe passes" 0 --base-ref base
 git -C "$repo" tag empty "$(git -C "$repo" commit-tree -m empty "$(git -C "$repo" hash-object -t tree /dev/null)")"
 run "a base with no recipes/sindri has nothing to compare" 0 --base-ref empty
 expect_text "it says so" "nothing to compare"
+
+AW_STUB_VALIDATE_RC=2 run "a validate tool error is exit 2, not a version failure" 2 --base-ref base
+expect_text "its stderr is shown" "stub: the tool broke"
+
+mkdir -p "$work/badgit"
+printf '#!/usr/bin/env bash\n[ "$1" = archive ] && exit 1\nexec %s "$@"\n' "$(command -v git)" > "$work/badgit/git"
+chmod +x "$work/badgit/git"
+PATH="$work/badgit:$PATH" run "a git archive failure on the base ref fails the script" 2 --base-ref base
+expect_text "it names the archive" "git archive base failed"
 
 run "a base ref that is not a commit is a setup error" 2 --base-ref nope
 run "an unknown argument is a usage error" 2 --verbose

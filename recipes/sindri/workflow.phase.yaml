@@ -26,13 +26,13 @@ states:
                                  inputs: { "fact:phasePacket": { fact: fact:phasePacket }, "fact:built": { fact: fact:built },
                                            "fact:workspace": { fact: fact:workspace }, "fact:redTests": { fact: fact:redTests } } } },
              next: "Waiting for {child}: proving {item} on its head." }
-  review:  { displayName: "Code review", why: "Review loops until no blocking issues remain.", kind: wait, timeout: { after: 3d, then: park },
+  review:  { displayName: "Code review", why: "Reviewers check the code, and fixes repeat until no blocking issues remain.", kind: wait, timeout: { after: 3d, then: park },
              waitFor: { child: { recipe: workflow.review-loop, onParked: propagate,
                                  inputs: { "fact:change": { fact: fact:change }, "fact:phasePacket": { fact: fact:phasePacket } } } },
              next: "Waiting for {child}: {item}'s review to zero blocking and issue findings." }
   drift:   { kind: active, step: step.phase.drift, loop: reprove, timeout: { after: 1h, then: park },
              next: "Check that {item}'s review left the proven head unchanged." }
-  ship:    { displayName: "Open the pull request", why: "Final check that proof, review and code are the same commit.", kind: wait, timeout: { after: 1d, then: park },
+  ship:    { displayName: "Open the pull request", why: "Checks that the proof and review are for the exact commit being shipped, then opens the pull request.", kind: wait, timeout: { after: 1d, then: park },
              waitFor: { child: { recipe: workflow.ship, onParked: propagate,
                                  inputs: { "fact:phasePacket": { fact: fact:phasePacket }, "fact:proofPack": { fact: fact:proofPack },
                                            "fact:review": { fact: fact:review }, "fact:workspace": { fact: fact:workspace },

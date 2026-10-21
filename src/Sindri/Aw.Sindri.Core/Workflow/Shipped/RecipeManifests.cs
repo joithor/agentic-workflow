@@ -30,6 +30,11 @@ public static class RecipeManifests
             }
 
             var mine = evals.Where(e => e.RelativePath.StartsWith($"{EvalsDirectory}{document.Recipe.Id.Value}/", StringComparison.Ordinal)).ToList();
+            if (document.Recipe.DisplayName is null)
+            {
+                invalid.Add(new ManifestInvalid(file.RelativePath, "RCP-DISPLAY-001: the recipe has no displayName"));
+            }
+
             recipes.Add(new ManifestEntry(document.Recipe.Id, document.Recipe.Version, document.Hash.Value, document.Recipe.DisplayName, mine.Count, EvalsHash(mine)));
         }
 

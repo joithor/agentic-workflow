@@ -32,21 +32,30 @@ trap cleanup EXIT
 mkdir -p "$work/base" "$work/head"
 
 # Compare git objects, not working trees: an untracked or edited file never counts.
-if ! git archive "$base_ref" recipes/sindri 2>/dev/null | tar -x -C "$work/base" 2>/dev/null || [ ! -d "$work/base/recipes/sindri" ]; then
+if [ -z "$(git ls-tree -d --name-only "$base_ref" recipes/sindri 2>/dev/null)" ]; then
   echo "recipe-versions: $base_ref has no recipes/sindri; nothing to compare"
   exit 0
 fi
-git archive HEAD recipes/sindri | tar -x -C "$work/head" || { echo "recipe-versions: git archive HEAD failed" >&2; exit 2; }
+{ git archive "$base_ref" recipes/sindri | tar -x -C "$work/base"; } || { echo "recipe-versions: git archive $base_ref failed" >&2; exit 2; }
+{ git archive HEAD recipes/sindri | tar -x -C "$work/head"; } || { echo "recipe-versions: git archive HEAD failed" >&2; exit 2; }
 
-"${sindri[@]}" recipe manifest "$work/base/recipes/sindri" --json > "$work/baseline.json" || {
-  echo "recipe-versions: the baseline ($base_ref) does not make a manifest" >&2; exit 2; }
+# The baseline may pre-date a rule (exit 1 lists its invalid recipes but still prints the manifest); only a tool error (2) or no output fails it.
+"${sindri[@]}" recipe manifest "$work/base/recipes/sindri" --json > "$work/baseline.json"; rc=$?
+if [ "$rc" -gt 1 ] || [ ! -s "$work/baseline.json" ]; then
+  echo "recipe-versions: the baseline ($base_ref) does not make a manifest" >&2; exit 2
+fi
 "${sindri[@]}" recipe manifest "$work/head/recipes/sindri" > "$work/head-manifest.txt"; rc=$?
 cat "$work/head-manifest.txt"
 [ "$rc" -eq 0 ] || { echo "recipe-versions: HEAD's recipes do not make a manifest" >&2; exit 1; }
 
 failed=0
 for file in "$work"/head/recipes/sindri/*.yaml; do
-  if ! out="$("${sindri[@]}" recipe validate "$file" --against "$work/baseline.json")"; then
+  out="$("${sindri[@]}" recipe validate "$file" --against "$work/baseline.json")"; rc=$?
+  if [ "$rc" -gt 1 ]; then
+    echo "recipe-versions: recipe validate failed on $(basename "$file") (exit $rc), a tool error:" >&2
+    echo "$out" >&2
+    exit 2
+  elif [ "$rc" -ne 0 ]; then
     failed=1
     echo "recipe-versions: $(basename "$file") changed without a version bump or does not validate:" >&2
     echo "$out" | grep -E '^RCP-' >&2
