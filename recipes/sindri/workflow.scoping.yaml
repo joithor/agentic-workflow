@@ -1,6 +1,6 @@
 schema: 1
 id: workflow.scoping
-version: 2
+version: 3
 description: "Station 1 of the line: scope a change from a brief, a tracker item, a rough idea or a PR, close the behaviour gaps by interview, and park at the owner's after-scoping stop with a cited, covered and challenged scope packet."
 displayName: "Decide what will change"
 urgency: work
@@ -12,7 +12,7 @@ outputs:
   - { key: fact:coverage,      label: "Lens coverage",   type: payload,   from: evidence }
   - { key: fact:decision,      label: "Size estimate",   type: payload,   from: size }
   - { key: fact:openQuestions, label: "Open questions",  type: payload,   from: evidence }
-  - { key: fact:scopePacket,   label: "Scope packet",    type: payload,   from: evidence }
+  - { key: fact:scopePacket,   label: "Scope packet",    type: payload,   from: freeze }
 initial: intake
 states:
   intake:       { displayName: "Take in the request", why: "Sorts a brief, ticket, idea or change into the right reader; without it the stage would guess the input.", kind: active, step: step.scope.intake, timeout: { after: 1h, then: park },
@@ -131,7 +131,7 @@ transitions:
   - { from: stop, to: freeze,   on: step.completed, when: { outcome: approve } }
   - { label: "you asked for changes: record your notes", from: stop, to: record,   on: step.completed, when: { outcome: revise }, produces: [fact:answers] }
   - { label: "you dropped it", from: stop, to: withdraw, on: step.completed, when: { outcome: drop } }
-  - { from: freeze, to: scoped,   on: step.completed, when: { outcome: frozen } }
+  - { from: freeze, to: scoped,   on: step.completed, when: { outcome: frozen }, produces: [fact:scopePacket] }
   - { label: "the document changed: check it again", from: freeze, to: evidence, on: step.completed, when: { outcome: mismatch }, produces: [fact:findings] }
   - { from: withdraw, to: dropped, on: step.completed, when: { outcome: withdrawn } }
 loops: { rounds: { cap: 6 }, rescope: { cap: 3 }, interview: { cap: 4 }, challenge: { cap: 4 }, refreeze: { cap: 2 } }
