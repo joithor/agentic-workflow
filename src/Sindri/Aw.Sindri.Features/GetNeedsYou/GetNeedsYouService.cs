@@ -20,8 +20,9 @@ namespace Aw.Sindri.Features.GetNeedsYou;
 /// <param name="callers">The caller, whose repo scope applies.</param>
 /// <param name="onyx">The managed Onyx's notice (not set up, or serve could not start it); it is a repo-less row, shown to a human caller only.</param>
 /// <param name="scrubber">Scrubs the notice's text.</param>
-/// <param name="clock">Stamps the notice's row.</param>
-internal sealed class GetNeedsYouService(IViewReader views, IProjectorStatus status, ICallerContextAccessor callers, IOnyxNotices onyx, ITextScrubber scrubber, TimeProvider clock) : IService<GetNeedsYouRequest, GetNeedsYouResponse>
+/// <param name="clock">Stamps the notice's row, and the time the timeouts are measured at.</param>
+/// <param name="joins">Adds the stop and the timeout to the desk and park rows.</param>
+internal sealed class GetNeedsYouService(IViewReader views, IProjectorStatus status, ICallerContextAccessor callers, IOnyxNotices onyx, ITextScrubber scrubber, TimeProvider clock, NeedsYouJoins joins) : IService<GetNeedsYouRequest, GetNeedsYouResponse>
 {
     public async ValueTask<Result<GetNeedsYouResponse>> Handle(GetNeedsYouRequest request, CancellationToken cancellationToken)
     {
@@ -38,7 +39,7 @@ internal sealed class GetNeedsYouService(IViewReader views, IProjectorStatus sta
             return records.Error;
         }
 
-        var rows = NeedsYouOrder.Sort([.. records.Value.Select(static r => r.Row).Where(r => ItemScope.VisibleOrRepoless(caller, r.Repo)), .. await OnyxRows(caller, cancellationToken).ConfigureAwait(false)]);
+        var rows = await joins.Apply(NeedsYouOrder.Sort([.. records.Value.Select(static r => r.Row).Where(r => ItemScope.VisibleOrRepoless(caller, r.Repo)), .. await OnyxRows(caller, cancellationToken).ConfigureAwait(false)]), clock.GetUtcNow(), cancellationToken).ConfigureAwait(false);
         var empty = current.Text;
         if (empty is null && rows.Count == 0)
         {

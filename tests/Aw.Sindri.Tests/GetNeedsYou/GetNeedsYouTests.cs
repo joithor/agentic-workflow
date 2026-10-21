@@ -5,7 +5,9 @@ using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.GetNeedsYou;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Tests.GetInstance;
 using Aw.Sindri.Tests.Requests;
+using Aw.Sindri.Tests.Workflow.Engine;
 
 namespace Aw.Sindri.Tests.GetNeedsYou;
 
@@ -17,7 +19,7 @@ public sealed class GetNeedsYouTests
 
     private readonly FakeOnyxNotices _onyx = new();
 
-    private GetNeedsYouService Service() => new(_q.Views.Views, _q.Views.Progress, _q.Views.Slice.Callers, _onyx, new PassThroughScrubber(), TimeProvider.System);
+    private GetNeedsYouService Service() => new(_q.Views.Views, _q.Views.Progress, _q.Views.Slice.Callers, _onyx, new PassThroughScrubber(), TimeProvider.System, new NeedsYouJoins(new SomeInstances(), new SomeInstances(), new Aw.Sindri.Testing.Workflow.Registry.InMemoryRecipeStore(), EngineFixture.Catalog, SliceHarness.Json));
 
     private async Task<GetNeedsYouResponse> Get() => (await Service().Handle(A.GetNeedsYouRequest().Build(), RequestQueryHarness.Token)).Value;
 
