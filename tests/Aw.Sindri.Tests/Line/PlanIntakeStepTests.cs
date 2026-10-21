@@ -23,13 +23,21 @@ public sealed class PlanIntakeStepTests
         var result = await new LineStation().PlanIntakeRun();
 
         Assert.Equal("loaded", result.Result!.Outcome.Value);
-        Assert.Equal(["answerLog", "answers", "design", "findings", "holdoutSets", "plan", "questions"], ScopingStepContexts.Keys(result));
+        Assert.Equal(["anchors", "answerLog", "answers", "design", "findings", "holdoutSets", "plan", "questions"], ScopingStepContexts.Keys(result));
         var design = JsonNode.Parse(LineStation.Fact(result, "design"))!;
         Assert.Equal("sec-1", (string?)design["sections"]![0]!["id"]);
         Assert.StartsWith("sha256:", (string?)design["packet"]!["hash"], StringComparison.Ordinal);
         Assert.StartsWith("sha256:", (string?)design["acceptanceHash"], StringComparison.Ordinal);
         Assert.Equal("{}", LineStation.Fact(result, "plan"));
         Assert.Equal("[]", LineStation.Fact(result, "holdoutSets"));
+    }
+
+    [Fact]
+    public async Task The_anchors_are_the_scope_map_keys_of_the_surfaces_the_design_covers()
+    {
+        var result = await new LineStation().PlanIntakeRun();
+
+        Assert.Equal("""["code:src/a.ts"]""", LineStation.Fact(result, "anchors"));
     }
 
     [Fact]

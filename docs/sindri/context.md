@@ -607,6 +607,15 @@ job (the engine's step lines are the job's progress), and exits 0, 1 or 2 as `so
   `context.map.built`;
 - a scoping run's surfaces: `context map propose <file>` (below).
 
+### Refreshing the map with no human step
+
+`sindri context map refresh [--detach] [--json]` is a job (catalog row `RefreshContextMap`, `POST /sindri/context/map/refresh`, key `refresh`, so one at a
+time): it builds a draft, runs the cleanup agent over the review queue (strong and agent-approved proposals are kept, weak ones removed), promotes the
+draft through the engine and records `context.map.built`, `context.map.promoted` and `context.map.refreshed` (repo, version, the heads it mapped, and the
+cleanup's counts). It does not go through `map promote` or its typed confirmation: the owner decided on 2026-10-19 that this job promotes as its caller. A
+terminal, the app or the `context-map-refresh` service may start it; a session may not. Any step's error fails the job (nothing is promoted; a built draft
+stays). The summary reads `map v<N>: <kept> kept, <removed> removed`, plus `, cleanup unavailable` when no model answered.
+
 A build takes a slot of the box-wide heavy-job lock (`$AW_STATE_DIR/locks/heavy-job.lock`, `.2` for the second slot,
 `AW_HEAVY_SLOTS`; the same directory the shell tools and `ui-evidence` use). If every slot stays held for 60 seconds
 it answers `SND-CONTEXT-040` (exit 75) naming the holder, and writes nothing. A second build keeps every decision you made
@@ -914,15 +923,16 @@ GET /sindri/context/code?anchor=<key>&anchor=<key>[&draft=true | &mapVersion=v2]
 
 For one to 20 anchors it lists the files that implement them, the tests that cover those files, the data things they read or write, and the schema files that name those things. The tests come from `tests` edges of the map and, beyond them, from a lexical search of the repo at the map's commit: a test file whose text names an implementing file's path (`imports`), or whose name matches the file's name (`sibling`). A lexical test is a suggestion; add the `tests` edge to the map to confirm it. Callers and callees say `unavailable (index-not-built)` until the code index ships.
 
-The output ends with what was searched: `map`, `code-index`, `lexical-tests` and `lexical-schema`, each with a state word. A repo clone that lacks the map's commit shows `unavailable (commit-not-held)`; a search that ran out of `context.deadline` shows `degraded (SND-CONTEXT-152)` with whatever it found. Neither stops the answer.
+The output ends with what was searched: `map`, `code-index`, `lexical-tests` and `lexical-schema`, each with a state word. A repo clone that lacks the map's commit shows `unavailable (commit-not-held)`; a search that ran out of `context.code.deadline` shows `degraded (SND-CONTEXT-152)` with whatever it found. Neither stops the answer.
 
-Two profile keys steer the search, both lists of repo-relative globs (at most 50, never overriding `denyPaths`):
+Three profile keys steer the search: two lists of repo-relative globs (at most 50, never overriding `denyPaths`) and a deadline, `deadline` (default `60s`, `100ms` to `600s`), because the search runs one `git grep` per implementing file and data thing, in turn:
 
 ```yaml
 context:
   code:
     schemaGlobs: ["db/migrations/**", "**/*.sql"]   # [] turns the schema scan off
     testGlobs: ["**/*.test.*", "**/tests/**"]       # matched case-sensitively
+    deadline: 60s                                   # 100ms to 600s; the shared context.deadline stays 4s
 ```
 
 Exit codes: 0 with an answer, 1 for attention (not running, no anchor found, unknown map version), 2 for a tool error.

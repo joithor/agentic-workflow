@@ -29,6 +29,9 @@ public static class EventTypes
     /// <summary>A held event expired from an instance's inbox (engine spec §5.4, §5.6).</summary>
     public const string WorkflowExpired = "workflow.expired";
 
+    /// <summary>An instance took or gave up a heavy-job slot (LN-WF3).</summary>
+    public const string WorkflowHeavy = "workflow.heavy";
+
     /// <summary>The Step inputs of a run filled its injection plan: the sections' names, sizes and digests, never their text (Step inputs plan, S4).</summary>
     public const string WorkflowInjection = "workflow.injection";
 
@@ -55,6 +58,9 @@ public static class EventTypes
 
     /// <summary>A draft map became current (context spec §3).</summary>
     public const string ContextMapPromoted = "context.map.promoted";
+
+    /// <summary>A refresh job built, cleaned up and promoted the map with no human step (owner F1, 2026-10-19).</summary>
+    public const string ContextMapRefreshed = "context.map.refreshed";
 
     /// <summary>The owner approved a scope packet (scoping spec §3, SC3); written by the freeze Step.</summary>
     public const string ScopingApproved = "scoping.approved";
@@ -139,6 +145,27 @@ public static class EventTypes
 
     /// <summary>A client attached to a session whose viewer had not confirmed (API P10a, launcher L-10).</summary>
     public const string LaunchViewerAttached = "launch.viewer-attached";
+
+    /// <summary>A setup step's derived state changed (setup-once spec §7.5).</summary>
+    public const string SetupStepChanged = "setup.step.changed";
+
+    /// <summary>A repo was added to the profile from the app or a terminal (setup-once spec §7.5).</summary>
+    public const string RepoAdded = "repo.added";
+
+    /// <summary>The approved profile names a repo and its onboarding ran (setup-once spec §7.5).</summary>
+    public const string RepoOnboarded = "repo.onboarded";
+
+    /// <summary>The shipped recipes were registered at start (setup-once spec §7.5).</summary>
+    public const string RecipeRegistrationCompleted = "recipe.registration.completed";
+
+    /// <summary>Sindri registered its MCP server in a repo (setup-once spec §7.5).</summary>
+    public const string McpRegistered = "mcp.registered";
+
+    /// <summary>The owner agreed that Sindri may register itself and build the map on its own (setup-once spec §7.5).</summary>
+    public const string SetupConsentGiven = "setup.consent.given";
+
+    /// <summary>The owner left Onyx for later, or took that back (setup-once spec §7.5).</summary>
+    public const string OnyxDeferred = "onyx.deferred";
 
     /// <summary>The event a background service records per run: 'service.&lt;name&gt;'.</summary>
     /// <param name="service">The service.</param>

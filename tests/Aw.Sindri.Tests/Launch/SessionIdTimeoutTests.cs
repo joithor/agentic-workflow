@@ -55,10 +55,11 @@ public sealed class SessionIdTimeoutTests
         Expect.Equal(SindriErrors.LaunchSessionIdTimedOut.Code, argv.Error.Code);
     }
 
+    // A mismatch is judged under a roomy limit: with the 1 ms one, a cold or loaded run can time out "[0-9]+" and answer SND-LAUNCH-015.
     [Fact]
     public void A_mismatch_is_still_a_plain_invalid_request()
     {
-        var argv = ArgvBuilder.Build(AgentEntries.ClaudeCode with { SessionIdPattern = "[0-9]+" }, LaunchMode.Open, Inputs(), _tight);
+        var argv = ArgvBuilder.Build(AgentEntries.ClaudeCode with { SessionIdPattern = "[0-9]+" }, LaunchMode.Open, Inputs(), TimeSpan.FromSeconds(5));
 
         Expect.Equal(SindriErrors.RequestInvalid.Code, argv.Error.Code);
     }

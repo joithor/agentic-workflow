@@ -35,7 +35,7 @@ internal sealed class LineStation
     {
         Area = new InMemoryRunArea();
         Files = new InMemoryPacketFiles(Area)
-            .Put(ScopeDirectory, "scope-map.json", $$"""{"schemaVersion":1,"change":"expiry","baseSha":"{{BaseSha}}","surfaces":[{"id":"S1"}]}""")
+            .Put(ScopeDirectory, "scope-map.json", $$"""{"schemaVersion":1,"change":"expiry","baseSha":"{{BaseSha}}","surfaces":[{"id":"S1","key":"code:src/a.ts"}]}""")
             .Put(ScopeDirectory, "acceptance.json", """{"schemaVersion":1,"parent":null,"items":[{"id":"AC-1","text":"WHEN a THEN b.","status":"failing"}]}""")
             .Put(ScopeDirectory, "questions.json", """{"schemaVersion":1,"questions":[{"id":"Q1"},{"id":"Q2"}]}""")
             .Put(ScopeDirectory, "answers.jsonl", """{"id":"A1","questionIds":["Q1"]}""" + "\n");

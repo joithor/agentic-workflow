@@ -28,11 +28,13 @@ internal static class EngineRows
     [
         // ---- P2: the registry (bound) ----
         Bound("RegisterRecipe", typeof(RegisterRecipeRequest), ActionClass.Desk, "POST /sindri/workflow/recipes", "sindri recipe register <file>") with { Ui = "ready" },
-        Protected("ApproveRecipe", "POST /sindri/workflow/recipes/{id}@{hash}/approve", "sindri recipe approve <recipe>", "WF-P2") with { CommandType = typeof(ApproveRecipeRequest), Ui = TypedConfirmation },
+        Protected("ApproveRecipe", "POST /sindri/workflow/recipes/{id}@{hash}/approve", "sindri recipe approve <recipe>", "WF-P2") with { CommandType = typeof(ApproveRecipeRequest), Ui = "ready", AppConfirm = true, Confirm = "typed" },   // the app confirms it (setup-once spec §4 item 7)
         // A job (200 JobStarted like every job route, key 'approve-all', ARCH-CQRS-003: class 'job') that only a human at a terminal may start and only by redeeming its challenge; a session is SND-AUTH-002.
-        // The app's held confirmation waits for the AppConfirm flag (setup-once spec §4 item 7, SO-A2).
-        JobRows.Job("ApproveAllRecipes", typeof(ApproveAllRecipesRequest), "/sindri/workflow/recipes/approve-all", "sindri recipe approve-all") with { NeedsTerminal = true, Ui = "pending:SO-E3" },
+        // The app confirms it by a hold, or by typing the text (setup-once spec §4 item 7): AppConfirm lets the app past the terminal gate, and the handler redeems the challenge first.
+        JobRows.Job("ApproveAllRecipes", typeof(ApproveAllRecipesRequest), "/sindri/workflow/recipes/approve-all", "sindri recipe approve-all") with { NeedsTerminal = true, Ui = "ready", AppConfirm = true, Confirm = "held" },
         Protected("RevokeRecipe", "POST /sindri/workflow/recipes/{id}@{hash}/revoke", "sindri recipe revoke <recipe>", "WF-P2") with { CommandType = typeof(RevokeRecipeRequest), Ui = TypedConfirmation },
+        // The app's own challenge route (setup-once spec §4 item 1): a desk row, the human token only, for exactly three actions.
+        Ready("IssueAppChallenge", typeof(IssueAppChallengeRequest), ActionClass.Desk, "POST /sindri/workflow/challenges/app", "sindri recipe approve <recipe>"),
         Protected("IssueChallenge", "POST /sindri/workflow/challenges", "sindri recipe approve <recipe>", "WF-P2") with { CommandType = typeof(IssueChallengeRequest), Class = ActionClass.Issue, Ui = "ready" },
 
         // ---- P4: instances (bound and mapped), and P5's takeover and handback ----

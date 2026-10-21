@@ -47,14 +47,14 @@ The small recipes that bugfix and spec-to-PR runs are built from. Each is a chil
 | `workflow.evidence-other` | phasePacket, built | evidenceSummary, evidenceReason | recorded / none-found |
 | `workflow.evidence-all` | phasePacket, built | evidenceSummary | done / failed, dropped |
 | `workflow.evidence` | phasePacket, built | evidenceSummary, decision | done / failed, all-failed, dropped |
-| `workflow.review-loop` (version 2, DTC4) | change (payload), phasePacket | review (packet) | clean / stuck, wrong (failed) |
+| `workflow.review-loop` (version 2, DTC4) | change (payload), phasePacket | review (packet) | clean / stuck, wrong (failed); both clean and wrong carry the frozen review |
 | `workflow.docs-sync` | pr, phasePacket (`{}` when started by hand) | docsResult, docsPr | opened / not-done; alreadySatisfied (no docs to change or sync off), abandoned (failed) |
 | `workflow.ship` | phasePacket, proofPack, review, workspace, lineContext | pr, handoff, returnNotes | shipped / returned (GREEN red or head moved) , refused (failed) |
 | `workflow.pr-babysitter` | pr, handoff, phasePacket, lineContext, workspace | mergedSha, reworkNotes | merged / stuck, rework (failed). **Stub**: one human-only Step (`step.babysit.watch`) stands for babysitting, docs sync and the merge until the PR babysitter spec's recipe replaces it |
 | `workflow.phase` | phasePacket, lineContext | pr, handoff, proofPack, mergedSha | merged / dropped. The per-phase child of the line (spec App. C.6): build, prove, review, drift check, ship, babysit; `stage` 3 and `reprove` 3 |
 
 
-`workflow.review-loop` v2 (DTC4) reviews one lens per run (`round`, `lens`, `lens-log`), a round per iteration (cap 5), keeps the narrow re-check, and ends `clean` only through `step.review.record`, which writes the review packet; `fact:review` is now `type: packet` (it was `payload`). Its hash changed: version 1 and version 2 are different recipes, and no approval of version 1 carries over (no live approvals exist, so there is no migration). The v1 eval names are kept (`happy`, `cap-then-recheck`, `behaviour-wrong`, `recheck-clean`, `recheck-wrong`) and `one-lens-per-run` is new. `step.lens.run`, `step.review.round`, `step.review.log` and `step.review.record` are descriptor-only: an instance parks with SND-WF-010 at the desk when it reaches one.
+`workflow.review-loop` v2 (DTC4) reviews one lens per run (`round`, `lens`, `lens-log`), a round per iteration (cap 5), keeps the narrow re-check, and ends `clean` or `wrong` only through `step.review.record` (`recorded` or `recordedWrong`), which writes and freezes the review packet, so a failed review carries its packet too; `step.review.round` reports `noLens` when no lens applies and the loop ends `stuck` for the owner (never a clean review of unreviewed code); a lens queue is capped by the `lens-runs` loop (50), which parks; `fact:review` is now `type: packet` (it was `payload`). Its hash changed: version 1 and version 2 are different recipes, and no approval of version 1 carries over (no live approvals exist, so there is no migration). The v1 eval names are kept (`happy`, `cap-then-recheck`, `behaviour-wrong`, `recheck-clean`, `recheck-wrong`) and `one-lens-per-run`, `empty-queue` and `lens-runs-cap` are new. `step.lens.run`, `step.review.round`, `step.review.log` and `step.review.record` are descriptor-only: an instance parks with SND-WF-010 at the desk when it reaches one.
 
 ### Rules every block recipe follows
 
@@ -90,7 +90,7 @@ DTC2 to DTC9 as the plan reads them. Out of this change: seeds (DT-R3), `workflo
 - `step.build.prepare` has a block runtime (`BuildPrepareStep`); every other Step of `workflow.build` and `workflow.prove` is descriptor-only (`BuildSteps.cs`, `ProveSteps.cs`) and parks with SND-WF-010 at the desk until its runtime ships. Only the owner may report `step.build.scope-desk`.
 - `workflow.build` inputs: `fact:phasePacket`, `fact:workspace` (text), `fact:buildNotes`, `fact:lineContext`. Outputs: `fact:built`, `fact:change`, `fact:redTests`, `fact:activePacket`. Terminals: `built` (resolved), `stopped` (unresolved).
 - `workflow.prove` inputs: `fact:phasePacket`, `fact:built`, `fact:workspace` (text), `fact:redTests`. Outputs: `fact:proofPack`, `fact:findings`. Terminals: `proven` (resolved), `failed` (unresolved, `fact:findings`). It waits on `workflow.hand-test`, `workflow.verify` and `workflow.evidence`.
-- Neither recipe waits on the heavy-job slot yet, because nothing in a served build grants it. Restore the slot waits (line spec C.3, C.4) when the heavy allocator exists.
+- `workflow.build` waits on a heavy-job slot (`slot`, after `prepare`) and `workflow.prove` after its `evidence` child (`slot`, before `before-after`); `workflow.ship` waits first. The engine takes the slot over the box's heavy-job lock, holds it while Steps run off the desk, and gives it up at a desk Step (`scope-desk`), a park or a takeover (docs/csharp/sindri-workflow.md "The heavy resource").
 
 ### The line's phase (workflow.phase)
 

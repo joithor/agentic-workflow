@@ -1,6 +1,6 @@
 schema: 1
 id: workflow.design
-version: 2
+version: 3
 description: "Station 2 of the line: one spec draft from a frozen scope packet, in the repo's style pack, reviewed by the repo's design lens pack on another model until no CRITICAL or HIGH finding is left; ends with a hashed candidate design packet."
 urgency: work
 inputs:
@@ -36,6 +36,8 @@ states:
                next: "Fix the CRITICAL and HIGH findings on {item}'s draft; answer the rest in writing." }
   lens-desk: { kind: active, step: step.design.lens-desk, timeout: { after: 7d, then: park },
                next: "The lens rounds on {item} hit their cap with findings left: accept them as known risks, revise with notes, or drop." }
+  ask:       { kind: active, step: step.lens.ask, timeout: { after: 7d, then: park },
+               next: "A lens can't settle a finding on {item}'s draft alone (an ambiguous fix or a product question): answer it, or drop the design." }
   evidence:  { kind: active, step: step.design.evidence, timeout: { after: 1h, then: park },
                next: "Check {item}'s design evidence and assemble the candidate design packet." }
   designed:  { kind: terminal, outcome: resolved }
@@ -53,6 +55,9 @@ transitions:
   - { from: lens,   to: lens-log, on: step.completed, when: { outcome: reviewed }, produces: [fact:lensReport] }
   - { from: lens-log, to: lens,      on: step.completed, when: { outcome: next },  produces: [fact:lensRounds, fact:lensQueue] }
   - { from: lens-log, to: evidence,  on: step.completed, when: { outcome: clean }, produces: [fact:lensRounds] }
+  - { from: lens-log, to: ask,       on: step.completed, when: { outcome: needsOwner }, produces: [fact:lensRounds, fact:findings, fact:escalation] }
+  - { from: ask,      to: revise,    on: step.completed, when: { outcome: answered }, produces: [fact:answers] }
+  - { from: ask,      to: dropped,   on: step.completed, when: { outcome: stop } }
   - { from: lens-log, to: revise,    on: step.completed,
       when: { all: [ { outcome: findings }, { loop: lens, below: cap } ] }, produces: [fact:lensRounds, fact:findings] }
   - { from: lens-log, to: lens-desk, on: step.completed, when: { outcome: findings }, produces: [fact:lensRounds, fact:findings] }
@@ -71,6 +76,8 @@ evals:   # the 7 cases of Appendix B.1 (plan's happy-assumed is assumed-happy: t
   - evals/workflow.design/fresh-happy.jsonl
   - evals/workflow.design/lens-cap-accept.jsonl
   - evals/workflow.design/lens-cap-drop.jsonl
+  - evals/workflow.design/lens-escalates.jsonl
+  - evals/workflow.design/lens-escalation-stop.jsonl
   - evals/workflow.design/lens-findings-revise.jsonl
   - evals/workflow.design/revise-after-caps.jsonl
   - evals/workflow.design/revise-edits-prior.jsonl

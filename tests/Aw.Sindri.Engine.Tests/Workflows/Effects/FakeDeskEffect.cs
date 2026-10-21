@@ -24,6 +24,9 @@ internal sealed class FakeDeskEffect : IEffectKind
     /// <summary>The outcome a recipe effect replies; 'delivered' is the one registered reply event declares.</summary>
     public string ReplyOutcome { get; set; } = "delivered";
 
+    /// <summary>The facts a recipe effect's reply carries (engine reply facts); none by default.</summary>
+    public IReadOnlyDictionary<FactKey, ReplyFact>? ReplyFacts { get; set; }
+
     /// <summary>Every dispatch, in order.</summary>
     public IReadOnlyList<EffectContext> Calls
     {
@@ -77,6 +80,6 @@ internal sealed class FakeDeskEffect : IEffectKind
             existed = !_performed.Add(context.Identity);
         }
 
-        return ValueTask.FromResult<Result<EffectDone>>(new EffectDone(context.FromEngine ? null : OutcomeName.From(ReplyOutcome), existed));
+        return ValueTask.FromResult<Result<EffectDone>>(new EffectDone(context.FromEngine ? null : OutcomeName.From(ReplyOutcome), existed, context.FromEngine ? null : ReplyFacts));
     }
 }

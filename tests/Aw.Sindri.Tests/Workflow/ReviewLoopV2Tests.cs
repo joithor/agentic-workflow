@@ -13,11 +13,11 @@ public sealed class ReviewLoopV2Tests
     private static Recipe Load() => RecipeComposition.ReadClean(ShippedRecipes.Read(Path), "workflow.review-loop.yaml").Recipe;
 
     [Fact, Trait("Lane", "unit")]
-    public void The_recipe_is_version_2_and_validates_against_the_shipped_catalog()
+    public void The_recipe_is_version_3_and_validates_against_the_shipped_catalog()
     {
         var document = RecipeComposition.ReadClean(ShippedRecipes.Read(Path), "workflow.review-loop.yaml");
 
-        Assert.Equal(2, document.Recipe.Version);
+        Assert.Equal(3, document.Recipe.Version);   // 3: the typed escalation (BS-12)
         Assert.Empty(RecipeComposition.Errors(document, FixtureCatalog.Shipped(), new InMemoryChildRecipes()));
     }
 
@@ -42,7 +42,7 @@ public sealed class ReviewLoopV2Tests
 
         Assert.Equal("round", recipe.Initial);
         Assert.Equal(
-            ["clean", "fix", "lens", "lens-log", "recheck", "record", "round", "stuck", "wrong"],
+            ["ask", "clean", "fix", "lens", "lens-log", "recheck", "record", "resolve", "round", "stuck", "wrong"],
             recipe.States.Keys.Order(StringComparer.Ordinal),
             StringComparer.Ordinal);
         Assert.Equal("step.review.round", recipe.States["round"].Step!.Use.Value);
@@ -67,12 +67,23 @@ public sealed class ReviewLoopV2Tests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Every_path_into_failed_writes_the_review_so_the_parent_can_take_it()
+    public void Failed_is_reached_only_through_record_so_a_failed_review_also_carries_its_frozen_packet()
     {
         var into = Load().Transitions.Where(static t => t.To == "wrong").ToList();
 
-        Assert.NotEmpty(into);
-        Assert.All(into, static t => Assert.Contains(t.Produces, static p => p.Fact.Value == "fact:review"));
+        Assert.Equal(["record"], Assert.Single(into).From);
+        Assert.Contains(Load().Transitions, static t => t.To == "record" && t.From.Contains("lens-log", StringComparer.Ordinal) && t.When?.Outcome?.Value == "behaviourWrong");
+        Assert.Contains(Load().Transitions, static t => t.To == "record" && t.From.Contains("recheck", StringComparer.Ordinal) && t.When?.Outcome?.Value == "behaviourWrong");
+        Assert.Contains(into, static t => t.Produces.Any(static p => p.Fact.Value == "fact:review"));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void No_lens_applying_ends_stuck_for_the_owner_and_never_enters_the_lens_loop()
+    {
+        var fromRound = Load().Transitions.Where(static t => t.From.Contains("round", StringComparer.Ordinal)).ToList();
+
+        Assert.Contains(fromRound, static t => t.To == "stuck" && t.When?.Outcome?.Value == "noLens");
+        Assert.Equal(50, Load().Loops["lens-runs"].Cap);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -104,11 +115,11 @@ public sealed class ReviewLoopV2Tests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void The_eval_names_of_version_1_are_kept_and_one_lens_per_run_is_added()
+    public void The_eval_names_of_version_1_are_kept_and_the_lens_cases_are_added()
     {
         var names = Load().Evals.Select(static e => System.IO.Path.GetFileNameWithoutExtension(e));
 
-        Assert.Equal(["behaviour-wrong", "cap-then-recheck", "happy", "one-lens-per-run", "recheck-clean", "recheck-wrong"], names.Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal(["ambiguous-fix-escalates", "behaviour-wrong", "cap-then-recheck", "empty-queue", "happy", "lens-runs-cap", "one-lens-per-run", "product-question-escalates", "recheck-clean", "recheck-wrong", "two-rounds-no-human", "untyped-please-decide-stays"], names.Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

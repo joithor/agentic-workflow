@@ -8,7 +8,7 @@ namespace Aw.Sindri.Tests.Workflow.Line;
 public sealed class LineBlocksTests
 {
     private const string Seeds = "fact:scope,fact:packs,fact:design,fact:findings,fact:lensRounds,fact:changedSections,fact:answers,fact:accepted";
-    private const string PlanSeeds = "fact:design,fact:plan,fact:findings,fact:questions,fact:answers,fact:answerLog,fact:holdoutSets";
+    private const string PlanSeeds = "fact:design,fact:plan,fact:findings,fact:questions,fact:answers,fact:answerLog,fact:holdoutSets,fact:anchors";
 
     private static BlockDescriptor? Find(string id) => FixtureCatalog.Shipped().Find(BlockId.From(id));
 
@@ -19,11 +19,12 @@ public sealed class LineBlocksTests
     [InlineData("step.design.apply", BlockRuntime.Agent, false, "fact:scope,fact:packs,fact:design,fact:designRevision,fact:answers", "applied", "", "fact:design=applied;fact:changedSections=applied", Capability.Tools)]
     [InlineData("step.design.check", BlockRuntime.Block, false, "fact:scope,fact:packs,fact:design", "pass,gaps", "", "fact:findings=gaps", Capability.Tools)]
     [InlineData("step.design.revise", BlockRuntime.Agent, false, "fact:scope,fact:packs,fact:design,fact:findings,fact:answers", "revised", "", "fact:design=revised;fact:changedSections=revised", Capability.Tools)]
+    [InlineData("step.lens.ask", BlockRuntime.Desk, true, "fact:escalation", "answered,stop", "", "fact:answers=answered", Capability.None)]
     [InlineData("step.design.lens-desk", BlockRuntime.Desk, true, "fact:findings,fact:lensRounds", "accept,revise,drop", "", "fact:accepted=accept;fact:answers=revise", Capability.None)]
     [InlineData("step.design.evidence", BlockRuntime.Block, false, "fact:scope,fact:packs,fact:design,fact:findings,fact:lensRounds,fact:accepted", "complete,incomplete", "", "fact:designPacket=complete;fact:design=complete;fact:lensRounds=complete;fact:findings=incomplete", Capability.Tools)]
     [InlineData("step.lens.round", BlockRuntime.Block, false, "fact:packs,fact:lensRounds,fact:changedSections", "ready", "", "fact:lensQueue=ready", Capability.Tools)]
     [InlineData("step.lens.run", BlockRuntime.Agent, false, "fact:lensQueue,fact:lensRounds", "reviewed", "", "fact:lensReport=reviewed", Capability.Tools)]
-    [InlineData("step.lens.log", BlockRuntime.Block, false, "fact:lensReport,fact:lensRounds,fact:lensQueue", "next,clean,findings", "fact:lensRounds", "fact:lensQueue=next;fact:findings=findings", Capability.None)]
+    [InlineData("step.lens.log", BlockRuntime.Block, false, "fact:lensReport,fact:lensRounds,fact:lensQueue", "next,clean,findings,needsOwner", "fact:lensRounds", "fact:lensQueue=next;fact:findings=findings,needsOwner;fact:escalation=needsOwner", Capability.None)]
     [InlineData("step.plan.intake", BlockRuntime.Block, false, "fact:scopePacket,fact:designPacket", "loaded", "", "PLANSEEDS", Capability.None)]
     [InlineData("step.plan.graph", BlockRuntime.Agent, false, "fact:scopePacket,fact:design,fact:plan,fact:findings,fact:answerLog", "drafted", "", "fact:plan=drafted", Capability.Tools)]
     [InlineData("step.plan.check", BlockRuntime.Block, false, "fact:scopePacket,fact:design,fact:plan", "pass,gaps", "", "fact:findings=gaps", Capability.Tools)]
