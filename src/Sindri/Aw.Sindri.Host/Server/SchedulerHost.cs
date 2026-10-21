@@ -29,7 +29,7 @@ internal sealed partial class SchedulerHost(
     private static readonly TimeSpan _tick = TimeSpan.FromSeconds(1);
     private readonly Dictionary<ServiceName, Task> _running = [];
     private IReadOnlyList<ServiceSchedule> _schedules = [];
-    private ProfileHash? _profile;
+    private LoadedProfile? _approved;
     private bool _loaded;
     private string? _problem;
     private bool _pausesKnown;   // until the first good read of the pauses no profile service runs (a built-in can't be paused): a restart mid-rebuild must not run what a human paused
@@ -92,12 +92,12 @@ internal sealed partial class SchedulerHost(
 
         _problem = null;
         var profile = approved.Value;
-        if (!_loaded || profile?.Hash != _profile)
+        if (!_loaded || profile?.Hash != _approved?.Hash)
         {
             _loaded = true;   // the first read loads the built-ins even with no approved profile (S1-D8)
-            _profile = profile?.Hash;
+            _approved = profile;
             _schedules = ServiceSchedule.From(profile?.Profile, inputs.BuiltIns, clock.GetUtcNow(), await LastRuns(ct).ConfigureAwait(false));
-            LogSchedule(log, _profile?.Abbreviated ?? "none", _schedules.Count);
+            LogSchedule(log, _approved?.Hash.Abbreviated ?? "none", _schedules.Count);
         }
     }
 
@@ -145,7 +145,7 @@ internal sealed partial class SchedulerHost(
     }
 
     /// <summary>A built-in service can't be paused (only the profile's can), so it needs no read of the pauses to start.</summary>
-    private bool IsBuiltIn(ServiceName name) => inputs.BuiltIns.Any(b => b.Name == name);
+    private bool IsBuiltIn(ServiceName name) => BuiltInService.Is(name, _approved?.Profile.Services?.ContainsKey(name.Value) == true, inputs.BuiltIns);
 
     private async Task ReadPauses(CancellationToken ct)
     {

@@ -7445,7 +7445,8 @@ static Aw.Sindri.Core.Text.SafeText.Escape(string! text) -> string!
 static Aw.Sindri.Core.Text.SafeText.Line(string! text, int max) -> string!
 static Aw.Sindri.Core.Views.AliasRow.operator !=(Aw.Sindri.Core.Views.AliasRow? left, Aw.Sindri.Core.Views.AliasRow? right) -> bool
 static Aw.Sindri.Core.Views.AliasRow.operator ==(Aw.Sindri.Core.Views.AliasRow? left, Aw.Sindri.Core.Views.AliasRow? right) -> bool
-static Aw.Sindri.Core.Views.ApprovedServices.Of(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>! rows, Aw.Sindri.Core.Profile.LoadedProfile? approved) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>!
+static Aw.Sindri.Core.Views.ApprovedServices.Of(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>! rows, Aw.Sindri.Core.Profile.LoadedProfile? approved, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Scheduling.BuiltInService!>! builtIns) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>!
+static Aw.Sindri.Core.Scheduling.BuiltInService.Is(Aw.Sindri.Core.Ids.ServiceName name, bool namedByProfile, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Scheduling.BuiltInService!>! builtIns) -> bool
 static Aw.Sindri.Core.Views.AsOf.operator !=(Aw.Sindri.Core.Views.AsOf? left, Aw.Sindri.Core.Views.AsOf? right) -> bool
 static Aw.Sindri.Core.Views.AsOf.operator ==(Aw.Sindri.Core.Views.AsOf? left, Aw.Sindri.Core.Views.AsOf? right) -> bool
 static Aw.Sindri.Core.Views.DecisionRules.Decide(Aw.Sindri.Core.Views.HumanDecisionRow! decision, Aw.Sindri.Core.Ids.DecisionOption choice, string? note, string! actor, Aw.Sindri.Core.Ids.CommandId command) -> Aw.Kernel.Result<Aw.Sindri.Core.Events.DecisionRecorded!>!
@@ -14231,3 +14232,14 @@ static Aw.Sindri.Core.Profile.RepoStatus.operator ==(Aw.Sindri.Core.Profile.Repo
 static Aw.Sindri.Core.Profile.RepoStatusRules.ExitCode(Aw.Sindri.Core.Profile.RepoStatus! status) -> int
 static Aw.Sindri.Core.Profile.RepoStatusRules.NudgeLine(Aw.Sindri.Core.Profile.RepoStatus! status) -> string!
 static Aw.Sindri.Core.Profile.RepoStatusRules.Text(Aw.Sindri.Core.Profile.RepoStatus! status) -> string!
+Aw.Sindri.Core.Workflow.Blocks.StepContext.HeavySlotHeld.get -> bool
+Aw.Sindri.Core.Workflow.Blocks.StepContext.HeavySlotHeld.init -> void
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyHold
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove.Acquire = 1 -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove.Ensure = 2 -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove.None = 0 -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove.Release = 3 -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType.Heavy = 8 -> Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType
+static Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyHold.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, bool inPhase, bool leased) -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+const Aw.Sindri.Core.Events.EventTypes.WorkflowHeavy = "workflow.heavy" -> string!
