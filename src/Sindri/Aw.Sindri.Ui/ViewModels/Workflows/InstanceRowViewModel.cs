@@ -82,6 +82,9 @@ internal sealed class InstanceRowViewModel : ObservableObject
     /// <summary>The served chip.</summary>
     public StateChip Chip => _row.Chip;
 
+    /// <summary>The one status the board, the list and the run drawer show for this run (F3 workflows spec §4).</summary>
+    public RunStatus Status => RunStatus.From(_row.Chip);
+
     /// <summary>The served now sentence, unchanged.</summary>
     public string Now => _row.Now;
 
