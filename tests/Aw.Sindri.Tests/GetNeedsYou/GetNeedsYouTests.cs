@@ -1,10 +1,14 @@
+using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Views;
+using Aw.Sindri.Core.Workflow.ApproveAll;
 using Aw.Sindri.Features.GetNeedsYou;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Testing.Workflow.ApproveAll;
+using Aw.Sindri.Tests.ApproveAll;
 using Aw.Sindri.Tests.GetInstance;
 using Aw.Sindri.Tests.Requests;
 using Aw.Sindri.Tests.Workflow.Engine;
@@ -19,7 +23,9 @@ public sealed class GetNeedsYouTests
 
     private readonly FakeOnyxNotices _onyx = new();
 
-    private GetNeedsYouService Service() => new(_q.Views.Views, _q.Views.Progress, _q.Views.Slice.Callers, _onyx, new PassThroughScrubber(), TimeProvider.System, new NeedsYouJoins(new SomeInstances(), new SomeInstances(), new Core.Workflow.Registry.RecipeRegistryReader(new Testing.Workflow.Registry.InMemoryRecipeStore(), new Testing.Workflow.Registry.InMemoryRecipeApprovals(), EngineFixture.Catalog, SliceHarness.Json, new NoProfileFacts()), EngineFixture.Catalog));
+    private IShippedRecipes _shipped = new FakeShippedRecipes([]);
+
+    private GetNeedsYouService Service() => new(_q.Views.Views, _q.Views.Progress, _q.Views.Slice.Callers, _onyx, new ApproveAllPlanReader(_q.Views.Slice.Profiles, _shipped), new PassThroughScrubber(), TimeProvider.System, new NeedsYouJoins(new SomeInstances(), new SomeInstances(), new Core.Workflow.Registry.RecipeRegistryReader(new Testing.Workflow.Registry.InMemoryRecipeStore(), new Testing.Workflow.Registry.InMemoryRecipeApprovals(), EngineFixture.Catalog, SliceHarness.Json, new NoProfileFacts()), EngineFixture.Catalog));
 
     private async Task<GetNeedsYouResponse> Get() => (await Service().Handle(A.GetNeedsYouRequest().Build(), RequestQueryHarness.Token)).Value;
 
@@ -39,6 +45,63 @@ public sealed class GetNeedsYouTests
         {
             Assert.Empty((await Get()).Rows);
         }
+    }
+
+    [Fact]
+    public async Task GetNeedsYou_shows_the_setup_recipes_row_and_the_own_approval_rows_to_a_human_and_not_to_a_session()
+    {
+        _ = await _q.Views.Slice.Profiles.Save(SliceHarness.Profile(), RequestQueryHarness.Token);
+        var fake = new FakeShippedRecipes(ApproveAllFixtures.StepAndItem());
+        fake.OwnApproval.Add(ApproveAllFixtures.ShipNeedsItsOwn());
+        _shipped = fake;
+
+        using (_q.Human())
+        {
+            var rows = (await Get()).Rows;
+            Expect.Sequence(["recipe:workflow.ship", "setup:recipes"], [.. rows.Select(static r => r.Id.Value)]);
+            var setup = rows.Single(static r => r.Kind == NeedsYouKind.Setup);
+            Expect.Equal(("Approve all new workflows (2)", "ApproveAllRecipes", "sindri recipe approve-all"), (setup.Title, setup.PrimaryAction?.Value, setup.Cli));
+            var recipe = rows.Single(static r => r.Kind == NeedsYouKind.Recipe);
+            Expect.Equal(("Approve a changed workflow: Ship a change", "ApproveRecipe", "sindri recipe approve workflow.ship"), (recipe.Title, recipe.PrimaryAction?.Value, recipe.Cli));
+        }
+
+        using (_q.Session(repo: null))
+        {
+            Assert.Empty((await Get()).Rows);
+        }
+    }
+
+    [Fact]
+    public async Task GetNeedsYou_has_no_recipe_rows_when_no_workflow_waits()
+    {
+        _ = await _q.Views.Slice.Profiles.Save(SliceHarness.Profile(), RequestQueryHarness.Token);
+        using var entered = _q.Human();
+
+        Assert.Empty((await Get()).Rows);
+    }
+
+    [Fact]
+    public async Task GetNeedsYou_drops_only_the_recipe_rows_when_the_plan_cannot_be_read()
+    {
+        await _q.Drift();
+        _shipped = new UnreadableShippedRecipes(throws: false);
+        using var entered = _q.Human();
+        _ = await _q.Views.Slice.Profiles.Save(SliceHarness.Profile(), RequestQueryHarness.Token);
+
+        Expect.Sequence(["profile:drift"], [.. (await Get()).Rows.Select(static r => r.Id.Value)]);
+
+        _shipped = new UnreadableShippedRecipes(throws: true);
+
+        Expect.Sequence(["profile:drift"], [.. (await Get()).Rows.Select(static r => r.Id.Value)]);
+    }
+
+    [Fact]
+    public async Task GetNeedsYou_has_no_recipe_rows_before_a_profile_is_approved()
+    {
+        _shipped = new FakeShippedRecipes(ApproveAllFixtures.StepAndItem());
+        using var entered = _q.Human();
+
+        Assert.Empty((await Get()).Rows);
     }
 
     [Fact]
@@ -154,6 +217,14 @@ public sealed class GetNeedsYouTests
         var result = await Service().Handle(A.GetNeedsYouRequest().Build(), RequestQueryHarness.Token);
 
         Expect.Equal(SindriErrors.AuthRefused.Code, result.Error.Code);
+    }
+
+    private sealed class UnreadableShippedRecipes(bool throws) : IShippedRecipes
+    {
+        public ValueTask<Result<ShippedRecipePlan>> Plan(CancellationToken cancellationToken) =>
+            throws ? throw new InvalidOperationException("the registry is unreadable") : ValueTask.FromResult<Result<ShippedRecipePlan>>(SindriErrors.ProfileNotApproved.With("the registry is unreadable"));
+
+        public ValueTask<Result<ApproveAllResult>> Approve(RedeemedPlan plan, IProgress<string> progress, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private sealed class NoProfileFacts : Core.Workflow.Validation.IRecipeProfileFacts
