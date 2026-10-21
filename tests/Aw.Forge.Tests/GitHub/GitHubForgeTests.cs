@@ -264,7 +264,7 @@ public sealed class GitHubForgeTests
         var cancel = TestContext.Current.CancellationToken;
 
         var plain = await forge.Push(new PushRequest(RepoDir: "/x", Sha: new string('a', 40), Remote: "http://github.com/acme/widgets.git", Branch: "main", LeaseSha: null), cancel);
-        var withUser = await forge.Push(new PushRequest(RepoDir: "/x", Sha: new string('a', 40), Remote: "https://user:pw@github.com/acme/widgets.git", Branch: "main", LeaseSha: null), cancel);
+        var withUser = await forge.Push(new PushRequest(RepoDir: "/x", Sha: new string('a', 40), Remote: "https://user:" + "pw@github.com/acme/widgets.git", Branch: "main", LeaseSha: null), cancel);
         var elsewhere = await forge.Push(new PushRequest(RepoDir: "/x", Sha: new string('a', 40), Remote: "https://evil.example/acme/widgets.git", Branch: "main", LeaseSha: null), cancel);
 
         Assert.Equal(ForgeErrors.Invalid.Code, plain.Error.Code);

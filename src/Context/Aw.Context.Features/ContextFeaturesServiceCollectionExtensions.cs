@@ -33,6 +33,8 @@ using Aw.Context.Features.GetHistory;
 using Aw.Context.Features.GetLenses;
 using Aw.Context.Features.GetProposals;
 using Aw.Context.Features.GetSubgraph;
+using Aw.Context.Features.HeldMap;
+using Aw.Context.Features.HoldMap;
 using Aw.Context.Features.ImportMap;
 using Aw.Context.Features.ListNeighbors;
 using Aw.Context.Features.MapHeads;
@@ -43,14 +45,17 @@ using Aw.Context.Features.ProposeFromScope;
 using Aw.Context.Features.PurgeMap;
 using Aw.Context.Features.QueryContext;
 using Aw.Context.Features.RefreshDocs;
+using Aw.Context.Features.ReleaseMap;
 using Aw.Context.Features.ReviewHistory;
 using Aw.Context.Features.ReviewMap;
 using Aw.Context.Features.ReviewQueue;
 using Aw.Context.Features.RunBacktest;
 using Aw.Context.Features.ShowMapStatus;
 using Aw.Context.Features.ShowNode;
+using Aw.Context.Features.ShowPublishStatus;
 using Aw.Context.Features.SourcesStatus;
 using Aw.Context.Features.SyncSources;
+using Aw.Kernel;
 using Aw.Kernel.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -97,12 +102,7 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<ListNeighborsRequest, NeighborsView>, ListNeighborsService>()
         .AddScoped<IService<FindPathRequest, PathView>, FindPathService>()
         .AddScoped<IService<BuildMapRequest, MapBuildReport>, BuildMapService>()
-        .AddScoped<IService<ReviewQueueRequest, ReviewQueueView>, ReviewQueueService>()
-        .AddScoped<IService<ReviewHistoryRequest, ReviewHistoryView>, ReviewHistoryService>()
-        .AddScoped<IService<ReviewMapRequest, ReviewResult>, ReviewMapService>()
-        .AddScoped<IService<ExportReviewRequest, ReviewExported>, ExportReviewService>()
-        .AddScoped<IService<PreviewReviewFileRequest, ReviewFilePreview>, PreviewReviewFileService>()
-        .AddScoped<IService<ApplyReviewFileRequest, ReviewResult>, ApplyReviewFileService>()
+        .AddReviewSlices()
         .AddPromoteSlices()
         .AddScoped<IService<ProposeFromScopeRequest, ProposeResult>, ProposeFromScopeService>()
         .AddScoped<IService<GetProposalsRequest, ProposalsView>, GetProposalsService>()
@@ -112,12 +112,29 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<MapAdmin>()
         .AddScoped<MapReview>()
         .AddScoped<MapProposals>()
+        .AddScoped<MapPublishing>()
+        .AddPublishSlices()
         .AddScoped<IContextMap, ContextMap>()
         .AddScoped<ContextGraph>()
         .AddScoped<IContextGraph>(static sp => sp.GetRequiredService<ContextGraph>())
         .AddScoped<IContextLenses>(static sp => sp.GetRequiredService<ContextGraph>())
         .AddScoped<IContextEngine, ContextEngine>()
         .AddLensSlices();
+
+    private static IServiceCollection AddReviewSlices(this IServiceCollection services) => services
+        .AddScoped<IService<ReviewQueueRequest, ReviewQueueView>, ReviewQueueService>()
+        .AddScoped<IService<ReviewHistoryRequest, ReviewHistoryView>, ReviewHistoryService>()
+        .AddScoped<IService<ReviewMapRequest, ReviewResult>, ReviewMapService>()
+        .AddScoped<IService<ExportReviewRequest, ReviewExported>, ExportReviewService>()
+        .AddScoped<IService<PreviewReviewFileRequest, ReviewFilePreview>, PreviewReviewFileService>()
+        .AddScoped<IService<ApplyReviewFileRequest, ReviewResult>, ApplyReviewFileService>();
+
+    // The hold, its release and the two publish reads (F1P).
+    private static IServiceCollection AddPublishSlices(this IServiceCollection services) => services
+        .AddScoped<IService<HeldMapRequest, MapPublishState>, HeldMapService>()
+        .AddScoped<IService<HoldMapRequest, MapHold>, HoldMapService>()
+        .AddScoped<IService<ReleaseMapRequest, Unit>, ReleaseMapService>()
+        .AddScoped<IService<ShowPublishStatusRequest, MapPublishView>, ShowPublishStatusService>();
 
     // The repo heads the map watcher reads (F1).
     private static IServiceCollection AddMapHeads(this IServiceCollection services) =>
