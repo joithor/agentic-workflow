@@ -20,7 +20,7 @@ internal sealed partial class NeedsYouBarViewModel
         }
         else if (Kind == BarKind.Decision)
         {
-            AcceptDecision();
+            await AcceptDecision().ConfigureAwait(true);
         }
         else if (Kind == BarKind.Desk && PrimaryEnabled)
         {
@@ -28,12 +28,43 @@ internal sealed partial class NeedsYouBarViewModel
         }
     }
 
-    private void AcceptDecision()
+    private async Task AcceptDecision()
     {
-        if (_row is not null && AcceptControl is { IsEnabled: true } accept)
+        if (AcceptControl is { IsEnabled: true } accept)
         {
-            DecisionRequested?.Invoke(this, new NeedsYouDecisionEventArgs(_row.Id, accept.Action.OptionId, ""));
+            await Decide(accept.Action.OptionId, "").ConfigureAwait(true);
         }
+    }
+
+    // The shell answers the decision as its sheet would; the reason stays until it is accepted, and a refusal shows here, not only in a sheet this page doesn't draw.
+    private async Task Decide(string optionId, string reason)
+    {
+        if (_row is null || IsSending)
+        {
+            return;
+        }
+
+        var (shown, asked) = (_row.Id, new NeedsYouDecisionEventArgs(_row.Id, optionId, reason));
+        (IsSending, Refusal) = (true, "");
+        Refresh();
+        DecisionRequested?.Invoke(this, asked);
+        var refusal = await asked.Settled.ConfigureAwait(true);
+        if (_row is null || !string.Equals(_row.Id, shown, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        IsSending = false;
+        if (refusal.Length > 0)
+        {
+            Refusal = refusal;
+        }
+        else
+        {
+            (Mode, ReasonText) = (NeedsYouBarMode.Pending, "");
+        }
+
+        Refresh();
     }
 
     // The first A on a request not read to the end only asks; the second, or one on a request read to the end, reports it.
@@ -75,9 +106,7 @@ internal sealed partial class NeedsYouBarViewModel
         var reason = ReasonText.Trim();
         if (Kind == BarKind.Decision && RejectControl is { IsEnabled: true } reject)
         {
-            DecisionRequested?.Invoke(this, new NeedsYouDecisionEventArgs(_row.Id, reject.Action.OptionId, reason));
-            (Mode, ReasonText) = (NeedsYouBarMode.Pending, "");
-            Refresh();
+            await Decide(reject.Action.OptionId, reason).ConfigureAwait(true);
         }
         else if (Kind == BarKind.Desk)
         {
@@ -154,12 +183,12 @@ internal sealed partial class NeedsYouBarViewModel
         (IsSending, Refusal) = (true, "");
         Refresh();
         var answer = await desk.Complete(target, WordOf(outcome), answers).ConfigureAwait(true);
-        IsSending = false;
         if (_row is null || !string.Equals(_row.Id, shown, StringComparison.Ordinal))
         {
-            return;
+            return;   // another request is shown now, and it owns the flag
         }
 
+        IsSending = false;
         if (answer is { IsError: true } refused)
         {
             Refusal = refused.Error.Message;

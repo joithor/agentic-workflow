@@ -248,6 +248,7 @@ public sealed class NeedsYouBarViewModelTests
     {
         var first = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var second = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _server.InstanceBody = _ => new RouteAnswer(System.Net.HttpStatusCode.OK, GoldenFiles.Api("workflow-instance", "dev-desk-round-trip"));   // the same desk run served for both instances
         _server.CompleteGate = first;
         var bar = await Bar(NeedsYouRows.Desk(), read: true);
         var stale = bar.PressApprove();

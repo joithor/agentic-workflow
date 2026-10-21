@@ -21,6 +21,7 @@ internal sealed partial class NeedsYouPage : UserControl
     private const double NarrowBelow = 1100;
 
     private NeedsYouPageViewModel? _page;
+    private NeedsYouBarMode _mode;
 
     public NeedsYouPage()
     {
@@ -63,6 +64,7 @@ internal sealed partial class NeedsYouPage : UserControl
         {
             _page.PropertyChanged -= OnPageChanged;
             _page.Bar.ReasonRequested -= OnReasonRequested;
+            _page.Bar.PropertyChanged -= OnBarChanged;
             _page.CardFocusRequested -= OnCardFocusRequested;
         }
 
@@ -71,6 +73,8 @@ internal sealed partial class NeedsYouPage : UserControl
         {
             _page.PropertyChanged += OnPageChanged;
             _page.Bar.ReasonRequested += OnReasonRequested;
+            _page.Bar.PropertyChanged += OnBarChanged;
+            _mode = _page.Bar.Mode;
             _page.CardFocusRequested += OnCardFocusRequested;
             NeedsYouDropItem.Header = _page.Bar.DropWord;   // a flyout's items do not take the page's data context
         }
@@ -101,6 +105,33 @@ internal sealed partial class NeedsYouPage : UserControl
     // The reason box opened (D): focus goes into it, so typing starts there.
     private void OnReasonRequested(object? sender, EventArgs e) =>
         Dispatcher.UIThread.Post(() => _ = NeedsYouReason.Focus(NavigationMethod.Tab), DispatcherPriority.Loaded);
+
+    // What closes under the keyboard takes its focus with it: a closed question hands focus back to Send back (or Approve), and a report that went through hands it to the
+    // list row, so focus never falls to the window.
+    private void OnBarChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (_page is null || !string.Equals(e.PropertyName, nameof(NeedsYouBarViewModel.Mode), StringComparison.Ordinal) || _page.Bar.Mode == _mode)
+        {
+            return;
+        }
+
+        var (was, now) = (_mode, _page.Bar.Mode);
+        _mode = now;
+        if (now == NeedsYouBarMode.Approved)
+        {
+            Dispatcher.UIThread.Post(() => _ = _page?.Selected is { } row && FocusRow(row.Id), DispatcherPriority.Loaded);
+        }
+        else if (now == NeedsYouBarMode.Pending && was is NeedsYouBarMode.SendingBack or NeedsYouBarMode.ConfirmingDrop or NeedsYouBarMode.Confirming)
+        {
+            Dispatcher.UIThread.Post(() => FocusBar(was), DispatcherPriority.Loaded);
+        }
+    }
+
+    private void FocusBar(NeedsYouBarMode was)
+    {
+        Button[] order = was == NeedsYouBarMode.Confirming ? [NeedsYouApprove, NeedsYouSendBack] : [NeedsYouSendBack, NeedsYouApprove, NeedsYouTerminal];
+        _ = order.FirstOrDefault(b => b.IsEffectivelyVisible && b.IsEnabled)?.Focus(NavigationMethod.Tab);
+    }
 
     // Enter on the list: focus goes to the card, where the arrow keys scroll it.
     private void OnCardFocusRequested(object? sender, EventArgs e) => _ = NeedsYouCardScroll.Focus(NavigationMethod.Tab);

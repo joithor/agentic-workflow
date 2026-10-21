@@ -74,7 +74,7 @@ internal sealed partial class ShellViewModel
     {
         var inbox = new NeedsYouPageViewModel(NeedsYou, _clock, clipboard, new DeskReporter(api, Health.ApiUrl));
         inbox.LeaveRequested += (_, _) => LeaveNeedsYouInbox();
-        inbox.Bar.DecisionRequested += (_, e) => AnswerDecision(e.RowId, e.OptionId, e.Note);
+        inbox.Bar.DecisionRequested += (_, e) => e.Settled = AnswerDecision(e.RowId, e.OptionId, e.Note);
         inbox.ItemRequested += (_, e) =>
         {
             if (NeedsYou.Row(e.RowId)?.ItemLink is { } link)
