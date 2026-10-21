@@ -10,7 +10,7 @@ internal sealed partial class RecipeWorkflow
     {
         while (!instance.Ended)
         {
-            instance = instance switch
+            instance = await HeavyTurn(instance, context).ConfigureAwait(true) ?? instance switch
             {
                 { Suspension: null, Frame.Run: { Runtime: StepRuntime.Block } block } => await RunBlockStep(instance, block, context).ConfigureAwait(true),
                 { Suspension: null, Frame.Run: { Runtime: StepRuntime.Agent } agent } => await RunAgentStep(instance, agent, context).ConfigureAwait(true),
