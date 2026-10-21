@@ -9,8 +9,7 @@ public static class CallCoverage
     /// <param name="subject">The coverage of the asked symbol's language.</param>
     /// <param name="edges">The rows of the answer.</param>
     public static Coverage Of(Coverage subject, IEnumerable<CallEdge> edges)
-    {
-        _ = (subject, edges);
-        return Coverage.Full;
-    }
+        => subject == Coverage.Unavailable ? Coverage.Unavailable
+            : subject == Coverage.Partial || edges.Any(e => e.Coverage != Coverage.Full) ? Coverage.Partial
+            : Coverage.Full;
 }
