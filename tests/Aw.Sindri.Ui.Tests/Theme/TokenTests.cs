@@ -42,6 +42,8 @@ public sealed class TokenTests
         { "WireHi", "#8a8f98" },
         { "LaneFill", "#05ffffff" },
         { "RingAnchor", "#d0d6e0" },
+        { "Violet", "#a78bfa" },
+        { "VioletSoft", "#170f2a" },
     };
 
     [Theory]
@@ -101,6 +103,7 @@ public sealed class TokenTests
         { "Size.Row", 36 }, { "Size.RowComfortable", 40 }, { "Size.TopBar", 48 }, { "Size.Sheet", 520 }, { "Size.SheetMin", 420 }, { "Size.SheetMax", 760 },
         { "Size.SheetCoversBelow", 1100 }, { "Size.WindowMinWidth", 900 }, { "Size.WindowMinHeight", 600 },
         { "Size.PanelGap", 16 }, { "Size.Control", 30 }, { "Size.FocusRing", 2 },
+        { "Size.Inspector", 480 }, { "Size.InspectorMin", 360 }, { "Size.BoardMin", 1230 }, { "Size.LaneMin", 200 }, { "Size.LaneMinLast", 150 },
     };
 
     [Theory]

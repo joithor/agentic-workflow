@@ -59,8 +59,25 @@ public sealed partial class ContrastTests
         { "RingAnchor", "Surface1", 13.0, NonText },
     };
 
+    // The workflow run statuses (F3 workflows spec §2), drawn on a board card (Surface2) and in the run drawer (Surface1).
+    public static TheoryData<string, string, double, double> StatusPairs => new()
+    {
+        // The workflow run's "you took over" status (F3 workflows spec §2 "Tokens"): violet glyph and word on its soft pair.
+        { "Violet", "VioletSoft", 6.8, TextAa },
+        { "Violet", "Surface1", 7.0, TextAa },
+        { "Violet", "Surface2", 6.7, TextAa },
+        // The other status pairs the Workflows page draws on a card (Surface2) and in a drawer (Surface1).
+        { "PrimaryHover", "PrimarySoft", 5.6, TextAa },   // running
+        { "Attention", "Surface2", 8.2, TextAa },
+        { "Error", "Surface2", 5.3, TextAa },
+        { "Success", "Surface2", 5.8, TextAa },
+        { "InkMuted", "Surface3", 12.1, TextAa },   // cancelled
+        { "InkSubtle", "Surface3", 5.4, TextAa },   // not started
+    };
+
     [Theory]
     [MemberData(nameof(Pairs))]
+    [MemberData(nameof(StatusPairs))]
     public void Each_pair_has_the_recorded_ratio_and_meets_its_threshold(string foreground, string background, double recorded, double minimum)
     {
         var ratio = _tokens.Contrast(foreground, background);
