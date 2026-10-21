@@ -37,7 +37,7 @@ public sealed class PlanIntakeStepTests
     {
         var result = await new LineStation().PlanIntakeRun();
 
-        Assert.Equal("""["code:src/a.ts"]""", LineStation.Fact(result, "anchors"));   // S1 is covered by sec-1; S2 by none
+        Assert.Equal("""["code:src/a.ts"]""", LineStation.Fact(result, "anchors"));
     }
 
     [Fact]
