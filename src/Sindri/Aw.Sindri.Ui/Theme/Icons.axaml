@@ -45,4 +45,12 @@
   <StreamGeometry x:Key="Icon.Kind.Plus">M8,3.5 L8,12.5 M3.5,8 L12.5,8</StreamGeometry>
   <StreamGeometry x:Key="Icon.Kind.Minus">M3.5,8 L12.5,8</StreamGeometry>
   <StreamGeometry x:Key="Icon.Kind.Fit">M2.5,6 L2.5,2.5 L6,2.5 M10,2.5 L13.5,2.5 L13.5,6 M13.5,10 L13.5,13.5 L10,13.5 M6,13.5 L2.5,13.5 L2.5,10</StreamGeometry>
+
+  <!-- The run status glyphs (F3 workflows spec §2): clock, person, pause, circle with a cross, circle with a bar, dashed circle -->
+  <StreamGeometry x:Key="Icon.RunClock">M8,2 A6,6 0 1 1 7.99,2 M8,4.5 L8,8 L10.5,9.5</StreamGeometry>
+  <StreamGeometry x:Key="Icon.RunPerson">M8,3 A2.5,2.5 0 1 1 7.99,3 M3,13.5 C3,10.5 5,9.5 8,9.5 C11,9.5 13,10.5 13,13.5</StreamGeometry>
+  <StreamGeometry x:Key="Icon.RunPause">M8,2 A6,6 0 1 1 7.99,2 M6.5,5.5 L6.5,10.5 M9.5,5.5 L9.5,10.5</StreamGeometry>
+  <StreamGeometry x:Key="Icon.RunCircleX">M8,2 A6,6 0 1 1 7.99,2 M5.8,5.8 L10.2,10.2 M10.2,5.8 L5.8,10.2</StreamGeometry>
+  <StreamGeometry x:Key="Icon.RunCircleMinus">M8,2 A6,6 0 1 1 7.99,2 M5.5,8 L10.5,8</StreamGeometry>
+  <StreamGeometry x:Key="Icon.RunCircleDashed">M8,2 A6,6 0 0 1 11.2,2.9 M12.9,4.8 A6,6 0 0 1 14,8 M13.1,10.2 A6,6 0 0 1 11.2,13.1 M9.2,13.8 A6,6 0 0 1 5.5,13.5 M3.5,12 A6,6 0 0 1 2,8 M2.9,5.8 A6,6 0 0 1 5.2,2.9</StreamGeometry>
 </ResourceDictionary>

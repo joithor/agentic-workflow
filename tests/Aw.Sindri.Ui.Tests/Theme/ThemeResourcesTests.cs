@@ -12,7 +12,7 @@ namespace Aw.Sindri.Ui.Tests.Theme;
 public sealed class ThemeResourcesTests
 {
     private static readonly TokenFile _tokens = TokenFile.Load();
-    private static readonly string[] _brushes = ["Canvas", "Surface1", "Ink", "InkSubtle", "Primary", "PrimaryHover", "Attention", "Error"];
+    private static readonly string[] _brushes = ["Canvas", "Surface1", "Ink", "InkSubtle", "Primary", "PrimaryHover", "Attention", "Error", "Violet", "VioletSoft"];
 
     private static async Task OnUi(Action body) =>
         _ = await HeadlessUnitTestSession.GetOrStartForAssembly(typeof(ThemeResourcesTests).Assembly)

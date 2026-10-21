@@ -15,7 +15,7 @@ public abstract class RunDiffContract
     /// <returns>The adapter and the worktree's path.</returns>
     protected abstract ValueTask<(IRunDiff Diff, string Worktree)> Create();
 
-    /// <summary>Adds an untracked file to <paramref name="worktree"/>.</summary>
+    /// <summary>Adds an untracked file named <c language="text">new.txt</c> to <paramref name="worktree"/>.</summary>
     /// <param name="worktree">The worktree.</param>
     /// <returns>Done.</returns>
     protected abstract ValueTask WriteFile(string worktree);
@@ -79,5 +79,44 @@ public abstract class RunDiffContract
         var empty = await diff.IsEmpty(Path.Combine(worktree, "no-such-dir"), "abc", Token);
 
         Expect.True(head.IsError && empty.IsError);
+    }
+
+    /// <summary>Nothing differs from the start commit in an untouched worktree.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task An_untouched_worktree_has_no_changed_paths()
+    {
+        var (diff, worktree) = await Create();
+        var start = await diff.Head(worktree, Token);
+
+        var paths = await diff.ChangedPaths(worktree, start.Value, Token);
+
+        Expect.True(paths.IsSuccess && paths.Value.Count == 0);
+    }
+
+    /// <summary>A new file is a changed path.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_new_file_is_a_changed_path()
+    {
+        var (diff, worktree) = await Create();
+        var start = await diff.Head(worktree, Token);
+        await WriteFile(worktree);
+
+        var paths = await diff.ChangedPaths(worktree, start.Value, Token);
+
+        Expect.True(paths.IsSuccess && paths.Value.SequenceEqual(["new.txt"], StringComparer.Ordinal));
+    }
+
+    /// <summary>A worktree that isn't there is an error, never "no changes".</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_missing_worktree_has_no_changed_paths_to_list()
+    {
+        var (diff, worktree) = await Create();
+
+        var paths = await diff.ChangedPaths(Path.Combine(worktree, "no-such-dir"), "abc", Token);
+
+        Expect.True(paths.IsError);
     }
 }
