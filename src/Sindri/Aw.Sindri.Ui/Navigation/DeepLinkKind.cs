@@ -35,4 +35,7 @@ internal enum DeepLinkKind
 
     /// <summary>'system/&lt;dependency&gt;': a dependency's doctor check (screens spec §4.6).</summary>
     System,
+
+    /// <summary>'setup': Settings, scrolled to the setup checklist (setup spec §5).</summary>
+    Setup,
 }
