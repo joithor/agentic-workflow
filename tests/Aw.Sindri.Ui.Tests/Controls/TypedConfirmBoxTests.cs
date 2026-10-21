@@ -1,6 +1,5 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.ViewModels.Confirmations;
-using Aw.Sindri.Ui.ViewModels.Controls;
 
 namespace Aw.Sindri.Ui.Tests.Controls;
 
