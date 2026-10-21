@@ -67,9 +67,9 @@ public sealed class ShellSetupTests
         shell.GoTo(PageId.Settings);
 
         Assert.True(DeepLink.TryParse("setup", out var link));
-        shell.Navigate(link!);
+        shell.Navigate(link);
 
-        Assert.Equal((PageId.Settings, 2, "setup"), (shell.CurrentPage, reveals, link!.ToString()));   // already on Settings: it still scrolls to the checklist
+        Assert.Equal((PageId.Settings, 2, "setup"), (shell.CurrentPage, reveals, link.ToString()));   // already on Settings: it still scrolls to the checklist
     }, Token);
 
     [Fact]
