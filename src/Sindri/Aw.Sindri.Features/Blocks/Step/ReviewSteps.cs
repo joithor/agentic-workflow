@@ -23,7 +23,7 @@ internal static class ReviewSteps
 
     /// <summary>'step.review.record': writes the review result packet (rounds, each finding with its class and resolution, the last verdict, the head sha) and machine-freezes it; 'recorded' after a clean review, 'recordedWrong' after a behaviour-wrong one (line spec DTC4).</summary>
     public static BlockDescriptor Record { get; } = BlockStep("step.review.record", Capability.Tools)
-        .Reads("fact:change", "fact:review", "fact:lensRounds").Reports("recorded", "recordedWrong").Writes(On("fact:review", "recorded", "recordedWrong"));
+        .Reads("fact:change", "fact:review", "fact:lensRounds", "fact:phasePacket").Reports("recorded", "recordedWrong").Writes(On("fact:review", "recorded", "recordedWrong"));
 
     /// <summary>
     /// 'step.review.fix': fixes the findings; 'fixed' with the new 'fact:change'. 'needsOwner' with a typed 'fact:escalation' when the fix is ambiguous or needs a product decision
