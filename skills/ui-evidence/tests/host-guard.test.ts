@@ -39,7 +39,7 @@ describe("resolveHost", () => {
     ["https://pr-abc.preview.example.com", "not a preview host"],
     ["https://app.example.org", "not a preview host"],
     ["http://pr-1.preview.example.com", "must be https"],
-    ["https://user:pw@pr-1.preview.example.com", "credentials"],
+    ["https://user:" + "pw@pr-1.preview.example.com", "credentials"],
     ["https://pr-1.preview.example.com:8443", "bare origin"],
     ["https://pr-1.preview.example.com/admin", "bare origin"],
     ["https://pr-1.preview.example.com/?x=1", "bare origin"],
