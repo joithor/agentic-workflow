@@ -59,27 +59,31 @@ internal sealed partial class ContextPageViewModel
     /// <summary>The choices' name.</summary>
     public string ChoicesName { get; } = Labels.ContextSuggestions;
 
-    /// <summary>Reads the lenses for the anchors in the box (Enter): one read, the newest answer wins.</summary>
+    /// <summary>Reads the lenses for what is in the box (Enter): a question is asked first for its anchors, anchor-shaped text is read as it is. One read, the newest answer wins.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>When the answer is drawn.</returns>
     public async Task Submit(CancellationToken cancellationToken = default)
     {
-        var anchors = AnchorText.Split([' ', ',', '\t', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct(StringComparer.Ordinal).ToList();
-        if (anchors.Count == 0 || Ports.ApiUrl() is not { } api)
+        var words = Words(AnchorText);
+        if (words.Count == 0 || Ports.ApiUrl() is not { } api)
+        {
+            return;
+        }
+
+        var generation = ++_generation;   // a read still in flight must not draw over this one
+        if (await Resolve(api, words, generation, cancellationToken).ConfigureAwait(true) is not var (anchors, fromQuestion))
         {
             return;
         }
 
         if (anchors.Count > MaxAnchors)
         {
-            _generation++;   // a read still in flight must not draw over the refusal
             Show(view: null, choices: []);
             Problem = Labels.ContextTooMany(MaxAnchors);
             Refresh();
             return;
         }
 
-        var generation = ++_generation;
         var result = await Ports.Api.Lenses(api, new LensesQuery(anchors, Depth: null, Draft: false, MapVersion: null), cancellationToken).ConfigureAwait(true);
         if (generation != _generation)
         {
@@ -88,7 +92,7 @@ internal sealed partial class ContextPageViewModel
 
         if (result.IsSuccess)
         {
-            Show(result.Value, choices: []);
+            Show(result.Value, choices: [], fromQuestion);
         }
         else
         {
@@ -123,7 +127,7 @@ internal sealed partial class ContextPageViewModel
             .SelectMany(m => m.Value.EnumerateArray()).Where(v => v.ValueKind == JsonValueKind.String).Select(v => v.GetString() ?? string.Empty)];
     }
 
-    private void Show(LensesView? view, List<string> choices)
+    private void Show(LensesView? view, List<string> choices, bool fromQuestion = false)
     {
         Problem = string.Empty;
         Choices = choices;
@@ -141,7 +145,7 @@ internal sealed partial class ContextPageViewModel
 
         var version = view.MapCommit is { Length: > 0 } commit ? $"{view.MapVersion}@{commit}" : view.MapVersion;
         MapLine = Labels.ContextMapLine(version);
-        Head = Labels.ContextHead(view.Anchors.Count) + (view.Draft ? " · " + Labels.ContextDraftMark : string.Empty);
+        Head = (fromQuestion ? Labels.ContextFromQuestion(view.Anchors.Count) : Labels.ContextHead(view.Anchors.Count)) + (view.Draft ? " · " + Labels.ContextDraftMark : string.Empty);
         var names = Names(view);
         Bands = [Intent(view), Product(view), Code(view)];
         Edges = EdgeLines(view, names);

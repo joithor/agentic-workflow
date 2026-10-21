@@ -111,7 +111,7 @@
     <Setter Property="Width" Value="28" />
     <Setter Property="Height" Value="28" />
   </Style>
-  <Style Selector="Panel.detail-canvas">
+  <Style Selector="Grid.detail-canvas">
     <Setter Property="Background" Value="{DynamicResource Brush.Canvas}" />
   </Style>
   <Style Selector="Border.request-card">
@@ -135,6 +135,56 @@
     <Setter Property="Height" Value="36" />
     <Setter Property="Padding" Value="20,0" />
     <Setter Property="Background" Value="{DynamicResource Brush.AttentionSoft}" />
+  </Style>
+  <!-- The action bar (needs-you spec §2, slice 2): a strip under the card on Surface1 with a Hairline on top; buttons 32 px high, Radius.SM; the primary is Primary on OnPrimary,
+       "Approve?" is AttentionSoft with an Attention border and text, the terminal button is Surface2 with HairlineStrong in mono. The dashed chip is a Rectangle stroke. -->
+  <Style Selector="Border.action-bar">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="0,1,0,0" />
+    <Setter Property="Padding" Value="24,10,24,12" />
+  </Style>
+  <Style Selector="Button.bar-button">
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.SM}" />
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Ink}" />
+  </Style>
+  <Style Selector="Button.bar-button.primary">
+    <Setter Property="Background" Value="{DynamicResource Brush.Primary}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Primary}" />
+    <Setter Property="Foreground" Value="{DynamicResource Brush.OnPrimary}" />
+  </Style>
+  <Style Selector="Button.bar-button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Brush.PrimaryHover}" />
+    <Setter Property="Foreground" Value="{DynamicResource Brush.OnPrimary}" />
+  </Style>
+  <Style Selector="Button.bar-button.asking, Button.bar-button.primary.asking">
+    <Setter Property="Background" Value="{DynamicResource Brush.AttentionSoft}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Attention}" />
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Attention}" />
+  </Style>
+  <Style Selector="Button.bar-button.asking:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.bar-button.primary.asking:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Brush.AttentionSoft}" />
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Attention}" />
+  </Style>
+  <Style Selector="Button.bar-button.terminal">
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.HairlineStrong}" />
+  </Style>
+  <Style Selector="Button.bar-button:focus-visible">
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.PrimaryHover}" />
+  </Style>
+  <Style Selector="Rectangle.chip-dash">
+    <Setter Property="Stroke" Value="{DynamicResource Brush.HairlineStrong}" />
+    <Setter Property="StrokeThickness" Value="1" />
+    <Setter Property="StrokeDashArray" Value="3,3" />
+    <Setter Property="Fill" Value="Transparent" />
+  </Style>
+  <Style Selector="TextBlock.success">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Success}" />
   </Style>
   <!-- The sticky header over a scrolled group list sits above the rows, and takes no pointer of its own. -->
   <Style Selector="ContentControl.sticky-header">
