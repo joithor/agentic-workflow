@@ -76,6 +76,7 @@ public sealed class GoldenContractTests
         ["workflow-challenges-app"] = As<AppChallengeView>,   // the same route's real goldens (setup-once spec §4): the profile's typed challenge and approve-all's held one with its plan
         ["recipes-approve-all-start"] = As<ApproveAllStarted>,   // POST /workflow/recipes/approve-all's 202
         ["approve-all-job"] = As<ApproveAllJob>,   // GET /jobs/{id} of the approval
+        ["workflow-complete"] = As<CompleteStepAccepted>,   // POST /workflow/instances/{id}/runs/{run}/complete's accepted answer (spec-shaped; the engine has no golden for it)
     };
 
     // Routes the app never calls yet: stop is Health's (U4), profile approve is protected (the app shows the CLI, §6.5), the profile route is a later page's (U2+), and the
@@ -91,6 +92,7 @@ public sealed class GoldenContractTests
         "workflow-instance-scoping",   // API2 (SC-K2): the scoping stop view; the app reads it in SC-U (U2)
         "workflow-instance-design-stop",   // LN-API2 (LN-K): stop 2's view of a workflow.plan instance; the app reads it in LN-U (LN-UI2)
         "items-id-scope",   // an item's scope: the Context page reads it once it lands (UI lane, with the lenses routes)
+        "code-index-status", "code-index-symbols", "code-index-callers", "code-index-callees",   // the code-index reads (CI-10a) are the CLI's; the app reads status for the Health card in CI-10b
         "events-catalog",   // API P5 (E-15): the app reads each type's invalidates once it switches from re-querying every view on each event (UI lane)
     };
 

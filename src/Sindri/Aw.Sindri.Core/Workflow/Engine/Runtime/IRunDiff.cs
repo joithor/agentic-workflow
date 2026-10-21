@@ -17,4 +17,11 @@ public interface IRunDiff
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>True when nothing changed; an error when the worktree can't be read.</returns>
     public ValueTask<Result<bool>> IsEmpty(string worktree, string startHead, CancellationToken cancellationToken);
+
+    /// <summary>The paths that differ from <paramref name="baseCommit"/>: committed, staged, unstaged and untracked, relative to the worktree.</summary>
+    /// <param name="worktree">The worktree.</param>
+    /// <param name="baseCommit">The commit to compare with.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The paths in ordinal order, none twice; an error when the worktree or the commit can't be read.</returns>
+    public ValueTask<Result<IReadOnlyList<string>>> ChangedPaths(string worktree, string baseCommit, CancellationToken cancellationToken);
 }
