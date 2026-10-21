@@ -15,7 +15,7 @@ gate and merge their PRs, relay between them and the owner, and keep the box hea
 Every step below is an `aw-meta` call. Don't improvise a step the CLI has a command for, and never edit its state
 (`$AW_STATE_DIR/meta/`) by hand. Works for any project: everything team-specific is in the team config.
 
-`aw-meta` is on PATH after `./setup.sh --with-meta` (Linux only for now: aw-meta reads /proc; on macOS setup skips it) (else `$HOME/.agentic-workflow/bin/aw-meta`). Every command takes
+`aw-meta` is on PATH after `./setup.sh --with-meta` (Linux and macOS; `aw-meta version` shows which commit it was built from) (else `$HOME/.agentic-workflow/bin/aw-meta`). Every command takes
 `--json`. Exit 0 ok, 1 attention (read the output and act on it), 2 usage or tool error. Reference:
 `$HOME/.agentic-workflow/toolkit/docs/csharp/meta.md`.
 
@@ -160,7 +160,7 @@ computed from the merge queue (sized against `heavy.cap`; not what the wrapper's
 
 The box has a fixed amount of memory, disk and heavy-job slots. Watch them and adapt, so lanes never find out by crashing the
 machine. The thresholds are the team config's `resources`, `builders` and `heavy` keys (defaults: disk floor 30 GB, memory floor
-8 GB, swap 90%, 4 builders per lane of 4 GB each; see the reference doc). Nothing below is specific to one project.
+8 GB, 4 builders per lane of 4 GB each; see the reference doc). Nothing below is specific to one project.
 
 **Gates.**
 - Run gates **only through `aw-meta gate-run`** (and reruns through `gate-rerun`). They carry `AW_HEAVY_PRIORITY=meta`, so the
@@ -186,7 +186,7 @@ machine. The thresholds are the team config's `resources`, `builders` and `heavy
 
 **Builders per lane.** `aw-meta health` prints `builders: N per lane (...)` (and `status` the same line): the number of builder
 subagents each lane may run at once now, never below 1. It falls as free disk gets close to the floor plus every lane's builder
-worktrees, and is 1 while memory is low (the same rule as `MEMORY LOW`: under its floor, or swap nearly full). Check it after `DISK`/`MEMORY` events and at each `health`, and **tell
+worktrees, and is 1 while memory is low (the same rule as `MEMORY LOW`: available memory under its floor; swap use alone never counts). Check it after `DISK`/`MEMORY` events and at each `health`, and **tell
 the lanes when it changes** (one message to every lane: "builders per lane: N"). Every builder gets its **own worktree and
 branch**; never two builders on one branch or in one worktree. The disk floor is a rule, not a hint: below it, no new builder
 starts whatever the advice says for a lane that is idle.
@@ -197,6 +197,34 @@ process) and sweep again.
 
 **Announcements.** Any message to a lane that announces main moving must carry the new **short sha** (the text `merge-run`
 prints does: send it verbatim). The Stop hook closes the `announce-main` obligation by matching that sha in what you sent.
+
+## Lane context
+
+Keep each Claude lane's context window small, or the lanes burn usage. `aw-meta lanes-context` lists each lane's size and a verdict
+(`ok`, `recycle` at `context.recycleAt`, default 300k, `unknown`); `health` and `status` print it as `context: api 487k (recycle), ...`,
+and `watch` prints `CONTEXT HIGH <lane> <N>k` once per crossing and `CONTEXT OK <lane>` after a recycle.
+
+On `CONTEXT HIGH` (or a `recycle` verdict), message the lane (SendMessage): at a safe point write a digest to
+`~/.agentic-workflow/digests/<team>-<lane>-<date>.md` and reply `DIGEST READY <path>`. A safe point means no builder subagent, review run or
+background job is running (`/clear` cuts them off) and everything is pushed. When the reply arrives, run
+`aw-meta lane-recycle <lane> --digest <path>` (`--dry-run` shows the steps). It clears the lane, waits for the new session, records it so a
+relaunch resumes it, and has the lane read the digest and continue. Exit 1 means it refused (stale or empty digest, or no live Claude session in the lane's pane) or the new session never
+appeared (nothing more was sent; the error prints the command to send the line by hand). Never recycle the meta lane this way.
+
+## Usage limits
+
+A Claude usage limit stops every lane and your own subagents at once ("You've hit your session limit · resets 2:50am",
+"weekly limit · resets Oct 19, 10pm"). `aw-meta usage` shows who is `limited` (kind and reset) and `watch` prints
+`USAGE LIMITED <lane|meta> <kind> resets <time>` once per stop.
+
+- On `USAGE LIMITED`: don't fight it and don't retry in a loop; the lanes cannot work and neither can you. Note it in the digest
+  (which lanes, which limit, the reset time) and run `aw-meta usage-wait` in the background (`run_in_background`): it blocks
+  until the reset plus a margin and its exit wakes you. If you are the one limited, the watch's `USAGE OK meta` line wakes you too.
+- On `USAGE OK <lane>`: the watch types the resume line into the idle lanes itself (`usage.autoResume`); a busy lane is
+  never typed into. You don't message them.
+- On `USAGE OK meta` (or the `usage-wait` exit): resume your own subagents with SendMessage (their ids are in your digest), re-arm
+  `aw-meta watch`, then run `aw-meta usage` and confirm every lane is `ok`. A lane still `limited` after the reset
+  (`USAGE RESUME FAILED`, or it was busy or had a draft in its box) needs a nudge: SendMessage it (`aw-meta lane-send` only for a non-Claude lane; it refuses a Claude lane, AW-META-017).
 
 ## The running log
 

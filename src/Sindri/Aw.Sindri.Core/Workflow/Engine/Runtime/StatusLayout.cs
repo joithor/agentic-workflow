@@ -3,7 +3,7 @@ using System.Text;
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 
 /// <summary>
-/// 'workflow status' (engine spec §6.4): the header, then labelled lines in a fixed order — next, child, inputs, drift,
+/// 'workflow status' (engine spec §6.4): the header, then labelled lines in a fixed order — next, run (an agent run, P8), child, inputs, injection, drift,
 /// timeout, paused, budget (beside an open desk task, as §6.4 shows it), answer, commands — leaving out the empty ones. Labels take 12 columns; a long 'next' wraps
 /// at 120 and every continuation line is indented to the value column. Plain ASCII.
 /// </summary>
@@ -22,8 +22,10 @@ public static class StatusLayout
         var text = new StringBuilder().Append(InstanceHeader.Line(view, now)).Append('\n');
         Labelled(text, "name", NameLines(view));
         Labelled(text, "next", Wrap(view.Next));
+        Labelled(text, "run", view.AgentRun is { } run ? [$"agent {run.Launch}"] : []);
         Labelled(text, "child", [.. view.Children.Select(static c => $"{c.Address.Value}  {c.State}")]);
         Labelled(text, "inputs", InputLines(view));
+        Labelled(text, "injection", InjectionLines(view));
         Labelled(text, "drift", view.Drift is { } drift ? [drift] : []);
         Labelled(text, "timeout", view.Task?.TimeoutAt is { } at ? [$"parks in {StatusText.Duration(at - now)} (desk)"] : []);
         Labelled(text, "paused", view.Paused is { } left ? [$"timeout {StatusText.Duration(left)} left"] : []);
@@ -58,6 +60,9 @@ public static class StatusLayout
 
     private static List<string> InputLines(InstanceView view) =>
         view.Task is { } task ? [.. task.Inputs.Select(static i => $"{i.Key.Value}  {i.Value.Name}  sha256:{StatusText.Digest(i.Value.Value.Sha256)}{(i.Value.Generated ? " (generated)" : string.Empty)}")] : [];
+
+    private static List<string> InjectionLines(InstanceView view) =>
+        view.Task is { } task ? [.. task.Injection.Select(static i => $"{i.Section}  {i.Input.Value}  sha256:{i.Sha256[..Math.Min(12, i.Sha256.Length)]}  {i.Bytes.ToString(System.Globalization.CultureInfo.InvariantCulture)} B{(i.Replaced is { } replaced ? $" (replaced {replaced.Value})" : string.Empty)}")] : [];
 
     private static void Labelled(StringBuilder text, string label, List<string> lines)
     {

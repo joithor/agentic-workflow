@@ -4,7 +4,6 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.Views.Workflows;
@@ -18,9 +17,18 @@ internal sealed partial class WorkflowsPage : UserControl
         AddHandler(InstanceRow.OpenEvent, OnOpen);
         AddHandler(InstanceRow.SelectEvent, OnSelect);
         AddHandler(RecipeGroup.ToggleEvent, OnToggle);
+        AddHandler(ChildAnswerButton.FollowEvent, OnChildAnswer);
     }
 
     private bool _focusWasHere;
+
+    private void OnChildAnswer(object? sender, RoutedEventArgs e)
+    {
+        if (e.Source is ChildAnswerButton { Answer: { } answer } button && button.FindAncestorOfType<InstanceRow>() is { Address.Length: > 0 } row)
+        {
+            (DataContext as WorkflowsViewModel)?.FollowChildAnswer(row.Address, answer);
+        }
+    }
 
     /// <inheritdoc />
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -97,7 +105,7 @@ internal sealed partial class WorkflowsPage : UserControl
     {
         if (List is { } list && sender is ComboBox { SelectedItem: string chosen })
         {
-            var recipe = string.Equals(chosen, Labels.AllRecipes, StringComparison.Ordinal) ? null : chosen;
+            var recipe = list.RecipeIdOf(chosen);   // a choice is a workflow's name; null for "All workflow types"
             if (!string.Equals(recipe, list.RecipeFilter, StringComparison.Ordinal))
             {
                 _ = list.FilterRecipe(recipe, CancellationToken.None);
@@ -114,6 +122,8 @@ internal sealed partial class WorkflowsPage : UserControl
             e.Handled = true;
         }
     }
+
+    private void OnStart(object? sender, RoutedEventArgs e) => List?.RequestStart();
 
     private void OnDoneToggle(object? sender, RoutedEventArgs e) => _ = List?.ToggleDone(CancellationToken.None);
 }

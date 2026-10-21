@@ -25,6 +25,7 @@
     <ProjectReference Include="../Aw.Sindri.Features/Aw.Sindri.Features.csproj" />
     <ProjectReference Include="../Aw.Sindri.Infrastructure/Aw.Sindri.Infrastructure.csproj" />
     <ProjectReference Include="../../Context/Aw.Context.Core/Aw.Context.Core.csproj" />
+    <ProjectReference Include="../../CodeIndex/Aw.CodeIndex.Core/Aw.CodeIndex.Core.csproj" />
     <!-- compose edge (deps.yaml): only AddContextFeatures and AddContextInfrastructure, in Composition (ARCH-COMPOSE-001) -->
     <ProjectReference Include="../../Context/Aw.Context.Features/Aw.Context.Features.csproj" />
     <ProjectReference Include="../../Context/Aw.Context.Infrastructure/Aw.Context.Infrastructure.csproj" />
@@ -41,7 +42,17 @@
     <PackageReference Include="ModelContextProtocol.AspNetCore" />
   </ItemGroup>
 
+  <!-- The shipped recipes (setup-once spec §5.3): every file of the directory AwRecipesDir names is embedded as
+       aw-recipes/sindri/<path relative to it>, '/' separated, README.md excluded. scripts/sindri-app.sh stages `git archive
+       HEAD recipes/sindri` into its build copy and passes that directory; an ordinary build leaves AwRecipesDir empty and
+       embeds nothing (an empty set is legal). The reader is the engine's IEmbeddedRecipes. -->
+  <ItemGroup Condition="'$(AwRecipesDir)' != '' And Exists('$(AwRecipesDir)')">
+    <EmbeddedResource Include="$(AwRecipesDir)/**/*" Exclude="$(AwRecipesDir)/README.md"
+                      LogicalName="aw-recipes/sindri/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)" />
+  </ItemGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="Aw.Sindri.Tests" />
+    <InternalsVisibleTo Include="Aw.Sindri.Engine.Tests" />
   </ItemGroup>
 </Project>

@@ -11,8 +11,15 @@ public static class ProfileRules
     /// <summary>Checks <paramref name="profile"/> and returns it with defaults applied (sorted services and repos).</summary>
     /// <param name="profile">The deserialized profile.</param>
     /// <returns>The canonical profile, or SND-PROFILE-002 naming the key path and the fix.</returns>
-    public static Result<SindriProfile> Check(SindriProfile profile)
+    public static Result<SindriProfile> Check(SindriProfile profile) => Check(profile, box: null);
+
+    /// <summary>Checks <paramref name="profile"/> against what the box allows, and returns it with defaults applied.</summary>
+    /// <param name="profile">The deserialized profile.</param>
+    /// <param name="box">The box's limits (the heavy-slot cap), or null to check the profile alone.</param>
+    /// <returns>The canonical profile, or SND-PROFILE-002 naming the key path and the fix.</returns>
+    public static Result<SindriProfile> Check(SindriProfile profile, BoxLimits? box)
     {
+        ArgumentNullException.ThrowIfNull(profile);
         if (profile.SchemaVersion != SindriProfile.CurrentSchemaVersion)
         {
             return Invalid("schemaVersion", string.Create(CultureInfo.InvariantCulture,
@@ -29,13 +36,80 @@ public static class ProfileRules
             return Invalid("api.port", "must be 0 (a free port) or 1024 to 65535");
         }
 
-        var invalid = Services(profile.Services) ?? Durations(profile.Workflow) ?? Effects(profile.Workflow) ?? Globs(profile);
+        var invalid = Sections(profile) ?? LineProfileRules.Check(profile.Workflow, box);
         if (invalid is not null)
         {
             return invalid;
         }
 
         return Canonical(profile);
+    }
+
+    private static Error? Sections(SindriProfile profile) =>
+        Services(profile.Services) ?? Workflow(profile) ?? Globs(profile) ?? IndexRules.Check(profile) ?? LaunchKeys(profile.Launch) ?? AgentKeys(profile.Agents) ?? SetupKeys(profile.Setup);
+
+    /// <summary>The 'setup:' block (setup-once spec §7.1): 'setup.mcp' is auto or off.</summary>
+    private static Error? SetupKeys(SetupSettings? setup) =>
+        setup?.Mcp is { } mcp && mcp is not (SetupSettings.Auto or SetupSettings.Off)
+            ? Invalid("setup.mcp", $"'{mcp}' is not auto or off")
+            : null;
+
+    /// <summary>The 'launch:' keys: the confirm window is a duration, and a repo has a name. Agent ids are checked by pattern when read, never against the catalog.</summary>
+    private static Error? LaunchKeys(LaunchSettings? launch)
+    {
+        if (launch?.ConfirmWindow is { } window && !RecipeDuration.TryFrom(window, out _))
+        {
+            return Invalid("launch.confirmWindow", $"'{window}' is not a duration: a whole number and m, h or d (for example 90m, 2h)");
+        }
+
+        return (launch?.Repos ?? new Dictionary<string, LaunchRepoSettings>(StringComparer.Ordinal)).Keys.Any(string.IsNullOrWhiteSpace)
+            ? Invalid("launch.repos", "a repo name must be non-empty text")
+            : null;
+    }
+
+    private const int MaxHash = 128;
+
+    private static Error? AgentProblem(string id, AgentLimits limits)
+    {
+        if (!Launch.AgentId.TryParse(id, provider: null, out _))
+        {
+            return Invalid($"agents.{id}", "is not an agent id: a lowercase letter, then lowercase letters, digits or '-', 2 to 32 characters");
+        }
+
+        if (limits.DailyBudget is <= 0m)
+        {
+            return Invalid($"agents.{id}.dailyBudget", "must be above 0 (a decimal amount in USD)");
+        }
+
+        var hashes = limits.StepArgvHash ?? [];
+        for (var i = 0; i < hashes.Count; i++)
+        {
+            if (hashes[i].Length is 0 or > MaxHash || hashes[i].Any(char.IsWhiteSpace))
+            {
+                return Invalid(string.Create(CultureInfo.InvariantCulture, $"agents.{id}.stepArgvHash[{i}]"), $"must be 1 to {MaxHash} characters with no spaces");
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>The 'agents:' keys: ids match the id pattern (never the catalog), 'softLimit' is a fraction, a budget is positive, a hash is a short word.</summary>
+    private static Error? AgentKeys(AgentSettings? agents)
+    {
+        if (agents?.SoftLimit is <= 0m or > 1m)
+        {
+            return Invalid("agents.softLimit", "must be above 0 and at most 1 (a fraction of the daily budget)");
+        }
+
+        foreach (var (id, limits) in agents?.Targets ?? new Dictionary<string, AgentLimits>(StringComparer.Ordinal))
+        {
+            if (AgentProblem(id, limits) is { } problem)
+            {
+                return problem;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>The longest glob 'index.denyPaths' takes.</summary>
@@ -65,7 +139,7 @@ public static class ProfileRules
         return null;
     }
 
-    private static string? GlobProblem(string glob) => true switch
+    internal static string? GlobProblem(string glob) => true switch
     {
         _ when string.IsNullOrWhiteSpace(glob) => "must be a non-empty glob",
         _ when glob.Length > MaxGlob => string.Create(CultureInfo.InvariantCulture, $"is over {MaxGlob} characters"),
@@ -106,6 +180,8 @@ public static class ProfileRules
         Services = new SortedDictionary<string, ServiceSettings>(
             (profile.Services ?? SindriProfile.NoServices).ToDictionary(StringComparer.Ordinal), StringComparer.Ordinal),
         Api = profile.Api ?? new ApiSettings(),
+        Launch = profile.Launch is { Repos: { } repos } launch ? launch with { Repos = new SortedDictionary<string, LaunchRepoSettings>(repos.ToDictionary(StringComparer.Ordinal), StringComparer.Ordinal) } : profile.Launch,
+        Agents = profile.Agents is { Targets: { } targets } agents ? agents with { Targets = new SortedDictionary<string, AgentLimits>(targets.ToDictionary(StringComparer.Ordinal), StringComparer.Ordinal) } : profile.Agents,
     };
 
     /// <summary>Each service's name and cadence.</summary>
@@ -160,6 +236,45 @@ public static class ProfileRules
         return workflow?.DispatchDelay is { } delay && EffectSettings.Delay(delay) is null
             ? Invalid("workflow.dispatchDelay", $"'{delay}' is not a delay: a whole number and s, m or h (for example 10s), from 5s to 24h")
             : null;
+    }
+
+    private static Error? Workflow(SindriProfile profile) => Durations(profile.Workflow) ?? Effects(profile.Workflow) ?? Judges(profile) ?? ForgeRules.Check(profile.Workflow?.Forge) ?? PrRules.Check(profile.Workflow?.Pr, profile.Workflow?.Docs) ?? Route(profile.Workflow?.Route);
+
+    /// <summary>The router stub's key (engine P7 plan D8): 'workflow.route.startable' is all or none.</summary>
+    private static Error? Route(RouteSettings? route) =>
+        route?.Startable is { } startable && startable is not (RouteSettings.All or RouteSettings.None)
+            ? Invalid("workflow.route.startable", $"'{startable}' is not all or none")
+            : null;
+
+    /// <summary>The judge provider lists (DT-J plan Q8): the box's and each repo's name only known providers.</summary>
+    private static Error? Judges(SindriProfile profile)
+    {
+        foreach (var (path, names) in JudgeLists(profile))
+        {
+            var unknown = names.Select(static (name, i) => (name, i)).FirstOrDefault(static n => !JudgeProviders.Known.Contains(n.name, StringComparer.Ordinal));
+            if (unknown.name is not null)
+            {
+                return Invalid(string.Create(CultureInfo.InvariantCulture, $"{path}[{unknown.i}]"), $"'{unknown.name}' is not a judge provider: {string.Join(", ", JudgeProviders.Known)}");
+            }
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<(string Path, IReadOnlyList<string> Names)> JudgeLists(SindriProfile profile)
+    {
+        if (profile.Workflow?.Judge?.Providers is { } box)
+        {
+            yield return ("workflow.judge.providers", box);
+        }
+
+        foreach (var repo in profile.Repos ?? [])
+        {
+            if (repo.Workflow?.Judge?.Providers is { } own)
+            {
+                yield return ($"repos.{repo.Name}.workflow.judge.providers", own);
+            }
+        }
     }
 
     private static Error Invalid(string keyPath, string problem) =>

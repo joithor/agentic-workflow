@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Aw.Sindri.Engine.Tests (split out of Aw.Sindri.Tests, LANE-PKG-001, owner 2026-10-18): the Temporal-bound suites (Workflows, CompleteStep, ApplyCommand), one Lane trait per test (spec §4b.5). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Aw.Sindri.Tests</RootNamespace>
+    <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Sindri/Aw.Sindri.Core/Aw.Sindri.Core.csproj" />
+    <ProjectReference Include="../../src/Sindri/Aw.Sindri.Features/Aw.Sindri.Features.csproj" />
+    <ProjectReference Include="../../src/Sindri/Aw.Sindri.Infrastructure/Aw.Sindri.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj" />
+    <ProjectReference Include="../../src/Sindri/Aw.Sindri.Workflows/Aw.Sindri.Workflows.csproj" />
+    <ProjectReference Include="../Aw.Sindri.Testing/Aw.Sindri.Testing.csproj" />
+    <ProjectReference Include="../Aw.Context.Testing/Aw.Context.Testing.csproj" />
+    <ProjectReference Include="../Aw.Kernel.Telemetry.Testing/Aw.Kernel.Telemetry.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 8 parallel test classes: most of the lane is spent waiting on Temporal servers, not on CPU (the TemporalServerFixture start retries a lost port). -->
+    <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Workflows/Fixtures/*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Helpers the moved suites share with Aw.Sindri.Tests, compiled into both (the split moves tests, not their support code). -->
+    <Compile Include="../Aw.Sindri.Tests/Launch/PrivateTmux.cs" Link="Shared/Launch/PrivateTmux.cs" />
+    <Compile Include="../Aw.Sindri.Tests/Ledger/SqliteStores.cs" Link="Shared/Ledger/SqliteStores.cs" />
+    <Compile Include="../Aw.Sindri.Tests/Ledger/TempHome.cs" Link="Shared/Ledger/TempHome.cs" />
+    <Compile Include="../Aw.Sindri.Tests/Notifications/FakeOsNotifier.cs" Link="Shared/Notifications/FakeOsNotifier.cs" />
+    <Compile Include="../Aw.Sindri.Tests/ReadFailingLedger.cs" Link="Shared/ReadFailingLedger.cs" />
+    <Compile Include="../Aw.Sindri.Tests/Server/Callers.cs" Link="Shared/Server/Callers.cs" />
+    <Compile Include="../Aw.Sindri.Tests/Server/ListLogger.cs" Link="Shared/Server/ListLogger.cs" />
+    <Compile Include="../Aw.Sindri.Tests/SliceHarness.cs" Link="Shared/SliceHarness.cs" />
+    <Compile Include="../Aw.Sindri.Tests/Workflow/Choice/RouteRecipes.cs" Link="Shared/Workflow/Choice/RouteRecipes.cs" />
+    <Compile Include="../Aw.Sindri.Tests/Workflow/Engine/EngineFixture.cs" Link="Shared/Workflow/Engine/EngineFixture.cs" />
+    <Compile Include="../Aw.Sindri.Tests/Workflow/Engine/EvalComposition.cs" Link="Shared/Workflow/Engine/EvalComposition.cs" />
+    <Compile Include="../Aw.Sindri.Tests/Workflow/Engine/FakeEngineRules.cs" Link="Shared/Workflow/Engine/FakeEngineRules.cs" />
+    <Compile Include="../Aw.Sindri.Tests/Workflow/Engine/FrameFixture.cs" Link="Shared/Workflow/Engine/FrameFixture.cs" />
+    <Compile Include="../Aw.Sindri.Tests/Workflow/LegacyRecipeRows.cs" Link="Shared/Workflow/LegacyRecipeRows.cs" />
+    <Compile Include="../Aw.Sindri.Tests/Workflow/RecipeComposition.cs" Link="Shared/Workflow/RecipeComposition.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+</Project>

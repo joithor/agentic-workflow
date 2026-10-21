@@ -72,7 +72,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-CHILD-003"] = new(
             FixtureSetup.Shipped,
-            "RCP-CHILD-003: child recipes nest 5 deep (workflow.depth-0 -> workflow.depth-1 -> workflow.depth-2 -> workflow.depth-3 -> workflow.depth-4 -> workflow.depth-5), more than 4 at RCP-CHILD-003.yaml:8:25 (states.running.waitFor.child.recipe); flatten the chain so children nest at most 4 deep",
+            "RCP-CHILD-003: child recipes nest 6 deep (workflow.depth-0 -> workflow.depth-1 -> workflow.depth-2 -> workflow.depth-3 -> workflow.depth-4 -> workflow.depth-5 -> workflow.depth-6), more than 5 at RCP-CHILD-003.yaml:8:25 (states.running.waitFor.child.recipe); flatten the chain so children nest at most 5 deep",
             []),
         ["RCP-DUR-001"] = new(
             FixtureSetup.Shipped,
@@ -82,9 +82,25 @@ internal static class InvalidFixtureCases
             FixtureSetup.EffectAllowlist,
             "RCP-EFFECT-001: effect 'effect.notify.desk' isn't on the profile's effect allowlist at RCP-EFFECT-001.yaml:16:83 (transitions[0].effects[0].use); add it to workflow.effects and approve the profile, or remove it",
             []),
+        ["RCP-HUMAN-001"] = new(
+            FixtureSetup.HumanTrigger,
+            "RCP-HUMAN-001: effect 'effect.test.merge' acts with a human's authority, but transitions[0] (ask -> done on step.completed) isn't a human's act at RCP-HUMAN-001.yaml:16:83 (transitions[0].effects[0].use); put it on a command.<verb> transition, a step.completed out of a human-only Step, or a transition that requires a fact only such a transition produces",
+            []),
+        ["RCP-HUMAN-001-fact"] = new(
+            FixtureSetup.HumanTrigger,
+            "RCP-HUMAN-001: effect 'effect.test.merge' acts with a human's authority, but transitions[1] (hold -> done on wait.satisfied) isn't a human's act at RCP-HUMAN-001-fact.yaml:22:101 (transitions[1].effects[0].use); put it on a command.<verb> transition, a step.completed out of a human-only Step, or a transition that requires a fact only such a transition produces",
+            []),
+        ["RCP-HUMAN-001-input"] = new(
+            FixtureSetup.HumanTrigger,
+            "RCP-HUMAN-001: effect 'effect.test.merge' acts with a human's authority, but transitions[3] (tidy -> done on step.completed) isn't a human's act at RCP-HUMAN-001-input.yaml:29:135 (transitions[3].effects[0].use); put it on a command.<verb> transition, a step.completed out of a human-only Step, or a transition that requires a fact only such a transition produces",
+            []),
+        ["RCP-HUMAN-001-step"] = new(
+            FixtureSetup.HumanTrigger,
+            "RCP-HUMAN-001: effect 'effect.test.merge' acts with a human's authority, but transitions[4] (tidy -> done on step.completed) isn't a human's act at RCP-HUMAN-001-step.yaml:36:135 (transitions[4].effects[0].use); put it on a command.<verb> transition, a step.completed out of a human-only Step, or a transition that requires a fact only such a transition produces",
+            []),
         ["RCP-EVENT-001"] = new(
             FixtureSetup.Shipped,
-            "RCP-EVENT-001: event 'item.rooted' isn't registered at RCP-EVENT-001.yaml:8:16 (states.triaged.waitFor.event); wait for a registered event: claim.created, item.routed, notify.delivered",
+            "RCP-EVENT-001: event 'item.rooted' isn't registered at RCP-EVENT-001.yaml:8:16 (states.triaged.waitFor.event); wait for a registered event: claim.created, item.routed, notify.delivered, pr.changed, pr.docsMerged, pr.mergeResult, pr.pushed, pr.restacked, pr.stacked",
             []),
         ["RCP-EVID-001"] = new(
             FixtureSetup.Shipped,
@@ -132,7 +148,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-RES-001"] = new(
             FixtureSetup.Shipped,
-            "RCP-RES-001: resource 'heavy' has no allocator in this build at RCP-RES-001.yaml:8:16 (states.queued.waitFor.resource); it parks with SND-WF-010 until the workflow engine's heavy allocator is wired to the heavy-job lock [Information]",
+            "RCP-RES-001: resource 'slot' has no allocator in this build at RCP-RES-001.yaml:8:16 (states.queued.waitFor.resource); it parks with SND-WF-010 until the session-slot stub lands (P7) [Information]",
             []),
         ["RCP-SCHEMA-001"] = new(
             FixtureSetup.Shipped,
@@ -169,6 +185,14 @@ internal static class InvalidFixtureCases
         ["RCP-TIME-002"] = new(
             FixtureSetup.Shipped,
             "RCP-TIME-002: state 'running' retries a child wait when it times out at RCP-TIME-002.yaml:9:28 (states.running.timeout.then); use then: park or then: escalate, since a child can't be retried",
+            []),
+        ["RCP-TIME-003"] = new(
+            FixtureSetup.Shipped,
+            "RCP-TIME-003: state 'route' runs step.judge.choose on the block runtime, where 'then: retry' doesn't apply at RCP-TIME-003.yaml:16:27 (states.route.timeout.then); use then: park (a judge call that runs out ends as step.failed, which the route sends to its desk twin)",
+            []),
+        ["RCP-TIME-003-short"] = new(
+            FixtureSetup.Shipped,
+            "RCP-TIME-003: state 'route' times out after 1 min but step.judge.choose may run for 2 min, so the state's timer and the Step's own bound would race at RCP-TIME-003-short.yaml:16:16 (states.route.timeout.after); make the state timeout longer than the Step's maxDuration (2 min)",
             []),
         ["RCP-TRIG-001"] = new(
             FixtureSetup.Shipped,

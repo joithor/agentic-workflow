@@ -1,0 +1,44 @@
+{
+  "session": {
+    "ref": "codex/bbbbbbbb-0000-4000-8000-000000000002",
+    "provider": "codex",
+    "providerLabel": "Codex",
+    "id": "bbbbbbbb-0000-4000-8000-000000000002",
+    "idKnown": true,
+    "state": "asking",
+    "asking": {
+      "reason": "approval",
+      "tool": "Bash",
+      "since": "2026-10-16T12:01:00.0000000Z"
+    },
+    "stateSource": "record",
+    "estimated": false,
+    "repo": "web",
+    "worktree": null,
+    "host": {
+      "kind": "warp",
+      "label": "Warp",
+      "socketKind": null,
+      "attachedClients": null,
+      "terminal": "warp",
+      "session": null,
+      "pane": null,
+      "socket": null
+    },
+    "lane": null,
+    "launchId": null,
+    "startedAt": null,
+    "since": "2026-10-16T12:01:00.0000000Z",
+    "focus": {
+      "method": "none",
+      "possible": false,
+      "why": "not-built"
+    },
+    "title": null,
+    "launch": null,
+    "pid": 222
+  },
+  "cwd": "/work/web",
+  "stateHistory": [],
+  "asOf": "2026-10-16T12:05:00.0000000Z"
+}

@@ -131,11 +131,11 @@ public sealed class WorkflowsStripFramesTests : FrameHost
         {
             var row = (StripRowViewModel)frame.DataContext!;
             Assert.Equal(row.AccessibleName, AutomationProperties.GetName(frame));
-            Assert.EndsWith(row.Address, AutomationProperties.GetName(frame), StringComparison.Ordinal);
+            Assert.DoesNotContain(row.Address, AutomationProperties.GetName(frame), StringComparison.Ordinal);   // the title says which run; the address lives in Details
             Assert.Equal((AccessibilityView.Control, "ListItem"), (AutomationProperties.GetAccessibilityView(frame), AutomationProperties.GetControlTypeOverride(frame)?.ToString()));
             foreach (var button in frame.GetVisualDescendants().OfType<Button>().Where(b => b.IsEffectivelyVisible))
             {
-                Assert.EndsWith(row.Address, AutomationProperties.GetName(button), StringComparison.Ordinal);
+                Assert.DoesNotContain(row.Address, AutomationProperties.GetName(button), StringComparison.Ordinal);
             }
         }
 

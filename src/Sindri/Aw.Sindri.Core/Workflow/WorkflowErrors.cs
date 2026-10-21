@@ -77,14 +77,37 @@ public static class WorkflowErrors
     /// <summary>SND-WF-016: a Step input has no runtime in this build (missing, or a descriptor only); raised at approve and at start.</summary>
     public static readonly ErrorDefinition StepInputNoRuntime = new("SND-WF-016", ErrorKind.Unavailable, "A Step input has no runtime in this build");
 
+    /// <summary>SND-WF-017: the text a pull refilled differs from what the run recorded; nothing is served.</summary>
+    public static readonly ErrorDefinition InjectionChanged = new("SND-WF-017", ErrorKind.Conflict, "The input's text changed since the run filled it");
+
+    /// <summary>SND-WF-018: a Step input, re-run on a cache miss, filled differently from what the run recorded; the Step does not run on different data.</summary>
+    public static readonly ErrorDefinition InputChanged = new("SND-WF-018", ErrorKind.Conflict, "The input changed since it was recorded");
+
+    /// <summary>SND-WF-019: a filled plan is invalid: a bad section name, a section over 256 KiB, or a plan over 1 MiB.</summary>
+    public static readonly ErrorDefinition InjectionInvalid = new("SND-WF-019", ErrorKind.Invalid, "A Step input filled an invalid plan");
+    /// <summary>SND-BLOCK-001: a fact a block Step reads can't be read; the run ends as step.failed with the message as its reason.</summary>
+    public static readonly ErrorDefinition BlockFactUnreadable = new("SND-BLOCK-001", ErrorKind.Unavailable, "A fact a block Step reads can't be read");
+
+    /// <summary>SND-BLOCK-002: the approved profile a block Step's providers come from can't be read; the run ends as step.failed 'profile-unreadable: ...'.</summary>
+    public static readonly ErrorDefinition BlockProfileUnreadable = new("SND-BLOCK-002", ErrorKind.Unavailable, "The approved profile can't be read for a block Step");
+
+    /// <summary>SND-BLOCK-003: the item's repo couldn't be read, so a block Step's per-repo keys can't be resolved; the run ends as step.failed 'repo-unreadable'.</summary>
+    public static readonly ErrorDefinition BlockRepoUnreadable = new("SND-BLOCK-003", ErrorKind.Unavailable, "The item's repo couldn't be read for a block Step");
+
+    /// <summary>SND-BLOCK-004: a Step's run area file can't be written or read; the Step fails with the message, and a line is never dropped.</summary>
+    public static readonly ErrorDefinition BlockRunAreaUnavailable = new("SND-BLOCK-004", ErrorKind.Unavailable, "A Step's run area file can't be written or read");
+
+    /// <summary>SND-RECIPE-011: a recipe is not one this build ships (its 'id@hash' is not in the embedded set); approve-all names it (setup-once spec §7.6).</summary>
+    public static readonly ErrorDefinition RecipeNotShipped = new("SND-RECIPE-011", ErrorKind.Conflict, "The recipe is not one this build ships");
+
     /// <summary>Every live workflow error, for ErrorCatalogue.Validate (together with SindriErrors.All).</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
         RecipeInvalid, RecipeNotFound, RecipeNotApproved, RecipeRevoked, RecipePinDrift, RecipeVersionTaken, RecipeEvalsFailing,
-        RecipeChallengeStale, RecipeUnreadable,
+        RecipeChallengeStale, RecipeUnreadable, RecipeNotShipped,
         InstanceNotFound, TriggerNotAllowed, GateRefused, StaleRunToken, AmbiguousAddress, MalformedReport,
         NonceRefused, NoRuntime, EffectNotAllowed, EarlierAttemptLive, WorkflowChallengeStale, ItemMismatch, EffectFailed,
-        StepInputNoRuntime,
+        StepInputNoRuntime, InjectionChanged, InputChanged, InjectionInvalid, BlockFactUnreadable, BlockProfileUnreadable, BlockRepoUnreadable, BlockRunAreaUnavailable,
     ];
 
     /// <summary>

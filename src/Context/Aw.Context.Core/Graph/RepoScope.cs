@@ -22,6 +22,43 @@ public static class RepoScope
     }
 
     /// <summary>
+    /// <paramref name="implemented"/> with the part-of hierarchy around it: every part-of ancestor (the feature a person filed the repo's screen under,
+    /// and that feature's own parents) and every part-of descendant of an implemented node (the actions and things on the repo's own screens). An
+    /// ancestor brings only itself: its other children (another repo's screens under a shared feature) stay out unless this repo implements them too.
+    /// </summary>
+    /// <param name="graph">The graph.</param>
+    /// <param name="implemented">The nodes the repo implements (<see cref="NodesFor"/>).</param>
+    /// <returns>The keys of the implemented nodes, their part-of ancestors and the descendants of the implemented ones (ordinal).</returns>
+    public static IReadOnlySet<string> WithHierarchy(GraphSnapshot graph, IReadOnlySet<string> implemented)
+    {
+        ArgumentNullException.ThrowIfNull(graph);
+        ArgumentNullException.ThrowIfNull(implemented);
+        var partOf = graph.Edges.Where(e => e.Type == EdgeType.PartOf).ToList();
+        var parents = partOf.ToLookup(e => e.From.Value, e => e.To.Value, StringComparer.Ordinal);
+        var children = partOf.ToLookup(e => e.To.Value, e => e.From.Value, StringComparer.Ordinal);
+        var all = new HashSet<string>(implemented, StringComparer.Ordinal);
+        all.UnionWith(Closure(implemented, parents));
+        all.UnionWith(Closure(implemented, children));
+        return all;
+    }
+
+    // Every key reachable from the start keys along next, the start keys left out.
+    private static HashSet<string> Closure(IReadOnlySet<string> start, ILookup<string, string> next)
+    {
+        var reached = new HashSet<string>(StringComparer.Ordinal);
+        var pending = new Stack<string>(start);
+        while (pending.TryPop(out var key))
+        {
+            foreach (var other in next[key].Where(o => !start.Contains(o) && reached.Add(o)))
+            {
+                pending.Push(other);
+            }
+        }
+
+        return reached;
+    }
+
+    /// <summary>
     /// <paramref name="scope"/> and the intent linked to it (spec §3 "intent records linked to those nodes"; owner decision 2026-10-15, B): the decisions with a 'decides' edge to a
     /// node in <paramref name="scope"/>, the records with a 'mentions' edge to one, and the records those decisions quote. A record or decision linked only to nodes outside
     /// <paramref name="scope"/> is not in the result. Nothing is added to an empty scope.

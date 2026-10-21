@@ -37,6 +37,40 @@ public sealed class EndpointCqrsTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task EndpointCqrs_the_subgraph_is_a_get_and_a_query_and_no_post_serves_a_query()
+    {
+        await using var app = Host();
+        var routes = Endpoints(app).Endpoints.OfType<RouteEndpoint>().SelectMany(EndpointCqrsRules.Routes).ToList();
+        var queryPosts = Endpoints(app).Endpoints.OfType<RouteEndpoint>()
+            .Where(e => EndpointCqrsRules.Routes(e).Any(r => r.StartsWith("POST ", StringComparison.Ordinal)) && EndpointCqrsRules.Request(e) is { } request
+                && request.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IQuery<>)))
+            .SelectMany(EndpointCqrsRules.Routes).ToList();
+
+        Assert.Contains("GET /sindri/context/subgraph", routes, StringComparer.Ordinal);
+        Assert.Contains("QUERY /sindri/context/subgraph", routes, StringComparer.Ordinal);
+        Assert.DoesNotContain("POST /sindri/context/subgraph", routes, StringComparer.Ordinal);
+        Assert.Empty(queryPosts);   // why: queries are GET or QUERY, with no carve-out list
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Cqrs_rule_allows_a_query_on_QUERY_and_flags_a_command_on_QUERY()
+    {
+        await using var app = WebApplication.CreateSlimBuilder().Build();
+        _ = app.MapMethods("/sindri/fixture/query-ok", ["QUERY"], ([FromServices] IService<FixtureQuery, string> _) => Results.Ok());
+        _ = app.MapMethods("/sindri/fixture/query-command", ["QUERY"], ([FromServices] IService<FixtureApply, CommandAccepted> _) => Results.Ok());
+        _ = app.MapPost("/sindri/fixture/post-query", ([FromServices] IService<FixtureQuery, string> _) => Results.Ok());
+
+        var violations = EndpointCqrsRules.Check(Endpoints(app), new InMemoryCommandCatalog(IssueRow()));
+
+        Assert.Equal(
+            [
+                "ARCH-CQRS-001: QUERY /sindri/fixture/query-command serves FixtureApply, which isn't an IQuery<>; a QUERY is a query",
+                "ARCH-CQRS-001: POST /sindri/fixture/post-query serves FixtureQuery, which isn't an ICommand<> or IIssue<>; a POST is a command",
+            ],
+            violations);
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task Every_ready_row_route_is_mapped()
     {
         await using var app = Host();

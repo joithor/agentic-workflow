@@ -19,12 +19,16 @@ internal sealed class StripRowViewModel : ObservableObject
     {
         (_row, _clock) = (row, clock);
         var answer = row.Answer;
-        if (answer is not null && InstanceRules.HasProtectedAnswer(row))
+        if (InstanceRules.IsChildPointer(answer))
+        {
+            ChildAnswer = ChildAnswerViewModel.ForInstance(row.Address, answer.Child);
+        }
+        else if (answer is not null && InstanceRules.HasProtectedAnswer(row))
         {
             Protected = new ProtectedActionViewModel(new ProtectedAction(Labels.AnswerVerb(answer.Kind), answer.Cli, row.Address), clipboard, clock);
         }
 
-        CanAnswer = Protected is null && (answer is not null || InstanceRules.CompletesAtDesk(row));
+        CanAnswer = Protected is null && ChildAnswer is null && (answer is not null || InstanceRules.CompletesAtDesk(row));
     }
 
     /// <summary>The served chip (the word and tone the chip control draws).</summary>
@@ -35,6 +39,9 @@ internal sealed class StripRowViewModel : ObservableObject
 
     /// <summary>The recipe's id, as served.</summary>
     public string Recipe => _row.Recipe.Id;
+
+    /// <summary>The workflow's name as a person reads it: the served display name, else the id made readable.</summary>
+    public string Workflow => WorkflowNames.Of(_row.Recipe.Id, _row.Recipe.DisplayName);
 
     /// <summary>The stage tag ("mitigate r1/3 ⇄ verify").</summary>
     public string Stage => StageTag.For(_row);
@@ -63,7 +70,10 @@ internal sealed class StripRowViewModel : ObservableObject
 #pragma warning restore CA1822, MA0041
 
     /// <summary>The answer button's accessible name: the verb and the address.</summary>
-    public string AnswerName => $"{Labels.Answer} {_row.Address}";
+    public string AnswerName => Labels.AnswerName(Subject);
+
+    /// <summary>The "Answer in the child" control of a row whose answer a child decides; null for any other row.</summary>
+    public ChildAnswerViewModel? ChildAnswer { get; }
 
     /// <summary>The lock button for a protected answer; null for none.</summary>
     public ProtectedActionViewModel? Protected { get; }
@@ -77,8 +87,11 @@ internal sealed class StripRowViewModel : ObservableObject
     /// <summary>The item the instance belongs to, as served; null for none.</summary>
     public string? ItemId => _row.ItemId;
 
-    /// <summary>The name screen readers hear: "incident" for an incident (the glyph is not spoken), the subject and the address.</summary>
-    public string AccessibleName => (_row.Recipe.Urgency == RecipeUrgency.Incident ? Labels.Incident + ", " : "") + $"{Subject} {_row.Address}";
+    /// <summary>The name screen readers hear: the subject (the visible title), the workflow and, for an incident, the word "incident" (the glyph is not spoken).</summary>
+    public string AccessibleName => Labels.StripRowName(Workflow, Subject) + (_row.Recipe.Urgency == RecipeUrgency.Incident ? ", " + Labels.Incident : "");
+
+    /// <summary>The title button's accessible name: the visible title first, then the workflow.</summary>
+    public string OpenName => Labels.StripRowName(Workflow, Subject);
 
     /// <summary>Where Enter and a click go: the instance in the Workflows frame.</summary>
     public DeepLink Link => new(DeepLinkKind.Workflow, _row.Address);
@@ -90,7 +103,7 @@ internal sealed class StripRowViewModel : ObservableObject
     public bool IsSelected { get; private set => Set(ref field, value); }
 
     /// <summary>Everything the row draws (the age is read from the clock, from the served since): two rows with the same signature look the same.</summary>
-    internal string Signature => string.Join('|', Address, _row.Since.UtcTicks, Chip, Subject, Recipe, Stage, Now, Badge, Glyph, CanAnswer, Protected?.Cli, ItemId);
+    internal string Signature => string.Join('|', Address, _row.Since.UtcTicks, Chip, Subject, Workflow, Stage, Now, Badge, Glyph, CanAnswer, Protected?.Cli, ChildAnswer?.Target, ChildAnswer?.Intent, ItemId);
 
     /// <summary>Reads the age anew.</summary>
     internal void Refresh() => OnChanged(nameof(Age));

@@ -59,8 +59,10 @@ internal sealed class HealthService(HostProbe probe, LaneCheck lanes, OrphanKill
             return advice.Error;
         }
 
+        // Advisory: lanes whose context can't be measured are left out; a recycle verdict does not make the box unhealthy.
+        var context = await lanes.Context(cancellationToken).ConfigureAwait(false);
         var response = new HealthResponse(
-            ProcessGroups.Group(processes), processes.Count, host.Resources, orphans, killed, HostRules.Duplicates(processes), missing, host.Locks, low, NeedsAttention(remaining, low, missing, standing), standing, advice.Value.Heavy, advice.Value.Builders);
+            ProcessGroups.Group(processes), processes.Count, host.Resources, orphans, killed, HostRules.Duplicates(processes), missing, host.Locks, low, NeedsAttention(remaining, low, missing, standing), standing, advice.Value.Heavy, advice.Value.Builders, context);
         var kept = await values.Set(KvKeys.HealthLast, Summary(response, remaining), cancellationToken).ConfigureAwait(false);
         return kept.IsError ? kept.Error : response;
     }

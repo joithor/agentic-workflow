@@ -73,8 +73,8 @@ public sealed class OneVisibleViewTests : IDisposable
         return reader switch
         {
             "show" => Code(await _world.Engine.ShowNode(key, scope, MapWorld.None)),
-            "lenses" => Code(await _world.Engine.Lenses(key, draft: false, depth: null, scope, MapWorld.None)),
-            "lenses-draft" => Code(await _world.Engine.Lenses(key, draft: true, depth: null, scope, MapWorld.None)),
+            "lenses" => Code(await _world.Engine.Lenses(key, read: MapRead.Current, depth: null, scope, MapWorld.None)),
+            "lenses-draft" => Code(await _world.Engine.Lenses(key, read: MapRead.NewestDraft, depth: null, scope, MapWorld.None)),
             "neighbors" => Code(await _world.Engine.Neighbors(key, depth: 1, scope, MapWorld.None)),
             "status" => Code(await _world.Map.MapStatus(key, scope, MapWorld.None)),
             "path" => Code(await _world.Engine.Path(key, "feature:kept", scope, MapWorld.None)),
@@ -216,7 +216,7 @@ public sealed class OneVisibleViewTests : IDisposable
         var scope = Denying();
 
         var status = (await _world.Map.MapStatus("feature:kept", scope, MapWorld.None)).Value;
-        var lenses = (await _world.Engine.Lenses("feature:kept", draft: false, depth: null, scope, MapWorld.None)).Value;
+        var lenses = (await _world.Engine.Lenses("feature:kept", read: MapRead.Current, depth: null, scope, MapWorld.None)).Value;
         var exported = (await _world.Map.ExportMap(path: null, scope, MapWorld.None)).Value;
         var document = _world.Exports.Documents[exported.Path];
 
@@ -336,7 +336,7 @@ public sealed class OneVisibleViewTests : IDisposable
             "  - {from: \"code:src/b.ts\", to: \"feature:kept\", type: implements}");
         await Decide(Drafts.Scope, On(ReviewVerb.Merge, "code:private/c.ts", other: "code:src/b.ts"));
 
-        var other = (await _world.Engine.Lenses("feature:other", draft: false, depth: null, Denying(), MapWorld.None)).Value;
+        var other = (await _world.Engine.Lenses("feature:other", read: MapRead.Current, depth: null, Denying(), MapWorld.None)).Value;
 
         Assert.DoesNotContain(other.Bands.Code.Files, f => f.Path.Contains("b.ts", StringComparison.Ordinal));   // c's link is not b's
         await AssertNeitherSeenNorPromoted(visibleNodes: 3, "code:private/c.ts");
@@ -355,9 +355,9 @@ public sealed class OneVisibleViewTests : IDisposable
             "  - {from: \"" + decision + "\", to: \"feature:kept\", type: decides}",
             "decisions:",
             "  - {record: \"" + record + "\", quote: \"" + quote + "\", wording: \"Keys stay out of the repo.\", at: 2026-07-15T10:00:00Z}");
-        var before = (await _world.Engine.Lenses("feature:kept", draft: false, depth: null, Drafts.Scope, MapWorld.None)).Value;
+        var before = (await _world.Engine.Lenses("feature:kept", read: MapRead.Current, depth: null, Drafts.Scope, MapWorld.None)).Value;
 
-        var lenses = (await _world.Engine.Lenses("feature:kept", draft: false, depth: null, Denying(), MapWorld.None)).Value;
+        var lenses = (await _world.Engine.Lenses("feature:kept", read: MapRead.Current, depth: null, Denying(), MapWorld.None)).Value;
         var query = (await _world.Engine.Query(new ContextQuery(Text: null, Node: "feature:kept"), Denying(), MapWorld.None)).Value;
 
         _ = Assert.Single(before.Bands.Intent.Decisions);
@@ -643,7 +643,7 @@ public sealed class OneVisibleViewTests : IDisposable
 
         var queue = (await _world.Map.ReviewQueue(limit: null, scope, MapWorld.None)).Value;
         var proposals = (await _world.Map.Proposals("run-2", scope, MapWorld.None)).Value;
-        var lenses = await _world.Engine.Lenses("surface:setting/mixed", draft: true, depth: null, scope, MapWorld.None);
+        var lenses = await _world.Engine.Lenses("surface:setting/mixed", read: MapRead.NewestDraft, depth: null, scope, MapWorld.None);
         var again = await Run("run-2", scope, mixed);
 
         Assert.Equal(0, queue.Undecided);

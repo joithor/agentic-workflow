@@ -5,7 +5,9 @@
 # the first run publishes both binaries into one build dir, links sindri-app, fetches temporal and runs sindri with the
 # arguments; an unchanged tree reuses the build; an edit (committed or not) rebuilds; --rebuild forces one; two builds
 # are kept; a failed publish leaves the last good build current; a foreign sindri-app on PATH is left alone, a dangling
-# one replaced, AW_SINDRI_APP_NO_LINK=1 links nothing; stdout carries only sindri's output.
+# one replaced, AW_SINDRI_APP_NO_LINK=1 links nothing; stdout carries only sindri's output. At the end: --publish-only
+# publishes and never execs or hints; the shipped recipes staged into the build copy are HEAD's (git archive), never the
+# working tree's; the stamp carries the commit and the recipes tree hash; a dirty tree says so; a non-git tree is refused.
 # Run: bash scripts/tests/sindri-app.test.sh
 set -uo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -17,7 +19,8 @@ check() {
 }
 WORK="$(cd "$(mktemp -d)" && pwd -P)"
 trap 'rm -rf "$WORK"' EXIT
-unset AW_SINDRI_APP_NO_LINK AW_SINDRI_HOME CLAUDE_LOCAL_BIN DOTNET_ROOT
+unset AW_SINDRI_APP_NO_LINK AW_SINDRI_HOME CLAUDE_LOCAL_BIN DOTNET_ROOT AW_SINDRI_MCP_REPO
+export AW_SINDRI_APP_NO_MCP=1   # the MCP registration has its own tests at the end
 export HOME="$WORK/home" AW_STATE_DIR="$WORK/state"
 mkdir -p "$HOME"
 CALLS="$WORK/calls"; : > "$CALLS"
@@ -32,13 +35,15 @@ case "$1" in
   publish)
     echo "publish" >> "$CALLS"
     echo "cwd=$(pwd -P)" >> "$CALLS"
+    [ -d recipes/sindri ] && echo "recipes=$(cd recipes/sindri && find . -type f | LC_ALL=C sort | tr '\n' ' ')" >> "$CALLS"
+    [ -f recipes/sindri/a.yaml ] && echo "recipe_a=$(cat recipes/sindri/a.yaml)" >> "$CALLS"
     for f in config/launcher/builtins.json BannedSymbols.All.txt BannedSymbols.NonHost.txt; do
       [ -f "$f" ] && echo "has $f" >> "$CALLS"
     done
     [ "${FAIL_PUBLISH:-0}" = 1 ] && { echo "error CS0001: boom"; exit 1; }
     out=""; while [ $# -gt 0 ]; do [ "$1" = -o ] && out="$2"; shift; done
     mkdir -p "$out"
-    printf '#!/usr/bin/env bash\necho "sindri $*"\necho "root=$DOTNET_ROOT" >&2\n' > "$out/sindri"; chmod +x "$out/sindri" ;;
+    printf '#!/usr/bin/env bash\necho "sindri $*"\necho "root=$DOTNET_ROOT" >&2\necho "sindri $*" >> "$CALLS"\ncase "$1" in mcp) echo "codex: registered" ; exit "${MCP_EXIT:-0}" ;; esac\n' > "$out/sindri"; chmod +x "$out/sindri" ;;
 esac
 EOF
 chmod +x "$WORK/fakebin/dotnet"
@@ -189,5 +194,118 @@ for n in 1 2; do
 done
 check "I3: the in-use build is kept when the state dir is a symlink" "$(test -d "$RB/$S_OLD" && echo kept)" "kept"
 kill "$HOLD" 2>/dev/null; wait "$HOLD" 2>/dev/null
+
+# MCP registration: `mcp register --apply` is the human's verb and sindri refuses it without a terminal (SND-AUTH-002), which a
+# background watcher never has. So once the plane is up (a live control.json) a bare run or serve prints the exact command to run,
+# with --repo from a linked worktree or AW_SINDRI_MCP_REPO, on stderr, and runs nothing; AW_SINDRI_APP_NO_MCP=1 skips it.
+export AW_STATE_DIR="$WORK/mcpstate"
+mkdir -p "$AW_STATE_DIR/sindri-app"
+sleep 60 & PLANE=$!
+printf '{"pid": %s, "url": "http://127.0.0.1:7480/"}\n' "$PLANE" > "$AW_STATE_DIR/sindri-app/control.json"
+: > "$CALLS"
+unset AW_SINDRI_APP_NO_MCP
+waitfor() { local i; for i in $(seq 1 40); do grep -q "$1" "$2" && return 0; sleep 0.25; done; return 1; }
+HINT='run: sindri-app mcp register --apply --providers all'
+(cd "$WORK" && AW_SINDRI_APP_NO_LINK=1 bash "$R/scripts/sindri-app.sh" >"$WORK/out" 2>"$WORK/err"); RC=$?
+waitfor "mcp register" "$WORK/err"; sleep 0.5
+check "mcp: a bare run prints the register command once the plane is up" "$(grep -c "$HINT\$" "$WORK/err")" "1"
+check "mcp: it runs no registration itself (sindri would refuse it without a terminal)" "$(grep -c '^sindri mcp' "$CALLS")" "0"
+check "mcp: the bare run's exit is unaffected" "$RC" "0"
+check "mcp: the hint goes to stderr, never stdout" "$(grep -c 'mcp register' "$WORK/out")" "0"
+
+(cd "$WORK" && AW_SINDRI_MCP_REPO=demo AW_SINDRI_APP_NO_LINK=1 bash "$R/scripts/sindri-app.sh" serve >/dev/null 2>"$WORK/err")
+waitfor "mcp register" "$WORK/err"; sleep 0.5
+check "mcp: AW_SINDRI_MCP_REPO is in the command as --repo (serve prints it too)" "$(grep -c "$HINT --repo demo\$" "$WORK/err")" "1"
+
+git -C "$R" worktree add -q "$WORK/wt2" -b wt2 >/dev/null 2>&1
+(cd "$WORK/wt2" && AW_SINDRI_APP_NO_LINK=1 bash "$WORK/wt2/scripts/sindri-app.sh" >/dev/null 2>"$WORK/err")
+waitfor "mcp register" "$WORK/err"; sleep 0.5
+check "mcp: from a linked worktree the main checkout's name is the --repo" "$(grep -c "$HINT --repo repo\$" "$WORK/err")" "1"
+git -C "$R" worktree remove --force "$WORK/wt2" >/dev/null 2>&1
+
+(cd "$WORK" && AW_SINDRI_APP_NO_MCP=1 AW_SINDRI_APP_NO_LINK=1 bash "$R/scripts/sindri-app.sh" >/dev/null 2>"$WORK/err"); sleep 1
+check "mcp: AW_SINDRI_APP_NO_MCP=1 prints nothing about it" "$(grep -c 'mcp register' "$WORK/err")" "0"
+
+AW_SINDRI_APP_NO_LINK=1 bash "$R/scripts/sindri-app.sh" status >/dev/null 2>"$WORK/err"; sleep 1
+check "mcp: other commands print nothing about it" "$(grep -c 'mcp register' "$WORK/err")" "0"
+check "mcp: and nothing ran a registration" "$(grep -c '^sindri mcp' "$CALLS")" "0"
+kill "$PLANE" 2>/dev/null; wait "$PLANE" 2>/dev/null
+
+# --- SO-A7a: --publish-only, and the recipes staged from HEAD ------------------------------------------------------
+git -C "$R" -c user.email=t@t -c user.name=t add -A >/dev/null 2>&1
+git -C "$R" -c user.email=t@t -c user.name=t commit -qm settle >/dev/null 2>&1
+mkdir -p "$R/recipes/sindri/evals/a"
+echo 'id: a' > "$R/recipes/sindri/a.yaml"
+echo '# readme' > "$R/recipes/sindri/README.md"
+echo '{}' > "$R/recipes/sindri/evals/a/happy.jsonl"
+git -C "$R" -c user.email=t@t -c user.name=t add -A >/dev/null 2>&1
+git -C "$R" -c user.email=t@t -c user.name=t commit -qm recipes >/dev/null 2>&1
+export AW_SINDRI_APP_NO_LINK=1
+export AW_STATE_DIR="$WORK/a7state"; B="$AW_STATE_DIR/bin/sindri-app"; C="$AW_STATE_DIR/cache/sindri-app-build"
+unset AW_SINDRI_APP_NO_MCP
+
+: > "$CALLS"
+OUT="$(cd "$WORK" && bash "$R/scripts/sindri-app.sh" --publish-only 2>"$WORK/err")"; RC=$?
+sleep 1
+check "publish-only: exit 0, publishes, stdout empty" "$RC:$(publishes):$OUT" "0:1:"
+check "publish-only: sindri is never run" "$(grep -c '^sindri ' "$CALLS")" "0"
+check "publish-only: no register hint" "$(grep -c 'mcp register' "$WORK/err")" "0"
+SP="$(cat "$B/current")"
+check "publish-only: the build is current, with both binaries" "$(test -x "$B/$SP/sindri" && test -x "$B/$SP/sindri-ui" && echo yes)" "yes"
+check "publish-only: the build dir records the commit and the recipes tree hash" \
+  "$(grep -c "^commit=$(git -C "$R" rev-parse HEAD)\$" "$B/$SP/build-info"):$(grep -c "^recipes-tree=$(git -C "$R" rev-parse HEAD:recipes/sindri)\$" "$B/$SP/build-info")" "1:1"
+check "publish-only: a clean tree is not called dirty" "$(grep -c 'uncommitted' "$WORK/err")" "0"
+
+: > "$CALLS"
+(cd "$WORK" && bash "$R/scripts/sindri-app.sh" --publish-only >/dev/null 2>&1)
+check "publish-only: a current build is not published again" "$(publishes)" "0"
+(cd "$WORK" && bash "$R/scripts/sindri-app.sh" --publish-only --rebuild >/dev/null 2>&1); RC=$?
+check "publish-only --rebuild: publishes again, exit 0" "$RC:$(publishes)" "0:1"
+bash "$R/scripts/sindri-app.sh" --publish-only status >/dev/null 2>"$WORK/err"; RC=$?
+check "publish-only with another argument: exit 2" "$RC" "2"
+FAIL_PUBLISH=1 bash "$R/scripts/sindri-app.sh" --publish-only --rebuild >/dev/null 2>"$WORK/err"; RC=$?
+check "publish-only: a failed publish exits 1 with the sentence" "$RC:$(grep -c 'publishing sindri failed' "$WORK/err")" "1:1"
+
+# The embedded set is HEAD's: an edit to a tracked recipe and an untracked one are in the working tree, not in the copy.
+echo 'id: a-edited' > "$R/recipes/sindri/a.yaml"
+echo 'id: x' > "$R/recipes/sindri/x.yaml"
+: > "$CALLS"
+bash "$R/scripts/sindri-app.sh" --publish-only --rebuild >/dev/null 2>"$WORK/err"; RC=$?
+check "staging: the copy holds HEAD's recipe files only" "$RC:$(grep '^recipes=' "$CALLS")" "0:recipes=./README.md ./a.yaml ./evals/a/happy.jsonl "
+check "staging: the edited recipe is HEAD's content" "$(grep '^recipe_a=' "$CALLS")" "recipe_a=id: a"
+check "staging: a dirty tree says so" "$(grep -c 'uncommitted changes; the embedded recipes are HEAD' "$WORK/err")" "1"
+check "staging: the working tree is untouched" "$(cat "$R/recipes/sindri/a.yaml"):$(test -f "$R/recipes/sindri/x.yaml" && echo kept)" "id: a-edited:kept"
+git -C "$R" checkout -q -- recipes/sindri/a.yaml && rm -f "$R/recipes/sindri/x.yaml"
+
+# The stamp: a recipe-only commit and an empty commit both republish.
+bash "$R/scripts/sindri-app.sh" --publish-only >/dev/null 2>&1; S_A="$(cat "$B/current")"
+echo 'id: a2' > "$R/recipes/sindri/a.yaml"
+git -C "$R" -c user.email=t@t -c user.name=t commit -qam "recipe only" >/dev/null 2>&1
+: > "$CALLS"; bash "$R/scripts/sindri-app.sh" --publish-only >/dev/null 2>&1; S_B="$(cat "$B/current")"
+check "stamp: a recipe-only commit republishes" "$(publishes):$([ "$S_A" != "$S_B" ] && echo new)" "1:new"
+git -C "$R" -c user.email=t@t -c user.name=t commit -q --allow-empty -m "empty" >/dev/null 2>&1
+: > "$CALLS"; bash "$R/scripts/sindri-app.sh" --publish-only >/dev/null 2>&1; S_C="$(cat "$B/current")"
+check "stamp: the commit is part of it" "$(publishes):$([ "$S_B" != "$S_C" ] && echo new)" "1:new"
+
+# Without --publish-only the arguments still go to sindri, as before.
+: > "$CALLS"
+OUT="$(bash "$R/scripts/sindri-app.sh" status 2>/dev/null)"
+check "no flag: arguments go to sindri" "$OUT" "sindri status"
+
+# A tree that is not a git checkout cannot be published.
+NG="$WORK/nogit"; mkdir -p "$NG/scripts/lib" "$NG/src/Sindri/Aw.Sindri.Host"
+cp "$DIR/sindri-app.sh" "$NG/scripts/"; cp "$DIR/lib/sindri-build-inputs.sh" "$NG/scripts/lib/"
+cp "$R/global.json" "$NG/"; cp "$R/scripts/binaries-lock.sh" "$NG/scripts/"
+(cd "$WORK" && GIT_CEILING_DIRECTORIES="$WORK" bash "$NG/scripts/sindri-app.sh" --publish-only >/dev/null 2>"$WORK/err"); RC=$?
+check "not a git checkout: exit 1 with the sentence" "$RC:$(grep -c 'Sindri can only be published from a git checkout' "$WORK/err")" "1:1"
+
+# A failed `git archive` fails the publish: nothing is published and no empty recipes set is embedded.
+REALGIT="$(command -v git)"; mkdir -p "$WORK/gitfail"
+printf '#!/usr/bin/env bash\nfor a in "$@"; do [ "$a" = archive ] && { echo "fatal: archive boom" >&2; exit 128; }; done\nexec "%s" "$@"\n' "$REALGIT" > "$WORK/gitfail/git"
+chmod +x "$WORK/gitfail/git"
+BEFORE="$(builds):$(cat "$B/current")"; : > "$CALLS"
+PATH="$WORK/gitfail:$PATH" bash "$R/scripts/sindri-app.sh" --publish-only --rebuild >/dev/null 2>"$WORK/err"; RC=$?
+check "archive failure: exit 1 with the sentence" "$RC:$(grep -c 'could not stage recipes/sindri from HEAD (git archive failed)' "$WORK/err")" "1:1"
+check "archive failure: nothing is published" "$(publishes):$(builds):$(cat "$B/current")" "0:$BEFORE"
 
 exit "$fail"

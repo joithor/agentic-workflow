@@ -28,7 +28,7 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 | Test | Vitest (in-memory SQLite) |
 | Build | tsc (ESM, Node16 module resolution) |
 
-**C# build — in progress, not installed until the cutover.** The toolkit is moving to C# (spec `docs/superpowers/specs/2026-10-09-agent-readiness-design.md` §4a–§4e). The tool ports stop after `Judge` (#156) and `Evidence` (#158); `scorer` and `sindri` are not ported. Sindri is **built new in C# as an application** (control plane, workflow engine, context retrieval engine; factory addendum §17.29, decision Q7; overview in `docs/sindri/README.md`), the finished tool ports become its blocks, and the TS `sindri/` stays the reference and keeps running until the switch. This is a clean cutover and a **reimplementation in idiomatic C#, not a translation**: the TS package is a guideline for what a package does, never for how (no TS formatting, quirks or workarounds; type-driven JSON through `AwJson`; contracts defined by the C# tests; `.agents/rules/csharp.md` "Porting a TS package"). The C# build keeps no byte or state compatibility with the TS build, and no TS state is migrated. The one exception is the **hook contract**: only what the bash hooks and statusline that keep running read (the commands and arguments they call, the JSON fields they `jq`, the exit codes and stderr prefixes they branch on, and the files they write, such as `judge/sessions`, `judge/outbox` and `judge/teammate-names.jsonl`; spec §4c). It stays frozen until the switch, checked in CI by running the real hook scripts against the C# binaries. The installed toolkit stays TypeScript until the C# build is complete; then one switch moves the install. Before that, nothing in `setup.sh`, the providers, MCP registration or launchd points at the C# build. Separately, `aw-readiness` and `aw-packets` run before the switch as standalone NativeAOT CLIs that write only under `readiness/` and `packets/` (spec §4c), and so does `aw-meta` (the `/meta` harness), which keeps its state under `meta/` and appends to its team's running log (its gate and merge commands also act on the team's checkout and PRs: `git fetch`, a gate worktree, the configured gate steps, `gh pr merge`, and removing finished worktrees with `git worktree remove` on merge, close and sweep triggers, never by age and never forced); it is one of two C# tools installed before the switch, and aw-meta is only opt-in through `./setup.sh --with-meta` and Linux only for now (aw-meta reads /proc; on macOS setup skips it) (owner, 2026-10-14). The other is `sindri-app` (`scripts/sindri-app.sh`, owner-approved), which publishes the C# Sindri for this platform and runs it; setup.sh does not install it, you run the script yourself.
+**C# build — in progress, not installed until the cutover.** The toolkit is moving to C# (spec `docs/superpowers/specs/2026-10-09-agent-readiness-design.md` §4a–§4e). The tool ports stop after `Judge` (#156) and `Evidence` (#158); `scorer` and `sindri` are not ported. Sindri is **built new in C# as an application** (control plane, workflow engine, context retrieval engine; factory addendum §17.29, decision Q7; overview in `docs/sindri/README.md`), the finished tool ports become its blocks, and the TS `sindri/` stays the reference and keeps running until the switch. This is a clean cutover and a **reimplementation in idiomatic C#, not a translation**: the TS package is a guideline for what a package does, never for how (no TS formatting, quirks or workarounds; type-driven JSON through `AwJson`; contracts defined by the C# tests; `.agents/rules/csharp.md` "Porting a TS package"). The C# build keeps no byte or state compatibility with the TS build, and no TS state is migrated. The one exception is the **hook contract**: only what the bash hooks and statusline that keep running read (the commands and arguments they call, the JSON fields they `jq`, the exit codes and stderr prefixes they branch on, and the files they write, such as `judge/sessions`, `judge/outbox` and `judge/teammate-names.jsonl`; spec §4c). It stays frozen until the switch, checked in CI by running the real hook scripts against the C# binaries. The installed toolkit stays TypeScript until the C# build is complete; then one switch moves the install. Before that, nothing in `setup.sh`, the providers, MCP registration or launchd points at the C# build, with one exception: `./setup.sh --with-sindri` also stands the pinned Onyx up by running the C# Sindri's `sindri-app onyx up` (`scripts/install-onyx.sh`; opt out with `--no-onyx`; owner, 2026-10-18; spec `2026-10-16-sindri-onyx-managed-design.md` P5). Separately, `aw-readiness` and `aw-packets` run before the switch as standalone NativeAOT CLIs that write only under `readiness/` and `packets/` (spec §4c), and so does `aw-meta` (the `/meta` harness), which keeps its state under `meta/` and appends to its team's running log (its gate and merge commands also act on the team's checkout and PRs: `git fetch`, a gate worktree, the configured gate steps, `gh pr merge`, and removing finished worktrees with `git worktree remove` on merge, close and sweep triggers, never by age and never forced); it is one of two C# tools installed before the switch, and aw-meta is only opt-in through `./setup.sh --with-meta`, on Linux and macOS (macOS reads memory, swap and the process table through `sysctl`, `vm_stat`, `ps` and `lsof` where Linux reads `/proc`; a macOS tool that can't run makes that figure `AW-META-010` "unavailable on macOS", never a guess; any other OS fails the install loudly; `docs/csharp/meta.md` "OS support") (owner, 2026-10-14; macOS 2026-10-17). The other is `sindri-app` (`scripts/sindri-app.sh`, owner-approved), which publishes the C# Sindri for this platform and runs it; setup.sh builds and links it only through the Onyx step of `--with-sindri` (skip with `--no-onyx`); otherwise you run the script yourself.
 
 | Layer | Technology (C# build) |
 |-------|------------|
@@ -51,14 +51,15 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 agentic-workflow/
 ├── skills/        # 52 provider-neutral skills (linked into each provider's skills dir)
 ├── bootstrap/     # /bootstrap skill — repo documentation generator
-├── config/        # Settings, MCP config, statusline, safety hooks, sindri-nudge SessionStart hook, meta Stop/outbox hooks, non-Claude lane hooks (meta-lane-gate, session-id-report) (+ hooks/adapters/ per provider)
+├── config/        # Settings, MCP config, statusline, safety hooks, sindri-nudge SessionStart hook, meta Stop/outbox hooks, non-Claude lane hooks (meta-lane-gate, session-id-report), the opt-in aw:fleet session-state hook (fleet-state, `--with-fleet`) (+ hooks/adapters/ per provider)
 ├── providers/     # Per-provider installers (claude, codex, cursor)
 ├── scorer/        # Daily cost/involvement report from provider session transcripts
 ├── judge/         # Cheap-agent-harness judge CLI (decisions, config, health)
 ├── sindri/        # Sindri in TypeScript (runs until the switch; reference for the C# app): profile, ledger, lock, scrubber, observe, index, scope, evolve, doctor (CLI)
+├── context/       # Pinned external deployments: onyx.lock (Onyx v4.9.0 pins)
 ├── mods/          # Claude Code mods (in-process function hooks): aw-live /live pane. Claude-only
 ├── planning/      # Project documentation
-├── src/           # C# build (in progress): Aw.Kernel (+ .Data, .Telemetry), Redaction, Aw.Analyzers, the tool ports (Packets, Readiness, BugFix; Judge, Evidence), Meta (aw-meta, the /meta harness) and later the new Sindri app — each Core · Features · Infrastructure · Host
+├── src/           # C# build (in progress): Aw.Kernel (+ .Data, .Telemetry), Redaction, Aw.Analyzers, the tool ports (Packets, Readiness, BugFix; Judge, Evidence), Meta (aw-meta, the /meta harness), Forge (the forge port with GitHub and file adapters), CodeIndex (the Sindri code index block: symbols, callers and callees per repo; library only) and later the new Sindri app — each Core · Features · Infrastructure · Host
 ├── tests/         # C# tests: Aw.<Pkg>.Tests (by feature), Aw.<Pkg>.Testing (fakes, builders, contract bases), Aw.Architecture.Tests
 ├── global.json · AgenticWorkflow.slnx · Directory.Build.props · Directory.Build.targets · Directory.Packages.props · nuget.config · .editorconfig · CodeMetricsConfig.txt · BannedSymbols.txt
 ├── .agents/rules/ # Glob-scoped domain rules (.claude/rules and .cursor/rules link here)
@@ -95,7 +96,7 @@ dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-
 dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=integration" --ignore-exit-code 8   # Temp SQLite files, WebApplicationFactory (< 60 s per package)
 dotnet test --solution AgenticWorkflow.slnx --filter-not-trait "Lane=heavy" --ignore-exit-code 8     # Everything except containers, browsers and index builds
 node scripts/ci/lane-budgets.mjs        # After a Release build: each package's unit/integration lane wall clock vs its budget (LANE-PKG-001)
-dotnet format --verify-no-changes       # Style and analyzer fixes are applied (CI and pre-commit)
+dotnet format --verify-no-changes       # Style and analyzer fixes are applied (CI and the meta gate; no pre-commit hook runs it)
 scripts/dotnet-verify-packages.sh       # Lock files present and unchanged, signature-verified locked restore, dotnet nuget verify --all
 # Add a package: /new-package (node scripts/scaffold/new-package.mjs; contract docs/csharp/scaffolds/new-package.md)
 # Add a use case: /new-slice (node scripts/scaffold/new-slice.mjs; contract docs/csharp/scaffolds/new-slice.md) — test, request and response, service, endpoint, registration
@@ -111,18 +112,22 @@ bash src/Judge/aot-smoke/run.sh          # judge under NativeAOT: publish (on a 
 dotnet run --project src/Evidence/Aw.Evidence.Host -- <run|parity|parity-plan|parity-comment|parity-stale|parity-put|publish-plan|doctor|provenance|install-browser|api-run|db-run> …   # ui-evidence, C# build (docs/csharp/evidence.md; api-run: HTTP and CLI contract checks, summary.json on stdout, `--at base|head`, `--host` for requests, targets from <repo>/.agentic-workflow/evidence.json; db-run: read-only SQLite (a copy) or Postgres (identity and role checked) row assertions, same summary contract, Npgsql): exit 0 ok, 1 usage/invalid/refused, 2 a check failed, 3 review pending, 4 the run errored, 75 a lock stayed busy
 dotnet run --project src/BugFix/Aw.BugFix.Host -- <command> --state <dir> [options]   # bugfix-state, the C# /bugFixOrchestrator helper (docs/csharp/bugfix.md); exit 0 ok, 1 bad input, 2 usage, 3 refused
 bash src/BugFix/aot-smoke/run.sh         # bugfix-state under NativeAOT: publish (on a copy), run a bug fix in a temp repo, compare with expected.txt
-dotnet run --project src/Sindri/Aw.Sindri.Host -- [--headless | serve | status [--follow] [--json] | stop | profile validate|approve | views rebuild [--no-start] | queue [--json] | items [--state S] [--repo R] [--json] | item add <title> [--repo R] | item close <item> [--cancelled] [--version N] | ledger [--after N] [--item X] [--type T] [--max N] [--json] | doctor | services [--json] | services run <name> [--detach] [--json] | services pause|resume <name> | jobs [--state S] [--kind K] [--json] | jobs show <id> [--json] | jobs cancel <id>]   # the C# Sindri app (S1 app shell, docs/csharp/sindri.md; `views rebuild` replays the ledger into views.db, the fix when the projector stalls); state in AW_SINDRI_HOME (default $AW_STATE_DIR/sindri-app); exit 0 ok, 1 attention, 2 error
+dotnet run --project src/Forge/Aw.Forge.Host -- <parse|open|pull|threads|seed thread|seed checks|seed advance> …   # aw-forge-fake, the C# forge port's CLI (docs/csharp/forge.md); adapter by AW_FORGE_ADAPTER (file default | github), hosts AW_FORGE_HOSTS, credential AW_FORGE_CREDENTIAL (env:NAME | command:argv, default env:AW_FORGE_TOKEN); one JSON document on stdout; exit 0 ok, 1 invalid or not found, 2 usage, 3 refused or forge unavailable
+dotnet test --project tests/Aw.Forge.Tests --filter-trait "Lane=heavy"   # Owner's GitHub check: the read-side forge contract against a scratch repo; skips unless AW_FORGE_GITHUB_REPO=owner/name and AW_FORGE_TOKEN are set (docs/csharp/forge.md)
+dotnet run --project src/Sindri/Aw.Sindri.Host -- [--headless | serve | status [--follow] [--json] | stop | profile validate|approve | views rebuild [--no-start] | queue [--json] | items [--state S] [--repo R] [--json] | item add <title> [--repo R] | item close <item> [--cancelled] [--version N] | ledger [--after N] [--item X] [--type T] [--max N] [--json] | doctor | services [--json] | services run <name> [--detach] [--json] | services pause|resume <name> | jobs [--state S] [--kind K] [--json] | jobs show <id> [--json] | jobs cancel <id> | agents [--provider P] [--state S] [--repo R] [--json] | agents show <provider>/<id> [--json] | setup [--json]]   # the C# Sindri app (S1 app shell, docs/csharp/sindri.md; `views rebuild` replays the ledger into views.db, the fix when the projector stalls; `agents` lists every live agent session on the box, read-only and never starting serve: exit 0 ok, 1 serve is down or a source failed, 2 error; `setup` prints where setting Sindri up stands, one line per step, read-only and never starting serve: exit 0 when every step is done or skipped, 1 when one is open or serve is down, 2 error); state in AW_SINDRI_HOME (default $AW_STATE_DIR/sindri-app); exit 0 ok, 1 attention, 2 error
 dotnet run --project src/Sindri/Aw.Sindri.Host -- recipe validate <file> [--json]   # check a workflow recipe in-process, no serve needed (docs/csharp/sindri-workflow.md); exit 0 pass, 1 fail, 2 usage or tool error
-dotnet run --project src/Sindri/Aw.Sindri.Host -- recipe eval <file> [--json] | --scaffold <file> [--out <dir>]   # run a recipe's eval cases over the pure engine; --scaffold --out writes one case per path of a route recipe (docs/csharp/sindri-workflow.md); exit 0 pass, 1 a case fails, 2 usage or tool error; --record needs the server (P4)
-dotnet run --project src/Sindri/Aw.Sindri.Host -- workflow start|status|list|events|answer|command|cancel|complete …   # the recipe instances: all ten workflow verbs (these eight and takeover|handback on the next line) go through the running control plane (reads never start it: exit 1 SND-API-001 when it is down); only `recipe validate` and `recipe eval` run in process (docs/csharp/sindri-workflow.md; `sindri help` has each line); exit 0 ok, 1 not running, 2 invalid, refused or error
-dotnet run --project src/Sindri/Aw.Sindri.Host -- workflow takeover|handback <address> [--nonce <n>] [--json]   # P5: take an instance over (its timer pauses) or hand it back (its timer resumes); `sindri handback <item-or-address>` is the short form; exit 0 applied, 1 not running, 2 invalid, refused or error (docs/csharp/sindri-workflow.md)
+dotnet run --project src/Sindri/Aw.Sindri.Host -- recipe eval <file> [--json] | --scaffold <file> [--out <dir>]   # run a recipe's eval cases over the pure engine; --scaffold --out writes one case per path of a route recipe (docs/csharp/sindri-workflow.md); exit 0 pass, 1 a case fails, 2 usage or tool error; --record <address> --out <file> writes an instance's history as an eval case from the ledger (no server)
+dotnet run --project src/Sindri/Aw.Sindri.Host -- scoping check (<address> | --facts <dir>) [--draft <dir>] [--stage draft|evidence] [--json] | show (<address> | --facts <dir>) [--json] | desk <block> --facts <dir> --out <dir> [--json]   # the scoping station's rules, stop view and desk helper (docs/csharp/sindri-scoping.md); --facts runs locally, an address reads through serve (down: exit 2 SND-API-001); --draft and --out are refused inside a git worktree (SND-SCOPING-002); desk evidence calls aw-packets hash (AW_PACKETS_BIN); exit 0 pass, 1 findings, 2 usage or tool error
+dotnet run --project src/Sindri/Aw.Sindri.Host -- workflow start|status|list|events|injection|answer|command|cancel|complete …   # the recipe instances: all ten workflow verbs (these eight and takeover|handback on the next line) go through the running control plane (reads never start it: exit 1 SND-API-001 when it is down); only `recipe validate` and `recipe eval` run in process (docs/csharp/sindri-workflow.md; `sindri help` has each line); exit 0 ok, 1 not running, 2 invalid, refused or error
+dotnet run --project src/Sindri/Aw.Sindri.Host -- workflow takeover|handback <address> [--nonce <n>] [--json]   # P5: take an instance over (its timer pauses) or hand it back (its timer resumes); `sindri takeover|handback <item-or-address>` are the short forms; exit 0 applied, 1 not running, 2 invalid, refused or error (docs/csharp/sindri-workflow.md)
 bash src/Sindri/aot-smoke/run.sh         # sindri, framework-dependent (the Temporal SDK has no NativeAOT; needs scripts/binaries-lock.sh fetch temporal): publish (on a copy), drive start, a refused second serve, the approve preview and its non-terminal refusal, a session's approve and stop refused (SND-AUTH-002), the human's typed approval and stop under a pty, views rebuild refused to a session and requested by the human, status (its views and health lines, and --json's apiVersion), /sindri/mcp's initialize and tools/list, stop and doctor (on a scratch HOME) in a temp home, then recipe validate on the shipped recipes and an invalid fixture (each call bounded to 30 s), compare with expected.txt
 dotnet run --project src/Sindri/Aw.Sindri.Ui.Desktop       # the Sindri app (S1b shell, U0 theme and shell; docs/csharp/sindri-ui.md): top bar, Home, Health, Settings, tray, single instance, live from the event stream; bare `sindri` opens it (sindri-ui next to sindri, or AW_SINDRI_UI)
 bash src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh [<dir>]   # sindri-ui under NativeAOT: publish (on a copy) and fail on any IL2xxx/IL3xxx warning or a missing binary; copies it and its native libraries to <dir> when given
 
-dotnet run --project src/Meta/Aw.Meta.Host -- <command> [--json]   # aw-meta, the /meta harness CLI (docs/csharp/meta.md): obligations (inbox-sync, stop-check, outbox-record, inbox-*), lanes-*, gate-run, gate-rerun, merge-check, merge-run, owner-*, health, watch, log-append, status, team-*, role-*; exit 0 ok, 1 attention, 2 usage or tool error
+dotnet run --project src/Meta/Aw.Meta.Host -- <command> [--json]   # aw-meta, the /meta harness CLI (docs/csharp/meta.md): obligations (inbox-sync, stop-check, outbox-record, inbox-*), lanes-*, gate-run, gate-rerun, merge-check, merge-run, owner-*, health, watch, log-append, status, version, team-*, role-*; exit 0 ok, 1 attention, 2 usage or tool error
 bash src/Meta/aot-smoke/run.sh           # aw-meta under NativeAOT: publish (on a copy), drive the obligation flow in a temp state dir, compare with expected.txt
-scripts/install-meta.sh                  # Publish aw-meta (NativeAOT) to $AW_STATE_DIR/bin, install its Claude hooks, link aw-meta and aw-meta-launch (or ./setup.sh --with-meta; Linux only for now, aw-meta reads /proc, setup skips it on macOS)
+scripts/install-fleet.sh [--provider claude] [--uninstall]   # The aw:fleet hook (Sindri session collector, CO-1): one state file per session under $AW_FLEET_DIR (or ./setup.sh --with-fleet); off: AW_FLEET_DISABLE=1 per session or --uninstall
+scripts/install-meta.sh                  # Publish aw-meta (NativeAOT, stamped with the commit and build time) to $AW_STATE_DIR/bin, install its hooks, link aw-meta and aw-meta-launch, print the installed version (or ./setup.sh --with-meta; Linux and macOS, other OSes fail loudly; aw-meta-launch warns when the binary is older than the Meta sources)
 scripts/meta-launch.sh [--lanes a,b] [--no-open] [--dry-run]   # The team in one Warp window: a pane per lane on tmux session <team>-<lane>, resumed by id (team config: aw-meta team-init)
 # Rules (edit .agents/rules/, then regenerate)
 scripts/sync-rules.sh                   # Link .claude/rules, .cursor/rules, CLAUDE.md; refresh Rules Index
@@ -136,8 +141,23 @@ node scripts/check-deps.mjs --mermaid [--base-file F]   # Also print the Mermaid
 scripts/binaries-lock.sh check          # Shape of binaries.lock: six fields, one version per name, all four platforms
 scripts/binaries-lock.sh fetch <name>   # Download this platform's row, verify its sha256, install under $AW_STATE_DIR/cache/bin/<name>-<version>/
 
-# External tools, once per box (setup.sh runs it): uv, graphify at sindri's pin, both Temporal binaries, system packages (installed when missing)
+sindri onyx status [--json]            # Can this box run the pinned Onyx? Docker, Compose, memory, disk and port checks; read-only, no control plane, an agent session may run it; exit 0 all ok, 1 attention, 2 usage
+sindri onyx up|down|open                  # The C# Sindri's Onyx: `up` stands the pinned stack up and continues with your account, Sindri's key and the profile section; `down` stops its containers; `open` opens the sign-up or connectors page (the human's verbs, a session is refused)
+# Onyx pins (context/onyx.lock: the Onyx version and commit, deployment-file sha256s, image digests per platform, preflight needs; spec docs/superpowers/specs/2026-10-16-sindri-onyx-managed-design.md §6)
+scripts/onyx-lock.sh check              # Shape of context/onyx.lock: one version row, every image on both platforms, both need rows; exit 0 ok, 1 a check failed
+scripts/onyx-lock.sh verify             # Maintainer-run, network, never in CI: recompute each file sha256 from raw.githubusercontent.com and each image digest from `docker buildx imagetools inspect`, and check the compose names only pinned images; exit 0 all match, 1 a mismatch, 2 usage or network
+
+# Sindri-managed Onyx (docs/sindri/onyx.md, docs/csharp/sindri.md; the C# Sindri app, `dotnet run --project src/Sindri/Aw.Sindri.Host --` or the published sindri)
+sindri onyx status [--json]             # Where Onyx stands (not set up / running with url and version / stopped) and whether this box can run the pinned one; read-only, no control plane needed; exit 0 ok, 1 a check needs attention
+sindri onyx up [--json]                 # Preflight, verified file fetch, .env and compose override, digest-pinned pull, start and readiness for Onyx v4.9.0 on 127.0.0.1; idempotent, resumable, the human's verb (a session is refused, SND-AUTH-002); exit 0 running, 1 a step failed (the error names the fix)
+sindri onyx down [--json]               # Stop it (containers only; data, images and files are kept); the human's verb
+
+# External tools, once per box (setup.sh runs it): uv, graphify at sindri's pin, the code index's graphify environment and Ollama model from context/code-index.lock, both Temporal binaries, system packages (installed when missing)
 scripts/install-deps.sh                 # AW_DRY_RUN=1 prints only; missing system packages are installed (brew on macOS; sudo + apt-get, dnf, yum, pacman or zypper on Linux); AW_NO_SYSTEM_INSTALL=1 prints the commands and exits 1 instead
+
+# Code index pins (context/code-index.lock: graphify version, date and requirements hash, the Ollama embedding model and digest, disk need; context/code-index-requirements.txt is the hash-pinned requirements; spec docs/superpowers/specs/2026-10-19-sindri-code-index-design.md §9)
+scripts/code-index-lock.sh check        # Shape of the lock, the requirements file's sha256, and parity with sindri/package.json's graphifyPin and graphifyPinDate; exit 0 ok, 1 a check failed, 2 usage
+scripts/code-index-lock.sh get <graphify-version|graphify-date|requirements-sha256|model|model-digest|disk-bytes>   # One pinned value (install-deps.sh reads these)
 
 # Rule records (rules/engineering/csharp/*.yaml + schemas/rule-record.schema.json; docs/csharp/rule-records.md)
 node scripts/check-rules.mjs [--json]   # Every §4b rule has a record; every active check exists; pending ones wait on their PR
@@ -159,10 +179,13 @@ bash scripts/tests/check-rules.test.sh
 bash scripts/tests/check-launcher.test.sh   # launcher.json schema, fixtures, built-ins and argvHash goldens (node scripts/check-launcher.mjs; Ajv is a dev dependency of scripts/)
 bash scripts/tests/check-fleet.test.sh      # fleet state schema, its valid and invalid fixtures, and the /proc-shaped sessions tree (node scripts/check-fleet.mjs; Ajv as above)
 bash scripts/tests/check-scoping-schemas.test.sh # schemas/scoping/: every schema compiles, its examples get their verdicts, seeds.json matches the recipe's intake (node scripts/check-scoping-schemas.mjs; Ajv as above)
+bash scripts/tests/check-line-schemas.test.sh    # schemas/line/: every report schema compiles, its examples get their verdicts (node scripts/check-line-schemas.mjs; Ajv as above)
 bash scripts/tests/check-profile-doc.test.sh # docs/csharp/sindri-profile.md names every SindriProfile key (node scripts/check-profile-doc.mjs)
 bash scripts/tests/scaffold.test.sh
 bash scripts/tests/check-env-example.test.sh
 bash scripts/tests/binaries-lock.test.sh
+bash scripts/tests/onyx-lock.test.sh
+bash scripts/tests/code-index-lock.test.sh
 bash scripts/tests/install-deps.test.sh
 bash scripts/tests/denylist-check.test.sh
 bash scripts/tests/owner-check.test.sh
@@ -172,8 +195,10 @@ bash scripts/tests/find-duplicate-skills.test.sh
 bash scripts/tests/dotnet-verify-packages.test.sh
 bash scripts/tests/install-scorer-audit.test.sh
 bash scripts/tests/install-sindri.test.sh
+bash scripts/tests/install-onyx.test.sh      # the Onyx step of setup.sh: dry run, Docker missing or silent, no terminal, the call, a failure, a rerun, --no-onyx (stub docker and sindri-app)
 bash scripts/tests/sindri-prove.test.sh
 bash scripts/tests/sindri-ui-fixture.test.sh
+bash scripts/tests/forge-fixture.test.sh    # scripts/forge-fixture.sh over the real aw-forge-fake (dotnet build once): the PR babysitter's fixture PR set, every variant, the guard, --github refusals and dry run
 bash scripts/tests/sindri-app.test.sh
 bash scripts/tests/readiness-baseline.test.sh
 bash scripts/tests/agent-token.test.sh
@@ -186,7 +211,9 @@ bash scripts/tests/test-tmux.test.sh
 bash scripts/tests/sindri-smoke-normalize.test.sh
 bash scripts/tests/scoping-fixture.test.sh
 bash scripts/tests/line-fixture.test.sh
-bash scripts/tests/meta-launch.test.sh
+bash scripts/tests/code-index-fixture.test.sh  # the code-index fixtures (tests/fixtures/code-index): verify.mjs, the sample check, the hostile generator
+bash scripts/tests/meta-launch.test.sh      # Linux and macOS (golden transcript; needs cc on macOS)
+bash scripts/tests/meta-version.test.sh     # the installed aw-meta's version and the launcher's staleness warning (Linux and macOS)
 bash scripts/tests/install-meta.test.sh
 bash scripts/tests/meta-teams.test.sh
 bash config/hooks/tests/codex-adapter.test.sh
@@ -195,14 +222,21 @@ bash config/hooks/tests/provider-install-hooks.test.sh
 bash config/hooks/tests/probe-log.test.sh
 bash config/hooks/tests/judge-health.test.sh
 bash config/hooks/tests/sindri-nudge.test.sh
+bash config/hooks/tests/fleet-state.test.sh   # the aw:fleet hook: every Claude event's state file against the schema, PostToolUse before jq, refusals, modes, under 100 ms (real payloads in tests/fixtures/fleet-input/)
+bash scripts/tests/install-fleet.test.sh      # install-fleet.sh install and --uninstall (only # aw:fleet entries), setup.sh --with-fleet --dry-run
+bash scripts/tests/install-headroom.test.sh   # aw-headroom.sh and install-headroom.sh: upstream detection order, no loop, fake headroom/claude/codex, dry run writes nothing, no MCP, token never printed
+bash scripts/tests/install-tldraw.test.sh     # install-tldraw.sh: brew cask on macOS, the pinned AppImage on Linux (sha256 refusal), the agent-skills marker check, fail-open, --no-tldraw
 bash config/hooks/tests/failopen.test.sh
 bash config/hooks/tests/meta-hooks.test.sh
-for t in config/lib/tests/*.test.sh; do bash "$t" || echo "FAILED: $t"; done  # merge-hook, levers, installers, and judge-cs-hook-surface (the hook contract: real hooks vs the C# judge, and the TS judge when judge/dist is built; needs dotnet)
+for t in config/lib/tests/*.test.sh; do bash "$t" || echo "FAILED: $t"; done  # merge-hook, levers, installers, judge-cs-hook-surface (the hook contract: real hooks vs the C# judge, and the TS judge when judge/dist is built; needs dotnet) and sindri-cs-hook-surface (the sindri-nudge SessionStart hook vs the C# `sindri repo status --nudge`: one line, silence, exit 0, read-only, bounded; builds the Sindri host, needs dotnet)
 
 # Levers and probe (default provider: claude)
 scripts/install-<lever>.sh --provider claude|codex|cursor
 scripts/probe.sh [--provider claude|codex|cursor] on|off|status
 scripts/install-scorer.sh               # Build scorer, install CLI + launchd job
+scripts/install-headroom.sh --provider claude|codex   # headroom as a proxy wrapper only (no MCP server): installs the CLI when missing and the `aw-headroom` launcher; setup.sh runs it per provider (Cursor: skipped), fail-open
+scripts/install-tldraw.sh [--dry-run]   # tldraw offline, the canvas agents drive for diagrams: brew cask on macOS, the pinned AppImage on Linux; prints the app's Develop → Install Agent Skills step until a provider has its skill (setup.sh runs it; skip with --no-tldraw), fail-open
+aw-headroom claude|codex [args]         # Run the tool through a loopback headroom proxy chained in front of its current upstream (e.g. EasyCLIProxyAPI); nothing on disk is edited; `aw-headroom upstream|status|stop`
 sindri doctor                           # Sindri health checks (ok / warn / fail + fix)
 sindri index setup && sindri index build    # code index (Ollama + graphify, offline)
 sindri evolve init && sindri evolve check --changed   # registry + module eval suites (heavy: takes a heavy-job slot)
@@ -216,10 +250,12 @@ sindri shape report                      # record-only shape signals and their o
 sindri shape reconcile                   # move the spool into the ledger and label outcomes now (observe does it hourly)
 sindri observe                          # Backlog with sizes; records to the ledger when the profile is approved
 scripts/install-sindri.sh               # Build sindri, install the CLI wrapper (or ./setup.sh --with-sindri)
+scripts/install-onyx.sh                 # Stand the pinned Onyx up through `sindri-app onyx up` (setup.sh --with-sindri runs it unless --no-onyx; AW_DRY_RUN=1 prints; exit 0 up, 3 skipped with the command to run later, 1 failed)
 GH_TOKEN="$(scripts/agent-token.sh [--repo NAME])"  # Owner/session launcher only, never inside an agent session: 1h agent App token
 AW_DENYLIST=<file:ABSPATH|env:VAR> scripts/denylist-check.sh <file>...   # Work identifiers in PR text; the list is injected through AW_DENYLIST (0600-or-stricter file or env var), never an argument: prints only file:line and a hit count; exit 0 none, 1 hits, 2 fails closed (unset/invalid pointer, bad or missing list; see the script header)
 scripts/owner-check.sh <stage> up [--seed] [--services a,b] [--labeling] [--session] [--repo NAME] | down   # Owner only: the scratch Sindri instance (port 7480) for a stage's owner check (context spec, owner-check outline steps 1-4 and 7)
 scripts/sindri-app.sh [--rebuild] [<sindri args>]   # `sindri-app`: the C# Sindri in one command; publishes sindri (framework-dependent) + sindri-ui (NativeAOT) for this platform into $AW_STATE_DIR/bin/sindri-app/<stamp>/ when the source changed, then runs it (bare: start the control plane and open the app); links ~/.local/bin/sindri-app (AW_SINDRI_APP_NO_LINK=1 skips). The TS `sindri` is untouched
+scripts/forge-fixture.sh up --fake <comments|ciRed|ciFlaky|conflict|stacked|noDocs|sourceFix|foreignPush|secret|all> | event merge-base | status | list | down [--all]   # The PR babysitter's fixture PR set (tests/fixtures/forge/pr-set/) loaded into the file-backed fake forge in a guarded temp home; prints the PR link and the answer key (PB-X). `up --github <owner/repo> <variant>` is the owner's, on a scratch repo (FORGE_FIXTURE_GITHUB_SCRATCH confirms it)
 scripts/sindri-ui-fixture.sh up|stall|unstall|drift|down   # The Sindri UI's proof fixture in a guarded temp AW_SINDRI_HOME, through sindri-prove.sh (UI spec §18.2; --large reserved)
 
 # Setup (from repo root)

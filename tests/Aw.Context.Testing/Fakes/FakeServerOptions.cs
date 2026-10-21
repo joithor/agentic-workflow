@@ -15,6 +15,9 @@ public sealed record FakeServerOptions
     /// </summary>
     public string? OnyxAccountType { get; init; }
 
+    /// <summary>The account's email as 'GET /api/me' reports it ('email'); null takes the fixture's service-account address.</summary>
+    public string? OnyxAccountEmail { get; init; }
+
     /// <summary>
     /// Whether the fake Onyx key holds the 'admin' permission (the default). Without it 'GET /api/me' lists a basic
     /// user's permissions and 'POST /api/admin/search' answers Onyx's 403 INSUFFICIENT_PERMISSIONS.

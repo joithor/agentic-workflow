@@ -2,12 +2,14 @@ using System.ComponentModel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Approvals;
 using Aw.Sindri.Ui.ViewModels.Instance;
 using Aw.Sindri.Ui.ViewModels.Item;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
 using Aw.Sindri.Ui.ViewModels.Palette;
 using Aw.Sindri.Ui.ViewModels.Queue;
 using Aw.Sindri.Ui.ViewModels.Recipes;
+using Aw.Sindri.Ui.ViewModels.Setup;
 using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
@@ -26,13 +28,13 @@ internal sealed partial class ShellViewModel : ObservableObject
     private static readonly string[] _stateProperties =
     [
         nameof(State), nameof(IsVersionMismatch), nameof(IsChromeVisible), nameof(IsNotRunning), nameof(IsNotRunningPanel), nameof(IsConnecting),
-        nameof(IsUnreadable), nameof(IsNotRespondingBanner), nameof(IsPageVisible), nameof(IsSheetShown), nameof(IsEdgeTabShown), nameof(IsNavigationEnabled),
+        nameof(IsUnreadable), nameof(IsNotRespondingBanner), nameof(IsPageVisible), nameof(IsInboxShown), nameof(IsPagesShown), nameof(IsSheetShown), nameof(IsEdgeTabShown), nameof(IsNavigationEnabled),
     ];
 
     private static readonly string[] _pageProperties =
     [
         nameof(CurrentPage), nameof(PageName), nameof(SelectedNav), nameof(IsHome), nameof(IsWorkflows), nameof(IsWork), nameof(IsRecipes), nameof(IsContext),
-        nameof(IsAgents), nameof(IsSystem), nameof(IsSettings), nameof(IsNotRunningPanel), nameof(IsPageVisible),
+        nameof(IsAgents), nameof(IsSystem), nameof(IsJobs), nameof(IsSettings), nameof(IsNotRunningPanel), nameof(IsPageVisible), nameof(IsHomeShown), nameof(IsInboxShown), nameof(IsPagesShown),
     ];
 
     private readonly Preferences _store;
@@ -49,8 +51,8 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <param name="preferences">The app's local preferences, shared with Settings (the shell keeps its window, sheet width and last page there).</param>
     /// <param name="clipboard">Where Copy puts a CLI (the window's clipboard).</param>
     /// <param name="motion">The OS reduce-motion setting; none means motion is allowed.</param>
-    /// <param name="launcher">Opens links and files in the system's apps; none opens nothing.</param>
-    internal ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, Preferences preferences, IClipboard clipboard, IMotionPreference? motion = null, ILauncher? launcher = null)
+    /// <param name="window">The window's adapters (opening links and files, choosing a file); none opens and chooses nothing.</param>
+    internal ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, Preferences preferences, IClipboard clipboard, IMotionPreference? motion = null, WindowPorts? window = null)
     {
         _store = preferences;
         _clock = clock;
@@ -59,7 +61,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         Health.Pill.PropertyChanged += OnPillChanged;
         CommandOutcome = new CommandOutcomeRegion(control => Health.Banner.HasRebuild && ReferenceEquals(Health.Banner.Rebuild, control));
         Create = new CreateItemViewModel(Health.Catalog, () => Health.ApiUrl(), api);
-        Palette = new CommandPaletteViewModel(Health.Catalog, GoTo, RememberRun, CommandOutcome, () => Create.Open());
+        Palette = new CommandPaletteViewModel(Health.Catalog, GoTo, RememberRun, CommandOutcome, () => Create.Open(), OpenStart, OpenApproveAll);
         Shortcuts = new ShortcutsViewModel(Health.Catalog);
         Queue = new QueueViewModel(api, Health.Catalog, clock);
         Queue.PageShown(RowScopeOf(CurrentPage));
@@ -69,16 +71,23 @@ internal sealed partial class ShellViewModel : ObservableObject
         Health.Follow(Item.Refresh);
         _api = api;
         NeedsYou = new NeedsYouViewModel(preferences, motion ?? new StillMotion(), clock);
+        ApproveAll = new ApproveAllViewModel(Health.Catalog, () => Health.ApiUrl(), api, clock, () => NeedsYou.Seen.ReducedMotion);
         Decision = new DecisionSheetViewModel(api, () => Health.ApiUrl(), clock, decisions, clipboard);
         InitNeedsYou(clipboard);
+        Inbox = InitInbox(api, clipboard);
         Strip = new WorkflowsStripViewModel(clipboard, clock);
         InitStrip();
+        Setup = new SetupViewModel(api, Health.Catalog, clock, OpensInApp);
+        InitSetup();
         Workflows = new WorkflowsViewModel(api, clipboard, clock);
         InitWorkflows();
-        Instance = new InstanceFrameViewModel(api, clipboard, clock, catalog: Health.Catalog, launcher: launcher);
+        Start = InitStart(api, window ??= WindowPorts.None);
+        Instance = new InstanceFrameViewModel(api, clipboard, clock, catalog: Health.Catalog, launcher: window.Launcher);
         InitInstance();
         Recipe = new RecipeSheetViewModel(api);
         InitRecipe();
+        InitAgents(clipboard);
+        InitContext(api, clipboard);
         Queue.PropertyChanged += OnQueueChanged;
         InitAnnouncements();
         Attention = AttentionSummary.For(feed: null, State, _clock.GetUtcNow());
@@ -215,7 +224,13 @@ internal sealed partial class ShellViewModel : ObservableObject
 
     internal void ShowPage(PageId page, HomeFilter filter)
     {
+        _ = LeaveNeedsYouInbox();   // any way to a page, Home included, leaves the inbox that shows over it
         SetHomeFilter(filter);
+        if (page == PageId.Settings)
+        {
+            Setup.RevealChecklist();   // every way into Settings (the rail, ⌘,, G U, the setup link, Home's line) shows the checklist, its first section
+        }
+
         if (page == CurrentPage)
         {
             return;
@@ -275,23 +290,6 @@ internal sealed partial class ShellViewModel : ObservableObject
                 break;
             default:
                 break;
-        }
-    }
-
-    private void OnPillChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(HealthPill.IsNotResponding))
-        {
-            OnChanged(nameof(IsNotRespondingBanner));
-            Announce();
-        }
-    }
-
-    private void Changed(params string[] names)
-    {
-        foreach (var name in names)
-        {
-            OnChanged(name);
         }
     }
 }

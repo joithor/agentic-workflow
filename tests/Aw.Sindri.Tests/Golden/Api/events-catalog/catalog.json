@@ -1,6 +1,13 @@
 {
   "types": [
     {
+      "type": "context.map.refreshed",
+      "keyShape": "context.map.refreshed:<repo>:v<version>",
+      "invalidates": [
+        "jobs"
+      ]
+    },
+    {
       "type": "decision.recorded",
       "keyShape": "decision.recorded:<decisionId>",
       "invalidates": [
@@ -40,6 +47,16 @@
       ]
     },
     {
+      "type": "item.open-requested",
+      "keyShape": "item.open-requested:<launchId>",
+      "invalidates": [
+        "launch",
+        "item",
+        "items",
+        "timeline"
+      ]
+    },
+    {
       "type": "item.state-changed",
       "keyShape": "item.state-changed:<itemId>:v<version>",
       "invalidates": [
@@ -58,7 +75,9 @@
       "invalidates": [
         "job",
         "jobs",
-        "services"
+        "services",
+        "context-lenses",
+        "context-history"
       ]
     },
     {
@@ -67,7 +86,9 @@
       "invalidates": [
         "job",
         "jobs",
-        "services"
+        "services",
+        "context-lenses",
+        "context-history"
       ]
     },
     {
@@ -84,7 +105,70 @@
       "invalidates": [
         "job",
         "jobs",
-        "services"
+        "services",
+        "context-lenses",
+        "context-history"
+      ]
+    },
+    {
+      "type": "launch.failed",
+      "keyShape": "launch.outcome:<launchId>",
+      "invalidates": [
+        "launch",
+        "item",
+        "items",
+        "timeline",
+        "needs-you",
+        "launch-targets"
+      ]
+    },
+    {
+      "type": "launch.probed",
+      "keyShape": "launch.probed:<probe>",
+      "invalidates": [
+        "launch-targets",
+        "item"
+      ]
+    },
+    {
+      "type": "launch.session-reported",
+      "keyShape": "launch.session-reported:<launch>",
+      "invalidates": [
+        "launch",
+        "item"
+      ]
+    },
+    {
+      "type": "launch.started",
+      "keyShape": "launch.outcome:<launchId>",
+      "invalidates": [
+        "launch",
+        "item",
+        "items",
+        "timeline",
+        "needs-you"
+      ]
+    },
+    {
+      "type": "launch.viewer-attached",
+      "keyShape": "launch.viewer-attached:<launch>",
+      "invalidates": [
+        "launch",
+        "item"
+      ]
+    },
+    {
+      "type": "mcp.registered",
+      "keyShape": "mcp.registered:<commandId>",
+      "invalidates": [
+        "setup"
+      ]
+    },
+    {
+      "type": "onyx.deferred",
+      "keyShape": "onyx.deferred:<commandId>",
+      "invalidates": [
+        "setup"
       ]
     },
     {
@@ -118,6 +202,28 @@
         "status",
         "profile",
         "needs-you"
+      ]
+    },
+    {
+      "type": "recipe.registration.completed",
+      "keyShape": "recipe.registration.completed:<epoch>",
+      "invalidates": [
+        "setup",
+        "recipes"
+      ]
+    },
+    {
+      "type": "repo.added",
+      "keyShape": "repo.added:<commandId>",
+      "invalidates": [
+        "setup"
+      ]
+    },
+    {
+      "type": "repo.onboarded",
+      "keyShape": "repo.onboarded:<repo>:<hash>",
+      "invalidates": [
+        "setup"
       ]
     },
     {
@@ -163,6 +269,30 @@
       "invalidates": [
         "services",
         "status"
+      ]
+    },
+    {
+      "type": "session.ended",
+      "keyShape": "session.ended:<launch>",
+      "invalidates": [
+        "launch",
+        "item",
+        "items",
+        "timeline"
+      ]
+    },
+    {
+      "type": "setup.consent.given",
+      "keyShape": "setup.consent.given:<profileHash>",
+      "invalidates": [
+        "setup"
+      ]
+    },
+    {
+      "type": "setup.step.changed",
+      "keyShape": "setup.step.changed:<id>:<state>:<n>",
+      "invalidates": [
+        "setup"
       ]
     }
   ]

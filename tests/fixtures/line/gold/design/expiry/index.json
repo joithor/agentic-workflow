@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "kind": "design",
   "parents": [
-    "sha256:be9df1f99df03e04901a58641a1ab45a07f25b0d16f00f1466e2a249da65d032"
+    "sha256:48b9dc81f8935c81f465f785a6e7dba0abd9697480786ad7994d1475da00c973"
   ],
   "acceptance": {
-    "self": "sha256:2c1018c827c36e84413554230c4323cf2e734ac940572580442417adbdb904b8",
-    "extends": "sha256:902302a86a1c15a279ee4b45d280a3442ce34840d7e332cd95aa2655b08398d6"
+    "self": "sha256:7cc115f6c06afa35470f3f1fffbf81ffafa1b620c206b00a5eba7e6fcda7c7f4",
+    "extends": "sha256:9b274b16f381c1ae0aa3a4988b4d5e04710db9afa0432304050254fa6e63c57b"
   }
 }

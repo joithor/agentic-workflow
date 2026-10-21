@@ -116,6 +116,11 @@ internal static class EventsCommand
             parts.Add($"run {run}");
         }
 
+        if (t.Via is { } via)
+        {
+            parts.Add(t.Decision is { } decision ? $"via {via} · decision {decision}" : t.Tokens is { } tokens ? $"via {via} · tokens {tokens.ToString(CultureInfo.InvariantCulture)}" : $"via {via}");
+        }
+
         parts.Add(e.Actor);
         return string.Join("  ", parts);
     }

@@ -11,8 +11,10 @@ using Aw.Meta.Features.Inbox;
 using Aw.Meta.Features.InboxDefer;
 using Aw.Meta.Features.InboxDismiss;
 using Aw.Meta.Features.LaneInbox;
+using Aw.Meta.Features.LaneRecycle;
 using Aw.Meta.Features.LaneReply;
 using Aw.Meta.Features.Lanes;
+using Aw.Meta.Features.LanesContext;
 using Aw.Meta.Features.LaneSend;
 using Aw.Meta.Features.LaneStopCheck;
 using Aw.Meta.Features.LogAppend;
@@ -28,6 +30,7 @@ using Aw.Meta.Features.Status;
 using Aw.Meta.Features.StopCheck;
 using Aw.Meta.Features.SyncInbox;
 using Aw.Meta.Features.Team;
+using Aw.Meta.Features.Usage;
 using Aw.Meta.Features.Watch;
 using Aw.Meta.Features.WorktreeList;
 using Aw.Meta.Features.WorktreeSweep;
@@ -39,6 +42,7 @@ namespace Aw.Meta.Host;
 [JsonSerializable(typeof(Error))]
 [JsonSerializable(typeof(TeamConfig))]
 [JsonSerializable(typeof(MetaRole))]
+[JsonSerializable(typeof(BuildInfo))]
 [JsonSerializable(typeof(TeamListResponse))]
 [JsonSerializable(typeof(TeamMigration))]
 [JsonSerializable(typeof(ShowRoleResponse))]
@@ -64,9 +68,13 @@ namespace Aw.Meta.Host;
 [JsonSerializable(typeof(ListWorktreesResponse))]
 [JsonSerializable(typeof(SweepWorktreesResponse))]
 [JsonSerializable(typeof(LaneSendResponse))]
+[JsonSerializable(typeof(LanesContextResponse))]
+[JsonSerializable(typeof(LaneRecycleResponse))]
 [JsonSerializable(typeof(LaneInboxResponse))]
 [JsonSerializable(typeof(LaneStopCheckResponse))]
 [JsonSerializable(typeof(LaneReplyResponse))]
+[JsonSerializable(typeof(UsageResponse))]
+[JsonSerializable(typeof(UsageWaitResponse))]
 [JsonSerializable(typeof(SyncInboxRequest))]
 [JsonSerializable(typeof(SyncInboxResponse))]
 internal sealed partial class MetaJsonContext : JsonSerializerContext;

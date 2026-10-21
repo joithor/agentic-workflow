@@ -7,28 +7,31 @@ namespace Aw.Sindri.Ui.ViewModels;
 internal static partial class Labels
 {
     /// <summary>The panel's heading.</summary>
-    internal const string FactsHeading = "FACTS";
+    internal const string FactsHeading = "What this run collected";
 
     /// <summary>The words of a recipe that declares no facts.</summary>
-    internal const string NoFacts = "This recipe declares no facts.";
+    internal const string NoFacts = "This workflow collects nothing.";
+
+    /// <summary>Why the panel is there, under its heading.</summary>
+    internal const string FactsHint = "Each stage adds what it found; later stages and agents read it.";
 
     /// <summary>What a human actor reads as.</summary>
     internal const string ByYou = "you";
 
     /// <summary>The View button, closed.</summary>
-    internal const string ViewFact = "View";
+    internal const string ViewFact = "Show";
 
     /// <summary>The View button, open.</summary>
     internal const string HideFact = "Hide";
 
     /// <summary>The words of a body the engine cut short.</summary>
-    internal const string PayloadTruncated = "The engine cut this body short.";
+    internal const string PayloadTruncated = "Only the first part is shown; the rest was cut off.";
 
     /// <summary>The words while a body is read.</summary>
-    internal const string ReadingFact = "Reading the fact…";
+    internal const string ReadingFact = "Reading…";
 
     /// <summary>What the payload viewer says when there is no API to ask.</summary>
-    internal const string PayloadNotRunning = "Sindri isn't running, so this fact can't be read now.";
+    internal const string PayloadNotRunning = "Sindri isn't running, so this can't be read now.";
 
     /// <summary>What the payload viewer's polite line says once the body is there.</summary>
     /// <param name="label">The fact's label.</param>
@@ -54,10 +57,10 @@ internal static partial class Labels
     /// <returns>The words.</returns>
     internal static string FactStatusWords(FactStatus status) => status switch
     {
-        FactStatus.Produced => "produced",
+        FactStatus.Produced => "done",
         FactStatus.InProgress => "in progress",
-        FactStatus.Pending => "pending",
-        _ => "pending",
+        FactStatus.Pending => "waiting",
+        _ => "waiting",
     };
 
     /// <summary>The state a fact came from.</summary>
@@ -80,7 +83,7 @@ internal static partial class Labels
     /// <summary>The facts panel's accessible name.</summary>
     /// <param name="address">The instance.</param>
     /// <returns>The words.</returns>
-    internal static string FactsName(string address) => $"Facts of {address}";
+    internal static string FactsName(string address) => $"What this run collected, {address}";
 
     /// <summary>A file's size in words.</summary>
     /// <param name="bytes">The size.</param>

@@ -273,21 +273,10 @@ internal sealed record EvalSimulation(
         return new GateAnswers(gates, evidence);
     }
 
-    /// <summary>The transition whose gates the trigger runs: the one it matches, for an answer the transition its park withheld, or on an answer wait the wait's own transition.</summary>
-    private RecipeTransition? Matched(Trigger trigger)
-    {
-        var index = trigger switch
-        {
-            StepCompleted or StepFailed or WaitSatisfied or CommandFired => TransitionDecision.Match(Instance, Recipe, trigger).Transition,
-            AnswerGiven when Instance.Suspension is { } suspension => suspension.Resume.Withheld?.Transition,
-            AnswerGiven => TransitionDecision.Match(Instance, Recipe, trigger).Transition,
-            _ => null,
-        };
-        return index is { } i && i >= 0 && i < Recipe.Transitions.Count ? Recipe.Transitions[i] : null;
-    }
+    private RecipeTransition? Matched(Trigger trigger) => MatchedTransition.Of(Instance, Recipe, trigger);
 
     private static DecisionContext Context(BlockCatalog catalog, IChildRecipeResolver children) =>
-        new(ApprovalCheck.Holds, catalog, catalog.Blocks.Select(static b => b.Id).ToHashSet(), children);
+        new(ApprovalCheck.Holds, catalog, catalog.Blocks.ToDictionary(static b => b.Id, static _ => StepRuntime.Agent), children);
 
     private static Error Missing(string detail) => KernelErrors.Invalid.With(detail);
 

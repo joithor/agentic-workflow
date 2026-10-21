@@ -1,6 +1,7 @@
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.Instance;
+using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -42,6 +43,50 @@ internal sealed partial class ShellViewModel
         Navigate(new DeepLink(DeepLinkKind.Workflow, address));
     }
 
+    /// <summary>Follows an "Answer in the child" control: the child's frame, or the parent's at its Children panel; a needs-you row opens the instance it stands for, else its own sheet.</summary>
+    /// <param name="answer">The control.</param>
+    internal void FollowChildAnswer(ChildAnswerViewModel answer)
+    {
+        ArgumentNullException.ThrowIfNull(answer);
+        var (link, intent) = answer.Link is { } served ? (served, answer.Intent) : (ParentOfNeedsYouRow(answer.NeedsYouRowId), FrameIntent.FocusChildren);
+        if (link is { Kind: DeepLinkKind.Workflow, Subject: { } address })
+        {
+            Instance.Intend(address, intent);
+        }
+
+        Navigate(link, rowSheet: true);   // a row no list knows keeps its own sheet: the answer is there
+    }
+
+    /// <summary>"Answer in the child" on a strip row: followed like the row's other controls, and the row is where Esc returns.</summary>
+    /// <param name="rowAddress">The strip row's address.</param>
+    /// <param name="answer">The pointer.</param>
+    internal void FollowChildAnswerFromStrip(string rowAddress, ChildAnswerViewModel answer)
+    {
+        SelectStripRow(rowAddress);
+        FollowChildAnswer(answer);
+        OpenerStrip = rowAddress;
+    }
+
+    /// <summary>"Answer in the child" on a needs-you row: the row is selected (Esc returns to it) and its parent's frame opens when a row knows the instance.</summary>
+    /// <param name="rowId">The needs-you row's id.</param>
+    /// <param name="answer">The pointer.</param>
+    internal void FollowChildAnswerFromNeedsYou(string rowId, ChildAnswerViewModel answer)
+    {
+        SelectNeedsYouRow(rowId);
+        FollowChildAnswer(answer);
+    }
+
+    // A needs-you row is served the instance it stands for as its subject (the address or the id) and no address of the child: its parent's
+    // frame when a row of the strip or the list knows that instance, else the row's own sheet. The child is never guessed.
+    private DeepLink ParentOfNeedsYouRow(string? rowId)
+    {
+        var entry = NeedsYou.Seen.Rows.FirstOrDefault(r => string.Equals(r.Id, rowId, StringComparison.Ordinal))?.Entry;
+        var subject = entry?.Subject?.Id;
+        var (address, _) = Strip.Rows.Select(r => (r.Address, r.InstanceId)).Concat(Workflows.Groups.SelectMany(g => g.Rows).Select(r => (r.Address, r.InstanceId)))
+            .FirstOrDefault(r => string.Equals(r.Address, subject, StringComparison.Ordinal) || string.Equals(r.InstanceId, subject, StringComparison.Ordinal));
+        return address is not null ? new DeepLink(DeepLinkKind.Workflow, address) : LinkOf(rowId ?? string.Empty);
+    }
+
     /// <summary>Back: returns to the frame or sheet this one was opened from (a child, an item), else closes the sheet like Esc does.</summary>
     internal void Back()
     {
@@ -79,6 +124,7 @@ internal sealed partial class ShellViewModel
     private void InitInstance()
     {
         Health.Follow((url, token) => IsInstanceSheet ? Instance.Refresh(url, token) : Task.CompletedTask);
+        Health.FollowInstances((url, change, token) => IsInstanceSheet ? Instance.Catch(url, change, token) : Task.FromResult(true));
         Instance.OpenRequested += (_, e) =>
         {
             Instance.Intend(e.Address, FrameIntent.OpenInitial);   // the child's frame, once read, asks for its first read action

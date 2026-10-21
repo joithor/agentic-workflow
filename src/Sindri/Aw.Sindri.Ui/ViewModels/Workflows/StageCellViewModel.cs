@@ -12,15 +12,14 @@ internal sealed class StageCellViewModel
 {
     private readonly StateCell _cell;
 
-    internal StageCellViewModel(StateCell cell, bool isCurrent, bool isBlocked, bool isMissing = false)
+    internal StageCellViewModel(StateCell cell, bool isCurrent, bool isBlocked)
     {
-        IsMissing = isMissing;
         _cell = cell;
         IsCurrent = isCurrent;
         IsBlocked = isBlocked;
         var badge = cell.Badge is { } b ? Labels.CellBadge(b.Kind, b.Reason) : string.Empty;
-        Glyph = isMissing ? string.Empty : isBlocked ? Labels.BlockedMark : badge.Length > 0 ? badge : Mark(cell.Glyph);
-        Detail = isMissing ? string.Empty : string.Join(' ', new[] { isBlocked ? badge : string.Empty, Parts(cell) }.Where(p => p.Length > 0));
+        Glyph = isBlocked ? Labels.BlockedMark : badge.Length > 0 ? badge : Mark(cell.Glyph);
+        Detail = string.Join(' ', new[] { isBlocked ? badge : string.Empty, Parts(cell) }.Where(p => p.Length > 0));
     }
 
     /// <summary>The state this cell is.</summary>
@@ -42,16 +41,7 @@ internal sealed class StageCellViewModel
     public bool IsCurrent { get; }
 
     /// <summary>The name screen readers hear: the state, what the cell says in words, and "current" for the state the instance is in.</summary>
-    public string Name => IsMissing ? string.Empty : $"{_cell.State}, {Words()}{(IsCurrent ? ", " + Labels.StageCurrent : string.Empty)}";
-
-    /// <summary>True for the blank under a column head whose state this row does not have (a row on another hash of the recipe).</summary>
-    public bool IsMissing { get; }
-
-    /// <summary>The blank for a column this row has no state for.</summary>
-    /// <param name="state">The column's state.</param>
-    /// <returns>A cell that draws nothing.</returns>
-    internal static StageCellViewModel Missing(string state) =>
-        new(new StateCell(state, Order: null, BranchOf: null, Api.Workflow.StateGlyph.Pending, Badge: null, Round: null, Loops: [], Desk: false, Child: false, Children: null, Outcome: null, Terminal: false), isCurrent: false, isBlocked: false, isMissing: true);
+    public string Name => $"{_cell.State}, {Words()}{(IsCurrent ? ", " + Labels.StageCurrent : string.Empty)}";
 
     internal static string Mark(Api.Workflow.StateGlyph glyph) => glyph switch
     {
@@ -67,7 +57,7 @@ internal sealed class StageCellViewModel
         {
             cell.Round is { } r ? string.Create(CultureInfo.InvariantCulture, $"r{r.N}/{r.Max}") : string.Empty,
             cell.Children is { } c ? string.Create(CultureInfo.InvariantCulture, $"{c.Done}/{c.Total}") : string.Empty,
-            cell.Desk ? "desk" : string.Empty,
+            cell.Desk ? Labels.StageDesk : string.Empty,
             cell.Child && cell.Children is null ? "child" : string.Empty,
         }.Where(p => p.Length > 0));
 

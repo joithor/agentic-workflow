@@ -18,6 +18,7 @@ internal sealed partial class CollectSessionsService(SessionDiscovery discovery,
         var now = clock.GetUtcNow();
         if (!discovery.IsEnabled())
         {
+            memory.History = new Dictionary<SessionRef, IReadOnlyList<SessionStateEntry>>();
             Publish([], [], [SessionProblems.Disabled], now);
             return new CollectSessionsResponse(memory.Pending, Good: false, Sessions: 0, Pruned: 0);
         }
@@ -35,8 +36,10 @@ internal sealed partial class CollectSessionsService(SessionDiscovery discovery,
         var ended = memory.Ending(sessions, now);
         memory.Tracker = diff.State;
         memory.Pending = Capped([.. memory.Pending, .. diff.Changes]);   // kept until the ledger has them (RecordFleetChangesService clears what it appended)
+        LogHostChanges(sessions);
         memory.Previous = sessions.ToDictionary(static s => s.Ref);
         memory.Ended = ended;
+        memory.History = StateHistoryRules.Next(memory.History, sessions);
         Publish(sessions, ended, found.Problems, now);
         return new CollectSessionsResponse(memory.Pending, Good: true, sessions.Count, discovery.Prune([.. sessions.Select(static s => s.Ref)], now));
     }
@@ -61,6 +64,26 @@ internal sealed partial class CollectSessionsService(SessionDiscovery discovery,
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The session collector holds {Cap} fleet changes the ledger hasn't taken; the oldest are dropped from here on")]
     private static partial void LogOverflow(ILogger logger, int cap);
+
+    /// <summary>One debug line per session whose host kind changed (refs and kinds only: no socket path, no cwd, no title).</summary>
+    private void LogHostChanges(List<ObservedSession> sessions)
+    {
+        if (!logger.IsEnabled(LogLevel.Debug))
+        {
+            return;
+        }
+
+        foreach (var session in sessions.Where(s => HostChanged(memory.Previous.GetValueOrDefault(s.Ref)?.Host, s.Host)))
+        {
+            LogHost(logger, session.Ref, session.Host.Kind, session.Host.Tmux?.SocketKind ?? "-");
+        }
+    }
+
+    private static bool HostChanged(HostInfo? before, HostInfo now) =>
+        before?.Kind != now.Kind || before?.Tmux?.SocketKind != now.Tmux?.SocketKind;
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "session {Ref} host {Kind} tmux socket kind {SocketKind}")]
+    private static partial void LogHost(ILogger logger, SessionRef @ref, string kind, string socketKind);
 
     private async Task<Discovered?> Discover(TimeSpan budget, CancellationToken cancellationToken)
     {
@@ -103,5 +126,5 @@ internal sealed partial class CollectSessionsService(SessionDiscovery discovery,
     }
 
     private void Publish(IReadOnlyList<ObservedSession> sessions, IReadOnlyList<EndedSession> ended, IReadOnlyList<SessionProblem> problems, DateTimeOffset at) =>
-        snapshot.Publish(new SessionSnapshot(sessions, ended, [.. discovery.StaticProblems(), .. problems], at));
+        snapshot.Publish(new SessionSnapshot(sessions, ended, [.. discovery.StaticProblems(), .. problems], at) { History = memory.History });
 }

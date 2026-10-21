@@ -18,12 +18,12 @@ namespace Aw.Context.Features.QueryContext;
 /// <param name="repos">The repo reader.</param>
 internal sealed class DiffAnswer(MapReader graphs, IRepoReader repos)
 {
-    internal async ValueTask<Result<(GraphPart Graph, IReadOnlyList<string> Terms)>> Build(QueryContextRequest request, DiffRange diff, (ContextSettings Settings, Scrubbers Scrubbers) context,
+    internal async ValueTask<Result<(GraphPart Graph, IReadOnlyList<string> Terms)>> Build(QueryContextRequest request, DiffRange diff, MapRead read, (ContextSettings Settings, Scrubbers Scrubbers) context,
         CancellationToken cancellationToken)
     {
         var query = request.Query;
         var repo = Addressed(context.Settings, request.Scope, query.Repo);
-        var map = repo.IsError ? repo.Error : await graphs.ReadViewAt(request.Scope, QueryReads.Of(query), cancellationToken).ConfigureAwait(false);
+        var map = repo.IsError ? repo.Error : await graphs.ReadViewAt(request.Scope, read, cancellationToken).ConfigureAwait(false);
         var changes = map.IsError ? map.Error : await repos.Changes(repo.Value, diff, cancellationToken).ConfigureAwait(false);
         if (repo.IsError || map.IsError || changes.IsError)
         {
@@ -34,8 +34,7 @@ internal sealed class DiffAnswer(MapReader graphs, IRepoReader repos)
         var text = new MapText(context.Scrubbers);
         var shown = Scrubbed(part, text);
         var terms = anchors.SelectMany(a => text.SearchTerms(a.Label)).Distinct(StringComparer.Ordinal).Take(QueryRules.MaxTerms).ToList();
-        var depth = query.Depth ?? context.Settings.CascadeDepth;
-        return (GraphAnswer.Build(map.Value, anchors, [], depth, text) with { Diff = shown }, terms);
+        return (GraphAnswer.Build(map.Value, anchors, [], CascadeReach.Of(query, context.Settings), text) with { Diff = shown }, terms);
     }
 
     // Changed paths are repo text: every caller reads them through the same egress scrub the cascade's code paths get (MapText), so one answer never shows a path two ways.

@@ -154,7 +154,6 @@ Aw.Meta.Core.Config.TeamConfig.Resources.get -> Aw.Meta.Core.Config.ResourcesCon
 Aw.Meta.Core.Config.TeamConfig.Resources.init -> void
 Aw.Meta.Core.Config.TeamConfig.Team.get -> string!
 Aw.Meta.Core.Config.TeamConfig.Team.init -> void
-Aw.Meta.Core.Config.TeamConfig.TeamConfig(string! team, string! repo, System.Collections.Generic.IReadOnlyList<string!>! lanes, string! metaLane = "meta", string? log = null, string? prompts = null, Aw.Meta.Core.Config.GateConfig? gate = null, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.MergeOrderRule!>? mergeOrder = null, System.Collections.Generic.IReadOnlyList<string!>? knownFlakes = null, Aw.Meta.Core.Config.WorktreeConfig? worktrees = null, Aw.Meta.Core.Config.ResourcesConfig? resources = null, Aw.Meta.Core.Config.BuildersConfig? builders = null, Aw.Meta.Core.Config.HeavyConfig? heavy = null) -> void
 Aw.Meta.Core.Config.TeamConfig.Worktrees.get -> Aw.Meta.Core.Config.WorktreeConfig!
 Aw.Meta.Core.Config.TeamConfig.Worktrees.init -> void
 Aw.Meta.Core.Config.ThresholdChecks
@@ -1750,6 +1749,51 @@ static readonly Aw.Meta.Core.MetaErrors.TranscriptUnreadable -> Aw.Kernel.ErrorD
 static readonly Aw.Meta.Core.MetaErrors.UnknownLane -> Aw.Kernel.ErrorDefinition!
 ~override Aw.Meta.Core.Config.ReserveSlots.Equals(object obj) -> bool
 ~override Aw.Meta.Core.Config.ReserveSlots.ToString() -> string
+Aw.Meta.Core.Commands.CommandRequest.TailCharacters.get -> int
+Aw.Meta.Core.Commands.CommandRequest.TailCharacters.init -> void
+const Aw.Meta.Core.Commands.CommandRequest.DefaultTailCharacters = 65536 -> int
+Aw.Meta.Core.Ports.BuildInfo
+Aw.Meta.Core.Ports.BuildInfo.<Clone>$() -> Aw.Meta.Core.Ports.BuildInfo!
+Aw.Meta.Core.Ports.BuildInfo.BuildInfo(string! Commit, string! BuiltAt, string! Os, string! Rid) -> void
+Aw.Meta.Core.Ports.BuildInfo.BuiltAt.get -> string!
+Aw.Meta.Core.Ports.BuildInfo.BuiltAt.init -> void
+Aw.Meta.Core.Ports.BuildInfo.Commit.get -> string!
+Aw.Meta.Core.Ports.BuildInfo.Commit.init -> void
+Aw.Meta.Core.Ports.BuildInfo.Deconstruct(out string! Commit, out string! BuiltAt, out string! Os, out string! Rid) -> void
+Aw.Meta.Core.Ports.BuildInfo.Equals(Aw.Meta.Core.Ports.BuildInfo? other) -> bool
+Aw.Meta.Core.Ports.BuildInfo.Os.get -> string!
+Aw.Meta.Core.Ports.BuildInfo.Os.init -> void
+Aw.Meta.Core.Ports.BuildInfo.Rid.get -> string!
+Aw.Meta.Core.Ports.BuildInfo.Rid.init -> void
+Aw.Meta.Core.Ports.IBuildInfo
+Aw.Meta.Core.Ports.IBuildInfo.Read() -> Aw.Meta.Core.Ports.BuildInfo!
+override Aw.Meta.Core.Ports.BuildInfo.Equals(object? obj) -> bool
+override Aw.Meta.Core.Ports.BuildInfo.GetHashCode() -> int
+override Aw.Meta.Core.Ports.BuildInfo.ToString() -> string!
+static Aw.Meta.Core.Ports.BuildInfo.operator !=(Aw.Meta.Core.Ports.BuildInfo? left, Aw.Meta.Core.Ports.BuildInfo? right) -> bool
+static Aw.Meta.Core.Ports.BuildInfo.operator ==(Aw.Meta.Core.Ports.BuildInfo? left, Aw.Meta.Core.Ports.BuildInfo? right) -> bool
+Aw.Meta.Core.Health.ProcessStart
+Aw.Meta.Core.Ports.IProcessLiveness
+Aw.Meta.Core.Ports.IProcessLiveness.IsRunning(int pid, System.DateTimeOffset recordedAt, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
+static Aw.Meta.Core.Health.ProcessStart.IsReused(System.DateTimeOffset startedAt, System.DateTimeOffset recordedAt) -> bool
+static Aw.Meta.Core.Health.ProcessStart.Tolerance.get -> System.TimeSpan
+Aw.Meta.Core.Ports.LivenessVerdicts
+Aw.Meta.Core.Ports.ProcessClaim.Pid.get -> int
+Aw.Meta.Core.Ports.ProcessClaim.RecordedAt.get -> System.DateTimeOffset
+Aw.Meta.Core.Ports.ProcessClaim
+Aw.Meta.Core.Ports.ProcessClaim.Pid.init -> void
+Aw.Meta.Core.Ports.ProcessClaim.RecordedAt.init -> void
+override Aw.Meta.Core.Ports.ProcessClaim.ToString() -> string!
+static Aw.Meta.Core.Ports.ProcessClaim.operator !=(Aw.Meta.Core.Ports.ProcessClaim? left, Aw.Meta.Core.Ports.ProcessClaim? right) -> bool
+static Aw.Meta.Core.Ports.ProcessClaim.operator ==(Aw.Meta.Core.Ports.ProcessClaim? left, Aw.Meta.Core.Ports.ProcessClaim? right) -> bool
+override Aw.Meta.Core.Ports.ProcessClaim.GetHashCode() -> int
+override Aw.Meta.Core.Ports.ProcessClaim.Equals(object? obj) -> bool
+Aw.Meta.Core.Ports.ProcessClaim.Equals(Aw.Meta.Core.Ports.ProcessClaim? other) -> bool
+Aw.Meta.Core.Ports.ProcessClaim.<Clone>$() -> Aw.Meta.Core.Ports.ProcessClaim!
+Aw.Meta.Core.Ports.ProcessClaim.Deconstruct(out int Pid, out System.DateTimeOffset RecordedAt) -> void
+Aw.Meta.Core.Ports.ProcessClaim.ProcessClaim(int Pid, System.DateTimeOffset RecordedAt) -> void
+static Aw.Meta.Core.Ports.LivenessVerdicts.IsLiveOrUnknown(this Aw.Kernel.Result<bool>! verdict) -> bool
+Aw.Meta.Core.Ports.IProcessLiveness.Running(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Ports.ProcessClaim!>! claims, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Kernel.Result<bool>!>!>
 Aw.Meta.Core.Commands.CommandRequest.Isolated.get -> bool
 Aw.Meta.Core.Commands.CommandRequest.Isolated.init -> void
 Aw.Meta.Core.Commands.CommandRequest.UnsetEnv.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -1887,3 +1931,193 @@ Aw.Meta.Core.Commands.CommandRequest.IsolatedFrom.get -> int
 Aw.Meta.Core.Commands.CommandRequest.IsolatedFrom.init -> void
 Aw.Meta.Core.Coordination.RepoCommands.Conflicts(string! repo, string! main, string! head) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
 Aw.Meta.Core.Coordination.GateWorkspace.CurrentTree(int pr) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Meta.Core.Config.ContextConfig
+Aw.Meta.Core.Config.ContextConfig.<Clone>$() -> Aw.Meta.Core.Config.ContextConfig!
+Aw.Meta.Core.Config.ContextConfig.ContextConfig(int RecycleAt = 300000) -> void
+Aw.Meta.Core.Config.ContextConfig.Deconstruct(out int RecycleAt) -> void
+Aw.Meta.Core.Config.ContextConfig.Equals(Aw.Meta.Core.Config.ContextConfig? other) -> bool
+Aw.Meta.Core.Config.ContextConfig.RecycleAt.get -> int
+Aw.Meta.Core.Config.ContextConfig.RecycleAt.init -> void
+Aw.Meta.Core.Config.TeamConfig.Context.get -> Aw.Meta.Core.Config.ContextConfig!
+Aw.Meta.Core.Config.TeamConfig.Context.init -> void
+Aw.Meta.Core.Coordination.LaneContextReader
+Aw.Meta.Core.Coordination.LaneContextReader.LaneContextReader(Aw.Meta.Core.Ports.ILaneFiles! files, Aw.Meta.Core.Ports.ILaneSessions! sessions, Aw.Meta.Core.Ports.IClaudeTranscripts! transcripts) -> void
+Aw.Meta.Core.Coordination.LaneContextReader.Read(Aw.Meta.Core.Config.TeamConfig! team, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneContext!>!>!>
+Aw.Meta.Core.Coordination.LaneContextReader.ReadLane(string! team, string! lane, int threshold, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Lanes.LaneContext!>!>
+Aw.Meta.Core.Coordination.PaneSubmitter
+Aw.Meta.Core.Coordination.PaneSubmitter.PaneSubmitter(Aw.Meta.Core.Ports.ILanePane! pane, Aw.Meta.Core.Ports.IDelay! delay) -> void
+Aw.Meta.Core.Coordination.PaneSubmitter.Submit(string! session, string! line, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Meta.Core.Lanes.ContextVerdict
+Aw.Meta.Core.Lanes.ContextVerdict.Ok = 1 -> Aw.Meta.Core.Lanes.ContextVerdict
+Aw.Meta.Core.Lanes.ContextVerdict.Recycle = 2 -> Aw.Meta.Core.Lanes.ContextVerdict
+Aw.Meta.Core.Lanes.ContextVerdict.Unknown = 3 -> Aw.Meta.Core.Lanes.ContextVerdict
+Aw.Meta.Core.Lanes.LaneContext
+Aw.Meta.Core.Lanes.LaneContext.<Clone>$() -> Aw.Meta.Core.Lanes.LaneContext!
+Aw.Meta.Core.Lanes.LaneContext.Compact() -> string!
+Aw.Meta.Core.Lanes.LaneContext.Deconstruct(out string! Lane, out Aw.Meta.Core.Ids.SessionId? Session, out string? Transcript, out long? Tokens, out System.DateTimeOffset? LastActivity, out long Threshold, out Aw.Meta.Core.Lanes.ContextVerdict Verdict, out string? Reason) -> void
+Aw.Meta.Core.Lanes.LaneContext.Equals(Aw.Meta.Core.Lanes.LaneContext? other) -> bool
+Aw.Meta.Core.Lanes.LaneContext.Lane.get -> string!
+Aw.Meta.Core.Lanes.LaneContext.Lane.init -> void
+Aw.Meta.Core.Lanes.LaneContext.LaneContext(string! Lane, Aw.Meta.Core.Ids.SessionId? Session, string? Transcript, long? Tokens, System.DateTimeOffset? LastActivity, long Threshold, Aw.Meta.Core.Lanes.ContextVerdict Verdict, string? Reason = null) -> void
+Aw.Meta.Core.Lanes.LaneContext.LastActivity.get -> System.DateTimeOffset?
+Aw.Meta.Core.Lanes.LaneContext.LastActivity.init -> void
+Aw.Meta.Core.Lanes.LaneContext.Reason.get -> string?
+Aw.Meta.Core.Lanes.LaneContext.Reason.init -> void
+Aw.Meta.Core.Lanes.LaneContext.Session.get -> Aw.Meta.Core.Ids.SessionId?
+Aw.Meta.Core.Lanes.LaneContext.Session.init -> void
+Aw.Meta.Core.Lanes.LaneContext.Threshold.get -> long
+Aw.Meta.Core.Lanes.LaneContext.Threshold.init -> void
+Aw.Meta.Core.Lanes.LaneContext.Tokens.get -> long?
+Aw.Meta.Core.Lanes.LaneContext.Tokens.init -> void
+Aw.Meta.Core.Lanes.LaneContext.Transcript.get -> string?
+Aw.Meta.Core.Lanes.LaneContext.Transcript.init -> void
+Aw.Meta.Core.Lanes.LaneContext.Verdict.get -> Aw.Meta.Core.Lanes.ContextVerdict
+Aw.Meta.Core.Lanes.LaneContext.Verdict.init -> void
+Aw.Meta.Core.Lanes.TranscriptUsage
+Aw.Meta.Core.Ports.DigestInfo
+Aw.Meta.Core.Ports.DigestInfo.<Clone>$() -> Aw.Meta.Core.Ports.DigestInfo!
+Aw.Meta.Core.Ports.DigestInfo.Deconstruct(out long Length, out System.DateTimeOffset ModifiedAt) -> void
+Aw.Meta.Core.Ports.DigestInfo.DigestInfo(long Length, System.DateTimeOffset ModifiedAt) -> void
+Aw.Meta.Core.Ports.DigestInfo.Equals(Aw.Meta.Core.Ports.DigestInfo? other) -> bool
+Aw.Meta.Core.Ports.DigestInfo.Length.get -> long
+Aw.Meta.Core.Ports.DigestInfo.Length.init -> void
+Aw.Meta.Core.Ports.DigestInfo.ModifiedAt.get -> System.DateTimeOffset
+Aw.Meta.Core.Ports.DigestInfo.ModifiedAt.init -> void
+Aw.Meta.Core.Ports.IClaudeTranscripts
+Aw.Meta.Core.Ports.IClaudeTranscripts.Tail(Aw.Meta.Core.Ids.SessionId session, int maxBytes, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Ports.TranscriptTail?>!>
+Aw.Meta.Core.Ports.IDigestFiles
+Aw.Meta.Core.Ports.IDigestFiles.Stat(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Ports.DigestInfo?>!>
+Aw.Meta.Core.Ports.ILaneFiles.RecordSession(string! lane, Aw.Meta.Core.Ids.SessionId session, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Meta.Core.Ports.ILanePane.Capture(string! session, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Meta.Core.Ports.ILanePane.PanePid(string! session, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<int?>!>
+Aw.Meta.Core.Ports.ILanePane.PressEnter(string! session, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Meta.Core.Ports.ILanePane.Type(string! session, string! text, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Meta.Core.Ports.ILaneSessions
+Aw.Meta.Core.Ports.ILaneSessions.Current(string! session, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Ids.SessionId?>!>
+Aw.Meta.Core.Ports.TranscriptTail
+Aw.Meta.Core.Ports.TranscriptTail.<Clone>$() -> Aw.Meta.Core.Ports.TranscriptTail!
+Aw.Meta.Core.Ports.TranscriptTail.Deconstruct(out string! Path, out System.DateTimeOffset ModifiedAt, out System.Collections.Generic.IReadOnlyList<string!>! Lines) -> void
+Aw.Meta.Core.Ports.TranscriptTail.Equals(Aw.Meta.Core.Ports.TranscriptTail? other) -> bool
+Aw.Meta.Core.Ports.TranscriptTail.Lines.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Ports.TranscriptTail.Lines.init -> void
+Aw.Meta.Core.Ports.TranscriptTail.ModifiedAt.get -> System.DateTimeOffset
+Aw.Meta.Core.Ports.TranscriptTail.ModifiedAt.init -> void
+Aw.Meta.Core.Ports.TranscriptTail.Path.get -> string!
+Aw.Meta.Core.Ports.TranscriptTail.Path.init -> void
+Aw.Meta.Core.Ports.TranscriptTail.TranscriptTail(string! Path, System.DateTimeOffset ModifiedAt, System.Collections.Generic.IReadOnlyList<string!>! Lines) -> void
+Aw.Meta.Core.Watch.ContextWatch
+const Aw.Meta.Core.Coordination.LaneContextReader.TailBytes = 1048576 -> int
+const Aw.Meta.Core.Coordination.PaneSubmitter.Retries = 3 -> int
+const Aw.Meta.Core.KvKeys.WatchContext = "watch.context" -> string!
+override Aw.Meta.Core.Config.ContextConfig.Equals(object? obj) -> bool
+override Aw.Meta.Core.Config.ContextConfig.GetHashCode() -> int
+override Aw.Meta.Core.Config.ContextConfig.ToString() -> string!
+override Aw.Meta.Core.Lanes.LaneContext.Equals(object? obj) -> bool
+override Aw.Meta.Core.Lanes.LaneContext.GetHashCode() -> int
+override Aw.Meta.Core.Lanes.LaneContext.ToString() -> string!
+override Aw.Meta.Core.Ports.DigestInfo.Equals(object? obj) -> bool
+override Aw.Meta.Core.Ports.DigestInfo.GetHashCode() -> int
+override Aw.Meta.Core.Ports.DigestInfo.ToString() -> string!
+override Aw.Meta.Core.Ports.TranscriptTail.Equals(object? obj) -> bool
+override Aw.Meta.Core.Ports.TranscriptTail.GetHashCode() -> int
+override Aw.Meta.Core.Ports.TranscriptTail.ToString() -> string!
+static Aw.Meta.Core.Config.ContextConfig.operator !=(Aw.Meta.Core.Config.ContextConfig? left, Aw.Meta.Core.Config.ContextConfig? right) -> bool
+static Aw.Meta.Core.Config.ContextConfig.operator ==(Aw.Meta.Core.Config.ContextConfig? left, Aw.Meta.Core.Config.ContextConfig? right) -> bool
+static Aw.Meta.Core.Coordination.PaneSubmitter.InputHolds(string! capture, string! line) -> bool
+static Aw.Meta.Core.Lanes.LaneContext.operator !=(Aw.Meta.Core.Lanes.LaneContext? left, Aw.Meta.Core.Lanes.LaneContext? right) -> bool
+static Aw.Meta.Core.Lanes.LaneContext.operator ==(Aw.Meta.Core.Lanes.LaneContext? left, Aw.Meta.Core.Lanes.LaneContext? right) -> bool
+static Aw.Meta.Core.Lanes.TranscriptUsage.ContextTokens(System.Collections.Generic.IReadOnlyList<string!>! lines) -> long?
+static Aw.Meta.Core.Ports.DigestInfo.operator !=(Aw.Meta.Core.Ports.DigestInfo? left, Aw.Meta.Core.Ports.DigestInfo? right) -> bool
+static Aw.Meta.Core.Ports.DigestInfo.operator ==(Aw.Meta.Core.Ports.DigestInfo? left, Aw.Meta.Core.Ports.DigestInfo? right) -> bool
+static Aw.Meta.Core.Ports.TranscriptTail.operator !=(Aw.Meta.Core.Ports.TranscriptTail? left, Aw.Meta.Core.Ports.TranscriptTail? right) -> bool
+static Aw.Meta.Core.Ports.TranscriptTail.operator ==(Aw.Meta.Core.Ports.TranscriptTail? left, Aw.Meta.Core.Ports.TranscriptTail? right) -> bool
+static Aw.Meta.Core.Watch.ContextWatch.Format(System.Collections.Generic.IReadOnlySet<string!>! high) -> string!
+static Aw.Meta.Core.Watch.ContextWatch.Parse(string? text) -> System.Collections.Generic.IReadOnlySet<string!>!
+static Aw.Meta.Core.Watch.ContextWatch.Step(System.Collections.Generic.IReadOnlySet<string!>! high, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneContext!>! now) -> (System.Collections.Generic.IReadOnlyList<string!>! Lines, System.Collections.Generic.IReadOnlySet<string!>! High)
+static readonly Aw.Meta.Core.Coordination.PaneSubmitter.Pause -> System.TimeSpan
+static readonly Aw.Meta.Core.MetaErrors.RecycleRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Meta.Core.MetaErrors.RecycleTimedOut -> Aw.Kernel.ErrorDefinition!
+Aw.Meta.Core.Coordination.LaneContextReader.ReadOrNull(Aw.Meta.Core.Config.TeamConfig? team, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneContext!>?>
+Aw.Meta.Core.Config.TeamConfig.TeamConfig(string! team, string! repo, System.Collections.Generic.IReadOnlyList<string!>! lanes, string! metaLane = "meta", string? log = null, string? prompts = null, Aw.Meta.Core.Config.GateConfig? gate = null, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.MergeOrderRule!>? mergeOrder = null, System.Collections.Generic.IReadOnlyList<string!>? knownFlakes = null, Aw.Meta.Core.Config.WorktreeConfig? worktrees = null, Aw.Meta.Core.Config.ResourcesConfig? resources = null, Aw.Meta.Core.Config.BuildersConfig? builders = null, Aw.Meta.Core.Config.HeavyConfig? heavy = null, Aw.Meta.Core.Config.ContextConfig? context = null, Aw.Meta.Core.Config.UsageConfig? usage = null) -> void
+Aw.Meta.Core.Config.TeamConfig.Usage.get -> Aw.Meta.Core.Config.UsageConfig!
+Aw.Meta.Core.Config.TeamConfig.Usage.init -> void
+Aw.Meta.Core.Config.UsageConfig
+Aw.Meta.Core.Config.UsageConfig.<Clone>$() -> Aw.Meta.Core.Config.UsageConfig!
+Aw.Meta.Core.Config.UsageConfig.AutoResume.get -> bool
+Aw.Meta.Core.Config.UsageConfig.AutoResume.init -> void
+Aw.Meta.Core.Config.UsageConfig.Deconstruct(out int ResumeMarginSeconds, out int ProbeMinutes, out bool AutoResume) -> void
+Aw.Meta.Core.Config.UsageConfig.Equals(Aw.Meta.Core.Config.UsageConfig? other) -> bool
+Aw.Meta.Core.Config.UsageConfig.ProbeMinutes.get -> int
+Aw.Meta.Core.Config.UsageConfig.ProbeMinutes.init -> void
+Aw.Meta.Core.Config.UsageConfig.ResumeMarginSeconds.get -> int
+Aw.Meta.Core.Config.UsageConfig.ResumeMarginSeconds.init -> void
+Aw.Meta.Core.Config.UsageConfig.UsageConfig(int ResumeMarginSeconds = 120, int ProbeMinutes = 15, bool AutoResume = true) -> void
+override Aw.Meta.Core.Config.UsageConfig.Equals(object? obj) -> bool
+override Aw.Meta.Core.Config.UsageConfig.GetHashCode() -> int
+override Aw.Meta.Core.Config.UsageConfig.ToString() -> string!
+static Aw.Meta.Core.Config.UsageConfig.operator !=(Aw.Meta.Core.Config.UsageConfig? left, Aw.Meta.Core.Config.UsageConfig? right) -> bool
+static Aw.Meta.Core.Config.UsageConfig.operator ==(Aw.Meta.Core.Config.UsageConfig? left, Aw.Meta.Core.Config.UsageConfig? right) -> bool
+const Aw.Meta.Core.KvKeys.UsageWatch = "usage.watch" -> string!
+Aw.Meta.Core.Usage.UsageKind
+Aw.Meta.Core.Usage.UsageKind.Other = 3 -> Aw.Meta.Core.Usage.UsageKind
+Aw.Meta.Core.Usage.UsageKind.Session = 1 -> Aw.Meta.Core.Usage.UsageKind
+Aw.Meta.Core.Usage.UsageKind.Weekly = 2 -> Aw.Meta.Core.Usage.UsageKind
+Aw.Meta.Core.Usage.UsageMonitor
+Aw.Meta.Core.Usage.UsageMonitor.Check(Aw.Meta.Core.Config.TeamConfig! team, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<string!>!>
+Aw.Meta.Core.Usage.UsageMonitor.UsageMonitor(Aw.Meta.Core.Usage.UsageReader! reader, Aw.Meta.Core.Usage.UsageWatcher! watcher) -> void
+Aw.Meta.Core.Usage.UsageReader
+Aw.Meta.Core.Usage.UsageReader.Read(Aw.Meta.Core.Config.TeamConfig! team, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Usage.UsageReading!>!>!>
+Aw.Meta.Core.Usage.UsageReader.ReadOrNull(Aw.Meta.Core.Config.TeamConfig? team, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Usage.UsageReading!>?>
+Aw.Meta.Core.Usage.UsageReader.UsageReader(Aw.Meta.Core.Ports.ILaneFiles! files, Aw.Meta.Core.Ports.ILaneSessions! sessions, Aw.Meta.Core.Ports.IClaudeTranscripts! transcripts, Aw.Meta.Core.Ports.ILanePane! pane, Aw.Meta.Core.Ports.IMessageStore! messages, System.TimeProvider! clock) -> void
+Aw.Meta.Core.Usage.UsageReading
+Aw.Meta.Core.Usage.UsageReading.<Clone>$() -> Aw.Meta.Core.Usage.UsageReading!
+Aw.Meta.Core.Usage.UsageReading.Deconstruct(out string! Subject, out Aw.Meta.Core.Usage.UsageState State, out Aw.Meta.Core.Usage.UsageStop? Stop, out bool Idle, out string? Reason, out string? Source) -> void
+Aw.Meta.Core.Usage.UsageReading.Equals(Aw.Meta.Core.Usage.UsageReading? other) -> bool
+Aw.Meta.Core.Usage.UsageReading.Idle.get -> bool
+Aw.Meta.Core.Usage.UsageReading.Idle.init -> void
+Aw.Meta.Core.Usage.UsageReading.Reason.get -> string?
+Aw.Meta.Core.Usage.UsageReading.Reason.init -> void
+Aw.Meta.Core.Usage.UsageReading.Source.get -> string?
+Aw.Meta.Core.Usage.UsageReading.Source.init -> void
+Aw.Meta.Core.Usage.UsageReading.State.get -> Aw.Meta.Core.Usage.UsageState
+Aw.Meta.Core.Usage.UsageReading.State.init -> void
+Aw.Meta.Core.Usage.UsageReading.Stop.get -> Aw.Meta.Core.Usage.UsageStop?
+Aw.Meta.Core.Usage.UsageReading.Stop.init -> void
+Aw.Meta.Core.Usage.UsageReading.Subject.get -> string!
+Aw.Meta.Core.Usage.UsageReading.Subject.init -> void
+Aw.Meta.Core.Usage.UsageReading.UsageReading(string! Subject, Aw.Meta.Core.Usage.UsageState State, Aw.Meta.Core.Usage.UsageStop? Stop, bool Idle, string? Reason = null, string? Source = null) -> void
+Aw.Meta.Core.Usage.UsageState
+Aw.Meta.Core.Usage.UsageState.Limited = 2 -> Aw.Meta.Core.Usage.UsageState
+Aw.Meta.Core.Usage.UsageState.Ok = 1 -> Aw.Meta.Core.Usage.UsageState
+Aw.Meta.Core.Usage.UsageState.Unknown = 3 -> Aw.Meta.Core.Usage.UsageState
+Aw.Meta.Core.Usage.UsageStop
+Aw.Meta.Core.Usage.UsageStop.<Clone>$() -> Aw.Meta.Core.Usage.UsageStop!
+Aw.Meta.Core.Usage.UsageStop.Deconstruct(out Aw.Meta.Core.Usage.UsageKind Kind, out System.DateTimeOffset? ResetsAt, out string! Text) -> void
+Aw.Meta.Core.Usage.UsageStop.Equals(Aw.Meta.Core.Usage.UsageStop? other) -> bool
+Aw.Meta.Core.Usage.UsageStop.Key.get -> string!
+Aw.Meta.Core.Usage.UsageStop.Kind.get -> Aw.Meta.Core.Usage.UsageKind
+Aw.Meta.Core.Usage.UsageStop.Kind.init -> void
+Aw.Meta.Core.Usage.UsageStop.ResetText.get -> string!
+Aw.Meta.Core.Usage.UsageStop.ResetsAt.get -> System.DateTimeOffset?
+Aw.Meta.Core.Usage.UsageStop.ResetsAt.init -> void
+Aw.Meta.Core.Usage.UsageStop.Text.get -> string!
+Aw.Meta.Core.Usage.UsageStop.Text.init -> void
+Aw.Meta.Core.Usage.UsageStop.UsageStop(Aw.Meta.Core.Usage.UsageKind Kind, System.DateTimeOffset? ResetsAt, string! Text) -> void
+Aw.Meta.Core.Usage.UsageWatch
+Aw.Meta.Core.Usage.UsageWatcher
+Aw.Meta.Core.Usage.UsageWatcher.Tick(Aw.Meta.Core.Config.TeamConfig! team, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Usage.UsageReading!>! readings, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<string!>!>
+Aw.Meta.Core.Usage.UsageWatcher.UsageWatcher(Aw.Meta.Core.Coordination.PaneSubmitter! pane, Aw.Meta.Core.Ports.IRunningLog! log, Aw.Meta.Core.Ports.IKeyValueStore! values, System.TimeProvider! clock) -> void
+const Aw.Meta.Core.Usage.UsageReader.TailBytes = 262144 -> int
+const Aw.Meta.Core.Usage.UsageWatch.Meta = "meta" -> string!
+const Aw.Meta.Core.Usage.UsageWatch.MetaWake = "USAGE OK meta: resume your subagents (SendMessage them) and re-arm the watch" -> string!
+const Aw.Meta.Core.Usage.UsageWatch.ResumeLine = "continue — the usage window has reset; resume where you stopped, including paused builders" -> string!
+override Aw.Meta.Core.Usage.UsageReading.Equals(object? obj) -> bool
+override Aw.Meta.Core.Usage.UsageReading.GetHashCode() -> int
+override Aw.Meta.Core.Usage.UsageReading.ToString() -> string!
+override Aw.Meta.Core.Usage.UsageStop.Equals(object? obj) -> bool
+override Aw.Meta.Core.Usage.UsageStop.GetHashCode() -> int
+override Aw.Meta.Core.Usage.UsageStop.ToString() -> string!
+static Aw.Meta.Core.Usage.UsageReading.operator !=(Aw.Meta.Core.Usage.UsageReading? left, Aw.Meta.Core.Usage.UsageReading? right) -> bool
+static Aw.Meta.Core.Usage.UsageReading.operator ==(Aw.Meta.Core.Usage.UsageReading? left, Aw.Meta.Core.Usage.UsageReading? right) -> bool
+static Aw.Meta.Core.Usage.UsageStop.operator !=(Aw.Meta.Core.Usage.UsageStop? left, Aw.Meta.Core.Usage.UsageStop? right) -> bool
+static Aw.Meta.Core.Usage.UsageStop.operator ==(Aw.Meta.Core.Usage.UsageStop? left, Aw.Meta.Core.Usage.UsageStop? right) -> bool

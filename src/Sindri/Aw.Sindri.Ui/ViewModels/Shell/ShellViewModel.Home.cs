@@ -1,5 +1,6 @@
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Approvals;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
 using Aw.Sindri.Ui.ViewModels.Queue;
 
@@ -40,7 +41,7 @@ internal sealed partial class ShellViewModel
             return;
         }
 
-        NeedsYou.Update(feed, HomeFilter == HomeFilter.Decisions ? row => row.DecisionId is not null : null);
+        NeedsYou.Update(feed, ShownOnHome);   // the inbox lists every row, whatever Home's filter says (see ShownOnHome)
         FollowDecision();
     }
 
@@ -68,14 +69,35 @@ internal sealed partial class ShellViewModel
         }
     }
 
-    // A key or a button asks to run a decision option: Decide, sent once with the option; the sheet shows what came back.
+    // A key or a button asks to run an action: approve-all opens its dialog; a decision option is Decide, sent once with the option, and the sheet shows what came back.
     private void Decide(NeedsYouActionEventArgs request)
     {
-        if (request.Action.OptionId.Length > 0 && NeedsYou.Row(request.RowId) is { } row)
+        if (string.Equals(request.Action.CatalogId, ApproveAllViewModel.Action, StringComparison.Ordinal))
         {
-            Decision.Show(row);
-            _ = Decision.Choose(request.Action.OptionId);
+            OpenApproveAll();
         }
+        else if (request.Action.OptionId.Length > 0)
+        {
+            _ = AnswerDecision(request.RowId, request.Action.OptionId, note: null);
+        }
+    }
+
+    // A decision answered from a key, a button or the inbox's action bar: the sheet takes the option (and the note, when the bar has one) and sends them once.
+    private async Task<string> AnswerDecision(string rowId, string optionId, string? note)
+    {
+        if (NeedsYou.Row(rowId) is not { } row)
+        {
+            return "";
+        }
+
+        Decision.Show(row);
+        if (note is not null)
+        {
+            Decision.Note = note;
+        }
+
+        await Decision.Choose(optionId).ConfigureAwait(true);
+        return Decision.Refusal;   // what the sheet shows after the answer: empty when it was accepted
     }
 
     // A decision row opens the decision sheet (by the decision's id); every other row opens its own, keyed on the row id.
@@ -155,6 +177,11 @@ internal sealed partial class ShellViewModel
         if (inSheet || !IsHome)
         {
             return false;
+        }
+
+        if (IsNeedsYouInbox)
+        {
+            return InboxKeyPressed(key);
         }
 
         return string.Equals(key, "J", StringComparison.Ordinal) || string.Equals(key, "K", StringComparison.Ordinal) ? MoveOnHome(string.Equals(key, "J", StringComparison.Ordinal) ? 1 : -1) : named is { } k && NeedsYou.SelectedId is not null && NeedsYou.Press(k);

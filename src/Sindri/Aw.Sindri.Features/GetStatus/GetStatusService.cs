@@ -7,18 +7,19 @@ using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Core.Views;
 
 namespace Aw.Sindri.Features.GetStatus;
 
-internal sealed class GetStatusService(HeldLease held, IApprovedProfile approvals, IProfileSource live, ILedgerReader ledger, EventFactory events,
-    IProjectorStatus projector, IViewReader viewRows)
+internal sealed class GetStatusService(HeldLease held, ProfileReads profiles, ILedgerReader ledger, EventFactory events,
+    IProjectorStatus projector, HealthServiceRows healthRows, ISessionSnapshot sessions)
     : IService<GetStatusRequest, GetStatusResponse>
 {
     public async ValueTask<Result<GetStatusResponse>> Handle(GetStatusRequest request, CancellationToken cancellationToken)
     {
-        var approved = await approvals.Latest(cancellationToken).ConfigureAwait(false);
-        var loaded = await live.Load(cancellationToken).ConfigureAwait(false);
+        var approved = await profiles.Approved(cancellationToken).ConfigureAwait(false);
+        var loaded = await profiles.Live(cancellationToken).ConfigureAwait(false);
         var approvedProfile = approved.IsSuccess ? approved.Value : null;
         var services = await Services(approvedProfile, cancellationToken).ConfigureAwait(false);
         var recorded = RecordedApproval.From(await ledger.Latest(EventTypes.ProfileApproved, cancellationToken).ConfigureAwait(false), events);
@@ -33,8 +34,12 @@ internal sealed class GetStatusService(HeldLease held, IApprovedProfile approval
         var views = await Views(cancellationToken).ConfigureAwait(false);
         var health = await Health(grant is not null, views, profile, approvedProfile, cancellationToken).ConfigureAwait(false);
         var status = new GetStatusResponse(grant is not null, grant?.Holder.Pid ?? 0, grant?.Epoch ?? 0, grant?.ExpiresAt, profile, services);
-        return status with { ApiVersion = SindriApi.Version, Views = views, Health = health };
+        return status with { ApiVersion = SindriApi.Version, Views = views, Health = health, Sessions = SessionCounts() };
     }
+
+    /// <summary>The collector's last pass in three numbers; zeros before the first pass (collector spec CA-8).</summary>
+    private SessionStatus SessionCounts() =>
+        sessions.Current is { } pass ? new SessionStatus(pass.Sessions.Count, pass.Sessions.Count(static s => s.State == SessionState.Asking), pass.Problems.Count) : new SessionStatus(0, 0, 0);
 
     /// <summary>The projector's status with the ledger's head read fresh, not the projector's last-seen one: cursor below ledgerHead is the real lag.</summary>
     private async ValueTask<ViewsStatus> Views(CancellationToken cancellationToken)
@@ -45,8 +50,8 @@ internal sealed class GetStatusService(HeldLease held, IApprovedProfile approval
 
     private async ValueTask<HealthReport> Health(bool running, ViewsStatus views, ProfileStatus profile, LoadedProfile? approved, CancellationToken cancellationToken)
     {
-        var rows = await viewRows.List<ServiceRow>(ViewNames.Services, cancellationToken).ConfigureAwait(false);
-        return HealthSummary.For(running, views, rows.IsSuccess ? ApprovedServices.Of(rows.Value, approved) : null, profile.NeedsApproval, profile.ChangedSinceApproval);
+        var rows = await healthRows.Read(approved, cancellationToken).ConfigureAwait(false);
+        return HealthSummary.For(running, views, rows, profile.NeedsApproval, profile.ChangedSinceApproval);
     }
 
     private static ProfileStatus Profile(LoadedProfile? approved, RecordedApproval? recorded, Result<LoadedProfile> loaded)

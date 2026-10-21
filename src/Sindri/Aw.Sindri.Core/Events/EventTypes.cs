@@ -29,6 +29,12 @@ public static class EventTypes
     /// <summary>A held event expired from an instance's inbox (engine spec §5.4, §5.6).</summary>
     public const string WorkflowExpired = "workflow.expired";
 
+    /// <summary>An instance took or gave up a heavy-job slot (LN-WF3).</summary>
+    public const string WorkflowHeavy = "workflow.heavy";
+
+    /// <summary>The Step inputs of a run filled its injection plan: the sections' names, sizes and digests, never their text (Step inputs plan, S4).</summary>
+    public const string WorkflowInjection = "workflow.injection";
+
     /// <summary>A human approved a profile hash.</summary>
     public const string ProfileApproved = "profile.approved";
 
@@ -52,6 +58,15 @@ public static class EventTypes
 
     /// <summary>A draft map became current (context spec §3).</summary>
     public const string ContextMapPromoted = "context.map.promoted";
+
+    /// <summary>A refresh job built, cleaned up and promoted the map with no human step (owner F1, 2026-10-19).</summary>
+    public const string ContextMapRefreshed = "context.map.refreshed";
+
+    /// <summary>The owner approved a scope packet (scoping spec §3, SC3); written by the freeze Step.</summary>
+    public const string ScopingApproved = "scoping.approved";
+
+    /// <summary>A later station found a surface or behaviour an approved scope packet missed (scoping spec §3, SC3); written by that station.</summary>
+    public const string ScopingEscape = "scoping.escape";
 
     /// <summary>A scoping run's surfaces were written to the draft map (context spec §3; S-4 adds this sixth event).</summary>
     public const string ContextMapProposed = "context.map.proposed";
@@ -106,6 +121,51 @@ public static class EventTypes
 
     /// <summary>A human resumed a paused background service (API P6).</summary>
     public const string ServiceResumed = "service.resumed";
+
+    /// <summary>A person asked to open an item's agent session (API P10a, UI E-1).</summary>
+    public const string ItemOpenRequested = "item.open-requested";
+
+    /// <summary>A launch started a session, whatever its viewer did (API P10a).</summary>
+    public const string LaunchStarted = "launch.started";
+
+    /// <summary>A launch failed before any session started (API P10a).</summary>
+    public const string LaunchFailed = "launch.failed";
+
+    /// <summary>The launcher probed the viewer, the host, the targets and the repos (API P10a, UI E-3).</summary>
+    public const string LaunchProbed = "launch.probed";
+
+    /// <summary>A launched session ended, by exit or lost heartbeat (API P10a).</summary>
+    public const string SessionEnded = "session.ended";
+
+    /// <summary>A usage sample of a launched session (not public; API P10a, SCR E-28).</summary>
+    public const string SessionUsage = "session.usage";
+
+    /// <summary>The agent's own session id was read and reported (API P10a, launcher L-9).</summary>
+    public const string LaunchSessionReported = "launch.session-reported";
+
+    /// <summary>A client attached to a session whose viewer had not confirmed (API P10a, launcher L-10).</summary>
+    public const string LaunchViewerAttached = "launch.viewer-attached";
+
+    /// <summary>A setup step's derived state changed (setup-once spec §7.5).</summary>
+    public const string SetupStepChanged = "setup.step.changed";
+
+    /// <summary>A repo was added to the profile from the app or a terminal (setup-once spec §7.5).</summary>
+    public const string RepoAdded = "repo.added";
+
+    /// <summary>The approved profile names a repo and its onboarding ran (setup-once spec §7.5).</summary>
+    public const string RepoOnboarded = "repo.onboarded";
+
+    /// <summary>The shipped recipes were registered at start (setup-once spec §7.5).</summary>
+    public const string RecipeRegistrationCompleted = "recipe.registration.completed";
+
+    /// <summary>Sindri registered its MCP server in a repo (setup-once spec §7.5).</summary>
+    public const string McpRegistered = "mcp.registered";
+
+    /// <summary>The owner agreed that Sindri may register itself and build the map on its own (setup-once spec §7.5).</summary>
+    public const string SetupConsentGiven = "setup.consent.given";
+
+    /// <summary>The owner left Onyx for later, or took that back (setup-once spec §7.5).</summary>
+    public const string OnyxDeferred = "onyx.deferred";
 
     /// <summary>The event a background service records per run: 'service.&lt;name&gt;'.</summary>
     /// <param name="service">The service.</param>

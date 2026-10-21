@@ -79,9 +79,9 @@ internal sealed partial record InstanceWords
             ? Recipe.Recipe.Transitions[index].To
             : "the next state";
 
-    /// <summary>The 'workflow complete' line for the task: its first declared outcome and the outputs required on it.</summary>
+    /// <summary>The 'workflow complete' line for the task: its outcome (all of them when there are several) and the outputs required on a single one.</summary>
     private string Complete(DeskTask task) =>
-        CompleteCommand.Line(Address, task.Run, task.Outcomes.Count > 0 ? task.Outcomes[0] : null, task.Outputs);
+        CompleteCommand.Line(Address, task.Run, task.Outcomes, task.Outputs);
 
     /// <summary>The state's recipe 'next' with its variables filled in (§3.7); one the engine can't fill stays as written.</summary>
     private string RecipeNext() =>

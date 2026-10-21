@@ -14,8 +14,11 @@ namespace Aw.Sindri.Host.Commands;
 internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLauncher launcher, ControlPlaneClient client, Output output, TimeProvider clock,
     AgentSession? session = null, Func<string>? openUi = null)
 {
-    /// <summary>How long a start waits for the control plane to answer.</summary>
-    internal static readonly TimeSpan Budget = TimeSpan.FromSeconds(10);
+    /// <summary>Gets a step that runs after the banner and before the control plane is looked for or started: the first-run Onyx offer, for bare 'sindri' at a terminal.</summary>
+    internal Func<CancellationToken, Task>? BeforeStart { get; init; }
+
+    /// <summary>How long a start waits for the control plane to answer: a loaded box (CI, a cold disk) can take well over 10 s to bind. A serve that exited ends the wait at once, so a long budget never hides a dead one.</summary>
+    internal static readonly TimeSpan Budget = TimeSpan.FromSeconds(30);
 
     /// <summary>How often the start wait probes.</summary>
     internal static readonly TimeSpan Poll = TimeSpan.FromMilliseconds(200);
@@ -23,6 +26,11 @@ internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLaunch
     internal async Task<int> Run(CancellationToken ct)
     {
         await output.Out.WriteLineAsync(Banner.Text).ConfigureAwait(false);
+        if (BeforeStart is not null)
+        {
+            await BeforeStart(ct).ConfigureAwait(false);   // the first-run Onyx offer, for bare 'sindri' at a terminal
+        }
+
         var found = await FindOrLaunch(ct).ConfigureAwait(false);
         if (found.IsError)
         {
@@ -77,6 +85,11 @@ internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLaunch
 
     private async Task<Result<(ControlEndpoint Endpoint, Ping Ping)>> Find(bool launch, CancellationToken ct)
     {
+        if (client.SettingRefusal is { } refused)
+        {
+            return refused;   // a malformed setting is refused before a start launches anything
+        }
+
         var found = await probe.Check(ct).ConfigureAwait(false);
         if (found.IsSuccess || found.Error.Code != SindriErrors.NotRunning.Code)
         {

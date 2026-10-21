@@ -192,6 +192,16 @@ public sealed class ContextReviewVerbsTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Cli_context_lenses_sends_the_hops_flag_as_hops()
+    {
+        var api = new ScriptedApi(Ok("{}"));
+
+        _ = await Lens(api, "lenses", "feature:a", "--hops", "state,component", "--depth", "1");
+
+        Assert.Equal("/sindri/context/lenses?anchor=feature%3Aa&depth=1&hops=state%2Ccomponent", api.Calls[0].Route);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Cli_context_lenses_refuses_draft_with_map_version_as_006_naming_both_flags()
     {
         var api = new ScriptedApi(Ok("{}"));

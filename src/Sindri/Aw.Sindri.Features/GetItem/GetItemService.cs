@@ -11,7 +11,8 @@ namespace Aw.Sindri.Features.GetItem;
 /// <param name="items">Resolves the reference.</param>
 /// <param name="status">How fresh the views are.</param>
 /// <param name="callers">The caller, whose repo scope applies.</param>
-internal sealed class GetItemService(IItemResolver items, IProjectorStatus status, ICallerContextAccessor callers) : IService<GetItemRequest, ItemView>
+/// <param name="launches">The item's launch block.</param>
+internal sealed class GetItemService(IItemResolver items, IProjectorStatus status, ICallerContextAccessor callers, IItemLaunchSource launches) : IService<GetItemRequest, ItemView>
 {
     public async ValueTask<Result<ItemView>> Handle(GetItemRequest request, CancellationToken cancellationToken)
     {
@@ -29,7 +30,13 @@ internal sealed class GetItemService(IItemResolver items, IProjectorStatus statu
         }
 
         var row = resolved.Value;
+        var launch = await launches.For(row, cancellationToken).ConfigureAwait(false);
+        if (launch.IsError)
+        {
+            return launch.Error;
+        }
+
         return new ItemView(row.Id, row.Title, row.Repo, row.State, row.Step, row.Since, ItemActions.Primary(row.State), ItemActions.For(row.State), row.Owner,
-            row.Version, row.CreatedBy, row.WaitingOn, row.Instance, row.CreatedAt, row.UpdatedAt, row.Body, row.Link, asOf);
+            row.Version, row.CreatedBy, row.WaitingOn, row.Instance, row.CreatedAt, row.UpdatedAt, row.Body, row.Link, launch.Value, asOf);
     }
 }

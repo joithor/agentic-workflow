@@ -1,6 +1,7 @@
 using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Sessions;
 
 namespace Aw.Sindri.Infrastructure.Sessions;
@@ -28,7 +29,7 @@ internal sealed class ClaudeSessionRecords(string directory) : IClaudeSessionRec
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return SindriErrors.SessionsUnavailable.With("claude-records-unreadable");
+            return SindriErrors.SessionSourceFailed.With("claude-records-unreadable");
         }
 
         var records = new List<ClaudeRecord>();

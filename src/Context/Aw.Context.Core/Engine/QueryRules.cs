@@ -5,7 +5,7 @@ using Aw.Kernel;
 namespace Aw.Context.Core.Engine;
 
 /// <summary>Checks a question before any source sees it (spec §8.1, §8.3 caps): the text and node shapes; item and symbol anchors arrive in later phases.</summary>
-public static class QueryRules
+public static partial class QueryRules
 {
     /// <summary>The budget a request gets when it names none.</summary>
     public const int DefaultBudget = 8_000;
@@ -79,6 +79,11 @@ public static class QueryRules
             return depthError;
         }
 
+        if (ParseHops(query.Hops) is { IsError: true } hopsError)
+        {
+            return hopsError.Error;
+        }
+
         if (query.Budget is <= 0 and var budget)
         {
             return OutOfRange(BudgetMessage, budget.ToString(CultureInfo.InvariantCulture));
@@ -91,6 +96,40 @@ public static class QueryRules
     /// <param name="text">The text, or null.</param>
     /// <returns>The depth (null when absent); SND-CONTEXT-006 when it is not a whole number or is out of range. The message names no flag: a transport adds its own hint.</returns>
     public static Result<int?> ParseDepth(string? text) => ParseWhole(text, DepthMessage, 0, MaxDepth);
+
+    /// <summary>The cascade hops as a transport sent them: absent, or a comma list of state, flow, dependency and component (repeated keys joined with commas).</summary>
+    /// <param name="text">The text, or null.</param>
+    /// <returns>The hops (null when absent); SND-CONTEXT-140 when a name is unknown or the list is empty.</returns>
+    public static Result<CascadeHops?> ParseHops(string? text)
+    {
+        if (text is null)
+        {
+            return (CascadeHops?)null;
+        }
+
+        var hops = CascadeHops.None;
+        foreach (var name in text.Split(',', StringSplitOptions.TrimEntries))
+        {
+            if (!name.All(char.IsAsciiLetter) || !Enum.TryParse<CascadeHops>(name, ignoreCase: true, out var hop) || hop is CascadeHops.None or CascadeHops.Default || !Enum.IsDefined(hop))
+            {
+                return ContextErrors.HopsInvalid.With("hops must be a comma list of state, flow, dependency and component");
+            }
+
+            hops |= hop;
+        }
+
+        return hops;
+    }
+
+    /// <summary>The cascade options for a call: the hops it named (the default three when none), and the profile's component fan-out cap.</summary>
+    /// <param name="hops">The hops from <see cref="ParseHops"/>, or null.</param>
+    /// <param name="settings">The profile's context settings.</param>
+    /// <returns>The options.</returns>
+    public static CascadeOptions CascadeFor(CascadeHops? hops, ContextSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        return new CascadeOptions(hops ?? CascadeHops.Default, settings.CascadeComponentFanOut);
+    }
 
     /// <summary>A token budget as a transport sent it: absent, or a whole number of 1 or more.</summary>
     /// <param name="text">The text, or null.</param>

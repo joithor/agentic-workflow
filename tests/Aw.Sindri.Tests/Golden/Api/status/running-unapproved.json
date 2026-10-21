@@ -33,5 +33,10 @@
       }
     ],
     "sentence": "Sindri is degraded: the profile isn't approved."
+  },
+  "sessions": {
+    "live": 0,
+    "asking": 0,
+    "problems": 0
   }
 }

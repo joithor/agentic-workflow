@@ -2,7 +2,7 @@ using Aw.Sindri.Ui.Navigation;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
-/// <summary>The detail sheet and its subject (UI spec §3.3, §4.2): open, closed to the edge tab, reopened. <see cref="Navigate"/> opens it.</summary>
+/// <summary>The detail sheet and its subject (UI spec §3.3, §4.2): open, closed to the edge tab, reopened. <see cref="Navigate(DeepLink)"/> opens it.</summary>
 internal sealed partial class ShellViewModel
 {
     /// <summary>True while the detail sheet is open.</summary>
@@ -21,10 +21,10 @@ internal sealed partial class ShellViewModel
     public bool IsSheetShown => IsSheetOpen && IsConnected;
 
     /// <summary>The sheet's accessible name: the kind's noun and the subject ("Workflow X"); an id that names itself stays bare.</summary>
-    public string SheetName => SheetLink is { } link && Labels.KindNoun(link.Kind) is { Length: > 0 } noun ? noun + " " + SheetSubject : SheetSubject;
+    public string SheetName => SheetLink is { } link && Labels.KindNoun(link.Kind) is { Length: > 0 } noun ? noun + " " + NamedSubject : SheetSubject;
 
     /// <summary>The edge tab's accessible name: "Reopen" and the sheet's name, its kind's noun in lower case.</summary>
-    public string EdgeTabName => Labels.Reopen + " " + (SheetLink is { } link && Labels.KindNoun(link.Kind) is { Length: > 0 } noun ? char.ToLowerInvariant(noun[0]) + noun[1..] + " " + SheetSubject : SheetSubject);
+    public string EdgeTabName => Labels.Reopen + " " + (SheetLink is { } link && Labels.KindNoun(link.Kind) is { Length: > 0 } noun ? char.ToLowerInvariant(noun[0]) + noun[1..] + " " + NamedSubject : SheetSubject);
 
     /// <summary>The edge tab shows when the sheet is closed and has a subject, over a visible page.</summary>
     public bool IsEdgeTabShown => !IsSheetOpen && HasEdgeTab && IsConnected;
@@ -38,8 +38,12 @@ internal sealed partial class ShellViewModel
         // LANE ANCHOR U3': one `DeepLinkKind.X or … => false` arm claims the kinds from the placeholder (kinds: NeedsYou, Decision), as screens spec §8 assigns them. `Item` is U2's item sheet (#197): its arm, `DeepLinkKind.Item => false`, is written above both markers. `HomeNeedsYou` is a page link, not a sheet. Insert immediately above this marker, never between the markers.
         // LANE ANCHOR U8: one `DeepLinkKind.X or … => false` arm claims the kinds (kinds: Workflow); U8b re-bases the item sheet (§4.7), which is content and adds no arm. Insert immediately below this marker, never between the markers.
         DeepLinkKind.Workflow => false,
-        // LANE ANCHOR U10: one `DeepLinkKind.X or … => false` arm claims the kinds (kinds: Recipe), U10a's read-only recipe sheet (UI spec §4.3). Node, Session, System, Service and Job are claimed later, at this switch, by the phase that renders them (screens spec §8). Insert immediately below this marker, never between the markers.
+        // LANE ANCHOR U10: one `DeepLinkKind.X or … => false` arm claims the kinds (kinds: Recipe), U10a's read-only recipe sheet (UI spec §4.3). System, Service and Job are claimed later, at this switch, by the phase that renders them (screens spec §8). Insert immediately below this marker, never between the markers.
         DeepLinkKind.Recipe => false,
+        // LANE ANCHOR U9: one `DeepLinkKind.X or … => false` arm claims the kinds (kinds: Node), the node card of the Context page (U9b writes the arm; until then Node still shows the placeholder). System, Service and Job are claimed later, at this switch, by the phase that renders them (screens spec §8). Insert immediately below this marker, never between the markers.
+        // LANE ANCHOR U11a: one `DeepLinkKind.X or … => false` arm claims the kinds (kinds: Session), U11a's session sheet (collector spec CU-3); the arm is written by the sheet's builder (T4), not by the contract. Insert immediately below this marker, never between the markers.
+        DeepLinkKind.Session => false,
+        DeepLinkKind.Job => false,
         _ => true,
     };
 #pragma warning restore IDE0072
@@ -71,7 +75,8 @@ internal sealed partial class ShellViewModel
             return;
         }
 
-        (IsSheetOpen, OpenerRow, OpenerStrip, OpenerRecipeGroup) = (true, null, null, null);
+        (IsSheetOpen, OpenerRow, OpenerStrip, OpenerRecipeGroup, OpenerSession) = (true, null, null, null, null);
+        OnJobSheetReopened();
         Changed(nameof(IsSheetOpen), nameof(IsSheetShown), nameof(IsEdgeTabShown));
     }
 }

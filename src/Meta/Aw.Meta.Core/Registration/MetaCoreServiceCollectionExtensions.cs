@@ -1,4 +1,5 @@
 using Aw.Meta.Core.Coordination;
+using Aw.Meta.Core.Usage;
 using Aw.Meta.Core.Worktrees;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -20,6 +21,11 @@ public static class MetaCoreServiceCollectionExtensions
         .AddScoped<LaneBeats>()
         .AddScoped<LaneStopGuard>()
         .AddScoped<LaneHealthReader>()
+        .AddScoped<LaneContextReader>()
+        .AddScoped<PaneSubmitter>()
+        .AddScoped<UsageReader>()
+        .AddScoped<UsageWatcher>()
+        .AddScoped<UsageMonitor>()
         .AddScoped<RepoCommands>()
         .AddScoped<GateTree>()
         .AddScoped<GateWorkspace>()

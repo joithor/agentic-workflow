@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using Aw.Kernel.Testing;
 
 namespace Aw.Meta.Tests.Cli;
 
@@ -149,10 +150,10 @@ internal sealed class WorktreeLab : IDisposable
 
         await File.WriteAllTextAsync(Path.Combine(GhState, "list.json"), list.Append(']').ToString(), TestContext.Current.CancellationToken);
         var script = Cli.File("gh");
-        await File.WriteAllLinesAsync(
+        _ = ExecutableScript.Write(
             script,
+            string.Join('\n',
             [
-                "#!/bin/sh",
                 $"S='{GhState}'",
                 "case \"$1 $2\" in",
                 "  \"pr list\") cat \"$S/list.json\" ;;",
@@ -160,9 +161,7 @@ internal sealed class WorktreeLab : IDisposable
                 "  \"pr merge\") if [ -f \"$S/merge-$3.sh\" ]; then sh \"$S/merge-$3.sh\"; fi ;;",
                 "  *) echo \"unexpected gh $*\" >&2; exit 9 ;;",
                 "esac",
-            ],
-            TestContext.Current.CancellationToken);
-        File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            ]) + "\n");
         Cli.SetEnv("AW_GH", script);
     }
 

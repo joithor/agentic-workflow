@@ -15,5 +15,6 @@ namespace Aw.Sindri.Features.ListCommands;
 /// <param name="Destructive">True when the UI confirms it first.</param>
 /// <param name="ReadsViews">True when it waits for the views (disabled during a rebuild).</param>
 /// <param name="Shortcut">Its default key, or null.</param>
+/// <param name="Confirm">How the app confirms it ('typed' or 'held'), or null when the app does not confirm it (setup-once spec §7.4).</param>
 public sealed record CommandListRow(ActionId Action, ActionClass Class, IReadOnlyList<string> AllowedCallers, bool Terminal,
-    string? Method, string? Route, string Cli, string Ui, bool Destructive, bool ReadsViews, string? Shortcut);
+    string? Method, string? Route, string Cli, string Ui, bool Destructive, bool ReadsViews, string? Shortcut, string? Confirm = null);

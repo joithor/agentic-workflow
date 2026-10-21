@@ -286,6 +286,20 @@ packages:
     src: null
     files: [launcher.json]
     note: "the session launcher's machine file and its contract (spec 2026-10-15-sindri-session-launcher-design.md, SL-0): $AW_STATE_DIR/launcher.json is read by aw-meta-launch (bash, SL-1) and by the C# Sindri launcher (SL-2). The repo-side contract files are schemas/launcher.schema.json, config/launcher/builtins.json and config/launcher/terminals.json (shared fixtures: tests/fixtures/launcher); no C# code of its own, so no projects. The bash reader lives with its only user, Meta (scripts/launcher-lib.sh), and is declared by the Meta -> Launcher file edge"
+  - id: Forge
+    kind: package
+    tier: 1
+    projectPrefix: Aw.Forge
+    ts: null
+    src: src/Forge
+    note: "the forge port (IForge): GitHub and file-backed adapters, a fake and its contract tests"
+  - id: CodeIndex
+    kind: package
+    tier: 1
+    projectPrefix: Aw.CodeIndex
+    ts: null
+    src: src/CodeIndex
+    note: "code index: symbols, callers and callees per repo, built in the background when trunk moves (code-index spec)"
 
 edges:
   # ---- current: found in the source today ----
@@ -352,8 +366,8 @@ edges:
   - from: Hooks
     to: Sindri
     kind: file
-    status: planned
-    note: "the aw:fleet hook (config/hooks/fleet-state.sh, session collector CO-1) writes one state file per session under $AW_FLEET_DIR (default $AW_STATE_DIR/fleet), which Sindri's collector reads and prunes (spec 2026-10-16-sindri-session-collector-design.md §5). Planned until CO-1 adds the script: check-deps fails a current edge the source lacks (DEPS-STALE-001) and a planned one it finds (DEPS-STALE-002). ~/.claude/sessions and the provider folders are outside the state root, so not edges"
+    status: current
+    note: "the aw:fleet hook (config/hooks/fleet-state.sh, session collector CO-1) writes one state file per session under $AW_FLEET_DIR (default $AW_STATE_DIR/fleet), which Sindri's collector reads and prunes (spec 2026-10-16-sindri-session-collector-design.md §5). ~/.claude/sessions and the provider folders are outside the state root, so not edges"
   - from: Statusline
     to: Judge
     kind: cli
@@ -618,6 +632,47 @@ edges:
     kind: file
     status: current
     note: "session collector CO-2a (CA-0): Aw.Sindri.Infrastructure embeds config/launcher/builtins.json (a linked EmbeddedResource) and reads $AW_STATE_DIR/launcher.json (AW_LAUNCHER_CONFIG), its agents and sessions sections, checked against schemas/launcher.schema.json by the shared fixtures in its tests; SL-2 extends the same reader with the launch argv, the viewer and host sections"
+  - from: Forge
+    to: Kernel
+    kind: project
+    status: current
+    note: "Result, IService, ports (scaffolded by /new-package)"
+  - from: Forge
+    to: KernelTelemetry
+    kind: project
+    status: current
+    note: "the host starts Kernel telemetry in Compose (scaffolded by /new-package)"
+  - from: Forge
+    to: Redaction
+    kind: project
+    status: current
+    note: "the GitHub adapter and the git pusher scrub forge text, check logs and git output through Aw.Redaction before they leave the package (tests build the same redactor)"
+  - from: CodeIndex
+    to: Kernel
+    kind: project
+    status: current
+    note: "Result, IService, ports, typed ids (scaffolded by /new-package)"
+  - from: CodeIndex
+    to: KernelData
+    kind: project
+    status: planned
+    note: "the per-repo index files (Aw.CodeIndex.Infrastructure only; CI-3 SqliteIndexStore, code-index spec §4.1)"
+  - from: CodeIndex
+    to: Redaction
+    kind: project
+    status: planned
+    note: "the scrubber behind IBodyScrubber: bodies, signatures, deps text and graph names are scrubbed before they are stored (Aw.CodeIndex.Infrastructure only; code-index spec §9)"
+  # ---- the code index (code-index spec §5, §7; CI-10a flipped the project edge, CI-9 flips the compose edge) ----
+  - from: Sindri
+    to: CodeIndex
+    kind: project
+    status: current
+    note: "Sindri's Features and Host use the ICodeIndex facade and its records in Aw.CodeIndex.Core (BuildCodeIndexService, code-index-main-move, the reads)"
+  - from: Sindri
+    to: CodeIndex
+    kind: compose
+    status: planned
+    note: "Sindri's Host calls AddCodeIndexFeatures and AddCodeIndexInfrastructure (and nothing else from those projects) in Composition (CI-9)"
 
 exceptions:
   - rule: DEPS-CYCLE-001

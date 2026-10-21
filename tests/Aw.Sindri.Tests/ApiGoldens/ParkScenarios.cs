@@ -17,7 +17,7 @@ internal static class ParkScenarios
     public static IReadOnlyList<(string Slug, string Scenario)> All { get; } =
     [
         ("queue", "running"), ("queue", "parked"), ("items-id", "running"),
-        ("needs-you", "park"), ("needs-you", "desk-task"), ("needs-you", "idle-takeover"),
+        ("needs-you", "park"), ("needs-you", "park-mirrored-child"), ("needs-you", "desk-task"), ("needs-you", "idle-takeover"),
     ];
 
     /// <summary>Whether <paramref name="slug"/> and <paramref name="scenario"/> belong to this class.</summary>
@@ -43,6 +43,12 @@ internal static class ParkScenarios
                 var park = new SuspensionSummary(SuspensionKind.Park, ParkReason.Rounds, ParkKind.Loop, Escalation: null, Mirrors: null);
                 await Append(host, item, EventTypes.WorkflowTransition, Row(address, "produce", "step.completed", frame: null, park), "parked", ct);
                 break;
+            case "park-mirrored-child":
+                await Append(host, item, EventTypes.WorkflowStarted, Row(address, "running", "start", new FrameSummary("running", 1, Run: null, Child: null), suspension: null), "started", ct);
+                var childAddress = address + "/step.4";
+                var mirrored = new SuspensionSummary(SuspensionKind.Park, ParkReason.NeedsAnswer, ParkKind.Step, Escalation: null, Mirrors: WorkflowInstanceId.Of(InstanceAddress.From(childAddress)).Value, MirrorsAddress: childAddress);
+                await Append(host, item, EventTypes.WorkflowTransition, Row(address, "running", "child.parked", frame: null, mirrored), "parked", ct);
+                break;
             default:   // 'idle-takeover'
                 await Append(host, item, EventTypes.WorkflowStarted, Row(address, "produce", "start", Desk(), suspension: null), "started", ct);
                 var takeover = new SuspensionSummary(SuspensionKind.Takeover, Reason: null, ParkKind: null, Escalation: null, Mirrors: null);
@@ -54,6 +60,13 @@ internal static class ParkScenarios
         await ViewScenarios.CatchUp(host, ct);
         var route = slug == "items-id" ? "/sindri/items/" + item : "/sindri/" + slug;
         return (await host.Http.Ask(Get(route, ItemScenarios.Human(host)))).Body;
+    }
+
+    /// <summary>Starts the item's instance in 'triaged', as the 'running' scenario does.</summary>
+    internal static async Task StartRunning(GoldenHost host, string item, CancellationToken ct)
+    {
+        await Append(host, item, EventTypes.WorkflowStarted, Row(item + "/step/1", "triaged", "start", new FrameSummary("triaged", 1, Run: null, Child: null), suspension: null), "started", ct);
+        await ViewScenarios.CatchUp(host, ct);
     }
 
     private static FrameSummary Desk() => new("produce", 1, "1.1", Child: null, StepRuntime.Desk);

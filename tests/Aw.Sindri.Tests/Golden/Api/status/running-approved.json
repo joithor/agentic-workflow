@@ -33,5 +33,10 @@
     "word": "healthy",
     "problems": [],
     "sentence": null
+  },
+  "sessions": {
+    "live": 0,
+    "asking": 0,
+    "problems": 0
   }
 }

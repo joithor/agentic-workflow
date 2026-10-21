@@ -6,6 +6,16 @@
     <Project Path="src/Aw.Kernel.Telemetry/Aw.Kernel.Telemetry.csproj" />
     <Project Path="src/Redaction/Aw.Redaction/Aw.Redaction.csproj" />
   </Folder>
+  <Folder Name="/src/CodeIndex/">
+    <Project Path="src/CodeIndex/Aw.CodeIndex.Core/Aw.CodeIndex.Core.csproj" />
+    <Project Path="src/CodeIndex/Aw.CodeIndex.Features/Aw.CodeIndex.Features.csproj" />
+    <Project Path="src/CodeIndex/Aw.CodeIndex.Infrastructure/Aw.CodeIndex.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Forge/">
+    <Project Path="src/Forge/Aw.Forge.Core/Aw.Forge.Core.csproj" />
+    <Project Path="src/Forge/Aw.Forge.Infrastructure/Aw.Forge.Infrastructure.csproj" />
+    <Project Path="src/Forge/Aw.Forge.Host/Aw.Forge.Host.csproj" />
+  </Folder>
   <Folder Name="/src/Meta/">
     <Project Path="src/Meta/Aw.Meta.Core/Aw.Meta.Core.csproj" />
     <Project Path="src/Meta/Aw.Meta.Features/Aw.Meta.Features.csproj" />
@@ -74,6 +84,7 @@
     <Project Path="tests/Aw.BugFix.Tests/Aw.BugFix.Tests.csproj" />
     <Project Path="tests/Aw.BugFix.Testing/Aw.BugFix.Testing.csproj" />
     <Project Path="tests/Aw.Sindri.Tests/Aw.Sindri.Tests.csproj" />
+    <Project Path="tests/Aw.Sindri.Engine.Tests/Aw.Sindri.Engine.Tests.csproj" />
     <Project Path="tests/Aw.Sindri.Testing/Aw.Sindri.Testing.csproj" />
     <Project Path="tests/Aw.Sindri.Ui.Tests/Aw.Sindri.Ui.Tests.csproj" />
     <Project Path="tests/Aw.Sindri.Ui.Rendering.Tests/Aw.Sindri.Ui.Rendering.Tests.csproj" />
@@ -83,5 +94,9 @@
     <Project Path="tests/Aw.Context.Tests/Aw.Context.Tests.csproj" />
     <Project Path="tests/Aw.Meta.Tests/Aw.Meta.Tests.csproj" />
     <Project Path="tests/Aw.Meta.Testing/Aw.Meta.Testing.csproj" />
+    <Project Path="tests/Aw.Forge.Tests/Aw.Forge.Tests.csproj" />
+    <Project Path="tests/Aw.Forge.Testing/Aw.Forge.Testing.csproj" />
+    <Project Path="tests/Aw.CodeIndex.Tests/Aw.CodeIndex.Tests.csproj" />
+    <Project Path="tests/Aw.CodeIndex.Testing/Aw.CodeIndex.Testing.csproj" />
   </Folder>
 </Solution>

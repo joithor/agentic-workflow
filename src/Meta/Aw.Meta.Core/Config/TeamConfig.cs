@@ -22,6 +22,8 @@ public sealed record TeamConfig
     /// <param name="resources">The memory and disk thresholds; the defaults when absent.</param>
     /// <param name="builders">How many builders a lane may run; the defaults when absent.</param>
     /// <param name="heavy">The heavy-slot reservation; the defaults when absent.</param>
+    /// <param name="context">The lane context-window threshold for recycling; the defaults when absent.</param>
+    /// <param name="usage">The usage-limit monitor's margin, probe interval and auto-resume; the defaults when absent.</param>
     [JsonConstructor]
     public TeamConfig(
         string team,
@@ -36,7 +38,9 @@ public sealed record TeamConfig
         WorktreeConfig? worktrees = null,
         ResourcesConfig? resources = null,
         BuildersConfig? builders = null,
-        HeavyConfig? heavy = null)
+        HeavyConfig? heavy = null,
+        ContextConfig? context = null,
+        UsageConfig? usage = null)
     {
         Team = team;
         Repo = repo;
@@ -51,6 +55,8 @@ public sealed record TeamConfig
         Resources = resources ?? new ResourcesConfig();
         Builders = builders ?? new BuildersConfig();
         Heavy = heavy ?? new HeavyConfig();
+        Context = context ?? new ContextConfig();
+        Usage = usage ?? new UsageConfig();
     }
 
     /// <summary>The team name; session names are "team-lane".</summary>
@@ -91,4 +97,10 @@ public sealed record TeamConfig
 
     /// <summary>The heavy-slot reservation.</summary>
     public HeavyConfig Heavy { get; init; }
+
+    /// <summary>The lane context-window threshold for recycling.</summary>
+    public ContextConfig Context { get; init; }
+
+    /// <summary>When the usage-limit monitor calls a limit over and whether it resumes idle lanes.</summary>
+    public UsageConfig Usage { get; init; }
 }

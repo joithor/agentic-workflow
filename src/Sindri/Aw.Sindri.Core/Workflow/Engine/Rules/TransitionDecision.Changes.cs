@@ -35,10 +35,23 @@ public static partial class TransitionDecision
             var before = Input.Instance;
             var trigger = Answered is { } answer
                 ? new TriggerRecord(answer.Name, Key, answer.Actor, Outcome: null)
-                : new TriggerRecord(Trigger.Name, Key, Trigger.Actor, Outcome(Trigger), (Trigger as StepFailed)?.Reason);
+                : new TriggerRecord(Trigger.Name, Key, Trigger.Actor, Outcome(Trigger), (Trigger as StepFailed)?.Reason, Via: ViaOf(Trigger), Decision: (Trigger as StepCompleted)?.Decision)
+                {
+                    Tokens = Trigger is StepCompleted { Via: StepRuntime.Agent } agent ? agent.Tokens : null,
+                };
             return new InstanceChange(after, new WorkflowEvent(
                 type, after.Id, trigger, Started: null, Rules.Delta(before, after),
                 records.Gates, records.Evidence, Grant: null, Override: null, Refusal: null, Effects: []));
         }
+
+        /// <summary>The runtime an event says ran the Step: 'block' for a block run's result or failure, 'agent' for an agent report; null for a desk report or any other trigger.</summary>
+        private static string? ViaOf(Trigger trigger) => trigger switch
+        {
+            StepCompleted { Via: StepRuntime.Block } => "block",
+            StepCompleted { Via: StepRuntime.Agent } => "agent",
+            StepFailed when BlockStepTriggers.IsBlockActor(trigger.Actor) => "block",
+            StepFailed when trigger.Actor.StartsWith("service:agent:", StringComparison.Ordinal) => "agent",   // an agent run that failed to launch, was lost or exited
+            _ => null,
+        };
     }
 }

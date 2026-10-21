@@ -9,9 +9,9 @@ internal static class WorkflowsLegend
     internal static readonly string Text =
         $"{StageCellViewModel.Mark(Progress.Done)} {Labels.StageDone}   {StageCellViewModel.Mark(Progress.Active)} {Labels.StageActive}   "
         + $"{StageCellViewModel.Mark(Progress.Pending)} {Labels.StagePending}   {Labels.MarkEscalated} {Labels.LegendEscalated}   {Labels.MarkTakenOver} {Labels.LegendTakenOver}   {Labels.LoopMark} {Labels.LegendLoop}"
-        + "        Enter opens · A answers a decision or completes a desk task · B hand back · X cancel";
+        + "        Enter opens · A answers a decision or finishes a task that is waiting for you · B shows how to hand a run back · X cancels";
 
     /// <summary>The line in words, for screen readers: no glyph.</summary>
     internal const string Name =
-        $"{Labels.StageDone}, {Labels.StageActive}, {Labels.StagePending}, {Labels.LegendEscalated}, {Labels.LegendTakenOver}, {Labels.LegendLoop}. Keys: Enter opens, A answers a decision or completes a desk task, B hand back, X cancel";
+        $"{Labels.StageDone}, {Labels.StageActive}, {Labels.StagePending}, {Labels.LegendEscalated}, {Labels.LegendTakenOver}, {Labels.LegendLoop}. Keys: Enter opens, A answers a decision or finishes a task that is waiting for you, B shows how to hand a run back, X cancels";
 }

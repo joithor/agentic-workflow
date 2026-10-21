@@ -36,6 +36,12 @@ internal sealed class ShellText
     /// <summary><see cref="Labels.DoctorFix"/>.</summary>
     public string DoctorFix { get; } = Labels.DoctorFix;
 
+    /// <summary><see cref="Labels.JobsLink"/>.</summary>
+    public string JobsLink { get; } = Labels.JobsLink;
+
+    /// <summary><see cref="Labels.JobsLinkName"/>.</summary>
+    public string JobsLinkName { get; } = Labels.JobsLinkName;
+
     /// <summary><see cref="Labels.GoKey"/>.</summary>
     public string GoKey { get; } = Labels.GoKey;
 
@@ -74,9 +80,6 @@ internal sealed class ShellText
 
     /// <summary>What the Context page waits for (<see cref="Labels.ArrivesWith"/>).</summary>
     public string ArrivesContext { get; } = Labels.ArrivesContext;
-
-    /// <summary>What the Agents page waits for (<see cref="Labels.ArrivesWith"/>).</summary>
-    public string ArrivesAgents { get; } = Labels.ArrivesAgents;
 
     /// <summary><see cref="Labels.Home"/>.</summary>
     public string Home { get; } = Labels.Home;
@@ -140,6 +143,9 @@ internal sealed class ShellText
 
     /// <summary><see cref="Labels.SearchKeyLetter"/>.</summary>
     public string SearchKeyLetter { get; } = Labels.SearchKeyLetter;
+
+    /// <summary><see cref="Labels.StartWorkflow"/>.</summary>
+    public string StartWorkflow { get; } = Labels.StartWorkflow;
 
     /// <summary><see cref="Labels.Stale"/>.</summary>
     public string Stale { get; } = Labels.Stale;

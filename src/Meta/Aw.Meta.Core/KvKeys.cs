@@ -33,9 +33,15 @@ public static class KvKeys
     /// <summary>The disk and memory state the last watch reported ("disk=low mem=ok"), so a re-armed watch does not announce an unchanged state again.</summary>
     public const string WatchResources = "watch.resources";
 
+    /// <summary>The lanes the last watch reported CONTEXT HIGH for (comma-separated), so a re-armed watch does not announce a standing one again.</summary>
+    public const string WatchContext = "watch.context";
+
     /// <summary>When the owner or meta dropped a pull request's merge-queue entry (aw-meta queue-drop), as "pr=ticks" pairs; a ready message newer than the drop queues it again.</summary>
     public const string QueueDropped = "queue.dropped";
 
     /// <summary>The running (or last) merge-train's summary lines, as the status shows them.</summary>
     public const string Train = "train.state";
+
+    /// <summary>The usage-limit stops the watch has announced (so a re-armed watch does not repeat them).</summary>
+    public const string UsageWatch = "usage.watch";
 }

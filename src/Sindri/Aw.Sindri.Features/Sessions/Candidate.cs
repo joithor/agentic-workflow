@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Sessions;
 
@@ -18,6 +19,8 @@ internal sealed record Candidate(ProcessEntry Process, AgentEntry Agent, Session
     internal string? Cwd { get; init; }
 
     internal string? TranscriptHint { get; init; }
+
+    internal HostInfo Host { get; init; } = HostInfo.Unknown;
 
     internal SessionRef Ref => new(Agent.Id, Session);
 }

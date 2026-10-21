@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Features.Sessions;
 using Aw.Sindri.Testing;
@@ -37,7 +38,7 @@ public sealed class CollectSessionsTests
     {
         ClaudeRuns();
         _ = _c.Records.With(LiveRecord());
-        var guarded = new SessionDiscovery(new ThrowingEnvironmentTable(_c.Fake), _c.Records, _c.Fleet, new Infrastructure.Launch.AgentCatalog(Agents), _c.Settings, _c.Base.Clock);
+        var guarded = new SessionDiscovery(new ThrowingEnvironmentTable(_c.Fake), _c.Records, _c.Fleet, new Infrastructure.Launch.AgentCatalog(Agents), _c.Settings, SessionHostData.None(_c.Fake), _c.Base.Clock);
 
         var found = await Task.Run(() => guarded.Discover(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken), TestContext.Current.CancellationToken);
 

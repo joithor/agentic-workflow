@@ -54,6 +54,12 @@
     <ProjectReference Include="../../src/Meta/Aw.Meta.Features/Aw.Meta.Features.csproj" />
     <ProjectReference Include="../../src/Meta/Aw.Meta.Infrastructure/Aw.Meta.Infrastructure.csproj" />
     <ProjectReference Include="../../src/Meta/Aw.Meta.Host/Aw.Meta.Host.csproj" />
+    <ProjectReference Include="../../src/Forge/Aw.Forge.Core/Aw.Forge.Core.csproj" />
+    <ProjectReference Include="../../src/Forge/Aw.Forge.Infrastructure/Aw.Forge.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Forge/Aw.Forge.Host/Aw.Forge.Host.csproj" />
+    <ProjectReference Include="../../src/CodeIndex/Aw.CodeIndex.Core/Aw.CodeIndex.Core.csproj" />
+    <ProjectReference Include="../../src/CodeIndex/Aw.CodeIndex.Features/Aw.CodeIndex.Features.csproj" />
+    <ProjectReference Include="../../src/CodeIndex/Aw.CodeIndex.Infrastructure/Aw.CodeIndex.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

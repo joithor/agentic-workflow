@@ -8,7 +8,7 @@ internal static class SindriUiErrors
     /// <summary>SND-UI-001: no usable endpoint record, or it names a process that isn't the one answering.</summary>
     public static readonly ErrorDefinition NotRunning = new("SND-UI-001", ErrorKind.Unavailable, "Sindri is not running");
 
-    /// <summary>SND-UI-002: nothing answered at the recorded endpoint, or not within 2 s.</summary>
+    /// <summary>SND-UI-002: nothing answered at the recorded endpoint, or not within 120 s.</summary>
     public static readonly ErrorDefinition Unreachable = new("SND-UI-002", ErrorKind.Unavailable, "Sindri's API doesn't answer");
 
     /// <summary>SND-UI-003: the API answered, but not with the record this build reads.</summary>

@@ -31,7 +31,27 @@ internal static class WorkflowRoutes
 
     internal static string Instance(string id) => $"{Root}/instances/{Uri.EscapeDataString(id)}";
 
+    /// <summary>POST: the report for an open desk run.</summary>
+    internal static string Complete(string id, string run) => $"{Instance(id)}/runs/{Uri.EscapeDataString(run)}/complete";
+
+    internal static string Events(string id) => $"{Instance(id)}/events";
+
     internal static string Fact(string id, string key) => $"{Instance(id)}/facts/{Uri.EscapeDataString(key)}";
+
+    /// <summary>GET: the recipe list (every registered recipe).</summary>
+    internal static string Recipes => $"{Root}/recipes";
+
+    /// <summary>POST: start an instance.</summary>
+    internal static string Start => $"{Root}/instances";
+
+    /// <summary>GET: the approve-all plan; POST: approve it (a job).</summary>
+    internal static string ApproveAll => $"{Root}/recipes/approve-all";
+
+    /// <summary>POST: a challenge the app answers by holding or typing.</summary>
+    internal static string AppChallenge => $"{Root}/challenges/app";
+
+    /// <summary>GET: one job, which the approval is followed through.</summary>
+    internal static string Job(string id) => $"/sindri/jobs/{Uri.EscapeDataString(id)}";
 
     internal static string Recipe(string recipe, string? hash)
     {

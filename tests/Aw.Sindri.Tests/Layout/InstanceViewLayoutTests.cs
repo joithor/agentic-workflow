@@ -51,7 +51,7 @@ public sealed class InstanceViewLayoutTests
                     new FactRef("spec.md", 10, "sha256:aa", "p", ItemId: null, Url: null, Host: null, Title: null, FactKey: null), progress,
                     new FactPending(Required: true, ["tests"], ActionId.From("CompleteStep"))),
             ],
-            ChildGroups = [new ChildGroup("build", RecipeId.From("workflow.builder-feature"), 4, 9, [new Workstream("ws-1", "UI", [row])], [], More: 6)],
+            ChildGroups = [new ChildGroup("build", RecipeId.From("workflow.builder-feature"), 4, 9, [new Workstream("ws-1", "UI", [row])], [], More: 6, DisplayName: "Builder feature")],
         };
     }
 
@@ -98,7 +98,7 @@ public sealed class InstanceViewLayoutTests
 
     private static void AssertStatus(JsonElement status)
     {
-        HasExactly(status, "header", "next", "answer", "child", "drift", "inputs", "timeout", "budget", "paused", "commands", "text");
+        HasExactly(status, "header", "next", "answer", "child", "drift", "inputs", "timeout", "budget", "paused", "commands", "text", "injection");
         HasExactly(Prop(status, "header"), "address", "recipe", "hash12", "version", "state", "detail", "since", "ageSeconds");
         HasExactly(Prop(status, "answer"), "kind", "actionId", "class", "cli", "atTerminal");
         Assert.Equal("grantTokens", Prop(Prop(status, "answer"), "kind").GetString());
@@ -124,7 +124,7 @@ public sealed class InstanceViewLayoutTests
         HasExactly(Prop(fact, "pending"), "required", "checks", "completeAction");
 
         var group = Prop(root, "childGroups")[0];
-        HasExactly(group, "state", "recipe", "done", "total", "workstreams", "rows", "more");
+        HasExactly(group, "state", "recipe", "displayName", "done", "total", "workstreams", "rows", "more");
         HasExactly(Prop(group, "workstreams")[0], "id", "label", "rows");
         HasExactly(Prop(Prop(group, "workstreams")[0], "rows")[0], "id", "address", "itemId", "title", "glyph", "state", "chip", "round", "agent", "ageSeconds", "engineOwned", "mirroredPark", "actions");
     }
@@ -170,7 +170,7 @@ public sealed class InstanceViewLayoutTests
         Assert.Equal(("with you: " + new string('x', 67))[..77] + "...", summary.Now);
         Assert.Equal(80, summary.Now.Length);
         Assert.Equal(view.Address, summary.Address);
-        Assert.Equal(new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, RecipeUrgency.Incident), summary.Recipe);
+        Assert.Equal(new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, RecipeUrgency.Incident, DisplayName: null), summary.Recipe);
         Assert.Equal(InstanceViews.Status(view, StatusCases.Now).Commands.Select(c => c.ActionId), summary.Actions);
         Assert.Equal((ItemKey.From("ITM-1"), view.State, view.Since), (summary.ItemId, summary.State, summary.Since));
         Assert.Same(view.States, summary.States);

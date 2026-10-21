@@ -15,6 +15,7 @@ internal sealed class StepSpec
     private readonly Capability _capabilities;
     private FactKey[] _inputs = [];
     private OutcomeName[] _outcomes = [];
+    private ParameterSpec[] _parameters = [];
 
     private StepSpec(string id, BlockRuntime runtime, bool humanOnly, Capability capabilities)
     {
@@ -59,12 +60,27 @@ internal sealed class StepSpec
     /// <returns>The output.</returns>
     public static OutputSpec Every(string fact) => new(FactKey.From(fact), RequiredOn: [], Every: true);
 
+    /// <summary>A text 'with:' parameter (a literal, a fact or a profile key).</summary>
+    /// <param name="name">The parameter's name.</param>
+    /// <param name="required">Whether a recipe must give it.</param>
+    /// <returns>The parameter.</returns>
+    public static ParameterSpec Text(string name, bool required = false) => new(name, ParameterType.Text, required, IsCapabilityField: false);
+
     /// <summary>The facts the Step reads.</summary>
     /// <param name="facts">The fact keys.</param>
     /// <returns>The builder.</returns>
     public StepSpec Reads(params string[] facts)
     {
         _inputs = [.. facts.Select(FactKey.From)];
+        return this;
+    }
+
+    /// <summary>The 'with:' parameters the Step takes.</summary>
+    /// <param name="parameters">The parameters.</param>
+    /// <returns>The builder.</returns>
+    public StepSpec Takes(params ParameterSpec[] parameters)
+    {
+        _parameters = parameters;
         return this;
     }
 
@@ -81,6 +97,6 @@ internal sealed class StepSpec
     /// <param name="outputs">The outputs.</param>
     /// <returns>The descriptor.</returns>
     public BlockDescriptor Writes(params OutputSpec[] outputs) => new(
-        _id, BlockKind.Step, Version: 1, _inputs, outputs, _outcomes, _capabilities, Parameters: [], Rung: null, DeskCapable: true,
+        _id, BlockKind.Step, Version: 1, _inputs, outputs, _outcomes, _capabilities, Parameters: _parameters, Rung: null, DeskCapable: true,
         HumanOnly: _humanOnly ? true : null, Runtime: _runtime);
 }

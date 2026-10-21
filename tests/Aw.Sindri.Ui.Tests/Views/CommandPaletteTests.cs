@@ -118,7 +118,7 @@ public sealed class CommandPaletteTests : IDisposable
         var names = EntryNames(window);
         Assert.All(shell.Health.Catalog.Controls, c => Assert.Single(names, n => n.StartsWith(c.Label + ", ", StringComparison.Ordinal)));
         Assert.Contains("Run doctor, Copy: sindri doctor", names, StringComparer.Ordinal);
-        Assert.Contains("Check launch targets again, arrives in P10a", names, StringComparer.Ordinal);
+        Assert.Contains("Check launch targets again, coming soon", names, StringComparer.Ordinal);
         Assert.Equal(["Actions", "Go to", "Sindri"], Named<ItemsControl>(window, "PaletteSections").GetVisualDescendants().OfType<TextBlock>()
             .Where(t => t.Classes.Contains("palette-heading")).Select(t => t.Text ?? string.Empty), StringComparer.Ordinal);
         Frame(window, "palette");
@@ -132,13 +132,13 @@ public sealed class CommandPaletteTests : IDisposable
         Assert.True(field.Focus(NavigationMethod.Tab));
 
         Press(window, Key.K, PhysicalKey.K, _command, "k");
-        window.KeyTextInput("approve profile");
+        window.KeyTextInput("revoke recipe");
         Settle(window);
 
-        Assert.Equal(["Approve profile, Copy: sindri profile approve [<hash>]"], EntryNames(window), StringComparer.Ordinal);
+        Assert.Equal(["Revoke recipe, Copy: sindri recipe revoke <recipe>"], EntryNames(window), StringComparer.Ordinal);
         Press(window, Key.Enter, PhysicalKey.Enter);
-        Assert.Equal("sindri profile approve [<hash>]", _clipboard.Text);
-        Assert.Equal(["Approve profile, Copied"], EntryNames(window), StringComparer.Ordinal);
+        Assert.Equal("sindri recipe revoke <recipe>", _clipboard.Text);
+        Assert.Equal(["Revoke recipe, Copied"], EntryNames(window), StringComparer.Ordinal);
         Frame(window, "palette-filtered");
 
         Press(window, Key.Escape, PhysicalKey.Escape);
@@ -158,7 +158,7 @@ public sealed class CommandPaletteTests : IDisposable
         Settle(window);
         Assert.True(shell.Palette.IsOpen);
 
-        window.KeyTextInput("workflows");   // the Workflows page entry (a bare "go" now also matches workflow copy blocks)
+        window.KeyTextInput("go:workflows");   // the Workflows page entry by id (the label "Workflow types" also matches a bare "workflows")
         Settle(window);
         Press(window, Key.Down, PhysicalKey.ArrowDown);
         Assert.Equal("go:Workflows", shell.Palette.Selected?.Id);
@@ -248,7 +248,7 @@ public sealed class CommandPaletteTests : IDisposable
         Press(window, Key.K, PhysicalKey.K, _command, "k");
         var scroll = Named<ScrollViewer>(window, "PaletteScroll");
 
-        Assert.Equal(("CreateItem", 0d), (shell.Palette.Selected?.Id, scroll.Offset.Y));
+        Assert.Equal(("ApproveAllRecipes", 0d), (shell.Palette.Selected?.Id, scroll.Offset.Y));   // the first enabled action by name: the catalog now has ApproveAllRecipes ready
         var heading = Named<ItemsControl>(window, "PaletteSections").GetVisualDescendants().OfType<TextBlock>().First(t => t.Text == "Actions");
         Assert.True(heading.TranslatePoint(default, scroll) is { Y: >= 0 } at && at.Y < scroll.Viewport.Height, "the Actions heading is in view");
         Frame(window, "palette-top");

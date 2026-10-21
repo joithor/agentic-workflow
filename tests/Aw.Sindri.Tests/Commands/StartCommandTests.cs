@@ -39,6 +39,22 @@ public sealed class StartCommandTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_malformed_AW_SINDRI_CLI_TIMEOUT_is_refused_before_anything_is_launched()
+    {
+        var launcher = new FakeControlPlaneLauncher();
+        _probe.Answers.Enqueue(SindriErrors.NotRunning.With("no control plane is recorded"));
+        using var refusing = new ControlPlaneClient(_probe, SliceHarness.Json, refusal: CliTimeout.Read(_ => "abc").Error);
+        var command = new StartCommand(_probe, launcher, refusing, new Output(TextWriter.Null, TextWriter.Null, SliceHarness.Json), _clock);
+
+        var found = await command.FindOrLaunch(Token);
+        var ensured = await command.EnsureRunning(launch: true, Token);
+
+        Assert.Equal(SindriErrors.InvalidInput.Code, found.Error.Code);
+        Assert.Equal(SindriErrors.InvalidInput.Code, ensured!.Code);
+        Assert.Equal(0, launcher.Launches);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_concurrent_start_that_won_the_lease_is_found_by_polling_on()
     {
         var launcher = FakeControlPlaneLauncher.ExitingWith("SND-LEASE-001 held by host/77 since then (epoch 3)");
@@ -55,6 +71,23 @@ public sealed class StartCommandTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_started_serve_that_needs_25_s_to_come_up_on_a_loaded_box_is_waited_for()
+    {
+        var launcher = new FakeControlPlaneLauncher();
+        var polls = (int)(TimeSpan.FromSeconds(25) / StartCommand.Poll);
+        for (var i = 0; i <= polls; i++)
+        {
+            _probe.Answers.Enqueue(SindriErrors.NotRunning.With("not yet"));   // the first check, then each poll until 25 s have passed
+        }
+
+        _probe.Answers.Enqueue(_found);
+
+        var found = await Drive(Command(launcher).FindOrLaunch(Token));
+
+        Assert.Equal(_found, found.Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_lost_lease_race_whose_winner_never_answers_fails_at_the_deadline()
     {
         var launcher = FakeControlPlaneLauncher.ExitingWith("SND-LEASE-001 held by host/77 since then (epoch 3)");
@@ -62,7 +95,7 @@ public sealed class StartCommandTests : IDisposable
         var found = await Drive(Command(launcher).FindOrLaunch(Token));
 
         Assert.Equal(SindriErrors.StartFailed.Code, found.Error.Code);
-        Assert.Contains("didn't answer within 10 s: the started one exited with SND-LEASE-001 held by host/77 since then (epoch 3)", found.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("didn't answer within 30 s: the started one exited with SND-LEASE-001 held by host/77 since then (epoch 3)", found.Error.Message, StringComparison.Ordinal);
         Assert.Equal(1 + (int)(StartCommand.Budget / StartCommand.Poll), _probe.Calls);   // the first check, then every poll to the deadline
     }
 

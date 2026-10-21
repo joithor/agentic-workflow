@@ -30,6 +30,19 @@ check "selfcheck passes" "$rc" "0"
 node "$FX/selfcheck.mjs" extra >/dev/null 2>&1; check "selfcheck: an unknown argument exits 2" "$?" "2"
 node "$FX/selfcheck.mjs" diff-scope >/dev/null 2>&1; check "selfcheck diff-scope with no arguments exits 2" "$?" "2"
 
+# A loaded gate gives new pipes one 4 KB page (fs.pipe-user-pages-soft): the selfcheck must still print every line, not
+# drop what it hasn't flushed when it exits. Linux only (F_SETPIPE_SZ), and needs python3.
+if [ "$(uname -s)" = Linux ] && command -v python3 >/dev/null; then
+  tail1="$(python3 -I -c '
+import fcntl, os, subprocess, sys, time
+r, w = os.pipe(); fcntl.fcntl(w, 1031, 4096)
+p = subprocess.Popen(["node", sys.argv[1]], stdout=w, stderr=w); os.close(w); time.sleep(1)
+out = b"".join(iter(lambda: os.read(r, 65536), b"")); p.wait()
+print(out.decode().rstrip().splitlines()[-1])' "$FX/selfcheck.mjs")"
+  if [[ "$tail1" =~ ^[0-9]+/[0-9]+\ checks\ pass$ ]]; then echo "ok - through a 4 KB pipe with a slow reader the selfcheck prints every line"; else
+    echo "not ok - through a 4 KB pipe the selfcheck's output was cut: last line '$tail1'"; fail=1; fi
+fi
+
 # --- each check can fail: break a copy of the fixture (line and scoping side by side) ---
 # sedi <script> <file>...: an in-place sed that works with GNU and BSD sed alike (CI runs on macOS).
 sedi() { local script="$1" f; shift; for f in "$@"; do sed "$script" "$f" > "$f.sedi" && mv "$f.sedi" "$f" || return 1; done; }
@@ -37,6 +50,10 @@ mutate() { # mutate <name> <expect-text> <command run inside the copy of tests/f
   local name="$1" expect="$2" cmd="$3" copy="$WORK/m-$1"
   mkdir -p "$copy" && cp -R "$ROOT/tests/fixtures/line" "$copy/line" && cp -R "$ROOT/tests/fixtures/scoping" "$copy/scoping"
   ( cd "$copy/line" && eval "$cmd" ) >/dev/null 2>&1
+  # a mutation that edits nothing proves nothing (BSD sed accepts GNU-only scripts and changes nothing)
+  if diff -rq "$ROOT/tests/fixtures/line" "$copy/line" >/dev/null && diff -rq "$ROOT/tests/fixtures/scoping" "$copy/scoping" >/dev/null; then
+    echo "not ok - the mutation $name changed no file"; fail=1; return
+  fi
   local got rc; got="$(node "$copy/line/selfcheck.mjs" 2>&1)"; rc=$?
   check "a broken fixture fails selfcheck: $name" "$rc" "1"
   if printf '%s\n' "$got" | grep '^not ok - ' | grep -qF -- "$expect"; then echo "ok - ...and a failing check names: $expect"; else echo "not ok - expected a failing check to name: $expect"; printf '%s\n' "$got" | grep -A1 '^not ok' | head -6; fail=1; fi
@@ -60,7 +77,7 @@ mutate pl-leak-report-clean "PL-LEAK" "node -e 'const f=\"gold/prove/holdout-res
 mutate related-path-not-a-cascade-path "related is a cascade lens" "sedi 's/reads action:audit.report/reads action:export.run/' gold/scope-trace/expiry.related-trace.json"
 mutate hops-not-hop-kinds "hop-kind arrays" "sedi 's/\"dependency\"/\"walk\"/' gold/scope/expiry/lenses.json gold/scope/expiry/coverage.json"
 mutate malformed-gold-is-a-check "crashed" "echo '{' > gold/design/expiry/signals.json"
-mutate design-parent-not-the-frozen-scope "index.json: kind design, parent is the frozen" "sedi '0,/sha256:[0-9a-f]\\{64\\}/s//sha256:0000000000000000000000000000000000000000000000000000000000000000/' gold/design/expiry/index.json"
+mutate design-parent-not-the-frozen-scope "index.json: kind design, parent is the frozen" "node -e 'const f=process.argv[1],fs=require(\"fs\");fs.writeFileSync(f,fs.readFileSync(f,\"utf8\").replace(/sha256:[0-9a-f]{64}/,\"sha256:\"+\"0\".repeat(64)))' gold/design/expiry/index.json"
 mutate plan-index-self-set "index.json: kind plan" "sedi 's/\"self\": null/\"self\": \"sha256:0000000000000000000000000000000000000000000000000000000000000000\"/' gold/plan/expiry/index.json"
 
 # --- the history: reproducible, with the planted items ---

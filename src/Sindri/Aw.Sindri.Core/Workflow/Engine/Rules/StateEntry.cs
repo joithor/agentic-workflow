@@ -32,6 +32,7 @@ internal static class StateEntry
         {
             Frame = new Frame(state, entry, OpenRun(target, entry, context), Child: null),
             Outcome = target.Kind == StateKind.Terminal ? target.Outcome : instance.Outcome,
+            Visited = instance.Visited?.Contains(state, StringComparer.Ordinal) == true ? instance.Visited : [.. instance.Visited ?? [], state],
         };
     }
 
@@ -54,7 +55,7 @@ internal static class StateEntry
             : null;
     }
 
-    // An active state's run '{entry}.1': the agent runtime when the build has the Step's, else the desk when it is
+    // An active state's run '{entry}.1': the block runtime when this build registered the Step's (DT spec §8.2), the agent runtime when the build has the Step's, else the desk when it is
     // deskCapable (W20); with neither there is no run, and the decision parks with SND-WF-010 (W5).
     private static OpenRun? OpenRun(RecipeState target, int entry, DecisionContext context)
     {
@@ -63,9 +64,9 @@ internal static class StateEntry
             return null;
         }
 
-        if (context.Runtimes.Contains(step.Use))
+        if (context.RuntimeOf(step.Use) is { } runtime)
         {
-            return new OpenRun(RunToken.For(entry, 1), StepRuntime.Agent, Launch: null, Task: null);
+            return new OpenRun(RunToken.For(entry, 1), runtime, Launch: null, Task: null);   // the engine or an agent session runs it, no desk task
         }
 
         return context.Catalog.Find(step.Use) is { DeskCapable: true }

@@ -8,7 +8,8 @@
     "id": "workflow.dev-desk-round-trip",
     "hash": "sha256:459f0bb87b5ab29e00fe744561f13e95e8a5819debcd065a1c52b0ad3aba27ac",
     "version": 2,
-    "urgency": "work"
+    "urgency": "work",
+    "displayName": "Dev desk round trip"
   },
   "state": "export",
   "since": "2026-10-12T12:00:00.0000000Z",
@@ -153,7 +154,8 @@
           "confirm": "Cancel ITM-01JL1/dev-desk-round-trip/1? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JL1/dev-desk-round-trip/1  workflow.dev-desk-round-trip@459f0bb87b5a  v2  export: desk task  since 12:00 (26m)\n  next      Export the file for the request (round 1/2), then run:\n            sindri workflow complete ITM-01JL1/dev-desk-round-trip/1 --run 1.1 --outcome done --output\n            fact:output=<file>\n  inputs    fact:request  request.txt  sha256:d2a7...\n  timeout   parks in 1d 23h 34m (desk)\n  commands  complete, takeover, cancel\n"
+      "text": "ITM-01JL1/dev-desk-round-trip/1  workflow.dev-desk-round-trip@459f0bb87b5a  v2  export: desk task  since 12:00 (26m)\n  next      Export the file for the request (round 1/2), then run:\n            sindri workflow complete ITM-01JL1/dev-desk-round-trip/1 --run 1.1 --outcome done --output\n            fact:output=<file>\n  inputs    fact:request  request.txt  sha256:d2a7...\n  timeout   parks in 1d 23h 34m (desk)\n  commands  complete, takeover, cancel\n",
+      "injection": []
     }
   },
   "facts": [
@@ -204,5 +206,6 @@
     "ApplyCommand:takeover",
     "ApplyCommand:cancel"
   ],
+  "stepRuns": [],
   "asOf": "2026-10-12T12:26:00.0000000Z"
 }

@@ -153,7 +153,6 @@ public sealed class ExpandedStateViewModelTests
 
         Expect.Sequence(served.Select(c => c.Cli), expanded.Commands.Select(c => c.Cli));
         Assert.All(expanded.Commands, c => Assert.Equal((Labels.AvailableWithU8b, null), (c.PendingChip, c.Protected)));
-        Assert.Equal(Labels.AvailableWithU8b, Labels.Arrives("U8b"));   // one wording for what U8b brings
         Assert.All(expanded.Commands, c => Assert.Contains(c.PendingChip, c.Name, StringComparison.Ordinal));
         await expanded.Commands[0].Copy(Token);
         Assert.Equal(served[0].Cli, _clipboard.Text);
@@ -241,14 +240,14 @@ public sealed class ExpandedStateViewModelTests
     }
 
     [Fact]
-    public void An_agent_step_shows_Attach_as_a_chip_pending_P10a()
+    public void An_agent_step_shows_Attach_waiting_on_the_item_not_P10a()
     {
         var agent = Expanded("incident-loop");
         var desk = Expanded("dev-desk-round-trip");
 
-        Assert.Equal((true, Labels.AvailableWithP10a), (agent.HasAttach, agent.AttachChip));
-        Assert.Contains(FixtureInstances.Detail("incident-loop").Address, agent.AttachName, StringComparison.Ordinal);
-        Assert.Equal((false, string.Empty), (desk.HasAttach, desk.AttachChip));
+        Assert.Equal((true, true, Labels.AttachChecking), (agent.HasAttach, agent.Attach!.IsPending, agent.Attach.PendingChip));
+        Assert.Contains(FixtureInstances.Detail("incident-loop").Address, agent.Attach.PendingChipName, StringComparison.Ordinal);
+        Assert.Equal((false, null), (desk.HasAttach, desk.Attach));
     }
 
     [Fact]

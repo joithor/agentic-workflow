@@ -1,7 +1,9 @@
 using System.Globalization;
 using Aw.Meta.Core;
 using Aw.Meta.Core.Commands;
+using Aw.Meta.Core.Coordination;
 using Aw.Meta.Core.Health;
+using Aw.Meta.Core.Usage;
 using Aw.Meta.Features.Watch;
 using Aw.Meta.Testing;
 using Aw.Meta.Tests.Reserve;
@@ -16,10 +18,11 @@ public sealed class WatchTests
 
     private WatchService Service() => new(
         _world.Config,
-        new WatchPoller(_world.Repo, _world.Resources, _world.Messages, _world.Values, new WatchSweeper(_world.Config, _world.Sweeper, _world.Values), Worlds.Reservation(_world)),
+        new WatchPoller(_world.Repo, _world.Resources, _world.Messages, _world.Values, new WatchSweeper(_world.Config, _world.Sweeper, _world.Values), Worlds.Reservation(_world), _world.Context),
         _world.Values,
         _world.Delay,
-        _world.Clock);
+        _world.Clock,
+        new UsageMonitor(new UsageReader(_world.LaneFiles, _world.LaneSessions, _world.ClaudeTranscripts, _world.Panes, _world.Messages, _world.Clock), new UsageWatcher(new PaneSubmitter(_world.Panes, _world.Delay), _world.Log, _world.Values, _world.Clock)));
 
     private static string Pr(int number, string state, string head, string mergeable = "MERGEABLE", bool draft = false) =>
         string.Create(CultureInfo.InvariantCulture, $$"""{"number":{{number}},"state":"{{state}}","isDraft":{{(draft ? "true" : "false")}},"headRefOid":"{{head}}","mergeable":"{{mergeable}}","title":"t{{number}}"}""");
@@ -238,7 +241,7 @@ public sealed class WatchTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Nearly_full_swap_counts_as_low_memory_even_with_memory_to_spare()
+    public async Task Nearly_full_swap_is_not_low_memory_while_ram_is_above_the_floor()
     {
         await _world.Ready();
         _world.Resources.Resources = new HostResources(64_000_000, 40_000_000, SwapUsedKb: 9_500_000, DiskFreeBytes: 80_000_000_000, SwapTotalKb: 10_000_000);
@@ -246,7 +249,7 @@ public sealed class WatchTests
 
         _ = await Watch(TimeSpan.FromSeconds(240));
 
-        Assert.Equal(["MEMORY LOW"], _lines.Where(l => l.StartsWith("MEMORY", StringComparison.Ordinal)), StringComparer.Ordinal);
+        Assert.DoesNotContain(_lines, l => l.StartsWith("MEMORY", StringComparison.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -291,5 +294,33 @@ public sealed class WatchTests
         Assert.All(
             [new WatchRequest(TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(1), Ignore), new WatchRequest(_interval, TimeSpan.FromSeconds(60), Ignore), new WatchRequest(_interval, TimeSpan.FromHours(30), Ignore)],
             request => Assert.Equal(MetaErrors.Invalid.Code, validator.Validate(request).Error.Code));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_lane_crossing_the_context_threshold_is_reported_once_and_ok_after_a_recycle_and_a_re_armed_watch_does_not_repeat_it()
+    {
+        await _world.Ready();
+        _world.LaneFiles.Put(new Core.Lanes.LaneRecord("api", Core.Ids.SessionId.From("s-old"), Agent: null, A.At(1)));
+        _world.ClaudeTranscripts.PutUsage("s-old", 487_000, A.At(5));
+        Script([List(Pr(190, "OPEN", "aaa1111"))], onPoll: poll =>
+        {
+            if (poll == 2)
+            {
+                _world.LaneSessions.Set("t1-api", "s-new");
+                _world.ClaudeTranscripts.PutUsage("s-new", 9_000, A.At(9));
+            }
+        });
+
+        _ = await Watch(TimeSpan.FromSeconds(540));
+        var context = _lines.Where(l => l.StartsWith("CONTEXT", StringComparison.Ordinal)).ToList();
+
+        Assert.Equal(["CONTEXT HIGH api 487k", "CONTEXT OK api"], context);
+        _lines.Clear();
+        _world.ClaudeTranscripts.PutUsage("s-new", 450_000, A.At(20));
+        _ = await Watch(TimeSpan.FromSeconds(240));
+        Assert.Equal(["CONTEXT HIGH api 450k"], _lines.Where(l => l.StartsWith("CONTEXT", StringComparison.Ordinal)), StringComparer.Ordinal);
+        _lines.Clear();
+        _ = await Watch(TimeSpan.FromSeconds(240));
+        Assert.DoesNotContain(_lines, l => l.StartsWith("CONTEXT", StringComparison.Ordinal));
     }
 }

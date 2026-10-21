@@ -45,6 +45,24 @@ public static class ApiViews
     /// <summary>GET /sindri/jobs.</summary>
     public const string Jobs = "jobs";
 
+    /// <summary>GET /sindri/context/lenses: its 'not-synced' rows name the sync job that is running.</summary>
+    public const string ContextLenses = "context-lenses";
+
+    /// <summary>GET /sindri/context/history: its 'not-synced' rows name the sync job that is running.</summary>
+    public const string ContextHistory = "context-history";
+
+    /// <summary>GET /sindri/launches/{launchId}.</summary>
+    public const string Launch = "launch";
+
+    /// <summary>GET /sindri/launch/targets.</summary>
+    public const string LaunchTargets = "launch-targets";
+
+    /// <summary>GET /sindri/setup.</summary>
+    public const string Setup = "setup";
+
+    /// <summary>GET /sindri/workflow/recipes.</summary>
+    public const string Recipes = "recipes";
+
     /// <summary>Every view name.</summary>
-    public static IReadOnlyList<string> All { get; } = [Status, Services, Profile, Commands, Queue, Items, Item, Timeline, NeedsYou, Requests, Decisions, Job, Jobs];
+    public static IReadOnlyList<string> All { get; } = [Status, Services, Profile, Commands, Queue, Items, Item, Timeline, NeedsYou, Requests, Decisions, Job, Jobs, ContextLenses, ContextHistory, Launch, LaunchTargets, Setup, Recipes];
 }

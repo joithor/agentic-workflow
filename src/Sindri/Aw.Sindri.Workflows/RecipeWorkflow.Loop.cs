@@ -82,7 +82,7 @@ internal sealed partial class RecipeWorkflow
     private async Task<WorkflowInstance> Wait(WorkflowInstance instance, Interpreting context)
     {
         var wait = instance.Suspension is null && context.Recipe.States.TryGetValue(instance.Frame.State, out var state) ? state.WaitFor : null;
-        if (!await WaitHolding(() => _submitted.Count > 0 || _timers.Fired || _delivered.Any(e => Fits(e, wait, instance.Frame)), instance, wait).ConfigureAwait(true))
+        if (!await WaitHolding(() => _submitted.Count > 0 || _timers.Fired || _delivered.Any(e => Fits(e, wait, instance)), instance, wait).ConfigureAwait(true))
         {
             return instance;   // woke only to expire a held event (§5.4); wait again
         }
@@ -92,7 +92,7 @@ internal sealed partial class RecipeWorkflow
             return await Apply(instance, submission, context).ConfigureAwait(true);
         }
 
-        Trigger next = _delivered.Any(e => Fits(e, wait, instance.Frame)) ? Take(wait, instance.Frame) : _timers.Take()!; // why: WaitHolding woke for an event that fits or a fired timer
+        Trigger next = _delivered.Any(e => Fits(e, wait, instance)) ? Take(wait, instance) : _timers.Take()!; // why: WaitHolding woke for an event that fits or a fired timer
         return await Apply(instance, new Submission(Ticket: 0, next), context).ConfigureAwait(true);
     }
 
@@ -102,13 +102,19 @@ internal sealed partial class RecipeWorkflow
     /// </summary>
     private async Task<WorkflowInstance> Apply(WorkflowInstance instance, Submission submission, Interpreting context)
     {
-        var decision = TransitionDecision.Decide(new DecisionInput(instance, context.Recipe, submission.Trigger, GateAnswers.None, context.Decisions));
+        var decision = TransitionDecision.Decide(await Deciding(instance, context, submission.Trigger).ConfigureAwait(true));
         var after = After(instance, decision);
         if (OwnChange(instance, decision) is { } change)
         {
             after = Enter(after, submission.Trigger.Actor);
             await Mirror(Record(instance, change, submission.Trigger), NeedsYou(after)).ConfigureAwait(true);
             Emit(instance, after, EffectsOf(decision), change.Event.Type);   // a takeoverIdle row (P5) is an engine notice
+            Spawn(decision);
+            Retry();   // a child's change held while the parent was busy gets another try
+        }
+        else
+        {
+            Hold(submission, decision);
         }
 
         if (submission.Ticket != 0)
@@ -120,13 +126,13 @@ internal sealed partial class RecipeWorkflow
     }
 
     /// <summary>The first delivered event that fits the wait, taken out of the buffer; the others stay, in order.</summary>
-    private WaitSatisfied Take(WaitFor? wait, Frame frame)
+    private WaitSatisfied Take(WaitFor? wait, WorkflowInstance instance)
     {
         WaitSatisfied? taken = null;
         for (var left = _delivered.Count; left > 0; left--)
         {
             var delivered = _delivered.Dequeue();
-            if (taken is null && Fits(delivered, wait, frame))
+            if (taken is null && Fits(delivered, wait, instance))
             {
                 taken = delivered;
             }
@@ -140,6 +146,9 @@ internal sealed partial class RecipeWorkflow
     }
 
     /// <summary>Whether <paramref name="delivered"/> is what the wait waits for: its event kind, its resource, or its child's end.</summary>
+    private static bool Fits(WaitSatisfied delivered, WaitFor? wait, WorkflowInstance instance) =>
+        (delivered.Source is ChildWaitSource child && instance.Suspension?.Mirrors == child.Child) || Fits(delivered, wait, instance.Frame);   // a child's end also ends the mirror of its own park (§5.8)
+
     private static bool Fits(WaitSatisfied delivered, WaitFor? wait, Frame frame) => (wait, delivered.Source) switch
     {
         (null, _) => false,
@@ -173,7 +182,7 @@ internal sealed partial class RecipeWorkflow
         },
         before.Frame.Run?.Token.Value,
         trigger.Actor,
-        Detail: WorkflowEventDetail.Of(change.Event, trigger),
+        Detail: Located(WorkflowEventDetail.Of(change.Event, trigger).WithRunOpening(change.After, _context!.Recipe), change.After),   // why: a decision is recorded only after Begin set the context
         Causation: (trigger as OpenRequested)?.Launch);
 
     internal static string TypeOf(WorkflowEventType type) => type switch
@@ -183,6 +192,7 @@ internal sealed partial class RecipeWorkflow
         WorkflowEventType.Shifted => EventTypes.WorkflowShifted,
         WorkflowEventType.Notified => EventTypes.WorkflowNotified,
         WorkflowEventType.Expired => EventTypes.WorkflowExpired,
+        WorkflowEventType.Heavy => EventTypes.WorkflowHeavy,
 
         // why: spec 5.7 names a dispatch refusal 'outbox.refused', written by P6's recheck; P4 runs no effects, so there is no kind to emit yet
         WorkflowEventType.EffectRefused => throw new NotSupportedException("an effect refusal is mirrored from P6 (outbox.refused)"),
@@ -240,18 +250,19 @@ internal sealed partial class RecipeWorkflow
         }
     }
 
-    /// <summary>The repo 'fact:item' names ('ReadItemRepo', a local activity on start); none when it can't be read.</summary>
-    private static async Task<string?> RepoOf(FactValue item)
+    /// <summary>The repo 'fact:item' names ('ReadItemRepo', a local activity on start); none when it names none, and Unreadable when it can't be read (a block Step that needs the repo then fails instead of using the box's list).</summary>
+    private static async Task<(string? Repo, bool Unreadable)> RepoOf(FactValue item)
     {
         try
         {
-            return await Workflow.ExecuteLocalActivityAsync(
+            var repo = await Workflow.ExecuteLocalActivityAsync(
                 (FactReadActivities a) => a.ReadRepoAsync(item),
                 new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(10), RetryPolicy = new RetryPolicy { MaximumAttempts = 3 } }).ConfigureAwait(true);
+            return (repo, false);
         }
         catch (Exception failed) when (IsActivityFailure(failed))
         {
-            return null; // boundary: a fact:item that can't be read leaves 'Repo' unset (spec §5.1); the start goes on
+            return (null, true); // boundary: a fact:item that can't be read leaves 'Repo' unset (spec §5.1); the start goes on
         }
     }
 
