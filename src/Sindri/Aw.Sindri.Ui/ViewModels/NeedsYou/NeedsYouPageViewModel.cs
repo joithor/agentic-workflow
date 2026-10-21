@@ -9,7 +9,7 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// reads the list Home's panel reads and shares its selection, so a row selected on one is selected on the other; it lists every
 /// row (Home caps its panel), the app never sorts or filters them, and a row keeps its place in its group's served order.
 /// </summary>
-internal sealed class NeedsYouPageViewModel : ObservableObject
+internal sealed partial class NeedsYouPageViewModel : ObservableObject
 {
     private readonly NeedsYouViewModel _list;
     private readonly TimeProvider _clock;
@@ -17,14 +17,17 @@ internal sealed class NeedsYouPageViewModel : ObservableObject
     private NeedsYouRowViewModel? _lastRow;   // the row the card last showed as selected
     private NeedsYouRowViewModel? _cleared;   // that row, once it left the list under the card, until the user moves on
 
-    internal NeedsYouPageViewModel(NeedsYouViewModel list, TimeProvider clock, IClipboard clipboard)
+    internal NeedsYouPageViewModel(NeedsYouViewModel list, TimeProvider clock, IClipboard clipboard, DeskReporter desk)
     {
         _list = list;
         _clock = clock;
         _clipboard = clipboard;
+        Bar = new NeedsYouBarViewModel(desk, clipboard, clock);
         _list.PropertyChanged += OnListChanged;
         Rebuild();
         _lastRow = Selected;
+        Bar.Show(Card);
+        Bar.PropertyChanged += OnBarChanged;
     }
 
     /// <summary>Raised when the breadcrumb asks to go back to Home.</summary>
@@ -210,7 +213,7 @@ internal sealed class NeedsYouPageViewModel : ObservableObject
 
     private static readonly string[] _cardProperties =
     [
-        nameof(Selected), nameof(Card), nameof(IsCleared), nameof(ClearedText), nameof(FooterName), nameof(HasSelected), nameof(KindWord), nameof(CardName), nameof(Reference), nameof(Why), nameof(Question), nameof(FooterRight),
+        nameof(ShowsRequest), nameof(IsDone), nameof(Selected), nameof(Card), nameof(IsCleared), nameof(ClearedText), nameof(FooterName), nameof(HasSelected), nameof(KindWord), nameof(CardName), nameof(Reference), nameof(Why), nameof(Question), nameof(FooterRight),
     ];
 
     private static readonly string[] _listProperties =
@@ -266,11 +269,18 @@ internal sealed class NeedsYouPageViewModel : ObservableObject
 
     private void Report(string[] names)
     {
+        if (ReferenceEquals(names, _cardProperties))
+        {
+            Bar.Show(Card);   // before the card's words are read: another request starts a fresh bar
+            Bar.Enabled = !IsCleared;
+        }
+
         foreach (var name in names)
         {
             OnChanged(name);
         }
     }
+
 
     // The groups are kept by (kind, heading) so a group that stays keeps its controls; its rows are the list's own row view models.
     private void Rebuild()

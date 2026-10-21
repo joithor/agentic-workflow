@@ -166,4 +166,65 @@ public sealed class ShellInboxTests
         Assert.Equal(NeedsYouViewModel.Cap, shell.NeedsYou.Rows.Count);
         Assert.Equal(8, shell.Inbox.Groups.Sum(g => g.Rows.Count));
     }, Token);
+
+    private void ServeDeskInstance() =>
+        _server.InstanceBody = _ => new RouteAnswer(System.Net.HttpStatusCode.OK, GoldenFiles.Api("workflow-instance", "dev-desk-round-trip"));
+
+    [Fact]
+    public Task A_asks_first_on_an_unread_desk_request_and_a_second_A_reports_it() => UiThread.Run(async () =>
+    {
+        ServeDeskInstance();
+        var shell = await Shell(NeedsYouRows.Desk());
+        shell.OpenNeedsYouInbox();
+        await shell.Inbox.Bar.Loaded;
+
+        _ = shell.Press("A");
+        Assert.Equal(NeedsYouBarMode.Confirming, shell.Inbox.Bar.Mode);
+        _ = shell.Press("A");
+
+        for (var i = 0; i < 400 && _server.CompleteCalls.Count == 0; i++)
+        {
+            await Task.Delay(5, Token);
+        }
+
+        Assert.Equal("approve", _server.CompleteCalls.Single().Body.Outcome);
+    }, Token);
+
+    [Fact]
+    public Task D_opens_the_reason_box_and_X_does_the_same_on_a_decision() => UiThread.Run(async () =>
+    {
+        var shell = await Shell(NeedsYouRows.Decision());
+        shell.OpenNeedsYouInbox();
+
+        _ = shell.Press("D");
+        Assert.Equal(NeedsYouBarMode.SendingBack, shell.Inbox.Bar.Mode);
+        shell.Inbox.Bar.Cancel();
+        _ = shell.Press("X");
+        Assert.Equal(NeedsYouBarMode.SendingBack, shell.Inbox.Bar.Mode);
+    }, Token);
+
+    [Fact]
+    public Task D_does_nothing_on_a_settings_request_and_E_is_inert() => UiThread.Run(async () =>
+    {
+        var shell = await Shell(NeedsYouRows.Profile());
+        shell.OpenNeedsYouInbox();
+
+        _ = shell.Press("D");
+        _ = shell.Press("E");
+
+        Assert.Equal(NeedsYouBarMode.Pending, shell.Inbox.Bar.Mode);
+    }, Token);
+
+    [Fact]
+    public Task Enter_asks_the_page_to_focus_the_card() => UiThread.Run(async () =>
+    {
+        var shell = await Shell(NeedsYouRows.Decision());
+        shell.OpenNeedsYouInbox();
+        var asked = 0;
+        shell.Inbox.CardFocusRequested += (_, _) => asked++;
+
+        var handled = shell.Press("Enter");
+
+        Assert.Equal((true, 1), (handled, asked));
+    }, Token);
 }
