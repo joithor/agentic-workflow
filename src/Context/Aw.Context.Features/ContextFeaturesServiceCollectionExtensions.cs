@@ -54,6 +54,7 @@ using Aw.Context.Features.ShowMapStatus;
 using Aw.Context.Features.ShowNode;
 using Aw.Context.Features.SourcesStatus;
 using Aw.Context.Features.SyncSources;
+using Aw.Kernel;
 using Aw.Kernel.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -99,12 +100,7 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<ListNeighborsRequest, NeighborsView>, ListNeighborsService>()
         .AddScoped<IService<FindPathRequest, PathView>, FindPathService>()
         .AddScoped<IService<BuildMapRequest, MapBuildReport>, BuildMapService>()
-        .AddScoped<IService<ReviewQueueRequest, ReviewQueueView>, ReviewQueueService>()
-        .AddScoped<IService<ReviewHistoryRequest, ReviewHistoryView>, ReviewHistoryService>()
-        .AddScoped<IService<ReviewMapRequest, ReviewResult>, ReviewMapService>()
-        .AddScoped<IService<ExportReviewRequest, ReviewExported>, ExportReviewService>()
-        .AddScoped<IService<PreviewReviewFileRequest, ReviewFilePreview>, PreviewReviewFileService>()
-        .AddScoped<IService<ApplyReviewFileRequest, ReviewResult>, ApplyReviewFileService>()
+        .AddReviewSlices()
         .AddPromoteSlices()
         .AddScoped<IService<ProposeFromScopeRequest, ProposeResult>, ProposeFromScopeService>()
         .AddScoped<IService<GetProposalsRequest, ProposalsView>, GetProposalsService>()
@@ -115,16 +111,28 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<MapReview>()
         .AddScoped<MapProposals>()
         .AddScoped<MapPublishing>()
-        .AddScoped<IService<HeldMapRequest, MapPublishState>, HeldMapService>()
-        .AddScoped<IService<HoldMapRequest, MapHold>, HoldMapService>()
-        .AddScoped<IService<ReleaseMapRequest, Unit>, ReleaseMapService>()
-        .AddScoped<IService<ShowPublishStatusRequest, MapPublishView>, ShowPublishStatusService>()
+        .AddPublishSlices()
         .AddScoped<IContextMap, ContextMap>()
         .AddScoped<ContextGraph>()
         .AddScoped<IContextGraph>(static sp => sp.GetRequiredService<ContextGraph>())
         .AddScoped<IContextLenses>(static sp => sp.GetRequiredService<ContextGraph>())
         .AddScoped<IContextEngine, ContextEngine>()
         .AddLensSlices();
+
+    private static IServiceCollection AddReviewSlices(this IServiceCollection services) => services
+        .AddScoped<IService<ReviewQueueRequest, ReviewQueueView>, ReviewQueueService>()
+        .AddScoped<IService<ReviewHistoryRequest, ReviewHistoryView>, ReviewHistoryService>()
+        .AddScoped<IService<ReviewMapRequest, ReviewResult>, ReviewMapService>()
+        .AddScoped<IService<ExportReviewRequest, ReviewExported>, ExportReviewService>()
+        .AddScoped<IService<PreviewReviewFileRequest, ReviewFilePreview>, PreviewReviewFileService>()
+        .AddScoped<IService<ApplyReviewFileRequest, ReviewResult>, ApplyReviewFileService>();
+
+    // The hold, its release and the two publish reads (F1P).
+    private static IServiceCollection AddPublishSlices(this IServiceCollection services) => services
+        .AddScoped<IService<HeldMapRequest, MapPublishState>, HeldMapService>()
+        .AddScoped<IService<HoldMapRequest, MapHold>, HoldMapService>()
+        .AddScoped<IService<ReleaseMapRequest, Unit>, ReleaseMapService>()
+        .AddScoped<IService<ShowPublishStatusRequest, MapPublishView>, ShowPublishStatusService>();
 
     // The repo heads the map watcher reads (F1).
     private static IServiceCollection AddMapHeads(this IServiceCollection services) =>

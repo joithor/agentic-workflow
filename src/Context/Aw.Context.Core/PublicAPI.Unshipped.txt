@@ -6155,3 +6155,5 @@ static readonly Aw.Context.Core.ContextErrors.UnknownArm -> Aw.Kernel.ErrorDefin
 ~override Aw.Context.Core.Map.MapRead.ToString() -> string
 ~override Aw.Context.Core.Map.MapVersionRef.Equals(object obj) -> bool
 ~override Aw.Context.Core.Map.MapVersionRef.ToString() -> string
+Aw.Context.Core.Map.PublishAccess
+static Aw.Context.Core.Map.PublishAccess.Gate(Aw.Context.Core.Engine.ContextScope! scope, string! what) -> Aw.Kernel.Error?

@@ -64,6 +64,13 @@ internal sealed class BuildMapService(
 
     private async ValueTask<Result<MapBuildReport>> Build(IProgress<string>? progress, ContextSettings settings, IReadOnlyList<ContextRepo> mappedRepos, IReadOnlyList<ContextRepo> profileRepos, CancellationToken cancellationToken)
     {
+        var read = await ReadRepos(progress, settings, mappedRepos, cancellationToken).ConfigureAwait(false);
+        return read.IsError ? read.Error : await Save(read.Value, profileRepos, mappedRepos, cancellationToken).ConfigureAwait(false);
+    }
+
+    // What the build read: the merged map, and where each repo stood as this build read it (the pre-build 'map heads' read can differ when trunk moved in between), kept with the draft for the publish rules.
+    private async ValueTask<Result<Reading>> ReadRepos(IProgress<string>? progress, ContextSettings settings, IReadOnlyList<ContextRepo> mappedRepos, CancellationToken cancellationToken)
+    {
         var found = ExtractedMap.Empty;
         var degraded = new List<string>();
         (string Commit, ContextRepoName Name)? primary = null;
@@ -82,12 +89,12 @@ internal sealed class BuildMapService(
             heads.Add(new MapHead(repo.Name, one.Value.Commit, await OnDefault(repo, one.Value.Commit, cancellationToken).ConfigureAwait(false)));
         }
 
-        // Where each repo stood as this build read it (the pre-build 'map heads' read can differ when trunk moved in between), kept with the draft for the publish rules.
-        if (MapHead.Check(heads) is { } invalid)
-        {
-            return invalid;
-        }
+        // why: mappedRepos is not empty, so the loop set the primary
+        return MapHead.Check(heads) is { } invalid ? invalid : new Reading(found, degraded, primary!.Value.Name, primary.Value.Commit, heads);
+    }
 
+    private async ValueTask<Result<MapBuildReport>> Save(Reading read, IReadOnlyList<ContextRepo> profileRepos, IReadOnlyList<ContextRepo> mappedRepos, CancellationToken cancellationToken)
+    {
         var current = await store.Snapshot(draft: false, cancellationToken).ConfigureAwait(false);
         if (current.IsError)
         {
@@ -95,7 +102,6 @@ internal sealed class BuildMapService(
         }
 
         var basis = current.Value?.Graph ?? GraphSnapshot.Empty;
-        var (name, commit) = (primary!.Value.Name, primary.Value.Commit);   // why: mappedRepos is not empty, so the loop set it
         var open = await store.Snapshot(draft: true, cancellationToken).ConfigureAwait(false);
         if (open.IsError)
         {
@@ -105,9 +111,11 @@ internal sealed class BuildMapService(
         var at = clock.GetUtcNow();
         var (kept, undo) = MapAccess.WithoutDenied(basis, current.Value?.Overrides ?? [], profileRepos, mappedRepos, at);
         undo = UndoAlso(undo, open.Value, profileRepos, mappedRepos, at);
-        var draft = await store.SaveDraft(new MapImport(name, commit, Join(kept, found), undo, heads), at, cancellationToken).ConfigureAwait(false);
-        return draft.IsError ? draft.Error : new MapBuildReport(draft.Value, Proposed(kept, found), degraded, heads);
+        var draft = await store.SaveDraft(new MapImport(read.Name, read.Commit, Join(kept, read.Found), undo, read.Heads), at, cancellationToken).ConfigureAwait(false);
+        return draft.IsError ? draft.Error : new MapBuildReport(draft.Value, Proposed(kept, read.Found), read.Degraded, read.Heads);
     }
+
+    private sealed record Reading(ExtractedMap Found, IReadOnlyList<string> Degraded, ContextRepoName Name, string Commit, IReadOnlyList<MapHead> Heads);
 
     // Whether the default branch holds the commit the build read; a checkout whose default ref can't be read counts as no (the repo is then not waited on), never a failed build.
     private async ValueTask<bool> OnDefault(ContextRepo repo, string commit, CancellationToken cancellationToken)

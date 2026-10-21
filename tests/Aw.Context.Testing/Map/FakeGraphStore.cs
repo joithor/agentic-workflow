@@ -116,7 +116,7 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
             return Results.Failure<MapVersion>(refused);
         }
 
-        DropDrafts(v => true);
+        _ = DropDrafts(v => true);
         var version = new MapVersion(++_last, map.Repo, map.Commit, EntryKey.Version, created, MapVersionStatus.Draft);
         _versions.Add((version, map.Graph));
         _heads[version.Number] = map.Heads ?? [];
@@ -204,8 +204,8 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
     /// <inheritdoc/>
     public ValueTask<Result<MapPublishState>> Held(CancellationToken cancellationToken) => Done(() =>
     {
-        int? draft = _versions.Where(v => v.Version.Status == MapVersionStatus.Draft).Select(v => (int?)v.Version.Number).Max();
-        int? current = _versions.Where(v => v.Version.Status == MapVersionStatus.Current).Select(v => (int?)v.Version.Number).FirstOrDefault();
+        var draft = LatestDraft();
+        var current = _versions.Select(v => v.Version).FirstOrDefault(v => v.Status == MapVersionStatus.Current)?.Number;
         var hold = _hold is { } held && _chain is { } since ? new MapHold(held, since, _heads.GetValueOrDefault(held) ?? []) : null;
         return Results.Success(new MapPublishState(hold, draft, current, current is { } c ? _heads.GetValueOrDefault(c) ?? [] : []));
     });
@@ -219,7 +219,7 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
             return Results.Failure<MapHold>(refused);
         }
 
-        int? latest = _versions.Where(v => v.Version.Status == MapVersionStatus.Draft).Select(v => (int?)v.Version.Number).Max();
+        var latest = LatestDraft();
         if (latest != hold.Version)
         {
             return Results.Failure<MapHold>(ContextErrors.DraftChanged.With(Changed(hold.Version, latest)));
@@ -259,7 +259,7 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
         ArgumentNullException.ThrowIfNull(overrides);
         if (expectedDraft is { } expected)
         {
-            int? latest = _versions.Where(v => v.Version.Status == MapVersionStatus.Draft).Select(v => (int?)v.Version.Number).Max();
+            var latest = LatestDraft();
             if (latest != expected)
             {
                 return Results.Failure<int>(ContextErrors.DraftChanged.With(Changed(expected, latest)));
@@ -305,4 +305,6 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
     }
 
     private ValueTask<Result<T>> Done<T>(Func<Result<T>> work) => ValueTask.FromResult(Failure is { } failure ? failure : work());
+
+    private int? LatestDraft() => _versions.Where(v => v.Version.Status == MapVersionStatus.Draft).Max(v => (int?)v.Version.Number);
 }

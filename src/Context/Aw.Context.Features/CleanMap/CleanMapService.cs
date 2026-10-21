@@ -47,17 +47,18 @@ internal sealed class CleanMapService(IGraphStore store, IScrubberFactory scrubb
         }
 
         var weak = first.Value.Queue.Entries.Where(IsWeak).ToList();
-        var (verdicts, mode) = weak.Count == 0
+        var judged = weak.Count == 0
             ? (new Dictionary<string, bool>(StringComparer.Ordinal), CleanupMode.None)
             : await Judge(weak, built.Value.Egress, request.MaxTokens, cancellationToken).ConfigureAwait(false);
 
-        return await Settle(request.Scope, request.ExpectedVersion, first, verdicts, mode, cancellationToken).ConfigureAwait(false);
+        return await Settle(request.Scope, request.ExpectedVersion, first, judged, cancellationToken).ConfigureAwait(false);
     }
 
     // Decides the queue pass after pass (a rejected node takes its links with it, so the queue is read again) until nothing is left.
     private async ValueTask<Result<CleanupReport>> Settle(
-        ContextScope scope, int? expected, Result<(MapSnapshot Draft, MapView View, ReviewQueueView Queue)> first, Dictionary<string, bool> verdicts, CleanupMode mode, CancellationToken cancellationToken)
+        ContextScope scope, int? expected, Result<(MapSnapshot Draft, MapView View, ReviewQueueView Queue)> first, (Dictionary<string, bool> Verdicts, CleanupMode Mode) judged, CancellationToken cancellationToken)
     {
+        var (verdicts, mode) = judged;
         var who = ReviewDrafts.Who(scope.Caller, user);
         int accepted = 0, removed = 0, dropped = 0;
         for (var pass = 0; pass < MaxPasses; pass++)
