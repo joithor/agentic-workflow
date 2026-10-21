@@ -63,6 +63,9 @@ public static class CodeIndexRules
     /// <summary>The estimated Jaccard similarity at or above which two symbols are near clones.</summary>
     public const double NearCloneThreshold = 0.8;
 
+    /// <summary>Most dependency rows one manifest gives; the rest are dropped.</summary>
+    public const int MaxDepsPerManifest = 5_000;
+
     /// <summary>The index schema version; a different one is rebuilt, never migrated.</summary>
     public const int SchemaVersion = 1;
 }

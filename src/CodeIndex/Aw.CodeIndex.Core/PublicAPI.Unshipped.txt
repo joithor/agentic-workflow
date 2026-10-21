@@ -1250,3 +1250,29 @@ static readonly Aw.CodeIndex.Core.CodeIndexErrors.SettingsInvalid -> Aw.Kernel.E
 static readonly Aw.CodeIndex.Core.CodeIndexErrors.SymbolNotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.CodeIndex.Core.CodeIndexRules.HeavySlotWait -> System.TimeSpan
 static readonly Aw.CodeIndex.Core.CodeIndexRules.MaxBuildTime -> System.TimeSpan
+Aw.CodeIndex.Core.Ports.IManifestReader
+Aw.CodeIndex.Core.Ports.IManifestReader.Handles(string! path) -> bool
+Aw.CodeIndex.Core.Ports.IManifestReader.Read(string! path, string! text) -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.DepRecord!>!
+Aw.CodeIndex.Core.Similarity.Clones
+Aw.CodeIndex.Core.Similarity.CloneTokenizer
+Aw.CodeIndex.Core.Similarity.SimilarClones
+Aw.CodeIndex.Core.Similarity.SimilarClones.<Clone>$() -> Aw.CodeIndex.Core.Similarity.SimilarClones!
+Aw.CodeIndex.Core.Similarity.SimilarClones.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>! Exact, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.NearClone!>! Near) -> void
+Aw.CodeIndex.Core.Similarity.SimilarClones.Equals(Aw.CodeIndex.Core.Similarity.SimilarClones? other) -> bool
+Aw.CodeIndex.Core.Similarity.SimilarClones.Exact.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>!
+Aw.CodeIndex.Core.Similarity.SimilarClones.Exact.init -> void
+Aw.CodeIndex.Core.Similarity.SimilarClones.Near.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.NearClone!>!
+Aw.CodeIndex.Core.Similarity.SimilarClones.Near.init -> void
+Aw.CodeIndex.Core.Similarity.SimilarClones.SimilarClones(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>! Exact, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.NearClone!>! Near) -> void
+override Aw.CodeIndex.Core.Similarity.SimilarClones.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Similarity.SimilarClones.GetHashCode() -> int
+override Aw.CodeIndex.Core.Similarity.SimilarClones.ToString() -> string!
+static Aw.CodeIndex.Core.Similarity.Clones.BandKeys(System.ReadOnlySpan<byte> signature) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.CodeIndex.Core.Similarity.Clones.Find(Aw.CodeIndex.Core.Values.SymbolRef subject, Aw.CodeIndex.Core.Ports.CloneCandidates! candidates) -> Aw.CodeIndex.Core.Similarity.SimilarClones!
+static Aw.CodeIndex.Core.Similarity.Clones.Signature(System.Collections.Generic.IReadOnlyList<string!>! tokens) -> byte[]!
+static Aw.CodeIndex.Core.Similarity.Clones.Similarity(System.ReadOnlySpan<byte> left, System.ReadOnlySpan<byte> right) -> double
+static Aw.CodeIndex.Core.Similarity.CloneTokenizer.TokenizeLines(string! text, int startLine, int endLine) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.CodeIndex.Core.Similarity.CloneTokenizer.Tokenize(string! text) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.CodeIndex.Core.Similarity.SimilarClones.operator !=(Aw.CodeIndex.Core.Similarity.SimilarClones? left, Aw.CodeIndex.Core.Similarity.SimilarClones? right) -> bool
+static Aw.CodeIndex.Core.Similarity.SimilarClones.operator ==(Aw.CodeIndex.Core.Similarity.SimilarClones? left, Aw.CodeIndex.Core.Similarity.SimilarClones? right) -> bool
+const Aw.CodeIndex.Core.CodeIndexRules.MaxDepsPerManifest = 5000 -> int
