@@ -1,6 +1,6 @@
 schema: 1
 id: workflow.build
-version: 2
+version: 3
 description: "Block recipe: one TDD builder for one phase in its own worktree: a failing test per acceptance item, then code in atomic commits inside the phase's allowed files."
 displayName: "Build one phase, tests first"
 inputs:
@@ -13,11 +13,12 @@ outputs:
   - { key: fact:change,       label: "Change under review", type: payload, from: checks }
   - { key: fact:redTests,     label: "Red tests",   type: payload, from: red }
   - { key: fact:activePacket, label: "Phase packet in force", type: packet, from: amend }
-# heavy grant: restore the slot wait when a heavy allocator exists (no allocator in a served build today; the wait would never be granted)
 initial: prepare
 states:
   prepare:    { kind: active, step: step.build.prepare, timeout: { after: 1h, then: park },
                 next: "Check {item}'s phase worktree is clean at its recorded head." }
+  slot:       { kind: wait, waitFor: { resource: heavy }, timeout: { after: 1d, then: park },
+                next: "Waiting for a heavy-job slot for {item}'s builder." }
   red:        { displayName: "Write failing tests", why: "Writes one failing test for each point of done, committed before any code.", kind: active, step: step.build.red, loop: tests, budget: { tokens: 300k }, timeout: { after: 3h, then: park },
                 next: "Write a failing test for each of {item}'s acceptance items (try {loop.tests}/{loop.tests.cap})." }
   red-check:  { kind: active, step: step.build.red-check, timeout: { after: 1h, then: park },
@@ -33,8 +34,9 @@ states:
   built:      { displayName: "Built", kind: terminal, outcome: resolved }
   stopped:    { displayName: "Stopped", kind: terminal, outcome: unresolved }
 transitions:
-  - { from: prepare, to: red, on: step.completed, when: { outcome: ready },
+  - { from: prepare, to: slot, on: step.completed, when: { outcome: ready },
       produces: [fact:activePacket, fact:redTests, fact:built, fact:change, fact:findings, fact:answers] }
+  - { from: slot, to: red, on: wait.satisfied }
   - { from: red,       to: red-check, on: step.completed, when: { outcome: written }, produces: [fact:redTests] }
   - { from: red-check, to: green,     on: step.completed, when: { outcome: red } }
   - { label: "a test passed too early: write it again", from: red-check, to: red,       on: step.completed, when: { outcome: vacuous }, produces: [fact:findings] }
@@ -54,6 +56,8 @@ evals:
   - evals/workflow.build/happy.jsonl
   - evals/workflow.build/out-of-scope-allow.jsonl
   - evals/workflow.build/prepare-park.jsonl
+  - evals/workflow.build/slot-desk-cycle.jsonl
+  - evals/workflow.build/slot-timeout.jsonl
   - evals/workflow.build/revisions-cap.jsonl
   - evals/workflow.build/scope-revert.jsonl
   - evals/workflow.build/vacuous-red.jsonl

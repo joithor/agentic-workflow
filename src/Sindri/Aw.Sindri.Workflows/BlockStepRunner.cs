@@ -93,6 +93,7 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
             {
                 Repo = repo.Value,
                 Address = run.Address,
+                HeavySlotHeld = run.HeavyHeld,
             };
     }
 

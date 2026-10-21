@@ -16,7 +16,7 @@ internal static class ContextRefusal
     internal static Error Extend(Error error, byte[] body)
     {
         ArgumentNullException.ThrowIfNull(error);
-        if (!error.Code.StartsWith("SND-CONTEXT-", StringComparison.Ordinal))
+        if (!error.Code.StartsWith("SND-CONTEXT-", StringComparison.Ordinal) && !string.Equals(error.Code, "SND-JOB-409", StringComparison.Ordinal))   // a job conflict carries the running job
         {
             return error;
         }
