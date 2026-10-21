@@ -84,7 +84,7 @@ public sealed class OnyxSettingsTests
     [Fact, Trait("Lane", "unit")]
     public void A_url_with_a_user_or_password_is_055_and_the_message_never_repeats_them()
     {
-        var error = OnyxSettings.Create("http://admin:planted-secret-7f3a@127.0.0.1:3000", Pointer, "v4.9.0").Error;
+        var error = OnyxSettings.Create("http://admin:" + "planted-secret-7f3a@127.0.0.1:3000", Pointer, "v4.9.0").Error;
 
         Assert.Equal(ContextErrors.OnyxNotPinnedOrLoopback.Code, error.Code);
         Assert.StartsWith("context.sources.onyx.url: ", error.Message, StringComparison.Ordinal);

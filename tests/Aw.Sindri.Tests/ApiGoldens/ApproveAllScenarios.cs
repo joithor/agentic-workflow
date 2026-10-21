@@ -23,10 +23,14 @@ internal static class ApproveAllScenarios
     /// <summary>The app's challenge route (setup-once spec §4): 'POST /workflow/challenges/app'.</summary>
     internal const string AppSlug = "workflow-challenges-app";
 
+    /// <summary>The needs-you list's read-time rows (setup-once spec §7.3): 'setup:recipes' for the hold and 'recipe:&lt;id&gt;' for a workflow approved on its own.</summary>
+    internal const string NeedsYouSlug = "needs-you";
+
     /// <summary>The (slug, scenario) pairs of this class.</summary>
     public static IReadOnlyList<(string Slug, string Scenario)> All { get; } =
         [(Slug, "plan"), (Slug, "plan-first-approval"), (Slug, "applied"), (Slug, "refused"), (Slug, "empty"),
-            (AppSlug, "profile"), (AppSlug, "approve-all"), (AppSlug, "refused-session"), (AppSlug, "refused-action"), (AppSlug, "before-profile")];
+            (AppSlug, "profile"), (AppSlug, "approve-all"), (AppSlug, "refused-session"), (AppSlug, "refused-action"), (AppSlug, "before-profile"),
+            (NeedsYouSlug, "setup-recipes"), (NeedsYouSlug, "recipe")];
 
     /// <summary>Whether <paramref name="slug"/> and <paramref name="scenario"/> belong to this class.</summary>
     public static bool Handles(string slug, string scenario) => All.Contains((slug, scenario));
@@ -48,6 +52,11 @@ internal static class ApproveAllScenarios
         }
 
         await ViewScenarios.Approve(host, ct);
+        if (string.Equals(slug, NeedsYouSlug, StringComparison.Ordinal))
+        {
+            return (await host.Http.Ask(Get("/sindri/needs-you", Human(host.Token.Value)))).Body;
+        }
+
         if (string.Equals(scenario, "applied", StringComparison.Ordinal) || string.Equals(scenario, "refused", StringComparison.Ordinal))
         {
             var job = await Hold(host, ct);
@@ -114,10 +123,10 @@ internal static class ApproveAllScenarios
         {
             "plan-first-approval" => ApproveAllFixtures.FirstShip(),
             "refused" => ApproveAllFixtures.OneRefused(),
-            "empty" => [],
+            "empty" or "recipe" => [],
             _ => ApproveAllFixtures.StepAndItem(),
         });
-        if (string.Equals(scenario, "plan", StringComparison.Ordinal))
+        if (string.Equals(scenario, "plan", StringComparison.Ordinal) || string.Equals(scenario, "recipe", StringComparison.Ordinal))
         {
             shipped.OwnApproval.Add(ApproveAllFixtures.ShipNeedsItsOwn());
         }

@@ -43,12 +43,12 @@ public static partial class SettingsReader
 
         if (UnknownKey(element) is { } unknown)
         {
-            return Invalid("context." + unknown, "is not a context setting this build knows (repos, docs, cascadeDepth, cascadeComponentFanOut, deadline, maxBudget, minHits, labeling, scrub, sessions, sources, eval, code, extract)");
+            return Invalid("context." + unknown, "is not a context setting this build knows (repos, docs, cascadeDepth, cascadeComponentFanOut, deadline, maxBudget, minHits, labeling, scrub, sessions, sources, eval, code, extract, publish)");
         }
 
         if (CodeUnknownKey(element) is { } codeKey)
         {
-            return Invalid("context.code." + codeKey, "is not a code-lens setting this build knows (schemaGlobs, testGlobs)");
+            return Invalid("context.code." + codeKey, "is not a code-lens setting this build knows (schemaGlobs, testGlobs, deadline)");
         }
 
         if (SourcesReader.Shape(element) is { } shape)
@@ -65,12 +65,14 @@ public static partial class SettingsReader
         var settings = new ContextSettings();
         var globs = section.Docs?.Globs ?? ContextSettings.DefaultDocGlobs;
         var deadline = section.Deadline is null ? settings.Deadline : Duration(section.Deadline);
+        var codeDeadline = CodeDeadline(section.Code, settings);
         var sources = SourcesReader.Check(section.Sources);
-        return (Refused(section, globs), deadline, sources) switch
+        return (Refused(section, globs), deadline, codeDeadline, sources) switch
         {
-            ({ } problem, _, _) => problem,
-            (_, null, _) => Invalid("context.deadline", "is a duration from 100ms to 60s, such as 4s or 500ms"),
-            (_, _, { IsError: true }) => sources.Error,
+            ({ } problem, _, _, _) => problem,
+            (_, null, _, _) => Invalid("context.deadline", "is a duration from 100ms to 60s, such as 4s or 500ms"),
+            (_, _, null, _) => Invalid("context.code.deadline", "is a duration from 100ms to 600s, such as 60s or 90s"),
+            (_, _, _, { IsError: true }) => sources.Error,
             _ => WithCode(
                 WithFanOut(settings, section) with
                 {
@@ -87,17 +89,25 @@ public static partial class SettingsReader
                     Labeling = Labeling(section.Labeling),
                     Adjudicator = Adjudicates(section.Eval),
                     Recognizers = Recognizers(section.Extract),
+                    Publish = Publish(section.Publish),
                 },
-                section.Code),
+                section.Code,
+                codeDeadline.Value),
         };
     }
 
     private const int MaxCodeGlobs = 50;
     private const int MaxCodeGlobLength = 200;
 
-    private static ContextSettings WithCode(ContextSettings settings, CodeSection? code) =>
+    private static readonly TimeSpan _maxCodeDeadline = TimeSpan.FromSeconds(600);
+
+    private static TimeSpan? CodeDeadline(CodeSection? code, ContextSettings settings) =>
+        code?.Deadline is null ? settings.CodeDeadline : Duration(code.Deadline, _maxCodeDeadline);
+
+    private static ContextSettings WithCode(ContextSettings settings, CodeSection? code, TimeSpan codeDeadline) =>
         settings with
         {
+            CodeDeadline = codeDeadline,
             SchemaGlobs = Globs(code?.SchemaGlobs, settings.SchemaGlobs),
             TestGlobs = Globs(code?.TestGlobs, settings.TestGlobs),
         };
@@ -150,7 +160,7 @@ public static partial class SettingsReader
             return null;
         }
 
-        string[] known = ["schemaGlobs", "testGlobs"];
+        string[] known = ["schemaGlobs", "testGlobs", "deadline"];
         return code.EnumerateObject().Select(p => p.Name).FirstOrDefault(n => !known.Contains(n, StringComparer.Ordinal)) is { } name ? Printable(name) : null;
     }
 
@@ -159,6 +169,8 @@ public static partial class SettingsReader
         [.. (extract?.Recognizers ?? []).OfType<RecognizerEntry>().Select(e => new ProfileRecognizer(e.Kind!, e.Glob!, e.Pattern!, e.KeyFrom!))];   // why: RecognizerRules refused a missing field
 
     private static Error? Refused(ContextSection section, IReadOnlyList<string> globs) => Problem(section, globs) ?? RecognizerRules.Problem(section.Extract?.Recognizers) ?? GraphifyRules.Problem(section.Extract?.Graphify);
+
+    private static PublishSettings Publish(PublishSection? section) => new() { WaitForIndexMinutes = section?.WaitForIndexMinutes ?? PublishSettings.DefaultWaitMinutes };
 
     private static bool Adjudicates(EvalSection? section) => section?.Adjudicator ?? false;
 
@@ -205,6 +217,7 @@ public static partial class SettingsReader
             { MinHits: < 0 or > 50 } => Invalid("context.minHits", "is 0 to 50"),
             { Labeling.MaxTokens: < 1_000 or > 20_000_000 } => Invalid("context.labeling.maxTokens", "is 1000 to 20000000 tokens"),
             { Labeling.MaxTokensPerSync: < 1 or > 20_000_000 } => Invalid("context.labeling.maxTokensPerSync", "is 1 to 20000000 tokens"),
+            { Publish.WaitForIndexMinutes: < 0 or > PublishSettings.MaxWaitMinutes } => Invalid("context.publish.waitForIndexMinutes", "is 0 to 240 minutes (0: don't wait for the code index)"),
             _ => CascadeProblem(section),
         };
     }
@@ -229,11 +242,13 @@ public static partial class SettingsReader
 
     private static string? UnknownKey(JsonElement element)
     {
-        string[] known = ["repos", "docs", "cascadeDepth", "cascadeComponentFanOut", "deadline", "maxBudget", "minHits", "labeling", "scrub", "sessions", "sources", "eval", "code", "extract"];
+        string[] known = ["repos", "docs", "cascadeDepth", "cascadeComponentFanOut", "deadline", "maxBudget", "minHits", "labeling", "scrub", "sessions", "sources", "eval", "code", "extract", "publish"];
         return element.EnumerateObject().Select(p => p.Name).FirstOrDefault(n => !known.Contains(n, StringComparer.Ordinal)) is { } name ? Printable(name) : null;
     }
 
-    private static TimeSpan? Duration(string text)
+    private static TimeSpan? Duration(string text) => Duration(text, TimeSpan.FromSeconds(60));
+
+    private static TimeSpan? Duration(string text, TimeSpan max)
     {
         var match = DurationShape.Match(text);
         if (!match.Success)
@@ -243,7 +258,7 @@ public static partial class SettingsReader
 
         var value = int.Parse(match.Groups["n"].Value, NumberStyles.None, CultureInfo.InvariantCulture);
         var span = string.Equals(match.Groups["u"].Value, "ms", StringComparison.Ordinal) ? TimeSpan.FromMilliseconds(value) : TimeSpan.FromSeconds(value);
-        return span >= TimeSpan.FromMilliseconds(100) && span <= TimeSpan.FromSeconds(60) ? span : null;
+        return span >= TimeSpan.FromMilliseconds(100) && span <= max ? span : null;
     }
 
     /// <summary>Whether text is a repo-relative glob the profile may name.</summary>

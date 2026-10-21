@@ -86,18 +86,24 @@ public sealed class GateEffectResourceRulesTests
         Assert.True(RecipeValidator.Passes(findings));
     }
 
-    [Theory, Trait("Lane", "unit")]
-    [InlineData(ResourceKind.Heavy, "heavy", "it parks with SND-WF-010 until the workflow engine's heavy allocator is wired to the heavy-job lock")]
-    [InlineData(ResourceKind.Slot, "slot", "it parks with SND-WF-010 until the session-slot stub lands (P7)")]
-    public void A_resource_wait_is_information_while_nothing_allocates_it(ResourceKind resource, string name, string fix)
+    [Fact, Trait("Lane", "unit")]
+    public void A_slot_wait_is_information_while_only_the_stub_allocates_it()
     {
-        // The heavy case is the recipe of invalid/RCP-RES-001.yaml.
-        var recipe = Of("queued", [("queued", WaitForResource(resource)), ("done", Terminal())], [Go("queued", "done", "wait.satisfied")], id: "workflow.resource");
+        // The recipe of invalid/RCP-RES-001.yaml.
+        var recipe = Of("queued", [("queued", WaitForResource(ResourceKind.Slot)), ("done", Terminal())], [Go("queued", "done", "wait.satisfied")], id: "workflow.resource");
 
         var findings = CheckBlocks(recipe, new Located("RCP-RES-001.yaml", [("states.queued.waitFor.resource", 8, 16)]));
 
-        Assert.Equal([$"RCP-RES-001: resource '{name}' has no allocator in this build at RCP-RES-001.yaml:8:16 (states.queued.waitFor.resource); {fix}"], findings.Lines());
+        Assert.Equal(["RCP-RES-001: resource 'slot' has no allocator in this build at RCP-RES-001.yaml:8:16 (states.queued.waitFor.resource); it parks with SND-WF-010 until the session-slot stub lands (P7)"], findings.Lines());
         Assert.Equal(FindingSeverity.Information, Assert.Single(findings).Severity);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_heavy_wait_has_an_allocator_so_it_is_no_finding()
+    {
+        var recipe = Of("queued", [("queued", WaitForResource(ResourceKind.Heavy)), ("done", Terminal())], [Go("queued", "done", "wait.satisfied")], id: "workflow.resource");
+
+        Assert.Empty(CheckBlocks(recipe));
     }
 
     private static RecipeTransition GatedBy(GateUse gate) =>

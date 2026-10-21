@@ -19,7 +19,7 @@ public sealed class FakeRunDiffContractTests : RunDiffContract
 
     protected override ValueTask WriteFile(string worktree)
     {
-        _diff.Touch(worktree);
+        _diff.Touch(worktree, "new.txt");
         return ValueTask.CompletedTask;
     }
 

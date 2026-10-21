@@ -31,4 +31,23 @@ internal sealed class GitRunDiff : IRunDiff
         var status = await GitProcess.Run(worktree, ["status", "--porcelain", "--untracked-files=all"], cancellationToken).ConfigureAwait(false);
         return status.Exit == 0 ? status.Output.Length == 0 : WorkflowErrors.EffectFailed.With($"git status failed in {worktree}: {status.Error.Trim()}");
     }
+
+    public async ValueTask<Result<IReadOnlyList<string>>> ChangedPaths(string worktree, string baseCommit, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(baseCommit);
+        var tracked = await GitProcess.Run(worktree, ["diff", "--name-only", "-z", baseCommit, "--"], cancellationToken).ConfigureAwait(false);
+        if (tracked.Exit != 0)
+        {
+            return WorkflowErrors.EffectFailed.With($"git diff {baseCommit} failed in {worktree}: {tracked.Error.Trim()}");
+        }
+
+        var untracked = await GitProcess.Run(worktree, ["ls-files", "--others", "--exclude-standard", "-z"], cancellationToken).ConfigureAwait(false);
+        if (untracked.Exit != 0)
+        {
+            return WorkflowErrors.EffectFailed.With($"git ls-files failed in {worktree}: {untracked.Error.Trim()}");
+        }
+
+        IReadOnlyList<string> paths = [.. tracked.Output.Split('\0', StringSplitOptions.RemoveEmptyEntries).Concat(untracked.Output.Split('\0', StringSplitOptions.RemoveEmptyEntries)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+        return Results.Success(paths);
+    }
 }
