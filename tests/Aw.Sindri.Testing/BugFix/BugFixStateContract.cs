@@ -135,7 +135,7 @@ public abstract class BugFixStateContract
             Expect.Equal(attempt, started.Value!.Attempt);
             var source = Commit(fixes: false);
             _ = await port.RecordCandidate(StateDirectory, source, Token);
-            _ = await port.Recheck(StateDirectory, "c" + attempt, source.Worktree, Check, Token);
+            _ = await port.Recheck(StateDirectory, "c" + attempt.ToString(System.Globalization.CultureInfo.InvariantCulture), source.Worktree, Check, Token);
         }
 
         var fourth = await port.StartAttempt(StateDirectory, AttemptMode.Whole, Token);

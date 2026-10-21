@@ -1,5 +1,6 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.BugFix;
+using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.BugFix;
 
 namespace Aw.Sindri.Tests.BugFix;

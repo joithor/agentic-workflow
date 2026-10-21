@@ -42,7 +42,7 @@ public sealed class JudgeStepTests
         Assert.Equal("c1", (string?)verdict["candidate"]);
         Assert.Equal(outcome, (string?)verdict["decision"]);
         Assert.Equal("fake-reason", (string?)verdict["reasonCode"]);
-        Assert.Equal(["the fake judged it"], verdict["reasons"]!.AsArray().Select(static r => (string?)r));
+        Assert.Equal<string?>(["the fake judged it"], verdict["reasons"]!.AsArray().Select(static r => (string?)r), StringComparer.Ordinal);
         Assert.True((bool?)verdict["asked"]);
     }
 
@@ -61,7 +61,7 @@ public sealed class JudgeStepTests
         var verdict = BugFixRig.Out(result, "verdict")!;
         Assert.Equal("no-evidence", (string?)verdict["reasonCode"]);
         Assert.False((bool?)verdict["asked"]);
-        Assert.DoesNotContain("judge c1", rig.State.Calls);
+        Assert.DoesNotContain("judge c1", rig.State.Calls, StringComparer.Ordinal);
     }
 
     [Fact]

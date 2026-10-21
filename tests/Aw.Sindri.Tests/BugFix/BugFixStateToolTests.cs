@@ -114,7 +114,7 @@ public sealed class BugFixStateToolTests
         var answer = await tool.RecordCandidate("/s", new CandidateSource("b", "/w"), Token);
 
         Assert.Equal(BugFixAnswerStatus.Refused, answer.Status);
-        Assert.Single(runner.Calls);
+        _ = Assert.Single(runner.Calls);
     }
 
     [Fact]
@@ -128,7 +128,7 @@ public sealed class BugFixStateToolTests
 
         Assert.Equal(["run-test", "--state", "/s", "--check", "tests/bug.test.sh", "--cwd", "/work/fix-1", "--", "bash", "tests/bug.test.sh"], runner.Calls[0].Arguments);
         Assert.Equal(["record-run", "c1", "--state", "/s", "--evidence", "/s/runs/r1.json"], runner.Calls[1].Arguments);
-        Assert.Equal(new CheckRun("c1", true, 0, "/s/runs/r1.json"), answer.Value);
+        Assert.Equal(new CheckRun("c1", Passed: true, ExitCode: 0, Evidence: "/s/runs/r1.json"), answer.Value);
     }
 
     [Fact]
@@ -141,7 +141,7 @@ public sealed class BugFixStateToolTests
         var answer = await tool.Recheck("/s", "c1", "/work/fix-1", new FrozenCheck("test", "t.sh", ["bash", "t.sh"], "web"), Token);
 
         Assert.Equal("/work/fix-1/web", runner.Calls[0].Arguments[6]);
-        Assert.Equal(new CheckRun("c1", false, 1, "/s/runs/r2.json"), answer.Value);
+        Assert.Equal(new CheckRun("c1", Passed: false, ExitCode: 1, Evidence: "/s/runs/r2.json"), answer.Value);
     }
 
     [Fact]
@@ -164,7 +164,7 @@ public sealed class BugFixStateToolTests
         var answer = await tool.Recheck("/s", "c1", "/w", new FrozenCheck("test", "t", ["t"], "."), Token);
 
         Assert.Equal("AW-BUGFIX-020", answer.Refusal!.Code);
-        Assert.Single(runner.Calls);
+        _ = Assert.Single(runner.Calls);
     }
 
     [Fact]
@@ -204,12 +204,12 @@ public sealed class BugFixStateToolTests
     }
 
     [Theory]
-    [InlineData(ToolOutcome.Missing)]
-    [InlineData(ToolOutcome.TimedOut)]
-    [InlineData(ToolOutcome.Cancelled)]
-    public async Task A_tool_that_did_not_exit_is_unavailable_with_the_fix(ToolOutcome outcome)
+    [InlineData("Missing")]
+    [InlineData("TimedOut")]
+    [InlineData("Cancelled")]
+    public async Task A_tool_that_did_not_exit_is_unavailable_with_the_fix(string outcome)
     {
-        var (tool, _) = Tool(new ToolRun(outcome, -1, ""));
+        var (tool, _) = Tool(new ToolRun(Enum.Parse<ToolOutcome>(outcome), -1, ""));
 
         var answer = await tool.StartAttempt("/s", AttemptMode.Whole, Token);
 

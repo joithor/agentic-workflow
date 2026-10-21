@@ -81,7 +81,7 @@ internal sealed class RealBugFixState : IDisposable
         var output = process.StandardOutput.ReadToEndAsync(TestContext.Current.CancellationToken);
         var error = process.StandardError.ReadToEndAsync(TestContext.Current.CancellationToken);
         process.WaitForExit();
-        Assert.True(process.ExitCode == 0, $"bugfix-state {string.Join(' ', args)} exited {process.ExitCode}: {output.Result}{error.Result}");
+        Assert.True(process.ExitCode == 0, $"bugfix-state {string.Join(' ', args)} exited {process.ExitCode.ToString(CultureInfo.InvariantCulture)}: {output.Result}{error.Result}");
         return output.Result;
     }
 
@@ -98,7 +98,7 @@ internal sealed class RealBugFixState : IDisposable
         var output = process.StandardOutput.ReadToEndAsync(TestContext.Current.CancellationToken);
         var error = process.StandardError.ReadToEndAsync(TestContext.Current.CancellationToken);
         process.WaitForExit();
-        Assert.True(process.ExitCode == 0, $"git {string.Join(' ', args)} exited {process.ExitCode}: {error.Result}");
+        Assert.True(process.ExitCode == 0, $"git {string.Join(' ', args)} exited {process.ExitCode.ToString(CultureInfo.InvariantCulture)}: {error.Result}");
         return output.Result.Trim();
     }
 

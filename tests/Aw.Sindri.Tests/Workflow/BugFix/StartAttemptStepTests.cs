@@ -32,9 +32,10 @@ public sealed class StartAttemptStepTests
         var step = new StartAttemptStep(rig.State, rig.Area);
         for (var round = 1; round <= 3; round++)
         {
+            var number = round.ToString(System.Globalization.CultureInfo.InvariantCulture);
             Assert.Equal("single", (await step.Run(BugFixRig.Context("step.bugfix.start-attempt", ("decision", BugFixRig.Decision("single"))), Token)).Result!.Outcome.Value);
-            _ = await rig.State.RecordCandidate(rig.StateDirectory, new CandidateSource("b" + round, "/w" + round), Token);
-            _ = await rig.State.Recheck(rig.StateDirectory, "c" + round, "/w" + round, new FrozenCheck("test", "t", ["t"], "."), Token);
+            _ = await rig.State.RecordCandidate(rig.StateDirectory, new CandidateSource("b" + number, "/w" + number), Token);
+            _ = await rig.State.Recheck(rig.StateDirectory, "c" + number, "/w" + number, new FrozenCheck("test", "t", ["t"], "."), Token);
         }
 
         var fourth = await step.Run(BugFixRig.Context("step.bugfix.start-attempt", ("decision", BugFixRig.Decision("single"))), Token);

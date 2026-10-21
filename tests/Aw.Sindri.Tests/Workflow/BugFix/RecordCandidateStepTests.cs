@@ -25,7 +25,7 @@ public sealed class RecordCandidateStepTests
         Assert.Equal(1, (int?)candidate["attempt"]);
         Assert.Equal("fix-1", (string?)candidate["branch"]);
         Assert.Equal("/work/fix-1", (string?)candidate["worktree"]);
-        Assert.Equal(["src/app.txt"], candidate["changedFiles"]!.AsArray().Select(static f => (string?)f));
+        Assert.Equal<string?>(["src/app.txt"], candidate["changedFiles"]!.AsArray().Select(static f => (string?)f), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public sealed class RecordCandidateStepTests
 
         _ = await new RecordCandidateStep(rig.State, rig.Area).Run(BugFixRig.Context("step.bugfix.record-candidate", ("diff", """{"branch":"b","worktree":"/w","hypothesis":2,"allowTestChanges":true}""")), Token);
 
-        Assert.Equal(new CandidateSource("b", "/w", 2, true), rig.State.Sources[0]);
+        Assert.Equal(new CandidateSource("b", "/w", Hypothesis: 2, AllowTestChanges: true), rig.State.Sources[0]);
     }
 
     [Theory]
