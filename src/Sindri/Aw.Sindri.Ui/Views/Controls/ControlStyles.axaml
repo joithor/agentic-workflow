@@ -126,7 +126,7 @@
   <Style Selector="controls|ZoomBorder">
     <Setter Property="Cursor" Value="Hand" />
   </Style>
-  <Style Selector="controls|ContextEdgesControl">
+  <Style Selector="controls|GraphEdgesControl">
     <Setter Property="Focusable" Value="False" />
     <Setter Property="IsTabStop" Value="False" />
   </Style>
