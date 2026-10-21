@@ -65,6 +65,7 @@ public sealed class GoldenContractTests
         // The approve-all plan and result are the engine's real goldens (workflow-recipes-approve-all); the start, job and refusal bodies below stay SPEC-SHAPED (the engine has none).
         ["workflow-recipes-approve-all"] = AsApproveAll,   // GET /workflow/recipes/approve-all (the plan*, empty scenarios) and the job's result (applied, refused): the engine's real goldens
         ["challenges-app"] = As<AppChallengeView>,   // POST /workflow/challenges/app
+        ["workflow-challenges-app"] = As<AppChallengeView>,   // the same route's real goldens (setup-once spec §4): the profile's typed challenge and approve-all's held one with its plan
         ["recipes-approve-all-start"] = As<ApproveAllStarted>,   // POST /workflow/recipes/approve-all's 202
         ["approve-all-job"] = As<ApproveAllJob>,   // GET /jobs/{id} of the approval
     };
@@ -81,6 +82,7 @@ public sealed class GoldenContractTests
         "services-name-run", "services-name-pause", "services-name-resume",   // API P6: the services calls are U4's (Services); the job calls are read below
         "sessions-id-heartbeat", "sessions-id-exit", "launch-targets", "launch-targets-probe",   // API P10a (U8): U10's session wrap's own calls and the launch-target reads, never the app's
         "workflow-instance-scoping",   // API2 (SC-K2): the scoping stop view; the app reads it in SC-U (U2)
+        "workflow-instance-design-stop",   // LN-API2 (LN-K): stop 2's view of a workflow.plan instance; the app reads it in LN-U (LN-UI2)
         "items-id-scope",   // an item's scope: the Context page reads it once it lands (UI lane, with the lenses routes)
         "code-index-status", "code-index-symbols", "code-index-callers", "code-index-callees",   // the code-index reads (CI-10a) are the CLI's; the app reads status for the Health card in CI-10b
         "events-catalog",   // API P5 (E-15): the app reads each type's invalidates once it switches from re-querying every view on each event (UI lane)
@@ -239,7 +241,7 @@ public sealed class GoldenContractTests
         Assert.Equal(("desk", "ready", "sindri views rebuild", false, false), (rebuild.Class, rebuild.Ui, rebuild.Cli, rebuild.Destructive, rebuild.ReadsViews));
         var stop = Assert.Single(catalog.Rows, r => r.Action == "StopProcess");
         Assert.Equal(("ready", true), (stop.Ui, stop.Destructive));
-        Assert.Equal("cli-only:typed-confirmation", Assert.Single(catalog.Rows, r => r.Action == "ApproveProfile").Ui);
+        Assert.Equal("ready", Assert.Single(catalog.Rows, r => r.Action == "ApproveProfile").Ui);
     }
 
     // A refusal's ProblemDetails names its SND code in title; any other body has none.

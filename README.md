@@ -156,6 +156,7 @@ The setup script:
 - Registers the MCP servers (`serena`, `prism-mcp`, and `xcodebuildmcp` on macOS) with each selected provider, and removes old `agentic-bridge` and `headroom` registrations and the leftover `mcp-bridge/` build output (the MCP bridge was retired)
 - Configures `prism-mcp` (persistent memory, downloaded on first use) with its Mind Palace dashboard at `http://localhost:7180` (`PRISM_DASHBOARD_PORT`). The `prism-context.sh` session-start hook warns if the dashboard is unreachable; `/prismStatus` runs a full health check
 - Installs rtk
+- Installs [tldraw offline](https://github.com/tldraw/tldraw-offline), a local whiteboard agents can drive to draw diagrams (`brew install --cask tldraw` on macOS, the pinned AppImage on Linux; skip with `--no-tldraw`). Its agent skills come from the app: open it and choose **Develop → Install Agent Skills** (setup prints this until a provider has the skill), and keep the app open while an agent draws
 - **Claude Code only:** copies `settings.json`, installs the statusline and shell integration, and adds plugin marketplaces and plugins
 
 ## Contents

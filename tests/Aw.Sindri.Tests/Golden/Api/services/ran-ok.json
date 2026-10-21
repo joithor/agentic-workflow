@@ -1,6 +1,22 @@
 {
   "services": [
     {
+      "name": "context-map-refresh",
+      "every": "1m",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null
+    },
+    {
+      "name": "context-sync-gaps",
+      "every": "1m",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null
+    },
+    {
       "name": "heartbeat",
       "every": "5s",
       "paused": false,
@@ -11,6 +27,30 @@
         "ranAt": "2026-01-01T00:00:00.0000000Z"
       },
       "nextSlot": "2026-01-01T00:00:05.0000000Z",
+      "job": null
+    },
+    {
+      "name": "router-stub",
+      "every": "5s",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null
+    },
+    {
+      "name": "setup",
+      "every": "1m",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null
+    },
+    {
+      "name": "workflow-events",
+      "every": "5s",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
       "job": null
     }
   ],
