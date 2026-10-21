@@ -12866,6 +12866,210 @@ Aw.Sindri.Core.Scheduling.MainMoveAction.Start = 3 -> Aw.Sindri.Core.Scheduling.
 Aw.Sindri.Core.Scheduling.MainMoveDecision
 static Aw.Sindri.Core.Scheduling.MainMoveDecision.Decide(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! onDefaultHeads, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? lastSucceededHeads, bool running, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.SyncAttempt!>! finishedNewestFirst, System.DateTimeOffset now) -> Aw.Sindri.Core.Scheduling.MainMoveAction
 static Aw.Sindri.Core.Scheduling.MainMoveDecision.FailedInARow(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.SyncAttempt!>! finishedNewestFirst) -> int
+Aw.Sindri.Core.Scheduling.IIndexOutlooks
+Aw.Sindri.Core.Scheduling.IIndexOutlooks.IndexCommits(System.Collections.Generic.IReadOnlyList<string!>! repos, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyDictionary<string!, string!>!>!>
+Aw.Sindri.Core.Scheduling.IIndexOutlooks.Read(Aw.Sindri.Core.Scheduling.MapHoldState! hold, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Scheduling.IndexOutlookDetail!>!>!>
+Aw.Sindri.Core.Scheduling.IndexAttempt
+Aw.Sindri.Core.Scheduling.IndexAttempt.<Clone>$() -> Aw.Sindri.Core.Scheduling.IndexAttempt!
+Aw.Sindri.Core.Scheduling.IndexAttempt.Deconstruct(out bool Failed, out bool Deferred, out System.DateTimeOffset EndedAt) -> void
+Aw.Sindri.Core.Scheduling.IndexAttempt.Deferred.get -> bool
+Aw.Sindri.Core.Scheduling.IndexAttempt.Deferred.init -> void
+Aw.Sindri.Core.Scheduling.IndexAttempt.EndedAt.get -> System.DateTimeOffset
+Aw.Sindri.Core.Scheduling.IndexAttempt.EndedAt.init -> void
+Aw.Sindri.Core.Scheduling.IndexAttempt.Equals(Aw.Sindri.Core.Scheduling.IndexAttempt? other) -> bool
+Aw.Sindri.Core.Scheduling.IndexAttempt.Failed.get -> bool
+Aw.Sindri.Core.Scheduling.IndexAttempt.Failed.init -> void
+Aw.Sindri.Core.Scheduling.IndexAttempt.IndexAttempt(bool Failed, bool Deferred, System.DateTimeOffset EndedAt) -> void
+Aw.Sindri.Core.Scheduling.IndexOutlook
+Aw.Sindri.Core.Scheduling.IndexOutlook.Absent = 4 -> Aw.Sindri.Core.Scheduling.IndexOutlook
+Aw.Sindri.Core.Scheduling.IndexOutlook.Backoff = 2 -> Aw.Sindri.Core.Scheduling.IndexOutlook
+Aw.Sindri.Core.Scheduling.IndexOutlook.Broken = 3 -> Aw.Sindri.Core.Scheduling.IndexOutlook
+Aw.Sindri.Core.Scheduling.IndexOutlook.Built = 0 -> Aw.Sindri.Core.Scheduling.IndexOutlook
+Aw.Sindri.Core.Scheduling.IndexOutlook.Coming = 1 -> Aw.Sindri.Core.Scheduling.IndexOutlook
+Aw.Sindri.Core.Scheduling.IndexOutlookDetail
+Aw.Sindri.Core.Scheduling.IndexOutlookDetail.<Clone>$() -> Aw.Sindri.Core.Scheduling.IndexOutlookDetail!
+Aw.Sindri.Core.Scheduling.IndexOutlookDetail.Deconstruct(out Aw.Sindri.Core.Scheduling.IndexOutlook Outlook, out Aw.Sindri.Core.Scheduling.RepoWait Word, out System.DateTimeOffset? RetryAt) -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookDetail.Equals(Aw.Sindri.Core.Scheduling.IndexOutlookDetail? other) -> bool
+Aw.Sindri.Core.Scheduling.IndexOutlookDetail.IndexOutlookDetail(Aw.Sindri.Core.Scheduling.IndexOutlook Outlook, Aw.Sindri.Core.Scheduling.RepoWait Word, System.DateTimeOffset? RetryAt) -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookDetail.Outlook.get -> Aw.Sindri.Core.Scheduling.IndexOutlook
+Aw.Sindri.Core.Scheduling.IndexOutlookDetail.Outlook.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookDetail.RetryAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Scheduling.IndexOutlookDetail.RetryAt.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookDetail.Word.get -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.IndexOutlookDetail.Word.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookInput
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.<Clone>$() -> Aw.Sindri.Core.Scheduling.IndexOutlookInput!
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.BuildRunning.get -> bool
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.BuildRunning.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.Deconstruct(out string? IndexCommit, out string! HoldHead, out bool HoldOnDefaultBranch, out string? LiveHead, out bool InScope, out bool ServiceActive, out bool BuildRunning, out bool NeverBuilt, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.IndexAttempt!>! FinishedNewestFirst) -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.Equals(Aw.Sindri.Core.Scheduling.IndexOutlookInput? other) -> bool
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.FinishedNewestFirst.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.IndexAttempt!>!
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.FinishedNewestFirst.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.HoldHead.get -> string!
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.HoldHead.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.HoldOnDefaultBranch.get -> bool
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.HoldOnDefaultBranch.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.InScope.get -> bool
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.InScope.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.IndexCommit.get -> string?
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.IndexCommit.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.IndexOutlookInput(string? IndexCommit, string! HoldHead, bool HoldOnDefaultBranch, string? LiveHead, bool InScope, bool ServiceActive, bool BuildRunning, bool NeverBuilt, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.IndexAttempt!>! FinishedNewestFirst) -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.LiveHead.get -> string?
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.LiveHead.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.NeverBuilt.get -> bool
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.NeverBuilt.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.ServiceActive.get -> bool
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.ServiceActive.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookRules
+Aw.Sindri.Core.Scheduling.MapDrop
+Aw.Sindri.Core.Scheduling.MapDrop.Deconstruct(out Aw.Sindri.Core.Scheduling.MapDropReason Reason) -> void
+Aw.Sindri.Core.Scheduling.MapDrop.Equals(Aw.Sindri.Core.Scheduling.MapDrop? other) -> bool
+Aw.Sindri.Core.Scheduling.MapDrop.MapDrop(Aw.Sindri.Core.Scheduling.MapDropReason Reason) -> void
+Aw.Sindri.Core.Scheduling.MapDrop.Reason.get -> Aw.Sindri.Core.Scheduling.MapDropReason
+Aw.Sindri.Core.Scheduling.MapDrop.Reason.init -> void
+Aw.Sindri.Core.Scheduling.MapDropReason
+Aw.Sindri.Core.Scheduling.MapDropReason.AlreadyCurrent = 0 -> Aw.Sindri.Core.Scheduling.MapDropReason
+Aw.Sindri.Core.Scheduling.MapDropReason.Gone = 1 -> Aw.Sindri.Core.Scheduling.MapDropReason
+Aw.Sindri.Core.Scheduling.MapHoldState
+Aw.Sindri.Core.Scheduling.MapHoldState.<Clone>$() -> Aw.Sindri.Core.Scheduling.MapHoldState!
+Aw.Sindri.Core.Scheduling.MapHoldState.Deconstruct(out int Version, out System.DateTimeOffset Since, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Scheduling.MapRepoHead!>! Heads) -> void
+Aw.Sindri.Core.Scheduling.MapHoldState.Equals(Aw.Sindri.Core.Scheduling.MapHoldState? other) -> bool
+Aw.Sindri.Core.Scheduling.MapHoldState.Heads.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Scheduling.MapRepoHead!>!
+Aw.Sindri.Core.Scheduling.MapHoldState.Heads.init -> void
+Aw.Sindri.Core.Scheduling.MapHoldState.MapHoldState(int Version, System.DateTimeOffset Since, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Scheduling.MapRepoHead!>! Heads) -> void
+Aw.Sindri.Core.Scheduling.MapHoldState.Since.get -> System.DateTimeOffset
+Aw.Sindri.Core.Scheduling.MapHoldState.Since.init -> void
+Aw.Sindri.Core.Scheduling.MapHoldState.Version.get -> int
+Aw.Sindri.Core.Scheduling.MapHoldState.Version.init -> void
+Aw.Sindri.Core.Scheduling.MapPublish
+Aw.Sindri.Core.Scheduling.MapPublish.Deconstruct(out Aw.Sindri.Core.Scheduling.MapPublishReason Reason, out System.Collections.Generic.IReadOnlyList<string!>! StaleRepos) -> void
+Aw.Sindri.Core.Scheduling.MapPublish.Equals(Aw.Sindri.Core.Scheduling.MapPublish? other) -> bool
+Aw.Sindri.Core.Scheduling.MapPublish.MapPublish(Aw.Sindri.Core.Scheduling.MapPublishReason Reason, System.Collections.Generic.IReadOnlyList<string!>! StaleRepos) -> void
+Aw.Sindri.Core.Scheduling.MapPublish.Reason.get -> Aw.Sindri.Core.Scheduling.MapPublishReason
+Aw.Sindri.Core.Scheduling.MapPublish.Reason.init -> void
+Aw.Sindri.Core.Scheduling.MapPublish.StaleRepos.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Scheduling.MapPublish.StaleRepos.init -> void
+Aw.Sindri.Core.Scheduling.MapPublishAction
+Aw.Sindri.Core.Scheduling.MapPublishAction.MapPublishAction(Aw.Sindri.Core.Scheduling.MapPublishAction! original) -> void
+Aw.Sindri.Core.Scheduling.MapPublishDecision
+Aw.Sindri.Core.Scheduling.MapPublishInput
+Aw.Sindri.Core.Scheduling.MapPublishInput.<Clone>$() -> Aw.Sindri.Core.Scheduling.MapPublishInput!
+Aw.Sindri.Core.Scheduling.MapPublishInput.CurrentVersion.get -> int?
+Aw.Sindri.Core.Scheduling.MapPublishInput.CurrentVersion.init -> void
+Aw.Sindri.Core.Scheduling.MapPublishInput.Deconstruct(out Aw.Sindri.Core.Scheduling.MapHoldState! Hold, out int? DraftVersion, out int? CurrentVersion, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Scheduling.IndexOutlookDetail!>! Outlooks, out System.TimeSpan Wait) -> void
+Aw.Sindri.Core.Scheduling.MapPublishInput.DraftVersion.get -> int?
+Aw.Sindri.Core.Scheduling.MapPublishInput.DraftVersion.init -> void
+Aw.Sindri.Core.Scheduling.MapPublishInput.Equals(Aw.Sindri.Core.Scheduling.MapPublishInput? other) -> bool
+Aw.Sindri.Core.Scheduling.MapPublishInput.Hold.get -> Aw.Sindri.Core.Scheduling.MapHoldState!
+Aw.Sindri.Core.Scheduling.MapPublishInput.Hold.init -> void
+Aw.Sindri.Core.Scheduling.MapPublishInput.MapPublishInput(Aw.Sindri.Core.Scheduling.MapHoldState! Hold, int? DraftVersion, int? CurrentVersion, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Scheduling.IndexOutlookDetail!>! Outlooks, System.TimeSpan Wait) -> void
+Aw.Sindri.Core.Scheduling.MapPublishInput.Outlooks.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Scheduling.IndexOutlookDetail!>!
+Aw.Sindri.Core.Scheduling.MapPublishInput.Outlooks.init -> void
+Aw.Sindri.Core.Scheduling.MapPublishInput.Wait.get -> System.TimeSpan
+Aw.Sindri.Core.Scheduling.MapPublishInput.Wait.init -> void
+Aw.Sindri.Core.Scheduling.MapPublishReason
+Aw.Sindri.Core.Scheduling.MapPublishReason.FirstMap = 3 -> Aw.Sindri.Core.Scheduling.MapPublishReason
+Aw.Sindri.Core.Scheduling.MapPublishReason.IndexBroken = 2 -> Aw.Sindri.Core.Scheduling.MapPublishReason
+Aw.Sindri.Core.Scheduling.MapPublishReason.IndexReady = 0 -> Aw.Sindri.Core.Scheduling.MapPublishReason
+Aw.Sindri.Core.Scheduling.MapPublishReason.NoIndex = 1 -> Aw.Sindri.Core.Scheduling.MapPublishReason
+Aw.Sindri.Core.Scheduling.MapPublishReason.TimedOut = 5 -> Aw.Sindri.Core.Scheduling.MapPublishReason
+Aw.Sindri.Core.Scheduling.MapPublishReason.WaitOff = 4 -> Aw.Sindri.Core.Scheduling.MapPublishReason
+Aw.Sindri.Core.Scheduling.MapRepoHead
+Aw.Sindri.Core.Scheduling.MapRepoHead.<Clone>$() -> Aw.Sindri.Core.Scheduling.MapRepoHead!
+Aw.Sindri.Core.Scheduling.MapRepoHead.Commit.get -> string!
+Aw.Sindri.Core.Scheduling.MapRepoHead.Commit.init -> void
+Aw.Sindri.Core.Scheduling.MapRepoHead.Deconstruct(out string! Commit, out bool OnDefaultBranch) -> void
+Aw.Sindri.Core.Scheduling.MapRepoHead.Equals(Aw.Sindri.Core.Scheduling.MapRepoHead? other) -> bool
+Aw.Sindri.Core.Scheduling.MapRepoHead.MapRepoHead(string! Commit, bool OnDefaultBranch) -> void
+Aw.Sindri.Core.Scheduling.MapRepoHead.OnDefaultBranch.get -> bool
+Aw.Sindri.Core.Scheduling.MapRepoHead.OnDefaultBranch.init -> void
+Aw.Sindri.Core.Scheduling.MapWait
+Aw.Sindri.Core.Scheduling.MapWait.Deconstruct(out System.DateTimeOffset Until, out int WaitingOn) -> void
+Aw.Sindri.Core.Scheduling.MapWait.Equals(Aw.Sindri.Core.Scheduling.MapWait? other) -> bool
+Aw.Sindri.Core.Scheduling.MapWait.MapWait(System.DateTimeOffset Until, int WaitingOn) -> void
+Aw.Sindri.Core.Scheduling.MapWait.Until.get -> System.DateTimeOffset
+Aw.Sindri.Core.Scheduling.MapWait.Until.init -> void
+Aw.Sindri.Core.Scheduling.MapWait.WaitingOn.get -> int
+Aw.Sindri.Core.Scheduling.MapWait.WaitingOn.init -> void
+Aw.Sindri.Core.Scheduling.MappedHeads
+Aw.Sindri.Core.Scheduling.NoIndexOutlooks
+Aw.Sindri.Core.Scheduling.NoIndexOutlooks.IndexCommits(System.Collections.Generic.IReadOnlyList<string!>! repos, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyDictionary<string!, string!>!>!>
+Aw.Sindri.Core.Scheduling.NoIndexOutlooks.NoIndexOutlooks() -> void
+Aw.Sindri.Core.Scheduling.NoIndexOutlooks.Read(Aw.Sindri.Core.Scheduling.MapHoldState! hold, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Scheduling.IndexOutlookDetail!>!>!>
+Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.Building = 2 -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.Damaged = 6 -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.NewerIndex = 5 -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.None = 0 -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.NotIndexed = 7 -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.Queued = 1 -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.Retrying = 4 -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.WaitingForSlot = 3 -> Aw.Sindri.Core.Scheduling.RepoWait
+abstract Aw.Sindri.Core.Scheduling.MapPublishAction.<Clone>$() -> Aw.Sindri.Core.Scheduling.MapPublishAction!
+const Aw.Sindri.Core.Scheduling.IndexOutlookRules.FailuresToBroken = 3 -> int
+override Aw.Sindri.Core.Scheduling.IndexAttempt.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.IndexAttempt.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.IndexAttempt.ToString() -> string!
+override Aw.Sindri.Core.Scheduling.IndexOutlookDetail.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.IndexOutlookDetail.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.IndexOutlookDetail.ToString() -> string!
+override Aw.Sindri.Core.Scheduling.IndexOutlookInput.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.IndexOutlookInput.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.IndexOutlookInput.ToString() -> string!
+override Aw.Sindri.Core.Scheduling.MapDrop.<Clone>$() -> Aw.Sindri.Core.Scheduling.MapDrop!
+override Aw.Sindri.Core.Scheduling.MapDrop.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.MapDrop.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.MapDrop.ToString() -> string!
+override Aw.Sindri.Core.Scheduling.MapHoldState.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.MapHoldState.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.MapHoldState.ToString() -> string!
+override Aw.Sindri.Core.Scheduling.MapPublish.<Clone>$() -> Aw.Sindri.Core.Scheduling.MapPublish!
+override Aw.Sindri.Core.Scheduling.MapPublish.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.MapPublish.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.MapPublish.ToString() -> string!
+override Aw.Sindri.Core.Scheduling.MapPublishAction.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.MapPublishAction.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.MapPublishAction.ToString() -> string!
+override Aw.Sindri.Core.Scheduling.MapPublishInput.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.MapPublishInput.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.MapPublishInput.ToString() -> string!
+override Aw.Sindri.Core.Scheduling.MapRepoHead.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.MapRepoHead.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.MapRepoHead.ToString() -> string!
+override Aw.Sindri.Core.Scheduling.MapWait.<Clone>$() -> Aw.Sindri.Core.Scheduling.MapWait!
+override Aw.Sindri.Core.Scheduling.MapWait.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.MapWait.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.MapWait.ToString() -> string!
+override sealed Aw.Sindri.Core.Scheduling.MapDrop.Equals(Aw.Sindri.Core.Scheduling.MapPublishAction? other) -> bool
+override sealed Aw.Sindri.Core.Scheduling.MapPublish.Equals(Aw.Sindri.Core.Scheduling.MapPublishAction? other) -> bool
+override sealed Aw.Sindri.Core.Scheduling.MapWait.Equals(Aw.Sindri.Core.Scheduling.MapPublishAction? other) -> bool
+static Aw.Sindri.Core.Scheduling.IndexAttempt.operator !=(Aw.Sindri.Core.Scheduling.IndexAttempt? left, Aw.Sindri.Core.Scheduling.IndexAttempt? right) -> bool
+static Aw.Sindri.Core.Scheduling.IndexAttempt.operator ==(Aw.Sindri.Core.Scheduling.IndexAttempt? left, Aw.Sindri.Core.Scheduling.IndexAttempt? right) -> bool
+static Aw.Sindri.Core.Scheduling.IndexOutlookDetail.operator !=(Aw.Sindri.Core.Scheduling.IndexOutlookDetail? left, Aw.Sindri.Core.Scheduling.IndexOutlookDetail? right) -> bool
+static Aw.Sindri.Core.Scheduling.IndexOutlookDetail.operator ==(Aw.Sindri.Core.Scheduling.IndexOutlookDetail? left, Aw.Sindri.Core.Scheduling.IndexOutlookDetail? right) -> bool
+static Aw.Sindri.Core.Scheduling.IndexOutlookInput.operator !=(Aw.Sindri.Core.Scheduling.IndexOutlookInput? left, Aw.Sindri.Core.Scheduling.IndexOutlookInput? right) -> bool
+static Aw.Sindri.Core.Scheduling.IndexOutlookInput.operator ==(Aw.Sindri.Core.Scheduling.IndexOutlookInput? left, Aw.Sindri.Core.Scheduling.IndexOutlookInput? right) -> bool
+static Aw.Sindri.Core.Scheduling.IndexOutlookRules.Classify(Aw.Sindri.Core.Scheduling.IndexOutlookInput! input, System.DateTimeOffset now) -> Aw.Sindri.Core.Scheduling.IndexOutlookDetail!
+static Aw.Sindri.Core.Scheduling.MapDrop.operator !=(Aw.Sindri.Core.Scheduling.MapDrop? left, Aw.Sindri.Core.Scheduling.MapDrop? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapDrop.operator ==(Aw.Sindri.Core.Scheduling.MapDrop? left, Aw.Sindri.Core.Scheduling.MapDrop? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapHoldState.operator !=(Aw.Sindri.Core.Scheduling.MapHoldState? left, Aw.Sindri.Core.Scheduling.MapHoldState? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapHoldState.operator ==(Aw.Sindri.Core.Scheduling.MapHoldState? left, Aw.Sindri.Core.Scheduling.MapHoldState? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapPublish.operator !=(Aw.Sindri.Core.Scheduling.MapPublish? left, Aw.Sindri.Core.Scheduling.MapPublish? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapPublish.operator ==(Aw.Sindri.Core.Scheduling.MapPublish? left, Aw.Sindri.Core.Scheduling.MapPublish? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapPublishAction.operator !=(Aw.Sindri.Core.Scheduling.MapPublishAction? left, Aw.Sindri.Core.Scheduling.MapPublishAction? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapPublishAction.operator ==(Aw.Sindri.Core.Scheduling.MapPublishAction? left, Aw.Sindri.Core.Scheduling.MapPublishAction? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapPublishDecision.Decide(Aw.Sindri.Core.Scheduling.MapPublishInput! input, System.DateTimeOffset now) -> Aw.Sindri.Core.Scheduling.MapPublishAction!
+static Aw.Sindri.Core.Scheduling.MapPublishInput.operator !=(Aw.Sindri.Core.Scheduling.MapPublishInput? left, Aw.Sindri.Core.Scheduling.MapPublishInput? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapPublishInput.operator ==(Aw.Sindri.Core.Scheduling.MapPublishInput? left, Aw.Sindri.Core.Scheduling.MapPublishInput? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapRepoHead.operator !=(Aw.Sindri.Core.Scheduling.MapRepoHead? left, Aw.Sindri.Core.Scheduling.MapRepoHead? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapRepoHead.operator ==(Aw.Sindri.Core.Scheduling.MapRepoHead? left, Aw.Sindri.Core.Scheduling.MapRepoHead? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapWait.operator !=(Aw.Sindri.Core.Scheduling.MapWait? left, Aw.Sindri.Core.Scheduling.MapWait? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapWait.operator ==(Aw.Sindri.Core.Scheduling.MapWait? left, Aw.Sindri.Core.Scheduling.MapWait? right) -> bool
+static Aw.Sindri.Core.Scheduling.MappedHeads.Of(Aw.Sindri.Core.Scheduling.MapHoldState? hold, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? currentHeads) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
+static readonly Aw.Sindri.Core.Scheduling.IndexOutlookRules.DeferredSuppress -> System.TimeSpan
+virtual Aw.Sindri.Core.Scheduling.MapPublishAction.EqualityContract.get -> System.Type!
+virtual Aw.Sindri.Core.Scheduling.MapPublishAction.Equals(Aw.Sindri.Core.Scheduling.MapPublishAction? other) -> bool
+virtual Aw.Sindri.Core.Scheduling.MapPublishAction.PrintMembers(System.Text.StringBuilder! builder) -> bool
 Aw.Sindri.Core.Workflow.Views.InstanceRecipe.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, out int Version, out Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency, out string? DisplayName) -> void
 Aw.Sindri.Core.Workflow.Views.NoRecipeDisplayNames.Of(Aw.Sindri.Core.Workflow.Ids.RecipeId id) -> string?
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.DisplayName.get -> string?
