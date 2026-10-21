@@ -87,9 +87,35 @@ All hook scripts live in `config/hooks/`:
 
 Each provider's `install-hooks.sh` installs them by copying, not symlinking, so they survive repo moves. Claude Code's copies go to `~/.claude/hooks/`, and Codex and Cursor copies go to `~/.agentic-workflow/hooks/`. The script then registers the command in that provider's hook config, wrapped by the adapter for Codex and Cursor.
 
-**Lever hooks** (context-guard, done-gate, scope-gate, external-write-guard, wake gating, judge-health, prompt-sort, sindri-nudge) are installed by `scripts/install-*.sh --provider claude|codex|cursor`, with `claude` as the default. `setup.sh` runs them for each selected provider. A lever with no equivalent event on a provider prints `skipped for <provider>` and writes nothing. For example, context-guard is skipped on Cursor.
+**Lever hooks** (context-guard, done-gate, scope-gate, external-write-guard, wake gating, judge-health, prompt-sort, sindri-nudge, trait-check) are installed by `scripts/install-*.sh --provider claude|codex|cursor`, with `claude` as the default. `setup.sh` runs them for each selected provider. A lever with no equivalent event on a provider prints `skipped for <provider>` and writes nothing. For example, context-guard is skipped on Cursor.
 
-Tests (all run under a temp `HOME`): `config/hooks/tests/{codex-adapter,cursor-adapter,failopen,provider-install-hooks,probe-log,judge-health,sindri-nudge,meta-hooks,fleet-state}.test.sh`, plus `config/lib/tests/{prompt-sort,install-prompt-sort}.test.sh` (run through the `config/lib/tests/*.test.sh` glob).
+Tests (all run under a temp `HOME`): `config/hooks/tests/{codex-adapter,cursor-adapter,failopen,provider-install-hooks,probe-log,judge-health,sindri-nudge,meta-hooks,fleet-state}.test.sh`, plus `config/lib/tests/{prompt-sort,install-prompt-sort,trait-check,install-trait-check}.test.sh` (run through the `config/lib/tests/*.test.sh` glob).
+
+## Trait check (opt-in)
+
+`trait-check.sh` checks a repo's **traits** against what an agent changed. A trait is one rule per file. It lives in `<repo>/.agents/traits/<name>.yaml`, which is shared, or in `~/.agentic-workflow/traits/<repo>/<name>.yaml`, a private draft overlay that wins when the names match. `<repo>` is the main checkout's directory name, so worktrees share the overlay.
+
+```yaml
+version: 1                                       # file format version; only 1 is read
+name: no-raw-sql-in-handlers                     # kebab-case; must match the file name
+subject: RPC handlers
+requirement: Handlers call a Repo; they never build SQL themselves.
+purpose: Keeps queries reviewable and testable in one place.
+applicability: Files that define RPC handlers.   # optional
+guidance: Move the query into the slice's Repo.ts. # optional, shown as "Fix:"
+context: Examples and sources for the judge.     # optional
+paths: ["packages/services/src/**/*.ts"]         # optional globs; omitted = every file
+severity: block                                  # block | warn
+```
+
+`judge trait-check` diffs the change (untracked files included) and asks Jev (TypeSafe System One, key `TYPESAFE_API_KEY` env or keychain `agentic-workflow-typesafe`) one choice question per trait per diff chunk: compliant, violation, not-applicable, or inconclusive.
+- **PostToolUse** (edit tools): the edited files vs HEAD, `p(violation) ≥ 0.6`, any severity. Exit 2 sends the findings back as feedback.
+- **Stop**: the branch vs its merge base with `origin/main`, `p ≥ 0.8`, `severity: block` only. Exit 2 makes the agent continue once (`stop_hook_active` exits 0).
+- A file opts out of a trait with `// trait-ignore-file <name>: <reason>` in its leading comment block.
+- A repo with no traits costs one `git rev-parse`. Jev being down or the key missing fails open (`jev-unavailable`). Every hook assessment is logged to `~/.agentic-workflow/judge/trait-check/log.jsonl`.
+- **Scan** (by hand, not a hook): `judge trait-check --scan [--path <pathspec>...] [--trait <name>...]` judges whole tracked files as if newly added, to find existing debt. It reports both severities at `p ≥ 0.8`, one JSON line per finding on stdout, and logs no assessments.
+
+Install with `scripts/install-trait-check.sh --provider claude|codex|cursor` (`--uninstall` to remove it). `setup.sh` never runs this lever.
 
 ## Fail-open logging (HOOK-FAILOPEN)
 
@@ -105,6 +131,7 @@ A hook **fails open** when its own error turns into an allow or a let-through: j
 - Fail-open hooks and their causes:
   - `send-gate`: `locks-lib-missing`, `judge-exit-<N>`, `judge-output-unparsable`, `judge-decision-missing`
   - `scope-gate`: the judge causes plus `judge-decision-unknown`
+  - `trait-check`: `judge-missing`, `jev-unavailable`, `judge-exit-<N>`, `mktemp`, plus the input causes
   - `external-write-guard`: `session-id-missing`, `session-state-unreadable`
   - `done-gate`: `transcript-unreadable`, `no-assistant-line`, `transcript-line-unparsable`, `judge-ask-check-exit-<N>`, `judge-brief-exit-<N>` (but not "no brief for …")
   - `outbox-flush`: `outbox-unreadable`
