@@ -203,6 +203,6 @@ public sealed class InstanceViewLayoutTests
     {
         var produce = StatusCases.View("desk-task").Steps[0];
 
-        Assert.Equal(EngineFixture.Catalog.Find(EngineFixture.Step.States["produce"].Step!.Use)!.Inputs.Select(static k => k.Value), produce.Needs);
+        Assert.Equal(EngineFixture.Catalog.Find(EngineFixture.Step.States["produce"].Step!.Use)!.Inputs.Select(static k => k.Value), produce.Needs, StringComparer.Ordinal);
     }
 }

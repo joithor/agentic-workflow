@@ -31,6 +31,9 @@ namespace Aw.Sindri.Features.ListInstances;
 /// <param name="rowBuilder">Builds the rows at the time the list is read: their ages and timeouts are worked out from it, not from when the workflow last ran, and each carries its recipe's display name.</param>
 internal sealed partial class ListInstancesService(IInstanceDirectory directory, IWorkflowInstances instances, EndedInstanceViews runtime, IViewReader itemViews, IItemRepos repos, ICallerContextAccessor callers, InstanceRows rowBuilder) : IService<ListInstancesRequest, InstanceList>
 {
+    /// <summary>What a list is drawn from besides its views: the counts, the titles, the sentence for an empty list and whether it is newest first.</summary>
+    private sealed record ListShape(ListCounts Counts, ItemTitles Titles, string? Empty, bool NewestFirst);
+
     /// <summary>The recipe whose root instance a row's line stage is read from.</summary>
     private const string LineRecipe = "workflow.line";
 
@@ -74,7 +77,7 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
 
         var kept = Narrowed(views.Value, Flag(request.Open), Flag(request.NeedsMe) == true);
         var titles = await Titles(kept, cancellationToken).ConfigureAwait(false);
-        return await Listed(Matching(kept, request.Subject, titles), counts.Value, titles, Empty(request), known, finishedOnly, cancellationToken).ConfigureAwait(false);
+        return await Listed(Matching(kept, request.Subject, titles), new ListShape(counts.Value, titles, Empty(request), finishedOnly), known, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>The views 'open' keeps (true: the unfinished, false: the finished), and for 'needsMe' only what needs the caller.</summary>
@@ -188,7 +191,7 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
         }
 
         var one = new Dictionary<string, InstanceView>(StringComparer.Ordinal) { [view.Value.Address.Value] = view.Value };
-        return await Listed([view.Value], InstanceCounts.Of([view.Value]), await Titles([view.Value], cancellationToken).ConfigureAwait(false), empty: null, one, newestFirst: false, cancellationToken).ConfigureAwait(false);
+        return await Listed([view.Value], new ListShape(InstanceCounts.Of([view.Value]), await Titles([view.Value], cancellationToken).ConfigureAwait(false), Empty: null, NewestFirst: false), one, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -202,15 +205,15 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             : [.. views.Where(v => InstanceSummaries.SubjectOf(v, titles.For(v)) is var s && (string.Equals(s.Key, subject, StringComparison.Ordinal) || s.Label.Contains(subject, StringComparison.OrdinalIgnoreCase)))];
 
     /// <summary>The list: the rows in the API order (§3.8: one order on every list path), each built by <see cref="InstanceSummaries.Of"/>.</summary>
-    private async ValueTask<InstanceList> Listed(List<InstanceView> views, ListCounts counts, ItemTitles titles, string? empty, Dictionary<string, InstanceView> known, bool newestFirst, CancellationToken cancellationToken)
+    private async ValueTask<InstanceList> Listed(List<InstanceView> views, ListShape shape, Dictionary<string, InstanceView> known, CancellationToken cancellationToken)
     {
         var lines = await LineStages(views, known, cancellationToken).ConfigureAwait(false);
         var now = rowBuilder.Now();
-        var ordered = newestFirst
+        var ordered = shape.NewestFirst
             ? views.OrderByDescending(static v => v.Since).ThenBy(static v => v.Address.Value, StringComparer.Ordinal)
-            : views.Order(new InstanceOrder(titles));
-        var list = ordered.Select(v => rowBuilder.Row(v, titles, now, lines.GetValueOrDefault(InstanceSummaries.RootOf(v.Address)))).ToList();
-        return new InstanceList(list, counts, list.Count == 0 ? empty : null, now);
+            : views.Order(new InstanceOrder(shape.Titles));
+        var list = ordered.Select(v => rowBuilder.Row(v, shape.Titles, now, lines.GetValueOrDefault(InstanceSummaries.RootOf(v.Address)))).ToList();
+        return new InstanceList(list, shape.Counts, list.Count == 0 ? shape.Empty : null, now);
     }
 
     /// <summary>

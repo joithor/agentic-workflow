@@ -42,7 +42,7 @@ internal static class CurrentStates
                     .SelectMany(static t => t.Produces)
                     .Select(static p => p.Fact.Value)
                     .Distinct(StringComparer.Ordinal)
-                    .Select(key => facts.FirstOrDefault(f => string.Equals(f.Key, key, StringComparison.Ordinal))?.Ref is { } held ? held with { FactKey = key } : new FactRef(null, null, null, null, null, null, null, null, key))])),
+                    .Select(key => facts.FirstOrDefault(f => string.Equals(f.Key, key, StringComparison.Ordinal))?.Ref is { } held ? held with { FactKey = key } : new FactRef(Name: null, Size: null, Hash: null, Path: null, ItemId: null, Url: null, Host: null, Title: null, FactKey: key))])),
     ];
 
     /// <summary>The gates on the transitions leaving the active state, once each.</summary>
