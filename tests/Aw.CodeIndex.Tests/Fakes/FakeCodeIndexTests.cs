@@ -72,7 +72,7 @@ public sealed class FakeCodeIndexTests
     [Fact, Trait("Lane", "unit")]
     public async Task Scripted_edges_come_back_with_their_unresolved_count_and_a_damaged_index_reads_as_not_built()
     {
-        var edge = new CallEdge(1, Other: null, "Helper", EdgeKind.Calls, EdgeBasis.Syntax, Confidence.Unresolved, Line: 5, Candidates: 0);
+        var edge = new CallEdge(1, Other: null, "Helper", EdgeKind.Calls, EdgeBasis.Syntax, Confidence.Unresolved, Line: 5, Candidates: 0, Coverage.Full);
         var fake = Fake().WithEdges(_api, _run, CallDirection.Callees, unresolved: 2, edge).WithDamaged(_web);
 
         var callees = await fake.Callees(Scope(CallerKind.Human, _api, _web), _run, CallDepth.One, Token);
@@ -80,5 +80,29 @@ public sealed class FakeCodeIndexTests
 
         Assert.Equal((2, 1), (callees.Value.UnresolvedCount, callees.Value.Edges.Count));
         Assert.Equal("SND-CODEIDX-013", damaged.Error.Code);
+    }
+
+    private static CallEdge Edge(Coverage coverage) => new(1, Other: null, "Go", EdgeKind.Calls, EdgeBasis.Graphify, Confidence.Likely, Line: 4, Candidates: 0, coverage);
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_csharp_answer_with_full_rows_is_full_and_one_partial_row_makes_it_partial()
+    {
+        var scope = Scope(CallerKind.Human, _api);
+        var full = await Fake().WithEdges(_api, _run, CallDirection.Callers, unresolved: 0, Edge(Coverage.Full)).Callers(scope, _run, CallDepth.One, includeImplementations: false, Token);
+        var mixed = await Fake().WithEdges(_api, _run, CallDirection.Callers, unresolved: 0, Edge(Coverage.Full), Edge(Coverage.Partial)).Callers(scope, _run, CallDepth.One, includeImplementations: false, Token);
+
+        Assert.Equal((Coverage.Full, Coverage.Partial), (full.Value.Coverage, mixed.Value.Coverage));
+        Assert.Equal([Coverage.Full, Coverage.Partial], [.. mixed.Value.Edges.Select(e => e.Coverage)]);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_empty_answer_for_a_graphify_language_is_partial_so_it_reads_none_found()
+    {
+        var go = SymbolRef.From("web:src/tabs.ts#go");
+        var fake = new FakeCodeIndex().WithIndex(_web, _commit, Hit(go, "src/tabs.ts", "go"));
+
+        var answer = await fake.Callees(Scope(CallerKind.Human, _web), go, CallDepth.One, Token);
+
+        Assert.Equal((Coverage.Partial, 0), (answer.Value.Coverage, answer.Value.Edges.Count));
     }
 }

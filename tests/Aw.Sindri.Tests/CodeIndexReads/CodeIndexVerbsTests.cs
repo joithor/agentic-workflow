@@ -84,6 +84,20 @@ public sealed class CodeIndexVerbsTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_partial_row_marks_a_csharp_answer_partial_and_each_row_shows_its_own_coverage()
+    {
+        var api = new ScriptedApi(Ok("code-index-callers", "csharp-partial-row"));
+
+        var exit = await Run(api, "callers", "demo:src/Worker.cs#Worker.Stop");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("coverage partial · 2 edges", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("(syntax, full)  line 15", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("(graphify, partial)  line 7  1 of 2", _out.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("none found", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Callees_print_each_edge_with_its_basis_confidence_and_coverage_and_the_unresolved_count()
     {
         var api = new ScriptedApi(Ok("code-index-callees", "graphify-partial"));

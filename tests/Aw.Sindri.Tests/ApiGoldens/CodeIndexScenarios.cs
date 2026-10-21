@@ -28,7 +28,7 @@ internal static class CodeIndexScenarios
     [
         ("code-index-status", "all-repos"), ("code-index-status", "one-repo"), ("code-index-status", "unknown-repo-013"), ("code-index-status", "session-own-repo"), ("code-index-status", "session-other-repo-013"),
         ("code-index-symbols", "exact"), ("code-index-symbols", "prefix"), ("code-index-symbols", "empty-012"), ("code-index-symbols", "bad-match-012"), ("code-index-symbols", "session-other-repo-none"), ("code-index-symbols", "session-fenced"),
-        ("code-index-callers", "csharp-full"), ("code-index-callers", "typescript-none-found"), ("code-index-callers", "with-repo"), ("code-index-callers", "depth-4-012"),
+        ("code-index-callers", "csharp-full"), ("code-index-callers", "csharp-partial-row"), ("code-index-callers", "typescript-none-found"), ("code-index-callers", "with-repo"), ("code-index-callers", "depth-4-012"),
         ("code-index-callers", "unknown-ref-011"), ("code-index-callers", "session-other-repo-013"), ("code-index-callers", "bad-ref-012"),
         ("code-index-callees", "graphify-partial"), ("code-index-callees", "depth-2"), ("code-index-callees", "session-other-repo-013"), ("code-index-callers", "session-fenced"),
     ];
@@ -46,10 +46,13 @@ internal static class CodeIndexScenarios
         return new FakeCodeIndex()
             .WithIndex(_demo, _commit, run, stop, helper, Hit(Go, "src/tabs.ts", "go", 3, 3))
             .WithIndex(_other, _commit, Hit(Secret, "src/Secret.cs", "Secret.Keep", 1, 4))
-            .WithEdges(_demo, Run, CallDirection.Callers, unresolved: 0, new CallEdge(1, stop, "Run", EdgeKind.Calls, EdgeBasis.Syntax, Confidence.Certain, Line: 25, Candidates: 1))
+            .WithEdges(_demo, Run, CallDirection.Callers, unresolved: 0, new CallEdge(1, stop, "Run", EdgeKind.Calls, EdgeBasis.Syntax, Confidence.Certain, Line: 25, Candidates: 1, Coverage.Full))
+            .WithEdges(_demo, Stop, CallDirection.Callers, unresolved: 0,
+                new CallEdge(1, run, "Stop", EdgeKind.Calls, EdgeBasis.Syntax, Confidence.Certain, Line: 15, Candidates: 1, Coverage.Full),
+                new CallEdge(1, helper, "Stop", EdgeKind.Calls, EdgeBasis.Graphify, Confidence.Likely, Line: 7, Candidates: 2, Coverage.Partial))
             .WithEdges(_demo, Run, CallDirection.Callees, unresolved: 2,
-                new CallEdge(1, helper, "Assist", EdgeKind.Calls, EdgeBasis.Syntax, Confidence.Certain, Line: 12, Candidates: 1),
-                new CallEdge(1, Other: null, "Log", EdgeKind.Calls, EdgeBasis.Graphify, Confidence.Likely, Line: 14, Candidates: 0));
+                new CallEdge(1, helper, "Assist", EdgeKind.Calls, EdgeBasis.Syntax, Confidence.Certain, Line: 12, Candidates: 1, Coverage.Full),
+                new CallEdge(1, Other: null, "Log", EdgeKind.Calls, EdgeBasis.Graphify, Confidence.Likely, Line: 14, Candidates: 0, Coverage.Partial));
     }
 
     /// <summary>Starts the golden host with <see cref="Index"/> as the facade and the item profile approved.</summary>
@@ -83,6 +86,7 @@ internal static class CodeIndexScenarios
         ("code-index-symbols", "session-fenced") => "/sindri/code-index/symbols?query=Worker.Run",
         ("code-index-symbols", "session-other-repo-none") => "/sindri/code-index/symbols?query=Secret.Keep",
         ("code-index-callers", "csharp-full") => Callers(Run),
+        ("code-index-callers", "csharp-partial-row") => Callers(Stop),
         ("code-index-callers", "typescript-none-found") => Callers(Go),
         ("code-index-callers", "with-repo") => "/sindri/code-index/callers?ref=" + Uri.EscapeDataString("src/Worker.cs#Worker.Run") + "&repo=demo",
         ("code-index-callers", "depth-4-012") => Callers(Run) + "&depth=4",
