@@ -2,14 +2,19 @@ using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks.Step;
+using Aw.Sindri.Features.Line;
+using Aw.Sindri.Testing.Packets;
 using Aw.Sindri.Testing.Workflow;
+using Aw.Sindri.Tests.Scoping.Steps;
 
 namespace Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 
-/// <summary>A descriptor-only block (no runtime until its phase): it hashes, kinds, registers once and resolves nothing.</summary>
+/// <summary>A block-runtime Step (the design station, BS2b): it hashes, kinds, registers once, resolves under IBlockStep and honours a cancelled token.</summary>
 [Lane(TestLane.Unit)]
-public sealed class DesignIntakeStepContract : DescriptorContract
+public sealed class DesignIntakeStepContract : BlockContract
 {
+    protected override Type Block => typeof(DesignIntakeStep);
+
     protected override BlockDescriptor Descriptor => DesignSteps.Intake;
 
     protected override string ExpectedHash => "sha256:b0c4f38d67e08b76df6a95f8317542d801e458ca58e6c2a31d97b9cb91ec62ed";
@@ -17,4 +22,7 @@ public sealed class DesignIntakeStepContract : DescriptorContract
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
+
+    protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
+        _ = await new DesignIntakeStep(new InMemoryPackets(), new InMemoryPacketFiles()).Run(ScopingStepContexts.Of("step.design.intake", []), cancellationToken);
 }

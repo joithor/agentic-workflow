@@ -43,6 +43,11 @@ public sealed class InMemoryRunArea : IRunArea
     /// <inheritdoc/>
     public Result<string> PathFor(string address, string name) => Check(address, name) is { } refused ? refused : "/run/" + address + "/" + name;
 
+    /// <summary>The text of the file whose location (<see cref="PathFor"/> of its address and name) is <paramref name="path"/>; null when no file is there.</summary>
+    /// <param name="path">The file's location.</param>
+    /// <returns>The text, or null.</returns>
+    public string? ReadLocation(string path) => _files.FirstOrDefault(f => string.Equals($"/run/{f.Key.Address}/{f.Key.Name}", path, StringComparison.Ordinal)) is { Value: { } text } ? text : null;
+
     private static Error? Check(string address, string name) =>
         !RunAreaNames.IsValid(name) ? SindriErrors.InvalidInput.With($"'{name}' is not a run area file name")
         : !InstanceAddress.TryFrom(address, out _) ? SindriErrors.InvalidInput.With($"'{address}' is not an instance address")
