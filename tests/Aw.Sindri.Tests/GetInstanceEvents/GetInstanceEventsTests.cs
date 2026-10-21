@@ -52,7 +52,8 @@ public sealed class GetInstanceEventsTests
 
         var read = (await new GetInstanceEventsService(counting, h.Events, instances, instances).Handle(new GetInstanceEventsRequest(_address.Value), TestContext.Current.CancellationToken)).Value;
 
-        Assert.Equal(([2L, 4L], 5L, 2), (read.Events.Select(static e => e.Sequence).ToArray(), read.Cursor, counting.RowsRead));
+        Assert.Equal([2L, 4L], read.Events.Select(static e => e.Sequence));
+        Assert.Equal((5L, 2), (read.Cursor, counting.RowsRead));
     }
 
     [Fact]

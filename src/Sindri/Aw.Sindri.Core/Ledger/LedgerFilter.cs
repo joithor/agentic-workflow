@@ -14,23 +14,32 @@ public sealed record LedgerFilter(TypeFilter? Types, ItemId? Item, int ScanLimit
     /// <summary>Every event, with the default scan limit.</summary>
     public static LedgerFilter All { get; } = new(Types: null, Item: null);
 
-    /// <summary>The last sequence a scan from <paramref name="cursor"/> looks at: the cursor plus the scan limit (at least one row), without overflowing.</summary>
+    /// <summary>
+    /// The last sequence a scan from <paramref name="cursor"/> looks at: the cursor plus the scan limit (at least one row), without
+    /// overflowing. A scan of one <see cref="Instance"/> walks an index, not the log, so it has no limit.
+    /// </summary>
     /// <param name="cursor">The sequence the scan starts after.</param>
     /// <returns>The highest sequence the scan may look at.</returns>
     public long UpperFrom(long cursor)
     {
+        if (Instance is not null)
+        {
+            return long.MaxValue;
+        }
+
         var limit = Math.Max(ScanLimit, 1);
         return cursor > long.MaxValue - limit ? long.MaxValue : cursor + limit;
     }
 
     /// <summary>True when this filter keeps <paramref name="row"/>.</summary>
     /// <param name="row">The ledger row.</param>
-    /// <returns>Whether the row's type and item pass.</returns>
+    /// <returns>Whether the row's type, item and instance pass.</returns>
     public bool Keeps(LedgerEvent row)
     {
         ArgumentNullException.ThrowIfNull(row);
         return (Types is null || Types.Matches(row.Envelope.Type))
-            && (Item is not { } item || string.Equals(row.Item, item.Value, StringComparison.Ordinal));
+            && (Item is not { } item || string.Equals(row.Item, item.Value, StringComparison.Ordinal))
+            && (Instance is not { } instance || InstanceEvents.Belongs(row, instance));
     }
 
     /// <summary>

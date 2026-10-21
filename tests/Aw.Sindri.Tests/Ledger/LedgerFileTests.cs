@@ -124,7 +124,9 @@ public sealed class LedgerFileTests : IDisposable
             plan.Add(reader.GetString(3));
         }
 
-        Assert.Contains(plan, static step => step.StartsWith("SEARCH events USING INDEX sqlite_autoindex_events", StringComparison.Ordinal) && step.Contains("idempotency_key", StringComparison.Ordinal));
+        Assert.True(
+            plan.Exists(static step => step.StartsWith("SEARCH events USING INDEX sqlite_autoindex_events", StringComparison.Ordinal) && step.Contains("idempotency_key", StringComparison.Ordinal)),
+            string.Join("; ", plan));
     }
 
     private static void Execute(string path, string sql)
