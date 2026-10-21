@@ -1,8 +1,11 @@
 using Aw.Context.Core;
+using Aw.Context.Core.Code;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Extract;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Symbols;
+using Aw.Context.Features.GetCode;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 
@@ -13,7 +16,7 @@ namespace Aw.Context.Features.GetFileMap;
 /// map the caller may read, built by FileMapBuilder. A repo outside the profile, outside 'context.repos' or outside a
 /// session's scope is SND-CONTEXT-045 with one answer for every reason, so a scope never reveals what is outside it.
 /// </summary>
-internal sealed class GetFileMapService(MapReader reader, IRepoReader repos) : IService<GetFileMapRequest, FileMapView>
+internal sealed class GetFileMapService(MapReader reader, IRepoReader repos, ICodeSymbolSource symbols) : IService<GetFileMapRequest, FileMapView>
 {
     public async ValueTask<Result<FileMapView>> Handle(GetFileMapRequest request, CancellationToken cancellationToken)
     {
@@ -26,8 +29,31 @@ internal sealed class GetFileMapService(MapReader reader, IRepoReader repos) : I
             return repo.IsError ? repo.Error : map.IsError ? map.Error : tree.Error;
         }
 
-        return FileMapBuilder.Build(new FileMapBasis(map.Value.Snapshot.Tag, tree.Value.Sha), query, tree.Value.Files, map.Value.Graph);
+        var built = FileMapBuilder.Build(new FileMapBasis(map.Value.Snapshot.Tag, tree.Value.Sha), query, tree.Value.Files, map.Value.Graph);
+        return built.IsError ? built.Error : built.Value with { Symbols = await Symbols(repo.Value, map.Value.Snapshot.Version, built.Value, cancellationToken).ConfigureAwait(false) };
     }
+
+    // The symbols column (S-9a): what the code index says about the files this listing shows, as of the map version's commit. A directory row has none; a read that fails is a column that says so, never an error of the route.
+    private async ValueTask<LensSymbols> Symbols(ContextRepo repo, MapVersion version, FileMapView view, CancellationToken cancellationToken)
+    {
+        var asOf = repo.Name == version.Repo && CodeLexicalSearch.IsSha(version.Commit) ? version.Commit : null;
+        var head = await symbols.Heads(repo.Name, asOf, cancellationToken).ConfigureAwait(false);
+        if (head.IsError)
+        {
+            return Down(head.Error.Code);
+        }
+
+        var paths = view.Entries.Where(e => e.Type == FileEntryType.File).Select(e => e.Path).Take(CodeRules.MaxSymbolFiles).ToList();
+        if (paths.Count == 0 || !CodeIndexReading.Readable(head.Value))
+        {
+            return CodeIndexReading.FileMap(head.Value, []);
+        }
+
+        var files = await symbols.FileSymbols(repo.Name, paths, asOf, cancellationToken).ConfigureAwait(false);
+        return files.IsError ? Down(files.Error.Code) : CodeIndexReading.FileMap(files.Value.Head, files.Value.Rows);
+    }
+
+    private static LensSymbols Down(string code) => LensSymbols.Unavailable with { Reason = "index unavailable", Code = code };
 
     private static Result<ContextRepo> Addressed(ContextScope scope, ContextRepoName name)
     {

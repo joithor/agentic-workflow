@@ -1,5 +1,6 @@
 using Aw.Context.Core.Code;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Symbols;
 
 namespace Aw.Context.Features.GetCode;
 
@@ -12,8 +13,23 @@ internal static class CodeTexts
         MissingAnchors = [.. view.MissingAnchors.Select(text.Line)],
         Files = [.. view.Files.Select(f => f with { Path = text.Line(f.Path), Label = text.Line(f.Path), TestedBy = [.. f.TestedBy.Select(text.Line)] })],
         Tests = [.. view.Tests.Select(t => t with { Path = text.Line(t.Path), Label = text.Line(t.Path), Named = [.. t.Named.Select(text.Line)] })],
+        Callers = Symbols(view.Callers, text),
+        Callees = Symbols(view.Callees, text),
         Data = new CodeData(
             [.. view.Data.Things.Select(t => t with { Label = text.Label(t.Label, t.Trust) })],
             [.. view.Data.Files.Select(f => f with { Path = text.Line(f.Path), Label = text.Line(f.Path), Matched = text.Line(f.Matched) })]),
+    };
+
+    // Names, signatures and paths of the index are repo text: one clean line each, like the paths above.
+    private static CodeSymbols Symbols(CodeSymbols symbols, MapText text) =>
+        symbols with { Items = [.. symbols.Items.Select(e => e with { Symbol = Site(e.Symbol, text) })] };
+
+    internal static SymbolSite Site(SymbolSite site, MapText text) => site with
+    {
+        Ref = text.Line(site.Ref),
+        Name = text.Line(site.Name),
+        Kind = text.Line(site.Kind),
+        Path = text.Line(site.Path),
+        Signature = site.Signature is null ? null : text.Line(site.Signature),
     };
 }
