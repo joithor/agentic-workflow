@@ -13,11 +13,12 @@ namespace Aw.Sindri.Ui.Api;
 
 /// <summary>
 /// The typed client of Sindri's loopback HTTP API (docs/csharp/sindri.md "Command layer and API"). A call that doesn't
-/// answer within 2 s is unreachable, like the CLI's; the event stream has no timeout and ends with its connection.
+/// answer within 120 s is unreachable (a context read of a large map takes seconds); the event stream has no timeout and
+/// ends with its connection.
 /// </summary>
 /// <param name="http">The HTTP client, with no timeout of its own (the app's, or one over a canned handler in tests).</param>
 /// <param name="token">The control plane's per-start human token, read at each call (API spec §6).</param>
-/// <param name="clock">The clock the 2 s deadline runs on (the app's, so tests drive it with a fake one).</param>
+/// <param name="clock">The clock the 120 s deadline runs on (the app's, so tests drive it with a fake one).</param>
 /// <param name="log">The app's log, where an unreadable body's parser detail goes (never the window); none by default.</param>
 internal sealed partial class SindriApiClient(HttpClient http, IHumanTokenSource token, TimeProvider clock, ILogger? log = null) : ISindriApi
 {
@@ -29,10 +30,9 @@ internal sealed partial class SindriApiClient(HttpClient http, IHumanTokenSource
     /// </summary>
     internal const int AppApiVersion = 1;
 
-    private static readonly TimeSpan _callTimeout = TimeSpan.FromSeconds(2);
-
-    // A view query carrying X-Sindri-After: the server waits up to 2 s for the views, so the client waits longer.
-    private static readonly TimeSpan _waitingTimeout = TimeSpan.FromSeconds(5);
+    // Every call's deadline: long enough for a context read of a large map (seconds), and well past the server's 2 s
+    // wait on a view query carrying X-Sindri-After.
+    internal static readonly TimeSpan CallTimeout = TimeSpan.FromSeconds(120);
 
     /// <summary>The app's JSON options (the AwJson profile over the app's context).</summary>
     internal static JsonSerializerOptions Json { get; } = AwJson.CreateOptions(SindriUiJsonContext.Default);

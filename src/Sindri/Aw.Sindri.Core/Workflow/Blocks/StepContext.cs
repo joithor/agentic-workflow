@@ -25,4 +25,7 @@ public sealed record StepContext(
 
     /// <summary>The instance's address ('T-1/scoping/1'), the identity a Step's external writes carry so a retry replaces them; the block runner always sets it. Text, not an InstanceAddress: that type's namespace depends on this one, and a Step that needs the typed id parses it (InstanceAddress.TryFrom).</summary>
     public string? Address { get; init; }
+
+    /// <summary>Whether the instance already holds a heavy-job slot for this Step (LN-WF3): a Step that runs a build or a test run takes no second one. False for an instance that never waited on the heavy resource.</summary>
+    public bool HeavySlotHeld { get; init; }
 }

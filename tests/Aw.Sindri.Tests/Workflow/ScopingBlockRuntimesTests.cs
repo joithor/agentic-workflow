@@ -5,6 +5,7 @@ using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Workflow;
@@ -24,7 +25,7 @@ public sealed class ScopingBlockRuntimesTests
 {
     private static readonly string[] _registered =
     [
-        "step.brief.seed", "step.build.prepare", "step.interview.record", "step.phase.drift", "step.prove.evidence", "step.prove.fail-log", "step.prove.intake", "step.scope.anchor", "step.scope.challenge-log", "step.scope.check", "step.scope.gather",
+        "step.brief.seed", "step.build.prepare", "step.interview.record", "step.phase.drift", "step.phase.seed", "step.prove.evidence", "step.prove.fail-log", "step.prove.intake", "step.scope.anchor", "step.scope.challenge-log", "step.scope.check", "step.scope.freeze", "step.scope.gather",
         "step.scope.intake", "step.scope.propose", "step.scope.read-brief", "step.scope.reanchor", "step.scope.withdraw", "step.ship.return",
     ];
 
@@ -48,7 +49,7 @@ public sealed class ScopingBlockRuntimesTests
         using var provider = ShippedComposition.Compose();
         var (recipe, context) = Scoping(provider);
 
-        var scoping = context.Runtimes.Keys.Select(static k => k.Value).Where(static k => !k.StartsWith("step.lens.", StringComparison.Ordinal));   // the lens loop's block Step is the design recipe's
+        var scoping = context.Runtimes.Keys.Select(static k => k.Value).Where(static k => !k.StartsWith("step.design.", StringComparison.Ordinal) && !k.StartsWith("step.plan.", StringComparison.Ordinal) && !k.StartsWith("step.review.", StringComparison.Ordinal) && !k.StartsWith("step.lens.", StringComparison.Ordinal));   // the design and plan stations' runtimes are BS2's, the lens loop's block Step is the design recipe's
         Assert.Equal(_registered, scoping.Order(StringComparer.Ordinal), StringComparer.Ordinal);
         var used = recipe.States.Values.Select(static s => s.Step?.Use.Value).OfType<string>().ToHashSet(StringComparer.Ordinal);
         Assert.Empty(_registered.Where(static id => id.StartsWith("step.scope.", StringComparison.Ordinal) || string.Equals(id, "step.brief.seed", StringComparison.Ordinal) || string.Equals(id, "step.interview.record", StringComparison.Ordinal)).Except(used.Concat(["step.brief.seed", "step.scope.anchor"]), StringComparer.Ordinal));   // brief.seed and anchor are the idea child's (workflow.idea-to-brief), not this recipe's
@@ -83,6 +84,21 @@ public sealed class ScopingBlockRuntimesTests
         Assert.Equal(StepRuntime.Block, entered.Frame.Run?.Runtime);
         Assert.Equal("pass", run.Result?.Outcome.Value);
         Assert.NotEqual("check", Next(entered, recipe, context, run), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_frozen_report_leaves_fact_scopePacket_as_hash_and_dir_on_the_instance()
+    {
+        await using var provider = ShippedComposition.Compose();
+        var (recipe, context) = Scoping(provider);
+        var entered = StateEntry.Enter(EngineFixture.At(recipe, "freeze"), recipe, "freeze", context);
+        var packet = EngineFixture.Fact("""{"hash":"sha256:aaaa","dir":"/runs/T-1/scoping/1/scope-packet"}""");
+        var outputs = new Dictionary<FactKey, FactValue> { [FactKey.From("fact:scopePacket")] = packet };
+        var trigger = BlockStepTriggers.Completed(entered, recipe, context, new BlockCompletion(recipe.States["freeze"].Step!.Use, entered.Frame.Run!.Token, OutcomeName.From("frozen"), outputs));
+
+        var after = Assert.IsType<Applied>(TransitionDecision.Decide(new DecisionInput(entered, recipe, trigger, GateAnswers.None, context))).Changes[0].After;
+
+        Assert.Equal(("scoped", packet), (after.State, after.Facts[FactKey.From("fact:scopePacket")]));
     }
 
     private static (Recipe Recipe, DecisionContext Context) Scoping(ServiceProvider provider)

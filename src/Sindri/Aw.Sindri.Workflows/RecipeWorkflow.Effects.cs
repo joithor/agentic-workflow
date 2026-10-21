@@ -27,6 +27,7 @@ internal sealed partial class RecipeWorkflow
     private readonly List<Task> _effects = [];
     private readonly HashSet<string> _effectsOpen = new(StringComparer.Ordinal);
     private readonly HashSet<string> _effectsSent = new(StringComparer.Ordinal);
+    private bool? _replyFacts;
     private CancellationTokenSource? _effectsCancel;
     private TimeSpan _dispatchDelay;
     private bool _deskTaskNotified;
@@ -115,6 +116,12 @@ internal sealed partial class RecipeWorkflow
         }
     }
 
+    /// <summary>
+    /// Whether an effect's reply may carry facts: the 'forge-reply-facts' marker, read once at the first effect dispatch (after every other marker,
+    /// which Begin reads), so a history recorded before it replays with no reply facts exactly as it ran.
+    /// </summary>
+    private bool ReplyFacts => _replyFacts ??= Workflow.Patched("forge-reply-facts");
+
     private async Task DispatchOne(WorkflowInstance after, EffectCommand effect)
     {
         var row = new EffectRow(effect.Identity.Text, Workflow.NewGuid().ToString("N"), effect.Effect, effect.Origin, EffectState.Pending, after.Address);
@@ -126,7 +133,7 @@ internal sealed partial class RecipeWorkflow
                 return;
             }
 
-            var run = new EffectRun(after.Address.Value, after.Item.Value, after.Attempt, effect, row.Command, TextOf(after, effect), after.Facts, _recipe!.Version);   // why: effects run only after Begin set _recipe
+            var run = new EffectRun(after.Address.Value, after.Item.Value, after.Attempt, effect, row.Command, TextOf(after, effect), after.Facts, _recipe!.Version, ReplyFacts);   // why: effects run only after Begin set _recipe
             var options = (ActivityOptions)EffectActivities.RunOptions.Clone();
             options.CancellationToken = Effects().Token;   // a cancel of the instance stops the retries too, not only the delay
             options.TaskQueue = Workflow.Info.TaskQueue;   // the instance's queue, from settings (never a constant)
