@@ -10,7 +10,7 @@ public sealed class NoIndexOutlooksTests
     [Fact, Trait("Lane", "unit")]
     public async Task Every_repo_of_the_hold_is_Absent_so_the_map_publishes_at_once()
     {
-        var hold = new MapHoldState(14, _now, new Dictionary<string, MapRepoHead>(StringComparer.Ordinal) { ["a"] = new("x", true), ["b"] = new("y", true) });
+        var hold = new MapHoldState(14, _now, new Dictionary<string, MapRepoHead>(StringComparer.Ordinal) { ["a"] = new("x", OnDefaultBranch: true), ["b"] = new("y", OnDefaultBranch: true) });
         var read = await new NoIndexOutlooks().Read(hold, CancellationToken.None);
         Assert.False(read.IsError);
         Assert.All(read.Value!.Values, static d => Assert.Equal(IndexOutlook.Absent, d.Outlook));

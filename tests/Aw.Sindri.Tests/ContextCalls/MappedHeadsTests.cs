@@ -10,7 +10,7 @@ public sealed class MappedHeadsTests
     private static Dictionary<string, string> Heads(params (string Repo, string Sha)[] h) => h.ToDictionary(static x => x.Repo, static x => x.Sha, StringComparer.Ordinal);
 
     private static MapHoldState Hold(params (string Repo, string Sha)[] h) =>
-        new(14, _now, h.ToDictionary(static x => x.Repo, static x => new MapRepoHead(x.Sha, true), StringComparer.Ordinal));
+        new(14, _now, h.ToDictionary(static x => x.Repo, static x => new MapRepoHead(x.Sha, OnDefaultBranch: true), StringComparer.Ordinal));
 
     [Fact, Trait("Lane", "unit")]
     public void The_held_drafts_heads_win_over_the_current_versions() =>
@@ -33,5 +33,5 @@ public sealed class MappedHeadsTests
 
     [Fact, Trait("Lane", "unit")]
     public void A_head_off_the_default_branch_is_still_the_commit_the_map_was_built_from() =>
-        Assert.Equal(Heads(("a", "x")), MappedHeads.Of(new MapHoldState(14, _now, new Dictionary<string, MapRepoHead>(StringComparer.Ordinal) { ["a"] = new("x", false) }), null));
+        Assert.Equal(Heads(("a", "x")), MappedHeads.Of(new MapHoldState(14, _now, new Dictionary<string, MapRepoHead>(StringComparer.Ordinal) { ["a"] = new("x", OnDefaultBranch: false) }), currentHeads: null));
 }

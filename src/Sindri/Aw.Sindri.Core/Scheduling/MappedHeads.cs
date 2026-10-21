@@ -7,5 +7,9 @@ public static class MappedHeads
     /// <param name="hold">The hold, or null.</param>
     /// <param name="currentHeads">The current version's commit by repo name, or null when there is none.</param>
     /// <returns>The commit by repo name, or null for none (which gets one refresh).</returns>
-    public static IReadOnlyDictionary<string, string>? Of(MapHoldState? hold, IReadOnlyDictionary<string, string>? currentHeads) => throw new NotSupportedException();
+    public static IReadOnlyDictionary<string, string>? Of(MapHoldState? hold, IReadOnlyDictionary<string, string>? currentHeads)
+    {
+        var heads = hold is null ? currentHeads : hold.Heads.ToDictionary(static h => h.Key, static h => h.Value.Commit, StringComparer.Ordinal);
+        return heads is { Count: > 0 } ? heads : null;
+    }
 }

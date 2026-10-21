@@ -8,10 +8,10 @@ public sealed class MapPublishDecisionTests
     private static readonly DateTimeOffset _now = new(2026, 10, 20, 12, 0, 0, TimeSpan.Zero);
     private static readonly TimeSpan _wait = TimeSpan.FromMinutes(15);
 
-    private static IndexOutlookDetail Of(IndexOutlook o, RepoWait w = RepoWait.None) => new(o, w, null);
+    private static IndexOutlookDetail Of(IndexOutlook o, RepoWait w = RepoWait.None) => new(o, w, RetryAt: null);
 
     private static MapHoldState Hold(DateTimeOffset since, params string[] repos) =>
-        new(14, since, repos.ToDictionary(static r => r, static r => new MapRepoHead("abc1234", true), StringComparer.Ordinal));
+        new(14, since, repos.ToDictionary(static r => r, static r => new MapRepoHead("abc1234", OnDefaultBranch: true), StringComparer.Ordinal));
 
     private static MapPublishAction Decide(MapHoldState hold, Dictionary<string, IndexOutlookDetail> outlooks, int? draft = 14, int? current = 13, TimeSpan? wait = null, DateTimeOffset? now = null) =>
         MapPublishDecision.Decide(new MapPublishInput(hold, draft, current, outlooks, wait ?? _wait), now ?? _now);
@@ -79,7 +79,7 @@ public sealed class MapPublishDecisionTests
     [Fact, Trait("Lane", "unit")]
     public void A_repo_off_the_default_branch_is_absent_by_its_outlook()
     {
-        var detail = IndexOutlookRules.Classify(new IndexOutlookInput(null, "abc1234", HoldOnDefaultBranch: false, "abc1234", true, true, false, false, []), _now);
+        var detail = IndexOutlookRules.Classify(new IndexOutlookInput(IndexCommit: null, HoldHead: "abc1234", HoldOnDefaultBranch: false, LiveHead: "abc1234", InScope: true, ServiceActive: true, BuildRunning: false, NeverBuilt: false, FinishedNewestFirst: []), _now);
         var hold = new MapHoldState(14, _now, new Dictionary<string, MapRepoHead>(StringComparer.Ordinal) { ["a"] = new("abc1234", false) });
         IsPublish(Decide(hold, new Dictionary<string, IndexOutlookDetail>(StringComparer.Ordinal) { ["a"] = detail }), MapPublishReason.NoIndex);
     }

@@ -10,6 +10,55 @@ public static class MapPublishDecision
     public static MapPublishAction Decide(MapPublishInput input, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(input);
-        throw new NotSupportedException(now.ToString("O", System.Globalization.CultureInfo.InvariantCulture));
+        var hold = input.Hold;
+        if (input.CurrentVersion == hold.Version)
+        {
+            return new MapDrop(MapDropReason.AlreadyCurrent);
+        }
+
+        if (input.DraftVersion != hold.Version)
+        {
+            return new MapDrop(MapDropReason.Gone);
+        }
+
+        var gated = Gated(input);
+        List<string> notBuilt = [.. gated.Where(static r => r.Outlook != IndexOutlook.Built).Select(static r => r.Repo)];
+        if (gated.Count == 0)
+        {
+            return new MapPublish(MapPublishReason.NoIndex, []);
+        }
+
+        if (notBuilt.Count == 0)
+        {
+            return new MapPublish(MapPublishReason.IndexReady, []);
+        }
+
+        return gated.Exists(static r => r.Outlook == IndexOutlook.Broken)
+            ? new MapPublish(MapPublishReason.IndexBroken, notBuilt)
+            : WithinTheWait(input, notBuilt, now);
+    }
+
+    // Absent repos are not part of the gate; a repo of the hold with no outlook reads as absent.
+    private static List<(string Repo, IndexOutlook Outlook)> Gated(MapPublishInput input) =>
+        [.. input.Hold.Heads.Keys
+            .Select(repo => (Repo: repo, Outlook: input.Outlooks.TryGetValue(repo, out var detail) ? detail.Outlook : IndexOutlook.Absent))
+            .Where(static r => r.Outlook != IndexOutlook.Absent)
+            .OrderBy(static r => r.Repo, StringComparer.Ordinal)];
+
+    // Lines 4 to 7: the first map, waiting turned off, the bound (inclusive; a since in the future is clamped to now), else keep waiting.
+    private static MapPublishAction WithinTheWait(MapPublishInput input, List<string> notBuilt, DateTimeOffset now)
+    {
+        if (input.CurrentVersion is null)
+        {
+            return new MapPublish(MapPublishReason.FirstMap, notBuilt);
+        }
+
+        if (input.Wait <= TimeSpan.Zero)
+        {
+            return new MapPublish(MapPublishReason.WaitOff, notBuilt);
+        }
+
+        var until = (input.Hold.Since < now ? input.Hold.Since : now) + input.Wait;
+        return now >= until ? new MapPublish(MapPublishReason.TimedOut, notBuilt) : new MapWait(until, notBuilt.Count);
     }
 }
