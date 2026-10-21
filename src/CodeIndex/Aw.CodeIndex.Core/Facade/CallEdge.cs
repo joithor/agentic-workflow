@@ -11,4 +11,5 @@ namespace Aw.CodeIndex.Core.Facade;
 /// <param name="Confidence">How sure.</param>
 /// <param name="Line">The line in the caller.</param>
 /// <param name="Candidates">How many symbols the name matched ('1 of 300').</param>
-public sealed record CallEdge(int Level, SymbolHit? Other, string Name, EdgeKind Kind, EdgeBasis Basis, Confidence Confidence, int Line, int Candidates);
+/// <param name="Coverage">Full for C#, Partial for a graphify language, Unavailable for an unmeasured one.</param>
+public sealed record CallEdge(int Level, SymbolHit? Other, string Name, EdgeKind Kind, EdgeBasis Basis, Confidence Confidence, int Line, int Candidates, Coverage Coverage);
