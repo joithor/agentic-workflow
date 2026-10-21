@@ -1,6 +1,6 @@
 using Aw.CodeIndex.Core.Values;
 
-namespace Aw.CodeIndex.Core.Model;
+namespace Aw.CodeIndex.Core.Facade;
 
 /// <summary>A registered repo as the facade sees it: its name, its main checkout, and the index settings that apply to it (the profile's, with the repo's own entry merged in by Sindri, spec §13).</summary>
 /// <param name="Name">Its short name.</param>

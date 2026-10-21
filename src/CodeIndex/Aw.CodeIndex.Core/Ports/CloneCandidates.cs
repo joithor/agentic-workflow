@@ -1,6 +1,6 @@
 using Aw.CodeIndex.Core.Facade;
 
-namespace Aw.CodeIndex.Core.Model;
+namespace Aw.CodeIndex.Core.Ports;
 
 /// <summary>What a reader finds for Similar: Core's clone logic turns the banded candidates into near clones by estimated Jaccard.</summary>
 /// <param name="Exact">Symbols with the subject's shape hash.</param>

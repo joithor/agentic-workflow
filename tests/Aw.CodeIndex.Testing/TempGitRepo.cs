@@ -1,4 +1,4 @@
-using Aw.CodeIndex.Core.Model;
+using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Values;
 
 namespace Aw.CodeIndex.Testing;

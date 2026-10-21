@@ -1,6 +1,6 @@
 using Aw.CodeIndex.Core.Facade;
 
-namespace Aw.CodeIndex.Core.Model;
+namespace Aw.CodeIndex.Core.Ports;
 
 /// <summary>A page of symbol hits from a reader.</summary>
 /// <param name="Hits">The hits, ordered.</param>

@@ -1,7 +1,7 @@
-using Aw.CodeIndex.Core.Ports;
+using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Values;
 
-namespace Aw.CodeIndex.Core.Model;
+namespace Aw.CodeIndex.Core.Ports;
 
 /// <summary>What the graph layer runs on: the filtered inventory of a commit, so the index's deny globs apply and nothing is read from the working tree.</summary>
 /// <param name="Repo">The repo.</param>

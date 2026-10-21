@@ -1,6 +1,6 @@
 using Aw.CodeIndex.Core.Facade;
 
-namespace Aw.CodeIndex.Core.Model;
+namespace Aw.CodeIndex.Core.Ports;
 
 /// <summary>A reader's callers or callees walk before the facade adds the stamp.</summary>
 /// <param name="Edges">The edges by level, at most <see cref="CodeIndexRules.MaxEdgesPerLevel"/> each.</param>
