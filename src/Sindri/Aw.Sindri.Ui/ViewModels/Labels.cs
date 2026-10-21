@@ -242,7 +242,7 @@ internal static partial class Labels
     internal const string StaleRecord = "The endpoint record is stale";
 
     /// <summary>
-    /// Not running (SND-UI-002, kill -9 or a crash): nothing answered at the recorded endpoint, or not within 2 s. The
+    /// Not running (SND-UI-002, kill -9 or a crash): nothing answered at the recorded endpoint, or not within 120 s. The
     /// address follows on its own line; the platform's exception text is never shown.
     /// </summary>
     internal const string NothingAnswered = "Nothing answered at the recorded endpoint";
