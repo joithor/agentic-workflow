@@ -22,6 +22,7 @@
     <ProjectReference Include="../../src/Sindri/Aw.Sindri.Workflows/Aw.Sindri.Workflows.csproj" />
     <ProjectReference Include="../Aw.Sindri.Testing/Aw.Sindri.Testing.csproj" />
     <ProjectReference Include="../Aw.Context.Testing/Aw.Context.Testing.csproj" />
+    <ProjectReference Include="../Aw.CodeIndex.Testing/Aw.CodeIndex.Testing.csproj" />
     <ProjectReference Include="../Aw.Kernel.Telemetry.Testing/Aw.Kernel.Telemetry.Testing.csproj" />
   </ItemGroup>
 

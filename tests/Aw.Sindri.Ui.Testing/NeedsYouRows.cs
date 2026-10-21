@@ -9,6 +9,34 @@ internal static class NeedsYouRows
 {
     internal const string Command = "sindri workflow answer ITM-01JC8 --grant 1";
 
+    internal const string DeskInstance = "WFI-44393da815f188cea9c6fe30ae2a30a6";
+
+    /// <summary>An open desk task (a person's approval): the engine's CompleteStep, ready, and the instance it reports on.</summary>
+    internal static NeedsYouEntry Desk(string instance = DeskInstance) => new("desk:" + instance, NeedsYouUrgency.Colour)
+    {
+        Kind = "park",
+        Chip = new StateChip("DESK TASK", ChipTone.Attn),
+        ShownId = "ITM-01JL1",
+        Title = "Try the engine",
+        Repo = "demo",
+        Label = "desk task",
+        Reason = "a desk task is open (ITM-01JL1/dev-desk-round-trip/1)",
+        Since = A.Noon.AddMinutes(-26),
+        PrimaryAction = "CompleteStep",
+        Actions = [new NeedsYouAction("CompleteStep", "Complete", ActionReadiness.Ready, "sindri workflow status ITM-01JL1/dev-desk-round-trip/1", RejectLike: false)],
+        Subject = new NeedsYouSubject("instance", instance),
+        ItemId = "ITM-01JL1",
+        Cli = "sindri workflow status ITM-01JL1/dev-desk-round-trip/1",
+    };
+
+    /// <summary>A paused run whose rounds are used up: "Grant rounds" is protected, so the app shows its command.</summary>
+    internal static NeedsYouEntry Grant(string id = "park:WFI-1") => Park(id) with
+    {
+        PrimaryAction = "ApplyCommand:answer-grant",
+        Actions = [new NeedsYouAction("ApplyCommand:answer-grant", "Grant rounds", ActionReadiness.CliOnly, "sindri workflow answer ITM-01JC8/step/1 --grant 1", RejectLike: false)],
+        Cli = "sindri workflow answer ITM-01JC8/step/1 --grant 1",
+    };
+
     /// <summary>A parked item: a protected primary and its command.</summary>
     internal static NeedsYouEntry Park(string id = "park:ITM-01JC8", int minutes = 12) => new(id, NeedsYouUrgency.Pulse)
     {

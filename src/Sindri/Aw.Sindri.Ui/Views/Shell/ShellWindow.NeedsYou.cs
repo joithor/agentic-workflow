@@ -91,6 +91,12 @@ internal sealed partial class ShellWindow
             return true;
         }
 
+        if (shell.IsNeedsYouInbox && shell.Inbox.Bar.HasOpenQuestion)
+        {
+            shell.Inbox.Bar.Cancel();   // the reason box, the drop question or "Approve?" closes first
+            return true;
+        }
+
         return shell.LeaveNeedsYouInbox();
     }
 
