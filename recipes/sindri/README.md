@@ -48,9 +48,10 @@ The small recipes that bugfix and spec-to-PR runs are built from. Each is a chil
 | `workflow.evidence-all` | phasePacket, built | evidenceSummary | done / failed, dropped |
 | `workflow.evidence` | phasePacket, built | evidenceSummary, decision | done / failed, all-failed, dropped |
 | `workflow.review-loop` (version 2, DTC4) | change (payload), phasePacket | review (packet) | clean / stuck, wrong (failed); both clean and wrong carry the frozen review |
-| `workflow.docs-sync` | pr, phasePacket (`{}` when started by hand) | docsResult, docsPr | opened / not-done; alreadySatisfied (no docs to change or sync off), abandoned (failed) |
+| `workflow.docs-sync` | pr, phasePacket (`{}` when started by hand) | docsResult, docsPr | opened / not-done; alreadySatisfied (no docs to change or sync off), abandoned (failed). The stacked docs PR is opened by `effect.pr.create-stacked` and awaited as `pr.stacked` (PB spec C.2) |
 | `workflow.ship` | phasePacket, proofPack, review, workspace, lineContext | pr, handoff, returnNotes | shipped / returned (GREEN red or head moved) , refused (failed) |
-| `workflow.pr-babysitter` | pr, handoff, phasePacket, lineContext, workspace | mergedSha, reworkNotes | merged / stuck, rework (failed). **Stub**: one human-only Step (`step.babysit.watch`) stands for babysitting, docs sync and the merge until the PR babysitter spec's recipe replaces it |
+| `workflow.pr-babysitter` | pr, handoff, phasePacket, lineContext, workspace | prState, mergedSha, docsPr, reworkNotes | merged / closed, stopped (unresolved), rework (failed). The PR babysitter (PB spec C.1): CI fixes, comments by type, re-proof, docs sync, then the stop at ready-to-merge. **Timeouts:** every state is under phase's 30d `babysit` escalate (the `ready` wait is 29d, a deviation from the spec's 30d) so the babysitter's own escalate fires first |
+| `workflow.prove-recheck` | handoff, phasePacket, workspace, prState | recheck | held / broken (unresolved), nothing (alreadySatisfied). Re-runs the verify journey and recorded evidence scripts on a PR's current head (PB spec C.3) |
 | `workflow.phase` | phasePacket, lineContext | pr, handoff, proofPack, mergedSha | merged / dropped. The per-phase child of the line (spec App. C.6): build, prove, review, drift check, ship, babysit; `stage` 3 and `reprove` 3 |
 
 
@@ -72,7 +73,7 @@ The small recipes that bugfix and spec-to-PR runs are built from. Each is a chil
 
 ### Approval order
 
-Approve leaf recipes first (`report`, `investigate`, `reproduce`, `implement`, `hand-test`, `verify`, `evidence-ui`, `evidence-api`, `evidence-db`, `evidence-other`, `review-loop`, `build`, `ship`, `pr-babysitter`), then `evidence-all`, then `evidence`, then `prove`, then `phase`. A child resolves beside its parent, from the same directory.
+Approve leaf recipes first (`report`, `investigate`, `reproduce`, `implement`, `hand-test`, `verify`, `evidence-ui`, `evidence-api`, `evidence-db`, `evidence-other`, `review-loop`, `build`, `ship`, `docs-sync`, `prove-recheck`, `pr-babysitter`), then `evidence-all`, then `evidence`, then `prove`, then `phase`. A child resolves beside its parent, from the same directory.
 
 ### Applied from the decision-tree spec
 
@@ -90,8 +91,8 @@ DTC2 to DTC9 as the plan reads them. Out of this change: seeds (DT-R3), `workflo
 - `step.build.prepare` has a block runtime (`BuildPrepareStep`); every other Step of `workflow.build` and `workflow.prove` is descriptor-only (`BuildSteps.cs`, `ProveSteps.cs`) and parks with SND-WF-010 at the desk until its runtime ships. Only the owner may report `step.build.scope-desk`.
 - `workflow.build` inputs: `fact:phasePacket`, `fact:workspace` (text), `fact:buildNotes`, `fact:lineContext`. Outputs: `fact:built`, `fact:change`, `fact:redTests`, `fact:activePacket`. Terminals: `built` (resolved), `stopped` (unresolved).
 - `workflow.prove` inputs: `fact:phasePacket`, `fact:built`, `fact:workspace` (text), `fact:redTests`. Outputs: `fact:proofPack`, `fact:findings`. Terminals: `proven` (resolved), `failed` (unresolved, `fact:findings`). It waits on `workflow.hand-test`, `workflow.verify` and `workflow.evidence`.
-- Neither recipe waits on the heavy-job slot yet, because nothing in a served build grants it. Restore the slot waits (line spec C.3, C.4) when the heavy allocator exists.
+- `workflow.build` waits on a heavy-job slot (`slot`, after `prepare`) and `workflow.prove` after its `evidence` child (`slot`, before `before-after`); `workflow.ship` waits first. The engine takes the slot over the box's heavy-job lock, holds it while Steps run off the desk, and gives it up at a desk Step (`scope-desk`), a park or a takeover (docs/csharp/sindri-workflow.md "The heavy resource").
 
 ### The line's phase (workflow.phase)
 
-`workflow.phase` waits on `build`, `prove`, `review-loop`, `ship` and `pr-babysitter`. `pr-babysitter` is a **stub** until the PR babysitter spec's recipe replaces it. `step.phase.drift` has a block runtime (`PhaseDriftStep`), and so do `step.build.prepare` and `step.ship.return`. Steps with no runtime (`step.phase.seed`, `step.phase.decide`, `step.babysit.watch`) are descriptors only: `recipe validate` and `recipe eval` pass, and a served instance parks with `SND-WF-010` at the desk. `effect.line.report` is descriptor-only too. The renames in phase's `produces` use the long form (`{ fact, from }`) and hold under `RCP-WIRE-003` because every path to the terminal each is taken on writes the note.
+`workflow.phase` waits on `build`, `prove`, `review-loop`, `ship` and `pr-babysitter`. `pr-babysitter` is the PR babysitter (PB spec C.1); its blocks are descriptors only until PB-B/PB-E give them runtimes, so a served instance parks with `SND-WF-010` at its first block Step. `step.phase.drift` has a block runtime (`PhaseDriftStep`), and so do `step.build.prepare` and `step.ship.return`. Steps with no runtime (`step.phase.seed`, `step.phase.decide`; `step.babysit.watch` is registered but no recipe uses it any more) are descriptors only: `recipe validate` and `recipe eval` pass, and a served instance parks with `SND-WF-010` at the desk. `effect.line.report` is descriptor-only too. The renames in phase's `produces` use the long form (`{ fact, from }`) and hold under `RCP-WIRE-003` because every path to the terminal each is taken on writes the note.

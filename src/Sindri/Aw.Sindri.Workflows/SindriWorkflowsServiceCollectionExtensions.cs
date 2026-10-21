@@ -81,6 +81,7 @@ public static class SindriWorkflowsServiceCollectionExtensions
         .AddSingleton<GateActivities>()                            // engine P7: EvaluateGates
         .AddSingleton<CleanupActivities>()                         // engine P7: ReleaseClaim
         .AddSingleton<ChildActivities>()                           // engine P7: LoadChildren
+        .AddSingleton<HeavyLeases>().AddSingleton<HeavyActivities>()   // LN-WF3: TakeHeavy, ReleaseHeavy over IHeavySlots; the leases a worker holds
         .AddSingleton<EngineActivities>()
         .AddSingleton<EffectActivities>()                          // engine P6: RecordEffect, RecheckEffect, RunEffect
         .AddStepInputRuntime()                                     // the Step inputs: FillInput, the in-memory texts and their runner

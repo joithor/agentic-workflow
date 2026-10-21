@@ -17,6 +17,7 @@ internal sealed record EdgeRoute(Point Start, IReadOnlyList<RouteStep> Steps)
 
     // An S-curve's handles are at least this long, so a short climb still leaves the node straight.
     private const double MinHandle = 40;
+    private const double MaxPortHandle = 110;
     private const int ArcChords = 8;
     private const int CurveChords = 24;
 
@@ -38,6 +39,19 @@ internal sealed record EdgeRoute(Point Start, IReadOnlyList<RouteStep> Steps)
         var sign = to.Y >= from.Y ? 1 : -1;
         var handle = Math.Max(MinHandle, Math.Abs(to.Y - from.Y) / 2) * sign;
         return new EdgeRoute(from, [new RouteStep(RouteStepKind.Cubic, to, Control1: new Point(from.X, from.Y + handle), Control2: new Point(to.X, to.Y - handle))]);
+    }
+
+    /// <summary>The cubic between two ports: it leaves each along its side's outward normal, the handles half the distance long, from 40 to 110 px.</summary>
+    /// <param name="from">The start port.</param>
+    /// <param name="fromSide">The side of the source node the start port is on.</param>
+    /// <param name="to">The end port.</param>
+    /// <param name="toSide">The side of the target node the end port is on.</param>
+    /// <returns>The route.</returns>
+    internal static EdgeRoute Between(Point from, PortSide fromSide, Point to, PortSide toSide)
+    {
+        var handle = Math.Clamp(Distance(from, to) / 2, MinHandle, MaxPortHandle);
+        var (n1, n2) = (Normal(fromSide), Normal(toSide));
+        return new EdgeRoute(from, [new RouteStep(RouteStepKind.Cubic, to, Control1: from + (n1 * handle), Control2: to + (n2 * handle))]);
     }
 
     /// <summary>A line through corner points with each corner rounded by an arc.</summary>
@@ -216,6 +230,15 @@ internal sealed record EdgeRoute(Point Start, IReadOnlyList<RouteStep> Steps)
         var t = squared == 0 ? 0 : Math.Clamp(((ap.X * ab.X) + (ap.Y * ab.Y)) / squared, 0, 1);
         return Distance(p, new Point(a.X + (ab.X * t), a.Y + (ab.Y * t)));
     }
+
+    private static Vector Normal(PortSide side) => side switch
+    {
+        PortSide.Top => new Vector(0, -1),
+        PortSide.Bottom => new Vector(0, 1),
+        PortSide.Left => new Vector(-1, 0),
+        PortSide.Right => new Vector(1, 0),
+        _ => throw new ArgumentOutOfRangeException(nameof(side), side, "not a port side"),
+    };
 
     private static double Distance(Point a, Point b) => Math.Sqrt(((a.X - b.X) * (a.X - b.X)) + ((a.Y - b.Y) * (a.Y - b.Y)));
 

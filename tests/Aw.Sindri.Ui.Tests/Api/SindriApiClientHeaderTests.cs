@@ -236,8 +236,8 @@ public sealed class SindriApiClientHeaderTests
         Assert.Equal(["43", "43"], handler.Requests.Skip(1).Select(r => r.After), StringComparer.Ordinal);
     }
 
-    // F2: the server waits up to 2 s for the sequence before it answers SND-API-011, so the call carrying it waits longer
-    // than the 2 s of an ordinary call.
+    // F2: the server waits up to 2 s for the sequence before it answers SND-API-011; the call carrying it outlasts that
+    // wait, and like every call it is unreachable only at 120 s.
     [Fact]
     public async Task The_call_carrying_the_sequence_outlasts_the_servers_two_second_wait()
     {
@@ -247,7 +247,7 @@ public sealed class SindriApiClientHeaderTests
         _ = await client.RebuildViews(_api, Token);
 
         var plain = client.Commands(_api, Token);
-        clock.Advance(TimeSpan.FromSeconds(2.5));
+        clock.Advance(TimeSpan.FromSeconds(120));
         Assert.Equal("SND-UI-002", (await plain).Error.Code);
 
         var query = client.Services(_api, Token);

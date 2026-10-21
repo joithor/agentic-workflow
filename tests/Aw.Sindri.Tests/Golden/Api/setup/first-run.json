@@ -24,10 +24,10 @@
     },
     {
       "id": "recipes",
-      "title": "Approve the recipes",
+      "title": "Approve the workflows",
       "state": "todo",
       "why": "After the profile is approved.",
-      "detail": "26 recipes registered.",
+      "detail": "26 workflows registered.",
       "error": null,
       "action": null,
       "progress": null,
