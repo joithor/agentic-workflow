@@ -237,7 +237,7 @@ public sealed class MapPublishTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task A_map_file_with_a_commit_that_is_not_lowercase_hex_is_refused_on_import()
     {
-        var yaml = MapWorld.Yaml("schemaVersion: 1", "mapVersion: 1", "keyVersion: 1", "repo: aw-split-panes", "commit: NOT-A-COMMIT", "nodes: []");
+        var yaml = MapWorld.Yaml("schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "commit: NOT-A-COMMIT", "nodes: []");
         const string path = "/maps/bad-commit.yaml";
         _world.Reader.Put(path, Maps.Parse(yaml), yaml);
 
