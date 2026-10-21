@@ -7,7 +7,7 @@ using Xunit;
 namespace Aw.CodeIndex.Testing;
 
 /// <summary>
-/// The <see cref="Aw.CodeIndex.Core.Ports.IRepoSnapshot"/> contract (spec §5.1, §11), run against the in-memory fake and
+/// The <see cref="Core.Ports.IRepoSnapshot"/> contract (spec §5.1, §11), run against the in-memory fake and
 /// against the git adapter on a temp repo.
 /// </summary>
 public abstract class RepoSnapshotContract
@@ -177,6 +177,6 @@ public abstract class RepoSnapshotContract
         }
     }
 
-    private static T Ok<T>(Aw.Kernel.Result<T> result)
+    private static T Ok<T>(Kernel.Result<T> result)
         => result.IsError ? throw new ContractViolationException($"contract: expected a value, got {result.Error.Code}: {result.Error.Message}") : result.Value;
 }
