@@ -10,9 +10,8 @@ using Aw.Kernel;
 namespace Aw.CodeIndex.Testing;
 
 /// <summary>
-/// An in-memory tree at a commit (spec §11). Stub level: it keeps regular files, skips symlinks and submodules (counted),
-/// applies the size caps and a path being absent from the object store ('missing'); the deny globs and path validation
-/// are InputRules' (CI-2), which will join this fake and RepoSnapshotContract.
+/// An in-memory tree at a commit (spec §11). It lists entries as git would and hands them to <see cref="InputRules"/>, the
+/// same rules the git adapter applies; a blob absent from the object store reads as 'missing'.
 /// </summary>
 public sealed class FakeRepoSnapshot : IRepoSnapshot
 {
@@ -63,31 +62,19 @@ public sealed class FakeRepoSnapshot : IRepoSnapshot
             return ValueTask.FromResult<Result<SnapshotInventory>>(CodeIndexErrors.RepoNotFound.With("the commit is not in the repo"));
         }
 
-        var skipped = new Dictionary<SkipReason, int>();
-        var kept = new List<SnapshotFile>();
-        foreach (var entry in tree.OrderBy(e => e.Path, StringComparer.Ordinal))
-        {
-            var reason = entry.Skip ?? (entry.Size > limits.MaxFileBytes ? SkipReason.TooLarge : null);
-            if (reason is { } why)
-            {
-                skipped[why] = skipped.GetValueOrDefault(why) + 1;
-                continue;
-            }
-
-            kept.Add(new SnapshotFile(entry.Path, entry.Blob, entry.Size));
-        }
-
-        if (kept.Sum(f => f.Size) > limits.MaxTotalBytes)
-        {
-            return ValueTask.FromResult<Result<SnapshotInventory>>(CodeIndexErrors.InputTooLarge.With("the kept files are over the total size cap"));
-        }
-
-        return ValueTask.FromResult<Result<SnapshotInventory>>(new SnapshotInventory(commit, kept, skipped));
+        var entries = tree.Select(e => new TreeEntry(
+            ModeOf(e.Skip),
+            e.Path,
+            e.Blob,
+            _missing.Contains(e.Blob) ? null : e.Size));
+        return ValueTask.FromResult(InputRules.Apply(commit, entries, limits));
     }
 
     /// <inheritdoc />
     public ValueTask<Result<IBlobReader>> OpenBlobs(CodeIndexRepo repo, CancellationToken cancellationToken)
         => ValueTask.FromResult<Result<IBlobReader>>(new Reader(this));
+
+    private static string ModeOf(SkipReason? skip) => skip == SkipReason.Symlink ? "120000" : skip == SkipReason.Submodule ? "160000" : "100644";
 
     private static string BlobId(byte[] bytes) => Convert.ToHexStringLower(SHA256.HashData(bytes))[..40];
 
