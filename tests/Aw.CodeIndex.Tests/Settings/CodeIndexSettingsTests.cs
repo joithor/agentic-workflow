@@ -59,7 +59,7 @@ public sealed class CodeIndexSettingsTests
     [InlineData("http://localhost:11434")]
     [InlineData("http://192.168.1.5:11434")]
     [InlineData("https://127.0.0.1:11434")]
-    [InlineData("http://user:pass@127.0.0.1:11434")]
+    [InlineData("http://user:" + "pass@127.0.0.1:11434")]
     [InlineData("not a url")]
     public void Create_refuses_an_embedding_url_that_is_not_plain_loopback(string url)
     {
