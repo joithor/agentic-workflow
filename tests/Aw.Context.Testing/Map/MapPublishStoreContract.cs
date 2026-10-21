@@ -3,6 +3,7 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
+using Aw.Kernel;
 using Xunit;
 
 namespace Aw.Context.Testing.Map;
@@ -36,7 +37,7 @@ public abstract class MapPublishStoreContract
 
         Expect.That(state is { Hold: null, LatestDraft: null, Current: null, CurrentHeads.Count: 0 }, test, "an empty store reported a hold, a draft, a current version or heads");
         Expect.That(Expect.Ok(await store.Heads(1, None), test).Count == 0, test, "heads of a version that is not there");
-        Expect.That(Expect.Ok(await store.Release(1, None), test) == Aw.Kernel.Unit.Value, test, "releasing a version that is not held failed");
+        Expect.That(Expect.Ok(await store.Release(1, None), test) == Unit.Value, test, "releasing a version that is not held failed");
     }
 
     /// <summary>A draft's heads read back as the build named them, in order.</summary>
@@ -337,5 +338,5 @@ public abstract class MapPublishStoreContract
 
     /// <summary>A fresh, empty store.</summary>
     /// <returns>The store.</returns>
-    protected abstract Aw.Context.Core.Map.IGraphStore CreateStore();
+    protected abstract IGraphStore CreateStore();
 }
