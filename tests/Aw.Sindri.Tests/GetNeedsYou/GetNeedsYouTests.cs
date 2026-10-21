@@ -25,7 +25,7 @@ public sealed class GetNeedsYouTests
 
     private IShippedRecipes _shipped = new FakeShippedRecipes([]);
 
-    private GetNeedsYouService Service() => new(_q.Views.Views, _q.Views.Progress, _q.Views.Slice.Callers, _onyx, new ApproveAllPlanReader(_q.Views.Slice.Profiles, _shipped), new PassThroughScrubber(), TimeProvider.System, new NeedsYouJoins(new SomeInstances(), new SomeInstances(), new Core.Workflow.Registry.RecipeRegistryReader(new Testing.Workflow.Registry.InMemoryRecipeStore(), new Testing.Workflow.Registry.InMemoryRecipeApprovals(), EngineFixture.Catalog, SliceHarness.Json, new NoProfileFacts()), EngineFixture.Catalog));
+    private GetNeedsYouService Service() => new(_q.Views.Views, _q.Views.Progress, _q.Views.Slice.Callers, new NeedsYouLiveRows(_onyx, new ApproveAllPlanReader(_q.Views.Slice.Profiles, _shipped), new PassThroughScrubber(), TimeProvider.System), TimeProvider.System, new NeedsYouJoins(new SomeInstances(), new SomeInstances(), new Core.Workflow.Registry.RecipeRegistryReader(new Testing.Workflow.Registry.InMemoryRecipeStore(), new Testing.Workflow.Registry.InMemoryRecipeApprovals(), EngineFixture.Catalog, SliceHarness.Json, new NoProfileFacts()), EngineFixture.Catalog));
 
     private async Task<GetNeedsYouResponse> Get() => (await Service().Handle(A.GetNeedsYouRequest().Build(), RequestQueryHarness.Token)).Value;
 
