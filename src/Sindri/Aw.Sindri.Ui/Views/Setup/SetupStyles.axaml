@@ -2,16 +2,16 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <!-- The setup checklist (setup spec §2.4): one panel of six rows on a hairline, a 4 px strip of segments, a meter, an error panel. Tokens only; the state words carry the
        meaning, the colours only back them. -->
-  <Style Selector="Border.seg">
+  <Style Selector="Border.setup-seg">
     <Setter Property="Height" Value="4" />
     <Setter Property="Margin" Value="0,0,4,0" />
     <Setter Property="CornerRadius" Value="{StaticResource Radius.XS}" />
     <Setter Property="Background" Value="{DynamicResource Brush.Surface3}" />
   </Style>
-  <Style Selector="Border.seg.working">
+  <Style Selector="Border.setup-seg.working">
     <Setter Property="Background" Value="{DynamicResource Brush.PrimaryHoverFill}" />
   </Style>
-  <Style Selector="Border.seg.done">
+  <Style Selector="Border.setup-seg.done">
     <Setter Property="Background" Value="{DynamicResource Brush.Success}" />
   </Style>
   <Style Selector="Button.setup-link">

@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Threading;
 using Aw.Sindri.Ui.ViewModels.Settings;
 using Aw.Sindri.Ui.ViewModels.Setup;
+using Aw.Sindri.Ui.Views.Setup;
 
 namespace Aw.Sindri.Ui.Views;
 
@@ -9,6 +10,7 @@ namespace Aw.Sindri.Ui.Views;
 internal sealed partial class SettingsView : UserControl
 {
     private SetupViewModel? _setup;
+    private SetupChecklist? _checklist;
 
     public SettingsView()
     {
@@ -22,10 +24,23 @@ internal sealed partial class SettingsView : UserControl
         _setup?.RevealRequested -= OnRevealRequested;
         _setup = (DataContext as SettingsViewModel)?.Setup;
         _setup?.RevealRequested += OnRevealRequested;
-        this.FindControl<Control>("SetupSection")?.IsVisible = _setup is not null;   // a host without setup draws no checklist, and none of its controls
+        if (Content is StackPanel page)
+        {
+            if (_checklist is not null)
+            {
+                _ = page.Children.Remove(_checklist);
+                _checklist = null;
+            }
+
+            if (_setup is not null)
+            {
+                _checklist = new SetupChecklist { Name = "SetupChecklist", DataContext = _setup };   // a host without setup draws no checklist, and none of its controls
+                page.Children.Insert(1, _checklist);
+            }
+        }
     }
 
     // Opened by a link, G U, ⌘, or Home's line: the checklist is the first section, so it is brought to the top of the page.
     private void OnRevealRequested(object? sender, EventArgs e) =>
-        Dispatcher.UIThread.Post(() => this.FindControl<Control>("SetupSection")?.BringIntoView(), DispatcherPriority.Loaded);
+        Dispatcher.UIThread.Post(() => _checklist?.BringIntoView(), DispatcherPriority.Loaded);
 }

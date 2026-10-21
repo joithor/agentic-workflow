@@ -1,7 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Aw.Sindri.Ui.ViewModels.Settings"
-             xmlns:sw="using:Aw.Sindri.Ui.Views.Setup"
              x:Class="Aw.Sindri.Ui.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
   <!-- Settings (UI spec §3.3 ⌘,, §11.4, §14.2; setup spec §2.4): the setup checklist first, then this app's own preferences. The shell hosts it as its Settings page, inside
@@ -11,9 +10,7 @@
     <TextBlock x:Name="TitleText" Classes="page-title" Text="{Binding Title}"
                AutomationProperties.Name="{Binding Title}" AutomationProperties.HeadingLevel="1" />
 
-    <Panel x:Name="SetupSection" IsVisible="False">
-      <sw:SetupChecklist x:Name="SetupChecklist" DataContext="{Binding Setup}" />
-    </Panel>
+    <!-- The setup checklist goes here, second child, put in code when the page has a setup list (a host without one draws nothing, so none of its controls exist). -->
 
     <Border x:Name="ThisAppName" AutomationProperties.Name="{Binding ThisAppLabel}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text" AutomationProperties.HeadingLevel="2">
       <TextBlock Classes="detail-title" Text="{Binding ThisAppLabel}" AutomationProperties.AccessibilityView="Raw" />

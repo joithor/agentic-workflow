@@ -13,7 +13,7 @@
     </ItemsControl.ItemsPanel>
     <ItemsControl.ItemTemplate>
       <DataTemplate x:DataType="sv:SetupSegment">
-        <Border Classes="seg" Classes.done="{Binding IsDone}" Classes.working="{Binding IsWorking}" AutomationProperties.AccessibilityView="Raw" />
+        <Border Classes="setup-seg" Classes.done="{Binding IsDone}" Classes.working="{Binding IsWorking}" AutomationProperties.AccessibilityView="Raw" />
       </DataTemplate>
     </ItemsControl.ItemTemplate>
   </ItemsControl>
