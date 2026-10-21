@@ -40,7 +40,7 @@ public sealed class SindriApiClientSetupWritesTests
         _ = await client.RegisterMcp(_api, new RegisterMcpRequest(), Token);
         var mcp = canned.Path;
         canned.Respond(HttpStatusCode.OK, GoldenFiles.SpecShaped("onyx-defer", "deferred"));
-        var deferred = await client.DeferOnyx(_api, new OnyxDeferRequest(true), Token);
+        var deferred = await client.DeferOnyx(_api, new OnyxDeferRequest(Deferred: true), Token);
 
         Assert.Equal(("/sindri/onyx/setup", "/sindri/setup/mcp", "/sindri/onyx/defer", true), (setup, mcp, canned.Path, deferred.Value.Deferred));
         Assert.Contains("\"deferred\":true", canned.Body, StringComparison.Ordinal);
@@ -81,7 +81,7 @@ public sealed class SindriApiClientSetupWritesTests
 
         var result = await client.ConnectOnyx(_api, new OnyxLogin("me@example.com", Sentinel), Token);
 
-        Assert.DoesNotContain(Sentinel, string.Join('\n', log.Entries.Select(e => e.Message + e.Exception)) + result, StringComparison.Ordinal);
+        Assert.DoesNotContain(Sentinel, string.Join('\n', log.Entries.Select(e => e.Message + e.Exception)) + (result.IsError ? result.Error.Message : string.Empty), StringComparison.Ordinal);
         if (result.IsError)
         {
             Assert.DoesNotContain(Sentinel, result.Error.Message, StringComparison.Ordinal);

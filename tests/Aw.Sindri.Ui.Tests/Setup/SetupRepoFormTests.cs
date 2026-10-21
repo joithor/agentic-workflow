@@ -39,7 +39,7 @@ public sealed class SetupRepoFormTests
     {
         var (_, form, _) = await Open();
         _f.Folders.Queue("/work/demo");
-        _f.Folders.Queue(null);
+        _f.Folders.Queue(folder: null);
 
         await form.Browse(Token);
         var chosen = form.Path;

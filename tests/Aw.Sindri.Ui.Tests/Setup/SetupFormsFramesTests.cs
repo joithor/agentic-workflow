@@ -1,5 +1,7 @@
 using System.Globalization;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.VisualTree;
@@ -63,6 +65,7 @@ public sealed class SetupFormsFramesTests : FrameHost
     [Fact]
     public Task A_head_with_no_chooser_has_no_Browse_button() => OnUi(async () =>
     {
+        Folders.IsAvailable = false;
         var (window, shell) = await OnSettings(SetupFixture.Golden("first-run"), 1440);
         var form = shell.Setup.Steps.Single(s => s.Id == "repo").Repo!;
 
@@ -117,7 +120,7 @@ public sealed class SetupFormsFramesTests : FrameHost
         var (window, shell) = await OnSettings(SetupFixture.With("first-run", "onyx", "needs-you", "ConnectOnyx"), 1440);
         var row = Row(window, "onyx");
         var password = Named<TextBox>(row, "SetupOnyxPassword");
-        password.Focus();
+        _ = password.Focus();
         password.Text = "hunter2";
 
         window.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, keySymbol: null);
@@ -151,6 +154,6 @@ public sealed class SetupFormsFramesTests : FrameHost
 
         Assert.True(foot.IsEffectivelyVisible);
         Assert.True(foot.TranslatePoint(default, window)!.Value.Y >= panel.TranslatePoint(new Avalonia.Point(0, panel.Bounds.Height), window)!.Value.Y);
-        Assert.Empty(Row(window, "onyx").GetVisualDescendants().OfType<Control>().Where(c => string.Equals(c.Name, "SetupFootnote", StringComparison.Ordinal)));   // not inside the row
+        Assert.DoesNotContain(Row(window, "onyx").GetVisualDescendants().OfType<Control>(), c => string.Equals(c.Name, "SetupFootnote", StringComparison.Ordinal));   // not inside the row
     });
 }

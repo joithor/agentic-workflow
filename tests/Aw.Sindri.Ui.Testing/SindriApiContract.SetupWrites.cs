@@ -93,12 +93,12 @@ public abstract partial class SindriApiContract
         var server = new FakeSindriApi();
         var api = Reach(server);
 
-        var later = (await api.DeferOnyx(_api, new OnyxDeferRequest(true), Token)).Value;
+        var later = (await api.DeferOnyx(_api, new OnyxDeferRequest(Deferred: true), Token)).Value;
         server.DeferOnyxAnswer = RouteAnswer.SpecShaped("onyx-defer", "undone");
-        var back = (await api.DeferOnyx(_api, new OnyxDeferRequest(false), Token)).Value;
+        var back = (await api.DeferOnyx(_api, new OnyxDeferRequest(Deferred: false), Token)).Value;
 
         Expect.Equal((true, false), (later.Deferred, back.Deferred));
-        Expect.Sequence([new OnyxDeferRequest(true), new OnyxDeferRequest(false)], server.OnyxDeferrals);
+        Expect.Sequence([new OnyxDeferRequest(Deferred: true), new OnyxDeferRequest(Deferred: false)], server.OnyxDeferrals);
     }
 
     [Fact]

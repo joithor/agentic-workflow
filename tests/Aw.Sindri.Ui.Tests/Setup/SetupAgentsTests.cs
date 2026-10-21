@@ -92,8 +92,8 @@ public sealed class SetupAgentsTests
         await setup.RegisterMcp(Token);   // the button is gone while it works, so a second press does nothing
 
         Assert.Equal(("Connect your agents", true, false), (action.Label, action.IsInApp, step.HasAction));
-        Assert.Equal(1, _f.Server.RegisteredMcp.Count);
-        Assert.Equal(((string?)null, "Working", Labels.SetupMcpAgain), (_f.Server.RegisteredMcp[0].Repo, step.ChipWord, step.Note));
+        var call = Assert.Single(_f.Server.RegisteredMcp);
+        Assert.Equal((null, "Working", Labels.SetupMcpAgain), (call.Repo, step.ChipWord, step.Note));
     }
 
     [Fact]

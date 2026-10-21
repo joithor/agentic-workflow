@@ -52,7 +52,8 @@ public sealed class SetupOnyxTests
         _f.Serve(Waiting());
         await setup.Refresh(Url, Token);
 
-        Assert.Equal((true, [SetupFocus.OnyxEmail]), (onyx.ShowForm, asked));
+        Assert.True(onyx.ShowForm);
+        Assert.Equal([SetupFocus.OnyxEmail], asked);
     }
 
     [Fact]
@@ -75,7 +76,7 @@ public sealed class SetupOnyxTests
 
         await onyx.Defer(Token);
 
-        Assert.Equal([new OnyxDeferRequest(true)], _f.Server.OnyxDeferrals);
+        Assert.Equal([new OnyxDeferRequest(Deferred: true)], _f.Server.OnyxDeferrals);
     }
 
     [Fact]

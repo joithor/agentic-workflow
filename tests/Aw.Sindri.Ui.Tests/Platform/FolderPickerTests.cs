@@ -15,7 +15,7 @@ public sealed class FolderPickerTests
     {
         var picker = new FakeFolderPicker();
         picker.Queue("/work/a");
-        picker.Queue(null);
+        picker.Queue(folder: null);
 
         var answers = new[] { await picker.Pick("first", Token), await picker.Pick("second", Token), await picker.Pick("third", Token) };
 
@@ -26,7 +26,7 @@ public sealed class FolderPickerTests
     [Fact]
     public async Task A_head_with_no_chooser_is_unavailable_and_chooses_nothing()
     {
-        IFolderPicker none = NullFolderPicker.Instance;
+        var none = NullFolderPicker.Instance;
         var fake = new FakeFolderPicker { IsAvailable = false };
         fake.Queue("/work/a");
 

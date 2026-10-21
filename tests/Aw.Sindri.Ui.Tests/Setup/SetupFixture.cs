@@ -50,9 +50,11 @@ internal sealed class SetupFixture
     private static bool IsExtra(string scenario) => scenario.StartsWith("extra-", StringComparison.Ordinal);
 
     /// <summary>The golden with one step changed: its state and, when given, its action.</summary>
-    internal static JsonNode With(string scenario, string step, string state, string? action = null)
+    internal static JsonNode With(string scenario, string step, string state, string? action = null) => With(Golden(scenario), step, state, action);
+
+    /// <summary>The list with one step changed: its state and, when given, its action.</summary>
+    internal static JsonNode With(JsonNode list, string step, string state, string? action = null)
     {
-        var list = Golden(scenario);
         var served = list["steps"]!.AsArray().Single(s => (string)s!["id"]! == step)!;
         served["state"] = state;
         served["action"] = action;
