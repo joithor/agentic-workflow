@@ -30,10 +30,10 @@
     },
     {
       "id": "recipes",
-      "title": "Approve the recipes",
+      "title": "Approve the workflows",
       "state": "done",
-      "why": "Every recipe that ships with Sindri is approved.",
-      "detail": "26 recipes.",
+      "why": "Every workflow that ships with Sindri is approved.",
+      "detail": "26 workflows.",
       "error": null,
       "action": null,
       "progress": {
