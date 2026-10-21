@@ -2629,6 +2629,8 @@ Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.DecisionContext(Aw.Sind
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Decisions.ApprovalCheck Approval, out Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! Catalog, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.BlockId, Aw.Sindri.Core.Workflow.Engine.StepRuntime>! Runtimes, out Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver! Children) -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.LegacyBudgetPark.get -> bool
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.LegacyBudgetPark.init -> void
+Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.LegacyLaunchRound.get -> bool
+Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.LegacyLaunchRound.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.DeskTimeout.get -> System.TimeSpan
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.DeskTimeout.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Equals(Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext? other) -> bool
@@ -3256,6 +3258,8 @@ Aw.Sindri.Core.Workflow.Engine.Instances.LoopState.Round.get -> int
 Aw.Sindri.Core.Workflow.Engine.Instances.LoopState.Round.init -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.LoopState.TextAnswered.get -> bool
 Aw.Sindri.Core.Workflow.Engine.Instances.LoopState.TextAnswered.init -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.LoopState.LaunchFailures.get -> int
+Aw.Sindri.Core.Workflow.Engine.Instances.LoopState.LaunchFailures.init -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun
 Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun!
 Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.RunToken Token, out Aw.Sindri.Core.Workflow.Engine.StepRuntime Runtime, out string? Launch, out string? Task) -> void
@@ -11954,6 +11958,7 @@ const Aw.Sindri.Core.Events.EventTypes.ScopingEscape = "scoping.escape" -> strin
 static readonly Aw.Sindri.Core.Scoping.ScopingErrors.PacketToolFailed -> Aw.Kernel.ErrorDefinition!
 Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.Detail.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.Detail.init -> void
+const Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.LaunchReason = "launch" -> string!
 Aw.Sindri.Core.Launch.StepArgs.Brief.get -> string?
 Aw.Sindri.Core.Launch.StepArgs.Brief.init -> void
 Aw.Sindri.Core.Launch.StepArgs.Deconstruct(out string? Model, out Aw.Sindri.Core.Launch.StepPolicy? Policy, out Aw.Sindri.Core.Launch.StepRef! Ref, out string? Brief) -> void

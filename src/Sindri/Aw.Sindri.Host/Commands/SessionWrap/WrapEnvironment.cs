@@ -10,9 +10,11 @@ internal static class WrapEnvironment
     /// <summary>The variables to set on top of the inherited environment.</summary>
     /// <param name="launch">The launch.</param>
     /// <param name="environment">Wrap's own environment.</param>
+    /// <param name="wrapExecutable">The path of the executable wrap runs as.</param>
     /// <returns>AW_SINDRI_CHILD and AW_SINDRI_LAUNCH, and whichever of the item, the launch secret and the home wrap itself was given.</returns>
-    internal static IReadOnlyDictionary<string, string> For(LaunchId launch, Func<string, string?> environment)
+    internal static IReadOnlyDictionary<string, string> For(LaunchId launch, Func<string, string?> environment, string wrapExecutable)
     {
+        ArgumentNullException.ThrowIfNull(wrapExecutable);
         var set = new Dictionary<string, string>(StringComparer.Ordinal) { ["AW_SINDRI_CHILD"] = "1", ["AW_SINDRI_LAUNCH"] = launch.Value };
         foreach (var name in _passedOn)
         {
