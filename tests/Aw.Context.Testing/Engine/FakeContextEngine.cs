@@ -134,10 +134,25 @@ public sealed class FakeContextEngine : IContextEngine
     public ValueTask<Result<ReviewFilePreview>> PreviewReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) => NoMap<ReviewFilePreview>();
 
     /// <inheritdoc/>
-    public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken) => NoMap<MapPromoted>();
+    public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken, int? expectedVersion = null) => NoMap<MapPromoted>();
 
     /// <inheritdoc/>
-    public ValueTask<Result<CleanupReport>> CleanDraft(ContextScope scope, CancellationToken cancellationToken) => NoMap<CleanupReport>();
+    public ValueTask<Result<CleanupReport>> CleanDraft(ContextScope scope, CancellationToken cancellationToken, int? expectedVersion = null) => NoMap<CleanupReport>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<MapPublishState>> Held(ContextScope scope, CancellationToken cancellationToken) =>
+        ValueTask.FromResult(Results.Success(new MapPublishState(Hold: null, LatestDraft: null, Current: null, CurrentHeads: [])));   // no map, so nothing is held
+
+    /// <inheritdoc/>
+    public ValueTask<Result<MapHold>> Hold(MapHold hold, ContextScope scope, CancellationToken cancellationToken) =>
+        ValueTask.FromResult<Result<MapHold>>(ContextErrors.DraftChanged.With("this test engine has no draft to hold"));
+
+    /// <inheritdoc/>
+    public ValueTask<Result<Unit>> Release(int version, ContextScope scope, CancellationToken cancellationToken) => ValueTask.FromResult(Results.Success(Unit.Value));
+
+    /// <inheritdoc/>
+    public ValueTask<Result<MapPublishView>> PublishStatus(ContextScope scope, CancellationToken cancellationToken) =>
+        ValueTask.FromResult(Results.Success(new MapPublishView(Repos: [], Hold: null, LatestDraft: null, Current: null, CurrentHeads: [])));
 
     /// <inheritdoc/>
     public ValueTask<Result<IReadOnlyList<RepoHead>>> MapHeads(ContextScope scope, CancellationToken cancellationToken) =>
