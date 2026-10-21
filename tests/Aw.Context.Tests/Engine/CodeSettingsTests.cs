@@ -88,6 +88,32 @@ public sealed class CodeSettingsTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Code_deadline_is_read_from_the_code_section()
+    {
+        Assert.Equal(TimeSpan.FromSeconds(90), Read("""{"code":{"deadline":"90s"}}""").Value.CodeDeadline);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Code_deadline_defaults_to_60s_and_leaves_the_query_deadline_at_4s()
+    {
+        var settings = Read("""{"minHits":1}""").Value;
+
+        Assert.Equal((TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(4)), (settings.CodeDeadline, settings.Deadline));
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("1s5")]
+    [InlineData("50ms")]
+    [InlineData("601s")]
+    public void An_invalid_code_deadline_is_refused_naming_the_key_path(string value)
+    {
+        var settings = Read("{\"code\":{\"deadline\":\"" + value + "\"}}");
+
+        Assert.Equal(ContextErrors.SettingsInvalid.Code, settings.Error.Code);
+        Assert.StartsWith("context.code.deadline:", settings.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void The_new_codes_are_150_timeout_152_and_150_151_are_attention()
     {
         Assert.Equal(["SND-CONTEXT-150", "SND-CONTEXT-151", "SND-CONTEXT-152"],
