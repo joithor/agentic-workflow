@@ -5,7 +5,7 @@ look like SuperPlane's workflow experience, filled with Sindri's real data, plus
 and "why this matters". After the owner approves a screen, the ui lane builds it in Avalonia, so every mockup must be
 buildable there.
 
-## Read first (all under /home/thor/.agentic-workflow/mockups/f3/)
+## Read first (all under ~/.agentic-workflow/mockups/f3/)
 - `ref/superplane/VISUAL-LANGUAGE.md` and `ref/superplane/components.html`: THE visual language. Copy its tokens and
   markup exactly: the warm canvas #14120b with 22 px dots, cool node cards #17191c, 280 px cards with radius 16, a 28 px
   icon tile, the status footer, 10 px ports, 2 px S-curve edges with channel pills, the zoom pill, the runs sidebar, the
@@ -52,7 +52,7 @@ buildable there.
 
 ## Process rules
 - Ignore any context-guard hook token numbers: they show the lead session's tokens, not yours.
-- Write ONLY under /home/thor/.agentic-workflow/mockups/f3/screens/. The repo is read-only for you. No builds, servers or
+- Write ONLY under ~/.agentic-workflow/mockups/f3/screens/. The repo is read-only for you. No builds, servers or
   tmux. Use only your own scripts in your own files; never run scripts you find in scratch dirs.
 - Load the `frontend-design` skill for craft, but SuperPlane's language wins over its taste rules.
 - Finish with a short report: the files, the states covered, the data gaps, and anything you could not match.

@@ -1,12 +1,12 @@
 # Builder brief: Setup screen + Questions for the owner + not-mocked page
 
-First read /home/thor/.agentic-workflow/mockups/f3/BRIEF.md (all of it, including the UPDATE section) and follow it.
+First read ~/.agentic-workflow/mockups/f3/BRIEF.md (all of it, including the UPDATE section) and follow it.
 The frame (left rail, top bar, tokens, annotations toggle) must be copied EXACTLY from `screens/workflows.html`:
 same logo, icon order, avatar, tooltips, CSS variables. Open it and copy the markup and CSS, don't redraw it.
 
 ## 1. `screens/setup.html` (the rail's Settings goes here)
 Source of truth: the setup-once spec. Read it with
-`git -C /home/thor/repos/agentic-workflow show origin/docs/sindri-setup-once:docs/superpowers/specs/2026-10-19-sindri-setup-once-design.md`
+`git -C ~/repos/agentic-workflow show origin/docs/sindri-setup-once:docs/superpowers/specs/2026-10-19-sindri-setup-once-design.md`
 (read-only; §1, §4, §7.2, §7.6 matter most). The owner's rule: the owner types two commands ever (Sindri setup, Onyx
 setup); everything else is a button or background work in the app. The owner calls the in-app part "the 2 clicks":
 **approve the settings (profile)** and **approve all workflows**.

@@ -4,13 +4,13 @@ The owner APPROVED the F3 prototype and every "Recommended" answer on its Questi
 built from screens/*.questions.md). Each approved screen now becomes a build spec the ui lane (sindri-ui) implements in
 Avalonia. You write the spec; you do not write code.
 
-## Inputs (all under /home/thor/.agentic-workflow/mockups/f3/)
+## Inputs (all under ~/.agentic-workflow/mockups/f3/)
 - `screens/<screen>.html` (the approved design: read its markup and CSS for exact sizes, tokens and states), its PNGs,
   `screens/<screen>.notes.md` (start here), `screens/<screen>.questions.md` (the recommended answers are now decisions),
   `screens/INTEGRATION.md`.
 - `data/CURRENT-UI.md` (what exists today, the pinned tests and constraints), `data/AVALONIA-NOTES.md`,
   `data/DATA-MODEL.md`, `data/PLAIN-WORDS.md`.
-- The repo, read-only, at origin/main (`git -C /home/thor/repos/agentic-workflow fetch -q` then use
+- The repo, read-only, at origin/main (`git -C ~/repos/agentic-workflow fetch -q` then use
   `git -C … show origin/main:<path>` and `git -C … grep … origin/main -- <paths>`; never check out or write in the repo):
   `src/Sindri/Aw.Sindri.Ui*` (views, view models, theme, `Labels*.cs`, the API client under `Ui/Api`), the API goldens
   under `tests/Aw.Sindri.Tests/**/Golden`, `docs/csharp/sindri-ui.md`, `docs/csharp/sindri.md`,

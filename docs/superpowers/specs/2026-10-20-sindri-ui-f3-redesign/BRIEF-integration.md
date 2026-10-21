@@ -1,7 +1,7 @@
 # Builder brief: integrate the F3 prototype into one clickable whole
 
-First read /home/thor/.agentic-workflow/mockups/f3/BRIEF.md (all of it, including the UPDATE section). The screens in
-`/home/thor/.agentic-workflow/mockups/f3/screens/` were built by four builders and must now feel like ONE app. You own
+First read ~/.agentic-workflow/mockups/f3/BRIEF.md (all of it, including the UPDATE section). The screens in
+`~/.agentic-workflow/mockups/f3/screens/` were built by four builders and must now feel like ONE app. You own
 consistency and click-through; you do not redesign any screen.
 
 ## 1. `screens/index.html`: the entry
@@ -30,7 +30,7 @@ shared script inline in each page; same markup everywhere).
 
 ## 3. Click-through
 Write a small node script in your own scratch dir (NOT in the screens dir, NOT in any repo) that loads each page with
-Playwright from `/home/thor/repos/agentic-workflow/skills/ui-evidence/node_modules/playwright` (import it by absolute
+Playwright from `~/repos/agentic-workflow/skills/ui-evidence/node_modules/playwright` (import it by absolute
 path; launch chromium headless; close the browser at the end, always, in a finally) and:
 - collects every `<a href>` and every element with `data-href`/onclick navigation, resolves relative links, and fails
   on any target file that doesn't exist or any `#state`/`?run=` value the target page doesn't handle (check that the

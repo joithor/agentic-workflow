@@ -61,7 +61,7 @@ let cur = (location.hash || '#fresh').slice(1); if (!STATE[cur]) cur = 'fresh';
 function meta(id, s){
   const m = {
    repo:{ title:'Add your repository', why:{todo:'Sindri works inside a repository you choose. Pick its top folder.',done:'Sindri can work in this repository.'},
-     det:{done:'agentic-workflow added, at /home/thor/repos/agentic-workflow'}, act:{todo:['Choose folder','primary']} },
+     det:{done:'agentic-workflow added, at ~/repos/agentic-workflow'}, act:{todo:['Choose folder','primary']} },
    profile:{ title:'Approve your settings', why:{todo:'Waits for a repository.',you:'Your settings changed. Sindri works only inside what you approve here.',done:'Sindri works only inside what you approved.'},
      det:{done:'approved just now'}, act:{you:['Review and approve','primary']} },
    recipes:{ title:'Approve the workflows', why:{todo:'Waits for your settings.',you:'11 workflows are loaded and waiting. Read what each may do, then approve them all at once.',done:'All 11 workflows can run.'},
@@ -82,7 +82,7 @@ function bodyFor(id, s, st){
   if (id==='repo') {
     if (s==='done') return detLine + `<div class="grey"><span>setup:repo</span><span>repo.added</span></div>`;
     return `<p>Choose the top folder of a git checkout. Adding it changes your settings, so you approve them next.</p>
-      <div class="field"><input class="in mono" value="/home/thor/repos/agentic-workflow" aria-label="Folder"><button class="btn">${I.folder}Browse</button></div>
+      <div class="field"><input class="in mono" value="~/repos/agentic-workflow" aria-label="Folder"><button class="btn">${I.folder}Browse</button></div>
       <p class="note">Linked worktrees resolve to their main checkout. If the folder is already added, or is inside Sindri's own folder, Sindri says so here and changes nothing.</p>`;
   }
   if (id==='profile') {
@@ -115,7 +115,7 @@ function bodyFor(id, s, st){
     return detLine + `<div class="prov" data-gap="per-coding-agent result (mcp.registered providers)">` + ps.map(p=>`<div class="r">${badge(p[1])}<b style="font-weight:500">${p[0]}</b><span class="sp"></span><small>${p[2]}</small></div>`).join('') + `</div><p class="note">Only this repository, never your whole account. Skipped automatically if a coding agent isn't installed.</p>`;
   }
   if (id==='map') {
-    if (s==='fail') return `<div class="err"><h3>${I.x}Couldn't read the repository's files</h3><p>The folder /home/thor/repos/agentic-workflow isn't readable right now. It may have moved or lost permission. Fix that, then retry. Sindri also retries on its own with longer waits (5, 10, 20 minutes).</p></div>
+    if (s==='fail') return `<div class="err"><h3>${I.x}Couldn't read the repository's files</h3><p>The folder ~/repos/agentic-workflow isn't readable right now. It may have moved or lost permission. Fix that, then retry. Sindri also retries on its own with longer waits (5, 10, 20 minutes).</p></div>
       <div class="meter"><i style="width:40%;background:var(--fail-dot)"></i></div><div class="meta2">Stopped at 1,240 of 3,100 files. Failed 3 times in a row.</div>
       <div class="grey"><span>failure:service:context-map-refresh</span><span>3 failures in a row</span></div>`;
     if (s==='done') return detLine + `<div class="grey"><span>setup:map</span><span>context.map.refreshed</span></div>`;

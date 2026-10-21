@@ -1,6 +1,6 @@
 # Sindri workflow data model (what the UI can really show)
 
-Source: repo `/home/thor/repos/agentic-workflow`, **read from git branch `batch/2026-10-19a` (7626e709a)**, extracted to
+Source: repo `~/repos/agentic-workflow`, **read from git branch `batch/2026-10-19a` (7626e709a)**, extracted to
 `data/_src/` (read-only copy; paths below are repo-relative and exist in that copy). The detached HEAD of the working tree
 (8597ecc92) is older: it has no `workflow.line`, `design`, `plan`, `phase`, `build`, `prove`, `ship` recipes. All of them
 are shipped on the batch branches (`recipes/sindri/`).
