@@ -122,8 +122,7 @@ internal sealed class GraphEdgesControl : Control, ICustomHitTest
             var dim = Dimmed.Contains(edge.Key);
             using (dim ? context.PushOpacity(DimmedOpacity) : default)
             {
-                var pen = new Pen(lit ? hi : (edge.BrushKey is { } key ? Brush(key) : wire), Stroke, edge.Dashed ? new DashStyle(_dash, 0) : null, PenLineCap.Flat);
-                context.DrawGeometry(brush: null, pen, geometry);
+                context.DrawGeometry(brush: null, StrokePen(edge, lit ? hi : EdgeBrush(edge, wire)), geometry);
             }
 
             foreach (var end in new[] { edge.Route.Start, edge.Route.End })
@@ -134,6 +133,10 @@ internal sealed class GraphEdgesControl : Control, ICustomHitTest
 
         return ports;
     }
+
+    private IBrush EdgeBrush(MapEdge edge, IBrush wire) => edge.BrushKey is null ? wire : Brush(edge.BrushKey);
+
+    private static Pen StrokePen(MapEdge edge, IBrush brush) => new(brush, Stroke, edge.Dashed ? new DashStyle(_dash, 0) : null, PenLineCap.Flat);
 
     /// <inheritdoc/>
     protected override void OnPointerMoved(PointerEventArgs e)
