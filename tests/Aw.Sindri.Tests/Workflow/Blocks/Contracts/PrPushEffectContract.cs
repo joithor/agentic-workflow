@@ -1,18 +1,18 @@
 using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
-using Aw.Sindri.Features.Blocks.Step;
+using Aw.Sindri.Features.Blocks.Effect;
 using Aw.Sindri.Testing.Workflow;
 
 namespace Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 
 /// <summary>A descriptor-only block (no runtime until its phase): it hashes, kinds, registers once and resolves nothing.</summary>
 [Lane(TestLane.Unit)]
-public sealed class DocsOpenPrStepContract : DescriptorContract
+public sealed class PrPushEffectContract : DescriptorContract
 {
-    protected override BlockDescriptor Descriptor => DocsSteps.OpenPr;
+    protected override BlockDescriptor Descriptor => PrEffects.Push;
 
-    protected override string ExpectedHash => "sha256:88bc44bc613a87c3df0d257866b94c121af596ae821179e204e939a55adc333f";
+    protected override string ExpectedHash => "sha256:39b2837b3cc1ce17ba5be44ed2275f4d33cf8b5c23b3afa545d2414fd688ad0f";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

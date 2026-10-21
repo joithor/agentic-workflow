@@ -5,6 +5,7 @@ using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Tests.Workflow.Engine;
@@ -121,6 +122,73 @@ public sealed class WorkflowEventDetailTests
         Assert.DoesNotContain("\"via\":", json, StringComparison.Ordinal);
         Assert.DoesNotContain("\"tokens\":", json, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void An_agent_run_opens_with_its_launch_the_loop_round_and_the_loop_cap()
+    {
+        var after = Opened("produce", StepRuntime.Agent, new LoopState(Round: 2, Allowed: 4, Last: null));
+
+        var frame = Opening(after).Delta.Frame!;
+
+        Assert.Equal((AgentLaunches.LaunchIdFor(after.Id, RunToken.For(3, 1)).Value, 2, 4), (frame.Actor, frame.Attempt, frame.MaxAttempts));
+    }
+
+    [Fact]
+    public void A_block_run_opens_as_the_block_runtime_and_a_desk_run_as_the_human_who_fired_the_trigger()
+    {
+        var block = Opening(Opened("produce", StepRuntime.Block, new LoopState(1, 3, Last: null))).Delta.Frame!;
+        var desk = Opening(Opened("checks", StepRuntime.Desk, loop: null)).Delta.Frame!;
+
+        Assert.Equal(("block", 1, 3), (block.Actor, block.Attempt, block.MaxAttempts));
+        Assert.Equal(("human:cli", null, null), (desk.Actor, desk.Attempt, desk.MaxAttempts));
+    }
+
+    [Fact]
+    public void A_desk_run_opened_by_a_service_names_the_human_desk_only()
+    {
+        var detail = WithFrame(Opened("checks", StepRuntime.Desk, loop: null), actor: "service:workflow");
+
+        Assert.Equal("human", detail.Delta.Frame!.Actor);
+    }
+
+    [Fact]
+    public void A_row_without_an_opened_run_stays_as_it_was_and_writes_none_of_the_fields()
+    {
+        var plain = Event(WorkflowEventType.Transition, "step.completed", delta: new InstanceDelta(new Frame("done", 4, Run: null, Child: null), Suspension: null, PendingPark: null, Loops: null, Spent: null, Facts: null, Outcome: null));
+        var detail = WorkflowEventDetail.Of(plain, Report());
+
+        var same = detail.WithRunOpening(FrameFixture.Instance(new Frame("done", 4, Run: null, Child: null)), FrameFixture.Recipe);
+
+        Assert.Equal(detail, same);
+        var json = System.Text.Json.JsonSerializer.Serialize(same, SliceHarness.Json);
+        Assert.DoesNotContain("maxAttempts", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"actor\"", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_opening_fields_are_written_camel_cased_on_the_frame()
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(Opening(Opened("produce", StepRuntime.Block, new LoopState(1, 3, Last: null))).Delta.Frame, SliceHarness.Json);
+
+        Assert.Contains("\"actor\":\"block\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"attempt\":1", json, StringComparison.Ordinal);
+        Assert.Contains("\"maxAttempts\":3", json, StringComparison.Ordinal);
+    }
+
+    private static WorkflowInstance Opened(string state, StepRuntime runtime, LoopState? loop) =>
+        FrameFixture.Instance(new Frame(state, Entry: 3, new OpenRun(RunToken.For(3, 1), runtime, Launch: null, Task: null), Child: null)) with
+        {
+            Loops = loop is null ? new Dictionary<string, LoopState>(StringComparer.Ordinal) : new Dictionary<string, LoopState>(StringComparer.Ordinal) { ["fix"] = loop },
+        };
+
+    private static WorkflowEventDetail WithFrame(WorkflowInstance after, string actor = "human:cli")
+    {
+        var frame = new FrameSummary(after.Frame.State, after.Frame.Entry, after.Frame.Run!.Token.Value, Child: null, after.Frame.Run.Runtime);
+        var detail = WorkflowEventDetail.Of(Event(WorkflowEventType.Transition, "step.completed", delta: new InstanceDelta(after.Frame, Suspension: null, PendingPark: null, Loops: null, Spent: null, Facts: null, Outcome: null)), Report());
+        return (detail with { TriggerActor = actor, Delta = detail.Delta with { Frame = frame } }).WithRunOpening(after, FrameFixture.Recipe);
+    }
+
+    private static WorkflowEventDetail Opening(WorkflowInstance after) => WithFrame(after);
 
     private static Dictionary<FactKey, FactValue> Output() => new() { [FactKey.From("fact:output")] = EngineFixture.Fact("the output") };
 
