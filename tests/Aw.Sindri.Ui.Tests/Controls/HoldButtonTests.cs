@@ -135,4 +135,15 @@ public sealed class HoldButtonTests
 
         Assert.Equal((false, "sindri profile approve", false), (hold.IsReady, hold.Terminal?.Cli, hold.Begin()));
     }
+
+    [Fact]
+    public void The_accessible_name_starts_with_the_visible_words_and_then_says_how_many()
+    {
+        var hold = Hold();
+        hold.SetCount(3);
+
+        Assert.Equal(("Hold to approve, 1.5 seconds", "Hold to approve, 1.5 seconds, 3 workflows"), (hold.Text, hold.Name));
+        hold.SetCount(1);
+        Assert.StartsWith(hold.Text, hold.Name, StringComparison.Ordinal);
+    }
 }

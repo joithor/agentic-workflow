@@ -30,7 +30,7 @@ internal sealed class HoldButton : UserControl
 
     public HoldButton()
     {
-        _timer = new DispatcherTimer(_tickEvery, DispatcherPriority.Normal, OnStep) { IsEnabled = false };
+        _timer = new DispatcherTimer(_tickEvery, DispatcherPriority.Normal, (_, _) => Step()) { IsEnabled = false };
         _fill.Classes.Add("hold-fill");
         _words.Classes.Add("button");
         AutomationProperties.SetAccessibilityView(_words, AccessibilityView.Raw);
@@ -152,7 +152,11 @@ internal sealed class HoldButton : UserControl
         pointer?.Capture(control: null);
     }
 
-    private void OnStep(object? sender, EventArgs e)
+    /// <summary>True while the 50 ms timer is stepping the hold.</summary>
+    internal bool Stepping => _timer.IsEnabled;
+
+    /// <summary>One step of the hold, as the timer takes it (a test takes it by hand on a fake clock).</summary>
+    internal void Step()
     {
         if (_model is not { } model)
         {

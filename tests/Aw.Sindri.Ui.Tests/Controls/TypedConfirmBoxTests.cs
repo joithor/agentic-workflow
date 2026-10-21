@@ -102,4 +102,20 @@ public sealed class TypedConfirmBoxTests
 
         Assert.Equal((false, "sindri profile approve"), (box.IsReady, box.Terminal?.Cli));
     }
+
+    [Fact]
+    public void Typing_the_phrase_says_it_matches_once_on_the_change_and_never_per_key()
+    {
+        var box = Box();
+        var resting = box.Live.Announcement;
+
+        box.Text = "approve profile 3f9";
+        Assert.Equal((resting, false), (box.Live.Announcement, box.Live.IsAnnouncing));
+        box.Text = "approve profile 3f9a1c";
+        Assert.Equal(("Matches", true), (box.Live.Announcement, box.Live.IsAnnouncing));
+
+        box.Live.Quiet();
+        box.Text = "approve profile 3f9a1c ";   // still a match: no new announcement
+        Assert.False(box.Live.IsAnnouncing);
+    }
 }
