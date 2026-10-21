@@ -23,6 +23,7 @@ using Aw.Sindri.Features.ApproveAllRecipes;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.ApproveRecipe;
 using Aw.Sindri.Features.Blocks;
+using Aw.Sindri.Features.BugFix;
 using Aw.Sindri.Features.Build;
 using Aw.Sindri.Features.CancelJob;
 using Aw.Sindri.Features.CheckProfile;
@@ -165,7 +166,7 @@ public static class SindriFeaturesServiceCollectionExtensions
     }
 
     private static IServiceCollection AddStationSlices(this IServiceCollection services) =>
-        services.AddScopingSlices().AddLineSlices().AddBuildSlices().AddShipSlices().AddLensLoops().AddProveSlices();
+        services.AddScopingSlices().AddLineSlices().AddBuildSlices().AddShipSlices().AddLensLoops().AddProveSlices().AddBugFixSlices();
 
     private static IServiceCollection AddCommands(this IServiceCollection services)
     {
