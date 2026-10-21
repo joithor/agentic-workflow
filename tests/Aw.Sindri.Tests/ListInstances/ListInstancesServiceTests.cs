@@ -104,6 +104,18 @@ public sealed class ListInstancesServiceTests
     }
 
     [Fact]
+    public async Task An_open_of_false_lists_only_the_finished_instances_newest_first()
+    {
+        var older = View("done", "T-1/step/1") with { Since = new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero) };
+        var newer = View("done", "T-2/step/1") with { Since = new DateTimeOffset(2026, 10, 2, 0, 0, 0, TimeSpan.Zero) };
+
+        var (result, port) = await Run(new ListInstancesRequest(Recipe: "workflow.step", Root: "true", Open: "false"), older, View("desk-task", "T-3/step/1"), newer);
+
+        Assert.Equal(["T-2/step/1", "T-1/step/1"], result.Value.Instances.Select(static r => r.Address.Value), StringComparer.Ordinal);
+        Assert.True(port.Calls[0].Ended);
+    }
+
+    [Fact]
     public async Task A_needs_me_of_false_is_no_filter_and_a_state_still_lists_ended_instances()
     {
         var (_, port) = await Run(new ListInstancesRequest(NeedsMe: "false", State: "parked"));

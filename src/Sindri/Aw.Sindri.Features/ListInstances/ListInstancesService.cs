@@ -45,6 +45,7 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
         }
 
         var open = Flag(request.Open) == true;
+        var finishedOnly = Flag(request.Open) == false;
         var filter = Filter(request);
         var rows = request.Query is { Length: > 0 } query
             ? await instances.List(Joined(InstanceFilters.ToQuery(filter), query), ended: !open, cancellationToken).ConfigureAwait(false)
@@ -68,10 +69,21 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             return counts.Error;
         }
 
-        var unfinished = open ? views.Value.FindAll(static v => v.Outcome is null) : views.Value;
-        var kept = Flag(request.NeedsMe) == true ? [.. NeedsYouList.Shown(unfinished)] : unfinished;
+        var kept = Narrowed(views.Value, Flag(request.Open), Flag(request.NeedsMe) == true);
         var titles = await Titles(kept, cancellationToken).ConfigureAwait(false);
-        return Listed(Matching(kept, request.Subject, titles), counts.Value, titles, Empty(request));
+        return Listed(Matching(kept, request.Subject, titles), counts.Value, titles, Empty(request), newestFirst: finishedOnly);
+    }
+
+    /// <summary>The views 'open' keeps (true: the unfinished, false: the finished), and for 'needsMe' only what needs the caller.</summary>
+    private static List<InstanceView> Narrowed(List<InstanceView> views, bool? open, bool needsMe)
+    {
+        var kept = open switch
+        {
+            true => views.FindAll(static v => v.Outcome is null),
+            false => views.FindAll(static v => v.Outcome is not null),
+            null => views,
+        };
+        return needsMe ? [.. NeedsYouList.Shown(kept)] : kept;
     }
 
     /// <summary>
@@ -186,10 +198,13 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             : [.. views.Where(v => InstanceSummaries.SubjectOf(v, titles.For(v)) is var s && (string.Equals(s.Key, subject, StringComparison.Ordinal) || s.Label.Contains(subject, StringComparison.OrdinalIgnoreCase)))];
 
     /// <summary>The list: the rows in the API order (§3.8: one order on every list path), each built by <see cref="InstanceSummaries.Of"/>.</summary>
-    private InstanceList Listed(List<InstanceView> views, ListCounts counts, ItemTitles titles, string? empty)
+    private InstanceList Listed(List<InstanceView> views, ListCounts counts, ItemTitles titles, string? empty, bool newestFirst = false)
     {
         var now = rowBuilder.Now();
-        var list = views.Order(new InstanceOrder(titles)).Select(v => rowBuilder.Row(v, titles, now)).ToList();
+        var ordered = newestFirst
+            ? views.OrderByDescending(static v => v.Since).ThenBy(static v => v.Address.Value, StringComparer.Ordinal)
+            : views.Order(new InstanceOrder(titles));
+        var list = ordered.Select(v => rowBuilder.Row(v, titles, now)).ToList();
         return new InstanceList(list, counts, list.Count == 0 ? empty : null, now);
     }
 
@@ -205,16 +220,21 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
         }
 
         var titles = new Dictionary<string, string>(StringComparer.Ordinal);
+        var steps = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var id in views.Select(static v => v.ItemId).OfType<ItemKey>().Select(static i => i.Value).Distinct(StringComparer.Ordinal))
         {
             var row = await itemViews.Get<ItemRow>(ViewNames.Items, id, cancellationToken).ConfigureAwait(false);
             if (row.IsSuccess && row.Value is { } item && ItemScope.Visible(caller, item.Repo))
             {
                 titles[id] = item.Title;
+                if (item.Step is { Length: > 0 } step)
+                {
+                    steps[id] = step;
+                }
             }
         }
 
-        return new ItemTitles(titles);
+        return new ItemTitles(titles, steps);
     }
 
     /// <summary>The sentence for an empty list that matches the filter: nothing needs you, no open workflows, or no workflow matches.</summary>
