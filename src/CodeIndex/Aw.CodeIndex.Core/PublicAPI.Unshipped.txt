@@ -1273,3 +1273,44 @@ static readonly Aw.CodeIndex.Core.CodeIndexErrors.SettingsInvalid -> Aw.Kernel.E
 static readonly Aw.CodeIndex.Core.CodeIndexErrors.SymbolNotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.CodeIndex.Core.CodeIndexRules.HeavySlotWait -> System.TimeSpan
 static readonly Aw.CodeIndex.Core.CodeIndexRules.MaxBuildTime -> System.TimeSpan
+Aw.CodeIndex.Core.InputRules
+Aw.CodeIndex.Core.Model.TreeEntry
+Aw.CodeIndex.Core.Model.TreeEntry.Blob.get -> string!
+Aw.CodeIndex.Core.Model.TreeEntry.Blob.init -> void
+Aw.CodeIndex.Core.Model.TreeEntry.<Clone>$() -> Aw.CodeIndex.Core.Model.TreeEntry!
+Aw.CodeIndex.Core.Model.TreeEntry.Deconstruct(out string! Mode, out string! Path, out string! Blob, out long? Size) -> void
+Aw.CodeIndex.Core.Model.TreeEntry.Equals(Aw.CodeIndex.Core.Model.TreeEntry? other) -> bool
+Aw.CodeIndex.Core.Model.TreeEntry.Mode.get -> string!
+Aw.CodeIndex.Core.Model.TreeEntry.Mode.init -> void
+Aw.CodeIndex.Core.Model.TreeEntry.Path.get -> string!
+Aw.CodeIndex.Core.Model.TreeEntry.Path.init -> void
+Aw.CodeIndex.Core.Model.TreeEntry.Size.get -> long?
+Aw.CodeIndex.Core.Model.TreeEntry.Size.init -> void
+Aw.CodeIndex.Core.Model.TreeEntry.TreeEntry(string! Mode, string! Path, string! Blob, long? Size) -> void
+override Aw.CodeIndex.Core.Model.TreeEntry.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Model.TreeEntry.GetHashCode() -> int
+override Aw.CodeIndex.Core.Model.TreeEntry.ToString() -> string!
+static Aw.CodeIndex.Core.InputRules.Apply(Aw.CodeIndex.Core.Values.CommitSha commit, System.Collections.Generic.IEnumerable<Aw.CodeIndex.Core.Model.TreeEntry!>! entries, Aw.CodeIndex.Core.Model.SnapshotLimits! limits) -> Aw.Kernel.Result<Aw.CodeIndex.Core.Model.SnapshotInventory!>!
+static Aw.CodeIndex.Core.InputRules.IsDenied(string! path, System.Collections.Generic.IReadOnlyList<string!>! addedGlobs) -> bool
+static Aw.CodeIndex.Core.InputRules.IsSafePath(string! path) -> bool
+static Aw.CodeIndex.Core.InputRules.SecretGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.CodeIndex.Core.Model.TreeEntry.operator !=(Aw.CodeIndex.Core.Model.TreeEntry? left, Aw.CodeIndex.Core.Model.TreeEntry? right) -> bool
+static Aw.CodeIndex.Core.Model.TreeEntry.operator ==(Aw.CodeIndex.Core.Model.TreeEntry? left, Aw.CodeIndex.Core.Model.TreeEntry? right) -> bool
+Aw.CodeIndex.Core.Facade.CallEdge.CallEdge(int Level, Aw.CodeIndex.Core.Facade.SymbolHit? Other, string! Name, Aw.CodeIndex.Core.Model.EdgeKind Kind, Aw.CodeIndex.Core.Model.EdgeBasis Basis, Aw.CodeIndex.Core.Model.Confidence Confidence, int Line, int Candidates, Aw.CodeIndex.Core.Model.Coverage Coverage) -> void
+Aw.CodeIndex.Core.Facade.CallEdge.Coverage.get -> Aw.CodeIndex.Core.Model.Coverage
+Aw.CodeIndex.Core.Facade.CallEdge.Coverage.init -> void
+Aw.CodeIndex.Core.Facade.CallEdge.Deconstruct(out int Level, out Aw.CodeIndex.Core.Facade.SymbolHit? Other, out string! Name, out Aw.CodeIndex.Core.Model.EdgeKind Kind, out Aw.CodeIndex.Core.Model.EdgeBasis Basis, out Aw.CodeIndex.Core.Model.Confidence Confidence, out int Line, out int Candidates, out Aw.CodeIndex.Core.Model.Coverage Coverage) -> void
+Aw.CodeIndex.Core.Facade.CallsAnswer.CallsAnswer(Aw.CodeIndex.Core.Facade.AnswerStamp! Stamp, Aw.CodeIndex.Core.Values.SymbolRef Subject, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>! Edges, int UnresolvedCount, bool Truncated, Aw.CodeIndex.Core.Model.Coverage Coverage) -> void
+Aw.CodeIndex.Core.Facade.CallsAnswer.Coverage.get -> Aw.CodeIndex.Core.Model.Coverage
+Aw.CodeIndex.Core.Facade.CallsAnswer.Coverage.init -> void
+Aw.CodeIndex.Core.Facade.CallsAnswer.Deconstruct(out Aw.CodeIndex.Core.Facade.AnswerStamp! Stamp, out Aw.CodeIndex.Core.Values.SymbolRef Subject, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>! Edges, out int UnresolvedCount, out bool Truncated, out Aw.CodeIndex.Core.Model.Coverage Coverage) -> void
+Aw.CodeIndex.Core.Ports.CallWalk.CallWalk(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>! Edges, int UnresolvedCount, bool Truncated, Aw.CodeIndex.Core.Model.Coverage Coverage) -> void
+Aw.CodeIndex.Core.Ports.CallWalk.Coverage.get -> Aw.CodeIndex.Core.Model.Coverage
+Aw.CodeIndex.Core.Ports.CallWalk.Coverage.init -> void
+Aw.CodeIndex.Core.Ports.CallWalk.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>! Edges, out int UnresolvedCount, out bool Truncated, out Aw.CodeIndex.Core.Model.Coverage Coverage) -> void
+Aw.CodeIndex.Core.Facade.CallCoverage
+Aw.CodeIndex.Core.Model.Coverage
+Aw.CodeIndex.Core.Model.Coverage.Full = 0 -> Aw.CodeIndex.Core.Model.Coverage
+Aw.CodeIndex.Core.Model.Coverage.Partial = 1 -> Aw.CodeIndex.Core.Model.Coverage
+Aw.CodeIndex.Core.Model.Coverage.Unavailable = 2 -> Aw.CodeIndex.Core.Model.Coverage
+static Aw.CodeIndex.Core.Facade.CallCoverage.Of(Aw.CodeIndex.Core.Model.Coverage subject, System.Collections.Generic.IEnumerable<Aw.CodeIndex.Core.Facade.CallEdge!>! edges) -> Aw.CodeIndex.Core.Model.Coverage
