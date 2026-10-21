@@ -191,6 +191,36 @@
       "schema": "holdout-result.json",
       "valid": false,
       "source": "A.9 Never: write the scenario's steps anywhere"
+    },
+    {
+      "file": "escalation.ambiguous-fix.json",
+      "schema": "escalation.json",
+      "valid": true,
+      "source": "BS-12: a reviewer's or fixer's typed ambiguousFix with options"
+    },
+    {
+      "file": "escalation.product-question.json",
+      "schema": "escalation.json",
+      "valid": true,
+      "source": "BS-12: a typed productQuestion without options"
+    },
+    {
+      "file": "escalation.untyped-kind.json",
+      "schema": "escalation.json",
+      "valid": false,
+      "source": "BS-12: only ambiguousFix and productQuestion reach a human"
+    },
+    {
+      "file": "escalation.no-question.json",
+      "schema": "escalation.json",
+      "valid": false,
+      "source": "BS-12: the question is the human's prompt, so it is required"
+    },
+    {
+      "file": "lens-report.escalate.json",
+      "schema": "lens-report.json",
+      "valid": true,
+      "source": "BS-12: a finding may carry a typed escalate"
     }
   ]
 }
