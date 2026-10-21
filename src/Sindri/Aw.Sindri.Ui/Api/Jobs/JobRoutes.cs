@@ -5,6 +5,9 @@ internal static class JobRoutes
 {
     private const string Root = "/sindri/jobs";
 
+    /// <summary>The map refresh's start (a job route; the map step's Retry).</summary>
+    internal const string RefreshContextMap = "/sindri/context/map/refresh";
+
     internal static string List(JobQuery query)
     {
         var parts = new List<string>();

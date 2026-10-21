@@ -9,6 +9,7 @@ using Aw.Sindri.Ui.ViewModels.NeedsYou;
 using Aw.Sindri.Ui.ViewModels.Palette;
 using Aw.Sindri.Ui.ViewModels.Queue;
 using Aw.Sindri.Ui.ViewModels.Recipes;
+using Aw.Sindri.Ui.ViewModels.Setup;
 using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
@@ -76,6 +77,8 @@ internal sealed partial class ShellViewModel : ObservableObject
         Inbox = InitInbox(api, clipboard);
         Strip = new WorkflowsStripViewModel(clipboard, clock);
         InitStrip();
+        Setup = new SetupViewModel(api, Health.Catalog, clock, OpensInApp);
+        InitSetup();
         Workflows = new WorkflowsViewModel(api, clipboard, clock);
         InitWorkflows();
         Start = InitStart(api, window ??= WindowPorts.None);
@@ -223,6 +226,11 @@ internal sealed partial class ShellViewModel : ObservableObject
     {
         _ = LeaveNeedsYouInbox();   // any way to a page, Home included, leaves the inbox that shows over it
         SetHomeFilter(filter);
+        if (page == PageId.Settings)
+        {
+            Setup.RevealChecklist();   // every way into Settings (the rail, ⌘,, G U, the setup link, Home's line) shows the checklist, its first section
+        }
+
         if (page == CurrentPage)
         {
             return;
