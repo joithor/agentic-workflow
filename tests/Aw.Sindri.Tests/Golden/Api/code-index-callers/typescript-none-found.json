@@ -1,0 +1,20 @@
+{
+  "stamp": {
+    "repo": "demo",
+    "commit": "0123456789abcdef0123456789abcdef01234567",
+    "builtAt": "2026-10-20T12:00:00.0000000Z",
+    "state": "ok",
+    "layer": {
+      "layer": "graph",
+      "state": "ok",
+      "code": null,
+      "detail": "ok"
+    }
+  },
+  "subject": "demo:src/tabs.ts#go",
+  "coverage": "partial",
+  "note": "none found (coverage partial: graphify keeps one call site per caller and callee pair)",
+  "edges": [],
+  "unresolvedCount": 0,
+  "truncated": false
+}
