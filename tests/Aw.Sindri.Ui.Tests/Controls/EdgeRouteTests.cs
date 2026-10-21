@@ -140,4 +140,54 @@ public sealed class EdgeRouteTests
         Assert.True(route.DistanceTo(new Point(300, 600)) < 0.001);
         Assert.True(route.DistanceTo(new Point(200, 300)) > 20);
     }
+
+    [Fact]
+    public void Control_offset_is_clamped_to_40_110()
+    {
+        var near = Assert.Single(EdgeRoute.Between(new Point(0, 0), PortSide.Bottom, new Point(0, 50), PortSide.Top).Steps);
+        var mid = Assert.Single(EdgeRoute.Between(new Point(0, 0), PortSide.Bottom, new Point(0, 150), PortSide.Top).Steps);
+        var far = Assert.Single(EdgeRoute.Between(new Point(0, 0), PortSide.Bottom, new Point(0, 600), PortSide.Top).Steps);
+
+        Assert.Equal(new Point(0, 40), near.Control1);
+        Assert.Equal(new Point(0, 75), mid.Control1);
+        Assert.Equal(new Point(0, 110), far.Control1);
+        Assert.Equal(new Point(0, 490), far.Control2);
+    }
+
+    [Fact]
+    public void Each_port_side_leaves_along_its_outward_normal()
+    {
+        var from = new Point(500, 500);
+        (PortSide Side, double Nx, double Ny)[] cases = [(PortSide.Top, 0, -1), (PortSide.Bottom, 0, 1), (PortSide.Left, -1, 0), (PortSide.Right, 1, 0)];
+
+        foreach (var (side, nx, ny) in cases)
+        {
+            var step = Assert.Single(EdgeRoute.Between(from, side, new Point(1000, 900), PortSide.Top).Steps);
+
+            Assert.Equal(new Point(500 + (nx * 110), 500 + (ny * 110)), step.Control1);
+        }
+    }
+
+    [Fact]
+    public void A_right_to_top_edge_leaves_horizontally_and_arrives_vertically()
+    {
+        var route = EdgeRoute.Between(new Point(160, 300), PortSide.Right, new Point(470, 700), PortSide.Top);
+
+        var step = Assert.Single(route.Steps);
+        Assert.Equal(RouteStepKind.Cubic, step.Kind);
+        Assert.Equal(new Point(160, 300), route.Start);
+        Assert.Equal(new Point(470, 700), route.End);
+        Assert.Equal(300, step.Control1.Y);
+        Assert.True(step.Control1.X > 160);
+        Assert.Equal(470, step.Control2.X);
+        Assert.True(step.Control2.Y < 700);
+    }
+
+    [Fact]
+    public void The_midpoint_of_a_port_edge_is_the_curve_at_half_way()
+    {
+        var route = EdgeRoute.Between(new Point(0, 0), PortSide.Bottom, new Point(300, 400), PortSide.Top);
+
+        Assert.Equal(new Point(150, 200), route.Midpoint());
+    }
 }
