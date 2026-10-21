@@ -1,6 +1,6 @@
 schema: 1
 id: workflow.line
-version: 1
+version: 2
 description: "Spec-to-proven-PR, end to end. Sequential stations (LN-WF8): scoping, design, plan and one workflow.phase child; parallel phase dispatch comes with LN-WF1."
 urgency: work
 inputs:
@@ -17,10 +17,10 @@ states:
              waitFor: { child: { recipe: workflow.scoping, onParked: propagate, inputs: { "fact:scopeInput": { fact: fact:scopeInput } } } },
              next: "Waiting for {child}: scoping {item}, ending at your after-scoping stop." }
   design: { kind: wait, timeout: { after: 7d, then: park },
-             waitFor: { child: { recipe: workflow.design, onParked: propagate, inputs: { "fact:scopePacket": { fact: fact:scopePacket }, "fact:designRevision": { literal: "First pass: no revision yet." } } } },
+             waitFor: { child: { recipe: workflow.design, onParked: propagate, inputs: { "fact:scopePacket": { fact: fact:scopePacket }, "fact:designRevision": { literal: "First pass: no revision yet." }, "fact:priorDesignPacket": { literal: "First pass: no previous design." } } } },
              next: "Waiting for {child}: {item}'s spec draft and its lens rounds." }
   redesign: { kind: wait, loop: redesign, timeout: { after: 7d, then: park },
-             waitFor: { child: { recipe: workflow.design, onParked: propagate, inputs: { "fact:scopePacket": { fact: fact:scopePacket }, "fact:designRevision": { fact: fact:designRevision } } } },
+             waitFor: { child: { recipe: workflow.design, onParked: propagate, inputs: { "fact:scopePacket": { fact: fact:scopePacket }, "fact:designRevision": { fact: fact:designRevision }, "fact:priorDesignPacket": { fact: fact:designPacket } } } },
              next: "Waiting for {child}: {item}'s redesign after the plan sent it back (pass {loop.redesign}/{loop.redesign.cap})." }
   plan: { kind: wait, timeout: { after: 30d, then: park },
              waitFor: { child: { recipe: workflow.plan, onParked: propagate, inputs: { "fact:scopePacket": { fact: fact:scopePacket }, "fact:designPacket": { fact: fact:designPacket } } } },
