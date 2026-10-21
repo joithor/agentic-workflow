@@ -31,6 +31,10 @@ public sealed class ContextMapLayoutTests
         return ContextMapLayout.Build(Read(node));
     }
 
+    private static readonly string[] _surfacePair = ["surface:command/group-tabs", "surface:command/switch-tab"];
+
+    private static bool IsOneOf(string value, params string[] options) => options.Contains(value, StringComparer.Ordinal);
+
     private static MapNodeLayout Node(MapLayout layout, string key) => layout.Nodes.Single(n => n.Key == key);
 
     private static JsonNode Product(string key, string kind) => JsonNode.Parse($$"""{"node":"{{key}}","label":"{{key}}","kind":"{{kind}}","provenance":"human","confidence":1,"confirmed":true,"trust":"trusted"}""")!;
@@ -42,7 +46,7 @@ public sealed class ContextMapLayoutTests
 
         Assert.Equal(new Rect(0, 0, 1360, 872), layout.World);
         Assert.Equal([(MapBand.Intent, 0d, 252d), (MapBand.Product, 304d, 336d), (MapBand.Code, 688d, 184d)], layout.Bands.Select(b => (b.Band, b.Top, b.Height)));
-        Assert.Equal([Labels.ContextMapBandIntent, Labels.ContextMapBandProduct, Labels.ContextMapBandCode], layout.Bands.Select(b => b.Title));
+        Assert.Equal([Labels.ContextMapBandIntent, Labels.ContextMapBandProduct, Labels.ContextMapBandCode], layout.Bands.Select(b => b.Title), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -102,8 +106,8 @@ public sealed class ContextMapLayoutTests
 
         // The surfaces hang off tab-groups (group-tabs) and tab-manager (switch-tab); their actions follow them.
         var surfaces = layout.Nodes.Where(n => n.Kind == "surface").OrderBy(n => n.Bounds.X).Select(n => n.Key).ToList();
-        var parentX = (string key) => Node(layout, key).Bounds.Center.X;
-        var expected = new[] { "surface:command/group-tabs", "surface:command/switch-tab" }.OrderBy(k => parentX(k == "surface:command/group-tabs" ? "feature:tabs.tab-groups" : "feature:tabs.tab-manager")).ThenBy(k => k, StringComparer.Ordinal).ToList();
+        double ParentX(string key) => Node(layout, key).Bounds.Center.X;
+        var expected = _surfacePair.OrderBy(k => ParentX(string.Equals(k, "surface:command/group-tabs", StringComparison.Ordinal) ? "feature:tabs.tab-groups" : "feature:tabs.tab-manager")).ThenBy(k => k, StringComparer.Ordinal).ToList();
         Assert.Equal(expected, surfaces);
         Assert.Equal(109, Node(layout, surfaces[0]).Bounds.Center.X);
         Assert.Equal(109 + 190, Node(layout, surfaces[1]).Bounds.Center.X);
@@ -117,7 +121,7 @@ public sealed class ContextMapLayoutTests
             var own = node["bands"]!["product"]!["own"]!.AsArray();
             for (var i = 0; i < 8; i++)
             {
-                own.Add(Product($"route:extra/r{i:00}", "route"));
+                own.Add(Product($"route:extra/r{i.ToString("00", System.Globalization.CultureInfo.InvariantCulture)}", "route"));
             }
         });
 
@@ -146,8 +150,8 @@ public sealed class ContextMapLayoutTests
         own.Add(anchor);
         for (var i = 0; i < 4; i++)
         {
-            own.Add(Product($"feature:s.f{i}", "feature"));
-            own.Add(Product($"route:s/r{i}", "route"));
+            own.Add(Product($"feature:s.f{i.ToString(System.Globalization.CultureInfo.InvariantCulture)}", "feature"));
+            own.Add(Product($"route:s/r{i.ToString(System.Globalization.CultureInfo.InvariantCulture)}", "route"));
         }
 
         product["edges"]!.AsArray().Clear();
@@ -160,15 +164,15 @@ public sealed class ContextMapLayoutTests
         for (var i = 0; i < 4; i++)
         {
             var file = template.DeepClone();
-            file["path"] = $"src/s/f{i}.ts";
-            file["label"] = $"src/s/f{i}.ts";
+            file["path"] = $"src/s/f{i.ToString(System.Globalization.CultureInfo.InvariantCulture)}.ts";
+            file["label"] = $"src/s/f{i.ToString(System.Globalization.CultureInfo.InvariantCulture)}.ts";
             file["implements"] = new JsonArray();
             file["suggested"] = false;
             file["confirmed"] = true;
             file["provenance"] = "deterministic";
             files.Add(file);
             var target = i < 3 || !withLink ? anchorKey : "feature:s.f0";
-            edges.Add(JsonNode.Parse($$"""{"from":"code:src/s/f{{i}}.ts","to":"{{target}}","type":"implements","provenance":"deterministic","link":"edge:s{{i}}","confirmed":true,"confidence":1}"""));
+            edges.Add(JsonNode.Parse($$"""{"from":"code:src/s/f{{i.ToString(System.Globalization.CultureInfo.InvariantCulture)}}.ts","to":"{{target}}","type":"implements","provenance":"deterministic","link":"edge:s{{i.ToString(System.Globalization.CultureInfo.InvariantCulture)}}","confirmed":true,"confidence":1}"""));
         }
 
         return node;
@@ -223,9 +227,9 @@ public sealed class ContextMapLayoutTests
     {
         var layout = Layout();
 
-        Assert.All(layout.Edges.Where(e => e.Type is "implements" or "decides" or "mentions" or "conflicts"), e => Assert.True(e.CrossesBands || e.Type == "conflicts", e.Key));
-        Assert.All(layout.Edges.Where(e => e.Type is "part-of" or "on"), e => Assert.False(e.CrossesBands, e.Key));
-        Assert.All(layout.Edges.Where(e => e.Type is "implements" or "decides" or "mentions"), e => Assert.True(e.CrossesBands, e.Key));
+        Assert.All(layout.Edges.Where(e => IsOneOf(e.Type, "implements", "decides", "mentions", "conflicts")), e => Assert.True(e.CrossesBands || e.Type == "conflicts", e.Key));
+        Assert.All(layout.Edges.Where(e => IsOneOf(e.Type, "part-of", "on")), e => Assert.False(e.CrossesBands, e.Key));
+        Assert.All(layout.Edges.Where(e => IsOneOf(e.Type, "implements", "decides", "mentions")), e => Assert.True(e.CrossesBands, e.Key));
     }
 
     [Fact]
@@ -271,8 +275,9 @@ public sealed class ContextMapLayoutTests
         });
     }
 
-    private static bool OnEdge(Rect r, Point p) => (Math.Abs(p.Y - r.Top) < 0.01 || Math.Abs(p.Y - r.Bottom) < 0.01) && p.X >= r.Left && p.X <= r.Right
-        || (Math.Abs(p.X - r.Left) < 0.01 || Math.Abs(p.X - r.Right) < 0.01) && p.Y >= r.Top && p.Y <= r.Bottom;
+    private static bool OnEdge(Rect r, Point p) =>
+        ((Math.Abs(p.Y - r.Top) < 0.01 || Math.Abs(p.Y - r.Bottom) < 0.01) && p.X >= r.Left && p.X <= r.Right)
+        || ((Math.Abs(p.X - r.Left) < 0.01 || Math.Abs(p.X - r.Right) < 0.01) && p.Y >= r.Top && p.Y <= r.Bottom);
 
     [Fact]
     public void Band_counts_come_from_the_served_counts()
@@ -298,7 +303,5 @@ public sealed class ContextMapLayoutTests
 
     [Fact]
     public void The_same_answer_lays_out_the_same_way_twice()
-    {
-        Assert.Equal(Layout().Nodes.Select(n => (n.Key, n.Bounds)), Layout().Nodes.Select(n => (n.Key, n.Bounds)));
-    }
+        => Assert.Equal(Layout().Nodes.Select(n => (n.Key, n.Bounds)), Layout().Nodes.Select(n => (n.Key, n.Bounds)));
 }
