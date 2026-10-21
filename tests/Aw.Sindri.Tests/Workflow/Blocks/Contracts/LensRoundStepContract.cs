@@ -17,7 +17,7 @@ public sealed class LensRoundStepContract : BlockContract
 
     protected override BlockDescriptor Descriptor => LensRoundSteps.Round;
 
-    protected override string ExpectedHash => "sha256:e0821b51b315b90745439d44725bd3d10e99a2a4b90a47b8b8d9d7b1fc44a74d";
+    protected override string ExpectedHash => "sha256:8e31f7aaa9519e250a145cb37f10aa61bc45746e857e1a7ad7bd0c6358ba8f3b";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

@@ -18,7 +18,7 @@ public sealed class ReviewRoundStepContract : BlockContract
 
     protected override BlockDescriptor Descriptor => ReviewSteps.Round;
 
-    protected override string ExpectedHash => "sha256:2aa8ad4611e71344356bbc5baf018bcde470b692ac899503d4799dc5a3dac8a7";
+    protected override string ExpectedHash => "sha256:4d36f64f2a6030e4afe9e94bc85bb11e81478708695818d1bbc1f58cf22a8e3a";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 
