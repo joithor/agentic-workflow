@@ -1,6 +1,6 @@
 schema: 1
 id: workflow.phase
-version: 1
+version: 2
 description: "The per-phase child of the line: build, prove, review and ship one phase as one PR, then babysit it (docs sync inside) to the owner's ready-to-merge stop and the merge."
 urgency: work
 inputs:
@@ -27,7 +27,7 @@ states:
              next: "Waiting for {child}: proving {item} on its head." }
   review:  { kind: wait, timeout: { after: 3d, then: park },
              waitFor: { child: { recipe: workflow.review-loop, onParked: propagate,
-                                 inputs: { "fact:change": { fact: fact:change }, "fact:phasePacket": { fact: fact:phasePacket } } } },
+                                 inputs: { "fact:change": { fact: fact:change }, "fact:phasePacket": { fact: fact:phasePacket }, "fact:lensRounds": [] } } },
              next: "Waiting for {child}: {item}'s review to zero blocking and issue findings." }
   drift:   { kind: active, step: step.phase.drift, loop: reprove, timeout: { after: 1h, then: park },
              next: "Check that {item}'s review left the proven head unchanged." }
