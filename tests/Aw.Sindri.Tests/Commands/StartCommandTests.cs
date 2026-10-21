@@ -71,6 +71,23 @@ public sealed class StartCommandTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_started_serve_that_needs_45_s_to_come_up_on_a_loaded_box_is_waited_for()
+    {
+        var launcher = new FakeControlPlaneLauncher();
+        var polls = (int)(TimeSpan.FromSeconds(45) / StartCommand.Poll);
+        for (var i = 0; i <= polls; i++)
+        {
+            _probe.Answers.Enqueue(SindriErrors.NotRunning.With("not yet"));   // the first check, then each poll until 45 s have passed
+        }
+
+        _probe.Answers.Enqueue(_found);
+
+        var found = await Drive(Command(launcher).FindOrLaunch(Token));
+
+        Assert.Equal(_found, found.Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_lost_lease_race_whose_winner_never_answers_fails_at_the_deadline()
     {
         var launcher = FakeControlPlaneLauncher.ExitingWith("SND-LEASE-001 held by host/77 since then (epoch 3)");
