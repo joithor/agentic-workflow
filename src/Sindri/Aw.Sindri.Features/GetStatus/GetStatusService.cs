@@ -13,7 +13,7 @@ using Aw.Sindri.Core.Views;
 namespace Aw.Sindri.Features.GetStatus;
 
 internal sealed class GetStatusService(HeldLease held, ProfileReads profiles, ILedgerReader ledger, EventFactory events,
-    IProjectorStatus projector, IViewReader viewRows, ISessionSnapshot sessions)
+    IProjectorStatus projector, HealthServiceRows healthRows, ISessionSnapshot sessions)
     : IService<GetStatusRequest, GetStatusResponse>
 {
     public async ValueTask<Result<GetStatusResponse>> Handle(GetStatusRequest request, CancellationToken cancellationToken)
@@ -50,8 +50,8 @@ internal sealed class GetStatusService(HeldLease held, ProfileReads profiles, IL
 
     private async ValueTask<HealthReport> Health(bool running, ViewsStatus views, ProfileStatus profile, LoadedProfile? approved, CancellationToken cancellationToken)
     {
-        var rows = await viewRows.List<ServiceRow>(ViewNames.Services, cancellationToken).ConfigureAwait(false);
-        return HealthSummary.For(running, views, rows.IsSuccess ? ApprovedServices.Of(rows.Value, approved) : null, profile.NeedsApproval, profile.ChangedSinceApproval);
+        var rows = await healthRows.Read(approved, cancellationToken).ConfigureAwait(false);
+        return HealthSummary.For(running, views, rows, profile.NeedsApproval, profile.ChangedSinceApproval);
     }
 
     private static ProfileStatus Profile(LoadedProfile? approved, RecordedApproval? recorded, Result<LoadedProfile> loaded)

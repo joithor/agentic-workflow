@@ -80,6 +80,16 @@ public sealed class GetSetupTests
         Assert.Equal((SetupStepId.Onyx, SindriErrors.ApiInternal.Code), (failed.Id, failed.Error?.Code));
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_source_cancelled_while_the_request_itself_is_cancelled_propagates()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        var facts = new ThrowingOnyx(InMemorySetupFacts.AllDone(), new OperationCanceledException(cts.Token));
+
+        _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await new GetSetupService(facts, new ProjectorProgress(_clock), _log).Handle(A.GetSetupRequest().Build(), cts.Token));
+    }
+
     private sealed class ThrowingOnyx(ISetupFacts inner, Exception? failure = null) : ISetupFacts
     {
         public ValueTask<Result<RepoFact>> Repos(CancellationToken cancellationToken) => inner.Repos(cancellationToken);
