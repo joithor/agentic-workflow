@@ -59,9 +59,9 @@ public sealed class DesignIntakeStepTests
     [Fact]
     public async Task A_revision_from_stop_two_is_revise_and_seeds_the_answers_with_it()
     {
-        const string revision = """{"decisions":[{"id":"D1","pick":"D1.b"}],"notes":[]}""";
+        var station = new LineStation();
 
-        var result = await Run(new LineStation(), revision: revision);
+        var result = await Run(station, revision: Revision, prior: await PriorPacket(station));
 
         Assert.Equal("revise", result.Result!.Outcome.Value);
         Assert.Equal("D1", (string?)JsonNode.Parse(LineStation.Fact(result, "answers"))![0]!["decisions"]![0]!["id"]);
@@ -73,7 +73,9 @@ public sealed class DesignIntakeStepTests
     {
         const string revision = """{"decisions":[],"notes":["owner asked for a revision, no text"]}""";
 
-        var result = await Run(new LineStation(), revision: revision);
+        var station = new LineStation();
+
+        var result = await Run(station, revision: revision, prior: await PriorPacket(station));
 
         Assert.Equal("revise", result.Result!.Outcome.Value);
     }

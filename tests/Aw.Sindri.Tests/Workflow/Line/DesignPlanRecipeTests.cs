@@ -40,7 +40,7 @@ public sealed class DesignPlanRecipeTests
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("workflow.design", 9)]
+    [InlineData("workflow.design", 10)]
     [InlineData("workflow.plan", 9)]
     public void The_recipe_lists_the_seven_cases_of_appendix_b1_and_two_more(string id, int cases) =>
         Assert.Equal(cases, Read(id).Recipe.Evals.Count);
