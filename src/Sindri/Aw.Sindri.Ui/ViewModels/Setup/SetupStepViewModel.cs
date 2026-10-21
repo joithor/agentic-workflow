@@ -13,6 +13,7 @@ internal sealed class SetupStepViewModel : ObservableObject
     private static readonly string[] _all =
     [
         nameof(Title), nameof(NumberText), nameof(Chip), nameof(ChipWord), nameof(Sub), nameof(DetailText), nameof(ProgressText), nameof(ProgressFraction), nameof(ErrorText), nameof(Items), nameof(Action), nameof(Fields),
+        nameof(IsMeterFailed), nameof(HintText), nameof(HasHint), nameof(Agents), nameof(HasAgents), nameof(TrustOnceText), nameof(AgentsNoteText),
         nameof(Name), nameof(Note), nameof(HasNote), nameof(HasDetail), nameof(HasProgress), nameof(HasError), nameof(HasItems), nameof(HasAction),
     ];
 
@@ -69,31 +70,29 @@ internal sealed class SetupStepViewModel : ObservableObject
     public SetupActionViewModel? Action { get; private set; }
 
     /// <summary>The repo form of the repo step; null for every other step.</summary>
-    internal SetupRepoFormViewModel? Repo { get; set; }
+    public SetupRepoFormViewModel? Repo { get; set; }
 
     /// <summary>The Onyx controls of the Onyx step; null for every other step.</summary>
-    internal SetupOnyxViewModel? Onyx { get; set; }
+    public SetupOnyxViewModel? Onyx { get; set; }
 
     /// <summary>One line per coding agent for the agents step; empty for every other step.</summary>
     public IReadOnlyList<SetupAgentViewModel> Agents { get; private set; } = [];
 
-#pragma warning disable CA1822, MA0041 // the red commit's stubs
     /// <summary>True when the meter of a failed step shows in the error colour.</summary>
-    public bool IsMeterFailed => false;
+    public bool IsMeterFailed => IsFailed && HasProgress;
 
     /// <summary>A line under the error: what Sindri does on its own; empty when nothing.</summary>
-    public string HintText => string.Empty;
+    public string HintText { get; private set; } = string.Empty;
 
     /// <summary>True when there is a hint.</summary>
     public bool HasHint => HintText.Length > 0;
 
     /// <summary>The fixed line under the agents list about trusting the folder.</summary>
-    public string TrustOnceText => string.Empty;
+    public string TrustOnceText => HasAgents ? Labels.SetupTrustOnce : string.Empty;
 
     /// <summary>The fixed line under the agents list about scope.</summary>
-    public string AgentsNoteText => string.Empty;
+    public string AgentsNoteText => HasAgents ? Labels.SetupAgentsNote : string.Empty;
 
-#pragma warning restore CA1822, MA0041
     /// <summary>True when the agents list shows.</summary>
     public bool HasAgents => Agents.Count > 0;
 
@@ -234,7 +233,32 @@ internal sealed class SetupStepViewModel : ObservableObject
         Items = [.. (Step.Items ?? []).Select(i => new SetupItemViewModel(i.Repo, i.State, i.Detail))];
         Action = _overrideNote is null ? _action(Step, Action) : null;
         Fields = Details();
+        HintText = IsFailed && string.Equals(Step.Id, "map", StringComparison.Ordinal) && _overrideNote is null ? Labels.SetupMapRetries : string.Empty;
+        Agents = string.Equals(Step.Id, "mcp", StringComparison.Ordinal) ? AgentLines() : [];
+        Repo?.Update(Step);
+        Onyx?.Update(Step, _overrideNote is not null);
     }
+
+    // Claude Code, Codex and Cursor: connected when every repo line names the agent, connecting while the step runs, else not started.
+    private List<SetupAgentViewModel> AgentLines()
+    {
+        var items = Step.Items ?? [];
+        var running = _overrideNote is not null || IsRunning;
+        return
+        [
+            .. Labels.SetupAgentNames.Select(agent =>
+            {
+                var connected = items.Count > 0 && items.All(i => Names(i.Detail, agent));
+                var (word, chip) = connected ? (Labels.SetupAgentConnected, Labels.SetupChip("done"))
+                    : running ? (Labels.SetupAgentConnecting, Labels.SetupChip("running"))
+                    : (Labels.SetupAgentNotStarted, Labels.SetupChip("todo"));
+                return new SetupAgentViewModel(agent, word, new StateChip(chip.Word, chip.Tone));
+            }),
+        ];
+    }
+
+    private static bool Names(string? detail, string agent) =>
+        detail is not null && detail.Split(',', StringSplitOptions.TrimEntries).Contains(agent, StringComparer.OrdinalIgnoreCase);
 
     private List<SetupFieldViewModel> Details()
     {

@@ -36,7 +36,7 @@ internal static partial class Labels
     internal const string SetupErr001 = "That folder isn't a git checkout, or can't be read.";
 
     /// <summary>SND-SETUP-002 in words.</summary>
-    internal const string SetupErr002 = "That repository is already added.";
+    internal const string SetupErr002 = "That repository is already added, or another repository has its name.";
 
     /// <summary>SND-SETUP-004 in words.</summary>
     internal const string SetupErr004 = "Add the repository and approve your settings first.";
@@ -127,6 +127,25 @@ internal static partial class Labels
 
     /// <summary>Under the form when Docker is missing (SND-ONYX-001).</summary>
     internal const string SetupDockerMissing = "Docker isn't installed.";
+
+    /// <summary>A refusal by an agent session (SND-AUTH-002) in words.</summary>
+    internal const string SetupAuthRefused = "Only you can do this from the app. An agent session can't.";
+
+    /// <summary>A setup refusal's code as a sentence the person can act on; null for a code with no words here.</summary>
+    /// <param name="code">The error code.</param>
+    /// <returns>The sentence, or null.</returns>
+    internal static string? SetupRefusal(string code) => code switch
+    {
+        "SND-SETUP-001" => SetupErr001,
+        "SND-SETUP-002" => SetupErr002,
+        "SND-SETUP-004" => SetupErr004,
+        "SND-SETUP-005" => SetupErr005,
+        "SND-SETUP-006" => SetupErr006,
+        "SND-ONYX-001" => SetupDockerMissing,
+        "SND-ONYX-007" => SetupOnyxWrong,
+        "SND-AUTH-002" => SetupAuthRefused,
+        _ => null,
+    };
 
     /// <summary>The accessible name of an agent's line.</summary>
     internal static string SetupAgentName(string agent, string word) => agent + ", " + word.ToLowerInvariant();

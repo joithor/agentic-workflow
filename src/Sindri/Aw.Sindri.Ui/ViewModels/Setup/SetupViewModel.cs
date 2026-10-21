@@ -16,7 +16,10 @@ namespace Aw.Sindri.Ui.ViewModels.Setup;
 internal sealed partial class SetupViewModel : ObservableObject
 {
     private const string MapStep = "map";
+    private const string McpStep = "mcp";
+    private const string OnyxStep = "onyx";
     private const string MapRefresh = "RefreshContextMap";
+    private const string RegisterAction = "RegisterMcp";
     private const string ConflictRefusal = "SND-JOB-409";
     private const string RunningJob = "runningJob";
 
@@ -25,9 +28,8 @@ internal sealed partial class SetupViewModel : ObservableObject
     private readonly CatalogViewModel _catalog;
     private readonly TimeProvider _clock;
     private readonly Func<string, bool> _opensInApp;
-#pragma warning disable IDE0052 // the red commit's stub: read once the forms are attached
     private readonly IFolderPicker _folders;
-#pragma warning restore IDE0052
+    private bool _registering;
     private int _reads;
     private bool _hasRead;
     private bool _refreshing;
@@ -70,8 +72,11 @@ internal sealed partial class SetupViewModel : ObservableObject
     public ControlViewModel Footnote { get; }
 
     /// <summary>True while the footnote shows: Onyx is not set up and not set aside.</summary>
-#pragma warning disable CA1822, MA0041, IDE0052 // the red commit's stub
-    public bool IsFootnoteShown => false;
+    public bool IsFootnoteShown => _rows.TryGetValue(OnyxStep, out var onyx) && !onyx.IsFinished;
+
+    /// <summary>The words before the footnote's command.</summary>
+#pragma warning disable CA1822, MA0041 // why: the view binds it as an instance property of the view model
+    public string FootnoteText => Labels.SetupOnyxFoot;
 #pragma warning restore CA1822, MA0041
 
     /// <summary>The lead over the checklist: "Set up Sindri", or "Sindri is set up"; empty until the first list.</summary>
@@ -148,7 +153,33 @@ internal sealed partial class SetupViewModel : ObservableObject
     /// <summary>Registers Sindri in the approved repos again (Connect on a failed agents step). One press sends once.</summary>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>A task that completes when the answer is shown.</returns>
-    internal Task RegisterMcp(CancellationToken cancellationToken) => throw new NotSupportedException();
+    internal async Task RegisterMcp(CancellationToken cancellationToken)
+    {
+        if (_registering || _url is not { } url || !_rows.TryGetValue(McpStep, out var mcp) || mcp.IsWorking)   // one press sends once
+        {
+            return;
+        }
+
+        _registering = true;
+        try
+        {
+            var started = await _api.RegisterMcp(url, new RegisterMcpRequest(), cancellationToken).ConfigureAwait(true);
+            if (started.IsSuccess)
+            {
+                Hold(mcp, Labels.SetupMcpAgain);
+            }
+            else
+            {
+                mcp.Say(Labels.SetupRefusal(started.Error.Code) ?? Labels.SetupMcpFailed);
+            }
+        }
+        finally
+        {
+            _registering = false;
+        }
+
+        Fold();
+    }
 
     /// <summary>Asks again, for every step, whether the app can do its action now.</summary>
     internal void Rederive()
@@ -156,6 +187,8 @@ internal sealed partial class SetupViewModel : ObservableObject
         foreach (var row in _rows.Values)
         {
             row.Rederive();
+            row.Repo?.Refresh();
+            row.Onyx?.Refresh();
         }
     }
 
@@ -215,6 +248,7 @@ internal sealed partial class SetupViewModel : ObservableObject
         HasSub = HasSteps && !IsFinished;
         Segments = [.. Steps.Select(s => new SetupSegment(s.SegmentKind))];
         FoldHomeLine();
+        OnChanged(nameof(IsFootnoteShown));
     }
 
     // Home's line: shown while a step is open, naming the first step still to do, with Continue.
@@ -227,45 +261,4 @@ internal sealed partial class SetupViewModel : ObservableObject
         OnChanged(nameof(HomeLineName));
         OnChanged(nameof(ContinueName));
     }
-
-    // A step's action: an app button when the app can do it, else the command to copy; none for an action nothing here knows. A kept action stays while nothing about it changed, so a
-    // Copy in flight is not reset.
-    private SetupActionViewModel? ActionOf(SetupStepView step, SetupActionViewModel? kept)
-    {
-        if (Offered(step) is not { } action)
-        {
-            return null;
-        }
-
-        var inApp = _opensInApp(action) || OpensHere(action);
-        if (kept is not null && kept.Matches(action, step, inApp))
-        {
-            return kept;
-        }
-
-        return Knows(action, inApp) ? new SetupActionViewModel(action, step, inApp, _catalog, _clock, Open) : null;
-    }
-
-    // The map has no button until it failed; then Retry is the catalog's refresh (a retry of the build, never a service run). Every other step offers what the API serves.
-    private static string? Offered(SetupStepView step) =>
-        string.Equals(step.Id, MapStep, StringComparison.Ordinal)
-            ? string.Equals(step.State, "failed", StringComparison.Ordinal) ? MapRefresh : null
-            : step.Action is { Length: > 0 } served ? served : null;
-
-    // The refresh is the app's own button when the catalog lists it as ready.
-    private bool OpensHere(string action) => string.Equals(action, MapRefresh, StringComparison.Ordinal) && _catalog.For(action) is { IsReady: true };
-
-    private void Open(string action)
-    {
-        if (string.Equals(action, MapRefresh, StringComparison.Ordinal))
-        {
-            _ = RefreshMap(CancellationToken.None);
-        }
-        else
-        {
-            ActionRequested?.Invoke(this, new SetupActionEventArgs(action));
-        }
-    }
-
-    private bool Knows(string action, bool inApp) => inApp || _catalog.Row(action) is not null || Labels.SetupCli(action).Length > 0;
 }
