@@ -7,8 +7,6 @@ using Avalonia.Media.Immutable;
 
 namespace Aw.Sindri.Ui.Views.Controls;
 
-#pragma warning disable MA0182 // until slice 2 places the control in the context page
-
 /// <summary>
 /// The context map's pannable, zoomable stage (F3 spec 1 §2): it holds the world as its child and moves it with a matrix.
 /// A drag on empty canvas pans, the wheel pans, Ctrl or Cmd with the wheel zooms around the cursor, and the scale stays
@@ -258,5 +256,3 @@ internal sealed partial class ZoomBorder : Border
         };
     }
 }
-
-#pragma warning restore MA0182
