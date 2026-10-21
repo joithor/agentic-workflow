@@ -39,7 +39,7 @@ internal sealed class HoldButton : UserControl
         Part.SizeChanged += (_, _) => Draw();
         Part.AddHandler(PointerPressedEvent, OnPressed, RoutingStrategies.Tunnel);
         Part.AddHandler(PointerReleasedEvent, OnReleased, RoutingStrategies.Tunnel);
-        Part.AddHandler(PointerCaptureLostEvent, OnLetGo, RoutingStrategies.Tunnel);
+        Part.AddHandler(PointerCaptureLostEvent, OnLetGo, RoutingStrategies.Direct);   // the event is Direct-only: a Tunnel subscription is never called
         Part.AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
         Part.AddHandler(KeyUpEvent, OnKeyUp, RoutingStrategies.Tunnel);
         Part.LostFocus += (_, _) => Release();
@@ -63,13 +63,35 @@ internal sealed class HoldButton : UserControl
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
-        _model?.PropertyChanged -= OnModelChanged;
-        _model = DataContext as HoldButtonViewModel;
-        _model?.PropertyChanged += OnModelChanged;
+        Watch(DataContext as HoldButtonViewModel);
         _terminal.DataContext = _model?.Terminal;
         _terminal.IsVisible = _model is { IsReady: false };
         Part.IsVisible = _model is null or { IsReady: true };
         Draw();
+    }
+
+    /// <inheritdoc />
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        Watch(_model);
+        Draw();
+    }
+
+    /// <inheritdoc />
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        Release();   // a hold in progress ends with the control: no timer, no capture, nothing sent
+        _model?.PropertyChanged -= OnModelChanged;
+        base.OnDetachedFromVisualTree(e);
+    }
+
+    // One subscription at most, whichever way the control comes to be watching.
+    private void Watch(HoldButtonViewModel? model)
+    {
+        _model?.PropertyChanged -= OnModelChanged;
+        _model = model;
+        _model?.PropertyChanged += OnModelChanged;
     }
 
     private void OnModelChanged(object? sender, PropertyChangedEventArgs e) => Draw();

@@ -107,9 +107,9 @@ internal static partial class Labels
     /// <summary>The hold button's accessible name once it counts the workflows.</summary>
     /// <param name="count">The count.</param>
     /// <param name="minHoldMs">The shortest hold.</param>
-    /// <returns>"Hold to approve 3 workflows, 1.5 seconds".</returns>
+    /// <returns>"Hold to approve, 1.5 seconds, 3 workflows": it starts with the words the button shows.</returns>
     internal static string ApproveHoldName(int count, int minHoldMs) =>
-        string.Create(CultureInfo.InvariantCulture, $"Hold to approve {count} {(count == 1 ? "workflow" : "workflows")}, {minHoldMs / 1000d:0.#} seconds");
+        string.Create(CultureInfo.InvariantCulture, $"{ApproveHold(minHoldMs)}, {count} {(count == 1 ? "workflow" : "workflows")}");
 
     /// <summary>The typed text did not match.</summary>
     /// <param name="expected">What to type.</param>

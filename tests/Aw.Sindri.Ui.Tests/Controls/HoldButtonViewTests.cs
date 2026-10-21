@@ -57,7 +57,8 @@ public sealed class HoldButtonViewTests
         s.Button.Step();
         s.Button.Step();
 
-        Assert.Equal(([1500], false, false), (s.Held, s.Model.IsHolding, s.Button.Stepping));
+        Assert.Equal([1500], s.Held);
+        Assert.Equal((false, false), (s.Model.IsHolding, s.Button.Stepping));
         s.Window.Close();
         return Task.CompletedTask;
     });

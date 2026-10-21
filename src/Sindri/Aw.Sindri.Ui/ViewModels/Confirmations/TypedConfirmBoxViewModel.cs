@@ -26,7 +26,7 @@ internal sealed class TypedConfirmBoxViewModel : ObservableObject
         Live = new LiveAnnouncer(Labels.TypedButton(action));
     }
 
-    /// <summary>The polite live region: the mismatch, said when the person presses on a wrong phrase, never per key.</summary>
+    /// <summary>The polite live region: the mismatch, said when the person presses on a wrong phrase, and the match, said once when the text becomes it; never per key.</summary>
     public LiveAnnouncer Live { get; }
 
     /// <summary>True when the catalog says the app may confirm; otherwise the terminal copy shows in its place.</summary>
@@ -58,10 +58,15 @@ internal sealed class TypedConfirmBoxViewModel : ObservableObject
         get;
         set
         {
+            var matched = Matches;
             Set(ref field, value);
             OnChanged(nameof(Matches));
             OnChanged(nameof(CanSubmit));
             OnChanged(nameof(ShowsMismatch));
+            if (Matches && !matched)
+            {
+                Live.Say(Labels.TypedMatches);   // the tick is visual only: say it once, on the change to a match, never per key
+            }
         }
     } = string.Empty;
 
