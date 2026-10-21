@@ -61,6 +61,24 @@ public sealed class TempGitRepo : IDisposable
         _ = File.CreateSymbolicLink(full, target);
     }
 
+    /// <summary>
+    /// Commits, on top of HEAD, a directory whose files carry names git's own checks refuse to stage ('..', '.GIT', a backslash),
+    /// written as raw tree entries with 'git mktree'. The names cannot be made by 'git add' or on every file system, which is
+    /// how a hostile repo would carry them (spec §5.1 unsafe-path).
+    /// </summary>
+    /// <param name="directory">The one directory (a plain name) that holds them.</param>
+    /// <param name="names">The file names, each a single path component.</param>
+    /// <returns>The new commit.</returns>
+    public CommitSha CommitUnsafeNames(string directory, params string[] names)
+    {
+        var blob = GitRunner.RunWithInput(Path, "unsafe\n", "hash-object", "-w", "--stdin");
+        var inner = GitRunner.RunWithInput(Path, string.Concat(names.Select(n => $"100644 blob {blob}\t{n}\n")), "mktree");
+        var top = GitRunner.RunWithInput(Path, Git("ls-tree", "HEAD") + $"\n040000 tree {inner}\t{directory}\n", "mktree");
+        var commit = Git("-c", "core.hooksPath=/dev/null", "commit-tree", "-p", "HEAD", "-m", "unsafe names", top);
+        _ = Git("update-ref", "HEAD", commit);
+        return Head;
+    }
+
     /// <inheritdoc />
     public void Dispose()
     {
@@ -77,7 +95,7 @@ public sealed class TempGitRepo : IDisposable
         {
             Directory.Delete(path, recursive: true);
         }
-        catch (IOException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             // a cleanup that fails must not replace the test's own failure
         }

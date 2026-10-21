@@ -8,6 +8,7 @@
 #   ./setup.sh [--providers ...] --with-sindri --no-onyx   # ... without the Onyx step (run `scripts/sindri-app.sh onyx up` later)
 #   ./setup.sh [--providers ...] --with-meta     # also install the /meta harness: aw-meta CLI, hooks, launcher (opt-in)
 #   ./setup.sh [--providers ...] --with-fleet    # also install the aw:fleet session-state hook for Sindri's session collector (opt-in)
+#   ./setup.sh [--providers ...] --no-tldraw     # skip the tldraw offline app (the canvas agents draw diagrams on)
 #   ./setup.sh --profile <web-app|ios|personal> --target <dir> [--dry-run]
 #
 # --providers defaults to every provider whose CLI is installed
@@ -27,7 +28,7 @@ CLAUDE_DIR="$HOME/.claude"
 ALL_PROVIDERS="claude codex cursor"
 
 usage() {
-  sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 # System packages are installed when missing (config/lib/sys-pkg.sh: Homebrew on macOS, sudo + the distro's package
@@ -140,6 +141,7 @@ WITH_SINDRI=0
 WITH_META=0
 WITH_ONYX=1
 WITH_FLEET=0
+WITH_TLDRAW=1
 while [ $# -gt 0 ]; do
   case "$1" in
     --providers) PROVIDERS_ARG="${2:-}"; shift 2 || { echo "--providers needs a value"; exit 1; } ;;
@@ -150,6 +152,7 @@ while [ $# -gt 0 ]; do
     --with-meta) WITH_META=1; shift ;;
     --no-onyx) WITH_ONYX=0; shift ;;
     --with-fleet) WITH_FLEET=1; shift ;;
+    --no-tldraw) WITH_TLDRAW=0; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown option: $1"; echo ""; usage; exit 1 ;;
   esac
@@ -656,6 +659,16 @@ for _p in $PROVIDERS; do
     bash "$SCRIPT_DIR/scripts/install-headroom.sh" --provider "$_p" || echo "  WARN: headroom: install-headroom.sh --provider $_p failed (non-fatal)"
   fi
 done
+
+# --- tldraw offline (skip: --no-tldraw): the desktop whiteboard agents drive to draw diagrams. Installs the app (brew cask on
+# macOS, the pinned AppImage on Linux) and reports whether the app's own agent skills are in place; those come only from the
+# app's Develop → Install Agent Skills, which the script prints as the next step. Once, not per provider: the app installs
+# for every provider at once. Fail-open: a failure warns and setup goes on. ---
+if [ "$WITH_TLDRAW" = "1" ]; then
+  echo ""
+  echo "=== tldraw offline ==="
+  bash "$SCRIPT_DIR/scripts/install-tldraw.sh" || echo "  WARN: tldraw: install-tldraw.sh failed (non-fatal)"
+fi
 
 # --- Provider registry (read by the skill preamble) ---
 echo ""

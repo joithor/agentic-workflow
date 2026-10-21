@@ -715,7 +715,7 @@ The fifth query shape (`ContextQuery.Diff = new DiffRange(base, head)`, optional
 - **How it reads.** `git grep` at one commit (never the working tree), then the candidates (100 at most, 512,000 characters each) are read through the repo reader (deny globs enforced) and matched in process. The commit is the map version's when it names one for that repo, otherwise the repo's HEAD; `lexical[].commit` says which. Only a path and the form that matched leave the engine, never a line. Search terms come from map text cleaned by the scrubber, and a name the scrubber redacted gives no term.
 - **Failures are rows, never route errors.** `searched.sources` has `map`, `code-index`, `lexical-tests` and `lexical-schema`. A clone without the map's commit makes both lexical rows `unavailable` with reason `commit-not-held` and code `SND-CONTEXT-110` (a recorded limit; the engine never fetches). The profile's `context.deadline` bounds the lexical step: on expiry what was found is returned and the row is `degraded` with `SND-CONTEXT-152` (and a line in `degraded[]`). More than 50 implementing files, or more candidates than the cap, is `ok` with reason `capped`.
 - **Caps.** 50 implementing files searched; 30 Things; 100 candidates per search; 20 schema files per Thing; 100 entries per list. They are fixed in `CodeRules`, not profile keys.
-- **Errors.** `SND-CONTEXT-150` (a `context.code.schemaGlobs` or `testGlobs` entry is not a repo-relative glob; the message starts with the key path), `151` (more than 50 entries in one list), `152` (the lexical search timed out; only ever the code of a `searched` row). Reused: `003`, `006` (over 20 anchors, a malformed `mapVersion`, `draft` with `mapVersion`), `037`, `110`, `120`.
+- **Errors.** `SND-CONTEXT-150` (a `context.code.schemaGlobs` or `testGlobs` entry is not a repo-relative glob; the message starts with the key path), `151` (more than 50 entries in one list), `152` (the lexical search ran out of `context.code.deadline`; only ever the code of a `searched` row). Reused: `003`, `006` (over 20 anchors, a malformed `mapVersion`, `draft` with `mapVersion`), `037`, `110`, `120`.
 - **Session cut.** A session reads through the same scope as `lenses`: an anchor outside its repo is not found, and the lexical step searches only repos the caller may read.
 - **Tests.** `GetCodeTests`, `CodeLensBuilderTests`, `CodeLensMergeTests`, `TestPathsTests`, the `CodeSearchContract` cases (fake and git), `ContextCodeApiTests`, `ContextCodeVerbsTests` and the `context-code` API goldens.
 
@@ -758,3 +758,37 @@ the caller's visible graph) is not walked: when that withheld a node, the answer
 ## S-LB2: the context Step inputs
 
 `input.context.lenses`, `input.context.history` and `input.context.code` are the scoping recipe's gather inputs (scoping spec C1, C3, C5). Each calls its facade in process (`IContextEngine`: lenses, history and code) as `service:engine` with a `ContextScope` cut to the instance's repo (`ContextInputScopes`: the profile's repos filtered to the one repo of the instance's item; a missing repo or a repo outside the profile is `SND-CONTEXT-045`, a missing profile `SND-PROFILE-005`). The answer reaches the Step as a text section and as the typed view; a refusal becomes a section that says so. Details and the section names: `docs/csharp/sindri-workflow.md` "The context inputs (S-LB2)". The plain-text renderers (`ContextLensText`, `ContextHistoryText`, `ContextCodeText`) live in `Features/ContextCalls` and are shared by the CLI verbs (the host sees them through `InternalsVisibleTo`).
+
+## F1P: publishing a refreshed map with the code index (the store half)
+
+The map and the code index still build on their own; this is where a refreshed map waits for the index of its commit. The decision, its numbers and
+its words are the code index spec's (`2026-10-19-sindri-code-index-design.md` §6.4, CI13); the contract of record for what the store holds and what
+each actor may do is the retrieval spec §8.7a. This section is the as-built record of `Aw.Context` (F1P-a); Sindri's pure decision, jobs and tick are F1P-b.
+
+### Shape
+
+- **Tables (migration `0010_s4p_map_publish`).** `map_version_head(version, repo, commit_sha, on_default)` (cascade-deleted with the version; the commit is 7 to 40 lowercase
+  hex, checked by the table too), `map_hold(version)` (one draft; cascade-deleted with it) and `map_publish_chain(id = 1, since)` (the start of the wait: tied to no draft, so a
+  rebuild keeps it). Reads never migrate: a store from before 0010 holds nothing and has no heads.
+- **Types (Core/Map).** `MapHead(Repo, Commit, OnDefault)` (`IsCommit`, `Check`: 191), `MapHold(Version, Since, Heads)` (`NextSince(chain, now)`: the chain's start, never later than now),
+  `MapPublishState(Hold, LatestDraft, Current, CurrentHeads)`, `MapPublishView(Repos, Hold, LatestDraft, Current, CurrentHeads)` and `MapBuildReport.Heads`.
+  `MapImport.Heads` is what a build names; null keeps a replaced draft's heads, or for an import the one commit its file names (as `OnDefault`).
+- **Store (`IGraphStore`).** `Heads(version)`, `Held()`, `Hold(MapHold)` (one transaction: the draft must be the latest, else 190; `since` is `MapHold.NextSince(stored chain, hold.Since)` and the clamped value is stored;
+  any other hold is replaced), `Release(version)` (the chain stays) and `AppendOverrides(rows, ct, expectedDraft)` (the latest draft is checked inside the append's transaction: 190, because the overrides layer is shared across versions).
+  Writes: a build (`SaveDraft`) drops the old draft, its hold and heads with it and writes the new heads; `ReplaceDraft` and `OpenDraft` copy the source's heads (a replacement that names heads keeps those);
+  every `Promote` and every import (`SaveCurrent`) deletes the hold and the chain in its own transaction; retention (`Delete`) removes a version's heads, and a retained version keeps them.
+- **Facade (`IContextMap`).** `Held`, `Hold`, `Release` refuse a session (020); `PublishStatus` is the read for everyone else and is cut to the caller's repos (`context.repos` for a human, the one repo for a session, the
+  usual 020/003 session rules): no other repo's name, commit or count. `Promote` and `CleanDraft` take `int? expectedVersion = null` (null: the latest draft, the human path). With a value, a latest draft of another number, or none,
+  is `SND-CONTEXT-190` and nothing is promoted or written; the cleanup checks it on every pass read and on its append. Without one, no draft is still 046.
+- **Build.** `BuildMapService` records, for each mapped repo, the commit its extraction read and whether the default branch holds it (a default ref that can't be read counts as not on it) into `MapBuildReport.Heads` and the draft.
+- **Profile.** `context.publish.waitForIndexMinutes` (`ContextSettings.Publish`, 0 to 240, default 15), `SND-CONTEXT-001` with the key path outside the range. A map file whose `commit` is not 7 to 40 lowercase hex is `SND-CONTEXT-031` at `commit`.
+
+### Errors
+
+`SND-CONTEXT-190` (`DraftChanged`, conflict, attention): the expected draft is not the latest. `SND-CONTEXT-191` (`MapHeadInvalid`): a head's commit is not 7 to 40 lowercase hex, or a repo appears twice. `192..194` stay reserved.
+
+### Tests
+
+`MapPublishStoreContract` (`tests/Aw.Context.Testing/Map`, run against `FakeGraphStore` and the SQLite store): heads in order, an import's one commit, invalid commits refused everywhere, the hold and its read, 190 for a wrong draft, the chain surviving a
+rebuild and clamped to now, promote and import clearing the hold and the chain, replacement and open copying heads, retention, release, `expectedDraft`. `MapPublishTests`, `MapHoldTests`, `PublishSettingsTests` and `MapPublishMigrationTests`
+(an old store opens and gets the tables) in `tests/Aw.Context.Tests`.

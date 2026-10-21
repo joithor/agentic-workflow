@@ -31,6 +31,10 @@ public sealed class InstanceRowViewModelTests
     public void Subject_cell_is_the_served_label() => Assert.All(Open, served => Assert.Equal(served.Subject.Label, Row(served).Subject));
 
     [Fact]
+    public void Status_is_the_served_chip_mapped_to_the_one_run_status() =>
+        Assert.All(Open, served => Assert.Equal(RunStatus.From(served.Chip), Row(served).Status));
+
+    [Fact]
     public void Inputs_show_check_or_cross_per_declared_input()
     {
         Assert.All(Open, served =>

@@ -11,7 +11,7 @@ public static class SetupSteps
 {
     private const string RepoTitle = "Add your repo";
     private const string ProfileTitle = "Approve the profile";
-    private const string RecipesTitle = "Approve the recipes";
+    private const string RecipesTitle = "Approve the workflows";
     private const string McpTitle = "Connect your agents";
     private const string MapTitle = "Build the map";
     private const string OnyxTitle = "Set up Onyx";
@@ -61,19 +61,19 @@ public static class SetupSteps
         ArgumentNullException.ThrowIfNull(fact);
         if (fact.Total == 0)
         {
-            return new SetupStep(SetupStepId.Recipes, RecipesTitle, SetupState.Todo, "No recipes are registered yet. Sindri registers them when it starts.", Detail: null, Error: null, Action: null, Progress: null);
+            return new SetupStep(SetupStepId.Recipes, RecipesTitle, SetupState.Todo, "No workflows are registered yet. Sindri registers them when it starts.", Detail: null, Error: null, Action: null, Progress: null);
         }
 
         if (!profileApproved)
         {
-            return new SetupStep(SetupStepId.Recipes, RecipesTitle, SetupState.Todo, "After the profile is approved.", Counted(fact.Total, "recipe", "recipes") + " registered.", Error: null, Action: null, Progress: null);
+            return new SetupStep(SetupStepId.Recipes, RecipesTitle, SetupState.Todo, "After the profile is approved.", Counted(fact.Total, "workflow", "workflows") + " registered.", Error: null, Action: null, Progress: null);
         }
 
         var progress = new SetupProgress(fact.Approved, fact.Total);
         var waiting = fact.Total - fact.Approved;
         return waiting <= 0
-            ? new SetupStep(SetupStepId.Recipes, RecipesTitle, SetupState.Done, "Every recipe that ships with Sindri is approved.", Counted(fact.Total, "recipe", "recipes") + ".", Error: null, Action: null, progress)
-            : new SetupStep(SetupStepId.Recipes, RecipesTitle, SetupState.NeedsYou, Counted(waiting, "recipe", "recipes") + (waiting == 1 ? " waits" : " wait") + " for your approval.",
+            ? new SetupStep(SetupStepId.Recipes, RecipesTitle, SetupState.Done, "Every workflow that ships with Sindri is approved.", Counted(fact.Total, "workflow", "workflows") + ".", Error: null, Action: null, progress)
+            : new SetupStep(SetupStepId.Recipes, RecipesTitle, SetupState.NeedsYou, Counted(waiting, "workflow", "workflows") + (waiting == 1 ? " waits" : " wait") + " for your approval.",
                 string.Create(CultureInfo.InvariantCulture, $"Approved {fact.Approved} of {fact.Total}."), Error: null, SetupActions.ApproveAllRecipes, progress);
     }
 
@@ -114,6 +114,7 @@ public static class SetupSteps
         var step = fact.Phase switch
         {
             MapPhase.Built => new SetupStep(SetupStepId.Map, MapTitle, SetupState.Done, "Every repo has a current map.", "The map is built.", Error: null, Action: null, Progress: null),
+            MapPhase.Building when fact.Retry is { } retry => new SetupStep(SetupStepId.Map, MapTitle, SetupState.Running, "Sindri is mapping " + repos + ".", RetryDetail(retry), Error: null, SetupActions.RefreshContextMap, fact.Progress),
             MapPhase.Building => new SetupStep(SetupStepId.Map, MapTitle, SetupState.Running, "Sindri is mapping " + repos + ".",
                 fact.Progress is { } p ? string.Create(CultureInfo.InvariantCulture, $"{p.Done} of {p.Total} done.") : "Reading the code.", Error: null, Action: null, fact.Progress),
             MapPhase.Failed => new SetupStep(SetupStepId.Map, MapTitle, SetupState.Failed, "The last try at building the map didn't finish.", Detail: null,
@@ -152,6 +153,11 @@ public static class SetupSteps
                 : new SetupStep(SetupStepId.Onyx, OnyxTitle, SetupState.Skipped, OnyxSentence(code), "Fix that and Sindri will offer Onyx again.", Error: null, Action: null, Progress: null);
         }
 
+        if (fact.Deferred)
+        {
+            return new SetupStep(SetupStepId.Onyx, OnyxTitle, SetupState.Skipped, "You chose to set up Onyx later.", "Onyx isn't set up. Use Set up Onyx in the card's menu when you want search.", Error: null, SetupActions.SetupOnyx, Progress: null);
+        }
+
         return new SetupStep(SetupStepId.Onyx, OnyxTitle, SetupState.Todo, "Docker is ready. Set up Onyx when you want search.",
             fact.State == OnyxState.Stopped ? "Onyx is set up but stopped." : "Onyx isn't set up yet.", Error: null, SetupActions.SetupOnyx, Progress: null);
     }
@@ -167,7 +173,7 @@ public static class SetupSteps
         {
             SetupStepId.Repo => (RepoTitle, "Sindri couldn't read your profile, so it can't tell which repositories are added."),
             SetupStepId.Profile => (ProfileTitle, "Sindri couldn't read your profile or its approval."),
-            SetupStepId.Recipes => (RecipesTitle, "Sindri couldn't read the list of recipes."),
+            SetupStepId.Recipes => (RecipesTitle, "Sindri couldn't read the list of workflows."),
             SetupStepId.Mcp => (McpTitle, "Sindri couldn't check whether your agent knows where it is."),
             SetupStepId.Map => (MapTitle, "Sindri couldn't read the state of the map."),
             SetupStepId.Onyx => (OnyxTitle, "Sindri couldn't check on Onyx."),
@@ -178,6 +184,12 @@ public static class SetupSteps
 
     private static SetupStep Failed(SetupStepId id, string title, SetupError error) =>
         new(id, title, SetupState.Failed, error.Sentence, Detail: null, error, Action: null, Progress: null);
+
+    private static string RetryDetail(MapRetry retry)
+    {
+        var minutes = Math.Max(1, (int)Math.Ceiling(retry.In.TotalMinutes));
+        return $"Retrying in {Counted(minutes, "minute", "minutes")}: {retry.Reason}.";
+    }
 
     private static string Names(SetupItems items, string fallback) => items.Lines.Count == 0 ? fallback : string.Join(", ", items.Lines.Select(static i => i.Repo));
 

@@ -150,6 +150,18 @@ public sealed class BlockStepRunnerTests
         Assert.Equal(2, _seen.InputResults[input.Value].GetProperty("count").GetInt32());
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task A_Step_is_told_whether_the_instance_already_holds_a_heavy_slot(bool held)
+    {
+        var run = (await RunOf(repo: null)) with { HeavyHeld = held };
+
+        _ = await Runner(_profiles).Run(run, TestContext.Current.CancellationToken);
+
+        Assert.Equal(held, _seen!.HeavySlotHeld);
+    }
+
     [Fact]
     public async Task A_block_Step_without_inputs_gets_no_sections_and_empty_results()
     {

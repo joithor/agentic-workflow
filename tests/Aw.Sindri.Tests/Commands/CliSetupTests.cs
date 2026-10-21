@@ -60,7 +60,7 @@ public sealed class CliSetupTests : IDisposable
         Assert.Equal(
             "done      Add your repo: 1 repository\n"
             + "needs-you Approve the profile: Sindri waits for you to approve the profile before it uses it.\n"
-            + "needs-you Approve the recipes: 6 recipes wait for your approval. (20 of 26)\n"
+            + "needs-you Approve the workflows: 6 workflows wait for your approval. (20 of 26)\n"
             + "failed    Build the map: The last try at building the map didn't finish.\n"
             + "1 of 4 steps done.\n",
             _out.ToString().ReplaceLineEndings("\n"));

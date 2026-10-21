@@ -46,7 +46,7 @@ internal sealed class FakeIndexReader(FakeIndexData data) : IIndexReader
             foreach (var edge in step.Take(CodeIndexRules.MaxEdgesPerLevel))
             {
                 var other = direction == CallDirection.Callers ? edge.Source : edge.Target;
-                edges.Add(new CallEdge(level, other is { } o ? data.Hit(o) : null, edge.TargetName, edge.Kind, edge.Basis, edge.Confidence, edge.Line, edge.Candidates));
+                edges.Add(new CallEdge(level, other is { } o ? data.Hit(o) : null, edge.TargetName, edge.Kind, edge.Basis, edge.Confidence, edge.Line, edge.Candidates, RowCoverage(edge)));
                 if (other is { } following && seen.Add(following))
                 {
                     frontier.Add(following);
@@ -54,7 +54,7 @@ internal sealed class FakeIndexReader(FakeIndexData data) : IIndexReader
             }
         }
 
-        return Ok(new CallWalk(edges, Unresolved(symbol, subject.Name, direction), truncated));
+        return Ok(new CallWalk(edges, Unresolved(symbol, subject.Name, direction), truncated, CallCoverage.Of(LanguageCoverage(symbol), edges)));
     }
 
     public ValueTask<Result<CloneCandidates>> CloneCandidates(SymbolRef symbol, CancellationToken cancellationToken)
@@ -85,6 +85,11 @@ internal sealed class FakeIndexReader(FakeIndexData data) : IIndexReader
             .Select(x => new Neighbor(data.Hit(x.e.Symbol)!, x.Score))]);
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+
+    private Coverage LanguageCoverage(SymbolRef symbol)
+        => string.Equals(data.Symbols.Where(x => x.Symbol.Ref.Equals(symbol)).Select(x => x.File.Language).FirstOrDefault(), "csharp", StringComparison.Ordinal) ? Coverage.Full : Coverage.Partial;
+
+    private static Coverage RowCoverage(EdgeRecord edge) => edge.Basis == EdgeBasis.Syntax ? Coverage.Full : Coverage.Partial;
 
     private int Unresolved(SymbolRef symbol, string name, CallDirection direction)
         => data.Edges.Count(e => e.Target is null && (direction == CallDirection.Callers

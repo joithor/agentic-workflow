@@ -38,6 +38,7 @@ internal static class EndpointTable
         _ = queries.MapGetInstanceEvents();
         _ = queries.MapGetInstanceFact();
         _ = queries.MapGetInstanceScoping();
+        _ = queries.MapGetInstanceDesignStop();
         _ = queries.MapGetPacketFile();
         _ = queries.MapReadInjection();
         _ = queries.MapGetProfile();
@@ -54,7 +55,17 @@ internal static class EndpointTable
         _ = queries.MapReadLedger();
         _ = queries.MapShowRecipe();
         _ = queries.MapStreamEvents();
+        _ = MapCodeIndexQueries(queries);
         return MapContextQueries(queries);
+    }
+
+    private static RouteGroupBuilder MapCodeIndexQueries(RouteGroupBuilder queries)
+    {
+        _ = queries.MapGetCodeIndexStatus();
+        _ = queries.MapFindCodeSymbols();
+        _ = queries.MapGetCodeCallers();
+        _ = queries.MapGetCodeCallees();
+        return queries;
     }
 
     private static RouteGroupBuilder MapContextQueries(RouteGroupBuilder queries)
@@ -104,6 +115,7 @@ internal static class EndpointTable
         _ = commands.MapApproveRecipe();
         _ = commands.MapRevokeRecipe();
         _ = commands.MapIssueChallenge();
+        _ = commands.MapIssueAppChallenge();
         _ = commands.MapRegisterRecipe();
         _ = commands.MapStartInstance();
         _ = commands.MapIssueNonce();

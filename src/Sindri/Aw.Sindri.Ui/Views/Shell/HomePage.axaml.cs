@@ -72,7 +72,7 @@ internal sealed partial class HomePage : UserControl
 
     private void OnUndoSeen(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.NeedsYou.Seen.Undo();
 
-    private void OnShowAllNeedsYou(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.NeedsYou.ShowAll();
+    private void OnShowAllNeedsYou(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.OpenNeedsYouInbox();
 
     private void OnShowNeedsYouHeld(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.NeedsYou.ShowHeld();
 
@@ -101,6 +101,10 @@ internal sealed partial class HomePage : UserControl
             shell.NeedsYou.Press(row.RowId, action);
         }
     }
+
+    private void OnSetupLink(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.Setup.RequestChecklist();
+
+    private void OnSetupContinue(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.Setup.Continue();
 
     private void OnStart(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.OpenStart();
 

@@ -9,6 +9,7 @@ using Aw.Sindri.Ui.ViewModels.NeedsYou;
 using Aw.Sindri.Ui.ViewModels.Palette;
 using Aw.Sindri.Ui.ViewModels.Queue;
 using Aw.Sindri.Ui.ViewModels.Recipes;
+using Aw.Sindri.Ui.ViewModels.Setup;
 using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
@@ -27,13 +28,13 @@ internal sealed partial class ShellViewModel : ObservableObject
     private static readonly string[] _stateProperties =
     [
         nameof(State), nameof(IsVersionMismatch), nameof(IsChromeVisible), nameof(IsNotRunning), nameof(IsNotRunningPanel), nameof(IsConnecting),
-        nameof(IsUnreadable), nameof(IsNotRespondingBanner), nameof(IsPageVisible), nameof(IsSheetShown), nameof(IsEdgeTabShown), nameof(IsNavigationEnabled),
+        nameof(IsUnreadable), nameof(IsNotRespondingBanner), nameof(IsPageVisible), nameof(IsInboxShown), nameof(IsPagesShown), nameof(IsSheetShown), nameof(IsEdgeTabShown), nameof(IsNavigationEnabled),
     ];
 
     private static readonly string[] _pageProperties =
     [
         nameof(CurrentPage), nameof(PageName), nameof(SelectedNav), nameof(IsHome), nameof(IsWorkflows), nameof(IsWork), nameof(IsRecipes), nameof(IsContext),
-        nameof(IsAgents), nameof(IsSystem), nameof(IsJobs), nameof(IsSettings), nameof(IsNotRunningPanel), nameof(IsPageVisible),
+        nameof(IsAgents), nameof(IsSystem), nameof(IsJobs), nameof(IsSettings), nameof(IsNotRunningPanel), nameof(IsPageVisible), nameof(IsHomeShown), nameof(IsInboxShown), nameof(IsPagesShown),
     ];
 
     private readonly Preferences _store;
@@ -73,8 +74,11 @@ internal sealed partial class ShellViewModel : ObservableObject
         ApproveAll = new ApproveAllViewModel(Health.Catalog, () => Health.ApiUrl(), api, clock, () => NeedsYou.Seen.ReducedMotion);
         Decision = new DecisionSheetViewModel(api, () => Health.ApiUrl(), clock, decisions, clipboard);
         InitNeedsYou(clipboard);
+        Inbox = InitInbox(api, clipboard);
         Strip = new WorkflowsStripViewModel(clipboard, clock);
         InitStrip();
+        Setup = new SetupViewModel(api, Health.Catalog, clock, OpensInApp);
+        InitSetup();
         Workflows = new WorkflowsViewModel(api, clipboard, clock);
         InitWorkflows();
         Start = InitStart(api, window ??= WindowPorts.None);
@@ -220,7 +224,13 @@ internal sealed partial class ShellViewModel : ObservableObject
 
     internal void ShowPage(PageId page, HomeFilter filter)
     {
+        _ = LeaveNeedsYouInbox();   // any way to a page, Home included, leaves the inbox that shows over it
         SetHomeFilter(filter);
+        if (page == PageId.Settings)
+        {
+            Setup.RevealChecklist();   // every way into Settings (the rail, ⌘,, G U, the setup link, Home's line) shows the checklist, its first section
+        }
+
         if (page == CurrentPage)
         {
             return;

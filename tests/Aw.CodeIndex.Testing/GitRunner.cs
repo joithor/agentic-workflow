@@ -9,9 +9,11 @@ internal static class GitRunner
 {
     private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(30);
 
-    internal static string Run(string directory, params string[] args)
+    internal static string Run(string directory, params string[] args) => RunWithInput(directory, input: null, args);
+
+    internal static string RunWithInput(string directory, string? input, params string[] args)
     {
-        var start = new ProcessStartInfo("git") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
+        var start = new ProcessStartInfo("git") { RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = input is not null, UseShellExecute = false };
         foreach (var name in start.Environment.Keys.Where(k => k.StartsWith("GIT_", StringComparison.Ordinal)).ToList())
         {
             _ = start.Environment.Remove(name);
@@ -25,6 +27,12 @@ internal static class GitRunner
         }
 
         using var git = Process.Start(start)!;   // why: git is on the test machine's PATH
+        if (input is not null)
+        {
+            git.StandardInput.Write(input);
+            git.StandardInput.Close();
+        }
+
         using var limit = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         limit.CancelAfter(_timeout);
         var stdout = git.StandardOutput.ReadToEndAsync(limit.Token);
