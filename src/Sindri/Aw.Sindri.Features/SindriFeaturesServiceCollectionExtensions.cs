@@ -152,7 +152,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IService<RecordEvalRequest, RecordEvalResponse>, RecordEvalService>()
             .AddRecipeBlocks()
             .AddRegistrySlices()
-            .AddContextSlices()
+            .AddContextSlices().AddCodeIndexReads()
             .AddContextJobs()
             .AddEngineSlices()
             .AddSessionSlices()

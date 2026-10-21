@@ -54,7 +54,17 @@ internal static class EndpointTable
         _ = queries.MapReadLedger();
         _ = queries.MapShowRecipe();
         _ = queries.MapStreamEvents();
+        _ = MapCodeIndexQueries(queries);
         return MapContextQueries(queries);
+    }
+
+    private static RouteGroupBuilder MapCodeIndexQueries(RouteGroupBuilder queries)
+    {
+        _ = queries.MapGetCodeIndexStatus();
+        _ = queries.MapFindCodeSymbols();
+        _ = queries.MapGetCodeCallers();
+        _ = queries.MapGetCodeCallees();
+        return queries;
     }
 
     private static RouteGroupBuilder MapContextQueries(RouteGroupBuilder queries)
