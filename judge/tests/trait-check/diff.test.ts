@@ -65,6 +65,18 @@ describe("chunkFile", () => {
     const big = { path: "p.ts", hunks: [{ start: 1, end: 3, text: "1234\n5678\n123456789" }] };
     expect(chunkFile(big, 6).map((s) => s.text)).toEqual(["1234", "5678", "123456"]);
   });
+
+  it("gives each piece of a split hunk its own new-file line span", () => {
+    const text = ["@@ -0,0 +10,4 @@", "+aaaa", "+bbbb", "-gone", "+cccc", "+dddd"].join("\n");
+    const big = { path: "p.ts", hunks: [{ start: 10, end: 13, text }] };
+    expect(chunkFile(big, 24).map((s) => [s.startLine, s.endLine])).toEqual([[10, 10], [11, 13]]);
+  });
+
+  it("pins a deletion-only piece to the line where it sits", () => {
+    const text = ["@@ -5,3 +5,1 @@", "-xxxxxxxx", "-yyyyyyyy", " keep"].join("\n");
+    const big = { path: "p.ts", hunks: [{ start: 5, end: 5, text }] };
+    expect(chunkFile(big, 20).map((s) => [s.startLine, s.endLine])).toEqual([[5, 5], [5, 5], [5, 5]]);
+  });
 });
 
 describe("ignoredTraits", () => {

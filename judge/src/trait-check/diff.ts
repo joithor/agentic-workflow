@@ -50,18 +50,25 @@ export function chunkFile(file: FileDiff, maxChars: number): Source[] {
       pieces.push(hunk);
       continue;
     }
+    // Each piece reports its own new-file span: ` ` and `+` lines advance the
+    // new-file line number; the `@@` header, `-` and `\` lines don't.
     let lines: string[] = [];
     let size = 0;
+    let next = hunk.start;
+    let pieceStart = next;
+    const flush = () => {
+      pieces.push({ start: pieceStart, end: Math.min(Math.max(next - 1, pieceStart), hunk.end), text: lines.join("\n") });
+      lines = [];
+      size = 0;
+      pieceStart = next;
+    };
     for (const line of hunk.text.split("\n")) {
-      if (lines.length > 0 && size + line.length + 1 > maxChars) {
-        pieces.push({ start: hunk.start, end: hunk.end, text: lines.join("\n") });
-        lines = [];
-        size = 0;
-      }
+      if (lines.length > 0 && size + line.length + 1 > maxChars) flush();
       lines.push(line.slice(0, maxChars));
       size += Math.min(line.length, maxChars) + 1;
+      if (/^[ +]/.test(line)) next++;
     }
-    pieces.push({ start: hunk.start, end: hunk.end, text: lines.join("\n") });
+    flush();
   }
   const sources: Source[] = [];
   for (const piece of pieces) {

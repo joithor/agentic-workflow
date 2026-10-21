@@ -6,6 +6,8 @@
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 
+import { hasUnclosedBrace } from "./glob.js";
+
 const text = z.string().regex(/\S/);
 
 export const TraitFrontmatter = z
@@ -16,7 +18,7 @@ export const TraitFrontmatter = z
     applicability: text.optional(),
     purpose: text,
     guidance: text.optional(),
-    paths: z.array(z.string().min(1)).min(1).optional(),
+    paths: z.array(z.string().min(1).refine((g) => !hasUnclosedBrace(g), "unclosed { in glob")).min(1).optional(),
     severity: z.enum(["block", "warn"]).default("block"),
   })
   .strict();

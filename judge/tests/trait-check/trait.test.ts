@@ -47,6 +47,11 @@ describe("parseTrait", () => {
     expect(parseTrait(doc(`${base}\nwhen: always`), "static-imports-first.md")).toMatchObject({ ok: false, error: expect.stringContaining("Unrecognized key") });
     expect(parseTrait(doc(base.replace("static-imports-first", "trait-bad")), "trait-bad.md")).toMatchObject({ ok: false, error: expect.stringMatching(/^name: /) });
     expect(parseTrait(doc("just a string"), "x.md")).toMatchObject({ ok: false, error: expect.stringMatching(/^frontmatter: /) });
+    expect(parseTrait(doc(`${base}\npaths: ["src/{a,b.ts"]`), "static-imports-first.md")).toEqual({
+      ok: false,
+      file: "static-imports-first.md",
+      error: "paths.0: unclosed { in glob",
+    });
   });
 
   it("requires the name to match the file name", () => {
