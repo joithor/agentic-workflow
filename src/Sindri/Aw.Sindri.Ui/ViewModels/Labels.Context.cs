@@ -20,6 +20,12 @@ internal static partial class Labels
     internal static string ContextHead(int anchors) =>
         string.Create(CultureInfo.InvariantCulture, $"{anchors} {(anchors == 1 ? "topic" : "topics")}");
 
+    /// <summary>The head of a read that came from a question: how many topics the question found.</summary>
+    /// <param name="topics">How many anchors the question resolved to.</param>
+    /// <returns>The head line.</returns>
+    internal static string ContextFromQuestion(int topics) =>
+        string.Create(CultureInfo.InvariantCulture, $"From your question: {topics} {(topics == 1 ? "topic" : "topics")}");
+
     /// <summary>The closed disclosure under the answer: the links, the coverage, what was searched and the map's version.</summary>
     internal const string ContextMore = "More about this answer";
 

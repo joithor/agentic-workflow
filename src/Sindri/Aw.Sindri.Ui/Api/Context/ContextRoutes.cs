@@ -62,6 +62,8 @@ internal static class ContextRoutes
         return With(Root + "/map", parts);
     }
 
+    internal static string Query(string text) => throw new NotSupportedException();
+
     internal static string Node(string key) => With(Root + "/node", ["key=" + Uri.EscapeDataString(key)]);
 
     private static List<string> Limit(int? limit) => limit is { } n ? [string.Create(CultureInfo.InvariantCulture, $"limit={n}")] : [];
