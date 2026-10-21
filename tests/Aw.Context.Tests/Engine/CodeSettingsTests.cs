@@ -89,9 +89,7 @@ public sealed class CodeSettingsTests
 
     [Fact, Trait("Lane", "unit")]
     public void Code_deadline_is_read_from_the_code_section()
-    {
-        Assert.Equal(TimeSpan.FromSeconds(90), Read("""{"code":{"deadline":"90s"}}""").Value.CodeDeadline);
-    }
+        => Assert.Equal(TimeSpan.FromSeconds(90), Read("""{"code":{"deadline":"90s"}}""").Value.CodeDeadline);
 
     [Fact, Trait("Lane", "unit")]
     public void Code_deadline_defaults_to_60s_and_leaves_the_query_deadline_at_4s()
