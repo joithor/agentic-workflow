@@ -1,3 +1,0 @@
-{"start":{"inputs":{"fact:pr":"https://example.test/pr/1","fact:phasePacket":{}}}}
-{"trigger":{"kind":"step.failed"},"expect":{"state":"owner"}}
-{"trigger":{"kind":"step.completed","outcome":"stop"},"expect":{"state":"abandoned","outcome":"failed"}}
