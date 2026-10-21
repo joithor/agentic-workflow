@@ -37,6 +37,7 @@ internal static partial class Labels
         ["Decide"] = "Decide",
         ["FileRequest"] = "File a request",
         ["ImportContextMap"] = "Import context map",
+        ["IssueAppChallenge"] = "Ask for a confirmation",
         ["FocusSession"] = "Focus",
         ["IssueChallenge"] = "Get approval challenge",
         ["IssueNonce"] = "Get command nonce",
