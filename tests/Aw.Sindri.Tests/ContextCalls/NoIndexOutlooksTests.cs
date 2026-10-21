@@ -13,7 +13,7 @@ public sealed class NoIndexOutlooksTests
         var hold = new MapHoldState(14, _now, new Dictionary<string, MapRepoHead>(StringComparer.Ordinal) { ["a"] = new("x", OnDefaultBranch: true), ["b"] = new("y", OnDefaultBranch: true) });
         var read = await new NoIndexOutlooks().Read(hold, CancellationToken.None);
         Assert.False(read.IsError);
-        Assert.All(read.Value!.Values, static d => Assert.Equal(IndexOutlook.Absent, d.Outlook));
+        Assert.All(read.Value.Values, static d => Assert.Equal(IndexOutlook.Absent, d.Outlook));
         Assert.Equal(["a", "b"], read.Value.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);
         var action = MapPublishDecision.Decide(new MapPublishInput(hold, 14, 13, read.Value, TimeSpan.FromMinutes(15)), _now);
         Assert.Equal(MapPublishReason.NoIndex, Assert.IsType<MapPublish>(action).Reason);
@@ -24,6 +24,6 @@ public sealed class NoIndexOutlooksTests
     {
         var commits = await new NoIndexOutlooks().IndexCommits(["a", "b"], CancellationToken.None);
         Assert.False(commits.IsError);
-        Assert.Empty(commits.Value!);
+        Assert.Empty(commits.Value);
     }
 }
