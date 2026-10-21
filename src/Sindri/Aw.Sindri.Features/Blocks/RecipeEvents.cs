@@ -21,4 +21,30 @@ internal static class RecipeEvents
     /// <summary>'notify.delivered', from the dispatcher, answering the 'effect.notify.desk' command that caused it.</summary>
     public static EventDescriptor NotifyDelivered { get; } = new(
         EventKind.From("notify.delivered"), Dispatcher, EventRoute.Causation, [OutcomeName.From("delivered")], []);
+
+    /// <summary>'pr.changed', from the PR watcher (PB spec §6.1): the forge changed the PR; the outcome is the first change in this order, 'idle' after a quiet period.</summary>
+    public static EventDescriptor PrChanged { get; } = new(
+        EventKind.From("pr.changed"), "service:pr-watch", EventRoute.Item, Outcomes("merged", "closed", "updated", "review", "ci", "idle"), [FactKey.From("fact:prEvent")]);
+
+    /// <summary>'pr.pushed', answering 'effect.pr.push'.</summary>
+    public static EventDescriptor PrPushed { get; } = new(
+        EventKind.From("pr.pushed"), Dispatcher, EventRoute.Causation, Outcomes("pushed", "pushedSource", "nothing", "headMoved", "rejected"), [FactKey.From("fact:push")]);
+
+    /// <summary>'pr.restacked', answering 'effect.pr.restack'.</summary>
+    public static EventDescriptor PrRestacked { get; } = new(
+        EventKind.From("pr.restacked"), Dispatcher, EventRoute.Causation, Outcomes("restacked", "nothing", "conflict", "refused"), [FactKey.From("fact:restack")]);
+
+    /// <summary>'pr.mergeResult', answering 'effect.pr.merge'.</summary>
+    public static EventDescriptor PrMergeResult { get; } = new(
+        EventKind.From("pr.mergeResult"), Dispatcher, EventRoute.Causation, Outcomes("merged", "blocked", "headMoved"), [FactKey.From("fact:merge")]);
+
+    /// <summary>'pr.docsMerged', answering 'effect.pr.merge-docs'.</summary>
+    public static EventDescriptor PrDocsMerged { get; } = new(
+        EventKind.From("pr.docsMerged"), Dispatcher, EventRoute.Causation, Outcomes("merged", "pending", "none"), [FactKey.From("fact:docsMerge")]);
+
+    /// <summary>'pr.stacked', answering 'effect.pr.create-stacked'.</summary>
+    public static EventDescriptor PrStacked { get; } = new(
+        EventKind.From("pr.stacked"), Dispatcher, EventRoute.Causation, Outcomes("opened", "updated", "rejected"), [FactKey.From("fact:docsPr")]);
+
+    private static OutcomeName[] Outcomes(params string[] names) => [.. names.Select(OutcomeName.From)];
 }
