@@ -20,6 +20,7 @@ internal static class SindriHostServiceCollectionExtensions
         .AddSingleton<ICommandCatalog, CommandCatalog>()
         .AddSingleton<Projector>()
         .AddSingleton<ScheduleInputs>()
+        .AddSingleton<CodeIndex.Core.Facade.ICodeIndex, CodeIndexHost.UnbuiltCodeIndex>()   // no index store yet: every read answers 'no index' until CI-9 registers the real facade
         .AddSingleton<IOnyxProgress>(static _ => new ConsoleOnyxProgress(Console.Error));   // `onyx up`'s lines and dots on standard error
 
     /// <summary>
