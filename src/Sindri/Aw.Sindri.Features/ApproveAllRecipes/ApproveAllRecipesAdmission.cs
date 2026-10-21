@@ -45,7 +45,7 @@ internal sealed class ApproveAllRecipesAdmission(ApproveAllPlanReader plans, ICh
             return SindriErrors.AuthRefused.With("approve-all needs a caller");
         }
 
-        var taken = RedeemedPlan.Redeem(challenges, request.Answer, plan.Value, caller.CommandId);
+        var taken = RedeemedPlan.Redeem(challenges, request.Answer, plan.Value, caller.CommandId, request.Answer.HeldMs);
         if (taken.IsError)
         {
             return taken.Error;

@@ -48,6 +48,7 @@ using Aw.Sindri.Features.GetLaunchTargets;
 using Aw.Sindri.Features.GetNeedsYou;
 using Aw.Sindri.Features.GetProfile;
 using Aw.Sindri.Features.GetQueue;
+using Aw.Sindri.Features.GetRepoStatus;
 using Aw.Sindri.Features.GetSession;
 using Aw.Sindri.Features.GetSessionPreview;
 using Aw.Sindri.Features.GetStatus;
@@ -135,6 +136,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddOnyxStatus()
             .AddScoped<ServeRecords>()
             .AddScoped<IService<RegisterMcpRequest, RegisterMcpResponse>, RegisterMcpService>()
+            .AddScoped<IService<GetRepoStatusRequest, GetRepoStatusResponse>, GetRepoStatusService>()
             .AddScoped<IScheduledService, HeartbeatService>()
             .AddSetupWatch(static sp => sp.GetRequiredService<IJobRunner>().Running)
             .AddScoped<IScheduledService, JobProbeService>()   // opt-in: not a BuiltInService, so only a profile that names it schedules it
@@ -163,7 +165,7 @@ public static class SindriFeaturesServiceCollectionExtensions
     }
 
     private static IServiceCollection AddStationSlices(this IServiceCollection services) =>
-        services.AddScopingSlices().AddBuildSlices().AddShipSlices().AddLensLoops().AddProveSlices();
+        services.AddScopingSlices().AddLineSlices().AddBuildSlices().AddShipSlices().AddLensLoops().AddProveSlices();
 
     private static IServiceCollection AddCommands(this IServiceCollection services)
     {
@@ -208,7 +210,7 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<GetContextSourcesRequest>, AcceptAllValidator<GetContextSourcesRequest>>().AddQuery<GetContextSourcesRequest, SourcesView, GetContextSourcesService>();
         _ = services.AddScoped<IValidator<GetProfileRequest>, AcceptAllValidator<GetProfileRequest>>().AddQuery<GetProfileRequest, GetProfileResponse, GetProfileService>();
         _ = services.AddScoped<ProfileReads>();
-        _ = services.AddGetSetup();
+        _ = services.AddGetSetup().AddAppConfirm();
         _ = services.AddScoped<IValidator<GetStatusRequest>, AcceptAllValidator<GetStatusRequest>>().AddQuery<GetStatusRequest, GetStatusResponse, GetStatusService>();
         _ = services.AddScoped<IValidator<ListCommandsRequest>, AcceptAllValidator<ListCommandsRequest>>().AddQuery<ListCommandsRequest, ListCommandsResponse, ListCommandsService>();
         _ = services.AddScoped<IValidator<ListItemsRequest>, AcceptAllValidator<ListItemsRequest>>().AddQuery<ListItemsRequest, ListItemsResponse, ListItemsService>();

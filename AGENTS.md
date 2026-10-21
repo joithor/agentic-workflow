@@ -96,7 +96,7 @@ dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=unit" --ignore-
 dotnet test --solution AgenticWorkflow.slnx --filter-trait "Lane=integration" --ignore-exit-code 8   # Temp SQLite files, WebApplicationFactory (< 60 s per package)
 dotnet test --solution AgenticWorkflow.slnx --filter-not-trait "Lane=heavy" --ignore-exit-code 8     # Everything except containers, browsers and index builds
 node scripts/ci/lane-budgets.mjs        # After a Release build: each package's unit/integration lane wall clock vs its budget (LANE-PKG-001)
-dotnet format --verify-no-changes       # Style and analyzer fixes are applied (CI and pre-commit)
+dotnet format --verify-no-changes       # Style and analyzer fixes are applied (CI and the meta gate; no pre-commit hook runs it)
 scripts/dotnet-verify-packages.sh       # Lock files present and unchanged, signature-verified locked restore, dotnet nuget verify --all
 # Add a package: /new-package (node scripts/scaffold/new-package.mjs; contract docs/csharp/scaffolds/new-package.md)
 # Add a use case: /new-slice (node scripts/scaffold/new-slice.mjs; contract docs/csharp/scaffolds/new-slice.md) — test, request and response, service, endpoint, registration
@@ -228,7 +228,7 @@ bash scripts/tests/install-headroom.test.sh   # aw-headroom.sh and install-headr
 bash scripts/tests/install-tldraw.test.sh     # install-tldraw.sh: brew cask on macOS, the pinned AppImage on Linux (sha256 refusal), the agent-skills marker check, fail-open, --no-tldraw
 bash config/hooks/tests/failopen.test.sh
 bash config/hooks/tests/meta-hooks.test.sh
-for t in config/lib/tests/*.test.sh; do bash "$t" || echo "FAILED: $t"; done  # merge-hook, levers, installers, and judge-cs-hook-surface (the hook contract: real hooks vs the C# judge, and the TS judge when judge/dist is built; needs dotnet)
+for t in config/lib/tests/*.test.sh; do bash "$t" || echo "FAILED: $t"; done  # merge-hook, levers, installers, judge-cs-hook-surface (the hook contract: real hooks vs the C# judge, and the TS judge when judge/dist is built; needs dotnet) and sindri-cs-hook-surface (the sindri-nudge SessionStart hook vs the C# `sindri repo status --nudge`: one line, silence, exit 0, read-only, bounded; builds the Sindri host, needs dotnet)
 
 # Levers and probe (default provider: claude)
 scripts/install-<lever>.sh --provider claude|codex|cursor
