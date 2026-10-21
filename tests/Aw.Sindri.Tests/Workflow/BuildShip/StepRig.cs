@@ -35,7 +35,7 @@ internal sealed class StepRig
         Changes = new InMemoryBranchChanges();
         Diff = new FakeRunDiff();
         Diff.Add(Tree, "h1");
-        Files = new InMemoryPacketFiles().Put(PacketDir, new Dictionary<string, string>(StringComparer.Ordinal)
+        Files = new InMemoryPacketDirectory().Put(PacketDir, new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["packet.json"] = """{"id":"p1","baseSha":"b0"}""",
             ["phase.json"] = """{"allowedFiles":["src/**","new: docs/x.md"],"testChange":[{"path":"tests/old.test.ts","reason":"renamed"}]}""",
@@ -53,7 +53,7 @@ internal sealed class StepRig
 
     internal FakeRunDiff Diff { get; }
 
-    internal InMemoryPacketFiles Files { get; }
+    internal InMemoryPacketDirectory Files { get; }
 
     internal RepoCommandRunner Runner { get; }
 

@@ -3,22 +3,15 @@ using Aw.Kernel;
 namespace Aw.Sindri.Core.Packets;
 
 /// <summary>
-/// The files of a packet directory, for a Step that derives one packet from another (an amended phase packet, line spec §7.2): read a packet's top-level files, and write a new
-/// packet's files into the instance's run area. aw-packets still hashes, checks and freezes the result (<see cref="IPackets"/>).
+/// Reads one file of a packet directory (the frozen scope packet, a candidate design packet: line spec LC-1, a station reads its input's files after it verified the hash).
+/// Only a packet's own file names are read, never a path, and only inside Sindri's home.
 /// </summary>
 public interface IPacketFiles
 {
-    /// <summary>Reads the files directly under a packet directory.</summary>
-    /// <param name="directory">The packet directory.</param>
+    /// <summary>The text of a packet file.</summary>
+    /// <param name="directory">The packet directory (absolute, inside Sindri's home).</param>
+    /// <param name="name">The file's name, such as 'scope-map.json': no path.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
-    /// <returns>File name to text; an error when the directory is missing or a file cannot be read.</returns>
-    public ValueTask<Result<IReadOnlyDictionary<string, string>>> Read(string directory, CancellationToken cancellationToken);
-
-    /// <summary>Writes a packet's files into a directory of the instance's run area, replacing what a retry wrote before.</summary>
-    /// <param name="address">The instance's address ('T-1/build/1').</param>
-    /// <param name="name">The packet's directory name under the run area, one to three '/'-separated segments of letters, digits, '.', '_' and '-'.</param>
-    /// <param name="files">File name to text; each name is a plain file name.</param>
-    /// <param name="cancellationToken">Cancels the write.</param>
-    /// <returns>The directory written; an error when the address, a name or a file name is invalid or the run area cannot be written.</returns>
-    public ValueTask<Result<string>> Create(string address, string name, IReadOnlyDictionary<string, string> files, CancellationToken cancellationToken);
+    /// <returns>The text; an error when the directory is outside Sindri's home, the name is not a file name, or the file is not there or is too large.</returns>
+    public ValueTask<Result<string>> Read(string directory, string name, CancellationToken cancellationToken);
 }

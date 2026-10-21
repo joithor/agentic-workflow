@@ -17,7 +17,7 @@ public sealed class BuildChecksStepContract : BlockContract
 
     protected override BlockDescriptor Descriptor => BuildSteps.Checks;
 
-    protected override string ExpectedHash => "sha256:02b25d912516f68f3df0acffd09f0be07a67d8973b0b70316bb1096914f66c31";
+    protected override string ExpectedHash => "sha256:e9bdefc6a042cf6266a4589b8e0c548450ab9631551bb5a41e4ee92d43f65877";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

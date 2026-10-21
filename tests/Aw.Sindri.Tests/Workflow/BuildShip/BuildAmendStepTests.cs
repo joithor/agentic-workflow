@@ -20,7 +20,7 @@ public sealed class BuildAmendStepTests
     private const string ParentHash = "sha256:0000000000000000000000000000000000000000000000000000000000000001";
 
     private readonly InMemoryPackets _packets = new();
-    private readonly InMemoryPacketFiles _files = new();
+    private readonly InMemoryPacketDirectory _files = new();
     private readonly InMemoryRunArea _area = new();
     private readonly FakeTimeProvider _clock = new(new DateTimeOffset(2026, 10, 19, 9, 0, 0, TimeSpan.Zero));
 
@@ -48,7 +48,7 @@ public sealed class BuildAmendStepTests
 
     private static JsonNode Out(BlockStepResult result, string key) => JsonNode.Parse(result.Result!.Outputs[FactKey.From("fact:" + key)].GetRawText())!;
 
-    private async Task<JsonNode> Child(string name) => JsonNode.Parse((await _files.Read(InMemoryPacketFiles.DirectoryOf(Address, "packets/" + name), Token)).Value["phase.json"])!;
+    private async Task<JsonNode> Child(string name) => JsonNode.Parse((await _files.Read(InMemoryPacketDirectory.DirectoryOf(Address, "packets/" + name), Token)).Value["phase.json"])!;
 
     [Fact]
     public async Task An_allow_writes_a_child_packet_with_the_grant_and_owner_freezes_it()
@@ -56,7 +56,7 @@ public sealed class BuildAmendStepTests
         var result = await Step().Run(Context(), Token);
 
         Assert.Equal("amended", result.Result!.Outcome.Value);
-        var dir = InMemoryPacketFiles.DirectoryOf(Address, "packets/fixture-p1-a1");
+        var dir = InMemoryPacketDirectory.DirectoryOf(Address, "packets/fixture-p1-a1");
         var (_, packet, by) = Assert.Single(_packets.Calls, static c => string.Equals(c.Verb, "freeze", StringComparison.Ordinal));
         Assert.Equal((PacketKind.Phase, dir, "/work/p1", PacketFreezer.Owner), (packet.Kind, packet.Directory, packet.Repo, by));
         var child = await Child("fixture-p1-a1");
@@ -74,7 +74,7 @@ public sealed class BuildAmendStepTests
     {
         _ = await Step().Run(Context(), Token);
 
-        var written = (await _files.Read(InMemoryPacketFiles.DirectoryOf(Address, "packets/fixture-p1-a1"), Token)).Value;
+        var written = (await _files.Read(InMemoryPacketDirectory.DirectoryOf(Address, "packets/fixture-p1-a1"), Token)).Value;
         var packet = JsonNode.Parse(written["packet.json"])!;
         Assert.Equal(("fixture-p1-a1", "draft", null), ((string?)packet["id"], (string?)packet["status"], (string?)packet["hash"]));
         Assert.Equal("3288642cd47359fff2642b8bf429976915ca4894", (string?)packet["baseSha"], StringComparer.Ordinal);
@@ -88,7 +88,7 @@ public sealed class BuildAmendStepTests
     {
         _ = await Step().Run(Context(id: "fixture-p1-a1"), Token);
 
-        Assert.Equal("fixture-p1-a2", (string?)JsonNode.Parse((await _files.Read(InMemoryPacketFiles.DirectoryOf(Address, "packets/fixture-p1-a2"), Token)).Value["packet.json"])!["id"], StringComparer.Ordinal);
+        Assert.Equal("fixture-p1-a2", (string?)JsonNode.Parse((await _files.Read(InMemoryPacketDirectory.DirectoryOf(Address, "packets/fixture-p1-a2"), Token)).Value["packet.json"])!["id"], StringComparer.Ordinal);
     }
 
     [Fact]
@@ -115,7 +115,7 @@ public sealed class BuildAmendStepTests
     public async Task A_packet_that_fails_its_checks_fails_the_Step_and_names_the_rule()
     {
         var context = Context();
-        _ = _packets.Fails(InMemoryPacketFiles.DirectoryOf(Address, "packets/fixture-p1-a1"), new PacketFailure("PKT-PHS-009", "packet", "amends is empty", Fix: null));
+        _ = _packets.Fails(InMemoryPacketDirectory.DirectoryOf(Address, "packets/fixture-p1-a1"), new PacketFailure("PKT-PHS-009", "packet", "amends is empty", Fix: null));
 
         var result = await Step().Run(context, Token);
 

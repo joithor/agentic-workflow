@@ -15,7 +15,7 @@ namespace Aw.Sindri.Features.Build;
 /// <param name="files">Reads the parent packet and writes the child into the run area.</param>
 /// <param name="area">Keeps the escape line.</param>
 /// <param name="clock">Stamps the amendment.</param>
-internal sealed class BuildAmendStep(IPackets packets, IPacketFiles files, IRunArea area, TimeProvider clock) : IBlockStep, IBlockStepId
+internal sealed class BuildAmendStep(IPackets packets, IPacketDirectory files, IRunArea area, TimeProvider clock) : IBlockStep, IBlockStepId
 {
     /// <inheritdoc/>
     public static BlockId Id { get; } = BlockId.From("step.build.amend");

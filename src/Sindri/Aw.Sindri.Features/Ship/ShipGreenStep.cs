@@ -19,7 +19,7 @@ namespace Aw.Sindri.Features.Ship;
 /// <param name="files">Reads the phase packet in force.</param>
 /// <param name="commands">Reads the profile's commands and runs them under a heavy slot.</param>
 /// <param name="scrubber">Recognises secrets on added lines.</param>
-internal sealed class ShipGreenStep(IRunDiff diff, IBranchChanges changes, IPacketFiles files, RepoCommandRunner commands, ITextScrubber scrubber) : IBlockStep, IBlockStepId
+internal sealed class ShipGreenStep(IRunDiff diff, IBranchChanges changes, IPacketDirectory files, RepoCommandRunner commands, ITextScrubber scrubber) : IBlockStep, IBlockStepId
 {
     /// <summary>The rule id of the secret scan before a push.</summary>
     internal const string SecretRule = "SHIP-SECRET-001";

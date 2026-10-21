@@ -20,7 +20,7 @@ namespace Aw.Sindri.Features.Build;
 /// <param name="files">Reads the packet in force.</param>
 /// <param name="commands">Reads the profile's commands and runs them under a heavy slot.</param>
 /// <param name="scrubber">Recognises secrets on added lines.</param>
-internal sealed class BuildChecksStep(IRunDiff diff, IBranchChanges changes, IPacketFiles files, RepoCommandRunner commands, ITextScrubber scrubber) : IBlockStep, IBlockStepId
+internal sealed class BuildChecksStep(IRunDiff diff, IBranchChanges changes, IPacketDirectory files, RepoCommandRunner commands, ITextScrubber scrubber) : IBlockStep, IBlockStepId
 {
     /// <summary>The rule id of a repo command that failed.</summary>
     internal const string CommandRule = "BLD-COMMAND-001";

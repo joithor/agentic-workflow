@@ -25,5 +25,5 @@ public sealed class BuildAmendStepContract : BlockContract
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await new BuildAmendStep(new InMemoryPackets(), new InMemoryPacketFiles(), new InMemoryRunArea(), new FakeTimeProvider()).Run(BuildShipContexts.Of("step.build.amend", []), cancellationToken);
+        _ = await new BuildAmendStep(new InMemoryPackets(), new InMemoryPacketDirectory(), new InMemoryRunArea(), new FakeTimeProvider()).Run(BuildShipContexts.Of("step.build.amend", []), cancellationToken);
 }
