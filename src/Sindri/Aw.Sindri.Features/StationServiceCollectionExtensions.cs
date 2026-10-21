@@ -16,5 +16,5 @@ internal static class StationServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
     internal static IServiceCollection AddStationSlices(this IServiceCollection services) =>
-        services.AddScopingSlices().AddBuildSlices().AddShipSlices().AddLensLoops().AddProveSlices().AddEvidenceSlices().AddDocsSlices();
+        services.AddScopingSlices().AddLineSlices().AddBuildSlices().AddShipSlices().AddLensLoops().AddProveSlices().AddEvidenceSlices().AddDocsSlices();
 }
