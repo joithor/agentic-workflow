@@ -39,7 +39,7 @@ internal sealed class ListServicesService(IApprovedProfile approvals, IViewReade
         }
 
         var named = approved.Value?.Profile.Services ?? SindriProfile.NoServices;
-        var own = builtIns.Where(b => !named.ContainsKey(b.Name.Value)).ToDictionary(b => b.Name.Value, b => b.Cadence.ToString(), StringComparer.Ordinal);   // a profile entry of the same name sets the cadence instead
+        var own = builtIns.Where(b => BuiltInService.Is(b.Name, named.ContainsKey(b.Name.Value), builtIns)).ToDictionary(b => b.Name.Value, b => b.Cadence.ToString(), StringComparer.Ordinal);   // a profile entry of the same name sets the cadence instead
         var runs = rows.Value.Where(r => named.ContainsKey(r.Name.Value) || own.ContainsKey(r.Name.Value)).ToDictionary(r => r.Name.Value, StringComparer.Ordinal);
         IReadOnlyList<ServiceView> services = [.. named.Select(s => (Name: s.Key, s.Value.Every)).Concat(own.Select(s => (Name: s.Key, Every: s.Value)))
             .OrderBy(s => s.Name, StringComparer.Ordinal)
