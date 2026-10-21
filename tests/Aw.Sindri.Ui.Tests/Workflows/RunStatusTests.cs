@@ -10,27 +10,29 @@ namespace Aw.Sindri.Ui.Tests.Workflows;
 [Lane(TestLane.Unit)]
 public sealed class RunStatusTests
 {
-    public static TheoryData<string, ChipTone, RunStatusKind, string, string> Served => new()
+    public static TheoryData<string, string, string, string, string> Served => new()
     {
-        { "RUNNING", ChipTone.Ok, RunStatusKind.Running, "Running", "running" },
-        { "DECISION", ChipTone.Attn, RunStatusKind.WaitingForYou, "Waiting for you", "attn" },
-        { "ESCALATED", ChipTone.Attn, RunStatusKind.WaitingForYou, "Waiting for you", "attn" },
-        { "PARKED", ChipTone.Attn, RunStatusKind.Paused, "Paused, needs you", "attn" },
-        { "WITH YOU", ChipTone.Neutral, RunStatusKind.TookOver, "You took over", "violet" },
-        { "QUEUED", ChipTone.Neutral, RunStatusKind.NotStarted, "Not started", "faint" },
-        { "DONE", ChipTone.Neutral, RunStatusKind.Done, "Done", "ok" },
-        { "FAILED", ChipTone.Fail, RunStatusKind.Failed, "Failed", "fail" },
-        { "DIDN'T WORK OUT", ChipTone.Attn, RunStatusKind.DidntWorkOut, "Didn't work out", "attn" },
-        { "CANCELLED", ChipTone.Neutral, RunStatusKind.Cancelled, "Cancelled", "neutral" },
+        { "RUNNING", "Ok", "Running", "Running", "running" },
+        { "DECISION", "Attn", "WaitingForYou", "Waiting for you", "attn" },
+        { "ESCALATED", "Attn", "WaitingForYou", "Waiting for you", "attn" },
+        { "PARKED", "Attn", "Paused", "Paused, needs you", "attn" },
+        { "WITH YOU", "Neutral", "TookOver", "You took over", "violet" },
+        { "QUEUED", "Neutral", "NotStarted", "Not started", "faint" },
+        { "DONE", "Neutral", "Done", "Done", "ok" },
+        { "FAILED", "Fail", "Failed", "Failed", "fail" },
+        { "DIDN'T WORK OUT", "Attn", "DidntWorkOut", "Didn't work out", "attn" },
+        { "CANCELLED", "Neutral", "Cancelled", "Cancelled", "neutral" },
     };
+
+    private static readonly string[] _finished = ["FAILED", "DIDN'T WORK OUT", "CANCELLED"];
 
     [Theory]
     [MemberData(nameof(Served))]
-    public void Each_served_word_maps_to_its_kind_and_sentence_case_word(string served, ChipTone tone, RunStatusKind kind, string word, string cls)
+    public void Each_served_word_maps_to_its_kind_and_sentence_case_word(string served, string tone, string kind, string word, string cls)
     {
-        var status = RunStatus.From(new StateChip(served, tone));
+        var status = RunStatus.From(new StateChip(served, Enum.Parse<ChipTone>(tone)));
 
-        Assert.Equal(kind, status.Kind);
+        Assert.Equal(Enum.Parse<RunStatusKind>(kind), status.Kind);
         Assert.Equal(word, status.Word);
         Assert.Equal(cls, status.Class);
     }
@@ -61,7 +63,7 @@ public sealed class RunStatusTests
 
         foreach (var row in Served)
         {
-            var status = RunStatus.From(new StateChip(row.Data.Item1, row.Data.Item2));
+            var status = RunStatus.From(new StateChip(row.Data.Item1, Enum.Parse<ChipTone>(row.Data.Item2)));
 
             Assert.False(string.IsNullOrWhiteSpace(status.Word));
             Assert.Contains("Icon." + status.Icon, icons);
@@ -73,7 +75,7 @@ public sealed class RunStatusTests
     [Fact]
     public void A_status_never_leans_on_colour_alone_failed_cancelled_and_didnt_work_out_are_told_apart_by_word()
     {
-        var words = new[] { "FAILED", "DIDN'T WORK OUT", "CANCELLED" }
+        var words = _finished
             .Select(w => RunStatus.From(new StateChip(w, ChipTone.Neutral)).Word).ToList();
 
         Assert.Equal(3, words.Distinct(StringComparer.Ordinal).Count());

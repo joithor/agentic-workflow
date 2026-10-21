@@ -15,5 +15,20 @@ internal sealed record RunStatus(RunStatusKind Kind, string Word, string Icon, s
     /// <summary>Maps a served chip to the run's status.</summary>
     /// <param name="chip">The chip the API served.</param>
     /// <returns>The status to draw.</returns>
-    internal static RunStatus From(StateChip chip) => throw new NotSupportedException();
+    internal static RunStatus From(StateChip chip) => Normal(chip.Word) switch
+    {
+        "RUNNING" => new(RunStatusKind.Running, Labels.WorkflowsStatusRunning, "Spinner", "running"),
+        "DECISION" or "ESCALATED" => new(RunStatusKind.WaitingForYou, Labels.WorkflowsStatusWaitingForYou, "RunClock", "attn"),
+        "PARKED" => new(RunStatusKind.Paused, Labels.WorkflowsStatusPaused, "RunPause", "attn"),
+        "WITH YOU" => new(RunStatusKind.TookOver, Labels.WorkflowsStatusTookOver, "RunPerson", "violet"),
+        "QUEUED" => new(RunStatusKind.NotStarted, Labels.WorkflowsStatusNotStarted, "RunCircleDashed", "faint"),
+        "DONE" => new(RunStatusKind.Done, Labels.WorkflowsStatusDone, "Ok", "ok"),
+        "FAILED" => new(RunStatusKind.Failed, Labels.WorkflowsStatusFailed, "RunCircleX", "fail"),
+        "DIDN'T WORK OUT" => new(RunStatusKind.DidntWorkOut, Labels.WorkflowsStatusDidntWorkOut, "RunCircleMinus", "attn"),
+        "CANCELLED" => new(RunStatusKind.Cancelled, Labels.WorkflowsStatusCancelled, "RunCircleX", "neutral"),
+        _ => new(RunStatusKind.Unknown, chip.Word, "RunCircleDashed", "neutral"),
+    };
+
+    // The served word in capitals with a straight apostrophe, so a curly one or another case still maps.
+    private static string Normal(string word) => word.Trim().ToUpperInvariant().Replace('\u2019', '\'');
 }
