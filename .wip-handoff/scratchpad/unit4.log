@@ -1,0 +1,23 @@
+heavy: waiting for the session lock (1 slot(s), /home/thor/.agentic-workflow/locks/heavy-session/75053.lock)
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Aw.Analyzers -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Analyzers/debug/Aw.Analyzers.dll
+  Aw.Kernel -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Kernel/debug/Aw.Kernel.dll
+  Aw.Redaction -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Redaction/debug/Aw.Redaction.dll
+  Aw.Kernel.Testing -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Kernel.Testing/debug/Aw.Kernel.Testing.dll
+  Aw.Kernel.Telemetry -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Kernel.Telemetry/debug/Aw.Kernel.Telemetry.dll
+  Aw.Sindri.Ui -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui/debug/Aw.Sindri.Ui.dll
+  Aw.Sindri.Ui.Desktop -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Desktop/debug/sindri-ui.dll
+  Aw.Sindri.Ui.Testing -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Testing/debug/Aw.Sindri.Ui.Testing.dll
+/home/thor/repos/aw-wt/sindri-ui-needs-you-2/tests/Aw.Sindri.Ui.Tests/NeedsYou/NeedsYouBarViewModelTests.cs(104,9): error IDE0058: Expression value is never used (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0058) [/home/thor/repos/aw-wt/sindri-ui-needs-you-2/tests/Aw.Sindri.Ui.Tests/Aw.Sindri.Ui.Tests.csproj]
+/home/thor/repos/aw-wt/sindri-ui-needs-you-2/tests/Aw.Sindri.Ui.Tests/NeedsYou/NeedsYouBarViewModelTests.cs(20,38): error IDE0051: Private member 'NeedsYouBarViewModelTests.Token' is unused (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0051) [/home/thor/repos/aw-wt/sindri-ui-needs-you-2/tests/Aw.Sindri.Ui.Tests/Aw.Sindri.Ui.Tests.csproj]
+
+Build FAILED.
+
+/home/thor/repos/aw-wt/sindri-ui-needs-you-2/tests/Aw.Sindri.Ui.Tests/NeedsYou/NeedsYouBarViewModelTests.cs(104,9): error IDE0058: Expression value is never used (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0058) [/home/thor/repos/aw-wt/sindri-ui-needs-you-2/tests/Aw.Sindri.Ui.Tests/Aw.Sindri.Ui.Tests.csproj]
+/home/thor/repos/aw-wt/sindri-ui-needs-you-2/tests/Aw.Sindri.Ui.Tests/NeedsYou/NeedsYouBarViewModelTests.cs(20,38): error IDE0051: Private member 'NeedsYouBarViewModelTests.Token' is unused (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0051) [/home/thor/repos/aw-wt/sindri-ui-needs-you-2/tests/Aw.Sindri.Ui.Tests/Aw.Sindri.Ui.Tests.csproj]
+    0 Warning(s)
+    2 Error(s)
+
+Time Elapsed 00:00:35.91
+exit 1

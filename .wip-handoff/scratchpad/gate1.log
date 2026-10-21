@@ -1,0 +1,47 @@
+heavy: waiting for the session lock (1 slot(s), /home/thor/.agentic-workflow/locks/heavy-session/75053.lock)
+heavy: waiting for the box-wide lock (4 slot(s), /home/thor/.agentic-workflow/locks/heavy-job.lock)
+Warnings were encountered while loading the workspace. Set the verbosity option to the 'diagnostic' level to log warnings.
+heavy: waiting for the session lock (1 slot(s), /home/thor/.agentic-workflow/locks/heavy-session/75053.lock)
+heavy: waiting for the box-wide lock (4 slot(s), /home/thor/.agentic-workflow/locks/heavy-job.lock)
+Warnings were encountered while loading the workspace. Set the verbosity option to the 'diagnostic' level to log warnings.
+FORMAT-OK
+    0 Error(s)
+
+Time Elapsed 00:00:14.77
+UNIT
+/home/thor/repos/aw-wt/sindri-ui-workflows/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64) passed (4s 131ms)
+
+Test run summary: Passed!
+  total: 2396
+  failed: 0
+  succeeded: 2396
+  skipped: 0
+  duration: 4s 314ms
+INTEGRATION
+/home/thor/repos/aw-wt/sindri-ui-workflows/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64) passed (1m 57s 700ms)
+
+Test run summary: Passed!
+  total: 743
+  failed: 0
+  succeeded: 733
+  skipped: 10
+  duration: 1m 57s 923ms
+RENDERING
+/home/thor/repos/aw-wt/sindri-ui-workflows/artifacts/bin/Aw.Sindri.Ui.Rendering.Tests/debug/Aw.Sindri.Ui.Rendering.Tests.dll (net10.0|x64) passed (9s 569ms)
+
+Test run summary: Passed!
+  total: 30
+  failed: 0
+  succeeded: 30
+  skipped: 0
+  duration: 9s 745ms
+ARCH
+/home/thor/repos/aw-wt/sindri-ui-workflows/artifacts/bin/Aw.Architecture.Tests/debug/Aw.Architecture.Tests.dll (net10.0|x64) passed (21s 047ms)
+
+Test run summary: Passed!
+  total: 130
+  failed: 0
+  succeeded: 130
+  skipped: 0
+  duration: 21s 224ms
+GATE-DONE

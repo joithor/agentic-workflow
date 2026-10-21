@@ -1,0 +1,205 @@
+heavy: waiting for the session lock (1 slot(s), /home/thor/.agentic-workflow/locks/heavy-session/75053.lock)
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Aw.Analyzers -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Analyzers/debug/Aw.Analyzers.dll
+  Aw.Kernel -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Kernel/debug/Aw.Kernel.dll
+  Aw.Redaction -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Redaction/debug/Aw.Redaction.dll
+  Aw.Kernel.Testing -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Kernel.Testing/debug/Aw.Kernel.Testing.dll
+  Aw.Sindri.Ui -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui/debug/Aw.Sindri.Ui.dll
+  Aw.Kernel.Telemetry -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Kernel.Telemetry/debug/Aw.Kernel.Telemetry.dll
+  Aw.Sindri.Ui.Testing -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Testing/debug/Aw.Sindri.Ui.Testing.dll
+  Aw.Sindri.Ui.Desktop -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Desktop/debug/sindri-ui.dll
+  Aw.Sindri.Ui.Tests -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:18.27
+  Determining projects to restore...
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/tests/Aw.Sindri.Ui.Rendering.Tests/Aw.Sindri.Ui.Rendering.Tests.csproj (in 522 ms).
+  8 of 9 projects are up-to-date for restore.
+  Aw.Analyzers -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Analyzers/debug/Aw.Analyzers.dll
+  Aw.Redaction -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Redaction/debug/Aw.Redaction.dll
+  Aw.Kernel -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Kernel/debug/Aw.Kernel.dll
+  Aw.Sindri.Ui -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui/debug/Aw.Sindri.Ui.dll
+  Aw.Kernel.Telemetry -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Kernel.Telemetry/debug/Aw.Kernel.Telemetry.dll
+  Aw.Kernel.Testing -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Kernel.Testing/debug/Aw.Kernel.Testing.dll
+  Aw.Sindri.Ui.Desktop -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Desktop/debug/sindri-ui.dll
+  Aw.Sindri.Ui.Testing -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Testing/debug/Aw.Sindri.Ui.Testing.dll
+  Aw.Sindri.Ui.Rendering.Tests -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Rendering.Tests/debug/Aw.Sindri.Ui.Rendering.Tests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:09.92
+  Determining projects to restore...
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Forge/Aw.Forge.Core/Aw.Forge.Core.csproj (in 592 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Context/Aw.Context.Features/Aw.Context.Features.csproj (in 677 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Forge/Aw.Forge.Infrastructure/Aw.Forge.Infrastructure.csproj (in 676 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Forge/Aw.Forge.Host/Aw.Forge.Host.csproj (in 675 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Evidence/Aw.Evidence.Features/Aw.Evidence.Features.csproj (in 9 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Evidence/Aw.Evidence.Core/Aw.Evidence.Core.csproj (in 13 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Context/Aw.Context.Infrastructure/Aw.Context.Infrastructure.csproj (in 25 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Context/Aw.Context.Core/Aw.Context.Core.csproj (in 14 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Evidence/Aw.Evidence.Infrastructure/Aw.Evidence.Infrastructure.csproj (in 107 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/BugFix/Aw.BugFix.Infrastructure/Aw.BugFix.Infrastructure.csproj (in 8 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Evidence/Aw.Evidence.Host/Aw.Evidence.Host.csproj (in 106 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/BugFix/Aw.BugFix.Host/Aw.BugFix.Host.csproj (in 16 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/BugFix/Aw.BugFix.Features/Aw.BugFix.Features.csproj (in 8 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/BugFix/Aw.BugFix.Core/Aw.BugFix.Core.csproj (in 6 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Aw.Kernel.Data/Aw.Kernel.Data.csproj (in 10 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Packets/Aw.Packets.Core/Aw.Packets.Core.csproj (in 17 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Sindri/Aw.Sindri.Workflows/Aw.Sindri.Workflows.csproj (in 33 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Sindri/Aw.Sindri.Infrastructure/Aw.Sindri.Infrastructure.csproj (in 16 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Sindri/Aw.Sindri.Core/Aw.Sindri.Core.csproj (in 6 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Sindri/Aw.Sindri.Features/Aw.Sindri.Features.csproj (in 14 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj (in 70 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Readiness/Aw.Readiness.Core/Aw.Readiness.Core.csproj (in 8 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Readiness/Aw.Readiness.App/Aw.Readiness.App.csproj (in 17 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Packets/Aw.Packets.App/Aw.Packets.App.csproj (in 12 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Meta/Aw.Meta.Infrastructure/Aw.Meta.Infrastructure.csproj (in 12 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Meta/Aw.Meta.Features/Aw.Meta.Features.csproj (in 11 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Meta/Aw.Meta.Core/Aw.Meta.Core.csproj (in 7 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Meta/Aw.Meta.Host/Aw.Meta.Host.csproj (in 24 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Judge/Aw.Judge.Host/Aw.Judge.Host.csproj (in 17 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Judge/Aw.Judge.Infrastructure/Aw.Judge.Infrastructure.csproj (in 20 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Judge/Aw.Judge.Core/Aw.Judge.Core.csproj (in 8 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/src/Judge/Aw.Judge.Features/Aw.Judge.Features.csproj (in 11 ms).
+  Restored /home/thor/repos/aw-wt/sindri-ui-needs-you-2/tests/Aw.Architecture.Tests/Aw.Architecture.Tests.csproj (in 287 ms).
+  6 of 39 projects are up-to-date for restore.
+  Aw.Analyzers -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Analyzers/debug/Aw.Analyzers.dll
+  Aw.Kernel -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Kernel/debug/Aw.Kernel.dll
+  Aw.Judge.Core -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Judge.Core/debug/Aw.Judge.Core.dll
+  Aw.Readiness.Core -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Readiness.Core/debug/Aw.Readiness.Core.dll
+  Aw.Forge.Core -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Forge.Core/debug/Aw.Forge.Core.dll
+  Aw.Kernel.Data -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Kernel.Data/debug/Aw.Kernel.Data.dll
+  Aw.Redaction -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Redaction/debug/Aw.Redaction.dll
+  Aw.Context.Core -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Context.Core/debug/Aw.Context.Core.dll
+  Aw.BugFix.Core -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.BugFix.Core/debug/Aw.BugFix.Core.dll
+  Aw.Evidence.Core -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Evidence.Core/debug/Aw.Evidence.Core.dll
+  Aw.BugFix.Infrastructure -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.BugFix.Infrastructure/debug/Aw.BugFix.Infrastructure.dll
+  Aw.Sindri.Core -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Core/debug/Aw.Sindri.Core.dll
+  Aw.Sindri.Ui -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui/debug/Aw.Sindri.Ui.dll
+  Aw.BugFix.Features -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.BugFix.Features/debug/Aw.BugFix.Features.dll
+  Aw.Meta.Core -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Meta.Core/debug/Aw.Meta.Core.dll
+  Aw.Judge.Features -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Judge.Features/debug/Aw.Judge.Features.dll
+  Aw.Kernel.Telemetry -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Kernel.Telemetry/debug/Aw.Kernel.Telemetry.dll
+  Aw.Context.Features -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Context.Features/debug/Aw.Context.Features.dll
+  Aw.Meta.Infrastructure -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Meta.Infrastructure/debug/Aw.Meta.Infrastructure.dll
+  Aw.Packets.Core -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Packets.Core/debug/Aw.Packets.Core.dll
+  Aw.Meta.Features -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Meta.Features/debug/Aw.Meta.Features.dll
+  Aw.Judge.Infrastructure -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Judge.Infrastructure/debug/Aw.Judge.Infrastructure.dll
+  Aw.Readiness.App -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Readiness.App/debug/aw-readiness.dll
+  Aw.Evidence.Features -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Evidence.Features/debug/Aw.Evidence.Features.dll
+  Aw.Evidence.Infrastructure -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Evidence.Infrastructure/debug/Aw.Evidence.Infrastructure.dll
+  Aw.Context.Infrastructure -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Context.Infrastructure/debug/Aw.Context.Infrastructure.dll
+  Aw.Meta.Host -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Meta.Host/debug/aw-meta.dll
+  Aw.BugFix.Host -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.BugFix.Host/debug/bugfix-state.dll
+  Aw.Forge.Infrastructure -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Forge.Infrastructure/debug/Aw.Forge.Infrastructure.dll
+  Aw.Packets.App -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Packets.App/debug/aw-packets.dll
+  Aw.Forge.Host -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Forge.Host/debug/aw-forge-fake.dll
+  Aw.Sindri.Infrastructure -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Infrastructure/debug/Aw.Sindri.Infrastructure.dll
+  Aw.Sindri.Features -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Features/debug/Aw.Sindri.Features.dll
+  Aw.Judge.Host -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Judge.Host/debug/judge.dll
+  Aw.Sindri.Workflows -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Workflows/debug/Aw.Sindri.Workflows.dll
+  Aw.Sindri.Ui.Desktop -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Desktop/debug/sindri-ui.dll
+  Aw.Evidence.Host -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Evidence.Host/debug/ui-evidence.dll
+  Aw.Sindri.Host -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Host/debug/sindri.dll
+  Aw.Architecture.Tests -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Architecture.Tests/debug/Aw.Architecture.Tests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:01:43.92
+=== unit lane
+Running tests from /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64)
+/home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64) passed (6s 344ms)
+
+Test run summary: Passed!
+  total: 2392
+  failed: 0
+  succeeded: 2392
+  skipped: 0
+  duration: 6s 652ms
+=== integration lane (full Ui.Tests)
+Running tests from /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64)
+skipped Aw.Sindri.Ui.Tests.Desktop.MacDockBadgeContractTests.Zero_clears_the_badge
+  the dock tile is macOS only
+  from /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64)
+skipped Aw.Sindri.Ui.Tests.Desktop.MacDockBadgeContractTests.Last_write_wins
+  the dock tile is macOS only
+  from /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64)
+skipped Aw.Sindri.Ui.Tests.Desktop.MacDockBadgeContractTests.It_starts_clear
+  the dock tile is macOS only
+  from /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64)
+skipped Aw.Sindri.Ui.Tests.Desktop.MacDockBadgeContractTests.Shows_a_count
+  the dock tile is macOS only
+  from /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64)
+skipped Aw.Sindri.Ui.Tests.Desktop.MotionReaderTests.MacOS_reads_the_accessibility_setting
+  macOS only
+  from /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64)
+failed Aw.Sindri.Ui.Tests.Views.NeedsYouFramesTests.D_opens_the_reason_box_Ctrl_Enter_sends_it_and_Esc_closes_it_before_leaving_the_inbox (2s 886ms)
+  from /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64)
+  Xunit.MicrosoftTestingPlatform.XunitException: System.InvalidOperationException : Sequence contains no elements
+    at System.Linq.ThrowHelper.ThrowNoElementsException()
+    at System.Linq.Enumerable.Single[TSource](IEnumerable`1 source)
+    at Aw.Sindri.Ui.Tests.Views.NeedsYouFramesTests.<D_opens_the_reason_box_Ctrl_Enter_sends_it_and_Esc_closes_it_before_leaving_the_inbox>b__22_0() in /home/thor/repos/aw-wt/sindri-ui-needs-you-2/tests/Aw.Sindri.Ui.Tests/Views/NeedsYouFramesTests.cs:341
+    at Aw.Sindri.Ui.Tests.Views.FrameHost.<>c__DisplayClass21_0.<<OnUi>b__0>d.MoveNext() in /home/thor/repos/aw-wt/sindri-ui-needs-you-2/tests/Aw.Sindri.Ui.Tests/Views/FrameHost.cs:60
+    --- End of stack trace from previous location ---
+    at Aw.Sindri.Ui.Tests.Views.FrameHost.<>c__DisplayClass21_0.<<OnUi>b__0>d.MoveNext() in /home/thor/repos/aw-wt/sindri-ui-needs-you-2/tests/Aw.Sindri.Ui.Tests/Views/FrameHost.cs:67
+    --- End of stack trace from previous location ---
+    at Avalonia.Headless.HeadlessUnitTestSession.<>c__DisplayClass12_0`1.<DispatchCore>b__0()
+    --- End of stack trace from previous location ---
+    at Aw.Sindri.Ui.Tests.Views.FrameHost.OnUi(Func`1 body) in /home/thor/repos/aw-wt/sindri-ui-needs-you-2/tests/Aw.Sindri.Ui.Tests/Views/FrameHost.cs:55
+    --- End of stack trace from previous location ---
+skipped Aw.Sindri.Ui.Tests.Desktop.WindowsDockBadgeContractTests.Last_write_wins
+  the taskbar overlay is Windows only
+  from /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64)
+skipped Aw.Sindri.Ui.Tests.Desktop.WindowsDockBadgeContractTests.Zero_clears_the_badge
+  the taskbar overlay is Windows only
+  from /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64)
+skipped Aw.Sindri.Ui.Tests.Desktop.WindowsDockBadgeContractTests.Shows_a_count
+  the taskbar overlay is Windows only
+  from /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64)
+skipped Aw.Sindri.Ui.Tests.Desktop.WindowsDockBadgeContractTests.It_starts_clear
+  the taskbar overlay is Windows only
+  from /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64)
+skipped Aw.Sindri.Ui.Tests.Views.ShellWindowTests.Command_option_arrows_cycle_the_regions_on_macOS
+  ⌘⌥←/→ is the macOS binding
+  from /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64)
+failed Aw.Sindri.Ui.Tests.Views.LockButtonWalkTests.No_realized_view_draws_the_lock_glyph_outside_a_protected_action_button(view: "NeedsYou/NeedsYouPage") (39ms)
+  from /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64)
+  Assert.Empty() Failure: Collection was not empty
+  Collection: ["⌂"]
+    at Aw.Sindri.Ui.Tests.Views.LockButtonWalkTests.No_realized_view_draws_the_lock_glyph_outside_a_protected_action_button(String view) in /home/thor/repos/aw-wt/sindri-ui-needs-you-2/tests/Aw.Sindri.Ui.Tests/Views/LockButtonWalkTests.cs:75
+    --- End of stack trace from previous location ---
+failed Aw.Sindri.Ui.Tests.Views.LockButtonWalkTests.No_realized_view_draws_the_lock_glyph_outside_a_protected_action_button(view: "Shell/ShellWindow") (260ms)
+  from /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64)
+  Assert.Empty() Failure: Collection was not empty
+  Collection: ["⌂"]
+    at Aw.Sindri.Ui.Tests.Views.LockButtonWalkTests.No_realized_view_draws_the_lock_glyph_outside_a_protected_action_button(String view) in /home/thor/repos/aw-wt/sindri-ui-needs-you-2/tests/Aw.Sindri.Ui.Tests/Views/LockButtonWalkTests.cs:75
+    --- End of stack trace from previous location ---
+failed Aw.Sindri.Ui.Tests.Views.LockButtonWalkTests.No_source_draws_the_lock_glyph_but_the_protected_action (11ms)
+  from /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64)
+  Assert.Empty() Failure: Collection was not empty
+  Collection: ["NeedsYouPage.axaml"]
+    at Aw.Sindri.Ui.Tests.Views.LockButtonWalkTests.No_source_draws_the_lock_glyph_but_the_protected_action() in /home/thor/repos/aw-wt/sindri-ui-needs-you-2/tests/Aw.Sindri.Ui.Tests/Views/LockButtonWalkTests.cs:37
+    at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+    at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+    at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+    at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+/home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64) failed with 4 error(s) (2m 29s 398ms)
+Exit code: 2
+  Error output: aw-ui-frames: no PNG written for 'u3-needs-you-outlined-selected' (and none will be): headless drawing renders no pixels; set AW_UI_FRAMES=1 to save the key frames.
+
+Test run summary: Failed!
+  total: 748
+  failed: 4
+  succeeded: 734
+  skipped: 10
+  duration: 2m 29s 626ms
+Test run completed with non-success exit code: 2 (see: https://aka.ms/testingplatform/exitcodes)
+exit 2

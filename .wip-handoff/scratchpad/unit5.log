@@ -1,0 +1,36 @@
+heavy: waiting for the session lock (1 slot(s), /home/thor/.agentic-workflow/locks/heavy-session/75053.lock)
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Aw.Analyzers -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Analyzers/debug/Aw.Analyzers.dll
+  Aw.Kernel -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Kernel/debug/Aw.Kernel.dll
+  Aw.Redaction -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Redaction/debug/Aw.Redaction.dll
+  Aw.Kernel.Testing -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Kernel.Testing/debug/Aw.Kernel.Testing.dll
+  Aw.Sindri.Ui -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui/debug/Aw.Sindri.Ui.dll
+  Aw.Sindri.Ui.Testing -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Testing/debug/Aw.Sindri.Ui.Testing.dll
+  Aw.Kernel.Telemetry -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Kernel.Telemetry/debug/Aw.Kernel.Telemetry.dll
+  Aw.Sindri.Ui.Desktop -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Desktop/debug/sindri-ui.dll
+  Aw.Sindri.Ui.Tests -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:13.11
+Running tests from /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64)
+failed Aw.Sindri.Ui.Tests.Api.GoldenContractTests.Every_golden_reads_through_the_apps_json_context_or_is_a_refusal (65ms)
+  from /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64)
+  SpecShaped/workflow-complete/accepted: a route the app doesn't place (read it or list it as not read)
+    at Aw.Sindri.Ui.Tests.Api.GoldenContractTests.Every_golden_reads_through_the_apps_json_context_or_is_a_refusal() in /home/thor/repos/aw-wt/sindri-ui-needs-you-2/tests/Aw.Sindri.Ui.Tests/Api/GoldenContractTests.cs:114
+    at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+    at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+/home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64) failed with 1 error(s) (7s 040ms)
+Exit code: 2
+
+Test run summary: Failed!
+  total: 2392
+  failed: 1
+  succeeded: 2391
+  skipped: 0
+  duration: 7s 328ms
+Test run completed with non-success exit code: 2 (see: https://aka.ms/testingplatform/exitcodes)
+exit 2

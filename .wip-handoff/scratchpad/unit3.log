@@ -1,0 +1,21 @@
+heavy: waiting for the session lock (1 slot(s), /home/thor/.agentic-workflow/locks/heavy-session/75053.lock)
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Aw.Analyzers -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Analyzers/debug/Aw.Analyzers.dll
+  Aw.Kernel -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Kernel/debug/Aw.Kernel.dll
+  Aw.Redaction -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Redaction/debug/Aw.Redaction.dll
+  Aw.Kernel.Testing -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Kernel.Testing/debug/Aw.Kernel.Testing.dll
+  Aw.Sindri.Ui -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui/debug/Aw.Sindri.Ui.dll
+  Aw.Kernel.Telemetry -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Kernel.Telemetry/debug/Aw.Kernel.Telemetry.dll
+  Aw.Sindri.Ui.Desktop -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Desktop/debug/sindri-ui.dll
+  Aw.Sindri.Ui.Testing -> /home/thor/repos/aw-wt/sindri-ui-needs-you-2/artifacts/bin/Aw.Sindri.Ui.Testing/debug/Aw.Sindri.Ui.Testing.dll
+/home/thor/repos/aw-wt/sindri-ui-needs-you-2/tests/Aw.Sindri.Ui.Tests/Views/NeedsYouFramesTests.cs(269,25): error CS0246: The type or namespace name 'ShellWindow' could not be found (are you missing a using directive or an assembly reference?) [/home/thor/repos/aw-wt/sindri-ui-needs-you-2/tests/Aw.Sindri.Ui.Tests/Aw.Sindri.Ui.Tests.csproj]
+
+Build FAILED.
+
+/home/thor/repos/aw-wt/sindri-ui-needs-you-2/tests/Aw.Sindri.Ui.Tests/Views/NeedsYouFramesTests.cs(269,25): error CS0246: The type or namespace name 'ShellWindow' could not be found (are you missing a using directive or an assembly reference?) [/home/thor/repos/aw-wt/sindri-ui-needs-you-2/tests/Aw.Sindri.Ui.Tests/Aw.Sindri.Ui.Tests.csproj]
+    0 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:08.43
+exit 1
