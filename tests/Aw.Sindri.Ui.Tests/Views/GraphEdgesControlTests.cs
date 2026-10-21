@@ -10,16 +10,16 @@ namespace Aw.Sindri.Ui.Tests.Views;
 /// <summary>The edges layer under the headless platform: which edge a point is on (the 12 px hit stroke), hover, and the geometry it builds.</summary>
 [Lane(TestLane.Integration)]
 [Collection(HeadlessWindows.Name)]
-public sealed class ContextEdgesControlTests
+public sealed class GraphEdgesControlTests
 {
     private static Task<T> OnUi<T>(Func<T> body) =>
-        HeadlessUnitTestSession.GetOrStartForAssembly(typeof(ContextEdgesControlTests).Assembly).Dispatch(body, TestContext.Current.CancellationToken);
+        HeadlessUnitTestSession.GetOrStartForAssembly(typeof(GraphEdgesControlTests).Assembly).Dispatch(body, TestContext.Current.CancellationToken);
 
     private static MapEdge Edge(string key, Point from, Point to, bool dashed = false) => new(key, EdgeRoute.Straight(from, to), dashed);
 
-    private static (Window Window, ContextEdgesControl Edges) Show(params MapEdge[] edges)
+    private static (Window Window, GraphEdgesControl Edges) Show(params MapEdge[] edges)
     {
-        var control = new ContextEdgesControl { Width = 400, Height = 300, Edges = edges, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Top };
+        var control = new GraphEdgesControl { Width = 400, Height = 300, Edges = edges, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Top };
         var window = new Window { Content = control, Width = 400, Height = 300 };
         window.Show();
         Dispatcher.UIThread.RunJobs();
@@ -35,6 +35,18 @@ public sealed class ContextEdgesControlTests
         Assert.Equal("a", edges.EdgeAt(new Point(100, 55.5)));
         Assert.Null(edges.EdgeAt(new Point(100, 57)));
         Assert.Null(edges.EdgeAt(new Point(300, 50)));
+        window.Close();
+        return true;
+    });
+
+    [Fact]
+    public async Task An_edge_with_a_wider_hit_width_is_hit_from_further_away() => await OnUi(() =>
+    {
+        var wide = new MapEdge("wide", EdgeRoute.Straight(new Point(20, 50), new Point(220, 50)), Dashed: false, HitWidth: 24);
+        var (window, edges) = Show(wide);
+
+        Assert.Equal("wide", edges.EdgeAt(new Point(100, 61)));
+        Assert.Null(edges.EdgeAt(new Point(100, 63)));
         window.Close();
         return true;
     });

@@ -7445,7 +7445,8 @@ static Aw.Sindri.Core.Text.SafeText.Escape(string! text) -> string!
 static Aw.Sindri.Core.Text.SafeText.Line(string! text, int max) -> string!
 static Aw.Sindri.Core.Views.AliasRow.operator !=(Aw.Sindri.Core.Views.AliasRow? left, Aw.Sindri.Core.Views.AliasRow? right) -> bool
 static Aw.Sindri.Core.Views.AliasRow.operator ==(Aw.Sindri.Core.Views.AliasRow? left, Aw.Sindri.Core.Views.AliasRow? right) -> bool
-static Aw.Sindri.Core.Views.ApprovedServices.Of(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>! rows, Aw.Sindri.Core.Profile.LoadedProfile? approved) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>!
+static Aw.Sindri.Core.Views.ApprovedServices.Of(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>! rows, Aw.Sindri.Core.Profile.LoadedProfile? approved, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Scheduling.BuiltInService!>! builtIns) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>!
+static Aw.Sindri.Core.Scheduling.BuiltInService.Is(Aw.Sindri.Core.Ids.ServiceName name, bool namedByProfile, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Scheduling.BuiltInService!>! builtIns) -> bool
 static Aw.Sindri.Core.Views.AsOf.operator !=(Aw.Sindri.Core.Views.AsOf? left, Aw.Sindri.Core.Views.AsOf? right) -> bool
 static Aw.Sindri.Core.Views.AsOf.operator ==(Aw.Sindri.Core.Views.AsOf? left, Aw.Sindri.Core.Views.AsOf? right) -> bool
 static Aw.Sindri.Core.Views.DecisionRules.Decide(Aw.Sindri.Core.Views.HumanDecisionRow! decision, Aw.Sindri.Core.Ids.DecisionOption choice, string? note, string! actor, Aw.Sindri.Core.Ids.CommandId command) -> Aw.Kernel.Result<Aw.Sindri.Core.Events.DecisionRecorded!>!
