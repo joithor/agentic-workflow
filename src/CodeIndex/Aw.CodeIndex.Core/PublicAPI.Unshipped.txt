@@ -1248,7 +1248,7 @@ static Aw.CodeIndex.Core.Planning.BuildPlanInput.operator ==(Aw.CodeIndex.Core.P
 static Aw.CodeIndex.Core.Planning.BuildPlan.operator !=(Aw.CodeIndex.Core.Planning.BuildPlan? left, Aw.CodeIndex.Core.Planning.BuildPlan? right) -> bool
 static Aw.CodeIndex.Core.Planning.BuildPlan.operator ==(Aw.CodeIndex.Core.Planning.BuildPlan? left, Aw.CodeIndex.Core.Planning.BuildPlan? right) -> bool
 static Aw.CodeIndex.Core.Planning.BuildPlanner.Plan(Aw.CodeIndex.Core.Planning.BuildPlanInput! input) -> Aw.CodeIndex.Core.Planning.BuildPlan!
-static Aw.CodeIndex.Core.Planning.StructureStamp.Compute(string! parserId, System.Collections.Generic.IReadOnlyList<string!>! utilityGlobs, System.Collections.Generic.IReadOnlyList<string!>! scrubPatterns) -> string!
+static Aw.CodeIndex.Core.Planning.StructureStamp.Compute(string! parserVersion, System.Collections.Generic.IReadOnlyList<string!>! utilityGlobs, System.Collections.Generic.IReadOnlyList<string!>! scrubPatterns) -> string!
 static Aw.CodeIndex.Core.Values.CommitSha.From(string! value) -> Aw.CodeIndex.Core.Values.CommitSha
 static Aw.CodeIndex.Core.Values.CommitSha.operator !=(Aw.CodeIndex.Core.Values.CommitSha left, Aw.CodeIndex.Core.Values.CommitSha right) -> bool
 static Aw.CodeIndex.Core.Values.CommitSha.operator ==(Aw.CodeIndex.Core.Values.CommitSha left, Aw.CodeIndex.Core.Values.CommitSha right) -> bool
