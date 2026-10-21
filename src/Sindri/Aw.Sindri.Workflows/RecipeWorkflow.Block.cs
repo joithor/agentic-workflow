@@ -70,7 +70,7 @@ internal sealed partial class RecipeWorkflow
         _runs++;
         var start = _start ?? throw new InvalidOperationException("the workflow has not begun"); // why: the loop runs only after Begin set it
         var recipe = _recipe ?? throw new InvalidOperationException("the workflow has not begun"); // why: as above
-        var run = new BlockStepRun(start.WorkflowId().Value, instance.Frame.State, open.Token.Value, step.Use, step.With, instance.Facts, _repo, _repoUnreadable, _fills.Count == 0 ? null : _fills);
+        var run = new BlockStepRun(start.WorkflowId().Value, instance.Frame.State, open.Token.Value, step.Use, step.With, instance.Facts, _repo, _repoUnreadable, _fills.Count == 0 ? null : _fills, HeavyHeld: _heavyLeased);
         var bound = Limit(recipe, step);
         return Workflow.ExecuteActivityAsync(
             (RunStepActivities a) => a.RunBlockStepAsync(run),
