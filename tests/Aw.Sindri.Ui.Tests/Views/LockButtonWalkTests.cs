@@ -24,6 +24,11 @@ public sealed class LockButtonWalkTests
     // The files that name the glyph: the button, its label and its view model's doc line.
     private static readonly string[] _owners = ["ProtectedActionButton.axaml", "Labels.Protected.cs", "ProtectedActionViewModel.cs"];
 
+    // The needs-you action bar's terminal button (needs-you spec "Terminal-only"): one press copies the served command and the hint
+    // says "Copied", so it is no dead end; it has no popover by design (A copies it too). It is the one other host of the glyph.
+    private const string BarTerminalSource = "NeedsYouPage.axaml";
+    private const string BarTerminalName = "NeedsYouTerminal";
+
     [Fact]
     public void No_source_draws_the_lock_glyph_but_the_protected_action()
     {
@@ -31,6 +36,7 @@ public sealed class LockButtonWalkTests
             .Where(f => (f.EndsWith(".cs", StringComparison.Ordinal) || f.EndsWith(".axaml", StringComparison.Ordinal))
                 && !f.Split(Path.DirectorySeparatorChar).Any(p => string.Equals(p, "bin", StringComparison.Ordinal) || string.Equals(p, "obj", StringComparison.Ordinal))
                 && !_owners.Contains(Path.GetFileName(f), StringComparer.Ordinal)
+                && !string.Equals(Path.GetFileName(f), BarTerminalSource, StringComparison.Ordinal)
                 && (File.ReadAllText(f).Contains(Lock, StringComparison.Ordinal) || File.ReadAllText(f).Contains("\\u2302", StringComparison.OrdinalIgnoreCase)))
             .Select(Path.GetFileName).ToList();
 
@@ -63,7 +69,8 @@ public sealed class LockButtonWalkTests
                 try
                 {
                     return window.GetVisualDescendants().OfType<TextBlock>()
-                        .Where(t => t.Text?.StartsWith(Lock) == true && !t.GetVisualAncestors().OfType<ProtectedActionButton>().Any())
+                        .Where(t => t.Text?.StartsWith(Lock) == true && !t.GetVisualAncestors().OfType<ProtectedActionButton>().Any()
+                            && !t.GetVisualAncestors().OfType<Button>().Any(b => string.Equals(b.Name, BarTerminalName, StringComparison.Ordinal)))
                         .Select(t => t.Text).ToList();
                 }
                 finally
