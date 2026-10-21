@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -15,10 +14,9 @@ namespace Aw.Sindri.Features.GetNeedsYou;
 /// </summary>
 /// <param name="directory">Resolves a row's instance id to its address.</param>
 /// <param name="instances">The instances' views.</param>
-/// <param name="recipes">The registered recipes, by hash.</param>
+/// <param name="registry">Reads a registered recipe back by its hash (a read-only door to the registry).</param>
 /// <param name="catalog">Says which Steps may run on the desk.</param>
-/// <param name="json">Reads a registered recipe's text.</param>
-internal sealed class NeedsYouJoins(IInstanceDirectory directory, IInstanceReader instances, IRecipeStore recipes, BlockCatalog catalog, JsonSerializerOptions json)
+internal sealed class NeedsYouJoins(IInstanceDirectory directory, IInstanceReader instances, RecipeRegistryReader registry, BlockCatalog catalog)
 {
     private const string Desk = "desk:";
     private const string Park = "park:";
@@ -106,14 +104,8 @@ internal sealed class NeedsYouJoins(IInstanceDirectory directory, IInstanceReade
     {
         try
         {
-            var found = await recipes.Find(hash, cancellationToken).ConfigureAwait(false);
-            if (found.IsError || found.Value is not { } registered)
-            {
-                return null;
-            }
-
-            var read = registered.Read(json);
-            return read.IsError ? null : read.Value;
+            var found = await registry.Recipe(hash, cancellationToken).ConfigureAwait(false);
+            return found.IsError ? null : found.Value;
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {

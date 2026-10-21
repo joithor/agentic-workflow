@@ -10,8 +10,9 @@ using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
-using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Core.Workflow.Registry;
+using Aw.Sindri.Core.Workflow.Validation;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.GetNeedsYou;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Workflow;
@@ -108,7 +109,7 @@ public sealed class NeedsYouJoinsTests
         await Register();
         var view = StatusCases.View("desk-task");
         var row = Desk(view);
-        var joins = new NeedsYouJoins(new SomeInstances(view), new ThrowingReader(), _recipes, EngineFixture.Catalog, SliceHarness.Json);
+        var joins = Joins(new SomeInstances(view), new ThrowingReader());
 
         var joined = Assert.Single(await joins.Apply([row], StatusCases.Now, TestContext.Current.CancellationToken));
 
@@ -121,7 +122,7 @@ public sealed class NeedsYouJoinsTests
         await Register();
         var view = StatusCases.View("desk-task");
         var reader = new CountingReader(view);
-        var joins = new NeedsYouJoins(reader, reader, _recipes, EngineFixture.Catalog, SliceHarness.Json);
+        var joins = Joins(reader, reader);
 
         var joined = await joins.Apply([Desk(view), NeedsYouRows.ForPark(Item(view), view.Address, new SuspensionSummary(SuspensionKind.Park, ParkReason.Rounds, ParkKind.Loop, Escalation: null, Mirrors: null), _since, _plain)], StatusCases.Now, TestContext.Current.CancellationToken);
 
@@ -150,7 +151,7 @@ public sealed class NeedsYouJoinsTests
 
     private static void Golden(IReadOnlyList<NeedsYouRow> rows, string scenario) =>
         ApiGoldens.ApiGolden.Match(
-            Encoding.UTF8.GetString(AwJson.Serialize(new Aw.Sindri.Features.GetNeedsYou.GetNeedsYouResponse(rows, Empty: null, new AsOf(7, 7, _since, Rebuilding: false, Stalled: false)), SliceHarness.Json)),
+            Encoding.UTF8.GetString(AwJson.Serialize(new GetNeedsYouResponse(rows, Empty: null, new AsOf(7, 7, _since, Rebuilding: false, Stalled: false)), SliceHarness.Json)),
             Path.GetTempPath(), "needs-you", scenario);
 
     private async Task Register()
@@ -161,13 +162,21 @@ public sealed class NeedsYouJoinsTests
     }
 
     private async Task<IReadOnlyList<NeedsYouRow>> Join(IReadOnlyList<NeedsYouRow> rows, SomeInstances instances) =>
-        await new NeedsYouJoins(instances, instances, _recipes, EngineFixture.Catalog, SliceHarness.Json).Apply(rows, StatusCases.Now, TestContext.Current.CancellationToken);
+        await Joins(instances, instances).Apply(rows, StatusCases.Now, TestContext.Current.CancellationToken);
+
+    private NeedsYouJoins Joins(IInstanceDirectory directory, IInstanceReader reader) =>
+        new(directory, reader, new RecipeRegistryReader(_recipes, new InMemoryRecipeApprovals(), EngineFixture.Catalog, SliceHarness.Json, new NoProfileFacts()), EngineFixture.Catalog);
 
     private static NeedsYouRow Desk(InstanceView view) => NeedsYouRows.ForDeskTask(Item(view), view.Address, _since, _plain);
 
     private static ItemRow Item(InstanceView view) => new(
         ItemId.From("ITM-11111111111111111111111111111111"), "the item", RepoName.From("agentic-workflow"), ItemState.Parked, Step: "produce", Version: 2, "human:thor", _since, _since, _since,
         Link: null, Alias: null, Body: null, WaitingOn: null, Instance: view.Address.Value, Owner: null, Sequence: 3);
+
+    private sealed class NoProfileFacts : IRecipeProfileFacts
+    {
+        public ValueTask<Result<RecipeProfileFacts>> Current(CancellationToken cancellationToken) => throw new NotSupportedException("reading a recipe back needs no profile");
+    }
 
     private sealed class ThrowingReader : IInstanceReader
     {

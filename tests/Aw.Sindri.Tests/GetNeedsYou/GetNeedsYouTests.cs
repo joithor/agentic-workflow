@@ -19,7 +19,7 @@ public sealed class GetNeedsYouTests
 
     private readonly FakeOnyxNotices _onyx = new();
 
-    private GetNeedsYouService Service() => new(_q.Views.Views, _q.Views.Progress, _q.Views.Slice.Callers, _onyx, new PassThroughScrubber(), TimeProvider.System, new NeedsYouJoins(new SomeInstances(), new SomeInstances(), new Aw.Sindri.Testing.Workflow.Registry.InMemoryRecipeStore(), EngineFixture.Catalog, SliceHarness.Json));
+    private GetNeedsYouService Service() => new(_q.Views.Views, _q.Views.Progress, _q.Views.Slice.Callers, _onyx, new PassThroughScrubber(), TimeProvider.System, new NeedsYouJoins(new SomeInstances(), new SomeInstances(), new Core.Workflow.Registry.RecipeRegistryReader(new Testing.Workflow.Registry.InMemoryRecipeStore(), new Testing.Workflow.Registry.InMemoryRecipeApprovals(), EngineFixture.Catalog, SliceHarness.Json, new NoProfileFacts()), EngineFixture.Catalog));
 
     private async Task<GetNeedsYouResponse> Get() => (await Service().Handle(A.GetNeedsYouRequest().Build(), RequestQueryHarness.Token)).Value;
 
@@ -154,5 +154,10 @@ public sealed class GetNeedsYouTests
         var result = await Service().Handle(A.GetNeedsYouRequest().Build(), RequestQueryHarness.Token);
 
         Expect.Equal(SindriErrors.AuthRefused.Code, result.Error.Code);
+    }
+
+    private sealed class NoProfileFacts : Core.Workflow.Validation.IRecipeProfileFacts
+    {
+        public ValueTask<Kernel.Result<Core.Workflow.Validation.RecipeProfileFacts>> Current(CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 }
