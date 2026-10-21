@@ -96,9 +96,11 @@ internal static class BlockRegistrations
     private static IServiceCollection AddReviewBlocks(this IServiceCollection services) => services
         .AddBlockDescriptor(ReviewSteps.Round)
         .AddBlockDescriptor(LensSteps.Run)
+        .AddBlockDescriptor(LensSteps.Ask)
         .AddBlockDescriptor(ReviewSteps.Log)
         .AddBlockDescriptor(ReviewSteps.Record)
         .AddBlockDescriptor(ReviewSteps.Fix)
+        .AddBlockDescriptor(ReviewSteps.ApplyAnswer)
         .AddBlockDescriptor(ReviewSteps.Recheck);
 
     /// <summary>Registers the design and plan stations' Steps and the lens round's Steps they share (line spec LN-Y1), descriptors only.</summary>

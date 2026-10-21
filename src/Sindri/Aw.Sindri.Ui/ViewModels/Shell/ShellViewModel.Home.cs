@@ -41,7 +41,7 @@ internal sealed partial class ShellViewModel
             return;
         }
 
-        NeedsYou.Update(feed, HomeFilter == HomeFilter.Decisions && !IsNeedsYouInbox ? row => row.DecisionId is not null : null);   // the inbox lists every row, whatever Home's filter says
+        NeedsYou.Update(feed, ShownOnHome);   // the inbox lists every row, whatever Home's filter says (see ShownOnHome)
         FollowDecision();
     }
 
