@@ -14352,3 +14352,14 @@ Aw.Sindri.Core.Scoping.ChangeRecord.ChangeRecord(string! Ref, string! Base, stri
 Aw.Sindri.Core.Scoping.ChangeRead.ChangeRead(int MaxDiffBytes) -> void
 static Aw.Sindri.Core.Scoping.ChangeRead.Scoping.get -> Aw.Sindri.Core.Scoping.ChangeRead!
 Aw.Sindri.Core.Scoping.ChangeRead.Cut(string! text) -> (string! Text, bool Truncated)
+Aw.Sindri.Core.Workflow.Blocks.StepContext.HeavySlotHeld.get -> bool
+Aw.Sindri.Core.Workflow.Blocks.StepContext.HeavySlotHeld.init -> void
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyHold
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove.Acquire = 1 -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove.Ensure = 2 -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove.None = 0 -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove.Release = 3 -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType.Heavy = 8 -> Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType
+static Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyHold.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, bool inPhase, bool leased) -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+const Aw.Sindri.Core.Events.EventTypes.WorkflowHeavy = "workflow.heavy" -> string!
