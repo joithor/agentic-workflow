@@ -71,13 +71,13 @@ public sealed class StartCommandTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_started_serve_that_needs_45_s_to_come_up_on_a_loaded_box_is_waited_for()
+    public async Task A_started_serve_that_needs_25_s_to_come_up_on_a_loaded_box_is_waited_for()
     {
         var launcher = new FakeControlPlaneLauncher();
-        var polls = (int)(TimeSpan.FromSeconds(45) / StartCommand.Poll);
+        var polls = (int)(TimeSpan.FromSeconds(25) / StartCommand.Poll);
         for (var i = 0; i <= polls; i++)
         {
-            _probe.Answers.Enqueue(SindriErrors.NotRunning.With("not yet"));   // the first check, then each poll until 45 s have passed
+            _probe.Answers.Enqueue(SindriErrors.NotRunning.With("not yet"));   // the first check, then each poll until 25 s have passed
         }
 
         _probe.Answers.Enqueue(_found);
