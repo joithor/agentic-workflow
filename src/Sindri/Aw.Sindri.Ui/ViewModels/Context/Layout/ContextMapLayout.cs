@@ -1,8 +1,7 @@
 using Avalonia;
 using Aw.Sindri.Ui.Api.Context;
-using Aw.Sindri.Ui.ViewModels;
 
-namespace Aw.Sindri.Ui.Views.Context.Map;
+namespace Aw.Sindri.Ui.ViewModels.Context.Layout;
 
 /// <summary>
 /// The map's deterministic layout (F3 spec 1 §2, "Layout"): a pure function of the lenses answer. The world is 1360 px wide with

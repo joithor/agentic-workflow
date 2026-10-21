@@ -1,6 +1,6 @@
 using Avalonia;
 
-namespace Aw.Sindri.Ui.Views.Context.Map;
+namespace Aw.Sindri.Ui.ViewModels.Context.Layout;
 
 /// <summary>One node placed on the map's world: where it sits and the served facts the view draws from.</summary>
 /// <param name="Key">The node's key as served ("feature:…", "decision:…", "code:path").</param>

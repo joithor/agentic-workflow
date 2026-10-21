@@ -1,7 +1,7 @@
 using Avalonia;
 using Aw.Sindri.Ui.Api.Context;
 
-namespace Aw.Sindri.Ui.Views.Context.Map;
+namespace Aw.Sindri.Ui.ViewModels.Context.Layout;
 
 internal static partial class ContextMapLayout
 {

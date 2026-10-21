@@ -1,7 +1,7 @@
 using Avalonia;
 using Aw.Sindri.Ui.Views.Controls;
 
-namespace Aw.Sindri.Ui.Views.Context.Map;
+namespace Aw.Sindri.Ui.ViewModels.Context.Layout;
 
 /// <summary>One edge placed on the world, with the words for its label pill.</summary>
 /// <param name="Key">The link id when served, else "from>to:type"; unique among the edges.</param>

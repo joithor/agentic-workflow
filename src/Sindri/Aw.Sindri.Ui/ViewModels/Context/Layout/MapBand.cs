@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Ui.Views.Context.Map;
+namespace Aw.Sindri.Ui.ViewModels.Context.Layout;
 
 /// <summary>The three bands of the context map, top to bottom.</summary>
 internal enum MapBand
