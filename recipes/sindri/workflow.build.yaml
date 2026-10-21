@@ -1,6 +1,6 @@
 schema: 1
 id: workflow.build
-version: 2
+version: 3
 description: "Block recipe: one TDD builder for one phase in its own worktree: a failing test per acceptance item, then code in atomic commits inside the phase's allowed files."
 inputs:
   - { key: fact:phasePacket, label: "Phase packet (frozen)", type: packet, kind: packet }

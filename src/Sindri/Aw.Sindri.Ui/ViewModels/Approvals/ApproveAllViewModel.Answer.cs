@@ -6,95 +6,44 @@ namespace Aw.Sindri.Ui.ViewModels.Approvals;
 internal sealed partial class ApproveAllViewModel
 {
     /// <summary>True while the button is held.</summary>
-    public bool IsHolding
-    {
-        get;
-        private set
-        {
-            Set(ref field, value);
-            OnChanged(nameof(ShowsFill));
-        }
-    }
+    public bool IsHolding => Hold.IsHolding;
 
-    /// <summary>True while the hold fills its bar: held, and motion is not reduced. Under reduced motion only the text count shows.</summary>
-    public bool ShowsFill => IsHolding && !_reducedMotion();
+    /// <summary>True while the hold shows its fill: held, and motion is not reduced.</summary>
+    public bool ShowsFill => Hold.ShowsFill;
 
-    /// <summary>How much of the hold is done, 0 to 1: the fill. Under reduced motion the view shows <see cref="HoldText"/> as a stepped count instead.</summary>
-    public double HoldProgress { get; private set => Set(ref field, value); }
+    /// <summary>How much of the hold is done, 0 to 1.</summary>
+    public double HoldProgress => Hold.Progress;
 
-    /// <summary>The hold button's words: the whole hold while idle, the count while held.</summary>
-    public string HoldText { get; private set => Set(ref field, value); } = Labels.ApproveHold(DefaultHoldMs);
+    /// <summary>The hold button's words.</summary>
+    public string HoldText => Hold.Text;
 
     /// <summary>The hold button's accessible name: it says how many workflows it approves.</summary>
-    public string HoldName => Labels.ApproveHoldName(Rows.Count, MinHoldMs);
+    public string HoldName => Hold.Name;
 
     /// <summary>The text typed in place of a hold.</summary>
     public string Typed
     {
-        get;
-        set
-        {
-            Set(ref field, value);
-            OnChanged(nameof(CanSubmitTyped));
-        }
-    } = string.Empty;
+        get => TypedBox.Text;
+        set => TypedBox.Text = value;
+    }
 
     /// <summary>True when typed text can be sent.</summary>
     public bool CanSubmitTyped => CanApprove && Typed.Trim().Length > 0;
 
     /// <summary>Starts the hold (the button pressed, or Space or Enter held). Does nothing without a challenge; a challenge that ran out is asked for again first.</summary>
-    internal void BeginHold()
-    {
-        if (!CanApprove || !OffersHold || IsHolding)
-        {
-            return;
-        }
+    internal void BeginHold() => _ = Hold.Begin();
 
-        if (Expired)
-        {
-            if (!_asking)   // one new challenge at a time
-            {
-                Notice = Labels.ApproveExpired;
-                _ = Reask();
-            }
-
-            return;
-        }
-
-        Notice = string.Empty;
-        _holdStarted = _clock.GetTimestamp();
-        (IsHolding, HoldProgress) = (true, 0);
-        HoldText = Labels.ApproveHolding(0, MinHoldMs);
-        Live.Say(Labels.ApproveHoldStarted);
-    }
-
-    /// <summary>One step of the fill (the view calls it on a timer while held). The hold that reaches the server's minimum answers by itself.</summary>
+    /// <summary>One step of the fill (the view's timer steps the button itself; this is the same step for a caller with no view). The hold that reaches the server's minimum answers by itself.</summary>
     /// <returns>A task that completes when the step, and any answer it sent, is done.</returns>
-    internal Task Tick()
-    {
-        if (!IsHolding || _challenge is not { } challenge)
-        {
-            return Task.CompletedTask;
-        }
+    internal Task Tick() => Hold.Tick() is { } held ? Held(held) : Task.CompletedTask;
 
-        var held = (int)_clock.GetElapsedTime(_holdStarted).TotalMilliseconds;
-        HoldProgress = Math.Min(1d, (double)held / MinHoldMs);
-        HoldText = Labels.ApproveHolding(held, MinHoldMs);
-        return held >= MinHoldMs ? Redeem(new ApproveAllRequest(challenge.Challenge, HeldMs: held)) : Task.CompletedTask;
-    }
+    /// <summary>The hold reached the server's minimum: it answers with the time held.</summary>
+    /// <param name="heldMs">How long the button was held.</param>
+    /// <returns>A task that completes when the answer is done.</returns>
+    internal Task Held(int heldMs) => _challenge is { } challenge ? Redeem(new ApproveAllRequest(challenge.Challenge, HeldMs: heldMs)) : Task.CompletedTask;
 
     /// <summary>The button let go (or focus left it) before the hold was done: nothing is sent.</summary>
-    internal void CancelHold()
-    {
-        if (!IsHolding)
-        {
-            return;
-        }
-
-        (IsHolding, HoldProgress) = (false, 0);
-        HoldText = Labels.ApproveHold(MinHoldMs);
-        Notice = Labels.ApproveHoldAgain;
-    }
+    internal void CancelHold() => Hold.Cancel();
 
     /// <summary>Sends the typed text. It must be exactly the challenge's text; anything else is said here and nothing is sent, so the challenge is not used up.</summary>
     /// <returns>A task that completes when the answer, if one was sent, is done.</returns>
@@ -144,7 +93,30 @@ internal sealed partial class ApproveAllViewModel
     }
 
     /// <summary>The hold button's fixed instructions for assistive tech (the count never goes into it).</summary>
-    public string HoldHelp => Labels.ApproveHold(MinHoldMs);
+    public string HoldHelp => Hold.Help;
+
+    // The hold may start when there is a challenge to answer; one that ran out is asked for again first and the hold waits for the next press.
+    private bool BeginGate()
+    {
+        if (!CanApprove || !OffersHold)
+        {
+            return false;
+        }
+
+        if (Expired)
+        {
+            if (!_asking)   // one new challenge at a time
+            {
+                Notice = Labels.ApproveExpired;
+                _ = Reask();
+            }
+
+            return false;
+        }
+
+        Notice = string.Empty;
+        return true;
+    }
 
     private bool Expired => _challenge is { } c && c.ExpiresAt <= _clock.GetUtcNow();
 
@@ -158,8 +130,8 @@ internal sealed partial class ApproveAllViewModel
 
     private void ResetAnswerState()
     {
-        (IsHolding, HoldProgress, Typed) = (false, 0, string.Empty);
-        HoldText = Labels.ApproveHold(DefaultHoldMs);
+        Hold.Reset();
+        TypedBox.Text = string.Empty;
         Result = null;
         Progress = string.Empty;
     }
