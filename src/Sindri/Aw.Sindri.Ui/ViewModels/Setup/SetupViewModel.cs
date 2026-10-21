@@ -2,8 +2,8 @@ using System.Collections.ObjectModel;
 using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Setup;
-using Aw.Sindri.Ui.ViewModels.Components;
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Components;
 using Aw.Sindri.Ui.ViewModels.Controls;
 
 namespace Aw.Sindri.Ui.ViewModels.Setup;

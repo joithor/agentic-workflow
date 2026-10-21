@@ -153,7 +153,7 @@ public sealed class SetupFormsFramesTests : FrameHost
         var foot = Named<Control>(window, "SetupFootnote");
 
         Assert.True(foot.IsEffectivelyVisible);
-        Assert.True(foot.TranslatePoint(default, window)!.Value.Y >= panel.TranslatePoint(new Avalonia.Point(0, panel.Bounds.Height), window)!.Value.Y);
+        Assert.True(foot.TranslatePoint(default, window)!.Value.Y >= panel.TranslatePoint(new Point(0, panel.Bounds.Height), window)!.Value.Y);
         Assert.DoesNotContain(Row(window, "onyx").GetVisualDescendants().OfType<Control>(), c => string.Equals(c.Name, "SetupFootnote", StringComparison.Ordinal));   // not inside the row
     });
 }

@@ -1,4 +1,5 @@
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Setup;
 using static Aw.Sindri.Ui.Tests.Setup.SetupFixture;
@@ -111,7 +112,7 @@ public sealed class SetupAgentsTests
     public async Task A_refused_Connect_is_said_in_words_and_the_step_stays_failed()
     {
         _f.Serve(With("all-done", "mcp", "failed", "RegisterMcp"));
-        _f.Server.RegisterMcpAnswer = Aw.Sindri.Ui.Testing.RouteAnswer.Problem("setup-mcp", "not-approved");
+        _f.Server.RegisterMcpAnswer = RouteAnswer.Problem("setup-mcp", "not-approved");
         var setup = await _f.Read(Token);
 
         await setup.RegisterMcp(Token);
