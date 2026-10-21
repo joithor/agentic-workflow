@@ -174,6 +174,10 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
             case "node":
                 _ = await server.Node(uri, query["key"] ?? string.Empty, cancellationToken);
                 return Answer(server.NodeAnswer);
+            case "query":
+                var asked = query["q"] ?? string.Empty;
+                _ = await server.QueryAnchors(uri, asked, cancellationToken);
+                return Answer(server.QueryAnswer(asked));
             case "sources":
                 _ = await server.Sources(uri, cancellationToken);
                 return Answer(server.SourcesAnswer);
