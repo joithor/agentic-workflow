@@ -22,6 +22,7 @@ internal sealed partial class SettingsView : UserControl
         _setup?.RevealRequested -= OnRevealRequested;
         _setup = (DataContext as SettingsViewModel)?.Setup;
         _setup?.RevealRequested += OnRevealRequested;
+        this.FindControl<Control>("SetupSection")?.IsVisible = _setup is not null;   // a host without setup draws no checklist, and none of its controls
     }
 
     // Opened by a link, G U, ⌘, or Home's line: the checklist is the first section, so it is brought to the top of the page.

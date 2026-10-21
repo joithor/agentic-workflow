@@ -1,4 +1,5 @@
 using Aw.Kernel;
+using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Jobs;
 
 namespace Aw.Sindri.Ui.Testing;

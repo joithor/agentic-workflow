@@ -38,6 +38,7 @@ internal static class EndpointTable
         _ = queries.MapGetInstanceEvents();
         _ = queries.MapGetInstanceFact();
         _ = queries.MapGetInstanceScoping();
+        _ = queries.MapGetInstanceDesignStop();
         _ = queries.MapGetPacketFile();
         _ = queries.MapReadInjection();
         _ = queries.MapGetProfile();
@@ -104,6 +105,7 @@ internal static class EndpointTable
         _ = commands.MapApproveRecipe();
         _ = commands.MapRevokeRecipe();
         _ = commands.MapIssueChallenge();
+        _ = commands.MapIssueAppChallenge();
         _ = commands.MapRegisterRecipe();
         _ = commands.MapStartInstance();
         _ = commands.MapIssueNonce();

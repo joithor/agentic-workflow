@@ -67,8 +67,9 @@ internal sealed partial class ShellViewModel
         }
     }
 
-    // Home's list: the decisions filter, and no setup row while Home's line stands for them.
+    // Home's list: the decisions filter, and no setup row while Home's line stands for them. The inbox lists every row, whatever Home's filter says and whatever the line stands for.
     private bool ShownOnHome(NeedsYouEntry row) =>
-        (HomeFilter != HomeFilter.Decisions || row.DecisionId is not null)
-        && !(Setup.IsHomeLineShown && string.Equals(row.Kind, SetupRowKind, StringComparison.Ordinal));
+        IsNeedsYouInbox
+        || ((HomeFilter != HomeFilter.Decisions || row.DecisionId is not null)
+            && !(Setup.IsHomeLineShown && string.Equals(row.Kind, SetupRowKind, StringComparison.Ordinal)));
 }

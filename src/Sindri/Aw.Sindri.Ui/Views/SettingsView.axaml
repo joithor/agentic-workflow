@@ -11,7 +11,7 @@
     <TextBlock x:Name="TitleText" Classes="page-title" Text="{Binding Title}"
                AutomationProperties.Name="{Binding Title}" AutomationProperties.HeadingLevel="1" />
 
-    <Panel x:Name="SetupSection" IsVisible="{Binding HasSetup}">
+    <Panel x:Name="SetupSection" IsVisible="False">
       <sw:SetupChecklist x:Name="SetupChecklist" DataContext="{Binding Setup}" />
     </Panel>
 

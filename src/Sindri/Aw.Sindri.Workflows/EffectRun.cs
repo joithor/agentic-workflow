@@ -14,6 +14,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="Text">An engine notice's rendered text; null for a recipe effect.</param>
 /// <param name="Facts">The instance's facts when the effect was emitted: a '{ fact }' argument reads its value here.</param>
 /// <param name="Recipe">The instance's recipe version: each attempt re-checks its approval and the allowlist (a later revoke is honoured); null skips the check.</param>
+/// <param name="ReplyFacts">The instance read the 'forge-reply-facts' marker: the effect's reply may carry facts. False: a reply that carries some is refused, never dropped.</param>
 internal sealed record EffectRun(
     string WorkflowId,
     string Item,
@@ -22,4 +23,5 @@ internal sealed record EffectRun(
     string CommandId,
     string? Text,
     IReadOnlyDictionary<FactKey, FactValue> Facts,
-    RecipeVersion? Recipe = null);
+    RecipeVersion? Recipe = null,
+    bool ReplyFacts = false);

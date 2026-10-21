@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Ui.Api.Jobs;
+namespace Aw.Sindri.Ui.Api;
 
 /// <summary>The 202 a job's start answers: the command that was accepted, and the job to follow.</summary>
 /// <param name="Accepted">The command's id and ledger sequence.</param>
