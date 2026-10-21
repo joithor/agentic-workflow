@@ -14,6 +14,7 @@ import { buildChain, restrictChain } from "./chain.js";
 import { adjudicateRefusal, evalProviderRefusal, gatePromptSortDeps, parseProvidersAllowlist } from "./providers-flag.js";
 import { judgeConfigPath, judgeDbPath, judgeStateDir, loadConfig, HOOK_KILL_MS } from "./config.js";
 import { runPromptSortCommand } from "./prompt-sort/commands.js";
+import { runTraitCheckCli } from "./trait-check/commands.js";
 import { openDb, pruneDecisionDetails } from "./db.js";
 import { makeRecorder, readReplay, runEval, writeEvalReport } from "./eval.js";
 import { runLabelImport, runLabelSet, runLabelStatus } from "./label.js";
@@ -109,6 +110,46 @@ function flag(name: string): string | undefined {
 
 async function main(): Promise<{ exitCode: number; stdout: string; stderr?: string }> {
   switch (cmd) {
+    case "trait-check": {
+      const logFile = path.join(judgeStateDir(), "judge", "trait-check", "log.jsonl");
+      return runTraitCheckCli(rest, {
+        cwd: process.cwd(),
+        stateDir: judgeStateDir(),
+        git: async (args, cwd) => {
+          try {
+            return { code: 0, stdout: (await exec("git", [...args], { cwd, maxBuffer: 64 * 1024 * 1024 })).stdout };
+          } catch (e) {
+            // `git diff --no-index` exits 1 when the files differ, which is its success case.
+            const err = e as { code?: unknown; stdout?: unknown };
+            return { code: typeof err.code === "number" ? err.code : 1, stdout: typeof err.stdout === "string" ? err.stdout : "" };
+          }
+        },
+        listDir: (dir) => {
+          try {
+            return fs.readdirSync(dir);
+          } catch {
+            return [];
+          }
+        },
+        readFile: (file) => {
+          try {
+            return fs.readFileSync(file, "utf8");
+          } catch {
+            return null;
+          }
+        },
+        jev: { fetch: (...args) => fetch(...args), apiKey: () => readApiKey({ env: process.env, readKeychain }) },
+        appendLog: (entry) => {
+          try {
+            fs.mkdirSync(path.dirname(logFile), { recursive: true });
+            fs.appendFileSync(logFile, JSON.stringify({ ts: new Date().toISOString(), ...entry }) + "\n");
+          } catch {
+            /* the log is best-effort */
+          }
+        },
+        now: () => Date.now(),
+      });
+    }
     case "undo":
       return runUndo(db, rest[0] ?? "", () => new Date());
     case "why":
