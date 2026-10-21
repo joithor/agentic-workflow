@@ -82,8 +82,11 @@ internal sealed partial class FakeSindriApi
     /// <returns>The answer.</returns>
     internal RouteAnswer FileMapFor(FileMapQuery query) => FileMapAnswer ?? ContextAnswers.FileMap(query);
 
-    public Task<Result<LensesView>> Lenses(Uri api, LensesQuery query, CancellationToken cancellationToken) =>
-        Context<LensesView>(api, "/sindri/context/lenses", LensesAnswer(query), LensesGate, cancellationToken);
+    public Task<Result<LensesView>> Lenses(Uri api, LensesQuery query, CancellationToken cancellationToken)
+    {
+        Log("lenses:" + string.Join(' ', query.Anchors));
+        return Context<LensesView>(api, "/sindri/context/lenses", LensesAnswer(query), LensesGate, cancellationToken);
+    }
 
     public Task<Result<FileMapView>> FileMap(Uri api, FileMapQuery query, CancellationToken cancellationToken) =>
         Context<FileMapView>(api, "/sindri/context/filemap", FileMapFor(query), FileMapGate, cancellationToken);
