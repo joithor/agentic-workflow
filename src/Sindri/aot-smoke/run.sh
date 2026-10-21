@@ -95,6 +95,7 @@ fi
 
 export AW_SINDRI_HOME="$work/home" AW_SINDRI_PORT=0
 mkdir -p "$AW_SINDRI_HOME/profile"
+: >"$AW_SINDRI_HOME/.prover-scratch"   # the smoke runs as the prover in a home it created (setup-once spec §4 item 6): the marker lets it confirm, as sindri-prove.sh does
 mkdir -p "$work/repo"   # the repo 'smoke' the mcp() helper names in X-Sindri-Repo (sindri_request files against an approved profile's repo)
 printf 'schemaVersion: 1\nuser: smoke\nrepos:\n  - { name: smoke, path: %s }\nservices:\n  heartbeat: { every: 5s }\n' "$work/repo" >"$AW_SINDRI_HOME/profile/profile.yaml"
 

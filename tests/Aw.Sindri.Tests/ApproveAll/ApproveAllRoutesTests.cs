@@ -96,20 +96,18 @@ public sealed class ApproveAllRoutesTests
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
-    public async Task A_session_and_the_app_are_refused_on_every_path_and_nothing_starts()
+    public async Task A_session_is_refused_on_every_path_and_nothing_starts()
     {
         var shipped = new FakeShippedRecipes(ApproveAllFixtures.StepAndItem());
         await using var host = await Started(shipped, TestContext.Current.CancellationToken);
         var answer = await Answer(host, await Digest(host));
         var empty = await Started(new FakeShippedRecipes([]), TestContext.Current.CancellationToken);
-        var app = Human(Terminal(host), client: "ui").Where(static h => h.Name != SindriHeaders.Terminal).ToArray();
 
         var bySession = await host.Http.Ask(Post(PlanRoute, answer, Session));
-        var byApp = await host.Http.Ask(Post(PlanRoute, answer, app));
         var emptyBySession = await empty.Http.Ask(Post(PlanRoute, json: null, Session));
         await empty.DisposeAsync();
 
-        Assert.Equal([(HttpStatusCode.Forbidden, "SND-AUTH-002")], new[] { bySession, byApp, emptyBySession }.Select(static a => (a.Status, Code(a))).Distinct().ToArray());
+        Assert.Equal([(HttpStatusCode.Forbidden, "SND-AUTH-002")], new[] { bySession, emptyBySession }.Select(static a => (a.Status, Code(a))).Distinct().ToArray());
         Assert.Equal(0, shipped.Applied);
     }
 

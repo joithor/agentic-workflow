@@ -165,7 +165,7 @@ public static class SindriFeaturesServiceCollectionExtensions
     }
 
     private static IServiceCollection AddStationSlices(this IServiceCollection services) =>
-        services.AddScopingSlices().AddBuildSlices().AddShipSlices().AddLensLoops().AddProveSlices();
+        services.AddScopingSlices().AddLineSlices().AddBuildSlices().AddShipSlices().AddLensLoops().AddProveSlices();
 
     private static IServiceCollection AddCommands(this IServiceCollection services)
     {
@@ -210,7 +210,7 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<GetContextSourcesRequest>, AcceptAllValidator<GetContextSourcesRequest>>().AddQuery<GetContextSourcesRequest, SourcesView, GetContextSourcesService>();
         _ = services.AddScoped<IValidator<GetProfileRequest>, AcceptAllValidator<GetProfileRequest>>().AddQuery<GetProfileRequest, GetProfileResponse, GetProfileService>();
         _ = services.AddScoped<ProfileReads>();
-        _ = services.AddGetSetup();
+        _ = services.AddGetSetup().AddAppConfirm();
         _ = services.AddScoped<IValidator<GetStatusRequest>, AcceptAllValidator<GetStatusRequest>>().AddQuery<GetStatusRequest, GetStatusResponse, GetStatusService>();
         _ = services.AddScoped<IValidator<ListCommandsRequest>, AcceptAllValidator<ListCommandsRequest>>().AddQuery<ListCommandsRequest, ListCommandsResponse, ListCommandsService>();
         _ = services.AddScoped<IValidator<ListItemsRequest>, AcceptAllValidator<ListItemsRequest>>().AddQuery<ListItemsRequest, ListItemsResponse, ListItemsService>();

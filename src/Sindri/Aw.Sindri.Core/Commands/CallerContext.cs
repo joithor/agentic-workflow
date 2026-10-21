@@ -27,9 +27,15 @@ public sealed record CallerContext(CallerClass Class, bool Terminal, string Acto
     public static CallerContext Http(CallerClass caller, bool terminal, ClientLabel client, RepoName? repo, IIdGenerator ids)
     {
         var human = caller == CallerClass.Human;
-        var actor = human ? "human:" + HumanLabel(client) : "session:" + SessionLabel(client);
-        return new CallerContext(human ? CallerClass.Human : CallerClass.Session, human && terminal, actor, ids.New<CommandId>(), ids.New<CorrelationId>(), repo);
+        return new CallerContext(human ? CallerClass.Human : CallerClass.Session, human && terminal, ActorOf(caller, client), ids.New<CommandId>(), ids.New<CorrelationId>(), repo);
     }
+
+    /// <summary>The actor an HTTP caller of <paramref name="caller"/> labelled <paramref name="client"/> is: 'human:prover', 'session:mcp' and the like.</summary>
+    /// <param name="caller">Human, else a session.</param>
+    /// <param name="client">The X-Sindri-Client label.</param>
+    /// <returns>The actor.</returns>
+    public static string ActorOf(CallerClass caller, ClientLabel client) =>
+        caller == CallerClass.Human ? "human:" + HumanLabel(client) : "session:" + SessionLabel(client);
 
     /// <summary>An in-process caller, 'service:&lt;name&gt;'.</summary>
     /// <param name="name">The service, for example 'host' or 'heartbeat'.</param>
