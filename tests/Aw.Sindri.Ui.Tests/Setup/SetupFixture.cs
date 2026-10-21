@@ -21,6 +21,8 @@ internal sealed class SetupFixture
 
     internal FakeClipboard Clipboard { get; } = new();
 
+    internal FakeFolderPicker Folders { get; } = new();
+
     internal FakeTimeProvider Clock { get; } = new(A.Noon);
 
     internal CatalogViewModel Catalog { get; }
@@ -57,7 +59,23 @@ internal sealed class SetupFixture
         return list;
     }
 
-    internal SetupViewModel Setup() => new(Server, Catalog, Clock, InApp.Contains);
+    /// <summary>The golden with one step's items replaced by (repo, state, detail) lines.</summary>
+    internal static JsonNode WithItems(JsonNode list, string step, params (string Repo, string State, string? Detail)[] items)
+    {
+        var served = list["steps"]!.AsArray().Single(s => (string)s!["id"]! == step)!;
+        served["items"] = new JsonArray([.. items.Select(i => (JsonNode)new JsonObject { ["repo"] = i.Repo, ["state"] = i.State, ["detail"] = i.Detail })]);
+        return list;
+    }
+
+    /// <summary>The golden with one step's error and progress set (a failed step that also counts).</summary>
+    internal static JsonNode WithProgress(JsonNode list, string step, int done, int total)
+    {
+        var served = list["steps"]!.AsArray().Single(s => (string)s!["id"]! == step)!;
+        served["progress"] = new JsonObject { ["done"] = done, ["total"] = total };
+        return list;
+    }
+
+    internal SetupViewModel Setup() => new(Server, Catalog, Clock, InApp.Contains, Folders);
 
     /// <summary>A view model that has read the list once.</summary>
     internal async Task<SetupViewModel> Read(CancellationToken token)

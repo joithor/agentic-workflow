@@ -3,6 +3,7 @@ using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Setup;
 using Aw.Sindri.Ui.ViewModels.Components;
+using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.Controls;
 
 namespace Aw.Sindri.Ui.ViewModels.Setup;
@@ -24,6 +25,9 @@ internal sealed partial class SetupViewModel : ObservableObject
     private readonly CatalogViewModel _catalog;
     private readonly TimeProvider _clock;
     private readonly Func<string, bool> _opensInApp;
+#pragma warning disable IDE0052 // the red commit's stub: read once the forms are attached
+    private readonly IFolderPicker _folders;
+#pragma warning restore IDE0052
     private int _reads;
     private bool _hasRead;
     private bool _refreshing;
@@ -36,10 +40,12 @@ internal sealed partial class SetupViewModel : ObservableObject
     /// <param name="catalog">The command catalog: its rows give the terminal forms of the actions.</param>
     /// <param name="clock">The clock for the Copy controls' timings.</param>
     /// <param name="opensInApp">Whether the app can do an action itself (a button) rather than show the command; the shell decides.</param>
-    internal SetupViewModel(ISindriApi api, CatalogViewModel catalog, TimeProvider clock, Func<string, bool> opensInApp)
+    /// <param name="folders">The folder chooser of the repo step; a head with none shows the typed path only.</param>
+    internal SetupViewModel(ISindriApi api, CatalogViewModel catalog, TimeProvider clock, Func<string, bool> opensInApp, IFolderPicker folders)
     {
-        (_api, _catalog, _clock, _opensInApp) = (api, catalog, clock, opensInApp);
+        (_api, _catalog, _clock, _opensInApp, _folders) = (api, catalog, clock, opensInApp, folders);
         Launcher = new ControlViewModel(new CommandRowView("StartSindri", "desk", [], Terminal: false, Method: null, Route: null, Labels.SetupLauncher, "cli-only:launcher", Destructive: false, ReadsViews: false, Shortcut: null), send: null, catalog.Clipboard, clock);
+        Footnote = new ControlViewModel(new CommandRowView("SetupOnyx", "desk", [], Terminal: false, Method: null, Route: null, Labels.SetupOnyxFootCommand, "cli-only:footnote", Destructive: false, ReadsViews: false, Shortcut: null), send: null, catalog.Clipboard, clock);
     }
 
     /// <summary>Raised when a step's button asks the shell to open an action in the app.</summary>
@@ -59,6 +65,14 @@ internal sealed partial class SetupViewModel : ObservableObject
 
     /// <summary>The launcher command with Copy, for when Sindri isn't running.</summary>
     public ControlViewModel Launcher { get; }
+
+    /// <summary>The terminal alternative for Onyx, one line under the checklist (Q5), with Copy.</summary>
+    public ControlViewModel Footnote { get; }
+
+    /// <summary>True while the footnote shows: Onyx is not set up and not set aside.</summary>
+#pragma warning disable CA1822, MA0041, IDE0052 // the red commit's stub
+    public bool IsFootnoteShown => false;
+#pragma warning restore CA1822, MA0041
 
     /// <summary>The lead over the checklist: "Set up Sindri", or "Sindri is set up"; empty until the first list.</summary>
     public string Lead { get; private set => Set(ref field, value); } = string.Empty;
@@ -130,6 +144,11 @@ internal sealed partial class SetupViewModel : ObservableObject
 
         ChecklistRequested?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>Registers Sindri in the approved repos again (Connect on a failed agents step). One press sends once.</summary>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>A task that completes when the answer is shown.</returns>
+    internal Task RegisterMcp(CancellationToken cancellationToken) => throw new NotSupportedException();
 
     /// <summary>Asks again, for every step, whether the app can do its action now.</summary>
     internal void Rederive()

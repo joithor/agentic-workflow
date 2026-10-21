@@ -68,6 +68,35 @@ internal sealed class SetupStepViewModel : ObservableObject
     /// <summary>The action, or null.</summary>
     public SetupActionViewModel? Action { get; private set; }
 
+    /// <summary>The repo form of the repo step; null for every other step.</summary>
+    internal SetupRepoFormViewModel? Repo { get; set; }
+
+    /// <summary>The Onyx controls of the Onyx step; null for every other step.</summary>
+    internal SetupOnyxViewModel? Onyx { get; set; }
+
+    /// <summary>One line per coding agent for the agents step; empty for every other step.</summary>
+    public IReadOnlyList<SetupAgentViewModel> Agents { get; private set; } = [];
+
+#pragma warning disable CA1822, MA0041 // the red commit's stubs
+    /// <summary>True when the meter of a failed step shows in the error colour.</summary>
+    public bool IsMeterFailed => false;
+
+    /// <summary>A line under the error: what Sindri does on its own; empty when nothing.</summary>
+    public string HintText => string.Empty;
+
+    /// <summary>True when there is a hint.</summary>
+    public bool HasHint => HintText.Length > 0;
+
+    /// <summary>The fixed line under the agents list about trusting the folder.</summary>
+    public string TrustOnceText => string.Empty;
+
+    /// <summary>The fixed line under the agents list about scope.</summary>
+    public string AgentsNoteText => string.Empty;
+
+#pragma warning restore CA1822, MA0041
+    /// <summary>True when the agents list shows.</summary>
+    public bool HasAgents => Agents.Count > 0;
+
     /// <summary>The ids and codes, for the closed Details.</summary>
     public IReadOnlyList<SetupFieldViewModel> Fields { get; private set; } = [];
 

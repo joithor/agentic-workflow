@@ -5,6 +5,7 @@ using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Context;
 using Aw.Sindri.Ui.Api.Jobs;
 using Aw.Sindri.Ui.Api.Sessions;
+using Aw.Sindri.Ui.Api.Setup;
 using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.Testing;
@@ -118,6 +119,11 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
             { } path when request.Method == HttpMethod.Get && (path == "/sindri/sessions" || path.StartsWith("/sindri/sessions/", StringComparison.Ordinal)) => await Sessions(uri, cancellationToken),
             { } path when path == "/sindri/jobs" || path.StartsWith("/sindri/jobs/", StringComparison.Ordinal) => await Jobs(request, cancellationToken),
             "/sindri/setup" when request.Method == HttpMethod.Get => Answer(Counted(await server.Setup(uri, cancellationToken), server.SetupAnswer)),
+            "/sindri/setup/repos" when request.Method == HttpMethod.Post => Answer(Counted(await server.AddRepo(uri, await Body<AddRepoRequest>(request, cancellationToken), cancellationToken), server.AddRepoAnswer)),
+            "/sindri/setup/mcp" when request.Method == HttpMethod.Post => Answer(Counted(await server.RegisterMcp(uri, await Body<RegisterMcpRequest>(request, cancellationToken), cancellationToken), server.RegisterMcpAnswer)),
+            "/sindri/onyx/setup" when request.Method == HttpMethod.Post => Answer(Counted(await server.SetupOnyx(uri, cancellationToken), server.SetupOnyxAnswer)),
+            "/sindri/onyx/account" when request.Method == HttpMethod.Post => Answer(Counted(await server.ConnectOnyx(uri, await Body<OnyxLogin>(request, cancellationToken), cancellationToken), server.ConnectOnyxAnswer)),
+            "/sindri/onyx/defer" when request.Method == HttpMethod.Post => Answer(Counted(await server.DeferOnyx(uri, await Body<OnyxDeferRequest>(request, cancellationToken), cancellationToken), server.DeferOnyxAnswer)),
             { } path when request.Method == HttpMethod.Get && path.StartsWith("/sindri/workflow/", StringComparison.Ordinal) => await Workflow(uri, cancellationToken),
             _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
         };

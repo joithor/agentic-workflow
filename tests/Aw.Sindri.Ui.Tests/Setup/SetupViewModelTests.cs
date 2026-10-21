@@ -19,6 +19,32 @@ public sealed class SetupViewModelTests
     private static SetupStepViewModel Step(SetupViewModel setup, string id) => setup.Steps.Single(s => s.Id == id);
 
     [Fact]
+    public async Task Map_row_has_no_button_unless_it_failed()
+    {
+        foreach (var scenario in (string[])["first-run", "running-progress", "map-retrying", "all-done"])
+        {
+            Assert.False(Step(await ReadWith(scenario), "map").HasAction, scenario);   // waiting, building, retrying by itself, done: the map builds itself
+        }
+
+        var failed = Step(await ReadWith("failed"), "map");
+        var building = Step(await ReadWith("running-progress"), "map");
+        Assert.Equal((true, "Retry"), (failed.HasAction, failed.Action?.Label));
+        Assert.Equal((true, 0.4, "40 of 100", false), (building.HasProgress, building.ProgressFraction, building.ProgressText, building.IsMeterFailed));   // a meter, not a button
+        Assert.Equal(Labels.SetupMapRetries, failed.HintText);   // and a line that it also retries on its own
+        Assert.Equal(string.Empty, building.HintText);
+    }
+
+    [Fact]
+    public async Task A_failed_map_that_counted_shows_where_it_stopped_on_a_meter_in_the_error_colour()
+    {
+        _f.Serve(WithProgress(Golden("failed"), "map", 40, 100));
+
+        var map = Step(await _f.Read(Token), "map");
+
+        Assert.Equal((true, true, 0.4, "40 of 100"), (map.HasProgress, map.IsMeterFailed, map.ProgressFraction, map.ProgressText));
+    }
+
+    [Fact]
     public async Task First_run_opens_the_first_step_and_shows_to_do_for_the_rest()
     {
         _f.Serve("first-run");
