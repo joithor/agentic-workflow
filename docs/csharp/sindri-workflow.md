@@ -279,8 +279,9 @@ Every state has `kind: active | wait | terminal`. State, loop and parameter (`wi
 | `outcome` | — | — | required: `resolved`, `unresolved`, `alreadySatisfied` or `failed` |
 
 `waitFor` is one of `{ event: <kind> }`, `{ answer: { id, question } }`, `{ resource: heavy | slot }` or
-`{ child: { recipe, inputs, onParked: propagate | ignore } }`. No resource has an allocator in this build, so a resource
-wait is reported as information (`RCP-RES-001`); at run time it parks with `SND-WF-010` until one lands. `then: retry`
+`{ child: { recipe, inputs, onParked: propagate | ignore } }`. The `heavy` resource is allocated over the box's heavy-job lock
+(LN-WF3, see "The heavy resource" below); `slot` is a stub that is always free (P7), so a `slot` wait is reported as information
+(`RCP-RES-001`). `then: retry`
 re-arms the deadline in the same frame and re-sends the entering transition's effects; it isn't allowed on a child wait
 (`RCP-TIME-002`), nor on a state whose Step runs on the block runtime, whose timeout must also outlast the Step's `maxDuration` (`RCP-TIME-003`).
 
@@ -393,7 +394,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-NEXT-002` | `next` names no approval-tier command | Leave it out |
 | `RCP-EFFECT-001` | Every effect is on the approved profile's effect allowlist. **Skipped** while no profile is approved or it has no `workflow.effects` | Add it to `workflow.effects` and approve the profile |
 | `RCP-HUMAN-001` | An effect whose block is `humanTrigger` runs only off a human's act: a `command.*` transition, a `step.completed` out of states that each run a `humanOnly` Step, or a `when` that requires a fact (`{fact: F, is: present}`, at the top or inside `all`) that only such command transitions produce. The initial state never counts | Move the effect onto a command transition or a human-only Step, or gate it on a fact a human's command produces |
-| `RCP-RES-001` | **Information:** a resource wait has no allocator in this build | None needed; it parks with `SND-WF-010` until one lands |
+| `RCP-RES-001` | **Information:** a `slot` wait has only the stub allocator in this build (`heavy` has the real one, LN-WF3 and is no longer reported) | None needed |
 | `RCP-URG-001` | `urgency` is `incident`, `triage` or `work` | Use one of them, or remove `urgency` (the default is `work`) |
 | `RCP-OUT-001` | An output's `from` names a state of the recipe | Name one of its states |
 | `RCP-OUT-002` | An output's `from` isn't a terminal or engine-owned state, and the state's Step, its leaving transitions' `produces` or its wait records the output's key. For a state that waits on a child, the child's declared outputs | Record the fact there, or name the state that does |
@@ -1295,3 +1296,14 @@ usage, the measured empty diff, and the stop of the session) before it decides.
 - **The dev recipe:** the interpreter tests (`AgentRuntimeInterpreterTests`) run an inline `workflow.dev-agent`: a `write`
   state whose Step is `step.report.write` (agent runtime), a state budget of 1000 tokens and a 1 minute timeout, with a fake
   launcher and fake sessions. It is not a shipped recipe.
+
+## The heavy resource (LN-WF3)
+
+`waitFor: { resource: heavy }` is granted when a slot of the box's heavy-job lock (`IHeavySlots`, the shared directory lock, its cap and its memory guard) was taken for the instance, holder `sindri <instance address>`. The grant is the `wait.satisfied` event with the resource source (`resource:heavy:<n>`). The wait's `timeout` bounds the take: a busy lock is "still waiting", never a failure, and the timer parks the wait like any other (`then: park`).
+
+- **Take and release run in activities** (`TakeHeavy`, `ReleaseHeavy`), never in workflow code; the take waits in 5 s slices, heartbeating, and a timer or a command cancels it. The lease lives in the worker's memory (`HeavyLeases`, keyed by instance address); a worker that stops loses it.
+- **Held** while the instance runs Steps off the desk (block or agent) and while it waits for its children. A child instance holds its own slot; the parent's is not released while a child runs.
+- **Released** when the instance ends, is cancelled, parks or is taken over, and at a desk Step (any Step with no runtime in the build). Before the next Step off the desk, the instance takes a slot again (bounded by that Step's timeout). This one rule also covers a worker restart: the instance is still in its heavy phase, the registry has no lease, so the next Step takes one first. A Step already running when the worker died may finish without a slot; it runs again on resume anyway.
+- **No second take inside a held Step:** a block Step's `StepContext.HeavySlotHeld` is true while the instance holds a slot; a Step that runs a build or tests takes none of its own. The agent launch (`AW_SANDBOX_SLOT_HELD=1`, sandbox spec) and BS-3d's check commands read the same fact once they land; `AW_HEAVY_LOCK_HELD` is never put in a session environment.
+- **Ledger:** one `workflow.heavy` row per grant (`heavy.held`) and per release (`heavy.released`), keyed like the other mirrored rows, so a replay writes it once.
+- A history recorded before the `ln-wf3-heavy-slot` marker never takes or grants a slot; an instance waiting on `heavy` from before stays waiting until its timeout parks it, as it did.
