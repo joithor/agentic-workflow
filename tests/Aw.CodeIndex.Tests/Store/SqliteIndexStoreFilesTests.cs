@@ -1,9 +1,7 @@
-using System.Text.RegularExpressions;
 using Aw.CodeIndex.Core;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Values;
 using Aw.CodeIndex.Infrastructure.Store;
-using Aw.CodeIndex.Testing;
 using Aw.Kernel.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Time.Testing;
@@ -93,7 +91,7 @@ public sealed partial class SqliteIndexStoreFilesTests : IDisposable
         await using (build)
         {
             Assert.True(build.Incremental);
-            Assert.Single((await build.StoredFiles(_none)).Value);
+            _ = Assert.Single((await build.StoredFiles(_none)).Value);
         }
     }
 
@@ -120,7 +118,7 @@ public sealed partial class SqliteIndexStoreFilesTests : IDisposable
 
         await Publish(store);
 
-        Assert.NotEqual(first, LiveFile);
+        Assert.NotEqual(first, LiveFile, StringComparer.Ordinal);
         Assert.True(File.Exists(first));
         Assert.False(File.Exists(Path.Combine(Indexes, "fixture.building")));
     }

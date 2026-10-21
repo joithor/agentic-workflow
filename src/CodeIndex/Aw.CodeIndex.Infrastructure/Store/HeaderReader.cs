@@ -17,7 +17,7 @@ internal static class HeaderReader
         var version = await Sql.Count(connection, "PRAGMA user_version", cancellationToken).ConfigureAwait(false);
         if (version != CodeIndexRules.SchemaVersion)
         {
-            throw new InvalidDataException($"the file has schema version {version}, not {CodeIndexRules.SchemaVersion}");
+            throw new InvalidDataException($"the file has schema version {version.ToString(CultureInfo.InvariantCulture)}, not {CodeIndexRules.SchemaVersion.ToString(CultureInfo.InvariantCulture)}");
         }
 
         var meta = await ReadMeta(connection, cancellationToken).ConfigureAwait(false);

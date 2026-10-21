@@ -9,14 +9,12 @@ namespace Aw.CodeIndex.Infrastructure.Store;
 
 internal sealed partial class SqliteIndexReader
 {
-    private const string FindExact = "SELECT " + HitColumns + """
-         FROM symbols s WHERE s.id IN (
-          SELECT id FROM symbols WHERE name = $text
-          UNION SELECT id FROM symbols WHERE ref = $text
-          UNION SELECT id FROM symbols WHERE file = $text
-          UNION SELECT id FROM symbols WHERE file = $path AND name = $name)
-         ORDER BY s.file, s.start_line, s.id LIMIT $limit
-        """;
+    private const string FindExact = "SELECT " + HitColumns + " FROM symbols s WHERE s.id IN ( "
+        + "SELECT id FROM symbols WHERE name = $text "
+        + "UNION SELECT id FROM symbols WHERE ref = $text "
+        + "UNION SELECT id FROM symbols WHERE file = $text "
+        + "UNION SELECT id FROM symbols WHERE file = $path AND name = $name) "
+        + "ORDER BY s.file, s.start_line, s.id LIMIT $limit";
 
     private const string FindPrefixOpen = "SELECT " + HitColumns + " FROM symbols s WHERE s.name >= $low ORDER BY s.file, s.start_line, s.id LIMIT $limit";
 

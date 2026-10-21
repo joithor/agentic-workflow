@@ -1,5 +1,4 @@
 using System.Globalization;
-using Aw.Kernel.Data;
 using Microsoft.Data.Sqlite;
 
 namespace Aw.CodeIndex.Infrastructure.Store;

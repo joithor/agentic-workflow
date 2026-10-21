@@ -9,7 +9,7 @@ using Microsoft.Data.Sqlite;
 namespace Aw.CodeIndex.Infrastructure.Store;
 
 /// <summary>
-/// A read-only view of one published index file (spec §4.1): opened <c>mode=ro</c> with <c>query_only</c>, never creating
+/// A read-only view of one published index file (spec §4.1): opened <c lang="text">mode=ro</c> with <c lang="text">query_only</c>, never creating
 /// a file; every query is parameterized and nothing a caller passes becomes SQL or a path.
 /// </summary>
 internal sealed partial class SqliteIndexReader(SqliteConnection connection, IndexHeader header) : IIndexReader
@@ -46,7 +46,7 @@ internal sealed partial class SqliteIndexReader(SqliteConnection connection, Ind
         }
     }
 
-    /// <summary>Runs <c>PRAGMA quick_check(1)</c>.</summary>
+    /// <summary>Runs <c lang="sql">PRAGMA quick_check(1)</c>.</summary>
     /// <returns>True when SQLite finds no problem.</returns>
     internal async Task<bool> QuickCheck(CancellationToken cancellationToken)
         => string.Equals(await Sql.Scalar(connection, "PRAGMA quick_check(1)", cancellationToken).ConfigureAwait(false) as string, "ok", StringComparison.Ordinal);

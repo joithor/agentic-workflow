@@ -23,18 +23,16 @@ internal sealed partial class SqliteIndexReader
     private const string UnresolvedFrom = "SELECT COUNT(*) FROM edges WHERE dst IS NULL AND kind = 'calls' AND src = $id";
 
     // The members of the types that inherit, at any depth, from the subject member's own type, with its name and arity.
-    private const string Implementations = """
-        WITH RECURSIVE subject(id, name, arity, container) AS (
-          SELECT id, name, arity, substr(qualified, 1, length(qualified) - length(name) - 1) FROM symbols WHERE id = $id),
-        implementor(id) AS (
-          SELECT e.src FROM edges e JOIN symbols t ON t.id = e.dst, subject
-           WHERE e.kind = 'inherits' AND t.qualified = subject.container AND t.kind IN ('class', 'record', 'struct', 'interface', 'enum')
-          UNION
-          SELECT e.src FROM edges e JOIN implementor ON e.dst = implementor.id WHERE e.kind = 'inherits')
-        SELECT m.id FROM implementor JOIN symbols u ON u.id = implementor.id JOIN subject
-          JOIN symbols m ON m.qualified = u.qualified || '.' || subject.name AND m.arity = subject.arity
-           AND m.kind NOT IN ('class', 'record', 'struct', 'interface', 'enum') AND m.id <> subject.id
-        """;
+    private const string Implementations = "WITH RECURSIVE subject(id, name, arity, container) AS ( "
+        + "SELECT id, name, arity, substr(qualified, 1, length(qualified) - length(name) - 1) FROM symbols WHERE id = $id), "
+        + "implementor(id) AS ( "
+        + "SELECT e.src FROM edges e JOIN symbols t ON t.id = e.dst, subject "
+        + "WHERE e.kind = 'inherits' AND t.qualified = subject.container AND t.kind IN ('class', 'record', 'struct', 'interface', 'enum') "
+        + "UNION "
+        + "SELECT e.src FROM edges e JOIN implementor ON e.dst = implementor.id WHERE e.kind = 'inherits') "
+        + "SELECT m.id FROM implementor JOIN symbols u ON u.id = implementor.id JOIN subject "
+        + "JOIN symbols m ON m.qualified = u.qualified || '.' || subject.name AND m.arity = subject.arity "
+        + "AND m.kind NOT IN ('class', 'record', 'struct', 'interface', 'enum') AND m.id <> subject.id";
 
     public ValueTask<Result<CallWalk>> Walk(SymbolRef symbol, CallDirection direction, CallDepth depth, bool includeImplementations, CancellationToken cancellationToken)
         => SqliteFailure.Guard("Walking the call edges", async () => await WalkEdges(symbol, direction, depth, includeImplementations, cancellationToken).ConfigureAwait(false));
@@ -54,7 +52,7 @@ internal sealed partial class SqliteIndexReader
         }
 
         var unresolved = await CountUnresolved(subject, direction, cancellationToken).ConfigureAwait(false);
-        return new CallWalk(walk.Edges, unresolved, walk.Truncated);
+        return new CallWalk(walk.Edges, unresolved, walk.Truncated, CallCoverage.Of(await LanguageCoverage(subject, cancellationToken).ConfigureAwait(false), walk.Edges));
     }
 
     // Callers of a base or interface member also include the callers of its implementations, when asked.
@@ -67,6 +65,16 @@ internal sealed partial class SqliteIndexReader
         }
 
         return targets;
+    }
+
+    private async Task<Coverage> LanguageCoverage(long subject, CancellationToken cancellationToken)
+    {
+        var command = Sql.Command(connection, "SELECT f.lang FROM symbols s JOIN files f ON f.path = s.file WHERE s.id = $id").With("$id", subject);
+        await using (command.ConfigureAwait(false))
+        {
+            var language = await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false) as string;
+            return string.Equals(language, "csharp", StringComparison.Ordinal) ? Coverage.Full : Coverage.Partial;
+        }
     }
 
     private async Task<int> CountUnresolved(long subject, CallDirection direction, CancellationToken cancellationToken)
@@ -100,7 +108,8 @@ internal sealed partial class SqliteIndexReader
                         StoredNames.BasisOf(reader.GetString(3)),
                         StoredNames.ConfidenceOf(reader.GetString(4)),
                         reader.GetInt32(0),
-                        reader.GetInt32(5));
+                        reader.GetInt32(5),
+                        StoredNames.BasisOf(reader.GetString(3)) == EdgeBasis.Syntax ? Coverage.Full : Coverage.Partial);
                     rows.Add((edge, reader.IsDBNull(6) ? null : reader.GetInt64(6)));
                 }
             }

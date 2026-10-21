@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text;
 using Aw.CodeIndex.Core;
 using Aw.CodeIndex.Core.Facade;
@@ -53,7 +54,11 @@ public sealed class FakeRepoSnapshotTests
 
         var reader = (await snapshot.OpenBlobs(_repo, TestContext.Current.CancellationToken)).Value;
         var present = await reader.Read(inventory.Files.Single(f => f.Path == "present.txt").Blob, TestContext.Current.CancellationToken);
-        var gone = await reader.Read(inventory.Files.Single(f => f.Path == "gone.txt").Blob, TestContext.Current.CancellationToken);
+        var goneBlob = Convert.ToHexStringLower(SHA256.HashData("bye"u8))[..40];
+        var gone = await reader.Read(goneBlob, TestContext.Current.CancellationToken);
+
+        // A file whose blob is missing is left out of the inventory, like the real snapshot's promisor-clone case.
+        Assert.DoesNotContain(inventory.Files, f => string.Equals(f.Path, "gone.txt", StringComparison.Ordinal));
 
         Assert.Equal("hello", Encoding.UTF8.GetString(present.Value!));
         Assert.Null(gone.Value);

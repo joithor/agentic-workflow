@@ -1,3 +1,5 @@
+using Aw.CodeIndex.Core.Values;
+
 namespace Aw.CodeIndex.Tests.Store;
 
 public sealed partial class SqliteIndexStoreFilesTests

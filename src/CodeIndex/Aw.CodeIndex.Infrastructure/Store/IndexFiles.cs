@@ -6,14 +6,14 @@ using Aw.Kernel;
 namespace Aw.CodeIndex.Infrastructure.Store;
 
 /// <summary>
-/// The files of the per-repo indexes in one directory (spec §4.1): <c>&lt;repo&gt;.&lt;ulid&gt;.db</c> index files, the one-line
-/// pointer <c>&lt;repo&gt;.current</c> that names the live ULID, and <c>&lt;repo&gt;.building</c>, which names the running build's file.
+/// The files of the per-repo indexes in one directory (spec §4.1): <c lang="text">&lt;repo&gt;.&lt;ulid&gt;.db</c> index files, the one-line
+/// pointer <c lang="text">&lt;repo&gt;.current</c> that names the live ULID, and <c lang="text">&lt;repo&gt;.building</c>, which names the running build's file.
 /// </summary>
 internal sealed class IndexFiles(string directory)
 {
     private static readonly TimeSpan _leftoverAge = TimeSpan.FromMinutes(10);
-    private static readonly UnixFileMode _privateFile = UnixFileMode.UserRead | UnixFileMode.UserWrite;
-    private static readonly UnixFileMode _privateDirectory = _privateFile | UnixFileMode.UserExecute;
+    private const UnixFileMode PrivateFile = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+    private const UnixFileMode PrivateDirectory = PrivateFile | UnixFileMode.UserExecute;
 
     internal string Root { get; } = directory;
 
@@ -56,17 +56,7 @@ internal sealed class IndexFiles(string directory)
         return file.LinkTarget is null && file.Exists ? (Result<string?>)file.FullName : Damaged("the pointer names a file that is not there");
     }
 
-    internal void EnsureDirectory()
-    {
-        if (OperatingSystem.IsWindows())
-        {
-            _ = Directory.CreateDirectory(Root);
-        }
-        else
-        {
-            _ = Directory.CreateDirectory(Root, _privateDirectory);
-        }
-    }
+    internal void EnsureDirectory() => _ = OperatingSystem.IsWindows() ? Directory.CreateDirectory(Root) : Directory.CreateDirectory(Root, PrivateDirectory);
 
     /// <summary>Creates an empty file, private to the owner, that must not exist yet.</summary>
     internal static FileStream CreatePrivate(string path)
@@ -74,13 +64,13 @@ internal sealed class IndexFiles(string directory)
         var options = new FileStreamOptions { Mode = FileMode.CreateNew, Access = FileAccess.Write, Share = FileShare.None };
         if (!OperatingSystem.IsWindows())
         {
-            options.UnixCreateMode = _privateFile;
+            options.UnixCreateMode = PrivateFile;
         }
 
         return new FileStream(path, options);
     }
 
-    /// <summary>Publishes a new live ULID: writes <c>.current.tmp</c> beside the pointer, then renames it over the pointer.</summary>
+    /// <summary>Publishes a new live ULID: writes <c lang="text">.current.tmp</c> beside the pointer, then renames it over the pointer.</summary>
     internal async Task SwapPointer(RepoName repo, string ulid, CancellationToken cancellationToken)
     {
         var temporary = PointerPath(repo) + ".tmp";
@@ -130,7 +120,7 @@ internal sealed class IndexFiles(string directory)
         foreach (var file in new DirectoryInfo(Root).EnumerateFiles($"{repo.Value}.*"))
         {
             var match = pattern.Match(file.Name);
-            if (match.Success && !keep.Contains(match.Groups["ulid"].Value) && now - file.LastWriteTimeUtc > _leftoverAge)
+            if (match.Success && !keep.Contains(match.Groups["ulid"].Value) && now - new DateTimeOffset(file.LastWriteTimeUtc) > _leftoverAge)
             {
                 file.Delete();
             }

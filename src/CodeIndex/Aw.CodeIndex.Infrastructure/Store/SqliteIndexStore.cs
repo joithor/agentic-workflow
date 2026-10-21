@@ -72,7 +72,7 @@ internal sealed class SqliteIndexStore(string directory, TimeProvider time) : II
         }
 
         var reader = await SqliteFailure.Guard(what, async () => await SqliteIndexReader.Open(file, cancellationToken).ConfigureAwait(false)).ConfigureAwait(false);
-        return reader.IsError ? reader.Error : (SqliteIndexReader?)reader.Value;
+        return reader.IsError ? reader.Error : reader.Value;
     }
 
     private async ValueTask<Result<IIndexBuild>> StartBuild(RepoName repo, bool incremental, CancellationToken cancellationToken)
@@ -98,7 +98,7 @@ internal sealed class SqliteIndexStore(string directory, TimeProvider time) : II
             }
 
             started = true;
-            return new SqliteIndexBuild(_files, repo, ulid, connection.Value, previous?.Header, time);
+            return new SqliteIndexBuild(_files, repo, ulid, connection.Value, previous?.Header);
         }
         finally
         {

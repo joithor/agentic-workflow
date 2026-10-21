@@ -20,9 +20,7 @@ public sealed class VectorCodecTests
 
     [Fact]
     public void A_blob_that_is_not_a_whole_number_of_floats_is_damage()
-    {
-        Assert.Throws<InvalidDataException>(() => VectorCodec.Decode(new byte[6]));
-    }
+        => _ = Assert.Throws<InvalidDataException>(() => VectorCodec.Decode(new byte[6]));
 
     [Fact]
     public void Cosine_is_one_for_the_same_direction_zero_for_orthogonal_and_zero_for_a_zero_vector()
@@ -34,7 +32,5 @@ public sealed class VectorCodecTests
 
     [Fact]
     public void Cosine_compares_the_shared_length_when_the_vectors_differ_in_size()
-    {
-        Assert.Equal(1.0, VectorCodec.Cosine([1, 0, 9], [3, 0]), precision: 9);
-    }
+        => Assert.Equal(1.0, VectorCodec.Cosine([1, 0, 9], [3, 0]), precision: 9);
 }

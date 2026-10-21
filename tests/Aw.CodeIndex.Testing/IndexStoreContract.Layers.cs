@@ -1,5 +1,4 @@
 using Aw.CodeIndex.Core.Model;
-using Aw.CodeIndex.Core.Values;
 using Xunit;
 
 namespace Aw.CodeIndex.Testing;

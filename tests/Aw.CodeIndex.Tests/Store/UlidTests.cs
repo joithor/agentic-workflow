@@ -25,7 +25,7 @@ public sealed class UlidTests
         time.Advance(TimeSpan.FromMilliseconds(5));
         var later = Ulid.New(time);
 
-        Assert.NotEqual(first, sameMillisecond);
+        Assert.NotEqual(first, sameMillisecond, StringComparer.Ordinal);
         Assert.True(string.CompareOrdinal(first, later) < 0);
         Assert.True(string.CompareOrdinal(sameMillisecond, later) < 0);
     }
@@ -38,7 +38,5 @@ public sealed class UlidTests
     [InlineData("01jc0000000000000000000000")]
     [InlineData("../01JC00000000000000000000")]
     public void A_text_that_is_not_26_crockford_characters_is_not_a_ulid(string text)
-    {
-        Assert.False(Ulid.IsValid(text));
-    }
+        => Assert.False(Ulid.IsValid(text));
 }

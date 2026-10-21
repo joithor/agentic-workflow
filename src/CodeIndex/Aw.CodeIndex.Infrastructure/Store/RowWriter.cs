@@ -8,11 +8,9 @@ internal sealed class RowWriter : IAsyncDisposable
 {
     private const string InsertFile = "INSERT INTO files(path, blob, size, lang, parsed) VALUES ($path, $blob, $size, $lang, $parsed)";
 
-    private const string InsertSymbol = """
-        INSERT INTO symbols(file, ref, name, qualified, kind, arity, start_line, end_line, exported, utility, signature, shape_hash, token_count, complexity, minhash)
-        VALUES ($file, $ref, $name, $qualified, $kind, $arity, $start, $end, $exported, $utility, $signature, $shape, $tokens, $complexity, $minhash)
-        RETURNING id
-        """;
+    private const string InsertSymbol = "INSERT INTO symbols(file, ref, name, qualified, kind, arity, start_line, end_line, exported, utility, signature, shape_hash, token_count, complexity, minhash) "
+        + "VALUES ($file, $ref, $name, $qualified, $kind, $arity, $start, $end, $exported, $utility, $signature, $shape, $tokens, $complexity, $minhash) "
+        + "RETURNING id";
 
     private const string InsertCallSite = "INSERT INTO call_sites(src, kind, name, arity, receiver, line) VALUES ($src, $kind, $name, $arity, $receiver, $line)";
 
@@ -60,10 +58,11 @@ internal sealed class RowWriter : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        foreach (var statement in (Stmt[])[_file, _symbol, _callSite, _band, _body])
-        {
-            await statement.DisposeAsync().ConfigureAwait(false);
-        }
+        await _file.DisposeAsync().ConfigureAwait(false);
+        await _symbol.DisposeAsync().ConfigureAwait(false);
+        await _callSite.DisposeAsync().ConfigureAwait(false);
+        await _band.DisposeAsync().ConfigureAwait(false);
+        await _body.DisposeAsync().ConfigureAwait(false);
     }
 
     private async Task<long> InsertSymbolRow(string path, SymbolRecord symbol, CancellationToken cancellationToken)

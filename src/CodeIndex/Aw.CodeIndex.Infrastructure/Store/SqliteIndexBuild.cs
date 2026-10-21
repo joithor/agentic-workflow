@@ -10,7 +10,7 @@ namespace Aw.CodeIndex.Infrastructure.Store;
 /// One build file in progress (spec §4.1, §5.7): the only way to write an index. The file is private to the owner and
 /// invisible to readers until <see cref="Publish"/> swaps the pointer; disposing without publishing deletes it.
 /// </summary>
-internal sealed partial class SqliteIndexBuild(IndexFiles files, RepoName repo, string ulid, SqliteConnection connection, IndexHeader? previous, TimeProvider time) : IIndexBuild
+internal sealed partial class SqliteIndexBuild(IndexFiles files, RepoName repo, string ulid, SqliteConnection connection, IndexHeader? previous) : IIndexBuild
 {
     private bool _published;
     private bool _closed;

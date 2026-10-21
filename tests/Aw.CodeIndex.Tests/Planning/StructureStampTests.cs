@@ -26,14 +26,12 @@ public sealed class StructureStampTests
     {
         var baseline = StructureStamp.Compute("p", ["a"], ["x"]);
 
-        Assert.NotEqual(baseline, StructureStamp.Compute("q", ["a"], ["x"]));
-        Assert.NotEqual(baseline, StructureStamp.Compute("p", ["a", "b"], ["x"]));
-        Assert.NotEqual(baseline, StructureStamp.Compute("p", ["a"], ["x", "y"]));
+        Assert.NotEqual(baseline, StructureStamp.Compute("q", ["a"], ["x"]), StringComparer.Ordinal);
+        Assert.NotEqual(baseline, StructureStamp.Compute("p", ["a", "b"], ["x"]), StringComparer.Ordinal);
+        Assert.NotEqual(baseline, StructureStamp.Compute("p", ["a"], ["x", "y"]), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
     public void A_glob_moved_into_the_scrub_list_is_a_different_stamp()
-    {
-        Assert.NotEqual(StructureStamp.Compute("p", ["a"], []), StructureStamp.Compute("p", [], ["a"]));
-    }
+        => Assert.NotEqual(StructureStamp.Compute("p", ["a"], []), StructureStamp.Compute("p", [], ["a"]), StringComparer.Ordinal);
 }

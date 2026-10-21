@@ -45,19 +45,14 @@ internal sealed class FakeIndexReader(FakeIndexData data) : IIndexReader
         var truncated = false;
         for (var level = 1; level <= (int)depth && frontier.Count > 0; level++)
         {
-            var targets = new List<SymbolRef>(frontier);
-            if (includeImplementations && direction == CallDirection.Callers)
-            {
-                targets.AddRange(frontier.SelectMany(f => data.ImplementationsOf(data.Symbols.First(x => x.Symbol.Ref.Equals(f)).Symbol)).Where(seen.Add));
-            }
-
+            var targets = Targets(frontier, seen, includeImplementations && direction == CallDirection.Callers);
             var step = data.Edges.Where(e => e.Kind == EdgeKind.Calls && Follows(e, direction, targets)).ToList();
             truncated |= step.Count > CodeIndexRules.MaxEdgesPerLevel;
             frontier = [];
             foreach (var edge in step.Take(CodeIndexRules.MaxEdgesPerLevel))
             {
                 var other = direction == CallDirection.Callers ? edge.Source : edge.Target;
-                edges.Add(new CallEdge(level, other is { } o ? data.Hit(o) : null, edge.TargetName, edge.Kind, edge.Basis, edge.Confidence, edge.Line, edge.Candidates, RowCoverage(edge)));
+                edges.Add(new CallEdge(level, HitOf(other), edge.TargetName, edge.Kind, edge.Basis, edge.Confidence, edge.Line, edge.Candidates, RowCoverage(edge)));
                 if (other is { } following && seen.Add(following))
                 {
                     frontier.Add(following);
@@ -97,6 +92,20 @@ internal sealed class FakeIndexReader(FakeIndexData data) : IIndexReader
             .Select(x => new Neighbor(data.Hit(x.e.Symbol)!, x.Score))]);
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+
+    // Callers of a base or interface member also include the callers of its implementations, when asked.
+    private List<SymbolRef> Targets(List<SymbolRef> frontier, HashSet<SymbolRef> seen, bool withImplementations)
+    {
+        var targets = new List<SymbolRef>(frontier);
+        if (withImplementations)
+        {
+            targets.AddRange(frontier.SelectMany(f => data.ImplementationsOf(data.Symbols.First(x => x.Symbol.Ref.Equals(f)).Symbol)).Where(seen.Add));
+        }
+
+        return targets;
+    }
+
+    private SymbolHit? HitOf(SymbolRef? symbol) => symbol is { } s ? data.Hit(s) : null;
 
     private Coverage LanguageCoverage(SymbolRef symbol)
         => string.Equals(data.Symbols.Where(x => x.Symbol.Ref.Equals(symbol)).Select(x => x.File.Language).FirstOrDefault(), "csharp", StringComparison.Ordinal) ? Coverage.Full : Coverage.Partial;

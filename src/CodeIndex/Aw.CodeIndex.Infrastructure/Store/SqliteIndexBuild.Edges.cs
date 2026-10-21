@@ -9,17 +9,13 @@ internal sealed partial class SqliteIndexBuild
 {
     private const string ReadSymbolRows = "SELECT ref, file, name, qualified, kind, arity, start_line, end_line FROM symbols ORDER BY id";
 
-    private const string ReadSiteRows = """
-        SELECT s.ref, c.kind, c.name, c.arity, c.receiver, c.line
-        FROM call_sites c JOIN symbols s ON s.id = c.src ORDER BY c.rowid
-        """;
+    private const string ReadSiteRows = "SELECT s.ref, c.kind, c.name, c.arity, c.receiver, c.line "
+        + "FROM call_sites c JOIN symbols s ON s.id = c.src ORDER BY c.rowid";
 
     // A source that is not in the index adds nothing; a target that is not in it is stored as unresolved.
-    private const string InsertEdge = """
-        INSERT OR IGNORE INTO edges(src, dst, dst_name, kind, basis, confidence, line, candidates)
-        SELECT s.id, (SELECT id FROM symbols WHERE ref = $dst), $name, $kind, $basis, $confidence, $line, $candidates
-        FROM symbols s WHERE s.ref = $src
-        """;
+    private const string InsertEdge = "INSERT OR IGNORE INTO edges(src, dst, dst_name, kind, basis, confidence, line, candidates) "
+        + "SELECT s.id, (SELECT id FROM symbols WHERE ref = $dst), $name, $kind, $basis, $confidence, $line, $candidates "
+        + "FROM symbols s WHERE s.ref = $src";
 
     public ValueTask<Result<IReadOnlyList<ResolutionSymbol>>> ReadSymbols(CancellationToken cancellationToken)
         => SqliteFailure.Guard("Reading the symbols", async () => await ReadAllSymbols(cancellationToken).ConfigureAwait(false));

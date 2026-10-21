@@ -44,7 +44,7 @@ public abstract partial class IndexStoreContract
         await using (reader)
         {
             var page = Ok(await reader.FindSymbols(Prefix("Run"), _none), "prefix Run");
-            Expect.That(page.Hits.Select(h => h.Name).SequenceEqual(["Run", "Runner", "Runeé"]) && !page.Truncated, "every name that starts with the text matches, and no other");
+            Expect.That(page.Hits.Select(h => h.Name).SequenceEqual(["Run", "Runner", "Runeé"], StringComparer.Ordinal) && !page.Truncated, "every name that starts with the text matches, and no other");
             var cut = Ok(await reader.FindSymbols(Prefix("Run", limit: 2), _none), "prefix Run, limit 2");
             Expect.That(cut.Hits.Count == 2 && cut.Truncated, "a page over its limit is cut and marked truncated");
             Expect.That(Ok(await reader.FindSymbols(Prefix("%"), _none), "prefix %").Hits.Count == 0, "a wildcard character is text, never a pattern");
@@ -123,7 +123,7 @@ public abstract partial class IndexStoreContract
     {
         var store = Create();
         var target = SymbolOf("src/T.cs", "T.Target");
-        var callers = Enumerable.Range(0, CodeIndexRules.MaxEdgesPerLevel + 1).Select(i => SymbolOf("src/C.cs", $"C.Caller{i:D3}", line: i * 10 + 1)).ToArray();
+        var callers = Enumerable.Range(0, CodeIndexRules.MaxEdgesPerLevel + 1).Select(i => SymbolOf("src/C.cs", $"C.Caller{i.ToString("D3", System.Globalization.CultureInfo.InvariantCulture)}", line: (i * 10) + 1)).ToArray();
         _ = await Publish(store, [FileOf("src/T.cs", target), FileOf("src/C.cs", callers)], [.. callers.Select(c => CallEdge(c, target))]);
 
         var reader = await Reader(store);
@@ -156,7 +156,7 @@ public abstract partial class IndexStoreContract
             var plain = Ok(await reader.Walk(contractRun.Ref, CallDirection.Callers, CallDepth.One, includeImplementations: false, _none), "callers");
             Expect.That(plain.Edges.Select(e => e.Other?.Ref).SequenceEqual([viaContract.Ref]), "without the flag only direct callers are listed");
             var all = Ok(await reader.Walk(contractRun.Ref, CallDirection.Callers, CallDepth.One, includeImplementations: true, _none), "callers with implementations");
-            Expect.That(Refs(all.Edges.Select(e => e.Other!)).Order(StringComparer.Ordinal).SequenceEqual(new[] { viaContract.Ref.Value, viaImpl.Ref.Value }.Order(StringComparer.Ordinal)), "with the flag the callers of the implementing member of the same name and arity join");
+            Expect.That(Refs(all.Edges.Select(e => e.Other!)).Order(StringComparer.Ordinal).SequenceEqual(new[] { viaContract.Ref.Value, viaImpl.Ref.Value }.Order(StringComparer.Ordinal), StringComparer.Ordinal), "with the flag the callers of the implementing member of the same name and arity join");
             var downward = Ok(await reader.Walk(implRun.Ref, CallDirection.Callers, CallDepth.One, includeImplementations: true, _none), "callers of the implementation");
             Expect.That(downward.Edges.Select(e => e.Other?.Ref).SequenceEqual([viaImpl.Ref]), "an implementation has no implementations of its own");
             var callees = Ok(await reader.Walk(viaContract.Ref, CallDirection.Callees, CallDepth.Two, includeImplementations: true, _none), "callees");

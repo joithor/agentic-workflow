@@ -22,9 +22,9 @@ public sealed class BuildPlannerTests
     {
         var plan = BuildPlanner.Plan(Input(snapshot: [File("a.cs", "1"), File("b.cs", "2")], stored: [], layers: []));
 
-        Assert.Equal(["a.cs", "b.cs"], plan.ToParse.Select(f => f.Path));
+        Assert.Equal(["a.cs", "b.cs"], plan.ToParse.Select(f => f.Path), StringComparer.Ordinal);
         Assert.Empty(plan.ToDrop);
-        Assert.All(plan.LayersCurrent.Values, current => Assert.False(current));
+        Assert.All(plan.LayersCurrent.Values, Assert.False);
         Assert.Equal(5, plan.LayersCurrent.Count);
     }
 
@@ -35,7 +35,7 @@ public sealed class BuildPlannerTests
 
         Assert.Empty(plan.ToParse);
         Assert.Empty(plan.ToDrop);
-        Assert.All(plan.LayersCurrent.Values, current => Assert.True(current));
+        Assert.All(plan.LayersCurrent.Values, Assert.True);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -71,7 +71,7 @@ public sealed class BuildPlannerTests
 
         var plan = BuildPlanner.Plan(Input([File("a.cs", "1"), File("b.cs", "2")], [Stored("a.cs", "1"), Stored("b.cs", "2"), Stored("gone.cs", "3")], AllOk(), wanted));
 
-        Assert.Equal(["a.cs", "b.cs"], plan.ToParse.Select(f => f.Path));
+        Assert.Equal(["a.cs", "b.cs"], plan.ToParse.Select(f => f.Path), StringComparer.Ordinal);
         Assert.Equal(["gone.cs"], plan.ToDrop);
         Assert.False(plan.LayersCurrent[LayerName.Structure]);
     }
@@ -125,13 +125,13 @@ public sealed class BuildPlannerTests
     {
         var plan = BuildPlanner.Plan(Input([File("a.cs", "2")], [Stored("a.cs", "1")], AllOk()));
 
-        Assert.All(plan.LayersCurrent.Values, current => Assert.False(current));
+        Assert.All(plan.LayersCurrent.Values, Assert.False);
     }
 
     [Fact, Trait("Lane", "unit")]
     public void A_layer_with_no_wanted_stamp_is_never_current()
     {
-        var wanted = _wanted.Where(p => p.Key != LayerName.Deps).ToDictionary();
+        var wanted = new Dictionary<LayerName, string>(_wanted.Where(p => p.Key != LayerName.Deps));
 
         var plan = BuildPlanner.Plan(Input([File("a.cs", "1")], [Stored("a.cs", "1")], AllOk(), wanted));
 

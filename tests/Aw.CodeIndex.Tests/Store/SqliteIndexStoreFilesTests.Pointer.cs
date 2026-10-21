@@ -46,14 +46,14 @@ public sealed partial class SqliteIndexStoreFilesTests
         var live = LiveFile;
         var target = Path.Combine(_root, "elsewhere.db");
         File.Move(live, target);
-        File.CreateSymbolicLink(live, target);
+        _ = File.CreateSymbolicLink(live, target);
         Assert.Equal("SND-CODEIDX-010", (await store.ReadHeader(_repo, _none)).Error.Code);
 
         File.Delete(live);
         File.Move(target, live);
         var pointerTarget = Path.Combine(_root, "elsewhere.current");
         File.Move(Pointer, pointerTarget);
-        File.CreateSymbolicLink(Pointer, pointerTarget);
+        _ = File.CreateSymbolicLink(Pointer, pointerTarget);
         Assert.Equal("SND-CODEIDX-010", (await store.ReadHeader(_repo, _none)).Error.Code);
     }
 
@@ -87,8 +87,8 @@ public sealed partial class SqliteIndexStoreFilesTests
         var store = Store();
         await Publish(store);
         var bytes = await File.ReadAllBytesAsync(LiveFile, _none);
-        // Page 1 (the header and schema) is intact, so the file opens and reads its header; a later page is zeroed.
-        Array.Clear(bytes, bytes.Length - 1024, 1024);
+        // Page 1 (the schema) and page 2 (the meta table, created first) are intact, so the file opens and reads its header; every table after them is zeroed.
+        Array.Clear(bytes, 8192, bytes.Length - 8192);
         await File.WriteAllBytesAsync(LiveFile, bytes, _none);
 
         var build = (await store.BeginBuild(_repo, incremental: true, _none)).Value;

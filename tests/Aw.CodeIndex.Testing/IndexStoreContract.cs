@@ -71,7 +71,7 @@ public abstract partial class IndexStoreContract
     /// <param name="line">The call's line.</param>
     /// <returns>The edge, with no target.</returns>
     protected static EdgeRecord UnresolvedEdge(SymbolRecord from, string name, int line = 3)
-        => new(from.Ref, null, name, EdgeKind.Calls, EdgeBasis.Syntax, Confidence.Unresolved, line, Candidates: 0);
+        => new(from.Ref, Target: null, name, EdgeKind.Calls, EdgeBasis.Syntax, Confidence.Unresolved, line, Candidates: 0);
 
     /// <summary>Builds and publishes an index from scratch.</summary>
     /// <param name="store">The store.</param>
@@ -107,7 +107,7 @@ public abstract partial class IndexStoreContract
     /// <param name="result">The result.</param>
     /// <param name="what">What was expected to succeed.</param>
     /// <returns>The value.</returns>
-    protected static T Ok<T>(Aw.Kernel.Result<T> result, string what)
+    protected static T Ok<T>(Kernel.Result<T> result, string what)
     {
         Expect.That(result.IsSuccess, $"{what} (got {(result.IsError ? result.Error.Code : "success")})");
         return result.Value;
@@ -117,14 +117,14 @@ public abstract partial class IndexStoreContract
     /// <typeparam name="T">The value type.</typeparam>
     /// <param name="result">The result.</param>
     /// <param name="what">What was expected to succeed.</param>
-    protected static void Succeeds<T>(Aw.Kernel.Result<T> result, string what) => _ = Ok(result, what);
+    protected static void Succeeds<T>(Kernel.Result<T> result, string what) => _ = Ok(result, what);
 
     /// <summary>Checks that a result failed with a code.</summary>
     /// <typeparam name="T">The value type.</typeparam>
     /// <param name="result">The result.</param>
     /// <param name="code">The expected catalogue code.</param>
     /// <param name="what">What was expected to fail.</param>
-    protected static void Fails<T>(Aw.Kernel.Result<T> result, string code, string what)
+    protected static void Fails<T>(Kernel.Result<T> result, string code, string what)
         => Expect.That(result.IsError && string.Equals(result.Error.Code, code, StringComparison.Ordinal), $"{what} fails with {code} (got {(result.IsError ? result.Error.Code : "success")})");
 
     /// <summary>The one item of a list.</summary>

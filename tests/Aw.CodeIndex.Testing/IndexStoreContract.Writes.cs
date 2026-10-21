@@ -19,10 +19,10 @@ public abstract partial class IndexStoreContract
         {
             var entries = Ok(await reader.FileSymbols(["src/A.cs", "src/none.cs"], _none), "listing");
 
-            Expect.That(entries.Select(e => e.Path).SequenceEqual(["src/A.cs", "src/none.cs"]), "one entry per path asked, in the order asked");
-            Expect.That(entries[0].Symbols.Select(s => s.Name).SequenceEqual(["Early", "Late"]), "symbols come in line order");
+            Expect.That(entries.Select(e => e.Path).SequenceEqual(["src/A.cs", "src/none.cs"], StringComparer.Ordinal), "one entry per path asked, in the order asked");
+            Expect.That(entries[0].Symbols.Select(s => s.Name).SequenceEqual(["Early", "Late"], StringComparer.Ordinal), "symbols come in line order");
             Expect.That(entries[1].Symbols.Count == 0, "a path with no file has an empty entry");
-            Expect.That(entries[0].Symbols[0] is { Kind: SymbolKind.Method, File: "src/A.cs", StartLine: 2, EndLine: 6, Exported: true, Signature: "void Early()" }, "a hit carries kind, file, span, signature and exported");
+            Expect.That(entries[0].Symbols[0] is { Kind: SymbolKind.Method, StartLine: 2, EndLine: 6, Exported: true } && string.Equals(entries[0].Symbols[0].File, "src/A.cs", StringComparison.Ordinal) && string.Equals(entries[0].Symbols[0].Signature, "void Early()", StringComparison.Ordinal), "a hit carries kind, file, span, signature and exported");
         }
     }
 
@@ -44,7 +44,7 @@ public abstract partial class IndexStoreContract
         await using (reader)
         {
             var entry = Ok(await reader.FileSymbols(["src/A.cs"], _none), "listing")[0];
-            Expect.That(entry.Symbols.Select(s => s.Name).SequenceEqual(["New"]), "only the second write's symbols remain");
+            Expect.That(entry.Symbols.Select(s => s.Name).SequenceEqual(["New"], StringComparer.Ordinal), "only the second write's symbols remain");
         }
     }
 
@@ -114,7 +114,7 @@ public abstract partial class IndexStoreContract
         await using (reader)
         {
             var fromA = Ok(await reader.Walk(a.Ref, CallDirection.Callees, CallDepth.One, includeImplementations: false, _none), "walking from A");
-            Expect.That(Only(fromA.Edges) is { Other: null, Name: "Helper" }, "the edge into the rewritten file is unresolved until the next resolve");
+            Expect.That(Only(fromA.Edges) is { Other: null } edgeIn && string.Equals(edgeIn.Name, "Helper", StringComparison.Ordinal), "the edge into the rewritten file is unresolved until the next resolve");
             var fromB = Ok(await reader.Walk(b.Ref, CallDirection.Callees, CallDepth.One, includeImplementations: false, _none), "walking from B");
             Expect.That(fromB.Edges.Count == 0, "the edges out of the rewritten file's old symbols are gone");
         }
@@ -129,7 +129,7 @@ public abstract partial class IndexStoreContract
         var caller = SymbolOf("src/A.cs", "A.Run");
         var first = SymbolOf("src/B.cs", "B.Handle");
         var second = SymbolOf("src/C.cs", "C.Handle");
-        var ambiguous = (SymbolRecord to) => CallEdge(caller, to, line: 7) with { Confidence = Confidence.Ambiguous, Candidates = 2 };
+        EdgeRecord ambiguous(SymbolRecord to) => CallEdge(caller, to, line: 7) with { Confidence = Confidence.Ambiguous, Candidates = 2 };
         _ = await Publish(store, [FileOf("src/A.cs", caller), FileOf("src/B.cs", first), FileOf("src/C.cs", second)], ambiguous(first), ambiguous(second));
 
         var build = await Begin(store, incremental: true);
@@ -143,7 +143,7 @@ public abstract partial class IndexStoreContract
         await using (reader)
         {
             var walk = Ok(await reader.Walk(caller.Ref, CallDirection.Callees, CallDepth.One, includeImplementations: false, _none), "walking");
-            Expect.That(Only(walk.Edges) is { Other: null, Name: "Handle", Line: 7 }, "one unresolved edge is left");
+            Expect.That(Only(walk.Edges) is { Other: null, Line: 7 } edgeOut && string.Equals(edgeOut.Name, "Handle", StringComparison.Ordinal), "one unresolved edge is left");
         }
     }
 
@@ -203,8 +203,8 @@ public abstract partial class IndexStoreContract
             Succeeds(await build.WriteFiles([FileOf("src/A.cs", run), FileOf("src/B.cs", SymbolOf("src/B.cs", "B.Helper"))], _none), "writing");
 
             var symbols = Ok(await build.ReadSymbols(_none), "reading symbols");
-            Expect.That(symbols.Select(s => s.Ref.Value).Order(StringComparer.Ordinal).SequenceEqual(["fixture:src/A.cs#A.Run", "fixture:src/B.cs#B.Helper"]), "every symbol is listed");
-            Expect.That(symbols.First(s => s.Name == "Run") is { File: "src/A.cs", Qualified: "A.Run", Kind: SymbolKind.Method, Arity: 2, StartLine: 5, EndLine: 9 }, "with the fields the resolver needs");
+            Expect.That(symbols.Select(s => s.Ref.Value).Order(StringComparer.Ordinal).SequenceEqual(["fixture:src/A.cs#A.Run", "fixture:src/B.cs#B.Helper"], StringComparer.Ordinal), "every symbol is listed");
+            Expect.That(symbols.First(s => s.Name == "Run") is { Kind: SymbolKind.Method, Arity: 2, StartLine: 5, EndLine: 9 } run2 && string.Equals(run2.File, "src/A.cs", StringComparison.Ordinal) && string.Equals(run2.Qualified, "A.Run", StringComparison.Ordinal), "with the fields the resolver needs");
 
             var sites = new List<CallSiteRow>();
             await foreach (var row in build.ReadCallSites(_none))
@@ -212,8 +212,8 @@ public abstract partial class IndexStoreContract
                 sites.Add(row);
             }
 
-            Expect.That(sites.Count == 2 && sites.All(r => r.Caller == run.Ref), "every call site comes with its caller");
-            Expect.That(sites.Any(r => r.Site == new CallSite(EdgeKind.Calls, "Helper", 1, "this", 7)) && sites.Any(r => r.Site.Kind == EdgeKind.Inherits), "and keeps its name, arity, receiver, line and kind");
+            Expect.That(sites.Count == 2 && sites.TrueForAll(r => r.Caller == run.Ref), "every call site comes with its caller");
+            Expect.That(sites.Exists(r => r.Site == new CallSite(EdgeKind.Calls, "Helper", 1, "this", 7)) && sites.Exists(r => r.Site.Kind == EdgeKind.Inherits), "and keeps its name, arity, receiver, line and kind");
         }
     }
 

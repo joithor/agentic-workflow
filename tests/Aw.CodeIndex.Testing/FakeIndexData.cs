@@ -94,7 +94,7 @@ internal sealed class FakeIndexData
         for (var found = true; found;)
         {
             var next = Edges.Where(e => e.Kind == EdgeKind.Inherits && e.Target is { } t && (bases.Contains(t) || implementors.Contains(t))).Select(e => e.Source).ToList();
-            found = next.Count(implementors.Add) > 0;
+            found = next.Where(implementors.Add).ToList().Count > 0;
         }
 
         var typeNames = Symbols.Where(x => implementors.Contains(x.Symbol.Ref)).Select(x => x.Symbol.Qualified).ToHashSet(StringComparer.Ordinal);

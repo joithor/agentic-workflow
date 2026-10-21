@@ -8,12 +8,10 @@ internal sealed partial class SqliteIndexBuild
 {
     private const string NotClassLike = "('class', 'record', 'struct', 'interface', 'enum')";
 
-    private const string Candidates = """
-        SELECT s.ref, s.name, s.signature, b.text
-        FROM bodies b JOIN symbols s ON s.id = b.symbol_id LEFT JOIN embeddings e ON e.symbol_id = s.id
-        WHERE e.symbol_id IS NULL AND s.kind NOT IN ('class', 'record', 'struct', 'interface', 'enum')
-        ORDER BY s.ref LIMIT $limit
-        """;
+    private const string Candidates = "SELECT s.ref, s.name, s.signature, b.text "
+        + "FROM bodies b JOIN symbols s ON s.id = b.symbol_id LEFT JOIN embeddings e ON e.symbol_id = s.id "
+        + "WHERE e.symbol_id IS NULL AND s.kind NOT IN ('class', 'record', 'struct', 'interface', 'enum') "
+        + "ORDER BY s.ref LIMIT $limit";
 
     private const string InsertVector = "INSERT OR REPLACE INTO embeddings(symbol_id, model, vector) SELECT id, $model, $vector FROM symbols WHERE ref = $ref";
 

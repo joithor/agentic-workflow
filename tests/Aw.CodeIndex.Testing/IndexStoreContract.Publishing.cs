@@ -70,7 +70,7 @@ public abstract partial class IndexStoreContract
         var layers = Ok(await store.ReadHeader(Repo, _none), "reading the header")!.Layers;
 
         Expect.That(layers.Select(l => (l.Layer, l.Stamp)).SequenceEqual([(LayerName.Structure, "p:2"), (LayerName.Graph, "g:1")]), "the layers are the last rows set, structure first");
-        Expect.That(layers[1] is { State: LayerState.Unavailable, Code: "SND-CODEIDX-008", Detail: "graphify is missing" }, "a layer keeps its state, code and detail");
+        Expect.That(layers[1] is { State: LayerState.Unavailable } && string.Equals(layers[1].Code, "SND-CODEIDX-008", StringComparison.Ordinal) && string.Equals(layers[1].Detail, "graphify is missing", StringComparison.Ordinal), "a layer keeps its state, code and detail");
     }
 
     /// <summary>A second publish replaces the first; the old index is not kept.</summary>
@@ -176,7 +176,7 @@ public abstract partial class IndexStoreContract
         {
             Expect.That(copy.Incremental && copy.Previous?.Meta.Commit == Commit, "an incremental build names the header it copied");
             var stored = Ok(await copy.StoredFiles(_none), "reading stored files");
-            Expect.That(stored.Select(f => f.Path).SequenceEqual(["src/A.cs"]) && stored[0].Blob == "blob-src/A.cs" && stored[0].Parsed, "the copy holds the live files");
+            Expect.That(stored.Select(f => f.Path).SequenceEqual(["src/A.cs"], StringComparer.Ordinal) && stored[0].Blob == "blob-src/A.cs" && stored[0].Parsed, "the copy holds the live files");
         }
 
         var scratch = await Begin(store, incremental: false);
