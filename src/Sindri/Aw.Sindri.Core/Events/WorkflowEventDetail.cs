@@ -84,7 +84,8 @@ public sealed record WorkflowEventDetail(
     {
         StepRuntime.Agent => AgentLaunches.LaunchIdFor(after.Id, open.Token).Value,
         StepRuntime.Block => "block",
-        _ => TriggerActor.StartsWith("human:", StringComparison.Ordinal) ? TriggerActor : "human",
+        StepRuntime.Desk => TriggerActor.StartsWith("human:", StringComparison.Ordinal) ? TriggerActor : "human",
+        _ => throw new ArgumentOutOfRangeException(nameof(open), open.Runtime, "an unknown runtime"),
     };
 
     /// <summary>
