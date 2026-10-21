@@ -48,6 +48,12 @@ internal static partial class Labels
     /// <summary>Home's one line while any step is open.</summary>
     internal const string SetupHomeLine = "Finish setting up Sindri";
 
+    /// <summary>Home's control that opens Settings at the first step still to do.</summary>
+    internal const string SetupContinue = "Continue";
+
+    /// <summary>The step Home's line points at, as its name reads it.</summary>
+    internal static string SetupNext(string step) => "Next: " + step;
+
     /// <summary>The checklist before the first answer.</summary>
     internal const string ReadingSetup = "Reading setup…";
 
@@ -59,9 +65,6 @@ internal static partial class Labels
 
     /// <summary>When the first read failed: the reason follows.</summary>
     internal static string SetupFailed(Error error) => "Couldn't read setup just now. " + InstanceRefused(error);
-
-    /// <summary>When Sindri isn't running (there is no Start button: the app never starts it from inside the window).</summary>
-    internal const string SetupNotRunning = "Sindri isn't running";
 
     /// <summary>The line over the launcher command.</summary>
     internal const string SetupStartIt = "Start it from a terminal:";
@@ -83,9 +86,6 @@ internal static partial class Labels
 
     /// <summary>The Details label of a step's state as served.</summary>
     internal const string SetupStateField = "State";
-
-    /// <summary>The Details label of an error code.</summary>
-    internal const string SetupCodeField = "Error code";
 
     /// <summary>The Details label of the action id.</summary>
     internal const string SetupActionField = "Action";

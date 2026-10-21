@@ -110,6 +110,9 @@ internal sealed class SetupStepViewModel : ObservableObject
     /// <summary>True when it stopped, as served.</summary>
     internal bool IsFailed => string.Equals(Step.State, "failed", StringComparison.Ordinal);
 
+    /// <summary>True while the row shows Working for a retry the app started, until the read that follows it.</summary>
+    internal bool IsWorking => _overrideNote is not null;
+
     /// <summary>True when the step is done, as served.</summary>
     internal bool IsDone => string.Equals(Step.State, "done", StringComparison.Ordinal);
 
@@ -118,12 +121,17 @@ internal sealed class SetupStepViewModel : ObservableObject
 
     /// <summary>Takes a newer serving of the same step and redraws only what changed. A step that moves into needs-you or failed opens; nothing else is closed.</summary>
     /// <param name="step">The step as served now.</param>
+    /// <param name="keepWorking">True for a read that began before a retry was sent: the row keeps showing Working.</param>
     /// <returns>True when its state changed.</returns>
-    internal bool Update(SetupStepView step)
+    internal bool Update(SetupStepView step, bool keepWorking = false)
     {
         var changed = !string.Equals(Step.State, step.State, StringComparison.Ordinal);
         Step = step;
-        _overrideNote = null;
+        if (!keepWorking)
+        {
+            _overrideNote = null;
+        }
+
         Derive();
         if (changed && (NeedsYou || IsFailed))
         {
@@ -204,7 +212,7 @@ internal sealed class SetupStepViewModel : ObservableObject
         List<SetupFieldViewModel> fields = [new(Labels.SetupStepField, Step.Id), new(Labels.SetupStateField, Step.State)];
         if (Step.Error is { } error)
         {
-            fields.Add(new SetupFieldViewModel(Labels.SetupCodeField, error.Code));
+            fields.Add(new SetupFieldViewModel(Labels.JobCodeField, error.Code));
         }
 
         if (Step.Action is { Length: > 0 } action)

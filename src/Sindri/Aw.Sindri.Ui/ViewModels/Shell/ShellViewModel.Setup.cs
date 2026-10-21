@@ -23,7 +23,7 @@ internal sealed partial class ShellViewModel
     private bool OpensInApp(string action) => action switch
     {
         ApproveAllViewModel.Action => ApproveAll.IsReady,
-        "ApproveProfile" => NeedsYou.Seen.Rows.Any(r => string.Equals(r.Id, ProfileDriftRow, StringComparison.Ordinal)),
+        "ApproveProfile" => _needsYou?.Rows.Any(r => string.Equals(r.Id, ProfileDriftRow, StringComparison.Ordinal)) == true,   // the unfiltered feed: Home's Decisions filter trims what NeedsYou lists
         _ => false,
     };
 

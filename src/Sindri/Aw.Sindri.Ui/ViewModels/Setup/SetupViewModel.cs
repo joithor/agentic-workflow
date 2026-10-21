@@ -15,7 +15,8 @@ internal sealed partial class SetupViewModel : ObservableObject
 {
     private const string MapStep = "map";
     private const string MapRefresh = "RefreshContextMap";
-    private const string RunningRefusal = "SND-JOB-409";
+    private const string ConflictRefusal = "SND-JOB-409";
+    private const string RunningJob = "runningJob";
 
     private readonly Dictionary<string, SetupStepViewModel> _rows = new(StringComparer.Ordinal);
     private readonly ISindriApi _api;
@@ -26,6 +27,8 @@ internal sealed partial class SetupViewModel : ObservableObject
     private bool _hasRead;
     private bool _refreshing;
     private Uri? _url;
+    private int _holdUntil;   // reads numbered up to this one began before the send of a retry: they must not bring the button back
+    private string? _revealStep;
 
     /// <summary>The list over its ports.</summary>
     /// <param name="api">The API.</param>
@@ -102,16 +105,30 @@ internal sealed partial class SetupViewModel : ObservableObject
     internal void RequestChecklist() => ChecklistRequested?.Invoke(this, EventArgs.Empty);
 
     /// <summary>Asks the checklist to come into view.</summary>
-    internal void RevealChecklist() => RevealRequested?.Invoke(this, new SetupRevealEventArgs(stepId: null));
+    internal void RevealChecklist()
+    {
+        var step = _revealStep;
+        _revealStep = null;
+        RevealRequested?.Invoke(this, new SetupRevealEventArgs(step));
+    }
 
-    /// <summary>The first step still to do (or being worked on), as Home's line names it; empty until the first list.</summary>
-    public string HomeStepText { get; private set; } = string.Empty;
+    /// <summary>The first step still to do (or being worked on), as Home's line names it; empty when setup is finished or before the first list.</summary>
+    public string HomeStepText { get; private set => Set(ref field, value); } = string.Empty;
 
-    /// <summary>The Continue control's words.</summary>
-    public string ContinueText { get; private set; } = string.Empty;
+    /// <summary>The Continue control's words; empty with no step to continue.</summary>
+    public string ContinueText { get; private set => Set(ref field, value); } = string.Empty;
 
-    /// <summary>Opens the first open step's row and asks for the checklist.</summary>
-    internal void Continue() => throw new NotSupportedException(HomeStepText);
+    /// <summary>Opens the first step still to do and asks for Settings at it (Home's Continue).</summary>
+    internal void Continue()
+    {
+        if (Steps.FirstOrDefault(s => !s.IsFinished) is { } next)
+        {
+            next.IsOpen = true;
+            _revealStep = next.Id;
+        }
+
+        ChecklistRequested?.Invoke(this, EventArgs.Empty);
+    }
 
     /// <summary>Asks again, for every step, whether the app can do its action now.</summary>
     internal void Rederive()
@@ -127,7 +144,7 @@ internal sealed partial class SetupViewModel : ObservableObject
     /// <returns>A task that completes when the answer is shown.</returns>
     internal async Task RefreshMap(CancellationToken cancellationToken)
     {
-        if (_refreshing || _url is not { } url || !_rows.TryGetValue(MapStep, out var map))
+        if (_refreshing || _url is not { } url || !_rows.TryGetValue(MapStep, out var map) || map.IsWorking)   // one press sends once, whatever is in flight
         {
             return;
         }
@@ -138,11 +155,11 @@ internal sealed partial class SetupViewModel : ObservableObject
             var started = await _api.RefreshContextMap(url, cancellationToken).ConfigureAwait(true);
             if (started.IsSuccess)
             {
-                map.ShowWorking(Labels.SetupMapAgain);
+                Hold(map, Labels.SetupMapAgain);
             }
-            else if (string.Equals(started.Error.Code, RunningRefusal, StringComparison.Ordinal))
+            else if (IsRunningJob(started.Error))
             {
-                map.ShowWorking(Labels.SetupMapAlready);   // 409 with the running job: the same refresh is already going
+                Hold(map, Labels.SetupMapAlready);   // 409 with the running job: the same refresh is already going
             }
             else
             {
@@ -157,13 +174,28 @@ internal sealed partial class SetupViewModel : ObservableObject
         Fold();
     }
 
+    // The row shows Working until the read that follows the send: a read begun before it is stale and must not bring the button back.
+    private void Hold(SetupStepViewModel map, string note)
+    {
+        _holdUntil = _reads;
+        map.ShowWorking(note);
+    }
+
+    // Only a 409 that names the running job means the same refresh is going; any other 409 (the job ended) is a refusal.
+    private static bool IsRunningJob(Error error) =>
+        string.Equals(error.Code, ConflictRefusal, StringComparison.Ordinal) && error.Extensions?.Any(e => string.Equals(e.Key, RunningJob, StringComparison.Ordinal)) == true;
+
     // Everything that follows from the steps: finished or not, the count and the strip, and whether Home shows its line.
     private void Fold()
     {
         IsFinished = Steps.Count > 0 && Steps.All(s => s.IsFinished);
         HasSteps = Steps.Count > 0;
         CountText = HasSteps ? Labels.SetupCount(Steps.Count(s => s.IsFinished), Steps.Count) : string.Empty;
+        var next = Steps.FirstOrDefault(s => !s.IsFinished);
+        HomeStepText = next?.Title ?? string.Empty;
+        ContinueText = next is null ? string.Empty : Labels.SetupContinue;
         OnChanged(nameof(HomeLineName));
+        OnChanged(nameof(ContinueName));
         Lead = !HasSteps ? string.Empty : IsFinished ? Labels.SetupLeadDone : Labels.SetupLead;
         HasSub = HasSteps && !IsFinished;
         Segments = [.. Steps.Select(s => new SetupSegment(s.SegmentKind))];

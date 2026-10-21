@@ -14,14 +14,19 @@
   <Style Selector="Border.setup-seg.done">
     <Setter Property="Background" Value="{DynamicResource Brush.Success}" />
   </Style>
-  <Style Selector="Button.setup-link">
-    <Setter Property="HorizontalAlignment" Value="Stretch" />
-    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  <Style Selector="Border.setup-line">
     <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{StaticResource Radius.MD}" />
+  </Style>
+  <Style Selector="Button.setup-link">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Padding" Value="12,0" />
+    <Setter Property="MinHeight" Value="40" />
   </Style>
   <Style Selector="Border.setup-panel">
     <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />

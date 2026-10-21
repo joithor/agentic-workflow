@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Aw.Sindri.Ui.ViewModels.Settings;
 using Aw.Sindri.Ui.ViewModels.Setup;
 using Aw.Sindri.Ui.Views.Setup;
@@ -42,5 +43,8 @@ internal sealed partial class SettingsView : UserControl
 
     // Opened by a link, G U, ⌘, or Home's line: the checklist is the first section, so it is brought to the top of the page.
     private void OnRevealRequested(object? sender, SetupRevealEventArgs e) =>
-        Dispatcher.UIThread.Post(() => _checklist?.BringIntoView(), DispatcherPriority.Loaded);
+        Dispatcher.UIThread.Post(() => (StepRow(e.StepId) ?? _checklist)?.BringIntoView(), DispatcherPriority.Loaded);
+
+    private Control? StepRow(string? id) =>
+        id is null ? null : _checklist?.GetVisualDescendants().OfType<SetupStepRow>().FirstOrDefault(r => r.DataContext is SetupStepViewModel step && string.Equals(step.Id, id, StringComparison.Ordinal));
 }

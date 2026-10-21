@@ -8,7 +8,10 @@ internal sealed partial class SetupViewModel
     public string HomeLineText => Labels.SetupHomeLine;
 
     /// <summary>Home's line as assistive technology reads it: its words first, then how far setup is.</summary>
-    public string HomeLineName => Labels.SetupHomeLine + ", " + CountText;
+    public string HomeLineName => Labels.SetupHomeLine + ", " + CountText + (HomeStepText.Length > 0 ? ". " + Labels.SetupNext(HomeStepText) : string.Empty);
+
+    /// <summary>The Continue control as assistive technology reads it: its word first, then the step.</summary>
+    public string ContinueName => ContinueText + ", " + HomeStepText;
 
     /// <summary>The one line under the lead.</summary>
     public string SubText => Labels.SetupSubline;
@@ -32,7 +35,7 @@ internal sealed partial class SetupViewModel
     public string RetryText => Labels.TryAgain;
 
     /// <summary>"Sindri isn't running".</summary>
-    public string NotRunningText => Labels.SetupNotRunning;
+    public string NotRunningText => Labels.SindriNotRunning;
 
     /// <summary>The line over the launcher command.</summary>
     public string StartItText => Labels.SetupStartIt;

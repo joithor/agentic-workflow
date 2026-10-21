@@ -33,7 +33,7 @@ internal sealed partial class SetupViewModel
 
         if (answer.IsSuccess)
         {
-            Show(answer.Value);
+            Show(answer.Value, read);
         }
         else
         {
@@ -79,7 +79,7 @@ internal sealed partial class SetupViewModel
         }
     }
 
-    private void Show(SetupView view)
+    private void Show(SetupView view, int read)
     {
         var said = new List<string>();
         var served = new List<SetupStepViewModel>(view.Steps.Count);
@@ -87,7 +87,7 @@ internal sealed partial class SetupViewModel
         {
             if (_rows.TryGetValue(step.Id, out var kept))
             {
-                if (kept.Update(step) && _hasRead)
+                if (kept.Update(step, keepWorking: read <= _holdUntil) && _hasRead)
                 {
                     said.Add(Labels.SetupChanged(kept.Title, kept.ChipWord));
                 }
