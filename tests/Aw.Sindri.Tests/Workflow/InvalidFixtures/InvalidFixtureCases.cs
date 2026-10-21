@@ -148,7 +148,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-RES-001"] = new(
             FixtureSetup.Shipped,
-            "RCP-RES-001: resource 'heavy' has no allocator in this build at RCP-RES-001.yaml:8:16 (states.queued.waitFor.resource); it parks with SND-WF-010 until the workflow engine's heavy allocator is wired to the heavy-job lock [Information]",
+            "RCP-RES-001: resource 'slot' has no allocator in this build at RCP-RES-001.yaml:8:16 (states.queued.waitFor.resource); it parks with SND-WF-010 until the session-slot stub lands (P7) [Information]",
             []),
         ["RCP-SCHEMA-001"] = new(
             FixtureSetup.Shipped,

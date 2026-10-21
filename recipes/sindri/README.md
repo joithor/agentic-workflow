@@ -91,7 +91,7 @@ DTC2 to DTC9 as the plan reads them. Out of this change: seeds (DT-R3), `workflo
 - `step.build.prepare` has a block runtime (`BuildPrepareStep`); every other Step of `workflow.build` and `workflow.prove` is descriptor-only (`BuildSteps.cs`, `ProveSteps.cs`) and parks with SND-WF-010 at the desk until its runtime ships. Only the owner may report `step.build.scope-desk`.
 - `workflow.build` inputs: `fact:phasePacket`, `fact:workspace` (text), `fact:buildNotes`, `fact:lineContext`. Outputs: `fact:built`, `fact:change`, `fact:redTests`, `fact:activePacket`. Terminals: `built` (resolved), `stopped` (unresolved).
 - `workflow.prove` inputs: `fact:phasePacket`, `fact:built`, `fact:workspace` (text), `fact:redTests`. Outputs: `fact:proofPack`, `fact:findings`. Terminals: `proven` (resolved), `failed` (unresolved, `fact:findings`). It waits on `workflow.hand-test`, `workflow.verify` and `workflow.evidence`.
-- Neither recipe waits on the heavy-job slot yet, because nothing in a served build grants it. Restore the slot waits (line spec C.3, C.4) when the heavy allocator exists.
+- `workflow.build` waits on a heavy-job slot (`slot`, after `prepare`) and `workflow.prove` after its `evidence` child (`slot`, before `before-after`); `workflow.ship` waits first. The engine takes the slot over the box's heavy-job lock, holds it while Steps run off the desk, and gives it up at a desk Step (`scope-desk`), a park or a takeover (docs/csharp/sindri-workflow.md "The heavy resource").
 
 ### The line's phase (workflow.phase)
 
