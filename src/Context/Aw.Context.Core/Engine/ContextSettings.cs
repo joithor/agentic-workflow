@@ -73,4 +73,7 @@ public sealed record ContextSettings
 
     /// <summary>'context.extract.graphify' (S-4): the cluster pass's time, snapshot, file and graph limits; generous defaults, 0 for no limit.</summary>
     public ClusterLimits Graphify { get; init; } = ClusterLimits.Default;
+
+    /// <summary>'context.publish': when a refreshed map becomes the current one (retrieval spec §8.7a).</summary>
+    public PublishSettings Publish { get; init; } = new();
 }

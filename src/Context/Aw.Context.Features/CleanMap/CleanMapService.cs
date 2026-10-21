@@ -40,7 +40,7 @@ internal sealed class CleanMapService(IGraphStore store, IScrubberFactory scrubb
             return built.Error;
         }
 
-        var first = await Read(request.Scope, cancellationToken).ConfigureAwait(false);
+        var first = await Read(request.Scope, request.ExpectedVersion, cancellationToken).ConfigureAwait(false);
         if (first.IsError)
         {
             return first.Error;
@@ -51,18 +51,18 @@ internal sealed class CleanMapService(IGraphStore store, IScrubberFactory scrubb
             ? (new Dictionary<string, bool>(StringComparer.Ordinal), CleanupMode.None)
             : await Judge(weak, built.Value.Egress, request.MaxTokens, cancellationToken).ConfigureAwait(false);
 
-        return await Settle(request.Scope, first, verdicts, mode, cancellationToken).ConfigureAwait(false);
+        return await Settle(request.Scope, request.ExpectedVersion, first, verdicts, mode, cancellationToken).ConfigureAwait(false);
     }
 
     // Decides the queue pass after pass (a rejected node takes its links with it, so the queue is read again) until nothing is left.
     private async ValueTask<Result<CleanupReport>> Settle(
-        ContextScope scope, Result<(MapSnapshot Draft, MapView View, ReviewQueueView Queue)> first, Dictionary<string, bool> verdicts, CleanupMode mode, CancellationToken cancellationToken)
+        ContextScope scope, int? expected, Result<(MapSnapshot Draft, MapView View, ReviewQueueView Queue)> first, Dictionary<string, bool> verdicts, CleanupMode mode, CancellationToken cancellationToken)
     {
         var who = ReviewDrafts.Who(scope.Caller, user);
         int accepted = 0, removed = 0, dropped = 0;
         for (var pass = 0; pass < MaxPasses; pass++)
         {
-            var read = pass == 0 ? first : await Read(scope, cancellationToken).ConfigureAwait(false);
+            var read = pass == 0 ? first : await Read(scope, expected, cancellationToken).ConfigureAwait(false);
             if (read.IsError)
             {
                 return read.Error;
@@ -77,7 +77,7 @@ internal sealed class CleanMapService(IGraphStore store, IScrubberFactory scrubb
             var (rows, _) = ReviewPlanner.PlanAll(Decisions(queue, verdicts), new ReviewBasis(view.Graph, view.Overrides), who, clock.GetUtcNow(), cancellationToken);
             var added = rows.Count == 0
                 ? ContextErrors.PromoteRefused.With($"the cleanup of draft {queue.Draft} decided nothing with {queue.Undecided.ToString(CultureInfo.InvariantCulture)} items left (fix: decide them with 'sindri context map review')")
-                : await store.AppendOverrides(rows, cancellationToken).ConfigureAwait(false);
+                : await store.AppendOverrides(rows, cancellationToken, expected).ConfigureAwait(false);
             if (added.IsError)
             {
                 return added.Error;
@@ -91,16 +91,25 @@ internal sealed class CleanMapService(IGraphStore store, IScrubberFactory scrubb
         return ContextErrors.PromoteRefused.With("the cleanup did not settle the review queue (fix: decide the rest with 'sindri context map review')");
     }
 
+    // The caller named one draft and it is not the latest: a rebuild replaced it, or it was promoted. The pass writes nothing for it.
+    private static Error Changed(int expected, int? latest) => ContextErrors.DraftChanged.With(string.Create(CultureInfo.InvariantCulture,
+        $"draft {expected} was expected, {(latest is { } n ? $"the latest draft is {n}" : "there is no draft")} (a rebuild replaced it, or it was promoted)"));
+
     private static bool IsWeak(ReviewEntry e) => e.Group == ReviewGroup.Model && e.Confidence < CleanupPolicy.KeepAt;
 
     private static string Key(ReviewEntry e) => e.Link?.Value ?? e.Node.Value;
 
-    private async ValueTask<Result<(MapSnapshot Draft, MapView View, ReviewQueueView Queue)>> Read(ContextScope scope, CancellationToken cancellationToken)
+    private async ValueTask<Result<(MapSnapshot Draft, MapView View, ReviewQueueView Queue)>> Read(ContextScope scope, int? expected, CancellationToken cancellationToken)
     {
         var draft = await ReviewDrafts.Draft(store, cancellationToken).ConfigureAwait(false);
         if (draft.IsError)
         {
-            return draft.Error;
+            return expected is { } wanted && draft.Error.Code == ContextErrors.NoDraftMap.Code ? Changed(wanted, latest: null) : draft.Error;
+        }
+
+        if (expected is { } named && named != draft.Value.Version.Number)
+        {
+            return Changed(named, draft.Value.Version.Number);
         }
 
         var seen = ReviewDrafts.Visible(draft.Value, scope);

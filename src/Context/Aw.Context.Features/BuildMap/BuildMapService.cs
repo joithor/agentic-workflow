@@ -24,6 +24,7 @@ internal sealed class BuildMapService(
     IClusterSource clusterSource,
     ILabeler labeler,
     IHeavyJobLock heavy,
+    IDefaultBranch defaults,
     IGraphStore store,
     TimeProvider clock) : IService<BuildMapRequest, MapBuildReport>
 {
@@ -66,6 +67,7 @@ internal sealed class BuildMapService(
         var found = ExtractedMap.Empty;
         var degraded = new List<string>();
         (string Commit, ContextRepoName Name)? primary = null;
+        var heads = new List<MapHead>(mappedRepos.Count);
         foreach (var repo in mappedRepos)
         {
             var one = await Extract(progress, settings, repo, cancellationToken).ConfigureAwait(false);
@@ -77,6 +79,13 @@ internal sealed class BuildMapService(
             found = found.Plus(one.Value.Map);
             degraded.AddRange(one.Value.Degraded.Except(degraded, StringComparer.Ordinal));
             primary ??= (one.Value.Commit, repo.Name);
+            heads.Add(new MapHead(repo.Name, one.Value.Commit, await OnDefault(repo, one.Value.Commit, cancellationToken).ConfigureAwait(false)));
+        }
+
+        // Where each repo stood as this build read it (the pre-build 'map heads' read can differ when trunk moved in between), kept with the draft for the publish rules.
+        if (MapHead.Check(heads) is { } invalid)
+        {
+            return invalid;
         }
 
         var current = await store.Snapshot(draft: false, cancellationToken).ConfigureAwait(false);
@@ -96,8 +105,15 @@ internal sealed class BuildMapService(
         var at = clock.GetUtcNow();
         var (kept, undo) = MapAccess.WithoutDenied(basis, current.Value?.Overrides ?? [], profileRepos, mappedRepos, at);
         undo = UndoAlso(undo, open.Value, profileRepos, mappedRepos, at);
-        var draft = await store.SaveDraft(new MapImport(name, commit, Join(kept, found), undo), at, cancellationToken).ConfigureAwait(false);
-        return draft.IsError ? draft.Error : new MapBuildReport(draft.Value, Proposed(kept, found), degraded);
+        var draft = await store.SaveDraft(new MapImport(name, commit, Join(kept, found), undo, heads), at, cancellationToken).ConfigureAwait(false);
+        return draft.IsError ? draft.Error : new MapBuildReport(draft.Value, Proposed(kept, found), degraded, heads);
+    }
+
+    // Whether the default branch holds the commit the build read; a checkout whose default ref can't be read counts as no (the repo is then not waited on), never a failed build.
+    private async ValueTask<bool> OnDefault(ContextRepo repo, string commit, CancellationToken cancellationToken)
+    {
+        var reached = await defaults.Reaches(repo, commit, cancellationToken).ConfigureAwait(false);
+        return reached.IsSuccess && reached.Value;
     }
 
     // The open draft this build replaces may hold nodes the current map doesn't (a surface found since the last promote): the decisions about those it would lose to the cut are undone too, in the same write.

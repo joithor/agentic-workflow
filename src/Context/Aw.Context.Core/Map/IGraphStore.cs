@@ -92,6 +92,34 @@ public interface IGraphStore
     /// <summary>Adds overrides to the layer; one whose id is already there is kept once. Each is one row.</summary>
     /// <param name="overrides">The overrides.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>How many rows were added, or SND-CONTEXT-004 (nothing is added then).</returns>
-    public ValueTask<Result<int>> AppendOverrides(IReadOnlyList<MapOverride> overrides, CancellationToken cancellationToken);
+    /// <param name="expectedDraft">When given, the rows are appended only while that is the latest draft (checked in the same transaction: the layer is shared across versions, so a person's build during a cleanup pass must not receive the old draft's rows).</param>
+    /// <returns>How many rows were added, SND-CONTEXT-190 when <paramref name="expectedDraft"/> is not the latest draft, or SND-CONTEXT-004 (nothing is added then).</returns>
+    public ValueTask<Result<int>> AppendOverrides(IReadOnlyList<MapOverride> overrides, CancellationToken cancellationToken, int? expectedDraft = null);
+
+    /// <summary>The commits a version was built at (map_version_head), in the order the build named them.</summary>
+    /// <param name="version">The version.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The heads (empty for a version built before heads were recorded, or one that is not there), or SND-CONTEXT-004.</returns>
+    public ValueTask<Result<IReadOnlyList<MapHead>>> Heads(int version, CancellationToken cancellationToken);
+
+    /// <summary>The hold, the latest draft, the current version and its heads, read together.</summary>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The state, or SND-CONTEXT-004.</returns>
+    public ValueTask<Result<MapPublishState>> Held(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// In one transaction: checks that <paramref name="hold"/> names the latest draft, takes the start of the wait from the chain row
+    /// (<see cref="MapHold.NextSince"/> over the stored one and <see cref="MapHold.Since"/> as now; the chain is written when there is none) and stores the hold,
+    /// replacing any other.
+    /// </summary>
+    /// <param name="hold">The draft and the time now as its <see cref="MapHold.Since"/>; its heads are checked, and the stored ones are the version's own rows.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The stored hold, SND-CONTEXT-190 when the draft is not the latest (nothing changes), 191 for an invalid head, or SND-CONTEXT-004.</returns>
+    public ValueTask<Result<MapHold>> Hold(MapHold hold, CancellationToken cancellationToken);
+
+    /// <summary>Removes the hold on a draft (the chain stays).</summary>
+    /// <param name="version">The draft.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>Unit, also when that draft was not held; or SND-CONTEXT-004.</returns>
+    public ValueTask<Result<Unit>> Release(int version, CancellationToken cancellationToken);
 }

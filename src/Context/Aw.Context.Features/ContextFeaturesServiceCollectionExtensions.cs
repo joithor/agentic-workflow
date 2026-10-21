@@ -37,7 +37,11 @@ using Aw.Context.Features.ListNeighbors;
 using Aw.Context.Features.MapHeads;
 using Aw.Context.Features.PreviewMap;
 using Aw.Context.Features.PreviewReviewFile;
+using Aw.Context.Features.HeldMap;
+using Aw.Context.Features.HoldMap;
 using Aw.Context.Features.PromoteMap;
+using Aw.Context.Features.ReleaseMap;
+using Aw.Context.Features.ShowPublishStatus;
 using Aw.Context.Features.ProposeFromScope;
 using Aw.Context.Features.PurgeMap;
 using Aw.Context.Features.QueryContext;
@@ -110,6 +114,11 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<MapAdmin>()
         .AddScoped<MapReview>()
         .AddScoped<MapProposals>()
+        .AddScoped<MapPublishing>()
+        .AddScoped<IService<HeldMapRequest, MapPublishState>, HeldMapService>()
+        .AddScoped<IService<HoldMapRequest, MapHold>, HoldMapService>()
+        .AddScoped<IService<ReleaseMapRequest, Unit>, ReleaseMapService>()
+        .AddScoped<IService<ShowPublishStatusRequest, MapPublishView>, ShowPublishStatusService>()
         .AddScoped<IContextMap, ContextMap>()
         .AddScoped<ContextGraph>()
         .AddScoped<IContextGraph>(static sp => sp.GetRequiredService<ContextGraph>())

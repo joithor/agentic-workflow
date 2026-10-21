@@ -208,16 +208,106 @@ internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSet
         return open.IsError ? open.Error : await new GraphWrites(open.Value, BatchSize).Promote(draft, cancellationToken).ConfigureAwait(false);
     }
 
-    public async ValueTask<Result<int>> AppendOverrides(IReadOnlyList<MapOverride> overrides, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<MapHead>>> Heads(int version, CancellationToken cancellationToken)
+    {
+        var read = await OpenRead(cancellationToken).ConfigureAwait(false);
+        if (read.IsError || read.Value is not { } session)
+        {
+            return read.IsError ? read.Error : Results.Success<IReadOnlyList<MapHead>>([]);
+        }
+
+        await using (session.ConfigureAwait(false))
+        {
+            var heads = await ReadHeads(session, version, cancellationToken).ConfigureAwait(false);
+            return heads.IsError ? ContextDatabase.Translate(heads.Error) : heads;
+        }
+    }
+
+    public async ValueTask<Result<MapPublishState>> Held(CancellationToken cancellationToken)
+    {
+        var read = await OpenRead(cancellationToken).ConfigureAwait(false);
+        if (read.IsError || read.Value is not { } session)
+        {
+            return read.IsError ? read.Error : new MapPublishState(Hold: null, LatestDraft: null, Current: null, CurrentHeads: []);
+        }
+
+        await using (session.ConfigureAwait(false))
+        {
+            var state = await StateIn(session, cancellationToken).ConfigureAwait(false);
+            return state.IsError ? ContextDatabase.Translate(state.Error) : state;
+        }
+    }
+
+    // The versions, the hold and the heads in one read session. A store not yet upgraded to 0010 (reads never migrate) holds nothing and has no heads.
+    private static async ValueTask<Result<MapPublishState>> StateIn(SqliteReadSession session, CancellationToken cancellationToken)
+    {
+        var versions = await SqliteQueries.List(session, new SqlStatement(GraphSql.SelectVersions), GraphRows.Version, cancellationToken).ConfigureAwait(false);
+        var upgraded = await SqliteQueries.One(session, new SqlStatement(GraphSql.HasPublishTables), GraphRows.Id, cancellationToken).ConfigureAwait(false);
+        if (versions.IsError || upgraded.IsError)
+        {
+            return versions.IsError ? versions.Error : upgraded.Error;
+        }
+
+        int? draft = versions.Value.Where(v => v.Status == MapVersionStatus.Draft).Select(v => (int?)v.Number).FirstOrDefault();
+        int? current = versions.Value.Where(v => v.Status == MapVersionStatus.Current).Select(v => (int?)v.Number).FirstOrDefault();
+        if (upgraded.Value < 3)
+        {
+            return new MapPublishState(Hold: null, draft, current, CurrentHeads: []);
+        }
+
+        var held = await SqliteQueries.List(session, new SqlStatement(GraphSql.SelectHold), GraphRows.Hold, cancellationToken).ConfigureAwait(false);
+        var currentHeads = current is { } c ? await ReadHeads(session, c, cancellationToken).ConfigureAwait(false) : Results.Success<IReadOnlyList<MapHead>>([]);
+        if (held.IsError || currentHeads.IsError)
+        {
+            return held.IsError ? held.Error : currentHeads.Error;
+        }
+
+        if (held.Value.Count == 0)
+        {
+            return new MapPublishState(Hold: null, draft, current, currentHeads.Value);
+        }
+
+        var (version, since) = held.Value[0];
+        var heads = await ReadHeads(session, version, cancellationToken).ConfigureAwait(false);
+        return heads.IsError ? heads.Error : new MapPublishState(new MapHold(version, GraphText.Time(since) ?? default, heads.Value), draft, current, currentHeads.Value);
+    }
+
+    private static async ValueTask<Result<IReadOnlyList<MapHead>>> ReadHeads(SqliteReadSession session, int version, CancellationToken cancellationToken)
+    {
+        var upgraded = await SqliteQueries.One(session, new SqlStatement(GraphSql.HasPublishTables), GraphRows.Id, cancellationToken).ConfigureAwait(false);
+        return upgraded.IsError ? upgraded.Error
+            : upgraded.Value < 3 ? Results.Success<IReadOnlyList<MapHead>>([])
+            : await SqliteQueries.List(session, new SqlStatement(GraphSql.SelectHeads, c => c.Bind("$v", (long)version)), GraphRows.Head, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async ValueTask<Result<MapHold>> Hold(MapHold hold, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(hold);
+        if (MapHead.Check(hold.Heads) is { } refused)
+        {
+            return refused;
+        }
+
+        var open = await database.Writable(cancellationToken).ConfigureAwait(false);
+        return open.IsError ? open.Error : await new GraphWrites(open.Value, BatchSize).Hold(hold, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async ValueTask<Result<Unit>> Release(int version, CancellationToken cancellationToken)
+    {
+        var open = await database.Writable(cancellationToken).ConfigureAwait(false);
+        return open.IsError ? open.Error : await new GraphWrites(open.Value, BatchSize).Release(version, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async ValueTask<Result<int>> AppendOverrides(IReadOnlyList<MapOverride> overrides, CancellationToken cancellationToken, int? expectedDraft = null)
     {
         ArgumentNullException.ThrowIfNull(overrides);
-        if (overrides.Count == 0)
+        if (overrides.Count == 0 && expectedDraft is null)
         {
             return 0;
         }
 
         var open = await database.Writable(cancellationToken).ConfigureAwait(false);
-        return open.IsError ? open.Error : await new GraphWrites(open.Value, BatchSize).AppendOverrides(overrides, cancellationToken).ConfigureAwait(false);
+        return open.IsError ? open.Error : await new GraphWrites(open.Value, BatchSize).AppendOverrides(overrides, cancellationToken, expectedDraft).ConfigureAwait(false);
     }
 
     public async ValueTask<Result<int>> SaveRun(ScopeProposal proposal, CancellationToken cancellationToken)

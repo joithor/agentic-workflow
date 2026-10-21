@@ -758,3 +758,37 @@ the caller's visible graph) is not walked: when that withheld a node, the answer
 ## S-LB2: the context Step inputs
 
 `input.context.lenses`, `input.context.history` and `input.context.code` are the scoping recipe's gather inputs (scoping spec C1, C3, C5). Each calls its facade in process (`IContextEngine`: lenses, history and code) as `service:engine` with a `ContextScope` cut to the instance's repo (`ContextInputScopes`: the profile's repos filtered to the one repo of the instance's item; a missing repo or a repo outside the profile is `SND-CONTEXT-045`, a missing profile `SND-PROFILE-005`). The answer reaches the Step as a text section and as the typed view; a refusal becomes a section that says so. Details and the section names: `docs/csharp/sindri-workflow.md` "The context inputs (S-LB2)". The plain-text renderers (`ContextLensText`, `ContextHistoryText`, `ContextCodeText`) live in `Features/ContextCalls` and are shared by the CLI verbs (the host sees them through `InternalsVisibleTo`).
+
+## F1P: publishing a refreshed map with the code index (the store half)
+
+The map and the code index still build on their own; this is where a refreshed map waits for the index of its commit. The decision, its numbers and
+its words are the code index spec's (`2026-10-19-sindri-code-index-design.md` §6.4, CI13); the contract of record for what the store holds and what
+each actor may do is the retrieval spec §8.7a. This section is the as-built record of `Aw.Context` (F1P-a); Sindri's pure decision, jobs and tick are F1P-b.
+
+### Shape
+
+- **Tables (migration `0010_s4p_map_publish`).** `map_version_head(version, repo, commit_sha, on_default)` (cascade-deleted with the version; the commit is 7 to 40 lowercase
+  hex, checked by the table too), `map_hold(version)` (one draft; cascade-deleted with it) and `map_publish_chain(id = 1, since)` (the start of the wait: tied to no draft, so a
+  rebuild keeps it). Reads never migrate: a store from before 0010 holds nothing and has no heads.
+- **Types (Core/Map).** `MapHead(Repo, Commit, OnDefault)` (`IsCommit`, `Check`: 191), `MapHold(Version, Since, Heads)` (`NextSince(chain, now)`: the chain's start, never later than now),
+  `MapPublishState(Hold, LatestDraft, Current, CurrentHeads)`, `MapPublishView(Repos, Hold, LatestDraft, Current, CurrentHeads)` and `MapBuildReport.Heads`.
+  `MapImport.Heads` is what a build names; null keeps a replaced draft's heads, or for an import the one commit its file names (as `OnDefault`).
+- **Store (`IGraphStore`).** `Heads(version)`, `Held()`, `Hold(MapHold)` (one transaction: the draft must be the latest, else 190; `since` is `MapHold.NextSince(stored chain, hold.Since)` and the clamped value is stored;
+  any other hold is replaced), `Release(version)` (the chain stays) and `AppendOverrides(rows, ct, expectedDraft)` (the latest draft is checked inside the append's transaction: 190, because the overrides layer is shared across versions).
+  Writes: a build (`SaveDraft`) drops the old draft, its hold and heads with it and writes the new heads; `ReplaceDraft` and `OpenDraft` copy the source's heads (a replacement that names heads keeps those);
+  every `Promote` and every import (`SaveCurrent`) deletes the hold and the chain in its own transaction; retention (`Delete`) removes a version's heads, and a retained version keeps them.
+- **Facade (`IContextMap`).** `Held`, `Hold`, `Release` refuse a session (020); `PublishStatus` is the read for everyone else and is cut to the caller's repos (`context.repos` for a human, the one repo for a session, the
+  usual 020/003 session rules): no other repo's name, commit or count. `Promote` and `CleanDraft` take `int? expectedVersion = null` (null: the latest draft, the human path). With a value, a latest draft of another number, or none,
+  is `SND-CONTEXT-190` and nothing is promoted or written; the cleanup checks it on every pass read and on its append. Without one, no draft is still 046.
+- **Build.** `BuildMapService` records, for each mapped repo, the commit its extraction read and whether the default branch holds it (a default ref that can't be read counts as not on it) into `MapBuildReport.Heads` and the draft.
+- **Profile.** `context.publish.waitForIndexMinutes` (`ContextSettings.Publish`, 0 to 240, default 15), `SND-CONTEXT-001` with the key path outside the range. A map file whose `commit` is not 7 to 40 lowercase hex is `SND-CONTEXT-031` at `commit`.
+
+### Errors
+
+`SND-CONTEXT-190` (`DraftChanged`, conflict, attention): the expected draft is not the latest. `SND-CONTEXT-191` (`MapHeadInvalid`): a head's commit is not 7 to 40 lowercase hex, or a repo appears twice. `192..194` stay reserved.
+
+### Tests
+
+`MapPublishStoreContract` (`tests/Aw.Context.Testing/Map`, run against `FakeGraphStore` and the SQLite store): heads in order, an import's one commit, invalid commits refused everywhere, the hold and its read, 190 for a wrong draft, the chain surviving a
+rebuild and clamped to now, promote and import clearing the hold and the chain, replacement and open copying heads, retention, release, `expectedDraft`. `MapPublishTests`, `MapHoldTests`, `PublishSettingsTests` and `MapPublishMigrationTests`
+(an old store opens and gets the tables) in `tests/Aw.Context.Tests`.
