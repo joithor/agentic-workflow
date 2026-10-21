@@ -26,7 +26,7 @@ public sealed class GetNeedsYouTests
     private readonly InMemoryJobViews _jobs = new();
     private IShippedRecipes _shipped = new FakeShippedRecipes([]);
 
-    private GetNeedsYouService Service() => new(_q.Views.Views, _q.Views.Progress, _q.Views.Slice.Callers, _onyx, new SetupNotices(_jobs, _q.Views.Slice.Profiles, new PassThroughScrubber()), new ApproveAllPlanReader(_q.Views.Slice.Profiles, _shipped), new PassThroughScrubber(), TimeProvider.System);
+    private GetNeedsYouService Service() => new(_q.Views.Views, _q.Views.Progress, _q.Views.Slice.Callers, _onyx, new SetupNotices(_jobs, _q.Views.Slice.Profiles, new ApproveAllPlanReader(_q.Views.Slice.Profiles, _shipped), new PassThroughScrubber(), TimeProvider.System), new PassThroughScrubber(), TimeProvider.System);
 
     private async Task<GetNeedsYouResponse> Get() => (await Service().Handle(A.GetNeedsYouRequest().Build(), RequestQueryHarness.Token)).Value;
 

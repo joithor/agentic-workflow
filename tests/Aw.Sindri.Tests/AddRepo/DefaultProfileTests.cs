@@ -76,9 +76,11 @@ public sealed class DefaultProfileTests
     [Fact, Trait("Lane", "unit")]
     public void The_check_fails_when_a_shipped_recipe_declares_an_effect_the_default_does_not_allow()
     {
+        var union = ShippedEffects.Union(Shipped.Select(static d => d.Recipe));
         var stale = Load(DefaultProfile.Text("thor", ["effect.notify.desk"]));
 
-        Assert.Equal(["effect.claim.ref"], Undeclared(stale), StringComparer.Ordinal);
+        Assert.Equal(union.Where(static e => e != "effect.notify.desk"), Undeclared(stale), StringComparer.Ordinal);
+        Assert.Contains("effect.claim.ref", Undeclared(stale), StringComparer.Ordinal);
     }
 
     /// <summary>
