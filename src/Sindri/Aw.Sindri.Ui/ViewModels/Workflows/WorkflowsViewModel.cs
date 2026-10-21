@@ -16,6 +16,8 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
 {
     private readonly Dictionary<string, RecipeGroupViewModel> _groups = new(StringComparer.Ordinal);
     private readonly Dictionary<string, InstanceRowViewModel> _rows = new(StringComparer.Ordinal);
+    private InstanceList? _list;
+    private List<InstanceRowViewModel> _loaded = [];
     private Uri? Url { get; set; }
     private int _reads;
     private int _doneReads;
@@ -148,7 +150,7 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
         if (list.IsSuccess)
         {
             Show(list.Value);
-            if (IsDoneExpanded)
+            if (IsDoneExpanded || ViewMode == WorkflowViewMode.Board)
             {
                 await ReadDone(cancellationToken).ConfigureAwait(true);
             }
@@ -234,6 +236,13 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
     private void Show(InstanceList list)
     {
         Drawn++;
+        _list = list;
+        Render(list);
+    }
+
+    // Draws the loaded list through the filter and the search; a change of either draws again without a read.
+    private void Render(InstanceList list)
+    {
         var before = WalkAddresses();
         IsUnreadable = false;
         OnChanged(nameof(UnreadableText));
@@ -242,15 +251,17 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
         var rows = list.Instances.Select(Row).ToList();
         _rows.Clear();
         rows.ForEach(r => _rows[r.Address] = r);
-        var shown = rows.GroupBy(r => r.Recipe, StringComparer.Ordinal).Select(g => Group(g.Key, [.. g])).ToList();
-        Patch.To(Groups, shown);
+        _loaded = rows;
+        var every = rows.GroupBy(r => r.Recipe, StringComparer.Ordinal).Select(g => Group(g.Key, [.. g.Where(Passes)])).ToList();
+        Patch.To(Groups, [.. every.Where(g => g.Count > 0)]);
         if (RecipeFilter is null && SubjectFilter is null)
         {
-            ReplaceIfChanged(KnownRecipes, [.. shown.Select(g => g.Recipe)]);
-            _choiceIds = ChoicesFor(shown);
+            ReplaceIfChanged(KnownRecipes, [.. every.Select(g => g.Recipe)]);
+            _choiceIds = ChoicesFor(every);
             ReplaceIfChanged(RecipeChoices, [Labels.AllRecipes, .. _choiceIds.Keys]);
         }
 
+        RebuildBoard();
         Reselect(before);
         IsEmpty = rows.Count == 0;
         EmptyText = IsEmpty ? list.Empty ?? Labels.NoWorkflowsMatch : string.Empty;

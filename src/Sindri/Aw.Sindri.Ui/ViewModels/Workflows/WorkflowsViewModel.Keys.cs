@@ -31,7 +31,9 @@ internal sealed partial class WorkflowsViewModel
     // Every row the page holds, and the rows J / K walk: those drawn (a collapsed group's are not).
     private IEnumerable<InstanceRowViewModel> Shown => Groups.SelectMany(g => g.Rows).Concat(DoneRows);
 
-    private List<InstanceRowViewModel> Walk => [.. Groups.Where(g => g.IsExpanded).SelectMany(g => g.Rows), .. IsDoneExpanded ? DoneRows : []];
+    private List<InstanceRowViewModel> Walk => ViewMode == WorkflowViewMode.Board
+        ? [.. Lanes.SelectMany(l => l.Cards)]
+        : [.. Groups.Where(g => g.IsExpanded).SelectMany(g => g.Rows), .. IsDoneExpanded ? DoneRows : []];
 
     /// <summary>Selects a row by its address.</summary>
     /// <param name="address">The instance's address.</param>
@@ -86,6 +88,12 @@ internal sealed partial class WorkflowsViewModel
                 return Move(key == "J" ? 1 : -1);
             case "N":
                 RequestStart();
+                return true;
+            case "V":
+                ToggleView();
+                return true;
+            case "/":
+                SearchFocusRequested?.Invoke(this, EventArgs.Empty);
                 return true;
             case "B":
                 Say(Labels.HandBackArrives);   // never a dead key: the note says where hand-back is

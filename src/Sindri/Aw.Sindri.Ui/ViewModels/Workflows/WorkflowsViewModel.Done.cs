@@ -13,7 +13,7 @@ internal sealed partial class WorkflowsViewModel
 
         var read = ++_doneReads;
         var all = await api.Instances(url, new InstanceQuery(Root: true, Recipe: RecipeFilter, Subject: SubjectFilter), cancellationToken).ConfigureAwait(true);
-        if (read != _doneReads || !IsDoneExpanded)
+        if (read != _doneReads || !(IsDoneExpanded || ViewMode == WorkflowViewMode.Board))
         {
             return;   // newer, or the line was collapsed while this was on its way
         }
@@ -25,6 +25,7 @@ internal sealed partial class WorkflowsViewModel
             finished.ForEach(r => r.SetStale(IsStale));
             DoneRows.Clear();
             finished.ForEach(DoneRows.Add);
+            RebuildBoard();
             Reselect(before);
         }
     }

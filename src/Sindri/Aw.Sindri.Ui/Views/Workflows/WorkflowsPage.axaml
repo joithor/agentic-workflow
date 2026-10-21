@@ -21,11 +21,27 @@
             <Border Classes="kbd" VerticalAlignment="Center"><TextBlock Classes="kbd" Text="N" /></Border>
           </StackPanel>
         </Button>
-        <ComboBox x:Name="RecipeFilter" ItemsSource="{Binding RecipeChoices}" SelectionChanged="OnRecipeChosen" PlaceholderText="{Binding RecipeFilterName}" MinWidth="180"
-                  AutomationProperties.Name="{Binding RecipeFilterName}" />
-        <TextBox x:Name="SubjectFilter" PlaceholderText="{Binding SubjectFilterName}" KeyDown="OnSubjectKey" MinWidth="160" AutomationProperties.Name="{Binding SubjectFilterName}" />
       </StackPanel>
     </Grid>
+
+    <!-- The toolbar (F3 workflows spec §2): the view switch, the workflow chip (the existing workflow filter), the search (the existing item
+         filter: Enter asks the API, typing narrows what is loaded), the filter segments with their counts, and the key hints. -->
+    <WrapPanel x:Name="WorkflowsToolbar" Orientation="Horizontal">
+      <ListBox x:Name="WorkflowsViewSwitch" Classes="segmented" SelectedIndex="{Binding ViewIndex, Mode=TwoWay}" Margin="0,0,12,6" AutomationProperties.Name="{Binding ViewBoardText}">
+        <ListBoxItem x:Name="WorkflowsViewBoardItem" AutomationProperties.Name="{Binding ViewBoardText}"><TextBlock Classes="caption" Text="{Binding ViewBoardText}" AutomationProperties.AccessibilityView="Raw" /></ListBoxItem>
+        <ListBoxItem x:Name="WorkflowsViewListItem" AutomationProperties.Name="{Binding ViewListText}"><TextBlock Classes="caption" Text="{Binding ViewListText}" AutomationProperties.AccessibilityView="Raw" /></ListBoxItem>
+      </ListBox>
+      <ComboBox x:Name="RecipeFilter" ItemsSource="{Binding RecipeChoices}" SelectionChanged="OnRecipeChosen" PlaceholderText="{Binding RecipeFilterName}" MinWidth="180" Margin="0,0,12,6"
+                AutomationProperties.Name="{Binding RecipeFilterName}" />
+      <TextBox x:Name="SubjectFilter" PlaceholderText="{Binding SubjectFilterName}" KeyDown="OnSubjectKey" TextChanged="OnSubjectTyped" MinWidth="200" MaxWidth="360" Margin="0,0,12,6"
+               AutomationProperties.Name="{Binding SubjectFilterName}" />
+      <ListBox x:Name="WorkflowsFilter" Classes="segmented" SelectedIndex="{Binding FilterIndex, Mode=TwoWay}" Margin="0,0,12,6" AutomationProperties.Name="{Binding FilterAllText}">
+        <ListBoxItem x:Name="WorkflowsFilterAllItem" AutomationProperties.Name="{Binding FilterAllText}"><TextBlock Classes="caption" Text="{Binding FilterAllText}" AutomationProperties.AccessibilityView="Raw" /></ListBoxItem>
+        <ListBoxItem x:Name="WorkflowsFilterNeedsYouItem" AutomationProperties.Name="{Binding FilterNeedsYouText}"><TextBlock Classes="caption" Text="{Binding FilterNeedsYouText}" AutomationProperties.AccessibilityView="Raw" /></ListBoxItem>
+        <ListBoxItem x:Name="WorkflowsFilterMineItem" AutomationProperties.Name="{Binding FilterMineText}"><TextBlock Classes="caption" Text="{Binding FilterMineText}" AutomationProperties.AccessibilityView="Raw" /></ListBoxItem>
+      </ListBox>
+      <TextBlock x:Name="WorkflowsKeyHints" Classes="caption subtle" Text="{Binding KeyHints}" VerticalAlignment="Center" Margin="0,0,0,6" AutomationProperties.AccessibilityView="Raw" />
+    </WrapPanel>
 
     <StackPanel x:Name="WorkflowsPageStale" Orientation="Horizontal" Spacing="4" IsVisible="{Binding IsStale}">
       <icons:StateIcon Glyph="Stale" VerticalAlignment="Center" />
@@ -38,7 +54,11 @@
     <TextBlock x:Name="WorkflowsKeyNoteAnnouncement" Classes="caption live-region" Classes.live="{Binding KeyNoteVoice.IsAnnouncing}" Width="0" Opacity="0"
                IsHitTestVisible="False" Text="{Binding KeyNoteVoice.Announcement}" />
 
-    <Border x:Name="WorkflowsPanel" Classes="panel" AutomationProperties.Name="Workflows" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
+    <TextBlock x:Name="WorkflowsNoRunsMatch" Classes="caption quiet" Text="{Binding NoRunsMatchText}" IsVisible="{Binding NoRunsMatch}" TextWrapping="Wrap"
+               AutomationProperties.Name="{Binding NoRunsMatchText}" />
+    <wfv:BoardView x:Name="WorkflowsBoard" IsVisible="{Binding IsBoard}" />
+
+    <Border x:Name="WorkflowsPanel" Classes="panel" IsVisible="{Binding IsList}" AutomationProperties.Name="Workflows" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
       <StackPanel>
         <TextBlock x:Name="WorkflowsPageEmpty" Classes="caption quiet" Text="{Binding EmptyText}" Margin="16,8" TextWrapping="Wrap"
                    IsVisible="{Binding IsEmpty}" AutomationProperties.Name="{Binding EmptyText}" />

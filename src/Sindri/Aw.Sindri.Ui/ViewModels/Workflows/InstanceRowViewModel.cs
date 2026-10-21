@@ -15,10 +15,11 @@ internal sealed class InstanceRowViewModel : ObservableObject
 
     private readonly InstanceSummary _row;
     private readonly IClipboard _clipboard;
+    private readonly TimeProvider _clock;
 
     internal InstanceRowViewModel(InstanceSummary row, IClipboard clipboard, TimeProvider clock)
     {
-        (_row, _clipboard) = (row, clipboard);
+        (_row, _clipboard, _clock) = (row, clipboard, clock);
         var blocked = row.Inputs.Any(i => i is { Required: true, Present: false });
         Inputs = [.. row.Inputs.Select(i => new InputCellViewModel(i))];
         var missing = row.Inputs.Count(i => !i.Present);
@@ -84,6 +85,11 @@ internal sealed class InstanceRowViewModel : ObservableObject
 
     /// <summary>The one status the board, the list and the run drawer show for this run (F3 workflows spec §4).</summary>
     public RunStatus Status => RunStatus.From(_row.Chip);
+
+    /// <summary>How long the run has been in its stage ("in stage 1h 30m"), or how long ago it ended ("ended 5h 20m ago"); the time is the served since.</summary>
+    public string TimeText => IsFinished ? Labels.WorkflowsEndedAgo(Age) : Labels.WorkflowsInStage(Age);
+
+    private TimeSpan Age => _clock.GetUtcNow() - _row.Since;
 
     /// <summary>The served now sentence, unchanged.</summary>
     public string Now => _row.Now;
