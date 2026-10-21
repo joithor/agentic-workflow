@@ -7,7 +7,7 @@ using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Ui.Tests.Context;
 
-/// <summary>The lens stack (U9a): the anchor box reads the lenses and draws the head, bands, edges, coverage and searched sources. Every value is read from a context-lenses golden.</summary>
+/// <summary>The lens stack (U9a, now the map of F3 spec 1): the anchor box reads the lenses and draws the head and the map. Every value is read from a context-lenses golden.</summary>
 [Lane(TestLane.Unit)]
 public sealed class ContextLensStackTests
 {
@@ -48,7 +48,7 @@ public sealed class ContextLensStackTests
     }
 
     [Fact]
-    public async Task The_bands_edges_coverage_and_sources_are_drawn_from_the_answer()
+    public async Task The_answer_is_laid_out_as_a_map_of_its_nodes_and_edges()
     {
         var golden = Golden("map-tabs");
         var page = Page(new FakeSindriApi());
@@ -56,19 +56,18 @@ public sealed class ContextLensStackTests
 
         await page.Submit(Token);
 
-        var product = golden["bands"]!["product"]!;
-        var coverage = golden["coverage"]!;
-        Assert.Equal(3, page.Bands.Count);
-        Assert.Equal(product["own"]!.AsArray().Count, page.Bands[1].Lines.Count);
-        Assert.Equal(golden["bands"]!["intent"]!["records"]!.AsArray().Count + golden["bands"]!["intent"]!["decisions"]!.AsArray().Count + golden["conflicts"]!.AsArray().Count, page.Bands[0].Lines.Count);
-        Assert.Equal(product["edges"]!.AsArray().Count + golden["edges"]!.AsArray().Count, page.Edges.Count);
-        Assert.Equal(Labels.ContextCoverIntent((int)coverage["intent"]!["covered"]!, (int)coverage["intent"]!["of"]!), page.Coverage[0].Text);
-        Assert.Equal(Labels.ContextCoverCode((int)coverage["code"]!["implemented"]!, (int)coverage["code"]!["of"]!, (int)coverage["code"]!["suggested"]!), page.Coverage[2].Text);
-        Assert.Equal(golden["searched"]!["sources"]!.AsArray().Count, page.Searched.Count);
+        var bands = golden["bands"]!;
+        var map = page.Map!;
+        Assert.True(page.HasStack);
+        Assert.Equal(3, map.Bands.Count);
+        Assert.Equal(bands["intent"]!["records"]!.AsArray().Count + bands["intent"]!["decisions"]!.AsArray().Count + bands["product"]!["own"]!.AsArray().Count + bands["code"]!["files"]!.AsArray().Count, map.Nodes.Count);
+        Assert.Equal(bands["product"]!["edges"]!.AsArray().Count + golden["edges"]!.AsArray().Count, map.Edges.Count);   // the conflict replaces one edge
+        Assert.Equal(Labels.ContextMapCoverageLead(1, 4), map.CoverageLead);
+        Assert.False(page.IsDraft);
     }
 
     [Fact]
-    public async Task A_model_link_reads_model_suggested_with_its_confidence_and_a_suggested_file_says_so()
+    public async Task A_model_link_is_a_dashed_edge_whose_pill_says_how_sure_the_tool_is_and_a_suggested_file_is_a_suggestion()
     {
         var golden = Golden("map-tabs");
         var edge = golden["edges"]!.AsArray().Single(e => (string)e!["provenance"]! == "model")!;
@@ -77,9 +76,11 @@ public sealed class ContextLensStackTests
 
         await page.Submit(Token);
 
-        var confidence = ((double)edge["confidence"]!).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
-        Assert.Contains(page.Edges, l => l.Text.Contains(Labels.ContextModelSuggested + " " + confidence, StringComparison.Ordinal));
-        Assert.Contains(page.Bands[2].Lines, l => l.Text.Contains(Labels.ContextSuggestedFile + " " + confidence, StringComparison.Ordinal));
+        var confidence = (int)Math.Round((double)edge["confidence"]! * 100, MidpointRounding.AwayFromZero);
+        var pill = page.Map!.Pills.Single(p => p.Key == (string)edge["link"]!);
+        Assert.True(pill.Dashed);
+        Assert.EndsWith(Labels.ContextMapSuggestedPct(confidence), pill.Text, StringComparison.Ordinal);
+        Assert.Contains(page.Map.Nodes, n => n.IsSuggested && n.Caption.EndsWith(Labels.ContextMapSuggestedPct(confidence), StringComparison.Ordinal));
     }
 
     [Fact]
@@ -134,7 +135,7 @@ public sealed class ContextLensStackTests
     }
 
     [Fact]
-    public async Task A_truncated_product_band_counts_its_nodes_not_the_truncation_line()
+    public async Task A_truncated_product_band_draws_one_more_not_shown_chip()
     {
         var golden = Golden("map-tabs");
         var body = golden.DeepClone();
@@ -145,10 +146,7 @@ public sealed class ContextLensStackTests
 
         await page.Submit(Token);
 
-        var product = golden["bands"]!["product"]!;
-        var nodes = product["own"]!.AsArray().Count + product["neighbors"]!.AsArray().Count + product["affects"]!.AsArray().Count;
-        Assert.Equal(Labels.ContextBandHeader(Labels.ContextProduct, nodes), page.Bands[1].Header);
-        Assert.Equal(nodes + 1, page.Bands[1].Lines.Count);
+        Assert.Single(page.Map!.Nodes, n => n.Label == Labels.ContextTruncated);
     }
 
     [Fact]

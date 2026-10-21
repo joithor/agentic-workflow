@@ -80,7 +80,7 @@ public sealed class ThemeResourcesTests
     [Fact]
     public Task Every_icon_is_a_geometry_resource() => OnUi(() =>
     {
-        foreach (var name in (string[])["Ok", "Down", "Stale", "Profile", "Brand", "Refresh", "Spinner", "Command", "Close"])
+        foreach (var name in (string[])["Ok", "Down", "Stale", "Profile", "Brand", "Refresh", "Spinner", "Command", "Close", "Kind.Feature", "Kind.Screen", "Kind.Route", "Kind.Dialog", "Kind.Email", "Kind.Action", "Kind.Data", "Kind.File", "Kind.Test", "Kind.Ticket", "Kind.Decision", "Kind.Dot", "Kind.Warn", "Kind.Chevron", "Kind.Plus", "Kind.Minus", "Kind.Fit"])
         {
             _ = Assert.IsType<Geometry>(Resource("Icon." + name), exactMatch: false);
         }

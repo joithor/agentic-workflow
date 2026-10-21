@@ -25,7 +25,7 @@ internal sealed class ContextMapWorld : Canvas
     }
 
     /// <summary>Gets the edges layer (for hover and the highlight).</summary>
-    internal ContextEdgesControl? EdgesLayer { get; private set; }
+    internal GraphEdgesControl? EdgesLayer { get; private set; }
 
     /// <summary>Gets the node views by node key.</summary>
     internal IReadOnlyDictionary<string, MapNodeView> NodeViews { get; private set; } = new Dictionary<string, MapNodeView>(StringComparer.Ordinal);
@@ -65,7 +65,7 @@ internal sealed class ContextMapWorld : Canvas
             Place(Frame(band), 0, band.Top);
         }
 
-        EdgesLayer = new ContextEdgesControl { Width = map.WorldWidth, Height = map.WorldHeight, Edges = map.Edges, IsHitTestVisible = true };
+        EdgesLayer = new GraphEdgesControl { Width = map.WorldWidth, Height = map.WorldHeight, Edges = map.Edges, IsHitTestVisible = true };
         Place(EdgesLayer, 0, 0);
         foreach (var band in map.Bands)
         {

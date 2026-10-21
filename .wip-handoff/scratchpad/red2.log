@@ -1,6 +1,0 @@
-heavy: waiting for the session lock (1 slot(s), /home/thor/.agentic-workflow/locks/heavy-session/75053.lock)
-heavy: waiting for the box-wide lock (4 slot(s), /home/thor/.agentic-workflow/locks/heavy-job.lock)
-/home/thor/repos/aw-wt/sindri-ui-context-2/src/Sindri/Aw.Sindri.Ui/ViewModels/Labels.ContextMap.cs(217,110): error MA0193: Use an overload with a MidpointRounding argument (https://github.com/meziantou/Meziantou.Analyzer/blob/main/docs/Rules/MA0193.md) [/home/thor/repos/aw-wt/sindri-ui-context-2/src/Sindri/Aw.Sindri.Ui/Aw.Sindri.Ui.csproj]
-/home/thor/repos/aw-wt/sindri-ui-context-2/src/Sindri/Aw.Sindri.Ui/Views/Context/Map/ContextMapLayout.cs(6,23): error MA0182: Internal type 'ContextMapLayout' is apparently never used. If so, remove it from the assembly. (https://github.com/meziantou/Meziantou.Analyzer/blob/main/docs/Rules/MA0182.md) [/home/thor/repos/aw-wt/sindri-ui-context-2/src/Sindri/Aw.Sindri.Ui/Aw.Sindri.Ui.csproj]
-Build failed with exit code: 1.
-done

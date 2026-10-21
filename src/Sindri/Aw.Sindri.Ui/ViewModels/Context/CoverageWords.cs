@@ -4,12 +4,12 @@ using Aw.Sindri.Ui.Views.Controls;
 namespace Aw.Sindri.Ui.ViewModels.Context;
 
 /// <summary>The coverage strip's words, built on the client from the answer's coverage, searched bands and symbols state.</summary>
-internal static class Coverage
+internal static class CoverageWords
 {
     /// <summary>The four areas and the sentence over them.</summary>
     /// <param name="view">The lenses answer.</param>
     /// <returns>The areas, the lead ("3 of 4 areas searched.") and the rest ("Code is limited.").</returns>
-    internal static (IReadOnlyList<CoverageArea> Areas, string Lead, string Rest) Words(LensesView view)
+    internal static (IReadOnlyList<CoverageArea> Areas, string Lead, string Tail) Words(LensesView view)
     {
         ArgumentNullException.ThrowIfNull(view);
         var c = view.Coverage;

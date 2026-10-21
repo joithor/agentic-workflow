@@ -25,9 +25,9 @@ internal sealed partial class ContextMapView : UserControl
         HudNone.Text = Labels.ContextMapWhyNone;
         LegendConfirmed.Text = Labels.ContextMapLegendConfirmed;
         LegendSuggested.Text = Labels.ContextMapLegendSuggested;
-        Name(ZoomOutButton, Labels.ContextMapZoomOut);
-        Name(ZoomInButton, Labels.ContextMapZoomIn);
-        Name(ZoomFitButton, Labels.ContextMapZoomFit);
+        SetName(ZoomOutButton, Labels.ContextMapZoomOut);
+        SetName(ZoomInButton, Labels.ContextMapZoomIn);
+        SetName(ZoomFitButton, Labels.ContextMapZoomFit);
         AutomationProperties.SetName(ContextZoom, Labels.ContextMapZoomPct(1));
         SetHud(collapsed: false);
         ContextCanvas.PropertyChanged += (_, e) =>
@@ -71,7 +71,7 @@ internal sealed partial class ContextMapView : UserControl
         }
     }
 
-    private static void Name(Control control, string name) => AutomationProperties.SetName(control, name);
+    private static void SetName(Control control, string name) => AutomationProperties.SetName(control, name);
 
     // The whole map on the stage, once, when the stage has a size (clamped at 62 %, so a narrow window pans to the right).
     private void FitWhenSized()

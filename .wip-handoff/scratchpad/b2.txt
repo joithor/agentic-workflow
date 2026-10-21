@@ -1,9 +1,0 @@
-    /// <summary>The key hint of Enter.</summary>
-    public string KeyOpenWord { get; } = Labels.NeedsYouKeyOpenWord;
-
-    /// <summary>The key hint of A.</summary>
-    public string KeyApproveWord { get; } = Labels.NeedsYouKeyApproveWord;
-
-    /// <summary>The key hint of D.</summary>
-    public string KeySendBackWord { get; } = Labels.NeedsYouKeySendBackWord;
-

@@ -1,6 +1,7 @@
 using System.Globalization;
 using Avalonia;
 using Aw.Sindri.Ui.Api.Context;
+using Aw.Sindri.Ui.ViewModels;
 
 namespace Aw.Sindri.Ui.Views.Context.Map;
 

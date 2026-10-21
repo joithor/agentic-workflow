@@ -26,7 +26,7 @@ internal sealed class ContextMapViewModel : ObservableObject
         WorldHeight = _layout.World.Height;
         Draft = view.Draft;
         Anchors = [.. view.Anchors.Select(a => new MapAnchorViewModel(a.Key, a.Label, a.Kind))];
-        (CoverageAreas, CoverageLead, CoverageRest) = Coverage.Words(view);
+        (CoverageAreas, CoverageLead, CoverageRest) = CoverageWords.Words(view);
     }
 
     /// <summary>The world's width, px.</summary>
