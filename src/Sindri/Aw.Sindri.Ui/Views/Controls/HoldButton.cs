@@ -6,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Threading;
+using Aw.Sindri.Ui.ViewModels.Confirmations;
 using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.Views.Components;
 

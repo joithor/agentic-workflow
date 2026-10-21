@@ -1,6 +1,7 @@
 using Aw.Sindri.Ui.ViewModels.Components;
+using Aw.Sindri.Ui.ViewModels.Controls;
 
-namespace Aw.Sindri.Ui.ViewModels.Controls;
+namespace Aw.Sindri.Ui.ViewModels.Confirmations;
 
 /// <summary>
 /// The three protected actions the app may confirm itself (setup spec §2): the shared confirmation controls draw and answer for these and for

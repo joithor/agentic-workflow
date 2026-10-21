@@ -1,6 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Aw.Sindri.Ui.ViewModels.Controls"
+             xmlns:vm="using:Aw.Sindri.Ui.ViewModels.Confirmations"
              xmlns:comp="using:Aw.Sindri.Ui.Views.Components"
              x:Class="Aw.Sindri.Ui.Views.Controls.TypedConfirmBox"
              x:DataType="vm:TypedConfirmBoxViewModel">

@@ -1,7 +1,8 @@
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.ViewModels.Components;
+using Aw.Sindri.Ui.ViewModels.Controls;
 
-namespace Aw.Sindri.Ui.ViewModels.Controls;
+namespace Aw.Sindri.Ui.ViewModels.Confirmations;
 
 /// <summary>
 /// The hold-to-approve button's state (setup spec §2.2). It draws and times the hold; the host owns the challenge and sends the answer. The

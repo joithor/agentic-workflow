@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Aw.Sindri.Ui.ViewModels.Confirmations;
 using Aw.Sindri.Ui.ViewModels.Controls;
 
 namespace Aw.Sindri.Ui.Views.Controls;

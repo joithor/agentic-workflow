@@ -1,7 +1,8 @@
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.ViewModels.Components;
+using Aw.Sindri.Ui.ViewModels.Controls;
 
-namespace Aw.Sindri.Ui.ViewModels.Controls;
+namespace Aw.Sindri.Ui.ViewModels.Confirmations;
 
 /// <summary>
 /// The typed confirmation's state (setup spec §2.1): the person types the server's own text, and only exactly that, after trimming and with
