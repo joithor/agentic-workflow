@@ -244,8 +244,27 @@ public abstract class AgentRuntimeTestBase : IDisposable
         /// <summary>The reason of the instance's one 'step.failed' row.</summary>
         public async Task<string?> FailureReason(CancellationToken ct) => (await Failure(ct)).Reason;
 
-        /// <summary>The reason and the runtime ('via') of the instance's one 'step.failed' row; nulls when there is none.</summary>
+        /// <summary>
+        /// The reason and the runtime ('via') of the instance's one 'step.failed' row. The park shows on the instance before the mirror activity has written
+        /// the row, so this waits for the row; nulls only when none arrives in 30 s.
+        /// </summary>
         public async Task<(string? Reason, string? Via)> Failure(CancellationToken ct)
+        {
+            var failure = (Reason: (string?)null, Via: (string?)null);
+            var deadline = RealTime.NowDateTime.AddSeconds(30);
+            while (failure.Reason is null && RealTime.NowDateTime < deadline)
+            {
+                failure = await ReadFailure(ct);
+                if (failure.Reason is null)
+                {
+                    await Task.Delay(50, ct);
+                }
+            }
+
+            return failure;
+        }
+
+        private async Task<(string? Reason, string? Via)> ReadFailure(CancellationToken ct)
         {
             var rows = (await Sindri.GetRequiredService<ILedgerStore>().ReadAfter(0, 200, ct)).Value;
             foreach (var row in rows.Where(static e => e.Envelope.Type == "workflow.transition"))
