@@ -43,18 +43,22 @@ public sealed class FakeRepoSnapshotTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_missing_blob_reads_as_null_and_a_present_one_as_its_bytes()
+    public async Task A_missing_blob_is_skipped_as_missing_and_reads_as_null_and_a_present_one_reads_as_its_bytes()
     {
         var snapshot = new FakeRepoSnapshot()
             .WithFile(_commit, "present.txt", "hello")
-            .WithFile(_commit, "gone.txt", "bye")
-            .WithMissingBlob(_commit, "gone.txt");
+            .WithFile(_commit, "gone.txt", "bye");
+        var before = (await snapshot.Inventory(_repo, _commit, _limits, TestContext.Current.CancellationToken)).Value;
+        var goneBlob = before.Files.Single(f => f.Path == "gone.txt").Blob;
+        _ = snapshot.WithMissingBlob(_commit, "gone.txt");
         var inventory = (await snapshot.Inventory(_repo, _commit, _limits, TestContext.Current.CancellationToken)).Value;
 
         var reader = (await snapshot.OpenBlobs(_repo, TestContext.Current.CancellationToken)).Value;
         var present = await reader.Read(inventory.Files.Single(f => f.Path == "present.txt").Blob, TestContext.Current.CancellationToken);
-        var gone = await reader.Read(inventory.Files.Single(f => f.Path == "gone.txt").Blob, TestContext.Current.CancellationToken);
+        var gone = await reader.Read(goneBlob, TestContext.Current.CancellationToken);
 
+        Assert.DoesNotContain(inventory.Files, f => f.Path == "gone.txt");
+        Assert.Equal(1, inventory.Skipped[SkipReason.Missing]);
         Assert.Equal("hello", Encoding.UTF8.GetString(present.Value!));
         Assert.Null(gone.Value);
     }
