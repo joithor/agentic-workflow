@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Map;
 using Aw.Context.Infrastructure.Graph;
@@ -61,9 +62,9 @@ public sealed class MapPublishMigrationTests : IDisposable
         var draft = (await store.SaveDraft(SampleMap.Build() with { Heads = [new MapHead(ContextRepoName.From("aw-split-panes"), "a41b07d", OnDefault: true)] }, SampleMap.At, Ct)).Value;
         _ = await store.Hold(new MapHold(draft.Number, SampleMap.At, []), Ct);
 
-        Assert.False(await TryExecute("INSERT INTO map_version_head (version, repo, commit_sha, on_default) VALUES (" + draft.Number + ", 'x', 'NOT-HEX', 1)"));
+        Assert.False(await TryExecute(string.Create(CultureInfo.InvariantCulture, $"INSERT INTO map_version_head (version, repo, commit_sha, on_default) VALUES ({draft.Number}, 'x', 'NOT-HEX', 1)")));
         Assert.False(await TryExecute("INSERT INTO map_publish_chain (id, since) VALUES (2, '2026-07-15T10:00:00Z')"));
-        Assert.True(await TryExecute("DELETE FROM map_version WHERE id = " + draft.Number));
+        Assert.True(await TryExecute(string.Create(CultureInfo.InvariantCulture, $"DELETE FROM map_version WHERE id = {draft.Number}")));
 
         Assert.Equal(0L, await Count("SELECT count(*) FROM map_version_head"));
         Assert.Equal(0L, await Count("SELECT count(*) FROM map_hold"));

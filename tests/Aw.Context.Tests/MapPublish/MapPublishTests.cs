@@ -1,7 +1,6 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Map;
-using Aw.Context.Core.Overrides;
 using Aw.Context.Core.Review;
 using Aw.Context.Tests.Map;
 using Aw.Context.Tests.ReviewMap;
@@ -54,7 +53,7 @@ public sealed class MapPublishTests : IDisposable
         var state = (await _world.Map.Held(_service, MapWorld.None)).Value;
 
         Assert.Equal((report.Draft.Number, now, report.Heads), (held.Value.Version, held.Value.Since, held.Value.Heads));
-        Assert.Equal((held.Value.Version, held.Value.Since, report.Heads, report.Draft.Number, (int?)null), (state.Hold!.Version, state.Hold.Since, state.Hold.Heads, state.LatestDraft, state.Current));
+        Assert.Equal((held.Value.Version, held.Value.Since, report.Heads, report.Draft.Number, null), (state.Hold!.Version, state.Hold.Since, state.Hold.Heads, state.LatestDraft, state.Current));
         Assert.True((await _world.Map.Release(report.Draft.Number, _service, MapWorld.None)).IsSuccess);
         Assert.Null((await _world.Map.Held(_service, MapWorld.None)).Value.Hold);
     }
@@ -194,9 +193,9 @@ public sealed class MapPublishTests : IDisposable
         var human = (await _world.Map.PublishStatus(two, MapWorld.None)).Value;
         var session = (await _world.Map.PublishStatus(MapWorld.Session(_repo.Value), MapWorld.None)).Value;
 
-        Assert.Equal([_repo.Value, "other"], human.Repos.Select(r => r.Value));
+        Assert.Equal([_repo.Value, "other"], human.Repos.Select(r => r.Value), StringComparer.Ordinal);
         Assert.Equal(report.Draft.Number, human.Hold!.Version);
-        Assert.Equal([_repo.Value], session.Repos.Select(r => r.Value));
+        Assert.Equal([_repo.Value], session.Repos.Select(r => r.Value), StringComparer.Ordinal);
         Assert.All(session.Hold!.Heads, h => Assert.Equal(_repo, h.Repo));
         Assert.All(session.CurrentHeads, h => Assert.Equal(_repo, h.Repo));
     }
