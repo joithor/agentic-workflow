@@ -187,8 +187,8 @@ S1 events and their keys: `process.started` (`process.started:<epoch>`), `proces
 approval is recorded: approving A, B, A, B, A records five events), `service.heartbeat` (`service.heartbeat:<epoch>:<slot>`), and from API P1
 `command.handled` (`command.handled:<commandId>`; the command chain's audit row, see Command chain). It is flagged
 non-public in `EventCatalog`, so the event stream never sends it and only a human's `GET /sindri/ledger` shows it (see Event stream). P4a's Temporal mirror adds
-six mirrored types: `workflow.started`, `workflow.transition`, `workflow.refused`, `workflow.expired`, `workflow.shifted` and
-`workflow.notified`, each keyed `workflow:<workflow id>:<run id>:<activity id>[:<content hash>]` (the RecordEvent activity id;
+seven mirrored types: `workflow.started`, `workflow.transition`, `workflow.refused`, `workflow.expired`, `workflow.shifted`,
+`workflow.notified` and `workflow.heavy` (a heavy-job slot taken or given up, LN-WF3; trigger `heavy.held` or `heavy.released`, no state change), each keyed `workflow:<workflow id>:<run id>:<activity id>[:<content hash>]` (the RecordEvent activity id;
 engine spec rev 8.1 §5.6). The suffix appears only when a workflow-task retry replayed the same activity id with a different
 event: the first row keeps the plain key and the different one is recorded under the key plus the first 12 hex digits of
 SHA-256 over its type and serialized payload. The join rule, stated once: the row for (run, activity id) is the newest row
