@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sv="using:Aw.Sindri.Ui.ViewModels.Setup"
+             xmlns:controls="using:Aw.Sindri.Ui.Views.Controls"
+             xmlns:comp="using:Aw.Sindri.Ui.Views.Components"
+             x:Class="Aw.Sindri.Ui.Views.Setup.SetupActionView"
+             x:DataType="sv:SetupActionViewModel">
+  <!-- A step's one action (setup-once spec §7.4): the app's own button when it can do the action (the one accent), otherwise the command to copy under a short hint; a protected action is the locked terminal-copy button. -->
+  <StackPanel Spacing="{StaticResource Space.XXS}">
+    <Button x:Name="SetupActionButton" Classes="command-control primary" Click="OnOpen" IsVisible="{Binding IsInApp}" HorizontalAlignment="Left"
+            AutomationProperties.Name="{Binding Name}">
+      <TextBlock Classes="button" Text="{Binding Label}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+    </Button>
+    <Panel IsVisible="{Binding HasProtected}" HorizontalAlignment="Left">
+      <comp:ProtectedActionButton x:Name="SetupActionProtected" DataContext="{Binding Protected}" />
+    </Panel>
+    <StackPanel x:Name="SetupActionCli" Spacing="{StaticResource Space.XXS}" IsVisible="{Binding HasCli}">
+      <Border x:Name="SetupCliHint" AutomationProperties.Name="{Binding CliHint}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+        <TextBlock Classes="caption subtle" Text="{Binding CliHint}" AutomationProperties.AccessibilityView="Raw" />
+      </Border>
+      <controls:CommandControl x:Name="SetupCliControl" DataContext="{Binding Cli}" />
+    </StackPanel>
+  </StackPanel>
+</UserControl>

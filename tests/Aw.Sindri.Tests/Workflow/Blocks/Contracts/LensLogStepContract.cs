@@ -16,7 +16,7 @@ public sealed class LensLogStepContract : BlockContract
 
     protected override BlockDescriptor Descriptor => LensRoundSteps.Log;
 
-    protected override string ExpectedHash => "sha256:29b0a0f290bc739ccd510df2775dd46e9a211c337ad02ba07c5481d9338b4f66";
+    protected override string ExpectedHash => "sha256:2dfc381ac91d3ab17be3a72d355ac5b303882ea9058e3b3d847efbfb2b37ec6f";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 
