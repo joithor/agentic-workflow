@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Setup;
 using Aw.Sindri.Ui.ViewModels.Components;
@@ -191,15 +192,21 @@ internal sealed partial class SetupViewModel : ObservableObject
         IsFinished = Steps.Count > 0 && Steps.All(s => s.IsFinished);
         HasSteps = Steps.Count > 0;
         CountText = HasSteps ? Labels.SetupCount(Steps.Count(s => s.IsFinished), Steps.Count) : string.Empty;
+        Lead = !HasSteps ? string.Empty : IsFinished ? Labels.SetupLeadDone : Labels.SetupLead;
+        HasSub = HasSteps && !IsFinished;
+        Segments = [.. Steps.Select(s => new SetupSegment(s.SegmentKind))];
+        FoldHomeLine();
+    }
+
+    // Home's line: shown while a step is open, naming the first step still to do, with Continue.
+    private void FoldHomeLine()
+    {
+        IsHomeLineShown = !IsReading && !IsNotServed && !IsUnreadable && HasSteps && !IsFinished;
         var next = Steps.FirstOrDefault(s => !s.IsFinished);
         HomeStepText = next?.Title ?? string.Empty;
         ContinueText = next is null ? string.Empty : Labels.SetupContinue;
         OnChanged(nameof(HomeLineName));
         OnChanged(nameof(ContinueName));
-        Lead = !HasSteps ? string.Empty : IsFinished ? Labels.SetupLeadDone : Labels.SetupLead;
-        HasSub = HasSteps && !IsFinished;
-        Segments = [.. Steps.Select(s => new SetupSegment(s.SegmentKind))];
-        IsHomeLineShown = !IsReading && !IsNotServed && !IsUnreadable && HasSteps && !IsFinished;
     }
 
     // A step's action: an app button when the app can do it, else the command to copy; none for an action nothing here knows. A kept action stays while nothing about it changed, so a
