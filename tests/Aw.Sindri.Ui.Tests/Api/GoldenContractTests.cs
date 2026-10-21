@@ -71,6 +71,7 @@ public sealed class GoldenContractTests
         ["workflow-challenges-app"] = As<AppChallengeView>,   // the same route's real goldens (setup-once spec §4): the profile's typed challenge and approve-all's held one with its plan
         ["recipes-approve-all-start"] = As<ApproveAllStarted>,   // POST /workflow/recipes/approve-all's 202
         ["approve-all-job"] = As<ApproveAllJob>,   // GET /jobs/{id} of the approval
+        ["workflow-complete"] = As<CompleteStepAccepted>,   // POST /workflow/instances/{id}/runs/{run}/complete's accepted answer (spec-shaped; the engine has no golden for it)
     };
 
     // Routes the app never calls yet: stop is Health's (U4), profile approve is protected (the app shows the CLI, §6.5), the profile route is a later page's (U2+), and the
