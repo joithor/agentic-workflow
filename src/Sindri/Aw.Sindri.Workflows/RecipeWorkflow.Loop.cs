@@ -182,7 +182,7 @@ internal sealed partial class RecipeWorkflow
         },
         before.Frame.Run?.Token.Value,
         trigger.Actor,
-        Detail: Located(WorkflowEventDetail.Of(change.Event, trigger), change.After),
+        Detail: Located(WorkflowEventDetail.Of(change.Event, trigger).WithRunOpening(change.After, _context!.Recipe), change.After),   // why: a decision is recorded only after Begin set the context
         Causation: (trigger as OpenRequested)?.Launch);
 
     internal static string TypeOf(WorkflowEventType type) => type switch
@@ -192,6 +192,7 @@ internal sealed partial class RecipeWorkflow
         WorkflowEventType.Shifted => EventTypes.WorkflowShifted,
         WorkflowEventType.Notified => EventTypes.WorkflowNotified,
         WorkflowEventType.Expired => EventTypes.WorkflowExpired,
+        WorkflowEventType.Heavy => EventTypes.WorkflowHeavy,
 
         // why: spec 5.7 names a dispatch refusal 'outbox.refused', written by P6's recheck; P4 runs no effects, so there is no kind to emit yet
         WorkflowEventType.EffectRefused => throw new NotSupportedException("an effect refusal is mirrored from P6 (outbox.refused)"),

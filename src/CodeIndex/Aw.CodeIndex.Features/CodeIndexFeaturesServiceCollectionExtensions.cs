@@ -1,0 +1,12 @@
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Aw.CodeIndex.Features;
+
+/// <summary>Registers Aw.CodeIndex.Features's slices: each service, its validator and its decorators (outermost first).</summary>
+public static class CodeIndexFeaturesServiceCollectionExtensions
+{
+    /// <summary>Adds every CodeIndex use case as an IService.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    public static IServiceCollection AddCodeIndexFeatures(this IServiceCollection services) => services;
+}

@@ -167,6 +167,33 @@ public sealed class LensLogStepTests
     }
 
     [Fact]
+    public async Task A_typed_escalation_on_a_critical_finding_ends_the_round_needsOwner_with_the_findings_and_the_question()
+    {
+        var result = await Run("""{"lens":"arch","findings":[{"severity":"CRITICAL","text":"c","escalate":{"kind":"productQuestion","question":"Keep the legacy flow?"}}]}""", "[]", """["arch"]""");
+
+        Assert.Equal("needsOwner", result.Result!.Outcome.Value);
+        Assert.Equal(["escalation", "findings", "lensRounds"], LensStepContexts.Keys(result));
+        Assert.Equal("Keep the legacy flow?", LensStepContexts.Out(result, "escalation")["question"]!.GetValue<string>());
+        _ = Assert.Single(LensStepContexts.Out(result, "findings").AsArray());
+    }
+
+    [Fact]
+    public async Task A_finding_with_an_untyped_please_decide_stays_findings()
+    {
+        var result = await Run("""{"lens":"arch","findings":[{"severity":"HIGH","text":"please decide","escalate":{"kind":"whatever","question":"q"}}]}""", "[]", """["arch"]""");
+
+        Assert.Equal("findings", result.Result!.Outcome.Value);
+    }
+
+    [Fact]
+    public async Task An_escalation_on_a_medium_finding_never_reaches_a_human()
+    {
+        var result = await Run("""{"lens":"arch","findings":[{"severity":"MEDIUM","text":"m","escalate":{"kind":"ambiguousFix","question":"q"}}]}""", "[]", """["arch"]""");
+
+        Assert.Equal("clean", result.Result!.Outcome.Value);
+    }
+
+    [Fact]
     public async Task The_gold_lens_rounds_replay_as_two_rounds_of_five_lenses()
     {
         var gold = (await File.ReadAllLinesAsync(Path.Combine(RepoRoot(), "tests", "fixtures", "line", "gold", "design", "expiry", "lens-rounds.jsonl"), TestContext.Current.CancellationToken)).Select(static l => JsonNode.Parse(l)!.AsObject()).ToList();
