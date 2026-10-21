@@ -341,6 +341,73 @@ public sealed class NeedsYouFramesTests : FrameHost
         Assert.Equal("revise", Server.CompleteCalls.Single().Body.Outcome);
     });
 
+    private static Control? Focused(Window window) => window.FocusManager?.GetFocusedElement() as Control;
+
+    [Fact]
+    public Task X_on_a_desk_request_does_nothing_and_A_with_the_reason_box_open_is_ignored() => OnUi(async () =>
+    {
+        var (window, shell) = await DeskInbox();
+
+        window.KeyPressQwerty(PhysicalKey.X, RawInputModifiers.None);
+        Settle(window);
+        Assert.False(Visible(window, "NeedsYouReason"));
+
+        window.KeyPressQwerty(PhysicalKey.D, RawInputModifiers.None);
+        Settle(window);
+        window.KeyPressQwerty(PhysicalKey.A, RawInputModifiers.None);
+        Settle(window);
+
+        Assert.Empty(Server.CompleteCalls);
+        Assert.True(Visible(window, "NeedsYouReason"));
+        Assert.True(shell.IsNeedsYouInbox);
+    });
+
+    [Fact]
+    public Task A_key_typed_in_the_reason_box_is_the_boxs_own() => OnUi(async () =>
+    {
+        var (window, shell) = await DeskInbox();
+        window.KeyPressQwerty(PhysicalKey.D, RawInputModifiers.None);
+        Settle(window);
+        var box = Named<TextBox>(window, "NeedsYouReason");
+        _ = box.Focus();
+
+        window.KeyPressQwerty(PhysicalKey.A, RawInputModifiers.None);
+        window.KeyPressQwerty(PhysicalKey.D, RawInputModifiers.None);
+        Settle(window);
+
+        Assert.Empty(Server.CompleteCalls);
+        Assert.Equal(ViewModels.NeedsYou.NeedsYouBarMode.SendingBack, NeedsYouBarModeOf(shell));
+    });
+
+    private static ViewModels.NeedsYou.NeedsYouBarMode NeedsYouBarModeOf(ViewModels.Shell.ShellViewModel shell) => shell.Inbox.Bar.Mode;
+
+    [Fact]
+    public Task Focus_goes_back_to_send_back_when_the_reason_box_closes_and_stays_in_the_page_after_a_send() => OnUi(async () =>
+    {
+        var (window, shell) = await DeskInbox();
+        window.KeyPressQwerty(PhysicalKey.D, RawInputModifiers.None);
+        Settle(window);
+
+        window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        Settle(window);
+        Assert.Equal("NeedsYouSendBack", Focused(window)?.Name);
+
+        window.KeyPressQwerty(PhysicalKey.D, RawInputModifiers.None);
+        Settle(window);
+        shell.Inbox.Bar.ReasonText = "cut the scope";
+        _ = Named<TextBox>(window, "NeedsYouReason").Focus();
+        window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.Control);
+        for (var i = 0; i < 400 && !shell.Inbox.IsDone; i++)
+        {
+            await Task.Delay(5, Token);
+        }
+        Settle(window);
+
+        var focused = Focused(window);
+        Assert.NotNull(focused);
+        Assert.Contains(focused.GetVisualAncestors().Prepend(focused), v => v is Control c && string.Equals(c.Name, "NeedsYouInbox", StringComparison.Ordinal));
+    });
+
     [Fact]
     public Task Escape_with_nothing_open_in_the_bar_still_leaves_the_inbox() => OnUi(async () =>
     {

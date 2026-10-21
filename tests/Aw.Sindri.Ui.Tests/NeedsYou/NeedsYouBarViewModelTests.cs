@@ -16,11 +16,16 @@ public sealed class NeedsYouBarViewModelTests
     private readonly FakeClipboard _clipboard = new();
     private readonly FakeSindriApi _server = new();
     private readonly List<NeedsYouDecisionEventArgs> _decisions = [];
+    private Func<NeedsYouDecisionEventArgs, Task<string>> _decisionAnswer = _ => Task.FromResult("");
 
     private async Task<NeedsYouBarViewModel> Bar(NeedsYouEntry entry, bool read = false)
     {
         var bar = new NeedsYouBarViewModel(new DeskReporter(_server, () => _api), _clipboard, _clock);
-        bar.DecisionRequested += (_, e) => _decisions.Add(e);
+        bar.DecisionRequested += (_, e) =>
+        {
+            _decisions.Add(e);
+            e.Settled = _decisionAnswer(e);
+        };
         bar.Show(new NeedsYouRowViewModel(entry, seen: true, reducedMotion: false, arrived: false, _clock));
         await bar.Loaded;
         bar.ReadToEnd = read;
@@ -236,5 +241,88 @@ public sealed class NeedsYouBarViewModelTests
         await bar.PressApprove();
 
         Assert.Empty(_server.CompleteCalls);
+    }
+
+    [Fact]
+    public async Task A_stale_answer_from_the_row_shown_before_does_not_reopen_the_one_sending_now()
+    {
+        var first = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var second = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _server.CompleteGate = first;
+        var bar = await Bar(NeedsYouRows.Desk(), read: true);
+        var stale = bar.PressApprove();
+
+        bar.Show(new NeedsYouRowViewModel(NeedsYouRows.Desk("WFI-other"), seen: true, reducedMotion: false, arrived: false, _clock));
+        await bar.Loaded;
+        bar.ReadToEnd = true;
+        _server.CompleteGate = second;
+        var current = bar.PressApprove();
+        first.SetResult();
+        await stale;
+
+        Assert.True(bar.IsSending);
+        await bar.PressApprove();
+        Assert.Equal(2, _server.CompleteCalls.Count);
+        second.SetResult();
+        await current;
+        Assert.Equal(NeedsYouBarMode.Approved, bar.Mode);
+    }
+
+    [Fact]
+    public async Task A_declined_decision_the_server_refuses_keeps_the_reason_and_shows_the_refusal_in_the_bar()
+    {
+        _decisionAnswer = _ => Task.FromResult("That decision was already answered.");
+        var bar = await Bar(NeedsYouRows.Decision());
+        await bar.PressSendBack();
+        bar.ReasonText = "out of scope";
+
+        await bar.Send();
+
+        Assert.Equal((NeedsYouBarMode.SendingBack, "out of scope", "That decision was already answered."), (bar.Mode, bar.ReasonText, bar.Refusal));
+    }
+
+    [Fact]
+    public async Task A_declined_decision_that_was_accepted_closes_the_box_and_clears_the_reason()
+    {
+        var bar = await Bar(NeedsYouRows.Decision());
+        await bar.PressSendBack();
+        bar.ReasonText = "out of scope";
+
+        await bar.Send();
+
+        Assert.Equal((NeedsYouBarMode.Pending, "", ""), (bar.Mode, bar.ReasonText, bar.Refusal));
+    }
+
+    [Fact]
+    public async Task A_pressed_twice_while_the_decision_is_in_flight_answers_it_once()
+    {
+        var gate = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _decisionAnswer = _ => gate.Task;
+        var bar = await Bar(NeedsYouRows.Decision());
+
+        var first = bar.PressApprove();
+        await bar.PressApprove();
+        gate.SetResult("");
+        await first;
+
+        _ = Assert.Single(_decisions);
+    }
+
+    [Fact]
+    public async Task Send_back_on_a_terminal_only_step_sends_rework_and_on_any_other_revise()
+    {
+        ServeProtectedComplete();
+        var terminal = await Bar(NeedsYouRows.Desk());
+        await terminal.PressSendBack();
+        terminal.ReasonText = "wrong branch";
+        await terminal.Send();
+
+        _server.InstanceBody = null;
+        var plain = await Bar(NeedsYouRows.Desk());
+        await plain.PressSendBack();
+        plain.ReasonText = "cut the scope";
+        await plain.Send();
+
+        Assert.Equal(["rework", "revise"], _server.CompleteCalls.Select(c => c.Body.Outcome).ToList());
     }
 }

@@ -14,4 +14,7 @@ internal sealed class NeedsYouDecisionEventArgs(string rowId, string optionId, s
 
     /// <summary>The reason, or empty for none.</summary>
     public string Note { get; } = note;
+
+    /// <summary>Set by the handler: completes with the refusal the decision came back with, or empty when it was accepted or nothing was sent.</summary>
+    public Task<string> Settled { get; set; } = Task.FromResult("");
 }
