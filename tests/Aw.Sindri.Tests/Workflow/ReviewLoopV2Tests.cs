@@ -13,11 +13,11 @@ public sealed class ReviewLoopV2Tests
     private static Recipe Load() => RecipeComposition.ReadClean(ShippedRecipes.Read(Path), "workflow.review-loop.yaml").Recipe;
 
     [Fact, Trait("Lane", "unit")]
-    public void The_recipe_is_version_2_and_validates_against_the_shipped_catalog()
+    public void The_recipe_is_version_3_and_validates_against_the_shipped_catalog()
     {
         var document = RecipeComposition.ReadClean(ShippedRecipes.Read(Path), "workflow.review-loop.yaml");
 
-        Assert.Equal(2, document.Recipe.Version);
+        Assert.Equal(3, document.Recipe.Version);   // 3: the typed escalation (BS-12)
         Assert.Empty(RecipeComposition.Errors(document, FixtureCatalog.Shipped(), new InMemoryChildRecipes()));
     }
 
@@ -42,7 +42,7 @@ public sealed class ReviewLoopV2Tests
 
         Assert.Equal("round", recipe.Initial);
         Assert.Equal(
-            ["clean", "fix", "lens", "lens-log", "recheck", "record", "round", "stuck", "wrong"],
+            ["ask", "clean", "fix", "lens", "lens-log", "recheck", "record", "resolve", "round", "stuck", "wrong"],
             recipe.States.Keys.Order(StringComparer.Ordinal),
             StringComparer.Ordinal);
         Assert.Equal("step.review.round", recipe.States["round"].Step!.Use.Value);
@@ -119,7 +119,7 @@ public sealed class ReviewLoopV2Tests
     {
         var names = Load().Evals.Select(static e => System.IO.Path.GetFileNameWithoutExtension(e));
 
-        Assert.Equal(["behaviour-wrong", "cap-then-recheck", "empty-queue", "happy", "lens-runs-cap", "one-lens-per-run", "recheck-clean", "recheck-wrong"], names.Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal(["ambiguous-fix-escalates", "behaviour-wrong", "cap-then-recheck", "empty-queue", "happy", "lens-runs-cap", "one-lens-per-run", "product-question-escalates", "recheck-clean", "recheck-wrong", "two-rounds-no-human", "untyped-please-decide-stays"], names.Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
