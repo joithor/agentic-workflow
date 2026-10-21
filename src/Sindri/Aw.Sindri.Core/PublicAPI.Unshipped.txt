@@ -1789,11 +1789,7 @@ Aw.Sindri.Core.Profile.IProfileSource
 Aw.Sindri.Core.Profile.IProfileSource.Load(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Profile.LoadedProfile!>!>
 Aw.Sindri.Core.Profile.IndexSettings
 Aw.Sindri.Core.Profile.IndexSettings.<Clone>$() -> Aw.Sindri.Core.Profile.IndexSettings!
-Aw.Sindri.Core.Profile.IndexSettings.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? DenyPaths) -> void
-Aw.Sindri.Core.Profile.IndexSettings.DenyPaths.get -> System.Collections.Generic.IReadOnlyList<string!>?
-Aw.Sindri.Core.Profile.IndexSettings.DenyPaths.init -> void
 Aw.Sindri.Core.Profile.IndexSettings.Equals(Aw.Sindri.Core.Profile.IndexSettings? other) -> bool
-Aw.Sindri.Core.Profile.IndexSettings.IndexSettings(System.Collections.Generic.IReadOnlyList<string!>? DenyPaths = null) -> void
 Aw.Sindri.Core.Profile.LoadedProfile
 Aw.Sindri.Core.Profile.LoadedProfile.<Clone>$() -> Aw.Sindri.Core.Profile.LoadedProfile!
 Aw.Sindri.Core.Profile.LoadedProfile.Deconstruct(out Aw.Sindri.Core.Profile.SindriProfile! Profile, out Aw.Sindri.Core.Ids.ProfileHash Hash, out string! Source) -> void
@@ -7445,7 +7441,8 @@ static Aw.Sindri.Core.Text.SafeText.Escape(string! text) -> string!
 static Aw.Sindri.Core.Text.SafeText.Line(string! text, int max) -> string!
 static Aw.Sindri.Core.Views.AliasRow.operator !=(Aw.Sindri.Core.Views.AliasRow? left, Aw.Sindri.Core.Views.AliasRow? right) -> bool
 static Aw.Sindri.Core.Views.AliasRow.operator ==(Aw.Sindri.Core.Views.AliasRow? left, Aw.Sindri.Core.Views.AliasRow? right) -> bool
-static Aw.Sindri.Core.Views.ApprovedServices.Of(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>! rows, Aw.Sindri.Core.Profile.LoadedProfile? approved) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>!
+static Aw.Sindri.Core.Views.ApprovedServices.Of(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>! rows, Aw.Sindri.Core.Profile.LoadedProfile? approved, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Scheduling.BuiltInService!>! builtIns) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>!
+static Aw.Sindri.Core.Scheduling.BuiltInService.Is(Aw.Sindri.Core.Ids.ServiceName name, bool namedByProfile, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Scheduling.BuiltInService!>! builtIns) -> bool
 static Aw.Sindri.Core.Views.AsOf.operator !=(Aw.Sindri.Core.Views.AsOf? left, Aw.Sindri.Core.Views.AsOf? right) -> bool
 static Aw.Sindri.Core.Views.AsOf.operator ==(Aw.Sindri.Core.Views.AsOf? left, Aw.Sindri.Core.Views.AsOf? right) -> bool
 static Aw.Sindri.Core.Views.DecisionRules.Decide(Aw.Sindri.Core.Views.HumanDecisionRow! decision, Aw.Sindri.Core.Ids.DecisionOption choice, string? note, string! actor, Aw.Sindri.Core.Ids.CommandId command) -> Aw.Kernel.Result<Aw.Sindri.Core.Events.DecisionRecorded!>!
@@ -12027,6 +12024,8 @@ Aw.Sindri.Core.Onyx.IOnyxSession.RevokeTokens(string! name, System.Threading.Can
 Aw.Sindri.Core.Onyx.OnyxAccounts
 const Aw.Sindri.Core.Onyx.OnyxAccounts.DedicatedEmail = "sindri@example.com" -> string!
 const Aw.Sindri.Core.Onyx.OnyxAccounts.LegacyEmail = "sindri@sindri.app" -> string!
+Aw.Sindri.Core.Packets.IPacketFiles
+Aw.Sindri.Core.Packets.IPacketFiles.Read(string! directory, string! name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
 Aw.Sindri.Core.Packets.IPackets
 Aw.Sindri.Core.Packets.IPackets.Freeze(Aw.Sindri.Core.Packets.PacketRef! packet, Aw.Sindri.Core.Packets.PacketFreezer by, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Packets.PacketFreeze!>!>
 Aw.Sindri.Core.Packets.IPackets.Hash(Aw.Sindri.Core.Packets.PacketRef! packet, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
@@ -12956,6 +12955,57 @@ static Aw.Sindri.Core.Sessions.SessionIdCapture.Check(string? pattern, Aw.Sindri
 static readonly Aw.Sindri.Core.SindriErrors.LaunchSessionIdTimedOut -> Aw.Kernel.ErrorDefinition!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext.Deconstruct(out string! Title, out Aw.Sindri.Core.Workflow.Views.ParentRef? Parent, out Aw.Sindri.Core.Workflow.Views.ViewCounts! Counts, out System.DateTimeOffset AsOf, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StepRun!>? StepRuns, out string? RecipeDisplayName) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext.InstanceDetailContext(string! Title, Aw.Sindri.Core.Workflow.Views.ParentRef? Parent, Aw.Sindri.Core.Workflow.Views.ViewCounts! Counts, System.DateTimeOffset AsOf, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StepRun!>? StepRuns = null, string? RecipeDisplayName = null) -> void
+Aw.Sindri.Core.Profile.EmbeddingSettings
+Aw.Sindri.Core.Profile.EmbeddingSettings.<Clone>$() -> Aw.Sindri.Core.Profile.EmbeddingSettings!
+Aw.Sindri.Core.Profile.EmbeddingSettings.EmbeddingSettings(bool? Enabled = null, string? Url = null, string? Model = null) -> void
+Aw.Sindri.Core.Profile.EmbeddingSettings.Deconstruct(out bool? Enabled, out string? Url, out string? Model) -> void
+Aw.Sindri.Core.Profile.EmbeddingSettings.Equals(Aw.Sindri.Core.Profile.EmbeddingSettings? other) -> bool
+Aw.Sindri.Core.Profile.EmbeddingSettings.Enabled.get -> bool?
+Aw.Sindri.Core.Profile.EmbeddingSettings.Enabled.init -> void
+Aw.Sindri.Core.Profile.EmbeddingSettings.Url.get -> string?
+Aw.Sindri.Core.Profile.EmbeddingSettings.Url.init -> void
+Aw.Sindri.Core.Profile.EmbeddingSettings.Model.get -> string?
+Aw.Sindri.Core.Profile.EmbeddingSettings.Model.init -> void
+override Aw.Sindri.Core.Profile.EmbeddingSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.EmbeddingSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.EmbeddingSettings.ToString() -> string!
+static Aw.Sindri.Core.Profile.EmbeddingSettings.operator !=(Aw.Sindri.Core.Profile.EmbeddingSettings? left, Aw.Sindri.Core.Profile.EmbeddingSettings? right) -> bool
+static Aw.Sindri.Core.Profile.EmbeddingSettings.operator ==(Aw.Sindri.Core.Profile.EmbeddingSettings? left, Aw.Sindri.Core.Profile.EmbeddingSettings? right) -> bool
+const Aw.Sindri.Core.Profile.EmbeddingSettings.DefaultUrl = "http://127.0.0.1:11434" -> string!
+Aw.Sindri.Core.Profile.GraphSettings
+Aw.Sindri.Core.Profile.GraphSettings.<Clone>$() -> Aw.Sindri.Core.Profile.GraphSettings!
+Aw.Sindri.Core.Profile.GraphSettings.GraphSettings(bool? Enabled = null, int? MaxMB = null, int? MaxNodes = null) -> void
+Aw.Sindri.Core.Profile.GraphSettings.Deconstruct(out bool? Enabled, out int? MaxMB, out int? MaxNodes) -> void
+Aw.Sindri.Core.Profile.GraphSettings.Equals(Aw.Sindri.Core.Profile.GraphSettings? other) -> bool
+Aw.Sindri.Core.Profile.GraphSettings.Enabled.get -> bool?
+Aw.Sindri.Core.Profile.GraphSettings.Enabled.init -> void
+Aw.Sindri.Core.Profile.GraphSettings.MaxMB.get -> int?
+Aw.Sindri.Core.Profile.GraphSettings.MaxMB.init -> void
+Aw.Sindri.Core.Profile.GraphSettings.MaxNodes.get -> int?
+Aw.Sindri.Core.Profile.GraphSettings.MaxNodes.init -> void
+override Aw.Sindri.Core.Profile.GraphSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.GraphSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.GraphSettings.ToString() -> string!
+static Aw.Sindri.Core.Profile.GraphSettings.operator !=(Aw.Sindri.Core.Profile.GraphSettings? left, Aw.Sindri.Core.Profile.GraphSettings? right) -> bool
+static Aw.Sindri.Core.Profile.GraphSettings.operator ==(Aw.Sindri.Core.Profile.GraphSettings? left, Aw.Sindri.Core.Profile.GraphSettings? right) -> bool
+const Aw.Sindri.Core.Profile.GraphSettings.DefaultMaxMB = 256 -> int
+const Aw.Sindri.Core.Profile.GraphSettings.DefaultMaxNodes = 500000 -> int
+Aw.Sindri.Core.Profile.IndexSettings.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? DenyPaths, out System.Collections.Generic.IReadOnlyList<string!>? UtilityGlobs, out int? MaxFileKB, out int? MaxTotalMB, out Aw.Sindri.Core.Profile.EmbeddingSettings? Embeddings, out Aw.Sindri.Core.Profile.GraphSettings? Graph) -> void
+Aw.Sindri.Core.Profile.IndexSettings.IndexSettings(System.Collections.Generic.IReadOnlyList<string!>? DenyPaths = null, System.Collections.Generic.IReadOnlyList<string!>? UtilityGlobs = null, int? MaxFileKB = null, int? MaxTotalMB = null, Aw.Sindri.Core.Profile.EmbeddingSettings? Embeddings = null, Aw.Sindri.Core.Profile.GraphSettings? Graph = null) -> void
+const Aw.Sindri.Core.Profile.IndexSettings.DefaultMaxFileKB = 512 -> int
+const Aw.Sindri.Core.Profile.IndexSettings.DefaultMaxTotalMB = 200 -> int
+Aw.Sindri.Core.Profile.IndexSettings.DenyPaths.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Profile.IndexSettings.DenyPaths.init -> void
+Aw.Sindri.Core.Profile.IndexSettings.UtilityGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Profile.IndexSettings.UtilityGlobs.init -> void
+Aw.Sindri.Core.Profile.IndexSettings.MaxFileKB.get -> int?
+Aw.Sindri.Core.Profile.IndexSettings.MaxFileKB.init -> void
+Aw.Sindri.Core.Profile.IndexSettings.MaxTotalMB.get -> int?
+Aw.Sindri.Core.Profile.IndexSettings.MaxTotalMB.init -> void
+Aw.Sindri.Core.Profile.IndexSettings.Embeddings.get -> Aw.Sindri.Core.Profile.EmbeddingSettings?
+Aw.Sindri.Core.Profile.IndexSettings.Embeddings.init -> void
+Aw.Sindri.Core.Profile.IndexSettings.Graph.get -> Aw.Sindri.Core.Profile.GraphSettings?
+Aw.Sindri.Core.Profile.IndexSettings.Graph.init -> void
 
 Aw.Sindri.Core.Line.LineCheckResponse
 Aw.Sindri.Core.Line.LineCheckResponse.<Clone>$() -> Aw.Sindri.Core.Line.LineCheckResponse!
@@ -14229,3 +14279,14 @@ static Aw.Sindri.Core.Profile.RepoStatus.operator ==(Aw.Sindri.Core.Profile.Repo
 static Aw.Sindri.Core.Profile.RepoStatusRules.ExitCode(Aw.Sindri.Core.Profile.RepoStatus! status) -> int
 static Aw.Sindri.Core.Profile.RepoStatusRules.NudgeLine(Aw.Sindri.Core.Profile.RepoStatus! status) -> string!
 static Aw.Sindri.Core.Profile.RepoStatusRules.Text(Aw.Sindri.Core.Profile.RepoStatus! status) -> string!
+Aw.Sindri.Core.Workflow.Blocks.StepContext.HeavySlotHeld.get -> bool
+Aw.Sindri.Core.Workflow.Blocks.StepContext.HeavySlotHeld.init -> void
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyHold
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove.Acquire = 1 -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove.Ensure = 2 -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove.None = 0 -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove.Release = 3 -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType.Heavy = 8 -> Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType
+static Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyHold.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, bool inPhase, bool leased) -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
+const Aw.Sindri.Core.Events.EventTypes.WorkflowHeavy = "workflow.heavy" -> string!

@@ -8,14 +8,14 @@ namespace Aw.Context.Features.GetCode;
 
 /// <summary>
 /// The lexical half of the code lens (S-CL): the test files that name an implementing file and the schema files that name a data thing, found by reading the repo at one commit through git (never the
-/// working tree) within the profile's deadline. File level: a path and the form that matched leave this class, never a line or text. A repo that can't be read, a commit the clone lacks or an expired
+/// working tree) within 'context.code.deadline'. File level: a path and the form that matched leave this class, never a line or text. A repo that can't be read, a commit the clone lacks or an expired
 /// deadline is a row of 'searched', never an error of the route.
 /// </summary>
 internal sealed class CodeLexicalSearch(IRepoReader repos, ICodeSearch search, LexicalTestsRule tests, LexicalSchemaRule schema, TimeProvider clock)
 {
     internal async ValueTask<CodeLexicalFindings> Find(CodeLexicalRequest request, CancellationToken cancellationToken)
     {
-        using var deadline = new CancellationTokenSource(request.Settings.Deadline, clock);   // the TimeProvider's timer, so a test drives it with a fake clock
+        using var deadline = new CancellationTokenSource(request.Settings.CodeDeadline, clock);   // the TimeProvider's timer, so a test drives it with a fake clock
         using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, deadline.Token);
         var pass = new LexicalPass(request.Settings, request.Map.Graph, request.View.Data.Things, request.Clean);
         try
