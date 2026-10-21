@@ -65,7 +65,7 @@ public static partial class SettingsReader
         var settings = new ContextSettings();
         var globs = section.Docs?.Globs ?? ContextSettings.DefaultDocGlobs;
         var deadline = section.Deadline is null ? settings.Deadline : Duration(section.Deadline);
-        var codeDeadline = section.Code?.Deadline is null ? settings.CodeDeadline : Duration(section.Code.Deadline, MaxCodeDeadline);
+        var codeDeadline = CodeDeadline(section.Code, settings);
         var sources = SourcesReader.Check(section.Sources);
         return (Refused(section, globs), deadline, codeDeadline, sources) switch
         {
@@ -99,7 +99,10 @@ public static partial class SettingsReader
     private const int MaxCodeGlobs = 50;
     private const int MaxCodeGlobLength = 200;
 
-    private static readonly TimeSpan MaxCodeDeadline = TimeSpan.FromSeconds(600);
+    private static readonly TimeSpan _maxCodeDeadline = TimeSpan.FromSeconds(600);
+
+    private static TimeSpan? CodeDeadline(CodeSection? code, ContextSettings settings) =>
+        code?.Deadline is null ? settings.CodeDeadline : Duration(code.Deadline, _maxCodeDeadline);
 
     private static ContextSettings WithCode(ContextSettings settings, CodeSection? code, TimeSpan codeDeadline) =>
         settings with
