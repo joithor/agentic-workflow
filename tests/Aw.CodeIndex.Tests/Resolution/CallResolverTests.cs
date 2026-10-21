@@ -117,9 +117,9 @@ public sealed class CallResolverTests
     {
         var caller = Sym("a/A.cs", "N.Outer.Inner.Run");
         var inOuter = Sym("b/B.cs", "N.Other.Go");                      // namespace N
-        var inInner = Sym("c/C.cs", "N.Outer.Inner.Go");                 // inside A.cs's own types, other file: namespace N too
+        var inInner = Sym("c/C.cs", "N.Outer.Inner.Go");                 // the same outer type declared in another file: namespace N too
         var elsewhere = Sym("0/Z.cs", "M.Z.Go");
-        var symbols = new[] { TypeSym("a/A.cs", "N.Outer"), TypeSym("a/A.cs", "N.Outer.Inner", 2), caller, TypeSym("b/B.cs", "N.Other"), inOuter, TypeSym("c/C.cs", "N.Outer.Inner"), inInner, TypeSym("0/Z.cs", "M.Z"), elsewhere };
+        var symbols = new[] { TypeSym("a/A.cs", "N.Outer"), TypeSym("a/A.cs", "N.Outer.Inner", 2), caller, TypeSym("b/B.cs", "N.Other"), inOuter, TypeSym("c/C.cs", "N.Outer"), TypeSym("c/C.cs", "N.Outer.Inner", 2), inInner, TypeSym("0/Z.cs", "M.Z"), elsewhere };
 
         var edges = new CallResolver(symbols, [""]).Resolve([Call(caller, "Go")]);
 

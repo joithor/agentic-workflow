@@ -1250,3 +1250,7 @@ static readonly Aw.CodeIndex.Core.CodeIndexErrors.SettingsInvalid -> Aw.Kernel.E
 static readonly Aw.CodeIndex.Core.CodeIndexErrors.SymbolNotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.CodeIndex.Core.CodeIndexRules.HeavySlotWait -> System.TimeSpan
 static readonly Aw.CodeIndex.Core.CodeIndexRules.MaxBuildTime -> System.TimeSpan
+Aw.CodeIndex.Core.Resolution.CallResolver
+Aw.CodeIndex.Core.Resolution.CallResolver.CallResolver(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.ResolutionSymbol!>! symbols, System.Collections.Generic.IReadOnlyCollection<string!>! projectDirectories) -> void
+Aw.CodeIndex.Core.Resolution.CallResolver.Resolve(System.Collections.Generic.IEnumerable<Aw.CodeIndex.Core.Model.CallSiteRow!>! rows) -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.EdgeRecord!>!
+static Aw.CodeIndex.Core.Resolution.CallResolver.RankText(int rank, int candidates) -> string!
