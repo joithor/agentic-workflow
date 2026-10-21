@@ -77,6 +77,12 @@ describe("chunkFile", () => {
     const big = { path: "p.ts", hunks: [{ start: 5, end: 5, text }] };
     expect(chunkFile(big, 20).map((s) => [s.startLine, s.endLine])).toEqual([[5, 5], [5, 5], [5, 5]]);
   });
+
+  it("never inverts the span of trailing deletion pieces", () => {
+    const text = ["@@ -5,3 +5,1 @@", " keep", "-xxxxxxxx", "-yyyyyyyy"].join("\n");
+    const big = { path: "p.ts", hunks: [{ start: 5, end: 5, text }] };
+    expect(chunkFile(big, 20).map((s) => [s.startLine, s.endLine])).toEqual([[5, 5], [5, 5], [5, 5]]);
+  });
 });
 
 describe("ignoredTraits", () => {

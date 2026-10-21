@@ -57,7 +57,9 @@ export function chunkFile(file: FileDiff, maxChars: number): Source[] {
     let next = hunk.start;
     let pieceStart = next;
     const flush = () => {
-      pieces.push({ start: pieceStart, end: Math.min(Math.max(next - 1, pieceStart), hunk.end), text: lines.join("\n") });
+      // Trailing `-` lines sit past the last new-file line: pin them to hunk.end.
+      const start = Math.min(pieceStart, hunk.end);
+      pieces.push({ start, end: Math.max(Math.min(next - 1, hunk.end), start), text: lines.join("\n") });
       lines = [];
       size = 0;
       pieceStart = next;
