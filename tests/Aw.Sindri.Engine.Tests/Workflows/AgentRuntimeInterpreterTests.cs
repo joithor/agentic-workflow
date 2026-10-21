@@ -154,13 +154,7 @@ public sealed class AgentRuntimeInterpreterTests : AgentRuntimeTestBase
             _sessions.End(rig.Launch, SessionEndReason.Exit, exitCode: 0);   // the resumed watch sees it
 
             _ = await WorkflowsHarness.Until(handle, static v => v.Question is not null);
-            string? reason = null;
-            var deadline = RealTime.NowDateTime.AddSeconds(30);
-            while (reason is null && RealTime.NowDateTime < deadline)   // the mirror row follows the park
-            {
-                reason = await rig.FailureReason(ct);
-                await Task.Delay(50, ct);
-            }
+            var reason = await rig.FailureReason(ct);   // waits for the mirror row that follows the park
 
             Assert.Equal("exit", reason);
             _ = Assert.Single(_launcher.Requests.Select(static r => r.Launch).Distinct());   // a relaunch after the handback is the same launch id, which the launcher keeps idempotent
