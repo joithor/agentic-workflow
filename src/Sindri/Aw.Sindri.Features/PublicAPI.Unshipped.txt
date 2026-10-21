@@ -3950,21 +3950,18 @@ static Aw.Sindri.Features.GetSetup.GetSetupRequest.operator !=(Aw.Sindri.Feature
 static Aw.Sindri.Features.GetSetup.GetSetupRequest.operator ==(Aw.Sindri.Features.GetSetup.GetSetupRequest? left, Aw.Sindri.Features.GetSetup.GetSetupRequest? right) -> bool
 static Aw.Sindri.Features.GetSetup.GetSetupResponse.operator !=(Aw.Sindri.Features.GetSetup.GetSetupResponse? left, Aw.Sindri.Features.GetSetup.GetSetupResponse? right) -> bool
 static Aw.Sindri.Features.GetSetup.GetSetupResponse.operator ==(Aw.Sindri.Features.GetSetup.GetSetupResponse? left, Aw.Sindri.Features.GetSetup.GetSetupResponse? right) -> bool
-Aw.Sindri.Features.CodeIndexReads.CallCoverage
-Aw.Sindri.Features.CodeIndexReads.CallCoverage.Full = 0 -> Aw.Sindri.Features.CodeIndexReads.CallCoverage
-Aw.Sindri.Features.CodeIndexReads.CallCoverage.Partial = 1 -> Aw.Sindri.Features.CodeIndexReads.CallCoverage
 Aw.Sindri.Features.CodeIndexReads.CodeCallRow
 Aw.Sindri.Features.CodeIndexReads.CodeCallRow.<Clone>$() -> Aw.Sindri.Features.CodeIndexReads.CodeCallRow!
 Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Basis.get -> Aw.CodeIndex.Core.Model.EdgeBasis
 Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Basis.init -> void
 Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Candidates.get -> int
 Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Candidates.init -> void
-Aw.Sindri.Features.CodeIndexReads.CodeCallRow.CodeCallRow(int Level, Aw.CodeIndex.Core.Facade.SymbolHit? Other, string! Name, Aw.CodeIndex.Core.Model.EdgeKind Kind, Aw.CodeIndex.Core.Model.EdgeBasis Basis, Aw.CodeIndex.Core.Model.Confidence Confidence, Aw.Sindri.Features.CodeIndexReads.CallCoverage Coverage, int Line, int Candidates) -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.CodeCallRow(int Level, Aw.CodeIndex.Core.Facade.SymbolHit? Other, string! Name, Aw.CodeIndex.Core.Model.EdgeKind Kind, Aw.CodeIndex.Core.Model.EdgeBasis Basis, Aw.CodeIndex.Core.Model.Confidence Confidence, Aw.CodeIndex.Core.Model.Coverage Coverage, int Line, int Candidates) -> void
 Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Confidence.get -> Aw.CodeIndex.Core.Model.Confidence
 Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Confidence.init -> void
-Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Coverage.get -> Aw.Sindri.Features.CodeIndexReads.CallCoverage
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Coverage.get -> Aw.CodeIndex.Core.Model.Coverage
 Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Coverage.init -> void
-Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Deconstruct(out int Level, out Aw.CodeIndex.Core.Facade.SymbolHit? Other, out string! Name, out Aw.CodeIndex.Core.Model.EdgeKind Kind, out Aw.CodeIndex.Core.Model.EdgeBasis Basis, out Aw.CodeIndex.Core.Model.Confidence Confidence, out Aw.Sindri.Features.CodeIndexReads.CallCoverage Coverage, out int Line, out int Candidates) -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Deconstruct(out int Level, out Aw.CodeIndex.Core.Facade.SymbolHit? Other, out string! Name, out Aw.CodeIndex.Core.Model.EdgeKind Kind, out Aw.CodeIndex.Core.Model.EdgeBasis Basis, out Aw.CodeIndex.Core.Model.Confidence Confidence, out Aw.CodeIndex.Core.Model.Coverage Coverage, out int Line, out int Candidates) -> void
 Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Equals(Aw.Sindri.Features.CodeIndexReads.CodeCallRow? other) -> bool
 Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Kind.get -> Aw.CodeIndex.Core.Model.EdgeKind
 Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Kind.init -> void
@@ -3978,10 +3975,10 @@ Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Other.get -> Aw.CodeIndex.Core.Fac
 Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Other.init -> void
 Aw.Sindri.Features.CodeIndexReads.CodeCallsView
 Aw.Sindri.Features.CodeIndexReads.CodeCallsView.<Clone>$() -> Aw.Sindri.Features.CodeIndexReads.CodeCallsView!
-Aw.Sindri.Features.CodeIndexReads.CodeCallsView.CodeCallsView(Aw.CodeIndex.Core.Facade.AnswerStamp! Stamp, Aw.CodeIndex.Core.Values.SymbolRef Subject, Aw.Sindri.Features.CodeIndexReads.CallCoverage Coverage, string! Note, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.CodeIndexReads.CodeCallRow!>! Edges, int UnresolvedCount, bool Truncated) -> void
-Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Coverage.get -> Aw.Sindri.Features.CodeIndexReads.CallCoverage
+Aw.Sindri.Features.CodeIndexReads.CodeCallsView.CodeCallsView(Aw.CodeIndex.Core.Facade.AnswerStamp! Stamp, Aw.CodeIndex.Core.Values.SymbolRef Subject, Aw.CodeIndex.Core.Model.Coverage Coverage, string! Note, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.CodeIndexReads.CodeCallRow!>! Edges, int UnresolvedCount, bool Truncated) -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Coverage.get -> Aw.CodeIndex.Core.Model.Coverage
 Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Coverage.init -> void
-Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Deconstruct(out Aw.CodeIndex.Core.Facade.AnswerStamp! Stamp, out Aw.CodeIndex.Core.Values.SymbolRef Subject, out Aw.Sindri.Features.CodeIndexReads.CallCoverage Coverage, out string! Note, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.CodeIndexReads.CodeCallRow!>! Edges, out int UnresolvedCount, out bool Truncated) -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Deconstruct(out Aw.CodeIndex.Core.Facade.AnswerStamp! Stamp, out Aw.CodeIndex.Core.Values.SymbolRef Subject, out Aw.CodeIndex.Core.Model.Coverage Coverage, out string! Note, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.CodeIndexReads.CodeCallRow!>! Edges, out int UnresolvedCount, out bool Truncated) -> void
 Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.CodeIndexReads.CodeCallRow!>!
 Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Edges.init -> void
 Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Equals(Aw.Sindri.Features.CodeIndexReads.CodeCallsView? other) -> bool

@@ -83,5 +83,11 @@ internal static class CodeIndexText
 
     private static string LayerWord(LayerName layer) => layer.ToString().ToLowerInvariant();
 
-    private static string CoverageWord(CallCoverage coverage) => coverage == CallCoverage.Full ? "full" : "partial";
+    private static string CoverageWord(Coverage coverage) => coverage switch
+    {
+        Coverage.Full => "full",
+        Coverage.Partial => "partial",
+        Coverage.Unavailable => "unavailable",
+        _ => "unavailable",
+    };
 }

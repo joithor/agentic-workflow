@@ -7,7 +7,7 @@ using Aw.Kernel;
 namespace Aw.CodeIndex.Testing;
 
 /// <summary>
-/// A scripted <see cref="ICodeIndex"/> for the surfaces that read it (Sindri's CLI and HTTP routes): repos with a status, symbols and call edges set up by the test.
+/// A scripted <see cref="ICodeIndex"/> for the surfaces that read it (Sindri's CLI and HTTP routes): repos with a status, symbols and call edges set up by the test. Each edge carries its own coverage; the answer's comes from <see cref="CallCoverage.Of"/> with the symbol's language read from its file extension (.cs full, else partial).
 /// It keeps the facade's scope rule: a repo outside the call's <see cref="CodeIndexScope"/>, or one with no index, answers the same SND-CODEIDX-013 (SND-CODEIDX-011 for a
 /// ref that names no symbol), and <see cref="Status"/> lists only the scope's repos. Build, FileSymbols, Similar and Neighbors answer 013: no reader scripts them yet.
 /// </summary>
@@ -128,7 +128,9 @@ public sealed class FakeCodeIndex : ICodeIndex
         }
 
         var (unresolved, edges) = index.Edges.TryGetValue((symbol, direction), out var scripted) ? scripted : (0, []);
-        return Ok(new CallsAnswer(Stamp(index), symbol, edges, unresolved, Truncated: false));
+        var subject = index.Symbols.First(s => s.Ref.Equals(symbol));
+        var language = subject.File.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) ? Coverage.Full : Coverage.Partial;
+        return Ok(new CallsAnswer(Stamp(index), symbol, edges, unresolved, Truncated: false, CallCoverage.Of(language, edges)));
     }
 
     private Repo? Readable(RepoName name) => _repos.TryGetValue(name, out var repo) && !repo.Damaged ? repo : null;
