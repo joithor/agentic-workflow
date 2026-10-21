@@ -75,7 +75,7 @@ public sealed class CallResolver
     /// <param name="rank">The 1-based rank.</param>
     /// <param name="candidates">The true number of matches.</param>
     /// <returns>For example '1 of 300'.</returns>
-    public static string RankText(int rank, int candidates) => $"{rank} of {candidates}";
+    public static string RankText(int rank, int candidates) => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{rank} of {candidates}");
 
     private static bool IsType(SymbolKind kind) => kind is SymbolKind.Class or SymbolKind.Record or SymbolKind.Struct or SymbolKind.Interface or SymbolKind.Enum;
 
@@ -123,7 +123,7 @@ public sealed class CallResolver
         return string.Empty;
     }
 
-    private IEnumerable<EdgeRecord> ResolveOne(Candidate caller, CallSiteRow row)
+    private EdgeRecord[] ResolveOne(Candidate caller, CallSiteRow row)
     {
         var site = row.Site;
         var matches = new List<Candidate>();
@@ -142,7 +142,7 @@ public sealed class CallResolver
 
         if (matches.Count == 0)
         {
-            return [new EdgeRecord(row.Caller, null, site.Name, site.Kind, EdgeBasis.Syntax, Confidence.Unresolved, site.Line, 0)];
+            return [new EdgeRecord(row.Caller, Target: null, site.Name, site.Kind, EdgeBasis.Syntax, Confidence.Unresolved, site.Line, 0)];
         }
 
         if (matches.Count == 1)

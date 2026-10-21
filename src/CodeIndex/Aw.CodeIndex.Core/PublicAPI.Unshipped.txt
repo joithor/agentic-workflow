@@ -1254,3 +1254,10 @@ Aw.CodeIndex.Core.Resolution.CallResolver
 Aw.CodeIndex.Core.Resolution.CallResolver.CallResolver(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.ResolutionSymbol!>! symbols, System.Collections.Generic.IReadOnlyCollection<string!>! projectDirectories) -> void
 Aw.CodeIndex.Core.Resolution.CallResolver.Resolve(System.Collections.Generic.IEnumerable<Aw.CodeIndex.Core.Model.CallSiteRow!>! rows) -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.EdgeRecord!>!
 static Aw.CodeIndex.Core.Resolution.CallResolver.RankText(int rank, int candidates) -> string!
+const Aw.CodeIndex.Core.CodeIndexRules.MaxQuarantined = 100 -> int
+Aw.CodeIndex.Core.Ports.IParseQuarantine
+Aw.CodeIndex.Core.Ports.IParseQuarantine.Begin(Aw.CodeIndex.Core.Values.RepoName repo, string! blob) -> void
+Aw.CodeIndex.Core.Ports.IParseQuarantine.Contains(Aw.CodeIndex.Core.Values.RepoName repo, string! blob) -> bool
+Aw.CodeIndex.Core.Ports.IParseQuarantine.End(Aw.CodeIndex.Core.Values.RepoName repo) -> void
+Aw.CodeIndex.Core.Ports.IParseQuarantine.Keep(Aw.CodeIndex.Core.Values.RepoName repo, System.Collections.Generic.IReadOnlySet<string!>! blobsInHead) -> int
+Aw.CodeIndex.Core.Ports.IParseQuarantine.Recover(Aw.CodeIndex.Core.Values.RepoName repo) -> int

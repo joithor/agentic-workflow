@@ -13,9 +13,11 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" VersionOverride="[5.9.0]" />
     <!-- Roslyn pin (CI-4): Microsoft.CodeAnalysis.CSharp is pinned at 5.9.0 centrally for Aw.Analyzers, which must stay on
-         the SDK's compiler. The parser needs a newer Roslyn for current C# syntax, so CI-4 adds the reference here with a
-         VersionOverride and says why; nothing else in this project references Roslyn. -->
+         the SDK's compiler. The parser needs a newer Roslyn for current C# syntax, so the reference here carries its own VersionOverride (today the newest
+         published Roslyn is 5.9.0, the same as the central pin; the override keeps the two moving independently);
+         nothing else in this project references Roslyn. -->
   </ItemGroup>
 
   <ItemGroup>
