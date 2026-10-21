@@ -44,7 +44,7 @@ public sealed class FakeRepoSnapshot : IRepoSnapshot
         return this;
     }
 
-    /// <summary>Removes a blob from the object store: the entry stays in the tree, its read answers null (a promisor clone's missing blob).</summary>
+    /// <summary>Removes a blob from the object store (a promisor clone's missing blob): the entry stays in the tree, the inventory skips it as missing, and a read of its blob answers null.</summary>
     /// <param name="commit">The commit whose tree holds the file.</param>
     /// <param name="path">The path.</param>
     /// <returns>This fake.</returns>
