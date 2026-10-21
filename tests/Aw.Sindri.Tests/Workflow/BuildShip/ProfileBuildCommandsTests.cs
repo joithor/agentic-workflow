@@ -52,13 +52,15 @@ public sealed class ProfileBuildCommandsTests
     }
 
     [Fact]
-    public async Task A_line_that_does_not_split_is_an_error_naming_it()
+    public async Task A_line_that_does_not_split_is_an_error_naming_its_index_with_the_fix_and_not_echoing_it()
     {
-        var source = await Approved(new(Build: new BuildSettings(["dotnet test --filter \"a"])));
+        var source = await Approved(new(Build: new BuildSettings(["dotnet build", "dotnet test --token=hunter2 --filter \"a"])));
 
         var set = await source.Read(Token);
 
         Assert.True(set.IsError);
-        Assert.Contains("dotnet test --filter \"a", set.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("workflow.build.commands[1]", set.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("(fix: ", set.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("hunter2", set.Error.Message, StringComparison.Ordinal);
     }
 }

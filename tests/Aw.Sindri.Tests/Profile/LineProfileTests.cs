@@ -83,11 +83,13 @@ public sealed class LineProfileTests
     [Fact, Trait("Lane", "unit")]
     public void An_unbalanced_quote_in_a_build_command_is_refused_at_validation_and_a_balanced_one_is_not()
     {
-        var unbalanced = ProfileRules.Check(With(new(Build: new BuildSettings(["dotnet test --filter \"Lane=unit"])))).Error;
+        var unbalanced = ProfileRules.Check(With(new(Build: new BuildSettings(["dotnet test --token=hunter2 --filter \"Lane=unit"])))).Error;
         var balanced = ProfileRules.Check(With(new(Build: new BuildSettings(["dotnet test --filter \"Lane=unit & Fast\""]))));
 
         Assert.StartsWith("workflow.build.commands[0]:", unbalanced.Message, StringComparison.Ordinal);
         Assert.Contains("never closed", unbalanced.Message, StringComparison.Ordinal);
+        Assert.Contains("(fix: ", unbalanced.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("hunter2", unbalanced.Message, StringComparison.Ordinal);   // the index names the line; its text is never echoed
         Assert.True(balanced.IsSuccess);
     }
 

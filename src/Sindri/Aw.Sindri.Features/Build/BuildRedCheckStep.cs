@@ -72,7 +72,7 @@ internal sealed class BuildRedCheckStep(IRunDiff diff, RepoCommandRunner command
 
     private async ValueTask<BlockStepResult> Check(RedTests red, CommandSet set, string worktree, CancellationToken cancellationToken)
     {
-        var ran = await commands.Run("sindri step.build.red-check", set, worktree, CommandStepLimits.BuildBudget, cancellationToken).ConfigureAwait(false);
+        var ran = await commands.RunUntilFailure("sindri step.build.red-check", set, worktree, CommandStepLimits.BuildBudget, cancellationToken).ConfigureAwait(false);
         if (ran.IsError)
         {
             return BlockStepResult.Failed($"step.build.red-check: {ran.Error.Message}");
@@ -80,7 +80,7 @@ internal sealed class BuildRedCheckStep(IRunDiff diff, RepoCommandRunner command
 
         if (ran.Value.FirstOrDefault(static r => r.Run.TimedOut) is { } slow)
         {
-            return BlockStepResult.Failed($"step.build.red-check: {slow.Summary}, so the red tests can't be judged (fix: raise workflow.steps.longMax)");
+            return BlockStepResult.Failed($"step.build.red-check: {slow.Summary}, so the red tests can't be judged (fix: make that command faster or split it; one command may run at most workflow.steps.longMax, and the Step at most 2 h)");
         }
 
         if (ran.Value.Any(static r => !r.Run.Passed))

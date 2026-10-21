@@ -17,7 +17,7 @@ public sealed class ShipGreenStepContract : BlockContract
 
     protected override BlockDescriptor Descriptor => ShipSteps.Green;
 
-    protected override string ExpectedHash => "sha256:6d6ae80950830824f1e7a500434ccec341b186212f13f61dc75882cf458a9831";
+    protected override string ExpectedHash => "sha256:3e06c887a6fb7d941a4b6f9f1f1f2669d13eae58954ef51169ae7eccdff1d73b";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

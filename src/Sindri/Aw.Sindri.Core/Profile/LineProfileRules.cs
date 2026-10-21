@@ -153,7 +153,7 @@ internal static class LineProfileRules
 
             if (!CommandLine.TryParse(commands[i], out _, out var problem))
             {
-                return Invalid(string.Create(CultureInfo.InvariantCulture, $"workflow.build.commands[{i}]"), $"'{commands[i]}' {problem}");
+                return Invalid(string.Create(CultureInfo.InvariantCulture, $"workflow.build.commands[{i}]"), $"{problem} (fix: correct the line)");
             }
         }
 

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Kernel;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow;
@@ -28,15 +29,16 @@ public sealed class ProfileBuildCommands(IApprovedProfile profile) : IBuildComma
 
         var each = RecipeDuration.TryFrom(LineProfile.LongMax(approved), out var longest) ? longest.Span : DefaultEach;
         var commands = new List<BuildCommand>();
-        foreach (var line in approved.Workflow?.Build?.Commands ?? [])
+        var lines = approved.Workflow?.Build?.Commands ?? [];
+        for (var i = 0; i < lines.Count; i++)
         {
-            // Profile validation refuses a line that doesn't split; this is for a profile written around it.
-            if (!CommandLine.TryParse(line, out var argv, out var problem))
+            // Profile validation refuses a line that doesn't split; this is for a profile written around it. The index names the line, its text is never echoed.
+            if (!CommandLine.TryParse(lines[i], out var argv, out var problem))
             {
-                return WorkflowErrors.EffectFailed.With($"workflow.build.commands '{line}' {problem}");
+                return WorkflowErrors.EffectFailed.With(string.Create(CultureInfo.InvariantCulture, $"workflow.build.commands[{i}] {problem} (fix: correct that line in the profile and approve it again)"));
             }
 
-            commands.Add(new BuildCommand(line, argv));
+            commands.Add(new BuildCommand(lines[i], argv));
         }
 
         return new CommandSet(commands, each);

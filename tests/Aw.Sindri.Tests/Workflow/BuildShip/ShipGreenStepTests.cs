@@ -111,7 +111,7 @@ public sealed class ShipGreenStepTests
         {
             _ = rig.Commands.Answer(name, _ =>
             {
-                rig.Clock.Advance(TimeSpan.FromMinutes(20));
+                rig.Clock.Advance(TimeSpan.FromMinutes(23));
                 return StepRig.Pass();
             });
         }
@@ -119,8 +119,8 @@ public sealed class ShipGreenStepTests
         var result = await Step(rig).Run(Context(), Token);
 
         Assert.Contains("budget", result.Failure, StringComparison.Ordinal);
-        Assert.Equal(5, rig.Commands.Calls.Count);   // 95 min of 100: the sixth never starts
-        Assert.True(rig.Clock.GetUtcNow() - KnownInstants.Epoch <= TimeSpan.FromMinutes(100));
+        Assert.Equal(5, rig.Commands.Calls.Count);   // 115 min of 120: the sixth never starts
+        Assert.True(rig.Clock.GetUtcNow() - KnownInstants.Epoch <= TimeSpan.FromMinutes(120));
     }
 
     private sealed class Mask : ITextScrubber

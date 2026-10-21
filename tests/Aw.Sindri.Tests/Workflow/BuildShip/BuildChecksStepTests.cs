@@ -161,12 +161,12 @@ public sealed class BuildChecksStepTests
     [Fact]
     public async Task A_batch_longer_than_the_Steps_budget_fails_the_Step_inside_it_with_the_budget_named()
     {
-        var rig = new StepRig("a", "b", "c", "d").Branch([Added("src/a.cs")]);
-        foreach (var name in new[] { "a", "b", "c", "d" })
+        var rig = new StepRig("a", "b", "c", "d", "e", "f").Branch([Added("src/a.cs")]);
+        foreach (var name in new[] { "a", "b", "c", "d", "e", "f" })
         {
             _ = rig.Commands.Answer(name, _ =>
             {
-                rig.Clock.Advance(TimeSpan.FromMinutes(15));
+                rig.Clock.Advance(TimeSpan.FromMinutes(23));
                 return StepRig.Pass();
             });
         }
@@ -174,8 +174,8 @@ public sealed class BuildChecksStepTests
         var result = await Step(rig).Run(Context(), Token);
 
         Assert.Contains("budget", result.Failure, StringComparison.Ordinal);
-        Assert.Equal(3, rig.Commands.Calls.Count);
-        Assert.True(rig.Clock.GetUtcNow() - KnownInstants.Epoch <= TimeSpan.FromMinutes(50));   // the Step's MaxDuration
+        Assert.Equal(5, rig.Commands.Calls.Count);   // 115 min of 120: the sixth never starts
+        Assert.True(rig.Clock.GetUtcNow() - KnownInstants.Epoch <= TimeSpan.FromMinutes(120));   // the Step's MaxDuration
     }
 
     [Fact]

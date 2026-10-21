@@ -115,6 +115,7 @@ public sealed class RepoCommandRunnerTests
         Assert.True(ran.IsError);
         Assert.Contains("budget", ran.Error.Message, StringComparison.Ordinal);
         Assert.Contains("45", ran.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("(fix:", ran.Error.Message, StringComparison.Ordinal);
         Assert.Equal(3, rig.Commands.Calls.Count);   // the fourth never started
         Assert.True(rig.Clock.GetUtcNow() - KnownInstants.Epoch <= TimeSpan.FromMinutes(50));
         Assert.Equal((1, 1), (rig.Slots.Taken, rig.Slots.Released));
@@ -183,5 +184,18 @@ public sealed class RepoCommandRunnerTests
         var ran = await rig.Runner.Run("h", StubCommandSource.Set(TimeSpan.FromMinutes(1), "c0"), StepRig.Tree, TimeSpan.FromMinutes(20), Token);
 
         Assert.True(ran.Value.Single().Run.TimedOut);
+    }
+
+    [Fact]
+    public async Task Running_until_a_failure_stops_at_the_first_failing_command_and_still_releases_the_slot()
+    {
+        var rig = new StepRig();
+        _ = rig.Commands.Answer("a", StepRig.Pass()).Answer("b", StepRig.Fail()).Answer("c", StepRig.Pass());
+
+        var ran = await rig.Runner.RunUntilFailure("h", StubCommandSource.Set(TimeSpan.FromHours(2), "a", "b", "c"), StepRig.Tree, TimeSpan.FromHours(4), Token);
+
+        Assert.Equal([true, false], ran.Value.Select(static r => r.Run.Passed));
+        Assert.Equal(2, rig.Commands.Calls.Count);
+        Assert.Equal((1, 1), (rig.Slots.Taken, rig.Slots.Released));
     }
 }

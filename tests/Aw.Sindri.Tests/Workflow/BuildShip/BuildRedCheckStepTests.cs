@@ -21,7 +21,7 @@ public sealed class BuildRedCheckStepTests
     private static BuildRedCheckStep Step(StepRig rig) => new(rig.Diff, rig.Runner);
 
     [Fact]
-    public async Task One_failing_command_is_enough_for_red_all_commands_run_once_in_the_worktree_under_one_slot()
+    public async Task A_failing_command_is_red_the_commands_before_it_run_once_in_the_worktree_under_one_slot()
     {
         var rig = new StepRig("typecheck", "red-tests --verbose");
         _ = rig.Commands.Answer("typecheck", StepRig.Pass()).Answer("red-tests --verbose", StepRig.Fail());
@@ -61,6 +61,21 @@ public sealed class BuildRedCheckStepTests
         var result = await Step(rig).Run(Context(), Token);
 
         Assert.Contains("ran past its timeout", result.Failure, StringComparison.Ordinal);
+        Assert.Contains("(fix: ", result.Failure, StringComparison.Ordinal);
+        Assert.Contains("split", result.Failure, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_first_failing_command_is_enough_so_the_rest_do_not_run()
+    {
+        var rig = new StepRig("typecheck", "red-tests", "lint");
+        _ = rig.Commands.Answer("typecheck", StepRig.Fail());
+
+        var result = await Step(rig).Run(Context(), Token);
+
+        Assert.Equal("red", result.Result!.Outcome.Value);
+        Assert.Equal([["typecheck"]], rig.Commands.Calls.Select(static c => c.Command.Argv.ToArray()));
+        Assert.Equal((1, 1), (rig.Slots.Taken, rig.Slots.Released));
     }
 
     [Fact]

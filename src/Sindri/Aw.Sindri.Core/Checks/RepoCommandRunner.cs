@@ -36,9 +36,24 @@ public sealed class RepoCommandRunner(IBuildCommandSource source, ICheckCommands
     /// <param name="budget">The time the slot wait and every command share (<see cref="BudgetFor"/>); a command gets what is left of it.</param>
     /// <param name="cancellationToken">Cancels the batch: the running command is killed and the call throws.</param>
     /// <returns>How each ended; an error when the slot stayed busy, the budget ran out or a command could not be started.</returns>
-    public async ValueTask<Result<IReadOnlyList<CheckResult>>> Run(
-        string holder, CommandSet set, string workingDirectory, TimeSpan budget, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<CheckResult>>> Run(
+        string holder, CommandSet set, string workingDirectory, TimeSpan budget, CancellationToken cancellationToken) =>
+        Execute(holder, new Batch(set, workingDirectory, StopAtFailure: false), budget, cancellationToken);
+
+    /// <summary>Runs the commands in order like <see cref="Run"/> but stops after the first one that does not pass, for a Step that needs only one failure.</summary>
+    /// <param name="holder">Who holds the slot, for the lock's owner file.</param>
+    /// <param name="set">The commands, and the longest each may run.</param>
+    /// <param name="workingDirectory">The phase worktree.</param>
+    /// <param name="budget">The time the slot wait and every command share.</param>
+    /// <param name="cancellationToken">Cancels the batch: the running command is killed and the call throws.</param>
+    /// <returns>How each command that ran ended, the last being the failing one; an error as for <see cref="Run"/>.</returns>
+    public ValueTask<Result<IReadOnlyList<CheckResult>>> RunUntilFailure(
+        string holder, CommandSet set, string workingDirectory, TimeSpan budget, CancellationToken cancellationToken) =>
+        Execute(holder, new Batch(set, workingDirectory, StopAtFailure: true), budget, cancellationToken);
+
+    private async ValueTask<Result<IReadOnlyList<CheckResult>>> Execute(string holder, Batch batch, TimeSpan budget, CancellationToken cancellationToken)
     {
+        var set = batch.Set;
         ArgumentNullException.ThrowIfNull(set);
         if (set.Commands.Count == 0)
         {
@@ -63,17 +78,18 @@ public sealed class RepoCommandRunner(IBuildCommandSource source, ICheckCommands
 
         await using (lease.ConfigureAwait(false))
         {
-            return await RunAll(set, workingDirectory, new Allowance(deadline, budget), cancellationToken).ConfigureAwait(false);
+            return await RunAll(batch, new Allowance(deadline, budget), cancellationToken).ConfigureAwait(false);
         }
     }
 
     private static string Minutes(TimeSpan time) => time.TotalMinutes.ToString("0", CultureInfo.InvariantCulture);
 
     private static Error OutOfBudget(Allowance allowance, string what) =>
-        WorkflowErrors.EffectFailed.With($"the Step's budget of {Minutes(allowance.Budget)} min ran out {what}");
+        WorkflowErrors.EffectFailed.With($"the Step's budget of {Minutes(allowance.Budget)} min ran out {what} (fix: make the commands faster, or list fewer of them in workflow.build.commands)");
 
-    private async ValueTask<Result<IReadOnlyList<CheckResult>>> RunAll(CommandSet set, string workingDirectory, Allowance allowance, CancellationToken cancellationToken)
+    private async ValueTask<Result<IReadOnlyList<CheckResult>>> RunAll(Batch batch, Allowance allowance, CancellationToken cancellationToken)
     {
+        var (set, workingDirectory, stopAtFailure) = batch;
         var results = new List<CheckResult>(set.Commands.Count);
         foreach (var command in set.Commands)
         {
@@ -97,12 +113,18 @@ public sealed class RepoCommandRunner(IBuildCommandSource source, ICheckCommands
             }
 
             results.Add(new CheckResult(command, run.Value));
+            if (stopAtFailure && !run.Value.Passed)
+            {
+                break;
+            }
         }
 
         return results;
     }
 
     private static string TailOf(CheckRun run) => string.IsNullOrWhiteSpace(run.Tail) ? string.Empty : $"; it had printed: {run.Tail}";
+
+    private sealed record Batch(CommandSet Set, string WorkingDirectory, bool StopAtFailure);
 
     private sealed record Allowance(DateTimeOffset Deadline, TimeSpan Budget);
 }

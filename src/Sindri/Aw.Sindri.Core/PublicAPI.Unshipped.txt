@@ -14531,6 +14531,7 @@ Aw.Sindri.Core.Checks.ProfileBuildCommands.Read(System.Threading.CancellationTok
 Aw.Sindri.Core.Checks.RepoCommandRunner.For(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Checks.CommandSet!>!>
 Aw.Sindri.Core.Checks.RepoCommandRunner.RepoCommandRunner(Aw.Sindri.Core.Checks.IBuildCommandSource! source, Aw.Sindri.Core.Checks.ICheckCommands! commands, Aw.Sindri.Core.Locks.IHeavySlots! slots, System.TimeProvider! clock) -> void
 Aw.Sindri.Core.Checks.RepoCommandRunner.Run(string! holder, Aw.Sindri.Core.Checks.CommandSet! set, string! workingDirectory, System.TimeSpan budget, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.CheckResult!>!>!>
+Aw.Sindri.Core.Checks.RepoCommandRunner.RunUntilFailure(string! holder, Aw.Sindri.Core.Checks.CommandSet! set, string! workingDirectory, System.TimeSpan budget, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.CheckResult!>!>!>
 Aw.Sindri.Core.Profile.BuildCommand
 Aw.Sindri.Core.Profile.BuildCommand.<Clone>$() -> Aw.Sindri.Core.Profile.BuildCommand!
 Aw.Sindri.Core.Profile.BuildCommand.BuildCommand(string! Name, System.Collections.Generic.IReadOnlyList<string!>! Run) -> void

@@ -20,11 +20,11 @@ states:
                 next: "Waiting for a heavy-job slot for {item}'s builder." }
   red:        { kind: active, step: step.build.red, loop: tests, budget: { tokens: 300k }, timeout: { after: 3h, then: park },
                 next: "Write a failing test for each of {item}'s acceptance items (try {loop.tests}/{loop.tests.cap})." }
-  red-check:  { kind: active, step: step.build.red-check, timeout: { after: 1h, then: park },
+  red-check:  { kind: active, step: step.build.red-check, timeout: { after: 3h, then: park },
                 next: "Run {item}'s red tests on the red commit: each must fail." }
   green:      { kind: active, step: step.build.green, loop: revisions, budget: { tokens: 600k }, timeout: { after: 6h, then: park },
                 next: "Implement {item} in atomic commits inside its allowed files (round {loop.revisions}/{loop.revisions.cap})." }
-  checks:     { kind: active, step: step.build.checks, timeout: { after: 1h, then: park },
+  checks:     { kind: active, step: step.build.checks, timeout: { after: 3h, then: park },
                 next: "Run {item}'s scope gate, build rules and the repo's commands." }
   scope-desk: { kind: active, step: step.build.scope-desk, timeout: { after: 2d, then: park },
                 next: "{item}'s builder needs a file outside its allowed files: allow it with a reason, have it reverted, or stop." }

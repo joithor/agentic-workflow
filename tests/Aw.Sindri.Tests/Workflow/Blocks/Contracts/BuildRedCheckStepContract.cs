@@ -16,7 +16,7 @@ public sealed class BuildRedCheckStepContract : BlockContract
 
     protected override BlockDescriptor Descriptor => BuildSteps.RedCheck;
 
-    protected override string ExpectedHash => "sha256:77854e9a2e2639a9c6b1bc0dfc3a8855f7681efe288badff22f2487867202463";
+    protected override string ExpectedHash => "sha256:f36bf0694daab113aab40ac73dc27a6f94a5d21a483d62dd160e11bbac22fc17";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

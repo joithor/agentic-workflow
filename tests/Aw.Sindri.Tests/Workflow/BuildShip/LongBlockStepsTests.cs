@@ -1,4 +1,5 @@
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Checks;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Testing.Workflow;
@@ -55,6 +56,17 @@ public sealed class LongBlockStepsTests
         using var provider = ShippedComposition.Compose();
         var max = BlockLimits.MaxDuration(provider.GetRequiredService<BlockCatalog>().Find(BlockId.From(step))!);
 
-        Assert.True(Aw.Sindri.Core.Checks.RepoCommandRunner.BudgetFor(max) <= max - TimeSpan.FromMinutes(1));
+        Assert.True(RepoCommandRunner.BudgetFor(max) <= max - TimeSpan.FromMinutes(1));
+    }
+
+    [Theory]
+    [MemberData(nameof(Ids))]
+    public void A_Step_may_run_for_the_default_longMax_so_a_one_hour_suite_fits_after_the_longest_slot_wait(string step)
+    {
+        using var provider = ShippedComposition.Compose();
+        var max = BlockLimits.MaxDuration(provider.GetRequiredService<BlockCatalog>().Find(BlockId.From(step))!);
+
+        Assert.Equal(_cap, max);
+        Assert.True(RepoCommandRunner.BudgetFor(max) - TimeSpan.FromMinutes(30) >= TimeSpan.FromHours(1));
     }
 }
