@@ -73,6 +73,9 @@
   <!-- derived: Attention at 14 % over Canvas, the needs-you chip background -->
   <Color x:Key="Color.AttentionSoft">#23160c</Color>
   <SolidColorBrush x:Key="Brush.AttentionSoft" Color="{StaticResource Color.AttentionSoft}" />
+  <!-- derived: Attention at 35 % over Surface2, opaque: the hold button's fill -->
+  <Color x:Key="Color.AttentionFill">#624328</Color>
+  <SolidColorBrush x:Key="Brush.AttentionFill" Color="{StaticResource Color.AttentionFill}" />
   <!-- derived: Error at 14 % over Canvas, the fail chip background -->
   <Color x:Key="Color.ErrorSoft">#220d0e</Color>
   <SolidColorBrush x:Key="Brush.ErrorSoft" Color="{StaticResource Color.ErrorSoft}" />
