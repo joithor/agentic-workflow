@@ -16,5 +16,6 @@ internal static class BuildServiceCollectionExtensions
         .AddBlockRuntime<BuildChecksStep>()
         .AddBlockRuntime<BuildPrepareStep>()
         .AddBlockRuntime<BuildRedCheckStep>()
-        .AddBlockRuntime<PhaseDriftStep>();
+        .AddBlockRuntime<PhaseDriftStep>()
+        .AddBlockRuntime<PhaseSeedStep>();
 }

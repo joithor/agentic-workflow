@@ -31,6 +31,7 @@ public sealed class BuildShipBlockRuntimesTests
     [InlineData("workflow.ship.yaml", "freeze", "step.ship.freeze")]
     [InlineData("workflow.ship.yaml", "return", "step.ship.return")]
     [InlineData("workflow.phase.yaml", "drift", "step.phase.drift")]
+    [InlineData("workflow.phase.yaml", "seed", "step.phase.seed")]
     [InlineData("workflow.prove.yaml", "intake", "step.prove.intake")]
     [InlineData("workflow.prove.yaml", "fail-log", "step.prove.fail-log")]
     [InlineData("workflow.prove.yaml", "evidence-pack", "step.prove.evidence")]
