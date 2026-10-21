@@ -17,4 +17,7 @@ public static class SetupActions
 
     /// <summary>Set the managed Onyx up.</summary>
     public const string SetupOnyx = "SetupOnyx";
+
+    /// <summary>Build the context map again now (the context lane's job).</summary>
+    public const string RefreshContextMap = "RefreshContextMap";
 }

@@ -24,6 +24,15 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// </summary>
 internal sealed partial class RecipeWorkflow
 {
+    // The Step-input markers, read once, first and in this order (before any await): an instance that began before a patch never starts doing its work halfway through.
+    private void ReadStepInputMarkers()
+    {
+        _fillsInputs = Workflow.Patched("step-inputs-v1");
+        _mirrorsInjection = Workflow.Patched("step-inputs-injection-row-v1");   // the ledger row adds a local activity: its own marker
+        _dropsTexts = Workflow.Patched("step-inputs-drop-v1");   // so does the eviction at the Step's end
+        _capsPlan = Workflow.Patched("step-inputs-plan-cap-v1");   // a plan over the cap fails the Step: a history that filled past it before must replay as it ran
+    }
+
     private bool _fillsInputs;
     private bool _mirrorsInjection;
     private bool _dropsTexts;
