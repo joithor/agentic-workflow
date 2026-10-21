@@ -62,7 +62,7 @@ internal static class ContextRoutes
         return With(Root + "/map", parts);
     }
 
-    internal static string Query(string text) => throw new NotSupportedException();
+    internal static string Query(string text) => With(Root + "/query", ["q=" + Uri.EscapeDataString(text)]);
 
     internal static string Node(string key) => With(Root + "/node", ["key=" + Uri.EscapeDataString(key)]);
 

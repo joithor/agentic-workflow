@@ -232,13 +232,6 @@ internal partial interface ISindriApi
     /// <returns>The sources, the API's refusal, or SND-UI-002/003.</returns>
     public Task<Result<SourcesView>> Sources(Uri api, CancellationToken cancellationToken);
 
-    /// <summary>GET /sindri/context/query?q= (context spec §8.5): a question in the person's words, read only for the anchors it resolves to.</summary>
-    /// <param name="api">The base URL.</param>
-    /// <param name="text">The question, as typed.</param>
-    /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>The anchors and suggested anchors, the API's refusal, or SND-UI-002/003.</returns>
-    public Task<Result<QueryAnchorsView>> QueryAnchors(Uri api, string text, CancellationToken cancellationToken);
-
     // LANE ANCHOR U11a: the Agents page's reads, one method each (the client's are in SindriApiClient.Sessions.cs); the Focus send (U11a-f) is declared once CO-4a serves its goldens. Insert immediately below this marker, never between the markers.
 
     /// <summary>GET /sindri/sessions (collector spec CA-1): the live agent sessions, the recently ended ones, the collector's problems and the head counts. A session problem (SND-SESSION-002) is a refusal, not a transport failure.</summary>

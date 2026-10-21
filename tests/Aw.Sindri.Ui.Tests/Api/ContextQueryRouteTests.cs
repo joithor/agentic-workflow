@@ -23,6 +23,7 @@ public sealed class ContextQueryRouteTests
 
         var seen = Assert.Single(handler.Requests);
         Assert.Equal(("GET", "/sindri/context/query", "?q=drag%20%26%20drop%20shifts"), (seen.Method, seen.Path, seen.Query));
-        Assert.Equal((["feature:a"], ["feature:b"]), ([.. answer.Value.Anchors], [.. answer.Value.SuggestedAnchors]));
+        Assert.Equal(["feature:a"], answer.Value.Anchors);
+        Assert.Equal(["feature:b"], answer.Value.SuggestedAnchors);
     }
 }
