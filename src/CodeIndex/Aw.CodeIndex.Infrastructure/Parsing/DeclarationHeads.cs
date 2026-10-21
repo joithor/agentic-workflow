@@ -26,9 +26,12 @@ internal static class DeclarationHeads
 
     public static int TypeHeadEnd(BaseTypeDeclarationSyntax type)
     {
-        var closer = type.OpenBraceToken.IsMissing ? type.SemicolonToken : type.OpenBraceToken;
-        return closer.IsMissing ? type.Identifier.Span.End : closer.GetPreviousToken().Span.End;
+        // A record with no body has no brace at all (a default token, which is not 'missing'), so absent and missing both fall through.
+        var closer = IsPresent(type.OpenBraceToken) ? type.OpenBraceToken : type.SemicolonToken;
+        return IsPresent(closer) ? closer.GetPreviousToken().Span.End : type.Identifier.Span.End;
     }
+
+    private static bool IsPresent(SyntaxToken token) => !token.IsKind(SyntaxKind.None) && !token.IsMissing;
 
     // 'public' and 'protected' (alone or with 'internal') export; 'private' (also 'private protected') and 'internal' do not; an interface
     // member with no modifier is public. The caller adds that every enclosing type is visible.

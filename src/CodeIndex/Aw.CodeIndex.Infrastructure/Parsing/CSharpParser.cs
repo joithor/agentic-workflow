@@ -35,6 +35,11 @@ public sealed class CSharpParser : ISymbolParser
     public Result<ParseOutcome> Parse(string path, string text, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (BracketsNestBeyond(text, _limits.MaxDepth))
+        {
+            return Skipped(SkipReasons.TooDeep);
+        }
+
         using var timeout = new CancellationTokenSource(_limits.TimeLimit);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
         var run = new Run();
@@ -92,6 +97,30 @@ public sealed class CSharpParser : ISymbolParser
         }
 
         return true;
+    }
+
+    // Roslyn's parser backtracks over every open parenthesis (cast, lambda or tuple?), so a few thousand nested ones outlast the time limit and
+    // ignore the token. A lexical count of open brackets refuses such a file before the parser sees it; it counts strings too, which only
+    // matters to a file with a thousand unclosed brackets in one literal, and that ends as a skip, never an error.
+    private static bool BracketsNestBeyond(string text, int maxDepth)
+    {
+        var depth = 0;
+        foreach (var c in text)
+        {
+            if (c is '(' or '[' or '{')
+            {
+                if (++depth > maxDepth)
+                {
+                    return true;
+                }
+            }
+            else if (c is ')' or ']' or '}' && depth > 0)
+            {
+                depth--;
+            }
+        }
+
+        return false;
     }
 
     private static ParseOutcome Skipped(string reason) => new([], reason);
