@@ -136,7 +136,7 @@ public sealed class MapPublishTests : IDisposable
         Assert.DoesNotContain((await _world.Store.Versions(MapWorld.None)).Value, v => v.Status == MapVersionStatus.Current);
     }
 
-    private static MapImport SampleMapOf(MapBuildReport report) => new(report.Draft.Repo, report.Draft.Commit, Aw.Context.Core.Graph.GraphSnapshot.Empty, []);
+    private static MapImport SampleMapOf(MapBuildReport report) => new(report.Draft.Repo, report.Draft.Commit, Context.Core.Graph.GraphSnapshot.Empty, []);
 
     [Fact, Trait("Lane", "unit")]
     public async Task A_cleanup_that_names_another_draft_is_190_and_writes_no_rows()
@@ -205,7 +205,7 @@ public sealed class MapPublishTests : IDisposable
     {
         var report = await BuildAndSettle();
         // a second repo's head on the draft: the build above mapped one repo, so add the other by a hold-time head the store keeps
-        _ = await _world.Store.SaveDraft(new MapImport(_repo, MapWorld.Head, Aw.Context.Core.Graph.GraphSnapshot.Empty, [],
+        _ = await _world.Store.SaveDraft(new MapImport(_repo, MapWorld.Head, Context.Core.Graph.GraphSnapshot.Empty, [],
             [new MapHead(_repo, "1111111", OnDefault: true), new MapHead(ContextRepoName.From("other"), "2222222", OnDefault: true)]), _world.Clock.GetUtcNow(), MapWorld.None);
         var latest = (await _world.Store.Snapshot(draft: true, MapWorld.None)).Value!.Version.Number;
         _ = await _world.Store.Hold(new MapHold(latest, _world.Clock.GetUtcNow(), []), MapWorld.None);
