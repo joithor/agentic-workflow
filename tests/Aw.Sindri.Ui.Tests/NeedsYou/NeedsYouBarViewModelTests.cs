@@ -1,0 +1,242 @@
+using System.Text;
+using System.Text.Json.Nodes;
+using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.ViewModels.NeedsYou;
+using Microsoft.Extensions.Time.Testing;
+
+namespace Aw.Sindri.Ui.Tests.NeedsYou;
+
+/// <summary>The inbox's action bar (needs-you spec §3 and §5, slice 2): what A, D and the buttons do per kind of request, and what is sent once.</summary>
+[Lane(TestLane.Unit)]
+public sealed class NeedsYouBarViewModelTests
+{
+    private static readonly Uri _api = new("http://127.0.0.1:7410/");
+    private readonly FakeTimeProvider _clock = new(A.Noon);
+    private readonly FakeClipboard _clipboard = new();
+    private readonly FakeSindriApi _server = new();
+    private readonly List<NeedsYouDecisionEventArgs> _decisions = [];
+
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
+    private async Task<NeedsYouBarViewModel> Bar(NeedsYouEntry entry, bool read = false)
+    {
+        var bar = new NeedsYouBarViewModel(new DeskReporter(_server, () => _api), _clipboard, _clock);
+        bar.DecisionRequested += (_, e) => _decisions.Add(e);
+        bar.Show(new NeedsYouRowViewModel(entry, seen: true, reducedMotion: false, arrived: false, _clock));
+        await bar.Loaded;
+        bar.ReadToEnd = read;
+        return bar;
+    }
+
+    // The desk instance's golden with its complete command served in another class (a merge: the line's last step is protected).
+    private void ServeProtectedComplete()
+    {
+        var instance = JsonNode.Parse(GoldenFiles.Api("workflow-instance", "dev-desk-round-trip"))!;
+        foreach (var command in instance["current"]!["status"]!["commands"]!.AsArray().Where(c => c!["verb"]!.GetValue<string>() == "complete"))
+        {
+            command!["class"] = "protected";
+        }
+
+        _server.InstanceBody = _ => new RouteAnswer(System.Net.HttpStatusCode.OK, instance.ToJsonString());
+    }
+
+    [Fact]
+    public async Task A_on_a_desk_request_not_read_to_the_end_asks_before_approving()
+    {
+        var bar = await Bar(NeedsYouRows.Desk());
+
+        await bar.PressApprove();
+
+        Assert.Equal((NeedsYouBarMode.Confirming, "Approve?", "You have not read to the end. Press A again to approve."), (bar.Mode, bar.ApproveWord, bar.Hint));
+        Assert.Empty(_server.CompleteCalls);
+    }
+
+    [Fact]
+    public async Task A_second_A_approves_with_the_run_the_instance_serves()
+    {
+        var bar = await Bar(NeedsYouRows.Desk());
+
+        await bar.PressApprove();
+        await bar.PressApprove();
+
+        var (instance, body) = Assert.Single(_server.CompleteCalls);
+        Assert.Equal((NeedsYouRows.DeskInstance, "1.1", "approve"), (instance, body.Run, body.Outcome));
+        Assert.Equal((NeedsYouBarMode.Approved, true), (bar.Mode, bar.IsApproved));
+    }
+
+    [Fact]
+    public async Task A_request_read_to_the_end_is_approved_at_once()
+    {
+        var bar = await Bar(NeedsYouRows.Desk(), read: true);
+
+        await bar.PressApprove();
+
+        Assert.Equal("approve", Assert.Single(_server.CompleteCalls).Body.Outcome);
+    }
+
+    [Fact]
+    public async Task Reading_to_the_end_clears_the_question_and_showing_another_request_does_too()
+    {
+        var bar = await Bar(NeedsYouRows.Desk());
+        await bar.PressApprove();
+
+        bar.ReadToEnd = true;
+        Assert.Equal((NeedsYouBarMode.Pending, "Approve"), (bar.Mode, bar.ApproveWord));
+
+        bar.ReadToEnd = false;
+        await bar.PressApprove();
+        bar.Show(new NeedsYouRowViewModel(NeedsYouRows.Desk("WFI-other"), seen: true, reducedMotion: false, arrived: false, _clock));
+        Assert.Equal(NeedsYouBarMode.Pending, bar.Mode);
+    }
+
+    [Fact]
+    public async Task Two_presses_while_the_report_is_in_flight_send_one()
+    {
+        _server.CompleteGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var bar = await Bar(NeedsYouRows.Desk(), read: true);
+
+        var first = bar.PressApprove();
+        await bar.PressApprove();
+        _server.CompleteGate.SetResult();
+        await first;
+
+        Assert.Single(_server.CompleteCalls);
+    }
+
+    [Fact]
+    public async Task A_refusal_shows_as_served_and_leaves_the_request_ready_to_press_again()
+    {
+        _server.CompleteAnswer = RouteAnswer.Problem(System.Net.HttpStatusCode.Conflict, "SND-WF-040", "That run is not open. Read the instance again.");
+        var bar = await Bar(NeedsYouRows.Desk(), read: true);
+
+        await bar.PressApprove();
+
+        Assert.Equal((NeedsYouBarMode.Pending, "That run is not open. Read the instance again."), (bar.Mode, bar.Refusal));
+        await bar.PressApprove();
+        Assert.Equal(2, _server.CompleteCalls.Count);
+    }
+
+    [Fact]
+    public async Task D_asks_for_a_reason_and_sends_the_request_back_with_it_as_the_answers_fact()
+    {
+        var bar = await Bar(NeedsYouRows.Desk());
+
+        await bar.PressSendBack();
+        Assert.Equal((NeedsYouBarMode.SendingBack, false), (bar.Mode, bar.CanSend));
+        await bar.Send();
+        Assert.Empty(_server.CompleteCalls);
+
+        bar.ReasonText = "   ";
+        Assert.False(bar.CanSend);
+        bar.ReasonText = "cut the scope to expiry only";
+        Assert.True(bar.CanSend);
+        await bar.Send();
+
+        var body = Assert.Single(_server.CompleteCalls).Body;
+        Assert.Equal(("revise", "cut the scope to expiry only"), (body.Outcome, Encoding.UTF8.GetString(body.Outputs["fact:answers"])));
+    }
+
+    [Fact]
+    public async Task Cancel_closes_the_reason_box_and_sends_nothing()
+    {
+        var bar = await Bar(NeedsYouRows.Desk());
+        await bar.PressSendBack();
+        bar.ReasonText = "not now";
+
+        bar.Cancel();
+
+        Assert.Equal((NeedsYouBarMode.Pending, "not now"), (bar.Mode, bar.ReasonText));
+        Assert.Empty(_server.CompleteCalls);
+    }
+
+    [Fact]
+    public async Task Drop_is_only_in_the_more_menu_and_asks_to_confirm_before_it_sends()
+    {
+        var bar = await Bar(NeedsYouRows.Desk());
+        Assert.True(bar.ShowsDrop);
+
+        await bar.RequestDrop();
+        Assert.Equal(NeedsYouBarMode.ConfirmingDrop, bar.Mode);
+        Assert.Empty(_server.CompleteCalls);
+
+        await bar.ConfirmDrop();
+        Assert.Equal("drop", Assert.Single(_server.CompleteCalls).Body.Outcome);
+    }
+
+    [Fact]
+    public async Task A_desk_request_offers_edit_before_approve_as_a_chip_that_is_not_available_yet()
+    {
+        Assert.True((await Bar(NeedsYouRows.Desk())).ShowsEditChip);
+        Assert.False((await Bar(NeedsYouRows.Decision())).ShowsEditChip);
+    }
+
+    [Fact]
+    public async Task A_step_that_serves_its_complete_command_as_protected_shows_the_terminal_button_and_sends_nothing()
+    {
+        ServeProtectedComplete();
+        var bar = await Bar(NeedsYouRows.Desk());
+
+        Assert.Equal((false, true), (bar.ShowsPrimary, bar.ShowsTerminal));
+        await bar.PressApprove();
+        await bar.CopyTerminal();
+
+        Assert.Empty(_server.CompleteCalls);
+        Assert.StartsWith("sindri workflow complete ITM-01JL1/dev-desk-round-trip/1", _clipboard.Text, StringComparison.Ordinal);
+        Assert.Equal("Copied. Paste it in your terminal to approve.", bar.Hint);
+    }
+
+    [Fact]
+    public async Task A_decision_is_accepted_with_its_recommended_option_and_declined_with_a_reason()
+    {
+        var bar = await Bar(NeedsYouRows.Decision());
+
+        Assert.Equal(("Accept", "Decline"), (bar.ApproveWord, bar.SendBackWord));
+        await bar.PressApprove();
+        await bar.PressSendBack();
+        bar.ReasonText = "out of scope";
+        await bar.Send();
+
+        Assert.Equal([("decision:DEC-1", "accept", ""), ("decision:DEC-1", "decline", "out of scope")], _decisions.Select(d => (d.RowId, d.OptionId, d.Note)));
+        Assert.Empty(_server.CompleteCalls);
+    }
+
+    [Fact]
+    public async Task A_settings_request_can_only_be_approved_so_send_back_is_disabled_with_the_reason()
+    {
+        var bar = await Bar(NeedsYouRows.Profile());
+
+        Assert.Equal((true, false, "These can only be approved. Change the settings or workflow file to undo."), (bar.ShowsSendBack, bar.SendBackEnabled, bar.SendBackTooltip));
+        await bar.PressSendBack();
+        Assert.Equal(NeedsYouBarMode.Pending, bar.Mode);
+    }
+
+    [Fact]
+    public async Task A_protected_primary_shows_the_terminal_button_and_the_words_for_more_tries()
+    {
+        var bar = await Bar(NeedsYouRows.Grant());
+
+        Assert.Equal((true, "Allow more tries"), (bar.ShowsTerminal, bar.TerminalWord));
+        await bar.CopyTerminal();
+        Assert.Equal(NeedsYouRows.Grant().Cli, _clipboard.Text);
+        Assert.Empty(_server.CompleteCalls);
+    }
+
+    [Fact]
+    public async Task A_failure_keeps_the_rows_own_controls_and_has_no_bar()
+    {
+        var bar = await Bar(NeedsYouRows.Failure());
+
+        Assert.Equal((true, false, false, false), (bar.ShowsRowControls, bar.ShowsPrimary, bar.ShowsTerminal, bar.ShowsSendBack));
+    }
+
+    [Fact]
+    public async Task A_desk_request_with_no_ready_action_sends_nothing()
+    {
+        var bar = await Bar(NeedsYouRows.Desk() with { Actions = [] });
+
+        await bar.PressApprove();
+
+        Assert.Empty(_server.CompleteCalls);
+    }
+}

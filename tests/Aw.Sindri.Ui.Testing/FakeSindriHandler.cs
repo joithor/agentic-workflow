@@ -108,6 +108,7 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
             // LANE ANCHOR U3': add the Needs you routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately above this marker, never between the markers.
             // LANE ANCHOR U8: add the workflow command routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately below this marker, never between the markers.
             var path when IsApproval(request, path) => await ApprovalRoute(request, path, cancellationToken),
+            var path when IsComplete(request, path) => await CompleteRoute(request, path, cancellationToken),
             "/sindri/workflow/recipes" when request.Method == HttpMethod.Get => Answer(Counted(await server.Recipes(uri, cancellationToken), server.RecipeListAnswer)),
             "/sindri/workflow/instances" when request.Method == HttpMethod.Post =>
                 Answer(Counted(await server.StartInstance(uri, await Body<StartInstanceRequest>(request, cancellationToken), cancellationToken), server.StartAnswer)),
