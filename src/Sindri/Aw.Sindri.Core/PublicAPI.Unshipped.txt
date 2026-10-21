@@ -11835,6 +11835,7 @@ override Aw.Sindri.Core.Onyx.OnyxNotice.ToString() -> string!
 static Aw.Sindri.Core.Control.OnyxEndpoint.operator !=(Aw.Sindri.Core.Control.OnyxEndpoint? left, Aw.Sindri.Core.Control.OnyxEndpoint? right) -> bool
 static Aw.Sindri.Core.Control.OnyxEndpoint.operator ==(Aw.Sindri.Core.Control.OnyxEndpoint? left, Aw.Sindri.Core.Control.OnyxEndpoint? right) -> bool
 static Aw.Sindri.Core.NeedsYou.NeedsYouRows.ForOnyx(Aw.Sindri.Core.Onyx.OnyxNotice! notice, System.DateTimeOffset since, Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> Aw.Kernel.Result<Aw.Sindri.Core.NeedsYou.NeedsYouRow!>!
+static Aw.Sindri.Core.NeedsYou.NeedsYouRows.ForRecipes(Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan! plan, System.DateTimeOffset since, Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.NeedsYou.NeedsYouRow!>!>!
 static Aw.Sindri.Core.Onyx.OnyxNotice.operator !=(Aw.Sindri.Core.Onyx.OnyxNotice? left, Aw.Sindri.Core.Onyx.OnyxNotice? right) -> bool
 static Aw.Sindri.Core.Onyx.OnyxNotice.operator ==(Aw.Sindri.Core.Onyx.OnyxNotice? left, Aw.Sindri.Core.Onyx.OnyxNotice? right) -> bool
 static Aw.Sindri.Core.Onyx.OnyxNoticeRules.Decide(bool managed, bool setUp, bool declined, string? ensure, bool configured = false) -> Aw.Sindri.Core.Onyx.OnyxNotice?
@@ -14089,7 +14090,9 @@ Aw.Sindri.Core.Events.SetupStepChanged.CommandId.init -> void
 Aw.Sindri.Core.Events.SetupStepChanged.Equals(Aw.Sindri.Core.Events.SetupStepChanged? other) -> bool
 Aw.Sindri.Core.Events.SetupStepChanged.State.init -> void
 Aw.Sindri.Core.NeedsYou.NeedsYouKind.Setup = 4 -> Aw.Sindri.Core.NeedsYou.NeedsYouKind
+Aw.Sindri.Core.NeedsYou.NeedsYouKind.Recipe = 5 -> Aw.Sindri.Core.NeedsYou.NeedsYouKind
 Aw.Sindri.Core.NeedsYou.SubjectKind.Setup = 6 -> Aw.Sindri.Core.NeedsYou.SubjectKind
+Aw.Sindri.Core.NeedsYou.SubjectKind.Recipe = 7 -> Aw.Sindri.Core.NeedsYou.SubjectKind
 const Aw.Sindri.Core.Events.ApiViews.Recipes = "recipes" -> string!
 const Aw.Sindri.Core.Events.ApiViews.Setup = "setup" -> string!
 const Aw.Sindri.Core.Events.EventTypes.McpRegistered = "mcp.registered" -> string!
