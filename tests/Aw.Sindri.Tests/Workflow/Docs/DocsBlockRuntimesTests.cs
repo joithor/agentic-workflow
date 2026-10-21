@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Features.Docs;
 using Aw.Sindri.Testing.Scoping;
@@ -61,6 +62,15 @@ public sealed class DocsBlockRuntimesTests
         return (recipe, new DecisionContext(ApprovalCheck.Holds, provider.GetRequiredService<BlockCatalog>(), runtimes, new InMemoryChildRecipes()));
     }
 
+    // The check's pass edge runs the diff-scope and secret-scan gates before the stacked PR opens; this test is about the Step's outcome, so both pass.
+    private static GateAnswers PassingGates { get; } = new(
+        new Dictionary<BlockId, GateResult>
+        {
+            [BlockId.From("gate.pr.diff-scope")] = new(GateVerdict.Pass, Score: null, Reasons: []),
+            [BlockId.From("gate.pr.secret-scan")] = new(GateVerdict.Pass, Score: null, Reasons: []),
+        },
+        new Dictionary<EvidenceCheck, EvidenceResult>());
+
     // The state the engine moves to on the Step's result, after the same report validation a desk report gets.
     private static string Next(Core.Workflow.Engine.Instances.WorkflowInstance entered, Recipe recipe, DecisionContext context, BlockStepResult run)
     {
@@ -68,7 +78,7 @@ public sealed class DocsBlockRuntimesTests
         var outputs = done.Outputs.ToDictionary(static o => o.Key, static o => EngineFixture.Fact(o.Value.ValueKind == JsonValueKind.String ? o.Value.GetString()! : o.Value.GetRawText()));   // why: a string element always holds its text
         var step = recipe.States[entered.State].Step!.Use;   // why: the caller entered a Step state
         var trigger = BlockStepTriggers.Completed(entered, recipe, context, new BlockCompletion(step, entered.Frame.Run!.Token, done.Outcome, outputs));   // why: a block run is open
-        var after = Assert.IsType<Applied>(TransitionDecision.Decide(new DecisionInput(entered, recipe, trigger, GateAnswers.None, context))).Changes[0].After;
+        var after = Assert.IsType<Applied>(TransitionDecision.Decide(new DecisionInput(entered, recipe, trigger, PassingGates, context))).Changes[0].After;
         return after.Park is { } park ? $"{after.State} ({park})" : after.State;
     }
 }
