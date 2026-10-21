@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Events;
 
@@ -57,6 +58,14 @@ public sealed record WorkflowEventDetail(
     /// <summary>The tokens an agent run spent; null for any other event. Not written when null.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public int? Tokens { get; init; }
+
+    /// <summary>
+    /// The detail with its opened run described (actor, attempt, max attempts), for a row whose frame opens a Step run; any other detail comes back unchanged.
+    /// </summary>
+    /// <param name="after">The instance after the row.</param>
+    /// <param name="recipe">Its recipe, which names the state's loop.</param>
+    /// <returns>The detail the ledger row carries.</returns>
+    public WorkflowEventDetail WithRunOpening(WorkflowInstance after, Recipe recipe) => throw new NotSupportedException();
 
     /// <summary>
     /// The detail of a row mirrored without a decision: a desk timeout's park, or a held event's expiry. It names the trigger
