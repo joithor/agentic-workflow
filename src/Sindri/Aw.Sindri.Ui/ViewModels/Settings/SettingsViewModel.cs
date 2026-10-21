@@ -1,4 +1,5 @@
 using Aw.Sindri.Ui.Platform;
+using Aw.Sindri.Ui.ViewModels.Setup;
 
 namespace Aw.Sindri.Ui.ViewModels.Settings;
 
@@ -21,8 +22,10 @@ internal sealed class SettingsViewModel : ObservableObject, IDisposable
     /// <param name="preferences">The app's local preferences, shared with the shell.</param>
     /// <param name="motion">The OS reduce-motion setting.</param>
     /// <param name="apply">Applies the appearance to the theme (on the UI thread).</param>
-    internal SettingsViewModel(Preferences preferences, IMotionPreference motion, Action<AppearanceSettings> apply)
+    /// <param name="setup">The setup checklist, Settings' first section; null where the page has none (a host that shows only the local preferences).</param>
+    internal SettingsViewModel(Preferences preferences, IMotionPreference motion, Action<AppearanceSettings> apply, SetupViewModel? setup = null)
     {
+        Setup = setup;
         _preferences = preferences;
         _motion = motion;
         _apply = apply;
@@ -32,6 +35,15 @@ internal sealed class SettingsViewModel : ObservableObject, IDisposable
 
     /// <summary>The page title.</summary>
     public string Title { get; } = Labels.Settings;
+
+    /// <summary>The setup checklist, the page's first section; null when this host has none.</summary>
+    public SetupViewModel? Setup { get; }
+
+    /// <summary>True when the page has the setup checklist.</summary>
+    public bool HasSetup => Setup is not null;
+
+    /// <summary>The heading over the app's own preferences, below the checklist.</summary>
+    public string ThisAppLabel { get; } = Labels.ThisApp;
 
     /// <summary>The switch's label.</summary>
     public string ReduceMotionLabel { get; } = Labels.ReduceMotion;

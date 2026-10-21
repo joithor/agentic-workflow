@@ -195,6 +195,24 @@ own transitions don't read the `Motion.*` tokens: `SettingsTheme.Follow(window, 
 `reduce-motion` class in step with `IsMotionReduced`, and `Theme/FluentOverrides.axaml` turns those transitions off
 under it (today the ToggleSwitch knob); another stock control with its own transitions gets its line there.
 
+### The setup checklist in Settings (setup spec §2.4, F3 slice 2)
+
+The first section of `SettingsView` is the six-step checklist over `ViewModels/Setup/SetupViewModel` (`Views/Setup/SetupChecklist`); the local preferences sit below it under "This app".
+`SettingsViewModel.Setup` is the shell's `SetupViewModel` (an optional constructor argument: a host without setup shows only the preferences). There is **no Setup page and no card on Home**:
+Home gets one 40 px line, "Finish setting up Sindri" with the count (`SetupHomeLink`), while any step is not done or skipped, and Home hides the `setup:*` rows of Needs you meanwhile (the line stands for
+them; Needs you elsewhere and the tray keep them). Every way into Settings (the rail, ⌘,, the chord G U, the deep link `setup`, Home's line) goes through `ShellViewModel.ShowPage`, which asks the
+checklist to come into view (`SetupViewModel.RevealChecklist`; `SettingsView` brings its first section into view).
+
+`GET /sindri/setup` is read on connect and with every event. The app owns the words: titles by step id (`Labels.SetupTitle`), the line under a title for the step/state pairs the spec has copy
+for (else the served `why`; a done row shows the served `detail`), and the five state words To do, Working, Done, Failed, Needs you on `StateChipView` (a skipped step says Skipped; a state this
+build doesn't know shows the To do chip with its own word). A row is an `Expander` (`SetupStepRow`): a step that needs the person or failed opens by itself, opening a row never closes another,
+and the person's choice survives a read. The progress strip is one 4 px segment per step (`SegmentStrip`: done, working, to do). The row's one action lives in its body: a protected action the app
+can't open itself (`ApproveProfile`, `ApproveAllRecipes`) is the existing `ProtectedActionButton` with the catalog's command to copy; `ApproveAllRecipes` and the profile's approval row open in the app
+when the shell can; the map shows **Retry** only when it failed, which sends `RefreshContextMap` (`POST /sindri/context/map/refresh`; the client is `ISindriApi.RefreshContextMap`). Retry sends once, the
+row shows Working until the next read, and a 409 `SND-JOB-409` (the running job) shows as already building, not as an error. Fallbacks: a 404 says "Setup isn't available in this build yet."; no answer
+says "Sindri isn't running" with the launcher command and no Start button. Not built here (slices 1, 3, 4): the typed and held confirmations in their rows, the per-agent list, the Onyx form and the
+repo form.
+
 ### LiveSetting on macOS (§11.4, §18.2; U0 spike)
 
 **Finding: supported in Avalonia 12.1.3, for a `TextBlock` whose `Text` changes; unconfirmed by ear.** The owner's
