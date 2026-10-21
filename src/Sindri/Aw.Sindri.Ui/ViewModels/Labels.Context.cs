@@ -26,9 +26,6 @@ internal static partial class Labels
     internal static string ContextFromQuestion(int topics) =>
         string.Create(CultureInfo.InvariantCulture, $"From your question: {topics} {(topics == 1 ? "topic" : "topics")}");
 
-    /// <summary>A draft read's mark on the head.</summary>
-    internal const string ContextDraftMark = "draft";
-
     /// <summary>The word for an anchor the map does not hold.</summary>
     internal const string ContextNotFound = "not found";
 
@@ -37,9 +34,6 @@ internal static partial class Labels
 
     /// <summary>The word for an untrusted label.</summary>
     internal const string ContextUntrusted = "untrusted";
-
-    /// <summary>The word for a node not yet confirmed.</summary>
-    internal const string ContextUnconfirmed = "unconfirmed";
 
     /// <summary>The word for an anchor node in a band.</summary>
     internal const string ContextAnchorTag = "topic";

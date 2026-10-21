@@ -65,7 +65,7 @@ internal sealed class ContextMapWorld : Canvas
             Place(Frame(band), 0, band.Top);
         }
 
-        EdgesLayer = new GraphEdgesControl { Width = map.WorldWidth, Height = map.WorldHeight, Edges = map.Edges, IsHitTestVisible = true };
+        EdgesLayer = new GraphEdgesControl { Width = map.WorldWidth, Height = map.WorldHeight, Edges = map.Edges, IsHitTestVisible = false };
         Place(EdgesLayer, 0, 0);
         foreach (var band in map.Bands)
         {
@@ -159,7 +159,7 @@ internal sealed class ContextMapWorld : Canvas
 
         box.Opacity = pill.Always ? 1 : 0;
         AutomationProperties.SetName(box, pill.Text);
-        AutomationProperties.SetAccessibilityView(box, AccessibilityView.Control);
+        AutomationProperties.SetAccessibilityView(box, pill.Always ? AccessibilityView.Control : AccessibilityView.Raw);   // a hover-only label is invisible until hover exists
         AutomationProperties.SetControlTypeOverride(box, Avalonia.Automation.Peers.AutomationControlType.Text);
         return new Grid { Width = 0, Height = 0, Children = { box }, IsHitTestVisible = false };
     }

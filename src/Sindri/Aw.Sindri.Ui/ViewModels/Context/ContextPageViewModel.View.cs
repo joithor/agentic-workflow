@@ -18,6 +18,9 @@ internal sealed partial class ContextPageViewModel
     /// <summary>The live choice's words.</summary>
     public string AsOfLive { get; } = Labels.ContextMapAsOfLive;
 
+    /// <summary>The version of the map that answered ("Map v3 @ abc1234"), or null before a read.</summary>
+    public string? AsOfLiveHint { get; private set; }
+
     /// <summary>The view switch's name.</summary>
     public string ViewName { get; } = Labels.ContextMapViewName;
 
@@ -31,7 +34,7 @@ internal sealed partial class ContextPageViewModel
     public bool ShowFiles
     {
         get;
-        private set
+        set
         {
             if (field == value)
             {
@@ -45,8 +48,18 @@ internal sealed partial class ContextPageViewModel
         }
     }
 
-    /// <summary>Whether the map view is shown.</summary>
-    public bool ShowMap => !ShowFiles;
+    /// <summary>Whether the map view is shown (the segment sets it; choosing the map is the only thing it can do).</summary>
+    public bool ShowMap
+    {
+        get => !ShowFiles;
+        set
+        {
+            if (value)
+            {
+                ShowFiles = false;
+            }
+        }
+    }
 
     /// <summary>Whether the canvas is on the stage: there is a map and the map view is the one chosen.</summary>
     public bool MapVisible => HasStack && ShowMap;

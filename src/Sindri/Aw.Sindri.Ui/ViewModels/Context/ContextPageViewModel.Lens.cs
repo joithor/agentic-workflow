@@ -115,12 +115,14 @@ internal sealed partial class ContextPageViewModel
         if (view is null)
         {
             Head = string.Empty;
+            AsOfLiveHint = null;
             Map = null;
             Missing = [];
             return;
         }
 
-        Head = (fromQuestion ? Labels.ContextFromQuestion(view.Anchors.Count) : Labels.ContextHead(view.Anchors.Count)) + (view.Draft ? " · " + Labels.ContextDraftMark : string.Empty);
+        Head = fromQuestion ? Labels.ContextFromQuestion(view.Anchors.Count) : Labels.ContextHead(view.Anchors.Count);
+        AsOfLiveHint = Labels.ContextMapVersionLine(view.MapVersion, view.MapCommit);
         Map = new ContextMapViewModel(view);
         Missing = [.. (view.MissingAnchors ?? []).Select(a => new ContextLine($"{a} · {Labels.ContextNotFound}"))];
     }
@@ -129,6 +131,7 @@ internal sealed partial class ContextPageViewModel
     {
         OnChanged(nameof(Map));
         OnChanged(nameof(Head));
+        OnChanged(nameof(AsOfLiveHint));
         OnChanged(nameof(HasHead));
         OnChanged(nameof(Missing));
         OnChanged(nameof(Choices));

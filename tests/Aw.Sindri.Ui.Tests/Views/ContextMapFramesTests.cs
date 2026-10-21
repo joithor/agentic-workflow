@@ -1,7 +1,6 @@
 using System.Globalization;
 using Avalonia.Automation;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
@@ -52,6 +51,7 @@ public sealed class ContextMapFramesTests : FrameHost
             Assert.Equal(n.Name, AutomationProperties.GetName(view));
         });
         Assert.Equal(map.Pills.Count, world.PillViews.Count);
+        Assert.All(map.Pills.Where(p => !p.Always), p => Assert.Equal(AccessibilityView.Raw, AutomationProperties.GetAccessibilityView(world.PillViews[p.Key].GetVisualDescendants().OfType<Border>().First())));   // an invisible label is not announced
         Assert.All(map.Pills.Where(p => p.Always), p => Assert.Equal(1, world.PillViews[p.Key].GetVisualDescendants().OfType<Border>().First().Opacity));
         Assert.Equal(map.Edges.Count, world.EdgesLayer!.Edges.Count);
         Frame(window, "context-map-1440", "f3-");
@@ -67,11 +67,28 @@ public sealed class ContextMapFramesTests : FrameHost
         var strip = Named<CoverageStrip>(window, "ContextCoverageStrip");
         Assert.Equal(shell.Context.Map!.CoverageLead, strip.Lead);
         Assert.Equal(4, strip.Areas.Count);
-        Assert.False(Named<ToggleButton>(window, "AsOfPinned").IsEnabled);
-        Assert.True(Named<ToggleButton>(window, "AsOfLive").IsChecked);
-        Assert.True(Named<ToggleButton>(window, "ViewMapButton").IsChecked);
-        Assert.False(Named<ToggleButton>(window, "ViewFilesButton").IsChecked);
+        Assert.False(Named<RadioButton>(window, "AsOfPinned").IsEnabled);
+        Assert.True(Named<RadioButton>(window, "AsOfLive").IsChecked);
+        Assert.True(Named<RadioButton>(window, "ViewMapButton").IsChecked);
+        Assert.False(Named<RadioButton>(window, "ViewFilesButton").IsChecked);
         Assert.False(Visible(window, "ContextDraftTag"));
+    });
+
+    [Fact]
+    public Task Live_stays_chosen_when_it_is_clicked_and_the_disabled_pinned_choice_explains_itself() => OnUi(async () =>
+    {
+        var (window, shell) = await Open(1440, 900);
+
+        var live = Named<RadioButton>(window, "AsOfLive");
+        live.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Settle(window);
+        var pinned = Named<RadioButton>(window, "AsOfPinned");
+        Assert.True(live.IsChecked);
+        Assert.False(pinned.IsChecked);
+        Assert.True(ToolTip.GetShowOnDisabled(pinned));
+        Assert.Equal(Labels.ContextMapPinnedNotServed, ToolTip.GetTip(pinned));
+        Assert.Equal(shell.Context.AsOfLiveHint, ToolTip.GetTip(live));
+        Assert.StartsWith("Map v", shell.Context.AsOfLiveHint, StringComparison.Ordinal);
     });
 
     [Fact]
@@ -103,13 +120,20 @@ public sealed class ContextMapFramesTests : FrameHost
     {
         var (window, shell) = await Open(1440, 900);
 
-        Named<ToggleButton>(window, "ViewFilesButton").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Named<RadioButton>(window, "ViewFilesButton").IsChecked = true;   // the segment pushes the choice to the view model
         Settle(window);
         Assert.True(shell.Context.ShowFiles);
         Assert.False(Visible(window, "ContextStack"));
         Assert.True(Visible(window, "ContextFilesPanel"));
 
-        Named<ToggleButton>(window, "ViewMapButton").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        shell.Context.ChooseView(files: false);   // a choice made anywhere keeps the segments in step
+        Settle(window);
+        Assert.True(Named<RadioButton>(window, "ViewMapButton").IsChecked);
+        Assert.False(Named<RadioButton>(window, "ViewFilesButton").IsChecked);
+        shell.Context.ChooseView(files: true);
+        Settle(window);
+        Assert.True(Named<RadioButton>(window, "ViewFilesButton").IsChecked);
+        Named<RadioButton>(window, "ViewMapButton").IsChecked = true;
         Settle(window);
         Assert.True(Visible(window, "ContextStack"));
         Assert.False(Visible(window, "ContextFilesPanel"));

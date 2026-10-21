@@ -75,18 +75,6 @@ internal sealed partial class ContextPage : UserControl
         }
     }
 
-    private void OnViewMap(object? sender, RoutedEventArgs e) => Choose(files: false);
-
-    private void OnViewFiles(object? sender, RoutedEventArgs e) => Choose(files: true);
-
-    // A segment that was pressed stays on: the view model is the one that says which view is chosen.
-    private void Choose(bool files)
-    {
-        _page?.ChooseView(files);
-        ViewMapButton.IsChecked = !files;
-        ViewFilesButton.IsChecked = files;
-    }
-
     private void OnPageChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (_page is not null && string.Equals(e.PropertyName, nameof(ContextPageViewModel.Map), StringComparison.Ordinal))

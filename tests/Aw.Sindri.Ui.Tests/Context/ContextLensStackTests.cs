@@ -1,3 +1,4 @@
+using System.Net;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
@@ -33,6 +34,24 @@ public sealed class ContextLensStackTests
 
         Assert.Equal(Labels.ContextHead(1), page.Head);
         Assert.True(page.HasHead);
+    }
+
+    [Fact]
+    public async Task A_draft_read_has_only_the_tag_on_its_head_and_the_map_version_is_on_the_live_choice()
+    {
+        var golden = Golden("map-tabs");
+        golden["draft"] = true;
+        golden["mapCommit"] = "abc1234";
+        var api = new FakeSindriApi { LensesAnswer = _ => new RouteAnswer(HttpStatusCode.OK, golden.ToJsonString()) };
+        var page = Page(api);
+        page.AnchorText = (string)golden["anchor"]!["key"]!;
+        Assert.Null(page.AsOfLiveHint);
+
+        await page.Submit(Token);
+
+        Assert.Equal(Labels.ContextHead(1), page.Head);
+        Assert.True(page.IsDraft);
+        Assert.Equal("Map v1 @ abc1234", page.AsOfLiveHint);
     }
 
     [Fact]
@@ -80,7 +99,7 @@ public sealed class ContextLensStackTests
         var pill = page.Map!.Pills.Single(p => p.Key == (string)edge["link"]!);
         Assert.True(pill.Dashed);
         Assert.EndsWith(Labels.ContextMapSuggestedPct(confidence), pill.Text, StringComparison.Ordinal);
-        Assert.Contains(page.Map.Nodes, n => n.IsSuggested && n.Caption.EndsWith(Labels.ContextMapSuggestedPct(confidence), StringComparison.Ordinal));
+        Assert.Contains(page.Map.Nodes, n => n.IsSuggested && n.Caption.Contains(Labels.ContextMapSuggestedPct(confidence), StringComparison.Ordinal));
     }
 
     [Fact]
@@ -140,7 +159,7 @@ public sealed class ContextLensStackTests
         var golden = Golden("map-tabs");
         var body = golden.DeepClone();
         body["bands"]!["product"]!["truncated"] = true;
-        var server = new FakeSindriApi { LensesAnswer = _ => new RouteAnswer(System.Net.HttpStatusCode.OK, body.ToJsonString()) };
+        var server = new FakeSindriApi { LensesAnswer = _ => new RouteAnswer(HttpStatusCode.OK, body.ToJsonString()) };
         var page = Page(server);
         page.AnchorText = (string)golden["anchor"]!["key"]!;
 

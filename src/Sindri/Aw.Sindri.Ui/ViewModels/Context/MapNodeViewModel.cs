@@ -13,10 +13,11 @@ internal sealed class MapNodeViewModel
         var kindWord = Labels.ContextMapKindWord(layout.Kind);
         Name = Labels.ContextMapNodeName(kindWord, layout.Label);
         IsCard = layout.Shape == MapShape.Card;
-        var sure = layout.IsSuggested ? Labels.ContextMapSuggestedPct((int)Math.Round(layout.Confidence * 100, MidpointRounding.AwayFromZero)) : null;
+        var sure = layout.IsProposed ? Labels.ContextMapSuggestedPct((int)Math.Round(layout.Confidence * 100, MidpointRounding.AwayFromZero)) : null;
+        var untrusted = layout.Untrusted ? Labels.ContextUntrusted : null;
         Caption = IsCard
-            ? Join(kindWord, layout.IsAnchor ? Labels.ContextMapAnchorDetail : layout.Detail, sure)
-            : layout.Band == MapBand.Code ? Join(layout.IsTest ? kindWord.ToLowerInvariant() : null, layout.Detail, sure) : Join(kindWord.ToLowerInvariant(), layout.Detail, sure);
+            ? Join(kindWord, layout.IsAnchor ? Labels.ContextMapAnchorDetail : layout.Detail, sure, untrusted)
+            : layout.Band == MapBand.Code ? Join(layout.IsTest ? kindWord.ToLowerInvariant() : null, layout.Detail, sure, untrusted) : Join(kindWord.ToLowerInvariant(), layout.Detail, sure, untrusted);
         (FootWord, FootRight, FootIcon) = layout switch
         {
             { IsAnchor: true } => (Labels.ContextMapInMap, Labels.ContextMapStartsHereFoot, "Ok"),
@@ -109,7 +110,7 @@ internal sealed class MapNodeViewModel
         "data" => "Kind.Data",
         "code" or "file" => "Kind.File",
         "test" => "Kind.Test",
-        _ => "Kind.Dot",
+        _ => "Kind.Dot",   // "surface" and any kind this build does not know: the spec maps no icon for it, so it gets the plain dot
     };
 
     private static string Join(params string?[] parts) => string.Join(" · ", parts.Where(p => !string.IsNullOrEmpty(p)));

@@ -48,7 +48,7 @@ public sealed class ContextMapViewModelTests
 
         Assert.Equal("Feature · " + Labels.ContextMapAnchorDetail, Node(map, "feature:tabs.tab-manager").Caption);
         Assert.Equal("feature", Node(map, "feature:tabs.tab-groups").Caption);
-        Assert.Equal("ticket · linear", map.Nodes.Single(n => n.Layout.Kind == "record").Caption);
+        Assert.Equal("ticket · linear · " + Labels.ContextUntrusted, map.Nodes.Single(n => n.Layout.Kind == "record").Caption);
         Assert.StartsWith("Decision · Jul ", map.Nodes.First(n => n.Layout.Kind == "decision").Caption, StringComparison.Ordinal);
         Assert.Equal("src/tabs", Node(map, "code:src/tabs/TabManager.ts").Caption);
     }
@@ -61,8 +61,27 @@ public sealed class ContextMapViewModelTests
         var suggested = Node(map, "code:src/tabs/TabGroups.ts");
         Assert.True(suggested.IsSuggested);
         Assert.False(suggested.IsSolid);
-        Assert.Equal("src/tabs · " + Labels.ContextMapSuggestedPct(74), suggested.Caption);
+        Assert.Equal("src/tabs · " + Labels.ContextMapSuggestedPct(74) + " · " + Labels.ContextUntrusted, suggested.Caption);
         Assert.True(Node(map, "code:src/tabs/TabManager.ts").IsSolid);
+    }
+
+    [Fact]
+    public void A_node_nobody_confirmed_is_dashed_whoever_found_it_and_untrusted_text_says_so()
+    {
+        var map = Map(node =>
+        {
+            var found = node["bands"]!["product"]!["own"]![1]!;
+            found["confirmed"] = false;
+            found["provenance"] = "deterministic";
+        });
+
+        var action = Node(map, "action:tab-groups.group-selected");
+        Assert.True(action.IsSuggested);
+        Assert.False(action.IsSolid);
+        Assert.DoesNotContain("%", action.Caption, StringComparison.Ordinal);   // the confidence is only for what a model proposed
+        Assert.True(Node(map, "feature:tabs.tab-manager").IsSolid);
+        Assert.EndsWith(Labels.ContextUntrusted, map.Nodes.Single(n => n.Layout.Kind == "record").Caption, StringComparison.Ordinal);
+        Assert.DoesNotContain(Labels.ContextUntrusted, Node(map, "feature:tabs.tab-manager").Caption, StringComparison.Ordinal);
     }
 
     [Fact]

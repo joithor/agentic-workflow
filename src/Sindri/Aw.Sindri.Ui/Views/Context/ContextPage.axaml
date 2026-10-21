@@ -21,14 +21,20 @@
 
   <UserControl.Styles>
     <!-- The segmented choices of the control row: a Surface2 track, the chosen segment on Surface3, 30 px high. -->
-    <Style Selector="ToggleButton.segment">
+    <Style Selector="RadioButton.segment">
       <Setter Property="Height" Value="{StaticResource Size.Control}" />
       <Setter Property="Padding" Value="12,0" />
       <Setter Property="CornerRadius" Value="{StaticResource Radius.MD}" />
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <ContentPresenter x:Name="PART_ContentPresenter" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}" Padding="{TemplateBinding Padding}"
+                            Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+        </ControlTemplate>
+      </Setter>
     </Style>
-    <Style Selector="ToggleButton.segment:checked /template/ ContentPresenter#PART_ContentPresenter">
+    <Style Selector="RadioButton.segment:checked /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource Brush.Surface3}" />
     </Style>
   </UserControl.Styles>
@@ -62,16 +68,16 @@
           <TextBlock Classes="eyebrow" Text="{Binding AsOfLabel}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
           <Border x:Name="ContextAsOf" Background="{DynamicResource Brush.Surface2}" CornerRadius="{StaticResource Radius.MD}" Padding="2">
             <StackPanel Orientation="Horizontal">
-              <ToggleButton x:Name="AsOfPinned" Classes="segment" IsEnabled="False" IsChecked="False" Content="{Binding AsOfPinned}" ToolTip.Tip="{Binding AsOfPinnedHint}" AutomationProperties.Name="{Binding AsOfPinned}" />
-              <ToggleButton x:Name="AsOfLive" Classes="segment" IsChecked="True" Content="{Binding AsOfLive}" AutomationProperties.Name="{Binding AsOfLive}" />
+              <RadioButton x:Name="AsOfPinned" GroupName="AsOf" Classes="segment" IsEnabled="False" IsChecked="False" Content="{Binding AsOfPinned}" ToolTip.Tip="{Binding AsOfPinnedHint}" ToolTip.ShowOnDisabled="True" AutomationProperties.Name="{Binding AsOfPinned}" />
+              <RadioButton x:Name="AsOfLive" GroupName="AsOf" Classes="segment" IsChecked="True" Content="{Binding AsOfLive}" ToolTip.Tip="{Binding AsOfLiveHint}" AutomationProperties.Name="{Binding AsOfLive}" />
             </StackPanel>
           </Border>
         </StackPanel>
         <Border x:Name="ContextViewSwitch" Background="{DynamicResource Brush.Surface2}" CornerRadius="{StaticResource Radius.MD}" Padding="2" Margin="0,0,16,8" VerticalAlignment="Center"
                 AutomationProperties.Name="{Binding ViewName}">
           <StackPanel Orientation="Horizontal">
-            <ToggleButton x:Name="ViewMapButton" Classes="segment" IsChecked="{Binding ShowMap, Mode=OneWay}" Click="OnViewMap" Content="{Binding ViewMapWord}" AutomationProperties.Name="{Binding ViewMapWord}" />
-            <ToggleButton x:Name="ViewFilesButton" Classes="segment" IsChecked="{Binding ShowFiles, Mode=OneWay}" Click="OnViewFiles" Content="{Binding ViewFilesWord}" AutomationProperties.Name="{Binding ViewFilesWord}" />
+            <RadioButton x:Name="ViewMapButton" GroupName="ContextView" Classes="segment" IsChecked="{Binding ShowMap, Mode=TwoWay}" Content="{Binding ViewMapWord}" AutomationProperties.Name="{Binding ViewMapWord}" />
+            <RadioButton x:Name="ViewFilesButton" GroupName="ContextView" Classes="segment" IsChecked="{Binding ShowFiles, Mode=TwoWay}" Content="{Binding ViewFilesWord}" AutomationProperties.Name="{Binding ViewFilesWord}" />
           </StackPanel>
         </Border>
       </WrapPanel>

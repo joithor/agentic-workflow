@@ -132,6 +132,13 @@ internal static partial class Labels
     /// <summary>The live choice.</summary>
     internal const string ContextMapAsOfLive = "Live";
 
+    /// <summary>The version of the map that answered, as the live choice's hint shows it.</summary>
+    /// <param name="version">The map version, "v3".</param>
+    /// <param name="commit">The map's commit, or null.</param>
+    /// <returns>"Map v3 @ abc1234".</returns>
+    internal static string ContextMapVersionLine(string version, string? commit) =>
+        commit is { Length: > 0 } ? $"Map {version} @ {commit}" : $"Map {version}";
+
     /// <summary>Why the pinned choice is off.</summary>
     internal const string ContextMapPinnedNotServed = "Not served yet: the map as it was at approval.";
 

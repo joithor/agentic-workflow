@@ -18,6 +18,7 @@ namespace Aw.Sindri.Ui.Views.Context.Map;
 /// <param name="IsTest">Whether a code node is a test file.</param>
 /// <param name="HasConflict">Whether a decision node is part of a conflict.</param>
 /// <param name="LinkId">The link a suggested code file waits on, or null.</param>
+/// <param name="Untrusted">Whether the served text is untrusted (the caption says so).</param>
 internal sealed record MapNodeLayout(
     string Key,
     string Label,
@@ -33,7 +34,8 @@ internal sealed record MapNodeLayout(
     string Path,
     bool IsTest,
     bool HasConflict,
-    string? LinkId)
+    string? LinkId,
+    bool Untrusted)
 {
     /// <summary>Gets the left edge, px (plain numbers for the view models, which carry no Avalonia types).</summary>
     internal double X => Bounds.X;
@@ -47,6 +49,9 @@ internal sealed record MapNodeLayout(
     /// <summary>Gets the height, px.</summary>
     internal double Height => Bounds.Height;
 
-    /// <summary>Gets a value indicating whether the node is a suggestion that nobody confirmed (drawn dashed).</summary>
-    internal bool IsSuggested => !Confirmed && string.Equals(Provenance, "model", StringComparison.Ordinal);
+    /// <summary>Gets a value indicating whether the node is not confirmed, whoever found it (drawn dashed).</summary>
+    internal bool IsSuggested => !Confirmed;
+
+    /// <summary>Gets a value indicating whether a model proposed the node, so the caption carries its confidence.</summary>
+    internal bool IsProposed => !Confirmed && string.Equals(Provenance, "model", StringComparison.Ordinal);
 }
