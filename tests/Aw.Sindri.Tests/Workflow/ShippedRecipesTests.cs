@@ -23,7 +23,7 @@ public sealed partial class ShippedRecipesTests
                 "sindri/workflow.evidence-api.yaml", "sindri/workflow.evidence-db.yaml", "sindri/workflow.evidence-other.yaml", "sindri/workflow.evidence-ui.yaml",
                 "sindri/workflow.evidence.yaml", "sindri/workflow.hand-test.yaml", "sindri/workflow.idea-to-brief.yaml", "sindri/workflow.implement.yaml",
                 "sindri/workflow.investigate.yaml", "sindri/workflow.item.yaml", "sindri/workflow.line.yaml", "sindri/workflow.phase.yaml", "sindri/workflow.plan.yaml",
-                "sindri/workflow.pr-babysitter.yaml", "sindri/workflow.prove.yaml", "sindri/workflow.report.yaml", "sindri/workflow.reproduce.yaml",
+                "sindri/workflow.pr-babysitter.yaml", "sindri/workflow.prove-recheck.yaml", "sindri/workflow.prove.yaml", "sindri/workflow.report.yaml", "sindri/workflow.reproduce.yaml",
                 "sindri/workflow.review-loop.yaml", "sindri/workflow.scoping.yaml", "sindri/workflow.ship.yaml", "sindri/workflow.step.yaml",
                 "sindri/workflow.verify.yaml",
             ],
@@ -116,7 +116,9 @@ public sealed partial class ShippedRecipesTests
                 ("workflow.line", "workflow.plan"), ("workflow.line", "workflow.scoping"),
                 ("workflow.phase", "workflow.build"), ("workflow.phase", "workflow.pr-babysitter"), ("workflow.phase", "workflow.prove"),
                 ("workflow.phase", "workflow.review-loop"), ("workflow.phase", "workflow.ship"),
+                ("workflow.pr-babysitter", "workflow.docs-sync"), ("workflow.pr-babysitter", "workflow.prove-recheck"),
                 ("workflow.prove", "workflow.evidence"), ("workflow.prove", "workflow.hand-test"), ("workflow.prove", "workflow.verify"),
+                ("workflow.prove-recheck", "workflow.verify"),
                 ("workflow.scoping", "workflow.idea-to-brief"),
             ],
             pairs);

@@ -197,6 +197,27 @@ public sealed class ScopingDeskBlocksTests
         Assert.Equal("index-not-built", Assert.Single(code["limits"]!.AsArray())!["why"]!.GetValue<string>());
     }
 
+    // The live lenses view lists the code index among its searched sources (it feeds the code band's symbols); copied into the related lens,
+    // index-not-built there was a limit on the wrong lens and failed SCP-COV-002 on every run until the index was built (FRN-4965 on web-app).
+    [Fact, Trait("Lane", "unit")]
+    public async Task Gather_keeps_the_lenses_views_code_index_source_out_of_the_related_lens_so_an_unbuilt_index_passes_the_check()
+    {
+        var facts = GatherFacts();
+        var lenses = JsonNode.Parse(facts["lensesView"])!.AsObject();
+        lenses["searched"]!["sources"]!.AsArray().Add(new JsonObject { ["id"] = "code-index", ["state"] = "unavailable", ["reason"] = "index-not-built" });
+        facts["lensesView"] = lenses.ToJsonString();
+        var response = await Run("gather", facts);
+        var check = ScopingFacts.Expiry();
+        check["lenses"] = response.Outputs["lenses"];
+        check["coverage"] = response.Outputs["coverage"];
+
+        var related = Out(response, "coverage")["lenses"]!.AsArray().Single(r => r!["lens"]!.GetValue<string>() == "related")!;
+        var report = ScopePacketChecks.Run(new ScopeFacts(check), ScopeStage.Draft);
+
+        Assert.DoesNotContain(related["searched"]!["sources"]!.AsArray(), s => s!["id"]!.GetValue<string>() == "code-index");
+        Assert.DoesNotContain(report.Findings, f => f.Rule == "SCP-COV-002");
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task Gather_over_the_code_lens_golden_whose_commit_is_not_held_records_both_limits_and_passes_the_coverage_rules()
     {
