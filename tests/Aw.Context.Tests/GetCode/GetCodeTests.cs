@@ -157,7 +157,7 @@ public sealed class GetCodeTests : IDisposable
 
         var view = (await slow.Code(MapWorld.HumanWith("""{"deadline":"4s"}"""))).Value;
 
-        Assert.All(["lexical-tests", "lexical-schema"], id => Assert.NotEqual(ContextErrors.CodeSearchTimedOut.Code, Row(view, id).Code));
+        Assert.All(["lexical-tests", "lexical-schema"], id => Assert.NotEqual(ContextErrors.CodeSearchTimedOut.Code, Row(view, id).Code, StringComparer.Ordinal));
         Assert.Contains(view.Tests, t => t.Path == "tests/routes.test.ts");
     }
 

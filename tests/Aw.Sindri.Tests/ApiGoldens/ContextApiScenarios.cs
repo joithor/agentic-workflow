@@ -166,10 +166,10 @@ internal static class ContextApiScenarios
         var extra = scenario switch
         {
             "schema-off" => "  code: { schemaGlobs: [] }\n",
-            "deadline-152" => "  deadline: 100ms\n",
+            "deadline-152" => "  deadline: 100ms\n  code: { deadline: 100ms }\n",   // the lexical search reads context.code.deadline (#553)
             _ => null,
         };
-        Action<IServiceCollection>? wire = scenario == "deadline-152" ? HangingCodeSearch.Install : null;   // a search that never answers: the 100ms deadline decides
+        Action<IServiceCollection>? wire = scenario == "deadline-152" ? HangingCodeSearch.Install : null;   // a search that never answers: the 100ms code deadline decides
         var host = await ContextHosts.Approved(repo.Path, sessions: true, ct, wire, CodeLensRepo.Repo, contextExtra: extra);
         host.Own(repo);
         var commit = scenario == "commit-not-held" ? new string('f', 40) : null;
