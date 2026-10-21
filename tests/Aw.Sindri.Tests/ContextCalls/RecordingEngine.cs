@@ -105,9 +105,17 @@ internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller 
 
     public ValueTask<Result<ReviewFilePreview>> PreviewReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) => inner.PreviewReviewFile(path, scope, cancellationToken);
 
-    public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken) => inner.Promote(scope, cancellationToken);
+    public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken, int? expectedVersion = null) => inner.Promote(scope, cancellationToken, expectedVersion);
 
-    public ValueTask<Result<CleanupReport>> CleanDraft(ContextScope scope, CancellationToken cancellationToken) => inner.CleanDraft(scope, cancellationToken);
+    public ValueTask<Result<CleanupReport>> CleanDraft(ContextScope scope, CancellationToken cancellationToken, int? expectedVersion = null) => inner.CleanDraft(scope, cancellationToken, expectedVersion);
+
+    public ValueTask<Result<MapPublishState>> Held(ContextScope scope, CancellationToken cancellationToken) => inner.Held(scope, cancellationToken);
+
+    public ValueTask<Result<MapHold>> Hold(MapHold hold, ContextScope scope, CancellationToken cancellationToken) => inner.Hold(hold, scope, cancellationToken);
+
+    public ValueTask<Result<Unit>> Release(int version, ContextScope scope, CancellationToken cancellationToken) => inner.Release(version, scope, cancellationToken);
+
+    public ValueTask<Result<MapPublishView>> PublishStatus(ContextScope scope, CancellationToken cancellationToken) => inner.PublishStatus(scope, cancellationToken);
 
     public ValueTask<Result<IReadOnlyList<RepoHead>>> MapHeads(ContextScope scope, CancellationToken cancellationToken) => inner.MapHeads(scope, cancellationToken);
 
