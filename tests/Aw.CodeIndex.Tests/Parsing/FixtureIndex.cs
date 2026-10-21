@@ -1,5 +1,5 @@
+using System.Globalization;
 using Aw.CodeIndex.Core.Model;
-using Aw.CodeIndex.Core.Resolution;
 using Aw.CodeIndex.Core.Values;
 using Aw.CodeIndex.Infrastructure.Parsing;
 
@@ -17,7 +17,7 @@ internal sealed class FixtureIndex
         Parsed = parsed;
         foreach (var (file, symbol, reference) in parsed)
         {
-            _keys[reference] = $"{file}:{symbol.StartLine}";
+            _keys[reference] = string.Create(CultureInfo.InvariantCulture, $"{file}:{symbol.StartLine}");
         }
     }
 
@@ -38,7 +38,7 @@ internal sealed class FixtureIndex
             var outcome = parser.Parse(path, text, CancellationToken.None).Value;
             foreach (var symbol in outcome.Symbols)
             {
-                var reference = SymbolRef.From($"fixture:{path}#{Clean(symbol.Qualified)}@{symbol.StartLine}");
+                var reference = SymbolRef.From(string.Create(CultureInfo.InvariantCulture, $"fixture:{path}#{Clean(symbol.Qualified)}@{symbol.StartLine}"));
                 parsed.Add((path, symbol, reference));
                 symbols.Add(new ResolutionSymbol(reference, path, symbol.Name, symbol.Qualified, symbol.Kind, symbol.Arity, symbol.StartLine, symbol.EndLine));
                 rows.AddRange(symbol.CallSites.Select(site => new CallSiteRow(reference, site)));
@@ -51,5 +51,5 @@ internal sealed class FixtureIndex
     /// <summary>The 'file:startLine' key of a symbol.</summary>
     public string KeyOf(SymbolRef reference) => _keys[reference];
 
-    private static string Clean(string qualified) => new([.. qualified.Where(c => !char.IsControl(c) && char.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.Format)]);
+    private static string Clean(string qualified) => new([.. qualified.Where(c => !char.IsControl(c) && char.GetUnicodeCategory(c) != UnicodeCategory.Format)]);
 }

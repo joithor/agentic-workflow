@@ -44,7 +44,7 @@ public sealed class CSharpParserTests
             }
             """;
 
-        var symbols = Symbols(text).ToDictionary(s => s.Qualified);
+        var symbols = Symbols(text).ToDictionary(s => s.Qualified, StringComparer.Ordinal);
 
         Assert.Equal((SymbolKind.Class, 1, 3, 10), (symbols["Outer.Inner.Box"].Kind, symbols["Outer.Inner.Box"].Arity, symbols["Outer.Inner.Box"].StartLine, symbols["Outer.Inner.Box"].EndLine));
         Assert.Equal((SymbolKind.Method, 0, 5), (symbols["Outer.Inner.Box.Count"].Kind, symbols["Outer.Inner.Box.Count"].Arity, symbols["Outer.Inner.Box.Count"].StartLine));
@@ -112,14 +112,14 @@ public sealed class CSharpParserTests
             }
             """;
 
-        var symbols = Symbols(text).ToDictionary(s => s.Qualified, s => s.Kind);
+        var symbols = Symbols(text).ToDictionary(s => s.Qualified, s => s.Kind, StringComparer.Ordinal);
 
         Assert.Equal(SymbolKind.Accessor, symbols["A.Prop.get"]);
         Assert.Equal(SymbolKind.Accessor, symbols["A.Prop.set"]);
         Assert.Equal(SymbolKind.Accessor, symbols["A.Expr.get"]);
         Assert.Equal(SymbolKind.LocalFunction, symbols["A.F.Local"]);
         Assert.Equal(SymbolKind.Lambda, symbols["A.F.twice"]);
-        Assert.DoesNotContain("A.F.plain", symbols.Keys);
+        Assert.DoesNotContain("A.F.plain", symbols.Keys, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -127,7 +127,7 @@ public sealed class CSharpParserTests
     {
         var names = Symbols("class A { public int P { get; set; } int _f; enum E { X } int Q { get; } }").Select(s => s.Qualified);
 
-        Assert.Equal(["A", "A.E"], names);
+        Assert.Equal(["A", "A.E"], names, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -137,7 +137,7 @@ public sealed class CSharpParserTests
 
         var names = Symbols(text).Select(s => s.Qualified);
 
-        Assert.Equal(["A", "A.operator +", "A.~A", "A.this[].get"], names);
+        Assert.Equal(["A", "A.operator +", "A.~A", "A.this[].get"], names, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -278,7 +278,7 @@ public sealed class CSharpParserTests
         const string different = "class A { int F(int a) { var b = a - 1; return b * 2; } }";
 
         Assert.Equal(Symbol(one, "A.F").ShapeHash, Symbol(renamed, "Z.Other").ShapeHash);
-        Assert.NotEqual(Symbol(one, "A.F").ShapeHash, Symbol(different, "A.F").ShapeHash);
+        Assert.NotEqual(Symbol(one, "A.F").ShapeHash, Symbol(different, "A.F").ShapeHash, StringComparer.Ordinal);
         Assert.Equal(16, Symbol(one, "A.F").ShapeHash.Length);
     }
 
@@ -305,7 +305,7 @@ public sealed class CSharpParserTests
     {
         var texts = Symbols("class A { void F(int a) { } void F(string a) { } void F(ref int a) { } }").Where(s => s.Name == "F").Select(s => s.ParameterTypesText);
 
-        Assert.Equal(["int", "string", "ref int"], texts);
+        Assert.Equal(["int", "string", "ref int"], texts, StringComparer.Ordinal);
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -369,6 +369,6 @@ public sealed class CSharpParserTests
         using var cancelled = new CancellationTokenSource();
         cancelled.Cancel();
 
-        Assert.Throws<OperationCanceledException>(() => _parser.Parse("src/A.cs", "class A { }", cancelled.Token));
+        _ = Assert.Throws<OperationCanceledException>(() => _parser.Parse("src/A.cs", "class A { }", cancelled.Token));
     }
 }

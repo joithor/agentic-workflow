@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 
@@ -27,14 +28,14 @@ internal static class FixtureSupport
     /// <summary>Runs 'node generate.mjs --out &lt;directory&gt;' for the hostile files and returns its manifest rows.</summary>
     public static IReadOnlyList<(string Path, long Size, string Outcome)> GenerateHostile(string directory)
     {
-        var start = new ProcessStartInfo("node") { RedirectStandardOutput = true, RedirectStandardError = true };
+        var start = new ProcessStartInfo("node") { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
         start.ArgumentList.Add(Path.Combine(FixtureRoot(), "hostile", "generate.mjs"));
         start.ArgumentList.Add("--out");
         start.ArgumentList.Add(directory);
         using var process = Process.Start(start) ?? throw new InvalidOperationException("node did not start");
-        var error = process.StandardError.ReadToEndAsync();
+        var error = process.StandardError.ReadToEndAsync(TestContext.Current.CancellationToken);
         process.WaitForExit();
-        Assert.True(process.ExitCode == 0, $"generate.mjs exited {process.ExitCode}: {error.Result}");
+        Assert.True(process.ExitCode == 0, string.Create(CultureInfo.InvariantCulture, $"generate.mjs exited {process.ExitCode}: {error.Result}"));
 
         using var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory, "manifest.json")));
         var rows = manifest.RootElement.ValueKind == JsonValueKind.Array ? manifest.RootElement : manifest.RootElement.GetProperty("files");
@@ -46,7 +47,7 @@ internal static class FixtureSupport
     {
         var root = RepoRoot();
         var paths = CommitPaths(commit, underPath, ".cs");
-        var start = new ProcessStartInfo("git") { RedirectStandardInput = true, RedirectStandardOutput = true, WorkingDirectory = root };
+        var start = new ProcessStartInfo("git") { UseShellExecute = false, RedirectStandardInput = true, RedirectStandardOutput = true, WorkingDirectory = root };
         start.ArgumentList.Add("cat-file");
         start.ArgumentList.Add("--batch");
         using var process = Process.Start(start) ?? throw new InvalidOperationException("git did not start");
@@ -57,10 +58,10 @@ internal static class FixtureSupport
             process.StandardInput.Write($"{commit}:{path}\n");
             process.StandardInput.Flush();
             var header = ReadLine(output).Split(' ');
-            var size = int.Parse(header[2], System.Globalization.CultureInfo.InvariantCulture);
+            var size = int.Parse(header[2], CultureInfo.InvariantCulture);
             var bytes = new byte[size];
             output.ReadExactly(bytes);
-            output.ReadByte();   // the LF after the content
+            _ = output.ReadByte();   // the LF after the content
             sources[path] = Encoding.UTF8.GetString(bytes);
         }
 
@@ -74,7 +75,7 @@ internal static class FixtureSupport
 
     public static bool CommitExists(string commit)
     {
-        var start = new ProcessStartInfo("git") { RedirectStandardOutput = true, RedirectStandardError = true, WorkingDirectory = RepoRoot() };
+        var start = new ProcessStartInfo("git") { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, WorkingDirectory = RepoRoot() };
         foreach (var argument in new[] { "cat-file", "-e", commit + "^{commit}" })
         {
             start.ArgumentList.Add(argument);
@@ -87,7 +88,7 @@ internal static class FixtureSupport
 
     private static string Git(string directory, params string[] arguments)
     {
-        var start = new ProcessStartInfo("git") { RedirectStandardOutput = true, WorkingDirectory = directory };
+        var start = new ProcessStartInfo("git") { UseShellExecute = false, RedirectStandardOutput = true, WorkingDirectory = directory };
         foreach (var argument in arguments)
         {
             start.ArgumentList.Add(argument);

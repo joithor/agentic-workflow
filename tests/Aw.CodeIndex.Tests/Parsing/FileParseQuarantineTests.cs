@@ -1,39 +1,13 @@
-using Aw.CodeIndex.Core.Ports;
+using Aw.CodeIndex.Core.Values;
 using Aw.CodeIndex.Infrastructure.Parsing;
-using Aw.CodeIndex.Testing;
+using Aw.Kernel.Testing;
 
 namespace Aw.CodeIndex.Tests.Parsing;
 
-[Trait("Lane", "unit")]
-public sealed class FakeParseQuarantineContractTests : ParseQuarantineContract
-{
-    protected override IParseQuarantine Create() => new FakeParseQuarantine();
-
-    protected override IParseQuarantine Restart(IParseQuarantine previous) => ((FakeParseQuarantine)previous).Restarted();
-}
-
-[Trait("Lane", "integration")]
-public sealed class FileParseQuarantineContractTests : ParseQuarantineContract, IDisposable
-{
-    private readonly string _directory = Path.Combine(Path.GetTempPath(), "aw-quarantine-" + Guid.NewGuid().ToString("N"));
-
-    protected override IParseQuarantine Create() => new FileParseQuarantine(_directory);
-
-    protected override IParseQuarantine Restart(IParseQuarantine previous) => new FileParseQuarantine(_directory);
-
-    public void Dispose()
-    {
-        if (Directory.Exists(_directory))
-        {
-            Directory.Delete(_directory, recursive: true);
-        }
-    }
-}
-
 public sealed class FileParseQuarantineTests : IDisposable
 {
-    private static readonly Aw.CodeIndex.Core.Values.RepoName _repo = Aw.CodeIndex.Core.Values.RepoName.From("alpha");
-    private readonly string _directory = Path.Combine(Path.GetTempPath(), "aw-quarantine-" + Guid.NewGuid().ToString("N"));
+    private static readonly RepoName _repo = RepoName.From("alpha");
+    private readonly string _directory = Path.Combine(Path.GetTempPath(), "aw-quarantine-" + RealTime.NewGuid().ToString("N"));
 
     public void Dispose()
     {

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 using Aw.CodeIndex.Infrastructure.Parsing;
+using Aw.Kernel.Testing;
 
 namespace Aw.CodeIndex.Tests.Parsing;
 
@@ -8,10 +9,14 @@ namespace Aw.CodeIndex.Tests.Parsing;
 public sealed class HostileParseTests : IDisposable
 {
     private static readonly CSharpParser _parser = new();
-    private readonly string _directory = Path.Combine(Path.GetTempPath(), "aw-hostile-" + Guid.NewGuid().ToString("N"));
+    private static readonly string[] _boundedSkips = ["too-deep", "too-many-call-sites"];
+    private readonly string _directory = Path.Combine(Path.GetTempPath(), "aw-hostile-" + RealTime.NewGuid().ToString("N"));
     private readonly IReadOnlyList<(string Path, long Size, string Outcome)> _manifest;
 
-    public HostileParseTests() => _manifest = FixtureSupport.GenerateHostile(_directory);
+    public HostileParseTests()
+    {
+        _manifest = FixtureSupport.GenerateHostile(_directory);
+    }
 
     public void Dispose() => Directory.Delete(_directory, recursive: true);
 
@@ -43,7 +48,7 @@ public sealed class HostileParseTests : IDisposable
             var clock = Stopwatch.StartNew();
             var outcome = ParseFile(row.Path);
 
-            Assert.True(outcome.Skip is null or "too-deep" or "too-many-call-sites", $"{row.Path} ended {outcome.Skip}");
+            Assert.True(outcome.Skip is null || _boundedSkips.Contains(outcome.Skip), $"{row.Path} ended {outcome.Skip}");
             Assert.True(clock.Elapsed < TimeSpan.FromSeconds(15), $"{row.Path} took {clock.Elapsed}");
         }
     }

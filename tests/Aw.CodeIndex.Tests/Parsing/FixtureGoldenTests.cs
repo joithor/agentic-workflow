@@ -1,7 +1,6 @@
-using System.Text.Json;
+using System.Globalization;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Resolution;
-using Aw.CodeIndex.Infrastructure.Parsing;
 
 namespace Aw.CodeIndex.Tests.Parsing;
 
@@ -13,7 +12,7 @@ public sealed class FixtureGoldenTests
     {
         var project = Path.Combine(FixtureSupport.FixtureRoot(), "project");
         var sources = Directory.EnumerateFiles(project, "*.cs", SearchOption.AllDirectories)
-            .ToDictionary(f => Path.GetRelativePath(project, f).Replace('\\', '/'), File.ReadAllText);
+            .ToDictionary(f => Path.GetRelativePath(project, f).Replace('\\', '/'), File.ReadAllText, StringComparer.Ordinal);
         return FixtureIndex.From(sources);
     }
 
@@ -24,9 +23,9 @@ public sealed class FixtureGoldenTests
         var index = ParseProject();
 
         var want = expected.RootElement.GetProperty("symbols").EnumerateArray().Select(s =>
-            $"{s.GetProperty("key").GetString()} | {s.GetProperty("qualified").GetString()} | {s.GetProperty("kind").GetString()} | {s.GetProperty("arity").GetInt32()} | {s.GetProperty("startLine").GetInt32()}-{s.GetProperty("endLine").GetInt32()} | {s.GetProperty("exported").GetBoolean()} | {s.GetProperty("signature").GetString()}").Order(StringComparer.Ordinal);
+            string.Create(CultureInfo.InvariantCulture, $"{s.GetProperty("key").GetString()} | {s.GetProperty("qualified").GetString()} | {s.GetProperty("kind").GetString()} | {s.GetProperty("arity").GetInt32()} | {s.GetProperty("startLine").GetInt32()}-{s.GetProperty("endLine").GetInt32()} | {s.GetProperty("exported").GetBoolean()} | {s.GetProperty("signature").GetString()}")).Order(StringComparer.Ordinal);
         var got = index.Parsed.Select(p =>
-            $"{p.File}:{p.Symbol.StartLine} | {p.Symbol.Qualified} | {_kindWords[(int)p.Symbol.Kind]} | {p.Symbol.Arity} | {p.Symbol.StartLine}-{p.Symbol.EndLine} | {p.Symbol.Exported} | {p.Symbol.Signature}").Order(StringComparer.Ordinal);
+            string.Create(CultureInfo.InvariantCulture, $"{p.File}:{p.Symbol.StartLine} | {p.Symbol.Qualified} | {_kindWords[(int)p.Symbol.Kind]} | {p.Symbol.Arity} | {p.Symbol.StartLine}-{p.Symbol.EndLine} | {p.Symbol.Exported} | {p.Symbol.Signature}")).Order(StringComparer.Ordinal);
 
         Assert.Equal(want, got);
     }
@@ -60,5 +59,5 @@ public sealed class FixtureGoldenTests
     }
 
     private static string Row(string src, string kind, string name, int line, string confidence, int candidates, IEnumerable<string> dst) =>
-        $"{src} | {kind} {name} @{line} | {confidence} of {candidates} | {string.Join(", ", dst)}";
+        string.Create(CultureInfo.InvariantCulture, $"{src} | {kind} {name} @{line} | {confidence} of {candidates} | {string.Join(", ", dst)}");
 }

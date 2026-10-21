@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.CodeIndex.Core;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Resolution;
@@ -8,7 +9,7 @@ namespace Aw.CodeIndex.Tests.Resolution;
 public sealed class CallResolverTests
 {
     private static ResolutionSymbol Sym(string file, string qualified, SymbolKind kind = SymbolKind.Method, int arity = 0, int line = 1) =>
-        new(SymbolRef.From($"r:{file}#{qualified}@{line}"), file, qualified[(qualified.LastIndexOf('.') + 1)..], qualified, kind, arity, line, line);
+        new(SymbolRef.From(string.Create(CultureInfo.InvariantCulture, $"r:{file}#{qualified}@{line}")), file, qualified[(qualified.LastIndexOf('.') + 1)..], qualified, kind, arity, line, line);
 
     private static ResolutionSymbol TypeSym(string file, string qualified, int line = 1) => Sym(file, qualified, SymbolKind.Class, 0, line);
 
@@ -130,7 +131,7 @@ public sealed class CallResolverTests
     public void An_ambiguous_call_keeps_eight_edges_and_the_true_count()
     {
         var caller = Sym("a/A.cs", "N.A.Run");
-        var handlers = Enumerable.Range(0, 300).Select(i => Sym($"h/{i:D3}.cs", $"N.H{i:D3}.Handle")).ToArray();
+        var handlers = Enumerable.Range(0, 300).Select(i => Sym(string.Create(CultureInfo.InvariantCulture, $"h/{i:D3}.cs"), string.Create(CultureInfo.InvariantCulture, $"N.H{i:D3}.Handle"))).ToArray();
 
         var edges = Resolve([caller, .. handlers.Reverse()], Call(caller, "Handle"));
 
