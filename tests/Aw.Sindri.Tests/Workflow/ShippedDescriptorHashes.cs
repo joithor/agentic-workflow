@@ -87,7 +87,7 @@ internal static class ShippedDescriptorHashes
         ["step.review.fix"] = "sha256:ad46d710894d7130254532f20eff470fe1673ea0359519d41671f0522196aae8",
         ["step.review.log"] = "sha256:6e7eaa86437ee3614f80f5f5d53882b16750baee43bdcd74d84d11b4b81d36f7",
         ["step.review.recheck"] = "sha256:87fe20fa2000cb66b32f09bed01b8a150ba79aace78936743295b662fb5d6337",
-        ["step.review.record"] = "sha256:577af267f90abe90b56288d43eca0318ff7736bdcc1231574c45a337f0020c08",
+        ["step.review.record"] = "sha256:f07264ff4425efe3023009ca98ea08eecfa51ecb9ecdc87b81e307b1e2c5bb0c",
         ["step.review.round"] = "sha256:2aa8ad4611e71344356bbc5baf018bcde470b692ac899503d4799dc5a3dac8a7",
         ["step.rootcause.investigate"] = "sha256:089db1c623c8ac46b368e17c20432e4384db243721ce09c7848cd940c23cd6d0",
         ["step.scope.anchor"] = "sha256:386744bd505765e9e639bdbecd10bd90afed0d7d2204f80c448ddb2189b651ce",
