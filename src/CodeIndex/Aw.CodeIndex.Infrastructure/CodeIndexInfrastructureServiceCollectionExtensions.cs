@@ -1,3 +1,5 @@
+using Aw.CodeIndex.Core.Ports;
+using Aw.CodeIndex.Infrastructure.Snapshot;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.CodeIndex.Infrastructure;
@@ -10,5 +12,7 @@ public static class CodeIndexInfrastructureServiceCollectionExtensions
     /// <param name="environment">Reads an environment variable (Environment.GetEnvironmentVariable in Program.cs, a lambda in tests).</param>
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddCodeIndexInfrastructure(this IServiceCollection services, Func<string, string?> environment)
-        => services.AddSingleton(SettingsFromEnvironment.Read(environment));
+        => services
+            .AddSingleton(SettingsFromEnvironment.Read(environment))
+            .AddSingleton<IRepoSnapshot, GitRepoSnapshot>();
 }

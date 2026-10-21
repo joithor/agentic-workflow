@@ -34,4 +34,8 @@ public enum SubjectKind
     /// <summary>A setup step; the id is the step ('repo', 'recipes' or 'mcp').</summary>
     [JsonStringEnumMemberName("setup")]
     Setup,
+
+    /// <summary>A workflow recipe; the id is the recipe's id.</summary>
+    [JsonStringEnumMemberName("recipe")]
+    Recipe,
 }
