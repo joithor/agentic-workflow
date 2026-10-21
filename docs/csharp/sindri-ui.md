@@ -306,8 +306,8 @@ re-reads the status and the services view at most once per view per 250 ms (§9.
 re-read when the window ends. A projection still behind the ledger (`cursor < ledgerHead`) or rebuilding is read again
 on the same beat with no event needed (a stalled one waits for an event, it won't move by itself). `X-Sindri-After`
 (the accepted command's sequence) is best effort and has one lifetime: it rides the view queries only (status, services;
-never ping, the catalog, a command or the stream), goes on the stale-token retry too, gives that call a 5 s deadline (the
-server waits up to 2 s when the views are behind, and answers a stalled projection at once), and is used up by the first
+never ping, the catalog, a command or the stream), goes on the stale-token retry too (the server waits up to 2 s when the views
+are behind, well inside every call's 120 s deadline, and answers a stalled projection at once), and is used up by the first
 answer of any kind, SND-API-011 included. A ping that shows another pid or epoch (another ledger) drops it unused. So
 SND-API-011 ("views behind") is not trouble and never repeats: the follower reads the status once more at once, without
 the header, and shows what Sindri says (stalled, rebuilding); only if that is behind too does the last data stay and the
