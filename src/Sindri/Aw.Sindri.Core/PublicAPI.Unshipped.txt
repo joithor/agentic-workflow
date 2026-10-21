@@ -3768,7 +3768,6 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe.Version.get -> Aw.Sindr
 Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe.Version.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles
 Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles.For(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view) -> string?
-Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles.ItemTitles(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! titles) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList
 Aw.Sindri.Core.Workflow.Engine.Runtime.NonceClaim
 Aw.Sindri.Core.Workflow.Engine.Runtime.NonceClaim.Applied = 2 -> Aw.Sindri.Core.Workflow.Engine.Runtime.NonceClaim
@@ -5239,7 +5238,6 @@ Aw.Sindri.Core.Workflow.Views.InstanceSummary.Answer.get -> Aw.Sindri.Core.Workf
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.Answer.init -> void
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.Chip.get -> Aw.Sindri.Core.Workflow.Views.StateChip!
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.Chip.init -> void
-Aw.Sindri.Core.Workflow.Views.InstanceSummary.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Id, out Aw.Sindri.Core.Workflow.Engine.ItemKey? ItemId, out Aw.Sindri.Core.Workflow.Views.InstanceRecipe! Recipe, out string! State, out Aw.Sindri.Core.Workflow.Views.StateChip! Chip, out System.DateTimeOffset Since, out Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? EngineOwned, out Aw.Sindri.Core.Workflow.Views.SubjectRef! Subject, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.InputPresence!>! Inputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateCell!>! States, out string! Now, out Aw.Sindri.Core.Workflow.Views.StatusAnswer? Answer, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions) -> void
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.EngineOwned.get -> Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge?
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.EngineOwned.init -> void
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.Equals(Aw.Sindri.Core.Workflow.Views.InstanceSummary? other) -> bool
@@ -5247,7 +5245,6 @@ Aw.Sindri.Core.Workflow.Views.InstanceSummary.Id.get -> Aw.Sindri.Core.Workflow.
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.Id.init -> void
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.Inputs.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.InputPresence!>!
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.Inputs.init -> void
-Aw.Sindri.Core.Workflow.Views.InstanceSummary.InstanceSummary(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Id, Aw.Sindri.Core.Workflow.Engine.ItemKey? ItemId, Aw.Sindri.Core.Workflow.Views.InstanceRecipe! Recipe, string! State, Aw.Sindri.Core.Workflow.Views.StateChip! Chip, System.DateTimeOffset Since, Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? EngineOwned, Aw.Sindri.Core.Workflow.Views.SubjectRef! Subject, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.InputPresence!>! Inputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateCell!>! States, string! Now, Aw.Sindri.Core.Workflow.Views.StatusAnswer? Answer, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions) -> void
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.ItemId.get -> Aw.Sindri.Core.Workflow.Engine.ItemKey?
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.ItemId.init -> void
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.Now.get -> string!
@@ -11121,10 +11118,8 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.DeskTask.Deconstruct(out Aw.Sindri.Core.W
 Aw.Sindri.Core.Workflow.Engine.Runtime.DeskTask.DeskTask(Aw.Sindri.Core.Workflow.Engine.RunToken Run, string! State, Aw.Sindri.Core.Workflow.Ids.BlockId Step, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.OutcomeName>! Outcomes, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.OutputSpec!>! Outputs, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.InputFact!>! Inputs, System.DateTimeOffset? TimeoutAt, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionEntry!>? Injection = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.DeskTask.Injection.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionEntry!>!
 Aw.Sindri.Core.Workflow.Engine.Runtime.DeskTask.Injection.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Deconstruct(out int Version, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>? Provenance, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>? Children, out Aw.Sindri.Core.Workflow.Views.SubjectRef? Subject, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string!>? Contents, out Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlan? Injection) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Injection.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlan?
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Injection.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.InstanceViewContext(int Version = 0, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>? Provenance = null, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>? Children = null, Aw.Sindri.Core.Workflow.Views.SubjectRef? Subject = null, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string!>? Contents = null, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlan? Injection = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.IInjectionSources
 Aw.Sindri.Core.Workflow.Engine.Runtime.IInjectionSources.Read(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource!>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource
@@ -12656,7 +12651,6 @@ Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllApproved.DisplayName.init -> void
 override Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllApproved.Equals(object? obj) -> bool
 Aw.Sindri.Core.Workflow.ApproveAll.CapabilityLine.<Clone>$() -> Aw.Sindri.Core.Workflow.ApproveAll.CapabilityLine!
 static Aw.Sindri.Core.Challenges.ChallengeAction.ApproveAll(string! digest) -> Aw.Sindri.Core.Challenges.ChallengeAction!
-Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaryContext.Deconstruct(out System.DateTimeOffset Now, out bool NotStarted, out string? ItemTitle, out string? RecipeDisplayName) -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRow.<Clone>$() -> Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRow!
 override Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllResult.GetHashCode() -> int
 Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow.Sentence.init -> void
@@ -12692,7 +12686,6 @@ override Aw.Sindri.Core.Workflow.ApproveAll.CapabilityDelta.ToString() -> string
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan.Digest.get -> string!
 override Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRow.GetHashCode() -> int
 Aw.Sindri.Core.Workflow.ApproveAll.CapabilityDelta.Removed.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaryContext.InstanceSummaryContext(System.DateTimeOffset Now, bool NotStarted = false, string? ItemTitle = null, string? RecipeDisplayName = null) -> void
 override Aw.Sindri.Core.Workflow.ApproveAll.CapabilityLine.ToString() -> string!
 Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow
 Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRefused.Code.get -> string!
@@ -12956,7 +12949,6 @@ static Aw.Sindri.Core.Sessions.SessionIdCapture.Check(string? pattern, Aw.Sindri
 static readonly Aw.Sindri.Core.SindriErrors.LaunchSessionIdTimedOut -> Aw.Kernel.ErrorDefinition!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext.Deconstruct(out string! Title, out Aw.Sindri.Core.Workflow.Views.ParentRef? Parent, out Aw.Sindri.Core.Workflow.Views.ViewCounts! Counts, out System.DateTimeOffset AsOf, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StepRun!>? StepRuns, out string? RecipeDisplayName) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext.InstanceDetailContext(string! Title, Aw.Sindri.Core.Workflow.Views.ParentRef? Parent, Aw.Sindri.Core.Workflow.Views.ViewCounts! Counts, System.DateTimeOffset AsOf, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StepRun!>? StepRuns = null, string? RecipeDisplayName = null) -> void
-
 Aw.Sindri.Core.Line.LineCheckResponse
 Aw.Sindri.Core.Line.LineCheckResponse.<Clone>$() -> Aw.Sindri.Core.Line.LineCheckResponse!
 Aw.Sindri.Core.Line.LineCheckResponse.Deconstruct(out string! Station, out Aw.Sindri.Core.Line.LineStage Stage, out Aw.Sindri.Core.Line.LineOutcome Outcome, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFinding!>! Findings, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineFinding!>! Warnings, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.LineRuleResult!>! Rules) -> void
@@ -14229,3 +14221,31 @@ static Aw.Sindri.Core.Profile.RepoStatus.operator ==(Aw.Sindri.Core.Profile.Repo
 static Aw.Sindri.Core.Profile.RepoStatusRules.ExitCode(Aw.Sindri.Core.Profile.RepoStatus! status) -> int
 static Aw.Sindri.Core.Profile.RepoStatusRules.NudgeLine(Aw.Sindri.Core.Profile.RepoStatus! status) -> string!
 static Aw.Sindri.Core.Profile.RepoStatusRules.Text(Aw.Sindri.Core.Profile.RepoStatus! status) -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceStart.StartedBy.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceStart.StartedBy.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaryContext.Deconstruct(out System.DateTimeOffset Now, out bool NotStarted, out string? ItemTitle, out string? RecipeDisplayName, out string? LineStage) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaryContext.InstanceSummaryContext(System.DateTimeOffset Now, bool NotStarted = false, string? ItemTitle = null, string? RecipeDisplayName = null, string? LineStage = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaryContext.LineStage.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaryContext.LineStage.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.StartedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.StartedAt.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.StartedBy.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.StartedBy.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Deconstruct(out int Version, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>? Provenance, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>? Children, out Aw.Sindri.Core.Workflow.Views.SubjectRef? Subject, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string!>? Contents, out Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlan? Injection, out System.DateTimeOffset? StartedAt, out string? StartedBy) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.InstanceViewContext(int Version = 0, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>? Provenance = null, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>? Children = null, Aw.Sindri.Core.Workflow.Views.SubjectRef? Subject = null, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string!>? Contents = null, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlan? Injection = null, System.DateTimeOffset? StartedAt = null, string? StartedBy = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.StartedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.StartedAt.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.StartedBy.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.StartedBy.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles.ItemTitles(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! titles, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? steps = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles.StepFor(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view) -> string?
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Id, out Aw.Sindri.Core.Workflow.Engine.ItemKey? ItemId, out Aw.Sindri.Core.Workflow.Views.InstanceRecipe! Recipe, out string! State, out Aw.Sindri.Core.Workflow.Views.StateChip! Chip, out System.DateTimeOffset Since, out Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? EngineOwned, out Aw.Sindri.Core.Workflow.Views.SubjectRef! Subject, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.InputPresence!>! Inputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateCell!>! States, out string! Now, out Aw.Sindri.Core.Workflow.Views.StatusAnswer? Answer, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, out string? StartedBy, out System.DateTimeOffset? StartedAt, out string? LineStage, out string? RootAddress) -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.InstanceSummary(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Id, Aw.Sindri.Core.Workflow.Engine.ItemKey? ItemId, Aw.Sindri.Core.Workflow.Views.InstanceRecipe! Recipe, string! State, Aw.Sindri.Core.Workflow.Views.StateChip! Chip, System.DateTimeOffset Since, Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? EngineOwned, Aw.Sindri.Core.Workflow.Views.SubjectRef! Subject, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.InputPresence!>! Inputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateCell!>! States, string! Now, Aw.Sindri.Core.Workflow.Views.StatusAnswer? Answer, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, string? StartedBy = null, System.DateTimeOffset? StartedAt = null, string? LineStage = null, string? RootAddress = null) -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.LineStage.get -> string?
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.LineStage.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.RootAddress.get -> string?
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.RootAddress.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.StartedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.StartedAt.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.StartedBy.get -> string?
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.StartedBy.init -> void

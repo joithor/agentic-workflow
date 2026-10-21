@@ -217,6 +217,8 @@
         "pending": null
       }
     ],
+    "startedAt": "<timestamp>",
+    "startedBy": "human:cli",
     "childGroups": []
   },
   "existing": false,

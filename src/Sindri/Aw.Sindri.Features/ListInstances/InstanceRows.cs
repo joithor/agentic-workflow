@@ -18,5 +18,5 @@ internal sealed class InstanceRows(TimeProvider clock, IRecipeDisplayNames? name
     /// <param name="now">The time the list is read at.</param>
     /// <returns>The row.</returns>
     public InstanceSummary Row(InstanceView view, ItemTitles titles, DateTimeOffset now) =>
-        InstanceSummaries.Of(view, new InstanceSummaryContext(now, ItemTitle: titles.For(view), RecipeDisplayName: names?.Of(view.Recipe.Id)));
+        InstanceSummaries.Of(view, new InstanceSummaryContext(now, ItemTitle: titles.For(view), RecipeDisplayName: names?.Of(view.Recipe.Id), LineStage: titles.StepFor(view)));
 }

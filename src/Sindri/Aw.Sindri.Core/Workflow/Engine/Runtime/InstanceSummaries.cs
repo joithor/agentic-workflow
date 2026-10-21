@@ -31,7 +31,11 @@ public static class InstanceSummaries
             view.States,
             Cut(RowSentences.Now(view, chip)),
             view.AnswerLine,
-            StatusRecords.ActionIds(view));
+            StatusRecords.ActionIds(view),
+            view.StartedBy,
+            view.StartedAt,
+            context.LineStage,
+            RootOf(view.Address));
     }
 
     /// <summary>
@@ -54,6 +58,9 @@ public static class InstanceSummaries
             { } subject => subject,
         };
     }
+
+    /// <summary>The root instance's address: the first three segments ('T-3/item/1'); a root's own.</summary>
+    private static string RootOf(InstanceAddress address) => string.Join('/', address.Value.Split('/').Take(3));
 
     /// <summary>The text cut to <see cref="NowLength"/> with the ellipsis inside it, never between the two halves of a surrogate pair.</summary>
     private static string Cut(string sentence)

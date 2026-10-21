@@ -77,6 +77,8 @@ public static partial class InstanceViews
             Budget = Budget(instance, recipe),
             AgentRun = AgentRunOf(instance),
             RunningSteps = instance is { Ended: false, Frame.Run.Runtime: not StepRuntime.Desk } ? 1 : 0,
+            StartedAt = context.StartedAt,
+            StartedBy = context.StartedBy,
             Paused = instance.Suspension is { Kind: SuspensionKind.Takeover, Remaining: { } paused } ? paused.Left : null,
         };
         return WithLayout(view, new Layout(instance, recipe, task, words), context);
