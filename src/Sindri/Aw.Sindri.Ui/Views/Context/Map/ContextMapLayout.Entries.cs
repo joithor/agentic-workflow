@@ -27,7 +27,7 @@ internal static partial class ContextMapLayout
     {
         var entries = new List<Entry>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        void Add(Entry entry)
+        foreach (var entry in IntentEntries(view).Concat(ProductEntries(view)).Concat(CodeEntries(view.Bands.Code)))
         {
             if (seen.Add(entry.Key))
             {
@@ -35,59 +35,71 @@ internal static partial class ContextMapLayout
             }
         }
 
+        return entries;
+    }
+
+    private static IEnumerable<Entry> IntentEntries(LensesView view)
+    {
         var inConflict = view.Conflicts.SelectMany(c => new[] { c.Decision, c.Other }).Where(k => k is not null).ToHashSet(StringComparer.Ordinal);
         var intent = view.Bands.Intent;
         foreach (var r in intent.Records)
         {
-            Add(new Entry(r.Key, r.Label, r.Kind, MapBand.Intent, Row.Intent, MapShape.Chip, 220, false, true, "human", 1, r.Source, string.Empty, false, null, 0));
+            yield return new Entry(r.Key, r.Label, r.Kind, MapBand.Intent, Row.Intent, MapShape.Chip, Width: 220, IsAnchor: false, Confirmed: true, Provenance: "human", Confidence: 1, Detail: r.Source, Path: string.Empty, HasConflict: false, LinkId: null, Order: 0);
         }
 
         foreach (var d in intent.Decisions.OrderByDescending(d => d.At).ThenBy(d => d.Node, StringComparer.Ordinal))
         {
-            Add(new Entry(d.Node, d.Label, d.Kind, MapBand.Intent, Row.Intent, MapShape.Card, 250, false, d.Confirmed, d.Provenance, 1, d.At.ToString("MMM d", CultureInfo.InvariantCulture), string.Empty, inConflict.Contains(d.Node), null, 0));
+            var when = d.At.ToString("MMM d", CultureInfo.InvariantCulture);
+            yield return new Entry(d.Node, d.Label, d.Kind, MapBand.Intent, Row.Intent, MapShape.Card, Width: 250, IsAnchor: false, d.Confirmed, d.Provenance, Confidence: 1, when, Path: string.Empty, inConflict.Contains(d.Node), LinkId: null, Order: 0);
         }
 
         if (intent.Truncated)
         {
-            Add(More(MapBand.Intent, Row.Intent));
+            yield return More(MapBand.Intent, Row.Intent);
         }
+    }
 
+    private static IEnumerable<Entry> ProductEntries(LensesView view)
+    {
         var anchors = view.Anchors.Select(a => a.Key).ToHashSet(StringComparer.Ordinal);
         var product = view.Bands.Product;
-        var acting = product.Edges.Concat(view.Edges).Where(e => e.Type is "on" or "reads" or "writes").Select(e => e.From).ToHashSet(StringComparer.Ordinal);
+        var acting = product.Edges.Concat(view.Edges).Where(e => _actingTypes.Contains(e.Type)).Select(e => e.From).ToHashSet(StringComparer.Ordinal);
         foreach (var n in product.Own.Concat(product.Neighbors).Concat(product.Affects))
         {
             var anchor = anchors.Contains(n.Node);
-            Add(new Entry(n.Node, n.Label, n.Kind, MapBand.Product, ProductRow(n, anchor, acting), anchor ? MapShape.Card : MapShape.Chip, anchor ? 280 : 170, anchor, n.Confirmed, n.Provenance, n.Confidence, string.Empty, string.Empty, false, null, 0));
+            yield return new Entry(n.Node, n.Label, n.Kind, MapBand.Product, ProductRow(n, anchor, acting), anchor ? MapShape.Card : MapShape.Chip, anchor ? 280 : 170, anchor, n.Confirmed, n.Provenance, n.Confidence, Detail: string.Empty, Path: string.Empty, HasConflict: false, LinkId: null, Order: 0);
         }
 
         if (product.Truncated)
         {
-            Add(More(MapBand.Product, Row.Features));
+            yield return More(MapBand.Product, Row.Features);
         }
+    }
 
-        foreach (var f in view.Bands.Code.Files)
+    private static IEnumerable<Entry> CodeEntries(CodeBand code)
+    {
+        foreach (var f in code.Files)
         {
             var test = f.Tests.Count > 0;
             var slash = f.Path.LastIndexOf('/');
             var name = slash < 0 ? f.Path : f.Path[(slash + 1)..];
             var dir = slash < 0 ? string.Empty : f.Path[..slash];
-            Add(new Entry("code:" + f.Path, name, test ? "test" : "file", MapBand.Code, test ? Row.Tests : Row.Files, MapShape.Chip, test ? 176 : 150, false, f.Confirmed, f.Provenance, f.Confidence, dir, f.Path, false, f.LinkId, 0));
+            yield return new Entry("code:" + f.Path, name, test ? "test" : "file", MapBand.Code, test ? Row.Tests : Row.Files, MapShape.Chip, test ? 176 : 150, IsAnchor: false, f.Confirmed, f.Provenance, f.Confidence, dir, f.Path, HasConflict: false, f.LinkId, Order: 0);
         }
 
-        if (view.Bands.Code.Truncated)
+        if (code.Truncated)
         {
-            Add(More(MapBand.Code, Row.Files));
+            yield return More(MapBand.Code, Row.Files);
         }
-
-        return entries;
     }
+
+    private static readonly HashSet<string> _actingTypes = new(["on", "reads", "writes"], StringComparer.Ordinal);
 
     private static Row ProductRow(ProductNode n, bool anchor, HashSet<string> acting) =>
         anchor || string.Equals(n.Kind, "feature", StringComparison.Ordinal) ? Row.Features
-        : n.Kind is "action" or "data" || acting.Contains(n.Node) ? Row.Actions
+        : string.Equals(n.Kind, "action", StringComparison.Ordinal) || string.Equals(n.Kind, "data", StringComparison.Ordinal) || acting.Contains(n.Node) ? Row.Actions
         : Row.Surfaces;
 
     // The chip that says the band was cut short.
-    private static Entry More(MapBand band, Row row) => new("more:" + band.ToString().ToLowerInvariant(), Labels.ContextTruncated, "more", band, row, MapShape.Chip, 170, false, true, "human", 1, string.Empty, string.Empty, false, null, 0);
+    private static Entry More(MapBand band, Row row) => new("more:" + band.ToString().ToLowerInvariant(), Labels.ContextTruncated, "more", band, row, MapShape.Chip, Width: 170, IsAnchor: false, Confirmed: true, Provenance: "human", Confidence: 1, Detail: string.Empty, Path: string.Empty, HasConflict: false, LinkId: null, Order: 0);
 }

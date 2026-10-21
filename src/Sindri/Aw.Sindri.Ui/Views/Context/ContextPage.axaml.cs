@@ -6,7 +6,6 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.VisualTree;
-using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Context;
 
 namespace Aw.Sindri.Ui.Views.Context;
@@ -30,11 +29,7 @@ internal sealed partial class ContextPage : UserControl
     protected override void OnDataContextChanged(EventArgs e)
     {
         base.OnDataContextChanged(e);
-        if (_page is not null)
-        {
-            _page.PropertyChanged -= OnPageChanged;
-        }
-
+        _page?.PropertyChanged -= OnPageChanged;
         _page = DataContext as ContextPageViewModel;
         if (_page is not null)
         {
@@ -48,11 +43,7 @@ internal sealed partial class ContextPage : UserControl
     {
         base.OnAttachedToVisualTree(e);
         _scroller = this.FindAncestorOfType<ScrollViewer>();
-        if (_scroller is not null)
-        {
-            _scroller.PropertyChanged += OnScrollerChanged;
-        }
-
+        _scroller?.PropertyChanged += OnScrollerChanged;
         ContextStack.DataContext = _page?.Map;
         FitStage();
     }
@@ -60,11 +51,8 @@ internal sealed partial class ContextPage : UserControl
     /// <inheritdoc/>
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        if (_scroller is not null)
-        {
-            _scroller.PropertyChanged -= OnScrollerChanged;
-            _scroller = null;
-        }
+        _scroller?.PropertyChanged -= OnScrollerChanged;
+        _scroller = null;
 
         base.OnDetachedFromVisualTree(e);
     }

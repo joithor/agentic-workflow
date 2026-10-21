@@ -21,7 +21,7 @@ internal static partial class ContextMapLayout
         {
             if (c.Decision is { } a && c.Other is { } b && keys.Contains(a) && keys.Contains(b) && pairs.Add(Pair(a, b)))
             {
-                conflicts.Add(new LensEdge(a, b, "conflicts", "deterministic", null, Confirmed: false, 1));
+                conflicts.Add(new LensEdge(a, b, "conflicts", "deterministic", Link: null, Confirmed: false, Confidence: 1));
             }
         }
 

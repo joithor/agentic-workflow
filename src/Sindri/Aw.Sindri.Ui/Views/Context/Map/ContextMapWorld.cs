@@ -73,24 +73,24 @@ internal sealed class ContextMapWorld : Canvas
             Place(Meta(band), 0, band.Top + 10);
         }
 
-        var nodes = new Dictionary<string, MapNodeView>(StringComparer.Ordinal);
-        foreach (var node in map.Nodes)
+        NodeViews = PlaceAll(map.Nodes, n => n.Key, n => (n.X, n.Y), n => new MapNodeView { DataContext = n });
+        PillViews = PlaceAll<MapPillViewModel, Control>(map.Pills, p => p.Key, p => (p.X, p.Y), Pill);
+    }
+
+    // Builds a view for each item, places it at its point and returns the views by key.
+    private Dictionary<string, TView> PlaceAll<TItem, TView>(IEnumerable<TItem> items, Func<TItem, string> key, Func<TItem, (double X, double Y)> at, Func<TItem, TView> build)
+        where TView : Control
+    {
+        var views = new Dictionary<string, TView>(StringComparer.Ordinal);
+        foreach (var item in items)
         {
-            var view = new MapNodeView { DataContext = node };
-            nodes[node.Key] = view;
-            Place(view, node.X, node.Y);
+            var view = build(item);
+            views[key(item)] = view;
+            var (x, y) = at(item);
+            Place(view, x, y);
         }
 
-        NodeViews = nodes;
-        var pills = new Dictionary<string, Control>(StringComparer.Ordinal);
-        foreach (var pill in map.Pills)
-        {
-            var view = Pill(pill);
-            pills[pill.Key] = view;
-            Place(view, pill.X, pill.Y);
-        }
-
-        PillViews = pills;
+        return views;
     }
 
     private void Place(Control control, double x, double y)
@@ -127,7 +127,7 @@ internal sealed class ContextMapWorld : Canvas
         return title;
     }
 
-    private Control Meta(MapBandViewModel band)
+    private Border Meta(MapBandViewModel band)
     {
         var text = new TextBlock { Text = band.Meta, FontSize = 12, LineHeight = 16, Foreground = Brush("Brush.InkSubtle"), TextAlignment = TextAlignment.Right };
         var meta = new Border { Width = band.Width - 20, Child = text, IsHitTestVisible = false };
@@ -136,7 +136,7 @@ internal sealed class ContextMapWorld : Canvas
     }
 
     // A pill is centred on its point: a zero-size host the pill overflows evenly on both sides.
-    private Control Pill(MapPillViewModel pill)
+    private Grid Pill(MapPillViewModel pill)
     {
         var text = new TextBlock { Text = pill.Text, FontSize = 11, LineHeight = 16, Foreground = Brush("Brush.InkMuted"), TextWrapping = TextWrapping.NoWrap };
         var box = new Border

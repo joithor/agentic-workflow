@@ -9,18 +9,18 @@ internal static partial class ContextMapLayout
     private const double CardRowStep = CardHeight + 14;
 
     // Every node's rectangle, band by band from the top: each band's height depends on how many rows the one above it wrapped to.
-    private static Places Place(LensesView view, List<Entry> entries, List<LensEdge> edges)
+    private static Places Place(List<Entry> entries, List<LensEdge> edges)
     {
         var rects = new Dictionary<string, Rect>(StringComparer.Ordinal);
         var near = Adjacency(edges);
         double Bary(Entry e) => near.TryGetValue(e.Key, out var others) && others.Where(rects.ContainsKey).Select(k => rects[k].Center.X).ToList() is { Count: > 0 } xs ? xs.Average() : double.MaxValue;
         List<Entry> Ordered(Row row) => [.. entries.Where(e => e.Row == row).OrderBy(Bary).ThenBy(e => e.Key, StringComparer.Ordinal)];
 
-        var intentRows = Flow(entries.Where(e => e.Band == MapBand.Intent).ToList(), rects);
-        var intentHeight = IntentHeight + (Math.Max(intentRows, 1) - 1) * CardRowStep;
+        var intentRows = Flow([.. entries.Where(e => e.Band == MapBand.Intent)], rects);
+        var intentHeight = IntentHeight + ((Math.Max(intentRows, 1) - 1) * CardRowStep);
         var productTop = intentHeight + 52;
 
-        var anchors = entries.Where(e => e.Row == Row.Features && e.IsAnchor).ToList();
+        var anchors = entries.Where(e => e.Row == Row.Features && e.IsAnchor);
         var features = anchors.Concat(Ordered(Row.Features).Where(e => !e.IsAnchor)).ToList();
         var extraFeatures = Features(features, productTop, rects);
         var surfaces = Ordered(Row.Surfaces);
@@ -60,7 +60,7 @@ internal static partial class ContextMapLayout
         var (left, row, previous) = (IntentLeft, 0, (Entry?)null);
         foreach (var e in items)
         {
-            var gap = previous is null ? 0 : previous.Shape == MapShape.Chip && e.Shape == MapShape.Card ? 60 : previous.Shape == MapShape.Card ? 80 : 20;
+            var gap = Gap(previous, e);
             if (left + gap + e.Width > RightLimit && previous is not null)
             {
                 (left, row, gap) = (IntentLeft, row + 1, 0);
@@ -76,10 +76,16 @@ internal static partial class ContextMapLayout
         return items.Count == 0 ? 0 : row + 1;
     }
 
+    private static double Gap(Entry? previous, Entry next) =>
+        previous is null ? 0
+        : previous.Shape == MapShape.Card ? 80
+        : next.Shape == MapShape.Card ? 60
+        : 20;
+
     // The first product row: the anchor cards, then chips on the same columns as the rows below. Returns how much the product band grew.
     private static double Features(List<Entry> items, double productTop, Dictionary<string, Rect> rects)
     {
-        var anchored = items.Any(e => e.IsAnchor);
+        var anchored = items.Exists(e => e.IsAnchor);
         var (left, row, column, lastTop, started) = (254d, 0, 0, 66d, false);
         foreach (var e in items)
         {
@@ -135,10 +141,8 @@ internal static partial class ContextMapLayout
                 continue;
             }
 
-            var crossed = edges.Where(e => rank.ContainsKey(e.From) && rank.ContainsKey(e.To) && rects.ContainsKey(e.From) && rects.ContainsKey(e.To)
-                && Math.Min(rank[e.From], rank[e.To]) < (int)row && (int)row < Math.Max(rank[e.From], rank[e.To])
-                && Math.Abs(rects[e.From].Center.X - rects[e.To].Center.X) < 1).Select(e => rects[e.From].Center.X);
-            if (crossed.Any(x => items.Any(i => rects[i.Key].Left - 8 <= x && x <= rects[i.Key].Right + 8)))
+            var crossed = CrossedX(edges, rank, rects, (int)row);
+            if (crossed.Any(x => items.Exists(i => rects[i.Key].Left - 8 <= x && x <= rects[i.Key].Right + 8)))
             {
                 foreach (var i in items)
                 {
@@ -147,4 +151,10 @@ internal static partial class ContextMapLayout
             }
         }
     }
+
+    // The x of every vertical link that skips the row.
+    private static IEnumerable<double> CrossedX(List<LensEdge> edges, Dictionary<string, int> rank, Dictionary<string, Rect> rects, int row) =>
+        edges.Where(e => rank.TryGetValue(e.From, out var from) && rank.TryGetValue(e.To, out var to) && Math.Min(from, to) < row && row < Math.Max(from, to)
+                && rects.TryGetValue(e.From, out var a) && rects.TryGetValue(e.To, out var b) && Math.Abs(a.Center.X - b.Center.X) < 1)
+            .Select(e => rects[e.From].Center.X);
 }

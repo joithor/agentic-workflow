@@ -32,7 +32,7 @@ internal static partial class ContextMapLayout
         ArgumentNullException.ThrowIfNull(view);
         var entries = Entries(view);
         var edges = Links(view, entries);
-        var places = Place(view, entries, edges);
+        var places = Place(entries, edges);
         var nodes = entries.Where(e => places.Rects.ContainsKey(e.Key)).Select(e => e.ToLayout(places.Rects[e.Key])).ToList();
         var bands = new List<MapBandLayout>
         {
