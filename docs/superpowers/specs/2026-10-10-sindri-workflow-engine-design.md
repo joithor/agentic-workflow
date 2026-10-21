@@ -292,8 +292,9 @@ Every state has `kind: active | wait | terminal`. State, loop and parameter (`wi
 - `{ event: <kind> }`;
 - `{ answer: { id, question } }`, satisfied by `workflow answer` with outcome `answered`, which records `fact:answer`;
 - `{ resource: heavy | slot }`. `slot` comes from the P7 stub. `heavy` is allocated by Sindri's heavy-job lock port, the same
-  port the context engine's `IHeavyJobLock` adapts (context spec §4). Until that port lands it parks with `SND-WF-010`,
-  and the validator reports that;
+  port the context engine's `IHeavyJobLock` adapts (context spec §4). LN-WF3 wires the engine to it (the allocator, the
+  holding rules and the `workflow.heavy` ledger row are in docs/csharp/sindri-workflow.md "The heavy resource"); only `slot` is
+  reported by the validator;
 - `{ child: { recipe, inputs, onParked: propagate|ignore } }`. The child's `escalated` and `cancelled` always
   propagate.
 

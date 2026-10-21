@@ -1,7 +1,9 @@
 using System.Text.Json;
+using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Tests.Workflows.Inputs;
@@ -40,7 +42,7 @@ public sealed class TemporalInjectionSourcesTests : IDisposable
             var view = await WorkflowsHarness.Until(handle, static v => v.Task is not null);
             var sources = new TemporalInjectionSources(sindri.GetRequiredService<TemporalFrontend>());
 
-            var read = await sources.Read(InstanceAddress.From(handle.Id), Token);
+            var read = await ReadOnceFilled(sources, InstanceAddress.From(handle.Id));
 
             Assert.True(read.IsSuccess, read.IsError ? read.Error.Message : null);
             Assert.Equal(("checks", view.Run!.Value.Value), (read.Value.State, read.Value.Run));
@@ -54,6 +56,20 @@ public sealed class TemporalInjectionSourcesTests : IDisposable
             Assert.Equal("SND-WF-001", gone.Error.Code);
             await handle.TerminateAsync("test over");
         }, Token);
+    }
+
+    /// <summary>The query answers an empty run until the step has filled its inputs, so this waits for the first fill; the last answer returns after 30 s.</summary>
+    private static async Task<Result<InjectionSource>> ReadOnceFilled(TemporalInjectionSources sources, InstanceAddress address)
+    {
+        var read = await sources.Read(address, Token);
+        var deadline = RealTime.NowDateTime.AddSeconds(30);
+        while (read.IsSuccess && read.Value.Inputs.Count == 0 && RealTime.NowDateTime < deadline)
+        {
+            await Task.Delay(50, Token);
+            read = await sources.Read(address, Token);
+        }
+
+        return read;
     }
 
     private void AddProbes(IServiceCollection services) => services.AddSingleton(_probe).AddStepInput<ProbeInput>();

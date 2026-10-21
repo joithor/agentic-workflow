@@ -97,13 +97,11 @@ Aw.CodeIndex.Core.Facade.CallDirection.Callers = 0 -> Aw.CodeIndex.Core.Facade.C
 Aw.CodeIndex.Core.Facade.CallEdge
 Aw.CodeIndex.Core.Facade.CallEdge.Basis.get -> Aw.CodeIndex.Core.Model.EdgeBasis
 Aw.CodeIndex.Core.Facade.CallEdge.Basis.init -> void
-Aw.CodeIndex.Core.Facade.CallEdge.CallEdge(int Level, Aw.CodeIndex.Core.Facade.SymbolHit? Other, string! Name, Aw.CodeIndex.Core.Model.EdgeKind Kind, Aw.CodeIndex.Core.Model.EdgeBasis Basis, Aw.CodeIndex.Core.Model.Confidence Confidence, int Line, int Candidates) -> void
 Aw.CodeIndex.Core.Facade.CallEdge.Candidates.get -> int
 Aw.CodeIndex.Core.Facade.CallEdge.Candidates.init -> void
 Aw.CodeIndex.Core.Facade.CallEdge.<Clone>$() -> Aw.CodeIndex.Core.Facade.CallEdge!
 Aw.CodeIndex.Core.Facade.CallEdge.Confidence.get -> Aw.CodeIndex.Core.Model.Confidence
 Aw.CodeIndex.Core.Facade.CallEdge.Confidence.init -> void
-Aw.CodeIndex.Core.Facade.CallEdge.Deconstruct(out int Level, out Aw.CodeIndex.Core.Facade.SymbolHit? Other, out string! Name, out Aw.CodeIndex.Core.Model.EdgeKind Kind, out Aw.CodeIndex.Core.Model.EdgeBasis Basis, out Aw.CodeIndex.Core.Model.Confidence Confidence, out int Line, out int Candidates) -> void
 Aw.CodeIndex.Core.Facade.CallEdge.Equals(Aw.CodeIndex.Core.Facade.CallEdge? other) -> bool
 Aw.CodeIndex.Core.Facade.CallEdge.Kind.get -> Aw.CodeIndex.Core.Model.EdgeKind
 Aw.CodeIndex.Core.Facade.CallEdge.Kind.init -> void
@@ -120,9 +118,7 @@ Aw.CodeIndex.Core.Facade.CallerKind.Human = 0 -> Aw.CodeIndex.Core.Facade.Caller
 Aw.CodeIndex.Core.Facade.CallerKind.Service = 1 -> Aw.CodeIndex.Core.Facade.CallerKind
 Aw.CodeIndex.Core.Facade.CallerKind.Session = 2 -> Aw.CodeIndex.Core.Facade.CallerKind
 Aw.CodeIndex.Core.Facade.CallsAnswer
-Aw.CodeIndex.Core.Facade.CallsAnswer.CallsAnswer(Aw.CodeIndex.Core.Facade.AnswerStamp! Stamp, Aw.CodeIndex.Core.Values.SymbolRef Subject, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>! Edges, int UnresolvedCount, bool Truncated) -> void
 Aw.CodeIndex.Core.Facade.CallsAnswer.<Clone>$() -> Aw.CodeIndex.Core.Facade.CallsAnswer!
-Aw.CodeIndex.Core.Facade.CallsAnswer.Deconstruct(out Aw.CodeIndex.Core.Facade.AnswerStamp! Stamp, out Aw.CodeIndex.Core.Values.SymbolRef Subject, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>! Edges, out int UnresolvedCount, out bool Truncated) -> void
 Aw.CodeIndex.Core.Facade.CallsAnswer.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>!
 Aw.CodeIndex.Core.Facade.CallsAnswer.Edges.init -> void
 Aw.CodeIndex.Core.Facade.CallsAnswer.Equals(Aw.CodeIndex.Core.Facade.CallsAnswer? other) -> bool
@@ -355,9 +351,7 @@ Aw.CodeIndex.Core.Model.CallSiteRow.Equals(Aw.CodeIndex.Core.Model.CallSiteRow? 
 Aw.CodeIndex.Core.Model.CallSiteRow.Site.get -> Aw.CodeIndex.Core.Model.CallSite!
 Aw.CodeIndex.Core.Model.CallSiteRow.Site.init -> void
 Aw.CodeIndex.Core.Ports.CallWalk
-Aw.CodeIndex.Core.Ports.CallWalk.CallWalk(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>! Edges, int UnresolvedCount, bool Truncated) -> void
 Aw.CodeIndex.Core.Ports.CallWalk.<Clone>$() -> Aw.CodeIndex.Core.Ports.CallWalk!
-Aw.CodeIndex.Core.Ports.CallWalk.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>! Edges, out int UnresolvedCount, out bool Truncated) -> void
 Aw.CodeIndex.Core.Ports.CallWalk.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>!
 Aw.CodeIndex.Core.Ports.CallWalk.Edges.init -> void
 Aw.CodeIndex.Core.Ports.CallWalk.Equals(Aw.CodeIndex.Core.Ports.CallWalk? other) -> bool
@@ -1273,3 +1267,21 @@ static Aw.CodeIndex.Core.InputRules.IsSafePath(string! path) -> bool
 static Aw.CodeIndex.Core.InputRules.SecretGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.CodeIndex.Core.Model.TreeEntry.operator !=(Aw.CodeIndex.Core.Model.TreeEntry? left, Aw.CodeIndex.Core.Model.TreeEntry? right) -> bool
 static Aw.CodeIndex.Core.Model.TreeEntry.operator ==(Aw.CodeIndex.Core.Model.TreeEntry? left, Aw.CodeIndex.Core.Model.TreeEntry? right) -> bool
+Aw.CodeIndex.Core.Facade.CallEdge.CallEdge(int Level, Aw.CodeIndex.Core.Facade.SymbolHit? Other, string! Name, Aw.CodeIndex.Core.Model.EdgeKind Kind, Aw.CodeIndex.Core.Model.EdgeBasis Basis, Aw.CodeIndex.Core.Model.Confidence Confidence, int Line, int Candidates, Aw.CodeIndex.Core.Model.Coverage Coverage) -> void
+Aw.CodeIndex.Core.Facade.CallEdge.Coverage.get -> Aw.CodeIndex.Core.Model.Coverage
+Aw.CodeIndex.Core.Facade.CallEdge.Coverage.init -> void
+Aw.CodeIndex.Core.Facade.CallEdge.Deconstruct(out int Level, out Aw.CodeIndex.Core.Facade.SymbolHit? Other, out string! Name, out Aw.CodeIndex.Core.Model.EdgeKind Kind, out Aw.CodeIndex.Core.Model.EdgeBasis Basis, out Aw.CodeIndex.Core.Model.Confidence Confidence, out int Line, out int Candidates, out Aw.CodeIndex.Core.Model.Coverage Coverage) -> void
+Aw.CodeIndex.Core.Facade.CallsAnswer.CallsAnswer(Aw.CodeIndex.Core.Facade.AnswerStamp! Stamp, Aw.CodeIndex.Core.Values.SymbolRef Subject, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>! Edges, int UnresolvedCount, bool Truncated, Aw.CodeIndex.Core.Model.Coverage Coverage) -> void
+Aw.CodeIndex.Core.Facade.CallsAnswer.Coverage.get -> Aw.CodeIndex.Core.Model.Coverage
+Aw.CodeIndex.Core.Facade.CallsAnswer.Coverage.init -> void
+Aw.CodeIndex.Core.Facade.CallsAnswer.Deconstruct(out Aw.CodeIndex.Core.Facade.AnswerStamp! Stamp, out Aw.CodeIndex.Core.Values.SymbolRef Subject, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>! Edges, out int UnresolvedCount, out bool Truncated, out Aw.CodeIndex.Core.Model.Coverage Coverage) -> void
+Aw.CodeIndex.Core.Ports.CallWalk.CallWalk(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>! Edges, int UnresolvedCount, bool Truncated, Aw.CodeIndex.Core.Model.Coverage Coverage) -> void
+Aw.CodeIndex.Core.Ports.CallWalk.Coverage.get -> Aw.CodeIndex.Core.Model.Coverage
+Aw.CodeIndex.Core.Ports.CallWalk.Coverage.init -> void
+Aw.CodeIndex.Core.Ports.CallWalk.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>! Edges, out int UnresolvedCount, out bool Truncated, out Aw.CodeIndex.Core.Model.Coverage Coverage) -> void
+Aw.CodeIndex.Core.Facade.CallCoverage
+Aw.CodeIndex.Core.Model.Coverage
+Aw.CodeIndex.Core.Model.Coverage.Full = 0 -> Aw.CodeIndex.Core.Model.Coverage
+Aw.CodeIndex.Core.Model.Coverage.Partial = 1 -> Aw.CodeIndex.Core.Model.Coverage
+Aw.CodeIndex.Core.Model.Coverage.Unavailable = 2 -> Aw.CodeIndex.Core.Model.Coverage
+static Aw.CodeIndex.Core.Facade.CallCoverage.Of(Aw.CodeIndex.Core.Model.Coverage subject, System.Collections.Generic.IEnumerable<Aw.CodeIndex.Core.Facade.CallEdge!>! edges) -> Aw.CodeIndex.Core.Model.Coverage

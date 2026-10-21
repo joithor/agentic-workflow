@@ -38,6 +38,7 @@ public static class EventCatalog
         new(EventTypes.WorkflowShifted, Public: true, typeof(WorkflowEventPayload), "workflow:<workflow id>:<run id>:<activity id>[:<content hash>]"),
         new(EventTypes.WorkflowNotified, Public: true, typeof(WorkflowEventPayload), "workflow:<workflow id>:<run id>:<activity id>[:<content hash>]"),
         new(EventTypes.WorkflowExpired, Public: true, typeof(WorkflowEventPayload), "workflow:<workflow id>:<run id>:<activity id>[:<content hash>]"),
+        new(EventTypes.WorkflowHeavy, Public: true, typeof(WorkflowEventPayload), "workflow:<workflow id>:<run id>:<activity id>[:<content hash>]"),
         new(EventTypes.WorkflowInjection, Public: true, typeof(WorkflowEventPayload), "workflow:<workflow id>:<run id>:<activity id>[:<content hash>]"),
         new(EventTypes.ServiceRan, Public: true, typeof(ServiceRan), "service.ran:<name>:<epoch>:<slot> | service.ran:<name>:manual:<jobId>") { Invalidates = [ApiViews.Status, ApiViews.Services, ApiViews.NeedsYou] },
         new(EventTypes.JobStarted, Public: true, typeof(JobStarted), "job.started:<jobId>") { Invalidates = [ApiViews.Job, ApiViews.Jobs, ApiViews.Services, ApiViews.ContextLenses, ApiViews.ContextHistory] },
@@ -56,6 +57,13 @@ public static class EventCatalog
         new(EventTypes.SessionUsage, Public: false, PublicPayload: null, "session.usage:<launch>:<n>"),
         new(EventTypes.LaunchSessionReported, Public: true, typeof(LaunchSessionReported), "launch.session-reported:<launch>") { Invalidates = [ApiViews.Launch, ApiViews.Item] },
         new(EventTypes.LaunchViewerAttached, Public: true, typeof(LaunchViewerAttached), "launch.viewer-attached:<launch>") { Invalidates = [ApiViews.Launch, ApiViews.Item] },
+        new(EventTypes.SetupStepChanged, Public: true, typeof(SetupStepChanged), "setup.step.changed:<id>:<state>:<n>") { Invalidates = [ApiViews.Setup] },
+        new(EventTypes.RepoAdded, Public: true, typeof(RepoAddedPublic), "repo.added:<commandId>") { Invalidates = [ApiViews.Setup] },
+        new(EventTypes.RepoOnboarded, Public: true, typeof(RepoOnboarded), "repo.onboarded:<repo>:<hash>") { Invalidates = [ApiViews.Setup] },
+        new(EventTypes.RecipeRegistrationCompleted, Public: true, typeof(RecipeRegistrationCompleted), "recipe.registration.completed:<epoch>") { Invalidates = [ApiViews.Setup, ApiViews.Recipes] },
+        new(EventTypes.McpRegistered, Public: true, typeof(McpRegistered), "mcp.registered:<commandId>") { Invalidates = [ApiViews.Setup] },
+        new(EventTypes.SetupConsentGiven, Public: true, typeof(SetupConsentGiven), "setup.consent.given:<profileHash>") { Invalidates = [ApiViews.Setup] },
+        new(EventTypes.OnyxDeferred, Public: true, typeof(OnyxDeferred), "onyx.deferred:<commandId>") { Invalidates = [ApiViews.Setup] },
         new(EventTypes.ViewsRebuilt, Public: false, PublicPayload: null, "views.rebuilt:<commandId>"),
     ];
 }

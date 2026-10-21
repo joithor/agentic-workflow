@@ -95,7 +95,7 @@ public sealed class TempGitRepo : IDisposable
         {
             Directory.Delete(path, recursive: true);
         }
-        catch (IOException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             // a cleanup that fails must not replace the test's own failure
         }

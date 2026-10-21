@@ -17,7 +17,7 @@ internal static class SetupScenarios
     /// <summary>The (slug, scenario) pairs of this class.</summary>
     public static IReadOnlyList<(string Slug, string Scenario)> All { get; } =
     [
-        ("setup", "first-run"), ("setup", "profile-needs-approval"), ("setup", "running-progress"), ("setup", "failed"), ("setup", "all-done"), ("setup", "onyx-no-docker"),
+        ("setup", "first-run"), ("setup", "profile-needs-approval"), ("setup", "running-progress"), ("setup", "failed"), ("setup", "all-done"), ("setup", "onyx-no-docker"), ("setup", "map-retrying"), ("setup", "onyx-skipped"),
     ];
 
     /// <summary>Whether <paramref name="slug"/> and <paramref name="scenario"/> belong to this class.</summary>
@@ -49,6 +49,8 @@ internal static class SetupScenarios
         },
         "running-progress" => Done(map: new MapFact(MapPhase.Building, new SetupProgress(40, 100)) { Items = Lines(SetupState.Running) }),
         "failed" => Done(map: new MapFact(MapPhase.Failed, FailureCode: "SND-CONTEXT-042") { Items = Lines(SetupState.Failed) }),
+        "map-retrying" => Done(map: new MapFact(MapPhase.Building, new SetupProgress(0, 1)) { Items = Lines(SetupState.Running), Retry = new MapRetry(TimeSpan.FromMinutes(5), "the code index was busy") }),
+        "onyx-skipped" => Done(onyx: new OnyxFact(OnyxState.NotSetUp, Unreachable: false, BlockedByCode: null) { Deferred = true }),
         "onyx-no-docker" => Done(onyx: new OnyxFact(OnyxState.NotSetUp, Unreachable: false, BlockedByCode: "SND-ONYX-001")),
         "all-done" => InMemorySetupFacts.AllDone(),
         _ => new InMemorySetupFacts { RecipesAnswer = new RecipesFact(26, 0) },

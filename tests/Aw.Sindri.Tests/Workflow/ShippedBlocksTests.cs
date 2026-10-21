@@ -38,13 +38,13 @@ public sealed class ShippedBlocksTests
                 "step.docs.scope", "step.docs.update", "step.evidence.api-plan", "step.evidence.api-run", "step.evidence.combine",
                 "step.evidence.db-plan", "step.evidence.db-run", "step.evidence.desk", "step.evidence.none", "step.evidence.ui-plan",
                 "step.evidence.ui-run", "step.handtest.run", "step.intake.ticket", "step.interview.answer", "step.interview.apply",
-                "step.interview.questions", "step.interview.record", "step.judge.choose", "step.lens.log", "step.lens.round",
+                "step.interview.questions", "step.interview.record", "step.judge.choose", "step.lens.ask", "step.lens.log", "step.lens.round",
                 "step.lens.run", "step.owner.decide", "step.phase.decide", "step.phase.drift", "step.phase.seed",
                 "step.plan.check", "step.plan.evidence", "step.plan.exec-review", "step.plan.freeze", "step.plan.graph",
                 "step.plan.holdout", "step.plan.intake", "step.plan.questions", "step.plan.review", "step.plan.settle",
                 "step.produce", "step.prove.before-after", "step.prove.evidence", "step.prove.fail-log", "step.prove.holdout",
                 "step.prove.holdout-log", "step.prove.intake", "step.report.write", "step.reproduce.test-check", "step.reproduce.ui-check",
-                "step.review.fix", "step.review.log", "step.review.recheck", "step.review.record", "step.review.round",
+                "step.review.apply-answer", "step.review.fix", "step.review.log", "step.review.recheck", "step.review.record", "step.review.round",
                 "step.rootcause.investigate", "step.scope.anchor", "step.scope.challenge", "step.scope.challenge-log",
                 "step.scope.check", "step.scope.draft", "step.scope.evidence", "step.scope.freeze", "step.scope.gather",
                 "step.scope.intake", "step.scope.propose", "step.scope.read-brief", "step.scope.read-change", "step.scope.read-tracker",
@@ -162,10 +162,10 @@ public sealed class ShippedBlocksTests
         Assert.Empty(scope.ServiceProvider.GetServices<IStep>());   // no runtime until the block runtime (DT-J)
         // the scoping station's and the design lens loop's Steps listed here are the block runtimes of this build (BS-1, BS-4); the judge's comes with J3 and moves its contract to BlockContract
         Assert.Equal(
-            ["step.brief.seed", "step.build.prepare", "step.interview.record", "step.lens.log", "step.phase.drift", "step.prove.evidence", "step.prove.fail-log", "step.prove.intake", "step.scope.anchor", "step.scope.challenge-log", "step.scope.check", "step.scope.gather", "step.scope.intake", "step.scope.propose", "step.scope.read-brief", "step.scope.reanchor", "step.scope.withdraw", "step.ship.return"],
+            ["step.brief.seed", "step.build.prepare", "step.interview.record", "step.lens.log", "step.phase.drift", "step.phase.seed", "step.prove.evidence", "step.prove.fail-log", "step.prove.intake", "step.review.log", "step.scope.anchor", "step.scope.challenge-log", "step.scope.check", "step.scope.freeze", "step.scope.gather", "step.scope.intake", "step.scope.propose", "step.scope.read-brief", "step.scope.reanchor", "step.scope.withdraw", "step.ship.return"],
             provider.GetServices<BlockStepRegistration>().Select(static r => r.Step.Value).Order(StringComparer.Ordinal),
             StringComparer.Ordinal);
-        Assert.Equal(18, scope.ServiceProvider.GetServices<IBlockStep>().Count());
+        Assert.Equal(21, scope.ServiceProvider.GetServices<IBlockStep>().Count());
     }
 
     [Fact, Trait("Lane", "unit")]
