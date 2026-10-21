@@ -3,6 +3,8 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features.ResumeService;
 using Aw.Sindri.Testing;
 
@@ -16,7 +18,7 @@ public sealed class ResumeServiceTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private ResumeServiceService Service() => new(_h.Profiles, _h.Store, _h.Held, _h.Events, _h.Callers);
+    private ResumeServiceService Service() => new(_h.Profiles, _h.Store, _h.Held, _h.Events, _h.Callers, [new BuiltInService(ServiceName.From("setup"), new Cadence(TimeSpan.FromMinutes(1)))]);
 
     private async Task Approve()
     {
@@ -77,5 +79,20 @@ public sealed class ResumeServiceTests
         }
 
         Expect.Equal(2, _h.Store.Events.Count(e => string.Equals(e.Envelope.Type, "service.resumed", StringComparison.Ordinal)));
+    }
+
+    [Theory]
+    [InlineData("setup", "setup is a built-in service and can't be paused or resumed.")]
+    [InlineData("ghost", "The approved profile has no service 'ghost' (fix: sindri services)")]
+    public async Task Resume_refuses_with_the_wording_of_what_the_name_is(string name, string message)
+    {
+        await Approve();
+        using var entered = Human();
+
+        var result = await Service().Handle(A.ResumeServiceRequest().ForService(ServiceName.From(name)).Build(), Token);
+
+        Expect.Equal(SindriErrors.ServiceNotFound.Code, result.Error.Code);
+        Expect.Equal(message, result.Error.Message);
+        Assert.Empty(_h.Store.Events);
     }
 }
