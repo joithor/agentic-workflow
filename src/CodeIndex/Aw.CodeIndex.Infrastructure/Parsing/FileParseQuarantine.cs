@@ -111,9 +111,14 @@ public sealed class FileParseQuarantine : IParseQuarantine
 
     private static void WriteDurably(string path, string content)
     {
-        var options = new FileStreamOptions { Mode = FileMode.Create, Access = FileAccess.Write, Share = FileShare.None, Options = FileOptions.WriteThrough, UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite };
+        var options = new FileStreamOptions { Mode = FileMode.Create, Access = FileAccess.Write, Share = FileShare.None, Options = FileOptions.WriteThrough };
+        if (!OperatingSystem.IsWindows())
+        {
+            options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        }
+
         using var stream = new FileStream(path, options);
-        var bytes = new UTF8Encoding(false).GetBytes(content);
+        var bytes = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false).GetBytes(content);
         stream.Write(bytes);
         stream.Flush(flushToDisk: true);
     }

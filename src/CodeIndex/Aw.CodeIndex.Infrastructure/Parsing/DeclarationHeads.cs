@@ -81,6 +81,6 @@ internal static class DeclarationHeads
     private static string ParameterType(ParameterSyntax parameter)
     {
         var modifiers = parameter.Modifiers.Where(m => !m.IsKind(SyntaxKind.ThisKeyword) && !m.IsKind(SyntaxKind.ParamsKeyword)).Select(m => m.Text);
-        return SyntaxText.Normalize($"{string.Join(' ', modifiers)} {parameter.Type}");
+        return SyntaxText.Normalize(string.Join(' ', modifiers) + " " + parameter.Type?.ToString());
     }
 }

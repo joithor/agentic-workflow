@@ -84,19 +84,22 @@ internal sealed partial class CSharpSymbolWalker
     private static (int Arity, string Types, int HeadEnd) LambdaHead(VariableDeclaratorSyntax declarator)
     {
         var whole = declarator.Span.End;
-        switch (declarator.Initializer?.Value)
+        return declarator.Initializer?.Value switch
         {
-            case SimpleLambdaExpressionSyntax simple:
-                return (1, string.Empty, simple.Block is null ? whole : simple.ArrowToken.Span.End);
-            case ParenthesizedLambdaExpressionSyntax parenthesized:
-                return (DeclarationHeads.ParameterCount(parenthesized.ParameterList), DeclarationHeads.ParameterTypes(parenthesized.ParameterList), parenthesized.Block is null ? whole : parenthesized.ArrowToken.Span.End);
-            case AnonymousMethodExpressionSyntax method:
-                var parameters = method.ParameterList;
-                var end = method.Block is null ? whole : parameters?.Span.End ?? method.DelegateKeyword.Span.End;
-                return (parameters is null ? 0 : DeclarationHeads.ParameterCount(parameters), parameters is null ? string.Empty : DeclarationHeads.ParameterTypes(parameters), end);
-            default:
-                return (0, string.Empty, whole);
-        }
+            SimpleLambdaExpressionSyntax simple => (1, string.Empty, simple.Block is null ? whole : simple.ArrowToken.Span.End),
+            ParenthesizedLambdaExpressionSyntax parenthesized => (DeclarationHeads.ParameterCount(parenthesized.ParameterList), DeclarationHeads.ParameterTypes(parenthesized.ParameterList), parenthesized.Block is null ? whole : parenthesized.ArrowToken.Span.End),
+            AnonymousMethodExpressionSyntax method => AnonymousMethodHead(method, whole),
+            _ => (0, string.Empty, whole),
+        };
+    }
+
+    private static (int Arity, string Types, int HeadEnd) AnonymousMethodHead(AnonymousMethodExpressionSyntax method, int whole)
+    {
+        var parameters = method.ParameterList;
+        var end = method.Block is null ? whole : parameters?.Span.End ?? method.DelegateKeyword.Span.End;
+        return parameters is null
+            ? (0, string.Empty, end)
+            : (DeclarationHeads.ParameterCount(parameters), DeclarationHeads.ParameterTypes(parameters), end);
     }
 
     private bool IsValueMember(string name) => _valueMembers.Any(members => members.Contains(name));

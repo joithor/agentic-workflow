@@ -1,4 +1,3 @@
-using Aw.CodeIndex.Core.Model;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
