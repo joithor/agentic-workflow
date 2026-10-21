@@ -1,3 +1,4 @@
+using Aw.Context.Core.Symbols;
 using Aw.Context.Core.Code;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Extract;
@@ -28,11 +29,11 @@ internal sealed class CodeWorld : IDisposable
 
     private const string Header = "schemaVersion: 1\nkind: authored\nrepo: aw-split-panes\n";
 
-    internal CodeWorld(IReadOnlyDictionary<string, string>? files = null, Func<ICodeSearch, ICodeSearch>? decorate = null, Func<IRepoReader, IRepoReader>? decorateRepo = null, Func<ICodeSearch, Action, ICodeSearch>? decorateTimed = null)
+    internal CodeWorld(IReadOnlyDictionary<string, string>? files = null, Func<ICodeSearch, ICodeSearch>? decorate = null, Func<IRepoReader, IRepoReader>? decorateRepo = null, Func<ICodeSearch, Action, ICodeSearch>? decorateTimed = null, ICodeSymbolSource? symbols = null)
     {
         var plain = new FakeCodeSearch(MapWorld.Repos[0], MapWorld.Head, files ?? Files);
         Search = new RecordingCodeSearch(decorateTimed is not null ? decorateTimed(plain, Expire) : decorate is null ? plain : decorate(plain));
-        World = new MapWorld(Wrap(decorateRepo, new Testing.Extract.FakeRepoReader(MapWorld.Repos[0], MapWorld.Head, files ?? Files)), intent: null, codeSearch: Search);
+        World = new MapWorld(Wrap(decorateRepo, new Testing.Extract.FakeRepoReader(MapWorld.Repos[0], MapWorld.Head, files ?? Files)), intent: null, codeSearch: Search, symbols: symbols);
     }
 
     private static IRepoReader Wrap(Func<IRepoReader, IRepoReader>? decorate, IRepoReader inner) => decorate is null ? inner : decorate(inner);
