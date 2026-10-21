@@ -161,6 +161,29 @@ What the router stub does with an item it routes (workflow engine spec §12). Re
 | Key | Type | Required | Default | Meaning |
 |---|---|---|---|---|
 | `denyPaths` | string[] | no | none | Repo-relative globs map extraction never reads (`private/**`, `**/*.generated.ts`), added to the built-in secret globs and never replacing them (context spec §6.2). A repo's own are added to the profile's |
+| `utilityGlobs` | string[] | no | none | Globs (same rules as `denyPaths`) of internal utility modules; the code index flags their exports `utility`. A repo's own are added to the profile's |
+| `maxFileKB` | whole number | no | `512` | The code index skips larger files as `too-large`. 1 to 102400 |
+| `maxTotalMB` | whole number | no | `200` | Larger tracked input stops a code index build (`SND-CODEIDX-003`). 1 to 102400 |
+| `embeddings` | mapping | no | none | The code index's embeddings layer, below |
+| `graph` | mapping | no | none | The code index's graph layer, below |
+
+A repo's `index:` replaces each scalar key it names (and each `embeddings` and `graph` key it names) and adds its list keys to the profile's. Unknown keys fail validation, in `embeddings` and `graph` too; a bad value is refused with its key path (`index.graph.maxMB: must be 1 to 4096`).
+
+#### `index.embeddings`
+
+| Key | Type | Required | Default | Meaning |
+|---|---|---|---|---|
+| `enabled` | true or false | no | `true` | `false` leaves the embeddings layer `disabled` |
+| `url` | text | no | `http://127.0.0.1:11434` | The embedding server: `http` on `127.0.0.1` or `[::1]`, no credentials (never `localhost`). Anything else is refused (`SND-CODEIDX-005`) |
+| `model` | text | no | the code index lock's model | A local Ollama model; a name containing `cloud` is refused |
+
+#### `index.graph`
+
+| Key | Type | Required | Default | Meaning |
+|---|---|---|---|---|
+| `enabled` | true or false | no | `true` | `false` leaves the graph layer `disabled` |
+| `maxMB` | whole number | no | `256` | The largest graph file read. 1 to 4096 |
+| `maxNodes` | whole number | no | `500000` | The most graph nodes read (edges: four times that). 1 to 5000000 |
 
 ### `launch`
 
