@@ -103,7 +103,7 @@ public sealed class SetupViewModelTests
     {
         var setup = await ReadWith("failed");
 
-        Assert.Equal("26 recipes.", Step(setup, "recipes").Sub);   // done: the served detail
+        Assert.Equal("26 workflows.", Step(setup, "recipes").Sub);   // done: the served detail
         Assert.Equal("The last try at building the map didn't finish.", Step(setup, "map").ErrorText);
         Assert.Equal("Waits for a repository.", Step(await ReadWith("first-run"), "profile").Sub);
     }
