@@ -110,7 +110,7 @@ public sealed class GetNeedsYouTests
         Expect.True(row.Reason.Contains("Pick the repo's top folder", StringComparison.Ordinal));
     }
 
-    private static Kernel.Result<Core.Profile.LoadedProfile> SetupFactsRigProfile() => SetupSources.SetupFactsRig.ProfileWithRepos();
+    private static Result<Core.Profile.LoadedProfile> SetupFactsRigProfile() => SetupSources.SetupFactsRig.ProfileWithRepos();
 
     [Fact]
     public async Task GetNeedsYou_shows_the_setup_recipes_row_and_the_own_approval_rows_to_a_human_and_not_to_a_session()
