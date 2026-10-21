@@ -1,4 +1,6 @@
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 
 namespace Aw.Sindri.Core.Ledger;
 
@@ -6,7 +8,8 @@ namespace Aw.Sindri.Core.Ledger;
 /// <param name="Types">The event types to keep, or null for every type.</param>
 /// <param name="Item">The work item to keep, or null for every event.</param>
 /// <param name="ScanLimit">The most rows one call looks at past its cursor, so a sparse filter never walks the whole ledger.</param>
-public sealed record LedgerFilter(TypeFilter? Types, ItemId? Item, int ScanLimit = 5_000)
+/// <param name="Instance">The workflow instance whose mirrored rows to keep (<see cref="InstanceEvents.Belongs(LedgerEvent, InstanceAddress)"/>), or null for any. The reader finds them through the idempotency-key index, so a scan costs the instance's rows and ignores <see cref="ScanLimit"/>.</param>
+public sealed record LedgerFilter(TypeFilter? Types, ItemId? Item, int ScanLimit = 5_000, InstanceAddress? Instance = null)
 {
     /// <summary>Every event, with the default scan limit.</summary>
     public static LedgerFilter All { get; } = new(Types: null, Item: null);

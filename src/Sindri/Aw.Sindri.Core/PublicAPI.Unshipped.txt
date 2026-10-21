@@ -1577,12 +1577,14 @@ Aw.Sindri.Core.Ledger.LedgerEvent.Sequence.get -> long
 Aw.Sindri.Core.Ledger.LedgerEvent.Sequence.init -> void
 Aw.Sindri.Core.Ledger.LedgerFilter
 Aw.Sindri.Core.Ledger.LedgerFilter.<Clone>$() -> Aw.Sindri.Core.Ledger.LedgerFilter!
-Aw.Sindri.Core.Ledger.LedgerFilter.Deconstruct(out Aw.Sindri.Core.Ledger.TypeFilter? Types, out Aw.Sindri.Core.Ids.ItemId? Item, out int ScanLimit) -> void
+Aw.Sindri.Core.Ledger.LedgerFilter.Deconstruct(out Aw.Sindri.Core.Ledger.TypeFilter? Types, out Aw.Sindri.Core.Ids.ItemId? Item, out int ScanLimit, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance) -> void
 Aw.Sindri.Core.Ledger.LedgerFilter.Equals(Aw.Sindri.Core.Ledger.LedgerFilter? other) -> bool
 Aw.Sindri.Core.Ledger.LedgerFilter.Item.get -> Aw.Sindri.Core.Ids.ItemId?
+Aw.Sindri.Core.Ledger.LedgerFilter.Instance.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress?
+Aw.Sindri.Core.Ledger.LedgerFilter.Instance.init -> void
 Aw.Sindri.Core.Ledger.LedgerFilter.Item.init -> void
 Aw.Sindri.Core.Ledger.LedgerFilter.Keeps(Aw.Sindri.Core.Ledger.LedgerEvent! row) -> bool
-Aw.Sindri.Core.Ledger.LedgerFilter.LedgerFilter(Aw.Sindri.Core.Ledger.TypeFilter? Types, Aw.Sindri.Core.Ids.ItemId? Item, int ScanLimit = 5000) -> void
+Aw.Sindri.Core.Ledger.LedgerFilter.LedgerFilter(Aw.Sindri.Core.Ledger.TypeFilter? Types, Aw.Sindri.Core.Ids.ItemId? Item, int ScanLimit = 5000, Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance = null) -> void
 Aw.Sindri.Core.Ledger.LedgerFilter.ScanLimit.get -> int
 Aw.Sindri.Core.Ledger.LedgerFilter.ScanLimit.init -> void
 Aw.Sindri.Core.Ledger.LedgerFilter.Scanned(long cursor, long head, int max, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ledger.LedgerEvent!>! kept) -> Aw.Sindri.Core.Ledger.LedgerScan!
