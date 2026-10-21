@@ -60,7 +60,9 @@ public static class InstanceSummaries
     }
 
     /// <summary>The root instance's address: the first three segments ('T-3/item/1'); a root's own.</summary>
-    private static string RootOf(InstanceAddress address) => string.Join('/', address.Value.Split('/').Take(3));
+    /// <param name="address">An instance address.</param>
+    /// <returns>The root's address.</returns>
+    public static string RootOf(InstanceAddress address) => string.Join('/', address.Value.Split('/').Take(3));
 
     /// <summary>The text cut to <see cref="NowLength"/> with the ellipsis inside it, never between the two halves of a surrogate pair.</summary>
     private static string Cut(string sentence)

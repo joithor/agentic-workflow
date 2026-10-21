@@ -26,6 +26,25 @@ internal static class CurrentStates
         };
     }
 
+    /// <summary>
+    /// What each Step state reads (the Step block descriptor's inputs) and produces (the facts of the transitions leaving the state, once each, as the
+    /// instance already holds them in <paramref name="facts"/>; a fact not recorded yet carries only its key), in the recipe's state order.
+    /// </summary>
+    public static IReadOnlyList<StateStep> Steps(InterpretedRecipe interpreted, IReadOnlyList<FactRow> facts) =>
+    [
+        .. interpreted.Recipe.States
+            .Where(static s => s.Value.Step is not null)
+            .Select(s => new StateStep(
+                s.Key,
+                [.. (interpreted.Catalog.Find(s.Value.Step!.Use)?.Inputs ?? []).Select(static k => k.Value)],   // why: the Where above keeps only states with a Step
+                [.. interpreted.Recipe.Transitions
+                    .Where(t => t.From.Contains(s.Key, StringComparer.Ordinal))
+                    .SelectMany(static t => t.Produces)
+                    .Select(static p => p.Fact.Value)
+                    .Distinct(StringComparer.Ordinal)
+                    .Select(key => facts.FirstOrDefault(f => string.Equals(f.Key, key, StringComparison.Ordinal))?.Ref is { } held ? held with { FactKey = key } : new FactRef(null, null, null, null, null, null, null, null, key))])),
+    ];
+
     /// <summary>The gates on the transitions leaving the active state, once each.</summary>
     public static IReadOnlyList<GateLine> Gates(WorkflowInstance instance, InterpretedRecipe interpreted) =>
     [

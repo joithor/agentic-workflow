@@ -58,15 +58,4 @@ public sealed class InstanceSummariesTests
         Assert.Null(row.StartedAt);
         Assert.Null(row.LineStage);
     }
-
-    [Fact]
-    public void The_line_stage_is_the_step_of_the_item_the_instance_is_on()
-    {
-        var view = StatusCases.View("taken-over") with { ItemId = ItemKey.From("ITM-7") };
-        var titles = new ItemTitles(new Dictionary<string, string>(StringComparer.Ordinal), new Dictionary<string, string>(StringComparer.Ordinal) { ["ITM-7"] = "verify" });
-
-        var row = new InstanceRows(new FakeTimeProvider()).Row(view, titles, StatusCases.Now);
-
-        Assert.Equal("verify", row.LineStage);
-    }
 }

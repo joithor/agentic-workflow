@@ -116,6 +116,73 @@ public sealed class ListInstancesServiceTests
     }
 
     [Fact]
+    public async Task An_absent_open_lists_the_open_and_the_finished_instances()
+    {
+        var (result, _) = await Run(new ListInstancesRequest(Recipe: "workflow.step", Root: "true"), View("done", "T-1/step/1"), View("desk-task", "T-2/step/1"));
+
+        Assert.Equal(2, result.Value.Instances.Count);
+    }
+
+    private static InstanceView Line(string name, string address) =>
+        View(name, address) with { Recipe = View(name, address).Recipe with { Id = Aw.Sindri.Core.Workflow.Ids.RecipeId.From("workflow.line") } };
+
+    private static async Task<(InstanceList List, FixedReader Reader)> RunLines(InstanceView[] all, params InstanceView[] listed)
+    {
+        var reader = new FixedReader(all);
+        var port = new RecordingInstances([.. listed.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]);
+        var service = Service(all, new FixedItemViews(failing: false), caller: null, port: port, reader: reader);
+        var result = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
+        return (result.Value, reader);
+    }
+
+    [Fact]
+    public async Task A_root_line_row_reads_its_own_state_as_the_line_stage_without_a_second_read()
+    {
+        var root = Line("desk-task", "T-1/line/1");
+
+        var (list, reader) = await RunLines([root], root);
+
+        Assert.Equal(root.State, list.Instances[0].LineStage);
+        Assert.Equal(["T-1/line/1"], reader.Reads, StringComparer.Ordinal);   // the one read of the row's view; the root is that view
+    }
+
+    [Fact]
+    public async Task A_child_row_reads_the_state_of_the_line_root_above_it()
+    {
+        var root = Line("parked-rounds", "T-1/line/1");
+        var child = View("desk-task", "T-1/line/1/phase.2");
+
+        var (list, _) = await RunLines([root, child], child);
+
+        Assert.Equal(root.State, list.Instances[0].LineStage);
+        Assert.Equal("T-1/line/1", list.Instances[0].RootAddress);
+    }
+
+    [Fact]
+    public async Task A_row_whose_root_is_not_a_line_instance_has_no_line_stage()
+    {
+        var root = View("desk-task", "T-1/step/1");
+        var child = View("desk-task", "T-1/step/1/phase.2");
+
+        var (list, _) = await RunLines([root, child], root, child);
+
+        Assert.All(list.Instances, static r => Assert.Null(r.LineStage));
+    }
+
+    [Fact]
+    public async Task Rows_that_share_a_root_read_that_root_once()
+    {
+        var root = Line("parked-rounds", "T-1/line/1");
+        var first = View("desk-task", "T-1/line/1/phase.2");
+        var second = View("desk-task", "T-1/line/1/phase.3");
+
+        var (list, reader) = await RunLines([root, first, second], first, second);
+
+        Assert.All(list.Instances, r => Assert.Equal(root.State, r.LineStage));
+        Assert.Equal(1, reader.Reads.Count(static a => a == "T-1/line/1"));
+    }
+
+    [Fact]
     public async Task A_needs_me_of_false_is_no_filter_and_a_state_still_lists_ended_instances()
     {
         var (_, port) = await Run(new ListInstancesRequest(NeedsMe: "false", State: "parked"));

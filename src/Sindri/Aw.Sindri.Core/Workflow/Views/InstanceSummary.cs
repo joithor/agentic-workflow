@@ -21,7 +21,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="Actions">The action ids allowed now.</param>
 /// <param name="StartedBy">Who started the instance, in the actor form of the step runs; null when nobody is recorded.</param>
 /// <param name="StartedAt">When it started; null for an older instance.</param>
-/// <param name="LineStage">The recipe step its item is at; null when the item has none.</param>
+/// <param name="LineStage">The current state id of the root workflow.line instance the row belongs to (its own state for a root line row); null when its root is not a line instance.</param>
 /// <param name="RootAddress">The address of its root instance; its own for a root.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record InstanceSummary(

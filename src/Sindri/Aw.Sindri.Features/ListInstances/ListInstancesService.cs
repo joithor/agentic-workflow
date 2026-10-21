@@ -31,6 +31,9 @@ namespace Aw.Sindri.Features.ListInstances;
 /// <param name="rowBuilder">Builds the rows at the time the list is read: their ages and timeouts are worked out from it, not from when the workflow last ran, and each carries its recipe's display name.</param>
 internal sealed partial class ListInstancesService(IInstanceDirectory directory, IWorkflowInstances instances, EndedInstanceViews runtime, IViewReader itemViews, IItemRepos repos, ICallerContextAccessor callers, InstanceRows rowBuilder) : IService<ListInstancesRequest, InstanceList>
 {
+    /// <summary>The recipe whose root instance a row's line stage is read from.</summary>
+    private const string LineRecipe = "workflow.line";
+
     public async ValueTask<Result<InstanceList>> Handle(ListInstancesRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -71,7 +74,7 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
 
         var kept = Narrowed(views.Value, Flag(request.Open), Flag(request.NeedsMe) == true);
         var titles = await Titles(kept, cancellationToken).ConfigureAwait(false);
-        return Listed(Matching(kept, request.Subject, titles), counts.Value, titles, Empty(request), newestFirst: finishedOnly);
+        return await Listed(Matching(kept, request.Subject, titles), counts.Value, titles, Empty(request), known, finishedOnly, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>The views 'open' keeps (true: the unfinished, false: the finished), and for 'needsMe' only what needs the caller.</summary>
@@ -184,7 +187,8 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             return refused;
         }
 
-        return Listed([view.Value], InstanceCounts.Of([view.Value]), await Titles([view.Value], cancellationToken).ConfigureAwait(false), empty: null);
+        var one = new Dictionary<string, InstanceView>(StringComparer.Ordinal) { [view.Value.Address.Value] = view.Value };
+        return await Listed([view.Value], InstanceCounts.Of([view.Value]), await Titles([view.Value], cancellationToken).ConfigureAwait(false), empty: null, one, newestFirst: false, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -198,14 +202,36 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             : [.. views.Where(v => InstanceSummaries.SubjectOf(v, titles.For(v)) is var s && (string.Equals(s.Key, subject, StringComparison.Ordinal) || s.Label.Contains(subject, StringComparison.OrdinalIgnoreCase)))];
 
     /// <summary>The list: the rows in the API order (§3.8: one order on every list path), each built by <see cref="InstanceSummaries.Of"/>.</summary>
-    private InstanceList Listed(List<InstanceView> views, ListCounts counts, ItemTitles titles, string? empty, bool newestFirst = false)
+    private async ValueTask<InstanceList> Listed(List<InstanceView> views, ListCounts counts, ItemTitles titles, string? empty, Dictionary<string, InstanceView> known, bool newestFirst, CancellationToken cancellationToken)
     {
+        var lines = await LineStages(views, known, cancellationToken).ConfigureAwait(false);
         var now = rowBuilder.Now();
         var ordered = newestFirst
             ? views.OrderByDescending(static v => v.Since).ThenBy(static v => v.Address.Value, StringComparer.Ordinal)
             : views.Order(new InstanceOrder(titles));
-        var list = ordered.Select(v => rowBuilder.Row(v, titles, now)).ToList();
+        var list = ordered.Select(v => rowBuilder.Row(v, titles, now, lines.GetValueOrDefault(InstanceSummaries.RootOf(v.Address)))).ToList();
         return new InstanceList(list, counts, list.Count == 0 ? empty : null, now);
+    }
+
+    /// <summary>
+    /// The current state of the root 'workflow.line' instance each row belongs to, by root address: a root already read for the list is taken from
+    /// <paramref name="known"/>, any other is read once however many rows share it. A root that is not a line instance, or can't be read, has no stage.
+    /// </summary>
+    private async ValueTask<Dictionary<string, string?>> LineStages(List<InstanceView> views, Dictionary<string, InstanceView> known, CancellationToken cancellationToken)
+    {
+        var stages = new Dictionary<string, string?>(StringComparer.Ordinal);
+        foreach (var root in views.Select(static v => InstanceSummaries.RootOf(v.Address)).Distinct(StringComparer.Ordinal))
+        {
+            if (!known.TryGetValue(root, out var view))
+            {
+                var read = await runtime.Get(InstanceAddress.From(root), cancellationToken).ConfigureAwait(false);
+                view = read.IsSuccess ? read.Value : null;
+            }
+
+            stages[root] = view is not null && string.Equals(view.Recipe.Id.Value, LineRecipe, StringComparison.Ordinal) ? view.State : null;
+        }
+
+        return stages;
     }
 
     /// <summary>
@@ -220,21 +246,16 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
         }
 
         var titles = new Dictionary<string, string>(StringComparer.Ordinal);
-        var steps = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var id in views.Select(static v => v.ItemId).OfType<ItemKey>().Select(static i => i.Value).Distinct(StringComparer.Ordinal))
         {
             var row = await itemViews.Get<ItemRow>(ViewNames.Items, id, cancellationToken).ConfigureAwait(false);
             if (row.IsSuccess && row.Value is { } item && ItemScope.Visible(caller, item.Repo))
             {
                 titles[id] = item.Title;
-                if (item.Step is { Length: > 0 } step)
-                {
-                    steps[id] = step;
-                }
             }
         }
 
-        return new ItemTitles(titles, steps);
+        return new ItemTitles(titles);
     }
 
     /// <summary>The sentence for an empty list that matches the filter: nothing needs you, no open workflows, or no workflow matches.</summary>

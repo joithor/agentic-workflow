@@ -134,6 +134,9 @@ public sealed record InstanceView(
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? StartedBy { get; init; }
 
+    /// <summary>What each Step state reads and produces (the detail's 'steps'), in the recipe's state order.</summary>
+    public IReadOnlyList<StateStep> Steps { get; init; } = [];
+
     /// <summary>The children, one group per state that declares child or runs step.children; empty until engine P7.</summary>
     public IReadOnlyList<ChildGroup> ChildGroups { get; init; } = [];
 }

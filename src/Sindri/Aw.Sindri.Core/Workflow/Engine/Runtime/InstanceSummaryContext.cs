@@ -5,5 +5,5 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// <param name="NotStarted">True for a child that has not run yet (its chip reads QUEUED); an instance that is still starting reads so too.</param>
 /// <param name="ItemTitle">The title of the item the instance is on, when the subject is that item; null shows the item's id.</param>
 /// <param name="RecipeDisplayName">The recipe's display name; null serves none.</param>
-/// <param name="LineStage">The recipe step the instance's item is at (the item row's step); null when the item has none or the caller can't see it.</param>
+/// <param name="LineStage">The current state of the root 'workflow.line' instance the row belongs to (its own state for the root row); null when its root is not a line instance.</param>
 public sealed record InstanceSummaryContext(DateTimeOffset Now, bool NotStarted = false, string? ItemTitle = null, string? RecipeDisplayName = null, string? LineStage = null);
