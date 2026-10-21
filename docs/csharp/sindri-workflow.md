@@ -307,7 +307,7 @@ reaches its rule (`RCP-TYPE-001` to `-003`, `RCP-INPUT-001`/`-002`, `RCP-NAME-00
 |---|---|
 | Fact key | `fact:<name>` or `evidence:<kind>@<base\|head>` |
 | Block id | `<gate\|step\|effect\|evidence\|input>.[<area>.]<name>`, kebab-case, at most 64 characters (`step.produce`, `gate.budget.available`; spec §3.3) |
-| Event kind | `<area>.<name>`, registered with `AddEvent` (this build: `claim.created`, `item.routed`, `notify.delivered`) |
+| Event kind | `<area>.<name>`, registered with `AddEvent` (this build: `claim.created`, `item.routed`, `notify.delivered`, and the PR babysitter's `pr.changed` (routed by item), `pr.pushed`, `pr.restacked`, `pr.mergeResult`, `pr.docsMerged`, `pr.stacked`) |
 | Duration | `<n>m`, `<n>h` or `<n>d`, at least `1m` (`RCP-DUR-001`) |
 | Tokens | An integer, or with a `k` or `M` suffix |
 | `with:` value | A literal (string, number, bool, or a list of these), `{ fact: <key> }` or `{ profile: <key> }`. Capability parameters take only literals or `{ profile }` (`RCP-CAP-007`) |

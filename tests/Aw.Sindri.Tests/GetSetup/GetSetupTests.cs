@@ -39,7 +39,7 @@ public sealed class GetSetupTests
     {
         var steps = (await Service(InMemorySetupFacts.AllDone()).Handle(A.GetSetupRequest().Build(), Token)).Value.Steps;
 
-        Assert.Equal(["Add your repo", "Approve the profile", "Approve the recipes", "Connect your agents", "Build the map", "Set up Onyx"], steps.Select(static s => s.Title), StringComparer.Ordinal);
+        Assert.Equal(["Add your repo", "Approve the profile", "Approve the workflows", "Connect your agents", "Build the map", "Set up Onyx"], steps.Select(static s => s.Title), StringComparer.Ordinal);
         Assert.Equal([1, 0, 0, 1, 1, 0], steps.Select(static s => s.Items.Count));
     }
 

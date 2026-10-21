@@ -11,7 +11,7 @@ public static class SetupSteps
 {
     private const string RepoTitle = "Add your repo";
     private const string ProfileTitle = "Approve the profile";
-    private const string RecipesTitle = "Approve the recipes";
+    private const string RecipesTitle = "Approve the workflows";
     private const string McpTitle = "Connect your agents";
     private const string MapTitle = "Build the map";
     private const string OnyxTitle = "Set up Onyx";
@@ -61,19 +61,19 @@ public static class SetupSteps
         ArgumentNullException.ThrowIfNull(fact);
         if (fact.Total == 0)
         {
-            return new SetupStep(SetupStepId.Recipes, RecipesTitle, SetupState.Todo, "No recipes are registered yet. Sindri registers them when it starts.", Detail: null, Error: null, Action: null, Progress: null);
+            return new SetupStep(SetupStepId.Recipes, RecipesTitle, SetupState.Todo, "No workflows are registered yet. Sindri registers them when it starts.", Detail: null, Error: null, Action: null, Progress: null);
         }
 
         if (!profileApproved)
         {
-            return new SetupStep(SetupStepId.Recipes, RecipesTitle, SetupState.Todo, "After the profile is approved.", Counted(fact.Total, "recipe", "recipes") + " registered.", Error: null, Action: null, Progress: null);
+            return new SetupStep(SetupStepId.Recipes, RecipesTitle, SetupState.Todo, "After the profile is approved.", Counted(fact.Total, "workflow", "workflows") + " registered.", Error: null, Action: null, Progress: null);
         }
 
         var progress = new SetupProgress(fact.Approved, fact.Total);
         var waiting = fact.Total - fact.Approved;
         return waiting <= 0
-            ? new SetupStep(SetupStepId.Recipes, RecipesTitle, SetupState.Done, "Every recipe that ships with Sindri is approved.", Counted(fact.Total, "recipe", "recipes") + ".", Error: null, Action: null, progress)
-            : new SetupStep(SetupStepId.Recipes, RecipesTitle, SetupState.NeedsYou, Counted(waiting, "recipe", "recipes") + (waiting == 1 ? " waits" : " wait") + " for your approval.",
+            ? new SetupStep(SetupStepId.Recipes, RecipesTitle, SetupState.Done, "Every workflow that ships with Sindri is approved.", Counted(fact.Total, "workflow", "workflows") + ".", Error: null, Action: null, progress)
+            : new SetupStep(SetupStepId.Recipes, RecipesTitle, SetupState.NeedsYou, Counted(waiting, "workflow", "workflows") + (waiting == 1 ? " waits" : " wait") + " for your approval.",
                 string.Create(CultureInfo.InvariantCulture, $"Approved {fact.Approved} of {fact.Total}."), Error: null, SetupActions.ApproveAllRecipes, progress);
     }
 
@@ -173,7 +173,7 @@ public static class SetupSteps
         {
             SetupStepId.Repo => (RepoTitle, "Sindri couldn't read your profile, so it can't tell which repositories are added."),
             SetupStepId.Profile => (ProfileTitle, "Sindri couldn't read your profile or its approval."),
-            SetupStepId.Recipes => (RecipesTitle, "Sindri couldn't read the list of recipes."),
+            SetupStepId.Recipes => (RecipesTitle, "Sindri couldn't read the list of workflows."),
             SetupStepId.Mcp => (McpTitle, "Sindri couldn't check whether your agent knows where it is."),
             SetupStepId.Map => (MapTitle, "Sindri couldn't read the state of the map."),
             SetupStepId.Onyx => (OnyxTitle, "Sindri couldn't check on Onyx."),
