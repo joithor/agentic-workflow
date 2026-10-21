@@ -6,32 +6,33 @@ using Avalonia.Rendering;
 
 namespace Aw.Sindri.Ui.Views.Controls;
 
-#pragma warning disable MA0182 // until slice 2 places the control in the context page
+#pragma warning disable MA0182 // until a page places the control
 
 /// <summary>
-/// The layer that draws the context map's edges (F3 spec 1 §2, "Edges") in one Render pass: a 2 px stroke in Wire, dashed
-/// 8 4 when suggested, a 10 px port with a 3 px radius at each end, WireHi for edges around the hovered or selected node, and
-/// a 12 px wide hit stroke so a thin line is easy to hover. Edges it is told are dimmed draw at 42 %.
+/// The layer that draws a graph's edges (the context map, F3 spec 1 §2; the run canvas, F3 spec 3 §2) in one Render pass: a
+/// 2 px stroke in Wire (or the edge's own brush key), dashed 8 4 when suggested, a 10 px port with a 3 px radius at each end,
+/// WireHi for edges around the hovered or selected node, and a hit stroke (12 px unless the edge sets its width) so a thin line
+/// is easy to hover. Edges it is told are dimmed draw at 42 %.
 /// </summary>
-internal sealed class ContextEdgesControl : Control, ICustomHitTest
+internal sealed class GraphEdgesControl : Control, ICustomHitTest
 {
     /// <summary>The edges to draw.</summary>
     internal static readonly StyledProperty<IReadOnlyList<MapEdge>> EdgesProperty =
-        AvaloniaProperty.Register<ContextEdgesControl, IReadOnlyList<MapEdge>>(nameof(Edges), []);
+        AvaloniaProperty.Register<GraphEdgesControl, IReadOnlyList<MapEdge>>(nameof(Edges), []);
 
     /// <summary>The keys of the edges drawn in WireHi.</summary>
     internal static readonly StyledProperty<IReadOnlySet<string>> HighlightedProperty =
-        AvaloniaProperty.Register<ContextEdgesControl, IReadOnlySet<string>>(nameof(Highlighted), new HashSet<string>(StringComparer.Ordinal));
+        AvaloniaProperty.Register<GraphEdgesControl, IReadOnlySet<string>>(nameof(Highlighted), new HashSet<string>(StringComparer.Ordinal));
 
     /// <summary>The keys of the edges drawn dimmed.</summary>
     internal static readonly StyledProperty<IReadOnlySet<string>> DimmedProperty =
-        AvaloniaProperty.Register<ContextEdgesControl, IReadOnlySet<string>>(nameof(Dimmed), new HashSet<string>(StringComparer.Ordinal));
+        AvaloniaProperty.Register<GraphEdgesControl, IReadOnlySet<string>>(nameof(Dimmed), new HashSet<string>(StringComparer.Ordinal));
 
     /// <summary>The key of the edge under the pointer, or null.</summary>
-    internal static readonly StyledProperty<string?> HoveredProperty = AvaloniaProperty.Register<ContextEdgesControl, string?>(nameof(Hovered));
+    internal static readonly StyledProperty<string?> HoveredProperty = AvaloniaProperty.Register<GraphEdgesControl, string?>(nameof(Hovered));
 
+    private const string DefaultBrushKey = "Brush.Wire";
     private const double Stroke = 2;
-    private const double HitWidth = 12;
     private const double PortSize = 10;   // outer, the 1 px outline included: the rectangle itself is 9 so the outline lands on whole pixels
     private const double PortRadius = 3;
     private const double DimmedOpacity = 0.42;
@@ -40,10 +41,10 @@ internal sealed class ContextEdgesControl : Control, ICustomHitTest
 
     private IReadOnlyList<(MapEdge Edge, StreamGeometry Geometry)> _built = [];
 
-    static ContextEdgesControl()
+    static GraphEdgesControl()
     {
-        AffectsRender<ContextEdgesControl>(HighlightedProperty, DimmedProperty, HoveredProperty);
-        _ = EdgesProperty.Changed.AddClassHandler<ContextEdgesControl>((c, _) => c.Rebuild());
+        AffectsRender<GraphEdgesControl>(HighlightedProperty, DimmedProperty, HoveredProperty);
+        _ = EdgesProperty.Changed.AddClassHandler<GraphEdgesControl>((c, _) => c.Rebuild());
     }
 
     /// <summary>Gets or sets the edges to draw.</summary>
@@ -81,7 +82,7 @@ internal sealed class ContextEdgesControl : Control, ICustomHitTest
     {
         for (var i = _built.Count - 1; i >= 0; i--)
         {
-            if (_built[i].Edge.Route.DistanceTo(point) <= HitWidth / 2)
+            if (_built[i].Edge.Route.DistanceTo(point) <= _built[i].Edge.HitWidth / 2)
             {
                 return _built[i].Edge.Key;
             }
@@ -96,7 +97,7 @@ internal sealed class ContextEdgesControl : Control, ICustomHitTest
     /// <inheritdoc/>
     public override void Render(DrawingContext context)
     {
-        var (wire, hi, card) = (Brush("Brush.Wire"), Brush("Brush.WireHi"), Brush("Brush.Surface1"));
+        var (wire, hi, card) = (Brush(DefaultBrushKey), Brush("Brush.WireHi"), Brush("Brush.Surface1"));
         var ports = DrawStrokes(context, wire, hi);
 
         // The ports go on after every stroke, so no later edge paints over one.
@@ -121,8 +122,7 @@ internal sealed class ContextEdgesControl : Control, ICustomHitTest
             var dim = Dimmed.Contains(edge.Key);
             using (dim ? context.PushOpacity(DimmedOpacity) : default)
             {
-                var pen = new Pen(lit ? hi : wire, Stroke, edge.Dashed ? new DashStyle(_dash, 0) : null, PenLineCap.Flat);
-                context.DrawGeometry(brush: null, pen, geometry);
+                context.DrawGeometry(brush: null, StrokePen(edge, lit ? hi : EdgeBrush(edge, wire)), geometry);
             }
 
             foreach (var end in new[] { edge.Route.Start, edge.Route.End })
@@ -133,6 +133,10 @@ internal sealed class ContextEdgesControl : Control, ICustomHitTest
 
         return ports;
     }
+
+    private IBrush EdgeBrush(MapEdge edge, IBrush wire) => edge.BrushKey is null ? wire : Brush(edge.BrushKey);
+
+    private static Pen StrokePen(MapEdge edge, IBrush brush) => new(brush, Stroke, edge.Dashed ? new DashStyle(_dash, 0) : null, PenLineCap.Flat);
 
     /// <inheritdoc/>
     protected override void OnPointerMoved(PointerEventArgs e)

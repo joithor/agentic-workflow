@@ -29,6 +29,9 @@ public static class EventTypes
     /// <summary>A held event expired from an instance's inbox (engine spec §5.4, §5.6).</summary>
     public const string WorkflowExpired = "workflow.expired";
 
+    /// <summary>An instance took or gave up a heavy-job slot (LN-WF3).</summary>
+    public const string WorkflowHeavy = "workflow.heavy";
+
     /// <summary>The Step inputs of a run filled its injection plan: the sections' names, sizes and digests, never their text (Step inputs plan, S4).</summary>
     public const string WorkflowInjection = "workflow.injection";
 

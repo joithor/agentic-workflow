@@ -33,7 +33,8 @@ Area `SND-CODEIDX` (`CodeIndexErrors` in `Aw.CodeIndex.Core`); 014 to 029 are re
 
 ## Contracts (CI-1)
 
-- Typed values: `RepoName` (file-safe, at most 64 characters), `CommitSha` (40 lower-case hex), `SymbolRef` (`<repo>:<path>#<qualified name>`).
+- Typed values: `RepoName` (file-safe, at most 64 characters), `CommitSha` (40 lower-case hex, never an abbreviated SHA: an adapter resolves and passes full SHAs), `SymbolRef` (`<repo>:<path>#<qualified name>`).
+- Every Callers/Callees row carries `coverage` (`full` for C#, `partial` for a graphify language, `unavailable` for an unmeasured one), and the answer carries one too (`CallCoverage.Of`): any partial row, or a partial language, marks the whole answer partial, and an empty partial answer reads "none found", never "none".
 - Ports, each documented with what an implementation must guarantee: `IRepoSnapshot` (+ `IBlobReader`), `IIndexStore` (+ `IIndexReader`, `IIndexBuild`), `ISymbolParser`, `IGraphRunner`, `IEmbedder`, `IRepoHeads`, `IHeavyJobLock`, `IBodyScrubber`.
 - The facade `ICodeIndex`: `Build`, `Status`, `Heads`, `ProbeLayers`, `FindSymbols`, `FileSymbols`, `Callers`, `Callees`, `Similar`, `Neighbors`; every call takes a `CodeIndexScope` (the caller's repos, each with its effective settings, and the caller).
 - `Aw.CodeIndex.Testing`: `GitRepoBuilder` / `TempGitRepo` (git init, commits, symlinks, a submodule entry, a path swapped after the commit, a promisor clone), `FakeRepoSnapshot`, `FakeIndexStore`, `FakeRepoHeads`, `FakeHeavyJobLock`, `FakeBodyScrubber`, `FakeSymbolParser`. The contract bases come with the adapters (CI-2, CI-3, ...).
