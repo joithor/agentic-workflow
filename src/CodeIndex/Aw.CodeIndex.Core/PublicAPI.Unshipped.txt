@@ -1256,9 +1256,9 @@ Aw.CodeIndex.Core.Ports.CallWalk.CallWalk(System.Collections.Generic.IReadOnlyLi
 Aw.CodeIndex.Core.Ports.CallWalk.Coverage.get -> Aw.CodeIndex.Core.Model.Coverage
 Aw.CodeIndex.Core.Ports.CallWalk.Coverage.init -> void
 Aw.CodeIndex.Core.Ports.CallWalk.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>! Edges, out int UnresolvedCount, out bool Truncated, out Aw.CodeIndex.Core.Model.Coverage Coverage) -> void
-Aw.CodeIndex.Core.Model.CallCoverage
+Aw.CodeIndex.Core.Facade.CallCoverage
 Aw.CodeIndex.Core.Model.Coverage
 Aw.CodeIndex.Core.Model.Coverage.Full = 0 -> Aw.CodeIndex.Core.Model.Coverage
 Aw.CodeIndex.Core.Model.Coverage.Partial = 1 -> Aw.CodeIndex.Core.Model.Coverage
 Aw.CodeIndex.Core.Model.Coverage.Unavailable = 2 -> Aw.CodeIndex.Core.Model.Coverage
-static Aw.CodeIndex.Core.Model.CallCoverage.Of(Aw.CodeIndex.Core.Model.Coverage subject, System.Collections.Generic.IEnumerable<Aw.CodeIndex.Core.Facade.CallEdge!>! edges) -> Aw.CodeIndex.Core.Model.Coverage
+static Aw.CodeIndex.Core.Facade.CallCoverage.Of(Aw.CodeIndex.Core.Model.Coverage subject, System.Collections.Generic.IEnumerable<Aw.CodeIndex.Core.Facade.CallEdge!>! edges) -> Aw.CodeIndex.Core.Model.Coverage

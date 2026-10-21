@@ -1,6 +1,6 @@
-using Aw.CodeIndex.Core.Facade;
+using Aw.CodeIndex.Core.Model;
 
-namespace Aw.CodeIndex.Core.Model;
+namespace Aw.CodeIndex.Core.Facade;
 
 /// <summary>The whole-answer coverage rule for Callers and Callees (spec §5.5).</summary>
 public static class CallCoverage
