@@ -4,4 +4,5 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="Gates">EvaluateGates, a local activity before a decision with gates.</param>
 /// <param name="Cleanup">ReleaseClaim, after any ending.</param>
 /// <param name="Children">LoadChildren, a local activity that reads the children the approval pinned.</param>
-internal sealed record EngineActivities(GateActivities Gates, CleanupActivities Cleanup, ChildActivities Children);
+/// <param name="Heavy">TakeHeavy and ReleaseHeavy, the heavy resource's allocator (LN-WF3).</param>
+internal sealed record EngineActivities(GateActivities Gates, CleanupActivities Cleanup, ChildActivities Children, HeavyActivities Heavy);
