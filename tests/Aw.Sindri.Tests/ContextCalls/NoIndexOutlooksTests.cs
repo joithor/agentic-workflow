@@ -14,7 +14,7 @@ public sealed class NoIndexOutlooksTests
         var read = await new NoIndexOutlooks().Read(hold, CancellationToken.None);
         Assert.False(read.IsError);
         Assert.All(read.Value!.Values, static d => Assert.Equal(IndexOutlook.Absent, d.Outlook));
-        Assert.Equal(["a", "b"], read.Value.Keys.Order(StringComparer.Ordinal));
+        Assert.Equal(["a", "b"], read.Value.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);
         var action = MapPublishDecision.Decide(new MapPublishInput(hold, 14, 13, read.Value, TimeSpan.FromMinutes(15)), _now);
         Assert.Equal(MapPublishReason.NoIndex, Assert.IsType<MapPublish>(action).Reason);
     }

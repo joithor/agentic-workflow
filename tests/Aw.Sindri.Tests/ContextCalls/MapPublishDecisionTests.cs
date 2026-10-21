@@ -80,7 +80,7 @@ public sealed class MapPublishDecisionTests
     public void A_repo_off_the_default_branch_is_absent_by_its_outlook()
     {
         var detail = IndexOutlookRules.Classify(new IndexOutlookInput(IndexCommit: null, HoldHead: "abc1234", HoldOnDefaultBranch: false, LiveHead: "abc1234", InScope: true, ServiceActive: true, BuildRunning: false, NeverBuilt: false, FinishedNewestFirst: []), _now);
-        var hold = new MapHoldState(14, _now, new Dictionary<string, MapRepoHead>(StringComparer.Ordinal) { ["a"] = new("abc1234", false) });
+        var hold = new MapHoldState(14, _now, new Dictionary<string, MapRepoHead>(StringComparer.Ordinal) { ["a"] = new("abc1234", OnDefaultBranch: false) });
         IsPublish(Decide(hold, new Dictionary<string, IndexOutlookDetail>(StringComparer.Ordinal) { ["a"] = detail }), MapPublishReason.NoIndex);
     }
 
