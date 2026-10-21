@@ -1,5 +1,5 @@
+using System.Globalization;
 using System.Text.Json.Nodes;
-using Aw.Sindri.Core.Prove;
 
 namespace Aw.Sindri.Core.Review;
 
@@ -37,7 +37,7 @@ public static class ReviewPack
         var blocking = Count(facts.Review, "blocking");
         var issue = Count(facts.Review, "issue");
         return string.Equals(verdict, "clean", StringComparison.Ordinal) && blocking + issue > 0
-            ? [$"the review says clean but {blocking} blocking and {issue} issue finding(s) are left"]
+            ? [string.Create(CultureInfo.InvariantCulture, $"the review says clean but {blocking} blocking and {issue} issue finding(s) are left")]
             : [];
     }
 
