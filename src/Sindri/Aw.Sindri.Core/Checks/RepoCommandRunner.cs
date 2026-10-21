@@ -8,14 +8,14 @@ using Aw.Sindri.Core.Workflow.Recipes;
 namespace Aw.Sindri.Core.Checks;
 
 /// <summary>
-/// Runs the repo's commands (<c language="text">workflow.build.commands</c>, line spec LN-WF9) for a build or ship Step: reads them from the approved profile and runs a batch in the phase worktree
+/// Runs the repo's commands (<c language="text">workflow.build.commands</c>, line spec LN-WF9) for a build or ship Step: reads them from its source and runs a batch in the phase worktree
 /// while holding one heavy slot, released on every path.
 /// </summary>
-/// <param name="profile">The approved profile.</param>
+/// <param name="source">The repo's commands.</param>
 /// <param name="commands">Runs one command.</param>
 /// <param name="slots">The box-wide heavy-job lock.</param>
 /// <param name="clock">Times the budget.</param>
-public sealed class RepoCommandRunner(IApprovedProfile profile, ICheckCommands commands, IHeavySlots slots, TimeProvider clock)
+public sealed class RepoCommandRunner(IBuildCommandSource source, ICheckCommands commands, IHeavySlots slots, TimeProvider clock)
 {
     private static readonly TimeSpan _reportMargin = TimeSpan.FromMinutes(5);
 
@@ -30,17 +30,7 @@ public sealed class RepoCommandRunner(IApprovedProfile profile, ICheckCommands c
     /// <param name="stage">'red', 'checks' or 'green' (<see cref="BuildCommand.Where"/>).</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The commands; none when no profile is approved or it lists none for the stage.</returns>
-    public async ValueTask<Result<IReadOnlyList<BuildCommand>>> For(string stage, CancellationToken cancellationToken)
-    {
-        var latest = await profile.Latest(cancellationToken).ConfigureAwait(false);
-        if (latest.IsError)
-        {
-            return latest.Error;
-        }
-
-        IReadOnlyList<BuildCommand> found = [.. latest.Value?.Profile.Workflow?.Build?.Commands?.Where(c => string.Equals(c.Where, stage, StringComparison.Ordinal)) ?? []];
-        return Results.Success(found);
-    }
+    public ValueTask<Result<IReadOnlyList<BuildCommand>>> For(string stage, CancellationToken cancellationToken) => source.For(stage, cancellationToken);
 
     /// <summary>Runs every planned command in order, in <paramref name="workingDirectory"/>, under one heavy slot. A failing command does not stop the rest.</summary>
     /// <param name="holder">Who holds the slot, for the lock's owner file ('sindri step.build.checks').</param>

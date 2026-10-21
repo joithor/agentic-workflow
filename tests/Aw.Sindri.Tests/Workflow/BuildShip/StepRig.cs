@@ -27,10 +27,6 @@ internal sealed class StepRig
 
     internal StepRig(params BuildCommand[] profileCommands)
     {
-        var profiles = new InMemoryProfiles();
-        _ = profiles.Save(
-            new LoadedProfile(new SindriProfile(1, "thor") with { Workflow = new(Build: new BuildSettings(profileCommands)) }, ProfileHash.From(new string('a', 64)), "/home/profile.yaml"),
-            CancellationToken.None).AsTask().GetAwaiter().GetResult();   // why: the in-memory save completes synchronously
         Clock = new FakeTimeProvider(KnownInstants.Epoch);
         Slots = new CountingSlots();
         Commands = new InMemoryCheckCommands();
@@ -42,7 +38,7 @@ internal sealed class StepRig
             ["packet.json"] = """{"id":"p1","baseSha":"b0"}""",
             ["phase.json"] = """{"allowedFiles":["src/**","new: docs/x.md"],"testChange":[{"path":"tests/old.test.ts","reason":"renamed"}]}""",
         });
-        Runner = new RepoCommandRunner(profiles, Commands, Slots, Clock);
+        Runner = new RepoCommandRunner(new StubCommandSource(profileCommands), Commands, Slots, Clock);
     }
 
     internal FakeTimeProvider Clock { get; }

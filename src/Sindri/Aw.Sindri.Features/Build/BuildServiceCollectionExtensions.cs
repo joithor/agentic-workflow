@@ -11,7 +11,7 @@ internal static class BuildServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
     internal static IServiceCollection AddBuildSlices(this IServiceCollection services) => services
-        .AddSingleton<RepoCommandRunner>()
+        .AddSingleton<IBuildCommandSource, ProfileBuildCommands>().AddSingleton<RepoCommandRunner>()
         .AddBlockRuntime<BuildAmendStep>()
         .AddBlockRuntime<BuildChecksStep>()
         .AddBlockRuntime<BuildPrepareStep>()
