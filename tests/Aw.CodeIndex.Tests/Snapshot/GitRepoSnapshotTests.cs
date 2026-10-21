@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Model;
@@ -17,10 +18,21 @@ public sealed class GitRepoSnapshotTests
     {
         var environment = new Dictionary<string, string?>(StringComparer.Ordinal)
         {
-            ["GIT_DIR"] = "/elsewhere", ["GIT_WORK_TREE"] = "/elsewhere", ["GIT_INDEX_FILE"] = "/elsewhere/index", ["GIT_OBJECT_DIRECTORY"] = "/elsewhere/objects",
-            ["GIT_ALTERNATE_OBJECT_DIRECTORIES"] = "/elsewhere/alt", ["GIT_NAMESPACE"] = "ns", ["GIT_CEILING_DIRECTORIES"] = "/", ["GIT_COMMON_DIR"] = "/elsewhere",
-            ["GIT_CONFIG_COUNT"] = "1", ["GIT_CONFIG_KEY_0"] = "core.hooksPath", ["GIT_CONFIG_VALUE_0"] = "/evil", ["GIT_CONFIG_PARAMETERS"] = "'core.pager=evil'",
-            ["GIT_CONFIG_GLOBAL"] = "/home/x/.gitconfig", ["GIT_TRACE"] = "1", ["PATH"] = "/usr/bin",
+            ["GIT_DIR"] = "/elsewhere",
+            ["GIT_WORK_TREE"] = "/elsewhere",
+            ["GIT_INDEX_FILE"] = "/elsewhere/index",
+            ["GIT_OBJECT_DIRECTORY"] = "/elsewhere/objects",
+            ["GIT_ALTERNATE_OBJECT_DIRECTORIES"] = "/elsewhere/alt",
+            ["GIT_NAMESPACE"] = "ns",
+            ["GIT_CEILING_DIRECTORIES"] = "/",
+            ["GIT_COMMON_DIR"] = "/elsewhere",
+            ["GIT_CONFIG_COUNT"] = "1",
+            ["GIT_CONFIG_KEY_0"] = "core.hooksPath",
+            ["GIT_CONFIG_VALUE_0"] = "/evil",
+            ["GIT_CONFIG_PARAMETERS"] = "'core.pager=evil'",
+            ["GIT_CONFIG_GLOBAL"] = "/home/x/.gitconfig",
+            ["GIT_TRACE"] = "1",
+            ["PATH"] = "/usr/bin",
         };
 
         CleanGit.ScrubEnvironment(environment);
@@ -29,7 +41,10 @@ public sealed class GitRepoSnapshotTests
         Assert.Equal(
             new Dictionary<string, string?>(StringComparer.Ordinal)
             {
-                ["GIT_OPTIONAL_LOCKS"] = "0", ["GIT_NO_LAZY_FETCH"] = "1", ["GIT_CONFIG_NOSYSTEM"] = "1", ["GIT_CONFIG_GLOBAL"] = "/dev/null",
+                ["GIT_OPTIONAL_LOCKS"] = "0",
+                ["GIT_NO_LAZY_FETCH"] = "1",
+                ["GIT_CONFIG_NOSYSTEM"] = "1",
+                ["GIT_CONFIG_GLOBAL"] = "/dev/null",
             },
             environment.Where(e => e.Key.StartsWith("GIT_", StringComparison.Ordinal)).ToDictionary(e => e.Key, e => e.Value, StringComparer.Ordinal));
     }
@@ -111,7 +126,7 @@ public sealed class GitRepoSnapshotTests
     [Fact, Trait("Lane", "integration")]
     public async Task A_large_blob_and_many_reads_through_one_reader_stay_in_step()
     {
-        var big = string.Concat(Enumerable.Range(0, 20_000).Select(i => $"line {i}\n"));
+        var big = string.Concat(Enumerable.Range(0, 20_000).Select(i => string.Create(CultureInfo.InvariantCulture, $"line {i}\n")));
         using var git = A.GitRepo().WithFile("big.txt", big).WithFile("small.txt", "small").Build();
         var inventory = (await _snapshot.Inventory(git.AsRepo(), git.Head, _limits, TestContext.Current.CancellationToken)).Value;
         await using var reader = (await _snapshot.OpenBlobs(git.AsRepo(), TestContext.Current.CancellationToken)).Value;

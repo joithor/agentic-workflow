@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.CodeIndex.Core;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Values;
@@ -79,7 +80,7 @@ public sealed class InputRulesTests
 
         var inventory = result.Value;
         Assert.Equal(_commit, inventory.Commit);
-        Assert.Equal(["a.txt", "run.sh", "src/B.cs"], inventory.Files.Select(f => f.Path));
+        Assert.Equal(["a.txt", "run.sh", "src/B.cs"], inventory.Files.Select(f => f.Path).ToList());
         Assert.Equal(new SnapshotFile("src/B.cs", "bbb", 20), inventory.Files[2]);
         Assert.Empty(inventory.Skipped);
     }
@@ -92,11 +93,11 @@ public sealed class InputRulesTests
             Regular("ok.cs", "1", 1),
             Entry("120000", "link", "2", 4),
             Entry("120000", ".env", "3", 4),            // a symlink first, even though it is also denied
-            Entry("160000", "vendor/module", "4", null),
+            Entry("160000", "vendor/module", "4", size: null),
             Regular("keys/server.pem", "5", 1),
             Regular("a/../b.cs", "6", 1),
             Regular("big.bin", "7", 101),
-            Regular("gone.cs", "8", null),
+            Regular("gone.cs", "8", size: null),
             Regular("a/.git/x", "9", 999),              // unsafe first, even though it is also too large
             Entry("100664", "odd-mode.cs", "a", 1),
         ];
@@ -133,7 +134,7 @@ public sealed class InputRulesTests
     [Fact, Trait("Lane", "unit")]
     public void More_kept_files_than_the_file_cap_is_SND_CODEIDX_003()
     {
-        var entries = Enumerable.Range(0, 4).Select(i => Regular($"f{i}.txt", $"b{i}", 1)).ToList();
+        var entries = Enumerable.Range(0, 4).Select(i => Regular(string.Create(CultureInfo.InvariantCulture, $"f{i}.txt"), string.Create(CultureInfo.InvariantCulture, $"b{i}"), 1)).ToList();
 
         var atCap = InputRules.Apply(_commit, entries, _limits with { MaxFiles = 4 });
         var over = InputRules.Apply(_commit, entries, _limits with { MaxFiles = 3 });
