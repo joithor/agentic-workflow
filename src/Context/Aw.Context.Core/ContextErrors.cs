@@ -188,7 +188,7 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-151: more than 50 entries in 'context.code.schemaGlobs' or 'context.code.testGlobs'.</summary>
     public static readonly ErrorDefinition CodeGlobsTooMany = new("SND-CONTEXT-151", ErrorKind.Invalid, "Too many code-lens globs");
 
-    /// <summary>SND-CONTEXT-152: the code lens's lexical search ran out of 'context.deadline' and returned what it had (the code of a searched row, never a route failure).</summary>
+    /// <summary>SND-CONTEXT-152: the code lens's lexical search ran out of 'context.code.deadline' and returned what it had (the code of a searched row, never a route failure).</summary>
     public static readonly ErrorDefinition CodeSearchTimedOut = new("SND-CONTEXT-152", ErrorKind.Timeout, "The lexical code search ran out of time");
 
     /// <summary>SND-CONTEXT-133: a 'context.extract.graphify' limit (timeoutMinutes, maxSnapshotMB, maxFileMB, maxGraphMB) isn't a whole number from 0 (no limit) up. The message names the key path.</summary>

@@ -48,7 +48,7 @@ public static partial class SettingsReader
 
         if (CodeUnknownKey(element) is { } codeKey)
         {
-            return Invalid("context.code." + codeKey, "is not a code-lens setting this build knows (schemaGlobs, testGlobs)");
+            return Invalid("context.code." + codeKey, "is not a code-lens setting this build knows (schemaGlobs, testGlobs, deadline)");
         }
 
         if (SourcesReader.Shape(element) is { } shape)
@@ -65,12 +65,14 @@ public static partial class SettingsReader
         var settings = new ContextSettings();
         var globs = section.Docs?.Globs ?? ContextSettings.DefaultDocGlobs;
         var deadline = section.Deadline is null ? settings.Deadline : Duration(section.Deadline);
+        var codeDeadline = section.Code?.Deadline is null ? settings.CodeDeadline : Duration(section.Code.Deadline, MaxCodeDeadline);
         var sources = SourcesReader.Check(section.Sources);
-        return (Refused(section, globs), deadline, sources) switch
+        return (Refused(section, globs), deadline, codeDeadline, sources) switch
         {
-            ({ } problem, _, _) => problem,
-            (_, null, _) => Invalid("context.deadline", "is a duration from 100ms to 60s, such as 4s or 500ms"),
-            (_, _, { IsError: true }) => sources.Error,
+            ({ } problem, _, _, _) => problem,
+            (_, null, _, _) => Invalid("context.deadline", "is a duration from 100ms to 60s, such as 4s or 500ms"),
+            (_, _, null, _) => Invalid("context.code.deadline", "is a duration from 100ms to 600s, such as 60s or 90s"),
+            (_, _, _, { IsError: true }) => sources.Error,
             _ => WithCode(
                 WithFanOut(settings, section) with
                 {
@@ -89,16 +91,20 @@ public static partial class SettingsReader
                     Recognizers = Recognizers(section.Extract),
                     Publish = Publish(section.Publish),
                 },
-                section.Code),
+                section.Code,
+                codeDeadline.Value),
         };
     }
 
     private const int MaxCodeGlobs = 50;
     private const int MaxCodeGlobLength = 200;
 
-    private static ContextSettings WithCode(ContextSettings settings, CodeSection? code) =>
+    private static readonly TimeSpan MaxCodeDeadline = TimeSpan.FromSeconds(600);
+
+    private static ContextSettings WithCode(ContextSettings settings, CodeSection? code, TimeSpan codeDeadline) =>
         settings with
         {
+            CodeDeadline = codeDeadline,
             SchemaGlobs = Globs(code?.SchemaGlobs, settings.SchemaGlobs),
             TestGlobs = Globs(code?.TestGlobs, settings.TestGlobs),
         };
@@ -151,7 +157,7 @@ public static partial class SettingsReader
             return null;
         }
 
-        string[] known = ["schemaGlobs", "testGlobs"];
+        string[] known = ["schemaGlobs", "testGlobs", "deadline"];
         return code.EnumerateObject().Select(p => p.Name).FirstOrDefault(n => !known.Contains(n, StringComparer.Ordinal)) is { } name ? Printable(name) : null;
     }
 
@@ -237,7 +243,9 @@ public static partial class SettingsReader
         return element.EnumerateObject().Select(p => p.Name).FirstOrDefault(n => !known.Contains(n, StringComparer.Ordinal)) is { } name ? Printable(name) : null;
     }
 
-    private static TimeSpan? Duration(string text)
+    private static TimeSpan? Duration(string text) => Duration(text, TimeSpan.FromSeconds(60));
+
+    private static TimeSpan? Duration(string text, TimeSpan max)
     {
         var match = DurationShape.Match(text);
         if (!match.Success)
@@ -247,7 +255,7 @@ public static partial class SettingsReader
 
         var value = int.Parse(match.Groups["n"].Value, NumberStyles.None, CultureInfo.InvariantCulture);
         var span = string.Equals(match.Groups["u"].Value, "ms", StringComparison.Ordinal) ? TimeSpan.FromMilliseconds(value) : TimeSpan.FromSeconds(value);
-        return span >= TimeSpan.FromMilliseconds(100) && span <= TimeSpan.FromSeconds(60) ? span : null;
+        return span >= TimeSpan.FromMilliseconds(100) && span <= max ? span : null;
     }
 
     /// <summary>Whether text is a repo-relative glob the profile may name.</summary>
