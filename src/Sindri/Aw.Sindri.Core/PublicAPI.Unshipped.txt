@@ -7346,6 +7346,7 @@ static Aw.Sindri.Core.Ledger.LedgerEntry.operator ==(Aw.Sindri.Core.Ledger.Ledge
 static Aw.Sindri.Core.Ledger.LedgerEvent.operator !=(Aw.Sindri.Core.Ledger.LedgerEvent? left, Aw.Sindri.Core.Ledger.LedgerEvent? right) -> bool
 static Aw.Sindri.Core.Ledger.LedgerEvent.operator ==(Aw.Sindri.Core.Ledger.LedgerEvent? left, Aw.Sindri.Core.Ledger.LedgerEvent? right) -> bool
 static Aw.Sindri.Core.Ledger.LedgerFilter.All.get -> Aw.Sindri.Core.Ledger.LedgerFilter!
+static Aw.Sindri.Core.Ledger.LedgerFilter.InstanceKeyPrefix(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address) -> string!
 static Aw.Sindri.Core.Ledger.LedgerFilter.operator !=(Aw.Sindri.Core.Ledger.LedgerFilter? left, Aw.Sindri.Core.Ledger.LedgerFilter? right) -> bool
 static Aw.Sindri.Core.Ledger.LedgerFilter.operator ==(Aw.Sindri.Core.Ledger.LedgerFilter? left, Aw.Sindri.Core.Ledger.LedgerFilter? right) -> bool
 static Aw.Sindri.Core.Ledger.LedgerScan.operator !=(Aw.Sindri.Core.Ledger.LedgerScan? left, Aw.Sindri.Core.Ledger.LedgerScan? right) -> bool
@@ -7743,7 +7744,6 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceChallenge.Subject(Aw.Sindr
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceEvents.Belongs(Aw.Sindri.Core.Ledger.LedgerEvent! recorded, Aw.Sindri.Core.Workflow.Engine.InstanceAddress address) -> bool
-static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceEvents.KeyPrefix(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address) -> string!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceEvents.Belongs(Aw.Sindri.Core.Ledger.LedgerEvent! recorded, Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId id) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceHeader.Line(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view, System.DateTimeOffset now) -> string!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceNames.FactsRead(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>!

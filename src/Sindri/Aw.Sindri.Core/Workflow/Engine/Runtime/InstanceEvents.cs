@@ -13,11 +13,6 @@ public static class InstanceEvents
     /// <summary>The empty state of 'workflow events'.</summary>
     public const string None = "no events";
 
-    /// <summary>The start of the idempotency key of every row <paramref name="address"/> mirrored, up to and including the ':' that keeps a parent from taking its children's rows.</summary>
-    /// <param name="address">The instance.</param>
-    /// <returns>The key prefix.</returns>
-    public static string KeyPrefix(InstanceAddress address) => $"workflow:{address.Value}:";
-
     /// <summary>Whether <paramref name="recorded"/> was mirrored by <paramref name="address"/>.</summary>
     /// <param name="recorded">The ledger event.</param>
     /// <param name="address">The instance.</param>
@@ -25,7 +20,7 @@ public static class InstanceEvents
     public static bool Belongs(LedgerEvent recorded, InstanceAddress address)
     {
         ArgumentNullException.ThrowIfNull(recorded);
-        return recorded.IdempotencyKey.StartsWith(KeyPrefix(address), StringComparison.Ordinal);
+        return recorded.IdempotencyKey.StartsWith(LedgerFilter.InstanceKeyPrefix(address), StringComparison.Ordinal);
     }
 
     /// <summary>Whether <paramref name="recorded"/> was mirrored by the instance whose id is <paramref name="id"/>: the id is read from the ledger's own keys, so it needs no Temporal.</summary>

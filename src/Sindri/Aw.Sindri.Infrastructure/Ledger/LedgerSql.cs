@@ -2,7 +2,6 @@ using System.Globalization;
 using Aw.Kernel.Data;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Workflow.Engine;
-using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Microsoft.Data.Sqlite;
 
 namespace Aw.Sindri.Infrastructure.Ledger;
@@ -80,7 +79,7 @@ internal static class LedgerSql
     {
         if (instance is { } address)
         {
-            var prefix = InstanceEvents.KeyPrefix(address);
+            var prefix = LedgerFilter.InstanceKeyPrefix(address);
             _ = command.Bind("$keyFrom", prefix).Bind("$keyTo", string.Concat(prefix.AsSpan(0, prefix.Length - 1), ";"));   // ';' is the character after ':'
         }
     }

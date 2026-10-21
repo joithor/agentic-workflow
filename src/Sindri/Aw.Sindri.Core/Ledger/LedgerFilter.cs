@@ -1,6 +1,5 @@
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Engine;
-using Aw.Sindri.Core.Workflow.Engine.Runtime;
 
 namespace Aw.Sindri.Core.Ledger;
 
@@ -8,9 +7,14 @@ namespace Aw.Sindri.Core.Ledger;
 /// <param name="Types">The event types to keep, or null for every type.</param>
 /// <param name="Item">The work item to keep, or null for every event.</param>
 /// <param name="ScanLimit">The most rows one call looks at past its cursor, so a sparse filter never walks the whole ledger.</param>
-/// <param name="Instance">The workflow instance whose mirrored rows to keep (<see cref="InstanceEvents.Belongs(LedgerEvent, InstanceAddress)"/>), or null for any. The reader finds them through the idempotency-key index, so a scan costs the instance's rows and ignores <see cref="ScanLimit"/>.</param>
+/// <param name="Instance">The workflow instance whose mirrored rows to keep (the engine's mirror keys 'workflow:{address}:…'), or null for any. The reader finds them through the idempotency-key index, so a scan costs the instance's rows and ignores <see cref="ScanLimit"/>.</param>
 public sealed record LedgerFilter(TypeFilter? Types, ItemId? Item, int ScanLimit = 5_000, InstanceAddress? Instance = null)
 {
+    /// <summary>The start of the idempotency key of every row <paramref name="address"/> mirrored, up to and including the ':' that keeps a parent from taking its children's rows.</summary>
+    /// <param name="address">The instance.</param>
+    /// <returns>The key prefix.</returns>
+    public static string InstanceKeyPrefix(InstanceAddress address) => $"workflow:{address.Value}:";
+
     /// <summary>Every event, with the default scan limit.</summary>
     public static LedgerFilter All { get; } = new(Types: null, Item: null);
 
@@ -39,7 +43,7 @@ public sealed record LedgerFilter(TypeFilter? Types, ItemId? Item, int ScanLimit
         ArgumentNullException.ThrowIfNull(row);
         return (Types is null || Types.Matches(row.Envelope.Type))
             && (Item is not { } item || string.Equals(row.Item, item.Value, StringComparison.Ordinal))
-            && (Instance is not { } instance || InstanceEvents.Belongs(row, instance));
+            && (Instance is not { } instance || row.IdempotencyKey.StartsWith(InstanceKeyPrefix(instance), StringComparison.Ordinal));
     }
 
     /// <summary>
