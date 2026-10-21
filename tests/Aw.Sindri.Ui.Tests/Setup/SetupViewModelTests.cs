@@ -132,6 +132,20 @@ public sealed class SetupViewModelTests
     }
 
     [Fact]
+    public async Task Home_line_names_the_first_step_still_open_and_Continue_opens_its_row_and_asks_for_the_checklist()
+    {
+        var setup = await ReadWith("profile-needs-approval");
+        var asked = 0;
+        setup.ChecklistRequested += (_, _) => asked++;
+        Step(setup, "profile").IsOpen = false;
+
+        Assert.Equal(("Approve your settings", "Continue", "Finish setting up Sindri, 1 of 6 done. Next: Approve your settings"), (setup.HomeStepText, setup.ContinueText, setup.HomeLineName));
+        setup.Continue();
+
+        Assert.Equal((1, true), (asked, Step(setup, "profile").IsOpen));
+    }
+
+    [Fact]
     public async Task A_step_that_reopens_brings_the_line_back()
     {
         var setup = await ReadWith("all-done");
@@ -242,7 +256,7 @@ public sealed class SetupViewModelTests
         var setup = await _f.Read(Token);
 
         Assert.Equal((true, false, false), (setup.IsNotRunning, setup.IsFailed, setup.IsHomeLineShown));
-        Assert.Equal(("Sindri isn't running", "sindri-app", "The app reconnects on its own when Sindri starts."), (setup.NotRunningText, setup.Launcher.Cli, setup.ReconnectsText));
+        Assert.Equal(("Sindri isn't running.", "sindri-app", "The app reconnects on its own when Sindri starts."), (setup.NotRunningText, setup.Launcher.Cli, setup.ReconnectsText));
         await setup.Launcher.Copy(Token);
         Assert.Equal("sindri-app", _f.Clipboard.Text);
     }

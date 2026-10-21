@@ -16,9 +16,17 @@ internal sealed partial class FakeSindriApi
     /// <summary>How many times the setup list was read.</summary>
     public int SetupCalls => Volatile.Read(ref _setupCalls);
 
-    public Task<Result<SetupView>> Setup(Uri api, CancellationToken cancellationToken)
+    /// <summary>When set, a setup read waits here (after it was counted) until the gate is completed, then answers what <see cref="SetupAnswer"/> is by then: a read in flight while something else happens.</summary>
+    public TaskCompletionSource? SetupGate { get; set; }
+
+    public async Task<Result<SetupView>> Setup(Uri api, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _setupCalls);
-        return Task.FromResult(Answer<SetupView>(api, SetupRoutes.Read, SetupAnswer));
+        if (SetupGate is { } gate)
+        {
+            await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        return Answer<SetupView>(api, SetupRoutes.Read, SetupAnswer);
     }
 }

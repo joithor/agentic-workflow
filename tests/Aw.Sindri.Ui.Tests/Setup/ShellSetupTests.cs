@@ -85,6 +85,33 @@ public sealed class ShellSetupTests
     }, Token);
 
     [Fact]
+    public Task Continue_opens_Settings_at_the_first_open_step() => UiThread.Run(async () =>
+    {
+        _server.SetupAnswer = SetupFixture.Answer("profile-needs-approval");
+        var shell = await Connected();
+        string? at = null;
+        shell.Setup.RevealRequested += (_, e) => at = e.StepId;
+
+        shell.Setup.Continue();
+
+        Assert.Equal((PageId.Settings, "profile"), (shell.CurrentPage, at));
+    }, Token);
+
+    [Fact]
+    public Task The_profile_button_stays_in_the_app_under_Homes_decisions_filter() => UiThread.Run(async () =>
+    {
+        _server.SetupAnswer = SetupFixture.Answer("profile-needs-approval");
+        _server.NeedsYouView = RouteAnswer.Api("needs-you", "fixture");
+        var shell = await Connected();
+        await ShellWait.Until(shell, () => shell.Setup.Steps.Single(s => s.Id == "profile").Action?.IsInApp == true, Token);
+
+        _ = shell.PressKey("G");
+        _ = shell.PressKey("D");   // the Decisions filter trims the rows Home lists, not what Needs you holds
+
+        Assert.True(shell.Setup.Steps.Single(s => s.Id == "profile").Action?.IsInApp);
+    }, Token);
+
+    [Fact]
     public Task The_approve_all_button_in_its_row_opens_the_dialog_and_approves_nothing() => UiThread.Run(async () =>
     {
         var list = SetupFixture.With("profile-needs-approval", "recipes", "needs-you", "ApproveAllRecipes");

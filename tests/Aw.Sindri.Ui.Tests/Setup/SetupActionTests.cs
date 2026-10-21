@@ -126,6 +126,37 @@ public sealed class SetupActionTests
     }
 
     [Fact]
+    public async Task One_press_sends_one_refresh_even_when_a_read_was_in_flight_and_a_second_press_follows()
+    {
+        var setup = await ReadWith("failed");
+        _f.Server.SetupGate = new TaskCompletionSource();
+        var inFlight = setup.Refresh(Url, Token);   // a read started before the press: it still says failed, and lands after it
+
+        await setup.RefreshMap(Token);
+        _f.Server.SetupGate.SetResult();
+        await inFlight;
+        await setup.RefreshMap(Token);   // a second press on a button that must not be there any more
+
+        var map = Step(setup, "map");
+        Assert.Equal((1, "Working", false), (_f.Server.RefreshContextMapCalls, map.ChipWord, map.HasAction));
+        _f.Server.SetupGate = null;
+        await setup.Refresh(Url, Token);   // the read that follows the send brings the server's word back
+        Assert.Equal(("Failed", true), (map.ChipWord, map.HasAction));
+    }
+
+    [Fact]
+    public async Task A_409_without_a_running_job_is_an_error_not_already_building()
+    {
+        var setup = await ReadWith("failed");
+        _f.Server.RefreshContextMapAnswer = RouteAnswer.Problem("context-map-refresh", "refused-ended");
+
+        await setup.RefreshMap(Token);
+
+        var map = Step(setup, "map");
+        Assert.Equal(("Failed", true), (map.ChipWord, map.Note.Length > 0 && !map.Note.StartsWith("Already", StringComparison.Ordinal)));
+    }
+
+    [Fact]
     public async Task A_409_with_the_running_job_shows_the_map_as_already_building_not_as_an_error()
     {
         var setup = await ReadWith("failed");

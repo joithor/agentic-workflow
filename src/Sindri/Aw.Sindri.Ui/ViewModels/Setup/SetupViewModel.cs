@@ -45,7 +45,7 @@ internal sealed partial class SetupViewModel : ObservableObject
     internal event EventHandler? ChecklistRequested;
 
     /// <summary>Raised when the checklist should come into view (Settings was opened by a link, G U, ⌘, or the line).</summary>
-    internal event EventHandler? RevealRequested;
+    internal event EventHandler<SetupRevealEventArgs>? RevealRequested;
 
     /// <summary>The steps in the order served.</summary>
     public ObservableCollection<SetupStepViewModel> Steps { get; } = [];
@@ -102,7 +102,16 @@ internal sealed partial class SetupViewModel : ObservableObject
     internal void RequestChecklist() => ChecklistRequested?.Invoke(this, EventArgs.Empty);
 
     /// <summary>Asks the checklist to come into view.</summary>
-    internal void RevealChecklist() => RevealRequested?.Invoke(this, EventArgs.Empty);
+    internal void RevealChecklist() => RevealRequested?.Invoke(this, new SetupRevealEventArgs(stepId: null));
+
+    /// <summary>The first step still to do (or being worked on), as Home's line names it; empty until the first list.</summary>
+    public string HomeStepText { get; private set; } = string.Empty;
+
+    /// <summary>The Continue control's words.</summary>
+    public string ContinueText { get; private set; } = string.Empty;
+
+    /// <summary>Opens the first open step's row and asks for the checklist.</summary>
+    internal void Continue() => throw new NotSupportedException(HomeStepText);
 
     /// <summary>Asks again, for every step, whether the app can do its action now.</summary>
     internal void Rederive()

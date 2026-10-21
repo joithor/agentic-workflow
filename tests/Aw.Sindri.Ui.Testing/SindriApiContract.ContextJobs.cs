@@ -24,5 +24,17 @@ public abstract partial class SindriApiContract
         var result = await Reach(server).RefreshContextMap(_api, Token);
 
         Expect.Equal(("SND-JOB-409", ErrorKind.Conflict), (result.Error.Code, result.Error.Kind));
+        Expect.Equal("JOB-000000000000000000000000000000a0", result.Error.Extensions?.FirstOrDefault(e => string.Equals(e.Key, "runningJob", StringComparison.Ordinal)).Value.GetString());   // the running job rides on the refusal
+    }
+
+    [Fact]
+    public async Task RefreshContextMap_409_without_a_running_job_carries_none()
+    {
+        var server = new FakeSindriApi { RefreshContextMapAnswer = RouteAnswer.Problem("context-map-refresh", "refused-ended") };
+
+        var result = await Reach(server).RefreshContextMap(_api, Token);
+
+        Expect.Equal("SND-JOB-409", result.Error.Code);
+        Expect.Equal(0, result.Error.Extensions?.Count(e => string.Equals(e.Key, "runningJob", StringComparison.Ordinal)) ?? 0);
     }
 }

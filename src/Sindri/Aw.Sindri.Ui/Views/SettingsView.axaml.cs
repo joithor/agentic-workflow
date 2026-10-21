@@ -41,6 +41,6 @@ internal sealed partial class SettingsView : UserControl
     }
 
     // Opened by a link, G U, ⌘, or Home's line: the checklist is the first section, so it is brought to the top of the page.
-    private void OnRevealRequested(object? sender, EventArgs e) =>
+    private void OnRevealRequested(object? sender, SetupRevealEventArgs e) =>
         Dispatcher.UIThread.Post(() => _checklist?.BringIntoView(), DispatcherPriority.Loaded);
 }
