@@ -71,7 +71,7 @@ public sealed class FakeCodeSymbolSource : ICodeSymbolSource
 
     private CodeIndexHead HeadOf(ContextRepoName repo, string? asOf) =>
         _repos.TryGetValue(repo.Value, out var held)
-            ? CodeIndexReading.Head(held.State, held.Commit, held.BuiltAt, asOf, held.Layer, held.Code)
+            ? CodeIndexReading.Head(new CodeIndexHead(held.State, held.Commit, held.BuiltAt, AsOfCommit: null, held.Layer, held.Code), asOf)
             : CodeIndexHead.None with { Code = "SND-CODEIDX-013" };
 
     private bool Readable(ContextRepoName repo, CodeIndexHead head, out FakeIndexedRepo held)

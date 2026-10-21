@@ -22,17 +22,14 @@ public static class CodeIndexReading
     }
 
     /// <summary>The head of an index read against the map's commit: a readable index that is not at that commit is <see cref="CodeIndexState.Stale"/> (both commits kept), computed at read time.</summary>
-    /// <param name="state">The block's own state (head moved, checkout off main, layer down, ...).</param>
-    /// <param name="commit">The commit the index describes, or null.</param>
-    /// <param name="builtAt">When it was built, or null.</param>
+    /// <param name="own">What the block says by itself (head moved, checkout off main, layer down, ...), with no as-of commit.</param>
     /// <param name="asOf">The map version's commit, or null.</param>
-    /// <param name="layer">The unavailable layer, or null.</param>
-    /// <param name="code">The explaining SND-CODEIDX code, or null.</param>
     /// <returns>The head.</returns>
-    public static CodeIndexHead Head(CodeIndexState state, string? commit, DateTimeOffset? builtAt, string? asOf, string? layer, string? code)
+    public static CodeIndexHead Head(CodeIndexHead own, string? asOf)
     {
-        var behind = !Unreadable(state) && commit is not null && asOf is not null && !Same(commit, asOf);
-        return new CodeIndexHead(behind && state is CodeIndexState.Ok or CodeIndexState.LayerUnavailable ? CodeIndexState.Stale : state, commit, builtAt, behind ? asOf : null, layer, code);
+        ArgumentNullException.ThrowIfNull(own);
+        var behind = !Unreadable(own.State) && own.Commit is not null && asOf is not null && !Same(own.Commit, asOf);
+        return behind ? own with { State = own.State is CodeIndexState.Ok or CodeIndexState.LayerUnavailable ? CodeIndexState.Stale : own.State, AsOfCommit = asOf } : own with { AsOfCommit = null };
     }
 
     /// <summary>Whether the head names an index that can be read: a commit and a state that is not missing, damaged, still building or not configured.</summary>
@@ -67,7 +64,7 @@ public static class CodeIndexReading
         return (head.State is CodeIndexState.Stale or CodeIndexState.CheckoutNotOnMain ? SymbolsState.Stale : SymbolsState.Ok, AsOfMismatch(head) ? head.AsOfCommit : null);
     }
 
-    /// <summary>The 'code-index' row of <c>searched.sources</c> for a head.</summary>
+    /// <summary>The 'code-index' row of 'searched.sources' for a head.</summary>
     /// <param name="head">The head.</param>
     /// <returns>ok, degraded (stale, checkout-not-on-main, or the layer), unavailable (index-not-built, index-damaged, index-building) or not-configured.</returns>
     public static SearchedSource Row(CodeIndexHead head)
@@ -82,6 +79,7 @@ public static class CodeIndexReading
             CodeIndexState.Damaged => Make(SearchedState.Unavailable, "index-damaged", head.Code, asOf: null),
             CodeIndexState.Building => Make(SearchedState.Unavailable, "index-building", head.Code, asOf: null),
             CodeIndexState.NotConfigured => Make(SearchedState.NotConfigured, "not-configured", head.Code, asOf: null),
+            CodeIndexState.Missing => Make(SearchedState.Unavailable, CodeSymbols.IndexNotBuilt, head.Code, asOf: null),
             _ => Make(SearchedState.Unavailable, CodeSymbols.IndexNotBuilt, head.Code, asOf: null),
         };
     }
@@ -160,6 +158,7 @@ public static class CodeIndexReading
         CodeIndexState.NotConfigured => 4,
         CodeIndexState.Building => 5,
         CodeIndexState.Missing => 6,
+        CodeIndexState.Damaged => 7,
         _ => 7,
     };
 
@@ -169,8 +168,10 @@ public static class CodeIndexReading
         (CodeIndexState.Damaged, false) => "index damaged",
         (CodeIndexState.Building, true) => "index-building",
         (CodeIndexState.Building, false) => "index building",
-        (_, true) => "not-configured",
-        _ => "not configured",
+        (CodeIndexState.NotConfigured, true) => "not-configured",
+        (CodeIndexState.NotConfigured, false) => "not configured",
+        (_, true) => CodeSymbols.IndexNotBuilt,
+        _ => "index not built",
     };
 
     // 'stale' for an index that is behind the map or the head; the code lens also notes a layer that is down, the file map does not (a file's symbols come from the structure layer, which is always on).
@@ -179,6 +180,7 @@ public static class CodeIndexReading
         CodeIndexState.Stale => "stale",
         CodeIndexState.CheckoutNotOnMain => "checkout-not-on-main",
         CodeIndexState.LayerUnavailable when calls => $"{head.Layer ?? "layer"}-unavailable",
+        CodeIndexState.Ok or CodeIndexState.LayerUnavailable or CodeIndexState.Missing or CodeIndexState.Damaged or CodeIndexState.Building or CodeIndexState.NotConfigured => null,
         _ => null,
     };
 

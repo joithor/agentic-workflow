@@ -1,4 +1,30 @@
 #nullable enable
+Aw.Context.Core.Code.CodeLensSymbols
+Aw.Context.Core.Code.CodeSymbolFindings
+Aw.Context.Core.Code.CodeSymbolFindings.<Clone>$() -> Aw.Context.Core.Code.CodeSymbolFindings!
+Aw.Context.Core.Code.CodeSymbolFindings.Callees.get -> Aw.Context.Core.Code.CodeSymbols!
+Aw.Context.Core.Code.CodeSymbolFindings.Callees.init -> void
+Aw.Context.Core.Code.CodeSymbolFindings.Callers.get -> Aw.Context.Core.Code.CodeSymbols!
+Aw.Context.Core.Code.CodeSymbolFindings.Callers.init -> void
+Aw.Context.Core.Code.CodeSymbolFindings.CodeSymbolFindings(Aw.Context.Core.Lenses.SearchedSource! Row, Aw.Context.Core.Code.CodeSymbols! Callers, Aw.Context.Core.Code.CodeSymbols! Callees) -> void
+Aw.Context.Core.Code.CodeSymbolFindings.Deconstruct(out Aw.Context.Core.Lenses.SearchedSource! Row, out Aw.Context.Core.Code.CodeSymbols! Callers, out Aw.Context.Core.Code.CodeSymbols! Callees) -> void
+Aw.Context.Core.Code.CodeSymbolFindings.Equals(Aw.Context.Core.Code.CodeSymbolFindings? other) -> bool
+Aw.Context.Core.Code.CodeSymbolFindings.Row.get -> Aw.Context.Core.Lenses.SearchedSource!
+Aw.Context.Core.Code.CodeSymbolFindings.Row.init -> void
+Aw.Context.Core.Code.CodeSymbols.AsOfCommit.get -> string?
+Aw.Context.Core.Code.CodeSymbols.AsOfCommit.init -> void
+Aw.Context.Core.Code.CodeSymbols.AsOfMismatch.get -> bool
+Aw.Context.Core.Code.CodeSymbols.AsOfMismatch.init -> void
+Aw.Context.Core.Code.CodeSymbols.Code.get -> string?
+Aw.Context.Core.Code.CodeSymbols.Code.init -> void
+Aw.Context.Core.Code.CodeSymbols.CodeSymbols(Aw.Context.Core.Lenses.SymbolsState State, string? Reason, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.CallEdgeRow!>! Items) -> void
+Aw.Context.Core.Code.CodeSymbols.Commit.get -> string?
+Aw.Context.Core.Code.CodeSymbols.Commit.init -> void
+Aw.Context.Core.Code.CodeSymbols.Deconstruct(out Aw.Context.Core.Lenses.SymbolsState State, out string? Reason, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.CallEdgeRow!>! Items) -> void
+Aw.Context.Core.Code.CodeSymbols.Items.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.CallEdgeRow!>!
+Aw.Context.Core.Code.CodeSymbols.Reason.get -> string?
+Aw.Context.Core.Code.CodeSymbols.Unresolved.get -> int
+Aw.Context.Core.Code.CodeSymbols.Unresolved.init -> void
 Aw.Context.Core.ContextCoreServiceCollectionExtensions
 Aw.Context.Core.ContextErrors
 Aw.Context.Core.Docs.DocIndexStatus
@@ -1180,12 +1206,22 @@ Aw.Context.Core.Lenses.LensRecord.Trust.get -> Aw.Context.Core.Results.Trust
 Aw.Context.Core.Lenses.LensRecord.Trust.init -> void
 Aw.Context.Core.Lenses.LensSymbols
 Aw.Context.Core.Lenses.LensSymbols.<Clone>$() -> Aw.Context.Core.Lenses.LensSymbols!
-Aw.Context.Core.Lenses.LensSymbols.Deconstruct(out Aw.Context.Core.Lenses.SymbolsState State, out string! Reason, out System.Collections.Generic.IReadOnlyList<string!>! Items) -> void
+Aw.Context.Core.Lenses.LensSymbols.AsOfCommit.get -> string?
+Aw.Context.Core.Lenses.LensSymbols.AsOfCommit.init -> void
+Aw.Context.Core.Lenses.LensSymbols.AsOfMismatch.get -> bool
+Aw.Context.Core.Lenses.LensSymbols.AsOfMismatch.init -> void
+Aw.Context.Core.Lenses.LensSymbols.Code.get -> string?
+Aw.Context.Core.Lenses.LensSymbols.Code.init -> void
+Aw.Context.Core.Lenses.LensSymbols.Commit.get -> string?
+Aw.Context.Core.Lenses.LensSymbols.Commit.init -> void
+Aw.Context.Core.Lenses.LensSymbols.Deconstruct(out Aw.Context.Core.Lenses.SymbolsState State, out string? Reason, out System.Collections.Generic.IReadOnlyList<string!>! Items) -> void
 Aw.Context.Core.Lenses.LensSymbols.Equals(Aw.Context.Core.Lenses.LensSymbols? other) -> bool
+Aw.Context.Core.Lenses.LensSymbols.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.FileSymbolsRow!>?
+Aw.Context.Core.Lenses.LensSymbols.Files.init -> void
 Aw.Context.Core.Lenses.LensSymbols.Items.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Context.Core.Lenses.LensSymbols.Items.init -> void
-Aw.Context.Core.Lenses.LensSymbols.LensSymbols(Aw.Context.Core.Lenses.SymbolsState State, string! Reason, System.Collections.Generic.IReadOnlyList<string!>! Items) -> void
-Aw.Context.Core.Lenses.LensSymbols.Reason.get -> string!
+Aw.Context.Core.Lenses.LensSymbols.LensSymbols(Aw.Context.Core.Lenses.SymbolsState State, string? Reason, System.Collections.Generic.IReadOnlyList<string!>! Items) -> void
+Aw.Context.Core.Lenses.LensSymbols.Reason.get -> string?
 Aw.Context.Core.Lenses.LensSymbols.Reason.init -> void
 Aw.Context.Core.Lenses.LensSymbols.State.get -> Aw.Context.Core.Lenses.SymbolsState
 Aw.Context.Core.Lenses.LensSymbols.State.init -> void
@@ -2670,6 +2706,147 @@ Aw.Context.Core.Sources.SourceVersion.ToString(System.IFormatProvider? provider)
 Aw.Context.Core.Sources.SourceVersion.Value.get -> string!
 Aw.Context.Core.StrictEnumConverter<TEnum>
 Aw.Context.Core.StrictEnumConverter<TEnum>.StrictEnumConverter() -> void
+Aw.Context.Core.Symbols.CallAnswer
+Aw.Context.Core.Symbols.CallAnswer.<Clone>$() -> Aw.Context.Core.Symbols.CallAnswer!
+Aw.Context.Core.Symbols.CallAnswer.CallAnswer(Aw.Context.Core.Symbols.CodeIndexHead! Head, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.CallEdgeRow!>! Rows, int Unresolved) -> void
+Aw.Context.Core.Symbols.CallAnswer.Deconstruct(out Aw.Context.Core.Symbols.CodeIndexHead! Head, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.CallEdgeRow!>! Rows, out int Unresolved) -> void
+Aw.Context.Core.Symbols.CallAnswer.Equals(Aw.Context.Core.Symbols.CallAnswer? other) -> bool
+Aw.Context.Core.Symbols.CallAnswer.Head.get -> Aw.Context.Core.Symbols.CodeIndexHead!
+Aw.Context.Core.Symbols.CallAnswer.Head.init -> void
+Aw.Context.Core.Symbols.CallAnswer.Rows.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.CallEdgeRow!>!
+Aw.Context.Core.Symbols.CallAnswer.Rows.init -> void
+Aw.Context.Core.Symbols.CallAnswer.Unresolved.get -> int
+Aw.Context.Core.Symbols.CallAnswer.Unresolved.init -> void
+Aw.Context.Core.Symbols.CallEdgeRow
+Aw.Context.Core.Symbols.CallEdgeRow.<Clone>$() -> Aw.Context.Core.Symbols.CallEdgeRow!
+Aw.Context.Core.Symbols.CallEdgeRow.AsOfCommit.get -> string?
+Aw.Context.Core.Symbols.CallEdgeRow.AsOfCommit.init -> void
+Aw.Context.Core.Symbols.CallEdgeRow.Basis.get -> string!
+Aw.Context.Core.Symbols.CallEdgeRow.Basis.init -> void
+Aw.Context.Core.Symbols.CallEdgeRow.CallEdgeRow(Aw.Context.Core.Symbols.SymbolSite! Symbol, string! Basis, double Confidence, string! Coverage, int Depth, string! Commit, string? AsOfCommit, Aw.Context.Core.Lenses.SymbolsState State) -> void
+Aw.Context.Core.Symbols.CallEdgeRow.Commit.get -> string!
+Aw.Context.Core.Symbols.CallEdgeRow.Commit.init -> void
+Aw.Context.Core.Symbols.CallEdgeRow.Confidence.get -> double
+Aw.Context.Core.Symbols.CallEdgeRow.Confidence.init -> void
+Aw.Context.Core.Symbols.CallEdgeRow.Coverage.get -> string!
+Aw.Context.Core.Symbols.CallEdgeRow.Coverage.init -> void
+Aw.Context.Core.Symbols.CallEdgeRow.Deconstruct(out Aw.Context.Core.Symbols.SymbolSite! Symbol, out string! Basis, out double Confidence, out string! Coverage, out int Depth, out string! Commit, out string? AsOfCommit, out Aw.Context.Core.Lenses.SymbolsState State) -> void
+Aw.Context.Core.Symbols.CallEdgeRow.Depth.get -> int
+Aw.Context.Core.Symbols.CallEdgeRow.Depth.init -> void
+Aw.Context.Core.Symbols.CallEdgeRow.Equals(Aw.Context.Core.Symbols.CallEdgeRow? other) -> bool
+Aw.Context.Core.Symbols.CallEdgeRow.State.get -> Aw.Context.Core.Lenses.SymbolsState
+Aw.Context.Core.Symbols.CallEdgeRow.State.init -> void
+Aw.Context.Core.Symbols.CallEdgeRow.Symbol.get -> Aw.Context.Core.Symbols.SymbolSite!
+Aw.Context.Core.Symbols.CallEdgeRow.Symbol.init -> void
+Aw.Context.Core.Symbols.CodeIndexHead
+Aw.Context.Core.Symbols.CodeIndexHead.<Clone>$() -> Aw.Context.Core.Symbols.CodeIndexHead!
+Aw.Context.Core.Symbols.CodeIndexHead.AsOfCommit.get -> string?
+Aw.Context.Core.Symbols.CodeIndexHead.AsOfCommit.init -> void
+Aw.Context.Core.Symbols.CodeIndexHead.BuiltAt.get -> System.DateTimeOffset?
+Aw.Context.Core.Symbols.CodeIndexHead.BuiltAt.init -> void
+Aw.Context.Core.Symbols.CodeIndexHead.Code.get -> string?
+Aw.Context.Core.Symbols.CodeIndexHead.Code.init -> void
+Aw.Context.Core.Symbols.CodeIndexHead.CodeIndexHead(Aw.Context.Core.Symbols.CodeIndexState State, string? Commit, System.DateTimeOffset? BuiltAt, string? AsOfCommit, string? Layer, string? Code) -> void
+Aw.Context.Core.Symbols.CodeIndexHead.Commit.get -> string?
+Aw.Context.Core.Symbols.CodeIndexHead.Commit.init -> void
+Aw.Context.Core.Symbols.CodeIndexHead.Deconstruct(out Aw.Context.Core.Symbols.CodeIndexState State, out string? Commit, out System.DateTimeOffset? BuiltAt, out string? AsOfCommit, out string? Layer, out string? Code) -> void
+Aw.Context.Core.Symbols.CodeIndexHead.Equals(Aw.Context.Core.Symbols.CodeIndexHead? other) -> bool
+Aw.Context.Core.Symbols.CodeIndexHead.Layer.get -> string?
+Aw.Context.Core.Symbols.CodeIndexHead.Layer.init -> void
+Aw.Context.Core.Symbols.CodeIndexHead.State.get -> Aw.Context.Core.Symbols.CodeIndexState
+Aw.Context.Core.Symbols.CodeIndexHead.State.init -> void
+Aw.Context.Core.Symbols.CodeIndexReading
+Aw.Context.Core.Symbols.CodeIndexState
+Aw.Context.Core.Symbols.CodeIndexState.Building = 6 -> Aw.Context.Core.Symbols.CodeIndexState
+Aw.Context.Core.Symbols.CodeIndexState.CheckoutNotOnMain = 2 -> Aw.Context.Core.Symbols.CodeIndexState
+Aw.Context.Core.Symbols.CodeIndexState.Damaged = 5 -> Aw.Context.Core.Symbols.CodeIndexState
+Aw.Context.Core.Symbols.CodeIndexState.LayerUnavailable = 3 -> Aw.Context.Core.Symbols.CodeIndexState
+Aw.Context.Core.Symbols.CodeIndexState.Missing = 4 -> Aw.Context.Core.Symbols.CodeIndexState
+Aw.Context.Core.Symbols.CodeIndexState.NotConfigured = 7 -> Aw.Context.Core.Symbols.CodeIndexState
+Aw.Context.Core.Symbols.CodeIndexState.Ok = 0 -> Aw.Context.Core.Symbols.CodeIndexState
+Aw.Context.Core.Symbols.CodeIndexState.Stale = 1 -> Aw.Context.Core.Symbols.CodeIndexState
+Aw.Context.Core.Symbols.FileSymbolsRow
+Aw.Context.Core.Symbols.FileSymbolsRow.<Clone>$() -> Aw.Context.Core.Symbols.FileSymbolsRow!
+Aw.Context.Core.Symbols.FileSymbolsRow.AsOfCommit.get -> string?
+Aw.Context.Core.Symbols.FileSymbolsRow.AsOfCommit.init -> void
+Aw.Context.Core.Symbols.FileSymbolsRow.Commit.get -> string!
+Aw.Context.Core.Symbols.FileSymbolsRow.Commit.init -> void
+Aw.Context.Core.Symbols.FileSymbolsRow.Deconstruct(out string! Path, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.SymbolSite!>! Symbols, out string! Commit, out string? AsOfCommit, out Aw.Context.Core.Lenses.SymbolsState State) -> void
+Aw.Context.Core.Symbols.FileSymbolsRow.Equals(Aw.Context.Core.Symbols.FileSymbolsRow? other) -> bool
+Aw.Context.Core.Symbols.FileSymbolsRow.FileSymbolsRow(string! Path, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.SymbolSite!>! Symbols, string! Commit, string? AsOfCommit, Aw.Context.Core.Lenses.SymbolsState State) -> void
+Aw.Context.Core.Symbols.FileSymbolsRow.Path.get -> string!
+Aw.Context.Core.Symbols.FileSymbolsRow.Path.init -> void
+Aw.Context.Core.Symbols.FileSymbolsRow.State.get -> Aw.Context.Core.Lenses.SymbolsState
+Aw.Context.Core.Symbols.FileSymbolsRow.State.init -> void
+Aw.Context.Core.Symbols.FileSymbolsRow.Symbols.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.SymbolSite!>!
+Aw.Context.Core.Symbols.FileSymbolsRow.Symbols.init -> void
+Aw.Context.Core.Symbols.ICodeSymbolSource
+Aw.Context.Core.Symbols.ICodeSymbolSource.Callees(Aw.Context.Core.Engine.ContextRepoName repo, string! symbolRef, int depth, string? asOf, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Symbols.CallAnswer!>!>
+Aw.Context.Core.Symbols.ICodeSymbolSource.Callers(Aw.Context.Core.Engine.ContextRepoName repo, string! symbolRef, int depth, string? asOf, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Symbols.CallAnswer!>!>
+Aw.Context.Core.Symbols.ICodeSymbolSource.FileSymbols(Aw.Context.Core.Engine.ContextRepoName repo, System.Collections.Generic.IReadOnlyList<string!>! paths, string? asOf, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Symbols.SymbolAnswer<Aw.Context.Core.Symbols.FileSymbolsRow!>!>!>
+Aw.Context.Core.Symbols.ICodeSymbolSource.FindSymbols(Aw.Context.Core.Engine.ContextRepoName repo, Aw.Context.Core.Symbols.SymbolQuery! query, string? asOf, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Symbols.SymbolAnswer<Aw.Context.Core.Symbols.SymbolHit!>!>!>
+Aw.Context.Core.Symbols.ICodeSymbolSource.Heads(Aw.Context.Core.Engine.ContextRepoName repo, string? asOf, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Symbols.CodeIndexHead!>!>
+Aw.Context.Core.Symbols.NoCodeSymbolSource
+Aw.Context.Core.Symbols.NoCodeSymbolSource.Callees(Aw.Context.Core.Engine.ContextRepoName repo, string! symbolRef, int depth, string? asOf, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Symbols.CallAnswer!>!>
+Aw.Context.Core.Symbols.NoCodeSymbolSource.Callers(Aw.Context.Core.Engine.ContextRepoName repo, string! symbolRef, int depth, string? asOf, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Symbols.CallAnswer!>!>
+Aw.Context.Core.Symbols.NoCodeSymbolSource.FileSymbols(Aw.Context.Core.Engine.ContextRepoName repo, System.Collections.Generic.IReadOnlyList<string!>! paths, string? asOf, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Symbols.SymbolAnswer<Aw.Context.Core.Symbols.FileSymbolsRow!>!>!>
+Aw.Context.Core.Symbols.NoCodeSymbolSource.FindSymbols(Aw.Context.Core.Engine.ContextRepoName repo, Aw.Context.Core.Symbols.SymbolQuery! query, string? asOf, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Symbols.SymbolAnswer<Aw.Context.Core.Symbols.SymbolHit!>!>!>
+Aw.Context.Core.Symbols.NoCodeSymbolSource.Heads(Aw.Context.Core.Engine.ContextRepoName repo, string? asOf, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Symbols.CodeIndexHead!>!>
+Aw.Context.Core.Symbols.NoCodeSymbolSource.NoCodeSymbolSource() -> void
+Aw.Context.Core.Symbols.SymbolAnswer<T>
+Aw.Context.Core.Symbols.SymbolAnswer<T>.<Clone>$() -> Aw.Context.Core.Symbols.SymbolAnswer<T>!
+Aw.Context.Core.Symbols.SymbolAnswer<T>.Deconstruct(out Aw.Context.Core.Symbols.CodeIndexHead! Head, out System.Collections.Generic.IReadOnlyList<T>! Rows) -> void
+Aw.Context.Core.Symbols.SymbolAnswer<T>.Equals(Aw.Context.Core.Symbols.SymbolAnswer<T>? other) -> bool
+Aw.Context.Core.Symbols.SymbolAnswer<T>.Head.get -> Aw.Context.Core.Symbols.CodeIndexHead!
+Aw.Context.Core.Symbols.SymbolAnswer<T>.Head.init -> void
+Aw.Context.Core.Symbols.SymbolAnswer<T>.Rows.get -> System.Collections.Generic.IReadOnlyList<T>!
+Aw.Context.Core.Symbols.SymbolAnswer<T>.Rows.init -> void
+Aw.Context.Core.Symbols.SymbolAnswer<T>.SymbolAnswer(Aw.Context.Core.Symbols.CodeIndexHead! Head, System.Collections.Generic.IReadOnlyList<T>! Rows) -> void
+Aw.Context.Core.Symbols.SymbolHit
+Aw.Context.Core.Symbols.SymbolHit.<Clone>$() -> Aw.Context.Core.Symbols.SymbolHit!
+Aw.Context.Core.Symbols.SymbolHit.AsOfCommit.get -> string?
+Aw.Context.Core.Symbols.SymbolHit.AsOfCommit.init -> void
+Aw.Context.Core.Symbols.SymbolHit.Commit.get -> string!
+Aw.Context.Core.Symbols.SymbolHit.Commit.init -> void
+Aw.Context.Core.Symbols.SymbolHit.Deconstruct(out Aw.Context.Core.Symbols.SymbolSite! Site, out string! Commit, out string? AsOfCommit, out Aw.Context.Core.Lenses.SymbolsState State) -> void
+Aw.Context.Core.Symbols.SymbolHit.Equals(Aw.Context.Core.Symbols.SymbolHit? other) -> bool
+Aw.Context.Core.Symbols.SymbolHit.Site.get -> Aw.Context.Core.Symbols.SymbolSite!
+Aw.Context.Core.Symbols.SymbolHit.Site.init -> void
+Aw.Context.Core.Symbols.SymbolHit.State.get -> Aw.Context.Core.Lenses.SymbolsState
+Aw.Context.Core.Symbols.SymbolHit.State.init -> void
+Aw.Context.Core.Symbols.SymbolHit.SymbolHit(Aw.Context.Core.Symbols.SymbolSite! Site, string! Commit, string? AsOfCommit, Aw.Context.Core.Lenses.SymbolsState State) -> void
+Aw.Context.Core.Symbols.SymbolQuery
+Aw.Context.Core.Symbols.SymbolQuery.<Clone>$() -> Aw.Context.Core.Symbols.SymbolQuery!
+Aw.Context.Core.Symbols.SymbolQuery.Deconstruct(out string! Text, out bool Prefix, out int Max) -> void
+Aw.Context.Core.Symbols.SymbolQuery.Equals(Aw.Context.Core.Symbols.SymbolQuery? other) -> bool
+Aw.Context.Core.Symbols.SymbolQuery.Max.get -> int
+Aw.Context.Core.Symbols.SymbolQuery.Max.init -> void
+Aw.Context.Core.Symbols.SymbolQuery.Prefix.get -> bool
+Aw.Context.Core.Symbols.SymbolQuery.Prefix.init -> void
+Aw.Context.Core.Symbols.SymbolQuery.SymbolQuery(string! Text, bool Prefix, int Max) -> void
+Aw.Context.Core.Symbols.SymbolQuery.Text.get -> string!
+Aw.Context.Core.Symbols.SymbolQuery.Text.init -> void
+Aw.Context.Core.Symbols.SymbolSite
+Aw.Context.Core.Symbols.SymbolSite.<Clone>$() -> Aw.Context.Core.Symbols.SymbolSite!
+Aw.Context.Core.Symbols.SymbolSite.Deconstruct(out string! Ref, out string! Name, out string! Kind, out string! Path, out int StartLine, out int EndLine, out string? Signature, out bool Exported) -> void
+Aw.Context.Core.Symbols.SymbolSite.EndLine.get -> int
+Aw.Context.Core.Symbols.SymbolSite.EndLine.init -> void
+Aw.Context.Core.Symbols.SymbolSite.Equals(Aw.Context.Core.Symbols.SymbolSite? other) -> bool
+Aw.Context.Core.Symbols.SymbolSite.Exported.get -> bool
+Aw.Context.Core.Symbols.SymbolSite.Exported.init -> void
+Aw.Context.Core.Symbols.SymbolSite.Kind.get -> string!
+Aw.Context.Core.Symbols.SymbolSite.Kind.init -> void
+Aw.Context.Core.Symbols.SymbolSite.Name.get -> string!
+Aw.Context.Core.Symbols.SymbolSite.Name.init -> void
+Aw.Context.Core.Symbols.SymbolSite.Path.get -> string!
+Aw.Context.Core.Symbols.SymbolSite.Path.init -> void
+Aw.Context.Core.Symbols.SymbolSite.Ref.get -> string!
+Aw.Context.Core.Symbols.SymbolSite.Ref.init -> void
+Aw.Context.Core.Symbols.SymbolSite.Signature.get -> string?
+Aw.Context.Core.Symbols.SymbolSite.Signature.init -> void
+Aw.Context.Core.Symbols.SymbolSite.StartLine.get -> int
+Aw.Context.Core.Symbols.SymbolSite.StartLine.init -> void
+Aw.Context.Core.Symbols.SymbolSite.SymbolSite(string! Ref, string! Name, string! Kind, string! Path, int StartLine, int EndLine, string? Signature, bool Exported) -> void
 Aw.Context.Core.Trust.IEgressScrubber
 Aw.Context.Core.Trust.IEgressScrubber.Scrub(string! value) -> Aw.Context.Core.Trust.ScrubbedField!
 Aw.Context.Core.Trust.IIngestFilter
@@ -2717,6 +2894,8 @@ Aw.Context.Core.Trust.Scrubbers.Ruleset.get -> Aw.Context.Core.Trust.ScrubRulese
 Aw.Context.Core.Trust.Scrubbers.Ruleset.init -> void
 Aw.Context.Core.Trust.Scrubbers.Scrubbers(Aw.Context.Core.Trust.IIngestFilter! Ingest, Aw.Context.Core.Trust.IEgressScrubber! Egress, Aw.Context.Core.Trust.ScrubRuleset Ruleset) -> void
 Aw.Context.Core.Trust.UntrustedFence
+const Aw.Context.Core.Code.CodeRules.MaxCallSymbols = 20 -> int
+const Aw.Context.Core.Code.CodeRules.MaxSymbolFiles = 200 -> int
 const Aw.Context.Core.Engine.QueryRules.BudgetMessage = "budget must be a whole number of tokens, 1 or more" -> string!
 const Aw.Context.Core.Engine.QueryRules.DefaultBudget = 8000 -> int
 const Aw.Context.Core.Engine.QueryRules.DepthMessage = "depth must be a whole number from 0 to 4" -> string!
@@ -2744,6 +2923,9 @@ const Aw.Context.Core.Review.ReviewHistory.MaxLimit = 1000 -> int
 const Aw.Context.Core.Review.ReviewLimits.Max = 1000 -> int
 const Aw.Context.Core.Review.ReviewLimits.QueueDefault = 100 -> int
 const Aw.Context.Core.Trust.UntrustedFence.MaxTitle = 200 -> int
+override Aw.Context.Core.Code.CodeSymbolFindings.Equals(object? obj) -> bool
+override Aw.Context.Core.Code.CodeSymbolFindings.GetHashCode() -> int
+override Aw.Context.Core.Code.CodeSymbolFindings.ToString() -> string!
 override Aw.Context.Core.Docs.DocIndexStatus.Equals(object? obj) -> bool
 override Aw.Context.Core.Docs.DocIndexStatus.GetHashCode() -> int
 override Aw.Context.Core.Docs.DocIndexStatus.ToString() -> string!
@@ -3257,6 +3439,30 @@ override Aw.Context.Core.Sources.SourceRef.ToString() -> string!
 override Aw.Context.Core.Sources.SourceVersion.Equals(object? obj) -> bool
 override Aw.Context.Core.Sources.SourceVersion.GetHashCode() -> int
 override Aw.Context.Core.Sources.SourceVersion.ToString() -> string!
+override Aw.Context.Core.Symbols.CallAnswer.Equals(object? obj) -> bool
+override Aw.Context.Core.Symbols.CallAnswer.GetHashCode() -> int
+override Aw.Context.Core.Symbols.CallAnswer.ToString() -> string!
+override Aw.Context.Core.Symbols.CallEdgeRow.Equals(object? obj) -> bool
+override Aw.Context.Core.Symbols.CallEdgeRow.GetHashCode() -> int
+override Aw.Context.Core.Symbols.CallEdgeRow.ToString() -> string!
+override Aw.Context.Core.Symbols.CodeIndexHead.Equals(object? obj) -> bool
+override Aw.Context.Core.Symbols.CodeIndexHead.GetHashCode() -> int
+override Aw.Context.Core.Symbols.CodeIndexHead.ToString() -> string!
+override Aw.Context.Core.Symbols.FileSymbolsRow.Equals(object? obj) -> bool
+override Aw.Context.Core.Symbols.FileSymbolsRow.GetHashCode() -> int
+override Aw.Context.Core.Symbols.FileSymbolsRow.ToString() -> string!
+override Aw.Context.Core.Symbols.SymbolAnswer<T>.Equals(object? obj) -> bool
+override Aw.Context.Core.Symbols.SymbolAnswer<T>.GetHashCode() -> int
+override Aw.Context.Core.Symbols.SymbolAnswer<T>.ToString() -> string!
+override Aw.Context.Core.Symbols.SymbolHit.Equals(object? obj) -> bool
+override Aw.Context.Core.Symbols.SymbolHit.GetHashCode() -> int
+override Aw.Context.Core.Symbols.SymbolHit.ToString() -> string!
+override Aw.Context.Core.Symbols.SymbolQuery.Equals(object? obj) -> bool
+override Aw.Context.Core.Symbols.SymbolQuery.GetHashCode() -> int
+override Aw.Context.Core.Symbols.SymbolQuery.ToString() -> string!
+override Aw.Context.Core.Symbols.SymbolSite.Equals(object? obj) -> bool
+override Aw.Context.Core.Symbols.SymbolSite.GetHashCode() -> int
+override Aw.Context.Core.Symbols.SymbolSite.ToString() -> string!
 override Aw.Context.Core.Trust.ScrubPattern.Equals(object? obj) -> bool
 override Aw.Context.Core.Trust.ScrubPattern.GetHashCode() -> int
 override Aw.Context.Core.Trust.ScrubPattern.ToString() -> string!
@@ -3269,6 +3475,9 @@ override Aw.Context.Core.Trust.ScrubbedField.ToString() -> string!
 override Aw.Context.Core.Trust.Scrubbers.Equals(object? obj) -> bool
 override Aw.Context.Core.Trust.Scrubbers.GetHashCode() -> int
 override Aw.Context.Core.Trust.Scrubbers.ToString() -> string!
+static Aw.Context.Core.Code.CodeLensSymbols.With(Aw.Context.Core.Code.CodeView! view, Aw.Context.Core.Code.CodeSymbolFindings! findings) -> Aw.Context.Core.Code.CodeView!
+static Aw.Context.Core.Code.CodeSymbolFindings.operator !=(Aw.Context.Core.Code.CodeSymbolFindings? left, Aw.Context.Core.Code.CodeSymbolFindings? right) -> bool
+static Aw.Context.Core.Code.CodeSymbolFindings.operator ==(Aw.Context.Core.Code.CodeSymbolFindings? left, Aw.Context.Core.Code.CodeSymbolFindings? right) -> bool
 static Aw.Context.Core.ContextCoreServiceCollectionExtensions.AddContextCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Context.Core.ContextErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
 static Aw.Context.Core.ContextErrors.Attention.get -> System.Collections.Generic.IReadOnlySet<string!>!
@@ -3777,6 +3986,33 @@ static Aw.Context.Core.Sources.SourceVersion.TryFrom(string? value, out Aw.Conte
 static Aw.Context.Core.Sources.SourceVersion.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Sources.SourceVersion result) -> bool
 static Aw.Context.Core.Sources.SourceVersion.operator !=(Aw.Context.Core.Sources.SourceVersion left, Aw.Context.Core.Sources.SourceVersion right) -> bool
 static Aw.Context.Core.Sources.SourceVersion.operator ==(Aw.Context.Core.Sources.SourceVersion left, Aw.Context.Core.Sources.SourceVersion right) -> bool
+static Aw.Context.Core.Symbols.CallAnswer.operator !=(Aw.Context.Core.Symbols.CallAnswer? left, Aw.Context.Core.Symbols.CallAnswer? right) -> bool
+static Aw.Context.Core.Symbols.CallAnswer.operator ==(Aw.Context.Core.Symbols.CallAnswer? left, Aw.Context.Core.Symbols.CallAnswer? right) -> bool
+static Aw.Context.Core.Symbols.CallEdgeRow.operator !=(Aw.Context.Core.Symbols.CallEdgeRow? left, Aw.Context.Core.Symbols.CallEdgeRow? right) -> bool
+static Aw.Context.Core.Symbols.CallEdgeRow.operator ==(Aw.Context.Core.Symbols.CallEdgeRow? left, Aw.Context.Core.Symbols.CallEdgeRow? right) -> bool
+static Aw.Context.Core.Symbols.CodeIndexHead.None.get -> Aw.Context.Core.Symbols.CodeIndexHead!
+static Aw.Context.Core.Symbols.CodeIndexHead.operator !=(Aw.Context.Core.Symbols.CodeIndexHead? left, Aw.Context.Core.Symbols.CodeIndexHead? right) -> bool
+static Aw.Context.Core.Symbols.CodeIndexHead.operator ==(Aw.Context.Core.Symbols.CodeIndexHead? left, Aw.Context.Core.Symbols.CodeIndexHead? right) -> bool
+static Aw.Context.Core.Symbols.CodeIndexReading.AsOfMismatch(Aw.Context.Core.Symbols.CodeIndexHead! head) -> bool
+static Aw.Context.Core.Symbols.CodeIndexReading.Calls(Aw.Context.Core.Symbols.CodeIndexHead! head, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.CallEdgeRow!>! rows, int unresolved) -> Aw.Context.Core.Code.CodeSymbols!
+static Aw.Context.Core.Symbols.CodeIndexReading.FailedRow(string! code) -> Aw.Context.Core.Lenses.SearchedSource!
+static Aw.Context.Core.Symbols.CodeIndexReading.FileMap(Aw.Context.Core.Symbols.CodeIndexHead! head, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.FileSymbolsRow!>! files) -> Aw.Context.Core.Lenses.LensSymbols!
+static Aw.Context.Core.Symbols.CodeIndexReading.Head(Aw.Context.Core.Symbols.CodeIndexHead! own, string? asOf) -> Aw.Context.Core.Symbols.CodeIndexHead!
+static Aw.Context.Core.Symbols.CodeIndexReading.Readable(Aw.Context.Core.Symbols.CodeIndexHead! head) -> bool
+static Aw.Context.Core.Symbols.CodeIndexReading.Row(Aw.Context.Core.Symbols.CodeIndexHead! head) -> Aw.Context.Core.Lenses.SearchedSource!
+static Aw.Context.Core.Symbols.CodeIndexReading.Same(string! left, string! right) -> bool
+static Aw.Context.Core.Symbols.CodeIndexReading.Stamp(Aw.Context.Core.Symbols.CodeIndexHead! head) -> (Aw.Context.Core.Lenses.SymbolsState State, string? AsOfCommit)
+static Aw.Context.Core.Symbols.CodeIndexReading.Worst(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.CodeIndexHead!>! heads) -> Aw.Context.Core.Symbols.CodeIndexHead!
+static Aw.Context.Core.Symbols.FileSymbolsRow.operator !=(Aw.Context.Core.Symbols.FileSymbolsRow? left, Aw.Context.Core.Symbols.FileSymbolsRow? right) -> bool
+static Aw.Context.Core.Symbols.FileSymbolsRow.operator ==(Aw.Context.Core.Symbols.FileSymbolsRow? left, Aw.Context.Core.Symbols.FileSymbolsRow? right) -> bool
+static Aw.Context.Core.Symbols.SymbolAnswer<T>.operator !=(Aw.Context.Core.Symbols.SymbolAnswer<T>? left, Aw.Context.Core.Symbols.SymbolAnswer<T>? right) -> bool
+static Aw.Context.Core.Symbols.SymbolAnswer<T>.operator ==(Aw.Context.Core.Symbols.SymbolAnswer<T>? left, Aw.Context.Core.Symbols.SymbolAnswer<T>? right) -> bool
+static Aw.Context.Core.Symbols.SymbolHit.operator !=(Aw.Context.Core.Symbols.SymbolHit? left, Aw.Context.Core.Symbols.SymbolHit? right) -> bool
+static Aw.Context.Core.Symbols.SymbolHit.operator ==(Aw.Context.Core.Symbols.SymbolHit? left, Aw.Context.Core.Symbols.SymbolHit? right) -> bool
+static Aw.Context.Core.Symbols.SymbolQuery.operator !=(Aw.Context.Core.Symbols.SymbolQuery? left, Aw.Context.Core.Symbols.SymbolQuery? right) -> bool
+static Aw.Context.Core.Symbols.SymbolQuery.operator ==(Aw.Context.Core.Symbols.SymbolQuery? left, Aw.Context.Core.Symbols.SymbolQuery? right) -> bool
+static Aw.Context.Core.Symbols.SymbolSite.operator !=(Aw.Context.Core.Symbols.SymbolSite? left, Aw.Context.Core.Symbols.SymbolSite? right) -> bool
+static Aw.Context.Core.Symbols.SymbolSite.operator ==(Aw.Context.Core.Symbols.SymbolSite? left, Aw.Context.Core.Symbols.SymbolSite? right) -> bool
 static Aw.Context.Core.Trust.Permalinks.Allowed(System.Uri? link) -> System.Uri?
 static Aw.Context.Core.Trust.ScrubPattern.operator !=(Aw.Context.Core.Trust.ScrubPattern? left, Aw.Context.Core.Trust.ScrubPattern? right) -> bool
 static Aw.Context.Core.Trust.ScrubPattern.operator ==(Aw.Context.Core.Trust.ScrubPattern? left, Aw.Context.Core.Trust.ScrubPattern? right) -> bool
@@ -5640,12 +5876,8 @@ Aw.Context.Core.Code.CodeLexical.SearchedFiles.get -> int
 Aw.Context.Core.Code.CodeLexical.SearchedFiles.init -> void
 Aw.Context.Core.Code.CodeSymbols
 Aw.Context.Core.Code.CodeSymbols.<Clone>$() -> Aw.Context.Core.Code.CodeSymbols!
-Aw.Context.Core.Code.CodeSymbols.CodeSymbols(Aw.Context.Core.Lenses.SymbolsState State, string! Reason, System.Collections.Generic.IReadOnlyList<string!>! Items) -> void
-Aw.Context.Core.Code.CodeSymbols.Deconstruct(out Aw.Context.Core.Lenses.SymbolsState State, out string! Reason, out System.Collections.Generic.IReadOnlyList<string!>! Items) -> void
 Aw.Context.Core.Code.CodeSymbols.Equals(Aw.Context.Core.Code.CodeSymbols? other) -> bool
-Aw.Context.Core.Code.CodeSymbols.Items.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Context.Core.Code.CodeSymbols.Items.init -> void
-Aw.Context.Core.Code.CodeSymbols.Reason.get -> string!
 Aw.Context.Core.Code.CodeSymbols.Reason.init -> void
 Aw.Context.Core.Code.CodeSymbols.State.get -> Aw.Context.Core.Lenses.SymbolsState
 Aw.Context.Core.Code.CodeSymbols.State.init -> void

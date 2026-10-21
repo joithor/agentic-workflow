@@ -11,7 +11,7 @@ public sealed class CodeIndexReadingTests
     private static readonly DateTimeOffset _built = new(2026, 10, 20, 8, 0, 0, TimeSpan.Zero);
 
     private static CodeIndexHead Head(CodeIndexState state, string? asOf = null, string? layer = null, string? code = null) =>
-        CodeIndexReading.Head(state, Indexed, _built, asOf, layer, code);
+        CodeIndexReading.Head(new CodeIndexHead(state, Indexed, _built, AsOfCommit: null, layer, code), asOf);
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("7c3e1a2", Indexed, true)]
@@ -57,7 +57,7 @@ public sealed class CodeIndexReadingTests
     [InlineData(CodeIndexState.Building)]
     [InlineData(CodeIndexState.NotConfigured)]
     public void An_unreadable_index_keeps_its_state_whatever_the_as_of_commit(CodeIndexState state) =>
-        Assert.Equal(state, CodeIndexReading.Head(state, commit: null, builtAt: null, Other, layer: null, code: null).State);
+        Assert.Equal(state, CodeIndexReading.Head(new CodeIndexHead(state, Commit: null, BuiltAt: null, AsOfCommit: null, Layer: null, Code: null), Other).State);
 
     [Fact, Trait("Lane", "unit")]
     public void A_layer_that_is_down_at_the_maps_commit_stays_a_layer_problem_and_at_another_commit_is_stale()
@@ -81,8 +81,8 @@ public sealed class CodeIndexReadingTests
     [InlineData(CodeIndexState.NotConfigured, SearchedState.NotConfigured, "not-configured", null)]
     public void The_lens_row_maps_the_blocks_state(CodeIndexState state, SearchedState searched, string? reason, string? code)
     {
-        var row = CodeIndexReading.Row(CodeIndexReading.Head(state, state is CodeIndexState.Missing or CodeIndexState.Damaged or CodeIndexState.Building or CodeIndexState.NotConfigured ? null : Indexed, _built, asOf: null,
-            state == CodeIndexState.LayerUnavailable ? "graph" : null, code));
+        var readable = state is not (CodeIndexState.Missing or CodeIndexState.Damaged or CodeIndexState.Building or CodeIndexState.NotConfigured);
+        var row = CodeIndexReading.Row(CodeIndexReading.Head(new CodeIndexHead(state, readable ? Indexed : null, _built, AsOfCommit: null, state == CodeIndexState.LayerUnavailable ? "graph" : null, code), asOf: null));
 
         Assert.Equal(("code-index", searched, reason, code), (row.Id.Value, row.State, row.Reason, row.Code));
     }
@@ -123,9 +123,9 @@ public sealed class CodeIndexReadingTests
     public void Calls_of_a_damaged_or_building_index_name_why()
     {
         Assert.Equal((SymbolsState.Unavailable, "index-damaged", "SND-CODEIDX-010"),
-            Pick(CodeIndexReading.Calls(CodeIndexReading.Head(CodeIndexState.Damaged, null, null, null, null, "SND-CODEIDX-010"), [], 0)));
+            Pick(CodeIndexReading.Calls(new CodeIndexHead(CodeIndexState.Damaged, null, null, null, null, "SND-CODEIDX-010"), [], 0)));
         Assert.Equal((SymbolsState.Unavailable, "index-building", (string?)null),
-            Pick(CodeIndexReading.Calls(CodeIndexReading.Head(CodeIndexState.Building, null, null, null, null, null), [], 0)));
+            Pick(CodeIndexReading.Calls(new CodeIndexHead(CodeIndexState.Building, null, null, null, null, null), [], 0)));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -159,9 +159,9 @@ public sealed class CodeIndexReadingTests
     [Fact, Trait("Lane", "unit")]
     public void The_file_map_column_names_why_it_is_empty()
     {
-        Assert.Equal((SymbolsState.Unavailable, "index building"), Words(CodeIndexReading.FileMap(CodeIndexReading.Head(CodeIndexState.Building, null, null, null, null, null), [])));
-        Assert.Equal((SymbolsState.Unavailable, "index damaged"), Words(CodeIndexReading.FileMap(CodeIndexReading.Head(CodeIndexState.Damaged, null, null, null, null, "SND-CODEIDX-010"), [])));
-        Assert.Equal((SymbolsState.Unavailable, "not configured"), Words(CodeIndexReading.FileMap(CodeIndexReading.Head(CodeIndexState.NotConfigured, null, null, null, null, null), [])));
+        Assert.Equal((SymbolsState.Unavailable, "index building"), Words(CodeIndexReading.FileMap(new CodeIndexHead(CodeIndexState.Building, null, null, null, null, null), [])));
+        Assert.Equal((SymbolsState.Unavailable, "index damaged"), Words(CodeIndexReading.FileMap(new CodeIndexHead(CodeIndexState.Damaged, null, null, null, null, "SND-CODEIDX-010"), [])));
+        Assert.Equal((SymbolsState.Unavailable, "not configured"), Words(CodeIndexReading.FileMap(new CodeIndexHead(CodeIndexState.NotConfigured, null, null, null, null, null), [])));
     }
 
     [Fact, Trait("Lane", "unit")]
