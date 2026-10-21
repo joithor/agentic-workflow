@@ -28,6 +28,8 @@ internal sealed partial class NeedsYouPage : UserControl
         AddHandler(NeedsYouInboxRow.SelectEvent, OnRowSelected);
         AddHandler(GotFocusEvent, (_, e) => Look(e, looking: true));
         AddHandler(LostFocusEvent, (_, e) => Look(e, looking: false));
+        // Tunnel: the multi-line box handles Enter itself before a bubbling handler would see Ctrl+Enter.
+        NeedsYouReason.AddHandler(KeyDownEvent, OnReasonKey, RoutingStrategies.Tunnel);
         SizeChanged += (_, e) => NeedsYouColumns.ColumnDefinitions[0].Width = new GridLength(e.NewSize.Width < NarrowBelow ? NarrowColumn : WideColumn);
     }
 

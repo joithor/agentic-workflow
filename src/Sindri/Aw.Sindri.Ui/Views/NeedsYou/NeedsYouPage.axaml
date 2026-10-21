@@ -227,7 +227,7 @@
               <TextBlock Grid.Column="1" Classes="caption subtle" Text="{Binding Bar.ReasonRequired}" />
             </Grid>
             <TextBox x:Name="NeedsYouReason" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" MaxHeight="120" Text="{Binding Bar.ReasonText, Mode=TwoWay}" PlaceholderText="{Binding Bar.ReasonPlaceholder}"
-                     KeyDown="OnReasonKey" AutomationProperties.Name="{Binding Bar.ReasonName}" />
+                     AutomationProperties.Name="{Binding Bar.ReasonName}" />
             <StackPanel Orientation="Horizontal" Spacing="8">
               <Button x:Name="NeedsYouSend" Classes="bar-button primary" IsEnabled="{Binding Bar.CanSend}" Click="OnSend" AutomationProperties.Name="{Binding Bar.SendWord}">
                 <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.AccessibilityView="Raw">
