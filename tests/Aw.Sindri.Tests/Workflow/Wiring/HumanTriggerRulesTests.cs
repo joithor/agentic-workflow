@@ -21,11 +21,9 @@ public sealed class HumanTriggerRulesTests
     {
         var recipe = Of(Merge(Go("ready", "done", when: Outcome("done"))));
 
-        var lines = CheckHumanTrigger(recipe, _at).Lines();
+        var finding = Assert.Single(CheckHumanTrigger(recipe, _at));
 
-        Assert.Equal(
-            ["RCP-HUMAN-001: effect 'effect.test.merge' acts with a human's authority, but transitions[0] (ready -> done on step.completed) isn't a human's act at r.yaml:3:7 (transitions[0].effects[0].use); put it on a command.<verb> transition, a step.completed out of a human-only Step, or a transition that requires a fact only such a transition produces"],
-            lines);
+        Assert.Equal(("RCP-HUMAN-001", "transitions[0].effects[0].use"), (finding.Rule, finding.Path));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -88,6 +86,53 @@ public sealed class HumanTriggerRulesTests
 
         _ = Assert.Single(CheckHumanTrigger(recipe));
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_required_fact_that_is_also_a_recipe_input_is_refused()
+    {
+        var recipe = Carried("fact:stepSpec", inputs: [DefaultInput, "fact:stepSpec"]);
+
+        _ = Assert.Single(CheckHumanTrigger(recipe));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_required_fact_a_Step_also_writes_is_refused()
+    {
+        var recipe = Carried("fact:output");
+
+        _ = Assert.Single(CheckHumanTrigger(recipe));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_required_fact_with_a_second_producer_off_an_agent_state_is_refused()
+    {
+        var recipe = Carried("fact:stepSpec", extra: Go("ready", "tidy", when: Outcome("done"), produces: ["fact:stepSpec"]));
+
+        _ = Assert.Single(CheckHumanTrigger(recipe));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_required_fact_inside_any_or_not_carries_nothing()
+    {
+        var any = new WhenClause(Outcome: null, Fact: null, Is: null, Loop: null, Below: null, All: null, Any: [Fact("fact:stepSpec", FactPresence.Present)], Not: null);
+
+        _ = Assert.Single(CheckHumanTrigger(Carried("fact:stepSpec", when: any)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_carried_form_passes() => Assert.Empty(CheckHumanTrigger(Carried("fact:stepSpec")));
+
+    /// <summary>The carried shape: a human's merge command enters 'merging', whose leaving transition records the fact the guarded merge needs.</summary>
+    private static Recipe Carried(string fact, string[]? inputs = null, RecipeTransition? extra = null, WhenClause? when = null) => WiringRecipe.Of(
+        "ready",
+        [("ready", Active("step.produce")), ("merging", WaitForEvent("item.routed")), ("tidy", Active("step.produce")), ("done", Terminal())],
+        [
+            Merge(Go("ready", "merging", on: "command.merge")),
+            Go("merging", "tidy", on: "wait.satisfied", produces: [fact]),
+            Merge(Go("tidy", "done", when: when ?? Fact(fact, FactPresence.Present))),
+            .. extra is null ? Array.Empty<RecipeTransition>() : [extra],
+        ],
+        inputs);
 
     private static WhenClause Fact(string key, FactPresence presence) =>
         new(Outcome: null, Core.Workflow.Ids.FactKey.From(key), presence, Loop: null, Below: null, All: null, Any: null, Not: null);

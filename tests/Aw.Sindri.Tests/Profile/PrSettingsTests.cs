@@ -19,7 +19,7 @@ public sealed class PrSettingsTests
         var pr = new PrSettings(Bots: ["dependabot[bot]"], AutofixCap: 5, PollInterval: "60s", RemindAfter: "14d", Replies: "post", MergeMethod: "rebase", HeldBlocksMerge: true, DocsMergeWait: "30m");
 
         Assert.True(ProfileRules.Check(With(pr)).IsSuccess);
-        Assert.True(ProfileRules.Check(With(new DocsSettings("off", ["docs/**", "*.md"]))).IsSuccess);
+        Assert.True(ProfileRules.Check(With(new DocsSettings(Globs: ["docs/**", "*.md"], Sync: "off"))).IsSuccess);
         Assert.True(ProfileRules.Check(With(new PrSettings())).IsSuccess);
     }
 
@@ -42,7 +42,7 @@ public sealed class PrSettingsTests
     {
         Assert.Contains("workflow.pr.docsMergeWait", ProfileRules.Check(With(new PrSettings(DocsMergeWait: "soon"))).Error.Message, StringComparison.Ordinal);
         Assert.Contains("workflow.pr.bots[0]", ProfileRules.Check(With(new PrSettings(Bots: [""]))).Error.Message, StringComparison.Ordinal);
-        Assert.Contains("workflow.docs.sync", ProfileRules.Check(With(new DocsSettings("maybe"))).Error.Message, StringComparison.Ordinal);
+        Assert.Contains("workflow.docs.sync", ProfileRules.Check(With(new DocsSettings(Sync: "maybe"))).Error.Message, StringComparison.Ordinal);
         Assert.Contains("workflow.docs.globs[0]", ProfileRules.Check(With(new DocsSettings(Globs: [""]))).Error.Message, StringComparison.Ordinal);
     }
 
@@ -54,7 +54,7 @@ public sealed class PrSettingsTests
         Assert.Equal(
             ["workflow.pr.autofixCap", "workflow.pr.bots", "workflow.pr.heldBlocksMerge", "workflow.pr.mergeMethod"],
             ProfileDiff.Between(live, With(new PrSettings(Bots: ["a[bot]"], AutofixCap: 4, MergeMethod: "merge", HeldBlocksMerge: true))));
-        Assert.Equal(["workflow.docs.globs", "workflow.docs.sync"], ProfileDiff.Between(live, With(new DocsSettings("off", ["docs/**"]))));
+        Assert.Equal(["workflow.docs.globs", "workflow.docs.sync"], ProfileDiff.Between(live, With(new DocsSettings(Globs: ["docs/**"], Sync: "off"))));
     }
 
     [Fact, Trait("Lane", "unit")]

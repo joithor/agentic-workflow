@@ -1,3 +1,4 @@
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Host;
@@ -13,7 +14,7 @@ namespace Aw.Sindri.Tests.Workflow;
 /// </summary>
 public sealed class ShippedDescriptorHashesTests
 {
-    private static readonly string _stateRoot = Path.Combine(Path.GetTempPath(), "aw-sindri-descriptor-hashes-test");
+    private static readonly string _stateRoot = Path.Combine(Path.GetTempPath(), "aw-sindri-descriptor-hashes-" + RealTime.NewGuid().ToString("N"));
 
     [Fact, Trait("Lane", "unit")]
     public void Every_shipped_descriptor_hash_is_unchanged()
