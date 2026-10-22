@@ -67,7 +67,7 @@ internal sealed partial class RunPageViewModel
 
     // Only what is served: the run's context, and no action this page does not know how to draw (takeover and a re-run wait on the engine, spec 3 §9).
     private static IReadOnlyList<RunNextOption> OptionsOf(InstanceDetail line) =>
-        line.ItemId is { } item ? [new RunNextOption(Labels.RunSeeContext, new DeepLink(DeepLinkKind.Item, item))] : [];
+        line.ItemId is { } item ? [new RunNextOption(Labels.RunSeeContext, new DeepLink(DeepLinkKind.ContextItem, item))] : [];
 
     // Reads the events of the failed instance and puts the reason of its last failed step in the block.
     private async Task ReadWhatWentWrong(Uri url, long at, CancellationToken cancellationToken)

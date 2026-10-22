@@ -139,13 +139,18 @@ export function isSameOriginPath(target: string): boolean {
   return target.startsWith("/") && !target.startsWith("//") && !target.includes("\\");
 }
 
+// Keys that move focus or selection, optionally with Shift. Anything else (Enter, Space, a letter, Control+S) can activate a control.
+const NAVIGATION_KEY = /^(Shift\+)?(ArrowUp|ArrowDown|ArrowLeft|ArrowRight|Home|End|PageUp|PageDown|Tab|Escape)$/;
+
 /**
  * Best-effort: click steps (and goto paths) whose words read like a save/submit/update/delete control.
- * Every drag counts as a write: dropping moves data whatever the test ids say.
+ * Every drag counts as a write: dropping moves data whatever the test ids say. A press counts as a write
+ * unless its key only navigates: Enter or Space on a focused Save button saves, whatever the target says.
  */
 export function findWriteSteps(steps: ScriptStep[]): Array<{ index: number; target: string }> {
   return steps.flatMap((s, index) => {
     if (s.action === "drag") return [{ index, target: `${s.target} → ${s.to}` }];
+    if (s.action === "press") return NAVIGATION_KEY.test(s.key) ? [] : [{ index, target: s.target === undefined ? s.key : `${s.key} on ${s.target}` }];
     const label = s.action === "click" ? targetLabel(s.target) : s.action === "goto" ? (s.target.split("?")[0] as string) : null;
     return label !== null && words(label).some(isWriteWord) ? [{ index, target: s.target }] : [];
   });
