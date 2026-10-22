@@ -113,5 +113,9 @@
   ],
   "now": "cancelled",
   "answer": null,
-  "actions": []
+  "actions": [],
+  "startedBy": null,
+  "startedAt": null,
+  "lineStage": null,
+  "rootAddress": "T-3/step/1"
 }

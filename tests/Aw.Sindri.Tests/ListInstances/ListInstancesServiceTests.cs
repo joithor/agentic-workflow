@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ListInstances;
 using Aw.Sindri.Testing;
@@ -101,6 +102,85 @@ public sealed class ListInstancesServiceTests
         Assert.Equal([("ITM-1", true), ("done", true)], [(byItem.Calls[0].Filter!.Item!, byItem.Calls[0].Ended), (byState.Calls[0].Filter!.State!, byState.Calls[0].Ended)]);
         Assert.True(neither.Calls[0].Ended);
         Assert.False(open.Calls[0].Ended);
+    }
+
+    [Fact]
+    public async Task An_open_of_false_lists_only_the_finished_instances_newest_first()
+    {
+        var older = View("done", "T-1/step/1") with { Since = new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero) };
+        var newer = View("done", "T-2/step/1") with { Since = new DateTimeOffset(2026, 10, 2, 0, 0, 0, TimeSpan.Zero) };
+
+        var (result, port) = await Run(new ListInstancesRequest(Recipe: "workflow.step", Root: "true", Open: "false"), older, View("desk-task", "T-3/step/1"), newer);
+
+        Assert.Equal(["T-2/step/1", "T-1/step/1"], result.Value.Instances.Select(static r => r.Address.Value), StringComparer.Ordinal);
+        Assert.True(port.Calls[0].Ended);
+    }
+
+    [Fact]
+    public async Task An_absent_open_lists_the_open_and_the_finished_instances()
+    {
+        var (result, _) = await Run(new ListInstancesRequest(Recipe: "workflow.step", Root: "true"), View("done", "T-1/step/1"), View("desk-task", "T-2/step/1"));
+
+        Assert.Equal(2, result.Value.Instances.Count);
+    }
+
+    private static InstanceView Line(string name, string address) =>
+        View(name, address) with { Recipe = View(name, address).Recipe with { Id = RecipeId.From("workflow.line") } };
+
+    private static async Task<(InstanceList List, FixedReader Reader)> RunLines(InstanceView[] all, params InstanceView[] listed)
+    {
+        var reader = new FixedReader(all);
+        var port = new RecordingInstances([.. listed.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]);
+        var service = Service(all, new FixedItemViews(failing: false), caller: null, port: port, reader: reader);
+        var result = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
+        return (result.Value, reader);
+    }
+
+    [Fact]
+    public async Task A_root_line_row_reads_its_own_state_as_the_line_stage_without_a_second_read()
+    {
+        var root = Line("desk-task", "T-1/line/1");
+
+        var (list, reader) = await RunLines([root], root);
+
+        Assert.Equal(root.State, list.Instances[0].LineStage);
+        Assert.Equal(["T-1/line/1"], reader.Reads, StringComparer.Ordinal);   // the one read of the row's view; the root is that view
+    }
+
+    [Fact]
+    public async Task A_child_row_reads_the_state_of_the_line_root_above_it()
+    {
+        var root = Line("parked-rounds", "T-1/line/1");
+        var child = View("desk-task", "T-1/line/1/phase.2");
+
+        var (list, _) = await RunLines([root, child], child);
+
+        Assert.Equal(root.State, list.Instances[0].LineStage);
+        Assert.Equal("T-1/line/1", list.Instances[0].RootAddress);
+    }
+
+    [Fact]
+    public async Task A_row_whose_root_is_not_a_line_instance_has_no_line_stage()
+    {
+        var root = View("desk-task", "T-1/step/1");
+        var child = View("desk-task", "T-1/step/1/phase.2");
+
+        var (list, _) = await RunLines([root, child], root, child);
+
+        Assert.All(list.Instances, static r => Assert.Null(r.LineStage));
+    }
+
+    [Fact]
+    public async Task Rows_that_share_a_root_read_that_root_once()
+    {
+        var root = Line("parked-rounds", "T-1/line/1");
+        var first = View("desk-task", "T-1/line/1/phase.2");
+        var second = View("desk-task", "T-1/line/1/phase.3");
+
+        var (list, reader) = await RunLines([root, first, second], first, second);
+
+        Assert.All(list.Instances, r => Assert.Equal(root.State, r.LineStage));
+        Assert.Equal(1, reader.Reads.Count(static a => a == "T-1/line/1"));
     }
 
     [Fact]

@@ -126,6 +126,17 @@ public sealed record InstanceView(
     /// <summary>One row per input and output the recipe declares, in declaration order.</summary>
     public IReadOnlyList<FactRow> Facts { get; init; } = [];
 
+    /// <summary>When the instance started; null for one that began before the start was stamped.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public DateTimeOffset? StartedAt { get; init; }
+
+    /// <summary>Who started the instance, in the actor form of the step runs ('human:prover'); null when nobody is recorded (a child, an automated start, an older instance).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? StartedBy { get; init; }
+
+    /// <summary>What each Step state reads and produces (the detail's 'steps'), in the recipe's state order.</summary>
+    public IReadOnlyList<StateStep> Steps { get; init; } = [];
+
     /// <summary>The children, one group per state that declares child or runs step.children; empty until engine P7.</summary>
     public IReadOnlyList<ChildGroup> ChildGroups { get; init; } = [];
 }

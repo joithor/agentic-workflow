@@ -3,7 +3,7 @@ using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.Testing;
 
-/// <summary>The workflow command routes every <see cref="Aw.Sindri.Ui.Api.ISindriApi"/> passes: the desk report.</summary>
+/// <summary>The workflow command routes every <see cref="Api.ISindriApi"/> passes: the desk report.</summary>
 public abstract partial class SindriApiContract
 {
     private const string DeskInstance = "WFI-44393da815f188cea9c6fe30ae2a30a6";

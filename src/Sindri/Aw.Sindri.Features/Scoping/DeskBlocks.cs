@@ -48,6 +48,8 @@ internal static partial class DeskBlocks
         "step.brief.seed" => Seed(),
         "step.scope.gather" => Gather(facts),
         "step.scope.read-brief" => ReadBrief(facts),
+        "step.scope.read-tracker" => ReadTracker(facts),
+        "step.scope.read-change" => ReadChange(facts),
         "step.scope.anchor" => Anchor(facts),
         "step.scope.reanchor" => Reanchor(facts),
         "step.scope.propose" => Propose(facts),

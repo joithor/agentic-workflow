@@ -370,6 +370,52 @@ Aw.CodeIndex.Core.Model.CallSiteRow.Deconstruct(out Aw.CodeIndex.Core.Values.Sym
 Aw.CodeIndex.Core.Model.CallSiteRow.Equals(Aw.CodeIndex.Core.Model.CallSiteRow? other) -> bool
 Aw.CodeIndex.Core.Model.CallSiteRow.Site.get -> Aw.CodeIndex.Core.Model.CallSite!
 Aw.CodeIndex.Core.Model.CallSiteRow.Site.init -> void
+Aw.CodeIndex.Core.Planning.BuildPlan
+Aw.CodeIndex.Core.Planning.BuildPlan.<Clone>$() -> Aw.CodeIndex.Core.Planning.BuildPlan!
+Aw.CodeIndex.Core.Planning.BuildPlan.BuildPlan(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>! ToParse, System.Collections.Generic.IReadOnlyList<string!>! ToDrop, System.Collections.Generic.IReadOnlyDictionary<Aw.CodeIndex.Core.Model.LayerName, bool>! LayersCurrent) -> void
+Aw.CodeIndex.Core.Planning.BuildPlan.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>! ToParse, out System.Collections.Generic.IReadOnlyList<string!>! ToDrop, out System.Collections.Generic.IReadOnlyDictionary<Aw.CodeIndex.Core.Model.LayerName, bool>! LayersCurrent) -> void
+Aw.CodeIndex.Core.Planning.BuildPlan.Equals(Aw.CodeIndex.Core.Planning.BuildPlan? other) -> bool
+Aw.CodeIndex.Core.Planning.BuildPlan.LayersCurrent.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.CodeIndex.Core.Model.LayerName, bool>!
+Aw.CodeIndex.Core.Planning.BuildPlan.LayersCurrent.init -> void
+Aw.CodeIndex.Core.Planning.BuildPlan.ToDrop.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.CodeIndex.Core.Planning.BuildPlan.ToDrop.init -> void
+Aw.CodeIndex.Core.Planning.BuildPlan.ToParse.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>!
+Aw.CodeIndex.Core.Planning.BuildPlan.ToParse.init -> void
+Aw.CodeIndex.Core.Planning.BuildPlanInput
+Aw.CodeIndex.Core.Planning.BuildPlanInput.<Clone>$() -> Aw.CodeIndex.Core.Planning.BuildPlanInput!
+Aw.CodeIndex.Core.Planning.BuildPlanInput.BuildPlanInput(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>! Snapshot, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.StoredFile!>! Stored, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.LayerRecord!>! StoredLayers, System.Collections.Generic.IReadOnlyDictionary<Aw.CodeIndex.Core.Model.LayerName, string!>! WantedStamps) -> void
+Aw.CodeIndex.Core.Planning.BuildPlanInput.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>! Snapshot, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.StoredFile!>! Stored, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.LayerRecord!>! StoredLayers, out System.Collections.Generic.IReadOnlyDictionary<Aw.CodeIndex.Core.Model.LayerName, string!>! WantedStamps) -> void
+Aw.CodeIndex.Core.Planning.BuildPlanInput.Equals(Aw.CodeIndex.Core.Planning.BuildPlanInput? other) -> bool
+Aw.CodeIndex.Core.Planning.BuildPlanInput.Snapshot.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>!
+Aw.CodeIndex.Core.Planning.BuildPlanInput.Snapshot.init -> void
+Aw.CodeIndex.Core.Planning.BuildPlanInput.Stored.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.StoredFile!>!
+Aw.CodeIndex.Core.Planning.BuildPlanInput.Stored.init -> void
+Aw.CodeIndex.Core.Planning.BuildPlanInput.StoredLayers.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.LayerRecord!>!
+Aw.CodeIndex.Core.Planning.BuildPlanInput.StoredLayers.init -> void
+Aw.CodeIndex.Core.Planning.BuildPlanInput.WantedStamps.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.CodeIndex.Core.Model.LayerName, string!>!
+Aw.CodeIndex.Core.Planning.BuildPlanInput.WantedStamps.init -> void
+Aw.CodeIndex.Core.Planning.BuildPlanner
+Aw.CodeIndex.Core.Planning.StructureStamp
+Aw.CodeIndex.Core.Ports.CallWalk
+Aw.CodeIndex.Core.Ports.CallWalk.<Clone>$() -> Aw.CodeIndex.Core.Ports.CallWalk!
+Aw.CodeIndex.Core.Ports.CallWalk.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>!
+Aw.CodeIndex.Core.Ports.CallWalk.Edges.init -> void
+Aw.CodeIndex.Core.Ports.CallWalk.Equals(Aw.CodeIndex.Core.Ports.CallWalk? other) -> bool
+Aw.CodeIndex.Core.Ports.CallWalk.Truncated.get -> bool
+Aw.CodeIndex.Core.Ports.CallWalk.Truncated.init -> void
+Aw.CodeIndex.Core.Ports.CallWalk.UnresolvedCount.get -> int
+Aw.CodeIndex.Core.Ports.CallWalk.UnresolvedCount.init -> void
+Aw.CodeIndex.Core.Ports.CloneCandidates
+Aw.CodeIndex.Core.Ports.CloneCandidates.Banded.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Ports.MinHashCandidate!>!
+Aw.CodeIndex.Core.Ports.CloneCandidates.Banded.init -> void
+Aw.CodeIndex.Core.Ports.CloneCandidates.<Clone>$() -> Aw.CodeIndex.Core.Ports.CloneCandidates!
+Aw.CodeIndex.Core.Ports.CloneCandidates.CloneCandidates(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>! Exact, System.ReadOnlyMemory<byte> SubjectMinHash, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Ports.MinHashCandidate!>! Banded) -> void
+Aw.CodeIndex.Core.Ports.CloneCandidates.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>! Exact, out System.ReadOnlyMemory<byte> SubjectMinHash, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Ports.MinHashCandidate!>! Banded) -> void
+Aw.CodeIndex.Core.Ports.CloneCandidates.Equals(Aw.CodeIndex.Core.Ports.CloneCandidates? other) -> bool
+Aw.CodeIndex.Core.Ports.CloneCandidates.Exact.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>!
+Aw.CodeIndex.Core.Ports.CloneCandidates.Exact.init -> void
+Aw.CodeIndex.Core.Ports.CloneCandidates.SubjectMinHash.get -> System.ReadOnlyMemory<byte>
+Aw.CodeIndex.Core.Ports.CloneCandidates.SubjectMinHash.init -> void
 Aw.CodeIndex.Core.Model.Confidence
 Aw.CodeIndex.Core.Model.Confidence.Ambiguous = 2 -> Aw.CodeIndex.Core.Model.Confidence
 Aw.CodeIndex.Core.Model.Confidence.Certain = 0 -> Aw.CodeIndex.Core.Model.Confidence
@@ -789,30 +835,10 @@ Aw.CodeIndex.Core.Model.SymbolRecord.TokenCount.get -> int
 Aw.CodeIndex.Core.Model.SymbolRecord.TokenCount.init -> void
 Aw.CodeIndex.Core.Model.SymbolRecord.Utility.get -> bool
 Aw.CodeIndex.Core.Model.SymbolRecord.Utility.init -> void
-Aw.CodeIndex.Core.Ports.CallWalk
-Aw.CodeIndex.Core.Ports.CallWalk.<Clone>$() -> Aw.CodeIndex.Core.Ports.CallWalk!
 Aw.CodeIndex.Core.Ports.CallWalk.CallWalk(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>! Edges, int UnresolvedCount, bool Truncated, Aw.CodeIndex.Core.Model.Coverage Coverage) -> void
 Aw.CodeIndex.Core.Ports.CallWalk.Coverage.get -> Aw.CodeIndex.Core.Model.Coverage
 Aw.CodeIndex.Core.Ports.CallWalk.Coverage.init -> void
 Aw.CodeIndex.Core.Ports.CallWalk.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>! Edges, out int UnresolvedCount, out bool Truncated, out Aw.CodeIndex.Core.Model.Coverage Coverage) -> void
-Aw.CodeIndex.Core.Ports.CallWalk.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>!
-Aw.CodeIndex.Core.Ports.CallWalk.Edges.init -> void
-Aw.CodeIndex.Core.Ports.CallWalk.Equals(Aw.CodeIndex.Core.Ports.CallWalk? other) -> bool
-Aw.CodeIndex.Core.Ports.CallWalk.Truncated.get -> bool
-Aw.CodeIndex.Core.Ports.CallWalk.Truncated.init -> void
-Aw.CodeIndex.Core.Ports.CallWalk.UnresolvedCount.get -> int
-Aw.CodeIndex.Core.Ports.CallWalk.UnresolvedCount.init -> void
-Aw.CodeIndex.Core.Ports.CloneCandidates
-Aw.CodeIndex.Core.Ports.CloneCandidates.<Clone>$() -> Aw.CodeIndex.Core.Ports.CloneCandidates!
-Aw.CodeIndex.Core.Ports.CloneCandidates.Banded.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Ports.MinHashCandidate!>!
-Aw.CodeIndex.Core.Ports.CloneCandidates.Banded.init -> void
-Aw.CodeIndex.Core.Ports.CloneCandidates.CloneCandidates(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>! Exact, System.ReadOnlyMemory<byte> SubjectMinHash, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Ports.MinHashCandidate!>! Banded) -> void
-Aw.CodeIndex.Core.Ports.CloneCandidates.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>! Exact, out System.ReadOnlyMemory<byte> SubjectMinHash, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Ports.MinHashCandidate!>! Banded) -> void
-Aw.CodeIndex.Core.Ports.CloneCandidates.Equals(Aw.CodeIndex.Core.Ports.CloneCandidates? other) -> bool
-Aw.CodeIndex.Core.Ports.CloneCandidates.Exact.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>!
-Aw.CodeIndex.Core.Ports.CloneCandidates.Exact.init -> void
-Aw.CodeIndex.Core.Ports.CloneCandidates.SubjectMinHash.get -> System.ReadOnlyMemory<byte>
-Aw.CodeIndex.Core.Ports.CloneCandidates.SubjectMinHash.init -> void
 Aw.CodeIndex.Core.Ports.GraphRequest
 Aw.CodeIndex.Core.Ports.GraphRequest.<Clone>$() -> Aw.CodeIndex.Core.Ports.GraphRequest!
 Aw.CodeIndex.Core.Ports.GraphRequest.Blobs.get -> Aw.CodeIndex.Core.Ports.IBlobReader!
@@ -1115,6 +1141,12 @@ override Aw.CodeIndex.Core.Ports.MinHashCandidate.ToString() -> string!
 override Aw.CodeIndex.Core.Ports.SymbolPage.Equals(object? obj) -> bool
 override Aw.CodeIndex.Core.Ports.SymbolPage.GetHashCode() -> int
 override Aw.CodeIndex.Core.Ports.SymbolPage.ToString() -> string!
+override Aw.CodeIndex.Core.Planning.BuildPlanInput.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Planning.BuildPlanInput.GetHashCode() -> int
+override Aw.CodeIndex.Core.Planning.BuildPlanInput.ToString() -> string!
+override Aw.CodeIndex.Core.Planning.BuildPlan.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Planning.BuildPlan.GetHashCode() -> int
+override Aw.CodeIndex.Core.Planning.BuildPlan.ToString() -> string!
 override Aw.CodeIndex.Core.Values.CommitSha.Equals(object? obj) -> bool
 override Aw.CodeIndex.Core.Values.CommitSha.GetHashCode() -> int
 override Aw.CodeIndex.Core.Values.CommitSha.ToString() -> string!
@@ -1240,6 +1272,12 @@ static Aw.CodeIndex.Core.Ports.MinHashCandidate.operator ==(Aw.CodeIndex.Core.Po
 static Aw.CodeIndex.Core.Ports.SymbolPage.operator !=(Aw.CodeIndex.Core.Ports.SymbolPage? left, Aw.CodeIndex.Core.Ports.SymbolPage? right) -> bool
 static Aw.CodeIndex.Core.Ports.SymbolPage.operator ==(Aw.CodeIndex.Core.Ports.SymbolPage? left, Aw.CodeIndex.Core.Ports.SymbolPage? right) -> bool
 static Aw.CodeIndex.Core.Resolution.CallResolver.RankText(int rank, int candidates) -> string!
+static Aw.CodeIndex.Core.Planning.BuildPlanInput.operator !=(Aw.CodeIndex.Core.Planning.BuildPlanInput? left, Aw.CodeIndex.Core.Planning.BuildPlanInput? right) -> bool
+static Aw.CodeIndex.Core.Planning.BuildPlanInput.operator ==(Aw.CodeIndex.Core.Planning.BuildPlanInput? left, Aw.CodeIndex.Core.Planning.BuildPlanInput? right) -> bool
+static Aw.CodeIndex.Core.Planning.BuildPlan.operator !=(Aw.CodeIndex.Core.Planning.BuildPlan? left, Aw.CodeIndex.Core.Planning.BuildPlan? right) -> bool
+static Aw.CodeIndex.Core.Planning.BuildPlan.operator ==(Aw.CodeIndex.Core.Planning.BuildPlan? left, Aw.CodeIndex.Core.Planning.BuildPlan? right) -> bool
+static Aw.CodeIndex.Core.Planning.BuildPlanner.Plan(Aw.CodeIndex.Core.Planning.BuildPlanInput! input) -> Aw.CodeIndex.Core.Planning.BuildPlan!
+static Aw.CodeIndex.Core.Planning.StructureStamp.Compute(string! parserVersion, System.Collections.Generic.IReadOnlyList<string!>! utilityGlobs, System.Collections.Generic.IReadOnlyList<string!>! scrubPatterns) -> string!
 static Aw.CodeIndex.Core.Values.CommitSha.From(string! value) -> Aw.CodeIndex.Core.Values.CommitSha
 static Aw.CodeIndex.Core.Values.CommitSha.operator !=(Aw.CodeIndex.Core.Values.CommitSha left, Aw.CodeIndex.Core.Values.CommitSha right) -> bool
 static Aw.CodeIndex.Core.Values.CommitSha.operator ==(Aw.CodeIndex.Core.Values.CommitSha left, Aw.CodeIndex.Core.Values.CommitSha right) -> bool
