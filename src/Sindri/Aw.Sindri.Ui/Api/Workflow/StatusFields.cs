@@ -13,7 +13,8 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="Injection">The injection sections, as served.</param>
 /// <param name="Commands">Commands, as served.</param>
 /// <param name="Text">Text, as served.</param>
-/// <param name="Run">The agent run the state is on, or null (omitted by a server before engine P8, and when no agent runs the Step).</param>
+/// <param name="Run">The agent run the state is on, or null (omitted by a server before engine P8, and when no agent runs the Step).
+/// <param name="TakenOverAt">When a person took the instance over, or null (omitted) when it is not taken over.</param></param>
 internal sealed record StatusFields(
     StatusHeader Header,
     string? Next,
