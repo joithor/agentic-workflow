@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json.Nodes;
 using Aw.Sindri.Core.Checks;
@@ -47,7 +48,7 @@ internal sealed class ProveBeforeAfterStep(IBriefFiles files, IRunArea area, IRe
             return BlockStepResult.Failed(failure!);   // why: a null phase comes with its reason
         }
 
-        var planned = await WithRedTestScripts(Signals(phase).ToList(), (inputs.Address, workspace), StepFacts.Read(context, "fact:redTests"), cancellationToken).ConfigureAwait(false);
+        var planned = await WithRedTestScripts([.. Signals(phase)], (inputs.Address, workspace), StepFacts.Read(context, "fact:redTests"), cancellationToken).ConfigureAwait(false);
         var (rows, unrunnable) = planned.Exists(static p => p.Script is not null)
             ? await RunInScratch(inputs.Address, (phase, checkout), planned, workspace, cancellationToken).ConfigureAwait(false)
             : ([.. planned.Select(static p => (JsonNode)Row(p, "missing", "missing"))], null);
@@ -196,13 +197,13 @@ internal sealed class ProveBeforeAfterStep(IBriefFiles files, IRunArea area, IRe
         foreach (var path in paths)
         {
             var file = Quote(path);
-            _ = script.Append($"[ {file} -ef \"$ws\"/{file} ] || {{ mkdir -p -- \"$(dirname -- {file})\" && cp -- \"$ws\"/{file} {file}; }}\n");
+            _ = script.Append(CultureInfo.InvariantCulture, $"[ {file} -ef \"$ws\"/{file} ] || {{ mkdir -p -- \"$(dirname -- {file})\" && cp -- \"$ws\"/{file} {file}; }}\n");
         }
 
         _ = script.Append("rc=0\n");
         foreach (var command in profile)
         {
-            _ = script.Append(string.Join(' ', command.Run.Select(Quote))).Append(" || rc=$?\n");
+            _ = script.AppendJoin(' ', command.Run.Select(Quote)).Append(" || rc=$?\n");
         }
 
         return script.Append("exit $rc\n").ToString();
