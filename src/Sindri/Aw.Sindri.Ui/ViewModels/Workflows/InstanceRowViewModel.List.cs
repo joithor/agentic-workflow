@@ -14,6 +14,7 @@ internal sealed partial class InstanceRowViewModel
     {
         RunStatusKind.WaitingForYou or RunStatusKind.Paused or RunStatusKind.TookOver => Labels.WorkflowsWaitYou,
         RunStatusKind.Running => Labels.WorkflowsWaitAgent,
+        RunStatusKind.Unknown or RunStatusKind.NotStarted or RunStatusKind.Done or RunStatusKind.Failed or RunStatusKind.DidntWorkOut or RunStatusKind.Cancelled => string.Empty,
         _ => string.Empty,
     };
 
