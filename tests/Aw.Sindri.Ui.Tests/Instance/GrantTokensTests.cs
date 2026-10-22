@@ -115,9 +115,9 @@ public sealed class GrantTokensTests
         _f.Clock.Advance(TimeSpan.FromMilliseconds(1500));
         await grant.Tick();
 
-        var (instance, sent) = _server.ApplyCalls.Single();
-        Assert.Equal(("WFI-44393da815f188cea9c6fe30ae2a30a6", "answer", "grant-tokens", 1_000_000, 1500L), (instance, sent.Kind, sent.Answer, sent.Amount, sent.Challenge.HeldMs));
-        Assert.Equal((Address, "CHL-00000000000000000000000000000003"), (sent.Instance, sent.Challenge.Challenge));
+        var (instance, sent) = _server.CommandCalls.Single();
+        Assert.Equal(("WFI-44393da815f188cea9c6fe30ae2a30a6", CommandKind.Answer, AnswerVariant.GrantTokens, (int?)1_000_000, (long?)1500L), (instance, sent.Kind, sent.Answer, sent.Amount, sent.Challenge!.HeldMs));
+        Assert.Equal((Address, "CHL-00000000000000000000000000000003"), (sent.Instance, sent.Challenge!.Challenge));
         Assert.Equal((1, true), (granted, grant.IsDone));
     }
 
@@ -133,7 +133,7 @@ public sealed class GrantTokensTests
         await grant.Tick();
         grant.CancelHold();
 
-        Assert.Empty(_server.ApplyCalls);
+        Assert.Empty(_server.CommandCalls);
         Assert.False(grant.IsDone);
     }
 
@@ -146,13 +146,13 @@ public sealed class GrantTokensTests
 
         grant.TypedBox.Text = "grant-tokens 1 " + Address;
         await grant.SubmitTyped();
-        Assert.Empty(_server.ApplyCalls);
+        Assert.Empty(_server.CommandCalls);
 
         grant.TypedBox.Text = "grant-tokens 1000000 " + Address;
         await grant.SubmitTyped();
 
-        var sent = _server.ApplyCalls.Single().Body;
-        Assert.Equal(("grant-tokens 1000000 " + Address, null), (sent.Challenge.Typed, sent.Challenge.HeldMs));
+        var sent = _server.CommandCalls.Single().Body;
+        Assert.Equal(("grant-tokens 1000000 " + Address, null), (sent.Challenge!.Typed, sent.Challenge.HeldMs));
     }
 
     [Fact]
@@ -176,7 +176,7 @@ public sealed class GrantTokensTests
     public async Task A_refusal_is_shown_in_the_servers_words_and_the_spent_challenge_is_gone()
     {
         Serves("grant-tokens 1000000 " + Address);
-        _server.ApplyAnswer = RouteAnswer.Problem(HttpStatusCode.UnprocessableEntity, "SND-WF-003", "--grant-tokens 1M is outside 1..400k, 4x the original budget of 100k (fix: use --grant-tokens 1 to --grant-tokens 400k)");
+        _server.CommandAnswer = RouteAnswer.Problem(HttpStatusCode.UnprocessableEntity, "SND-WF-003", "--grant-tokens 1M is outside 1..400k, 4x the original budget of 100k (fix: use --grant-tokens 1 to --grant-tokens 400k)");
         var grant = Grant();
         await grant.Prepare();
         _ = grant.Hold.Begin();

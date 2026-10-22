@@ -49,6 +49,8 @@ internal sealed partial class SetupViewModel
         if (error.Kind == ErrorKind.NotFound)
         {
             IsNotServed = true;
+            _rows.Clear();   // a Sindri without the route shows only that, never the rows of an earlier read
+            Steps.Clear();
         }
         else if (string.Equals(error.Code, SindriUiErrors.BadAnswer.Code, StringComparison.Ordinal))
         {
@@ -97,18 +99,15 @@ internal sealed partial class SetupViewModel
             else
             {
                 var row = new SetupStepViewModel(step, served.Count + 1, ActionOf);
+                Attach(row);
                 _rows[step.Id] = row;
                 served.Add(row);
             }
         }
 
-        var present = new HashSet<string>(view.Steps.Select(s => s.Id), StringComparer.Ordinal);
-        foreach (var gone in _rows.Keys.Where(k => !present.Contains(k)).ToList())
-        {
-            _ = _rows.Remove(gone);
-        }
-
+        Forget(view);
         Patch.To(Steps, served);
+        ConfirmAll(served);
         (IsReading, IsNotServed, IsUnreadable, IsStale, IsFailed, IsNotRunning, FailedText) = (false, false, false, false, false, false, string.Empty);
         OpenTheFirstStep();
         _hasRead = true;
@@ -116,6 +115,23 @@ internal sealed partial class SetupViewModel
         if (said.Count > 0)
         {
             Live.Say(string.Join(". ", said));
+        }
+    }
+
+    private void Forget(SetupView view)
+    {
+        var present = new HashSet<string>(view.Steps.Select(s => s.Id), StringComparer.Ordinal);
+        foreach (var gone in _rows.Keys.Where(k => !present.Contains(k)).ToList())
+        {
+            _ = _rows.Remove(gone);
+        }
+    }
+
+    private static void ConfirmAll(List<SetupStepViewModel> rows)
+    {
+        foreach (var row in rows)
+        {
+            Confirm(row);
         }
     }
 }

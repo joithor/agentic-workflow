@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Setup;
+using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.Components;
 using Aw.Sindri.Ui.ViewModels.Controls;
 
@@ -15,7 +16,13 @@ namespace Aw.Sindri.Ui.ViewModels.Setup;
 internal sealed partial class SetupViewModel : ObservableObject
 {
     private const string MapStep = "map";
+    private const string McpStep = "mcp";
+    private const string OnyxStep = "onyx";
+    private const string ProfileStep = "profile";
+    private const string RecipesStep = "recipes";
+    private const string ProfileAction = "ApproveProfile";
     private const string MapRefresh = "RefreshContextMap";
+    private const string RegisterAction = "RegisterMcp";
     private const string ConflictRefusal = "SND-JOB-409";
     private const string RunningJob = "runningJob";
 
@@ -24,6 +31,10 @@ internal sealed partial class SetupViewModel : ObservableObject
     private readonly CatalogViewModel _catalog;
     private readonly TimeProvider _clock;
     private readonly Func<string, bool> _opensInApp;
+    private readonly IFolderPicker _folders;
+    private readonly Func<string?> _profileHash;
+    private readonly Func<bool>? _reducedMotion;
+    private bool _registering;
     private int _reads;
     private bool _hasRead;
     private bool _refreshing;
@@ -36,10 +47,15 @@ internal sealed partial class SetupViewModel : ObservableObject
     /// <param name="catalog">The command catalog: its rows give the terminal forms of the actions.</param>
     /// <param name="clock">The clock for the Copy controls' timings.</param>
     /// <param name="opensInApp">Whether the app can do an action itself (a button) rather than show the command; the shell decides.</param>
-    internal SetupViewModel(ISindriApi api, CatalogViewModel catalog, TimeProvider clock, Func<string, bool> opensInApp)
+    /// <param name="folders">The folder chooser of the repo step; a head with none shows the typed path only.</param>
+    /// <param name="profileHash">The live profile's hash the typed approval is tied to, or null when not known; none means never known.</param>
+    /// <param name="reducedMotion">True when motion is reduced: the approve-all hold counts in words and shows no fill. None means motion is allowed.</param>
+    internal SetupViewModel(ISindriApi api, CatalogViewModel catalog, TimeProvider clock, Func<string, bool> opensInApp, IFolderPicker folders, Func<string?>? profileHash = null, Func<bool>? reducedMotion = null)
     {
-        (_api, _catalog, _clock, _opensInApp) = (api, catalog, clock, opensInApp);
+        (_api, _catalog, _clock, _opensInApp, _folders) = (api, catalog, clock, opensInApp, folders);
+        (_profileHash, _reducedMotion) = (profileHash ?? (static () => null), reducedMotion);
         Launcher = new ControlViewModel(new CommandRowView("StartSindri", "desk", [], Terminal: false, Method: null, Route: null, Labels.SetupLauncher, "cli-only:launcher", Destructive: false, ReadsViews: false, Shortcut: null), send: null, catalog.Clipboard, clock);
+        Footnote = new ControlViewModel(new CommandRowView("SetupOnyx", "desk", [], Terminal: false, Method: null, Route: null, Labels.SetupOnyxFootCommand, "cli-only:footnote", Destructive: false, ReadsViews: false, Shortcut: null), send: null, catalog.Clipboard, clock);
     }
 
     /// <summary>Raised when a step's button asks the shell to open an action in the app.</summary>
@@ -59,6 +75,17 @@ internal sealed partial class SetupViewModel : ObservableObject
 
     /// <summary>The launcher command with Copy, for when Sindri isn't running.</summary>
     public ControlViewModel Launcher { get; }
+
+    /// <summary>The terminal alternative for Onyx, one line under the checklist (Q5), with Copy.</summary>
+    public ControlViewModel Footnote { get; }
+
+    /// <summary>True while the footnote shows: Onyx is not set up and not set aside.</summary>
+    public bool IsFootnoteShown => _rows.TryGetValue(OnyxStep, out var onyx) && !onyx.IsFinished;
+
+    /// <summary>The words before the footnote's command.</summary>
+#pragma warning disable CA1822, MA0041 // why: the view binds it as an instance property of the view model
+    public string FootnoteText => Labels.SetupOnyxFoot;
+#pragma warning restore CA1822, MA0041
 
     /// <summary>The lead over the checklist: "Set up Sindri", or "Sindri is set up"; empty until the first list.</summary>
     public string Lead { get; private set => Set(ref field, value); } = string.Empty;
@@ -131,12 +158,46 @@ internal sealed partial class SetupViewModel : ObservableObject
         ChecklistRequested?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <summary>Registers Sindri in the approved repos again (Connect on a failed agents step). One press sends once.</summary>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>A task that completes when the answer is shown.</returns>
+    internal async Task RegisterMcp(CancellationToken cancellationToken)
+    {
+        if (_registering || _url is not { } url || !_rows.TryGetValue(McpStep, out var mcp) || mcp.IsWorking)   // one press sends once
+        {
+            return;
+        }
+
+        _registering = true;
+        try
+        {
+            var started = await _api.RegisterMcp(url, new RegisterMcpRequest(), cancellationToken).ConfigureAwait(true);
+            if (started.IsSuccess)
+            {
+                Hold(mcp, Labels.SetupMcpAgain);
+            }
+            else
+            {
+                mcp.Say(Labels.SetupRefusal(started.Error.Code) ?? Labels.SetupMcpFailed);
+            }
+        }
+        finally
+        {
+            _registering = false;
+        }
+
+        Fold();
+    }
+
     /// <summary>Asks again, for every step, whether the app can do its action now.</summary>
     internal void Rederive()
     {
         foreach (var row in _rows.Values)
         {
             row.Rederive();
+            row.Repo?.Refresh();
+            row.Onyx?.Refresh();
+            Confirm(row);
         }
     }
 
@@ -196,6 +257,7 @@ internal sealed partial class SetupViewModel : ObservableObject
         HasSub = HasSteps && !IsFinished;
         Segments = [.. Steps.Select(s => new SetupSegment(s.SegmentKind))];
         FoldHomeLine();
+        OnChanged(nameof(IsFootnoteShown));
     }
 
     // Home's line: shown while a step is open, naming the first step still to do, with Continue.
@@ -208,45 +270,4 @@ internal sealed partial class SetupViewModel : ObservableObject
         OnChanged(nameof(HomeLineName));
         OnChanged(nameof(ContinueName));
     }
-
-    // A step's action: an app button when the app can do it, else the command to copy; none for an action nothing here knows. A kept action stays while nothing about it changed, so a
-    // Copy in flight is not reset.
-    private SetupActionViewModel? ActionOf(SetupStepView step, SetupActionViewModel? kept)
-    {
-        if (Offered(step) is not { } action)
-        {
-            return null;
-        }
-
-        var inApp = _opensInApp(action) || OpensHere(action);
-        if (kept is not null && kept.Matches(action, step, inApp))
-        {
-            return kept;
-        }
-
-        return Knows(action, inApp) ? new SetupActionViewModel(action, step, inApp, _catalog, _clock, Open) : null;
-    }
-
-    // The map has no button until it failed; then Retry is the catalog's refresh (a retry of the build, never a service run). Every other step offers what the API serves.
-    private static string? Offered(SetupStepView step) =>
-        string.Equals(step.Id, MapStep, StringComparison.Ordinal)
-            ? string.Equals(step.State, "failed", StringComparison.Ordinal) ? MapRefresh : null
-            : step.Action is { Length: > 0 } served ? served : null;
-
-    // The refresh is the app's own button when the catalog lists it as ready.
-    private bool OpensHere(string action) => string.Equals(action, MapRefresh, StringComparison.Ordinal) && _catalog.For(action) is { IsReady: true };
-
-    private void Open(string action)
-    {
-        if (string.Equals(action, MapRefresh, StringComparison.Ordinal))
-        {
-            _ = RefreshMap(CancellationToken.None);
-        }
-        else
-        {
-            ActionRequested?.Invoke(this, new SetupActionEventArgs(action));
-        }
-    }
-
-    private bool Knows(string action, bool inApp) => inApp || _catalog.Row(action) is not null || Labels.SetupCli(action).Length > 0;
 }

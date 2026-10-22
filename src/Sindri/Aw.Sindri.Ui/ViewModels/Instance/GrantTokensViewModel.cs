@@ -200,7 +200,7 @@ internal sealed class GrantTokensViewModel : ObservableObject
         (IsSending, Error) = (true, string.Empty);
         Hold.Busy();
         TypedBox.SetSending(sending: true);
-        Result<CommandApplied> applied;
+        Result<ApplyCommandAccepted> applied;
         try
         {
             applied = await _api.ApplyCommand(api, _instanceId, ApplyCommandBody.GrantTokens(_address, tokens, answer), CancellationToken.None).ConfigureAwait(true);

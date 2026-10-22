@@ -1,20 +1,21 @@
 namespace Aw.Sindri.Ui.Api.Workflow;
 
 /// <summary>
-/// The body of POST /sindri/workflow/instances/{id}/commands for a protected answer (engine spec §4.2, §6.3): '--grant-tokens n' with the
-/// challenge the person answered by hold or by typing. The instance is its address; the route names it by id.
+/// The body of POST /sindri/workflow/instances/{id}/commands (engine spec rev 8 §5.2, §6.3): a command on an instance. The route names
+/// the instance and wins over the body's. A token grant is a protected answer: it carries the amount and the challenge the person answered.
 /// </summary>
-/// <param name="Instance">The instance's address.</param>
-/// <param name="Kind">'answer'.</param>
-/// <param name="Answer">The answer's variant, 'grant-tokens'.</param>
-/// <param name="Amount">The tokens granted.</param>
-/// <param name="Challenge">The challenge and its answer.</param>
-internal sealed record ApplyCommandBody(string Instance, string Kind, string Answer, int Amount, ChallengeAnswerBody Challenge)
+/// <param name="Instance">The instance's id (an address for a grant).</param>
+/// <param name="Kind">The command: an answer, a cancel or a hand back.</param>
+/// <param name="Answer">The answer's variant, for an answer; null otherwise.</param>
+/// <param name="Text">The answer's text (a hint); null otherwise.</param>
+/// <param name="Amount">The tokens granted, for a grant; null otherwise.</param>
+/// <param name="Challenge">The challenge and its answer, for a grant; null otherwise.</param>
+internal sealed record ApplyCommandBody(string Instance, CommandKind Kind, AnswerVariant? Answer = null, string? Text = null, int? Amount = null, ChallengeAnswerBody? Challenge = null)
 {
     /// <summary>The token grant of <paramref name="amount"/> on <paramref name="address"/>.</summary>
     /// <param name="address">The instance's address.</param>
     /// <param name="amount">The tokens.</param>
     /// <param name="challenge">The challenge and its answer.</param>
     /// <returns>The body.</returns>
-    internal static ApplyCommandBody GrantTokens(string address, int amount, ChallengeAnswerBody challenge) => new(address, "answer", "grant-tokens", amount, challenge);
+    internal static ApplyCommandBody GrantTokens(string address, int amount, ChallengeAnswerBody challenge) => new(address, CommandKind.Answer, AnswerVariant.GrantTokens, null, amount, challenge);
 }

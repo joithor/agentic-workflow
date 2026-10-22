@@ -21,6 +21,8 @@ internal sealed class SetupFixture
 
     internal FakeClipboard Clipboard { get; } = new();
 
+    internal FakeFolderPicker Folders { get; } = new();
+
     internal FakeTimeProvider Clock { get; } = new(A.Noon);
 
     internal CatalogViewModel Catalog { get; }
@@ -48,16 +50,37 @@ internal sealed class SetupFixture
     private static bool IsExtra(string scenario) => scenario.StartsWith("extra-", StringComparison.Ordinal);
 
     /// <summary>The golden with one step changed: its state and, when given, its action.</summary>
-    internal static JsonNode With(string scenario, string step, string state, string? action = null)
+    internal static JsonNode With(string scenario, string step, string state, string? action = null) => With(Golden(scenario), step, state, action);
+
+    /// <summary>The list with one step changed: its state and, when given, its action.</summary>
+    internal static JsonNode With(JsonNode list, string step, string state, string? action = null)
     {
-        var list = Golden(scenario);
         var served = list["steps"]!.AsArray().Single(s => (string)s!["id"]! == step)!;
         served["state"] = state;
         served["action"] = action;
         return list;
     }
 
-    internal SetupViewModel Setup() => new(Server, Catalog, Clock, InApp.Contains);
+    /// <summary>The golden with one step's items replaced by (repo, state, detail) lines.</summary>
+    internal static JsonNode WithItems(JsonNode list, string step, params (string Repo, string State, string? Detail)[] items)
+    {
+        var served = list["steps"]!.AsArray().Single(s => (string)s!["id"]! == step)!;
+        served["items"] = new JsonArray([.. items.Select(i => (JsonNode)new JsonObject { ["repo"] = i.Repo, ["state"] = i.State, ["detail"] = i.Detail })]);
+        return list;
+    }
+
+    /// <summary>The golden with one step's error and progress set (a failed step that also counts).</summary>
+    internal static JsonNode WithProgress(JsonNode list, string step, int done, int total, string? unit = null)
+    {
+        var served = list["steps"]!.AsArray().Single(s => (string)s!["id"]! == step)!;
+        served["progress"] = new JsonObject { ["done"] = done, ["total"] = total, ["unit"] = unit };
+        return list;
+    }
+
+    /// <summary>The live profile's hash the typed approval is tied to; none until a test sets it.</summary>
+    internal string? Hash { get; set; }
+
+    internal SetupViewModel Setup() => new(Server, Catalog, Clock, InApp.Contains, Folders, () => Hash);
 
     /// <summary>A view model that has read the list once.</summary>
     internal async Task<SetupViewModel> Read(CancellationToken token)

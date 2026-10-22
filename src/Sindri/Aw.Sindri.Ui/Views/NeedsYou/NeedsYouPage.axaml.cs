@@ -31,6 +31,8 @@ internal sealed partial class NeedsYouPage : UserControl
         AddHandler(LostFocusEvent, (_, e) => Look(e, looking: false));
         // Tunnel: the multi-line box handles Enter itself before a bubbling handler would see Ctrl+Enter.
         NeedsYouReason.AddHandler(KeyDownEvent, OnReasonKey, RoutingStrategies.Tunnel);
+        NeedsYouHoldControl.Held += (_, e) => _ = _page?.Bar.HoldReached(e.HeldMs);   // the hold that reached the server's time is the person's: the bar sends it once
+        NeedsYouTypedBox.Submitted += (_, e) => _ = _page?.Bar.SubmitTyped(e.Text);
         SizeChanged += (_, e) => NeedsYouColumns.ColumnDefinitions[0].Width = new GridLength(e.NewSize.Width < NarrowBelow ? NarrowColumn : WideColumn);
     }
 
@@ -64,6 +66,7 @@ internal sealed partial class NeedsYouPage : UserControl
         {
             _page.PropertyChanged -= OnPageChanged;
             _page.Bar.ReasonRequested -= OnReasonRequested;
+            _page.Bar.ConfirmFocusRequested -= OnConfirmFocusRequested;
             _page.Bar.PropertyChanged -= OnBarChanged;
             _page.CardFocusRequested -= OnCardFocusRequested;
         }
@@ -73,6 +76,7 @@ internal sealed partial class NeedsYouPage : UserControl
         {
             _page.PropertyChanged += OnPageChanged;
             _page.Bar.ReasonRequested += OnReasonRequested;
+            _page.Bar.ConfirmFocusRequested += OnConfirmFocusRequested;
             _page.Bar.PropertyChanged += OnBarChanged;
             _mode = _page.Bar.Mode;
             _page.CardFocusRequested += OnCardFocusRequested;
@@ -105,6 +109,20 @@ internal sealed partial class NeedsYouPage : UserControl
     // The reason box opened (D): focus goes into it, so typing starts there.
     private void OnReasonRequested(object? sender, EventArgs e) =>
         Dispatcher.UIThread.Post(() => _ = NeedsYouReason.Focus(NavigationMethod.Tab), DispatcherPriority.Loaded);
+
+    // A: focus moves to the confirmation control (the typed box's field, or the hold button), so Enter types or Space holds there. Nothing is approved by it.
+    private void OnConfirmFocusRequested(object? sender, EventArgs e) =>
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_page?.Bar.ShowsTyped == true)
+            {
+                NeedsYouTypedBox.FocusField();
+            }
+            else if (_page?.Bar.ShowsHold == true)
+            {
+                _ = NeedsYouHoldControl.Part.Focus(NavigationMethod.Tab);
+            }
+        }, DispatcherPriority.Loaded);
 
     // What closes under the keyboard takes its focus with it: a closed question hands focus back to Send back (or Approve), and a report that went through hands it to the
     // list row, so focus never falls to the window.
@@ -160,6 +178,28 @@ internal sealed partial class NeedsYouPage : UserControl
     private void OnSend(object? sender, RoutedEventArgs e) => _ = _page?.Bar.Send();
 
     private void OnCancel(object? sender, RoutedEventArgs e) => _page?.Bar.Cancel();
+
+    private void OnAnswerMoreTries(object? sender, RoutedEventArgs e) => _page?.Answer?.Choose(PausedAnswerOption.MoreTries);
+
+    private void OnAnswerHint(object? sender, RoutedEventArgs e) => _page?.Answer?.Choose(PausedAnswerOption.Hint);
+
+    private void OnAnswerStop(object? sender, RoutedEventArgs e) => _page?.Answer?.Choose(PausedAnswerOption.Stop);
+
+    private void OnAnswerFewer(object? sender, RoutedEventArgs e) => _page?.Answer?.Decrease();
+
+    private void OnAnswerMore(object? sender, RoutedEventArgs e) => _page?.Answer?.Increase();
+
+    private void OnAnswerSend(object? sender, RoutedEventArgs e) => _ = _page?.Answer?.Send();
+
+    private void OnHandBack(object? sender, RoutedEventArgs e) => _ = _page?.Takeover?.HandBack();
+
+    private void OnNotYet(object? sender, RoutedEventArgs e) => _page?.Takeover?.NotYet();
+
+    private void OnCancelRun(object? sender, RoutedEventArgs e) => _page?.Takeover?.AskCancel();
+
+    private void OnCancelConfirm(object? sender, RoutedEventArgs e) => _ = _page?.Takeover?.ConfirmCancel();
+
+    private void OnCancelBackOut(object? sender, RoutedEventArgs e) => _page?.Takeover?.BackOutOfCancel();
 
     private void OnDropItem(object? sender, RoutedEventArgs e) => _ = _page?.Bar.RequestDrop();
 
