@@ -62,8 +62,23 @@ internal static class GraphSandbox
         var hidden = _secrets.Append("Library/Keychains").SelectMany(d => (string[])[$"{home}/{d}", host.RealPath($"{home}/{d}")]).Distinct(StringComparer.Ordinal).Select(Subpath);
         var writes = writable.Select(Subpath).Append(Subpath("/dev"));
         var reads = readOnly.Count == 0 ? string.Empty : $"(allow file-read* {string.Join(' ', readOnly.Select(Subpath))})";
+        var own = writable.Count == 0 ? string.Empty : $"(allow file-read* {string.Join(' ', writable.Select(Subpath))})";
+        var parents = readOnly.Concat(writable).SelectMany(Parents).Distinct(StringComparer.Ordinal).Select(Literal).ToList();
+        var walk = parents.Count == 0 ? string.Empty : $"(allow file-read-metadata {string.Join(' ', parents)})";
         return "(version 1)(allow default)(deny network*)(deny lsopen)(deny appleevent-send)"
             + "(deny mach-lookup (global-name \"com.apple.coreservices.launchservicesd\"))(deny process-exec (literal \"/bin/launchctl\"))"
-            + $"(deny file-write*)(allow file-write* {string.Join(' ', writes)})(deny file-read* {string.Join(' ', hidden)}){reads}";
+            + $"(deny file-write*)(allow file-write* {string.Join(' ', writes)})(deny file-read* {string.Join(' ', hidden)}){reads}{own}{walk}";
+    }
+
+    private static string Literal(string path) => $"(literal \"{path.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal)}\")";
+
+    // Every parent of an allowed folder, for its metadata only: resolving a path (Python's realpath at start-up) stats each parent, and the
+    // folders sit under the hidden state directory. The parents' contents stay hidden.
+    private static IEnumerable<string> Parents(string path)
+    {
+        for (var parent = Path.GetDirectoryName(path); !string.IsNullOrEmpty(parent) && parent != "/"; parent = Path.GetDirectoryName(parent))
+        {
+            yield return parent;
+        }
     }
 }
