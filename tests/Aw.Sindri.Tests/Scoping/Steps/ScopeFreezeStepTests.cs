@@ -48,6 +48,27 @@ public sealed class ScopeFreezeStepTests
     }
 
     [Fact]
+    public async Task The_freeze_carries_the_repo_slug_and_the_instance_slug_aw_packets_files_a_scoping_packet_under()
+    {
+        _ = await Run(Facts());
+
+        var freeze = Assert.Single(_packets.Calls, static c => c.Verb == "freeze").Packet;
+        Assert.Equal(("sindri/demo", "t-1-scoping-1"), (freeze.RepoSlug, freeze.Instance));
+    }
+
+    [Fact]
+    public async Task An_instance_with_no_repo_fails_the_step_before_aw_packets_is_called()
+    {
+        var context = ScopingStepContexts.Of("step.scope.freeze", Facts()) with { Repo = null };
+
+        var result = await new ScopeFreezeStep(_area, _packets).Run(context, Token);
+
+        Assert.Null(result.Result);
+        Assert.Contains("repo", result.Failure, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(_packets.Calls);
+    }
+
+    [Fact]
     public async Task A_run_area_packet_that_hashes_to_something_else_than_fact_scopePacket_is_a_mismatch_with_findings_and_nothing_is_frozen()
     {
         var result = await Run(Facts("sha256:" + new string('a', 64)));
