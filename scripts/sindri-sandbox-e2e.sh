@@ -502,8 +502,12 @@ auto_grant() {
   [ "${#DESK_LOG[@]}" -lt "$DESK_MAX" ] || return 1
   say "auto-desk: $addr grant $GRANT_TOKENS tokens"
   DESK_LOG+=("$addr grant-tokens $GRANT_TOKENS")
-  # a grant is a protected answer: the human types the challenge's action back at the terminal
-  printf 'grant-tokens %s %s\n' "$GRANT_TOKENS" "$addr" | human workflow answer "$addr" --grant-tokens "$GRANT_TOKENS" 2>&1 | tail -2 | sed 's/^/  /' >&2
+  # a grant is a protected answer: the human types the challenge's action back at the terminal. The challenge names the
+  # parked child (an answer on a parent is forwarded), so a first call with nothing typed reads it from the preview.
+  local challenge
+  challenge="$(human workflow answer "$addr" --grant-tokens "$GRANT_TOKENS" < /dev/null 2>&1 | sed -n "s/.*type '\([^']*\)' to confirm.*/\1/p" | head -1)"
+  [ -n "$challenge" ] || challenge="grant-tokens $GRANT_TOKENS $addr"
+  printf '%s\n' "$challenge" | human workflow answer "$addr" --grant-tokens "$GRANT_TOKENS" 2>&1 | tail -2 | sed 's/^/  /' >&2
   return 0
 }
 
