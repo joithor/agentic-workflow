@@ -47,6 +47,20 @@ internal static partial class Labels
     /// <summary>The agents list: being connected now.</summary>
     internal const string SetupAgentConnecting = "Connecting";
 
+    /// <summary>The agents list: reached but could not be connected.</summary>
+    internal const string SetupAgentFailed = "Failed";
+
+    /// <summary>The agent's name for the provider id the API serves ('claude', 'codex', 'cursor'); empty for one this build doesn't know.</summary>
+    /// <param name="provider">The provider id.</param>
+    /// <returns>The name.</returns>
+    internal static string SetupAgentForProvider(string provider) => provider switch
+    {
+        "claude" => "Claude Code",
+        "codex" => "Codex",
+        "cursor" => "Cursor",
+        _ => string.Empty,
+    };
+
     /// <summary>The agents list: not reached yet.</summary>
     internal const string SetupAgentNotStarted = "Not started";
 
