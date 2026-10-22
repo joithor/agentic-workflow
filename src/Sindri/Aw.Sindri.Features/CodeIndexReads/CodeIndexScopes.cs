@@ -6,7 +6,7 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Profile;
 
-namespace Aw.Sindri.Features;
+namespace Aw.Sindri.Features.CodeIndexReads;
 
 /// <summary>
 /// The one mapping from Sindri to the code index's scope (code-index spec §7, §10): the approved profile's repos, each with the

@@ -17,6 +17,7 @@ internal static class CodeIndexJobServiceCollectionExtensions
         return services
             .AddSingleton<IRepoHeads, ContextRepoHeads>()
             .AddSingleton<IHeavyJobLock, SindriCodeIndexHeavyLock>()
+            .AddScoped<CodeIndexJobScopes>()
             .AddScoped<CodeIndexEventSource>()
             .AddScoped<IIndexOutlooks, CodeIndexOutlooks>()
             .AddScoped<IScheduledService, CodeIndexMainMoveService>()

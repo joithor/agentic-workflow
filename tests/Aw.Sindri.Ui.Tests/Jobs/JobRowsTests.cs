@@ -20,6 +20,7 @@ public sealed class JobRowsTests
     [InlineData("ApproveAllRecipes", "Approve all workflows")]
     [InlineData("AddRepo", "Add a repository")]
     [InlineData("RegisterMcp", "Connect agents")]
+    [InlineData("OnboardRepo", "Onboard a repository")]
     public void A_known_kind_reads_by_its_plain_name(string kind, string expected) => Assert.Equal(expected, Labels.JobKind(kind));
 
     [Fact]

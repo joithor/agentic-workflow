@@ -90,6 +90,15 @@ internal static partial class Labels
     /// <summary>The kind filter's first choice: no filter.</summary>
     internal const string AllKinds = "All kinds";
 
+    /// <summary>The link beside "no jobs yet": System's Services tab, where the background work is scheduled.</summary>
+    internal const string JobsServicesLink = "See Sindri's services";
+
+    /// <summary>The narrowest width, in px, at which the table keeps every column.</summary>
+    internal const double JobsWideFrom = 760;
+
+    /// <summary>How many skeleton rows stand in for the table while it is read.</summary>
+    internal const int JobsSkeletonRows = 6;
+
     /// <summary>The line above a table of ended jobs.</summary>
     internal const string NoRunningJobs = "No running jobs.";
 
@@ -137,6 +146,7 @@ internal static partial class Labels
         "ApproveAllRecipes" => "Approve all workflows",
         "AddRepo" => "Add a repository",
         "RegisterMcp" => "Connect agents",
+        "OnboardRepo" => "Onboard a repository",
         _ => Action(kind),
     };
 

@@ -11,7 +11,19 @@ internal sealed partial class JobsPage : UserControl
     {
         InitializeComponent();
         AddHandler(JobRow.OpenEvent, OnOpen);
+        SizeChanged += OnSize;
     }
+
+    private void OnSize(object? sender, SizeChangedEventArgs e)
+    {
+        if (DataContext is JobsPageViewModel page)
+        {
+            page.Resize(e.NewSize.Width);
+            JobsHeader.ColumnDefinitions = ColumnDefinitions.Parse(page.IsCompact ? JobsColumns.Compact : JobsColumns.Wide);
+        }
+    }
+
+    private void OnServices(object? sender, RoutedEventArgs e) => (DataContext as JobsPageViewModel)?.RequestServices();
 
 #pragma warning disable MA0155 // why: an Avalonia RoutedEvent handler returns void, so it can only be async void
     private async void OnRetry(object? sender, RoutedEventArgs e)
