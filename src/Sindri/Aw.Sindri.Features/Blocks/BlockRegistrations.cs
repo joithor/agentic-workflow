@@ -60,6 +60,7 @@ internal static class BlockRegistrations
         .AddEffect<ClaimRefEffect>()      // engine P6 unit (d)
         .AddEffect<NotifyDeskEffect>()    // engine P6 unit (c)
         .AddPrEffects()
+        .AddSingleton<IMergeRecord, MergeRecord>() // PB-B: the merge record's one writer
         .AddEffect<LineReportEffect>()    // LN-WF1: a phase's shipped and merged, recorded for its line
         .AddEvent(RecipeEvents.ItemRouted)
         .AddEvent(RecipeEvents.ClaimCreated)

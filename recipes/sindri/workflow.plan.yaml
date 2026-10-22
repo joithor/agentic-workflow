@@ -1,8 +1,9 @@
 schema: 1
 id: workflow.plan
-version: 4
+version: 5
 description: "Station 3 of the line: the phase graph for a candidate design, its executability review and hidden scenarios, then the owner's after-design stop, which freezes the design, the plan and every phase packet together."
 displayName: "Plan the build in phases"
+why: "Breaks the approved design into phases small enough to build and prove one at a time, then waits for your approval."
 urgency: work
 inputs:
   - { key: fact:scopePacket,  label: "Scope packet (frozen)",     type: packet, kind: packet }
@@ -53,6 +54,7 @@ states:
   settle:      { kind: active, step: step.plan.settle, timeout: { after: 1h, then: park },
                  next: "Compare {item}'s answers with the design's assumptions." }
   stop:        { displayName: "Approve the design and plan", why: "Locks in the design, the plan and every phase together.", kind: active, step: step.plan.review, loop: revisions, timeout: { after: 7d, then: park },
+                 onOutcome: { approve: "Locks in the design and the plan and starts building.", reviseDesign: "Sends your notes back so the design is changed, then asks you again.", revisePlan: "Sends your notes back so the plan is changed, then asks you again.", drop: "Ends the work here and builds nothing." },
                  next: "Your stop: read {item}'s design and plan graph (`sindri plan show {instance}` or the stop view), then approve, revise the design, revise the plan, or drop." }
   freeze:      { kind: active, step: step.plan.freeze, loop: refreeze, timeout: { after: 1h, then: park },
                  next: "Re-check and freeze {item}'s design, plan and phase packets." }

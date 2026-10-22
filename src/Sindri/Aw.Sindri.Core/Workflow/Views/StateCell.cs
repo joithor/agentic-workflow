@@ -15,6 +15,8 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="Children">Children progress.</param>
 /// <param name="Outcome">A recorded outcome worth showing.</param>
 /// <param name="Terminal">Whether it is final.</param>
+/// <param name="EnteredAt">When the latest visit to the state began; null (left out of the JSON) when the instance never entered it, or began before visits were kept.</param>
+/// <param name="LeftAt">When the latest visit ended; null (left out of the JSON) while the state is current or was not reached.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record StateCell(
     [property: JsonPropertyName("id")] string State,
@@ -28,4 +30,6 @@ public sealed record StateCell(
     bool Child,
     Progress? Children,
     string? Outcome,
-    bool Terminal);
+    bool Terminal,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] DateTimeOffset? EnteredAt = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] DateTimeOffset? LeftAt = null);

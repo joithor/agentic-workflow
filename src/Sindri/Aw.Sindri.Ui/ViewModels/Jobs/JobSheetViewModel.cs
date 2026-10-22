@@ -16,6 +16,7 @@ internal sealed partial class JobSheetViewModel(ISindriApi api) : ObservableObje
     private Uri? _url;
     private int _generation;
     private int _copies;
+    private int _idCopies;
     private CatalogViewModel? _catalog;
     private TimeProvider _clock = TimeProvider.System;
     private JobView? _last;
@@ -258,7 +259,8 @@ internal sealed partial class JobSheetViewModel(ISindriApi api) : ObservableObje
     {
         (Heading, StateLine, SummaryText, ProblemText, Note, ResultText, Cli) = (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
         (Progress, Fields, Cancel, _last) = ([], [], null, null);
-        (ProblemCode, CopyLabel) = (string.Empty, Labels.Copy);
+        (ProblemCode, CopyLabel, CopyIdLabel) = (string.Empty, Labels.Copy, Labels.Copy);
+        _idCopies++;
         _copies++;   // a pending "Copied" reset belongs to the job that was copied
         OnChanged(nameof(HasSummary));
     }

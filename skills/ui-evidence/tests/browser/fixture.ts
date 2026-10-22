@@ -57,8 +57,29 @@ document.addEventListener("pointerup", (e) => {
 </script>
 </body></html>`;
 
+// /tabs: a roving-focus tablist. Arrow keys move focus and selection, and the
+// URL's ?timeFilter follows 300ms later, like a router write lagging the key.
+const TABS_PAGE = `<!doctype html><html><body>
+<div role="tablist">
+<button role="tab" data-testid="tab-day" aria-selected="true">Day</button>
+<button role="tab" data-testid="tab-night" aria-selected="false" tabindex="-1">Night</button>
+</div>
+<script>
+const tabs = [...document.querySelectorAll('[role="tab"]')];
+tabs.forEach((tab, i) => tab.addEventListener("keydown", (e) => {
+  if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+  const next = tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
+  tabs.forEach((t) => t.setAttribute("aria-selected", String(t === next)));
+  next.focus();
+  setTimeout(() => history.replaceState({}, "", "/tabs?timeFilter=" + next.textContent), 300);
+}));
+</script>
+</body></html>`;
+
+const PAGES: Record<string, string> = { "/dnd": DND_PAGE, "/tabs": TABS_PAGE };
+
 export async function startFixture(): Promise<{ host: string; close: () => Promise<void> }> {
-  const server = http.createServer((_req, res) => { res.setHeader("content-type", "text/html"); res.end(_req.url === "/dnd" ? DND_PAGE : PAGE); });
+  const server = http.createServer((_req, res) => { res.setHeader("content-type", "text/html"); res.end(PAGES[(_req.url ?? "/").split("?")[0] as string] ?? PAGE); });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
   const { port } = server.address() as { port: number };
   return { host: `http://127.0.0.1:${port}`, close: () => new Promise((r) => server.close(() => r())) };

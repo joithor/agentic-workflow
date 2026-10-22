@@ -17,7 +17,8 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 /// <param name="pulls">The pull requests port.</param>
 /// <param name="facts">Reads 'pr' and 'at' back.</param>
 /// <param name="profile">The approved profile: the merge method when the recipe names none.</param>
-internal sealed class PrMergeEffect(IPullRequests pulls, IFactContents facts, IApprovedProfile profile) : IEffectKind, IDescribedBlock
+/// <param name="record">The merge record, where the merge row goes.</param>
+internal sealed class PrMergeEffect(IPullRequests pulls, IFactContents facts, IApprovedProfile profile, IMergeRecord record) : IEffectKind, IDescribedBlock
 {
     /// <inheritdoc/>
     public static BlockDescriptor Descriptor => PrEffects.Merge;
@@ -48,7 +49,36 @@ internal sealed class PrMergeEffect(IPullRequests pulls, IFactContents facts, IA
         }
 
         var merged = await pulls.Merge(new PullMerge(link, method.Value, head), cancellationToken).ConfigureAwait(false);
-        return merged.IsError ? merged.Error : new EffectDone(Outcome(merged.Value.Status), Existed: false);
+        if (merged.IsError)
+        {
+            return merged.Error;
+        }
+
+        if (merged.Value.Status == PullMergeStatus.Merged)
+        {
+            var recorded = await Record(context, new Merged(head, method.Value, merged.Value.MergedSha), cancellationToken).ConfigureAwait(false);
+            if (recorded.IsError)
+            {
+                return recorded.Error;
+            }
+        }
+
+        return new EffectDone(Outcome(merged.Value.Status), Existed: false);
+    }
+
+    private sealed record Merged(string Head, PullMergeMethod Method, string? Sha);
+
+    // The merge row (BD7): the method, the merged sha and the actor, which a recipe passes as the optional 'actor' argument (the engine's context carries none).
+    private async ValueTask<Result<bool>> Record(EffectContext context, Merged merged, CancellationToken cancellationToken)
+    {
+        var actor = context.Arguments.TryGetValue("actor", out var named) ? PrReplyFacts.Text(named) : null;
+        var fields = new System.Text.Json.Nodes.JsonObject
+        {
+            ["method"] = merged.Method.ToString().ToLowerInvariant(),
+            ["sha"] = merged.Sha,
+            ["actor"] = actor,
+        };
+        return await record.Append(new MergeRow(context.Instance, context.Identity, "merge", merged.Head, fields), cancellationToken).ConfigureAwait(false);
     }
 
     private static OutcomeName Outcome(PullMergeStatus status) => OutcomeName.From(status switch

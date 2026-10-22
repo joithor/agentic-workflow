@@ -192,6 +192,23 @@ public sealed class GitHubForgeTests
     }
 
     [Fact]
+    public async Task Check_runs_are_counted_as_passed_pending_and_failing()
+    {
+        const string pull = """{"html_url":"https://github.com/acme/widgets/pull/7","title":"T","state":"open","draft":false,"merged":false,"mergeable":true,"user":{"login":"ada"},"base":{"ref":"main","sha":"b","repo":{"full_name":"acme/widgets","default_branch":"main"}},"head":{"ref":"feature","sha":"abc123","repo":{"full_name":"acme/widgets"}}}""";
+        const string runs = """{"check_runs":[{"id":1,"name":"a","status":"completed","conclusion":"success"},{"id":2,"name":"b","status":"completed","conclusion":"neutral"},{"id":3,"name":"c","status":"completed","conclusion":"skipped"},{"id":4,"name":"d","status":"queued","conclusion":null},{"id":5,"name":"e","status":"in_progress","conclusion":null},{"id":6,"name":"f","status":"completed","conclusion":"failure"}]}""";
+        var http = new StubHandler()
+            .On(HttpMethod.Get, "/repos/acme/widgets/pulls/7/reviews", HttpStatusCode.OK, "[]")
+            .On(HttpMethod.Get, "/repos/acme/widgets/pulls/7", HttpStatusCode.OK, pull)
+            .On(HttpMethod.Get, "/repos/acme/widgets/commits/abc123/check-runs", HttpStatusCode.OK, runs);
+        var (forge, _, _) = Build(http);
+
+        var checks = (await forge.GetPull(Pull(), TestContext.Current.CancellationToken)).Value.Checks;
+
+        Assert.Equal((3, 2), (checks.Passed, checks.Pending));
+        Assert.Equal(["f"], checks.Failing);
+    }
+
+    [Fact]
     public async Task A_review_list_is_followed_across_pages_on_the_same_origin_only()
     {
         const string link = "<https://api.github.com/repos/acme/widgets/pulls/7/reviews?per_page=100&page=2>; rel=\"next\"";
