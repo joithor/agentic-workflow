@@ -12817,6 +12817,8 @@ Aw.Sindri.Core.Prove.HoldoutSet.Phase.get -> string!
 Aw.Sindri.Core.Prove.HoldoutSet.Phase.init -> void
 Aw.Sindri.Core.Prove.HoldoutSet.Scenarios.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Prove.HoldoutScenario!>!
 Aw.Sindri.Core.Prove.HoldoutSet.Scenarios.init -> void
+Aw.Sindri.Core.Prove.IArtifactFiles
+Aw.Sindri.Core.Prove.IArtifactFiles.Sha256(string! workspace, string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string?>!>
 Aw.Sindri.Core.Prove.ICommitText
 Aw.Sindri.Core.Prove.ICommitText.Range(string! checkout, string! baseSha, string! head, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
 Aw.Sindri.Core.Prove.IHoldoutStore
