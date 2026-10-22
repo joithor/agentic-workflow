@@ -470,10 +470,8 @@ public sealed class PrSnapshotStepTests
     }
 
     [Fact]
-    public async Task The_docs_are_missing_when_no_docs_sync_has_ended()
-    {
+    public async Task The_docs_are_missing_when_no_docs_sync_has_ended() =>
         Assert.Equal("missing", Status(await Snapshot()).GetProperty("docs").GetProperty("status").GetString());
-    }
 
     [Theory]
     [InlineData("none")]
