@@ -22,6 +22,7 @@ public sealed class PrSnapshotStepTests
     private readonly FakePullRequests _pulls = new([Host]);
     private readonly FakePull _pull;
     private readonly InMemoryPrCommentMarks _marks = new();
+    private readonly FakeRunDiff _diff = new();
 
     public PrSnapshotStepTests() => _pull = _pulls.Add(new PullRepo(Host, "acme", "app"), "feat/x", Head);
 
@@ -30,13 +31,13 @@ public sealed class PrSnapshotStepTests
     private static PullThread Thread(string key, string author = "alice", bool resolved = false, IReadOnlyList<string>? markers = null) =>
         new(key, PullCommentKind.Thread, author, "MEMBER", IsBot: false, resolved, Outdated: false, "a.cs", $"fix {key}", markers ?? []);
 
-    private Task<BlockStepResult> Snapshot(string? pr = null) => Run(new PrSnapshotStep(_pulls, _marks, new FakeTimeProvider(DateTimeOffset.Parse("2026-10-22T08:00:00Z", System.Globalization.CultureInfo.InvariantCulture))), "step.pr.snapshot", pr);
+    private Task<BlockStepResult> Snapshot(string? pr = null, Dictionary<string, string>? more = null) => Run(new PrSnapshotStep(_pulls, _marks, _diff, new FakeTimeProvider(DateTimeOffset.Parse("2026-10-22T08:00:00Z", System.Globalization.CultureInfo.InvariantCulture))), "step.pr.snapshot", pr, more: more);
 
     private Task<BlockStepResult> Intake(string? pr = null, string? workspace = null) => Run(new PrIntakeStep(_pulls), "step.pr.intake", pr, workspace);
 
-    private async Task<BlockStepResult> Run(IBlockStep step, string id, string? pr, string? workspace = null)
+    private async Task<BlockStepResult> Run(IBlockStep step, string id, string? pr, string? workspace = null, Dictionary<string, string>? more = null)
     {
-        var facts = new Dictionary<string, string>(StringComparer.Ordinal);
+        var facts = new Dictionary<string, string>(more ?? [], StringComparer.Ordinal);
         if ((pr ?? _pull.Link) is { Length: > 0 } link && pr != "")
         {
             facts["pr"] = link;
@@ -265,6 +266,103 @@ public sealed class PrSnapshotStepTests
         Assert.Equal(JsonValueKind.Null, state.GetProperty("mergeable").ValueKind);
         Assert.Equal(0, state.GetProperty("unresolvedThreads").GetInt32());
         Assert.StartsWith("2026-10-22T08:00:00", state.GetProperty("at").GetString(), StringComparison.Ordinal);
+    }
+
+    private FakePull DocsPull(string head = "dddd4444")
+    {
+        var docs = _pulls.Add(new PullRepo(Host, "acme", "app"), "docs/feat/x", head);
+        docs.ChecksState = PullChecksState.Passing;
+        return docs;
+    }
+
+    private static Dictionary<string, string> DocsFacts(FakePull docs, string? result = null)
+    {
+        var facts = new Dictionary<string, string>(StringComparer.Ordinal) { ["docsPr"] = docs.Link };
+        if (result is not null)
+        {
+            facts["docsResult"] = $$"""{ "result": "{{result}}" }""";
+        }
+
+        return facts;
+    }
+
+    [Fact]
+    public async Task A_merged_pull_request_whose_docs_pull_request_is_open_reports_mergedDocsOpen_and_its_sha()
+    {
+        _pull.State = PullState.Merged;
+        var docs = DocsPull();
+
+        var result = await Snapshot(more: DocsFacts(docs));
+
+        Assert.Equal("mergedDocsOpen", Outcome(result));
+        Assert.Equal(Head, Fact(result, "fact:mergedSha").GetString());
+    }
+
+    [Fact]
+    public async Task A_merged_pull_request_whose_docs_pull_request_is_merged_reports_merged()
+    {
+        _pull.State = PullState.Merged;
+        var docs = DocsPull();
+        docs.State = PullState.Merged;
+
+        Assert.Equal("merged", Outcome(await Snapshot(more: DocsFacts(docs))));
+    }
+
+    [Fact]
+    public async Task A_red_docs_pull_request_reports_docsRed_after_the_comments_and_before_pending()
+    {
+        _pull.ChecksState = PullChecksState.Pending;
+        var docs = DocsPull();
+        docs.ChecksState = PullChecksState.Failing;
+        docs.FailingChecks.Add("docs-build");
+
+        var red = await Snapshot(more: DocsFacts(docs));
+        _pull.Threads.Add(Thread("t1"));
+        var withComments = await Snapshot(more: DocsFacts(docs));
+
+        Assert.Equal(("docsRed", "comments"), (Outcome(red), Outcome(withComments)));
+        Assert.Equal("docs-build", Fact(red, "fact:prState").GetProperty("docs").GetProperty("checks").GetProperty("failing")[0].GetString());
+    }
+
+    [Fact]
+    public async Task A_red_docs_pull_request_the_owner_skipped_is_not_docsRed()
+    {
+        _pull.ChecksState = PullChecksState.Passing;
+        var docs = DocsPull();
+        docs.ChecksState = PullChecksState.Failing;
+
+        Assert.Equal("green", Outcome(await Snapshot(more: DocsFacts(docs, result: "skippedByOwner"))));
+    }
+
+    [Fact]
+    public async Task A_docs_pull_request_with_checks_running_keeps_the_snapshot_pending()
+    {
+        _pull.ChecksState = PullChecksState.Passing;
+        var docs = DocsPull();
+        docs.ChecksState = PullChecksState.Pending;
+
+        Assert.Equal("pending", Outcome(await Snapshot(more: DocsFacts(docs))));
+    }
+
+    [Fact]
+    public async Task A_workspace_on_another_commit_than_the_pull_request_head_is_ahead()
+    {
+        _diff.Add("/work/tree", "bbbb2222");
+        _diff.Add("/work/same", Head);
+
+        var ahead = Fact(await Snapshot(more: new() { ["workspace"] = "/work/tree" }), "fact:prState");
+        var same = Fact(await Snapshot(more: new() { ["workspace"] = "/work/same" }), "fact:prState");
+        var none = Fact(await Snapshot(), "fact:prState");
+
+        Assert.Equal((true, false, false), (ahead.GetProperty("workspaceAhead").GetBoolean(), same.GetProperty("workspaceAhead").GetBoolean(), none.GetProperty("workspaceAhead").GetBoolean()));
+    }
+
+    [Fact]
+    public async Task A_snapshot_without_a_docs_pull_request_carries_no_docs()
+    {
+        var state = Fact(await Snapshot(), "fact:prState");
+
+        Assert.Equal(JsonValueKind.Null, state.GetProperty("docs").ValueKind);
     }
 
     [Fact]

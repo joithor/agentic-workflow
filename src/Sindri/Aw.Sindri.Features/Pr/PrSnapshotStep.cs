@@ -4,6 +4,7 @@ using Aw.Kernel;
 using Aw.Sindri.Core.Forge;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Features.Pr;
@@ -18,8 +19,9 @@ namespace Aw.Sindri.Features.Pr;
 /// </summary>
 /// <param name="pulls">The forge, through Sindri's port.</param>
 /// <param name="marks">The comment marks.</param>
+/// <param name="diff">Reads the workspace's head.</param>
 /// <param name="clock">The clock.</param>
-internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks, TimeProvider clock) : IBlockStep, IBlockStepId
+internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks, IRunDiff diff, TimeProvider clock) : IBlockStep, IBlockStepId
 {
     private static readonly string[] _trusted = ["OWNER", "MEMBER", "COLLABORATOR"];
 
