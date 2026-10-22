@@ -23,3 +23,7 @@ A local verb: it runs in this process and needs no running control plane. It run
 Output: one line per finding with its fix, then the verdict; `--json` prints `{ "findings": [{ rule, item, message, fix }], "passed": bool }`.
 
 Exit codes: 0 no findings, 1 findings, 2 usage or a tool error (a missing directory or fact file, a worktree git cannot read).
+
+## The babysitter's commands in the status (API18)
+
+`sindri workflow status` and `GET /sindri/workflow/instances/{id}` list the babysitter's recipe verbs for its current state as `allowedCommands` entries with `actionId` `ApplyCommand:command` and a `verb`. In `ready` they are `merge`, `rework`, `comments`, `resync-docs` and `check`, so the app shows one button per verb and a terminal user runs `sindri workflow command <address> <verb>`. `merge` and `rework` are human-trigger verbs: they are listed, and a session's call is refused (`SND-AUTH-002`). Details in `docs/csharp/sindri-workflow.md`.
