@@ -59,6 +59,7 @@ internal static class BlockRegistrations
         .AddEffect<PrRerunChecksEffect>() // PB-E: re-run a flaky check
         .AddEffect<PrMergeEffect>()       // PB-E: the merge, expected-head checked
         .AddEffect<PrReplyEffect>()       // PB-E: replies, reactions and marks
+        .AddEffect<PrOpenEffect>()        // PB-O (BD1)
         .AddEvent(RecipeEvents.ItemRouted)
         .AddEvent(RecipeEvents.ClaimCreated)
         .AddEvent(RecipeEvents.NotifyDelivered)
@@ -73,7 +74,8 @@ internal static class BlockRegistrations
         .AddEvent(RecipeEvents.PrRestacked)
         .AddEvent(RecipeEvents.PrMergeResult)
         .AddEvent(RecipeEvents.PrDocsMerged)
-        .AddEvent(RecipeEvents.PrStacked);
+        .AddEvent(RecipeEvents.PrStacked)
+        .AddEvent(RecipeEvents.PrOpened);
 
     /// <summary>Registers the line's blocks (the build and prove stations' and the per-phase child's).</summary>
     /// <param name="services">The service collection.</param>

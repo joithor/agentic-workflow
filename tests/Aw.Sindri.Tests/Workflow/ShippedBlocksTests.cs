@@ -29,7 +29,7 @@ public sealed class ShippedBlocksTests
         Assert.Equal(
             [
                 "effect.claim.ref", "effect.line.report", "effect.notify.desk", "effect.pr.create-stacked", "effect.pr.merge",
-                "effect.pr.merge-docs", "effect.pr.push", "effect.pr.record", "effect.pr.reply", "effect.pr.rerun-checks", "effect.pr.restack",
+                "effect.pr.merge-docs", "effect.pr.open", "effect.pr.push", "effect.pr.record", "effect.pr.reply", "effect.pr.rerun-checks", "effect.pr.restack",
                 "evidence.check", "gate.budget.available", "gate.pr.autofix-cap", "gate.pr.base-is-default", "gate.pr.diff-scope",
                 "gate.pr.secret-scan", "gate.revision-bound", "gate.route.startable", "input.context.code", "input.context.history",
                 "input.context.lenses", "input.handoff-note", "input.phase-packet", "input.pr.context", "step.babysit.watch",
@@ -58,7 +58,7 @@ public sealed class ShippedBlocksTests
             ],
             catalog.Blocks.Select(b => b.Id.Value).Order(StringComparer.Ordinal),
             StringComparer.Ordinal);
-        Assert.Equal(["claim.created", "item.routed", "notify.delivered", "pr.changed", "pr.docsMerged", "pr.mergeResult", "pr.pushed", "pr.restacked", "pr.stacked"], catalog.Events.Select(e => e.Kind.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal(["claim.created", "item.routed", "notify.delivered", "pr.changed", "pr.docsMerged", "pr.mergeResult", "pr.opened", "pr.pushed", "pr.restacked", "pr.stacked"], catalog.Events.Select(e => e.Kind.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     /// <summary>Engine P8 Q4: the produce Step runs on an agent session when the build has the runtime, and stays deskCapable so a box with no agent target runs it at the desk (D7).</summary>
@@ -103,7 +103,7 @@ public sealed class ShippedBlocksTests
 
         Assert.Equal([typeof(BudgetAvailableGate), typeof(RouteStartableGate)], scope.ServiceProvider.GetServices<IGate>().Select(static g => g.GetType()));   // engine P7 adds the route stub
         Assert.Empty(scope.ServiceProvider.GetServices<IStep>());
-        Assert.Equal([typeof(ClaimRefEffect), typeof(NotifyDeskEffect), typeof(PrPushEffect), typeof(PrRecordEffect), typeof(PrRerunChecksEffect), typeof(PrMergeEffect), typeof(PrReplyEffect)], scope.ServiceProvider.GetServices<IEffectKind>().Select(static e => e.GetType()));   // engine P6
+        Assert.Equal([typeof(ClaimRefEffect), typeof(NotifyDeskEffect), typeof(PrPushEffect), typeof(PrRecordEffect), typeof(PrRerunChecksEffect), typeof(PrMergeEffect), typeof(PrReplyEffect), typeof(PrOpenEffect)], scope.ServiceProvider.GetServices<IEffectKind>().Select(static e => e.GetType()));   // engine P6
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -127,6 +127,7 @@ public sealed class ShippedBlocksTests
     [InlineData("effect.pr.push", Capability.Effects)]
     [InlineData("effect.pr.record", Capability.Effects)]
     [InlineData("effect.pr.rerun-checks", Capability.Effects)]
+    [InlineData("effect.pr.open", Capability.Effects)]
     [InlineData("gate.budget.available", Capability.None)]
     [InlineData("gate.route.startable", Capability.None)]
     public void Each_block_declares_what_it_reaches(string id, Capability capabilities) =>

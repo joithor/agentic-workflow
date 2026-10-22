@@ -15755,6 +15755,8 @@ static Aw.Sindri.Core.Workflow.Engine.Effects.PrCommentId.TryFrom(string? value,
 static Aw.Sindri.Core.Workflow.Engine.Effects.PrCommentId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Workflow.Engine.Effects.PrCommentId result) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Effects.PrCommentId.operator !=(Aw.Sindri.Core.Workflow.Engine.Effects.PrCommentId left, Aw.Sindri.Core.Workflow.Engine.Effects.PrCommentId right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Effects.PrCommentId.operator ==(Aw.Sindri.Core.Workflow.Engine.Effects.PrCommentId left, Aw.Sindri.Core.Workflow.Engine.Effects.PrCommentId right) -> bool
+Aw.Sindri.Core.Forge.IForgeRepos
+Aw.Sindri.Core.Forge.IForgeRepos.OfWorkspace(string! workspace, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullRepo!>!>
 Aw.Sindri.Core.Forge.PullThread
 Aw.Sindri.Core.Forge.PullThread.<Clone>$() -> Aw.Sindri.Core.Forge.PullThread!
 Aw.Sindri.Core.Forge.PullThread.Key.get -> string!
