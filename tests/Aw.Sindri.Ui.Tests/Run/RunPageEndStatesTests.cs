@@ -84,7 +84,7 @@ public sealed class RunPageEndStatesTests
         Assert.Equal("Didn't work out", end.Word);
         Assert.Equal("Didn't work out", page.HeaderWord);
         Assert.DoesNotContain(page.Edges, e => string.Equals(e.BrushKey, "Brush.Error", StringComparison.Ordinal));
-        Assert.StartsWith("Run took", page.StartedText, StringComparison.Ordinal);
+        Assert.StartsWith("Took", page.StartedText, StringComparison.Ordinal);
     }
 
     [Fact]

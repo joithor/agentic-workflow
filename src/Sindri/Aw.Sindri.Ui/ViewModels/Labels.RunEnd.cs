@@ -6,12 +6,6 @@ internal static partial class Labels
     /// <summary>The heading of the block that says why a step failed.</summary>
     internal const string RunWhatWentWrong = "What went wrong";
 
-    /// <summary>The reason when the events say nothing more.</summary>
-    internal const string RunNoDetail = "No more detail was recorded for this step.";
-
-    /// <summary>The next option that opens the run's context.</summary>
-    internal const string RunSeeContext = "See its context";
-
     /// <summary>The step could not be started.</summary>
     internal const string RunReasonLaunch = "The agent could not be started.";
 
@@ -23,11 +17,6 @@ internal static partial class Labels
 
     /// <summary>The step used up its allowance.</summary>
     internal const string RunReasonLimit = "The agent ran out of its allowance.";
-
-    /// <summary>"Run took 11h 02m".</summary>
-    /// <param name="took">How long the run lasted, as <see cref="Duration(long)"/> says it.</param>
-    /// <returns>The words.</returns>
-    internal static string RunTook(string took) => $"Run took {took}";
 
     /// <summary>"Ended 3h 10m ago", for a run whose start is not served.</summary>
     /// <param name="ago">How long ago, as <see cref="Duration(long)"/> says it.</param>
