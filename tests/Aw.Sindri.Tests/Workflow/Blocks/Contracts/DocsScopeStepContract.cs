@@ -25,5 +25,5 @@ public sealed class DocsScopeStepContract : BlockContract
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await new DocsScopeStep(new InMemoryRepoCheckouts(), new FakeWorktrees(), new FakeChangedPaths(), new FakeTrackedFiles(), new InMemoryBriefFiles()).Run(BuildShipContexts.Of("step.docs.scope", []), cancellationToken);
+        _ = await new DocsScopeStep(new InMemoryRepoCheckouts(), new FakeWorktrees(), new FakeChangedPaths(), new FakeTrackedFiles(), new InMemoryBriefFiles(), new FakeDiffContent()).Run(BuildShipContexts.Of("step.docs.scope", []), cancellationToken);
 }
