@@ -9,6 +9,7 @@ using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Blocks.Effect;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Testing.Forge;
 using Aw.Sindri.Testing.Packets;
 using Aw.Sindri.Testing.Workflow;
 

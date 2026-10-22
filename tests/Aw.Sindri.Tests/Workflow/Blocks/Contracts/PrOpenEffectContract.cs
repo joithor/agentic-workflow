@@ -3,6 +3,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks.Effect;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Testing.Forge;
 using Aw.Sindri.Testing.Packets;
 using Aw.Sindri.Testing.Workflow;
 
@@ -24,7 +25,7 @@ public sealed class PrOpenEffectContract : BlockContract
     protected override async Task InvokeAsync(CancellationToken cancellationToken)
     {
         var facts = new InMemoryFactStore();
-        _ = await new PrOpenEffect(new FakePullRequests(), new FakeForgeRepos(), new InMemoryPacketFiles(), facts, facts, new InMemoryProfiles())
+        _ = await new PrOpenEffect(new FakePullRequests(["github.com"]), new FakeForgeRepos(), new InMemoryPacketFiles(), facts, facts, new InMemoryProfiles())
             .Dispatch(ShippedComposition.Effect("effect.pr.open"), cancellationToken);
     }
 }

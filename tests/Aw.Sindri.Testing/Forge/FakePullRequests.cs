@@ -14,6 +14,23 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
 {
     private readonly HashSet<string> _hosts = new(hosts, StringComparer.Ordinal);
     private readonly List<FakePull> _pulls = [];
+    private readonly Dictionary<string, string> _tips = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _delivered = new(StringComparer.Ordinal);
+
+    /// <summary>Gets or sets an error that Find, Open, Update and PushBranch answer when set.</summary>
+    public Error? Failure { get; set; }
+
+    /// <summary>Gets the requests Open received, in order.</summary>
+    public IList<OpenPull> Opened { get; } = [];
+
+    /// <summary>Gets the branch pushes PushBranch received, in order.</summary>
+    public IList<PullBranchPush> Pushed { get; } = [];
+
+    /// <summary>Gets or sets what PushBranch answers when the lease holds.</summary>
+    public PullPushOutcome PushOutcome { get; set; } = PullPushOutcome.Pushed;
+
+    /// <summary>Gets the (link, title, body) triples Update received, in order.</summary>
+    public IList<(string Link, string? Title, string? Body)> Updated { get; } = [];
 
     /// <summary>Gets the operations called, in order.</summary>
     public IList<string> Calls { get; } = [];
@@ -34,11 +51,25 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
         return pull;
     }
 
+    /// <summary>Puts an open pull request on the fake forge, as if the request had opened it.</summary>
+    /// <param name="request">What it was opened with.</param>
+    /// <returns>The pull request.</returns>
+    public OpenedPull Seed(OpenPull request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var pull = Add(request.Repo, request.Head, request.HeadSha);
+        pull.Title = request.Title;
+        pull.Body = request.Body;
+        pull.Draft = request.Draft;
+        pull.Marker = request.Marker;
+        return new OpenedPull(pull.Link, pull.Number);
+    }
+
     /// <inheritdoc />
     public ValueTask<Result<PullView>> Get(string link, CancellationToken cancellationToken)
     {
         Calls.Add("Get");
-        return Done(Locate(link).Map(p => new PullView(p.Link, p.State, p.HeadSha, Mergeable: true, ReviewDecision: null, UnresolvedThreads: 0, new PullChecks(PullChecksState.None, p.HeadSha, []))));
+        return Done(Locate(link).Map(p => new PullView(p.Link, p.State, p.HeadSha, Mergeable: true, ReviewDecision: null, UnresolvedThreads: p.Threads.Count(static t => t.Kind == PullCommentKind.Thread && !t.Resolved), new PullChecks(PullChecksState.None, p.HeadSha, []))));
     }
 
     /// <inheritdoc />
@@ -72,11 +103,105 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
         return Done(Locate(link).Map(_ => 0));
     }
 
+    /// <summary>Plays the reviewer: adds an inline thread to the pull request at a link.</summary>
+    /// <param name="link">The pull request's link.</param>
+    /// <param name="body">The thread's text.</param>
+    /// <returns>The thread's key.</returns>
+    public string SeedThread(string link, string body)
+    {
+        var pull = Locate(link).Value;
+        var key = string.Create(CultureInfo.InvariantCulture, $"thread-{pull.Threads.Count + 1}");
+        pull.Threads.Add(new PullThread(key, PullCommentKind.Thread, "reviewer", "MEMBER", IsBot: false, Resolved: false, Outdated: false, "src/a.cs", body, []));
+        return key;
+    }
+
+    /// <inheritdoc />
+    public ValueTask<Result<IReadOnlyList<PullThread>>> Threads(string link, CancellationToken cancellationToken)
+    {
+        Calls.Add("Threads");
+        return Done(Locate(link).Map<IReadOnlyList<PullThread>>(p => [.. p.Threads]));
+    }
+
+    /// <inheritdoc />
+    public ValueTask<Result<PullMergeOutcome>> Merge(PullMerge request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        Calls.Add("Merge");
+        return Done(Locate(request.Link).Map(p =>
+        {
+            if (p.State != PullState.Open)
+            {
+                return new PullMergeOutcome(PullMergeStatus.Blocked, MergedSha: null, "already merged or closed");
+            }
+
+            if (p.HeadSha != request.ExpectedHead)
+            {
+                return new PullMergeOutcome(PullMergeStatus.HeadMoved, MergedSha: null, Reason: null);
+            }
+
+            p.State = PullState.Merged;
+            return new PullMergeOutcome(PullMergeStatus.Merged, new string('m', 40), Reason: null);
+        }));
+    }
+
+    /// <inheritdoc />
+    public ValueTask<Result<PullDelivery>> Reply(PullReply request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        Calls.Add("Reply");
+        return Done(Locate(request.Link).Map(_ => Deliver($"reply|{request.Link}|{request.ThreadKey}|{request.Marker}")));
+    }
+
+    /// <inheritdoc />
+    public ValueTask<Result<PullDelivery>> React(PullReaction request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        Calls.Add("React");
+        return Done(Locate(request.Link).Map(_ => Deliver($"react|{request.Link}|{request.ThreadKey}|{request.Marker}")));
+    }
+
+    /// <inheritdoc />
+    public ValueTask<Result<PullPushOutcome>> PushBranch(PullBranchPush push, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(push);
+        Calls.Add("PushBranch");
+        Pushed.Add(push);
+        if (Failure is { } failure)
+        {
+            return Done<PullPushOutcome>(failure);
+        }
+
+        if (Refuse(push.Repo.Host) is { } refused)
+        {
+            return Done<PullPushOutcome>(refused);
+        }
+
+        var key = $"{push.Repo.Host}/{push.Repo.Owner}/{push.Repo.Name}#{push.Branch}";
+        var has = _tips.TryGetValue(key, out var tip);
+        if (push.LeaseSha is null ? has : tip != push.LeaseSha)
+        {
+            return Done(Results.Success(PullPushOutcome.HeadMoved));
+        }
+
+        if (PushOutcome != PullPushOutcome.Pushed)
+        {
+            return Done(Results.Success(PushOutcome));
+        }
+
+        _tips[key] = push.Sha;
+        return Done(Results.Success(PullPushOutcome.Pushed));
+    }
+
     /// <inheritdoc />
     public ValueTask<Result<OpenedPull?>> Find(FindPull query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         Calls.Add("Find");
+        if (Failure is { } failure)
+        {
+            return Done<OpenedPull?>(failure);
+        }
+
         if (Refuse(query.Repo.Host) is { } refused)
         {
             return Done<OpenedPull?>(refused);
@@ -91,23 +216,30 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     {
         ArgumentNullException.ThrowIfNull(request);
         Calls.Add("Open");
+        if (Failure is { } failure)
+        {
+            return Done<OpenedPull>(failure);
+        }
+
         if (Refuse(request.Repo.Host) is { } refused)
         {
             return Done<OpenedPull>(refused);
         }
 
-        var pull = Add(request.Repo, request.Head, request.HeadSha);
-        pull.Title = request.Title;
-        pull.Body = request.Body;
-        pull.Draft = request.Draft;
-        pull.Marker = request.Marker;
-        return Done(Results.Success(new OpenedPull(pull.Link, pull.Number)));
+        Opened.Add(request);
+        return Done(Results.Success(Seed(request)));
     }
 
     /// <inheritdoc />
     public ValueTask<Result<Unit>> Update(string link, string? title, string? body, CancellationToken cancellationToken)
     {
         Calls.Add("Update");
+        if (Failure is { } failure)
+        {
+            return Done<Unit>(failure);
+        }
+
+        Updated.Add((link, title, body));
         return Done(Locate(link).Map(p =>
         {
             p.Title = title ?? p.Title;
@@ -115,6 +247,8 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
             return Unit.Value;
         }));
     }
+
+    private PullDelivery Deliver(string key) => _delivered.Add(key) ? PullDelivery.Delivered : PullDelivery.AlreadyDelivered;
 
     private static ValueTask<Result<T>> Done<T>(Result<T> result) => ValueTask.FromResult(result);
 

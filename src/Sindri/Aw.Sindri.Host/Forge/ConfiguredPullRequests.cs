@@ -1,6 +1,7 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Forge;
 using Aw.Sindri.Core.Profile;
+using Results = Aw.Kernel.Results;
 
 namespace Aw.Sindri.Host.Forge;
 
@@ -14,7 +15,7 @@ namespace Aw.Sindri.Host.Forge;
 /// <param name="clock">The clock.</param>
 internal sealed class ConfiguredPullRequests(IApprovedProfile approved, Func<string, string?> environment, TimeProvider clock) : IPullRequests
 {
-    private static readonly NoForgePullRequests None = new();
+    private static readonly NoForgePullRequests _none = new();
 
     private readonly Lock _gate = new();
     private (string Key, IPullRequests Adapter)? _built;
@@ -30,6 +31,21 @@ internal sealed class ConfiguredPullRequests(IApprovedProfile approved, Func<str
 
     public ValueTask<Result<int>> RerunChecks(string link, string sha, CancellationToken cancellationToken)
         => Call(pulls => pulls.RerunChecks(link, sha, cancellationToken), cancellationToken);
+
+    public ValueTask<Result<IReadOnlyList<PullThread>>> Threads(string link, CancellationToken cancellationToken)
+        => Call(pulls => pulls.Threads(link, cancellationToken), cancellationToken);
+
+    public ValueTask<Result<PullMergeOutcome>> Merge(PullMerge request, CancellationToken cancellationToken)
+        => Call(pulls => pulls.Merge(request, cancellationToken), cancellationToken);
+
+    public ValueTask<Result<PullDelivery>> Reply(PullReply request, CancellationToken cancellationToken)
+        => Call(pulls => pulls.Reply(request, cancellationToken), cancellationToken);
+
+    public ValueTask<Result<PullDelivery>> React(PullReaction request, CancellationToken cancellationToken)
+        => Call(pulls => pulls.React(request, cancellationToken), cancellationToken);
+
+    public ValueTask<Result<PullPushOutcome>> PushBranch(PullBranchPush push, CancellationToken cancellationToken)
+        => Call(pulls => pulls.PushBranch(push, cancellationToken), cancellationToken);
 
     public ValueTask<Result<OpenedPull?>> Find(FindPull query, CancellationToken cancellationToken)
         => Call(pulls => pulls.Find(query, cancellationToken), cancellationToken);
@@ -56,7 +72,7 @@ internal sealed class ConfiguredPullRequests(IApprovedProfile approved, Func<str
 
         if (latest.Value?.Profile.Workflow?.Forge is not { Adapter: not null } settings)
         {
-            return None;
+            return _none;
         }
 
         var key = string.Join('\n', settings.Adapter, string.Join(',', settings.Hosts ?? []), settings.Credential);
