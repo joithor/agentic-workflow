@@ -4,14 +4,16 @@ using Aw.Sindri.Core.Workflow.Ids;
 namespace Aw.Sindri.Features.Blocks.Effect;
 
 /// <summary>
-/// The PR babysitter's and docs sync's effects (PB spec §10.1): descriptors, of which merge and reply have a runtime (PrMergeEffect, PrReplyEffect) and the rest none yet; a served
-/// instance's dispatch of one is refused as an effect with no runtime. 'effect.pr.merge' and 'effect.pr.merge-docs' act with a
+/// The PR babysitter's and docs sync's effects (PB spec §10.1): descriptors, of which push, record, rerun-checks, merge and reply have a runtime (PrPushEffect, PrRecordEffect,
+/// PrRerunChecksEffect, PrMergeEffect, PrReplyEffect) and the rest none yet; a served instance's dispatch of one is refused as an effect with no runtime. 'effect.pr.merge' and 'effect.pr.merge-docs' act with a
 /// human's authority (W23, RCP-HUMAN-001).
 /// </summary>
 internal static class PrEffects
 {
     /// <summary>'effect.pr.push': pushes the workspace head to the PR head with a lease; never rebases onto commits it didn't make.</summary>
-    public static BlockDescriptor Push { get; } = Of("effect.pr.push", humanTrigger: false, "pr", "lease", "workspace", "cause");
+    public static BlockDescriptor Push { get; } = Of("effect.pr.push", humanTrigger: false, "pr", "lease", "workspace", "cause")
+        with
+    { Outputs = [new OutputSpec(FactKey.From("fact:push"), []),], };
 
     /// <summary>'effect.pr.reply': thread, reaction, fixed, fixedReplies, none or hold forms.</summary>
     public static BlockDescriptor Reply { get; } = Of("effect.pr.reply", humanTrigger: false, "form", "reason", "comment", "decision", "fix", "body", "pr", "push");
