@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recipes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Tokens: SuperPlane dark factory theme (VISUAL-LANGUAGE.md section 1). Each colour is defined once. */
+:root{
+  --bg:#14120b; --fg:#edecec; --card:#17191c; --card-warm:#1b1913; --muted:#26251e; --muted-fg:#a3a3a3; --faint:#8a8f98;
+  --border:#33312b; --field:#221f18; --ring:#8a8578; --wire:#4a4740;
+  --panel:#101113; --panel-card:#17191c; --panel-border:#2e3138; --panel-hover:#1f2125;
+  --seg:#2a2c2f; --seg-on:#101113;
+  --lane-run:rgba(29,78,216,.08); --lane-idle:rgba(255,255,255,.02); --lane-head:rgba(0,0,0,.25);
+  --hover:rgba(255,255,255,.04); --focus:rgba(255,255,255,.07); --select:rgba(255,255,255,.1);
+  --run-fg:#93c5fd; --run-bg:rgba(29,78,216,.16); --run-bd:rgba(59,130,246,.4); --run-dot:#60a5fa;
+  --wait-fg:#fcd34d; --wait-bg:rgba(180,83,9,.18); --wait-bd:rgba(245,158,11,.4); --wait-dot:#f59e0b;
+  --done-fg:#86efac; --done-bg:rgba(21,128,61,.18); --done-bd:rgba(74,222,128,.35); --done-dot:#4ade80;
+  --fail-fg:#fca5a5; --fail-bg:rgba(185,28,28,.18); --fail-bd:rgba(248,113,113,.35); --fail-dot:#f87171;
+  --you-fg:#c4b5fd; --you-bg:rgba(109,40,217,.18); --you-bd:rgba(139,92,246,.4); --you-dot:#a78bfa;
+  --idle-fg:#a1a1aa; --idle-bg:#26251e; --idle-bd:#33312b; --idle-dot:#71717a;
+  --annot:#f59e0b; --annot-ink:#1a1200;
+  --font:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 13px/19.5px var(--font);font-feature-settings:"cv02","cv03","cv04","cv11";-webkit-font-smoothing:antialiased;overflow:hidden;letter-spacing:-.01em}
+button,input{font:inherit;color:inherit;letter-spacing:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+a{color:inherit;text-decoration:none}
+svg{display:block;flex:none}
+.ico{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+:focus-visible{outline:2px solid var(--ring);outline-offset:1px}
+.mono{font-family:var(--mono);font-size:11px;letter-spacing:0}
+.tnum{font-variant-numeric:tabular-nums}
+kbd{font:500 11px/16px var(--mono);letter-spacing:0;border:1px solid var(--border);border-radius:4px;padding:0 5px;height:18px;display:inline-flex;align-items:center;color:var(--muted-fg);background:var(--field)}
+
+/* ---------- App frame ---------- */
+.app{display:flex;height:100vh;min-width:900px}
+.rail{width:56px;flex:none;background:var(--card-warm);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px}
+.rail .ws{width:32px;height:32px;border-radius:8px;background:var(--fg);color:var(--bg);font:700 13px/32px var(--font);text-align:center;margin-bottom:12px}
+.rail a{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted-fg);position:relative}
+.rail a svg{width:20px;height:20px}
+.rail a:hover{background:var(--hover);color:var(--fg)}
+.rail a[aria-current]{background:var(--muted);color:var(--fg);box-shadow:inset 0 0 0 1px var(--border)}
+.rail a .tip{position:absolute;left:48px;top:50%;transform:translateY(-50%);background:var(--card);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font:500 12px/18px var(--font);color:var(--fg);white-space:nowrap;display:none;z-index:30}
+.rail a:hover .tip{display:block}
+.rail .sp{flex:1}
+.rail .me{width:28px;height:28px;border-radius:50%;background:var(--seg);font:600 11px/28px var(--font);text-align:center;color:var(--muted-fg)}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.work{flex:1;min-height:0;display:flex}
+.page{flex:1;min-width:0;display:flex;flex-direction:column}
+
+/* ---------- Top bar ---------- */
+.top{height:56px;flex:none;display:flex;align-items:center;gap:16px;padding:0 16px;border-bottom:1px solid var(--border)}
+.top h1{font:600 22px/33px var(--font);letter-spacing:-.02em;margin:0;white-space:nowrap}
+.search{position:relative;flex:1;max-width:360px;min-width:120px;margin-left:8px}
+.search svg{position:absolute;left:10px;top:8px;width:16px;height:16px;color:var(--muted-fg)}
+.search input{width:100%;height:32px;border-radius:6px;border:1px solid var(--border);background:var(--field);padding:0 40px 0 34px;outline:none;font-size:13px}
+.search input::placeholder{color:var(--muted-fg)}
+.search input:focus{border-color:var(--ring)}
+.search kbd{position:absolute;right:8px;top:7px}
+.top .sp{flex:1}
+.cmdk{display:inline-flex;align-items:center;gap:6px;color:var(--muted-fg);font-size:12px;height:28px;padding:0 8px;border-radius:6px;border:1px solid var(--border)}
+.switch{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--muted-fg);height:28px;cursor:pointer;user-select:none}
+.switch i{width:28px;height:16px;border-radius:8px;background:var(--seg);position:relative;transition:background .2s}
+.switch i::after{content:"";position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:50%;background:var(--muted-fg);transition:transform .2s}
+.switch[aria-checked=true] i{background:var(--annot)}
+.switch[aria-checked=true] i::after{transform:translateX(12px);background:var(--annot-ink)}
+
+.bar{height:48px;flex:none;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--border)}
+.seg{display:inline-flex;background:var(--seg);border-radius:8px;padding:2px;gap:2px}
+.seg button{white-space:nowrap;height:28px;padding:0 12px;border-radius:6px;font:500 12px/16px var(--font);color:var(--muted-fg);display:inline-flex;align-items:center;gap:6px;border:1px solid transparent}
+.seg button:hover{color:var(--fg)}
+.seg button[aria-pressed=true]{background:var(--seg-on);color:var(--fg);border-color:var(--border)}
+.seg .n{font-variant-numeric:tabular-nums;color:var(--faint);font-size:11px}
+.seg button .ico{width:14px;height:14px}
+.wfchip{display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 10px;border:1px solid var(--border);border-radius:6px;font:500 13px/16px var(--font);background:var(--field);min-width:0}
+.wfchip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wfchip .ico{width:14px;height:14px;color:var(--muted-fg)}
+.bar .sp{flex:1}
+.hint{color:var(--faint);font-size:12px;display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
+
+/* ---------- Status badge and glyphs ---------- */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 6px 2px 4px;border-radius:4px;font:500 12px/16px var(--font);white-space:nowrap;border:1px solid transparent}
+.badge .ico{width:14px;height:14px}
+.s-running{color:var(--run-fg);background:var(--run-bg);border-color:var(--run-bd)}
+.s-running .ico{stroke:var(--run-dot)}
+.s-wait{color:var(--wait-fg);background:var(--wait-bg);border-color:var(--wait-bd)}
+.s-wait .ico{stroke:var(--wait-dot)}
+.s-done{color:var(--done-fg);background:var(--done-bg);border-color:var(--done-bd)}
+.s-done .ico{stroke:var(--done-dot)}
+.s-fail{color:var(--fail-fg);background:var(--fail-bg);border-color:var(--fail-bd)}
+.s-fail .ico{stroke:var(--fail-dot)}
+.s-you{color:var(--you-fg);background:var(--you-bg);border-color:var(--you-bd)}
+.s-you .ico{stroke:var(--you-dot)}
+.s-idle{color:var(--idle-fg);background:var(--idle-bg);border-color:var(--idle-bd)}
+.s-idle .ico{stroke:var(--idle-dot)}
+.spin{animation:spin 1s linear infinite;transform-origin:50% 50%}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+.chip{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:1px 8px;font:500 11px/16px var(--font);border:1px solid;white-space:nowrap}
+.chip .ico{width:12px;height:12px}
+
+/* ---------- Board ---------- */
+.boardwrap{flex:1;min-height:0;overflow:auto;padding:16px 16px 12px}
+.board{display:flex;gap:10px;height:100%;min-height:420px;width:100%;min-width:1230px}
+.lane{flex:1 1 0;min-width:200px;display:flex;flex-direction:column;border:1px solid color-mix(in oklab,var(--border) 70%,transparent);border-radius:8px;background:var(--lane-run)}
+.lane.idle{background:var(--lane-idle)}
+.lane.last{flex:.6 1 0;min-width:150px}
+.lane .lh{background:var(--lane-head);border-bottom:1px solid color-mix(in oklab,var(--border) 70%,transparent);border-radius:8px 8px 0 0;padding:10px 12px 8px}
+.lane .lt{display:flex;align-items:center;gap:8px}
+.lane .lt h2{font:600 15px/22.5px var(--font);letter-spacing:-.01em;margin:0;flex:1}
+.lane .cnt{font:500 12px/16px var(--font);color:var(--faint);font-variant-numeric:tabular-nums}
+.lane .why{color:var(--muted-fg);font-size:12px;line-height:16px;min-height:32px;margin-top:2px}
+.lane .appr{display:flex;align-items:center;gap:6px;color:var(--muted-fg);font-size:12px;line-height:16px;height:20px;margin-top:6px}
+.lane .appr .ico{width:14px;height:14px}
+.lane .lb{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:8px}
+.empty{border:1px dashed color-mix(in oklab,var(--border) 90%,transparent);border-radius:6px;padding:20px 12px;text-align:center;color:var(--muted-fg);font-size:12px;line-height:18px}
+.empty b{display:block;color:var(--fg);font-weight:500;font-size:13px;margin-bottom:2px}
+
+.card{display:block;width:100%;text-align:left;border-radius:6px;border:1px solid var(--border);background:var(--card-warm);padding:10px;box-shadow:0 1px 2px rgba(0,0,0,.05);transition:border-color .2s,background-color .2s;position:relative}
+.card:hover{border-color:color-mix(in oklab,var(--fg) 20%,transparent)}
+.card[aria-selected=true]{background:var(--panel-card);border-color:color-mix(in oklab,var(--fg) 30%,transparent)}
+.card .ct{font:500 13px/20px var(--font);letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .cm{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 8px;margin-top:6px}
+.card .time{font-size:12px;line-height:16px;color:var(--muted-fg);font-variant-numeric:tabular-nums;white-space:nowrap}
+.card .step{margin-top:6px;font-size:12px;line-height:16px;color:var(--muted-fg);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card .chips{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+.chip.need{color:var(--wait-fg);background:var(--wait-bg);border-color:var(--wait-bd)}
+
+/* ---------- List ---------- */
+.listwrap{flex:1;min-height:0;overflow:auto;container-type:inline-size}
+.lcols,.lrow{display:grid;grid-template-columns:minmax(200px,2.2fr) 128px 148px minmax(150px,1.8fr) 124px 80px;column-gap:12px;align-items:center;padding:0 16px}
+.lcols{height:28px;position:sticky;top:0;z-index:3;background:var(--bg);border-bottom:1px solid var(--border);color:var(--faint);font:500 12px/16px var(--font)}
+.grp{height:32px;display:flex;align-items:center;gap:8px;padding:0 16px;background:color-mix(in oklab,var(--card-warm) 80%,transparent);border-bottom:1px solid var(--border);font:500 13px/16px var(--font);color:var(--muted-fg);position:sticky;top:28px;z-index:2}
+.grp .ico{width:14px;height:14px}
+.grp b{color:var(--fg);font-weight:500}
+.grp .n{color:var(--faint);font-variant-numeric:tabular-nums}
+.lrow{height:36px;border-bottom:1px solid color-mix(in oklab,var(--border) 60%,transparent);width:100%;text-align:left;transition:background-color .1s}
+.lrow:hover{background:var(--hover)}
+.lrow[data-focus=true]{background:var(--focus)}
+.lrow[aria-selected=true]{background:var(--select);box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--fg) 15%,transparent)}
+.lrow > *{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lrow .it{display:flex;align-items:center;gap:8px;font-weight:500}
+.lrow .it span.t{overflow:hidden;text-overflow:ellipsis}
+.lrow .it .mono{color:var(--faint);font-weight:400}
+.lrow .muted{color:var(--muted-fg)}
+.lrow .up{color:var(--faint);font-size:12px;text-align:right;font-variant-numeric:tabular-nums}
+.lcols .r{text-align:right}
+@container (max-width:960px){
+  .lcols,.lrow{grid-template-columns:minmax(150px,2fr) 148px minmax(110px,1.4fr) 72px}
+  .c-stage,.c-wait{display:none}
+}
+@container (max-width:560px){
+  .lcols,.lrow{grid-template-columns:minmax(120px,1fr) 148px}
+  .c-step,.c-up{display:none}
+  .lrow .it .mono{display:none}
+}
+.noresult{padding:48px 16px}
+
+/* ---------- Inspector ---------- */
+.insp{width:min(480px,48vw);min-width:360px;flex:none;background:var(--panel);border-left:1px solid var(--panel-border);display:none;flex-direction:column;min-height:0}
+.insp.open{display:flex}
+.insp .chrome{height:40px;flex:none;display:flex;align-items:center;gap:2px;padding:0 8px;border-bottom:1px solid var(--panel-border)}
+.ib{width:28px;height:28px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;color:var(--muted-fg)}
+.ib:hover{background:var(--panel-hover);color:var(--fg)}
+.ib .ico{width:16px;height:16px}
+.insp .chrome .sp{flex:1}
+.insp .scroll{flex:1;overflow-y:auto;min-height:0}
+.insp .hd{padding:16px;border-bottom:1px solid var(--panel-border)}
+.insp .hd .row1{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.insp h2{font:600 16px/22px var(--font);letter-spacing:-.01em;margin:8px 0 0}
+.insp .meta{margin-top:6px;font-size:12px;line-height:16px;color:var(--muted-fg);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.insp .meta .dotsep{color:var(--faint)}
+.copy{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--panel-border);border-radius:4px;padding:1px 6px;color:var(--muted-fg);font:400 11px/16px var(--mono);letter-spacing:0;max-width:100%}
+.copy:hover{color:var(--fg);background:var(--panel-hover)}
+.copy .ico{width:12px;height:12px}
+.copy span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acts{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.btn{height:32px;padding:0 12px;border-radius:6px;display:inline-flex;align-items:center;gap:6px;font:500 13px/16px var(--font);border:1px solid var(--border);background:var(--field);color:var(--fg)}
+.btn:hover{background:var(--muted)}
+.btn .ico{width:14px;height:14px}
+.btn.primary{background:#f7f7f4;color:#26251e;border-color:#f7f7f4}
+.btn.primary:hover{background:#e6e6e0}
+.callout{margin:16px 16px 0;border:1px solid var(--panel-border);background:var(--panel-card);border-radius:8px;padding:12px}
+.callout.need{border-color:var(--wait-bd);background:var(--wait-bg)}
+.callout.bad{border-color:var(--fail-bd);background:var(--fail-bg)}
+.callout h3{font:600 13px/19px var(--font);margin:0;display:flex;gap:8px;align-items:center}
+.callout h3 .ico{width:14px;height:14px}
+.callout.need h3{color:var(--wait-fg)}
+.callout.bad h3{color:var(--fail-fg)}
+.callout p{margin:4px 0 0;font-size:12px;line-height:18px;color:var(--muted-fg)}
+.callout .acts{margin-top:10px}
+.cap{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--panel-border);font:600 12px/16px var(--font);text-transform:uppercase;letter-spacing:.06em;color:var(--faint);margin-top:16px}
+.cap .n{margin-left:auto;font-weight:500;text-transform:none;letter-spacing:0;font-variant-numeric:tabular-nums}
+.stg{border-bottom:1px solid var(--panel-border)}
+.stg .sh{display:flex;align-items:center;gap:10px;min-height:40px;padding:8px 16px}
+.stg .sn{font:500 13px/20px var(--font);flex:1;min-width:0}
+.stg .sn small{display:block;font:400 12px/16px var(--font);color:var(--muted-fg);margin-top:1px}
+.stg .sr{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.stg .sd{font-size:12px;color:var(--muted-fg);font-variant-numeric:tabular-nums}
+.stg.cur{background:var(--panel-card)}
+.stg.off .sn{color:var(--muted-fg)}
+.idx{width:16px;height:16px;border-radius:50%;background:var(--panel-border);color:var(--muted-fg);font:600 11px/16px var(--font);text-align:center;flex:none;font-variant-numeric:tabular-nums}
+.foot{padding:12px 16px 24px;color:var(--faint);font-size:12px;line-height:18px;display:flex;gap:8px;align-items:center}
+
+/* ---------- Annotations (data-gap) ---------- */
+body.annot [data-gap]{outline:1px dashed var(--annot);outline-offset:2px;position:relative}
+body.annot [data-gap]::after{content:attr(data-gap);position:absolute;top:-10px;left:4px;z-index:40;background:var(--annot);color:var(--annot-ink);font:600 11px/14px var(--font);letter-spacing:0;padding:0 4px;border-radius:3px;pointer-events:none;white-space:nowrap}
+body.annot .lane .lh [data-gap]::after{top:-9px}
+
+@media (max-width:1180px){.hint{display:none}}
+.hidden{display:none !important}
+
+/* ---------- Added in the all-screens pass (same tokens; nothing new in :root) ---------- */
+.stsw{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--muted-fg)}
+.stsw select{height:28px;border-radius:6px;border:1px solid var(--border);background:var(--field);color:var(--fg);padding:0 8px;font:500 12px var(--font)}
+.sel{position:relative;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:1px solid var(--border);border-radius:6px;background:var(--field);font:500 12px/16px var(--font);color:var(--fg);white-space:nowrap}
+.sel .ico{width:14px;height:14px;color:var(--muted-fg)}
+.sel .k{color:var(--faint);font-weight:400}
+.panel{margin:16px;border:1px solid var(--border);border-radius:8px;background:var(--card-warm);overflow:hidden}
+.panel .ph{display:flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-bottom:1px solid var(--border);font:600 12px/16px var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+.panel .ph .n{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:500;font-variant-numeric:tabular-nums}
+.note-line{display:flex;gap:8px;align-items:flex-start;margin:12px 16px 0;padding:8px 12px;border-radius:6px;border:1px solid var(--border);background:var(--field);color:var(--muted-fg);font-size:12px;line-height:18px}
+.note-line .ico{width:14px;height:14px;margin-top:2px;flex:none}
+.note-line.warn{border-color:var(--wait-bd);background:var(--wait-bg);color:var(--wait-fg)}
+.note-line.bad{border-color:var(--fail-bd);background:var(--fail-bg);color:var(--fail-fg)}
+.skel{height:36px;border-bottom:1px solid color-mix(in oklab,var(--border) 60%,transparent);display:grid;align-items:center;padding:0 16px}
+.skel i{display:block;height:10px;border-radius:5px;background:linear-gradient(90deg,var(--muted),var(--seg),var(--muted));background-size:200% 100%;animation:sk 1.4s linear infinite}
+@keyframes sk{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.skel i{animation:none}}
+.fold{width:100%;display:flex;align-items:center;gap:8px;height:36px;padding:0 16px;color:var(--muted-fg);font:500 13px/16px var(--font);border-top:1px solid var(--border);text-align:left}
+.fold:hover{background:var(--hover)}
+.fold .ico{width:14px;height:14px;transition:transform .15s}
+.fold[aria-expanded=true] .ico{transform:rotate(90deg)}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:6px 12px;padding:12px 16px;font-size:12px;line-height:18px;margin:0}
+.kv dt{color:var(--faint)}
+.kv dd{margin:0;color:var(--fg);min-width:0;overflow-wrap:anywhere}
+.kv dd.mono{font-family:var(--mono);font-size:12px}
+.toast{position:fixed;left:50%;bottom:64px;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font:500 12px/16px var(--font);z-index:150;display:none}
+.toast.on{display:block}
+.tile{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:var(--field);display:flex;align-items:center;justify-content:center;color:var(--muted-fg);margin:0 auto 12px}
+.empty-st{flex:1;display:flex;align-items:center;justify-content:center;padding:32px}
+.empty-st .box{max-width:420px;text-align:center}
+.empty-st h2{font:600 16px/22px var(--font);margin:0 0 6px}
+.empty-st p{margin:0 0 16px;color:var(--muted-fg);font-size:13px;line-height:20px}
+.empty-st .acts{justify-content:center;margin-top:0}
+.meter{height:6px;border-radius:3px;background:var(--seg);overflow:hidden;min-width:80px}
+.meter i{display:block;height:100%;background:var(--run-dot)}
+.meter.warn i{background:var(--wait-dot)}
+.cols{display:grid;column-gap:12px;align-items:center;padding:0 16px}
+.crow{height:36px;border-bottom:1px solid color-mix(in oklab,var(--border) 60%,transparent);width:100%;text-align:left;transition:background-color .1s}
+.crow:hover{background:var(--hover)}
+.crow[aria-selected=true]{background:var(--select);box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--fg) 15%,transparent)}
+.crow > *{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chead{height:28px;border-bottom:1px solid var(--border);color:var(--faint);font:500 12px/16px var(--font);background:var(--bg)}
+.muted{color:var(--muted-fg)}
+.faint{color:var(--faint)}
+.sec{padding:16px;border-bottom:1px solid var(--panel-border)}
+.sec h3{font:600 12px/16px var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin:0 0 8px}
+.foot{padding:12px 16px 24px;color:var(--faint);font-size:12px;line-height:18px;display:flex;gap:8px;align-items:flex-start;margin:0}
+.foot .ico{width:14px;height:14px;margin-top:2px}
+.page{overflow:auto}
+.rcols{grid-template-columns:minmax(200px,2fr) 70px 170px 80px 90px 100px}
+@container (max-width:780px){.rcols{grid-template-columns:minmax(150px,1fr) 170px 100px}.rcols>:nth-child(2),.rcols>:nth-child(4),.rcols>:nth-child(5){display:none}}
+.pcq{container-type:inline-size}
+.band{display:flex;flex-wrap:wrap;gap:6px;padding:12px 16px}
+.node{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 8px;border:1px solid var(--panel-border);border-radius:6px;background:var(--panel-card);font:500 12px/16px var(--font)}
+.node .ico{width:12px;height:12px;color:var(--muted-fg)}
+.node.end{color:var(--faint)}
+.lst{margin:0;padding:8px 16px 12px 32px;font-size:13px;line-height:20px}
+.lst.none{list-style:none;padding-left:16px;color:var(--faint)}</style>
+</head>
+<body>
+<div class="app">
+  <nav class="rail" aria-label="Sindri pages">
+    <div class="ws" aria-hidden="true">S</div>
+    <a href="home.html" aria-label="Home"><svg class="ico" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg><span class="tip">Home</span></a>
+    <a href="work.html" aria-label="Work"><svg class="ico" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12"/><path d="M3 6l1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2"/></svg><span class="tip">Work</span></a>
+    <a href="workflows.html" aria-label="Workflows"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="6" rx="1.5"/><rect x="14" y="15" width="7" height="6" rx="1.5"/><path d="M6.5 9v3a3 3 0 003 3H14"/></svg><span class="tip">Workflows</span></a>
+    <a href="recipes.html" aria-label="Recipes" aria-current="page"><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span class="tip">Recipes</span></a>
+    <a href="context.html" aria-label="Context"><svg class="ico" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="8" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8 7l8 1M7 8l4 8M17 10.5l-4 5.5"/></svg><span class="tip">Context</span></a>
+    <a href="agents.html" aria-label="Agents"><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 14h.01M15 14h.01M2 13v2M22 13v2"/></svg><span class="tip">Agents</span></a>
+    <a href="system.html" aria-label="System"><svg class="ico" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span class="tip">System</span></a>
+    <a href="setup.html" aria-label="Settings"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 01-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 010-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 014 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 010 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg><span class="tip">Settings</span></a>
+    <div class="sp"></div>
+    <a href="questions.html" aria-label="Questions for the owner"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 114 2c-.9.6-1.5 1-1.5 2M12 17h.01"/></svg><span class="tip">Questions for the owner</span></a>
+    <div class="me" aria-hidden="true">You</div>
+  </nav>
+
+  <div class="main">
+    <header class="top">
+      <h1>Workflows</h1>
+      <label class="search"><svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="q" type="search" placeholder="Search workflows" aria-label="Search workflows" autocomplete="off"><kbd>/</kbd></label><span class="muted" id="hd" style="font-size:13px"></span>
+      <span class="sp"></span>
+      <span class="cmdk" title="Command palette"><kbd>⌘K</kbd> Jump to anything</span>
+      <button class="switch" id="annot" role="switch" aria-checked="false"><i></i>Annotations</button>
+    </header>
+    <div class="bar">
+      <div class="seg" role="group" aria-label="Show" id="filters">
+        <button data-f="all" aria-pressed="true">All <span class="n" id="n-all"></span></button>
+        <button data-f="look" aria-pressed="false">Needs approval <span class="n" id="n-look"></span></button>
+      </div>
+      <span class="sp"></span>
+      <span class="hint"><kbd>J</kbd><kbd>K</kbd> move <kbd>Enter</kbd> open <kbd>Esc</kbd> close</span>
+      <label class="stsw" data-gap="demo of an outline">View as
+        <select id="stsel" aria-label="Show this state (prototype only)">
+          <option value="populated">Workflows</option>
+          <option value="reading">Reading</option>
+          <option value="empty">No workflows</option>
+          <option value="nomatch">Filter matches nothing</option>
+          <option value="stale">Out of date</option>
+          <option value="unreadable">Can't read the answer</option>
+        </select></label>
+      <a class="btn primary" href="setup.html#approveall" data-gap="approve all: hold button, lives in Settings"><svg class='ico' viewBox='0 0 24 24'><path d='M5 12.5l4.5 4.5L19 7'/></svg>Approve new workflows</a>
+    </div>
+    <div class="work">
+      <div class="page" id="pg">
+        <div id="list"></div>
+      </div>
+        <aside class="insp" id="insp" aria-label="Workflow details"></aside>
+    </div>
+  </div>
+</div>
+<script>
+
+const NOW = Date.parse('2026-10-19T16:40:00Z');
+const I = (d) => `<svg class="ico" viewBox="0 0 24 24">${d}</svg>`;
+const P = {
+  spin: '<svg class="ico spin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" opacity=".25"/><path d="M21 12a9 9 0 00-9-9"/></svg>',
+  clock: I('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+  person: I('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/>'),
+  pause: I('<circle cx="12" cy="12" r="9"/><path d="M10 9v6M14 9v6"/>'),
+  fail: I('<circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/>'),
+  done: I('<circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/>'),
+  idle: I('<circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/>'),
+  ask: I('<path d="M21 12a8 8 0 01-11.6 7.1L4 20l1-4.5A8 8 0 1121 12z"/><path d="M9.7 9.7a2.4 2.4 0 114 1.7c-.8.5-1.2.9-1.2 1.6M12.5 16h.01"/>'),
+  copy: I('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/>'),
+  close: I('<path d="M6 6l12 12M18 6L6 18"/>'),
+  chev: I('<path d="M9 6l6 6-6 6"/>'),
+  open: I('<path d="M7 17L17 7M8 7h9v9"/>'),
+  info: I('<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>'),
+  warn: I('<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>'),
+  term: I('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M13 15h4"/>'),
+  search: I('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>'),
+  plus: I('<path d="M12 5v14M5 12h14"/>'),
+  play: I('<path d="M7 4l13 8-13 8z"/>'),
+};
+const STATUS = {
+  running: { word: 'Working', cls: 's-running', g: P.spin },
+  asking:  { word: 'Asking you', cls: 's-wait', g: P.ask },
+  idle:    { word: 'Idle', cls: 's-idle', g: P.idle },
+  need:    { word: 'Waiting for you', cls: 's-wait', g: P.clock },
+  took:    { word: 'You took over', cls: 's-you', g: P.person },
+  paused:  { word: 'Paused, needs you', cls: 's-wait', g: P.pause },
+  failed:  { word: 'Failed', cls: 's-fail', g: P.fail },
+  done:    { word: 'Done', cls: 's-done', g: P.done },
+  unres:   { word: "Didn't work out", cls: 's-idle', g: P.fail },
+  cancel:  { word: 'Cancelled', cls: 's-idle', g: P.pause },
+  queued:  { word: 'Queued', cls: 's-idle', g: P.idle },
+  ok:      { word: 'Running', cls: 's-done', g: P.done },
+  degraded:{ word: 'Needs a look', cls: 's-wait', g: P.warn },
+  stopped: { word: 'Stopped', cls: 's-fail', g: P.fail },
+};
+const badge = (k, extra = '', word) => { const s = STATUS[k]; return `<span class="badge ${s.cls}" ${extra}>${s.g}${word || s.word}</span>`; };
+const mins = (iso) => Math.round((NOW - Date.parse(iso)) / 60000);
+const ago = (iso) => { const m = mins(iso); if (m >= 2880) return Math.round(m / 1440) + 'd'; if (m < 1) return 'now'; return m < 60 ? m + 'm' : (Math.floor(m / 60) + 'h ' + (m % 60 ? (m % 60) + 'm' : '')).trim(); };
+const agoShort = (iso) => ago(iso) === 'now' ? 'just now' : ago(iso) + ' ago';
+const hm = (iso) => iso.slice(11, 16);
+const utc = (iso) => iso.slice(0, 10) + ' ' + iso.slice(11, 19) + ' UTC';
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const Q = new URLSearchParams(location.search);
+function toast(t) { let e = document.getElementById('toast'); if (!e) { e = document.createElement('div'); e.id = 'toast'; e.className = 'toast'; e.setAttribute('role', 'status'); document.body.appendChild(e); } e.textContent = t; e.classList.add('on'); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove('on'), 1800); }
+document.addEventListener('click', (ev) => { const c = ev.target.closest('[data-copy]'); if (c) { try { navigator.clipboard.writeText(c.dataset.copy); } catch (e) {} toast('Copied'); } });
+const annotBtn = document.getElementById('annot');
+annotBtn.onclick = () => { const on = annotBtn.getAttribute('aria-checked') !== 'true'; annotBtn.setAttribute('aria-checked', on); document.body.classList.toggle('annot', on); };
+if (Q.get('annot')) { document.body.classList.add('annot'); annotBtn.setAttribute('aria-checked', 'true'); }
+
+const R = [{"id": "workflow.line", "name": "Idea to merged pull request", "does": "The whole pipeline: scope, design, plan, then build and prove each phase.", "version": 1, "standing": "approved", "stale": [], "via": "desk", "urgency": "work", "hash": "sha256:e204c3b4ff1755b975bc92713ab9a7f4ca9ea54a8888a5b32b06bba4fac8c636", "inputs": ["What to build", "Line context (base, stack parent, run area)"], "outputs": ["Scope packet", "Design packet", "Plan graph", "Pull request"], "states": [{"id": "scoping", "kind": "wait", "runtime": "wait-child", "human": false, "order": 1}, {"id": "design", "kind": "wait", "runtime": "wait-child", "human": false, "order": 2}, {"id": "redesign", "kind": "wait", "runtime": "wait-child", "human": false, "order": null}, {"id": "plan", "kind": "wait", "runtime": "wait-child", "human": false, "order": 3}, {"id": "phase", "kind": "wait", "runtime": "wait-child", "human": false, "order": 4}, {"id": "done", "kind": "terminal", "runtime": "terminal", "human": false, "order": 6}, {"id": "dropped", "kind": "terminal", "runtime": "terminal", "human": false, "order": 5}, {"id": "stuck", "kind": "terminal", "runtime": "terminal", "human": false, "order": 7}], "loops": [{"name": "redesign", "cap": 2}]}, {"id": "workflow.scoping", "name": "Scoping", "does": "Decide what will change, from a brief or a ticket.", "version": 1, "standing": "approved", "stale": [], "via": "desk", "urgency": "work", "hash": "sha256:68d4d63d671acb1abe44ab69393e2e082f1ad39a25aa640143bbfe36432efead", "inputs": ["What to scope"], "outputs": ["Scope map", "Acceptance list", "Lens coverage", "Size estimate", "Open questions", "Scope packet"], "states": [{"id": "intake", "kind": "active", "runtime": "block", "human": false, "order": 1}, {"id": "read-brief", "kind": "active", "runtime": "block", "human": false, "order": 2}, {"id": "read-tracker", "kind": "active", "runtime": "block", "human": false, "order": null}, {"id": "read-change", "kind": "active", "runtime": "block", "human": false, "order": null}, {"id": "idea", "kind": "wait", "runtime": "wait-child", "human": false, "order": null}, {"id": "gather", "kind": "active", "runtime": "block", "human": false, "order": 3}, {"id": "draft", "kind": "active", "runtime": "agent", "human": false, "order": 4}, {"id": "check", "kind": "active", "runtime": "block", "human": false, "order": 5}, {"id": "questions", "kind": "active", "runtime": "agent", "human": false, "order": 6}, {"id": "interview", "kind": "active", "runtime": "desk(human-only)", "human": true, "order": 7}, {"id": "record", "kind": "active", "runtime": "block", "human": false, "order": 8}, {"id": "apply", "kind": "active", "runtime": "agent", "human": false, "order": 9}, {"id": "reanchor", "kind": "active", "runtime": "block", "human": false, "order": 10}, {"id": "challenge", "kind": "active", "runtime": "agent", "human": false, "order": null}, {"id": "challenge-log", "kind": "active", "runtime": "block", "human": false, "order": null}, {"id": "size", "kind": "active", "runtime": "block", "human": false, "order": null}, {"id": "size-desk", "kind": "active", "runtime": "desk(human-only)", "human": true, "order": null}, {"id": "propose", "kind": "active", "runtime": "block", "human": false, "order": null}, {"id": "evidence", "kind": "active", "runtime": "block", "human": false, "order": null}, {"id": "stop", "kind": "active", "runtime": "desk(human-only)", "human": true, "order": null}, {"id": "freeze", "kind": "active", "runtime": "block", "human": false, "order": null}, {"id": "withdraw", "kind": "active", "runtime": "block", "human": false, "order": null}, {"id": "scoped", "kind": "terminal", "runtime": "terminal", "human": false, "order": 12}, {"id": "dropped", "kind": "terminal", "runtime": "terminal", "human": false, "order": 11}], "loops": [{"name": "rounds", "cap": 6}, {"name": "rescope", "cap": 3}, {"name": "interview", "cap": 4}, {"name": "challenge", "cap": 4}, {"name": "refreeze", "cap": 2}]}, {"id": "workflow.idea-to-brief", "name": "Idea to brief", "does": "Turn a rough idea typed in the app into a cited brief.", "version": 1, "standing": "approved", "stale": [], "via": "desk", "urgency": "work", "hash": "sha256:f11d686d930100ab8a1dcd725decc5fee3bc71107fa4b1cb7e94a5f9225d8d56", "inputs": ["The idea"], "outputs": ["Brief", "Answer log", "Anchors"], "states": [{"id": "seed", "kind": "active", "runtime": "block", "human": false, "order": 1}, {"id": "ask", "kind": "active", "runtime": "agent", "human": false, "order": 2}, {"id": "answer", "kind": "active", "runtime": "desk(human-only)", "human": true, "order": 3}, {"id": "record", "kind": "active", "runtime": "block", "human": false, "order": 4}, {"id": "write", "kind": "active", "runtime": "agent", "human": false, "order": 5}, {"id": "anchor", "kind": "active", "runtime": "block", "human": false, "order": 6}, {"id": "done", "kind": "terminal", "runtime": "terminal", "human": false, "order": 8}, {"id": "dropped", "kind": "terminal", "runtime": "terminal", "human": false, "order": 7}], "loops": [{"name": "rounds", "cap": 3}]}, {"id": "workflow.design", "name": "Design", "does": "Turn the locked scope into one reviewed spec.", "version": 1, "standing": "approved", "stale": [], "via": "desk", "urgency": "work", "hash": "sha256:5828ca3c37b7055e454fde8b43259b61d77134db7c29ad4854f379712f2fbf44", "inputs": ["Scope packet (frozen)", "Revision from stop 2"], "outputs": ["Design packet (candidate)", "Design", "Lens rounds"], "states": [{"id": "intake", "kind": "active", "runtime": "block", "human": false, "order": 1}, {"id": "draft", "kind": "active", "runtime": "agent", "human": false, "order": 2}, {"id": "apply", "kind": "active", "runtime": "agent", "human": false, "order": null}, {"id": "check", "kind": "active", "runtime": "block", "human": false, "order": 3}, {"id": "round", "kind": "active", "runtime": "block", "human": false, "order": 4}, {"id": "lens", "kind": "active", "runtime": "agent", "human": false, "order": 5}, {"id": "lens-log", "kind": "active", "runtime": "block", "human": false, "order": 6}, {"id": "revise", "kind": "active", "runtime": "agent", "human": false, "order": null}, {"id": "lens-desk", "kind": "active", "runtime": "desk(human-only)", "human": true, "order": null}, {"id": "evidence", "kind": "active", "runtime": "block", "human": false, "order": 7}, {"id": "designed", "kind": "terminal", "runtime": "terminal", "human": false, "order": 9}, {"id": "dropped", "kind": "terminal", "runtime": "terminal", "human": false, "order": 8}], "loops": [{"name": "rounds", "cap": 5}, {"name": "lens", "cap": 4}, {"name": "lens-runs", "cap": 40}]}, {"id": "workflow.plan", "name": "Plan", "does": "Split the design into buildable phases and check a builder could do them.", "version": 1, "standing": "approved", "stale": [], "via": "desk", "urgency": "work", "hash": "sha256:2fee6d224ac436f53e14925b5d3b8341c40ef177c89ecb6ee00ae5230a01e3af", "inputs": ["Scope packet (frozen)", "Design packet (candidate)"], "outputs": ["Plan graph", "Phase packets", "Design revision"], "states": [{"id": "intake", "kind": "active", "runtime": "block", "human": false, "order": 1}, {"id": "graph", "kind": "active", "runtime": "agent", "human": false, "order": 2}, {"id": "check", "kind": "active", "runtime": "block", "human": false, "order": 3}, {"id": "exec-review", "kind": "active", "runtime": "agent", "human": false, "order": 4}, {"id": "holdout", "kind": "active", "runtime": "agent", "human": false, "order": 5}, {"id": "evidence", "kind": "active", "runtime": "block", "human": false, "order": 6}, {"id": "questions", "kind": "active", "runtime": "block", "human": false, "order": 7}, {"id": "decide", "kind": "active", "runtime": "desk(human-only)", "human": true, "order": 8}, {"id": "record", "kind": "active", "runtime": "block", "human": false, "order": 9}, {"id": "settle", "kind": "active", "runtime": "block", "human": false, "order": 10}, {"id": "stop", "kind": "active", "runtime": "desk(human-only)", "human": true, "order": 11}, {"id": "freeze", "kind": "active", "runtime": "block", "human": false, "order": 12}, {"id": "planned", "kind": "terminal", "runtime": "terminal", "human": false, "order": 15}, {"id": "redesign", "kind": "terminal", "runtime": "terminal", "human": false, "order": 13}, {"id": "dropped", "kind": "terminal", "runtime": "terminal", "human": false, "order": 14}], "loops": [{"name": "rounds", "cap": 5}, {"name": "refreeze", "cap": 2}, {"name": "revisions", "cap": 5}]}, {"id": "workflow.phase", "name": "Build and prove", "does": "Build, prove, review and ship one phase as one pull request.", "version": 1, "standing": "approved", "stale": [], "via": "desk", "urgency": "work", "hash": "sha256:772f495bcc606c1a3b38055a22289e4808fd5341f0898ead5b905056114fe5c5", "inputs": ["Phase packet (frozen)", "Line context"], "outputs": ["Pull request", "PR hand-off", "Proof pack", "Merged sha"], "states": [{"id": "seed", "kind": "active", "runtime": "block", "human": false, "order": 1}, {"id": "build", "kind": "wait", "runtime": "wait-child", "human": false, "order": 2}, {"id": "prove", "kind": "wait", "runtime": "wait-child", "human": false, "order": 3}, {"id": "review", "kind": "wait", "runtime": "wait-child", "human": false, "order": 4}, {"id": "drift", "kind": "active", "runtime": "block", "human": false, "order": 5}, {"id": "ship", "kind": "wait", "runtime": "wait-child", "human": false, "order": 6}, {"id": "babysit", "kind": "wait", "runtime": "wait-child", "human": false, "order": 7}, {"id": "owner", "kind": "active", "runtime": "desk(human-only)", "human": true, "order": 8}, {"id": "merged", "kind": "terminal", "runtime": "terminal", "human": false, "order": 10}, {"id": "dropped", "kind": "terminal", "runtime": "terminal", "human": false, "order": 9}], "loops": [{"name": "stage", "cap": 3}, {"name": "reprove", "cap": 3}]}, {"id": "workflow.build", "name": "Build", "does": "One test-first builder for one phase, in its own worktree.", "version": 1, "standing": "approved", "stale": [], "via": "desk", "urgency": "work", "hash": "sha256:22deb2c85ba34a6dd2d97a3238a5ddcf9760789b48d8b9fafb67a43469586ee6", "inputs": ["Phase packet (frozen)", "Phase worktree", "Notes from a later station", "Line context (base, stack parent, run area)"], "outputs": ["Built head", "Change under review", "Red tests", "Phase packet in force"], "states": [{"id": "prepare", "kind": "active", "runtime": "block", "human": false, "order": 1}, {"id": "red", "kind": "active", "runtime": "agent", "human": false, "order": 2}, {"id": "red-check", "kind": "active", "runtime": "block", "human": false, "order": 3}, {"id": "green", "kind": "active", "runtime": "agent", "human": false, "order": 4}, {"id": "checks", "kind": "active", "runtime": "block", "human": false, "order": 5}, {"id": "scope-desk", "kind": "active", "runtime": "desk(human-only)", "human": true, "order": 6}, {"id": "amend", "kind": "active", "runtime": "block", "human": false, "order": 7}, {"id": "built", "kind": "terminal", "runtime": "terminal", "human": false, "order": 8}, {"id": "stopped", "kind": "terminal", "runtime": "terminal", "human": false, "order": 9}], "loops": [{"name": "tests", "cap": 3}, {"name": "revisions", "cap": 4}, {"name": "grants", "cap": 3}]}, {"id": "workflow.prove", "name": "Prove", "does": "Prove every acceptance item of a phase on its final commit.", "version": 1, "standing": "approved", "stale": [], "via": "desk", "urgency": "work", "hash": "sha256:142e1bd290edd718f7a09e4c2b271b46475cf744dfd3f194bbf8da80a1122079", "inputs": ["Phase packet", "Built head", "Workspace", "Red tests"], "outputs": ["Proof pack", "Why not proven"], "states": [{"id": "intake", "kind": "active", "runtime": "block", "human": false, "order": 1}, {"id": "hand-test", "kind": "wait", "runtime": "wait-child", "human": false, "order": 2}, {"id": "verify", "kind": "wait", "runtime": "wait-child", "human": false, "order": 3}, {"id": "evidence", "kind": "wait", "runtime": "wait-child", "human": false, "order": 4}, {"id": "before-after", "kind": "active", "runtime": "block", "human": false, "order": 5}, {"id": "holdout", "kind": "active", "runtime": "agent", "human": false, "order": 6}, {"id": "holdout-log", "kind": "active", "runtime": "block", "human": false, "order": 7}, {"id": "evidence-pack", "kind": "active", "runtime": "block", "human": false, "order": 8}, {"id": "fail-log", "kind": "active", "runtime": "block", "human": false, "order": 9}, {"id": "proven", "kind": "terminal", "runtime": "terminal", "human": false, "order": 11}, {"id": "failed", "kind": "terminal", "runtime": "terminal", "human": false, "order": 10}], "loops": []}, {"id": "workflow.ship", "name": "Ship", "does": "Check the change is green, then open the pull request.", "version": 1, "standing": "approved", "stale": [], "via": "desk", "urgency": "work", "hash": "sha256:0e52c5a3da8705346bf775470e2656aa6eed2a0c77fc7e27081bd356df108311", "inputs": ["Phase packet", "Proof pack", "Review result", "Workspace", "Line context"], "outputs": ["Pull request", "PR hand-off", "Why it went back"], "states": [{"id": "green", "kind": "active", "runtime": "block", "human": false, "order": 1}, {"id": "pack", "kind": "active", "runtime": "block", "human": false, "order": 2}, {"id": "freeze", "kind": "active", "runtime": "block", "human": false, "order": 3}, {"id": "opening", "kind": "active", "runtime": "desk(human-only)", "human": true, "order": 4}, {"id": "return", "kind": "active", "runtime": "block", "human": false, "order": null}, {"id": "shipped", "kind": "terminal", "runtime": "terminal", "human": false, "order": 5}, {"id": "returned", "kind": "terminal", "runtime": "terminal", "human": false, "order": 7}, {"id": "refused", "kind": "terminal", "runtime": "terminal", "human": false, "order": 6}], "loops": []}, {"id": "workflow.review-loop", "name": "Review loop", "does": "Review a phase's change one angle at a time, round by round.", "version": 2, "standing": "approved", "stale": ["child-stale"], "via": "desk", "urgency": "work", "hash": "sha256:899ac76ac87c5606d2c76246129785437d50a839128b1b175c918a43e6a97d42", "inputs": ["Change", "Phase packet"], "outputs": ["Review result"], "states": [{"id": "round", "kind": "active", "runtime": "block", "human": false, "order": 1}, {"id": "lens", "kind": "active", "runtime": "agent", "human": false, "order": 2}, {"id": "lens-log", "kind": "active", "runtime": "block", "human": false, "order": 3}, {"id": "fix", "kind": "active", "runtime": "agent", "human": false, "order": null}, {"id": "recheck", "kind": "active", "runtime": "agent", "human": false, "order": null}, {"id": "record", "kind": "active", "runtime": "block", "human": false, "order": 4}, {"id": "clean", "kind": "terminal", "runtime": "terminal", "human": false, "order": 7}, {"id": "stuck", "kind": "terminal", "runtime": "terminal", "human": false, "order": 6}, {"id": "wrong", "kind": "terminal", "runtime": "terminal", "human": false, "order": 5}], "loops": [{"name": "rounds", "cap": 5}, {"name": "lens-runs", "cap": 50}]}, {"id": "workflow.pr-babysitter", "name": "Pull request babysitter", "does": "Placeholder until the babysitter lands: one step done by a person.", "version": 1, "standing": "unapproved", "stale": [], "via": "desk", "urgency": "work", "hash": "sha256:42ee26f21d7c2baaf5be576e7c10f9cf79e87482774dade1107f2c2ed62a115e", "inputs": ["Pull request", "PR hand-off", "Phase packet", "Line context", "Workspace"], "outputs": ["Merged sha", "Why it goes back"], "states": [{"id": "watch", "kind": "active", "runtime": "desk(human-only)", "human": true, "order": 1}, {"id": "merged", "kind": "terminal", "runtime": "terminal", "human": false, "order": 2}, {"id": "rework", "kind": "terminal", "runtime": "terminal", "human": false, "order": 3}, {"id": "stuck", "kind": "terminal", "runtime": "terminal", "human": false, "order": 4}], "loops": []}, {"id": "workflow.step", "name": "Plain step", "does": "One step with a checks-and-revise loop; used for trying workflows out.", "version": 2, "standing": "approved", "stale": [], "via": "desk", "urgency": "work", "hash": "sha256:83a94755be326ee8babe83dabb1a030505898b1e148c55a9509f7c50bb3b0e4d", "inputs": ["Spec"], "outputs": [], "states": [{"id": "produce", "kind": "active", "runtime": "agent", "human": false, "order": 1}, {"id": "checks", "kind": "active", "runtime": "desk", "human": false, "order": 2}, {"id": "verify", "kind": "active", "runtime": "desk", "human": false, "order": 3}, {"id": "done", "kind": "terminal", "runtime": "terminal", "human": false, "order": 4}], "loops": [{"name": "revisions", "cap": 3}]}];
+/* Data: GET /sindri/workflow/recipes (golden workflow-recipes/list.json: id, version, hash, standing, via, stale[], inputs, urgency, outputs, states[{id, order, branchOf}], loops[{name, from, to}]).
+   The states and their kinds come from sample.json (the real recipes); plain names, the standing of two rows and the hashes are mockup-authored. */
+const STAND = { approved: ['done', 'Approved'], unapproved: ['need', 'Not approved'], revoked: ['failed', 'Revoked'] };
+const STALE = { 'pin-drift': 'A step it uses changed since it was approved', 'child-stale': 'A workflow it starts is out of date', 'legacy-shape': 'It is written in an old format' };
+const KIND = { agent: P.term, block: I('<rect x="4" y="4" width="16" height="16" rx="3"/>'), human: P.person, wait: P.clock, terminal: P.done };
+const st = { state: Q.get('state') || 'populated', filter: Q.get('filter') || 'all', q: '', sel: Q.get('open') };
+const stal = (x) => x.stale.length ? '<span class="faint" title="' + esc(x.stale.map((s) => STALE[s]).join('; ')) + '"> · out of date</span>' : '';
+function row(x) {
+  const s = STAND[x.standing];
+  return `<button class="crow cols rcols rrow" data-id="${x.id}" aria-selected="${st.sel === x.id}">
+    <span style="font-weight:500;display:flex;gap:8px;align-items:center;min-width:0"><span style="overflow:hidden;text-overflow:ellipsis">${esc(x.name)}</span><span class="mono faint" style="font-weight:400">${x.id.replace('workflow.', '')}</span></span>
+    <span class="muted tnum">v${x.version}</span><span>${badge(s[0], '', s[1])}${stal(x)}</span><span class="muted tnum">${x.states.length} steps</span>
+    <span class="muted">${x.inputs.length} in · ${x.outputs.length} out</span><span class="mono faint">${x.hash.slice(7, 19)}</span></button>`;
+}
+function msg(t, p) { return `<div class="empty-st" style="padding:56px 16px"><div class="box"><div class="tile">${I('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>')}</div><h2>${t}</h2><p>${p}</p></div></div>`; }
+function render() {
+  document.getElementById('stsel').value = st.state;
+  document.querySelectorAll('#filters button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.f === st.filter));
+  const look = (x) => x.standing !== 'approved' || x.stale.length;
+  document.getElementById('n-all').textContent = R.length; document.getElementById('n-look').textContent = R.filter(look).length;
+  const vis = R.filter((x) => (st.filter === 'all' || look(x)) && (!st.q || (x.name + x.id).toLowerCase().includes(st.q)));
+  document.getElementById('hd').textContent = ['reading', 'empty', 'unreadable'].includes(st.state) ? '' : R.length + ' workflows · ' + R.filter((x) => x.standing === 'approved').length + ' approved';
+  let html = '';
+  if (st.state === 'stale') html += `<div class="note-line warn">${P.warn}<span>Showing the last answer. Sindri has not answered for 30 seconds.</span></div>`;
+  if (st.state === 'reading') html = `<div class="panel"><div class="ph">Reading workflows…</div>${Array.from({ length: 6 }, () => '<div class="skel"><i style="width:' + (30 + Math.random() * 40 | 0) + '%"></i></div>').join('')}</div>`;
+  else if (st.state === 'empty') html = msg('No workflows are installed', 'Sindri has no workflow templates yet. They are installed with Sindri itself.');
+  else if (st.state === 'unreadable') html = msg("This app can't read the workflow list", 'The answer is in a shape this version of the app does not know. Update the app.');
+  else if (!vis.length || st.state === 'nomatch') html += msg('No workflows match', 'Nothing matches your search. Clear it to see all of them.');
+  else html += `<div class="panel pcq"><div class="cols chead rcols"><span>Workflow</span><span>Version</span><span>Standing</span><span>Size</span><span data-gap="usage stats (runs, success rate, time) are API P12, not served">Needs and produces</span><span>Fingerprint</span></div>${vis.map(row).join('')}</div>
+    <p class="foot">${P.info}<span>Only approved workflows can start a run. Runs, success rate and average time per workflow are not served yet.</span></p>`;
+  document.getElementById('list').innerHTML = html;
+  document.querySelectorAll('.rrow').forEach((b) => b.onclick = () => { st.sel = b.dataset.id; render(); });
+  sheet();
+}
+function sheet() {
+  const el = document.getElementById('insp'), x = R.find((r) => r.id === st.sel);
+  if (!x || ['reading', 'empty', 'unreadable'].includes(st.state)) { el.classList.remove('open'); el.innerHTML = ''; return; }
+  el.classList.add('open');
+  const s = STAND[x.standing];
+  el.innerHTML = `<div class="chrome"><span class="sp"></span><button class="ib" id="x" aria-label="Close (Esc)">${P.close}</button></div>
+  <div class="scroll"><div class="hd"><div class="row1">${badge(s[0], '', s[1])}<span class="muted">v${x.version}</span></div>
+    <h2>${esc(x.name)}</h2><div class="meta"><span>${esc(x.does)}</span></div>
+    <div class="meta"><span class="copy" data-copy="${x.id}">${P.copy}<span>${x.id}</span></span></div>
+    ${x.standing === 'unapproved' ? `<div class="acts"><span class="copy" data-copy="sindri recipe approve ${x.id}">${P.copy}<span>sindri recipe approve ${x.id}</span></span></div>` : ''}</div>
+  ${x.standing === 'unapproved' ? `<div class="callout need"><h3>${P.clock}Not approved</h3><p>This workflow cannot start a run until you approve it. Approving takes a typed confirmation, in the terminal for now.</p></div>` : ''}
+  ${x.stale.map((t) => `<div class="callout need"><h3>${P.warn}Out of date</h3><p>${STALE[t]}. Approve it again once you have looked at what changed.</p></div>`).join('')}
+  <div class="cap">How it works <span class="n">${x.states.length} steps</span></div>
+  <div class="band" data-gap="plain step names are not served">${x.states.map((n) => `<span class="node ${n.kind === 'terminal' ? 'end' : ''}" title="${n.kind}${n.runtime ? ', ' + n.runtime : ''}">${KIND[n.human ? 'human' : n.kind === 'terminal' ? 'terminal' : n.kind === 'wait' ? 'wait' : (n.runtime === 'agent' ? 'agent' : 'block')]}${esc(n.id)}</span>`).join('')}</div>
+  ${x.loops.length ? `<ul class="lst">${x.loops.map((l) => `<li>${esc(l.name)}: up to ${l.cap} rounds</li>`).join('')}</ul>` : ''}
+  <div class="cap">What it needs <span class="n">${x.inputs.length}</span></div><ul class="lst">${x.inputs.map((i) => '<li>' + esc(i) + '</li>').join('')}</ul>
+  <div class="cap">What it produces <span class="n">${x.outputs.length}</span></div>${x.outputs.length ? '<ul class="lst">' + x.outputs.map((i) => '<li>' + esc(i) + '</li>').join('') + '</ul>' : '<ul class="lst none"><li>This workflow does not produce anything.</li></ul>'}
+  <div class="cap">Details</div><dl class="kv"><dt>Id</dt><dd class="mono">${x.id}</dd><dt>Version</dt><dd>${x.version}</dd><dt>Fingerprint</dt><dd class="mono">${x.hash.slice(7, 19)}</dd><dt>Approved through</dt><dd>${x.via === 'desk' ? 'you, at your desk' : x.via}</dd><dt>Used for</dt><dd>${x.urgency}</dd></dl>
+  </div>`;
+  document.getElementById('x').onclick = () => { st.sel = null; render(); };
+}
+document.getElementById('stsel').onchange = (e) => { st.state = e.target.value; render(); };
+document.getElementById('q').oninput = (e) => { st.q = e.target.value.toLowerCase(); render(); };
+document.getElementById('filters').onclick = (e) => { const b = e.target.closest('button'); if (b) { st.filter = b.dataset.f; render(); } };
+document.addEventListener('keydown', (e) => {
+  if (['INPUT', 'SELECT'].includes(e.target.tagName) || e.metaKey || e.ctrlKey) return;
+  const rows = [...document.querySelectorAll('.rrow')]; const i = rows.findIndex((r) => r.dataset.id === st.sel);
+  if (e.key === 'j') { st.sel = (rows[Math.min(i + 1, rows.length - 1)] || {}).dataset?.id; render(); }
+  else if (e.key === 'k') { st.sel = (rows[Math.max(i - 1, 0)] || {}).dataset?.id; render(); }
+  else if (e.key === 'Escape') { st.sel = null; render(); } else if (e.key === '/') { e.preventDefault(); document.getElementById('q').focus(); }
+});
+if (!st.sel && st.state === 'populated' && !Q.has('closed')) st.sel = 'workflow.plan';
+render();
+
+</script>
+</body>
+</html>
