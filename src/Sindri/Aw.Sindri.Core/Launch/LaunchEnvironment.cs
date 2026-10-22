@@ -23,6 +23,15 @@ public static class LaunchEnvironment
     /// <returns>A new dictionary; <paramref name="env"/> is not changed.</returns>
     public static Dictionary<string, string> Scrub(IReadOnlyDictionary<string, string> env, string worktree, string ghConfigDir)
     {
-        throw new NotSupportedException();
+        ArgumentNullException.ThrowIfNull(env);
+        Dictionary<string, string> scrubbed = new(env, StringComparer.Ordinal);
+        foreach (var name in Credentials)
+        {
+            scrubbed[name] = string.Empty;
+        }
+
+        scrubbed[GhConfigDirectory] = ghConfigDir;
+        scrubbed[Worktree] = worktree;
+        return scrubbed;
     }
 }

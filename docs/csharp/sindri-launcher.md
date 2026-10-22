@@ -159,6 +159,28 @@ takeover all work; T3 Code just isn't the window.
 { "schema": 1, "viewer": { "kind": "print" } }
 ```
 
+## What a launched Step can't do
+
+A Sindri-launched agent Step (an unattended launch; line spec LN-LCH1) can't hold a forge credential or push. Sindri pushes. Three things enforce it,
+all built in one place when the launch is prepared:
+
+| Change | What it is for |
+|--------|----------------|
+| `GH_TOKEN`, `GITHUB_TOKEN` | the GitHub CLI's and API's tokens: set to the empty string (the host only adds variables, it can't remove one) |
+| `GH_ENTERPRISE_TOKEN` | the same for a GitHub Enterprise host |
+| `AW_FORGE_TOKEN` | the forge port's default credential variable (`AW_FORGE_CREDENTIAL` defaults to `env:AW_FORGE_TOKEN`) |
+| `GH_CONFIG_DIR` | an empty directory `launch/<launch>.gh` under the Sindri home, so `gh` finds no stored login; deleted with the launch |
+| `AW_SINDRI_WORKTREE` | the Step's worktree (the phase worktree, else its working directory); the pre-push hook refuses wherever it is set |
+
+The scrub is the pure `LaunchEnvironment.Scrub` in Core. The **pre-push hook** is written to the hooks directory git resolves for the Step's working directory
+(`git rev-parse --git-path hooks`, so `core.hooksPath` and a linked worktree's shared directory are respected). It prints `SND-LAUNCH-022: agent Steps can't push; Sindri pushes`
+and exits 1 where `AW_SINDRI_WORKTREE` is set, and exits 0 otherwise, so the owner's pushes from the same repo pass. It is installed only when missing or ours (marker line
+`# aw-sindri pre-push guard (LN-LCH1)`); a `pre-push` hook that isn't ours refuses the launch with `SND-LAUNCH-022` and is never changed. An attended open gets none of this.
+
+**Writable and denied paths.** The `claude-settings-file` policy already allows `Edit`/`Write` under the policy's writable path (the Step's worktree). Denying reads and edits of
+other phases' worktrees and the holdout store is **not done**: `StepPolicy` carries no list of other worktrees or a holdout path, so it needs the engine to state them
+(a `DeniedPaths` list on `StepPolicy`, rendered as `Read`/`Edit` deny rules for `claude-settings-file`, and `SND-LAUNCH-013` for a form with no deny).
+
 ## C# ports
 
 The C# side is `Aw.Sindri.Core/Launch` (the catalog, `BuildArgv`, the ports), `Aw.Sindri.Infrastructure/Launch` (the launcher, the tmux host, the

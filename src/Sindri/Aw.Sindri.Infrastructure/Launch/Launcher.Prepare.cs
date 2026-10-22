@@ -18,6 +18,11 @@ internal sealed partial class Launcher
         }
 
         var workDir = request.Worktree ?? request.RepoPath;
+        if (!request.Attended && request.Step is not null && await PrePushGuard.Install(workDir, cancellationToken).ConfigureAwait(false) is { } foreign)
+        {
+            return foreign;
+        }
+
         try
         {
             var composed = await Compose(request, entry, workDir, cancellationToken).ConfigureAwait(false);
@@ -92,11 +97,29 @@ internal sealed partial class Launcher
             env["AW_SINDRI_HOME"] = home;
         }
 
-        return env;
+        if (request.Attended || request.Step is null)
+        {
+            return env;
+        }
+
+        var ghConfig = GhConfigPath(request.Launch);
+        _ = Directory.CreateDirectory(ghConfig);   // empty: the Step's gh has no login to find
+        return LaunchEnvironment.Scrub(env, request.Worktree ?? request.RepoPath, ghConfig);
     }
+
+    private string GhConfigPath(LaunchId launch) => Path.Combine(parts.Options.LaunchDirectory, launch.Value + ".gh");
 
     private void Cleanup(LaunchId launch)
     {
+        try
+        {
+            Directory.Delete(GhConfigPath(launch), recursive: true);   // a missing one is fine
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // an empty directory left behind holds nothing
+        }
+
         LaunchSecrets.Delete(parts.Options.SecretsDirectory, launch);
         LaunchFileStore.DeleteFlat(parts.Options, launch);
         LaunchFileStore.DeleteIn(parts.Options.PolicyDirectory, StepPolicyFile.PathFor(parts.Options.PolicyDirectory, launch));
