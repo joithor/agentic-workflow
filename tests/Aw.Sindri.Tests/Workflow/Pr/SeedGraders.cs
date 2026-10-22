@@ -14,18 +14,18 @@ internal static class SeedGraders
     {
         ArgumentNullException.ThrowIfNull(run);
         ArgumentNullException.ThrowIfNull(fixture);
-        var (outcomes, grade) = step switch
+        (string[] Outcomes, Func<SeedRun, SeedCase, List<string>> Grade) grader = step switch
         {
-            "step.pr.ci-fix" => (["fixed", "flaky", "cannotFix"], (Func<SeedRun, SeedCase, List<string>>)CiFix),
+            "step.pr.ci-fix" => (["fixed", "flaky", "cannotFix"], CiFix),
             "step.pr.fix-comment" => (["fixed", "declined", "cannotFix"], FixComment),
             "step.pr.reply-draft" => (["drafted", "noReply", "needsOwner"], ReplyDraft),
-            "step.docs.update" => (new[] { "changed", "noChange", "blocked" }, DocsUpdate),
+            "step.docs.update" => (["changed", "noChange", "blocked"], DocsUpdate),
             _ => throw new ArgumentException($"'{step}' is not a babysitter or docs-sync seed.", nameof(step)),
         };
 
-        return outcomes.Contains(run.Outcome, StringComparer.Ordinal)
-            ? grade(run, fixture)
-            : [$"outcome '{run.Outcome}' is not one of {string.Join(", ", outcomes)}"];
+        return grader.Outcomes.Contains(run.Outcome, StringComparer.Ordinal)
+            ? grader.Grade(run, fixture)
+            : [$"outcome '{run.Outcome}' is not one of {string.Join(", ", grader.Outcomes)}"];
     }
 
     private static List<string> CiFix(SeedRun run, SeedCase fixture)
