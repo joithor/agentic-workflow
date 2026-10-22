@@ -120,5 +120,9 @@
     "CompleteStep",
     "ApplyCommand:takeover",
     "ApplyCommand:cancel"
-  ]
+  ],
+  "startedBy": null,
+  "startedAt": null,
+  "lineStage": null,
+  "rootAddress": "T-3/step/1"
 }

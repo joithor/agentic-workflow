@@ -8,6 +8,7 @@ using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Host;
 using Aw.Sindri.Tests.GetInstance;
+using Aw.Sindri.Tests.Workflow.Engine;
 using ActionClass = Aw.Sindri.Core.Commands.ActionClass;
 using RecipeUrgency = Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency;
 
@@ -186,5 +187,22 @@ public sealed class InstanceViewLayoutTests
 
         Assert.Equal(cut ? (prefix + new string('y', length))[..77] + "..." : prefix + new string('y', length), now);
         Assert.Equal(80, now.Length);
+    }
+
+    [Fact]
+    public void The_view_lists_what_each_step_state_produces_by_the_transitions_leaving_it()
+    {
+        var steps = StatusCases.View("desk-task").Steps;
+
+        Assert.Equal(["produce", "checks", "verify"], steps.Select(static s => s.State), StringComparer.Ordinal);
+        Assert.Equal([["fact:output"], ["fact:findings"], ["fact:findings"]], steps.Select(static s => s.Produces.Select(static p => p.FactKey).ToArray()));
+    }
+
+    [Fact]
+    public void A_step_state_needs_the_inputs_its_block_descriptor_reads()
+    {
+        var produce = StatusCases.View("desk-task").Steps[0];
+
+        Assert.Equal(EngineFixture.Catalog.Find(EngineFixture.Step.States["produce"].Step!.Use)!.Inputs.Select(static k => k.Value), produce.Needs, StringComparer.Ordinal);
     }
 }

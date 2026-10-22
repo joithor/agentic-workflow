@@ -235,5 +235,25 @@
     "ApplyCommand:cancel"
   ],
   "stepRuns": [],
-  "asOf": "2026-10-12T12:26:00.0000000Z"
+  "asOf": "2026-10-12T12:26:00.0000000Z",
+  "steps": [
+    {
+      "state": "desk",
+      "needs": [],
+      "produces": [
+        {
+          "name": null,
+          "size": null,
+          "hash": null,
+          "path": null,
+          "itemId": null,
+          "url": null,
+          "host": null,
+          "title": null,
+          "factKey": "fact:output"
+        }
+      ]
+    }
+  ],
+  "startedBy": null
 }

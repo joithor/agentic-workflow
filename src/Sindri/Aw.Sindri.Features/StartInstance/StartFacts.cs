@@ -1,4 +1,5 @@
 using Aw.Kernel;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -11,7 +12,8 @@ namespace Aw.Sindri.Features.StartInstance;
 /// <param name="facts">Where the input facts are stored.</param>
 /// <param name="clock">The start time that an input's generate template reads.</param>
 /// <param name="inputRuntimes">The Step inputs this build runs.</param>
-internal sealed class StartFacts(IFactStore facts, TimeProvider clock, StepInputRuntimes inputRuntimes)
+/// <param name="callers">The caller, whose actor stamps the start as who started the instance; none stamps nobody.</param>
+internal sealed class StartFacts(IFactStore facts, TimeProvider clock, StepInputRuntimes inputRuntimes, ICallerContextAccessor? callers = null)
 {
     /// <summary>SND-WF-016 when a Step of <paramref name="recipe"/> names an input this build has no runtime for.</summary>
     /// <param name="recipe">The approved recipe.</param>
@@ -50,6 +52,6 @@ internal sealed class StartFacts(IFactStore facts, TimeProvider clock, StepInput
             stored[key] = new InputFact(fact.Name, put.Value);
         }
 
-        return new StartedFacts(stored, now);
+        return new StartedFacts(stored, now, callers?.Current?.Actor);
     }
 }
