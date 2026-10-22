@@ -1,5 +1,6 @@
 using System.Globalization;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -117,7 +118,7 @@ internal sealed partial record InstanceWords
     private string? TokensLeft()
     {
         var cap = Recipe.Recipe.States.TryGetValue(Instance.Frame.State, out var state) && state.Budget is { } own ? own.Tokens : Recipe.Recipe.Budget?.Tokens;
-        var spent = state?.Budget is not null && Instance.Spent.ByState.TryGetValue(Instance.Frame.State, out var here) ? here : Instance.Spent.Total;
+        var spent = state?.Budget is not null ? BudgetRules.StateUsed(Instance, Recipe.Recipe, Instance.Frame.State) : Instance.Spent.Total;
         return cap is { } tokens ? StatusText.Tokens(Math.Max(0, tokens - spent)) : null;
     }
 

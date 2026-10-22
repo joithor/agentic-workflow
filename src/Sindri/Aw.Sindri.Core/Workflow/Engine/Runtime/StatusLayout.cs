@@ -98,16 +98,17 @@ public static class StatusLayout
 
     private static string Budget(BudgetView budget)
     {
+        var scope = budget.PerRound ? "state, this round" : "state";
         List<string> parts =
         [
             budget.StateCap is { } state
-                ? $"{StatusText.Tokens(budget.State)} / {StatusText.Tokens(state)} (state)"
-                : $"{StatusText.Tokens(budget.State)} used (state)",   // no cap: "used" only, never "/ <limit>"
+                ? $"{StatusText.Tokens(budget.State)} / {StatusText.Tokens(state)} ({scope})"
+                : $"{StatusText.Tokens(budget.State)} used ({scope})",   // no cap: "used" only, never "/ <limit>"
             budget.InstanceCap is { } instance
                 ? $"{StatusText.Tokens(budget.Instance)} / {StatusText.Tokens(instance)} (instance)"
                 : $"{StatusText.Tokens(budget.Instance)} used (instance)",
         ];
 
-        return "tokens " + string.Join(", ", parts);
+        return "tokens " + string.Join(", ", parts) + (budget.Overrun is { } overrun ? $"; over budget: {overrun}" : string.Empty);
     }
 }

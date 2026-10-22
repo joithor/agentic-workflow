@@ -28,7 +28,7 @@ public static partial class TransitionDecision
                 $"the start pins {request.Recipe.Id.Value}, not {recipe.Id.Value} (fix: start it from the recipe it pins)"));
         }
 
-        var entering = Enter(new Scope(rules, context, recipe, request.Actor), Seed(request, recipe), recipe.Initial);
+        var entering = Enter(new Scope(rules, context, recipe, request.Actor), Seed(request, recipe, context.PooledBudget), recipe.Initial);
         if (entering.IsError)
         {
             return new Rejected(request.Key, entering.Error);
@@ -53,7 +53,7 @@ public static partial class TransitionDecision
     }
 
     /// <summary>The instance before its first entry: entry 0 in the initial state, so the entry makes it entry 1.</summary>
-    private static WorkflowInstance Seed(StartRequest request, Recipe recipe) => new(
+    private static WorkflowInstance Seed(StartRequest request, Recipe recipe, bool pooledBudget) => new(
         request.Id,
         request.Address,
         request.Tenant,
@@ -66,7 +66,7 @@ public static partial class TransitionDecision
         Suspension: null,
         PendingPark: null,
         new Dictionary<string, LoopState>(StringComparer.Ordinal),
-        TokenSpend.None,
+        pooledBudget ? TokenSpend.None : TokenSpend.PerRound,
         request.Inputs,
         Outcome: null);
 }

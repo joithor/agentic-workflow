@@ -2739,6 +2739,8 @@ Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.DecisionContext(Aw.Sind
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Decisions.ApprovalCheck Approval, out Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! Catalog, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.BlockId, Aw.Sindri.Core.Workflow.Engine.StepRuntime>! Runtimes, out Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver! Children) -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.LegacyBudgetPark.get -> bool
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.LegacyBudgetPark.init -> void
+Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.PooledBudget.get -> bool
+Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.PooledBudget.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.LegacyLaunchRound.get -> bool
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.LegacyLaunchRound.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.DeskTimeout.get -> System.TimeSpan
@@ -3137,9 +3139,9 @@ Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger!
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Amount.get -> int?
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Amount.init -> void
-Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Deconstruct(out string! Kind, out Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>? Outputs, out Aw.Sindri.Core.Workflow.Engine.ParkReason? Park, out Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant? Variant, out int? Amount, out string? Reason) -> void
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Deconstruct(out string! Kind, out Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>? Outputs, out Aw.Sindri.Core.Workflow.Engine.ParkReason? Park, out Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant? Variant, out int? Amount, out string? Reason, out int? Tokens) -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Equals(Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger? other) -> bool
-Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.EvalTrigger(string! Kind, Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome = null, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>? Outputs = null, Aw.Sindri.Core.Workflow.Engine.ParkReason? Park = null, Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant? Variant = null, int? Amount = null, string? Reason = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.EvalTrigger(string! Kind, Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome = null, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>? Outputs = null, Aw.Sindri.Core.Workflow.Engine.ParkReason? Park = null, Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant? Variant = null, int? Amount = null, string? Reason = null, int? Tokens = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Kind.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Kind.init -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Outcome.get -> Aw.Sindri.Core.Workflow.Ids.OutcomeName?
@@ -3150,6 +3152,8 @@ Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Park.get -> Aw.Sindri.Core.Work
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Park.init -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Reason.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Reason.init -> void
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Tokens.get -> int?
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Tokens.init -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Variant.get -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant?
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Variant.init -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant
@@ -3475,6 +3479,30 @@ Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind.Escalation = 2 -> Aw.Sin
 Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind.Park = 1 -> Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind
 Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind.Takeover = 3 -> Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind
 Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun!
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun.Allowed.get -> int
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun.Allowed.init -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun.Deconstruct(out string! State, out int Round, out int Used, out int Allowed) -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun.Equals(Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun.Round.get -> int
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun.Round.init -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun.RoundOverrun(string! State, int Round, int Used, int Allowed) -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun.State.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun.State.init -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun.Used.get -> int
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun.Used.init -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend!
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend.Deconstruct(out int Round, out int Used, out int Granted) -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend.Equals(Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend.Granted.get -> int
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend.Granted.init -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend.Round.get -> int
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend.Round.init -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend.RoundSpend(int Round, int Used, int Granted) -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend.Used.get -> int
+Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend.Used.init -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend!
 Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend.ByState.get -> System.Collections.Generic.IReadOnlyDictionary<string!, int>!
 Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend.ByState.init -> void
@@ -3482,6 +3510,11 @@ Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend.Deconstruct(out int Total, o
 Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend.Equals(Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend? other) -> bool
 Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend.Granted.get -> int
 Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend.Granted.init -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend.Rounds.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend!>?
+Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend.Rounds.init -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend.Overruns.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun!>?
+Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend.Overruns.init -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend.IsPerRound.get -> bool
 Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend.TokenSpend(int Total, System.Collections.Generic.IReadOnlyDictionary<string!, int>! ByState, int Granted) -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend.Total.get -> int
 Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend.Total.init -> void
@@ -3632,6 +3665,10 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.Instance.get -> int
 Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.Instance.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.InstanceCap.get -> int?
 Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.InstanceCap.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.Overrun.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.Overrun.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.PerRound.get -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.PerRound.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.State.get -> int
 Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.State.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.BudgetView.StateCap.get -> int?
@@ -6512,6 +6549,12 @@ override Aw.Sindri.Core.Workflow.Engine.Instances.Frame.ToString() -> string!
 override Aw.Sindri.Core.Workflow.Engine.Instances.LoopState.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Engine.Instances.LoopState.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Engine.Instances.LoopState.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend.ToString() -> string!
 override Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun.ToString() -> string!
@@ -7774,6 +7817,10 @@ static Aw.Sindri.Core.Workflow.Engine.Instances.Frame.operator !=(Aw.Sindri.Core
 static Aw.Sindri.Core.Workflow.Engine.Instances.Frame.operator ==(Aw.Sindri.Core.Workflow.Engine.Instances.Frame? left, Aw.Sindri.Core.Workflow.Engine.Instances.Frame? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Instances.LoopState.operator !=(Aw.Sindri.Core.Workflow.Engine.Instances.LoopState? left, Aw.Sindri.Core.Workflow.Engine.Instances.LoopState? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Instances.LoopState.operator ==(Aw.Sindri.Core.Workflow.Engine.Instances.LoopState? left, Aw.Sindri.Core.Workflow.Engine.Instances.LoopState? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun.operator !=(Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun? left, Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun.operator ==(Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun? left, Aw.Sindri.Core.Workflow.Engine.Instances.RoundOverrun? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend.operator !=(Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend? left, Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend.operator ==(Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend? left, Aw.Sindri.Core.Workflow.Engine.Instances.RoundSpend? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun.operator !=(Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun? left, Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun.operator ==(Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun? left, Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Instances.PinnedRecipe.operator !=(Aw.Sindri.Core.Workflow.Engine.Instances.PinnedRecipe? left, Aw.Sindri.Core.Workflow.Engine.Instances.PinnedRecipe? right) -> bool
@@ -7787,6 +7834,7 @@ static Aw.Sindri.Core.Workflow.Engine.Instances.ResumeAction.operator ==(Aw.Sind
 static Aw.Sindri.Core.Workflow.Engine.Instances.Suspension.operator !=(Aw.Sindri.Core.Workflow.Engine.Instances.Suspension? left, Aw.Sindri.Core.Workflow.Engine.Instances.Suspension? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Instances.Suspension.operator ==(Aw.Sindri.Core.Workflow.Engine.Instances.Suspension? left, Aw.Sindri.Core.Workflow.Engine.Instances.Suspension? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend.None.get -> Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend!
+static Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend.PerRound.get -> Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend!
 static Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend.operator !=(Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend? left, Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend.operator ==(Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend? left, Aw.Sindri.Core.Workflow.Engine.Instances.TokenSpend? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Instances.WithheldTrigger.operator !=(Aw.Sindri.Core.Workflow.Engine.Instances.WithheldTrigger? left, Aw.Sindri.Core.Workflow.Engine.Instances.WithheldTrigger? right) -> bool
