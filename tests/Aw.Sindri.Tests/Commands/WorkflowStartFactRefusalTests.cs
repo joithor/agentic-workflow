@@ -30,7 +30,7 @@ public sealed class WorkflowStartFactRefusalTests : IDisposable
         var api = new RoutedApi().OnRaw("/sindri/workflow/instances", HttpStatusCode.BadRequest, refusal);
         var client = new ControlPlaneClient(_probe, SliceHarness.Json,
             CallerHeaders.For(new AgentSession(Signal: null, Terminal: true, Prover: false), new InMemoryHumanTokenStore(), _ => ValueTask.FromResult((RepoName?)null)), handler: api);
-        var desk = new RecipeDesk(client, TextReader.Null, static _ => Task.FromResult<Aw.Kernel.Error?>(null));
+        var desk = new RecipeDesk(client, TextReader.Null, static _ => Task.FromResult<Kernel.Error?>(null));
         await using var services = new ServiceCollection().AddSingleton(TimeProvider.System).BuildServiceProvider();
 
         var code = await WorkflowStartCommand.Run(["workflow.scoping", "--item", "T-1", "--fact", "fact:scopeInput=" + _fact.Path], desk, services, new Output(_out, _error, SliceHarness.Json), TestContext.Current.CancellationToken);
