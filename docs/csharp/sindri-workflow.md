@@ -1375,6 +1375,12 @@ usage, the measured empty diff, and the stop of the session) before it decides.
   and `tokens`, left out when null. A desk report carries neither.
 - **Replay:** `Workflow.Patched("p8-agent-runtime")` follows `dt-j-block-runtime` in `Begin`, so a history started before P8
   replays with no agent Steps and its Step stays a desk task (`A_history_before_P8_replays_on_the_desk`).
+- **A failed launch counts no round:** a launch that never started a session ends the run as `step.failed` with reason `launch`
+  (`StepFailed.LaunchReason`); when the recipe's failed transition re-enters the looped state, the round stays, and the loop
+  counts the failure in `LoopState.LaunchFailures` (a counted round resets it). The third in a row (`LoopRules.MaxLaunchFailures`)
+  parks the instance with `needs-answer` (kind step, resume `rerun`) and the last launch error as the question. The decision
+  is `TransitionDecision`'s re-entry; `Workflow.Patched("launch-failure-keeps-round-v1")` (after `ln-wf3-heavy-slot`) sets
+  `DecisionContext.LegacyLaunchRound` for a history recorded without it, which counts the round as it did.
 - **The dev recipe:** the interpreter tests (`AgentRuntimeInterpreterTests`) run an inline `workflow.dev-agent`: a `write`
   state whose Step is `step.report.write` (agent runtime), a state budget of 1000 tokens and a 1 minute timeout, with a fake
   launcher and fake sessions. It is not a shipped recipe.
