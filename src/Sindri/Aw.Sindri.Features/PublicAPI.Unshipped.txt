@@ -1052,18 +1052,22 @@ Aw.Sindri.Features.ListOutbox.OutboxCommandView.State.get -> Aw.Sindri.Core.Work
 Aw.Sindri.Features.ListOutbox.OutboxCommandView.State.init -> void
 Aw.Sindri.Features.ListRecipes.ListRecipesRequest
 Aw.Sindri.Features.ListRecipes.ListRecipesRequest.<Clone>$() -> Aw.Sindri.Features.ListRecipes.ListRecipesRequest!
-Aw.Sindri.Features.ListRecipes.ListRecipesRequest.Deconstruct(out bool Stale) -> void
+Aw.Sindri.Features.ListRecipes.ListRecipesRequest.Deconstruct(out bool Stale, out string? Window) -> void
 Aw.Sindri.Features.ListRecipes.ListRecipesRequest.Equals(Aw.Sindri.Features.ListRecipes.ListRecipesRequest? other) -> bool
-Aw.Sindri.Features.ListRecipes.ListRecipesRequest.ListRecipesRequest(bool Stale) -> void
+Aw.Sindri.Features.ListRecipes.ListRecipesRequest.ListRecipesRequest(bool Stale, string? Window = null) -> void
 Aw.Sindri.Features.ListRecipes.ListRecipesRequest.Stale.get -> bool
 Aw.Sindri.Features.ListRecipes.ListRecipesRequest.Stale.init -> void
+Aw.Sindri.Features.ListRecipes.ListRecipesRequest.Window.get -> string?
+Aw.Sindri.Features.ListRecipes.ListRecipesRequest.Window.init -> void
 Aw.Sindri.Features.ListRecipes.ListRecipesResponse
 Aw.Sindri.Features.ListRecipes.ListRecipesResponse.<Clone>$() -> Aw.Sindri.Features.ListRecipes.ListRecipesResponse!
-Aw.Sindri.Features.ListRecipes.ListRecipesResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeSummary!>! Recipes) -> void
+Aw.Sindri.Features.ListRecipes.ListRecipesResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeSummary!>! Recipes, out string? Window) -> void
 Aw.Sindri.Features.ListRecipes.ListRecipesResponse.Equals(Aw.Sindri.Features.ListRecipes.ListRecipesResponse? other) -> bool
-Aw.Sindri.Features.ListRecipes.ListRecipesResponse.ListRecipesResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeSummary!>! Recipes) -> void
+Aw.Sindri.Features.ListRecipes.ListRecipesResponse.ListRecipesResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeSummary!>! Recipes, string? Window = null) -> void
 Aw.Sindri.Features.ListRecipes.ListRecipesResponse.Recipes.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeSummary!>!
 Aw.Sindri.Features.ListRecipes.ListRecipesResponse.Recipes.init -> void
+Aw.Sindri.Features.ListRecipes.ListRecipesResponse.Window.get -> string?
+Aw.Sindri.Features.ListRecipes.ListRecipesResponse.Window.init -> void
 Aw.Sindri.Features.ListServices.ListServicesRequest
 Aw.Sindri.Features.ListServices.ListServicesRequest.<Clone>$() -> Aw.Sindri.Features.ListServices.ListServicesRequest!
 Aw.Sindri.Features.ListServices.ListServicesRequest.Equals(Aw.Sindri.Features.ListServices.ListServicesRequest? other) -> bool
@@ -4225,3 +4229,19 @@ override Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest.GetHashCode() -> i
 override Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest.ToString() -> string!
 static Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest.operator !=(Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest? left, Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest? right) -> bool
 static Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest.operator ==(Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest? left, Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest? right) -> bool
+Aw.Sindri.Features.GetRecipeStats.GetRecipeStatsRequest
+Aw.Sindri.Features.GetRecipeStats.GetRecipeStatsRequest.<Clone>$() -> Aw.Sindri.Features.GetRecipeStats.GetRecipeStatsRequest!
+Aw.Sindri.Features.GetRecipeStats.GetRecipeStatsRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out string? Window, out string? Hash) -> void
+Aw.Sindri.Features.GetRecipeStats.GetRecipeStatsRequest.Equals(Aw.Sindri.Features.GetRecipeStats.GetRecipeStatsRequest? other) -> bool
+Aw.Sindri.Features.GetRecipeStats.GetRecipeStatsRequest.GetRecipeStatsRequest(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, string? Window = null, string? Hash = null) -> void
+Aw.Sindri.Features.GetRecipeStats.GetRecipeStatsRequest.Hash.get -> string?
+Aw.Sindri.Features.GetRecipeStats.GetRecipeStatsRequest.Hash.init -> void
+Aw.Sindri.Features.GetRecipeStats.GetRecipeStatsRequest.Id.get -> Aw.Sindri.Core.Workflow.Ids.RecipeId
+Aw.Sindri.Features.GetRecipeStats.GetRecipeStatsRequest.Id.init -> void
+Aw.Sindri.Features.GetRecipeStats.GetRecipeStatsRequest.Window.get -> string?
+Aw.Sindri.Features.GetRecipeStats.GetRecipeStatsRequest.Window.init -> void
+override Aw.Sindri.Features.GetRecipeStats.GetRecipeStatsRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetRecipeStats.GetRecipeStatsRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetRecipeStats.GetRecipeStatsRequest.ToString() -> string!
+static Aw.Sindri.Features.GetRecipeStats.GetRecipeStatsRequest.operator !=(Aw.Sindri.Features.GetRecipeStats.GetRecipeStatsRequest? left, Aw.Sindri.Features.GetRecipeStats.GetRecipeStatsRequest? right) -> bool
+static Aw.Sindri.Features.GetRecipeStats.GetRecipeStatsRequest.operator ==(Aw.Sindri.Features.GetRecipeStats.GetRecipeStatsRequest? left, Aw.Sindri.Features.GetRecipeStats.GetRecipeStatsRequest? right) -> bool

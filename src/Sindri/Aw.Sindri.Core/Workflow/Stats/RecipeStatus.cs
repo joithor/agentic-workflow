@@ -18,6 +18,7 @@ public sealed record RecipeStatus(string Word, string? Detail)
             RecipeStanding.Revoked => new RecipeStatus("revoked", null),
             RecipeStanding.Unapproved => new RecipeStatus("draft", null),
             _ when line.Stale.Count > 0 => new RecipeStatus("changed", string.Join(", ", line.Stale.Select(Reason))),
+            RecipeStanding.Approved => throw new NotImplementedException(),
             _ => new RecipeStatus("approved", null),
         };
     }

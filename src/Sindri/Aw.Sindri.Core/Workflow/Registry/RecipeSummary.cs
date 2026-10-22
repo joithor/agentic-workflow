@@ -35,5 +35,5 @@ public sealed record RecipeSummary(RecipeId Id, int Version, RecipeHash Hash, Re
 
     /// <summary>The recipe's stats at the list's window; left out of the JSON for a draft, a child-only recipe and a list read without them.</summary>
     [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
-    public Aw.Sindri.Core.Workflow.Stats.RecipeListStats? Stats { get; init; }
+    public Stats.RecipeListStats? Stats { get; init; }
 }
