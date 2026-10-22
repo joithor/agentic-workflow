@@ -54,6 +54,9 @@ internal static class BlockRegistrations
         .AddGate<RouteStartableGate>()     // engine P7 unit U1: a stub over the profile's workflow.route
         .AddEffect<ClaimRefEffect>()      // engine P6 unit (d)
         .AddEffect<NotifyDeskEffect>()    // engine P6 unit (c)
+        .AddEffect<PrPushEffect>()        // PB-E: the lease push
+        .AddEffect<PrRecordEffect>()      // PB-E: the merge record's recheck and docs rows
+        .AddEffect<PrRerunChecksEffect>() // PB-E: re-run a flaky check
         .AddEvent(RecipeEvents.ItemRouted)
         .AddEvent(RecipeEvents.ClaimCreated)
         .AddEvent(RecipeEvents.NotifyDelivered)
@@ -213,10 +216,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PrGates.AutofixCap)
         .AddBlockDescriptor(PrGates.DiffScope)
         .AddBlockDescriptor(PrGates.SecretScan)
-        .AddBlockDescriptor(PrEffects.Push)
         .AddBlockDescriptor(PrEffects.Reply)
-        .AddBlockDescriptor(PrEffects.Record)
-        .AddBlockDescriptor(PrEffects.RerunChecks)
         .AddBlockDescriptor(PrEffects.Restack)
         .AddBlockDescriptor(PrEffects.CreateStacked)
         .AddBlockDescriptor(PrEffects.Merge)
