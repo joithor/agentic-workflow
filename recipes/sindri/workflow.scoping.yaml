@@ -165,6 +165,7 @@ evals:   # 30 cases: the 22 of Appendix B.1, the two recorded-limit cases of the
   - evals/workflow.scoping/challenge-cap-size.jsonl
   - evals/workflow.scoping/e2e-run15-capped.jsonl
   - evals/workflow.scoping/e2e-run9-capped.jsonl
+  - evals/workflow.scoping/e2e-run16-parked.jsonl
   - evals/workflow.scoping/size-uncertain.jsonl
   - evals/workflow.scoping/propose-skipped.jsonl
   - evals/workflow.scoping/evidence-incomplete.jsonl

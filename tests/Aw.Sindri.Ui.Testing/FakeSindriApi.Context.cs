@@ -19,6 +19,14 @@ internal sealed partial class FakeSindriApi
     /// <summary>GET /sindri/context/lenses's answer per query (the goldens by default).</summary>
     public Func<LensesQuery, RouteAnswer> LensesAnswer { get; set; } = ContextAnswers.Lenses;
 
+    /// <summary>GET /sindri/items/{id}/scope's answer per item (the no-scope golden by default: nothing frozen yet).</summary>
+    public Func<string, RouteAnswer> ItemScopeAnswer { get; set; } = _ => RouteAnswer.Api("items-id-scope", "no-scope");
+
+    /// <summary>The items whose scope was asked for, in order.</summary>
+    public IReadOnlyList<string> ScopeAsked { get { lock (_gate) { return [.. _scopeAsked]; } } }
+
+    private readonly List<string> _scopeAsked = [];
+
     /// <summary>GET /sindri/context/filemap's answer, or null for the golden the query names.</summary>
     public RouteAnswer? FileMapAnswer { get; set; }
 
@@ -86,6 +94,16 @@ internal sealed partial class FakeSindriApi
     {
         Log("lenses:" + string.Join(' ', query.Anchors));
         return Context<LensesView>(api, "/sindri/context/lenses", LensesAnswer(query), LensesGate, cancellationToken);
+    }
+
+    public Task<Result<ItemScopeView>> ItemScope(Uri api, string itemId, CancellationToken cancellationToken)
+    {
+        lock (_gate)
+        {
+            _scopeAsked.Add(itemId);
+        }
+
+        return Context<ItemScopeView>(api, "/sindri/items/{id}/scope", ItemScopeAnswer(itemId), gate: null, cancellationToken);
     }
 
     public Task<Result<FileMapView>> FileMap(Uri api, FileMapQuery query, CancellationToken cancellationToken) =>

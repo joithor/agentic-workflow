@@ -15,7 +15,7 @@ namespace Aw.Sindri.Features.Scoping;
 /// </summary>
 /// <param name="area">The instance's run area, where the scope packet is kept.</param>
 /// <param name="packets">Hashes and freezes the packet.</param>
-internal sealed class ScopeFreezeStep(IRunArea area, IPackets packets) : IBlockStep, IBlockStepId
+internal sealed class ScopeFreezeStep(IRunArea area, IPackets packets) : IBlockStep, IBlockStepId, IRepoStep
 {
     private const string FactPrefix = "fact:";
     private const string PacketName = "scope-packet";
@@ -29,9 +29,9 @@ internal sealed class ScopeFreezeStep(IRunArea area, IPackets packets) : IBlockS
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();
         var recorded = ScopeHash.Of(StepFacts.Read(context, "fact:scopePacket")?.ToJsonString());
-        if (context.Address is not { } address || recorded is null)
+        if (context.Address is not { } address || PacketSlugs.RepoSlug(context.Repo) is not { } repoSlug || recorded is null)
         {
-            return BlockStepResult.Failed($"{Id.Value} needs the instance's address and fact:scopePacket with its hash");
+            return BlockStepResult.Failed($"{Id.Value} needs the instance's address and repo and fact:scopePacket with its hash");
         }
 
         var checks = DeskBlocks.Run("step.scope.evidence", new ScopeFacts(Texts(context)));
@@ -48,7 +48,7 @@ internal sealed class ScopeFreezeStep(IRunArea area, IPackets packets) : IBlockS
         var dir = area.PathFor(address, PacketName);
         return dir.IsError
             ? BlockStepResult.Failed($"{Id.Value} can't place the scope packet: {dir.Error.Message}")
-            : await Freeze(new PacketRef(PacketKind.Scoping, dir.Value), recorded, cancellationToken).ConfigureAwait(false);
+            : await Freeze(new PacketRef(PacketKind.Scoping, dir.Value, RepoSlug: repoSlug, Instance: PacketSlugs.InstanceSlug(address)), recorded, cancellationToken).ConfigureAwait(false);
     }
 
     private async ValueTask<BlockStepResult> Freeze(PacketRef packet, string recorded, CancellationToken cancellationToken)
