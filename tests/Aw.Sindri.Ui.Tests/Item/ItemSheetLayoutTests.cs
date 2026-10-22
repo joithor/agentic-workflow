@@ -49,7 +49,7 @@ public sealed class ItemSheetLayoutTests
     [Fact]
     public async Task An_ended_item_offers_no_actions()
     {
-        _server.Items[DecisionItem] = new RouteAnswer(System.Net.HttpStatusCode.OK, GoldenFiles.SpecShaped("items-id", "cancelled"));
+        _server.Items[DecisionItem] = new RouteAnswer(System.Net.HttpStatusCode.OK, GoldenFiles.SpecShaped("items-id", "after-close"));
 
         var sheet = await Sheet(DecisionItem);
 

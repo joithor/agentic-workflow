@@ -21,14 +21,14 @@ public sealed class ClosedFoldTests
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     private static ItemSummaryView Closed(string id, string state, int hoursAgo) =>
-        new(id, "Item " + id, "alpha", state, null, A.Noon.AddHours(-hoursAgo), PrimaryAction: "CloseItem:done", Actions: ["CloseItem:done"]);
+        new(id, "Item " + id, "alpha", state, Step: null, A.Noon.AddHours(-hoursAgo), PrimaryAction: "CloseItem:done", Actions: ["CloseItem:done"]);
 
     private QueueViewModel Queue()
     {
         _server.ListItemsBody = state =>
         {
             var items = string.Equals(state, "done", StringComparison.Ordinal) ? new[] { Closed("ITM-1", "done", 5), Closed("ITM-3", "done", 1) } : [Closed("ITM-2", "cancelled", 3)];
-            var list = new ItemListView(items, null, new AsOfView(1, 1, A.Noon, Rebuilding: false, Stalled: false));
+            var list = new ItemListView(items, Empty: null, new AsOfView(1, 1, A.Noon, Rebuilding: false, Stalled: false));
             return new RouteAnswer(HttpStatusCode.OK, JsonSerializer.Serialize(list, SindriApiClient.Json));
         };
         return new QueueViewModel(_server, new CatalogViewModel(new FakeClipboard(), _clock), _clock);
