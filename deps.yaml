@@ -692,7 +692,7 @@ edges:
   - from: Sindri
     to: CodeIndex
     kind: compose
-    status: planned
+    status: current
     note: "Sindri's Host calls AddCodeIndexFeatures and AddCodeIndexInfrastructure (and nothing else from those projects) in Composition (CI-9)"
 
 exceptions:
