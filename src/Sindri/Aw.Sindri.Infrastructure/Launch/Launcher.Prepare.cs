@@ -20,18 +20,18 @@ internal sealed partial class Launcher
         }
 
         var workDir = located.Value;
-        if (!request.Attended && request.Step is not null && await PrePushGuard.Install(workDir, cancellationToken).ConfigureAwait(false) is { } foreign)
+        if (await Guard(request, entry, workDir, cancellationToken).ConfigureAwait(false) is { } refusedStart)
         {
-            return foreign;
-        }
-
-        if (await Trust(request, entry, workDir, cancellationToken).ConfigureAwait(false) is { } untrusted)
-        {
-            return untrusted;
+            return refusedStart;
         }
 
         try
         {
+            if (WriteBundle(request, workDir) is { } refused)
+            {
+                return refused;
+            }
+
             var composed = await Compose(request, entry, workDir, cancellationToken).ConfigureAwait(false);
             if (composed.IsError)
             {
@@ -50,6 +50,23 @@ internal sealed partial class Launcher
             return KernelErrors.Unavailable.With($"the launch's files could not be written: {e.Message}");
         }
     }
+
+    /// <summary>A Step's worktree gets the pre-push guard and, for claude-code, its trust mark before anything else is written; an error when either is refused.</summary>
+    private async ValueTask<Error?> Guard(LaunchRequest request, AgentEntry entry, string workDir, CancellationToken cancellationToken)
+    {
+        if (!request.Attended && request.Step is not null && await PrePushGuard.Install(workDir, cancellationToken).ConfigureAwait(false) is { } foreign)
+        {
+            return foreign;
+        }
+
+        return await Trust(request, entry, workDir, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>LN-WF5: the Step's pack, in its directory before the session starts (an attended launch has none); an error when the pack is refused.</summary>
+    private static Error? WriteBundle(LaunchRequest request, string workDir) =>
+        request is { Attended: false, Step.Bundle: { } bundle }
+            ? PackBundleFiles.Write(StepEnvironment.For(request).GetValueOrDefault(StepEnvironment.RunDirectory, workDir), bundle)
+            : null;
 
     /// <summary>Where the session runs: the holdout evaluator's own scratch checkout at the head sha (removed with the launch, LN-LCH2), else the launch's worktree or the repo.</summary>
     private async ValueTask<Result<string>> WorkDirectory(LaunchRequest request, CancellationToken cancellationToken)

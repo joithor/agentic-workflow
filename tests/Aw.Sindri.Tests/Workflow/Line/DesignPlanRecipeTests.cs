@@ -23,14 +23,14 @@ public sealed class DesignPlanRecipeTests
         Assert.Empty(RecipeComposition.Errors(Read(id), FixtureCatalog.Shipped(), InMemoryChildRecipes.None));
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("workflow.design", "rounds=5;lens=4;lens-runs=40", 1500000)]
-    [InlineData("workflow.plan", "rounds=5;refreeze=2;revisions=5", 1000000)]
-    public void The_loop_caps_and_budget_are_the_ones_the_spec_names(string id, string loops, int tokens)
+    [InlineData("workflow.design", "rounds=5;lens=4;lens-runs=40")]
+    [InlineData("workflow.plan", "rounds=5;refreeze=2;revisions=5")]
+    public void The_loop_caps_are_the_ones_the_spec_names_and_no_token_cap_binds_the_instance(string id, string loops)
     {
         var recipe = Read(id).Recipe;
 
         Assert.Equal(loops.Split(';').Order(StringComparer.Ordinal), recipe.Loops.Select(l => $"{l.Key}={l.Value.Cap.ToString(CultureInfo.InvariantCulture)}").Order(StringComparer.Ordinal), StringComparer.Ordinal);
-        Assert.Equal(tokens, recipe.Budget?.Tokens);
+        Assert.Null(recipe.Budget);   // owner, 2026-10-21: only the per-run 1M backstop parks on tokens
     }
 
     [Theory, Trait("Lane", "unit")]
