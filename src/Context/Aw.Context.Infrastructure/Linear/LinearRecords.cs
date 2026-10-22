@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Text.Json.Nodes;
 using Aw.Context.Core;
 using Aw.Context.Core.Sources;
 using Aw.Kernel;
@@ -13,6 +15,7 @@ namespace Aw.Context.Infrastructure.Linear;
 internal sealed class LinearRecords(LinearClient client, LinearScope scope)
 {
     private const int Batch = 100;
+    private const int LatestUpdates = 5;
     private const string IssuePrefix = "linear:issue/";
     private const string DocPrefix = "linear:doc/";
     private const string ProjectPrefix = "linear:project/";
@@ -95,7 +98,7 @@ internal sealed class LinearRecords(LinearClient client, LinearScope scope)
             return NotFound($"document {id} is gone");
         }
 
-        var allowed = await InProfile(document.Project?.Id, deadline, cancellationToken).ConfigureAwait(false);
+        var allowed = await InProfile(document.Project?.Id, Remaining(deadline), cancellationToken).ConfigureAwait(false);
         if (allowed.IsError)
         {
             return allowed.Error;
@@ -115,10 +118,20 @@ internal sealed class LinearRecords(LinearClient client, LinearScope scope)
             return data.Error;
         }
 
-        return data.Value.Projects.Nodes is [var project, ..] && scope.InScope(project)
-            ? AtCitedVersion(reference, project.UpdatedAt, () =>
-                new SourceRecord(reference, RecordKind.Project, project.Name, LinearText.Of(project), project.Lead?.Name, project.CreatedAt, project.UpdatedAt))
-            : NotFound($"project {id} is gone, or isn't in the profile's teams");
+        if (data.Value.Projects.Nodes is not [var project, ..] || !scope.InScope(project))
+        {
+            return NotFound($"project {id} is gone, or isn't in the profile's teams");
+        }
+
+        if (Changed(reference, project.UpdatedAt) is { } changed)
+        {
+            return changed;
+        }
+
+        var updates = await client.Pages(new LinearList<LinearUpdatesData, LinearProjectUpdate>("ProjectUpdates", LinearFilters.InProject(id), LatestUpdates, static d => d.ProjectUpdates), Remaining(deadline), cancellationToken).ConfigureAwait(false);
+        return updates.IsError
+            ? updates.Error
+            : new SourceRecord(reference, RecordKind.Project, project.Name, LinearText.Of(project, [.. updates.Value.OrderByDescending(static u => u.UpdatedAt).Take(LatestUpdates)]), project.Lead?.Name, project.CreatedAt, project.UpdatedAt);
     }
 
     private async ValueTask<Result<SourceRecord>> Update(SourceRef reference, string id, TimeSpan deadline, CancellationToken cancellationToken)
@@ -134,7 +147,7 @@ internal sealed class LinearRecords(LinearClient client, LinearScope scope)
             return NotFound($"project update {id} is gone");
         }
 
-        var allowed = await InProfile(update.Project?.Id, deadline, cancellationToken).ConfigureAwait(false);
+        var allowed = await InProfile(update.Project?.Id, Remaining(deadline), cancellationToken).ConfigureAwait(false);
         if (allowed.IsError)
         {
             return allowed.Error;
@@ -146,35 +159,66 @@ internal sealed class LinearRecords(LinearClient client, LinearScope scope)
                 new SourceRecord(reference, RecordKind.Project, $"Project update: {update.Project?.Name ?? "project"} ({LinearText.Day(update.CreatedAt)})", LinearText.Of(update), update.User?.Name, update.CreatedAt, update.UpdatedAt));
     }
 
-    private async ValueTask<Result<bool>> InProfile(string? projectId, TimeSpan deadline, CancellationToken cancellationToken)
+    // One small project read with the profile's teams in its filter: the answer does not depend on how many projects the workspace has.
+    private async ValueTask<Result<bool>> InProfile(string? projectId, Func<TimeSpan> left, CancellationToken cancellationToken)
     {
         if (!scope.IsScoped)
         {
             return true;
         }
 
-        var projects = await scope.Projects(deadline, cancellationToken).ConfigureAwait(false);
-        return projects.IsError ? projects.Error : projectId is not null && projects.Value.Any(p => string.Equals(p.Id, projectId, StringComparison.Ordinal));
+        var projects = await scope.ProjectsOf([projectId], left, cancellationToken).ConfigureAwait(false);
+        return projects.IsError ? projects.Error : projectId is not null && projects.Value.Contains(projectId);
     }
 
-    private async ValueTask<Result<IReadOnlyList<(string Id, string Version)>>> VersionsOf(string prefix, string[] ids, TimeSpan deadline, CancellationToken cancellationToken)
+    private static Func<TimeSpan> Remaining(TimeSpan deadline)
     {
-        var variables = LinearFilters.Variables(LinearFilters.WithIds(ids), ids.Length);
-        switch (prefix)
+        var started = Stopwatch.GetTimestamp();
+        return () => deadline - Stopwatch.GetElapsedTime(started);
+    }
+
+    // The versions of records the profile reads, as Fetch reads them: an issue by its team, a project by its teams, a document or an update by its project.
+    private ValueTask<Result<IReadOnlyList<(string Id, string Version)>>> VersionsOf(string prefix, string[] ids, TimeSpan deadline, CancellationToken cancellationToken)
+    {
+        var (left, filter) = (Remaining(deadline), LinearFilters.WithIds(ids));
+        return prefix switch
         {
-            case IssuePrefix:
-                var issues = await client.Query<LinearIssuesData>("IssueHits", variables, deadline, cancellationToken).ConfigureAwait(false);
-                return issues.IsError ? issues.Error : Found(issues.Value.Issues.Nodes.Select(i => (i.Id, i.UpdatedAt)));
-            case DocPrefix:
-                var documents = await client.Query<LinearDocumentsData>("DocumentHits", variables, deadline, cancellationToken).ConfigureAwait(false);
-                return documents.IsError ? documents.Error : Found(documents.Value.Documents.Nodes.Select(d => (d.Id, d.UpdatedAt)));
-            case ProjectPrefix:
-                var projects = await client.Query<LinearProjectsData>("Projects", variables, deadline, cancellationToken).ConfigureAwait(false);
-                return projects.IsError ? projects.Error : Found(projects.Value.Projects.Nodes.Select(p => (p.Id, p.UpdatedAt)));
-            default:
-                var updates = await client.Query<LinearUpdatesData>("ProjectUpdates", variables, deadline, cancellationToken).ConfigureAwait(false);
-                return updates.IsError ? updates.Error : Found(updates.Value.ProjectUpdates.Nodes.Select(u => (u.Id, u.UpdatedAt)));
-        }
+            IssuePrefix => IssueVersions(filter, ids.Length, left, cancellationToken),
+            DocPrefix => DocumentVersions(filter, ids.Length, left, cancellationToken),
+            ProjectPrefix => ProjectVersions(filter, ids.Length, left, cancellationToken),
+            _ => UpdateVersions(filter, ids.Length, left, cancellationToken),
+        };
+    }
+
+    private async ValueTask<Result<IReadOnlyList<(string Id, string Version)>>> IssueVersions(JsonObject filter, int count, Func<TimeSpan> left, CancellationToken cancellationToken)
+    {
+        var issues = await client.Pages(new LinearList<LinearIssuesData, LinearIssue>("IssueHits", filter, count, static d => d.Issues), left, cancellationToken).ConfigureAwait(false);
+        return issues.IsError ? issues.Error : Found(issues.Value.Where(i => scope.Reads(i.Team?.Key)).Select(i => (i.Id, i.UpdatedAt)));
+    }
+
+    private async ValueTask<Result<IReadOnlyList<(string Id, string Version)>>> DocumentVersions(JsonObject filter, int count, Func<TimeSpan> left, CancellationToken cancellationToken)
+    {
+        var documents = await client.Pages(new LinearList<LinearDocumentsData, LinearDocument>("DocumentHits", filter, count, static d => d.Documents), left, cancellationToken).ConfigureAwait(false);
+        return documents.IsError ? documents.Error : await InProfileOnly(documents.Value.Select(d => (d.Id, d.UpdatedAt, d.Project?.Id)), left, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async ValueTask<Result<IReadOnlyList<(string Id, string Version)>>> ProjectVersions(JsonObject filter, int count, Func<TimeSpan> left, CancellationToken cancellationToken)
+    {
+        var projects = await client.Pages(new LinearList<LinearProjectsData, LinearProject>("Projects", filter, count, static d => d.Projects), left, cancellationToken).ConfigureAwait(false);
+        return projects.IsError ? projects.Error : Found(projects.Value.Where(scope.InScope).Select(p => (p.Id, p.UpdatedAt)));
+    }
+
+    private async ValueTask<Result<IReadOnlyList<(string Id, string Version)>>> UpdateVersions(JsonObject filter, int count, Func<TimeSpan> left, CancellationToken cancellationToken)
+    {
+        var updates = await client.Pages(new LinearList<LinearUpdatesData, LinearProjectUpdate>("ProjectUpdates", filter, count, static d => d.ProjectUpdates), left, cancellationToken).ConfigureAwait(false);
+        return updates.IsError ? updates.Error : await InProfileOnly(updates.Value.Select(u => (u.Id, u.UpdatedAt, u.Project?.Id)), left, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async ValueTask<Result<IReadOnlyList<(string Id, string Version)>>> InProfileOnly(IEnumerable<(string Id, DateTimeOffset UpdatedAt, string? Project)> records, Func<TimeSpan> left, CancellationToken cancellationToken)
+    {
+        var all = records.ToList();
+        var allowed = await scope.ProjectsOf(all.Select(static r => r.Project), left, cancellationToken).ConfigureAwait(false);
+        return allowed.IsError ? allowed.Error : Found(all.Where(r => !scope.IsScoped || (r.Project is not null && allowed.Value.Contains(r.Project))).Select(static r => (r.Id, r.UpdatedAt)));
     }
 
     private static Result<IReadOnlyList<(string Id, string Version)>> Found(IEnumerable<(string Id, DateTimeOffset UpdatedAt)> nodes) =>
@@ -188,11 +232,15 @@ internal sealed class LinearRecords(LinearClient client, LinearScope scope)
         : "";
 
     /// <summary>The record while it is at the version cited, else NotFound.</summary>
-    private static Result<SourceRecord> AtCitedVersion(SourceRef reference, DateTimeOffset updatedAt, Func<SourceRecord> record)
+    private static Result<SourceRecord> AtCitedVersion(SourceRef reference, DateTimeOffset updatedAt, Func<SourceRecord> record) =>
+        Changed(reference, updatedAt) is { } changed ? changed : record();
+
+    // The error for a record that moved on since it was cited, or null while it is still at the cited version.
+    private static Error? Changed(SourceRef reference, DateTimeOffset updatedAt)
     {
         var now = LinearHits.Version(updatedAt);
         return string.Equals(now, reference.Version.Value, StringComparison.Ordinal)
-            ? record()
+            ? null
             : ContextErrors.LinearRecordNotFound.With($"Linear's {reference.Canonical.Value} changed since it was cited (cited {reference.Version.Value}, now {now}); Linear keeps no earlier version.");
     }
 

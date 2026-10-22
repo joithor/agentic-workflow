@@ -26,12 +26,22 @@ internal static class LinearFilters
         return filter;
     }
 
-    /// <summary>The filter limited to records of these projects.</summary>
-    public static JsonObject InProjects(JsonObject filter, IEnumerable<string> projectIds)
+    /// <summary>The filter limited to records of a project that one of these teams can see (Linear applies it; the adapter keeps no list of projects).</summary>
+    public static JsonObject InProjectsOfTeams(JsonObject filter, IEnumerable<string> teams)
     {
-        filter["project"] = new JsonObject { ["id"] = new JsonObject { ["in"] = Strings(projectIds) } };
+        filter["project"] = new JsonObject { ["accessibleTeams"] = TeamsSome(teams) };
         return filter;
     }
+
+    /// <summary>The project filter limited to projects that one of these teams can see.</summary>
+    public static JsonObject OfTeams(JsonObject filter, IEnumerable<string> teams)
+    {
+        filter["accessibleTeams"] = TeamsSome(teams);
+        return filter;
+    }
+
+    /// <summary>A filter for records of this project.</summary>
+    public static JsonObject InProject(string projectId) => new() { ["project"] = new JsonObject { ["id"] = new JsonObject { ["eq"] = projectId } } };
 
     /// <summary>The filter limited to issues of these teams.</summary>
     public static JsonObject InTeams(JsonObject filter, IEnumerable<string> teams)
@@ -43,10 +53,15 @@ internal static class LinearFilters
     /// <summary>A filter for records with these ids.</summary>
     public static JsonObject WithIds(IEnumerable<string> ids) => new() { ["id"] = new JsonObject { ["in"] = Strings(ids) } };
 
-    /// <summary>The variables of a filtered, counted read.</summary>
-    public static JsonObject Variables(JsonObject? filter, int first)
+    /// <summary>The variables of a filtered, counted read, from the cursor <paramref name="after"/> when there is one.</summary>
+    public static JsonObject Variables(JsonObject? filter, int first, string? after = null)
     {
         var variables = new JsonObject { ["first"] = first };
+        if (after is not null)
+        {
+            variables["after"] = after;
+        }
+
         if (filter is not null)
         {
             variables["filter"] = filter;
@@ -57,6 +72,8 @@ internal static class LinearFilters
 
     /// <summary>The variables of a read by id.</summary>
     public static JsonObject ById(string id) => new() { ["id"] = id };
+
+    private static JsonObject TeamsSome(IEnumerable<string> teams) => new() { ["some"] = new JsonObject { ["key"] = new JsonObject { ["in"] = Strings(teams) } } };
 
     private static JsonArray Strings(IEnumerable<string> values) => new([.. values.Select(v => (JsonNode?)JsonValue.Create(v))]);
 }
