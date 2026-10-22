@@ -10,7 +10,7 @@ namespace Aw.Sindri.Ui.Tests.Setup;
 [Lane(TestLane.Unit)]
 public sealed class SetupAgentsTests
 {
-    private readonly SetupFixture _f = new("extra-setup-ready");
+    private readonly SetupFixture _f = new();
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -58,6 +58,37 @@ public sealed class SetupAgentsTests
         var step = Mcp(await _f.Read(Token));
 
         Assert.Equal([("Claude Code", "Connected"), ("Codex", "Not started"), ("Cursor", "Not started")], Lines(step));
+    }
+
+    [Fact]
+    public async Task Served_provider_states_set_each_agent_and_a_failed_one_says_failed()
+    {
+        _f.Serve(WithProviders(WithItems(Golden("all-done"), "mcp", ("demo", "failed", null)), "mcp", "demo", ("claude", "connected", null), ("codex", "failed", "no write access"), ("cursor", "connecting", null)));
+
+        var step = Mcp(await _f.Read(Token));
+
+        Assert.Equal([("Claude Code", "Connected"), ("Codex", "Failed"), ("Cursor", "Connecting")], Lines(step));
+        Assert.Equal(["Done", "Failed", "Working"], step.Agents.Select(a => a.Chip.Word), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_provider_the_repo_lines_do_not_list_is_not_started_even_when_the_detail_names_it()
+    {
+        _f.Serve(WithProviders(WithItems(Golden("all-done"), "mcp", ("demo", "done", "Claude Code, Codex")), "mcp", "demo", ("claude", "connected", null)));
+
+        var step = Mcp(await _f.Read(Token));
+
+        Assert.Equal([("Claude Code", "Connected"), ("Codex", "Not started"), ("Cursor", "Not started")], Lines(step));
+    }
+
+    [Fact]
+    public async Task With_two_repos_a_provider_is_connected_only_when_every_repo_lists_it_connected()
+    {
+        _f.Serve(WithProviders(WithProviders(WithItems(Golden("all-done"), "mcp", ("demo", "done", null), ("other", "running", null)), "mcp", "demo", ("claude", "connected", null)), "mcp", "other", ("claude", "connecting", null)));
+
+        var step = Mcp(await _f.Read(Token));
+
+        Assert.Equal(("Claude Code", "Connecting"), Lines(step)[0]);
     }
 
     [Fact]

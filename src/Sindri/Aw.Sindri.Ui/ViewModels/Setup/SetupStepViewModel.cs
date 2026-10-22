@@ -12,7 +12,7 @@ internal sealed class SetupStepViewModel : ObservableObject
 {
     private static readonly string[] _all =
     [
-        nameof(Title), nameof(NumberText), nameof(Chip), nameof(ChipWord), nameof(Sub), nameof(DetailText), nameof(ProgressText), nameof(ProgressFraction), nameof(ErrorText), nameof(Items), nameof(Action), nameof(Fields),
+        nameof(Title), nameof(NumberText), nameof(Chip), nameof(ChipWord), nameof(Sub), nameof(DetailText), nameof(ProgressText), nameof(ProgressFraction), nameof(ErrorText), nameof(Items), nameof(Preview), nameof(HasPreview), nameof(Action), nameof(Fields),
         nameof(IsMeterFailed), nameof(HintText), nameof(HasHint), nameof(Agents), nameof(HasAgents), nameof(TrustOnceText), nameof(AgentsNoteText),
         nameof(Name), nameof(Note), nameof(HasNote), nameof(HasDetail), nameof(HasProgress), nameof(HasError), nameof(HasItems), nameof(HasAction),
     ];
@@ -65,6 +65,12 @@ internal sealed class SetupStepViewModel : ObservableObject
 
     /// <summary>One line per repo.</summary>
     public IReadOnlyList<SetupItemViewModel> Items { get; private set; } = [];
+
+    /// <summary>What the profile allows in plain words (the profile step before it is approved); empty otherwise.</summary>
+    public IReadOnlyList<SetupPreviewLineViewModel> Preview { get; private set; } = [];
+
+    /// <summary>True when there is a preview to show.</summary>
+    public bool HasPreview => Preview.Count > 0;
 
     /// <summary>The action, or null.</summary>
     public SetupActionViewModel? Action { get; private set; }
