@@ -175,6 +175,7 @@ internal sealed class DecisionSheetViewModel(ISindriApi api, Func<Uri?> apiUrl, 
 
     private async Task Send(Uri url, string id, string optionId, string label, string note)
     {
+        (RefusalCode, Refusal) = ("", "");
         var sending = sender.Send(url, id, optionId, note);
         Raise();
         OnChanged(nameof(IsSending));

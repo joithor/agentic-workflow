@@ -18,6 +18,12 @@ internal sealed partial class ShellViewModel
 
     private void Navigate(DeepLink link, bool rowSheet)
     {
+        if (link.Kind == DeepLinkKind.Setup)
+        {
+            GoTo(PageId.Settings);   // the checklist is Settings' first section; ShowPage scrolls to it
+            return;
+        }
+
         if (link.Kind == DeepLinkKind.HomeNeedsYou || link.Subject is null)
         {
             GoTo(PageId.Home);
@@ -58,7 +64,7 @@ internal sealed partial class ShellViewModel
         DeepLinkKind.Node => PageId.Context,
         DeepLinkKind.Session => PageId.Agents,
         DeepLinkKind.System => PageId.System,
-        DeepLinkKind.HomeNeedsYou or DeepLinkKind.NeedsYou or DeepLinkKind.Item or DeepLinkKind.Decision or DeepLinkKind.Service or DeepLinkKind.Job => null,
+        DeepLinkKind.HomeNeedsYou or DeepLinkKind.NeedsYou or DeepLinkKind.Item or DeepLinkKind.Decision or DeepLinkKind.Service or DeepLinkKind.Job or DeepLinkKind.Setup => null,
         _ => null,
     };
 }

@@ -18,7 +18,7 @@ public enum SearchedState
     [JsonStringEnumMemberName("unavailable")]
     Unavailable,
 
-    /// <summary>Named, and its last run failed; <see cref="SearchedSource.Code"/> says why.</summary>
+    /// <summary>Named, and answered from an older or partial source (a code index at another commit, a layer down), or its last run failed; <see cref="SearchedSource.Code"/> and <see cref="SearchedSource.Reason"/> say why.</summary>
     [JsonStringEnumMemberName("degraded")]
     Degraded,
 }

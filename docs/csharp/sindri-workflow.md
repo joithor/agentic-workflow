@@ -14,7 +14,7 @@ desk Steps and the bridge, P4; engine spec §0 and §5, revision 8) come in late
 ## `sindri recipe validate`
 
 ```
-sindri recipe validate <file> [--json]
+sindri recipe validate <file> [--json] [--against <manifest.json>]
 ```
 
 Local: it runs in the calling process with this build's block catalog, and never starts or contacts `sindri serve`. It
@@ -29,6 +29,12 @@ reads the file and its child recipes, and writes nothing.
   plain order; each has `code`, `severity` (`error`, `information` or `skipped`), `message`, `file`, `line`, `column`,
   `path` and `fix`) and `normalized`. `normalized` is the normalized long form without `hash`; SHA-256 over its RFC 8785
   canonical JSON is `hash`.
+- **`--against <manifest.json>`** (setup-once SO-E1) checks the file against a saved `recipe manifest --json` output as if its recipes were
+  registered: the same id and version with another hash is `RCP-VERSION-001`, and a version below the highest in the manifest that is not in it is
+  `RCP-VERSION-002`; a recipe the manifest lacks passes. This is the rule **"a content change bumps the version"**: CI runs `recipe manifest` over
+  `git archive origin/main recipes/sindri` and validates every recipe of `git archive HEAD recipes/sindri` against that output
+  (`scripts/ci/recipe-versions.sh`), and no manifest is committed anywhere. A manifest file that is missing or is not a manifest is `SND-RECIPE-010`
+  (exit 2). `--against` may come before or after `--json`.
 - **Child recipes** resolve from the recipe file's directory (`<child id>.yaml`), so `recipes/sindri/workflow.item.yaml`
   finds `workflow.step.yaml`. Once the registry exists (P2), a served validation resolves them from the registered recipes.
 - **Hand-written only:** `recipe validate` passes no base recipe, so it checks every recipe as hand-written: a `base`
@@ -116,6 +122,48 @@ A recipe with a route state (a `step.judge.choose`, see "Writing a decision tree
 | 0 | Every case passes, or the recipe declares none |
 | 1 | A case fails (`<case> fail at <file>:<line>: <detail>`) |
 | 2 | A usage error (no file, `--record` without an address and `--out`: `SND-CLI-003`; an unknown argument: `SND-CLI-001`; `--record` of an address the ledger never saw: `SND-WF-001`; an `--out` file that exists: `SND-CLI-003`), or a tool error: the recipe can't be read (`SND-RECIPE-010`) or doesn't bind (`SND-RECIPE-001`, fix: `sindri recipe validate`), a listed eval file is missing, unreadable or outside the recipe's directory (`SND-RECIPE-008`), or a bug inside `sindri` (`SND-API-005 recipe eval failed inside sindri: …`) |
+
+## `sindri recipe manifest` and `recipe eval --shipped`
+
+```
+sindri recipe manifest <dir> [--json]
+sindri recipe eval --shipped [--json]
+```
+
+Both are local (setup-once spec §5.3, SO-E1): they run in the calling process, never start or contact `sindri serve`, and write nothing.
+
+**`recipe manifest <dir>`** reads `<dir>` as a recipe set laid out like `recipes/sindri` (its flat `*.yaml` files and `evals/<recipe>/*.jsonl`; any other file or
+directory, such as the README, is left alone) and prints one line per recipe, **sorted by id (ordinal)**, with the registry's own hash function (the reader's):
+
+```
+workflow.build@2 → sha256:<64 hex> (3 eval cases)
+workflow.line@2 → sha256:<64 hex> (6 eval cases)
+digest sha256:<64 hex>
+```
+
+A recipe that does not read prints `invalid <file>: <first finding>` instead, and there is no digest line. `--json` prints one document:
+`{"recipes":[{"id","version","hash","displayName","evalCases","evalsHash"}],"invalid":[{"file","finding"}],"digest"}`. `evalsHash` is the SHA-256 over the recipe's
+eval files (path, length and bytes, by path), so an eval-only change changes the manifest; `digest` is the SHA-256 over the lines `id@version TAB hash TAB evalsHash`
+in output order and is `null` when `invalid` is not empty; `displayName` is `null` for a recipe without one (it is also `RCP-DISPLAY-001` at validate). The publish
+compares this output with the previous publish's to decide whether to run the evals; the running app never reads it.
+
+| Exit | When |
+|---|---|
+| 0 | Every recipe read |
+| 1 | A recipe did not read (the rest are still listed) |
+| 2 | A usage error (no directory, more than one, an unknown flag: `SND-CLI-003`), or the directory cannot be read (`SND-RECIPE-010`) |
+
+**`recipe eval --shipped`** runs the eval cases of every recipe in the **embedded set** (`IEmbeddedRecipes`, below) over the pure engine, exactly as `recipe eval <file>` runs
+one file, with the embedded siblings as the children and the embedded `evals/…` files as the cases. One header line per recipe (`id@version`), one indented line
+per case (`happy pass`, or `happy fail at <file>:<line>: <detail>`), then `26 recipes passed (80 cases)` or `1 case failed in 1 recipe`. A recipe that does not read, whose
+eval file is not in the set, or that declares **no** evals fails (approval needs evals declared, so a shipped recipe must have them). An empty embedded set passes and says
+`no recipes are embedded in this build; nothing to evaluate`. `--json` prints `{"passed","empty","recipes":[{"id","version","hash","displayName","passed","cases":[{"case","passed","line","detail"}],"error"?}]}`
+(`version` and `hash` are `null`, and `error` is set, for a recipe that did not read). Exit 0 pass, 1 a case fails, 2 usage or a bug inside `sindri`.
+
+**`IEmbeddedRecipes`** (Core port; the Host adapter `ManifestEmbeddedRecipes` reads the manifest resources named `aw-recipes/sindri/<relative path>` in `Aw.Sindri.Host`) returns one list of
+`(relativePath, bytes)`, relative to `recipes/sindri`, sorted by path: flat `*.yaml` and `evals/<recipe>/<case>.jsonl` (anything else under the prefix, the README, is left out).
+The publish embeds `git archive HEAD recipes/sindri` there (SO-A7a); until it does, and in any build that stages nothing, the set is empty, and an empty set is legal.
+Nothing at run time reads `recipes/sindri` from disk. `FakeEmbeddedRecipes` is the test fake; both pass `EmbeddedRecipesContract`.
 
 ## `sindri recipe register`, `show` and `list`
 
@@ -232,6 +280,7 @@ needs re-approval.
 | `id` | yes | `workflow.<name>` |
 | `version` | yes | An integer. Same id and version with another hash, or a version not above the highest registered, is refused once the registry exists (`RCP-VERSION-001`/`-002`, P2) |
 | `description` | no | |
+| `displayName` | yes | The name the app shows instead of the id (setup-once SO-10): sentence case, at most 60 characters, what the recipe does (`Idea to merged pull request`), no id or code name (`RCP-DISPLAY-001`). It is part of the hash, so adding or changing it needs a new `version`: **a content change bumps the version** (`recipe validate --against`) |
 | `base` | generated recipes only | Written by Sindri's generator; on a hand-written recipe it is `RCP-CAP-004`, and `recipe validate` treats every recipe as hand-written |
 | `urgency` | no | `incident`, `triage` or `work` (default `work`; UI E-21). The app orders its Workflows strip by it; the engine never reads it. The normalizer writes `work` when it is absent, so an absent urgency and `urgency: work` hash the same. Any other value is `RCP-URG-001` |
 | `inputs` | yes | At least one (`RCP-INPUT-002`): `{ key, label?, type?, kind, generate? }`. `kind` is a subject kind and required (`RCP-INPUT-001`); `type` is a fact type and defaults to the type `kind` pairs with; `generate` is a template that supplies the value when the start gives none (text inputs only, `RCP-NAME-005`/`-006`). The bare-key short form (`[fact:item]`) normalizes to an input with no `kind`, so it fails `RCP-INPUT-001`. The first input is the instance's subject (UI E-22) |
@@ -258,7 +307,7 @@ reaches its rule (`RCP-TYPE-001` to `-003`, `RCP-INPUT-001`/`-002`, `RCP-NAME-00
 |---|---|
 | Fact key | `fact:<name>` or `evidence:<kind>@<base\|head>` |
 | Block id | `<gate\|step\|effect\|evidence\|input>.[<area>.]<name>`, kebab-case, at most 64 characters (`step.produce`, `gate.budget.available`; spec §3.3) |
-| Event kind | `<area>.<name>`, registered with `AddEvent` (this build: `claim.created`, `item.routed`, `notify.delivered`) |
+| Event kind | `<area>.<name>`, registered with `AddEvent` (this build: `claim.created`, `item.routed`, `notify.delivered`, and the PR babysitter's `pr.changed` (routed by item), `pr.pushed`, `pr.restacked`, `pr.mergeResult`, `pr.docsMerged`, `pr.stacked`) |
 | Duration | `<n>m`, `<n>h` or `<n>d`, at least `1m` (`RCP-DUR-001`) |
 | Tokens | An integer, or with a `k` or `M` suffix |
 | `with:` value | A literal (string, number, bool, or a list of these), `{ fact: <key> }` or `{ profile: <key> }`. Capability parameters take only literals or `{ profile }` (`RCP-CAP-007`) |
@@ -278,9 +327,14 @@ Every state has `kind: active | wait | terminal`. State, loop and parameter (`wi
 | `next` | required | required | optional |
 | `outcome` | — | — | required: `resolved`, `unresolved`, `alreadySatisfied` or `failed` |
 
+Any state may also carry two optional plain-words fields the app shows (setup-once SO-E1; each is written into the hashed form only when set):
+`displayName` (sentence case, at most 60 characters, no id; `RCP-DISPLAY-003`) names the step instead of the state id, and `why` (one plain sentence, at most 200
+characters, no id or code name; `RCP-DISPLAY-002`) says why the state is in the recipe. Neither is on a block descriptor.
+
 `waitFor` is one of `{ event: <kind> }`, `{ answer: { id, question } }`, `{ resource: heavy | slot }` or
-`{ child: { recipe, inputs, onParked: propagate | ignore } }`. No resource has an allocator in this build, so a resource
-wait is reported as information (`RCP-RES-001`); at run time it parks with `SND-WF-010` until one lands. `then: retry`
+`{ child: { recipe, inputs, onParked: propagate | ignore } }`. The `heavy` resource is allocated over the box's heavy-job lock
+(LN-WF3, see "The heavy resource" below); `slot` is a stub that is always free (P7), so a `slot` wait is reported as information
+(`RCP-RES-001`). `then: retry`
 re-arms the deadline in the same frame and re-sends the entering transition's effects; it isn't allowed on a child wait
 (`RCP-TIME-002`), nor on a state whose Step runs on the block runtime, whose timeout must also outlast the Step's `maxDuration` (`RCP-TIME-003`).
 
@@ -295,6 +349,7 @@ re-arms the deadline in the same frame and re-sends the entering transition's ef
 | `gates` | no | `{ use, threshold?, with? }`, run in order. A judge or model gate needs a threshold above 0 and at most 1; a deterministic gate takes none (`RCP-THRESH-001`/`-002`) |
 | `evidence` | no | `{ kind, at, expect: pass \| fail }` |
 | `effects` | no | `{ use, with? }` |
+| `label` | no | Plain words for what the transition means, drawn on the arrow (`gaps found: draft again`): at most 60 characters, no id or code name (`RCP-DISPLAY-003`). Written into the hashed form only when set |
 | `produces` | no | Facts the transition records; each must be an output of the trigger's source (`RCP-WIRE-002`; for a child, one of its declared `outputs`). An entry is a fact key, or `{ fact, from }` to record a child's output under another key (DT-C) |
 
 The first transition whose `when` holds is the one taken. If its gates refuse, that is a refusal, not a fall-through to
@@ -393,7 +448,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-NEXT-002` | `next` names no approval-tier command | Leave it out |
 | `RCP-EFFECT-001` | Every effect is on the approved profile's effect allowlist. **Skipped** while no profile is approved or it has no `workflow.effects` | Add it to `workflow.effects` and approve the profile |
 | `RCP-HUMAN-001` | An effect whose block is `humanTrigger` runs only off a human's act: a `command.*` transition, a `step.completed` out of states that each run a `humanOnly` Step, or a `when` that requires a fact (`{fact: F, is: present}`, at the top or inside `all`) that only such command transitions produce. The initial state never counts | Move the effect onto a command transition or a human-only Step, or gate it on a fact a human's command produces |
-| `RCP-RES-001` | **Information:** a resource wait has no allocator in this build | None needed; it parks with `SND-WF-010` until one lands |
+| `RCP-RES-001` | **Information:** a `slot` wait has only the stub allocator in this build (`heavy` has the real one, LN-WF3 and is no longer reported) | None needed |
 | `RCP-URG-001` | `urgency` is `incident`, `triage` or `work` | Use one of them, or remove `urgency` (the default is `work`) |
 | `RCP-OUT-001` | An output's `from` names a state of the recipe | Name one of its states |
 | `RCP-OUT-002` | An output's `from` isn't a terminal or engine-owned state, and the state's Step, its leaving transitions' `produces` or its wait records the output's key. For a state that waits on a child, the child's declared outputs | Record the fact there, or name the state that does |
@@ -408,8 +463,11 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-NAME-004` | `{fact:x}` in `name` names a declared input | Declare it under `inputs`, or remove the placeholder |
 | `RCP-NAME-005` | A `generate` template has no `{fact:…}` placeholder | Use only literals, `{start:date}` and `{start:time}` |
 | `RCP-NAME-006` | `generate` is only on an input of kind `text` | Supply that input at start |
+| `RCP-DISPLAY-001` | A recipe has a `displayName`: required, sentence case, at most 60 characters, no id or code name | Write the name the app shows (`Idea to merged pull request`) |
+| `RCP-DISPLAY-002` | A state's `why` is one plain line of at most 200 characters, with no id or code name | Say in plain words why the state is there |
+| `RCP-DISPLAY-003` | A state's `displayName` (sentence case) and a transition's `label` are at most 60 characters, with no id or code name | Use plain words |
 | `RCP-HASH-001` | A `hash` in the file matches the content | Set it to the hash the message names, or remove it |
-| `RCP-VERSION-001` | Same id and version, same hash (registry, P2) | Raise `version` |
+| `RCP-VERSION-001` | Same id and version, same hash (registry, P2; and `recipe validate --against <manifest.json>`: a content change bumps the version) | Raise `version` |
 | `RCP-VERSION-002` | `version` is above the highest registered (registry, P2) | Raise `version` |
 
 Rows marked P2 need the registry and aren't checked by `recipe validate` yet; neither are the generated-recipes-only rows,
@@ -495,11 +553,13 @@ what a report must carry, on which outcomes; "every outcome" outputs are on all 
 | `step.evidence.none` | block | `built` | `done` | `evidenceSummary` on done |
 | `step.evidence.combine` | block | `evidenceUi`, `evidenceApi`, `evidenceDb` | `done` | `evidenceSummary` on done |
 | `step.evidence.desk` | desk, human-only | `built` | `recorded`, `noneFound` | `evidenceSummary` (every outcome); `evidenceReason` (every outcome) |
-| `step.review.round` | block | `change`, `phasePacket` | `ready` | `lensQueue`, `lensRounds` on ready |
+| `step.review.round` | block | `change`, `phasePacket`, `lensRounds` | `ready`, `noLens` | `lensQueue`, `lensRounds` on ready |
 | `step.lens.run` | agent; parameters `subject` (required), `bundle` | `lensQueue`, `lensRounds` | `reviewed` | `lensReport` on reviewed |
-| `step.review.log` | block | `lensReport`, `lensRounds` | `next`, `clean`, `findings`, `behaviourWrong` | `lensRounds` (every outcome); `lensQueue` on next; `review` on clean, findings, behaviourWrong |
+| `step.review.log` | block | `lensReport`, `lensRounds`, `lensQueue` | `next`, `clean`, `findings`, `behaviourWrong`, `needsOwner` | `lensRounds` (every outcome); `lensQueue` on next; `review` on clean, findings, behaviourWrong, needsOwner; `escalation` on needsOwner |
 | `step.review.record` | block | `change`, `review`, `lensRounds` | `recorded` | `review` on recorded |
-| `step.review.fix` | agent | `change`, `review` | `fixed` | `change` on fixed |
+| `step.review.fix` | agent | `change`, `review` | `fixed`, `needsOwner` | `change` on fixed; `escalation` on needsOwner |
+| `step.review.apply-answer` | agent | `change`, `review`, `escalation`, `answers` | `fixed`, `needsOwner` | `change` on fixed; `escalation` on needsOwner |
+| `step.lens.ask` | desk, human-only | `escalation` | `answered`, `stop` | `answers` on answered |
 | `step.review.recheck` | agent | `change`, `review` | `clean`, `findings`, `behaviourWrong` | `review` (every outcome) |
 | `step.owner.decide` | desk, human-only | - | `retry`, `stop` | `notes` on retry |
 | `step.ship.green` | block | `phasePacket`, `workspace` | `green`, `red` | `green` on green; `findings` on red |
@@ -557,16 +617,16 @@ Steps of `workflow.design` and `workflow.plan` (line spec §4-§6, LN-Y1; all de
 
 | Step | Kind | Reads | Outcomes | Writes |
 |---|---|---|---|---|
-| `step.design.intake` | block | `scopePacket`, `designRevision` | `fresh`, `revise` | the eight seeds (`scope`, `packs`, `design`, `findings`, `lensRounds`, `changedSections`, `answers`, `accepted`) on both |
+| `step.design.intake` | block | `scopePacket`, `designRevision`, `priorDesignPacket` | `fresh`, `revise` | the eight seeds (`scope`, `packs`, `design`, `findings`, `lensRounds`, `changedSections`, `answers`, `accepted`) on both; on `revise`, `design` is the previous design packet's design |
 | `step.design.draft` | agent | `scope`, `packs`, `design`, `findings`, `changedSections` | `drafted` | `design`; optional `bundle` |
 | `step.design.apply` | agent | `scope`, `packs`, `design`, `designRevision`, `answers` | `applied` | `design`, `changedSections`; optional `bundle` |
 | `step.design.check` | block | `scope`, `packs`, `design` | `pass`, `gaps` | `findings` on gaps |
 | `step.design.revise` | agent | `scope`, `packs`, `design`, `findings`, `answers` | `revised` | `design`, `changedSections`; optional `bundle` |
 | `step.design.lens-desk` | desk, human-only | `findings`, `lensRounds` | `accept`, `revise`, `drop` | `accepted` on accept, `answers` on revise |
 | `step.design.evidence` | block | `scope`, `packs`, `design`, `findings`, `lensRounds`, `accepted` | `complete`, `incomplete` | `designPacket`, `design`, `lensRounds` on complete; `findings` on incomplete |
-| `step.lens.round` | block | `packs`, `lensRounds`, `changedSections` | `ready` | `lensQueue`; optional `pack` |
+| `step.lens.round` | block | `scope`, `packs`, `lensRounds`, `changedSections` | `ready` | `lensQueue`, `lensRounds` on ready; optional `pack` |
 | `step.lens.run` | agent | `lensQueue`, `lensRounds` | `reviewed` | `lensReport`; `subject` (required), optional `bundle` |
-| `step.lens.log` | block | `lensReport`, `lensRounds`, `lensQueue` | `next`, `clean`, `findings` | `lensRounds` on all; `lensQueue` on next; `findings` on findings |
+| `step.lens.log` | block | `lensReport`, `lensRounds`, `lensQueue` | `next`, `clean`, `findings`, `needsOwner` | `lensRounds` on all; `lensQueue` on next; `findings` on findings, needsOwner; `escalation` on needsOwner |
 | `step.plan.intake` | block | `scopePacket`, `designPacket` | `loaded` | the seven seeds (`design`, `plan`, `findings`, `questions`, `answers`, `answerLog`, `holdoutSets`) and `anchors`: the anchor keys of the design's covered surfaces, read by the planner's `input.context.code` (LN-CTX2) |
 | `step.plan.graph` | agent | `scopePacket`, `design`, `plan`, `findings`, `answerLog` | `drafted` | `plan` |
 | `step.plan.check` | block | `scopePacket`, `design`, `plan` | `pass`, `gaps` | `findings` on gaps |
@@ -580,12 +640,33 @@ Steps of `workflow.design` and `workflow.plan` (line spec §4-§6, LN-Y1; all de
 
 The Step inputs `input.context.lenses`, `input.context.code` and `input.context.history` are real Step inputs (parameters `anchors`, `depth`, `hops`, `window`; "The context inputs (S-LB2)" below), so the recipe validates and approves. The output schemas are `schemas/scoping/` (`node scripts/check-scoping-schemas.mjs`).
 
+### Design and plan stations on the block runtime (BS-2, BS-2b)
+
+Nine Steps of `workflow.design` and `workflow.plan` run on the block runtime in this build (code in `Aw.Sindri.Features/Line/`, registered by `AddLineSlices`; the descriptors above are BS-2b's, except `step.design.intake` and `step.design.draft`, whose Reads BS-2c widened, so those two hashes and both recipes' hashes moved; no `Workflow.Patched` marker was needed): `step.design.check`, `step.plan.check`, `step.plan.questions`, `step.plan.settle` (BS-2, pure rule sets over facts) and the five that touch packets (BS-2b): `step.design.intake`, `step.design.evidence`, `step.plan.intake`, `step.plan.evidence`, `step.plan.freeze`. They work through ports, never the disk or the aw-packets binary directly: `IPackets` (hash, validate, freeze), `IRunArea` (now with `PathFor`, the absolute path of a run-area directory, so aw-packets can be pointed at a packet a Step wrote), `IPacketFiles` (reads one named file of a packet directory inside Sindri's home) and `IRepoCheckouts` (the checkout aw-packets needs for PKT-BASE-001; the evidence and freeze Steps are `IRepoStep`).
+
+Shapes the spec leaves open, chosen here:
+
+| Shape | Choice |
+|---|---|
+| Packet facts | `fact:scopePacket`, `fact:designPacket` and `fact:planPacket` are `{ "hash": "sha256:…", "dir": "<absolute directory>" }`; a bare hash has no files to read and fails the Step with the fix. The scoping station's freeze must write `dir` too (today it writes only `hash`: a cross-lane item). |
+| Verification | The Step recomputes the hash from the directory (`IPackets.Hash`) and compares: a mismatch fails with `SND-LINE-001` naming both hashes. The port has no `verify`, so the freeze record is not looked up. |
+| `fact:scope` | `{ hash, dir, baseSha, change, scopeMap, acceptance, acceptanceHash, openQuestions[], answerLog[] }`, loaded from `scope-map.json`, `acceptance.json`, `questions.json` and `answers.jsonl`; an open question is one no answer batch answered. `acceptanceHash` is the digest of `acceptance.json`'s bytes, which the design's acceptance chain extends. |
+| `fact:packs` | `{}`: no pack resolver exists until LN-PK, so `SND-PACK-001/-002` are not checked and `style.json` holds only what `fact:packs` carries (`style`, `lenses`). |
+| Revision | `fact:designRevision` with decisions or notes is `revise` and seeds `fact:answers` with `[revision]`; the first pass text is `fresh`. A revision edits the previous design: `workflow.design` takes `fact:priorDesignPacket` (the line passes its `fact:designPacket` to the redesign child, and a text on the first pass, which fresh ignores). Revise verifies that packet's hash and that its index names the scope packet (SND-LINE-001) and loads it into `fact:design` with `DesignPacket.FromFiles`, so its acceptance chain carries over and `step.design.apply` rewrites only the sections in `affects`. A revision with no previous packet fails with the fix; it never seeds an empty design. `step.design.draft` also reads `designRevision` and `answers`, so a redraft after `gaps` keeps the owner's picks. |
+| `fact:design` | The design packet's files, field by field: `spec` (the `spec.md` text), `sections`, `coverage`, `decisions`, `deferred`, `resolutions` (the last two live in `decisions.json`), `signals`, `contracts`, `acceptance` (`items`), `escapes`, `runs`; the plan station's copy adds `lensRounds`, `accepted` (the owner's accepted risks, kept in `runs.json`), `acceptanceHash` and `packet` (`{ hash, dir }`). The gold fixture's `signals.json` and `coverage.json` have other shapes than the fact's (an object keyed by item; surfaces with sections): the checks read the fact's. |
+| Repo slug | A packet's `repo` is `sindri/<repo name>`: the profile names no remote, and aw-packets wants `owner/name`. Ids: `design-<change>`, `plan-<change>`, `<change>-<phase>`. |
+| `fact:plan` | The checks' phases (`id`, `workstream`, `deps`, `size`, `kind`, `acceptance`, `waitsForMerge`, `execReview`), plus optional `title`, `goal`, `writeScope` or `allowedFiles`, `readSeeds`, `rules`, `testChange` and `budget`. `tasks.json` is PKT's task plan made from it (`kind:` and `test-change:` rules); `graph.json` is derived: wave = 1 + the deepest dependency, a phase continues its first dependency's stack unless an earlier one did (else a new stack), base = the default branch with no dependency, else the first dependency's head, `waitsForMerge` = the phase's flag or more than one dependency. |
+| Phase packets | Made at `step.plan.evidence` in `phase-packets/<phase>/` (unfrozen) and named in `fact:planPacket.phases[]` (`{ phase, id, dir, hash }`, the hash being what `step.plan.freeze` compares before it freezes); `step.plan.freeze` freezes them and writes `fact:phasePackets` (`[{ phase, id, hash, dir }]`). `design.md` is the spec's sections that cite the phase's items. |
+| Freezer | `step.plan.freeze` freezes as `owner` (LC-5: it runs only on stop 2's human-only approve, and a freeze is write-once, so a machine freeze first would never be upgraded). A packet frozen by someone else first is `mismatch` (`PKT-FREEZE-002`). |
+
+Run-area files: `design-packet/` (13 files) in the design instance, `plan-packet/` (7) and `phase-packets/<phase>/` (7 each) in the plan instance, written by the evidence Steps and read by the next station through `fact:*Packet.dir`. A Step has no ledger port (a write needs a lease grant), so `line.escape`, `design.approved` and `plan.approved` rows are not written (the escapes are in `escapes.json`), the holdout sets are not sealed, and LN-CTX1's proposals to the context map are not made; `step.plan.freeze` also cannot re-run the design checks (it reads no scope), so it re-runs the plan checks and confirms the design and plan packets still hash to what the evidence checked. Also known: `DSN-XSPEC-001/-002` and `DSN-STYLE-001` only warn, `PLN-PKT-001`'s `--sizes` is not passed.
+
 `step.judge.choose` is `block` runtime and `step.desk.choose` is `desk` and human-only; their hashes moved once when the two fields
 landed (provisional owner default). The agent runtime (engine P8) moved `step.produce`, `step.build.red`, `step.build.green` and `step.prove.holdout`; every other shipped descriptor hashes as before (`ShippedBlocksTests` pins all of them). `sindri recipe list --stale` shows which approved recipes use a moved descriptor and need re-approval.
 
 ### Lens loop facts (`step.lens.log` and the lens report)
 
-`step.lens.log` is a block runtime (BS-4, `Aw.Sindri.Features/LensLoops/`); `step.lens.round`, `step.review.round`, `step.review.log` and `step.review.record` still run at the desk (see below). The facts the loop passes between its Steps have these shapes, so the prompts of `step.lens.run` and the Steps that read the log can target them. Facts are JSON text; every field not listed is kept as written. Severity names are matched ignoring case: the design scale is CRITICAL, HIGH, MEDIUM, LOW (the gold packet writes them upper case), the review scale blocking, issue, suggestion, nit. The two most severe stop a round.
+`step.lens.log` is a block runtime (BS-4, `Aw.Sindri.Features/LensLoops/`); `step.review.log` joined it in BS-12, and `step.lens.round` and `step.review.round` in LN-PK lite (see "Lens packs" below); `step.review.record` still runs at the desk. The facts the loop passes between its Steps have these shapes, so the prompts of `step.lens.run` and the Steps that read the log can target them. Facts are JSON text; every field not listed is kept as written. Severity names are matched ignoring case: the design scale is CRITICAL, HIGH, MEDIUM, LOW (the gold packet writes them upper case), the review scale blocking, issue, suggestion, nit. The two most severe stop a round.
 
 | Fact | Written by | Shape |
 |---|---|---|
@@ -595,9 +676,19 @@ landed (provisional owner default). The agent runtime (engine P8) moved `step.pr
 | `fact:lensRounds` | `step.lens.log` (append-only; every outcome) | array, one entry per lens run: the report as written plus `"round": n` (counted from 1) and, on the last entry of a round (the queue is empty), `"closes": true`. A round continues while the last entry does not close; the entry after a closing one opens round n+1, and so does a report for a lens the open round already logged. A `closes` or `round` the agent wrote in its report is ignored: the Step sets both. `step.design.evidence` writes `lens-rounds.jsonl` from these entries and drops `closes` |
 | `fact:findings` (design, on `findings`) | `step.lens.log` | array of the round's CRITICAL and HIGH findings, each with `"lens": "<id>"` added |
 
-Outcomes of `step.lens.log`: `next` while the queue is not empty (writes `lensRounds`, `lensQueue`); at the round's end `clean` (no CRITICAL or HIGH finding in any entry of the round) or `findings`. Caps and no-progress are the recipe's loops, not the Step's.
+Outcomes of `step.lens.log`: `next` while the queue is not empty (writes `lensRounds`, `lensQueue`); at the round's end `clean` (no CRITICAL or HIGH finding in any entry of the round), `findings`, or `needsOwner` (the same findings and a typed escalation; see below). Caps and no-progress are the recipe's loops, not the Step's.
 
-**Review loop, not a block yet.** `step.review.log` has the same job with the review scale and a running `fact:review`, but its descriptor reads only `lensReport` and `lensRounds`; the runner gives a Step only the facts its descriptor reads, so the Step cannot see `fact:lensQueue` and cannot tell `next` from a round's end. Likewise `step.review.round` reads neither `lensRounds` nor `review`, so it cannot carry earlier rounds forward, and the `round` number and the review packet's `rounds` would restart each iteration. Two descriptor changes (a hash move) unblock it: `step.review.log` reads `fact:lensQueue`, and `step.review.round` reads `fact:lensRounds` and keeps it. The intended `fact:review` is `{ "round": n, "verdict": "clean" | "findings" | "behaviourWrong", "blocking": n, "issue": n, "suggestions": n, "nits": n, "behaviour"?: "wrong", "findings": [Finding + lens] }`, where `behaviourWrong` is a blocking finding with `"behaviour": "wrong"`. `step.review.recheck` writes the same shape, `step.review.record` freezes `review.json` from it with `fact:lensRounds` and the head sha of `fact:change`.
+**Review loop (BS-12).** `step.review.log` has the same job with the review scale and a running `fact:review`, and is a block runtime now that its descriptor reads `fact:lensQueue` (so it tells `next` from a round's end). `step.review.record` stays at the desk: it needs a review-packet writer over `IPackets` (kind `review`), which does not exist in the build; `step.review.round` is a block runtime (LN-PK lite, below). The `fact:review` is `{ "round": n, "verdict": "clean" | "findings" | "behaviourWrong", "blocking": n, "issue": n, "suggestions": n, "nits": n, "behaviour"?: "wrong", "findings": [Finding + lens] }`, where `behaviourWrong` is a blocking finding with `"behaviour": "wrong"`. `step.review.recheck` writes the same shape, `step.review.record` freezes `review.json` from it with `fact:lensRounds` and the head sha of `fact:change`.
+
+**Escalation (BS-12, owner 2026-10-19).** The review and design loops run by themselves and ask a human only on an ambiguous fix or a product question. The one way there is an agent's typed report: a finding (lens report, `schemas/line/lens-report.json`) carries `escalate: { kind: "ambiguousFix" | "productQuestion", question, options? }`, or `step.review.fix` reports `needsOwner` with `fact:escalation` of the same shape (`schemas/line/escalation.json`). At a round's end `step.lens.log` and `step.review.log` report `needsOwner` instead of `findings` when a stopping finding (CRITICAL or HIGH; blocking or issue) carries a valid one, and write it as `fact:escalation` (plus the finding's `lens` and `finding` id); a `behaviourWrong` round keeps its route. A finding that only says "please decide", has another kind, no question or a bad option never escalates and stays in the loop, round after round. The recipes route `needsOwner` to `ask` (`step.lens.ask`, human-only, the form is the agent's question and options): `answered` writes `fact:answers` and goes to the fixer (`step.review.apply-answer` in the review loop, which can ask again; `step.design.revise` in the design loop); `stop` ends the loop (review: `stuck`, unresolved; design: `dropped`). The review loop's `asks` loop caps the asks at 3; a loop past its cap parks (a failure the owner sees, not a question). A cap hit or no progress keeps its route: review rounds at the cap go to the narrow re-check and then `stuck`; the design lens cap goes to `step.design.lens-desk`.
+
+### Lens packs (`step.lens.round`, `step.review.round`; LN-PK lite)
+
+The lenses a round queues come from a **built-in pack** in `config/packs/lenses/<id>/` (`pack.json` and `lenses/<lens>.md`, line spec §5.2), embedded in the Infrastructure assembly. `design-five` (applies `design`: product, architecture, design, devex, security) and `code-review` (applies `review`: correctness, security, performance, architecture, tests, and the conditional data-integrity, accessibility and ui-races) ship with the toolkit; a pack holds 1 to 10 lenses. `ILensPacks.Resolve(kind, repo)` (Core port, `ProfileLensPacks` over the approved profile) picks the id from `workflow.packs.lenses.design` or `.review` (a repo's `repos` entry, else `default`, else the built-in default) and returns `{ id, hash, lenses[] }`; the hash is SHA-256 over each file's path and the hash of its bytes, in path order. An id that is not a built-in pack, a pack for the other loop, or a pack of more than 10 lenses is an `SND-CLI-003` error (the Step fails with it; `SND-PACK-001` to `-004` are not run in this unit, and there are no repo packs, machine packs or pins yet).
+
+Each round queues the lenses whose `when` holds, in pack order, as `fact:lensQueue` (lens ids), and appends one `{ "lens", "round", "notApplicable": "<reason>", "packHash" }` row to `fact:lensRounds` for every lens it does not queue, so none is skipped silently. `when` is `"always"`, `{ "surfaceKinds": [...] }` (design: the kinds of the surfaces in `fact:scope`, ignoring case) or `{ "paths": [...] }` (review: the paths of `git diff --name-only base...head` of `fact:change`, `**` crossing directories, `*` and `?` within one). A subject that does not say (a scope with no surface list; a change with no `base` and `head`, such as the empty change a bug fix passes) selects every lens. `step.review.round` reports `noLens` when nothing applies (the loop ends `stuck`); `step.lens.round` fails the Step instead (the design lens loop has no such route).
+
+**Round 1.** Both Steps read `fact:lensRounds`, and the runner fails a Step whose declared fact is missing, so the log must exist before round 1. The design recipe's `intake` already seeds it. `workflow.review-loop` (version 4) declares `fact:lensRounds` as an input, and `workflow.phase` (version 2) passes the literal `[]` for it each time it starts a review, so every review starts with an empty log and `step.review.round` carries it (and the next round's start numbers after the closed one).
 
 ### Block catalog (line stations: build and prove)
 
@@ -619,6 +710,40 @@ Outcomes of `step.lens.log`: `next` while the queue is not empty (writes `lensRo
 | `step.prove.evidence` | block | `complete`, `incomplete` | `proofPack`; `findings` on incomplete |
 | `step.prove.fail-log` | block | `logged` | `findings` |
 
+`step.prove.holdout-log` has a block runtime (BS-6b, `Aw.Sindri.Features/Prove/ProveHoldoutLogStep.cs`): it checks the evaluator's `fact:holdoutResult` against the phase's hidden set in the holdout store (a result naming a scenario the set lacks, or whose `observed` line repeats a run of 8 words of the scenario, fails the Step), scans the phase's commits (base to `fact:built.head`) and the facts it reads for the canary phrase (`leaked`, one PRV-HOLD-003 finding), marks failed scenarios spent (`failed`, PRV-HOLD-001 findings by item) and otherwise records `passed` with `canary: clean`. Its descriptor now says block, so its hash moved (`sha256:9511ad11…`); no shipped recipe changed.
+
+### Build and ship Steps on the block runtime: fact shapes
+
+`step.build.prepare`, `step.phase.drift`, `step.ship.return`, `step.build.amend` and `step.ship.freeze` have block runtimes (`Aw.Sindri.Features/Build`, `Ship`); the descriptors above are unchanged. They read these shapes (the line spec does not define them, so these are the contract the desk and the other Steps write to):
+
+| Fact | Shape | Written by |
+|---|---|---|
+| `fact:phasePacket`, `fact:activePacket` | `{ hash, dir, repo? }`: the packet's frozen hash and directory; `repo` is a checkout of the repository it builds on (PKT-BASE-001 needs the base commit), which `step.build.prepare` sets to `fact:workspace` | the phase's seed (`hash`, `dir`), prepare (`repo`), amend (the child's) |
+| `fact:answers` | object `{ allow?: string[], reason?: string, revert?: string[] }`, the shape the shipped `workflow.build` evals use. `allow` holds the granted paths (repo-relative globs or `new: <path>`); amend needs at least one, and takes the owner's `reason` or the stock line `allowed at the scope desk` | prepare seeds `{}`; the scope desk writes it |
+| `fact:handoffDraft` | `{ dir, head, workspace }`: the hand-off packet directory (`pr.json`, `body.md`, `green.json`, `packet.json`, `index.json`), the head it was packed on, and the phase worktree | `step.ship.pack` (at the desk until its fact shapes are settled) |
+| `fact:proofPack`, `fact:review` | each holds `head`, the commit its run covered | `step.prove.evidence`, `step.review.record` |
+| `fact:handoff` | `{ hash, dir }`: the frozen hand-off | freeze |
+| `fact:findings` | array of `{ rule, message }` | `SHIP-SHA-001` on stale |
+
+The build Steps read and write whole packet directories through `IPacketDirectory` (`Read(dir)` returns every file, `Create(address, name, files)` writes a new directory under the run area), a different port from the line Steps' `IPacketFiles`, which reads one named file; the adapters are `DiskPacketDirectory` and `InMemoryPacketDirectory`.
+
+**The three Steps that run the repo's commands** (`step.build.red-check`, `step.build.checks`, `step.ship.green`) run every line of `workflow.build.commands` in the phase worktree under one heavy slot, taken and released inside the Step. Each refuses a dirty worktree before running anything: `BLD-TREE-001` (checks), `SHIP-TREE-001` (green), and for red-check a failure naming the worktree (it also needs HEAD to be the red commit, `BLD-RED-001`).
+
+| Step | Outcome | When | Rule |
+|---|---|---|---|
+| `step.build.red-check` | `red` | at least one command fails on the red commit; it stops at the first failure | |
+| | `vacuous` | every command passes, with one finding (`fact:findings`) naming the items and their tests | `BLD-RED-001` |
+| `step.build.checks` | `pass` | the scope gate and the build rules hold and every command passes | |
+| | `failed` | a command fails, one finding per failing command | `BLD-COMMAND-001` |
+| `step.ship.green` | `green` | every command passes (`fact:green` records the commands run, `fact:green.commands`) | |
+| | `red` | a command fails, one finding per failing command | `SHIP-GREEN-001` |
+
+With **no commands** (no approved profile, or a profile that lists none): red-check fails the Step with the fix (add `workflow.build.commands`) and takes no slot; `step.build.checks` and `step.ship.green` pass, and green records an empty `fact:green.commands`. A command that outlives its own limit is that command's answer (a finding for checks, `red` for green, a failed Step for red-check). Each command may run for at most `workflow.steps.longMax`, and the Step gives the slot wait and all commands one budget: its `maxDuration` of 2 h (the default `longMax`, the cap on what a Step declares; a descriptor is static, so a larger `longMax` does not lengthen it) less 5 min to write its report. A 1 h suite therefore fits even after the longest slot wait (30 min). A batch that runs out of that budget fails the Step (`(fix: make the commands faster, or list fewer of them in workflow.build.commands)`), it is not a command's finding. The states that run these Steps time out after 3 h, longer than the Steps (RCP-TIME-003).
+
+**`step.build.amend`** reads `fact:activePacket` and `fact:answers` only (the descriptor's reads), so the child packet goes in **this instance's** run area, `workflow/runs/<WFI-id>/packets/<parent id>-a<n>/`, not the line's (`fact:lineContext.runArea` is not among its reads). It copies the parent's files, sets `packet.json` to the next id (`-a1`, then `-a2`...), `draft` and a null hash, adds the granted paths to `phase.json`'s `allowedFiles`, writes `amends: { parent, paths, reason, at }` (the parent's hash, this grant's paths only) and sets `index.json`'s parents to the parent's hash. It owner-freezes the child through `aw-packets freeze --kind phase --by owner` and reports `{ hash, dir, repo }` as the packet in force. A grant with no usable `allow`, a missing `repo`, an unreadable parent or a child that fails its checks fails the Step (the rule ids are in the message). The LC-7 escape is a line `{ from: "build", station: "amend", kind: "scopeGrant", id, parent }` appended to the run area's `escapes.jsonl`; the Step reads no ledger, so the `line.escape` row is written from that file.
+
+**`step.ship.freeze`** passes `SHIP-SHA-001` when the draft's, proof's and review's heads and the worktree's HEAD (`IRunDiff.Head(workspace)`) are one sha; it then machine-freezes the hand-off (`aw-packets freeze --kind handoff --by machine`) and reports `frozen`. Any other combination reports `stale` with one `SHIP-SHA-001` finding naming all four shas and freezes nothing. A hand-off that fails its checks, or a missing fact, fails the Step.
+
 #### The prove station's fact shapes (BS-5)
 
 The line spec names the facts but not their fields; these are the shapes the prove Steps on the block runtime read and write (`Aw.Sindri.Features/Prove/`, rules in `Aw.Sindri.Core/Prove/ProofChecks.cs`). They are all JSON, and a fact the instance does not hold is a Step failure or, for an optional one, a rule reported as not run.
@@ -632,9 +757,10 @@ The line spec names the facts but not their fields; these are the shapes the pro
 - `beforeAfter` matching: a result with no `signal` matches any signal of its item.
 - `proofPack`: `{hash, dir}`, the machine-frozen proof pack (the same shape as a packet fact).
 - `step.prove.fail-log` keeps the findings the instance holds, adds one `PRV-BA-001` per before/after result that did not fail at the base and pass at the head, and one `PRV-HOLD-001` per hidden scenario that did not pass (by item and the observed line, never the scenario's id or text; spec §9.3), never the same rule and item twice; with nothing recorded it adds `PRV-FAIL-001`.
-- `step.prove.evidence` reads exactly its descriptor's five facts (`phasePacket`, `built`, `redTests`, `beforeAfter`, `holdoutResult`), and the runner hands it nothing else, so `fact:proof` never reaches it in a served instance. `PRV-ACC-001` and `PRV-SHA-001` need `proof`'s artifacts and have no structural cover in the recipe, so without them **the Step fails** (`ProofReport.Unrunnable`, `ProofChecks.Required`): an unrouted `step.failed` parks the instance for the owner, nothing is frozen and the phase is not proven (LN7). Until something writes the artifacts into `proof` and the descriptor reads it, the evidence Step therefore parks every phase for the owner. `PRV-APP-001` needs the hand test and verify results (`manualTest`, `evidencePack`, which the descriptor does not read), and `PRV-HOLD-003` needs `holdoutResult.canary`: the recipe guarantees both structurally (evidence-pack is reached only after the hand-test and verify children resolve, and holdout-log routes `leaked` to fail-log), so each is reported **not run**, listed in the pack's `proof.json` under `notRun`, and is a warning, not a failure. `PRV-HOLD-002` uses a minimum of 2 until the profile key `workflow.prove.holdoutMin` exists. A phase of kind `docs` or `config` needs no application run and may have no red tests. `PRV-NP-001` is met by construction: `not-proven.md` lists every planned signal no passing head artifact names (by `signal`), or says `nothing skipped`. A pack that aw-packets refuses is the Step's own output, which the builder cannot fix: the Step fails with aw-packets' failed checks as the message instead of sending findings back to build.
+- `step.prove.evidence` reads exactly its descriptor's six facts (`phasePacket`, `built`, `proof`, `redTests`, `beforeAfter`, `holdoutResult`), and the runner hands it nothing else (`proof` was missing from the descriptor until this fix, so it never reached the Step and every phase parked). `PRV-ACC-001` and `PRV-SHA-001` need `proof`'s artifacts and have no structural cover in the recipe, so without them **the Step fails** (`ProofReport.Unrunnable`, `ProofChecks.Required`): an unrouted `step.failed` parks the instance for the owner, nothing is frozen and the phase is not proven (LN7). Until something writes the artifacts into `proof` and the descriptor reads it, the evidence Step therefore parks every phase for the owner. `PRV-APP-001` needs the hand test and verify results (`manualTest`, `evidencePack`, which the descriptor does not read), and `PRV-HOLD-003` needs `holdoutResult.canary`: the recipe guarantees both structurally (evidence-pack is reached only after the hand-test and verify children resolve, and holdout-log routes `leaked` to fail-log), so each is reported **not run**, listed in the pack's `proof.json` under `notRun`, and is a warning, not a failure. `PRV-HOLD-002` uses a minimum of 2 until the profile key `workflow.prove.holdoutMin` exists. A phase of kind `docs` or `config` needs no application run and may have no red tests. `PRV-NP-001` is met by construction: `not-proven.md` lists every planned signal no passing head artifact names (by `signal`), or says `nothing skipped`. A pack that aw-packets refuses is the Step's own output, which the builder cannot fix: the Step fails with aw-packets' failed checks as the message instead of sending findings back to build.
 - The pack is written to `proof-pack/` of the instance's run area (`packet.json`, `index.json`, `proof.json`, `red.json`, `before-after.json`, `holdout.json` with ids, verdicts and `spent` only, `not-proven.md`, `acceptance.json`, empty `app-run` and `evidence` lists) and frozen by aw-packets as kind `proof`, with the repo's checkout as `--repo`. The packet id is the phase packet's id and `-proof`; its only parent is the phase packet's hash; its acceptance extends the hash of the phase's `acceptance.json` bytes and flips an item to `passing` only with the evidence of a passing artifact of the head (`PRV-ACC-002`). `IRunArea.PathFor` gives the directory.
-- Left at the desk: `step.prove.before-after` (needs the command port, BS-3d) and `step.prove.holdout-log` (needs the hidden-scenario store, spec §9.1, which has no port yet).
+- `step.prove.holdout-log` (BS-6b) reads `holdoutResult`, `built` and `phasePacket`. The phase key is the phase packet's `packet.json` `id`, the base of the diff its `baseSha`, and the line slug the first segment of the instance's address; the hidden set comes from `IHoldoutStore` (`$AW_SINDRI_HOME/holdout/<line>/<phase>/`, spec §9.1). It parks the instance (the Step fails) when the observed line of a result shares a run of 8 words with its scenario's steps or expected text (case and punctuation ignored), when the report names a scenario the set lacks, when the set has no canary, or when the store or the commits can't be read. Otherwise it looks for the canary phrase (ignoring case) in the commits and patches from `baseSha` to the head (`ICommitText`, `git log -p`) and in the facts it reads: a hit is `leaked` with one `PRV-HOLD-003` finding and nothing else written. Failed scenarios are marked spent in the store and written as `PRV-HOLD-001` findings by item and observed line ('failed'); else 'passed'. The recorded `holdoutResult` is `{commit, canary: clean, results[...]}`: each result keeps the evaluator's fields, gets `spent: true` when the store holds it spent, and the canary's own result (`kind: canary`, no `item`, verdict `pass`) is appended and is never counted as a hidden scenario. It does not read `fact:findings`, so on 'failed' and 'leaked' it writes its own findings only. Left at the desk: the canary scan of every stored fact of the phase's instances (no reader of facts by address prefix exists), so only the facts the Step reads are scanned.
+- Left at the desk: `step.prove.before-after` (needs the command port, BS-3d).
 
 ### Block recipes
 
@@ -1292,6 +1418,23 @@ usage, the measured empty diff, and the stop of the session) before it decides.
   and `tokens`, left out when null. A desk report carries neither.
 - **Replay:** `Workflow.Patched("p8-agent-runtime")` follows `dt-j-block-runtime` in `Begin`, so a history started before P8
   replays with no agent Steps and its Step stays a desk task (`A_history_before_P8_replays_on_the_desk`).
+- **A failed launch counts no round:** a launch that never started a session ends the run as `step.failed` with reason `launch`
+  (`StepFailed.LaunchReason`); when the recipe's failed transition re-enters the looped state, the round stays, and the loop
+  counts the failure in `LoopState.LaunchFailures` (a counted round resets it). The third in a row (`LoopRules.MaxLaunchFailures`)
+  parks the instance with `needs-answer` (kind step, resume `rerun`) and the last launch error as the question. The decision
+  is `TransitionDecision`'s re-entry; `Workflow.Patched("launch-failure-keeps-round-v1")` (after `ln-wf3-heavy-slot`) sets
+  `DecisionContext.LegacyLaunchRound` for a history recorded without it, which counts the round as it did.
 - **The dev recipe:** the interpreter tests (`AgentRuntimeInterpreterTests`) run an inline `workflow.dev-agent`: a `write`
   state whose Step is `step.report.write` (agent runtime), a state budget of 1000 tokens and a 1 minute timeout, with a fake
   launcher and fake sessions. It is not a shipped recipe.
+
+## The heavy resource (LN-WF3)
+
+`waitFor: { resource: heavy }` is granted when a slot of the box's heavy-job lock (`IHeavySlots`, the shared directory lock, its cap and its memory guard) was taken for the instance, holder `sindri <instance address>`. The grant is the `wait.satisfied` event with the resource source (`resource:heavy:<n>`). The wait's `timeout` bounds the take: a busy lock is "still waiting", never a failure, and the timer parks the wait like any other (`then: park`).
+
+- **Take and release run in activities** (`TakeHeavy`, `ReleaseHeavy`), never in workflow code; the take waits in 5 s slices, heartbeating, and a timer or a command cancels it. The lease lives in the worker's memory (`HeavyLeases`, keyed by instance address); a worker that stops loses it.
+- **Held** while the instance runs Steps off the desk (block or agent) and while it waits for its children. A child instance holds its own slot; the parent's is not released while a child runs.
+- **Released** when the instance ends, is cancelled, parks or is taken over, and at a desk Step (any Step with no runtime in the build). Before the next Step off the desk, the instance takes a slot again (bounded by that Step's timeout). This one rule also covers a worker restart: the instance is still in its heavy phase, the registry has no lease, so the next Step takes one first. A Step already running when the worker died may finish without a slot; it runs again on resume anyway.
+- **No second take inside a held Step:** a block Step's `StepContext.HeavySlotHeld` is true while the instance holds a slot; a Step that runs a build or tests takes none of its own. The agent launch (`AW_SANDBOX_SLOT_HELD=1`, sandbox spec) and BS-3d's check commands read the same fact once they land; `AW_HEAVY_LOCK_HELD` is never put in a session environment.
+- **Ledger:** one `workflow.heavy` row per grant (`heavy.held`) and per release (`heavy.released`), keyed like the other mirrored rows, so a replay writes it once.
+- A history recorded before the `ln-wf3-heavy-slot` marker never takes or grants a slot; an instance waiting on `heavy` from before stays waiting until its timeout parks it, as it did.

@@ -28,7 +28,7 @@ public sealed class WarpViewerTests : TerminalViewerContract, IDisposable
     protected override ViewerRequest Request() => _f.Request() with { Window = TimeSpan.Zero };
 
     private WarpViewer Viewer(string opener, Func<string, string?>? getEnv = null) =>
-        new(new WarpViewerOptions(_launchDir) { Opener = opener, GetEnv = getEnv }, _f.Host, _f.Clock);
+        new(new WarpViewerOptions(_launchDir) { Opener = opener, GetEnv = getEnv, IsMac = false, HasHandler = _ => ValueTask.FromResult(true), OnPath = (program, _) => ValueTask.FromResult(program == "sh") }, _f.Host, _f.Clock);
 
     private string LaunchFile => Path.Combine(_launchDir, "sindri-snd-one.yaml");
 

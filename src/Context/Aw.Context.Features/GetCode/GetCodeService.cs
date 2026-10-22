@@ -9,10 +9,10 @@ namespace Aw.Context.Features.GetCode;
 
 /// <summary>
 /// The code lens around one to 20 anchors (S-CL, scoping station C3): one snapshot of the map the caller may read (a session's graph is already cut to its repo) serves every anchor, the graph half is
-/// built by <see cref="CodeLensBuilder"/>, the lexical half by <see cref="CodeLexicalSearch"/> at the map's commit, and every piece of map text is cleaned like every answer's. An anchor the version doesn't hold, a
+/// built by <see cref="CodeLensBuilder"/>, the lexical half by <see cref="CodeLexicalSearch"/> at the map's commit, the callers and callees by <see cref="CodeSymbolSearch"/> from the code index, and every piece of map text is cleaned like every answer's. An anchor the version doesn't hold, a
 /// session can't see or a deny glob hides is listed in 'missingAnchors' with one answer for every reason; none resolving is SND-CONTEXT-003 and an ambiguous name 037.
 /// </summary>
-internal sealed class GetCodeService(MapReader reader, LensBasisReader bases, CodeLexicalSearch lexical, IScrubberFactory scrubbers) : IService<GetCodeRequest, CodeView>
+internal sealed class GetCodeService(MapReader reader, LensBasisReader bases, CodeLexicalSearch lexical, CodeSymbolSearch symbols, IScrubberFactory scrubbers) : IService<GetCodeRequest, CodeView>
 {
     public async ValueTask<Result<CodeView>> Handle(GetCodeRequest request, CancellationToken cancellationToken)
     {
@@ -50,7 +50,9 @@ internal sealed class GetCodeService(MapReader reader, LensBasisReader bases, Co
 
         var text = new MapText(built.Value, FencePolicies.For(request.Scope.Caller));
         var found = await lexical.Find(new CodeLexicalRequest(graphHalf.Value, read.Value, settings.Value, request.Scope, name => Term(text, name)), cancellationToken).ConfigureAwait(false);
-        return CodeTexts.Clean(CodeLensMerge.With(graphHalf.Value, found), text);
+        var merged = CodeLensMerge.With(graphHalf.Value, found);
+        var indexed = await symbols.Find(merged, read.Value, settings.Value, request.Scope, cancellationToken).ConfigureAwait(false);
+        return CodeTexts.Clean(CodeLensSymbols.With(merged, indexed), text);
     }
 
     // A name the answer could not carry (a secret, a blocked word) gives no search term.

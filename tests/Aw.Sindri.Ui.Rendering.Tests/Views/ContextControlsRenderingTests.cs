@@ -9,6 +9,7 @@ using Avalonia.Threading;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Tests.Theme;
 using Aw.Sindri.Ui.Tests.Views;
+using Aw.Sindri.Ui.ViewModels.Context.Layout;
 using Aw.Sindri.Ui.Views.Controls;
 
 namespace Aw.Sindri.Ui.Rendering.Tests.Views;
@@ -43,10 +44,10 @@ public sealed class ContextControlsRenderingTests
         return window;
     }
 
-    private static ContextEdgesControl Edges(params MapEdge[] edges) =>
+    private static GraphEdgesControl Edges(params MapEdge[] edges) =>
         new() { Edges = edges, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch };
 
-    private static MapEdge Line(string key, double y, bool dashed = false) => new(key, EdgeRoute.Straight(new Point(20, y), new Point(220, y)), dashed);
+    private static MapEdge Line(string key, double y, bool dashed = false) => new(key, EdgeRoute.Straight(new MapPoint(20, y), new MapPoint(220, y)), dashed);
 
     private static Frame Capture(Window window, string name)
     {
@@ -71,6 +72,20 @@ public sealed class ContextControlsRenderingTests
             Assert.True(frame.Near(x, 94, Token("Canvas")), frame.Describe(x, 94));
         }
 
+        window.Close();
+        return true;
+    });
+
+    [Fact]
+    public async Task An_edge_with_a_brush_key_is_drawn_in_that_brush() => await OnUi(() =>
+    {
+        var window = Stage(Edges(
+            new MapEdge("a", EdgeRoute.Straight(new MapPoint(20, 100), new MapPoint(220, 100)), Dashed: false, BrushKey: "Brush.Error"),
+            Line("b", 150)));
+        var frame = Capture(window, "edge-brush");
+
+        Assert.True(frame.Near(120, 100, Token("Error")), frame.Describe(120, 100));
+        Assert.True(frame.Near(120, 150, Token("Wire")), frame.Describe(120, 150));
         window.Close();
         return true;
     });
@@ -145,8 +160,8 @@ public sealed class ContextControlsRenderingTests
     public async Task A_port_shared_with_a_lit_edge_is_lit_and_not_dimmed_by_the_dimmed_one() => await OnUi(() =>
     {
         var edges = Edges(
-            new MapEdge("dim", EdgeRoute.Straight(new Point(20, 100), new Point(220, 100)), Dashed: false),
-            new MapEdge("lit", EdgeRoute.Straight(new Point(20, 100), new Point(20, 200)), Dashed: false));
+            new MapEdge("dim", EdgeRoute.Straight(new MapPoint(20, 100), new MapPoint(220, 100)), Dashed: false),
+            new MapEdge("lit", EdgeRoute.Straight(new MapPoint(20, 100), new MapPoint(20, 200)), Dashed: false));
         edges.Dimmed = new HashSet<string>(StringComparer.Ordinal) { "dim" };
         edges.Highlighted = new HashSet<string>(StringComparer.Ordinal) { "lit" };
         var window = Stage(edges);

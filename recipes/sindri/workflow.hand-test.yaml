@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.hand-test
-version: 1
+version: 2
 description: "Block recipe: use the change by hand in the running app; record what was done, expected and seen."
+displayName: "Try the change by hand in the running app"
 inputs:
   - { key: fact:phasePacket, label: "Phase packet", type: packet, kind: packet }
   - { key: fact:workspace, label: "Workspace", type: text, kind: text }

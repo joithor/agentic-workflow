@@ -29,6 +29,9 @@ public sealed record ContextSettings
     /// <summary>The per-query deadline.</summary>
     public TimeSpan Deadline { get; init; } = TimeSpan.FromSeconds(4);
 
+    /// <summary>The code lens's lexical search deadline: one git grep per implementing file and data thing, run in turn, so it gets longer than a query.</summary>
+    public TimeSpan CodeDeadline { get; init; } = TimeSpan.FromSeconds(60);
+
     /// <summary>The largest token budget a request may ask for.</summary>
     public int MaxBudget { get; init; } = 32_000;
 
@@ -73,4 +76,7 @@ public sealed record ContextSettings
 
     /// <summary>'context.extract.graphify' (S-4): the cluster pass's time, snapshot, file and graph limits; generous defaults, 0 for no limit.</summary>
     public ClusterLimits Graphify { get; init; } = ClusterLimits.Default;
+
+    /// <summary>'context.publish': when a refreshed map becomes the current one (retrieval spec §8.7a).</summary>
+    public PublishSettings Publish { get; init; } = new();
 }

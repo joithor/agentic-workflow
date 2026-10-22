@@ -107,9 +107,9 @@ internal static partial class Labels
     /// <summary>The hold button's accessible name once it counts the workflows.</summary>
     /// <param name="count">The count.</param>
     /// <param name="minHoldMs">The shortest hold.</param>
-    /// <returns>"Hold to approve 3 workflows, 1.5 seconds".</returns>
+    /// <returns>"Hold to approve, 1.5 seconds, 3 workflows": it starts with the words the button shows.</returns>
     internal static string ApproveHoldName(int count, int minHoldMs) =>
-        string.Create(CultureInfo.InvariantCulture, $"Hold to approve {count} {(count == 1 ? "workflow" : "workflows")}, {minHoldMs / 1000d:0.#} seconds");
+        string.Create(CultureInfo.InvariantCulture, $"{ApproveHold(minHoldMs)}, {count} {(count == 1 ? "workflow" : "workflows")}");
 
     /// <summary>The typed text did not match.</summary>
     /// <param name="expected">What to type.</param>
@@ -160,4 +160,46 @@ internal static partial class Labels
     /// <param name="reason">Why it is in the plan.</param>
     /// <returns>The name.</returns>
     internal static string ApproveRowName(string name, string reason) => name + ", " + reason;
+
+    /// <summary>The typed confirmation's lead-in, before the phrase.</summary>
+    internal const string TypedAsk = "To approve, type";
+
+    /// <summary>The typed confirmation's note: the phrase belongs to exactly what was read.</summary>
+    internal const string TypedNote = "The phrase is tied to exactly this list. If your settings change before you press the button, Sindri asks again.";
+
+    /// <summary>The typed confirmation's mark for a match, read aloud in place of the tick glyph.</summary>
+    internal const string TypedMatches = "Matches";
+
+    /// <summary>The hold button while the answer is on its way.</summary>
+    internal const string HoldApproving = "Approving...";
+
+    /// <summary>The typed confirmation's button, by what it approves.</summary>
+    /// <param name="action">ApproveProfile, ApproveRecipe or ApproveAllRecipes.</param>
+    /// <returns>The button's words.</returns>
+    internal static string TypedButton(string action) => action switch
+    {
+        "ApproveProfile" => "Approve settings",
+        "ApproveRecipe" => "Approve workflow",
+        _ => "Approve all workflows",
+    };
+
+    /// <summary>The lock button's verb for a confirmation that is terminal copy for now.</summary>
+    /// <param name="action">ApproveProfile, ApproveRecipe or ApproveAllRecipes.</param>
+    /// <returns>The verb.</returns>
+    internal static string TerminalVerb(string action) => action switch
+    {
+        "ApproveProfile" => "Approve settings",
+        "ApproveRecipe" => "Approve workflow",
+        _ => "Approve all",
+    };
+
+    /// <summary>What a confirmation acts on, for accessible names.</summary>
+    /// <param name="action">ApproveProfile, ApproveRecipe or ApproveAllRecipes.</param>
+    /// <returns>The subject.</returns>
+    internal static string ConfirmSubject(string action) => action switch
+    {
+        "ApproveProfile" => "settings",
+        "ApproveRecipe" => "workflow",
+        _ => "workflows",
+    };
 }

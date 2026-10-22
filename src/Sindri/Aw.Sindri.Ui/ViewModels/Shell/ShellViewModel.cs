@@ -9,6 +9,7 @@ using Aw.Sindri.Ui.ViewModels.NeedsYou;
 using Aw.Sindri.Ui.ViewModels.Palette;
 using Aw.Sindri.Ui.ViewModels.Queue;
 using Aw.Sindri.Ui.ViewModels.Recipes;
+using Aw.Sindri.Ui.ViewModels.Setup;
 using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
@@ -73,12 +74,15 @@ internal sealed partial class ShellViewModel : ObservableObject
         ApproveAll = new ApproveAllViewModel(Health.Catalog, () => Health.ApiUrl(), api, clock, () => NeedsYou.Seen.ReducedMotion);
         Decision = new DecisionSheetViewModel(api, () => Health.ApiUrl(), clock, decisions, clipboard);
         InitNeedsYou(clipboard);
-        Inbox = InitInbox(clipboard);
+        Inbox = InitInbox(api, clipboard);
         Strip = new WorkflowsStripViewModel(clipboard, clock);
         InitStrip();
+        window ??= WindowPorts.None;
+        Setup = new SetupViewModel(api, Health.Catalog, clock, OpensInApp, window.Folders, () => Health.LiveProfile, () => NeedsYou.Seen.ReducedMotion);
+        InitSetup();
         Workflows = new WorkflowsViewModel(api, clipboard, clock);
         InitWorkflows();
-        Start = InitStart(api, window ??= WindowPorts.None);
+        Start = InitStart(api, window);
         Instance = new InstanceFrameViewModel(api, clipboard, clock, catalog: Health.Catalog, launcher: window.Launcher);
         InitInstance();
         Recipe = new RecipeSheetViewModel(api);
@@ -223,6 +227,11 @@ internal sealed partial class ShellViewModel : ObservableObject
     {
         _ = LeaveNeedsYouInbox();   // any way to a page, Home included, leaves the inbox that shows over it
         SetHomeFilter(filter);
+        if (page == PageId.Settings)
+        {
+            Setup.RevealChecklist();   // every way into Settings (the rail, ⌘,, G U, the setup link, Home's line) shows the checklist, its first section
+        }
+
         if (page == CurrentPage)
         {
             return;

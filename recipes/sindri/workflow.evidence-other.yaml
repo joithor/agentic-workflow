@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.evidence-other
-version: 1
+version: 2
 description: "Block recipe: the evidence a person used when no evidence block fitted, and why."
+displayName: "Record proof a person gathered by hand"
 inputs:
   - { key: fact:phasePacket, label: "Phase packet", type: packet, kind: packet }
   - { key: fact:built, label: "Built change", type: link, kind: link }

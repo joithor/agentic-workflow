@@ -5,7 +5,7 @@ RCP-NEXT-001: the next of state 'produce' uses '{ticket}', which isn't a recipe 
 RCP-REACH-001: state 'orphan' is unreachable from 'queued' at multi-fault.yaml:19:3 (states.orphan); add a transition into it or remove it
 RCP-INPUT-002: the recipe declares no input at multi-fault.yaml:1:1 (inputs); declare at least one input; a scheduled recipe gives it generate: "<template>"
 RCP-BLOCK-001: block 'step.prodcue' isn't registered at multi-fault.yaml:13:5 (states.produce.step.use); name a registered step block, or fix the id
-information: RCP-RES-001: resource 'heavy' has no allocator in this build at multi-fault.yaml:8:16 (states.queued.waitFor.resource); it parks with SND-WF-010 until the workflow engine's heavy allocator is wired to the heavy-job lock
+information: RCP-RES-001: resource 'slot' has no allocator in this build at multi-fault.yaml:8:16 (states.queued.waitFor.resource); it parks with SND-WF-010 until the session-slot stub lands (P7)
 skipped: RCP-EFFECT-001: effect 'effect.notify.desk' wasn't checked against an effect allowlist, since the profile has no workflow.effects at multi-fault.yaml:23:64 (transitions[0].effects[0].use); add workflow.effects to the profile; until then the effect is refused at run time
-hash sha256:64710501be3077381f2246d8ce72347c8b5b66b9eb98f9589a14372bc749242a
+hash sha256:464075d19d634e7561ef036b6a081f188273a3b17ba05fe4a15610b720008f28
 --- stderr

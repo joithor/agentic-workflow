@@ -7,8 +7,6 @@ using Avalonia.Media.Immutable;
 
 namespace Aw.Sindri.Ui.Views.Controls;
 
-#pragma warning disable MA0182 // until slice 2 places the control in the context page
-
 /// <summary>
 /// The context map's pannable, zoomable stage (F3 spec 1 §2): it holds the world as its child and moves it with a matrix.
 /// A drag on empty canvas pans, the wheel pans, Ctrl or Cmd with the wheel zooms around the cursor, and the scale stays
@@ -66,6 +64,9 @@ internal sealed partial class ZoomBorder : Border
 
     /// <summary>Gets the current view.</summary>
     internal ZoomView View { get; private set; } = ZoomView.Identity;
+
+    /// <summary>Gets where the view is going: the end of an unfinished transition, else the view itself.</summary>
+    internal ZoomView Target => _move?.To ?? View;
 
     /// <summary>Gets or sets the world's rectangle.</summary>
     internal Rect WorldBounds
@@ -236,7 +237,7 @@ internal sealed partial class ZoomBorder : Border
         }
     }
 
-    // The 22 px dot grid in HairlineStrong, in a tile that scales and moves with the view, over a transparent base so the pointer still lands here.
+    // The 22 px dot grid in HairlineStrong (each dot centred on the pixel at 11,11 so it paints that pixel whole, not a quarter of it), in a tile that scales and moves with the view, over a transparent base so the pointer still lands here.
     private DrawingBrush Dots()
     {
         var dot = this.TryFindResource("Brush.HairlineStrong", ActualThemeVariant, out var found) && found is IBrush brush ? brush : Brushes.Gray;
@@ -246,7 +247,7 @@ internal sealed partial class ZoomBorder : Border
             Children =
             {
                 new GeometryDrawing { Brush = Brushes.Transparent, Geometry = new RectangleGeometry(tile) },
-                new GeometryDrawing { Brush = dot, Geometry = new EllipseGeometry(new Rect((DotPitch / 2) - 1, (DotPitch / 2) - 1, 2, 2)) },
+                new GeometryDrawing { Brush = dot, Geometry = new EllipseGeometry(new Rect((DotPitch / 2) - 0.5, (DotPitch / 2) - 0.5, 2, 2)) },
             },
         };
         return new DrawingBrush(drawing)
@@ -258,5 +259,3 @@ internal sealed partial class ZoomBorder : Border
         };
     }
 }
-
-#pragma warning restore MA0182

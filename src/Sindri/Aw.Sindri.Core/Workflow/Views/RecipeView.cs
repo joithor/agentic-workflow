@@ -16,6 +16,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="OrderedBy">How the states were ordered: 'path', or 'transition-list' with more than one initial path.</param>
 /// <param name="States">States in path order.</param>
 /// <param name="Loops">The loops.</param>
+/// <param name="TransitionLabels">The transitions that carry a plain-words label, in file order; null (left out of the JSON) when none does.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record RecipeView(
     RecipeId Id,
@@ -28,4 +29,5 @@ public sealed record RecipeView(
     PathOrdering OrderedBy,
     IReadOnlyList<RecipeStateView> States,
     IReadOnlyList<RecipeLoopView> Loops,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? DisplayName = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? DisplayName = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<RecipeTransitionLabelView>? TransitionLabels = null);

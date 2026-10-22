@@ -32,9 +32,7 @@ internal sealed partial class SindriApiClient
     private async Task<Result<T>> Call<T>(Uri api, HttpMethod method, string path, CancellationToken cancellationToken, CallOptions options = default)
     {
         var (view, content) = options;
-        // A read that carries a sequence is held by the server for up to 2 s before it answers SND-API-011, so its
-        // deadline is longer than an ordinary call's.
-        using var timeout = new CancellationTokenSource(view && Volatile.Read(ref _after) > 0 ? _waitingTimeout : _callTimeout, clock);
+        using var timeout = new CancellationTokenSource(CallTimeout, clock);
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
         try
         {
@@ -50,7 +48,7 @@ internal sealed partial class SindriApiClient
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            return SindriUiErrors.Unreachable.With($"{api.Authority} didn't answer within 2 s");
+            return SindriUiErrors.Unreachable.With(string.Create(CultureInfo.InvariantCulture, $"{api.Authority} didn't answer within {CallTimeout.TotalSeconds:0} s"));
         }
         catch (HttpRequestException)
         {

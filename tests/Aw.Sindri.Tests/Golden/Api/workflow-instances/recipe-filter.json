@@ -97,7 +97,11 @@
         "CompleteStep",
         "ApplyCommand:takeover",
         "ApplyCommand:cancel"
-      ]
+      ],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null
     },
     {
       "address": "ITM-01JK6/triage-alert/1",
@@ -209,7 +213,11 @@
         "ApplyCommand:answer-reject",
         "ApplyCommand:takeover",
         "ApplyCommand:cancel"
-      ]
+      ],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null
     },
     {
       "address": "ITM-01JKA/triage-alert/1",
@@ -304,7 +312,11 @@
       ],
       "now": "done",
       "answer": null,
-      "actions": []
+      "actions": [],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null
     },
     {
       "address": "ITM-01JK9/triage-alert/1",
@@ -399,7 +411,11 @@
       ],
       "now": "done",
       "answer": null,
-      "actions": []
+      "actions": [],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null
     },
     {
       "address": "ITM-01JK8/triage-alert/1",
@@ -494,7 +510,11 @@
       ],
       "now": "done",
       "answer": null,
-      "actions": []
+      "actions": [],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null
     },
     {
       "address": "ITM-01JK7/triage-alert/1",
@@ -589,7 +609,11 @@
       ],
       "now": "done",
       "answer": null,
-      "actions": []
+      "actions": [],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null
     }
   ],
   "counts": {
