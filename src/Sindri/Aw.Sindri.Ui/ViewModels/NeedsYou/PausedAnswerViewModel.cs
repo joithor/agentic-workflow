@@ -10,7 +10,6 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// protected, so its button copies the row's served command with the stepper's rounds filled in and sends nothing; a hint and a stop go
 /// to the instance as ApplyCommand:answer-text and ApplyCommand:answer-reject, once per press.
 /// </summary>
-#pragma warning disable MA0182 // until the needs-you card places the answer form
 internal sealed partial class PausedAnswerViewModel : ObservableObject
 {
     internal const int MinTries = 1;

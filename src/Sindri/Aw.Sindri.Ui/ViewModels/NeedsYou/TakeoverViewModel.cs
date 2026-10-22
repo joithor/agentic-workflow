@@ -9,7 +9,6 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// whether the clock stands still, the 2-hour nudge from the served "takeover:" row, and Hand back, which sends
 /// "ApplyCommand:handback" and nothing else. The run canvas hosts the inspector block these properties fill.
 /// </summary>
-#pragma warning disable MA0182 // until the run view places the inspector block
 internal sealed class TakeoverViewModel : ObservableObject
 {
     private const string TakenOverState = "taken-over";
