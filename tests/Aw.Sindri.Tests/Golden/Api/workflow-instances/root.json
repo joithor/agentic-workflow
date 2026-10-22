@@ -125,7 +125,11 @@
       "actions": [
         "ApplyCommand:takeover",
         "ApplyCommand:cancel"
-      ]
+      ],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null
     },
     {
       "address": "ITM-01JK2/triage-alert/1",
@@ -224,7 +228,11 @@
         "CompleteStep",
         "ApplyCommand:takeover",
         "ApplyCommand:cancel"
-      ]
+      ],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null
     },
     {
       "address": "ITM-01JK3/project/1",
@@ -366,7 +374,11 @@
       "actions": [
         "ApplyCommand:takeover",
         "ApplyCommand:cancel"
-      ]
+      ],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null
     },
     {
       "address": "ITM-01JK4/project/1",
@@ -511,7 +523,11 @@
       "actions": [
         "ApplyCommand:handback",
         "ApplyCommand:cancel"
-      ]
+      ],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null
     },
     {
       "address": "ITM-01JK5/project/1",
@@ -653,7 +669,11 @@
       "actions": [
         "ApplyCommand:takeover",
         "ApplyCommand:cancel"
-      ]
+      ],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null
     },
     {
       "address": "ITM-01JKC/intake-linear/1",
@@ -736,7 +756,11 @@
       "answer": null,
       "actions": [
         "ApplyCommand:cancel"
-      ]
+      ],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null
     },
     {
       "address": "ITM-01JKB/intake-linear/1",
@@ -819,7 +843,11 @@
       "answer": null,
       "actions": [
         "ApplyCommand:cancel"
-      ]
+      ],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null
     },
     {
       "address": "ITM-01JK6/triage-alert/1",
@@ -931,7 +959,11 @@
         "ApplyCommand:answer-reject",
         "ApplyCommand:takeover",
         "ApplyCommand:cancel"
-      ]
+      ],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null
     },
     {
       "address": "ITM-01JKA/triage-alert/1",
@@ -1026,7 +1058,11 @@
       ],
       "now": "done",
       "answer": null,
-      "actions": []
+      "actions": [],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null
     },
     {
       "address": "ITM-01JK9/triage-alert/1",
@@ -1121,7 +1157,11 @@
       ],
       "now": "done",
       "answer": null,
-      "actions": []
+      "actions": [],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null
     },
     {
       "address": "ITM-01JK8/triage-alert/1",
@@ -1216,7 +1256,11 @@
       ],
       "now": "done",
       "answer": null,
-      "actions": []
+      "actions": [],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null
     },
     {
       "address": "ITM-01JK7/triage-alert/1",
@@ -1311,7 +1355,11 @@
       ],
       "now": "done",
       "answer": null,
-      "actions": []
+      "actions": [],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null
     }
   ],
   "counts": {

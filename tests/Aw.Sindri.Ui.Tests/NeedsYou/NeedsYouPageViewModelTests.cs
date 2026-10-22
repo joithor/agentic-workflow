@@ -12,6 +12,7 @@ public sealed class NeedsYouPageViewModelTests
 {
     private readonly FakeTimeProvider _clock = new(A.Noon);
     private readonly FakeClipboard _clipboard = new();
+    private readonly FakeSindriApi _server = new();
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -20,7 +21,7 @@ public sealed class NeedsYouPageViewModelTests
         var list = new NeedsYouViewModel(new Preferences(new InMemoryPreferencesStore()), new FakeMotionPreference(), _clock);
         await list.Restore(Token);
         list.Update(new NeedsYouFeed(rows, rows.Length == 0 ? "Nothing needs you. 1 running, 2 queued." : ""));
-        return (list, new NeedsYouPageViewModel(list, _clock, _clipboard));
+        return (list, new NeedsYouPageViewModel(list, _clock, _clipboard, new DeskReporter(_server, () => new Uri("http://127.0.0.1:7410/"))));
     }
 
     [Fact]
@@ -194,5 +195,48 @@ public sealed class NeedsYouPageViewModelTests
         Assert.Empty(page.Groups);
         Assert.Null(page.Selected);
         Assert.Equal("0 waiting, 0 runs", page.CountText);
+    }
+    [Fact]
+    public async Task The_action_bar_follows_the_card_and_a_new_request_starts_it_fresh()
+    {
+        var (list, page) = await Page(NeedsYouRows.Desk(), NeedsYouRows.Decision());
+        list.Select(NeedsYouRows.Desk().Id);
+        await page.Bar.Loaded;
+        page.Bar.ReadToEnd = true;
+        await page.Bar.PressSendBack();
+        Assert.Equal(NeedsYouBarMode.SendingBack, page.Bar.Mode);
+
+        _ = page.Move(1);
+
+        Assert.Equal((NeedsYouBarMode.Pending, false, "Accept"), (page.Bar.Mode, page.Bar.ReadToEnd, page.Bar.ApproveWord));
+    }
+
+    [Fact]
+    public async Task Approving_replaces_the_card_with_the_done_card_until_the_user_moves_on()
+    {
+        var (list, page) = await Page(NeedsYouRows.Desk(), NeedsYouRows.Decision());
+        list.Select(NeedsYouRows.Desk().Id);
+        await page.Bar.Loaded;
+        page.Bar.ReadToEnd = true;
+
+        await page.Bar.PressApprove();
+
+        Assert.Equal((true, false, "Approved: Try the engine"), (page.IsDone, page.ShowsRequest, page.Bar.DoneTitle));
+        _ = page.Move(1);
+        Assert.Equal((false, true), (page.IsDone, page.ShowsRequest));
+    }
+
+    [Fact]
+    public async Task A_request_that_left_the_list_keeps_its_card_and_quiets_the_bar()
+    {
+        var (list, page) = await Page(NeedsYouRows.Desk(), NeedsYouRows.Decision());
+        list.Select(NeedsYouRows.Desk().Id);
+        await page.Bar.Loaded;
+        page.Bar.ReadToEnd = true;
+
+        list.Update(new NeedsYouFeed([NeedsYouRows.Decision()], ""));
+
+        Assert.True(page.IsCleared);
+        Assert.False(page.Bar.PrimaryEnabled);
     }
 }

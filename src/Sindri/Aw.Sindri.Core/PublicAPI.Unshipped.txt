@@ -3805,7 +3805,6 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe.Version.get -> Aw.Sindr
 Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe.Version.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles
 Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles.For(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view) -> string?
-Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles.ItemTitles(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! titles) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.NeedsYouList
 Aw.Sindri.Core.Workflow.Engine.Runtime.NonceClaim
 Aw.Sindri.Core.Workflow.Engine.Runtime.NonceClaim.Applied = 2 -> Aw.Sindri.Core.Workflow.Engine.Runtime.NonceClaim
@@ -5276,7 +5275,6 @@ Aw.Sindri.Core.Workflow.Views.InstanceSummary.Answer.get -> Aw.Sindri.Core.Workf
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.Answer.init -> void
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.Chip.get -> Aw.Sindri.Core.Workflow.Views.StateChip!
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.Chip.init -> void
-Aw.Sindri.Core.Workflow.Views.InstanceSummary.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Id, out Aw.Sindri.Core.Workflow.Engine.ItemKey? ItemId, out Aw.Sindri.Core.Workflow.Views.InstanceRecipe! Recipe, out string! State, out Aw.Sindri.Core.Workflow.Views.StateChip! Chip, out System.DateTimeOffset Since, out Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? EngineOwned, out Aw.Sindri.Core.Workflow.Views.SubjectRef! Subject, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.InputPresence!>! Inputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateCell!>! States, out string! Now, out Aw.Sindri.Core.Workflow.Views.StatusAnswer? Answer, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions) -> void
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.EngineOwned.get -> Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge?
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.EngineOwned.init -> void
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.Equals(Aw.Sindri.Core.Workflow.Views.InstanceSummary? other) -> bool
@@ -5284,7 +5282,6 @@ Aw.Sindri.Core.Workflow.Views.InstanceSummary.Id.get -> Aw.Sindri.Core.Workflow.
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.Id.init -> void
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.Inputs.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.InputPresence!>!
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.Inputs.init -> void
-Aw.Sindri.Core.Workflow.Views.InstanceSummary.InstanceSummary(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Id, Aw.Sindri.Core.Workflow.Engine.ItemKey? ItemId, Aw.Sindri.Core.Workflow.Views.InstanceRecipe! Recipe, string! State, Aw.Sindri.Core.Workflow.Views.StateChip! Chip, System.DateTimeOffset Since, Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? EngineOwned, Aw.Sindri.Core.Workflow.Views.SubjectRef! Subject, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.InputPresence!>! Inputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateCell!>! States, string! Now, Aw.Sindri.Core.Workflow.Views.StatusAnswer? Answer, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions) -> void
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.ItemId.get -> Aw.Sindri.Core.Workflow.Engine.ItemKey?
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.ItemId.init -> void
 Aw.Sindri.Core.Workflow.Views.InstanceSummary.Now.get -> string!
@@ -10827,6 +10824,7 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentSessions
 Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentSessions.Usage(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<long>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentSessions.Watch(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState!>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.IRunDiff
+Aw.Sindri.Core.Workflow.Engine.Runtime.IRunDiff.ChangedPaths(string! worktree, string! baseCommit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.IRunDiff.Head(string! worktree, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.IRunDiff.IsEmpty(string! worktree, string! startHead, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
 Aw.Sindri.Core.Launches.ILaunchUsage
@@ -11170,10 +11168,8 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.DeskTask.Deconstruct(out Aw.Sindri.Core.W
 Aw.Sindri.Core.Workflow.Engine.Runtime.DeskTask.DeskTask(Aw.Sindri.Core.Workflow.Engine.RunToken Run, string! State, Aw.Sindri.Core.Workflow.Ids.BlockId Step, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.OutcomeName>! Outcomes, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.OutputSpec!>! Outputs, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.InputFact!>! Inputs, System.DateTimeOffset? TimeoutAt, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionEntry!>? Injection = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.DeskTask.Injection.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionEntry!>!
 Aw.Sindri.Core.Workflow.Engine.Runtime.DeskTask.Injection.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Deconstruct(out int Version, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>? Provenance, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>? Children, out Aw.Sindri.Core.Workflow.Views.SubjectRef? Subject, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string!>? Contents, out Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlan? Injection) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Injection.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlan?
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Injection.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.InstanceViewContext(int Version = 0, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>? Provenance = null, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>? Children = null, Aw.Sindri.Core.Workflow.Views.SubjectRef? Subject = null, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string!>? Contents = null, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlan? Injection = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.IInjectionSources
 Aw.Sindri.Core.Workflow.Engine.Runtime.IInjectionSources.Read(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource!>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource
@@ -12709,7 +12705,6 @@ Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllApproved.DisplayName.init -> void
 override Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllApproved.Equals(object? obj) -> bool
 Aw.Sindri.Core.Workflow.ApproveAll.CapabilityLine.<Clone>$() -> Aw.Sindri.Core.Workflow.ApproveAll.CapabilityLine!
 static Aw.Sindri.Core.Challenges.ChallengeAction.ApproveAll(string! digest) -> Aw.Sindri.Core.Challenges.ChallengeAction!
-Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaryContext.Deconstruct(out System.DateTimeOffset Now, out bool NotStarted, out string? ItemTitle, out string? RecipeDisplayName) -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRow.<Clone>$() -> Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRow!
 override Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllResult.GetHashCode() -> int
 Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow.Sentence.init -> void
@@ -12745,7 +12740,6 @@ override Aw.Sindri.Core.Workflow.ApproveAll.CapabilityDelta.ToString() -> string
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan.Digest.get -> string!
 override Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRow.GetHashCode() -> int
 Aw.Sindri.Core.Workflow.ApproveAll.CapabilityDelta.Removed.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaryContext.InstanceSummaryContext(System.DateTimeOffset Now, bool NotStarted = false, string? ItemTitle = null, string? RecipeDisplayName = null) -> void
 override Aw.Sindri.Core.Workflow.ApproveAll.CapabilityLine.ToString() -> string!
 Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow
 Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRefused.Code.get -> string!
@@ -12844,8 +12838,6 @@ static Aw.Sindri.Core.Jobs.JobConflicts.Running(Aw.Sindri.Core.Ids.JobKind kind,
 Aw.Sindri.Core.Workflow.Registry.RecipeRegistryReader.RecipeRegistryReader(Aw.Sindri.Core.Workflow.Registry.IRecipeStore! store, Aw.Sindri.Core.Workflow.Registry.IRecipeApprovals! approvals, Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! catalog, System.Text.Json.JsonSerializerOptions! json, Aw.Sindri.Core.Workflow.Validation.IRecipeProfileFacts! profile, Aw.Sindri.Core.Workflow.Views.IRecipeDisplayNames? names = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext.StepRuns.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StepRun!>?
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext.StepRuns.init -> void
-Aw.Sindri.Core.Workflow.Views.InstanceDetail.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Id, out Aw.Sindri.Core.Workflow.Views.ParentRef? Parent, out Aw.Sindri.Core.Workflow.Engine.ItemKey? ItemId, out string! Title, out Aw.Sindri.Core.Workflow.Views.InstanceRecipe! Recipe, out string! State, out System.DateTimeOffset Since, out Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? EngineOwned, out Aw.Sindri.Core.Workflow.Views.SubjectRef! Subject, out Aw.Sindri.Core.Workflow.Views.PathOrdering OrderedBy, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateCell!>! States, out Aw.Sindri.Core.Workflow.Views.CurrentState! Current, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.FactRow!>! Facts, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.ChildGroup!>! Children, out Aw.Sindri.Core.Workflow.Views.ViewCounts! Counts, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StepRun!>! StepRuns, out System.DateTimeOffset AsOf) -> void
-Aw.Sindri.Core.Workflow.Views.InstanceDetail.InstanceDetail(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Id, Aw.Sindri.Core.Workflow.Views.ParentRef? Parent, Aw.Sindri.Core.Workflow.Engine.ItemKey? ItemId, string! Title, Aw.Sindri.Core.Workflow.Views.InstanceRecipe! Recipe, string! State, System.DateTimeOffset Since, Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? EngineOwned, Aw.Sindri.Core.Workflow.Views.SubjectRef! Subject, Aw.Sindri.Core.Workflow.Views.PathOrdering OrderedBy, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateCell!>! States, Aw.Sindri.Core.Workflow.Views.CurrentState! Current, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.FactRow!>! Facts, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.ChildGroup!>! Children, Aw.Sindri.Core.Workflow.Views.ViewCounts! Counts, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StepRun!>! StepRuns, System.DateTimeOffset AsOf) -> void
 Aw.Sindri.Core.Workflow.Views.InstanceDetail.StepRuns.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StepRun!>!
 Aw.Sindri.Core.Workflow.Views.InstanceDetail.StepRuns.init -> void
 Aw.Sindri.Core.Workflow.Views.StepRun
@@ -12919,6 +12911,210 @@ Aw.Sindri.Core.Scheduling.MainMoveAction.Start = 3 -> Aw.Sindri.Core.Scheduling.
 Aw.Sindri.Core.Scheduling.MainMoveDecision
 static Aw.Sindri.Core.Scheduling.MainMoveDecision.Decide(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! onDefaultHeads, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? lastSucceededHeads, bool running, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.SyncAttempt!>! finishedNewestFirst, System.DateTimeOffset now) -> Aw.Sindri.Core.Scheduling.MainMoveAction
 static Aw.Sindri.Core.Scheduling.MainMoveDecision.FailedInARow(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.SyncAttempt!>! finishedNewestFirst) -> int
+Aw.Sindri.Core.Scheduling.IIndexOutlooks
+Aw.Sindri.Core.Scheduling.IIndexOutlooks.IndexCommits(System.Collections.Generic.IReadOnlyList<string!>! repos, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyDictionary<string!, string!>!>!>
+Aw.Sindri.Core.Scheduling.IIndexOutlooks.Read(Aw.Sindri.Core.Scheduling.MapHoldState! hold, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Scheduling.IndexOutlookDetail!>!>!>
+Aw.Sindri.Core.Scheduling.IndexAttempt
+Aw.Sindri.Core.Scheduling.IndexAttempt.<Clone>$() -> Aw.Sindri.Core.Scheduling.IndexAttempt!
+Aw.Sindri.Core.Scheduling.IndexAttempt.Deconstruct(out bool Failed, out bool Deferred, out System.DateTimeOffset EndedAt) -> void
+Aw.Sindri.Core.Scheduling.IndexAttempt.Deferred.get -> bool
+Aw.Sindri.Core.Scheduling.IndexAttempt.Deferred.init -> void
+Aw.Sindri.Core.Scheduling.IndexAttempt.EndedAt.get -> System.DateTimeOffset
+Aw.Sindri.Core.Scheduling.IndexAttempt.EndedAt.init -> void
+Aw.Sindri.Core.Scheduling.IndexAttempt.Equals(Aw.Sindri.Core.Scheduling.IndexAttempt? other) -> bool
+Aw.Sindri.Core.Scheduling.IndexAttempt.Failed.get -> bool
+Aw.Sindri.Core.Scheduling.IndexAttempt.Failed.init -> void
+Aw.Sindri.Core.Scheduling.IndexAttempt.IndexAttempt(bool Failed, bool Deferred, System.DateTimeOffset EndedAt) -> void
+Aw.Sindri.Core.Scheduling.IndexOutlook
+Aw.Sindri.Core.Scheduling.IndexOutlook.Absent = 4 -> Aw.Sindri.Core.Scheduling.IndexOutlook
+Aw.Sindri.Core.Scheduling.IndexOutlook.Backoff = 2 -> Aw.Sindri.Core.Scheduling.IndexOutlook
+Aw.Sindri.Core.Scheduling.IndexOutlook.Broken = 3 -> Aw.Sindri.Core.Scheduling.IndexOutlook
+Aw.Sindri.Core.Scheduling.IndexOutlook.Built = 0 -> Aw.Sindri.Core.Scheduling.IndexOutlook
+Aw.Sindri.Core.Scheduling.IndexOutlook.Coming = 1 -> Aw.Sindri.Core.Scheduling.IndexOutlook
+Aw.Sindri.Core.Scheduling.IndexOutlookDetail
+Aw.Sindri.Core.Scheduling.IndexOutlookDetail.<Clone>$() -> Aw.Sindri.Core.Scheduling.IndexOutlookDetail!
+Aw.Sindri.Core.Scheduling.IndexOutlookDetail.Deconstruct(out Aw.Sindri.Core.Scheduling.IndexOutlook Outlook, out Aw.Sindri.Core.Scheduling.RepoWait Word, out System.DateTimeOffset? RetryAt) -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookDetail.Equals(Aw.Sindri.Core.Scheduling.IndexOutlookDetail? other) -> bool
+Aw.Sindri.Core.Scheduling.IndexOutlookDetail.IndexOutlookDetail(Aw.Sindri.Core.Scheduling.IndexOutlook Outlook, Aw.Sindri.Core.Scheduling.RepoWait Word, System.DateTimeOffset? RetryAt) -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookDetail.Outlook.get -> Aw.Sindri.Core.Scheduling.IndexOutlook
+Aw.Sindri.Core.Scheduling.IndexOutlookDetail.Outlook.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookDetail.RetryAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Scheduling.IndexOutlookDetail.RetryAt.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookDetail.Word.get -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.IndexOutlookDetail.Word.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookInput
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.<Clone>$() -> Aw.Sindri.Core.Scheduling.IndexOutlookInput!
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.BuildRunning.get -> bool
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.BuildRunning.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.Deconstruct(out string? IndexCommit, out string! HoldHead, out bool HoldOnDefaultBranch, out string? LiveHead, out bool InScope, out bool ServiceActive, out bool BuildRunning, out bool NeverBuilt, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.IndexAttempt!>! FinishedNewestFirst) -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.Equals(Aw.Sindri.Core.Scheduling.IndexOutlookInput? other) -> bool
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.FinishedNewestFirst.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.IndexAttempt!>!
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.FinishedNewestFirst.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.HoldHead.get -> string!
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.HoldHead.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.HoldOnDefaultBranch.get -> bool
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.HoldOnDefaultBranch.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.InScope.get -> bool
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.InScope.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.IndexCommit.get -> string?
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.IndexCommit.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.IndexOutlookInput(string? IndexCommit, string! HoldHead, bool HoldOnDefaultBranch, string? LiveHead, bool InScope, bool ServiceActive, bool BuildRunning, bool NeverBuilt, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.IndexAttempt!>! FinishedNewestFirst) -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.LiveHead.get -> string?
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.LiveHead.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.NeverBuilt.get -> bool
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.NeverBuilt.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.ServiceActive.get -> bool
+Aw.Sindri.Core.Scheduling.IndexOutlookInput.ServiceActive.init -> void
+Aw.Sindri.Core.Scheduling.IndexOutlookRules
+Aw.Sindri.Core.Scheduling.MapDrop
+Aw.Sindri.Core.Scheduling.MapDrop.Deconstruct(out Aw.Sindri.Core.Scheduling.MapDropReason Reason) -> void
+Aw.Sindri.Core.Scheduling.MapDrop.Equals(Aw.Sindri.Core.Scheduling.MapDrop? other) -> bool
+Aw.Sindri.Core.Scheduling.MapDrop.MapDrop(Aw.Sindri.Core.Scheduling.MapDropReason Reason) -> void
+Aw.Sindri.Core.Scheduling.MapDrop.Reason.get -> Aw.Sindri.Core.Scheduling.MapDropReason
+Aw.Sindri.Core.Scheduling.MapDrop.Reason.init -> void
+Aw.Sindri.Core.Scheduling.MapDropReason
+Aw.Sindri.Core.Scheduling.MapDropReason.AlreadyCurrent = 0 -> Aw.Sindri.Core.Scheduling.MapDropReason
+Aw.Sindri.Core.Scheduling.MapDropReason.Gone = 1 -> Aw.Sindri.Core.Scheduling.MapDropReason
+Aw.Sindri.Core.Scheduling.MapHoldState
+Aw.Sindri.Core.Scheduling.MapHoldState.<Clone>$() -> Aw.Sindri.Core.Scheduling.MapHoldState!
+Aw.Sindri.Core.Scheduling.MapHoldState.Deconstruct(out int Version, out System.DateTimeOffset Since, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Scheduling.MapRepoHead!>! Heads) -> void
+Aw.Sindri.Core.Scheduling.MapHoldState.Equals(Aw.Sindri.Core.Scheduling.MapHoldState? other) -> bool
+Aw.Sindri.Core.Scheduling.MapHoldState.Heads.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Scheduling.MapRepoHead!>!
+Aw.Sindri.Core.Scheduling.MapHoldState.Heads.init -> void
+Aw.Sindri.Core.Scheduling.MapHoldState.MapHoldState(int Version, System.DateTimeOffset Since, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Scheduling.MapRepoHead!>! Heads) -> void
+Aw.Sindri.Core.Scheduling.MapHoldState.Since.get -> System.DateTimeOffset
+Aw.Sindri.Core.Scheduling.MapHoldState.Since.init -> void
+Aw.Sindri.Core.Scheduling.MapHoldState.Version.get -> int
+Aw.Sindri.Core.Scheduling.MapHoldState.Version.init -> void
+Aw.Sindri.Core.Scheduling.MapPublish
+Aw.Sindri.Core.Scheduling.MapPublish.Deconstruct(out Aw.Sindri.Core.Scheduling.MapPublishReason Reason, out System.Collections.Generic.IReadOnlyList<string!>! StaleRepos) -> void
+Aw.Sindri.Core.Scheduling.MapPublish.Equals(Aw.Sindri.Core.Scheduling.MapPublish? other) -> bool
+Aw.Sindri.Core.Scheduling.MapPublish.MapPublish(Aw.Sindri.Core.Scheduling.MapPublishReason Reason, System.Collections.Generic.IReadOnlyList<string!>! StaleRepos) -> void
+Aw.Sindri.Core.Scheduling.MapPublish.Reason.get -> Aw.Sindri.Core.Scheduling.MapPublishReason
+Aw.Sindri.Core.Scheduling.MapPublish.Reason.init -> void
+Aw.Sindri.Core.Scheduling.MapPublish.StaleRepos.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Scheduling.MapPublish.StaleRepos.init -> void
+Aw.Sindri.Core.Scheduling.MapPublishAction
+Aw.Sindri.Core.Scheduling.MapPublishAction.MapPublishAction(Aw.Sindri.Core.Scheduling.MapPublishAction! original) -> void
+Aw.Sindri.Core.Scheduling.MapPublishDecision
+Aw.Sindri.Core.Scheduling.MapPublishInput
+Aw.Sindri.Core.Scheduling.MapPublishInput.<Clone>$() -> Aw.Sindri.Core.Scheduling.MapPublishInput!
+Aw.Sindri.Core.Scheduling.MapPublishInput.CurrentVersion.get -> int?
+Aw.Sindri.Core.Scheduling.MapPublishInput.CurrentVersion.init -> void
+Aw.Sindri.Core.Scheduling.MapPublishInput.Deconstruct(out Aw.Sindri.Core.Scheduling.MapHoldState! Hold, out int? DraftVersion, out int? CurrentVersion, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Scheduling.IndexOutlookDetail!>! Outlooks, out System.TimeSpan Wait) -> void
+Aw.Sindri.Core.Scheduling.MapPublishInput.DraftVersion.get -> int?
+Aw.Sindri.Core.Scheduling.MapPublishInput.DraftVersion.init -> void
+Aw.Sindri.Core.Scheduling.MapPublishInput.Equals(Aw.Sindri.Core.Scheduling.MapPublishInput? other) -> bool
+Aw.Sindri.Core.Scheduling.MapPublishInput.Hold.get -> Aw.Sindri.Core.Scheduling.MapHoldState!
+Aw.Sindri.Core.Scheduling.MapPublishInput.Hold.init -> void
+Aw.Sindri.Core.Scheduling.MapPublishInput.MapPublishInput(Aw.Sindri.Core.Scheduling.MapHoldState! Hold, int? DraftVersion, int? CurrentVersion, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Scheduling.IndexOutlookDetail!>! Outlooks, System.TimeSpan Wait) -> void
+Aw.Sindri.Core.Scheduling.MapPublishInput.Outlooks.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Scheduling.IndexOutlookDetail!>!
+Aw.Sindri.Core.Scheduling.MapPublishInput.Outlooks.init -> void
+Aw.Sindri.Core.Scheduling.MapPublishInput.Wait.get -> System.TimeSpan
+Aw.Sindri.Core.Scheduling.MapPublishInput.Wait.init -> void
+Aw.Sindri.Core.Scheduling.MapPublishReason
+Aw.Sindri.Core.Scheduling.MapPublishReason.FirstMap = 3 -> Aw.Sindri.Core.Scheduling.MapPublishReason
+Aw.Sindri.Core.Scheduling.MapPublishReason.IndexBroken = 2 -> Aw.Sindri.Core.Scheduling.MapPublishReason
+Aw.Sindri.Core.Scheduling.MapPublishReason.IndexReady = 0 -> Aw.Sindri.Core.Scheduling.MapPublishReason
+Aw.Sindri.Core.Scheduling.MapPublishReason.NoIndex = 1 -> Aw.Sindri.Core.Scheduling.MapPublishReason
+Aw.Sindri.Core.Scheduling.MapPublishReason.TimedOut = 5 -> Aw.Sindri.Core.Scheduling.MapPublishReason
+Aw.Sindri.Core.Scheduling.MapPublishReason.WaitOff = 4 -> Aw.Sindri.Core.Scheduling.MapPublishReason
+Aw.Sindri.Core.Scheduling.MapRepoHead
+Aw.Sindri.Core.Scheduling.MapRepoHead.<Clone>$() -> Aw.Sindri.Core.Scheduling.MapRepoHead!
+Aw.Sindri.Core.Scheduling.MapRepoHead.Commit.get -> string!
+Aw.Sindri.Core.Scheduling.MapRepoHead.Commit.init -> void
+Aw.Sindri.Core.Scheduling.MapRepoHead.Deconstruct(out string! Commit, out bool OnDefaultBranch) -> void
+Aw.Sindri.Core.Scheduling.MapRepoHead.Equals(Aw.Sindri.Core.Scheduling.MapRepoHead? other) -> bool
+Aw.Sindri.Core.Scheduling.MapRepoHead.MapRepoHead(string! Commit, bool OnDefaultBranch) -> void
+Aw.Sindri.Core.Scheduling.MapRepoHead.OnDefaultBranch.get -> bool
+Aw.Sindri.Core.Scheduling.MapRepoHead.OnDefaultBranch.init -> void
+Aw.Sindri.Core.Scheduling.MapWait
+Aw.Sindri.Core.Scheduling.MapWait.Deconstruct(out System.DateTimeOffset Until, out int WaitingOn) -> void
+Aw.Sindri.Core.Scheduling.MapWait.Equals(Aw.Sindri.Core.Scheduling.MapWait? other) -> bool
+Aw.Sindri.Core.Scheduling.MapWait.MapWait(System.DateTimeOffset Until, int WaitingOn) -> void
+Aw.Sindri.Core.Scheduling.MapWait.Until.get -> System.DateTimeOffset
+Aw.Sindri.Core.Scheduling.MapWait.Until.init -> void
+Aw.Sindri.Core.Scheduling.MapWait.WaitingOn.get -> int
+Aw.Sindri.Core.Scheduling.MapWait.WaitingOn.init -> void
+Aw.Sindri.Core.Scheduling.MappedHeads
+Aw.Sindri.Core.Scheduling.NoIndexOutlooks
+Aw.Sindri.Core.Scheduling.NoIndexOutlooks.IndexCommits(System.Collections.Generic.IReadOnlyList<string!>! repos, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyDictionary<string!, string!>!>!>
+Aw.Sindri.Core.Scheduling.NoIndexOutlooks.NoIndexOutlooks() -> void
+Aw.Sindri.Core.Scheduling.NoIndexOutlooks.Read(Aw.Sindri.Core.Scheduling.MapHoldState! hold, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Scheduling.IndexOutlookDetail!>!>!>
+Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.Building = 2 -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.Damaged = 6 -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.NewerIndex = 5 -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.None = 0 -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.NotIndexed = 7 -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.Queued = 1 -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.Retrying = 4 -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.WaitingForSlot = 3 -> Aw.Sindri.Core.Scheduling.RepoWait
+abstract Aw.Sindri.Core.Scheduling.MapPublishAction.<Clone>$() -> Aw.Sindri.Core.Scheduling.MapPublishAction!
+const Aw.Sindri.Core.Scheduling.IndexOutlookRules.FailuresToBroken = 3 -> int
+override Aw.Sindri.Core.Scheduling.IndexAttempt.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.IndexAttempt.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.IndexAttempt.ToString() -> string!
+override Aw.Sindri.Core.Scheduling.IndexOutlookDetail.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.IndexOutlookDetail.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.IndexOutlookDetail.ToString() -> string!
+override Aw.Sindri.Core.Scheduling.IndexOutlookInput.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.IndexOutlookInput.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.IndexOutlookInput.ToString() -> string!
+override Aw.Sindri.Core.Scheduling.MapDrop.<Clone>$() -> Aw.Sindri.Core.Scheduling.MapDrop!
+override Aw.Sindri.Core.Scheduling.MapDrop.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.MapDrop.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.MapDrop.ToString() -> string!
+override Aw.Sindri.Core.Scheduling.MapHoldState.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.MapHoldState.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.MapHoldState.ToString() -> string!
+override Aw.Sindri.Core.Scheduling.MapPublish.<Clone>$() -> Aw.Sindri.Core.Scheduling.MapPublish!
+override Aw.Sindri.Core.Scheduling.MapPublish.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.MapPublish.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.MapPublish.ToString() -> string!
+override Aw.Sindri.Core.Scheduling.MapPublishAction.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.MapPublishAction.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.MapPublishAction.ToString() -> string!
+override Aw.Sindri.Core.Scheduling.MapPublishInput.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.MapPublishInput.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.MapPublishInput.ToString() -> string!
+override Aw.Sindri.Core.Scheduling.MapRepoHead.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.MapRepoHead.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.MapRepoHead.ToString() -> string!
+override Aw.Sindri.Core.Scheduling.MapWait.<Clone>$() -> Aw.Sindri.Core.Scheduling.MapWait!
+override Aw.Sindri.Core.Scheduling.MapWait.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.MapWait.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.MapWait.ToString() -> string!
+override sealed Aw.Sindri.Core.Scheduling.MapDrop.Equals(Aw.Sindri.Core.Scheduling.MapPublishAction? other) -> bool
+override sealed Aw.Sindri.Core.Scheduling.MapPublish.Equals(Aw.Sindri.Core.Scheduling.MapPublishAction? other) -> bool
+override sealed Aw.Sindri.Core.Scheduling.MapWait.Equals(Aw.Sindri.Core.Scheduling.MapPublishAction? other) -> bool
+static Aw.Sindri.Core.Scheduling.IndexAttempt.operator !=(Aw.Sindri.Core.Scheduling.IndexAttempt? left, Aw.Sindri.Core.Scheduling.IndexAttempt? right) -> bool
+static Aw.Sindri.Core.Scheduling.IndexAttempt.operator ==(Aw.Sindri.Core.Scheduling.IndexAttempt? left, Aw.Sindri.Core.Scheduling.IndexAttempt? right) -> bool
+static Aw.Sindri.Core.Scheduling.IndexOutlookDetail.operator !=(Aw.Sindri.Core.Scheduling.IndexOutlookDetail? left, Aw.Sindri.Core.Scheduling.IndexOutlookDetail? right) -> bool
+static Aw.Sindri.Core.Scheduling.IndexOutlookDetail.operator ==(Aw.Sindri.Core.Scheduling.IndexOutlookDetail? left, Aw.Sindri.Core.Scheduling.IndexOutlookDetail? right) -> bool
+static Aw.Sindri.Core.Scheduling.IndexOutlookInput.operator !=(Aw.Sindri.Core.Scheduling.IndexOutlookInput? left, Aw.Sindri.Core.Scheduling.IndexOutlookInput? right) -> bool
+static Aw.Sindri.Core.Scheduling.IndexOutlookInput.operator ==(Aw.Sindri.Core.Scheduling.IndexOutlookInput? left, Aw.Sindri.Core.Scheduling.IndexOutlookInput? right) -> bool
+static Aw.Sindri.Core.Scheduling.IndexOutlookRules.Classify(Aw.Sindri.Core.Scheduling.IndexOutlookInput! input, System.DateTimeOffset now) -> Aw.Sindri.Core.Scheduling.IndexOutlookDetail!
+static Aw.Sindri.Core.Scheduling.MapDrop.operator !=(Aw.Sindri.Core.Scheduling.MapDrop? left, Aw.Sindri.Core.Scheduling.MapDrop? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapDrop.operator ==(Aw.Sindri.Core.Scheduling.MapDrop? left, Aw.Sindri.Core.Scheduling.MapDrop? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapHoldState.operator !=(Aw.Sindri.Core.Scheduling.MapHoldState? left, Aw.Sindri.Core.Scheduling.MapHoldState? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapHoldState.operator ==(Aw.Sindri.Core.Scheduling.MapHoldState? left, Aw.Sindri.Core.Scheduling.MapHoldState? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapPublish.operator !=(Aw.Sindri.Core.Scheduling.MapPublish? left, Aw.Sindri.Core.Scheduling.MapPublish? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapPublish.operator ==(Aw.Sindri.Core.Scheduling.MapPublish? left, Aw.Sindri.Core.Scheduling.MapPublish? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapPublishAction.operator !=(Aw.Sindri.Core.Scheduling.MapPublishAction? left, Aw.Sindri.Core.Scheduling.MapPublishAction? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapPublishAction.operator ==(Aw.Sindri.Core.Scheduling.MapPublishAction? left, Aw.Sindri.Core.Scheduling.MapPublishAction? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapPublishDecision.Decide(Aw.Sindri.Core.Scheduling.MapPublishInput! input, System.DateTimeOffset now) -> Aw.Sindri.Core.Scheduling.MapPublishAction!
+static Aw.Sindri.Core.Scheduling.MapPublishInput.operator !=(Aw.Sindri.Core.Scheduling.MapPublishInput? left, Aw.Sindri.Core.Scheduling.MapPublishInput? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapPublishInput.operator ==(Aw.Sindri.Core.Scheduling.MapPublishInput? left, Aw.Sindri.Core.Scheduling.MapPublishInput? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapRepoHead.operator !=(Aw.Sindri.Core.Scheduling.MapRepoHead? left, Aw.Sindri.Core.Scheduling.MapRepoHead? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapRepoHead.operator ==(Aw.Sindri.Core.Scheduling.MapRepoHead? left, Aw.Sindri.Core.Scheduling.MapRepoHead? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapWait.operator !=(Aw.Sindri.Core.Scheduling.MapWait? left, Aw.Sindri.Core.Scheduling.MapWait? right) -> bool
+static Aw.Sindri.Core.Scheduling.MapWait.operator ==(Aw.Sindri.Core.Scheduling.MapWait? left, Aw.Sindri.Core.Scheduling.MapWait? right) -> bool
+static Aw.Sindri.Core.Scheduling.MappedHeads.Of(Aw.Sindri.Core.Scheduling.MapHoldState? hold, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? currentHeads) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
+static readonly Aw.Sindri.Core.Scheduling.IndexOutlookRules.DeferredSuppress -> System.TimeSpan
+virtual Aw.Sindri.Core.Scheduling.MapPublishAction.EqualityContract.get -> System.Type!
+virtual Aw.Sindri.Core.Scheduling.MapPublishAction.Equals(Aw.Sindri.Core.Scheduling.MapPublishAction? other) -> bool
+virtual Aw.Sindri.Core.Scheduling.MapPublishAction.PrintMembers(System.Text.StringBuilder! builder) -> bool
 Aw.Sindri.Core.Workflow.Views.InstanceRecipe.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, out int Version, out Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency, out string? DisplayName) -> void
 Aw.Sindri.Core.Workflow.Views.NoRecipeDisplayNames.Of(Aw.Sindri.Core.Workflow.Ids.RecipeId id) -> string?
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.DisplayName.get -> string?
@@ -14361,6 +14557,155 @@ static Aw.Sindri.Core.Profile.RepoStatus.operator ==(Aw.Sindri.Core.Profile.Repo
 static Aw.Sindri.Core.Profile.RepoStatusRules.ExitCode(Aw.Sindri.Core.Profile.RepoStatus! status) -> int
 static Aw.Sindri.Core.Profile.RepoStatusRules.NudgeLine(Aw.Sindri.Core.Profile.RepoStatus! status) -> string!
 static Aw.Sindri.Core.Profile.RepoStatusRules.Text(Aw.Sindri.Core.Profile.RepoStatus! status) -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceStart.StartedBy.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceStart.StartedBy.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaryContext.Deconstruct(out System.DateTimeOffset Now, out bool NotStarted, out string? ItemTitle, out string? RecipeDisplayName, out string? LineStage) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaryContext.InstanceSummaryContext(System.DateTimeOffset Now, bool NotStarted = false, string? ItemTitle = null, string? RecipeDisplayName = null, string? LineStage = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaryContext.LineStage.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaryContext.LineStage.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.StartedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.StartedAt.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.StartedBy.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.StartedBy.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Deconstruct(out int Version, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>? Provenance, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>? Children, out Aw.Sindri.Core.Workflow.Views.SubjectRef? Subject, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string!>? Contents, out Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlan? Injection, out System.DateTimeOffset? StartedAt, out string? StartedBy) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.InstanceViewContext(int Version = 0, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>? Provenance = null, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>? Children = null, Aw.Sindri.Core.Workflow.Views.SubjectRef? Subject = null, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string!>? Contents = null, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlan? Injection = null, System.DateTimeOffset? StartedAt = null, string? StartedBy = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.StartedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.StartedAt.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.StartedBy.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.StartedBy.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Id, out Aw.Sindri.Core.Workflow.Engine.ItemKey? ItemId, out Aw.Sindri.Core.Workflow.Views.InstanceRecipe! Recipe, out string! State, out Aw.Sindri.Core.Workflow.Views.StateChip! Chip, out System.DateTimeOffset Since, out Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? EngineOwned, out Aw.Sindri.Core.Workflow.Views.SubjectRef! Subject, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.InputPresence!>! Inputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateCell!>! States, out string! Now, out Aw.Sindri.Core.Workflow.Views.StatusAnswer? Answer, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, out string? StartedBy, out System.DateTimeOffset? StartedAt, out string? LineStage, out string? RootAddress) -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.InstanceSummary(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Id, Aw.Sindri.Core.Workflow.Engine.ItemKey? ItemId, Aw.Sindri.Core.Workflow.Views.InstanceRecipe! Recipe, string! State, Aw.Sindri.Core.Workflow.Views.StateChip! Chip, System.DateTimeOffset Since, Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? EngineOwned, Aw.Sindri.Core.Workflow.Views.SubjectRef! Subject, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.InputPresence!>! Inputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateCell!>! States, string! Now, Aw.Sindri.Core.Workflow.Views.StatusAnswer? Answer, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, string? StartedBy = null, System.DateTimeOffset? StartedAt = null, string? LineStage = null, string? RootAddress = null) -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.LineStage.get -> string?
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.LineStage.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.RootAddress.get -> string?
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.RootAddress.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.StartedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.StartedAt.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.StartedBy.get -> string?
+Aw.Sindri.Core.Workflow.Views.InstanceSummary.StartedBy.init -> void
+Aw.Sindri.Core.Scoping.ChangeRead
+Aw.Sindri.Core.Scoping.ChangeRead.MaxDiffBytes.get -> int
+override Aw.Sindri.Core.Scoping.ChangeRead.ToString() -> string!
+static Aw.Sindri.Core.Scoping.ChangeRead.operator !=(Aw.Sindri.Core.Scoping.ChangeRead? left, Aw.Sindri.Core.Scoping.ChangeRead? right) -> bool
+Aw.Sindri.Core.Scoping.ChangeRead.MaxDiffBytes.init -> void
+static Aw.Sindri.Core.Scoping.ChangeRead.operator ==(Aw.Sindri.Core.Scoping.ChangeRead? left, Aw.Sindri.Core.Scoping.ChangeRead? right) -> bool
+override Aw.Sindri.Core.Scoping.ChangeRead.GetHashCode() -> int
+override Aw.Sindri.Core.Scoping.ChangeRead.Equals(object? obj) -> bool
+Aw.Sindri.Core.Scoping.ChangeRead.Equals(Aw.Sindri.Core.Scoping.ChangeRead? other) -> bool
+Aw.Sindri.Core.Scoping.ChangeRead.<Clone>$() -> Aw.Sindri.Core.Scoping.ChangeRead!
+Aw.Sindri.Core.Scoping.ChangeRead.Deconstruct(out int MaxDiffBytes) -> void
+Aw.Sindri.Core.Scoping.ChangeRecord
+override Aw.Sindri.Core.Scoping.ChangeRecord.ToString() -> string!
+static Aw.Sindri.Core.Scoping.ChangeRecord.operator !=(Aw.Sindri.Core.Scoping.ChangeRecord? left, Aw.Sindri.Core.Scoping.ChangeRecord? right) -> bool
+static Aw.Sindri.Core.Scoping.ChangeRecord.operator ==(Aw.Sindri.Core.Scoping.ChangeRecord? left, Aw.Sindri.Core.Scoping.ChangeRecord? right) -> bool
+Aw.Sindri.Core.Scoping.ChangeRecord.Base.get -> string!
+override Aw.Sindri.Core.Scoping.ChangeRecord.GetHashCode() -> int
+override Aw.Sindri.Core.Scoping.ChangeRecord.Equals(object? obj) -> bool
+Aw.Sindri.Core.Scoping.ChangeRecord.Equals(Aw.Sindri.Core.Scoping.ChangeRecord? other) -> bool
+Aw.Sindri.Core.Scoping.ChangeRecord.Base.init -> void
+Aw.Sindri.Core.Scoping.ChangeRecord.<Clone>$() -> Aw.Sindri.Core.Scoping.ChangeRecord!
+Aw.Sindri.Core.Scoping.ChangeRecord.Deconstruct(out string! Ref, out string! Base, out string! Head, out string? PullRequestBody, out System.Collections.Generic.IReadOnlyList<string!>! Commits, out System.Collections.Generic.IReadOnlyList<string!>! Files, out System.Collections.Generic.IReadOnlyList<string!>! Denied, out string! Diff, out bool Truncated) -> void
+Aw.Sindri.Core.Scoping.ChangeRecord.PullRequestBody.get -> string?
+Aw.Sindri.Core.Scoping.ChangeRecord.PullRequestBody.init -> void
+Aw.Sindri.Core.Scoping.ChangeRecord.Commits.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Scoping.ChangeRecord.Head.get -> string!
+Aw.Sindri.Core.Scoping.ChangeRecord.Commits.init -> void
+Aw.Sindri.Core.Scoping.ChangeRecord.Files.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Scoping.ChangeRecord.Head.init -> void
+Aw.Sindri.Core.Scoping.ChangeRecord.Files.init -> void
+Aw.Sindri.Core.Scoping.ChangeRecord.Denied.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Scoping.ChangeRecord.Denied.init -> void
+Aw.Sindri.Core.Scoping.ChangeRecord.Diff.get -> string!
+Aw.Sindri.Core.Scoping.ChangeRecord.Truncated.get -> bool
+Aw.Sindri.Core.Scoping.ChangeRecord.Diff.init -> void
+Aw.Sindri.Core.Scoping.ChangeRecord.Truncated.init -> void
+Aw.Sindri.Core.Scoping.IChangeSource
+Aw.Sindri.Core.Scoping.ChangeRecord.Ref.get -> string!
+Aw.Sindri.Core.Scoping.ChangeRecord.Ref.init -> void
+Aw.Sindri.Core.Scoping.ITrackerSource
+static readonly Aw.Sindri.Core.Scoping.ScopingErrors.NoTrackerSource -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Scoping.TrackerComment
+Aw.Sindri.Core.Scoping.TrackerComment.Author.get -> string!
+Aw.Sindri.Core.Scoping.TrackerComment.Text.get -> string!
+override Aw.Sindri.Core.Scoping.TrackerComment.ToString() -> string!
+static Aw.Sindri.Core.Scoping.TrackerComment.operator !=(Aw.Sindri.Core.Scoping.TrackerComment? left, Aw.Sindri.Core.Scoping.TrackerComment? right) -> bool
+Aw.Sindri.Core.Scoping.TrackerComment.Author.init -> void
+Aw.Sindri.Core.Scoping.TrackerComment.Text.init -> void
+static Aw.Sindri.Core.Scoping.TrackerComment.operator ==(Aw.Sindri.Core.Scoping.TrackerComment? left, Aw.Sindri.Core.Scoping.TrackerComment? right) -> bool
+override Aw.Sindri.Core.Scoping.TrackerComment.GetHashCode() -> int
+Aw.Sindri.Core.Scoping.TrackerItem.Key.get -> string!
+Aw.Sindri.Core.Scoping.TrackerItem
+override Aw.Sindri.Core.Scoping.TrackerComment.Equals(object? obj) -> bool
+Aw.Sindri.Core.Scoping.TrackerItem.Key.init -> void
+Aw.Sindri.Core.Scoping.TrackerComment.Equals(Aw.Sindri.Core.Scoping.TrackerComment? other) -> bool
+override Aw.Sindri.Core.Scoping.TrackerItem.ToString() -> string!
+Aw.Sindri.Core.Scoping.TrackerComment.<Clone>$() -> Aw.Sindri.Core.Scoping.TrackerComment!
+Aw.Sindri.Core.Scoping.TrackerComment.Deconstruct(out string! Author, out string! Text) -> void
+static Aw.Sindri.Core.Scoping.TrackerItem.operator !=(Aw.Sindri.Core.Scoping.TrackerItem? left, Aw.Sindri.Core.Scoping.TrackerItem? right) -> bool
+Aw.Sindri.Core.Scoping.TrackerItem.Title.get -> string!
+static Aw.Sindri.Core.Scoping.TrackerItem.operator ==(Aw.Sindri.Core.Scoping.TrackerItem? left, Aw.Sindri.Core.Scoping.TrackerItem? right) -> bool
+Aw.Sindri.Core.Scoping.TrackerItem.Text.get -> string!
+override Aw.Sindri.Core.Scoping.TrackerItem.GetHashCode() -> int
+Aw.Sindri.Core.Scoping.TrackerItem.Text.init -> void
+Aw.Sindri.Core.Scoping.TrackerItem.Title.init -> void
+override Aw.Sindri.Core.Scoping.TrackerItem.Equals(object? obj) -> bool
+Aw.Sindri.Core.Scoping.TrackerItem.Equals(Aw.Sindri.Core.Scoping.TrackerItem? other) -> bool
+Aw.Sindri.Core.Scoping.TrackerItem.Comments.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scoping.TrackerComment!>!
+Aw.Sindri.Core.Scoping.TrackerItem.Comments.init -> void
+Aw.Sindri.Core.Scoping.TrackerItem.<Clone>$() -> Aw.Sindri.Core.Scoping.TrackerItem!
+Aw.Sindri.Core.Scoping.TrackerItem.Deconstruct(out string! Key, out string! Title, out string! Text, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scoping.TrackerComment!>! Comments) -> void
+Aw.Sindri.Core.Scoping.TrackerKind.Issue = 0 -> Aw.Sindri.Core.Scoping.TrackerKind
+Aw.Sindri.Core.Scoping.TrackerKind
+Aw.Sindri.Core.Scoping.TrackerKind.Project = 1 -> Aw.Sindri.Core.Scoping.TrackerKind
+Aw.Sindri.Core.Scoping.TrackerRead
+Aw.Sindri.Core.Scoping.TrackerRead.MaxChildren.get -> int
+Aw.Sindri.Core.Scoping.TrackerRead.CommentsPerItem.get -> int
+override Aw.Sindri.Core.Scoping.TrackerRead.ToString() -> string!
+Aw.Sindri.Core.Scoping.TrackerRead.MaxChildren.init -> void
+Aw.Sindri.Core.Scoping.TrackerRead.CommentsPerItem.init -> void
+static Aw.Sindri.Core.Scoping.TrackerRead.operator !=(Aw.Sindri.Core.Scoping.TrackerRead? left, Aw.Sindri.Core.Scoping.TrackerRead? right) -> bool
+static Aw.Sindri.Core.Scoping.TrackerRead.operator ==(Aw.Sindri.Core.Scoping.TrackerRead? left, Aw.Sindri.Core.Scoping.TrackerRead? right) -> bool
+override Aw.Sindri.Core.Scoping.TrackerRead.GetHashCode() -> int
+Aw.Sindri.Core.Scoping.TrackerRecord
+Aw.Sindri.Core.Scoping.TrackerRecord.Key.get -> string!
+override Aw.Sindri.Core.Scoping.TrackerRead.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scoping.TrackerRecord.ToString() -> string!
+Aw.Sindri.Core.Scoping.TrackerRecord.Key.init -> void
+Aw.Sindri.Core.Scoping.TrackerRead.Equals(Aw.Sindri.Core.Scoping.TrackerRead? other) -> bool
+static Aw.Sindri.Core.Scoping.TrackerRecord.operator !=(Aw.Sindri.Core.Scoping.TrackerRecord? left, Aw.Sindri.Core.Scoping.TrackerRecord? right) -> bool
+Aw.Sindri.Core.Scoping.TrackerRead.<Clone>$() -> Aw.Sindri.Core.Scoping.TrackerRead!
+static Aw.Sindri.Core.Scoping.TrackerRecord.operator ==(Aw.Sindri.Core.Scoping.TrackerRecord? left, Aw.Sindri.Core.Scoping.TrackerRecord? right) -> bool
+Aw.Sindri.Core.Scoping.TrackerRecord.Kind.get -> Aw.Sindri.Core.Scoping.TrackerKind
+Aw.Sindri.Core.Scoping.TrackerRead.Deconstruct(out int MaxChildren, out int CommentsPerItem) -> void
+override Aw.Sindri.Core.Scoping.TrackerRecord.GetHashCode() -> int
+Aw.Sindri.Core.Scoping.TrackerRecord.Kind.init -> void
+override Aw.Sindri.Core.Scoping.TrackerRecord.Equals(object? obj) -> bool
+Aw.Sindri.Core.Scoping.TrackerRecord.Title.get -> string!
+Aw.Sindri.Core.Scoping.TrackerRecord.Text.get -> string!
+Aw.Sindri.Core.Scoping.TrackerRecord.Text.init -> void
+Aw.Sindri.Core.Scoping.TrackerRecord.Title.init -> void
+Aw.Sindri.Core.Scoping.TrackerRecord.Equals(Aw.Sindri.Core.Scoping.TrackerRecord? other) -> bool
+Aw.Sindri.Core.Scoping.TrackerRecord.Comments.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scoping.TrackerComment!>!
+Aw.Sindri.Core.Scoping.TrackerRecord.Version.get -> string!
+Aw.Sindri.Core.Scoping.TrackerRecord.<Clone>$() -> Aw.Sindri.Core.Scoping.TrackerRecord!
+Aw.Sindri.Core.Scoping.TrackerRecord.Comments.init -> void
+Aw.Sindri.Core.Scoping.TrackerRecord.Version.init -> void
+Aw.Sindri.Core.Scoping.TrackerRecord.Children.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scoping.TrackerItem!>!
+Aw.Sindri.Core.Scoping.TrackerRecord.Truncated.get -> bool
+Aw.Sindri.Core.Scoping.TrackerRecord.Deconstruct(out string! Key, out Aw.Sindri.Core.Scoping.TrackerKind Kind, out string! Title, out string! Text, out string! Version, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scoping.TrackerComment!>! Comments, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scoping.TrackerItem!>! Children, out bool Truncated) -> void
+Aw.Sindri.Core.Scoping.TrackerRecord.Children.init -> void
+Aw.Sindri.Core.Scoping.TrackerRecord.Truncated.init -> void
+Aw.Sindri.Core.Scoping.TrackerRecord.TrackerRecord(string! Key, Aw.Sindri.Core.Scoping.TrackerKind Kind, string! Title, string! Text, string! Version, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scoping.TrackerComment!>! Comments, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scoping.TrackerItem!>! Children, bool Truncated) -> void
+Aw.Sindri.Core.Scoping.TrackerRead.TrackerRead(int MaxChildren, int CommentsPerItem) -> void
+static Aw.Sindri.Core.Scoping.TrackerRead.Scoping.get -> Aw.Sindri.Core.Scoping.TrackerRead!
+Aw.Sindri.Core.Scoping.TrackerItem.TrackerItem(string! Key, string! Title, string! Text, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scoping.TrackerComment!>! Comments) -> void
+Aw.Sindri.Core.Scoping.TrackerComment.TrackerComment(string! Author, string! Text) -> void
+Aw.Sindri.Core.Scoping.ITrackerSource.Read(string! key, Aw.Sindri.Core.Scoping.TrackerRead! read, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Scoping.TrackerRecord!>!>
+Aw.Sindri.Core.Scoping.IChangeSource.Read(string! checkout, string! reference, Aw.Sindri.Core.Scoping.ChangeRead! read, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Scoping.ChangeRecord!>!>
+Aw.Sindri.Core.Scoping.ChangeRecord.ChangeRecord(string! Ref, string! Base, string! Head, string? PullRequestBody, System.Collections.Generic.IReadOnlyList<string!>! Commits, System.Collections.Generic.IReadOnlyList<string!>! Files, System.Collections.Generic.IReadOnlyList<string!>! Denied, string! Diff, bool Truncated) -> void
+Aw.Sindri.Core.Scoping.ChangeRead.ChangeRead(int MaxDiffBytes) -> void
+static Aw.Sindri.Core.Scoping.ChangeRead.Scoping.get -> Aw.Sindri.Core.Scoping.ChangeRead!
+Aw.Sindri.Core.Scoping.ChangeRead.Cut(string! text) -> (string! Text, bool Truncated)
 Aw.Sindri.Core.Profile.DocsSettings.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? Globs, out string? Sync) -> void
 Aw.Sindri.Core.Profile.DocsSettings.DocsSettings(System.Collections.Generic.IReadOnlyList<string!>? Globs = null, string? Sync = null) -> void
 Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold, out System.Collections.Generic.IReadOnlyList<string!>? Effects, out string? DispatchDelay, out Aw.Sindri.Core.Profile.JudgeSettings? Judge, out Aw.Sindri.Core.Profile.WorkflowAgentSettings? Agent, out Aw.Sindri.Core.Profile.ForgeSettings? Forge, out Aw.Sindri.Core.Profile.RouteSettings? Route, out Aw.Sindri.Core.Profile.PackSettings? Packs, out Aw.Sindri.Core.Profile.LineSettings? Line, out Aw.Sindri.Core.Profile.PlanSettings? Plan, out Aw.Sindri.Core.Profile.ProveSettings? Prove, out Aw.Sindri.Core.Profile.BuildSettings? Build, out Aw.Sindri.Core.Profile.ShipSettings? Ship, out Aw.Sindri.Core.Profile.DesignSettings? Design, out Aw.Sindri.Core.Profile.ReviewSettings? Review, out Aw.Sindri.Core.Profile.StepsSettings? Steps, out Aw.Sindri.Core.Profile.DocsSettings? Docs, out Aw.Sindri.Core.Profile.PrSettings? Pr) -> void
@@ -14376,3 +14721,70 @@ Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove.Release = 3 -> Aw.Sindri.Core.Wor
 Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType.Heavy = 8 -> Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType
 static Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyHold.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, bool inPhase, bool leased) -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
 const Aw.Sindri.Core.Events.EventTypes.WorkflowHeavy = "workflow.heavy" -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Steps.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateStep!>!
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Steps.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles.ItemTitles(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! titles) -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Id, out Aw.Sindri.Core.Workflow.Views.ParentRef? Parent, out Aw.Sindri.Core.Workflow.Engine.ItemKey? ItemId, out string! Title, out Aw.Sindri.Core.Workflow.Views.InstanceRecipe! Recipe, out string! State, out System.DateTimeOffset Since, out Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? EngineOwned, out Aw.Sindri.Core.Workflow.Views.SubjectRef! Subject, out Aw.Sindri.Core.Workflow.Views.PathOrdering OrderedBy, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateCell!>! States, out Aw.Sindri.Core.Workflow.Views.CurrentState! Current, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.FactRow!>! Facts, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.ChildGroup!>! Children, out Aw.Sindri.Core.Workflow.Views.ViewCounts! Counts, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StepRun!>! StepRuns, out System.DateTimeOffset AsOf, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateStep!>? Steps, out string? StartedBy) -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.InstanceDetail(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Id, Aw.Sindri.Core.Workflow.Views.ParentRef? Parent, Aw.Sindri.Core.Workflow.Engine.ItemKey? ItemId, string! Title, Aw.Sindri.Core.Workflow.Views.InstanceRecipe! Recipe, string! State, System.DateTimeOffset Since, Aw.Sindri.Core.Workflow.Views.EngineOwnedBadge? EngineOwned, Aw.Sindri.Core.Workflow.Views.SubjectRef! Subject, Aw.Sindri.Core.Workflow.Views.PathOrdering OrderedBy, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateCell!>! States, Aw.Sindri.Core.Workflow.Views.CurrentState! Current, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.FactRow!>! Facts, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.ChildGroup!>! Children, Aw.Sindri.Core.Workflow.Views.ViewCounts! Counts, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StepRun!>! StepRuns, System.DateTimeOffset AsOf, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateStep!>? Steps = null, string? StartedBy = null) -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.StartedBy.get -> string?
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.StartedBy.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Steps.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateStep!>?
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.Steps.init -> void
+Aw.Sindri.Core.Workflow.Views.StateStep
+Aw.Sindri.Core.Workflow.Views.StateStep.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StateStep!
+Aw.Sindri.Core.Workflow.Views.StateStep.Deconstruct(out string! State, out System.Collections.Generic.IReadOnlyList<string!>! Needs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.FactRef!>! Produces) -> void
+Aw.Sindri.Core.Workflow.Views.StateStep.Equals(Aw.Sindri.Core.Workflow.Views.StateStep? other) -> bool
+Aw.Sindri.Core.Workflow.Views.StateStep.Needs.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Workflow.Views.StateStep.Needs.init -> void
+Aw.Sindri.Core.Workflow.Views.StateStep.Produces.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.FactRef!>!
+Aw.Sindri.Core.Workflow.Views.StateStep.Produces.init -> void
+Aw.Sindri.Core.Workflow.Views.StateStep.State.get -> string!
+Aw.Sindri.Core.Workflow.Views.StateStep.State.init -> void
+Aw.Sindri.Core.Workflow.Views.StateStep.StateStep(string! State, System.Collections.Generic.IReadOnlyList<string!>! Needs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.FactRef!>! Produces) -> void
+override Aw.Sindri.Core.Workflow.Views.StateStep.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.StateStep.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.StateStep.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaries.RootOf(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address) -> string!
+static Aw.Sindri.Core.Workflow.Views.StateStep.operator !=(Aw.Sindri.Core.Workflow.Views.StateStep? left, Aw.Sindri.Core.Workflow.Views.StateStep? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StateStep.operator ==(Aw.Sindri.Core.Workflow.Views.StateStep? left, Aw.Sindri.Core.Workflow.Views.StateStep? right) -> bool
+Aw.Sindri.Core.Review.ReviewFacts
+Aw.Sindri.Core.Review.ReviewFacts.<Clone>$() -> Aw.Sindri.Core.Review.ReviewFacts!
+Aw.Sindri.Core.Review.ReviewFacts.Deconstruct(out string! Head, out System.Text.Json.Nodes.JsonNode! Review, out System.Text.Json.Nodes.JsonNode? LensRounds) -> void
+Aw.Sindri.Core.Review.ReviewFacts.Equals(Aw.Sindri.Core.Review.ReviewFacts? other) -> bool
+Aw.Sindri.Core.Review.ReviewFacts.Head.get -> string!
+Aw.Sindri.Core.Review.ReviewFacts.Head.init -> void
+Aw.Sindri.Core.Review.ReviewFacts.LensRounds.get -> System.Text.Json.Nodes.JsonNode?
+Aw.Sindri.Core.Review.ReviewFacts.LensRounds.init -> void
+Aw.Sindri.Core.Review.ReviewFacts.ReviewFacts(string! Head, System.Text.Json.Nodes.JsonNode! Review, System.Text.Json.Nodes.JsonNode? LensRounds) -> void
+Aw.Sindri.Core.Review.ReviewFacts.Review.get -> System.Text.Json.Nodes.JsonNode!
+Aw.Sindri.Core.Review.ReviewFacts.Review.init -> void
+Aw.Sindri.Core.Review.ReviewPack
+Aw.Sindri.Core.Review.ReviewPackOrigin
+Aw.Sindri.Core.Review.ReviewPackOrigin.AcceptanceHash.get -> string!
+Aw.Sindri.Core.Review.ReviewPackOrigin.AcceptanceHash.init -> void
+Aw.Sindri.Core.Review.ReviewPackOrigin.BaseSha.get -> string!
+Aw.Sindri.Core.Review.ReviewPackOrigin.BaseSha.init -> void
+Aw.Sindri.Core.Review.ReviewPackOrigin.<Clone>$() -> Aw.Sindri.Core.Review.ReviewPackOrigin!
+Aw.Sindri.Core.Review.ReviewPackOrigin.Deconstruct(out string! Slug, out string! Repo, out string! BaseSha, out string! PacketHash, out string! AcceptanceHash) -> void
+Aw.Sindri.Core.Review.ReviewPackOrigin.Equals(Aw.Sindri.Core.Review.ReviewPackOrigin? other) -> bool
+Aw.Sindri.Core.Review.ReviewPackOrigin.PacketHash.get -> string!
+Aw.Sindri.Core.Review.ReviewPackOrigin.PacketHash.init -> void
+Aw.Sindri.Core.Review.ReviewPackOrigin.Repo.get -> string!
+Aw.Sindri.Core.Review.ReviewPackOrigin.Repo.init -> void
+Aw.Sindri.Core.Review.ReviewPackOrigin.ReviewPackOrigin(string! Slug, string! Repo, string! BaseSha, string! PacketHash, string! AcceptanceHash) -> void
+Aw.Sindri.Core.Review.ReviewPackOrigin.Slug.get -> string!
+Aw.Sindri.Core.Review.ReviewPackOrigin.Slug.init -> void
+override Aw.Sindri.Core.Review.ReviewFacts.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Review.ReviewFacts.GetHashCode() -> int
+override Aw.Sindri.Core.Review.ReviewFacts.ToString() -> string!
+override Aw.Sindri.Core.Review.ReviewPackOrigin.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Review.ReviewPackOrigin.GetHashCode() -> int
+override Aw.Sindri.Core.Review.ReviewPackOrigin.ToString() -> string!
+static Aw.Sindri.Core.Review.ReviewFacts.operator !=(Aw.Sindri.Core.Review.ReviewFacts? left, Aw.Sindri.Core.Review.ReviewFacts? right) -> bool
+static Aw.Sindri.Core.Review.ReviewFacts.operator ==(Aw.Sindri.Core.Review.ReviewFacts? left, Aw.Sindri.Core.Review.ReviewFacts? right) -> bool
+static Aw.Sindri.Core.Review.ReviewPack.FileNames.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Review.ReviewPack.Files(Aw.Sindri.Core.Review.ReviewFacts! facts, Aw.Sindri.Core.Review.ReviewPackOrigin! origin) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+static Aw.Sindri.Core.Review.ReviewPackOrigin.operator !=(Aw.Sindri.Core.Review.ReviewPackOrigin? left, Aw.Sindri.Core.Review.ReviewPackOrigin? right) -> bool
+static Aw.Sindri.Core.Review.ReviewPackOrigin.operator ==(Aw.Sindri.Core.Review.ReviewPackOrigin? left, Aw.Sindri.Core.Review.ReviewPackOrigin? right) -> bool
+static Aw.Sindri.Core.Review.ReviewPack.Problems(Aw.Sindri.Core.Review.ReviewFacts! facts) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Review.ReviewPack.Verdict(System.Text.Json.Nodes.JsonNode! review) -> string?

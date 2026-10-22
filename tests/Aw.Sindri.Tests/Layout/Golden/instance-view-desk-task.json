@@ -215,5 +215,62 @@
       "pending": null
     }
   ],
+  "steps": [
+    {
+      "state": "produce",
+      "needs": [],
+      "produces": [
+        {
+          "name": null,
+          "size": null,
+          "hash": null,
+          "path": null,
+          "itemId": null,
+          "url": null,
+          "host": null,
+          "title": null,
+          "factKey": "fact:output"
+        }
+      ]
+    },
+    {
+      "state": "checks",
+      "needs": [
+        "fact:output"
+      ],
+      "produces": [
+        {
+          "name": null,
+          "size": null,
+          "hash": null,
+          "path": null,
+          "itemId": null,
+          "url": null,
+          "host": null,
+          "title": null,
+          "factKey": "fact:findings"
+        }
+      ]
+    },
+    {
+      "state": "verify",
+      "needs": [
+        "fact:output"
+      ],
+      "produces": [
+        {
+          "name": null,
+          "size": null,
+          "hash": null,
+          "path": null,
+          "itemId": null,
+          "url": null,
+          "host": null,
+          "title": null,
+          "factKey": "fact:findings"
+        }
+      ]
+    }
+  ],
   "childGroups": []
 }

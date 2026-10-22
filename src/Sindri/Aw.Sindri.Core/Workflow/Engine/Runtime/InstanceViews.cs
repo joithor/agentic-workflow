@@ -79,6 +79,8 @@ public static partial class InstanceViews
             Budget = Budget(instance, recipe),
             AgentRun = AgentRunOf(instance),
             RunningSteps = instance is { Ended: false, Frame.Run.Runtime: not StepRuntime.Desk } ? 1 : 0,
+            StartedAt = context.StartedAt,
+            StartedBy = context.StartedBy,
             Paused = instance.Suspension is { Kind: SuspensionKind.Takeover, Remaining: { } paused } ? paused.Left : null,
         };
         return WithLayout(view, new Layout(instance, recipe, task, words), context);
@@ -122,7 +124,9 @@ public static partial class InstanceViews
             context.Counts,
             [.. status.Commands.Select(static c => c.ActionId)],
             context.StepRuns ?? [],
-            context.AsOf);
+            context.AsOf,
+            view.Steps,
+            view.StartedBy);
     }
 
     /// <summary>The status layout of <paramref name="view"/> as fields, as of <paramref name="now"/>: a pure function of the view and the time, so the ages, the timeout and the text move with the caller's clock.</summary>
@@ -148,6 +152,7 @@ public static partial class InstanceViews
         var badge = from.Words.EngineBadge();
         var legacy = SubjectKinds.Legacy(from.Recipe.Recipe) is not null;   // a pre-P4c row: no kind to name a subject or an input slot by
         var subject = context.Subject ?? (legacy ? InstanceSummaries.SubjectOf(view with { ItemId = from.Instance.Item }, itemTitle: null) : SubjectRefs.Of(from.Recipe, from.Instance.Item));   // never null on the wire: a legacy instance shows the item, as its list row does
+        var facts = FactRows.Of(from.Instance, from.Recipe, from.Task, context.Provenance ?? new Dictionary<FactKey, FactProvenance>(), context.Contents);
         var complete = view with
         {
             ItemId = from.Instance.Item,
@@ -158,7 +163,8 @@ public static partial class InstanceViews
             Inputs = legacy ? [] : InputSlots.Of(from.Instance, from.Recipe),
             OrderedBy = StatePathOrder.Of(from.Recipe.Recipe).OrderedBy == "transition-list" ? PathOrdering.TransitionList : PathOrdering.Path,
             States = StateCells.Of(from.Instance, from.Recipe, badge),
-            Facts = FactRows.Of(from.Instance, from.Recipe, from.Task, context.Provenance ?? new Dictionary<FactKey, FactProvenance>(), context.Contents),
+            Facts = facts,
+            Steps = CurrentStates.Steps(from.Recipe, facts),
             ChildGroups = [],
             Step = CurrentStates.Step(from.Instance, from.Recipe),
             Gates = CurrentStates.Gates(from.Instance, from.Recipe),

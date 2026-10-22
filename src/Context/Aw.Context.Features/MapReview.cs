@@ -41,6 +41,6 @@ internal sealed class MapReview(
     public ValueTask<Result<ReviewResult>> ApplyReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) =>
         applyFile.Handle(new ApplyReviewFileRequest(path, scope), cancellationToken);
 
-    public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken) =>
-        promote.Handle(new PromoteMapRequest(scope), cancellationToken);
+    public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken, int? expectedVersion = null) =>
+        promote.Handle(new PromoteMapRequest(scope, expectedVersion), cancellationToken);
 }
