@@ -156,6 +156,13 @@ describe("write guard", () => {
     expect(guardWrites(steps, true)).toEqual({ ok: true });
     expect(guardWrites([click("a")], false)).toEqual({ ok: true });
   });
+  it("treats navigation key presses as reads and every other key as a write", () => {
+    const press = (key: string, target?: string): ScriptStep => ({ action: "press", key, ...(target === undefined ? {} : { target }), expectedState: { kind: "url-search", param: "timeFilter", value: "Night" } });
+    expect(findWriteSteps(["ArrowRight", "ArrowLeft", "Home", "End", "Tab", "Shift+Tab", "Escape", "PageDown"].map((k) => press(k, "save-button")))).toEqual([]);
+    expect(findWriteSteps([press("Enter", "time-filter-day"), press("Space"), press(" "), press("Control+s"), press("a")]).map((w) => w.index)).toEqual([0, 1, 2, 3, 4]);
+    expect(guardWrites([press("Enter", "time-filter-day")], false)).toEqual({ ok: false, error: "refusing write-looking steps without --allow-writes: #1 press Enter on time-filter-day" });
+    expect(guardWrites([press("Enter")], true)).toEqual({ ok: true });
+  });
   it("flags every drag, whatever its test ids say", () => {
     const drag: ScriptStep = { action: "drag", target: "shift-card", to: "day-cell", expectedState: { kind: "testid-visible", testId: "day-cell" } };
     expect(findWriteSteps([click("a"), drag])).toEqual([{ index: 1, target: "shift-card → day-cell" }]);
