@@ -174,7 +174,10 @@ internal sealed class InstanceRowViewModel : ObservableObject
     public bool IsStale { get; private set => Set(ref field, value); }
 
     /// <summary>Everything the row draws: two rows with the same signature look the same.</summary>
-    internal string Signature => string.Join('|', Address, DisplayName, Who, MissingInputsText, Subject, Chip, Now, string.Join(',', Inputs.Select(i => i.Name)), string.Join(',', Stages.Select(s => s.Name)), StateWord, Chip.Word, Protected?.Cli, ChildAnswer?.Target, ChildAnswer?.Intent, CanAnswerAtDesk, CanCancel);
+    internal string Signature => string.Join('|', Address, _row.Since.UtcTicks, DisplayName, Who, MissingInputsText, Subject, Chip, Now, string.Join(',', Inputs.Select(i => i.Name)), string.Join(',', Stages.Select(s => s.Name)), StateWord, Chip.Word, Protected?.Cli, ChildAnswer?.Target, ChildAnswer?.Intent, CanAnswerAtDesk, CanCancel);
+
+    /// <summary>Reads the time in stage anew.</summary>
+    internal void Tick() => OnChanged(nameof(TimeText));
 
     /// <summary>Sets what the list knows of the row.</summary>
     /// <param name="stale">The views are stalled or rebuilding.</param>

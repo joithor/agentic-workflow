@@ -11,6 +11,7 @@ namespace Aw.Sindri.Ui.ViewModels.Workflows;
 internal sealed partial class WorkflowsViewModel
 {
     private string? _search;
+    private int _onBoard;
 
     /// <summary>The six lanes of the board, in order; they stay even when empty.</summary>
     public ObservableCollection<BoardLaneViewModel> Lanes { get; } = [.. LineStages.Lanes.Select(l => new BoardLaneViewModel(l))];
@@ -74,10 +75,19 @@ internal sealed partial class WorkflowsViewModel
     public bool NoRunsMatch { get; private set => Set(ref field, value); }
 
     /// <summary>True while the board draws its lanes: not when there are no runs at all, which says so in its place.</summary>
-    public bool ShowBoard => IsBoard && !IsEmpty;
+    public bool ShowBoard => IsBoard && !IsEmpty && _onBoard > 0;
 
-    /// <summary>True when the board is chosen and there is no run to draw.</summary>
-    public bool IsBoardEmpty => IsBoard && IsEmpty;
+    /// <summary>True when the board is chosen and no run lands in any lane: none at all, or only runs that are not on the line.</summary>
+    public bool IsBoardEmpty => IsBoard && (IsEmpty || _onBoard == 0);
+
+    /// <summary>What the board says in place of its lanes: the served empty sentence with no runs at all, else the plain one.</summary>
+    public string BoardEmptyText { get; private set => Set(ref field, value); } = string.Empty;
+
+    /// <summary>"2 runs not on the board — switch to list"; empty when every open run is on the board.</summary>
+    public string OffBoardText { get; private set => Set(ref field, value); } = string.Empty;
+
+    /// <summary>True while the board is chosen and some open run has no lane.</summary>
+    public bool HasOffBoard => IsBoard && OffBoardText.Length > 0;
 
     /// <summary>True when the board is chosen and the last read could not be read; the lanes keep the last good runs, marked stale.</summary>
     public bool IsBoardUnreadable => IsBoard && IsUnreadable;
@@ -139,6 +149,7 @@ internal sealed partial class WorkflowsViewModel
         OnChanged(nameof(ShowBoard));
         OnChanged(nameof(IsBoardEmpty));
         OnChanged(nameof(IsBoardUnreadable));
+        OnChanged(nameof(HasOffBoard));
     }
 
     private bool Passes(InstanceRowViewModel row) => WorkflowFilters.Matches(row, Filter, _search);
@@ -157,6 +168,9 @@ internal sealed partial class WorkflowsViewModel
     {
         var line = _loaded.Where(r => LineStages.LaneOf(r.LineStage) is not null).ToList();
         var finished = DoneRows.Where(r => r.LineStage is not null).ToList();
+        _onBoard = line.Count + finished.Count;
+        var off = _loaded.Count - line.Count;
+        OffBoardText = off > 0 ? Labels.WorkflowsOffBoard(off) : string.Empty;
         var anyHidden = Filter != WorkflowFilter.All || _search is not null;
         foreach (var lane in Lanes)
         {
