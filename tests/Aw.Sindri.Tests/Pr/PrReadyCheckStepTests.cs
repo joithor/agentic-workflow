@@ -25,7 +25,8 @@ public sealed class PrReadyCheckStepTests
     private static string Snapshot(PullView pull) => new JsonObject
     {
         ["link"] = pull.Link,
-        ["state"] = pull.State.ToString(),
+        ["state"] = "green",   // the outcome word; the pull request's own state is pullState
+        ["pullState"] = pull.State.ToString().ToLowerInvariant(),
         ["headSha"] = pull.HeadSha,
         ["mergeable"] = pull.Mergeable,
         ["reviewDecision"] = pull.ReviewDecision,
