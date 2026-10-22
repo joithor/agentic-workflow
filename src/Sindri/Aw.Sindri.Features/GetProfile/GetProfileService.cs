@@ -57,7 +57,7 @@ internal sealed class GetProfileService(IViewReader views, IProjectorStatus stat
         {
             var weight = await git.WeightOf(repo.Path, cancellationToken).ConfigureAwait(false);
             var path = weight?.Path ?? repo.Path;
-            repos.Add(new RepoPreview(repo.Name, path, weight?.Files ?? 0, Math.Round((weight?.Bytes ?? 0) / MebiByte, 1), ProfileChanges.RepoSentences(repo.Name, path)));
+            repos.Add(new RepoPreview(repo.Name, path, weight?.Files ?? 0, Math.Round((weight?.Bytes ?? 0) / MebiByte, 1, MidpointRounding.AwayFromZero), ProfileChanges.RepoSentences(repo.Name, path)));
         }
 
         return new ProfileSummary(repos, changes.Services, changes.Allowance, changes.Connections, changes.HumanOnly);

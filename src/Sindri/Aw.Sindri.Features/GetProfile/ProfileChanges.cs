@@ -25,12 +25,10 @@ internal sealed record ProfileChanges(IReadOnlyList<RepoEntry> NewRepos, IReadOn
     {
         ArgumentNullException.ThrowIfNull(live);
         ArgumentNullException.ThrowIfNull(sentences);
-        var named = (approved?.Repos ?? []).Select(static r => r.Name).ToHashSet(StringComparer.Ordinal);
-        var allowed = (approved?.Workflow?.Effects ?? []).ToHashSet(StringComparer.Ordinal);
         return new ProfileChanges(
-            [.. (live.Repos ?? []).Where(r => !named.Contains(r.Name))],
+            AbsentRepos(approved, live),
             [.. ServiceSentences(approved?.Services ?? SindriProfile.NoServices, live.Services ?? SindriProfile.NoServices)],
-            [.. (live.Workflow?.Effects ?? []).Where(e => !allowed.Contains(e)).Distinct(StringComparer.Ordinal).Select(e => EffectSentence(e, sentences)).Concat(ProfileGroups.Allowance(approved, live))],
+            [.. NewEffects(approved, live, sentences).Concat(ProfileGroups.Allowance(approved, live))],
             [.. ProfileGroups.Connections(approved, live)],
             [.. ProfileGroups.HumanOnly(approved, live)]);
     }
@@ -45,6 +43,18 @@ internal sealed record ProfileChanges(IReadOnlyList<RepoEntry> NewRepos, IReadOn
         $"Sindri will write its MCP settings into {name} for Claude Code, Codex and Cursor",
         $"Sindri will keep {name}'s map up to date on its own",
     ];
+
+    private static List<RepoEntry> AbsentRepos(SindriProfile? approved, SindriProfile live)
+    {
+        var named = (approved?.Repos ?? []).Select(static r => r.Name).ToHashSet(StringComparer.Ordinal);
+        return [.. (live.Repos ?? []).Where(r => !named.Contains(r.Name))];
+    }
+
+    private static IEnumerable<string> NewEffects(SindriProfile? approved, SindriProfile live, IBlockSentences sentences)
+    {
+        var allowed = (approved?.Workflow?.Effects ?? []).ToHashSet(StringComparer.Ordinal);
+        return (live.Workflow?.Effects ?? []).Where(e => !allowed.Contains(e)).Distinct(StringComparer.Ordinal).Select(e => EffectSentence(e, sentences));
+    }
 
     private static IEnumerable<string> ServiceSentences(IReadOnlyDictionary<string, ServiceSettings> approved, IReadOnlyDictionary<string, ServiceSettings> live)
     {
