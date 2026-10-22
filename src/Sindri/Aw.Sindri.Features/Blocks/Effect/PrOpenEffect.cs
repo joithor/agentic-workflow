@@ -37,7 +37,9 @@ internal sealed class PrOpenEffect(IPullRequests pulls, IForgeRepos repos, IPack
     public static BlockDescriptor Descriptor { get; } = new(
         BlockId.From("effect.pr.open"), BlockKind.Effect, Version: 1, Inputs: [FactKey.From("fact:handoff"), FactKey.From("fact:workspace")],
         Outputs: [new OutputSpec(FactKey.From("fact:pr"), [_opened, _updated])], Outcomes: [],
-        Capability.Effects, Parameters: [], Rung: null, DeskCapable: false);
+        Capability.Effects,
+        Parameters: [new ParameterSpec("handoff", ParameterType.Text, Required: false, IsCapabilityField: false), new ParameterSpec("workspace", ParameterType.Text, Required: false, IsCapabilityField: false)],
+        Rung: null, DeskCapable: false);
 
     /// <inheritdoc/>
     public async ValueTask<Result<EffectDone>> Dispatch(EffectContext context, CancellationToken cancellationToken)

@@ -17,7 +17,7 @@ namespace Aw.Sindri.Ui.Tests.Setup;
 public sealed class SetupOnyxTests
 {
     private const string Sentinel = "hunter2-sentinel-9f3a";
-    private readonly SetupFixture _f = new("extra-setup-ready");
+    private readonly SetupFixture _f = new();
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
