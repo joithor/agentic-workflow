@@ -239,6 +239,24 @@
       "confirm": "typed"
     },
     {
+      "action": "BuildCodeIndex",
+      "class": "job",
+      "allowedCallers": [
+        "human+terminal",
+        "human",
+        "service"
+      ],
+      "terminal": false,
+      "method": null,
+      "route": null,
+      "cli": "sindri services run code-index-main-move",
+      "ui": "ready",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null,
+      "confirm": null
+    },
+    {
       "action": "BuildContextMap",
       "class": "job",
       "allowedCallers": [
