@@ -12,5 +12,6 @@ internal static class ProveServiceCollectionExtensions
     internal static IServiceCollection AddProveSlices(this IServiceCollection services) => services
         .AddBlockRuntime<ProveIntakeStep>()
         .AddBlockRuntime<ProveEvidenceStep>()
-        .AddBlockRuntime<ProveFailLogStep>();
+        .AddBlockRuntime<ProveFailLogStep>()
+        .AddBlockRuntime<ProveHoldoutLogStep>();
 }

@@ -10,6 +10,9 @@ namespace Aw.CodeIndex.Core.Ports;
 /// </summary>
 public interface ISymbolParser
 {
+    /// <summary>The parser's version word ('csharp-1'); it is part of the structure stamp, so a new version parses every file again.</summary>
+    public string Version { get; }
+
     /// <summary>Whether this parser reads the file.</summary>
     /// <param name="path">The repo-relative path.</param>
     /// <returns>True for the extensions the parser covers.</returns>

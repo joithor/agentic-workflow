@@ -4,6 +4,7 @@ using Aw.Redaction;
 using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Core.BugFix;
 using Aw.Sindri.Core.Challenges;
+using Aw.Sindri.Core.Checks;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Lease;
@@ -15,9 +16,11 @@ using Aw.Sindri.Core.Mcp;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Packets;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Prove;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Secrets;
+using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow;
@@ -30,6 +33,7 @@ using Aw.Sindri.Core.Worktrees;
 using Aw.Sindri.Infrastructure.Auth;
 using Aw.Sindri.Infrastructure.BugFix;
 using Aw.Sindri.Infrastructure.Challenges;
+using Aw.Sindri.Infrastructure.Checks;
 using Aw.Sindri.Infrastructure.Control;
 using Aw.Sindri.Infrastructure.Launch;
 using Aw.Sindri.Infrastructure.Lease;
@@ -42,9 +46,11 @@ using Aw.Sindri.Infrastructure.Onyx;
 using Aw.Sindri.Infrastructure.Packets;
 using Aw.Sindri.Infrastructure.Processes;
 using Aw.Sindri.Infrastructure.Profile;
+using Aw.Sindri.Infrastructure.Prove;
 using Aw.Sindri.Infrastructure.Scoping;
 using Aw.Sindri.Infrastructure.Secrets;
 using Aw.Sindri.Infrastructure.Sessions;
+using Aw.Sindri.Infrastructure.Setup;
 using Aw.Sindri.Infrastructure.Text;
 using Aw.Sindri.Infrastructure.Views;
 using Aw.Sindri.Infrastructure.Workflow;
@@ -69,7 +75,8 @@ public static class SindriInfrastructureServiceCollectionExtensions
 
     /// <summary>Engine P8: the diff signal of an agent run (git) and an agent session's end and spend (the ledger).</summary>
     private static IServiceCollection AddAgentRuntimeAdapters(this IServiceCollection services) =>
-        services.AddSingleton<IRunDiff, GitRunDiff>().AddSingleton<IDiffContent, GitDiffContent>().AddSingleton<IAgentSessions, LedgerAgentSessions>()
+        services.AddSingleton<IRunDiff, GitRunDiff>().AddSingleton<IDiffContent, GitDiffContent>().AddSingleton<IBranchChanges, GitBranchChanges>().AddSingleton<IAgentSessions, LedgerAgentSessions>()
+            .AddSingleton<ICheckCommands>(sp => new ToolCheckCommands(new ProcessToolRunner(), sp.GetRequiredService<ITextScrubber>(), sp.GetRequiredService<TimeProvider>()))
             .AddSingleton<ILensPackSource, EmbeddedLensPackSource>().AddSingleton<ILensPacks, ProfileLensPacks>().AddSingleton<IChangedPaths, GitChangedPaths>();   // LN-PK lite: the built-in lens packs and the review loop's changed paths
 
     /// <summary>The bugfix block Steps' port over the bugfix-state program (deps.yaml Sindri to BugFix, kind cli).</summary>
@@ -78,7 +85,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
 
     private static IServiceCollection AddScopingInfrastructure(this IServiceCollection services, Func<string, string?> environment) =>
         services.AddSingleton<IPackets>(_ => new AwPacketsTool(new ProcessToolRunner(), environment))
-            .AddSingleton<IScopePacketStore>(sp => new ScopePacketStore(sp.GetRequiredService<SindriSettings>(), sp.GetRequiredService<IPackets>())).AddSingleton<IBriefFiles, BriefFiles>().AddSingleton<IRunArea, DiskRunArea>().AddSingleton<IPacketFiles, DiskPacketFiles>()
+            .AddSingleton<IScopePacketStore>(sp => new ScopePacketStore(sp.GetRequiredService<SindriSettings>(), sp.GetRequiredService<IPackets>())).AddSingleton<IBriefFiles, BriefFiles>().AddSingleton<IRunArea, DiskRunArea>().AddSingleton<IPacketFiles, DiskPacketFiles>().AddSingleton<IHoldoutStore, DiskHoldoutStore>().AddSingleton<ICommitText, GitCommitText>().AddSingleton<IPacketDirectory, DiskPacketDirectory>()
             .AddSingleton<IOwnerDecisions, PendingOwnerDecisions>()
             .AddSingleton<IFrozenPackets>(sp => new FrozenPacketRecords(Path.Combine(sp.GetRequiredService<SindriSettings>().StateDirectory, "packets")))
             .AddSingleton<ITrackerSource>(_ => new FileTrackerSource(environment("AW_SINDRI_TRACKER_DIR"))).AddSingleton<IChangeSource, GitChangeSource>();
@@ -105,7 +112,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton(static sp => new ProverLabel(sp.GetRequiredService<SindriSettings>().ProverLabelAllowed, sp.GetRequiredService<SindriSettings>().ProverMayConfirm))
             .AddScoped<IDoctorChecks, TokenFileDoctorChecks>()
             .AddSingleton<IProcessAncestry, PosixProcessAncestry>()
-            .AddSingleton<IRepoLocator, GitRepoLocator>()
+            .AddSingleton<IRepoLocator, GitRepoLocator>().AddSingleton<IRepoInspector, GitRepoInspector>().AddSingleton<IProfileRepoWriter, YamlProfileRepoWriter>()   // setup-once §5.1: AddRepo's folder checks and the profile's repos[] appender
             .AddSingleton<ICommandOrigins, LedgerCommandOrigins>()   // engine P4 unit (d): the bridge's causation route
             .AddSingleton<IRecipeReader, YamlRecipeReader>()
             .AddSingleton<IRecipeFiles, FileRecipeFiles>()
@@ -131,6 +138,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
         => services
             .AddSingleton(McpSettings.Read(environment))
             .AddSingleton<IClaudeCli, ProcessClaudeCli>()
+            .AddSingleton<IMcpAutoSwitch>(new EnvironmentMcpSwitch(environment))
             .AddSingleton<IProviderHost, ProviderHost>()
             .AddSingleton<IProviderFiles, ProviderConfigFiles>();
 
