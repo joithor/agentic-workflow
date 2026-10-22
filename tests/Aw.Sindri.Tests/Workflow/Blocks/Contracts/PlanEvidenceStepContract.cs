@@ -18,7 +18,7 @@ public sealed class PlanEvidenceStepContract : BlockContract
 
     protected override BlockDescriptor Descriptor => PlanSteps.Evidence;
 
-    protected override string ExpectedHash => "sha256:601f0d8d8a97e571a59bac477718ca59ede5fe052f2a8f56e1cd6474ab3c6f9c";
+    protected override string ExpectedHash => "sha256:63f3839b3db0f4c63c93ededa2ae429bd2921e58aecb1bb90587d3f17292f00f";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 
