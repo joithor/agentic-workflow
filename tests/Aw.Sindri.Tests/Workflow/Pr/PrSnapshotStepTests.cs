@@ -2,8 +2,11 @@ using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Forge;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Effects;
 using Aw.Sindri.Features.Pr;
 using Aw.Sindri.Testing.Forge;
+using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 using Microsoft.Extensions.Time.Testing;
 
@@ -18,6 +21,7 @@ public sealed class PrSnapshotStepTests
 
     private readonly FakePullRequests _pulls = new([Host]);
     private readonly FakePull _pull;
+    private readonly InMemoryPrCommentMarks _marks = new();
 
     public PrSnapshotStepTests() => _pull = _pulls.Add(new PullRepo(Host, "acme", "app"), "feat/x", Head);
 
@@ -26,7 +30,7 @@ public sealed class PrSnapshotStepTests
     private static PullThread Thread(string key, string author = "alice", bool resolved = false, IReadOnlyList<string>? markers = null) =>
         new(key, PullCommentKind.Thread, author, "MEMBER", IsBot: false, resolved, Outdated: false, "a.cs", $"fix {key}", markers ?? []);
 
-    private Task<BlockStepResult> Snapshot(string? pr = null) => Run(new PrSnapshotStep(_pulls, new FakeTimeProvider(DateTimeOffset.Parse("2026-10-22T08:00:00Z", System.Globalization.CultureInfo.InvariantCulture))), "step.pr.snapshot", pr);
+    private Task<BlockStepResult> Snapshot(string? pr = null) => Run(new PrSnapshotStep(_pulls, _marks, new FakeTimeProvider(DateTimeOffset.Parse("2026-10-22T08:00:00Z", System.Globalization.CultureInfo.InvariantCulture))), "step.pr.snapshot", pr);
 
     private Task<BlockStepResult> Intake(string? pr = null, string? workspace = null) => Run(new PrIntakeStep(_pulls), "step.pr.intake", pr, workspace);
 
@@ -49,6 +53,58 @@ public sealed class PrSnapshotStepTests
     private static JsonElement Fact(BlockStepResult result, string key) => result.Result!.Outputs.Single(o => string.Equals(o.Key.Value, key, StringComparison.Ordinal)).Value;
 
     private static string Outcome(BlockStepResult result) => result.Result!.Outcome.Value;
+
+    private ValueTask<Aw.Kernel.Result<bool>> Mark(string comment, string outcome, int minutes, string effect, string? reason = null, string? commit = null) =>
+        _marks.Write(new PrCommentMark(new PrRef(Host, "acme/app", _pull.Number), PrCommentId.From(comment), EditedAt: null, InstanceAddress.From("T-3/item/1"), outcome, reason, commit, new DateTimeOffset(2026, 10, 22, 7, minutes, 0, TimeSpan.Zero), effect), Token);
+
+    private static JsonElement CommentOf(JsonElement state, string key) => state.GetProperty("comments").EnumerateArray().Single(c => string.Equals(c.GetProperty("key").GetString(), key, StringComparison.Ordinal));
+
+    [Fact]
+    public async Task A_comment_carries_its_latest_mark()
+    {
+        _pull.Threads.Add(Thread("t1"));
+        _pull.Threads.Add(Thread("t2"));
+        await Mark("t1", "thread", minutes: 1, effect: "e1");
+        await Mark("t1", "fixed", minutes: 5, effect: "e2", commit: "bbbb2222");
+
+        var state = Fact(await Snapshot(), "fact:prState");
+
+        var mark = CommentOf(state, "t1").GetProperty("mark");
+        Assert.Equal("fixed", mark.GetProperty("outcome").GetString());
+        Assert.Equal("bbbb2222", mark.GetProperty("commit").GetString());
+        Assert.Equal(JsonValueKind.Null, mark.GetProperty("reason").ValueKind);
+        Assert.Equal(DateTimeOffset.Parse("2026-10-22T07:05:00Z", System.Globalization.CultureInfo.InvariantCulture), mark.GetProperty("at").GetDateTimeOffset());
+        Assert.Equal(JsonValueKind.Null, CommentOf(state, "t2").GetProperty("mark").ValueKind);
+    }
+
+    [Fact]
+    public async Task The_held_count_is_the_comments_whose_latest_mark_is_hold()
+    {
+        _pull.Threads.Add(Thread("t1"));
+        _pull.Threads.Add(Thread("t2"));
+        _pull.Threads.Add(Thread("t3"));
+        await Mark("t1", "hold", minutes: 1, effect: "e1", reason: "type");
+        await Mark("t2", "hold", minutes: 1, effect: "e2", reason: "type");
+        await Mark("t2", "fixed", minutes: 2, effect: "e3");
+
+        var state = Fact(await Snapshot(), "fact:prState");
+
+        Assert.Equal(1, state.GetProperty("queue").GetProperty("held").GetInt32());
+        Assert.Equal("type", CommentOf(state, "t1").GetProperty("mark").GetProperty("reason").GetString());
+    }
+
+    [Fact]
+    public async Task Checks_on_another_commit_than_the_head_make_the_snapshot_stale()
+    {
+        _pull.ChecksState = PullChecksState.Passing;
+        _pull.ChecksSha = "old0000";
+
+        Assert.True(Fact(await Snapshot(), "fact:prState").GetProperty("stale").GetBoolean());
+
+        _pull.ChecksSha = null;
+
+        Assert.False(Fact(await Snapshot(), "fact:prState").GetProperty("stale").GetBoolean());
+    }
 
     [Fact]
     public async Task A_merged_pull_request_reports_merged_and_its_sha()
