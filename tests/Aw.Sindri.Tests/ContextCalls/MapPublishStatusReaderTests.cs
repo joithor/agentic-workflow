@@ -1,10 +1,8 @@
 using System.Globalization;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Map;
-using Aw.Kernel;
 using Aw.Kernel.Events;
 using Aw.Sindri.Core.Events;
-using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features;
@@ -63,19 +61,5 @@ public sealed class MapPublishStatusReaderTests
             Event(2, EventTypes.ContextMapPublished, """{"repo":"aw-a","version":14,"reason":"IndexReady"}"""));
 
         Assert.DoesNotContain("replaced", view.Lines[0], StringComparison.Ordinal);
-    }
-
-    private sealed class ListLedger(LedgerEvent[] events) : ILedgerStore
-    {
-        public ValueTask<Result<LedgerAppend>> Append(LedgerEntry entry, LeaseGrant grant, CancellationToken cancellationToken) => throw new NotSupportedException();
-
-        public ValueTask<Result<IReadOnlyList<LedgerEvent>>> ReadAfter(long sequence, int max, CancellationToken cancellationToken) =>
-            ValueTask.FromResult(Results.Success<IReadOnlyList<LedgerEvent>>([.. events.Where(e => e.Sequence > sequence).Take(max)]));
-
-        public ValueTask<Result<LedgerEvent?>> Latest(string type, CancellationToken cancellationToken) => throw new NotSupportedException();
-
-        public ValueTask<Result<long>> Head(CancellationToken cancellationToken) => ValueTask.FromResult(Results.Success(events.Length == 0 ? 0 : events.Max(static e => e.Sequence)));
-
-        public ValueTask<Result<SchemaStatus>> Schema(CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 }
