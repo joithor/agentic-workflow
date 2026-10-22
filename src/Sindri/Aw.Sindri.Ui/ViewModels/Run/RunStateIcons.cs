@@ -14,6 +14,7 @@ internal static class RunStateIcons
         RunNodeState.DidntWorkOut => "RunCircleMinus",
         RunNodeState.Waiting or RunNodeState.Paused => "RunClock",
         RunNodeState.TookOver => "RunPerson",
+        RunNodeState.NotStarted => "RunCircleDashed",
         _ => "RunCircleDashed",
     };
 }

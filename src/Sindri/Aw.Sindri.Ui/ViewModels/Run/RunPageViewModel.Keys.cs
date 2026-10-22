@@ -35,7 +35,7 @@ internal sealed partial class RunPageViewModel
     /// <summary>The active stage at 100 %, centred in the visible part of the stage.</summary>
     /// <returns>The view; the identity view when there is no active stage yet.</returns>
     internal RunFocus FocusActive() =>
-        ActiveNodeId is { } id && _layout.Rects.TryGetValue(id, out var rect)
+        ActiveNodeId is { } id && Layout.Rects.TryGetValue(id, out var rect)
             ? RunViewport.FocusActive(rect, Viewport.Width, Viewport.Height, Viewport.RightInset)
             : new RunFocus(1, 0, 0);
 
@@ -79,7 +79,7 @@ internal sealed partial class RunPageViewModel
             return false;
         }
 
-        Select(null);
+        Select(key: null);
         return true;
     }
 

@@ -57,6 +57,21 @@ public sealed class SetupFramesTests : FrameHost
     });
 
     [Fact]
+    public Task Every_row_and_its_toggle_are_named_and_the_toggle_starts_with_the_step_title() => OnUi(async () =>
+    {
+        var (window, _) = await OnSettings("first-run", 1440);
+
+        foreach (var row in Rows(window))
+        {
+            var title = ((ViewModels.Setup.SetupStepViewModel)row.DataContext!).Title;
+            var heard = Heard.Tree(Expander(row));
+
+            var toggle = heard.First(h => h.Type == Avalonia.Automation.Peers.AutomationControlType.Button);
+            Assert.StartsWith(title, toggle.Name, StringComparison.Ordinal);
+        }
+    });
+
+    [Fact]
     public Task The_checklist_is_the_first_section_and_This_app_comes_below_it() => OnUi(async () =>
     {
         var (window, _) = await OnSettings("first-run", 1440);
@@ -93,6 +108,7 @@ public sealed class SetupFramesTests : FrameHost
     public Task A_protected_approval_row_shows_the_locked_terminal_copy_button() => OnUi(async () =>
     {
         Server.NeedsYouView = RouteAnswer.Api("needs-you", "empty");   // no profile approval row to open in the app: the button is the terminal copy
+        Server.Catalog = RouteAnswer.SpecShaped("commands", "extra-approve-all-ready");   // ApproveProfile is not ready here
         var (window, _) = await OnSettings("profile-needs-approval", 1440);
 
         var profile = Rows(window).Single(r => ((ViewModels.Setup.SetupStepViewModel)r.DataContext!).Id == "profile");

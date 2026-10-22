@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
@@ -77,14 +76,15 @@ internal sealed partial class ShellViewModel : ObservableObject
         Inbox = InitInbox(api, clipboard);
         Strip = new WorkflowsStripViewModel(clipboard, clock);
         InitStrip();
-        Setup = new SetupViewModel(api, Health.Catalog, clock, OpensInApp);
+        window ??= WindowPorts.None;
+        Setup = new SetupViewModel(api, Health.Catalog, clock, OpensInApp, window.Folders, () => Health.LiveProfile, () => NeedsYou.Seen.ReducedMotion);
         InitSetup();
         Workflows = new WorkflowsViewModel(api, clipboard, clock);
         InitWorkflows();
-        Start = InitStart(api, window ??= WindowPorts.None);
+        Start = InitStart(api, window);
         Instance = new InstanceFrameViewModel(api, clipboard, clock, catalog: Health.Catalog, launcher: window.Launcher);
         InitInstance();
-        Recipe = new RecipeSheetViewModel(api);
+        Recipe = new RecipeSheetViewModel(api, clipboard);
         InitRecipe();
         InitAgents(clipboard);
         InitContext(api, clipboard);
@@ -277,25 +277,4 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <param name="cancellationToken">Stops following.</param>
     /// <returns>A task that ends when cancelled.</returns>
     internal Task Run(CancellationToken cancellationToken) => Health.Run(cancellationToken);
-
-    private void OnHealthChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        switch (e.PropertyName)
-        {
-            case nameof(HealthViewModel.State):
-                Changed(_stateProperties);
-                Reattend();
-                Announce();
-                break;
-            case nameof(HealthViewModel.Reason):
-                OnChanged(e.PropertyName);
-                Announce();
-                break;
-            case nameof(HealthViewModel.ReasonDetail):
-                OnChanged(e.PropertyName);
-                break;
-            default:
-                break;
-        }
-    }
 }

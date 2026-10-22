@@ -46,6 +46,7 @@ internal static class RunStates
         RunNodeState.Waiting => Labels.RunWordWaiting,
         RunNodeState.Paused => Labels.RunWordPaused,
         RunNodeState.TookOver => Labels.RunWordTookOver,
+        RunNodeState.NotStarted => Labels.RunWordNotStarted,
         _ => Labels.RunWordNotStarted,
     };
 
@@ -60,6 +61,7 @@ internal static class RunStates
         RunNodeState.DidntWorkOut or RunNodeState.Waiting or RunNodeState.Paused => _attention,
         RunNodeState.Cancelled => _cancelled,
         RunNodeState.TookOver => _tookOver,
+        RunNodeState.NotStarted => _notStarted,
         _ => _notStarted,
     };
 

@@ -1,4 +1,3 @@
-using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Navigation;
@@ -24,7 +23,7 @@ internal sealed partial class RunPageViewModel(ISindriApi api, CatalogViewModel 
     private string? _id;
     private int _generation;
     private string _state = string.Empty;   // the state the view served last, to compare with a frame's
-    private IReadOnlySet<string> _watched = new HashSet<string>(StringComparer.Ordinal);
+    private HashSet<string> _watched = new(StringComparer.Ordinal);
 
     /// <summary>Raised when the page asks to leave for another place (a run of the list, See its context, Back).</summary>
     internal event EventHandler<OpenRequestedEventArgs>? LinkRequested;
@@ -33,7 +32,7 @@ internal sealed partial class RunPageViewModel(ISindriApi api, CatalogViewModel 
     internal event EventHandler? BackRequested;
 
     /// <summary>Raised when the canvas should move to a view (open at the active stage, centre, fit).</summary>
-    internal event EventHandler<RunFocus>? ViewRequested;
+    internal event EventHandler<ValueEventArgs<RunFocus>>? ViewRequested;
 
     /// <summary>Where the read stands.</summary>
     public RunPageState Phase
@@ -195,7 +194,7 @@ internal sealed partial class RunPageViewModel(ISindriApi api, CatalogViewModel 
     /// <summary>Leaves the run for the Workflows list.</summary>
     internal void Back() => BackRequested?.Invoke(this, EventArgs.Empty);
 
-    private void Raise(RunFocus focus) => ViewRequested?.Invoke(this, focus);
+    private void Raise(RunFocus focus) => ViewRequested?.Invoke(this, new ValueEventArgs<RunFocus>(focus));
 
     private void Clear()
     {
@@ -203,7 +202,7 @@ internal sealed partial class RunPageViewModel(ISindriApi api, CatalogViewModel 
         (Title, Reference, StartedText, ProblemText, BranchesNote, HeaderWord, HeaderIcon, _state) = (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
         (Cards, Pills, Edges, ActiveNodeId, Cancel, ReferenceCopy) = ([], [], [], null, null, null);
         (World, ReadingOrder, SelectedKey, _opened, _openPending) = (default, [], null, false, false);
-        _watched = new HashSet<string>(StringComparer.Ordinal);
+        _watched = new(StringComparer.Ordinal);
         ClearRuns();
         ResetInspector();
         Phase = RunPageState.Empty;
@@ -252,65 +251,12 @@ internal sealed partial class RunPageViewModel(ISindriApi api, CatalogViewModel 
     {
         var recipe = api.Recipe(url, line.Recipe.Id, hash: null, cancellationToken);
         var list = api.Instances(url, new InstanceQuery(Root: true, Open: true, Recipe: line.Recipe.Id), cancellationToken);
-        var kids = line.Children.Select(g => g.Rows.FirstOrDefault(r => !string.Equals(r.Chip.Word, "DONE", StringComparison.OrdinalIgnoreCase)) ?? g.Rows.LastOrDefault())
+        var kids = line.Children.Select(g => g.Rows.FirstOrDefault(r => !string.Equals(r.Chip.Word, "DONE", StringComparison.OrdinalIgnoreCase)) ?? (g.Rows.Count > 0 ? g.Rows[^1] : null))
             .OfType<ChildRow>().DistinctBy(r => r.Id, StringComparer.Ordinal).ToList();
         var reads = await Task.WhenAll(kids.Select(async r => (r.Id, Answer: await api.Instance(url, r.Id, cancellationToken).ConfigureAwait(true)))).ConfigureAwait(true);
         var children = reads.Where(r => r.Answer.IsSuccess).ToDictionary(r => r.Id, r => r.Answer.Value, StringComparer.Ordinal);
         var recipeAnswer = await recipe.ConfigureAwait(true);
         var listAnswer = await list.ConfigureAwait(true);
         return (recipeAnswer.IsSuccess ? recipeAnswer.Value : null, children, listAnswer.IsSuccess ? listAnswer.Value.Instances : []);
-    }
-
-    // An address from a deep link names a row of the list: the one whose address it is, else the one it matches.
-    private async Task<string?> Resolve(Uri url, string address, int generation, CancellationToken cancellationToken)
-    {
-        var found = await api.Instances(url, new InstanceQuery(Address: address), cancellationToken).ConfigureAwait(true);
-        if (generation != _generation)
-        {
-            return null;
-        }
-
-        if (found.IsError)
-        {
-            Failed(found.Error);
-            return null;
-        }
-
-        var rows = found.Value.Instances;
-        if ((rows.FirstOrDefault(r => string.Equals(r.Address, address, StringComparison.Ordinal)) ?? (rows.Count == 1 ? rows[0] : null)) is not { } row)
-        {
-            Problem(RunPageState.NotFound, Labels.InstanceNotFound(address));
-            return null;
-        }
-
-        return row.Id;
-    }
-
-    // A first read ends in a problem; a later one keeps what is shown.
-    private void Failed(Error error)
-    {
-        if (Phase == RunPageState.Shown)
-        {
-            return;
-        }
-
-        if (error.Kind == ErrorKind.NotFound)
-        {
-            Problem(RunPageState.NotFound, error.Message);
-        }
-        else if (string.Equals(error.Code, SindriUiErrors.BadAnswer.Code, StringComparison.Ordinal))
-        {
-            Problem(RunPageState.Problem, Labels.StripUnreadable);
-        }
-        else
-        {
-            Problem(RunPageState.Problem, Labels.InstanceRefused(error));
-        }
-    }
-
-    private void Problem(RunPageState phase, string text)
-    {
-        ProblemText = text;
-        Phase = phase;
     }
 }

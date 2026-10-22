@@ -23,7 +23,7 @@ internal sealed partial class RunPage : UserControl
     public RunPage()
     {
         InitializeComponent();
-        RunWorld.Picked += (_, key) => _page?.Select(key);
+        RunWorld.Picked += (_, e) => _page?.Select(e.Value);
         RunCanvas.EmptyClicked += (_, _) => _page?.ClearSelection();
         RunCanvas.PropertyChanged += OnCanvasChanged;
         RunCanvas.SizeChanged += (_, _) => ReportStage();
@@ -63,7 +63,7 @@ internal sealed partial class RunPage : UserControl
     protected override void OnSizeChanged(SizeChangedEventArgs e)
     {
         base.OnSizeChanged(e);
-        var narrow = e.NewSize.Width > 0 && e.NewSize.Width < NarrowBelow;
+        var narrow = e.NewSize.Width is > 0 and < NarrowBelow;
         if (narrow != _narrow)
         {
             _narrow = narrow;
