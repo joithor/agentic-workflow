@@ -1,5 +1,4 @@
 using Aw.Sindri.Core.Onyx;
-using Aw.Sindri.Core.Ports;
 using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Testing;
 using Microsoft.Extensions.DependencyInjection;
