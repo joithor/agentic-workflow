@@ -1,4 +1,5 @@
 using Aw.Sindri.Ui.Api.Setup;
+using Aw.Sindri.Ui.ViewModels.Approvals;
 
 namespace Aw.Sindri.Ui.ViewModels.Setup;
 
@@ -30,8 +31,11 @@ internal sealed partial class SetupViewModel
             ? string.Equals(step.State, "failed", StringComparison.Ordinal) ? MapRefresh : null
             : step.Action is { Length: > 0 } served && !HasForm(step, served) ? served : null;
 
+    // The profile and workflows rows confirm in the row (typed, or held) when the catalog lets the app; otherwise they keep the terminal copy of the action.
     private bool HasForm(SetupStepView step, string action) =>
-        (string.Equals(step.Id, "repo", StringComparison.Ordinal) && Ready(action)) || (string.Equals(step.Id, OnyxStep, StringComparison.Ordinal) && Ready(action));
+        Ready(action) && (string.Equals(step.Id, "repo", StringComparison.Ordinal) || string.Equals(step.Id, OnyxStep, StringComparison.Ordinal)
+            || (string.Equals(step.Id, ProfileStep, StringComparison.Ordinal) && string.Equals(action, ProfileAction, StringComparison.Ordinal))
+            || (string.Equals(step.Id, RecipesStep, StringComparison.Ordinal) && string.Equals(action, ApproveAllViewModel.Action, StringComparison.Ordinal)));
 
     private bool Ready(string action) => _catalog.For(action) is { IsReady: true };
 
@@ -62,6 +66,14 @@ internal sealed partial class SetupViewModel
             row.Repo = new SetupRepoFormViewModel(() => _url, _api, _folders, () => Ready("AddRepo"), note => Started(row, note));
             row.Repo.Update(row.Step);
         }
+        else if (string.Equals(row.Id, ProfileStep, StringComparison.Ordinal))
+        {
+            row.Profile = new SetupProfileConfirmViewModel(_catalog, () => _url, _profileHash, _api, _clock);
+        }
+        else if (string.Equals(row.Id, RecipesStep, StringComparison.Ordinal))
+        {
+            row.Workflows = new ApproveAllViewModel(_catalog, () => _url, _api, _clock, _reducedMotion);
+        }
         else if (string.Equals(row.Id, OnyxStep, StringComparison.Ordinal))
         {
             row.Onyx = new SetupOnyxViewModel(() => _url, _api, Ready, note => Started(row, note), row.Say);
@@ -76,4 +88,27 @@ internal sealed partial class SetupViewModel
     }
 
     private bool Knows(string action, bool inApp) => inApp || _catalog.Row(action) is not null || Labels.SetupCli(action).Length > 0;
+
+    // The confirmations in the profile and workflows rows follow their step: asked for while it needs the person, dropped when it does not. An approval under way is left to finish.
+    private static void Confirm(SetupStepViewModel row)
+    {
+        if (row.Profile is { } profile)
+        {
+            _ = profile.Follow(row.NeedsYou);
+        }
+        else if (row.Workflows is { } all)
+        {
+            if (row.NeedsYou && all.IsReady)
+            {
+                if (!all.IsOpen)
+                {
+                    _ = all.Open(CancellationToken.None);
+                }
+            }
+            else if (all.IsOpen && all.Phase is not (ApproveAllPhase.Applying or ApproveAllPhase.Done))
+            {
+                all.Close();
+            }
+        }
+    }
 }
