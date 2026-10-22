@@ -12,7 +12,7 @@ public static class CompleteCommand
 {
     /// <summary>
     /// The command reporting the Step's outcome, with an '--output &lt;fact&gt;=&lt;file&gt;' flag for each output the caller has to write. One outcome is filled in
-    /// (with its outputs); several are all named ('&lt;a|b|c&gt;') for the caller to pick from, with the outputs every one of them needs; none shows '&lt;outcome&gt;'.
+    /// (with its outputs); several are all named ('&lt;a|b|c&gt;') for the caller to pick from, with the outputs every one of them needs and, per outcome, those only it needs; none shows '&lt;outcome&gt;'.
     /// </summary>
     /// <param name="address">The instance address.</param>
     /// <param name="run">The open run.</param>
@@ -30,11 +30,31 @@ public static class CompleteCommand
         }
 
         _ = line.Append(outcomes.Count == 1 ? outcomes[0].Value : "<" + string.Join('|', outcomes.Select(static o => o.Value)) + ">");
-        foreach (var output in outputs.Where(o => outcomes.All(outcome => StepOutputs.CallerWritesOn(o, outcome))))   // several outcomes: only what every one of them needs
+        var all = outputs as IReadOnlyList<OutputSpec> ?? [.. outputs];
+        var common = all.Where(o => outcomes.All(outcome => StepOutputs.CallerWritesOn(o, outcome))).ToList();   // several outcomes: only what every one of them needs
+        foreach (var output in common)
         {
             _ = line.Append(" --output ").Append(output.Fact.Value).Append("=<file>");
         }
 
+        if (outcomes.Count > 1)
+        {
+            AppendExtras(line, outcomes, all, common);
+        }
+
         return line.ToString();
+    }
+
+    /// <summary>Names, for each outcome, the outputs it needs beyond the ones every outcome needs, so a caller who picks it isn't refused for a missing fact.</summary>
+    private static void AppendExtras(StringBuilder line, IReadOnlyList<OutcomeName> outcomes, IReadOnlyList<OutputSpec> all, List<OutputSpec> common)
+    {
+        foreach (var outcome in outcomes)
+        {
+            var extra = all.Where(o => !common.Contains(o) && StepOutputs.CallerWritesOn(o, outcome)).ToList();
+            if (extra.Count > 0)
+            {
+                _ = line.Append(" (").Append(outcome.Value).Append(" also needs:").AppendJoin(string.Empty, extra.Select(static o => $" --output {o.Fact.Value}=<file>")).Append(')');
+            }
+        }
     }
 }

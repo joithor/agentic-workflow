@@ -2,6 +2,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Features.Blocks.Step;
 using Aw.Sindri.Tests.Workflow.Choice;
 using Aw.Sindri.Tests.Workflow.Engine;
 
@@ -54,5 +55,23 @@ public sealed class ChoiceStepViewsTests
 
         Assert.Equal("sindri workflow complete T-3/r/1 --run 1.1 --outcome done", CompleteCommand.Line("T-3/r/1", run, [OutcomeName.From("done")], []));
         Assert.Equal("sindri workflow complete T-3/r/1 --run 1.1 --outcome <outcome>", CompleteCommand.Line("T-3/r/1", run, [], []));
+    }
+
+    [Fact]
+    public void The_interview_desk_line_names_what_doneAsking_also_requires()
+    {
+        var line = CompleteCommand.Line("T-3/scope/1", RunToken.From("1.1"), ScopingSteps.InterviewAnswer.Outcomes, ScopingSteps.InterviewAnswer.Outputs);
+
+        Assert.Equal(
+            "sindri workflow complete T-3/scope/1 --run 1.1 --outcome <answered|doneAsking> --output fact:answers=<file> (doneAsking also needs: --output fact:interviewClosed=<file>)",
+            line);
+    }
+
+    [Fact]
+    public void One_outcome_of_the_interview_desk_names_only_its_own_outputs()
+    {
+        var line = CompleteCommand.Line("T-3/scope/1", RunToken.From("1.1"), [OutcomeName.From("answered")], ScopingSteps.InterviewAnswer.Outputs);
+
+        Assert.Equal("sindri workflow complete T-3/scope/1 --run 1.1 --outcome answered --output fact:answers=<file>", line);
     }
 }
