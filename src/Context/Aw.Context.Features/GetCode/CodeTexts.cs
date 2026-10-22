@@ -26,10 +26,13 @@ internal static class CodeTexts
 
     internal static SymbolSite Site(SymbolSite site, MapText text) => site with
     {
-        Ref = text.Line(site.Ref),
-        Name = text.Line(site.Name),
-        Kind = text.Line(site.Kind),
-        Path = text.Line(site.Path),
-        Signature = site.Signature is null ? null : text.Line(site.Signature),
+        Ref = OneLine(site.Ref, text),
+        Name = OneLine(site.Name, text),
+        Kind = OneLine(site.Kind, text),
+        Path = OneLine(site.Path, text),
+        Signature = site.Signature is null ? null : OneLine(site.Signature, text),
     };
+
+    // Line breaks and runs of white space become one space before the scrub, so a planted line break cannot start a new line of an answer.
+    private static string OneLine(string value, MapText text) => text.Line(string.Join(' ', value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)));
 }

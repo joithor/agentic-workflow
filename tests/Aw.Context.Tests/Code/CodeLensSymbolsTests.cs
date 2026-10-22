@@ -20,7 +20,9 @@ public sealed class CodeLensSymbolsTests
 
         var merged = CodeLensSymbols.With(view, new CodeSymbolFindings(row, Ok(CodeSymbolSourceContract.Indexed), CodeSymbols.Unavailable));
 
-        Assert.Equal(Ok(CodeSymbolSourceContract.Indexed), merged.Callers);
+        var expected = Ok(CodeSymbolSourceContract.Indexed);
+        Assert.Equal(expected.Items, merged.Callers.Items);
+        Assert.Equal(expected with { Items = [] }, merged.Callers with { Items = [] });
         Assert.Equal(CodeSymbols.Unavailable, merged.Callees);
         Assert.Equal(view.Searched.Sources.Select(s => s.Id.Value), merged.Searched.Sources.Select(s => s.Id.Value), StringComparer.Ordinal);
         Assert.Equal(row, merged.Searched.Sources.Single(s => s.Id.Value == "code-index"));

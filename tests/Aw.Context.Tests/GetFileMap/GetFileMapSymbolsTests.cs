@@ -71,7 +71,7 @@ public sealed class GetFileMapSymbolsTests
         var (world, view) = await Ask(new FakeCodeSymbolSource([]));
         using var _ = world;
 
-        Assert.Equal(LensSymbols.Unavailable, view.Symbols);
+        Assert.Equal(LensSymbols.Unavailable with { Code = "SND-CODEIDX-013" }, view.Symbols);
     }
 
     [Fact, Trait("Lane", "unit")]
