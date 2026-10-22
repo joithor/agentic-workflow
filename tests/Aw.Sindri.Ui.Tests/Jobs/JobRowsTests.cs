@@ -19,8 +19,7 @@ public sealed class JobRowsTests
     [InlineData("RunService", "Run a service")]
     [InlineData("ApproveAllRecipes", "Approve all workflows")]
     [InlineData("AddRepo", "Add a repository")]
-    [InlineData("CheckLaunchTargets", "Check agent launch targets")]
-    [InlineData("TestContextMap", "Test the context map")]
+    [InlineData("RegisterMcp", "Connect agents")]
     public void A_known_kind_reads_by_its_plain_name(string kind, string expected) => Assert.Equal(expected, Labels.JobKind(kind));
 
     [Fact]

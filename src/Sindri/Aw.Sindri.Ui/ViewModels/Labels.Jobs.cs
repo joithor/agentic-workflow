@@ -135,8 +135,7 @@ internal static partial class Labels
         "RunService" => "Run a service",
         "ApproveAllRecipes" => "Approve all workflows",
         "AddRepo" => "Add a repository",
-        "CheckLaunchTargets" => "Check agent launch targets",
-        "TestContextMap" => "Test the context map",
+        "RegisterMcp" => "Connect agents",
         _ => Action(kind),
     };
 
