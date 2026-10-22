@@ -24,7 +24,8 @@ namespace Aw.Sindri.Features.Pr;
 /// <param name="marks">The comment marks.</param>
 /// <param name="diff">Reads the workspace's head.</param>
 /// <param name="clock">The clock.</param>
-internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks, IRunDiff diff, TimeProvider clock) : IBlockStep, IBlockStepId
+/// <param name="record">The merge record, where a changed snapshot is appended.</param>
+internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks, IRunDiff diff, TimeProvider clock, IMergeRecord record) : IBlockStep, IBlockStepId
 {
     private static readonly string[] _trusted = ["OWNER", "MEMBER", "COLLABORATOR"];
 

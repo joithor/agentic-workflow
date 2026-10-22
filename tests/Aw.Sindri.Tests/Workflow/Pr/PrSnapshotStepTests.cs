@@ -4,7 +4,9 @@ using Aw.Sindri.Core.Forge;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
+using Aw.Sindri.Features.Blocks.Effect;
 using Aw.Sindri.Features.Pr;
+using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Forge;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Workflow.Blocks.Contracts;
@@ -18,11 +20,14 @@ public sealed class PrSnapshotStepTests
 {
     private const string Host = "forge.test";
     private const string Head = "aaaa1111";
+    private const string Address = "T-3/pr-babysitter/1";
 
     private readonly FakePullRequests _pulls = new([Host]);
     private readonly FakePull _pull;
     private readonly InMemoryPrCommentMarks _marks = new();
     private readonly FakeRunDiff _diff = new();
+    private readonly InMemoryRunArea _area = new();
+    private readonly FakeTimeProvider _clock = new(DateTimeOffset.Parse("2026-10-22T08:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
 
     public PrSnapshotStepTests() => _pull = _pulls.Add(new PullRepo(Host, "acme", "app"), "feat/x", Head);
 
@@ -31,7 +36,7 @@ public sealed class PrSnapshotStepTests
     private static PullThread Thread(string key, string author = "alice", bool resolved = false, IReadOnlyList<string>? markers = null) =>
         new(key, PullCommentKind.Thread, author, "MEMBER", IsBot: false, resolved, Outdated: false, "a.cs", $"fix {key}", markers ?? []);
 
-    private Task<BlockStepResult> Snapshot(string? pr = null, Dictionary<string, string>? more = null) => Run(new PrSnapshotStep(_pulls, _marks, _diff, new FakeTimeProvider(DateTimeOffset.Parse("2026-10-22T08:00:00Z", System.Globalization.CultureInfo.InvariantCulture))), "step.pr.snapshot", pr, more: more);
+    private Task<BlockStepResult> Snapshot(string? pr = null, Dictionary<string, string>? more = null) => Run(new PrSnapshotStep(_pulls, _marks, _diff, _clock, new MergeRecord(_area, _clock)), "step.pr.snapshot", pr, more: more);
 
     private Task<BlockStepResult> Intake(string? pr = null, string? workspace = null) => Run(new PrIntakeStep(_pulls), "step.pr.intake", pr, workspace);
 
@@ -48,8 +53,74 @@ public sealed class PrSnapshotStepTests
             facts["workspace"] = workspace;
         }
 
-        return await step.Run(BuildShipContexts.Of(id, facts), Token);
+        return await step.Run(BuildShipContexts.Of(id, facts, address: Address), Token);
     }
+
+    [Fact]
+    public async Task The_first_snapshot_appends_a_snapshot_row_with_the_outcome_the_checks_and_the_queue_counts()
+    {
+        _pull.Threads.Add(Thread("t1"));
+
+        _ = await Snapshot();
+
+        var row = Single(await Rows());
+        Assert.Equal("snapshot", row.GetProperty("kind").GetString());
+        Assert.Equal(Head, row.GetProperty("headSha").GetString());
+        Assert.Equal(Address, row.GetProperty("instance").GetString());
+        Assert.Equal("comments", row.GetProperty("outcome").GetString());
+        Assert.Equal(Head, row.GetProperty("checks").GetProperty("sha").GetString());
+        Assert.Equal(1, row.GetProperty("queue").GetProperty("unhandled").GetInt32());
+    }
+
+    [Fact]
+    public async Task A_snapshot_with_the_same_outcome_and_head_as_the_last_appends_no_row()
+    {
+        var first = await Snapshot();
+
+        _ = await Snapshot(more: Previous(first));
+
+        _ = Single(await Rows());
+    }
+
+    [Fact]
+    public async Task A_moved_head_or_a_new_outcome_appends_another_row()
+    {
+        var first = await Snapshot();
+        _pull.HeadSha = "bbbb2222";
+        var second = await Snapshot(more: Previous(first));
+
+        _ = await Snapshot(more: Previous(second));
+
+        Assert.Equal(2, (await Rows()).Length);
+    }
+
+    [Fact]
+    public async Task A_retried_snapshot_appends_its_row_once()
+    {
+        var first = await Snapshot();
+        _pull.HeadSha = "bbbb2222";
+        var previous = Previous(first);
+
+        _ = await Snapshot(more: previous);
+        _ = await Snapshot(more: previous);
+
+        Assert.Equal(2, (await Rows()).Length);
+    }
+
+    [Fact]
+    public async Task A_step_with_no_instance_address_still_snapshots_and_appends_nothing()
+    {
+        var result = await new PrSnapshotStep(_pulls, _marks, _diff, _clock, new MergeRecord(_area, _clock)).Run(BuildShipContexts.Of("step.pr.snapshot", new Dictionary<string, string> { ["pr"] = _pull.Link }), Token);
+
+        Assert.NotNull(result.Result);
+        Assert.Empty(await Rows());
+    }
+
+    private static Dictionary<string, string> Previous(BlockStepResult result) => new(StringComparer.Ordinal) { ["prState"] = Fact(result, "fact:prState").GetRawText() };
+
+    private async Task<string[]> Rows() => (await _area.Read(Address, "babysit.jsonl", Token)).Value.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+    private static JsonElement Single(string[] lines) => JsonDocument.Parse(Assert.Single(lines)).RootElement.Clone();
 
     private static JsonElement Fact(BlockStepResult result, string key) => result.Result!.Outputs.Single(o => string.Equals(o.Key.Value, key, StringComparison.Ordinal)).Value;
 
