@@ -77,7 +77,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
     private static IServiceCollection AddAgentRuntimeAdapters(this IServiceCollection services) =>
         services.AddSingleton<IRunDiff, GitRunDiff>().AddSingleton<IDiffContent, GitDiffContent>().AddSingleton<IBranchChanges, GitBranchChanges>().AddSingleton<IAgentSessions, LedgerAgentSessions>()
             .AddSingleton<ICheckCommands>(sp => new ToolCheckCommands(new ProcessToolRunner(), sp.GetRequiredService<ITextScrubber>(), sp.GetRequiredService<TimeProvider>()))
-            .AddSingleton<ILensPackSource, EmbeddedLensPackSource>().AddSingleton<ILensPacks, ProfileLensPacks>().AddSingleton<IChangedPaths, GitChangedPaths>();   // LN-PK lite: the built-in lens packs and the review loop's changed paths
+            .AddSingleton<ILensPackSource, EmbeddedLensPackSource>().AddSingleton<IPackDirectories, DiskPackDirectories>().AddSingleton<ILensPacks, ProfileLensPacks>().AddSingleton<IChangedPaths, GitChangedPaths>();   // LN-PK lite: the built-in lens packs and the review loop's changed paths
 
     /// <summary>The bugfix block Steps' port over the bugfix-state program (deps.yaml Sindri to BugFix, kind cli).</summary>
     private static IServiceCollection AddBugFixInfrastructure(this IServiceCollection services, Func<string, string?> environment) =>

@@ -16141,6 +16141,25 @@ Aw.Sindri.Core.Forge.IPullRequests.Merge(Aw.Sindri.Core.Forge.PullMerge! request
 Aw.Sindri.Core.Forge.IPullRequests.Reply(Aw.Sindri.Core.Forge.PullReply! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullDelivery>!>
 Aw.Sindri.Core.Forge.IPullRequests.React(Aw.Sindri.Core.Forge.PullReaction! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullDelivery>!>
 Aw.Sindri.Core.Forge.IPullRequests.PushBranch(Aw.Sindri.Core.Forge.PullBranchPush! push, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullPushOutcome>!>
+Aw.Sindri.Core.LensPacks.LensPackReader
+static Aw.Sindri.Core.LensPacks.LensPackReader.Hash(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! files) -> string!
+static Aw.Sindri.Core.LensPacks.LensPackReader.Read(Aw.Sindri.Core.LensPacks.LensPackId id, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! files) -> Aw.Kernel.Result<Aw.Sindri.Core.LensPacks.LensPack!>!
+Aw.Sindri.Core.LensPacks.IPackDirectories
+Aw.Sindri.Core.LensPacks.IPackDirectories.Read(string! directory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.LensPacks.PackDirectory!>!>
+Aw.Sindri.Core.LensPacks.PackDirectory
+Aw.Sindri.Core.LensPacks.PackDirectory.Files.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Sindri.Core.LensPacks.PackDirectory.Outside.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.LensPacks.PackDirectory.PackDirectory(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Files, System.Collections.Generic.IReadOnlyList<string!>! Outside) -> void
+Aw.Sindri.Core.LensPacks.PackDirectory.<Clone>$() -> Aw.Sindri.Core.LensPacks.PackDirectory!
+Aw.Sindri.Core.LensPacks.PackDirectory.Deconstruct(out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Files, out System.Collections.Generic.IReadOnlyList<string!>! Outside) -> void
+Aw.Sindri.Core.LensPacks.PackDirectory.Equals(Aw.Sindri.Core.LensPacks.PackDirectory? other) -> bool
+Aw.Sindri.Core.LensPacks.PackDirectory.Files.init -> void
+Aw.Sindri.Core.LensPacks.PackDirectory.Outside.init -> void
+override Aw.Sindri.Core.LensPacks.PackDirectory.Equals(object? obj) -> bool
+override Aw.Sindri.Core.LensPacks.PackDirectory.GetHashCode() -> int
+override Aw.Sindri.Core.LensPacks.PackDirectory.ToString() -> string!
+static Aw.Sindri.Core.LensPacks.PackDirectory.operator !=(Aw.Sindri.Core.LensPacks.PackDirectory? left, Aw.Sindri.Core.LensPacks.PackDirectory? right) -> bool
+static Aw.Sindri.Core.LensPacks.PackDirectory.operator ==(Aw.Sindri.Core.LensPacks.PackDirectory? left, Aw.Sindri.Core.LensPacks.PackDirectory? right) -> bool
 
 Aw.Sindri.Core.Launch.StepDenials
 const Aw.Sindri.Core.Launch.StepDenials.HoldoutDirectory = "holdout" -> string!
