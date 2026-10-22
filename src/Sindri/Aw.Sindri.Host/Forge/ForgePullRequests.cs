@@ -38,7 +38,7 @@ internal sealed class ForgePullRequests(IForge forge) : IPullRequests
 
         var s = snapshot.Value;
         var open = threads.Value.Count(static t => t.Kind == CommentKind.Thread && !t.Resolved);
-        return new PullView(pull.Link, State(s.Status), s.Head.Sha, s.Mergeable, s.ReviewDecision, open, new PullChecks(Checks(s.Checks.State), s.Checks.Sha, s.Checks.Failing));
+        return new PullView(pull.Link, State(s.Status), s.Head.Sha, s.Mergeable, s.ReviewDecision, open, new PullChecks(Checks(s.Checks.State), s.Checks.Sha, s.Checks.Failing), s.Labels);
     }
 
     public async ValueTask<Result<string>> CheckLog(string link, string check, CancellationToken cancellationToken)
@@ -178,7 +178,7 @@ internal sealed class ForgePullRequests(IForge forge) : IPullRequests
             body = ForgeMarker.Append(body, marker);
         }
 
-        var opened = await forge.OpenPull(new OpenPullRequest(Repo(request.Repo), request.Head, request.Base, request.HeadSha, request.Title, body, request.Draft), cancellationToken).ConfigureAwait(false);
+        var opened = await forge.OpenPull(new OpenPullRequest(Repo(request.Repo), request.Head, request.Base, request.HeadSha, request.Title, body, request.Draft, request.Labels), cancellationToken).ConfigureAwait(false);
         return opened.IsError ? PullErrors.From(opened.Error) : new OpenedPull(opened.Value.Link, opened.Value.Number);
     }
 

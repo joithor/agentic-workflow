@@ -73,7 +73,8 @@ internal partial class WorldForge
             new HeadBranch(p.HeadRef, p.HeadSha, p.Fork),
             p.Mergeable,
             p.ReviewDecision,
-            new ChecksSummary(p.Checks, p.ChecksSha, [.. p.Failing]));
+            new ChecksSummary(p.Checks, p.ChecksSha, [.. p.Failing]),
+            [.. p.Labels]);
     }
 
     private static PullDigest Digest(ForgeRef pull, WorldPull p) =>

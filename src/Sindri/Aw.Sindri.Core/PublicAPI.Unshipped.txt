@@ -15172,9 +15172,9 @@ Aw.Sindri.Core.Forge.PullView.UnresolvedThreads.get -> int
 Aw.Sindri.Core.Forge.PullView.UnresolvedThreads.init -> void
 Aw.Sindri.Core.Forge.PullView.Checks.get -> Aw.Sindri.Core.Forge.PullChecks!
 Aw.Sindri.Core.Forge.PullView.Checks.init -> void
-Aw.Sindri.Core.Forge.PullView.Deconstruct(out string! Link, out Aw.Sindri.Core.Forge.PullState State, out string! HeadSha, out bool? Mergeable, out string? ReviewDecision, out int UnresolvedThreads, out Aw.Sindri.Core.Forge.PullChecks! Checks) -> void
+Aw.Sindri.Core.Forge.PullView.Deconstruct(out string! Link, out Aw.Sindri.Core.Forge.PullState State, out string! HeadSha, out bool? Mergeable, out string? ReviewDecision, out int UnresolvedThreads, out Aw.Sindri.Core.Forge.PullChecks! Checks, out System.Collections.Generic.IReadOnlyList<string!>! Labels) -> void
 Aw.Sindri.Core.Forge.PullView.Equals(Aw.Sindri.Core.Forge.PullView? other) -> bool
-Aw.Sindri.Core.Forge.PullView.PullView(string! Link, Aw.Sindri.Core.Forge.PullState State, string! HeadSha, bool? Mergeable, string? ReviewDecision, int UnresolvedThreads, Aw.Sindri.Core.Forge.PullChecks! Checks) -> void
+Aw.Sindri.Core.Forge.PullView.PullView(string! Link, Aw.Sindri.Core.Forge.PullState State, string! HeadSha, bool? Mergeable, string? ReviewDecision, int UnresolvedThreads, Aw.Sindri.Core.Forge.PullChecks! Checks, System.Collections.Generic.IReadOnlyList<string!>! Labels) -> void
 override Aw.Sindri.Core.Forge.PullView.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Forge.PullView.GetHashCode() -> int
 override Aw.Sindri.Core.Forge.PullView.ToString() -> string!
@@ -15230,9 +15230,9 @@ Aw.Sindri.Core.Forge.OpenPull.Draft.get -> bool
 Aw.Sindri.Core.Forge.OpenPull.Draft.init -> void
 Aw.Sindri.Core.Forge.OpenPull.Marker.get -> string?
 Aw.Sindri.Core.Forge.OpenPull.Marker.init -> void
-Aw.Sindri.Core.Forge.OpenPull.Deconstruct(out Aw.Sindri.Core.Forge.PullRepo! Repo, out string! Head, out string! Base, out string! HeadSha, out string! Title, out string! Body, out bool Draft, out string? Marker) -> void
+Aw.Sindri.Core.Forge.OpenPull.Deconstruct(out Aw.Sindri.Core.Forge.PullRepo! Repo, out string! Head, out string! Base, out string! HeadSha, out string! Title, out string! Body, out bool Draft, out string? Marker, out System.Collections.Generic.IReadOnlyList<string!>? Labels) -> void
 Aw.Sindri.Core.Forge.OpenPull.Equals(Aw.Sindri.Core.Forge.OpenPull? other) -> bool
-Aw.Sindri.Core.Forge.OpenPull.OpenPull(Aw.Sindri.Core.Forge.PullRepo! Repo, string! Head, string! Base, string! HeadSha, string! Title, string! Body, bool Draft, string? Marker) -> void
+Aw.Sindri.Core.Forge.OpenPull.OpenPull(Aw.Sindri.Core.Forge.PullRepo! Repo, string! Head, string! Base, string! HeadSha, string! Title, string! Body, bool Draft, string? Marker, System.Collections.Generic.IReadOnlyList<string!>? Labels = null) -> void
 override Aw.Sindri.Core.Forge.OpenPull.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Forge.OpenPull.GetHashCode() -> int
 override Aw.Sindri.Core.Forge.OpenPull.ToString() -> string!
@@ -15424,3 +15424,7 @@ Aw.Sindri.Core.Forge.PullThread.EditedAt.init -> void
 Aw.Sindri.Core.Forge.PullThread.Url.get -> string?
 Aw.Sindri.Core.Forge.PullThread.Url.init -> void
 Aw.Sindri.Core.Forge.IPullRequests.Self(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Sindri.Core.Forge.OpenPull.Labels.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Forge.OpenPull.Labels.init -> void
+Aw.Sindri.Core.Forge.PullView.Labels.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Forge.PullView.Labels.init -> void

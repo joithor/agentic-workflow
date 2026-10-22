@@ -63,6 +63,21 @@ public abstract class ForgeContract : ForgeReadContract
         Expect.That(threads.All(t => t.Url is not null && t.Url.StartsWith(pull.Link, StringComparison.Ordinal) && t.Url.EndsWith(t.Key, StringComparison.Ordinal)), "each links to the pull request");
     }
 
+    /// <summary>Labels given to OpenPull are on the snapshot; none given means none.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task Opened_labels_read_back()
+    {
+        var run = Create();
+        var labelled = Expect.Ok(await run.Forge.OpenPull(new OpenPullRequest(run.Repo, Feature, "main", Sha('a'), "T", "B", Draft: false, Labels: ["area:forge", "size:S"]), Ct), "OpenPull with labels");
+        var plain = Expect.Ok(await run.Forge.OpenPull(new OpenPullRequest(run.Repo, "feature/plain", "main", Sha('a'), "T", "B", Draft: false), Ct), "OpenPull without labels");
+
+        var withLabels = Expect.Ok(await run.Forge.GetPull(labelled, Ct), "GetPull").Labels;
+        var without = Expect.Ok(await run.Forge.GetPull(plain, Ct), "GetPull").Labels;
+
+        Expect.That(withLabels.Order(StringComparer.Ordinal).SequenceEqual(["area:forge", "size:S"], StringComparer.Ordinal) && without.Count == 0, "the labels given are the labels read, none by default");
+    }
+
     /// <summary>Self names the login the forge acts as.</summary>
     /// <returns>A task.</returns>
     [Fact]

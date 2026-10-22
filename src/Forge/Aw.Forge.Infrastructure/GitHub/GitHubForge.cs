@@ -226,7 +226,8 @@ internal sealed partial class GitHubForge(GitHubApi api, ICredentialSource crede
             new HeadBranch(head.Str("ref"), head.Str("sha"), fork),
             json.NullableFlag("mergeable"),
             decision,
-            checks);
+            checks,
+            [.. (json.At("labels") ?? default).Items().Select(l => l.Str("name")).Where(n => n.Length > 0)]);
     }
 
     private static PullDigest Digest(ForgeRef pull, JsonElement json, ChecksSummary checks)

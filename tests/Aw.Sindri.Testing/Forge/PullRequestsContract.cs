@@ -122,6 +122,19 @@ public abstract class PullRequestsContract
         Expect.True(threads[0].CreatedAt <= threads[1].CreatedAt);
     }
 
+    /// <summary>Labels given to Open show on the pull request when it is read back.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task Labels_given_to_open_read_back()
+    {
+        var run = Create();
+
+        var opened = Ok(await run.Pulls.Open(Request(run) with { Labels = ["area:forge", "size:S"] }, Ct), "Open");
+        var view = Ok(await run.Pulls.Get(opened.Link, Ct), "Get");
+
+        Expect.Sequence(["area:forge", "size:S"], view.Labels.Order(StringComparer.Ordinal));
+    }
+
     /// <summary>A merge with the right head lands and reads back merged; a stale head is HeadMoved and changes nothing.</summary>
     /// <returns>A task.</returns>
     [Fact]

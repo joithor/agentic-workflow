@@ -347,4 +347,43 @@ public sealed class GitHubForgeTests
         Assert.Equal("sindri-bot", second.Value);
         _ = Assert.Single(http.Seen);
     }
+
+    [Fact]
+    public async Task Open_applies_labels_after_the_create()
+    {
+        var http = new StubHandler()
+            .On(HttpMethod.Post, "/repos/acme/widgets/pulls", HttpStatusCode.Created, "{\"number\":7}")
+            .On(HttpMethod.Post, "/repos/acme/widgets/issues/7/labels", HttpStatusCode.OK, "[]");
+        var (forge, _, _) = Build(http);
+
+        var opened = await forge.OpenPull(new OpenPullRequest(_repo, "feature", "main", new string('a', 40), "T", "B", Draft: false, Labels: ["area:forge"]), TestContext.Current.CancellationToken);
+
+        Assert.Equal(7, opened.Value.Number);
+        Assert.Equal(["/repos/acme/widgets/pulls", "/repos/acme/widgets/issues/7/labels"], http.Seen.Select(r => r.Url.AbsolutePath), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_label_the_forge_refuses_does_not_fail_the_open()
+    {
+        var http = new StubHandler()
+            .On(HttpMethod.Post, "/repos/acme/widgets/pulls", HttpStatusCode.Created, "{\"number\":7}")
+            .On(HttpMethod.Post, "/repos/acme/widgets/issues/7/labels", HttpStatusCode.Forbidden, "{\"message\":\"nope\"}");
+        var (forge, _, _) = Build(http);
+
+        var opened = await forge.OpenPull(new OpenPullRequest(_repo, "feature", "main", new string('a', 40), "T", "B", Draft: false, Labels: ["area:forge"]), TestContext.Current.CancellationToken);
+
+        Assert.True(opened.IsSuccess);
+        Assert.Equal(7, opened.Value.Number);
+    }
+
+    [Fact]
+    public async Task Open_without_labels_sends_no_label_request()
+    {
+        var http = new StubHandler().On(HttpMethod.Post, "/repos/acme/widgets/pulls", HttpStatusCode.Created, "{\"number\":7}");
+        var (forge, _, _) = Build(http);
+
+        _ = await forge.OpenPull(new OpenPullRequest(_repo, "feature", "main", new string('a', 40), "T", "B", Draft: false), TestContext.Current.CancellationToken);
+
+        _ = Assert.Single(http.Seen);
+    }
 }

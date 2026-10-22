@@ -40,7 +40,7 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     public ValueTask<Result<PullView>> Get(string link, CancellationToken cancellationToken)
     {
         Calls.Add("Get");
-        return Done(Locate(link).Map(p => new PullView(p.Link, p.State, p.HeadSha, Mergeable: true, ReviewDecision: null, UnresolvedThreads: 0, new PullChecks(PullChecksState.None, p.HeadSha, []))));
+        return Done(Locate(link).Map(p => new PullView(p.Link, p.State, p.HeadSha, Mergeable: true, ReviewDecision: null, UnresolvedThreads: 0, new PullChecks(PullChecksState.None, p.HeadSha, []), p.Labels)));
     }
 
     /// <inheritdoc />
@@ -187,6 +187,7 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
         pull.Title = request.Title;
         pull.Body = request.Body;
         pull.Draft = request.Draft;
+        pull.Labels = [.. request.Labels ?? []];
         pull.Marker = request.Marker;
         return Done(Results.Success(new OpenedPull(pull.Link, pull.Number)));
     }
