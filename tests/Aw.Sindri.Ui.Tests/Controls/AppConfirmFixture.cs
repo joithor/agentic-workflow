@@ -10,7 +10,7 @@ namespace Aw.Sindri.Ui.Tests.Controls;
 internal sealed class AppConfirmFixture
 {
     private static readonly Uri _api = new("http://127.0.0.1:7410/");
-    private static readonly string[] _actions = ["ApproveProfile", "ApproveRecipe", "ApproveAllRecipes", "Decide"];
+    private static readonly string[] _actions = ["ApproveProfile", "ApproveRecipe", "ApproveAllRecipes", "Decide", "ApplyCommand:answer-grant-tokens"];
 
     internal FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
 

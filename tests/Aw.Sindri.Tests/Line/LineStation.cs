@@ -1,9 +1,11 @@
 using System.Text.Json.Nodes;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.LensPacks;
 using Aw.Sindri.Core.Packets;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Line;
+using Aw.Sindri.Testing.LensPacks;
 using Aw.Sindri.Testing.Packets;
 using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Tests.Scoping.Steps;
@@ -44,6 +46,15 @@ internal sealed class LineStation
 
     internal InMemoryRunArea Area { get; }
 
+    /// <summary>The style packs the station's Steps resolve: 'plain', which asks the gold design's two sections and nothing else.</summary>
+    internal FakeStylePacks Styles { get; } = new FakeStylePacks().With(Style("plain", maxWords: null));
+
+    /// <summary>The lens packs the station's intake resolves: 'design-five', with one lens.</summary>
+    internal FakeLensPacks Lenses { get; } = new FakeLensPacks().With(new LensPack(LensPackId.From("design-five"), "sha256:" + new string('b', 64), LensPackKind.Design, [new PackLens(LensId.From("product"), "Product", "prompt", LensWhen.Always)]));
+
+    /// <summary>A style pack with the gold design's sections: Summary required and Detail optional, and no wording rules.</summary>
+    internal static StylePack Style(string id, int? maxWords) => new(LensPackId.From(id), "sha256:" + new string('a', 64), [new StyleSection("Summary", Required: true, maxWords), new StyleSection("Detail", Required: false, MaxWords: null)], new StyleRules([], MaxLines: null));
+
     internal InMemoryPacketFiles Files { get; }
 
     internal InMemoryPackets Packets { get; } = new();
@@ -56,9 +67,9 @@ internal sealed class LineStation
     /// <summary>The context of a Step of the station at <paramref name="address"/>, with the web repo.</summary>
     internal static StepContext Context(string step, string address, ScopingFacts facts) => ScopingStepContexts.Of(step, facts) with { Repo = RepoName.From("web"), Address = address };
 
-    internal DesignIntakeStep DesignIntake() => new(Packets, Files);
+    internal DesignIntakeStep DesignIntake() => new(Packets, Files, Styles, Lenses);
 
-    internal DesignEvidenceStep DesignEvidence() => new(Packets, Area, Checkouts);
+    internal DesignEvidenceStep DesignEvidence() => new(Packets, Area, Checkouts, Styles);
 
     internal PlanIntakeStep PlanIntake() => new(Packets, Files);
 
@@ -66,7 +77,7 @@ internal sealed class LineStation
 
     internal PlanFreezeStep PlanFreeze() => new(Packets, Checkouts);
 
-    /// <summary>The design station's evidence facts: the scope the intake loaded, empty packs, the sound design, the round log and no accepted risks.</summary>
+    /// <summary>The design station's evidence facts: the scope and the packs the intake pinned, the sound design, the round log and no accepted risks.</summary>
     internal async Task<ScopingFacts> DesignFacts(Func<JsonObject, JsonObject>? edit = null)
     {
         var intake = await DesignIntake().Run(Context("step.design.intake", DesignAddress, new ScopingFacts { ["scopePacket"] = ScopePacket, ["designRevision"] = "First pass." }), TestContext.Current.CancellationToken);
@@ -74,7 +85,7 @@ internal sealed class LineStation
         return new ScopingFacts
         {
             ["scope"] = intake.Result!.Outputs[FactKey.From("fact:scope")].GetRawText(),
-            ["packs"] = "{}",
+            ["packs"] = intake.Result!.Outputs[FactKey.From("fact:packs")].GetRawText(),
             ["design"] = (edit?.Invoke(design) ?? design).ToJsonString(),
             ["findings"] = "[]",
             ["lensRounds"] = LensRounds,

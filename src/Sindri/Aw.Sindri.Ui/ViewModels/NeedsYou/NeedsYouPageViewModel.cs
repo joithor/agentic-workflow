@@ -137,9 +137,6 @@ internal sealed partial class NeedsYouPageViewModel : ObservableObject
     /// <summary>The card's footer, left: what the row waits for.</summary>
     public string FooterLeft { get; } = Labels.NeedsYouFootWaiting;
 
-    /// <summary>The card's footer, right: how long it has waited; empty when the row serves no time.</summary>
-    public string FooterRight => Card?.Entry is { Since: var since } && since != default ? Labels.NeedsYouFootRight(Labels.NeedsYouWaited(_clock.GetUtcNow() - since)) : "";
-
     /// <summary>Selects the first row of the first group when none is selected (or the selected one is gone).</summary>
     internal void SelectFirst()
     {
