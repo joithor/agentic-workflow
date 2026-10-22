@@ -38,7 +38,7 @@ public sealed class PrSnapshotStepTests
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     private static PullThread Thread(string key, string author = "alice", bool resolved = false, IReadOnlyList<string>? markers = null) =>
-        new(key, PullCommentKind.Thread, author, "MEMBER", IsBot: false, resolved, Outdated: false, "a.cs", $"fix {key}", markers ?? []);
+        new(key, PullCommentKind.Thread, author, "MEMBER", IsBot: false, resolved, Outdated: false, "a.cs", $"fix {key}", markers ?? [], new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero), Line: null, EditedAt: null, Url: null);
 
     private Task<BlockStepResult> Snapshot(string? pr = null, Dictionary<string, string>? more = null) => Run(new PrSnapshotStep(_pulls, _marks, _diff, _clock, new MergeRecord(_area, _clock)), "step.pr.snapshot", pr, more: more);
 

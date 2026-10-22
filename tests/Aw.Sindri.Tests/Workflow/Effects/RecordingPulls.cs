@@ -51,4 +51,12 @@ internal sealed class RecordingPulls : IPullRequests
     public ValueTask<Result<PullPushOutcome>> PushBranch(PullBranchPush push, CancellationToken cancellationToken) => throw new NotSupportedException();
 
     public ValueTask<Result<Unit>> Update(string link, string? title, string? body, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+    public ValueTask<Result<string>> Self(CancellationToken cancellationToken) => throw new NotSupportedException();
+
+    public ValueTask<Result<Unit>> Retarget(string link, string newBase, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+    public ValueTask<Result<string>> DefaultBranch(PullRepo repo, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+    public ValueTask<Result<IReadOnlyList<PullDigest>>> Digest(IReadOnlyList<string> links, CancellationToken cancellationToken) => throw new NotSupportedException();
 }
