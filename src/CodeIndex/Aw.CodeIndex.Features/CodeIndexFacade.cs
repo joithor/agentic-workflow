@@ -16,7 +16,8 @@ namespace Aw.CodeIndex.Features;
 /// </summary>
 /// <param name="build">The build slice.</param>
 /// <param name="store">The index files.</param>
-public sealed class CodeIndexFacade(IService<BuildCodeIndexRequest, BuildReport> build, IIndexStore store) : ICodeIndex
+/// <param name="graph">The graph layer's tool, or null where none is registered.</param>
+public sealed class CodeIndexFacade(IService<BuildCodeIndexRequest, BuildReport> build, IIndexStore store, IGraphRunner? graph = null) : ICodeIndex
 {
     /// <inheritdoc />
     public async ValueTask<Result<BuildReport>> Build(CodeIndexScope scope, RepoName repo, CommitSha commit, IProgress<string> progress, CancellationToken cancellationToken)
@@ -69,12 +70,29 @@ public sealed class CodeIndexFacade(IService<BuildCodeIndexRequest, BuildReport>
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<LayerProbe>>> ProbeLayers(CodeIndexScope scope, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<LayerProbe>>> ProbeLayers(CodeIndexScope scope, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(scope);
+        var probes = new List<LayerProbe>(scope.Repos.Count);
+        foreach (var repo in scope.Repos)
+        {
+            var buildable = new List<LayerName>();
+            if (graph is not null && repo.Settings.Graph.Enabled && await GraphWasUnavailable(repo, cancellationToken).ConfigureAwait(false)
+                && (await graph.Probe(cancellationToken).ConfigureAwait(false)).IsSuccess)
+            {
+                buildable.Add(LayerName.Graph);
+            }
 
-        // No later layer can be built yet, so nothing is buildable; the graph and embeddings units fill this in.
-        return ValueTask.FromResult<Result<IReadOnlyList<LayerProbe>>>(scope.Repos.Select(r => new LayerProbe(r.Name, [])).ToList());
+            probes.Add(new LayerProbe(repo.Name, buildable));
+        }
+
+        return probes;
+    }
+
+    private async ValueTask<bool> GraphWasUnavailable(CodeIndexRepo repo, CancellationToken cancellationToken)
+    {
+        var header = await store.ReadHeader(repo.Name, cancellationToken).ConfigureAwait(false);
+        return header is { IsError: false, Value: { } live } && live.Layers.Any(l => l.Layer == LayerName.Graph && l.State == LayerState.Unavailable);
     }
 
     /// <inheritdoc />
