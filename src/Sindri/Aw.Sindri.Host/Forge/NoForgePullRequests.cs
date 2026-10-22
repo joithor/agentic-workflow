@@ -33,5 +33,11 @@ internal sealed class NoForgePullRequests : IPullRequests
 
     public ValueTask<Result<Unit>> Update(string link, string? title, string? body, CancellationToken cancellationToken) => None<Unit>();
 
+    public ValueTask<Result<Unit>> Retarget(string link, string newBase, CancellationToken cancellationToken) => None<Unit>();
+
+    public ValueTask<Result<string>> DefaultBranch(PullRepo repo, CancellationToken cancellationToken) => None<string>();
+
+    public ValueTask<Result<IReadOnlyList<PullDigest>>> Digest(IReadOnlyList<string> links, CancellationToken cancellationToken) => None<IReadOnlyList<PullDigest>>();
+
     private static ValueTask<Result<T>> None<T>() => ValueTask.FromResult<Result<T>>(SindriErrors.NoForge.With("the approved profile has no workflow.forge.adapter"));
 }

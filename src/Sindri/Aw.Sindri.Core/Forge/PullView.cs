@@ -9,4 +9,5 @@ namespace Aw.Sindri.Core.Forge;
 /// <param name="UnresolvedThreads">How many review threads are open.</param>
 /// <param name="Checks">The checks.</param>
 /// <param name="Labels">The labels on it, by name.</param>
-public sealed record PullView(string Link, PullState State, string HeadSha, bool? Mergeable, string? ReviewDecision, int UnresolvedThreads, PullChecks Checks, IReadOnlyList<string> Labels);
+/// <param name="Base">The base branch it targets, by name.</param>
+public sealed record PullView(string Link, PullState State, string HeadSha, bool? Mergeable, string? ReviewDecision, int UnresolvedThreads, PullChecks Checks, IReadOnlyList<string> Labels, string Base);

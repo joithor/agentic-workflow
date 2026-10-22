@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Aw.Forge.Core;
 using Aw.Forge.Core.Ports;
 using Aw.Forge.Core.Pulls;
@@ -6,7 +7,6 @@ using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Forge;
 using Results = Aw.Kernel.Results;
-using System.Diagnostics;
 
 namespace Aw.Sindri.Host.Forge;
 
@@ -15,7 +15,7 @@ namespace Aw.Sindri.Host.Forge;
 /// records meet the forge's refs and DTOs. The forge checks every link and repository against the profile's host list before it sends anything.
 /// </summary>
 /// <param name="forge">The adapter the profile's 'workflow.forge.adapter' names.</param>
-internal sealed class ForgePullRequests(IForge forge) : IPullRequests
+internal sealed partial class ForgePullRequests(IForge forge) : IPullRequests
 {
     public async ValueTask<Result<PullView>> Get(string link, CancellationToken cancellationToken)
     {
@@ -40,7 +40,7 @@ internal sealed class ForgePullRequests(IForge forge) : IPullRequests
 
         var s = snapshot.Value;
         var open = threads.Value.Count(static t => t.Kind == CommentKind.Thread && !t.Resolved);
-        return new PullView(pull.Link, State(s.Status), s.Head.Sha, s.Mergeable, s.ReviewDecision, open, new PullChecks(Checks(s.Checks.State), s.Checks.Sha, s.Checks.Failing), s.Labels);
+        return new PullView(pull.Link, State(s.Status), s.Head.Sha, s.Mergeable, s.ReviewDecision, open, new PullChecks(Checks(s.Checks.State), s.Checks.Sha, s.Checks.Failing), s.Labels, s.Base.Ref);
     }
 
     public async ValueTask<Result<string>> CheckLog(string link, string check, CancellationToken cancellationToken)
