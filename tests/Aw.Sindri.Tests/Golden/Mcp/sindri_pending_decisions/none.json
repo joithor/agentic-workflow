@@ -4,8 +4,8 @@
     "decisions": [],
     "empty": "No decisions are waiting.",
     "asOf": {
-      "cursor": 119,
-      "ledgerHead": 119,
+      "cursor": 120,
+      "ledgerHead": 120,
       "projectedAt": "2026-01-01T00:00:00.0000000Z",
       "rebuilding": false,
       "stalled": false
