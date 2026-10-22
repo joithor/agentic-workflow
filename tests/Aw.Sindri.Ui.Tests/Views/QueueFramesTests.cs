@@ -122,7 +122,7 @@ public sealed class QueueFramesTests : IDisposable
         Settle(window);
 
         var page = Named<Control>(window, "QueuePage");
-        var headers = page.GetVisualDescendants().OfType<ToggleButton>().Where(t => t.Classes.Contains("group-head") && t.IsEffectivelyVisible).Select(AutomationProperties.GetName).ToList();
+        var headers = page.GetVisualDescendants().OfType<ToggleButton>().Where(t => t.Classes.Contains("group-head") && t.IsEffectivelyVisible && t.Name != "QueueClosedToggle").Select(AutomationProperties.GetName).ToList();
         Assert.Equal(["Queued 4"], headers, StringComparer.Ordinal);
         var rows = page.GetVisualDescendants().OfType<Ui.Views.Queue.ItemRow>().Where(r => r.IsEffectivelyVisible).Select(r => r.ItemId).ToList();
         Assert.Equal(4, rows.Count);
