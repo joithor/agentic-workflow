@@ -4225,3 +4225,50 @@ override Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest.GetHashCode() -> i
 override Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest.ToString() -> string!
 static Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest.operator !=(Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest? left, Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest? right) -> bool
 static Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest.operator ==(Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest? left, Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest? right) -> bool
+Aw.Sindri.Features.OnboardRepo.OnboardRepoRequest
+Aw.Sindri.Features.OnboardRepo.OnboardRepoRequest.<Clone>$() -> Aw.Sindri.Features.OnboardRepo.OnboardRepoRequest!
+Aw.Sindri.Features.OnboardRepo.OnboardRepoRequest.OnboardRepoRequest(string! Path) -> void
+Aw.Sindri.Features.OnboardRepo.OnboardRepoRequest.Deconstruct(out string! Path) -> void
+Aw.Sindri.Features.OnboardRepo.OnboardRepoRequest.Path.get -> string!
+Aw.Sindri.Features.OnboardRepo.OnboardRepoRequest.Path.init -> void
+Aw.Sindri.Features.OnboardRepo.OnboardRepoRequest.Equals(Aw.Sindri.Features.OnboardRepo.OnboardRepoRequest? other) -> bool
+override Aw.Sindri.Features.OnboardRepo.OnboardRepoRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.OnboardRepo.OnboardRepoRequest.GetHashCode() -> int
+override Aw.Sindri.Features.OnboardRepo.OnboardRepoRequest.ToString() -> string!
+static Aw.Sindri.Features.OnboardRepo.OnboardRepoRequest.operator !=(Aw.Sindri.Features.OnboardRepo.OnboardRepoRequest? left, Aw.Sindri.Features.OnboardRepo.OnboardRepoRequest? right) -> bool
+static Aw.Sindri.Features.OnboardRepo.OnboardRepoRequest.operator ==(Aw.Sindri.Features.OnboardRepo.OnboardRepoRequest? left, Aw.Sindri.Features.OnboardRepo.OnboardRepoRequest? right) -> bool
+Aw.Sindri.Features.OnboardRepo.OnboardedRepo
+Aw.Sindri.Features.OnboardRepo.OnboardedRepo.<Clone>$() -> Aw.Sindri.Features.OnboardRepo.OnboardedRepo!
+Aw.Sindri.Features.OnboardRepo.OnboardedRepo.OnboardedRepo(Aw.Sindri.Core.Ids.RepoName Repo, string! Hooks) -> void
+Aw.Sindri.Features.OnboardRepo.OnboardedRepo.Deconstruct(out Aw.Sindri.Core.Ids.RepoName Repo, out string! Hooks) -> void
+Aw.Sindri.Features.OnboardRepo.OnboardedRepo.Repo.get -> Aw.Sindri.Core.Ids.RepoName
+Aw.Sindri.Features.OnboardRepo.OnboardedRepo.Repo.init -> void
+Aw.Sindri.Features.OnboardRepo.OnboardedRepo.Hooks.get -> string!
+Aw.Sindri.Features.OnboardRepo.OnboardedRepo.Hooks.init -> void
+Aw.Sindri.Features.OnboardRepo.OnboardedRepo.Equals(Aw.Sindri.Features.OnboardRepo.OnboardedRepo? other) -> bool
+override Aw.Sindri.Features.OnboardRepo.OnboardedRepo.Equals(object? obj) -> bool
+override Aw.Sindri.Features.OnboardRepo.OnboardedRepo.GetHashCode() -> int
+override Aw.Sindri.Features.OnboardRepo.OnboardedRepo.ToString() -> string!
+static Aw.Sindri.Features.OnboardRepo.OnboardedRepo.operator !=(Aw.Sindri.Features.OnboardRepo.OnboardedRepo? left, Aw.Sindri.Features.OnboardRepo.OnboardedRepo? right) -> bool
+static Aw.Sindri.Features.OnboardRepo.OnboardedRepo.operator ==(Aw.Sindri.Features.OnboardRepo.OnboardedRepo? left, Aw.Sindri.Features.OnboardRepo.OnboardedRepo? right) -> bool
+Aw.Sindri.Features.InitProfile.InitProfileRequest
+Aw.Sindri.Features.InitProfile.InitProfileRequest.<Clone>$() -> Aw.Sindri.Features.InitProfile.InitProfileRequest!
+Aw.Sindri.Features.InitProfile.InitProfileRequest.InitProfileRequest() -> void
+Aw.Sindri.Features.InitProfile.InitProfileRequest.Equals(Aw.Sindri.Features.InitProfile.InitProfileRequest? other) -> bool
+override Aw.Sindri.Features.InitProfile.InitProfileRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.InitProfile.InitProfileRequest.GetHashCode() -> int
+override Aw.Sindri.Features.InitProfile.InitProfileRequest.ToString() -> string!
+static Aw.Sindri.Features.InitProfile.InitProfileRequest.operator !=(Aw.Sindri.Features.InitProfile.InitProfileRequest? left, Aw.Sindri.Features.InitProfile.InitProfileRequest? right) -> bool
+static Aw.Sindri.Features.InitProfile.InitProfileRequest.operator ==(Aw.Sindri.Features.InitProfile.InitProfileRequest? left, Aw.Sindri.Features.InitProfile.InitProfileRequest? right) -> bool
+Aw.Sindri.Features.InitProfile.InitProfileResponse
+Aw.Sindri.Features.InitProfile.InitProfileResponse.<Clone>$() -> Aw.Sindri.Features.InitProfile.InitProfileResponse!
+Aw.Sindri.Features.InitProfile.InitProfileResponse.InitProfileResponse(string! Path) -> void
+Aw.Sindri.Features.InitProfile.InitProfileResponse.Deconstruct(out string! Path) -> void
+Aw.Sindri.Features.InitProfile.InitProfileResponse.Path.get -> string!
+Aw.Sindri.Features.InitProfile.InitProfileResponse.Path.init -> void
+Aw.Sindri.Features.InitProfile.InitProfileResponse.Equals(Aw.Sindri.Features.InitProfile.InitProfileResponse? other) -> bool
+override Aw.Sindri.Features.InitProfile.InitProfileResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.InitProfile.InitProfileResponse.GetHashCode() -> int
+override Aw.Sindri.Features.InitProfile.InitProfileResponse.ToString() -> string!
+static Aw.Sindri.Features.InitProfile.InitProfileResponse.operator !=(Aw.Sindri.Features.InitProfile.InitProfileResponse? left, Aw.Sindri.Features.InitProfile.InitProfileResponse? right) -> bool
+static Aw.Sindri.Features.InitProfile.InitProfileResponse.operator ==(Aw.Sindri.Features.InitProfile.InitProfileResponse? left, Aw.Sindri.Features.InitProfile.InitProfileResponse? right) -> bool

@@ -50,6 +50,7 @@ using Aw.Sindri.Features.GetRepoStatus;
 using Aw.Sindri.Features.GetSession;
 using Aw.Sindri.Features.GetSessionPreview;
 using Aw.Sindri.Features.GetStatus;
+using Aw.Sindri.Features.InitProfile;
 using Aw.Sindri.Features.IssueChallenge;
 using Aw.Sindri.Features.IssueNonce;
 using Aw.Sindri.Features.Items;
@@ -125,6 +126,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddRecordServiceRun()
             .AddScoped<IService<CheckProfileRequest, CheckProfileResponse>, CheckProfileService>()
             .AddScoped<IService<ValidateProfileRequest, ValidateProfileResponse>, ValidateProfileService>()
+            .AddScoped<IService<InitProfileRequest, InitProfileResponse>, InitProfileService>()
             .AddDoctor()
             .AddOnyxStatus()
             .AddScoped<ServeRecords>()
@@ -151,7 +153,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddLaunchSlices()
             .AddLaunchTargetJob()
             .AddScoped<IRepoCheckouts, ProfileRepoCheckouts>()
-            .AddAddRepo().AddRegisterMcpJob()
+            .AddAddRepo().AddRegisterMcpJob().AddOnboardRepo()
             .AddStationSlices();
         return services;
     }
