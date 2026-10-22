@@ -14,7 +14,10 @@
       "paused": false,
       "lastRun": null,
       "nextSlot": null,
-      "job": null
+      "job": null,
+      "actions": [
+        "run"
+      ]
     },
     {
       "name": "context-sync-gaps",
@@ -22,7 +25,10 @@
       "paused": false,
       "lastRun": null,
       "nextSlot": null,
-      "job": null
+      "job": null,
+      "actions": [
+        "run"
+      ]
     },
     {
       "name": "heartbeat",
@@ -30,7 +36,11 @@
       "paused": false,
       "lastRun": null,
       "nextSlot": null,
-      "job": null
+      "job": null,
+      "actions": [
+        "run",
+        "pause"
+      ]
     },
     {
       "name": "phantom",
@@ -38,7 +48,11 @@
       "paused": false,
       "lastRun": null,
       "nextSlot": null,
-      "job": null
+      "job": null,
+      "actions": [
+        "run",
+        "pause"
+      ]
     },
     {
       "name": "router-stub",
@@ -46,7 +60,10 @@
       "paused": false,
       "lastRun": null,
       "nextSlot": null,
-      "job": null
+      "job": null,
+      "actions": [
+        "run"
+      ]
     },
     {
       "name": "setup",
@@ -54,7 +71,10 @@
       "paused": false,
       "lastRun": null,
       "nextSlot": null,
-      "job": null
+      "job": null,
+      "actions": [
+        "run"
+      ]
     },
     {
       "name": "stuck",
@@ -62,7 +82,10 @@
       "paused": false,
       "lastRun": null,
       "nextSlot": null,
-      "job": "JOB-0000000000000000000000000000000e"
+      "job": "JOB-0000000000000000000000000000000f",
+      "actions": [
+        "pause"
+      ]
     },
     {
       "name": "workflow-events",
@@ -70,13 +93,16 @@
       "paused": false,
       "lastRun": null,
       "nextSlot": null,
-      "job": null
+      "job": null,
+      "actions": [
+        "run"
+      ]
     }
   ],
   "empty": null,
   "asOf": {
-    "cursor": 7,
-    "ledgerHead": 7,
+    "cursor": 8,
+    "ledgerHead": 8,
     "projectedAt": "2026-01-01T00:00:00.0000000Z",
     "rebuilding": false,
     "stalled": false
