@@ -90,8 +90,8 @@ public sealed class ProfileChangesTests
     [Fact, Trait("Lane", "unit")]
     public void Allowance_says_a_removed_daily_budget_and_a_raised_size_budget()
     {
-        var approved = Profile(agents: Agents(("claude", 5m)), plan: new PlanSettings(Sizes: new() { ["S"] = new SizeSettings(Budget: new BudgetSettings(Tokens: 1000, Turns: 10)) }));
-        var live = Profile(agents: Agents(("claude", null)), plan: new PlanSettings(Sizes: new() { ["S"] = new SizeSettings(Budget: new BudgetSettings(Tokens: 2000, Turns: 10, WallMinutes: 30)) }));
+        var approved = Profile(agents: Agents(("claude", 5m)), plan: new PlanSettings(Sizes: new Dictionary<string, SizeSettings>(StringComparer.Ordinal) { ["S"] = new SizeSettings(Budget: new BudgetSettings(Tokens: 1000, Turns: 10)) }));
+        var live = Profile(agents: Agents(("claude", null)), plan: new PlanSettings(Sizes: new Dictionary<string, SizeSettings>(StringComparer.Ordinal) { ["S"] = new SizeSettings(Budget: new BudgetSettings(Tokens: 2000, Turns: 10, WallMinutes: 30)) }));
 
         var changes = ProfileChanges.Between(approved, live, _sentences);
 
