@@ -12418,13 +12418,13 @@ static Aw.Sindri.Core.Checks.RuleFinding.operator ==(Aw.Sindri.Core.Checks.RuleF
 static Aw.Sindri.Core.Checks.ScopeGlobs.Allows(System.Collections.Generic.IReadOnlyList<string!>! entries, string! path) -> bool
 static Aw.Sindri.Core.Checks.SecretScan.Findings(string! rule, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.AddedLine!>! lines, Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.RuleFinding!>!
 static Aw.Sindri.Core.Checks.TestPaths.IsTest(string! path) -> bool
-Aw.Sindri.Core.Ports.ISetupFacts
-Aw.Sindri.Core.Ports.ISetupFacts.Map(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.MapFact!>!>
-Aw.Sindri.Core.Ports.ISetupFacts.Mcp(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.McpFact!>!>
-Aw.Sindri.Core.Ports.ISetupFacts.Onyx(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.OnyxFact!>!>
-Aw.Sindri.Core.Ports.ISetupFacts.Profile(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.ProfileFact!>!>
-Aw.Sindri.Core.Ports.ISetupFacts.Recipes(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.RecipesFact!>!>
-Aw.Sindri.Core.Ports.ISetupFacts.Repos(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.RepoFact!>!>
+Aw.Sindri.Core.Setup.ISetupFacts
+Aw.Sindri.Core.Setup.ISetupFacts.Map(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.MapFact!>!>
+Aw.Sindri.Core.Setup.ISetupFacts.Mcp(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.McpFact!>!>
+Aw.Sindri.Core.Setup.ISetupFacts.Onyx(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.OnyxFact!>!>
+Aw.Sindri.Core.Setup.ISetupFacts.Profile(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.ProfileFact!>!>
+Aw.Sindri.Core.Setup.ISetupFacts.Recipes(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.RecipesFact!>!>
+Aw.Sindri.Core.Setup.ISetupFacts.Repos(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.RepoFact!>!>
 Aw.Sindri.Core.Setup.MapFact
 Aw.Sindri.Core.Setup.MapFact.<Clone>$() -> Aw.Sindri.Core.Setup.MapFact!
 Aw.Sindri.Core.Setup.MapFact.Deconstruct(out Aw.Sindri.Core.Setup.MapPhase Phase, out Aw.Sindri.Core.Setup.SetupProgress? Progress, out string? FailureCode) -> void
@@ -16193,7 +16193,7 @@ static Aw.Sindri.Core.Setup.SetupStepChanges.Word(Aw.Sindri.Core.Setup.SetupStat
 static Aw.Sindri.Core.Setup.SetupStepChanges.Word(Aw.Sindri.Core.Setup.SetupStepId id) -> string!
 Aw.Sindri.Core.Setup.SetupDeriver
 Aw.Sindri.Core.Setup.SetupDeriver.Derive(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupStep!>!>
-Aw.Sindri.Core.Setup.SetupDeriver.SetupDeriver(Aw.Sindri.Core.Ports.ISetupFacts! facts, System.Action<string!, System.Exception!>? sourceFailed = null) -> void
+Aw.Sindri.Core.Setup.SetupDeriver.SetupDeriver(Aw.Sindri.Core.Setup.ISetupFacts! facts, System.Action<string!, System.Exception!>? sourceFailed = null) -> void
 Aw.Sindri.Core.Setup.SetupStepLog
 Aw.Sindri.Core.Setup.SetupStepLog.Add(Aw.Sindri.Core.Setup.SetupStepId id, Aw.Sindri.Core.Setup.SetupState state, string? code) -> void
 Aw.Sindri.Core.Setup.SetupStepLog.Loaded.get -> bool
