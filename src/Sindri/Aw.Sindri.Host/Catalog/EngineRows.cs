@@ -39,6 +39,8 @@ internal static class EngineRows
 
         // ---- P4: instances (bound and mapped), and P5's takeover and handback ----
         Ready("StartInstance", typeof(StartInstanceRequest), ActionClass.Desk, "POST /sindri/workflow/instances", "sindri workflow start <recipe> --item <itemId>") with { ReadsViews = true }, // UI spec E-19: it waits for the launches view head
+        // Run again: a desk row, not destructive, offered only on a root instance that ended failed, unresolved or cancelled (Reruns). Its CLI is the start's next attempt; the app's button also repeats the inputs.
+        Ready("RerunInstance", typeof(RerunInstanceRequest), ActionClass.Desk, "POST /sindri/workflow/instances/{instanceId}/rerun", "sindri workflow start <recipe> --item <itemId> --attempt next"),
         Ready("IssueNonce", typeof(IssueNonceRequest), ActionClass.Issue, "POST /sindri/workflow/instances/{instanceId}/nonce", "sindri workflow command <address> <verb>"),
         Ready("ApplyCommand:answer-text", typeof(ApplyCommandRequest), ActionClass.Desk, Commands, "sindri workflow answer <address> --text <text>"),
         Ready("ApplyCommand:answer-resume", typeof(ApplyCommandRequest), ActionClass.Desk, Commands, "sindri workflow answer <address> --resume"),
