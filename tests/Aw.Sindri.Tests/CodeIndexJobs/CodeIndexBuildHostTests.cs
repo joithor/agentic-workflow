@@ -84,7 +84,9 @@ public sealed class CodeIndexBuildHostTests : IDisposable
             await Task.Delay(250, ct);
         }
 
-        throw new TimeoutException("the index job didn't end");
+        var last = (await views.List(state: null, JobKind.From("BuildCodeIndex"), ct)).Value;
+        var tail = (await host.App.Services.GetRequiredService<ILedgerStore>().ReadAfter(0, 1000, ct)).Value ?? [];
+        throw new TimeoutException($"the index job didn't end: {last.Count} jobs ({string.Join(", ", last.Select(static j => $"{j.State} {j.Code} {j.Progress.Count} lines {j.Summary}"))}); the ledger ends with: {string.Join(", ", tail.TakeLast(8).Select(static e => e.Envelope.Type))}");
     }
 
     private static async Task<int> Built(GoldenHost host, CancellationToken ct)

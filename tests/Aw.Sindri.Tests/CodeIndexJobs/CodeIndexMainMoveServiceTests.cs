@@ -132,7 +132,7 @@ public sealed class CodeIndexMainMoveServiceTests
         _ = await Run();
         Assert.Empty(_start.Requests);
 
-        _rig.Job("demo", JobState.Succeeded, TimeSpan.FromMinutes(11), outcome: "deferred");
+        _rig.Harness.Clock.Advance(TimeSpan.FromMinutes(2));   // the same deferred build has now ended 11 minutes ago
         _ = await Run();
 
         _ = Assert.Single(_start.Requests);
