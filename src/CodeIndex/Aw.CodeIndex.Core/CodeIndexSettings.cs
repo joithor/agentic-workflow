@@ -1,3 +1,4 @@
+using Aw.CodeIndex.Core.Embedding;
 using Aw.CodeIndex.Core.Model;
 using Aw.Kernel;
 
@@ -66,7 +67,7 @@ public sealed record CodeIndexSettings(
 
     private static Error? CheckEmbeddings(CodeIndexSettingsInput input)
     {
-        if (!IsLoopbackUrl(input.EmbeddingsUrl ?? DefaultEmbeddingsUrl))
+        if (!EmbeddingTarget.IsLoopbackUrl(input.EmbeddingsUrl ?? DefaultEmbeddingsUrl))
         {
             return CodeIndexErrors.EmbeddingTargetRefused.With("index.embeddings.url: must be http://127.0.0.1 or http://[::1], with no credentials");
         }
@@ -90,10 +91,4 @@ public sealed record CodeIndexSettings(
 
     private static string? Globs(string key, IReadOnlyList<string>? globs)
         => globs?.Any(string.IsNullOrWhiteSpace) == true ? $"{key}: a glob is empty" : null;
-
-    private static bool IsLoopbackUrl(string url)
-        => Uri.TryCreate(url, UriKind.Absolute, out var uri)
-            && string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.Ordinal)
-            && uri.UserInfo.Length == 0
-            && (string.Equals(uri.Host, "127.0.0.1", StringComparison.Ordinal) || string.Equals(uri.Host, "[::1]", StringComparison.Ordinal));
 }
