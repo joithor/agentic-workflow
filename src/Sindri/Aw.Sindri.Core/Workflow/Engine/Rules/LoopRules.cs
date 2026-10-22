@@ -19,6 +19,9 @@ namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 /// </remarks>
 internal static partial class LoopRules
 {
+    /// <summary>How many launches in a row may fail in one round before the instance parks (a failed launch counts no round, so this bounds the relaunching).</summary>
+    public const int MaxLaunchFailures = 3;
+
     /// <summary>
     /// Entering a looped state again (spec §3.7): the next round, or a park with no-progress (the round repeats the
     /// last one's mark on a signal the loop names) or rounds (past the allowed rounds), kind loop, resume transition.
@@ -47,7 +50,38 @@ internal static partial class LoopRules
 
         return loop.Round >= loop.Allowed
             ? new LoopVerdict(Next: null, LoopPark(ParkReason.Rounds, $"{name} used all {Text(loop.Allowed)} rounds"))
-            : new LoopVerdict(loop with { Round = loop.Round + 1, Last = mark }, Park: null);
+            : new LoopVerdict(loop with { Round = loop.Round + 1, Last = mark, LaunchFailures = 0 }, Park: null);
+    }
+
+    /// <summary>
+    /// A launch that never started a session failed, and the failed transition enters the looped state again: the round stays (a launch failure is no round of work),
+    /// and the <see cref="MaxLaunchFailures"/>th in a row parks with needs-answer, as a failed Step no transition takes does, with the last error as the question.
+    /// </summary>
+    /// <param name="instance">The instance.</param>
+    /// <param name="recipe">Its recipe.</param>
+    /// <param name="state">The looped state being entered again.</param>
+    /// <param name="question">What the park asks when the streak ends here: the Step and the last launch error.</param>
+    /// <param name="actor">Who reported the failure.</param>
+    /// <returns>Go on in the same round with the streak counted, or park with the streak cleared for the answer's re-run.</returns>
+    public static LoopVerdict LaunchFailed(WorkflowInstance instance, Recipe recipe, string state, string question, string actor)
+    {
+        ArgumentNullException.ThrowIfNull(instance);
+        ArgumentNullException.ThrowIfNull(recipe);
+        if (Find(recipe, state) is not var (name, spec))
+        {
+            return new LoopVerdict(Next: null, Park: null);
+        }
+
+        var loop = Counters(instance, name, spec);
+        if (loop.LaunchFailures + 1 < MaxLaunchFailures)
+        {
+            return new LoopVerdict(loop with { LaunchFailures = loop.LaunchFailures + 1 }, Park: null);
+        }
+
+        var park = new Suspension(
+            SuspensionKind.Park, ParkReason.NeedsAnswer, ParkKind.Step, Escalation: null, question, actor, Mirrors: null,
+            new ResumeAction(ResumeKind.Rerun, Withheld: null, Gate: null, Effects: []));
+        return new LoopVerdict(loop with { LaunchFailures = 0 }, park);
     }
 
     /// <summary>Whether the loop of <paramref name="state"/> is at its allowed rounds (a refusal there parks with rounds, kind refusal).</summary>

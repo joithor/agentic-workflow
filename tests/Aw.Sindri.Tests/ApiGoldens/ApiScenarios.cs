@@ -39,6 +39,7 @@ internal static class ApiScenarios
         ["Launches"] = [.. LaunchScenarios.All, .. WrapSessionScenarios.All],
         ["Setup"] = [.. SetupScenarios.All, .. SetupRepoScenarios.All],
         ["Recipes"] = ApproveAllScenarios.All,
+        ["CodeIndex"] = CodeIndexScenarios.All,
     };
 
     /// <summary>Every (route slug, scenario) pair, group by group.</summary>
@@ -49,7 +50,9 @@ internal static class ApiScenarios
 
     /// <summary>Starts the host the scenario runs on: the plain golden host, or for the context routes one over a small git repo with a map.</summary>
     public static async Task<GoldenHost> Start(string slug, string scenario, CancellationToken ct) =>
-        ContextApiScenarios.Handles(slug)
+        CodeIndexScenarios.Handles(slug)
+            ? await CodeIndexScenarios.Start(ct)
+            : ContextApiScenarios.Handles(slug)
             ? await ContextApiScenarios.Start(slug, scenario, ct)
             : SetupScenarios.Handles(slug, scenario)
             ? await SetupScenarios.Start(scenario, ct)
@@ -73,6 +76,11 @@ internal static class ApiScenarios
     /// <summary>Runs the scenario against <paramref name="host"/> and returns the body to compare.</summary>
     public static async Task<string> Body(GoldenHost host, string slug, string scenario, CancellationToken ct)
     {
+        if (CodeIndexScenarios.Handles(slug))
+        {
+            return await CodeIndexScenarios.Body(host, slug, scenario, ct);
+        }
+
         if (ContextApiScenarios.Handles(slug))
         {
             return await ContextApiScenarios.Body(host, slug, scenario, ct);

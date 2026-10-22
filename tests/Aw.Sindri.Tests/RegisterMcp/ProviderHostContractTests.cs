@@ -101,9 +101,9 @@ public sealed class ProviderHostContractTests : ProviderHostContract, IDisposabl
         var path = Path.Combine(Root, relativePath);
         _ = Directory.CreateDirectory(Path.GetDirectoryName(path)!);   // why: the path has a directory
         await File.WriteAllTextAsync(path, text, Token);
-        await Git("init", "-q");
+        await Git(IsolatedGit.Init());
         await Git("add", "--", relativePath);
-        await Git("-c", "user.email=test@example.invalid", "-c", "user.name=test", "commit", "-q", "-m", "init");
+        await Git([.. IsolatedGit.NoHooks, "-c", "user.email=test@example.invalid", "-c", "user.name=test", "commit", "-q", "-m", "init"]);
     }
 
     private ProviderHost Host(Dictionary<string, string> environment)

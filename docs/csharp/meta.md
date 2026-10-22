@@ -356,10 +356,26 @@ SL-1). With no file the launcher is what it was apart from the team's own tmux s
 | `viewer.kind: exec-template` | One window per lane (the lanes of this run, so `--lanes` opens only those) running `viewer.argv` with `{title}` and `{name}` = `<team>-<lane>`, `{cwd}` = the repo, `{cmd...}` = `tmux -L <team> attach -t =<team>-<lane>`; `--no-open` opens none, `--dry-run` prints each argv. A terminal that is not installed never stops the sessions: the attach command is printed |
 | `viewer.kind: print` | Prints `tmux -L <team> attach -t =<team>-<lane>` per lane |
 | `host` | Checked, not used: lanes always run in tmux |
-| `meta.lanesAgent`, `meta.lanes.<lane>` | The catalog agent that runs the lane (the meta lane is always Claude Code). The catalog is `config/launcher/builtins.json` plus the file's `agents` |
+| `meta.lanesAgent`, `meta.lanes.<lane>` | The catalog agent that runs the lane. `lanesAgent` is the default for the lanes and never reaches the meta lane, which is Claude Code unless `meta.lanes.<metaLane>` names another agent. Every lane must resolve to the meta lane's agent (see "One agent per team" below). The catalog is `config/launcher/builtins.json` plus the file's `agents` |
 | `agents.<id>` | `open`/`resume` argv templates (`{bin}`, `{cwd}`, `{name}`, `{seed}`, `{sessionId}`), `processName` (the pane check that restarts a lane whose agent exited) and `transcripts` (the glob that decides resume) |
 
-**Non-Claude lanes.** A lane on `codex`, `cursor` or an added agent starts and resumes. `aw-meta-launch` prints
+**One agent per team.** A team is all Claude Code or all Codex (or another single catalog agent): there is no mixed team and no
+meta-to-lane delivery across agents. Before it creates anything (the `--dry-run` too) `aw-meta-launch` resolves every lane of the
+team config, not only those `--lanes` selects, and exits 1 when any differs from the meta lane's agent:
+`meta-launch: a team runs one agent: the meta lane 'meta' runs claude-code, but api (codex), ui (codex) do not. Make them agree in
+launcher.json ...`. An all-Claude team (no `launcher.json`) is unaffected. A Codex team is written with `meta.lanes.<metaLane>`
+naming `codex` next to `meta.lanesAgent: codex`; a `launcher.json` that only set `lanesAgent` (Codex lanes under a Claude meta, which
+worked before) is now refused with that message.
+
+**Codex meta role.** A Codex meta reports its session id after it starts, so `meta-lane.sh` has no id to hand `role-set` on a fresh
+start (it still does on a resume, where the id is known). `session-id-report.sh` registers the role instead: in the lane whose name is
+the `metaLane` of the team config `AW_META_CONFIG` names (default `meta`), once it has written `lane-sessions/<lane>`, it runs
+`aw-meta role-set --session <id> --name <team>-<lane>`. The hook, not the launcher's id watcher, because a later session of the meta
+lane (a new id after `/new`) must take the role too, and the watcher has ended by then. A failing `role-set` is a `session-id-report`
+fail-open cause (`role-set-exit-<n>`), and the id stays recorded. `meta-lane-gate.sh` passes the meta lane straight through: it runs
+none of `lane-inbox`, `lane-reply` or `lane-stop-check` for it (the meta has no lane inbox; its Codex stop gate and inbox are a later change).
+
+**Non-Claude lanes.** A lane on `codex`, `cursor` or an added agent starts and resumes, under a meta lane on the same agent (a Claude meta with Codex lanes is refused, see "One agent per team" above). `aw-meta-launch` prints
 `lane <l>: <agent>, takes part in the obligations through its hooks (scripts/install-meta.sh installs them)` for an agent whose
 catalog entry has `reportedId.hook: true`, and `lane <l>: <agent>, launch-only: no obligations` for one without a hook system. A
 lane takes part once its hooks are installed and trusted (see [Non-Claude lanes](#non-claude-lanes)); a launch-only lane is not

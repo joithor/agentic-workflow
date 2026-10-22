@@ -17,7 +17,7 @@ public class RefreshEngineProxy : DispatchProxy
     public Result<IReadOnlyList<RepoHead>> Heads { get; set; } = new List<RepoHead> { new(ContextRepoName.From("app"), "abc123", OnDefault: true) };
 
     /// <summary>What <see cref="IContextMap.BuildMap"/> answers.</summary>
-    public Result<MapBuildReport> Built { get; set; } = new MapBuildReport(Version(2, MapVersionStatus.Draft), [], []);
+    public Result<MapBuildReport> Built { get; set; } = new MapBuildReport(Version(2, MapVersionStatus.Draft), [], [], []);
 
     /// <summary>What <see cref="IContextMap.ReviewQueue"/> answers.</summary>
     public Result<ReviewQueueView> Queue { get; set; } = new ReviewQueueView("v2@abc123", ReviewVersion.None, [], 0, 0, new QueueCounts(3, 0, 0), new Dictionary<string, int>(StringComparer.Ordinal), ReviewTruncated.None);

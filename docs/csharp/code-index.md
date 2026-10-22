@@ -39,3 +39,16 @@ Area `SND-CODEIDX` (`CodeIndexErrors` in `Aw.CodeIndex.Core`); 014 to 029 are re
 - The facade `ICodeIndex`: `Build`, `Status`, `Heads`, `ProbeLayers`, `FindSymbols`, `FileSymbols`, `Callers`, `Callees`, `Similar`, `Neighbors`; every call takes a `CodeIndexScope` (the caller's repos, each with its effective settings, and the caller).
 - `Aw.CodeIndex.Testing`: `GitRepoBuilder` / `TempGitRepo` (git init, commits, symlinks, a submodule entry, a path swapped after the commit, a promisor clone), `FakeRepoSnapshot`, `FakeIndexStore`, `FakeRepoHeads`, `FakeHeavyJobLock`, `FakeBodyScrubber`, `FakeSymbolParser`. The contract bases come with the adapters (CI-2, CI-3, ...).
 - `Aw.CodeIndex.Infrastructure` is `AwAotCompatible=false`: the C# parser (CI-4) uses Roslyn, which is not trim or NativeAOT safe.
+
+## Read surfaces (CI-10a)
+
+Sindri's reads of the facade live in `Aw.Sindri.Features/CodeIndexReads` (the slices) and `Aw.Sindri.Host` (routes, CLI, text); the facade is `ICodeIndex`, scoped by `CodeIndexScopes` from the approved profile and the caller (a session's scope holds only its own repo, so another repo and a repo that does not exist answer the same SND-CODEIDX-013).
+
+| Surface | What |
+|---|---|
+| `sindri code-index status [--repo R] [--json]` | each repo's state, commit, layers and counts; exit 1 when a repo is not `ok` |
+| `sindri code-index symbols <query> [--repo R] [--prefix] [--json]` | symbols by name, path, `path#name` or ref (exact), or by name prefix |
+| `sindri code-index callers\|callees <ref> [--depth 1..3] [--repo R] [--json]` | edges with basis, confidence and coverage; `--repo` lets a ref be written `path#name` |
+| `GET /sindri/code-index/status`, `/symbols`, `/callers`, `/callees` | the same, query class, goldens in `tests/Aw.Sindri.Tests/Golden/Api/code-index-*` |
+
+Exit codes: 0 ok; 1 attention (a repo not ok, the control plane down, SND-CODEIDX-011 and -013); 2 error (including -012). Callers and callees carry `coverage` (`full`, `partial` or `unavailable`) per row and for the answer, both taken from the facade's `CallEdge` and `CallsAnswer` (the answer rule is `CallCoverage.Of`, in `Aw.CodeIndex.Core.Facade`): any partial row, or a partial language, makes the answer `partial`, and an empty partial answer reads "none found", never "none". The CLI prints the answer's coverage in the header line, each row's after its basis (`certain (syntax, full)`), and the note line (`none found (coverage partial: ...)`); `--json` and the routes carry the `coverage` and `note` fields. Sessions get the repo text (names, signatures, paths) fenced as untrusted by the server. There are no MCP tools in version 1 (spec §10). Until CI-9 registers the real facade, the host answers every repo as `missing` through `UnbuiltCodeIndex`.

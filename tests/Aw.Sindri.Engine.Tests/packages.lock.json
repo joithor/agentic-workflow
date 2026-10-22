@@ -541,6 +541,14 @@
           "xunit.v3.runner.common": "[4.0.1]"
         }
       },
+      "aw.codeindex.core": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
+          "Vogen": "[8.0.7, 8.0.7]"
+        }
+      },
       "aw.context.core": {
         "type": "Project",
         "dependencies": {
@@ -643,6 +651,7 @@
       "aw.sindri.features": {
         "type": "Project",
         "dependencies": {
+          "Aw.CodeIndex.Core": "[1.0.0, )",
           "Aw.Context.Core": "[1.0.0, )",
           "Aw.Kernel": "[1.0.0, )",
           "Aw.Sindri.Core": "[1.0.0, )",
@@ -684,6 +693,7 @@
       "sindri": {
         "type": "Project",
         "dependencies": {
+          "Aw.CodeIndex.Core": "[1.0.0, )",
           "Aw.Context.Core": "[1.0.0, )",
           "Aw.Context.Features": "[1.0.0, )",
           "Aw.Context.Infrastructure": "[1.0.0, )",

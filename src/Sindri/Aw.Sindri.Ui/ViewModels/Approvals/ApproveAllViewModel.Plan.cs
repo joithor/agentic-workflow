@@ -73,7 +73,7 @@ internal sealed partial class ApproveAllViewModel
     public string TypedAlternative { get; private set => Set(ref field, value); } = string.Empty;
 
     /// <summary>The shortest hold the server accepts, in milliseconds.</summary>
-    public int MinHoldMs { get; private set => Set(ref field, value); } = DefaultHoldMs;
+    public int MinHoldMs => Hold.MinHoldMs;
 
     /// <summary>True when there is a challenge to answer and a plan to approve: the hold and the typed field are live.</summary>
     public bool CanApprove => Phase == ApproveAllPhase.Plan && _challenge is not null && !IsSending && Rows.Count > 0;
@@ -113,6 +113,7 @@ internal sealed partial class ApproveAllViewModel
         OwnApproval = [.. plan.OwnApproval.Select(OwnLine)];
         EmptyText = plan.Empty ?? string.Empty;
         Heading = Labels.ApprovePlanHeading(plan.Recipes.Count);
+        Hold.SetCount(Rows.Count);
         DetailLines = [.. Rows.Select(r => r.Detail).Prepend("plan " + plan.Digest)];
         OnChanged(nameof(HasOwnApproval));
     }
@@ -145,13 +146,12 @@ internal sealed partial class ApproveAllViewModel
 
         _challenge = asked.Value;
         TypedAlternative = asked.Value.TypedAlternative ?? asked.Value.Action;
-        MinHoldMs = asked.Value.MinHoldMs ?? DefaultHoldMs;
+        Hold.Offer(asked.Value);
+        TypedBox.Offer(asked.Value);
         Notice = string.Empty;   // "that took too long" is over once the fresh challenge is here
         OnChanged(nameof(CanApprove));
         OnChanged(nameof(CanRetry));
         OnChanged(nameof(OffersHold));
-        OnChanged(nameof(HoldHelp));
-        OnChanged(nameof(HoldName));
         Live.Say(Labels.ApproveReady);
     }
 
@@ -211,7 +211,9 @@ internal sealed partial class ApproveAllViewModel
     {
         (Rows, OwnApproval, DetailLines) = ([], [], []);
         (Heading, EmptyText, Error, ErrorCode, Notice, TypedAlternative) = (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
-        MinHoldMs = DefaultHoldMs;
+        Hold.SetMinHold(DefaultHoldMs);
+        Hold.SetCount(0);
+        TypedBox.Clear();
         OnChanged(nameof(HasOwnApproval));
         OnChanged(nameof(HasNotice));
     }
