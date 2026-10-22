@@ -22,6 +22,7 @@ namespace Aw.Sindri.Tests.Workflow.Effects;
 [Lane(TestLane.Unit)]
 public sealed class PrMergeReplyEffectTests
 {
+    private const string Hidden = "swordfish-test-value";
     private const string Link = "https://forge.example/acme/web/pull/7";
 
     private readonly RecordingPulls _pulls = new();
@@ -160,14 +161,14 @@ public sealed class PrMergeReplyEffectTests
     }
 
     [Fact]
-    public async Task Hold_writes_a_hold_mark_with_its_reason_and_posts_nothing()
+    public async Task Hold_writes_a_held_mark_with_its_reason_and_posts_nothing()
     {
         var context = await Context("effect.pr.reply", new Dictionary<string, string> { ["form"] = "hold", ["reason"] = "\"type\"", ["comment"] = """{"id":"c1","key":"t9"}""" });
 
         _ = await Reply().Dispatch(context, Token);
         var mark = Assert.Single((await _marks.Latest(_pr, Token)).Value);
 
-        Assert.Equal(("hold", "type"), (mark.Outcome, mark.Reason));
+        Assert.Equal(("held", "type"), (mark.Outcome, mark.Reason));
         Assert.Empty(_pulls.Replies);
     }
 
@@ -241,7 +242,22 @@ public sealed class PrMergeReplyEffectTests
         Assert.Empty(_pulls.Replies);
     }
 
-    private PrReplyEffect Reply() => new(_pulls, _facts, _marks, _clock);
+    [Fact]
+    public async Task A_thread_reply_is_scrubbed_before_it_reaches_the_forge()
+    {
+        var context = await Context("effect.pr.reply", new Dictionary<string, string> { ["form"] = "thread", ["comment"] = """{"id":"c1","key":"t9"}""", ["body"] = "\"Value " + Hidden + " fixed.\"" });
+
+        _ = await Reply().Dispatch(context, Token);
+
+        Assert.Equal("Value [masked] fixed.", Assert.Single(_pulls.Replies).Text);
+    }
+
+    private sealed class Mask : Aw.Sindri.Core.Text.ITextScrubber
+    {
+        public string Scrub(string text) => text.Replace(Hidden, "[masked]", StringComparison.Ordinal);
+    }
+
+    private PrReplyEffect Reply() => new(_pulls, _facts, _marks, _clock, new Mask());
 
     private PrCommentMark Marked(string comment, string outcome, string commit, string effect) =>
         new(_pr, PrCommentId.From(comment), EditedAt: null, InstanceAddress.From("T-4/pr/1"), outcome, Reason: null, commit, KnownInstants.Epoch, effect);
