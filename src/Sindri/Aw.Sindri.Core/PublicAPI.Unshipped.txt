@@ -15959,6 +15959,56 @@ static Aw.Sindri.Core.Events.ContextMapPublished.operator !=(Aw.Sindri.Core.Even
 static Aw.Sindri.Core.Events.ContextMapPublished.operator ==(Aw.Sindri.Core.Events.ContextMapPublished? left, Aw.Sindri.Core.Events.ContextMapPublished? right) -> bool
 static Aw.Sindri.Core.Events.ContextMapPublishedPublic.operator !=(Aw.Sindri.Core.Events.ContextMapPublishedPublic? left, Aw.Sindri.Core.Events.ContextMapPublishedPublic? right) -> bool
 static Aw.Sindri.Core.Events.ContextMapPublishedPublic.operator ==(Aw.Sindri.Core.Events.ContextMapPublishedPublic? left, Aw.Sindri.Core.Events.ContextMapPublishedPublic? right) -> bool
+Aw.Sindri.Core.Events.CodeIndexBuilt
+Aw.Sindri.Core.Events.CodeIndexBuilt.<Clone>$() -> Aw.Sindri.Core.Events.CodeIndexBuilt!
+Aw.Sindri.Core.Events.CodeIndexBuilt.AmbiguousShare.get -> double
+Aw.Sindri.Core.Events.CodeIndexBuilt.AmbiguousShare.init -> void
+Aw.Sindri.Core.Events.CodeIndexBuilt.CodeIndexBuilt(string! Repo, string! Commit, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.CodeIndexBuiltLayer!>! Layers, int Files, int Symbols, int Edges, double UnresolvedShare, double AmbiguousShare, int EmbeddedPercent, long Milliseconds, bool Incremental) -> void
+Aw.Sindri.Core.Events.CodeIndexBuilt.Commit.get -> string!
+Aw.Sindri.Core.Events.CodeIndexBuilt.Commit.init -> void
+Aw.Sindri.Core.Events.CodeIndexBuilt.Deconstruct(out string! Repo, out string! Commit, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.CodeIndexBuiltLayer!>! Layers, out int Files, out int Symbols, out int Edges, out double UnresolvedShare, out double AmbiguousShare, out int EmbeddedPercent, out long Milliseconds, out bool Incremental) -> void
+Aw.Sindri.Core.Events.CodeIndexBuilt.Edges.get -> int
+Aw.Sindri.Core.Events.CodeIndexBuilt.Edges.init -> void
+Aw.Sindri.Core.Events.CodeIndexBuilt.EmbeddedPercent.get -> int
+Aw.Sindri.Core.Events.CodeIndexBuilt.EmbeddedPercent.init -> void
+Aw.Sindri.Core.Events.CodeIndexBuilt.Equals(Aw.Sindri.Core.Events.CodeIndexBuilt? other) -> bool
+Aw.Sindri.Core.Events.CodeIndexBuilt.Files.get -> int
+Aw.Sindri.Core.Events.CodeIndexBuilt.Files.init -> void
+Aw.Sindri.Core.Events.CodeIndexBuilt.Incremental.get -> bool
+Aw.Sindri.Core.Events.CodeIndexBuilt.Incremental.init -> void
+Aw.Sindri.Core.Events.CodeIndexBuilt.Layers.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.CodeIndexBuiltLayer!>!
+Aw.Sindri.Core.Events.CodeIndexBuilt.Layers.init -> void
+Aw.Sindri.Core.Events.CodeIndexBuilt.Milliseconds.get -> long
+Aw.Sindri.Core.Events.CodeIndexBuilt.Milliseconds.init -> void
+Aw.Sindri.Core.Events.CodeIndexBuilt.Repo.get -> string!
+Aw.Sindri.Core.Events.CodeIndexBuilt.Repo.init -> void
+Aw.Sindri.Core.Events.CodeIndexBuilt.Symbols.get -> int
+Aw.Sindri.Core.Events.CodeIndexBuilt.Symbols.init -> void
+Aw.Sindri.Core.Events.CodeIndexBuilt.UnresolvedShare.get -> double
+Aw.Sindri.Core.Events.CodeIndexBuilt.UnresolvedShare.init -> void
+Aw.Sindri.Core.Events.CodeIndexBuiltLayer
+Aw.Sindri.Core.Events.CodeIndexBuiltLayer.<Clone>$() -> Aw.Sindri.Core.Events.CodeIndexBuiltLayer!
+Aw.Sindri.Core.Events.CodeIndexBuiltLayer.Code.get -> string?
+Aw.Sindri.Core.Events.CodeIndexBuiltLayer.Code.init -> void
+Aw.Sindri.Core.Events.CodeIndexBuiltLayer.CodeIndexBuiltLayer(string! Name, string! Status, string? Code) -> void
+Aw.Sindri.Core.Events.CodeIndexBuiltLayer.Deconstruct(out string! Name, out string! Status, out string? Code) -> void
+Aw.Sindri.Core.Events.CodeIndexBuiltLayer.Equals(Aw.Sindri.Core.Events.CodeIndexBuiltLayer? other) -> bool
+Aw.Sindri.Core.Events.CodeIndexBuiltLayer.Name.get -> string!
+Aw.Sindri.Core.Events.CodeIndexBuiltLayer.Name.init -> void
+Aw.Sindri.Core.Events.CodeIndexBuiltLayer.Status.get -> string!
+Aw.Sindri.Core.Events.CodeIndexBuiltLayer.Status.init -> void
+const Aw.Sindri.Core.Events.ApiViews.CodeIndex = "code-index" -> string!
+const Aw.Sindri.Core.Events.EventTypes.CodeIndexBuilt = "codeindex.built" -> string!
+override Aw.Sindri.Core.Events.CodeIndexBuilt.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.CodeIndexBuilt.GetHashCode() -> int
+override Aw.Sindri.Core.Events.CodeIndexBuilt.ToString() -> string!
+override Aw.Sindri.Core.Events.CodeIndexBuiltLayer.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.CodeIndexBuiltLayer.GetHashCode() -> int
+override Aw.Sindri.Core.Events.CodeIndexBuiltLayer.ToString() -> string!
+static Aw.Sindri.Core.Events.CodeIndexBuilt.operator !=(Aw.Sindri.Core.Events.CodeIndexBuilt? left, Aw.Sindri.Core.Events.CodeIndexBuilt? right) -> bool
+static Aw.Sindri.Core.Events.CodeIndexBuilt.operator ==(Aw.Sindri.Core.Events.CodeIndexBuilt? left, Aw.Sindri.Core.Events.CodeIndexBuilt? right) -> bool
+static Aw.Sindri.Core.Events.CodeIndexBuiltLayer.operator !=(Aw.Sindri.Core.Events.CodeIndexBuiltLayer? left, Aw.Sindri.Core.Events.CodeIndexBuiltLayer? right) -> bool
+static Aw.Sindri.Core.Events.CodeIndexBuiltLayer.operator ==(Aw.Sindri.Core.Events.CodeIndexBuiltLayer? left, Aw.Sindri.Core.Events.CodeIndexBuiltLayer? right) -> bool
 Aw.Sindri.Core.Worktrees.ITrackedFiles
 Aw.Sindri.Core.Worktrees.ITrackedFiles.Paths(string! checkout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.IDiffContent
