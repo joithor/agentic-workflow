@@ -36,8 +36,5 @@ public static class ServiceActions
     /// <param name="paused">True when the service is paused.</param>
     /// <param name="jobRunning">True when a manual run of it is running.</param>
     /// <returns>The allowed actions, in the order run, pause, resume.</returns>
-    public static IReadOnlyList<string> Allowed(bool namedByProfile, bool builtIn, bool paused, bool jobRunning)
-    {
-        throw new NotSupportedException();
-    }
+    public static IReadOnlyList<string> Allowed(bool namedByProfile, bool builtIn, bool paused, bool jobRunning) => throw new NotSupportedException();
 }
