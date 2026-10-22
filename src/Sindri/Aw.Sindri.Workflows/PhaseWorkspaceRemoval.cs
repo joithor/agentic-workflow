@@ -1,6 +1,6 @@
-using Aw.Sindri.Core.Worktrees;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Worktrees;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
@@ -13,5 +13,9 @@ internal sealed class PhaseWorkspaceRemoval(IFactContents contents, IWorktrees w
     /// <param name="workspace">The stored 'fact:workspace'.</param>
     /// <param name="cancellationToken">Cancels the removal.</param>
     /// <returns>True when the worktree is gone (or was); false when it was left as it is.</returns>
-    public ValueTask<bool> Remove(FactValue workspace, CancellationToken cancellationToken) => throw new NotSupportedException();
+    public async ValueTask<bool> Remove(FactValue workspace, CancellationToken cancellationToken)
+    {
+        var path = await PhaseWorkspace.PathOf(contents, workspace, cancellationToken).ConfigureAwait(false);
+        return !path.IsError && !(await worktrees.Remove(path.Value, cancellationToken).ConfigureAwait(false)).IsError;   // why: a tree that can't be removed (SND-WT-004) is left as it is; the ending stands
+    }
 }

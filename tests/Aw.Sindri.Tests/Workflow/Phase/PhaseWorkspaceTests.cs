@@ -2,10 +2,10 @@ using System.Security.Cryptography;
 using System.Text;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Worktrees;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Worktrees;
 using Aw.Sindri.Infrastructure.Workflows;
 
 namespace Aw.Sindri.Tests.Workflow.Phase;
@@ -100,7 +100,7 @@ public sealed class PhaseWorkspaceTests
     [Fact]
     public async Task A_tree_with_uncommitted_files_is_left_as_it_is_and_the_ending_is_not_failed()
     {
-        var worktrees = new Recording { Answer = Sindri.Core.SindriErrors.WorktreeDirty.With("dirty") };
+        var worktrees = new Recording { Answer = Core.SindriErrors.WorktreeDirty.With("dirty") };
         var removal = new PhaseWorkspaceRemoval(new Facts1("/work/phase"), worktrees);
 
         Assert.False(await removal.Remove(Stored("/work/phase"), Token));
