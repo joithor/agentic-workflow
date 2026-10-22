@@ -173,13 +173,15 @@ all built in one place when the launch is prepared:
 | `AW_SINDRI_WORKTREE` | the Step's worktree (the phase worktree, else its working directory); the pre-push hook refuses wherever it is set |
 
 The scrub is the pure `LaunchEnvironment.Scrub` in Core. The **pre-push hook** is written to the hooks directory git resolves for the Step's working directory
-(`git rev-parse --git-path hooks`, so `core.hooksPath` and a linked worktree's shared directory are respected). It prints `SND-LAUNCH-022: agent Steps can't push; Sindri pushes`
+(`git rev-parse --git-path hooks`, so `core.hooksPath` and a linked worktree's shared directory are respected). It prints `SND-LAUNCH-023: agent Steps can't push; Sindri pushes`
 and exits 1 where `AW_SINDRI_WORKTREE` is set, and exits 0 otherwise, so the owner's pushes from the same repo pass. It is installed only when missing or ours (marker line
 `# aw-sindri pre-push guard (LN-LCH1)`); a `pre-push` hook that isn't ours refuses the launch with `SND-LAUNCH-022` and is never changed. An attended open gets none of this.
 
-**Writable and denied paths.** The `claude-settings-file` policy already allows `Edit`/`Write` under the policy's writable path (the Step's worktree). Denying reads and edits of
-other phases' worktrees and the holdout store is **not done**: `StepPolicy` carries no list of other worktrees or a holdout path, so it needs the engine to state them
-(a `DeniedPaths` list on `StepPolicy`, rendered as `Read`/`Edit` deny rules for `claude-settings-file`, and `SND-LAUNCH-013` for a form with no deny).
+**Writable and denied paths.** The `claude-settings-file` policy allows `Edit`/`Write` under the policy's writable path (the Step's worktree), and renders
+`StepPolicy.DeniedPaths` as `Read(//path/**)` and `Edit(//path/**)` deny rules. An entry that can't express a denied read (`codex-overrides`, `cursor-config`, `none`)
+refuses a Step whose `DeniedPaths` is non-empty with `SND-LAUNCH-013`. The engine does not fill the list yet: it has no source for other phases' worktrees (the
+sibling worktrees under the line's phase area) or the holdout store's location, so `AgentLaunches.RequestFor` passes none. Plumbing and rendering are in place; the
+engine fills the list when those locations exist.
 
 ## C# ports
 

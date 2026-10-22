@@ -16,7 +16,7 @@ internal static class PrePushGuard
         "#!/bin/sh\n"
         + Marker + "\n"
         + $"if [ -n \"${{{LaunchEnvironment.Worktree}:-}}\" ]; then\n"
-        + $"  echo \"{SindriErrors.LaunchPrePushForeign.Code}: agent Steps can't push; Sindri pushes\" >&2\n"
+        + $"  echo \"{SindriErrors.LaunchPushRefused.Code}: agent Steps can't push; Sindri pushes\" >&2\n"
         + "  exit 1\n"
         + "fi\n"
         + "exit 0\n";
