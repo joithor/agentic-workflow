@@ -205,6 +205,7 @@ internal sealed partial class RunPageViewModel(ISindriApi api, CatalogViewModel 
         (World, ReadingOrder, SelectedKey, _opened, _openPending) = (default, [], null, false, false);
         _watched = new HashSet<string>(StringComparer.Ordinal);
         ClearRuns();
+        ResetInspector();
         Phase = RunPageState.Empty;
     }
 
