@@ -112,6 +112,7 @@ internal sealed partial class ContextPageViewModel
 
     private void Show(LensesView? view, List<string> choices, bool fromQuestion = false)
     {
+        ForgetSelection();
         Problem = string.Empty;
         Choices = choices;
         if (view is null)
@@ -125,7 +126,7 @@ internal sealed partial class ContextPageViewModel
 
         Head = fromQuestion ? Labels.ContextFromQuestion(view.Anchors.Count) : Labels.ContextHead(view.Anchors.Count);
         AsOfLiveHint = Labels.ContextMapVersionLine(view.MapVersion, view.MapCommit);
-        Map = new ContextMapViewModel(view);
+        Map = new ContextMapViewModel(view) { Chosen = key => _ = Select(key) };
         Missing = [.. (view.MissingAnchors ?? []).Select(a => new ContextLine($"{a} · {Labels.ContextNotFound}"))];
     }
 
@@ -140,6 +141,7 @@ internal sealed partial class ContextPageViewModel
         OnChanged(nameof(Problem));
         OnChanged(nameof(HasStack));
         OnChanged(nameof(MapVisible));
+        OnChanged(nameof(InspectorOpen));
         OnChanged(nameof(IsDraft));
         OnChanged(nameof(HasChoices));
         OnChanged(nameof(HasProblem));
