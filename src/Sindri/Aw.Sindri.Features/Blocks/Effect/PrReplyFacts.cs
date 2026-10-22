@@ -32,6 +32,15 @@ internal static class PrReplyFacts
     public static ValueTask<Result<JsonElement>> Fact(IFactContents facts, EffectContext context, string key, CancellationToken cancellationToken) =>
         context.Facts.TryGetValue(FactKey.From(key), out var value) ? Content(facts, value, cancellationToken) : ValueTask.FromResult<Result<JsonElement>>(default(JsonElement));
 
+    /// <summary>The result of an absent argument: an undefined element.</summary>
+    public static Result<JsonElement> Undefined { get; } = default(JsonElement);
+
+    /// <summary>The first error among <paramref name="results"/>.</summary>
+    /// <param name="results">The reads.</param>
+    /// <returns>The first error, or null when every read succeeded.</returns>
+    public static Error? FirstError(params Result<JsonElement>[] results) =>
+        results.FirstOrDefault(r => r.IsError)?.Error;
+
     /// <summary>The text a value holds: itself when it is a string, else the first of <paramref name="names"/> its object has as a string.</summary>
     /// <param name="value">The value.</param>
     /// <param name="names">The property names, most wanted first.</param>
