@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.CodeIndex.Core;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Infrastructure.Deps;
@@ -6,14 +7,14 @@ namespace Aw.CodeIndex.Tests.Deps;
 
 public sealed class CentralPackagesReaderTests
 {
-    private readonly CentralPackagesReader reader = new();
+    private readonly CentralPackagesReader _reader = new();
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("Directory.Packages.props", true)]
     [InlineData("src/Directory.Packages.props", true)]
     [InlineData("Directory.Build.props", false)]
     [InlineData("App.csproj", false)]
-    public void Handles_only_directory_packages_props(string path, bool expected) => Assert.Equal(expected, reader.Handles(path));
+    public void Handles_only_directory_packages_props(string path, bool expected) => Assert.Equal(expected, _reader.Handles(path));
 
     [Fact, Trait("Lane", "unit")]
     public void Read_gives_package_versions_and_global_references()
@@ -35,17 +36,17 @@ public sealed class CentralPackagesReaderTests
                 new DepRecord("Directory.Packages.props", "Roslyn", "5.9.0", "central", "conditional"),
                 new DepRecord("Directory.Packages.props", "Meziantou.Analyzer", "2.0.1", "global", ""),
             ],
-            reader.Read("Directory.Packages.props", text));
+            _reader.Read("Directory.Packages.props", text));
     }
 
     [Fact, Trait("Lane", "unit")]
     public void Read_stops_at_the_per_manifest_limit()
     {
-        var items = string.Concat(Enumerable.Range(0, CodeIndexRules.MaxDepsPerManifest + 10).Select(i => $"<PackageVersion Include=\"P{i}\" Version=\"1\"/>"));
+        var items = string.Concat(Enumerable.Range(0, CodeIndexRules.MaxDepsPerManifest + 10).Select(i => $"<PackageVersion Include=\"P{i.ToString(CultureInfo.InvariantCulture)}\" Version=\"1\"/>"));
 
-        Assert.Equal(CodeIndexRules.MaxDepsPerManifest, reader.Read("Directory.Packages.props", $"<Project><ItemGroup>{items}</ItemGroup></Project>").Count);
+        Assert.Equal(CodeIndexRules.MaxDepsPerManifest, _reader.Read("Directory.Packages.props", $"<Project><ItemGroup>{items}</ItemGroup></Project>").Count);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Read_gives_no_rows_for_a_malformed_file() => Assert.Empty(reader.Read("Directory.Packages.props", "<Project>"));
+    public void Read_gives_no_rows_for_a_malformed_file() => Assert.Empty(_reader.Read("Directory.Packages.props", "<Project>"));
 }

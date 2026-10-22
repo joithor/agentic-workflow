@@ -5,14 +5,14 @@ namespace Aw.CodeIndex.Tests.Deps;
 
 public sealed class CsprojReaderTests
 {
-    private readonly CsprojReader reader = new();
+    private readonly CsprojReader _reader = new();
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("src/App/App.csproj", true)]
     [InlineData("App.CSPROJ", true)]
     [InlineData("App.csproj.user", false)]
     [InlineData("package.json", false)]
-    public void Handles_csproj_files(string path, bool expected) => Assert.Equal(expected, reader.Handles(path));
+    public void Handles_csproj_files(string path, bool expected) => Assert.Equal(expected, _reader.Handles(path));
 
     [Fact, Trait("Lane", "unit")]
     public void Read_takes_versions_from_attributes_children_and_overrides()
@@ -33,7 +33,7 @@ public sealed class CsprojReaderTests
             </Project>
             """;
 
-        var rows = reader.Read("App.csproj", text);
+        var rows = _reader.Read("App.csproj", text);
 
         Assert.Equal(
             [
@@ -56,7 +56,7 @@ public sealed class CsprojReaderTests
             </Project>
             """;
 
-        Assert.Equal([new DepRecord("Old.csproj", "Dup", "1.0.0", "runtime", "")], reader.Read("Old.csproj", text));
+        Assert.Equal([new DepRecord("Old.csproj", "Dup", "1.0.0", "runtime", "")], _reader.Read("Old.csproj", text));
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -64,5 +64,5 @@ public sealed class CsprojReaderTests
     [InlineData("<Project><ItemGroup>")]
     [InlineData("plain text")]
     [InlineData("<!DOCTYPE Project [<!ENTITY a \"aaaa\">]><Project><ItemGroup><PackageReference Include=\"&a;\" Version=\"1\"/></ItemGroup></Project>")]
-    public void Read_gives_no_rows_for_a_malformed_file_or_one_with_a_dtd(string text) => Assert.Empty(reader.Read("App.csproj", text));
+    public void Read_gives_no_rows_for_a_malformed_file_or_one_with_a_dtd(string text) => Assert.Empty(_reader.Read("App.csproj", text));
 }

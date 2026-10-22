@@ -5,7 +5,7 @@ namespace Aw.CodeIndex.Tests.Deps;
 
 public sealed class PackageJsonReaderTests
 {
-    private readonly PackageJsonReader reader = new();
+    private readonly PackageJsonReader _reader = new();
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("package.json", true)]
@@ -13,7 +13,7 @@ public sealed class PackageJsonReaderTests
     [InlineData("package-lock.json", false)]
     [InlineData("my-package.json", false)]
     [InlineData("src/A.cs", false)]
-    public void Handles_only_files_named_package_json(string path, bool expected) => Assert.Equal(expected, reader.Handles(path));
+    public void Handles_only_files_named_package_json(string path, bool expected) => Assert.Equal(expected, _reader.Handles(path));
 
     [Fact, Trait("Lane", "unit")]
     public void Read_gives_one_row_per_dependency_with_its_kind()
@@ -26,7 +26,7 @@ public sealed class PackageJsonReaderTests
               "optionalDependencies": { "fsevents": "2.3.3" } }
             """;
 
-        var rows = reader.Read("web/package.json", text);
+        var rows = _reader.Read("web/package.json", text);
 
         Assert.Equal(
             [
@@ -47,7 +47,7 @@ public sealed class PackageJsonReaderTests
     [InlineData("https://example.test/x.tgz", "url")]
     [InlineData("^1.2.3", "")]
     public void Read_tags_the_versions_that_are_not_from_the_registry(string version, string tags)
-        => Assert.Equal(tags, Assert.Single(reader.Read("package.json", $"{{\"dependencies\":{{\"x\":\"{version}\"}}}}")).Tags);
+        => Assert.Equal(tags, Assert.Single(_reader.Read("package.json", $"{{\"dependencies\":{{\"x\":\"{version}\"}}}}")).Tags);
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("")]
@@ -55,8 +55,8 @@ public sealed class PackageJsonReaderTests
     [InlineData("[1,2]")]
     [InlineData("""{"dependencies": ["a"]}""")]
     [InlineData("""{"dependencies": {"a": 1, "b": null, "": "1"}}""")]
-    public void Read_gives_no_rows_for_a_malformed_or_oddly_shaped_file(string text) => Assert.Empty(reader.Read("package.json", text));
+    public void Read_gives_no_rows_for_a_malformed_or_oddly_shaped_file(string text) => Assert.Empty(_reader.Read("package.json", text));
 
     [Fact, Trait("Lane", "unit")]
-    public void Read_survives_a_deeply_nested_file() => Assert.Empty(reader.Read("package.json", new string('[', 5_000)));
+    public void Read_survives_a_deeply_nested_file() => Assert.Empty(_reader.Read("package.json", new string('[', 5_000)));
 }

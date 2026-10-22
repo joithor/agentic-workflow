@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.CodeIndex.Core;
 using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Model;
@@ -9,7 +10,7 @@ namespace Aw.CodeIndex.Tests.Similarity;
 
 public sealed class ClonesTests
 {
-    private static List<string> Body(int count, string prefix = "t") => [.. Enumerable.Range(0, count).Select(i => $"{prefix}{i}")];
+    private static List<string> Body(int count, string prefix = "t") => [.. Enumerable.Range(0, count).Select(i => $"{prefix}{i.ToString(CultureInfo.InvariantCulture)}")];
 
     [Fact, Trait("Lane", "unit")]
     public void Fnv1a_matches_the_published_vectors()
@@ -31,7 +32,7 @@ public sealed class ClonesTests
     {
         var signature = Clones.Signature(Body(40));
 
-        Assert.Equal("KNOWN-VECTOR", Convert.ToHexStringLower(signature, 0, 32));
+        Assert.Equal("322c1e05d77f3e06d54e360720e695022ee47b0422cf9401960a5f057b22b404", Convert.ToHexStringLower(signature, 0, 32));
         Assert.Equal(signature, Clones.Signature(Body(40)));
         Assert.NotEqual(signature, Clones.Signature(Body(40, "u")));
     }
@@ -56,7 +57,7 @@ public sealed class ClonesTests
         var keys = Clones.BandKeys(a);
 
         Assert.Equal(CodeIndexRules.MinHashBands, keys.Count);
-        Assert.Equal(keys.Count, keys.Distinct().Count());
+        Assert.Equal(keys.Count, keys.Distinct(StringComparer.Ordinal).Count());
         Assert.All(keys, k => Assert.Equal(33, k.Length));
         Assert.Equal(keys, Clones.BandKeys(Clones.Signature(Body(40))));
         Assert.Empty(Clones.BandKeys([]));
@@ -68,7 +69,7 @@ public sealed class ClonesTests
         var original = Tokens("int Total(Order o) { var sum = 0; foreach (var line in o.Lines) { if (line.Qty > 0) { sum += line.Price * line.Qty; } else { log.Skip(line.Id); } } return sum; }");
         var edited = Tokens("int Total(Order o) { var sum = 0; foreach (var line in o.Lines) { if (line.Qty > 0) { sum += line.Price * line.Qty; } else { log.Skip(line.Id); } } return sum + o.Fee; }");
 
-        var shared = Clones.BandKeys(Clones.Signature(original)).Intersect(Clones.BandKeys(Clones.Signature(edited)));
+        var shared = Clones.BandKeys(Clones.Signature(original)).Intersect(Clones.BandKeys(Clones.Signature(edited)), StringComparer.Ordinal);
 
         Assert.NotEmpty(shared);
         Assert.True(Clones.Similarity(Clones.Signature(original), Clones.Signature(edited)) >= CodeIndexRules.NearCloneThreshold);
@@ -85,7 +86,7 @@ public sealed class ClonesTests
     {
         var found = Clones.Find(Hit("Subject").Ref, new CloneCandidates([Hit("Zed"), Hit("Subject"), Hit("Alpha")], default, []));
 
-        Assert.Equal(["Alpha", "Zed"], found.Exact.Select(h => h.Name));
+        Assert.Equal(["Alpha", "Zed"], found.Exact.Select(h => h.Name), StringComparer.Ordinal);
         Assert.Empty(found.Near);
     }
 
@@ -99,7 +100,7 @@ public sealed class ClonesTests
         var found = Clones.Find(Hit("Subject").Ref, new CloneCandidates([Hit("Twin")], subject,
             [Banded("Far", far), Banded("Close", close), Banded("Twin", subject), Banded("Subject", subject), Banded("Same", subject)]));
 
-        Assert.Equal(["Same", "Close"], found.Near.Select(n => n.Symbol.Name));
+        Assert.Equal(["Same", "Close"], found.Near.Select(n => n.Symbol.Name), StringComparer.Ordinal);
         Assert.Equal(1.0, found.Near[0].Similarity);
         Assert.True(found.Near[1].Similarity >= CodeIndexRules.NearCloneThreshold);
     }
@@ -111,7 +112,7 @@ public sealed class ClonesTests
     [Fact, Trait("Lane", "unit")]
     public void Find_caps_each_list_at_the_hit_limit()
     {
-        var exact = Enumerable.Range(0, CodeIndexRules.MaxSymbolHits + 20).Select(i => Hit($"E{i:D4}")).ToList();
+        var exact = Enumerable.Range(0, CodeIndexRules.MaxSymbolHits + 20).Select(i => Hit($"E{i.ToString("D4", CultureInfo.InvariantCulture)}")).ToList();
 
         Assert.Equal(CodeIndexRules.MaxSymbolHits, Clones.Find(Hit("Subject").Ref, new CloneCandidates(exact, default, [])).Exact.Count);
     }

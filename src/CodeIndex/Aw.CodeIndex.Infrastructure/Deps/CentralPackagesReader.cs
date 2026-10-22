@@ -7,6 +7,8 @@ namespace Aw.CodeIndex.Infrastructure.Deps;
 /// <summary>Reads the dependencies of Directory.Packages.props files.</summary>
 internal sealed class CentralPackagesReader : IManifestReader
 {
+    private static readonly HashSet<string> _itemNames = new(["PackageVersion", "GlobalPackageReference"], StringComparer.Ordinal);
+
     public bool Handles(string path) => ManifestXml.NameIs(path, "Directory.Packages.props");
 
     public IReadOnlyList<DepRecord> Read(string path, string text)
@@ -20,7 +22,7 @@ internal sealed class CentralPackagesReader : IManifestReader
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var rows = new List<DepRecord>();
         var items = root.Descendants()
-            .Where(e => e.Name.LocalName == "PackageVersion" || e.Name.LocalName == "GlobalPackageReference");
+            .Where(e => _itemNames.Contains(e.Name.LocalName));
         foreach (var item in items)
         {
             var name = ManifestXml.Attribute(item, "Include");
