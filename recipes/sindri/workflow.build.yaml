@@ -1,6 +1,6 @@
 schema: 1
 id: workflow.build
-version: 2
+version: 3
 description: "Block recipe: one TDD builder for one phase in its own worktree: a failing test per acceptance item, then code in atomic commits inside the phase's allowed files."
 inputs:
   - { key: fact:phasePacket, label: "Phase packet (frozen)", type: packet, kind: packet }
@@ -18,11 +18,11 @@ states:
                 next: "Check {item}'s phase worktree is clean at its recorded head." }
   slot:       { kind: wait, waitFor: { resource: heavy }, timeout: { after: 1d, then: park },
                 next: "Waiting for a heavy-job slot for {item}'s builder." }
-  red:        { kind: active, step: step.build.red, loop: tests, budget: { tokens: 300k }, timeout: { after: 3h, then: park },
+  red:        { kind: active, step: step.build.red, loop: tests, budget: { tokens: 1M }, timeout: { after: 3h, then: park },
                 next: "Write a failing test for each of {item}'s acceptance items (try {loop.tests}/{loop.tests.cap})." }
   red-check:  { kind: active, step: step.build.red-check, timeout: { after: 1h, then: park },
                 next: "Run {item}'s red tests on the red commit: each must fail." }
-  green:      { kind: active, step: step.build.green, loop: revisions, budget: { tokens: 600k }, timeout: { after: 6h, then: park },
+  green:      { kind: active, step: step.build.green, loop: revisions, budget: { tokens: 1M }, timeout: { after: 6h, then: park },
                 next: "Implement {item} in atomic commits inside its allowed files (round {loop.revisions}/{loop.revisions.cap})." }
   checks:     { kind: active, step: step.build.checks, timeout: { after: 1h, then: park },
                 next: "Run {item}'s scope gate, build rules and the repo's commands." }
@@ -49,7 +49,7 @@ transitions:
   - { from: scope-desk, to: stopped, on: step.completed, when: { outcome: stop } }
   - { from: amend, to: checks, on: step.completed, when: { outcome: amended }, produces: [fact:activePacket] }
 loops: { tests: { cap: 3 }, revisions: { cap: 4 }, grants: { cap: 3 } }
-budget: { tokens: 1200k }
+budget: { tokens: 8M }
 evals:
   - evals/workflow.build/blocked-stop.jsonl
   - evals/workflow.build/happy.jsonl

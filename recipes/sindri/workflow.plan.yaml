@@ -1,6 +1,6 @@
 schema: 1
 id: workflow.plan
-version: 2
+version: 3
 description: "Station 3 of the line: the phase graph for a candidate design, its executability review and hidden scenarios, then the owner's after-design stop, which freezes the design, the plan and every phase packet together."
 urgency: work
 inputs:
@@ -21,7 +21,7 @@ states:
       inputs:
         - { use: input.context.code, with: { anchors: { fact: fact:anchors } } }   # LN-CTX2: the code lens, anchored on the design's covered surfaces (intake derives fact:anchors from the design packet)
     loop: rounds
-    budget: { tokens: 300k }
+    budget: { tokens: 1M }
     timeout: { after: 3h, then: park }
     next: "Draft {item}'s phase graph (round {loop.rounds}/{loop.rounds.cap})."
   check:       { kind: active, step: step.plan.check, timeout: { after: 1h, then: park },
@@ -32,10 +32,10 @@ states:
       use: step.plan.exec-review
       inputs:
         - { use: input.context.code, with: { anchors: { fact: fact:anchors } } }   # LN-CTX2
-    budget: { tokens: 150k }
+    budget: { tokens: 1M }
     timeout: { after: 2h, then: park }
     next: "Review each of {item}'s phases as its builder: executable, context, files, checkable signals."
-  holdout:     { kind: active, step: step.plan.holdout, budget: { tokens: 200k }, timeout: { after: 2h, then: park },
+  holdout:     { kind: active, step: step.plan.holdout, budget: { tokens: 1M }, timeout: { after: 2h, then: park },
                  next: "Write {item}'s hidden scenarios into the holdout store." }
   evidence:    { kind: active, step: step.plan.evidence, timeout: { after: 1h, then: park },
                  next: "Check {item}'s design and plan evidence and assemble the candidate packets." }
@@ -80,7 +80,7 @@ transitions:
   - { from: freeze, to: planned, on: step.completed, when: { outcome: frozen },   produces: [fact:planPacket, fact:phasePackets] }
   - { from: freeze, to: evidence, on: step.completed, when: { outcome: mismatch }, produces: [fact:findings] }
 loops: { rounds: { cap: 5 }, refreeze: { cap: 2 }, revisions: { cap: 5 } }
-budget: { tokens: 1000k }
+budget: { tokens: 15M }
 evals:   # the 7 cases of Appendix B.1 (plan's happy-assumed is assumed-happy: the shipped-recipe test wants a *-happy name) and two more
   - evals/workflow.plan/assumed-happy.jsonl
   - evals/workflow.plan/changed-decision.jsonl
