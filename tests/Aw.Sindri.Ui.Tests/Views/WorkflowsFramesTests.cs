@@ -70,7 +70,7 @@ public sealed class WorkflowsFramesTests : FrameHost
         Assert.DoesNotContain(texts, t => t.Contains("workflow.", StringComparison.Ordinal));
         Assert.DoesNotContain(frame.GetVisualDescendants().OfType<Border>(), b => (string.Equals(b.Name, "WorkflowRowInputs", StringComparison.Ordinal) || string.Equals(b.Name, "WorkflowRowStages", StringComparison.Ordinal)) && b.IsEffectivelyVisible);
         var head = Named<Border>(window, "WorkflowColumnHead");   // the head sits above the scrolled rows
-        var kept = ListColumns.For(Named<Border>(window, "WorkflowsPanel").Bounds.Width);
+        var kept = ListColumns.For(ListPanel(window).Bounds.Width);
         string[] heads = [Labels.WorkflowsColItem, Labels.WorkflowsColStage, Labels.WorkflowsColStatus, Labels.WorkflowsColStep, Labels.WorkflowsColWaitingOn, Labels.WorkflowsColUpdated];
         Expect.Sequence(heads.Where((_, i) => kept.Shows(i)), head.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible).Select(t => t.Text ?? string.Empty));
         Assert.DoesNotContain(head.GetVisualAncestors().OfType<ScrollViewer>(), s => s.Name == "WorkflowsListScroll");
@@ -88,6 +88,9 @@ public sealed class WorkflowsFramesTests : FrameHost
         Assert.Equal(row.AccessibleName, Heard.Name(frame));
     }
 
+    // The list's own panel: Home's Running strip has a panel of the same name, which the Workflows page does not show.
+    private static Border ListPanel(Window window) => Named<Border>(window.GetVisualDescendants().OfType<Ui.Views.Workflows.RunListView>().First(), "WorkflowsPanel");
+
     private async Task ListAt(double width, string frame)
     {
         var (window, shell) = await Connected(s => s.Workflows.Groups.Count > 0, width, 900);
@@ -97,11 +100,11 @@ public sealed class WorkflowsFramesTests : FrameHost
 
         var rows = Rows(window);
         Expect.Sequence(shell.Workflows.Groups.SelectMany(g => g.Rows).Select(r => r.Address), rows.Select(Address));
-        var kept = ListColumns.For(Named<Border>(window, "WorkflowsPanel").Bounds.Width);
+        var kept = ListColumns.For(ListPanel(window).Bounds.Width);
         var stages = window.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == "WorkflowRowStage" && t.IsEffectivelyVisible).ToList();
         Assert.Equal(kept.Shows(ListColumns.Stage), stages.Count > 0);   // 1440 keeps all six columns; at 900 Stage and Waiting on are gone
         Assert.Equal(kept.Shows(ListColumns.WaitingOn), window.GetVisualDescendants().OfType<TextBlock>().Any(t => t.Name == "WorkflowRowWho" && t.IsEffectivelyVisible));
-        Assert.True(Named<Border>(window, "WorkflowsPanel").Bounds.Width <= width);   // the page never scrolls sideways
+        Assert.True(ListPanel(window).Bounds.Width <= width);   // the page never scrolls sideways
         Frame(window, "workflows-list-" + frame, "f3-");
     }
 
