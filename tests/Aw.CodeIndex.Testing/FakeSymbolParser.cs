@@ -9,13 +9,12 @@ public sealed class FakeSymbolParser : ISymbolParser
 {
     private readonly Dictionary<string, ParseOutcome> _outcomes = new(StringComparer.Ordinal);
     private readonly List<string> _paths = [];
-    private int _parsed;
 
     /// <summary>The version the fake reports; a test sets another to see a new parser version re-parse every file.</summary>
     public string Version { get; init; } = "fake-1";
 
     /// <summary>How many times <see cref="Parse"/> ran, so a test can see an unchanged file was not parsed again.</summary>
-    public int Parsed => _parsed;
+    public int Parsed { get; private set; }
 
     /// <summary>The paths <see cref="Parse"/> ran for, in order.</summary>
     public IReadOnlyList<string> ParsedPaths => _paths;
@@ -39,7 +38,7 @@ public sealed class FakeSymbolParser : ISymbolParser
     /// <inheritdoc />
     public Result<ParseOutcome> Parse(string path, string text, CancellationToken cancellationToken)
     {
-        _parsed++;
+        Parsed++;
         _paths.Add(path);
         OnParse?.Invoke(path);
         return _outcomes.TryGetValue(path, out var outcome) ? outcome : new ParseOutcome([]);

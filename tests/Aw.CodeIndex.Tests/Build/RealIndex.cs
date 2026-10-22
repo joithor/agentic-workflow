@@ -1,7 +1,7 @@
 using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Ports;
 using Aw.CodeIndex.Features.BuildCodeIndex;
-using Aw.CodeIndex.Features.Facade;
+using Aw.CodeIndex.Features;
 using Aw.CodeIndex.Infrastructure.Parsing;
 using Aw.CodeIndex.Infrastructure.Scrubbing;
 using Aw.CodeIndex.Infrastructure.Snapshot;
@@ -19,9 +19,10 @@ internal sealed class RealIndex : IDisposable
     public RealIndex(FakeHeavyJobLock? heavy = null)
     {
         _ = Directory.CreateDirectory(_directory);
+        var snapshot = new GitRepoSnapshot();
         Store = new SqliteIndexStore(Path.Combine(_directory, "index"), TimeProvider.System);
         Heavy = heavy ?? new FakeHeavyJobLock();
-        Service = new BuildCodeIndexService(new FakeRepoHeads(), new GitRepoSnapshot(), [new CSharpParser()], new FileParseQuarantine(Path.Combine(_directory, "index")), new RedactingBodyScrubber(), Store, Heavy, TimeProvider.System);
+        Service = new BuildCodeIndexService(new FakeRepoHeads(), snapshot, new StructureWriter(snapshot, [new CSharpParser()], new FileParseQuarantine(Path.Combine(_directory, "index")), new RedactingBodyScrubber()), Store, Heavy, TimeProvider.System);
         Facade = new CodeIndexFacade(Service, Store);
     }
 

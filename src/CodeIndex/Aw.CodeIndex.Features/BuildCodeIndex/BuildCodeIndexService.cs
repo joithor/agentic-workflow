@@ -1,30 +1,163 @@
+using Aw.CodeIndex.Core;
 using Aw.CodeIndex.Core.Facade;
+using Aw.CodeIndex.Core.Model;
+using Aw.CodeIndex.Core.Planning;
 using Aw.CodeIndex.Core.Ports;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 
 namespace Aw.CodeIndex.Features.BuildCodeIndex;
 
-/// <summary>The build slice (spec §5.7): a heavy slot, the snapshot, the incremental plan, the structure write, the edges and the publish.</summary>
-public sealed class BuildCodeIndexService : IService<BuildCodeIndexRequest, BuildReport>
+/// <summary>
+/// The build slice (spec §5.7): a heavy slot, the snapshot, the incremental plan, the structure write in batches, the syntax
+/// edges and the publish. The graph, clones, deps and embeddings layers plug in later; until then each is recorded as unavailable
+/// with its reason, so a reader never mistakes a layer that was not built for one that is empty.
+/// </summary>
+/// <param name="heads">Whether a commit is still on the default branch.</param>
+/// <param name="snapshot">The repo's tree at a commit.</param>
+/// <param name="structure">Parses and writes the planned files.</param>
+/// <param name="store">The index files.</param>
+/// <param name="heavy">The box-wide heavy-job slots.</param>
+/// <param name="clock">The time source.</param>
+public sealed partial class BuildCodeIndexService(IRepoHeads heads, IRepoSnapshot snapshot, StructureWriter structure, IIndexStore store, IHeavyJobLock heavy, TimeProvider clock) : IService<BuildCodeIndexRequest, BuildReport>
 {
-    private readonly object[] _ports;
+    private static readonly LayerName[] _laterLayers = [LayerName.Clones, LayerName.Deps, LayerName.Graph, LayerName.Embeddings];
 
-    /// <summary>Creates the service over its ports.</summary>
-    /// <param name="heads">Whether a commit is still on the default branch.</param>
-    /// <param name="snapshot">The repo's tree and blobs at a commit.</param>
-    /// <param name="parsers">The parsers, chosen by file extension.</param>
-    /// <param name="quarantine">The crash guard around parsing.</param>
-    /// <param name="scrubber">Scrubs signatures before they are stored.</param>
-    /// <param name="store">The index files.</param>
-    /// <param name="heavy">The box-wide heavy-job slots.</param>
-    /// <param name="clock">The time source.</param>
-    public BuildCodeIndexService(IRepoHeads heads, IRepoSnapshot snapshot, IEnumerable<ISymbolParser> parsers, IParseQuarantine quarantine, IBodyScrubber scrubber, IIndexStore store, IHeavyJobLock heavy, TimeProvider clock)
-    {
-        _ports = [heads, snapshot, parsers, quarantine, scrubber, store, heavy, clock];
-    }
+    /// <summary>A build in progress: its file, its request and what the snapshot found.</summary>
+    private sealed record BuildContext(IIndexBuild Build, BuildCodeIndexRequest Request, SnapshotInventory Inventory, string DefaultBranch, long Started);
 
     /// <inheritdoc />
-    public ValueTask<Result<BuildReport>> Handle(BuildCodeIndexRequest request, CancellationToken cancellationToken)
-        => throw new NotSupportedException($"BuildCodeIndex is not built yet ({_ports.Length} ports).");
+    public async ValueTask<Result<BuildReport>> Handle(BuildCodeIndexRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var started = clock.GetTimestamp();
+        var slot = await heavy.Take("sindri code-index:" + request.Repo.Name.Value, CodeIndexRules.HeavySlotWait, waiting: null, cancellationToken).ConfigureAwait(false);
+        if (slot.IsError)
+        {
+            return string.Equals(slot.Error.Code, CodeIndexErrors.HeavyBusy.Code, StringComparison.Ordinal) ? Nothing(request, BuildOutcome.Deferred, started) : slot.Error;
+        }
+
+        await using (slot.Value.ConfigureAwait(false))
+        {
+            return await Run(request, started, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private async Task<Result<BuildReport>> Run(BuildCodeIndexRequest request, long started, CancellationToken cancellationToken)
+    {
+        var (repo, commit) = (request.Repo, request.Commit);
+        var onMain = await heads.OnDefaultBranch(repo, commit, cancellationToken).ConfigureAwait(false);
+        if (onMain.IsError)
+        {
+            return onMain.Error;
+        }
+
+        if (!onMain.Value.Contains)
+        {
+            return Nothing(request, BuildOutcome.NotOnMain, started);
+        }
+
+        var inventory = await snapshot.Inventory(repo, commit, repo.Settings.SnapshotLimits(), cancellationToken).ConfigureAwait(false);
+        if (inventory.IsError)
+        {
+            return inventory.Error;
+        }
+
+        var begun = await store.BeginBuild(repo.Name, incremental: true, cancellationToken).ConfigureAwait(false);
+        if (begun.IsError)
+        {
+            return begun.Error;
+        }
+
+        await using (begun.Value.ConfigureAwait(false))
+        {
+            return await Build(new BuildContext(begun.Value, request, inventory.Value, onMain.Value.DefaultBranch, started), cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private async Task<Result<BuildReport>> Build(BuildContext context, CancellationToken cancellationToken)
+    {
+        var (build, request) = (context.Build, context.Request);
+        var settings = request.Repo.Settings;
+        var stamp = StructureStamp.Compute(structure.ParserVersion, settings.UtilityGlobs, []);
+        var code = context.Inventory.Files.Where(f => LanguageTable.Of(f.Path) is not null).ToList();
+        var stored = await build.StoredFiles(cancellationToken).ConfigureAwait(false);
+        if (stored.IsError)
+        {
+            return stored.Error;
+        }
+
+        var plan = BuildPlanner.Plan(new BuildPlanInput(code, stored.Value, build.Previous?.Layers ?? [], new Dictionary<LayerName, string> { [LayerName.Structure] = stamp }));
+        structure.Prepare(request.Repo.Name, code.Select(f => f.Blob).ToHashSet(StringComparer.Ordinal));
+        var wrote = await structure.Write(build, request, plan, cancellationToken).ConfigureAwait(false);
+        if (wrote.IsError)
+        {
+            return wrote.Error;
+        }
+
+        var edges = await WriteEdges(build, request, ProjectManifests.Directories(context.Inventory.Files.Select(f => f.Path)), cancellationToken).ConfigureAwait(false);
+        if (edges.IsError)
+        {
+            return edges.Error;
+        }
+
+        var layers = await RecordLayers(build, settings, stamp, cancellationToken).ConfigureAwait(false);
+        return layers.IsError ? layers.Error : await Publish(context, edges.Value, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<Result<BuildReport>> Publish(BuildContext context, EdgeShares shares, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var request = context.Request;
+        var meta = new IndexMeta(request.Commit, context.DefaultBranch, clock.GetUtcNow(), CodeIndexRules.SchemaVersion, structure.ParserVersion, LockSha: null, new IndexCounts(0, 0, 0));
+        var published = await context.Build.Publish(meta, cancellationToken).ConfigureAwait(false);
+        if (published.IsError)
+        {
+            return published.Error;
+        }
+
+        request.Progress.Report("published");
+        return new BuildReport(
+            request.Repo.Name,
+            request.Commit,
+            BuildOutcome.Published,
+            published.Value.Meta.Counts,
+            [.. published.Value.Layers.Select(l => new LayerStatus(l.Layer, l.State, l.Code, l.Detail))],
+            shares.UnresolvedShare,
+            shares.AmbiguousShare,
+            Embedded: 0,
+            Embeddable: 0,
+            context.Build.Incremental,
+            Elapsed(context.Started));
+    }
+
+    private async ValueTask<Result<Unit>> RecordLayers(IIndexBuild build, CodeIndexSettings settings, string stamp, CancellationToken cancellationToken)
+    {
+        var now = clock.GetUtcNow();
+        var first = await build.SetLayer(new LayerRecord(LayerName.Structure, stamp, LayerState.Ok, Code: null, "ok", now), cancellationToken).ConfigureAwait(false);
+        if (first.IsError)
+        {
+            return first.Error;
+        }
+
+        foreach (var layer in _laterLayers)
+        {
+            var disabled = (layer == LayerName.Graph && !settings.Graph.Enabled) || (layer == LayerName.Embeddings && !settings.Embeddings.Enabled);
+            var state = disabled ? LayerState.Disabled : LayerState.Unavailable;
+            var detail = disabled ? "disabled by the profile" : "not built by this version";
+            var recorded = await build.SetLayer(new LayerRecord(layer, "none", state, Code: null, detail, now), cancellationToken).ConfigureAwait(false);
+            if (recorded.IsError)
+            {
+                return recorded.Error;
+            }
+        }
+
+        return Unit.Value;
+    }
+
+    private BuildReport Nothing(BuildCodeIndexRequest request, BuildOutcome outcome, long started)
+        => new(request.Repo.Name, Commit: null, outcome, new IndexCounts(0, 0, 0), [], UnresolvedShare: 0, AmbiguousShare: 0, Embedded: 0, Embeddable: 0, Incremental: false, Elapsed(started));
+
+    private long Elapsed(long started) => (long)clock.GetElapsedTime(started).TotalMilliseconds;
+
 }

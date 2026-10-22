@@ -4,7 +4,6 @@ using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Values;
 using Aw.CodeIndex.Features.BuildCodeIndex;
-using Aw.CodeIndex.Testing;
 
 namespace Aw.CodeIndex.Tests.Build;
 
@@ -48,7 +47,7 @@ public sealed class BuildThisRepoHeavyTests(ITestOutputHelper output)
 
     private static string HeadOf(string root)
     {
-        var start = new ProcessStartInfo("git", ["-C", root, "rev-parse", "HEAD"]) { RedirectStandardOutput = true };
+        var start = new ProcessStartInfo("git", ["-C", root, "rev-parse", "HEAD"]) { RedirectStandardOutput = true, UseShellExecute = false };
         using var process = Process.Start(start) ?? throw new InvalidOperationException("git did not start.");
         var head = process.StandardOutput.ReadToEnd().Trim();
         process.WaitForExit();

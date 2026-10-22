@@ -1,10 +1,9 @@
 using Aw.CodeIndex.Core;
 using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Model;
-using Aw.CodeIndex.Core.Ports;
 using Aw.CodeIndex.Core.Values;
 using Aw.CodeIndex.Features.BuildCodeIndex;
-using Aw.CodeIndex.Features.Facade;
+using Aw.CodeIndex.Features;
 using Aw.CodeIndex.Testing;
 using Aw.Kernel;
 using Microsoft.Extensions.Time.Testing;
@@ -38,7 +37,7 @@ internal sealed class BuildHarness
 
     public CodeIndexScope Scope => new([Repo], new CodeIndexCaller(CallerKind.Service, Repo: null));
 
-    public BuildCodeIndexService Service => new(Heads, Snapshot, [Parser], Quarantine, Scrubber, Store, Heavy, Clock);
+    public BuildCodeIndexService Service => new(Heads, Snapshot, new StructureWriter(Snapshot, [Parser], Quarantine, Scrubber), Store, Heavy, Clock);
 
     public CodeIndexFacade Facade => new(Service, Store);
 
@@ -52,14 +51,4 @@ internal sealed class BuildHarness
         => await Service.Handle(new BuildCodeIndexRequest(Repo, commit, new Progress<string>()), cancellationToken);
 
     public async Task<IndexHeader?> Header() => (await Store.ReadHeader(Name, CancellationToken.None)).Value;
-}
-
-/// <summary>Collects progress lines synchronously, so a test reads them in order without a thread hop.</summary>
-internal sealed class Lines : IProgress<string>
-{
-    private readonly List<string> _lines = [];
-
-    public IReadOnlyList<string> All => _lines;
-
-    public void Report(string value) => _lines.Add(value);
 }

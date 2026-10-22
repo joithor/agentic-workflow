@@ -101,7 +101,7 @@ public sealed class CodeIndexFacadeTests
         var harness = await Built();
 
         var answer = (await harness.Facade.FileSymbols(harness.Scope, BuildHarness.Name, ["src/A.cs", "src/none.cs"], Token)).Value;
-        var tooMany = await harness.Facade.FileSymbols(harness.Scope, BuildHarness.Name, [.. Enumerable.Range(0, 201).Select(i => $"f{i}.cs")], Token);
+        var tooMany = await harness.Facade.FileSymbols(harness.Scope, BuildHarness.Name, [.. Enumerable.Range(0, 201).Select(i => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"f{i}.cs"))], Token);
 
         Assert.Equal(2, answer.Files[0].Symbols.Count);
         Assert.Empty(answer.Files[1].Symbols);

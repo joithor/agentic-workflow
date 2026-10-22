@@ -20,6 +20,6 @@ public sealed class LanguageTableTests
     {
         var directories = ProjectManifests.Directories(["Directory.Build.props", "src/A/A.csproj", "src/A/Code.cs", "web/package.json", "go.mod", "docs/readme.md"]);
 
-        Assert.Equal(["", "src/A", "web"], directories.Order(StringComparer.Ordinal));
+        Assert.Equal(["", "src/A", "web"], directories.Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 }

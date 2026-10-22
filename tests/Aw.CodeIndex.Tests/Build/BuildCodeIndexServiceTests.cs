@@ -1,6 +1,5 @@
 using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Model;
-using Aw.CodeIndex.Core.Values;
 using Aw.CodeIndex.Testing;
 
 namespace Aw.CodeIndex.Tests.Build;
@@ -105,7 +104,7 @@ public sealed class BuildCodeIndexServiceTests
         var report = await harness.Build(BuildHarness.Second, cancellationToken: Token);
 
         Assert.True(report.Incremental);
-        Assert.Equal(["src/A.cs"], harness.Parser.ParsedPaths.Skip(before));
+        Assert.Equal(["src/A.cs"], harness.Parser.ParsedPaths.Skip(before), StringComparer.Ordinal);
         Assert.Equal(BuildHarness.Second, (await harness.Header())!.Meta.Commit);
         Assert.Equal(6, report.Counts.Symbols);
     }
@@ -132,7 +131,7 @@ public sealed class BuildCodeIndexServiceTests
         var newer = new BuildHarness { Parser = new FakeSymbolParser { Version = "fake-2" }.With("src/A.cs", new ParseOutcome([])).With("src/B.cs", new ParseOutcome([])) };
 
         // The same store and snapshot, a parser that reports another version.
-        var service = new Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexService(harness.Heads, harness.Snapshot, [newer.Parser], harness.Quarantine, harness.Scrubber, harness.Store, harness.Heavy, harness.Clock);
+        var service = new Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexService(harness.Heads, harness.Snapshot, new Aw.CodeIndex.Features.BuildCodeIndex.StructureWriter(harness.Snapshot, [newer.Parser], harness.Quarantine, harness.Scrubber), harness.Store, harness.Heavy, harness.Clock);
         var result = await service.Handle(new Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexRequest(harness.Repo, BuildHarness.Second, new Progress<string>()), Token);
 
         Assert.Equal(["src/A.cs", "src/B.cs"], newer.Parser.ParsedPaths);
@@ -147,7 +146,7 @@ public sealed class BuildCodeIndexServiceTests
 
         _ = await harness.Build(BuildHarness.First, lines, Token);
 
-        Assert.Contains("structure 2 of 2 files", lines.All);
+        Assert.Contains("structure 2 of 2 files", lines.All, StringComparer.Ordinal);
         Assert.All(lines.All, line => Assert.DoesNotContain("src/", line, StringComparison.Ordinal));
     }
 
@@ -178,7 +177,7 @@ public sealed class BuildCodeIndexServiceTests
         var report = await harness.Build(BuildHarness.First, cancellationToken: Token);
 
         Assert.Equal(2, report.Counts.Files);
-        Assert.DoesNotContain("src/B.cs", harness.Parser.ParsedPaths);
+        Assert.DoesNotContain("src/B.cs", harness.Parser.ParsedPaths, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -233,6 +232,6 @@ public sealed class BuildCodeIndexServiceTests
 
         _ = await harness.Build(BuildHarness.First, cancellationToken: Token);
 
-        Assert.DoesNotContain("README.md", harness.Parser.ParsedPaths);
+        Assert.DoesNotContain("README.md", harness.Parser.ParsedPaths, StringComparer.Ordinal);
     }
 }
