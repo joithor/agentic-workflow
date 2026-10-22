@@ -43,4 +43,40 @@ public static partial class NeedsYouRows
             [_addRepo],
             cli.Value.Text);
     }
+
+    private static readonly ActionId _registerMcp = ActionId.From(SetupActions.RegisterMcp);
+
+    /// <summary>The row for the mcp step after a failed RegisterMcp job (setup-once spec §5.4, §7.3): 'setup:mcp', coloured, with RegisterMcp to try again after the owner has fixed what the sentence names.</summary>
+    /// <param name="sentence">Why it failed, in the owner's words (the provider's sentence and its fix).</param>
+    /// <param name="since">When the job ended.</param>
+    /// <param name="scrubber">Scrubs the text.</param>
+    /// <returns>The row.</returns>
+    public static Result<NeedsYouRow> ForSetupMcp(string sentence, DateTimeOffset since, ITextScrubber scrubber)
+    {
+        ArgumentNullException.ThrowIfNull(sentence);
+        ArgumentNullException.ThrowIfNull(scrubber);
+        var cli = CliForm.Parse("sindri mcp register --apply");
+        if (cli.IsError)
+        {
+            return cli.Error;
+        }
+
+        return new NeedsYouRow(
+            NeedsYouRowId.From("setup:mcp"),
+            NeedsYouKind.Setup,
+            "setup · connect your agents",
+            new NeedsYouSubject(SubjectKind.Setup, SubjectId.From("mcp")),
+            Item: null,
+            "Connect your agents",
+            SafeText.Clean(scrubber, sentence, ReasonMax),
+            Repo: null,
+            Urgency.Colour,
+            since,
+            RecordedOnly: false,
+            Notice: null,
+            AnswerKind: null,
+            _registerMcp,
+            [_registerMcp],
+            cli.Value.Text);
+    }
 }

@@ -64,8 +64,9 @@ internal sealed class GetNeedsYouService(IViewReader views, IProjectorStatus sta
         }
 
         var repo = await setup.Repo(cancellationToken).ConfigureAwait(false);
+        var mcp = await setup.Mcp(cancellationToken).ConfigureAwait(false);
         var recipes = await setup.Recipes(cancellationToken).ConfigureAwait(false);
-        return repo is { } row ? [row, .. recipes] : recipes;
+        return [.. new[] { repo, mcp }.OfType<NeedsYouRow>(), .. recipes];
     }
 
     // The managed Onyx's row: it is the human's to act on, so a session doesn't see it.

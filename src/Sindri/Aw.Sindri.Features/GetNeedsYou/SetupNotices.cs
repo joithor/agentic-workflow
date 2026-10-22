@@ -20,15 +20,28 @@ namespace Aw.Sindri.Features.GetNeedsYou;
 internal sealed class SetupNotices(IJobViews jobs, IProfileSource live, ApproveAllPlanReader plans, ITextScrubber scrubber, TimeProvider clock)
 {
     private static readonly JobKind _addRepo = JobKind.From("AddRepo");
+    private static readonly JobKind _registerMcp = JobKind.From("RegisterMcp");
 
     internal async ValueTask<NeedsYouRow?> Repo(CancellationToken cancellationToken)
     {
-        if (await LastFailed(cancellationToken).ConfigureAwait(false) is not { } failed || await HasRepo(cancellationToken).ConfigureAwait(false))
+        if (await LastFailed(_addRepo, cancellationToken).ConfigureAwait(false) is not { } failed || await HasRepo(cancellationToken).ConfigureAwait(false))
         {
             return null;
         }
 
         var row = NeedsYouRows.ForSetupRepo(failed.Summary ?? "The last folder you picked could not be added. Pick the repo's top folder.", failed.EndedAt ?? failed.StartedAt, scrubber);
+        return row.IsSuccess ? row.Value : null;
+    }
+
+    // 'setup:mcp' stands while the newest RegisterMcp job failed and none is running: the job's own sentence, the provider's fix in it. A new run clears it; a success replaces the failed job as the newest.
+    internal async ValueTask<NeedsYouRow?> Mcp(CancellationToken cancellationToken)
+    {
+        if (await LastFailed(_registerMcp, cancellationToken).ConfigureAwait(false) is not { } failed)
+        {
+            return null;
+        }
+
+        var row = NeedsYouRows.ForSetupMcp(failed.Summary ?? "Sindri could not register itself with your agents. Press Connect again.", failed.EndedAt ?? failed.StartedAt, scrubber);
         return row.IsSuccess ? row.Value : null;
     }
 
@@ -55,12 +68,12 @@ internal sealed class SetupNotices(IJobViews jobs, IProfileSource live, ApproveA
         }
     }
 
-    // The newest AddRepo job when it failed and none is running now; else null.
-    private async ValueTask<JobRow?> LastFailed(CancellationToken cancellationToken)
+    // The newest job of a kind when it failed and none of that kind is running now; else null.
+    private async ValueTask<JobRow?> LastFailed(JobKind kind, CancellationToken cancellationToken)
     {
         var running = await jobs.Running(cancellationToken).ConfigureAwait(false);
-        var latest = await jobs.List(state: null, _addRepo, cancellationToken).ConfigureAwait(false);
-        if (running.IsError || latest.IsError || running.Value.Any(static j => j.Kind == _addRepo))
+        var latest = await jobs.List(state: null, kind, cancellationToken).ConfigureAwait(false);
+        if (running.IsError || latest.IsError || running.Value.Any(j => j.Kind == kind))
         {
             return null;
         }
