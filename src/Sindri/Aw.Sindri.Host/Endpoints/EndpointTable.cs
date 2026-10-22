@@ -97,6 +97,9 @@ internal static class EndpointTable
         _ = commands.MapApproveProfile();
         _ = commands.MapCancelJob();
         _ = commands.MapCloseItem();
+        _ = commands.MapDeferOnyx();
+        _ = commands.MapSetupOnyx();
+        _ = commands.MapConnectOnyx();
         _ = commands.MapOpenItem();
         _ = commands.MapPauseService();
         _ = commands.MapResumeService();
@@ -111,10 +114,12 @@ internal static class EndpointTable
         _ = commands.MapPromoteContextMap();
         _ = commands.MapProposeContextMap();
         _ = commands.MapReviewContextMap();
+        _ = commands.MapShowLineHoldout();
         _ = commands.MapStopProcess();
         _ = commands.MapApproveAllRecipes();
         _ = commands.MapAddRepo();
         _ = commands.MapRegisterMcp();
+        _ = commands.MapOnboardRepo();
         _ = commands.MapApproveRecipe();
         _ = commands.MapRevokeRecipe();
         _ = commands.MapIssueChallenge();

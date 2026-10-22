@@ -12,7 +12,7 @@ namespace Aw.Sindri.Features.WorkflowStats;
 /// <param name="rows">The ledger's workflow rows.</param>
 /// <param name="clock">The read's time.</param>
 /// <param name="cache">The stats cache; null counts on every read.</param>
-internal sealed class RecipeStatsSource(WorkflowStatRows rows, TimeProvider clock, IRecipeStatsCache? cache = null)
+internal sealed class RecipeStatsSource(IWorkflowStatRows rows, TimeProvider clock, IRecipeStatsCache? cache = null)
 {
     private (long Head, IReadOnlyList<StatEvent> Events)? _snapshot;
 

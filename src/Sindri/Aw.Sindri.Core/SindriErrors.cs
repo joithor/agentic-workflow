@@ -3,7 +3,7 @@ using Aw.Kernel;
 namespace Aw.Sindri.Core;
 
 /// <summary>The Sindri error catalogue (codes SND-AREA-NNN, docs/csharp/sindri.md).</summary>
-public static class SindriErrors
+public static partial class SindriErrors
 {
     /// <summary>SND-LEASE-001: another live process holds the host lease.</summary>
     public static readonly ErrorDefinition LeaseHeld = new("SND-LEASE-001", ErrorKind.Conflict, "The host lease is held by another process");
@@ -88,18 +88,6 @@ public static class SindriErrors
 
     /// <summary>SND-SECRET-003: a file: pointer names a file others may read or write, or something that isn't a regular file.</summary>
     public static readonly ErrorDefinition SecretFileUnsafe = new("SND-SECRET-003", ErrorKind.Forbidden, "The secret file is unsafe");
-
-    /// <summary>SND-API-010: a command that reads views was refused while the views rebuild; it wasn't run.</summary>
-    public static readonly ErrorDefinition ViewsRebuilding = new("SND-API-010", ErrorKind.Unavailable, "Views are rebuilding; the command wasn't run, retry");
-
-    /// <summary>SND-API-011: the views didn't reach the sequence a caller waits for (X-Sindri-After, or a command's head) in time.</summary>
-    public static readonly ErrorDefinition ViewsBehind = new("SND-API-011", ErrorKind.Unavailable, "The views didn't reach the sequence in time");
-
-    /// <summary>SND-API-012: every event stream a caller may open is open (16, 4 held for the human; API spec §5.4).</summary>
-    public static readonly ErrorDefinition StreamsFull = new("SND-API-012", ErrorKind.RateLimited, "Too many event streams are open; re-query every 5 s");
-
-    /// <summary>SND-API-013: a query parameter outside its set: a stats or list window that isn't 7d, 30d or 90d, or a hash that isn't a recipe hash (API spec §3.8, E-24, E-25).</summary>
-    public static readonly ErrorDefinition InvalidQuery = new("SND-API-013", ErrorKind.Invalid, "A query parameter is outside its set");
 
     /// <summary>SND-VIEW-001: the projector stalled on an event or can't run (views.db or the ledger can't be used); 'sindri views rebuild' clears an event stall or a views.db cause, 'sindri doctor' diagnoses a ledger cause.</summary>
     public static readonly ErrorDefinition ViewsStalled = new("SND-VIEW-001", ErrorKind.Unavailable, "The projector stalled on an event");
@@ -209,6 +197,15 @@ public static class SindriErrors
     /// <summary>SND-LAUNCH-015: the agent entry's session id pattern timed out on an id, so the id was refused unjudged (not as a mismatch). -014 is reserved by the sandbox spec.</summary>
     public static readonly ErrorDefinition LaunchSessionIdTimedOut = new("SND-LAUNCH-015", ErrorKind.Unavailable, "The session id pattern timed out");
 
+    /// <summary>SND-LAUNCH-022: a Step's worktree already has a pre-push hook that isn't Sindri's; the launch is refused rather than overwrite it (line spec LN-LCH1).</summary>
+    public static readonly ErrorDefinition LaunchPrePushForeign = new("SND-LAUNCH-022", ErrorKind.Conflict, "The Step's worktree has a pre-push hook of its own");
+
+    /// <summary>SND-LAUNCH-023: printed by the pre-push hook Sindri installs when an agent Step tries to push; the push is refused (line spec LN-LCH1).</summary>
+    public static readonly ErrorDefinition LaunchPushRefused = new("SND-LAUNCH-023", ErrorKind.Forbidden, "Agent Steps can't push; Sindri pushes");
+
+    /// <summary>SND-LAUNCH-024: the agent CLI's trust file can't be updated for the Step's worktree (unparseable, locked or not writable); the file is left untouched and the launch is refused.</summary>
+    public static readonly ErrorDefinition LaunchTrustUnavailable = new("SND-LAUNCH-024", ErrorKind.Unavailable, "The agent CLI's trust file couldn't be updated");
+
     /// <summary>SND-LAUNCH-013: a Step asked for a model or a policy, and the entry's matching form is 'none'; nothing launches (launcher L-17).</summary>
     public static readonly ErrorDefinition LaunchFormUnsupported = new("SND-LAUNCH-013", ErrorKind.Invalid, "The agent entry can't express the Step's model or policy");
 
@@ -286,7 +283,7 @@ public static class SindriErrors
         CallerUnknown, OriginRefused, CommandBusy, AuthTokenRequired, AuthRefused, UnknownVerb, StartFailed,
         InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, StreamsFull, ViewsStalled, ItemNotFound, ItemConflict, RequestInvalid, RequestsRateLimited, DecisionNotFound, DecisionInvalid, JobNotFound, JobConflict, JobInterrupted, JobsRateLimited, ServiceNotFound, OnyxDockerUnavailable, OnyxComposeMissing, OnyxNotEnoughResources, OnyxPinsMalformed, OnyxPortTaken, OnyxNotAdmin, OnyxKeyFailed, OnyxSecretNotStored, OnyxNotReady, OnyxRemoteDocker, OnyxComposeFailed, OnyxWorkspaceUnusable, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe,
         LaunchNotFound, LaunchViewerFailed, LaunchNoViewer, LaunchAgentMissing, LaunchRepoMissing, LaunchNoSession, LaunchInterrupted, LaunchInProgress, LaunchTimedOut, LaunchBudgetReached,
-        LauncherInvalid, LaunchNotApproved, LaunchFormUnsupported, LaunchSessionIdTimedOut, AuthLaunchSecret, SessionSourceFailed, SessionsUnavailable, SessionsTestOverride, SessionNotFound, SessionConflict,
+        LauncherInvalid, LaunchNotApproved, LaunchFormUnsupported, LaunchPrePushForeign, LaunchPushRefused, LaunchTrustUnavailable, LaunchSessionIdTimedOut, AuthLaunchSecret, SessionSourceFailed, SessionsUnavailable, SessionsTestOverride, SessionNotFound, SessionConflict,
         WorktreeInvalid, WorktreeConflict, WorktreeGitFailed, WorktreeDirty, SetupFolderInvalid, SetupRepoExists, SetupConfirmationRefused, SetupRepoNotInProfile, SetupOnyxCredentialsMissing, SetupOnyxNotWaiting, SetupProfileNotApproved,
         NoForge, ForgeRefused, ForgeNotFound, ForgeUnavailable,
     ];

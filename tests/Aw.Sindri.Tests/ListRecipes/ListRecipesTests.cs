@@ -32,7 +32,7 @@ public sealed class ListRecipesTests
         var listed = await r.List();
 
         Assert.Equal([item.Hash, step.Hash], listed.Select(s => s.Hash));
-        Assert.Equal(["draft", "approved"], listed.Select(s => s.Status));
+        Assert.Equal(["draft", "approved"], listed.Select(s => s.Status), StringComparer.Ordinal);
         var (itemLine, stepLine) = (listed[0], listed[1]);
         Assert.Equal(RecipeStanding.Unapproved, itemLine.Standing);
         Assert.Null(itemLine.Via);

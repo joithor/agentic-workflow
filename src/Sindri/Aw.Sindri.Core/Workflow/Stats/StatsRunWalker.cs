@@ -130,6 +130,8 @@ internal sealed class StatsRunWalker(StatsTally tally)
             case SuspensionKind.Takeover:
                 tally.TakeoverSeconds.Add(seconds);
                 break;
+            case SuspensionKind.Park:
+            case SuspensionKind.Escalation:
             default:
                 break;
         }

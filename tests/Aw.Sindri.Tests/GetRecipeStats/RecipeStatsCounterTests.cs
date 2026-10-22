@@ -153,7 +153,7 @@ public sealed class RecipeStatsCounterTests
 
         var buckets = Count(rows).Buckets;
 
-        Assert.Equal(["2026-09-28", "2026-10-05", "2026-10-12", "2026-10-19"], buckets.Select(b => b.WeekStart));   // Now is Thursday 2026-10-22
+        Assert.Equal(["2026-09-28", "2026-10-05", "2026-10-12", "2026-10-19"], buckets.Select(b => b.WeekStart), StringComparer.Ordinal);   // Now is Thursday 2026-10-22
         Assert.Equal([0, 0, 1, 2], buckets.Select(b => b.Runs));
         Assert.Equal(0.5, buckets[3].HumanRate);
         Assert.Null(buckets[0].HumanRate);

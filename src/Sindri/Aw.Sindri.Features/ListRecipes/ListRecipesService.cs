@@ -1,8 +1,8 @@
 using Aw.Kernel;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Core.Workflow.Stats;
-using Aw.Sindri.Features.WorkflowStats;
 
 namespace Aw.Sindri.Features.ListRecipes;
 
@@ -43,10 +43,15 @@ internal sealed class ListRecipesService(RecipeRegistryReader registry, RecipeSt
             return children.Error;
         }
 
+        return await WithStats(kept, children.Value, stats, window.Value, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async ValueTask<Result<ListRecipesResponse>> WithStats(List<RecipeSummary> kept, IReadOnlySet<RecipeId> children, RecipeStatsSource stats, StatsWindow window, CancellationToken cancellationToken)
+    {
         var listed = new List<RecipeSummary>();
         foreach (var line in kept)
         {
-            var counted = await stats.Of(line.Id, hash: null, window.Value, children.Value.Contains(line.Id), cancellationToken).ConfigureAwait(false);
+            var counted = await stats.Of(line.Id, hash: null, window, children.Contains(line.Id), cancellationToken).ConfigureAwait(false);
             if (counted.IsError)
             {
                 return counted.Error;
@@ -60,7 +65,7 @@ internal sealed class ListRecipesService(RecipeRegistryReader registry, RecipeSt
             });
         }
 
-        return new ListRecipesResponse(listed, window.Value.Text);
+        return new ListRecipesResponse(listed, window.Text);
     }
 
     private static RecipeSummary WithStatus(RecipeSummary line)

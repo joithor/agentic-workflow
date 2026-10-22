@@ -12,7 +12,7 @@ namespace Aw.Sindri.Features.WorkflowStats;
 /// </summary>
 /// <param name="ledger">The ledger, read-only.</param>
 /// <param name="events">Reads each event's payload.</param>
-internal sealed class WorkflowStatRows(ILedgerReader ledger, EventFactory events)
+internal sealed class WorkflowStatRows(ILedgerReader ledger, EventFactory events) : IWorkflowStatRows
 {
     private const int Page = 500;
     private static readonly LedgerFilter _filter = new(TypeFilter.Parse("workflow.*").Value, Item: null);
