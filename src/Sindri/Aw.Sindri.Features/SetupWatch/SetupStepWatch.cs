@@ -1,4 +1,3 @@
-using Aw.Sindri.Core.Ports;
 using Aw.Sindri.Core.Setup;
 using Microsoft.Extensions.Logging;
 
@@ -11,7 +10,8 @@ namespace Aw.Sindri.Features.SetupWatch;
 /// <param name="facts">The sources.</param>
 /// <param name="recorder">Appends the changes.</param>
 /// <param name="logger">Where a source that threw, or a change that couldn't be recorded, is noted.</param>
-internal sealed partial class SetupStepWatch(ISetupFacts facts, SetupStepRecorder recorder, ILogger<SetupStepWatch> logger)
+/// <param name="measures">Records 'setup.done' and 'setup.first-item' from the ledger (§7.5); absent in a host that has none.</param>
+internal sealed partial class SetupStepWatch(ISetupFacts facts, SetupStepRecorder recorder, ILogger<SetupStepWatch> logger, SetupMeasures? measures = null)
 {
     /// <summary>Derives the steps and records the changes.</summary>
     /// <param name="cancellationToken">Cancels the run.</param>
@@ -23,6 +23,12 @@ internal sealed partial class SetupStepWatch(ISetupFacts facts, SetupStepRecorde
         if (recorded.IsError)
         {
             LogNotRecorded(logger, recorded.Error.Code);
+            return;
+        }
+
+        if (measures is not null)
+        {
+            _ = await measures.Observe(steps, recorded.Value, cancellationToken).ConfigureAwait(false);
         }
     }
 
