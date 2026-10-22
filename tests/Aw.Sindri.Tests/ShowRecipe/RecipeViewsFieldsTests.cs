@@ -136,4 +136,17 @@ public sealed class RecipeViewsFieldsTests
         Assert.Null(state.Inputs);
         Assert.Null(state.Outputs);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_step_whose_inputs_come_from_a_list_parameter_lists_those_facts_then_its_fixed_ones()
+    {
+        var step = TestBlocks.Step("step.produce") with { InputsFrom = "facts", Inputs = [FactKey.From("fact:output")] };
+        var recipe = ARecipe.Minimal(_stamp.Id);
+        var use = recipe.States["produce"].Step! with { With = WiringRecipe.With(("facts", WiringRecipe.Literal("[\"fact:item\"]"))) };
+        recipe = recipe with { States = new Dictionary<string, RecipeState>(recipe.States, StringComparer.Ordinal) { ["produce"] = recipe.States["produce"] with { Step = use } } };
+
+        var inputs = Produce(recipe, Catalog(step)).Inputs;
+
+        Assert.Equal(["fact:item", "fact:output"], inputs!.Select(static f => f.Key));
+    }
 }

@@ -51,7 +51,7 @@ public static class RecipeViews
             state.State, state.Order, state.BranchOf, declared.Why, declared.DisplayName,
             KindOf(declared, descriptor),
             OnOutcome(recipe, declared, descriptor),
-            Facts(descriptor?.Inputs, recipe),
+            Facts(descriptor is not null && declared.Step is { } use ? StepInputs.Of(descriptor, use.With, recipe) ?? descriptor.Inputs : null, recipe),
             Facts(descriptor?.Outputs.Select(static o => o.Fact), recipe));
     }
 
