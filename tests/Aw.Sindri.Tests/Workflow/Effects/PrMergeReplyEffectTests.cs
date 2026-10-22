@@ -98,26 +98,26 @@ public sealed class PrMergeReplyEffectTests
         var other = new PrRef("forge.example", "acme/web", 8);
         _ = await _marks.Write(Mark(_pr, "t9", "id-1"), Token);
         _ = await _marks.Write(Mark(other, "t1", "id-2"), Token);
-        var context = await Context("effect.pr.purge-marks", new Dictionary<string, string> { ["pr"] = "\"" + Link + "\"" });
+        var context = await Context("effect.pr.purge-marks", new Dictionary<string, string>(StringComparer.Ordinal) { ["pr"] = "\"" + Link + "\"" });
 
         var done = await new PrPurgeMarksEffect(_facts, _marks).Dispatch(context, Token);
 
         Assert.True(done.IsSuccess);
         Assert.Null(done.Value.Reply);
         Assert.Empty((await _marks.Latest(_pr, Token)).Value);
-        Assert.Single((await _marks.Latest(other, Token)).Value);
+        _ = Assert.Single((await _marks.Latest(other, Token)).Value);
     }
 
     [Fact]
     public async Task Purge_marks_without_a_pull_request_link_is_an_error_and_deletes_nothing()
     {
         _ = await _marks.Write(Mark(_pr, "t9", "id-1"), Token);
-        var context = await Context("effect.pr.purge-marks", new Dictionary<string, string> { ["pr"] = "\"not a link\"" });
+        var context = await Context("effect.pr.purge-marks", new Dictionary<string, string>(StringComparer.Ordinal) { ["pr"] = "\"not a link\"" });
 
         var done = await new PrPurgeMarksEffect(_facts, _marks).Dispatch(context, Token);
 
         Assert.True(done.IsError);
-        Assert.Single((await _marks.Latest(_pr, Token)).Value);
+        _ = Assert.Single((await _marks.Latest(_pr, Token)).Value);
     }
 
     private static PrCommentMark Mark(PrRef pr, string comment, string effect) =>
