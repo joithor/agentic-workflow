@@ -1,18 +1,5 @@
 namespace Aw.Sindri.Core.Setup;
 
-/// <summary>The last 'setup.step.changed' recorded for a step.</summary>
-/// <param name="State">The state it moved to.</param>
-/// <param name="Code">The error code it failed with, or null.</param>
-/// <param name="Count">How many change events the step has in all.</param>
-public sealed record RecordedStep(SetupState State, string? Code, int Count);
-
-/// <summary>A change to record: <paramref name="Count"/> is the step's earlier change events, the n of the key.</summary>
-/// <param name="Id">The step.</param>
-/// <param name="State">The state it moved to.</param>
-/// <param name="Code">The error code when it failed, else null.</param>
-/// <param name="Count">The step's earlier change events.</param>
-public sealed record StepChange(SetupStepId Id, SetupState State, string? Code, int Count);
-
 /// <summary>When a step's derived state is a change worth an event (setup-once spec §7.5): when it differs from the last event of that step, or the step has none yet.</summary>
 public static class SetupStepChanges
 {
@@ -46,7 +33,7 @@ public static class SetupStepChanges
     /// <param name="state">The state it moved to.</param>
     /// <param name="count">The step's earlier change events.</param>
     /// <returns>The key.</returns>
-    public static string KeyOf(SetupStepId id, SetupState state, int count) => $"setup.step.changed:{Word(id)}:{Word(state)}:{count}";
+    public static string KeyOf(SetupStepId id, SetupState state, int count) => $"setup.step.changed:{Word(id)}:{Word(state)}:{count.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
 
     /// <summary>A state in the event's fixed words.</summary>
     /// <param name="state">The state.</param>
