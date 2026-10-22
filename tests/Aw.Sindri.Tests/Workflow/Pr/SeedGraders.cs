@@ -16,9 +16,9 @@ internal static class SeedGraders
         ArgumentNullException.ThrowIfNull(fixture);
         var (outcomes, grade) = step switch
         {
-            "step.pr.ci-fix" => (new[] { "fixed", "flaky", "cannotFix" }, (Func<SeedRun, SeedCase, List<string>>)CiFix),
-            "step.pr.fix-comment" => (new[] { "fixed", "declined", "cannotFix" }, FixComment),
-            "step.pr.reply-draft" => (new[] { "drafted", "noReply", "needsOwner" }, ReplyDraft),
+            "step.pr.ci-fix" => (["fixed", "flaky", "cannotFix"], (Func<SeedRun, SeedCase, List<string>>)CiFix),
+            "step.pr.fix-comment" => (["fixed", "declined", "cannotFix"], FixComment),
+            "step.pr.reply-draft" => (["drafted", "noReply", "needsOwner"], ReplyDraft),
             "step.docs.update" => (new[] { "changed", "noChange", "blocked" }, DocsUpdate),
             _ => throw new ArgumentException($"'{step}' is not a babysitter or docs-sync seed.", nameof(step)),
         };
