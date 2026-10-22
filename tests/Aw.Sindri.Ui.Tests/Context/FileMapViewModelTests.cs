@@ -30,7 +30,7 @@ public sealed class FileMapViewModelTests
 
         await files.Load(path: null, Token);
 
-        Assert.Equal(golden["entries"]!.AsArray().Select(e => (string)e!["name"]!), files.Rows.Select(r => r.Name));
+        Assert.Equal(golden["entries"]!.AsArray().Select(e => (string)e!["name"]!), files.Rows.Select(r => r.Name), StringComparer.Ordinal);
         var src = files.Rows[0];
         Assert.Equal((true, Labels.ContextFilesCount(4), Labels.ContextFilesIntent(records: 1, decisions: 0)), (src.IsDirectory, src.FilesText, src.IntentText));
         var readme = files.Rows[1];

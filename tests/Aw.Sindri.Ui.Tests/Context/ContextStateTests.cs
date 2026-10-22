@@ -1,6 +1,5 @@
 using System.Net;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Context;
@@ -31,12 +30,12 @@ public sealed class ContextStateTests
     }
 
     [Theory]
-    [InlineData(false, false, ContextOverlay.None)]
-    [InlineData(true, false, ContextOverlay.Empty)]
-    [InlineData(true, true, ContextOverlay.Building)]
-    [InlineData(false, true, ContextOverlay.Building)]
-    public void The_overlay_is_building_when_a_build_runs_else_empty_when_there_is_no_map_else_none(bool noMap, bool building, ContextOverlay expected) =>
-        Assert.Equal(expected, ContextStates.Overlay(noMap, building));
+    [InlineData(false, false, "None")]
+    [InlineData(true, false, "Empty")]
+    [InlineData(true, true, "Building")]
+    [InlineData(false, true, "Building")]
+    public void The_overlay_is_building_when_a_build_runs_else_empty_when_there_is_no_map_else_none(bool noMap, bool building, string expected) =>
+        Assert.Equal(expected, ContextStates.Overlay(noMap, building).ToString());
 
     [Fact]
     public async Task A_read_with_a_map_shows_no_overlay_and_no_banner()
@@ -120,8 +119,11 @@ public sealed class ContextStateTests
     [Fact]
     public async Task A_build_job_already_running_when_the_no_map_answer_comes_shows_building_at_once()
     {
-        var server = new FakeSindriApi { LensesAnswer = _ => NoMap };
-        server.JobsAnswer = new RouteAnswer(HttpStatusCode.OK, GoldenFiles.Api("jobs", "running").Replace("EchoJob", "BuildContextMap", StringComparison.Ordinal));
+        var server = new FakeSindriApi
+        {
+            LensesAnswer = _ => NoMap,
+            JobsAnswer = new RouteAnswer(HttpStatusCode.OK, GoldenFiles.Api("jobs", "running").Replace("EchoJob", "BuildContextMap", StringComparison.Ordinal)),
+        };
         var (page, _) = await Page(server);
         page.AnchorText = Anchor;
 

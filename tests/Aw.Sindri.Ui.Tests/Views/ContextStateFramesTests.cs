@@ -5,7 +5,6 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
-using Aw.Sindri.Ui.ViewModels.Context;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Shell;
 
@@ -28,7 +27,7 @@ public sealed class ContextStateFramesTests : FrameHost
         return (window, shell);
     }
 
-    private async Task Ask(ShellViewModel shell, string anchor)
+    private static async Task Ask(ShellViewModel shell, string anchor)
     {
         shell.Context.AnchorText = anchor;
         await shell.Context.Submit(Token);
