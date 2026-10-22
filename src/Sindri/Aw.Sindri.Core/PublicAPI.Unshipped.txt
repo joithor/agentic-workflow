@@ -15277,35 +15277,3 @@ static readonly Aw.Sindri.Core.SindriErrors.NoForge -> Aw.Kernel.ErrorDefinition
 static readonly Aw.Sindri.Core.SindriErrors.ForgeRefused -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.ForgeNotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.ForgeUnavailable -> Aw.Kernel.ErrorDefinition!
-Aw.Sindri.Core.Forge.PullThread
-Aw.Sindri.Core.Forge.PullThread.<Clone>$() -> Aw.Sindri.Core.Forge.PullThread!
-Aw.Sindri.Core.Forge.PullThread.Key.get -> string!
-Aw.Sindri.Core.Forge.PullThread.Key.init -> void
-Aw.Sindri.Core.Forge.PullThread.Kind.get -> string!
-Aw.Sindri.Core.Forge.PullThread.Kind.init -> void
-Aw.Sindri.Core.Forge.PullThread.Author.get -> string!
-Aw.Sindri.Core.Forge.PullThread.Author.init -> void
-Aw.Sindri.Core.Forge.PullThread.Association.get -> string!
-Aw.Sindri.Core.Forge.PullThread.Association.init -> void
-Aw.Sindri.Core.Forge.PullThread.IsBot.get -> bool
-Aw.Sindri.Core.Forge.PullThread.IsBot.init -> void
-Aw.Sindri.Core.Forge.PullThread.Resolved.get -> bool
-Aw.Sindri.Core.Forge.PullThread.Resolved.init -> void
-Aw.Sindri.Core.Forge.PullThread.Outdated.get -> bool
-Aw.Sindri.Core.Forge.PullThread.Outdated.init -> void
-Aw.Sindri.Core.Forge.PullThread.Path.get -> string?
-Aw.Sindri.Core.Forge.PullThread.Path.init -> void
-Aw.Sindri.Core.Forge.PullThread.Body.get -> string!
-Aw.Sindri.Core.Forge.PullThread.Body.init -> void
-Aw.Sindri.Core.Forge.PullThread.Markers.get -> System.Collections.Generic.IReadOnlyList<string!>!
-Aw.Sindri.Core.Forge.PullThread.Markers.init -> void
-Aw.Sindri.Core.Forge.PullThread.Deconstruct(out string! Key, out string! Kind, out string! Author, out string! Association, out bool IsBot, out bool Resolved, out bool Outdated, out string? Path, out string! Body, out System.Collections.Generic.IReadOnlyList<string!>! Markers) -> void
-Aw.Sindri.Core.Forge.PullThread.Equals(Aw.Sindri.Core.Forge.PullThread? other) -> bool
-Aw.Sindri.Core.Forge.PullThread.PullThread(string! Key, string! Kind, string! Author, string! Association, bool IsBot, bool Resolved, bool Outdated, string? Path, string! Body, System.Collections.Generic.IReadOnlyList<string!>! Markers) -> void
-override Aw.Sindri.Core.Forge.PullThread.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Forge.PullThread.GetHashCode() -> int
-override Aw.Sindri.Core.Forge.PullThread.ToString() -> string!
-static Aw.Sindri.Core.Forge.PullThread.operator !=(Aw.Sindri.Core.Forge.PullThread? left, Aw.Sindri.Core.Forge.PullThread? right) -> bool
-static Aw.Sindri.Core.Forge.PullThread.operator ==(Aw.Sindri.Core.Forge.PullThread? left, Aw.Sindri.Core.Forge.PullThread? right) -> bool
-Aw.Sindri.Core.Forge.IPullRequests.Threads(string! link, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Forge.PullThread!>!>!>
-Aw.Sindri.Core.Forge.IPullRequests.Self(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>

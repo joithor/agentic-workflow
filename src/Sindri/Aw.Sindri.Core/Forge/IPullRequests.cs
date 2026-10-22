@@ -17,17 +17,6 @@ public interface IPullRequests
     /// <returns>The pull request, or the error.</returns>
     public ValueTask<Result<PullView>> Get(string link, CancellationToken cancellationToken);
 
-    /// <summary>Reads the pull request's conversation: every review thread, review and comment, oldest first. The text is untrusted.</summary>
-    /// <param name="link">The pull request's link.</param>
-    /// <param name="cancellationToken">Cancels the read.</param>
-    /// <returns>The threads, or the error.</returns>
-    public ValueTask<Result<IReadOnlyList<PullThread>>> Threads(string link, CancellationToken cancellationToken);
-
-    /// <summary>Reads the login Sindri's forge credential acts as, so its own replies are not taken for work.</summary>
-    /// <param name="cancellationToken">Cancels the read.</param>
-    /// <returns>The login, or the error.</returns>
-    public ValueTask<Result<string>> Self(CancellationToken cancellationToken);
-
     /// <summary>Reads the tail of one check's log, capped and scrubbed by the forge port. The text is untrusted.</summary>
     /// <param name="link">The pull request's link.</param>
     /// <param name="check">The check's name, as <see cref="PullChecks.Failing"/> lists it.</param>
