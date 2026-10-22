@@ -2,8 +2,8 @@ using System.Globalization;
 using Aw.CodeIndex.Core;
 using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Model;
-using Aw.CodeIndex.Tests.Build;
 using Aw.CodeIndex.Testing;
+using Aw.CodeIndex.Tests.Build;
 using Aw.Kernel;
 
 namespace Aw.CodeIndex.Tests.Embedding;
@@ -11,7 +11,7 @@ namespace Aw.CodeIndex.Tests.Embedding;
 [Trait("Lane", "unit")]
 public sealed class NeighborsTests
 {
-    private const string TextOfSecond = "M0001\nvoid M0001()\n{ Work(1); }";
+    private const string TextOfSecond = "M0001\nvoid M0001()\n{ Work(0001); }";
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -57,7 +57,7 @@ public sealed class NeighborsTests
     {
         var harness = await Built(4_100);
 
-        var answer = (await harness.Facade.Neighbors(harness.Scope, BuildHarness.Name, "M0001\nvoid M0001()\n{ Work(1); }", 3, Token)).Value;
+        var answer = (await harness.Facade.Neighbors(harness.Scope, BuildHarness.Name, "M0001\nvoid M0001()\n{ Work(0001); }", 3, Token)).Value;
 
         Assert.Equal(3, answer.Neighbors.Count);
         Assert.Equal(LayerState.Pending, answer.Stamp.Layer.State);
