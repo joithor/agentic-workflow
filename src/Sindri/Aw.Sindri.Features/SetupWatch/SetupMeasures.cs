@@ -5,11 +5,6 @@ using Aw.Sindri.Core.Setup;
 
 namespace Aw.Sindri.Features.SetupWatch;
 
-/// <summary>What one look measured: <paramref name="Done"/> is the time from the first 'setup.step.changed' to the one that finished every step, <paramref name="FirstItem"/> the time from there to the first work item's first start. Null for what was not measured now.</summary>
-/// <param name="Done">Time to done, once.</param>
-/// <param name="FirstItem">Time to first value, once.</param>
-internal sealed record SetupMeasured(TimeSpan? Done, TimeSpan? FirstItem);
-
 /// <summary>
 /// The two measures of setup-once spec §7.5, computed by 'service:setup' from the ledger (no new event): 'setup.done' when a look that appended a change leaves every step done or skipped (the app's first open is the first 'setup.step.changed': the first tick records all six),
 /// and 'setup.first-item' on the first 'workflow.started' after it. Each is measured once per process (<see cref="SetupMeasureLog"/>); a process that starts on a finished setup measures neither.
