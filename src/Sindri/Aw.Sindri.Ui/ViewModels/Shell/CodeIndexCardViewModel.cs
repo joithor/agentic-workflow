@@ -84,11 +84,11 @@ internal sealed partial class CodeIndexCardViewModel(ISindriApi api, TimeProvide
 
     // The embeddings layer says "31 of 100 embedded"; that is the only percentage the status view carries.
     [GeneratedRegex(@"^(?<done>\d+) of (?<all>\d+) embedded$", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
-    private static partial Regex Embedded();
+    private static partial Regex Embedded { get; }
 
     private static int? Percent(CodeIndexLayerView layer)
     {
-        if (!string.Equals(layer.State, "pending", StringComparison.Ordinal) || Embedded().Match(layer.Detail) is not { Success: true } m
+        if (!string.Equals(layer.State, "pending", StringComparison.Ordinal) || Embedded.Match(layer.Detail) is not { Success: true } m
             || !long.TryParse(m.Groups["done"].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var done)
             || !long.TryParse(m.Groups["all"].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var all) || all <= 0)
         {

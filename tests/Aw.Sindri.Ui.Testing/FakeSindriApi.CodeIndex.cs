@@ -1,5 +1,4 @@
 using Aw.Kernel;
-using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.CodeIndex;
 
 namespace Aw.Sindri.Ui.Testing;

@@ -1,6 +1,8 @@
 using System.Net;
+using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Media;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
@@ -14,12 +16,7 @@ public sealed class CodeIndexCardViewTests : FrameHost
 {
     private const string LongRepo = "a-repository-with-an-unreasonably-long-name-that-would-not-fit-on-one-line-of-a-narrow-window";
 
-    private static string Body(string repo) => $$"""
-        {"repos":[{"repo":"{{repo}}","state":"ok","commit":"abcdef0123456789abcdef0123456789abcdef01","builtAt":"2026-10-20T12:00:00Z",
-        "layers":[{"layer":"structure","state":"ok","code":null,"detail":"ok"},
-                  {"layer":"graph","state":"unavailable","code":"SND-CODEIDX-020","detail":"graphify failed"},
-                  {"layer":"embeddings","state":"pending","code":null,"detail":"31 of 100 embedded"}],"counts":null}]}
-        """;
+    private static string Body(string repo) => $$"""{"repos":[{"repo":"{{repo}}","state":"ok","commit":"abcdef0123456789abcdef0123456789abcdef01","builtAt":"2026-10-20T12:00:00Z","layers":[{"layer":"structure","state":"ok","code":null,"detail":"ok"},{"layer":"graph","state":"unavailable","code":"SND-CODEIDX-020","detail":"graphify failed"},{"layer":"embeddings","state":"pending","code":null,"detail":"31 of 100 embedded"}],"counts":null}]}""";
 
     [Fact]
     public Task The_card_names_each_line_and_the_heading_for_assistive_technology() => OnUi(async () =>
@@ -29,7 +26,7 @@ public sealed class CodeIndexCardViewTests : FrameHost
         shell.GoTo(PageId.System);
         Settle(window);
 
-        var line = Assert.Single(Named<ItemsControl>(window, "CodeIndexLines").GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible));
+        var line = Assert.Single(Named<ItemsControl>(window, "CodeIndexLines").GetVisualDescendants().OfType<TextBlock>(), t => t.IsEffectivelyVisible);
         Assert.Equal(shell.Health.CodeIndex.Lines[0].Name, AutomationProperties.GetName(line));
         Assert.StartsWith("Code index: repo @ abcdef0", AutomationProperties.GetName(line), StringComparison.Ordinal);
         Assert.Equal(("Code index", "needs a look"), (AutomationProperties.GetName(Named<TextBlock>(window, "CodeIndexEyebrow")), AutomationProperties.GetName(Named<TextBlock>(window, "CodeIndexWord"))));
@@ -46,7 +43,7 @@ public sealed class CodeIndexCardViewTests : FrameHost
 
         var panel = Named<Border>(window, "CodeIndexPanel");
         var line = Named<ItemsControl>(window, "CodeIndexLines").GetVisualDescendants().OfType<TextBlock>().First(t => t.IsEffectivelyVisible);
-        var inWindow = line.TranslatePoint(new Avalonia.Point(line.Bounds.Width, 0), window)!.Value.X; // why: the line is in the tree
+        var inWindow = line.TranslatePoint(new Point(line.Bounds.Width, 0), window)!.Value.X; // why: the line is in the tree
         Assert.Equal(TextWrapping.Wrap, line.TextWrapping);
         Assert.InRange(inWindow, 0, window.Width);
         Assert.True(line.Bounds.Height > line.FontSize * 2, "the long line takes more than one row, so it wrapped");

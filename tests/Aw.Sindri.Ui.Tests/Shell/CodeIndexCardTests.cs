@@ -23,11 +23,11 @@ public sealed class CodeIndexCardTests
         $$"""{"layer":"{{layer}}","state":"{{state}}","code":{{(code is null ? "null" : "\"" + code + "\"")}},"detail":"{{detail}}"}""";
 
     private string Repo(string name, string state, string? commit, int builtMinutesAgo, params string[] layers) =>
-        $$"""{"repo":"{{name}}","state":"{{state}}","commit":{{(commit is null ? "null" : "\"" + commit + "\"")}},"builtAt":"{{_clock.GetUtcNow().AddMinutes(-builtMinutesAgo):O}}","layers":[{{string.Join(",", layers)}}],"counts":null}""";
+        $$"""{"repo":"{{name}}","state":"{{state}}","commit":{{(commit is null ? "null" : "\"" + commit + "\"")}},"builtAt":"{{_clock.GetUtcNow().AddMinutes(-builtMinutesAgo):O}}","layers":[{{string.Join(',', layers)}}],"counts":null}""";
 
     private async Task<CodeIndexCardViewModel> Read(params string[] repos)
     {
-        _server.CodeIndexStatusAnswer = new RouteAnswer(HttpStatusCode.OK, $$"""{"repos":[{{string.Join(",", repos)}}]}""");
+        _server.CodeIndexStatusAnswer = new RouteAnswer(HttpStatusCode.OK, $$"""{"repos":[{{string.Join(',', repos)}}]}""");
         var card = new CodeIndexCardViewModel(_server, _clock);
         await card.Refresh(_api, Token);
         return card;
@@ -89,7 +89,7 @@ public sealed class CodeIndexCardTests
     {
         var card = await Read(Repo("a", "ok", Sha, 5, Layer("structure", "ok")), Repo("b", "missing", commit: null, 0));
 
-        Assert.Equal(["a @ abcdef0, 5 min old, structure ok", "b: first build queued"], card.Lines.Select(l => l.Text));
+        Assert.Equal(["a @ abcdef0, 5 min old, structure ok", "b: first build queued"], card.Lines.Select(l => l.Text), StringComparer.Ordinal);
     }
 
     [Fact]
