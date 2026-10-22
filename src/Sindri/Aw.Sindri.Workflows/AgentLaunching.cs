@@ -41,7 +41,7 @@ internal sealed class AgentLaunching(
         }
 
         var block = BlockId.From(run.Run.Step.Block);
-        var told = instructions.FirstOrDefault(i => i.Step == block)?.Lines;
+        var told = instructions.FirstOrDefault(i => i.IsFor(block))?.Lines;
         var request = AgentLaunches.RequestFor(run.Run, target.Value, catalog.Find(block), told, workspace.Value);
         var result = await launcher.Launch(request, cancellationToken).ConfigureAwait(false);
         switch (result)
