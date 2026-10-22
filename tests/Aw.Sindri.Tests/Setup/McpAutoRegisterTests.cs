@@ -1,6 +1,7 @@
 using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Profile;
@@ -23,6 +24,8 @@ public sealed class McpAutoRegisterTests
     private readonly InMemoryJobViews _jobs = new();
     private readonly Starter _starter = new();
     private readonly Switch _switch = new();
+    private readonly InMemoryEndpointFile _endpoint = new();
+    private readonly McpAutoMemory _memory = new();
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -127,6 +130,48 @@ public sealed class McpAutoRegisterTests
     }
 
     [Fact]
+    public async Task Ticks_with_nothing_changed_start_one_job_and_a_port_change_starts_a_second()
+    {
+        var approved = await Approve(repos: ["demo"]);
+        await Consent(approved);
+        await Listen(7480);
+
+        await Run();
+        await Run();
+        await Run();
+
+        Assert.Equal(["demo"], _starter.Repos);
+        await Listen(7481);
+        await Run();
+        await Run();
+        Assert.Equal(["demo", "demo"], _starter.Repos);
+    }
+
+    [Fact]
+    public async Task A_new_approved_profile_that_names_the_repo_starts_a_job_again()
+    {
+        await Consent(await Approve(repos: ["demo"]));
+        await Run();
+
+        await Consent(await Approve(repos: ["demo", "other"]));
+        await Run();
+        await Run();
+
+        Assert.Equal(["demo", "demo", "other"], _starter.Repos);
+    }
+
+    [Fact]
+    public async Task A_new_serve_process_looks_again()
+    {
+        await Consent(await Approve(repos: ["demo"]));
+        await Run();
+
+        await Run(new McpAutoMemory());
+
+        Assert.Equal(["demo", "demo"], _starter.Repos);
+    }
+
+    [Fact]
     public async Task Only_a_humans_press_records_the_consent()
     {
         var approved = await Approve(repos: ["demo"]);
@@ -144,11 +189,16 @@ public sealed class McpAutoRegisterTests
 
     private McpEvents Events() => new(_slice.Held, _slice.Store, _slice.Events, _slice.Callers);
 
-    private async Task Run()
+    private Task Listen(int port) => _endpoint.Write(new ControlEndpoint(new Uri("http://127.0.0.1:" + port.ToString(System.Globalization.CultureInfo.InvariantCulture)), Pid: 1, Epoch: 1), Token).AsTask();
+
+    private Task Run() => Run(_memory);
+
+    private async Task Run(McpAutoMemory memory)
     {
         using var queue = new SetupJobQueue(() => 0);
-        var need = new McpNeed(new AutomaticMcpRegistration(new RegisterMcpService(_slice.Profiles, new FakeRepoLocator(), new InMemoryEndpointFile(), new FakeClaudeCli(), _host) { WriteCodexTrust = false }));
-        await new McpAutoRegister(Gate(), need, queue, _starter, new NothingRunning()).Run(Token);
+        var need = new McpNeed(new AutomaticMcpRegistration(new RegisterMcpService(_slice.Profiles, new FakeRepoLocator(), _endpoint, new FakeClaudeCli(), _host) { WriteCodexTrust = false }));
+        var changed = new ChangedMcpNeed(need, _slice.Profiles, _endpoint, memory);
+        await new McpAutoRegister(Gate(), changed, queue, _starter, new NothingRunning()).Run(Token);
     }
 
     private async Task<LoadedProfile> Approve(string[] repos, string? mcp = null)
