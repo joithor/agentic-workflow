@@ -24,7 +24,7 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 internal sealed class LineReportEffect(IRunArea area, IFactContents contents, IFactStore store, TimeProvider clock) : IEffectKind, IDescribedBlock
 {
     private const string Record = "line-report.jsonl";
-    private static readonly FactKey PhaseEventFact = FactKey.From("fact:phaseEvent");
+    private static readonly FactKey _phaseEventFact = FactKey.From("fact:phaseEvent");
 
     /// <inheritdoc/>
     public static BlockDescriptor Descriptor => LineEffects.Report;
@@ -50,8 +50,16 @@ internal sealed class LineReportEffect(IRunArea area, IFactContents contents, IF
             : new EffectDone(Reply: null, Existed: false);
     }
 
-    private static string? Status(EffectContext context) =>
-        context.Arguments.TryGetValue("status", out var value) && value.ValueKind == JsonValueKind.String && value.GetString() is "shipped" or "merged" ? value.GetString() : null;
+    private static string? Status(EffectContext context)
+    {
+        if (!context.Arguments.TryGetValue("status", out var value) || value.ValueKind != JsonValueKind.String)
+        {
+            return null;
+        }
+
+        var status = value.GetString();
+        return string.Equals(status, "shipped", StringComparison.Ordinal) || string.Equals(status, "merged", StringComparison.Ordinal) ? status : null;
+    }
 
     private static string? Name(JsonElement line, string property) =>
         line.ValueKind == JsonValueKind.Object && line.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.String && value.GetString() is { Length: > 0 } text ? text : null;
@@ -120,7 +128,7 @@ internal sealed class LineReportEffect(IRunArea area, IFactContents contents, IF
             return stored.Error;
         }
 
-        var facts = new Dictionary<FactKey, ReplyFact> { [PhaseEventFact] = new ReplyFact(stored.Value.Ref, stored.Value.Sha256, HeadSha: null) };
+        var facts = new Dictionary<FactKey, ReplyFact> { [_phaseEventFact] = new ReplyFact(stored.Value.Ref, stored.Value.Sha256, HeadSha: null) };
         return new EffectDone(OutcomeName.From(status), existed, facts);
     }
 
