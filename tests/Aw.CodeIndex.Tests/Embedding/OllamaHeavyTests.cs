@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.CodeIndex.Core;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Ports;
@@ -35,10 +36,10 @@ public sealed class OllamaHeavyTests(ITestOutputHelper output) : EmbedderContrac
         var report = (await index.Service.Handle(new Features.BuildCodeIndex.BuildCodeIndexRequest(repo, git.Head, lines), TestContext.Current.CancellationToken)).Value;
         var neighbors = (await index.Facade.Neighbors(scope, repo.Name, "decimal TotalWithTax(decimal net, decimal rate) { var tax = net * rate; return net + tax; }", 3, TestContext.Current.CancellationToken)).Value;
 
-        output.WriteLine($"embeddings: {report.Embedded} of {report.Embeddable} embedded; layers: {string.Join(", ", report.Layers.Select(l => $"{l.Layer}={l.State}"))}");
-        output.WriteLine("nearest: " + string.Join(", ", neighbors.Neighbors.Select(n => $"{n.Symbol.Name} {n.Score:F3}")));
+        output.WriteLine(string.Create(CultureInfo.InvariantCulture, $"embeddings: {report.Embedded} of {report.Embeddable} embedded; layers: {string.Join(", ", report.Layers.Select(l => l.Layer + "=" + l.State))}"));
+        output.WriteLine("nearest: " + string.Join(", ", neighbors.Neighbors.Select(n => n.Symbol.Name + " " + n.Score.ToString("F3", CultureInfo.InvariantCulture))));
         Assert.Equal((3, 3), (report.Embedded, report.Embeddable));
-        Assert.Equal(["TotalWithTax", "GrossAmount", "ListLogs"], neighbors.Neighbors.Select(n => n.Symbol.Name));
+        Assert.Equal(["TotalWithTax", "GrossAmount", "ListLogs"], neighbors.Neighbors.Select(n => n.Symbol.Name), StringComparer.Ordinal);
     }
 
     private static async Task<OllamaEmbedder> Available()

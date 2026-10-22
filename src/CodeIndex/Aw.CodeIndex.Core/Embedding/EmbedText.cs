@@ -11,6 +11,7 @@ public static class EmbedText
     public static string Of(EmbedCandidate candidate)
     {
         ArgumentNullException.ThrowIfNull(candidate);
-        throw new NotSupportedException();
+        var text = string.Join('\n', candidate.Name, candidate.Signature, candidate.Body);
+        return text.Length <= CodeIndexRules.EmbedTextMaxCharacters ? text : text[..CodeIndexRules.EmbedTextMaxCharacters];
     }
 }

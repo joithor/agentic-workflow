@@ -10,7 +10,7 @@ namespace Aw.CodeIndex.Features.BuildCodeIndex;
 
 /// <summary>
 /// The build slice (spec §5.7): a heavy slot, the snapshot, the incremental plan, the structure write in batches, the syntax
-/// edges and the publish. The graph, clones, deps and embeddings layers plug in later; until then each is recorded as unavailable
+/// edges and the publish. The graph, clones and deps layers plug in later; the embeddings layer is built here; until then each is recorded as unavailable
 /// with its reason, so a reader never mistakes a layer that was not built for one that is empty.
 /// </summary>
 /// <param name="heads">Whether a commit is still on the default branch.</param>
@@ -22,7 +22,7 @@ namespace Aw.CodeIndex.Features.BuildCodeIndex;
 /// <param name="clock">The time source.</param>
 public sealed partial class BuildCodeIndexService(IRepoHeads heads, IRepoSnapshot snapshot, StructureWriter structure, EmbeddingsLayer embeddings, IIndexStore store, IHeavyJobLock heavy, TimeProvider clock) : IService<BuildCodeIndexRequest, BuildReport>
 {
-    private static readonly LayerName[] _laterLayers = [LayerName.Clones, LayerName.Deps, LayerName.Graph, LayerName.Embeddings];
+    private static readonly LayerName[] _laterLayers = [LayerName.Clones, LayerName.Deps, LayerName.Graph];
 
     /// <summary>A build in progress: its file, its request and what the snapshot found.</summary>
     private sealed record BuildContext(IIndexBuild Build, BuildCodeIndexRequest Request, SnapshotInventory Inventory, string DefaultBranch, long Started);
@@ -31,7 +31,6 @@ public sealed partial class BuildCodeIndexService(IRepoHeads heads, IRepoSnapsho
     public async ValueTask<Result<BuildReport>> Handle(BuildCodeIndexRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        _ = embeddings;
         var started = clock.GetTimestamp();
         var slot = await heavy.Take("sindri code-index:" + request.Repo.Name.Value, CodeIndexRules.HeavySlotWait, waiting: null, cancellationToken).ConfigureAwait(false);
         if (slot.IsError)
@@ -103,11 +102,17 @@ public sealed partial class BuildCodeIndexService(IRepoHeads heads, IRepoSnapsho
             return edges.Error;
         }
 
+        var embedded = await embeddings.Run(build, settings.Embeddings, request.Progress, cancellationToken).ConfigureAwait(false);
+        if (embedded.IsError)
+        {
+            return embedded.Error;
+        }
+
         var layers = await RecordLayers(build, settings, stamp, cancellationToken).ConfigureAwait(false);
-        return layers.IsError ? layers.Error : await Publish(context, edges.Value, cancellationToken).ConfigureAwait(false);
+        return layers.IsError ? layers.Error : await Publish(context, edges.Value, embedded.Value, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<Result<BuildReport>> Publish(BuildContext context, EdgeShares shares, CancellationToken cancellationToken)
+    private async Task<Result<BuildReport>> Publish(BuildContext context, EdgeShares shares, EmbeddingProgress embedded, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var request = context.Request;
@@ -127,8 +132,8 @@ public sealed partial class BuildCodeIndexService(IRepoHeads heads, IRepoSnapsho
             [.. published.Value.Layers.Select(l => new LayerStatus(l.Layer, l.State, l.Code, l.Detail))],
             shares.UnresolvedShare,
             shares.AmbiguousShare,
-            Embedded: 0,
-            Embeddable: 0,
+            embedded.Embedded,
+            embedded.Embeddable,
             context.Build.Incremental,
             Elapsed(context.Started));
     }
@@ -144,7 +149,7 @@ public sealed partial class BuildCodeIndexService(IRepoHeads heads, IRepoSnapsho
 
         foreach (var layer in _laterLayers)
         {
-            var disabled = (layer == LayerName.Graph && !settings.Graph.Enabled) || (layer == LayerName.Embeddings && !settings.Embeddings.Enabled);
+            var disabled = layer == LayerName.Graph && !settings.Graph.Enabled;
             var state = disabled ? LayerState.Disabled : LayerState.Unavailable;
             var detail = disabled ? "disabled by the profile" : "not built by this version";
             var recorded = await build.SetLayer(new LayerRecord(layer, "none", state, Code: null, detail, now), cancellationToken).ConfigureAwait(false);

@@ -11,7 +11,7 @@ internal sealed class FakeOllamaServer : HttpMessageHandler
     public const string Model = "nomic-embed-text:latest";
     public const string Digest = "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f";
 
-    public Dictionary<string, string> Models { get; } = new() { [Model] = Digest };
+    public Dictionary<string, string> Models { get; } = new(StringComparer.Ordinal) { [Model] = Digest };
 
     public List<(HttpMethod Method, Uri Uri, string Body)> Requests { get; } = [];
 

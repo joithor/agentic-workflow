@@ -1,6 +1,5 @@
 using System.Security.Cryptography;
 using System.Text;
-using Aw.CodeIndex.Core;
 using Aw.CodeIndex.Core.Embedding;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Ports;
@@ -21,10 +20,11 @@ public sealed class FakeEmbedder : IEmbedder
     /// <summary>The dimension of every vector.</summary>
     public const int Dimensions = 16;
 
+    private readonly List<IReadOnlyList<string>> _batches = [];
     private int _succeeded;
 
     /// <summary>Every batch embedded, in order.</summary>
-    public List<IReadOnlyList<string>> Batches { get; } = [];
+    public IReadOnlyList<IReadOnlyList<string>> Batches => _batches;
 
     /// <summary>How many times <see cref="Probe"/> was called.</summary>
     public int Probes { get; private set; }
@@ -45,7 +45,7 @@ public sealed class FakeEmbedder : IEmbedder
         var vector = new float[Dimensions];
         for (var i = 0; i < vector.Length; i++)
         {
-            vector[i] = ((hash[i] / 128f) - 1f) + 0.001f;
+            vector[i] = (hash[i] / 128f) - 1f + 0.001f;
         }
 
         return vector;
@@ -82,7 +82,7 @@ public sealed class FakeEmbedder : IEmbedder
         }
 
         _succeeded++;
-        Batches.Add([.. texts]);
+        _batches.Add([.. texts]);
         return ValueTask.FromResult(Results.Success<IReadOnlyList<ReadOnlyMemory<float>>>([.. texts.Select(t => (ReadOnlyMemory<float>)VectorOf(t))]));
     }
 }

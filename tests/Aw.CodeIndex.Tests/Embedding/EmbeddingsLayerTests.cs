@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.CodeIndex.Core;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Tests.Build;
@@ -14,11 +15,13 @@ public sealed class EmbeddingsLayerTests
     {
         var harness = new BuildHarness { Embedder = embedder ?? new FakeEmbedder(), Settings = settings ?? CodeIndexSettings.Default };
         var symbols = new List<ParsedSymbol> { Parsed.Class("A", 1) };
-        symbols.AddRange(Enumerable.Range(0, methods).Select(i => Parsed.Method($"A.M{i:D4}", 2 + (i * 3)) with { Body = $"{{ Work({i}); }}" }));
+        symbols.AddRange(Enumerable.Range(0, methods).Select(i => Parsed.Method("A.M" + Number(i), 2 + (i * 3)) with { Body = "{ Work(" + Number(i) + "); }" }));
         _ = harness.Parser.With("src/A.cs", new ParseOutcome(symbols));
         _ = harness.Snapshot.WithFile(BuildHarness.First, "src/A.cs", "class A").WithFile(BuildHarness.Second, "src/A.cs", "class A");
         return harness;
     }
+
+    private static string Number(int i) => i.ToString("D4", CultureInfo.InvariantCulture);
 
     private static async Task<LayerRecord> Layer(BuildHarness harness)
         => (await harness.Header())!.Layers.Single(l => l.Layer == LayerName.Embeddings);
@@ -31,7 +34,7 @@ public sealed class EmbeddingsLayerTests
 
         var report = await harness.Build(BuildHarness.First, cancellationToken: Token);
 
-        Assert.Equal([["M0000\nvoid M0000()\n{ Work(0); }", "M0001\nvoid M0001()\n{ Work(1); }"]], embedder.Batches);
+        Assert.Equal(["M0000\nvoid M0000()\n{ Work(0); }", "M0001\nvoid M0001()\n{ Work(1); }"], Assert.Single(embedder.Batches), StringComparer.Ordinal);
         Assert.Equal((2, 2), (report.Embedded, report.Embeddable));
         var layer = await Layer(harness);
         Assert.Equal(LayerState.Ok, layer.State);
@@ -162,8 +165,8 @@ public sealed class EmbeddingsLayerTests
 
         _ = await Arranged(40).Build(BuildHarness.First, lines, Token);
 
-        Assert.Contains("embeddings 32 of 40", lines.All);
-        Assert.Contains("embeddings 40 of 40", lines.All);
+        Assert.Contains("embeddings 32 of 40", lines.All, StringComparer.Ordinal);
+        Assert.Contains("embeddings 40 of 40", lines.All, StringComparer.Ordinal);
         Assert.DoesNotContain(lines.All, l => l.Contains("Work(", StringComparison.Ordinal));
     }
 

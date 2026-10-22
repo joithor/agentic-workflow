@@ -12,7 +12,10 @@ public static class EmbeddingTarget
     public static bool IsLoopbackUrl(string url)
     {
         ArgumentNullException.ThrowIfNull(url);
-        throw new NotSupportedException();
+        return Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            && string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.Ordinal)
+            && uri.UserInfo.Length == 0
+            && (string.Equals(uri.Host, "127.0.0.1", StringComparison.Ordinal) || string.Equals(uri.Host, "[::1]", StringComparison.Ordinal));
     }
 
     /// <summary>Checks the URL and the model of the settings.</summary>
@@ -21,6 +24,13 @@ public static class EmbeddingTarget
     public static Error? Check(EmbeddingsSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        throw new NotSupportedException();
+        if (!IsLoopbackUrl(settings.Url))
+        {
+            return CodeIndexErrors.EmbeddingTargetRefused.With("the embedding URL must be http://127.0.0.1 or http://[::1], with no credentials");
+        }
+
+        return settings.Model is { } model && (model.Length == 0 || model.Contains("cloud", StringComparison.OrdinalIgnoreCase))
+            ? CodeIndexErrors.EmbeddingTargetRefused.With("the embedding model must be a local model, never a cloud model")
+            : null;
     }
 }

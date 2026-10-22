@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.CodeIndex.Core;
 using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Model;
@@ -10,14 +11,14 @@ namespace Aw.CodeIndex.Tests.Embedding;
 [Trait("Lane", "unit")]
 public sealed class NeighborsTests
 {
-    private const string _textOfSecond = "M0001\nvoid M0001()\n{ Work(1); }";
+    private const string TextOfSecond = "M0001\nvoid M0001()\n{ Work(1); }";
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     private static async Task<BuildHarness> Built(int methods = 3, FakeEmbedder? embedder = null, CodeIndexSettings? settings = null)
     {
         var harness = new BuildHarness { Embedder = embedder ?? new FakeEmbedder(), Settings = settings ?? CodeIndexSettings.Default };
-        var symbols = Enumerable.Range(0, methods).Select(i => Parsed.Method($"A.M{i:D4}", 2 + (i * 3)) with { Body = $"{{ Work({i}); }}" }).ToList();
+        var symbols = Enumerable.Range(0, methods).Select(i => Parsed.Method("A.M" + i.ToString("D4", CultureInfo.InvariantCulture), 2 + (i * 3)) with { Body = "{ Work(" + i.ToString("D4", CultureInfo.InvariantCulture) + "); }" }).ToList();
         _ = harness.Parser.With("src/A.cs", new ParseOutcome(symbols));
         _ = harness.Snapshot.WithFile(BuildHarness.First, "src/A.cs", "class A");
         _ = await harness.Build(BuildHarness.First, cancellationToken: Token);
@@ -29,13 +30,13 @@ public sealed class NeighborsTests
     {
         var harness = await Built();
 
-        var answer = (await harness.Facade.Neighbors(harness.Scope, BuildHarness.Name, _textOfSecond, 2, Token)).Value;
+        var answer = (await harness.Facade.Neighbors(harness.Scope, BuildHarness.Name, TextOfSecond, 2, Token)).Value;
 
         Assert.Equal(2, answer.Neighbors.Count);
         Assert.Equal("M0001", answer.Neighbors[0].Symbol.Name);
         Assert.Equal(1.0, answer.Neighbors[0].Score, 4);
         Assert.True(answer.Neighbors[0].Score >= answer.Neighbors[1].Score);
-        Assert.Equal([_textOfSecond], harness.Embedder.Batches[^1]);
+        Assert.Equal([TextOfSecond], harness.Embedder.Batches[^1], StringComparer.Ordinal);
     }
 
     [Fact]
@@ -43,7 +44,7 @@ public sealed class NeighborsTests
     {
         var harness = await Built();
 
-        var stamp = (await harness.Facade.Neighbors(harness.Scope, BuildHarness.Name, _textOfSecond, 1, Token)).Value.Stamp;
+        var stamp = (await harness.Facade.Neighbors(harness.Scope, BuildHarness.Name, TextOfSecond, 1, Token)).Value.Stamp;
 
         Assert.Equal(BuildHarness.Name, stamp.Repo);
         Assert.Equal(BuildHarness.First, stamp.Commit);
@@ -67,7 +68,7 @@ public sealed class NeighborsTests
     {
         var harness = await Built(embedder: new FakeEmbedder { FailProbe = CodeIndexErrors.PinMismatch.With("digest differs") });
 
-        var answer = await harness.Facade.Neighbors(harness.Scope, BuildHarness.Name, _textOfSecond, 2, Token);
+        var answer = await harness.Facade.Neighbors(harness.Scope, BuildHarness.Name, TextOfSecond, 2, Token);
 
         Assert.Equal(CodeIndexErrors.PinMismatch.Code, answer.Error.Code);
         Assert.Equal(ErrorKind.Unavailable, answer.Error.Kind);
@@ -79,7 +80,7 @@ public sealed class NeighborsTests
         var off = CodeIndexSettings.Default with { Embeddings = new EmbeddingsSettings(Enabled: false, CodeIndexSettings.DefaultEmbeddingsUrl, Model: null) };
         var harness = await Built(settings: off);
 
-        var answer = await harness.Facade.Neighbors(harness.Scope, BuildHarness.Name, _textOfSecond, 2, Token);
+        var answer = await harness.Facade.Neighbors(harness.Scope, BuildHarness.Name, TextOfSecond, 2, Token);
 
         Assert.Equal(CodeIndexErrors.IndexNotBuilt.Code, answer.Error.Code);
     }
@@ -131,7 +132,7 @@ public sealed class NeighborsTests
         var changed = CodeIndexSettings.Default with { Embeddings = new EmbeddingsSettings(Enabled: true, CodeIndexSettings.DefaultEmbeddingsUrl, "another-model:1") };
         var scope = new CodeIndexScope([new CodeIndexRepo(BuildHarness.Name, "/work/api", changed)], new CodeIndexCaller(CallerKind.Service, Repo: null));
 
-        var answer = await harness.Facade.Neighbors(scope, BuildHarness.Name, _textOfSecond, 2, Token);
+        var answer = await harness.Facade.Neighbors(scope, BuildHarness.Name, TextOfSecond, 2, Token);
 
         Assert.Equal(CodeIndexErrors.PinMismatch.Code, answer.Error.Code);
     }
@@ -143,7 +144,7 @@ public sealed class NeighborsTests
         var harness = await Built(embedder: embedder);
         embedder.FailEmbedAfter = (embedder.Batches.Count, CodeIndexErrors.EmbeddingServerFailed.With("went away"));
 
-        var answer = await harness.Facade.Neighbors(harness.Scope, BuildHarness.Name, _textOfSecond, 2, Token);
+        var answer = await harness.Facade.Neighbors(harness.Scope, BuildHarness.Name, TextOfSecond, 2, Token);
 
         Assert.Equal(CodeIndexErrors.EmbeddingServerFailed.Code, answer.Error.Code);
     }

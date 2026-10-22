@@ -114,7 +114,7 @@ public sealed class OllamaEmbedderTests
         Assert.Equal("http://127.0.0.1:11434/api/embed", request.Uri.ToString());
         using var body = JsonDocument.Parse(request.Body);
         Assert.Equal(FakeOllamaServer.Model, body.RootElement.GetProperty("model").GetString());
-        Assert.Equal(["one", "two"], body.RootElement.GetProperty("input").EnumerateArray().Select(i => i.GetString()));
+        Assert.Equal(["one", "two"], body.RootElement.GetProperty("input").EnumerateArray().Select(i => i.GetString()), StringComparer.Ordinal);
     }
 
     [Fact]
