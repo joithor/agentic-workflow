@@ -26,8 +26,13 @@ internal sealed class SqliteRecipeStatsCache(ViewsDatabase database, IViewReader
             return row.Error;
         }
 
-        var age = row.Value is { } found ? now - found.CachedAt : TimeSpan.MaxValue;
-        return Results.Success<RecipeStats?>(age >= TimeSpan.Zero && age < IRecipeStatsCache.MaxAge ? row.Value!.Stats : null);
+        if (row.Value is not { } found)
+        {
+            return Results.Success<RecipeStats?>(null);
+        }
+
+        var age = now - found.CachedAt;
+        return Results.Success<RecipeStats?>(age >= TimeSpan.Zero && age < IRecipeStatsCache.MaxAge ? found.Stats : null);
     }
 
     public async ValueTask<Result<Unit>> Put(RecipeStats stats, long head, DateTimeOffset now, CancellationToken cancellationToken)
