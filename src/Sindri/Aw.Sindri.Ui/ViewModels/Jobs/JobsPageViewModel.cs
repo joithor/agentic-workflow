@@ -195,13 +195,15 @@ internal sealed partial class JobsPageViewModel : ObservableObject, IDisposable
         var unreadable = string.Equals(error.Code, SindriUiErrors.BadAnswer.Code, StringComparison.Ordinal);
         (IsReading, IsUnreadable, IsStale) = (false, unreadable, true);   // the last good rows stay, marked stale (screens §4.1)
         IsFailed = !unreadable && Rows.Count == 0;   // with nothing to show, the page says so and offers to try again
-        FailedText = IsFailed ? Labels.JobsFailed(error) : string.Empty;
+        (ShowRetry, IsDimmed) = (!unreadable, !unreadable && Rows.Count > 0);   // with old rows, they stay, dimmed, under the same line and button
+        FailedText = ShowRetry ? Labels.JobsFailed(error) : string.Empty;
     }
 
     private void Show(JobList list)
     {
         Drawn++;
         (IsReading, IsUnreadable, IsStale, IsFailed, FailedText) = (false, false, false, false, string.Empty);
+        (ShowRetry, IsDimmed) = (false, false);
         var rows = list.Jobs.Select(Row).ToList();
         var present = new HashSet<string>(list.Jobs.Select(j => j.Id), StringComparer.Ordinal);
         foreach (var gone in _rows.Keys.Where(k => !present.Contains(k)).ToList())
@@ -209,11 +211,17 @@ internal sealed partial class JobsPageViewModel : ObservableObject, IDisposable
             _ = _rows.Remove(gone);
         }
 
+        foreach (var row in rows)
+        {
+            row.SetCompact(IsCompact);   // a row that arrives after the page narrowed is narrow too
+        }
+
         Patch.To(Rows, rows);
         Head = Labels.JobsHead(list.Jobs.Count(j => string.Equals(j.State, "running", StringComparison.Ordinal)), list.Jobs.Count);
         (IsEmpty, EmptyText) = (rows.Count == 0, rows.Count == 0 ? list.Empty ?? string.Empty : string.Empty);
         IsNoneRunning = rows.Count > 0 && !rows.Exists(r => r.IsRunning);
         OnChanged(nameof(HeadName));
+        OnChanged(nameof(ShowServicesLink));
         NoteKinds(list.Jobs);
     }
 

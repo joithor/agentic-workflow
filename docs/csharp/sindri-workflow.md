@@ -75,13 +75,13 @@ and stays inside its directory (`evals/<recipe id>/<case>.jsonl`).
 
 A case file is JSON lines, LF or CRLF:
 - line 1: `{"start":{"inputs":{"<fact>":"<value>",...}}}` (`"scaffold": true` marks a generated case);
-- each later line: `{"trigger":{"kind","outcome"?,"outputs"?,"park"?,"variant"?,"amount"?,"reason"?},"gates"?:{"<block>":"pass|fail|uncertain"},"expect":{"state","park"?,"outcome"?}}`.
+- each later line: `{"trigger":{"kind","outcome"?,"outputs"?,"park"?,"variant"?,"amount"?,"reason"?,"tokens"?},"gates"?:{"<block>":"pass|fail|uncertain"},"expect":{"state","park"?,"outcome"?}}`.
 
 `kind` is a recipe trigger (`step.completed`, `step.failed`, `wait.satisfied`, `command.<verb>`), a child's change
 (`child.parked` with `park`, `child.resumed`, `child.escalated`; a child's end is `wait.satisfied` with its outcome),
 or an engine trigger: `answer` with a `variant` (`grant`, `grant-tokens`, `accept`, `reject`, `resume`, `text`; the
 grants take `amount`, a `text` answer's text is `outputs` `fact:answer`), `takeover`, `handback`, `cancel` and
-`deadline`. An answer wait is satisfied by an `answer` line with `variant` `text` (outcome `answered`), not by
+`deadline`. A `step.completed` or `step.failed` line may give `tokens`, the tokens the run reports (0 when left out, so a budget binds in an eval only when a line says it spent); on another kind, or below 0, it fails the line. An answer wait is satisfied by an `answer` line with `variant` `text` (outcome `answered`), not by
 `wait.satisfied`. A child's `wait.satisfied` line may give `outputs`: only the child's declared outputs, under the child's keys; a key it doesn't declare, or any on `cancelled`, fails the line. `--scaffold` fills a child line with the outputs its outcome always carries. A `deadline` line fires the running timer: `takeoverIdle` while taken over, the retry timer after a `then: retry` re-armed the state, otherwise the state timer. It fails when no timer runs (parked, escalated or ended).
 
 A `step.failed` line takes an optional `reason`, what the Step reported as its failure. Left out, it is the constant
@@ -137,7 +137,7 @@ directory, such as the README, is left alone) and prints one line per recipe, **
 
 ```
 workflow.build@2 → sha256:<64 hex> (3 eval cases)
-workflow.line@2 → sha256:<64 hex> (6 eval cases)
+workflow.line@4 → sha256:<64 hex> (8 eval cases)
 digest sha256:<64 hex>
 ```
 
@@ -288,6 +288,7 @@ needs re-approval.
 | `version` | yes | An integer. Same id and version with another hash, or a version not above the highest registered, is refused once the registry exists (`RCP-VERSION-001`/`-002`, P2) |
 | `description` | no | |
 | `displayName` | yes | The name the app shows instead of the id (setup-once SO-10): sentence case, at most 60 characters, what the recipe does (`Idea to merged pull request`), no id or code name (`RCP-DISPLAY-001`). It is part of the hash, so adding or changing it needs a new `version`: **a content change bumps the version** (`recipe validate --against`) |
+| `why` | no | One plain sentence on why the recipe exists (at most 200 characters, no id or code name; `RCP-DISPLAY-002`). Served as `RecipeView.why`; written into the hashed form only when set, so adding it needs a new `version` |
 | `base` | generated recipes only | Written by Sindri's generator; on a hand-written recipe it is `RCP-CAP-004`, and `recipe validate` treats every recipe as hand-written |
 | `urgency` | no | `incident`, `triage` or `work` (default `work`; UI E-21). The app orders its Workflows strip by it; the engine never reads it. The normalizer writes `work` when it is absent, so an absent urgency and `urgency: work` hash the same. Any other value is `RCP-URG-001` |
 | `inputs` | yes | At least one (`RCP-INPUT-002`): `{ key, label?, type?, kind, generate? }`. `kind` is a subject kind and required (`RCP-INPUT-001`); `type` is a fact type and defaults to the type `kind` pairs with; `generate` is a template that supplies the value when the start gives none (text inputs only, `RCP-NAME-005`/`-006`). The bare-key short form (`[fact:item]`) normalizes to an input with no `kind`, so it fails `RCP-INPUT-001`. The first input is the instance's subject (UI E-22) |
@@ -338,6 +339,11 @@ Any state may also carry two optional plain-words fields the app shows (setup-on
 `displayName` (sentence case, at most 60 characters, no id; `RCP-DISPLAY-003`) names the step instead of the state id, and `why` (one plain sentence, at most 200
 characters, no id or code name; `RCP-DISPLAY-002`) says why the state is in the recipe. Neither is on a block descriptor.
 
+A state that runs a Step may also carry `onOutcome`, a map from an outcome of its Step to one plain sentence (at most 200 characters, no id or code name) on what choosing that outcome does:
+`onOutcome: { approve: "Locks the scope in and moves on to design.", revise: "Sends your notes back, then asks you again." }`. Each key must be an outcome of the state's Step
+(`StepOutcomes`, so a choice Step's own choices count) and each text plain words, both `RCP-DISPLAY-002`. The app shows the texts on the desk state's outcome buttons, in the Step's outcome
+order (`RecipeStateView.onOutcome`). Written into the hashed form only when set.
+
 `waitFor` is one of `{ event: <kind> }`, `{ answer: { id, question } }`, `{ resource: heavy | slot }` or
 `{ child: { recipe, inputs, onParked: propagate | ignore } }`. The `heavy` resource is allocated over the box's heavy-job lock
 (LN-WF3, see "The heavy resource" below); `slot` is a stub that is always free (P7), so a `slot` wait is reported as information
@@ -385,6 +391,10 @@ terminal outcomes plus `cancelled` (`RCP-WHEN-001`, whose message ends with `(ou
   though `session.usage` still carries them as `cacheReadTokens` (absent when none). A report the engine accepted is **never discarded for its cost**:
   its transition applies and the spend is recorded, and the park falls where the next Step would start (`budget`, answered with `--grant-tokens`,
   which starts that Step without counting a round). A run that fails over budget still parks on it.
+  **A state's budget is each round's allowance**: spend is counted by (state, loop round), a fresh allowance starts with the round, a grant applies to the
+  round it answers (and raises the recipe's allowance too), and the recipe's budget is the cap over the whole instance. A round that overspends is kept and
+  recorded, and status says so ("round 1 used 139k of 100k"). `--grant-tokens` takes at most 4x the original budget, and the error names that bound;
+  the park suggests a whole round's budget. An instance that began before the rule (Temporal patch `token-budget-per-round-v1`) keeps the pooled count.
 - **`next`** tells whoever reads the status what happens or what to do. Its variables are `{item}`, `{instance}`,
   `{state}`, `{user}`, `{child}`, `{loop.<name>}`, `{loop.<name>.cap}` and `{budget.tokens.left}` (`RCP-NEXT-001`).
   It never tells the reader to run an approval-tier command such as `--grant` (`RCP-NEXT-002`). Waits are descriptions
@@ -471,7 +481,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-NAME-005` | A `generate` template has no `{fact:…}` placeholder | Use only literals, `{start:date}` and `{start:time}` |
 | `RCP-NAME-006` | `generate` is only on an input of kind `text` | Supply that input at start |
 | `RCP-DISPLAY-001` | A recipe has a `displayName`: required, sentence case, at most 60 characters, no id or code name | Write the name the app shows (`Idea to merged pull request`) |
-| `RCP-DISPLAY-002` | A state's `why` is one plain line of at most 200 characters, with no id or code name | Say in plain words why the state is there |
+| `RCP-DISPLAY-002` | A recipe's or state's `why`, and each `onOutcome` text, is one plain line of at most 200 characters, with no id or code name; each `onOutcome` key is an outcome of the state's Step | Say in plain words why the state is there; key `onOutcome` by the Step's outcomes |
 | `RCP-DISPLAY-003` | A state's `displayName` (sentence case) and a transition's `label` are at most 60 characters, with no id or code name | Use plain words |
 | `RCP-HASH-001` | A `hash` in the file matches the content | Set it to the hash the message names, or remove it |
 | `RCP-VERSION-001` | Same id and version, same hash (registry, P2; and `recipe validate --against <manifest.json>`: a content change bumps the version) | Raise `version` |
@@ -614,6 +624,10 @@ The table also lists the ship and phase Steps. Three of them have block runtimes
 | `step.phase.drift` | block | `built`, `change`, `workspace` | `same`, `moved` | `built`, `change` on moved |
 | `step.phase.decide` | desk, human-only | `phasePacket` | `rebuild`, `stop` | `buildNotes` on rebuild |
 | `step.babysit.watch` | desk, human-only (stub of `workflow.pr-babysitter`) | `pr`, `handoff`, `phasePacket`, `lineContext`, `workspace` | `merged`, `rework`, `stuck` | `mergedSha` on merged; `reworkNotes` on rework |
+| `step.line.seed` | block | `phasePackets` | `seeded` | `phaseBoard` (one waiting row per phase, plan order), `phaseEvent` and `boardEdit` (empty) |
+| `step.line.dispatch` | block | `phaseBoard`, `phaseEvent`, `boardEdit` | `start`, `full`, `done`, `blocked` | `phaseBoard`, `phaseEvent`, `boardEdit` on every outcome; `nextPhase` on start |
+| `step.line.decide` | desk, human-only | `phaseBoard` | `retry`, `skip`, `stop` | `boardEdit` on retry and skip |
+| `effect.line.start-phase` | effect | `lineContext` | `started` | parameters `recipe` (a literal), `phase` (`fact:nextPhase`); reply `line.phaseChanged` with `fact:phaseEvent` |
 | `effect.line.report` | effect | - | - | parameters `status`, `line` |
 
 `step.interview.answer` and `step.scope.review` carry no form yet: the answer form built from `fact:questions` and the stop's fixed form (approve, revise, drop) await W2, so at the desk they complete with plain outcomes and outputs. The output schemas, their fact-or-packet-file design and field-name choices are in `schemas/scoping/README.md`.
@@ -1056,7 +1070,7 @@ The `--json` output is the served body as the CLI's serializer prints it: `list`
   detail (`desk task`, the park reason with `(child)` for a mirrored park, `spec-conflict (<kind>)`, the escalation
   kind, the outcome when it isn't the state's name), `next` (§3.8's text per row, a park's instruction on its own line;
   a desk task's recipe `next` with its variables filled and the `workflow complete` line with the Step's first declared
-  outcome and the outputs required on it), the answer line per park reason (`--grant 1`, `--grant-tokens <half the
+  outcome and the outputs required on it), the answer line per park reason (`--grant 1`, `--grant-tokens <the
   state's budget>`, `--text`, `--resume [--text]`, `--resume`, `--accept`, and the approval or cancel a spec-conflict
   needs), the drift line for a drift recorded behind a park, the budgets, and `allowedCommands`. A spec-conflict park
   whose only way out is an approval or a cancel (revoked, child revoked, drift) offers no `answer`. An open park or escalation serves one `answer` entry per fitting variant, each under its catalog id (`answer-text`, `answer-resume`, `answer-grant`, `answer-grant-tokens`, `answer-accept`, `answer-reject`), the status line's own variant first, each with the full command that runs it (the status line itself may keep its hint form, such as `--resume [--text <answer>]`; `--text <answer>` stays a template because the text is the person's). A suspension that mirrors a child serves only the variants its reason alone fixes (rounds, no-progress, timeout, no-runtime). An escalation from a child and a mirrored needs-answer, budget or spec-conflict park serve none, and their status `answer` line points at the child (`sindri workflow answer <address> <the child's answer>`, `(forwarded to <child>)`, action id `answer-text`) and is marked explicitly: `via: "child"` and `child: <the child's address>` on the status answer record (both omitted on every other answer; `child` is present only when the served view lists the mirrored child, matched by its instance id, and a parent's view lists its live children, each with the state that child answers now (engine P7); a child the status read cannot reach shows the state `unreachable`, never its last known one); the needs-you row carries the same `via` marker, so a client never reads the cli text to tell a pointer from a form. A budget grant's amount is whole `k` or `M` when exact, else the plain integer, so it parses (`TokenCounts.Format`) whenever a cap exists to halve; a budget park with no cap (a `gate.budget` refusal on a recipe with no budget) serves no `answer-grant-tokens` entry, and its status line keeps the `--grant-tokens <n>` hint. The one table of which variants fit is `AnswerVariants.Fitting`, shared by the answer check and the served list.
@@ -1107,6 +1121,8 @@ own slots that come due meanwhile are skipped, never overlapped.
 ## Start, answer, command and cancel (engine P4 unit (b))
 
 Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
+
+`sindri pr babysit <url>` and `sindri docs sync <url>` are `workflow start` with the facts of the PR babysitter's hand start built for you (`docs/csharp/sindri-pr.md`, API16).
 
 - **`workflow start <recipe> --item <id> [--attempt next] [--fact <key>=<file>]…`** runs the `StartInstance` slice: it
   resolves the item (`IItems`) and the approved recipe (the latest, or `id@hash`, a hash prefix of 8 or more digits),
@@ -1465,3 +1481,13 @@ usage, the measured empty diff, and the stop of the session) before it decides.
 - **No second take inside a held Step:** a block Step's `StepContext.HeavySlotHeld` is true while the instance holds a slot; a Step that runs a build or tests takes none of its own. The agent launch (`AW_SANDBOX_SLOT_HELD=1`, sandbox spec) and BS-3d's check commands read the same fact once they land; `AW_HEAVY_LOCK_HELD` is never put in a session environment.
 - **Ledger:** one `workflow.heavy` row per grant (`heavy.held`) and per release (`heavy.released`), keyed like the other mirrored rows, so a replay writes it once.
 - A history recorded before the `ln-wf3-heavy-slot` marker never takes or grants a slot; an instance waiting on `heavy` from before stays waiting until its timeout parks it, as it did.
+
+## The line dispatcher (LN-WF1)
+
+`workflow.line` starts a plan's phases itself, in parallel and stacked, instead of running one at a time.
+
+- **The board.** `step.line.seed` writes `fact:phaseBoard` after the plan freezes: one row per phase in plan order (state `waiting`, attempt 0, its dependencies). `step.line.dispatch` folds the last `fact:phaseEvent` and the owner's `fact:boardEdit` into it (`PhaseBoard`, pure), then reports `start`, `full`, `done` or `blocked`.
+- **Which phase starts.** The first `waiting` phase in plan order whose dependencies are all merged (built on the default branch), or exactly one of which is unmerged and `shipped` with its head branch known (stacked on that branch). A failed phase blocks the line for the owner. `workflow.line.parallel` (default 2) caps running phases; `workflow.line.maxOpenPrs` (default 4) caps shipped, unmerged ones; at either cap, or with nothing ready while a phase runs, it reports `full` and the line waits in `building`.
+- **Starting.** The `start` transition carries `effect.line.start-phase` with `recipe: workflow.phase`. It starts `workflow.phase` as a linked instance at `{line}/phase.<id>.<attempt>` (idempotent by that address; a retry is the next attempt), pinned and approved with the line like a child, with `fact:phasePacket` (the plan's packet entry plus its `base` and `stackParent`) and the line's `fact:lineContext`. It replies `started`.
+- **Events.** `line.phaseChanged` is routed to the linked parent (`route: parent`; an effect run by the line itself, like the start, answers the line). Outcomes: `started`, `shipped`, `parked`, `resumed`, `merged`, `ended`, `failed`. `fact:phaseEvent` is `{ line, phase, attempt?, status, instance, at }`; the attempt is the instance address's when absent. `effect.line.report` replies `shipped`, `merged` and `failed`; because `merged` is also an outcome of `pr.mergeResult` and `pr.docsMerged`, an effect names its reply event in `EffectDone.Event` when more than one declares its outcome. `workflow.phase` reports `failed` when the owner stops it.
+- **The owner.** A failed phase sends the line to `step.line.decide`: `retry` (the next attempt), `skip` (the phase and, transitively, its dependents) or `stop` (the line ends `failed`). `ticks` (cap 400) bounds the dispatch loop.

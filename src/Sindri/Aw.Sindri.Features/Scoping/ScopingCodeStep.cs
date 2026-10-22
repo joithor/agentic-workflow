@@ -36,8 +36,22 @@ internal abstract class ScopingCodeStep(BlockId step) : IBlockStep
         }
 
         var kept = await Keep(context, ran.Value, cancellationToken).ConfigureAwait(false);
-        return kept.IsError ? BlockStepResult.Failed(kept.Error.Message) : Completed(ran.Value);
+        if (kept.IsError)
+        {
+            return BlockStepResult.Failed(kept.Error.Message);
+        }
+
+        var more = await MoreOutputs(context, ran.Value, cancellationToken).ConfigureAwait(false);
+        return more.IsError ? BlockStepResult.Failed(more.Error.Message) : Completed(ran.Value, more.Value);
     }
+
+    /// <summary>Facts the Step records beyond the code's outputs, such as the hash of a packet it just kept: none by default.</summary>
+    /// <param name="context">The Step's context.</param>
+    /// <param name="response">The code's response.</param>
+    /// <param name="cancellationToken">Cancelled when the run ends before the Step does.</param>
+    /// <returns>JSON text by fact key without the 'fact:' prefix, or the error that fails the Step.</returns>
+    protected virtual ValueTask<Result<IReadOnlyDictionary<string, string>>> MoreOutputs(StepContext context, ScopingDeskResponse response, CancellationToken cancellationToken) =>
+        ValueTask.FromResult(Facts([]));
 
     /// <summary>Keeps what the code produced beyond the facts, such as the round line: nothing by default.</summary>
     /// <param name="context">The Step's context.</param>
@@ -141,9 +155,9 @@ internal abstract class ScopingCodeStep(BlockId step) : IBlockStep
     /// <returns>The text.</returns>
     protected static string Text(JsonElement value) => value.ValueKind == JsonValueKind.String ? value.GetString() ?? string.Empty : value.GetRawText();
 
-    private static BlockStepResult Completed(ScopingDeskResponse response)
+    private static BlockStepResult Completed(ScopingDeskResponse response, IReadOnlyDictionary<string, string> more)
     {
-        var outputs = response.Outputs.ToDictionary(static o => FactKey.From(FactPrefix + o.Key), static o => Element(o.Value));
+        var outputs = response.Outputs.Concat(more).ToDictionary(static o => FactKey.From(FactPrefix + o.Key), static o => Element(o.Value));
         return BlockStepResult.Completed(OutcomeName.From(response.Outcome), outputs);
     }
 

@@ -52,15 +52,7 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<IProjectorStatus>(static sp => sp.GetRequiredService<ProjectorProgress>())
             .AddSingleton<IProjectorControl>(static sp => sp.GetRequiredService<ProjectorProgress>())
             .AddSingleton<IProjectorFeed>(static sp => sp.GetRequiredService<ProjectorProgress>())
-            .AddSingleton<IProjection, ServicesProjection>()
-            .AddSingleton<IProjection, ProfileProjection>()
-            .AddSingleton<IProjection, RequestsProjection>()
-            .AddSingleton<IProjection, ItemsProjection>()
-            .AddSingleton<IProjection, ItemAliasesProjection>()
-            .AddSingleton<IProjection, ItemTimelineProjection>()
-            .AddSingleton<IProjection, NeedsYouProjection>()
-            .AddSingleton<IProjection, JobsProjection>()
-            .AddSingleton<IProjection, LaunchesProjection>()
+            .AddProjections()
             .AddSingleton<ILaunchViews, LaunchViews>()
             .AddSingleton<LaunchLiveness>()
             .AddSingleton<UsageSamples>()
@@ -72,4 +64,18 @@ public static class SindriCoreServiceCollectionExtensions
             .AddScoped<RecipeRegistryReader>()
             .AddSingleton<RecipeEvents>()
             .AddSingleton<IApprovedRecipes, RegistryApprovedRecipes>();
+
+    /// <summary>The views' projections, in the order the projector folds them.</summary>
+    private static IServiceCollection AddProjections(this IServiceCollection services)
+        => services
+            .AddSingleton<IProjection, ServicesProjection>()
+            .AddSingleton<IProjection, ProfileProjection>()
+            .AddSingleton<IProjection, RequestsProjection>()
+            .AddSingleton<IProjection, ItemsProjection>()
+            .AddSingleton<IProjection, ItemAliasesProjection>()
+            .AddSingleton<IProjection, ItemTimelineProjection>()
+            .AddSingleton<IProjection, NeedsYouProjection>()
+            .AddSingleton<IProjection, JobsProjection>()
+            .AddSingleton<IProjection, LaunchesProjection>()
+            .AddSingleton<IProjection, RecipeStatsProjection>();
 }
