@@ -151,16 +151,15 @@ public sealed class RecipeStatsRouteTests : IAsyncLifetime
     public async Task A_run_that_ends_empties_the_cache_and_the_next_read_counts_it()
     {
         var ct = TestContext.Current.CancellationToken;
-        _ledger.At(18 * 24);
-        await _ledger.Start("T-5/item/1", 18 * 24);
+        await _ledger.Start("T-5/item/1", 19 * 24);   // the clock already stands at 19 days: time only moves forward
         await ViewScenarios.CatchUp(_host, ct);
         var before = await Body("?window=30d");
         var open = (await Cache().Get(RecipeId.From("workflow.item"), hash: null, StatsWindow.ThirtyDays, Clock.GetUtcNow(), ct)).Value;
 
-        await _ledger.End("T-5/item/1", (18 * 24) + 1, "produce", "done", "resolved");
+        await _ledger.End("T-5/item/1", (19 * 24) + 1, "produce", "done", "resolved");
         await ViewScenarios.CatchUp(_host, ct);
         var emptied = (await Cache().Get(RecipeId.From("workflow.item"), hash: null, StatsWindow.ThirtyDays, Clock.GetUtcNow(), ct)).Value;
-        _ledger.At(19 * 24);
+        _ledger.At((19 * 24) + 2);
         var after = await Body("?window=30d");
 
         Assert.NotNull(open);

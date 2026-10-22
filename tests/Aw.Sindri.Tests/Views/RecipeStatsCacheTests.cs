@@ -1,6 +1,8 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Views;
+using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Stats;
 using Aw.Sindri.Infrastructure.Views;
@@ -44,8 +46,15 @@ public sealed class RecipeStatsCacheTests : IDisposable
         Assert.Null(applied.Stall);
     }
 
-    private Task Workflow(string type, string? outcome) =>
-        Fold(type, new WorkflowEventPayload("T-1/item/1", "produce", "done", "step.completed", outcome, Run: null, Detail: null));
+    private string Json(RecipeStats? stats) => System.Text.Json.JsonSerializer.Serialize(stats, _views.Options);
+
+    private Task Workflow(string type, string? outcome)
+    {
+        var delta = new WorkflowEventDelta(Frame: null, Suspension: null, PendingPark: null, Loops: null, TokensSpent: null, TokensGranted: null, Facts: null, outcome);
+        var detail = new WorkflowEventDetail(TriggerKey.For(WorkflowInstanceId.From("WFI-" + new string('a', 32)), "t"), "human:cli", SourceSequence: null, ArgumentsSha256: null, ReportSha256: null,
+            Answer: null, Amount: null, Reason: null, [], [], Grant: null, Override: null, Refusal: null, [], delta);
+        return Fold(type, new WorkflowEventPayload("T-1/item/1", "produce", "done", "step.completed", Outcome: null, Run: null, detail));
+    }
 
     private async Task<RecipeStats?> Get(string? hash = null) => (await _cache.Get(_recipe, hash, StatsWindow.ThirtyDays, _h.Clock.GetUtcNow(), Token)).Value;
 
@@ -55,7 +64,7 @@ public sealed class RecipeStatsCacheTests : IDisposable
         _ = (await _views.Store.Open(ViewSchema.Version, Token)).Value;
         _ = (await _cache.Put(Stats(), head: 0, _h.Clock.GetUtcNow(), Token)).Value;
 
-        Assert.Equal(Stats(), await Get());
+        Assert.Equal(Json(Stats()), Json(await Get()));   // collections compare by reference, so by value through the wire shape
         Assert.Null(await Get(hash: "sha256:" + new string('a', 64)));
     }
 
