@@ -17,8 +17,9 @@ public sealed record RecipeStatus(string Word, string? Detail)
         {
             RecipeStanding.Revoked => new RecipeStatus("revoked", Detail: null),
             RecipeStanding.Unapproved => new RecipeStatus("draft", Detail: null),
-            _ when line.Stale.Count > 0 => new RecipeStatus("changed", string.Join(", ", line.Stale.Select(Reason))),
-            _ => new RecipeStatus("approved", Detail: null),
+            RecipeStanding.Approved when line.Stale.Count > 0 => new RecipeStatus("changed", string.Join(", ", line.Stale.Select(Reason))),
+            RecipeStanding.Approved => new RecipeStatus("approved", Detail: null),
+            _ => throw new ArgumentOutOfRangeException(nameof(line)),
         };
     }
 
@@ -27,6 +28,6 @@ public sealed record RecipeStatus(string Word, string? Detail)
         StaleReason.PinDrift => "a pinned block changed",
         StaleReason.ChildStale => "a pinned child changed",
         StaleReason.LegacyShape => "the file is in a legacy shape",
-        _ => "something changed",
+        _ => throw new ArgumentOutOfRangeException(nameof(reason)),
     };
 }
