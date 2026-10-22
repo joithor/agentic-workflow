@@ -36,7 +36,7 @@ internal static class StatEventMap
         StatGate[] gates = [.. (payload.Detail?.Gates ?? []).Select(static g => new StatGate(g.Gate.Value, g.Outcome, g.Threshold))];
         if (payload.Detail?.Delta is not { } delta)
         {
-            return new StatEvent(address, at, payload.From, payload.To, null, null, HasDetail: false, null, null, null, answered, null, null, gates);
+            return new StatEvent(address, at, payload.From, payload.To, RecipeId: null, RecipeHash: null, HasDetail: false, Suspension: null, ParkReason: null, Escalation: null, answered, Outcome: null, TokensSpent: null, gates);
         }
 
         var suspension = delta.Suspension;
