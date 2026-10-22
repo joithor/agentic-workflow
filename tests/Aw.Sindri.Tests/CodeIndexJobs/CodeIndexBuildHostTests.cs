@@ -1,3 +1,4 @@
+using Aw.CodeIndex.Core.Ports;
 using Aw.CodeIndex.Testing;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
@@ -36,6 +37,9 @@ public sealed class CodeIndexBuildHostTests : IDisposable
             // why: the build would otherwise take a slot of the box's real heavy-job lock
             _ = services.RemoveAll<HeavyLockSettings>();
             _ = services.AddSingleton(new HeavyLockSettings(Path.Combine(_locks.FullName, "heavy-job.lock"), 2, Held: false));
+            // why: the real embedder calls the box's Ollama when one is running, which stalls the build past the wait
+            _ = services.RemoveAll<IEmbedder>();
+            _ = services.AddSingleton<IEmbedder>(new FakeEmbedder());
         });
 
         var first = _repo.Head;
@@ -80,7 +84,9 @@ public sealed class CodeIndexBuildHostTests : IDisposable
             await Task.Delay(250, ct);
         }
 
-        throw new TimeoutException("the index job didn't end");
+        var last = (await views.List(state: null, JobKind.From("BuildCodeIndex"), ct)).Value;
+        var tail = (await host.App.Services.GetRequiredService<ILedgerStore>().ReadAfter(0, 1000, ct)).Value ?? [];
+        throw new TimeoutException($"the index job didn't end: {last.Count} jobs ({string.Join(", ", last.Select(static j => $"{j.State} {j.Code} {j.Progress.Count} lines {j.Summary}"))}); the ledger ends with: {string.Join(", ", tail.TakeLast(8).Select(static e => e.Envelope.Type))}");
     }
 
     private static async Task<int> Built(GoldenHost host, CancellationToken ct)
