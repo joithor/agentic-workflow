@@ -39,7 +39,7 @@ internal sealed partial class FakeSindriApi
     public RouteAnswer CommandAnswer { get; set; } = RouteAnswer.SpecShaped("workflow-complete", "accepted");
 
     /// <summary>Held open until set: a command received while it was set waits for it.</summary>
-    public TaskCompletionSource? CommandGate { get; set; }
+    public TaskCompletionSource? WorkflowCommandGate { get; set; }
 
     /// <summary>Every command received, in order: the instance of the route and the body.</summary>
     public IReadOnlyList<(string Instance, ApplyCommandBody Body)> CommandCalls { get { lock (_gate) { return [.. _commands]; } } }
@@ -56,7 +56,7 @@ internal sealed partial class FakeSindriApi
             _commands.Add((instanceId, body));
         }
 
-        await WaitFor(CommandGate, cancellationToken).ConfigureAwait(false);
+        await WaitFor(WorkflowCommandGate, cancellationToken).ConfigureAwait(false);
         return Answer<ApplyCommandAccepted>(api, WorkflowRoutes.Commands(instanceId), CommandAnswer);
     }
 }

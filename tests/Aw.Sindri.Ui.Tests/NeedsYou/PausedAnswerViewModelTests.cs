@@ -32,11 +32,11 @@ public sealed class PausedAnswerViewModelTests
         var form = Form();
         form.Choose(PausedAnswerOption.Hint);
         form.HintText = "  focus on the retry loop ";
-        _server.CommandGate = new TaskCompletionSource();
+        _server.WorkflowCommandGate = new TaskCompletionSource();
 
         var first = form.Send();
         await form.Send();   // a second press while the first is out
-        _server.CommandGate.SetResult();
+        _server.WorkflowCommandGate.SetResult();
         await first;
 
         var (instance, body) = Assert.Single(_server.CommandCalls);
@@ -53,7 +53,7 @@ public sealed class PausedAnswerViewModelTests
         await form.Send();
 
         var (_, body) = Assert.Single(_server.CommandCalls);
-        Assert.Equal((CommandKind.Answer, (AnswerVariant?)AnswerVariant.Reject, (string?)null), (body.Kind, body.Answer, body.Text));
+        Assert.Equal((CommandKind.Answer, (AnswerVariant?)AnswerVariant.Reject, null), (body.Kind, body.Answer, body.Text));
         Assert.Empty(_server.CompleteCalls);
     }
 

@@ -99,7 +99,7 @@ public sealed class TakeoverViewModelTests
         await takeover.HandBack();
 
         var (instance, body) = Assert.Single(_server.CommandCalls);
-        Assert.Equal((Instance, CommandKind.Handback, (AnswerVariant?)null, (string?)null), (instance, body.Kind, body.Answer, body.Text));
+        Assert.Equal((Instance, CommandKind.Handback, null, null), (instance, body.Kind, body.Answer, body.Text));
         Assert.Empty(_server.CompleteCalls);
         Assert.Equal(("Running", "clock running, 2h 50m left", false, true), (takeover.Badge, takeover.Footer, takeover.NudgeVisible, takeover.ToastVisible));
 
@@ -114,14 +114,14 @@ public sealed class TakeoverViewModelTests
         ServeTakenOver(left: 10200);
         var takeover = Takeover();
         await takeover.Load(Instance);
-        _server.CommandGate = new TaskCompletionSource();
+        _server.WorkflowCommandGate = new TaskCompletionSource();
 
         var first = takeover.HandBack();
         await takeover.HandBack();
-        _server.CommandGate.SetResult();
+        _server.WorkflowCommandGate.SetResult();
         await first;
 
-        Assert.Single(_server.CommandCalls);
+        _ = Assert.Single(_server.CommandCalls);
     }
 
     [Fact]
