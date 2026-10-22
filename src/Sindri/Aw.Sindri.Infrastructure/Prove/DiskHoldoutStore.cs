@@ -63,7 +63,49 @@ internal sealed class DiskHoldoutStore(SindriSettings settings) : IHoldoutStore
             return spent.Error;
         }
 
-        return Write(line, phase, HoldoutFiles.SpentJson(spent.Value.Concat(scenarios).Distinct(StringComparer.Ordinal)));
+        return Write(line, phase, HoldoutFiles.SpentName, HoldoutFiles.SpentJson(spent.Value.Concat(scenarios).Distinct(StringComparer.Ordinal)));
+    }
+
+    /// <inheritdoc/>
+    public async ValueTask<Result<HoldoutSet>> Save(string line, string phase, string setText, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(setText);
+        var accepted = HoldoutFiles.Accept(phase, setText);
+        if (accepted.IsError)
+        {
+            return accepted.Error;
+        }
+
+        var sealedAlready = await Seal(line, phase, cancellationToken).ConfigureAwait(false);
+        if (sealedAlready.IsSuccess)
+        {
+            return SindriErrors.InvalidInput.With($"the hidden set of phase '{phase}' is sealed and is not replaced");
+        }
+
+        var written = Write(line, phase, HoldoutFiles.SetName, setText);
+        return written.IsError ? written.Error : accepted.Value;
+    }
+
+    /// <inheritdoc/>
+    public async ValueTask<Result<HoldoutSeal>> SealWith(string line, string phase, string planHash, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(planHash);
+        var set = await Set(line, phase, cancellationToken).ConfigureAwait(false);
+        if (set.IsError)
+        {
+            return set.Error;
+        }
+
+        var existing = await Seal(line, phase, cancellationToken).ConfigureAwait(false);
+        if (existing.IsSuccess)
+        {
+            return string.Equals(existing.Value.PlanHash, planHash, StringComparison.Ordinal) && string.Equals(existing.Value.SetHash, set.Value.Hash, StringComparison.Ordinal)
+                ? existing.Value
+                : SindriErrors.InvalidInput.With($"the hidden set of phase '{phase}' is already sealed to another plan packet");
+        }
+
+        var written = Write(line, phase, HoldoutFiles.SealName, HoldoutFiles.SealJson(phase, set.Value.Hash, planHash));
+        return written.IsError ? written.Error : new HoldoutSeal(set.Value.Hash, planHash);
     }
 
     /// <summary>The phase's directory.</summary>
@@ -72,20 +114,25 @@ internal sealed class DiskHoldoutStore(SindriSettings settings) : IHoldoutStore
     /// <returns>The path.</returns>
     internal string Directory(string line, string phase) => Path.Combine(settings.Home, "holdout", line, phase);
 
-    private Result<bool> Write(string line, string phase, string text)
+    private Result<bool> Write(string line, string phase, string name, string text)
     {
+        if (!HoldoutFiles.IsKey(line) || !HoldoutFiles.IsKey(phase))
+        {
+            return SindriErrors.InvalidInput.With("a holdout line and phase are each one path segment of letters, digits, '.', '_' and '-', not starting with '.'");
+        }
+
         try
         {
             var dir = Directory(line, phase);
             OwnerOnly.EnsureDirectory(Path.Combine(settings.Home, "holdout"));
             OwnerOnly.EnsureDirectory(Path.Combine(settings.Home, "holdout", line));
             OwnerOnly.EnsureDirectory(dir);
-            OwnerOnly.WriteAtomically(Path.Combine(dir, HoldoutFiles.SpentName), System.Text.Encoding.UTF8.GetBytes(text));
+            OwnerOnly.WriteAtomically(Path.Combine(dir, name), System.Text.Encoding.UTF8.GetBytes(text));
             return true;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return HoldoutFiles.Unreadable(HoldoutFiles.SpentName, $"it can't be written: {e.Message}");   // boundary: disk
+            return HoldoutFiles.Unreadable(name, $"it can't be written: {e.Message}");   // boundary: disk
         }
     }
 
