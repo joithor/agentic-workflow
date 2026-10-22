@@ -18,6 +18,12 @@ relative to recipes/sindri>` (`/` separated, `README.md` left out, nothing embed
 working-tree recipe is never embedded; a dirty tree publishes and says so. The build stamp includes the commit and the git
 tree hash of `recipes/sindri`, and the build dir holds both in `build-info`. A tree that is not a git checkout is refused.
 
+The eval step runs before the build becomes current, with the published binary over the staged set: `recipe manifest <staged dir> --json`
+gives the digest, and when it differs from the last successful publish's (`$AW_STATE_DIR/bin/sindri-app/recipes-digest`) the publish runs
+`recipe eval --shipped --json`. A failing eval, or an embedded recipe count that differs from the number of `recipes/sindri/*.yaml` files in
+the staged archive, fails the publish with exit 1: no build for the stamp, the last good build stays current and the digest is not
+recorded. A matching digest skips the evals and the count check (the set was verified by the publish that recorded it).
+
 ## The binary
 
 One binary, `sindri`, is both the control plane and its CLI. It publishes framework-dependent, not NativeAOT: the Temporal .NET SDK its worker runs has no trimming support (temporalio/sdk-dotnet#286; `.agents/rules/csharp.md` "AOT scope").
@@ -725,6 +731,8 @@ There is no decision, desk, protected, job or step-report tool, and no `sindri_c
 | `SND-LAUNCH-012` | The agent entry isn't approved for unattended Steps: `detail.reason` is `not-approved` or `hash-changed`, with the `current` and `approved` hashes (403; launcher SL8; API P10a) |
 | `SND-LAUNCH-013` | A Step asked for a model or a policy and the entry's matching form is `none`; nothing launches (400; launcher L-17; API P10a) |
 | `SND-LAUNCH-015` | The agent entry's `sessionIdPattern` timed out on a session id (2 s limit, non-backtracking), so the id was refused unjudged, not as a mismatch: an argv build (open or resume) fails with it, a heartbeat or exit report that carries the id returns it (the heartbeat still counts and the exit still ends the session), and `session wrap` prints it on stderr when a hook file or a scanned file hit the limit. `-014` is reserved by the sandbox spec (a gap, not a reuse) (launcher L-9) |
+| `SND-LAUNCH-022` | The Step's worktree already has a `pre-push` hook that isn't Sindri's (no `# aw-sindri pre-push guard` marker line); the launch is refused (409) and the hook is never changed. `-014`..`-021` belong to the sandbox spec (LN-LCH1) |
+| `SND-LAUNCH-023` | Printed by the pre-push hook Sindri installs, when an agent Step tries to push: "agent Steps can't push; Sindri pushes" (LN-LCH1; the hook exits 1, so this is git's refusal, not an API response) |
 | `SND-LAUNCH-404` | No launch has that id, or a session caller may not see it: `GET /sindri/launches/{launchId}` (404; API P10a) |
 | `SND-SESSION-001` | One of the session collector's sources failed or a pass overran its 500 ms budget: a problem row beside a normal list, never an exception message (collector CO-2a) |
 | `SND-SESSION-002` | The session collector can't run here; the `detail` is `unsupported-platform`, `proc-unreadable` or `disabled`, and only these replace the list (collector CO-2a; the routes `GET /sessions` and `GET /sessions/{provider}/{id}` answer it, CO-3) |
@@ -803,8 +811,8 @@ together with `SindriErrors`. Retired codes stay reserved in `WorkflowErrors.Ret
 | `SND-BLOCK-002` | unavailable | The approved profile a block Step's providers come from can't be read; the run ends as `step.failed` `profile-unreadable: <code>` |
 | `SND-BLOCK-003` | unavailable | The item's repo (`fact:item`) couldn't be read, so a block Step's per-repo keys can't be resolved; the run ends as `step.failed` `repo-unreadable`, never with the box's list |
 | `SND-BLOCK-004` | unavailable | A Step's run-area file (`$AW_SINDRI_HOME/workflow/runs/<WFI-id>/`, for example the scoping station's `rounds.jsonl`) can't be written or read; the Step fails with the reason, and the line is never dropped |
-| `SND-BLOCK-020` | notFound | A phase has no hidden set in the holdout store (`$AW_SINDRI_HOME/holdout/<line>/<phase>/set.json`): nothing was written or sealed for it |
-| `SND-BLOCK-021` | unavailable | A file of the holdout store can't be read, parsed or written (`set.json`, `seal.json`, `spent.json`); the owner replaces the phase's hidden set |
+| `SND-BLOCK-005` | notFound | A phase has no hidden set in the holdout store (`$AW_SINDRI_HOME/holdout/<line>/<phase>/set.json`): nothing was written or sealed for it |
+| `SND-BLOCK-006` | unavailable | A file of the holdout store can't be read, parsed or written (`set.json`, `seal.json`, `spent.json`); the owner replaces the phase's hidden set |
 
 `sindri recipe validate <file> [--json]`, `sindri recipe eval <file>`, `sindri recipe manifest <dir>` and `sindri recipe eval --shipped` are local checker verbs (engine spec W27): exit
 0 pass, 1 fail, 2 usage or tool error. The recipe reference, the eval format, the `RCP-*` rule table and how to add
