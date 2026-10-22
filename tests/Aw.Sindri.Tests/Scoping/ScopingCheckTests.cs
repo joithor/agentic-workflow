@@ -320,12 +320,14 @@ public sealed class ScopingCheckTests
     [Fact, Trait("Lane", "unit")]
     public async Task A_found_last_round_after_the_second_opinion_is_spent_warns_and_before_it_fails()
     {
-        var spent = await Run(ScopingFacts.Expiry().Edit("challenge", n => n["rounds"]![1]!["verdict"] = "found"), ScopeStage.Evidence);
+        var spent = await Run(ScopingFacts.Expiry().Edit("challenge", n => { var rounds = n["rounds"]!.AsArray(); rounds.Add(rounds[1]!.DeepClone()); rounds[2]!["verdict"] = "found"; }), ScopeStage.Evidence);
+        var notYet = await Run(ScopingFacts.Expiry().Edit("challenge", n => n["rounds"]![1]!["verdict"] = "found"), ScopeStage.Evidence);
         var first = await Run(ScopingFacts.Expiry().Edit("challenge", n => { var rounds = n["rounds"]!.AsArray(); rounds.RemoveAt(0); rounds[0]!["verdict"] = "found"; }), ScopeStage.Evidence);
 
         Assert.Equal(ScopeOutcome.Complete, spent.Outcome);
         Assert.Equal(ScopeRuleStatus.Warn, spent.Rules.Single(r => r.Rule == "SCP-CHAL-001").Status);
         Assert.Equal(ScopeOutcome.Incomplete, first.Outcome);
+        Assert.Equal(ScopeOutcome.Incomplete, notYet.Outcome);
     }
 
     [Fact, Trait("Lane", "unit")]

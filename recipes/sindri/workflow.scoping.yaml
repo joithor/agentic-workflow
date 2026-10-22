@@ -140,7 +140,7 @@ transitions:
   - { from: freeze, to: scoped,   on: step.completed, when: { outcome: frozen }, produces: [fact:scopePacket] }
   - { label: "the document changed: check it again", from: freeze, to: evidence, on: step.completed, when: { outcome: mismatch }, produces: [fact:findings] }
   - { from: withdraw, to: dropped, on: step.completed, when: { outcome: withdrawn } }
-loops: { rounds: { cap: 6 }, rescope: { cap: 3 }, interview: { cap: 4 }, challenge: { cap: 2 }, refreeze: { cap: 2 }, revise: { cap: 4 } }
+loops: { rounds: { cap: 6 }, rescope: { cap: 3 }, interview: { cap: 4 }, challenge: { cap: 3 }, refreeze: { cap: 2 }, revise: { cap: 4 } }
 evals:   # 30 cases: the 22 of Appendix B.1, the two recorded-limit cases of the line amendment (commit-not-held, not-synced), idea-child-unresolved and the challenge cap that routes to the desk or to size
   - evals/workflow.scoping/brief-happy.jsonl
   - evals/workflow.scoping/tracker-happy.jsonl
