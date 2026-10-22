@@ -3,14 +3,9 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using Aw.Sindri.Ui.ViewModels.Run;
 
 namespace Aw.Sindri.Ui.Views.Controls;
-
-/// <summary>One rectangle of the minimap: a card's place in the world and the brush it is filled with.</summary>
-/// <param name="Rect">The card's rectangle, in world coordinates.</param>
-/// <param name="Fill">The fill, from the card's state.</param>
-/// <param name="Selected">Whether the card is the selected one (outlined).</param>
-internal sealed record MiniMapNode(Rect Rect, IBrush Fill, bool Selected);
 
 /// <summary>
 /// The run canvas's overview (F3 spec 3 §2, "MiniMapControl"): one rounded rectangle per card on the whole world, the selected card
@@ -47,7 +42,7 @@ internal sealed class MiniMapControl : Control
     }
 
     /// <summary>Raised when the pointer asks to centre the stage on a point of the world.</summary>
-    internal event EventHandler<Point>? Centred;
+    internal event EventHandler<ValueEventArgs<Point>>? Centred;
 
     /// <summary>Gets or sets the cards.</summary>
     internal IReadOnlyList<MiniMapNode> Nodes
@@ -90,14 +85,14 @@ internal sealed class MiniMapControl : Control
     /// <returns>The same place in the world.</returns>
     internal Point ToWorld(Point point)
     {
-        var f = Frame();
-        return new Point((point.X - f.X) / f.Scale, (point.Y - f.Y) / f.Scale);
+        var (scale, x, y) = Frame();
+        return new Point((point.X - x) / scale, (point.Y - y) / scale);
     }
 
     /// <inheritdoc/>
     public override void Render(DrawingContext context)
     {
-        context.DrawRectangle(Brushes.Transparent, null, new Rect(Bounds.Size));
+        context.DrawRectangle(Brushes.Transparent, pen: null, new Rect(Bounds.Size));
         var f = Frame();
         var outline = new Pen(Brush("Brush.Ink"), 1);
         foreach (var node in Nodes)
@@ -124,7 +119,7 @@ internal sealed class MiniMapControl : Control
 
         _dragging = true;
         e.Pointer.Capture(this);
-        Centred?.Invoke(this, ToWorld(e.GetPosition(this)));
+        Centred?.Invoke(this, new ValueEventArgs<Point>(ToWorld(e.GetPosition(this))));
         e.Handled = true;
     }
 
@@ -134,7 +129,7 @@ internal sealed class MiniMapControl : Control
         base.OnPointerMoved(e);
         if (_dragging)
         {
-            Centred?.Invoke(this, ToWorld(e.GetPosition(this)));
+            Centred?.Invoke(this, new ValueEventArgs<Point>(ToWorld(e.GetPosition(this))));
         }
     }
 
@@ -145,7 +140,7 @@ internal sealed class MiniMapControl : Control
         if (_dragging)
         {
             _dragging = false;
-            e.Pointer.Capture(null);
+            e.Pointer.Capture(control: null);
         }
     }
 

@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
@@ -278,25 +277,4 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <param name="cancellationToken">Stops following.</param>
     /// <returns>A task that ends when cancelled.</returns>
     internal Task Run(CancellationToken cancellationToken) => Health.Run(cancellationToken);
-
-    private void OnHealthChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        switch (e.PropertyName)
-        {
-            case nameof(HealthViewModel.State):
-                Changed(_stateProperties);
-                Reattend();
-                Announce();
-                break;
-            case nameof(HealthViewModel.Reason):
-                OnChanged(e.PropertyName);
-                Announce();
-                break;
-            case nameof(HealthViewModel.ReasonDetail):
-                OnChanged(e.PropertyName);
-                break;
-            default:
-                break;
-        }
-    }
 }
