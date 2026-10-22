@@ -16,8 +16,9 @@ public static class StateCells
     /// <param name="instance">The interpreter's state.</param>
     /// <param name="interpreted">The recipe it runs and its blocks' descriptors.</param>
     /// <param name="badge">The engine's badge for the state the instance is interrupted in, if it is.</param>
+    /// <param name="visits">The latest visit to each state by id, which gives each cell its enteredAt and leftAt; null leaves the cells without times.</param>
     /// <returns>The cells, in path order (<see cref="StatePathOrder"/>).</returns>
-    public static IReadOnlyList<StateCell> Of(WorkflowInstance instance, InterpretedRecipe interpreted, EngineOwnedBadge? badge)
+    public static IReadOnlyList<StateCell> Of(WorkflowInstance instance, InterpretedRecipe interpreted, EngineOwnedBadge? badge, IReadOnlyDictionary<string, StateVisit>? visits = null)
     {
         ArgumentNullException.ThrowIfNull(instance);
         ArgumentNullException.ThrowIfNull(interpreted);
@@ -25,7 +26,7 @@ public static class StateCells
         var path = StatePathOrder.Of(recipe);
         var active = instance.Frame.State;
         var activeOrder = ActiveOrder(path, active);
-        return [.. path.States.Select(place => Cell(place, new Place(instance, interpreted, path, active, activeOrder, badge)))];
+        return [.. path.States.Select(place => Cell(place, new Place(instance, interpreted, path, active, activeOrder, badge, visits)))];
     }
 
     private static StateCell Cell(StatePlace place, Place at)
@@ -45,8 +46,12 @@ public static class StateCells
             Child: state.WaitFor?.Child is not null,
             Children: null,   // why: child progress is engine P7's; no instance has children yet
             Outcome: terminal && isActive && at.Instance.Ended ? at.Instance.Outcome?.Value : null,
-            terminal);
+            terminal,
+            Visit(place.State, at)?.EnteredAt,
+            Visit(place.State, at)?.LeftAt);
     }
+
+    private static StateVisit? Visit(string state, Place at) => at.Visits is { } visits && visits.TryGetValue(state, out var visit) ? visit : null;
 
     private static StateGlyph Glyph(StatePlace place, bool terminal, bool isActive, Place at)
     {
@@ -105,5 +110,5 @@ public static class StateCells
         return pairs;
     }
 
-    private sealed record Place(WorkflowInstance Instance, InterpretedRecipe Interpreted, PathOrder Path, string Active, int ActiveOrder, EngineOwnedBadge? Badge);
+    private sealed record Place(WorkflowInstance Instance, InterpretedRecipe Interpreted, PathOrder Path, string Active, int ActiveOrder, EngineOwnedBadge? Badge, IReadOnlyDictionary<string, StateVisit>? Visits);
 }
