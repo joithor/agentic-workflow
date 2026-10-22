@@ -12,7 +12,7 @@ public static class RecipeViews
     /// </summary>
     /// <param name="recipe">The recipe as registered.</param>
     /// <param name="stamp">Its id, version and hash.</param>
-    /// <param name="displayName">The name shown instead of the id; null shows the id.</param>
+    /// <param name="displayName">The name shown instead of the id; null takes the recipe's own displayName (null when it has none, and the view leaves it out).</param>
     /// <returns>The view.</returns>
     public static RecipeView Of(Recipe recipe, RecipeVersion stamp, string? displayName = null)
     {
@@ -28,9 +28,22 @@ public static class RecipeViews
             [.. recipe.Outputs.Select(static o => new RecipeOutputView(o.Key.Value, o.Label, Declared(o.Type), o.From))],
             Urgencies.IsKnown(recipe.Urgency) ? Urgencies.Parse(recipe.Urgency) : RecipeUrgency.Work,
             path.OrderedBy == "transition-list" ? PathOrdering.TransitionList : PathOrdering.Path,
-            [.. path.States.Select(static s => new RecipeStateView(s.State, s.Order, s.BranchOf))],
+            [.. path.States.Select(s => State(recipe, s))],
             [.. path.Loops.Where(l => l.Name is { } name && recipe.Loops.ContainsKey(name)).Select(l => new RecipeLoopView(l.Name, l.From, l.To, recipe.Loops[l.Name!].Cap))],   // why: the Where kept only the named ones
-            displayName);
+            displayName ?? recipe.DisplayName,
+            Labelled(recipe));
+    }
+
+    private static RecipeStateView State(Recipe recipe, StatePlace state) =>
+        recipe.States.TryGetValue(state.State, out var declared)
+            ? new RecipeStateView(state.State, state.Order, state.BranchOf, declared.Why, declared.DisplayName)
+            : new RecipeStateView(state.State, state.Order, state.BranchOf);
+
+    /// <summary>The transitions that carry a label, in file order; null (left out of the JSON) when none does.</summary>
+    private static List<RecipeTransitionLabelView>? Labelled(Recipe recipe)
+    {
+        var labelled = recipe.Transitions.Where(static t => t.Label is not null).Select(static t => new RecipeTransitionLabelView(t.From, t.To, t.On, t.Label!)).ToList();   // why: the Where kept only the labelled ones
+        return labelled.Count == 0 ? null : labelled;
     }
 
     private static FactType Declared(string? type) => FactTypes.Parse(type ?? Recipes.FactTypes.Default);

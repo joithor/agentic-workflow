@@ -48,3 +48,4 @@ transitions:
   - { from: route-b, to: route-b-desk, on: step.completed, when: { outcome: uncertain }, produces: [fact:decision] }
   - { from: route-b, to: route-b-desk, on: step.failed }
 inputs: [{ key: fact:change, label: "Change", type: text, kind: text }]
+displayName: Test recipe

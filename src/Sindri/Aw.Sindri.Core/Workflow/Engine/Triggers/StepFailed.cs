@@ -8,6 +8,9 @@ namespace Aw.Sindri.Core.Workflow.Engine.Triggers;
 /// <param name="ReportSha256">The SHA-256 of the canonical report.</param>
 public sealed record StepFailed(string Actor, RunToken Run, string Reason, int Tokens, string ReportSha256) : Trigger(Actor)
 {
+    /// <summary>The reason of a run whose launch failed before any session started (the agent runtime records it; the loop counts no round for it).</summary>
+    public const string LaunchReason = "launch";
+
     /// <summary>What the human reads after the reason (an agent run's launcher words, scrubbed); null for none. It is in the park's question, not in the recorded reason.</summary>
     public string? Detail { get; init; }
 

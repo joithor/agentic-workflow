@@ -15,8 +15,8 @@ namespace Aw.Sindri.Host.Commands;
 /// </summary>
 internal static partial class RecipeCommandTable
 {
-    private const string ValidateUsage = "usage: sindri recipe validate <file> [--json]";
-    private const string EvalUsage = "usage: sindri recipe eval <file> [--json] | --scaffold <file> [--out <dir>] | --record <address> --out <file>";
+    private const string ValidateUsage = "usage: sindri recipe validate <file> [--json] [--against <manifest.json>]";
+    private const string EvalUsage = "usage: sindri recipe eval <file> [--json] | --shipped [--json] | --scaffold <file> [--out <dir>] | --record <address> --out <file>";
     private const string ApproveUsage = "usage: sindri recipe approve <file|id@hash>";
     private const string RevokeUsage = "usage: sindri recipe revoke <id@hash>";
     private const string RegisterUsage = "usage: sindri recipe register <file>";
@@ -28,11 +28,14 @@ internal static partial class RecipeCommandTable
     /// <summary>Runs a 'recipe' verb; the registry's server verbs (register, show, list, approve, revoke) need <paramref name="desk"/>.</summary>
     internal static Task<int> Run(string[] args, IServiceProvider services, Output output, RecipeDesk? desk, CancellationToken ct) => args switch
     {
+        ["validate", .. var withBaseline] when withBaseline.Contains("--against", StringComparer.Ordinal) => ValidateAgainst(withBaseline, services, output, ct),
         ["validate", "--json"] or ["validate"] => output.Error(SindriErrors.InvalidInput.With($"recipe validate needs a recipe file ({ValidateUsage})")),
-        ["validate", var file] => Validate(file, json: false, services, output, ct),
-        ["validate", var file, "--json"] => Validate(file, json: true, services, output, ct),
-        ["validate", "--json", var file] => Validate(file, json: true, services, output, ct),
+        ["validate", var file] => Validate(ValidateRecipeRequest.FromPath(file), json: false, services, output, ct),
+        ["validate", var file, "--json"] => Validate(ValidateRecipeRequest.FromPath(file), json: true, services, output, ct),
+        ["validate", "--json", var file] => Validate(ValidateRecipeRequest.FromPath(file), json: true, services, output, ct),
+        ["eval", .. var shipped] when shipped.Contains("--shipped", StringComparer.Ordinal) => RunEvalShipped(shipped, services, output, ct),
         ["eval", .. var rest] => RunEval(rest, services, output, ct),
+        ["manifest", .. var manifest] => RunManifest(manifest, services, output, ct),
         ["register", var file] when !IsFlag(file) && desk is not null => new RecipeRegistryCommands(desk, services, output).Register(file, ct),
         ["register", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe register needs one recipe file ({RegisterUsage})")),
         ["show", var target] when !IsFlag(target) && desk is not null => new RecipeRegistryCommands(desk, services, output).Show(target, json: false, ct),
@@ -47,7 +50,7 @@ internal static partial class RecipeCommandTable
         ["approve", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe approve needs one recipe file or id@hash ({ApproveUsage})")),
         ["revoke", var target] when target.Contains('@', StringComparison.Ordinal) && desk is not null => new RecipeDeskCommands(desk, services, output).Revoke(target, ct),
         ["revoke", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe revoke needs one id@hash ({RevokeUsage})")),
-        _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["recipe", .. args])}' is not a sindri command ({ValidateUsage}; {EvalUsage}; {RegisterUsage}; {ShowUsage}; {ListUsage}; {ApproveUsage}; {RevokeUsage})")),
+        _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["recipe", .. args])}' is not a sindri command ({ValidateUsage}; {EvalUsage}; {ManifestUsage}; {RegisterUsage}; {ShowUsage}; {ListUsage}; {ApproveUsage}; {RevokeUsage})")),
     };
 
     private static Task<int> RunEval(string[] args, IServiceProvider services, Output output, CancellationToken ct) => args switch
@@ -75,17 +78,17 @@ internal static partial class RecipeCommandTable
 
     private static bool IsFlag(string arg) => arg.StartsWith("--", StringComparison.Ordinal);
 
-    private static async Task<int> Validate(string file, bool json, IServiceProvider services, Output output, CancellationToken ct)
+    private static async Task<int> Validate(ValidateRecipeRequest request, bool json, IServiceProvider services, Output output, CancellationToken ct)
     {
         Result<ValidateRecipeResponse> result;
         try
         {
             result = await services.GetRequiredService<IService<ValidateRecipeRequest, ValidateRecipeResponse>>()
-                .Handle(ValidateRecipeRequest.FromPath(file), ct).ConfigureAwait(false);
+                .Handle(request, ct).ConfigureAwait(false);
         }
         catch (Exception e) when (e is not OperationCanceledException)   // boundary: a bug in reading or validation is a tool error (W27 exit 2), not a crash
         {
-            return await ToolError(services, output, "recipe validate", e, file).ConfigureAwait(false);
+            return await ToolError(services, output, "recipe validate", e, request.Path ?? string.Empty).ConfigureAwait(false);
         }
 
         if (result.IsError)
