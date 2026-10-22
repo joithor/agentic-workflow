@@ -139,6 +139,17 @@ body.annot [data-gap]::after{content:attr(data-gap);position:absolute;top:-10px;
 <li><a class="stop" href="setup.html?tour=11#approveall"><span class="num">11</span><span class="st"><b>Setup: the two approvals</b><span>Approve your settings, then hold to approve all new workflows.</span></span><span class="go mono">setup.html</span></a></li>
 <li><a class="stop" href="questions.html?tour=12"><span class="num">12</span><span class="st"><b>Questions for the owner</b><span>Every open decision, with the recommended answer and the app it copies.</span></span><span class="go mono">questions.html</span></a></li>
       </ol>
+      <h2>Every other screen</h2>
+      <p class="sub">Not in the tour, but part of the app. Each has a state switcher in its bar and the same data shapes the server serves.</p>
+      <ol class="stops">
+<li><a class="stop" href="home.html"><span class="num">+</span><span class="st"><b>Home</b><span>What needs you, what is running and what is queued, with the health strip. States: busy, first run, nothing needs you, loading, out of date, not running.</span></span><span class="go mono">home.html</span></a></li>
+<li><a class="stop" href="work.html"><span class="num">+</span><span class="st"><b>Work</b><span>Every item as a table: waiting on you, with you, running, queued, closed. Item sheet and New item dialog. States: loading, empty, rebuilding, stalled, not running.</span></span><span class="go mono">work.html</span></a></li>
+<li><a class="stop" href="recipes.html"><span class="num">+</span><span class="st"><b>Recipes</b><span>Every workflow template with its standing, and how each one works. States: loading, empty, out of date, unreadable.</span></span><span class="go mono">recipes.html</span></a></li>
+<li><a class="stop" href="agents.html"><span class="num">+</span><span class="st"><b>Agents</b><span>Every coding agent on this computer, which one is asking you, and the session sheet. States: loading, empty, a source failed, cannot see sessions.</span></span><span class="go mono">agents.html</span></a></li>
+<li><a class="stop" href="system.html"><span class="num">+</span><span class="st"><b>System</b><span>Is Sindri healthy: control plane, profile, views, services and actions. Ten states from healthy to not running.</span></span><span class="go mono">system.html</span></a></li>
+<li><a class="stop" href="jobs.html"><span class="num">+</span><span class="st"><b>Background jobs</b><span>What Sindri does in the background and whether it worked. Job sheet with progress and cancel.</span></span><span class="go mono">jobs.html</span></a></li>
+<li><a class="stop" href="setup.html#thisapp"><span class="num">+</span><span class="st"><b>Settings: This app</b><span>Reduce motion and text size, kept on this computer. Under the setup checklist.</span></span><span class="go mono">setup.html</span></a></li>
+      </ol>
       <div class="note"><svg class="ico" viewBox="0 0 24 24" style="margin-top:2px;color:var(--annot)"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><p><b data-gap="demo of an outline">Annotations</b> (top right, on every screen) outlines what needs new data from Sindri. Turn it on to see which parts of a screen the API does not serve yet.</p></div>
     </main>
   </div>

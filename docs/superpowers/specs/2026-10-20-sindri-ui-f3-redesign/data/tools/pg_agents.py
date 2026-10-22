@@ -162,7 +162,7 @@ function sheet() {
   <div class="cap">Host</div><dl class="kv">
     ${field('Host', esc(h.label))}${field('Terminal', h.terminal)}${field('Socket kind', h.socketKind)}${field('Tmux session', h.session)}${field('Pane', h.pane, 1)}${field('Socket', h.socket, 1)}${field('Attached clients', h.attachedClients)}${field('Process', s.pid, 1)}</dl>
   <div class="cap">History <span class="n">${hist.length ? hist.length + ' changes' : ''}</span></div>
-  ${hist.length ? hist.map((x, i) => `<div class="stg ${i === 0 ? 'cur' : ''}"><div class="sh">${badge(x[0])}<div class="sn">${x[1] ? esc(x[1]) : '<span class="muted">—</span>'}<small>${utc(x[2])} · ${esc(x[3])}</small></div><span class="sd">${i === 0 && !e ? 'now' : ago(x[2]) + ' ago'}</span></div></div>`).join('') : '<p class="faint" style="padding:12px 16px;margin:0;font-size:12px">No history yet.</p>'}
+  ${hist.length ? hist.map((x, i) => `<div class="stg ${i === 0 ? 'cur' : ''}"><div class="sh">${badge(x[0])}<div class="sn">${x[1] ? esc(x[1]) : '<span class="muted">no reason given</span>'}<small>${utc(x[2])} · ${esc(x[3])}</small></div><span class="sd">${i === 0 && !e ? 'now' : ago(x[2]) + ' ago'}</span></div></div>`).join('') : '<p class="faint" style="padding:12px 16px;margin:0;font-size:12px">No history yet.</p>'}
   <p class="foot">${P.info}<span>Read from the process list and the agents' own records. The window and the allowance an agent has used are not served yet.</span></p></div>`;
   document.getElementById('x').onclick = () => { st.sel = null; render(); };
 }
