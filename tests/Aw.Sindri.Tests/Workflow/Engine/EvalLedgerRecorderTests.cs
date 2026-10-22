@@ -37,9 +37,9 @@ public sealed class EvalLedgerRecorderTests
         Assert.False(recorded.IsError, recorded.IsError ? recorded.Error.Message : null);
         var outputs = Assert.IsType<IReadOnlyDictionary<FactKey, JsonElement>>(recorded.Value.Steps[0].Trigger.Outputs, exactMatch: false);
         Assert.Equal(["fact:acceptance", "fact:openQuestions", "fact:scopeMap"], outputs.Keys.Select(static k => k.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
-        var acceptance = outputs[FactKey.From("fact:acceptance")];   // JSON text is written as the JSON value, not as a string holding it
-        Assert.Equal(JsonValueKind.Object, acceptance.ValueKind);
-        Assert.Equal("""{"items":[]}""", acceptance.GetRawText(), StringComparer.Ordinal);
+        var stored = outputs[FactKey.From("fact:acceptance")];   // JSON text is written as the JSON value, not as a string holding it
+        Assert.Equal(JsonValueKind.Object, stored.ValueKind);
+        Assert.Equal("""{"items":[]}""", stored.GetRawText(), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
