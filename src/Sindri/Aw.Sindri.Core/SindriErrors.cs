@@ -98,6 +98,9 @@ public static class SindriErrors
     /// <summary>SND-API-012: every event stream a caller may open is open (16, 4 held for the human; API spec §5.4).</summary>
     public static readonly ErrorDefinition StreamsFull = new("SND-API-012", ErrorKind.RateLimited, "Too many event streams are open; re-query every 5 s");
 
+    /// <summary>SND-API-013: a query parameter outside its set: a stats or list window that isn't 7d, 30d or 90d, or a hash that isn't a recipe hash (API spec §3.8, E-24, E-25).</summary>
+    public static readonly ErrorDefinition InvalidQuery = new("SND-API-013", ErrorKind.Invalid, "A query parameter is outside its set");
+
     /// <summary>SND-VIEW-001: the projector stalled on an event or can't run (views.db or the ledger can't be used); 'sindri views rebuild' clears an event stall or a views.db cause, 'sindri doctor' diagnoses a ledger cause.</summary>
     public static readonly ErrorDefinition ViewsStalled = new("SND-VIEW-001", ErrorKind.Unavailable, "The projector stalled on an event");
 
