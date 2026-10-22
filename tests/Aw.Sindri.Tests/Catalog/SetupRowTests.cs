@@ -30,6 +30,26 @@ public sealed class SetupRowTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void OnboardRepo_is_a_ready_job_row_the_terminal_and_app_start_and_a_session_is_refused()
+    {
+        var row = Assert.Single(new CommandCatalog().Rows, r => r.Action.Value == "OnboardRepo");
+
+        Assert.Equal((ActionClass.Job, "POST", "/sindri/setup/repos/onboard", "sindri repo onboard [<path>]", "ready", false, false), (row.Class, row.Method, row.Route, row.Cli.Text, row.Ui, row.NeedsTerminal, row.Destructive));
+        Assert.NotNull(Authorization.Decide(row.Class, A.Caller().Session().Build(), row).Refusal);
+        Assert.Null(Authorization.Decide(row.Class, A.Caller().Human().AtTerminal().Build(), row).Refusal);
+        Assert.Null(Authorization.Decide(row.Class, A.Caller().Human().Build(), row).Refusal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void InitProfile_is_a_cli_only_local_row()
+    {
+        var row = Assert.Single(new CommandCatalog().Rows, r => r.Action.Value == "InitProfile");
+
+        Assert.Equal((ActionClass.Local, "sindri profile init", "cli-only:local"), (row.Class, row.Cli.Text, row.Ui));
+        Assert.Null(row.Route);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void RegisterMcp_is_a_ready_job_row_the_app_starts_and_a_session_is_refused()
     {
         var row = Assert.Single(new CommandCatalog().Rows, r => r.Action.Value == "RegisterMcp");
