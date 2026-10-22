@@ -189,4 +189,13 @@ auto_desk C/1 2>/dev/null
 check "auto-desk: the retry adds the required output" "$(tail -1 "$COMPLETED")" "workflow complete C/1 --run 7.1 --outcome doneAsking --output fact:answers=$SCRATCH/desk/0-answers.json --output fact:interviewClosed=$SCRATCH/desk/0-interviewClosed.json"
 check "auto-desk: two calls in all" "$(wc -l < "$COMPLETED" | tr -d ' ')" "2"
 check "auto-desk: the log shows the outputs sent last" "${DESK_LOG[0]}" "C/1 run 7.1 -> doneAsking --output fact:answers=$SCRATCH/desk/0-answers.json --output fact:interviewClosed=$SCRATCH/desk/0-interviewClosed.json"
+# auto-grant: a budget park gets a token grant, logged with the desk answers, and stops at --desk-max
+: > "$COMPLETED"; DESK_LOG=(); DESK_MAX=2
+human() { printf '%s\n' "$*" >> "$COMPLETED"; }
+auto_grant P/1 2>/dev/null
+check "auto-grant: answers with a token grant" "$(cat "$COMPLETED")" "workflow answer P/1 --grant-tokens 300000"
+check "auto-grant: logged" "${DESK_LOG[0]}" "P/1 grant-tokens 300000"
+auto_grant P/1 2>/dev/null
+auto_grant P/1 2>/dev/null; rc=$?
+check "auto-grant: stops at --desk-max" "$rc $(wc -l < "$COMPLETED" | tr -d ' ')" "1 2"
 exit "$fail"
