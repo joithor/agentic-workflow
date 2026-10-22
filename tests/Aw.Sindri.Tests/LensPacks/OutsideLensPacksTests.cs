@@ -34,7 +34,7 @@ public sealed class OutsideLensPacksTests
         }
     }
 
-    private static string HashOf(string id, string lensId) => LensPackReader.Read(id, Pack(id, lensId)).Value.Hash;
+    private static string HashOf(string id, string lensId) => LensPackReader.Read(LensPackId.From(id), Pack(id, lensId)).Value.Hash;
 
     private ProfileLensPacks Packs(string chosen, Dictionary<string, string>? pins = null, bool repoEntry = true)
     {

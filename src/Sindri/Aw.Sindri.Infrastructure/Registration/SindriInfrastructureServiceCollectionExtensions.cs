@@ -81,7 +81,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
 
     /// <summary>LN-PK lite: the built-in lens and style packs (and the machine packs under the state root) and the review loop's changed paths.</summary>
     private static IServiceCollection AddLensPackAdapters(this IServiceCollection services, Func<string, string?> environment) =>
-        services.AddSingleton<ILensPackSource, EmbeddedLensPackSource>().AddSingleton<IOutsidePackFiles, DiskPackFiles>().AddSingleton<ILensPacks>(sp => new ProfileLensPacks(sp.GetRequiredService<IApprovedProfile>(), sp.GetRequiredService<ILensPackSource>(), sp.GetRequiredService<IOutsidePackFiles>(), Path.Combine(SettingsFromEnvironment.StateRoot(environment), "packs")))
+        services.AddSingleton<ILensPackSource, EmbeddedLensPackSource>().AddSingleton<IOutsidePackFiles, DiskPackFiles>().AddSingleton<IPackDirectories, DiskPackDirectories>().AddSingleton<ILensPacks>(sp => new ProfileLensPacks(sp.GetRequiredService<IApprovedProfile>(), sp.GetRequiredService<ILensPackSource>(), sp.GetRequiredService<IOutsidePackFiles>(), Path.Combine(SettingsFromEnvironment.StateRoot(environment), "packs")))
             .AddSingleton<IStylePackSource, EmbeddedStylePackSource>().AddSingleton<IStylePacks, ProfileStylePacks>().AddSingleton<IPackBundles, PackBundles>().AddSingleton<IChangedPaths, GitChangedPaths>();
 
     /// <summary>The bugfix block Steps' port over the bugfix-state program (deps.yaml Sindri to BugFix, kind cli).</summary>
@@ -90,7 +90,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
 
     private static IServiceCollection AddScopingInfrastructure(this IServiceCollection services, Func<string, string?> environment) =>
         services.AddSingleton<IPackets>(_ => new AwPacketsTool(new ProcessToolRunner(), environment))
-            .AddSingleton<IScopePacketStore>(sp => new ScopePacketStore(sp.GetRequiredService<SindriSettings>(), sp.GetRequiredService<IPackets>())).AddSingleton<IBriefFiles, BriefFiles>().AddSingleton<IRunArea, DiskRunArea>().AddSingleton<IPacketFiles, DiskPacketFiles>().AddSingleton<IHoldoutStore, DiskHoldoutStore>().AddSingleton<ICommitText, GitCommitText>().AddSingleton<IPacketDirectory, DiskPacketDirectory>()
+            .AddSingleton<IScopePacketStore>(sp => new ScopePacketStore(sp.GetRequiredService<SindriSettings>(), sp.GetRequiredService<IPackets>())).AddSingleton<IBriefFiles, BriefFiles>().AddSingleton<IRunArea, DiskRunArea>().AddSingleton<IPacketFiles, DiskPacketFiles>().AddSingleton<IHoldoutStore, DiskHoldoutStore>().AddSingleton<ICommitText, GitCommitText>().AddSingleton<IArtifactFiles, DiskArtifactFiles>().AddSingleton<IPacketDirectory, DiskPacketDirectory>()
             .AddSingleton<IOwnerDecisions, PendingOwnerDecisions>()
             .AddSingleton<IFrozenPackets>(sp => new FrozenPacketRecords(Path.Combine(sp.GetRequiredService<SindriSettings>().StateDirectory, "packets")))
             .AddSingleton<ITrackerSource>(_ => new FileTrackerSource(environment("AW_SINDRI_TRACKER_DIR"))).AddSingleton<IChangeSource, GitChangeSource>();

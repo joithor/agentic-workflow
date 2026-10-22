@@ -3,20 +3,18 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Kernel;
-using Aw.Sindri.Core.LensPacks;
 
-namespace Aw.Sindri.Infrastructure.LensPacks;
+namespace Aw.Sindri.Core.LensPacks;
 
 /// <summary>Reads a lens pack from its files (line spec §5.2): <c language="text">pack.json</c> and one prompt file a lens, checking the shape the loops rely on.</summary>
-internal static class LensPackReader
+public static class LensPackReader
 {
     /// <summary>The pack the files hold.</summary>
     /// <param name="id">The id the pack was asked for; the file must say the same.</param>
     /// <param name="files">Each file's path inside the pack and its text.</param>
     /// <returns>The pack; an error naming what is wrong with the file.</returns>
-    internal static Result<LensPack> Read(string id, IReadOnlyDictionary<string, string> files)
+    public static Result<LensPack> Read(LensPackId id, IReadOnlyDictionary<string, string> files)
     {
-        ArgumentNullException.ThrowIfNull(id);
         ArgumentNullException.ThrowIfNull(files);
         var header = Header(id, files);
         if (header.IsError)
@@ -24,11 +22,11 @@ internal static class LensPackReader
             return header.Error;
         }
 
-        var (packId, kind, entries) = header.Value;
+        var (kind, entries) = header.Value;
         var lenses = new List<PackLens>();
         foreach (var entry in entries)
         {
-            var lens = Lens(id, entry as JsonObject, files);
+            var lens = Lens(id.Value, entry as JsonObject, files);
             if (lens.IsError)
             {
                 return lens.Error;
@@ -38,13 +36,13 @@ internal static class LensPackReader
         }
 
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        return lenses.Exists(l => !seen.Add(l.Id.Value)) ? Bad(id, "names a lens id twice") : new LensPack(packId, Hash(files), kind, lenses);
+        return lenses.Exists(l => !seen.Add(l.Id.Value)) ? Bad(id.Value, "names a lens id twice") : new LensPack(id, Hash(files), kind, lenses);
     }
 
     /// <summary>The hash of a pack's files: each path and the SHA-256 of its UTF-8 bytes as 'path NUL hex LF', in ordinal path order, hashed again.</summary>
     /// <param name="files">The files.</param>
     /// <returns>'sha256:' and 64 lower-case hex digits.</returns>
-    internal static string Hash(IReadOnlyDictionary<string, string> files)
+    public static string Hash(IReadOnlyDictionary<string, string> files)
     {
         var manifest = new StringBuilder();
         foreach (var path in files.Keys.Order(StringComparer.Ordinal))
@@ -56,11 +54,11 @@ internal static class LensPackReader
     }
 
     // pack.json's own fields: kind, id, applies, and between 1 and the most lenses a pack may hold.
-    private static Result<(LensPackId Id, LensPackKind Kind, JsonArray Entries)> Header(string id, IReadOnlyDictionary<string, string> files)
+    private static Result<(LensPackKind Kind, JsonArray Entries)> Header(LensPackId id, IReadOnlyDictionary<string, string> files)
     {
         if (!files.TryGetValue("pack.json", out var text))
         {
-            return Bad(id, "has no pack.json");
+            return Bad(id.Value, "has no pack.json");
         }
 
         JsonNode? root;
@@ -70,25 +68,25 @@ internal static class LensPackReader
         }
         catch (JsonException e)
         {
-            return Bad(id, $"has a pack.json that is not JSON: {e.Message}");
+            return Bad(id.Value, $"has a pack.json that is not JSON: {e.Message}");
         }
 
-        if (root is not JsonObject pack || Text(pack, "kind") != "lenses" || Text(pack, "id") != id || !LensPackId.TryFrom(id, out var packId))
+        if (root is not JsonObject pack || Text(pack, "kind") != "lenses" || Text(pack, "id") != id.Value)
         {
-            return Bad(id, $"has a pack.json that is not a lens pack with the id '{id}' (a lowercase letter, then lowercase letters, digits or '-', 2 to 40 characters)");
+            return Bad(id.Value, $"has a pack.json that is not a lens pack with the id '{id.Value}' (a lowercase letter, then lowercase letters, digits or '-', 2 to 40 characters)");
         }
 
         var applies = Text(pack, "applies") switch { "design" => (LensPackKind?)LensPackKind.Design, "review" => LensPackKind.Review, _ => null };
         if (applies is not { } kind)
         {
-            return Bad(id, "says 'applies' something other than design or review");
+            return Bad(id.Value, "says 'applies' something other than design or review");
         }
 
         return pack["lenses"] switch
         {
-            not JsonArray { Count: > 0 } => Bad(id, "has no lens"),
-            JsonArray { Count: > LensPack.MaxLenses } many => Bad(id, $"has {many.Count} lenses, more than the {LensPack.MaxLenses} a pack may hold (fix: split the pack)"),
-            JsonArray entries => (packId, kind, entries),
+            not JsonArray { Count: > 0 } => Bad(id.Value, "has no lens"),
+            JsonArray { Count: > LensPack.MaxLenses } many => Bad(id.Value, $"has {many.Count} lenses, more than the {LensPack.MaxLenses} a pack may hold (fix: split the pack)"),
+            JsonArray entries => (kind, entries),
         };
     }
 

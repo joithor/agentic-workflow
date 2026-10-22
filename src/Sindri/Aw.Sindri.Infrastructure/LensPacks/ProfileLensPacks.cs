@@ -56,7 +56,12 @@ internal sealed class ProfileLensPacks(IApprovedProfile approved, ILensPackSourc
             return PackErrors.NotFound.With($"the lens pack '{id}' is not a repo, machine or built-in pack (built in: {string.Join(", ", source.Ids())}; fix: set workflow.packs.lenses.{Loop(kind)} to a pack that exists)");
         }
 
-        var pack = LensPackReader.Read(id, files);
+        if (!LensPackId.TryFrom(id, out var packId))
+        {
+            return PackErrors.Invalid.With($"the lens pack '{id}' is not a pack id (a lowercase letter, then lowercase letters, digits or '-', 2 to 40 characters)");
+        }
+
+        var pack = LensPackReader.Read(packId, files);
         if (pack.IsError)
         {
             return pack;

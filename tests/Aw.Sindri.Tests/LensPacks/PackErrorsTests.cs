@@ -50,7 +50,7 @@ public sealed class PackErrorsTests
     [Fact]
     public void More_than_ten_lenses_is_SND_PACK_003()
     {
-        var read = LensPackReader.Read("big-pack", PackFiles(lenses: 11));
+        var read = LensPackReader.Read(LensPackId.From("big-pack"), PackFiles(lenses: 11));
 
         Assert.Equal("SND-PACK-003", read.Error.Code);
     }
@@ -61,7 +61,7 @@ public sealed class PackErrorsTests
         var files = PackFiles(lenses: 2);
         _ = files.Remove("lenses/l1.md");
 
-        Assert.Equal("SND-PACK-003", LensPackReader.Read("big-pack", files).Error.Code);
+        Assert.Equal("SND-PACK-003", LensPackReader.Read(LensPackId.From("big-pack"), files).Error.Code);
     }
 
     private static ProfileLensPacks Packs(string chosen) => new(new Chosen(chosen), new EmbeddedLensPackSource());
