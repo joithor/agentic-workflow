@@ -54,7 +54,9 @@ public sealed class WorkflowsKeysTests
         Assert.True(shell.Press("J"));
         var address = Flat(shell)[0];
 
-        Assert.True(shell.Press("Enter"));
+        Assert.True(shell.Press("Enter"));   // the first Enter opens the run drawer, nothing else
+        Assert.False(shell.IsInstanceSheet);
+        Assert.True(shell.Press("Enter"));   // the second opens the run
         await ShellWait.Until(shell, () => Reached(shell), Token);
 
         Assert.Equal((address, address, true), (shell.Instance.Address, shell.OpenerWorkflow, shell.IsInstanceSheet));
