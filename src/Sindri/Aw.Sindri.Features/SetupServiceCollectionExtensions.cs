@@ -1,6 +1,6 @@
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Onyx;
-using Aw.Sindri.Core.Ports;
+using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Features.Commands;
 using Aw.Sindri.Features.GetSetup;
 using Aw.Sindri.Features.SetupSources;

@@ -43,6 +43,7 @@ using Aw.Sindri.Features.ApproveAllRecipes;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.ApproveRecipe;
 using Aw.Sindri.Features.CancelJob;
+using Aw.Sindri.Features.CheckPack;
 using Aw.Sindri.Features.CloseItem;
 using Aw.Sindri.Features.CompleteStep;
 using Aw.Sindri.Features.ConnectOnyx;
@@ -137,7 +138,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(StreamErrorFrame)), JsonSerializable(typeof(InstanceChanged)), JsonSerializable(typeof(ListCommandsRequest)), JsonSerializable(typeof(ListCommandsResponse)), JsonSerializable(typeof(CommandListRow))]
 [JsonSerializable(typeof(ListServicesRequest)), JsonSerializable(typeof(ListServicesResponse)), JsonSerializable(typeof(ServiceView)), JsonSerializable(typeof(GetProfileRequest))]
 [JsonSerializable(typeof(GetSetupRequest)), JsonSerializable(typeof(GetSetupResponse)), JsonSerializable(typeof(GetRepoStatusResponse)), JsonSerializable(typeof(RepoStatus))]
-[JsonSerializable(typeof(GetProfileResponse)), JsonSerializable(typeof(RebuildViewsRequest)), JsonSerializable(typeof(CreateItemRequest)), JsonSerializable(typeof(ItemCreatedResponse))]
+[JsonSerializable(typeof(GetProfileResponse)), JsonSerializable(typeof(ProfilePack)), JsonSerializable(typeof(RebuildViewsRequest)), JsonSerializable(typeof(CreateItemRequest)), JsonSerializable(typeof(ItemCreatedResponse))]
 [JsonSerializable(typeof(DeferOnyxRequest)), JsonSerializable(typeof(DeferOnyxResponse)), JsonSerializable(typeof(DeferOnyxBody)), JsonSerializable(typeof(SetupOnyxRequest)), JsonSerializable(typeof(SetupOnyxResult)), JsonSerializable(typeof(ConnectOnyxRequest))]
 [JsonSerializable(typeof(CloseItemRequest)), JsonSerializable(typeof(CloseItemBody)), JsonSerializable(typeof(GetQueueRequest)), JsonSerializable(typeof(QueueResponse))]
 [JsonSerializable(typeof(QueueGroupView)), JsonSerializable(typeof(ItemSummary)), JsonSerializable(typeof(ListItemsRequest)), JsonSerializable(typeof(ListItemsResponse))]
@@ -146,6 +147,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(RequestView)), JsonSerializable(typeof(ListDecisionsRequest)), JsonSerializable(typeof(ListDecisionsResponse)), JsonSerializable(typeof(DecisionView))]
 [JsonSerializable(typeof(OptionView)), JsonSerializable(typeof(GetNeedsYouRequest)), JsonSerializable(typeof(GetNeedsYouResponse)), JsonSerializable(typeof(GetItemTimelineRequest)), JsonSerializable(typeof(GetItemScopeRequest)), JsonSerializable(typeof(ItemScopeResponse))]
 [JsonSerializable(typeof(TimelineResponse)), JsonSerializable(typeof(Recipe)), JsonSerializable(typeof(BlockDescriptor)), JsonSerializable(typeof(ValidateRecipeResponse))]
+[JsonSerializable(typeof(CheckPackResponse)), JsonSerializable(typeof(PackFinding))]
 [JsonSerializable(typeof(EvalRecipeResponse)), JsonSerializable(typeof(WorkflowEvent)), JsonSerializable(typeof(EvalStartLine)), JsonSerializable(typeof(EvalStepLine))]
 [JsonSerializable(typeof(RecipeValidationView)), JsonSerializable(typeof(CompleteStepResponse)), JsonSerializable(typeof(InstanceView)), JsonSerializable(typeof(ListOutboxResponse))]
 [JsonSerializable(typeof(ScopingApproved)), JsonSerializable(typeof(ScopingEscape)), JsonSerializable(typeof(ScopingView)), JsonSerializable(typeof(ScopingCheckResponse)), JsonSerializable(typeof(ScopingDeskReport))]   // SC-K: the scoping verbs

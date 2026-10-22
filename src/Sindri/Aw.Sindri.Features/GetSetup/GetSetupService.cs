@@ -1,6 +1,5 @@
 using Aw.Kernel;
 using Aw.Kernel.Services;
-using Aw.Sindri.Core.Ports;
 using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Core.Views;
 using Microsoft.Extensions.Logging;
