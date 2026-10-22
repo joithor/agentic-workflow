@@ -45,6 +45,8 @@ public sealed partial class ContrastTests
         { "Error", "ErrorSoft", 5.3, TextAa },   // the fail chip
         { "Success", "SuccessSoft", 5.8, TextAa },   // the ok chip
         { "InkMuted", "Surface2", 12.5, TextAa },   // the neutral chip
+        { "Ink", "AttentionFill", 8.4, TextAa },   // the hold button's label over its fill (setup spec §2.3 says about 9; the computed ratio is 8.4)
+        { "AttentionFill", "Surface2", 2.05, 0 },   // decoration: the fill against the button's own background
         { "Hairline", "Canvas", 1.3, 0 },
         { "HairlineStrong", "Canvas", 1.7, 0 },
         // The context map (F3 spec 1 §2 "Tokens"): the wire and its ports are decoration, 1.3+ like the hairline; the

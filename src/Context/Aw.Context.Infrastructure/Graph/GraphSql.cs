@@ -95,6 +95,33 @@ internal static class GraphSql
     public const string CopyVersion =
         "INSERT INTO map_version (repo, commit_sha, key_version, created, status) SELECT repo, commit_sha, key_version, $created, 'draft' FROM map_version WHERE id = $from RETURNING id";
 
+    public const string InsertHead =
+        "INSERT INTO map_version_head (version, repo, commit_sha, on_default) VALUES ($v, $repo, $commit, $onDefault)";
+
+    public const string CopyHeads =
+        "INSERT INTO map_version_head (version, repo, commit_sha, on_default) SELECT $to, repo, commit_sha, on_default FROM map_version_head WHERE version = $from ORDER BY rowid";
+
+    public const string SelectHeads = "SELECT repo, commit_sha, on_default FROM map_version_head WHERE version = $v ORDER BY rowid";
+
+    public const string SelectHold = "SELECT h.version, c.since FROM map_hold h JOIN map_publish_chain c ON c.id = 1";
+
+    public const string SelectChain = "SELECT since FROM map_publish_chain WHERE id = 1";
+
+    public const string UpsertChain = "INSERT INTO map_publish_chain (id, since) VALUES (1, $since) ON CONFLICT (id) DO UPDATE SET since = excluded.since";
+
+    public const string DeleteHolds = "DELETE FROM map_hold";
+
+    public const string InsertHold = "INSERT INTO map_hold (version) VALUES ($v)";
+
+    public const string DeleteHold = "DELETE FROM map_hold WHERE version = $v";
+
+    public const string DeleteChain = "DELETE FROM map_publish_chain";
+
+    // A store not yet upgraded to 0010 (a graph-store read doesn't migrate): nothing was ever held and no version has heads.
+    public const string HasPublishTables = "SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name IN ('map_hold', 'map_publish_chain', 'map_version_head')";
+
+    public const string LatestDraft = "SELECT id FROM map_version WHERE status = 'draft' ORDER BY id DESC LIMIT 1";
+
     public static readonly string[] CopyGraph =
     [
         "INSERT INTO node (map_version, key, label, attributes, provenance, confidence, trust, written_at) SELECT $to, key, label, attributes, provenance, confidence, trust, written_at FROM node WHERE map_version = $from",
@@ -104,5 +131,6 @@ internal static class GraphSql
         "INSERT INTO edge_evidence (edge_id, position, record, span) SELECT n.id, ee.position, ee.record, ee.span FROM edge_evidence ee JOIN edge o ON o.id = ee.edge_id " +
         "JOIN edge n ON n.map_version = $to AND n.from_key = o.from_key AND n.to_key = o.to_key AND n.type = o.type WHERE o.map_version = $from",
         "INSERT INTO decision (map_version, key, quote, wording, provenance, trust, written_at) SELECT $to, key, quote, wording, provenance, trust, written_at FROM decision WHERE map_version = $from",
+        "INSERT INTO map_version_head (version, repo, commit_sha, on_default) SELECT $to, repo, commit_sha, on_default FROM map_version_head WHERE version = $from ORDER BY rowid",
     ];
 }

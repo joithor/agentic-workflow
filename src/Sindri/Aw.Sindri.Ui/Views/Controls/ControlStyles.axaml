@@ -35,6 +35,43 @@
   <Style Selector="Button.command-control:disabled icons|StateIcon">
     <Setter Property="Foreground" Value="{DynamicResource Brush.InkTertiary}" />
   </Style>
+  <!-- The shared confirmations (setup spec §2.1, §2.2). The hold button: 36 high, Surface2 with a strong hairline, the fill a clipped border in the
+       AttentionFill token that grows with the hold. The typed box: a matching phrase turns the field's border to Success (the tick glyph says it too). -->
+  <Style Selector="Button.hold-part">
+    <Setter Property="MinWidth" Value="260" />
+    <Setter Property="Height" Value="36" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.HairlineStrong}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.SM}" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="Button.hold-part:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.hold-part:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.HairlineStrong}" />
+  </Style>
+  <Style Selector="Border.hold-fill">
+    <Setter Property="Background" Value="{DynamicResource Brush.AttentionFill}" />
+  </Style>
+  <Style Selector="TextBox.typed-field">
+    <Setter Property="Height" Value="32" />
+    <Setter Property="MinWidth" Value="220" />
+    <Setter Property="MaxLength" Value="200" />
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+    <Setter Property="FontFamily" Value="{DynamicResource Font.Mono}" />
+  </Style>
+  <Style Selector="TextBox.typed-field.match /template/ Border#PART_BorderElement">
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Success}" />
+  </Style>
+  <Style Selector="Border.phrase-chip">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.HairlineStrong}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.XS}" />
+    <Setter Property="Padding" Value="6,2" />
+  </Style>
   <Style Selector="Button.copy">
     <Setter Property="Padding" Value="8,2" />
   </Style>
@@ -166,7 +203,7 @@
   <Style Selector="controls|ZoomBorder">
     <Setter Property="Cursor" Value="Hand" />
   </Style>
-  <Style Selector="controls|ContextEdgesControl">
+  <Style Selector="controls|GraphEdgesControl">
     <Setter Property="Focusable" Value="False" />
     <Setter Property="IsTabStop" Value="False" />
   </Style>

@@ -44,6 +44,20 @@ public sealed class NeedsYouBuiltInTests
         Assert.Empty(await Rows());
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_profile_service_with_a_built_ins_name_gets_the_profile_rows_actions_and_clears_with_the_profile_rules()
+    {
+        await _v.Fold(EventTypes.ProfileChecked, new ProfileChecked(H.Ids.New<CommandId>(), _hash, _hash, Drifted: false, [], [_gaps]));   // the profile names sync-gaps too
+        await Ran(_gaps, ServiceOutcome.Failed);
+
+        var row = (await Rows())["failure:service:sync-gaps"];
+        Assert.Equal(["RunService", "PauseService"], row.Actions.Select(a => a.Value), StringComparer.Ordinal);
+
+        await _v.Fold(EventTypes.ProfileChecked, new ProfileChecked(H.Ids.New<CommandId>(), _hash, _hash, Drifted: false, [], [ServiceName.From("index")]));
+        await Ran(_gaps, ServiceOutcome.Ok);
+        Assert.Empty(await Rows());
+    }
+
     private async Task<Dictionary<string, NeedsYouRow>> Rows() =>
         (await _v.Views.List<NeedsYouRowRecord>(ViewNames.NeedsYou, TestContext.Current.CancellationToken)).Value.ToDictionary(r => r.Row.Id.Value, r => r.Row, StringComparer.Ordinal);
 

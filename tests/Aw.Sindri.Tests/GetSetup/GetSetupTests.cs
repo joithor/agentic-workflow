@@ -39,7 +39,7 @@ public sealed class GetSetupTests
     {
         var steps = (await Service(InMemorySetupFacts.AllDone()).Handle(A.GetSetupRequest().Build(), Token)).Value.Steps;
 
-        Assert.Equal(["Add your repo", "Approve the profile", "Approve the recipes", "Connect your agents", "Build the map", "Set up Onyx"], steps.Select(static s => s.Title), StringComparer.Ordinal);
+        Assert.Equal(["Add your repo", "Approve the profile", "Approve the workflows", "Connect your agents", "Build the map", "Set up Onyx"], steps.Select(static s => s.Title), StringComparer.Ordinal);
         Assert.Equal([1, 0, 0, 1, 1, 0], steps.Select(static s => s.Items.Count));
     }
 
@@ -78,6 +78,16 @@ public sealed class GetSetupTests
         Assert.True(result.IsSuccess);
         var failed = Assert.Single(result.Value.Steps, static s => s.State == SetupState.Failed);
         Assert.Equal((SetupStepId.Onyx, SindriErrors.ApiInternal.Code), (failed.Id, failed.Error?.Code));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_source_cancelled_while_the_request_itself_is_cancelled_propagates()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        var facts = new ThrowingOnyx(InMemorySetupFacts.AllDone(), new OperationCanceledException(cts.Token));
+
+        _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await new GetSetupService(facts, new ProjectorProgress(_clock), _log).Handle(A.GetSetupRequest().Build(), cts.Token));
     }
 
     private sealed class ThrowingOnyx(ISetupFacts inner, Exception? failure = null) : ISetupFacts

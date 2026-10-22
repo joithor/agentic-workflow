@@ -32,4 +32,23 @@ public sealed class GitRunDiffContractTests : RunDiffContract, IDisposable
 
     protected override async ValueTask Commit(string worktree) =>
         await _repos.Single(r => string.Equals(r.Path, worktree, StringComparison.Ordinal)).Git("-c", "user.email=test@example.invalid", "-c", "user.name=test", "commit", "-q", "--allow-empty", "-m", "more");
+
+    [Fact]
+    public async Task A_committed_staged_edited_and_new_file_are_all_changed_paths_once_each_in_order()
+    {
+        var (diff, worktree) = await Create();
+        var repo = _repos.Single(r => string.Equals(r.Path, worktree, StringComparison.Ordinal));
+        var start = await diff.Head(worktree, TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Path.Combine(worktree, "b.md"), "b", TestContext.Current.CancellationToken);
+        _ = await repo.Git("add", "b.md");
+        _ = await repo.Git("-c", "user.email=test@example.invalid", "-c", "user.name=test", "commit", "-q", "-m", "b");
+        await File.WriteAllTextAsync(Path.Combine(worktree, "a.md"), "a", TestContext.Current.CancellationToken);
+        _ = await repo.Git("add", "a.md");
+        await File.AppendAllTextAsync(Path.Combine(worktree, "b.md"), " more", TestContext.Current.CancellationToken);
+        await WriteFile(worktree);
+
+        var paths = await diff.ChangedPaths(worktree, start.Value, TestContext.Current.CancellationToken);
+
+        Assert.Equal(["a.md", "b.md", "new.txt"], paths.Value);
+    }
 }

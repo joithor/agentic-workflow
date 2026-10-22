@@ -5,4 +5,8 @@ namespace Aw.Sindri.Infrastructure.Launch;
 /// <param name="OnPath">True when a program resolves on the login PATH (<c lang="text">bash -lc 'command -v -- "$1"' _ prog</c>).</param>
 /// <param name="WarpPresent">True when Warp can open a launch file here.</param>
 /// <param name="Templates">terminals.json's rows.</param>
-internal sealed record DetectionInputs(Func<string, string?> GetEnv, Func<string, CancellationToken, ValueTask<bool>> OnPath, Func<CancellationToken, ValueTask<bool>> WarpPresent, IReadOnlyList<TerminalTemplate> Templates);
+internal sealed record DetectionInputs(Func<string, string?> GetEnv, Func<string, CancellationToken, ValueTask<bool>> OnPath, Func<CancellationToken, ValueTask<bool>> WarpPresent, IReadOnlyList<TerminalTemplate> Templates)
+{
+    /// <summary>True on macOS, which always has a GUI session; this OS when not set (tests pin it).</summary>
+    public bool IsMac { get; init; } = OperatingSystem.IsMacOS();
+}

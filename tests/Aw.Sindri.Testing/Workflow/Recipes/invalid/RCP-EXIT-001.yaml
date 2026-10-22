@@ -21,3 +21,4 @@ transitions:
   - { from: produce, to: checks, on: step.failed }
   - { from: checks, to: checks, on: step.completed }
 inputs: [{ key: fact:item, type: item, kind: item }]
+displayName: Test recipe

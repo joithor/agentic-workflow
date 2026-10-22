@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.dev-child-outputs
-version: 1
+version: 2
 description: "A parent that waits for a child and keeps its exported file, under its own name, to review it (decision-tree recipes, DT-C)."
+displayName: "Keep a child's exported file to review it"
 inputs:
   - { key: fact:request, label: "Request", type: text, kind: text }
 outputs:

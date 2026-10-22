@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.dev-child-summary
-version: 1
+version: 2
 description: "A child that exports a file and checks it, and hands the file back to its parent when it resolves (decision-tree recipes, DT-C)."
+displayName: "Export a file and check it"
 inputs:
   - { key: fact:request, label: "Request", type: text, kind: text }
 outputs:

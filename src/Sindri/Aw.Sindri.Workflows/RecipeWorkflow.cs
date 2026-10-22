@@ -73,9 +73,11 @@ internal sealed partial class RecipeWorkflow
         try
         {
             instance = await Interpret(instance, context).ConfigureAwait(true);
+            await GiveUpHeavyAtEnd(instance).ConfigureAwait(true);   // LN-WF3: the slot goes back when the instance ends
         }
         catch (Exception failed) when (TemporalException.IsCanceledException(failed))
         {
+            await ReleaseHeavyDetached().ConfigureAwait(true);   // LN-WF3: a cancel gives the slot back too
             await DropTexts(instance.Address.Value).ConfigureAwait(true);   // a Step's texts still in memory go too (any runtime)
             await Cleanup().ConfigureAwait(true);   // the workflow itself was cancelled: the claim is still released (detached scope)
             throw;
@@ -94,10 +96,7 @@ internal sealed partial class RecipeWorkflow
     {
         ArgumentNullException.ThrowIfNull(start);
         _start = start;
-        _fillsInputs = Workflow.Patched("step-inputs-v1");   // read once: an instance that began before the patch never starts filling halfway through
-        _mirrorsInjection = Workflow.Patched("step-inputs-injection-row-v1");   // the ledger row adds a local activity: its own marker
-        _dropsTexts = Workflow.Patched("step-inputs-drop-v1");   // so does the eviction at the Step's end
-        _capsPlan = Workflow.Patched("step-inputs-plan-cap-v1");   // a plan over the cap fails the Step: a history that filled past it before must replay as it ran
+        ReadStepInputMarkers();
         _since = Now;
         // DT-J2: first, before any await, so the marker is the first command and replays at the same place; a history that began before the block runtime has no marker, so it replays with no block runtimes, on the desk path exactly as recorded (kept until the cutover; DT-J plan Q7)
         var blockRuntime = Workflow.Patched("dt-j-block-runtime");
@@ -105,6 +104,8 @@ internal sealed partial class RecipeWorkflow
         // P8: right after the DT-J marker, before any other command; a history that began before the agent runtime has no marker, so it replays with no agent map and stays on the desk exactly as recorded (kept until the cutover)
         var agentRuntime = Workflow.Patched("p8-agent-runtime");
         var keepsReport = Workflow.Patched("token-budget-keeps-report-v1");   // an accepted report over budget keeps its transition (the next Step start parks); a history without the marker parks on the report as it did
+        _heavy = Workflow.Patched("ln-wf3-heavy-slot");   // LN-WF3: the heavy allocator; last, after every marker main has; a history without it never takes or grants a slot
+        var keepsRoundOnLaunchFailure = Workflow.Patched("launch-failure-keeps-round-v1");   // a launch that never started a session counts no loop round, and the third in a row parks; a history without the marker counts the round as it did.
         var loaded = await Workflow.ExecuteLocalActivityAsync(
             (RunStepActivities a) => a.LoadRecipeAsync(start.Recipe),
             new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(30) }).ConfigureAwait(true);
@@ -114,8 +115,7 @@ internal sealed partial class RecipeWorkflow
         _deskTimeout = loaded.DeskTimeout;
         _eventHold = loaded.EventHold;
         _dispatchDelay = loaded.DispatchDelay;
-        var runtimes = Runtimes(loaded, blockRuntime, agentRuntime);
-        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, runtimes, pins.Resolver()) { DeskTimeout = loaded.DeskTimeout, LegacyBudgetPark = !keepsReport };
+        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, Runtimes(loaded, blockRuntime, agentRuntime), pins.Resolver()) { DeskTimeout = loaded.DeskTimeout, LegacyBudgetPark = !keepsReport, LegacyLaunchRound = !keepsRoundOnLaunchFailure };
         _context = new Interpreting(loaded.Recipe, decisions);
         (_repo, _repoUnreadable) = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : (null, false);
         (_subject, _contents) = await NamedSubject(_recipe, start).ConfigureAwait(true);
@@ -127,7 +127,7 @@ internal sealed partial class RecipeWorkflow
             _provenance[key] = new FactProvenance(GenerateActor, Now);   // a generated input was made by the engine, not supplied (spec section 3.11)
         }
 
-        await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null, Detail: Named(WorkflowEventDetail.Of(change.Event, trigger: null), start), Causation: start.OpenLaunch), NeedsYou(instance)).ConfigureAwait(true);
+        await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null, Detail: Named(WorkflowEventDetail.Of(change.Event, trigger: null).WithRunOpening(change.After, loaded.Recipe), start), Causation: start.OpenLaunch), NeedsYou(instance)).ConfigureAwait(true);
         Emit(before: null, instance, []);
         Spawn(decided);
         return (instance, _context);

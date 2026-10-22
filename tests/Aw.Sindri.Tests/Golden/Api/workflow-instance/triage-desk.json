@@ -252,5 +252,7 @@
     "ApplyCommand:cancel"
   ],
   "stepRuns": [],
-  "asOf": "2026-10-12T12:26:00.0000000Z"
+  "asOf": "2026-10-12T12:26:00.0000000Z",
+  "steps": [],
+  "startedBy": null
 }

@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.investigate
-version: 1
+version: 2
 description: "Block recipe: find the root cause of a reported bug, with a confirmed hypothesis; at most 2 rounds."
+displayName: "Find why a bug happens"
 inputs:
   - { key: fact:issue, label: "Issue", type: text, kind: text }
   - { key: fact:expected, label: "Expected", type: text, kind: text }
