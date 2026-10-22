@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Ui.Views.Controls;
+namespace Aw.Sindri.Ui.ViewModels.Context.Layout;
 
 /// <summary>The kinds of step a route is made of.</summary>
 internal enum RouteStepKind

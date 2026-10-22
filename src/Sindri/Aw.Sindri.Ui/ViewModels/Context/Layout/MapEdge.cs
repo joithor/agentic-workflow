@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Ui.Views.Controls;
+namespace Aw.Sindri.Ui.ViewModels.Context.Layout;
 
 /// <summary>One edge as the edges layer draws it.</summary>
 /// <param name="Key">A key unique among the edges.</param>

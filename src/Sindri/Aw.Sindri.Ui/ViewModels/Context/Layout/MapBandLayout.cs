@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Ui.Views.Context.Map;
+namespace Aw.Sindri.Ui.ViewModels.Context.Layout;
 
 /// <summary>One band's frame on the world and its two lines of words.</summary>
 /// <param name="Band">Which band.</param>

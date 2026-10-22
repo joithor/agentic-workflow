@@ -25,13 +25,20 @@ public sealed class ContextMapFramesTests : FrameHost
 
     private static string Anchor => (string)GoldenFiles.Node("context-lenses", "map-tabs")["anchor"]!["key"]!;
 
+    // The stage has finished its fit to its present size.
+    private static bool Fitted(ZoomBorder stage)
+    {
+        stage.Settle();
+        return stage.View == ZoomView.Fit(stage.Bounds.Size, stage.WorldBounds);
+    }
+
     private async Task<(ShellWindow Window, ShellViewModel Shell)> Open(double width, double height)
     {
         var (window, shell) = await Connected(width: width, height: height);
         shell.GoTo(PageId.Context);
         shell.Context.AnchorText = Anchor;
         await shell.Context.Submit(Token);
-        await Until(window, () => window.GetVisualDescendants().OfType<ContextMapWorld>().FirstOrDefault() is { NodeViews.Count: > 0 } && window.GetVisualDescendants().OfType<ZoomBorder>().FirstOrDefault() is { Bounds.Width: > 0 }, "the map never drew");
+        await Until(window, () => window.GetVisualDescendants().OfType<ContextMapWorld>().FirstOrDefault() is { NodeViews.Count: > 0 } && window.GetVisualDescendants().OfType<ZoomBorder>().FirstOrDefault() is { Bounds.Width: > 0 } stage && Fitted(stage), "the map never drew and fitted");
         Settle(window);
         return (window, shell);
     }
@@ -108,7 +115,9 @@ public sealed class ContextMapFramesTests : FrameHost
         var (window, _) = await Open(900, 800);
 
         Assert.False(Visible(window, "HudNone"));
-        var scale = Named<ZoomBorder>(window, "ContextCanvas").View.Scale;
+        var canvas = Named<ZoomBorder>(window, "ContextCanvas");
+        var scale = canvas.View.Scale;
+        Assert.Equal(ZoomView.Fit(canvas.Bounds.Size, canvas.WorldBounds).Scale, scale);
         Assert.InRange(scale, 0.62, 1.0);
         var pages = Named<ScrollViewer>(window, "Pages");
         Assert.True(pages.Extent.Width <= pages.Viewport.Width + 0.5, string.Create(CultureInfo.InvariantCulture, $"{pages.Extent.Width} > {pages.Viewport.Width}"));
@@ -146,13 +155,16 @@ public sealed class ContextMapFramesTests : FrameHost
         var canvas = Named<ZoomBorder>(window, "ContextCanvas");
         canvas.Settle();
 
+        var fitted = canvas.View.Scale;
+        Assert.True(fitted > ZoomRange.Default.Min, "there is room to zoom out");
         canvas.ZoomOut();
         canvas.Settle();
         var smaller = canvas.View.Scale;
         canvas.Fit();
         canvas.Settle();
 
-        Assert.True(smaller <= canvas.View.Scale);
+        Assert.True(smaller < fitted);
+        Assert.Equal(fitted, canvas.View.Scale);
         Assert.Equal(Labels.ContextMapZoomPct(canvas.View.Scale), Named<TextBlock>(window, "ZoomValue").Text);
         Assert.Equal([Labels.ContextMapZoomOut, Labels.ContextMapZoomIn, Labels.ContextMapZoomFit], _zoomButtons.Select(n => AutomationProperties.GetName(Named<Button>(window, n))), StringComparer.Ordinal);
     });

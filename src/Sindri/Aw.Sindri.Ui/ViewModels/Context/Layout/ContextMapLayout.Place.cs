@@ -1,7 +1,6 @@
-using Avalonia;
 using Aw.Sindri.Ui.Api.Context;
 
-namespace Aw.Sindri.Ui.Views.Context.Map;
+namespace Aw.Sindri.Ui.ViewModels.Context.Layout;
 
 internal static partial class ContextMapLayout
 {
@@ -11,7 +10,7 @@ internal static partial class ContextMapLayout
     // Every node's rectangle, band by band from the top: each band's height depends on how many rows the one above it wrapped to.
     private static Places Place(List<Entry> entries, List<LensEdge> edges)
     {
-        var rects = new Dictionary<string, Rect>(StringComparer.Ordinal);
+        var rects = new Dictionary<string, MapRect>(StringComparer.Ordinal);
         var near = Adjacency(edges);
         double Bary(Entry e) => near.TryGetValue(e.Key, out var others) && others.Where(rects.ContainsKey).Select(k => rects[k].Center.X).ToList() is { Count: > 0 } xs ? xs.Average() : double.MaxValue;
         List<Entry> Ordered(Row row) => [.. entries.Where(e => e.Row == row).OrderBy(Bary).ThenBy(e => e.Key, StringComparer.Ordinal)];
@@ -55,7 +54,7 @@ internal static partial class ContextMapLayout
     }
 
     // The intent band is one flow, left to right from IntentLeft: tickets, then decisions. Returns how many rows it used.
-    private static int Flow(List<Entry> items, Dictionary<string, Rect> rects)
+    private static int Flow(List<Entry> items, Dictionary<string, MapRect> rects)
     {
         var (left, row, previous) = (IntentLeft, 0, (Entry?)null);
         foreach (var e in items)
@@ -69,7 +68,7 @@ internal static partial class ContextMapLayout
             left += gap;
             var cardTop = 52 + (row * CardRowStep);
             var top = e.Shape == MapShape.Card ? cardTop : cardTop + 36;
-            rects[e.Key] = new Rect(left, top, e.Width, e.Shape == MapShape.Card ? CardHeight : ChipHeight);
+            rects[e.Key] = new MapRect(left, top, e.Width, e.Shape == MapShape.Card ? CardHeight : ChipHeight);
             (left, previous) = (left + e.Width, e);
         }
 
@@ -83,7 +82,7 @@ internal static partial class ContextMapLayout
         : 20;
 
     // The first product row: the anchor cards, then chips on the same columns as the rows below. Returns how much the product band grew.
-    private static double Features(List<Entry> items, double productTop, Dictionary<string, Rect> rects)
+    private static double Features(List<Entry> items, double productTop, Dictionary<string, MapRect> rects)
     {
         var anchored = items.Exists(e => e.IsAnchor);
         var (left, row, column, lastTop, started) = (254d, 0, 0, 66d, false);
@@ -91,7 +90,7 @@ internal static partial class ContextMapLayout
         {
             if (e.IsAnchor)
             {
-                rects[e.Key] = new Rect(left, productTop + 46, e.Width, CardHeight);
+                rects[e.Key] = new MapRect(left, productTop + 46, e.Width, CardHeight);
                 left += e.Width + 20;
                 continue;
             }
@@ -107,7 +106,7 @@ internal static partial class ContextMapLayout
             }
 
             lastTop = row == 0 ? 66 : (anchored ? 184 : 66 + RowStep) + (RowStep * (row - 1));
-            rects[e.Key] = new Rect(FirstCentre + (Pitch * column) - (e.Width / 2), productTop + lastTop, e.Width, ChipHeight);
+            rects[e.Key] = new MapRect(FirstCentre + (Pitch * column) - (e.Width / 2), productTop + lastTop, e.Width, ChipHeight);
             column++;
         }
 
@@ -118,12 +117,12 @@ internal static partial class ContextMapLayout
     private static int FirstColumnAfter(double x) => (int)Math.Max(0, Math.Ceiling((x + 85 - FirstCentre) / Pitch));
 
     // A row of chips on the column grid, Columns to a row, RowStep between rows. Returns how many rows it used.
-    private static int Grid(List<Entry> items, double top, Dictionary<string, Rect> rects)
+    private static int Grid(List<Entry> items, double top, Dictionary<string, MapRect> rects)
     {
         for (var i = 0; i < items.Count; i++)
         {
             var e = items[i];
-            rects[e.Key] = new Rect(FirstCentre + (Pitch * (i % Columns)) - (e.Width / 2), top + (RowStep * (i / Columns)), e.Width, ChipHeight);
+            rects[e.Key] = new MapRect(FirstCentre + (Pitch * (i % Columns)) - (e.Width / 2), top + (RowStep * (i / Columns)), e.Width, ChipHeight);
         }
 
         return (items.Count + Columns - 1) / Columns;
@@ -131,7 +130,7 @@ internal static partial class ContextMapLayout
 
     // A straight link between two nodes that skips a row passes through any chip of that row standing on its x. The row moves half a
     // column over, so the link runs between two chips (only a single row of six or fewer has the room).
-    private static void StraddleShift(List<(Row Row, List<Entry> Items)> rows, List<Entry> entries, List<LensEdge> edges, Dictionary<string, Rect> rects)
+    private static void StraddleShift(List<(Row Row, List<Entry> Items)> rows, List<Entry> entries, List<LensEdge> edges, Dictionary<string, MapRect> rects)
     {
         var rank = entries.ToDictionary(e => e.Key, e => (int)e.Row, StringComparer.Ordinal);
         foreach (var (row, items) in rows)
@@ -146,14 +145,14 @@ internal static partial class ContextMapLayout
             {
                 foreach (var i in items)
                 {
-                    rects[i.Key] = rects[i.Key].Translate(new Vector(HalfColumn, 0));
+                    rects[i.Key] = rects[i.Key].Translate(new MapVector(HalfColumn, 0));
                 }
             }
         }
     }
 
     // The x of every vertical link that skips the row.
-    private static IEnumerable<double> CrossedX(List<LensEdge> edges, Dictionary<string, int> rank, Dictionary<string, Rect> rects, int row) =>
+    private static IEnumerable<double> CrossedX(List<LensEdge> edges, Dictionary<string, int> rank, Dictionary<string, MapRect> rects, int row) =>
         edges.Where(e => rank.TryGetValue(e.From, out var from) && rank.TryGetValue(e.To, out var to) && Math.Min(from, to) < row && row < Math.Max(from, to)
                 && rects.TryGetValue(e.From, out var a) && rects.TryGetValue(e.To, out var b) && Math.Abs(a.Center.X - b.Center.X) < 1)
             .Select(e => rects[e.From].Center.X);
