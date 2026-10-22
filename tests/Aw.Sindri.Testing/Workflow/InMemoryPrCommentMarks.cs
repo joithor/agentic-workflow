@@ -33,7 +33,7 @@ public sealed class InMemoryPrCommentMarks : IPrCommentMarks
             var latest = new List<PrCommentMark>();
             foreach (var row in _rows.Where(r => r.Pr == pr))
             {
-                var at = latest.FindIndex(l => string.Equals(l.CommentId, row.CommentId, StringComparison.Ordinal) && string.Equals(l.EditedAt, row.EditedAt, StringComparison.Ordinal));
+                var at = latest.FindIndex(l => l.CommentId == row.CommentId && string.Equals(l.EditedAt, row.EditedAt, StringComparison.Ordinal));
                 if (at < 0)
                 {
                     latest.Add(row);

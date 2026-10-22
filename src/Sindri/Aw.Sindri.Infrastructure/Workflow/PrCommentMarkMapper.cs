@@ -12,7 +12,7 @@ internal sealed class PrCommentMarkMapper : IRowMapper<PrCommentMark>
 
     public PrCommentMark Map(SqliteDataReader reader) => new(
         new PrRef(reader.GetString(0), reader.GetString(1), reader.GetInt32(2)),
-        reader.GetString(3),
+        PrCommentId.From(reader.GetString(3)),
         reader.GetString(4) is { Length: > 0 } edited ? edited : null,
         InstanceAddress.From(reader.GetString(5)),
         reader.GetString(6),

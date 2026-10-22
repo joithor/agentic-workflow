@@ -14,4 +14,4 @@ namespace Aw.Sindri.Core.Workflow.Engine.Effects;
 /// <param name="At">When the mark was written.</param>
 /// <param name="Effect">The identity of the effect that delivered it; a mark with an identity already recorded is not written twice.</param>
 public sealed record PrCommentMark(
-    PrRef Pr, string CommentId, string? EditedAt, InstanceAddress Instance, string Outcome, string? Reason, string? Commit, DateTimeOffset At, string Effect);
+    PrRef Pr, PrCommentId CommentId, string? EditedAt, InstanceAddress Instance, string Outcome, string? Reason, string? Commit, DateTimeOffset At, string Effect);

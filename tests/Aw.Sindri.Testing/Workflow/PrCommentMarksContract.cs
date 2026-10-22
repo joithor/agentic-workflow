@@ -21,7 +21,7 @@ public abstract class PrCommentMarksContract
     protected abstract IPrCommentMarks Create();
 
     private static PrCommentMark Mark(string comment, string outcome, int minutes, string effect, string? edited = null, PrRef? pr = null) =>
-        new(pr ?? _pr, comment, edited, InstanceAddress.From("T-3/item/1"), outcome, Reason: outcome == "hold" ? "type" : null, Commit: null, _t0.AddMinutes(minutes), effect);
+        new(pr ?? _pr, PrCommentId.From(comment), edited, InstanceAddress.From("T-3/item/1"), outcome, Reason: outcome == "hold" ? "type" : null, Commit: null, _t0.AddMinutes(minutes), effect);
 
     /// <summary>A PR nothing was marked on has no marks.</summary>
     /// <returns>The test.</returns>
@@ -61,8 +61,8 @@ public abstract class PrCommentMarksContract
         var latest = (await marks.Latest(_pr, Token)).Value;
 
         Expect.Equal(2, latest.Count);
-        Expect.Equal("thread", latest.Single(m => m.CommentId == "c1").Outcome);
-        Expect.Equal("reaction", latest.Single(m => m.CommentId == "c2").Outcome);
+        Expect.Equal("thread", latest.Single(m => m.CommentId.Value == "c1").Outcome);
+        Expect.Equal("reaction", latest.Single(m => m.CommentId.Value == "c2").Outcome);
     }
 
     /// <summary>An edited comment is a different key, so it is unhandled again.</summary>

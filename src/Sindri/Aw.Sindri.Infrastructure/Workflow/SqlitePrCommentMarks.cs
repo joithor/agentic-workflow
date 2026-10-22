@@ -49,7 +49,7 @@ internal sealed class SqlitePrCommentMarks(LedgerDatabase database) : IPrComment
         .Bind("$pr", pr.Number);
 
     private static SqliteCommand Bound(SqliteCommand command, PrCommentMark mark) => ByPr(command, mark.Pr)
-        .Bind("$commentId", mark.CommentId)
+        .Bind("$commentId", mark.CommentId.Value)
         .Bind("$editedAt", mark.EditedAt ?? string.Empty)
         .Bind("$instance", mark.Instance.Value)
         .Bind("$outcome", mark.Outcome)
