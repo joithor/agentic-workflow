@@ -13,7 +13,7 @@
 #   --stall SECONDS  no progress for this long is a stop (default 300)
 #   --max-wait SEC   the whole follow gives up after this long (default 3600)
 #   --auto-desk      answer a desk state with its default outcome (the first the status offers), and a budget park
-#                    with a grant of 300k tokens, recording each
+#                    with a grant of 200k tokens (the most one grant may give), recording each
 #   --map FILE       the context map to import (authored map format, docs/sindri/demo-handoff.md 5b); default: a small
 #                    map generated for the feature (its doc, one surface, one code node)
 #   --code FILE      the repo file the generated map says the feature changes (default: the first repo file the
@@ -193,7 +193,19 @@ publish_sindri() {
   (cd "$tree" && $pre dotnet publish src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj -c Release --no-self-contained \
     -p:AwRecipesDir="$tree/recipes/sindri" -o "$out") </dev/null >"$log" 2>&1 || { tail -20 "$log" >&2; die "publishing sindri failed"; }
   [ -x "$out/sindri" ] || die "the publish left no sindri in $out"
-  say "published sindri at $commit"
+  # The C# judge beside it (NativeAOT, as sindri-app.sh publishes it): step.judge.choose runs `judge choose` through
+  # AW_SINDRI_JUDGE, and the judge on the PATH is the TypeScript one, which has no choose. Published apart, then the
+  # binary and its bundled e_sqlite3 are copied next to sindri.
+  local jout="$SCRATCH/judge-bin" rid f
+  rid="$(dotnet --info | awk '/^ *RID:/ {print $2; exit}')"
+  say "publishing judge (NativeAOT, $rid) into $out"
+  # shellcheck disable=SC2086 # $pre is the heavy launcher and its flag
+  (cd "$tree" && $pre dotnet publish src/Judge/Aw.Judge.Host/Aw.Judge.Host.csproj -c Release -r "$rid" \
+    -p:RestoreLockedMode=false -o "$jout") </dev/null >>"$log" 2>&1 || { tail -20 "$log" >&2; die "publishing judge failed"; }
+  [ -x "$jout/judge" ] || die "the publish left no judge in $jout"
+  cp "$jout/judge" "$out/judge"
+  for f in "$jout"/libe_sqlite3.*; do if [ -f "$f" ]; then cp "$f" "$out/"; fi; done
+  say "published sindri and judge at $commit"
   SINDRI_CMD="$out/sindri"
 }
 
@@ -398,6 +410,14 @@ main() {
   # 2. the binary
   if [ -n "$sindri_cmd" ]; then SINDRI_CMD="$sindri_cmd"; else publish_sindri; fi
   export SINDRI="$SINDRI_CMD"
+  # serve (started by the first human call) runs step.judge.choose: point it at the C# judge beside the binary (published
+  # here, or next to --sindri), unless the caller named one.
+  if [ -z "${AW_SINDRI_JUDGE:-}" ] && [ -x "$(dirname "$SINDRI_CMD")/judge" ]; then AW_SINDRI_JUDGE="$(dirname "$SINDRI_CMD")/judge"; fi
+  if [ -n "${AW_SINDRI_JUDGE:-}" ]; then
+    export AW_SINDRI_JUDGE; say "judge: $AW_SINDRI_JUDGE"
+  else
+    say "judge: none beside sindri and AW_SINDRI_JUDGE unset; step.judge.choose falls back to the judge on the PATH"
+  fi
 
   # 3. the target repo: a local clone on a new branch
   REPO="$SCRATCH/repo"
@@ -496,14 +516,19 @@ follow() {
 
 # Answers a budget park with a token grant of $GRANT_TOKENS (an answer on a parent is forwarded to the parked child).
 # Shares --desk-max with the desk answers; each grant is in the summary's desk list. Returns 1 at --desk-max.
-GRANT_TOKENS=300000
+GRANT_TOKENS=200000   # the most one grant may give (SND-WF-003)
 auto_grant() {
   local addr="$1"
   [ "${#DESK_LOG[@]}" -lt "$DESK_MAX" ] || return 1
   say "auto-desk: $addr grant $GRANT_TOKENS tokens"
   DESK_LOG+=("$addr grant-tokens $GRANT_TOKENS")
-  # a grant is a protected answer: the human types the challenge's action back at the terminal
-  printf 'grant-tokens %s %s\n' "$GRANT_TOKENS" "$addr" | human workflow answer "$addr" --grant-tokens "$GRANT_TOKENS" 2>&1 | tail -2 | sed 's/^/  /' >&2
+  # a grant is a protected answer: the human types the challenge's action back at the terminal. The challenge names the
+  # parked child (an answer on a parent is forwarded), so a first call that types an empty line (refused, nothing
+  # recorded) reads it from the preview. Not </dev/null: the pty never passes the end of input on, so that call waits.
+  local challenge
+  challenge="$(printf '\n' | human workflow answer "$addr" --grant-tokens "$GRANT_TOKENS" 2>&1 | sed -n "s/.*type '\([^']*\)' to confirm.*/\1/p" | head -1)"
+  [ -n "$challenge" ] || challenge="grant-tokens $GRANT_TOKENS $addr"
+  printf '%s\n' "$challenge" | human workflow answer "$addr" --grant-tokens "$GRANT_TOKENS" 2>&1 | tail -2 | sed 's/^/  /' >&2
   return 0
 }
 
