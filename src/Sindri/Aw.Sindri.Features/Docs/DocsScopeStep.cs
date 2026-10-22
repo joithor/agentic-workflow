@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using Aw.Sindri.Core.LensPacks;
 using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Worktrees;
 
@@ -13,15 +14,16 @@ namespace Aw.Sindri.Features.Docs;
 /// 'design.md' names (marked 'designNamed'). The changed paths come from git base...head in the repo's checkout, so no forge read is needed; the pull request's
 /// state, base and head are read from 'fact:pr' ('{ state?, base: { ref, sha? }, head: { ref, sha } }', 'fact:prState' fills what it lacks). With docs listed it cuts
 /// its own worktree 'sindri/docs/&lt;instance&gt;' at the head (W28) and reports 'candidates'; with none it removes the worktree again and reports 'none'.
-/// 'fact:docsScope' is { base (the head the worktree starts at), paths (the globs), candidates: [{ path, designNamed }] }. Symbols, commands and config keys are not
-/// searched yet: only the changed paths and their file names.
+/// 'fact:docsScope' is { base (the head the worktree starts at), paths (the globs), candidates: [{ path, designNamed }] }. Besides the changed paths and their file names it searches the names the diff's added lines introduce
+/// (declared types and methods, long command flags, environment variables, dotted config keys; 'DiffNeedles'), skipping short names. Removed lines are not searched: the diff port reports added lines only.
 /// </summary>
 /// <param name="checkouts">Where the repo is checked out.</param>
 /// <param name="worktrees">Makes the docs worktree.</param>
 /// <param name="changed">The paths the pull request changes.</param>
 /// <param name="tracked">The files the docs worktree holds.</param>
 /// <param name="files">Reads the docs and the design.</param>
-internal sealed class DocsScopeStep(IRepoCheckouts checkouts, IWorktrees worktrees, IChangedPaths changed, ITrackedFiles tracked, IBriefFiles files) : IBlockStep, IBlockStepId, IRepoStep
+/// <param name="diff">The lines the pull request adds.</param>
+internal sealed class DocsScopeStep(IRepoCheckouts checkouts, IWorktrees worktrees, IChangedPaths changed, ITrackedFiles tracked, IBriefFiles files, IDiffContent diff) : IBlockStep, IBlockStepId, IRepoStep
 {
     private const int MinNameLength = 6;   // a shorter file name ('a.cs') would match half the docs
 
@@ -78,7 +80,14 @@ internal sealed class DocsScopeStep(IRepoCheckouts checkouts, IWorktrees worktre
             return BlockStepResult.Failed($"step.docs.scope can't place the docs worktree: {made.Error.Code} {made.Error.Message}");
         }
 
-        var candidates = await Candidates(context, made.Value.Path, globs, paths.Value, cancellationToken).ConfigureAwait(false);
+        var needles = Needles(paths.Value.Where(path => !globs.Exists(g => DocGlob.Matches(g, path))));
+        var added = await diff.AddedLines(made.Value.Path, baseRef, cancellationToken).ConfigureAwait(false);   // a diff that can't be read leaves the path needles
+        if (added.IsSuccess)
+        {
+            needles = [.. needles.Concat(DiffNeedles.From(added.Value, path => globs.Exists(g => DocGlob.Matches(g, path)))).Distinct(StringComparer.Ordinal)];
+        }
+
+        var candidates = await Candidates(context, made.Value.Path, globs, needles, cancellationToken).ConfigureAwait(false);
         if (candidates.Count == 0)
         {
             _ = await worktrees.Remove(made.Value.Path, cancellationToken).ConfigureAwait(false);   // nothing to edit: the worktree is not left behind
@@ -88,11 +97,10 @@ internal sealed class DocsScopeStep(IRepoCheckouts checkouts, IWorktrees worktre
         return Listed(context, made.Value.Path, head, globs, candidates);
     }
 
-    private async ValueTask<List<(string Path, bool DesignNamed)>> Candidates(StepContext context, string tree, List<string> globs, IReadOnlyList<string> changedPaths, CancellationToken cancellationToken)
+    private async ValueTask<List<(string Path, bool DesignNamed)>> Candidates(StepContext context, string tree, List<string> globs, List<string> needles, CancellationToken cancellationToken)
     {
         var listed = await tracked.Paths(tree, cancellationToken).ConfigureAwait(false);
         var docs = listed.IsError ? [] : listed.Value.Where(path => globs.Exists(g => DocGlob.Matches(g, path))).ToList();
-        var needles = Needles(changedPaths.Where(path => !globs.Exists(g => DocGlob.Matches(g, path))));
         var design = await DesignText(context, cancellationToken).ConfigureAwait(false);
         List<(string, bool)> candidates = [];
         foreach (var doc in docs)
