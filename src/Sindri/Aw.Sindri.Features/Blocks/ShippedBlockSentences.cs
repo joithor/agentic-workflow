@@ -22,6 +22,7 @@ internal sealed class ShippedBlockSentences : IBlockSentences
         ["effect.pr.open"] = "Opens the pull request with its proof, or updates the one already open",
         ["effect.pr.push"] = "Pushes the fix to the pull request without overwriting anyone else's commits",
         ["effect.pr.record"] = "Adds a line about the new proof or the docs to the merge record",
+        ["effect.pr.purge-marks"] = "Forgets which review comments were handled once the pull request is over",
         ["effect.pr.reply"] = "Answers a review comment, reacts to it, or holds it for you",
         ["effect.pr.rerun-checks"] = "Asks the forge to run the pull request's checks again",
         ["effect.pr.restack"] = "Moves the pull request onto its new base branch",
