@@ -168,7 +168,8 @@ public sealed class ListServicesTests
 
         Assert.Equal(
             ["digest: run,resume", "heartbeat: pause", "workflow-events: run"],
-            list.Services.Select(s => $"{s.Name.Value}: {string.Join(',', s.Actions)}"));
+            list.Services.Select(s => $"{s.Name.Value}: {string.Join(',', s.Actions)}"),
+            StringComparer.Ordinal);
     }
 
     private ListServicesService Service() => new(_v.Slice.Profiles, _v.Views, _v.Progress, _jobs, _builtIns);
