@@ -16998,3 +16998,8 @@ Aw.Sindri.Core.Workflow.Views.StatusFields.TakenOverBy.get -> string?
 Aw.Sindri.Core.Workflow.Views.StatusFields.TakenOverBy.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.TakenOverBy.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.TakenOverBy.init -> void
+Aw.Sindri.Core.Workflow.Views.WaitingOn
+const Aw.Sindri.Core.Workflow.Views.WaitingOn.Agent = "agent" -> string!
+const Aw.Sindri.Core.Workflow.Views.WaitingOn.Engine = "engine" -> string!
+const Aw.Sindri.Core.Workflow.Views.WaitingOn.You = "you" -> string!
+static Aw.Sindri.Core.Workflow.Views.WaitingOn.Of(Aw.Sindri.Core.Workflow.Views.StateChip! chip, bool deskOpen, bool agentRunOpen, bool ended) -> string?
