@@ -18,8 +18,8 @@ internal static class PrEffects
     /// <summary>'effect.pr.reply': thread, reaction, fixed, fixedReplies, none or hold forms.</summary>
     public static BlockDescriptor Reply { get; } = Of("effect.pr.reply", humanTrigger: false, "form", "reason", "comment", "decision", "fix", "body", "pr", "push");
 
-    /// <summary>'effect.pr.record': appends a recheck or docs row to the merge record.</summary>
-    public static BlockDescriptor Record { get; } = Of("effect.pr.record", humanTrigger: false, "kind", "result");
+    /// <summary>'effect.pr.record': appends a recheck, docs or end row to the merge record.</summary>
+    public static BlockDescriptor Record { get; } = Of("effect.pr.record", humanTrigger: false, "kind", "result", "terminal", "notes");
 
     /// <summary>'effect.pr.rerun-checks': asks the forge to re-run the PR's checks.</summary>
     public static BlockDescriptor RerunChecks { get; } = Of("effect.pr.rerun-checks", humanTrigger: false, "pr", "at");
