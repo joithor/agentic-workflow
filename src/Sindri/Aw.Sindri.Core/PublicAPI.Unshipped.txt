@@ -12418,13 +12418,13 @@ static Aw.Sindri.Core.Checks.RuleFinding.operator ==(Aw.Sindri.Core.Checks.RuleF
 static Aw.Sindri.Core.Checks.ScopeGlobs.Allows(System.Collections.Generic.IReadOnlyList<string!>! entries, string! path) -> bool
 static Aw.Sindri.Core.Checks.SecretScan.Findings(string! rule, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.AddedLine!>! lines, Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.RuleFinding!>!
 static Aw.Sindri.Core.Checks.TestPaths.IsTest(string! path) -> bool
-Aw.Sindri.Core.Ports.ISetupFacts
-Aw.Sindri.Core.Ports.ISetupFacts.Map(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.MapFact!>!>
-Aw.Sindri.Core.Ports.ISetupFacts.Mcp(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.McpFact!>!>
-Aw.Sindri.Core.Ports.ISetupFacts.Onyx(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.OnyxFact!>!>
-Aw.Sindri.Core.Ports.ISetupFacts.Profile(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.ProfileFact!>!>
-Aw.Sindri.Core.Ports.ISetupFacts.Recipes(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.RecipesFact!>!>
-Aw.Sindri.Core.Ports.ISetupFacts.Repos(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.RepoFact!>!>
+Aw.Sindri.Core.Setup.ISetupFacts
+Aw.Sindri.Core.Setup.ISetupFacts.Map(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.MapFact!>!>
+Aw.Sindri.Core.Setup.ISetupFacts.Mcp(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.McpFact!>!>
+Aw.Sindri.Core.Setup.ISetupFacts.Onyx(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.OnyxFact!>!>
+Aw.Sindri.Core.Setup.ISetupFacts.Profile(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.ProfileFact!>!>
+Aw.Sindri.Core.Setup.ISetupFacts.Recipes(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.RecipesFact!>!>
+Aw.Sindri.Core.Setup.ISetupFacts.Repos(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.RepoFact!>!>
 Aw.Sindri.Core.Setup.MapFact
 Aw.Sindri.Core.Setup.MapFact.<Clone>$() -> Aw.Sindri.Core.Setup.MapFact!
 Aw.Sindri.Core.Setup.MapFact.Deconstruct(out Aw.Sindri.Core.Setup.MapPhase Phase, out Aw.Sindri.Core.Setup.SetupProgress? Progress, out string? FailureCode) -> void
@@ -12817,6 +12817,8 @@ Aw.Sindri.Core.Prove.HoldoutSet.Phase.get -> string!
 Aw.Sindri.Core.Prove.HoldoutSet.Phase.init -> void
 Aw.Sindri.Core.Prove.HoldoutSet.Scenarios.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Prove.HoldoutScenario!>!
 Aw.Sindri.Core.Prove.HoldoutSet.Scenarios.init -> void
+Aw.Sindri.Core.Prove.IArtifactFiles
+Aw.Sindri.Core.Prove.IArtifactFiles.Sha256(string! workspace, string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string?>!>
 Aw.Sindri.Core.Prove.ICommitText
 Aw.Sindri.Core.Prove.ICommitText.Range(string! checkout, string! baseSha, string! head, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
 Aw.Sindri.Core.Prove.IHoldoutStore
@@ -16139,6 +16141,25 @@ Aw.Sindri.Core.Forge.IPullRequests.Merge(Aw.Sindri.Core.Forge.PullMerge! request
 Aw.Sindri.Core.Forge.IPullRequests.Reply(Aw.Sindri.Core.Forge.PullReply! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullDelivery>!>
 Aw.Sindri.Core.Forge.IPullRequests.React(Aw.Sindri.Core.Forge.PullReaction! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullDelivery>!>
 Aw.Sindri.Core.Forge.IPullRequests.PushBranch(Aw.Sindri.Core.Forge.PullBranchPush! push, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullPushOutcome>!>
+Aw.Sindri.Core.LensPacks.LensPackReader
+static Aw.Sindri.Core.LensPacks.LensPackReader.Hash(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! files) -> string!
+static Aw.Sindri.Core.LensPacks.LensPackReader.Read(Aw.Sindri.Core.LensPacks.LensPackId id, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! files) -> Aw.Kernel.Result<Aw.Sindri.Core.LensPacks.LensPack!>!
+Aw.Sindri.Core.LensPacks.IPackDirectories
+Aw.Sindri.Core.LensPacks.IPackDirectories.Read(string! directory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.LensPacks.PackDirectory!>!>
+Aw.Sindri.Core.LensPacks.PackDirectory
+Aw.Sindri.Core.LensPacks.PackDirectory.Files.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Sindri.Core.LensPacks.PackDirectory.Outside.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.LensPacks.PackDirectory.PackDirectory(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Files, System.Collections.Generic.IReadOnlyList<string!>! Outside) -> void
+Aw.Sindri.Core.LensPacks.PackDirectory.<Clone>$() -> Aw.Sindri.Core.LensPacks.PackDirectory!
+Aw.Sindri.Core.LensPacks.PackDirectory.Deconstruct(out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Files, out System.Collections.Generic.IReadOnlyList<string!>! Outside) -> void
+Aw.Sindri.Core.LensPacks.PackDirectory.Equals(Aw.Sindri.Core.LensPacks.PackDirectory? other) -> bool
+Aw.Sindri.Core.LensPacks.PackDirectory.Files.init -> void
+Aw.Sindri.Core.LensPacks.PackDirectory.Outside.init -> void
+override Aw.Sindri.Core.LensPacks.PackDirectory.Equals(object? obj) -> bool
+override Aw.Sindri.Core.LensPacks.PackDirectory.GetHashCode() -> int
+override Aw.Sindri.Core.LensPacks.PackDirectory.ToString() -> string!
+static Aw.Sindri.Core.LensPacks.PackDirectory.operator !=(Aw.Sindri.Core.LensPacks.PackDirectory? left, Aw.Sindri.Core.LensPacks.PackDirectory? right) -> bool
+static Aw.Sindri.Core.LensPacks.PackDirectory.operator ==(Aw.Sindri.Core.LensPacks.PackDirectory? left, Aw.Sindri.Core.LensPacks.PackDirectory? right) -> bool
 
 Aw.Sindri.Core.Launch.StepDenials
 const Aw.Sindri.Core.Launch.StepDenials.HoldoutDirectory = "holdout" -> string!
@@ -16193,7 +16214,7 @@ static Aw.Sindri.Core.Setup.SetupStepChanges.Word(Aw.Sindri.Core.Setup.SetupStat
 static Aw.Sindri.Core.Setup.SetupStepChanges.Word(Aw.Sindri.Core.Setup.SetupStepId id) -> string!
 Aw.Sindri.Core.Setup.SetupDeriver
 Aw.Sindri.Core.Setup.SetupDeriver.Derive(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupStep!>!>
-Aw.Sindri.Core.Setup.SetupDeriver.SetupDeriver(Aw.Sindri.Core.Ports.ISetupFacts! facts, System.Action<string!, System.Exception!>? sourceFailed = null) -> void
+Aw.Sindri.Core.Setup.SetupDeriver.SetupDeriver(Aw.Sindri.Core.Setup.ISetupFacts! facts, System.Action<string!, System.Exception!>? sourceFailed = null) -> void
 Aw.Sindri.Core.Setup.SetupStepLog
 Aw.Sindri.Core.Setup.SetupStepLog.Add(Aw.Sindri.Core.Setup.SetupStepId id, Aw.Sindri.Core.Setup.SetupState state, string? code) -> void
 Aw.Sindri.Core.Setup.SetupStepLog.Loaded.get -> bool
@@ -16203,22 +16224,22 @@ Aw.Sindri.Core.Setup.SetupStepLog.Snapshot() -> System.Collections.Generic.IRead
 Aw.Sindri.Core.Setup.SetupStepRecorder
 Aw.Sindri.Core.Setup.SetupStepRecorder.Record(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupStep!>! steps, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<int>!>
 Aw.Sindri.Core.Setup.SetupStepRecorder.SetupStepRecorder(Aw.Sindri.Core.Lease.HeldLease! held, Aw.Sindri.Core.Ledger.ILedgerStore! ledger, Aw.Sindri.Core.Ledger.ILedgerReader! reader, Aw.Sindri.Core.Events.EventFactory! events, Aw.Sindri.Core.Commands.ICallerContextAccessor! callers, Aw.Sindri.Core.Setup.SetupStepLog! log) -> void
-Aw.Sindri.Core.Ports.IRecipeBuild
-Aw.Sindri.Core.Ports.IRecipeBuild.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Ports.RecipeTrees?>
-Aw.Sindri.Core.Ports.RecipeTrees
-Aw.Sindri.Core.Ports.RecipeTrees.<Clone>$() -> Aw.Sindri.Core.Ports.RecipeTrees!
-Aw.Sindri.Core.Ports.RecipeTrees.Deconstruct(out string! Embedded, out string? Head) -> void
-Aw.Sindri.Core.Ports.RecipeTrees.Embedded.get -> string!
-Aw.Sindri.Core.Ports.RecipeTrees.Embedded.init -> void
-Aw.Sindri.Core.Ports.RecipeTrees.Equals(Aw.Sindri.Core.Ports.RecipeTrees? other) -> bool
-Aw.Sindri.Core.Ports.RecipeTrees.Head.get -> string?
-Aw.Sindri.Core.Ports.RecipeTrees.Head.init -> void
-Aw.Sindri.Core.Ports.RecipeTrees.RecipeTrees(string! Embedded, string? Head) -> void
-override Aw.Sindri.Core.Ports.RecipeTrees.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Ports.RecipeTrees.GetHashCode() -> int
-override Aw.Sindri.Core.Ports.RecipeTrees.ToString() -> string!
-static Aw.Sindri.Core.Ports.RecipeTrees.operator !=(Aw.Sindri.Core.Ports.RecipeTrees? left, Aw.Sindri.Core.Ports.RecipeTrees? right) -> bool
-static Aw.Sindri.Core.Ports.RecipeTrees.operator ==(Aw.Sindri.Core.Ports.RecipeTrees? left, Aw.Sindri.Core.Ports.RecipeTrees? right) -> bool
+Aw.Sindri.Core.Setup.IRecipeBuild
+Aw.Sindri.Core.Setup.IRecipeBuild.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Setup.RecipeTrees?>
+Aw.Sindri.Core.Setup.RecipeTrees
+Aw.Sindri.Core.Setup.RecipeTrees.<Clone>$() -> Aw.Sindri.Core.Setup.RecipeTrees!
+Aw.Sindri.Core.Setup.RecipeTrees.Deconstruct(out string! Embedded, out string? Head) -> void
+Aw.Sindri.Core.Setup.RecipeTrees.Embedded.get -> string!
+Aw.Sindri.Core.Setup.RecipeTrees.Embedded.init -> void
+Aw.Sindri.Core.Setup.RecipeTrees.Equals(Aw.Sindri.Core.Setup.RecipeTrees? other) -> bool
+Aw.Sindri.Core.Setup.RecipeTrees.Head.get -> string?
+Aw.Sindri.Core.Setup.RecipeTrees.Head.init -> void
+Aw.Sindri.Core.Setup.RecipeTrees.RecipeTrees(string! Embedded, string? Head) -> void
+override Aw.Sindri.Core.Setup.RecipeTrees.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Setup.RecipeTrees.GetHashCode() -> int
+override Aw.Sindri.Core.Setup.RecipeTrees.ToString() -> string!
+static Aw.Sindri.Core.Setup.RecipeTrees.operator !=(Aw.Sindri.Core.Setup.RecipeTrees? left, Aw.Sindri.Core.Setup.RecipeTrees? right) -> bool
+static Aw.Sindri.Core.Setup.RecipeTrees.operator ==(Aw.Sindri.Core.Setup.RecipeTrees? left, Aw.Sindri.Core.Setup.RecipeTrees? right) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions
 Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions.Lines.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions.IsFor(Aw.Sindri.Core.Workflow.Ids.BlockId step) -> bool

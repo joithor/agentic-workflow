@@ -1,4 +1,4 @@
-using Aw.Sindri.Core.Ports;
+using Aw.Sindri.Core.Setup;
 
 namespace Aw.Sindri.Testing;
 

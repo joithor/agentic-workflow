@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Core.Ports;
+namespace Aw.Sindri.Core.Setup;
 
 /// <summary>Where doctor learns whether the embedded recipe set is HEAD's: a read of the build stamp and of git, starting nothing.</summary>
 public interface IRecipeBuild

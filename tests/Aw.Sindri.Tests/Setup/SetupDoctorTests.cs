@@ -1,5 +1,5 @@
 using Aw.Sindri.Core.Doctor;
-using Aw.Sindri.Core.Ports;
+using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Testing;
 

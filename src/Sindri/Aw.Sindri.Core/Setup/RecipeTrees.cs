@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Core.Ports;
+namespace Aw.Sindri.Core.Setup;
 
 /// <summary>The git tree hash of 'recipes/sindri' as this build embeds it, and as the checkout the app runs from holds it at HEAD (setup-once spec §5.3).</summary>
 /// <param name="Embedded">The tree hash recorded in the build's stamp.</param>

@@ -1,5 +1,4 @@
 using Aw.Kernel;
-using Aw.Sindri.Core.Ports;
 
 namespace Aw.Sindri.Core.Setup;
 
