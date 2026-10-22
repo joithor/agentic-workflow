@@ -19,7 +19,7 @@ public sealed class PlanHoldoutStoreStepContract : BlockContract
 
     protected override BlockDescriptor Descriptor => PlanSteps.HoldoutStore;
 
-    protected override string ExpectedHash => "sha256:TODO";
+    protected override string ExpectedHash => "sha256:afcf37e929350079f35b0461703e0d359b6cbd17576b67574a945c8bdb6d0e7a";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

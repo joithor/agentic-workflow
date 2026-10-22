@@ -13,10 +13,11 @@ namespace Aw.Sindri.Features.Line;
 /// still hash to the facts' hashes), re-runs the plan checks, and has aw-packets freeze, in order, the design packet, the plan packet and each phase packet, as 'owner': the Step runs only on stop 2's
 /// human-only approve, and a freeze is write-once, so a machine freeze first would never be upgraded. A hash frozen by someone else first, a failed check or a hash that moved is 'mismatch' with the
 /// findings (the recipe loops to evidence). 'frozen' writes 'fact:planPacket' (frozen) and 'fact:phasePackets' ([{ phase, id, hash, dir }]). Not done here, for want of a Step-side port: the
-/// design.approved and plan.approved ledger rows, sealing the holdout sets, and LN-CTX1's proposals to the context map.
+/// design.approved and plan.approved ledger rows and LN-CTX1's proposals to the context map.
 /// </summary>
 /// <param name="packets">aw-packets.</param>
 /// <param name="checkouts">Where the repo's checkout is.</param>
+/// <param name="holdouts">The holdout store the frozen plan packet's hash seals each phase's set in.</param>
 internal sealed class PlanFreezeStep(IPackets packets, IRepoCheckouts checkouts, IHoldoutStore holdouts) : IBlockStep, IBlockStepId, IRepoStep
 {
     /// <inheritdoc/>

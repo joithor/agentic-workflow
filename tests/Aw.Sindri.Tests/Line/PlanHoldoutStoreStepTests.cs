@@ -1,9 +1,7 @@
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Prove;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Testing.Scoping;
-using Aw.Sindri.Tests.Scoping.Steps;
 
 namespace Aw.Sindri.Tests.Line;
 
@@ -13,11 +11,9 @@ public sealed class PlanHoldoutStoreStepTests
 {
     private const string Dir = "/author/run";
 
-    private const string Sound = """
-        { "sets": [ { "phase": "P1", "scenarios": [
-          { "id": "P1-H1", "item": "AC-1", "kind": "api", "steps": ["open an expired link"], "expected": "answers 410" },
-          { "id": "P1-H2", "item": "AC-1", "kind": "ui", "steps": ["click save twice"], "expected": "one record" } ] } ] }
-        """;
+    private const string Sound = "{ \"sets\": [ { \"phase\": \"P1\", \"scenarios\": [ "
+        + "{ \"id\": \"P1-H1\", \"item\": \"AC-1\", \"kind\": \"api\", \"steps\": [\"open an expired link\"], \"expected\": \"answers 410\" }, "
+        + "{ \"id\": \"P1-H2\", \"item\": \"AC-1\", \"kind\": \"ui\", \"steps\": [\"click save twice\"], \"expected\": \"one record\" } ] } ] }";
 
     private static async Task<(BlockStepResult Step, LineStation Station)> Run(string? draft, Func<JsonObject, JsonObject>? editPlan = null)
     {
@@ -52,7 +48,7 @@ public sealed class PlanHoldoutStoreStepTests
     [Fact]
     public async Task Sindri_adds_the_canary_with_a_random_phrase_and_drops_any_the_author_wrote()
     {
-        var withCanary = Sound.Replace("""[ { "id": "P1-H1\"""", """[ { "id": "P1-C", "item": null, "kind": "canary", "steps": [], "expected": "x", "phrase": "author-phrase" }, { "id": "P1-H1\"""", StringComparison.Ordinal);
+        var withCanary = Sound.Replace("[ { \"id\": \"P1-H1\"", "[ { \"id\": \"P1-C\", \"item\": null, \"kind\": \"canary\", \"steps\": [], \"expected\": \"x\", \"phrase\": \"author-phrase\" }, { \"id\": \"P1-H1\"", StringComparison.Ordinal);
         var (_, first) = await Run(withCanary);
         var (_, second) = await Run(Sound);
 
@@ -61,8 +57,8 @@ public sealed class PlanHoldoutStoreStepTests
 
         Assert.Equal(3, a.Scenarios.Count);
         Assert.Equal(1, a.Scenarios.Count(static s => s.IsCanary));
-        Assert.NotEqual("author-phrase", a.Canary);
-        Assert.NotEqual(a.Canary, b.Canary);
+        Assert.NotEqual("author-phrase", a.Canary, StringComparer.Ordinal);
+        Assert.NotEqual(a.Canary, b.Canary, StringComparer.Ordinal);
     }
 
     [Fact]

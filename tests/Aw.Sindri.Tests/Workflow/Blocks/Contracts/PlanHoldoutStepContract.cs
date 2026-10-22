@@ -12,7 +12,7 @@ public sealed class PlanHoldoutStepContract : DescriptorContract
 {
     protected override BlockDescriptor Descriptor => PlanSteps.Holdout;
 
-    protected override string ExpectedHash => "sha256:6565536e97d9d256dfc1b73de8204fe192b43d9a2cd405b15a606d14ec9e5830";
+    protected override string ExpectedHash => "sha256:e81f65a6acbf05549dc5c3e58ab2b077b5b10b52f27b3d04aaded977fb40618d";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

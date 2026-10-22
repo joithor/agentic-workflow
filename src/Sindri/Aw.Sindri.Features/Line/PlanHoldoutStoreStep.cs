@@ -52,7 +52,7 @@ internal sealed class PlanHoldoutStoreStep(IPackets packets, IPacketFiles packet
         }
 
         var min = LineJson.Int(plan, "holdoutMin") ?? 2;
-        var (sets, found) = Parse(draft.Value.Text, LineJson.Items(plan, "phases").ToList(), scope.Value, min);
+        var (sets, found) = Parse(draft.Value.Text, [.. LineJson.Items(plan, "phases")], scope.Value, min);
         if (found.Count > 0)
         {
             return LinePackets.Gaps("invalid", found);
@@ -65,7 +65,7 @@ internal sealed class PlanHoldoutStoreStep(IPackets packets, IPacketFiles packet
 
     private async ValueTask<BlockStepResult> Save(string line, List<Prepared> sets, CancellationToken cancellationToken)
     {
-        var report = new JsonArray();
+        var report = new List<JsonNode?>();
         foreach (var set in sets)
         {
             var saved = await store.Save(line, set.Key, set.Text, cancellationToken).ConfigureAwait(false);
@@ -77,7 +77,7 @@ internal sealed class PlanHoldoutStoreStep(IPackets packets, IPacketFiles packet
             report.Add(new JsonObject { ["phase"] = set.Phase, ["count"] = set.Count, ["hash"] = saved.Value.Hash, ["canary"] = true });
         }
 
-        return StepFacts.Done("stored", ("fact:holdoutSets", report));
+        return StepFacts.Done("stored", ("fact:holdoutSets", new JsonArray([.. report])));
     }
 
     private static (List<Prepared> Sets, List<LineFinding> Findings) Parse(string text, List<JsonNode> phases, JsonObject scope, int min)
@@ -106,7 +106,7 @@ internal sealed class PlanHoldoutStoreStep(IPackets packets, IPacketFiles packet
                 continue;
             }
 
-            var problems = Check(LineJson.Items(set, "scenarios").ToList(), items, id, min);
+            var problems = Check([.. LineJson.Items(set, "scenarios")], items, id, min);
             findings.AddRange(problems);
             if (problems.Count == 0)
             {
@@ -133,11 +133,7 @@ internal sealed class PlanHoldoutStoreStep(IPackets packets, IPacketFiles packet
         foreach (var s in author)
         {
             var key = LineJson.Str(s, "id");
-            var problem = key is null || !HoldoutFiles.IsKey(key) ? "a scenario id must be letters, digits, '.', '_' or '-'"
-                : !seen.Add(key) ? $"scenario {key} is repeated"
-                : LineJson.Str(s, "item") is not { } item || !items.Contains(item) ? $"scenario {key} names no visible acceptance item of the phase"
-                : !LineJson.Strings(s, "steps").Any() || string.IsNullOrWhiteSpace(LineJson.Str(s, "expected")) || string.IsNullOrWhiteSpace(LineJson.Str(s, "kind")) ? $"scenario {key} needs a kind, steps and an expected result"
-                : null;
+            var problem = Problem(s, key, items, seen);
             if (problem is not null)
             {
                 findings.Add(LinePackets.Finding("PLN-HOLD-003", $"phase {phase}: {problem}", "Fix the scenario in holdout-sets.json."));
@@ -147,32 +143,36 @@ internal sealed class PlanHoldoutStoreStep(IPackets packets, IPacketFiles packet
         return findings;
     }
 
+    private static string? Problem(JsonNode s, string? key, HashSet<string> items, HashSet<string> seen) =>
+        key is null || !HoldoutFiles.IsKey(key) ? "a scenario id must be letters, digits, '.', '_' or '-'"
+        : !seen.Add(key) ? $"scenario {key} is repeated"
+        : LineJson.Str(s, "item") is not { } item || !items.Contains(item) ? $"scenario {key} names no visible acceptance item of the phase"
+        : !LineJson.Strings(s, "steps").Any() || string.IsNullOrWhiteSpace(LineJson.Str(s, "expected")) || string.IsNullOrWhiteSpace(LineJson.Str(s, "kind")) ? $"scenario {key} needs a kind, steps and an expected result"
+        : null;
+
     private static Prepared Prepare(string phase, string key, IEnumerable<JsonNode> scenarios)
     {
         var author = scenarios.Where(static s => !string.Equals(LineJson.Str(s, "kind"), HoldoutScenario.CanaryKind, StringComparison.Ordinal)).ToList();
-        var list = new JsonArray();
-        foreach (var s in author)
+        var list = new List<JsonNode?>([.. author.Select(static s => new JsonObject
         {
-            list.Add(new JsonObject
+            ["id"] = LineJson.Str(s, "id"),
+            ["item"] = LineJson.Str(s, "item"),
+            ["kind"] = LineJson.Str(s, "kind"),
+            ["steps"] = LineJson.ToArray(LineJson.Strings(s, "steps")),
+            ["expected"] = LineJson.Str(s, "expected"),
+        })])
+        {
+            new JsonObject
             {
-                ["id"] = LineJson.Str(s, "id"),
-                ["item"] = LineJson.Str(s, "item"),
-                ["kind"] = LineJson.Str(s, "kind"),
-                ["steps"] = LineJson.ToArray(LineJson.Strings(s, "steps")),
-                ["expected"] = LineJson.Str(s, "expected"),
-            });
-        }
-
-        list.Add(new JsonObject
-        {
-            ["id"] = key + "-canary",
-            ["item"] = null,
-            ["kind"] = HoldoutScenario.CanaryKind,
-            ["steps"] = new JsonArray(),
-            ["expected"] = "never",
-            ["phrase"] = "canary-" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(12)),
-        });
-        var set = new JsonObject { ["schemaVersion"] = 1, ["phase"] = key, ["scenarios"] = list };
+                ["id"] = key + "-canary",
+                ["item"] = null,
+                ["kind"] = HoldoutScenario.CanaryKind,
+                ["steps"] = new JsonArray(),
+                ["expected"] = "never",
+                ["phrase"] = "canary-" + Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(12)),
+            },
+        };
+        var set = new JsonObject { ["schemaVersion"] = 1, ["phase"] = key, ["scenarios"] = new JsonArray([.. list]) };
         return new Prepared(phase, key, set.ToJsonString(new JsonSerializerOptions { WriteIndented = true }), author.Count);
     }
 
