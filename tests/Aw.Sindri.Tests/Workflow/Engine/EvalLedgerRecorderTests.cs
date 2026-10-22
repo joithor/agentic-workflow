@@ -28,16 +28,16 @@ public sealed class EvalLedgerRecorderTests
         var after = Stored(contents, """[{"id":"Q1"}]""");
         var history = new[]
         {
-            Row("start", from: "", to: "apply", outcome: null, new Dictionary<string, string> { ["fact:scopeMap"] = map, ["fact:acceptance"] = acceptance, ["fact:openQuestions"] = before }),
-            Row("step.completed", from: "apply", to: "check", outcome: "updated", new Dictionary<string, string> { ["fact:openQuestions"] = after }),
+            Row("start", from: "", to: "apply", outcome: null, new Dictionary<string, string>(StringComparer.Ordinal) { ["fact:scopeMap"] = map, ["fact:acceptance"] = acceptance, ["fact:openQuestions"] = before }),
+            Row("step.completed", from: "apply", to: "check", outcome: "updated", new Dictionary<string, string>(StringComparer.Ordinal) { ["fact:openQuestions"] = after }),
         };
 
-        var recorded = EvalLedgerRecorder.Record("recorded", _scoping, InMemoryChildRecipes.None, EvalComposition.Catalog, history, contents);
+        var recorded = EvalLedgerRecorder.Record("recorded", new LedgerRecording(_scoping, InMemoryChildRecipes.None, EvalComposition.Catalog), history, contents);
 
         Assert.False(recorded.IsError, recorded.IsError ? recorded.Error.Message : null);
-        var outputs = Assert.IsAssignableFrom<IReadOnlyDictionary<FactKey, JsonElement>>(recorded.Value.Steps[0].Trigger.Outputs);
-        Assert.Equal(["fact:acceptance", "fact:openQuestions", "fact:scopeMap"], outputs.Keys.Select(static k => k.Value).Order(StringComparer.Ordinal));
-        Assert.Equal("""{"items":[]}""", outputs[FactKey.From("fact:acceptance")].GetString());
+        var outputs = Assert.IsType<IReadOnlyDictionary<FactKey, JsonElement>>(recorded.Value.Steps[0].Trigger.Outputs, exactMatch: false);
+        Assert.Equal(["fact:acceptance", "fact:openQuestions", "fact:scopeMap"], outputs.Keys.Select(static k => k.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal("""{"items":[]}""", outputs[FactKey.From("fact:acceptance")].GetString(), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -47,14 +47,14 @@ public sealed class EvalLedgerRecorderTests
         var brief = Stored(contents, "the brief");
         var history = new[]
         {
-            Row("start", from: "", to: "record", outcome: null, new Dictionary<string, string> { ["fact:brief"] = brief, ["fact:answerLog"] = Stored(contents, "[]") }),
+            Row("start", from: "", to: "record", outcome: null, new Dictionary<string, string>(StringComparer.Ordinal) { ["fact:brief"] = brief, ["fact:answerLog"] = Stored(contents, "[]") }),
             Row("step.completed", from: "record", to: "apply", outcome: "recorded", facts: null),
         };
 
-        var recorded = EvalLedgerRecorder.Record("recorded", _scoping, InMemoryChildRecipes.None, EvalComposition.Catalog, history, contents);
+        var recorded = EvalLedgerRecorder.Record("recorded", new LedgerRecording(_scoping, InMemoryChildRecipes.None, EvalComposition.Catalog), history, contents);
 
         Assert.False(recorded.IsError, recorded.IsError ? recorded.Error.Message : null);
-        Assert.Equal(["fact:answerLog"], recorded.Value.Steps[0].Trigger.Outputs!.Keys.Select(static k => k.Value));
+        Assert.Equal(["fact:answerLog"], recorded.Value.Steps[0].Trigger.Outputs!.Keys.Select(static k => k.Value), StringComparer.Ordinal);
     }
 
     private static string Stored(Dictionary<string, JsonElement> contents, string text)

@@ -62,7 +62,7 @@ internal sealed class RecordEvalService(ILedgerReader ledger, IApprovedRecipes r
             return contents.Error;
         }
 
-        var recorded = EvalLedgerRecorder.Record("recorded", approved.Value.Recipe, children.Value, catalog, rows.Value, contents.Value);
+        var recorded = EvalLedgerRecorder.Record("recorded", new LedgerRecording(approved.Value.Recipe, children.Value, catalog), rows.Value, contents.Value);
         return recorded.IsError ? recorded.Error : new RecordEvalResponse(EvalLines.Write(recorded.Value, options));
     }
 
