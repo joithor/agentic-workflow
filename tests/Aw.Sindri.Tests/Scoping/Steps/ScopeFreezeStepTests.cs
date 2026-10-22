@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Packets;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -31,7 +32,7 @@ public sealed class ScopeFreezeStepTests
     }
 
     private Task<BlockStepResult> Run(ScopingFacts facts) =>
-        new ScopeFreezeStep(_area, _packets).Run(ScopingStepContexts.Of("step.scope.freeze", facts), Token).AsTask();
+        new ScopeFreezeStep(_area, _packets).Run(Freeze(facts), Token).AsTask();
 
     private static JsonNode Out(BlockStepResult result, string key) => JsonNode.Parse(result.Result!.Outputs[FactKey.From("fact:" + key)].GetRawText())!;
 
@@ -59,7 +60,7 @@ public sealed class ScopeFreezeStepTests
     [Fact]
     public async Task An_instance_with_no_repo_fails_the_step_before_aw_packets_is_called()
     {
-        var context = ScopingStepContexts.Of("step.scope.freeze", Facts()) with { Repo = null };
+        var context = Freeze(Facts()) with { Repo = null };
 
         var result = await new ScopeFreezeStep(_area, _packets).Run(context, Token);
 
@@ -115,7 +116,7 @@ public sealed class ScopeFreezeStepTests
     {
         var missing = await Run(Facts().Without("scopePacket"));
         var step = new ScopeFreezeStep(_area, _packets);
-        var noAddress = await step.Run(ScopingStepContexts.Of("step.scope.freeze", Facts()) with { Address = null }, Token);
+        var noAddress = await step.Run(Freeze(Facts()) with { Address = null }, Token);
 
         Assert.Null(missing.Result);
         Assert.Null(noAddress.Result);
@@ -127,7 +128,7 @@ public sealed class ScopeFreezeStepTests
         var other = "sha256:" + new string('c', 64);
         var step = new ScopeFreezeStep(_area, new FreezesAs(_packets, other));
 
-        var result = await step.Run(ScopingStepContexts.Of("step.scope.freeze", Facts()), Token);
+        var result = await step.Run(Freeze(Facts()), Token);
 
         Assert.Equal("mismatch", result.Result!.Outcome.Value);
         Assert.Contains(other, Out(result, "findings").ToJsonString(), StringComparison.Ordinal);
@@ -143,4 +144,7 @@ public sealed class ScopeFreezeStepTests
         public ValueTask<Result<PacketFreeze>> Freeze(PacketRef packet, PacketFreezer by, CancellationToken cancellationToken) =>
             ValueTask.FromResult<Result<PacketFreeze>>(new PacketFreeze(Frozen: true, hash, by, AlreadyFrozen: false, AlreadyFrozenBy: null, Failures: []));
     }
+
+    // The freeze files the packet under its repo, so these contexts carry one (the shared helper's have none).
+    private static StepContext Freeze(ScopingFacts facts) => ScopingStepContexts.Of("step.scope.freeze", facts) with { Repo = RepoName.From("demo") };
 }
