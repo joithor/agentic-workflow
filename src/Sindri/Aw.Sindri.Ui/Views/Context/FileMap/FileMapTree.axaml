@@ -44,7 +44,7 @@
       <TextBlock Classes="eyebrow" Text="{Binding ColFile}" />
       <TextBlock Grid.Column="1" Classes="eyebrow" Text="{Binding ColFor}" />
       <TextBlock Grid.Column="2" Classes="eyebrow" Text="{Binding ColIntent}" />
-      <TextBlock Grid.Column="3" Classes="eyebrow" Text="{Binding ColSymbols}" />
+      <TextBlock Grid.Column="3" Classes="eyebrow" Text="{Binding SymbolsHeading}" />
     </Grid>
 
     <Panel Grid.Row="2">

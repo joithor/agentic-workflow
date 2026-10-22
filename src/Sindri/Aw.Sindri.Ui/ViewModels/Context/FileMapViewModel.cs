@@ -22,6 +22,9 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
     /// <summary>The symbols column's heading.</summary>
     public string ColSymbols { get; } = Labels.ContextSymbolsColumn;
 
+    /// <summary>The heading with where the names came from ("symbols · from 7c3e1a2", "· stale"): provenance in words, since a dimmed cell says it by colour alone. When the index cannot answer, each cell says why instead.</summary>
+    public string SymbolsHeading => Symbols is { Unavailable: false } column ? Labels.Dots(ColSymbols, column.Caption) : ColSymbols;
+
     /// <summary>The first column's heading.</summary>
     public string ColFile { get; } = Labels.ContextFilesColFile;
 
@@ -193,5 +196,6 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
         OnChanged(nameof(IsEmptyFolder));
         OnChanged(nameof(HasNote));
         OnChanged(nameof(HasProblem));
+        OnChanged(nameof(SymbolsHeading));
     }
 }
