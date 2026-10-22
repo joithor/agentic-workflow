@@ -1,0 +1,6 @@
+query IssueHits($filter: IssueFilter, $first: Int) {
+  issues(filter: $filter, first: $first, orderBy: updatedAt) {
+    nodes { id identifier title url createdAt updatedAt team { id key name } }
+    pageInfo { hasNextPage endCursor }
+  }
+}

@@ -1,0 +1,6 @@
+query ProjectUpdates($filter: ProjectUpdateFilter, $first: Int) {
+  projectUpdates(filter: $filter, first: $first, orderBy: updatedAt) {
+    nodes { id health url body createdAt updatedAt user { id name } project { id name } }
+    pageInfo { hasNextPage endCursor }
+  }
+}
