@@ -24,7 +24,7 @@ public sealed class ContextPublishDoctorTests
 
     private static LedgerEvent Published() => new(
         1, Epoch: 1,
-        new Aw.Kernel.Events.EventEnvelope<string>(new Guid(1, 0, 0, new byte[8]), EventTypes.ContextMapPublished, SchemaVersion: 1, _published, "service:context-map-refresh", Tenant: "t", Ring: 0, new Guid(2, 0, 0, new byte[8]), CausationId: null, TraceId: null,
+        new Kernel.Events.EventEnvelope<string>(new Guid(1, 0, 0, new byte[8]), EventTypes.ContextMapPublished, SchemaVersion: 1, _published, "service:context-map-refresh", Tenant: "t", Ring: 0, new Guid(2, 0, 0, new byte[8]), CausationId: null, TraceId: null,
             """{"repo":"demo","version":14,"reason":"TimedOut"}"""),
         "k1", Item: null);
 
