@@ -1,3 +1,6 @@
+using System.Net;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -8,9 +11,6 @@ using Aw.Sindri.Tests.ApiGoldens;
 using Aw.Sindri.Tests.Callers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
-using System.Net;
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using static Aw.Sindri.Tests.Callers.CallerRequests;
 
 namespace Aw.Sindri.Tests.GetRecipeStats;

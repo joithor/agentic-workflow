@@ -82,7 +82,7 @@ internal sealed class SetupStepViewModel : ObservableObject
     public SetupProfileConfirmViewModel? Profile { get; set; }
 
     /// <summary>The plan, hold and typed alternative of the workflows step (the approve-all dialog's own view model); null for every other step.</summary>
-    public ViewModels.Approvals.ApproveAllViewModel? Workflows { get; set; }
+    public Approvals.ApproveAllViewModel? Workflows { get; set; }
 
     /// <summary>The Onyx controls of the Onyx step; null for every other step.</summary>
     public SetupOnyxViewModel? Onyx { get; set; }
