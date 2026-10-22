@@ -11,8 +11,8 @@ using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.ContextCalls;
-using Aw.Sindri.Tests.ContextCalls;
 using Aw.Sindri.Tests.Workflow.Blocks.Contracts;
+using RecordKey = Aw.Context.Core.Sources.RecordKey;
 
 namespace Aw.Sindri.Tests.Workflow.Blocks.Input;
 
@@ -22,35 +22,14 @@ public sealed class ContextRetrieveInputTests
 {
     private static readonly DateTimeOffset _at = new(2026, 10, 22, 9, 0, 0, TimeSpan.Zero);
 
-    /// <summary>An engine that answers only Query, from a script, and records each ask.</summary>
-    internal class QueryEngine : DispatchProxy
-    {
-        public List<(ContextQuery Query, ContextScope Scope)> Calls { get; } = [];
-
-        public Func<Result<ContextResult>> Answer { get; set; } = () => Result();
-
-        internal IContextEngine Engine => (IContextEngine)(object)this;
-
-        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
-        {
-            if (targetMethod?.Name != nameof(IContextEngine.Query))
-            {
-                throw new NotSupportedException(targetMethod?.Name);
-            }
-
-            Calls.Add(((ContextQuery)args![0]!, (ContextScope)args[1]!));
-            return ValueTask.FromResult(Answer());
-        }
-    }
-
-    internal static ContextRetrieveInput Input(QueryEngine engine, bool profile = true) =>
+    internal static ContextRetrieveInput Input(QueryEngineProxy engine, bool profile = true) =>
         new(engine.Engine, new ContextInputScopes(new ContextInputFixtures.Profiles(profile ? ContextInputFixtures.Profile() : null)), ContextInputFixtures.NoFacts(), ShippedComposition.Json);
 
     internal static Result<ContextResult> Result(string queryId = "q_one", DateTimeOffset? asOf = null, Trust trust = Trust.Trusted, string text = "Panes split on a drag.", bool degraded = false) =>
         new ContextResult(ContextResult.CurrentSchemaVersion, QueryId.From(queryId), new ContextQuery("split"), ["feature:layout.split-pane"], "v3", asOf ?? _at,
             [new ResultSection("graph", [new ResultItem("feature", "feature:layout.split-pane", "Split pane", text, Score: 0.9, ["matched the question"], Provenance.Deterministic, Confirmed: true, trust, ["C1"])], [])],
             [], [], degraded ? [new DegradedSource(SourceId.From("onyx"), "SND-CONTEXT-010", "Onyx did not answer", asOf ?? _at)] : [], Truncated: false, new BudgetUse(4000, 120, Estimate: true),
-            new Dictionary<string, Citation> { ["C1"] = new(RecordKey.From("map:web/v3"), [new CitationRef(SourceId.From("map"), ExternalId.From("v3"), SourceVersion.From("v3"))], Permalink: null, Trust.Trusted, CitationState.Current) });
+            new Dictionary<string, Citation>(StringComparer.Ordinal) { ["C1"] = new(RecordKey.From("map:web/v3"), [new CitationRef(SourceId.From("map"), ExternalId.From("v3"), SourceVersion.From("v3"))], Permalink: null, Trust.Trusted, CitationState.Current) });
 
     private static StepInputContext Context(RepoName? repo, params (string Name, object Value)[] with) => new(
         BlockId.From(ContextRetrieveInput.Id), BlockId.From("step.scope.gather"),
@@ -58,7 +37,9 @@ public sealed class ContextRetrieveInputTests
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    private static QueryEngine Engine() => (QueryEngine)(object)DispatchProxy.Create<IContextEngine, QueryEngine>();
+    internal static QueryEngineProxy NewEngine() => Engine();
+
+    private static QueryEngineProxy Engine() => (QueryEngineProxy)(object)DispatchProxy.Create<IContextEngine, QueryEngineProxy>();
 
     [Fact]
     public async Task Fill_asks_the_engine_as_the_service_cut_to_the_instances_repo_and_returns_cited_text_and_the_typed_result()
@@ -182,7 +163,7 @@ public sealed class ContextRetrieveInputTests
     public async Task A_huge_answer_is_cut_to_the_section_cap_and_never_fails_the_Step()
     {
         var engine = Engine();
-        engine.Answer = () => Result(text: string.Join('\n', Enumerable.Range(0, 20_000).Select(static i => "line " + i + " of a very long record body")));
+        engine.Answer = () => Result(text: string.Join('\n', Enumerable.Range(0, 20_000).Select(static i => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"line {i} of a very long record body"))));
 
         var filled = await Input(engine).Fill(Context(ContextInputFixtures.Web, ("q", "split")), Ct);
 

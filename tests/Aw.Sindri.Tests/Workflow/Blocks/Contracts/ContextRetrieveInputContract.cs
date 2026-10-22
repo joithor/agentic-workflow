@@ -4,7 +4,6 @@ using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Testing.Workflow;
-using Aw.Sindri.Tests.ContextCalls;
 using Aw.Sindri.Tests.Workflow.Blocks.Input;
 
 namespace Aw.Sindri.Tests.Workflow.Blocks.Contracts;
@@ -24,7 +23,7 @@ public sealed class ContextRetrieveInputContract : BlockContract
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await ContextRetrieveInputTests.Input(new ContextRetrieveInputTests.QueryEngine()).Fill(
+        _ = await ContextRetrieveInputTests.Input(ContextRetrieveInputTests.NewEngine()).Fill(
             new StepInputContext(BlockId.From(ContextRetrieveInput.Id), BlockId.From("step.scope.gather"), new Dictionary<string, JsonElement>(StringComparer.Ordinal), new Dictionary<FactKey, JsonElement>()),
             cancellationToken);
 }
