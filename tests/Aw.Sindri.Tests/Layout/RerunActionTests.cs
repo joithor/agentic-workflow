@@ -52,7 +52,7 @@ public sealed class RerunActionTests
     {
         var failed = StatusCases.View("failed");
 
-        Assert.Single(Reruns.Of(failed));
+        _ = Assert.Single(Reruns.Of(failed));
         Assert.Empty(Reruns.Of(failed with { ParentId = WorkflowInstanceId.Of(InstanceAddress.From("T-3/step/1")) }));
     }
 

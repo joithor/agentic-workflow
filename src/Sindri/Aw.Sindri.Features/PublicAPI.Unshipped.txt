@@ -4506,3 +4506,17 @@ override Aw.Sindri.Features.InitProfile.InitProfileResponse.GetHashCode() -> int
 override Aw.Sindri.Features.InitProfile.InitProfileResponse.ToString() -> string!
 static Aw.Sindri.Features.InitProfile.InitProfileResponse.operator !=(Aw.Sindri.Features.InitProfile.InitProfileResponse? left, Aw.Sindri.Features.InitProfile.InitProfileResponse? right) -> bool
 static Aw.Sindri.Features.InitProfile.InitProfileResponse.operator ==(Aw.Sindri.Features.InitProfile.InitProfileResponse? left, Aw.Sindri.Features.InitProfile.InitProfileResponse? right) -> bool
+Aw.Sindri.Features.StartInstance.RerunInstanceRequest
+Aw.Sindri.Features.StartInstance.RerunInstanceRequest.<Clone>$() -> Aw.Sindri.Features.StartInstance.RerunInstanceRequest!
+Aw.Sindri.Features.StartInstance.RerunInstanceRequest.Deconstruct(out string! Instance) -> void
+Aw.Sindri.Features.StartInstance.RerunInstanceRequest.Equals(Aw.Sindri.Features.StartInstance.RerunInstanceRequest? other) -> bool
+Aw.Sindri.Features.StartInstance.RerunInstanceRequest.Instance.get -> string!
+Aw.Sindri.Features.StartInstance.RerunInstanceRequest.Instance.init -> void
+Aw.Sindri.Features.StartInstance.RerunInstanceRequest.RerunInstanceRequest(string! Instance) -> void
+Aw.Sindri.Features.StartInstance.StartInstanceRequest.Again.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress?
+Aw.Sindri.Features.StartInstance.StartInstanceRequest.Again.init -> void
+override Aw.Sindri.Features.StartInstance.RerunInstanceRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.StartInstance.RerunInstanceRequest.GetHashCode() -> int
+override Aw.Sindri.Features.StartInstance.RerunInstanceRequest.ToString() -> string!
+static Aw.Sindri.Features.StartInstance.RerunInstanceRequest.operator !=(Aw.Sindri.Features.StartInstance.RerunInstanceRequest? left, Aw.Sindri.Features.StartInstance.RerunInstanceRequest? right) -> bool
+static Aw.Sindri.Features.StartInstance.RerunInstanceRequest.operator ==(Aw.Sindri.Features.StartInstance.RerunInstanceRequest? left, Aw.Sindri.Features.StartInstance.RerunInstanceRequest? right) -> bool

@@ -1,7 +1,6 @@
 using Aw.Sindri.Core.Commands;
-using Aw.Sindri.Features.StartInstance;
 
-namespace Aw.Sindri.Features.RerunInstance;
+namespace Aw.Sindri.Features.StartInstance;
 
 /// <summary>
 /// 'RerunInstance' (POST /workflow/instances/{instanceId}/rerun; desk): starts the same recipe again on the same item with the same input facts, as the next attempt,

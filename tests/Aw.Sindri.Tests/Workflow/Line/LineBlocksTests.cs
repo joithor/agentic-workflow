@@ -30,7 +30,7 @@ public sealed class LineBlocksTests
     [InlineData("step.plan.check", BlockRuntime.Block, false, "fact:scopePacket,fact:design,fact:plan", "pass,gaps", "", "fact:findings=gaps", Capability.Tools)]
     [InlineData("step.plan.exec-review", BlockRuntime.Agent, false, "fact:design,fact:plan", "executable,objections", "", "fact:findings=objections", Capability.Tools)]
     [InlineData("step.plan.holdout", BlockRuntime.Agent, false, "fact:design,fact:plan", "written", "", "fact:holdoutSets=written", Capability.Tools)]
-    [InlineData("step.plan.evidence", BlockRuntime.Block, false, "fact:scopePacket,fact:design,fact:plan,fact:holdoutSets,fact:findings,fact:answerLog", "complete,incomplete", "", "fact:planPacket=complete;fact:findings=incomplete", Capability.Tools)]
+    [InlineData("step.plan.evidence", BlockRuntime.Block, false, "fact:scopePacket,fact:design,fact:plan,fact:holdoutSets,fact:findings,fact:answerLog", "complete,incomplete", "", "fact:planPacket=complete;fact:recommendation=;fact:findings=incomplete", Capability.Tools)]
     [InlineData("step.plan.questions", BlockRuntime.Block, false, "fact:design,fact:answers,fact:answerLog", "asked,none", "", "fact:questions=asked", Capability.None)]
     [InlineData("step.plan.settle", BlockRuntime.Block, false, "fact:design,fact:answers,fact:answerLog", "assumed,changed,replan", "", "fact:designRevision=changed", Capability.None)]
     [InlineData("step.plan.review", BlockRuntime.Desk, true, "fact:planPacket,fact:design", "approve,reviseDesign,revisePlan,drop", "", "fact:answers=reviseDesign,revisePlan", Capability.None)]

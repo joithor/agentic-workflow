@@ -667,23 +667,23 @@ public static class WorkflowViewFixtures
     public static InstanceDetail F5RerunFailed()
     {
         var detail = Done();
-        var address = InstanceAddress.From("ITM-01JKA/triage-alert/1");
-        return detail with { Address = address, Id = WorkflowInstanceId.Of(address), ItemId = ItemKey.From("ITM-01JKA"), Title = "429s on stream (failed)", Actions = [Act("RerunInstance")] };
+        var address = InstanceAddress.From("ITM-01JKX/triage-alert/1");
+        return detail with { Address = address, Id = WorkflowInstanceId.Of(address), ItemId = ItemKey.From("ITM-01JKX"), Title = "429s on stream (failed)", Actions = [Act("RerunInstance")] };
     }
 
     /// <summary>A rerun waiting at its desk: it carries <c language="text">again</c>, the address of the failed instance it reruns, and the form recommends an outcome.</summary>
     public static InstanceDetail F5DeskRecommended()
     {
         var detail = TriageDesk();
-        var address = InstanceAddress.From("ITM-01JKB/triage-alert/2");
+        var address = InstanceAddress.From("ITM-01JKY/triage-alert/2");
         var form = detail.Current.Desk! with { Recommended = new DeskRecommendation("done", "Every check passed and no question is left open.") };
         return detail with
         {
             Address = address,
             Id = WorkflowInstanceId.Of(address),
-            ItemId = ItemKey.From("ITM-01JKB"),
+            ItemId = ItemKey.From("ITM-01JKY"),
             Current = detail.Current with { Desk = form },
-            Again = InstanceAddress.From("ITM-01JKA/triage-alert/1"),
+            Again = InstanceAddress.From("ITM-01JKX/triage-alert/1"),
         };
     }
 

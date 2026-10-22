@@ -7,7 +7,6 @@ using Aw.Sindri.Features.CompleteStep;
 using Aw.Sindri.Features.IssueChallenge;
 using Aw.Sindri.Features.IssueNonce;
 using Aw.Sindri.Features.RegisterRecipe;
-using Aw.Sindri.Features.RerunInstance;
 using Aw.Sindri.Features.RevokeRecipe;
 using Aw.Sindri.Features.StartInstance;
 

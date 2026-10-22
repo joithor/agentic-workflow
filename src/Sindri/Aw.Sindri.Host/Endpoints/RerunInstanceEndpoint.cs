@@ -1,5 +1,4 @@
 using Aw.Kernel.Services;
-using Aw.Sindri.Features.RerunInstance;
 using Aw.Sindri.Features.StartInstance;
 
 namespace Aw.Sindri.Host.Endpoints;

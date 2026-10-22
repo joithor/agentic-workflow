@@ -90,7 +90,6 @@ using Aw.Sindri.Features.SessionHeartbeat;
 using Aw.Sindri.Features.Sessions;
 using Aw.Sindri.Features.SetupWatch;
 using Aw.Sindri.Features.ShowRecipe;
-using Aw.Sindri.Features.RerunInstance;
 using Aw.Sindri.Features.StartInstance;
 using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Features.StopProcess;

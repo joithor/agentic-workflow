@@ -3,13 +3,11 @@ using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Items;
-using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Features.StartInstance;
 
-namespace Aw.Sindri.Features.RerunInstance;
+namespace Aw.Sindri.Features.StartInstance;
 
 /// <summary>
 /// 'RerunInstance': reads the instance, refuses unless <see cref="Reruns"/> offers the rerun (a live, finished or child instance is an input error), reads back the input facts it was
