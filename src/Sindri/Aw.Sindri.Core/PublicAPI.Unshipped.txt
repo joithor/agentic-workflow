@@ -10827,7 +10827,7 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailures.Of(Aw.Sindri.C
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches
 static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.LaunchIdFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run) -> Aw.Sindri.Core.Workflow.Engine.LaunchId
 static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.LaunchIdFor(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId workflow, Aw.Sindri.Core.Workflow.Engine.RunToken run) -> Aw.Sindri.Core.Workflow.Engine.LaunchId
-static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.WorktreeFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget! target) -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.WorktreeFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget! target, string? workspace = null) -> string!
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun!
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Address.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
@@ -11495,6 +11495,8 @@ Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Tokens.get -> int?
 Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Tokens.init -> void
 Aw.Sindri.Core.Workflow.Views.StatusFields.Run.get -> Aw.Sindri.Core.Workflow.Views.StatusRun?
 Aw.Sindri.Core.Workflow.Views.StatusFields.Run.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusFields.TakenOverAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Workflow.Views.StatusFields.TakenOverAt.init -> void
 Aw.Sindri.Core.Workflow.Views.StatusRun
 Aw.Sindri.Core.Workflow.Views.StatusRun.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StatusRun!
 Aw.Sindri.Core.Workflow.Views.StatusRun.Deconstruct(out string! Runtime, out string? Launch) -> void
@@ -12066,9 +12068,9 @@ Aw.Sindri.Core.Launch.StepArgs.Brief.get -> string?
 Aw.Sindri.Core.Launch.StepArgs.Brief.init -> void
 Aw.Sindri.Core.Launch.StepArgs.Deconstruct(out string? Model, out Aw.Sindri.Core.Launch.StepPolicy? Policy, out Aw.Sindri.Core.Launch.StepRef! Ref, out string? Brief) -> void
 Aw.Sindri.Core.Launch.StepArgs.StepArgs(string? Model, Aw.Sindri.Core.Launch.StepPolicy? Policy, Aw.Sindri.Core.Launch.StepRef! Ref, string? Brief = null) -> void
-static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.RequestFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget! target, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? descriptor = null) -> Aw.Sindri.Core.Launch.LaunchRequest!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.RequestFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget! target, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? descriptor = null, System.Collections.Generic.IReadOnlyList<string!>? instructions = null, string? workspace = null) -> Aw.Sindri.Core.Launch.LaunchRequest!
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepBrief
-static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepBrief.Render(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? descriptor) -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepBrief.Render(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? descriptor, System.Collections.Generic.IReadOnlyList<string!>? instructions = null) -> string!
 Aw.Sindri.Core.Scoping.BriefFile
 Aw.Sindri.Core.Scoping.BriefFile.<Clone>$() -> Aw.Sindri.Core.Scoping.BriefFile!
 Aw.Sindri.Core.Scoping.BriefFile.BriefFile(string! Path, string! Text, string! Version) -> void
@@ -15847,3 +15849,6 @@ Aw.Sindri.Core.Forge.IPullRequests.Merge(Aw.Sindri.Core.Forge.PullMerge! request
 Aw.Sindri.Core.Forge.IPullRequests.Reply(Aw.Sindri.Core.Forge.PullReply! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullDelivery>!>
 Aw.Sindri.Core.Forge.IPullRequests.React(Aw.Sindri.Core.Forge.PullReaction! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullDelivery>!>
 Aw.Sindri.Core.Forge.IPullRequests.PushBranch(Aw.Sindri.Core.Forge.PullBranchPush! push, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullPushOutcome>!>
+Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions
+Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions.Lines.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions.Step.get -> Aw.Sindri.Core.Workflow.Ids.BlockId

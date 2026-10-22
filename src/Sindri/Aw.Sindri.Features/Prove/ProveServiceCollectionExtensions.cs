@@ -14,5 +14,8 @@ internal static class ProveServiceCollectionExtensions
         .AddBlockRuntime<ProveBeforeAfterStep>()
         .AddBlockRuntime<ProveEvidenceStep>()
         .AddBlockRuntime<ProveFailLogStep>()
+        .AddBlockRuntime<RecheckPlanStep>()
+        .AddBlockRuntime<ProveRerunScriptsStep>()
+        .AddBlockRuntime<RecheckLogStep>()
         .AddBlockRuntime<ProveHoldoutLogStep>();
 }
