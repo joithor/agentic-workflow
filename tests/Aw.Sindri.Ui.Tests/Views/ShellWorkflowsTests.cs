@@ -86,11 +86,11 @@ public sealed class ShellWorkflowsTests : FrameHost
         var open = Named<Button>(window, "WorkflowRowOpen");
         Assert.True(open.Focus(NavigationMethod.Tab));
         var filter = Named<TextBox>(window, "SubjectFilter");
-        filter.Text = "typed, not yet applied";
+        filter.Text = "  ";   // blank: the live search takes it as none, so every row stays and the text must too
         var scroll = Named<ScrollViewer>(window, "Pages");
         scroll.Offset = new Avalonia.Vector(0, 40);
         Settle(window);
-        Assert.True(scroll.Offset.Y > 0, $"the list must be scrolled for the check to mean anything (extent {scroll.Extent}, viewport {scroll.Viewport})");
+        Assert.True(scroll.Offset.Y > 0, $"the list must be scrolled for the check to mean anything (extent {scroll.Extent}, viewport {scroll.Viewport}, rows {shell.Workflows.Groups.Sum(g => g.Rows.Count).ToString(CultureInfo.InvariantCulture)}, rowsDrawn {Rows(window).Count.ToString(CultureInfo.InvariantCulture)})");
         var (focused, offset, reads) = (window.FocusManager?.GetFocusedElement(), scroll.Offset, shell.Workflows.Drawn);
 
         Server.Push(A.Event(81, "workflow.started"));
@@ -98,6 +98,6 @@ public sealed class ShellWorkflowsTests : FrameHost
         Settle(window);
 
         Assert.Same(focused, window.FocusManager?.GetFocusedElement());
-        Assert.Equal(("typed, not yet applied", offset), (Named<TextBox>(window, "SubjectFilter").Text, scroll.Offset));
+        Assert.Equal(("  ", offset), (Named<TextBox>(window, "SubjectFilter").Text, scroll.Offset));
     });
 }
