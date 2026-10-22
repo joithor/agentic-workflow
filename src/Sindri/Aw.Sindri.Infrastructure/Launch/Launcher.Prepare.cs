@@ -18,14 +18,9 @@ internal sealed partial class Launcher
         }
 
         var workDir = request.Worktree ?? request.RepoPath;
-        if (!request.Attended && request.Step is not null && await PrePushGuard.Install(workDir, cancellationToken).ConfigureAwait(false) is { } foreign)
+        if (await Guard(request, entry, workDir, cancellationToken).ConfigureAwait(false) is { } refusedStart)
         {
-            return foreign;
-        }
-
-        if (await Trust(request, entry, workDir, cancellationToken).ConfigureAwait(false) is { } untrusted)
-        {
-            return untrusted;
+            return refusedStart;
         }
 
         try
@@ -52,6 +47,17 @@ internal sealed partial class Launcher
         {
             return KernelErrors.Unavailable.With($"the launch's files could not be written: {e.Message}");
         }
+    }
+
+    /// <summary>A Step's worktree gets the pre-push guard and, for claude-code, its trust mark before anything else is written; an error when either is refused.</summary>
+    private async ValueTask<Error?> Guard(LaunchRequest request, AgentEntry entry, string workDir, CancellationToken cancellationToken)
+    {
+        if (!request.Attended && request.Step is not null && await PrePushGuard.Install(workDir, cancellationToken).ConfigureAwait(false) is { } foreign)
+        {
+            return foreign;
+        }
+
+        return await Trust(request, entry, workDir, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>LN-WF5: the Step's pack, in its directory before the session starts (an attended launch has none); an error when the pack is refused.</summary>
