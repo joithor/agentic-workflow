@@ -6,5 +6,5 @@ public interface IRepoOnboardingTick
     /// <summary>Onboards each repo of the latest approved profile that is not yet recorded for its hash.</summary>
     /// <param name="cancellationToken">Cancels the work.</param>
     /// <returns>A task that ends when every repo was tried; a failure is tried again on the next tick.</returns>
-    ValueTask Ensure(CancellationToken cancellationToken);
+    public ValueTask Ensure(CancellationToken cancellationToken);
 }
