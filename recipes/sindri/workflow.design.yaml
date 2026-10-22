@@ -1,8 +1,9 @@
 schema: 1
 id: workflow.design
-version: 5
+version: 6
 description: "Station 2 of the line: one spec draft from a frozen scope packet, in the repo's style pack, reviewed by the repo's design lens pack on another model until no CRITICAL or HIGH finding is left; ends with a hashed candidate design packet."
 displayName: "Turn the scope into a design"
+why: "Writes the design for the approved scope and has it reviewed from several angles until no serious problem is left."
 urgency: work
 inputs:
   - { key: fact:scopePacket,    label: "Scope packet (frozen)", type: packet, kind: packet }
