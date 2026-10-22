@@ -645,7 +645,7 @@ Steps of `workflow.design` and `workflow.plan` (line spec §4-§6, LN-Y1; all de
 | `step.plan.review` | desk, human-only | `planPacket`, `design` | `approve`, `reviseDesign`, `revisePlan`, `drop` | `answers` on reviseDesign and revisePlan |
 | `step.plan.freeze` | block | `planPacket`, `design`, `plan`, `holdoutSets` | `frozen`, `mismatch` | `planPacket`, `phasePackets` on frozen; `findings` on mismatch |
 
-The Step inputs `input.context.lenses`, `input.context.code` and `input.context.history` are real Step inputs (parameters `anchors`, `depth`, `hops`, `window`; "The context inputs (S-LB2)" below), so the recipe validates and approves. The output schemas are `schemas/scoping/` (`node scripts/check-scoping-schemas.mjs`).
+The Step inputs `input.context.lenses`, `input.context.code` and `input.context.history` are real Step inputs, with `input.context.retrieve` as the fourth (parameters `anchors`, `depth`, `hops`, `window`; `q`, `node`, `symbol`, `budget`; "The context inputs (S-LB2)" below), so the recipe validates and approves. The output schemas are `schemas/scoping/` (`node scripts/check-scoping-schemas.mjs`).
 
 ### Design and plan stations on the block runtime (BS-2, BS-2b)
 
@@ -1168,6 +1168,7 @@ The scoping recipe's `gather` Step names three real inputs, so `sindri recipe ap
 | `input.context.lenses {anchors, depth?, hops?}` | `lenses` | `LensesSetView` (schema 2) | `IContextEngine` lenses on the current map |
 | `input.context.history {anchors, window?}` | `history` | `HistoryView` (no live sync marker: a fill depends on the stored state only) | `IContextEngine` history; `window` is `{since?, before?}` (RFC 3339 or a date) or a bare string meaning `since` |
 | `input.context.code {anchors}` | `code` | `CodeView` | `IContextEngine` code on the current map |
+| `input.context.retrieve {q? \| node? \| symbol?, depth?, budget?}` | `context` | `ContextResult` (S-10; no query id, `asOf` is the Unix epoch, degraded `since` likewise, every citation `unchecked`) | `IContextEngine.Query` on the current map: one question, the readable answer with `[Cn]` markers, `DEGRADED` and `CONFLICT` lines and a `sources:` list (the run receipt's citations); record text arrives fenced by the engine and is not wrapped again; a Step with none of `q`, `node`, `symbol` gets an unavailable section |
 
 - **`service:engine`, the instance's repo.** Each call runs as the engine's service caller with a scope cut to the one repo of the instance's item (`StepInputContext.Repo`, from the ledger), never from a caller (`ContextInputScopes`).
 - **Honest sections.** An empty anchor list, a bad window, an item with no repo, a repo outside the approved profile, no approved profile, and any refusal from the engine (`SND-CONTEXT-*`) become one section ("The context lenses are unavailable for this Step (code: message); it runs without them.") with no typed result. They never throw; a degraded source stays visible in the view's `searched` rows.

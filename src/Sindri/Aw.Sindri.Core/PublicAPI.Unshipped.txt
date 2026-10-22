@@ -16009,3 +16009,9 @@ static Aw.Sindri.Core.Ports.RecipeTrees.operator ==(Aw.Sindri.Core.Ports.RecipeT
 Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions
 Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions.Lines.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions.Step.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
+Aw.Sindri.Core.Launch.IAgentTrust
+Aw.Sindri.Core.Launch.IAgentTrust.Trust(string! directory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Launch.IAgentTrust.Untrust(string! directory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Launch.ILaunchShutdown
+Aw.Sindri.Core.Launch.ILaunchShutdown.StopAll(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int>
+static readonly Aw.Sindri.Core.SindriErrors.LaunchTrustUnavailable -> Aw.Kernel.ErrorDefinition!
