@@ -15982,6 +15982,13 @@ Aw.Sindri.Core.Forge.IPullRequests.Merge(Aw.Sindri.Core.Forge.PullMerge! request
 Aw.Sindri.Core.Forge.IPullRequests.Reply(Aw.Sindri.Core.Forge.PullReply! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullDelivery>!>
 Aw.Sindri.Core.Forge.IPullRequests.React(Aw.Sindri.Core.Forge.PullReaction! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullDelivery>!>
 Aw.Sindri.Core.Forge.IPullRequests.PushBranch(Aw.Sindri.Core.Forge.PullBranchPush! push, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullPushOutcome>!>
+Aw.Sindri.Core.Scheduling.ServiceActions
+const Aw.Sindri.Core.Scheduling.ServiceActions.Pause = "pause" -> string!
+const Aw.Sindri.Core.Scheduling.ServiceActions.Resume = "resume" -> string!
+const Aw.Sindri.Core.Scheduling.ServiceActions.Run = "run" -> string!
+static Aw.Sindri.Core.Scheduling.ServiceActions.Allowed(bool namedByProfile, bool builtIn, bool paused, bool jobRunning) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Scheduling.ServiceActions.CanPauseOrResume(bool namedByProfile) -> bool
+static Aw.Sindri.Core.Scheduling.ServiceActions.CanRun(bool namedByProfile, bool builtIn) -> bool
 Aw.Sindri.Core.Setup.RecordedStep
 Aw.Sindri.Core.Setup.RecordedStep.<Clone>$() -> Aw.Sindri.Core.Setup.RecordedStep!
 Aw.Sindri.Core.Setup.RecordedStep.Deconstruct(out Aw.Sindri.Core.Setup.SetupState State, out string? Code, out int Count) -> void
