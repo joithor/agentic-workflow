@@ -25,7 +25,7 @@ A rule whose files are absent is **not run** and names them; it never fails a dr
 | `DSN-DEC-001` | draft | a decision has fewer than 2 or more than 3 options, not exactly one recommended, an option with no trade-offs, no citations, or nothing affected, or an affected section lacks the `assumes` marker in `sections.json` or `spec.md` (the chosen option once answered, else the recommended one) |
 | `DSN-CITE-001` | draft | a section cites nothing, or an id that resolves to no scope surface, acceptance item, decision, section, answer, ref or lens item |
 | `DSN-XSPEC-001/002/003` | draft | an edit's target file or heading is not at the base commit, its quote is not in the target, or it has no numbered row naming it in "Rows to other lanes", shares a lane, or changes a span another edit changes. 001 and 002 need the repo's files and are not run without them |
-| `DSN-STYLE-001` | draft | `spec.md` breaks the style pack's sections (unknown, missing, out of order, over their word limit), uses a forbidden phrase or is over the line cap |
+| `DSN-STYLE-001` | draft | `spec.md` breaks the style pack's sections (unknown, missing, out of order, over their word limit), uses a forbidden phrase or is over the line cap. On the block runtime the pack is the one `step.design.intake` pinned in `fact:packs` (`{ style: { id, hash }, lenses: { id, hash } }`), read again by `step.design.check` and `step.design.evidence`; a pack that no longer resolves fails the Step `SND-PACK-001`, one whose hash moved `SND-PACK-002`. Only built-in packs resolve for now |
 | `DSN-LENS-001` | evidence | a round skipped a lens of the pack, or the last round leaves a CRITICAL or HIGH finding the owner did not accept at the lens desk (`acceptedByOwner`) |
 | `DSN-LENS-002` | evidence, warning | the lens model is the writer's, or, with `options.json` `multiVendor`, the lens vendor is |
 | `DSN-LENS-003` | evidence | a finding of any round has no written resolution |
@@ -70,8 +70,15 @@ An `<address>` of `design check` or `plan check` is looked up (a serve that is d
 
 ## Codes
 
-`SND-LINE-001` a packet's hash does not match its freeze record, or a parent resolves to no frozen packet. `SND-LINE-002` a phase start is blocked (LN-L). `SND-LINE-003` a line view asked of the wrong recipe's instance. `SND-LINE-004` `line doctor` found missing setup. The `SND-PACK-*` codes are the pack lane's (LN-PK).
+`SND-LINE-001` a packet's hash does not match its freeze record, or a parent resolves to no frozen packet. `SND-LINE-002` a phase start is blocked (LN-L). `SND-LINE-003` a line view asked of the wrong recipe's instance. `SND-LINE-004` `line doctor` found missing setup. The `SND-PACK-*` codes are `PackErrors`' (`Aw.Sindri.Core.LensPacks`): `-001` no pack resolves (not found), `-002` a repo or machine pack has no pin or a different hash (conflict; its message carries the pin line to approve), `-003` a pack is not valid (a file missing, bad schema, more than 10 lenses), `-004` a pack serves the other loop.
 
 ## Profile
 
 The line's keys are in `docs/csharp/sindri-profile.md`. `ProfileRules.Check(profile, box)` refuses `workflow.line.parallel` above the box's heavy-slot cap; the live profile source reads the cap each time (`$AW_STATE_DIR/heavy-slots-cap`, else `AW_HEAVY_SLOTS`). `LineProfile` reads the values with their defaults and writes the sizes file for `aw-packets validate --sizes`.
+
+## Pack bundles (LN-WF5)
+
+An agent Step's `with: { bundle: style | lenses }` makes the runtime copy the resolved pack into the Step's directory before its session starts. The recipe check (RCP-BLOCK-003) accepts only the plain words `style` and `lenses`, and only the one the Step works from (`step.lens.*` bundle `lenses`, the other agent Steps `style`); a fact is refused. At launch `AgentLaunching` asks `IPackBundles` (`Aw.Sindri.Infrastructure/LensPacks/PackBundles.cs`) for the files: a style bundle is the pack's own files under `style/`; a lens bundle is `lens/pack.json` (the resolved pack: id, hash, applies, lens ids and titles) and `lens/prompt.md`, the prompt of the head of `fact:lensQueue`. The pack's `subject` (`change` asks for the review pack, anything else the design one) and the item's repo choose which pack. The launcher writes the files (`PackBundleFiles`) after it creates the worktree, replacing a retry's leftovers, and refuses a path that leaves the folder. A pack that does not resolve fails the Step; one whose pin is missing or moved (`SND-PACK-002`) parks it.
+
+Not done yet: `lens/reference.md` (the pack reader keeps no reference file), recording the bundle's `{ id, hash }` on the launch record and in `fact:packs`, and keeping `style/` and `lens/` out of the worktree's commits.
+

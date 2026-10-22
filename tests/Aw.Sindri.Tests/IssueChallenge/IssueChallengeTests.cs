@@ -19,18 +19,18 @@ public sealed class IssueChallengeTests
         _ = await r.H.HoldLease();
         var step = await r.Shipped("sindri/workflow.step.yaml");
 
-        var issued = (await r.Issue("approve workflow.step 3")).Value;
+        var issued = (await r.Issue("approve workflow.step 4")).Value;
         var byHash = (await r.Issue($"approve workflow.step@{step.Hash.Display}")).Value;
 
-        Assert.Equal(("approve workflow.step 3", r.H.Clock.GetUtcNow().AddMinutes(5)), (issued.Action, issued.ExpiresAt));
+        Assert.Equal(("approve workflow.step 4", r.H.Clock.GetUtcNow().AddMinutes(5)), (issued.Action, issued.ExpiresAt));
         Assert.Equal((step.Id, step.Hash), (issued.Approve!.Id, issued.Approve.Hash));   // why: an approval's challenge carries its preview
         Assert.Null(issued.Revoke);
-        Assert.Equal("approve workflow.step 3", byHash.Action);
+        Assert.Equal("approve workflow.step 4", byHash.Action);
         Assert.NotEqual(issued.Challenge, byHash.Challenge);
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("approve workflow.step 4", "SND-RECIPE-002")]
+    [InlineData("approve workflow.step 5", "SND-RECIPE-002")]
     [InlineData("approve workflow.nothing 1", "SND-RECIPE-002")]
     [InlineData("approve workflow.step", "SND-CLI-003")]
     [InlineData("grant 1 T-1/step/1", "SND-WF-001")]
@@ -54,7 +54,7 @@ public sealed class IssueChallengeTests
         _ = await r.Shipped("sindri/workflow.step.yaml");
         var caller = who == "session" ? A.Caller().Session().Build() : A.Caller().Human().Client(ClientLabel.Ui).Build();
 
-        var refused = await r.Issue("approve workflow.step 3", caller);
+        var refused = await r.Issue("approve workflow.step 4", caller);
 
         Assert.Equal(SindriErrors.AuthRefused.Code, refused.Error.Code);
         Assert.Equal("IssueChallenge is a human decision. Ask the human to run it in a terminal: sindri recipe approve <recipe>", refused.Error.Message);
@@ -62,7 +62,7 @@ public sealed class IssueChallengeTests
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("revoke workflow.step@9ab2d40c1e77", "sindri recipe revoke <recipe>", "sindri recipe approve")]
-    [InlineData("approve workflow.step 3", "sindri recipe approve <recipe>", "sindri recipe revoke")]
+    [InlineData("approve workflow.step 4", "sindri recipe approve <recipe>", "sindri recipe revoke")]
     public async Task A_session_is_refused_with_the_one_command_for_its_action(string action, string named, string other)
     {
         await using var r = new RegistryHarness();

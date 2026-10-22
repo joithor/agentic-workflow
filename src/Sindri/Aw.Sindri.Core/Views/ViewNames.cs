@@ -33,6 +33,9 @@ public static class ViewNames
     /// <summary>Launches, keyed by launch id (API P10a).</summary>
     public const string Launches = "launches";
 
+    /// <summary>The recipe stats cache, keyed '&lt;recipe&gt;/&lt;window&gt;/&lt;hash or -&gt;' (API P12): a read-through the stats reads fill and a run's start or end empties.</summary>
+    public const string RecipeStats = "recipe-stats";
+
     /// <summary>Every view that has a table.</summary>
-    public static IReadOnlyList<string> All { get; } = [Services, Profile, Items, ItemAliases, ItemTimeline, Requests, Decisions, NeedsYou, Jobs, Launches];
+    public static IReadOnlyList<string> All { get; } = [Services, Profile, Items, ItemAliases, ItemTimeline, Requests, Decisions, NeedsYou, Jobs, Launches, RecipeStats];
 }

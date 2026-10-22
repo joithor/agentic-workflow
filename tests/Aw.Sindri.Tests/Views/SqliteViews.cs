@@ -21,6 +21,8 @@ internal sealed class SqliteViews : IDisposable
         Store = new SqliteViewStore(_writer, options);
         Reader = new SqliteViewReader(_reader, options);
         Path = settings.ViewsPath;
+        Database = _writer;
+        Options = options;
     }
 
     public SqliteViewStore Store { get; }
@@ -28,6 +30,10 @@ internal sealed class SqliteViews : IDisposable
     public SqliteViewReader Reader { get; }
 
     public string Path { get; }
+
+    public ViewsDatabase Database { get; }
+
+    public System.Text.Json.JsonSerializerOptions Options { get; }
 
     public void Dispose()
     {

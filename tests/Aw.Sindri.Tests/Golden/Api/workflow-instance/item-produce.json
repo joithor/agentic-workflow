@@ -12,8 +12,8 @@
   "title": "Add needs-you ack route",
   "recipe": {
     "id": "workflow.step",
-    "hash": "sha256:d39861bd12222fcc4b74432567eabfd7b58660c4b8d714be71528b6a1353ba2a",
-    "version": 3,
+    "hash": "sha256:f039848fd714d2a46a4d3d216083bff1815821cd3e3b4f1bc6402bbb44bd54fa",
+    "version": 4,
     "urgency": "work",
     "displayName": "Step"
   },
@@ -137,8 +137,8 @@
       "header": {
         "address": "ITM-01JE7/item/1/step.4",
         "recipe": "workflow.step",
-        "hash12": "d39861bd1222",
-        "version": 3,
+        "hash12": "f039848fd714",
+        "version": 4,
         "state": "produce",
         "detail": "desk task",
         "since": "2026-10-12T12:20:00.0000000Z",
@@ -163,10 +163,10 @@
       "budget": {
         "scope": "state",
         "used": 0,
-        "limit": 200000,
+        "limit": 1000000,
         "instance": {
           "used": 0,
-          "limit": 400000
+          "limit": null
         }
       },
       "paused": null,
@@ -193,7 +193,7 @@
           "confirm": "Cancel ITM-01JE7/item/1/step.4? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JE7/item/1/step.4  workflow.step@d39861bd1222  v3  produce: desk task  since 12:20 (6m)\n  next      Produce the Step output for ITM-01JE7 (round 2/3), then run: sindri workflow complete\n            ITM-01JE7/item/1/step.4 --run 3.1 --outcome done --output fact:output=<file>\n  inputs    fact:spec  spec.md  sha256:1c0e...\n  timeout   parks in 1d 23h 54m (desk)\n  budget    tokens 0 / 200k (state), 0 / 400k (instance)\n  commands  complete, takeover, cancel\n",
+      "text": "ITM-01JE7/item/1/step.4  workflow.step@f039848fd714  v4  produce: desk task  since 12:20 (6m)\n  next      Produce the Step output for ITM-01JE7 (round 2/3), then run: sindri workflow complete\n            ITM-01JE7/item/1/step.4 --run 3.1 --outcome done --output fact:output=<file>\n  inputs    fact:spec  spec.md  sha256:1c0e...\n  timeout   parks in 1d 23h 54m (desk)\n  budget    tokens 0 / 1M (state), 0 used (instance)\n  commands  complete, takeover, cancel\n",
       "injection": []
     }
   },

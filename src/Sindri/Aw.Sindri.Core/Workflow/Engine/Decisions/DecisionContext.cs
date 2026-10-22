@@ -22,7 +22,7 @@ public sealed record DecisionContext(
 {
     /// <summary>
     /// The profile's 'workflow.deskTimeout' (W20): a desk Step's timer runs at least this long, and the park its expiry
-    /// leaves names the time the Step had. Defaults to W20's 2d (Runtime.DeskTimeouts.DefaultFloor, which this namespace
+    /// leaves names the time the Step had. Defaults to W20's 2d (Rules.DeskTimeouts.DefaultFloor, which this namespace
     /// can't name without a namespace cycle).
     /// </summary>
     public TimeSpan DeskTimeout { get; init; } = TimeSpan.FromDays(2);
@@ -32,6 +32,12 @@ public sealed record DecisionContext(
     /// patch, which a history recorded without the marker replays). Off: the report's transition applies, the spend is recorded, and the next Step start parks on the budget.
     /// </summary>
     public bool LegacyBudgetPark { get; init; }
+
+    /// <summary>
+    /// Whether an instance that starts counts a state's budget over its lifetime (the pooled rule before the 'token-budget-per-round-v1' patch, which a history
+    /// recorded without the marker replays). Off: it starts under the per-round rule, where each round of a state has its own allowance (BudgetRules).
+    /// </summary>
+    public bool PooledBudget { get; init; }
 
     /// <summary>
     /// Whether a Step whose launch failed still counts a loop round (the behavior before the 'launch-failure-keeps-round-v1' patch, which a history recorded without the

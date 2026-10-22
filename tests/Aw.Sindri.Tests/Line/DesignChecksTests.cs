@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.LensPacks;
 using Aw.Sindri.Features.Line;
 
 namespace Aw.Sindri.Tests.Line;
@@ -257,5 +258,95 @@ public sealed class DesignChecksTests
         Assert.Equal("fail", (string)finding["severity"]!);
         Assert.False(string.IsNullOrEmpty((string)finding["message"]!));
         Assert.False(string.IsNullOrEmpty((string)finding["fix"]!));
+    }
+
+    private static StylePack Style(int? maxWords = null, string[]? forbidden = null, int? maxLines = null) => new(
+        LensPackId.From("plain"),
+        "sha256:" + new string('a', 64),
+        [new StyleSection("Summary", Required: true, maxWords), new StyleSection("Behaviour", Required: true, MaxWords: null), new StyleSection("Notes", Required: false, MaxWords: null)],
+        new StyleRules(forbidden ?? [], maxLines));
+
+    private static IReadOnlyList<LineFinding> StyleFailures(string spec, StylePack style)
+    {
+        var design = (JsonObject)JsonNode.Parse(Design)!;
+        design["spec"] = spec;
+        var report = DesignChecks.RunStyled(JsonNode.Parse(Scope), design, (JsonNode.Parse(Rounds), JsonNode.Parse("[]")), evidence: false, style);
+        return [.. report.Findings.Where(static f => string.Equals(f.Rule, "DSN-STYLE-001", StringComparison.Ordinal))];
+    }
+
+    private const string Spec = "# Title\n\n## Summary\nOne short paragraph.\n\n## Behaviour\nThe route answers 410.\n";
+
+    [Fact]
+    public void A_spec_that_follows_the_style_pack_has_no_DSN_STYLE_001_finding_and_no_warning()
+        => Assert.Empty(StyleFailures(Spec, Style(maxWords: 10)));
+
+    [Fact]
+    public void A_missing_required_section_fails_DSN_STYLE_001_naming_it()
+    {
+        var found = Assert.Single(StyleFailures("# T\n\n## Summary\nShort.\n", Style()));
+
+        Assert.False(found.Warn);
+        Assert.Contains("Behaviour", found.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_missing_optional_section_is_fine()
+        => Assert.Empty(StyleFailures(Spec, Style()));
+
+    [Fact]
+    public void Sections_out_of_order_fail_DSN_STYLE_001()
+    {
+        var found = Assert.Single(StyleFailures("# T\n\n## Behaviour\nB.\n\n## Summary\nS.\n", Style()));
+
+        Assert.Contains("order", found.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_section_over_its_word_limit_fails_DSN_STYLE_001_with_the_count()
+    {
+        var found = Assert.Single(StyleFailures("# T\n\n## Summary\none two three four five six\n\n## Behaviour\nB.\n", Style(maxWords: 5)));
+
+        Assert.Contains("6 words, over 5", found.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_forbidden_phrase_fails_DSN_STYLE_001_whatever_its_case_and_a_longer_word_does_not_match()
+    {
+        var hit = StyleFailures("# T\n\n## Summary\nThe system SHALL do it.\n\n## Behaviour\nB.\n", Style(forbidden: ["shall"]));
+        var longer = StyleFailures("# T\n\n## Summary\nA shallow cut.\n\n## Behaviour\nB.\n", Style(forbidden: ["shall"]));
+
+        Assert.Contains("shall", Assert.Single(hit).Message, StringComparison.Ordinal);
+        Assert.Empty(longer);
+    }
+
+    [Fact]
+    public void A_spec_over_the_line_cap_fails_DSN_STYLE_001()
+    {
+        var found = Assert.Single(StyleFailures(Spec, Style(maxLines: 3)));
+
+        Assert.Contains("lines, over 3", found.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_heading_the_style_pack_does_not_know_fails_DSN_STYLE_001()
+    {
+        var found = Assert.Single(StyleFailures(Spec + "\n## Appendix\nExtra.\n", Style()));
+
+        Assert.Contains("Appendix", found.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_design_with_no_spec_text_fails_DSN_STYLE_001_against_a_style_pack()
+    {
+        var found = Assert.Single(StyleFailures(string.Empty, Style()));
+
+        Assert.False(found.Warn);
+    }
+
+    [Fact]
+    public void Without_a_style_pack_the_check_still_only_warns()
+    {
+        Assert.Equal(["DSN-STYLE-001"], Warned(Check()), StringComparer.Ordinal);
+        Assert.Empty(Failed(Check()));
     }
 }

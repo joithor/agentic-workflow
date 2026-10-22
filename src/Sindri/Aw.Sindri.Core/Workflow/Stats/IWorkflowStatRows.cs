@@ -5,6 +5,11 @@ namespace Aw.Sindri.Core.Workflow.Stats;
 /// <summary>The ledger's workflow rows as the plain <see cref="StatEvent"/>s the recipe stats count, oldest first (API spec §3.8).</summary>
 public interface IWorkflowStatRows
 {
+    /// <summary>The ledger's head: read before <see cref="Read"/>, it is a point the rows are no older than.</summary>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The head sequence.</returns>
+    public ValueTask<Result<long>> Head(CancellationToken cancellationToken);
+
     /// <summary>Every workflow row in the ledger, oldest first.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The rows.</returns>

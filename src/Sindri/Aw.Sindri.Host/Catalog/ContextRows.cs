@@ -1,5 +1,6 @@
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Features.CodeIndexJobs;
 using Aw.Sindri.Features.ContextCalls;
 
 namespace Aw.Sindri.Host.Catalog;
@@ -41,6 +42,10 @@ internal static class ContextRows
         new(ActionId.From("PublishContextMap"), typeof(PublishContextMapRequest), Variant: null, ActionClass.Job, ServiceGrants: [],
             NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
             Method: null, Route: null, ShellRows.Form("sindri services run context-map-refresh"), "ready"),
+        // BuildCodeIndex has no route and no verb of its own (code index spec 8): the code-index-main-move service starts it as itself, so the row names the verb that runs that service.
+        new(ActionId.From("BuildCodeIndex"), typeof(BuildCodeIndexRequest), Variant: null, ActionClass.Job, ServiceGrants: [],
+            NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
+            Method: null, Route: null, ShellRows.Form("sindri services run code-index-main-move"), "ready"),
         new(ActionId.From("ImportContextMap"), typeof(ImportContextMapRequest), Variant: null, ActionClass.Protected, ServiceGrants: [],
             NeedsTerminal: true, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
             "POST", "/sindri/context/map/import", ShellRows.Form("sindri context map import <file>"), "cli-only:typed-confirmation"),

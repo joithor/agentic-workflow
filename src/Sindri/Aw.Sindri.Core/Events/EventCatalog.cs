@@ -22,6 +22,7 @@ public static class EventCatalog
         new(EventTypes.ContextMapHeld, Public: false, PublicPayload: null, "context.map.held:<repo>:v<version>"),
         new(EventTypes.ContextMapPublished, Public: true, typeof(ContextMapPublishedPublic), "context.map.published:<repo>:v<version>") { Invalidates = [ApiViews.Jobs] },
         new(EventTypes.ContextMapHoldDropped, Public: false, PublicPayload: null, "context.map.hold.dropped:<repo>:v<version>:<ulid>"),
+        new(EventTypes.CodeIndexBuilt, Public: false, PublicPayload: null, "codeindex.built:<repo>:<commit>:<ulid>") { Invalidates = [ApiViews.CodeIndex, ApiViews.Jobs] },
         new(EventTypes.ScopingApproved, Public: true, typeof(ScopingApproved), "scoping.approved:<packetHash>"),
         new(EventTypes.ScopingEscape, Public: true, typeof(ScopingEscape), "scoping.escape:<packetHash>:<station>:<reference>"),
         new(EventTypes.ContextMapProposed, Public: true, typeof(ContextMapProposed), "context.map.proposed:<run>:<rows hash16>"),

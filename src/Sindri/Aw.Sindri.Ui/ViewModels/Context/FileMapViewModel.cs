@@ -16,6 +16,15 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
     /// <summary>What the stage reads through.</summary>
     internal ContextPorts Ports { get; } = ports;
 
+    /// <summary>The symbols column of the folder shown (S-9); null before a read.</summary>
+    internal SymbolsColumnViewModel? Symbols { get; private set; }
+
+    /// <summary>The symbols column's heading.</summary>
+    public string ColSymbols { get; } = Labels.ContextSymbolsColumn;
+
+    /// <summary>The heading with where the names came from ("symbols · from 7c3e1a2", "· stale"): provenance in words, since a dimmed cell says it by colour alone. When the index cannot answer, each cell says why instead.</summary>
+    public string SymbolsHeading => Symbols is { Unavailable: false } column ? Labels.Dots(ColSymbols, column.Caption) : ColSymbols;
+
     /// <summary>The first column's heading.</summary>
     public string ColFile { get; } = Labels.ContextFilesColFile;
 
@@ -165,7 +174,8 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
     {
         _current = view.Path;
         Problem = string.Empty;
-        Rows = [.. view.Entries.Select(e => new FileRowViewModel(e))];
+        Symbols = new SymbolsColumnViewModel(view.Symbols);
+        Rows = [.. view.Entries.Select(e => new FileRowViewModel(e, Symbols))];
         PathText = view.Path.Length == 0 ? Labels.ContextFilesRoot : view.Path;
         CanGoUp = view.Path.Length > 0;
         TotalsText = Labels.ContextFilesTotals(view.Totals.Files, view.Totals.Mapped, view.Totals.Suggested, view.Totals.Unmapped);
@@ -186,5 +196,6 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
         OnChanged(nameof(IsEmptyFolder));
         OnChanged(nameof(HasNote));
         OnChanged(nameof(HasProblem));
+        OnChanged(nameof(SymbolsHeading));
     }
 }

@@ -20,12 +20,12 @@ public static class FixtureRecipes
 
     private static ShapeOutput Out(string key, string label, FactType type, string from) => new(key, label, type, from);
 
-    /// <summary>workflow.step v1 (recipes/sindri/workflow.step.yaml): produce, checks, verify, done; the revisions loop returns to produce.</summary>
-    public static RecipeShape Step { get; } = new("workflow.step", 3, "d39861bd12222fcc4b74432567eabfd7b58660c4b8d714be71528b6a1353ba2a", RecipeUrgency.Work,
-        [S("produce", 1, desk: true, timeout: T(4 * Hour, TimeoutAction.Park), tokens: 200_000, block: "step.produce"), S("checks", 2, desk: true, timeout: T(30, TimeoutAction.Retry), block: "step.checks"),
+    /// <summary>workflow.step v4 (recipes/sindri/workflow.step.yaml): produce, checks, verify, done; the revisions loop returns to produce.</summary>
+    public static RecipeShape Step { get; } = new("workflow.step", 4, "f039848fd714d2a46a4d3d216083bff1815821cd3e3b4f1bc6402bbb44bd54fa", RecipeUrgency.Work,
+        [S("produce", 1, desk: true, timeout: T(4 * Hour, TimeoutAction.Park), tokens: 1_000_000, block: "step.produce"), S("checks", 2, desk: true, timeout: T(30, TimeoutAction.Retry), block: "step.checks"),
             S("verify", 3, desk: true, timeout: T(Hour, TimeoutAction.Park), block: "step.verify"), S("done", 4, terminal: true)],
         [new ShapeLoop("revisions", "checks", "produce", 3), new ShapeLoop("revisions", "verify", "produce", 3)],
-        [In("fact:spec", "Spec", FactType.Text, "text")], [], BudgetTokens: 400_000);
+        [In("fact:spec", "Spec", FactType.Text, "text")], []);
 
     /// <summary>workflow.dev-desk-round-trip v1: export (desk), import, done; the rounds loop returns from import to export.</summary>
     public static RecipeShape DevDesk { get; } = new("workflow.dev-desk-round-trip", 3, "22e3d173c3030036026aa70ae192f0bbe64b5135960ec38d7f05976443595357", RecipeUrgency.Work,
@@ -57,9 +57,9 @@ public static class FixtureRecipes
 
     /// <summary>workflow.triage-alert (fixture-only): the classify state is a desk.</summary>
     public static RecipeShape Triage { get; } = new("workflow.triage-alert", 2, "d41f2a07", RecipeUrgency.Triage,
-        [S("ingest", 1, timeout: T(15, TimeoutAction.Park), agent: true), S("classify", 2, desk: true, timeout: T(Day, TimeoutAction.Park), tokens: 200_000), S("route", 3, timeout: T(Hour, TimeoutAction.Park), agent: true), S("done", 4, terminal: true)], [],
+        [S("ingest", 1, timeout: T(15, TimeoutAction.Park), agent: true), S("classify", 2, desk: true, timeout: T(Day, TimeoutAction.Park), tokens: 1_000_000), S("route", 3, timeout: T(Hour, TimeoutAction.Park), agent: true), S("done", 4, terminal: true)], [],
         [In("fact:alert", "Alert", FactType.Payload, "webhook")],
-        [Out("fact:severity", "Severity", FactType.Text, "classify"), Out("fact:route", "Route", FactType.Decision, "route"), Out("fact:item", "Item", FactType.Item, "route")], BudgetTokens: 400_000);
+        [Out("fact:severity", "Severity", FactType.Text, "classify"), Out("fact:route", "Route", FactType.Decision, "route"), Out("fact:item", "Item", FactType.Item, "route")]);
 
     /// <summary>workflow.project (fixture-only): the scoping challenge loop, a design desk and a build state that waits on its children.</summary>
     public static RecipeShape Project { get; } = new("workflow.project", 12, "a8c21e7f", RecipeUrgency.Work,

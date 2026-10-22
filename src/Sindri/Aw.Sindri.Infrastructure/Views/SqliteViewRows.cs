@@ -128,6 +128,9 @@ internal sealed class SqliteViewRows(ISqliteSession session, long sequence, Json
     public ValueTask<Result<Unit>> Delete(string view, string key, CancellationToken cancellationToken) =>
         Write(view, t => new SqlStatement(t.Delete, c => c.Bind("$key", key)), cancellationToken);
 
+    public ValueTask<Result<Unit>> Clear(string view, CancellationToken cancellationToken) =>
+        Write(view, t => new SqlStatement(t.Clear), cancellationToken);
+
     private async ValueTask<Result<Unit>> Write(string view, Func<ViewTable, SqlStatement> statement, CancellationToken cancellationToken)
     {
         if (ViewSql.Table(view) is not { } table)

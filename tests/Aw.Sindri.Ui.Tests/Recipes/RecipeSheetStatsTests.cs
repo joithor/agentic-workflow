@@ -1,5 +1,5 @@
-using Aw.Kernel.Testing;
 using System.Net;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels.Recipes;
 

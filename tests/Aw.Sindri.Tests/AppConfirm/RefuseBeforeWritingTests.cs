@@ -57,7 +57,7 @@ public sealed class RefuseBeforeWritingTests
         await using var scope = registry.Services.CreateAsyncScope();
 
         var approved = await scope.ServiceProvider.GetRequiredService<ApproveRecipeService>()
-            .Handle(new ApproveRecipeRequest(step.Id, step.Hash, new ChallengeAnswer(_missing, "approve workflow.step 3")), Token);
+            .Handle(new ApproveRecipeRequest(step.Id, step.Hash, new ChallengeAnswer(_missing, "approve workflow.step 4")), Token);
 
         Assert.Equal("SND-RECIPE-009", approved.Error.Code);
         Assert.Equal(1, refusing.Redeemed);

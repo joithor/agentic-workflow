@@ -300,12 +300,48 @@ public sealed class ScopingCheckTests
     [Fact, Trait("Lane", "unit")]
     public async Task A_not_run_rule_is_never_a_pass_at_the_evidence_stage()
     {
-        var facts = ScopingFacts.Expiry().Without("runs");
+        var facts = ScopingFacts.Expiry().Without("answers");
 
         var response = await Run(facts, ScopeStage.Evidence);
 
         Assert.Equal(ScopeOutcome.Incomplete, response.Outcome);
-        Assert.Equal(ScopeRuleStatus.NotRun, response.Rules.Single(r => r.Rule == "SCP-CHAL-002").Status);
+        Assert.Equal(ScopeRuleStatus.NotRun, response.Rules.Single(r => r.Rule == "SCP-ANS-001").Status);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Missing_run_records_warn_and_never_hold_the_evidence_back()
+    {
+        var response = await Run(ScopingFacts.Expiry().Without("runs"), ScopeStage.Evidence);
+
+        Assert.Equal(ScopeOutcome.Complete, response.Outcome);
+        Assert.Equal(ScopeRuleStatus.Warn, response.Rules.Single(r => r.Rule == "SCP-CHAL-002").Status);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_found_last_round_after_the_second_opinion_is_spent_warns_and_before_it_fails()
+    {
+        var spent = await Run(ScopingFacts.Expiry().Edit("challenge", n => { var rounds = n["rounds"]!.AsArray(); rounds.Add(rounds[1]!.DeepClone()); rounds[2]!["verdict"] = "found"; }), ScopeStage.Evidence);
+        var notYet = await Run(ScopingFacts.Expiry().Edit("challenge", n => n["rounds"]![1]!["verdict"] = "found"), ScopeStage.Evidence);
+        var first = await Run(ScopingFacts.Expiry().Edit("challenge", n => { var rounds = n["rounds"]!.AsArray(); rounds.RemoveAt(0); rounds[0]!["verdict"] = "found"; }), ScopeStage.Evidence);
+
+        Assert.Equal(ScopeOutcome.Complete, spent.Outcome);
+        Assert.Equal(ScopeRuleStatus.Warn, spent.Rules.Single(r => r.Rule == "SCP-CHAL-001").Status);
+        Assert.Equal(ScopeOutcome.Incomplete, first.Outcome);
+        Assert.Equal(ScopeOutcome.Incomplete, notYet.Outcome);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_dimension_any_round_walked_counts_as_walked()
+    {
+        var facts = ScopingFacts.Expiry().Edit("challenge", n =>
+        {
+            var last = n["rounds"]![1]!.AsObject();
+            last["walked"] = new JsonArray();
+        });
+
+        var response = await Run(facts, ScopeStage.Evidence);
+
+        Assert.DoesNotContain(response.Findings, f => f.Rule == "SCP-CHAL-001");
     }
 
     [Fact, Trait("Lane", "unit")]

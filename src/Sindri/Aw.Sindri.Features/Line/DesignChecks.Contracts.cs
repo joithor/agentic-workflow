@@ -4,7 +4,7 @@ namespace Aw.Sindri.Features.Line;
 
 internal static partial class DesignChecks
 {
-    // DSN-XSPEC-003, and the warnings for XSPEC-001/-002 and STYLE-001, which need the repo at the base sha and the style pack.
+    // DSN-XSPEC-003, and the warnings for XSPEC-001/-002 (they need the repo at the base sha) and for STYLE-001 when no style pack was passed.
     private static IEnumerable<LineFinding> Contracts(DesignContext c)
     {
         var edits = LineJson.Items(c.Design, "contracts").ToList();
@@ -32,7 +32,14 @@ internal static partial class DesignChecks
 
     private static IEnumerable<LineFinding> StyleNotes(DesignContext c)
     {
-        if (c.Sections.Count > 0)
+        if (c.Style is { } style)
+        {
+            foreach (var finding in StyleFindings(c, style))
+            {
+                yield return finding;
+            }
+        }
+        else if (c.Sections.Count > 0)
         {
             yield return DesignContext.Warning("DSN-STYLE-001", item: null, "spec.md was not checked against the style pack's section rules on this runtime", "Check it with sindri design check at the desk.");
         }

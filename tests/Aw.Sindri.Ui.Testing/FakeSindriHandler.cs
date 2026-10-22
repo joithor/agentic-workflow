@@ -186,6 +186,10 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
     {
         switch (uri.AbsolutePath["/sindri/context/".Length..])
         {
+            case "code":
+                var code = new CodeQuery([.. query.GetValues("anchor") ?? []], Draft: query["draft"] == "true", MapVersion: query["mapVersion"]);
+                _ = await server.Code(uri, code, cancellationToken);
+                return Answer(server.CodeFor(code));
             case "map":
                 _ = await server.MapStatus(uri, query["anchor"], cancellationToken);
                 return Answer(server.MapStatusAnswer);
@@ -311,6 +315,7 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
         {
             [var id] => Answer(Counted(await server.Item(uri, id, sequence, cancellationToken), server.ItemAnswer(id))),
             [var id, "timeline"] => Answer(Counted(await server.Timeline(uri, id, After(uri), sequence, cancellationToken), server.TimelineAnswer(id, After(uri)))),
+            [var id, "scope"] => Answer(Counted(await server.ItemScope(uri, id, cancellationToken), server.ItemScopeAnswer(id))),
             [var id, "close"] when request.Method == HttpMethod.Post =>
                 Answer(Counted(await server.CloseItem(uri, id, await Body<CloseItemRequest>(request, cancellationToken), cancellationToken), server.Close)),
             _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),

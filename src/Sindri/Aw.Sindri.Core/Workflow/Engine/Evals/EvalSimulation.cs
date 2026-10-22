@@ -42,7 +42,7 @@ internal sealed record EvalSimulation(
     {
         ArgumentNullException.ThrowIfNull(evalCase);
         var id = WorkflowInstanceId.For(Guid(evalCase.Name + ":" + recipe.Id.Value));
-        var pins = recipe.States.Values.Select(static s => s.WaitFor?.Child?.Recipe).OfType<RecipeId>().Distinct()
+        var pins = RecipeChildren.Of(recipe)
             .Select(c => (Id: c, Child: children.Resolve(c))).Where(static c => c.Child is not null)
             .ToDictionary(static c => c.Id, static c => c.Child!.Hash); // why: the Where keeps resolved children only
         var request = new StartRequest(
@@ -168,9 +168,9 @@ internal sealed record EvalSimulation(
         var report = Hex($"report:{Text(number)}:{line.Kind}:{line.Outcome?.Value}");
         return line.Kind switch
         {
-            TriggerNames.StepCompleted when line.Outcome is { } outcome => Run(run => new StepCompleted(Person, run, outcome, outputs, Tokens: 0, StepRuntime.Agent, report)),
+            TriggerNames.StepCompleted when line.Outcome is { } outcome => Run(run => new StepCompleted(Person, run, outcome, outputs, line.Tokens ?? 0, StepRuntime.Agent, report)),
             TriggerNames.StepCompleted => Missing("step.completed needs the Step's 'outcome'"),
-            TriggerNames.StepFailed => Run(run => new StepFailed(Person, run, line.Reason ?? DefaultFailure, Tokens: 0, report)),
+            TriggerNames.StepFailed => Run(run => new StepFailed(Person, run, line.Reason ?? DefaultFailure, line.Tokens ?? 0, report)),
             TriggerNames.WaitSatisfied => Satisfied(line, outputs, number),
             TriggerNames.ChildParked => Child(ChildChange.Parked, line.Park, number),
             TriggerNames.ChildResumed => Child(ChildChange.Resumed, reason: null, number),

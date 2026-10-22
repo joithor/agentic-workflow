@@ -146,7 +146,7 @@ public sealed class SetupFactsTests
     [Fact, Trait("Lane", "unit")]
     public async Task Mcp_item_lists_each_installed_provider_as_connected_or_not_started()
     {
-        var host = new Testing.FakeProviderHost();
+        var host = new FakeProviderHost();
         await using var rig = new SetupFactsRig(host);
         await rig.Approve(SetupFactsRig.ProfileWithRepos());
         rig.ClaudeHas((SetupFactsRig.Checkout, "demo"));

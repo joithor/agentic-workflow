@@ -205,7 +205,16 @@ publish_sindri() {
   [ -x "$jout/judge" ] || die "the publish left no judge in $jout"
   cp "$jout/judge" "$out/judge"
   for f in "$jout"/libe_sqlite3.*; do if [ -f "$f" ]; then cp "$f" "$out/"; fi; done
-  say "published sindri and judge at $commit"
+  # aw-packets beside it (NativeAOT): step.scope.evidence runs `aw-packets hash` through AW_PACKETS_BIN, and nothing else puts it on the PATH.
+  local pout="$SCRATCH/packets-bin"
+  say "publishing aw-packets (NativeAOT, $rid) into $out"
+  # shellcheck disable=SC2086 # $pre is the heavy launcher and its flag
+  (cd "$tree" && $pre dotnet publish src/Packets/Aw.Packets.App/Aw.Packets.App.csproj -c Release -r "$rid" \
+    -p:RestoreLockedMode=false -o "$pout") </dev/null >>"$log" 2>&1 || { tail -20 "$log" >&2; die "publishing aw-packets failed"; }
+  [ -x "$pout/aw-packets" ] || die "the publish left no aw-packets in $pout"
+  cp "$pout/aw-packets" "$out/aw-packets"
+  for f in "$pout"/libe_sqlite3.*; do if [ -f "$f" ] && [ ! -e "$out/$(basename "$f")" ]; then cp "$f" "$out/"; fi; done
+  say "published sindri, judge and aw-packets at $commit"
   SINDRI_CMD="$out/sindri"
 }
 
@@ -226,8 +235,8 @@ write_profile() {
       echo "  sessions: { enabled: true }"
     fi
     echo "workflow:"
-    # the effect ids the code registers (grep '\"effect\\.' src/Sindri); effect.line.start-phase, which the docs name, is not registered
-    echo "  effects: [effect.line.report, effect.claim.ref, effect.pr.open, effect.notify.desk, effect.pr.push, effect.pr.reply, effect.pr.record, effect.pr.rerun-checks, effect.pr.restack, effect.pr.create-stacked, effect.pr.merge, effect.pr.merge-docs]"
+    # the effect ids the code registers (grep '\"effect\\.' src/Sindri)
+    echo "  effects: [effect.line.report, effect.claim.ref, effect.pr.open, effect.notify.desk, effect.pr.push, effect.pr.reply, effect.pr.record, effect.pr.rerun-checks, effect.pr.restack, effect.pr.create-stacked, effect.pr.merge, effect.pr.merge-docs, effect.pr.purge-marks, effect.line.start-phase]"
     echo "  forge: { adapter: file, hosts: [forge.test] }"
     if [ -n "$AGENT" ]; then echo "  agent: { target: $AGENT }"; fi
   } > "$file"
@@ -418,6 +427,14 @@ main() {
     say "judge: none beside sindri and AW_SINDRI_JUDGE unset; step.judge.choose falls back to the judge on the PATH"
   fi
 
+  # step.scope.evidence runs `aw-packets hash`: point it at the aw-packets beside the binary, unless the caller named one.
+  if [ -z "${AW_PACKETS_BIN:-}" ] && [ -x "$(dirname "$SINDRI_CMD")/aw-packets" ]; then AW_PACKETS_BIN="$(dirname "$SINDRI_CMD")/aw-packets"; fi
+  if [ -n "${AW_PACKETS_BIN:-}" ]; then
+    export AW_PACKETS_BIN; say "aw-packets: $AW_PACKETS_BIN"
+  else
+    say "aw-packets: none beside sindri and AW_PACKETS_BIN unset; step.scope.evidence falls back to aw-packets on the PATH"
+  fi
+
   # 3. the target repo: a local clone on a new branch
   REPO="$SCRATCH/repo"
   git clone -q --local "$REPO_SRC" "$REPO" || die "clone failed"
@@ -453,7 +470,7 @@ main() {
   out="$(human item add "$title" --repo repo 2>&1)"
   ITEM="$(printf '%s\n' "$out" | grep -oE 'ITM-[0-9a-f]+' | head -1)"
   [ -n "$ITEM" ] || die "item add gave no id: $out"
-  printf '{"kind":"brief","path":"%s"}\n' "$FEATURE_REL" > "$SCRATCH/facts/scopeInput.json"
+  printf '{"kind":"brief","repo":"repo","path":"%s"}\n' "$FEATURE_REL" > "$SCRATCH/facts/scopeInput.json"   # repo: scope-input.json requires it (the profile names the clone "repo")
   local base; base="$(git -C "$REPO" rev-parse HEAD)"
   printf '{"line":"line","phase":"1","attempt":1,"base":"%s","runArea":{}}\n' "$base" > "$SCRATCH/facts/lineContext.json"
   local facts=(--fact "fact:scopeInput=$SCRATCH/facts/scopeInput.json")

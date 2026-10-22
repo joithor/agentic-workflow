@@ -92,7 +92,43 @@
         </Border>
       </Border>
 
-      <WrapPanel x:Name="SystemCards" Orientation="Horizontal">
+      <!-- Stopped answering: the last answer stays under an amber line. -->
+      <Border x:Name="StaleLineBox" Classes="panel headline warn" IsVisible="{Binding ShowStaleLine}">
+        <TextBlock x:Name="StaleLineText" Classes="body" Text="{Binding StaleLine}" TextWrapping="Wrap" AutomationProperties.Name="{Binding StaleLine}" />
+      </Border>
+
+      <!-- Not running, different versions, unreadable: one box in place of the cards. -->
+      <Border x:Name="StateBox" Classes="panel" IsVisible="{Binding HasStateBox}">
+        <Border Classes="section last">
+          <StackPanel Spacing="{StaticResource Space.SM}">
+            <TextBlock x:Name="StateBoxTitleText" Classes="detail-title" Text="{Binding StateBoxTitle}" TextWrapping="Wrap" AutomationProperties.Name="{Binding StateBoxTitle}" />
+            <ItemsControl x:Name="StateBoxLineList" ItemsSource="{Binding StateBoxLines}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:HealthCell">
+                  <Grid ColumnDefinitions="130,*" AutomationProperties.Name="{Binding Label}">
+                    <TextBlock Classes="caption subtle" Text="{Binding Label}" AutomationProperties.Name="{Binding Label}" />
+                    <TextBlock Grid.Column="1" Classes="mono" Text="{Binding Value}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Value}" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Border x:Name="StateBoxFixChip" Classes="command" HorizontalAlignment="Left" IsVisible="{Binding HasStateBoxFix}">
+              <TextBlock x:Name="StateBoxFixText" Classes="mono" Text="{Binding StateBoxFix}" AutomationProperties.Name="{Binding StateBoxFix}" />
+            </Border>
+          </StackPanel>
+        </Border>
+      </Border>
+
+      <!-- Connecting: skeleton rows in place of the cards (first load only). -->
+      <Border x:Name="ConnectingRows" Classes="panel" IsVisible="{Binding IsConnectingPage}" AutomationProperties.AccessibilityView="Raw">
+        <StackPanel Spacing="{StaticResource Space.SM}" Margin="14">
+          <Border Classes="skeleton" Width="420" />
+          <Border Classes="skeleton" Width="320" />
+          <Border Classes="skeleton" Width="380" />
+        </StackPanel>
+      </Border>
+
+      <WrapPanel x:Name="SystemCards" Orientation="Horizontal" IsVisible="{Binding ShowOverviewCards}">
         <!-- The control plane: its state is the pill's glyph and word (running, stale, not running). -->
         <Border Classes="panel" Width="440" Margin="0,0,12,12">
           <Border Classes="section last">

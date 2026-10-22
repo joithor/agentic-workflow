@@ -27,7 +27,7 @@ public sealed class ParkAnswersTests
     {
         var expected = StatusCases.View(layout).AnswerLine;
 
-        var answer = ParkAnswers.For(new ParkShape(kind, reason, parkKind, escalation), _address, grantTokens: "100k");
+        var answer = ParkAnswers.For(new ParkShape(kind, reason, parkKind, escalation), _address, grantTokens: "1M");
 
         Assert.Equal(expected, answer);
     }

@@ -34,7 +34,7 @@ public sealed class LegacyRecipeRowTests
 
     /// <summary>workflow.step as it was registered before P2b: the file with its inputs in the bare-key short form it had then.</summary>
     internal static string LegacyStep() => ShippedRecipes.Read("sindri/workflow.step.yaml")
-        .Replace("version: 3\n", "version: 1\n", StringComparison.Ordinal)
+        .Replace("version: 4\n", "version: 1\n", StringComparison.Ordinal)
         .Replace("displayName: \"Do one step, check it and review it\"\n", string.Empty, StringComparison.Ordinal)
         .Replace("inputs:\n  - { key: fact:spec, label: \"Spec\", type: text, kind: text }\n", "inputs: [fact:spec]\n", StringComparison.Ordinal);
 
@@ -124,7 +124,7 @@ public sealed class LegacyRecipeRowTests
     public void The_legacy_hash_of_workflow_step_is_the_one_it_was_registered_under()
     {
         Assert.Equal(
-            "sha256:12e030dc92a0f827d4da641c65f023d5e547e15e9c1b29a9a427a603e0f50d40",
+            "sha256:c5c69b64ac0f6a853673a10a108ee23e4f28aa6979eecfc5fb6855a3b9e57f19",
             RecipeDeclarationsTests.LegacyHash(LegacyStep()).Value);
     }
 

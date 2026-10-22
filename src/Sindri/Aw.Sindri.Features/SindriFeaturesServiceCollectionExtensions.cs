@@ -5,17 +5,12 @@ using Aw.Kernel.Services;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Doctor;
-using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Launches;
-using Aw.Sindri.Core.Lease;
-using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Scoping;
-using Aw.Sindri.Core.Text;
-using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.ApproveAll;
 using Aw.Sindri.Core.Workflow.Stats;
 using Aw.Sindri.Core.Workflow.Views;
@@ -139,20 +134,13 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IScheduledService, HeartbeatService>()
             .AddSetupWatch(static sp => sp.GetRequiredService<IJobRunner>().Running)
             .AddScoped<IScheduledService, JobProbeService>()   // opt-in: not a BuiltInService, so only a profile that names it schedules it
-            .AddSingleton(static sp => new JobStartRecorder(sp.GetRequiredService<HeldLease>(), sp.GetRequiredService<ILedgerStore>(), sp.GetRequiredService<EventFactory>()))
-            .AddSingleton(static sp => new JobEventWriter(sp.GetRequiredService<ILedgerStore>(), sp.GetRequiredService<HeldLease>(), sp.GetRequiredService<EventFactory>(),
-                sp.GetRequiredService<ITextScrubber>(), sp.GetRequiredService<ICallerContextAccessor>()))   // API P6 unit C: the job runtime, outside the command gate
-            .AddSingleton(static sp => new JobRunner(() => { var scope = sp.GetRequiredService<IServiceScopeFactory>().CreateAsyncScope(); return new JobScope(scope.ServiceProvider.GetRequiredService, scope); }, sp.GetRequiredService<IJobContextAccessor>(),
-                sp.GetRequiredService<ICallerContextAccessor>(), sp.GetRequiredService<JobEventWriter>(), sp.GetRequiredService<JobRegistry>(), sp.GetRequiredService<IShutdown>(), sp.GetRequiredService<JobWaits>()))
-            .AddSingleton<JobWaits>().AddSingleton<IJobSignals>(static sp => sp.GetRequiredService<JobWaits>())
-            .AddSingleton(static sp => new JobRecovery(sp.GetRequiredService<IJobViews>(), sp.GetRequiredService<ILedgerReader>(), sp.GetRequiredService<IProjectorStatus>(),
-                sp.GetRequiredService<HeldLease>(), sp.GetRequiredService<JobEventWriter>(), sp.GetRequiredService<JobRegistry>()))
-            .AddSingleton<IJobRunner>(static sp => sp.GetRequiredService<JobRunner>()).AddSingleton<IJobCancellation>(static sp => sp.GetRequiredService<JobRunner>())
+            .AddJobRuntime()
             .AddRecipeTools()
             .AddRecipeBlocks()
             .AddRegistrySlices()
             .AddContextSlices().AddCodeIndexReads()
             .AddContextJobs()
+            .AddCodeIndexJobs()
             .AddEngineSlices()
             .AddSessionSlices()
             .AddLaunchSlices()
@@ -289,7 +277,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddJob<ApproveAllRecipesRequest, ApproveAllResult, ApproveAllRecipesService>(static _ => ApproveAllRecipesAdmission.Key, static r => ApproveAllRecipesService.Summary(r));
         _ = services.AddScoped<IValidator<ListRecipesRequest>, AcceptAllValidator<ListRecipesRequest>>().AddQuery<ListRecipesRequest, ListRecipesResponse, ListRecipesService>();
         _ = services.AddScoped<IValidator<ShowRecipeRequest>, AcceptAllValidator<ShowRecipeRequest>>().AddQuery<ShowRecipeRequest, RecipeView, ShowRecipeService>();
-        _ = services.AddScoped<WorkflowStatRows>().AddScoped<IWorkflowStatRows>(static sp => sp.GetRequiredService<WorkflowStatRows>()).AddScoped<IValidator<GetRecipeStatsRequest>, AcceptAllValidator<GetRecipeStatsRequest>>().AddQuery<GetRecipeStatsRequest, RecipeStats, GetRecipeStatsService>();   // API P12
+        _ = services.AddScoped<WorkflowStatRows>().AddScoped<IWorkflowStatRows>(static sp => sp.GetRequiredService<WorkflowStatRows>()).AddScoped<RecipeStatsSource>().AddScoped<IValidator<GetRecipeStatsRequest>, AcceptAllValidator<GetRecipeStatsRequest>>().AddQuery<GetRecipeStatsRequest, RecipeStats, GetRecipeStatsService>();   // API P12
         _ = services.AddScoped<IValidator<ReadInjectionRequest>, AcceptAllValidator<ReadInjectionRequest>>().AddQuery<ReadInjectionRequest, InjectionView, ReadInjectionService>();
         _ = services.AddScoped<IValidator<GetInstanceFactRequest>, AcceptAllValidator<GetInstanceFactRequest>>().AddQuery<GetInstanceFactRequest, FactView, GetInstanceFactService>();
         _ = services.AddScoped<IValidator<GetInstanceScopingRequest>, AcceptAllValidator<GetInstanceScopingRequest>>().AddQuery<GetInstanceScopingRequest, ScopingView, GetInstanceScopingService>();

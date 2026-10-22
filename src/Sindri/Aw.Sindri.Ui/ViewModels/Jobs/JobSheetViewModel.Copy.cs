@@ -49,4 +49,49 @@ internal sealed partial class JobSheetViewModel
             CopyLabel = Labels.Copy;
         }
     }
+
+    /// <summary>The job id's copy chip: "Copy", or "Copied" for a moment.</summary>
+    public string CopyIdLabel
+    {
+        get;
+        private set
+        {
+            Set(ref field, value);
+            OnChanged(nameof(CopyIdName));
+        }
+    } = Labels.Copy;
+
+    /// <summary>The chip's accessible name: "Copy: Job id", then "Copied".</summary>
+    public string CopyIdName => string.Equals(CopyIdLabel, Labels.Copied, StringComparison.Ordinal) ? Labels.Copied : Labels.Copy + ": " + Labels.JobIdField;
+
+    /// <summary>Copies the job's id: "Copied" for <see cref="ControlViewModel.CopiedFor"/>.</summary>
+    /// <param name="cancellationToken">Cancels the write.</param>
+    /// <returns>A task that ends when the clipboard answered.</returns>
+    internal async Task CopyJobId(CancellationToken cancellationToken)
+    {
+        if (_catalog is not { } catalog || Id.Length == 0 || !await catalog.Clipboard.SetText(Id, cancellationToken).ConfigureAwait(true))
+        {
+            return;
+        }
+
+        CopyIdLabel = Labels.Copied;
+        _ = UncopyId(++_idCopies, cancellationToken);
+    }
+
+    private async Task UncopyId(int copy, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(ControlViewModel.CopiedFor, _clock, cancellationToken).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        if (copy == _idCopies)
+        {
+            CopyIdLabel = Labels.Copy;
+        }
+    }
 }

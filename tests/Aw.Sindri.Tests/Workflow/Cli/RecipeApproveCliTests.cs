@@ -42,7 +42,7 @@ public sealed class RecipeApproveCliTests : IDisposable
         var step = await Register(app, ct);
         var name = $"workflow.step@{step.Hash.Display}";
 
-        var approved = await Commands(app, human: true, "approve workflow.step 3").Approve(name, ct);
+        var approved = await Commands(app, human: true, "approve workflow.step 4").Approve(name, ct);
         var approveOut = _out.ToString();
         var revoked = await Commands(app, human: true, $"revoke {name}").Revoke(name, ct);
 
@@ -50,7 +50,7 @@ public sealed class RecipeApproveCliTests : IDisposable
         Assert.Contains("diff against the last approved version: nothing\n", approveOut, StringComparison.Ordinal);
         Assert.Contains("pinned blocks:\n  step.checks sha256:", approveOut, StringComparison.Ordinal);
         Assert.Contains("evals    3 declared: evals/workflow.step/happy.jsonl", approveOut, StringComparison.Ordinal);
-        Assert.Contains("Type 'approve workflow.step 3' to confirm", approveOut, StringComparison.Ordinal);
+        Assert.Contains("Type 'approve workflow.step 4' to confirm", approveOut, StringComparison.Ordinal);
         Assert.EndsWith($"approved {name}\n", approveOut, StringComparison.Ordinal);
         Assert.True(revoked == 0, _error.ToString());
         Assert.EndsWith($"revoked {name}; 0 instances parked\n", _out.ToString(), StringComparison.Ordinal);
@@ -63,10 +63,10 @@ public sealed class RecipeApproveCliTests : IDisposable
         await using var app = await Started(ct);
         var step = await Register(app, ct);
         var name = $"workflow.step@{step.Hash.Display}";
-        Assert.Equal(0, await Commands(app, human: true, "approve workflow.step 3").Approve(name, ct));
+        Assert.Equal(0, await Commands(app, human: true, "approve workflow.step 4").Approve(name, ct));
         _out.GetStringBuilder().Clear();
 
-        var again = await Commands(app, human: true, "approve workflow.step 3").Approve(name, ct);
+        var again = await Commands(app, human: true, "approve workflow.step 4").Approve(name, ct);
 
         Assert.True(again == 0, _error.ToString());
         Assert.EndsWith($"already approved {name}; woke 0 open instances\n", _out.ToString(), StringComparison.Ordinal);
@@ -80,7 +80,7 @@ public sealed class RecipeApproveCliTests : IDisposable
         var step = await Register(app, ct);
         var name = $"workflow.step@{step.Hash.Display}";
 
-        var session = await Commands(app, human: false, "approve workflow.step 3").Approve(name, ct);
+        var session = await Commands(app, human: false, "approve workflow.step 4").Approve(name, ct);
         var sessionError = _error.ToString();
         var mistyped = await Commands(app, human: true, "approve workflow.step").Approve(name, ct);
 
@@ -115,7 +115,7 @@ public sealed class RecipeApproveCliTests : IDisposable
         var file = Path.Combine(_home.Path, "workflow.step.yaml");
         await File.WriteAllTextAsync(file, ShippedRecipes.Read("sindri/workflow.step.yaml"), ct);
 
-        var code = await Commands(app, human: true, "approve workflow.step 3").Approve(file, ct);
+        var code = await Commands(app, human: true, "approve workflow.step 4").Approve(file, ct);
 
         Assert.Equal(2, code);
         Assert.StartsWith($"SND-RECIPE-008 {file} declares eval evals/workflow.step/happy.jsonl, which is missing", _error.ToString(), StringComparison.Ordinal);
@@ -130,7 +130,7 @@ public sealed class RecipeApproveCliTests : IDisposable
         var step = await Register(app, ct);
         var file = await EditedCopy(ct);
 
-        var code = await Commands(app, human: true, "approve workflow.step 3").Approve(file, ct);
+        var code = await Commands(app, human: true, "approve workflow.step 4").Approve(file, ct);
 
         AssertRefusedAsEdited(step, code);
         Assert.Null((await app.Services.GetRequiredService<IRecipeApprovals>().Latest(step.Id, 3, step.Hash, ct)).Value);
@@ -142,12 +142,12 @@ public sealed class RecipeApproveCliTests : IDisposable
         var ct = TestContext.Current.CancellationToken;
         await using var app = await Started(ct);
         var step = await Register(app, ct);
-        Assert.Equal(0, await Commands(app, human: true, "approve workflow.step 3").Approve($"workflow.step@{step.Hash.Display}", ct));
+        Assert.Equal(0, await Commands(app, human: true, "approve workflow.step 4").Approve($"workflow.step@{step.Hash.Display}", ct));
         _out.GetStringBuilder().Clear();
         _error.GetStringBuilder().Clear();
         var file = await EditedCopy(ct);
 
-        var code = await Commands(app, human: true, "approve workflow.step 3").Approve(file, ct);
+        var code = await Commands(app, human: true, "approve workflow.step 4").Approve(file, ct);
 
         AssertRefusedAsEdited(step, code);
     }
@@ -157,7 +157,7 @@ public sealed class RecipeApproveCliTests : IDisposable
         Assert.Equal(2, code);
         Assert.DoesNotContain("Type '", _out.ToString(), StringComparison.Ordinal);
         Assert.StartsWith("SND-RECIPE-007 ", _error.ToString(), StringComparison.Ordinal);
-        Assert.Contains($"RCP-VERSION-001: workflow.step version 3 is registered with hash {step.Hash.Display}", _error.ToString(), StringComparison.Ordinal);
+        Assert.Contains($"RCP-VERSION-001: workflow.step version 4 is registered with hash {step.Hash.Display}", _error.ToString(), StringComparison.Ordinal);
     }
 
     /// <summary>workflow.step's text with one 'next:' line edited and its version left at 2, with its eval files beside it.</summary>

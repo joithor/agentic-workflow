@@ -12,7 +12,7 @@ using Aw.Sindri.Core.Workflow.Ids;
 namespace Aw.Sindri.Features.Blocks.Effect;
 
 /// <summary>
-/// 'effect.line.report' (line spec BD7, LN-WF1, Q13): the phase tells its line that it has 'shipped' or 'merged'. A phase that belongs to a line
+/// 'effect.line.report' (line spec BD7, LN-WF1, Q13): the phase tells its line that it has 'shipped', 'merged' or 'failed'. A phase that belongs to a line
 /// (its 'line' fact names one) appends a row to 'line-report.jsonl' in the instance's run area, one per effect identity, and replies nothing; a phase
 /// outside a line records nothing. The delivery of 'line.phaseChanged' to the linked parent belongs to the line's dispatcher (LN-WF1), which reads
 /// this record; it is not this effect's.
@@ -24,6 +24,8 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 internal sealed class LineReportEffect(IRunArea area, IFactContents contents, IFactStore store, TimeProvider clock) : IEffectKind, IDescribedBlock
 {
     private const string Record = "line-report.jsonl";
+    private static readonly string[] _statuses = ["shipped", "merged", "failed"];
+    private static readonly EventKind _phaseChanged = EventKind.From("line.phaseChanged");
     private static readonly FactKey _phaseEventFact = FactKey.From("fact:phaseEvent");
 
     /// <inheritdoc/>
@@ -36,7 +38,7 @@ internal sealed class LineReportEffect(IRunArea area, IFactContents contents, IF
         cancellationToken.ThrowIfCancellationRequested();
         if (Status(context) is not { } status)
         {
-            return Failed(context, "status 'shipped' or 'merged'");
+            return Failed(context, "status 'shipped', 'merged' or 'failed'");
         }
 
         var line = await ReadLine(context, cancellationToken).ConfigureAwait(false);
@@ -58,7 +60,7 @@ internal sealed class LineReportEffect(IRunArea area, IFactContents contents, IF
         }
 
         var status = value.GetString();
-        return string.Equals(status, "shipped", StringComparison.Ordinal) || string.Equals(status, "merged", StringComparison.Ordinal) ? status : null;
+        return status is not null && _statuses.Contains(status, StringComparer.Ordinal) ? status : null;
     }
 
     private static string? Name(JsonElement line, string property) =>
@@ -129,7 +131,7 @@ internal sealed class LineReportEffect(IRunArea area, IFactContents contents, IF
         }
 
         var facts = new Dictionary<FactKey, ReplyFact> { [_phaseEventFact] = new ReplyFact(stored.Value.Ref, stored.Value.Sha256, HeadSha: null) };
-        return new EffectDone(OutcomeName.From(status), existed, facts);
+        return new EffectDone(OutcomeName.From(status), existed, facts, _phaseChanged);   // why: 'merged' is also an outcome of pr.mergeResult and pr.docsMerged
     }
 
     private sealed record PhaseEvent(string Line, string? Phase, string Instance, string At);

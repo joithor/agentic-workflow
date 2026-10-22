@@ -72,12 +72,12 @@ public sealed class ScopingCommandTests : IDisposable
     [Fact, Trait("Lane", "integration")]
     public async Task Check_defaults_to_the_draft_stage_and_runs_every_rule_at_evidence()
     {
-        await Put(ScopingFacts.Expiry().Without("runs"));
+        await Put(ScopingFacts.Expiry().Without("answers"));
 
         Assert.Equal(0, await Run("scoping", "check", "--facts", Facts));
         _out.GetStringBuilder().Clear();
         Assert.Equal(1, await Run("scoping", "check", "--facts", Facts, "--stage", "evidence"));
-        Assert.Contains("SCP-CHAL-002", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("SCP-ANS-001", _out.ToString(), StringComparison.Ordinal);
         Assert.Contains("not run", _out.ToString(), StringComparison.Ordinal);
     }
 

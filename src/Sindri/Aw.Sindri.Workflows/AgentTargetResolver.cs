@@ -54,7 +54,7 @@ internal sealed class AgentTargetResolver(IApprovedProfile approved, IFactConten
         var path = profile.Repos?.FirstOrDefault(r => string.Equals(r.Name, item.Repo, StringComparison.Ordinal))?.Path;
         return path is null || !ItemId.TryFrom(item.Id, out var id)
             ? SindriErrors.LaunchRepoMissing.With($"the item's repo '{item.Repo}' is not in the approved profile's repos (fix: add it and approve the profile)")
-            : new AgentStepTarget(id, agent, path);
+            : new AgentStepTarget(id, agent, path, RepoName.TryFrom(item.Repo, out var repo) ? repo : null);
     }
 
     private async ValueTask<Result<ItemFact>> ReadItem(FactValue? item, InstanceAddress address, CancellationToken cancellationToken)

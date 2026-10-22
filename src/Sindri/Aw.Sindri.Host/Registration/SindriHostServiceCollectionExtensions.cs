@@ -26,9 +26,8 @@ internal static class SindriHostServiceCollectionExtensions
         .AddSingleton<IEmbeddedRecipes>(static _ => new ManifestEmbeddedRecipes(typeof(ManifestEmbeddedRecipes).Assembly))   // the recipes this build ships; nothing at run time reads recipes/sindri from disk
         .AddSingleton<Projector>()
         .AddSingleton<ScheduleInputs>()
-        .AddSingleton<CodeIndex.Core.Facade.ICodeIndex, CodeIndexHost.UnbuiltCodeIndex>()   // no index store yet: every read answers 'no index' until CI-9 registers the real facade
         .AddScoped<CodeIndexHost.ICodeIndexScopeSource, CodeIndexHost.ProfileCodeIndexScopeSource>()
-        .AddScoped<Context.Core.Symbols.ICodeSymbolSource, CodeIndexHost.CodeIndexSymbolSource>()   // Context reads the index through the facade above (S-9); replaces the no-index default (TryAdd in AddContextFeatures)
+        .AddScoped<Context.Core.Symbols.ICodeSymbolSource, CodeIndexHost.CodeIndexSymbolSource>()   // Context reads the index through the CodeIndex facade (S-9); replaces the no-index default (TryAdd in AddContextFeatures)
         .AddSingleton<IOnyxProgress>(static sp => new JobOnyxProgress(new ConsoleOnyxProgress(Console.Error), sp.GetRequiredService<IJobContextAccessor>()));   // `onyx up`'s lines and dots on standard error, or the Onyx setup job's own lines
 
     /// <summary>

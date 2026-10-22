@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Sindri.Ui.ViewModels.Confirmations;
 
 namespace Aw.Sindri.Ui.ViewModels;
 
@@ -180,6 +181,7 @@ internal static partial class Labels
     {
         "ApproveProfile" => "Approve settings",
         "ApproveRecipe" => "Approve workflow",
+        AppConfirm.GrantTokens => "Grant tokens",
         _ => "Approve all workflows",
     };
 
@@ -190,6 +192,7 @@ internal static partial class Labels
     {
         "ApproveProfile" => "Approve settings",
         "ApproveRecipe" => "Approve workflow",
+        AppConfirm.GrantTokens => "Grant tokens",
         _ => "Approve all",
     };
 
@@ -200,6 +203,7 @@ internal static partial class Labels
     {
         "ApproveProfile" => "settings",
         "ApproveRecipe" => "workflow",
+        AppConfirm.GrantTokens => "token grant",
         _ => "workflows",
     };
 }

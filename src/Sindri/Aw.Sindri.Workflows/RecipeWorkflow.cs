@@ -104,8 +104,8 @@ internal sealed partial class RecipeWorkflow
         // P8: right after the DT-J marker, before any other command; a history that began before the agent runtime has no marker, so it replays with no agent map and stays on the desk exactly as recorded (kept until the cutover)
         var agentRuntime = Workflow.Patched("p8-agent-runtime");
         var keepsReport = Workflow.Patched("token-budget-keeps-report-v1");   // an accepted report over budget keeps its transition (the next Step start parks); a history without the marker parks on the report as it did
-        _heavy = Workflow.Patched("ln-wf3-heavy-slot");   // LN-WF3: the heavy allocator; last, after every marker main has; a history without it never takes or grants a slot
         var keepsRoundOnLaunchFailure = Workflow.Patched("launch-failure-keeps-round-v1");   // a launch that never started a session counts no loop round, and the third in a row parks; a history without the marker counts the round as it did.
+        var perRound = Workflow.Patched("token-budget-per-round-v1"); _heavy = Workflow.Patched("ln-wf3-heavy-slot");   // LN-WF3: the heavy allocator; last, after every marker main has; a history without it never takes or grants a slot
         var loaded = await Workflow.ExecuteLocalActivityAsync(
             (RunStepActivities a) => a.LoadRecipeAsync(start.Recipe),
             new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(30) }).ConfigureAwait(true);
@@ -115,7 +115,7 @@ internal sealed partial class RecipeWorkflow
         _deskTimeout = loaded.DeskTimeout;
         _eventHold = loaded.EventHold;
         _dispatchDelay = loaded.DispatchDelay;
-        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, Runtimes(loaded, blockRuntime, agentRuntime), pins.Resolver()) { DeskTimeout = loaded.DeskTimeout, LegacyBudgetPark = !keepsReport, LegacyLaunchRound = !keepsRoundOnLaunchFailure };
+        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, Runtimes(loaded, blockRuntime, agentRuntime), pins.Resolver()) { DeskTimeout = loaded.DeskTimeout, LegacyBudgetPark = !keepsReport, PooledBudget = !perRound, LegacyLaunchRound = !keepsRoundOnLaunchFailure };
         _context = new Interpreting(loaded.Recipe, decisions);
         (_repo, _repoUnreadable) = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : (null, false);
         (_subject, _contents) = await NamedSubject(_recipe, start).ConfigureAwait(true);
@@ -227,7 +227,7 @@ internal sealed partial class RecipeWorkflow
         {
             _since = Now;
         }
-
+        Visited(before, instance);
         var recipe = _context!.Recipe; // why: Begin sets the context before the first entry
         var kept = before is null
             ? First(instance, recipe)

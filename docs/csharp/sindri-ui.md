@@ -646,8 +646,8 @@ depends on nothing else about how `sindri` is built: it talks to the control pla
 **One command before the switch: `sindri-app`** (`scripts/sindri-app.sh`). It builds exactly that layout and runs it:
 when the source changed (a content hash of the files the host build reads, committed or not, with the pinned SDK and
 the platform), it publishes `sindri` framework-dependent and `sindri-ui` NativeAOT (through
-`Aw.Sindri.Ui.AotSmoke/run.sh <dir>`) and the C# `judge` NativeAOT (the publish of `src/Judge/aot-smoke/run.sh`) into `$AW_STATE_DIR/bin/sindri-app/<stamp>/`, keeping the build before it, then
-`exec`s that `sindri` with its arguments and `AW_SINDRI_JUDGE=<stamp dir>/judge` (unless the caller set it; `step.judge.choose` needs `judge choose`, which the TypeScript `judge` on the PATH lacks), so bare `sindri-app` starts the control plane and opens the app. It also
+`Aw.Sindri.Ui.AotSmoke/run.sh <dir>`) the C# `judge` NativeAOT (the publish of `src/Judge/aot-smoke/run.sh`) and `aw-packets` NativeAOT (`src/Packets/aot-smoke/run.sh`) into `$AW_STATE_DIR/bin/sindri-app/<stamp>/`, keeping the build before it, then
+`exec`s that `sindri` with its arguments and `AW_SINDRI_JUDGE=<stamp dir>/judge` (unless the caller set it; `step.judge.choose` needs `judge choose`, which the TypeScript `judge` on the PATH lacks) and `AW_PACKETS_BIN=<stamp dir>/aw-packets` (unless the caller set it; `step.scope.evidence` runs `aw-packets hash`), so bare `sindri-app` starts the control plane and opens the app. It also
 installs the pinned SDK into `~/.dotnet` and fetches the pinned `temporal` when either is missing, and links
 `~/.local/bin/sindri-app` to itself (from the canonical checkout; `AW_SINDRI_APP_NO_LINK=1` skips). It is a side name:
 `sindri` stays the TypeScript CLI until the switch. A control plane already running from an earlier build keeps
@@ -858,3 +858,7 @@ The contract (T0): `GET /sindri/sessions` and `GET /sindri/sessions/{provider}/{
 **Proof.** The owner's proof row (collector spec CO section 11, U11a): Focus on a lane brings its Warp tab forward or shows the copy line, run on the real box in U11a-f. The app proof runs on a private Xvfb with `scripts/sindri-ui-fixture.sh up` then `sessions up|ask|end|back|disable|enable|down` and AT-SPI dumps; the journeys are in the verification plan (J1 to J15).
 
 **Tests.** `Agents/Page` (view model, keys, poll: unit; `AgentsPageTests`: integration), `Agents/Sheet`, `Shell/AgentCountsTests`, `LaneAnchorTests`.
+
+## Grant tokens (budget parks)
+
+A budget-parked instance's frame shows a Grant tokens panel in the header, under the stage line (UI spec W7; engine spec §3.7, §4.2). It is `GrantTokensViewModel` on the shared `HoldButton` and `TypedConfirmBox`, for the one catalog action `ApplyCommand:answer-grant-tokens` (`AppConfirm.GrantTokens`, the fourth action `AppConfirm.Require` accepts). The amount field starts at the amount of the served `--grant-tokens` command (the whole round budget), and a challenge is asked for that amount and instance (`POST /sindri/workflow/challenges/app` with `grant-tokens <n> <address>`), so changing the amount drops it. A complete hold or the exact typed text sends `POST /sindri/workflow/instances/{id}/commands` (`kind: answer`, `answer: grant-tokens`, `amount`, `challenge`); the server's refusal (amount outside the 4x bound, a stale challenge, an agent session) shows in its own words, and the frame re-reads once the grant applied. While the catalog's row is `cli-only:typed-confirmation` (it is, until the server opens the answer to the app) the panel is the lock button with the served command, as for every protected answer, and the answer's `atTerminal` stays true until then.

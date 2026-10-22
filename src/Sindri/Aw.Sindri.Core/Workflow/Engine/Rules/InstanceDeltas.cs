@@ -41,7 +41,13 @@ internal static class InstanceDeltas
     private static bool SameSpend(TokenSpend before, TokenSpend after) =>
         ReferenceEquals(before, after)
         || (before.Total == after.Total && before.Granted == after.Granted && before.ByState.Count == after.ByState.Count
-            && before.ByState.All(entry => after.ByState.TryGetValue(entry.Key, out var spent) && spent == entry.Value));
+            && before.ByState.All(entry => after.ByState.TryGetValue(entry.Key, out var spent) && spent == entry.Value)
+            && SameRounds(before.Rounds, after.Rounds) && (before.Overruns ?? []).SequenceEqual(after.Overruns ?? []));
+
+    private static bool SameRounds(IReadOnlyDictionary<string, RoundSpend>? before, IReadOnlyDictionary<string, RoundSpend>? after) =>
+        before is null || after is null
+            ? before is null && after is null
+            : before.Count == after.Count && before.All(entry => after.TryGetValue(entry.Key, out var round) && round == entry.Value);
 
     private static Dictionary<FactKey, FactValue>? FactsDelta(IReadOnlyDictionary<FactKey, FactValue> before, IReadOnlyDictionary<FactKey, FactValue> after)
     {

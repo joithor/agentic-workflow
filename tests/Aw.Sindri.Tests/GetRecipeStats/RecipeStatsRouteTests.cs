@@ -1,9 +1,16 @@
 using System.Net;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Stats;
+using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.ApiGoldens;
 using Aw.Sindri.Tests.Callers;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 using static Aw.Sindri.Tests.Callers.CallerRequests;
 
 namespace Aw.Sindri.Tests.GetRecipeStats;
@@ -16,6 +23,7 @@ public sealed class RecipeStatsRouteTests : IAsyncLifetime
 {
     private const string Item = "/sindri/workflow/recipes/workflow.item/stats";
     private GoldenHost _host = null!;
+    private StatLedger _ledger = null!;
     private (string Name, string Value)[] _human = [];
     private string _itemHash = string.Empty;
 
@@ -26,7 +34,7 @@ public sealed class RecipeStatsRouteTests : IAsyncLifetime
         _human = Human(_host.Token.Value);
         _ = await Register("sindri/workflow.step.yaml");
         _itemHash = await Register("sindri/workflow.item.yaml");
-        var ledger = new StatLedger(_host, "workflow.item", _itemHash);
+        var ledger = _ledger = new StatLedger(_host, "workflow.item", _itemHash);
         await ledger.Start("T-1/item/1", 0);
         await ledger.Move("T-1/item/1", 0.5, "produce", "verify", tokens: 1_000);
         await ledger.End("T-1/item/1", 1, "verify", "done", "resolved");
@@ -121,6 +129,78 @@ public sealed class RecipeStatsRouteTests : IAsyncLifetime
         var served = await _host.Http.Ask(Get("/sindri/workflow/recipes?window=1y", _human));
 
         Assert.Equal((HttpStatusCode.BadRequest, "SND-API-013"), (served.Status, served.Code));
+    }
+
+    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    public async Task A_read_is_kept_and_the_next_gives_the_same_body_apart_from_asOf()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await ViewScenarios.CatchUp(_host, ct);
+
+        var first = await Body("?window=30d");
+        var kept = (await Cache().Get(RecipeId.From("workflow.item"), hash: null, StatsWindow.ThirtyDays, Clock.GetUtcNow(), ct)).Value;
+        Clock.Advance(TimeSpan.FromMinutes(5));
+        var second = await Body("?window=30d");
+
+        Assert.NotNull(kept);
+        Assert.True(JsonNode.DeepEquals(WithoutAsOf(first), WithoutAsOf(second)));
+        Assert.NotEqual((string?)first["asOf"], (string?)second["asOf"], StringComparer.Ordinal);
+    }
+
+    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    public async Task A_run_that_ends_empties_the_cache_and_the_next_read_counts_it()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await _ledger.Start("T-5/item/1", 19 * 24);   // the clock already stands at 19 days: time only moves forward
+        await ViewScenarios.CatchUp(_host, ct);
+        var before = await Body("?window=30d");
+        var open = (await Cache().Get(RecipeId.From("workflow.item"), hash: null, StatsWindow.ThirtyDays, Clock.GetUtcNow(), ct)).Value;
+
+        await _ledger.End("T-5/item/1", (19 * 24) + 1, "produce", "done", "resolved");
+        await ViewScenarios.CatchUp(_host, ct);
+        var emptied = (await Cache().Get(RecipeId.From("workflow.item"), hash: null, StatsWindow.ThirtyDays, Clock.GetUtcNow(), ct)).Value;
+        _ledger.At((19 * 24) + 2);
+        var after = await Body("?window=30d");
+
+        Assert.NotNull(open);
+        Assert.Null(emptied);
+        Expect.Equal((5, 2), ((int)before["runs"]!, (int)before["done"]!));
+        Expect.Equal((5, 3), ((int)after["runs"]!, (int)after["done"]!));
+    }
+
+    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    public async Task A_rebuild_empties_the_cache_and_the_next_read_gives_the_same_body_apart_from_asOf()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await ViewScenarios.CatchUp(_host, ct);
+        var first = await Body("?window=30d");
+
+        _ = (await _host.App.Services.GetRequiredService<IViewStore>().Reset(ViewNames.All, ViewSchema.Version, Clock.GetUtcNow(), ct)).Value;
+        var emptied = (await Cache().Get(RecipeId.From("workflow.item"), hash: null, StatsWindow.ThirtyDays, Clock.GetUtcNow(), ct)).Value;
+        await ViewScenarios.CatchUp(_host, ct);
+        var second = await Body("?window=30d");
+
+        Assert.Null(emptied);
+        Assert.True(JsonNode.DeepEquals(WithoutAsOf(first), WithoutAsOf(second)));
+    }
+
+    private FakeTimeProvider Clock => (FakeTimeProvider)_host.App.Services.GetRequiredService<TimeProvider>();   // why: the golden host runs on a FakeTimeProvider
+
+    private IRecipeStatsCache Cache() => _host.App.Services.GetRequiredService<IRecipeStatsCache>();
+
+    private static JsonObject WithoutAsOf(JsonObject body)
+    {
+        var copy = body.DeepClone().AsObject();
+        _ = copy.Remove("asOf");
+        return copy;
+    }
+
+    /// <summary>The stats body as a JSON object.</summary>
+    private async Task<JsonObject> Body(string query)
+    {
+        var served = await _host.Http.Ask(Get(Item + query, _human));
+        Assert.True(served.Status == HttpStatusCode.OK, served.Body);
+        return JsonNode.Parse(served.Body)!.AsObject();
     }
 
     private async Task<string> Register(string path)

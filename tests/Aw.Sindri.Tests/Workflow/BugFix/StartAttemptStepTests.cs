@@ -76,7 +76,7 @@ public sealed class StartAttemptStepTests
     [Fact]
     public async Task A_bug_fix_that_was_never_started_fails_the_Step()
     {
-        var result = await new StartAttemptStep(new Aw.Sindri.Testing.BugFix.InMemoryBugFixState(), new Aw.Sindri.Testing.Scoping.InMemoryRunArea()).Run(BugFixRig.Context("step.bugfix.start-attempt", ("decision", BugFixRig.Decision("single"))), Token);
+        var result = await new StartAttemptStep(new Testing.BugFix.InMemoryBugFixState(), new Testing.Scoping.InMemoryRunArea()).Run(BugFixRig.Context("step.bugfix.start-attempt", ("decision", BugFixRig.Decision("single"))), Token);
 
         Assert.Null(result.Result);
         Assert.Contains("AW-BUGFIX-002", result.Failure, StringComparison.Ordinal);

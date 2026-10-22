@@ -46,6 +46,7 @@ using Aw.Sindri.Features.ApproveRecipe;
 using Aw.Sindri.Features.CancelJob;
 using Aw.Sindri.Features.CheckPack;
 using Aw.Sindri.Features.CloseItem;
+using Aw.Sindri.Features.CodeIndexJobs;
 using Aw.Sindri.Features.CompleteStep;
 using Aw.Sindri.Features.ConnectOnyx;
 using Aw.Sindri.Features.ContextCalls;
@@ -195,9 +196,9 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(FactRef)), JsonSerializable(typeof(FactRow)), JsonSerializable(typeof(GateLine)), JsonSerializable(typeof(InputPresence))]
 [JsonSerializable(typeof(InstanceDetail)), JsonSerializable(typeof(InstanceList)), JsonSerializable(typeof(InstanceRecipe)), JsonSerializable(typeof(InstanceSummary))]
 [JsonSerializable(typeof(LoopPair)), JsonSerializable(typeof(Progress)), JsonSerializable(typeof(RecipeInputView)), JsonSerializable(typeof(RecipeLoopView))]
-[JsonSerializable(typeof(RecipeTransitionLabelView)), JsonSerializable(typeof(RecipeManifest)), JsonSerializable(typeof(ManifestEntry)), JsonSerializable(typeof(ManifestInvalid))]
+[JsonSerializable(typeof(RecipeTransitionLabelView)), JsonSerializable(typeof(RecipeTransitionView)), JsonSerializable(typeof(RecipeOutcomeText)), JsonSerializable(typeof(RecipeFactView)), JsonSerializable(typeof(RecipeManifest)), JsonSerializable(typeof(ManifestEntry)), JsonSerializable(typeof(ManifestInvalid))]
 [JsonSerializable(typeof(EvalShippedResponse)), JsonSerializable(typeof(ShippedRecipeEval))]
-[JsonSerializable(typeof(RecipeOutputView)), JsonSerializable(typeof(RecipeStateView)), JsonSerializable(typeof(RecipeView)), JsonSerializable(typeof(Round)), JsonSerializable(typeof(RecipeStats))]   // API P12: GET /workflow/recipes/{id}/stats
+[JsonSerializable(typeof(RecipeOutputView)), JsonSerializable(typeof(RecipeStateView)), JsonSerializable(typeof(RecipeView)), JsonSerializable(typeof(Round)), JsonSerializable(typeof(RecipeStats)), JsonSerializable(typeof(RecipeStatsRow))]   // API P12: GET /workflow/recipes/{id}/stats
 [JsonSerializable(typeof(StateCell)), JsonSerializable(typeof(StatusAnswer)), JsonSerializable(typeof(StatusBudget)), JsonSerializable(typeof(StatusChild))]
 [JsonSerializable(typeof(StatusCommand)), JsonSerializable(typeof(StatusDrift)), JsonSerializable(typeof(StatusFields)), JsonSerializable(typeof(StatusHeader))]
 [JsonSerializable(typeof(StatusInput)), JsonSerializable(typeof(StatusInjection)), JsonSerializable(typeof(StatusPaused)), JsonSerializable(typeof(StatusTimeout)), JsonSerializable(typeof(StepDeclaration))]
@@ -222,6 +223,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(SyncContextSourcesRequest)), JsonSerializable(typeof(SyncContextSourcesResult))]
 [JsonSerializable(typeof(BuildContextMapRequest)), JsonSerializable(typeof(BuildContextMapResult))]
 [JsonSerializable(typeof(RefreshContextMapRequest)), JsonSerializable(typeof(RefreshContextMapResult)), JsonSerializable(typeof(ContextMapRefreshed))]
+[JsonSerializable(typeof(BuildCodeIndexRequest)), JsonSerializable(typeof(BuildCodeIndexResult)), JsonSerializable(typeof(CodeIndexBuilt)), JsonSerializable(typeof(CodeIndexBuiltLayer))]
 [JsonSerializable(typeof(PublishContextMapRequest)), JsonSerializable(typeof(PublishContextMapResult)), JsonSerializable(typeof(ContextMapHeld)), JsonSerializable(typeof(ContextMapPublished)), JsonSerializable(typeof(ContextMapPublishedPublic)), JsonSerializable(typeof(ContextMapHoldDropped))]
 [JsonSerializable(typeof(Context.Core.Eval.MapQuality.MapQualityRun)), JsonSerializable(typeof(Context.Core.Eval.Backtest.BacktestRun)), JsonSerializable(typeof(Context.Core.Eval.Backtest.EvalPurgeReport))]
 [JsonSerializable(typeof(RunContextBacktestRequest)), JsonSerializable(typeof(RunContextBacktestResult)), JsonSerializable(typeof(BacktestArmLine))]

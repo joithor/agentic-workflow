@@ -165,9 +165,9 @@ internal static partial class Labels
 
     /// <summary>The budget line.</summary>
     /// <param name="budget">The served figures.</param>
-    /// <returns>"tokens 1.2M / 4M (state), 1.9M / 6M (instance)".</returns>
+    /// <returns>"tokens 1.2M / 4M (state), 1.9M / 6M (instance)"; with no instance cap (the per-round budgets have none), "tokens 1.2M / 1M (state), 1.9M used (instance)".</returns>
     internal static string BudgetLine(StatusBudget budget) =>
-        $"tokens {Figure(budget.Used, budget.Limit)} ({budget.Scope}), {Figure(budget.Instance.Used, budget.Instance.Limit)} (instance)";
+        $"tokens {Figure(budget.Used, budget.Limit)} ({budget.Scope}), {(budget.Instance.Limit is null ? Tokens(budget.Instance.Used) + " used" : Figure(budget.Instance.Used, budget.Instance.Limit))} (instance)";
 
     /// <summary>The timeout line.</summary>
     /// <param name="timeout">The served timeout.</param>

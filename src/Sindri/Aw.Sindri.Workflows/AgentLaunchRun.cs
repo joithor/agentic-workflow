@@ -7,4 +7,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="Run">The run: the instance, the run token, the Step and whether it may write.</param>
 /// <param name="Item">The instance's stored 'fact:item'; null when it has none.</param>
 /// <param name="Workspace">The instance's stored 'fact:workspace' for a Step that launches in it (the CI-red autofix); null for every other Step.</param>
-internal sealed record AgentLaunchRun(AgentStepRun Run, FactValue? Item, FactValue? Workspace = null);
+/// <param name="Bundle">The Step's 'bundle' parameter ('style' or 'lenses'), or null when it bundles no pack (LN-WF5).</param>
+/// <param name="Subject">The Step's 'subject' parameter, which says which lens loop's pack a 'lenses' bundle holds; null for none.</param>
+/// <param name="LensQueue">The instance's stored 'fact:lensQueue', whose head lens's prompt a 'lenses' bundle holds; null when it has none.</param>
+internal sealed record AgentLaunchRun(AgentStepRun Run, FactValue? Item, FactValue? Workspace = null, string? Bundle = null, string? Subject = null, FactValue? LensQueue = null);

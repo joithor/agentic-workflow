@@ -22,6 +22,10 @@
           <Button x:Name="InstanceRecipe" Content="{Binding RecipeLinkText}" IsVisible="{Binding HasRecipeLink}" Click="OnRecipe" AutomationProperties.Name="{Binding RecipeLinkName}" />
         </WrapPanel>
         <TextBlock x:Name="InstanceNote" Classes="body-strong" Text="{Binding Note}" IsVisible="{Binding HasNote}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Note}" />
+        <!-- The header's actions: Grant tokens, while the instance is parked on its budget. -->
+        <Panel IsVisible="{Binding Grant, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <iv:GrantTokensPanel x:Name="Grant" DataContext="{Binding Grant}" HorizontalAlignment="Left" />
+        </Panel>
         <!-- The ids: the address, the workflow id and hash, the version. Closed; Copy is the one action. -->
         <Expander x:Name="InstanceDetails" Header="{Binding DetailsHeading}" IsExpanded="False">
           <StackPanel Spacing="4">

@@ -1,13 +1,13 @@
 schema: 1
 id: workflow.step
-version: 3
+version: 4
 displayName: "Do one step, check it and review it"
 inputs:
   - { key: fact:spec, label: "Spec", type: text, kind: text }
 initial: produce
 states:
   produce: { kind: active, step: step.produce, loop: revisions, timeout: { after: 4h, then: park },
-             budget: { tokens: 200k }, next: "Produce the Step output for {item} (round {loop.revisions}/{loop.revisions.cap})." }
+             budget: { tokens: 1M }, next: "Produce the Step output for {item} (round {loop.revisions}/{loop.revisions.cap})." }
   checks:  { kind: active, step: step.checks, timeout: { after: 30m, then: retry },
              next: "Run the Step's deterministic checks." }
   verify:  { kind: active, step: step.verify, timeout: { after: 1h, then: park },
@@ -20,5 +20,4 @@ transitions:
   - { from: verify,  to: done,    on: step.completed, when: { outcome: accepted } }
   - { from: verify,  to: produce, on: step.completed, when: { outcome: rejected }, produces: [fact:findings] }
 loops: { revisions: { cap: 3 } }
-budget: { tokens: 400k }
 evals: [evals/workflow.step/happy.jsonl, evals/workflow.step/no-progress.jsonl, evals/workflow.step/rounds.jsonl]

@@ -4,17 +4,21 @@ using Aw.Sindri.Ui.ViewModels.Controls;
 namespace Aw.Sindri.Ui.ViewModels.Confirmations;
 
 /// <summary>
-/// The three protected actions the app may confirm itself (setup spec §2): the shared confirmation controls draw and answer for these and for
-/// no other, so a control can never be pointed at another protected action. Until the catalog row is ready the controls are the terminal copy.
+/// The protected actions the app may confirm itself (setup spec §2, and the token grant of the per-round budgets brief, 2026-10-21): the shared
+/// confirmation controls draw and answer for these and for no other, so a control can never be pointed at another protected action. Until the
+/// catalog row is ready the controls are the terminal copy.
 /// </summary>
 internal static class AppConfirm
 {
-    private static readonly string[] _actions = ["ApproveProfile", "ApproveRecipe", "ApproveAllRecipes"];
+    /// <summary>The catalog action of '--grant-tokens n': a budget park's answer. Its row says whether the app may confirm it yet.</summary>
+    internal const string GrantTokens = "ApplyCommand:answer-grant-tokens";
+
+    private static readonly string[] _actions = ["ApproveProfile", "ApproveRecipe", "ApproveAllRecipes", GrantTokens];
 
     /// <summary>The action ids the app confirms.</summary>
     internal static IReadOnlyList<string> Actions => _actions;
 
-    /// <summary>Checks that an action is one of the three.</summary>
+    /// <summary>Checks that an action is one the app confirms.</summary>
     /// <param name="action">The catalog action id.</param>
     /// <returns>The same id.</returns>
     /// <exception cref="ArgumentException">The id is not one the app confirms.</exception>

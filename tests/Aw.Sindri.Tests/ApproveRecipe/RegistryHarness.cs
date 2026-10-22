@@ -220,6 +220,7 @@ file static class EffectPortRegistrations
         .AddSingleton<IApprovedProfile>(h.Profiles)
         .AddSingleton<IWorkflowClaims>(new InMemoryWorkflowClaims())
         .AddSingleton<IClaimRefs>(new InMemoryClaimRefs())
+        .AddSingleton<IPhaseStarts>(new FakePhaseStarts())
         .AddSingleton<IInstanceLiveness>(new FakeInstanceLiveness())
         .AddSingleton<InMemoryFactStore>().AddSingleton<IFactContents>(sp => sp.GetRequiredService<InMemoryFactStore>()).AddSingleton<IFactStore>(sp => sp.GetRequiredService<InMemoryFactStore>())
         .AddSingleton<IDeskNotices>(new InMemoryDeskNotices())

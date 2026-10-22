@@ -7,4 +7,5 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// <param name="Item">The item the session works on.</param>
 /// <param name="Agent">The catalog entry to run.</param>
 /// <param name="RepoPath">The repo checkout the worktree is made under.</param>
-public sealed record AgentStepTarget(ItemId Item, AgentId Agent, string RepoPath);
+/// <param name="Repo">The repo's name in the profile, for the pack a Step bundles (LN-WF5); null when the item names none a typed name fits.</param>
+public sealed record AgentStepTarget(ItemId Item, AgentId Agent, string RepoPath, RepoName? Repo = null);

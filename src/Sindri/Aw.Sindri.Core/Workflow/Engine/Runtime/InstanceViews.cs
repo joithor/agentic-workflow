@@ -1,5 +1,7 @@
+using System.Globalization;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Views;
@@ -160,7 +162,7 @@ public static partial class InstanceViews
             Name = from.Recipe.Recipe.Name is null ? null : subject?.Label,
             Inputs = legacy ? [] : InputSlots.Of(from.Instance, from.Recipe),
             OrderedBy = StatePathOrder.Of(from.Recipe.Recipe).OrderedBy == "transition-list" ? PathOrdering.TransitionList : PathOrdering.Path,
-            States = StateCells.Of(from.Instance, from.Recipe, badge),
+            States = StateCells.Of(from.Instance, from.Recipe, badge, context.StateVisits),
             Facts = facts,
             Steps = CurrentStates.Steps(from.Recipe, facts),
             ChildGroups = [],
@@ -258,7 +260,13 @@ public static partial class InstanceViews
             return null;
         }
 
-        var spentHere = instance.Spent.ByState.TryGetValue(instance.Frame.State, out var spent) ? spent : 0;
-        return new BudgetView(spentHere, stateCap, instance.Spent.Total, instanceCap);
+        var perRound = instance.Spent.IsPerRound;
+        var spentHere = perRound ? BudgetRules.StateUsed(instance, recipe.Recipe, instance.Frame.State) : instance.Spent.ByState.GetValueOrDefault(instance.Frame.State);
+        var overrun = instance.Spent.Overruns is { Count: > 0 } overruns ? overruns[^1] : null;
+        return new BudgetView(spentHere, stateCap, instance.Spent.Total, instanceCap)
+        {
+            PerRound = perRound,
+            Overrun = overrun is null ? null : $"{overrun.State} round {overrun.Round.ToString(CultureInfo.InvariantCulture)} used {StatusText.Tokens(overrun.Used)} of {StatusText.Tokens(overrun.Allowed)}",
+        };
     }
 }

@@ -27,7 +27,7 @@ public sealed class SetupDoctorTests
     public async Task A_skipped_onyx_still_counts_as_finished()
     {
         var facts = InMemorySetupFacts.AllDone();
-        facts.OnyxAnswer = new Core.Setup.OnyxFact(Core.Onyx.OnyxState.NotSetUp, Unreachable: false, BlockedByCode: null) { Deferred = true };
+        facts.OnyxAnswer = new OnyxFact(Core.Onyx.OnyxState.NotSetUp, Unreachable: false, BlockedByCode: null) { Deferred = true };
 
         Assert.Equal(CheckState.Ok, (await Run(facts)).State);
     }
@@ -46,7 +46,7 @@ public sealed class SetupDoctorTests
     public async Task A_step_that_cannot_be_read_is_a_warning_not_a_throw()
     {
         var facts = InMemorySetupFacts.AllDone();
-        facts.OnyxAnswer = Aw.Sindri.Core.SindriErrors.ApiInternal.With("boom");
+        facts.OnyxAnswer = Core.SindriErrors.ApiInternal.With("boom");
 
         var check = await Run(facts);
 

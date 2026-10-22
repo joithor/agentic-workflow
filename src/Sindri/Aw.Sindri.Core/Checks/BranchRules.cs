@@ -26,7 +26,7 @@ public static class BranchRules
         ArgumentNullException.ThrowIfNull(scope);
         ArgumentNullException.ThrowIfNull(changes);
         return [.. changes.Files
-            .Where(f => !ScopeGlobs.Allows(scope.AllowedFiles, f.Path) && !(f.Kind == ChangeKind.Added && TestPaths.IsTest(f.Path)))
+            .Where(f => !ScopeGlobs.Allows(scope.AllowedFiles, f.Path) && !(f.Kind == ChangeKind.Added && TestPaths.IsTest(f.Path) && !ScopeGlobs.IsPackPath(f.Path)))
             .Select(static f => new RuleFinding(Scope, $"{f.Path} is outside the phase's allowedFiles (the owner can allow it at the scope desk, or it can be reverted)", f.Path))];
     }
 

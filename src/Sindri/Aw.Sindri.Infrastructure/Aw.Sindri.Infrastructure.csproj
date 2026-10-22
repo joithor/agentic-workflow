@@ -25,11 +25,15 @@
     <!-- the built-in lens packs (line spec §5.2, LN-PK lite): config/packs/lenses/<id>/..., embedded as lens-packs/<id>/<path> -->
     <LensPackFile Include="../../../config/packs/lenses/**/*" />
     <EmbeddedResource Include="@(LensPackFile)" LogicalName="lens-packs/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)" />
+    <!-- the built-in style packs (line spec §5.1): config/packs/style/<id>/..., embedded as style-packs/<id>/<path> -->
+    <StylePackFile Include="../../../config/packs/style/**/*" />
+    <EmbeddedResource Include="@(StylePackFile)" LogicalName="style-packs/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(Filename)%(Extension)" />
   </ItemGroup>
 
   <!-- An empty glob embeds nothing and every pack lookup fails at run time (a publish copy tree without config/packs did): make it a build error. -->
   <Target Name="RequireLensPacks" BeforeTargets="BeforeBuild">
     <Error Condition="'@(LensPackFile)' == ''" Text="No lens pack to embed: ../../../config/packs/lenses/** matched nothing. A publish copy tree must carry config/packs (scripts/lib/sindri-build-inputs.sh)." />
+    <Error Condition="'@(StylePackFile)' == ''" Text="No style pack to embed: ../../../config/packs/style/** matched nothing. A publish copy tree must carry config/packs (scripts/lib/sindri-build-inputs.sh)." />
   </Target>
 
   <ItemGroup>

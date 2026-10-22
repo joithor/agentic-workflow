@@ -159,7 +159,7 @@ public sealed class ProveBeforeAfterStepTests
         Assert.NotNull(result.Result);
         var again = await rig.Worktrees.Remove(BaseTree, Token);   // already gone: removing it again succeeds, and nothing is left to clean
         Assert.False(again.IsError);
-        var recreated = await rig.Worktrees.Create(new Aw.Sindri.Core.Worktrees.WorktreeRequest("/checkouts/name", Base, "sindri/before-after/line-p1", BaseTree), Token);
+        var recreated = await rig.Worktrees.Create(new Core.Worktrees.WorktreeRequest("/checkouts/name", Base, "sindri/before-after/line-p1", BaseTree), Token);
         Assert.False(recreated.IsError);
     }
 

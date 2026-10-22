@@ -1,0 +1,34 @@
+using Aw.CodeIndex.Core.Ports;
+using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Features.CodeIndexJobs;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Aw.Sindri.Features;
+
+/// <summary>Registers the code index's job and service on Sindri's runtime (code index spec §6, §8, CI-9): 'BuildCodeIndex', the 'code-index-main-move' service, the heavy-slot adapter and the map gate's outlooks.</summary>
+internal static class CodeIndexJobServiceCollectionExtensions
+{
+    /// <summary>Adds the job (keyed 'index:&lt;repo&gt;'), the service and the adapters of the code index's ports; the host registers the facade itself.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    internal static IServiceCollection AddCodeIndexJobs(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        return services
+            .AddSingleton<IHeavyJobLock, SindriCodeIndexHeavyLock>()
+            .AddScoped<CodeIndexJobScopes>()
+            .AddScoped<CodeIndexEventSource>()
+            .AddScoped<IIndexOutlooks, CodeIndexOutlooks>()
+            .AddScoped<IScheduledService, CodeIndexMainMoveService>()
+            .AddSingleton(CodeIndexMainMoveService.BuiltIn)
+            .AddJob<BuildCodeIndexRequest, BuildCodeIndexResult, BuildCodeIndexService>(
+                static r => IndexJobs.KeyOf(r.Repo), static r => Summary(r), precheck: null, repo: static r => Core.Ids.RepoName.TryFrom(r.Repo, out var repo) ? repo : null);
+    }
+
+    private static string Summary(BuildCodeIndexResult result) => result.Outcome switch
+    {
+        BuildCodeIndexResult.Deferred => $"{result.Repo}: deferred, every heavy-job slot was busy",
+        "not-on-main" => $"{result.Repo}: left the default branch, nothing indexed",
+        _ => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{result.Repo} @ {result.Commit?[..7]}: {result.Files:N0} files, {result.Symbols:N0} symbols"),
+    };
+}

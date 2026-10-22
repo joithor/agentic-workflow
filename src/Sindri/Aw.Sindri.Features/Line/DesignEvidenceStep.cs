@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Aw.Sindri.Core.LensPacks;
 using Aw.Sindri.Core.Packets;
 using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Workflow.Blocks;
@@ -15,7 +16,8 @@ namespace Aw.Sindri.Features.Line;
 /// <param name="packets">aw-packets.</param>
 /// <param name="area">The instance's run area.</param>
 /// <param name="checkouts">Where the repo's checkout is.</param>
-internal sealed class DesignEvidenceStep(IPackets packets, IRunArea area, IRepoCheckouts checkouts) : IBlockStep, IBlockStepId, IRepoStep
+/// <param name="styles">The style packs, to read the pinned one again (DSN-STYLE-001).</param>
+internal sealed class DesignEvidenceStep(IPackets packets, IRunArea area, IRepoCheckouts checkouts, IStylePacks styles) : IBlockStep, IBlockStepId, IRepoStep
 {
     /// <inheritdoc/>
     public static BlockId Id { get; } = BlockId.From("step.design.evidence");
@@ -32,7 +34,13 @@ internal sealed class DesignEvidenceStep(IPackets packets, IRunArea area, IRepoC
 
         var design = StepFacts.Read(context, "fact:design");
         var rounds = StepFacts.Read(context, "fact:lensRounds");
-        var report = DesignChecks.Run(scope, design, rounds, StepFacts.Read(context, "fact:accepted"), evidence: true);
+        var pinned = StylePin.Read(styles, StepFacts.Read(context, "fact:packs"));
+        if (pinned.Failure is { } failure)
+        {
+            return BlockStepResult.Failed($"{Id.Value}: {failure}");
+        }
+
+        var report = DesignChecks.RunStyled(scope, design, (rounds, StepFacts.Read(context, "fact:accepted")), evidence: true, pinned.Pack);
         if (!report.Passed)
         {
             return LinePackets.Gaps("incomplete", report.Failures);

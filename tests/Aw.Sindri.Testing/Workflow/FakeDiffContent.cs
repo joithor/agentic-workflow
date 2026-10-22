@@ -52,7 +52,7 @@ public sealed class FakeDiffContent : IDiffContent
     {
         cancellationToken.ThrowIfCancellationRequested();
         Calls.Add($"{worktree} {baseCommit}");
-        return ValueTask.FromResult<Result<IReadOnlyList<(string Path, int Line, string Text)>>>(_added.TryGetValue(worktree, out var lines)
+        return ValueTask.FromResult(_added.TryGetValue(worktree, out var lines)
             ? Results.Success<IReadOnlyList<(string Path, int Line, string Text)>>([.. lines])
             : Missing(worktree));
     }
@@ -62,7 +62,7 @@ public sealed class FakeDiffContent : IDiffContent
     {
         cancellationToken.ThrowIfCancellationRequested();
         Calls.Add($"{worktree} {baseCommit}");
-        return ValueTask.FromResult<Result<IReadOnlyList<string>>>(_deleted.TryGetValue(worktree, out var paths)
+        return ValueTask.FromResult(_deleted.TryGetValue(worktree, out var paths)
             ? Results.Success<IReadOnlyList<string>>([.. paths])
             : Missing(worktree));
     }

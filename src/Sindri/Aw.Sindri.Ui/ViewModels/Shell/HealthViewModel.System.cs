@@ -159,6 +159,7 @@ internal sealed partial class HealthViewModel
         };
         ViewsRows = views is null ? [] : ViewsCells(views);
         ViewsFix = views is { } v && (v.Stalled || v.Rebuilding) ? Catalog.Rebuild : null;
+        ShowStateBox();
     }
 
     private static string Count(int n) => n.ToString(System.Globalization.CultureInfo.InvariantCulture);

@@ -3,6 +3,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks.Step;
 using Aw.Sindri.Features.Line;
+using Aw.Sindri.Testing.LensPacks;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Scoping.Steps;
 
@@ -23,5 +24,5 @@ public sealed class DesignCheckStepContract : BlockContract
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await new DesignCheckStep().Run(ScopingStepContexts.Of("step.design.check", []), cancellationToken);
+        _ = await new DesignCheckStep(new FakeStylePacks()).Run(ScopingStepContexts.Of("step.design.check", []), cancellationToken);
 }

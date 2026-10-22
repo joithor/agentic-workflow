@@ -137,7 +137,7 @@ public sealed class ScopingDeskTests
     [Fact, Trait("Lane", "unit")]
     public async Task Evidence_with_a_failing_rule_reports_incomplete_with_the_findings_and_writes_no_packet()
     {
-        var facts = ScopingFacts.Expiry().Edit("challenge", n => n["rounds"]![1]!["verdict"] = "found");
+        var facts = ScopingFacts.Expiry().Edit("challenge", n => { var rounds = n["rounds"]!.AsArray(); rounds.RemoveAt(0); rounds[0]!["verdict"] = "found"; });
 
         var response = await Run("evidence", facts);
 

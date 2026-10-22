@@ -47,18 +47,17 @@ public static class AgentLaunches
     /// <param name="run">The run.</param>
     /// <param name="target">Where it runs.</param>
     /// <param name="descriptor">The Step's descriptor, for the brief; null when the catalog doesn't know it.</param>
-    /// <param name="instructions">What the Step is told to do, for the brief; none when it has none.</param>
-    /// <param name="workspace">The workspace the Step reads (an existing worktree it works in); null when it reads none.</param>
+    /// <param name="extras">What the Step is told, the workspace it reads and the pack it bundles; null for none.</param>
     /// <returns>The request.</returns>
-    public static LaunchRequest RequestFor(AgentStepRun run, AgentStepTarget target, BlockDescriptor? descriptor = null, IReadOnlyList<string>? instructions = null, string? workspace = null)
+    public static LaunchRequest RequestFor(AgentStepRun run, AgentStepTarget target, BlockDescriptor? descriptor = null, AgentLaunchExtras? extras = null)
     {
-        var worktree = WorktreeFor(run, target, workspace);
+        var worktree = WorktreeFor(run, target, extras?.Workspace);
         // Never plan mode: plan mode runs read-only tools only, so the session couldn't run 'sindri workflow complete'. A Step only tightens the
         // profile: every Step may report, a write Step may write its own worktree and commit it, and nothing else is allowed (no build tools: SC-R).
         var policy = new StepPolicy(run.WriteScope ? [.. _report, .. _commit] : _report, StepPermissionMode.Default, run.WriteScope ? worktree : null);
         return new LaunchRequest(
             LaunchIdFor(run), target.Item, target.Agent, LaunchMode.Open, Attended: false, target.RepoPath, run.Address, worktree,
-            new StepArgs(Model: null, policy, run.Step, AgentStepBrief.Render(run, descriptor, instructions)), run.Run);   // Model null: per-Step models are SC-R
+            new StepArgs(Model: null, policy, run.Step, AgentStepBrief.Render(run, descriptor, extras?.Instructions), extras?.Bundle), run.Run);   // Model null: per-Step models are SC-R
     }
 
     /// <summary>The holdout evaluator's request (LN-LCH2): it runs in a scratch checkout at the head sha, reads the holdout set and never writes it, can't touch the phase worktree, and may run the evidence CLIs.</summary>

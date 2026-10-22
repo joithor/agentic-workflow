@@ -3,7 +3,7 @@ using Aw.Kernel;
 namespace Aw.Sindri.Core.Line;
 
 /// <summary>
-/// The line's error catalogue (line spec Appendix D, LN-API8), beside <see cref="SindriErrors"/> and validated with it. The SND-PACK-* codes are the pack lane's (LN-PK) and
+/// The line's error catalogue (line spec Appendix D, LN-API8), beside <see cref="SindriErrors"/> and validated with it. The SND-PACK-* codes are <see cref="LensPacks.PackErrors"/>'s and
 /// are not registered here.
 /// </summary>
 public static class LineErrors

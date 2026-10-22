@@ -143,7 +143,7 @@ public sealed class SetupConfirmTests
         var setup = await ready._f.Read(Token);
 
         ready._f.Serve(With("profile-needs-approval", "recipes", "todo"));
-        await setup.Refresh(SetupFixture.Url, Token);
+        await setup.Refresh(Url, Token);
 
         Assert.False(Step(setup, "recipes").Workflows!.IsOpen);
     }
