@@ -51,8 +51,6 @@ public sealed class QueueTableRowsTests
     }
 
     [Fact]
-    public void The_column_headings_are_sentence_case()
-    {
+    public void The_column_headings_are_sentence_case() =>
         Assert.Equal(["Title", "Repo", "Status", "Stage", "Age"], [Labels.ColumnTitle, Labels.ColumnRepo, Labels.ColumnState, Labels.ColumnStep, Labels.ColumnSince], StringComparer.Ordinal);
-    }
 }
