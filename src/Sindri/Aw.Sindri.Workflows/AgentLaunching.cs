@@ -66,13 +66,7 @@ internal sealed class AgentLaunching(
             return (string?)null;
         }
 
-        var read = await contents.Read(stored, cancellationToken).ConfigureAwait(false);
-        if (read.IsError)
-        {
-            return read.Error;
-        }
-
-        var text = System.Text.Encoding.UTF8.GetString(read.Value.Span).Trim();
-        return text.Length >= 2 && text[0] == '"' && text[^1] == '"' ? System.Text.Json.JsonSerializer.Deserialize<string>(text) : text;
+        var path = await PhaseWorkspace.PathOf(contents, stored, cancellationToken).ConfigureAwait(false);
+        return path.IsError ? path.Error : path.Value;
     }
 }
