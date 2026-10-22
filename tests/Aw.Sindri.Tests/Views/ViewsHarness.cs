@@ -32,6 +32,7 @@ internal sealed class ViewsHarness
             new NeedsYouProjection(Slice.Events, new PassThroughScrubber(), builtIns),
             new JobsProjection(Slice.Events),
             new LaunchesProjection(Slice.Events),
+            new CodeIndexProjection(Slice.Events),
         ];
     }
 

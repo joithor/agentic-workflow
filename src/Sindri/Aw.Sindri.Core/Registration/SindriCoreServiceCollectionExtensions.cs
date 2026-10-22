@@ -61,6 +61,7 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<IProjection, NeedsYouProjection>()
             .AddSingleton<IProjection, JobsProjection>()
             .AddSingleton<IProjection, LaunchesProjection>()
+            .AddSingleton<IProjection, CodeIndexProjection>()
             .AddSingleton<ILaunchViews, LaunchViews>()
             .AddSingleton<LaunchLiveness>()
             .AddSingleton<UsageSamples>()

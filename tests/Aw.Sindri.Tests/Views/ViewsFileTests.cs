@@ -56,7 +56,7 @@ public sealed class ViewsFileTests : IDisposable
         var migrated = await runner.Migrate(ViewsDatabase.Migrations, Token);
 
         Assert.True(migrated.IsSuccess, migrated.IsError ? migrated.Error.Message : null);
-        Assert.Equal(["projector_state", "view_decisions", "view_item_aliases", "view_item_timeline", "view_items", "view_jobs", "view_launches", "view_needs_you", "view_profile", "view_requests", "view_services"], Tables(path));
+        Assert.Equal(["projector_state", "view_code_index", "view_decisions", "view_item_aliases", "view_item_timeline", "view_items", "view_jobs", "view_launches", "view_needs_you", "view_profile", "view_requests", "view_services"], Tables(path));
         Assert.Equal(["key", "row_json", "seq", "owner"], Columns(path, "view_items"));
         Assert.Equal(["key", "row_json", "seq", "item", "state", "repo"], Columns(path, "view_requests"));
         Assert.Equal(["key", "row_json", "seq", "item", "state", "repo"], Columns(path, "view_decisions"));
@@ -68,7 +68,7 @@ public sealed class ViewsFileTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public void Every_view_name_has_a_table_and_the_schema_is_at_version_7()
     {
-        Assert.Equal(["decisions", "item-aliases", "item-timeline", "items", "jobs", "launches", "needs_you", "profile", "requests", "services"], ViewNames.All.Order(StringComparer.Ordinal).ToList());
+        Assert.Equal(["code-index", "decisions", "item-aliases", "item-timeline", "items", "jobs", "launches", "needs_you", "profile", "requests", "services"], ViewNames.All.Order(StringComparer.Ordinal).ToList());
         Assert.Equal(7, ViewSchema.Version);   // launch rows gained a required member: a v6 views.db must rebuild, not fail to read
     }
 

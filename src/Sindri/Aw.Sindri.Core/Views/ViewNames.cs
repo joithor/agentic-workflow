@@ -34,5 +34,8 @@ public static class ViewNames
     public const string Launches = "launches";
 
     /// <summary>Every view that has a table.</summary>
-    public static IReadOnlyList<string> All { get; } = [Services, Profile, Items, ItemAliases, ItemTimeline, Requests, Decisions, NeedsYou, Jobs, Launches];
+    /// <summary>The newest built code index per repo (code index spec §8), folded from 'codeindex.built'.</summary>
+    public const string CodeIndex = "code-index";
+
+    public static IReadOnlyList<string> All { get; } = [CodeIndex, Services, Profile, Items, ItemAliases, ItemTimeline, Requests, Decisions, NeedsYou, Jobs, Launches];
 }
