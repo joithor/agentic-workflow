@@ -71,7 +71,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
 
     /// <summary>Engine P8: the diff signal of an agent run (git) and an agent session's end and spend (the ledger).</summary>
     private static IServiceCollection AddAgentRuntimeAdapters(this IServiceCollection services) =>
-        services.AddSingleton<IRunDiff, GitRunDiff>().AddSingleton<IProofScripts, BashProofScripts>().AddSingleton<IAgentSessions, LedgerAgentSessions>()
+        services.AddSingleton<IRunDiff, GitRunDiff>().AddSingleton<IAgentSessions, LedgerAgentSessions>()
             .AddSingleton<ILensPackSource, EmbeddedLensPackSource>().AddSingleton<ILensPacks, ProfileLensPacks>().AddSingleton<IChangedPaths, GitChangedPaths>();   // LN-PK lite: the built-in lens packs and the review loop's changed paths
 
     /// <summary>The bugfix block Steps' port over the bugfix-state program (deps.yaml Sindri to BugFix, kind cli).</summary>
@@ -118,6 +118,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IRecipeApprovals, SqliteRecipeApprovals>()
             .AddSingleton<IWorkflowClaims, SqliteWorkflowClaims>()   // engine P6 unit (d): workflow_claims in ledger.db
             .AddSingleton<IClaimRefs, GitClaimRefs>()                // engine P6 unit (d): the claim's marker ref
+            .AddSingleton<IScriptRuns>(_ => new BashScriptRuns(new ProcessToolRunner()))   // the prove station's before/after scripts
             .AddSingleton<IWorktrees, GitWorktrees>()               // per-run and phase worktrees (engine spec §6.5); nothing calls it until BS-10
             .AddSingleton<IChallenges, ProcessChallenges>()
             .AddSingleton(sp => HeavyLockSettings.Read(environment, sp.GetRequiredService<SindriSettings>().StateDirectory))

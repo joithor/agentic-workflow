@@ -15122,19 +15122,5 @@ static Aw.Sindri.Core.Review.ReviewPackOrigin.operator !=(Aw.Sindri.Core.Review.
 static Aw.Sindri.Core.Review.ReviewPackOrigin.operator ==(Aw.Sindri.Core.Review.ReviewPackOrigin? left, Aw.Sindri.Core.Review.ReviewPackOrigin? right) -> bool
 static Aw.Sindri.Core.Review.ReviewPack.Problems(Aw.Sindri.Core.Review.ReviewFacts! facts) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Sindri.Core.Review.ReviewPack.Verdict(System.Text.Json.Nodes.JsonNode! review) -> string?
-Aw.Sindri.Core.Prove.IProofScripts
-Aw.Sindri.Core.Prove.IProofScripts.Run(string! worktree, string! script, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Prove.ProofScriptRun!>!>
-Aw.Sindri.Core.Prove.ProofScriptRun
-Aw.Sindri.Core.Prove.ProofScriptRun.<Clone>$() -> Aw.Sindri.Core.Prove.ProofScriptRun!
-Aw.Sindri.Core.Prove.ProofScriptRun.Deconstruct(out bool Passed, out string! Detail) -> void
-Aw.Sindri.Core.Prove.ProofScriptRun.Equals(Aw.Sindri.Core.Prove.ProofScriptRun? other) -> bool
-Aw.Sindri.Core.Prove.ProofScriptRun.Detail.get -> string!
-Aw.Sindri.Core.Prove.ProofScriptRun.Detail.init -> void
-Aw.Sindri.Core.Prove.ProofScriptRun.Passed.get -> bool
-Aw.Sindri.Core.Prove.ProofScriptRun.Passed.init -> void
-Aw.Sindri.Core.Prove.ProofScriptRun.ProofScriptRun(bool Passed, string! Detail) -> void
-override Aw.Sindri.Core.Prove.ProofScriptRun.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Prove.ProofScriptRun.GetHashCode() -> int
-override Aw.Sindri.Core.Prove.ProofScriptRun.ToString() -> string!
-static Aw.Sindri.Core.Prove.ProofScriptRun.operator !=(Aw.Sindri.Core.Prove.ProofScriptRun? left, Aw.Sindri.Core.Prove.ProofScriptRun? right) -> bool
-static Aw.Sindri.Core.Prove.ProofScriptRun.operator ==(Aw.Sindri.Core.Prove.ProofScriptRun? left, Aw.Sindri.Core.Prove.ProofScriptRun? right) -> bool
+Aw.Sindri.Core.Prove.IScriptRuns
+Aw.Sindri.Core.Prove.IScriptRuns.Run(string! directory, string! script, System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int?>

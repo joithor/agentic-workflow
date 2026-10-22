@@ -1,11 +1,11 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Prove;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Prove;
+using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 
@@ -39,14 +39,15 @@ public sealed class RecheckStepsTests
         .With("before-after.json", """{"results":[{"item":"AC-1","signal":"SG-1","base":"fail","head":"pass","baseScript":"proof/ac1.sh","headScript":"proof/ac1.sh"}]}""")
         .With("proof.json", """{"items":[{"id":"AC-1","artifacts":[{"script":"proof/ac1.sh"},{"script":"proof/old.sh","superseded":true},{"script":"proof/ac2.sh"}]}]}""");
 
-    private sealed class FakeScripts(params string[] failing) : IProofScripts
+    // Per-script exits, which FakeScriptRuns (one exit per directory) can't give.
+    private sealed class FakeScripts(params string[] failing) : IScriptRuns
     {
         public List<string> Ran { get; } = [];
 
-        public ValueTask<Result<ProofScriptRun>> Run(string worktree, string script, CancellationToken cancellationToken)
+        public ValueTask<int?> Run(string directory, string script, TimeSpan timeout, CancellationToken cancellationToken)
         {
-            Ran.Add(worktree + ":" + script);
-            return ValueTask.FromResult<Result<ProofScriptRun>>(new ProofScriptRun(!failing.Contains(script, StringComparer.Ordinal), "ran"));
+            Ran.Add(directory + ":" + script);
+            return ValueTask.FromResult<int?>(failing.Contains(script, StringComparer.Ordinal) ? 1 : 0);
         }
     }
 
@@ -104,15 +105,25 @@ public sealed class RecheckStepsTests
     }
 
     [Fact]
+    public async Task Rerun_fails_a_script_that_could_not_be_run()
+    {
+        var plan = """{"headSha":"h2","workspace":"/work/p1","scripts":["proof/ac1.sh"]}""";
+
+        var result = await new ProveRerunScriptsStep(new FakeScriptRuns().CannotRun("/work/p1"), new InMemoryRunArea()).Run(Facts("step.prove.rerun-scripts", ("recheckPlan", plan)), Token);
+
+        Assert.Equal("fail", result.Result!.Outcome.Value);
+    }
+
+    [Fact]
     public async Task Rerun_refuses_a_script_outside_the_workspace_without_running_it()
     {
-        var scripts = new FakeScripts();
+        var scripts = new FakeScriptRuns();
         var plan = """{"headSha":"h2","workspace":"/work/p1","scripts":["../evil.sh","/abs.sh"]}""";
 
         var result = await new ProveRerunScriptsStep(scripts, new InMemoryRunArea()).Run(Facts("step.prove.rerun-scripts", ("recheckPlan", plan)), Token);
 
         Assert.Equal("fail", result.Result!.Outcome.Value);
-        Assert.Empty(scripts.Ran);
+        Assert.Empty(scripts.Calls);
         Assert.Equal(2, Out(result, "findings").AsArray().Count);
     }
 

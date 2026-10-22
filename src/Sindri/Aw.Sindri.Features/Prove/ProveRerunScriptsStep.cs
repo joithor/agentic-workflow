@@ -12,8 +12,10 @@ namespace Aw.Sindri.Features.Prove;
 /// </summary>
 /// <param name="scripts">Runs one script in a worktree.</param>
 /// <param name="area">The instance's run area, where the results are kept for the log.</param>
-internal sealed class ProveRerunScriptsStep(IProofScripts scripts, IRunArea area) : IBlockStep, IBlockStepId
+internal sealed class ProveRerunScriptsStep(IScriptRuns scripts, IRunArea area) : IBlockStep, IBlockStepId
 {
+    private static readonly TimeSpan _budget = TimeSpan.FromMinutes(30);
+
     /// <inheritdoc/>
     public static BlockId Id { get; } = BlockId.From("step.prove.rerun-scripts");
 
@@ -54,7 +56,11 @@ internal sealed class ProveRerunScriptsStep(IProofScripts scripts, IRunArea area
             return (false, "the recorded script path is outside the workspace, so it was not run");
         }
 
-        var run = await scripts.Run(workspace, script, cancellationToken).ConfigureAwait(false);
-        return run.IsError ? (false, $"it could not be run: {run.Error.Message}") : (run.Value.Passed, run.Value.Detail);
+        return await scripts.Run(workspace, script, _budget, cancellationToken).ConfigureAwait(false) switch
+        {
+            0 => (true, "exit 0"),
+            { } code => (false, $"it exited {code}"),
+            null => (false, "it could not be run"),
+        };
     }
 }
