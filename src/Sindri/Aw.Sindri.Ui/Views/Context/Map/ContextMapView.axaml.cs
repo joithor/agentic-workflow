@@ -15,6 +15,7 @@ internal sealed partial class ContextMapView : UserControl
     private const double NarrowStage = 1100;   // under this the summary card starts collapsed
     private bool _fit = true;
     private bool _sized;
+    private ZoomView? _autoFit;
 
     /// <summary>Initializes a new instance of the <see cref="ContextMapView"/> class.</summary>
     public ContextMapView()
@@ -73,13 +74,20 @@ internal sealed partial class ContextMapView : UserControl
 
     private static void SetName(Control control, string name) => AutomationProperties.SetName(control, name);
 
-    // The whole map on the stage, once, when the stage has a size (clamped at 62 %, so a narrow window pans to the right).
+    // The whole map on the stage when it has a size (clamped at 62 %, so a narrow window pans to the right). The stage settles into its final
+    // height after the first fit, so the fit is redone for as long as the view is still headed where the fit sent it: a view the person moved stays put.
     private void FitWhenSized()
     {
-        if (_fit && ContextCanvas.Bounds.Width > 0 && ContextCanvas.Bounds.Height > 0 && DataContext is ContextMapViewModel)
+        if (DataContext is not ContextMapViewModel || ContextCanvas.Bounds.Width <= 0 || ContextCanvas.Bounds.Height <= 0)
+        {
+            return;
+        }
+
+        if (_fit || ContextCanvas.Target == _autoFit)
         {
             _fit = false;
             ContextCanvas.Fit();
+            _autoFit = ZoomView.Fit(ContextCanvas.Bounds.Size, ContextCanvas.WorldBounds);
         }
     }
 

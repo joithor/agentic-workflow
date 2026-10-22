@@ -22,7 +22,7 @@ public sealed class LineBlocksTests
     [InlineData("step.lens.ask", BlockRuntime.Desk, true, "fact:escalation", "answered,stop", "", "fact:answers=answered", Capability.None)]
     [InlineData("step.design.lens-desk", BlockRuntime.Desk, true, "fact:findings,fact:lensRounds", "accept,revise,drop", "", "fact:accepted=accept;fact:answers=revise", Capability.None)]
     [InlineData("step.design.evidence", BlockRuntime.Block, false, "fact:scope,fact:packs,fact:design,fact:findings,fact:lensRounds,fact:accepted", "complete,incomplete", "", "fact:designPacket=complete;fact:design=complete;fact:lensRounds=complete;fact:findings=incomplete", Capability.Tools)]
-    [InlineData("step.lens.round", BlockRuntime.Block, false, "fact:packs,fact:lensRounds,fact:changedSections", "ready", "", "fact:lensQueue=ready", Capability.Tools)]
+    [InlineData("step.lens.round", BlockRuntime.Block, false, "fact:scope,fact:packs,fact:lensRounds,fact:changedSections", "ready", "", "fact:lensQueue=ready;fact:lensRounds=ready", Capability.Tools)]
     [InlineData("step.lens.run", BlockRuntime.Agent, false, "fact:lensQueue,fact:lensRounds", "reviewed", "", "fact:lensReport=reviewed", Capability.Tools)]
     [InlineData("step.lens.log", BlockRuntime.Block, false, "fact:lensReport,fact:lensRounds,fact:lensQueue", "next,clean,findings,needsOwner", "fact:lensRounds", "fact:lensQueue=next;fact:findings=findings,needsOwner;fact:escalation=needsOwner", Capability.None)]
     [InlineData("step.plan.intake", BlockRuntime.Block, false, "fact:scopePacket,fact:designPacket", "loaded", "", "PLANSEEDS", Capability.None)]
