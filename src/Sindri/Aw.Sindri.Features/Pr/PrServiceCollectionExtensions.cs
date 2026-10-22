@@ -13,5 +13,6 @@ internal static class PrServiceCollectionExtensions
         .AddBlockRuntime<PrIntakeStep>()
         .AddBlockRuntime<PrSnapshotStep>()
         .AddBlockRuntime<PrNextCommentStep>()
-        .AddBlockRuntime<PrHeldCommentStep>();
+        .AddBlockRuntime<PrHeldCommentStep>()
+        .AddBlockRuntime<PrReadyCheckStep>();
 }

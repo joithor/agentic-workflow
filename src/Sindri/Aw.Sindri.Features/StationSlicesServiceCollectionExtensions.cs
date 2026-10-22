@@ -3,6 +3,7 @@ using Aw.Sindri.Features.Build;
 using Aw.Sindri.Features.Docs;
 using Aw.Sindri.Features.Evidence;
 using Aw.Sindri.Features.LensLoops;
+using Aw.Sindri.Features.Pr;
 using Aw.Sindri.Features.Line;
 using Aw.Sindri.Features.Pr;
 using Aw.Sindri.Features.Prove;

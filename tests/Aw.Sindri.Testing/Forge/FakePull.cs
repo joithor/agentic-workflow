@@ -52,6 +52,9 @@ public sealed class FakePull(PullRepo repo, int number, string head, string head
     /// <summary>Gets the names of the failing checks.</summary>
     public IList<string> FailingChecks { get; } = [];
 
+    /// <summary>Gets or sets the checks; null reads as none, on the head's tip.</summary>
+    public PullChecks? Checks { get; set; }
+
     /// <summary>Gets the threads, oldest first.</summary>
     public IList<PullThread> Threads { get; } = [];
 
