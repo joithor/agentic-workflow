@@ -105,10 +105,12 @@ internal sealed partial class RecipeWorkflow
         var agentRuntime = Workflow.Patched("p8-agent-runtime");
         var keepsReport = Workflow.Patched("token-budget-keeps-report-v1");   // an accepted report over budget keeps its transition (the next Step start parks); a history without the marker parks on the report as it did
         var keepsRoundOnLaunchFailure = Workflow.Patched("launch-failure-keeps-round-v1");   // a launch that never started a session counts no loop round, and the third in a row parks; a history without the marker counts the round as it did.
-        var perRound = Workflow.Patched("token-budget-per-round-v1"); _heavy = Workflow.Patched("ln-wf3-heavy-slot");   // LN-WF3: the heavy allocator; last, after every marker main has; a history without it never takes or grants a slot
+        var perRound = Workflow.Patched("token-budget-per-round-v1"); _heavy = Workflow.Patched("ln-wf3-heavy-slot");
+        var storesLiterals = Workflow.Patched("child-literal-facts-v1");   // a child's literal inputs are written to the fact store at its start; a history without it never stored them   // LN-WF3: the heavy allocator; last, after every marker main has; a history without it never takes or grants a slot
         var loaded = await Workflow.ExecuteLocalActivityAsync(
             (RunStepActivities a) => a.LoadRecipeAsync(start.Recipe),
             new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(30) }).ConfigureAwait(true);
+        await StoreLiterals(start, storesLiterals).ConfigureAwait(true);
         var pins = await LoadChildPins(loaded).ConfigureAwait(true);   // engine P7: the children the approval pinned
         var catalog = new BlockCatalog(loaded.Blocks, []);
         _recipe = new InterpretedRecipe(loaded.Version, loaded.Recipe, catalog, start.Inputs);
