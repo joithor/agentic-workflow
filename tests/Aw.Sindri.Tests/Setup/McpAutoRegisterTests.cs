@@ -203,7 +203,10 @@ public sealed class McpAutoRegisterTests
 
     private async Task<LoadedProfile> Approve(string[] repos, string? mcp = null)
     {
-        _ = await _slice.HoldLease();
+        if (_slice.Held.Current is null)   // a second approval in one test keeps the lease the first took
+        {
+            _ = await _slice.HoldLease();
+        }
         var live = SliceHarness.Profile();
         var profile = live.Profile with { Repos = [.. repos.Select(static r => new RepoEntry(r, "/work/" + r))], Setup = mcp is null ? null : new SetupSettings(mcp) };
         var loaded = live with { Profile = profile };
