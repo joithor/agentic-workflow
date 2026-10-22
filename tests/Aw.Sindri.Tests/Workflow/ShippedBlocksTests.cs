@@ -32,7 +32,7 @@ public sealed class ShippedBlocksTests
                 "effect.pr.merge-docs", "effect.pr.push", "effect.pr.record", "effect.pr.reply", "effect.pr.rerun-checks", "effect.pr.restack",
                 "evidence.check", "gate.budget.available", "gate.pr.autofix-cap", "gate.pr.base-is-default", "gate.pr.diff-scope",
                 "gate.pr.secret-scan", "gate.revision-bound", "gate.route.startable", "input.context.code", "input.context.history",
-                "input.context.lenses", "input.handoff-note", "input.phase-packet", "input.pr.context", "step.babysit.watch",
+                "input.context.lenses", "input.context.retrieve", "input.handoff-note", "input.phase-packet", "input.pr.context", "step.babysit.watch",
                 "step.brief.questions", "step.brief.seed", "step.brief.write", "step.bugfix.judge", "step.bugfix.recheck",
                 "step.bugfix.record-candidate", "step.bugfix.start-attempt", "step.build.amend", "step.build.checks", "step.build.green",
                 "step.build.prepare", "step.build.red", "step.build.red-check", "step.build.scope-desk", "step.checks", "step.design.apply",
