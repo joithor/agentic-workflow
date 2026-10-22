@@ -5,7 +5,7 @@ initial: queued
 states:
   queued:
     kind: wait
-    waitFor: { resource: heavy }
+    waitFor: { resource: slot }
     timeout: { after: 1d, then: park }
     next: "Waiting for a heavy-job slot."
   produce:
@@ -22,3 +22,4 @@ states:
 transitions:
   - { from: queued, to: produce, on: wait.satisfied, effects: [effect.notify.desk] }
   - { from: produce, to: done, on: step.completed }
+displayName: Test recipe

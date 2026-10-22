@@ -28,7 +28,7 @@
 # realpath(${TMPDIR:-/tmp}) or inside a proof folder, <AW_STATE_DIR or ~/.agentic-workflow>/<repo slug>/proof/…,
 # a subset of the homes the server honours X-Sindri-Client: prover for (src/Sindri/Aw.Sindri.Infrastructure/ProverHome.cs):
 # the guard also refuses a home whose deepest existing part is a dangling link or a file, which the server would accept.
-# Parts of the home that don't exist yet are judged as written. Anything else exits 2, so a prover can never reach the
+# A home under the temp root gets the marker file .prover-scratch (setup-once spec §4 item 6), which lets human:prover confirm what the app confirms. Parts of the home that don't exist yet are judged as written. Anything else exits 2, so a prover can never reach the
 # owner's real ledger. AW_SINDRI_PORT=0 is exported (a free port, recorded in control.json).
 #
 # SINDRI is the command line of the C# CLI, split on spaces. Default: dotnet run --project src/Sindri/Aw.Sindri.Host --
@@ -93,6 +93,12 @@ inside() {
   case "$1" in "${2%/}"/?*) return 0 ;; *) return 1 ;; esac
 }
 
+# The marker only this script writes (setup-once spec §4 item 6): a home under the temp root that the prover uses is a scratch home, and only there may
+# human:prover confirm what the app confirms (the server checks the file). The owner's default home is never under the temp root, so it never carries it.
+mark_scratch() {
+  mkdir -p "$1" && : > "$1/.prover-scratch" || die "can't mark $1 as a scratch home"
+}
+
 guard() {
   local given="${AW_SINDRI_HOME:-}" home temp state below slug
   local msg="AW_SINDRI_HOME must be under \$TMPDIR or a proof folder (got ${given:-nothing})"
@@ -100,7 +106,7 @@ guard() {
   home="$(real "$given")" || die "$msg"
   temp="$(real "${TMPDIR:-/tmp}")" || die "$msg"
   state="$(real "${AW_STATE_DIR:-$HOME/.agentic-workflow}")" || die "$msg"
-  if inside "$home" "$temp"; then return 0; fi
+  if inside "$home" "$temp"; then mark_scratch "$home"; return 0; fi
   if inside "$home" "$state"; then
     below="${home#"${state%/}"/}"   # <slug>/proof/<more…>
     slug="${below%%/*}"

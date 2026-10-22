@@ -10,10 +10,11 @@
 # temporal): doctor with nothing running, start headless with an unapproved profile, a second serve refused by the lease,
 # the approve preview and its non-terminal refusal, a session's typed approve refused (SND-AUTH-002), the human's typed
 # approval, status (text and --json's apiVersion), /sindri/mcp's initialize and tools/list as a stateless MCP client, then the 12 tools' calls (sindri_queue, sindri_request filed as session:mcp, sindri_item refused, sindri_decide absent),
-# the views rebuild refused to a session and requested by the human, status's views and health lines, the item verbs (API P3: a human's item add, the queue and the item list, a session's item add refused, the human's item close, the done list and the queue again), the request verbs (API P4: a session's request, the needs-you list, a session's decide refused, the human's decide, the list again and the accepted requests), the ledger read (API P5: the human's lists command.handled, a session's doesn't, one item's events, and GET /events/catalog), the service and job verbs (API P6: the services list as JSON, a manual run of heartbeat followed to its end, a session's run refused, jobs show and the jobs list, pause and resume with a session's pause refused, and the services list after each), a session's stop refused, the human's stop, status and doctor again (doctor with HOME on an empty scratch dir, so its
+# the views rebuild refused to a session and requested by the human, status's views and health lines, the item verbs (API P3: a human's item add, the queue and the item list, a session's item add refused, the human's item close, the done list and the queue again), the request verbs (API P4: a session's request, the needs-you list, a session's decide refused, the human's decide, the list again and the accepted requests), the ledger read (API P5: the human's lists command.handled, a session's doesn't, one item's events, and GET /events/catalog), QUERY /context/subgraph with a JSON body on the published host (POST is 405), the service and job verbs (API P6: the services list as JSON, a manual run of heartbeat followed to its end, a session's run refused, jobs show and the jobs list, pause and resume with a session's pause refused, and the services list after each), a session's stop refused, the human's stop, status and doctor again (doctor with HOME on an empty scratch dir, so its
 # context:mcp-scope row never reads the real provider files);
 # then recipe validate on the shipped recipes (their hashes; workflow.item reads its child beside it) and on an invalid
-# fixture (RCP-REACH-001, exit 1). The normalized output (pids, ports, hashes, times, the host name and the temp path
+# fixture (RCP-REACH-001, exit 1), then Onyx P2: onyx status --json with no docker on PATH (state not-set-up, the docker row fail
+# SND-ONYX-001) and onyx up and down refused to a session and to a CLI with no terminal (SND-AUTH-002). The normalized output (pids, ports, hashes, times, the host name and the temp path
 # masked) must equal expected.txt.
 # The apphost, not 'dotnet sindri.dll': start re-launches its own executable as 'serve' (Environment.ProcessPath), which
 # under 'dotnet sindri.dll' is the dotnet muxer.
@@ -94,6 +95,7 @@ fi
 
 export AW_SINDRI_HOME="$work/home" AW_SINDRI_PORT=0
 mkdir -p "$AW_SINDRI_HOME/profile"
+: >"$AW_SINDRI_HOME/.prover-scratch"   # the smoke runs as the prover in a home it created (setup-once spec §4 item 6): the marker lets it confirm, as sindri-prove.sh does
 mkdir -p "$work/repo"   # the repo 'smoke' the mcp() helper names in X-Sindri-Repo (sindri_request files against an approved profile's repo)
 printf 'schemaVersion: 1\nuser: smoke\nrepos:\n  - { name: smoke, path: %s }\nservices:\n  heartbeat: { every: 5s }\n' "$work/repo" >"$AW_SINDRI_HOME/profile/profile.yaml"
 
@@ -208,6 +210,11 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   echo "## GET /sindri/events/catalog | jq (public types, their invalidates)"
   curl -s -m 30 "$(jq -r '.url' "$AW_SINDRI_HOME/control.json" | sed 's|/$||')/sindri/events/catalog" -H 'X-Sindri-Repo: smoke' \
     | jq -c '{commandHandled: any(.types[]; .type == "command.handled"), itemCreated: (.types[] | select(.type == "item.created") | .invalidates)}'
+  echo "## QUERY /sindri/context/subgraph with a JSON body on the published host (the HTTP QUERY method; POST is not a route)"
+  base="$(jq -r '.url' "$AW_SINDRI_HOME/control.json" | sed 's|/$||')"
+  curl -s -m 30 -X QUERY "$base/sindri/context/subgraph" -H 'X-Sindri-Repo: smoke' -H 'Content-Type: application/json' -d '{"nodes":["feature:smoke.none"]}' \
+    -w '\nhttp=%{http_code}\n' | jq -R -c 'if startswith("http=") then . else (try (fromjson | {title, status}) catch .) end'
+  curl -s -m 30 -o /dev/null -w 'post http=%{http_code}\n' -X POST "$base/sindri/context/subgraph" -H 'X-Sindri-Repo: smoke' -H 'Content-Type: application/json' -d '{"nodes":["feature:smoke.none"]}'
   echo "## sindri services --json | jq (name, every, paused, job)"
   bounded "$bin" services --json </dev/null | jq -c '[.services[] | {name, every, paused, job}]'
   human services run heartbeat </dev/null
@@ -232,6 +239,15 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   run recipe validate "$root/recipes/sindri/workflow.review-loop.yaml"
   run recipe validate "$root/recipes/sindri/workflow.evidence.yaml"
   run recipe validate "$root/tests/Aw.Sindri.Testing/Workflow/Recipes/invalid/RCP-REACH-001.yaml"
+  # Onyx P2: status with no docker on PATH (a scratch dir holding only perl, which the alarm wrapper needs), only its deterministic rows; up and down are the human's.
+  mkdir -p "$work/nodocker"
+  ln -s "$(command -v perl)" "$work/nodocker/perl"
+  echo "## sindri onyx status --json | jq '{state, docker}' (no docker on PATH; a check's state 2 is fail)"
+  json="$({ PATH="$work/nodocker" bounded "$bin" onyx status --json </dev/null 2>&1 || true; })"
+  jq -c '{state, docker: (.checks[] | select(.name == "docker") | {failed: (.state == 2), code: .problem.code})}' <<<"$json" 2>/dev/null || printf '%s\n' "$json"
+  session onyx up
+  run onyx up
+  session onyx down
 } >"$out/actual.raw"
 
 bash "$here/normalize.sh" "$work" "$root" <"$out/actual.raw" >"$out/actual.txt"

@@ -31,6 +31,7 @@ using Aw.Meta.Features.Status;
 using Aw.Meta.Features.StopCheck;
 using Aw.Meta.Features.SyncInbox;
 using Aw.Meta.Features.Team;
+using Aw.Meta.Features.Usage;
 using Aw.Meta.Features.Watch;
 using Aw.Meta.Features.WorktreeList;
 using Aw.Meta.Features.WorktreeSweep;
@@ -161,6 +162,11 @@ public static class MetaFeaturesServiceCollectionExtensions
         .AddScoped<OrphanKiller>()
         .AddScoped<HealthService>()
         .Plain<HealthService, HealthRequest, HealthResponse>()
+        .AddScoped<UsageService>()
+        .Plain<UsageService, UsageRequest, UsageResponse>()
+        .AddScoped<UsageWaitService>()
+        .AddScoped<IValidator<UsageWaitRequest>, UsageWaitValidator>()
+        .Validated<UsageWaitService, UsageWaitRequest, UsageWaitResponse>()
         .AddScoped<WatchSweeper>()
         .AddScoped<WatchPoller>()
         .AddScoped<WatchService>()

@@ -2,8 +2,8 @@
   "header": {
     "address": "ITM-01JC9/item/1",
     "recipe": "workflow.item",
-    "hash12": "85ecaff4781e",
-    "version": 2,
+    "hash12": "fbd360859893",
+    "version": 3,
     "state": "parked",
     "detail": "escalated (child)",
     "since": "2026-10-12T11:54:00.0000000Z",
@@ -46,5 +46,6 @@
       "confirm": "Cancel ITM-01JC9/item/1? 0 running steps stop; 1 child is cancelled."
     }
   ],
-  "text": "ITM-01JC9/item/1  workflow.item@85ecaff4781e  v2  parked: escalated (child)  since 11:54 (32m)\n  next      Escalated in ITM-01JC9/item/1/step.4: the child's gate escalated.\n  child     ITM-01JC9/item/1/step.4  escalated: gate\n  answer    sindri workflow answer ITM-01JC9/item/1 <the child's answer>     (forwarded to the child)\n  commands  takeover, cancel\n"
+  "text": "ITM-01JC9/item/1  workflow.item@fbd360859893  v3  parked: escalated (child)  since 11:54 (32m)\n  next      Escalated in ITM-01JC9/item/1/step.4: the child's gate escalated.\n  child     ITM-01JC9/item/1/step.4  escalated: gate\n  answer    sindri workflow answer ITM-01JC9/item/1 <the child's answer>     (forwarded to the child)\n  commands  takeover, cancel\n",
+  "injection": []
 }

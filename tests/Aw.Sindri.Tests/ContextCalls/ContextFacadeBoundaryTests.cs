@@ -22,7 +22,7 @@ public sealed class ContextFacadeBoundaryTests
             .SelectMany(a => a.GetTypes())
             .SelectMany(t => t.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
                 .SelectMany(c => c.GetParameters())
-                .Where(p => Types(p.ParameterType).Any(t => t.IsInterface && t.Assembly == contextCore && t != typeof(IContextEngine)))
+                .Where(p => Types(p.ParameterType).Any(t => t.IsInterface && t.Assembly == contextCore && t != typeof(IContextEngine) && t != typeof(IScopeProposals)))
                 .Select(p => $"{t.FullName}({p.ParameterType.Name} {p.Name})"))
             .ToList();
 

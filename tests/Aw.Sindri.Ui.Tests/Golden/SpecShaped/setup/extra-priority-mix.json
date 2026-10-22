@@ -1,0 +1,102 @@
+{
+  "steps": [
+    {
+      "id": "repo",
+      "title": "Add your repo",
+      "state": "done",
+      "why": "A repo is in your profile.",
+      "detail": "demo",
+      "error": null,
+      "action": null,
+      "progress": null,
+      "items": [
+        {
+          "repo": "demo",
+          "state": "done",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "id": "profile",
+      "title": "Approve the profile",
+      "state": "failed",
+      "why": "Sindri couldn't read your profile.",
+      "detail": null,
+      "error": {
+        "code": "SND-PROFILE-001",
+        "sentence": "Your profile file has a mistake in it."
+      },
+      "action": null,
+      "progress": null,
+      "items": []
+    },
+    {
+      "id": "recipes",
+      "title": "Approve the recipes",
+      "state": "todo",
+      "why": "After the profile is approved.",
+      "detail": "Registered 26 of 26.",
+      "error": null,
+      "action": null,
+      "progress": null,
+      "items": []
+    },
+    {
+      "id": "mcp",
+      "title": "Connect your agents",
+      "state": "needs-you",
+      "why": "Sindri can tell your agents where it is. Press the button to do it.",
+      "detail": null,
+      "error": null,
+      "action": "RegisterMcp",
+      "progress": null,
+      "items": [
+        {
+          "repo": "demo",
+          "state": "needs-you",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "id": "map",
+      "title": "Build the map",
+      "state": "running",
+      "why": "Sindri is mapping demo.",
+      "detail": "40 of 100 done.",
+      "error": null,
+      "action": null,
+      "progress": {
+        "done": 40,
+        "total": 100,
+        "unit": "files"
+      },
+      "items": [
+        {
+          "repo": "demo",
+          "state": "running",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "id": "onyx",
+      "title": "Set up Onyx",
+      "state": "todo",
+      "why": "Docker is ready. Set up Onyx when you want search.",
+      "detail": "Onyx isn't set up yet.",
+      "error": null,
+      "action": "SetupOnyx",
+      "progress": null,
+      "items": []
+    }
+  ],
+  "asOf": {
+    "cursor": 0,
+    "ledgerHead": 0,
+    "projectedAt": null,
+    "rebuilding": false,
+    "stalled": false
+  }
+}

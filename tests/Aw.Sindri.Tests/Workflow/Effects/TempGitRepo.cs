@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Tests.Ledger;
 
 namespace Aw.Sindri.Tests.Workflow.Effects;
@@ -21,10 +22,10 @@ public sealed class TempGitRepo : IDisposable
     public static async Task<TempGitRepo> Create(int commits = 1)
     {
         var repo = new TempGitRepo();
-        _ = await repo.Git("init", "-q", "-b", "main");
+        _ = await repo.Git(IsolatedGit.Init("-b", "main"));
         for (var i = 0; i < commits; i++)
         {
-            _ = await repo.Git("-c", "user.email=test@example.invalid", "-c", "user.name=test", "commit", "-q", "--allow-empty", "-m", "init");
+            _ = await repo.Git([.. IsolatedGit.NoHooks, "-c", "user.email=test@example.invalid", "-c", "user.name=test", "commit", "-q", "--allow-empty", "-m", "init"]);
         }
 
         return repo;
@@ -41,9 +42,18 @@ public sealed class TempGitRepo : IDisposable
     }
 
     /// <summary>Runs git in the repo and returns its exit code, output and error.</summary>
-    public async Task<(int Exit, string Output, string Error)> Run(params string[] args)
+    public Task<(int Exit, string Output, string Error)> Run(params string[] args) => RunIn(Path, args);
+
+    /// <summary>Runs git in <paramref name="directory"/> (a worktree of the repo, say) and asserts it exits 0.</summary>
+    public static async Task GitIn(string directory, params string[] args)
     {
-        var start = new ProcessStartInfo("git", ["-C", Path, .. args]) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+        var (exit, _, error) = await RunIn(directory, args);
+        Assert.True(exit == 0, $"git {string.Join(' ', args)}: {error}");
+    }
+
+    private static async Task<(int Exit, string Output, string Error)> RunIn(string directory, string[] args)
+    {
+        var start = new ProcessStartInfo("git", ["-C", directory, .. args]) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
         start.Environment["GIT_CONFIG_GLOBAL"] = "/dev/null";
         start.Environment["GIT_CONFIG_NOSYSTEM"] = "1";
         using var git = Process.Start(start)!;   // why: Start returns a process for a command it found

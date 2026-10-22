@@ -18,5 +18,6 @@
   "budget": null,
   "paused": null,
   "commands": [],
-  "text": "ITM-01JK7/triage-alert/1  workflow.triage-alert@d41f2a070000  v2  done: resolved  since 11:58 (28m)\n"
+  "text": "ITM-01JK7/triage-alert/1  workflow.triage-alert@d41f2a070000  v2  done: resolved  since 11:58 (28m)\n",
+  "injection": []
 }

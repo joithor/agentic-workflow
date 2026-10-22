@@ -5,7 +5,6 @@ using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Items.Vocabulary;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launches;
-using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
@@ -28,7 +27,7 @@ public sealed class LaunchOptionsTests
     private static LaunchRow Row(int n, LaunchState state, bool live = false, SessionId? reported = null, string? code = null, TimeSpan? age = null) =>
         new(LaunchId.From("LCH-" + n.ToString("x32", System.Globalization.CultureInfo.InvariantCulture)), _item, RepoName.From("web"), LaunchMode.Open, AgentId.From("claude-code"), "click", state,
             _now - (age ?? TimeSpan.FromMinutes(5)), OutcomeAt: null, code, Message: null, Stage: null, SessionId: null, reported, TabTitle: "sindri " + _item.Value, Viewer: null, Late: false,
-            Attach: state == LaunchState.Started ? ["tmux", "attach"] : null, CatalogSource: null, ArgvHash: null, live || state != LaunchState.Started ? null : new LaunchEnd(SessionEndReason.Exit, 0, _now), Sequence: n);
+            Attach: state == LaunchState.Started ? ["tmux", "attach"] : null, CatalogSource: null, ArgvHash: null, live || state != LaunchState.Started ? null : new LaunchEnd(SessionEndReason.Exit, 0, _now), LaunchStep.None, Sequence: n);
 
     private static ItemLaunch For(ItemRow item, params LaunchRow[] launches) => LaunchOptions.For(new LaunchOptionInputs
     {
@@ -88,6 +87,44 @@ public sealed class LaunchOptionsTests
         Assert.Null(refused.Confirm);
         Assert.Null(old.Confirm);
         Assert.Null(takenOver.Confirm);
+    }
+
+    private static LaunchRow Attached(int n, LaunchState state = LaunchState.Started, SessionId? session = null, TimeSpan? age = null) =>
+        Row(n, state, live: true, age: age) with { Mode = LaunchMode.Attach, SessionId = session ?? _session };   // an attach records the live session's id and never ends
+
+    [Fact]
+    public void An_attach_row_is_never_offered_as_a_session_to_resume()
+    {
+        var open = Row(1, LaunchState.Started, live: true) with { SessionId = _session };
+
+        var launch = For(Item(engine: Engine()), Attached(2), open);
+
+        Assert.Equal([LaunchMode.Open, LaunchMode.Attach], launch.Modes);   // attach to the running session; never a second agent on it
+        Assert.Null(launch.Resumable);
+    }
+
+    [Fact]
+    public void An_older_ended_session_is_not_resumable_while_a_newer_one_of_the_agent_runs()
+    {
+        var ended = Row(1, LaunchState.Started, live: false, reported: _session, age: TimeSpan.FromMinutes(40));
+        var running = Row(2, LaunchState.Started, live: true);
+
+        var launch = For(Item(engine: Engine()), running, ended);
+
+        Assert.DoesNotContain(LaunchMode.Resume, launch.Modes);
+        Assert.Null(launch.Resumable);
+    }
+
+    [Fact]
+    public void An_attach_row_is_not_a_start_for_the_confirm_or_the_last_started()
+    {
+        var attachOnly = For(Item(), Attached(1));
+        var afterEndedOpen = For(Item(), Attached(2), Row(1, LaunchState.Started, live: false, age: TimeSpan.FromHours(3)));
+
+        Assert.Null(attachOnly.Confirm);
+        Assert.Null(attachOnly.LastStarted);
+        Assert.Null(afterEndedOpen.Confirm);   // the open is past the window; the attach started nothing
+        Assert.Equal(_now - TimeSpan.FromHours(3), afterEndedOpen.LastStarted?.At);
     }
 
     [Fact]

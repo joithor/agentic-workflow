@@ -3,7 +3,7 @@ using Aw.Sindri.Core.Ids;
 namespace Aw.Sindri.Core.Launch.Argv;
 
 /// <summary>
-/// What <see cref="ArgvBuilder.Build"/> expands an entry's templates with (launcher spec section 3): ids, the repo path, the session name,
+/// What <see cref="ArgvBuilder.Build(AgentEntry, LaunchMode, ArgvInputs)"/> expands an entry's templates with (launcher spec section 3): ids, the repo path, the session name,
 /// the seed (a fixed template plus ids, UI 6.2) and the per-launch MCP config path. Never item text.
 /// </summary>
 /// <param name="Item">The item the session works on.</param>
@@ -19,7 +19,7 @@ public sealed record ArgvInputs(
     string RepoPath,
     string SessionName,
     string Seed,
-    Sessions.SessionId? SessionId = null,
+    SessionId? SessionId = null,
     string? McpConfigPath = null,
     StepArgs? Step = null,
     string? PolicyFilePath = null);

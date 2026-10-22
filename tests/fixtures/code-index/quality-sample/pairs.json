@@ -1,0 +1,1007 @@
+{
+  "comment": "Quality-probe sample (spec section 11): 50 call-site to definition pairs from this repo's own src/, labeled by the lane by reading the code. NOT yet reviewed by the owner: every row has reviewed: false.",
+  "commit": "b6f5644024cade66818a247361b997497f4c9fb1",
+  "labelMeaning": "label true: at that call site the callee is the statically bound method, or an implementation the call can dispatch to (kind dispatch). label false: the callee has the same name but cannot be reached from that call site. kind static | dispatch; how says how the lane decided.",
+  "pairs": [
+    {
+      "id": "P01",
+      "group": "Fold",
+      "weakSpot": "overload-by-type",
+      "caller": {
+        "file": "src/Sindri/Aw.Sindri.Core/Views/JobsProjection.cs",
+        "line": 48,
+        "text": "return row.IsError ? row.Error : await rows.Put(ViewNames.Jobs, key, Fold(row.Value, started.Value, recorded), cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Fold",
+        "file": "src/Sindri/Aw.Sindri.Core/Views/JobsProjection.cs",
+        "line": 70,
+        "text": "public static JobRow Fold(JobRow? row, JobStarted started, LedgerEvent recorded)"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "argument started is a JobStarted; the overload taking JobStarted",
+      "reviewed": false
+    },
+    {
+      "id": "P02",
+      "group": "Fold",
+      "weakSpot": "overload-by-type",
+      "caller": {
+        "file": "src/Sindri/Aw.Sindri.Core/Views/JobsProjection.cs",
+        "line": 48,
+        "text": "return row.IsError ? row.Error : await rows.Put(ViewNames.Jobs, key, Fold(row.Value, started.Value, recorded), cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Fold",
+        "file": "src/Sindri/Aw.Sindri.Core/Views/JobsProjection.cs",
+        "line": 84,
+        "text": "public static JobRow Fold(JobRow row, JobProgress progress, LedgerEvent recorded)"
+      },
+      "label": false,
+      "kind": "static",
+      "how": "the JobProgress overload; the argument is a JobStarted",
+      "reviewed": false
+    },
+    {
+      "id": "P03",
+      "group": "Fold",
+      "weakSpot": "overload-by-type",
+      "caller": {
+        "file": "src/Sindri/Aw.Sindri.Core/Views/ProfileProjection.cs",
+        "line": 34,
+        "text": ": events.Payload<ProfileChecked>(recorded).Map(check => Fold(row.Value, check, recorded));"
+      },
+      "callee": {
+        "name": "Fold",
+        "file": "src/Sindri/Aw.Sindri.Core/Views/ProfileProjection.cs",
+        "line": 64,
+        "text": "public static ProfileRow Fold(ProfileRow? row, ProfileChecked check, LedgerEvent recorded)"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "argument check is a ProfileChecked; the lambda parameter of Map over Payload<ProfileChecked>",
+      "reviewed": false
+    },
+    {
+      "id": "P04",
+      "group": "Fold",
+      "weakSpot": "overload-by-type",
+      "caller": {
+        "file": "src/Sindri/Aw.Sindri.Core/Views/ProfileProjection.cs",
+        "line": 34,
+        "text": ": events.Payload<ProfileChecked>(recorded).Map(check => Fold(row.Value, check, recorded));"
+      },
+      "callee": {
+        "name": "Fold",
+        "file": "src/Sindri/Aw.Sindri.Core/Views/ProfileProjection.cs",
+        "line": 43,
+        "text": "public static ProfileRow Fold(ProfileRow? row, ProfileApproved approved, LedgerEvent recorded)"
+      },
+      "label": false,
+      "kind": "static",
+      "how": "the ProfileApproved overload; this branch passes a ProfileChecked",
+      "reviewed": false
+    },
+    {
+      "id": "P05",
+      "group": "Fold",
+      "weakSpot": "same-name-other-type",
+      "caller": {
+        "file": "src/Sindri/Aw.Sindri.Core/NeedsYou/NeedsYouProjection.cs",
+        "line": 109,
+        "text": "var service = ServicesProjection.Fold(row: null, ran.Value, recorded);"
+      },
+      "callee": {
+        "name": "Fold",
+        "file": "src/Sindri/Aw.Sindri.Core/Views/ServicesProjection.cs",
+        "line": 50,
+        "text": "public static ServiceRow Fold(ServiceRow? row, ServiceRan ran, LedgerEvent recorded)"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "ServicesProjection.Fold with a ServiceRan, named by the type qualifier",
+      "reviewed": false
+    },
+    {
+      "id": "P06",
+      "group": "Fold",
+      "weakSpot": "same-name-other-type",
+      "caller": {
+        "file": "src/Sindri/Aw.Sindri.Core/NeedsYou/NeedsYouProjection.cs",
+        "line": 109,
+        "text": "var service = ServicesProjection.Fold(row: null, ran.Value, recorded);"
+      },
+      "callee": {
+        "name": "Fold",
+        "file": "src/Sindri/Aw.Sindri.Core/Views/JobsProjection.cs",
+        "line": 70,
+        "text": "public static JobRow Fold(JobRow? row, JobStarted started, LedgerEvent recorded)"
+      },
+      "label": false,
+      "kind": "static",
+      "how": "same arity and parameter shape, but the receiver is ServicesProjection, not JobsProjection",
+      "reviewed": false
+    },
+    {
+      "id": "P07",
+      "group": "Fold",
+      "weakSpot": "overload-by-arity",
+      "caller": {
+        "file": "src/Sindri/Aw.Sindri.Core/Items/RequestsProjection.cs",
+        "line": 134,
+        "text": "var made = Fold(filed.Value, recorded, scrubber, version);"
+      },
+      "callee": {
+        "name": "Fold",
+        "file": "src/Sindri/Aw.Sindri.Core/Items/RequestsProjection.cs",
+        "line": 59,
+        "text": "public static FiledRows Fold(RequestFiled filed, LedgerEvent recorded, ITextScrubber scrubber, long itemVersion)"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "four arguments (filed, recorded, scrubber, version): the RequestFiled overload",
+      "reviewed": false
+    },
+    {
+      "id": "P08",
+      "group": "Fold",
+      "weakSpot": "overload-by-arity",
+      "caller": {
+        "file": "src/Sindri/Aw.Sindri.Core/Items/RequestsProjection.cs",
+        "line": 156,
+        "text": "var made = request.IsError ? request.Error : Fold(payload.Value, decision.Value, request.Value, recorded, scrubber);"
+      },
+      "callee": {
+        "name": "Fold",
+        "file": "src/Sindri/Aw.Sindri.Core/Items/RequestsProjection.cs",
+        "line": 59,
+        "text": "public static FiledRows Fold(RequestFiled filed, LedgerEvent recorded, ITextScrubber scrubber, long itemVersion)"
+      },
+      "label": false,
+      "kind": "static",
+      "how": "five arguments here; the RequestFiled overload takes four",
+      "reviewed": false
+    },
+    {
+      "id": "P09",
+      "group": "Probe",
+      "weakSpot": "interface-dispatch",
+      "caller": {
+        "file": "src/Context/Aw.Context.Features/SourcesStatus/SourcesStatusService.cs",
+        "line": 63,
+        "text": "var health = await source.Probe(cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Probe",
+        "file": "src/Context/Aw.Context.Core/Sources/IContextSource.cs",
+        "line": 38,
+        "text": "public ValueTask<SourceHealth> Probe(CancellationToken cancellationToken);"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "source is an IContextSource; the interface member is the static target",
+      "reviewed": false
+    },
+    {
+      "id": "P10",
+      "group": "Probe",
+      "weakSpot": "interface-dispatch",
+      "caller": {
+        "file": "src/Context/Aw.Context.Features/SourcesStatus/SourcesStatusService.cs",
+        "line": 63,
+        "text": "var health = await source.Probe(cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Probe",
+        "file": "src/Context/Aw.Context.Infrastructure/Onyx/OnyxSource.cs",
+        "line": 89,
+        "text": "public async ValueTask<SourceHealth> Probe(CancellationToken cancellationToken)"
+      },
+      "label": true,
+      "kind": "dispatch",
+      "how": "OnyxSource implements IContextSource, so the call can reach it",
+      "reviewed": false
+    },
+    {
+      "id": "P11",
+      "group": "Probe",
+      "weakSpot": "same-name-other-type",
+      "caller": {
+        "file": "src/Context/Aw.Context.Features/SourcesStatus/SourcesStatusService.cs",
+        "line": 63,
+        "text": "var health = await source.Probe(cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Probe",
+        "file": "src/Meta/Aw.Meta.Infrastructure/Processes/TmuxLanePane.cs",
+        "line": 21,
+        "text": "public async ValueTask<Result<PaneState?>> Probe(string session, CancellationToken cancellationToken)"
+      },
+      "label": false,
+      "kind": "static",
+      "how": "TmuxLanePane implements ILanePane, not IContextSource; it takes a session name too",
+      "reviewed": false
+    },
+    {
+      "id": "P12",
+      "group": "Probe",
+      "weakSpot": "interface-dispatch",
+      "caller": {
+        "file": "src/Context/Aw.Context.Features/SourcesStatus/SourcesStatusService.cs",
+        "line": 63,
+        "text": "var health = await source.Probe(cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Probe",
+        "file": "src/Context/Aw.Context.Infrastructure/Docs/RepoDocsSource.cs",
+        "line": 117,
+        "text": "public async ValueTask<SourceHealth> Probe(CancellationToken cancellationToken)"
+      },
+      "label": true,
+      "kind": "dispatch",
+      "how": "RepoDocsSource implements IContextSource",
+      "reviewed": false
+    },
+    {
+      "id": "P13",
+      "group": "Probe",
+      "weakSpot": "interface-dispatch",
+      "caller": {
+        "file": "src/Meta/Aw.Meta.Features/LaneSend/LaneSendService.cs",
+        "line": 111,
+        "text": "var state = await pane.Probe(target.Session, cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Probe",
+        "file": "src/Meta/Aw.Meta.Core/Ports/ILanePane.cs",
+        "line": 13,
+        "text": "public ValueTask<Result<PaneState?>> Probe(string session, CancellationToken cancellationToken);"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "pane is an ILanePane; the call passes a session name and a token",
+      "reviewed": false
+    },
+    {
+      "id": "P14",
+      "group": "Probe",
+      "weakSpot": "same-name-other-type",
+      "caller": {
+        "file": "src/Meta/Aw.Meta.Features/LaneSend/LaneSendService.cs",
+        "line": 111,
+        "text": "var state = await pane.Probe(target.Session, cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Probe",
+        "file": "src/Context/Aw.Context.Core/Sources/IContextSource.cs",
+        "line": 38,
+        "text": "public ValueTask<SourceHealth> Probe(CancellationToken cancellationToken);"
+      },
+      "label": false,
+      "kind": "static",
+      "how": "IContextSource.Probe takes only a token; an ILanePane is not an IContextSource",
+      "reviewed": false
+    },
+    {
+      "id": "P15",
+      "group": "Probe",
+      "weakSpot": "interface-dispatch",
+      "caller": {
+        "file": "src/Sindri/Aw.Sindri.Infrastructure/Launch/Launcher.cs",
+        "line": 60,
+        "text": "var terminal = await parts.Viewer.Probe(cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Probe",
+        "file": "src/Sindri/Aw.Sindri.Core/Launch/ITerminalViewer.cs",
+        "line": 21,
+        "text": "public ValueTask<TerminalFacts> Probe(CancellationToken cancellationToken);"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "parts.Viewer is an ITerminalViewer",
+      "reviewed": false
+    },
+    {
+      "id": "P16",
+      "group": "Probe",
+      "weakSpot": "same-name-other-type",
+      "caller": {
+        "file": "src/Sindri/Aw.Sindri.Infrastructure/Launch/Launcher.cs",
+        "line": 60,
+        "text": "var terminal = await parts.Viewer.Probe(cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Probe",
+        "file": "src/Sindri/Aw.Sindri.Core/Launch/ISessionHost.cs",
+        "line": 47,
+        "text": "public ValueTask<HostFacts> Probe(CancellationToken cancellationToken);"
+      },
+      "label": false,
+      "kind": "static",
+      "how": "ISessionHost.Probe is the target of the next line (HostFor); this receiver is the viewer",
+      "reviewed": false
+    },
+    {
+      "id": "P17",
+      "group": "Decide",
+      "weakSpot": "same-name-other-type",
+      "caller": {
+        "file": "src/Meta/Aw.Meta.Features/LaneStopCheck/LaneStopCheckService.cs",
+        "line": 39,
+        "text": "var outcome = await guard.Decide(new LaneStop(request.Identity, owed.Value, request.HookActive, request.MaxBlocks, now), cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Decide",
+        "file": "src/Meta/Aw.Meta.Core/Coordination/LaneStopGuard.cs",
+        "line": 24,
+        "text": "public async ValueTask<Result<StopOutcome>> Decide(LaneStop stop, CancellationToken cancellationToken)"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "guard is a LaneStopGuard (the constructor parameter type)",
+      "reviewed": false
+    },
+    {
+      "id": "P18",
+      "group": "Decide",
+      "weakSpot": "same-name-other-type",
+      "caller": {
+        "file": "src/Meta/Aw.Meta.Features/LaneStopCheck/LaneStopCheckService.cs",
+        "line": 39,
+        "text": "var outcome = await guard.Decide(new LaneStop(request.Identity, owed.Value, request.HookActive, request.MaxBlocks, now), cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Decide",
+        "file": "src/Meta/Aw.Meta.Core/Coordination/StopGuard.cs",
+        "line": 22,
+        "text": "public async ValueTask<Result<StopOutcome>> Decide(IReadOnlyList<Obligation> open, bool hookActive, int max, DateTimeOffset now, CancellationToken cancellationToken)"
+      },
+      "label": false,
+      "kind": "static",
+      "how": "StopGuard.Decide takes five arguments; the call passes two",
+      "reviewed": false
+    },
+    {
+      "id": "P19",
+      "group": "Decide",
+      "weakSpot": "same-name-other-type",
+      "caller": {
+        "file": "src/Meta/Aw.Meta.Features/StopCheck/StopCheckService.cs",
+        "line": 39,
+        "text": "var outcome = await guard.Decide(open.Value, request.HookActive, request.MaxBlocks, now, cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Decide",
+        "file": "src/Meta/Aw.Meta.Core/Coordination/StopGuard.cs",
+        "line": 22,
+        "text": "public async ValueTask<Result<StopOutcome>> Decide(IReadOnlyList<Obligation> open, bool hookActive, int max, DateTimeOffset now, CancellationToken cancellationToken)"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "five arguments, guard a StopGuard",
+      "reviewed": false
+    },
+    {
+      "id": "P20",
+      "group": "Decide",
+      "weakSpot": "same-name-other-type",
+      "caller": {
+        "file": "src/Meta/Aw.Meta.Features/StopCheck/StopCheckService.cs",
+        "line": 39,
+        "text": "var outcome = await guard.Decide(open.Value, request.HookActive, request.MaxBlocks, now, cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Decide",
+        "file": "src/Meta/Aw.Meta.Core/Coordination/LaneStopGuard.cs",
+        "line": 24,
+        "text": "public async ValueTask<Result<StopOutcome>> Decide(LaneStop stop, CancellationToken cancellationToken)"
+      },
+      "label": false,
+      "kind": "static",
+      "how": "LaneStopGuard.Decide takes a LaneStop and a token",
+      "reviewed": false
+    },
+    {
+      "id": "P21",
+      "group": "Decide",
+      "weakSpot": "static-vs-instance",
+      "caller": {
+        "file": "src/Meta/Aw.Meta.Core/Coordination/LaneStopGuard.cs",
+        "line": 36,
+        "text": "var decision = StopLoopGuard.Decide(previous, Fingerprint(stop.Owed), stop.HookActive, stop.MaxBlocks);"
+      },
+      "callee": {
+        "name": "Decide",
+        "file": "src/Meta/Aw.Meta.Core/Guard/StopLoopGuard.cs",
+        "line": 27,
+        "text": "public static GuardDecision Decide(GuardState previous, string fingerprint, bool hookActive, int max)"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "StopLoopGuard.Decide(previous, fingerprint, hookActive, max), named by the type qualifier",
+      "reviewed": false
+    },
+    {
+      "id": "P22",
+      "group": "Decide",
+      "weakSpot": "interface-dispatch",
+      "caller": {
+        "file": "src/Judge/Aw.Judge.Core/Evaluation/QuestionEvaluator.cs",
+        "line": 175,
+        "text": "var result = await provider.Decide(reference, run.Input, question.TimeBudget, cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Decide",
+        "file": "src/Judge/Aw.Judge.Core/Ports/IModelProvider.cs",
+        "line": 27,
+        "text": "public ValueTask<ProviderResult> Decide(QuestionRef question, JsonNode? input, TimeSpan budget, CancellationToken cancellationToken);"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "provider is an IModelProvider (candidates list); four arguments",
+      "reviewed": false
+    },
+    {
+      "id": "P23",
+      "group": "Decide",
+      "weakSpot": "interface-dispatch",
+      "caller": {
+        "file": "src/Judge/Aw.Judge.Core/Evaluation/QuestionEvaluator.cs",
+        "line": 175,
+        "text": "var result = await provider.Decide(reference, run.Input, question.TimeBudget, cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Decide",
+        "file": "src/Judge/Aw.Judge.Core/Evaluation/RulesProvider.cs",
+        "line": 26,
+        "text": "public ValueTask<ProviderResult> Decide(QuestionRef question, JsonNode? input, TimeSpan budget, CancellationToken cancellationToken)"
+      },
+      "label": true,
+      "kind": "dispatch",
+      "how": "RulesProvider implements IModelProvider",
+      "reviewed": false
+    },
+    {
+      "id": "P24",
+      "group": "Decide",
+      "weakSpot": "same-name-other-type",
+      "caller": {
+        "file": "src/Judge/Aw.Judge.Core/Evaluation/QuestionEvaluator.cs",
+        "line": 175,
+        "text": "var result = await provider.Decide(reference, run.Input, question.TimeBudget, cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Decide",
+        "file": "src/Meta/Aw.Meta.Core/Guard/StopLoopGuard.cs",
+        "line": 27,
+        "text": "public static GuardDecision Decide(GuardState previous, string fingerprint, bool hookActive, int max)"
+      },
+      "label": false,
+      "kind": "static",
+      "how": "also four parameters, but a static method of StopLoopGuard; the receiver is an IModelProvider",
+      "reviewed": false
+    },
+    {
+      "id": "P25",
+      "group": "Decide",
+      "weakSpot": "unqualified-same-type",
+      "caller": {
+        "file": "src/Readiness/Aw.Readiness.Core/Criteria/TemplateReadiness.cs",
+        "line": 29,
+        "text": "return [.. _catalogue.Select(e => Decide(e, context))];"
+      },
+      "callee": {
+        "name": "Decide",
+        "file": "src/Readiness/Aw.Readiness.Core/Criteria/TemplateReadiness.cs",
+        "line": 42,
+        "text": "private static Finding Decide(CatalogueEntry entry, RepoContext context)"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "unqualified call inside TemplateReadiness; its own two-parameter private method",
+      "reviewed": false
+    },
+    {
+      "id": "P26",
+      "group": "Decide",
+      "weakSpot": "same-name-other-type",
+      "caller": {
+        "file": "src/Readiness/Aw.Readiness.Core/Criteria/TemplateReadiness.cs",
+        "line": 29,
+        "text": "return [.. _catalogue.Select(e => Decide(e, context))];"
+      },
+      "callee": {
+        "name": "Decide",
+        "file": "src/Context/Aw.Context.Core/Review/ReviewFileMatcher.cs",
+        "line": 38,
+        "text": "private static Result<ReviewDecision> Decide(ReviewFileEntry entry, HashSet<string> queued)"
+      },
+      "label": false,
+      "kind": "static",
+      "how": "ReviewFileMatcher.Decide is private to another class",
+      "reviewed": false
+    },
+    {
+      "id": "P27",
+      "group": "Stop",
+      "weakSpot": "interface-dispatch",
+      "caller": {
+        "file": "src/Sindri/Aw.Sindri.Infrastructure/Launch/Launcher.cs",
+        "line": 47,
+        "text": "var stopped = await parts.HostFor(false).Stop(new HostRef(HostKind.Tmux, SessionName(launch)), cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Stop",
+        "file": "src/Sindri/Aw.Sindri.Core/Launch/ISessionHost.cs",
+        "line": 25,
+        "text": "public ValueTask<Result<Unit>> Stop(HostRef host, CancellationToken cancellationToken);"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "HostFor returns an ISessionHost",
+      "reviewed": false
+    },
+    {
+      "id": "P28",
+      "group": "Stop",
+      "weakSpot": "same-name-other-type",
+      "caller": {
+        "file": "src/Sindri/Aw.Sindri.Infrastructure/Launch/Launcher.cs",
+        "line": 47,
+        "text": "var stopped = await parts.HostFor(false).Stop(new HostRef(HostKind.Tmux, SessionName(launch)), cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Stop",
+        "file": "src/Sindri/Aw.Sindri.Infrastructure/Onyx/DockerCliRuntime.Compose.cs",
+        "line": 49,
+        "text": "public Result<Unit> Stop(ComposeProject project, CancellationToken cancellationToken)"
+      },
+      "label": false,
+      "kind": "static",
+      "how": "DockerCliRuntime.Stop takes a ComposeProject; the call passes a HostRef",
+      "reviewed": false
+    },
+    {
+      "id": "P29",
+      "group": "Release",
+      "weakSpot": "interface-dispatch",
+      "caller": {
+        "file": "src/BugFix/Aw.BugFix.Features/RunUi/RunUiService.cs",
+        "line": 36,
+        "text": "ledger.Release(slot);"
+      },
+      "callee": {
+        "name": "Release",
+        "file": "src/BugFix/Aw.BugFix.Core/Ports/IRunLedger.cs",
+        "line": 34,
+        "text": "public void Release(RunSlot slot);"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "ledger is an IRunLedger",
+      "reviewed": false
+    },
+    {
+      "id": "P30",
+      "group": "Release",
+      "weakSpot": "interface-dispatch",
+      "caller": {
+        "file": "src/BugFix/Aw.BugFix.Features/RunUi/RunUiService.cs",
+        "line": 36,
+        "text": "ledger.Release(slot);"
+      },
+      "callee": {
+        "name": "Release",
+        "file": "src/BugFix/Aw.BugFix.Infrastructure/FileRunLedger.cs",
+        "line": 102,
+        "text": "public void Release(RunSlot slot) => File.Delete(slot.Record);"
+      },
+      "label": true,
+      "kind": "dispatch",
+      "how": "FileRunLedger implements IRunLedger",
+      "reviewed": false
+    },
+    {
+      "id": "P31",
+      "group": "Release",
+      "weakSpot": "same-name-other-type",
+      "caller": {
+        "file": "src/BugFix/Aw.BugFix.Features/RunUi/RunUiService.cs",
+        "line": 36,
+        "text": "ledger.Release(slot);"
+      },
+      "callee": {
+        "name": "Release",
+        "file": "src/Sindri/Aw.Sindri.Workflows/HomeCommandNonces.cs",
+        "line": 82,
+        "text": "public async ValueTask<Result<Unit>> Release(CommandNonce nonce, CancellationToken cancellationToken)"
+      },
+      "label": false,
+      "kind": "static",
+      "how": "HomeCommandNonces.Release takes a nonce and a token; the call passes one slot",
+      "reviewed": false
+    },
+    {
+      "id": "P32",
+      "group": "Release",
+      "weakSpot": "interface-dispatch",
+      "caller": {
+        "file": "src/Sindri/Aw.Sindri.Features/ApplyCommand/ApplyCommandService.cs",
+        "line": 94,
+        "text": "_ = await nonces.Release(nonce, cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Release",
+        "file": "src/Sindri/Aw.Sindri.Core/Workflow/Engine/Runtime/ICommandNonces.cs",
+        "line": 49,
+        "text": "public ValueTask<Result<Unit>> Release(CommandNonce nonce, CancellationToken cancellationToken);"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "nonces is an ICommandNonces; arguments are a CommandNonce and a token",
+      "reviewed": false
+    },
+    {
+      "id": "P33",
+      "group": "Release",
+      "weakSpot": "same-name-other-type",
+      "caller": {
+        "file": "src/Sindri/Aw.Sindri.Features/ApplyCommand/ApplyCommandService.cs",
+        "line": 94,
+        "text": "_ = await nonces.Release(nonce, cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Release",
+        "file": "src/Sindri/Aw.Sindri.Workflows/CleanupActivities.cs",
+        "line": 30,
+        "text": "public async Task<bool> Release(ReleaseRun run, CancellationToken cancellationToken)"
+      },
+      "label": false,
+      "kind": "static",
+      "how": "same arity as the interface member, but CleanupActivities.Release takes a ReleaseRun and is not an ICommandNonces",
+      "reviewed": false
+    },
+    {
+      "id": "P34",
+      "group": "Release",
+      "weakSpot": "unqualified-same-type",
+      "caller": {
+        "file": "src/Sindri/Aw.Sindri.Ui/Views/Approvals/ApproveAllDialog.axaml.cs",
+        "line": 32,
+        "text": "hold.LostFocus += (_, _) => Release();"
+      },
+      "callee": {
+        "name": "Release",
+        "file": "src/Sindri/Aw.Sindri.Ui/Views/Approvals/ApproveAllDialog.axaml.cs",
+        "line": 130,
+        "text": "private void Release()"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "unqualified call in the dialog's own method",
+      "reviewed": false
+    },
+    {
+      "id": "P35",
+      "group": "Release",
+      "weakSpot": "optional-parameter",
+      "caller": {
+        "file": "src/Sindri/Aw.Sindri.Ui/ViewModels/Queue/QueueViewModel.Keys.cs",
+        "line": 67,
+        "text": "_ = Release();"
+      },
+      "callee": {
+        "name": "Release",
+        "file": "src/Sindri/Aw.Sindri.Ui/ViewModels/Queue/QueueViewModel.Keys.cs",
+        "line": 92,
+        "text": "private bool Release(bool byPill = false)"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "Release() with the default of byPill",
+      "reviewed": false
+    },
+    {
+      "id": "P36",
+      "group": "Matches",
+      "weakSpot": "unqualified-same-type",
+      "caller": {
+        "file": "src/Meta/Aw.Meta.Core/Messages/MessageClassifier.cs",
+        "line": 23,
+        "text": "if (Matches(ReadyPattern, text) is { } ready"
+      },
+      "callee": {
+        "name": "Matches",
+        "file": "src/Meta/Aw.Meta.Core/Messages/MessageClassifier.cs",
+        "line": 41,
+        "text": "private static Match? Matches(Regex pattern, string text)"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "two arguments (pattern, text); the private method of the same class",
+      "reviewed": false
+    },
+    {
+      "id": "P37",
+      "group": "Matches",
+      "weakSpot": "same-name-other-type",
+      "caller": {
+        "file": "src/Meta/Aw.Meta.Core/Messages/MessageClassifier.cs",
+        "line": 23,
+        "text": "if (Matches(ReadyPattern, text) is { } ready"
+      },
+      "callee": {
+        "name": "Matches",
+        "file": "src/Judge/Aw.Judge.Infrastructure/Providers/AgentAnswer.cs",
+        "line": 102,
+        "text": "private static bool Matches(JsonObject fragment, JsonNode value)"
+      },
+      "label": false,
+      "kind": "static",
+      "how": "also two parameters, but in AgentAnswer; the call is unqualified in MessageClassifier",
+      "reviewed": false
+    },
+    {
+      "id": "P38",
+      "group": "Matches",
+      "weakSpot": "same-name-other-type",
+      "caller": {
+        "file": "src/Sindri/Aw.Sindri.Ui/ViewModels/Palette/CommandPaletteViewModel.cs",
+        "line": 241,
+        "text": "Sections = [.. _all.Select(s => s with { Entries = [.. s.Entries.Where(e => e.Matches(query))] }).Where(s => s.Entries.Count > 0)];"
+      },
+      "callee": {
+        "name": "Matches",
+        "file": "src/Sindri/Aw.Sindri.Ui/ViewModels/Palette/PaletteEntry.cs",
+        "line": 109,
+        "text": "internal bool Matches(string query) => query.Length == 0 || Subsequence(query, Label) || Subsequence(query, Id);"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "e is a PaletteEntry (Entries of PaletteSection), argument is the query string",
+      "reviewed": false
+    },
+    {
+      "id": "P39",
+      "group": "Matches",
+      "weakSpot": "same-name-other-type",
+      "caller": {
+        "file": "src/Sindri/Aw.Sindri.Ui/ViewModels/Palette/CommandPaletteViewModel.cs",
+        "line": 241,
+        "text": "Sections = [.. _all.Select(s => s with { Entries = [.. s.Entries.Where(e => e.Matches(query))] }).Where(s => s.Entries.Count > 0)];"
+      },
+      "callee": {
+        "name": "Matches",
+        "file": "src/Context/Aw.Context.Infrastructure/Docs/Glob.cs",
+        "line": 18,
+        "text": "public bool Matches(string path) => _patterns.Any(p => p.IsMatch(path));"
+      },
+      "label": false,
+      "kind": "static",
+      "how": "Glob.Matches(path) has one parameter too, but e is a PaletteEntry",
+      "reviewed": false
+    },
+    {
+      "id": "P40",
+      "group": "Matches",
+      "weakSpot": "overload-by-type",
+      "caller": {
+        "file": "src/Meta/Aw.Meta.Core/Obligations/ObligationEvaluator.cs",
+        "line": 103,
+        "text": "[.. lanes.Where(lane => !facts.Outbound.Any(o => Recipient.Matches(o.To, lane) && sent(o)))];"
+      },
+      "callee": {
+        "name": "Matches",
+        "file": "src/Meta/Aw.Meta.Core/Obligations/Recipient.cs",
+        "line": 13,
+        "text": "internal static bool Matches(string to, LaneAssignment lane) =>"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "the second argument is a LaneAssignment (the lane variable)",
+      "reviewed": false
+    },
+    {
+      "id": "P41",
+      "group": "Matches",
+      "weakSpot": "overload-by-type",
+      "caller": {
+        "file": "src/Meta/Aw.Meta.Core/Obligations/ObligationEvaluator.cs",
+        "line": 103,
+        "text": "[.. lanes.Where(lane => !facts.Outbound.Any(o => Recipient.Matches(o.To, lane) && sent(o)))];"
+      },
+      "callee": {
+        "name": "Matches",
+        "file": "src/Meta/Aw.Meta.Core/Obligations/Recipient.cs",
+        "line": 8,
+        "text": "internal static bool Matches(string to, string name, string? other = null) =>"
+      },
+      "label": false,
+      "kind": "static",
+      "how": "the string overload; the second argument is a LaneAssignment, not a string",
+      "reviewed": false
+    },
+    {
+      "id": "P42",
+      "group": "Handle",
+      "weakSpot": "interface-dispatch",
+      "caller": {
+        "file": "src/Packets/Aw.Packets.App/Commands/ValidatePacketCommand.cs",
+        "line": 21,
+        "text": "var result = await service.Handle(new ValidatePacketRequest(arguments.PacketDirectory, arguments.RepoDirectory, arguments.SizesFile), CancellationToken.None)"
+      },
+      "callee": {
+        "name": "Handle",
+        "file": "src/Aw.Kernel/Services/IService.cs",
+        "line": 16,
+        "text": "public ValueTask<Result<TResponse>> Handle(TRequest request, CancellationToken cancellationToken);"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "service is an IService<ValidatePacketRequest, ValidatePacketResponse>",
+      "reviewed": false
+    },
+    {
+      "id": "P43",
+      "group": "Handle",
+      "weakSpot": "interface-dispatch",
+      "caller": {
+        "file": "src/Packets/Aw.Packets.App/Commands/ValidatePacketCommand.cs",
+        "line": 21,
+        "text": "var result = await service.Handle(new ValidatePacketRequest(arguments.PacketDirectory, arguments.RepoDirectory, arguments.SizesFile), CancellationToken.None)"
+      },
+      "callee": {
+        "name": "Handle",
+        "file": "src/Packets/Aw.Packets.App/Features/ValidatePacket/ValidatePacketService.cs",
+        "line": 10,
+        "text": "public async ValueTask<Result<ValidatePacketResponse>> Handle(ValidatePacketRequest request, CancellationToken cancellationToken)"
+      },
+      "label": true,
+      "kind": "dispatch",
+      "how": "the service registered for that closed type",
+      "reviewed": false
+    },
+    {
+      "id": "P44",
+      "group": "Handle",
+      "weakSpot": "same-name-other-type",
+      "caller": {
+        "file": "src/Packets/Aw.Packets.App/Commands/ValidatePacketCommand.cs",
+        "line": 21,
+        "text": "var result = await service.Handle(new ValidatePacketRequest(arguments.PacketDirectory, arguments.RepoDirectory, arguments.SizesFile), CancellationToken.None)"
+      },
+      "callee": {
+        "name": "Handle",
+        "file": "src/Packets/Aw.Packets.App/Features/FreezePacket/FreezePacketService.cs",
+        "line": 13,
+        "text": "public async ValueTask<Result<FreezePacketResponse>> Handle(FreezePacketRequest request, CancellationToken cancellationToken)"
+      },
+      "label": false,
+      "kind": "static",
+      "how": "implements IService<FreezePacketRequest,...>, another closed type",
+      "reviewed": false
+    },
+    {
+      "id": "P45",
+      "group": "Handle",
+      "weakSpot": "interface-dispatch",
+      "caller": {
+        "file": "src/Packets/Aw.Packets.App/Commands/HashPacketCommand.cs",
+        "line": 23,
+        "text": "var result = await service.Handle(new HashPacketRequest(kind.Name, arguments.PacketDirectory), CancellationToken.None).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Handle",
+        "file": "src/Packets/Aw.Packets.App/Features/HashPacket/HashPacketService.cs",
+        "line": 12,
+        "text": "public async ValueTask<Result<HashPacketResponse>> Handle(HashPacketRequest request, CancellationToken cancellationToken)"
+      },
+      "label": true,
+      "kind": "dispatch",
+      "how": "HashPacketService implements the IService the command resolves",
+      "reviewed": false
+    },
+    {
+      "id": "P46",
+      "group": "Handle",
+      "weakSpot": "same-name-other-type",
+      "caller": {
+        "file": "src/Packets/Aw.Packets.App/Commands/HashPacketCommand.cs",
+        "line": 23,
+        "text": "var result = await service.Handle(new HashPacketRequest(kind.Name, arguments.PacketDirectory), CancellationToken.None).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Handle",
+        "file": "src/Packets/Aw.Packets.App/Features/ValidateLinePacket/ValidateLinePacketService.cs",
+        "line": 12,
+        "text": "public async ValueTask<Result<ValidateLinePacketResponse>> Handle(ValidateLinePacketRequest request, CancellationToken cancellationToken)"
+      },
+      "label": false,
+      "kind": "static",
+      "how": "a service of another request type",
+      "reviewed": false
+    },
+    {
+      "id": "P47",
+      "group": "Ask",
+      "weakSpot": "interface-dispatch",
+      "caller": {
+        "file": "src/Context/Aw.Context.Infrastructure/Labeling/ModelLabeler.cs",
+        "line": 49,
+        "text": "var answer = await model.Ask(new ModelRequest(ModelPurpose.Labeling, prompt, answerCap, _budget), cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Ask",
+        "file": "src/Context/Aw.Context.Core/Models/IModelPort.cs",
+        "line": 16,
+        "text": "public ValueTask<Result<ModelAnswer>> Ask(ModelRequest request, CancellationToken cancellationToken);"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "model is an IModelPort; a ModelRequest and a token",
+      "reviewed": false
+    },
+    {
+      "id": "P48",
+      "group": "Ask",
+      "weakSpot": "same-name-other-type",
+      "caller": {
+        "file": "src/Context/Aw.Context.Infrastructure/Labeling/ModelLabeler.cs",
+        "line": 49,
+        "text": "var answer = await model.Ask(new ModelRequest(ModelPurpose.Labeling, prompt, answerCap, _budget), cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Ask",
+        "file": "src/Context/Aw.Context.Core/Eval/Backtest/IArmQuery.cs",
+        "line": 16,
+        "text": "public ValueTask<Result<ContextResult>> Ask(ArmQuestion question, CancellationToken cancellationToken);"
+      },
+      "label": false,
+      "kind": "static",
+      "how": "IArmQuery.Ask also takes two arguments but an ArmQuestion; model is not an IArmQuery",
+      "reviewed": false
+    },
+    {
+      "id": "P49",
+      "group": "Ask",
+      "weakSpot": "interface-dispatch",
+      "caller": {
+        "file": "src/Meta/Aw.Meta.Core/Coordination/InboxSync.cs",
+        "line": 57,
+        "text": "var asked = await owner.Ask(message.FromName.Length > 0 ? message.FromName : message.From, OwnerQuestionText.From(message.Body), message.At, cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Ask",
+        "file": "src/Meta/Aw.Meta.Core/Ports/IOwnerStore.cs",
+        "line": 16,
+        "text": "public ValueTask<Result<int>> Ask(string askedBy, string text, DateTimeOffset at, CancellationToken cancellationToken);"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "owner is an IOwnerStore; four arguments",
+      "reviewed": false
+    },
+    {
+      "id": "P50",
+      "group": "Ask",
+      "weakSpot": "unqualified-same-type",
+      "caller": {
+        "file": "src/Context/Aw.Context.Features/Adjudicate/Adjudicator.cs",
+        "line": 30,
+        "text": "var first = await Ask(request, request.Surfaces, 0, cancellationToken).ConfigureAwait(false);"
+      },
+      "callee": {
+        "name": "Ask",
+        "file": "src/Context/Aw.Context.Features/Adjudicate/Adjudicator.cs",
+        "line": 53,
+        "text": "private async ValueTask<Round> Ask(AdjudicationRequest request, IReadOnlyList<Surface> order, int spentBefore, CancellationToken cancellationToken)"
+      },
+      "label": true,
+      "kind": "static",
+      "how": "unqualified call to the class's own four-parameter private method",
+      "reviewed": false
+    }
+  ]
+}

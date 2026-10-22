@@ -1,7 +1,7 @@
 {
   "id": "workflow.dev-triage-three-state",
-  "hash": "sha256:94c0c28e21ca37b9f9ad16233e33c9620b70e940c0fc19f3fb14cc9dfc51f002",
-  "version": 2,
+  "hash": "sha256:b77152c8613ea86d8a64fdf9e9a140c23b1c9352fc06fcebe5c1254ca5e2ad93",
+  "version": 3,
   "name": "{fact:scope} - {start:date}",
   "inputs": [
     {
@@ -54,5 +54,6 @@
       "branchOf": null
     }
   ],
-  "loops": []
+  "loops": [],
+  "displayName": "Dev triage three state"
 }

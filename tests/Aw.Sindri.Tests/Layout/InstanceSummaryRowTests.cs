@@ -28,7 +28,7 @@ public sealed partial class InstanceSummaryRowTests
         Assert.Equal(view.Address, row.Address);
         Assert.Equal(view.Id, row.Id);
         Assert.Equal(view.ItemId, row.ItemId);
-        Assert.Equal(new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, view.Urgency), row.Recipe);
+        Assert.Equal(new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, view.Urgency, DisplayName: null), row.Recipe);
         Assert.Equal(view.State, row.State);
         Assert.Equal(new StateChip("DECISION", ChipTone.Attn), row.Chip);
         Assert.Equal(view.Since, row.Since);
@@ -134,6 +134,9 @@ public sealed partial class InstanceSummaryRowTests
     [InlineData("parked-needs-answer-step")]
     [InlineData("escalated-gate")]
     [InlineData("done")]
+    [InlineData("failed")]
+    [InlineData("unresolved")]
+    [InlineData("cancelled")]
     [InlineData("escalated-child")]
     [InlineData("parked-mirrored-budget")]
     public void The_built_row_serializes_to_its_golden_file(string name)

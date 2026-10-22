@@ -33,6 +33,12 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     /// <summary>The shortest time between two re-reads of a view after events (§9.2: one refresh per view per 250 ms).</summary>
     internal static readonly TimeSpan RefreshEvery = TimeSpan.FromMilliseconds(250);
 
+    /// <summary>How many more times a view that lags an instance change's state is read (after the first read), each after twice the wait before: <see cref="InstanceBackoff"/>, then double, then double.</summary>
+    internal const int InstanceRetries = 3;
+
+    /// <summary>The wait before the first retry of a lagging view.</summary>
+    internal static readonly TimeSpan InstanceBackoff = TimeSpan.FromMilliseconds(200);
+
     // How often "updated Ns ago" is re-worded.
     private static readonly TimeSpan _tick = TimeSpan.FromSeconds(1);
 
@@ -122,6 +128,9 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     /// <summary>The followed control plane answered a ping: it is there, so the views are fresh (§4.1).</summary>
     internal void Answered() => Heard();
 
+    /// <summary>The live profile's hash from the last status, when it loads; the typed approval is tied to it.</summary>
+    internal string? LiveProfile { get; private set; }
+
     /// <summary>A status: the card's words, or a version mismatch.</summary>
     /// <param name="url">Where the API answered.</param>
     /// <param name="status">The status.</param>
@@ -141,12 +150,14 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
 
         _url = url;
         (_health, _projectedAt) = (status.Health, status.Views?.ProjectedAt);
+        Sessions = status.Sessions;
         Detail.Show(url, status);
         Api = url.Authority;
         Lease = StatusText.Lease(status);
         ProfileState = StatusText.ProfileState(status.Profile);
         ProfileDetail = StatusText.ProfileDetail(status.Profile);
         ProfileFix = StatusText.ProfileFix(status.Profile);
+        LiveProfile = status.Profile.Live;
         Services = [.. status.Services.Select(StatusText.Service)];
         if (status.Running)
         {
@@ -166,11 +177,19 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     /// <summary>The catalog as the API at <paramref name="url"/> served it; the stalled banner's Rebuild views follows it.</summary>
     /// <param name="url">Where the API answered.</param>
     /// <param name="catalog">The catalog.</param>
-    internal void ShowCatalog(Uri url, CommandList catalog) => Catalog.Show(url, api, catalog);
+    internal void ShowCatalog(Uri url, CommandList catalog)
+    {
+        Catalog.Show(url, api, catalog);
+        ReconnectServiceControls();
+    }
 
     /// <summary>The services view (API P2) for the banners; null when it isn't served or failed, which hides them.</summary>
     /// <param name="view">The view, or null.</param>
-    internal void ShowViews(ServiceList? view) => Banner.Show(view, Catalog.For("RebuildViews"));
+    internal void ShowViews(ServiceList? view)
+    {
+        Banner.Show(view, Catalog.For("RebuildViews"));
+        ShowServices(view);
+    }
 
     /// <summary>
     /// A failed call: SND-UI-002 (nothing answered) is Not running, led by its sentence with the address on its own line
@@ -247,6 +266,8 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     {
         Pill.Show(State, clock.GetUtcNow() - (_projectedAt ?? _heard), _failedRefreshes >= NotRespondingAfter, _health);
         StripName = Pill.IsDataStale ? HealthLine + " · " + Labels.Stale : HealthLine;
+        Sentence = SentenceFor(State, _health is not null, Pill.IsHealthy, Pill.Problems, HasProfileFix);
+        ShowSystemState();
     }
 
     // §4.1 Stale: "After 3 failed refreshes: Sindri not responding: run sindri doctor".

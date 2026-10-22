@@ -1,12 +1,13 @@
 using Aw.Context.Core;
+using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
 using Aw.Sindri.Core;
-using Aw.Sindri.Host.Text;
+using Aw.Sindri.Features.ContextCalls;
 
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
-/// 'sindri context lenses &lt;anchor&gt;... [--depth N] [--draft | --map-version V] [--json]' and 'sindri context filemap --repo R [--path P] [--unmapped] [--draft] [--json]'
+/// 'sindri context lenses &lt;anchor&gt;... [--depth N] [--hops H] [--draft | --map-version V] [--json]', 'sindri context history &lt;anchor&gt;... [--since T] [--before T] [--draft | --map-version V] [--json]' and 'sindri context filemap --repo R [--path P] [--unmapped] [--draft] [--json]'
 /// (context spec §8.5, §8.9): clients of GET /sindri/context/lenses and /filemap. Exit 0 with an answer; 1 for attention (not running,
 /// unknown anchor, no draft, a repo outside the scope, sessions off); 2 for a tool error.
 /// </summary>
@@ -14,23 +15,25 @@ namespace Aw.Sindri.Host.Commands;
 /// <param name="output">Where the verbs write.</param>
 internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
 {
-    private const string Forms = "context lenses <anchor>... [--depth <0-4>] [--draft | --map-version <v>] [--json] | context filemap --repo <repo> [--path <dir>] [--unmapped] [--draft] [--json] | context filemap accept|reject <link-id>";
+    private const string Forms = "context lenses <anchor>... [--depth <0-4>] [--hops <state,flow,dependency,component>] [--draft | --map-version <v>] [--json] | context history <anchor>... [--since <t>] [--before <t>] [--draft | --map-version <v>] [--json] | context filemap --repo <repo> [--path <dir>] [--unmapped] [--draft] [--json] | context filemap accept|reject <link-id>";
 
     internal Task<int> Run(string[] args, CancellationToken ct) => args switch
     {
         ["lenses", .. var rest] when Lenses(rest) is { } l => Lenses(l, ct),
+        ["history", .. var rest] when History(rest) is { } h => History(h, ct),
         ["filemap", .. var rest] when FileMap(rest) is { } f => FileMap(f, ct),
-        _ => output.Error(SindriErrors.UnknownVerb.With($"'context {string.Join(' ', args)}' is not a lenses or filemap command: {Forms}")),
+        _ => output.Error(SindriErrors.UnknownVerb.With($"'context {string.Join(' ', args)}' is not a lenses, history or filemap command: {Forms}")),
     };
 
-    private async Task<int> Lenses((string[] Anchors, string? Depth, bool Draft, string? MapVersion, bool Json) o, CancellationToken ct) =>
+    private async Task<int> Lenses((string[] Anchors, string? Depth, string? Hops, bool Draft, string? MapVersion, bool Json) o, CancellationToken ct) =>
         o.Draft && o.MapVersion is not null
             ? await Failed(ContextErrors.QueryInvalid.With("'--draft' and '--map-version' are two shapes of one question (fix: pass one of them, not both)")).ConfigureAwait(false)
             : await Read(o, ct).ConfigureAwait(false);
 
-    private async Task<int> Read((string[] Anchors, string? Depth, bool Draft, string? MapVersion, bool Json) o, CancellationToken ct)
+    private async Task<int> Read((string[] Anchors, string? Depth, string? Hops, bool Draft, string? MapVersion, bool Json) o, CancellationToken ct)
     {
         var query = "?" + string.Join('&', o.Anchors.Select(static a => "anchor=" + Uri.EscapeDataString(a))) + (o.Depth is null ? string.Empty : "&depth=" + Uri.EscapeDataString(o.Depth))
+            + (o.Hops is null ? string.Empty : "&hops=" + Uri.EscapeDataString(o.Hops))
             + (o.Draft ? "&draft=true" : string.Empty) + (o.MapVersion is null ? string.Empty : "&mapVersion=" + Uri.EscapeDataString(o.MapVersion));
         var fence = client.SessionReason is null;
         if (o.Anchors.Distinct(StringComparer.Ordinal).Skip(1).Any())
@@ -47,6 +50,21 @@ internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
             : await output.Text(ContextLensText.Lenses(answer.Value.Value, fence), 0).ConfigureAwait(false);
     }
 
+    private async Task<int> History((string[] Anchors, string? Since, string? Before, bool Draft, string? MapVersion, bool Json) o, CancellationToken ct)
+    {
+        if (o.Draft && o.MapVersion is not null)
+        {
+            return await Failed(ContextErrors.QueryInvalid.With("'--draft' and '--map-version' are two shapes of one question (fix: pass one of them, not both)")).ConfigureAwait(false);
+        }
+
+        var query = "?" + string.Join('&', o.Anchors.Select(static a => "anchor=" + Uri.EscapeDataString(a))) + (o.Since is null ? string.Empty : "&since=" + Uri.EscapeDataString(o.Since))
+            + (o.Before is null ? string.Empty : "&before=" + Uri.EscapeDataString(o.Before)) + (o.Draft ? "&draft=true" : string.Empty) + (o.MapVersion is null ? string.Empty : "&mapVersion=" + Uri.EscapeDataString(o.MapVersion));
+        var answer = await client.Get<HistoryView>("/sindri/context/history" + query, ct).ConfigureAwait(false);
+        return answer.IsError ? await Failed(answer.Error).ConfigureAwait(false)
+            : o.Json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)
+            : await output.Text(ContextHistoryText.History(answer.Value.Value, client.SessionReason is null), 0).ConfigureAwait(false);
+    }
+
     private async Task<int> FileMap((string Repo, string? Path, bool Unmapped, bool Draft, bool Json) o, CancellationToken ct)
     {
         var query = "?repo=" + Uri.EscapeDataString(o.Repo) + (o.Path is null ? string.Empty : "&path=" + Uri.EscapeDataString(o.Path))
@@ -60,12 +78,21 @@ internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
     private async Task<int> Failed(Kernel.Error error) => ContextExit.For(error, await output.Error(error).ConfigureAwait(false));
 
     /// <summary>One or more anchors with [--depth N], [--draft or --map-version V] and [--json] in any order; null for none; a draft with a version parses and is refused as 006 by the command.</summary>
-    private static (string[] Anchors, string? Depth, bool Draft, string? MapVersion, bool Json)? Lenses(string[] rest)
+    private static (string[] Anchors, string? Depth, string? Hops, bool Draft, string? MapVersion, bool Json)? Lenses(string[] rest)
     {
-        var flags = Flags(rest, valued: ["--depth", "--map-version"], bare: ["--draft", "--json"]);
+        var flags = Flags(rest, valued: ["--depth", "--hops", "--map-version"], bare: ["--draft", "--json"]);
         var version = flags?.Values.GetValueOrDefault("--map-version");
         return flags is { Words.Length: > 0 }
-            ? (flags.Words, flags.Values.GetValueOrDefault("--depth"), flags.Bare.Contains("--draft"), version, flags.Bare.Contains("--json"))
+            ? (flags.Words, flags.Values.GetValueOrDefault("--depth"), flags.Values.GetValueOrDefault("--hops"), flags.Bare.Contains("--draft"), version, flags.Bare.Contains("--json"))
+            : null;
+    }
+
+    /// <summary>One or more anchors with [--since T] [--before T], [--draft or --map-version V] and [--json] in any order; null for none.</summary>
+    private static (string[] Anchors, string? Since, string? Before, bool Draft, string? MapVersion, bool Json)? History(string[] rest)
+    {
+        var flags = Flags(rest, valued: ["--since", "--before", "--map-version"], bare: ["--draft", "--json"]);
+        return flags is { Words.Length: > 0 }
+            ? (flags.Words, flags.Values.GetValueOrDefault("--since"), flags.Values.GetValueOrDefault("--before"), flags.Bare.Contains("--draft"), flags.Values.GetValueOrDefault("--map-version"), flags.Bare.Contains("--json"))
             : null;
     }
 

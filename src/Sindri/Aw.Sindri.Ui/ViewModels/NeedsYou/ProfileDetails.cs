@@ -16,8 +16,8 @@ internal static class ProfileDetails
         return
         [
             new(Labels.SheetChanged, entry.Reason),
-            .. hash.Length > 0 ? [new SheetDetail(Labels.SheetHash, hash)] : Array.Empty<SheetDetail>(),
-            new(Labels.SheetApprove, entry.Cli),
+            .. hash.Length > 0 ? [new SheetDetail(Labels.SheetHash, hash, Secondary: true)] : Array.Empty<SheetDetail>(),
+            new(Labels.SheetApprove, entry.Cli, Secondary: true),
         ];
     }
 }

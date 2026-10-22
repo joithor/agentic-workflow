@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
@@ -50,7 +51,7 @@ public static partial class InstanceViews
         ArgumentNullException.ThrowIfNull(context);
         var children = context.Children ?? [];
         var task = instance is { Ended: false, Suspension: null, Frame.Run: { Runtime: StepRuntime.Desk } open }
-            ? Task(instance.Frame.State, open.Token, recipe, timeoutAt)
+            ? Task(instance.Frame.State, open.Token, recipe, timeoutAt, context.Injection)
             : null;
         var words = new InstanceWords(instance, recipe, since, MirroredChild(instance, children));
         var view = new InstanceView(
@@ -74,11 +75,20 @@ public static partial class InstanceViews
             Answer = words.Answer(),
             Drift = words.Drift(),
             Budget = Budget(instance, recipe),
+            AgentRun = AgentRunOf(instance),
             RunningSteps = instance is { Ended: false, Frame.Run.Runtime: not StepRuntime.Desk } ? 1 : 0,
+            StartedAt = context.StartedAt,
+            StartedBy = context.StartedBy,
             Paused = instance.Suspension is { Kind: SuspensionKind.Takeover, Remaining: { } paused } ? paused.Left : null,
         };
         return WithLayout(view, new Layout(instance, recipe, task, words), context);
     }
+
+    /// <summary>The open agent run; one still launching names the launch id it will have (the id is pure), so status never shows a run without one.</summary>
+    private static OpenRun? AgentRunOf(WorkflowInstance instance) =>
+        instance is { Ended: false, Frame.Run: { Runtime: StepRuntime.Agent } agent }
+            ? agent with { Launch = agent.Launch ?? AgentLaunches.LaunchIdFor(WorkflowInstanceId.Of(instance.Address), agent.Token).Value }
+            : null;
 
     /// <summary>The stored digest of each fact by key; null when the instance holds none.</summary>
     private static Dictionary<string, string>? ShasOf(WorkflowInstance instance) =>
@@ -99,7 +109,7 @@ public static partial class InstanceViews
             context.Parent,
             view.ItemId,
             context.Title,
-            new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, view.Urgency),
+            new InstanceRecipe(view.Recipe.Id, view.Recipe.Hash, view.Recipe.Version, view.Urgency, context.RecipeDisplayName),
             view.State,
             view.Since,
             view.EngineOwned,
@@ -111,7 +121,10 @@ public static partial class InstanceViews
             view.ChildGroups,
             context.Counts,
             [.. status.Commands.Select(static c => c.ActionId)],
-            context.AsOf);
+            context.StepRuns ?? [],
+            context.AsOf,
+            view.Steps,
+            view.StartedBy);
     }
 
     /// <summary>The status layout of <paramref name="view"/> as fields, as of <paramref name="now"/>: a pure function of the view and the time, so the ages, the timeout and the text move with the caller's clock.</summary>
@@ -137,6 +150,7 @@ public static partial class InstanceViews
         var badge = from.Words.EngineBadge();
         var legacy = SubjectKinds.Legacy(from.Recipe.Recipe) is not null;   // a pre-P4c row: no kind to name a subject or an input slot by
         var subject = context.Subject ?? (legacy ? InstanceSummaries.SubjectOf(view with { ItemId = from.Instance.Item }, itemTitle: null) : SubjectRefs.Of(from.Recipe, from.Instance.Item));   // never null on the wire: a legacy instance shows the item, as its list row does
+        var facts = FactRows.Of(from.Instance, from.Recipe, from.Task, context.Provenance ?? new Dictionary<FactKey, FactProvenance>(), context.Contents);
         var complete = view with
         {
             ItemId = from.Instance.Item,
@@ -147,7 +161,8 @@ public static partial class InstanceViews
             Inputs = legacy ? [] : InputSlots.Of(from.Instance, from.Recipe),
             OrderedBy = StatePathOrder.Of(from.Recipe.Recipe).OrderedBy == "transition-list" ? PathOrdering.TransitionList : PathOrdering.Path,
             States = StateCells.Of(from.Instance, from.Recipe, badge),
-            Facts = FactRows.Of(from.Instance, from.Recipe, from.Task, context.Provenance ?? new Dictionary<FactKey, FactProvenance>(), context.Contents),
+            Facts = facts,
+            Steps = CurrentStates.Steps(from.Recipe, facts),
             ChildGroups = [],
             Step = CurrentStates.Step(from.Instance, from.Recipe),
             Gates = CurrentStates.Gates(from.Instance, from.Recipe),
@@ -204,11 +219,11 @@ public static partial class InstanceViews
     }
 
     /// <summary>
-    /// The complete command with the outcome it reports (the Step's first declared) and an '--output &lt;fact&gt;=&lt;file&gt;' flag for each
+    /// The complete command with the outcome it reports (every one the Step can report when there are several) and an '--output &lt;fact&gt;=&lt;file&gt;' flag for each
     /// output required on that outcome (API spec §3.8 'desk runtime'); '&lt;outcome&gt;' when the Step declares none.
     /// </summary>
     private static string CompleteCli(string address, DeskTask task) =>
-        CompleteCommand.Line(address, task.Run, task.Outcomes.Count > 0 ? task.Outcomes[0] : null, task.Outputs);
+        CompleteCommand.Line(address, task.Run, task.Outcomes, task.Outputs);
 
     /// <summary>The child a suspension mirrors, matched by its instance id (a sibling listed first is not it); none listed means none; with no mirror, the first child.</summary>
     private static ChildView? MirroredChild(WorkflowInstance instance, IReadOnlyList<ChildView> children) =>
@@ -219,13 +234,19 @@ public static partial class InstanceViews
     private static bool Answerable(Suspension suspension) =>
         suspension.ParkKind is not (ParkKind.Revoked or ParkKind.ChildRevoked or ParkKind.Drift);
 
-    private static DeskTask Task(string state, RunToken run, InterpretedRecipe recipe, DateTimeOffset? timeoutAt)
+    private static DeskTask Task(string state, RunToken run, InterpretedRecipe recipe, DateTimeOffset? timeoutAt, InjectionPlan? injection)
     {
-        var step = recipe.Recipe.States[state].Step?.Use
+        var use = recipe.Recipe.States[state].Step
             ?? throw new InvalidOperationException($"state {state} has an open run but no Step");
+        var step = use.Use;
         var descriptor = recipe.Catalog.Find(step);
-        return new DeskTask(run, state, step, descriptor?.Outcomes ?? [], descriptor?.Outputs ?? [], recipe.Inputs, timeoutAt);
+        var outcomes = OutcomesOf(descriptor, use, recipe);
+        return new DeskTask(run, state, step, outcomes, descriptor?.Outputs ?? [], recipe.Inputs, timeoutAt, injection?.Entries);
     }
+
+    /// <summary>The outcomes the Step reports, through the one resolver; the descriptor's own for a recipe the validator refuses.</summary>
+    private static IReadOnlyList<OutcomeName> OutcomesOf(BlockDescriptor? descriptor, StepUse use, InterpretedRecipe recipe) =>
+        descriptor is null ? [] : StepOutcomes.Of(descriptor, use, recipe.Recipe) ?? descriptor.Outcomes;
 
     /// <summary>The budgets of the active state and the instance, when either is declared and the instance hasn't ended.</summary>
     private static BudgetView? Budget(WorkflowInstance instance, InterpretedRecipe recipe)

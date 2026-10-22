@@ -27,7 +27,24 @@ internal static class StepPolicyFile
             directories = [path];
         }
 
-        var permissions = new ClaudePermissions(allow) { DefaultMode = policy.Mode == StepPermissionMode.Default ? null : "plan", AdditionalDirectories = directories };
+        var deny = new List<string>();
+        foreach (var denied in policy.DeniedPaths ?? [])
+        {
+            deny.AddRange([$"Read(/{denied}/**)", $"Edit(/{denied}/**)"]);
+        }
+
+        foreach (var readOnly in policy.ReadOnlyPaths ?? [])
+        {
+            deny.Add($"Edit(/{readOnly}/**)");   // readable through the directory, never edited
+            directories = [.. directories ?? [], readOnly];
+        }
+
+        var permissions = new ClaudePermissions(allow)
+        {
+            Deny = deny.Count == 0 ? null : [.. deny],
+            DefaultMode = policy.Mode == StepPermissionMode.Default ? null : "plan",
+            AdditionalDirectories = directories,
+        };
         return [.. AwJson.Serialize(new ClaudeSettingsDocument(permissions), _json), .. "\n"u8];
     }
 
@@ -53,5 +70,5 @@ internal static class StepPolicyFile
     /// <summary>Deletes the launch's file; a missing one is fine.</summary>
     /// <param name="directory">The launcher's policy directory.</param>
     /// <param name="launch">The launch.</param>
-    internal static void Delete(string directory, LaunchId launch) => File.Delete(PathFor(directory, launch));
+    internal static void Delete(string directory, LaunchId launch) => _ = OwnerOnly.TryDelete(PathFor(directory, launch));
 }

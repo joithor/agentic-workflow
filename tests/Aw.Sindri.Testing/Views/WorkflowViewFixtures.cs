@@ -54,7 +54,7 @@ public static class WorkflowViewFixtures
     {
         var states = cells.Select(c => owned is not null && c.State == state && c.Badge is null ? c with { Badge = owned } : c).ToList();
         return new(InstanceAddress.From(address), WorkflowInstanceId.Of(InstanceAddress.From(address)), ItemKey.From(address[..address.IndexOf('/', StringComparison.Ordinal)]), shape.Stamp, state,
-            StateChip.For(owned, states.Exists(c => c.Desk && c.Glyph == StateGlyph.Active), states.Exists(c => c.Terminal && c.Glyph == StateGlyph.Done && c.State == state)),
+            StateChip.For(owned, states.Exists(c => c.Desk && c.Glyph == StateGlyph.Active), states.Exists(c => c.Terminal && c.Glyph == StateGlyph.Done && c.State == state) ? OutcomeName.From("resolved") : null),
             since, owned, subject, shape.InputRows(), states, now.Length > 80 ? now[..79] + "…" : now, null, Acts(actions));
     }
 
@@ -114,6 +114,10 @@ public static class WorkflowViewFixtures
     private static readonly InstanceSummary _takenOver = Row("ITM-01JA1/step/1", _step, "produce", Today(12, 1),
         new EngineOwnedBadge(EngineOwnedKind.TakenOver, "with you since 12:01"),
         Subject("text", "ITM-01JA1", "ITM-01JA1"), _step.Cells("produce"), "with you", "ApplyCommand:handback", "ApplyCommand:cancel");
+
+    // ITM-01JM3: its produce Step runs on an agent session (P8): not a row of the root list, and no desk task, so no complete command.
+    private static readonly InstanceSummary _agentRun = Row("ITM-01JM3/step/1", _step, "produce", Today(12, 10), null,
+        Subject("text", "ITM-01JM3", "ITM-01JM3"), _step.Cells("produce"), "agent running", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
     // A needs-answer park of its own (PRJ-exports is the taken-over project): a project parked at its design desk. Not a row of the root list.
     private static readonly InstanceSummary _prjReports = Row("ITM-01JKE/project/1", _project, "design", Today(10, 30),
@@ -207,7 +211,11 @@ public static class WorkflowViewFixtures
         // The header's v<n> is the instance's version (its mirrored event count). A fixture has no events, so it shows the recipe's author version as a stand-in: the goldens pin it.
         var header = new StatusHeader(row.Address, recipe.Id, recipe.Hash.Display, recipe.Version, HeaderState(row), detail, row.Since, (long)(Now - row.Since).TotalSeconds);
         var fields = new StatusFields(header, next, lines.Answer, lines.Child, lines.Drift, lines.Inputs, lines.Timeout, lines.Budget, lines.Paused,
-            Commands(row, lines.Answer, open), string.Empty);
+            Commands(row, lines.Answer, open), string.Empty)
+        {
+            Run = lines.Run,
+            TakenOverAt = lines.TakenOverAt,
+        };
         var name = FixtureRecipes.All.SingleOrDefault(r => r.Id == recipe.Id.Value)?.Name is null ? null : row.Subject.Label;
         return fields with { Text = StatusText.Render(fields, Now, name) };
     }
@@ -313,6 +321,10 @@ public static class WorkflowViewFixtures
         public StatusBudget? Budget { get; init; }
 
         public StatusPaused? Paused { get; init; }
+
+        public DateTimeOffset? TakenOverAt { get; init; }
+
+        public StatusRun? Run { get; init; }
     }
 
     private static readonly StatusInput _alertInput = new("fact:alert", "alert.json", Hash("1c0e5a77"));
@@ -332,6 +344,12 @@ public static class WorkflowViewFixtures
         "Parked (no-progress) in ITM-01JC8/item/1/step.4: checks failed twice with the same findings. Grant more rounds at a terminal, or cancel.",
         new OpenWork(OpenChildren: 1),
         new StatusLines { Answer = Answer(AnswerKind.Grant, "ITM-01JC8/item/1"), Child = new StatusChild(WorkflowInstanceId.Of(InstanceAddress.From("ITM-01JC8/item/1/step.4")), InstanceAddress.From("ITM-01JC8/item/1/step.4"), "parked", "no-progress") });
+
+    /// <summary>The same park as <see cref="StatusParkedChild"/> when the live lookup of the child gets no answer (engine P7, Q2): the child shows as `unreachable` with no reason, never as its last known state.</summary>
+    public static StatusFields StatusUnreachableChild() => Status(_itemParked, "no-progress (child)",
+        "Parked (no-progress) in ITM-01JC8/item/1/step.4: checks failed twice with the same findings. Grant more rounds at a terminal, or cancel.",
+        new OpenWork(OpenChildren: 1),
+        new StatusLines { Answer = Answer(AnswerKind.Grant, "ITM-01JC8/item/1"), Child = new StatusChild(WorkflowInstanceId.Of(InstanceAddress.From("ITM-01JC8/item/1/step.4")), InstanceAddress.From("ITM-01JC8/item/1/step.4"), "unreachable", Reason: null) });
 
     /// <summary>An escalation from a child: the status answer is a pointer to the child (`via: "child"`), and no answer entry is served.</summary>
     public static StatusFields StatusEscalatedChild() => Status(_itemChildPointer, "escalated (child)",
@@ -374,10 +392,15 @@ public static class WorkflowViewFixtures
     /// <summary>Layout 5: a taken-over instance with its timeout paused.</summary>
     public static StatusFields StatusTakenOver() => Status(_takenOver, null,
         "With you since 12:01. Run `sindri workflow handback ITM-01JA1/step/1` when you're done.", new OpenWork(),
-        new StatusLines { Paused = new StatusPaused(40), Budget = new StatusBudget("state", 40_000, 200_000, new BudgetFigures(40_000, 400_000)) });
+        new StatusLines { Paused = new StatusPaused(40), TakenOverAt = _takenOver.Since, Budget = new StatusBudget("state", 40_000, 200_000, new BudgetFigures(40_000, 400_000)) });
 
     /// <summary>Layout 6: a finished instance, the header only.</summary>
     public static StatusFields StatusDone() => Status(_sentry8809, "resolved", null, new OpenWork());
+
+    /// <summary>P8: an open Step run on an agent session. The status names the runtime and the launch, offers takeover and cancel, and has no desk task.</summary>
+    public static StatusFields StatusAgentRun() => Status(_agentRun, "agent running",
+        "An agent session is working on produce. It reports when it is done; take it over to work on it yourself.", new OpenWork(RunningSteps: 1),
+        new StatusLines { Run = new StatusRun("agent", "LCH-01JM3A4B5C6D7E8F") });
 
     /// <summary>A park with a recorded drift: it takes no answer (API Q-API-4): the recipe re-approval is its own protected command, and the approval resumes the instance.</summary>
     public static StatusFields StatusParkedDrift() => Status(_prjCache, "spec-conflict (drift)",
@@ -400,7 +423,7 @@ public static class WorkflowViewFixtures
     /// <returns>The statuses.</returns>
     public static IReadOnlyList<StatusFields> AllStatuses() =>
     [
-        StatusParkedChild(), StatusEscalatedChild(), StatusMirroredBudget(), StatusMirroredBudgetNoChild(), StatusDeskTask(), StatusParkedBudget(), StatusEscalatedGate(), StatusTakenOver(), StatusDone(),
+        StatusParkedChild(), StatusUnreachableChild(), StatusEscalatedChild(), StatusMirroredBudget(), StatusMirroredBudgetNoChild(), StatusDeskTask(), StatusParkedBudget(), StatusEscalatedGate(), StatusTakenOver(), StatusDone(),
         StatusParkedDrift(), StatusNeedsAnswerStep(), StatusNeedsAnswerWait(), .. AllDetails().Select(d => d.Current.Status),
     ];
 
@@ -425,7 +448,7 @@ public static class WorkflowViewFixtures
             : parked ? Acts("OpenItem", "ApplyCommand:answer-grant", "ApplyCommand:takeover")
             : Acts("OpenItem", "ApplyCommand:takeover");
         // A workflow.step state is a desk task until the agent runtime (P8): an active child that isn't parked is a DECISION with no agent.
-        var chip = StateChip.For(owned, glyph == StateGlyph.Active && !parked, state == "done", notStarted: glyph == StateGlyph.Pending);
+        var chip = StateChip.For(owned, glyph == StateGlyph.Active && !parked, state == "done" ? OutcomeName.From("resolved") : null, notStarted: glyph == StateGlyph.Pending);
         var address = InstanceAddress.From(parent + "/step." + entry.ToString(System.Globalization.CultureInfo.InvariantCulture));
         return new(WorkflowInstanceId.Of(address), address, ItemKey.From(item), title, glyph, state, chip, null, null, age, owned, parked ? owned : null, actions);
     }
@@ -435,8 +458,11 @@ public static class WorkflowViewFixtures
     // ---- the instance views (E-20) -----------------------------------------------------------------------------------
 
     private static InstanceDetail Detail(InstanceSummary row, string title, PathOrdering ordering, CurrentState current, IReadOnlyList<FactRow> facts,
-        IReadOnlyList<ChildGroup> children, ViewCounts counts, ParentRef? parent = null) =>
-        new(row.Address, row.Id, parent, row.ItemId, title, row.Recipe, row.State, row.Since, row.EngineOwned, row.Subject, ordering, row.States, current, facts, children, counts, row.Actions, Now);
+        IReadOnlyList<ChildGroup> children, ViewCounts counts, ParentRef? parent = null, IReadOnlyList<StepRun>? stepRuns = null, IReadOnlyList<StateStep>? steps = null) =>
+        new(row.Address, row.Id, parent, row.ItemId, title, row.Recipe, row.State, row.Since, row.EngineOwned, row.Subject, ordering, row.States, current, facts, children, counts, row.Actions, stepRuns ?? [], Now, steps ?? []);
+
+    /// <summary>One Step state's card: what it reads and the facts leaving it records, each only by key (nothing recorded yet).</summary>
+    private static StateStep Card(string state, string[] needs, params string[] produces) => new(state, needs, [.. produces.Select(static k => Ref(factKey: k))]);
 
     private static FactRow Fake(RecipeShape recipe, string key, FactStatus status, string summary, DateTimeOffset? at = null, string? by = null, FactRef? reference = null, Progress? progress = null, FactPending? pending = null) =>
         recipe.Fact(key, status, summary, at, by, reference, progress, pending);
@@ -490,7 +516,7 @@ public static class WorkflowViewFixtures
                 [new GateLine(BlockId.From("gate.evidence.all"), "exit", null, "Every child has its evidence pack."), new GateLine(BlockId.From("gate.judge.verify"), "exit", 0.8, "The judge scores the build at least 0.8.")],
                 null, status),
             _project.Facts([.. ProjectFacts(At(10, 12, 9, 14), Fake(_project, "fact:evidence", FactStatus.InProgress, "4 of 9 packs", reference: Ref(factKey: "fact:evidence"), progress: new Progress(4, 9)))]),
-            [new ChildGroup("build", RecipeId.From("workflow.step"), 4, 9, [ws1, ws2, ws3, ws4], [], 0)],
+            [new ChildGroup("build", RecipeId.From("workflow.step"), 4, 9, [ws1, ws2, ws3, ws4], [], 0, "Step")],
             Counts(41, 3, 1));
     }
 
@@ -515,7 +541,7 @@ public static class WorkflowViewFixtures
         return Detail(_prjDocs, "Handbook", PathOrdering.Path,
             new CurrentState("build", new StepDeclaration("wait", "workflow.step", "one child per packet task"), [], null, status),
             _project.Facts([.. HandbookFacts(Fake(_project, "fact:evidence", FactStatus.InProgress, "6 of 24 packs", reference: Ref(factKey: "fact:evidence"), progress: new Progress(6, 24)))]),
-            [new ChildGroup("build", RecipeId.From("workflow.step"), 6, 24, [], rows, 4)],
+            [new ChildGroup("build", RecipeId.From("workflow.step"), 6, 24, [], rows, 4, "Step")],
             Counts(30, 0, 0));
     }
 
@@ -574,7 +600,11 @@ public static class WorkflowViewFixtures
                 new DeskForm(RunToken.From("3.1"), [new DeskOutput("fact:output", FactType.File, true)], ["output.file"], Act("CompleteStep")), status),
             _step.Facts(Produced(_step, "fact:spec", "spec.md", At(10, 12, 12, 20), "service:item", Ref(name: "spec.md", hash: Hash("1c0e5a77")))),
             [], Counts(6, 0, 0),
-            new ParentRef(WorkflowInstanceId.Of(InstanceAddress.From("ITM-01JE7/item/1")), InstanceAddress.From("ITM-01JE7/item/1"), "ITM-01JE7 · Add needs-you ack route", null, null));
+            new ParentRef(WorkflowInstanceId.Of(InstanceAddress.From("ITM-01JE7/item/1")), InstanceAddress.From("ITM-01JE7/item/1"), "ITM-01JE7 · Add needs-you ack route", null, null),
+            [
+                new StepRun("1.1", "produce", Attempt: 1, MaxAttempts: 3, StepRunState.Refused, StepRuntime.Desk, Today(10, 5), Today(10, 50), DurationMs: 2_700_000, Outcome: "done", Tokens: null, Actor: "human:cli"),
+                new StepRun("3.1", "produce", Attempt: 2, MaxAttempts: 3, StepRunState.Running, StepRuntime.Desk, Today(12, 20), EndedAt: null, DurationMs: null, Outcome: null, Tokens: null, Actor: null),
+            ]);
     }
 
     /// <summary>The desk-round-trip dev recipe, desk open on its export (round 1 of 2): the P11 signal fixture.</summary>
@@ -589,7 +619,7 @@ public static class WorkflowViewFixtures
             _devDesk.Facts(
                 Produced(_devDesk, "fact:request", "Summarize the week", At(10, 12, 12, 0), "human:cli"),
                 Fake(_devDesk, "fact:output", FactStatus.Pending, "awaiting your file", pending: new FactPending(true, ["output.file"], Act("CompleteStep")))),
-            [], Counts(2, 0, 0));
+            [], Counts(2, 0, 0), steps: [Card("export", [], "fact:output"), Card("import", ["fact:output"], "fact:findings")]);
     }
 
     /// <summary>The three-state triage dev recipe, at its desk.</summary>
@@ -605,7 +635,7 @@ public static class WorkflowViewFixtures
                 Produced(_devTriage, "fact:scope", "Crash on launch", At(10, 12, 12, 0), "human:cli"),
                 Produced(_devTriage, "fact:item", "ITM-01JL2 Crash on launch", At(10, 12, 12, 0), "human:cli", Ref(item: "ITM-01JL2")),
                 Fake(_devTriage, "fact:output", FactStatus.Pending, "awaiting your file", pending: new FactPending(true, ["output.file"], Act("CompleteStep")))),
-            [], Counts(2, 0, 0));
+            [], Counts(2, 0, 0), steps: [Card("desk", [], "fact:output")]);
     }
 
     /// <summary>A recipe with two initial paths: the band says transition-list and folds 'right' under 'left' (a branch has no order).</summary>
@@ -643,7 +673,7 @@ public static class WorkflowViewFixtures
     public static RecipeView NoOutputsRecipe() => new(
         RecipeId.From("workflow.no-outputs"), RecipeHash.From("sha256:" + "3c9d51e2".PadRight(64, '0')), 1, Name: null,
         [new RecipeInputView("fact:request", "Request", FactType.Text, "text", true, Generate: null), new RecipeInputView("fact:context", null, FactType.Text, "text", false, "context {start:date}")],
-        [], RecipeUrgency.Work, PathOrdering.Path, [new RecipeStateView("intake", 1, null), new RecipeStateView("classify", 2, null), new RecipeStateView("done", 3, null)], []);
+        [], RecipeUrgency.Work, PathOrdering.Path, [new RecipeStateView("intake", 1, null), new RecipeStateView("classify", 2, null), new RecipeStateView("done", 3, null)], [], "No outputs");
 
     /// <summary>The recipe view of one fixture recipe, by recipe id ('workflow.step'): the same declaration its instances and list rows are built from.</summary>
     /// <param name="id">A recipe id of <see cref="FixtureRecipes.All"/>.</param>

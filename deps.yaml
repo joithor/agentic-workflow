@@ -300,6 +300,13 @@ packages:
     ts: null
     src: src/Forge
     note: "the forge port (IForge): GitHub and file-backed adapters, a fake and its contract tests"
+  - id: CodeIndex
+    kind: package
+    tier: 1
+    projectPrefix: Aw.CodeIndex
+    ts: null
+    src: src/CodeIndex
+    note: "code index: symbols, callers and callees per repo, built in the background when trunk moves (code-index spec)"
 
 edges:
   # ---- current: found in the source today ----
@@ -371,8 +378,8 @@ edges:
   - from: Hooks
     to: Sindri
     kind: file
-    status: planned
-    note: "the aw:fleet hook (config/hooks/fleet-state.sh, session collector CO-1) writes one state file per session under $AW_FLEET_DIR (default $AW_STATE_DIR/fleet), which Sindri's collector reads and prunes (spec 2026-10-16-sindri-session-collector-design.md §5). Planned until CO-1 adds the script: check-deps fails a current edge the source lacks (DEPS-STALE-001) and a planned one it finds (DEPS-STALE-002). ~/.claude/sessions and the provider folders are outside the state root, so not edges"
+    status: current
+    note: "the aw:fleet hook (config/hooks/fleet-state.sh, session collector CO-1) writes one state file per session under $AW_FLEET_DIR (default $AW_STATE_DIR/fleet), which Sindri's collector reads and prunes (spec 2026-10-16-sindri-session-collector-design.md §5). ~/.claude/sessions and the provider folders are outside the state root, so not edges"
   - from: Statusline
     to: Judge
     kind: cli
@@ -547,6 +554,16 @@ edges:
     status: planned
     note: "every port and factory run is a packet; sindri runs aw-packets, since the use cases live in App and a project edge reaches only Core (spec §4c)"
   - from: Sindri
+    to: BugFix
+    kind: cli
+    status: planned
+    note: "the bugfix block Steps (step.bugfix.start-attempt, record-candidate, recheck, judge; DT spec 5.5, 6.1) run bugfix-state, which owns the attempt count, the candidate rules, the frozen check and the once-per-candidate verdict; Sindri reaches it through the IBugFixState port and its CLI adapter (AW_BUGFIX_BIN, else bugfix-state on the PATH), since the use cases live in Host and a project edge reaches only Core (spec 4c)"
+  - from: Sindri
+    to: Judge
+    kind: cli
+    status: planned
+    note: "step.judge.choose (DT spec 3.1, 8.3) runs `judge choose --providers a,b` with the question on stdin, through the IJudgeChoice port and its CLI adapter (AW_SINDRI_JUDGE, set by sindri-app and the sandbox e2e to the C# judge published next to sindri, else judge on the PATH; AW_JUDGE_STATE_DIR is Sindri's own judge directory under its home), since the use cases live in Host and a project edge reaches only Core (spec 4c); Judge's stores never join Sindri's"
+  - from: Sindri
     to: Readiness
     kind: cli
     status: planned
@@ -578,6 +595,17 @@ edges:
     kind: compose
     status: current
     note: "Sindri's Host calls AddJudgeInfrastructure (and nothing else from that project), in a container of its own: Judge's stores and ids never join Sindri's container (Host/Models/JudgeCatalog)"
+  # ---- Sindri's pull-request port (PR babysitter spec §10.2, BD1) ----
+  - from: Sindri
+    to: Forge
+    kind: project
+    status: current
+    note: "Sindri's Host adapts IForge and its DTOs in Aw.Forge.Core as Sindri's own IPullRequests port (Host/Forge/ForgePullRequests); Core and Features never see a forge type"
+  - from: Sindri
+    to: Forge
+    kind: compose
+    status: current
+    note: "Sindri's Host calls AddForgeFileInfrastructure or AddForgeGitHubInfrastructure (and nothing else from that project), whichever the approved profile's workflow.forge.adapter names, in a container of its own (Host/Forge/ForgeAdapters)"
   - from: Sindri
     to: SindriUi
     kind: cli
@@ -652,6 +680,32 @@ edges:
     kind: project
     status: current
     note: "the GitHub adapter and the git pusher scrub forge text, check logs and git output through Aw.Redaction before they leave the package (tests build the same redactor)"
+  - from: CodeIndex
+    to: Kernel
+    kind: project
+    status: current
+    note: "Result, IService, ports, typed ids (scaffolded by /new-package)"
+  - from: CodeIndex
+    to: KernelData
+    kind: project
+    status: current
+    note: "the per-repo index files (Aw.CodeIndex.Infrastructure only; CI-3 SqliteIndexStore, code-index spec §4.1)"
+  - from: CodeIndex
+    to: Redaction
+    kind: project
+    status: current
+    note: "the scrubber behind IBodyScrubber: bodies, signatures, deps text and graph names are scrubbed before they are stored (Aw.CodeIndex.Infrastructure only; code-index spec §9)"
+  # ---- the code index (code-index spec §5, §7; CI-10a flipped the project edge, CI-9 flips the compose edge) ----
+  - from: Sindri
+    to: CodeIndex
+    kind: project
+    status: current
+    note: "Sindri's Features and Host use the ICodeIndex facade and its records in Aw.CodeIndex.Core (BuildCodeIndexService, code-index-main-move, the reads)"
+  - from: Sindri
+    to: CodeIndex
+    kind: compose
+    status: planned
+    note: "Sindri's Host calls AddCodeIndexFeatures and AddCodeIndexInfrastructure (and nothing else from those projects) in Composition (CI-9)"
 
 exceptions:
   - rule: DEPS-CYCLE-001

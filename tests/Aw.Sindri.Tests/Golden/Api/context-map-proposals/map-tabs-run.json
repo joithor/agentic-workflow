@@ -10,9 +10,11 @@
     },
     "added": 1,
     "existing": 1,
-    "rejected": 0
+    "rejected": 0,
+    "withdrawn": 0,
+    "kept": 0
   },
-  "sequence": 9,
+  "sequence": 10,
   "surfaces": [
     {
       "surface": "Tab manager",

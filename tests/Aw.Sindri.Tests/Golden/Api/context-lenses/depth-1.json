@@ -138,7 +138,9 @@
       "affects": [],
       "counts": {
         "own": 6,
-        "affects": 0
+        "affects": 0,
+        "neighbors": 0,
+        "edges": 5
       },
       "edges": [
         {
@@ -226,7 +228,8 @@
       "symbols": {
         "state": "unavailable",
         "reason": "index not built",
-        "items": []
+        "items": [],
+        "code": "SND-CODEIDX-013"
       },
       "counts": {
         "files": 2,

@@ -32,8 +32,12 @@ public sealed class DecisionTreeBlocksTests
     [InlineData("step.evidence.none", BlockRuntime.Block, false, "fact:built", "done", "", "fact:evidenceSummary=done", Capability.None)]
     [InlineData("step.evidence.combine", BlockRuntime.Block, false, "fact:evidenceUi,fact:evidenceApi,fact:evidenceDb", "done", "", "fact:evidenceSummary=done", Capability.None)]
     [InlineData("step.evidence.desk", BlockRuntime.Desk, true, "fact:built", "recorded,noneFound", "fact:evidenceSummary,fact:evidenceReason", "", Capability.None)]
-    [InlineData("step.review.run", BlockRuntime.Agent, false, "fact:change,fact:phasePacket", "clean,findings,behaviourWrong", "fact:review", "", Capability.Tools)]
-    [InlineData("step.review.fix", BlockRuntime.Agent, false, "fact:change,fact:review", "fixed", "", "fact:change=fixed", Capability.Tools | Capability.WriteScope)]
+    [InlineData("step.lens.run", BlockRuntime.Agent, false, "fact:lensQueue,fact:lensRounds", "reviewed", "", "fact:lensReport=reviewed", Capability.Tools)]
+    [InlineData("step.review.round", BlockRuntime.Block, false, "fact:change,fact:phasePacket,fact:lensRounds", "ready,noLens", "", "fact:lensQueue=ready;fact:lensRounds=ready", Capability.None)]
+    [InlineData("step.review.log", BlockRuntime.Block, false, "fact:lensReport,fact:lensRounds,fact:lensQueue", "next,clean,findings,behaviourWrong,needsOwner", "fact:lensRounds", "fact:lensQueue=next;fact:review=clean,findings,behaviourWrong,needsOwner;fact:escalation=needsOwner", Capability.None)]
+    [InlineData("step.review.record", BlockRuntime.Block, false, "fact:change,fact:review,fact:lensRounds,fact:phasePacket", "recorded,recordedWrong", "", "fact:review=recorded,recordedWrong", Capability.Tools)]
+    [InlineData("step.review.fix", BlockRuntime.Agent, false, "fact:change,fact:review", "fixed,needsOwner", "", "fact:change=fixed;fact:escalation=needsOwner", Capability.Tools | Capability.WriteScope)]
+    [InlineData("step.review.apply-answer", BlockRuntime.Agent, false, "fact:change,fact:review,fact:escalation,fact:answers", "fixed,needsOwner", "", "fact:change=fixed;fact:escalation=needsOwner", Capability.Tools | Capability.WriteScope)]
     [InlineData("step.review.recheck", BlockRuntime.Agent, false, "fact:change,fact:review", "clean,findings,behaviourWrong", "fact:review", "", Capability.Tools)]
     [InlineData("step.owner.decide", BlockRuntime.Desk, true, "", "retry,stop", "", "fact:notes=retry", Capability.None)]
     public void Each_decision_tree_step_declares_what_it_runs_reads_reports_and_writes(
@@ -68,7 +72,7 @@ public sealed class DecisionTreeBlocksTests
     {
         var humanOnly = FixtureCatalog.Shipped().Blocks.Where(b => b.HumanOnly == true).ToList();
 
-        Assert.Equal(["step.desk.choose", "step.evidence.desk", "step.interview.answer", "step.owner.decide", "step.scope.review"], humanOnly.Select(b => b.Id.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal(["step.babysit.watch", "step.build.scope-desk", "step.design.lens-desk", "step.desk.choose", "step.evidence.desk", "step.interview.answer", "step.lens.ask", "step.line.decide", "step.owner.decide", "step.phase.decide", "step.plan.review", "step.pr.docs-decide", "step.pr.docs-merge-decide", "step.pr.owner-comment", "step.pr.rework-notes", "step.scope.review", "step.ship.open"], humanOnly.Select(b => b.Id.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.All(humanOnly, b => Assert.True(b.DeskCapable));
         Assert.All(humanOnly, b => Assert.NotEqual(BlockRuntime.Agent, b.Runtime));
     }

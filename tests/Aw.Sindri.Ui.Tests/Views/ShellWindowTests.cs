@@ -2,6 +2,7 @@ using System.Globalization;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -121,12 +122,17 @@ public sealed class ShellWindowTests : IDisposable
                 && (c is Button or ListBoxItem or TextBlock { Text.Length: > 1 })
                 && string.IsNullOrEmpty(AutomationProperties.GetName(c))
                 && !c.Classes.Contains("live-region")
+                && !IsNamedDisclosureToggle(c)
                 && AutomationProperties.GetAccessibilityView(c) != AccessibilityView.Raw   // hidden from the tree on purpose; its parent carries the name
                 && (c is not TextBlock || (c.FindAncestorOfType<Button>() is null && c.FindAncestorOfType<ListBoxItem>() is null)))
             .Select(c => c.GetType().Name + ":" + (c as TextBlock)?.Text)
             .ToList();
         Assert.True(unnamed.Count == 0, "unnamed: " + string.Join(", ", unnamed));
     }
+
+    // An Expander's header toggle: the named Expander carries the name.
+    private static bool IsNamedDisclosureToggle(Control c) =>
+        c is ToggleButton && c.FindAncestorOfType<Expander>() is { } disclosure && !string.IsNullOrEmpty(AutomationProperties.GetName(disclosure));
 
     // §14.2: every text is a step of the type ramp, so the Text size preference reaches all of it. At scale 1.3 each
     // visible TextBlock's size is a ramp size × 1.3 (a literal size, or one Fluent's own default sets, stays put). The
@@ -1277,6 +1283,7 @@ public sealed class ShellWindowTests : IDisposable
 
         Assert.Equal(PageId.System, shell.CurrentPage);
         Assert.True(Visible(window, "HealthPage"));
+        Settle(window);
 
         // I5 (services-health.html HEALTH): label/value rows at Body size under section heads that carry the state's
         // glyph and word; no display-size values and no badge repeating the pill.
@@ -1290,9 +1297,24 @@ public sealed class ShellWindowTests : IDisposable
         Assert.False(Visible(window, "HeadlineText"));
         var page = Named<Control>(window, "HealthPage");
         Assert.DoesNotContain(page.GetVisualDescendants().OfType<TextBlock>(), t => t.IsEffectivelyVisible && t.FontSize > 13 && !t.Classes.Contains("page-title"));
-        Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "last run " + A.Noon.ToLocalTime().ToString("HH:mm:ss", CultureInfo.InvariantCulture));
+        Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "last run " + DateTimeOffset.Parse("2026-01-01T00:00:55Z", CultureInfo.InvariantCulture).ToLocalTime().ToString("HH:mm:ss", CultureInfo.InvariantCulture));   // the Services card reads the services view
         EveryControlIsNamed(window);
         Frame(window, "health");
+    });
+
+    // F3 review (456-1): what the person must act on stays up front; only the per-service detail waits behind Details.
+    [Fact]
+    public Task The_profile_fix_and_the_actions_are_up_front_with_the_cards() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        _server.Current = A.Status(profile: A.ChangedProfile());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal && s.Health.HasProfileFix);
+        shell.GoTo(PageId.System);
+        Settle(window);
+
+        Assert.True(Visible(window, "ProfileFixText"));
+        Assert.True(Visible(window, "ActionsSection"));
+        Assert.True(Visible(window, "ProcessRows"));
     });
 
     [Fact]
@@ -1723,6 +1745,7 @@ public sealed class ShellWindowTests : IDisposable
             return names.FirstOrDefault(n => focused is not null && window.Get<Control>(n) is var r && (r == focused || r.IsVisualAncestorOf(focused))) ?? "none";
         }
 
+        Settle(window);
         var seen = new List<string>();
         for (var i = 0; i < 4; i++)
         {
@@ -1731,7 +1754,8 @@ public sealed class ShellWindowTests : IDisposable
             seen.Add(Region());
         }
 
-        Assert.Equal(["TopBar", "Page", "Sheet", "TopBar"], seen);
+        // The window opens with focus on the page region, so the first F6 goes to the sheet.
+        Assert.Equal(["Sheet", "TopBar", "Page", "Sheet"], seen);
     });
 
     // Owner decision F6 (2026-10-12, review run 4): on macOS ⌘⌥→ and ⌘⌥← cycle the regions forward and back, like F6
@@ -1754,6 +1778,7 @@ public sealed class ShellWindowTests : IDisposable
             return names.FirstOrDefault(n => focused is not null && window.Get<Control>(n) is var r && (r == focused || r.IsVisualAncestorOf(focused))) ?? "none";
         }
 
+        Settle(window);
         var seen = new List<string>();
         foreach (var (key, physical) in new[] { (Key.Right, PhysicalKey.ArrowRight), (Key.Right, PhysicalKey.ArrowRight), (Key.Right, PhysicalKey.ArrowRight), (Key.Left, PhysicalKey.ArrowLeft), (Key.Left, PhysicalKey.ArrowLeft) })
         {
@@ -1762,7 +1787,8 @@ public sealed class ShellWindowTests : IDisposable
             seen.Add(Region());
         }
 
-        Assert.Equal(["TopBar", "Page", "Sheet", "Page", "TopBar"], seen);
+        // The window opens with focus on the page region (as in F6_cycles_top_bar_page_and_sheet), so the first ⌘⌥→ goes to the sheet.
+        Assert.Equal(["Sheet", "TopBar", "Page", "TopBar", "Sheet"], seen);
     });
 
     [Fact]

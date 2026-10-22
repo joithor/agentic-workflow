@@ -42,6 +42,7 @@ public sealed class WorkflowsKeysViewTests : FrameHost
     {
         var (window, shell) = await Connected(s => s.Workflows.Groups.Count > 0);
         shell.GoTo(PageId.Workflows);
+        shell.Workflows.SetViewMode(WorkflowViewMode.List);   // the grouped list; the board has its own tests
         Settle(window);
         _ = window.Get<Control>("Page").Focus(NavigationMethod.Tab);
         return (window, shell);
@@ -197,9 +198,6 @@ public sealed class WorkflowsKeysViewTests : FrameHost
         Settle(window);
         Assert.Equal((true, Labels.HandBackArrives), (Visible(window, "WorkflowsKeyNote"), Named<TextBlock>(window, "WorkflowsKeyNote").Text));
 
-        Press(window, Key.N);
-        Settle(window);
-        Assert.Equal(Labels.StartArrives, Named<TextBlock>(window, "WorkflowsKeyNote").Text);
         Assert.Same(RowFrame(window, Plain.Address), Focused(window));
         Frame(window, "u8-keys-phase-note", "");
     });

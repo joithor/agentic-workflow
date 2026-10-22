@@ -22,7 +22,10 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="Children">Child groups in path order.</param>
 /// <param name="Counts">The tab counts.</param>
 /// <param name="Actions">The action ids allowed now.</param>
+/// <param name="StepRuns">Every Step run in start order, folded from the instance's ledger events.</param>
 /// <param name="AsOf">When it was read.</param>
+/// <param name="Steps">What each Step state reads and produces, in the recipe's state order.</param>
+/// <param name="StartedBy">Who started the instance, in the actor form of the step runs; null when nobody is recorded.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record InstanceDetail(
     InstanceAddress Address,
@@ -42,4 +45,7 @@ public sealed record InstanceDetail(
     IReadOnlyList<ChildGroup> Children,
     ViewCounts Counts,
     IReadOnlyList<ActionId> Actions,
-    DateTimeOffset AsOf);
+    IReadOnlyList<StepRun> StepRuns,
+    DateTimeOffset AsOf,
+    IReadOnlyList<StateStep>? Steps = null,
+    string? StartedBy = null);

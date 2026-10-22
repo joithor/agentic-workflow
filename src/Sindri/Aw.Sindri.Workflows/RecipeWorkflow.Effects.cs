@@ -27,6 +27,7 @@ internal sealed partial class RecipeWorkflow
     private readonly List<Task> _effects = [];
     private readonly HashSet<string> _effectsOpen = new(StringComparer.Ordinal);
     private readonly HashSet<string> _effectsSent = new(StringComparer.Ordinal);
+    private bool? _replyFacts;
     private CancellationTokenSource? _effectsCancel;
     private TimeSpan _dispatchDelay;
     private bool _deskTaskNotified;
@@ -66,6 +67,7 @@ internal sealed partial class RecipeWorkflow
     /// <param name="change">The type of the change's ledger event: a 'workflow.notified' one is takeoverIdle's (P5).</param>
     private void Emit(WorkflowInstance? before, WorkflowInstance after, IReadOnlyList<EffectCommand> effects, WorkflowEventType change = WorkflowEventType.Transition)
     {
+        Announce(before, after);   // engine P7: a child tells its parent about a park, escalation or resume
         List<EffectCommand> all = [.. effects.Where(e => e.Identity.Instance == after.Id), .. Notices(before, after, change)];
         if (all.Count > 0)
         {
@@ -101,7 +103,7 @@ internal sealed partial class RecipeWorkflow
     /// carries its own text in its arguments, so it has none here.
     /// </summary>
     private string? TextOf(WorkflowInstance after, EffectCommand effect) =>
-        effect.Origin == CommandOrigin.Recipe && _recipe is { } recipe ? InstanceViews.Of(after, recipe, _since, timeoutAt: null, new InstanceViewContext(_mirrored, _provenance, Subject: _subject, Contents: _contents)).Next : null;
+        effect.Origin == CommandOrigin.Recipe && _recipe is { } recipe ? InstanceViews.Of(after, recipe, _since, timeoutAt: null, ViewContext()).Next : null;
 
     /// <summary>Waits until every effect the instance emitted has settled (the run's end), surfacing a failed one.</summary>
     private async Task Settle()
@@ -114,6 +116,12 @@ internal sealed partial class RecipeWorkflow
         }
     }
 
+    /// <summary>
+    /// Whether an effect's reply may carry facts: the 'forge-reply-facts' marker, read once at the first effect dispatch (after every other marker,
+    /// which Begin reads), so a history recorded before it replays with no reply facts exactly as it ran.
+    /// </summary>
+    private bool ReplyFacts => _replyFacts ??= Workflow.Patched("forge-reply-facts");
+
     private async Task DispatchOne(WorkflowInstance after, EffectCommand effect)
     {
         var row = new EffectRow(effect.Identity.Text, Workflow.NewGuid().ToString("N"), effect.Effect, effect.Origin, EffectState.Pending, after.Address);
@@ -125,7 +133,7 @@ internal sealed partial class RecipeWorkflow
                 return;
             }
 
-            var run = new EffectRun(after.Address.Value, after.Item.Value, after.Attempt, effect, row.Command, TextOf(after, effect), after.Facts, _recipe!.Version);   // why: effects run only after Begin set _recipe
+            var run = new EffectRun(after.Address.Value, after.Item.Value, after.Attempt, effect, row.Command, TextOf(after, effect), after.Facts, _recipe!.Version, ReplyFacts);   // why: effects run only after Begin set _recipe
             var options = (ActivityOptions)EffectActivities.RunOptions.Clone();
             options.CancellationToken = Effects().Token;   // a cancel of the instance stops the retries too, not only the delay
             options.TaskQueue = Workflow.Info.TaskQueue;   // the instance's queue, from settings (never a constant)

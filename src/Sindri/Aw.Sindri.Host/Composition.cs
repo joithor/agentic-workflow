@@ -6,6 +6,7 @@ using Aw.Kernel.Json;
 using Aw.Kernel.Telemetry;
 using Aw.Sindri.Core.Registration;
 using Aw.Sindri.Features;
+using Aw.Sindri.Host.Forge;
 using Aw.Sindri.Host.Models;
 using Aw.Sindri.Host.Registration;
 using Aw.Sindri.Infrastructure.Registration;
@@ -30,7 +31,14 @@ internal static class Composition
             .AddContextInfrastructure(ContextEnvironment(environment))   // context engine: $AW_SINDRI_HOME/context (compose edge); pointers resolve here
             .AddContextLabeling()   // the labeling pass over IModelPort; a build asks it only when the approved profile turns 'context.labeling' on
             .AddSingleton<IModelPort>(sp => new JudgeModelPort(new JudgeCatalog(environment, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<System.Text.Json.JsonSerializerOptions>()).Get))
+            .AddPullRequests(environment)   // IPullRequests over the forge the approved profile names (workflow.forge; compose edge to Aw.Forge.Infrastructure in Forge/ForgeAdapters)
+            .AddProveBlocks(environment)   // input.prove.echo, only under AW_SINDRI_PROVE_BLOCKS=1 in a prover home
             .AddSindriHost();
+
+    private static IServiceCollection AddProveBlocks(this IServiceCollection services, Func<string, string?> environment) =>
+        SindriProveInfrastructureServiceCollectionExtensions.ProveBlocksAllowed(environment)
+            ? services.AddSindriProveInfrastructure(environment).AddSindriProveBlocks()
+            : services;
 
     /// <summary>
     /// The environment function Composition passes to AddContextInfrastructure (context spec §4 "Secrets"): a name that is a

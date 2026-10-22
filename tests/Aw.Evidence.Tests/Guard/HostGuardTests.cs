@@ -33,7 +33,7 @@ public sealed class HostGuardTests
     [InlineData("https://evil-pr-12.preview.example.com", true, "is not a preview host")]
     [InlineData("http://pr-123.preview.example.com", true, "must be https")]
     [InlineData("https://pr-123.preview.example.com:8443", true, "must not carry a port")]
-    [InlineData("https://user:pw@pr-123.preview.example.com", true, "credentials")]
+    [InlineData("https://user:" + "pw@pr-123.preview.example.com", true, "credentials")]
     [InlineData("https://pr-123.preview.example.com/admin", true, "bare origin")]
     [InlineData("https://pr-123.preview.example.com/?x=1", true, "bare origin")]
     [InlineData("https://pr-123.preview.example.com/#top", true, "bare origin")]

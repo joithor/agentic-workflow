@@ -24,9 +24,21 @@ internal static class ContextApiScenarios
 {
     private const string Repo = MapTabsRepo.Repo;
     private const string Anchor = "feature%3Atabs.tab-manager";
+    private const string SplitPane = "feature%3Alayout.split-pane";
+
+    private const string ThreeKeys = "nodes=feature%3Atabs.tab-manager&nodes=feature%3Atabs.tab-groups&nodes=feature%3Anope.x";
+
+    /// <summary>The QUERY body: a mixed set of four keys (a surface, a code file, a decision, one absent), not the GET's three feature keys.</summary>
+    internal const string SubgraphBody = """{"nodes":["surface:command/switch-tab","code:src/tabs/TabManager.ts","decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b","feature:nope.x"]}""";   // a real mixed set: a surface, a code file, a decision, one absent key
+
+    private static string Subgraph(string query) => "/sindri/context/subgraph?" + query;
 
     private delegate Task<string> Run(Scenario scenario, CancellationToken ct);
 
+
+    private const string CodeAnchor = "feature%3Asharing";
+
+    private static string CodeRoute(string? second = null) => $"/sindri/context/code?anchor={CodeAnchor}" + (second is null ? string.Empty : $"&anchor={second}");
 
     private static readonly (string Slug, string Scenario, Run Body)[] _table =
     [
@@ -41,6 +53,40 @@ internal static class ContextApiScenarios
         ("context-lenses", "map-version-v1", async (s, ct) => await s.FetchAfterSecondMap($"/sindri/context/lenses?anchor={Anchor}&mapVersion=v1", ct)),
         ("context-lenses", "map-version-not-retained-120", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&mapVersion=v99", ct)),
         ("context-lenses", "session-set-other-repo", async (s, ct) => await s.FetchAsSession($"/sindri/context/lenses?anchor={Anchor}&anchor=feature%3Aother.thing", ct)),
+        ("context-subgraph", "get-three-keys", async (s, ct) => await s.Fetch(Subgraph(ThreeKeys), ct)),
+        ("context-subgraph", "query-packet-set", async (s, ct) => await s.Query("/sindri/context/subgraph", SubgraphBody, ct)),
+        ("context-subgraph", "depth-2", async (s, ct) => await s.Fetch(Subgraph(ThreeKeys) + "&depth=2", ct)),
+        ("context-subgraph", "missing-after-v2", async (s, ct) => await s.FetchAfterSecondMap(Subgraph(ThreeKeys), ct)),
+        ("context-subgraph", "session-own-repo", async (s, ct) => await s.FetchAsSession(Subgraph(ThreeKeys) + "&depth=2", ct)),
+        ("context-subgraph", "too-many-006", async (s, ct) => await s.Fetch(Subgraph(string.Join('&', Enumerable.Range(0, 21).Select(i => "nodes=feature%3Anope." + i.ToString(System.Globalization.CultureInfo.InvariantCulture)))), ct)),
+        ("context-subgraph", "not-retained-120", async (s, ct) => await s.Fetch(Subgraph(ThreeKeys) + "&mapVersion=v99", ct)),
+        ("context-subgraph", "query-refused-origin", async (s, ct) => await s.QueryForeignOrigin("/sindri/context/subgraph", SubgraphBody, ct)),
+        ("context-code", "edges-and-lexical", async (s, ct) => await s.Fetch(CodeRoute(), ct)),
+        ("context-code", "two-anchors", async (s, ct) => await s.Fetch(CodeRoute("feature%3Aaudit"), ct)),
+        ("context-code", "schema-off", async (s, ct) => await s.Fetch(CodeRoute(), ct)),
+        ("context-code", "commit-not-held", async (s, ct) => await s.Fetch(CodeRoute(), ct)),
+        ("context-code", "map-version-v1", async (s, ct) => await s.FetchAfterSecondMap(CodeRoute() + "&mapVersion=v1", ct)),
+        ("context-code", "capped", async (s, ct) => await s.Fetch(CodeRoute(), ct)),
+        ("context-code", "deadline-152", async (s, ct) => await s.Fetch(CodeRoute(), ct)),
+        ("context-code", "unknown-anchor-003", async (s, ct) => await s.Fetch("/sindri/context/code?anchor=feature%3Anope", ct)),
+        ("context-code", "too-many-anchors-006", async (s, ct) => await s.Fetch("/sindri/context/code?" + string.Join('&', Enumerable.Range(0, 21).Select(i => "anchor=feature%3Anope." + i.ToString(System.Globalization.CultureInfo.InvariantCulture))), ct)),
+        ("context-code", "not-retained-120", async (s, ct) => await s.Fetch(CodeRoute() + "&mapVersion=v99", ct)),
+        ("context-code", "session-other-repo", async (s, ct) => await s.FetchAsSession(CodeRoute("feature%3Aother.thing"), ct)),
+        ("context-history", "split-pane", async (s, ct) => await s.Fetch($"/sindri/context/history?anchor={SplitPane}", ct)),
+        ("context-history", "before-cut", async (s, ct) => await s.Fetch($"/sindri/context/history?anchor={SplitPane}&before=2026-07-12T00:00:00Z", ct)),
+        ("context-history", "since-window", async (s, ct) => await s.Fetch($"/sindri/context/history?anchor={SplitPane}&since=2026-07-20T00:00:00Z", ct)),
+        ("context-history", "two-anchors", async (s, ct) => await s.Fetch($"/sindri/context/history?anchor={SplitPane}&anchor=feature%3Atabs.tab-manager", ct)),
+        ("context-history", "missing-anchor", async (s, ct) => await s.Fetch($"/sindri/context/history?anchor={SplitPane}&anchor=feature%3Anope.x", ct)),
+        ("context-history", "no-files-thing", async (s, ct) => await s.Fetch("/sindri/context/history?anchor=thing%3Apane-layout", ct)),
+        ("context-history", "unknown-anchor-003", async (s, ct) => await s.Fetch("/sindri/context/history?anchor=feature%3Atabs.nope", ct)),
+        ("context-history", "bad-window-006", async (s, ct) => await s.Fetch($"/sindri/context/history?anchor={SplitPane}&since=90d", ct)),
+        ("context-history", "too-many-anchors-006", async (s, ct) => await s.Fetch("/sindri/context/history?" + string.Join('&', Enumerable.Range(0, 21).Select(i => "anchor=feature%3Anope." + i.ToString(System.Globalization.CultureInfo.InvariantCulture))), ct)),
+        ("context-history", "map-version-v1", async (s, ct) => await s.FetchAfterSecondMap($"/sindri/context/history?anchor={SplitPane}&mapVersion=v1", ct)),
+        ("context-history", "not-retained-120", async (s, ct) => await s.Fetch($"/sindri/context/history?anchor={SplitPane}&mapVersion=v99", ct)),
+        ("context-history", "session-other-repo", async (s, ct) => await s.FetchAsSession($"/sindri/context/history?anchor={SplitPane}&anchor=feature%3Aother.thing", ct)),
+        ("context-lenses", "hops-component", async (s, ct) => await s.Fetch("/sindri/context/lenses?anchor=feature%3Ashare.sharing&depth=1&hops=state,dependency,flow,component", ct)),
+        ("context-lenses", "hops-component-skipped", async (s, ct) => await s.Fetch("/sindri/context/lenses?anchor=feature%3Autil.u0&depth=1&hops=component", ct)),
+        ("context-lenses", "hops-bogus-140", async (s, ct) => await s.Fetch("/sindri/context/lenses?anchor=feature%3Ashare.sharing&hops=bogus", ct)),
         ("context-eval", "map-tabs", async (s, ct) => await s.Fetch("/sindri/context/eval/map", ct)),
         ("context-filemap", "root", async (s, ct) => await s.Fetch($"/sindri/context/filemap?repo={Repo}", ct)),
         ("context-filemap", "src", async (s, ct) => await s.Fetch($"/sindri/context/filemap?repo={Repo}&path=src/", ct)),
@@ -51,6 +97,8 @@ internal static class ContextApiScenarios
         ("context-map", "map-tabs-anchor", async (s, ct) => await s.Fetch($"/sindri/context/map?anchor={Anchor}", ct)),
         ("context-query", "diff-spl-103", async (s, ct) => await s.Fetch($"/sindri/context/query?diff={DiffRange(s)}&repo={FixtureMap.Repo}", ct)),
         ("context-query", "diff-unknown-sha-110", async (s, ct) => await s.Fetch($"/sindri/context/query?diff={_unknownBase}..{HeadOf(s)}&repo={FixtureMap.Repo}", ct)),
+        ("context-query", "diff-spl-103-hops-component", async (s, ct) => await s.Fetch($"/sindri/context/query?diff={DiffRange(s)}&repo={FixtureMap.Repo}&hops=component", ct)),
+        ("context-query", "hops-component-node", async (s, ct) => await s.Fetch("/sindri/context/query?node=feature%3Autil.u0&depth=1&hops=component", ct)),
         ("context-node", "tab-manager", async (s, ct) => await s.Fetch($"/sindri/context/node?key={Anchor}", ct)),
         ("context-map-review", "no-draft-044", async (s, ct) => await s.Fetch("/sindri/context/map/review", ct)),
         ("context-map-review", "session-auth-002", async (s, ct) => await s.SessionReview(ct)),
@@ -77,9 +125,19 @@ internal static class ContextApiScenarios
     /// <summary>Starts the host the scenario runs on, with the map imported (the bulk accept: a rebuilt draft over the fixture repo).</summary>
     public static async Task<GoldenHost> Start(string slug, string scenario, CancellationToken ct)
     {
-        if (slug == "context-query")
+        if (slug == "context-query" && scenario != "hops-component-node")
         {
             return await StartDiff(ct);
+        }
+
+        if (slug == "context-code")
+        {
+            return await StartCode(scenario, ct);
+        }
+
+        if (slug == "context-history")
+        {
+            return await StartHistory(ct);
         }
 
         var bulk = (slug, scenario) is ("context-map-review", "post-accept-deterministic");
@@ -101,6 +159,24 @@ internal static class ContextApiScenarios
         return host;
     }
 
+    // The code goldens read the CodeLensRepo (a fixed sha); the map names no commit, so the lexical search reads HEAD, except where a scenario says otherwise.
+    private static async Task<GoldenHost> StartCode(string scenario, CancellationToken ct)
+    {
+        var repo = CodeLensRepo.Build(extraTests: scenario == "capped" ? 105 : 0);
+        var extra = scenario switch
+        {
+            "schema-off" => "  code: { schemaGlobs: [] }\n",
+            "deadline-152" => "  deadline: 100ms\n  code: { deadline: 100ms }\n",   // the lexical search reads context.code.deadline (#553)
+            _ => null,
+        };
+        Action<IServiceCollection>? wire = scenario == "deadline-152" ? HangingCodeSearch.Install : null;   // a search that never answers: the 100ms code deadline decides
+        var host = await ContextHosts.Approved(repo.Path, sessions: true, ct, wire, CodeLensRepo.Repo, contextExtra: extra);
+        host.Own(repo);
+        var commit = scenario == "commit-not-held" ? new string('f', 40) : null;
+        await ContextMapApiTests.Import(host, CodeLensRepo.WriteMap(host.Home, CodeLensRepo.MapYaml(commit)));
+        return host;
+    }
+
     // The diff goldens read PR 3 of the split-panes fixture repo, whose shas are the same on every machine.
     private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<GoldenHost, string> _diffRanges = [];
 
@@ -118,6 +194,16 @@ internal static class ContextApiScenarios
         await ContextMapApiTests.Import(host);
         var merge = repo.PullRequests.Single(p => p.Number == 3).MergeCommit;
         _diffRanges.Add(host, $"{Rev(repo, merge + "^1")}..{Rev(repo, merge + "^2")}");
+        return host;
+    }
+
+    // The history goldens read the five merged pull requests of the same fixture repo: committer dates and shas are fixed.
+    private static async Task<GoldenHost> StartHistory(CancellationToken ct)
+    {
+        var repo = FixtureRepo.Build();
+        var host = await ContextHosts.Approved(repo, sessions: true, ct, name: FixtureMap.Repo);
+        host.Own(repo);
+        await ContextMapApiTests.Import(host);
         return host;
     }
 
@@ -144,6 +230,11 @@ internal static class ContextApiScenarios
 
     private static string ImportFile(GoldenHost host, string slug, string scenario)
     {
+        if (scenario.StartsWith("hops-", StringComparison.Ordinal))
+        {
+            return HopsMap(host.Home);
+        }
+
         if ((slug, scenario) is not ("context-lenses", "ambiguous-037"))
         {
             return MapTabsRepo.WriteMap(host.Home);
@@ -152,6 +243,33 @@ internal static class ContextApiScenarios
         var file = Path.Combine(host.Home, "ambiguous-map.yaml");
         File.WriteAllText(file, string.Join('\n', "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:",
             "  - {key: \"feature:layout.a\", label: \"Layout\"}", "  - {key: \"feature:layout.b\", label: \"Layout\"}") + "\n");
+        return file;
+    }
+
+    /// <summary>Two features sharing one confirmed code unit, and six features sharing a utility over the default fan-out cap of 5.</summary>
+    private static string HopsMap(string home)
+    {
+        var nodes = new List<string>
+        {
+            "  - {key: \"feature:share.sharing\", label: \"Sharing\"}",
+            "  - {key: \"feature:share.export\", label: \"Export\"}",
+            "  - {key: \"code:src/share/Share.ts\", label: \"Share.ts\"}",
+            "  - {key: \"code:src/util/format.ts\", label: \"format.ts\"}",
+        };
+        var edges = new List<string>
+        {
+            "  - {from: \"code:src/share/Share.ts\", to: \"feature:share.sharing\", type: implements}",
+            "  - {from: \"code:src/share/Share.ts\", to: \"feature:share.export\", type: implements}",
+        };
+        for (var i = 0; i < 6; i++)
+        {
+            var key = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"feature:util.u{i}");
+            nodes.Add(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"  - {{key: \"{key}\", label: \"U{i}\"}}"));
+            edges.Add($"  - {{from: \"code:src/util/format.ts\", to: \"{key}\", type: implements}}");
+        }
+
+        var file = Path.Combine(home, "hops-map.yaml");
+        File.WriteAllText(file, string.Join('\n', ["schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:", .. nodes, "edges:", .. edges]) + "\n");
         return file;
     }
 

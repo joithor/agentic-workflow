@@ -45,18 +45,57 @@ public sealed partial class ContrastTests
         { "Error", "ErrorSoft", 5.3, TextAa },   // the fail chip
         { "Success", "SuccessSoft", 5.8, TextAa },   // the ok chip
         { "InkMuted", "Surface2", 12.5, TextAa },   // the neutral chip
+        { "Ink", "AttentionFill", 8.4, TextAa },   // the hold button's label over its fill (setup spec §2.3 says about 9; the computed ratio is 8.4)
+        { "AttentionFill", "Surface2", 2.05, 0 },   // decoration: the fill against the button's own background
         { "Hairline", "Canvas", 1.3, 0 },
         { "HairlineStrong", "Canvas", 1.7, 0 },
+        // The context map (F3 spec 1 §2 "Tokens"): the wire and its ports are decoration, 1.3+ like the hairline; the
+        // highlighted wire and the anchor ring are the same values as InkSubtle and InkMuted, so they pass as non-text.
+        { "Wire", "Canvas", 2.4, 1.3 },
+        { "Wire", "Surface1", 2.2, 1.3 },
+        { "WireHi", "Canvas", 6.4, NonText },
+        { "WireHi", "Surface1", 5.9, NonText },
+        { "RingAnchor", "Canvas", 14.3, NonText },
+        { "RingAnchor", "Surface1", 13.0, NonText },
+    };
+
+    // The workflow run statuses (F3 workflows spec §2), drawn on a board card (Surface2) and in the run drawer (Surface1).
+    public static TheoryData<string, string, double, double> StatusPairs => new()
+    {
+        // The workflow run's "you took over" status (F3 workflows spec §2 "Tokens"): violet glyph and word on its soft pair.
+        { "Violet", "VioletSoft", 6.8, TextAa },
+        { "Violet", "Surface1", 7.0, TextAa },
+        { "Violet", "Surface2", 6.7, TextAa },
+        // The other status pairs the Workflows page draws on a card (Surface2) and in a drawer (Surface1).
+        { "PrimaryHover", "PrimarySoft", 5.6, TextAa },   // running
+        { "Attention", "Surface2", 8.2, TextAa },
+        { "Error", "Surface2", 5.3, TextAa },
+        { "Success", "Surface2", 5.8, TextAa },
+        { "InkMuted", "Surface3", 12.1, TextAa },   // cancelled
+        { "InkSubtle", "Surface3", 5.4, TextAa },   // not started
     };
 
     [Theory]
     [MemberData(nameof(Pairs))]
+    [MemberData(nameof(StatusPairs))]
     public void Each_pair_has_the_recorded_ratio_and_meets_its_threshold(string foreground, string background, double recorded, double minimum)
     {
         var ratio = _tokens.Contrast(foreground, background);
 
         Assert.True(Math.Abs(ratio - recorded) <= 0.1, string.Create(CultureInfo.InvariantCulture, $"{foreground} on {background} is {ratio:F2}, §11.1 records {recorded}"));
         Assert.True(ratio >= minimum, string.Create(CultureInfo.InvariantCulture, $"{foreground} on {background} is {ratio:F2}, below {minimum}"));
+    }
+
+    // The band fill is a wash of white at 1.8 % over the canvas: it must stay too faint to carry anything.
+    [Fact]
+    public void The_lane_fill_is_white_at_under_two_percent()
+    {
+        var fill = _tokens.Color("LaneFill");
+
+        Assert.Equal(9, fill.Length);
+        Assert.Equal("ffffff", fill[3..]);
+        Assert.InRange(Convert.ToInt32(fill[1..3], 16) / 255.0, 0.017, 0.02);
+        Assert.Contains("Color.LaneFill", _tokens.Resources["Brush.LaneFill"].Attribute("Color")?.Value, StringComparison.Ordinal);
     }
 
     [Fact]

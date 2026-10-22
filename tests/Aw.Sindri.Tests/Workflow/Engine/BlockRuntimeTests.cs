@@ -36,7 +36,7 @@ public sealed class BlockRuntimeTests
     public void A_registered_Step_whose_descriptor_is_not_a_block_one_opens_a_desk_run_like_an_unregistered_one()
     {
         var deskTwin = BlockId.From("step.desk.choose");
-        var context = EngineFixture.Context() with { BlockRuntimes = new HashSet<BlockId> { deskTwin } };
+        var context = EngineFixture.Context() with { Runtimes = new Dictionary<BlockId, StepRuntime> { [deskTwin] = StepRuntime.Block } };
 
         var entered = StateEntry.Enter(EngineFixture.At(_route, "route-evidence-desk"), _route, "route-evidence-desk", context);
 
@@ -153,7 +153,7 @@ public sealed class BlockRuntimeTests
     public void With_no_state_timer_the_bound_is_the_max_duration() =>
         Assert.Equal(BlockLimits.Fallback, BlockLimits.Bound(BlockLimits.Fallback, timerLeft: null));
 
-    private static DecisionContext Context() => EngineFixture.Context() with { BlockRuntimes = new HashSet<BlockId> { _judge } };
+    private static DecisionContext Context() => EngineFixture.Context() with { Runtimes = new Dictionary<BlockId, StepRuntime> { [_judge] = StepRuntime.Block } };
 
     private static WorkflowInstance BlockRun()
     {

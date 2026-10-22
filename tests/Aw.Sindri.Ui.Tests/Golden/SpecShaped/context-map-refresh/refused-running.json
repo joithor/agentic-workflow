@@ -1,0 +1,1 @@
+{"type":"about:blank","title":"SND-JOB-409","status":409,"detail":"A refresh job is already running for refresh (fix: run `sindri jobs show JOB-000000000000000000000000000000a0`, or wait for it to end)","runningJob":"JOB-000000000000000000000000000000a0","traceId":"<trace>"}

@@ -52,8 +52,10 @@ internal sealed partial class InstanceFrameView : UserControl
 
     private void Satisfy()
     {
-        if (_wanted is not { } wanted)
+        if (_wanted is not { } wanted || !this.IsAttachedToVisualTree())
         {
+            // nothing wanted, or the view left its window (a closed one cannot hold focus): stop, so the queue drains
+            (_wanted, _attempts) = (null, 0);
             LayoutUpdated -= OnLayoutUpdated;
             return;
         }
@@ -82,7 +84,7 @@ internal sealed partial class InstanceFrameView : UserControl
     private void GiveUp(FrameFocusEventArgs wanted)
     {
         LayoutUpdated -= OnLayoutUpdated;
-        if (wanted.Target is FrameFocus.ChildEntry or FrameFocus.ChildItem or FrameFocus.ChildPointer && _frame is { } frame)
+        if (wanted.Target is FrameFocus.ChildEntry or FrameFocus.ChildItem or FrameFocus.ChildPointer or FrameFocus.Children && _frame is { } frame)
         {
             OnFocusRequested(frame, new FrameFocusEventArgs(frame.InitialFocus, key: null));
             return;
@@ -107,6 +109,7 @@ internal sealed partial class InstanceFrameView : UserControl
             FrameFocus.ChildItem => Find("ChildRowItemOpen", b => b.DataContext is ChildRowViewModel child && string.Equals(child.ItemId, wanted.Key, StringComparison.Ordinal)),
             FrameFocus.ChildPointer => Find("ExpandedChild"),
             FrameFocus.Recipe => Find("InstanceRecipe"),
+            FrameFocus.Children => Find("ChildRowOpen"),
             _ => throw new ArgumentOutOfRangeException(nameof(wanted), wanted.Target, message: null),
         };
     }
@@ -117,6 +120,8 @@ internal sealed partial class InstanceFrameView : UserControl
     private void OnBack(object? sender, RoutedEventArgs e) => (TopLevel.GetTopLevel(this)?.DataContext as ShellViewModel)?.Back();
 
     private void OnRecipe(object? sender, RoutedEventArgs e) => _frame?.OpenRecipe();
+
+    private void OnCopyAddress(object? sender, RoutedEventArgs e) => _ = _frame?.CopyAddress(CancellationToken.None);
 
     private void OnOpenIn(object? sender, RoutedEventArgs e) => _ = (DataContext as InstanceFrameViewModel)?.Subject?.OpenIn(CancellationToken.None);
 }

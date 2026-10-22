@@ -17,7 +17,7 @@ namespace Aw.Sindri.Ui.Tests.Views;
 [Lane(TestLane.Integration)]
 public sealed class DecisionsFramesTests : FrameHost
 {
-    private const string Pending = "DEC-00000000000000000000000000000011";
+    private const string Pending = "DEC-00000000000000000000000000000012";
 
     private async Task<(Window Window, ViewModels.Shell.ShellViewModel Shell)> WithDecisionOpen()
     {
@@ -125,7 +125,7 @@ public sealed class DecisionsFramesTests : FrameHost
         var (window, shell) = await Connected(width: 1400);
         shell.ShowNeedsYou(new NeedsYouFeed([NeedsYouRows.Failure()], ""));
 
-        shell.Navigate(new DeepLink(DeepLinkKind.NeedsYou, "failure:service:index"));
+        shell.NavigateToRowSheet(new DeepLink(DeepLinkKind.NeedsYou, "failure:service:index"));
         Settle(window);
 
         Assert.True(Visible(window, "NeedsYouSheet"));
@@ -133,15 +133,26 @@ public sealed class DecisionsFramesTests : FrameHost
     });
 
     [Fact]
-    public Task The_profile_sheet_shows_the_served_cli() => OnUi(async () =>
+    public Task The_profile_sheet_keeps_the_hash_and_the_served_cli_behind_closed_Details() => OnUi(async () =>
     {
         var (window, shell) = await Connected(width: 1400);
-        shell.ShowNeedsYou(new NeedsYouFeed([NeedsYouRows.Profile()], ""));
+        shell.ShowNeedsYou(new NeedsYouFeed([NeedsYouRows.Profile(new NeedsYouSubject("profile", "3f1c09"))], ""));
 
-        shell.Navigate(new DeepLink(DeepLinkKind.NeedsYou, "profile:drift"));
+        shell.NavigateToRowSheet(new DeepLink(DeepLinkKind.NeedsYou, "profile:drift"));
         Settle(window);
 
-        Assert.True(Visible(window, "SheetRowCli"));
+        var row = shell.NeedsYou.Rows.Single();
+        Assert.False(Visible(window, "SheetRowCli"));
+        Assert.True(Visible(window, "SheetRowMoreDetails"));   // the Details heading shows, closed
+        Assert.False(row.DetailsOpen);
+        var details = window.GetVisualDescendants().OfType<Expander>().Single(e => e.Name == "SheetRowMoreDetails");
+        Assert.DoesNotContain(details.GetVisualDescendants().OfType<TextBlock>(), t => t.IsEffectivelyVisible && (t.Text == row.Cli || t.Text == "3f1c09"));
         Frame(window, "profile-sheet");
+
+        row.DetailsOpen = true;
+        Settle(window);
+
+        Assert.Contains(details.GetVisualDescendants().OfType<TextBlock>(), t => t.IsEffectivelyVisible && t.Text == row.Cli);
+        Assert.Contains(details.GetVisualDescendants().OfType<TextBlock>(), t => t.IsEffectivelyVisible && t.Text == "3f1c09");
     });
 }

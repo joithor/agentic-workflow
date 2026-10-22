@@ -19,6 +19,10 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="Counts">Counts, as served.</param>
 /// <param name="Actions">Actions, as served.</param>
 /// <param name="AsOf">AsOf, as served.</param>
+/// <param name="StepRuns">The Step runs, in start order; null from a server that predates them.</param>
+/// <param name="Steps">What each Step state reads and produces; null from a server that predates them.</param>
+/// <param name="StartedBy">Who started the instance; null when nobody is recorded.</param>
+/// <param name="DisplayName">The workflow's display name when the instance view serves it; null otherwise.</param>
 internal sealed record InstanceDetail(
     string Address,
     string Id,
@@ -37,4 +41,8 @@ internal sealed record InstanceDetail(
     IReadOnlyList<ChildGroup> Children,
     ViewCounts Counts,
     IReadOnlyList<string> Actions,
-    DateTimeOffset AsOf);
+    DateTimeOffset AsOf,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? DisplayName = null,
+    IReadOnlyList<StepRun>? StepRuns = null,
+    IReadOnlyList<StateStep>? Steps = null,
+    string? StartedBy = null);

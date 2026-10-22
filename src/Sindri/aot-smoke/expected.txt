@@ -45,7 +45,7 @@ exit 1
 SND-PROFILE-004 approving needs an interactive terminal: run it yourself and type the action the challenge asks for
 exit 2
 ## sindri profile approve HASH (session, terminal)
-SND-AUTH-002 ApproveProfile is a human decision. Ask the human to run it in a terminal: sindri profile approve [<hash>] (this CLI ran as a session: CLAUDECODE is set)
+SND-AUTH-002 ApproveProfile is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri profile approve [<hash>] (this CLI ran as a session: CLAUDECODE is set)
 exit 2
 ## sindri profile approve HASH (human, terminal)
 Type 'approve profile HASH6' to approve it: approve profile HASH6
@@ -136,8 +136,12 @@ false
 ["item.created","item.state-changed"]
 ## GET /sindri/events/catalog | jq (public types, their invalidates)
 {"commandHandled":false,"itemCreated":["queue","items","item","timeline"]}
+## QUERY /sindri/context/subgraph with a JSON body on the published host (the HTTP QUERY method; POST is not a route)
+{"title":"SND-CONTEXT-020","status":403}
+"http=403"
+post http=405
 ## sindri services --json | jq (name, every, paused, job)
-[{"name":"heartbeat","every":"5s","paused":false,"job":null}]
+[{"name":"context-map-refresh","every":"1m","paused":false,"job":null},{"name":"context-sync-gaps","every":"1m","paused":false,"job":null},{"name":"heartbeat","every":"5s","paused":false,"job":null},{"name":"router-stub","every":"5s","paused":false,"job":null},{"name":"setup","every":"1m","paused":false,"job":null},{"name":"workflow-events","every":"5s","paused":false,"job":null}]
 ## sindri services run heartbeat (human, terminal)
 job JOB-ID started
 run heartbeat (manual)
@@ -159,11 +163,21 @@ heartbeat paused (sequence SEQ)
 SND-AUTH-002 PauseService is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri services pause <name> (this CLI ran as a session: CLAUDECODE is set)
 exit 2
 ## sindri services
+context-map-refresh  every 1m  last: ok  next: TIME
+context-sync-gaps  every 1m  last: ok  next: TIME
 heartbeat  every 5s  paused  last: ok  next: paused
+router-stub  every 5s  last: ok  next: TIME
+setup  every 1m  last: ok  next: TIME
+workflow-events  every 5s  last: ok  next: TIME
 ## sindri services resume heartbeat (human, terminal)
 heartbeat resumed (sequence SEQ)
 ## sindri services
+context-map-refresh  every 1m  last: ok  next: TIME
+context-sync-gaps  every 1m  last: ok  next: TIME
 heartbeat  every 5s  last: ok  next: TIME
+router-stub  every 5s  last: ok  next: TIME
+setup  every 1m  last: ok  next: TIME
+workflow-events  every 5s  last: ok  next: TIME
 ## sindri stop (session)
 SND-AUTH-002 StopProcess is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri stop (this CLI ran as a session: CLAUDECODE is set)
 exit 2
@@ -195,8 +209,8 @@ exit 2
 ## sindri recipe validate ROOT/recipes/sindri/workflow.step.yaml
 hash sha256:HASH
 ## sindri recipe validate ROOT/recipes/sindri/workflow.item.yaml
-information: RCP-RES-001: resource 'slot' has no allocator in this build at workflow.item.yaml:10:39 (states.startable.waitFor.resource); it parks with SND-WF-010 until the session-slot stub lands (P7)
-skipped: RCP-EFFECT-001: effect 'effect.claim.ref' wasn't checked against an effect allowlist, since the profile has no workflow.effects at workflow.item.yaml:23:101 (transitions[2].effects[0].use); add workflow.effects to the profile; until then the effect is refused at run time
+information: RCP-RES-001: resource 'slot' has no allocator in this build at workflow.item.yaml:11:39 (states.startable.waitFor.resource); it parks with SND-WF-010 until the session-slot stub lands (P7)
+skipped: RCP-EFFECT-001: effect 'effect.claim.ref' wasn't checked against an effect allowlist, since the profile has no workflow.effects at workflow.item.yaml:24:101 (transitions[2].effects[0].use); add workflow.effects to the profile; until then the effect is refused at run time
 hash sha256:HASH
 ## sindri recipe validate ROOT/recipes/sindri/workflow.review-loop.yaml
 hash sha256:HASH
@@ -205,4 +219,15 @@ hash sha256:HASH
 ## sindri recipe validate ROOT/tests/Aw.Sindri.Testing/Workflow/Recipes/invalid/RCP-REACH-001.yaml
 RCP-REACH-001: state 'orphan' is unreachable from 'produce' at RCP-REACH-001.yaml:14:3 (states.orphan); add a transition into it or remove it
 hash sha256:HASH
+exit 1
+## sindri onyx status --json | jq '{state, docker}' (no docker on PATH; a check's state 2 is fail)
+{"state":"not-set-up","docker":{"failed":true,"code":"SND-ONYX-001"}}
+## sindri onyx up (session)
+SND-AUTH-002 `sindri onyx up` runs Docker and writes Onyx's files, so only a human at a terminal runs it (this CLI ran as a session: CLAUDECODE is set; fix: ask the human to run `sindri onyx up`)
+exit 1
+## sindri onyx up
+SND-AUTH-002 `sindri onyx up` runs Docker and writes Onyx's files, so only a human at a terminal runs it (this CLI ran as a session: no terminal; fix: ask the human to run `sindri onyx up`)
+exit 1
+## sindri onyx down (session)
+SND-AUTH-002 `sindri onyx down` stops Docker containers, so only a human at a terminal runs it (this CLI ran as a session: CLAUDECODE is set; fix: ask the human to run `sindri onyx down`)
 exit 1

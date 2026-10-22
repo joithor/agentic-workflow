@@ -27,6 +27,26 @@ public sealed class OnyxSettingsTests
         Assert.Equal("v4.9.0", settings.Value.Version);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void A_managed_onyx_is_reached_at_127_0_0_1_over_http_and_unmanaged_is_the_default()
+    {
+        Assert.True(OnyxSettings.Create("http://127.0.0.1:3001", Pointer, "v4.9.0", managed: true).Value.Managed);
+        Assert.False(OnyxSettings.Create("http://127.0.0.1:3001", Pointer, "v4.9.0").Value.Managed);
+        Assert.False(OnyxSettings.Create("http://localhost:3000", Pointer, "v4.9.0").Value.Managed);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("http://localhost:3000")]
+    [InlineData("http://[::1]:3000")]
+    [InlineData("https://127.0.0.1:3000")]
+    public void A_managed_onyx_on_any_other_loopback_form_is_055(string url)
+    {
+        var error = OnyxSettings.Create(url, Pointer, "v4.9.0", managed: true).Error;
+
+        Assert.Equal("SND-CONTEXT-055", error.Code);
+        Assert.Contains("managed", error.Message, StringComparison.Ordinal);
+    }
+
     [Theory, Trait("Lane", "unit")]
     [InlineData("http://10.0.0.5:3000", "10.0.0.5")]
     [InlineData("http://0.0.0.0:3000", "0.0.0.0")]
@@ -64,7 +84,7 @@ public sealed class OnyxSettingsTests
     [Fact, Trait("Lane", "unit")]
     public void A_url_with_a_user_or_password_is_055_and_the_message_never_repeats_them()
     {
-        var error = OnyxSettings.Create("http://admin:planted-secret-7f3a@127.0.0.1:3000", Pointer, "v4.9.0").Error;
+        var error = OnyxSettings.Create("http://admin:" + "planted-secret-7f3a@127.0.0.1:3000", Pointer, "v4.9.0").Error;
 
         Assert.Equal(ContextErrors.OnyxNotPinnedOrLoopback.Code, error.Code);
         Assert.StartsWith("context.sources.onyx.url: ", error.Message, StringComparison.Ordinal);

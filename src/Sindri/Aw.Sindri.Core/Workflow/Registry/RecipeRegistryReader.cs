@@ -5,6 +5,7 @@ using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Validation;
+using Aw.Sindri.Core.Workflow.Views;
 
 namespace Aw.Sindri.Core.Workflow.Registry;
 
@@ -20,7 +21,8 @@ namespace Aw.Sindri.Core.Workflow.Registry;
 /// <param name="catalog">This build's blocks, against which an approval's pins drift.</param>
 /// <param name="json">The package's AwJson options (they read the stored text and hash the descriptors).</param>
 /// <param name="profile">The approved profile's facts, whose 'workflow.effects' RCP-EFFECT-001 checks against (S1-D11).</param>
-public sealed class RecipeRegistryReader(IRecipeStore store, IRecipeApprovals approvals, BlockCatalog catalog, JsonSerializerOptions json, IRecipeProfileFacts profile)
+/// <param name="names">The names the app shows instead of the ids (setup-once spec §7.7); null shows the ids.</param>
+public sealed class RecipeRegistryReader(IRecipeStore store, IRecipeApprovals approvals, BlockCatalog catalog, JsonSerializerOptions json, IRecipeProfileFacts profile, IRecipeDisplayNames? names = null)
 {
     /// <summary>Every registered recipe's line, by id and then version.</summary>
     /// <param name="cancellationToken">Cancels the reads.</param>
@@ -47,6 +49,30 @@ public sealed class RecipeRegistryReader(IRecipeStore store, IRecipeApprovals ap
         }
 
         return lines;
+    }
+
+    /// <summary>The ids of the registered recipes some registered recipe starts as a child (a 'waitFor: { child }').</summary>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The ids; empty when no recipe has a child.</returns>
+    public async ValueTask<Result<IReadOnlySet<RecipeId>>> ChildRecipeIds(CancellationToken cancellationToken)
+    {
+        var all = await store.All(cancellationToken).ConfigureAwait(false);
+        if (all.IsError)
+        {
+            return all.Error;
+        }
+
+        var ids = new HashSet<RecipeId>();
+        foreach (var registered in all.Value)
+        {
+            var parsed = Parse(registered);
+            if (parsed.IsSuccess)
+            {
+                ids.UnionWith(parsed.Value.States.Values.Select(static s => s.WaitFor?.Child?.Recipe).OfType<RecipeId>());
+            }
+        }
+
+        return Results.Success<IReadOnlySet<RecipeId>>(ids);
     }
 
     /// <summary>The line of <paramref name="recipe"/>.</summary>
@@ -166,7 +192,7 @@ public sealed class RecipeRegistryReader(IRecipeStore store, IRecipeApprovals ap
 
         var (standing, stale) = Stand(parsed.Value, latest.Value, revoked.Value, current);
         var order = StatePathOrder.Of(parsed.Value);
-        return new RecipeSummary(recipe.Id, recipe.Version, recipe.Hash, standing, latest.Value?.Via, stale, parsed.Value.Inputs, parsed.Value.Urgency, parsed.Value.Outputs, order.OrderedBy, order.States, order.Loops, parsed.Value.Name);
+        return new RecipeSummary(recipe.Id, recipe.Version, recipe.Hash, standing, latest.Value?.Via, stale, parsed.Value.Inputs, parsed.Value.Urgency, parsed.Value.Outputs, order.OrderedBy, order.States, order.Loops, parsed.Value.Name, names?.Of(recipe.Id));
     }
 
     /// <summary>

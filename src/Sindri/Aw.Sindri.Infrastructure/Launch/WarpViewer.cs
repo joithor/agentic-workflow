@@ -57,9 +57,9 @@ internal sealed partial class WarpViewer(WarpViewerOptions options, ISessionHost
     /// <inheritdoc/>
     public async ValueTask<TerminalFacts> Probe(CancellationToken cancellationToken)
     {
-        var opener = await ViewerProcess.OnLoginPath(options.Opener, cancellationToken).ConfigureAwait(false);
-        var handler = opener && (options.IsMac || await HasLinuxHandler(cancellationToken).ConfigureAwait(false));
-        var gui = ViewerProcess.HasGuiSession(options.GetEnv);
+        var opener = await (options.OnPath ?? ViewerProcess.OnLoginPath)(options.Opener, cancellationToken).ConfigureAwait(false);
+        var handler = opener && (options.IsMac || await (options.HasHandler ?? HasLinuxHandler)(cancellationToken).ConfigureAwait(false));
+        var gui = ViewerProcess.HasGuiSession(options.GetEnv, options.IsMac);
         var problem = !handler ? "not-installed" : gui ? null : "no-gui-session";
         return new TerminalFacts(Kind, "Warp", problem is null, "file", ConfigPath: null, problem, Detail: null);
     }
@@ -90,28 +90,32 @@ internal sealed partial class WarpViewer(WarpViewerOptions options, ISessionHost
             return ViewerProcess.Failed(problem ?? "the opener did not start");
         }
 
-        using var budget = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        budget.CancelAfter(_openerBudget);
         try
         {
-            await child.Exited.WaitAsync(budget.Token).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-        {
-            ViewerProcess.Reap(child);
-            return ViewerOutcome.Failed(SindriErrors.LaunchTimedOut.Code, string.Create(CultureInfo.InvariantCulture, $"{options.Opener} did not return within {_openerBudget.TotalSeconds:0} s"));
-        }
+            using var budget = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            budget.CancelAfter(_openerBudget);
+            try
+            {
+                await child.Exited.WaitAsync(budget.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                ViewerProcess.KillTree(child);   // an opener that overran its budget must not be waited on for ever
+                return ViewerOutcome.Failed(SindriErrors.LaunchTimedOut.Code, string.Create(CultureInfo.InvariantCulture, $"{options.Opener} did not return within {_openerBudget.TotalSeconds:0} s"));
+            }
 
-        var code = child.Process.ExitCode;
-        if (code != 0)
-        {
-            var detail = await ViewerProcess.Detail(child, code, redactor).ConfigureAwait(false);
-            ViewerProcess.Reap(child);
-            return ViewerProcess.Failed(detail);
-        }
+            var code = child.Process.ExitCode;
+            if (code != 0)
+            {
+                return ViewerProcess.Failed(await ViewerProcess.Detail(child, code, redactor).ConfigureAwait(false));
+            }
 
-        ViewerProcess.Reap(child);
-        return await ViewerProcess.Watch(host, time, new ViewerProcess.WatchPlan(request, () => ValueTask.FromResult<ViewerOutcome?>(null), Wake: null), cancellationToken).ConfigureAwait(false);
+            return await ViewerProcess.Watch(host, time, new ViewerProcess.WatchPlan(request, () => ValueTask.FromResult<ViewerOutcome?>(null), Wake: null), cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            ViewerProcess.Reap(child);   // on every way out, including the caller's cancel
+        }
     }
 
     private void Write(string path, ViewerRequest request, string name)

@@ -1,7 +1,7 @@
 {
   "id": "workflow.dev-desk-round-trip",
-  "hash": "sha256:459f0bb87b5ab29e00fe744561f13e95e8a5819debcd065a1c52b0ad3aba27ac",
-  "version": 2,
+  "hash": "sha256:22e3d173c3030036026aa70ae192f0bbe64b5135960ec38d7f05976443595357",
+  "version": 3,
   "name": null,
   "inputs": [
     {
@@ -47,5 +47,6 @@
       "to": "export",
       "cap": 2
     }
-  ]
+  ],
+  "displayName": "Dev desk round trip"
 }

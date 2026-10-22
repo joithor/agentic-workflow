@@ -1,5 +1,6 @@
 using Aw.Kernel;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
@@ -55,6 +56,71 @@ public sealed class HealthViewModelTests : IDisposable
         Assert.Equal(("memory:control.json", Labels.NoRecord), (_vm.ReasonDetail, _vm.Reason));
         Assert.False(_vm.IsRunning);
     }
+
+    // F3/F4: the System page leads with one sentence, and the per-service detail waits behind Details.
+    [Fact]
+    public async Task Not_running_leads_with_one_plain_sentence()
+    {
+        Start();
+
+        await Eventually(() => _vm.Headline == "Not running", "headline");
+        Assert.Equal("Sindri isn't running.", _vm.Sentence);
+    }
+
+    [Fact]
+    public async Task A_healthy_running_control_plane_says_everything_is_running()
+    {
+        _records.Write(A.Record());
+        _server.Current = A.Status() with { Health = new HealthView("healthy", []) };
+        Start();
+
+        await Eventually(() => _vm.IsRunning, "running");
+        Assert.Equal("Everything is running.", _vm.Sentence);
+    }
+
+    [Fact]
+    public async Task Without_health_data_the_sentence_does_not_claim_all_is_well()
+    {
+        _records.Write(A.Record());
+        Start();
+
+        await Eventually(() => _vm.IsRunning, "running");
+        Assert.Equal("Checking…", _vm.Sentence);
+    }
+
+    [Fact]
+    public async Task A_pending_profile_fix_says_what_needs_you_even_when_health_is_healthy()
+    {
+        _records.Write(A.Record());
+        _server.Current = A.Status(profile: A.ChangedProfile()) with { Health = new HealthView("healthy", []) };
+        Start();
+
+        await Eventually(() => _vm.HasProfileFix, "profile fix");
+        await Eventually(() => _vm.Sentence == "The profile needs your approval.", "the sentence");
+    }
+
+    [Fact]
+    public async Task A_degraded_service_names_what_needs_a_look()
+    {
+        _records.Write(A.Record());
+        _server.Current = A.Status() with { Health = new HealthView("degraded", [new HealthProblemView("SND-SCHED-001", "index failed")]) };
+        Start();
+
+        await Eventually(() => _vm.Sentence == "Something needs a look: index failed.", "the sentence");
+    }
+
+    [Fact]
+    public async Task Degraded_without_problem_text_still_says_something_needs_a_look()
+    {
+        _records.Write(A.Record());
+        _server.Current = A.Status() with { Health = new HealthView("degraded", []) };
+        Start();
+
+        await Eventually(() => _vm.Sentence == "Sindri is running, but something needs a look.", "the sentence");
+    }
+
+    [Fact]
+    public void The_page_opens_on_overview() => Assert.True(_vm.ShowOverview);
 
     // API §6, §3.6 and the orchestrator's decision (PR #184): a call refused even after its one retry (SND-AUTH-001, a
     // missing or stale token) is the Unreadable banner with Sindri's code and detail as they are, never "nothing

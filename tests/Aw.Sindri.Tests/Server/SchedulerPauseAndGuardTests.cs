@@ -63,6 +63,32 @@ public sealed class SchedulerPauseAndGuardTests
     }
 
     [Fact]
+    public async Task A_profile_service_named_like_a_built_in_can_be_paused_and_stays_unrun()
+    {
+        var counted = new CountingService();
+        await using var rig = await SchedulerRig.Start([counted], [new BuiltInService(CountingService.Name, new Cadence(TimeSpan.FromSeconds(5)))], ("counted", "5s"));
+        await rig.Pause("counted");
+        await rig.Begin();
+
+        await rig.Step(17);
+
+        Expect.Equal(0, counted.Runs);   // the profile names it, so it is no built-in and the pause holds
+    }
+
+    [Fact]
+    public async Task A_profile_service_named_like_a_built_in_waits_for_the_first_good_read_of_the_pauses()
+    {
+        var counted = new CountingService();
+        await using var rig = await SchedulerRig.Start([counted], [new BuiltInService(CountingService.Name, new Cadence(TimeSpan.FromSeconds(5)))], ("counted", "5s"));
+        await rig.BeginRebuild();
+        await rig.Begin();
+
+        await rig.Step(12);
+
+        Expect.Equal(0, counted.Runs);
+    }
+
+    [Fact]
     public async Task A_built_in_service_runs_before_the_first_good_read_of_the_pauses_while_a_profile_service_waits()
     {
         var tidy = new ScriptedService(ScriptedService.Worked);

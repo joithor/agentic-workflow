@@ -31,6 +31,7 @@ public sealed class WorkflowsViewModelTests
     private async Task<WorkflowsViewModel> Shown()
     {
         var list = new WorkflowsViewModel(_server, new FakeClipboard(), new FakeTimeProvider(A.Noon));
+        list.SetViewMode(WorkflowViewMode.List);   // the grouped list; the board has its own tests
         await list.Refresh(_api, Token);
         return list;
     }
@@ -62,15 +63,67 @@ public sealed class WorkflowsViewModelTests
     }
 
     [Fact]
-    public async Task Each_groups_columns_are_its_rows_states_in_order()
+    public async Task A_group_is_named_for_its_workflow_and_counts_runs_and_never_shows_the_recipe_id()
+    {
+        var list = await Shown();
+        var served = GoldenFiles.Node("workflow-instances", "open")["instances"]!.AsArray()   // why: the golden is a JSON document
+            .DistinctBy(static i => (string)i!["recipe"]!["id"]!, StringComparer.Ordinal)
+            .ToDictionary(static i => (string)i!["recipe"]!["id"]!, static i => (string)i!["recipe"]!["displayName"]!, StringComparer.Ordinal);
+
+        Assert.All(list.Groups, group =>
+        {
+            Assert.Equal(served[group.Recipe], group.Name);   // the name the server serves; an older one serves none and the id is made readable (WorkflowNames)
+            Assert.Equal(group.Rows.Count == 1 ? "1 run" : $"{group.Rows.Count} runs", group.CountText);
+            Assert.Equal($"{group.Name} · {group.CountText}", group.Header);
+            Assert.DoesNotContain("workflow.", group.Header, StringComparison.Ordinal);
+            Assert.DoesNotContain("workflow.", group.ToggleName, StringComparison.Ordinal);
+        });
+        Assert.Contains(list.Groups, g => g.Rows.Count > 1);
+    }
+
+    [Fact]
+    public async Task A_served_display_name_names_the_group()
+    {
+        var body = GoldenFiles.Node("workflow-instances", "open");
+        var first = body["instances"]!.AsArray()[0]!;
+        first["recipe"]!["displayName"] = "Build and ship a change";
+        _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, body.ToJsonString());
+
+        var list = await Shown();
+
+        Assert.Equal("Build and ship a change", list.Groups.First(g => g.Recipe == Recipe(first)).Name);
+    }
+
+    [Fact]
+    public async Task The_workflow_filter_lists_workflows_by_name_and_maps_a_choice_back_to_its_id()
     {
         var list = await Shown();
 
-        foreach (var group in list.Groups)
+        Expect.Sequence([Labels.AllRecipes, .. list.Groups.Select(g => g.Name)], list.RecipeChoices);
+        Assert.All(list.Groups, g => Assert.Equal(g.Recipe, list.RecipeIdOf(g.Name)));
+        Assert.Null(list.RecipeIdOf(Labels.AllRecipes));
+        Assert.Equal(("All workflow types", "Workflow type", "Item"), (Labels.AllRecipes, Labels.RecipeFilter, Labels.SubjectFilter));
+    }
+
+    [Fact]
+    public async Task Two_workflows_with_one_display_name_are_told_apart_in_the_filter_and_map_back_exactly()
+    {
+        var body = GoldenFiles.Node("workflow-instances", "open");
+        var rows = body["instances"]!.AsArray();
+        var ids = rows.Select(r => Recipe(r!)).Distinct(StringComparer.Ordinal).Take(2).ToList();
+        Assert.Equal(2, ids.Count);
+        foreach (var row in rows)
         {
-            var first = Served("open").First(r => Recipe(r!) == group.Recipe)!;
-            Expect.Sequence(first["states"]!.AsArray().Select(s => Text(s!["id"])), group.Columns);
+            row!["recipe"]!["displayName"] = "Same name";
         }
+
+        _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, body.ToJsonString());
+
+        var list = await Shown();
+
+        Assert.Equal(list.RecipeChoices.Count, list.RecipeChoices.Distinct(StringComparer.Ordinal).Count());
+        Assert.All(list.RecipeChoices, c => Assert.DoesNotContain("workflow.", c, StringComparison.Ordinal));
+        Assert.All(list.Groups, g => Assert.Equal(g.Recipe, list.RecipeIdOf(list.RecipeChoices[list.Groups.IndexOf(g) + 1])));
     }
 
     [Fact]
@@ -89,14 +142,14 @@ public sealed class WorkflowsViewModelTests
         var list = await Shown();
 
         var done = GoldenFiles.Node("workflow-instances", "root")["counts"]!["done"];
-        Assert.Equal((true, $"{done} done today", false, 0), (list.HasDone, list.DoneText, list.IsDoneExpanded, list.DoneRows.Count));
+        Assert.Equal((true, $"{done} finished", false, 0), (list.HasDone, list.DoneText, list.IsDoneExpanded, list.DoneRows.Count));
 
         await list.ToggleDone(Token);
 
         var finished = Served("root").Where(r => r!["states"]!.AsArray().Any(s => Text(s!["id"]) == Text(r["state"]) && (bool)s["terminal"]!)).Select(r => Text(r!["address"]));
         Assert.True(list.IsDoneExpanded);
         Expect.Sequence(finished, list.DoneRows.Select(r => r.Address));
-        Assert.Equal(new InstanceQuery(Root: true), _server.LastInstancesQuery);
+        Assert.Equal(new InstanceQuery(Root: true, Open: false), _server.LastInstancesQuery);
 
         await list.ToggleDone(Token);
         Assert.Equal((false, 0), (list.IsDoneExpanded, list.DoneRows.Count));
@@ -255,7 +308,7 @@ public sealed class WorkflowsViewModelTests
     public Task Expanding_then_collapsing_the_finished_line_does_not_refill_it() => UiThread.Run(async () =>
     {
         var list = await Shown();
-        var late = Hold(new InstanceQuery(Root: true));
+        var late = Hold(new InstanceQuery(Root: true, Open: false));
         var expanding = list.ToggleDone(Token);
 
         await list.ToggleDone(Token);
@@ -264,26 +317,6 @@ public sealed class WorkflowsViewModelTests
 
         Assert.Equal((false, 0), (list.IsDoneExpanded, list.DoneRows.Count));
     }, Token);
-
-    [Fact]
-    public async Task Every_rows_cells_sit_under_the_groups_column_heads()
-    {
-        var body = GoldenFiles.Node("workflow-instances", "open");
-        var rows = body["instances"]!.AsArray();
-        var group = rows.GroupBy(r => Recipe(r!), StringComparer.Ordinal).First(g => g.Skip(1).Any()).ToList();
-        var shortened = group[1]!;
-        var dropped = Text(shortened["states"]!.AsArray()[0]!["id"]);
-        shortened["states"]!.AsArray().RemoveAt(0);   // a row on another hash: one state fewer
-        _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, body.ToJsonString());
-
-        var list = await Shown();
-
-        var served = list.Groups.First(g => string.Equals(g.Recipe, Recipe(shortened), StringComparison.Ordinal));
-        Assert.Contains(dropped, served.Columns, StringComparer.Ordinal);
-        Assert.All(served.Rows, row => Expect.Sequence(served.Columns, row.Cells.Select(c => c.State)));
-        var short1 = served.Rows.First(r => string.Equals(r.Address, Text(shortened["address"]), StringComparison.Ordinal));
-        Assert.Contains(short1.Cells, c => string.Equals(c.State, dropped, StringComparison.Ordinal) && c.Text.Length == 0);
-    }
 
     [Fact]
     public async Task Recipe_link_opens_the_approved_recipe()
@@ -297,6 +330,8 @@ public sealed class WorkflowsViewModelTests
 
         Expect.Sequence([group.Recipe], asked);   // a bare id: the approved version
         Assert.StartsWith(Labels.RecipeLink[..^2], group.RecipeLinkName, StringComparison.Ordinal);
-        Assert.Contains(group.Recipe, group.RecipeLinkName, StringComparison.Ordinal);
+        Assert.Contains(group.Name, group.RecipeLinkName, StringComparison.Ordinal);
+        Assert.DoesNotContain("workflow.", group.RecipeLinkName, StringComparison.Ordinal);
+        Assert.Equal("How it works ▸", Labels.RecipeLink);
     }
 }

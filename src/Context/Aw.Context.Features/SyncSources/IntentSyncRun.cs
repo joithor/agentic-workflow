@@ -208,7 +208,7 @@ internal sealed class IntentSyncRun(IContextSource source, VisibleMap map, (Cont
     {
         var title = context.Scrubbers.Ingest.Clean(fetched.Title, singleLine: true);
         var aliases = hit.Aliases.Select(a => context.Scrubbers.Ingest.Clean(a, singleLine: true)).Where(a => !a.Blocked).Select(a => a.Text).ToList();
-        return new IntentRecord(hit.Ref.Canonical, _id, hit.Ref.Version.Value, title.Blocked ? "(withheld by the scrubber)" : title.Text, aliases);
+        return new IntentRecord(hit.Ref.Canonical, _id, hit.Ref.Version.Value, title.Blocked ? "(withheld by the scrubber)" : title.Text, aliases) { CreatedAt = fetched.CreatedAt };
     }
 
     private string Text(SourceRecord fetched) => fetched.Blocked ? string.Empty : context.Scrubbers.Ingest.Clean(fetched.Text, singleLine: false) is { Blocked: false } clean ? clean.Text : string.Empty;

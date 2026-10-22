@@ -1,6 +1,5 @@
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Map;
-using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Review;
 using Aw.Kernel;
 
@@ -8,9 +7,9 @@ namespace Aw.Context.Core.Facade;
 
 /// <summary>
 /// The map part of the facade (spec Phase 3, stage S-3a): import, export, status, the doctor checks and the purge; stage S-4 adds the build, the review, the promote and the scoping proposals.
-/// IContextEngine extends it; Sindri calls these through IContextEngine only. Reads take the same ContextScope as the rest of the engine.
+/// IContextEngine extends it, and so does IScopeProposals (the scoping run's proposals and their withdrawal); Sindri calls these through IContextEngine only. Reads take the same ContextScope as the rest of the engine.
 /// </summary>
-public interface IContextMap
+public interface IContextMap : IScopeProposals
 {
     /// <summary>Reads and checks a map file without writing anything: what 'context map import' shows before asking for the hash.</summary>
     /// <param name="path">The file.</param>
@@ -109,23 +108,47 @@ public interface IContextMap
     /// <returns>The rows written and the entries skipped, or SND-CONTEXT-001/004/005/043/044.</returns>
     public ValueTask<Result<ReviewResult>> ApplyReviewFile(string path, ContextScope scope, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// The cleanup agent (owner F1, 2026-10-19): settles every entry of the latest draft's review queue so the draft can be promoted with no human step.
+    /// Deterministic entries are accepted, orphaned overrides dropped, model entries at or above <see cref="CleanupPolicy.KeepAt"/> accepted, and the ones
+    /// below it judged by a model (keep: accept, remove: reject); when no model answers they are rejected. Every row is written as the caller. A session is refused.
+    /// </summary>
+    /// <param name="scope">The profile's context section and repos, and the caller.</param>
+    /// <param name="cancellationToken">Cancels the pass; the rows already written stay (each is an ordinary review decision).</param>
+    /// <param name="expectedVersion">The draft the caller means (the automatic publish passes the one it decided about), or null for whichever is latest (the human path). The pass checks it on every read, and its rows are appended only while that draft is still the latest.</param>
+    /// <returns>What it decided, or SND-CONTEXT-001/004/020/044/047/190 (190: <paramref name="expectedVersion"/> is given and the latest draft is another number, or there is none).</returns>
+    public ValueTask<Result<CleanupReport>> CleanDraft(ContextScope scope, CancellationToken cancellationToken, int? expectedVersion = null);
+
     /// <summary>Makes the latest draft current (a protected command with the typed challenge: Sindri checks the caller first).</summary>
     /// <param name="scope">The profile's context section and repos, and the caller.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>The new current version, or SND-CONTEXT-001/004/046 (no draft, or undecided items).</returns>
-    public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken);
+    /// <param name="expectedVersion">The draft the caller means, or null for whichever is latest (the human path, which is never held). Bound to the draft read at the start of the call.</param>
+    /// <returns>The new current version, or SND-CONTEXT-001/004/046 (no draft, or undecided items) or 190 (<paramref name="expectedVersion"/> is given and the latest draft is another number, or there is none). Every promote clears the hold and the wait.</returns>
+    public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken, int? expectedVersion = null);
 
-    /// <summary>Writes a scoping run's surfaces as 'propose' rows in the latest draft (opening one as a copy of current when there is none); never changes current.</summary>
-    /// <param name="proposal">The run's surfaces.</param>
-    /// <param name="scope">The profile's context section and repos, and the caller.</param>
+    /// <summary>What the publish rules read: the hold, the latest draft, the current version and its heads (service use).</summary>
+    /// <param name="scope">The profile's context section and repos, and the caller: a session is refused.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>What was written, or SND-CONTEXT-001/004/030/045.</returns>
-    public ValueTask<Result<ProposeResult>> Propose(ScopeProposal proposal, ContextScope scope, CancellationToken cancellationToken);
+    /// <returns>The state (all repos), or SND-CONTEXT-001/004/020.</returns>
+    public ValueTask<Result<MapPublishState>> Held(ContextScope scope, CancellationToken cancellationToken);
 
-    /// <summary>Where each surface a scoping run proposed stands: mapped, new or unmapped.</summary>
-    /// <param name="run">The run's id.</param>
-    /// <param name="scope">The profile's context section and repos, and the caller.</param>
+    /// <summary>Holds the latest draft for the code index: stores the hold next to it, with the start of the wait read from the chain row in the same transaction (service use).</summary>
+    /// <param name="hold">The draft to hold, its heads (checked, 7 to 40 lowercase hex) and the time now as <see cref="MapHold.Since"/>.</param>
+    /// <param name="scope">The profile's context section and repos, and the caller: a session is refused.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>The view, or SND-CONTEXT-001/004/030.</returns>
-    public ValueTask<Result<ProposalsView>> Proposals(string run, ContextScope scope, CancellationToken cancellationToken);
+    /// <returns>The stored hold (its <see cref="MapHold.Since"/> is the wait's start), or SND-CONTEXT-001/004/020/190 (the draft is not the latest)/191 (a head is invalid).</returns>
+    public ValueTask<Result<MapHold>> Hold(MapHold hold, ContextScope scope, CancellationToken cancellationToken);
+
+    /// <summary>Drops the hold on a draft; the wait's start (the chain) stays, and so does the draft (service use).</summary>
+    /// <param name="version">The held draft.</param>
+    /// <param name="scope">The profile's context section and repos, and the caller: a session is refused.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>Unit (also when that draft is not held), or SND-CONTEXT-001/004/020.</returns>
+    public ValueTask<Result<Unit>> Release(int version, ContextScope scope, CancellationToken cancellationToken);
+
+    /// <summary>The publish state for everyone else: 'context map status', the Health card and a session. Only the caller's repos appear.</summary>
+    /// <param name="scope">The profile's context section and repos, and the caller (a session sees its own repo, while sessions are on).</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The view, or SND-CONTEXT-001/003/004/020.</returns>
+    public ValueTask<Result<MapPublishView>> PublishStatus(ContextScope scope, CancellationToken cancellationToken);
 }

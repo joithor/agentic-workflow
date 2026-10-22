@@ -53,12 +53,19 @@ public static class StepForms
             return SindriErrors.RequestInvalid.With("the Step's writable path isn't absolute (fix: pass the Step directory's absolute path)");
         }
 
+        if (entry.PolicyForm != PolicyForm.ClaudeSettingsFile && (policy.ReadOnlyPaths is { Count: > 0 } || policy.DeniedPaths is { Count: > 0 }))
+        {
+            return Unsupported(entry, "policy", "its policy form can't deny a read or keep a path read-only (only claude-settings-file can)");
+        }
+
         return entry.PolicyForm switch
         {
             PolicyForm.ClaudeSettingsFile => settingsPath is { } path && Placeholders.IsAbsolute(path)
                 ? Results.Success<IReadOnlyList<string>>(["--settings", path])
                 : SindriErrors.RequestInvalid.With("a claude-settings-file policy needs the settings file's absolute path"),
-            PolicyForm.CodexOverrides => Results.Success(CodexOverrides(policy)),
+            PolicyForm.CodexOverrides => policy.DeniedPaths is { Count: > 0 }
+                ? Unsupported(entry, "policy", "codex-overrides can't deny reads of paths")
+                : Results.Success(CodexOverrides(policy)),
             PolicyForm.CursorConfig => Unsupported(entry, "policy", "cursor-config is reserved until it is verified"),
             PolicyForm.None => Unsupported(entry, "policy", "its policy form is none"),
             _ => Unsupported(entry, "policy", "its policy form is unknown"),

@@ -4,30 +4,32 @@
              xmlns:controls="using:Aw.Sindri.Ui.Views.Controls"
              x:Class="Aw.Sindri.Ui.Views.Queue.ItemRow"
              x:DataType="queue:ItemRowViewModel">
-  <!-- One item row (UI spec §4.5, queue.html): id (mono), title, repo, the state as a word, step, since, and the row's
+  <!-- One item row (UI spec §4.5, queue.html): title, repo, the state as a word, step, since, and the row's
        primary action from the catalog. A click on the title, or Enter, opens the sheet (§3.2); the row is named by its
-       id, title and state. -->
+       id, title and state (the id is read out, never drawn). -->
   <Border x:Name="RowFrame" Classes="item-row" Classes.selected="{Binding IsSelected}" Focusable="True"
           AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
     <Grid x:Name="TableRow" VerticalAlignment="Center">
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="150" /><ColumnDefinition Width="*" MinWidth="160" /><ColumnDefinition Width="150" /><ColumnDefinition Width="130" />
+        <ColumnDefinition Width="*" MinWidth="160" /><ColumnDefinition Width="150" /><ColumnDefinition Width="130" />
         <ColumnDefinition Width="110" /><ColumnDefinition Width="70" /><ColumnDefinition Width="260" />
       </Grid.ColumnDefinitions>
-      <TextBlock x:Name="IdText" AutomationProperties.Name="{Binding Id}" Classes="mono subtle" Text="{Binding Id}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-      <Button x:Name="TitleButton" Grid.Column="1" Classes="row-title" Click="OnOpen" AutomationProperties.Name="{Binding OpenName}">
-        <TextBlock Classes="body-strong" Text="{Binding Title}" TextTrimming="CharacterEllipsis" AutomationProperties.Name="{Binding Title}" />
+      <Button x:Name="TitleButton" Classes="row-title" Click="OnOpen" AutomationProperties.Name="{Binding OpenName}">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock Classes="body-strong" Text="{Binding Title}" TextTrimming="CharacterEllipsis" AutomationProperties.Name="{Binding Title}" />
+          <TextBlock x:Name="IdText" Classes="mono subtle" Text="{Binding Id}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+        </StackPanel>
       </Button>
-      <TextBlock x:Name="RepoText" AutomationProperties.Name="{Binding Repo}" Grid.Column="2" Classes="caption subtle" Text="{Binding Repo}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-      <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+      <TextBlock x:Name="RepoText" AutomationProperties.Name="{Binding Repo}" Grid.Column="1" Classes="caption subtle" Text="{Binding Repo}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
         <TextBlock x:Name="StateText" AutomationProperties.Name="{Binding StateWord}" Classes="body" Text="{Binding StateWord}" VerticalAlignment="Center" />
         <Border x:Name="Badge" Classes="badge" IsVisible="{Binding HasBadge}" VerticalAlignment="Center">
           <TextBlock x:Name="BadgeText" Classes="caption" Text="{Binding Badge}" AutomationProperties.Name="{Binding Badge}" />
         </Border>
       </StackPanel>
-      <TextBlock x:Name="StepText" AutomationProperties.Name="{Binding Step}" Grid.Column="4" Classes="mono" Text="{Binding Step}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-      <TextBlock x:Name="AgeText" AutomationProperties.Name="{Binding Age}" Grid.Column="5" Classes="caption subtle" Text="{Binding Age}" VerticalAlignment="Center" />
-      <Panel Grid.Column="6" IsVisible="{Binding HasPrimaryAction}">
+      <TextBlock x:Name="StepText" AutomationProperties.Name="{Binding Stage}" Grid.Column="3" Classes="body" Classes.raw="{Binding StageIsRaw}" Text="{Binding Stage}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+      <TextBlock x:Name="AgeText" AutomationProperties.Name="{Binding Age}" Grid.Column="4" Classes="caption subtle" Text="{Binding Age}" VerticalAlignment="Center" />
+      <Panel Grid.Column="5" IsVisible="{Binding HasPrimaryAction}">
         <controls:CommandControl x:Name="PrimaryAction" DataContext="{Binding PrimaryAction}" />
       </Panel>
     </Grid>

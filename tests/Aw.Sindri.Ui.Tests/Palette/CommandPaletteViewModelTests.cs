@@ -48,8 +48,8 @@ public sealed partial class CommandPaletteViewModelTests
         Assert.Equal(["Actions", "Go to", "Sindri"], _palette.Sections.Select(s => s.Heading), StringComparer.Ordinal);
         var actions = _palette.Entries.Where(e => e.IsAction).Select(e => e.Id).ToList();
         Assert.Equal(_catalog.Rows.Select(r => r.Action).Order(StringComparer.Ordinal), actions.Order(StringComparer.Ordinal), StringComparer.Ordinal);
-        Assert.Equal(("ready", "not in the app yet", "Copy: sindri doctor"), (Entry("RebuildViews").Status, Entry("ProbeLaunchTargets").Status, Entry("RunDoctor").Status));
-        Assert.Equal("Check launch targets again, not in the app yet", Entry("ProbeLaunchTargets").Name);
+        Assert.Equal(("ready", "coming soon", "Copy: sindri doctor"), (Entry("RebuildViews").Status, Entry("ProbeLaunchTargets").Status, Entry("RunDoctor").Status));
+        Assert.Equal("Check launch targets again, coming soon", Entry("ProbeLaunchTargets").Name);
     }
 
     // Q3: with no selected row, Actions lists the catalog grouped by status: ready, then pending, then cli-only.
@@ -72,7 +72,7 @@ public sealed partial class CommandPaletteViewModelTests
         _palette.Open();
 
         Assert.Equal(
-            ["Home G H", "Workflows G W", "Work G Q", "Recipes G R", "Context G C", "Agents G A", "System G .", "Settings ⌘,"],
+            ["Home G H", "Workflows G W", "Work G Q", "Workflow types G R", "Context G C", "Agents G A", "System G .", "Jobs G J", "Settings ⌘,"],
             _palette.Sections[1].Entries.Select(e => e.Label + " " + e.Key),
             StringComparer.Ordinal);
     }
@@ -118,6 +118,21 @@ public sealed partial class CommandPaletteViewModelTests
         Assert.Equal("ApplyCommand:answer-accept", _palette.Selected?.Id);
         Assert.True(_palette.Selected!.IsSelected);
         Assert.All(_palette.Entries.Where(e => e.Control?.IsPending == true), e => Assert.False(e.IsEnabled));
+    }
+
+    // A pending row says "coming soon" in its status and its accessible name; no phase code reaches the screen.
+    [Fact]
+    public void Pending_entries_say_coming_soon_with_no_phase_code()
+    {
+        _palette.Open();
+        var pending = _palette.Entries.Where(e => e.Control?.IsPending == true).ToList();
+
+        Assert.NotEmpty(pending);
+        Assert.All(pending, e =>
+        {
+            Assert.Equal("coming soon", e.Status);
+            Assert.DoesNotContain("arrives", e.Name, StringComparison.Ordinal);
+        });
     }
 
     // Q4: Stop Sindri goes to Health, where it lives (§4.8); it is never sent from the palette.
@@ -600,14 +615,14 @@ public sealed partial class CommandPaletteViewModelTests
     public async Task A_cli_only_entry_copies_its_cli()
     {
         _palette.Open();
-        _palette.Query = "approve";
+        _palette.Query = "revokerecipe";
 
         await _palette.Run(_palette.Selected, Token);
 
-        Assert.Equal("sindri profile approve [<hash>]", _clipboard.Text);
-        Assert.Equal(("Copied", true), (Entry("ApproveProfile").Status, _palette.IsOpen));
+        Assert.Equal("sindri recipe revoke <recipe>", _clipboard.Text);
+        Assert.Equal(("Copied", true), (Entry("RevokeRecipe").Status, _palette.IsOpen));
         _clock.Advance(ControlViewModel.CopiedFor);
-        Assert.Equal("Copy: sindri profile approve [<hash>]", Entry("ApproveProfile").Status);
+        Assert.Equal("Copy: sindri recipe revoke <recipe>", Entry("RevokeRecipe").Status);
     }
 
     [Fact]
@@ -666,8 +681,8 @@ public sealed partial class CommandPaletteViewModelTests
         Assert.Contains(_palette.Selected!.Name, _palette.Announcement, StringComparison.Ordinal);
         Assert.Contains("2 of", _palette.Announcement, StringComparison.Ordinal);
 
-        _palette.Query = "recipes";
-        Assert.Contains("Recipes", _palette.Announcement, StringComparison.Ordinal);
+        _palette.Query = "workflow types";
+        Assert.Contains("Workflow types", _palette.Announcement, StringComparison.Ordinal);
 
         _palette.Query = "zzzz";
         Assert.Equal("Nothing matches", _palette.Announcement);
@@ -680,7 +695,7 @@ public sealed partial class CommandPaletteViewModelTests
     public async Task A_copy_changes_the_announcement()
     {
         _palette.Open();
-        _palette.Query = "approve profile";
+        _palette.Query = "revoke recipe";
 
         await _palette.Run(_palette.Selected, Token);
 

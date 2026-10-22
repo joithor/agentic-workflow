@@ -1,9 +1,12 @@
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Sessions;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Features.GetSession;
 using Aw.Sindri.Tests.ListSessions;
 using Aw.Sindri.Tests.Sessions;
+using Aw.Sindri.Tests.Views;
 
 namespace Aw.Sindri.Tests.GetSession;
 
@@ -14,7 +17,7 @@ public sealed class GetSessionTests
 
     private readonly SessionsRig _r = new();
 
-    private GetSessionService Service() => new(_r.Snapshot, _r.Catalog, _r.Base.Profiles, _r.Base.Callers);
+    private GetSessionService Service() => new(_r.Snapshot, _r.Catalog, _r.Base.Profiles, _r.Base.Callers, _r.LaunchViews);
 
     private static SessionStateEntry Entry(SessionState state, int minute, AskingReason? reason = null) => new(state, reason, SessionData.T0.AddMinutes(minute), StateSource.Hook);
 
@@ -32,6 +35,33 @@ public sealed class GetSessionTests
             (view.Cwd, view.Session.Host.Socket, view.Session.Host.Session, view.Session.Host.Pane, view.Session.Title, view.Session.Pid));
         Assert.Equal([SessionState.Idle, SessionState.Running], view.StateHistory!.Select(h => h.State));
         Assert.Equal(SessionData.T0.AddMinutes(5), view.AsOf);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task GetSession_row_carries_the_launch_instance_state_and_attempt()
+    {
+        var instance = InstanceAddress.From("ITM-00000000000000000000000000000001/spec/1");
+        await _r.Launches.Item(repo: null);
+        await _r.Launches.Start(LaunchId.From(SessionsRig.Launch), instance: instance, state: "review", attempt: 1);
+        _ = _r.Publish(SessionsRig.Three);
+        using var human = _r.Human();
+
+        var view = (await Service().Handle(new GetSessionRequest(new SessionRef(AgentId.From("cursor"), SessionId.From("pid-333-100"))), SessionsRig.Token)).Value;
+
+        Assert.Equal(new LaunchStep(instance, "review", 1), view.Session.Launch);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task GetSession_still_serves_the_row_with_launch_null_when_the_launches_view_cannot_be_read()
+    {
+        _r.LaunchViews = new SessionsRig.UnreadableLaunches();
+        _ = _r.Publish(SessionsRig.Three);
+        using var human = _r.Human();
+
+        var result = await Service().Handle(new GetSessionRequest(new SessionRef(AgentId.From("cursor"), SessionId.From("pid-333-100"))), SessionsRig.Token);
+
+        Assert.True(result.IsSuccess, result.IsError ? result.Error.ToString() : null);
+        Assert.Null(result.Value.Session.Launch);
     }
 
     [Fact, Trait("Lane", "unit")]

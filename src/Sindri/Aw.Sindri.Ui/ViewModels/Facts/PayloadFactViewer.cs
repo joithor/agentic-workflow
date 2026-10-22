@@ -5,13 +5,10 @@ using Aw.Sindri.Ui.Api.Workflow;
 namespace Aw.Sindri.Ui.ViewModels.Facts;
 
 /// <summary>
-/// A payload fact, and every type with no viewer of its own: View reads the fact's route and shows the body's first three keys, then a
-/// scrubbed tree. A body the engine cut short says so; a fact the engine doesn't have shows the sentence it served.
+/// A payload fact, and every type with no viewer of its own: View reads the fact's route and shows the body once, as a scrubbed tree (a lone value as one line). A body the engine cut short says so; a fact the engine doesn't have shows the sentence it served.
 /// </summary>
 internal sealed class PayloadFactViewer : ObservableObject, IFactViewer
 {
-    private const int PreviewKeys = 3;
-
     private readonly FactViewerContext _context;
 
     internal PayloadFactViewer(FactRow row, FactViewerContext context)
@@ -42,8 +39,11 @@ internal sealed class PayloadFactViewer : ObservableObject, IFactViewer
     /// <summary>True when the body can't be shown.</summary>
     public bool HasProblem => ProblemText.Length > 0;
 
-    /// <summary>The first three keys, one line each.</summary>
-    public IReadOnlyList<string> Preview { get; private set => Set(ref field, value); } = [];
+    /// <summary>A body that is not an object or an array, as one line; empty when the tree draws the body. The body is drawn once.</summary>
+    public string ScalarLine { get; private set { Set(ref field, value); OnChanged(nameof(HasScalarLine)); } } = string.Empty;
+
+    /// <summary>True when the body is a lone value the tree can't draw.</summary>
+    public bool HasScalarLine => ScalarLine.Length > 0;
 
     /// <summary>The whole body as a tree.</summary>
     public IReadOnlyList<PayloadNodeViewModel> Tree { get; private set => Set(ref field, value); } = [];
@@ -87,7 +87,7 @@ internal sealed class PayloadFactViewer : ObservableObject, IFactViewer
     {
         var tree = PayloadNodeViewModel.Roots(fact.Body);
         Tree = tree;
-        Preview = fact.Body.ValueKind is JsonValueKind.Object or JsonValueKind.Array ? [.. tree.Take(PreviewKeys).Select(n => n.Text)] : [PayloadNodeViewModel.Line(fact.Body)];
+        ScalarLine = fact.Body.ValueKind is JsonValueKind.Object or JsonValueKind.Array ? string.Empty : PayloadNodeViewModel.Line(fact.Body);
         TruncatedNote = fact.Truncated ? Labels.PayloadTruncated : string.Empty;
     }
 }

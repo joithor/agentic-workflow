@@ -2,7 +2,6 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launches;
-using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Engine;
 
@@ -28,10 +27,11 @@ namespace Aw.Sindri.Features.GetLaunch;
 /// <param name="CatalogSource">Where the launched entry came from, once started.</param>
 /// <param name="ArgvHash">The hash of the entry's argv template, once started.</param>
 /// <param name="Ended">How the session ended, or null while it runs.</param>
+/// <param name="Step">The workflow instance, Step (state id) and attempt the launch belongs to; its members are null for an attended launch.</param>
 /// <param name="AsOf">How fresh the answer is.</param>
 public sealed record LaunchView(LaunchId Id, ItemId Item, LaunchMode Mode, LaunchState State, AgentId Target, string ChosenBy, DateTimeOffset RequestedAt,
     DateTimeOffset? OutcomeAt, string? Code, string? Detail, LaunchStage? Stage, SessionId? SessionId, string? TabTitle, LaunchViewer? Viewer, bool Late,
-    IReadOnlyList<string>? Attach, CatalogSource? CatalogSource, string? ArgvHash, LaunchEnd? Ended, AsOf AsOf)
+    IReadOnlyList<string>? Attach, CatalogSource? CatalogSource, string? ArgvHash, LaunchEnd? Ended, LaunchStep Step, AsOf AsOf)
 {
     /// <summary>The failure's sandbox reason (SND-LAUNCH-014 to -021), left out otherwise.</summary>
     [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]

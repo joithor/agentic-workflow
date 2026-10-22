@@ -260,6 +260,24 @@ echo '{"schema":1,"agents":{"codex":{"bin":"x"}},"meta":{"lanesAgent":"codex"}}'
 OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open 2>&1)"; RC=$?
 check "a built-in id without override: true is named" "$RC:$(grep -c 'codex is built in: add "override": true' <<< "$OUT")" "1:1"
 
+# One provider per team: every lane resolves to the meta lane's agent, or the launch is refused before any session exists.
+reset
+jq -n --arg c "$WORK/codex" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanesAgent:"codex"}}' > "$LCFG"
+OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open 2>&1)"; RC=$?
+check "codex lanes under a Claude meta: refused, naming the meta's agent and the odd lanes with theirs" "$RC:$(grep -c "meta-launch: a team runs one agent: the meta lane 'meta' runs claude-code, but api (codex), ui (codex) do not" <<< "$OUT"):$(tmux list-sessions -F '#S' | grep -c '^t1-')" "1:1:0"
+check "the refusal says how to fix it" "$(grep -c 'meta.lanes.meta' <<< "$OUT")" "1"
+OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --dry-run 2>&1)"; RC=$?
+check "the dry run refuses too" "$RC:$(grep -c 'a team runs one agent' <<< "$OUT")" "1:1"
+jq -n --arg c "$WORK/codex" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanes:{meta:"codex", api:"codex"}}}' > "$LCFG"
+OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --dry-run 2>&1)"; RC=$?
+check "only the odd lane is named" "$RC:$(grep -c "the meta lane 'meta' runs codex, but ui (claude-code) do not" <<< "$OUT")" "1:1"
+jq -n --arg c "$WORK/codex" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanesAgent:"codex", lanes:{meta:"codex"}}}' > "$LCFG"
+OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --dry-run 2>&1)"; RC=$?
+check "an all-codex team is accepted" "$RC:$(grep -c 'a team runs one agent' <<< "$OUT")" "0:0"
+rm -f "$LCFG"
+OUT="$(bash "$DIR/meta-launch.sh" --dry-run 2>&1)"; RC=$?
+check "an all-Claude team (no launcher.json) is accepted" "$RC:$(grep -c 'a team runs one agent' <<< "$OUT")" "0:0"
+
 # viewer: warp written explicitly equals the no-file layout.
 reset
 OUT0="$(bash "$DIR/meta-launch.sh" --no-open --dry-run | sed "s#$WORK#W#g")"
@@ -341,25 +359,25 @@ echo "parent=$([ "$AW_META_LANE_PID" = "$PPID" ] && echo lane-script || echo oth
 sleep 600
 EOF
 chmod +x "$WORK/codex"
-jq -n --arg c "$WORK/codex" '{schema:1, agents:{codex:{override:true, bin:$c, model:"codex-flag", policy:"codex-overrides"}}, meta:{lanesAgent:"codex"}}' > "$LCFG"   # the forms are named and never applied: the argv check below holds
+jq -n --arg c "$WORK/codex" '{schema:1, agents:{codex:{override:true, bin:$c, model:"codex-flag", policy:"codex-overrides"}}, meta:{lanesAgent:"codex", lanes:{meta:"codex"}}}' > "$LCFG"   # a team runs one agent: the meta lane is codex too. The forms are named and never applied: the argv check below holds
 reset; : > "$CALLS.events"; : > "$CALLS.codex"
 OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open 2>&1)"; RC=$?
 check "codex lanes: the launch notes that they take part through their hooks" "$RC:$(grep -c -x 'lane api: codex, takes part in the obligations through its hooks (scripts/install-meta.sh installs them)' <<< "$OUT"):$(grep -c '^lane meta' <<< "$OUT")" "0:1:0"
 ids="$AW_STATE_DIR/meta/lane-sessions"
-waitfor '[ -s "$ids/api" ] && [ -s "$ids/ui" ] && [ "$(wc -l < "$CALLS.codex")" -ge 2 ]'
-check "codex lanes: started one at a time (each id is reported before the next lane starts)" "$(awk '{print $1" "$2}' "$CALLS.events" | tr '\n' ';')" "start api;wrote api;start ui;wrote ui;"
+waitfor '[ -s "$ids/api" ] && [ -s "$ids/ui" ] && [ -s "$ids/meta" ] && [ "$(wc -l < "$CALLS.codex")" -ge 3 ]'
+check "codex lanes: started one at a time, the meta lane first (each id is reported before the next lane starts)" "$(awk '{print $1" "$2}' "$CALLS.events" | tr '\n' ';')" "start meta;wrote meta;start api;wrote api;start ui;wrote ui;"
 a="$(tr -d '[:space:]' < "$ids/api")"; u="$(tr -d '[:space:]' < "$ids/ui")"
 check "codex lanes: each lane recorded the id its own rollout file carries" "$(grep -c "wrote api $a" "$CALLS.events"):$(grep -c "wrote ui $u" "$CALLS.events")" "1:1"
 check "codex lanes: two distinct ids" "$([ "$a" != "$u" ] && [ -n "$a" ] && echo yes)" "yes"
-check "codex lanes: the built-in open argv (the model and policy forms add nothing), the prompt as the last argument, none without one" "$(grep -h -- '-C' "$CALLS.codex" | sort | tr '\n' ';')" "-C|$WORK/repo|1|t1|ui;-C|$WORK/repo|API kickoff  When you answer a message from the meta (aw-meta lane-inbox shows it), end your turn with a line starting REPLY TO META: followed by your reply.|1|t1|api;"
+check "codex lanes: the built-in open argv (the model and policy forms add nothing), the prompt as the last argument, none without one" "$(grep -h -- '-C' "$CALLS.codex" | sort | tr '\n' ';')" "-C|$WORK/repo|1|t1|meta;-C|$WORK/repo|1|t1|ui;-C|$WORK/repo|API kickoff  When you answer a message from the meta (aw-meta lane-inbox shows it), end your turn with a line starting REPLY TO META: followed by your reply.|1|t1|api;"
 check "codex lanes: <lane>.agent records the catalog facts the lane map needs" "$(jq -cS . "$ids/api.agent")" '{"agent":"codex","hooks":true,"processName":"codex","transcripts":"~/.codex/sessions/*/*/*/rollout-*-{sessionId}.jsonl"}'
-check "codex lanes: the meta lane (Claude) has no .agent record" "$(ls "$ids" | grep -c '^meta.agent$')" "0"
+check "codex lanes: the meta lane has an .agent record too (one agent per team)" "$(jq -r .agent "$ids/meta.agent")" "codex"
 check "codex lanes: AW_META_LANE_PID is the agent's parent (the lane script), AW_META_LANE_PROC the process name, AW_META_LANE_AGENT the catalog id" "$(sort -u "$CALLS.pid" | tr '\n' ';')" "parent=lane-script|proc=codex|agent=codex;"
 check "codex lanes: the agent's environment names the state directory and the team config" "$(sort -u "$CALLS.state" | tr '\n' ';')" "$AW_STATE_DIR|$cfg;"
-check "codex lanes: two codex sessions, not three (the meta lane is Claude)" "$(wc -l < "$CALLS.codex" | tr -d ' ')" "2"
+check "codex lanes: three codex sessions (the meta lane is codex too)" "$(wc -l < "$CALLS.codex" | tr -d ' ')" "3"
 check "the lane variables are in the lane's environment and not in tmux's global one" "$(tmux show-environment -g 2>&1 | grep -c 'AW_SINDRI_CHILD\|AW_META_TEAM\|AW_META_LANE')" "0"
-# The meta lane stays Claude Code even when lanesAgent says otherwise; its claude is the stub.
-check "the meta lane runs the claude stub, not codex" "$(grep -c 'meta' "$CALLS.events")" "0"
+# meta.lanes names the meta lane's agent; lanesAgent alone never does (the refusal tests above).
+check "the meta lane runs the codex stub, as meta.lanes.meta says" "$(grep -c '^start meta' "$CALLS.events")" "1"
 # Resume: a lane whose rollout exists resumes by the reported id.
 tmux kill-server 2> /dev/null; : > "$CALLS.codex"
 AW_LAUNCHER_CONFIG="$LCFG" AW_META_NO_SHELL=1 bash "$DIR/meta-lane.sh" t1 api > /dev/null 2>&1 &
@@ -461,7 +479,7 @@ mkdir -p "$HOME/.codex/sessions/2026/10/15"
 sleep 600
 EOF2
 chmod +x "$WORK/codex-race"; export OLD_ROLLOUT="$old"
-jq -n --arg c "$WORK/codex-race" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanesAgent:"codex"}}' > "$WORK/race.json"
+jq -n --arg c "$WORK/codex-race" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanesAgent:"codex", lanes:{meta:"codex"}}}' > "$WORK/race.json"
 rm -f "$ids/race" "$ids/race.settled"
 AW_LAUNCHER_CONFIG="$WORK/race.json" AW_META_ID_WAIT=8 bash "$DIR/meta-lane.sh" t1 race > /dev/null 2>&1 &
 rp=$!; waitfor '[ -e "$ids/race.settled" ]'
@@ -477,7 +495,7 @@ mkdir -p "$HOME/.codex/sessions/2026/10/16"
 sleep 600
 EOF2
 chmod +x "$WORK/codex-two"
-jq -n --arg c "$WORK/codex-two" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanesAgent:"codex"}}' > "$WORK/two.json"
+jq -n --arg c "$WORK/codex-two" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanesAgent:"codex", lanes:{meta:"codex"}}}' > "$WORK/two.json"
 jq -n --arg r "$WORK/repo" '{team:"t1", repo:$r, metaLane:"meta", lanes:["amb","idle"]}' > "$WORK/team2.json"
 tmux kill-server 2> /dev/null; sleep 0.3; tmux new-session -d -s keepalive "sleep 600"; rm -f "$ids/amb" "$ids/amb.ambiguous" "$ids/amb.settled"
 OUT="$(AW_META_CONFIG="$WORK/team2.json" AW_LAUNCHER_CONFIG="$WORK/two.json" AW_META_ID_WAIT=5 bash "$DIR/meta-launch.sh" --no-open --lanes amb 2>&1)"; RC=$?
@@ -485,13 +503,34 @@ check "two unclaimed new session files: no id recorded, .ambiguous left" "$(test
 check "the launcher reports the ambiguous id and still exits 0" "$RC:$(grep -c 'lane amb: ambiguous session id' <<< "$OUT")" "0:1"
 killstubs
 
+# A session id pattern is a whole-id match, as in the C# reader: an unanchored pattern that matches only part of the captured id refuses it.
+cat > "$WORK/codex-whole" <<'EOF2'
+#!/usr/bin/env bash
+mkdir -p "$HOME/.codex/sessions/2026/10/17"
+: > "$HOME/.codex/sessions/2026/10/17/rollout-2026-10-17T00-00-00-55555555-5555-5555-5555-555555555555.jsonl"
+sleep 600
+EOF2
+chmod +x "$WORK/codex-whole"
+jq -n --arg c "$WORK/codex-whole" '{schema:1, agents:{codex:{override:true, bin:$c, sessionIdPattern:"[0-9a-f]{8}-[0-9a-f]{4}"}}, meta:{lanesAgent:"codex", lanes:{meta:"codex"}}}' > "$WORK/whole-partial.json"
+sed 's/55555555-5555-5555-5555-555555555555/66666666-6666-6666-6666-666666666666/; s/2026\/10\/17/2026\/10\/18/g; s/2026-10-17/2026-10-18/' "$WORK/codex-whole" > "$WORK/codex-whole2"; chmod +x "$WORK/codex-whole2"
+jq -n --arg c "$WORK/codex-whole2" '{schema:1, agents:{codex:{override:true, bin:$c, sessionIdPattern:"[0-9a-f-]{36}"}}, meta:{lanesAgent:"codex", lanes:{meta:"codex"}}}' > "$WORK/whole-full.json"
+rm -f "$ids/whole" "$ids/whole.settled" "$ids/whole.ambiguous"
+AW_LAUNCHER_CONFIG="$WORK/whole-partial.json" AW_META_ID_WAIT=2 bash "$DIR/meta-lane.sh" t1 whole > /dev/null 2>&1 &
+rp=$!; sleep 3.5; kill "$rp" 2> /dev/null; killstubs; wait "$rp" 2> /dev/null
+check "a pattern that matches only part of the captured id refuses it" "$(test -s "$ids/whole" && echo id || echo none)" "none"
+rm -f "$ids/whole" "$ids/whole.settled" "$ids/whole.ambiguous"
+AW_LAUNCHER_CONFIG="$WORK/whole-full.json" AW_META_ID_WAIT=8 bash "$DIR/meta-lane.sh" t1 whole > /dev/null 2>&1 &
+rp=$!; waitfor '[ -e "$ids/whole.settled" ]'
+check "a pattern that matches the whole captured id records it" "$(tr -d '[:space:]' < "$ids/whole" 2> /dev/null)" "66666666-6666-6666-6666-666666666666"
+kill "$rp" 2> /dev/null; killstubs; wait "$rp" 2> /dev/null
+
 # An agent that never reports: the launcher times out with a message and the next lane still starts.
 cat > "$WORK/codex-idle" <<'EOF2'
 #!/usr/bin/env bash
 sleep 600
 EOF2
 chmod +x "$WORK/codex-idle"
-jq -n --arg c "$WORK/codex-idle" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanesAgent:"codex"}}' > "$WORK/idle.json"
+jq -n --arg c "$WORK/codex-idle" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanesAgent:"codex", lanes:{meta:"codex"}}}' > "$WORK/idle.json"
 rm -f "$ids/idle" "$ids/idle.settled" "$ids/idle.ambiguous"
 OUT="$(AW_META_CONFIG="$WORK/team2.json" AW_LAUNCHER_CONFIG="$WORK/idle.json" AW_META_ID_WAIT=1 bash "$DIR/meta-launch.sh" --no-open --lanes idle,amb 2>&1)"; RC=$?
 check "an id that never arrives: the timeout message, exit 0, the next lane started" "$RC:$(grep -c 'lane idle has not reported its session id after 1s' <<< "$OUT"):$(grep -c 'tmux t1-amb: started' <<< "$OUT")" "0:1:1"
@@ -624,7 +663,7 @@ mkdir -p "$HOME/.codex/sessions/2026/10/17"
 sleep 600
 EOF2
 chmod +x "$WORK/codex-new"
-jq -n --arg c "$WORK/codex-new" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanesAgent:"codex"}}' > "$WORK/new.json"
+jq -n --arg c "$WORK/codex-new" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanesAgent:"codex", lanes:{meta:"codex"}}}' > "$WORK/new.json"
 rm -f "$ids/many" "$ids/many.settled"; rm -rf "$HOME/.codex/sessions/2026/10/17"
 t0=$SECONDS
 AW_LAUNCHER_CONFIG="$WORK/new.json" AW_META_ID_WAIT=25 bash "$DIR/meta-lane.sh" t1 many > /dev/null 2>&1 &
@@ -644,7 +683,7 @@ echo "$AW_META_LANE $id" >> "$CALLS.late"
 sleep 600
 EOF2
 chmod +x "$WORK/codex-late"
-jq -n --arg c "$WORK/codex-late" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanesAgent:"codex"}}' > "$WORK/late.json"
+jq -n --arg c "$WORK/codex-late" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanesAgent:"codex", lanes:{meta:"codex"}}}' > "$WORK/late.json"
 jq -n --arg r "$WORK/repo" '{team:"t1", repo:$r, metaLane:"meta", lanes:["la","lb"]}' > "$WORK/team3.json"
 reset; tmux set-environment -g AW_META_ID_WAIT 2; tmux set-environment -g AW_META_ID_GRACE 6   # the lanes run under the tmux server, not this shell
 : > "$CALLS.late"; rm -f "$ids"/la* "$ids"/lb*; rm -rf "$HOME/.codex/sessions/2026/10/18"

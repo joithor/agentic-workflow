@@ -35,10 +35,9 @@ public sealed class ViewerIntegrationTests : IDisposable
     private ExecTemplateViewer Viewer(string body)
     {
         var path = Path.Combine(_tmux.Scratch, "viewer.sh");
-        File.WriteAllText(path, "#!/bin/sh\n" + body + "\n");
-        File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        File.WriteAllText(path, body + "\n");   // run as 'sh <file>': a freshly written executable can fail with 'text file busy' when another test forks meanwhile
         var env = new Dictionary<string, string>(StringComparer.Ordinal) { ["TMUX_TMPDIR"] = _tmux.TmuxTmpDir };
-        return new ExecTemplateViewer(new ExecTemplateOptions("stub", [path, "{title}", "{cmd...}"]) { Environment = env }, _host, TimeProvider.System);
+        return new ExecTemplateViewer(new ExecTemplateOptions("stub", ["sh", path, "{title}", "{cmd...}"]) { Environment = env }, _host, TimeProvider.System);
     }
 
     [Fact(Timeout = 30_000)]

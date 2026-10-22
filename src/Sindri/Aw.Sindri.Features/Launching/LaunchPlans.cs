@@ -12,7 +12,8 @@ namespace Aw.Sindri.Features.Launching;
 /// <param name="reader">Reads the item.</param>
 /// <param name="profile">The approved profile, which names each repo's path and each agent's daily budget.</param>
 /// <param name="spend">What each agent has spent today, for the budget re-check (screens spec E-28).</param>
-internal sealed class LaunchPlans(IViewReader reader, IApprovedProfile profile, ILaunchSpend spend)
+/// <param name="launches">The 'launches' view, for the session a resume addresses.</param>
+internal sealed class LaunchPlans(IViewReader reader, IApprovedProfile profile, ILaunchSpend spend, ILaunchViews launches)
 {
     private static string? RepoPath(RepoName? repo, IReadOnlyList<RepoEntry>? repos) =>
         repo is { } named ? repos?.FirstOrDefault(r => string.Equals(r.Name, named.Value, StringComparison.Ordinal))?.Path : null;
@@ -49,8 +50,35 @@ internal sealed class LaunchPlans(IViewReader reader, IApprovedProfile profile, 
         }
 
         var path = RepoPath(item.Value?.Repo, approved.Value?.Profile.Repos);
-        return path is null
-            ? SindriErrors.LaunchRepoMissing.With($"{request.Item.Value} has no repo with a path in the approved profile (fix: add the repo to repos and approve)")
-            : new LaunchRequest(request.Launch, request.Item, request.Target, request.Mode, Attended: true, path, Instance: null, Worktree: null, Step: null, Run: null);
+        if (path is null)
+        {
+            return SindriErrors.LaunchRepoMissing.With($"{request.Item.Value} has no repo with a path in the approved profile (fix: add the repo to repos and approve)");
+        }
+
+        var resume = await ResumeFor(request, cancellationToken).ConfigureAwait(false);
+        if (resume.IsError)
+        {
+            return resume.Error;
+        }
+
+        return new LaunchRequest(request.Launch, request.Item, request.Target, request.Mode, Attended: true, path, Instance: null, Worktree: null, Step: null, Run: null, resume.Value);
+    }
+
+    /// <summary>The session a resume addresses (null for any other mode): the newest ended session of the picked agent that has an id, while none of that agent's sessions runs (the same rule the open was admitted by).</summary>
+    private async ValueTask<Result<SessionId?>> ResumeFor(Core.Events.ItemOpenRequested request, CancellationToken cancellationToken)
+    {
+        if (request.Mode != LaunchMode.Resume)
+        {
+            return (SessionId?)null;
+        }
+
+        var history = await launches.ForItem(request.Item, cancellationToken).ConfigureAwait(false);
+        var found = history.IsError ? null : LaunchRules.ResumeCandidate(history.Value.Where(row => row.Target == request.Target))?.ResumableId;
+        if (found is null)
+        {
+            return SindriErrors.LaunchNoSession.With("the item has no ended session of this agent to resume, or one still runs (fix: attach to it, or open the item again)");   // the open was admitted on an older view: never start a fresh session in the name of a resume
+        }
+
+        return found;
     }
 }

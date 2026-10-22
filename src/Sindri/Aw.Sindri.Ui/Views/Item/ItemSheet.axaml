@@ -32,34 +32,27 @@
     <StackPanel x:Name="ItemBody" Spacing="{StaticResource Space.MD}" IsVisible="{Binding HasItem}">
       <StackPanel Spacing="4">
         <TextBlock x:Name="ItemTitle" Classes="detail-title" Text="{Binding Title}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Title}" />
-        <WrapPanel x:Name="ItemFacts" Orientation="Horizontal">
+        <!-- F3 (owner example): the sheet leads with the title and one status sentence ("Running for 2h 56m"), then the repo,
+             what it waits for, the body and the tracker link: what decides what to do with the item. Who made it, its
+             version and the run's address are bookkeeping, so they wait behind Details, closed until asked for. -->
+        <WrapPanel x:Name="ItemMeta" Orientation="Horizontal">
+          <TextBlock x:Name="ItemStatusLine" Classes="caption body-strong" Text="{Binding StatusLine}" Margin="0,0,12,0" AutomationProperties.Name="{Binding StatusLine}" />
           <TextBlock Classes="caption subtle" Text="{Binding Repo}" Margin="0,0,12,0" AutomationProperties.Name="{Binding Repo}" />
-          <TextBlock x:Name="ItemState" Classes="caption body-strong" Text="{Binding StateWord}" Margin="0,0,12,0" AutomationProperties.Name="{Binding StateWord}" />
-          <TextBlock x:Name="ItemVersion" Classes="caption subtle" Text="{Binding VersionText}" Margin="0,0,12,0" AutomationProperties.Name="{Binding VersionText}" />
-          <TextBlock x:Name="ItemAge" Classes="caption subtle" Text="{Binding Age}" Margin="0,0,12,0" AutomationProperties.Name="{Binding Age}" />
           <StackPanel x:Name="ItemStale" Orientation="Horizontal" Spacing="4" IsVisible="{Binding IsStale}">
             <icons:StateIcon Glyph="Stale" VerticalAlignment="Center" />
             <TextBlock Classes="caption subtle" Text="{Binding Text.Stale}" VerticalAlignment="Center" />
           </StackPanel>
         </WrapPanel>
+        <Grid Classes="row" ColumnDefinitions="110,*" IsVisible="{Binding HasWaitingOn}">
+          <TextBlock Classes="caption subtle row-label" Text="{Binding Text.WaitingOn}" />
+          <TextBlock x:Name="ItemWaitingOn" Grid.Column="1" Classes="mono" Text="{Binding WaitingOn}" AutomationProperties.Name="{Binding WaitingOn}" />
+        </Grid>
         <!-- §4.6 (owner, 2026-10-12): the body as served (scrubbed, plain text) and the tracker link. -->
         <TextBlock x:Name="ItemBodyText" Classes="body" Text="{Binding Body}" TextWrapping="Wrap" IsVisible="{Binding HasBody}"
                    Margin="0,6,0,6" AutomationProperties.Name="{Binding Body}" />
         <Grid Classes="row" ColumnDefinitions="110,*" IsVisible="{Binding HasLink}">
           <TextBlock Classes="caption subtle row-label" Text="{Binding Text.Link}" />
           <TextBlock x:Name="ItemLinkText" Grid.Column="1" Classes="mono" Text="{Binding Link}" AutomationProperties.Name="{Binding Link}" />
-        </Grid>
-        <Grid Classes="row" ColumnDefinitions="110,*">
-          <TextBlock Classes="caption subtle row-label" Text="{Binding Text.CreatedBy}" />
-          <TextBlock x:Name="ItemCreatedBy" Grid.Column="1" Classes="mono" Text="{Binding CreatedBy}" AutomationProperties.Name="{Binding CreatedBy}" />
-        </Grid>
-        <Grid Classes="row" ColumnDefinitions="110,*" IsVisible="{Binding HasWaitingOn}">
-          <TextBlock Classes="caption subtle row-label" Text="{Binding Text.WaitingOn}" />
-          <TextBlock x:Name="ItemWaitingOn" Grid.Column="1" Classes="mono" Text="{Binding WaitingOn}" AutomationProperties.Name="{Binding WaitingOn}" />
-        </Grid>
-        <Grid Classes="row" ColumnDefinitions="110,*" IsVisible="{Binding HasInstance}">
-          <TextBlock Classes="caption subtle row-label" Text="{Binding Text.InstanceLabel}" />
-          <TextBlock x:Name="ItemInstance" Grid.Column="1" Classes="mono" Text="{Binding Instance}" AutomationProperties.Name="{Binding Instance}" />
         </Grid>
       </StackPanel>
 
@@ -77,6 +70,7 @@
         </ItemsControl>
       </StackPanel>
 
+      <Border x:Name="ItemDecisionsCallout" Classes.callout="{Binding HasOpenDecision}">
       <StackPanel x:Name="ItemDecisions" Spacing="6">
         <TextBlock Classes="eyebrow" Text="{Binding Text.Decisions}" />
         <TextBlock x:Name="ItemDecisionsEmpty" Classes="body muted" Text="{Binding Needs.DecisionsEmpty}" TextWrapping="Wrap"
@@ -109,9 +103,12 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
+        <Button x:Name="ItemOpenNeedsYou" Content="{Binding Text.OpenNeedsYou}" Click="OnOpenNeedsYou" HorizontalAlignment="Left" IsVisible="{Binding HasOpenDecision}"
+                AutomationProperties.Name="{Binding Text.OpenNeedsYou}" />
         <TextBlock x:Name="ItemDecisionRefusal" Classes="caption" Text="{Binding Needs.Refusal}" TextWrapping="Wrap"
                    IsVisible="{Binding Needs.Refusal, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
       </StackPanel>
+      </Border>
 
       <StackPanel x:Name="ItemRequests" Spacing="6">
         <TextBlock Classes="eyebrow" Text="{Binding Text.Requests}" />
@@ -132,6 +129,30 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
       </StackPanel>
+
+      <Expander x:Name="ItemDetailsExpander" Header="{Binding Text.Details}" IsExpanded="{Binding DetailsOpen, Mode=TwoWay}" AutomationProperties.Name="{Binding Text.Details}">
+        <StackPanel x:Name="ItemDetails" Spacing="4">
+          <Grid Classes="row" ColumnDefinitions="110,*,Auto">
+            <TextBlock Classes="caption subtle row-label" Text="{Binding Text.ItemIdLabel}" />
+            <TextBlock x:Name="ItemIdText" Grid.Column="1" Classes="mono" Text="{Binding ItemId}" TextTrimming="CharacterEllipsis" AutomationProperties.Name="{Binding ItemId}" />
+            <Button x:Name="ItemCopyId" Grid.Column="2" Classes="copy" Click="OnCopyId" AutomationProperties.Name="{Binding Text.CopyItemId}">
+              <TextBlock Classes="caption" Text="{Binding Text.CopyItemId}" />
+            </Button>
+          </Grid>
+          <Grid Classes="row" ColumnDefinitions="110,*">
+            <TextBlock Classes="caption subtle row-label" Text="{Binding Text.CreatedBy}" />
+            <TextBlock x:Name="ItemCreatedBy" Grid.Column="1" Classes="mono" Text="{Binding CreatedBy}" AutomationProperties.Name="{Binding CreatedBy}" />
+          </Grid>
+          <Grid Classes="row" ColumnDefinitions="110,*">
+            <TextBlock Classes="caption subtle row-label" Text="{Binding Text.VersionLabel}" />
+            <TextBlock x:Name="ItemVersion" Grid.Column="1" Classes="mono" Text="{Binding VersionText}" AutomationProperties.Name="{Binding VersionText}" />
+          </Grid>
+          <Grid Classes="row" ColumnDefinitions="110,*" IsVisible="{Binding HasInstance}">
+            <TextBlock Classes="caption subtle row-label" Text="{Binding Text.InstanceLabel}" />
+            <TextBlock x:Name="ItemInstance" Grid.Column="1" Classes="mono" Text="{Binding Instance}" AutomationProperties.Name="{Binding Instance}" />
+          </Grid>
+        </StackPanel>
+      </Expander>
 
       <StackPanel x:Name="ItemTimeline" Spacing="6">
         <TextBlock Classes="eyebrow" Text="{Binding Text.Timeline}" />

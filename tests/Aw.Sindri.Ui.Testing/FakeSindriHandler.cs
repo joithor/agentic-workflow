@@ -2,6 +2,9 @@ using System.Globalization;
 using System.Net;
 using System.Text;
 using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.Api.Context;
+using Aw.Sindri.Ui.Api.Jobs;
+using Aw.Sindri.Ui.Api.Sessions;
 using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.Testing;
@@ -14,12 +17,25 @@ namespace Aw.Sindri.Ui.Testing;
 /// goldens' shape (UI spec E-17).
 /// </summary>
 /// <param name="server">The model.</param>
-internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandler
+internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandler
 {
     /// <summary>The requests seen, in order: the path and the headers the app's identity rests on (API §6).</summary>
     public IReadOnlyList<SeenRequest> Requests => [.. _requests];
 
     private readonly List<SeenRequest> _requests = [];
+    private readonly List<string> _reviewBodies = [];
+
+    /// <summary>The raw bodies the review route received, as the client wrote them (so a test checks the wire, not a round trip).</summary>
+    public IReadOnlyList<string> ReviewBodies
+    {
+        get
+        {
+            lock (_requests)
+            {
+                return [.. _reviewBodies];
+            }
+        }
+    }
 
     /// <summary>When set, the token Sindri holds: a request without it is refused with 403 SND-AUTH-001, as Sindri's caller check does.</summary>
     public string? RequiredToken { get; set; }
@@ -69,10 +85,43 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
     {
         var uri = request.RequestUri!; // why: HttpClient always sets it on a sent request
         var after = long.TryParse(Header(request, "X-Sindri-After"), NumberStyles.None, CultureInfo.InvariantCulture, out var carried) ? carried : 0;
+        // Order matters: CoreRoute answers first, so the lane-anchored arms below only see paths it declined.
+        if (await CoreRoute(request, uri, after, cancellationToken) is { } core)
+        {
+            return core;
+        }
+
+        return uri.AbsolutePath switch
+        {
+            // LANE ANCHOR U3': add the Needs you routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately above this marker, never between the markers.
+            // LANE ANCHOR U8: add the workflow command routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately below this marker, never between the markers.
+            var path when IsApproval(request, path) => await ApprovalRoute(request, path, cancellationToken),
+            var path when IsComplete(request, path) => await CompleteRoute(request, path, cancellationToken),
+            var path when IsCommand(request, path) => await CommandRoute(request, path, cancellationToken),
+            "/sindri/workflow/recipes" when request.Method == HttpMethod.Get => Answer(Counted(await server.Recipes(uri, cancellationToken), server.RecipeListAnswer)),
+            "/sindri/workflow/instances" when request.Method == HttpMethod.Post =>
+                Answer(Counted(await server.StartInstance(uri, await Body<StartInstanceRequest>(request, cancellationToken), cancellationToken), server.StartAnswer)),
+            var path when IsServiceCommand(request, path) => await ServiceCommand(request, path, cancellationToken),
+            "/sindri/context/map/refresh" when request.Method == HttpMethod.Post => Answer(Counted(await server.RefreshContextMap(uri, cancellationToken), server.RefreshContextMapAnswer)),
+            { } path when path.StartsWith("/sindri/context/", StringComparison.Ordinal) => await ContextRoute(request, cancellationToken),
+            // LANE ANCHOR U11a: the session reads, as arms above the workflow-read arm. Insert immediately below this marker, never between the markers.
+            { } path when request.Method == HttpMethod.Get && (path == "/sindri/sessions" || path.StartsWith("/sindri/sessions/", StringComparison.Ordinal)) => await Sessions(uri, cancellationToken),
+            { } path when path == "/sindri/jobs" || path.StartsWith("/sindri/jobs/", StringComparison.Ordinal) => await Jobs(request, cancellationToken),
+            "/sindri/setup" when request.Method == HttpMethod.Get => Answer(Counted(await server.Setup(uri, cancellationToken), server.SetupAnswer)),
+            { } path when request.Method == HttpMethod.Post && IsSetupWrite(path) => await SetupWrite(request, path, cancellationToken),
+            { } path when request.Method == HttpMethod.Get && path.StartsWith("/sindri/workflow/", StringComparison.Ordinal) => await Workflow(uri, cancellationToken),
+            _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
+        };
+    }
+
+    // The status, queue, item, decision and request routes, ahead of the lane anchors in Route; null when the path is not one of them.
+    private async Task<HttpResponseMessage?> CoreRoute(HttpRequestMessage request, Uri uri, long after, CancellationToken cancellationToken)
+    {
         return uri.AbsolutePath switch
         {
             "/sindri/ping" => await PingAnswer(uri, cancellationToken),
             "/sindri/status" => await StatusAnswer(uri, after, cancellationToken),
+            "/sindri/events" when string.Equals(Query(uri, "types"), InstanceChange.Type, StringComparison.Ordinal) => await Changes(Query(uri, "instance"), cancellationToken),
             "/sindri/events" => Events(After(uri), cancellationToken),
             "/sindri/commands" => Answer(Counted(await server.Commands(uri, cancellationToken), server.Catalog)),
             "/sindri/services" => Answer(Counted(await server.Services(uri, after), server.ServiceView)),
@@ -88,12 +137,75 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
             "/sindri/requests" when request.Method == HttpMethod.Post =>
                 Answer(Counted(await server.FileRequest(uri, await Body<FileRequestRequest>(request, cancellationToken), cancellationToken), server.Filed)),
             "/sindri/requests" when request.Method == HttpMethod.Get => Answer(Counted(await server.Requests(uri, Query(uri, "state"), Query(uri, "item"), after, cancellationToken), server.RequestsAnswer(Query(uri, "item")))),
-            // LANE ANCHOR U3': add the Needs you routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately above this marker, never between the markers.
-            // LANE ANCHOR U8: add the workflow command routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately below this marker, never between the markers.
-            { } path when request.Method == HttpMethod.Get && path.StartsWith("/sindri/workflow/", StringComparison.Ordinal) => await Workflow(uri, cancellationToken),
-            _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
+            "/sindri/context/map/build" when request.Method == HttpMethod.Post => Answer(Counted(await server.BuildContextMap(uri, cancellationToken), server.BuildContextMapAnswer)),
+            _ => null,
         };
     }
+
+    // The context routes (context spec §8): the call goes through the model (its counts, its refusals, the queue it keeps), then the
+    // answer the model holds is served as it is. A key, an anchor or a path is only ever a query value.
+    private async Task<HttpResponseMessage> ContextRoute(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var uri = request.RequestUri!; // why: HttpClient always sets it on a sent request
+        if (request.Method == HttpMethod.Post && uri.AbsolutePath.EndsWith("/map/review", StringComparison.Ordinal))
+        {
+            var sent = await request.Content!.ReadAsStringAsync(cancellationToken).ConfigureAwait(false); // why: the client always sends a body on this POST
+            lock (_requests)
+            {
+                _reviewBodies.Add(sent);
+            }
+
+            _ = await server.ReviewDecision(uri, await Body<ReviewDecisionRequest>(request, cancellationToken), cancellationToken);
+            return Answer(server.ReviewDecided);
+        }
+
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        var limit = int.TryParse(query["limit"], NumberStyles.None, CultureInfo.InvariantCulture, out var n) ? n : (int?)null;
+        switch (uri.AbsolutePath["/sindri/context/".Length..])
+        {
+            case "lenses":
+                var lenses = Lenses(query);
+                _ = await server.Lenses(uri, lenses, cancellationToken);
+                return Answer(server.LensesAnswer(lenses));
+            case "filemap":
+                var files = new FileMapQuery(query["repo"] ?? string.Empty, Path: query["path"], UnmappedOnly: query["unmapped"] == "true", Draft: query["draft"] == "true");
+                _ = await server.FileMap(uri, files, cancellationToken);
+                return Answer(server.FileMapFor(files));
+            case "map/review":
+                _ = await server.ReviewQueue(uri, limit, cancellationToken);
+                return Answer(server.ReviewQueueBody());
+            case "map/review/history":
+                _ = await server.ReviewHistory(uri, limit, cancellationToken);
+                return Answer(server.ReviewHistoryAnswer);
+            default:
+                return await ContextRecord(uri, query, cancellationToken);
+        }
+    }
+
+    private async Task<HttpResponseMessage> ContextRecord(Uri uri, System.Collections.Specialized.NameValueCollection query, CancellationToken cancellationToken)
+    {
+        switch (uri.AbsolutePath["/sindri/context/".Length..])
+        {
+            case "map":
+                _ = await server.MapStatus(uri, query["anchor"], cancellationToken);
+                return Answer(server.MapStatusAnswer);
+            case "node":
+                _ = await server.Node(uri, query["key"] ?? string.Empty, cancellationToken);
+                return Answer(server.NodeAnswer);
+            case "query":
+                var asked = query["q"] ?? string.Empty;
+                _ = await server.QueryAnchors(uri, asked, cancellationToken);
+                return Answer(server.QueryAnswer(asked));
+            case "sources":
+                _ = await server.Sources(uri, cancellationToken);
+                return Answer(server.SourcesAnswer);
+            default:
+                return Text(HttpStatusCode.NotFound, "{}", "application/json");
+        }
+    }
+
+    private static LensesQuery Lenses(System.Collections.Specialized.NameValueCollection query) =>
+        new([.. query.GetValues("anchor") ?? []], Depth: int.TryParse(query["depth"], NumberStyles.None, CultureInfo.InvariantCulture, out var depth) ? depth : null, Draft: query["draft"] == "true", MapVersion: query["mapVersion"]);
 
     // The workflow reads (API §3.8): the call goes through the model (so a down server or a refusal answers as it does there),
     // then the route's golden is served as the model has it. An address is only ever a query value, so every segment is an id, a key or a recipe.
@@ -122,12 +234,49 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
         }
     }
 
+    // The session reads (collector spec CA-1, CA-2): through the model (a down server or a refusal answers as it does there), then the route's golden as the model has it.
+    private async Task<HttpResponseMessage> Sessions(Uri uri, CancellationToken cancellationToken)
+    {
+        var parts = uri.AbsolutePath["/sindri/sessions".Length..].Split('/', StringSplitOptions.RemoveEmptyEntries).Select(Uri.UnescapeDataString).ToArray();
+        switch (parts)
+        {
+            case []:
+                var query = new SessionQuery(Query(uri, "provider"), Query(uri, "state"), Query(uri, "repo"), Flag(uri, "inWorkflow"));
+                _ = await server.Sessions(uri, query, cancellationToken);
+                return Answer(server.SessionListAnswer());
+            case [var provider, var id]:
+                _ = await server.Session(uri, provider, id, cancellationToken);
+                return Answer(server.SessionOneAnswer(provider, id));
+            default:
+                return Text(HttpStatusCode.NotFound, "{}", "application/json");
+        }
+    }
+
+    private async Task<HttpResponseMessage> Jobs(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var uri = request.RequestUri!; // why: HttpClient always sets it on a sent request
+        var parts = uri.AbsolutePath["/sindri/jobs".Length..].Split('/', StringSplitOptions.RemoveEmptyEntries).Select(Uri.UnescapeDataString).ToArray();
+        switch (parts)
+        {
+            case [] when request.Method == HttpMethod.Get:
+                _ = await server.Jobs(uri, new JobQuery(Query(uri, "state"), Query(uri, "kind")), cancellationToken);
+                return Answer(server.JobsAnswer);
+            case [var id] when request.Method == HttpMethod.Get:
+                _ = await server.Job(uri, id, cancellationToken);
+                return Answer(server.JobOneAnswer(id));
+            case [var id, "cancel"] when request.Method == HttpMethod.Post:
+                return Answer(Counted(await server.CancelJob(uri, id, cancellationToken), server.CancelJobAnswer));
+            default:
+                return Text(HttpStatusCode.NotFound, "{}", "application/json");
+        }
+    }
+
     private static InstanceQuery Query(Uri uri)
     {
         var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
         return new InstanceQuery(
             Root: query["root"] == "true",
-            Open: query["open"] == "true",
+            Open: query["open"] switch { "true" => true, "false" => false, _ => null },
             Recipe: query["recipe"],
             Subject: query["subject"],
             Address: query["address"]);
@@ -218,6 +367,28 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
                 body.Send(Encoding.UTF8.GetBytes(string.Create(CultureInfo.InvariantCulture, $"id: {e.Sequence}\nevent: {e.Type}\ndata: {Event(e)}\n\n")));
             }
 
+            body.End();
+        }, cancellationToken);
+        return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(body) { Headers = { { "Content-Type", "text/event-stream" } } } };
+    }
+
+    // The derived stream: frames are written as the API writes them, with an event name and no "id:" line (API §5).
+    private async Task<HttpResponseMessage> Changes(string? instance, CancellationToken cancellationToken)
+    {
+        var body = new ChunkStream();
+        var items = server.InstanceChanges(new Uri("http://fake/"), instance, cancellationToken).GetAsyncEnumerator(cancellationToken);
+        var open = await items.MoveNextAsync();   // the stream is registered with the model before the response, as a connected socket is
+        _ = Task.Run(async () =>
+        {
+            for (var more = open; more; more = await items.MoveNextAsync())
+            {
+                if (items.Current.Change is { } c)
+                {
+                    body.Send(Encoding.UTF8.GetBytes(string.Create(CultureInfo.InvariantCulture, $"event: {InstanceChange.Type}\ndata: {{\"instance\":\"{c.Instance}\",\"state\":\"{c.State}\",\"cursor\":{c.Cursor}}}\n\n")));
+                }
+            }
+
+            await items.DisposeAsync();
             body.End();
         }, cancellationToken);
         return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(body) { Headers = { { "Content-Type", "text/event-stream" } } } };

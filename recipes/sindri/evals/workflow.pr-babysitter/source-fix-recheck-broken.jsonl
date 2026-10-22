@@ -1,0 +1,6 @@
+{"start":{"inputs":{"fact:pr":"https://example.test/pr/1","fact:handoff":{"head":"abc123"},"fact:phasePacket":{"phase":"1"},"fact:lineContext":{"base":"origin/main"},"fact:workspace":"/work/phase-1"}}}
+{"trigger":{"kind":"step.completed","outcome":"seeded","outputs":{"fact:workspace":"/work/phase-1","fact:decision":{},"fact:ownerNote":"","fact:handoffNote":{"done":"","next":"","risks":[],"files":[]},"fact:fix":{},"fact:reply":"","fact:recheck":{}}},"expect":{"state":"snapshot"}}
+{"trigger":{"kind":"step.completed","outcome":"stale","outputs":{"fact:prState":{"state":"stale","head":{"sha":"abc123"}}}},"expect":{"state":"recheck"}}
+{"trigger":{"kind":"wait.satisfied","outcome":"unresolved","outputs":{"fact:recheck":{"result":"broken"}}},"expect":{"state":"recheck-owner"}}
+{"trigger":{"kind":"step.completed","outcome":"retry","outputs":{"fact:notes":"retry"}},"expect":{"state":"recheck"}}
+{"trigger":{"kind":"wait.satisfied","outcome":"resolved","outputs":{"fact:recheck":{"result":"held"}}},"expect":{"state":"snapshot"}}

@@ -32,26 +32,31 @@ internal sealed class ExecTemplateViewer(ExecTemplateOptions options, ISessionHo
             return ViewerProcess.Failed(argv.Error.Message);
         }
 
-        var (child, problem) = ViewerProcess.Start(argv.Value, options.Environment);
+        var (child, problem) = ViewerProcess.Start(argv.Value, options.Environment, detached: true);
         if (child is null)
         {
             return ViewerProcess.Failed(problem ?? "the viewer did not start");
         }
 
-        var outcome = await ViewerProcess.Watch(host, time, new ViewerProcess.WatchPlan(request, () => Failure(child), child.Exited), cancellationToken).ConfigureAwait(false);
-        ViewerProcess.Reap(child);
-        return outcome;
+        try
+        {
+            return await ViewerProcess.Watch(host, time, new ViewerProcess.WatchPlan(request, () => Failure(child), child.Exited), cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            ViewerProcess.Reap(child);   // also when the caller cancels: the process is disposed and the pipe drain ends with it
+        }
     }
 
     /// <inheritdoc/>
     public async ValueTask<TerminalFacts> Probe(CancellationToken cancellationToken)
     {
-        var found = await ViewerProcess.OnLoginPath(options.Argv[0], cancellationToken).ConfigureAwait(false);
-        var gui = ViewerProcess.HasGuiSession(options.GetEnv);
+        var found = await (options.OnPath ?? ViewerProcess.OnLoginPath)(options.Argv[0], cancellationToken).ConfigureAwait(false);
+        var gui = ViewerProcess.HasGuiSession(options.GetEnv, options.IsMac);
         var problem = !found ? "not-installed" : gui ? null : "no-gui-session";
         var detail = options.Argv.Any(a => a.Contains("{title}", StringComparison.Ordinal))
             ? null
-            : "the template has no {title}: windows open untitled";
+            : new TerminalDetail(Line: null, "the template has no {title}: windows open untitled");
         return new TerminalFacts(Kind, options.Name, problem is null, "file", ConfigPath: null, problem, detail);
     }
 

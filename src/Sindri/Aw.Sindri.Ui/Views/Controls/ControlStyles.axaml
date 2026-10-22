@@ -35,6 +35,43 @@
   <Style Selector="Button.command-control:disabled icons|StateIcon">
     <Setter Property="Foreground" Value="{DynamicResource Brush.InkTertiary}" />
   </Style>
+  <!-- The shared confirmations (setup spec §2.1, §2.2). The hold button: 36 high, Surface2 with a strong hairline, the fill a clipped border in the
+       AttentionFill token that grows with the hold. The typed box: a matching phrase turns the field's border to Success (the tick glyph says it too). -->
+  <Style Selector="Button.hold-part">
+    <Setter Property="MinWidth" Value="260" />
+    <Setter Property="Height" Value="36" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.HairlineStrong}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.SM}" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="Button.hold-part:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.hold-part:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.HairlineStrong}" />
+  </Style>
+  <Style Selector="Border.hold-fill">
+    <Setter Property="Background" Value="{DynamicResource Brush.AttentionFill}" />
+  </Style>
+  <Style Selector="TextBox.typed-field">
+    <Setter Property="Height" Value="32" />
+    <Setter Property="MinWidth" Value="220" />
+    <Setter Property="MaxLength" Value="200" />
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+    <Setter Property="FontFamily" Value="{DynamicResource Font.Mono}" />
+  </Style>
+  <Style Selector="TextBox.typed-field.match /template/ Border#PART_BorderElement">
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Success}" />
+  </Style>
+  <Style Selector="Border.phrase-chip">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.HairlineStrong}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.XS}" />
+    <Setter Property="Padding" Value="6,2" />
+  </Style>
   <Style Selector="Button.copy">
     <Setter Property="Padding" Value="8,2" />
   </Style>
@@ -82,5 +119,108 @@
   </Style>
   <Style Selector="controls|StateChipView.ok > TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource Brush.Success}" />
+  </Style>
+  <!-- A run's status (F3 workflows spec §2): glyph and word in the kind's colour on its soft pair, the pill radius. Each pair is
+       held by the contrast tests; the glyph always sits beside the word. -->
+  <Style Selector="controls|StatusBadge">
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.Pill}" />
+    <Setter Property="Padding" Value="6,1,8,1" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+  </Style>
+  <Style Selector="controls|StatusBadge TextBlock">
+    <Setter Property="FontSize" Value="{DynamicResource Type.Caption.Size}" />
+    <Setter Property="LineHeight" Value="{DynamicResource Type.Caption.LineHeight}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="controls|StatusBadge.running">
+    <Setter Property="Background" Value="{DynamicResource Brush.PrimarySoft}" />
+  </Style>
+  <Style Selector="controls|StatusBadge.running TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.PrimaryHover}" />
+  </Style>
+  <Style Selector="controls|StatusBadge.running icons|StateIcon">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.PrimaryHover}" />
+  </Style>
+  <Style Selector="controls|StatusBadge.attn">
+    <Setter Property="Background" Value="{DynamicResource Brush.AttentionSoft}" />
+  </Style>
+  <Style Selector="controls|StatusBadge.attn TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Attention}" />
+  </Style>
+  <Style Selector="controls|StatusBadge.attn icons|StateIcon">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Attention}" />
+  </Style>
+  <Style Selector="controls|StatusBadge.violet">
+    <Setter Property="Background" Value="{DynamicResource Brush.VioletSoft}" />
+  </Style>
+  <Style Selector="controls|StatusBadge.violet TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Violet}" />
+  </Style>
+  <Style Selector="controls|StatusBadge.violet icons|StateIcon">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Violet}" />
+  </Style>
+  <Style Selector="controls|StatusBadge.ok">
+    <Setter Property="Background" Value="{DynamicResource Brush.SuccessSoft}" />
+  </Style>
+  <Style Selector="controls|StatusBadge.ok TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Success}" />
+  </Style>
+  <Style Selector="controls|StatusBadge.ok icons|StateIcon">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Success}" />
+  </Style>
+  <Style Selector="controls|StatusBadge.fail">
+    <Setter Property="Background" Value="{DynamicResource Brush.ErrorSoft}" />
+  </Style>
+  <Style Selector="controls|StatusBadge.fail TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
+  </Style>
+  <Style Selector="controls|StatusBadge.fail icons|StateIcon">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
+  </Style>
+  <Style Selector="controls|StatusBadge.neutral">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface3}" />
+  </Style>
+  <Style Selector="controls|StatusBadge.neutral TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkMuted}" />
+  </Style>
+  <Style Selector="controls|StatusBadge.neutral icons|StateIcon">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkMuted}" />
+  </Style>
+  <Style Selector="controls|StatusBadge.faint">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+  </Style>
+  <Style Selector="controls|StatusBadge.faint TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkSubtle}" />
+  </Style>
+  <Style Selector="controls|StatusBadge.faint icons|StateIcon">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkSubtle}" />
+  </Style>
+  <!-- The context map's own controls (F3 spec 1 §2). The stage shows the hand cursor, since a drag pans it; the edges layer is
+       never a keyboard stop (the nodes are); the coverage strip is a quiet button that lifts to Surface2 under the pointer, its
+       words in InkMuted with the lead in Ink. -->
+  <Style Selector="controls|ZoomBorder">
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="controls|GraphEdgesControl">
+    <Setter Property="Focusable" Value="False" />
+    <Setter Property="IsTabStop" Value="False" />
+  </Style>
+  <Style Selector="controls|CoverageStrip">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="8,4" />
+    <Setter Property="MinHeight" Value="{StaticResource Size.Control}" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.SM}" />
+  </Style>
+  <Style Selector="controls|CoverageStrip:pointerover /template/ ContentPresenter#PART_ContentPresenter, controls|CoverageStrip:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+  </Style>
+  <Style Selector="controls|CoverageStrip TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkMuted}" />
+  </Style>
+  <Style Selector="controls|CoverageStrip TextBlock.lead">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Ink}" />
   </Style>
 </Styles>

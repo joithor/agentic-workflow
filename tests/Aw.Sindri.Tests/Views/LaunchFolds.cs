@@ -2,7 +2,6 @@ using Aw.Kernel.Ids;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
-using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Testing;
 
@@ -22,14 +21,16 @@ internal static class LaunchFolds
         v.Fold(EventTypes.ItemOpenRequested, new ItemOpenRequested(launch ?? A.FirstLaunchId, item ?? A.FirstItemId, mode, target ?? ClaudeCode, chosenBy), item ?? A.FirstItemId);
 
     /// <summary>Folds a 'launch.started' whose viewer did <paramref name="outcome"/>.</summary>
-    public static Task Start(this ViewsHarness v, LaunchId? launch = null, ViewerOutcomeKind outcome = ViewerOutcomeKind.Opened, SessionId? session = null, AgentId? target = null, LaunchMode mode = LaunchMode.Open, string? viewerDetail = null) =>
+    public static Task Start(this ViewsHarness v, LaunchId? launch = null, ViewerOutcomeKind outcome = ViewerOutcomeKind.Opened, SessionId? session = null, AgentId? target = null, LaunchMode mode = LaunchMode.Open, string? viewerDetail = null,
+        InstanceAddress? instance = null, string? state = null, int? attempt = null) =>
         v.Fold(EventTypes.LaunchStarted,
             new LaunchStarted(launch ?? A.FirstLaunchId, A.FirstItemId, mode, target ?? ClaudeCode, session, "sindri " + A.FirstItemId.Value,
-                new LaunchViewer("warp", "Warp", outcome, outcome == ViewerOutcomeKind.Failed ? "SND-LAUNCH-001" : null, viewerDetail), ["tmux", "attach"], CatalogSource.Builtin, "sha256:abc"), A.FirstItemId);
+                new LaunchViewer("warp", "Warp", outcome, outcome == ViewerOutcomeKind.Failed ? "SND-LAUNCH-001" : null, viewerDetail), ["tmux", "attach"], CatalogSource.Builtin, "sha256:abc", instance, state, attempt), A.FirstItemId);
 
     /// <summary>Folds a 'launch.failed'.</summary>
-    public static Task Fail(this ViewsHarness v, string code = "SND-LAUNCH-007", LaunchStage? stage = null, LaunchId? launch = null, string message = "the launch was interrupted", string? reason = null, string? source = null) =>
-        v.Fold(EventTypes.LaunchFailed, new LaunchFailed(launch ?? A.FirstLaunchId, A.FirstItemId, code, message, stage, reason, source), A.FirstItemId);
+    public static Task Fail(this ViewsHarness v, string code = "SND-LAUNCH-007", LaunchStage? stage = null, LaunchId? launch = null, string message = "the launch was interrupted",
+        InstanceAddress? instance = null, string? state = null, int? attempt = null, string? reason = null, string? source = null) =>
+        v.Fold(EventTypes.LaunchFailed, new LaunchFailed(launch ?? A.FirstLaunchId, A.FirstItemId, code, message, stage is { } s ? new LaunchFailureDetail(s) : null, instance, state, attempt, reason, source), A.FirstItemId);
 
     /// <summary>Folds a 'launch.viewer-attached'.</summary>
     public static Task Attached(this ViewsHarness v, LaunchId? launch = null) =>

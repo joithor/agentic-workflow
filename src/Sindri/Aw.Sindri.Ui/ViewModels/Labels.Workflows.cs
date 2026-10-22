@@ -34,16 +34,16 @@ internal static partial class Labels
     internal const string NoWorkflowsMatch = "No workflow matches.";
 
     /// <summary>The finished line's expand control name.</summary>
-    internal const string DoneToggle = "Show finished workflows";
+    internal const string DoneToggle = "Show finished runs";
 
-    /// <summary>The recipe filter's name.</summary>
-    internal const string RecipeFilter = "Recipe";
+    /// <summary>The workflow-type filter's name.</summary>
+    internal const string RecipeFilter = "Workflow type";
 
     /// <summary>The subject filter's name.</summary>
-    internal const string SubjectFilter = "Subject";
+    internal const string SubjectFilter = "Item";
 
     /// <summary>The recipe filter's "all recipes" entry.</summary>
-    internal const string AllRecipes = "All recipes";
+    internal const string AllRecipes = "All workflow types";
 
     /// <summary>The column that names what an instance is about.</summary>
     internal const string ColumnSubject = "SUBJECT";
@@ -73,13 +73,13 @@ internal static partial class Labels
     internal const string StageCurrent = "current";
 
     /// <summary>The legend's word for the loop mark.</summary>
-    internal const string LegendLoop = "loop";
+    internal const string LegendLoop = "repeats";
 
     /// <summary>The legend's word for the mark of an escalated or parked stage.</summary>
-    internal const string LegendEscalated = "escalated or parked";
+    internal const string LegendEscalated = "paused: needs a decision";
 
     /// <summary>The legend's word for the mark of a taken-over stage.</summary>
-    internal const string LegendTakenOver = "taken over";
+    internal const string LegendTakenOver = "you took over";
 
     /// <summary>The mark of a finished stage (and a produced fact).</summary>
     internal const string MarkDone = "●";
@@ -96,12 +96,61 @@ internal static partial class Labels
     /// <summary>The mark of a declared input that is missing.</summary>
     internal const string MarkInputMissing = "✕";
 
+    /// <summary>The Workflow cell's word for a stage that waits on the human (a desk stage).</summary>
+    internal const string StageDesk = "waiting for you";
+
+    /// <summary>Who is on a run the human took over.</summary>
+    internal const string WhoYouTookOver = "You took it over";
+
+    /// <summary>Who is on a run the engine paused for a decision.</summary>
+    internal const string WhoPaused = "Paused: needs a decision";
+
+    /// <summary>Who is on a run that waits for the human.</summary>
+    internal const string WhoWaitingForYou = "Waiting for you";
+
+    /// <summary>Who is on a run that is moving on its own.</summary>
+    internal const string WhoInProgress = "In progress";
+
+    /// <summary>The up-front line of a run with inputs still missing.</summary>
+    /// <param name="count">How many declared inputs are missing.</param>
+    /// <returns>"1 input missing", "3 inputs missing".</returns>
+    internal static string InputsMissing(int count) => count == 1 ? "1 input missing" : string.Create(CultureInfo.InvariantCulture, $"{count} inputs missing");
+
+    /// <summary>The row's disclosure.</summary>
+    internal const string RowDetails = "Details";
+
+    /// <summary>The key line's disclosure at the foot of the page.</summary>
+    internal const string KeyHeader = "Key and shortcuts";
+
+    /// <summary>The Details line that names the stages.</summary>
+    internal const string StagesHeading = "Stages";
+
+    /// <summary>The Details line that names the inputs.</summary>
+    internal const string InputsDetailsHeading = "Inputs";
+
+    /// <summary>The Details line that names the workflow type's id.</summary>
+    internal const string WorkflowTypeIdHeading = "Workflow type id";
+
+    /// <summary>The Details line that names the run's address.</summary>
+    internal const string RunAddressHeading = "Run address";
+
     /// <summary>The Workflows head: the root-wide counts.</summary>
     /// <param name="open">How many are open.</param>
     /// <param name="needsYou">How many need the human.</param>
     /// <param name="withYou">How many are with the human.</param>
     /// <returns>"8 open · 2 need you · 1 with you".</returns>
     internal static string WorkflowsHead(string open, string needsYou, string withYou) => $"{open} open · {needsYou} need you · {withYou} with you";
+
+    /// <summary>A group's run count.</summary>
+    /// <param name="count">How many runs.</param>
+    /// <returns>"1 run", "3 runs".</returns>
+    internal static string RunCount(int count) => count == 1 ? "1 run" : string.Create(CultureInfo.InvariantCulture, $"{count} runs");
+
+    /// <summary>A row's open-the-run button name: the visible title first.</summary>
+    /// <param name="subject">The item's title.</param>
+    /// <param name="workflow">The workflow's display name.</param>
+    /// <returns>The name.</returns>
+    internal static string OpenRunName(string subject, string workflow) => $"Open {subject}, {workflow}";
 
     /// <summary>The mark of an escalated or parked stage.</summary>
     internal const string MarkEscalated = "▲";
@@ -110,10 +159,7 @@ internal static partial class Labels
     internal const string MarkTakenOver = "▌";
 
     /// <summary>B on a row: handing an instance back is sent from the app in U8b.</summary>
-    internal static readonly string HandBackArrives = $"Hand back {Arrives("U8b")}. Copy its command from the instance and run it at a terminal.";
-
-    /// <summary>N: starting a workflow from the app arrives with U5'.</summary>
-    internal static readonly string StartArrives = $"Start {Arrives("U5'")}.";
+    internal const string HandBackArrives = "Handing a run back isn't available in the app yet. Copy its command from the run and run it at a terminal.";
 
     /// <summary>The frame tab strip's heading for screen readers.</summary>
     internal const string TabsHeading = "Instance views";

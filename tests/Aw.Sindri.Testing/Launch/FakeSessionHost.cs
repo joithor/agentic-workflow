@@ -19,6 +19,9 @@ public sealed class FakeSessionHost : ISessionHost
     /// <summary>How many sessions are live now.</summary>
     public int LiveCount => _clients.Count;
 
+    /// <summary>When true, <see cref="Exists"/> answers false for a live session, as a host that did not answer in time does; Start still clashes with it.</summary>
+    public bool ExistsAnswersFalse { get; set; }
+
     /// <summary>Makes the next Start fail with <paramref name="error"/>; the one after that works again.</summary>
     /// <param name="error">The error (SND-LAUNCH-009 for a host that overran).</param>
     public void FailNextStart(Error error) => _nextStartFailure = error;
@@ -63,6 +66,13 @@ public sealed class FakeSessionHost : ISessionHost
     }
 
     /// <inheritdoc/>
+    public ValueTask<bool> Exists(HostRef host, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(host);
+        return ValueTask.FromResult(!ExistsAnswersFalse && _clients.ContainsKey(host.Name));
+    }
+
+    /// <inheritdoc/>
     public ValueTask<int> AttachedClients(HostRef host, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(host);
@@ -73,7 +83,7 @@ public sealed class FakeSessionHost : ISessionHost
     public IReadOnlyList<string> AttachArgv(HostRef host)
     {
         ArgumentNullException.ThrowIfNull(host);
-        return ["tmux", "-L", "sindri", "attach-session", "-t", "=" + host.Name];
+        return ["tmux", "-L", "sindri-launch", "attach", "-t", "=" + host.Name];
     }
 
     /// <inheritdoc/>

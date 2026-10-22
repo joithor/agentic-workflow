@@ -1,7 +1,9 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -30,16 +32,9 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton(new WorkflowsHome(settings.Home))
             .AddSingleton<TemporalDevServer>()
             .AddSingleton<ITemporalServer, DevServerTemporal>()
-            .AddSingleton<RunStepActivities>()
-            .AddSingleton<RecordEventActivities>()
-            .AddSingleton<FactReadActivities>()
-            .AddSingleton<EffectDispatch>(static provider => (context, ct) => DispatchScoped(provider, context, ct))   // engine P6 unit (a): RunEffect runs a scoped block by id
-            .AddSingleton<BlockStepDispatch>(static provider => (step, context, ct) => RunBlockScoped(provider, step, context, ct))   // DT-J2: RunBlockStep runs a scoped block Step by id
-            .AddSingleton<BlockStepRunner>()
-            .AddSingleton<EffectActivities>()                          // engine P6: RecordEffect, RecheckEffect, RunEffect
-            .AddSingleton(provider => SindriWorker.Options(settings,
-                provider.GetRequiredService<RunStepActivities>(), provider.GetRequiredService<RecordEventActivities>(),
-                provider.GetRequiredService<FactReadActivities>(), provider.GetRequiredService<EffectActivities>()))
+            .AddInterpreterActivities()
+            .AddAgentRuntime()
+            .AddSingleton(provider => SindriWorker.Options(settings, provider.GetRequiredService<WorkerActivities>()))
             .AddSingleton<TemporalFrontend>()
             .AddSingleton<KnownInstances>()                            // engine P4: the opaque ids this process has seen (spec §6.3)
             .AddSingleton<IItems, SelfItems>()                       // stub until API P3's items
@@ -59,10 +54,66 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<IInstanceLiveness>(static sp => sp.GetRequiredService<TemporalInstanceDirectory>())    // engine P6 unit (d): a claim holder's liveness
             .AddSingleton<IRecipeWake, TemporalRecipeWake>()          // engine P6 integration: the revoke and drift wakes as the 'wake' signal (replaces P2's no-op)
             .AddSingleton<ProfileWorkflowTimes>()                    // engine P4 unit (e): S1-D11, workflow.deskTimeout and workflow.eventHold, read by LoadRecipe
+            .AddEventBridge();
+    }
+
+    /// <summary>The ledger-to-Temporal event bridge (its held window and cursor file) and the router stub (its cursor file and the 'item.routed' scheduled service), both of which run without a profile entry.</summary>
+    private static IServiceCollection AddEventBridge(this IServiceCollection services) => services
             .AddSingleton<HeldItemEvents>()                            // engine P4: the bridge's held window (visibility lag)
             .AddSingleton<EventBridgeCursor>()                         // engine P4 unit (d): the bridge's cursor file
             .AddScoped<IScheduledService, EventBridge>()               // engine P4 unit (d): the ledger-to-Temporal bridge
-            .AddSingleton(EventBridge.BuiltIn);                        // engine P4 unit (d): runs without a profile entry (S1-D8)
+            .AddSingleton(EventBridge.BuiltIn)                         // engine P4 unit (d): runs without a profile entry (S1-D8)
+            .AddSingleton<RouterStubCursor>()                          // engine P7: the stub's cursor file
+            .AddScoped<ItemRouter>()
+            .AddScoped<IScheduledService, RouterStub>()                // engine P7 unit U3: the router stub (spec §12), 'item.routed' for each workflow.item that starts
+            .AddSingleton(RouterStub.BuiltIn);
+
+    /// <summary>The activities the interpreter runs (RunStep, RecordEvent, ReadItemRepo, the effect activities, EvaluateGates) and the Step, effect and gate dispatchers they run blocks through.</summary>
+    private static IServiceCollection AddInterpreterActivities(this IServiceCollection services) => services
+        .AddSingleton<RunStepActivities>()
+        .AddSingleton<RecordEventActivities>()
+        .AddScoped<ScopingApprovals>()                             // BS-1b: the scoping.approved row after step.scope.freeze reports frozen
+        .AddSingleton<FactReadActivities>()
+        .AddSingleton<EffectDispatch>(static provider => (context, ct) => DispatchScoped(provider, context, ct))   // engine P6 unit (a): RunEffect runs a scoped block by id
+        .AddSingleton<BlockStepDispatch>(static provider => (step, context, ct) => RunBlockScoped(provider, step, context, ct))   // DT-J2: RunBlockStep runs a scoped block Step by id
+        .AddSingleton<BlockStepRunner>().AddSingleton<AgentStepSelection>()
+        .AddSingleton<GateDispatch>(static provider => (gate, context, ct) => RunGateScoped(provider, gate, context, ct))   // engine P7: EvaluateGates runs a scoped gate by id
+        .AddSingleton<GateActivities>()                            // engine P7: EvaluateGates
+        .AddSingleton<PhaseWorkspaceRemoval>()                     // LN-WF2: the ended phase's worktree
+        .AddSingleton<CleanupActivities>()                         // engine P7: ReleaseClaim, LN-WF2: RemovePhaseWorkspace
+        .AddSingleton<ChildActivities>()                           // engine P7: LoadChildren
+        .AddSingleton<HeavyLeases>().AddSingleton<HeavyActivities>()   // LN-WF3: TakeHeavy, ReleaseHeavy over IHeavySlots; the leases a worker holds
+        .AddSingleton<EngineActivities>()
+        .AddSingleton<EffectActivities>()                          // engine P6: RecordEffect, RecheckEffect, RunEffect
+        .AddStepInputRuntime()                                     // the Step inputs: FillInput, the in-memory texts and their runner
+        .AddSingleton<WorkerActivities>();
+
+    /// <summary>The <see cref="GateDispatch"/> registration: resolves the gate AddGate keyed by its id, in its own scope; null when this build has no runtime for it.</summary>
+    private static async ValueTask<GateResult?> RunGateScoped(IServiceProvider provider, BlockId gate, GateContext context, CancellationToken cancellationToken)
+    {
+        var scope = provider.CreateAsyncScope();
+        await using (scope.ConfigureAwait(false))
+        {
+            return scope.ServiceProvider.GetKeyedService<IGate>(gate.Value) is { } runtime
+                ? await runtime.Evaluate(context, cancellationToken).ConfigureAwait(false)
+                : null;
+        }
+    }
+
+    // Engine P8 U3: LaunchAgentStep, WatchAgentStep, CloseAgentStep and what they use, and the worker's set of activity classes.
+    private static IServiceCollection AddAgentRuntime(this IServiceCollection services) => services
+        .AddSingleton<AgentStepActivities>().AddSingleton<AgentLaunching>().AddSingleton<AgentClosing>()
+        .AddSingleton<UsageFlush>(static provider => (launch, ct) => FlushScoped(provider, launch, ct))
+        .AddSingleton<AgentTargetResolver>().AddSingleton<AgentLaunchRecorder>().AddSingleton(AgentRuntimeOptions.Default)
+        .AddSingleton<WorkerActivities>();
+
+    private static async ValueTask FlushScoped(IServiceProvider provider, LaunchId launch, CancellationToken cancellationToken)
+    {
+        var scope = provider.CreateAsyncScope();
+        await using (scope.ConfigureAwait(false))
+        {
+            _ = await scope.ServiceProvider.GetRequiredService<ISessionUsageSampler>().Flush(launch, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     private static async ValueTask<BlockStepResult> RunBlockScoped(IServiceProvider provider, BlockId step, StepContext context, CancellationToken cancellationToken)
@@ -70,7 +121,28 @@ public static class SindriWorkflowsServiceCollectionExtensions
         var scope = provider.CreateAsyncScope();
         await using (scope.ConfigureAwait(false))
         {
-            return await scope.ServiceProvider.GetRequiredKeyedService<IBlockStep>(step.Value).Run(context, cancellationToken).ConfigureAwait(false);
+            var result = await scope.ServiceProvider.GetRequiredKeyedService<IBlockStep>(step.Value).Run(context, cancellationToken).ConfigureAwait(false);
+            return step == ScopingApprovals.Freeze   // BS-1b: the freeze Step has no ledger port, so the engine appends scoping.approved for its 'frozen'
+                ? await scope.ServiceProvider.GetRequiredService<ScopingApprovals>().After(step, context, result, cancellationToken).ConfigureAwait(false)
+                : result;
+        }
+    }
+
+    /// <summary>The Step inputs' run time: the in-memory texts (no text is stored), the one runner, the FillInput activity, and the in-process Step's context (no IStep runtime ships yet).</summary>
+    private static IServiceCollection AddStepInputRuntime(this IServiceCollection services) => services
+        .AddSingleton<IInjectionTexts, MemoryInjectionTexts>()
+        .AddSingleton<InputDispatch>(static provider => (context, ct) => FillScoped(provider, context, ct))
+        .AddSingleton<IStepInputRunner, StepInputRunner>()
+        .AddSingleton<IInjectionSources, TemporalInjectionSources>()
+        .AddSingleton<StepInputActivities>()
+        .AddSingleton<StepContexts>();
+
+    private static async ValueTask<Result<InjectionSections>> FillScoped(IServiceProvider provider, StepInputContext context, CancellationToken cancellationToken)
+    {
+        var scope = provider.CreateAsyncScope();
+        await using (scope.ConfigureAwait(false))
+        {
+            return await scope.ServiceProvider.GetRequiredKeyedService<IStepInput>(context.Input.Value).Fill(context, cancellationToken).ConfigureAwait(false);
         }
     }
 

@@ -2,8 +2,8 @@
   "header": {
     "address": "ITM-01JC8/item/1",
     "recipe": "workflow.item",
-    "hash12": "85ecaff4781e",
-    "version": 2,
+    "hash12": "fbd360859893",
+    "version": 3,
     "state": "parked",
     "detail": "no-progress (child)",
     "since": "2026-10-12T11:54:00.0000000Z",
@@ -58,5 +58,6 @@
       "confirm": "Cancel ITM-01JC8/item/1? 0 running steps stop; 1 child is cancelled."
     }
   ],
-  "text": "ITM-01JC8/item/1  workflow.item@85ecaff4781e  v2  parked: no-progress (child)  since 11:54 (32m)\n  next      Parked (no-progress) in ITM-01JC8/item/1/step.4: checks failed twice with the same findings. Grant more\n            rounds at a terminal, or cancel.\n  child     ITM-01JC8/item/1/step.4  parked: no-progress\n  answer    sindri workflow answer ITM-01JC8/item/1 --grant 1     (at a terminal; forwarded to the child)\n  commands  answer (forwarded), takeover, cancel\n"
+  "text": "ITM-01JC8/item/1  workflow.item@fbd360859893  v3  parked: no-progress (child)  since 11:54 (32m)\n  next      Parked (no-progress) in ITM-01JC8/item/1/step.4: checks failed twice with the same findings. Grant more\n            rounds at a terminal, or cancel.\n  child     ITM-01JC8/item/1/step.4  parked: no-progress\n  answer    sindri workflow answer ITM-01JC8/item/1 --grant 1     (at a terminal; forwarded to the child)\n  commands  answer (forwarded), takeover, cancel\n",
+  "injection": []
 }

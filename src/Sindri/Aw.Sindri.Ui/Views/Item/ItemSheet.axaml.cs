@@ -57,6 +57,18 @@ internal sealed partial class ItemSheet : UserControl
         }
     }
 
+    // The decision is answered in Needs you (F3 spec work §1 Q8): the link goes to that page.
+    private void OnOpenNeedsYou(object? sender, RoutedEventArgs e) =>
+        (TopLevel.GetTopLevel(this)?.DataContext as ViewModels.Shell.ShellViewModel)?.Navigate(Navigation.DeepLink.HomeNeedsYou);
+
+    private void OnCopyId(object? sender, RoutedEventArgs e)
+    {
+        if (_sheet is { } sheet)
+        {
+            _ = sheet.CopyId();
+        }
+    }
+
     private void OnCopyDecide(object? sender, RoutedEventArgs e)
     {
         if (_sheet is { } sheet && sender is Button { DataContext: ItemDecisionRow row })

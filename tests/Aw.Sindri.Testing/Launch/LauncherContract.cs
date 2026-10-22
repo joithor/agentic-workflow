@@ -31,6 +31,24 @@ public abstract class LauncherContract
         Expect.Equal(1, SessionCount());
     }
 
+    /// <summary>
+    /// A launcher that did not start the session (a Sindri restart: engine P8 re-sends the same id) answers a Launch of the id of a live session with that session and starts no second one.
+    /// A launcher whose <see cref="Create"/> returns one object keeps its memory, which is the same promise.
+    /// </summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_new_launcher_answers_the_live_session_of_a_launch_id()
+    {
+        var request = A.LaunchRequest().Build();
+        var first = await Create().Launch(request, CancellationToken.None);
+
+        var again = await Create().Launch(request, CancellationToken.None);
+
+        Expect.True(first is StartedLaunch && again is StartedLaunch);
+        Expect.Equal(((StartedLaunch)first).Host, ((StartedLaunch)again).Host);
+        Expect.Equal(1, SessionCount());
+    }
+
     /// <summary>Stop is safe to repeat, and for a launch that never started.</summary>
     /// <returns>The test.</returns>
     [Fact]

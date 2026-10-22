@@ -18,6 +18,8 @@ public static class ThresholdChecks
             : builders.MaxPerLane < 1 ? Message("builders.maxPerLane", "1 or more", builders.MaxPerLane)
             : builders.WorktreeGb < 0 ? Message("builders.worktreeGb", "0 or more", builders.WorktreeGb)
             : team.Context.RecycleAt < 1 ? Message("context.recycleAt", "1 or more", team.Context.RecycleAt)
+            : team.Usage.ResumeMarginSeconds < 0 ? Message("usage.resumeMarginSeconds", "0 or more", team.Usage.ResumeMarginSeconds)
+            : team.Usage.ProbeMinutes < 1 ? Message("usage.probeMinutes", "1 or more", team.Usage.ProbeMinutes)
             : heavy.Cap < 1 ? Message("heavy.cap", "1 or more", heavy.Cap)
             : null;
     }

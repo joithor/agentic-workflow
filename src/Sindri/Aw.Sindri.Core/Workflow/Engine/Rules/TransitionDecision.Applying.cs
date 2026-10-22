@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Events;
@@ -29,7 +30,7 @@ public static partial class TransitionDecision
         var (looped, park) = Reenter(d, instance, transition.To, index);
         if (park is not null)
         {
-            return d.Changed(d.Rules.Suspend(instance, park), records);
+            return d.Changed(d.Rules.Suspend(looped, park), records);
         }
 
         var produced = looped with { Facts = Produce(looped.Facts, transition, d.Trigger) };
@@ -58,6 +59,11 @@ public static partial class TransitionDecision
             return (instance, null);
         }
 
+        if (!d.Context.LegacyLaunchRound && d.Trigger is StepFailed launch && string.Equals(launch.Reason, StepFailed.LaunchReason, StringComparison.Ordinal))
+        {
+            return LaunchFailed(d, instance, name, state, launch);
+        }
+
         var verdict = d.Rules.Reenter(instance, d.Recipe, state, Progress(d.Trigger));
         if (verdict.Park is { } park)
         {
@@ -65,6 +71,16 @@ public static partial class TransitionDecision
         }
 
         return verdict.Next is { } next ? (instance with { Loops = With(instance.Loops, name, next) }, null) : (instance, null);
+    }
+
+    /// <summary>A failed launch re-enters the looped state in the same round; the third in a row parks (<see cref="LoopRules.LaunchFailed"/>) with a re-run to answer it, not a withheld transition.</summary>
+    private static (WorkflowInstance Instance, Suspension? Park) LaunchFailed(Deciding d, WorkflowInstance instance, string name, string state, StepFailed failed)
+    {
+        var step = d.Recipe.States[state].Step?.Use.Value ?? state;
+        var error = failed.Detail is { } detail ? $"{failed.Reason}: {detail}" : failed.Reason;
+        var verdict = LoopRules.LaunchFailed(instance, d.Recipe, state, $"{step} failed to launch {LoopRules.MaxLaunchFailures.ToString(CultureInfo.InvariantCulture)} times in a row, the last time: {error}", failed.Actor);
+        var after = verdict.Next is { } next ? instance with { Loops = With(instance.Loops, name, next) } : instance;
+        return (after, verdict.Park);
     }
 
     /// <summary>
@@ -90,6 +106,11 @@ public static partial class TransitionDecision
         if (!Runnable(scope.Context, step.Use))
         {
             return new Entered(scope.Rules.Suspend(entered, NoRuntime(step.Use, scope.Actor)), entry, [], [], []);
+        }
+
+        if (!scope.Context.LegacyBudgetPark && BudgetRules.Exhausted(entered, scope.Recipe) is { } question)
+        {
+            return new Entered(scope.Rules.Suspend(entered, BudgetRules.StartPark(question, scope.Actor)), entry, [], [], []);   // a kept report spent the budget: this Step does not start
         }
 
         FollowUp[] start = entered.Frame.Run is { } run ? [new(FollowUpKind.StartRun, entered.Id, run.Token, step.Use, Answer: null)] : [];
@@ -123,7 +144,7 @@ public static partial class TransitionDecision
 
     /// <summary>A Step runs when this build has its runtime, or on the desk runtime when its descriptor says deskCapable (W5, W20).</summary>
     private static bool Runnable(DecisionContext context, BlockId step) =>
-        context.Runtimes.Contains(step) || context.RunsAsBlock(step) || context.Catalog.Find(step) is { DeskCapable: true };
+        context.RuntimeOf(step) is not null || context.Catalog.Find(step) is { DeskCapable: true };
 
     private static Suspension NoRuntime(BlockId step, string actor) => new(
         SuspensionKind.Park, ParkReason.NoRuntime, ParkKind: null, Escalation: null,
@@ -153,6 +174,7 @@ public static partial class TransitionDecision
     private static ProgressMark Progress(Trigger trigger) => trigger switch
     {
         StepFailed failed => new ProgressMark(Findings: null, RefusalRules.Digest(failed.Reason), EmptyDiff: false),
+        StepCompleted done => new ProgressMark(Outputs(trigger).GetValueOrDefault(_findings)?.Sha256, Failure: null, done.EmptyDiff, done.FindingKeys),
         _ => new ProgressMark(Outputs(trigger).GetValueOrDefault(_findings)?.Sha256, Failure: null, EmptyDiff: false),
     };
 

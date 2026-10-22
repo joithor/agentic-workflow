@@ -32,6 +32,7 @@ internal static class StateEntry
         {
             Frame = new Frame(state, entry, OpenRun(target, entry, context), Child: null),
             Outcome = target.Kind == StateKind.Terminal ? target.Outcome : instance.Outcome,
+            Visited = instance.Visited?.Contains(state, StringComparer.Ordinal) == true ? instance.Visited : [.. instance.Visited ?? [], state],
         };
     }
 
@@ -63,14 +64,9 @@ internal static class StateEntry
             return null;
         }
 
-        if (context.RunsAsBlock(step.Use))
+        if (context.RuntimeOf(step.Use) is { } runtime)
         {
-            return new OpenRun(RunToken.For(entry, 1), StepRuntime.Block, Launch: null, Task: null);   // DT spec §8.2: the engine runs it, no desk task
-        }
-
-        if (context.Runtimes.Contains(step.Use))
-        {
-            return new OpenRun(RunToken.For(entry, 1), StepRuntime.Agent, Launch: null, Task: null);
+            return new OpenRun(RunToken.For(entry, 1), runtime, Launch: null, Task: null);   // the engine or an agent session runs it, no desk task
         }
 
         return context.Catalog.Find(step.Use) is { DeskCapable: true }

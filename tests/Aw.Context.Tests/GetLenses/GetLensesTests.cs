@@ -1,6 +1,7 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Lenses;
+using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
 using Aw.Context.Testing.Map;
 using Aw.Context.Tests.Map;
@@ -19,7 +20,7 @@ public sealed class GetLensesTests : IDisposable
         _ = await _world.ImportYaml(MapWorld.TabsMap);
 
     private ValueTask<Kernel.Result<LensesView>> Ask(string anchor, ContextScope? scope = null, bool draft = false, int? depth = null) =>
-        _world.Engine.Lenses(anchor, draft, depth, scope ?? MapWorld.Human, MapWorld.None);
+        _world.Engine.Lenses(anchor, draft ? MapRead.NewestDraft : MapRead.Current, depth, scope ?? MapWorld.Human, MapWorld.None);
 
     private async Task ImportFencedCase() =>
         _ = await _world.ImportYaml(MapWorld.Yaml(

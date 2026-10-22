@@ -42,7 +42,7 @@ internal sealed record EvalSimulation(
     {
         ArgumentNullException.ThrowIfNull(evalCase);
         var id = WorkflowInstanceId.For(Guid(evalCase.Name + ":" + recipe.Id.Value));
-        var pins = recipe.States.Values.Select(static s => s.WaitFor?.Child?.Recipe).OfType<RecipeId>().Distinct()
+        var pins = RecipeChildren.Of(recipe)
             .Select(c => (Id: c, Child: children.Resolve(c))).Where(static c => c.Child is not null)
             .ToDictionary(static c => c.Id, static c => c.Child!.Hash); // why: the Where keeps resolved children only
         var request = new StartRequest(
@@ -273,21 +273,10 @@ internal sealed record EvalSimulation(
         return new GateAnswers(gates, evidence);
     }
 
-    /// <summary>The transition whose gates the trigger runs: the one it matches, for an answer the transition its park withheld, or on an answer wait the wait's own transition.</summary>
-    private RecipeTransition? Matched(Trigger trigger)
-    {
-        var index = trigger switch
-        {
-            StepCompleted or StepFailed or WaitSatisfied or CommandFired => TransitionDecision.Match(Instance, Recipe, trigger).Transition,
-            AnswerGiven when Instance.Suspension is { } suspension => suspension.Resume.Withheld?.Transition,
-            AnswerGiven => TransitionDecision.Match(Instance, Recipe, trigger).Transition,
-            _ => null,
-        };
-        return index is { } i && i >= 0 && i < Recipe.Transitions.Count ? Recipe.Transitions[i] : null;
-    }
+    private RecipeTransition? Matched(Trigger trigger) => MatchedTransition.Of(Instance, Recipe, trigger);
 
     private static DecisionContext Context(BlockCatalog catalog, IChildRecipeResolver children) =>
-        new(ApprovalCheck.Holds, catalog, catalog.Blocks.Select(static b => b.Id).ToHashSet(), children);
+        new(ApprovalCheck.Holds, catalog, catalog.Blocks.ToDictionary(static b => b.Id, static _ => StepRuntime.Agent), children);
 
     private static Error Missing(string detail) => KernelErrors.Invalid.With(detail);
 

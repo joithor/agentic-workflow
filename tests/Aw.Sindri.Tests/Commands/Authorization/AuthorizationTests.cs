@@ -12,7 +12,7 @@ public sealed class AuthorizationTests
     private static readonly Dictionary<ActionClass, string> _table = new()
     {
         [ActionClass.Request] = "hasv",
-        [ActionClass.StepReport] = "",       // only the launched session, proven by P10's launch secret: nobody yet
+        [ActionClass.StepReport] = "s",      // only a session; the service checks its launch secret (SND-AUTH-003)
         [ActionClass.Pause] = "hasv",
         [ActionClass.Job] = "hav",
         [ActionClass.Decision] = "ha",
@@ -93,12 +93,13 @@ public sealed class AuthorizationTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Step_report_is_refused_until_launch_proof_exists()
+    public void Step_report_is_for_a_session_only_and_the_launch_secret_is_the_services_check()
     {
         var row = Rows.Of(ActionClass.StepReport, "CompleteStep");
 
-        Assert.All([A.Caller().Session().Build(), A.Caller().AtTerminal().Build(), A.Caller().Human().Build(), A.Caller().Service("engine").Build()],
+        Assert.All([A.Caller().AtTerminal().Build(), A.Caller().Human().Build(), A.Caller().Service("engine").Build()],
             caller => Assert.False(Table.Decide(ActionClass.StepReport, caller, row).Allowed));
+        Assert.True(Table.Decide(ActionClass.StepReport, A.Caller().Session().Build(), row).Allowed);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -131,7 +132,7 @@ public sealed class AuthorizationTests
         Assert.Equal(["human+terminal", "human", "service:host"], Table.CallersFor(ActionClass.Desk, ["host"]));
         Assert.Equal(["human+terminal", "human"], Table.CallersFor(ActionClass.Decision, ["host"]));
         Assert.Equal(["human+terminal"], Table.CallersFor(ActionClass.Protected, []));
-        Assert.Empty(Table.CallersFor(ActionClass.StepReport, []));
+        Assert.Equal(["session"], Table.CallersFor(ActionClass.StepReport, []));
         Assert.Empty(Table.CallersFor(ActionClass.Local, []));
     }
 }

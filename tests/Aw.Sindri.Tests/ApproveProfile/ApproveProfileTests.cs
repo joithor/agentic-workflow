@@ -15,6 +15,7 @@ using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.ValidateProfile;
 using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Infrastructure.Processes;
 using Aw.Sindri.Infrastructure.Secrets;
 using Aw.Sindri.Testing;
 
@@ -58,6 +59,21 @@ public sealed class ApproveProfileTests
         var recorded = Assert.Single(_h.Store.Events);
         Assert.Equal((EventTypes.ProfileApproved, $"profile.approved:{live.Hash.Value}:after:0"), (recorded.Envelope.Type, recorded.IdempotencyKey));
         Assert.Equal(recorded.Sequence, approved.Sequence);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Approving_the_profile_also_records_the_consent_to_the_automatic_setup_steps_for_that_hash()
+    {
+        var live = SliceHarness.Profile("5s");
+        _h.Profiles.Live = live;
+        _ = await _h.HoldLease();
+        using var caller = _h.Callers.EnterService("test");
+
+        _ = await Service().Handle(new ApproveProfileRequest(live.Hash, _h.Confirm(live.Hash)), Token);
+
+        var consent = Assert.Single(_h.Store.Events, static e => e.Envelope.Type == EventTypes.SetupConsentGiven);
+        Assert.Equal($"setup.consent.given:{live.Hash.Value}", consent.IdempotencyKey);
+        Assert.Contains("\"mcp\"", consent.Envelope.Payload, StringComparison.Ordinal);
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -254,7 +270,7 @@ public sealed class ApproveProfileTests
     private async Task<(bool Preview, bool StatusNeedsApproval, bool Validated, CheckState Doctor, string Summary)> Surfaces()
     {
         var preview = (await Service().Handle(new ApproveProfileRequest(Hash: null, Answer: null), Token)).Value;
-        var status = (await new GetStatusService(_h.Held, new ProfileReads(_h.Profiles, _h.Profiles), _h.Store, _h.Events, new ProjectorProgress(_h.Clock), new InMemoryViewStore(SliceHarness.Json), new InMemorySessionSnapshot()).Handle(new GetStatusRequest(), Token)).Value;
+        var status = (await new GetStatusService(_h.Held, new ProfileReads(_h.Profiles, _h.Profiles), _h.Store, _h.Events, new ProjectorProgress(_h.Clock), new HealthServiceRows(new InMemoryViewStore(SliceHarness.Json), []), new InMemorySessionSnapshot()).Handle(new GetStatusRequest(), Token)).Value;
         var validated = (await new ValidateProfileService(_h.Profiles, _h.Profiles, _h.Store, _h.Events, FakeContextEngine.Instance).Handle(new ValidateProfileRequest(), Token)).Value;
         var doctor = (await new RunDoctorService(_h.Store, _h.Probe, new LedgerFacts(_h.Store, new InMemoryViewStore(SliceHarness.Json)), new ProfileFacts(_h.Profiles, _h.Profiles, _h.Store, _h.Events,
             new ContextEngineChecks(FakeContextEngine.Instance, new OnyxDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))))), new FakeControlPlaneProbe(), new FakeTemporalServer(), _h.Clock)

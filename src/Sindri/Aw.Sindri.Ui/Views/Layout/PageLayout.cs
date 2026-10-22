@@ -22,30 +22,30 @@ internal static class PageLayout
 
     private static readonly double[][] _widths =
     [
-        [150, 0, 150, 130, 110, 70, 260],
-        [150, 0, 150, 130, 0, 0, 260],
-        [150, 0, 0, 130, 0, 0, 260],
-        [100, 0, 0, 0, 0, 0, 170],
+        [0, 150, 130, 110, 70, 260],
+        [0, 150, 130, 0, 0, 260],
+        [0, 0, 130, 0, 0, 260],
+        [0, 0, 130, 0, 70, 170],
     ];
 
     /// <summary>The class a page region of this width has.</summary>
     /// <param name="width">The page region's width.</param>
     /// <returns>The tier.</returns>
     internal static PageTier For(double width) =>
-        width >= 1120 ? PageTier.Wide : width >= 1000 ? PageTier.Mid : width >= 790 ? PageTier.Narrow : PageTier.Tight;
+        width >= 1120 ? PageTier.Wide : width >= 1000 ? PageTier.Mid : width >= 760 ? PageTier.Narrow : PageTier.Tight;
 
-    /// <summary>Sets a table's columns (the queue's header and rows) for a tier; the title column (1) stays a star, and a dropped column's cells are hidden.</summary>
-    /// <param name="table">The grid with the seven queue columns.</param>
+    /// <summary>Sets a table's columns (the queue's header and rows) for a tier; the title column (0) stays a star, and a dropped column's cells are hidden.</summary>
+    /// <param name="table">The grid with the six queue columns.</param>
     /// <param name="tier">The tier.</param>
     internal static void Apply(Grid table, PageTier tier)
     {
         var widths = _widths[(int)tier];
         for (var i = 0; i < table.ColumnDefinitions.Count; i++)
         {
-            table.ColumnDefinitions[i].Width = i == 1 ? new GridLength(1, GridUnitType.Star) : new GridLength(widths[i]);
+            table.ColumnDefinitions[i].Width = i == 0 ? new GridLength(1, GridUnitType.Star) : new GridLength(widths[i]);
         }
 
-        foreach (var cell in table.Children.Where(c => Grid.GetColumn(c) is >= 2 and <= 5))
+        foreach (var cell in table.Children.Where(c => Grid.GetColumn(c) is >= 1 and <= 4))
         {
             cell.IsVisible = widths[Grid.GetColumn(cell)] > 0;
         }

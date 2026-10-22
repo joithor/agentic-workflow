@@ -6,6 +6,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 
 /// <summary>The recipe view: the recipe's stamp (id, hash, version; the same one an instance carries in `recipe`), served now ahead of the engine's full body, and the E-22 additions (inputs, outputs, urgency, path-ordered states and loops).</summary>
 /// <param name="Id">The recipe id.</param>
+/// <param name="DisplayName">The name shown instead of the id (setup-once spec §7.7); null, and left out of the JSON, when the engine knows none yet (the field is required on a recipe file once RCP-DISPLAY-001 lands). The app makes the id readable itself.</param>
 /// <param name="Hash">The recipe hash, sha256: and 64 hex digits.</param>
 /// <param name="Version">The recipe version.</param>
 /// <param name="Name">The recipe's name template as written, or null (spec section 3.11).</param>
@@ -15,6 +16,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="OrderedBy">How the states were ordered: 'path', or 'transition-list' with more than one initial path.</param>
 /// <param name="States">States in path order.</param>
 /// <param name="Loops">The loops.</param>
+/// <param name="TransitionLabels">The transitions that carry a plain-words label, in file order; null (left out of the JSON) when none does.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record RecipeView(
     RecipeId Id,
@@ -26,4 +28,6 @@ public sealed record RecipeView(
     RecipeUrgency Urgency,
     PathOrdering OrderedBy,
     IReadOnlyList<RecipeStateView> States,
-    IReadOnlyList<RecipeLoopView> Loops);
+    IReadOnlyList<RecipeLoopView> Loops,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? DisplayName = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<RecipeTransitionLabelView>? TransitionLabels = null);
