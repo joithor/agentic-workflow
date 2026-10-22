@@ -17,6 +17,8 @@ internal static partial class Labels
         ["RegisterMcp"] = ("Connect your agents", "Connect again"),
         ["SetupOnyx"] = ("Set up Onyx", "Set up again"),
         ["RefreshContextMap"] = ("Retry", "Retry"),
+        ["ConnectOnyx"] = ("Connect", "Connect"),
+        ["DeferOnyx"] = ("Not now", "Not now"),
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
     // The app's titles, keyed by step id: the API's own are its plain default, the app owns the words people read.

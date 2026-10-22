@@ -10,7 +10,7 @@ namespace Aw.Sindri.Tests.Forge;
 [Lane(TestLane.Integration)]
 public sealed class ConfiguredPullRequestsTests : IDisposable
 {
-    private static readonly PullRepo Repo = new("forge.test", "acme", "widgets");
+    private static readonly PullRepo _repo = new("forge.test", "acme", "widgets");
     private readonly DirectoryInfo _state = Directory.CreateTempSubdirectory("aw-sindri-configured-");
 
     [Fact]
@@ -18,7 +18,7 @@ public sealed class ConfiguredPullRequestsTests : IDisposable
     {
         var pulls = await Configured(forge: null);
 
-        var result = await pulls.Find(new FindPull(Repo, "feature/x", Marker: null), TestContext.Current.CancellationToken);
+        var result = await pulls.Find(new FindPull(_repo, "feature/x", Marker: null), TestContext.Current.CancellationToken);
 
         Assert.Equal("SND-FORGE-001", result.Error.Code);
     }
@@ -28,7 +28,7 @@ public sealed class ConfiguredPullRequestsTests : IDisposable
     {
         var pulls = new ConfiguredPullRequests(new InMemoryProfiles(), Environment, TimeProvider.System);
 
-        var result = await pulls.Find(new FindPull(Repo, "feature/x", Marker: null), TestContext.Current.CancellationToken);
+        var result = await pulls.Find(new FindPull(_repo, "feature/x", Marker: null), TestContext.Current.CancellationToken);
 
         Assert.Equal("SND-FORGE-001", result.Error.Code);
     }
@@ -39,8 +39,8 @@ public sealed class ConfiguredPullRequestsTests : IDisposable
         var pulls = await Configured(new ForgeSettings(Adapter: "file", Hosts: ["forge.test"]));
         var ct = TestContext.Current.CancellationToken;
 
-        var opened = await pulls.Open(new OpenPull(Repo, "feature/x", "main", new string('a', 40), "T", "B", Draft: false, "run-1"), ct);
-        var found = await pulls.Find(new FindPull(Repo, "feature/x", "run-1"), ct);
+        var opened = await pulls.Open(new OpenPull(_repo, "feature/x", "main", new string('a', 40), "T", "B", Draft: false, "run-1"), ct);
+        var found = await pulls.Find(new FindPull(_repo, "feature/x", "run-1"), ct);
 
         Assert.Equal(opened.Value, found.Value);
     }

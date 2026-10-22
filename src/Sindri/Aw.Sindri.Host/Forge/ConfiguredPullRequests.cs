@@ -1,6 +1,7 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Forge;
 using Aw.Sindri.Core.Profile;
+using Results = Aw.Kernel.Results;
 
 namespace Aw.Sindri.Host.Forge;
 
@@ -14,7 +15,7 @@ namespace Aw.Sindri.Host.Forge;
 /// <param name="clock">The clock.</param>
 internal sealed class ConfiguredPullRequests(IApprovedProfile approved, Func<string, string?> environment, TimeProvider clock) : IPullRequests
 {
-    private static readonly NoForgePullRequests None = new();
+    private static readonly NoForgePullRequests _none = new();
 
     private readonly Lock _gate = new();
     private (string Key, IPullRequests Adapter)? _built;
@@ -74,7 +75,7 @@ internal sealed class ConfiguredPullRequests(IApprovedProfile approved, Func<str
 
         if (latest.Value?.Profile.Workflow?.Forge is not { Adapter: not null } settings)
         {
-            return None;
+            return _none;
         }
 
         var key = string.Join('\n', settings.Adapter, string.Join(',', settings.Hosts ?? []), settings.Credential);
