@@ -21,9 +21,9 @@ public sealed class BabysitterReadyCommandsTests
             .ToList();
         var rows = new CommandCatalog().Rows;
 
-        Assert.Contains("comments", verbs);
-        Assert.Contains("resync-docs", verbs);
-        Assert.Contains("check", verbs);
+        Assert.Contains("comments", verbs, StringComparer.Ordinal);
+        Assert.Contains("resync-docs", verbs, StringComparer.Ordinal);
+        Assert.Contains("check", verbs, StringComparer.Ordinal);
         var row = Assert.Single(rows, r => r.Action.Value == "ApplyCommand:command");
         Assert.Equal((ActionClass.Desk, false), (row.Class, row.Destructive));
         Assert.DoesNotContain(rows, r => r.Action.Value.StartsWith("ApplyCommand:command-", StringComparison.Ordinal));
