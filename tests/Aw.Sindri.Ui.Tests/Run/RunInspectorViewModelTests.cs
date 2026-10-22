@@ -129,7 +129,7 @@ public sealed class RunInspectorViewModelTests
 
         page.Inspector!.SeeContext();
 
-        Assert.Equal(DeepLinkKind.Node, Assert.Single(_links).Kind);
+        Assert.Equal(DeepLinkKind.ContextItem, Assert.Single(_links).Kind);
     }
 
     [Fact]

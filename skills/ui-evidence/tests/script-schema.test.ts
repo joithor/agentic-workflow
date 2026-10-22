@@ -98,6 +98,7 @@ describe("parseUiScript", () => {
     expect(describeExpectedState({ kind: "testid-visible", testId: "t" })).toContain("t");
     expect(describeExpectedState({ kind: "testid-absent", testId: "t" })).toBe("element t absent");
     expect(describeExpectedState({ kind: "url-path", path: "/p" })).toContain("/p");
+    expect(describeExpectedState({ kind: "url-search", param: "timeFilter", value: "Night" })).toBe("url ?timeFilter=Night");
     expect(describeExpectedState({ kind: "input-value", testId: "t", value: "v" })).toContain('"v"');
   });
 
@@ -137,6 +138,33 @@ describe("drag steps and localStorage", () => {
   it("labels a drag with its destination", () => {
     expect(describeStep({ action: "drag", target: "shift-1", to: "day-2", expectedState: dropped })).toBe("drag shift-1 → day-2");
     expect(describeStep({ action: "click", target: "save", expectedState: dropped })).toBe("click save");
+  });
+});
+
+describe("press steps and url-search", () => {
+  const base = { route: "/x", role: "admin", viewports: ["desktop"] } as const;
+  const night = { kind: "url-search", param: "timeFilter", value: "Night" } as const;
+
+  it("accepts a press with a key, and optionally a target (test id, role: or text:) and index", () => {
+    expect(parseUiScript({ ...base, steps: [{ action: "press", key: "ArrowRight", expectedState: night }] })).not.toHaveProperty("error");
+    expect(parseUiScript({ ...base, steps: [{ action: "press", key: "ArrowRight", target: "time-filter-day", index: 1, expectedState: night }] })).not.toHaveProperty("error");
+    expect(parseUiScript({ ...base, steps: [{ action: "press", key: "Shift+Tab", target: "role:tab|Day", expectedState: night }] })).not.toHaveProperty("error");
+  });
+
+  it("rejects a press without a key, with a malformed target, or with an index but no target", () => {
+    expect(parseUiScript({ ...base, steps: [{ action: "press", target: "time-filter-day", expectedState: night }] })).toHaveProperty("error");
+    expect(parseUiScript({ ...base, steps: [{ action: "press", key: "", expectedState: night }] })).toHaveProperty("error");
+    expect(parseUiScript({ ...base, steps: [{ action: "press", key: "ArrowRight", target: "role:tab", expectedState: night }] })).toHaveProperty("error");
+    expect(parseUiScript({ ...base, steps: [{ action: "press", key: "ArrowRight", index: 1, expectedState: night }] })).toHaveProperty("error");
+  });
+
+  it("rejects a url-search without a param", () => {
+    expect(parseUiScript({ ...base, steps: [{ action: "press", key: "ArrowRight", expectedState: { kind: "url-search", param: "", value: "Night" } }] })).toHaveProperty("error");
+  });
+
+  it("labels a press with its key and target", () => {
+    expect(describeStep({ action: "press", key: "ArrowRight", target: "time-filter-day", expectedState: night })).toBe("press ArrowRight on time-filter-day");
+    expect(describeStep({ action: "press", key: "ArrowLeft", expectedState: night })).toBe("press ArrowLeft");
   });
 });
 

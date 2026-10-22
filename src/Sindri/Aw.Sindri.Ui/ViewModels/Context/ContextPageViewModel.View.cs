@@ -10,10 +10,10 @@ internal sealed partial class ContextPageViewModel
     public string AsOfLabel { get; } = Labels.ContextMapAsOf;
 
     /// <summary>The pinned choice's words (off until the item's approved map is served).</summary>
-    public string AsOfPinned { get; } = Labels.ContextMapAsOfPinned;
+    public string AsOfPinned { get; private set => Set(ref field, value); } = Labels.ContextMapAsOfPinned;
 
     /// <summary>Why the pinned choice is off.</summary>
-    public string AsOfPinnedHint { get; } = Labels.ContextMapPinnedNotServed;
+    public string AsOfPinnedHint { get; private set => Set(ref field, value); } = Labels.ContextMapPinnedNotServed;
 
     /// <summary>The live choice's words.</summary>
     public string AsOfLive { get; } = Labels.ContextMapAsOfLive;
