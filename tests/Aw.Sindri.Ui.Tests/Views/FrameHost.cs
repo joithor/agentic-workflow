@@ -69,10 +69,13 @@ public abstract class FrameHost : IDisposable
                 return true;
             }, Token);
 
+    /// <summary>The folder chooser the shell is given: available unless a test turns it off.</summary>
+    private protected FakeFolderPicker Folders { get; } = new();
+
     private protected async Task<(ShellWindow Window, ShellViewModel Shell)> Connected(Func<ShellViewModel, bool>? ready = null, double? width = null, double? height = null)
     {
         _records.Write(A.Record());
-        var shell = new ShellViewModel(_records, Server, Clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard(), Motion, new WindowPorts(NullLauncher.Instance, Files));
+        var shell = new ShellViewModel(_records, Server, Clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard(), Motion, new WindowPorts(NullLauncher.Instance, Files, Folders));
         await shell.Restore(Token);
         var window = new ShellWindow { DataContext = shell };
         if (width is { } w)

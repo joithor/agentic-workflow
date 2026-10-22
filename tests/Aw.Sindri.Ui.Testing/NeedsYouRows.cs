@@ -7,6 +7,8 @@ namespace Aw.Sindri.Ui.Testing;
 /// <summary>Builders for needs-you rows in the shapes the screens fixture gives (a park, a decision, a failure, a profile drift).</summary>
 internal static class NeedsYouRows
 {
+    internal const string ProfileHash = "932d876195e0684a7eef2cfb155d03297bc90219dd98257fb87549114040c79a";
+
     internal const string Command = "sindri workflow answer ITM-01JC8 --grant 1";
 
     internal const string DeskInstance = "WFI-44393da815f188cea9c6fe30ae2a30a6";
@@ -109,6 +111,42 @@ internal static class NeedsYouRows
         Actions = [new NeedsYouAction("ApproveProfile", "Approve", ActionReadiness.CliOnly, "sindri profile approve 3f1c09", RejectLike: false)],
         Subject = subject,
         Cli = "sindri profile approve 3f1c09",
+    };
+
+    /// <summary>The drifted profile with its full hash as the subject and an approve the catalog lets the app confirm.</summary>
+    internal static NeedsYouEntry ProfileReady(string hash = ProfileHash) => Profile(new NeedsYouSubject("profile", hash)) with
+    {
+        Actions = [new NeedsYouAction("ApproveProfile", "Approve", ActionReadiness.Ready, "sindri profile approve " + hash[..6], RejectLike: false)],
+        Cli = "sindri profile approve " + hash[..6],
+    };
+
+    /// <summary>The setup row that waits on approve-all: its primary is ApproveAllRecipes.</summary>
+    internal static NeedsYouEntry SetupRecipes(ActionReadiness readiness = ActionReadiness.Ready) => new("setup:recipes", NeedsYouUrgency.Calm)
+    {
+        Kind = "setup",
+        Chip = new StateChip("SETUP", ChipTone.Attn),
+        Title = "2 new workflows to approve",
+        Label = "setup · workflows",
+        Reason = "2 workflows are new or changed",
+        Since = A.Noon.AddHours(-1),
+        PrimaryAction = "ApproveAllRecipes",
+        Actions = [new NeedsYouAction("ApproveAllRecipes", "Approve all", readiness, "sindri recipe approve-all", RejectLike: false)],
+        Cli = "sindri recipe approve-all",
+    };
+
+    /// <summary>A changed workflow: its single approve is a later slice's, so the bar shows the command only.</summary>
+    internal static NeedsYouEntry Recipe(string id = "workflow.step") => new("recipe:" + id, NeedsYouUrgency.Calm)
+    {
+        Kind = "recipe",
+        Chip = new StateChip("RECIPE", ChipTone.Attn),
+        Title = "One step changed",
+        Label = "workflow · changed",
+        Reason = "the recipe changed since it was approved",
+        Since = A.Noon.AddHours(-1),
+        PrimaryAction = "ApproveRecipe",
+        Actions = [new NeedsYouAction("ApproveRecipe", "Approve", ActionReadiness.Ready, "sindri recipe approve " + id, RejectLike: false)],
+        Subject = new NeedsYouSubject("recipe", id),
+        Cli = "sindri recipe approve " + id,
     };
 
     /// <summary>A pulse row with just an id, for lists that need many.</summary>

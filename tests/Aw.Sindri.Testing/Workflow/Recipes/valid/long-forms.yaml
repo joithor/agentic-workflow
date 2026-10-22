@@ -48,3 +48,4 @@ transitions:
 loops: { revisions: { cap: 3, noProgress: [findings, emptyDiff, sameFailure] } }
 budget: { tokens: 2000000 }
 evals: []
+displayName: Test recipe

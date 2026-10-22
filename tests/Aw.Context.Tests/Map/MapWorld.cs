@@ -12,6 +12,7 @@ using Aw.Context.Core.Models;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Review;
 using Aw.Context.Core.Sources;
+using Aw.Context.Core.Symbols;
 using Aw.Context.Core.Trust;
 using Aw.Context.Features;
 using Aw.Context.Testing.Code;
@@ -62,7 +63,7 @@ internal sealed class MapWorld : IDisposable
         ["README.md"] = "# Split panes",
     };
 
-    public MapWorld(IRepoReader? repoReader = null, IContextSource? intent = null, ICodeSearch? codeSearch = null, IFileHistory? history = null)
+    public MapWorld(IRepoReader? repoReader = null, IContextSource? intent = null, ICodeSearch? codeSearch = null, IFileHistory? history = null, ICodeSymbolSource? symbols = null)
     {
         Sources = new FixedSourceCatalog(intent is null ? [Docs] : [Docs, intent]);
         Exports = new FakeExportStore(Clock);
@@ -82,6 +83,7 @@ internal sealed class MapWorld : IDisposable
             .AddSingleton(repoReader ?? new FakeRepoReader(Repos[0], Head, BuildFiles))
             .AddSingleton<IDefaultBranch>(DefaultBranch)
             .AddSingleton(codeSearch ?? new FakeCodeSearch(Repos[0], Head, BuildFiles))
+            .AddSingleton(symbols ?? new NoCodeSymbolSource())
             .AddSingleton<IIntentStore>(Intents)
             .AddSingleton(history ?? new FakeFileHistory(Repos[0], new HistoryWorld(Head, [])))
             .AddSingleton<IModelPort>(Model)

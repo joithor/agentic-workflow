@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Tests.Ledger;
 
 namespace Aw.Sindri.Tests.Workflows.Effects;
@@ -21,10 +22,10 @@ public sealed class TempGitRepo : IDisposable
     public static async Task<TempGitRepo> Create(int commits = 1)
     {
         var repo = new TempGitRepo();
-        _ = await repo.Git("init", "-q", "-b", "main");
+        _ = await repo.Git(IsolatedGit.Init("-b", "main"));
         for (var i = 0; i < commits; i++)
         {
-            _ = await repo.Git("-c", "user.email=test@example.invalid", "-c", "user.name=test", "commit", "-q", "--allow-empty", "-m", "init");
+            _ = await repo.Git([.. IsolatedGit.NoHooks, "-c", "user.email=test@example.invalid", "-c", "user.name=test", "commit", "-q", "--allow-empty", "-m", "init"]);
         }
 
         return repo;
