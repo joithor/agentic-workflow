@@ -49,7 +49,7 @@ internal sealed class PrIntakeStep(IPullRequests pulls, IMergeRecord record) : I
     }
 
     // The start row (spec §4.7): the pull request, its base (unknown: the forge port's view has none), the hand-off's hash, the phase and who started it. Keyed by the instance, so a retry writes it once.
-    private async ValueTask<Aw.Kernel.Result<bool>> Start(StepContext context, PullView pull, CancellationToken cancellationToken)
+    private async ValueTask<Kernel.Result<bool>> Start(StepContext context, PullView pull, CancellationToken cancellationToken)
     {
         if (context.Address is not { Length: > 0 } address)
         {
