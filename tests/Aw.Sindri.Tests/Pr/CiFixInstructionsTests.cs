@@ -80,7 +80,7 @@ public sealed class CiFixInstructionsTests
     [Fact]
     public void A_Step_that_reads_a_workspace_launches_in_it_and_may_write_only_there()
     {
-        var request = AgentLaunches.RequestFor(Run(), _target, descriptor: null, instructions: null, workspace: "/work/phase-1");
+        var request = AgentLaunches.RequestFor(Run(), _target, descriptor: null, new AgentLaunchExtras(Workspace: "/work/phase-1"));
 
         Assert.Equal("/work/phase-1", request.Worktree);
         Assert.Equal("/work/phase-1", request.Step?.Policy?.WritablePath);
@@ -92,7 +92,7 @@ public sealed class CiFixInstructionsTests
     [InlineData("  ")]
     public void A_Step_with_no_workspace_gets_the_worktree_the_launcher_makes(string? workspace)
     {
-        var request = AgentLaunches.RequestFor(Run(), _target, descriptor: null, instructions: null, workspace);
+        var request = AgentLaunches.RequestFor(Run(), _target, descriptor: null, new AgentLaunchExtras(Workspace: workspace));
 
         Assert.Equal("/work/app/.claude/worktrees/sindri-" + WorkflowInstanceId.Of(_address).Value + "-2.1", request.Worktree);
     }

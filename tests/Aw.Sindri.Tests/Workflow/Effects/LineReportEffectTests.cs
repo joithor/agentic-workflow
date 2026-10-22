@@ -46,11 +46,13 @@ public sealed class LineReportEffectTests
     [Theory]
     [InlineData("shipped")]
     [InlineData("merged")]
+    [InlineData("failed")]
     public async Task A_report_replies_its_status_with_the_phase_storedfact(string status)
     {
         var done = await Report(status, LineContext);
 
         Assert.Equal(OutcomeName.From(status), done.Value.Reply);
+        Assert.Equal("line.phaseChanged", done.Value.Event?.Value);   // 'merged' is also pr.mergeResult's and pr.docsMerged's outcome
         var fact = Assert.Single(done.Value.Facts!);
         Assert.Equal(FactKey.From("fact:phaseEvent"), fact.Key);
         var stored = await _facts.Read(new FactValue(fact.Value.Ref, fact.Value.Sha256, fact.Value.HeadSha), Token);
@@ -88,7 +90,7 @@ public sealed class LineReportEffectTests
     [Theory]
     [InlineData("started")]
     [InlineData("")]
-    public async Task A_status_other_than_shipped_or_merged_is_the_dispatch_error(string status)
+    public async Task A_status_other_than_shipped_merged_or_failed_is_the_dispatch_error(string status)
     {
         var done = await Report(status, LineContext);
 
@@ -108,7 +110,7 @@ public sealed class LineReportEffectTests
 
     private string[] Rows() => _area.Read(Instance, Record, Token).AsTask().GetAwaiter().GetResult().Value.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
-    private async Task<Aw.Kernel.Result<EffectDone>> Report(string status, string lineContext)
+    private async Task<Kernel.Result<EffectDone>> Report(string status, string lineContext)
     {
         var put = (await _facts.Put(Encoding.UTF8.GetBytes(lineContext), Token)).Value;
         var stored = JsonDocument.Parse($$"""{"ref":"{{put.Ref}}","sha256":"{{put.Sha256}}"}""").RootElement.Clone();

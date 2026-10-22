@@ -11,12 +11,11 @@ namespace Aw.Sindri.Features.GetRecipeStats;
 /// <summary>
 /// A recipe's stats (API spec §3.8, E-24), counted from the ledger's workflow rows on each read: SND-API-013 for a window outside 7d, 30d and 90d or a
 /// hash that is not a recipe hash, SND-RECIPE-002 for a recipe no one registered. A recipe some recipe starts as a child and that never started as a root
-/// is child-only and has no run figures of its own. The spec caches the result in views.db; that is a follow-up (the ledger read is cheap at today's volume).
+/// is child-only and has no run figures of its own. The stats read through the views.db cache (<see cref="RecipeStatsSource"/>).
 /// </summary>
 /// <param name="registry">Which recipes are registered, and which are started as children.</param>
-/// <param name="rows">The ledger's workflow rows.</param>
-/// <param name="clock">The read's time.</param>
-internal sealed class GetRecipeStatsService(RecipeRegistryReader registry, IWorkflowStatRows rows, TimeProvider clock) : IService<GetRecipeStatsRequest, RecipeStats>
+/// <param name="source">The stats: cached, or counted from the ledger's workflow rows.</param>
+internal sealed class GetRecipeStatsService(RecipeRegistryReader registry, RecipeStatsSource source) : IService<GetRecipeStatsRequest, RecipeStats>
 {
     public async ValueTask<Result<RecipeStats>> Handle(GetRecipeStatsRequest request, CancellationToken cancellationToken)
     {
@@ -44,15 +43,11 @@ internal sealed class GetRecipeStatsService(RecipeRegistryReader registry, IWork
         }
 
         var children = await registry.ChildRecipeIds(cancellationToken).ConfigureAwait(false);
-        var read = children.IsError ? children.Error : await rows.Read(cancellationToken).ConfigureAwait(false);
-        if (read.IsError)
+        if (children.IsError)
         {
-            return read.Error;
+            return children.Error;
         }
 
-        var now = clock.GetUtcNow();
-        return children.Value.Contains(request.Id) && !RecipeStatsCounter.HasRoot(read.Value, request.Id)
-            ? RecipeStats.ForChildOnly(request.Id, request.Hash, window.Value, now)
-            : RecipeStatsCounter.Count(read.Value, request.Id, request.Hash, window.Value, now);
+        return await source.Of(request.Id, request.Hash, window.Value, children.Value.Contains(request.Id), cancellationToken).ConfigureAwait(false);
     }
 }

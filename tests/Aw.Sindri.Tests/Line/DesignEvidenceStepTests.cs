@@ -100,11 +100,15 @@ public sealed class DesignEvidenceStepTests
     [Fact]
     public async Task A_design_with_no_spec_text_is_incomplete_and_names_the_fix()
     {
-        var result = await new LineStation().DesignEvidenceRun(design =>
+        var station = new LineStation();
+        var facts = await station.DesignFacts(design =>
         {
             _ = design.Remove("spec");
             return design;
         });
+        facts["packs"] = "{}"; // no pinned style pack, so the style check doesn't stop the run before the packet is assembled
+
+        var result = await station.DesignEvidence().Run(LineStation.Context("step.design.evidence", LineStation.DesignAddress, facts), TestContext.Current.CancellationToken);
 
         Assert.Equal("incomplete", result.Result!.Outcome.Value);
         var finding = JsonNode.Parse(LineStation.Fact(result, "findings"))![0]!;
@@ -169,7 +173,7 @@ public sealed class DesignEvidenceStepTests
         var station = new LineStation();
         var facts = await station.DesignFacts();
 
-        var result = await new DesignEvidenceStep(station.Packets, station.Area, new InMemoryRepoCheckouts()).Run(
+        var result = await new DesignEvidenceStep(station.Packets, station.Area, new InMemoryRepoCheckouts(), station.Styles).Run(
             LineStation.Context("step.design.evidence", LineStation.DesignAddress, facts), TestContext.Current.CancellationToken);
 
         Assert.Null(result.Result);
@@ -195,5 +199,30 @@ public sealed class DesignEvidenceStepTests
         Assert.Equal(original["deferred"]!.ToJsonString(), design["deferred"]!.ToJsonString());
         Assert.Equal(LineStation.LensRounds, design["lensRounds"]!.ToJsonString());
         Assert.Equal(Location, (string?)design["packet"]!["dir"]);
+    }
+
+    [Fact]
+    public async Task A_style_pack_that_changed_since_the_intake_pinned_it_fails_the_Step_with_SND_PACK_002()
+    {
+        var station = new LineStation();
+        var facts = await station.DesignFacts();
+        _ = station.Styles.With(LineStation.Style("plain", maxWords: 5) with { Hash = "sha256:" + new string('c', 64) });
+
+        var result = await station.DesignEvidence().Run(LineStation.Context("step.design.evidence", LineStation.DesignAddress, facts), TestContext.Current.CancellationToken);
+
+        Assert.Null(result.Result);
+        Assert.Contains("SND-PACK-002", result.Failure, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_design_whose_spec_breaks_the_pinned_style_packs_word_limit_is_incomplete_with_DSN_STYLE_001()
+    {
+        var station = new LineStation();
+        _ = station.Styles.With(LineStation.Style("plain", maxWords: 1));
+
+        var result = await station.DesignEvidenceRun();
+
+        Assert.Equal("incomplete", result.Result!.Outcome.Value);
+        Assert.Contains("DSN-STYLE-001", LineStation.Fact(result, "findings"), StringComparison.Ordinal);
     }
 }

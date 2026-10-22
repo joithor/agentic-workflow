@@ -61,10 +61,26 @@ public sealed class PhaseWorkspaceTests
 
     [Theory]
     [InlineData("workflow.pr-babysitter")]
-    [InlineData("workflow.docs-sync")]
     [InlineData("workflow.build")]
     public void Only_the_phase_owns_its_worktree_a_child_or_another_recipe_never_removes_it(string recipe) =>
         Assert.Null(PhaseWorkspace.ToRemove(RecipeId.From(recipe), Facts(pr: false), OutcomeName.From("resolved")));
+
+    [Theory]
+    [InlineData("resolved")]
+    [InlineData("none")]
+    [InlineData("cancelled")]
+    [InlineData("failed")]
+    public void Docs_sync_gives_its_own_worktree_back_on_any_ending_even_with_the_source_pull_request_held(string outcome) =>
+        Assert.Equal(Facts(pr: true)[_workspace], PhaseWorkspace.ToRemove(RecipeId.From("workflow.docs-sync"), Facts(pr: true), OutcomeName.From(outcome)));
+
+    [Fact]
+    public void Docs_sync_that_ended_without_a_worktree_or_by_a_cancel_has_the_right_answer()
+    {
+        var docs = RecipeId.From("workflow.docs-sync");
+
+        Assert.Null(PhaseWorkspace.ToRemove(docs, new Dictionary<FactKey, FactValue>(), OutcomeName.From("none")));
+        Assert.Equal(Facts(pr: false)[_workspace], PhaseWorkspace.ToRemove(docs, Facts(pr: false), outcome: null));
+    }
 
     [Theory]
     [InlineData("/work/phase")]

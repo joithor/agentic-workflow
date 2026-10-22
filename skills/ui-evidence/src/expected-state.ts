@@ -41,6 +41,9 @@ export async function assertExpectedState(page: AssertablePage, e: ExpectedState
       // Waits like every other kind: client-side routing can lag the click.
       await page.waitForURL((u) => u.pathname === e.path, { timeout: TIMEOUT });
       return;
+    case "url-search":
+      await page.waitForURL((u) => u.searchParams.get(e.param) === e.value, { timeout: TIMEOUT });
+      return;
     case "input-value": {
       const actual = await page.getByTestId(e.testId).inputValue({ timeout: TIMEOUT });
       if (actual !== e.value) throw new Error(`expected input ${e.testId} = "${e.value}", got "${actual}"`);

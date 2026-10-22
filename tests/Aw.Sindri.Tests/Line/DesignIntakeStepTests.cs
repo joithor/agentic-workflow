@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.LensPacks;
 using Aw.Sindri.Core.Packets;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Line;
@@ -108,7 +109,7 @@ public sealed class DesignIntakeStepTests
         var station = new LineStation();
         var files = new InMemoryPacketFiles().Put(LineStation.ScopeDirectory, "scope-map.json", "{}");
 
-        var result = await new DesignIntakeStep(station.Packets, files).Run(
+        var result = await new DesignIntakeStep(station.Packets, files, station.Styles, station.Lenses).Run(
             LineStation.Context("step.design.intake", LineStation.DesignAddress, new ScopingFacts { ["scopePacket"] = LineStation.ScopePacket, ["designRevision"] = "x" }),
             TestContext.Current.CancellationToken);
 
@@ -176,4 +177,50 @@ public sealed class DesignIntakeStepTests
     }
 
     private static string ScopeHash() => InMemoryPackets.HashOf(new PacketRef(PacketKind.Scoping, LineStation.ScopeDirectory));
+
+    [Fact]
+    public async Task The_style_pack_and_the_design_lens_pack_are_pinned_by_id_and_hash_in_fact_packs()
+    {
+        var result = await Run(new LineStation());
+
+        var packs = JsonNode.Parse(LineStation.Fact(result, "packs"))!;
+        Assert.Equal("plain", (string?)packs["style"]!["id"]);
+        Assert.Equal("sha256:" + new string('a', 64), (string?)packs["style"]!["hash"]);
+        Assert.Equal("design-five", (string?)packs["lenses"]!["id"]);
+        Assert.Equal("sha256:" + new string('b', 64), (string?)packs["lenses"]!["hash"]);
+    }
+
+    [Fact]
+    public async Task A_style_pack_that_does_not_resolve_fails_the_Step_with_SND_PACK_001()
+    {
+        var station = new LineStation();
+        _ = station.Styles.Choosing("missing");
+
+        var result = await Run(station);
+
+        Assert.Null(result.Result);
+        Assert.Contains("SND-PACK-001", result.Failure, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_lens_pack_that_does_not_resolve_fails_the_Step_with_SND_PACK_001()
+    {
+        var station = new LineStation();
+        _ = station.Lenses.Choosing(LensPackKind.Design, "missing");
+
+        var result = await Run(station);
+
+        Assert.Null(result.Result);
+        Assert.Contains("SND-PACK-001", result.Failure, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_packs_are_resolved_for_the_instances_repo()
+    {
+        var station = new LineStation();
+
+        _ = await Run(station);
+
+        Assert.Equal("web", Assert.Single(station.Styles.Asked)!.Value.Value);
+    }
 }

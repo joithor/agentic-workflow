@@ -18,7 +18,7 @@ namespace Aw.Sindri.Features.CodeIndexJobs;
 /// <param name="jobs">The 'jobs' view.</param>
 /// <param name="pauses">The paused services.</param>
 /// <param name="clock">The time.</param>
-internal sealed class CodeIndexOutlooks(CodeIndexScopes scopes, ICodeIndex index, IRepoHeads heads, IJobViews jobs, IServicePauses pauses, TimeProvider clock) : IIndexOutlooks
+internal sealed class CodeIndexOutlooks(CodeIndexJobScopes scopes, ICodeIndex index, IRepoHeads heads, IJobViews jobs, IServicePauses pauses, TimeProvider clock) : IIndexOutlooks
 {
     // The backoff caps at the fifth failure in a row and "broken" needs three, so the newest few jobs decide.
     private const int RecentJobs = 8;

@@ -14,6 +14,8 @@ export const ExpectedStateSchema = z.discriminatedUnion("kind", [
   // a leftover element right after a drag drop fails the step.
   z.object({ kind: z.literal("testid-absent"), testId: z.string().min(1) }),
   z.object({ kind: z.literal("url-path"), path: z.string().min(1) }),
+  // One query parameter's value, e.g. a URL-backed filter (`?timeFilter=Night`); the path is not checked.
+  z.object({ kind: z.literal("url-search"), param: z.string().min(1), value: z.string() }),
   z.object({ kind: z.literal("input-value"), testId: z.string().min(1), value: z.string() }),
 ]);
 export type ExpectedState = z.infer<typeof ExpectedStateSchema>;
@@ -44,9 +46,24 @@ export const ScriptStepSchema = z
       holdAlt: z.boolean().optional(),
       expectedState: ExpectedStateSchema,
     }),
+    // A Playwright key (`ArrowRight`, `Shift+Tab`) pressed on `target`, which is
+    // focused first; with no target the key goes to whatever already has focus.
+    z.object({
+      action: z.literal("press"),
+      key: z.string().min(1),
+      target: z.string().min(1).optional(),
+      index: z.number().int().nonnegative().optional(),
+      expectedState: ExpectedStateSchema,
+    }),
   ])
   .superRefine((step, ctx) => {
     if (step.action === "drag") return;
+    if (step.action === "press") {
+      const parsed = step.target === undefined ? null : parseStepTarget(step.target);
+      if (parsed !== null && "error" in parsed) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["target"], message: parsed.error });
+      if (step.index !== undefined && step.target === undefined) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["index"], message: "index needs a target" });
+      return;
+    }
     if (step.index !== undefined && step.action !== "click" && step.action !== "fill" && step.action !== "scroll") {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["index"], message: "index is only allowed for click, fill and scroll steps" });
     }
@@ -60,12 +77,15 @@ export const ScriptStepSchema = z
   });
 export type ScriptStep = z.infer<typeof ScriptStepSchema>;
 export type DragStep = Extract<ScriptStep, { action: "drag" }>;
-/** Every step but a drag: one target, an optional `value` and `index`. */
-export type TargetStep = Exclude<ScriptStep, { action: "drag" }>;
+export type PressStep = Extract<ScriptStep, { action: "press" }>;
+/** Every step but a drag or a press: one target, an optional `value` and `index`. */
+export type TargetStep = Exclude<ScriptStep, DragStep | PressStep>;
 
-/** The step's label in summaries and errors: `click save`, `drag shift-1 → day-2`. */
+/** The step's label in summaries and errors: `click save`, `drag shift-1 → day-2`, `press ArrowRight on tab-day`. */
 export function describeStep(step: ScriptStep): string {
-  return step.action === "drag" ? `drag ${step.target} → ${step.to}` : `${step.action} ${step.target}`;
+  if (step.action === "drag") return `drag ${step.target} → ${step.to}`;
+  if (step.action === "press") return step.target === undefined ? `press ${step.key}` : `press ${step.key} on ${step.target}`;
+  return `${step.action} ${step.target}`;
 }
 
 // Provenance for the cost baseline: the planner's one model invocation,
@@ -109,6 +129,7 @@ export function describeExpectedState(e: ExpectedState): string {
     case "testid-visible": return `element ${e.testId} visible`;
     case "testid-absent": return `element ${e.testId} absent`;
     case "url-path": return `url path ${e.path}`;
+    case "url-search": return `url ?${e.param}=${e.value}`;
     case "input-value": return `input ${e.testId} has value "${e.value}"`;
   }
 }
