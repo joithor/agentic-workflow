@@ -210,7 +210,7 @@ internal sealed class PrReplyEffect(IPullRequests pulls, IFactContents facts, IP
             ["outcome"] = row.Outcome,
             ["commit"] = row.Commit,
         };
-        return await record.Append(new MergeRow(context.Instance, row.Identity, "comment", HeadSha: null, fields), cancellationToken).ConfigureAwait(false);
+        return await record.Append(new MergeRow(context.Instance, row.Identity, "comment", headSha: null, fields), cancellationToken).ConfigureAwait(false);
     }
 
     private ValueTask<Result<bool>> Record(MarkTarget target, string outcome, MarkDetail detail, CancellationToken cancellationToken) =>

@@ -126,7 +126,7 @@ internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchCh
             ["cause"] = pushed.Request.Cause,
             ["ciFixes"] = pushed.CiFixes,
         };
-        if (outcome is "pushed" or "pushedSource")
+        if (string.Equals(outcome, "pushed", StringComparison.Ordinal) || string.Equals(outcome, "pushedSource", StringComparison.Ordinal))
         {
             var row = new MergeRow(pushed.Request.Instance, pushed.Request.Identity, "push", pushed.Sha, new JsonObject
             {

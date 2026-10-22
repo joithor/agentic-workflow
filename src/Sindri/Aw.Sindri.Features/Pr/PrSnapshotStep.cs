@@ -83,7 +83,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
             return BlockStepResult.Failed($"step.pr.snapshot can't append to the merge record: {recorded.Error.Message}");
         }
 
-        return outcome is "merged" or "mergedDocsOpen"
+        return string.Equals(outcome, "merged", StringComparison.Ordinal) || string.Equals(outcome, "mergedDocsOpen", StringComparison.Ordinal)
             ? StepFacts.Done(outcome, ("fact:prState", state), ("fact:mergedSha", JsonValue.Create(StepFacts.Field(StepFacts.Read(context, "fact:merge"), "mergedSha") ?? pull.HeadSha)))
             : StepFacts.Done(outcome, ("fact:prState", state));
     }
@@ -178,11 +178,11 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
             return pull.State == PullState.Merged ? (docs?.View.State == PullState.Open ? "mergedDocsOpen" : "merged") : "closed";
         }
 
-        if (pull.Mergeable == false)
-        {
-            return "conflict";
-        }
+        return pull.Mergeable == false ? "conflict" : OpenOutcome(pull, unhandled, docs);
+    }
 
+    private static string OpenOutcome(PullView pull, int unhandled, DocsRead? docs)
+    {
         var onHead = string.Equals(pull.Checks.Sha, pull.HeadSha, StringComparison.Ordinal);
         if (onHead && pull.Checks.State == PullChecksState.Failing)
         {
@@ -195,14 +195,15 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
         }
 
         var gating = docs is { Skipped: false, View.State: PullState.Open } ? docs.View : null;
-        if (gating is not null && string.Equals(gating.Checks.Sha, gating.HeadSha, StringComparison.Ordinal) && gating.Checks.State == PullChecksState.Failing)
-        {
-            return "docsRed";
-        }
-
-        // Checks on an older commit (right after a push) or still running are not an answer yet; no check at all on the head is a repository without required checks.
-        return !onHead || pull.Checks.State == PullChecksState.Pending || DocsPending(gating) ? "pending" : "green";
+        return DocsRed(gating) ? "docsRed" : Pending(pull, onHead, gating) ? "pending" : "green";
     }
+
+    private static bool DocsRed(PullView? gating) =>
+        gating is not null && string.Equals(gating.Checks.Sha, gating.HeadSha, StringComparison.Ordinal) && gating.Checks.State == PullChecksState.Failing;
+
+    // Checks on an older commit (right after a push) or still running are not an answer yet; no check at all on the head is a repository without required checks.
+    private static bool Pending(PullView pull, bool onHead, PullView? gating) =>
+        !onHead || pull.Checks.State == PullChecksState.Pending || DocsPending(gating);
 
     private static bool DocsPending(PullView? docs) =>
         docs is not null && (docs.Checks.State == PullChecksState.Pending || !string.Equals(docs.Checks.Sha, docs.HeadSha, StringComparison.Ordinal));
