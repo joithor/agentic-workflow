@@ -34,7 +34,7 @@ public sealed class JobsFramesTests : FrameHost
 
         Assert.Equal(shell.Jobs.Head, Named<TextBlock>(window, "JobsHead").Text);
         Assert.False(shell.Jobs.IsCompact);
-        Frame(window, $"table-{width}", Prefix);
+        Frame(window, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"table-{width}"), Prefix);
     });
 
     [Theory]
@@ -46,7 +46,7 @@ public sealed class JobsFramesTests : FrameHost
 
         Assert.True(Visible(window, "JobsNoneRunningName"));
         Assert.True(shell.Jobs.IsNoneRunning);
-        Frame(window, $"ended-{width}", Prefix);
+        Frame(window, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"ended-{width}"), Prefix);
     });
 
     [Theory]
@@ -60,7 +60,7 @@ public sealed class JobsFramesTests : FrameHost
         await Until(window, () => shell.JobSheet.Phase == FramePhase.Shown && shell.IsJobSheet);
 
         Assert.True(Visible(window, "JobIdCopy"));
-        Frame(window, $"sheet-{width}", Prefix);
+        Frame(window, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"sheet-{width}"), Prefix);
     });
 
     [Fact]
