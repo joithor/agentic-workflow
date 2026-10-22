@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json.Nodes;
 using Aw.Kernel;
+using Aw.Sindri.Core.Checks;
 using Aw.Sindri.Core.Forge;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -16,9 +17,10 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 /// </summary>
 /// <param name="pulls">The forge port.</param>
 /// <param name="diff">Reads the workspace's head and changed paths.</param>
+/// <param name="changes">Lists the commits a push carries.</param>
 /// <param name="contents">Reads the facts it takes.</param>
 /// <param name="facts">Stores the fact it replies with.</param>
-internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IFactContents contents, IFactStore facts) : IEffectKind, IDescribedBlock
+internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchChanges changes, IFactContents contents, IFactStore facts) : IEffectKind, IDescribedBlock
 {
     private static readonly FactKey _push = FactKey.From("fact:push");
 

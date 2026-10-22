@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Checks;
 using Aw.Sindri.Core.Forge;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Blocks.Effect;
@@ -11,6 +12,8 @@ namespace Aw.Sindri.Tests.Workflow.Effects;
 public sealed class PrPushEffectTests
 {
     private readonly PrEffectRig _rig = new();
+
+    public PrPushEffectTests() => Range("aaa111+", "aaa111+");
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -80,24 +83,70 @@ public sealed class PrPushEffectTests
     public async Task A_forge_error_is_the_dispatch_error()
     {
         _rig.Diff.Advance(PrEffectRig.Workspace);
-        var effect = new PrPushEffect(new Aw.Sindri.Testing.Forge.FakePullRequests([]), _rig.Diff, _rig.Facts, _rig.Facts);
+        var effect = new PrPushEffect(new Aw.Sindri.Testing.Forge.FakePullRequests([]), _rig.Diff, _rig.Changes, _rig.Facts, _rig.Facts);
 
         var result = await effect.Dispatch(Context(), Token);
 
         Assert.True(result.IsError);
     }
 
-    private PrPushEffect Effect() => new(_rig.Forge, _rig.Diff, _rig.Facts, _rig.Facts);
+    private PrPushEffect Effect() => new(_rig.Forge, _rig.Diff, _rig.Changes, _rig.Facts, _rig.Facts);
 
-    private Aw.Sindri.Core.Workflow.Blocks.EffectContext Context() => _rig.Context("effect.pr.push", new Dictionary<string, object>(StringComparer.Ordinal)
+    [Fact]
+    public async Task Every_commit_between_the_lease_and_the_head_is_listed_oldest_first()
+    {
+        _rig.Diff.Advance(PrEffectRig.Workspace);
+        Range("aaa111+", "fix1", "fix2", "aaa111+");
+
+        var pushed = await Pushed(await Dispatch());
+
+        Assert.Equal(["fix1", "fix2", "aaa111+"], pushed.GetProperty("commits").EnumerateArray().Select(static c => c.GetString()));
+    }
+
+    [Fact]
+    public async Task A_ci_fix_push_counts_one_more_ciFixes_than_the_fact_push_it_replaces()
+    {
+        _rig.Diff.Advance(PrEffectRig.Workspace);
+
+        var first = await Pushed(await Dispatch());
+        var second = await Pushed(await Dispatch(held: new() { ["fact:push"] = """{ "sha": "old", "commits": [], "comments": [], "source": false, "cause": "ci", "ciFixes": 1 }""" }));
+
+        Assert.Equal((1, 2), (first.GetProperty("ciFixes").GetInt32(), second.GetProperty("ciFixes").GetInt32()));
+    }
+
+    [Fact]
+    public async Task A_push_for_a_comment_carries_ciFixes_unchanged()
+    {
+        _rig.Diff.Advance(PrEffectRig.Workspace);
+
+        var pushed = await Pushed(await Dispatch(cause: "comment", held: new() { ["fact:push"] = """{ "ciFixes": 2 }""" }));
+
+        Assert.Equal(2, pushed.GetProperty("ciFixes").GetInt32());
+    }
+
+    [Fact]
+    public async Task A_push_that_does_not_land_carries_ciFixes_unchanged()
+    {
+        _rig.Diff.Advance(PrEffectRig.Workspace);
+        _rig.Pull.HeadSha = "someone-else";
+
+        var pushed = await Pushed(await Dispatch(held: new() { ["fact:push"] = """{ "ciFixes": 2 }""" }));
+
+        Assert.Equal(2, pushed.GetProperty("ciFixes").GetInt32());
+    }
+
+    private void Range(string head, params string[] commits) =>
+        _rig.Changes.Add(PrEffectRig.Workspace, PrEffectRig.Seen, head, new BranchChanges([], [], [.. commits.Select(static c => new ChangedCommit(c, "subject", IsMerge: false))]));
+
+    private Aw.Sindri.Core.Workflow.Blocks.EffectContext Context(string cause = "ci", Dictionary<string, string>? held = null) => _rig.Context("effect.pr.push", new Dictionary<string, object>(StringComparer.Ordinal)
     {
         ["pr"] = PrEffectRig.Fact($"\"{_rig.Link}\""),
         ["lease"] = PrEffectRig.Fact(PrEffectRig.PrState(PrEffectRig.Seen, PrEffectRig.Seen)),
         ["workspace"] = PrEffectRig.Fact($"\"{PrEffectRig.Workspace}\""),
-        ["cause"] = "ci",
-    });
+        ["cause"] = cause,
+    }, held);
 
-    private async Task<Aw.Sindri.Core.Workflow.Blocks.EffectDone> Dispatch() => (await Effect().Dispatch(Context(), Token)).Value;
+    private async Task<Aw.Sindri.Core.Workflow.Blocks.EffectDone> Dispatch(string cause = "ci", Dictionary<string, string>? held = null) => (await Effect().Dispatch(Context(cause, held), Token)).Value;
 
     private async Task<JsonElement> Pushed(Aw.Sindri.Core.Workflow.Blocks.EffectDone done)
     {
