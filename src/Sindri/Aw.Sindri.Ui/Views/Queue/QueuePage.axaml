@@ -68,8 +68,14 @@
           <Grid Classes="skrow" ColumnDefinitions="*,60"><Border Classes="skeleton" Width="420" /><Border Grid.Column="1" Classes="skeleton" Width="40" /></Grid>
         </StackPanel>
 
-        <TextBlock x:Name="QueueEmpty" Classes="caption quiet" Text="{Binding Queue.EmptyText}" IsVisible="{Binding Queue.IsEmpty}"
-                   AutomationProperties.Name="{Binding Queue.EmptyText}" />
+        <StackPanel x:Name="QueueNothing" IsVisible="{Binding Queue.ShowsNothing}" Spacing="4" Margin="16,12">
+          <TextBlock Classes="body-strong" Text="{Binding Queue.NothingTitle}" AutomationProperties.Name="{Binding Queue.NothingTitle}" />
+          <TextBlock x:Name="QueueEmpty" Classes="caption quiet" Text="{Binding Queue.EmptyText}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Queue.EmptyText}" />
+        </StackPanel>
+        <StackPanel x:Name="QueueNoMatch" IsVisible="{Binding Queue.ShowsNoMatch}" Spacing="8" Margin="16,12">
+          <TextBlock Classes="body-strong" Text="{Binding Queue.NoMatchTitle}" AutomationProperties.Name="{Binding Queue.NoMatchTitle}" />
+          <Button x:Name="QueueClearFilter" Content="{Binding Queue.ClearFilterText}" Click="OnClearFilter" HorizontalAlignment="Left" AutomationProperties.Name="{Binding Queue.ClearFilterText}" />
+        </StackPanel>
 
         <ItemsControl x:Name="QueueGroups" ItemsSource="{Binding Queue.Groups}">
           <ItemsControl.ItemTemplate>
@@ -96,5 +102,6 @@
         </ItemsControl>
       </StackPanel>
     </Border>
+    <TextBlock x:Name="QueueFooter" Classes="caption subtle" Text="{Binding Queue.FooterText}" AutomationProperties.Name="{Binding Queue.FooterText}" />
   </StackPanel>
 </UserControl>

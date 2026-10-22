@@ -168,6 +168,7 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
         IsEmpty = (Showing == QueueFilter.All && Total == 0) || unmatched;
         EmptyText = unmatched ? Labels.NoMatches : IsEmpty ? view.Empty ?? string.Empty : string.Empty;
         Panels(all);
+        States(view);
         Mark();
     }
 
@@ -204,7 +205,7 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
             shown = _groups[group.Group] = new QueueGroupViewModel(group.Group);
         }
 
-        shown.Update([.. all.Where(r => Matches(r.Id, r.Title, r.Repo))], group.Empty, picked, filtered: picked && Showing != QueueFilter.All);
+        shown.Update([.. all.Where(r => Matches(r.Id, r.Title, r.Repo))], EmptyLine(group), picked, filtered: picked && Showing != QueueFilter.All);
         return shown;
     }
 

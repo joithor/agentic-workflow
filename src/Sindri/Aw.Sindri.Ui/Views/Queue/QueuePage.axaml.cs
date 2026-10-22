@@ -44,6 +44,8 @@ internal sealed partial class QueuePage : UserControl
         }
     }
 
+    private void OnClearFilter(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.Queue.ClearFilter();
+
     private void OnCreate(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.Create.Open();
 
     private void OnShowHeld(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.Queue.ShowHeld(ViewModels.Queue.QueueScope.Page);
