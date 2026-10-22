@@ -86,10 +86,10 @@ internal static class EngineInstanceScan
         activity is not null
             ? new EngineWaiting(EngineWaitKinds.Activity, activity.ActivityType.Name, (activity.LastStartedTime ?? activity.ScheduledTime)?.ToDateTimeOffset() ?? since)
             : description.PendingChildren.Count > 0
-                ? new EngineWaiting(EngineWaitKinds.Child, name: null, since)
+                ? new EngineWaiting(EngineWaitKinds.Child, Name: null, since)
                 : timers.Count > 0
                     ? new EngineWaiting(EngineWaitKinds.Timer, timers[0].Name, since)
-                    : new EngineWaiting(EngineWaitKinds.Signal, name: null, since);
+                    : new EngineWaiting(EngineWaitKinds.Signal, Name: null, since);
 
     /// <summary>The timers started and neither fired nor cancelled in <paramref name="newestFirst"/>.</summary>
     /// <param name="newestFirst">The newest events, newest first.</param>
