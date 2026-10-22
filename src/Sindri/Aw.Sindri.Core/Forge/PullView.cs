@@ -8,5 +8,4 @@ namespace Aw.Sindri.Core.Forge;
 /// <param name="ReviewDecision">'APPROVED', 'CHANGES_REQUESTED' or null.</param>
 /// <param name="UnresolvedThreads">How many review threads are open.</param>
 /// <param name="Checks">The checks.</param>
-/// <param name="MergedSha">The merge commit, once merged.</param>
-public sealed record PullView(string Link, PullState State, string HeadSha, bool? Mergeable, string? ReviewDecision, int UnresolvedThreads, PullChecks Checks, string? MergedSha);
+public sealed record PullView(string Link, PullState State, string HeadSha, bool? Mergeable, string? ReviewDecision, int UnresolvedThreads, PullChecks Checks);
