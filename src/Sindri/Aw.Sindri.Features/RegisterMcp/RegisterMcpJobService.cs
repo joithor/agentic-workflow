@@ -5,6 +5,7 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Mcp;
+using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Setup;
 
 namespace Aw.Sindri.Features.RegisterMcp;
@@ -14,7 +15,7 @@ namespace Aw.Sindri.Features.RegisterMcp;
 /// project-trust row (Codex asks the owner once). It names the repo, so it never reads the current directory. It records 'mcp.registered' with each provider's outcome; a provider that failed fails the job, with
 /// that provider's sentence and fix, which the 'setup:mcp' needs-you row shows.
 /// </summary>
-internal sealed class RegisterMcpJobService(ResolvedMcpRepos resolved, AutomaticMcpRegistration registration, IJobContextAccessor jobs, McpEvents recorder)
+internal sealed class RegisterMcpJobService(ResolvedMcpRepos resolved, AutomaticMcpRegistration registration, IApprovedProfile approvals, IJobContextAccessor jobs, McpEvents recorder)
     : IService<RegisterMcpJobRequest, RegisterMcpResponse>
 {
     public async ValueTask<Result<RegisterMcpResponse>> Handle(RegisterMcpJobRequest request, CancellationToken cancellationToken)
@@ -23,6 +24,11 @@ internal sealed class RegisterMcpJobService(ResolvedMcpRepos resolved, Automatic
         if (resolved.Take(request) is not { } repo)
         {
             return SindriErrors.ApiInternal.With("the RegisterMcp job has no resolved repo");
+        }
+
+        if (await approvals.Latest(cancellationToken).ConfigureAwait(false) is { IsSuccess: true, Value: { } approved })
+        {
+            _ = await recorder.ConsentOnHumanPress(approved.Hash, cancellationToken).ConfigureAwait(false);   // pressing "Turn on for your repos" is the consent
         }
 
         jobs.Current?.Progress.Report("registering");

@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Mcp;
 using Aw.Sindri.Core.Profile;
@@ -20,9 +21,9 @@ internal static class RegisterMcpServiceCollectionExtensions
         var resolved = new ResolvedMcpRepos();
         return services
             .AddSingleton(resolved)
-            .AddScoped<McpEvents>()
+            .AddScoped<McpEvents>().AddScoped<IMcpJobStarter, McpJobStarter>().AddScoped<IMcpNeed, McpNeed>()
             .AddScoped(static sp => new AutomaticMcpRegistration(new RegisterMcpService(sp.GetRequiredService<IApprovedProfile>(), sp.GetRequiredService<IRepoLocator>(), sp.GetRequiredService<IEndpointFile>(), sp.GetRequiredService<IClaudeCli>(), sp.GetRequiredService<IProviderHost>()) { WriteCodexTrust = false }))
             .AddScoped<IJobAdmission<RegisterMcpJobRequest>, RegisterMcpAdmission>()
-            .AddJob<RegisterMcpJobRequest, RegisterMcpResponse, RegisterMcpJobService>(resolved.KeyOf, static r => "registered in " + r.Repo.Value);
+            .AddJob<RegisterMcpJobRequest, RegisterMcpResponse, RegisterMcpJobService>(resolved.KeyOf, static r => "registered in " + r.Repo.Value, repo: static r => r.Repo is { } named && RepoName.TryFrom(named, out var name) ? name : null);
     }
 }

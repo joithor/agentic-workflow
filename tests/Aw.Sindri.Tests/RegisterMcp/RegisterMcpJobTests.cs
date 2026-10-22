@@ -72,7 +72,7 @@ public sealed class RegisterMcpJobTests : IDisposable
     }
 
     private RegisterMcpJobService Service() =>
-        new(_resolved, new AutomaticMcpRegistration(new RegisterMcpService(_slice.Profiles, new FakeRepoLocator(), _endpoint, _claude, _host) { WriteCodexTrust = false }), new FakeJobContextAccessor(),
+        new(_resolved, new AutomaticMcpRegistration(new RegisterMcpService(_slice.Profiles, new FakeRepoLocator(), _endpoint, _claude, _host) { WriteCodexTrust = false }), _slice.Profiles, new FakeJobContextAccessor(),
             new McpEvents(_slice.Held, _slice.Store, _slice.Events, _slice.Callers));
 
     private RegisterMcpJobRequest Admit(string repo)

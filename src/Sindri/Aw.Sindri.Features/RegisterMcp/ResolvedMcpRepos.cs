@@ -1,7 +1,6 @@
 using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
-using System.Text;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Setup;
 
 namespace Aw.Sindri.Features.RegisterMcp;
 
@@ -18,9 +17,7 @@ internal sealed class ResolvedMcpRepos
     /// <param name="request">The request.</param>
     /// <returns>The key.</returns>
     public JobKey KeyOf(RegisterMcpJobRequest request) =>
-        _held.TryGetValue(request, out var box)
-            ? JobKey.From("mcp-" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(box.Repo.Value)))[..16])
-            : throw new InvalidOperationException("the RegisterMcp start was not admitted");
+        _held.TryGetValue(request, out var box) ? McpJobKeys.For(box.Repo) : throw new InvalidOperationException("the RegisterMcp start was not admitted");
 
     public RepoName? Take(RegisterMcpJobRequest request)
     {

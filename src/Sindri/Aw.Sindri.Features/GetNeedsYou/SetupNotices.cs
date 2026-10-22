@@ -2,6 +2,7 @@ using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.ApproveAll;
@@ -17,7 +18,8 @@ namespace Aw.Sindri.Features.GetNeedsYou;
 /// <param name="plans">The approve-all plan, which the 'setup:recipes' and 'recipe:' rows are read from; a plan that can't be read drops those rows only.</param>
 /// <param name="scrubber">Scrubs the text.</param>
 /// <param name="clock">Stamps the recipe rows.</param>
-internal sealed class SetupNotices(IJobViews jobs, IProfileSource live, ApproveAllPlanReader plans, ITextScrubber scrubber, TimeProvider clock)
+/// <param name="mcp">Says whether the owner is to be asked once to turn the automatic registration on.</param>
+internal sealed class SetupNotices(IJobViews jobs, IProfileSource live, ApproveAllPlanReader plans, ITextScrubber scrubber, TimeProvider clock, McpAutoGate mcp)
 {
     private static readonly JobKind _addRepo = JobKind.From("AddRepo");
     private static readonly JobKind _registerMcp = JobKind.From("RegisterMcp");
@@ -38,7 +40,8 @@ internal sealed class SetupNotices(IJobViews jobs, IProfileSource live, ApproveA
     {
         if (await LastFailed(_registerMcp, cancellationToken).ConfigureAwait(false) is not { } failed)
         {
-            return null;
+            var turnOn = await mcp.TurnOnNeeded(cancellationToken).ConfigureAwait(false) ? NeedsYouRows.ForTurnOnMcp(clock.GetUtcNow(), scrubber) : null;
+            return turnOn is { IsSuccess: true } ? turnOn.Value : null;
         }
 
         var row = NeedsYouRows.ForSetupMcp(failed.Summary ?? "Sindri could not register itself with your agents. Press Connect again.", failed.EndedAt ?? failed.StartedAt, scrubber);
