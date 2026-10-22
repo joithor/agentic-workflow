@@ -10,7 +10,7 @@ internal sealed record ClaudePermissions(IReadOnlyList<string> Allow)
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? DefaultMode { get; init; }
 
-    /// <summary>Tool rules refused outright (a denied path, a read-only path's writes), or absent.</summary>
+    /// <summary>Tool rules that are always refused (the Step's denied paths, a read-only path's edits), or absent.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<string>? Deny { get; init; }
 

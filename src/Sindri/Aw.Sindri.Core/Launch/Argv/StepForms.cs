@@ -63,7 +63,9 @@ public static class StepForms
             PolicyForm.ClaudeSettingsFile => settingsPath is { } path && Placeholders.IsAbsolute(path)
                 ? Results.Success<IReadOnlyList<string>>(["--settings", path])
                 : SindriErrors.RequestInvalid.With("a claude-settings-file policy needs the settings file's absolute path"),
-            PolicyForm.CodexOverrides => Results.Success(CodexOverrides(policy)),
+            PolicyForm.CodexOverrides => policy.DeniedPaths is { Count: > 0 }
+                ? Unsupported(entry, "policy", "codex-overrides can't deny reads of paths")
+                : Results.Success(CodexOverrides(policy)),
             PolicyForm.CursorConfig => Unsupported(entry, "policy", "cursor-config is reserved until it is verified"),
             PolicyForm.None => Unsupported(entry, "policy", "its policy form is none"),
             _ => Unsupported(entry, "policy", "its policy form is unknown"),

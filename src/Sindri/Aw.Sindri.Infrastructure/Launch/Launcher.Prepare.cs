@@ -40,6 +40,11 @@ internal sealed partial class Launcher
             workDir = request.Worktree ?? request.RepoPath;
         }
 
+        if (!request.Attended && request.Step is not null && await PrePushGuard.Install(workDir, cancellationToken).ConfigureAwait(false) is { } foreign)
+        {
+            return foreign;
+        }
+
         try
         {
             var composed = await Compose(request, entry, workDir, cancellationToken).ConfigureAwait(false);
@@ -53,7 +58,7 @@ internal sealed partial class Launcher
             var hashFile = LaunchSecrets.PathFor(parts.Options.SecretsDirectory, request.Launch);
             var prior = File.Exists(hashFile) ? await File.ReadAllBytesAsync(hashFile, cancellationToken).ConfigureAwait(false) : null;   // a live session of this launch may own it
             LaunchSecrets.Write(parts.Options.SecretsDirectory, request.Launch, secret);
-            return new Prepared(workDir, composed.Value.Argv, Environment(request), composed.Value.Session?.Value) { PriorHash = prior };
+            return new Prepared(workDir, composed.Value.Argv, Environment(request, workDir), composed.Value.Session?.Value) { PriorHash = prior };
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
@@ -63,12 +68,7 @@ internal sealed partial class Launcher
 
     private async ValueTask<Result<(IReadOnlyList<string> Argv, SessionId? Session)>> Compose(LaunchRequest request, AgentEntry entry, string workDir, CancellationToken cancellationToken)
     {
-        var step = request.Attended ? null : request.Step;
-        if (step?.Policy is { } requested && request.Evaluator is not null)
-        {
-            step = step with { Policy = requested with { WritablePath = workDir } };   // the scratch checkout is the one path the evaluator writes
-        }
-
+        var step = Denying(request.Attended ? null : request.Step, request, entry, workDir);
         var policyPath = step?.Policy is { } policy && entry.PolicyForm == PolicyForm.ClaudeSettingsFile
             ? StepPolicyFile.Write(parts.Options.PolicyDirectory, request.Launch, policy)
             : null;
@@ -83,6 +83,44 @@ internal sealed partial class Launcher
 
         IReadOnlyList<string> argv = [.. built.Value, .. mcpArguments];
         return (argv, session);
+    }
+
+    /// <summary>The Step with its denied paths added: the other worktrees and the holdout store. Only a form that can express a denied read gets them, since a codex entry would refuse the whole Step with SND-LAUNCH-013.</summary>
+    private StepArgs? Denying(StepArgs? step, LaunchRequest request, AgentEntry entry, string workDir)
+    {
+        if (step?.Policy is not { } stated)
+        {
+            return step;
+        }
+
+        if (request.Evaluator is not null)
+        {
+            // The evaluator's scratch checkout is the one path it writes, and its set is the one holdout path it reads: the store is not denied wholesale (no
+            // Sindri home passed), and its policy already names the phase worktree and the set. Another form is refused by the argv builder (SND-LAUNCH-013).
+            return step with { Policy = stated with { WritablePath = workDir } };
+        }
+
+        if (entry.PolicyForm != PolicyForm.ClaudeSettingsFile)
+        {
+            return step;
+        }
+
+        var siblings = request.Worktree is null ? [] : SiblingWorktrees(workDir);
+        return step with { Policy = stated with { DeniedPaths = [.. stated.DeniedPaths ?? [], .. StepDenials.For(workDir, siblings, parts.Options.SindriHome)] } };
+    }
+
+    /// <summary>The Sindri worktrees beside <paramref name="workDir"/> ('sindri-*' under the same parent), which a Step must not read.</summary>
+    private static string[] SiblingWorktrees(string workDir)
+    {
+        var parent = Path.GetDirectoryName(workDir.TrimEnd('/', '\\'));
+        try
+        {
+            return parent is not null && Directory.Exists(parent) ? [.. Directory.EnumerateDirectories(parent, "sindri-*")] : [];
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return [];   // nothing readable beside it to name
+        }
     }
 
     /// <summary>What an unattended launch adds to the seed: which Step it is, then the Step's brief when it has one (engine P8 F13).</summary>
@@ -105,7 +143,7 @@ internal sealed partial class Launcher
         OwnerOnly.WriteAtomically(Path.Combine(parts.Options.LaunchesDirectory, LaunchFiles.CaptureName(launch)), AwJson.Serialize(rule, _captureJson));
     }
 
-    private Dictionary<string, string> Environment(LaunchRequest request)
+    private Dictionary<string, string> Environment(LaunchRequest request, string workDir)
     {
         var env = new Dictionary<string, string>(StepEnvironment.For(request), StringComparer.Ordinal)
         {
@@ -119,11 +157,29 @@ internal sealed partial class Launcher
             env["AW_SINDRI_HOME"] = home;
         }
 
-        return env;
+        if (request.Attended || request.Step is null)
+        {
+            return env;
+        }
+
+        var ghConfig = GhConfigPath(request.Launch);
+        _ = Directory.CreateDirectory(ghConfig);   // empty: the Step's gh has no login to find
+        return new Dictionary<string, string>(LaunchEnvironment.Scrub(env, workDir, ghConfig), StringComparer.Ordinal);
     }
+
+    private string GhConfigPath(LaunchId launch) => Path.Combine(parts.Options.LaunchDirectory, launch.Value + ".gh");
 
     private async ValueTask Cleanup(LaunchId launch)
     {
+        try
+        {
+            Directory.Delete(GhConfigPath(launch), recursive: true);   // a missing one is fine
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // an empty directory left behind holds nothing
+        }
+
         LaunchSecrets.Delete(parts.Options.SecretsDirectory, launch);
         LaunchFileStore.DeleteFlat(parts.Options, launch);
         LaunchFileStore.DeleteIn(parts.Options.PolicyDirectory, StepPolicyFile.PathFor(parts.Options.PolicyDirectory, launch));

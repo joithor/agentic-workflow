@@ -26,7 +26,7 @@ public sealed class EvaluatorLaunchTests : IDisposable
 
     public void Dispose() => Directory.Delete(_home, recursive: true);
 
-    private LauncherOptions Options => new(_home);
+    private LauncherOptions Options => new(_home) { SindriHome = "/home/s" };
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -96,10 +96,10 @@ public sealed class EvaluatorLaunchTests : IDisposable
         var scratch = Path.Combine(Options.ScratchDirectory, "eval-" + request.Launch.Value);
         Assert.Contains("Bash(ui-evidence:*)", text, StringComparison.Ordinal);
         Assert.Contains($"\"Edit(/{_evaluator.HoldoutPath}/**)\"", text, StringComparison.Ordinal);
-        Assert.Contains($"\"Write(/{_evaluator.HoldoutPath}/**)\"", text, StringComparison.Ordinal);
         Assert.DoesNotContain($"Read(/{_evaluator.HoldoutPath}", text, StringComparison.Ordinal);   // readable
         Assert.Contains($"\"Read(/{_evaluator.PhaseWorktree}/**)\"", text, StringComparison.Ordinal);
-        Assert.Contains($"\"Write(/{_evaluator.PhaseWorktree}/**)\"", text, StringComparison.Ordinal);
+        Assert.Contains($"\"Edit(/{_evaluator.PhaseWorktree}/**)\"", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("Read(//home/s/holdout/**)", text, StringComparison.Ordinal);   // the store isn't denied wholesale: the evaluator reads its own set
         Assert.Contains($"\"Write(/{scratch}/**)\"", text, StringComparison.Ordinal);
         Assert.Contains($"\"{_evaluator.HoldoutPath}\"", text, StringComparison.Ordinal);   // additionalDirectories
     }
