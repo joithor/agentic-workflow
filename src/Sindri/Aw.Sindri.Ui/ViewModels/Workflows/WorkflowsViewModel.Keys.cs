@@ -89,17 +89,27 @@ internal sealed partial class WorkflowsViewModel
             case "N":
                 RequestStart();
                 return true;
+            case "B":
+                Say(Labels.HandBackArrives);   // never a dead key: the note says where hand-back is
+                return true;
+            default:
+                return PressOnPage(key) || (SelectedRow is { } row && PressOn(row, key));
+        }
+    }
+
+    // V switches the view and / goes to the search box: keys of the page, whatever is selected.
+    private bool PressOnPage(string key)
+    {
+        switch (key)
+        {
             case "V":
                 ToggleView();
                 return true;
             case "/":
                 SearchFocusRequested?.Invoke(this, EventArgs.Empty);
                 return true;
-            case "B":
-                Say(Labels.HandBackArrives);   // never a dead key: the note says where hand-back is
-                return true;
             default:
-                return SelectedRow is { } row && PressOn(row, key);
+                return false;
         }
     }
 

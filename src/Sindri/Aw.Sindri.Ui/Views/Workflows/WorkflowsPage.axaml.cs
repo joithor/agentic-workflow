@@ -78,7 +78,7 @@ internal sealed partial class WorkflowsPage : UserControl
             return;   // not drawn, or focus is already in the row (a click or its control), or a re-read must leave a usable focus alone, and a focus that was elsewhere (the sheet)
         }
 
-        if (row.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => b.Name is "WorkflowRowFrame" or "WorkflowCardFrame") is { } frame)
+        if (row.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => string.Equals(b.Name, "WorkflowRowFrame", StringComparison.Ordinal) || string.Equals(b.Name, "WorkflowCardFrame", StringComparison.Ordinal)) is { } frame)
         {
             _ = frame.Focus(NavigationMethod.Tab);
             frame.BringIntoView();

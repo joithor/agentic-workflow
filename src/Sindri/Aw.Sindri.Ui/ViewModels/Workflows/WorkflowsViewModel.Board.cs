@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 
 namespace Aw.Sindri.Ui.ViewModels.Workflows;
 
@@ -137,22 +138,22 @@ internal sealed partial class WorkflowsViewModel
     // The lanes: the line workflow's open runs by state, then its finished runs in Done; the segments' counts are over the runs the view draws.
     private void RebuildBoard()
     {
-        var line = _loaded.Where(r => LineStages.LaneOf(r.Recipe, r.StateWord) is not null).ToList();
-        var finished = DoneRows.Where(r => string.Equals(r.Recipe, LineStages.Recipe, StringComparison.Ordinal)).ToList();
+        var line = _loaded.Where(r => LineStages.LaneOf(r.LineStage) is not null).ToList();
+        var finished = DoneRows.Where(r => r.LineStage is not null).ToList();
         var anyHidden = Filter != WorkflowFilter.All || _search is not null;
         foreach (var lane in Lanes)
         {
             var cards = lane.Id == LaneId.Done
                 ? finished
-                : line.Where(r => LineStages.LaneOf(r.Recipe, r.StateWord) == lane.Id).ToList();
+                : [.. line.Where(r => LineStages.LaneOf(r.LineStage) == lane.Id)];
             lane.Show([.. cards.Where(Passes)], anyHidden && cards.Count > 0);
         }
 
-        var counted = IsBoard ? [.. line, .. finished] : _loaded;
+        List<InstanceRowViewModel> counted = IsBoard ? [.. line, .. finished] : _loaded;
         var (all, needs, mine) = WorkflowFilters.Counts(counted);
-        FilterAllText = $"{Labels.WorkflowsFilterAll} {all}";
-        FilterNeedsYouText = $"{Labels.WorkflowsFilterNeedsYou} {needs}";
-        FilterMineText = $"{Labels.WorkflowsFilterMine} {mine}";
-        NoRunsMatch = anyHidden && counted.Count > 0 && counted.All(r => !Passes(r));
+        FilterAllText = $"{Labels.WorkflowsFilterAll} {all.ToString(CultureInfo.InvariantCulture)}";
+        FilterNeedsYouText = $"{Labels.WorkflowsFilterNeedsYou} {needs.ToString(CultureInfo.InvariantCulture)}";
+        FilterMineText = $"{Labels.WorkflowsFilterMine} {mine.ToString(CultureInfo.InvariantCulture)}";
+        NoRunsMatch = anyHidden && counted.Count > 0 && counted.TrueForAll(r => !Passes(r));
     }
 }

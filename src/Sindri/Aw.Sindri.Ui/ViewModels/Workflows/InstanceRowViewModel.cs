@@ -91,6 +91,9 @@ internal sealed class InstanceRowViewModel : ObservableObject
 
     private TimeSpan Age => _clock.GetUtcNow() - _row.Since;
 
+    /// <summary>The served line stage: the state id of the root line instance the run belongs to; null when its root is not a line run.</summary>
+    public string? LineStage => _row.LineStage;
+
     /// <summary>The served now sentence, unchanged.</summary>
     public string Now => _row.Now;
 

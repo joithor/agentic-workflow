@@ -19,6 +19,7 @@ internal static class WorkflowFilters
     {
         WorkflowFilter.NeedsYou => NeedsYou(row),
         WorkflowFilter.Mine => NeedsYou(row) || row.Status.Kind == RunStatusKind.TookOver,
+        WorkflowFilter.All => true,
         _ => true,
     };
 

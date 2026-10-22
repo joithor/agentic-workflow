@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
@@ -14,8 +15,25 @@ public sealed class WorkflowLanesTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    // The golden's project rows are the line's (the engine serves workflow.line), and its finished triage rows stand for finished line runs.
-    private static string AsLine(string body) => body.Replace("workflow.project", LineStages.Recipe, StringComparison.Ordinal).Replace("workflow.triage-alert", LineStages.Recipe, StringComparison.Ordinal);
+    // The golden's project rows are the line's (the engine serves workflow.line with lineStage and rootAddress on each), and its finished
+    // triage rows stand for finished line runs; the other rows stay other workflows' with no line stage.
+    private static string AsLine(string body)
+    {
+        var list = JsonNode.Parse(body)!;
+        foreach (var row in list["instances"]!.AsArray().Select(r => r!.AsObject()))
+        {
+            var recipe = row["recipe"]!["id"]!.GetValue<string>();
+            var state = row["state"]!.GetValue<string>();
+            if (recipe == "workflow.project" || (recipe == "workflow.triage-alert" && state == "done"))
+            {
+                row["recipe"]!["id"] = "workflow.line";
+                row["lineStage"] = state;
+                row["rootAddress"] = row["address"]!.GetValue<string>();
+            }
+        }
+
+        return list.ToJsonString();
+    }
 
     private static async Task<WorkflowsViewModel> Shown()
     {
@@ -32,15 +50,16 @@ public sealed class WorkflowLanesTests
     [InlineData("plan", "Plan")]
     [InlineData("phase", "Build and prove")]
     public void A_line_state_lands_in_its_lane(string state, string lane) =>
-        Assert.Equal(lane, LineStages.Name(LineStages.LaneOf(LineStages.Recipe, state)!.Value));
+        Assert.Equal(lane, LineStages.Name(LineStages.LaneOf(state)!.Value));
 
     [Theory]
-    [InlineData("workflow.line", "done")]
-    [InlineData("workflow.line", "stuck")]
-    [InlineData("workflow.build", "build")]
-    [InlineData("workflow.incident-response", "mitigate")]
-    public void A_finished_state_or_another_workflow_sits_in_no_open_lane(string recipe, string state) =>
-        Assert.Null(LineStages.LaneOf(recipe, state));
+    [InlineData("done")]
+    [InlineData("stuck")]
+    [InlineData("dropped")]
+    [InlineData("mitigate")]
+    [InlineData(null)]
+    public void A_finished_state_or_no_line_stage_sits_in_no_open_lane(string? lineStage) =>
+        Assert.Null(LineStages.LaneOf(lineStage));
 
     [Fact]
     public void The_board_has_six_lanes_in_order_even_when_nothing_is_loaded()
@@ -67,7 +86,19 @@ public sealed class WorkflowLanesTests
         var list = await Shown();
 
         var onBoard = list.Lanes.SelectMany(l => l.Cards).Select(c => c.Recipe).Distinct(StringComparer.Ordinal);
-        Assert.Equal([LineStages.Recipe], onBoard);
+        Assert.Equal(["workflow.line"], onBoard);
+    }
+
+    [Fact]
+    public async Task A_card_goes_to_the_lane_of_the_served_line_stage_not_of_its_own_state()
+    {
+        var server = new FakeSindriApi { InstancesRewrite = body => AsLine(body).Replace("\"lineStage\":\"scoping\"", "\"lineStage\":\"plan\"", StringComparison.Ordinal) };
+        var list = new WorkflowsViewModel(server, new FakeClipboard(), new FakeTimeProvider(A.Noon));
+
+        await list.Refresh(_api, Token);
+
+        Assert.Equal(["ENG · Tab manager v2"], Cards(list, "Plan"));
+        Assert.Empty(Cards(list, "Scoping"));
     }
 
     [Fact]
