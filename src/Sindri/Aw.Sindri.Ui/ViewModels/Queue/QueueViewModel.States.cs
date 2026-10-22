@@ -30,7 +30,7 @@ internal sealed partial class QueueViewModel
 
     private void States(QueueView view)
     {
-        var unmatched = FilterText.Length > 0 && !Visible().Any();
+        var unmatched = (FilterText.Length > 0 || SelectedRepo.Length > 0) && !Visible().Any();
         ShowsNoMatch = unmatched;
         ShowsNothing = IsEmpty && !unmatched;
         FooterText = view.AsOf.Cursor >= view.AsOf.LedgerHead ? Labels.QueueUpToDate(view.AsOf.LedgerHead) : Labels.QueueBehind(view.AsOf.Cursor, view.AsOf.LedgerHead);

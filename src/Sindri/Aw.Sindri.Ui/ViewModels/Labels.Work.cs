@@ -36,4 +36,17 @@ internal static partial class Labels
     /// <param name="head">The ledger's last event.</param>
     /// <returns>"Updated up to event 8 of 9."</returns>
     internal static string QueueBehind(long cursor, long head) => string.Create(CultureInfo.InvariantCulture, $"Updated up to event {cursor} of {head}.");
+
+    /// <summary>The repo chip's accessible name.</summary>
+    internal const string RepoChipName = "Repo";
+
+    /// <summary>The All segment with its count.</summary>
+    /// <param name="count">How many items.</param>
+    /// <returns>"All 12".</returns>
+    internal static string QueueAllSegment(int count) => string.Create(CultureInfo.InvariantCulture, $"All {count}");
+
+    /// <summary>The Running segment with its count.</summary>
+    /// <param name="count">How many items run.</param>
+    /// <returns>"Running 3".</returns>
+    internal static string QueueRunningSegment(int count) => string.Create(CultureInfo.InvariantCulture, $"Running {count}");
 }

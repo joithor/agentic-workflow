@@ -164,10 +164,11 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
         _rows = fresh;
         Patch.To(Groups, [.. view.Groups.Select(g => Group(g, all[g.Group]))]);
         Total = all.Values.Sum(r => r.Count);
-        var unmatched = FilterText.Length > 0 && !Visible().Any();
+        var unmatched = (FilterText.Length > 0 || SelectedRepo.Length > 0) && !Visible().Any();
         IsEmpty = (Showing == QueueFilter.All && Total == 0) || unmatched;
         EmptyText = unmatched ? Labels.NoMatches : IsEmpty ? view.Empty ?? string.Empty : string.Empty;
         Panels(all);
+        Toolbar(all);
         States(view);
         Mark();
     }

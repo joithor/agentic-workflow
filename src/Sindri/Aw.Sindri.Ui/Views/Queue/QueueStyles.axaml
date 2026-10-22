@@ -101,4 +101,14 @@
   <Style Selector="Border.item-row TextBlock.raw">
     <Setter Property="Foreground" Value="{DynamicResource Brush.InkSubtle}" />
   </Style>
+  <!-- The All / Running segments. -->
+  <Style Selector="Button.segment">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+    <Setter Property="Padding" Value="12,4" />
+    <Setter Property="Height" Value="28" />
+  </Style>
+  <Style Selector="Button.segment.selected">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface3}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.HairlineStrong}" />
+  </Style>
 </Styles>
