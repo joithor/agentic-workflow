@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using Aw.Sindri.Core.LensPacks;
 using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Worktrees;
 
@@ -21,7 +22,8 @@ namespace Aw.Sindri.Features.Docs;
 /// <param name="changed">The paths the pull request changes.</param>
 /// <param name="tracked">The files the docs worktree holds.</param>
 /// <param name="files">Reads the docs and the design.</param>
-internal sealed class DocsScopeStep(IRepoCheckouts checkouts, IWorktrees worktrees, IChangedPaths changed, ITrackedFiles tracked, IBriefFiles files) : IBlockStep, IBlockStepId, IRepoStep
+/// <param name="diff">The lines the pull request adds.</param>
+internal sealed class DocsScopeStep(IRepoCheckouts checkouts, IWorktrees worktrees, IChangedPaths changed, ITrackedFiles tracked, IBriefFiles files, IDiffContent diff) : IBlockStep, IBlockStepId, IRepoStep
 {
     private const int MinNameLength = 6;   // a shorter file name ('a.cs') would match half the docs
 

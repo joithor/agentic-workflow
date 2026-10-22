@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Docs;
 using Aw.Sindri.Testing.LensPacks;
 using Aw.Sindri.Testing.Scoping;
+using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Testing.Worktrees;
 using Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 
@@ -31,6 +32,8 @@ public sealed class DocsScopeStepTests
 
         public FakeChangedPaths Changed { get; } = new();
 
+        public FakeDiffContent Diff { get; } = new();
+
         public FakeTrackedFiles Tracked { get; } = new FakeTrackedFiles().With(Tree, "README.md", "docs/guide.md", "docs/other.md", "src/Other.cs");
 
         public InMemoryBriefFiles Files { get; } = new InMemoryBriefFiles()
@@ -39,7 +42,7 @@ public sealed class DocsScopeStepTests
             .With("docs/other.md", "# Other\nUnrelated.\n")
             .With("src/Other.cs", "// mentions src/App.cs but is not a doc\n");
 
-        public DocsScopeStep Step() => new(new InMemoryRepoCheckouts().With("name", Checkout), Worktrees, Changed, Tracked, Files);
+        public DocsScopeStep Step() => new(new InMemoryRepoCheckouts().With("name", Checkout), Worktrees, Changed, Tracked, Files, Diff);
     }
 
     private static StepContext Context(string? state = "open", bool enabled = true, string? packet = null, bool withHead = true)
@@ -165,5 +168,67 @@ public sealed class DocsScopeStepTests
         var result = await new Rig().Step().Run(Context(), Token);
 
         Assert.NotNull(result.Failure);
+    }
+
+    private static async Task<string[]> Listed(Rig rig, string guide, params string[] added)
+    {
+        _ = rig.Changed.With(Checkout, Base, Head, "src/Unmentioned.cs");
+        _ = rig.Files.With("docs/guide.md", guide);
+        _ = rig.Diff.Adding(Tree, "src/Unmentioned.cs", added);
+
+        var result = await rig.Step().Run(Context(), Token);
+
+        return result.Result!.Outcome.Value == "none"
+            ? []
+            : [.. Out(result, "docsScope")["candidates"]!.AsArray().Select(static c => (string)c!["path"]!)];
+    }
+
+    [Fact]
+    public async Task A_doc_naming_a_type_the_diff_adds_is_listed()
+    {
+        Assert.Equal(["docs/guide.md"], await Listed(new Rig(), "# Guide\nThe WidgetRegistry holds them.\n", "public sealed class WidgetRegistry : IRegistry"));
+    }
+
+    [Fact]
+    public async Task A_doc_naming_a_method_the_diff_adds_is_listed()
+    {
+        Assert.Equal(["docs/guide.md"], await Listed(new Rig(), "# Guide\nCall RegisterWidgets first.\n", "    public static void RegisterWidgets(int count)"));
+    }
+
+    [Fact]
+    public async Task A_doc_naming_a_flag_the_diff_adds_is_listed()
+    {
+        Assert.Equal(["docs/guide.md"], await Listed(new Rig(), "# Guide\nPass --dry-run to preview.\n", "  if (arg == \"--dry-run\") preview = true;"));
+    }
+
+    [Fact]
+    public async Task A_doc_naming_an_environment_variable_the_diff_adds_is_listed()
+    {
+        Assert.Equal(["docs/guide.md"], await Listed(new Rig(), "# Guide\nSet AW_WIDGET_HOME to move it.\n", "var home = Environment.GetEnvironmentVariable(\"AW_WIDGET_HOME\");"));
+    }
+
+    [Fact]
+    public async Task A_doc_naming_a_dotted_config_key_the_diff_adds_is_listed()
+    {
+        Assert.Equal(["docs/guide.md"], await Listed(new Rig(), "# Guide\nSet workflow.widgets.limit in the profile.\n", "  [\"workflow.widgets.limit\"] = 3,"));
+    }
+
+    [Fact]
+    public async Task A_short_or_common_name_in_the_diff_does_not_list_a_doc()
+    {
+        Assert.Empty(await Listed(new Rig(), "# Guide\nThe Run of a Cache with an id and a -x flag. MAX_N.\n", "class Cache", "void Run(int id)", "if (a == \"-x\") { }", "const MAX_N = 3;"));
+    }
+
+    [Fact]
+    public async Task Lines_a_changed_doc_adds_are_not_searched_for_names()
+    {
+        var rig = new Rig();
+        _ = rig.Changed.With(Checkout, Base, Head, "docs/other.md");
+        _ = rig.Diff.Adding(Tree, "docs/other.md", "Use the WidgetRegistry class.");
+        _ = rig.Files.With("docs/guide.md", "# Guide\nThe WidgetRegistry holds them.\n");
+
+        var result = await rig.Step().Run(Context(), Token);
+
+        Assert.Equal("none", result.Result!.Outcome.Value);
     }
 }
