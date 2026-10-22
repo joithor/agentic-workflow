@@ -63,6 +63,9 @@ public static class ApiViews
     /// <summary>GET /sindri/workflow/recipes.</summary>
     public const string Recipes = "recipes";
 
+    /// <summary>GET /sindri/code-index/status: the newest built index per repo.</summary>
+    public const string CodeIndex = "code-index";
+
     /// <summary>Every view name.</summary>
-    public static IReadOnlyList<string> All { get; } = [Status, Services, Profile, Commands, Queue, Items, Item, Timeline, NeedsYou, Requests, Decisions, Job, Jobs, ContextLenses, ContextHistory, Launch, LaunchTargets, Setup, Recipes];
+    public static IReadOnlyList<string> All { get; } = [Status, Services, Profile, Commands, Queue, Items, Item, Timeline, NeedsYou, Requests, Decisions, Job, Jobs, ContextLenses, ContextHistory, Launch, LaunchTargets, Setup, Recipes, CodeIndex];
 }

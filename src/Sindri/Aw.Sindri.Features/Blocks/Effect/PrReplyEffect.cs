@@ -22,7 +22,8 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 /// <param name="marks">The comment marks (W26).</param>
 /// <param name="clock">Stamps a mark.</param>
 /// <param name="scrubber">Takes secrets out of a reply's text before the forge gets it.</param>
-internal sealed class PrReplyEffect(IPullRequests pulls, IFactContents facts, IPrCommentMarks marks, TimeProvider clock, ITextScrubber scrubber) : IEffectKind, IDescribedBlock
+/// <param name="record">The merge record, where the comment rows go.</param>
+internal sealed class PrReplyEffect(IPullRequests pulls, IFactContents facts, IPrCommentMarks marks, TimeProvider clock, ITextScrubber scrubber, IMergeRecord record) : IEffectKind, IDescribedBlock
 {
     private const int MarkerLimit = 128;
 
@@ -64,7 +65,8 @@ internal sealed class PrReplyEffect(IPullRequests pulls, IFactContents facts, IP
         }
 
         var written = await Record(target, reaction ? "reaction" : "thread", new MarkDetail(Reason: null, Commit: null, Effect: context.Identity), cancellationToken).ConfigureAwait(false);
-        return written.IsError ? written.Error : new EffectDone(Reply: null, Existed: delivered.Value == PullDelivery.AlreadyDelivered);
+        var row = written.IsError ? written : await Comment(context, new CommentRow(context.Identity, target.Comment.Value, reaction ? "reacted" : "replied", Commit: null, WithType: true), cancellationToken).ConfigureAwait(false);
+        return row.IsError ? row.Error : new EffectDone(Reply: null, Existed: delivered.Value == PullDelivery.AlreadyDelivered);
     }
 
     private async ValueTask<Result<PostInput>> ReadPost(EffectContext context, bool reaction, CancellationToken cancellationToken)
@@ -111,7 +113,8 @@ internal sealed class PrReplyEffect(IPullRequests pulls, IFactContents facts, IP
         var detail = new MarkDetail(PrReplyFacts.Text(reason.Value, "reason"), form == "fixed" ? PrReplyFacts.Text(fix.Value, "commit", "sha") : null, context.Identity);
         var outcome = form == "hold" ? "held" : form;   // spec 5.3: the form is 'hold', the mark's outcome 'held'
         var written = await Record(target.Value, outcome, detail, cancellationToken).ConfigureAwait(false);
-        return written.IsError ? written.Error : new EffectDone(Reply: null, Existed: !written.Value);
+        var row = written.IsError ? written : await Comment(context, new CommentRow(context.Identity, target.Value.Comment.Value, form == "none" ? "skipped" : outcome, detail.Commit, WithType: true), cancellationToken).ConfigureAwait(false);
+        return row.IsError ? row.Error : new EffectDone(Reply: null, Existed: !written.Value);
     }
 
     /// <summary>The 'fixedReplies' form: answers each comment whose latest mark is 'fixed' with a commit the push carried, then marks it 'thread'.</summary>
@@ -185,7 +188,29 @@ internal sealed class PrReplyEffect(IPullRequests pulls, IFactContents facts, IP
 
         var target = new MarkTarget(mark.Pr, mark.CommentId, mark.EditedAt, mark.Instance);
         var written = await Record(target, "thread", new MarkDetail(Reason: null, Commit: commit, Effect: effect), cancellationToken).ConfigureAwait(false);
-        return written.IsError ? written.Error : delivered.Value == PullDelivery.AlreadyDelivered;
+        var row = written.IsError ? written : await Comment(context, new CommentRow(effect, mark.CommentId.Value, "replied", commit, WithType: false), cancellationToken).ConfigureAwait(false);
+        return row.IsError ? row.Error : delivered.Value == PullDelivery.AlreadyDelivered;
+    }
+
+    private readonly record struct CommentRow(string Identity, string Comment, string Outcome, string? Commit, bool WithType);
+
+    // The comment row (BD7): the comment, its judge type (the 'decision' argument's 'type', when the form is about a decided comment), the outcome and the fix's commit.
+    private async ValueTask<Result<bool>> Comment(EffectContext context, CommentRow row, CancellationToken cancellationToken)
+    {
+        var decision = row.WithType ? await PrReplyFacts.Argument(facts, context, "decision", cancellationToken).ConfigureAwait(false) : PrReplyFacts.Undefined;
+        if (decision.IsError)
+        {
+            return decision.Error;
+        }
+
+        var fields = new System.Text.Json.Nodes.JsonObject
+        {
+            ["comment"] = row.Comment,
+            ["type"] = PrReplyFacts.Text(decision.Value, "type"),
+            ["outcome"] = row.Outcome,
+            ["commit"] = row.Commit,
+        };
+        return await record.Append(new MergeRow(context.Instance, row.Identity, "comment", headSha: null, fields), cancellationToken).ConfigureAwait(false);
     }
 
     private ValueTask<Result<bool>> Record(MarkTarget target, string outcome, MarkDetail detail, CancellationToken cancellationToken) =>
