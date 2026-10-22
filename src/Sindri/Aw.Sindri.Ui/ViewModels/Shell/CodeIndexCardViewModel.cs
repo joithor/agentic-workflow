@@ -5,14 +5,6 @@ using Aw.Sindri.Ui.Api.CodeIndex;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
-/// <summary>One line of the card: the words, and the accessible name that leads with the card's name.</summary>
-/// <param name="Text">"repo @ abcdef0, 3 min old, structure ok · graph ok · embeddings pending 31%".</param>
-internal sealed record CodeIndexLine(string Text)
-{
-    /// <summary>The line read aloud: "Code index: " first.</summary>
-    public string Name { get; } = Labels.CodeIndexNamePrefix + Text;
-}
-
 /// <summary>
 /// Health's Code index card (code-index spec §7.3, CI-10b): one line per repo in scope from GET /sindri/code-index/status, the words keyed by the
 /// index's state. Followed like the other views: read on connect and after every event, never folded.
@@ -68,8 +60,10 @@ internal sealed partial class CodeIndexCardViewModel(ISindriApi api, TimeProvide
         OnChanged(nameof(HasMessage));
     }
 
+    private static bool One(string state, params string[] words) => words.Contains(state, StringComparer.Ordinal);
+
     private static bool Fine(CodeIndexRepoView repo) =>
-        string.Equals(repo.State, "ok", StringComparison.Ordinal) && repo.Layers.All(static l => l.State is "ok" or "disabled" or "pending");
+        string.Equals(repo.State, "ok", StringComparison.Ordinal) && repo.Layers.All(static l => One(l.State, "ok", "disabled", "pending"));
 
     private string Line(CodeIndexRepoView repo)
     {
@@ -84,19 +78,19 @@ internal sealed partial class CodeIndexCardViewModel(ISindriApi api, TimeProvide
         return repo.Repo + " @ " + commit[..Math.Min(ShortSha, commit.Length)] + age + state + (layers.Length == 0 ? string.Empty : ", " + layers);
     }
 
-    private static bool Shown(CodeIndexLayerView layer) => _named.Contains(layer.Layer, StringComparer.Ordinal) || layer.State is not ("ok" or "disabled");
+    private static bool Shown(CodeIndexLayerView layer) => _named.Contains(layer.Layer, StringComparer.Ordinal) || !One(layer.State, "ok", "disabled");
 
     private static string Words(CodeIndexLayerView layer) => Labels.CodeIndexLayer(layer.Layer, layer.State, layer.Code, Percent(layer));
 
     // The embeddings layer says "31 of 100 embedded"; that is the only percentage the status view carries.
-    [GeneratedRegex(@"^(\d+) of (\d+) embedded$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 100)]
+    [GeneratedRegex(@"^(?<done>\d+) of (?<all>\d+) embedded$", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
     private static partial Regex Embedded();
 
     private static int? Percent(CodeIndexLayerView layer)
     {
         if (!string.Equals(layer.State, "pending", StringComparison.Ordinal) || Embedded().Match(layer.Detail) is not { Success: true } m
-            || !long.TryParse(m.Groups[1].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var done)
-            || !long.TryParse(m.Groups[2].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var all) || all <= 0)
+            || !long.TryParse(m.Groups["done"].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var done)
+            || !long.TryParse(m.Groups["all"].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var all) || all <= 0)
         {
             return null;
         }
