@@ -54,10 +54,8 @@ internal static class ApiScenarios
             ? await CodeIndexScenarios.Start(ct)
             : ContextApiScenarios.Handles(slug)
             ? await ContextApiScenarios.Start(slug, scenario, ct)
-            : SetupScenarios.Handles(slug, scenario)
-            ? await SetupScenarios.Start(scenario, ct)
-            : SetupRepoScenarios.Handles(slug, scenario)
-            ? await SetupRepoScenarios.Start(scenario, ct)
+            : SetupHost(slug, scenario, ct) is { } setup
+            ? await setup
             : JobScenarios.Handles(slug, scenario) || JobScopeScenarios.Handles(slug, scenario)
             ? await Jobs.JobHost.Start(ct, pump: false)
             : LaunchScenarios.Handles(slug, scenario)
@@ -69,6 +67,12 @@ internal static class ApiScenarios
             : WrapSessionScenarios.Handles(slug, scenario)
             ? await GoldenHost.Start(temporary: true, ct, ItemScenarios.ProfileYaml)
             : await GoldenHost.Start(temporary: !NeedsNonTemporaryHome(slug, scenario), ct, ProfileYaml(slug, scenario));
+
+    /// <summary>The host of a setup scenario (the steps, or adding a repo), else null.</summary>
+    private static Task<GoldenHost>? SetupHost(string slug, string scenario, CancellationToken ct) =>
+        SetupScenarios.Handles(slug, scenario) ? SetupScenarios.Start(scenario, ct)
+        : SetupRepoScenarios.Handles(slug, scenario) ? SetupRepoScenarios.Start(scenario, ct)
+        : null;
 
     /// <summary>The live profile the scenario's host starts with: the item scenarios need two repos.</summary>
     public static string ProfileYaml(string slug, string scenario) => SessionScenarios.Handles(slug, scenario) ? SessionScenarios.ProfileYaml : ItemScenarios.Handles(slug, scenario) || ParkScenarios.Handles(slug, scenario) || RequestScenarios.Handles(slug, scenario) || StreamScenarios.Handles(slug, scenario) ? ItemScenarios.ProfileYaml : GoldenHost.ProfileYaml;
