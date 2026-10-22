@@ -1,6 +1,6 @@
 using Aw.Sindri.Core.Scheduling;
 
-namespace Aw.Sindri.Features;
+namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>One repo the caller sees, as the status words need it.</summary>
 /// <param name="Repo">The repo's name.</param>

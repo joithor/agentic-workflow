@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Features;
+namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>Where a repo's code answers stand against the map: the index's commit first, then the map's.</summary>
 /// <param name="Repo">The repo.</param>

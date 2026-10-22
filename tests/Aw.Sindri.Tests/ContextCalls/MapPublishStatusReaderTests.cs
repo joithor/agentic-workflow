@@ -5,7 +5,7 @@ using Aw.Kernel.Events;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Scheduling;
-using Aw.Sindri.Features;
+using Aw.Sindri.Features.ContextCalls;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests.ContextCalls;

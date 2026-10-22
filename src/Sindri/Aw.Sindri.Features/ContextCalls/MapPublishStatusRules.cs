@@ -1,7 +1,7 @@
 using System.Globalization;
 using Aw.Sindri.Core.Scheduling;
 
-namespace Aw.Sindri.Features;
+namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>The publish state and its words (code index spec 6.4, "What the owner sees"): pure, computed live from stored state, never stored.</summary>
 internal static class MapPublishStatusRules

@@ -1,7 +1,6 @@
 using Aw.Context.Core.Map;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Challenges;
-using Aw.Sindri.Features;
 using Aw.Sindri.Features.ContextCalls;
 
 namespace Aw.Sindri.Host.Commands;

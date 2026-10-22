@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Features;
+namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>What <see cref="MapPublishStatusRules"/> reads: stored state and the index's commits, cut to the caller's repos.</summary>
 /// <param name="HeldVersion">The held draft's number, or null when nothing is held.</param>

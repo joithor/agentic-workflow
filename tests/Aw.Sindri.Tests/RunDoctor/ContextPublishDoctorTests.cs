@@ -4,7 +4,7 @@ using Aw.Context.Testing.Engine;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ledger;
-using Aw.Sindri.Features;
+using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Infrastructure.Processes;
 using Aw.Sindri.Infrastructure.Secrets;
@@ -39,9 +39,9 @@ public sealed class ContextPublishDoctorTests
         var clock = new FakeTimeProvider(now);
         var engine = PublishStatusEngineProxy.Create(view);
         var reader = new MapPublishStatusReader(engine, outlooks, new ListLedger([Published()]), clock);
-        var checks = new ContextEngineChecks(FakeContextEngine.Instance, new OnyxDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))), reader, clock);
+        var checks = new ContextEngineChecks(FakeContextEngine.Instance, new OnyxDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))), new MapPublishDoctorCheck(reader, clock));
         var rows = await checks.Check(SliceHarness.Profile(), Ct);
-        return rows.Single(static c => c.Name == ContextEngineChecks.PublishName);
+        return rows.Single(static c => c.Name == MapPublishDoctorCheck.PublishName);
     }
 
     private static MapPublishView Current() => new([_repo], Hold: null, LatestDraft: null, Current: 14, [new MapHead(_repo, "1234567", OnDefault: true)]);

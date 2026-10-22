@@ -1,5 +1,4 @@
 using Aw.Kernel.Services;
-using Aw.Sindri.Features;
 using Aw.Sindri.Features.ContextCalls;
 
 namespace Aw.Sindri.Host.Endpoints;

@@ -38,7 +38,6 @@ using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Core.Workflow.Shipped;
 using Aw.Sindri.Core.Workflow.Stats;
 using Aw.Sindri.Core.Workflow.Views;
-using Aw.Sindri.Features;
 using Aw.Sindri.Features.AddRepo;
 using Aw.Sindri.Features.ApplyCommand;
 using Aw.Sindri.Features.ApproveAllRecipes;

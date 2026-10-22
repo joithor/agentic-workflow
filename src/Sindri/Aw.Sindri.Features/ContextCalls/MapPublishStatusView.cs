@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Features;
+namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>
 /// GET /sindri/context/map/publish: how the current map was published, or that it is held for the code index (code index spec 6.4). State is

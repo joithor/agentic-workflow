@@ -8,7 +8,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Scheduling;
 
-namespace Aw.Sindri.Features;
+namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>
 /// Reads the stored publish state for the caller's repos, the index's commits and the ledger's last 'published' and 'promoted' events, and puts
@@ -19,7 +19,7 @@ namespace Aw.Sindri.Features;
 /// <param name="outlooks">The code index's side of the publish gate.</param>
 /// <param name="ledger">The ledger, for how the current map was published.</param>
 /// <param name="clock">The time.</param>
-internal sealed class MapPublishStatusReader(IContextEngine engine, IIndexOutlooks outlooks, ILedgerStore ledger, TimeProvider clock)
+internal sealed class MapPublishStatusReader(IContextEngine engine, IIndexOutlooks outlooks, ILedgerReader ledger, TimeProvider clock)
 {
     /// <summary>The status as the caller of <paramref name="scope"/> may see it.</summary>
     /// <param name="scope">The profile's context section and repos, and the caller.</param>

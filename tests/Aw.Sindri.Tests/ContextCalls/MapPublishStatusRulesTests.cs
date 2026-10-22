@@ -1,5 +1,5 @@
 using Aw.Sindri.Core.Scheduling;
-using Aw.Sindri.Features;
+using Aw.Sindri.Features.ContextCalls;
 
 namespace Aw.Sindri.Tests.ContextCalls;
 
