@@ -17,6 +17,7 @@ using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.ApproveAll;
+using Aw.Sindri.Core.Workflow.Stats;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ApplyCommand;
 using Aw.Sindri.Features.ApproveAllRecipes;
@@ -47,6 +48,7 @@ using Aw.Sindri.Features.GetLaunchTargets;
 using Aw.Sindri.Features.GetNeedsYou;
 using Aw.Sindri.Features.GetProfile;
 using Aw.Sindri.Features.GetQueue;
+using Aw.Sindri.Features.GetRecipeStats;
 using Aw.Sindri.Features.GetRepoStatus;
 using Aw.Sindri.Features.GetSession;
 using Aw.Sindri.Features.GetSessionPreview;
@@ -99,6 +101,7 @@ using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Features.StreamEvents;
 using Aw.Sindri.Features.SweepLostSessions;
 using Aw.Sindri.Features.ValidateProfile;
+using Aw.Sindri.Features.WorkflowStats;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -286,6 +289,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddJob<ApproveAllRecipesRequest, ApproveAllResult, ApproveAllRecipesService>(static _ => ApproveAllRecipesAdmission.Key, static r => ApproveAllRecipesService.Summary(r));
         _ = services.AddScoped<IValidator<ListRecipesRequest>, AcceptAllValidator<ListRecipesRequest>>().AddQuery<ListRecipesRequest, ListRecipesResponse, ListRecipesService>();
         _ = services.AddScoped<IValidator<ShowRecipeRequest>, AcceptAllValidator<ShowRecipeRequest>>().AddQuery<ShowRecipeRequest, RecipeView, ShowRecipeService>();
+        _ = services.AddScoped<WorkflowStatRows>().AddScoped<IWorkflowStatRows>(static sp => sp.GetRequiredService<WorkflowStatRows>()).AddScoped<IValidator<GetRecipeStatsRequest>, AcceptAllValidator<GetRecipeStatsRequest>>().AddQuery<GetRecipeStatsRequest, RecipeStats, GetRecipeStatsService>();   // API P12
         _ = services.AddScoped<IValidator<ReadInjectionRequest>, AcceptAllValidator<ReadInjectionRequest>>().AddQuery<ReadInjectionRequest, InjectionView, ReadInjectionService>();
         _ = services.AddScoped<IValidator<GetInstanceFactRequest>, AcceptAllValidator<GetInstanceFactRequest>>().AddQuery<GetInstanceFactRequest, FactView, GetInstanceFactService>();
         _ = services.AddScoped<IValidator<GetInstanceScopingRequest>, AcceptAllValidator<GetInstanceScopingRequest>>().AddQuery<GetInstanceScopingRequest, ScopingView, GetInstanceScopingService>();

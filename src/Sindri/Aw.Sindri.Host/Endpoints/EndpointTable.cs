@@ -54,6 +54,7 @@ internal static class EndpointTable
         _ = queries.MapPingProcess();
         _ = queries.MapReadLedger();
         _ = queries.MapShowRecipe();
+        _ = queries.MapGetRecipeStats();
         _ = queries.MapStreamEvents();
         _ = MapCodeIndexQueries(queries);
         return MapContextQueries(queries);
