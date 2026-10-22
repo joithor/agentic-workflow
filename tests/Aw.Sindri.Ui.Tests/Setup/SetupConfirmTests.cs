@@ -51,7 +51,7 @@ public sealed class SetupConfirmTests
 
         Assert.Null(row.Action);   // the typed box takes the button's place
         Assert.True(row.Profile!.ShowsTyped);
-        Assert.Equal(["approve profile " + LiveHash[..6]], ready._f.Server.Challenges.Select(c => c.Action));
+        Assert.Equal(["approve profile " + LiveHash[..6]], ready._f.Server.Challenges.Select(c => c.Action), StringComparer.Ordinal);
         Assert.Equal(PhraseText, row.Profile.TypedBox.Phrase);
     }
 
