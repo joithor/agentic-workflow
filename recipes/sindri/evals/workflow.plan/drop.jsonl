@@ -3,7 +3,8 @@
 {"trigger":{"kind":"step.completed","outcome":"drafted","outputs":{"fact:plan":{"phases":[{"id":"P1","items":["AC-1"]}]}}},"expect":{"state":"check"}}
 {"trigger":{"kind":"step.completed","outcome":"pass"},"expect":{"state":"exec-review"}}
 {"trigger":{"kind":"step.completed","outcome":"executable"},"expect":{"state":"holdout"}}
-{"trigger":{"kind":"step.completed","outcome":"written","outputs":{"fact:holdoutSets":[{"phase":"P1","count":3,"hash":"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"}]}},"expect":{"state":"evidence"}}
+{"trigger":{"kind":"step.completed","outcome":"written","outputs":{"fact:holdoutDraft":{"dir":"/run/holdout"}}},"expect":{"state":"holdout-store"}}
+{"trigger":{"kind":"step.completed","outcome":"stored","outputs":{"fact:holdoutSets":[{"phase":"P1","count":3,"hash":"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"}]}},"expect":{"state":"evidence"}}
 {"trigger":{"kind":"step.completed","outcome":"complete","outputs":{"fact:planPacket":"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"}},"expect":{"state":"questions"}}
 {"trigger":{"kind":"step.completed","outcome":"asked","outputs":{"fact:questions":[{"id":"Q1","options":["a","b"]}]}},"expect":{"state":"decide"}}
 {"trigger":{"kind":"step.completed","outcome":"answered","outputs":{"fact:answers":[{"question":"Q1","pick":"a"}]}},"expect":{"state":"record"}}
