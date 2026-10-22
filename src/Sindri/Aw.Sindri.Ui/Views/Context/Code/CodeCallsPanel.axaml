@@ -1,0 +1,16 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctx="using:Aw.Sindri.Ui.ViewModels.Context"
+             xmlns:cv="using:Aw.Sindri.Ui.Views.Context.Code"
+             x:Class="Aw.Sindri.Ui.Views.Context.Code.CodeCallsPanel"
+             x:DataType="ctx:CodeLensViewModel">
+  <!-- The inspector's code lens (code index spec §10): who calls the symbols of the files in scope, and what they call, with where the index
+       read them from. Shown once a code lens answer has been read. -->
+  <StackPanel Spacing="16" Margin="20,16,20,20">
+    <TextBlock x:Name="CodeNotice" Classes="caption subtle" Text="{Binding Notice}" IsVisible="{Binding HasNotice}" />
+    <StackPanel IsVisible="{Binding HasPanels}" Spacing="16">
+      <cv:CallsSection x:Name="CallersSection" DataContext="{Binding Callers}" />
+      <cv:CallsSection x:Name="CalleesSection" DataContext="{Binding Callees}" />
+    </StackPanel>
+  </StackPanel>
+</UserControl>
