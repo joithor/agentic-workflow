@@ -24,7 +24,7 @@ public abstract partial class SindriApiContract
         var running = (await Reach(new FakeSindriApi { ServiceView = RouteAnswer.Api("services", "running-job") }).Services(_api, Token)).Value.Services!;
 
         Expect.True(paused.Single(r => string.Equals(r.Name, "heartbeat", StringComparison.Ordinal)).Paused);
-        Expect.Equal("JOB-0000000000000000000000000000000e", running.Single(r => string.Equals(r.Name, "stuck", StringComparison.Ordinal)).Job);
+        Expect.Equal((string)GoldenFiles.Node("services", "running-job")["services"]!.AsArray().Single(r => (string?)r!["job"] is not null)!["job"]!, running.Single(r => string.Equals(r.Name, "stuck", StringComparison.Ordinal)).Job);
     }
 
     [Fact]

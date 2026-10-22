@@ -68,7 +68,7 @@ public sealed class ServicesTabTests
         await system.Show();
 
         var stuck = system.Vm.ServiceTable.Single(r => string.Equals(r.Name, "stuck", StringComparison.Ordinal));
-        Assert.Equal((Labels.ServiceRunning, "JOB-0000000000000000000000000000000e"), (stuck.Status, stuck.JobId));
+        Assert.Equal((Labels.ServiceRunning, (string)GoldenFiles.Node("services", "running-job")["services"]!.AsArray().Single(r => (string?)r!["job"] is not null)!["job"]!), (stuck.Status, stuck.JobId));
     }
 
     [Fact]
@@ -138,5 +138,18 @@ public sealed class ServicesTabTests
         var after = system.Vm.ServiceTable.Single(r => string.Equals(r.Name, "setup", StringComparison.Ordinal));
         Assert.Same(before, after);
         Assert.Same(run, after.Run);
+    }
+
+    [Fact]
+    public async Task Only_the_actions_a_row_allows_are_offered()
+    {
+        var system = new SystemTestHarness("approved");
+        await system.Show();
+
+        var runOnly = system.Vm.ServiceTable.Single(r => string.Equals(r.Name, "context-map-refresh", StringComparison.Ordinal));
+        var both = system.Vm.ServiceTable.Single(r => string.Equals(r.Name, "heartbeat", StringComparison.Ordinal));
+
+        Assert.Equal((true, false), (runOnly.RunShown, runOnly.ToggleShown));
+        Assert.Equal((true, true), (both.RunShown, both.ToggleShown));
     }
 }

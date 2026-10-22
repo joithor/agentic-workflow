@@ -170,7 +170,7 @@ internal sealed partial class HealthViewModel
             }
 
             vm.Show(row);
-            WireServiceControls(vm, row.Paused);
+            WireServiceControls(vm, row);
             shown.Add(vm);
         }
 
@@ -185,14 +185,18 @@ internal sealed partial class HealthViewModel
     }
 
     // Run now stays one control for the row's life; the toggle is Pause until the service is paused, then Resume.
-    private void WireServiceControls(ServiceRowViewModel row, bool paused)
+    private void WireServiceControls(ServiceRowViewModel row, ServiceRowView view)
     {
         if (_url is not { } url)
         {
             return;
         }
 
+        var paused = view.Paused;
+        var allowed = view.Actions;
         row.Run ??= Catalog.On("RunService", row.Name, async ct => (await api.RunService(url, row.Name, ct).ConfigureAwait(true)).Map(started => started.Accepted));
+        row.RunAllowed = Allows(allowed, "run");
+        row.ToggleAllowed = Allows(allowed, paused ? "resume" : "pause");
         if (row.Toggle is null || row.ToggleResumes != paused)
         {
             row.ToggleResumes = paused;
@@ -201,6 +205,9 @@ internal sealed partial class HealthViewModel
                 : Catalog.On("PauseService", row.Name, ct => api.PauseService(url, row.Name, ct));
         }
     }
+
+    // A served list of allowed actions decides; an answer without one allows all (the server's refusal is then shown on the row).
+    private static bool Allows(IReadOnlyList<string>? allowed, string action) => allowed is null || allowed.Contains(action, StringComparer.Ordinal);
 
     // A catalog read again: the rows' controls belong to the old one, so they are made again from the services as last read.
     private void ReconnectServiceControls()

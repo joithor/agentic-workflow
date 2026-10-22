@@ -39,10 +39,54 @@ internal sealed class ServiceRowViewModel(string name) : ObservableObject
     public string JobId { get; private set => Set(ref field, value); } = string.Empty;
 
     /// <summary>Run now for this service, or null before the catalog is read.</summary>
-    public ControlViewModel? Run { get; internal set => Set(ref field, value); }
+    public ControlViewModel? Run
+    {
+        get;
+        internal set
+        {
+            Set(ref field, value);
+            OnChanged(nameof(RunShown));
+        }
+    }
 
     /// <summary>Pause for a running schedule, Resume for a paused one; null before the catalog is read.</summary>
-    public ControlViewModel? Toggle { get; internal set => Set(ref field, value); }
+    public ControlViewModel? Toggle
+    {
+        get;
+        internal set
+        {
+            Set(ref field, value);
+            OnChanged(nameof(ToggleShown));
+        }
+    }
+
+    /// <summary>True when the service allows Run now.</summary>
+    public bool RunAllowed
+    {
+        get;
+        internal set
+        {
+            Set(ref field, value);
+            OnChanged(nameof(RunShown));
+        }
+    } = true;
+
+    /// <summary>True when Run now is offered: the catalog is read and the service allows it.</summary>
+    public bool RunShown => Run is not null && RunAllowed;
+
+    /// <summary>True when the service allows the toggle's action (Pause, or Resume while paused).</summary>
+    public bool ToggleAllowed
+    {
+        get;
+        internal set
+        {
+            Set(ref field, value);
+            OnChanged(nameof(ToggleShown));
+        }
+    } = true;
+
+    /// <summary>True when Pause or Resume is offered: the catalog is read and the service allows it.</summary>
+    public bool ToggleShown => Toggle is not null && ToggleAllowed;
 
     /// <summary>True when <see cref="Toggle"/> was made for a paused service (it resumes).</summary>
     internal bool ToggleResumes { get; set; }
