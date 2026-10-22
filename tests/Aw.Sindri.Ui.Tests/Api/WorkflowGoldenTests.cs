@@ -270,12 +270,16 @@ public sealed class WorkflowGoldenTests
     [Fact]
     public void A_block_run_frame_reads_its_actor_and_attempt_and_writes_back_without_the_fields_it_lacks()
     {
-        var opened = AwJson.Deserialize<FrameSummary>(Encoding.UTF8.GetBytes(GoldenFiles.SpecShaped("workflow-event-frame", "block-attempt-3")), SindriApiClient.Json).Value;
-        var quiet = AwJson.Deserialize<FrameSummary>(Encoding.UTF8.GetBytes(GoldenFiles.SpecShaped("workflow-event-frame", "no-run-open")), SindriApiClient.Json).Value;
+        var opened = FrameOf("workflow.transition-block-run-attempt-3-of-3");
+        var quiet = FrameOf("workflow.transition-nothing-open");
 
-        Assert.Equal(("verify", "block", "block", 3, 3), (opened.State, opened.Runtime, opened.Actor, opened.Attempt, opened.MaxAttempts));
+        Assert.Equal(("produce", "block", "block", 3, 3), (opened.State, opened.Runtime, opened.Actor, opened.Attempt, opened.MaxAttempts));
         Assert.Equal((null, null, null, null), (quiet.Runtime, quiet.Actor, quiet.Attempt, quiet.MaxAttempts));
-        var written = JsonNode.Parse(AwJson.Serialize(quiet, SindriApiClient.Json).Value)!.AsObject(); // why: a record writes a JSON object
+        var written = JsonNode.Parse(AwJson.Serialize(quiet, SindriApiClient.Json))!.AsObject(); // why: a record writes a JSON object
         Assert.Equal(["state", "entry", "run", "child"], written.Select(p => p.Key), StringComparer.Ordinal);
     }
+
+    // The frame sits at detail.delta.frame of the engine's ledger row.
+    private static FrameSummary FrameOf(string row) =>
+        AwJson.Deserialize<FrameSummary>(Encoding.UTF8.GetBytes(GoldenFiles.Ledger(row)["detail"]!["delta"]!["frame"]!.ToJsonString()), SindriApiClient.Json).Value;
 }
