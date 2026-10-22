@@ -3,6 +3,7 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Aw.Sindri.Ui.ViewModels.Context.Layout;
 
 namespace Aw.Sindri.Ui.Views.Controls;
 

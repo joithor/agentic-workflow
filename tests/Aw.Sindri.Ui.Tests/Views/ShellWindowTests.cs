@@ -1785,6 +1785,7 @@ public sealed class ShellWindowTests : IDisposable
             return names.FirstOrDefault(n => focused is not null && window.Get<Control>(n) is var r && (r == focused || r.IsVisualAncestorOf(focused))) ?? "none";
         }
 
+        Settle(window);
         var seen = new List<string>();
         foreach (var (key, physical) in new[] { (Key.Right, PhysicalKey.ArrowRight), (Key.Right, PhysicalKey.ArrowRight), (Key.Right, PhysicalKey.ArrowRight), (Key.Left, PhysicalKey.ArrowLeft), (Key.Left, PhysicalKey.ArrowLeft) })
         {
@@ -1793,7 +1794,8 @@ public sealed class ShellWindowTests : IDisposable
             seen.Add(Region());
         }
 
-        Assert.Equal(["TopBar", "Page", "Sheet", "Page", "TopBar"], seen);
+        // The window opens with focus on the page region (as in F6_cycles_top_bar_page_and_sheet), so the first ⌘⌥→ goes to the sheet.
+        Assert.Equal(["Sheet", "TopBar", "Page", "TopBar", "Sheet"], seen);
     });
 
     [Fact]

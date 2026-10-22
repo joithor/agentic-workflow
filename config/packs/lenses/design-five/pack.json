@@ -1,0 +1,13 @@
+{
+  "kind": "lenses",
+  "id": "design-five",
+  "version": 1,
+  "applies": "design",
+  "lenses": [
+    { "id": "product", "title": "Product and scope", "prompt": "lenses/product.md", "when": "always" },
+    { "id": "architecture", "title": "Architecture and failure modes", "prompt": "lenses/architecture.md", "when": "always" },
+    { "id": "design", "title": "Design, interaction and accessibility", "prompt": "lenses/design.md", "when": "always" },
+    { "id": "devex", "title": "Developer experience", "prompt": "lenses/devex.md", "when": "always" },
+    { "id": "security", "title": "Security and threat model", "prompt": "lenses/security.md", "when": "always" }
+  ]
+}
