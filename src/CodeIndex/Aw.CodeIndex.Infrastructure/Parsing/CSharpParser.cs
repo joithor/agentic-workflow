@@ -11,7 +11,7 @@ namespace Aw.CodeIndex.Infrastructure.Parsing;
 /// executed. The file's text is parsed on its own thread with a large fixed stack, under a time limit, and walked with a
 /// depth cap; a file that trips a guard comes back as a skip ('too-deep', 'timeout', ...), never an error (CI12).
 /// </summary>
-public sealed class CSharpParser : ISymbolParser
+internal sealed class CSharpParser : ISymbolParser
 {
     private static readonly CSharpParseOptions _options = new(LanguageVersion.Latest, DocumentationMode.None, SourceCodeKind.Regular);
 
