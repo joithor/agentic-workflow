@@ -240,15 +240,6 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
         }
     }
 
-    // Time passes between reads: the "in stage" and "ended ago" words are read anew from the clock.
-    private void TickTimes()
-    {
-        foreach (var row in _loaded.Concat(DoneRows))
-        {
-            row.Tick();
-        }
-    }
-
     private Task Reread(CancellationToken cancellationToken) => Url is { } url ? Refresh(url, cancellationToken) : Task.CompletedTask;
 
     private void Show(InstanceList list)
