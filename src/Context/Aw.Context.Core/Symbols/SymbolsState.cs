@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Aw.Context.Core.Lenses;
+namespace Aw.Context.Core.Symbols;
 
 /// <summary>Whether the code index can answer for symbols.</summary>
 [JsonConverter(typeof(StrictEnumConverter<SymbolsState>))]
@@ -10,7 +10,7 @@ public enum SymbolsState
     [JsonStringEnumMemberName("unavailable")]
     Unavailable,
 
-    /// <summary>The index exists but is older than the map.</summary>
+    /// <summary>The index answers from another commit than the map's or the checkout's head (both commits are named).</summary>
     [JsonStringEnumMemberName("stale")]
     Stale,
 
