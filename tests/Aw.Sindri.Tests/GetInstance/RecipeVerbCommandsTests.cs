@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -79,5 +80,14 @@ public sealed class RecipeVerbCommandsTests
 
         Assert.Equal("merge", entries[0].GetProperty("verb").GetString());
         Assert.False(entries[^1].TryGetProperty("verb", out _));   // cancel
+    }
+
+    [Fact]
+    public void The_status_text_and_record_keep_their_closed_verbs_and_leave_the_recipe_verbs_to_allowed_commands()
+    {
+        var view = View(EngineFixture.At(_babysitter, "ready"));
+
+        Assert.Equal("takeover, cancel", StatusLayout.Commands(view));
+        Assert.Equal([ActionId.From("ApplyCommand:takeover"), ActionId.From("ApplyCommand:cancel")], StatusRecords.ActionIds(view));
     }
 }
