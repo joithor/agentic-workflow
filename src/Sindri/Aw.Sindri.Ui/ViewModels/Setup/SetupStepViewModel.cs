@@ -72,6 +72,12 @@ internal sealed class SetupStepViewModel : ObservableObject
     /// <summary>The repo form of the repo step; null for every other step.</summary>
     public SetupRepoFormViewModel? Repo { get; set; }
 
+    /// <summary>The typed approval of the profile step; null for every other step.</summary>
+    public SetupProfileConfirmViewModel? Profile { get; set; }
+
+    /// <summary>The plan, hold and typed alternative of the workflows step (the approve-all dialog's own view model); null for every other step.</summary>
+    public ViewModels.Approvals.ApproveAllViewModel? Workflows { get; set; }
+
     /// <summary>The Onyx controls of the Onyx step; null for every other step.</summary>
     public SetupOnyxViewModel? Onyx { get; set; }
 
@@ -225,7 +231,7 @@ internal sealed class SetupStepViewModel : ObservableObject
 
     private void DeriveProgress() =>
         (ProgressText, ProgressFraction) = Step.Progress is { Total: > 0 } progress
-            ? (Labels.SetupProgress(progress.Done, progress.Total), Math.Clamp((double)progress.Done / progress.Total, 0, 1))
+            ? (Labels.SetupProgress(progress.Done, progress.Total, progress.Unit), Math.Clamp((double)progress.Done / progress.Total, 0, 1))
             : (string.Empty, 0);
 
     private void DeriveParts()

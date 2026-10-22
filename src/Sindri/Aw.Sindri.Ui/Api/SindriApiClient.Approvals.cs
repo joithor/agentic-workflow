@@ -20,4 +20,8 @@ internal sealed partial class SindriApiClient
 
     /// <inheritdoc />
     public Task<Result<ApproveAllJob>> ApproveAllJob(Uri api, string id, CancellationToken cancellationToken) => Get<ApproveAllJob>(api, WorkflowRoutes.Job(id), cancellationToken);
+
+    /// <inheritdoc />
+    public Task<Result<ProfileApproved>> ApproveProfile(Uri api, ApproveProfileRequest request, CancellationToken cancellationToken) =>
+        Call<ProfileApproved>(api, HttpMethod.Post, "/sindri/profile/approve", cancellationToken, new CallOptions(Content: AwJson.Serialize(request, Json)));
 }

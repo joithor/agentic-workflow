@@ -18,6 +18,16 @@ internal sealed partial class Launcher
         }
 
         var workDir = request.Worktree ?? request.RepoPath;
+        if (!request.Attended && request.Step is not null && await PrePushGuard.Install(workDir, cancellationToken).ConfigureAwait(false) is { } foreign)
+        {
+            return foreign;
+        }
+
+        if (await Trust(request, entry, workDir, cancellationToken).ConfigureAwait(false) is { } untrusted)
+        {
+            return untrusted;
+        }
+
         try
         {
             var composed = await Compose(request, entry, workDir, cancellationToken).ConfigureAwait(false);
@@ -39,9 +49,21 @@ internal sealed partial class Launcher
         }
     }
 
+    /// <summary>A claude-code Step's worktree is marked trusted before the CLI starts: it would stop at "do you trust this project?" with no one to answer. Other entries and human opens need nothing.</summary>
+    private async ValueTask<Error?> Trust(LaunchRequest request, AgentEntry entry, string workDir, CancellationToken cancellationToken)
+    {
+        if (request.Attended || !string.Equals(entry.Id.Value, "claude-code", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var trusted = await parts.Trust.Trust(workDir, cancellationToken).ConfigureAwait(false);
+        return trusted.IsError ? trusted.Error : null;
+    }
+
     private async ValueTask<Result<(IReadOnlyList<string> Argv, SessionId? Session)>> Compose(LaunchRequest request, AgentEntry entry, string workDir, CancellationToken cancellationToken)
     {
-        var step = request.Attended ? null : request.Step;
+        var step = Denying(request.Attended ? null : request.Step, request, entry, workDir);
         var policyPath = step?.Policy is { } policy && entry.PolicyForm == PolicyForm.ClaudeSettingsFile
             ? StepPolicyFile.Write(parts.Options.PolicyDirectory, request.Launch, policy)
             : null;
@@ -56,6 +78,32 @@ internal sealed partial class Launcher
 
         IReadOnlyList<string> argv = [.. built.Value, .. mcpArguments];
         return (argv, session);
+    }
+
+    /// <summary>The Step with its denied paths added: the other worktrees and the holdout store. Only a form that can express a denied read gets them, since a codex entry would refuse the whole Step with SND-LAUNCH-013.</summary>
+    private StepArgs? Denying(StepArgs? step, LaunchRequest request, AgentEntry entry, string workDir)
+    {
+        if (step?.Policy is not { } stated || entry.PolicyForm != PolicyForm.ClaudeSettingsFile)
+        {
+            return step;
+        }
+
+        var siblings = request.Worktree is null ? [] : SiblingWorktrees(workDir);
+        return step with { Policy = stated with { DeniedPaths = [.. stated.DeniedPaths ?? [], .. StepDenials.For(workDir, siblings, parts.Options.SindriHome)] } };
+    }
+
+    /// <summary>The Sindri worktrees beside <paramref name="workDir"/> ('sindri-*' under the same parent), which a Step must not read.</summary>
+    private static string[] SiblingWorktrees(string workDir)
+    {
+        var parent = Path.GetDirectoryName(workDir.TrimEnd('/', '\\'));
+        try
+        {
+            return parent is not null && Directory.Exists(parent) ? [.. Directory.EnumerateDirectories(parent, "sindri-*")] : [];
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return [];   // nothing readable beside it to name
+        }
     }
 
     /// <summary>What an unattended launch adds to the seed: which Step it is, then the Step's brief when it has one (engine P8 F13).</summary>
@@ -92,11 +140,29 @@ internal sealed partial class Launcher
             env["AW_SINDRI_HOME"] = home;
         }
 
-        return env;
+        if (request.Attended || request.Step is null)
+        {
+            return env;
+        }
+
+        var ghConfig = GhConfigPath(request.Launch);
+        _ = Directory.CreateDirectory(ghConfig);   // empty: the Step's gh has no login to find
+        return new Dictionary<string, string>(LaunchEnvironment.Scrub(env, request.Worktree ?? request.RepoPath, ghConfig), StringComparer.Ordinal);
     }
+
+    private string GhConfigPath(LaunchId launch) => Path.Combine(parts.Options.LaunchDirectory, launch.Value + ".gh");
 
     private void Cleanup(LaunchId launch)
     {
+        try
+        {
+            Directory.Delete(GhConfigPath(launch), recursive: true);   // a missing one is fine
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // an empty directory left behind holds nothing
+        }
+
         LaunchSecrets.Delete(parts.Options.SecretsDirectory, launch);
         LaunchFileStore.DeleteFlat(parts.Options, launch);
         LaunchFileStore.DeleteIn(parts.Options.PolicyDirectory, StepPolicyFile.PathFor(parts.Options.PolicyDirectory, launch));
