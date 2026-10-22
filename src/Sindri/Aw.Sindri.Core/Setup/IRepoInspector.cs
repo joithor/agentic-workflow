@@ -18,4 +18,10 @@ public interface IRepoInspector
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The facts, or SND-SETUP-001 when the folder is gone or no longer a checkout.</returns>
     public ValueTask<Result<RepoGit>> Facts(string checkout, CancellationToken cancellationToken);
+
+    /// <summary>How big a checkout is, for the profile approval's preview (setup-once spec §5.2 "Preview"): its real path, tracked files and their size.</summary>
+    /// <param name="path">The checkout's path as the profile names it.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The weight, or SND-SETUP-001 when the folder is gone or not a checkout.</returns>
+    public ValueTask<Result<RepoWeight>> Weight(string path, CancellationToken cancellationToken);
 }
