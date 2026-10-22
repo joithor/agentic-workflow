@@ -145,6 +145,11 @@ public sealed class ScopeFreezeStepTests
             ValueTask.FromResult<Result<PacketFreeze>>(new PacketFreeze(Frozen: true, hash, by, AlreadyFrozen: false, AlreadyFrozenBy: null, Failures: []));
     }
 
+    // A child scoping instance has no fact:item, so the runtime looks its repo up only for a Step that says it needs one.
+    [Fact]
+    public void The_freeze_is_a_repo_step_so_a_child_instance_gets_its_repo() =>
+        Assert.True(typeof(IRepoStep).IsAssignableFrom(typeof(ScopeFreezeStep)));
+
     // The freeze files the packet under its repo, so these contexts carry one (the shared helper's have none).
     private static StepContext Freeze(ScopingFacts facts) => ScopingStepContexts.Of("step.scope.freeze", facts) with { Repo = RepoName.From("demo") };
 }
