@@ -59,7 +59,7 @@ public sealed class SetupServiceTests : IDisposable
         _rig.Enter();
         _rig.ProfileNames(("demo", "/work/demo"));
         var onboarding = new Features.OnboardRepo.RepoOnboarding(_rig.Slice.Profiles, new Features.OnboardRepo.NoSecretCheckHook(), _rig.Recorder, new Core.Setup.KnownRepoEvents(), _rig.Git);
-        var service = new SetupService(_rig.Slice.Profiles, _rig.Backfill, mcp: null, onboarding);
+        var service = new SetupService(_rig.Slice.Profiles, _rig.Backfill, mcp: null, onboarding: onboarding);
 
         _ = await Tick(service);
         Assert.DoesNotContain(_rig.Slice.Store.Events, static e => e.Envelope.Type == EventTypes.RepoOnboarded);
