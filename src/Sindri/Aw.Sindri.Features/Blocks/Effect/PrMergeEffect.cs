@@ -27,15 +27,15 @@ internal sealed class PrMergeEffect(IPullRequests pulls, IFactContents facts, IA
     {
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();
-        var pr = await PrEffectFacts.Argument(facts, context, "pr", cancellationToken).ConfigureAwait(false);
-        var at = await PrEffectFacts.Argument(facts, context, "at", cancellationToken).ConfigureAwait(false);
+        var pr = await PrReplyFacts.Argument(facts, context, "pr", cancellationToken).ConfigureAwait(false);
+        var at = await PrReplyFacts.Argument(facts, context, "at", cancellationToken).ConfigureAwait(false);
         if (pr.IsError || at.IsError)
         {
             return pr.IsError ? pr.Error : at.Error;
         }
 
-        var link = PrEffectFacts.Text(pr.Value, "link", "url", "pr");
-        var head = PrEffectFacts.Text(at.Value, "headSha", "head", "sha");
+        var link = PrReplyFacts.Text(pr.Value, "link", "url", "pr");
+        var head = PrReplyFacts.Text(at.Value, "headSha", "head", "sha");
         if (string.IsNullOrEmpty(link) || string.IsNullOrEmpty(head))
         {
             return WorkflowErrors.NoRuntime.With($"effect.pr.merge of {context.Instance} needs the pull request's link ('pr') and the head the snapshot saw ('at': headSha)");
@@ -61,7 +61,7 @@ internal sealed class PrMergeEffect(IPullRequests pulls, IFactContents facts, IA
 
     private async ValueTask<Result<PullMergeMethod>> Method(EffectContext context, CancellationToken cancellationToken)
     {
-        var named = context.Arguments.TryGetValue("method", out var literal) ? PrEffectFacts.Text(literal) : null;
+        var named = context.Arguments.TryGetValue("method", out var literal) ? PrReplyFacts.Text(literal) : null;
         if (named is null)
         {
             var approved = await profile.Latest(cancellationToken).ConfigureAwait(false);

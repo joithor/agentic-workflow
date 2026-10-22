@@ -32,7 +32,7 @@ internal sealed class PrReplyEffect(IPullRequests pulls, IFactContents facts, IP
     {
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();
-        var form = context.Arguments.TryGetValue("form", out var named) ? PrEffectFacts.Text(named) : null;
+        var form = context.Arguments.TryGetValue("form", out var named) ? PrReplyFacts.Text(named) : null;
         return form switch
         {
             "thread" => await Post(context, reaction: false, cancellationToken).ConfigureAwait(false),
@@ -45,24 +45,24 @@ internal sealed class PrReplyEffect(IPullRequests pulls, IFactContents facts, IP
 
     private async ValueTask<Result<EffectDone>> Post(EffectContext context, bool reaction, CancellationToken cancellationToken)
     {
-        var pr = await PrEffectFacts.Fact(facts, context, "fact:pr", cancellationToken).ConfigureAwait(false);
-        var comment = await PrEffectFacts.Argument(facts, context, "comment", cancellationToken).ConfigureAwait(false);
-        var body = reaction ? default : await PrEffectFacts.Argument(facts, context, "body", cancellationToken).ConfigureAwait(false);
+        var pr = await PrReplyFacts.Fact(facts, context, "fact:pr", cancellationToken).ConfigureAwait(false);
+        var comment = await PrReplyFacts.Argument(facts, context, "comment", cancellationToken).ConfigureAwait(false);
+        var body = reaction ? default : await PrReplyFacts.Argument(facts, context, "body", cancellationToken).ConfigureAwait(false);
         if (pr.IsError || comment.IsError || body.IsError)
         {
             return pr.IsError ? pr.Error : comment.IsError ? comment.Error : body.Error;
         }
 
-        var link = PrEffectFacts.Text(pr.Value, "link", "url", "pr");
-        var thread = PrEffectFacts.Text(comment.Value, "key", "threadId", "thread");
-        var text = reaction ? "+1" : PrEffectFacts.Text(body.Value, "body", "text", "reply");
+        var link = PrReplyFacts.Text(pr.Value, "link", "url", "pr");
+        var thread = PrReplyFacts.Text(comment.Value, "key", "threadId", "thread");
+        var text = reaction ? "+1" : PrReplyFacts.Text(body.Value, "body", "text", "reply");
         if (string.IsNullOrEmpty(link) || string.IsNullOrEmpty(thread) || string.IsNullOrWhiteSpace(text))
         {
             return WorkflowErrors.NoRuntime.With($"effect.pr.reply of {context.Instance} needs the pull request ('fact:pr'), the comment's thread key and, for a thread reply, its body");
         }
 
         var marker = Marker(context.Identity);
-        var target = Target(context, link, thread, PrEffectFacts.Text(comment.Value, "editedAt", "edited_at"));
+        var target = Target(context, link, thread, PrReplyFacts.Text(comment.Value, "editedAt", "edited_at"));
         if (target.IsError)
         {
             return target.Error;
@@ -83,23 +83,23 @@ internal sealed class PrReplyEffect(IPullRequests pulls, IFactContents facts, IP
     /// <summary>The 'fixed', 'hold' and 'none' forms: post nothing, write the mark ('fixed' carries the fix's commit, 'hold' its reason).</summary>
     private async ValueTask<Result<EffectDone>> MarkOnly(EffectContext context, string form, CancellationToken cancellationToken)
     {
-        var pr = await PrEffectFacts.Fact(facts, context, "fact:pr", cancellationToken).ConfigureAwait(false);
-        var comment = await PrEffectFacts.Argument(facts, context, "comment", cancellationToken).ConfigureAwait(false);
-        var fix = await PrEffectFacts.Argument(facts, context, "fix", cancellationToken).ConfigureAwait(false);
-        var reason = await PrEffectFacts.Argument(facts, context, "reason", cancellationToken).ConfigureAwait(false);
+        var pr = await PrReplyFacts.Fact(facts, context, "fact:pr", cancellationToken).ConfigureAwait(false);
+        var comment = await PrReplyFacts.Argument(facts, context, "comment", cancellationToken).ConfigureAwait(false);
+        var fix = await PrReplyFacts.Argument(facts, context, "fix", cancellationToken).ConfigureAwait(false);
+        var reason = await PrReplyFacts.Argument(facts, context, "reason", cancellationToken).ConfigureAwait(false);
         if (pr.IsError || comment.IsError || fix.IsError || reason.IsError)
         {
             return pr.IsError ? pr.Error : comment.IsError ? comment.Error : fix.IsError ? fix.Error : reason.Error;
         }
 
-        var id = PrEffectFacts.Text(fix.Value, "thread") ?? PrEffectFacts.Text(comment.Value, "key", "threadId", "thread");
-        var target = Target(context, PrEffectFacts.Text(pr.Value, "link", "url", "pr"), id, PrEffectFacts.Text(comment.Value, "editedAt", "edited_at"));
+        var id = PrReplyFacts.Text(fix.Value, "thread") ?? PrReplyFacts.Text(comment.Value, "key", "threadId", "thread");
+        var target = Target(context, PrReplyFacts.Text(pr.Value, "link", "url", "pr"), id, PrReplyFacts.Text(comment.Value, "editedAt", "edited_at"));
         if (target.IsError)
         {
             return target.Error;
         }
 
-        var detail = new MarkDetail(PrEffectFacts.Text(reason.Value, "reason"), form == "fixed" ? PrEffectFacts.Text(fix.Value, "commit", "sha") : null, context.Identity);
+        var detail = new MarkDetail(PrReplyFacts.Text(reason.Value, "reason"), form == "fixed" ? PrReplyFacts.Text(fix.Value, "commit", "sha") : null, context.Identity);
         var written = await Record(target.Value, form, detail, cancellationToken).ConfigureAwait(false);
         return written.IsError ? written.Error : new EffectDone(Reply: null, Existed: !written.Value);
     }
@@ -107,22 +107,22 @@ internal sealed class PrReplyEffect(IPullRequests pulls, IFactContents facts, IP
     /// <summary>The 'fixedReplies' form: answers each comment whose latest mark is 'fixed' with a commit the push carried, then marks it 'thread'.</summary>
     private async ValueTask<Result<EffectDone>> ReplyFixed(EffectContext context, CancellationToken cancellationToken)
     {
-        var pr = await PrEffectFacts.Argument(facts, context, "pr", cancellationToken).ConfigureAwait(false);
-        var push = await PrEffectFacts.Argument(facts, context, "push", cancellationToken).ConfigureAwait(false);
-        var fallback = pr.IsSuccess && pr.Value.ValueKind != System.Text.Json.JsonValueKind.Undefined ? pr : await PrEffectFacts.Fact(facts, context, "fact:pr", cancellationToken).ConfigureAwait(false);
+        var pr = await PrReplyFacts.Argument(facts, context, "pr", cancellationToken).ConfigureAwait(false);
+        var push = await PrReplyFacts.Argument(facts, context, "push", cancellationToken).ConfigureAwait(false);
+        var fallback = pr.IsSuccess && pr.Value.ValueKind != System.Text.Json.JsonValueKind.Undefined ? pr : await PrReplyFacts.Fact(facts, context, "fact:pr", cancellationToken).ConfigureAwait(false);
         if (fallback.IsError || push.IsError)
         {
             return fallback.IsError ? fallback.Error : push.Error;
         }
 
-        var link = PrEffectFacts.Text(fallback.Value, "link", "url", "pr");
+        var link = PrReplyFacts.Text(fallback.Value, "link", "url", "pr");
         var anchor = Target(context, link, "-", editedAt: null);
         if (anchor.IsError)
         {
             return anchor.Error;
         }
 
-        var carried = PrEffectFacts.Commits(push.Value);
+        var carried = PrReplyFacts.Commits(push.Value);
         var latest = await marks.Latest(anchor.Value.Pr, cancellationToken).ConfigureAwait(false);
         if (latest.IsError)
         {

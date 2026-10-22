@@ -12,7 +12,7 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 /// What the PR effects read from their context: an argument or an instance fact reaches an effect as the stored reference ('{ref, sha256}'),
 /// and these read its content (JSON, or the text it is) and pull a text out of it.
 /// </summary>
-internal static class PrEffectFacts
+internal static class PrReplyFacts
 {
     /// <summary>An argument's value: the content when it is a stored fact, else the literal; an undefined element when it is absent.</summary>
     /// <param name="facts">The fact content port.</param>
