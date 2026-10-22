@@ -34,7 +34,7 @@ public abstract partial class SindriApiContract
 
         var started = (await Reach(server).RunService(_api, "stuck", Token)).Value;
 
-        Expect.Equal(("JOB-0000000000000000000000000000000e", 5L), (started.JobId, started.Accepted.Sequence));
+        Expect.Equal(((string)GoldenFiles.Node("services-name-run", "started")["jobId"]!, (long)GoldenFiles.Node("services-name-run", "started")["accepted"]!["sequence"]!), (started.JobId, started.Accepted.Sequence));
         Expect.Sequence(["stuck"], server.RunServiceCalls);
     }
 
@@ -46,7 +46,7 @@ public abstract partial class SindriApiContract
         var result = await Reach(server).RunService(_api, "stuck", Token);
 
         Expect.Equal(("SND-JOB-409", ErrorKind.Conflict), (result.Error.Code, result.Error.Kind));
-        Expect.Equal("JOB-0000000000000000000000000000000e", result.Error.Extensions?.FirstOrDefault(e => string.Equals(e.Key, "runningJob", StringComparison.Ordinal)).Value.GetString());
+        Expect.Equal((string)GoldenFiles.Node("services-name-run", "already-running")["runningJob"]!, result.Error.Extensions?.FirstOrDefault(e => string.Equals(e.Key, "runningJob", StringComparison.Ordinal)).Value.GetString());
     }
 
     [Fact]
@@ -57,8 +57,8 @@ public abstract partial class SindriApiContract
         var paused = (await Reach(server).PauseService(_api, "heartbeat", Token)).Value;
         var resumed = (await Reach(server).ResumeService(_api, "heartbeat", Token)).Value;
 
-        Expect.Equal(5L, paused.Sequence);
-        Expect.Equal(5L, resumed.Sequence);
+        Expect.Equal((long)GoldenFiles.Node("services-name-pause", "accepted")["sequence"]!, paused.Sequence);
+        Expect.Equal((long)GoldenFiles.Node("services-name-resume", "accepted")["sequence"]!, resumed.Sequence);
         Expect.Sequence(["heartbeat"], server.PauseServiceCalls);
         Expect.Sequence(["heartbeat"], server.ResumeServiceCalls);
     }
