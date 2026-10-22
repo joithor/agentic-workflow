@@ -1,6 +1,8 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Aw.Sindri.Ui.ViewModels.Recipes;
+using Aw.Sindri.Ui.Views.Layout;
 
 namespace Aw.Sindri.Ui.Views.Recipes;
 
@@ -11,6 +13,16 @@ internal sealed partial class RecipesPage : UserControl
     {
         InitializeComponent();
         AddHandler(RecipeRow.OpenEvent, OnOpen);
+    }
+
+    /// <inheritdoc />
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == PageLayout.TierProperty && this.FindControl<Grid>("RecipesHeader") is { } header)
+        {
+            RecipeColumns.Apply(header, change.GetNewValue<PageTier>());
+        }
     }
 
     private RecipesPageViewModel? Page => DataContext as RecipesPageViewModel;
@@ -28,6 +40,16 @@ internal sealed partial class RecipesPage : UserControl
     private void OnAll(object? sender, RoutedEventArgs e) => Page?.ShowAll();
 
     private void OnNeeds(object? sender, RoutedEventArgs e) => Page?.ShowNeeds();
+
+#pragma warning disable MA0155 // why: an Avalonia RoutedEvent handler returns void, so it can only be async void
+    private async void OnWindow(object? sender, RoutedEventArgs e)
+    {
+        if (Page is { } page && sender is Control { DataContext: WindowChoiceViewModel choice })
+        {
+            await page.ChooseWindow(choice.Window, CancellationToken.None).ConfigureAwait(true);
+        }
+    }
+#pragma warning restore MA0155
 
     private void OnApproveNew(object? sender, RoutedEventArgs e) => Page?.RequestApproveNew();
 

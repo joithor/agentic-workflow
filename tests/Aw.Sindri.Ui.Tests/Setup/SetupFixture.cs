@@ -69,6 +69,14 @@ internal sealed class SetupFixture
         return list;
     }
 
+    /// <summary>The golden with one repo line's providers set, as (provider, state, detail) the API serves them; the line keeps its other fields.</summary>
+    internal static JsonNode WithProviders(JsonNode list, string step, string repo, params (string Provider, string State, string? Detail)[] providers)
+    {
+        var line = list["steps"]!.AsArray().Single(s => (string)s!["id"]! == step)!["items"]!.AsArray().Single(i => (string)i!["repo"]! == repo)!;
+        line["providers"] = new JsonArray([.. providers.Select(p => (JsonNode)new JsonObject { ["provider"] = p.Provider, ["state"] = p.State, ["detail"] = p.Detail })]);
+        return list;
+    }
+
     /// <summary>The golden with one step's error and progress set (a failed step that also counts).</summary>
     internal static JsonNode WithProgress(JsonNode list, string step, int done, int total, string? unit = null)
     {

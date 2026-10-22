@@ -90,10 +90,15 @@ public sealed partial class PhaseTreeTests
         Assert.Contains(errors, static e => e.Contains("RCP-WIRE-003", StringComparison.Ordinal));
     }
 
-    /// <summary>LN-WF1 placeholder: no phase transition carries an effect until 'effect.line.report' has a runtime. LN-WF1 flips this to 'shipped' on ship to babysit and 'merged' on babysit to merged, each with line = fact:lineContext.</summary>
+    /// <summary>BD7, LN-WF1: the phase reports 'shipped' on ship to babysit and 'merged' on babysit to merged, and 'failed' when the owner stops it, each with line = fact:lineContext, and no other transition carries an effect.</summary>
     [Fact, Trait("Lane", "unit")]
-    public void LN_WF1_placeholder_no_phase_transition_carries_an_effect_yet() =>
-        Assert.All(LineTree.Recipe("workflow.phase").Transitions, static t => Assert.Empty(t.Effects));
+    public void The_phase_reports_shipped_merged_and_failed_to_its_line_and_no_other_transition_carries_an_effect()
+    {
+        var withEffects = LineTree.Recipe("workflow.phase").Transitions.Where(static t => t.Effects.Count > 0).ToList();
+
+        Assert.Equal([("ship", "babysit", "shipped"), ("babysit", "merged", "merged"), ("owner", "dropped", "failed")], withEffects.Select(static t => (Assert.Single(t.From), t.To, Assert.Single(t.Effects).With["status"].Literal!.Value.GetString())));
+        Assert.All(withEffects, static t => Assert.Equal("effect.line.report", Assert.Single(t.Effects).Use.Value));
+    }
 
     [Fact, Trait("Lane", "unit")]
     public void The_babysitter_gives_up_before_phase_gives_up_on_it_so_the_outcome_propagates()

@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Aw.Sindri.Core.LensPacks;
 
 namespace Aw.Sindri.Features.Line;
 
@@ -8,10 +9,13 @@ namespace Aw.Sindri.Features.Line;
 /// options[]), deferred[] (question, owner, buildMayAssume), signals[] (item, kind, statement, runs, reference), contracts[] (lane, target, quote, row),
 /// acceptance.items[] (the live list: scope's items unchanged, added ones with cites, superseded ones with supersededBy), resolutions[] (finding, text),
 /// escapes[] (kind, id). 'lensRounds' is the round log: each round has selected[] (lens ids), writerModel and lenses[] (lens, state, model, findings[] with
-/// id, severity); 'accepted' lists the finding ids the owner accepted as risks.
+/// id, severity); 'accepted' lists the finding ids the owner accepted as risks; 'style' is the pinned style pack, when the Step has one.
 /// </summary>
-internal sealed class DesignContext(JsonNode? scope, JsonNode? design, JsonNode? lensRounds, JsonNode? accepted)
+internal sealed class DesignContext(JsonNode? scope, JsonNode? design, JsonNode? lensRounds, JsonNode? accepted, StylePack? style = null)
 {
+    /// <summary>The style pack spec.md is checked against; null when the caller has none (DSN-STYLE-001 then warns).</summary>
+    internal StylePack? Style { get; } = style;
+
     /// <summary>The scope's surface ids.</summary>
     internal IReadOnlyList<string> SurfaceIds { get; } = [.. LineJson.Items(LineJson.Obj(scope, "scopeMap"), "surfaces").Select(static s => LineJson.Str(s, "id")).OfType<string>()];
 
