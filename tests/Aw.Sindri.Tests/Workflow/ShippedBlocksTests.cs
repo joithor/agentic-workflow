@@ -29,7 +29,7 @@ public sealed class ShippedBlocksTests
         Assert.Equal(
             [
                 "effect.claim.ref", "effect.line.report", "effect.notify.desk", "effect.pr.create-stacked", "effect.pr.merge",
-                "effect.pr.merge-docs", "effect.pr.open", "effect.pr.push", "effect.pr.record", "effect.pr.reply", "effect.pr.rerun-checks", "effect.pr.restack",
+                "effect.pr.merge-docs", "effect.pr.open", "effect.pr.purge-marks", "effect.pr.push", "effect.pr.record", "effect.pr.reply", "effect.pr.rerun-checks", "effect.pr.restack",
                 "evidence.check", "gate.budget.available", "gate.pr.autofix-cap", "gate.pr.base-is-default", "gate.pr.diff-scope",
                 "gate.pr.secret-scan", "gate.revision-bound", "gate.route.startable", "input.context.code", "input.context.history",
                 "input.context.lenses", "input.context.retrieve", "input.handoff-note", "input.phase-packet", "input.pr.context", "step.babysit.watch",
@@ -103,7 +103,7 @@ public sealed class ShippedBlocksTests
 
         Assert.Equal([typeof(PrDiffScopeGate), typeof(PrSecretScanGate), typeof(BudgetAvailableGate), typeof(RouteStartableGate), typeof(RevisionBoundGate), typeof(PrAutofixCapGate)], scope.ServiceProvider.GetServices<IGate>().Select(static g => g.GetType()));   // engine P7 adds the route stub
         Assert.Empty(scope.ServiceProvider.GetServices<IStep>());
-        Assert.Equal([typeof(ClaimRefEffect), typeof(NotifyDeskEffect), typeof(PrPushEffect), typeof(PrRecordEffect), typeof(PrRerunChecksEffect), typeof(PrMergeEffect), typeof(PrReplyEffect), typeof(PrOpenEffect), typeof(LineReportEffect)], scope.ServiceProvider.GetServices<IEffectKind>().Select(static e => e.GetType()));   // engine P6
+        Assert.Equal([typeof(ClaimRefEffect), typeof(NotifyDeskEffect), typeof(PrPushEffect), typeof(PrRecordEffect), typeof(PrRerunChecksEffect), typeof(PrMergeEffect), typeof(PrReplyEffect), typeof(PrPurgeMarksEffect), typeof(PrOpenEffect), typeof(LineReportEffect)], scope.ServiceProvider.GetServices<IEffectKind>().Select(static e => e.GetType()));   // engine P6
     }
 
     [Theory, Trait("Lane", "unit")]

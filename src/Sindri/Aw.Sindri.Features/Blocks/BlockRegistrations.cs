@@ -75,6 +75,7 @@ internal static class BlockRegistrations
         .AddEffect<PrRerunChecksEffect>() // PB-E: re-run a flaky check
         .AddEffect<PrMergeEffect>()       // PB-E: the merge, expected-head checked
         .AddEffect<PrReplyEffect>()       // PB-E: replies, reactions and marks
+        .AddEffect<PrPurgeMarksEffect>()  // PB-E: W26's terminal cleanup of a PR's marks
         .AddEffect<PrOpenEffect>();       // PB-O (BD1)
 
     /// <summary>Registers the gates that have runtimes in this build.</summary>
