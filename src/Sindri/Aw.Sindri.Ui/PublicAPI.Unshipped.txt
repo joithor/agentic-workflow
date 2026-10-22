@@ -143,6 +143,9 @@ Aw.Sindri.Ui.Platform.ILauncher.OpenFile(string! path, System.Threading.Cancella
 Aw.Sindri.Ui.Platform.ILauncher.OpenUri(System.Uri! uri, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<bool>!
 Aw.Sindri.Ui.Platform.IFilePicker
 Aw.Sindri.Ui.Platform.IFilePicker.Pick(string! title, int limit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Aw.Sindri.Ui.Platform.PickedFile?>!
+Aw.Sindri.Ui.Platform.IFolderPicker
+Aw.Sindri.Ui.Platform.IFolderPicker.IsAvailable.get -> bool
+Aw.Sindri.Ui.Platform.IFolderPicker.Pick(string! title, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<string?>!
 Aw.Sindri.Ui.Platform.PickedFile
 Aw.Sindri.Ui.Platform.PickedFile.<Clone>$() -> Aw.Sindri.Ui.Platform.PickedFile!
 Aw.Sindri.Ui.Platform.PickedFile.Content.get -> System.ReadOnlyMemory<byte>

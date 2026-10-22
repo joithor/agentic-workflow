@@ -69,4 +69,11 @@
     <Setter Property="Background" Value="{DynamicResource Brush.Surface3}" />
     <Setter Property="Foreground" Value="{DynamicResource Brush.PrimaryHoverFill}" />
   </Style>
+  <Style Selector="ProgressBar.map-meter.failed">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Error}" />
+  </Style>
+  <Style Selector="Border.agent-line">
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
 </Styles>
