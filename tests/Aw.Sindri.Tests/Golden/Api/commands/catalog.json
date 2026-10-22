@@ -2,16 +2,17 @@
   "rows": [
     {
       "action": "AddRepo",
-      "class": "desk",
+      "class": "job",
       "allowedCallers": [
         "human+terminal",
-        "human"
+        "human",
+        "service"
       ],
       "terminal": false,
       "method": "POST",
       "route": "/sindri/setup/repos",
       "cli": "sindri repo add <path>",
-      "ui": "pending:SO-A3",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null,
@@ -732,17 +733,17 @@
     },
     {
       "action": "RegisterMcp",
-      "class": "desk",
+      "class": "job",
       "allowedCallers": [
         "human+terminal",
         "human",
-        "service:setup"
+        "service"
       ],
       "terminal": false,
       "method": "POST",
       "route": "/sindri/setup/mcp",
       "cli": "sindri mcp register --apply",
-      "ui": "pending:SO-A4",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null,
