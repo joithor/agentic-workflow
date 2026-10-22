@@ -107,6 +107,34 @@ public sealed class PrSnapshotStepTests
     }
 
     [Fact]
+    public async Task Marked_comments_are_handled_and_leave_the_unhandled_count()
+    {
+        _pull.ChecksState = PullChecksState.Passing;
+        _pull.Threads.Add(Thread("t1"));
+        _pull.Threads.Add(Thread("t2"));
+        _pull.Threads.Add(Thread("t3"));
+        await Mark("t1", "hold", minutes: 1, effect: "e1", reason: "type");
+        await Mark("t2", "fixed", minutes: 1, effect: "e2", commit: "bbbb2222");
+
+        var state = Fact(await Snapshot(), "fact:prState");
+
+        Assert.Equal(1, state.GetProperty("queue").GetProperty("unhandled").GetInt32());
+        Assert.Equal(1, state.GetProperty("queue").GetProperty("held").GetInt32());
+    }
+
+    [Fact]
+    public async Task Comments_that_are_all_marked_do_not_trigger_the_comments_outcome()
+    {
+        _pull.ChecksState = PullChecksState.Passing;
+        _pull.Threads.Add(Thread("t1"));
+        _pull.Threads.Add(Thread("t2"));
+        await Mark("t1", "hold", minutes: 1, effect: "e1", reason: "type");
+        await Mark("t2", "fixed", minutes: 1, effect: "e2", commit: "bbbb2222");
+
+        Assert.Equal("green", Outcome(await Snapshot()));
+    }
+
+    [Fact]
     public async Task A_merged_pull_request_reports_merged_and_its_sha()
     {
         _pull.State = PullState.Merged;
