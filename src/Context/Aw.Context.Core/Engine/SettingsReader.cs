@@ -43,7 +43,7 @@ public static partial class SettingsReader
 
         if (UnknownKey(element) is { } unknown)
         {
-            return Invalid("context." + unknown, "is not a context setting this build knows (repos, docs, cascadeDepth, cascadeComponentFanOut, deadline, maxBudget, minHits, labeling, scrub, sessions, sources, eval, code, extract)");
+            return Invalid("context." + unknown, "is not a context setting this build knows (repos, docs, cascadeDepth, cascadeComponentFanOut, deadline, maxBudget, minHits, labeling, scrub, sessions, sources, eval, code, extract, publish)");
         }
 
         if (CodeUnknownKey(element) is { } codeKey)
@@ -89,6 +89,7 @@ public static partial class SettingsReader
                     Labeling = Labeling(section.Labeling),
                     Adjudicator = Adjudicates(section.Eval),
                     Recognizers = Recognizers(section.Extract),
+                    Publish = Publish(section.Publish),
                 },
                 section.Code,
                 codeDeadline.Value),
@@ -169,6 +170,8 @@ public static partial class SettingsReader
 
     private static Error? Refused(ContextSection section, IReadOnlyList<string> globs) => Problem(section, globs) ?? RecognizerRules.Problem(section.Extract?.Recognizers) ?? GraphifyRules.Problem(section.Extract?.Graphify);
 
+    private static PublishSettings Publish(PublishSection? section) => new() { WaitForIndexMinutes = section?.WaitForIndexMinutes ?? PublishSettings.DefaultWaitMinutes };
+
     private static bool Adjudicates(EvalSection? section) => section?.Adjudicator ?? false;
 
     private static LabelingSettings Labeling(LabelingSection? section) =>
@@ -214,6 +217,7 @@ public static partial class SettingsReader
             { MinHits: < 0 or > 50 } => Invalid("context.minHits", "is 0 to 50"),
             { Labeling.MaxTokens: < 1_000 or > 20_000_000 } => Invalid("context.labeling.maxTokens", "is 1000 to 20000000 tokens"),
             { Labeling.MaxTokensPerSync: < 1 or > 20_000_000 } => Invalid("context.labeling.maxTokensPerSync", "is 1 to 20000000 tokens"),
+            { Publish.WaitForIndexMinutes: < 0 or > PublishSettings.MaxWaitMinutes } => Invalid("context.publish.waitForIndexMinutes", "is 0 to 240 minutes (0: don't wait for the code index)"),
             _ => CascadeProblem(section),
         };
     }
@@ -238,7 +242,7 @@ public static partial class SettingsReader
 
     private static string? UnknownKey(JsonElement element)
     {
-        string[] known = ["repos", "docs", "cascadeDepth", "cascadeComponentFanOut", "deadline", "maxBudget", "minHits", "labeling", "scrub", "sessions", "sources", "eval", "code", "extract"];
+        string[] known = ["repos", "docs", "cascadeDepth", "cascadeComponentFanOut", "deadline", "maxBudget", "minHits", "labeling", "scrub", "sessions", "sources", "eval", "code", "extract", "publish"];
         return element.EnumerateObject().Select(p => p.Name).FirstOrDefault(n => !known.Contains(n, StringComparer.Ordinal)) is { } name ? Printable(name) : null;
     }
 

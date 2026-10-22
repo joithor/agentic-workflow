@@ -16,13 +16,14 @@ internal static class LegacyRecipeRows
         return reading.Document!.Recipe;
     }
 
-    /// <summary>The long form of the legacy recipe as the registry stored it: today's JSON (with its null 'hash') without the declarations P2b added (urgency, outputs, kind) and the two P4c added (name, generate).</summary>
+    /// <summary>The long form of the legacy recipe as the registry stored it: today's JSON (with its null 'hash') without the declarations P2b added (urgency, outputs, kind), the two P4c added (name, generate) and the plain-words name SO-E1 added (displayName).</summary>
     internal static JsonObject Json(string yaml)
     {
         var node = JsonNode.Parse(AwJson.Serialize(Bind(yaml) with { Hash = null }, SliceHarness.Json))!.AsObject();
         _ = node.Remove("urgency");
         _ = node.Remove("outputs");
         _ = node.Remove("name");
+        _ = node.Remove("displayName");
         foreach (var input in node["inputs"]!.AsArray())
         {
             _ = input!.AsObject().Remove("kind");

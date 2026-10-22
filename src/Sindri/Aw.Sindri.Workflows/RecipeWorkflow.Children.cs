@@ -234,7 +234,9 @@ internal sealed partial class RecipeWorkflow
 
     private IReadOnlyList<ChildView>? ChildViews() => _children ? [.. _childRuns.Values.Select(static r => new ChildView(r.Address, r.State))] : null;
 
-    private InstanceViewContext ViewContext() => new(_mirrored, _provenance, ChildViews(), _subject, _contents, _injection);
+    private static DateTimeOffset? StartedAtOf(InstanceStart? start) => start is { StartedAt: var at } && at != default ? at : null;
+
+    private InstanceViewContext ViewContext() => new(_mirrored, _provenance, ChildViews(), _subject, _contents, _injection, StartedAtOf(_start), _start?.StartedBy);
 
     /// <summary>What a child hands its parent (DT spec §8.4): its declared outputs. A root instance's result carries none; neither does a history from before engine P7.</summary>
     private Dictionary<FactKey, FactValue>? OutputsOf(WorkflowInstance ended)

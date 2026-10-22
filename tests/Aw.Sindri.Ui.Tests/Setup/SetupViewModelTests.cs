@@ -1,6 +1,7 @@
 using System.Net;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Setup;
 using static Aw.Sindri.Ui.Tests.Setup.SetupFixture;
 
@@ -17,6 +18,32 @@ public sealed class SetupViewModelTests
     private static string[] Ids(IEnumerable<SetupStepViewModel> steps) => [.. steps.Select(s => s.Id)];
 
     private static SetupStepViewModel Step(SetupViewModel setup, string id) => setup.Steps.Single(s => s.Id == id);
+
+    [Fact]
+    public async Task Map_row_has_no_button_unless_it_failed()
+    {
+        foreach (var scenario in (string[])["first-run", "running-progress", "map-retrying", "all-done"])
+        {
+            Assert.False(Step(await ReadWith(scenario), "map").HasAction, scenario);   // waiting, building, retrying by itself, done: the map builds itself
+        }
+
+        var failed = Step(await ReadWith("failed"), "map");
+        var building = Step(await ReadWith("running-progress"), "map");
+        Assert.Equal((true, "Retry"), (failed.HasAction, failed.Action?.Label));
+        Assert.Equal((true, 0.4, "40 of 100", false), (building.HasProgress, building.ProgressFraction, building.ProgressText, building.IsMeterFailed));   // a meter, not a button
+        Assert.Equal(Labels.SetupMapRetries, failed.HintText);   // and a line that it also retries on its own
+        Assert.Equal(string.Empty, building.HintText);
+    }
+
+    [Fact]
+    public async Task A_failed_map_that_counted_shows_where_it_stopped_on_a_meter_in_the_error_colour()
+    {
+        _f.Serve(WithProgress(Golden("failed"), "map", 40, 100));
+
+        var map = Step(await _f.Read(Token), "map");
+
+        Assert.Equal((true, true, 0.4, "40 of 100"), (map.HasProgress, map.IsMeterFailed, map.ProgressFraction, map.ProgressText));
+    }
 
     [Fact]
     public async Task First_run_opens_the_first_step_and_shows_to_do_for_the_rest()
@@ -236,6 +263,17 @@ public sealed class SetupViewModelTests
 
         Assert.Equal((true, false, false), (setup.IsNotServed, setup.IsHomeLineShown, setup.IsReading));
         Assert.Equal("Setup isn't available in this build yet.", setup.NotServedText);
+    }
+
+    [Fact]
+    public async Task A_404_after_steps_were_shown_drops_the_stale_rows_and_shows_only_the_not_available_text()
+    {
+        var setup = await ReadWith("first-run");
+        _f.Server.SetupAnswer = RouteAnswer.Problem(HttpStatusCode.NotFound, "SND-API-004", "The API answered without an error code");
+
+        await setup.Refresh(Url, Token);
+
+        Assert.Equal((true, 0, false, false), (setup.IsNotServed, setup.Steps.Count, setup.HasSteps, setup.IsHomeLineShown));
     }
 
     [Fact]
