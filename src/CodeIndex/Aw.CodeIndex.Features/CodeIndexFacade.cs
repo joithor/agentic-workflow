@@ -12,11 +12,12 @@ namespace Aw.CodeIndex.Features;
 /// <summary>
 /// The code index's facade over the index files (spec §7): the build and the reads that need only the structure layer.
 /// A repo outside the scope, or one with no index, answers the same SND-CODEIDX-013 (Callers and Callees of a ref that names no symbol: 011).
-/// Similar and Neighbors answer 013 until the clones and embeddings layers exist.
+/// Similar answers from the clone rows; Neighbors embeds its text with the model the index was built with and answers from the stored vectors.
 /// </summary>
 /// <param name="build">The build slice.</param>
 /// <param name="store">The index files.</param>
-public sealed class CodeIndexFacade(IService<BuildCodeIndexRequest, BuildReport> build, IIndexStore store) : ICodeIndex
+/// <param name="embedder">Embeds a Neighbors query with the model the index was embedded with.</param>
+public sealed partial class CodeIndexFacade(IService<BuildCodeIndexRequest, BuildReport> build, IIndexStore store, IEmbedder embedder) : ICodeIndex
 {
     /// <inheritdoc />
     public async ValueTask<Result<BuildReport>> Build(CodeIndexScope scope, RepoName repo, CommitSha commit, IProgress<string> progress, CancellationToken cancellationToken)
@@ -163,14 +164,6 @@ public sealed class CodeIndexFacade(IService<BuildCodeIndexRequest, BuildReport>
     /// <inheritdoc />
     public ValueTask<Result<CallsAnswer>> Callees(CodeIndexScope scope, SymbolRef symbol, CallDepth depth, CancellationToken cancellationToken)
         => Walk(scope, new WalkQuery(symbol, CallDirection.Callees, depth, IncludeImplementations: false), cancellationToken);
-
-    /// <inheritdoc />
-    public ValueTask<Result<SimilarAnswer>> Similar(CodeIndexScope scope, SymbolRef symbol, CancellationToken cancellationToken)
-        => ValueTask.FromResult<Result<SimilarAnswer>>(CodeIndexErrors.IndexNotBuilt.With("the clones layer is not built by this version"));
-
-    /// <inheritdoc />
-    public ValueTask<Result<NeighborsAnswer>> Neighbors(CodeIndexScope scope, RepoName repo, string text, int k, CancellationToken cancellationToken)
-        => ValueTask.FromResult<Result<NeighborsAnswer>>(CodeIndexErrors.IndexNotBuilt.With("the embeddings layer is not built by this version"));
 
     private async ValueTask<Result<CallsAnswer>> Walk(CodeIndexScope scope, WalkQuery query, CancellationToken cancellationToken)
     {

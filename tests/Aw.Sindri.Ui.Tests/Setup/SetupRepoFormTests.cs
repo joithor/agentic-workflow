@@ -28,10 +28,10 @@ public sealed class SetupRepoFormTests
     public async Task The_form_replaces_the_terminal_command_once_the_catalog_lets_the_app_add_a_repo()
     {
         var (_, form, step) = await Open();
-        var (_, closed, closedStep) = await Open(new SetupFixture());   // AddRepo is still pending in the served catalog
+        var (_, closed, closedStep) = await Open(new SetupFixture("extra-approve-all-ready"));   // this catalog has no AddRepo row (the served one is ready since api #528)
 
         Assert.Equal((true, false), (form.IsAvailable, step.HasAction));
-        Assert.Equal((false, "sindri repo add <path>"), (closed.IsAvailable, closedStep.Action?.Cli?.Cli));
+        Assert.Equal((false, "sindri-app repo add <path>"), (closed.IsAvailable, closedStep.Action?.Cli?.Cli));
     }
 
     [Fact]
