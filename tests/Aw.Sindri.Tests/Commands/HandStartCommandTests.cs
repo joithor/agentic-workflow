@@ -18,8 +18,8 @@ using Aw.Sindri.Features.CreateItem;
 using Aw.Sindri.Features.ListItems;
 using Aw.Sindri.Features.StartInstance;
 using Aw.Sindri.Host.Commands;
-using Microsoft.Extensions.DependencyInjection;
 using Aw.Sindri.Testing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Tests.Commands;
 
@@ -164,7 +164,7 @@ public sealed class HandStartCommandTests : IDisposable
         var api = StartApi();
         var down = SindriErrors.NotRunning.With("not running (fix: start it with 'sindri')");
 
-        var code = await Run(api, c => HandStartCommand.Babysit([Link, "--item", "ITM-1"], c.Desk with { EnsureRunning = _ => Task.FromResult<Aw.Kernel.Error?>(down) }, c.Services, c.Output, Token));
+        var code = await Run(api, c => HandStartCommand.Babysit([Link, "--item", "ITM-1"], c.Desk with { EnsureRunning = _ => Task.FromResult<Kernel.Error?>(down) }, c.Services, c.Output, Token));
 
         Assert.Equal(1, code);
         Assert.Empty(api.Calls);
@@ -173,7 +173,7 @@ public sealed class HandStartCommandTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task A_refused_start_is_exit_2()
     {
-        var api = new RoutedApi().OnRaw("/sindri/workflow/instances", HttpStatusCode.Conflict, """{"title":"SND-WF-012","detail":"refused"}""");
+        var api = new RoutedApi().OnRaw("/sindri/workflow/instances", HttpStatusCode.Conflict, """{"type":"about:blank","title":"SND-WF-012","status":409,"detail":"refused"}""");
 
         var code = await Run(api, c => HandStartCommand.Babysit([Link, "--item", "ITM-1"], c.Desk, c.Services, c.Output, Token));
 
@@ -207,7 +207,7 @@ public sealed class HandStartCommandTests : IDisposable
     {
         var client = new ControlPlaneClient(_probe, SliceHarness.Json,
             CallerHeaders.For(new AgentSession(Signal: null, Terminal: true, Prover: false), new InMemoryHumanTokenStore(), _ => ValueTask.FromResult((RepoName?)null)), handler: api);
-        var desk = new RecipeDesk(client, TextReader.Null, static _ => Task.FromResult<Aw.Kernel.Error?>(null));
+        var desk = new RecipeDesk(client, TextReader.Null, static _ => Task.FromResult<Kernel.Error?>(null));
         await using var services = new ServiceCollection().AddSingleton(TimeProvider.System).BuildServiceProvider();
         return await verb((desk, services, new Output(_out, _error, SliceHarness.Json)));
     }
