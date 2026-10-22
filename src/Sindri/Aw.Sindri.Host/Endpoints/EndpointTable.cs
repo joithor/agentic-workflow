@@ -110,6 +110,7 @@ internal static class EndpointTable
         _ = commands.MapPromoteContextMap();
         _ = commands.MapProposeContextMap();
         _ = commands.MapReviewContextMap();
+        _ = commands.MapShowLineHoldout();
         _ = commands.MapStopProcess();
         _ = commands.MapApproveAllRecipes();
         _ = commands.MapAddRepo();

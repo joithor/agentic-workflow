@@ -3,7 +3,9 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Features.LineHoldout;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Testing.Challenges;
 using Aw.Sindri.Testing.Prove;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 
 namespace Aw.Sindri.Tests.LineHoldout;
@@ -15,9 +17,11 @@ public sealed class ShowLineHoldoutTests
 
     private readonly InMemoryHoldoutStore _store = new();
 
+    private readonly FakeTimeProvider _clock = new(KnownInstants.Epoch);
+
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static ShowLineHoldoutService Service() => new();
+    private ShowLineHoldoutService Service() => new(_store, new InMemoryChallenges(_clock));
 
     [Fact]
     public async Task Without_an_answer_it_shows_counts_and_a_challenge_and_no_text()
