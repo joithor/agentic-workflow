@@ -45,7 +45,7 @@ internal sealed class PrContextInput(IPullRequests pulls, IChangedPaths changed,
 
         var state = await InputFacts.Read(contents, context, "fact:prState", cancellationToken).ConfigureAwait(false);
         var workspace = await InputFacts.Read(contents, context, "fact:workspace", cancellationToken).ConfigureAwait(false);
-        if (Changed(state) ?? Changed(workspace) is { } changed)
+        if ((Changed(state) ?? Changed(workspace)) is { } changed)
         {
             return changed;
         }
