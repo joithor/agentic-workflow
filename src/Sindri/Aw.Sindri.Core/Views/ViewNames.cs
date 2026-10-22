@@ -33,9 +33,9 @@ public static class ViewNames
     /// <summary>Launches, keyed by launch id (API P10a).</summary>
     public const string Launches = "launches";
 
-    /// <summary>Every view that has a table.</summary>
     /// <summary>The newest built code index per repo (code index spec §8), folded from 'codeindex.built'.</summary>
     public const string CodeIndex = "code-index";
 
+    /// <summary>Every view that has a table.</summary>
     public static IReadOnlyList<string> All { get; } = [CodeIndex, Services, Profile, Items, ItemAliases, ItemTimeline, Requests, Decisions, NeedsYou, Jobs, Launches];
 }

@@ -1,6 +1,7 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Views;
+using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.Views;
 
