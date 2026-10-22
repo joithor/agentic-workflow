@@ -53,7 +53,7 @@ public sealed class PausedAnswerViewModelTests
         await form.Send();
 
         var (_, body) = Assert.Single(_server.CommandCalls);
-        Assert.Equal((CommandKind.Answer, (AnswerVariant?)AnswerVariant.Reject, (string?)null), (body.Kind, body.Answer, body.Text));
+        Assert.Equal((CommandKind.Answer, AnswerVariant.Reject, null), (body.Kind, body.Answer, body.Text));
         Assert.Empty(_server.CompleteCalls);
     }
 

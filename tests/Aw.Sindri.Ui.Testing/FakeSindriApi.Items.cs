@@ -52,9 +52,6 @@ internal sealed partial class FakeSindriApi
     /// <summary>POST /sindri/items/{id}/close's answer.</summary>
     public RouteAnswer Close { get; set; } = RouteAnswer.SpecShaped("items-id-close", "accepted");
 
-    /// <summary>Held open until set, to see a command's sending phase.</summary>
-    public TaskCompletionSource? CommandGate { get; set; }
-
     /// <summary>Runs after an accepted CloseItem, as the projector would move the item (a test sets the next answers here).</summary>
     public Action<string, CloseItemRequest>? OnClosed { get; set; }
 
