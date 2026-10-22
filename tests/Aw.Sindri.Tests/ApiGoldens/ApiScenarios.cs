@@ -54,8 +54,8 @@ internal static class ApiScenarios
             ? await CodeIndexScenarios.Start(ct)
             : ContextApiScenarios.Handles(slug)
             ? await ContextApiScenarios.Start(slug, scenario, ct)
-            : SetupHost(slug, scenario, ct) is { } setup
-            ? await setup
+            : IsSetup(slug, scenario)
+            ? await SetupHost(slug, scenario, ct)
             : JobScenarios.Handles(slug, scenario) || JobScopeScenarios.Handles(slug, scenario)
             ? await Jobs.JobHost.Start(ct, pump: false)
             : LaunchScenarios.Handles(slug, scenario)
@@ -68,11 +68,13 @@ internal static class ApiScenarios
             ? await GoldenHost.Start(temporary: true, ct, ItemScenarios.ProfileYaml)
             : await GoldenHost.Start(temporary: !NeedsNonTemporaryHome(slug, scenario), ct, ProfileYaml(slug, scenario));
 
-    /// <summary>The host of a setup scenario (the steps, or adding a repo), else null.</summary>
-    private static Task<GoldenHost>? SetupHost(string slug, string scenario, CancellationToken ct) =>
-        SetupScenarios.Handles(slug, scenario) ? SetupScenarios.Start(scenario, ct)
-        : SetupRepoScenarios.Handles(slug, scenario) ? SetupRepoScenarios.Start(scenario, ct)
-        : null;
+    /// <summary>Whether the scenario is a setup one (the steps, or adding a repo).</summary>
+    private static bool IsSetup(string slug, string scenario) =>
+        SetupScenarios.Handles(slug, scenario) || SetupRepoScenarios.Handles(slug, scenario);
+
+    /// <summary>The host of a setup scenario (the steps, or adding a repo).</summary>
+    private static Task<GoldenHost> SetupHost(string slug, string scenario, CancellationToken ct) =>
+        SetupScenarios.Handles(slug, scenario) ? SetupScenarios.Start(scenario, ct) : SetupRepoScenarios.Start(scenario, ct);
 
     /// <summary>The live profile the scenario's host starts with: the item scenarios need two repos.</summary>
     public static string ProfileYaml(string slug, string scenario) => SessionScenarios.Handles(slug, scenario) ? SessionScenarios.ProfileYaml : ItemScenarios.Handles(slug, scenario) || ParkScenarios.Handles(slug, scenario) || RequestScenarios.Handles(slug, scenario) || StreamScenarios.Handles(slug, scenario) ? ItemScenarios.ProfileYaml : GoldenHost.ProfileYaml;
