@@ -19,11 +19,13 @@ temp home and prints the pull request link.
 
 ## Variants
 
+Every variant seeds its head's checks with counts the Sindri UI shows (`seed checks --passed/--pending`): a green head has 7 passed, none pending.
+
 | Variant | What it loads | Consumed by |
 |---|---|---|
 | `comments` | The 17 items below; CI green on the head | PB-S1 (classify, reply, fix traces), PB-B (queue, snapshot `comments`), PB-P1 (parks at `ready` with five held: three judged, `design`, `directive` and `uncertain`, and two untrusted, `stranger-lou` and `relaybot[bot]`) |
-| `ciRed` | A required check (`unit`) fails on the head, with a log tail | `ci-fix`; snapshot `ciRed` |
-| `ciFlaky` | `integration` fails on a network timeout unrelated to the diff (`expected.json` has `flaky: true`) | `ci-fix` must rerun, not edit (`flaky-without-evidence`) |
+| `ciRed` | A required check (`unit`) fails on the head, with a log tail (5 other checks passed) | `ci-fix`; snapshot `ciRed` |
+| `ciFlaky` | `integration` fails on a network timeout unrelated to the diff (`expected.json` has `flaky: true`); 6 other checks passed, 1 is pending | `ci-fix` must rerun, not edit (`flaky-without-evidence`) |
 | `conflict` | The forge reports `mergeable: false` | snapshot `conflict` |
 | `stacked` | PR 2 sits on PR 1's branch (`feature/json-base`); `forge-fixture.sh event merge-base` merges PR 1 mid-run | snapshot `restack`; `stacked` refuses merge until its base merges |
 | `noDocs` | No `docs/`, no link to it, no mention of a changed thing in any remaining doc (the changelog line is dropped; AGENTS.md names only `README.md`) | docs scope `none` |
