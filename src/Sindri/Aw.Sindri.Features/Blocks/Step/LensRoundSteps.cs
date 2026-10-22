@@ -9,11 +9,14 @@ namespace Aw.Sindri.Features.Blocks.Step;
 /// </summary>
 internal static class LensRoundSteps
 {
-    /// <summary>'step.lens.round': queues the pack's lenses for a round; 'ready'. 'pack' names the lens pack (a profile key).</summary>
+    /// <summary>
+    /// 'step.lens.round': queues the design lens pack's lenses that apply to the scope's surface kinds ('fact:lensQueue') and records the others as not applicable, with the reason, in 'fact:lensRounds'; 'ready'.
+    /// The pack is the approved profile's (workflow.packs.lenses.design, a built-in pack); 'pack' names that profile key.
+    /// </summary>
     public static BlockDescriptor Round { get; } = BlockStep("step.lens.round", Capability.Tools)
         .Takes(new ParameterSpec("pack", ParameterType.Text, Required: false, IsCapabilityField: false))
-        .Reads("fact:packs", "fact:lensRounds", "fact:changedSections").Reports("ready")
-        .Writes(On("fact:lensQueue", "ready"));
+        .Reads("fact:scope", "fact:packs", "fact:lensRounds", "fact:changedSections").Reports("ready")
+        .Writes(On("fact:lensQueue", "ready"), On("fact:lensRounds", "ready"));
 
     /// <summary>
     /// 'step.lens.log': appends the report to the lens rounds; 'next' (a lens is still queued), 'clean' or 'findings'. 'needsOwner' instead of 'findings' when a stopping finding carries

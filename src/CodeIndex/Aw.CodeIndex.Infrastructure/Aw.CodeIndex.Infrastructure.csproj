@@ -13,14 +13,15 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
-    <!-- Roslyn pin (CI-4): Microsoft.CodeAnalysis.CSharp is pinned at 5.9.0 centrally for Aw.Analyzers, which must stay on
-         the SDK's compiler. The parser needs a newer Roslyn for current C# syntax, so CI-4 adds the reference here with a
-         VersionOverride and says why; nothing else in this project references Roslyn. -->
+    <!-- Roslyn (CI-4): the parser reads C# with the central Microsoft.CodeAnalysis.CSharp pin (5.9.0, the newest published Roslyn).
+         Nothing else in this project references Roslyn. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../Aw.CodeIndex.Core/Aw.CodeIndex.Core.csproj" />
     <ProjectReference Include="../../Aw.Kernel/Aw.Kernel.csproj" />
+    <ProjectReference Include="../../Aw.Kernel.Data/Aw.Kernel.Data.csproj" />
   </ItemGroup>
 
   <ItemGroup>

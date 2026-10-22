@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.LensPacks;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
@@ -32,6 +33,22 @@ public sealed class LensLoopBlockRuntimesTests
         Assert.Equal(StepRuntime.Block, entered.Frame.Run?.Runtime);
         Assert.Contains(BlockId.From("step.review.log"), context.Runtimes.Keys);
         Assert.Contains(FactKey.From("fact:lensQueue"), provider.GetRequiredService<BlockCatalog>().Find(BlockId.From("step.review.log"))!.Inputs);
+    }
+
+    [Fact]
+    public async Task Both_round_Steps_run_as_blocks_in_the_shipped_build_with_a_resolver_behind_them()
+    {
+        await using var provider = ShippedComposition.Compose();
+        var (design, designContext) = Recipe(provider, "sindri/workflow.design.yaml");
+        var (review, reviewContext) = Recipe(provider, "sindri/workflow.review-loop.yaml");
+
+        var lens = StateEntry.Enter(EngineFixture.At(design, "round"), design, "round", designContext);
+        var round = StateEntry.Enter(EngineFixture.At(review, "round"), review, "round", reviewContext);
+
+        Assert.Equal(StepRuntime.Block, lens.Frame.Run?.Runtime);
+        Assert.Equal(StepRuntime.Block, round.Frame.Run?.Runtime);
+        Assert.NotNull(provider.GetService<ILensPacks>());
+        Assert.NotNull(provider.GetService<IChangedPaths>());
     }
 
     [Fact]

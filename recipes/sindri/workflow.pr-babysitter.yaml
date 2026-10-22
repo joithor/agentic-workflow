@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.pr-babysitter
-version: 1
+version: 2
 description: "The line's last station for one PR: fix red CI, handle each comment by its type, re-prove when the source changes, sync the docs once, then stop at ready-to-merge for the owner's merge or rework."
+displayName: "Watch the pull request until you merge it"
 inputs:
   - { key: fact:pr,          label: "Pull request", type: link, kind: link }
   - { key: fact:handoff,     label: "PR hand-off (empty when started by hand)", type: packet, kind: packet }
@@ -32,6 +33,8 @@ states:
     timeout: { after: 30m, then: park }
     next: "Waiting for {item}'s pull request to be restacked onto its new base."
   ci-fix:
+    displayName: "Fix the failing checks"
+    why: "Fixes the checks that fail on the pull request."
     kind: active
     step: { use: step.pr.ci-fix, inputs: [input.pr.context, input.handoff-note, input.phase-packet] }
     loop: ci
@@ -64,6 +67,8 @@ states:
     timeout: { after: 2d, then: park }
     next: "Classify comment {loop.comments} on {item}'s pull request: run `sindri workflow status {instance}` for the types."
   classify-desk:
+    displayName: "Pick the type of a comment"
+    why: "The reviewer's comment needs a type from you."
     kind: active
     step: { use: step.desk.choose, with: { from: classify } }
     timeout: { after: 2d, then: park }
@@ -105,6 +110,8 @@ states:
     timeout: { after: 1d, then: park }
     next: "Waiting for {child}: re-proving {item} on its current head."
   recheck-owner:
+    displayName: "Decide about the new proof"
+    why: "The pull request no longer matches its proof, so you choose to retry or stop."
     kind: active
     step: step.owner.decide
     timeout: { after: 2d, then: escalate }
@@ -121,11 +128,15 @@ states:
     timeout: { after: 1d, then: park }
     next: "Waiting for {child}: the stacked docs PR for {item}."
   docs-owner:
+    displayName: "Decide about the docs"
+    why: "The docs update did not finish or its pull request is red, so you choose what to do."
     kind: active
     step: step.pr.docs-decide
     timeout: { after: 2d, then: escalate }
     next: "Docs sync for {item} didn't finish or its docs PR is red: run `sindri workflow status {instance}`, then retry, check again after a fix by hand, skip the docs, or stop."
   ready:
+    displayName: "Ready to merge"
+    why: "Checks are green and the docs are settled, so you merge it or send it back."
     kind: wait
     waitFor: { event: pr.changed }
     timeout: { after: 29d, then: escalate }
@@ -143,17 +154,23 @@ states:
     timeout: { after: 2d, then: park }
     next: "Take the oldest held comment on {item}'s pull request."
   owner-comment:
+    displayName: "Decide a held comment"
+    why: "A review comment was held for you to fix, answer or skip."
     kind: active
     step: step.pr.owner-comment
     timeout: { after: 7d, then: escalate }
     next: "Decide this held comment on {item}'s pull request: fix it, reply, skip it, or leave the rest for later."
   held-fix:
+    displayName: "Make the fix you asked for"
+    why: "Fixes a held comment the way you decided."
     kind: active
     step: { use: step.pr.fix-comment, with: { effort: full }, inputs: [input.pr.context, input.handoff-note, input.phase-packet] }
     budget: { tokens: 300k }
     timeout: { after: 4h, then: park }
     next: "Make the fix the owner asked for on this held comment. Commit with its trailer; Sindri pushes when the walk ends."
   rework-notes:
+    displayName: "Write the rework notes"
+    why: "You say what the phase must change before it is built again."
     kind: active
     step: step.pr.rework-notes
     timeout: { after: 7d, then: escalate }
@@ -169,21 +186,25 @@ states:
     timeout: { after: 2h, then: park }
     next: "{item}'s pull request is merged; waiting for its stacked docs PR to be retargeted, checked and merged."
   docs-merge-owner:
+    displayName: "Decide about the docs pull request"
+    why: "The code is merged but the docs pull request is still open."
     kind: active
     step: step.pr.docs-merge-decide
     loop: docs-merges
     timeout: { after: 7d, then: escalate }
     next: "{item}'s pull request is merged and its docs PR is still open: merge it, mark it done by hand, or leave it open."
   owner:
+    displayName: "The pull request needs you"
+    why: "Something stopped the watch, so you choose to retry or stop."
     kind: active
     step: step.owner.decide
     loop: retries
     timeout: { after: 7d, then: escalate }
     next: "{item}'s pull request needs you: run `sindri workflow status {instance}` for the reason, then retry or stop."
-  merged:  { kind: terminal, outcome: resolved }
-  closed:  { kind: terminal, outcome: unresolved }
-  stopped: { kind: terminal, outcome: unresolved }
-  rework:  { kind: terminal, outcome: failed }
+  merged:  { kind: terminal, outcome: resolved, displayName: "Merged" }
+  closed:  { kind: terminal, outcome: unresolved, displayName: "Closed without merging" }
+  stopped: { kind: terminal, outcome: unresolved, displayName: "Stopped" }
+  rework:  { kind: terminal, outcome: failed, displayName: "Sent back to build" }
 transitions:
   - { from: intake, to: snapshot, on: step.completed, when: { outcome: seeded },
       produces: [fact:workspace, fact:decision, fact:ownerNote, fact:handoffNote, fact:fix, fact:reply, fact:recheck] }

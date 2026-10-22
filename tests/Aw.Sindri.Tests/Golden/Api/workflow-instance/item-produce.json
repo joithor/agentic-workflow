@@ -12,8 +12,8 @@
   "title": "Add needs-you ack route",
   "recipe": {
     "id": "workflow.step",
-    "hash": "sha256:1c1173a162a77736c33620e985d6d75473cf3755963adc5c46eb9049434f5276",
-    "version": 2,
+    "hash": "sha256:d39861bd12222fcc4b74432567eabfd7b58660c4b8d714be71528b6a1353ba2a",
+    "version": 3,
     "urgency": "work",
     "displayName": "Step"
   },
@@ -137,8 +137,8 @@
       "header": {
         "address": "ITM-01JE7/item/1/step.4",
         "recipe": "workflow.step",
-        "hash12": "1c1173a162a7",
-        "version": 2,
+        "hash12": "d39861bd1222",
+        "version": 3,
         "state": "produce",
         "detail": "desk task",
         "since": "2026-10-12T12:20:00.0000000Z",
@@ -193,7 +193,7 @@
           "confirm": "Cancel ITM-01JE7/item/1/step.4? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JE7/item/1/step.4  workflow.step@1c1173a162a7  v2  produce: desk task  since 12:20 (6m)\n  next      Produce the Step output for ITM-01JE7 (round 2/3), then run: sindri workflow complete\n            ITM-01JE7/item/1/step.4 --run 3.1 --outcome done --output fact:output=<file>\n  inputs    fact:spec  spec.md  sha256:1c0e...\n  timeout   parks in 1d 23h 54m (desk)\n  budget    tokens 0 / 200k (state), 0 / 400k (instance)\n  commands  complete, takeover, cancel\n",
+      "text": "ITM-01JE7/item/1/step.4  workflow.step@d39861bd1222  v3  produce: desk task  since 12:20 (6m)\n  next      Produce the Step output for ITM-01JE7 (round 2/3), then run: sindri workflow complete\n            ITM-01JE7/item/1/step.4 --run 3.1 --outcome done --output fact:output=<file>\n  inputs    fact:spec  spec.md  sha256:1c0e...\n  timeout   parks in 1d 23h 54m (desk)\n  budget    tokens 0 / 200k (state), 0 / 400k (instance)\n  commands  complete, takeover, cancel\n",
       "injection": []
     }
   },
@@ -265,5 +265,7 @@
       "actor": null
     }
   ],
-  "asOf": "2026-10-12T12:26:00.0000000Z"
+  "asOf": "2026-10-12T12:26:00.0000000Z",
+  "steps": [],
+  "startedBy": null
 }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Events;
@@ -29,7 +30,7 @@ public static partial class TransitionDecision
         var (looped, park) = Reenter(d, instance, transition.To, index);
         if (park is not null)
         {
-            return d.Changed(d.Rules.Suspend(instance, park), records);
+            return d.Changed(d.Rules.Suspend(looped, park), records);
         }
 
         var produced = looped with { Facts = Produce(looped.Facts, transition, d.Trigger) };
@@ -58,6 +59,11 @@ public static partial class TransitionDecision
             return (instance, null);
         }
 
+        if (!d.Context.LegacyLaunchRound && d.Trigger is StepFailed launch && string.Equals(launch.Reason, StepFailed.LaunchReason, StringComparison.Ordinal))
+        {
+            return LaunchFailed(d, instance, name, state, launch);
+        }
+
         var verdict = d.Rules.Reenter(instance, d.Recipe, state, Progress(d.Trigger));
         if (verdict.Park is { } park)
         {
@@ -65,6 +71,16 @@ public static partial class TransitionDecision
         }
 
         return verdict.Next is { } next ? (instance with { Loops = With(instance.Loops, name, next) }, null) : (instance, null);
+    }
+
+    /// <summary>A failed launch re-enters the looped state in the same round; the third in a row parks (<see cref="LoopRules.LaunchFailed"/>) with a re-run to answer it, not a withheld transition.</summary>
+    private static (WorkflowInstance Instance, Suspension? Park) LaunchFailed(Deciding d, WorkflowInstance instance, string name, string state, StepFailed failed)
+    {
+        var step = d.Recipe.States[state].Step?.Use.Value ?? state;
+        var error = failed.Detail is { } detail ? $"{failed.Reason}: {detail}" : failed.Reason;
+        var verdict = LoopRules.LaunchFailed(instance, d.Recipe, state, $"{step} failed to launch {LoopRules.MaxLaunchFailures.ToString(CultureInfo.InvariantCulture)} times in a row, the last time: {error}", failed.Actor);
+        var after = verdict.Next is { } next ? instance with { Loops = With(instance.Loops, name, next) } : instance;
+        return (after, verdict.Park);
     }
 
     /// <summary>

@@ -18,6 +18,7 @@ internal static class BlockRegistrations
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
     internal static IServiceCollection AddRecipeBlocks(this IServiceCollection services) => services
+        .AddSingleton<IBlockSentences, ShippedBlockSentences>()
         .AddBlockDescriptor(DeskSteps.Produce)
         .AddBlockDescriptor(DeskSteps.Checks)
         .AddBlockDescriptor(DeskSteps.Verify)

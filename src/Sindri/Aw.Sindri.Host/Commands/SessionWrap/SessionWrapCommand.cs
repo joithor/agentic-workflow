@@ -120,7 +120,7 @@ internal sealed class SessionWrapCommand(IWrapCalls calls, IChildLauncher childr
             return (127, launch, null);
         }
 
-        var started = children.Start(argv, WrapEnvironment.For(launch, Env));
+        var started = children.Start(argv, WrapEnvironment.For(launch, Env, Environment.ProcessPath ?? string.Empty));
         if (started.IsError)
         {
             await errors.WriteLineAsync($"{started.Error.Code}: {started.Error.Message}").ConfigureAwait(false);
