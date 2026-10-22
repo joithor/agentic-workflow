@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
@@ -22,8 +23,9 @@ public sealed class SetupConfirmTests
     private SetupConfirmTests(string catalog)
     {
         _f = new SetupFixture(catalog) { Hash = LiveHash };
-        _f.Clock.SetUtcNow(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));   // the served challenges expire five minutes after this
-        _f.Server.AppChallengeAnswer = RouteAnswer.Api("workflow-challenges-app", "profile");
+        var challenge = JsonNode.Parse(GoldenFiles.Api("workflow-challenges-app", "profile"))!;   // why: the golden is a JSON document
+        challenge["expiresAt"] = _f.Clock.GetUtcNow().AddMinutes(5).ToString("O", System.Globalization.CultureInfo.InvariantCulture);   // valid for five minutes from the fixture's clock
+        _f.Server.AppChallengeAnswer = new RouteAnswer(System.Net.HttpStatusCode.OK, challenge.ToJsonString());
     }
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
