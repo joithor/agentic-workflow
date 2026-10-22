@@ -15831,3 +15831,9 @@ Aw.Sindri.Core.Forge.IPullRequests.PushBranch(Aw.Sindri.Core.Forge.PullBranchPus
 Aw.Sindri.Core.LensPacks.LensPackReader
 static Aw.Sindri.Core.LensPacks.LensPackReader.Hash(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! files) -> string!
 static Aw.Sindri.Core.LensPacks.LensPackReader.Read(string! id, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! files) -> Aw.Kernel.Result<Aw.Sindri.Core.LensPacks.LensPack!>
+Aw.Sindri.Core.LensPacks.IPackDirectories
+Aw.Sindri.Core.LensPacks.IPackDirectories.Read(string! directory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.LensPacks.PackDirectory!>>
+Aw.Sindri.Core.LensPacks.PackDirectory
+Aw.Sindri.Core.LensPacks.PackDirectory.Files.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Sindri.Core.LensPacks.PackDirectory.Outside.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.LensPacks.PackDirectory.PackDirectory(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Files, System.Collections.Generic.IReadOnlyList<string!>! Outside) -> void
