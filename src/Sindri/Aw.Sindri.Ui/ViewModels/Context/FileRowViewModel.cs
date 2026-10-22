@@ -61,7 +61,7 @@ internal sealed class FileRowViewModel
         }
 
         var shown = features.Take(FeaturesShown).Select(Feature);
-        var more = features.Count > FeaturesShown ? $"+{features.Count - FeaturesShown}" : null;
+        var more = features.Count > FeaturesShown ? "+" + (features.Count - FeaturesShown).ToString(System.Globalization.CultureInfo.InvariantCulture) : null;
         return Dots(string.Join(", ", shown), more);
     }
 
@@ -69,7 +69,7 @@ internal sealed class FileRowViewModel
     {
         var name = Labels.ContextFilesFeature(feature.Key);
         return !feature.Confirmed && feature.Confidence is { } confidence
-            ? $"{name} ({Labels.ContextMapSuggestedPct((int)Math.Round(confidence * 100, MidpointRounding.AwayFromZero))})"
+            ? name + " (" + Labels.ContextMapSuggestedPct((int)Math.Round(confidence * 100, MidpointRounding.AwayFromZero)) + ")"
             : name;
     }
 

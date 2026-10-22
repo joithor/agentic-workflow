@@ -14,7 +14,7 @@ internal sealed partial class FileMapTree : UserControl
 
     private void OnOpen(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is FileMapViewModel files && (sender as Control)?.DataContext is FileRowViewModel row)
+        if (DataContext is FileMapViewModel files && sender is Control { DataContext: FileRowViewModel row })
         {
             _ = files.Open(row);
         }

@@ -83,32 +83,7 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
         Changed();
         try
         {
-            var repo = _repo ?? await ReadRepo(api, cancellationToken).ConfigureAwait(true);
-            if (generation != _generation)
-            {
-                return;
-            }
-
-            if (repo is null)
-            {
-                return;
-            }
-
-            _repo = repo;
-            var read = await Ports.Api.FileMap(api, new FileMapQuery(repo, path, UnmappedOnly: false, Draft: false), cancellationToken).ConfigureAwait(true);
-            if (generation != _generation)
-            {
-                return;
-            }
-
-            if (read.IsSuccess)
-            {
-                Show(read.Value);
-            }
-            else
-            {
-                Fail(read.Error);
-            }
+            await Read(api, path, generation, cancellationToken).ConfigureAwait(true);
         }
         finally
         {
@@ -117,6 +92,31 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
                 IsLoading = false;
                 Changed();
             }
+        }
+    }
+
+    private async Task Read(Uri api, string? path, int generation, CancellationToken cancellationToken)
+    {
+        var repo = _repo ?? await ReadRepo(api, cancellationToken).ConfigureAwait(true);
+        if (generation != _generation || repo is null)
+        {
+            return;
+        }
+
+        _repo = repo;
+        var read = await Ports.Api.FileMap(api, new FileMapQuery(repo, path, UnmappedOnly: false, Draft: false), cancellationToken).ConfigureAwait(true);
+        if (generation != _generation)
+        {
+            return;
+        }
+
+        if (read.IsSuccess)
+        {
+            Show(read.Value);
+        }
+        else
+        {
+            Fail(read.Error);
         }
     }
 
