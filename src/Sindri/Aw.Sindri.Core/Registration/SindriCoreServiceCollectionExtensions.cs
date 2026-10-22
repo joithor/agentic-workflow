@@ -14,6 +14,7 @@ using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Registry;
+using Aw.Sindri.Core.Workflow.Stats;
 using Aw.Sindri.Core.Workflow.Validation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -61,6 +62,7 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<IProjection, NeedsYouProjection>()
             .AddSingleton<IProjection, JobsProjection>()
             .AddSingleton<IProjection, LaunchesProjection>()
+            .AddSingleton<IProjection, RecipeStatsProjection>()
             .AddSingleton<ILaunchViews, LaunchViews>()
             .AddSingleton<LaunchLiveness>()
             .AddSingleton<UsageSamples>()

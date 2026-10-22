@@ -1,6 +1,5 @@
 using Aw.Kernel;
 using Aw.Kernel.Services;
-using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Core.Workflow.Stats;
 using Aw.Sindri.Features.WorkflowStats;
@@ -14,9 +13,8 @@ namespace Aw.Sindri.Features.ListRecipes;
 /// ever runs as a child and its stats at the request's window (API spec §3.8, E-25): the stats are left out for a draft and for a child-only recipe.
 /// </summary>
 /// <param name="registry">Reads where the registered recipes stand.</param>
-/// <param name="rows">The ledger's workflow rows; null serves the lines without stats.</param>
-/// <param name="clock">The read's time.</param>
-internal sealed class ListRecipesService(RecipeRegistryReader registry, WorkflowStatRows? rows = null, TimeProvider? clock = null) : IService<ListRecipesRequest, ListRecipesResponse>
+/// <param name="stats">The recipes' stats, cached or counted from the ledger; null serves the lines without stats.</param>
+internal sealed class ListRecipesService(RecipeRegistryReader registry, RecipeStatsSource? stats = null) : IService<ListRecipesRequest, ListRecipesResponse>
 {
     public async ValueTask<Result<ListRecipesResponse>> Handle(ListRecipesRequest request, CancellationToken cancellationToken)
     {
@@ -34,31 +32,35 @@ internal sealed class ListRecipesService(RecipeRegistryReader registry, Workflow
         }
 
         var kept = lines.Value.Where(l => !request.Stale || l is { Standing: RecipeStanding.Approved, Stale.Count: > 0 }).ToList();
-        if (rows is null)
+        if (stats is null)
         {
             return new ListRecipesResponse([.. kept.Select(WithStatus)]);
         }
 
         var children = await registry.ChildRecipeIds(cancellationToken).ConfigureAwait(false);
-        var read = children.IsError ? children.Error : await rows.Read(cancellationToken).ConfigureAwait(false);
-        if (read.IsError)
+        if (children.IsError)
         {
-            return read.Error;
+            return children.Error;
         }
 
-        var now = (clock ?? TimeProvider.System).GetUtcNow();
-        var counted = new Dictionary<RecipeId, RecipeListStats?>();
-        var listed = kept.Select(line =>
+        var listed = new List<RecipeSummary>();
+        foreach (var line in kept)
         {
-            var childOnly = children.Value.Contains(line.Id) && !RecipeStatsCounter.HasRoot(read.Value, line.Id);
-            if (!counted.TryGetValue(line.Id, out var stats))
+            var counted = await stats.Of(line.Id, hash: null, window.Value, children.Value.Contains(line.Id), cancellationToken).ConfigureAwait(false);
+            if (counted.IsError)
             {
-                counted[line.Id] = stats = childOnly ? null : RecipeListStats.Of(RecipeStatsCounter.Count(read.Value, line.Id, hashPrefix: null, window.Value, now));
+                return counted.Error;
             }
 
-            return WithStatus(line) with { ChildOnly = childOnly, Stats = line.Standing == RecipeStanding.Unapproved || childOnly ? null : stats };
-        });
-        return new ListRecipesResponse([.. listed], window.Value.Text);
+            var childOnly = counted.Value.ChildOnly;
+            listed.Add(WithStatus(line) with
+            {
+                ChildOnly = childOnly,
+                Stats = line.Standing == RecipeStanding.Unapproved || childOnly ? null : RecipeListStats.Of(counted.Value),
+            });
+        }
+
+        return new ListRecipesResponse(listed, window.Value.Text);
     }
 
     private static RecipeSummary WithStatus(RecipeSummary line)
