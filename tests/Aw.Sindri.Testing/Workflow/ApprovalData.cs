@@ -10,6 +10,6 @@ public static partial class ApprovalData
     /// <returns>True when it has one.</returns>
     public static bool In(string text) => Key.IsMatch(text);
 
-    [GeneratedRegex(@"(^|[\s{,])(approv[A-Za-z]*|pins)\s*:", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    [GeneratedRegex(@"(^|[\s{,])(approv(?!e\b)[A-Za-z]*|pins)\s*:", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Key { get; }
 }
