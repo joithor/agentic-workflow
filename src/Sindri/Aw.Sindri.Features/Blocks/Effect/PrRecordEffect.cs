@@ -12,7 +12,7 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 /// </summary>
 /// <param name="record">The merge record's writer.</param>
 /// <param name="contents">Reads the facts it takes.</param>
-internal sealed class PrRecordEffect(MergeRecord record, IFactContents contents) : IEffectKind, IDescribedBlock
+internal sealed class PrRecordEffect(IMergeRecord record, IFactContents contents) : IEffectKind, IDescribedBlock
 {
     /// <inheritdoc/>
     public static BlockDescriptor Descriptor => PrEffects.Record;
