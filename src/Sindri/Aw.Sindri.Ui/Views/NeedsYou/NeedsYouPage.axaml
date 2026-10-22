@@ -218,7 +218,12 @@
                   </Border>
                   <StackPanel Orientation="Horizontal" Spacing="8">
                     <Button x:Name="NeedsYouHandBack" Classes="bar-button primary" IsEnabled="{Binding IsTakenOver}" Click="OnHandBack" AutomationProperties.Name="{Binding HandBackWord}"><TextBlock Text="{Binding HandBackWord}" AutomationProperties.AccessibilityView="Raw" /></Button>
-                    <Button x:Name="NeedsYouCancelRun" Classes="bar-button" Click="OnCancelRun" AutomationProperties.Name="{Binding CancelWord}" ToolTip.Tip="{Binding CancelHelp}"><TextBlock Text="{Binding CancelWord}" AutomationProperties.AccessibilityView="Raw" /></Button>
+                    <Button x:Name="NeedsYouCancelRun" Classes="bar-button" IsVisible="{Binding !IsAskingCancel}" Click="OnCancelRun" AutomationProperties.Name="{Binding CancelWord}" ToolTip.Tip="{Binding CancelHelp}"><TextBlock Text="{Binding CancelWord}" AutomationProperties.AccessibilityView="Raw" /></Button>
+                  </StackPanel>
+                  <StackPanel x:Name="NeedsYouCancelAsk" Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsAskingCancel}">
+                    <TextBlock Classes="body" Text="{Binding CancelAsk}" VerticalAlignment="Center" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+                    <Button x:Name="NeedsYouCancelConfirm" Classes="bar-button asking" Click="OnCancelConfirm" AutomationProperties.Name="{Binding ConfirmCancelWord}"><TextBlock Text="{Binding ConfirmCancelWord}" AutomationProperties.AccessibilityView="Raw" /></Button>
+                    <Button x:Name="NeedsYouCancelBackOut" Classes="bar-button" Click="OnCancelBackOut" AutomationProperties.Name="{Binding BackOutWord}"><TextBlock Text="{Binding BackOutWord}" AutomationProperties.AccessibilityView="Raw" /></Button>
                   </StackPanel>
                   <TextBlock x:Name="NeedsYouTakeoverRefusal" Classes="caption attention" Text="{Binding Refusal}" IsVisible="{Binding HasRefusal}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
                 </StackPanel>
@@ -253,7 +258,7 @@
        <!-- The action bar (F3 needs-you spec §2, §5): fixed under the card, outside it, always in view. A and D reach the same methods as its buttons. -->
        <Border x:Name="NeedsYouActionBar" Grid.Row="1" Classes="action-bar" IsVisible="{Binding Bar.HasBar}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group" AutomationProperties.Name="{Binding Bar.BarName}">
         <StackPanel MaxWidth="760" Spacing="8">
-          <WrapPanel x:Name="NeedsYouBarButtons" Orientation="Horizontal" ItemSpacing="8" LineSpacing="6" IsVisible="{Binding Bar.ShowsActions}">
+          <WrapPanel x:Name="NeedsYouBarButtons" Orientation="Horizontal" ItemSpacing="8" LineSpacing="6" IsVisible="{Binding ShowsBarButtons}">
             <Button x:Name="NeedsYouApprove" Classes="bar-button primary" Classes.asking="{Binding Bar.IsAsking}" IsVisible="{Binding Bar.ShowsPrimary}" IsEnabled="{Binding Bar.PrimaryEnabled}"
                     Click="OnApprove" AutomationProperties.Name="{Binding Bar.ApproveName}">
               <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.AccessibilityView="Raw">

@@ -195,7 +195,11 @@ internal sealed partial class NeedsYouPage : UserControl
 
     private void OnNotYet(object? sender, RoutedEventArgs e) => _page?.Takeover?.NotYet();
 
-    private void OnCancelRun(object? sender, RoutedEventArgs e) => _ = _page?.Takeover?.CancelRun();
+    private void OnCancelRun(object? sender, RoutedEventArgs e) => _page?.Takeover?.AskCancel();
+
+    private void OnCancelConfirm(object? sender, RoutedEventArgs e) => _ = _page?.Takeover?.ConfirmCancel();
+
+    private void OnCancelBackOut(object? sender, RoutedEventArgs e) => _page?.Takeover?.BackOutOfCancel();
 
     private void OnDropItem(object? sender, RoutedEventArgs e) => _ = _page?.Bar.RequestDrop();
 

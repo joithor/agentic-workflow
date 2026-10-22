@@ -17,7 +17,7 @@ internal sealed class TakeoverViewModel : ObservableObject
     private static readonly string[] _all =
     [
         nameof(IsTakenOver), nameof(Badge), nameof(Footer), nameof(ClockText), nameof(HandBackBox), nameof(NudgeVisible), nameof(NudgeTitle), nameof(ToastVisible),
-        nameof(IsSending), nameof(Refusal), nameof(HasRefusal),
+        nameof(IsSending), nameof(Refusal), nameof(HasRefusal), nameof(IsAskingCancel), nameof(CancelAsk),
     ];
 
     private long? Left { get; set; }
@@ -26,6 +26,8 @@ internal sealed class TakeoverViewModel : ObservableObject
     private readonly InstanceCommander _commands;
     private readonly TimeProvider _clock;
     private string? _instance;
+    private string _address = "";
+    private string _confirm = "";
     private bool Nudge { get; set; }
     private DateTimeOffset _since;
     private DateTimeOffset? _dismissed;
@@ -115,6 +117,7 @@ internal sealed class TakeoverViewModel : ObservableObject
         }
 
         var status = read.Value.Current.Status;
+        (_address, _confirm) = (status.Header.Address, status.Commands.FirstOrDefault(c => c.Verb == StatusVerb.Cancel)?.Confirm ?? "");
         IsTakenOver = status.Paused is not null || string.Equals(status.Header.State, TakenOverState, StringComparison.Ordinal);
         Left = status.Paused?.TimeoutLeftSeconds ?? Left;   // handed back, the instance serves none: the footer keeps the time that was left
         Refresh();
@@ -162,12 +165,42 @@ internal sealed class TakeoverViewModel : ObservableObject
         }
     }
 
-    /// <summary>Cancel run, in the inspector: sends "ApplyCommand:cancel". The caller asks first.</summary>
-    /// <returns>A task that completes when the answer came.</returns>
-    internal async Task CancelRun()
+    /// <summary>True while the inspector asks "Cancel ...?" before it cancels.</summary>
+    public bool IsAskingCancel { get; private set; }
+
+    /// <summary>The cancel question: the served confirm text, else the app's own.</summary>
+    public string CancelAsk => _confirm.Length > 0 ? _confirm : Labels.CancelAsk(_address);
+
+    /// <summary>The cancel question's confirm button.</summary>
+    public string ConfirmCancelWord { get; } = Labels.ConfirmCancel;
+
+    /// <summary>The cancel question's back-out button.</summary>
+    public string BackOutWord { get; } = Labels.NeedsYouBackOut;
+
+    /// <summary>Cancel run, in the inspector: asks first; nothing is sent by this press.</summary>
+    internal void AskCancel()
     {
-        if (_instance is { } instance && !IsSending)
+        if (_instance is not null && !IsSending)
         {
+            IsAskingCancel = true;
+            Refresh();
+        }
+    }
+
+    /// <summary>Backs out of the cancel question: nothing is sent.</summary>
+    internal void BackOutOfCancel()
+    {
+        IsAskingCancel = false;
+        Refresh();
+    }
+
+    /// <summary>The cancel question's confirm: sends "ApplyCommand:cancel", once per press.</summary>
+    /// <returns>A task that completes when the answer came.</returns>
+    internal async Task ConfirmCancel()
+    {
+        if (_instance is { } instance && IsAskingCancel && !IsSending)
+        {
+            IsAskingCancel = false;
             _ = await Send(new ApplyCommandBody(instance, CommandKind.Cancel)).ConfigureAwait(true);
         }
     }

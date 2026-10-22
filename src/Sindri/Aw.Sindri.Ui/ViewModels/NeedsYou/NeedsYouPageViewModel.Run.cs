@@ -18,6 +18,9 @@ internal sealed partial class NeedsYouPageViewModel
     /// <summary>True when the card is a taken-over run and has the takeover block.</summary>
     public bool ShowsTakeover => Takeover is not null && !IsCleared && Card is { } row && row.Id.StartsWith(TakeoverPrefix, StringComparison.Ordinal);
 
+    /// <summary>True while the action bar's own primary and terminal buttons show: a card with the answer form or the takeover block has one set of controls.</summary>
+    public bool ShowsBarButtons => Bar.ShowsActions && !ShowsAnswer && !ShowsTakeover;
+
     // The card moved on: the form follows the row, and the takeover block reads the instance and takes the served rows (the nudge is one of them).
     private void ShowPausedRun()
     {

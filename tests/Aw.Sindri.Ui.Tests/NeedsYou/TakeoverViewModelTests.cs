@@ -136,4 +136,35 @@ public sealed class TakeoverViewModelTests
 
         Assert.Equal((true, "That run has moved on. Read the instance again.", false), (takeover.IsTakenOver, takeover.Refusal, takeover.ToastVisible));
     }
+
+    [Fact]
+    public async Task Cancel_run_asks_first_and_the_confirm_sends_once()
+    {
+        ServeTakenOver(left: 10200);
+        var takeover = Takeover();
+        await takeover.Load(Instance);
+
+        takeover.AskCancel();
+        Assert.Equal((true, 0), (takeover.IsAskingCancel, _server.CommandCalls.Count));
+
+        await takeover.ConfirmCancel();
+        await takeover.ConfirmCancel();   // the question is gone: a second press does nothing
+
+        var (instance, body) = Assert.Single(_server.CommandCalls);
+        Assert.Equal((Instance, CommandKind.Cancel, false), (instance, body.Kind, takeover.IsAskingCancel));
+    }
+
+    [Fact]
+    public async Task Backing_out_of_the_cancel_question_sends_nothing()
+    {
+        ServeTakenOver(left: 10200);
+        var takeover = Takeover();
+        await takeover.Load(Instance);
+
+        takeover.AskCancel();
+        takeover.BackOutOfCancel();
+        await takeover.ConfirmCancel();
+
+        Assert.Equal((false, 0), (takeover.IsAskingCancel, _server.CommandCalls.Count));
+    }
 }

@@ -95,4 +95,7 @@ internal static partial class Labels
 
     /// <summary>The toast's body.</summary>
     internal const string NeedsYouHandedBackBody = "The workflow carries on from here.";
+
+    /// <summary>The back-out button of the cancel question.</summary>
+    internal const string NeedsYouBackOut = "Keep it";
 }
