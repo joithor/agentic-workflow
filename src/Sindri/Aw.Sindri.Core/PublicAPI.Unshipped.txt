@@ -1581,12 +1581,14 @@ Aw.Sindri.Core.Ledger.LedgerEvent.Sequence.get -> long
 Aw.Sindri.Core.Ledger.LedgerEvent.Sequence.init -> void
 Aw.Sindri.Core.Ledger.LedgerFilter
 Aw.Sindri.Core.Ledger.LedgerFilter.<Clone>$() -> Aw.Sindri.Core.Ledger.LedgerFilter!
-Aw.Sindri.Core.Ledger.LedgerFilter.Deconstruct(out Aw.Sindri.Core.Ledger.TypeFilter? Types, out Aw.Sindri.Core.Ids.ItemId? Item, out int ScanLimit) -> void
+Aw.Sindri.Core.Ledger.LedgerFilter.Deconstruct(out Aw.Sindri.Core.Ledger.TypeFilter? Types, out Aw.Sindri.Core.Ids.ItemId? Item, out int ScanLimit, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance) -> void
 Aw.Sindri.Core.Ledger.LedgerFilter.Equals(Aw.Sindri.Core.Ledger.LedgerFilter? other) -> bool
 Aw.Sindri.Core.Ledger.LedgerFilter.Item.get -> Aw.Sindri.Core.Ids.ItemId?
+Aw.Sindri.Core.Ledger.LedgerFilter.Instance.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress?
+Aw.Sindri.Core.Ledger.LedgerFilter.Instance.init -> void
 Aw.Sindri.Core.Ledger.LedgerFilter.Item.init -> void
 Aw.Sindri.Core.Ledger.LedgerFilter.Keeps(Aw.Sindri.Core.Ledger.LedgerEvent! row) -> bool
-Aw.Sindri.Core.Ledger.LedgerFilter.LedgerFilter(Aw.Sindri.Core.Ledger.TypeFilter? Types, Aw.Sindri.Core.Ids.ItemId? Item, int ScanLimit = 5000) -> void
+Aw.Sindri.Core.Ledger.LedgerFilter.LedgerFilter(Aw.Sindri.Core.Ledger.TypeFilter? Types, Aw.Sindri.Core.Ids.ItemId? Item, int ScanLimit = 5000, Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance = null) -> void
 Aw.Sindri.Core.Ledger.LedgerFilter.ScanLimit.get -> int
 Aw.Sindri.Core.Ledger.LedgerFilter.ScanLimit.init -> void
 Aw.Sindri.Core.Ledger.LedgerFilter.Scanned(long cursor, long head, int max, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ledger.LedgerEvent!>! kept) -> Aw.Sindri.Core.Ledger.LedgerScan!
@@ -7445,6 +7447,7 @@ static Aw.Sindri.Core.Ledger.LedgerEntry.operator ==(Aw.Sindri.Core.Ledger.Ledge
 static Aw.Sindri.Core.Ledger.LedgerEvent.operator !=(Aw.Sindri.Core.Ledger.LedgerEvent? left, Aw.Sindri.Core.Ledger.LedgerEvent? right) -> bool
 static Aw.Sindri.Core.Ledger.LedgerEvent.operator ==(Aw.Sindri.Core.Ledger.LedgerEvent? left, Aw.Sindri.Core.Ledger.LedgerEvent? right) -> bool
 static Aw.Sindri.Core.Ledger.LedgerFilter.All.get -> Aw.Sindri.Core.Ledger.LedgerFilter!
+static Aw.Sindri.Core.Ledger.LedgerFilter.InstanceKeyPrefix(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address) -> string!
 static Aw.Sindri.Core.Ledger.LedgerFilter.operator !=(Aw.Sindri.Core.Ledger.LedgerFilter? left, Aw.Sindri.Core.Ledger.LedgerFilter? right) -> bool
 static Aw.Sindri.Core.Ledger.LedgerFilter.operator ==(Aw.Sindri.Core.Ledger.LedgerFilter? left, Aw.Sindri.Core.Ledger.LedgerFilter? right) -> bool
 static Aw.Sindri.Core.Ledger.LedgerScan.operator !=(Aw.Sindri.Core.Ledger.LedgerScan? left, Aw.Sindri.Core.Ledger.LedgerScan? right) -> bool
@@ -8964,14 +8967,16 @@ static Aw.Sindri.Core.Launch.TargetFacts.operator !=(Aw.Sindri.Core.Launch.Targe
 static Aw.Sindri.Core.Launch.TargetFacts.operator ==(Aw.Sindri.Core.Launch.TargetFacts? left, Aw.Sindri.Core.Launch.TargetFacts? right) -> bool
 Aw.Sindri.Core.Launch.StartedLaunch.Deconstruct(out Aw.Sindri.Core.Launch.HostRef! Host, out Aw.Sindri.Core.Launch.ViewerOutcome! Viewer, out System.Collections.Generic.IReadOnlyList<string!>! Attach, out Aw.Sindri.Core.Launch.CatalogSource CatalogSource, out string! ArgvHash) -> void
 Aw.Sindri.Core.Launch.StartedLaunch.StartedLaunch(Aw.Sindri.Core.Launch.HostRef! Host, Aw.Sindri.Core.Launch.ViewerOutcome! Viewer, System.Collections.Generic.IReadOnlyList<string!>! Attach, Aw.Sindri.Core.Launch.CatalogSource CatalogSource, string! ArgvHash) -> void
-Aw.Sindri.Core.Launch.StepPolicy.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! AllowedTools, out Aw.Sindri.Core.Launch.StepPermissionMode Mode, out string? WritablePath) -> void
+Aw.Sindri.Core.Launch.StepPolicy.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! AllowedTools, out Aw.Sindri.Core.Launch.StepPermissionMode Mode, out string? WritablePath, out System.Collections.Generic.IReadOnlyList<string!>? DeniedPaths) -> void
 Aw.Sindri.Core.Launch.StepPolicy.AllowedTools.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Launch.StepPolicy.AllowedTools.init -> void
 Aw.Sindri.Core.Launch.StepPolicy.Mode.get -> Aw.Sindri.Core.Launch.StepPermissionMode
 Aw.Sindri.Core.Launch.StepPolicy.Mode.init -> void
 Aw.Sindri.Core.Launch.StepPolicy.WritablePath.get -> string?
 Aw.Sindri.Core.Launch.StepPolicy.WritablePath.init -> void
-Aw.Sindri.Core.Launch.StepPolicy.StepPolicy(System.Collections.Generic.IReadOnlyList<string!>! AllowedTools, Aw.Sindri.Core.Launch.StepPermissionMode Mode, string? WritablePath) -> void
+Aw.Sindri.Core.Launch.StepPolicy.DeniedPaths.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Launch.StepPolicy.DeniedPaths.init -> void
+Aw.Sindri.Core.Launch.StepPolicy.StepPolicy(System.Collections.Generic.IReadOnlyList<string!>! AllowedTools, Aw.Sindri.Core.Launch.StepPermissionMode Mode, string? WritablePath, System.Collections.Generic.IReadOnlyList<string!>? DeniedPaths = null) -> void
 Aw.Sindri.Core.Launch.StepPermissionMode
 Aw.Sindri.Core.Launch.StepPermissionMode.ReadOnly = 0 -> Aw.Sindri.Core.Launch.StepPermissionMode
 Aw.Sindri.Core.Launch.StepPermissionMode.Plan = 1 -> Aw.Sindri.Core.Launch.StepPermissionMode
@@ -10820,7 +10825,7 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailures.Of(Aw.Sindri.C
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches
 static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.LaunchIdFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run) -> Aw.Sindri.Core.Workflow.Engine.LaunchId
 static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.LaunchIdFor(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId workflow, Aw.Sindri.Core.Workflow.Engine.RunToken run) -> Aw.Sindri.Core.Workflow.Engine.LaunchId
-static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.WorktreeFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget! target) -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.WorktreeFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget! target, string? workspace = null) -> string!
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun!
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Address.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
@@ -11488,6 +11493,8 @@ Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Tokens.get -> int?
 Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Tokens.init -> void
 Aw.Sindri.Core.Workflow.Views.StatusFields.Run.get -> Aw.Sindri.Core.Workflow.Views.StatusRun?
 Aw.Sindri.Core.Workflow.Views.StatusFields.Run.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusFields.TakenOverAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Workflow.Views.StatusFields.TakenOverAt.init -> void
 Aw.Sindri.Core.Workflow.Views.StatusRun
 Aw.Sindri.Core.Workflow.Views.StatusRun.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StatusRun!
 Aw.Sindri.Core.Workflow.Views.StatusRun.Deconstruct(out string! Runtime, out string? Launch) -> void
@@ -12059,9 +12066,9 @@ Aw.Sindri.Core.Launch.StepArgs.Brief.get -> string?
 Aw.Sindri.Core.Launch.StepArgs.Brief.init -> void
 Aw.Sindri.Core.Launch.StepArgs.Deconstruct(out string? Model, out Aw.Sindri.Core.Launch.StepPolicy? Policy, out Aw.Sindri.Core.Launch.StepRef! Ref, out string? Brief) -> void
 Aw.Sindri.Core.Launch.StepArgs.StepArgs(string? Model, Aw.Sindri.Core.Launch.StepPolicy? Policy, Aw.Sindri.Core.Launch.StepRef! Ref, string? Brief = null) -> void
-static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.RequestFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget! target, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? descriptor = null) -> Aw.Sindri.Core.Launch.LaunchRequest!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.RequestFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget! target, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? descriptor = null, System.Collections.Generic.IReadOnlyList<string!>? instructions = null, string? workspace = null) -> Aw.Sindri.Core.Launch.LaunchRequest!
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepBrief
-static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepBrief.Render(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? descriptor) -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepBrief.Render(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? descriptor, System.Collections.Generic.IReadOnlyList<string!>? instructions = null) -> string!
 Aw.Sindri.Core.Scoping.BriefFile
 Aw.Sindri.Core.Scoping.BriefFile.<Clone>$() -> Aw.Sindri.Core.Scoping.BriefFile!
 Aw.Sindri.Core.Scoping.BriefFile.BriefFile(string! Path, string! Text, string! Version) -> void
@@ -15623,3 +15630,308 @@ static Aw.Sindri.Core.Events.ContextMapPublished.operator !=(Aw.Sindri.Core.Even
 static Aw.Sindri.Core.Events.ContextMapPublished.operator ==(Aw.Sindri.Core.Events.ContextMapPublished? left, Aw.Sindri.Core.Events.ContextMapPublished? right) -> bool
 static Aw.Sindri.Core.Events.ContextMapPublishedPublic.operator !=(Aw.Sindri.Core.Events.ContextMapPublishedPublic? left, Aw.Sindri.Core.Events.ContextMapPublishedPublic? right) -> bool
 static Aw.Sindri.Core.Events.ContextMapPublishedPublic.operator ==(Aw.Sindri.Core.Events.ContextMapPublishedPublic? left, Aw.Sindri.Core.Events.ContextMapPublishedPublic? right) -> bool
+static readonly Aw.Sindri.Core.SindriErrors.LaunchPrePushForeign -> Aw.Kernel.ErrorDefinition!
+const Aw.Sindri.Core.Launch.LaunchEnvironment.GhConfigDirectory = "GH_CONFIG_DIR" -> string!
+const Aw.Sindri.Core.Launch.LaunchEnvironment.Worktree = "AW_SINDRI_WORKTREE" -> string!
+Aw.Sindri.Core.Launch.LaunchEnvironment
+static Aw.Sindri.Core.Launch.LaunchEnvironment.Credentials.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Launch.LaunchEnvironment.Scrub(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! env, string! worktree, string! ghConfigDir) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+static readonly Aw.Sindri.Core.SindriErrors.LaunchPushRefused -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Prove.IScriptRuns
+Aw.Sindri.Core.Prove.IScriptRuns.Run(string! directory, string! script, System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int?>
+Aw.Sindri.Core.Forge.PullChecks
+Aw.Sindri.Core.Forge.PullChecks.<Clone>$() -> Aw.Sindri.Core.Forge.PullChecks!
+Aw.Sindri.Core.Forge.PullChecks.State.get -> Aw.Sindri.Core.Forge.PullChecksState
+Aw.Sindri.Core.Forge.PullChecks.State.init -> void
+Aw.Sindri.Core.Forge.PullChecks.Sha.get -> string!
+Aw.Sindri.Core.Forge.PullChecks.Sha.init -> void
+Aw.Sindri.Core.Forge.PullChecks.Failing.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Forge.PullChecks.Failing.init -> void
+Aw.Sindri.Core.Forge.PullChecks.Deconstruct(out Aw.Sindri.Core.Forge.PullChecksState State, out string! Sha, out System.Collections.Generic.IReadOnlyList<string!>! Failing) -> void
+Aw.Sindri.Core.Forge.PullChecks.Equals(Aw.Sindri.Core.Forge.PullChecks? other) -> bool
+Aw.Sindri.Core.Forge.PullChecks.PullChecks(Aw.Sindri.Core.Forge.PullChecksState State, string! Sha, System.Collections.Generic.IReadOnlyList<string!>! Failing) -> void
+override Aw.Sindri.Core.Forge.PullChecks.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Forge.PullChecks.GetHashCode() -> int
+override Aw.Sindri.Core.Forge.PullChecks.ToString() -> string!
+static Aw.Sindri.Core.Forge.PullChecks.operator !=(Aw.Sindri.Core.Forge.PullChecks? left, Aw.Sindri.Core.Forge.PullChecks? right) -> bool
+static Aw.Sindri.Core.Forge.PullChecks.operator ==(Aw.Sindri.Core.Forge.PullChecks? left, Aw.Sindri.Core.Forge.PullChecks? right) -> bool
+Aw.Sindri.Core.Forge.PullPush
+Aw.Sindri.Core.Forge.PullPush.<Clone>$() -> Aw.Sindri.Core.Forge.PullPush!
+Aw.Sindri.Core.Forge.PullPush.Link.get -> string!
+Aw.Sindri.Core.Forge.PullPush.Link.init -> void
+Aw.Sindri.Core.Forge.PullPush.Workspace.get -> string!
+Aw.Sindri.Core.Forge.PullPush.Workspace.init -> void
+Aw.Sindri.Core.Forge.PullPush.Sha.get -> string!
+Aw.Sindri.Core.Forge.PullPush.Sha.init -> void
+Aw.Sindri.Core.Forge.PullPush.LeaseSha.get -> string!
+Aw.Sindri.Core.Forge.PullPush.LeaseSha.init -> void
+Aw.Sindri.Core.Forge.PullPush.Deconstruct(out string! Link, out string! Workspace, out string! Sha, out string! LeaseSha) -> void
+Aw.Sindri.Core.Forge.PullPush.Equals(Aw.Sindri.Core.Forge.PullPush? other) -> bool
+Aw.Sindri.Core.Forge.PullPush.PullPush(string! Link, string! Workspace, string! Sha, string! LeaseSha) -> void
+override Aw.Sindri.Core.Forge.PullPush.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Forge.PullPush.GetHashCode() -> int
+override Aw.Sindri.Core.Forge.PullPush.ToString() -> string!
+static Aw.Sindri.Core.Forge.PullPush.operator !=(Aw.Sindri.Core.Forge.PullPush? left, Aw.Sindri.Core.Forge.PullPush? right) -> bool
+static Aw.Sindri.Core.Forge.PullPush.operator ==(Aw.Sindri.Core.Forge.PullPush? left, Aw.Sindri.Core.Forge.PullPush? right) -> bool
+Aw.Sindri.Core.Forge.PullView
+Aw.Sindri.Core.Forge.PullView.<Clone>$() -> Aw.Sindri.Core.Forge.PullView!
+Aw.Sindri.Core.Forge.PullView.Link.get -> string!
+Aw.Sindri.Core.Forge.PullView.Link.init -> void
+Aw.Sindri.Core.Forge.PullView.State.get -> Aw.Sindri.Core.Forge.PullState
+Aw.Sindri.Core.Forge.PullView.State.init -> void
+Aw.Sindri.Core.Forge.PullView.HeadSha.get -> string!
+Aw.Sindri.Core.Forge.PullView.HeadSha.init -> void
+Aw.Sindri.Core.Forge.PullView.Mergeable.get -> bool?
+Aw.Sindri.Core.Forge.PullView.Mergeable.init -> void
+Aw.Sindri.Core.Forge.PullView.ReviewDecision.get -> string?
+Aw.Sindri.Core.Forge.PullView.ReviewDecision.init -> void
+Aw.Sindri.Core.Forge.PullView.UnresolvedThreads.get -> int
+Aw.Sindri.Core.Forge.PullView.UnresolvedThreads.init -> void
+Aw.Sindri.Core.Forge.PullView.Checks.get -> Aw.Sindri.Core.Forge.PullChecks!
+Aw.Sindri.Core.Forge.PullView.Checks.init -> void
+Aw.Sindri.Core.Forge.PullView.Deconstruct(out string! Link, out Aw.Sindri.Core.Forge.PullState State, out string! HeadSha, out bool? Mergeable, out string? ReviewDecision, out int UnresolvedThreads, out Aw.Sindri.Core.Forge.PullChecks! Checks) -> void
+Aw.Sindri.Core.Forge.PullView.Equals(Aw.Sindri.Core.Forge.PullView? other) -> bool
+Aw.Sindri.Core.Forge.PullView.PullView(string! Link, Aw.Sindri.Core.Forge.PullState State, string! HeadSha, bool? Mergeable, string? ReviewDecision, int UnresolvedThreads, Aw.Sindri.Core.Forge.PullChecks! Checks) -> void
+override Aw.Sindri.Core.Forge.PullView.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Forge.PullView.GetHashCode() -> int
+override Aw.Sindri.Core.Forge.PullView.ToString() -> string!
+static Aw.Sindri.Core.Forge.PullView.operator !=(Aw.Sindri.Core.Forge.PullView? left, Aw.Sindri.Core.Forge.PullView? right) -> bool
+static Aw.Sindri.Core.Forge.PullView.operator ==(Aw.Sindri.Core.Forge.PullView? left, Aw.Sindri.Core.Forge.PullView? right) -> bool
+Aw.Sindri.Core.Forge.PullRepo
+Aw.Sindri.Core.Forge.PullRepo.<Clone>$() -> Aw.Sindri.Core.Forge.PullRepo!
+Aw.Sindri.Core.Forge.PullRepo.Host.get -> string!
+Aw.Sindri.Core.Forge.PullRepo.Host.init -> void
+Aw.Sindri.Core.Forge.PullRepo.Owner.get -> string!
+Aw.Sindri.Core.Forge.PullRepo.Owner.init -> void
+Aw.Sindri.Core.Forge.PullRepo.Name.get -> string!
+Aw.Sindri.Core.Forge.PullRepo.Name.init -> void
+Aw.Sindri.Core.Forge.PullRepo.Deconstruct(out string! Host, out string! Owner, out string! Name) -> void
+Aw.Sindri.Core.Forge.PullRepo.Equals(Aw.Sindri.Core.Forge.PullRepo? other) -> bool
+Aw.Sindri.Core.Forge.PullRepo.PullRepo(string! Host, string! Owner, string! Name) -> void
+override Aw.Sindri.Core.Forge.PullRepo.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Forge.PullRepo.GetHashCode() -> int
+override Aw.Sindri.Core.Forge.PullRepo.ToString() -> string!
+static Aw.Sindri.Core.Forge.PullRepo.operator !=(Aw.Sindri.Core.Forge.PullRepo? left, Aw.Sindri.Core.Forge.PullRepo? right) -> bool
+static Aw.Sindri.Core.Forge.PullRepo.operator ==(Aw.Sindri.Core.Forge.PullRepo? left, Aw.Sindri.Core.Forge.PullRepo? right) -> bool
+Aw.Sindri.Core.Forge.FindPull
+Aw.Sindri.Core.Forge.FindPull.<Clone>$() -> Aw.Sindri.Core.Forge.FindPull!
+Aw.Sindri.Core.Forge.FindPull.Repo.get -> Aw.Sindri.Core.Forge.PullRepo!
+Aw.Sindri.Core.Forge.FindPull.Repo.init -> void
+Aw.Sindri.Core.Forge.FindPull.Head.get -> string!
+Aw.Sindri.Core.Forge.FindPull.Head.init -> void
+Aw.Sindri.Core.Forge.FindPull.Marker.get -> string?
+Aw.Sindri.Core.Forge.FindPull.Marker.init -> void
+Aw.Sindri.Core.Forge.FindPull.Deconstruct(out Aw.Sindri.Core.Forge.PullRepo! Repo, out string! Head, out string? Marker) -> void
+Aw.Sindri.Core.Forge.FindPull.Equals(Aw.Sindri.Core.Forge.FindPull? other) -> bool
+Aw.Sindri.Core.Forge.FindPull.FindPull(Aw.Sindri.Core.Forge.PullRepo! Repo, string! Head, string? Marker) -> void
+override Aw.Sindri.Core.Forge.FindPull.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Forge.FindPull.GetHashCode() -> int
+override Aw.Sindri.Core.Forge.FindPull.ToString() -> string!
+static Aw.Sindri.Core.Forge.FindPull.operator !=(Aw.Sindri.Core.Forge.FindPull? left, Aw.Sindri.Core.Forge.FindPull? right) -> bool
+static Aw.Sindri.Core.Forge.FindPull.operator ==(Aw.Sindri.Core.Forge.FindPull? left, Aw.Sindri.Core.Forge.FindPull? right) -> bool
+Aw.Sindri.Core.Forge.OpenPull
+Aw.Sindri.Core.Forge.OpenPull.<Clone>$() -> Aw.Sindri.Core.Forge.OpenPull!
+Aw.Sindri.Core.Forge.OpenPull.Repo.get -> Aw.Sindri.Core.Forge.PullRepo!
+Aw.Sindri.Core.Forge.OpenPull.Repo.init -> void
+Aw.Sindri.Core.Forge.OpenPull.Head.get -> string!
+Aw.Sindri.Core.Forge.OpenPull.Head.init -> void
+Aw.Sindri.Core.Forge.OpenPull.Base.get -> string!
+Aw.Sindri.Core.Forge.OpenPull.Base.init -> void
+Aw.Sindri.Core.Forge.OpenPull.HeadSha.get -> string!
+Aw.Sindri.Core.Forge.OpenPull.HeadSha.init -> void
+Aw.Sindri.Core.Forge.OpenPull.Title.get -> string!
+Aw.Sindri.Core.Forge.OpenPull.Title.init -> void
+Aw.Sindri.Core.Forge.OpenPull.Body.get -> string!
+Aw.Sindri.Core.Forge.OpenPull.Body.init -> void
+Aw.Sindri.Core.Forge.OpenPull.Draft.get -> bool
+Aw.Sindri.Core.Forge.OpenPull.Draft.init -> void
+Aw.Sindri.Core.Forge.OpenPull.Marker.get -> string?
+Aw.Sindri.Core.Forge.OpenPull.Marker.init -> void
+Aw.Sindri.Core.Forge.OpenPull.Deconstruct(out Aw.Sindri.Core.Forge.PullRepo! Repo, out string! Head, out string! Base, out string! HeadSha, out string! Title, out string! Body, out bool Draft, out string? Marker) -> void
+Aw.Sindri.Core.Forge.OpenPull.Equals(Aw.Sindri.Core.Forge.OpenPull? other) -> bool
+Aw.Sindri.Core.Forge.OpenPull.OpenPull(Aw.Sindri.Core.Forge.PullRepo! Repo, string! Head, string! Base, string! HeadSha, string! Title, string! Body, bool Draft, string? Marker) -> void
+override Aw.Sindri.Core.Forge.OpenPull.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Forge.OpenPull.GetHashCode() -> int
+override Aw.Sindri.Core.Forge.OpenPull.ToString() -> string!
+static Aw.Sindri.Core.Forge.OpenPull.operator !=(Aw.Sindri.Core.Forge.OpenPull? left, Aw.Sindri.Core.Forge.OpenPull? right) -> bool
+static Aw.Sindri.Core.Forge.OpenPull.operator ==(Aw.Sindri.Core.Forge.OpenPull? left, Aw.Sindri.Core.Forge.OpenPull? right) -> bool
+Aw.Sindri.Core.Forge.OpenedPull
+Aw.Sindri.Core.Forge.OpenedPull.<Clone>$() -> Aw.Sindri.Core.Forge.OpenedPull!
+Aw.Sindri.Core.Forge.OpenedPull.Link.get -> string!
+Aw.Sindri.Core.Forge.OpenedPull.Link.init -> void
+Aw.Sindri.Core.Forge.OpenedPull.Number.get -> int
+Aw.Sindri.Core.Forge.OpenedPull.Number.init -> void
+Aw.Sindri.Core.Forge.OpenedPull.Deconstruct(out string! Link, out int Number) -> void
+Aw.Sindri.Core.Forge.OpenedPull.Equals(Aw.Sindri.Core.Forge.OpenedPull? other) -> bool
+Aw.Sindri.Core.Forge.OpenedPull.OpenedPull(string! Link, int Number) -> void
+override Aw.Sindri.Core.Forge.OpenedPull.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Forge.OpenedPull.GetHashCode() -> int
+override Aw.Sindri.Core.Forge.OpenedPull.ToString() -> string!
+static Aw.Sindri.Core.Forge.OpenedPull.operator !=(Aw.Sindri.Core.Forge.OpenedPull? left, Aw.Sindri.Core.Forge.OpenedPull? right) -> bool
+static Aw.Sindri.Core.Forge.OpenedPull.operator ==(Aw.Sindri.Core.Forge.OpenedPull? left, Aw.Sindri.Core.Forge.OpenedPull? right) -> bool
+Aw.Sindri.Core.Forge.PullChecksState
+Aw.Sindri.Core.Forge.PullChecksState.None = 1 -> Aw.Sindri.Core.Forge.PullChecksState
+Aw.Sindri.Core.Forge.PullChecksState.Pending = 2 -> Aw.Sindri.Core.Forge.PullChecksState
+Aw.Sindri.Core.Forge.PullChecksState.Passing = 3 -> Aw.Sindri.Core.Forge.PullChecksState
+Aw.Sindri.Core.Forge.PullChecksState.Failing = 4 -> Aw.Sindri.Core.Forge.PullChecksState
+Aw.Sindri.Core.Forge.PullState
+Aw.Sindri.Core.Forge.PullState.Open = 1 -> Aw.Sindri.Core.Forge.PullState
+Aw.Sindri.Core.Forge.PullState.Closed = 2 -> Aw.Sindri.Core.Forge.PullState
+Aw.Sindri.Core.Forge.PullState.Merged = 3 -> Aw.Sindri.Core.Forge.PullState
+Aw.Sindri.Core.Forge.PullPushOutcome
+Aw.Sindri.Core.Forge.PullPushOutcome.Pushed = 1 -> Aw.Sindri.Core.Forge.PullPushOutcome
+Aw.Sindri.Core.Forge.PullPushOutcome.HeadMoved = 2 -> Aw.Sindri.Core.Forge.PullPushOutcome
+Aw.Sindri.Core.Forge.PullPushOutcome.Rejected = 3 -> Aw.Sindri.Core.Forge.PullPushOutcome
+Aw.Sindri.Core.Forge.IPullRequests
+Aw.Sindri.Core.Forge.IPullRequests.CheckLog(string! link, string! check, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Sindri.Core.Forge.IPullRequests.Find(Aw.Sindri.Core.Forge.FindPull! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.OpenedPull?>!>
+Aw.Sindri.Core.Forge.IPullRequests.Get(string! link, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullView!>!>
+Aw.Sindri.Core.Forge.IPullRequests.Open(Aw.Sindri.Core.Forge.OpenPull! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.OpenedPull!>!>
+Aw.Sindri.Core.Forge.IPullRequests.Push(Aw.Sindri.Core.Forge.PullPush! push, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullPushOutcome>!>
+Aw.Sindri.Core.Forge.IPullRequests.RerunChecks(string! link, string! sha, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<int>!>
+Aw.Sindri.Core.Forge.IPullRequests.Update(string! link, string? title, string? body, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+static readonly Aw.Sindri.Core.SindriErrors.NoForge -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.ForgeRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.ForgeNotFound -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.ForgeUnavailable -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Forge.PullThread
+Aw.Sindri.Core.Forge.PullThread.<Clone>$() -> Aw.Sindri.Core.Forge.PullThread!
+Aw.Sindri.Core.Forge.PullThread.Key.get -> string!
+Aw.Sindri.Core.Forge.PullThread.Key.init -> void
+Aw.Sindri.Core.Forge.PullThread.Kind.get -> Aw.Sindri.Core.Forge.PullCommentKind
+Aw.Sindri.Core.Forge.PullThread.Kind.init -> void
+Aw.Sindri.Core.Forge.PullThread.Author.get -> string!
+Aw.Sindri.Core.Forge.PullThread.Author.init -> void
+Aw.Sindri.Core.Forge.PullThread.Association.get -> string!
+Aw.Sindri.Core.Forge.PullThread.Association.init -> void
+Aw.Sindri.Core.Forge.PullThread.IsBot.get -> bool
+Aw.Sindri.Core.Forge.PullThread.IsBot.init -> void
+Aw.Sindri.Core.Forge.PullThread.Resolved.get -> bool
+Aw.Sindri.Core.Forge.PullThread.Resolved.init -> void
+Aw.Sindri.Core.Forge.PullThread.Outdated.get -> bool
+Aw.Sindri.Core.Forge.PullThread.Outdated.init -> void
+Aw.Sindri.Core.Forge.PullThread.Path.get -> string?
+Aw.Sindri.Core.Forge.PullThread.Path.init -> void
+Aw.Sindri.Core.Forge.PullThread.Body.get -> string!
+Aw.Sindri.Core.Forge.PullThread.Body.init -> void
+Aw.Sindri.Core.Forge.PullThread.Markers.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Forge.PullThread.Markers.init -> void
+Aw.Sindri.Core.Forge.PullThread.Deconstruct(out string! Key, out Aw.Sindri.Core.Forge.PullCommentKind Kind, out string! Author, out string! Association, out bool IsBot, out bool Resolved, out bool Outdated, out string? Path, out string! Body, out System.Collections.Generic.IReadOnlyList<string!>! Markers) -> void
+Aw.Sindri.Core.Forge.PullThread.Equals(Aw.Sindri.Core.Forge.PullThread? other) -> bool
+Aw.Sindri.Core.Forge.PullThread.PullThread(string! Key, Aw.Sindri.Core.Forge.PullCommentKind Kind, string! Author, string! Association, bool IsBot, bool Resolved, bool Outdated, string? Path, string! Body, System.Collections.Generic.IReadOnlyList<string!>! Markers) -> void
+override Aw.Sindri.Core.Forge.PullThread.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Forge.PullThread.GetHashCode() -> int
+override Aw.Sindri.Core.Forge.PullThread.ToString() -> string!
+static Aw.Sindri.Core.Forge.PullThread.operator !=(Aw.Sindri.Core.Forge.PullThread? left, Aw.Sindri.Core.Forge.PullThread? right) -> bool
+static Aw.Sindri.Core.Forge.PullThread.operator ==(Aw.Sindri.Core.Forge.PullThread? left, Aw.Sindri.Core.Forge.PullThread? right) -> bool
+Aw.Sindri.Core.Forge.PullCommentKind
+Aw.Sindri.Core.Forge.PullCommentKind.Thread = 1 -> Aw.Sindri.Core.Forge.PullCommentKind
+Aw.Sindri.Core.Forge.PullCommentKind.Review = 2 -> Aw.Sindri.Core.Forge.PullCommentKind
+Aw.Sindri.Core.Forge.PullCommentKind.Comment = 3 -> Aw.Sindri.Core.Forge.PullCommentKind
+Aw.Sindri.Core.Forge.IPullRequests.Threads(string! link, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Forge.PullThread!>!>!>
+Aw.Sindri.Core.Forge.PullMerge
+Aw.Sindri.Core.Forge.PullMerge.<Clone>$() -> Aw.Sindri.Core.Forge.PullMerge!
+Aw.Sindri.Core.Forge.PullMerge.Link.get -> string!
+Aw.Sindri.Core.Forge.PullMerge.Link.init -> void
+Aw.Sindri.Core.Forge.PullMerge.Method.get -> Aw.Sindri.Core.Forge.PullMergeMethod
+Aw.Sindri.Core.Forge.PullMerge.Method.init -> void
+Aw.Sindri.Core.Forge.PullMerge.ExpectedHead.get -> string!
+Aw.Sindri.Core.Forge.PullMerge.ExpectedHead.init -> void
+Aw.Sindri.Core.Forge.PullMerge.Deconstruct(out string! Link, out Aw.Sindri.Core.Forge.PullMergeMethod Method, out string! ExpectedHead) -> void
+Aw.Sindri.Core.Forge.PullMerge.Equals(Aw.Sindri.Core.Forge.PullMerge? other) -> bool
+Aw.Sindri.Core.Forge.PullMerge.PullMerge(string! Link, Aw.Sindri.Core.Forge.PullMergeMethod Method, string! ExpectedHead) -> void
+override Aw.Sindri.Core.Forge.PullMerge.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Forge.PullMerge.GetHashCode() -> int
+override Aw.Sindri.Core.Forge.PullMerge.ToString() -> string!
+static Aw.Sindri.Core.Forge.PullMerge.operator !=(Aw.Sindri.Core.Forge.PullMerge? left, Aw.Sindri.Core.Forge.PullMerge? right) -> bool
+static Aw.Sindri.Core.Forge.PullMerge.operator ==(Aw.Sindri.Core.Forge.PullMerge? left, Aw.Sindri.Core.Forge.PullMerge? right) -> bool
+Aw.Sindri.Core.Forge.PullMergeOutcome
+Aw.Sindri.Core.Forge.PullMergeOutcome.<Clone>$() -> Aw.Sindri.Core.Forge.PullMergeOutcome!
+Aw.Sindri.Core.Forge.PullMergeOutcome.Status.get -> Aw.Sindri.Core.Forge.PullMergeStatus
+Aw.Sindri.Core.Forge.PullMergeOutcome.Status.init -> void
+Aw.Sindri.Core.Forge.PullMergeOutcome.MergedSha.get -> string?
+Aw.Sindri.Core.Forge.PullMergeOutcome.MergedSha.init -> void
+Aw.Sindri.Core.Forge.PullMergeOutcome.Reason.get -> string?
+Aw.Sindri.Core.Forge.PullMergeOutcome.Reason.init -> void
+Aw.Sindri.Core.Forge.PullMergeOutcome.Deconstruct(out Aw.Sindri.Core.Forge.PullMergeStatus Status, out string? MergedSha, out string? Reason) -> void
+Aw.Sindri.Core.Forge.PullMergeOutcome.Equals(Aw.Sindri.Core.Forge.PullMergeOutcome? other) -> bool
+Aw.Sindri.Core.Forge.PullMergeOutcome.PullMergeOutcome(Aw.Sindri.Core.Forge.PullMergeStatus Status, string? MergedSha, string? Reason) -> void
+override Aw.Sindri.Core.Forge.PullMergeOutcome.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Forge.PullMergeOutcome.GetHashCode() -> int
+override Aw.Sindri.Core.Forge.PullMergeOutcome.ToString() -> string!
+static Aw.Sindri.Core.Forge.PullMergeOutcome.operator !=(Aw.Sindri.Core.Forge.PullMergeOutcome? left, Aw.Sindri.Core.Forge.PullMergeOutcome? right) -> bool
+static Aw.Sindri.Core.Forge.PullMergeOutcome.operator ==(Aw.Sindri.Core.Forge.PullMergeOutcome? left, Aw.Sindri.Core.Forge.PullMergeOutcome? right) -> bool
+Aw.Sindri.Core.Forge.PullReply
+Aw.Sindri.Core.Forge.PullReply.<Clone>$() -> Aw.Sindri.Core.Forge.PullReply!
+Aw.Sindri.Core.Forge.PullReply.Link.get -> string!
+Aw.Sindri.Core.Forge.PullReply.Link.init -> void
+Aw.Sindri.Core.Forge.PullReply.ThreadKey.get -> string!
+Aw.Sindri.Core.Forge.PullReply.ThreadKey.init -> void
+Aw.Sindri.Core.Forge.PullReply.Text.get -> string!
+Aw.Sindri.Core.Forge.PullReply.Text.init -> void
+Aw.Sindri.Core.Forge.PullReply.Marker.get -> string!
+Aw.Sindri.Core.Forge.PullReply.Marker.init -> void
+Aw.Sindri.Core.Forge.PullReply.Deconstruct(out string! Link, out string! ThreadKey, out string! Text, out string! Marker) -> void
+Aw.Sindri.Core.Forge.PullReply.Equals(Aw.Sindri.Core.Forge.PullReply? other) -> bool
+Aw.Sindri.Core.Forge.PullReply.PullReply(string! Link, string! ThreadKey, string! Text, string! Marker) -> void
+override Aw.Sindri.Core.Forge.PullReply.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Forge.PullReply.GetHashCode() -> int
+override Aw.Sindri.Core.Forge.PullReply.ToString() -> string!
+static Aw.Sindri.Core.Forge.PullReply.operator !=(Aw.Sindri.Core.Forge.PullReply? left, Aw.Sindri.Core.Forge.PullReply? right) -> bool
+static Aw.Sindri.Core.Forge.PullReply.operator ==(Aw.Sindri.Core.Forge.PullReply? left, Aw.Sindri.Core.Forge.PullReply? right) -> bool
+Aw.Sindri.Core.Forge.PullReaction
+Aw.Sindri.Core.Forge.PullReaction.<Clone>$() -> Aw.Sindri.Core.Forge.PullReaction!
+Aw.Sindri.Core.Forge.PullReaction.Link.get -> string!
+Aw.Sindri.Core.Forge.PullReaction.Link.init -> void
+Aw.Sindri.Core.Forge.PullReaction.ThreadKey.get -> string!
+Aw.Sindri.Core.Forge.PullReaction.ThreadKey.init -> void
+Aw.Sindri.Core.Forge.PullReaction.Reaction.get -> string!
+Aw.Sindri.Core.Forge.PullReaction.Reaction.init -> void
+Aw.Sindri.Core.Forge.PullReaction.Marker.get -> string!
+Aw.Sindri.Core.Forge.PullReaction.Marker.init -> void
+Aw.Sindri.Core.Forge.PullReaction.Deconstruct(out string! Link, out string! ThreadKey, out string! Reaction, out string! Marker) -> void
+Aw.Sindri.Core.Forge.PullReaction.Equals(Aw.Sindri.Core.Forge.PullReaction? other) -> bool
+Aw.Sindri.Core.Forge.PullReaction.PullReaction(string! Link, string! ThreadKey, string! Reaction, string! Marker) -> void
+override Aw.Sindri.Core.Forge.PullReaction.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Forge.PullReaction.GetHashCode() -> int
+override Aw.Sindri.Core.Forge.PullReaction.ToString() -> string!
+static Aw.Sindri.Core.Forge.PullReaction.operator !=(Aw.Sindri.Core.Forge.PullReaction? left, Aw.Sindri.Core.Forge.PullReaction? right) -> bool
+static Aw.Sindri.Core.Forge.PullReaction.operator ==(Aw.Sindri.Core.Forge.PullReaction? left, Aw.Sindri.Core.Forge.PullReaction? right) -> bool
+Aw.Sindri.Core.Forge.PullBranchPush
+Aw.Sindri.Core.Forge.PullBranchPush.<Clone>$() -> Aw.Sindri.Core.Forge.PullBranchPush!
+Aw.Sindri.Core.Forge.PullBranchPush.Repo.get -> Aw.Sindri.Core.Forge.PullRepo!
+Aw.Sindri.Core.Forge.PullBranchPush.Repo.init -> void
+Aw.Sindri.Core.Forge.PullBranchPush.Workspace.get -> string!
+Aw.Sindri.Core.Forge.PullBranchPush.Workspace.init -> void
+Aw.Sindri.Core.Forge.PullBranchPush.Branch.get -> string!
+Aw.Sindri.Core.Forge.PullBranchPush.Branch.init -> void
+Aw.Sindri.Core.Forge.PullBranchPush.Sha.get -> string!
+Aw.Sindri.Core.Forge.PullBranchPush.Sha.init -> void
+Aw.Sindri.Core.Forge.PullBranchPush.LeaseSha.get -> string?
+Aw.Sindri.Core.Forge.PullBranchPush.LeaseSha.init -> void
+Aw.Sindri.Core.Forge.PullBranchPush.Deconstruct(out Aw.Sindri.Core.Forge.PullRepo! Repo, out string! Workspace, out string! Branch, out string! Sha, out string? LeaseSha) -> void
+Aw.Sindri.Core.Forge.PullBranchPush.Equals(Aw.Sindri.Core.Forge.PullBranchPush? other) -> bool
+Aw.Sindri.Core.Forge.PullBranchPush.PullBranchPush(Aw.Sindri.Core.Forge.PullRepo! Repo, string! Workspace, string! Branch, string! Sha, string? LeaseSha) -> void
+override Aw.Sindri.Core.Forge.PullBranchPush.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Forge.PullBranchPush.GetHashCode() -> int
+override Aw.Sindri.Core.Forge.PullBranchPush.ToString() -> string!
+static Aw.Sindri.Core.Forge.PullBranchPush.operator !=(Aw.Sindri.Core.Forge.PullBranchPush? left, Aw.Sindri.Core.Forge.PullBranchPush? right) -> bool
+static Aw.Sindri.Core.Forge.PullBranchPush.operator ==(Aw.Sindri.Core.Forge.PullBranchPush? left, Aw.Sindri.Core.Forge.PullBranchPush? right) -> bool
+Aw.Sindri.Core.Forge.PullMergeMethod
+Aw.Sindri.Core.Forge.PullMergeMethod.Merge = 1 -> Aw.Sindri.Core.Forge.PullMergeMethod
+Aw.Sindri.Core.Forge.PullMergeMethod.Squash = 2 -> Aw.Sindri.Core.Forge.PullMergeMethod
+Aw.Sindri.Core.Forge.PullMergeMethod.Rebase = 3 -> Aw.Sindri.Core.Forge.PullMergeMethod
+Aw.Sindri.Core.Forge.PullMergeStatus
+Aw.Sindri.Core.Forge.PullMergeStatus.Merged = 1 -> Aw.Sindri.Core.Forge.PullMergeStatus
+Aw.Sindri.Core.Forge.PullMergeStatus.Blocked = 2 -> Aw.Sindri.Core.Forge.PullMergeStatus
+Aw.Sindri.Core.Forge.PullMergeStatus.HeadMoved = 3 -> Aw.Sindri.Core.Forge.PullMergeStatus
+Aw.Sindri.Core.Forge.PullDelivery
+Aw.Sindri.Core.Forge.PullDelivery.Delivered = 1 -> Aw.Sindri.Core.Forge.PullDelivery
+Aw.Sindri.Core.Forge.PullDelivery.AlreadyDelivered = 2 -> Aw.Sindri.Core.Forge.PullDelivery
+Aw.Sindri.Core.Forge.IPullRequests.Merge(Aw.Sindri.Core.Forge.PullMerge! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullMergeOutcome!>!>
+Aw.Sindri.Core.Forge.IPullRequests.Reply(Aw.Sindri.Core.Forge.PullReply! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullDelivery>!>
+Aw.Sindri.Core.Forge.IPullRequests.React(Aw.Sindri.Core.Forge.PullReaction! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullDelivery>!>
+Aw.Sindri.Core.Forge.IPullRequests.PushBranch(Aw.Sindri.Core.Forge.PullBranchPush! push, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullPushOutcome>!>
+Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions
+Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions.Lines.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions.Step.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
