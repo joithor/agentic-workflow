@@ -88,6 +88,7 @@ public static partial class SindriErrors
 
     /// <summary>SND-SECRET-003: a file: pointer names a file others may read or write, or something that isn't a regular file.</summary>
     public static readonly ErrorDefinition SecretFileUnsafe = new("SND-SECRET-003", ErrorKind.Forbidden, "The secret file is unsafe");
+
     /// <summary>SND-VIEW-001: the projector stalled on an event or can't run (views.db or the ledger can't be used); 'sindri views rebuild' clears an event stall or a views.db cause, 'sindri doctor' diagnoses a ledger cause.</summary>
     public static readonly ErrorDefinition ViewsStalled = new("SND-VIEW-001", ErrorKind.Unavailable, "The projector stalled on an event");
 
