@@ -470,24 +470,32 @@ index_clear() {
   done
 }
 
-# Removes the hold, its chain and the draft this fixture wrote; the current version stays.
+# Removes the hold, its chain, the draft and the map events this fixture wrote; the current version stays. The events go too, so every state is
+# the only one current: the status reads the newest map event of the version, and a state that records none must not inherit an earlier one's.
 publish_clear() {
   index_clear
+  ledger "DELETE FROM events WHERE idempotency_key LIKE 'sindri-ui-fixture:publish:%';" >/dev/null || return
   sql_on "$(context_db)" "DELETE FROM map_hold; DELETE FROM map_publish_chain; DELETE FROM map_version WHERE status = 'draft' AND commit_sha = 'fixture-hold'; DELETE FROM map_version_head WHERE version NOT IN (SELECT id FROM map_version);"
 }
 
 # A draft with the current version's heads, held, with the wait started $1 seconds ago.
 publish_hold() {
-  local ago="$1" db
+  local ago="$1" db live
   db="$(context_db)"
   publish_clear || return
+  # The held map is for the repo's live head and the index is at another commit, so the repo is waiting (build queued), not "newer".
+  live="$(git -C "$AW_SINDRI_HOME/ui-fixture-context/$repo" rev-parse HEAD 2>/dev/null)" || live=""
+  [ -n "$live" ] || live="9999999999999999999999999999999999999999"
   sql_on "$db" "INSERT INTO map_version (repo, commit_sha, key_version, created, status)
                   SELECT repo, 'fixture-hold', key_version, strftime('%Y-%m-%dT%H:%M:%S', 'now') || '.0000000Z', 'draft' FROM map_version WHERE status = 'current';
                 INSERT INTO map_version_head (version, repo, commit_sha, on_default)
                   SELECT d.id, h.repo, h.commit_sha, h.on_default FROM map_version d, map_version_head h, map_version c
                   WHERE d.commit_sha = 'fixture-hold' AND c.status = 'current' AND h.version = c.id;
                 INSERT INTO map_hold (version) SELECT id FROM map_version WHERE commit_sha = 'fixture-hold';
-                INSERT OR REPLACE INTO map_publish_chain (id, since) VALUES (1, strftime('%Y-%m-%dT%H:%M:%S', 'now', '-$ago seconds') || '.0000000Z');" >/dev/null
+                INSERT OR REPLACE INTO map_publish_chain (id, since) VALUES (1, strftime('%Y-%m-%dT%H:%M:%S', 'now', '-$ago seconds') || '.0000000Z');
+                UPDATE map_version_head SET commit_sha = '$live', on_default = 1
+                  WHERE version = (SELECT id FROM map_version WHERE commit_sha = 'fixture-hold');" >/dev/null \
+    && index_write "$repo"
 }
 
 context_publish() {
@@ -498,6 +506,8 @@ context_publish() {
   current="$(sql_on "$db" "SELECT id || '|' || repo FROM map_version WHERE status = 'current'")"
   [ -n "$current" ] || die "no current map: run 'context up' first"
   version="${current%%|*}"; repo="${current#*|}"
+  # The current map's head for the repo (a map built without heads has none): the held draft copies it and the stale state moves it.
+  sql_on "$db" "INSERT OR IGNORE INTO map_version_head (version, repo, commit_sha, on_default) VALUES ($version, '$repo', '$INDEX_COMMIT', 1);" >/dev/null || return
   case "$1" in
     pause) "$PROVE" human services pause "$PUBLISH_SERVICE"; return ;;
     resume) "$PROVE" human services resume "$PUBLISH_SERVICE"; return ;;
@@ -514,7 +524,7 @@ context_publish() {
         by-hand)
           publish_event byhand context.map.promoted "human:fixture" "{\"version\":$version,\"repo\":\"$repo\",\"retained\":null}" && state="published-by-hand" ;;
         stale)
-          sql_on "$db" "UPDATE map_version_head SET commit_sha = '1234567' WHERE version = $version;" >/dev/null \
+          sql_on "$db" "UPDATE map_version_head SET commit_sha = '1234567' WHERE version = $version AND repo = '$repo';" >/dev/null \
             && index_write "$repo" \
             && publish_event timedout context.map.published "service:$PUBLISH_SERVICE" "{\"repo\":\"$repo\",\"version\":$version,\"reason\":\"TimedOut\",\"via\":\"check\",\"repos\":1,\"staleRepos\":1,\"waitedSeconds\":900,\"heads\":{}}" \
             && state="published-stale" ;;

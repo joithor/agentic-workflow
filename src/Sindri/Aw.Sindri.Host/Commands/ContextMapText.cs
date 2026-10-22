@@ -39,7 +39,7 @@ internal static class ContextMapText
             MapPublishStatusRules.PublishedWithoutWaiting => $"published: {version} without waiting ({WithoutWaiting(p.Reason)})",
             MapPublishStatusRules.PublishedStale => $"published stale: {version} (reason {Kebab(p.Reason)}, {string.Join(", ", p.StaleRepos.Select(static r => r.Repo))} stale)",
             MapPublishStatusRules.PublishedByHand => $"published by hand: {version}",
-            _ => $"published: {version}, code index matches",
+            _ => $"published: {version}",
         };
     }
 

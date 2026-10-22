@@ -481,7 +481,8 @@ sqlq "$CDB" "INSERT INTO map_version_head (version, repo, commit_sha, on_default
 : > "$STUB_LOG"
 out="$(pub held 2>&1)"; check "publish held exits 0" "$?" "0"
 check "held prints its state id" "$out" "held"
-check "held writes a draft with the current version's heads and a hold on it" "$(sqlq "$CDB" "SELECT d.id, d.status, h.repo, h.commit_sha FROM map_hold m JOIN map_version d ON d.id = m.version JOIN map_version_head h ON h.version = d.id")" "2|draft|aw-split-panes|abcdef0"
+check "held writes a draft headed at the repo's live commit (a stand-in outside a git repo) and a hold on it" "$(sqlq "$CDB" "SELECT d.id, d.status, h.repo, h.commit_sha FROM map_hold m JOIN map_version d ON d.id = m.version JOIN map_version_head h ON h.version = d.id")" "2|draft|aw-split-panes|9999999999999999999999999999999999999999"
+check "held writes the code index at another commit, so the repo waits" "$(ls "$P/code-index" | wc -l | tr -d ' ')" "2"
 check "held starts the wait now" "$(sqlq "$CDB" "SELECT since >= strftime('%Y-%m-%dT%H:%M:%S', 'now', '-30 seconds') FROM map_publish_chain")" "1"
 check "held pauses the map service so no tick publishes it" "$(cat "$STUB_LOG")" "services pause context-map-refresh"
 check "held leaves the current version" "$(sqlq "$CDB" "SELECT id, status FROM map_version WHERE status = 'current'")" "1|current"
@@ -521,6 +522,11 @@ IXDB="$P/code-index/aw-split-panes.0123456789ABCDEFGHJKMNPQRS.db"
 check "stale writes the code index file beside the pointer" "$(ls "$P/code-index" | sort | tr '\n' ' ')" "aw-split-panes.0123456789ABCDEFGHJKMNPQRS.db aw-split-panes.current "
 check "the pointer names the file and is private" "$(cat "$P/code-index/aw-split-panes.current") $(stat -c %a "$P/code-index/aw-split-panes.current" 2>/dev/null || stat -f %Lp "$P/code-index/aw-split-panes.current")" "0123456789ABCDEFGHJKMNPQRS 600"
 check "the index header reads back at abcdef0 under schema 1" "$(sqlq "$IXDB" "SELECT value FROM meta WHERE key = 'commit'") $(sqlq "$IXDB" "PRAGMA user_version")" "abcdef0000000000000000000000000000000000 1"
+pub by-hand >/dev/null 2>&1
+pub published >/dev/null 2>&1
+check "published after by-hand leaves no map event, so the newest state is published" "$(sqlq "$P/ledger.db" "SELECT COUNT(*) FROM events WHERE idempotency_key LIKE 'sindri-ui-fixture:publish:%'")" "0"
+pub stale >/dev/null 2>&1
+check "stale after published records its TimedOut event again" "$(sqlq "$P/ledger.db" "SELECT COUNT(*) FROM events WHERE idempotency_key LIKE 'sindri-ui-fixture:publish:timedout:%'")" "1"
 pub published >/dev/null 2>&1
 check "any other state removes the index file and its pointer" "$(ls "$P/code-index" | wc -l | tr -d ' ')" "0"
 pub stale >/dev/null 2>&1
