@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Aw.Sindri.Core.Checks;
 using Aw.Sindri.Core.Prove;
 using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Workflow.Blocks;
@@ -20,7 +21,8 @@ namespace Aw.Sindri.Features.Prove;
 /// <param name="checkouts">Where the repo is checked out.</param>
 /// <param name="worktrees">Makes and removes the scratch worktree.</param>
 /// <param name="scripts">Runs a script in a checkout.</param>
-internal sealed class ProveBeforeAfterStep(IBriefFiles files, IRunArea area, IRepoCheckouts checkouts, IWorktrees worktrees, IScriptRuns scripts) : IBlockStep, IBlockStepId, IRepoStep
+/// <param name="commands">The profile's commands, which a script written from the red tests runs.</param>
+internal sealed class ProveBeforeAfterStep(IBriefFiles files, IRunArea area, IRepoCheckouts checkouts, IWorktrees worktrees, IScriptRuns scripts, RepoCommandRunner commands) : IBlockStep, IBlockStepId, IRepoStep
 {
     private static readonly TimeSpan _scriptTimeout = TimeSpan.FromMinutes(20);
 
