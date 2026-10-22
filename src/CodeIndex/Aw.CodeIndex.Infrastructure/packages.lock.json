@@ -114,6 +114,9 @@
           "Microsoft.Data.Sqlite": "[10.0.12, 10.0.12]"
         }
       },
+      "aw.redaction": {
+        "type": "Project"
+      },
       "Microsoft.Data.Sqlite": {
         "type": "CentralTransitive",
         "requested": "[10.0.12, 10.0.12]",
