@@ -105,7 +105,7 @@ internal sealed partial class CodeIndexMainMoveService(CodeIndexScopes scopes, I
         return probes.IsError ? [] : [.. probes.Value.Where(static p => p.Buildable.Count > 0).Select(static p => p.Repo.Value)];
     }
 
-    private static bool Fixable(Aw.CodeIndex.Core.Facade.RepoStatus repo) => repo.Layers.Any(static l =>
+    private static bool Fixable(CodeIndex.Core.Facade.RepoStatus repo) => repo.Layers.Any(static l =>
         l.Layer is LayerName.Graph or LayerName.Embeddings && l.State == LayerState.Unavailable && l.Code is not null && _fixableCodes.Contains(l.Code));
 
     private static bool Settled(IReadOnlyList<JobRow> builds, string repo, DateTimeOffset now) =>

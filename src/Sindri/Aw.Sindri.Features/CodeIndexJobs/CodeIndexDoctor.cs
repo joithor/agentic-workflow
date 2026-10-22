@@ -1,8 +1,8 @@
 using System.Globalization;
 using Aw.CodeIndex.Core.Facade;
-using Aw.Kernel;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Ports;
+using Aw.Kernel;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Profile;

@@ -91,8 +91,8 @@ public sealed class CodeIndexDoctorTests
     private static DoctorCheck Row(string name, CodeIndexDoctor.Probes probes) =>
         CodeIndexDoctor.Rows([Built(Ok(LayerName.Structure))], [], [], _now, probes).Single(c => c.Name == name);
 
-    private static CodeIndexDoctor.Probes Probes(LockState state, Aw.Kernel.Result<Aw.Kernel.Unit>? model = null, bool enabled = true) =>
-        new(new CodeIndexDoctor.ModelProbe(enabled, model ?? Aw.Kernel.Unit.Value), state);
+    private static CodeIndexDoctor.Probes Probes(LockState state, Kernel.Result<Kernel.Unit>? model = null, bool enabled = true) =>
+        new(new CodeIndexDoctor.ModelProbe(enabled, model ?? Kernel.Unit.Value), state);
 
     [Theory, Trait("Lane", "unit")]
     [InlineData(LockState.Matches, CheckState.Ok, "parses and matches")]
@@ -110,7 +110,7 @@ public sealed class CodeIndexDoctorTests
     [Fact, Trait("Lane", "unit")]
     public void An_unreachable_embedding_server_is_a_warning_from_the_live_probe()
     {
-        var row = Row("code-index:ollama", Probes(LockState.Matches, Aw.CodeIndex.Core.CodeIndexErrors.EmbeddingServerFailed.With("no answer")));
+        var row = Row("code-index:ollama", Probes(LockState.Matches, CodeIndex.Core.CodeIndexErrors.EmbeddingServerFailed.With("no answer")));
 
         Assert.Equal(CheckState.Warn, row.State);
         Assert.Contains("SND-CODEIDX-006", row.Detail, StringComparison.Ordinal);
