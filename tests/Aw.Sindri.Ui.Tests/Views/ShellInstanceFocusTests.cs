@@ -47,7 +47,9 @@ public sealed class ShellInstanceFocusTests : FrameHost
         shell.Workflows.SetViewMode(WorkflowViewMode.List);   // the grouped list; the board has its own tests
         Settle(window);
         Assert.True(shell.Workflows.Select(address));
-        Press(window, Key.Enter);
+        Press(window, Key.Enter);   // the first Enter opens the run drawer
+        Assert.True(shell.Workflows.IsInspectorOpen);
+        Press(window, Key.Enter);   // Enter on the run the drawer shows opens the run's frame
         await Until(window, () => shell.Instance.Phase == FramePhase.Shown && string.Equals(shell.Instance.Address, address, StringComparison.Ordinal));
         return (window, shell, address);
     }
