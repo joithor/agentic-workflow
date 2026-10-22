@@ -37,15 +37,15 @@ public sealed class InMemoryArtifactFiles : IArtifactFiles
     {
         cancellationToken.ThrowIfCancellationRequested();
         _asked.Add((workspace, path));
-        var root = System.IO.Path.GetFullPath(workspace).TrimEnd(System.IO.Path.DirectorySeparatorChar) + System.IO.Path.DirectorySeparatorChar;
+        var root = Path.GetFullPath(workspace).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
         var full = Full(workspace, path);
         if (!full.StartsWith(root, StringComparison.Ordinal))
         {
             return ValueTask.FromResult<Result<string?>>(SindriErrors.InvalidInput.With($"{path} is outside the phase worktree"));
         }
 
-        return ValueTask.FromResult(Results.Success<string?>(_files.TryGetValue(full, out var bytes) ? "sha256:" + Convert.ToHexStringLower(SHA256.HashData(bytes)) : null));
+        return ValueTask.FromResult(Results.Success(_files.TryGetValue(full, out var bytes) ? "sha256:" + Convert.ToHexStringLower(SHA256.HashData(bytes)) : null));
     }
 
-    private static string Full(string workspace, string path) => System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Path.GetFullPath(workspace), path));
+    private static string Full(string workspace, string path) => Path.GetFullPath(Path.Combine(Path.GetFullPath(workspace), path));
 }
