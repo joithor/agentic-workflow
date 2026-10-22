@@ -12,9 +12,12 @@ internal sealed class SystemTestHarness
 
     internal SystemTestHarness(string servicesScenario = "approved")
     {
+        Clock = new FakeTimeProvider(A.Noon);
         Server = new FakeSindriApi { ServiceView = RouteAnswer.Api("services", servicesScenario) };
-        Vm = new HealthViewModel(new InMemoryEndpointRecords(), Server, new FakeTimeProvider(A.Noon), new FakeClipboard());
+        Vm = new HealthViewModel(new InMemoryEndpointRecords(), Server, Clock, new FakeClipboard());
     }
+
+    internal FakeTimeProvider Clock { get; }
 
     internal FakeSindriApi Server { get; }
 
