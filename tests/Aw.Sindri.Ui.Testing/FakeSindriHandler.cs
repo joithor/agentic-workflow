@@ -85,6 +85,37 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
     {
         var uri = request.RequestUri!; // why: HttpClient always sets it on a sent request
         var after = long.TryParse(Header(request, "X-Sindri-After"), NumberStyles.None, CultureInfo.InvariantCulture, out var carried) ? carried : 0;
+        // Order matters: CoreRoute answers first, so the lane-anchored arms below only see paths it declined.
+        if (await CoreRoute(request, uri, after, cancellationToken) is { } core)
+        {
+            return core;
+        }
+
+        return uri.AbsolutePath switch
+        {
+            // LANE ANCHOR U3': add the Needs you routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately above this marker, never between the markers.
+            // LANE ANCHOR U8: add the workflow command routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately below this marker, never between the markers.
+            var path when IsApproval(request, path) => await ApprovalRoute(request, path, cancellationToken),
+            var path when IsComplete(request, path) => await CompleteRoute(request, path, cancellationToken),
+            var path when IsCommand(request, path) => await CommandRoute(request, path, cancellationToken),
+            "/sindri/workflow/recipes" when request.Method == HttpMethod.Get => Answer(Counted(await server.Recipes(uri, cancellationToken), server.RecipeListAnswer)),
+            "/sindri/workflow/instances" when request.Method == HttpMethod.Post =>
+                Answer(Counted(await server.StartInstance(uri, await Body<StartInstanceRequest>(request, cancellationToken), cancellationToken), server.StartAnswer)),
+            "/sindri/context/map/refresh" when request.Method == HttpMethod.Post => Answer(Counted(await server.RefreshContextMap(uri, cancellationToken), server.RefreshContextMapAnswer)),
+            { } path when path.StartsWith("/sindri/context/", StringComparison.Ordinal) => await ContextRoute(request, cancellationToken),
+            // LANE ANCHOR U11a: the session reads, as arms above the workflow-read arm. Insert immediately below this marker, never between the markers.
+            { } path when request.Method == HttpMethod.Get && (path == "/sindri/sessions" || path.StartsWith("/sindri/sessions/", StringComparison.Ordinal)) => await Sessions(uri, cancellationToken),
+            { } path when path == "/sindri/jobs" || path.StartsWith("/sindri/jobs/", StringComparison.Ordinal) => await Jobs(request, cancellationToken),
+            "/sindri/setup" when request.Method == HttpMethod.Get => Answer(Counted(await server.Setup(uri, cancellationToken), server.SetupAnswer)),
+            { } path when request.Method == HttpMethod.Post && IsSetupWrite(path) => await SetupWrite(request, path, cancellationToken),
+            { } path when request.Method == HttpMethod.Get && path.StartsWith("/sindri/workflow/", StringComparison.Ordinal) => await Workflow(uri, cancellationToken),
+            _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
+        };
+    }
+
+    // The status, queue, item, decision and request routes, ahead of the lane anchors in Route; null when the path is not one of them.
+    private async Task<HttpResponseMessage?> CoreRoute(HttpRequestMessage request, Uri uri, long after, CancellationToken cancellationToken)
+    {
         return uri.AbsolutePath switch
         {
             "/sindri/ping" => await PingAnswer(uri, cancellationToken),
@@ -105,23 +136,7 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
             "/sindri/requests" when request.Method == HttpMethod.Post =>
                 Answer(Counted(await server.FileRequest(uri, await Body<FileRequestRequest>(request, cancellationToken), cancellationToken), server.Filed)),
             "/sindri/requests" when request.Method == HttpMethod.Get => Answer(Counted(await server.Requests(uri, Query(uri, "state"), Query(uri, "item"), after, cancellationToken), server.RequestsAnswer(Query(uri, "item")))),
-            // LANE ANCHOR U3': add the Needs you routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately above this marker, never between the markers.
-            // LANE ANCHOR U8: add the workflow command routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately below this marker, never between the markers.
-            var path when IsApproval(request, path) => await ApprovalRoute(request, path, cancellationToken),
-            var path when IsComplete(request, path) => await CompleteRoute(request, path, cancellationToken),
-            var path when IsCommand(request, path) => await CommandRoute(request, path, cancellationToken),
-            "/sindri/workflow/recipes" when request.Method == HttpMethod.Get => Answer(Counted(await server.Recipes(uri, cancellationToken), server.RecipeListAnswer)),
-            "/sindri/workflow/instances" when request.Method == HttpMethod.Post =>
-                Answer(Counted(await server.StartInstance(uri, await Body<StartInstanceRequest>(request, cancellationToken), cancellationToken), server.StartAnswer)),
-
-            "/sindri/context/map/refresh" when request.Method == HttpMethod.Post => Answer(Counted(await server.RefreshContextMap(uri, cancellationToken), server.RefreshContextMapAnswer)),
-            { } path when path.StartsWith("/sindri/context/", StringComparison.Ordinal) => await ContextRoute(request, cancellationToken),
-            // LANE ANCHOR U11a: the session reads, as arms above the workflow-read arm. Insert immediately below this marker, never between the markers.
-            { } path when request.Method == HttpMethod.Get && (path == "/sindri/sessions" || path.StartsWith("/sindri/sessions/", StringComparison.Ordinal)) => await Sessions(uri, cancellationToken),
-            { } path when path == "/sindri/jobs" || path.StartsWith("/sindri/jobs/", StringComparison.Ordinal) => await Jobs(request, cancellationToken),
-            "/sindri/setup" when request.Method == HttpMethod.Get => Answer(Counted(await server.Setup(uri, cancellationToken), server.SetupAnswer)),
-            { } path when request.Method == HttpMethod.Get && path.StartsWith("/sindri/workflow/", StringComparison.Ordinal) => await Workflow(uri, cancellationToken),
-            _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
+            _ => null,
         };
     }
 
