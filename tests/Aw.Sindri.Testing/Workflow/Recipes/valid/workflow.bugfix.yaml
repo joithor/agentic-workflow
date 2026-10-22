@@ -58,3 +58,4 @@ transitions:
   - { from: evaluate,    to: unresolved, on: step.completed, when: { outcome: giveUp } }
 loops: { attempts: { cap: 3 } }
 budget: { tokens: 1M }
+displayName: Test recipe

@@ -24,7 +24,7 @@ public sealed class ExecTemplateViewerTests : TerminalViewerContract, IDisposabl
     // A stub script is run by "sh <file>", never exec'd: a script written a moment ago can still be open for writing in a process another test forked at that
     // instant, and exec of such a file fails with ETXTBSY ("Text file busy"), so the viewer answers 'failed' at once and the stub never runs (seen once in a gate lane).
     private ExecTemplateViewer Viewer(string script, Func<string, string?>? getEnv = null) =>
-        new(new ExecTemplateOptions("stub", File.Exists(script) ? ["sh", script, .. _template] : [script, .. _template]) { GetEnv = getEnv }, _f.Host, _f.Clock);
+        new(new ExecTemplateOptions("stub", File.Exists(script) ? ["sh", script, .. _template] : [script, .. _template]) { GetEnv = getEnv, IsMac = false, OnPath = (program, _) => ValueTask.FromResult(program == "sh") }, _f.Host, _f.Clock);
 
     private static string? Display(string name) => name == "DISPLAY" ? ":99" : null;
 
@@ -201,7 +201,7 @@ public sealed class ExecTemplateViewerTests : TerminalViewerContract, IDisposabl
     [Fact(Timeout = 30_000)]
     public async Task A_template_without_title_is_noted_in_the_probe_detail()
     {
-        var viewer = new ExecTemplateViewer(new ExecTemplateOptions("stub", ["sh", "{cmd...}"]) { GetEnv = Display }, _f.Host, _f.Clock);
+        var viewer = new ExecTemplateViewer(new ExecTemplateOptions("stub", ["sh", "{cmd...}"]) { GetEnv = Display, IsMac = false, OnPath = (program, _) => ValueTask.FromResult(program == "sh") }, _f.Host, _f.Clock);
 
         var facts = await viewer.Probe(TestContext.Current.CancellationToken);
 

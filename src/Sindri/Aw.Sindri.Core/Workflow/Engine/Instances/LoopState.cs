@@ -8,4 +8,7 @@ public sealed record LoopState(int Round, int Allowed, ProgressMark? Last)
 {
     /// <summary>Whether '--text' already answered a no-progress park of this loop: it works once (spec §3.8); after that only '--grant n' does.</summary>
     public bool TextAnswered { get; init; }
+
+    /// <summary>How many launches in a row failed in the current round (a launch that never started a session counts no round, spec §3.7); a round counted resets it.</summary>
+    public int LaunchFailures { get; init; }
 }
