@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Aw.Sindri.Core.Forge;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -17,10 +18,80 @@ internal sealed class PrReadyCheckStep(IPullRequests pulls) : IBlockStep, IBlock
     public static BlockId Id { get; } = BlockId.From("step.pr.ready-check");
 
     /// <inheritdoc/>
-    public ValueTask<BlockStepResult> Run(StepContext context, CancellationToken cancellationToken)
+    public async ValueTask<BlockStepResult> Run(StepContext context, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(pulls);
         ArgumentNullException.ThrowIfNull(context);
-        throw new NotSupportedException();
+        cancellationToken.ThrowIfCancellationRequested();
+        if (StepFacts.Text(context, "fact:pr") is not { Length: > 0 } link)
+        {
+            return BlockStepResult.Failed("step.pr.ready-check needs fact:pr (the pull request's link)");
+        }
+
+        var now = await pulls.Get(link, cancellationToken).ConfigureAwait(false);
+        if (now.IsError)
+        {
+            return BlockStepResult.Failed($"step.pr.ready-check can't read {link}: {now.Error.Message}");
+        }
+
+        var then = Snapshot.Read(StepFacts.Read(context, "fact:prState"));
+        return StepFacts.Done(then is not null && Snapshot.Matches(then, now.Value) ? "same" : "changed");
+    }
+
+    /// <summary>The one place that reads the snapshot fact's keys (camelCase of the pull request view: link, state, headSha, mergeable, reviewDecision, unresolvedThreads, checks { state, sha, failing }, mergedSha).</summary>
+    private static class Snapshot
+    {
+        /// <summary>What the babysitter waits on: everything that moves the snapshot's outcome or the ready view.</summary>
+        internal static bool Matches(PullView then, PullView now) =>
+            then.State == now.State
+            && string.Equals(then.HeadSha, now.HeadSha, StringComparison.Ordinal)
+            && then.Mergeable == now.Mergeable
+            && string.Equals(then.ReviewDecision, now.ReviewDecision, StringComparison.Ordinal)
+            && then.UnresolvedThreads == now.UnresolvedThreads
+            && then.Checks.State == now.Checks.State
+            && string.Equals(then.Checks.Sha, now.Checks.Sha, StringComparison.Ordinal);
+
+        /// <summary>The recorded snapshot as a pull request view; null when it isn't one.</summary>
+        internal static PullView? Read(JsonNode? fact)
+        {
+            if (fact is not JsonObject root || root["checks"] is not JsonObject checks
+                || Word<PullState>(root["state"]) is not { } state || Word<PullChecksState>(checks["state"]) is not { } checksState
+                || Text(root["headSha"]) is not { } head || Text(checks["sha"]) is not { } checksSha)
+            {
+                return null;
+            }
+
+            return new PullView(
+                Text(root["link"]) ?? string.Empty,
+                state,
+                head,
+                Flag(root["mergeable"]),
+                Text(root["reviewDecision"]),
+                Count(root["unresolvedThreads"]),
+                new PullChecks(checksState, checksSha, []),
+                Text(root["mergedSha"]));
+        }
+
+        private static string? Text(JsonNode? node) => node is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
+
+        private static bool? Flag(JsonNode? node) => node is JsonValue value && value.TryGetValue<bool>(out var flag) ? flag : null;
+
+        private static int Count(JsonNode? node) => node is JsonValue value && value.TryGetValue<int>(out var count) ? count : 0;
+
+        // An enum as its name (any case) or its number.
+        private static T? Word<T>(JsonNode? node)
+            where T : struct, Enum
+        {
+            if (node is not JsonValue value)
+            {
+                return null;
+            }
+
+            if (value.TryGetValue<string>(out var name))
+            {
+                return Enum.TryParse<T>(name, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed) ? parsed : null;
+            }
+
+            return value.TryGetValue<int>(out var number) && Enum.IsDefined(typeof(T), number) ? (T)Enum.ToObject(typeof(T), number) : null;
+        }
     }
 }
