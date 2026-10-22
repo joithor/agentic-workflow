@@ -3,6 +3,7 @@ using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
+using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Labels = Aw.Sindri.Ui.ViewModels.Labels;
 using Aw.Sindri.Ui.ViewModels.Controls;
@@ -97,5 +98,6 @@ public sealed class RunPageEndStatesTests
         Assert.Equal("Cancelled", page.HeaderWord);
         var option = Assert.Single(page.NextOptions);
         Assert.Equal(Labels.RunSeeContext, option.Text);
+        Assert.Equal(new DeepLink(DeepLinkKind.ContextItem, "ITM-01JN2"), option.Link);
     }
 }
