@@ -11495,6 +11495,8 @@ Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Tokens.get -> int?
 Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Tokens.init -> void
 Aw.Sindri.Core.Workflow.Views.StatusFields.Run.get -> Aw.Sindri.Core.Workflow.Views.StatusRun?
 Aw.Sindri.Core.Workflow.Views.StatusFields.Run.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusFields.TakenOverAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Workflow.Views.StatusFields.TakenOverAt.init -> void
 Aw.Sindri.Core.Workflow.Views.StatusRun
 Aw.Sindri.Core.Workflow.Views.StatusRun.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StatusRun!
 Aw.Sindri.Core.Workflow.Views.StatusRun.Deconstruct(out string! Runtime, out string? Launch) -> void
