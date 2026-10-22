@@ -34,6 +34,19 @@ public sealed class CodeIndexCardViewTests : FrameHost
     });
 
     [Fact]
+    public Task The_card_follows_Views_in_the_overview() => OnUi(async () =>
+    {
+        Server.CodeIndexStatusAnswer = new RouteAnswer(HttpStatusCode.OK, Body("repo"));
+        var (window, shell) = await Connected(s => s.Health.CodeIndex.Lines.Count > 0);
+        shell.GoTo(PageId.System);
+        Settle(window);
+
+        // Both say whether the data is current (System spec), so the code index sits right after Views.
+        var cards = Named<WrapPanel>(window, "SystemCards").Children;
+        Assert.Equal(cards.IndexOf(Named<Border>(window, "ViewsCard")) + 1, cards.IndexOf(Named<Border>(window, "CodeIndexPanel")));
+    });
+
+    [Fact]
     public Task A_long_line_wraps_inside_a_narrow_window() => OnUi(async () =>
     {
         Server.CodeIndexStatusAnswer = new RouteAnswer(HttpStatusCode.OK, Body(LongRepo));
