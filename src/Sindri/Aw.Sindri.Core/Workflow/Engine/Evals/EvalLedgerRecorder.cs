@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using Aw.Kernel;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -23,6 +24,7 @@ public static class EvalLedgerRecorder
     /// <param name="name">The case's name.</param>
     /// <param name="recipe">The instance's recipe, which says which state waits on a child.</param>
     /// <param name="children">The pinned child recipes, whose declared outputs a child's end may carry.</param>
+    /// <param name="catalog">The build's block descriptors, which say what outputs a Step's report has to carry.</param>
     /// <param name="events">The instance's 'workflow.*' ledger payloads, oldest first, from its start.</param>
     /// <param name="contents">The stored fact content, by SHA-256.</param>
     /// <returns>The case, or why the events can't be one.</returns>
@@ -30,11 +32,13 @@ public static class EvalLedgerRecorder
         string name,
         Recipe recipe,
         IChildRecipeResolver children,
+        BlockCatalog catalog,
         IReadOnlyList<WorkflowEventPayload> events,
         IReadOnlyDictionary<string, JsonElement> contents)
     {
         ArgumentNullException.ThrowIfNull(recipe);
         ArgumentNullException.ThrowIfNull(children);
+        ArgumentNullException.ThrowIfNull(catalog);
         ArgumentNullException.ThrowIfNull(events);
         ArgumentNullException.ThrowIfNull(contents);
         if (events.Count == 0 || events[0].Detail is not { } started || !string.Equals(events[0].Trigger, "start", StringComparison.Ordinal))
@@ -48,16 +52,22 @@ public static class EvalLedgerRecorder
             return inputs.Error;
         }
 
-        var steps = Steps(recipe, children, events, started.Delta.Frame?.State ?? recipe.Initial, contents);
+        var steps = Steps(recipe, children, catalog, events, started.Delta.Frame?.State ?? recipe.Initial, contents);
         return steps.IsError ? steps.Error : new EvalCase(name, new EvalStartLine(new EvalStart(inputs.Value), Scaffold: null), steps.Value);
     }
 
-    private static Result<List<EvalStepLine>> Steps(Recipe recipe, IChildRecipeResolver children, IReadOnlyList<WorkflowEventPayload> events, string state, IReadOnlyDictionary<string, JsonElement> contents)
+    private static Result<List<EvalStepLine>> Steps(Recipe recipe, IChildRecipeResolver children, BlockCatalog catalog, IReadOnlyList<WorkflowEventPayload> events, string state, IReadOnlyDictionary<string, JsonElement> contents)
     {
+        var kept = new Dictionary<string, string>(events[0].Detail!.Delta.Facts ?? new Dictionary<string, string>(), StringComparer.Ordinal); // why: Record checked the first event's detail
         var steps = new List<EvalStepLine>(events.Count - 1);
         for (var i = 1; i < events.Count; i++)
         {
-            var step = Step(events[i], i + 1, recipe.States.GetValueOrDefault(state), children, contents);
+            foreach (var (key, sha) in events[i].Detail?.Delta.Facts ?? new Dictionary<string, string>())
+            {
+                kept[key] = sha;
+            }
+
+            var step = Step(events[i], i + 1, recipe.States.GetValueOrDefault(state), (children, catalog), (kept, contents));
             if (step.IsError)
             {
                 return step.Error;
@@ -70,8 +80,14 @@ public static class EvalLedgerRecorder
         return steps;
     }
 
-    private static Result<EvalStepLine> Step(WorkflowEventPayload row, int number, RecipeState? at, IChildRecipeResolver children, IReadOnlyDictionary<string, JsonElement> contents)
+    private static Result<EvalStepLine> Step(
+        WorkflowEventPayload row,
+        int number,
+        RecipeState? at,
+        (IChildRecipeResolver Children, BlockCatalog Catalog) resolve,
+        (Dictionary<string, string> Kept, IReadOnlyDictionary<string, JsonElement> Contents) stored)
     {
+        var (children, contents) = (resolve.Children, stored.Contents);
         if (row.Detail is not { } detail)
         {
             return KernelErrors.Invalid.With($"event {Text(number)} ({row.Trigger}) carries no detail, so it can't be an eval line (fix: record a history without it)");
@@ -83,7 +99,14 @@ public static class EvalLedgerRecorder
             return facts.Error;
         }
 
-        var trigger = Trigger(row, detail, Outputs(row, at, children, facts.Value), number);
+        var reported = Outputs(row, at, children, facts.Value);
+        var carried = Carried(row, at, resolve.Catalog, stored, reported);
+        if (carried.IsError)
+        {
+            return carried.Error;
+        }
+
+        var trigger = Trigger(row, detail, carried.Value, number);
         if (trigger.IsError)
         {
             return trigger.Error;
@@ -103,6 +126,44 @@ public static class EvalLedgerRecorder
             ? Declared(children, wait, facts)
             : facts;
         return reported.Count == 0 ? null : reported;
+    }
+
+    /// <summary>
+    /// A completed Step's report with the outputs its descriptor requires on the outcome: a delta holds only the facts a report added or
+    /// changed, so one reported again unchanged (the answer log of a round that added nothing, the map an apply left as it was) is
+    /// missing from it, and the line takes it from the facts the instance kept at that point.
+    /// </summary>
+    private static Result<Dictionary<FactKey, JsonElement>?> Carried(
+        WorkflowEventPayload row,
+        RecipeState? at,
+        BlockCatalog catalog,
+        (Dictionary<string, string> Kept, IReadOnlyDictionary<string, JsonElement> Contents) stored,
+        Dictionary<FactKey, JsonElement>? reported)
+    {
+        if (!string.Equals(row.Trigger, TriggerNames.StepCompleted, StringComparison.Ordinal) || row.Outcome is not { } named
+            || at?.Step is not { } step || catalog.Find(step.Use) is not { } descriptor)
+        {
+            return reported;
+        }
+
+        var outcome = OutcomeName.From(named);
+        var outputs = reported ?? [];
+        foreach (var spec in descriptor.Outputs.Where(o => StepOutputs.CallerWritesOn(o, outcome) && !outputs.ContainsKey(o.Fact)))
+        {
+            if (!stored.Kept.TryGetValue(spec.Fact.Value, out var sha))
+            {
+                continue; // why: never written, so the replay reports the same gap the run had
+            }
+
+            if (!stored.Contents.TryGetValue(sha, out var content))
+            {
+                return KernelErrors.Invalid.With($"no stored content for {spec.Fact.Value} (sha256 {sha}) (fix: record while the instance's facts are kept)");
+            }
+
+            outputs[spec.Fact] = content;
+        }
+
+        return outputs.Count == 0 ? null : outputs;
     }
 
     private static Dictionary<FactKey, JsonElement> Declared(IChildRecipeResolver children, ChildWait wait, Dictionary<FactKey, JsonElement> facts)
