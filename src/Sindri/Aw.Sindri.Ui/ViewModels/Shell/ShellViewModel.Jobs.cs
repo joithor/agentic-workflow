@@ -38,6 +38,11 @@ internal sealed partial class ShellViewModel
             }
         };
         Jobs.OpenRequested += (_, e) => OpenSheet(e.Link);
+        Jobs.ServicesRequested += (_, _) =>
+        {
+            GoTo(PageId.System);
+            Health.ShowServicesTab = true;
+        };
         JobSheet.PropertyChanged += (_, e) =>
         {
             if (string.Equals(e.PropertyName, nameof(JobSheetViewModel.Heading), StringComparison.Ordinal))
