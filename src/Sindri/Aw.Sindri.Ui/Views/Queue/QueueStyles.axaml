@@ -97,4 +97,8 @@
   <Style Selector="Button.command-control.destructive">
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Error}" />
   </Style>
+  <!-- A stage the app has no plain name for shows as served, grey. -->
+  <Style Selector="Border.item-row TextBlock.raw">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.InkSubtle}" />
+  </Style>
 </Styles>
