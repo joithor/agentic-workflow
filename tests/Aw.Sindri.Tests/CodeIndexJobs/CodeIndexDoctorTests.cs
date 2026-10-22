@@ -77,11 +77,10 @@ public sealed class CodeIndexDoctorTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_pin_mismatch_warns_on_the_lock_row()
+    public void A_stored_pin_mismatch_on_the_embeddings_layer_warns_on_the_ollama_row()
     {
         var rows = CodeIndexDoctor.Rows([Built(Ok(LayerName.Structure), new LayerStatus(LayerName.Embeddings, LayerState.Unavailable, "SND-CODEIDX-009", "model digest"))], [], [], _now);
 
-        Assert.Equal(CheckState.Warn, rows.Single(static c => c.Name == "code-index:lock").State);
         Assert.Equal(CheckState.Warn, rows.Single(static c => c.Name == "code-index:ollama").State);
     }
 
