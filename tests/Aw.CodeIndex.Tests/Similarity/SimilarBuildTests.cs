@@ -39,7 +39,11 @@ public sealed class SimilarBuildTests
     }
 
     private static async Task<SimilarAnswer> Similar(BuildHarness harness, string qualified)
-        => (await harness.Facade.Similar(harness.Scope, Ref(qualified), Token)).Value;
+    {
+        var name = qualified[(qualified.LastIndexOf('.') + 1)..];
+        var hit = (await harness.Facade.FindSymbols(harness.Scope, new SymbolQuery(name, SymbolMatch.Exact, Repo: null), Token)).Value.Hits.Single();
+        return (await harness.Facade.Similar(harness.Scope, hit.Ref, Token)).Value;
+    }
 
     [Fact]
     public async Task A_build_records_the_clones_layer_ok()
