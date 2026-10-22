@@ -51,7 +51,7 @@ public sealed class PrRecordEffectTests
         Assert.True(done.IsError);
     }
 
-    private async Task<Aw.Sindri.Core.Workflow.Blocks.EffectDone> Record(string kind)
+    private async Task<Core.Workflow.Blocks.EffectDone> Record(string kind)
     {
         var context = _rig.Context("effect.pr.record", new Dictionary<string, object>(StringComparer.Ordinal)
         {

@@ -33,6 +33,9 @@ internal static class ScopeRules
         (Ans1, ScopeStage.Draft), (Trust1, ScopeStage.Draft), (Chal1, ScopeStage.Evidence), (Chal2, ScopeStage.Evidence), (Map1, ScopeStage.Draft),
     ];
 
+    /// <summary>The rounds of the recipe's challenge loop (workflow.scoping loops.challenge.cap); the last round found something new only warns once this many ran.</summary>
+    internal const int ChallengeRounds = 3;
+
     /// <summary>The four lenses, in the order the coverage and the lens file list them.</summary>
     internal static IReadOnlyList<string> Lenses { get; } = ["code", "product", "related", "history"];
 

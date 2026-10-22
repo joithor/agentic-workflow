@@ -110,7 +110,7 @@ public sealed class LineReportEffectTests
 
     private string[] Rows() => _area.Read(Instance, Record, Token).AsTask().GetAwaiter().GetResult().Value.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
-    private async Task<Aw.Kernel.Result<EffectDone>> Report(string status, string lineContext)
+    private async Task<Kernel.Result<EffectDone>> Report(string status, string lineContext)
     {
         var put = (await _facts.Put(Encoding.UTF8.GetBytes(lineContext), Token)).Value;
         var stored = JsonDocument.Parse($$"""{"ref":"{{put.Ref}}","sha256":"{{put.Sha256}}"}""").RootElement.Clone();
