@@ -11,7 +11,7 @@ namespace Aw.Sindri.Features.Pr;
 
 /// <summary>
 /// 'step.pr.snapshot' on the block runtime (babysitter spec §4.3): one forge read of the pull request and its conversation, reported as the first outcome that holds, in the
-/// spec's order, with 'fact:prState' on every outcome and 'fact:mergedSha' when merged. The fact is the pull request view in camelCase (link, state, headSha, mergeable,
+/// spec's order, with 'fact:prState' on every outcome and 'fact:mergedSha' when merged (the merge commit 'fact:merge' holds when this instance merged it; else the head sha, an approximation: the forge port has no merge commit on a view). The fact is the pull request view in camelCase (link, state, headSha, mergeable,
 /// reviewDecision, unresolvedThreads, checks { state, sha, failing }), 'pullState' (open, closed or merged), 'comments' (the threads, oldest first, as the queue Steps parse
 /// them), 'self' (null), 'queue' counts, 'mergeBlockedBy' and 'at'. 'state' is 'green' when the outcome is green (the merge gate reads it), else the pull request's own state.
 /// Each comment carries its latest mark (outcome, reason, commit, at) from the comment marks, queue.held counts the comments whose latest mark is 'hold'; a marked comment is handled and is not in queue.unhandled or the 'comments' outcome, and 'stale' says the checks ran on another commit than the head.
@@ -70,7 +70,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
         var state = State(pull.Value, outcome, new Conversation(threads.Value, work, latest.Value), docs.Value);
         state["workspaceAhead"] = await WorkspaceAhead(context, pull.Value.HeadSha, cancellationToken).ConfigureAwait(false);
         return outcome is "merged" or "mergedDocsOpen"
-            ? StepFacts.Done(outcome, ("fact:prState", state), ("fact:mergedSha", JsonValue.Create(pull.Value.HeadSha)!))
+            ? StepFacts.Done(outcome, ("fact:prState", state), ("fact:mergedSha", JsonValue.Create(StepFacts.Field(StepFacts.Read(context, "fact:merge"), "mergedSha") ?? pull.Value.HeadSha)!))
             : StepFacts.Done(outcome, ("fact:prState", state));
     }
 
