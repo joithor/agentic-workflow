@@ -1,6 +1,7 @@
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Onyx;
+using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Core.Workflow.Shipped;
 using Aw.Sindri.Host.Catalog;
 using Aw.Sindri.Host.Onyx;
@@ -20,10 +21,13 @@ internal static class SindriHostServiceCollectionExtensions
         .AddSingleton<IShutdown>(static sp => sp.GetRequiredService<ProcessShutdown>())
         .AddSingleton<IExitCode, ProcessExitCode>()
         .AddSingleton<ICommandCatalog, CommandCatalog>()
+        .AddSingleton<IShippedEffects, EmbeddedShippedEffects>()   // the default profile allows the effects the embedded recipes declare (setup-once §5.1)
         .AddSingleton<IEmbeddedRecipes>(static _ => new ManifestEmbeddedRecipes(typeof(ManifestEmbeddedRecipes).Assembly))   // the recipes this build ships; nothing at run time reads recipes/sindri from disk
         .AddSingleton<Projector>()
         .AddSingleton<ScheduleInputs>()
         .AddSingleton<CodeIndex.Core.Facade.ICodeIndex, CodeIndexHost.UnbuiltCodeIndex>()   // no index store yet: every read answers 'no index' until CI-9 registers the real facade
+        .AddScoped<CodeIndexHost.ICodeIndexScopeSource, CodeIndexHost.ProfileCodeIndexScopeSource>()
+        .AddScoped<Context.Core.Symbols.ICodeSymbolSource, CodeIndexHost.CodeIndexSymbolSource>()   // Context reads the index through the facade above (S-9); replaces the no-index default (TryAdd in AddContextFeatures)
         .AddSingleton<IOnyxProgress>(static _ => new ConsoleOnyxProgress(Console.Error));   // `onyx up`'s lines and dots on standard error
 
     /// <summary>
