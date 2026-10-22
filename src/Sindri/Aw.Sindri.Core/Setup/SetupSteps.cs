@@ -42,7 +42,7 @@ public static class SetupSteps
         }
 
         var added = repos.Items.Lines.Count > 0 ? "You added " + string.Join(", ", repos.Items.Lines.Select(static i => i.Repo)) + ". " : string.Empty;
-        return fact.Presence switch
+        var step = fact.Presence switch
         {
             ProfilePresence.Approved => new SetupStep(SetupStepId.Profile, ProfileTitle, SetupState.Done, "Your profile is approved.", Detail: null, Error: null, Action: null, Progress: null),
             ProfilePresence.Unapproved => new SetupStep(SetupStepId.Profile, ProfileTitle, SetupState.NeedsYou, added + "Sindri waits for you to approve the profile before it uses it.", Detail: null, Error: null, SetupActions.ApproveProfile, Progress: null),
@@ -50,6 +50,7 @@ public static class SetupSteps
             ProfilePresence.Missing => new SetupStep(SetupStepId.Profile, ProfileTitle, SetupState.Todo, "There is no profile yet.", Detail: null, Error: null, Action: null, Progress: null),
             _ => throw new ArgumentOutOfRangeException(nameof(fact), fact.Presence, "Not a profile presence"),
         };
+        return step with { Preview = fact.Preview };
     }
 
     /// <summary>The recipes step: it waits for an approved profile, then done when every recipe is approved, the human's while some wait.</summary>

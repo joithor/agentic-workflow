@@ -15695,6 +15695,51 @@ static Aw.Sindri.Core.Onyx.OnyxConnected.operator !=(Aw.Sindri.Core.Onyx.OnyxCon
 static Aw.Sindri.Core.Onyx.OnyxConnected.operator ==(Aw.Sindri.Core.Onyx.OnyxConnected? left, Aw.Sindri.Core.Onyx.OnyxConnected? right) -> bool
 static Aw.Sindri.Core.Onyx.OnyxStackInfo.operator !=(Aw.Sindri.Core.Onyx.OnyxStackInfo? left, Aw.Sindri.Core.Onyx.OnyxStackInfo? right) -> bool
 static Aw.Sindri.Core.Onyx.OnyxStackInfo.operator ==(Aw.Sindri.Core.Onyx.OnyxStackInfo? left, Aw.Sindri.Core.Onyx.OnyxStackInfo? right) -> bool
+Aw.Sindri.Core.Setup.McpConnection
+Aw.Sindri.Core.Setup.McpConnection.Connected = 0 -> Aw.Sindri.Core.Setup.McpConnection
+Aw.Sindri.Core.Setup.McpConnection.Connecting = 1 -> Aw.Sindri.Core.Setup.McpConnection
+Aw.Sindri.Core.Setup.McpConnection.Failed = 3 -> Aw.Sindri.Core.Setup.McpConnection
+Aw.Sindri.Core.Setup.McpConnection.NotStarted = 2 -> Aw.Sindri.Core.Setup.McpConnection
+Aw.Sindri.Core.Setup.McpProviderState
+Aw.Sindri.Core.Setup.McpProviderState.<Clone>$() -> Aw.Sindri.Core.Setup.McpProviderState!
+Aw.Sindri.Core.Setup.McpProviderState.Deconstruct(out string! Provider, out Aw.Sindri.Core.Setup.McpConnection State, out string? Detail) -> void
+Aw.Sindri.Core.Setup.McpProviderState.Detail.get -> string?
+Aw.Sindri.Core.Setup.McpProviderState.Detail.init -> void
+Aw.Sindri.Core.Setup.McpProviderState.Equals(Aw.Sindri.Core.Setup.McpProviderState? other) -> bool
+Aw.Sindri.Core.Setup.McpProviderState.McpProviderState(string! Provider, Aw.Sindri.Core.Setup.McpConnection State, string? Detail = null) -> void
+Aw.Sindri.Core.Setup.McpProviderState.Provider.get -> string!
+Aw.Sindri.Core.Setup.McpProviderState.Provider.init -> void
+Aw.Sindri.Core.Setup.McpProviderState.State.get -> Aw.Sindri.Core.Setup.McpConnection
+Aw.Sindri.Core.Setup.McpProviderState.State.init -> void
+Aw.Sindri.Core.Setup.SetupItem.Providers.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.McpProviderState!>?
+Aw.Sindri.Core.Setup.SetupItem.Providers.init -> void
+override Aw.Sindri.Core.Setup.McpProviderState.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Setup.McpProviderState.GetHashCode() -> int
+override Aw.Sindri.Core.Setup.McpProviderState.ToString() -> string!
+static Aw.Sindri.Core.Setup.McpProviderState.operator !=(Aw.Sindri.Core.Setup.McpProviderState? left, Aw.Sindri.Core.Setup.McpProviderState? right) -> bool
+static Aw.Sindri.Core.Setup.McpProviderState.operator ==(Aw.Sindri.Core.Setup.McpProviderState? left, Aw.Sindri.Core.Setup.McpProviderState? right) -> bool
+Aw.Sindri.Core.Setup.ISetupJobSlots
+Aw.Sindri.Core.Setup.ISetupJobSlots.Holds(Aw.Sindri.Core.Ids.JobKind kind, Aw.Sindri.Core.Ids.JobKey key) -> bool
+Aw.Sindri.Core.Setup.ProfileFact.Preview.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupPreviewLine!>?
+Aw.Sindri.Core.Setup.ProfileFact.Preview.init -> void
+Aw.Sindri.Core.Setup.SetupStep.Preview.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupPreviewLine!>?
+Aw.Sindri.Core.Setup.SetupStep.Preview.init -> void
+Aw.Sindri.Core.Setup.ProfilePreview
+static Aw.Sindri.Core.Setup.ProfilePreview.Lines(Aw.Sindri.Core.Profile.SindriProfile! profile) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupPreviewLine!>!
+Aw.Sindri.Core.Setup.SetupPreviewLine
+Aw.Sindri.Core.Setup.SetupPreviewLine.<Clone>$() -> Aw.Sindri.Core.Setup.SetupPreviewLine!
+Aw.Sindri.Core.Setup.SetupPreviewLine.Deconstruct(out string! Kind, out string! Text) -> void
+Aw.Sindri.Core.Setup.SetupPreviewLine.Equals(Aw.Sindri.Core.Setup.SetupPreviewLine? other) -> bool
+Aw.Sindri.Core.Setup.SetupPreviewLine.Kind.get -> string!
+Aw.Sindri.Core.Setup.SetupPreviewLine.Kind.init -> void
+Aw.Sindri.Core.Setup.SetupPreviewLine.SetupPreviewLine(string! Kind, string! Text) -> void
+Aw.Sindri.Core.Setup.SetupPreviewLine.Text.get -> string!
+Aw.Sindri.Core.Setup.SetupPreviewLine.Text.init -> void
+override Aw.Sindri.Core.Setup.SetupPreviewLine.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Setup.SetupPreviewLine.GetHashCode() -> int
+override Aw.Sindri.Core.Setup.SetupPreviewLine.ToString() -> string!
+static Aw.Sindri.Core.Setup.SetupPreviewLine.operator !=(Aw.Sindri.Core.Setup.SetupPreviewLine? left, Aw.Sindri.Core.Setup.SetupPreviewLine? right) -> bool
+static Aw.Sindri.Core.Setup.SetupPreviewLine.operator ==(Aw.Sindri.Core.Setup.SetupPreviewLine? left, Aw.Sindri.Core.Setup.SetupPreviewLine? right) -> bool
 Aw.Sindri.Core.Events.ContextMapHeld
 Aw.Sindri.Core.Events.ContextMapHeld.<Clone>$() -> Aw.Sindri.Core.Events.ContextMapHeld!
 Aw.Sindri.Core.Events.ContextMapHeld.Chained.get -> bool
@@ -16092,6 +16137,72 @@ Aw.Sindri.Core.Forge.IPullRequests.Merge(Aw.Sindri.Core.Forge.PullMerge! request
 Aw.Sindri.Core.Forge.IPullRequests.Reply(Aw.Sindri.Core.Forge.PullReply! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullDelivery>!>
 Aw.Sindri.Core.Forge.IPullRequests.React(Aw.Sindri.Core.Forge.PullReaction! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullDelivery>!>
 Aw.Sindri.Core.Forge.IPullRequests.PushBranch(Aw.Sindri.Core.Forge.PullBranchPush! push, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullPushOutcome>!>
+Aw.Sindri.Core.Scheduling.ServiceActions
+const Aw.Sindri.Core.Scheduling.ServiceActions.Pause = "pause" -> string!
+const Aw.Sindri.Core.Scheduling.ServiceActions.Resume = "resume" -> string!
+const Aw.Sindri.Core.Scheduling.ServiceActions.Run = "run" -> string!
+static Aw.Sindri.Core.Scheduling.ServiceActions.Allowed(bool namedByProfile, bool builtIn, bool paused, bool jobRunning) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Scheduling.ServiceActions.CanPauseOrResume(bool namedByProfile) -> bool
+static Aw.Sindri.Core.Scheduling.ServiceActions.CanRun(bool namedByProfile, bool builtIn) -> bool
+Aw.Sindri.Core.Setup.RecordedStep
+Aw.Sindri.Core.Setup.RecordedStep.<Clone>$() -> Aw.Sindri.Core.Setup.RecordedStep!
+Aw.Sindri.Core.Setup.RecordedStep.Deconstruct(out Aw.Sindri.Core.Setup.SetupState State, out string? Code, out int Count) -> void
+Aw.Sindri.Core.Setup.RecordedStep.Equals(Aw.Sindri.Core.Setup.RecordedStep? other) -> bool
+Aw.Sindri.Core.Setup.RecordedStep.RecordedStep(Aw.Sindri.Core.Setup.SetupState State, string? Code, int Count) -> void
+Aw.Sindri.Core.Setup.RecordedStep.State.get -> Aw.Sindri.Core.Setup.SetupState
+Aw.Sindri.Core.Setup.RecordedStep.State.init -> void
+Aw.Sindri.Core.Setup.RecordedStep.Code.get -> string?
+Aw.Sindri.Core.Setup.RecordedStep.Code.init -> void
+Aw.Sindri.Core.Setup.RecordedStep.Count.get -> int
+Aw.Sindri.Core.Setup.RecordedStep.Count.init -> void
+override Aw.Sindri.Core.Setup.RecordedStep.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Setup.RecordedStep.GetHashCode() -> int
+override Aw.Sindri.Core.Setup.RecordedStep.ToString() -> string!
+static Aw.Sindri.Core.Setup.RecordedStep.operator !=(Aw.Sindri.Core.Setup.RecordedStep? left, Aw.Sindri.Core.Setup.RecordedStep? right) -> bool
+static Aw.Sindri.Core.Setup.RecordedStep.operator ==(Aw.Sindri.Core.Setup.RecordedStep? left, Aw.Sindri.Core.Setup.RecordedStep? right) -> bool
+Aw.Sindri.Core.Setup.StepChange
+Aw.Sindri.Core.Setup.StepChange.<Clone>$() -> Aw.Sindri.Core.Setup.StepChange!
+Aw.Sindri.Core.Setup.StepChange.Deconstruct(out Aw.Sindri.Core.Setup.SetupStepId Id, out Aw.Sindri.Core.Setup.SetupState State, out string? Code, out int Count) -> void
+Aw.Sindri.Core.Setup.StepChange.Equals(Aw.Sindri.Core.Setup.StepChange? other) -> bool
+Aw.Sindri.Core.Setup.StepChange.StepChange(Aw.Sindri.Core.Setup.SetupStepId Id, Aw.Sindri.Core.Setup.SetupState State, string? Code, int Count) -> void
+Aw.Sindri.Core.Setup.StepChange.Id.get -> Aw.Sindri.Core.Setup.SetupStepId
+Aw.Sindri.Core.Setup.StepChange.Id.init -> void
+Aw.Sindri.Core.Setup.StepChange.State.get -> Aw.Sindri.Core.Setup.SetupState
+Aw.Sindri.Core.Setup.StepChange.State.init -> void
+Aw.Sindri.Core.Setup.StepChange.Code.get -> string?
+Aw.Sindri.Core.Setup.StepChange.Code.init -> void
+Aw.Sindri.Core.Setup.StepChange.Count.get -> int
+Aw.Sindri.Core.Setup.StepChange.Count.init -> void
+override Aw.Sindri.Core.Setup.StepChange.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Setup.StepChange.GetHashCode() -> int
+override Aw.Sindri.Core.Setup.StepChange.ToString() -> string!
+static Aw.Sindri.Core.Setup.StepChange.operator !=(Aw.Sindri.Core.Setup.StepChange? left, Aw.Sindri.Core.Setup.StepChange? right) -> bool
+static Aw.Sindri.Core.Setup.StepChange.operator ==(Aw.Sindri.Core.Setup.StepChange? left, Aw.Sindri.Core.Setup.StepChange? right) -> bool
+Aw.Sindri.Core.Setup.SetupStepChanges
+static Aw.Sindri.Core.Setup.SetupStepChanges.KeyOf(Aw.Sindri.Core.Setup.SetupStepId id, Aw.Sindri.Core.Setup.SetupState state, int count) -> string!
+static Aw.Sindri.Core.Setup.SetupStepChanges.Plan(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupStep!>! steps, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Setup.SetupStepId, Aw.Sindri.Core.Setup.RecordedStep!>! recorded) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.StepChange!>!
+static Aw.Sindri.Core.Setup.SetupStepChanges.TryState(string! word, out Aw.Sindri.Core.Setup.SetupState state) -> bool
+static Aw.Sindri.Core.Setup.SetupStepChanges.TryStep(string! word, out Aw.Sindri.Core.Setup.SetupStepId id) -> bool
+static Aw.Sindri.Core.Setup.SetupStepChanges.Word(Aw.Sindri.Core.Setup.SetupState state) -> string!
+static Aw.Sindri.Core.Setup.SetupStepChanges.Word(Aw.Sindri.Core.Setup.SetupStepId id) -> string!
+Aw.Sindri.Core.Setup.SetupDeriver
+Aw.Sindri.Core.Setup.SetupDeriver.Derive(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupStep!>!>
+Aw.Sindri.Core.Setup.SetupDeriver.SetupDeriver(Aw.Sindri.Core.Ports.ISetupFacts! facts, System.Action<string!, System.Exception!>? sourceFailed = null) -> void
+Aw.Sindri.Core.Setup.SetupStepLog
+Aw.Sindri.Core.Setup.SetupStepLog.Add(Aw.Sindri.Core.Setup.SetupStepId id, Aw.Sindri.Core.Setup.SetupState state, string? code) -> void
+Aw.Sindri.Core.Setup.SetupStepLog.Loaded.get -> bool
+Aw.Sindri.Core.Setup.SetupStepLog.MarkLoaded() -> void
+Aw.Sindri.Core.Setup.SetupStepLog.SetupStepLog() -> void
+Aw.Sindri.Core.Setup.SetupStepLog.Snapshot() -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Setup.SetupStepId, Aw.Sindri.Core.Setup.RecordedStep!>!
+Aw.Sindri.Core.Setup.SetupStepRecorder
+Aw.Sindri.Core.Setup.SetupStepRecorder.Record(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupStep!>! steps, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<int>!>
+Aw.Sindri.Core.Setup.SetupStepRecorder.SetupStepRecorder(Aw.Sindri.Core.Lease.HeldLease! held, Aw.Sindri.Core.Ledger.ILedgerStore! ledger, Aw.Sindri.Core.Ledger.ILedgerReader! reader, Aw.Sindri.Core.Events.EventFactory! events, Aw.Sindri.Core.Commands.ICallerContextAccessor! callers, Aw.Sindri.Core.Setup.SetupStepLog! log) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions
 Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions.Lines.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions.Step.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
+Aw.Sindri.Core.Launch.IAgentTrust
+Aw.Sindri.Core.Launch.IAgentTrust.Trust(string! directory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Launch.IAgentTrust.Untrust(string! directory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Launch.ILaunchShutdown
+Aw.Sindri.Core.Launch.ILaunchShutdown.StopAll(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int>
+static readonly Aw.Sindri.Core.SindriErrors.LaunchTrustUnavailable -> Aw.Kernel.ErrorDefinition!
