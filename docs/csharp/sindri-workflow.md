@@ -75,13 +75,13 @@ and stays inside its directory (`evals/<recipe id>/<case>.jsonl`).
 
 A case file is JSON lines, LF or CRLF:
 - line 1: `{"start":{"inputs":{"<fact>":"<value>",...}}}` (`"scaffold": true` marks a generated case);
-- each later line: `{"trigger":{"kind","outcome"?,"outputs"?,"park"?,"variant"?,"amount"?,"reason"?},"gates"?:{"<block>":"pass|fail|uncertain"},"expect":{"state","park"?,"outcome"?}}`.
+- each later line: `{"trigger":{"kind","outcome"?,"outputs"?,"park"?,"variant"?,"amount"?,"reason"?,"tokens"?},"gates"?:{"<block>":"pass|fail|uncertain"},"expect":{"state","park"?,"outcome"?}}`.
 
 `kind` is a recipe trigger (`step.completed`, `step.failed`, `wait.satisfied`, `command.<verb>`), a child's change
 (`child.parked` with `park`, `child.resumed`, `child.escalated`; a child's end is `wait.satisfied` with its outcome),
 or an engine trigger: `answer` with a `variant` (`grant`, `grant-tokens`, `accept`, `reject`, `resume`, `text`; the
 grants take `amount`, a `text` answer's text is `outputs` `fact:answer`), `takeover`, `handback`, `cancel` and
-`deadline`. An answer wait is satisfied by an `answer` line with `variant` `text` (outcome `answered`), not by
+`deadline`. A `step.completed` or `step.failed` line may give `tokens`, the tokens the run reports (0 when left out, so a budget binds in an eval only when a line says it spent); on another kind, or below 0, it fails the line. An answer wait is satisfied by an `answer` line with `variant` `text` (outcome `answered`), not by
 `wait.satisfied`. A child's `wait.satisfied` line may give `outputs`: only the child's declared outputs, under the child's keys; a key it doesn't declare, or any on `cancelled`, fails the line. `--scaffold` fills a child line with the outputs its outcome always carries. A `deadline` line fires the running timer: `takeoverIdle` while taken over, the retry timer after a `then: retry` re-armed the state, otherwise the state timer. It fails when no timer runs (parked, escalated or ended).
 
 A `step.failed` line takes an optional `reason`, what the Step reported as its failure. Left out, it is the constant
@@ -385,6 +385,10 @@ terminal outcomes plus `cancelled` (`RCP-WHEN-001`, whose message ends with `(ou
   though `session.usage` still carries them as `cacheReadTokens` (absent when none). A report the engine accepted is **never discarded for its cost**:
   its transition applies and the spend is recorded, and the park falls where the next Step would start (`budget`, answered with `--grant-tokens`,
   which starts that Step without counting a round). A run that fails over budget still parks on it.
+  **A state's budget is each round's allowance**: spend is counted by (state, loop round), a fresh allowance starts with the round, a grant applies to the
+  round it answers (and raises the recipe's allowance too), and the recipe's budget is the cap over the whole instance. A round that overspends is kept and
+  recorded, and status says so ("round 1 used 139k of 100k"). `--grant-tokens` takes at most 4x the original budget, and the error names that bound;
+  the park suggests a whole round's budget. An instance that began before the rule (Temporal patch `token-budget-per-round-v1`) keeps the pooled count.
 - **`next`** tells whoever reads the status what happens or what to do. Its variables are `{item}`, `{instance}`,
   `{state}`, `{user}`, `{child}`, `{loop.<name>}`, `{loop.<name>.cap}` and `{budget.tokens.left}` (`RCP-NEXT-001`).
   It never tells the reader to run an approval-tier command such as `--grant` (`RCP-NEXT-002`). Waits are descriptions
@@ -1060,7 +1064,7 @@ The `--json` output is the served body as the CLI's serializer prints it: `list`
   detail (`desk task`, the park reason with `(child)` for a mirrored park, `spec-conflict (<kind>)`, the escalation
   kind, the outcome when it isn't the state's name), `next` (§3.8's text per row, a park's instruction on its own line;
   a desk task's recipe `next` with its variables filled and the `workflow complete` line with the Step's first declared
-  outcome and the outputs required on it), the answer line per park reason (`--grant 1`, `--grant-tokens <half the
+  outcome and the outputs required on it), the answer line per park reason (`--grant 1`, `--grant-tokens <the
   state's budget>`, `--text`, `--resume [--text]`, `--resume`, `--accept`, and the approval or cancel a spec-conflict
   needs), the drift line for a drift recorded behind a park, the budgets, and `allowedCommands`. A spec-conflict park
   whose only way out is an approval or a cancel (revoked, child revoked, drift) offers no `answer`. An open park or escalation serves one `answer` entry per fitting variant, each under its catalog id (`answer-text`, `answer-resume`, `answer-grant`, `answer-grant-tokens`, `answer-accept`, `answer-reject`), the status line's own variant first, each with the full command that runs it (the status line itself may keep its hint form, such as `--resume [--text <answer>]`; `--text <answer>` stays a template because the text is the person's). A suspension that mirrors a child serves only the variants its reason alone fixes (rounds, no-progress, timeout, no-runtime). An escalation from a child and a mirrored needs-answer, budget or spec-conflict park serve none, and their status `answer` line points at the child (`sindri workflow answer <address> <the child's answer>`, `(forwarded to <child>)`, action id `answer-text`) and is marked explicitly: `via: "child"` and `child: <the child's address>` on the status answer record (both omitted on every other answer; `child` is present only when the served view lists the mirrored child, matched by its instance id, and a parent's view lists its live children, each with the state that child answers now (engine P7); a child the status read cannot reach shows the state `unreachable`, never its last known one); the needs-you row carries the same `via` marker, so a client never reads the cli text to tell a pointer from a form. A budget grant's amount is whole `k` or `M` when exact, else the plain integer, so it parses (`TokenCounts.Format`) whenever a cap exists to halve; a budget park with no cap (a `gate.budget` refusal on a recipe with no budget) serves no `answer-grant-tokens` entry, and its status line keeps the `--grant-tokens <n>` hint. The one table of which variants fit is `AnswerVariants.Fitting`, shared by the answer check and the served list.

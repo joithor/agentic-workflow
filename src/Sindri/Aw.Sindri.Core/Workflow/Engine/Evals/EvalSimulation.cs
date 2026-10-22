@@ -168,9 +168,9 @@ internal sealed record EvalSimulation(
         var report = Hex($"report:{Text(number)}:{line.Kind}:{line.Outcome?.Value}");
         return line.Kind switch
         {
-            TriggerNames.StepCompleted when line.Outcome is { } outcome => Run(run => new StepCompleted(Person, run, outcome, outputs, Tokens: 0, StepRuntime.Agent, report)),
+            TriggerNames.StepCompleted when line.Outcome is { } outcome => Run(run => new StepCompleted(Person, run, outcome, outputs, line.Tokens ?? 0, StepRuntime.Agent, report)),
             TriggerNames.StepCompleted => Missing("step.completed needs the Step's 'outcome'"),
-            TriggerNames.StepFailed => Run(run => new StepFailed(Person, run, line.Reason ?? DefaultFailure, Tokens: 0, report)),
+            TriggerNames.StepFailed => Run(run => new StepFailed(Person, run, line.Reason ?? DefaultFailure, line.Tokens ?? 0, report)),
             TriggerNames.WaitSatisfied => Satisfied(line, outputs, number),
             TriggerNames.ChildParked => Child(ChildChange.Parked, line.Park, number),
             TriggerNames.ChildResumed => Child(ChildChange.Resumed, reason: null, number),

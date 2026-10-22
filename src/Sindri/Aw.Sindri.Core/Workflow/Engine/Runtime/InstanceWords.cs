@@ -98,13 +98,13 @@ internal sealed partial record InstanceWords(WorkflowInstance Instance, Interpre
         ParkKind.Loop or ParkKind.Refusal or ParkKind.Step or ParkKind.Wait or null or _ => $"{Answering} --resume",
     };
 
-    /// <summary>The grant a budget park suggests: half the active state's budget, else half the recipe's.</summary>
+    /// <summary>The grant a budget park suggests: a whole round's budget (the active state's, else the recipe's), so the next round has room for a typical one.</summary>
     internal string GrantTokens()
     {
         var cap = Recipe.Recipe.States.TryGetValue(Instance.Frame.State, out var state) && state.Budget is { } own
             ? own.Tokens
             : Recipe.Recipe.Budget?.Tokens;
-        return cap is { } tokens ? TokenCounts.Format(Math.Max(1, tokens / 2)) : "<n>";
+        return cap is { } tokens ? TokenCounts.Format(Math.Max(1, tokens)) : "<n>";
     }
 
     /// <summary>The block a drift or no-runtime park names: its question when that is a block id, otherwise words for it.</summary>
