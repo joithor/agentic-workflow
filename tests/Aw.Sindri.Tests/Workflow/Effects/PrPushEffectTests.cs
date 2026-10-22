@@ -18,7 +18,10 @@ public sealed class PrPushEffectTests
 
     private MergeRecord Record => new(_area, new FakeTimeProvider(KnownInstants.Epoch));
 
-    public PrPushEffectTests() => Range("aaa111+", "aaa111+");
+    public PrPushEffectTests()
+    {
+        Range("aaa111+", "aaa111+");
+    }
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -128,7 +131,7 @@ public sealed class PrPushEffectTests
     public async Task A_forge_error_is_the_dispatch_error()
     {
         _rig.Diff.Advance(PrEffectRig.Workspace);
-        var effect = new PrPushEffect(new Aw.Sindri.Testing.Forge.FakePullRequests([]), _rig.Diff, _rig.Changes, _rig.Facts, _rig.Facts, Record);
+        var effect = new PrPushEffect(new Testing.Forge.FakePullRequests([]), _rig.Diff, _rig.Changes, _rig.Facts, _rig.Facts, Record);
 
         var result = await effect.Dispatch(Context(), Token);
 
@@ -145,7 +148,7 @@ public sealed class PrPushEffectTests
 
         var pushed = await Pushed(await Dispatch());
 
-        Assert.Equal(["fix1", "fix2", "aaa111+"], pushed.GetProperty("commits").EnumerateArray().Select(static c => c.GetString()));
+        Assert.Equal(["fix1", "fix2", "aaa111+"], pushed.GetProperty("commits").EnumerateArray().Select(static c => c.GetString()), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -154,7 +157,7 @@ public sealed class PrPushEffectTests
         _rig.Diff.Advance(PrEffectRig.Workspace);
 
         var first = await Pushed(await Dispatch());
-        var second = await Pushed(await Dispatch(held: new() { ["fact:push"] = """{ "sha": "old", "commits": [], "comments": [], "source": false, "cause": "ci", "ciFixes": 1 }""" }));
+        var second = await Pushed(await Dispatch(held: new(StringComparer.Ordinal) { ["fact:push"] = """{ "sha": "old", "commits": [], "comments": [], "source": false, "cause": "ci", "ciFixes": 1 }""" }));
 
         Assert.Equal((1, 2), (first.GetProperty("ciFixes").GetInt32(), second.GetProperty("ciFixes").GetInt32()));
     }
@@ -163,7 +166,7 @@ public sealed class PrPushEffectTests
     public async Task A_redispatch_that_finds_its_own_push_already_counted_does_not_count_it_again()
     {
         _rig.Diff.Advance(PrEffectRig.Workspace);
-        var held = new Dictionary<string, string> { ["fact:push"] = """{ "sha": "aaa111+", "commits": ["aaa111+"], "comments": [], "source": false, "cause": "ci", "ciFixes": 1 }""" };
+        var held = new Dictionary<string, string>(StringComparer.Ordinal) { ["fact:push"] = """{ "sha": "aaa111+", "commits": ["aaa111+"], "comments": [], "source": false, "cause": "ci", "ciFixes": 1 }""" };
 
         _ = await Dispatch();
         var again = await Dispatch(held: held);
@@ -177,7 +180,7 @@ public sealed class PrPushEffectTests
     {
         _rig.Diff.Advance(PrEffectRig.Workspace);
 
-        var pushed = await Pushed(await Dispatch(cause: "comment", held: new() { ["fact:push"] = """{ "ciFixes": 2 }""" }));
+        var pushed = await Pushed(await Dispatch(cause: "comment", held: new(StringComparer.Ordinal) { ["fact:push"] = """{ "ciFixes": 2 }""" }));
 
         Assert.Equal(2, pushed.GetProperty("ciFixes").GetInt32());
     }
@@ -188,7 +191,7 @@ public sealed class PrPushEffectTests
         _rig.Diff.Advance(PrEffectRig.Workspace);
         _rig.Pull.HeadSha = "someone-else";
 
-        var pushed = await Pushed(await Dispatch(held: new() { ["fact:push"] = """{ "ciFixes": 2 }""" }));
+        var pushed = await Pushed(await Dispatch(held: new(StringComparer.Ordinal) { ["fact:push"] = """{ "ciFixes": 2 }""" }));
 
         Assert.Equal(2, pushed.GetProperty("ciFixes").GetInt32());
     }
@@ -196,7 +199,7 @@ public sealed class PrPushEffectTests
     private void Range(string head, params string[] commits) =>
         _rig.Changes.Add(PrEffectRig.Workspace, PrEffectRig.Seen, head, new BranchChanges([], [], [.. commits.Select(static c => new ChangedCommit(c, "subject", IsMerge: false))]));
 
-    private Aw.Sindri.Core.Workflow.Blocks.EffectContext Context(string cause = "ci", Dictionary<string, string>? held = null) => _rig.Context("effect.pr.push", new Dictionary<string, object>(StringComparer.Ordinal)
+    private Core.Workflow.Blocks.EffectContext Context(string cause = "ci", Dictionary<string, string>? held = null) => _rig.Context("effect.pr.push", new Dictionary<string, object>(StringComparer.Ordinal)
     {
         ["pr"] = PrEffectRig.Fact($"\"{_rig.Link}\""),
         ["lease"] = PrEffectRig.Fact(PrEffectRig.PrState(PrEffectRig.Seen, PrEffectRig.Seen)),
@@ -204,12 +207,12 @@ public sealed class PrPushEffectTests
         ["cause"] = cause,
     }, held);
 
-    private async Task<Aw.Sindri.Core.Workflow.Blocks.EffectDone> Dispatch(string cause = "ci", Dictionary<string, string>? held = null) => (await Effect().Dispatch(Context(cause, held), Token)).Value;
+    private async Task<Core.Workflow.Blocks.EffectDone> Dispatch(string cause = "ci", Dictionary<string, string>? held = null) => (await Effect().Dispatch(Context(cause, held), Token)).Value;
 
-    private async Task<JsonElement> Pushed(Aw.Sindri.Core.Workflow.Blocks.EffectDone done)
+    private async Task<JsonElement> Pushed(Core.Workflow.Blocks.EffectDone done)
     {
         var reply = done.Facts![FactKey.From("fact:push")];
-        var content = await _rig.Facts.Read(new Aw.Sindri.Core.Workflow.Engine.FactValue(reply.Ref, reply.Sha256, null), Token);
+        var content = await _rig.Facts.Read(new Core.Workflow.Engine.FactValue(reply.Ref, reply.Sha256, HeadSha: null), Token);
         return JsonDocument.Parse(content.Value).RootElement.Clone();
     }
 }

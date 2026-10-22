@@ -1,12 +1,11 @@
 using System.Text;
 using System.Text.Json;
-using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Forge;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
-using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Blocks.Effect;
 using Aw.Sindri.Testing;
@@ -41,7 +40,7 @@ public sealed class PrMergeReplyEffectTests
     [Fact]
     public async Task Merge_carries_the_snapshots_head_and_replies_merged()
     {
-        var context = await Context("effect.pr.merge", new Dictionary<string, string> { ["pr"] = "\"" + Link + "\"", ["at"] = """{"headSha":"deadbeef"}""" });
+        var context = await Context("effect.pr.merge", new Dictionary<string, string>(StringComparer.Ordinal) { ["pr"] = "\"" + Link + "\"", ["at"] = """{"headSha":"deadbeef"}""" });
 
         var done = await new PrMergeEffect(_pulls, _facts, _profiles, Record).Dispatch(context, Token);
 
@@ -52,7 +51,7 @@ public sealed class PrMergeReplyEffectTests
     [Fact]
     public async Task Merge_uses_the_method_the_recipe_names()
     {
-        var context = await Context("effect.pr.merge", new Dictionary<string, string> { ["pr"] = Link, ["at"] = """{"headSha":"deadbeef"}""" });
+        var context = await Context("effect.pr.merge", new Dictionary<string, string>(StringComparer.Ordinal) { ["pr"] = Link, ["at"] = """{"headSha":"deadbeef"}""" });
         context = context with { Arguments = new Dictionary<string, JsonElement>(context.Arguments, StringComparer.Ordinal) { ["method"] = Literal("rebase") } };
 
         _ = await new PrMergeEffect(_pulls, _facts, _profiles, Record).Dispatch(context, Token);
@@ -66,19 +65,19 @@ public sealed class PrMergeReplyEffectTests
     public async Task Merge_maps_a_refusal_to_its_outcome_and_never_forces(PullMergeStatus status, string outcome)
     {
         _pulls.MergeAnswer = new PullMergeOutcome(status, MergedSha: null, "why");
-        var context = await Context("effect.pr.merge", new Dictionary<string, string> { ["pr"] = Link, ["at"] = """{"headSha":"deadbeef"}""" });
+        var context = await Context("effect.pr.merge", new Dictionary<string, string>(StringComparer.Ordinal) { ["pr"] = Link, ["at"] = """{"headSha":"deadbeef"}""" });
 
         var done = await new PrMergeEffect(_pulls, _facts, _profiles, Record).Dispatch(context, Token);
 
         Assert.Equal(OutcomeName.From(outcome), done.Value.Reply);
-        Assert.Single(_pulls.Merges);
+        _ = Assert.Single(_pulls.Merges);
     }
 
     [Fact]
     public async Task Merge_answers_the_forges_error()
     {
         _pulls.MergeAnswer = SindriErrors.ForgeUnavailable.With("down");
-        var context = await Context("effect.pr.merge", new Dictionary<string, string> { ["pr"] = Link, ["at"] = """{"headSha":"deadbeef"}""" });
+        var context = await Context("effect.pr.merge", new Dictionary<string, string>(StringComparer.Ordinal) { ["pr"] = Link, ["at"] = """{"headSha":"deadbeef"}""" });
 
         var done = await new PrMergeEffect(_pulls, _facts, _profiles, Record).Dispatch(context, Token);
 
@@ -88,7 +87,7 @@ public sealed class PrMergeReplyEffectTests
     [Fact]
     public async Task Merge_without_a_head_in_the_snapshot_is_an_error_and_merges_nothing()
     {
-        var context = await Context("effect.pr.merge", new Dictionary<string, string> { ["pr"] = Link, ["at"] = """{"state":"open"}""" });
+        var context = await Context("effect.pr.merge", new Dictionary<string, string>(StringComparer.Ordinal) { ["pr"] = Link, ["at"] = """{"state":"open"}""" });
 
         var done = await new PrMergeEffect(_pulls, _facts, _profiles, Record).Dispatch(context, Token);
 
@@ -99,7 +98,7 @@ public sealed class PrMergeReplyEffectTests
     [Fact]
     public async Task A_thread_reply_posts_the_drafted_text_with_a_marker_derived_from_the_identity()
     {
-        var context = await Context("effect.pr.reply", new Dictionary<string, string> { ["form"] = "thread", ["comment"] = """{"id":"c1","key":"t9"}""", ["body"] = "\"Done, thanks.\"" });
+        var context = await Context("effect.pr.reply", new Dictionary<string, string>(StringComparer.Ordinal) { ["form"] = "thread", ["comment"] = """{"id":"c1","key":"t9"}""", ["body"] = "\"Done, thanks.\"" });
 
         var done = await Reply().Dispatch(context, Token);
 
@@ -111,7 +110,7 @@ public sealed class PrMergeReplyEffectTests
     public async Task A_reply_the_forge_already_has_reports_existed()
     {
         _pulls.Delivery = PullDelivery.AlreadyDelivered;
-        var context = await Context("effect.pr.reply", new Dictionary<string, string> { ["form"] = "thread", ["comment"] = """{"id":"c1","key":"t9"}""", ["body"] = "\"Done.\"" });
+        var context = await Context("effect.pr.reply", new Dictionary<string, string>(StringComparer.Ordinal) { ["form"] = "thread", ["comment"] = """{"id":"c1","key":"t9"}""", ["body"] = "\"Done.\"" });
 
         var done = await Reply().Dispatch(context, Token);
 
@@ -121,7 +120,7 @@ public sealed class PrMergeReplyEffectTests
     [Fact]
     public async Task A_reaction_reacts_on_the_comments_thread()
     {
-        var context = await Context("effect.pr.reply", new Dictionary<string, string> { ["form"] = "reaction", ["comment"] = """{"id":"c1","key":"t9"}""" });
+        var context = await Context("effect.pr.reply", new Dictionary<string, string>(StringComparer.Ordinal) { ["form"] = "reaction", ["comment"] = """{"id":"c1","key":"t9"}""" });
 
         _ = await Reply().Dispatch(context, Token);
 
@@ -134,7 +133,7 @@ public sealed class PrMergeReplyEffectTests
     [InlineData("none")]
     public async Task The_forms_that_post_nothing_post_nothing(string form)
     {
-        var context = await Context("effect.pr.reply", new Dictionary<string, string> { ["form"] = form, ["comment"] = """{"id":"c1","key":"t9"}""" });
+        var context = await Context("effect.pr.reply", new Dictionary<string, string>(StringComparer.Ordinal) { ["form"] = form, ["comment"] = """{"id":"c1","key":"t9"}""" });
 
         var done = await Reply().Dispatch(context, Token);
 
@@ -146,7 +145,7 @@ public sealed class PrMergeReplyEffectTests
     [Fact]
     public async Task A_thread_reply_writes_a_thread_mark_keyed_by_the_effect_identity()
     {
-        var context = await Context("effect.pr.reply", new Dictionary<string, string> { ["form"] = "thread", ["comment"] = """{"id":"c1","key":"t9","editedAt":"2026-10-21T08:00:00Z"}""", ["body"] = "\"Done.\"" });
+        var context = await Context("effect.pr.reply", new Dictionary<string, string>(StringComparer.Ordinal) { ["form"] = "thread", ["comment"] = """{"id":"c1","key":"t9","editedAt":"2026-10-21T08:00:00Z"}""", ["body"] = "\"Done.\"" });
 
         _ = await Reply().Dispatch(context, Token);
         var mark = Assert.Single((await _marks.Latest(_pr, Token)).Value);
@@ -157,7 +156,7 @@ public sealed class PrMergeReplyEffectTests
     [Fact]
     public async Task A_reaction_writes_a_reaction_mark()
     {
-        var context = await Context("effect.pr.reply", new Dictionary<string, string> { ["form"] = "reaction", ["comment"] = """{"id":"c1","key":"t9"}""" });
+        var context = await Context("effect.pr.reply", new Dictionary<string, string>(StringComparer.Ordinal) { ["form"] = "reaction", ["comment"] = """{"id":"c1","key":"t9"}""" });
 
         _ = await Reply().Dispatch(context, Token);
 
@@ -167,7 +166,7 @@ public sealed class PrMergeReplyEffectTests
     [Fact]
     public async Task Hold_writes_a_held_mark_with_its_reason_and_posts_nothing()
     {
-        var context = await Context("effect.pr.reply", new Dictionary<string, string> { ["form"] = "hold", ["reason"] = "\"type\"", ["comment"] = """{"id":"c1","key":"t9"}""" });
+        var context = await Context("effect.pr.reply", new Dictionary<string, string>(StringComparer.Ordinal) { ["form"] = "hold", ["reason"] = "\"type\"", ["comment"] = """{"id":"c1","key":"t9"}""" });
 
         _ = await Reply().Dispatch(context, Token);
         var mark = Assert.Single((await _marks.Latest(_pr, Token)).Value);
@@ -179,7 +178,7 @@ public sealed class PrMergeReplyEffectTests
     [Fact]
     public async Task None_writes_a_none_mark()
     {
-        var context = await Context("effect.pr.reply", new Dictionary<string, string> { ["form"] = "none", ["comment"] = """{"id":"c1","key":"t9"}""" });
+        var context = await Context("effect.pr.reply", new Dictionary<string, string>(StringComparer.Ordinal) { ["form"] = "none", ["comment"] = """{"id":"c1","key":"t9"}""" });
 
         _ = await Reply().Dispatch(context, Token);
 
@@ -189,7 +188,7 @@ public sealed class PrMergeReplyEffectTests
     [Fact]
     public async Task Fixed_writes_a_fixed_mark_with_the_fixs_commit()
     {
-        var context = await Context("effect.pr.reply", new Dictionary<string, string> { ["form"] = "fixed", ["comment"] = """{"id":"c1","key":"t9"}""", ["fix"] = """{"thread":"t9","commit":"abc1234"}""" });
+        var context = await Context("effect.pr.reply", new Dictionary<string, string>(StringComparer.Ordinal) { ["form"] = "fixed", ["comment"] = """{"id":"c1","key":"t9"}""", ["fix"] = """{"thread":"t9","commit":"abc1234"}""" });
 
         _ = await Reply().Dispatch(context, Token);
         var mark = Assert.Single((await _marks.Latest(_pr, Token)).Value);
@@ -200,18 +199,18 @@ public sealed class PrMergeReplyEffectTests
     [Fact]
     public async Task A_redelivered_effect_writes_its_mark_once()
     {
-        var context = await Context("effect.pr.reply", new Dictionary<string, string> { ["form"] = "none", ["comment"] = """{"id":"c1","key":"t9"}""" });
+        var context = await Context("effect.pr.reply", new Dictionary<string, string>(StringComparer.Ordinal) { ["form"] = "none", ["comment"] = """{"id":"c1","key":"t9"}""" });
 
         _ = await Reply().Dispatch(context, Token);
         _ = await Reply().Dispatch(context, Token);
 
-        Assert.Single((await _marks.Latest(_pr, Token)).Value);
+        _ = Assert.Single((await _marks.Latest(_pr, Token)).Value);
     }
 
     [Fact]
     public async Task A_form_that_needs_a_comment_without_one_is_an_error_and_writes_nothing()
     {
-        var context = await Context("effect.pr.reply", new Dictionary<string, string> { ["form"] = "none" });
+        var context = await Context("effect.pr.reply", new Dictionary<string, string>(StringComparer.Ordinal) { ["form"] = "none" });
 
         var done = await Reply().Dispatch(context, Token);
 
@@ -224,7 +223,7 @@ public sealed class PrMergeReplyEffectTests
     {
         _ = await _marks.Write(Marked("t9", "fixed", "abc1234", "e:1"), Token);
         _ = await _marks.Write(Marked("t8", "fixed", "ffff999", "e:2"), Token);
-        var context = await Context("effect.pr.reply", new Dictionary<string, string> { ["form"] = "fixedReplies", ["push"] = """{"sha":"abc1234","commits":["abc1234"]}""" });
+        var context = await Context("effect.pr.reply", new Dictionary<string, string>(StringComparer.Ordinal) { ["form"] = "fixedReplies", ["push"] = """{"sha":"abc1234","commits":["abc1234"]}""" });
 
         var done = await Reply().Dispatch(context, Token);
         var latest = (await _marks.Latest(_pr, Token)).Value;
@@ -238,7 +237,7 @@ public sealed class PrMergeReplyEffectTests
     [Fact]
     public async Task FixedReplies_with_nothing_fixed_posts_nothing()
     {
-        var context = await Context("effect.pr.reply", new Dictionary<string, string> { ["form"] = "fixedReplies", ["push"] = """{"commits":["abc1234"]}""" });
+        var context = await Context("effect.pr.reply", new Dictionary<string, string>(StringComparer.Ordinal) { ["form"] = "fixedReplies", ["push"] = """{"commits":["abc1234"]}""" });
 
         var done = await Reply().Dispatch(context, Token);
 
@@ -249,7 +248,7 @@ public sealed class PrMergeReplyEffectTests
     [Fact]
     public async Task A_thread_reply_is_scrubbed_before_it_reaches_the_forge()
     {
-        var context = await Context("effect.pr.reply", new Dictionary<string, string> { ["form"] = "thread", ["comment"] = """{"id":"c1","key":"t9"}""", ["body"] = "\"Value " + Hidden + " fixed.\"" });
+        var context = await Context("effect.pr.reply", new Dictionary<string, string>(StringComparer.Ordinal) { ["form"] = "thread", ["comment"] = """{"id":"c1","key":"t9"}""", ["body"] = "\"Value " + Hidden + " fixed.\"" });
 
         _ = await Reply().Dispatch(context, Token);
 
@@ -259,7 +258,7 @@ public sealed class PrMergeReplyEffectTests
     [Fact]
     public async Task A_merge_appends_a_merge_row_with_the_method_the_merged_sha_and_the_expected_head()
     {
-        var context = await Context("effect.pr.merge", new Dictionary<string, string> { ["pr"] = Link, ["at"] = """{"headSha":"deadbeef"}""" });
+        var context = await Context("effect.pr.merge", new Dictionary<string, string>(StringComparer.Ordinal) { ["pr"] = Link, ["at"] = """{"headSha":"deadbeef"}""" });
 
         _ = await new PrMergeEffect(_pulls, _facts, _profiles, Record).Dispatch(context, Token);
 
@@ -276,7 +275,7 @@ public sealed class PrMergeReplyEffectTests
     public async Task A_merge_the_forge_refused_writes_no_row(PullMergeStatus status)
     {
         _pulls.MergeAnswer = new PullMergeOutcome(status, MergedSha: null, "why");
-        var context = await Context("effect.pr.merge", new Dictionary<string, string> { ["pr"] = Link, ["at"] = """{"headSha":"deadbeef"}""" });
+        var context = await Context("effect.pr.merge", new Dictionary<string, string>(StringComparer.Ordinal) { ["pr"] = Link, ["at"] = """{"headSha":"deadbeef"}""" });
 
         _ = await new PrMergeEffect(_pulls, _facts, _profiles, Record).Dispatch(context, Token);
 
@@ -291,7 +290,7 @@ public sealed class PrMergeReplyEffectTests
     [InlineData("none", "skipped")]
     public async Task Each_reply_form_appends_a_comment_row_with_its_outcome_the_comment_and_its_type(string form, string outcome)
     {
-        var context = await Context("effect.pr.reply", new Dictionary<string, string>
+        var context = await Context("effect.pr.reply", new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["form"] = form,
             ["comment"] = """{"id":"c1","key":"t9"}""",
@@ -313,7 +312,7 @@ public sealed class PrMergeReplyEffectTests
     [Fact]
     public async Task A_redelivered_reply_writes_its_comment_row_once()
     {
-        var context = await Context("effect.pr.reply", new Dictionary<string, string> { ["form"] = "none", ["comment"] = """{"id":"c1","key":"t9"}""" });
+        var context = await Context("effect.pr.reply", new Dictionary<string, string>(StringComparer.Ordinal) { ["form"] = "none", ["comment"] = """{"id":"c1","key":"t9"}""" });
 
         _ = await Reply().Dispatch(context, Token);
         _ = await Reply().Dispatch(context, Token);
@@ -325,7 +324,7 @@ public sealed class PrMergeReplyEffectTests
     public async Task FixedReplies_appends_a_replied_comment_row_for_each_comment_it_answers()
     {
         _ = await _marks.Write(Marked("t9", "fixed", "abc1234", "e:1"), Token);
-        var context = await Context("effect.pr.reply", new Dictionary<string, string> { ["form"] = "fixedReplies", ["push"] = """{"sha":"abc1234","commits":["abc1234"]}""" });
+        var context = await Context("effect.pr.reply", new Dictionary<string, string>(StringComparer.Ordinal) { ["form"] = "fixedReplies", ["push"] = """{"sha":"abc1234","commits":["abc1234"]}""" });
 
         _ = await Reply().Dispatch(context, Token);
 
@@ -337,7 +336,7 @@ public sealed class PrMergeReplyEffectTests
 
     private static JsonElement Single(string[] lines) => JsonDocument.Parse(Assert.Single(lines)).RootElement.Clone();
 
-    private sealed class Mask : Aw.Sindri.Core.Text.ITextScrubber
+    private sealed class Mask : Core.Text.ITextScrubber
     {
         public string Scrub(string text) => text.Replace(Hidden, "[masked]", StringComparison.Ordinal);
     }

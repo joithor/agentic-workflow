@@ -16,7 +16,7 @@ public sealed class PrPushEffectContract : BlockContract
 
     protected override BlockDescriptor Descriptor => PrEffects.Push;
 
-    protected override string ExpectedHash => "sha256:39b2837b3cc1ce17ba5be44ed2275f4d33cf8b5c23b3afa545d2414fd688ad0f";   // PENDING: the descriptor now lists fact:push in Outputs, so the hash changes; replace with the value the contract test prints
+    protected override string ExpectedHash => "sha256:2939a0d119c4875ad5e9d48dcab5e360f52b298f4ef8c3e11a069b8810a1f970";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

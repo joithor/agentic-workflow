@@ -7,8 +7,8 @@ using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
 using Aw.Sindri.Features.Blocks.Effect;
 using Aw.Sindri.Features.Pr;
-using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Forge;
+using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 using Microsoft.Extensions.Time.Testing;
@@ -30,7 +30,10 @@ public sealed class PrSnapshotStepTests
     private readonly InMemoryRunArea _area = new();
     private readonly FakeTimeProvider _clock = new(DateTimeOffset.Parse("2026-10-22T08:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
 
-    public PrSnapshotStepTests() => _pull = _pulls.Add(new PullRepo(Host, "acme", "app"), "feat/x", Head);
+    public PrSnapshotStepTests()
+    {
+        _pull = _pulls.Add(new PullRepo(Host, "acme", "app"), "feat/x", Head);
+    }
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -111,7 +114,7 @@ public sealed class PrSnapshotStepTests
     [Fact]
     public async Task A_step_with_no_instance_address_still_snapshots_and_appends_nothing()
     {
-        var result = await new PrSnapshotStep(_pulls, _marks, _diff, _clock, new MergeRecord(_area, _clock)).Run(BuildShipContexts.Of("step.pr.snapshot", new Dictionary<string, string> { ["pr"] = _pull.Link }), Token);
+        var result = await new PrSnapshotStep(_pulls, _marks, _diff, _clock, new MergeRecord(_area, _clock)).Run(BuildShipContexts.Of("step.pr.snapshot", new Dictionary<string, string>(StringComparer.Ordinal) { ["pr"] = _pull.Link }), Token);
 
         Assert.NotNull(result.Result);
         Assert.Empty(await Rows());
@@ -120,7 +123,7 @@ public sealed class PrSnapshotStepTests
     [Fact]
     public async Task Intake_appends_a_start_row_with_the_pull_request_the_handoff_hash_the_phase_and_the_line()
     {
-        _ = await Intake(more: new() { ["handoff"] = "the hand-off text", ["phasePacket"] = """{"id":"P1"}""", ["lineContext"] = """{"runArea":"line/run"}""" });
+        _ = await Intake(more: new(StringComparer.Ordinal) { ["handoff"] = "the hand-off text", ["phasePacket"] = """{"id":"P1"}""", ["lineContext"] = """{"runArea":"line/run"}""" });
 
         var row = Single(await Rows());
         Assert.Equal("start", row.GetProperty("kind").GetString());
@@ -179,8 +182,8 @@ public sealed class PrSnapshotStepTests
     {
         _pull.Threads.Add(Thread("t1"));
         _pull.Threads.Add(Thread("t2"));
-        await Mark("t1", "thread", minutes: 1, effect: "e1");
-        await Mark("t1", "fixed", minutes: 5, effect: "e2", commit: "bbbb2222");
+        _ = await Mark("t1", "thread", minutes: 1, effect: "e1");
+        _ = await Mark("t1", "fixed", minutes: 5, effect: "e2", commit: "bbbb2222");
 
         var state = Fact(await Snapshot(), "fact:prState");
 
@@ -198,9 +201,9 @@ public sealed class PrSnapshotStepTests
         _pull.Threads.Add(Thread("t1"));
         _pull.Threads.Add(Thread("t2"));
         _pull.Threads.Add(Thread("t3"));
-        await Mark("t1", "held", minutes: 1, effect: "e1", reason: "type");
-        await Mark("t2", "held", minutes: 1, effect: "e2", reason: "type");
-        await Mark("t2", "fixed", minutes: 2, effect: "e3");
+        _ = await Mark("t1", "held", minutes: 1, effect: "e1", reason: "type");
+        _ = await Mark("t2", "held", minutes: 1, effect: "e2", reason: "type");
+        _ = await Mark("t2", "fixed", minutes: 2, effect: "e3");
 
         var state = Fact(await Snapshot(), "fact:prState");
 
@@ -228,8 +231,8 @@ public sealed class PrSnapshotStepTests
         _pull.Threads.Add(Thread("t1"));
         _pull.Threads.Add(Thread("t2"));
         _pull.Threads.Add(Thread("t3"));
-        await Mark("t1", "held", minutes: 1, effect: "e1", reason: "type");
-        await Mark("t2", "fixed", minutes: 1, effect: "e2", commit: "bbbb2222");
+        _ = await Mark("t1", "held", minutes: 1, effect: "e1", reason: "type");
+        _ = await Mark("t2", "fixed", minutes: 1, effect: "e2", commit: "bbbb2222");
 
         var state = Fact(await Snapshot(), "fact:prState");
 
@@ -243,8 +246,8 @@ public sealed class PrSnapshotStepTests
         _pull.ChecksState = PullChecksState.Passing;
         _pull.Threads.Add(Thread("t1"));
         _pull.Threads.Add(Thread("t2"));
-        await Mark("t1", "held", minutes: 1, effect: "e1", reason: "type");
-        await Mark("t2", "fixed", minutes: 1, effect: "e2", commit: "bbbb2222");
+        _ = await Mark("t1", "held", minutes: 1, effect: "e1", reason: "type");
+        _ = await Mark("t2", "fixed", minutes: 1, effect: "e2", commit: "bbbb2222");
 
         Assert.Equal("green", Outcome(await Snapshot()));
     }
@@ -266,7 +269,7 @@ public sealed class PrSnapshotStepTests
     {
         _pull.State = PullState.Merged;
 
-        var result = await Snapshot(more: new() { ["merge"] = """{ "mergedSha": "mmmm9999", "method": "squash", "headSha": "aaaa1111" }""" });
+        var result = await Snapshot(more: new(StringComparer.Ordinal) { ["merge"] = """{ "mergedSha": "mmmm9999", "method": "squash", "headSha": "aaaa1111" }""" });
 
         Assert.Equal("mmmm9999", Fact(result, "fact:mergedSha").GetString());
     }
@@ -331,7 +334,7 @@ public sealed class PrSnapshotStepTests
 
         var state = Fact(result, "fact:prState");
         Assert.Equal("comments", Outcome(result));
-        Assert.Equal(["thread:1", "thread:2", "thread:3"], state.GetProperty("comments").EnumerateArray().Select(c => c.GetProperty("key").GetString()));
+        Assert.Equal(["thread:1", "thread:2", "thread:3"], state.GetProperty("comments").EnumerateArray().Select(c => c.GetProperty("key").GetString()), StringComparer.Ordinal);
         Assert.Equal("alice", state.GetProperty("comments")[0].GetProperty("author").GetString());
         Assert.Equal(2, state.GetProperty("queue").GetProperty("unhandled").GetInt32());
     }
@@ -374,7 +377,7 @@ public sealed class PrSnapshotStepTests
         var result = await Snapshot();
 
         Assert.Equal("green", Outcome(result));
-        Assert.Equal(["reviewRequired"], Fact(result, "fact:prState").GetProperty("mergeBlockedBy").EnumerateArray().Select(b => b.GetString()));
+        Assert.Equal(["reviewRequired"], Fact(result, "fact:prState").GetProperty("mergeBlockedBy").EnumerateArray().Select(b => b.GetString()), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -474,8 +477,8 @@ public sealed class PrSnapshotStepTests
         _diff.Add("/work/tree", "bbbb2222");
         _diff.Add("/work/same", Head);
 
-        var ahead = Fact(await Snapshot(more: new() { ["workspace"] = "/work/tree" }), "fact:prState");
-        var same = Fact(await Snapshot(more: new() { ["workspace"] = "/work/same" }), "fact:prState");
+        var ahead = Fact(await Snapshot(more: new(StringComparer.Ordinal) { ["workspace"] = "/work/tree" }), "fact:prState");
+        var same = Fact(await Snapshot(more: new(StringComparer.Ordinal) { ["workspace"] = "/work/same" }), "fact:prState");
         var none = Fact(await Snapshot(), "fact:prState");
 
         Assert.Equal((true, false, false), (ahead.GetProperty("workspaceAhead").GetBoolean(), same.GetProperty("workspaceAhead").GetBoolean(), none.GetProperty("workspaceAhead").GetBoolean()));
@@ -516,7 +519,7 @@ public sealed class PrSnapshotStepTests
         Assert.Equal("/work/tree", Fact(result, "fact:workspace").GetString());
         Assert.Equal(
             ["fact:decision", "fact:fix", "fact:handoffNote", "fact:ownerNote", "fact:recheck", "fact:reply", "fact:workspace"],
-            result.Result!.Outputs.Select(o => o.Key.Value).Order(StringComparer.Ordinal));
+            result.Result!.Outputs.Select(o => o.Key.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     [Fact]
