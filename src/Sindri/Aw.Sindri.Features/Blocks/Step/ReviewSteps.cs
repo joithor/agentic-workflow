@@ -8,9 +8,9 @@ namespace Aw.Sindri.Features.Blocks.Step;
 /// </summary>
 internal static class ReviewSteps
 {
-    /// <summary>'step.review.round': starts a review round; queues the review pack's lenses that apply to the changed paths, in pack order and seeds the round's log. 'ready', or 'noLens' when no lens applies (the queue would be empty; the loop ends stuck for the owner).</summary>
+    /// <summary>'step.review.round': starts a review round; queues the review pack's lenses that apply to the changed paths, in pack order, and records the others as not applicable in the carried 'fact:lensRounds'. 'ready', or 'noLens' when no lens applies (the queue would be empty; the loop ends stuck for the owner).</summary>
     public static BlockDescriptor Round { get; } = BlockStep("step.review.round", Capability.None)
-        .Reads("fact:change", "fact:phasePacket").Reports("ready", "noLens").Writes(On("fact:lensQueue", "ready"), On("fact:lensRounds", "ready"));
+        .Reads("fact:change", "fact:phasePacket", "fact:lensRounds").Reports("ready", "noLens").Writes(On("fact:lensQueue", "ready"), On("fact:lensRounds", "ready"));
 
     /// <summary>
     /// 'step.review.log': appends the lens report to the round's log. 'next' while the queue is not empty; at the round's end 'clean' (zero blocking and zero issue),

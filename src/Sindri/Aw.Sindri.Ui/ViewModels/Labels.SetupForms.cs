@@ -131,6 +131,9 @@ internal static partial class Labels
     /// <summary>A refusal by an agent session (SND-AUTH-002) in words.</summary>
     internal const string SetupAuthRefused = "Only you can do this from the app. An agent session can't.";
 
+    /// <summary>Under the form when the profile changed while Sindri was writing it (SND-PROFILE-002).</summary>
+    internal const string SetupProfileChanged = "The profile changed while Sindri was writing it. Try again.";
+
     /// <summary>A setup refusal's code as a sentence the person can act on; null for a code with no words here.</summary>
     /// <param name="code">The error code.</param>
     /// <returns>The sentence, or null.</returns>
@@ -141,6 +144,7 @@ internal static partial class Labels
         "SND-SETUP-004" => SetupErr004,
         "SND-SETUP-005" => SetupErr005,
         "SND-SETUP-006" => SetupErr006,
+        "SND-PROFILE-002" => SetupProfileChanged,
         "SND-ONYX-001" => SetupDockerMissing,
         "SND-ONYX-007" => SetupOnyxWrong,
         "SND-AUTH-002" => SetupAuthRefused,
