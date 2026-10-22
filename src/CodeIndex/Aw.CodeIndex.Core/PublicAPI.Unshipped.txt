@@ -874,6 +874,7 @@ Aw.CodeIndex.Core.Ports.IBodyScrubber
 Aw.CodeIndex.Core.Ports.IBodyScrubber.Scrub(string! text, int maxCharacters) -> string!
 Aw.CodeIndex.Core.Ports.IEmbedder
 Aw.CodeIndex.Core.Ports.IEmbedder.Embed(Aw.CodeIndex.Core.Model.EmbeddingsSettings! settings, System.Collections.Generic.IReadOnlyList<string!>! texts, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<System.ReadOnlyMemory<float>>!>!>
+Aw.CodeIndex.Core.Ports.IEmbedder.ModelFor(Aw.CodeIndex.Core.Model.EmbeddingsSettings! settings) -> string!
 Aw.CodeIndex.Core.Ports.IEmbedder.Probe(Aw.CodeIndex.Core.Model.EmbeddingsSettings! settings, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.CodeIndex.Core.Ports.IGraphRunner
 Aw.CodeIndex.Core.Ports.IGraphRunner.Probe(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
@@ -1366,3 +1367,8 @@ Aw.CodeIndex.Core.Ports.ISymbolParser.Version.get -> string!
 static Aw.CodeIndex.Core.InputRules.MatchesAny(string! path, System.Collections.Generic.IEnumerable<string!>! globs) -> bool
 static Aw.CodeIndex.Core.Planning.LanguageTable.Of(string! path) -> string?
 static Aw.CodeIndex.Core.Planning.ProjectManifests.Directories(System.Collections.Generic.IEnumerable<string!>! paths) -> System.Collections.Generic.IReadOnlySet<string!>!
+Aw.CodeIndex.Core.Embedding.EmbedText
+Aw.CodeIndex.Core.EmbeddingTarget
+static Aw.CodeIndex.Core.Embedding.EmbedText.Of(Aw.CodeIndex.Core.Model.EmbedCandidate! candidate) -> string!
+static Aw.CodeIndex.Core.EmbeddingTarget.Check(Aw.CodeIndex.Core.Model.EmbeddingsSettings! settings) -> Aw.Kernel.Error?
+static Aw.CodeIndex.Core.EmbeddingTarget.IsLoopbackUrl(string! url) -> bool

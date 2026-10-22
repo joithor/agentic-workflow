@@ -105,13 +105,9 @@ internal sealed partial class SetupViewModel
             }
         }
 
-        var present = new HashSet<string>(view.Steps.Select(s => s.Id), StringComparer.Ordinal);
-        foreach (var gone in _rows.Keys.Where(k => !present.Contains(k)).ToList())
-        {
-            _ = _rows.Remove(gone);
-        }
-
+        Forget(view);
         Patch.To(Steps, served);
+        ConfirmAll(served);
         (IsReading, IsNotServed, IsUnreadable, IsStale, IsFailed, IsNotRunning, FailedText) = (false, false, false, false, false, false, string.Empty);
         OpenTheFirstStep();
         _hasRead = true;
@@ -119,6 +115,23 @@ internal sealed partial class SetupViewModel
         if (said.Count > 0)
         {
             Live.Say(string.Join(". ", said));
+        }
+    }
+
+    private void Forget(SetupView view)
+    {
+        var present = new HashSet<string>(view.Steps.Select(s => s.Id), StringComparer.Ordinal);
+        foreach (var gone in _rows.Keys.Where(k => !present.Contains(k)).ToList())
+        {
+            _ = _rows.Remove(gone);
+        }
+    }
+
+    private static void ConfirmAll(List<SetupStepViewModel> rows)
+    {
+        foreach (var row in rows)
+        {
+            Confirm(row);
         }
     }
 }

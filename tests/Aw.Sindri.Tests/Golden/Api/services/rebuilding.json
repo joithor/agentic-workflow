@@ -6,7 +6,10 @@
       "paused": false,
       "lastRun": null,
       "nextSlot": null,
-      "job": null
+      "job": null,
+      "actions": [
+        "run"
+      ]
     },
     {
       "name": "context-sync-gaps",
@@ -14,7 +17,10 @@
       "paused": false,
       "lastRun": null,
       "nextSlot": null,
-      "job": null
+      "job": null,
+      "actions": [
+        "run"
+      ]
     },
     {
       "name": "heartbeat",
@@ -22,7 +28,11 @@
       "paused": false,
       "lastRun": null,
       "nextSlot": null,
-      "job": null
+      "job": null,
+      "actions": [
+        "run",
+        "pause"
+      ]
     },
     {
       "name": "router-stub",
@@ -30,7 +40,10 @@
       "paused": false,
       "lastRun": null,
       "nextSlot": null,
-      "job": null
+      "job": null,
+      "actions": [
+        "run"
+      ]
     },
     {
       "name": "setup",
@@ -38,7 +51,10 @@
       "paused": false,
       "lastRun": null,
       "nextSlot": null,
-      "job": null
+      "job": null,
+      "actions": [
+        "run"
+      ]
     },
     {
       "name": "workflow-events",
@@ -46,13 +62,16 @@
       "paused": false,
       "lastRun": null,
       "nextSlot": null,
-      "job": null
+      "job": null,
+      "actions": [
+        "run"
+      ]
     }
   ],
-  "empty": "Rebuilding views (cursor 4 of 4)…",
+  "empty": "Rebuilding views (cursor 5 of 5)…",
   "asOf": {
-    "cursor": 4,
-    "ledgerHead": 4,
+    "cursor": 5,
+    "ledgerHead": 5,
     "projectedAt": "2026-01-01T00:00:00.0000000Z",
     "rebuilding": true,
     "stalled": false

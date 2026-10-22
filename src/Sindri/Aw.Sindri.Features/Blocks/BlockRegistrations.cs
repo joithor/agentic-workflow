@@ -50,14 +50,23 @@ internal static class BlockRegistrations
         .AddScopingBlocks()
         .AddLineBlocks().AddLineDesignBlocks()
         .AddBlockDescriptor(EvidenceProviders.Check)
-        .AddGate<BudgetAvailableGate>()
-        .AddGate<RouteStartableGate>()     // engine P7 unit U1: a stub over the profile's workflow.route
+        .AddRecipeGates()
         .AddEffect<ClaimRefEffect>()      // engine P6 unit (d)
         .AddEffect<NotifyDeskEffect>()    // engine P6 unit (c)
+        .AddEffect<LineReportEffect>()    // LN-WF1: a phase's shipped and merged, recorded for its line
         .AddEvent(RecipeEvents.ItemRouted)
         .AddEvent(RecipeEvents.ClaimCreated)
         .AddEvent(RecipeEvents.NotifyDelivered)
         .AddPrEvents();
+
+    /// <summary>Registers the gates that have runtimes in this build.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    private static IServiceCollection AddRecipeGates(this IServiceCollection services) => services
+        .AddGate<BudgetAvailableGate>()
+        .AddGate<RouteStartableGate>()     // engine P7 unit U1: a stub over the profile's workflow.route
+        .AddGate<RevisionBoundGate>()
+        .AddGate<PrAutofixCapGate>();
 
     /// <summary>Registers the PR babysitter's and docs sync's events (PB spec §6.1, W25).</summary>
     /// <param name="services">The service collection.</param>
@@ -82,8 +91,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PhaseSteps.Seed)
         .AddBlockDescriptor(PhaseSteps.Drift)
         .AddBlockDescriptor(PhaseSteps.Decide)
-        .AddBlockDescriptor(BabysitSteps.Watch)
-        .AddBlockDescriptor(LineEffects.Report);
+        .AddBlockDescriptor(BabysitSteps.Watch);
 
     /// <summary>Registers the line's build and prove stations' Steps (line spec §7.2, §7.3), descriptors only.</summary>
     /// <param name="services">The service collection.</param>
@@ -100,6 +108,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(ProveSteps.BeforeAfter)
         .AddBlockDescriptor(ProveSteps.Holdout)
         .AddBlockDescriptor(ProveSteps.HoldoutLog)
+        .AddBlockDescriptor(ProveSteps.Collect)
         .AddBlockDescriptor(ProveSteps.Evidence)
         .AddBlockDescriptor(ProveSteps.FailLog);
 
@@ -208,11 +217,9 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(RecheckSteps.Plan)
         .AddBlockDescriptor(RecheckSteps.RerunScripts)
         .AddBlockDescriptor(RecheckSteps.Log)
-        .AddBlockDescriptor(PrGates.RevisionBound)
         .AddBlockDescriptor(PrGates.BaseIsDefault)
-        .AddBlockDescriptor(PrGates.AutofixCap)
-        .AddBlockDescriptor(PrGates.DiffScope)
-        .AddBlockDescriptor(PrGates.SecretScan)
+        .AddGate<PrDiffScopeGate>()
+        .AddGate<PrSecretScanGate>()
         .AddBlockDescriptor(PrEffects.Push)
         .AddBlockDescriptor(PrEffects.Reply)
         .AddBlockDescriptor(PrEffects.Record)
@@ -221,7 +228,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PrEffects.CreateStacked)
         .AddBlockDescriptor(PrEffects.Merge)
         .AddBlockDescriptor(PrEffects.MergeDocs)
-        .AddBlockDescriptor(PrInputs.Context)
-        .AddBlockDescriptor(PrInputs.PhasePacket)
-        .AddBlockDescriptor(PrInputs.HandoffNote);
+        .AddStepInput<PrContextInput>()
+        .AddStepInput<PhasePacketInput>()
+        .AddStepInput<HandoffNoteInput>();
 }
