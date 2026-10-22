@@ -222,7 +222,7 @@ internal sealed class LinearRecords(LinearClient client, LinearScope scope)
     }
 
     private static Result<IReadOnlyList<(string Id, string Version)>> Found(IEnumerable<(string Id, DateTimeOffset UpdatedAt)> nodes) =>
-        Kernel.Results.Success<IReadOnlyList<(string Id, string Version)>>([.. nodes.Select(n => (n.Id, LinearHits.Version(n.UpdatedAt)))]);
+        Results.Success<IReadOnlyList<(string Id, string Version)>>([.. nodes.Select(n => (n.Id, LinearHits.Version(n.UpdatedAt)))]);
 
     private static string Prefix(string key) =>
         key.StartsWith(IssuePrefix, StringComparison.Ordinal) ? IssuePrefix
