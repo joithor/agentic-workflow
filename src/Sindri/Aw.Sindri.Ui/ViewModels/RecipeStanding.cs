@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Ui.ViewModels.Recipes;
+namespace Aw.Sindri.Ui.ViewModels;
 
 /// <summary>Where a workflow stands, in the three words a person sees; only an approved one starts a run.</summary>
 internal enum RecipeStanding
