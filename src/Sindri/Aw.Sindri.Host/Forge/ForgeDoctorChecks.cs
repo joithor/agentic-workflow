@@ -1,4 +1,3 @@
-using System.Globalization;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Forge;
