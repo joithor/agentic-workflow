@@ -1,5 +1,6 @@
 using Aw.Kernel;
 using Aw.Kernel.Json;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launch.Argv;
@@ -12,12 +13,33 @@ internal sealed partial class Launcher
 {
     private async ValueTask<Result<Prepared>> Prepare(LaunchRequest request, AgentEntry entry, CancellationToken cancellationToken)
     {
-        if (await LaunchWorktree.Ensure(request, cancellationToken).ConfigureAwait(false) is { } missing)
+        string workDir;
+        if (request.Evaluator is { } evaluator)
         {
-            return missing;
+            if (request.Attended || request.Step?.Policy is null)
+            {
+                return SindriErrors.RequestInvalid.With("the holdout evaluator launches unattended and with a policy (fix: build the request with AgentLaunches.RequestFor)");
+            }
+
+            // The evaluator never runs in the phase worktree: its own checkout at the head sha, removed with the launch (LN-LCH2).
+            var scratch = await parts.Scratch.Create(request.RepoPath, ScratchPath(request.Launch), evaluator.HeadSha, cancellationToken).ConfigureAwait(false);
+            if (scratch.IsError)
+            {
+                return scratch.Error;
+            }
+
+            workDir = scratch.Value;
+        }
+        else
+        {
+            if (await LaunchWorktree.Ensure(request, cancellationToken).ConfigureAwait(false) is { } missing)
+            {
+                return missing;
+            }
+
+            workDir = request.Worktree ?? request.RepoPath;
         }
 
-        var workDir = request.Worktree ?? request.RepoPath;
         try
         {
             var composed = await Compose(request, entry, workDir, cancellationToken).ConfigureAwait(false);
@@ -42,6 +64,11 @@ internal sealed partial class Launcher
     private async ValueTask<Result<(IReadOnlyList<string> Argv, SessionId? Session)>> Compose(LaunchRequest request, AgentEntry entry, string workDir, CancellationToken cancellationToken)
     {
         var step = request.Attended ? null : request.Step;
+        if (step?.Policy is { } requested && request.Evaluator is not null)
+        {
+            step = step with { Policy = requested with { WritablePath = workDir } };   // the scratch checkout is the one path the evaluator writes
+        }
+
         var policyPath = step?.Policy is { } policy && entry.PolicyForm == PolicyForm.ClaudeSettingsFile
             ? StepPolicyFile.Write(parts.Options.PolicyDirectory, request.Launch, policy)
             : null;
@@ -95,13 +122,16 @@ internal sealed partial class Launcher
         return env;
     }
 
-    private void Cleanup(LaunchId launch)
+    private async ValueTask Cleanup(LaunchId launch)
     {
         LaunchSecrets.Delete(parts.Options.SecretsDirectory, launch);
         LaunchFileStore.DeleteFlat(parts.Options, launch);
         LaunchFileStore.DeleteIn(parts.Options.PolicyDirectory, StepPolicyFile.PathFor(parts.Options.PolicyDirectory, launch));
         LaunchFileStore.DeleteIn(parts.Options.LaunchDirectory, McpLaunchConfig.PathFor(parts.Options.LaunchDirectory, launch));
+        _ = await parts.Scratch.Remove(ScratchPath(launch), CancellationToken.None).ConfigureAwait(false);   // the evaluator's checkout; none for any other launch
     }
+
+    private string ScratchPath(LaunchId launch) => Path.Combine(parts.Options.ScratchDirectory, "eval-" + launch.Value);
 
     private sealed record Prepared(string WorkDir, IReadOnlyList<string> Argv, Dictionary<string, string> Env, string? Session)
     {
