@@ -15,7 +15,10 @@ namespace Aw.Sindri.Features.Pr;
 /// reviewDecision, unresolvedThreads, checks { state, sha, failing }), 'pullState' (open, closed or merged), 'comments' (the threads, oldest first, as the queue Steps parse
 /// them), 'self' (null), 'queue' counts, 'mergeBlockedBy' and 'at'. 'state' is 'green' when the outcome is green (the merge gate reads it), else the pull request's own state.
 /// Each comment carries its latest mark (outcome, reason, commit, at) from the comment marks, queue.held counts the comments whose latest mark is 'hold'; a marked comment is handled and is not in queue.unhandled or the 'comments' outcome, and 'stale' says the checks ran on another commit than the head.
-/// Not read yet, for want of a port: the base branch (restack), the docs pull request (mergedDocsOpen, docsRed) and the workspace.
+/// The docs pull request ('fact:docsPr', when the instance holds one) is read too: a merged pull request whose docs pull request is open is 'mergedDocsOpen', a red docs pull request is 'docsRed'
+/// (after the comments, before pending; not when the owner skipped the docs, 'fact:docsResult' result 'skippedByOwner'), and checks still running on it keep the snapshot pending; 'docs' carries it
+/// (link, state, headSha, checks). 'workspaceAhead' says the workspace ('fact:workspace') is on another commit than the pull request's head (null when its head can't be read).
+/// Not read yet, for want of a port: the base branch, so 'restack' is never reported (TODO: the forge port's PullView has no base branch or default branch).
 /// </summary>
 /// <param name="pulls">The forge, through Sindri's port.</param>
 /// <param name="marks">The comment marks.</param>
@@ -56,12 +59,51 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
             return BlockStepResult.Failed($"step.pr.snapshot can't read the comment marks of {link}: {latest.Error.Message}");
         }
 
+        var docs = await ReadDocs(context, cancellationToken).ConfigureAwait(false);
+        if (docs.IsError)
+        {
+            return BlockStepResult.Failed($"step.pr.snapshot can't read the docs pull request of {link}: {docs.Error.Message}");
+        }
+
         var work = threads.Value.Where(t => !t.Resolved && !Own(t) && !latest.Value.ContainsKey(t.Key)).ToList();   // a marked comment is handled (spec: a mark not superseded by an edit); the forge port has no login, so Sindri's replies are told apart by their markers alone
-        var outcome = Outcome(pull.Value, work.Count);
-        var state = State(pull.Value, outcome, threads.Value, work, latest.Value);
-        return outcome is "merged"
+        var outcome = Outcome(pull.Value, work.Count, docs.Value);
+        var state = State(pull.Value, outcome, new Conversation(threads.Value, work, latest.Value), docs.Value);
+        state["workspaceAhead"] = await WorkspaceAhead(context, pull.Value.HeadSha, cancellationToken).ConfigureAwait(false);
+        return outcome is "merged" or "mergedDocsOpen"
             ? StepFacts.Done(outcome, ("fact:prState", state), ("fact:mergedSha", JsonValue.Create(pull.Value.HeadSha)!))
             : StepFacts.Done(outcome, ("fact:prState", state));
+    }
+
+    // The docs pull request the instance holds, with whether the owner skipped the docs; null when it holds none.
+    private async ValueTask<Result<DocsRead?>> ReadDocs(StepContext context, CancellationToken cancellationToken)
+    {
+        var fact = StepFacts.Read(context, "fact:docsPr");
+        var link = fact switch
+        {
+            JsonValue value when value.TryGetValue<string>(out var text) => text,
+            JsonObject obj => StepFacts.Field(obj, "link") ?? StepFacts.Field(obj, "url"),
+            _ => null,
+        };
+        if (string.IsNullOrWhiteSpace(link))
+        {
+            return (DocsRead?)null;
+        }
+
+        var view = await pulls.Get(link.Trim(), cancellationToken).ConfigureAwait(false);
+        var skipped = string.Equals(StepFacts.Field(StepFacts.Read(context, "fact:docsResult"), "result"), "skippedByOwner", StringComparison.Ordinal);
+        return view.IsError ? view.Error : new DocsRead(view.Value, skipped);
+    }
+
+    // Whether the workspace is on another commit than the pull request's head; null when its head can't be read.
+    private async ValueTask<JsonNode?> WorkspaceAhead(StepContext context, string headSha, CancellationToken cancellationToken)
+    {
+        if (StepFacts.Text(context, "fact:workspace") is not { Length: > 0 } workspace)
+        {
+            return JsonValue.Create(false);
+        }
+
+        var head = await diff.Head(workspace, cancellationToken).ConfigureAwait(false);
+        return head.IsError ? null : JsonValue.Create(!string.Equals(head.Value.Trim(), headSha, StringComparison.Ordinal));
     }
 
     // The latest mark per comment across its edits, keyed by the thread key (a mark's CommentId).
@@ -97,11 +139,11 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
         return result;
     }
 
-    private static string Outcome(PullView pull, int unhandled)
+    private static string Outcome(PullView pull, int unhandled, DocsRead? docs)
     {
         if (pull.State != PullState.Open)
         {
-            return pull.State == PullState.Merged ? "merged" : "closed";
+            return pull.State == PullState.Merged ? (docs?.View.State == PullState.Open ? "mergedDocsOpen" : "merged") : "closed";
         }
 
         if (pull.Mergeable == false)
@@ -120,12 +162,22 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
             return "comments";
         }
 
+        var gating = docs is { Skipped: false, View.State: PullState.Open } ? docs.View : null;
+        if (gating is not null && string.Equals(gating.Checks.Sha, gating.HeadSha, StringComparison.Ordinal) && gating.Checks.State == PullChecksState.Failing)
+        {
+            return "docsRed";
+        }
+
         // Checks on an older commit (right after a push) or still running are not an answer yet; no check at all on the head is a repository without required checks.
-        return !onHead || pull.Checks.State == PullChecksState.Pending ? "pending" : "green";
+        return !onHead || pull.Checks.State == PullChecksState.Pending || DocsPending(gating) ? "pending" : "green";
     }
 
-    private JsonObject State(PullView pull, string outcome, IReadOnlyList<PullThread> threads, List<PullThread> work, Dictionary<string, PrCommentMark> marked)
+    private static bool DocsPending(PullView? docs) =>
+        docs is not null && (docs.Checks.State == PullChecksState.Pending || !string.Equals(docs.Checks.Sha, docs.HeadSha, StringComparison.Ordinal));
+
+    private JsonObject State(PullView pull, string outcome, Conversation conversation, DocsRead? docs)
     {
+        var (threads, work, marked) = conversation;
         var pullState = pull.State.ToString().ToLowerInvariant();
         return new JsonObject
         {
@@ -152,12 +204,26 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
                 ["bots"] = work.Count(static t => t.IsBot),
             },
             ["comments"] = new JsonArray([.. threads.Select(t => (JsonNode)Comment(t, marked.GetValueOrDefault(t.Key)))]),
+            ["docs"] = docs is null ? null : DocsState(docs.View),
             ["self"] = null,
             ["mergeBlockedBy"] = new JsonArray([.. BlockedBy(pull).Select(static b => (JsonNode)JsonValue.Create(b)!)]),
             ["heldBlocksMerge"] = false,
             ["at"] = clock.GetUtcNow().ToString("O", CultureInfo.InvariantCulture),
         };
     }
+
+    private static JsonObject DocsState(PullView docs) => new()
+    {
+        ["link"] = docs.Link,
+        ["state"] = docs.State.ToString().ToLowerInvariant(),
+        ["headSha"] = docs.HeadSha,
+        ["checks"] = new JsonObject
+        {
+            ["state"] = docs.Checks.State.ToString().ToLowerInvariant(),
+            ["sha"] = docs.Checks.Sha,
+            ["failing"] = new JsonArray([.. docs.Checks.Failing.Select(static f => (JsonNode)JsonValue.Create(f)!)]),
+        },
+    };
 
     private static IEnumerable<string> BlockedBy(PullView pull)
     {
@@ -191,4 +257,8 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
     // Sindri's replies never come back as work: a marker it wrote.
     private static bool Own(PullThread thread) =>
         thread.Markers.Any(static m => m.StartsWith("sindri", StringComparison.Ordinal));
+
+    private sealed record DocsRead(PullView View, bool Skipped);
+
+    private sealed record Conversation(IReadOnlyList<PullThread> Threads, List<PullThread> Work, Dictionary<string, PrCommentMark> Marked);
 }
