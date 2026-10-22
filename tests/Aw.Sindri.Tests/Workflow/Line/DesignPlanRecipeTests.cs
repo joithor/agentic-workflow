@@ -23,8 +23,8 @@ public sealed class DesignPlanRecipeTests
         Assert.Empty(RecipeComposition.Errors(Read(id), FixtureCatalog.Shipped(), InMemoryChildRecipes.None));
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("workflow.design", "rounds=5;lens=4;lens-runs=40", 1500000)]
-    [InlineData("workflow.plan", "rounds=5;refreeze=2;revisions=5", 1000000)]
+    [InlineData("workflow.design", "rounds=5;lens=4;lens-runs=40", 160000000)]
+    [InlineData("workflow.plan", "rounds=5;refreeze=2;revisions=5", 15000000)]
     public void The_loop_caps_and_budget_are_the_ones_the_spec_names(string id, string loops, int tokens)
     {
         var recipe = Read(id).Recipe;

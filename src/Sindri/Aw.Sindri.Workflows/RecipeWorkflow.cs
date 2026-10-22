@@ -104,7 +104,7 @@ internal sealed partial class RecipeWorkflow
         // P8: right after the DT-J marker, before any other command; a history that began before the agent runtime has no marker, so it replays with no agent map and stays on the desk exactly as recorded (kept until the cutover)
         var agentRuntime = Workflow.Patched("p8-agent-runtime");
         var keepsReport = Workflow.Patched("token-budget-keeps-report-v1");   // an accepted report over budget keeps its transition (the next Step start parks); a history without the marker parks on the report as it did
-        _heavy = Workflow.Patched("ln-wf3-heavy-slot");   // LN-WF3: the heavy allocator; last, after every marker main has; a history without it never takes or grants a slot
+        var perRound = Workflow.Patched("token-budget-per-round-v1"); _heavy = Workflow.Patched("ln-wf3-heavy-slot");   // LN-WF3: the heavy allocator; last, after every marker main has; a history without it never takes or grants a slot
         var loaded = await Workflow.ExecuteLocalActivityAsync(
             (RunStepActivities a) => a.LoadRecipeAsync(start.Recipe),
             new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(30) }).ConfigureAwait(true);
@@ -115,7 +115,7 @@ internal sealed partial class RecipeWorkflow
         _eventHold = loaded.EventHold;
         _dispatchDelay = loaded.DispatchDelay;
         var runtimes = Runtimes(loaded, blockRuntime, agentRuntime);
-        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, runtimes, pins.Resolver()) { DeskTimeout = loaded.DeskTimeout, LegacyBudgetPark = !keepsReport };
+        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, runtimes, pins.Resolver()) { DeskTimeout = loaded.DeskTimeout, LegacyBudgetPark = !keepsReport, PooledBudget = !perRound };
         _context = new Interpreting(loaded.Recipe, decisions);
         (_repo, _repoUnreadable) = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : (null, false);
         (_subject, _contents) = await NamedSubject(_recipe, start).ConfigureAwait(true);

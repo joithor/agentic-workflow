@@ -65,7 +65,9 @@
       "state": 0,
       "stateCap": 200000,
       "instance": 0,
-      "instanceCap": 400000
+      "instanceCap": 400000,
+      "perRound": true,
+      "overrun": null
     },
     "paused": null,
     "runningSteps": 0,

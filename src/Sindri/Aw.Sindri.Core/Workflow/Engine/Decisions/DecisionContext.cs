@@ -34,6 +34,12 @@ public sealed record DecisionContext(
     public bool LegacyBudgetPark { get; init; }
 
     /// <summary>
+    /// Whether an instance that starts counts a state's budget over its lifetime (the pooled rule before the 'token-budget-per-round-v1' patch, which a history
+    /// recorded without the marker replays). Off: it starts under the per-round rule, where each round of a state has its own allowance (BudgetRules).
+    /// </summary>
+    public bool PooledBudget { get; init; }
+
+    /// <summary>
     /// Where this build runs a Step that is not at the desk (P8 D5, one map): <see cref="StepRuntime.Block"/> for a registered block runtime whose descriptor says
     /// <see cref="BlockRuntime.Block"/>, <see cref="StepRuntime.Agent"/> for a Step an agent session runs. A Step in neither is at the desk when it is deskCapable.
     /// </summary>
