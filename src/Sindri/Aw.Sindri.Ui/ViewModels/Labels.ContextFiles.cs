@@ -11,9 +11,6 @@ internal static partial class Labels
     /// <summary>The files table's second column.</summary>
     internal const string ContextFilesColFor = "What it is for";
 
-    /// <summary>The files table's third column.</summary>
-    internal const string ContextFilesColIntent = "Tickets and decisions";
-
     /// <summary>The name of the top folder.</summary>
     internal const string ContextFilesRoot = "Top of the repo";
 
@@ -25,9 +22,6 @@ internal static partial class Labels
 
     /// <summary>The word for a folder with nothing in it.</summary>
     internal const string ContextFilesEmpty = "Nothing in this folder.";
-
-    /// <summary>The note under the table while the code index is not built.</summary>
-    internal const string ContextFilesNames = "Function names are not available yet: the code index isn't built.";
 
     /// <summary>What a file with no feature says.</summary>
     internal const string ContextFilesNoFeature = "Not linked to a feature yet";

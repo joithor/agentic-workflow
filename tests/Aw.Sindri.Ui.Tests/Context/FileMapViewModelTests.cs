@@ -69,7 +69,7 @@ public sealed class FileMapViewModelTests
 
         var totals = golden["totals"]!;
         Assert.Equal(Labels.ContextFilesTotals((int)totals["files"]!, (int)totals["mapped"]!, (int)totals["suggested"]!, (int)totals["unmapped"]!), files.TotalsText);
-        Assert.Equal(Labels.ContextFilesNames, files.Note);
+        Assert.Equal(Labels.ContextMapNamesDetail, files.Note);
         Assert.True(files.HasNote);
     }
 

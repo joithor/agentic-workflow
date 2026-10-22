@@ -23,7 +23,7 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
     public string ColFor { get; } = Labels.ContextFilesColFor;
 
     /// <summary>The third column's heading.</summary>
-    public string ColIntent { get; } = Labels.ContextFilesColIntent;
+    public string ColIntent { get; } = Labels.ContextMapAreaIntent;
 
     /// <summary>The up button's words.</summary>
     public string UpWord { get; } = Labels.ContextFilesUp;
@@ -169,7 +169,7 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
         PathText = view.Path.Length == 0 ? Labels.ContextFilesRoot : view.Path;
         CanGoUp = view.Path.Length > 0;
         TotalsText = Labels.ContextFilesTotals(view.Totals.Files, view.Totals.Mapped, view.Totals.Suggested, view.Totals.Unmapped);
-        Note = string.Equals(view.Symbols.State, "available", StringComparison.Ordinal) ? string.Empty : Labels.ContextFilesNames;
+        Note = string.Equals(view.Symbols.State, "available", StringComparison.Ordinal) ? string.Empty : Labels.ContextMapNamesDetail;
     }
 
     private void Fail(Error error)
