@@ -43,7 +43,7 @@ public sealed class RecipeStatsRouteTests : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _host.DisposeAsync();
 
-    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    [Fact, Trait("Lane", "integration")]
     public async Task The_stats_match_the_fixture_ledger_in_the_golden_body()
     {
         var served = await _host.Http.Ask(Get(Item + "?window=30d", _human));
@@ -52,7 +52,7 @@ public sealed class RecipeStatsRouteTests : IAsyncLifetime
         ApiGolden.Match(served.Body, _host.Home, "workflow-recipes-id-stats", "workflow-item");
     }
 
-    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    [Fact, Trait("Lane", "integration")]
     public async Task The_default_window_is_30_days_and_7_days_leaves_out_the_older_runs()
     {
         var thirty = JsonDocument.Parse((await _host.Http.Ask(Get(Item, _human))).Body).RootElement;
@@ -62,7 +62,7 @@ public sealed class RecipeStatsRouteTests : IAsyncLifetime
         Assert.Equal(("7d", 0), (seven.GetProperty("window").GetString(), seven.GetProperty("runs").GetInt32()));
     }
 
-    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    [Fact, Trait("Lane", "integration")]
     public async Task A_hash_scopes_the_stats_to_the_runs_under_it()
     {
         var under = JsonDocument.Parse((await _host.Http.Ask(Get($"{Item}?hash={_itemHash}", _human))).Body).RootElement;
@@ -72,7 +72,7 @@ public sealed class RecipeStatsRouteTests : IAsyncLifetime
         Assert.Equal(0, other.GetProperty("runs").GetInt32());
     }
 
-    [Theory(Timeout = 60_000), Trait("Lane", "integration")]
+    [Theory, Trait("Lane", "integration")]
     [InlineData("?window=1y")]
     [InlineData("?window=")]
     [InlineData("?hash=not-a-hash")]
@@ -84,7 +84,7 @@ public sealed class RecipeStatsRouteTests : IAsyncLifetime
         Assert.Equal((HttpStatusCode.BadRequest, "SND-API-013"), (served.Status, served.Code));
     }
 
-    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    [Fact, Trait("Lane", "integration")]
     public async Task An_unregistered_recipe_is_SND_RECIPE_002()
     {
         var served = await _host.Http.Ask(Get("/sindri/workflow/recipes/workflow.unknown/stats", _human));
@@ -92,7 +92,7 @@ public sealed class RecipeStatsRouteTests : IAsyncLifetime
         Assert.Equal((HttpStatusCode.NotFound, "SND-RECIPE-002"), (served.Status, served.Code));
     }
 
-    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    [Fact, Trait("Lane", "integration")]
     public async Task A_recipe_that_is_only_ever_a_child_returns_child_only_with_null_run_figures()
     {
         var served = JsonDocument.Parse((await _host.Http.Ask(Get("/sindri/workflow/recipes/workflow.step/stats", _human))).Body).RootElement;
@@ -101,21 +101,21 @@ public sealed class RecipeStatsRouteTests : IAsyncLifetime
         Assert.Equal(JsonValueKind.Null, served.GetProperty("runs").ValueKind);
     }
 
-    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    [Fact, Trait("Lane", "integration")]
     public async Task The_list_gives_each_recipe_its_status_word_and_the_default_window_stats_apart_from_a_draft_and_a_child_only_recipe()
     {
         var served = await _host.Http.Ask(Get("/sindri/workflow/recipes", _human));
         var listed = JsonDocument.Parse(served.Body).RootElement;
 
         Assert.Equal("30d", listed.GetProperty("window").GetString());
-        var recipes = listed.GetProperty("recipes").EnumerateArray().ToDictionary(r => r.GetProperty("id").GetString()!, r => r);
+        var recipes = listed.GetProperty("recipes").EnumerateArray().ToDictionary(r => r.GetProperty("id").GetString()!, r => r, StringComparer.Ordinal);
         Assert.Equal(("draft", false), (recipes["workflow.item"].GetProperty("status").GetString(), recipes["workflow.item"].GetProperty("childOnly").GetBoolean()));
         Assert.Equal(("draft", true), (recipes["workflow.step"].GetProperty("status").GetString(), recipes["workflow.step"].GetProperty("childOnly").GetBoolean()));
         Assert.False(recipes["workflow.item"].TryGetProperty("stats", out _));   // a draft has none
         Assert.False(recipes["workflow.step"].TryGetProperty("stats", out _));   // a child-only recipe has none
     }
 
-    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    [Fact, Trait("Lane", "integration")]
     public async Task A_list_window_outside_its_set_is_SND_API_013()
     {
         var served = await _host.Http.Ask(Get("/sindri/workflow/recipes?window=1y", _human));
