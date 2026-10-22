@@ -153,6 +153,17 @@ public sealed class ShellViewModelTests
         Assert.Equal(PageId.Home, shell.CurrentPage);
     }
 
+    [Fact]
+    public async Task A_context_item_link_opens_the_context_page_without_a_sheet()
+    {
+        var shell = await Shell();
+        Assert.True(DeepLink.TryParse("context?item=ITM-01JC8", out var link));
+
+        shell.Navigate(link);
+
+        Assert.Equal((PageId.Context, false), (shell.CurrentPage, shell.IsSheetOpen));
+    }
+
     [Theory]
     [InlineData("workflow/INC-14", DeepLinkKind.Workflow, PageId.Workflows)]
     [InlineData("workflow/ITM-01JC8/step", DeepLinkKind.Workflow, PageId.Workflows)]

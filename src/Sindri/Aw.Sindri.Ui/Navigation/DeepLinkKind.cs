@@ -30,6 +30,9 @@ internal enum DeepLinkKind
     /// <summary>'node/&lt;key&gt;': a context node (screens spec §4.4).</summary>
     Node,
 
+    /// <summary>'context?item=&lt;ItemId&gt;': the Context page for an item, at its frozen scope (context spec §9 item 1).</summary>
+    ContextItem,
+
     /// <summary>'session/&lt;provider&gt;/&lt;id&gt;': a live agent session's sheet (screens spec §4.5).</summary>
     Session,
 
