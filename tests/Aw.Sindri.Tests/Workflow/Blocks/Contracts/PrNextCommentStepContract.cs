@@ -15,7 +15,7 @@ public sealed class PrNextCommentStepContract : BlockContract
 
     protected override BlockDescriptor Descriptor => PrSteps.NextComment;
 
-    protected override string ExpectedHash => "sha256:3ce37975a54990a4d8ef250b002c370fdaad27efca96a43840a5c2c8b2dd9e12";   // repin: the descriptor now reads fact:prState
+    protected override string ExpectedHash => "sha256:51abfe654381a000386c4c144347fe3713ac9e55c6039609cb84cf6028244aed";   // repin: the descriptor now reads fact:prState
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 
