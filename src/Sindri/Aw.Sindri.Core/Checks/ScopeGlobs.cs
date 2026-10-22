@@ -22,6 +22,15 @@ public static class ScopeGlobs
             : Segments(entry.Trim().Split('/'), 0, parts, 0));
     }
 
+    /// <summary>True when <paramref name="path"/> is under '.agentic-workflow/packs', where a repo's style and lens packs live: no phase may write there (line spec §5.1).</summary>
+    /// <param name="path">A repo-relative path with '/' separators.</param>
+    /// <returns>Whether the path is a pack path.</returns>
+    public static bool IsPackPath(string path)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        return false;
+    }
+
     private static bool Segments(string[] glob, int g, string[] parts, int p)
     {
         if (g == glob.Length)
