@@ -93,7 +93,7 @@ internal sealed partial class RunInspectorView : UserControl
         return button;
     }
 
-    private StackPanel Block(string heading, Control content)
+    private static StackPanel Block(string heading, Control content)
     {
         var block = new StackPanel { Spacing = 8 };
         block.Children.Add(Heading(heading));
@@ -101,7 +101,7 @@ internal sealed partial class RunInspectorView : UserControl
         return block;
     }
 
-    private TextBlock Heading(string text)
+    private static TextBlock Heading(string text)
     {
         var heading = new TextBlock { Text = text };
         heading.Classes.Add("eyebrow");
@@ -121,7 +121,7 @@ internal sealed partial class RunInspectorView : UserControl
     private StackPanel Actions(RunCanvasInspectorViewModel inspector)
     {
         var block = new StackPanel { Spacing = 12 };
-        block.Children.Add(Heading(Labels.RunNext));
+        block.Children.Add(Heading(inspector.NextHeading));
         if (inspector.HasTakeOver)
         {
             block.Children.Add(ActionBlock(inspector.TakeOverTitle, inspector.TakeOverHelp, "RunInspectorTakeOver", inspector.TakeOverLabel, inspector.TakeOver));

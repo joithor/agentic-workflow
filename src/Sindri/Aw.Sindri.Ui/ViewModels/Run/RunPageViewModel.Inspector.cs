@@ -21,7 +21,7 @@ internal sealed partial class RunPageViewModel
     private void ResetInspector()
     {
         _source = null;
-        ShowInspector(null);
+        ShowInspector(inspector: null);
     }
 
     // The selection and the last read decide the inspector; a selection whose card is gone closes it.
@@ -29,14 +29,14 @@ internal sealed partial class RunPageViewModel
     {
         if (SelectedKey is not { } key || _source is not { } source)
         {
-            ShowInspector(null);
+            ShowInspector(inspector: null);
             return;
         }
 
         var card = Cards.FirstOrDefault(c => string.Equals(c.Id, key, StringComparison.Ordinal) || key.StartsWith(c.Id + "/", StringComparison.Ordinal));
         if (card is null)
         {
-            ShowInspector(null);
+            ShowInspector(inspector: null);
             return;
         }
 

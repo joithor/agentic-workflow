@@ -1,5 +1,5 @@
+using Avalonia.Controls;
 using Avalonia.Layout;
-using Aw.Sindri.Ui.ViewModels.Run;
 
 namespace Aw.Sindri.Ui.Views.Run;
 
@@ -39,6 +39,9 @@ internal sealed partial class RunPage
         RunInspector.Width = _narrow ? OverlayWidth : SideWidth;
         RunInspector.HorizontalAlignment = _narrow ? HorizontalAlignment.Right : HorizontalAlignment.Stretch;
         RunInspector.ZIndex = _narrow ? 5 : 0;
-        RunMiniMapFrame.SetCurrentValue(IsVisibleProperty, (_page?.IsShown ?? false) && !(_narrow && open));
+        ArrangeMiniMap(hidden: _narrow && open);
     }
+
+    // Under the narrow overlay the minimap is hidden.
+    private void ArrangeMiniMap(bool hidden) => RunMiniMapFrame.SetCurrentValue(IsVisibleProperty, (_page?.IsShown ?? false) && !hidden);
 }
