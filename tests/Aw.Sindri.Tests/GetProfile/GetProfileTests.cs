@@ -80,7 +80,7 @@ public sealed class GetProfileTests
     [Fact, Trait("Lane", "unit")]
     public async Task Nothing_approved_yet_it_summarises_the_live_profile_with_the_real_path_and_file_facts()
     {
-        var live = Live(new SindriProfile(1, "t", Repos: [new RepoEntry("web", "/link/web")], Workflow: new WorkflowSettings(Effects: ["effect.claim.ref"])));
+        var live = LiveProfile(new SindriProfile(1, "t", Repos: [new RepoEntry("web", "/link/web")], Workflow: new WorkflowSettings(Effects: ["effect.claim.ref"])));
         _ = _git.Has("/link/web", "/work/web").Weighs("/link/web", files: 120, bytes: (5 * 1024 * 1024) + 300_000, realPath: "/work/web");
 
         var summary = (await Service(live: live).Handle(new GetProfileRequest(), Token)).Value.Summary;
@@ -99,7 +99,7 @@ public sealed class GetProfileTests
         await _v.Fold(EventTypes.ProfileApproved, new ProfileApproved(_a, []));
         await _v.Fold(EventTypes.ProfileChecked, new ProfileChecked(_v.Slice.Ids.New<CommandId>(), _a, _b, Drifted: true, ["repos"], []));
         var approved = new LoadedProfile(new SindriProfile(1, "t", Repos: [new RepoEntry("web", "/work/web")]), _a, "/p.yaml");
-        var live = Live(new SindriProfile(1, "t", Repos: [new RepoEntry("web", "/work/web"), new RepoEntry("api", "/work/api")]));
+        var live = LiveProfile(new SindriProfile(1, "t", Repos: [new RepoEntry("web", "/work/web"), new RepoEntry("api", "/work/api")]));
 
         var summary = (await Service(profile: approved, live: live).Handle(new GetProfileRequest(), Token)).Value.Summary;
 
@@ -112,7 +112,7 @@ public sealed class GetProfileTests
     {
         var approved = new LoadedProfile(new SindriProfile(1, "t"), _a, "/p.yaml");
 
-        var response = (await Service(profile: approved, live: Live(new SindriProfile(1, "t", Repos: [new RepoEntry("web", "/work/web")]))).Handle(new GetProfileRequest(), Token)).Value;
+        var response = (await Service(profile: approved, live: LiveProfile(new SindriProfile(1, "t", Repos: [new RepoEntry("web", "/work/web")]))).Handle(new GetProfileRequest(), Token)).Value;
 
         Assert.Null(response.Summary);
     }
@@ -120,7 +120,7 @@ public sealed class GetProfileTests
     [Fact, Trait("Lane", "unit")]
     public async Task A_repo_git_cannot_read_is_previewed_with_the_profiles_path_and_no_facts()
     {
-        var live = Live(new SindriProfile(1, "t", Repos: [new RepoEntry("gone", "/work/gone")]));
+        var live = LiveProfile(new SindriProfile(1, "t", Repos: [new RepoEntry("gone", "/work/gone")]));
 
         var repo = Assert.Single((await Service(live: live).Handle(new GetProfileRequest(), Token)).Value.Summary!.Repos);
 
@@ -130,12 +130,12 @@ public sealed class GetProfileTests
     [Fact, Trait("Lane", "unit")]
     public async Task When_nothing_is_new_there_is_no_summary()
     {
-        var live = Live(new SindriProfile(1, "t"));
+        var live = LiveProfile(new SindriProfile(1, "t"));
 
         Assert.Null((await Service(live: live).Handle(new GetProfileRequest(), Token)).Value.Summary);
     }
 
-    private static LoadedProfile Live(SindriProfile profile) => new(profile, _b, "/live.yaml");
+    private static LoadedProfile LiveProfile(SindriProfile profile) => new(profile, _b, "/live.yaml");
 
     private GetProfileService Service(FakeLensPacks? packs = null, LoadedProfile? profile = null, LoadedProfile? live = null) =>
         new(_v.Views, _v.Progress, packs ?? Packs(), new Approved(profile), new Live(live), new RepoGitCache(_git, _v.Slice.Clock), new ShippedBlockSentences());
