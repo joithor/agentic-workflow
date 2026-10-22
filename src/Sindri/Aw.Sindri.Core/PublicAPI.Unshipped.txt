@@ -15540,6 +15540,26 @@ static Aw.Sindri.Core.Review.ReviewPackOrigin.operator !=(Aw.Sindri.Core.Review.
 static Aw.Sindri.Core.Review.ReviewPackOrigin.operator ==(Aw.Sindri.Core.Review.ReviewPackOrigin? left, Aw.Sindri.Core.Review.ReviewPackOrigin? right) -> bool
 static Aw.Sindri.Core.Review.ReviewPack.Problems(Aw.Sindri.Core.Review.ReviewFacts! facts) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Sindri.Core.Review.ReviewPack.Verdict(System.Text.Json.Nodes.JsonNode! review) -> string?
+Aw.Sindri.Core.Setup.ProfileFact.Preview.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupPreviewLine!>?
+Aw.Sindri.Core.Setup.ProfileFact.Preview.init -> void
+Aw.Sindri.Core.Setup.SetupStep.Preview.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupPreviewLine!>?
+Aw.Sindri.Core.Setup.SetupStep.Preview.init -> void
+Aw.Sindri.Core.Setup.ProfilePreview
+static Aw.Sindri.Core.Setup.ProfilePreview.Lines(Aw.Sindri.Core.Profile.SindriProfile! profile) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupPreviewLine!>!
+Aw.Sindri.Core.Setup.SetupPreviewLine
+Aw.Sindri.Core.Setup.SetupPreviewLine.<Clone>$() -> Aw.Sindri.Core.Setup.SetupPreviewLine!
+Aw.Sindri.Core.Setup.SetupPreviewLine.Deconstruct(out string! Kind, out string! Text) -> void
+Aw.Sindri.Core.Setup.SetupPreviewLine.Equals(Aw.Sindri.Core.Setup.SetupPreviewLine? other) -> bool
+Aw.Sindri.Core.Setup.SetupPreviewLine.Kind.get -> string!
+Aw.Sindri.Core.Setup.SetupPreviewLine.Kind.init -> void
+Aw.Sindri.Core.Setup.SetupPreviewLine.SetupPreviewLine(string! Kind, string! Text) -> void
+Aw.Sindri.Core.Setup.SetupPreviewLine.Text.get -> string!
+Aw.Sindri.Core.Setup.SetupPreviewLine.Text.init -> void
+override Aw.Sindri.Core.Setup.SetupPreviewLine.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Setup.SetupPreviewLine.GetHashCode() -> int
+override Aw.Sindri.Core.Setup.SetupPreviewLine.ToString() -> string!
+static Aw.Sindri.Core.Setup.SetupPreviewLine.operator !=(Aw.Sindri.Core.Setup.SetupPreviewLine? left, Aw.Sindri.Core.Setup.SetupPreviewLine? right) -> bool
+static Aw.Sindri.Core.Setup.SetupPreviewLine.operator ==(Aw.Sindri.Core.Setup.SetupPreviewLine? left, Aw.Sindri.Core.Setup.SetupPreviewLine? right) -> bool
 Aw.Sindri.Core.Events.ContextMapHeld
 Aw.Sindri.Core.Events.ContextMapHeld.<Clone>$() -> Aw.Sindri.Core.Events.ContextMapHeld!
 Aw.Sindri.Core.Events.ContextMapHeld.Chained.get -> bool

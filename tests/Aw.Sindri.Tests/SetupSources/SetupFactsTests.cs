@@ -40,6 +40,19 @@ public sealed class SetupFactsTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Profile_preview_says_what_the_live_profile_allows_and_is_absent_without_one()
+    {
+        await using var rig = new SetupFactsRig();
+        var none = (await rig.Facts.Profile(Token)).Value.Preview;
+        rig.Profiles.Live = SetupFactsRig.ProfileWithRepos();
+
+        var preview = (await rig.Facts.Profile(Token)).Value.Preview;
+
+        Assert.Null(none);
+        Assert.Equal([new SetupPreviewLine("repo", "Works in demo (/work/demo)."), new SetupPreviewLine("allows", "Workflows may not change anything outside Sindri.")], preview);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_profile_with_a_mistake_is_an_error_that_fails_its_own_step()
     {
         await using var rig = new SetupFactsRig();
