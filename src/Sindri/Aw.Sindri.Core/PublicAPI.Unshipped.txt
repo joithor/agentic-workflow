@@ -15909,13 +15909,13 @@ override Aw.Sindri.Core.LensPacks.StylePack.ToString() -> string!
 static Aw.Sindri.Core.LensPacks.StylePack.operator !=(Aw.Sindri.Core.LensPacks.StylePack? left, Aw.Sindri.Core.LensPacks.StylePack? right) -> bool
 static Aw.Sindri.Core.LensPacks.StylePack.operator ==(Aw.Sindri.Core.LensPacks.StylePack? left, Aw.Sindri.Core.LensPacks.StylePack? right) -> bool
 Aw.Sindri.Core.LensPacks.IStylePacks
-Aw.Sindri.Core.LensPacks.IStylePacks.Find(string! id) -> Aw.Kernel.Result<Aw.Sindri.Core.LensPacks.StylePack!>!
+Aw.Sindri.Core.LensPacks.IStylePacks.Find(Aw.Sindri.Core.LensPacks.LensPackId id) -> Aw.Kernel.Result<Aw.Sindri.Core.LensPacks.StylePack!>!
 Aw.Sindri.Core.LensPacks.IStylePacks.Resolve(Aw.Sindri.Core.Ids.RepoName? repo, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.LensPacks.StylePack!>!>
 Aw.Sindri.Core.LensPacks.PackBundle
 Aw.Sindri.Core.LensPacks.PackBundle.<Clone>$() -> Aw.Sindri.Core.LensPacks.PackBundle!
-Aw.Sindri.Core.LensPacks.PackBundle.Deconstruct(out string! Directory, out string! PackId, out string! Hash, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Files) -> void
+Aw.Sindri.Core.LensPacks.PackBundle.Deconstruct(out string! Directory, out Aw.Sindri.Core.LensPacks.LensPackId PackId, out string! Hash, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Files) -> void
 Aw.Sindri.Core.LensPacks.PackBundle.Equals(Aw.Sindri.Core.LensPacks.PackBundle? other) -> bool
-Aw.Sindri.Core.LensPacks.PackBundle.PackBundle(string! Directory, string! PackId, string! Hash, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Files) -> void
+Aw.Sindri.Core.LensPacks.PackBundle.PackBundle(string! Directory, Aw.Sindri.Core.LensPacks.LensPackId PackId, string! Hash, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Files) -> void
 override Aw.Sindri.Core.LensPacks.PackBundle.Equals(object? obj) -> bool
 override Aw.Sindri.Core.LensPacks.PackBundle.GetHashCode() -> int
 override Aw.Sindri.Core.LensPacks.PackBundle.ToString() -> string!
@@ -15927,7 +15927,7 @@ Aw.Sindri.Core.LensPacks.PackBundle.Files.get -> System.Collections.Generic.IRea
 Aw.Sindri.Core.LensPacks.PackBundle.Files.init -> void
 Aw.Sindri.Core.LensPacks.PackBundle.Hash.get -> string!
 Aw.Sindri.Core.LensPacks.PackBundle.Hash.init -> void
-Aw.Sindri.Core.LensPacks.PackBundle.PackId.get -> string!
+Aw.Sindri.Core.LensPacks.PackBundle.PackId.get -> Aw.Sindri.Core.LensPacks.LensPackId
 Aw.Sindri.Core.LensPacks.PackBundle.PackId.init -> void
 Aw.Sindri.Core.LensPacks.PackBundleRequest
 Aw.Sindri.Core.LensPacks.PackBundleRequest.<Clone>$() -> Aw.Sindri.Core.LensPacks.PackBundleRequest!

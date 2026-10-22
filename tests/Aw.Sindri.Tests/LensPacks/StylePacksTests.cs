@@ -58,13 +58,13 @@ public sealed class StylePacksTests
         var packs = new ProfileStylePacks(new NoProfile(), new EmbeddedStylePackSource());
 
         Assert.Equal(["plain"], new EmbeddedStylePackSource().Ids(), StringComparer.Ordinal);
-        Assert.Equal("plain", packs.Find("plain").Value.Id.Value);
+        Assert.Equal("plain", packs.Find(LensPackId.From("plain")).Value.Id.Value);
     }
 
     [Fact]
     public void An_id_that_is_not_a_built_in_pack_is_an_error_naming_the_built_in_ones()
     {
-        var found = new ProfileStylePacks(new NoProfile(), new EmbeddedStylePackSource()).Find("formal");
+        var found = new ProfileStylePacks(new NoProfile(), new EmbeddedStylePackSource()).Find(LensPackId.From("formal"));
 
         Assert.True(found.IsError);
         Assert.Contains("plain", found.Error.Message, StringComparison.Ordinal);

@@ -20,7 +20,7 @@ public sealed class PackBundleLaunchTests
     [Fact, Trait("Lane", "unit")]
     public void The_bundle_is_on_the_Steps_arguments()
     {
-        var bundle = new PackBundle("style", "plain", "sha256:" + new string('b', 64), new Dictionary<string, string>(StringComparer.Ordinal) { ["pack.json"] = "{}" });
+        var bundle = new PackBundle("style", LensPackId.From("plain"), "sha256:" + new string('b', 64), new Dictionary<string, string>(StringComparer.Ordinal) { ["pack.json"] = "{}" });
 
         var request = AgentLaunches.RequestFor(Run(), _target, descriptor: null, new AgentLaunchExtras(Bundle: bundle));
 

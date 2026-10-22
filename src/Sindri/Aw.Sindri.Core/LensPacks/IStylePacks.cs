@@ -18,5 +18,5 @@ public interface IStylePacks
     /// <summary>A built-in pack by id, for a check that reads the id a run pinned.</summary>
     /// <param name="id">The pack id.</param>
     /// <returns>The pack; an error when there is no such pack.</returns>
-    public Result<StylePack> Find(string id);
+    public Result<StylePack> Find(LensPackId id);
 }

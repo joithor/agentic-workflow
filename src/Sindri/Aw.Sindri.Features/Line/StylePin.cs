@@ -25,7 +25,12 @@ internal static class StylePin
             return new Pinned(Pack: null, Failure: null);
         }
 
-        var found = styles.Find(id);
+        if (!LensPackId.TryFrom(id, out var packId))
+        {
+            return new Pinned(Pack: null, $"SND-PACK-001: the style pack '{id}' is not a built-in pack");
+        }
+
+        var found = styles.Find(packId);
         if (found.IsError)
         {
             return new Pinned(Pack: null, $"SND-PACK-001: {found.Error.Message}");

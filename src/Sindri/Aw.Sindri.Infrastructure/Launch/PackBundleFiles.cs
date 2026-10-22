@@ -20,7 +20,7 @@ internal static class PackBundleFiles
             var target = Path.GetFullPath(Path.Combine(root, relative));
             if (Path.IsPathRooted(relative) || !target.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.Ordinal))
             {
-                return PackErrors.Invalid.With($"the pack '{bundle.PackId}' has a file '{relative}' outside its folder, so its bundle was not written");
+                return PackErrors.Invalid.With($"the pack '{bundle.PackId.Value}' has a file '{relative}' outside its folder, so its bundle was not written");
             }
 
             targets.Add((target, text));

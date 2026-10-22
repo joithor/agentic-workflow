@@ -49,13 +49,10 @@ public sealed class FakeStylePacks : IStylePacks
     {
         cancellationToken.ThrowIfCancellationRequested();
         Asked.Add(repo);
-        return ValueTask.FromResult(Find(repo is { } named && _repos.TryGetValue(named.Value, out var own) ? own : _default));
+        return ValueTask.FromResult(Find(LensPackId.From(repo is { } named && _repos.TryGetValue(named.Value, out var own) ? own : _default)));
     }
 
     /// <inheritdoc/>
-    public Result<StylePack> Find(string id)
-    {
-        ArgumentNullException.ThrowIfNull(id);
-        return _packs.TryGetValue(id, out var pack) ? pack : SindriErrors.InvalidInput.With($"the style pack '{id}' is not a built-in pack");
-    }
+    public Result<StylePack> Find(LensPackId id) =>
+        _packs.TryGetValue(id.Value, out var pack) ? pack : SindriErrors.InvalidInput.With($"the style pack '{id.Value}' is not a built-in pack");
 }

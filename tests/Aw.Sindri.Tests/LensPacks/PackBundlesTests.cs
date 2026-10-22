@@ -33,8 +33,8 @@ public sealed class PackBundlesTests
 
         Assert.False(bundle.IsError);
         Assert.Equal("style", bundle.Value.Directory);
-        Assert.Equal("plain", bundle.Value.PackId);
-        Assert.Equal(new ProfileStylePacks(new NoProfile(), new EmbeddedStylePackSource()).Find("plain").Value.Hash, bundle.Value.Hash);
+        Assert.Equal(LensPackId.From("plain"), bundle.Value.PackId);
+        Assert.Equal(new ProfileStylePacks(new NoProfile(), new EmbeddedStylePackSource()).Find(LensPackId.From("plain")).Value.Hash, bundle.Value.Hash);
         Assert.Contains("pack.json", bundle.Value.Files.Keys);
         Assert.Contains("template.md", bundle.Value.Files.Keys);
         Assert.Contains("voice.md", bundle.Value.Files.Keys);
@@ -49,7 +49,7 @@ public sealed class PackBundlesTests
 
         Assert.False(bundle.IsError);
         Assert.Equal("lens", bundle.Value.Directory);
-        Assert.Equal("design-five", bundle.Value.PackId);
+        Assert.Equal(LensPackId.From("design-five"), bundle.Value.PackId);
         Assert.Equal(Hash, bundle.Value.Hash);
         Assert.Equal(["pack.json", "prompt.md"], bundle.Value.Files.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.Equal("Look for threats.", bundle.Value.Files["prompt.md"]);
@@ -71,7 +71,7 @@ public sealed class PackBundlesTests
 
         var bundle = await Bundles(packs).Resolve(new PackBundleRequest("lenses", RepoName.From("web"), Subject: "change", Lens: "correctness"), Token);
 
-        Assert.Equal("code-review", bundle.Value.PackId);
+        Assert.Equal(LensPackId.From("code-review"), bundle.Value.PackId);
         var (kind, repo) = Assert.Single(packs.Asked);
         Assert.Equal(LensPackKind.Review, kind);
         Assert.Equal("web", repo?.Value);

@@ -20,16 +20,21 @@ internal sealed class ProfileStylePacks(IApprovedProfile approved, IStylePackSou
     public async ValueTask<Result<StylePack>> Resolve(RepoName? repo, CancellationToken cancellationToken)
     {
         var latest = await approved.Latest(cancellationToken).ConfigureAwait(false);
-        return latest.IsError ? latest.Error : Find(Chosen(repo, latest.Value?.Profile.Workflow?.Packs?.Style));
+        if (latest.IsError)
+        {
+            return latest.Error;
+        }
+
+        var chosen = Chosen(repo, latest.Value?.Profile.Workflow?.Packs?.Style);
+        return LensPackId.TryFrom(chosen, out var id)
+            ? Find(id)
+            : SindriErrors.InvalidInput.With($"the style pack '{chosen}' is not a built-in pack (built in: {string.Join(", ", source.Ids())}; fix: set workflow.packs.style to one of them)");
     }
 
-    public Result<StylePack> Find(string id)
-    {
-        ArgumentNullException.ThrowIfNull(id);
-        return source.Files(id) is { } files
-            ? StylePackReader.Read(id, files)
-            : SindriErrors.InvalidInput.With($"the style pack '{id}' is not a built-in pack (built in: {string.Join(", ", source.Ids())}; fix: set workflow.packs.style to one of them)");
-    }
+    public Result<StylePack> Find(LensPackId id) =>
+        source.Files(id.Value) is { } files
+            ? StylePackReader.Read(id.Value, files)
+            : SindriErrors.InvalidInput.With($"the style pack '{id.Value}' is not a built-in pack (built in: {string.Join(", ", source.Ids())}; fix: set workflow.packs.style to one of them)");
 
     private static string Chosen(RepoName? repo, PackChoice? choice) =>
         (repo is { } named && choice?.Repos is { } repos && repos.TryGetValue(named.Value, out var own) ? own : null) ?? choice?.Default ?? Default;

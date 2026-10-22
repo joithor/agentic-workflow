@@ -34,7 +34,7 @@ internal sealed class PackBundles(IStylePacks styles, IStylePackSource styleSour
         }
 
         return styleSource.Files(pack.Value.Id.Value) is { } files
-            ? new PackBundle("style", pack.Value.Id.Value, pack.Value.Hash, files)
+            ? new PackBundle("style", pack.Value.Id, pack.Value.Hash, files)
             : PackErrors.NotFound.With($"the style pack '{pack.Value.Id.Value}' has no files to bundle");
     }
 
@@ -59,7 +59,7 @@ internal sealed class PackBundles(IStylePacks styles, IStylePackSource styleSour
             files["prompt.md"] = lens.Prompt;
         }
 
-        return new PackBundle("lens", pack.Id.Value, pack.Hash, files);
+        return new PackBundle("lens", pack.Id, pack.Hash, files);
     }
 
     private static string Described(LensPack pack)
