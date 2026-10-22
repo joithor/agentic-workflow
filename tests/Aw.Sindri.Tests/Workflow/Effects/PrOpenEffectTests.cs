@@ -66,6 +66,19 @@ public sealed class PrOpenEffectTests
     }
 
     [Fact]
+    public async Task A_second_dispatch_for_the_same_head_opens_nothing_twice()
+    {
+        var first = await Dispatch();
+        var second = await Dispatch();
+
+        Assert.Equal("opened", first.Reply?.Value);
+        Assert.Equal("updated", second.Reply?.Value);
+        _ = Assert.Single(_pulls.Opened);
+        _ = Assert.Single(_pulls.Pulls);
+        Assert.Equal(2, _pulls.Pushed.Count);
+    }
+
+    [Fact]
     public async Task A_head_branch_with_no_pull_request_is_pushed_without_a_lease_before_the_pull_request_is_opened()
     {
         _ = await Dispatch();

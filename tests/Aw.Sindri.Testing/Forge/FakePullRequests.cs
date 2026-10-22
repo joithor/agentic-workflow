@@ -264,6 +264,12 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     public ValueTask<Result<Unit>> Update(string link, string? title, string? body, CancellationToken cancellationToken)
     {
         Calls.Add("Update");
+        if (Failure is { } failure)
+        {
+            return Done<Unit>(failure);
+        }
+
+        Updated.Add((link, title, body));
         return Done(Locate(link).Map(p =>
         {
             p.Title = title ?? p.Title;
