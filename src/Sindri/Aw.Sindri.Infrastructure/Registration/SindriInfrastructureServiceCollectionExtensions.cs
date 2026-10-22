@@ -75,9 +75,9 @@ public static class SindriInfrastructureServiceCollectionExtensions
 
     /// <summary>Engine P8: the diff signal of an agent run (git) and an agent session's end and spend (the ledger).</summary>
     private static IServiceCollection AddAgentRuntimeAdapters(this IServiceCollection services) =>
-        services.AddSingleton<IRunDiff, GitRunDiff>().AddSingleton<IBranchChanges, GitBranchChanges>().AddSingleton<IAgentSessions, LedgerAgentSessions>()
+        services.AddSingleton<IRunDiff, GitRunDiff>().AddSingleton<IDiffContent, GitDiffContent>().AddSingleton<IBranchChanges, GitBranchChanges>().AddSingleton<IAgentSessions, LedgerAgentSessions>()
             .AddSingleton<ICheckCommands>(sp => new ToolCheckCommands(new ProcessToolRunner(), sp.GetRequiredService<ITextScrubber>(), sp.GetRequiredService<TimeProvider>()))
-            .AddSingleton<ILensPackSource, EmbeddedLensPackSource>().AddSingleton<ILensPacks, ProfileLensPacks>().AddSingleton<IChangedPaths, GitChangedPaths>();   // LN-PK lite: the built-in lens packs and the review loop's changed paths
+            .AddSingleton<ILensPackSource, EmbeddedLensPackSource>().AddSingleton<IPackDirectories, DiskPackDirectories>().AddSingleton<ILensPacks, ProfileLensPacks>().AddSingleton<IChangedPaths, GitChangedPaths>();   // LN-PK lite: the built-in lens packs and the review loop's changed paths
 
     /// <summary>The bugfix block Steps' port over the bugfix-state program (deps.yaml Sindri to BugFix, kind cli).</summary>
     private static IServiceCollection AddBugFixInfrastructure(this IServiceCollection services, Func<string, string?> environment) =>
@@ -85,7 +85,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
 
     private static IServiceCollection AddScopingInfrastructure(this IServiceCollection services, Func<string, string?> environment) =>
         services.AddSingleton<IPackets>(_ => new AwPacketsTool(new ProcessToolRunner(), environment))
-            .AddSingleton<IScopePacketStore>(sp => new ScopePacketStore(sp.GetRequiredService<SindriSettings>(), sp.GetRequiredService<IPackets>())).AddSingleton<IBriefFiles, BriefFiles>().AddSingleton<IRunArea, DiskRunArea>().AddSingleton<IPacketFiles, DiskPacketFiles>().AddSingleton<IHoldoutStore, DiskHoldoutStore>().AddSingleton<ICommitText, GitCommitText>().AddSingleton<IPacketDirectory, DiskPacketDirectory>()
+            .AddSingleton<IScopePacketStore>(sp => new ScopePacketStore(sp.GetRequiredService<SindriSettings>(), sp.GetRequiredService<IPackets>())).AddSingleton<IBriefFiles, BriefFiles>().AddSingleton<IRunArea, DiskRunArea>().AddSingleton<IPacketFiles, DiskPacketFiles>().AddSingleton<IHoldoutStore, DiskHoldoutStore>().AddSingleton<ICommitText, GitCommitText>().AddSingleton<IArtifactFiles, DiskArtifactFiles>().AddSingleton<IPacketDirectory, DiskPacketDirectory>()
             .AddSingleton<IOwnerDecisions, PendingOwnerDecisions>()
             .AddSingleton<IFrozenPackets>(sp => new FrozenPacketRecords(Path.Combine(sp.GetRequiredService<SindriSettings>().StateDirectory, "packets")))
             .AddSingleton<ITrackerSource>(_ => new FileTrackerSource(environment("AW_SINDRI_TRACKER_DIR"))).AddSingleton<IChangeSource, GitChangeSource>();
@@ -102,6 +102,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IWorkflowClaims, SqliteWorkflowClaims>()   // engine P6 unit (d): workflow_claims in ledger.db
             .AddSingleton<IClaimRefs, GitClaimRefs>()                // engine P6 unit (d): the claim's marker ref
             .AddSingleton<IScriptRuns>(_ => new BashScriptRuns(new ProcessToolRunner()))   // the prove station's before/after scripts
+            .AddSingleton<ITrackedFiles, GitTrackedFiles>()          // the docs-sync scope's file list
             .AddSingleton<IWorktrees, GitWorktrees>();              // per-run and phase worktrees (engine spec §6.5); nothing calls it until BS-10
 
     private static IServiceCollection AddSindriAdapters(this IServiceCollection services, Func<string, string?> environment)
