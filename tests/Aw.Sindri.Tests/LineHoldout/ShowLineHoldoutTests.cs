@@ -6,7 +6,6 @@ using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Challenges;
 using Aw.Sindri.Testing.Prove;
 using Microsoft.Extensions.Time.Testing;
-using Xunit;
 
 namespace Aw.Sindri.Tests.LineHoldout;
 
