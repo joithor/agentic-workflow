@@ -54,6 +54,8 @@ internal static class ApiScenarios
             ? await CodeIndexScenarios.Start(ct)
             : ContextApiScenarios.Handles(slug)
             ? await ContextApiScenarios.Start(slug, scenario, ct)
+            : (slug, scenario) is ("profile", "repo-added")
+            ? await ViewScenarios.StartWithGit(ct)
             : IsSetup(slug, scenario)
             ? await SetupHost(slug, scenario, ct)
             : JobScenarios.Handles(slug, scenario) || JobScopeScenarios.Handles(slug, scenario)

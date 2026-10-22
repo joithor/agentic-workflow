@@ -29,5 +29,12 @@
       "pin": "built-in",
       "status": "ok"
     }
-  ]
+  ],
+  "summary": {
+    "repos": [],
+    "services": [
+      "Sindri will run the heartbeat service every 5 seconds"
+    ],
+    "effects": []
+  }
 }
