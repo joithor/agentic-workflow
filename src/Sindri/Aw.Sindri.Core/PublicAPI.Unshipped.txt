@@ -15437,6 +15437,8 @@ Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out
 Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null, System.Collections.Generic.IReadOnlyList<string!>? Effects = null, string? DispatchDelay = null, Aw.Sindri.Core.Profile.JudgeSettings? Judge = null, Aw.Sindri.Core.Profile.WorkflowAgentSettings? Agent = null, Aw.Sindri.Core.Profile.ForgeSettings? Forge = null, Aw.Sindri.Core.Profile.RouteSettings? Route = null, Aw.Sindri.Core.Profile.PackSettings? Packs = null, Aw.Sindri.Core.Profile.LineSettings? Line = null, Aw.Sindri.Core.Profile.PlanSettings? Plan = null, Aw.Sindri.Core.Profile.ProveSettings? Prove = null, Aw.Sindri.Core.Profile.BuildSettings? Build = null, Aw.Sindri.Core.Profile.ShipSettings? Ship = null, Aw.Sindri.Core.Profile.DesignSettings? Design = null, Aw.Sindri.Core.Profile.ReviewSettings? Review = null, Aw.Sindri.Core.Profile.StepsSettings? Steps = null, Aw.Sindri.Core.Profile.DocsSettings? Docs = null, Aw.Sindri.Core.Profile.PrSettings? Pr = null) -> void
 Aw.Sindri.Core.Workflow.Blocks.StepContext.HeavySlotHeld.get -> bool
 Aw.Sindri.Core.Workflow.Blocks.StepContext.HeavySlotHeld.init -> void
+Aw.Sindri.Core.Workflow.Blocks.StepContext.LoopCaps.get -> System.Collections.Generic.IReadOnlyDictionary<string!, int>!
+Aw.Sindri.Core.Workflow.Blocks.StepContext.LoopCaps.init -> void
 Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyHold
 Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
 Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove.Acquire = 1 -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
