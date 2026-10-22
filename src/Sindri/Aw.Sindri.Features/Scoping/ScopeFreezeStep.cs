@@ -3,7 +3,6 @@ using System.Text.Json.Nodes;
 using Aw.Sindri.Core.Packets;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Features.Line;
 
 namespace Aw.Sindri.Features.Scoping;
 
@@ -30,7 +29,7 @@ internal sealed class ScopeFreezeStep(IRunArea area, IPackets packets) : IBlockS
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();
         var recorded = ScopeHash.Of(StepFacts.Read(context, "fact:scopePacket")?.ToJsonString());
-        if (context.Address is not { } address || LinePackets.RepoSlug(context) is not { } repoSlug || recorded is null)
+        if (context.Address is not { } address || PacketSlugs.RepoSlug(context.Repo) is not { } repoSlug || recorded is null)
         {
             return BlockStepResult.Failed($"{Id.Value} needs the instance's address and repo and fact:scopePacket with its hash");
         }
@@ -49,7 +48,7 @@ internal sealed class ScopeFreezeStep(IRunArea area, IPackets packets) : IBlockS
         var dir = area.PathFor(address, PacketName);
         return dir.IsError
             ? BlockStepResult.Failed($"{Id.Value} can't place the scope packet: {dir.Error.Message}")
-            : await Freeze(new PacketRef(PacketKind.Scoping, dir.Value, RepoSlug: repoSlug, Instance: LinePackets.InstanceSlug(address)), recorded, cancellationToken).ConfigureAwait(false);
+            : await Freeze(new PacketRef(PacketKind.Scoping, dir.Value, RepoSlug: repoSlug, Instance: PacketSlugs.InstanceSlug(address)), recorded, cancellationToken).ConfigureAwait(false);
     }
 
     private async ValueTask<BlockStepResult> Freeze(PacketRef packet, string recorded, CancellationToken cancellationToken)

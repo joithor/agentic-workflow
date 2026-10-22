@@ -1,7 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Nodes;
-using System.Text.RegularExpressions;
 using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Packets;
@@ -10,7 +9,7 @@ using Aw.Sindri.Core.Workflow.Blocks;
 namespace Aw.Sindri.Features.Line;
 
 /// <summary>What the design and plan stations do with packets: verify a hash, write the files of a packet they assembled into the run area, turn aw-packets' failures into findings.</summary>
-internal static partial class LinePackets
+internal static class LinePackets
 {
     /// <summary>The packet directory of the design station's candidate in its run area.</summary>
     internal const string DesignDirectory = "design-packet";
@@ -21,18 +20,10 @@ internal static partial class LinePackets
     /// <summary>The directory (below the run area) holding one packet directory per phase.</summary>
     internal const string PhaseDirectory = "phase-packets";
 
-    /// <summary>The longest a packet id segment may be (aw-packets' PacketId).</summary>
-    private const int PacketIdMaxLength = 64;
-
     /// <summary>The owner and the repo's name aw-packets files a packet under ('owner/name'): the profile names no remote, so the owner is 'sindri'.</summary>
     /// <param name="context">The Step's context.</param>
     /// <returns>The slug, or null when the instance has no repo.</returns>
-    internal static string? RepoSlug(StepContext context) => context.Repo is { } repo ? "sindri/" + repo.Value : null;
-
-    /// <summary>The instance segment aw-packets files a scoping freeze under (1-64 of [a-z0-9-], starting with a letter or digit): the instance's address as a slug, stable for every re-run of the instance.</summary>
-    /// <param name="address">The instance's address ('T-1/scoping/1').</param>
-    /// <returns>The slug.</returns>
-    internal static string InstanceSlug(string address) => Slug(address, PacketIdMaxLength);
+    internal static string? RepoSlug(StepContext context) => PacketSlugs.RepoSlug(context.Repo);
 
     /// <summary>Recomputes a packet's hash from its directory and compares it with the fact's (a candidate: no freeze record is looked up; the port has no verify).</summary>
     /// <param name="packets">aw-packets.</param>
@@ -116,15 +107,10 @@ internal static partial class LinePackets
     /// <returns>The digest.</returns>
     internal static string Sha256(string text) => "sha256:" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
 
-    /// <summary>A packet id segment: lower-case letters, digits and '-' (aw-packets' PacketId).</summary>
+    /// <summary>A packet id segment: lower-case letters, digits and '-' (aw-packets' PacketId), at most 40 characters.</summary>
     /// <param name="text">Any text.</param>
-    /// <param name="maxLength">The most characters to keep (default 40).</param>
     /// <returns>The slug, 'x' when nothing is left.</returns>
-    internal static string Slug(string text, int maxLength = 40)
-    {
-        var slug = NotId.Replace(text.ToLowerInvariant(), "-").Trim('-');
-        return slug.Length == 0 ? "x" : slug.Length > maxLength ? slug[..maxLength].TrimEnd('-') : slug;
-    }
+    internal static string Slug(string text) => PacketSlugs.Slug(text);
 
     /// <summary>A JSON file's text: the object, one line, and a closing newline.</summary>
     /// <param name="node">The tree.</param>
@@ -144,7 +130,4 @@ internal static partial class LinePackets
 
         return obj;
     }
-
-    [GeneratedRegex("[^a-z0-9]+", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex NotId { get; }
 }
