@@ -1,7 +1,7 @@
 using Aw.CodeIndex.Core.Model;
 using Aw.Kernel;
 
-namespace Aw.CodeIndex.Core.Embedding;
+namespace Aw.CodeIndex.Core;
 
 /// <summary>Where the embeddings layer may send text (spec §5.6): an IP-literal loopback address, never 'localhost', and never a cloud model.</summary>
 public static class EmbeddingTarget

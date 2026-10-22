@@ -78,14 +78,14 @@ internal sealed partial class ShellViewModel : ObservableObject
         Strip = new WorkflowsStripViewModel(clipboard, clock);
         InitStrip();
         window ??= WindowPorts.None;
-        Setup = new SetupViewModel(api, Health.Catalog, clock, OpensInApp, window.Folders);
+        Setup = new SetupViewModel(api, Health.Catalog, clock, OpensInApp, window.Folders, () => Health.LiveProfile, () => NeedsYou.Seen.ReducedMotion);
         InitSetup();
         Workflows = new WorkflowsViewModel(api, clipboard, clock);
         InitWorkflows();
         Start = InitStart(api, window);
         Instance = new InstanceFrameViewModel(api, clipboard, clock, catalog: Health.Catalog, launcher: window.Launcher);
         InitInstance();
-        Recipe = new RecipeSheetViewModel(api);
+        Recipe = new RecipeSheetViewModel(api, clipboard);
         InitRecipe();
         InitAgents(clipboard);
         InitContext(api, clipboard);
