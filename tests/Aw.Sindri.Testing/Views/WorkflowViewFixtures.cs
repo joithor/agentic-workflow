@@ -726,14 +726,15 @@ public static class WorkflowViewFixtures
         var states = detail.States.Select(cell =>
         {
             var entered = Today(9, 0) + TimeSpan.FromMinutes(10 * index++);
-            return cell.Glyph switch
+            if (cell.Glyph == StateGlyph.Done)
             {
-                StateGlyph.Done => cell with { EnteredAt = entered, LeftAt = entered + TimeSpan.FromMinutes(10) },
-                StateGlyph.Active => cell with { EnteredAt = entered },
-                _ => cell,
-            };
+                return cell with { EnteredAt = entered, LeftAt = entered + TimeSpan.FromMinutes(10) };
+            }
+
+            return cell.Glyph == StateGlyph.Active ? cell with { EnteredAt = entered } : cell;
         }).ToList();
-        return detail with { States = states };
+        var address = InstanceAddress.From("ITM-01JK9/incident-response/1");   // its own instance, so no list or fact lookup by id finds two
+        return detail with { Address = address, Id = WorkflowInstanceId.Of(address), ItemId = ItemKey.From("ITM-01JK9"), States = states };
     }
 
     // ---- the facts route (GetInstanceFact) ---------------------------------------------------------------------------

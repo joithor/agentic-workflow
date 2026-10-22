@@ -33,6 +33,7 @@ public static class StateCells
     {
         var state = at.Interpreted.Recipe.States[place.State];
         var isActive = string.Equals(place.State, at.Active, StringComparison.Ordinal);
+        var visit = Visit(place.State, at);
         var terminal = state.Kind == StateKind.Terminal;
         return new StateCell(
             place.State,
@@ -45,11 +46,13 @@ public static class StateCells
             Desk: state.Step is { } step && at.Interpreted.Catalog.Find(step.Use) is { DeskCapable: true },
             Child: state.WaitFor?.Child is not null,
             Children: null,   // why: child progress is engine P7's; no instance has children yet
-            Outcome: terminal && isActive && at.Instance.Ended ? at.Instance.Outcome?.Value : null,
+            Outcome: Outcome(terminal && isActive, at),
             terminal,
-            Visit(place.State, at)?.EnteredAt,
-            Visit(place.State, at)?.LeftAt);
+            visit?.EnteredAt,
+            visit?.LeftAt);
     }
+
+    private static string? Outcome(bool endedHere, Place at) => endedHere && at.Instance.Ended ? at.Instance.Outcome?.Value : null;
 
     private static StateVisit? Visit(string state, Place at) => at.Visits is { } visits && visits.TryGetValue(state, out var visit) ? visit : null;
 

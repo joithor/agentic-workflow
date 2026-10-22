@@ -46,7 +46,6 @@ internal sealed partial class RecipeWorkflow
     private Interpreting? _context;
     private WorkflowInstance? _instance;
     private DateTimeOffset _since;
-    private readonly Dictionary<string, StateVisit> _visits = new(StringComparer.Ordinal);   // the latest visit to each state, for the state band's times; built from the workflow's own clock, so a replay rebuilds it
     private TimeSpan _deskTimeout;
     private string? _repo;
     private bool _repoUnreadable;   // fact:item was there but couldn't be read: a block Step that needs the repo fails instead of using the box's list
@@ -228,9 +227,7 @@ internal sealed partial class RecipeWorkflow
         {
             _since = Now;
         }
-
         Visited(before, instance);
-
         var recipe = _context!.Recipe; // why: Begin sets the context before the first entry
         var kept = before is null
             ? First(instance, recipe)
@@ -240,23 +237,6 @@ internal sealed partial class RecipeWorkflow
             : instance;
         GrantSlot(before, instance, recipe);
         return _instance;
-    }
-
-    /// <summary>Records that the instance left the frame's state it was in (when it moved to another) and entered <paramref name="after"/>'s: the latest visit to a state is the one the band shows.</summary>
-    private void Visited(WorkflowInstance? before, WorkflowInstance after)
-    {
-        var (was, entered) = (before?.Frame, after.Frame);   // the frame's state is the recipe's: a park or takeover changes State, not the frame
-        if (was is not null && was.State == entered.State && was.Entry == entered.Entry)
-        {
-            return;
-        }
-
-        if (was is not null && !string.Equals(was.State, entered.State, StringComparison.Ordinal) && _visits.TryGetValue(was.State, out var left))
-        {
-            _visits[was.State] = left with { LeftAt = Now };
-        }
-
-        _visits[entered.State] = new StateVisit(Now);
     }
 
     /// <summary>

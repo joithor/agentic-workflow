@@ -99,35 +99,38 @@ public sealed class DisplayRulesTests
     public void A_label_may_start_in_lower_case_and_a_why_may_end_in_a_full_stop() =>
         Assert.Empty(CheckDisplay(Base(label: "gaps found: draft again", why: "Ends in a full stop.")));
 
-    private static Recipe WithOnOutcome(Dictionary<string, string> texts, string? why = null) =>
-        Of("produce", [("produce", Active("step.produce") with { OnOutcome = texts }), ("done", Terminal())], [Go("produce", "done", when: Outcome("done"))])
-            with { DisplayName = "Produce and finish", Why = why };
+    private static Recipe WithOnOutcome(string? why = null, params (string Outcome, string Text)[] texts)
+    {
+        var recipe = Of("produce", [("produce", Active("step.produce") with { OnOutcome = texts.ToDictionary(static t => t.Outcome, static t => t.Text, StringComparer.Ordinal) }), ("done", Terminal())],
+            [Go("produce", "done", when: Outcome("done"))]);
+        return recipe with { DisplayName = "Produce and finish", Why = why };
+    }
 
     [Fact, Trait("Lane", "unit")]
     public void A_recipe_why_that_is_not_plain_words_is_RCP_DISPLAY_002()
     {
-        Assert.Empty(CheckDisplay(WithOnOutcome(new(), why: "Gets the work from idea to merged pull request.")));
+        Assert.Empty(CheckDisplay(WithOnOutcome(why: "Gets the work from idea to merged pull request.")));
         Assert.Equal(
             ["RCP-DISPLAY-002: the why of the recipe: 'step.produce' is an id or code name, not plain words at r.yaml:4:1 (why); write one plain sentence of at most 200 characters, with no id or code name"],
-            CheckDisplay(WithOnOutcome(new(), why: "Runs step.produce once."), At(("why", 4, 1))).Lines());
+            CheckDisplay(WithOnOutcome(why: "Runs step.produce once."), At(("why", 4, 1))).Lines());
     }
 
     [Fact, Trait("Lane", "unit")]
     public void An_on_outcome_text_keyed_by_an_outcome_of_the_step_is_accepted() =>
-        Assert.Empty(CheckDisplay(WithOnOutcome(new() { ["done"] = "Moves on to the next stage." })));
+        Assert.Empty(CheckDisplay(WithOnOutcome(why: null, texts: [("done", "Moves on to the next stage.")])));
 
     [Fact, Trait("Lane", "unit")]
     public void An_on_outcome_key_the_step_does_not_report_is_RCP_DISPLAY_002()
     {
         Assert.Equal(
             ["RCP-DISPLAY-002: the onOutcome of state 'produce' names 'approve', which its Step doesn't report (done) at r.yaml:6:9 (states.produce.onOutcome.approve); key each onOutcome text by an outcome of the state's Step"],
-            CheckDisplay(WithOnOutcome(new() { ["approve"] = "Moves on." }), At(("states.produce.onOutcome.approve", 6, 9))).Lines());
+            CheckDisplay(WithOnOutcome(why: null, texts: [("approve", "Moves on.")]), At(("states.produce.onOutcome.approve", 6, 9))).Lines());
     }
 
     [Fact, Trait("Lane", "unit")]
     public void An_on_outcome_text_that_is_not_plain_words_is_RCP_DISPLAY_002()
     {
-        var line = Assert.Single(CheckDisplay(WithOnOutcome(new() { ["done"] = "Writes fact:output." })).Lines());
+        var line = Assert.Single(CheckDisplay(WithOnOutcome(why: null, texts: [("done", "Writes fact:output.")])).Lines());
 
         Assert.StartsWith("RCP-DISPLAY-002: the onOutcome text for 'done' of state 'produce': 'fact:output' is an id or code name, not plain words", line, StringComparison.Ordinal);
     }
@@ -135,8 +138,9 @@ public sealed class DisplayRulesTests
     [Fact, Trait("Lane", "unit")]
     public void An_on_outcome_on_a_state_that_runs_no_Step_is_RCP_DISPLAY_002()
     {
-        var recipe = Of("wait", [("wait", WaitForAnswer("go") with { OnOutcome = new Dictionary<string, string> { ["yes"] = "Goes on." } }), ("done", Terminal())],
-            [Go("wait", "done", on: "wait.satisfied")]) with { DisplayName = "Wait and finish" };
+        var texts = new Dictionary<string, string>(StringComparer.Ordinal) { ["yes"] = "Goes on." };
+        var recipe = Of("wait", [("wait", WaitForAnswer("go") with { OnOutcome = texts }), ("done", Terminal())], [Go("wait", "done", on: "wait.satisfied")]);
+        recipe = recipe with { DisplayName = "Wait and finish" };
 
         var line = Assert.Single(CheckDisplay(recipe).Lines());
 

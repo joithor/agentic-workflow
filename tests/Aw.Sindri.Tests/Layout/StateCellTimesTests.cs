@@ -19,7 +19,7 @@ public sealed class StateCellTimesTests
     [Fact]
     public void A_state_left_behind_carries_when_its_latest_visit_began_and_ended_and_the_current_one_carries_no_leave_time()
     {
-        var visits = new Dictionary<string, StateVisit>
+        var visits = new Dictionary<string, StateVisit>(StringComparer.Ordinal)
         {
             ["produce"] = new(_entered, _left),
             ["checks"] = new(_left),
@@ -28,13 +28,13 @@ public sealed class StateCellTimesTests
         var cells = View(visits).States.ToDictionary(static c => c.State, StringComparer.Ordinal);
 
         Assert.Equal((_entered, _left), (cells["produce"].EnteredAt, cells["produce"].LeftAt));
-        Assert.Equal((_left, (DateTimeOffset?)null), (cells["checks"].EnteredAt, cells["checks"].LeftAt));
+        Assert.Equal((_left, null), (cells["checks"].EnteredAt, cells["checks"].LeftAt));
     }
 
     [Fact]
     public void A_state_the_instance_never_reached_carries_no_times()
     {
-        var cells = View(new Dictionary<string, StateVisit> { ["produce"] = new(_entered, _left) }).States;
+        var cells = View(new Dictionary<string, StateVisit>(StringComparer.Ordinal) { ["produce"] = new(_entered, _left) }).States;
 
         Assert.All(cells.Where(static c => c.State != "produce"), static c => Assert.Equal((null, null), (c.EnteredAt, c.LeftAt)));
     }
@@ -45,7 +45,7 @@ public sealed class StateCellTimesTests
         var view = View(visits: null);
 
         Assert.All(view.States, static c => Assert.Equal((null, null), (c.EnteredAt, c.LeftAt)));
-        var json = AwJson.Serialize(view.States[0], SliceHarness.Json);
+        var json = Json(view.States[0]);
         Assert.DoesNotContain("enteredAt", json, StringComparison.Ordinal);
         Assert.DoesNotContain("leftAt", json, StringComparison.Ordinal);
     }
@@ -53,11 +53,14 @@ public sealed class StateCellTimesTests
     [Fact]
     public void The_times_serialize_as_iso_8601_utc()
     {
-        var cell = View(new Dictionary<string, StateVisit> { ["produce"] = new(_entered, _left) }).States.Single(static c => c.State == "produce");
+        var cell = View(new Dictionary<string, StateVisit>(StringComparer.Ordinal) { ["produce"] = new(_entered, _left) }).States.Single(static c => c.State == "produce");
 
-        var json = AwJson.Serialize(cell, SliceHarness.Json);
+        var json = Json(cell);
 
-        Assert.Contains($"\"enteredAt\":\"{_entered.UtcDateTime:yyyy-MM-ddTHH:mm:ss}", json, StringComparison.Ordinal);
+        var stamp = _entered.UtcDateTime.ToString("yyyy-MM-ddTHH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+        Assert.Contains($"\"enteredAt\":\"{stamp}", json, StringComparison.Ordinal);
         Assert.Contains("\"leftAt\":", json, StringComparison.Ordinal);
     }
+
+    private static string Json<T>(T value) => System.Text.Encoding.UTF8.GetString(AwJson.Serialize(value, SliceHarness.Json));
 }

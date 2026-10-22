@@ -76,13 +76,16 @@ public static class RecipeViews
             return null;
         }
 
-        IEnumerable<string> order = step is not null && state.Step is { } use ? (StepOutcomes.Of(step, use, recipe) ?? step.Outcomes).Select(static o => o.Value) : [];
+        var order = OutcomeOrder(recipe, state, step);
         var listed = order.Concat(texts.Keys).Distinct(StringComparer.Ordinal)
             .Where(o => texts.TryGetValue(o, out var text) && !string.IsNullOrWhiteSpace(text))
             .Select(o => new RecipeOutcomeText(o, texts[o]))
             .ToList();
         return listed.Count == 0 ? null : listed;
     }
+
+    private static IEnumerable<string> OutcomeOrder(Recipe recipe, RecipeState state, BlockDescriptor? step) =>
+        step is not null && state.Step is { } use ? (StepOutcomes.Of(step, use, recipe) ?? step.Outcomes).Select(static o => o.Value) : [];
 
     /// <summary>The facts as the fact rows key them, each with the recipe's label when it declares one; null when there are none.</summary>
     private static List<RecipeFactView>? Facts(IEnumerable<FactKey>? keys, Recipe recipe)

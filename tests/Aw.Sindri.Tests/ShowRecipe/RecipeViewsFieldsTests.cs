@@ -29,7 +29,7 @@ public sealed class RecipeViewsFieldsTests
 
         Assert.Null(RecipeViews.Of(recipe, _stamp).Why);
         Assert.Equal("Gets the work done.", RecipeViews.Of(recipe with { Why = "Gets the work done." }, _stamp).Why);
-        Assert.DoesNotContain("\"why\"", AwJson.Serialize(RecipeViews.Of(recipe, _stamp), SliceHarness.Json), StringComparison.Ordinal);
+        Assert.DoesNotContain("\"why\"", Json(RecipeViews.Of(recipe, _stamp)), StringComparison.Ordinal);
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -62,8 +62,8 @@ public sealed class RecipeViewsFieldsTests
     {
         var recipe = ARecipe.Minimal(_stamp.Id);
 
-        var known = AwJson.Serialize(Produce(recipe, Catalog(Step(BlockRuntime.Desk, humanOnly: true))), SliceHarness.Json);
-        var unknown = AwJson.Serialize(Produce(recipe, catalog: null), SliceHarness.Json);
+        var known = Json(Produce(recipe, Catalog(Step(BlockRuntime.Desk, humanOnly: true))));
+        var unknown = Json(Produce(recipe, catalog: null));
 
         Assert.Contains("\"kind\":\"onlyYou\"", known, StringComparison.Ordinal);
         Assert.DoesNotContain("\"kind\"", unknown, StringComparison.Ordinal);
@@ -74,7 +74,7 @@ public sealed class RecipeViewsFieldsTests
     {
         var step = TestBlocks.Step("step.produce") with { Outcomes = [OutcomeName.From("approve"), OutcomeName.From("revise"), OutcomeName.From("drop")] };
         var recipe = ARecipe.Minimal(_stamp.Id);
-        var texts = new Dictionary<string, string> { ["drop"] = "Ends it.", ["approve"] = "Moves on.", ["revise"] = " " };
+        var texts = new Dictionary<string, string>(StringComparer.Ordinal) { ["drop"] = "Ends it.", ["approve"] = "Moves on.", ["revise"] = " " };
         recipe = recipe with { States = new Dictionary<string, RecipeState>(recipe.States, StringComparer.Ordinal) { ["produce"] = recipe.States["produce"] with { OnOutcome = texts } } };
 
         var onOutcome = Produce(recipe, Catalog(step)).OnOutcome;
@@ -88,7 +88,7 @@ public sealed class RecipeViewsFieldsTests
         var recipe = ARecipe.Minimal(_stamp.Id);
 
         Assert.Null(Produce(recipe, Catalog(Step(BlockRuntime.Desk))).OnOutcome);
-        Assert.DoesNotContain("onOutcome", AwJson.Serialize(Produce(recipe, Catalog(Step(BlockRuntime.Desk))), SliceHarness.Json), StringComparison.Ordinal);
+        Assert.DoesNotContain("onOutcome", Json(Produce(recipe, Catalog(Step(BlockRuntime.Desk)))), StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -105,7 +105,7 @@ public sealed class RecipeViewsFieldsTests
         Assert.Equal(
             [("produce", "step.completed", "done", "done", "all done"), ("produce", "command.cancel", null, "done", null)],
             transitions.Select(static t => (string.Join(',', t.From), t.On, t.Outcome, t.To, t.Label)));
-        Assert.DoesNotContain("\"outcome\"", AwJson.Serialize(transitions[1], SliceHarness.Json), StringComparison.Ordinal);
+        Assert.DoesNotContain("\"outcome\"", Json(transitions[1]), StringComparison.Ordinal);
         Assert.NotNull(RecipeViews.Of(recipe, _stamp).TransitionLabels);   // the labelled list stays as it was
     }
 
@@ -123,7 +123,7 @@ public sealed class RecipeViewsFieldsTests
         var state = Produce(recipe, Catalog(step));
 
         Assert.Equal([("fact:item", "The item")], state.Inputs!.Select(static f => (f.Key, f.Label)));
-        Assert.Equal([("fact:output", (string?)null)], state.Outputs!.Select(static f => (f.Key, f.Label)));
+        Assert.Equal([("fact:output", null)], state.Outputs!.Select(static f => (f.Key, f.Label)));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -147,6 +147,8 @@ public sealed class RecipeViewsFieldsTests
 
         var inputs = Produce(recipe, Catalog(step)).Inputs;
 
-        Assert.Equal(["fact:item", "fact:output"], inputs!.Select(static f => f.Key));
+        Assert.Equal(["fact:item", "fact:output"], inputs!.Select(static f => f.Key), StringComparer.Ordinal);
     }
+
+    private static string Json<T>(T value) => System.Text.Encoding.UTF8.GetString(AwJson.Serialize(value, SliceHarness.Json));
 }
