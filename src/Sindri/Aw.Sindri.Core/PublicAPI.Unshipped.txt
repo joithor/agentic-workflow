@@ -15630,6 +15630,9 @@ static Aw.Sindri.Core.Events.ContextMapPublished.operator !=(Aw.Sindri.Core.Even
 static Aw.Sindri.Core.Events.ContextMapPublished.operator ==(Aw.Sindri.Core.Events.ContextMapPublished? left, Aw.Sindri.Core.Events.ContextMapPublished? right) -> bool
 static Aw.Sindri.Core.Events.ContextMapPublishedPublic.operator !=(Aw.Sindri.Core.Events.ContextMapPublishedPublic? left, Aw.Sindri.Core.Events.ContextMapPublishedPublic? right) -> bool
 static Aw.Sindri.Core.Events.ContextMapPublishedPublic.operator ==(Aw.Sindri.Core.Events.ContextMapPublishedPublic? left, Aw.Sindri.Core.Events.ContextMapPublishedPublic? right) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.IDiffContent
+Aw.Sindri.Core.Workflow.Engine.Runtime.IDiffContent.AddedLines(string! worktree, string! baseCommit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<(string! Path, int Line, string! Text)>!>!>
+Aw.Sindri.Core.Workflow.Engine.Runtime.IDiffContent.DeletedPaths(string! worktree, string! baseCommit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!>
 static readonly Aw.Sindri.Core.SindriErrors.LaunchPrePushForeign -> Aw.Kernel.ErrorDefinition!
 const Aw.Sindri.Core.Launch.LaunchEnvironment.GhConfigDirectory = "GH_CONFIG_DIR" -> string!
 const Aw.Sindri.Core.Launch.LaunchEnvironment.Worktree = "AW_SINDRI_WORKTREE" -> string!
