@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.reproduce
-version: 1
+version: 2
 description: "Block recipe: route a bug to a UI check or a test check, then reproduce it with a check that fails for the reported reason."
+displayName: "Reproduce a bug with a failing check"
 inputs:
   - { key: fact:issue, label: "Issue", type: text, kind: text }
   - { key: fact:rootCause, label: "Root cause", type: text, kind: text }

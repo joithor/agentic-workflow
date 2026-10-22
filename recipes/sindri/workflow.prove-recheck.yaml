@@ -2,6 +2,7 @@ schema: 1
 id: workflow.prove-recheck
 version: 1
 description: "Block recipe: when a PR's source no longer matches its proof, re-run the phase's verify journey and recorded evidence scripts on the current head. No route, no hand test, no holdout."
+displayName: "Prove the pull request again after a change"
 inputs:
   - { key: fact:handoff,     label: "PR hand-off",  type: packet, kind: packet }
   - { key: fact:phasePacket, label: "Phase packet", type: packet, kind: packet }
@@ -22,9 +23,9 @@ states:
              next: "Re-run {item}'s recorded evidence scripts on the head." }
   log:     { kind: active, step: step.recheck.log, timeout: { after: 1h, then: park },
              next: "Record the recheck verdict for {item}." }
-  held:    { kind: terminal, outcome: resolved }
-  nothing: { kind: terminal, outcome: alreadySatisfied }
-  broken:  { kind: terminal, outcome: unresolved }
+  held:    { displayName: "Proof still holds", kind: terminal, outcome: resolved }
+  nothing: { displayName: "Nothing to prove again", kind: terminal, outcome: alreadySatisfied }
+  broken:  { displayName: "Proof is broken", kind: terminal, outcome: unresolved }
 transitions:
   - { from: plan, to: slot,    on: step.completed, when: { outcome: planned }, produces: [fact:recheckPlan] }
   - { from: plan, to: log,     on: step.completed, when: { outcome: nothing } }

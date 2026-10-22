@@ -17,7 +17,7 @@ public sealed class ReviewLoopV2Tests
     {
         var document = RecipeComposition.ReadClean(ShippedRecipes.Read(Path), "workflow.review-loop.yaml");
 
-        Assert.Equal(4, document.Recipe.Version);   // 4: the round log is an input, so round 1 holds fact:lensRounds (LN-PK lite); 3: the typed escalation (BS-12)
+        Assert.Equal(4, document.Recipe.Version);   // 4: the round log is an input, so round 1 holds fact:lensRounds (LN-PK lite); the typed escalation (BS-12) and the display fields (SO-E1) came with it
         Assert.Empty(RecipeComposition.Errors(document, FixtureCatalog.Shipped(), new InMemoryChildRecipes()));
     }
 
