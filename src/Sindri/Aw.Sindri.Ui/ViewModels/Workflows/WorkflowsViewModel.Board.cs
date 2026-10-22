@@ -149,7 +149,7 @@ internal sealed partial class WorkflowsViewModel
             lane.Show([.. cards.Where(Passes)], anyHidden && cards.Count > 0);
         }
 
-        List<InstanceRowViewModel> counted = IsBoard ? [.. line, .. finished] : _loaded;
+        var counted = IsBoard ? [.. line, .. finished] : _loaded;
         var (all, needs, mine) = WorkflowFilters.Counts(counted);
         FilterAllText = $"{Labels.WorkflowsFilterAll} {all.ToString(CultureInfo.InvariantCulture)}";
         FilterNeedsYouText = $"{Labels.WorkflowsFilterNeedsYou} {needs.ToString(CultureInfo.InvariantCulture)}";

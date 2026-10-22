@@ -1,7 +1,6 @@
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
-using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Workflows;
 using Microsoft.Extensions.Time.Testing;
 
@@ -86,7 +85,7 @@ public sealed class WorkflowLanesTests
         var list = await Shown();
 
         var onBoard = list.Lanes.SelectMany(l => l.Cards).Select(c => c.Recipe).Distinct(StringComparer.Ordinal);
-        Assert.Equal(["workflow.line"], onBoard);
+        Assert.Equal("workflow.line", Assert.Single(onBoard));
     }
 
     [Fact]

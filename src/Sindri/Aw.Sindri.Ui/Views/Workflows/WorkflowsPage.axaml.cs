@@ -71,19 +71,27 @@ internal sealed partial class WorkflowsPage : UserControl
 
     private void FocusRow(WorkflowFocusEventArgs request)
     {
-        var row = (Control?)this.GetVisualDescendants().OfType<InstanceRow>().FirstOrDefault(r => r.IsEffectivelyVisible && string.Equals(r.Address, request.Address, StringComparison.Ordinal))
-            ?? this.GetVisualDescendants().OfType<RunCard>().FirstOrDefault(r => r.IsEffectivelyVisible && string.Equals(r.Address, request.Address, StringComparison.Ordinal));
+        var row = DrawnRow(request.Address);
         if (row is null || row.IsKeyboardFocusWithin || (request.OnlyIfLost && (HasUsableFocus() || !_focusWasHere)))
         {
             return;   // not drawn, or focus is already in the row (a click or its control), or a re-read must leave a usable focus alone, and a focus that was elsewhere (the sheet)
         }
 
-        if (row.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => string.Equals(b.Name, "WorkflowRowFrame", StringComparison.Ordinal) || string.Equals(b.Name, "WorkflowCardFrame", StringComparison.Ordinal)) is { } frame)
+        if (FrameOf(row) is { } frame)
         {
             _ = frame.Focus(NavigationMethod.Tab);
             frame.BringIntoView();
         }
     }
+
+    // The list row or the board card drawn for an address.
+    private Control? DrawnRow(string address) =>
+        (Control?)this.GetVisualDescendants().OfType<InstanceRow>().FirstOrDefault(r => r.IsEffectivelyVisible && string.Equals(r.Address, address, StringComparison.Ordinal))
+        ?? this.GetVisualDescendants().OfType<RunCard>().FirstOrDefault(r => r.IsEffectivelyVisible && string.Equals(r.Address, address, StringComparison.Ordinal));
+
+    // The border that takes keyboard focus in a row or a card.
+    private static Border? FrameOf(Control row) =>
+        row.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => string.Equals(b.Name, "WorkflowRowFrame", StringComparison.Ordinal) || string.Equals(b.Name, "WorkflowCardFrame", StringComparison.Ordinal));
 
     // Focus on a control that is still in the tree, shown and enabled.
     private bool HasUsableFocus() =>
