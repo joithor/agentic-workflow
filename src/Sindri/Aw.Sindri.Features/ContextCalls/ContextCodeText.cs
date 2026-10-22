@@ -24,7 +24,7 @@ internal static class ContextCodeText
         Files(text, view);
         Tests(text, view);
         Data(text, view, fence);
-        _ = text.AppendLine(Invariant($"callers {Word(view.Callers.State)} ({view.Callers.Reason}) · callees {Word(view.Callees.State)} ({view.Callees.Reason})"));
+        _ = text.AppendLine(Invariant($"callers {Word(view.Callers.State)}{SymbolWords.Why(view.Callers.Reason, view.Callers.Commit, view.Callers.AsOfCommit)}{Count(view.Callers)} · callees {Word(view.Callees.State)}{SymbolWords.Why(view.Callees.Reason, view.Callees.Commit, view.Callees.AsOfCommit)}{Count(view.Callees)}"));
         foreach (var lexical in view.Lexical)
         {
             _ = text.AppendLine(Invariant($"lexical: {lexical.Repo} at {lexical.Commit} · {lexical.SearchedFiles} files used, {lexical.Candidates} candidates, {lexical.Read} read"));
@@ -105,6 +105,8 @@ internal static class ContextCodeText
         CodeBasis.Sibling => "sibling",
         _ => basis.ToString().ToLowerInvariant(),
     };
+
+    private static string Count(CodeSymbols symbols) => symbols.Items.Count == 0 ? string.Empty : Invariant($" {symbols.Items.Count}");
 
     private static string Word(SymbolsState state) => state.ToString().ToLowerInvariant();
 

@@ -1,0 +1,28 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sv="using:Aw.Sindri.Ui.ViewModels.Setup"
+             xmlns:controls="using:Aw.Sindri.Ui.Views.Controls"
+             x:Class="Aw.Sindri.Ui.Views.Setup.SetupAgentList"
+             x:DataType="sv:SetupStepViewModel">
+  <!-- The agents step's list (setup spec §2.4): one line per coding agent with what Sindri reached, then the two fixed lines about trusting the folder and about scope. -->
+  <StackPanel Spacing="8" IsVisible="{Binding HasAgents}">
+    <ItemsControl ItemsSource="{Binding Agents}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="sv:SetupAgentViewModel">
+          <Border Classes="agent-line" AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
+            <Grid ColumnDefinitions="*,Auto" MinHeight="32" AutomationProperties.AccessibilityView="Raw">
+              <TextBlock Classes="body" Text="{Binding Agent}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+              <controls:StateChipView Grid.Column="1" Chip="{Binding Chip}" VerticalAlignment="Center" />
+            </Grid>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <Border AutomationProperties.Name="{Binding TrustOnceText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+      <TextBlock Classes="caption subtle" Text="{Binding TrustOnceText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+    </Border>
+    <Border AutomationProperties.Name="{Binding AgentsNoteText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+      <TextBlock Classes="caption subtle" Text="{Binding AgentsNoteText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+    </Border>
+  </StackPanel>
+</UserControl>
