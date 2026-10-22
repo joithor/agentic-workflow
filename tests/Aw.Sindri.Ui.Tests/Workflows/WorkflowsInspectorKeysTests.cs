@@ -28,7 +28,7 @@ public sealed class WorkflowsInspectorKeysTests
     {
         var (list, opened) = await Shown();
         Assert.True(list.Press("J"));
-        var address = list.SelectedAddress!;
+        var address = list.SelectedAddress;
 
         Assert.True(list.Press("Enter"));
         await list.InspectorRead;
