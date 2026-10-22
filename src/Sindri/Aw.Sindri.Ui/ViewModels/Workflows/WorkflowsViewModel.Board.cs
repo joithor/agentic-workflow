@@ -100,9 +100,9 @@ internal sealed partial class WorkflowsViewModel
         OnChanged(nameof(ViewIndex));
         NotifyBoardStates();
         Redraw();
-        if (mode == WorkflowViewMode.Board && DoneRows.Count == 0 && Url is not null)
+        if (mode == WorkflowViewMode.Board && Url is not null && !string.Equals(_doneFor, DoneKey, StringComparison.Ordinal))
         {
-            _ = ReadDone(CancellationToken.None);   // the Done lane fills from the finished read the list keeps behind its line
+            _ = ReadDone(CancellationToken.None);   // the Done lane fills from the finished read the list keeps behind its line, once for a filter
         }
     }
 

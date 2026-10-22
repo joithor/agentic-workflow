@@ -150,6 +150,4 @@ internal sealed partial class WorkflowsPage : UserControl
     private void OnSubjectTyped(object? sender, TextChangedEventArgs e) => List?.SetSearch((sender as TextBox)?.Text);
 
     private void OnStart(object? sender, RoutedEventArgs e) => List?.RequestStart();
-
-    private void OnDoneToggle(object? sender, RoutedEventArgs e) => _ = List?.ToggleDone(CancellationToken.None);
 }

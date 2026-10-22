@@ -4,6 +4,11 @@ namespace Aw.Sindri.Ui.ViewModels.Workflows;
 
 internal sealed partial class WorkflowsViewModel
 {
+    // The filter the Done rows were read for; null while they are not current (never read, collapsed, or a refresh passed without reading them).
+    private string? _doneFor;
+
+    private string DoneKey => $"{RecipeFilter}\n{SubjectFilter}";
+
     private async Task ReadDone(CancellationToken cancellationToken)
     {
         if (Url is not { } url)
@@ -12,7 +17,8 @@ internal sealed partial class WorkflowsViewModel
         }
 
         var read = ++_doneReads;
-        var all = await api.Instances(url, new InstanceQuery(Root: true, Recipe: RecipeFilter, Subject: SubjectFilter), cancellationToken).ConfigureAwait(true);
+        var key = DoneKey;
+        var all = await api.Instances(url, new InstanceQuery(Root: true, Open: false, Recipe: RecipeFilter, Subject: SubjectFilter), cancellationToken).ConfigureAwait(true);
         if (read != _doneReads || !(IsDoneExpanded || ViewMode == WorkflowViewMode.Board))
         {
             return;   // newer, or the line was collapsed while this was on its way
@@ -25,6 +31,7 @@ internal sealed partial class WorkflowsViewModel
             finished.ForEach(r => r.SetStale(IsStale));
             DoneRows.Clear();
             finished.ForEach(DoneRows.Add);
+            _doneFor = key;
             RebuildBoard();
             Reselect(before);
         }

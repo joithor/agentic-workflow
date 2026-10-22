@@ -9,7 +9,7 @@ namespace Aw.Sindri.Ui.ViewModels.Workflows;
 /// One row of the Workflows list (screens §4.2): the subject, the inputs, a cell per state, and the served now and chip. It decides
 /// nothing: every word is the row's own.
 /// </summary>
-internal sealed class InstanceRowViewModel : ObservableObject
+internal sealed partial class InstanceRowViewModel : ObservableObject
 {
     private const string CancelCommand = "ApplyCommand:cancel";
 
