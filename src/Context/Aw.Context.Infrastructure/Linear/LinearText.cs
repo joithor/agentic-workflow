@@ -17,23 +17,23 @@ internal static class LinearText
     public static string Of(LinearDocument document) => Cut(document.Content ?? "");
 
     /// <summary>A project: its description and a line each for state, lead, teams and dates.</summary>
-    public static string Of(LinearProject project)
-    {
-        var lines = new List<string>
+    public static string Of(LinearProject project) =>
+        Cut((project.Description ?? "") + "\n\n" + string.Join('\n', new[]
         {
-            "State: " + (project.State ?? "unknown"),
-            project.Lead?.Name is { } lead ? "Lead: " + lead : "",
-            project.Teams?.Nodes is { Count: > 0 } teams ? "Teams: " + string.Join(", ", teams.Select(t => t.Key)) : "",
-            project.StartDate is null && project.TargetDate is null ? "" : $"Start: {project.StartDate ?? "none"}, target: {project.TargetDate ?? "none"}",
-        };
-        return Cut((project.Description ?? "") + "\n\n" + string.Join('\n', lines.Where(l => l.Length > 0)));
-    }
+            Line("State", project.State ?? "unknown"),
+            Line("Lead", project.Lead?.Name),
+            Line("Teams", string.Join(", ", (project.Teams?.Nodes ?? []).Select(t => t.Key))),
+            Line("Start", project.StartDate),
+            Line("Target", project.TargetDate),
+        }.Where(l => l.Length > 0)));
 
     /// <summary>A project update: its health, then its body.</summary>
     public static string Of(LinearProjectUpdate update) => Cut($"Health: {update.Health ?? "unknown"}\n\n{update.Body}");
 
     /// <summary>A day as 'yyyy-MM-dd' (UTC).</summary>
     public static string Day(DateTimeOffset at) => at.UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+    private static string Line(string label, string? value) => string.IsNullOrEmpty(value) ? "" : $"{label}: {value}";
 
     private static string Section(string title, IEnumerable<string> lines) =>
         lines.ToList() is { Count: > 0 } kept ? $"\n\n{title}:\n" + string.Join('\n', kept) : "";

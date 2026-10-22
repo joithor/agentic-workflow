@@ -8,8 +8,8 @@ namespace Aw.Context.Infrastructure.Linear;
 
 /// <summary>
 /// One search of the linear source (spec §5.2): title and key lookup. An issue identifier among the terms is looked up by key; documents, issues and (by name) the profile's projects
-/// are matched on their title, project updates on their body. The query's UpdatedSince goes to Linear as an 'updatedAt' filter and the profile's teams as a team or project filter, both
-/// before the cap. Hits come in groups (key lookups, documents, projects, issues, updates), each newest change first, deduplicated by canonical key and cut to the limit.
+/// are matched on their title (project updates have none and are reached from their project). The query's UpdatedSince goes to Linear as an 'updatedAt' filter and the profile's teams as a team or project filter, both
+/// before the cap. Hits come in groups (key lookups, documents, projects, issues), each newest change first, deduplicated by canonical key and cut to the limit.
 /// </summary>
 /// <param name="client">The client.</param>
 /// <param name="scope">The profile's teams and projects.</param>
@@ -42,7 +42,6 @@ internal sealed partial class LinearSearch(LinearClient client, LinearScope scop
             () => Documents(terms, query.UpdatedSince, hits, Left(), cancellationToken),
             () => Projects(terms, query.UpdatedSince, hits, Left(), cancellationToken),
             () => Issues(terms, query.UpdatedSince, hits, Left(), cancellationToken),
-            () => Updates(terms, query.UpdatedSince, hits, Left(), cancellationToken),
         })
         {
             var group = await step().ConfigureAwait(false);
@@ -113,24 +112,6 @@ internal sealed partial class LinearSearch(LinearClient client, LinearScope scop
 
         var data = await client.Query<LinearIssuesData>("IssueHits", LinearFilters.Variables(filter, PerKind), left, cancellationToken).ConfigureAwait(false);
         return data.IsError ? data.Error : Newest(data.Value.Issues.Nodes, i => i.UpdatedAt, hits.Of);
-    }
-
-    private async ValueTask<Result<List<SourceHit>>> Updates(List<string> terms, DateTimeOffset? since, LinearHits hits, TimeSpan left, CancellationToken cancellationToken)
-    {
-        var filter = LinearFilters.Matching("body", terms, since);
-        if (scope.IsScoped)
-        {
-            var projects = await scope.Projects(left, cancellationToken).ConfigureAwait(false);
-            if (projects.IsError || projects.Value.Count == 0)
-            {
-                return projects.IsError ? projects.Error : new List<SourceHit>();
-            }
-
-            _ = LinearFilters.InProjects(filter, projects.Value.Select(p => p.Id));
-        }
-
-        var data = await client.Query<LinearUpdatesData>("ProjectUpdates", LinearFilters.Variables(filter, PerKind), left, cancellationToken).ConfigureAwait(false);
-        return data.IsError ? data.Error : Newest(data.Value.ProjectUpdates.Nodes, u => u.UpdatedAt, hits.Of);
     }
 
     private static List<SourceHit> Newest<T>(IEnumerable<T> nodes, Func<T, DateTimeOffset> updatedAt, Func<T, SourceHit?> hit) =>
