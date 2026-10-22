@@ -27,6 +27,31 @@ public sealed class TakeoverViewModelTests
         _server.InstanceBody = _ => new RouteAnswer(HttpStatusCode.OK, instance.ToJsonString());
     }
 
+    [Fact]
+    public async Task The_takeover_line_says_when_the_run_was_taken_over_from_the_served_time()
+    {
+        var instance = JsonNode.Parse(GoldenFiles.Api("workflow-instance", "dev-desk-round-trip"))!;
+        instance["current"]!["status"]!["paused"] = new JsonObject { ["timeoutLeftSeconds"] = 10200 };
+        instance["current"]!["status"]!["takenOverAt"] = (A.Noon - TimeSpan.FromMinutes(155)).ToString("O", System.Globalization.CultureInfo.InvariantCulture);   // 09:25, 2h 35m before the clock
+        _server.InstanceBody = _ => new RouteAnswer(HttpStatusCode.OK, instance.ToJsonString());
+        var takeover = Takeover();
+
+        await takeover.Load(Instance);
+
+        Assert.Equal("you took over at 09:25 (2h 35m ago)", takeover.TookOverLine);
+    }
+
+    [Fact]
+    public async Task A_takeover_with_no_served_time_has_no_line()
+    {
+        ServeTakenOver(left: 10200);
+        var takeover = Takeover();
+
+        await takeover.Load(Instance);
+
+        Assert.Equal((false, ""), (takeover.HasTookOverLine, takeover.TookOverLine));
+    }
+
     private static NeedsYouEntry NudgeRow(TimeSpan age, string instance = Instance) => NeedsYouRows.Park("takeover:" + instance) with
     {
         Label = "taken over",
@@ -114,11 +139,11 @@ public sealed class TakeoverViewModelTests
         ServeTakenOver(left: 10200);
         var takeover = Takeover();
         await takeover.Load(Instance);
-        _server.CommandGate = new TaskCompletionSource();
+        _server.WorkflowCommandGate = new TaskCompletionSource();
 
         var first = takeover.HandBack();
         await takeover.HandBack();
-        _server.CommandGate.SetResult();
+        _server.WorkflowCommandGate.SetResult();
         await first;
 
         _ = Assert.Single(_server.CommandCalls);

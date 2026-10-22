@@ -105,6 +105,9 @@ internal sealed partial class ApproveAllViewModel : ObservableObject
 
     /// <summary>The heading over what waits on those.</summary>
     public string WaitingHeading => Labels.ApproveWaiting;
+
+    /// <summary>The line under the plan in the setup row: the shipped workflows pass their own checks when Sindri is built.</summary>
+    public string EveryText => Labels.SetupWorkflowsEvery;
 #pragma warning restore CA1822, MA0041
 
     /// <summary>True while the dialog is shown.</summary>

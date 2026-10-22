@@ -204,6 +204,7 @@
               <Border x:Name="NeedsYouTakeover" Classes="card-section" IsVisible="{Binding ShowsTakeover}">
                 <StackPanel Spacing="8" DataContext="{Binding Takeover}" x:DataType="ny:TakeoverViewModel">
                   <TextBlock x:Name="NeedsYouTakeoverBadge" Classes="eyebrow attention" Text="{Binding Badge}" />
+                  <TextBlock x:Name="NeedsYouTakeoverAt" Classes="caption muted" Text="{Binding TookOverLine}" IsVisible="{Binding HasTookOverLine}" />
                   <TextBlock x:Name="NeedsYouTakeoverClock" Classes="caption mono" Text="{Binding ClockText}" AutomationProperties.LiveSetting="Polite" />
                   <TextBlock x:Name="NeedsYouTakeoverBox" Classes="body" Text="{Binding HandBackBox}" TextWrapping="Wrap" />
                   <Border x:Name="NeedsYouNudge" Classes="card-section tinted" IsVisible="{Binding NudgeVisible}">

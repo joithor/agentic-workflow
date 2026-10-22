@@ -164,6 +164,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(StartInstanceRequest)), JsonSerializable(typeof(ApplyCommandRequest)), JsonSerializable(typeof(CompleteStepRequest)), JsonSerializable(typeof(ApplyCommandResponse))]
 [JsonSerializable(typeof(IssueNonceResponse)), JsonSerializable(typeof(RecipeRegistered)), JsonSerializable(typeof(RecipeApproved)), JsonSerializable(typeof(RecipeRevoked))]
 [JsonSerializable(typeof(RegisterRecipeRequest)), JsonSerializable(typeof(RegisterRecipeResponse)), JsonSerializable(typeof(ListRecipesResponse)), JsonSerializable(typeof(ApproveRecipeRequest))]
+[JsonSerializable(typeof(RegisterMcpJobRequest))]   // setup-once §5.4: register Sindri in a repo from the app
 [JsonSerializable(typeof(AddRepoRequest)), JsonSerializable(typeof(AddedRepo))]   // setup-once §5.1: add a repo from the app
 [JsonSerializable(typeof(ApproveAllRecipesRequest)), JsonSerializable(typeof(ApproveAllPlan)), JsonSerializable(typeof(ApproveAllResult)), JsonSerializable(typeof(ShippedRecipePlan))]   // setup-once §7.2: the plan, the hold's job and its result
 [JsonSerializable(typeof(ApproveRecipeResponse)), JsonSerializable(typeof(RevokeRecipeRequest)), JsonSerializable(typeof(RevokeRecipeResponse)), JsonSerializable(typeof(IssueChallengeRequest))]
@@ -207,6 +208,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(SyncContextSourcesRequest)), JsonSerializable(typeof(SyncContextSourcesResult))]
 [JsonSerializable(typeof(BuildContextMapRequest)), JsonSerializable(typeof(BuildContextMapResult))]
 [JsonSerializable(typeof(RefreshContextMapRequest)), JsonSerializable(typeof(RefreshContextMapResult)), JsonSerializable(typeof(ContextMapRefreshed))]
+[JsonSerializable(typeof(PublishContextMapRequest)), JsonSerializable(typeof(PublishContextMapResult)), JsonSerializable(typeof(ContextMapHeld)), JsonSerializable(typeof(ContextMapPublished)), JsonSerializable(typeof(ContextMapPublishedPublic)), JsonSerializable(typeof(ContextMapHoldDropped))]
 [JsonSerializable(typeof(Context.Core.Eval.MapQuality.MapQualityRun)), JsonSerializable(typeof(Context.Core.Eval.Backtest.BacktestRun)), JsonSerializable(typeof(Context.Core.Eval.Backtest.EvalPurgeReport))]
 [JsonSerializable(typeof(RunContextBacktestRequest)), JsonSerializable(typeof(RunContextBacktestResult)), JsonSerializable(typeof(BacktestArmLine))]
 internal sealed partial class SindriJsonContext : JsonSerializerContext;
