@@ -10,10 +10,8 @@ public sealed class EngineBoundaryRulesTests
     private static (string, IReadOnlyList<string>) Project(string name, params string[] packages) => (name, packages);
 
     [Fact]
-    public void The_adapter_project_alone_may_reference_the_sdk()
-    {
+    public void The_adapter_project_alone_may_reference_the_sdk() =>
         Verify.None(EngineBoundaryRules.CheckPackages([Project("Aw.Sindri.Workflows", "Temporalio", "Microsoft.Extensions.DependencyInjection.Abstractions"), Project("Aw.Sindri.Host", "Microsoft.AspNetCore.App")]));
-    }
 
     [Theory]
     [InlineData("Aw.Sindri.Host")]
