@@ -16,7 +16,7 @@ public sealed class SetupConfirmTests
 
     private readonly SetupFixture _f;
 
-    public SetupConfirmTests() : this("catalog")
+    public SetupConfirmTests() : this("extra-approve-all-cli-only")
     {
     }
 
