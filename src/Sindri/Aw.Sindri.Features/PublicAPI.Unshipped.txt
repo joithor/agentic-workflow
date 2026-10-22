@@ -95,6 +95,41 @@ Aw.Sindri.Features.CancelJob.CancelJobRequest.Deconstruct(out Aw.Sindri.Core.Ids
 Aw.Sindri.Features.CancelJob.CancelJobRequest.Equals(Aw.Sindri.Features.CancelJob.CancelJobRequest? other) -> bool
 Aw.Sindri.Features.CancelJob.CancelJobRequest.Job.get -> Aw.Sindri.Core.Ids.JobId
 Aw.Sindri.Features.CancelJob.CancelJobRequest.Job.init -> void
+Aw.Sindri.Features.CheckPack.CheckPackRequest
+Aw.Sindri.Features.CheckPack.CheckPackRequest.<Clone>$() -> Aw.Sindri.Features.CheckPack.CheckPackRequest!
+Aw.Sindri.Features.CheckPack.CheckPackRequest.CheckPackRequest(string! Directory) -> void
+Aw.Sindri.Features.CheckPack.CheckPackRequest.Deconstruct(out string! Directory) -> void
+Aw.Sindri.Features.CheckPack.CheckPackRequest.Directory.get -> string!
+Aw.Sindri.Features.CheckPack.CheckPackRequest.Directory.init -> void
+Aw.Sindri.Features.CheckPack.CheckPackRequest.Equals(Aw.Sindri.Features.CheckPack.CheckPackRequest? other) -> bool
+Aw.Sindri.Features.CheckPack.CheckPackResponse
+Aw.Sindri.Features.CheckPack.CheckPackResponse.<Clone>$() -> Aw.Sindri.Features.CheckPack.CheckPackResponse!
+Aw.Sindri.Features.CheckPack.CheckPackResponse.Applies.get -> string?
+Aw.Sindri.Features.CheckPack.CheckPackResponse.Applies.init -> void
+Aw.Sindri.Features.CheckPack.CheckPackResponse.CheckPackResponse(bool Passed, Aw.Sindri.Core.LensPacks.LensPackId? Id, string? Applies, int Lenses, string? Hash, string? Pin, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.CheckPack.PackFinding!>! Findings) -> void
+Aw.Sindri.Features.CheckPack.CheckPackResponse.Deconstruct(out bool Passed, out Aw.Sindri.Core.LensPacks.LensPackId? Id, out string? Applies, out int Lenses, out string? Hash, out string? Pin, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.CheckPack.PackFinding!>! Findings) -> void
+Aw.Sindri.Features.CheckPack.CheckPackResponse.Equals(Aw.Sindri.Features.CheckPack.CheckPackResponse? other) -> bool
+Aw.Sindri.Features.CheckPack.CheckPackResponse.Findings.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.CheckPack.PackFinding!>!
+Aw.Sindri.Features.CheckPack.CheckPackResponse.Findings.init -> void
+Aw.Sindri.Features.CheckPack.CheckPackResponse.Hash.get -> string?
+Aw.Sindri.Features.CheckPack.CheckPackResponse.Hash.init -> void
+Aw.Sindri.Features.CheckPack.CheckPackResponse.Id.get -> Aw.Sindri.Core.LensPacks.LensPackId?
+Aw.Sindri.Features.CheckPack.CheckPackResponse.Id.init -> void
+Aw.Sindri.Features.CheckPack.CheckPackResponse.Lenses.get -> int
+Aw.Sindri.Features.CheckPack.CheckPackResponse.Lenses.init -> void
+Aw.Sindri.Features.CheckPack.CheckPackResponse.Passed.get -> bool
+Aw.Sindri.Features.CheckPack.CheckPackResponse.Passed.init -> void
+Aw.Sindri.Features.CheckPack.CheckPackResponse.Pin.get -> string?
+Aw.Sindri.Features.CheckPack.CheckPackResponse.Pin.init -> void
+Aw.Sindri.Features.CheckPack.PackFinding
+Aw.Sindri.Features.CheckPack.PackFinding.<Clone>$() -> Aw.Sindri.Features.CheckPack.PackFinding!
+Aw.Sindri.Features.CheckPack.PackFinding.Code.get -> string!
+Aw.Sindri.Features.CheckPack.PackFinding.Code.init -> void
+Aw.Sindri.Features.CheckPack.PackFinding.Deconstruct(out string! Code, out string! Message) -> void
+Aw.Sindri.Features.CheckPack.PackFinding.Equals(Aw.Sindri.Features.CheckPack.PackFinding? other) -> bool
+Aw.Sindri.Features.CheckPack.PackFinding.Message.get -> string!
+Aw.Sindri.Features.CheckPack.PackFinding.Message.init -> void
+Aw.Sindri.Features.CheckPack.PackFinding.PackFinding(string! Code, string! Message) -> void
 Aw.Sindri.Features.CheckProfile.CheckProfileRequest
 Aw.Sindri.Features.CheckProfile.CheckProfileRequest.<Clone>$() -> Aw.Sindri.Features.CheckProfile.CheckProfileRequest!
 Aw.Sindri.Features.CheckProfile.CheckProfileRequest.CheckProfileRequest(Aw.Sindri.Core.Lease.LeaseGrant! Grant) -> void
@@ -795,21 +830,21 @@ Aw.Sindri.Features.GetProfile.GetProfileResponse.Packs.get -> System.Collections
 Aw.Sindri.Features.GetProfile.GetProfileResponse.Packs.init -> void
 Aw.Sindri.Features.GetProfile.ProfilePack
 Aw.Sindri.Features.GetProfile.ProfilePack.<Clone>$() -> Aw.Sindri.Features.GetProfile.ProfilePack!
-Aw.Sindri.Features.GetProfile.ProfilePack.Deconstruct(out string! Kind, out string! Id, out string! Source, out string? Hash, out string! Pin, out string! Status) -> void
+Aw.Sindri.Features.GetProfile.ProfilePack.Deconstruct(out string! Kind, out Aw.Sindri.Core.LensPacks.LensPackId? Id, out string! Source, out string? Hash, out string! Pin, out string! Status) -> void
 Aw.Sindri.Features.GetProfile.ProfilePack.Equals(Aw.Sindri.Features.GetProfile.ProfilePack? other) -> bool
 Aw.Sindri.Features.GetProfile.ProfilePack.Hash.get -> string?
 Aw.Sindri.Features.GetProfile.ProfilePack.Hash.init -> void
-Aw.Sindri.Features.GetProfile.ProfilePack.Id.get -> string!
+Aw.Sindri.Features.GetProfile.ProfilePack.Id.get -> Aw.Sindri.Core.LensPacks.LensPackId?
 Aw.Sindri.Features.GetProfile.ProfilePack.Id.init -> void
 Aw.Sindri.Features.GetProfile.ProfilePack.Kind.get -> string!
 Aw.Sindri.Features.GetProfile.ProfilePack.Kind.init -> void
 Aw.Sindri.Features.GetProfile.ProfilePack.Pin.get -> string!
 Aw.Sindri.Features.GetProfile.ProfilePack.Pin.init -> void
+Aw.Sindri.Features.GetProfile.ProfilePack.ProfilePack(string! Kind, Aw.Sindri.Core.LensPacks.LensPackId? Id, string! Source, string? Hash, string! Pin, string! Status) -> void
 Aw.Sindri.Features.GetProfile.ProfilePack.Source.get -> string!
 Aw.Sindri.Features.GetProfile.ProfilePack.Source.init -> void
 Aw.Sindri.Features.GetProfile.ProfilePack.Status.get -> string!
 Aw.Sindri.Features.GetProfile.ProfilePack.Status.init -> void
-Aw.Sindri.Features.GetProfile.ProfilePack.ProfilePack(string! Kind, string! Id, string! Source, string? Hash, string! Pin, string! Status) -> void
 Aw.Sindri.Features.GetQueue.GetQueueRequest
 Aw.Sindri.Features.GetQueue.GetQueueRequest.<Clone>$() -> Aw.Sindri.Features.GetQueue.GetQueueRequest!
 Aw.Sindri.Features.GetQueue.GetQueueRequest.Equals(Aw.Sindri.Features.GetQueue.GetQueueRequest? other) -> bool
@@ -1355,6 +1390,15 @@ Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.Max.init -> void
 Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.ReadLedgerRequest(long After, Aw.Sindri.Core.Ids.ItemRef? Item = null, string? Type = null, int Max = 100) -> void
 Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.Type.get -> string?
 Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.Type.init -> void
+override Aw.Sindri.Features.CheckPack.CheckPackRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.CheckPack.CheckPackRequest.GetHashCode() -> int
+override Aw.Sindri.Features.CheckPack.CheckPackRequest.ToString() -> string!
+override Aw.Sindri.Features.CheckPack.CheckPackResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.CheckPack.CheckPackResponse.GetHashCode() -> int
+override Aw.Sindri.Features.CheckPack.CheckPackResponse.ToString() -> string!
+override Aw.Sindri.Features.CheckPack.PackFinding.Equals(object? obj) -> bool
+override Aw.Sindri.Features.CheckPack.PackFinding.GetHashCode() -> int
+override Aw.Sindri.Features.CheckPack.PackFinding.ToString() -> string!
 override Aw.Sindri.Features.GetEventCatalog.EventCatalogView.Equals(object? obj) -> bool
 override Aw.Sindri.Features.GetEventCatalog.EventCatalogView.GetHashCode() -> int
 override Aw.Sindri.Features.GetEventCatalog.EventCatalogView.ToString() -> string!
@@ -1364,18 +1408,29 @@ override Aw.Sindri.Features.GetEventCatalog.EventTypeView.ToString() -> string!
 override Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest.Equals(object? obj) -> bool
 override Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest.GetHashCode() -> int
 override Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest.ToString() -> string!
+override Aw.Sindri.Features.GetProfile.ProfilePack.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetProfile.ProfilePack.GetHashCode() -> int
+override Aw.Sindri.Features.GetProfile.ProfilePack.ToString() -> string!
 override Aw.Sindri.Features.ReadLedger.LedgerPage.Equals(object? obj) -> bool
 override Aw.Sindri.Features.ReadLedger.LedgerPage.GetHashCode() -> int
 override Aw.Sindri.Features.ReadLedger.LedgerPage.ToString() -> string!
 override Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.Equals(object? obj) -> bool
 override Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.GetHashCode() -> int
 override Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.ToString() -> string!
+static Aw.Sindri.Features.CheckPack.CheckPackRequest.operator !=(Aw.Sindri.Features.CheckPack.CheckPackRequest? left, Aw.Sindri.Features.CheckPack.CheckPackRequest? right) -> bool
+static Aw.Sindri.Features.CheckPack.CheckPackRequest.operator ==(Aw.Sindri.Features.CheckPack.CheckPackRequest? left, Aw.Sindri.Features.CheckPack.CheckPackRequest? right) -> bool
+static Aw.Sindri.Features.CheckPack.CheckPackResponse.operator !=(Aw.Sindri.Features.CheckPack.CheckPackResponse? left, Aw.Sindri.Features.CheckPack.CheckPackResponse? right) -> bool
+static Aw.Sindri.Features.CheckPack.CheckPackResponse.operator ==(Aw.Sindri.Features.CheckPack.CheckPackResponse? left, Aw.Sindri.Features.CheckPack.CheckPackResponse? right) -> bool
+static Aw.Sindri.Features.CheckPack.PackFinding.operator !=(Aw.Sindri.Features.CheckPack.PackFinding? left, Aw.Sindri.Features.CheckPack.PackFinding? right) -> bool
+static Aw.Sindri.Features.CheckPack.PackFinding.operator ==(Aw.Sindri.Features.CheckPack.PackFinding? left, Aw.Sindri.Features.CheckPack.PackFinding? right) -> bool
 static Aw.Sindri.Features.GetEventCatalog.EventCatalogView.operator !=(Aw.Sindri.Features.GetEventCatalog.EventCatalogView? left, Aw.Sindri.Features.GetEventCatalog.EventCatalogView? right) -> bool
 static Aw.Sindri.Features.GetEventCatalog.EventCatalogView.operator ==(Aw.Sindri.Features.GetEventCatalog.EventCatalogView? left, Aw.Sindri.Features.GetEventCatalog.EventCatalogView? right) -> bool
 static Aw.Sindri.Features.GetEventCatalog.EventTypeView.operator !=(Aw.Sindri.Features.GetEventCatalog.EventTypeView? left, Aw.Sindri.Features.GetEventCatalog.EventTypeView? right) -> bool
 static Aw.Sindri.Features.GetEventCatalog.EventTypeView.operator ==(Aw.Sindri.Features.GetEventCatalog.EventTypeView? left, Aw.Sindri.Features.GetEventCatalog.EventTypeView? right) -> bool
 static Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest.operator !=(Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest? left, Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest? right) -> bool
 static Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest.operator ==(Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest? left, Aw.Sindri.Features.GetEventCatalog.GetEventCatalogRequest? right) -> bool
+static Aw.Sindri.Features.GetProfile.ProfilePack.operator !=(Aw.Sindri.Features.GetProfile.ProfilePack? left, Aw.Sindri.Features.GetProfile.ProfilePack? right) -> bool
+static Aw.Sindri.Features.GetProfile.ProfilePack.operator ==(Aw.Sindri.Features.GetProfile.ProfilePack? left, Aw.Sindri.Features.GetProfile.ProfilePack? right) -> bool
 static Aw.Sindri.Features.ReadLedger.LedgerPage.operator !=(Aw.Sindri.Features.ReadLedger.LedgerPage? left, Aw.Sindri.Features.ReadLedger.LedgerPage? right) -> bool
 static Aw.Sindri.Features.ReadLedger.LedgerPage.operator ==(Aw.Sindri.Features.ReadLedger.LedgerPage? left, Aw.Sindri.Features.ReadLedger.LedgerPage? right) -> bool
 static Aw.Sindri.Features.ReadLedger.ReadLedgerRequest.operator !=(Aw.Sindri.Features.ReadLedger.ReadLedgerRequest? left, Aw.Sindri.Features.ReadLedger.ReadLedgerRequest? right) -> bool

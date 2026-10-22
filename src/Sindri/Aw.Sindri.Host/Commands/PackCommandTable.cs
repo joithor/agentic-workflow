@@ -42,7 +42,7 @@ internal static class PackCommandTable
         var text = new StringBuilder();
         if (!check.Passed)
         {
-            _ = text.Append("pack ").Append(check.Id).AppendLine(" has findings:");
+            _ = text.Append("pack ").Append(check.Id?.Value ?? "(not a pack id)").AppendLine(" has findings:");
             foreach (var finding in check.Findings)
             {
                 _ = text.Append("  ").Append(finding.Code).Append(' ').AppendLine(finding.Message);
@@ -51,7 +51,7 @@ internal static class PackCommandTable
             return text.ToString();
         }
 
-        _ = text.Append("pack ").Append(check.Id).Append(" passes: ").Append(check.Lenses).Append(" lenses, applies to ").AppendLine(check.Applies);
+        _ = text.Append("pack ").Append(check.Id?.Value).Append(" passes: ").Append(check.Lenses).Append(" lenses, applies to ").AppendLine(check.Applies);
         _ = text.Append("hash ").AppendLine(check.Hash);
         _ = text.Append("pin line to approve: ").AppendLine(check.Pin);
         return text.ToString();

@@ -1,3 +1,5 @@
+using System.Globalization;
+using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.LensPacks;
 using Aw.Sindri.Features.CheckPack;
@@ -15,7 +17,7 @@ public sealed class CheckPackServiceTests
 
     private static string Manifest(params string[] prompts)
     {
-        var lenses = string.Join(",", prompts.Select(static (p, i) => $$"""{"id":"lens-{{i}}","title":"Lens {{i}}","prompt":"{{p}}","when":"always"}"""));
+        var lenses = string.Join(',', prompts.Select(static (p, i) => $$"""{"id":"lens-{{i.ToString(CultureInfo.InvariantCulture)}}","title":"Lens {{i.ToString(CultureInfo.InvariantCulture)}}","prompt":"{{p}}","when":"always"}"""));
         return $$"""{"kind":"lenses","id":"mine","version":1,"applies":"design","lenses":[{{lenses}}]}""";
     }
 
@@ -26,7 +28,7 @@ public sealed class CheckPackServiceTests
         ["lenses/b.md"] = "Look for B.",
     };
 
-    private static ValueTask<Aw.Kernel.Result<CheckPackResponse>> Check(Dictionary<string, string> files, params string[] outside) =>
+    private static ValueTask<Result<CheckPackResponse>> Check(Dictionary<string, string> files, params string[] outside) =>
         new CheckPackService(new InMemoryPackDirectories().With(Dir, files, outside)).Handle(new CheckPackRequest(Dir), Token);
 
     [Fact]
@@ -38,7 +40,7 @@ public sealed class CheckPackServiceTests
 
         Assert.True(result.Passed);
         Assert.Empty(result.Findings);
-        Assert.Equal("mine", result.Id);
+        Assert.Equal("mine", result.Id?.Value);
         Assert.Equal("design", result.Applies);
         Assert.Equal(2, result.Lenses);
         Assert.Equal(LensPackReader.Hash(files), result.Hash);
@@ -51,7 +53,7 @@ public sealed class CheckPackServiceTests
         var changed = Valid();
         changed["lenses/b.md"] = "Look for something else.";
 
-        Assert.NotEqual((await Check(Valid())).Value.Hash, (await Check(changed)).Value.Hash);
+        Assert.NotEqual((await Check(Valid())).Value.Hash, (await Check(changed)).Value.Hash, StringComparer.Ordinal);
     }
 
     [Fact]
@@ -73,7 +75,7 @@ public sealed class CheckPackServiceTests
     [Fact]
     public async Task More_than_ten_lenses_fail()
     {
-        var prompts = Enumerable.Range(0, 11).Select(static i => $"lenses/{i}.md").ToArray();
+        var prompts = Enumerable.Range(0, 11).Select(static i => $"lenses/{i.ToString(CultureInfo.InvariantCulture)}.md").ToArray();
         var files = new Dictionary<string, string>(StringComparer.Ordinal) { ["pack.json"] = Manifest(prompts) };
         foreach (var prompt in prompts)
         {

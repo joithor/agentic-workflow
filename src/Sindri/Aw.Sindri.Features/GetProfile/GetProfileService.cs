@@ -34,30 +34,32 @@ internal sealed class GetProfileService(IViewReader views, IProjectorStatus stat
         var loaded = await approved.Latest(cancellationToken).ConfigureAwait(false);
         var lenses = loaded.IsError ? null : loaded.Value?.Profile.Workflow?.Packs?.Lenses;
         var packs = new List<ProfilePack>();
-        foreach (var (kind, choice, fallback) in new[]
-        {
-            (LensPackKind.Design, lenses?.Design, "design-five"),
-            (LensPackKind.Review, lenses?.Review, "code-review"),
-        })
-        {
-            await Add(packs, kind, repo: null, choice?.Default ?? fallback, cancellationToken).ConfigureAwait(false);
-            foreach (var (repo, id) in choice?.Repos?.OrderBy(static r => r.Key, StringComparer.Ordinal) ?? [])
-            {
-                await Add(packs, kind, RepoName.TryFrom(repo, out var named) ? named : null, id, cancellationToken).ConfigureAwait(false);
-            }
-        }
-
+        await AddKind(packs, LensPackKind.Design, lenses?.Design, "design-five", cancellationToken).ConfigureAwait(false);
+        await AddKind(packs, LensPackKind.Review, lenses?.Review, "code-review", cancellationToken).ConfigureAwait(false);
         return packs;
     }
+
+    private async ValueTask AddKind(List<ProfilePack> packs, LensPackKind kind, PackChoice? choice, string fallback, CancellationToken cancellationToken)
+    {
+        await Add(packs, kind, repo: null, choice?.Default ?? fallback, cancellationToken).ConfigureAwait(false);
+        foreach (var (repo, id) in RepoChoices(choice))
+        {
+            await Add(packs, kind, RepoName.TryFrom(repo, out var named) ? named : null, id, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private static IEnumerable<KeyValuePair<string, string>> RepoChoices(PackChoice? choice) =>
+        choice?.Repos is { } repos ? repos.OrderBy(static r => r.Key, StringComparer.Ordinal) : [];
 
     private async ValueTask Add(List<ProfilePack> packs, LensPackKind kind, RepoName? repo, string named, CancellationToken cancellationToken)
     {
         var key = kind == LensPackKind.Design ? "lenses.design" : "lenses.review";
         var resolved = await lensPacks.Resolve(kind, repo, cancellationToken).ConfigureAwait(false);
         var pack = resolved.IsError
-            ? new ProfilePack(key, named, "built-in", Hash: null, "none", "invalid: " + resolved.Error.Message)
-            : new ProfilePack(key, resolved.Value.Id.Value, "built-in", resolved.Value.Hash, "built-in", "ok");
-        if (!packs.Exists(p => string.Equals(p.Kind, pack.Kind, StringComparison.Ordinal) && string.Equals(p.Id, pack.Id, StringComparison.Ordinal)))
+            ? new ProfilePack(key, LensPackId.TryFrom(named, out var asked) ? asked : null, "built-in", Hash: null, "none", $"invalid: '{named}': {resolved.Error.Message}")
+            : new ProfilePack(key, resolved.Value.Id, "built-in", resolved.Value.Hash, "built-in", "ok");
+        var same = packs.Exists(p => string.Equals(p.Kind, pack.Kind, StringComparison.Ordinal) && p.Id?.Value == pack.Id?.Value && (pack.Id is not null || p.Status == pack.Status));
+        if (!same)
         {
             packs.Add(pack);
         }

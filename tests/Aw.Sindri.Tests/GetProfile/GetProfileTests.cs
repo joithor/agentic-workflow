@@ -53,8 +53,8 @@ public sealed class GetProfileTests
         var packs = (await Service().Handle(new GetProfileRequest(), Token)).Value.Packs;
 
         Assert.Equal(
-            [new ProfilePack("lenses.design", "design-five", "built-in", "sha256:" + new string('d', 64), "built-in", "ok"),
-             new ProfilePack("lenses.review", "code-review", "built-in", "sha256:" + new string('r', 64), "built-in", "ok")],
+            [new ProfilePack("lenses.design", LensPackId.From("design-five"), "built-in", "sha256:" + new string('d', 64), "built-in", "ok"),
+             new ProfilePack("lenses.review", LensPackId.From("code-review"), "built-in", "sha256:" + new string('r', 64), "built-in", "ok")],
             packs);
     }
 
@@ -67,8 +67,8 @@ public sealed class GetProfileTests
 
         var packs = (await Service(fake, profile).Handle(new GetProfileRequest(), Token)).Value.Packs;
 
-        var strict = Assert.Single(packs, static p => string.Equals(p.Id, "strict", StringComparison.Ordinal));
-        Assert.Equal(("lenses.review", (string?)null, "none"), (strict.Kind, strict.Hash, strict.Pin));
+        var strict = Assert.Single(packs, static p => string.Equals(p.Id?.Value, "strict", StringComparison.Ordinal));
+        Assert.Equal(("lenses.review", null, "none"), (strict.Kind, strict.Hash, strict.Pin));
         Assert.StartsWith("invalid: ", strict.Status, StringComparison.Ordinal);
         Assert.Equal(3, packs.Count);
     }

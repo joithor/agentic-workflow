@@ -9,7 +9,7 @@ namespace Aw.Sindri.Tests.CheckPack;
 [Lane(TestLane.Integration)]
 public sealed class DiskPackDirectoriesContractTests : PackDirectoriesContract, IDisposable
 {
-    private readonly string _root = Path.Combine(Path.GetTempPath(), "aw-pack-dir-" + Guid.NewGuid().ToString("N"));
+    private readonly string _root = Path.Combine(Path.GetTempPath(), "aw-pack-dir-" + RealTime.NewGuid().ToString("N"));
 
     public void Dispose()
     {
@@ -26,7 +26,7 @@ public sealed class DiskPackDirectoriesContractTests : PackDirectoriesContract, 
         await File.WriteAllTextAsync(Path.Combine(pack, "pack.json"), "{}", TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(Path.Combine(pack, "lenses", "a.md"), "alpha", TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(Path.Combine(_root, "secret.txt"), "outside", TestContext.Current.CancellationToken);
-        File.CreateSymbolicLink(Path.Combine(pack, "lenses", "out.md"), Path.Combine(_root, "secret.txt"));
+        _ = File.CreateSymbolicLink(Path.Combine(pack, "lenses", "out.md"), Path.Combine(_root, "secret.txt"));
         return (new DiskPackDirectories(), pack);
     }
 
