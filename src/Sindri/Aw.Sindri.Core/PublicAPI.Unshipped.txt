@@ -15255,3 +15255,5 @@ override Aw.Sindri.Core.Setup.McpProviderState.GetHashCode() -> int
 override Aw.Sindri.Core.Setup.McpProviderState.ToString() -> string!
 static Aw.Sindri.Core.Setup.McpProviderState.operator !=(Aw.Sindri.Core.Setup.McpProviderState? left, Aw.Sindri.Core.Setup.McpProviderState? right) -> bool
 static Aw.Sindri.Core.Setup.McpProviderState.operator ==(Aw.Sindri.Core.Setup.McpProviderState? left, Aw.Sindri.Core.Setup.McpProviderState? right) -> bool
+Aw.Sindri.Core.Setup.ISetupJobSlots
+Aw.Sindri.Core.Setup.ISetupJobSlots.Holds(Aw.Sindri.Core.Ids.JobKind kind, Aw.Sindri.Core.Ids.JobKey key) -> bool

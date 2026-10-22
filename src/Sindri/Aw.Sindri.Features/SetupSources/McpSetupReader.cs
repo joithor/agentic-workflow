@@ -5,7 +5,6 @@ using Aw.Sindri.Core.Mcp;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Core.Views;
-using Aw.Sindri.Features.SetupWatch;
 
 namespace Aw.Sindri.Features.SetupSources;
 
@@ -18,7 +17,7 @@ namespace Aw.Sindri.Features.SetupSources;
 /// <param name="host">Reads the providers' config files and says which are installed.</param>
 /// <param name="jobs">The 'jobs' view (the RegisterMcp jobs).</param>
 /// <param name="queue">The setup service's job queue (a job waiting for its turn is connecting too).</param>
-internal sealed class McpSetupReader(IApprovedProfile approvals, IProviderHost host, IJobViews jobs, SetupJobQueue queue)
+internal sealed class McpSetupReader(IApprovedProfile approvals, IProviderHost host, IJobViews jobs, ISetupJobSlots queue)
 {
     private static readonly JobKind _register = JobKind.From("RegisterMcp");
     private static readonly (ProviderFile Provider, string Name, string Id)[] _providers = [(ProviderFile.Claude, "Claude Code", "claude"), (ProviderFile.Codex, "Codex", "codex"), (ProviderFile.Cursor, "Cursor", "cursor")];
@@ -76,7 +75,7 @@ internal sealed class McpSetupReader(IApprovedProfile approvals, IProviderHost h
     {
         var key = McpJobKeys.For(RepoName.From(repo.Name));
         var mine = recent.Where(j => j.Key == key).ToList();
-        var queued = queue.Slot == (_register, key) || queue.Waiting.Any(w => w == (_register, key));
+        var queued = queue.Holds(_register, key);
         if (queued || mine.Exists(static j => j.State == JobState.Running))
         {
             return (McpConnection.Connecting, null);
