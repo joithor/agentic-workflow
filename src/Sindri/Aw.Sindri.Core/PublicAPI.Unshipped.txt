@@ -15843,3 +15843,5 @@ Aw.Sindri.Core.Setup.IProfileInitializer
 Aw.Sindri.Core.Setup.IProfileInitializer.Create(System.Collections.Generic.IReadOnlyCollection<string!>! defaultEffects, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
 Aw.Sindri.Core.Setup.RepoEvents.Onboarded(Aw.Sindri.Core.Ids.RepoName repo, Aw.Sindri.Core.Ids.ProfileHash approved, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 static Aw.Sindri.Core.Setup.RepoEvents.OnboardedKeyOf(Aw.Sindri.Core.Ids.RepoName repo, Aw.Sindri.Core.Ids.ProfileHash approved) -> string!
+Aw.Sindri.Core.Setup.IRepoOnboardingTick
+Aw.Sindri.Core.Setup.IRepoOnboardingTick.Ensure(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask

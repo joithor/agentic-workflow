@@ -15,12 +15,10 @@ namespace Aw.Sindri.Features.OnboardRepo;
 /// <param name="recorder">Records the event.</param>
 /// <param name="known">The (repo, hash) pairs known to be recorded, so a tick does not run them again.</param>
 /// <param name="git">Forgets what it knows of the repos.</param>
-internal sealed class RepoOnboarding(IApprovedProfile approvals, IRepoHooks hooks, RepoEvents recorder, KnownRepoEvents known, RepoGitCache git)
+internal sealed class RepoOnboarding(IApprovedProfile approvals, IRepoHooks hooks, RepoEvents recorder, KnownRepoEvents known, RepoGitCache git) : IRepoOnboardingTick
 {
-    /// <summary>Onboards each repo of the latest approved profile that is not yet recorded for its hash.</summary>
-    /// <param name="cancellationToken">Cancels the work.</param>
-    /// <returns>A task that ends when every repo was tried; a failure is tried again on the next tick.</returns>
-    internal async ValueTask Ensure(CancellationToken cancellationToken)
+    /// <inheritdoc/>
+    public async ValueTask Ensure(CancellationToken cancellationToken)
     {
         if (!recorder.CanRecord() || await approvals.Latest(cancellationToken).ConfigureAwait(false) is not { IsSuccess: true, Value: { } approved })
         {

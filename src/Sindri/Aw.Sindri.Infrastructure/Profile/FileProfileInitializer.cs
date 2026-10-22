@@ -9,7 +9,7 @@ namespace Aw.Sindri.Infrastructure.Profile;
 /// <param name="settings">Where the profile is.</param>
 internal sealed class FileProfileInitializer(SindriSettings settings) : IProfileInitializer
 {
-    public ValueTask<Result<string>> Create(IReadOnlyCollection<string> defaultEffects, CancellationToken cancellationToken)
+    public async ValueTask<Result<string>> Create(IReadOnlyCollection<string> defaultEffects, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(defaultEffects);
         cancellationToken.ThrowIfCancellationRequested();
@@ -17,7 +17,7 @@ internal sealed class FileProfileInitializer(SindriSettings settings) : IProfile
         var exists = SindriErrors.ProfileInvalid.With($"a profile already exists at {path} (fix: edit it, or remove it first)");
         if (File.Exists(path))
         {
-            return ValueTask.FromResult<Result<string>>(exists);
+            return exists;
         }
 
         try
@@ -27,21 +27,22 @@ internal sealed class FileProfileInitializer(SindriSettings settings) : IProfile
                 OwnerOnly.EnsureDirectory(directory);
             }
 
-            using (var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write))
+            var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write);
+            await using (stream.ConfigureAwait(false))
             {
-                stream.Write(new UTF8Encoding(encoderShouldEmitUTF8Identifier: false).GetBytes(DefaultProfile.Text(Environment.UserName, defaultEffects)));
+                await stream.WriteAsync(new UTF8Encoding(encoderShouldEmitUTF8Identifier: false).GetBytes(DefaultProfile.Text(Environment.UserName, defaultEffects)), cancellationToken).ConfigureAwait(false);
             }
 
             OwnerOnly.RestrictFiles(path);
-            return ValueTask.FromResult<Result<string>>(path);
+            return path;
         }
         catch (IOException) when (File.Exists(path))
         {
-            return ValueTask.FromResult<Result<string>>(exists);   // another process created it between the check and the create
+            return exists;   // another process created it between the check and the create
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return ValueTask.FromResult<Result<string>>(SindriErrors.ProfileInvalid.With($"{path} can't be written: {e.Message} (fix: make the folder writable, then run 'sindri profile init' again)"));
+            return SindriErrors.ProfileInvalid.With($"{path} can't be written: {e.Message} (fix: make the folder writable, then run 'sindri profile init' again)");
         }
     }
 }

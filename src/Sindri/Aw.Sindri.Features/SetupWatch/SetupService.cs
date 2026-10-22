@@ -3,7 +3,6 @@ using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Setup;
-using Aw.Sindri.Features.OnboardRepo;
 
 namespace Aw.Sindri.Features.SetupWatch;
 
@@ -15,7 +14,7 @@ namespace Aw.Sindri.Features.SetupWatch;
 /// <param name="backfill">Appends a missing 'repo.added' (the re-run rule of AddRepo, setup-once spec §5.1).</param>
 /// <param name="mcp">The automatic MCP registration (SO-A4); absent in a host that has none.</param>
 /// <param name="onboarding">Onboarding after approval (SO-A3c): each repo the approved profile names gets 'repo.onboarded' once per approval; absent in a host that has none.</param>
-internal sealed class SetupService(IProfileSource live, RepoAddedBackfill backfill, McpAutoRegister? mcp = null, RepoOnboarding? onboarding = null) : IScheduledService
+internal sealed class SetupService(IProfileSource live, RepoAddedBackfill backfill, McpAutoRegister? mcp = null, IRepoOnboardingTick? onboarding = null) : IScheduledService
 {
     /// <summary>The service's name in the schedule ('setup'); its actor is 'service:setup'.</summary>
     internal static ServiceName ServiceId { get; } = ServiceName.From("setup");

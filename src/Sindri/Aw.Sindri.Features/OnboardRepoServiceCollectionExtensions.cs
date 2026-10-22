@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Jobs;
+using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Features.OnboardRepo;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -19,6 +20,7 @@ internal static class OnboardRepoServiceCollectionExtensions
         return services
             .AddSingleton(resolved)
             .AddScoped<RepoOnboarding>()
+            .AddScoped<IRepoOnboardingTick>(static sp => sp.GetRequiredService<RepoOnboarding>())
             .AddScoped<IJobAdmission<OnboardRepoRequest>, OnboardRepoAdmission>()
             .AddJob<OnboardRepoRequest, OnboardedRepo, OnboardRepoService>(resolved.KeyOf, static r => "onboarded " + r.Repo.Value);
     }
