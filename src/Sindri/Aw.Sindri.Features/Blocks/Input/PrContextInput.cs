@@ -45,14 +45,9 @@ internal sealed class PrContextInput(IPullRequests pulls, IChangedPaths changed,
 
         var state = await InputFacts.Read(contents, context, "fact:prState", cancellationToken).ConfigureAwait(false);
         var workspace = await InputFacts.Read(contents, context, "fact:workspace", cancellationToken).ConfigureAwait(false);
-        if (state.IsError && InputFacts.Fails(state.Error))
+        if (Changed(state) ?? Changed(workspace) is { } changed)
         {
-            return state.Error;
-        }
-
-        if (workspace.IsError && InputFacts.Fails(workspace.Error))
-        {
-            return workspace.Error;
+            return changed;
         }
 
         var view = await pulls.Get(link, cancellationToken).ConfigureAwait(false);
@@ -61,15 +56,21 @@ internal sealed class PrContextInput(IPullRequests pulls, IChangedPaths changed,
             return Unavailable(view.Error.Code + ": " + view.Error.Message);
         }
 
-        var snapshot = state.IsError ? null : state.Value;
+        return await Compose(link, view.Value, state.IsError ? null : state.Value, workspace.IsError ? null : Text(workspace.Value, "path", "dir"), cancellationToken).ConfigureAwait(false);
+    }
+
+    private static Error? Changed(Result<JsonNode?> fact) => fact.IsError && InputFacts.Fails(fact.Error) ? fact.Error : null;
+
+    private async ValueTask<Result<InjectionSections>> Compose(string link, PullView view, JsonNode? snapshot, string? workspace, CancellationToken cancellationToken)
+    {
         var parts = new List<string>
         {
-            $"## Pull request {link}\nState: {view.Value.State}; head {view.Value.HeadSha}; checks {view.Value.Checks.State}\n" + Titled(snapshot),
-            await Paths(workspace.IsError ? null : Text(workspace.Value, "path", "dir"), snapshot, view.Value.HeadSha, cancellationToken).ConfigureAwait(false),
-            await Failing(link, view.Value.Checks.Failing, cancellationToken).ConfigureAwait(false),
+            $"## Pull request {link}\nState: {view.State}; head {view.HeadSha}; checks {view.Checks.State}\n" + Titled(snapshot),
+            await Paths(workspace, snapshot, view.HeadSha, cancellationToken).ConfigureAwait(false),
+            await Failing(link, view.Checks.Failing, cancellationToken).ConfigureAwait(false),
             await Thread(link, cancellationToken).ConfigureAwait(false),
         };
-        var text = scrubber.Scrub(string.Join("\n", parts));
+        var text = scrubber.Scrub(string.Join('\n', parts));
         return InputFacts.Say(Section, text.Length > TotalCap ? text[..TotalCap] + "\n[truncated]" : text.TrimEnd());
     }
 
