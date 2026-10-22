@@ -1,0 +1,207 @@
+using Aw.Kernel;
+using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.Api.Workflow;
+
+namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
+
+/// <summary>
+/// A run the user took over (F3 needs-you spec §3, §4): the clock text from the served time left, the footer and badge that say
+/// whether the clock stands still, the 2-hour nudge from the served "takeover:" row, and Hand back, which sends
+/// <c>ApplyCommand:handback</c> and nothing else. The run canvas hosts the inspector block these properties fill.
+/// </summary>
+internal sealed class TakeoverViewModel : ObservableObject
+{
+    private const string TakenOverState = "taken-over";
+    private const string RowPrefix = "takeover:";
+    private static readonly TimeSpan _toastShown = TimeSpan.FromSeconds(5);
+    private static readonly string[] _all =
+    [
+        nameof(IsTakenOver), nameof(Badge), nameof(Footer), nameof(ClockText), nameof(HandBackBox), nameof(NudgeVisible), nameof(NudgeTitle), nameof(ToastVisible),
+        nameof(IsSending), nameof(Refusal), nameof(HasRefusal),
+    ];
+
+    private readonly ISindriApi _api;
+    private readonly Func<Uri?> _apiUrl;
+    private readonly InstanceCommander _commands;
+    private readonly TimeProvider _clock;
+    private string? _instance;
+    private long? _left;
+    private bool _nudge;
+    private DateTimeOffset _since;
+    private DateTimeOffset? _dismissed;
+
+    internal TakeoverViewModel(ISindriApi api, Func<Uri?> apiUrl, InstanceCommander commands, TimeProvider clock)
+    {
+        (_api, _apiUrl, _commands, _clock) = (api, apiUrl, commands, clock);
+    }
+
+    /// <summary>The inspector's hand-back button.</summary>
+    public string HandBackWord { get; } = Labels.NeedsYouHandBack;
+
+    /// <summary>The inspector's cancel button.</summary>
+    public string CancelWord { get; } = Labels.NeedsYouCancelRun;
+
+    /// <summary>The cancel button's help.</summary>
+    public string CancelHelp { get; } = Labels.NeedsYouCancelRunHelp;
+
+    /// <summary>The nudge's body.</summary>
+    public string NudgeBody { get; } = Labels.NeedsYouNudgeBody;
+
+    /// <summary>The nudge's dismiss button.</summary>
+    public string NotYetWord { get; } = Labels.NeedsYouNotYet;
+
+    /// <summary>The toast's title.</summary>
+    public string ToastTitle { get; } = Labels.NeedsYouHandedBack;
+
+    /// <summary>The toast's body.</summary>
+    public string ToastBody { get; } = Labels.NeedsYouHandedBackBody;
+
+    /// <summary>True while the user has the run: the instance serves a paused line.</summary>
+    public bool IsTakenOver { get; private set; }
+
+    /// <summary>The node and inspector badge: "You took over", or "Running" once handed back.</summary>
+    public string Badge => IsTakenOver ? Labels.NeedsYouTookOver : Labels.NeedsYouRunning;
+
+    /// <summary>The time left as the engine says it ("2h 50m"); empty when none is served.</summary>
+    public string TimeLeft => _left is { } left ? Labels.Duration(left) : "";
+
+    /// <summary>The node footer: the clock stands still while the user has the run, runs again after.</summary>
+    public string Footer => _left is null
+        ? Labels.NeedsYouClockPausedNoTime
+        : IsTakenOver ? Labels.NeedsYouClockPaused(TimeLeft) : Labels.NeedsYouClockRunning(TimeLeft);
+
+    /// <summary>The inspector's clock line, from the served time left.</summary>
+    public string ClockText => Footer;
+
+    /// <summary>The inspector's hand-back box.</summary>
+    public string HandBackBox => Labels.NeedsYouHandBackBox(TimeLeft);
+
+    /// <summary>True while the 2-hour nudge shows.</summary>
+    public bool NudgeVisible => _nudge && IsTakenOver;
+
+    /// <summary>The nudge's title: whole hours since the served row's time, at least two.</summary>
+    public string NudgeTitle => Labels.NeedsYouNudgeTitle(Math.Max(2, (int)(_clock.GetUtcNow() - _since).TotalHours));
+
+    /// <summary>True for five seconds after a hand back.</summary>
+    public bool ToastVisible { get; private set; }
+
+    /// <summary>True while a command is in flight.</summary>
+    public bool IsSending { get; private set; }
+
+    /// <summary>The served refusal of the last command, as served; empty for none.</summary>
+    public string Refusal { get; private set; } = "";
+
+    /// <summary>True when there is a refusal to show.</summary>
+    public bool HasRefusal => Refusal.Length > 0;
+
+    /// <summary>Completes when the toast has been shown for its time and dropped.</summary>
+    internal Task ToastExpiry { get; private set; } = Task.CompletedTask;
+
+    /// <summary>Reads the instance: whether the user has it, and the clock's time left.</summary>
+    /// <param name="instanceId">The instance.</param>
+    /// <returns>A task that completes when the read was applied.</returns>
+    internal async Task Load(string instanceId)
+    {
+        _instance = instanceId;
+        if (_apiUrl() is not { } url)
+        {
+            return;
+        }
+
+        var read = await _api.Instance(url, instanceId, CancellationToken.None).ConfigureAwait(true);
+        if (read.IsError || !string.Equals(_instance, instanceId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var status = read.Value.Current.Status;
+        IsTakenOver = status.Paused is not null || string.Equals(status.Header.State, TakenOverState, StringComparison.Ordinal);
+        _left = status.Paused?.TimeoutLeftSeconds ?? _left;   // handed back, the instance serves none: the footer keeps the time that was left
+        Refresh();
+    }
+
+    /// <summary>Takes the served rows: the "takeover:" row of this instance shows the nudge, unless "Not yet" dismissed that very row.</summary>
+    /// <param name="rows">The rows as served.</param>
+    internal void Observe(IEnumerable<NeedsYouEntry> rows)
+    {
+        ArgumentNullException.ThrowIfNull(rows);
+        var row = _instance is null ? null : rows.FirstOrDefault(r => string.Equals(r.Id, RowPrefix + _instance, StringComparison.Ordinal));
+        _nudge = row is not null && _dismissed != row.Since;
+        _since = row?.Since ?? _since;
+        if (row is null)
+        {
+            _dismissed = null;   // the row left: the next one served is a new nudge
+        }
+
+        Refresh();
+    }
+
+    /// <summary>"Not yet": hides the nudge until the next served row.</summary>
+    internal void NotYet()
+    {
+        _dismissed = _since;
+        _nudge = false;
+        Refresh();
+    }
+
+    /// <summary>Hand back, in the inspector or the nudge: sends <c>ApplyCommand:handback</c>, once per press, and nothing else.</summary>
+    /// <returns>A task that completes when the answer came.</returns>
+    internal async Task HandBack()
+    {
+        if (_instance is not { } instance || IsSending || !IsTakenOver)
+        {
+            return;
+        }
+
+        var answer = await Send(new ApplyCommandBody(instance, CommandKind.Handback)).ConfigureAwait(true);
+        if (answer is { IsError: false })
+        {
+            (IsTakenOver, _nudge, ToastVisible) = (false, false, true);
+            ToastExpiry = DropToast();
+            Refresh();
+        }
+    }
+
+    /// <summary>Cancel run, in the inspector: sends <c>ApplyCommand:cancel</c>. The caller asks first.</summary>
+    /// <returns>A task that completes when the answer came.</returns>
+    internal async Task CancelRun()
+    {
+        if (_instance is { } instance && !IsSending)
+        {
+            _ = await Send(new ApplyCommandBody(instance, CommandKind.Cancel)).ConfigureAwait(true);
+        }
+    }
+
+    // One command per press: the flag is set before the first await. A refusal shows as served and leaves the control pressable.
+    private async Task<Result<ApplyCommandAccepted>?> Send(ApplyCommandBody body)
+    {
+        (IsSending, Refusal) = (true, "");
+        Refresh();
+        var answer = await _commands.Send(body).ConfigureAwait(true);
+        IsSending = false;
+        if (answer is { IsError: true } refused)
+        {
+            Refusal = refused.Error.Message;
+        }
+
+        Refresh();
+        return answer;
+    }
+
+    private async Task DropToast()
+    {
+        await Task.Delay(_toastShown, _clock).ConfigureAwait(true);
+        ToastVisible = false;
+        Refresh();
+    }
+
+    private void Refresh()
+    {
+        foreach (var name in _all)
+        {
+            OnChanged(name);
+        }
+
+        OnChanged(nameof(TimeLeft));
+    }
+}
