@@ -51,6 +51,7 @@ internal static class TemporalReads
     /// <param name="query">The visibility query.</param>
     /// <param name="match">Which execution is wanted.</param>
     /// <param name="cancellationToken">The caller's token.</param>
+    /// <param name="timeout">The per-attempt deadline of each RPC, or null for the call's default.</param>
     /// <returns>The execution, or null when none matches.</returns>
     internal static Task<WorkflowExecution?> Find(ITemporalClient client, string query, Func<WorkflowExecution, bool> match, CancellationToken cancellationToken, TimeSpan? timeout = null)
     {
@@ -74,6 +75,7 @@ internal static class TemporalReads
     /// <param name="client">The client.</param>
     /// <param name="query">The visibility query.</param>
     /// <param name="cancellationToken">The caller's token.</param>
+    /// <param name="timeout">The per-attempt deadline of each RPC, or null for the call's default.</param>
     /// <returns>Each execution's id and start time with its search attributes, as the caller reads them.</returns>
     internal static Task<List<WorkflowExecution>> List(ITemporalClient client, string query, CancellationToken cancellationToken, TimeSpan? timeout = null)
     {
