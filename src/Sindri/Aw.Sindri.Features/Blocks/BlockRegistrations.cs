@@ -71,7 +71,8 @@ internal static class BlockRegistrations
         .AddSingleton<IMergeRecord, MergeRecord>()      // PB-B: the merge record's one writer
         .AddEffect<PrPushEffect>()        // PB-E: the lease push
         .AddEffect<PrRecordEffect>()      // PB-E: the merge record's recheck and docs rows
-        .AddEffect<PrRerunChecksEffect>(); // PB-E: re-run a flaky check
+        .AddEffect<PrRerunChecksEffect>() // PB-E: re-run a flaky check
+        .AddEffect<LineReportEffect>();   // LN-WF1: a phase's shipped and merged, recorded for its line
 
     /// <summary>Registers the PR babysitter's and docs sync's events (PB spec §6.1, W25).</summary>
     /// <param name="services">The service collection.</param>
@@ -96,8 +97,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PhaseSteps.Seed)
         .AddBlockDescriptor(PhaseSteps.Drift)
         .AddBlockDescriptor(PhaseSteps.Decide)
-        .AddBlockDescriptor(BabysitSteps.Watch)
-        .AddBlockDescriptor(LineEffects.Report);
+        .AddBlockDescriptor(BabysitSteps.Watch);
 
     /// <summary>Registers the line's build and prove stations' Steps (line spec §7.2, §7.3), descriptors only.</summary>
     /// <param name="services">The service collection.</param>
@@ -114,6 +114,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(ProveSteps.BeforeAfter)
         .AddBlockDescriptor(ProveSteps.Holdout)
         .AddBlockDescriptor(ProveSteps.HoldoutLog)
+        .AddBlockDescriptor(ProveSteps.Collect)
         .AddBlockDescriptor(ProveSteps.Evidence)
         .AddBlockDescriptor(ProveSteps.FailLog);
 
