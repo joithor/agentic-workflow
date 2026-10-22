@@ -7,23 +7,22 @@ namespace Aw.Sindri.Ui.ViewModels.Run;
 /// <summary>The run page's answer to a read (<see cref="RunPageViewModel"/>, continued): the graph, its places, the cards, edges and header.</summary>
 internal sealed partial class RunPageViewModel
 {
-    private RunLayout _layout = new(new Dictionary<string, MapRect>(StringComparer.Ordinal), default, new Dictionary<string, EdgePorts>(StringComparer.Ordinal));
     private bool _opened;   // the canvas has been sent to the active stage once for this run
 
     /// <summary>Where the cards are in the world.</summary>
-    internal RunLayout Layout => _layout;
+    internal RunLayout Layout { get; private set; } = new(new Dictionary<string, MapRect>(StringComparer.Ordinal), default, new Dictionary<string, EdgePorts>(StringComparer.Ordinal));
 
     private void Show(InstanceDetail line, RecipeView? recipe, IReadOnlyDictionary<string, InstanceDetail> children, IReadOnlyList<InstanceSummary> runs)
     {
         var graph = RunEndStates.Apply(RunGraphBuilder.Build(line, recipe, children));
-        _layout = RunCanvasLayout.Of(graph, graph.Nodes.ToDictionary(n => n.Id, RunCardSizes.Of, StringComparer.Ordinal));
+        Layout = RunCanvasLayout.Of(graph, graph.Nodes.ToDictionary(n => n.Id, RunCardSizes.Of, StringComparer.Ordinal));
         var active = ActiveOf(graph);
         var stages = graph.Nodes.Where(n => n.Kind == RunNodeKind.Stage).ToList();
         var cards = graph.Nodes.Select(n => Card(n, line, stages, active)).ToList();
         (Edges, Pills) = EdgesOf(graph);
-        World = _layout.World;
+        World = Layout.World;
         ActiveNodeId = active;
-        ReadingOrder = [.. cards.Where(c => c.IsStage).SelectMany(c => c.Steps.Count > 0 ? c.Steps.Select(s => s.Key) : new[] { c.Id })];
+        ReadingOrder = [.. cards.Where(c => c.IsStage).SelectMany(c => c.Steps.Count > 0 ? c.Steps.Select(s => s.Key) : [c.Id])];
         BranchesNote = graph.BranchesServed ? string.Empty : Labels.RunBranchesNotServed;
         OnChanged(nameof(HasBranchesNote));
         Header(line, graph, runs);
@@ -53,7 +52,7 @@ internal sealed partial class RunPageViewModel
 
     private RunCardViewModel Card(RunNode node, InstanceDetail line, List<RunNode> stages, string? active)
     {
-        var rect = _layout.Rects.GetValueOrDefault(node.Id);
+        var rect = Layout.Rects.GetValueOrDefault(node.Id);
         var at = stages.FindIndex(n => string.Equals(n.Id, node.Id, StringComparison.Ordinal));
         var leadsTo = at >= 0 && at + 1 < stages.Count ? stages[at + 1].Name : null;
         var group = line.Children.FirstOrDefault(g => string.Equals(g.State, node.Id, StringComparison.Ordinal));
@@ -67,7 +66,7 @@ internal sealed partial class RunPageViewModel
         var pills = new List<RunPillViewModel>();
         foreach (var edge in graph.Edges)
         {
-            if (!_layout.Rects.TryGetValue(edge.From, out var from) || !_layout.Rects.TryGetValue(edge.To, out var to) || !_layout.Ports.TryGetValue(edge.Key, out var ports))
+            if (!Layout.Rects.TryGetValue(edge.From, out var from) || !Layout.Rects.TryGetValue(edge.To, out var to) || !Layout.Ports.TryGetValue(edge.Key, out var ports))
             {
                 continue;
             }
@@ -77,7 +76,8 @@ internal sealed partial class RunPageViewModel
             {
                 EdgeTone.Active => (false, "Brush.PrimaryHover"),
                 EdgeTone.Failed => (false, "Brush.Error"),
-                EdgeTone.Dim => (true, (string?)null),
+                EdgeTone.Dim => (true, null),
+                EdgeTone.Normal => (false, null),
                 _ => (false, null),
             };
             edges.Add(new MapEdge(edge.Key, route, dashed, brush));
@@ -97,6 +97,7 @@ internal sealed partial class RunPageViewModel
         PortSide.Top => new MapPoint(rect.X + (rect.Width / 2), rect.Top),
         PortSide.Bottom => new MapPoint(rect.X + (rect.Width / 2), rect.Bottom),
         PortSide.Left => new MapPoint(rect.Left, rect.Y + (rect.Height / 2)),
+        PortSide.Right => new MapPoint(rect.Right, rect.Y + (rect.Height / 2)),
         _ => new MapPoint(rect.Right, rect.Y + (rect.Height / 2)),
     };
 

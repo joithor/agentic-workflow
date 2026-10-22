@@ -26,7 +26,7 @@ internal sealed class RunCanvasWorld : Canvas
     }
 
     /// <summary>Raised when a card or one of its steps was clicked; carries the card's id or the step's key.</summary>
-    internal event EventHandler<string>? Picked;
+    internal event EventHandler<ValueEventArgs<string>>? Picked;
 
     /// <summary>Gets the point of the canvas where the world's origin sits.</summary>
     internal Point Origin { get; private set; }
@@ -87,7 +87,7 @@ internal sealed class RunCanvasWorld : Canvas
         foreach (var card in page.Cards)
         {
             var view = new RunCardView(card);
-            view.Picked += (_, key) => Picked?.Invoke(this, key);
+            view.Picked += (_, e) => Picked?.Invoke(this, e);
             views[card.Id] = view;
             Place(view, card.X + Origin.X, card.Y + Origin.Y);
         }

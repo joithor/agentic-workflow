@@ -9,8 +9,11 @@ namespace Aw.Sindri.Ui.Views.Run;
 internal sealed partial class RunPage
 {
     // The page asks for a view in world coordinates; the canvas lives in canvas coordinates, the world moved by the origin.
-    private void OnViewRequested(object? sender, RunFocus focus) =>
+    private void OnViewRequested(object? sender, ValueEventArgs<RunFocus> e)
+    {
+        var focus = e.Value;
         RunCanvas.MoveToView(new ZoomView(focus.Scale, focus.X - (RunWorld.Origin.X * focus.Scale), focus.Y - (RunWorld.Origin.Y * focus.Scale)));
+    }
 
     private void OnCanvasChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
@@ -22,8 +25,9 @@ internal sealed partial class RunPage
     }
 
     // Pointing at the minimap centres the stage on that point of the world, with no transition so a drag follows the pointer.
-    private void OnMiniMapCentred(object? sender, Point world)
+    private void OnMiniMapCentred(object? sender, ValueEventArgs<Point> e)
     {
+        var world = e.Value;
         var scale = RunCanvas.View.Scale;
         var canvas = new Point(world.X + RunWorld.Origin.X, world.Y + RunWorld.Origin.Y);
         RunCanvas.SetView(new ZoomView(scale, (RunCanvas.Bounds.Width / 2) - (canvas.X * scale), (RunCanvas.Bounds.Height / 2) - (canvas.Y * scale)));

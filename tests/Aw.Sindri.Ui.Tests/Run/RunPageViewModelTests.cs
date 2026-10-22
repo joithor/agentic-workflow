@@ -70,12 +70,12 @@ public sealed class RunPageViewModelTests
     {
         var page = await Opened("design");
         RunFocus? asked = null;
-        page.ViewRequested += (_, f) => asked = f;
+        page.ViewRequested += (_, e) => asked = e.Value;
 
         Assert.Null(page.Opening);
         page.SetViewport(1200, 800, rightInset: 480);
 
-        Assert.NotNull(asked);
+        _ = Assert.NotNull(asked);
         Assert.Equal(1, asked.Value.Scale);
         Assert.Equal(360, asked.Value.X);   // (1200 - 480) / 2 around the centre column
     }
@@ -96,7 +96,7 @@ public sealed class RunPageViewModelTests
     [Fact]
     public async Task The_runs_list_asks_for_the_open_runs_of_the_same_workflow()
     {
-        await Opened("plan");
+        _ = await Opened("plan");
 
         Assert.Equal(new InstanceQuery(Root: true, Open: true, Recipe: "workflow.line"), _server.LastInstancesQuery);
     }
@@ -129,7 +129,7 @@ public sealed class RunPageViewModelTests
         Assert.Empty(_reads);
 
         _ = await page.Catch(_api, new InstanceChange(child, "produce", 11), Token);
-        Assert.Contains("WFI-line", _reads);
+        Assert.Contains("WFI-line", _reads, StringComparer.Ordinal);
     }
 
     [Fact]

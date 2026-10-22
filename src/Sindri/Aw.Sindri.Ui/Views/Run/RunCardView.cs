@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Globalization;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -38,7 +39,7 @@ internal sealed class RunCardView : Border
     }
 
     /// <summary>Raised when the card or one of its steps is clicked; carries the card's id or the step's key.</summary>
-    internal event EventHandler<string>? Picked;
+    internal event EventHandler<ValueEventArgs<string>>? Picked;
 
     /// <summary>Gets the card's header button.</summary>
     internal Button? Header { get; private set; }
@@ -71,8 +72,8 @@ internal sealed class RunCardView : Border
     {
         Background = this.Brush("Brush.Surface1");
         CornerRadius = this.Corner("Radius.LG", 12);
-        var root = new Grid { RowDefinitions = new RowDefinitions($"{RunCardSizes.Header},*,{RunCardSizes.Footer}") };
-        Header = Flat(HeaderContent(), _card.AutomationName, () => Picked?.Invoke(this, _card.Id));
+        var root = new Grid { RowDefinitions = new RowDefinitions($"{RunCardSizes.Header.ToString(CultureInfo.InvariantCulture)},*,{RunCardSizes.Footer.ToString(CultureInfo.InvariantCulture)}") };
+        Header = Flat(HeaderContent(), _card.AutomationName, () => Picked?.Invoke(this, new ValueEventArgs<string>(_card.Id)));
         Header.Height = RunCardSizes.Header;
         root.Children.Add(Header);
         if (_card.HasSteps)
@@ -125,7 +126,7 @@ internal sealed class RunCardView : Border
         var stack = new StackPanel();
         foreach (var step in _card.Steps)
         {
-            var row = Flat(StepContent(step), step.AutomationName, () => Picked?.Invoke(this, step.Key));
+            var row = Flat(StepContent(step), step.AutomationName, () => Picked?.Invoke(this, new ValueEventArgs<string>(step.Key)));
             row.Height = RowHeight;
             row.Padding = new Thickness(6, 0);
             row.CornerRadius = this.Corner("Radius.SM", 6);

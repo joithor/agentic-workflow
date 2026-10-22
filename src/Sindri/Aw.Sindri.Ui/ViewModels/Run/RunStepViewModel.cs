@@ -18,6 +18,7 @@ internal sealed class RunStepViewModel : ObservableObject
             RunStepKind.Agent => "AI agent",
             RunStepKind.You => "You",
             RunStepKind.Sub => "Runs a sub-workflow",
+            RunStepKind.Unknown => string.Empty,
             _ => string.Empty,
         };
         AutomationName = $"{Labels.StepOf(stageName, number, total)}, {step.Name}, {Word}" + (Kind.Length > 0 ? ", " + Kind : string.Empty);
