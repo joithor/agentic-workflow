@@ -205,7 +205,16 @@ publish_sindri() {
   [ -x "$jout/judge" ] || die "the publish left no judge in $jout"
   cp "$jout/judge" "$out/judge"
   for f in "$jout"/libe_sqlite3.*; do if [ -f "$f" ]; then cp "$f" "$out/"; fi; done
-  say "published sindri and judge at $commit"
+  # aw-packets beside it (NativeAOT): step.scope.evidence runs `aw-packets hash` through AW_PACKETS_BIN, and nothing else puts it on the PATH.
+  local pout="$SCRATCH/packets-bin"
+  say "publishing aw-packets (NativeAOT, $rid) into $out"
+  # shellcheck disable=SC2086 # $pre is the heavy launcher and its flag
+  (cd "$tree" && $pre dotnet publish src/Packets/Aw.Packets.App/Aw.Packets.App.csproj -c Release -r "$rid" \
+    -p:RestoreLockedMode=false -o "$pout") </dev/null >>"$log" 2>&1 || { tail -20 "$log" >&2; die "publishing aw-packets failed"; }
+  [ -x "$pout/aw-packets" ] || die "the publish left no aw-packets in $pout"
+  cp "$pout/aw-packets" "$out/aw-packets"
+  for f in "$pout"/libe_sqlite3.*; do if [ -f "$f" ] && [ ! -e "$out/$(basename "$f")" ]; then cp "$f" "$out/"; fi; done
+  say "published sindri, judge and aw-packets at $commit"
   SINDRI_CMD="$out/sindri"
 }
 
@@ -416,6 +425,14 @@ main() {
     export AW_SINDRI_JUDGE; say "judge: $AW_SINDRI_JUDGE"
   else
     say "judge: none beside sindri and AW_SINDRI_JUDGE unset; step.judge.choose falls back to the judge on the PATH"
+  fi
+
+  # step.scope.evidence runs `aw-packets hash`: point it at the aw-packets beside the binary, unless the caller named one.
+  if [ -z "${AW_PACKETS_BIN:-}" ] && [ -x "$(dirname "$SINDRI_CMD")/aw-packets" ]; then AW_PACKETS_BIN="$(dirname "$SINDRI_CMD")/aw-packets"; fi
+  if [ -n "${AW_PACKETS_BIN:-}" ]; then
+    export AW_PACKETS_BIN; say "aw-packets: $AW_PACKETS_BIN"
+  else
+    say "aw-packets: none beside sindri and AW_PACKETS_BIN unset; step.scope.evidence falls back to aw-packets on the PATH"
   fi
 
   # 3. the target repo: a local clone on a new branch
