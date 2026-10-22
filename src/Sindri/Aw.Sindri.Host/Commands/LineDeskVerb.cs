@@ -8,6 +8,7 @@ using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Line;
 using Aw.Sindri.Core.Packets;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Design;
 using Aw.Sindri.Features.Plan;
 using Aw.Sindri.Host.Commands.Line;
@@ -61,7 +62,7 @@ internal static class LineDeskVerb
         }
 
         var reply = await Dispatch(block, services, facts.Value, context.Value, ct).ConfigureAwait(false);
-        return reply.IsError ? reply.Error : await Write(reply.Value, outDirectory, (services.GetRequiredService<IPackets>(), services.GetRequiredService<JsonSerializerOptions>()), ct).ConfigureAwait(false);
+        return reply.IsError ? reply.Error : await Write(reply.Value, outDirectory, (services.GetRequiredService<IPackets>(), services.GetRequiredService<JsonSerializerOptions>(), services.GetRequiredService<BlockCatalog>()), ct).ConfigureAwait(false);
     }
 
     private static async Task<Result<LineDeskResponse>> Dispatch(string block, IServiceProvider services, Dictionary<string, string> facts, LineDeskContext context, CancellationToken ct) => block switch
@@ -107,7 +108,7 @@ internal static class LineDeskVerb
     }
 
     /// <summary>Writes the Step's fact files, its run-area files and report.json; an evidence Step's packet gets its hash from aw-packets.</summary>
-    private static async Task<Result<LineDeskReport>> Write(LineDeskResponse response, string outDirectory, (IPackets Packets, JsonSerializerOptions Json) context, CancellationToken ct)
+    private static async Task<Result<LineDeskReport>> Write(LineDeskResponse response, string outDirectory, (IPackets Packets, JsonSerializerOptions Json, BlockCatalog Catalog) context, CancellationToken ct)
     {
         var outputs = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var (key, text) in response.Outputs)
@@ -130,7 +131,7 @@ internal static class LineDeskVerb
             }
         }
 
-        var report = new LineDeskReport(response.Block, response.Outcome, outputs, [.. response.Files.Select(static f => f.Path)], response.Findings, response.Warnings);
+        var report = new LineDeskReport(response.Block, response.Outcome, outputs, DeskOutputs.ByOutcome(context.Catalog, response.Block), [.. response.Files.Select(static f => f.Path)], response.Findings, response.Warnings);
         await ScopingFactDirectory.Write(Path.Combine(outDirectory, "report.json"), Encoding.UTF8.GetString(AwJson.Serialize(report, context.Json)) + "\n", append: false, ct).ConfigureAwait(false);
         return report;
     }
