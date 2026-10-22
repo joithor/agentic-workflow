@@ -23,6 +23,11 @@ internal sealed partial class Launcher
             return foreign;
         }
 
+        if (await Trust(request, entry, workDir, cancellationToken).ConfigureAwait(false) is { } untrusted)
+        {
+            return untrusted;
+        }
+
         try
         {
             if (WriteBundle(request, workDir) is { } refused)
@@ -54,6 +59,18 @@ internal sealed partial class Launcher
         request is { Attended: false, Step.Bundle: { } bundle }
             ? PackBundleFiles.Write(StepEnvironment.For(request).GetValueOrDefault(StepEnvironment.RunDirectory, workDir), bundle)
             : null;
+
+    /// <summary>A claude-code Step's worktree is marked trusted before the CLI starts: it would stop at "do you trust this project?" with no one to answer. Other entries and human opens need nothing.</summary>
+    private async ValueTask<Error?> Trust(LaunchRequest request, AgentEntry entry, string workDir, CancellationToken cancellationToken)
+    {
+        if (request.Attended || !string.Equals(entry.Id.Value, "claude-code", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var trusted = await parts.Trust.Trust(workDir, cancellationToken).ConfigureAwait(false);
+        return trusted.IsError ? trusted.Error : null;
+    }
 
     private async ValueTask<Result<(IReadOnlyList<string> Argv, SessionId? Session)>> Compose(LaunchRequest request, AgentEntry entry, string workDir, CancellationToken cancellationToken)
     {
