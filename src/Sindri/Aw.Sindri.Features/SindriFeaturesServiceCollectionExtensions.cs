@@ -246,6 +246,7 @@ public static class SindriFeaturesServiceCollectionExtensions
         .AddScoped<ProfileFacts>()
         .AddScoped<LedgerFacts>()
         .AddScoped<OnyxDoctor>()
+        .AddScoped<LinearDoctor>()
         .AddScoped<ContextEngineChecks>()
         .AddScoped<RunDoctorService>()
         .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>>(static sp =>
