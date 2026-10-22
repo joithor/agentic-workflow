@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Kernel;
@@ -6,6 +7,7 @@ using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Features.Blocks.Effect;
 
@@ -22,6 +24,7 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 internal sealed class LineReportEffect(IRunArea area, IFactContents contents, IFactStore store, TimeProvider clock) : IEffectKind, IDescribedBlock
 {
     private const string Record = "line-report.jsonl";
+    private static readonly FactKey PhaseEventFact = FactKey.From("fact:phaseEvent");
 
     /// <inheritdoc/>
     public static BlockDescriptor Descriptor => LineEffects.Report;
@@ -65,11 +68,14 @@ internal sealed class LineReportEffect(IRunArea area, IFactContents contents, IF
         }
 
         var identity = JsonValue.Create(context.Identity).ToJsonString();
-        if (before.Value.Split('\n', StringSplitOptions.RemoveEmptyEntries).Any(row => row.Contains("\"identity\":" + identity, StringComparison.Ordinal)))
+        var recorded = before.Value.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(row => row.Contains("\"identity\":" + identity, StringComparison.Ordinal));
+        if (recorded is not null)
         {
-            return new EffectDone(Reply: null, Existed: true);
+            // A repeat replies again with the first attempt's 'at', so the reply fact is the same bytes (the reply's ledger key makes the repeat harmless).
+            return await Reply(status, new PhaseEvent(line, phase, context.Instance, At(recorded)), existed: true, cancellationToken).ConfigureAwait(false);
         }
 
+        var at = clock.GetUtcNow().ToString("O", CultureInfo.InvariantCulture);
         var row = new JsonObject
         {
             ["status"] = status,
@@ -77,11 +83,48 @@ internal sealed class LineReportEffect(IRunArea area, IFactContents contents, IF
             ["instance"] = context.Instance,
             ["line"] = line,
             ["phase"] = phase,
-            ["at"] = clock.GetUtcNow().ToString("O", CultureInfo.InvariantCulture),
+            ["at"] = at,
         };
         var written = await area.Write(context.Instance, Record, row.ToJsonString() + "\n", append: true, cancellationToken).ConfigureAwait(false);
-        return written.IsError ? written.Error : new EffectDone(Reply: null, Existed: false);
+        return written.IsError
+            ? written.Error
+            : await Reply(status, new PhaseEvent(line, phase, context.Instance, at), existed: false, cancellationToken).ConfigureAwait(false);
     }
+
+    private static string At(string recorded)
+    {
+        try
+        {
+            return JsonNode.Parse(recorded)?["at"]?.GetValue<string>() ?? string.Empty;
+        }
+        catch (Exception e) when (e is JsonException or InvalidOperationException)   // boundary: a damaged audit row has no time to repeat
+        {
+            return string.Empty;
+        }
+    }
+
+    /// <summary>The reply: the status as the outcome of 'line.phaseChanged', carrying 'fact:phaseEvent' { line, phase, status, instance, at }.</summary>
+    private async ValueTask<Result<EffectDone>> Reply(string status, PhaseEvent phaseEvent, bool existed, CancellationToken cancellationToken)
+    {
+        var payload = new JsonObject
+        {
+            ["line"] = phaseEvent.Line,
+            ["phase"] = phaseEvent.Phase,
+            ["status"] = status,
+            ["instance"] = phaseEvent.Instance,
+            ["at"] = phaseEvent.At,
+        };
+        var stored = await store.Put(Encoding.UTF8.GetBytes(payload.ToJsonString()), cancellationToken).ConfigureAwait(false);
+        if (stored.IsError)
+        {
+            return stored.Error;
+        }
+
+        var facts = new Dictionary<FactKey, ReplyFact> { [PhaseEventFact] = new ReplyFact(stored.Value.Ref, stored.Value.Sha256, HeadSha: null) };
+        return new EffectDone(OutcomeName.From(status), existed, facts);
+    }
+
+    private sealed record PhaseEvent(string Line, string? Phase, string Instance, string At);
 
     private async ValueTask<Result<JsonElement>> ReadLine(EffectContext context, CancellationToken cancellationToken)
     {
