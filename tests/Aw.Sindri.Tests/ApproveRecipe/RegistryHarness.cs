@@ -215,5 +215,6 @@ file static class EffectPortRegistrations
         .AddSingleton<Core.Workflow.Engine.Runtime.IFactContents>(new InMemoryFactStore())
         .AddSingleton<Core.Workflow.Engine.Effects.IDeskNotices>(new InMemoryDeskNotices())
         .AddSingleton<Core.Scoping.IBriefFiles>(new Testing.Scoping.InMemoryBriefFiles())
-        .AddSingleton<Core.Scoping.IRepoCheckouts>(new Testing.Scoping.InMemoryRepoCheckouts());
+        .AddSingleton<Core.Scoping.IRepoCheckouts>(new Testing.Scoping.InMemoryRepoCheckouts())
+        .AddSingleton<Core.Forge.IPullRequests>(new Testing.Forge.FakePullRequests(["forge.test"]));
 }
