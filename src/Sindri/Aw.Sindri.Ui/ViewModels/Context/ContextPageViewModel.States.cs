@@ -58,7 +58,7 @@ internal sealed partial class ContextPageViewModel
         }
 
         Problem = string.Empty;   // the overlay says it, not the banner
-        BuildControl ??= MakeBuildControl();
+        BuildControl ??= MakeBuildControl();   // null until the catalog is read; the next no-map answer tries again
         if (!IsBuilding && await BuildRunning(api, cancellationToken).ConfigureAwait(true))
         {
             IsBuilding = true;
@@ -74,14 +74,11 @@ internal sealed partial class ContextPageViewModel
         ChangedStates();
     }
 
-    // The catalog's own row when it is read; a ready job row of the same shape until then, so the button is there on the first no-map answer.
-    private ControlViewModel MakeBuildControl()
+    // Readiness always comes from the catalog: until its BuildContextMap row is read there is no button.
+    private ControlViewModel? MakeBuildControl()
     {
         Func<CancellationToken, Task<Result<CommandAcceptedView>>> send = StartBuild;
-        return Ports.Catalog.On(BuildAction, subject: string.Empty, send)
-            ?? new ControlViewModel(
-                new CommandRowView(BuildAction, "job", [], Terminal: false, Method: "POST", Route: JobRoutes.BuildContextMap, Cli: "sindri context map build", Ui: "ready", Destructive: false, ReadsViews: false, Shortcut: null),
-                send, Ports.Catalog.Clipboard, Ports.Clock);
+        return Ports.Catalog.On(BuildAction, subject: string.Empty, send);
     }
 
     // One press starts one build; a build that is already running is the state the page wanted anyway.

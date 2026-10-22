@@ -150,7 +150,9 @@
             <StackPanel Spacing="12" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="560">
               <TextBlock x:Name="ContextEmptyTitle" Classes="detail-title" Text="{Binding EmptyTitle}" TextAlignment="Center" />
               <TextBlock x:Name="ContextEmptyBody" Classes="body subtle" Text="{Binding EmptyBody}" TextWrapping="Wrap" TextAlignment="Center" />
-              <ctl:CommandControl x:Name="ContextBuild" DataContext="{Binding BuildControl}" HorizontalAlignment="Center" />
+              <Panel IsVisible="{Binding BuildControl, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <ctl:CommandControl x:Name="ContextBuild" DataContext="{Binding BuildControl}" HorizontalAlignment="Center" />
+              </Panel>
             </StackPanel>
           </Border>
         </Panel>
