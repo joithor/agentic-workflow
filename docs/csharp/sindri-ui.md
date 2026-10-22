@@ -618,6 +618,7 @@ message, which names the full path; the path shows shortened (`~/…`) on its ow
 | Profile fix | `profile.needsApproval` (Sindri's verdict; the app doesn't derive it) | `sindri profile approve` when set |
 | Services | `services[]` | `heartbeat · every 5s · last run 12:00:05Z` (`not run yet`) |
 | Last event | the newest stream event | `service.heartbeat · 12:00:05Z · #42` |
+| Code index (CI-10b) | `GET /sindri/code-index/status` (`repos[]`: `state`, `commit`, `builtAt`, `layers[]`) | One wrapped line per repo, read on connect and after each event: `repo @ abcdef0, 3 min old, structure ok · graph ok · embeddings pending 31%` (its accessible name starts "Code index: "), and a word at the heading, `ok` or `needs a look`. By state: `missing` "first build queued", `damaged` "damaged, rebuilding on the next check", `stale` "(behind main)", `building`, `waiting` "waiting for a free build slot"; a state the app doesn't know shows as served. A layer reads `ok`, `off`, `pending N%` (from "N of M embedded") or `unavailable (SND-CODEIDX-…)`; clones and deps show only when they need a look. A failed read says "The code index can't be read just now." |
 
 State is always a word, never colour alone; each status text carries an `AutomationProperties.Name`. The look follows
 `docs/sindri/DESIGN.md`: the near-black canvas, charcoal cards with hairline borders, Inter, and the lavender accent only

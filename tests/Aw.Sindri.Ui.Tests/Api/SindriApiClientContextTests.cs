@@ -204,4 +204,19 @@ public sealed class SindriApiClientContextTests
         Assert.Equal((int)GoldenFiles.Node("context-map", "map-tabs-anchor")["version"]!["number"]!, status.Version.Number);
         Assert.Equal(["?limit=5", "?limit=3", "?anchor=feature:x"], handler.Requests.Select(r => Uri.UnescapeDataString(r.Query)), StringComparer.Ordinal);
     }
+
+    [Fact]
+    public async Task CodeIndexStatus_reads_the_status_route_as_the_human_and_parses_the_golden()
+    {
+        var (client, _, handler) = Reach();
+
+        var status = await client.CodeIndexStatus(_api, Token);
+
+        var seen = Assert.Single(handler.Requests);
+        Assert.Equal(("GET", "/sindri/code-index/status", string.Empty), (seen.Method, seen.Path, seen.Query));
+        Assert.Equal(("human", "ui", A.HumanToken), (seen.Caller, seen.Client, seen.Token));
+        var repo = Assert.Single(status.Value.Repos);
+        Assert.Equal(("other", "ok"), (repo.Repo, repo.State));
+        Assert.Equal(("structure", "ok"), (repo.Layers[0].Layer, repo.Layers[0].State));
+    }
 }

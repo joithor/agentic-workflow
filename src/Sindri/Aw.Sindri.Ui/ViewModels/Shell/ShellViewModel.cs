@@ -69,6 +69,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         Item = new ItemSheetViewModel(api, Health.Catalog, clock, decisions);
         Health.Follow(Queue.Refresh);
         Health.Follow(Item.Refresh);
+        Health.Follow(Health.CodeIndex.Refresh);
         _api = api;
         NeedsYou = new NeedsYouViewModel(preferences, motion ?? new StillMotion(), clock);
         ApproveAll = new ApproveAllViewModel(Health.Catalog, () => Health.ApiUrl(), api, clock, () => NeedsYou.Seen.ReducedMotion);
