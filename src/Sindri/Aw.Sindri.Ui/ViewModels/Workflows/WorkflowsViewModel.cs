@@ -19,8 +19,11 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
     private InstanceList? _list;
     private List<InstanceRowViewModel> _loaded = [];
     private Uri? Url { get; set; }
+    private static readonly TimeSpan _timeTick = TimeSpan.FromMinutes(1);
     private int _reads;
     private int _doneReads;
+    private readonly UiContext _ui = new();
+    private ITimer? _ticker;
 
     /// <summary>Raised when a row asks to open its instance.</summary>
     internal event EventHandler<OpenRequestedEventArgs>? OpenRequested;
@@ -139,6 +142,7 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
     internal async Task Refresh(Uri url, CancellationToken cancellationToken)
     {
         Url = url;
+        _ticker ??= clock.CreateTimer(_ => _ui.PostOrInline(TickTimes), state: null, _timeTick, _timeTick);
         var read = ++_reads;
         _doneReads++;   // a finished read for the filter before this one (or from before this refresh) is no longer wanted
         var list = await api.Instances(url, new InstanceQuery(Root: true, Open: true, Recipe: RecipeFilter, Subject: SubjectFilter), cancellationToken).ConfigureAwait(true);
@@ -270,6 +274,7 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
         Reselect(before);
         IsEmpty = rows.Count == 0;
         EmptyText = IsEmpty ? list.Empty ?? Labels.NoWorkflowsMatch : string.Empty;
+        BoardEmptyText = IsEmpty ? EmptyText : Labels.WorkflowsNothingHere;
         NotifyBoardStates();
     }
 

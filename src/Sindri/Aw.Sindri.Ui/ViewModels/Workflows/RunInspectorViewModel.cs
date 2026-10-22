@@ -106,7 +106,7 @@ internal sealed partial class RunInspectorViewModel(ISindriApi api, IClipboard c
     public string PreviousText => Labels.RunPrevious;
 
     /// <summary>The next button's words.</summary>
-    public string NextText => Labels.RunNext;
+    public string NextText => Labels.RunNextRun;
 
     /// <summary>The copy-reference button's words.</summary>
     public string CopyReferenceText => Labels.RunCopyReference;
