@@ -98,4 +98,10 @@ internal static partial class Labels
 
     /// <summary>The back-out button of the cancel question.</summary>
     internal const string NeedsYouBackOut = "Keep it";
+
+    /// <summary>The inspector's line saying when the user took the run over.</summary>
+    /// <param name="time">The time of day, "14:05".</param>
+    /// <param name="ago">How long ago, as the engine says a length of time.</param>
+    /// <returns>The words.</returns>
+    internal static string NeedsYouTookOverAt(string time, string ago) => $"you took over at {time} ({ago} ago)";
 }

@@ -41,6 +41,27 @@ public sealed class StepPolicyFileTests : IDisposable
         Assert.Contains("\"defaultMode\": \"plan\"", text, StringComparison.Ordinal);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void Denied_paths_become_read_and_edit_deny_rules()
+    {
+        var text = Encoding.UTF8.GetString(StepPolicyFile.Render(new StepPolicy(["Read"], StepPermissionMode.Default, "/work/wt", ["/work/other", "/work/holdout"])));
+
+        Assert.Contains("\"deny\"", text, StringComparison.Ordinal);
+        foreach (var path in new[] { "other", "holdout" })
+        {
+            Assert.Contains($"\"Read(//work/{path}/**)\"", text, StringComparison.Ordinal);
+            Assert.Contains($"\"Edit(//work/{path}/**)\"", text, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Without_denied_paths_there_is_no_deny_key()
+    {
+        var text = Encoding.UTF8.GetString(StepPolicyFile.Render(new StepPolicy(["Read"], StepPermissionMode.Default, "/work/wt")));
+
+        Assert.DoesNotContain("deny", text, StringComparison.Ordinal);
+    }
+
     [Fact, Trait("Lane", "integration")]
     public void The_file_is_written_0600_in_a_0700_directory_and_deleted_with_the_launch()
     {

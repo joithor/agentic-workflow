@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
@@ -17,7 +18,7 @@ internal sealed class TakeoverViewModel : ObservableObject
     private static readonly string[] _all =
     [
         nameof(IsTakenOver), nameof(Badge), nameof(Footer), nameof(ClockText), nameof(HandBackBox), nameof(NudgeVisible), nameof(NudgeTitle), nameof(ToastVisible),
-        nameof(IsSending), nameof(Refusal), nameof(HasRefusal), nameof(IsAskingCancel), nameof(CancelAsk),
+        nameof(IsSending), nameof(Refusal), nameof(HasRefusal), nameof(IsAskingCancel), nameof(CancelAsk), nameof(TookOverLine), nameof(HasTookOverLine),
     ];
 
     private long? Left { get; set; }
@@ -26,6 +27,7 @@ internal sealed class TakeoverViewModel : ObservableObject
     private readonly InstanceCommander _commands;
     private readonly TimeProvider _clock;
     private string? _instance;
+    private DateTimeOffset? _takenAt;
     private string _address = "";
     private string _confirm = "";
     private bool Nudge { get; set; }
@@ -87,6 +89,14 @@ internal sealed class TakeoverViewModel : ObservableObject
     /// <summary>True for five seconds after a hand back.</summary>
     public bool ToastVisible { get; private set; }
 
+    /// <summary>"you took over at 14:05 (2h 35m ago)"; empty when the instance serves no takeover time (the badge says "You took over" alone).</summary>
+    public string TookOverLine => _takenAt is { } at && IsTakenOver
+        ? Labels.NeedsYouTookOverAt(at.ToOffset(_clock.GetLocalNow().Offset).ToString("HH:mm", CultureInfo.InvariantCulture), Labels.Duration((long)(_clock.GetUtcNow() - at).TotalSeconds))
+        : "";
+
+    /// <summary>True when the line shows.</summary>
+    public bool HasTookOverLine => TookOverLine.Length > 0;
+
     /// <summary>True while a command is in flight.</summary>
     public bool IsSending { get; private set; }
 
@@ -118,6 +128,7 @@ internal sealed class TakeoverViewModel : ObservableObject
 
         var status = read.Value.Current.Status;
         (_address, _confirm) = (status.Header.Address, status.Commands.FirstOrDefault(c => c.Verb == StatusVerb.Cancel)?.Confirm ?? "");
+        _takenAt = status.TakenOverAt;
         IsTakenOver = status.Paused is not null || string.Equals(status.Header.State, TakenOverState, StringComparison.Ordinal);
         Left = status.Paused?.TimeoutLeftSeconds ?? Left;   // handed back, the instance serves none: the footer keeps the time that was left
         Refresh();
