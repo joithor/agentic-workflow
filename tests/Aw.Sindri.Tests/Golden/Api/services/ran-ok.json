@@ -6,7 +6,10 @@
       "paused": false,
       "lastRun": null,
       "nextSlot": null,
-      "job": null
+      "job": null,
+      "actions": [
+        "run"
+      ]
     },
     {
       "name": "context-map-refresh",
