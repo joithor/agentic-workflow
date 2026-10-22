@@ -17,8 +17,28 @@ internal sealed class GitRepoSnapshot : IRepoSnapshot
     /// <inheritdoc />
     public async ValueTask<Result<SnapshotInventory>> Inventory(CodeIndexRepo repo, CommitSha commit, SnapshotLimits limits, CancellationToken cancellationToken)
     {
-        var listed = await Run(repo.Path, cancellationToken, "ls-tree", "-r", "-z", "--full-tree", "--long", commit.Value).ConfigureAwait(false);
-        return listed.IsError ? listed.Error : InputRules.Apply(commit, Parse(listed.Value), limits);
+        var config = await Run(repo.Path, cancellationToken, "config", "--list").ConfigureAwait(false);
+        if (config.IsError)
+        {
+            return config.Error;
+        }
+
+        if (!IsPartialClone(config.Value))
+        {
+            var listed = await Run(repo.Path, cancellationToken, "ls-tree", "-r", "-z", "--full-tree", "--long", commit.Value).ConfigureAwait(false);
+            return listed.IsError ? listed.Error : InputRules.Apply(commit, Parse(listed.Value, presentSizes: null), limits);
+        }
+
+        // A partial clone: asking git for a missing blob's size dies on git 2.43 even with lazy fetch off, so the tree is
+        // listed without sizes and the sizes come from the objects the clone holds; a blob it lacks has none and is 'missing'.
+        var tree = await Run(repo.Path, cancellationToken, "ls-tree", "-r", "-z", "--full-tree", commit.Value).ConfigureAwait(false);
+        if (tree.IsError)
+        {
+            return tree.Error;
+        }
+
+        var present = await Run(repo.Path, cancellationToken, "cat-file", "--batch-all-objects", "--unordered", "--batch-check=%(objectname) %(objectsize)").ConfigureAwait(false);
+        return present.IsError ? present.Error : InputRules.Apply(commit, Parse(tree.Value, Sizes(present.Value)), limits);
     }
 
     /// <inheritdoc />
@@ -84,11 +104,31 @@ internal sealed class GitRepoSnapshot : IRepoSnapshot
         }
     }
 
-    private static IEnumerable<TreeEntry> Parse(string output)
+    private static bool IsPartialClone(string config) =>
+        config.Split('\n').Any(line =>
+            line.StartsWith("extensions.partialclone=", StringComparison.OrdinalIgnoreCase)
+            || (line.StartsWith("remote.", StringComparison.OrdinalIgnoreCase) && line.EndsWith(".promisor=true", StringComparison.OrdinalIgnoreCase)));
+
+    private static Dictionary<string, long> Sizes(string batchCheck)
+    {
+        var sizes = new Dictionary<string, long>(StringComparer.Ordinal);
+        foreach (var line in batchCheck.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var space = line.IndexOf(' ', StringComparison.Ordinal);
+            if (space > 0 && long.TryParse(line.AsSpan(space + 1), NumberStyles.None, CultureInfo.InvariantCulture, out var bytes))
+            {
+                sizes[line[..space]] = bytes;
+            }
+        }
+
+        return sizes;
+    }
+
+    private static IEnumerable<TreeEntry> Parse(string output, Dictionary<string, long>? presentSizes)
     {
         foreach (var record in output.Split('\0', StringSplitOptions.RemoveEmptyEntries))
         {
-            // "<mode> SP <type> SP <object> SP <size, padded> TAB <path>"
+            // "<mode> SP <type> SP <object> SP <size, padded> TAB <path>", or without the size when presentSizes is given
             var tab = record.IndexOf('\t', StringComparison.Ordinal);
             if (tab < 0)
             {
@@ -96,12 +136,14 @@ internal sealed class GitRepoSnapshot : IRepoSnapshot
             }
 
             var meta = record[..tab].Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (meta.Length != 4 || meta[1] == "tree")
+            if (meta.Length != (presentSizes is null ? 4 : 3) || meta[1] == "tree")
             {
                 continue;
             }
 
-            long? size = long.TryParse(meta[3], NumberStyles.None, CultureInfo.InvariantCulture, out var bytes) ? bytes : null;
+            long? size = presentSizes is null
+                ? long.TryParse(meta[3], NumberStyles.None, CultureInfo.InvariantCulture, out var bytes) ? bytes : null
+                : presentSizes.TryGetValue(meta[2], out var held) ? held : null;
             yield return new TreeEntry(meta[0], record[(tab + 1)..], meta[2], meta[1] == "blob" ? size : 0);
         }
     }
