@@ -2,6 +2,7 @@ using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Forge;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Lease;
@@ -216,7 +217,7 @@ public sealed class PrWatchServiceTests : IDisposable
         var store = new PrWatchStore(home);
         var watching = new List<WatchedPull>();
         var profile = new FixedProfile(new SindriProfile(1, "thor", Workflow: new WorkflowSettings(Pr: new PrSettings(PollInterval: "5s", RemindAfter: "1m"))));
-        var recorder = new PrChangedRecorder(sindri.GetRequiredService<ILedgerStore>(), sindri.GetRequiredService<Aw.Sindri.Core.Events.EventFactory>(), sindri.GetRequiredService<IFactStore>(), NullLogger<PrChangedRecorder>.Instance);
+        var recorder = new PrChangedRecorder(sindri.GetRequiredService<ILedgerStore>(), sindri.GetRequiredService<EventFactory>(), sindri.GetRequiredService<IFactStore>(), NullLogger<PrChangedRecorder>.Instance);
         var service = new PrWatchService(new FixedWatched(watching), _forge, recorder, store, profile, _clock, NullLogger<PrWatchService>.Instance);
         return new WatchRig(sindri, service, store, watching, _clock, home.PrWatchFile);
     }
