@@ -1,4 +1,5 @@
 using Aw.Kernel;
+using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
@@ -209,7 +210,7 @@ public sealed class McpAutoRegisterTests
         }
         var live = SliceHarness.Profile();
         var profile = live.Profile with { Repos = [.. repos.Select(static r => new RepoEntry(r, "/work/" + r))], Setup = mcp is null ? null : new SetupSettings(mcp) };
-        var loaded = live with { Profile = profile };
+        var loaded = new LoadedProfile(profile, ProfileHashing.Of(AwJson.Serialize(profile, SliceHarness.Json)), live.Source);   // a new profile gets its own hash
         _ = await _slice.Profiles.Save(loaded, Token);
         return loaded;
     }
