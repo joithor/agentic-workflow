@@ -1,7 +1,6 @@
 using Aw.Kernel;
-using Aw.Sindri.Core.Setup;
 
-namespace Aw.Sindri.Core.Ports;
+namespace Aw.Sindri.Core.Setup;
 
 /// <summary>
 /// What each setup step reads (GET /sindri/setup): one member per source, each a pure read that starts nothing. A source that can't be read is an

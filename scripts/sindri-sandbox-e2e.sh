@@ -513,7 +513,18 @@ auto_desk() {
   done
   say "auto-desk: $addr run $run outcome $outcome ${args[*]:-}"
   DESK_LOG+=("$addr run $run -> $outcome ${args[*]:-}")
-  human workflow complete "$addr" --run "$run" --outcome "$outcome" ${args[@]+"${args[@]}"} 2>&1 | tail -2 | sed 's/^/  /' >&2
+  # The printed command can leave out an output the outcome needs (an interview's doneAsking also writes
+  # fact:interviewClosed); a refusal that names one gets its placeholder and one more try per fact.
+  local out tries=0
+  while :; do
+    out="$(human workflow complete "$addr" --run "$run" --outcome "$outcome" ${args[@]+"${args[@]}"} 2>&1 | tail -2)"
+    key="$(printf '%s' "$out" | grep -oE 'required output fact:[A-Za-z0-9_]+' | head -1 | sed 's/required output //')"
+    [ -n "$key" ] && [ "$tries" -lt 3 ] || break
+    tries=$((tries + 1)); f="$SCRATCH/desk/$n-${key#fact:}.json"; printf '{}\n' > "$f"; args+=(--output "$key=$f")
+    say "auto-desk: $addr also needs $key"
+    DESK_LOG[${#DESK_LOG[@]}-1]="$addr run $run -> $outcome ${args[*]}"
+  done
+  printf '%s\n' "$out" | sed 's/^/  /' >&2
   return 0
 }
 

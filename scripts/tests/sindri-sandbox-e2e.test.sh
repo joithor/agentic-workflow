@@ -175,4 +175,18 @@ check "auto-desk: fact:answers is an empty list" "$(cat "$SCRATCH/desk/0-answers
 auto_desk B/1 2>/dev/null
 check "auto-desk: another choice takes its first" "$(cat "$COMPLETED")" "workflow complete B/1 --run 2.1 --outcome pass --output fact:verdict=$SCRATCH/desk/1-verdict.json"
 check "auto-desk: another fact is an empty object" "$(cat "$SCRATCH/desk/1-verdict.json")" "{}"
+# auto-desk: a refusal that names a required output gets that output's placeholder and one more try
+: > "$COMPLETED"; DESK_LOG=()
+human() {
+  printf '%s\n' "$*" >> "$COMPLETED"
+  case "$*" in
+    *interviewClosed*) echo "completed" ;;
+    *) echo "SND-WF-008 step.interview.answer reported 'doneAsking' without fact:interviewClosed (fix: include the required output fact:interviewClosed)" ;;
+  esac
+}
+DESK_NEXT='run: sindri workflow complete C/1 --run 7.1 --outcome <answered|doneAsking> --output fact:answers=<file>'
+auto_desk C/1 2>/dev/null
+check "auto-desk: the retry adds the required output" "$(tail -1 "$COMPLETED")" "workflow complete C/1 --run 7.1 --outcome doneAsking --output fact:answers=$SCRATCH/desk/0-answers.json --output fact:interviewClosed=$SCRATCH/desk/0-interviewClosed.json"
+check "auto-desk: two calls in all" "$(wc -l < "$COMPLETED" | tr -d ' ')" "2"
+check "auto-desk: the log shows the outputs sent last" "${DESK_LOG[0]}" "C/1 run 7.1 -> doneAsking --output fact:answers=$SCRATCH/desk/0-answers.json --output fact:interviewClosed=$SCRATCH/desk/0-interviewClosed.json"
 exit "$fail"
