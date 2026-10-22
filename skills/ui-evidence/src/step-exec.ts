@@ -6,7 +6,7 @@ import type { Locator, Page } from "playwright";
 import { isSameOriginPath } from "./host-guard.js";
 import { assertExpectedState } from "./expected-state.js";
 import { candidateFits, resolveCandidate, type Candidate, type RepairProposal } from "./repair.js";
-import { describeExpectedState, type DragStep, type ScriptStep, type TargetStep } from "./script-schema.js";
+import { describeExpectedState, type DragStep, type PressStep, type ScriptStep, type TargetStep } from "./script-schema.js";
 import { isPrefixedTarget, parseStepTarget } from "./step-target.js";
 
 const INTERACTIVE = "button, a, input, [role], [data-testid]";
@@ -27,7 +27,7 @@ export type RepairFn = (brokenSelector: string, step: string, candidates: Candid
  * ambiguous role/text target fails loudly instead of acting on the first match. An explicit `#<n>`
  * suffix picks the nth match and fails clearly when fewer than n exist.
  */
-async function locateTarget(page: Page, step: TargetStep, timeout: number): Promise<Locator> {
+async function locateTarget(page: Page, step: { target: string; index?: number }, timeout: number): Promise<Locator> {
   const target = step.target;
   const parsed = parseStepTarget(target);
   if ("error" in parsed) throw new Error(parsed.error);
@@ -57,6 +57,8 @@ export async function performAction(page: Page, step: ScriptStep, host: string, 
     await scrollContainer(page, step, timeout);
   } else if (step.action === "drag") {
     await drag(page, step, timeout);
+  } else if (step.action === "press") {
+    await press(page, step, timeout);
   } else {
     await page.getByText(step.target).locator("visible=true").first().waitFor({ state: "visible", timeout });
   }
@@ -124,6 +126,12 @@ async function drag(page: Page, step: DragStep, timeout: number): Promise<void> 
   }
 }
 
+/** Focuses the target (when given), then presses the key there; a missing target throws with no key sent. */
+async function press(page: Page, step: PressStep, timeout: number): Promise<void> {
+  if (step.target !== undefined) await (await locateTarget(page, { target: step.target, index: step.index }, timeout)).focus({ timeout });
+  await page.keyboard.press(step.key);
+}
+
 /** Currently-visible interactive elements; `index` is the DOM-order position. */
 export async function enumerateVisibleCandidates(page: Page): Promise<Candidate[]> {
   return page.evaluate((selector) => {
@@ -169,7 +177,7 @@ export async function executeStep(page: Page, step: ScriptStep, host: string, re
   }
 }
 
-async function repairAndRun(page: Page, step: Exclude<ScriptStep, DragStep>, action: "click" | "fill", repair: RepairFn, timeout: number): Promise<boolean> {
+async function repairAndRun(page: Page, step: TargetStep, action: "click" | "fill", repair: RepairFn, timeout: number): Promise<boolean> {
   const description = `${action} ${step.target}; expected: ${describeExpectedState(step.expectedState)}`;
   for (let attempt = 0; attempt < MAX_REPAIR_ATTEMPTS; attempt++) {
     const visible = await enumerateVisibleCandidates(page);

@@ -15,9 +15,18 @@ internal sealed partial class FakeSindriApi
     private readonly Dictionary<string, (int Index, JsonNode Entry)> _decidedEntries = new(StringComparer.Ordinal);
     private JsonObject? _queue;
     private int _contextCalls;
+    private int _mapPublishCalls;
 
     /// <summary>GET /sindri/context/lenses's answer per query (the goldens by default).</summary>
     public Func<LensesQuery, RouteAnswer> LensesAnswer { get; set; } = ContextAnswers.Lenses;
+
+    /// <summary>GET /sindri/items/{id}/scope's answer per item (the no-scope golden by default: nothing frozen yet).</summary>
+    public Func<string, RouteAnswer> ItemScopeAnswer { get; set; } = _ => RouteAnswer.Api("items-id-scope", "no-scope");
+
+    /// <summary>The items whose scope was asked for, in order.</summary>
+    public IReadOnlyList<string> ScopeAsked { get { lock (_gate) { return [.. _scopeAsked]; } } }
+
+    private readonly List<string> _scopeAsked = [];
 
     /// <summary>GET /sindri/context/filemap's answer, or null for the golden the query names.</summary>
     public RouteAnswer? FileMapAnswer { get; set; }
@@ -34,6 +43,12 @@ internal sealed partial class FakeSindriApi
     /// <summary>GET /sindri/context/map's answer.</summary>
     public RouteAnswer MapStatusAnswer { get; set; } = RouteAnswer.Api("context-map", "map-tabs-anchor");
 
+    /// <summary>GET /sindri/context/map/publish's answer (the Health page's Context map card).</summary>
+    public RouteAnswer MapPublishAnswer { get; set; } = RouteAnswer.Api("context-map-publish", "published");
+
+    /// <summary>How many times the publish state was read; counted apart from <see cref="ContextCalls"/>, which the Context page's tests hold at zero.</summary>
+    public int MapPublishCalls => Volatile.Read(ref _mapPublishCalls);
+
     /// <summary>GET /sindri/context/node's answer.</summary>
     public RouteAnswer NodeAnswer { get; set; } = RouteAnswer.Api("context-node", "tab-manager");
 
@@ -42,6 +57,12 @@ internal sealed partial class FakeSindriApi
 
     /// <summary>Held open until set: the lenses read waits for it (a read in flight); null answers at once. Cancelling the call completes it as cancelled.</summary>
     public TaskCompletionSource? LensesGate { get; set; }
+
+    /// <summary>GET /sindri/context/code's answer: null serves the golden for a known anchor and SND-CONTEXT-003 for another.</summary>
+    public RouteAnswer? CodeAnswer { get; set; }
+
+    /// <summary>Held open until set: the code lens read waits for it.</summary>
+    public TaskCompletionSource? CodeGate { get; set; }
 
     /// <summary>Held open until set: the file map read waits for it.</summary>
     public TaskCompletionSource? FileMapGate { get; set; }
@@ -88,6 +109,36 @@ internal sealed partial class FakeSindriApi
         return Context<LensesView>(api, "/sindri/context/lenses", LensesAnswer(query), LensesGate, cancellationToken);
     }
 
+    /// <summary>The code lens answer for a query.</summary>
+    /// <param name="query">What was asked.</param>
+    /// <returns>The answer.</returns>
+    internal RouteAnswer CodeFor(CodeQuery query) => CodeAnswer ?? ContextAnswers.Code(query);
+
+    /// <summary>Every code lens read, in order.</summary>
+    public IReadOnlyList<CodeQuery> CodeQueries { get { lock (_gate) { return [.. _codeQueries]; } } }
+
+    private readonly List<CodeQuery> _codeQueries = [];
+
+    public Task<Result<CodeView>> Code(Uri api, CodeQuery query, CancellationToken cancellationToken)
+    {
+        lock (_gate)
+        {
+            _codeQueries.Add(query);
+        }
+
+        return Context<CodeView>(api, "/sindri/context/code", CodeFor(query), CodeGate, cancellationToken);
+    }
+
+    public Task<Result<ItemScopeView>> ItemScope(Uri api, string itemId, CancellationToken cancellationToken)
+    {
+        lock (_gate)
+        {
+            _scopeAsked.Add(itemId);
+        }
+
+        return Context<ItemScopeView>(api, "/sindri/items/{id}/scope", ItemScopeAnswer(itemId), gate: null, cancellationToken);
+    }
+
     public Task<Result<FileMapView>> FileMap(Uri api, FileMapQuery query, CancellationToken cancellationToken) =>
         Context<FileMapView>(api, "/sindri/context/filemap", FileMapFor(query), FileMapGate, cancellationToken);
 
@@ -125,6 +176,12 @@ internal sealed partial class FakeSindriApi
 
     public Task<Result<MapStatusView>> MapStatus(Uri api, string? anchor, CancellationToken cancellationToken) =>
         Context<MapStatusView>(api, "/sindri/context/map", MapStatusAnswer, MapStatusGate, cancellationToken);
+
+    public Task<Result<MapPublishView>> MapPublish(Uri api, CancellationToken cancellationToken)
+    {
+        _ = Interlocked.Increment(ref _mapPublishCalls);
+        return Task.FromResult(Answer<MapPublishView>(api, "/sindri/context/map/publish", MapPublishAnswer));
+    }
 
     public Task<Result<NodeView>> Node(Uri api, string key, CancellationToken cancellationToken)
     {

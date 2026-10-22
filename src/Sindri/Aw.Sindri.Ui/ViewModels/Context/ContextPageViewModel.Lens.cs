@@ -65,16 +65,27 @@ internal sealed partial class ContextPageViewModel
             return;
         }
 
-        var result = await Ports.Api.Lenses(api, new LensesQuery(anchors, Depth: null, Draft: false, MapVersion: null), cancellationToken).ConfigureAwait(true);
+        var result = await Ports.Api.Lenses(api, new LensesQuery(anchors, Depth: null, Draft: false, MapVersion: PinnedVersion), cancellationToken).ConfigureAwait(true);
         if (generation != _generation)
         {
             return;
         }
 
+        await Draw(api, result, fromQuestion, cancellationToken).ConfigureAwait(true);
+    }
+
+    // The answer onto the page: the map, the live map once the pinned version is gone, or the refusal with its suggestions.
+    private async Task Draw(Uri api, Result<LensesView> result, bool fromQuestion, CancellationToken cancellationToken)
+    {
         if (result.IsSuccess)
         {
             Show(result.Value, choices: [], fromQuestion);
             NoteRead();
+        }
+        else if (PinnedVersion is not null && string.Equals(result.Error.Code, MapVersionNotRetained, StringComparison.Ordinal))
+        {
+            await FallBackToLive(cancellationToken).ConfigureAwait(true);
+            return;
         }
         else
         {

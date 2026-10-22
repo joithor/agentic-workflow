@@ -11,6 +11,9 @@ internal static class ContextRoutes
     /// <summary>POST and GET /sindri/context/map/review.</summary>
     internal const string Review = Root + "/map/review";
 
+    /// <summary>GET /sindri/context/map/publish.</summary>
+    internal const string MapPublish = Root + "/map/publish";
+
     /// <summary>GET /sindri/context/sources.</summary>
     internal const string Sources = Root + "/sources";
 
@@ -31,6 +34,20 @@ internal static class ContextRoutes
 
         Add(parts, "mapVersion", query.MapVersion);
         return With(Root + "/lenses", parts);
+    }
+
+    internal static string Code(CodeQuery query)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        var parts = new List<string>();
+        parts.AddRange(query.Anchors.Select(a => "anchor=" + Uri.EscapeDataString(a)));
+        if (query.Draft)
+        {
+            parts.Add("draft=true");
+        }
+
+        Add(parts, "mapVersion", query.MapVersion);
+        return With(Root + "/code", parts);
     }
 
     internal static string FileMap(FileMapQuery query)
