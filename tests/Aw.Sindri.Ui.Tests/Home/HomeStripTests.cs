@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -69,7 +70,7 @@ public sealed class HomeStripTests
         {
             Rect line = Box(window, "SetupHomeLine"), meter = Box(window, "SetupHomeMeter"), link = Box(window, "SetupHomeLink"), go = Box(window, "SetupHomeContinue");
 
-            Assert.True(Math.Abs(meter.Width - 120) < 1, $"the meter is 120 px wide, was {meter.Width}");
+            Assert.True(Math.Abs(meter.Width - 120) < 1, string.Create(CultureInfo.InvariantCulture, $"the meter is 120 px wide, was {meter.Width}"));
             Assert.True(meter.Left >= link.Left && meter.Right <= go.Left + 0.5, "the meter sits before Continue");
             Assert.True(line.Contains(meter.TopLeft) && line.Contains(go.BottomRight - new Point(1, 1)), "the line holds the meter and Continue");
         });
@@ -83,7 +84,7 @@ public sealed class HomeStripTests
             var cells = window.GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("cell")).ToList();
 
             Assert.Equal(5, cells.Count);
-            Assert.True(cells.All(c => Math.Abs(c.TranslatePoint(default, window)!.Value.Y - cells[0].TranslatePoint(default, window)!.Value.Y) < 1), "the cells share one row");
+            Assert.True(cells.TrueForAll(c => Math.Abs(c.TranslatePoint(default, window)!.Value.Y - cells[0].TranslatePoint(default, window)!.Value.Y) < 1), "the cells share one row");
         });
     }
 }
