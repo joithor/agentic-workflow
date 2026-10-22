@@ -212,7 +212,7 @@ public sealed class RecipeReaderTests
 
         Assert.Equal(
             [
-                "RCP-SCHEMA-001: 'colour' isn't a field of the recipe at test.yaml:15:1 (colour); remove it; the recipe has schema, id, version, description, base, urgency, name, inputs, outputs, initial, states, transitions, loops, budget, evals, hash, displayName",
+                "RCP-SCHEMA-001: 'colour' isn't a field of the recipe at test.yaml:15:1 (colour); remove it; the recipe has schema, id, version, description, base, urgency, name, inputs, outputs, initial, states, transitions, loops, budget, evals, hash, displayName, why",
                 "RCP-SCHEMA-002: transition to 'nowhere' names a state the recipe doesn't declare at test.yaml:14:22 (transitions[0].to); name one of the recipe's states: produce, done",
                 "RCP-SCHEMA-001: active state 'produce' has no 'next' at test.yaml:6:3 (states.produce.next); an active state has step, timeout and next, and may have loop and budget",
             ],
@@ -360,7 +360,7 @@ public sealed class RecipeReaderTests
                 "RCP-SCHEMA-002: 'one' isn't a whole number at test.yaml:3:1 (version); write a whole number",
                 "RCP-SCHEMA-002: 'activ' isn't active, wait or terminal at test.yaml:7:5 (states.produce.kind); write active, wait or terminal",
                 "RCP-DUR-001: '4 hours' isn't a duration ('10m', '4h', '2d', at least 1m) at test.yaml:9:16 (states.produce.timeout.after); write a whole number and m, h or d, at least 1m ('10m', '4h', '2d')",
-                "RCP-SCHEMA-001: 'colour' isn't a field of a state at test.yaml:11:5 (states.produce.colour); remove it; a state has kind, step, waitFor, timeout, loop, budget, next, outcome, why, displayName",
+                "RCP-SCHEMA-001: 'colour' isn't a field of a state at test.yaml:11:5 (states.produce.colour); remove it; a state has kind, step, waitFor, timeout, loop, budget, next, outcome, why, displayName, onOutcome",
             ],
             findings.Findings.Select(f => f.ToLine()),
             StringComparer.Ordinal);
