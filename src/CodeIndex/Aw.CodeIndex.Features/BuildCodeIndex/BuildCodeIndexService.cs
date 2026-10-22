@@ -10,19 +10,19 @@ namespace Aw.CodeIndex.Features.BuildCodeIndex;
 
 /// <summary>
 /// The build slice (spec §5.7): a heavy slot, the snapshot, the incremental plan, the structure write in batches, the syntax
-/// edges and the publish. The graph layer (graphify) runs after the syntax edges and never fails the build; the clones, deps and embeddings layers plug in later; until then each is recorded as unavailable
+/// edges and the publish. The graph layer (graphify) runs after the syntax edges and never fails the build; the embeddings layer is built here; the clones and deps layers plug in later; until then each is recorded as unavailable
 /// with its reason, so a reader never mistakes a layer that was not built for one that is empty.
 /// </summary>
 /// <param name="heads">Whether a commit is still on the default branch.</param>
 /// <param name="snapshot">The repo's tree at a commit.</param>
 /// <param name="structure">Parses and writes the planned files.</param>
+/// <param name="layers">The embeddings and graph layers.</param>
 /// <param name="store">The index files.</param>
 /// <param name="heavy">The box-wide heavy-job slots.</param>
 /// <param name="clock">The time source.</param>
-/// <param name="graph">The graph layer's tool, or null where none is registered (the layer is then unavailable).</param>
-public sealed partial class BuildCodeIndexService(IRepoHeads heads, IRepoSnapshot snapshot, StructureWriter structure, IIndexStore store, IHeavyJobLock heavy, TimeProvider clock, IGraphRunner? graph = null) : IService<BuildCodeIndexRequest, BuildReport>
+public sealed partial class BuildCodeIndexService(IRepoHeads heads, IRepoSnapshot snapshot, StructureWriter structure, BuildLayers layers, IIndexStore store, IHeavyJobLock heavy, TimeProvider clock) : IService<BuildCodeIndexRequest, BuildReport>
 {
-    private static readonly LayerName[] _laterLayers = [LayerName.Clones, LayerName.Deps, LayerName.Embeddings];
+    private static readonly LayerName[] _laterLayers = [LayerName.Clones, LayerName.Deps];
 
     /// <summary>A build in progress: its file, its request and what the snapshot found.</summary>
     private sealed record BuildContext(IIndexBuild Build, BuildCodeIndexRequest Request, SnapshotInventory Inventory, string DefaultBranch, long Started);
@@ -102,17 +102,23 @@ public sealed partial class BuildCodeIndexService(IRepoHeads heads, IRepoSnapsho
             return edges.Error;
         }
 
-        var graphLayer = await BuildGraph(context, code, cancellationToken).ConfigureAwait(false);
+        var graphLayer = await layers.Graph.Run(build, request, code, cancellationToken).ConfigureAwait(false);
         if (graphLayer.IsError)
         {
             return graphLayer.Error;
         }
 
-        var layers = await RecordLayers(build, settings, stamp, graphLayer.Value, cancellationToken).ConfigureAwait(false);
-        return layers.IsError ? layers.Error : await Publish(context, edges.Value, cancellationToken).ConfigureAwait(false);
+        var embedded = await layers.Embeddings.Run(build, settings.Embeddings, request.Progress, cancellationToken).ConfigureAwait(false);
+        if (embedded.IsError)
+        {
+            return embedded.Error;
+        }
+
+        var recorded = await RecordLayers(build, stamp, graphLayer.Value, cancellationToken).ConfigureAwait(false);
+        return recorded.IsError ? recorded.Error : await Publish(context, edges.Value, embedded.Value, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<Result<BuildReport>> Publish(BuildContext context, EdgeShares shares, CancellationToken cancellationToken)
+    private async Task<Result<BuildReport>> Publish(BuildContext context, EdgeShares shares, EmbeddingProgress embedded, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var request = context.Request;
@@ -132,13 +138,13 @@ public sealed partial class BuildCodeIndexService(IRepoHeads heads, IRepoSnapsho
             [.. published.Value.Layers.Select(l => new LayerStatus(l.Layer, l.State, l.Code, l.Detail))],
             shares.UnresolvedShare,
             shares.AmbiguousShare,
-            Embedded: 0,
-            Embeddable: 0,
+            embedded.Embedded,
+            embedded.Embeddable,
             context.Build.Incremental,
             Elapsed(context.Started));
     }
 
-    private async ValueTask<Result<Unit>> RecordLayers(IIndexBuild build, CodeIndexSettings settings, string stamp, LayerRecord graphLayer, CancellationToken cancellationToken)
+    private async ValueTask<Result<Unit>> RecordLayers(IIndexBuild build, string stamp, LayerRecord graphLayer, CancellationToken cancellationToken)
     {
         var now = clock.GetUtcNow();
         var first = await build.SetLayer(new LayerRecord(LayerName.Structure, stamp, LayerState.Ok, Code: null, "ok", now), cancellationToken).ConfigureAwait(false);
@@ -155,10 +161,7 @@ public sealed partial class BuildCodeIndexService(IRepoHeads heads, IRepoSnapsho
 
         foreach (var layer in _laterLayers)
         {
-            var disabled = layer == LayerName.Embeddings && !settings.Embeddings.Enabled;
-            var state = disabled ? LayerState.Disabled : LayerState.Unavailable;
-            var detail = disabled ? "disabled by the profile" : "not built by this version";
-            var recorded = await build.SetLayer(new LayerRecord(layer, "none", state, Code: null, detail, now), cancellationToken).ConfigureAwait(false);
+            var recorded = await build.SetLayer(new LayerRecord(layer, "none", LayerState.Unavailable, Code: null, "not built by this version", now), cancellationToken).ConfigureAwait(false);
             if (recorded.IsError)
             {
                 return recorded.Error;

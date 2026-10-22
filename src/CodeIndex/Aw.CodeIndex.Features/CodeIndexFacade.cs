@@ -12,12 +12,13 @@ namespace Aw.CodeIndex.Features;
 /// <summary>
 /// The code index's facade over the index files (spec §7): the build and the reads that need only the structure layer.
 /// A repo outside the scope, or one with no index, answers the same SND-CODEIDX-013 (Callers and Callees of a ref that names no symbol: 011).
-/// Similar and Neighbors answer 013 until the clones and embeddings layers exist.
+/// Similar answers 013 until the clones layer exists; Neighbors embeds its text with the model the index was built with and answers from the stored vectors.
 /// </summary>
 /// <param name="build">The build slice.</param>
 /// <param name="store">The index files.</param>
+/// <param name="embedder">Embeds a Neighbors query with the model the index was embedded with.</param>
 /// <param name="graph">The graph layer's tool, or null where none is registered.</param>
-public sealed class CodeIndexFacade(IService<BuildCodeIndexRequest, BuildReport> build, IIndexStore store, IGraphRunner? graph = null) : ICodeIndex
+public sealed partial class CodeIndexFacade(IService<BuildCodeIndexRequest, BuildReport> build, IIndexStore store, IEmbedder embedder, IGraphRunner? graph = null) : ICodeIndex
 {
     /// <inheritdoc />
     public async ValueTask<Result<BuildReport>> Build(CodeIndexScope scope, RepoName repo, CommitSha commit, IProgress<string> progress, CancellationToken cancellationToken)
@@ -67,32 +68,6 @@ public sealed class CodeIndexFacade(IService<BuildCodeIndexRequest, BuildReport>
         }
 
         return heads;
-    }
-
-    /// <inheritdoc />
-    public async ValueTask<Result<IReadOnlyList<LayerProbe>>> ProbeLayers(CodeIndexScope scope, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(scope);
-        var probes = new List<LayerProbe>(scope.Repos.Count);
-        foreach (var repo in scope.Repos)
-        {
-            var buildable = new List<LayerName>();
-            if (graph is not null && repo.Settings.Graph.Enabled && await GraphWasUnavailable(repo, cancellationToken).ConfigureAwait(false)
-                && (await graph.Probe(cancellationToken).ConfigureAwait(false)).IsSuccess)
-            {
-                buildable.Add(LayerName.Graph);
-            }
-
-            probes.Add(new LayerProbe(repo.Name, buildable));
-        }
-
-        return probes;
-    }
-
-    private async ValueTask<bool> GraphWasUnavailable(CodeIndexRepo repo, CancellationToken cancellationToken)
-    {
-        var header = await store.ReadHeader(repo.Name, cancellationToken).ConfigureAwait(false);
-        return header is { IsError: false, Value: { } live } && live.Layers.Any(l => l.Layer == LayerName.Graph && l.State == LayerState.Unavailable);
     }
 
     /// <inheritdoc />
@@ -187,8 +162,56 @@ public sealed class CodeIndexFacade(IService<BuildCodeIndexRequest, BuildReport>
         => ValueTask.FromResult<Result<SimilarAnswer>>(CodeIndexErrors.IndexNotBuilt.With("the clones layer is not built by this version"));
 
     /// <inheritdoc />
-    public ValueTask<Result<NeighborsAnswer>> Neighbors(CodeIndexScope scope, RepoName repo, string text, int k, CancellationToken cancellationToken)
-        => ValueTask.FromResult<Result<NeighborsAnswer>>(CodeIndexErrors.IndexNotBuilt.With("the embeddings layer is not built by this version"));
+    public async ValueTask<Result<NeighborsAnswer>> Neighbors(CodeIndexScope scope, RepoName repo, string text, int k, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(scope);
+        ArgumentNullException.ThrowIfNull(text);
+        if (string.IsNullOrWhiteSpace(text) || k is < 1 or > CodeIndexRules.MaxNeighbors)
+        {
+            return CodeIndexErrors.QueryInvalid.With("the text is empty, or k is outside 1 to 100");
+        }
+
+        var opened = await Open(scope, repo, cancellationToken).ConfigureAwait(false);
+        if (opened.IsError)
+        {
+            return opened.Error;
+        }
+
+        await using (opened.Value.ConfigureAwait(false))
+        {
+            var settings = scope.Repos.First(r => r.Name == repo).Settings.Embeddings;
+            var layer = opened.Value.Header.Layers.FirstOrDefault(l => l.Layer == LayerName.Embeddings);
+            if (LayerError(layer, embedder.ModelFor(settings)) is { } unusable)
+            {
+                return unusable;
+            }
+
+            var vectors = await embedder.Embed(settings, [text.Length <= CodeIndexRules.EmbedTextMaxCharacters ? text : text[..CodeIndexRules.EmbedTextMaxCharacters]], cancellationToken).ConfigureAwait(false);
+            if (vectors.IsError)
+            {
+                return vectors.Error;
+            }
+
+            var nearest = await opened.Value.Nearest(vectors.Value[0], k, cancellationToken).ConfigureAwait(false);
+            return nearest.IsError ? nearest.Error : new NeighborsAnswer(Stamp(repo, opened.Value.Header, LayerName.Embeddings), nearest.Value);
+        }
+    }
+
+    // Why the embeddings layer cannot answer, or null when it can (ok, or pending with the vectors it has so far).
+    private static Error? LayerError(LayerRecord? layer, string model)
+    {
+        if (layer is null or { State: LayerState.Disabled })
+        {
+            return CodeIndexErrors.IndexNotBuilt.With("the embeddings layer is not built for this repo");
+        }
+
+        if (layer.State == LayerState.Unavailable)
+        {
+            return new Error(layer.Code ?? CodeIndexErrors.EmbeddingServerFailed.Code, ErrorKind.Unavailable, "the embeddings layer is unavailable");
+        }
+
+        return string.Equals(layer.Stamp, model, StringComparison.Ordinal) ? null : CodeIndexErrors.PinMismatch.With("the index was embedded with another model than the profile names");
+    }
 
     private async ValueTask<Result<CallsAnswer>> Walk(CodeIndexScope scope, WalkQuery query, CancellationToken cancellationToken)
     {

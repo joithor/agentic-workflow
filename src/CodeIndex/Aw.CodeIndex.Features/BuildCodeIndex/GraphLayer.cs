@@ -7,8 +7,14 @@ using Aw.Kernel;
 
 namespace Aw.CodeIndex.Features.BuildCodeIndex;
 
-public sealed partial class BuildCodeIndexService
+/// <summary>The graph layer of a build (spec §5.5, §5.7): the tool, if any is registered, over the snapshot's blobs.</summary>
+/// <param name="snapshot">The repo's tree at a commit.</param>
+/// <param name="clock">The time source.</param>
+/// <param name="graph">The graph layer's tool, or null where none is registered (the layer is then unavailable).</param>
+public sealed class GraphLayer(IRepoSnapshot snapshot, TimeProvider clock, IGraphRunner? graph = null)
 {
+    private const int EdgeBatch = 5_000;
+
     private static readonly string[] _layerCodes = [CodeIndexErrors.NoSandbox.Code, CodeIndexErrors.GraphUnavailable.Code, CodeIndexErrors.PinMismatch.Code];
 
     /// <summary>
@@ -16,13 +22,20 @@ public sealed partial class BuildCodeIndexService
     /// as 'graphify' edges. A tool that is missing, unsandboxed, off the pin or failed leaves the layer unavailable with its code and no stale edge; only a
     /// failure of the index file itself fails the build.
     /// </summary>
-    private async ValueTask<Result<LayerRecord>> BuildGraph(BuildContext context, IReadOnlyList<SnapshotFile> code, CancellationToken cancellationToken)
+    /// <param name="build">The build file.</param>
+    /// <param name="request">The build request.</param>
+    /// <param name="code">The snapshot's code files.</param>
+    /// <param name="cancellationToken">Cancels the layer.</param>
+    /// <returns>The layer's row for the caller to record; an error only when the index file cannot be written.</returns>
+    public async ValueTask<Result<LayerRecord>> Run(IIndexBuild build, BuildCodeIndexRequest request, IReadOnlyList<SnapshotFile> code, CancellationToken cancellationToken)
     {
-        var request = context.Request;
+        ArgumentNullException.ThrowIfNull(build);
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(code);
         var now = clock.GetUtcNow();
         if (!request.Repo.Settings.Graph.Enabled)
         {
-            var cleared = await StoreGraph(context.Build, EmptyGraph(request, code), cancellationToken).ConfigureAwait(false);
+            var cleared = await StoreGraph(build, EmptyGraph(request, code), cancellationToken).ConfigureAwait(false);
             return cleared.IsError ? cleared.Error : new LayerRecord(LayerName.Graph, "none", LayerState.Disabled, Code: null, "disabled by the profile", now);
         }
 
@@ -35,7 +48,7 @@ public sealed partial class BuildCodeIndexService
         var ran = await RunGraph(graph, request, code, cancellationToken).ConfigureAwait(false);
         if (ran.IsError)
         {
-            var emptied = await StoreGraph(context.Build, EmptyGraph(request, code), cancellationToken).ConfigureAwait(false);
+            var emptied = await StoreGraph(build, EmptyGraph(request, code), cancellationToken).ConfigureAwait(false);
             if (emptied.IsError)
             {
                 return emptied.Error;
@@ -45,7 +58,7 @@ public sealed partial class BuildCodeIndexService
         }
 
         var merged = GraphMerge.Plan(request.Repo.Name, ran.Value, code);
-        var stored = await StoreGraph(context.Build, (ran.Value, merged), cancellationToken).ConfigureAwait(false);
+        var stored = await StoreGraph(build, (ran.Value, merged), cancellationToken).ConfigureAwait(false);
         if (stored.IsError)
         {
             return stored.Error;
