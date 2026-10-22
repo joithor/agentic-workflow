@@ -64,9 +64,10 @@ public sealed class ExpandedStateSendTests
         expanded.AskCancel();
 
         await expanded.ConfirmCancelAsync();
+        var said = expanded.PendingNote;
         expanded.AskCancel();
 
-        Assert.Equal(("That run has moved on. Read the instance again.", true), (expanded.PendingNote, expanded.IsConfirmingCancel));
+        Assert.Equal(("That run has moved on. Read the instance again.", true), (said, expanded.IsConfirmingCancel));
     }
 
     [Fact]
@@ -82,7 +83,7 @@ public sealed class ExpandedStateSendTests
         _server.CommandGate.SetResult();
         await first;
 
-        Assert.Single(_server.CommandCalls);
+        _ = Assert.Single(_server.CommandCalls);
     }
 
     [Fact]
