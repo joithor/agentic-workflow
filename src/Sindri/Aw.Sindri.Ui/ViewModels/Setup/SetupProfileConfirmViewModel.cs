@@ -194,7 +194,7 @@ internal sealed class SetupProfileConfirmViewModel : ObservableObject
     // A refusal in words: a changed profile asks to read it again, an agent session is told the app is the person's.
     private static string Words(Error error) => error.Code switch
     {
-        ChangedRefusal => Labels.SetupProfileChanged,
+        ChangedRefusal => Labels.SetupProfileChangedWhileReading,
         SessionRefusal => Labels.ApproveSessionRefused,
         _ => error.Message,
     };

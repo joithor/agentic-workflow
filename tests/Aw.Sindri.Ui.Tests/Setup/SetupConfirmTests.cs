@@ -90,7 +90,7 @@ public sealed class SetupConfirmTests
 
         await profile.SubmitTyped(PhraseText);
 
-        Assert.Equal((Labels.SetupProfileChanged, false, 2), (profile.Refusal, profile.IsDone, ready._f.Server.Challenges.Count));   // one phrase for the first ask, one after the refusal
+        Assert.Equal((Labels.SetupProfileChangedWhileReading, false, 2), (profile.Refusal, profile.IsDone, ready._f.Server.Challenges.Count));   // one phrase for the first ask, one after the refusal
         Assert.True(profile.ShowsTyped);
     }
 

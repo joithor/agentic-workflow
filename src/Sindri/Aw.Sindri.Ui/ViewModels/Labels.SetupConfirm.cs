@@ -4,7 +4,7 @@ namespace Aw.Sindri.Ui.ViewModels;
 internal static partial class Labels
 {
     /// <summary>Said when the settings changed while the person was reading them: the phrase was tied to the old list, so a new one is asked for.</summary>
-    internal const string SetupProfileChanged = "This changed while you were reading it. Read it again, then approve.";
+    internal const string SetupProfileChangedWhileReading = "This changed while you were reading it. Read it again, then approve.";
 
     /// <summary>Said while the settings the approval is tied to are not known yet.</summary>
     internal const string SetupProfileReading = "Sindri is reading your settings.";
