@@ -45,6 +45,7 @@ public sealed class CodeIndexBuildHostTests : IDisposable
 
         var first = _repo.Head;
         var started = await Tick(host, ct);
+        Assert.True(started.IsSuccess, started.IsError ? $"{started.Error.Code}: {started.Error.Message}" : null);
         var firstJob = await Ended(host, expectedJobs: 1, ct);
         _repo.WriteFile("src/Worker.cs", "namespace Demo; public sealed class Worker { public void Run() => Stop(); public void Stop() => Go(); void Go() { } }\n");
         var second = _repo.Commit("second");
