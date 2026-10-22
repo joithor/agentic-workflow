@@ -15,14 +15,15 @@ internal static class NeedsYouMapper
     /// <param name="catalog">GET /commands: where each action's readiness comes from.</param>
     /// <param name="decisions">The pending decisions, whose options become a decision row's Decide buttons; null keeps the one served action.</param>
     /// <param name="counts">Home's other totals.</param>
+    /// <param name="readAt">When the list was read: a row's served time left is counted from it. Default for unknown, which leaves the rows' timeouts out.</param>
     /// <returns>The feed, rows in the API's order.</returns>
-    internal static NeedsYouFeed Map(NeedsYouList list, CommandList catalog, DecisionList? decisions, HomeCounts counts)
+    internal static NeedsYouFeed Map(NeedsYouList list, CommandList catalog, DecisionList? decisions, HomeCounts counts, DateTimeOffset readAt = default)
     {
         ArgumentNullException.ThrowIfNull(list);
         ArgumentNullException.ThrowIfNull(catalog);
         var readiness = catalog.Rows.ToDictionary(r => r.Action, r => (ReadinessOf(r.Ui), CatalogReadiness.Parse(r.Ui).Stage, r.Cli), StringComparer.Ordinal);
         var read = catalog.Rows.Count > 0;
-        return new NeedsYouFeed([.. list.Rows.Select(row => Entry(row, readiness, decisions, read))], list.Empty ?? string.Empty)
+        return new NeedsYouFeed([.. list.Rows.Select(row => Entry(row, readiness, decisions, read, readAt))], list.Empty ?? string.Empty)
         {
             Stalled = list.AsOf.Stalled,
             Rebuilding = list.AsOf.Rebuilding,
@@ -39,7 +40,7 @@ internal static class NeedsYouMapper
         _ => ActionReadiness.CliOnly,
     };
 
-    private static NeedsYouEntry Entry(NeedsYouRowView row, Dictionary<string, (ActionReadiness Readiness, string Stage, string Cli)> readiness, DecisionList? decisions, bool read)
+    private static NeedsYouEntry Entry(NeedsYouRowView row, Dictionary<string, (ActionReadiness Readiness, string Stage, string Cli)> readiness, DecisionList? decisions, bool read, DateTimeOffset readAt)
     {
         var subject = row.Subject is { } s ? new NeedsYouSubject(s.Kind, s.Id) : null;
         row = Unanswerable(row);
@@ -62,9 +63,14 @@ internal static class NeedsYouMapper
             Child = ChildOf(row),
             RecordedOnly = row.RecordedOnly,
             Notice = row.Notice ?? string.Empty,
+            Timeout = TimeoutOf(row, readAt),
             Question = PendingDecision(subject?.DecisionId, decisions)?.Question ?? string.Empty,
         };
     }
+
+    // The served time left, counted from when the list was read; none without the read time.
+    private static RowTimeout? TimeoutOf(NeedsYouRowView row, DateTimeOffset readAt) =>
+        row.Timeout is { } timeout && readAt != default ? new RowTimeout(timeout.Kind, readAt.AddSeconds(timeout.InSeconds)) : null;
 
     // The child's address a via child row names; a row that is not via child names none, whatever it carries.
     private static string? ChildOf(NeedsYouRowView row) => InstanceRules.IsChildVia(row.Via) && row.Child is { Length: > 0 } child ? child : null;

@@ -7,6 +7,7 @@ using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Testing.Worktrees;
+using Aw.Sindri.Tests.Workflow.BuildShip;
 
 namespace Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 
@@ -18,12 +19,12 @@ public sealed class ProveBeforeAfterStepContract : BlockContract
 
     protected override BlockDescriptor Descriptor => ProveSteps.BeforeAfter;
 
-    protected override string ExpectedHash => "sha256:262fd4a9557d27a21e413eeffc1365cf76f1b9c8ea6dec3a6caa3095b01c5ce0";
+    protected override string ExpectedHash => "sha256:01da010bcd11eeb97da80170ca98f07e5ce256071343ceecf9a521ab902cace6";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await new ProveBeforeAfterStep(new InMemoryBriefFiles(), new InMemoryRunArea(), new InMemoryRepoCheckouts(), new FakeWorktrees(), new FakeScriptRuns()).Run(BuildShipContexts.Of("step.prove.before-after", []), cancellationToken);
+        _ = await new ProveBeforeAfterStep(new InMemoryBriefFiles(), new InMemoryRunArea(), new InMemoryRepoCheckouts(), new FakeWorktrees(), new FakeScriptRuns(), new StepRig("dotnet test").Runner).Run(BuildShipContexts.Of("step.prove.before-after", []), cancellationToken);
 }

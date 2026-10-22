@@ -8,6 +8,7 @@ using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Recipes;
 using Temporalio.Common;
 using Temporalio.Exceptions;
 using Temporalio.Workflows;
@@ -63,7 +64,7 @@ internal sealed partial class RecipeWorkflow
     /// <summary>The pinned children of the recipe ('LoadChildren', a local activity); none for a recipe with no child wait or a history from before engine P7.</summary>
     private async Task<ChildPins> LoadChildPins(LoadedRecipe loaded)
     {
-        if (!_children || !loaded.Recipe.States.Values.Any(static s => s.WaitFor?.Child is not null))
+        if (!_children || !RecipeChildren.Of(loaded.Recipe).Any())
         {
             return ChildPins.None;
         }
@@ -236,7 +237,7 @@ internal sealed partial class RecipeWorkflow
 
     private static DateTimeOffset? StartedAtOf(InstanceStart? start) => start is { StartedAt: var at } && at != default ? at : null;
 
-    private InstanceViewContext ViewContext() => new(_mirrored, _provenance, ChildViews(), _subject, _contents, _injection, StartedAtOf(_start), _start?.StartedBy);
+    private InstanceViewContext ViewContext() => new(_mirrored, _provenance, ChildViews(), _subject, _contents, _injection, StartedAtOf(_start), _start?.StartedBy, _visits);
 
     /// <summary>What a child hands its parent (DT spec §8.4): its declared outputs. A root instance's result carries none; neither does a history from before engine P7.</summary>
     private Dictionary<FactKey, FactValue>? OutputsOf(WorkflowInstance ended)

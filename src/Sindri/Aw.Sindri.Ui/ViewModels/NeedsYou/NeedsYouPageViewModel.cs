@@ -17,8 +17,9 @@ internal sealed partial class NeedsYouPageViewModel : ObservableObject
     private NeedsYouRowViewModel? _lastRow;   // the row the card last showed as selected
     private NeedsYouRowViewModel? _cleared;   // that row, once it left the list under the card, until the user moves on
 
-    internal NeedsYouPageViewModel(NeedsYouViewModel list, TimeProvider clock, IClipboard clipboard, DeskReporter desk, NeedsYouConfirm? confirm = null)
+    internal NeedsYouPageViewModel(NeedsYouViewModel list, TimeProvider clock, IClipboard clipboard, DeskReporter desk, NeedsYouConfirm? confirm = null, PausedAnswerViewModel? answer = null, TakeoverViewModel? takeover = null)
     {
+        (Answer, Takeover) = (answer, takeover);
         _list = list;
         _clock = clock;
         _clipboard = clipboard;
@@ -136,9 +137,6 @@ internal sealed partial class NeedsYouPageViewModel : ObservableObject
     /// <summary>The card's footer, left: what the row waits for.</summary>
     public string FooterLeft { get; } = Labels.NeedsYouFootWaiting;
 
-    /// <summary>The card's footer, right: how long it has waited; empty when the row serves no time.</summary>
-    public string FooterRight => Card?.Entry is { Since: var since } && since != default ? Labels.NeedsYouFootRight(Labels.NeedsYouWaited(_clock.GetUtcNow() - since)) : "";
-
     /// <summary>Selects the first row of the first group when none is selected (or the selected one is gone).</summary>
     internal void SelectFirst()
     {
@@ -213,7 +211,7 @@ internal sealed partial class NeedsYouPageViewModel : ObservableObject
 
     private static readonly string[] _cardProperties =
     [
-        nameof(ShowsRequest), nameof(IsDone), nameof(Selected), nameof(Card), nameof(IsCleared), nameof(ClearedText), nameof(FooterName), nameof(HasSelected), nameof(KindWord), nameof(CardName), nameof(Reference), nameof(Why), nameof(Question), nameof(FooterRight),
+        nameof(ShowsRequest), nameof(IsDone), nameof(Selected), nameof(Card), nameof(IsCleared), nameof(ClearedText), nameof(FooterName), nameof(HasSelected), nameof(KindWord), nameof(CardName), nameof(Reference), nameof(Why), nameof(Question), nameof(FooterRight), nameof(ShowsAnswer), nameof(ShowsTakeover), nameof(ShowsBarButtons),
     ];
 
     private static readonly string[] _listProperties =
@@ -273,6 +271,7 @@ internal sealed partial class NeedsYouPageViewModel : ObservableObject
         {
             Bar.Show(Card);   // before the card's words are read: another request starts a fresh bar
             Bar.Enabled = !IsCleared;
+            ShowPausedRun();
         }
 
         foreach (var name in names)
@@ -280,7 +279,6 @@ internal sealed partial class NeedsYouPageViewModel : ObservableObject
             OnChanged(name);
         }
     }
-
 
     // The groups are kept by (kind, heading) so a group that stays keeps its controls; its rows are the list's own row view models.
     private void Rebuild()

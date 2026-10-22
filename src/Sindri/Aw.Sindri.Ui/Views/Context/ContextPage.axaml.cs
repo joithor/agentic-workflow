@@ -103,7 +103,7 @@ internal sealed partial class ContextPage : UserControl
         await choose.ConfigureAwait(true);
         if (_page?.Map is { SelectedKey: { } key } map && map.Node(key) is { } node)
         {
-            ContextStack.Canvas.Reveal(new Avalonia.Rect(node.X, node.Y, node.Width, node.Height), rightInset: 480);
+            ContextStack.Canvas.Reveal(new Rect(node.X, node.Y, node.Width, node.Height), rightInset: 480);
         }
     }
 

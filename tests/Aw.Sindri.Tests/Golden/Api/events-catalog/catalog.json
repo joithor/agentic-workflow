@@ -1,14 +1,6 @@
 {
   "types": [
     {
-      "type": "codeindex.built",
-      "keyShape": "codeindex.built:<repo>:<commit>:<ulid>",
-      "invalidates": [
-        "code-index",
-        "jobs"
-      ]
-    },
-    {
       "type": "context.map.published",
       "keyShape": "context.map.published:<repo>:v<version>",
       "invalidates": [
@@ -115,6 +107,15 @@
       ]
     },
     {
+      "type": "job.resumed",
+      "keyShape": "job.resumed:<jobId>:<n>",
+      "invalidates": [
+        "job",
+        "jobs",
+        "setup"
+      ]
+    },
+    {
       "type": "job.started",
       "keyShape": "job.started:<jobId>",
       "invalidates": [
@@ -123,6 +124,15 @@
         "services",
         "context-lenses",
         "context-history"
+      ]
+    },
+    {
+      "type": "job.waiting",
+      "keyShape": "job.waiting:<jobId>:<n>",
+      "invalidates": [
+        "job",
+        "jobs",
+        "setup"
       ]
     },
     {

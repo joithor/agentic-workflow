@@ -32,6 +32,7 @@ public sealed class ListRecipesTests
         var listed = await r.List();
 
         Assert.Equal([item.Hash, step.Hash], listed.Select(s => s.Hash));
+        Assert.Equal(["draft", "approved"], listed.Select(s => s.Status), StringComparer.Ordinal);
         var (itemLine, stepLine) = (listed[0], listed[1]);
         Assert.Equal(RecipeStanding.Unapproved, itemLine.Standing);
         Assert.Null(itemLine.Via);
@@ -55,6 +56,7 @@ public sealed class ListRecipesTests
 
         Assert.Equal(RecipeStanding.Approved, line.Standing);
         Assert.Equal([StaleReason.PinDrift], line.Stale);
+        Assert.Equal(("changed", "a pinned block changed"), (line.Status, line.StatusDetail));
         Assert.Equal([step.Hash], stale.Select(s => s.Hash));
     }
 
@@ -86,7 +88,7 @@ public sealed class ListRecipesTests
         var item = await r.Shipped("sindri/workflow.item.yaml");
         _ = await r.Approve(step);
         _ = await r.Approve(item);
-        var step2 = await r.Register(RegistryHarness.Parse(step) with { Version = 4 });
+        var step2 = await r.Register(RegistryHarness.Parse(step) with { Version = 5 });
         Assert.Empty(await r.List(stale: true));
 
         _ = await r.Approve(step2);

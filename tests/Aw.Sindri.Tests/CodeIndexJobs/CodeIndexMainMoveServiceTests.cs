@@ -28,11 +28,15 @@ public sealed class CodeIndexMainMoveServiceTests
 
     private async Task<Result<ScheduledResult>> Run()
     {
-        await _rig.Approve(Ct);
-        _grant ??= await _rig.Harness.HoldLease();
+        if (_grant is null)
+        {
+            await _rig.Approve(Ct);   // once: Approve sets the clock to the rig's start, and a later run must not move it back
+            _grant = await _rig.Harness.HoldLease();
+        }
+
         var service = new CodeIndexMainMoveService(_rig.Scopes, _rig.Index, _rig.Heads, _rig.Jobs, _start, _rig.Harness.Clock, new SilentLogger());
         using var caller = _rig.Harness.Callers.EnterService("code-index-main-move");
-        return await service.Run(new ScheduledRun(_grant, CodeIndexJobsRig.Now), Ct);
+        return await service.Run(new ScheduledRun(_grant, _rig.Harness.Clock.GetUtcNow()), Ct);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -132,7 +136,7 @@ public sealed class CodeIndexMainMoveServiceTests
         _ = await Run();
         Assert.Empty(_start.Requests);
 
-        _rig.Job("demo", JobState.Succeeded, TimeSpan.FromMinutes(11), outcome: "deferred");
+        _rig.Harness.Clock.Advance(TimeSpan.FromMinutes(2));   // the same deferred build has now ended 11 minutes ago
         _ = await Run();
 
         _ = Assert.Single(_start.Requests);

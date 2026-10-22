@@ -1,6 +1,6 @@
 using Aw.CodeIndex.Core.Facade;
 using Aw.Kernel;
-using Aw.Sindri.Features;
+using Aw.Sindri.Features.CodeIndexReads;
 
 namespace Aw.Sindri.Host.CodeIndexHost;
 

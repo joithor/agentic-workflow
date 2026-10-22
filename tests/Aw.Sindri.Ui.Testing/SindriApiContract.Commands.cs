@@ -23,6 +23,30 @@ public abstract partial class SindriApiContract
     }
 
     [Fact]
+    public async Task ApplyCommand_sends_the_token_grant_and_its_challenge_answer_to_the_instance()
+    {
+        var server = new FakeSindriApi();
+        var body = ApplyCommandBody.GrantTokens("ITM-01JH5/step/1", 1_000_000, new ChallengeAnswerBody("CHL-00000000000000000000000000000001", HeldMs: 1500));
+
+        var applied = (await Reach(server).ApplyCommand(_api, DeskInstance, body, Token)).Value;
+
+        Expect.Equal(expected: false, applied.AlreadyApplied);
+        var (instance, sent) = server.CommandCalls.Single();
+        Expect.Equal((DeskInstance, CommandKind.Answer, AnswerVariant.GrantTokens, 1_000_000), (instance, sent.Kind, sent.Answer, sent.Amount));
+        Expect.Equal(("CHL-00000000000000000000000000000001", 1500L), (sent.Challenge!.Challenge, sent.Challenge.HeldMs ?? -1));
+    }
+
+    [Fact]
+    public async Task ApplyCommand_refused_grant_is_a_problem_with_the_served_words_not_an_exception()
+    {
+        var server = new FakeSindriApi { CommandAnswer = RouteAnswer.Problem(HttpStatusCode.UnprocessableEntity, "SND-WF-003", "--grant-tokens 9M is outside 1..4M (fix: use --grant-tokens 1 to --grant-tokens 4M)") };
+
+        var result = await Reach(server).ApplyCommand(_api, DeskInstance, ApplyCommandBody.GrantTokens("ITM-01JH5/step/1", 9_000_000, new ChallengeAnswerBody("CHL-00000000000000000000000000000001", Typed: "grant-tokens 9000000 ITM-01JH5/step/1")), Token);
+
+        Expect.Equal("SND-WF-003", result.Error.Code);
+    }
+
+    [Fact]
     public async Task CompleteStep_refused_is_a_problem_with_the_served_words_not_an_exception()
     {
         var server = new FakeSindriApi { CompleteAnswer = RouteAnswer.Problem(HttpStatusCode.Conflict, "SND-WF-040", "That run is not open. Read the instance again.") };
@@ -30,5 +54,27 @@ public abstract partial class SindriApiContract
         var result = await Reach(server).CompleteStep(_api, DeskInstance, new CompleteStepBody(DeskInstance, "1.1", "approve", new Dictionary<string, byte[]>(StringComparer.Ordinal)), Token);
 
         Expect.Equal(("SND-WF-040", "That run is not open. Read the instance again."), (result.Error.Code, result.Error.Message));
+    }
+
+    [Fact]
+    public async Task ApplyCommand_sends_the_kind_and_the_answer_to_the_instance()
+    {
+        var server = new FakeSindriApi();
+
+        var accepted = (await Reach(server).ApplyCommand(_api, DeskInstance, new ApplyCommandBody(DeskInstance, CommandKind.Answer, AnswerVariant.Text, "focus on the retry"), Token)).Value;
+
+        Expect.Equal(expected: false, accepted.AlreadyApplied);
+        var (instance, sent) = server.CommandCalls.Single();
+        Expect.Equal((DeskInstance, CommandKind.Answer, AnswerVariant.Text, "focus on the retry"), (instance, sent.Kind, sent.Answer, sent.Text));
+    }
+
+    [Fact]
+    public async Task ApplyCommand_refused_is_a_problem_with_the_served_words_not_an_exception()
+    {
+        var server = new FakeSindriApi { CommandAnswer = RouteAnswer.Problem(HttpStatusCode.Conflict, "SND-WF-041", "That run has moved on. Read the instance again.") };
+
+        var result = await Reach(server).ApplyCommand(_api, DeskInstance, new ApplyCommandBody(DeskInstance, CommandKind.Handback), Token);
+
+        Expect.Equal(("SND-WF-041", "That run has moved on. Read the instance again."), (result.Error.Code, result.Error.Message));
     }
 }

@@ -8,6 +8,7 @@ using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Views;
+using Aw.Sindri.Host.Server;
 using Aw.Sindri.Infrastructure.Locks;
 using Aw.Sindri.Tests.ApiGoldens;
 using Aw.Sindri.Tests.ContextCalls;
@@ -48,7 +49,7 @@ public sealed class CodeIndexBuildHostTests : IDisposable
         _repo.WriteFile("src/Worker.cs", "namespace Demo; public sealed class Worker { public void Run() => Stop(); public void Stop() => Go(); void Go() { } }\n");
         var second = _repo.Commit("second");
         _ = await Tick(host, ct);
-        var secondJob = await Ended(host, expectedJobs: 2, ct);
+        var secondJob = await Ended(host, expectedJobs: 2, ct, except: firstJob.Id);
         var quiet = await Tick(host, ct);
 
         Assert.False(started.Value.Idle);
@@ -61,6 +62,7 @@ public sealed class CodeIndexBuildHostTests : IDisposable
     // One scheduler tick of the service, as the lease holder: the host runs no scheduler of its own in a test.
     private static async Task<Kernel.Result<ScheduledResult>> Tick(GoldenHost host, CancellationToken ct)
     {
+        _ = await host.App.Services.GetRequiredService<Projector>().CatchUp(ct);   // why: a test host runs no projector loop, and the service reads the jobs view
         await using var scope = host.App.Services.CreateAsyncScope();
         var service = scope.ServiceProvider.GetServices<IScheduledService>().Single(s => s.Identity().Value == "code-index-main-move");
         var grant = host.App.Services.GetRequiredService<HeldLease>().Current!;   // why: the started host holds the lease
@@ -70,21 +72,24 @@ public sealed class CodeIndexBuildHostTests : IDisposable
 
     private static string? Field(JobRow job, string name) => job.Result?.TryGetProperty(name, out var value) == true ? value.GetString() : null;
 
-    private static async Task<JobRow> Ended(GoldenHost host, int expectedJobs, CancellationToken ct)
+    private static async Task<JobRow> Ended(GoldenHost host, int expectedJobs, CancellationToken ct, JobId? except = null)
     {
         var views = host.App.Services.GetRequiredService<IJobViews>();
         for (var i = 0; i < 400; i++)
         {
+            _ = await host.App.Services.GetRequiredService<Projector>().CatchUp(ct);
             var jobs = (await views.List(state: null, JobKind.From("BuildCodeIndex"), ct)).Value;
             if (jobs.Count == expectedJobs && jobs.All(static j => j.State != JobState.Running))
             {
-                return jobs[0];
+                return jobs.First(j => j.Id != except);   // why: on the fake clock both jobs start at one instant, so the newest-first order between them is by id
             }
 
             await Task.Delay(250, ct);
         }
 
-        throw new TimeoutException("the index job didn't end");
+        var last = (await views.List(state: null, JobKind.From("BuildCodeIndex"), ct)).Value;
+        var tail = (await host.App.Services.GetRequiredService<ILedgerStore>().ReadAfter(0, 1000, ct)).Value ?? [];
+        throw new TimeoutException($"the index job didn't end: {last.Count} jobs ({string.Join(", ", last.Select(static j => $"{j.State} {j.Code} {j.Progress.Count} lines {j.Summary}"))}); the ledger ends with: {string.Join(", ", tail.TakeLast(8).Select(static e => e.Envelope.Type))}");
     }
 
     private static async Task<int> Built(GoldenHost host, CancellationToken ct)
