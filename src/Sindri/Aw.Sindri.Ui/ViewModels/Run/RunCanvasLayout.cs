@@ -2,6 +2,8 @@ using Aw.Sindri.Ui.ViewModels.Context.Layout;
 
 namespace Aw.Sindri.Ui.ViewModels.Run;
 
+#pragma warning disable MA0182 // until slice 3 places the run canvas on its page
+
 /// <summary>Places the run canvas's cards (F3 spec 3 §2, "Deterministic layout"). Pure: the heights come in measured, nothing is measured here.</summary>
 internal static class RunCanvasLayout
 {
@@ -98,15 +100,18 @@ internal static class RunCanvasLayout
     // A success sits under the main path (the first one; later ones continue to the right), what could not finish to the right, a stop or an unknown end to the left.
     private static int ColumnOf(string? outcome, EndColumns used)
     {
-        if (outcome is "resolved" or "alreadySatisfied" && !used.Centre)
+        var success = Is(outcome, "resolved") || Is(outcome, "alreadySatisfied");
+        if (success && !used.Centre)
         {
             used.Centre = true;
             return 0;
         }
 
-        var toTheRight = outcome is "resolved" or "alreadySatisfied" or "unresolved" or "failed";
-        return toTheRight ? ++used.Right : -(++used.Left);
+        var toTheRight = success || Is(outcome, "unresolved") || Is(outcome, "failed");
+        return toTheRight ? ++used.Right : -++used.Left;
     }
+
+    private static bool Is(string? outcome, string word) => string.Equals(outcome, word, StringComparison.Ordinal);
 
     private static Dictionary<string, EdgePorts> Ports(RunGraph graph, Dictionary<string, int> columns)
     {
@@ -157,3 +162,4 @@ internal static class RunCanvasLayout
         internal int Left { get; set; }
     }
 }
+#pragma warning restore MA0182

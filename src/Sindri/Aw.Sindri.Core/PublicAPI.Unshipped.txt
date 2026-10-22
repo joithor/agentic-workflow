@@ -9415,6 +9415,7 @@ Aw.Sindri.Core.Ids.SessionId.IsInitialized() -> bool
 Aw.Sindri.Core.Ids.SessionId.SessionId() -> void
 Aw.Sindri.Core.Ids.SessionId.ToString(System.IFormatProvider? provider) -> string!
 Aw.Sindri.Core.Ids.SessionId.Value.get -> string!
+Aw.Sindri.Core.Sessions.PsStartTime
 Aw.Sindri.Core.Sessions.SessionLiveness
 Aw.Sindri.Core.Sessions.SessionProblem
 Aw.Sindri.Core.Sessions.SessionProblem.<Clone>$() -> Aw.Sindri.Core.Sessions.SessionProblem!
@@ -9610,6 +9611,7 @@ static Aw.Sindri.Core.Ids.SessionId.operator ==(Aw.Sindri.Core.Ids.SessionId lef
 static Aw.Sindri.Core.Ids.SessionId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Ids.SessionId
 static Aw.Sindri.Core.Ids.SessionId.TryFrom(string? value, out Aw.Sindri.Core.Ids.SessionId vo) -> bool
 static Aw.Sindri.Core.Ids.SessionId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Ids.SessionId result) -> bool
+static Aw.Sindri.Core.Sessions.PsStartTime.ToEpochSeconds(string? text) -> long?
 static Aw.Sindri.Core.Sessions.SessionLiveness.Matches(string? procStart, long actualTicks) -> bool
 static Aw.Sindri.Core.Sessions.SessionProblem.operator !=(Aw.Sindri.Core.Sessions.SessionProblem? left, Aw.Sindri.Core.Sessions.SessionProblem? right) -> bool
 static Aw.Sindri.Core.Sessions.SessionProblem.operator ==(Aw.Sindri.Core.Sessions.SessionProblem? left, Aw.Sindri.Core.Sessions.SessionProblem? right) -> bool
@@ -11952,8 +11954,8 @@ Aw.Sindri.Core.Events.SuspensionSummary.MirrorsAddress.init -> void
 Aw.Sindri.Core.Events.SuspensionSummary.SuspensionSummary(Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind Kind, Aw.Sindri.Core.Workflow.Engine.ParkReason? Reason, Aw.Sindri.Core.Workflow.Engine.ParkKind? ParkKind, Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation, string? Mirrors, string? MirrorsAddress = null) -> void
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Child.get -> string?
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Child.init -> void
-Aw.Sindri.Core.NeedsYou.NeedsYouRow.Deconstruct(out Aw.Sindri.Core.Ids.NeedsYouRowId Id, out Aw.Sindri.Core.NeedsYou.NeedsYouKind Kind, out string! Label, out Aw.Sindri.Core.NeedsYou.NeedsYouSubject! Subject, out Aw.Sindri.Core.Ids.ItemId? Item, out string! Title, out string! Reason, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.NeedsYou.Urgency Urgency, out System.DateTimeOffset Since, out bool RecordedOnly, out string? Notice, out Aw.Sindri.Core.Workflow.Views.AnswerKind? AnswerKind, out Aw.Sindri.Core.Ids.ActionId? PrimaryAction, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, out string! Cli, out string? Via, out string? Child) -> void
-Aw.Sindri.Core.NeedsYou.NeedsYouRow.NeedsYouRow(Aw.Sindri.Core.Ids.NeedsYouRowId Id, Aw.Sindri.Core.NeedsYou.NeedsYouKind Kind, string! Label, Aw.Sindri.Core.NeedsYou.NeedsYouSubject! Subject, Aw.Sindri.Core.Ids.ItemId? Item, string! Title, string! Reason, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.NeedsYou.Urgency Urgency, System.DateTimeOffset Since, bool RecordedOnly, string? Notice, Aw.Sindri.Core.Workflow.Views.AnswerKind? AnswerKind, Aw.Sindri.Core.Ids.ActionId? PrimaryAction, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, string! Cli, string? Via = null, string? Child = null) -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouRow.Deconstruct(out Aw.Sindri.Core.Ids.NeedsYouRowId Id, out Aw.Sindri.Core.NeedsYou.NeedsYouKind Kind, out string! Label, out Aw.Sindri.Core.NeedsYou.NeedsYouSubject! Subject, out Aw.Sindri.Core.Ids.ItemId? Item, out string! Title, out string! Reason, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.NeedsYou.Urgency Urgency, out System.DateTimeOffset Since, out bool RecordedOnly, out string? Notice, out Aw.Sindri.Core.Workflow.Views.AnswerKind? AnswerKind, out Aw.Sindri.Core.Ids.ActionId? PrimaryAction, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, out string! Cli, out string? Via, out string? Child, out Aw.Sindri.Core.NeedsYou.NeedsYouStop? Stop, out Aw.Sindri.Core.Workflow.Views.StatusTimeout? Timeout) -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouRow.NeedsYouRow(Aw.Sindri.Core.Ids.NeedsYouRowId Id, Aw.Sindri.Core.NeedsYou.NeedsYouKind Kind, string! Label, Aw.Sindri.Core.NeedsYou.NeedsYouSubject! Subject, Aw.Sindri.Core.Ids.ItemId? Item, string! Title, string! Reason, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.NeedsYou.Urgency Urgency, System.DateTimeOffset Since, bool RecordedOnly, string? Notice, Aw.Sindri.Core.Workflow.Views.AnswerKind? AnswerKind, Aw.Sindri.Core.Ids.ActionId? PrimaryAction, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, string! Cli, string? Via = null, string? Child = null, Aw.Sindri.Core.NeedsYou.NeedsYouStop? Stop = null, Aw.Sindri.Core.Workflow.Views.StatusTimeout? Timeout = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalLedgerRecorder
 static Aw.Sindri.Core.Workflow.Engine.Evals.EvalLedgerRecorder.ContentOf(System.ReadOnlySpan<byte> content) -> System.Text.Json.JsonElement
 static Aw.Sindri.Core.Workflow.Engine.Evals.EvalLedgerRecorder.Record(string! name, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver! children, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.WorkflowEventPayload!>! events, System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! contents) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Evals.EvalCase!>!
@@ -12243,6 +12245,178 @@ Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.NeedsRepo.get -> bool
 Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.NeedsRepo.init -> void
 Aw.Sindri.Core.Workflow.Blocks.BlockStepRuntimes.NeedsRepo(Aw.Sindri.Core.Workflow.Ids.BlockId step) -> bool
 Aw.Sindri.Core.Workflow.Blocks.IRepoStep
+Aw.Sindri.Core.Packets.IPacketDirectory
+Aw.Sindri.Core.Packets.IPacketDirectory.Create(string! address, string! name, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! files, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Sindri.Core.Packets.IPacketDirectory.Read(string! directory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyDictionary<string!, string!>!>!>
+static Aw.Sindri.Core.Workflow.Blocks.StepFacts.Field(System.Text.Json.Nodes.JsonNode? fact, string! name) -> string?
+static Aw.Sindri.Core.Packets.PacketFailure.Describe(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Packets.PacketFailure!>! failures) -> string!
+Aw.Sindri.Core.Checks.AddedLine
+Aw.Sindri.Core.Checks.AddedLine.<Clone>$() -> Aw.Sindri.Core.Checks.AddedLine!
+Aw.Sindri.Core.Checks.AddedLine.AddedLine(string! Path, int Line, string! Text) -> void
+Aw.Sindri.Core.Checks.AddedLine.Deconstruct(out string! Path, out int Line, out string! Text) -> void
+Aw.Sindri.Core.Checks.AddedLine.Equals(Aw.Sindri.Core.Checks.AddedLine? other) -> bool
+Aw.Sindri.Core.Checks.AddedLine.Line.get -> int
+Aw.Sindri.Core.Checks.AddedLine.Line.init -> void
+Aw.Sindri.Core.Checks.AddedLine.Path.get -> string!
+Aw.Sindri.Core.Checks.AddedLine.Path.init -> void
+Aw.Sindri.Core.Checks.AddedLine.Text.get -> string!
+Aw.Sindri.Core.Checks.AddedLine.Text.init -> void
+Aw.Sindri.Core.Checks.BranchChanges
+Aw.Sindri.Core.Checks.BranchChanges.<Clone>$() -> Aw.Sindri.Core.Checks.BranchChanges!
+Aw.Sindri.Core.Checks.BranchChanges.AddedLines.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.AddedLine!>!
+Aw.Sindri.Core.Checks.BranchChanges.AddedLines.init -> void
+Aw.Sindri.Core.Checks.BranchChanges.BranchChanges(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.ChangedFile!>! Files, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.AddedLine!>! AddedLines, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.ChangedCommit!>! Commits) -> void
+Aw.Sindri.Core.Checks.BranchChanges.Commits.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.ChangedCommit!>!
+Aw.Sindri.Core.Checks.BranchChanges.Commits.init -> void
+Aw.Sindri.Core.Checks.BranchChanges.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.ChangedFile!>! Files, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.AddedLine!>! AddedLines, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.ChangedCommit!>! Commits) -> void
+Aw.Sindri.Core.Checks.BranchChanges.Equals(Aw.Sindri.Core.Checks.BranchChanges? other) -> bool
+Aw.Sindri.Core.Checks.BranchChanges.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.ChangedFile!>!
+Aw.Sindri.Core.Checks.BranchChanges.Files.init -> void
+Aw.Sindri.Core.Checks.ChangeKind
+Aw.Sindri.Core.Checks.ChangeKind.Added = 1 -> Aw.Sindri.Core.Checks.ChangeKind
+Aw.Sindri.Core.Checks.ChangeKind.Deleted = 3 -> Aw.Sindri.Core.Checks.ChangeKind
+Aw.Sindri.Core.Checks.ChangeKind.Modified = 2 -> Aw.Sindri.Core.Checks.ChangeKind
+Aw.Sindri.Core.Checks.ChangedCommit
+Aw.Sindri.Core.Checks.ChangedCommit.<Clone>$() -> Aw.Sindri.Core.Checks.ChangedCommit!
+Aw.Sindri.Core.Checks.ChangedCommit.ChangedCommit(string! Sha, string! Subject, bool IsMerge) -> void
+Aw.Sindri.Core.Checks.ChangedCommit.Deconstruct(out string! Sha, out string! Subject, out bool IsMerge) -> void
+Aw.Sindri.Core.Checks.ChangedCommit.Equals(Aw.Sindri.Core.Checks.ChangedCommit? other) -> bool
+Aw.Sindri.Core.Checks.ChangedCommit.IsMerge.get -> bool
+Aw.Sindri.Core.Checks.ChangedCommit.IsMerge.init -> void
+Aw.Sindri.Core.Checks.ChangedCommit.Sha.get -> string!
+Aw.Sindri.Core.Checks.ChangedCommit.Sha.init -> void
+Aw.Sindri.Core.Checks.ChangedCommit.Subject.get -> string!
+Aw.Sindri.Core.Checks.ChangedCommit.Subject.init -> void
+Aw.Sindri.Core.Checks.ChangedFile
+Aw.Sindri.Core.Checks.ChangedFile.<Clone>$() -> Aw.Sindri.Core.Checks.ChangedFile!
+Aw.Sindri.Core.Checks.ChangedFile.ChangedFile(string! Path, Aw.Sindri.Core.Checks.ChangeKind Kind) -> void
+Aw.Sindri.Core.Checks.ChangedFile.Deconstruct(out string! Path, out Aw.Sindri.Core.Checks.ChangeKind Kind) -> void
+Aw.Sindri.Core.Checks.ChangedFile.Equals(Aw.Sindri.Core.Checks.ChangedFile? other) -> bool
+Aw.Sindri.Core.Checks.ChangedFile.Kind.get -> Aw.Sindri.Core.Checks.ChangeKind
+Aw.Sindri.Core.Checks.ChangedFile.Kind.init -> void
+Aw.Sindri.Core.Checks.ChangedFile.Path.get -> string!
+Aw.Sindri.Core.Checks.ChangedFile.Path.init -> void
+Aw.Sindri.Core.Checks.CheckInvocation
+Aw.Sindri.Core.Checks.CheckInvocation.<Clone>$() -> Aw.Sindri.Core.Checks.CheckInvocation!
+Aw.Sindri.Core.Checks.CheckInvocation.Argv.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Checks.CheckInvocation.Argv.init -> void
+Aw.Sindri.Core.Checks.CheckInvocation.CheckInvocation(string! Name, System.Collections.Generic.IReadOnlyList<string!>! Argv, System.TimeSpan Timeout) -> void
+Aw.Sindri.Core.Checks.CheckInvocation.Deconstruct(out string! Name, out System.Collections.Generic.IReadOnlyList<string!>! Argv, out System.TimeSpan Timeout) -> void
+Aw.Sindri.Core.Checks.CheckInvocation.Equals(Aw.Sindri.Core.Checks.CheckInvocation? other) -> bool
+Aw.Sindri.Core.Checks.CheckInvocation.Name.get -> string!
+Aw.Sindri.Core.Checks.CheckInvocation.Name.init -> void
+Aw.Sindri.Core.Checks.CheckInvocation.Timeout.get -> System.TimeSpan
+Aw.Sindri.Core.Checks.CheckInvocation.Timeout.init -> void
+Aw.Sindri.Core.Checks.CheckRun
+Aw.Sindri.Core.Checks.CheckRun.<Clone>$() -> Aw.Sindri.Core.Checks.CheckRun!
+Aw.Sindri.Core.Checks.CheckRun.CheckRun(int ExitCode, bool TimedOut, System.TimeSpan Duration, string! Tail) -> void
+Aw.Sindri.Core.Checks.CheckRun.Deconstruct(out int ExitCode, out bool TimedOut, out System.TimeSpan Duration, out string! Tail) -> void
+Aw.Sindri.Core.Checks.CheckRun.Duration.get -> System.TimeSpan
+Aw.Sindri.Core.Checks.CheckRun.Duration.init -> void
+Aw.Sindri.Core.Checks.CheckRun.Equals(Aw.Sindri.Core.Checks.CheckRun? other) -> bool
+Aw.Sindri.Core.Checks.CheckRun.ExitCode.get -> int
+Aw.Sindri.Core.Checks.CheckRun.ExitCode.init -> void
+Aw.Sindri.Core.Checks.CheckRun.Passed.get -> bool
+Aw.Sindri.Core.Checks.CheckRun.Tail.get -> string!
+Aw.Sindri.Core.Checks.CheckRun.Tail.init -> void
+Aw.Sindri.Core.Checks.CheckRun.TimedOut.get -> bool
+Aw.Sindri.Core.Checks.CheckRun.TimedOut.init -> void
+Aw.Sindri.Core.Checks.IBranchChanges
+Aw.Sindri.Core.Checks.IBranchChanges.Between(string! worktree, string! baseSha, string! head, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Checks.BranchChanges!>!>
+Aw.Sindri.Core.Checks.ICheckCommands
+Aw.Sindri.Core.Checks.ICheckCommands.Run(Aw.Sindri.Core.Checks.CheckInvocation! command, string! workingDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Checks.CheckRun!>!>
+const Aw.Sindri.Core.Checks.CheckRun.TailLimit = 4000 -> int
+override Aw.Sindri.Core.Checks.AddedLine.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Checks.AddedLine.GetHashCode() -> int
+override Aw.Sindri.Core.Checks.AddedLine.ToString() -> string!
+override Aw.Sindri.Core.Checks.BranchChanges.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Checks.BranchChanges.GetHashCode() -> int
+override Aw.Sindri.Core.Checks.BranchChanges.ToString() -> string!
+override Aw.Sindri.Core.Checks.ChangedCommit.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Checks.ChangedCommit.GetHashCode() -> int
+override Aw.Sindri.Core.Checks.ChangedCommit.ToString() -> string!
+override Aw.Sindri.Core.Checks.ChangedFile.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Checks.ChangedFile.GetHashCode() -> int
+override Aw.Sindri.Core.Checks.ChangedFile.ToString() -> string!
+override Aw.Sindri.Core.Checks.CheckInvocation.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Checks.CheckInvocation.GetHashCode() -> int
+override Aw.Sindri.Core.Checks.CheckInvocation.ToString() -> string!
+override Aw.Sindri.Core.Checks.CheckRun.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Checks.CheckRun.GetHashCode() -> int
+override Aw.Sindri.Core.Checks.CheckRun.ToString() -> string!
+static Aw.Sindri.Core.Checks.AddedLine.operator !=(Aw.Sindri.Core.Checks.AddedLine? left, Aw.Sindri.Core.Checks.AddedLine? right) -> bool
+static Aw.Sindri.Core.Checks.AddedLine.operator ==(Aw.Sindri.Core.Checks.AddedLine? left, Aw.Sindri.Core.Checks.AddedLine? right) -> bool
+static Aw.Sindri.Core.Checks.BranchChanges.operator !=(Aw.Sindri.Core.Checks.BranchChanges? left, Aw.Sindri.Core.Checks.BranchChanges? right) -> bool
+static Aw.Sindri.Core.Checks.BranchChanges.operator ==(Aw.Sindri.Core.Checks.BranchChanges? left, Aw.Sindri.Core.Checks.BranchChanges? right) -> bool
+static Aw.Sindri.Core.Checks.ChangedCommit.operator !=(Aw.Sindri.Core.Checks.ChangedCommit? left, Aw.Sindri.Core.Checks.ChangedCommit? right) -> bool
+static Aw.Sindri.Core.Checks.ChangedCommit.operator ==(Aw.Sindri.Core.Checks.ChangedCommit? left, Aw.Sindri.Core.Checks.ChangedCommit? right) -> bool
+static Aw.Sindri.Core.Checks.ChangedFile.operator !=(Aw.Sindri.Core.Checks.ChangedFile? left, Aw.Sindri.Core.Checks.ChangedFile? right) -> bool
+static Aw.Sindri.Core.Checks.ChangedFile.operator ==(Aw.Sindri.Core.Checks.ChangedFile? left, Aw.Sindri.Core.Checks.ChangedFile? right) -> bool
+static Aw.Sindri.Core.Checks.CheckInvocation.operator !=(Aw.Sindri.Core.Checks.CheckInvocation? left, Aw.Sindri.Core.Checks.CheckInvocation? right) -> bool
+static Aw.Sindri.Core.Checks.CheckInvocation.operator ==(Aw.Sindri.Core.Checks.CheckInvocation? left, Aw.Sindri.Core.Checks.CheckInvocation? right) -> bool
+static Aw.Sindri.Core.Checks.CheckRun.Of(int exitCode, bool timedOut, System.TimeSpan duration, string! output) -> Aw.Sindri.Core.Checks.CheckRun!
+static Aw.Sindri.Core.Checks.CheckRun.operator !=(Aw.Sindri.Core.Checks.CheckRun? left, Aw.Sindri.Core.Checks.CheckRun? right) -> bool
+static Aw.Sindri.Core.Checks.CheckRun.operator ==(Aw.Sindri.Core.Checks.CheckRun? left, Aw.Sindri.Core.Checks.CheckRun? right) -> bool
+Aw.Sindri.Core.Checks.BranchRules
+Aw.Sindri.Core.Checks.PhaseScope
+Aw.Sindri.Core.Checks.PhaseScope.<Clone>$() -> Aw.Sindri.Core.Checks.PhaseScope!
+Aw.Sindri.Core.Checks.PhaseScope.AllowedFiles.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Checks.PhaseScope.AllowedFiles.init -> void
+Aw.Sindri.Core.Checks.PhaseScope.BaseSha.get -> string!
+Aw.Sindri.Core.Checks.PhaseScope.BaseSha.init -> void
+Aw.Sindri.Core.Checks.PhaseScope.Deconstruct(out string! BaseSha, out System.Collections.Generic.IReadOnlyList<string!>! AllowedFiles, out System.Collections.Generic.IReadOnlyList<string!>! TestChange) -> void
+Aw.Sindri.Core.Checks.PhaseScope.Equals(Aw.Sindri.Core.Checks.PhaseScope? other) -> bool
+Aw.Sindri.Core.Checks.PhaseScope.PhaseScope(string! BaseSha, System.Collections.Generic.IReadOnlyList<string!>! AllowedFiles, System.Collections.Generic.IReadOnlyList<string!>! TestChange) -> void
+Aw.Sindri.Core.Checks.PhaseScope.TestChange.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Checks.PhaseScope.TestChange.init -> void
+Aw.Sindri.Core.Checks.CommandStepLimits
+static Aw.Sindri.Core.Checks.CommandStepLimits.BuildBudget.get -> System.TimeSpan
+static Aw.Sindri.Core.Checks.CommandStepLimits.BuildMaxDuration.get -> System.TimeSpan
+static Aw.Sindri.Core.Checks.CommandStepLimits.GreenBudget.get -> System.TimeSpan
+static Aw.Sindri.Core.Checks.CommandStepLimits.GreenMaxDuration.get -> System.TimeSpan
+Aw.Sindri.Core.Checks.RepoCommandRunner
+static Aw.Sindri.Core.Checks.RepoCommandRunner.BudgetFor(System.TimeSpan maxDuration) -> System.TimeSpan
+Aw.Sindri.Core.Checks.RuleFinding
+Aw.Sindri.Core.Checks.RuleFinding.<Clone>$() -> Aw.Sindri.Core.Checks.RuleFinding!
+Aw.Sindri.Core.Checks.RuleFinding.Deconstruct(out string! Rule, out string! Message, out string? Path, out int? Line, out string? Detail) -> void
+Aw.Sindri.Core.Checks.RuleFinding.Detail.get -> string?
+Aw.Sindri.Core.Checks.RuleFinding.Detail.init -> void
+Aw.Sindri.Core.Checks.RuleFinding.Equals(Aw.Sindri.Core.Checks.RuleFinding? other) -> bool
+Aw.Sindri.Core.Checks.RuleFinding.Line.get -> int?
+Aw.Sindri.Core.Checks.RuleFinding.Line.init -> void
+Aw.Sindri.Core.Checks.RuleFinding.Message.get -> string!
+Aw.Sindri.Core.Checks.RuleFinding.Message.init -> void
+Aw.Sindri.Core.Checks.RuleFinding.Path.get -> string?
+Aw.Sindri.Core.Checks.RuleFinding.Path.init -> void
+Aw.Sindri.Core.Checks.RuleFinding.Rule.get -> string!
+Aw.Sindri.Core.Checks.RuleFinding.Rule.init -> void
+Aw.Sindri.Core.Checks.RuleFinding.Scrubbed(Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> Aw.Sindri.Core.Checks.RuleFinding!
+Aw.Sindri.Core.Checks.RuleFinding.RuleFinding(string! Rule, string! Message, string? Path = null, int? Line = null, string? Detail = null) -> void
+Aw.Sindri.Core.Checks.ScopeGlobs
+Aw.Sindri.Core.Checks.SecretScan
+Aw.Sindri.Core.Checks.TestPaths
+const Aw.Sindri.Core.Checks.BranchRules.Commit = "BLD-COMMIT-001" -> string!
+const Aw.Sindri.Core.Checks.BranchRules.Scope = "BLD-SCOPE-001" -> string!
+const Aw.Sindri.Core.Checks.BranchRules.Secret = "BLD-SECRET-001" -> string!
+const Aw.Sindri.Core.Checks.BranchRules.Test = "BLD-TEST-001" -> string!
+override Aw.Sindri.Core.Checks.PhaseScope.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Checks.PhaseScope.GetHashCode() -> int
+override Aw.Sindri.Core.Checks.PhaseScope.ToString() -> string!
+override Aw.Sindri.Core.Checks.RuleFinding.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Checks.RuleFinding.GetHashCode() -> int
+override Aw.Sindri.Core.Checks.RuleFinding.ToString() -> string!
+static Aw.Sindri.Core.Checks.BranchRules.ChangedTests(Aw.Sindri.Core.Checks.PhaseScope! scope, Aw.Sindri.Core.Checks.BranchChanges! changes) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.RuleFinding!>!
+static Aw.Sindri.Core.Checks.BranchRules.CommitType(string! subject) -> string?
+static Aw.Sindri.Core.Checks.BranchRules.Commits(Aw.Sindri.Core.Checks.BranchChanges! changes) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.RuleFinding!>!
+static Aw.Sindri.Core.Checks.BranchRules.OutOfScope(Aw.Sindri.Core.Checks.PhaseScope! scope, Aw.Sindri.Core.Checks.BranchChanges! changes) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.RuleFinding!>!
+static Aw.Sindri.Core.Checks.PhaseScope.From(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! files) -> Aw.Kernel.Result<Aw.Sindri.Core.Checks.PhaseScope!>!
+static Aw.Sindri.Core.Checks.PhaseScope.operator !=(Aw.Sindri.Core.Checks.PhaseScope? left, Aw.Sindri.Core.Checks.PhaseScope? right) -> bool
+static Aw.Sindri.Core.Checks.PhaseScope.operator ==(Aw.Sindri.Core.Checks.PhaseScope? left, Aw.Sindri.Core.Checks.PhaseScope? right) -> bool
+static Aw.Sindri.Core.Checks.RuleFinding.operator !=(Aw.Sindri.Core.Checks.RuleFinding? left, Aw.Sindri.Core.Checks.RuleFinding? right) -> bool
+static Aw.Sindri.Core.Checks.RuleFinding.operator ==(Aw.Sindri.Core.Checks.RuleFinding? left, Aw.Sindri.Core.Checks.RuleFinding? right) -> bool
+static Aw.Sindri.Core.Checks.ScopeGlobs.Allows(System.Collections.Generic.IReadOnlyList<string!>! entries, string! path) -> bool
+static Aw.Sindri.Core.Checks.SecretScan.Findings(string! rule, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.AddedLine!>! lines, Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.RuleFinding!>!
+static Aw.Sindri.Core.Checks.TestPaths.IsTest(string! path) -> bool
 Aw.Sindri.Core.Ports.ISetupFacts
 Aw.Sindri.Core.Ports.ISetupFacts.Map(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.MapFact!>!>
 Aw.Sindri.Core.Ports.ISetupFacts.Mcp(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.McpFact!>!>
@@ -12643,6 +12817,7 @@ Aw.Sindri.Core.Worktrees.WorktreeRequest.Branch.init -> void
 Aw.Sindri.Core.Worktrees.WorktreeRequest.Path.get -> string!
 Aw.Sindri.Core.Worktrees.WorktreeRequest.Path.init -> void
 Aw.Sindri.Core.Worktrees.WorktreeRequest.Validate() -> Aw.Kernel.Error?
+static Aw.Sindri.Core.Checks.RuleFinding.ToFact(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Checks.RuleFinding!>! findings) -> System.Text.Json.Nodes.JsonArray!
 Aw.Sindri.Core.Workflow.ApproveAll.CapabilityDelta.CapabilityDelta(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.CapabilityLine!>! Added, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.CapabilityLine!>! Removed) -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRefused.<Clone>$() -> Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRefused!
 Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRow.ChangeWord.init -> void
@@ -14659,6 +14834,73 @@ Aw.Sindri.Core.Events.SetupStepChanged.Deconstruct(out Aw.Sindri.Core.Ids.Comman
 Aw.Sindri.Core.Events.SetupStepChanged.SetupStepChanged(Aw.Sindri.Core.Ids.CommandId CommandId, string! Step, string! State, string? Code = null) -> void
 Aw.Sindri.Core.Events.SetupStepChanged.Step.get -> string!
 Aw.Sindri.Core.Events.SetupStepChanged.Step.init -> void
+Aw.Sindri.Core.Setup.IProfileRepoWriter
+Aw.Sindri.Core.Setup.IProfileRepoWriter.Append(Aw.Sindri.Core.Profile.RepoEntry! repo, System.Collections.Generic.IReadOnlyCollection<string!>! defaultEffects, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.RepoAppended>!>
+Aw.Sindri.Core.Setup.IRepoInspector
+Aw.Sindri.Core.Setup.IRepoInspector.Facts(string! checkout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.RepoGit!>!>
+Aw.Sindri.Core.Setup.IRepoInspector.Inspect(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.InspectedRepo!>!>
+Aw.Sindri.Core.Setup.IShippedEffects
+Aw.Sindri.Core.Setup.IShippedEffects.Kinds() -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Setup.InspectedRepo
+Aw.Sindri.Core.Setup.InspectedRepo.<Clone>$() -> Aw.Sindri.Core.Setup.InspectedRepo!
+Aw.Sindri.Core.Setup.InspectedRepo.Checkout.get -> string!
+Aw.Sindri.Core.Setup.InspectedRepo.Checkout.init -> void
+Aw.Sindri.Core.Setup.InspectedRepo.Deconstruct(out string! Checkout, out Aw.Sindri.Core.Setup.RepoGit! Git) -> void
+Aw.Sindri.Core.Setup.InspectedRepo.Equals(Aw.Sindri.Core.Setup.InspectedRepo? other) -> bool
+Aw.Sindri.Core.Setup.InspectedRepo.Git.get -> Aw.Sindri.Core.Setup.RepoGit!
+Aw.Sindri.Core.Setup.InspectedRepo.Git.init -> void
+Aw.Sindri.Core.Setup.InspectedRepo.InspectedRepo(string! Checkout, Aw.Sindri.Core.Setup.RepoGit! Git) -> void
+Aw.Sindri.Core.Setup.NoShippedEffects
+Aw.Sindri.Core.Setup.NoShippedEffects.Kinds() -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Setup.NoShippedEffects.NoShippedEffects() -> void
+Aw.Sindri.Core.Setup.RepoAppended
+Aw.Sindri.Core.Setup.RepoAppended.AlreadyThere = 2 -> Aw.Sindri.Core.Setup.RepoAppended
+Aw.Sindri.Core.Setup.RepoAppended.Appended = 1 -> Aw.Sindri.Core.Setup.RepoAppended
+Aw.Sindri.Core.Setup.RepoAppended.Created = 0 -> Aw.Sindri.Core.Setup.RepoAppended
+Aw.Sindri.Core.Setup.RepoGit
+Aw.Sindri.Core.Setup.RepoGit.<Clone>$() -> Aw.Sindri.Core.Setup.RepoGit!
+Aw.Sindri.Core.Setup.RepoGit.Deconstruct(out string? DefaultBranch, out string? Head) -> void
+Aw.Sindri.Core.Setup.RepoGit.DefaultBranch.get -> string?
+Aw.Sindri.Core.Setup.RepoGit.DefaultBranch.init -> void
+Aw.Sindri.Core.Setup.RepoGit.Equals(Aw.Sindri.Core.Setup.RepoGit? other) -> bool
+Aw.Sindri.Core.Setup.RepoGit.Head.get -> string?
+Aw.Sindri.Core.Setup.RepoGit.Head.init -> void
+Aw.Sindri.Core.Setup.RepoGit.RepoGit(string? DefaultBranch, string? Head) -> void
+Aw.Sindri.Core.Setup.DefaultProfile
+Aw.Sindri.Core.Setup.RepoFolders
+Aw.Sindri.Core.Setup.ShippedEffects
+override Aw.Sindri.Core.Setup.InspectedRepo.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Setup.InspectedRepo.GetHashCode() -> int
+override Aw.Sindri.Core.Setup.InspectedRepo.ToString() -> string!
+override Aw.Sindri.Core.Setup.RepoGit.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Setup.RepoGit.GetHashCode() -> int
+override Aw.Sindri.Core.Setup.RepoGit.ToString() -> string!
+static Aw.Sindri.Core.NeedsYou.NeedsYouRows.ForSetupRepo(string! sentence, System.DateTimeOffset since, Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> Aw.Kernel.Result<Aw.Sindri.Core.NeedsYou.NeedsYouRow!>!
+static Aw.Sindri.Core.Setup.InspectedRepo.operator !=(Aw.Sindri.Core.Setup.InspectedRepo? left, Aw.Sindri.Core.Setup.InspectedRepo? right) -> bool
+static Aw.Sindri.Core.Setup.InspectedRepo.operator ==(Aw.Sindri.Core.Setup.InspectedRepo? left, Aw.Sindri.Core.Setup.InspectedRepo? right) -> bool
+static Aw.Sindri.Core.Setup.RepoGit.operator !=(Aw.Sindri.Core.Setup.RepoGit? left, Aw.Sindri.Core.Setup.RepoGit? right) -> bool
+static Aw.Sindri.Core.Setup.RepoGit.operator ==(Aw.Sindri.Core.Setup.RepoGit? left, Aw.Sindri.Core.Setup.RepoGit? right) -> bool
+static Aw.Sindri.Core.Setup.DefaultProfile.Quote(string! value) -> string!
+static Aw.Sindri.Core.Setup.DefaultProfile.Text(string! user, System.Collections.Generic.IReadOnlyCollection<string!>! effects) -> string!
+static Aw.Sindri.Core.Setup.RepoFolders.KeyOf(string! resolvedPath) -> Aw.Sindri.Core.Ids.JobKey
+static Aw.Sindri.Core.Setup.RepoFolders.NameOf(string! path) -> string!
+static Aw.Sindri.Core.Setup.RepoFolders.Refuse(string! resolvedPath, string! userHome, string! sindriHome) -> string?
+static Aw.Sindri.Core.Setup.ShippedEffects.Union(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Recipes.Recipe!>! recipes) -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Setup.KnownRepoEvents
+Aw.Sindri.Core.Setup.KnownRepoEvents.Add(string! name) -> void
+Aw.Sindri.Core.Setup.KnownRepoEvents.Has(string! name) -> bool
+Aw.Sindri.Core.Setup.KnownRepoEvents.KnownRepoEvents() -> void
+Aw.Sindri.Core.Setup.RepoAddedBackfill
+Aw.Sindri.Core.Setup.RepoAddedBackfill.Ensure(Aw.Sindri.Core.Profile.RepoEntry! entry, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+Aw.Sindri.Core.Setup.RepoAddedBackfill.Ensure(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>! entries, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+Aw.Sindri.Core.Setup.RepoAddedBackfill.RepoAddedBackfill(Aw.Sindri.Core.Setup.RepoEvents! recorder, Aw.Sindri.Core.Ledger.ILedgerReader! reader, Aw.Sindri.Core.Events.EventFactory! events, Aw.Sindri.Core.Setup.RepoGitCache! git, Aw.Sindri.Core.Setup.KnownRepoEvents! known) -> void
+Aw.Sindri.Core.Setup.RepoEvents
+Aw.Sindri.Core.Setup.RepoEvents.RepoEvents(Aw.Sindri.Core.Lease.HeldLease! held, Aw.Sindri.Core.Ledger.ILedgerStore! ledger, Aw.Sindri.Core.Events.EventFactory! events, Aw.Sindri.Core.Commands.ICallerContextAccessor! callers) -> void
+Aw.Sindri.Core.Setup.RepoGitCache
+Aw.Sindri.Core.Setup.RepoGitCache.Invalidate() -> void
+Aw.Sindri.Core.Setup.RepoGitCache.Of(string! checkout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Setup.RepoGit?>
+Aw.Sindri.Core.Setup.RepoGitCache.RepoGitCache(Aw.Sindri.Core.Setup.IRepoInspector! inspector, System.TimeProvider! clock) -> void
+Aw.Sindri.Core.Setup.RepoEvents.CanRecord() -> bool
 Aw.Sindri.Core.Auth.ProverLabel.Deconstruct(out bool Allowed, out bool MayConfirm) -> void
 Aw.Sindri.Core.Auth.ProverLabel.MayConfirm.get -> bool
 Aw.Sindri.Core.Auth.ProverLabel.MayConfirm.init -> void
@@ -14733,6 +14975,26 @@ static Aw.Sindri.Core.Profile.RepoStatus.operator ==(Aw.Sindri.Core.Profile.Repo
 static Aw.Sindri.Core.Profile.RepoStatusRules.ExitCode(Aw.Sindri.Core.Profile.RepoStatus! status) -> int
 static Aw.Sindri.Core.Profile.RepoStatusRules.NudgeLine(Aw.Sindri.Core.Profile.RepoStatus! status) -> string!
 static Aw.Sindri.Core.Profile.RepoStatusRules.Text(Aw.Sindri.Core.Profile.RepoStatus! status) -> string!
+Aw.Sindri.Core.NeedsYou.NeedsYouRow.Stop.get -> Aw.Sindri.Core.NeedsYou.NeedsYouStop?
+Aw.Sindri.Core.NeedsYou.NeedsYouRow.Stop.init -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouRow.Timeout.get -> Aw.Sindri.Core.Workflow.Views.StatusTimeout?
+Aw.Sindri.Core.NeedsYou.NeedsYouRow.Timeout.init -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouStop
+Aw.Sindri.Core.NeedsYou.NeedsYouStop.<Clone>$() -> Aw.Sindri.Core.NeedsYou.NeedsYouStop!
+Aw.Sindri.Core.NeedsYou.NeedsYouStop.Deconstruct(out int N, out int Of) -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouStop.Equals(Aw.Sindri.Core.NeedsYou.NeedsYouStop? other) -> bool
+Aw.Sindri.Core.NeedsYou.NeedsYouStop.N.get -> int
+Aw.Sindri.Core.NeedsYou.NeedsYouStop.N.init -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouStop.NeedsYouStop(int N, int Of) -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouStop.Of.get -> int
+Aw.Sindri.Core.NeedsYou.NeedsYouStop.Of.init -> void
+override Aw.Sindri.Core.NeedsYou.NeedsYouStop.Equals(object? obj) -> bool
+override Aw.Sindri.Core.NeedsYou.NeedsYouStop.GetHashCode() -> int
+override Aw.Sindri.Core.NeedsYou.NeedsYouStop.ToString() -> string!
+static Aw.Sindri.Core.NeedsYou.NeedsYouStop.operator !=(Aw.Sindri.Core.NeedsYou.NeedsYouStop? left, Aw.Sindri.Core.NeedsYou.NeedsYouStop? right) -> bool
+static Aw.Sindri.Core.NeedsYou.NeedsYouStop.operator ==(Aw.Sindri.Core.NeedsYou.NeedsYouStop? left, Aw.Sindri.Core.NeedsYou.NeedsYouStop? right) -> bool
+Aw.Sindri.Core.Setup.RepoEvents.Added(Aw.Sindri.Core.Ids.RepoName repo, string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+static Aw.Sindri.Core.Setup.RepoEvents.KeyOf(Aw.Sindri.Core.Ids.RepoName repo) -> string!
 Aw.Sindri.Core.BugFix.AttemptMode
 Aw.Sindri.Core.BugFix.AttemptMode.Split = 2 -> Aw.Sindri.Core.BugFix.AttemptMode
 Aw.Sindri.Core.BugFix.AttemptMode.Whole = 1 -> Aw.Sindri.Core.BugFix.AttemptMode
@@ -15055,6 +15317,82 @@ Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove.Release = 3 -> Aw.Sindri.Core.Wor
 Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType.Heavy = 8 -> Aw.Sindri.Core.Workflow.Engine.Events.WorkflowEventType
 static Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyHold.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, bool inPhase, bool leased) -> Aw.Sindri.Core.Workflow.Engine.Heavy.HeavyMove
 const Aw.Sindri.Core.Events.EventTypes.WorkflowHeavy = "workflow.heavy" -> string!
+Aw.Sindri.Core.Checks.CheckResult
+Aw.Sindri.Core.Checks.CheckResult.<Clone>$() -> Aw.Sindri.Core.Checks.CheckResult!
+Aw.Sindri.Core.Checks.CheckResult.CheckResult(Aw.Sindri.Core.Profile.BuildCommand! Command, Aw.Sindri.Core.Checks.CheckRun! Run) -> void
+Aw.Sindri.Core.Checks.CheckResult.Command.get -> Aw.Sindri.Core.Profile.BuildCommand!
+Aw.Sindri.Core.Checks.CheckResult.Command.init -> void
+Aw.Sindri.Core.Checks.CheckResult.Deconstruct(out Aw.Sindri.Core.Profile.BuildCommand! Command, out Aw.Sindri.Core.Checks.CheckRun! Run) -> void
+Aw.Sindri.Core.Checks.CheckResult.Equals(Aw.Sindri.Core.Checks.CheckResult? other) -> bool
+Aw.Sindri.Core.Checks.CheckResult.Name.get -> string!
+Aw.Sindri.Core.Checks.CheckResult.Run.get -> Aw.Sindri.Core.Checks.CheckRun!
+Aw.Sindri.Core.Checks.CheckResult.Run.init -> void
+Aw.Sindri.Core.Checks.CheckResult.Summary.get -> string!
+Aw.Sindri.Core.Checks.CommandSet
+Aw.Sindri.Core.Checks.CommandSet.<Clone>$() -> Aw.Sindri.Core.Checks.CommandSet!
+Aw.Sindri.Core.Checks.CommandSet.CommandSet(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.BuildCommand!>! Commands, System.TimeSpan Each) -> void
+Aw.Sindri.Core.Checks.CommandSet.Commands.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.BuildCommand!>!
+Aw.Sindri.Core.Checks.CommandSet.Commands.init -> void
+Aw.Sindri.Core.Checks.CommandSet.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.BuildCommand!>! Commands, out System.TimeSpan Each) -> void
+Aw.Sindri.Core.Checks.CommandSet.Each.get -> System.TimeSpan
+Aw.Sindri.Core.Checks.CommandSet.Each.init -> void
+Aw.Sindri.Core.Checks.CommandSet.Equals(Aw.Sindri.Core.Checks.CommandSet? other) -> bool
+Aw.Sindri.Core.Checks.IBuildCommandSource
+Aw.Sindri.Core.Checks.IBuildCommandSource.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Checks.CommandSet!>!>
+Aw.Sindri.Core.Checks.ProfileBuildCommands
+Aw.Sindri.Core.Checks.ProfileBuildCommands.ProfileBuildCommands(Aw.Sindri.Core.Profile.IApprovedProfile! profile) -> void
+Aw.Sindri.Core.Checks.ProfileBuildCommands.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Checks.CommandSet!>!>
+Aw.Sindri.Core.Checks.RepoCommandRunner.For(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Checks.CommandSet!>!>
+Aw.Sindri.Core.Checks.RepoCommandRunner.RepoCommandRunner(Aw.Sindri.Core.Checks.IBuildCommandSource! source, Aw.Sindri.Core.Checks.ICheckCommands! commands, Aw.Sindri.Core.Locks.IHeavySlots! slots, System.TimeProvider! clock) -> void
+Aw.Sindri.Core.Checks.RepoCommandRunner.Run(string! holder, Aw.Sindri.Core.Checks.CommandSet! set, string! workingDirectory, System.TimeSpan budget, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.CheckResult!>!>!>
+Aw.Sindri.Core.Checks.RepoCommandRunner.RunUntilFailure(string! holder, Aw.Sindri.Core.Checks.CommandSet! set, string! workingDirectory, System.TimeSpan budget, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.CheckResult!>!>!>
+Aw.Sindri.Core.Profile.BuildCommand
+Aw.Sindri.Core.Profile.BuildCommand.<Clone>$() -> Aw.Sindri.Core.Profile.BuildCommand!
+Aw.Sindri.Core.Profile.BuildCommand.BuildCommand(string! Name, System.Collections.Generic.IReadOnlyList<string!>! Run) -> void
+Aw.Sindri.Core.Profile.BuildCommand.Deconstruct(out string! Name, out System.Collections.Generic.IReadOnlyList<string!>! Run) -> void
+Aw.Sindri.Core.Profile.BuildCommand.Equals(Aw.Sindri.Core.Profile.BuildCommand? other) -> bool
+Aw.Sindri.Core.Profile.BuildCommand.Name.get -> string!
+Aw.Sindri.Core.Profile.BuildCommand.Name.init -> void
+Aw.Sindri.Core.Profile.BuildCommand.Run.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Profile.BuildCommand.Run.init -> void
+Aw.Sindri.Core.Profile.CommandLine
+override Aw.Sindri.Core.Checks.CheckResult.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Checks.CheckResult.GetHashCode() -> int
+override Aw.Sindri.Core.Checks.CheckResult.ToString() -> string!
+override Aw.Sindri.Core.Checks.CommandSet.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Checks.CommandSet.GetHashCode() -> int
+override Aw.Sindri.Core.Checks.CommandSet.ToString() -> string!
+override Aw.Sindri.Core.Profile.BuildCommand.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.BuildCommand.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.BuildCommand.ToString() -> string!
+static Aw.Sindri.Core.Checks.CheckResult.operator !=(Aw.Sindri.Core.Checks.CheckResult? left, Aw.Sindri.Core.Checks.CheckResult? right) -> bool
+static Aw.Sindri.Core.Checks.CheckResult.operator ==(Aw.Sindri.Core.Checks.CheckResult? left, Aw.Sindri.Core.Checks.CheckResult? right) -> bool
+static Aw.Sindri.Core.Checks.CommandSet.operator !=(Aw.Sindri.Core.Checks.CommandSet? left, Aw.Sindri.Core.Checks.CommandSet? right) -> bool
+static Aw.Sindri.Core.Checks.CommandSet.operator ==(Aw.Sindri.Core.Checks.CommandSet? left, Aw.Sindri.Core.Checks.CommandSet? right) -> bool
+static Aw.Sindri.Core.Profile.BuildCommand.operator !=(Aw.Sindri.Core.Profile.BuildCommand? left, Aw.Sindri.Core.Profile.BuildCommand? right) -> bool
+static Aw.Sindri.Core.Profile.BuildCommand.operator ==(Aw.Sindri.Core.Profile.BuildCommand? left, Aw.Sindri.Core.Profile.BuildCommand? right) -> bool
+static Aw.Sindri.Core.Profile.CommandLine.TryParse(string! line, out System.Collections.Generic.IReadOnlyList<string!>! argv, out string? problem) -> bool
+Aw.Sindri.Core.Setup.McpEvents
+Aw.Sindri.Core.Setup.McpEvents.McpEvents(Aw.Sindri.Core.Lease.HeldLease! held, Aw.Sindri.Core.Ledger.ILedgerStore! ledger, Aw.Sindri.Core.Events.EventFactory! events, Aw.Sindri.Core.Commands.ICallerContextAccessor! callers) -> void
+Aw.Sindri.Core.Setup.McpEvents.Registered(Aw.Sindri.Core.Ids.RepoName repo, int port, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.McpProviderOutcome!>! providers, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Events.EventFactory.CurrentCommandId() -> Aw.Sindri.Core.Ids.CommandId?
+Aw.Sindri.Core.Setup.IMcpAutoSwitch
+Aw.Sindri.Core.Setup.IMcpAutoSwitch.Off.get -> bool
+Aw.Sindri.Core.Setup.McpEvents.ConsentGiven(Aw.Sindri.Core.Ids.ProfileHash profile, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+Aw.Sindri.Core.Setup.McpEvents.ConsentOnHumanPress(Aw.Sindri.Core.Ids.ProfileHash profile, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+static Aw.Sindri.Core.NeedsYou.NeedsYouRows.ForSetupMcp(string! sentence, System.DateTimeOffset since, Aw.Sindri.Core.Text.ITextScrubber! scrubber, string! headline = "Connect your agents") -> Aw.Kernel.Result<Aw.Sindri.Core.NeedsYou.NeedsYouRow!>!
+static Aw.Sindri.Core.NeedsYou.NeedsYouRows.ForTurnOnMcp(System.DateTimeOffset since, Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> Aw.Kernel.Result<Aw.Sindri.Core.NeedsYou.NeedsYouRow!>!
+Aw.Sindri.Core.Setup.IMcpJobStarter
+Aw.Sindri.Core.Setup.IMcpJobStarter.Start(Aw.Sindri.Core.Ids.RepoName repo, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Setup.IMcpNeed
+Aw.Sindri.Core.Setup.IMcpNeed.Needed(Aw.Sindri.Core.Ids.RepoName repo, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+Aw.Sindri.Core.Setup.McpAutoGate
+Aw.Sindri.Core.Setup.McpAutoGate.McpAutoGate(Aw.Sindri.Core.Profile.IApprovedProfile! approvals, Aw.Sindri.Core.Setup.McpEvents! facts, Aw.Sindri.Core.Setup.IMcpAutoSwitch! environment, Aw.Sindri.Core.Views.IJobViews! jobs) -> void
+Aw.Sindri.Core.Setup.McpAutoGate.Ready(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Profile.LoadedProfile?>
+Aw.Sindri.Core.Setup.McpAutoGate.RecentlyFailed(Aw.Sindri.Core.Ids.RepoName repo, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+Aw.Sindri.Core.Setup.McpAutoGate.TurnOnNeeded(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+Aw.Sindri.Core.Setup.McpJobKeys
+static Aw.Sindri.Core.Setup.McpJobKeys.For(Aw.Sindri.Core.Ids.RepoName repo) -> Aw.Sindri.Core.Ids.JobKey
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Steps.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StateStep!>!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Steps.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.ItemTitles.ItemTitles(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! titles) -> void

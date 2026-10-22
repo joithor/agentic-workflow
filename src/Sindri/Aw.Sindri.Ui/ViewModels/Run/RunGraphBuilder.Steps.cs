@@ -15,13 +15,13 @@ internal static partial class RunGraphBuilder
             .Select(c =>
             {
                 var own = runs.Where(r => string.Equals(r.Step, c.State, StringComparison.Ordinal)).ToList();
-                return new RunStep(c.State, WorkflowNames.Of(c.State, null), StepState(c, own.LastOrDefault()), StepKindOf(c, own), c.Round);
+                return new RunStep(c.State, WorkflowNames.Of(c.State, displayName: null), StepState(c, own.LastOrDefault()), StepKindOf(c, own), c.Round);
             })];
     }
 
     private static RunNodeState StepState(StateCell cell, StepRun? run)
     {
-        if (cell.Glyph != StateGlyph.Active)
+        if (cell.Glyph != Api.Workflow.StateGlyph.Active)
         {
             return FromGlyph(cell.Glyph);
         }
