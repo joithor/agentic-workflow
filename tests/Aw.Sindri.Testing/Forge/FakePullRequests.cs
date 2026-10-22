@@ -18,6 +18,12 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     /// <summary>Gets the operations called, in order.</summary>
     public IList<string> Calls { get; } = [];
 
+    /// <summary>Gets the pushes asked for, in order.</summary>
+    public IList<PullPush> Pushes { get; } = [];
+
+    /// <summary>Gets the re-runs asked for (link and commit), in order.</summary>
+    public IList<(string Link, string Sha)> Reruns { get; } = [];
+
     /// <summary>Gets the pull requests, with what Open and Update gave them.</summary>
     public IReadOnlyList<FakePull> Pulls => _pulls;
 
@@ -53,6 +59,7 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     {
         ArgumentNullException.ThrowIfNull(push);
         Calls.Add("Push");
+        Pushes.Add(push);
         return Done(Locate(push.Link).Map(p =>
         {
             if (p.HeadSha != push.LeaseSha)
@@ -69,6 +76,7 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     public ValueTask<Result<int>> RerunChecks(string link, string sha, CancellationToken cancellationToken)
     {
         Calls.Add("RerunChecks");
+        Reruns.Add((link, sha));
         return Done(Locate(link).Map(_ => 0));
     }
 
