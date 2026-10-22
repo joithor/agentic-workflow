@@ -63,8 +63,8 @@ public sealed class ScopeEvidenceStepTests
     {
         var result = await Run(new InMemoryRunArea(), Gold());
 
-        var open = System.Text.Json.Nodes.JsonNode.Parse(result.Result!.Outputs[Aw.Sindri.Core.Workflow.Ids.FactKey.From("fact:openQuestions")].GetRawText())!.AsArray().Count;
-        var recommended = System.Text.Json.Nodes.JsonNode.Parse(result.Result.Outputs[Aw.Sindri.Core.Workflow.Ids.FactKey.From("fact:recommendation")].GetRawText())!;
+        var open = JsonNode.Parse(result.Result!.Outputs[FactKey.From("fact:openQuestions")].GetRawText())!.AsArray().Count;
+        var recommended = JsonNode.Parse(result.Result.Outputs[FactKey.From("fact:recommendation")].GetRawText())!;
 
         Assert.Equal(open == 0 ? "approve" : "revise", (string?)recommended["outcome"]);
         Assert.False(string.IsNullOrWhiteSpace((string?)recommended["why"]));
