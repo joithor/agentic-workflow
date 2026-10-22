@@ -243,12 +243,22 @@ internal sealed partial class GitHubForge
     {
         var (key, kind, json, resolved, outdated, path, markers) = parts;
         var user = json.At("user") ?? default;
-        var created = json.At("created_at") is not null ? Time(json, "created_at") : Time(json, "submitted_at");
-        var edited = json.At("updated_at") is not null && Time(json, "updated_at") is var updated && updated != created ? updated : (DateTimeOffset?)null;
-        var line = json.Long("line") is > 0 and var current ? (int)current : json.Long("original_line") is > 0 and var original ? (int)original : (int?)null;
+        var (created, edited) = Times(json);
         var isBot = user.Str("type") == "Bot" || user.Str("login").EndsWith("[bot]", StringComparison.Ordinal);
-        return new ForgeThread(key, kind, user.Str("login"), json.Str("author_association"), isBot, resolved, outdated, path is { Length: > 0 } ? path : null, json.Str("body"), markers, created, line, edited, json.Str("html_url") is { Length: > 0 } url ? url : null);
+        return new ForgeThread(key, kind, user.Str("login"), json.Str("author_association"), isBot, resolved, outdated, path is { Length: > 0 } ? path : null, json.Str("body"), markers, created, Line(json), edited, json.Str("html_url") is { Length: > 0 } url ? url : null);
     }
+
+    // A review has submitted_at only; a comment has created_at, and updated_at when it differs from it means it was edited.
+    private static (DateTimeOffset Created, DateTimeOffset? Edited) Times(JsonElement json)
+    {
+        var created = json.At("created_at") is not null ? Time(json, "created_at") : Time(json, "submitted_at");
+        var updated = json.At("updated_at") is not null ? Time(json, "updated_at") : created;
+        return (created, updated != created ? updated : null);
+    }
+
+    // The line a thread sits on now, else the one it was written on.
+    private static int? Line(JsonElement json) =>
+        json.Long("line") is > 0 and var current ? (int)current : json.Long("original_line") is > 0 and var original ? (int)original : null;
 
     private static DateTimeOffset Time(JsonElement json, string name) =>
         DateTimeOffset.TryParse(json.Str(name), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal, out var when) ? when : DateTimeOffset.MinValue;
