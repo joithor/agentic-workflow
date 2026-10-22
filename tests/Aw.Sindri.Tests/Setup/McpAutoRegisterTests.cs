@@ -134,14 +134,14 @@ public sealed class McpAutoRegisterTests
     {
         var approved = await Approve(repos: ["demo"]);
         await Consent(approved);
-        await Listen(7480);
+        _ = await Listen(7480);
 
         await Run();
         await Run();
         await Run();
 
         Assert.Equal(["demo"], _starter.Repos);
-        await Listen(7481);
+        _ = await Listen(7481);
         await Run();
         await Run();
         Assert.Equal(["demo", "demo"], _starter.Repos);
