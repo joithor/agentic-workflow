@@ -56,7 +56,7 @@ internal static class BlockRegistrations
         .AddEffect<NotifyDeskEffect>()    // engine P6 unit (c)
         .AddEffect<PrMergeEffect>()       // PB-E: the merge, expected-head checked
         .AddEffect<PrReplyEffect>()       // PB-E: replies, reactions and marks
-        .AddSingleton<MergeRecord>()      // PB-B: the merge record's one writer
+        .AddSingleton<IMergeRecord, MergeRecord>()      // PB-B: the merge record's one writer
         .AddEffect<PrPushEffect>()        // PB-E: the lease push
         .AddEffect<PrRecordEffect>()      // PB-E: the merge record's recheck and docs rows
         .AddEffect<PrRerunChecksEffect>() // PB-E: re-run a flaky check
