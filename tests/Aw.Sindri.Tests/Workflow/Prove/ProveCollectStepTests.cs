@@ -109,8 +109,8 @@ public sealed class ProveCollectStepTests
 
         var result = await Run(files, Facts(summary: """{"kind":"combined","ui":{"artifacts":["ui.png"]},"api":{"artifacts":["api.json"]}}"""));
 
-        Assert.Equal(["ui.png", "api.json"], Artifacts(result, "i1").Select(a => (string?)a!["path"]));
-        Assert.Equal(["ui-evidence", "api-evidence"], Artifacts(result, "i1").Select(a => (string?)a!["kind"]));
+        Assert.Equal(["ui.png", "api.json"], Artifacts(result, "i1").Select(a => (string?)a!["path"]), StringComparer.Ordinal);
+        Assert.Equal(["ui-evidence", "api-evidence"], Artifacts(result, "i1").Select(a => (string?)a!["kind"]), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -160,7 +160,7 @@ public sealed class ProveCollectStepTests
 
         var result = await Run(files, Facts(manual: """{"artifacts":["new.md"]}""", proof: Proof(stale)));
 
-        Assert.Equal(["old.md", "new.md"], Artifacts(result, "i1").Select(a => (string?)a!["path"]));
+        Assert.Equal(["old.md", "new.md"], Artifacts(result, "i1").Select(a => (string?)a!["path"]), StringComparer.Ordinal);
         Assert.Equal(Old, (string?)Artifacts(result, "i1")[0]!["commit"]);
     }
 
@@ -173,7 +173,7 @@ public sealed class ProveCollectStepTests
 
         var again = await Run(files, Facts(manual: """{"artifacts":["a.md"]}""", proof: proof));
 
-        Assert.Single(Artifacts(again, "i1"));
+        _ = Assert.Single(Artifacts(again, "i1"));
     }
 
     [Fact]

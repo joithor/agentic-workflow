@@ -29,8 +29,8 @@ public abstract class ArtifactFilesContract
 
         var read = await Create().Sha256(Workspace, "evidence/shot.txt", Token);
 
-        Assert.True(read.IsSuccess);
-        Assert.Equal(InMemoryArtifactFiles.HashOf("hello"), read.Value);
+        Expect.True(read.IsSuccess);
+        Expect.Equal(InMemoryArtifactFiles.HashOf("hello"), read.Value);
     }
 
     /// <summary>An absolute path inside the worktree is read the same as the relative one.</summary>
@@ -42,7 +42,7 @@ public abstract class ArtifactFilesContract
 
         var read = await Create().Sha256(Workspace, Path.Combine(Workspace, "a.txt"), Token);
 
-        Assert.Equal(InMemoryArtifactFiles.HashOf("hello"), read.Value);
+        Expect.Equal(InMemoryArtifactFiles.HashOf("hello"), read.Value);
     }
 
     /// <summary>Different bytes make a different hash.</summary>
@@ -57,7 +57,7 @@ public abstract class ArtifactFilesContract
         var a = await files.Sha256(Workspace, "a.txt", Token);
         var b = await files.Sha256(Workspace, "b.txt", Token);
 
-        Assert.NotEqual(a.Value, b.Value);
+        Expect.True(a.Value != b.Value);
     }
 
     /// <summary>A file that isn't there is a success with no hash, so the caller can name the item it fails to back.</summary>
@@ -67,8 +67,8 @@ public abstract class ArtifactFilesContract
     {
         var read = await Create().Sha256(Workspace, "evidence/none.txt", Token);
 
-        Assert.True(read.IsSuccess);
-        Assert.Null(read.Value);
+        Expect.True(read.IsSuccess);
+        Expect.True(read.Value is null);
     }
 
     /// <summary>A path that leaves the worktree is refused, whether by '..' or by an absolute path.</summary>
@@ -82,6 +82,6 @@ public abstract class ArtifactFilesContract
     {
         var read = await Create().Sha256(Workspace, path, Token);
 
-        Assert.True(read.IsError);
+        Expect.True(read.IsError);
     }
 }

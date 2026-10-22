@@ -34,9 +34,9 @@ public sealed class DiskArtifactFilesContractTests : ArtifactFilesContract, IDis
         }
 
         var outside = Path.Combine(_home.Path, "secret.txt");
-        File.WriteAllText(outside, "secret");
+        await File.WriteAllTextAsync(outside, "secret", TestContext.Current.CancellationToken);
         Put("keep.txt", "x");
-        File.CreateSymbolicLink(Path.Combine(Workspace, "link.txt"), outside);
+        _ = File.CreateSymbolicLink(Path.Combine(Workspace, "link.txt"), outside);
 
         var read = await Create().Sha256(Workspace, "link.txt", TestContext.Current.CancellationToken);
 
