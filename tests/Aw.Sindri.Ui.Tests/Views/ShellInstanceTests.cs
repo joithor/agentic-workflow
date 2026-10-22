@@ -112,6 +112,7 @@ public sealed class ShellInstanceTests : FrameHost
         var served = FixtureInstances.Details.Select(d => d.Detail.Address).ToList();
         var (window, shell) = await Connected(s => s.Workflows.Groups.Count > 0);
         shell.GoTo(PageId.Workflows);
+        shell.Workflows.SetViewMode(WorkflowViewMode.List);   // the grouped list; the board has its own tests
         Settle(window);
         var open = window.GetVisualDescendants().OfType<Button>().First(b => b.Name == "WorkflowRowOpen" && b.DataContext is InstanceRowViewModel r && served.Contains(r.Address));
         Assert.True(open.Focus(NavigationMethod.Tab));
