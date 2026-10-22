@@ -43,7 +43,7 @@ internal sealed class CodeLensViewModel : ObservableObject
     /// <param name="callees">The served callees.</param>
     internal void Show(SymbolsView callers, SymbolsView callees)
     {
-        SetNotice(null);
+        SetNotice(notice: null);
         Callers = new CallsPanelViewModel(callers: true, callers);
         Callees = new CallsPanelViewModel(callers: false, callees);
         OnChanged(nameof(Callers));
@@ -55,7 +55,7 @@ internal sealed class CodeLensViewModel : ObservableObject
     internal void Clear()
     {
         _generation++;
-        SetNotice(null);
+        SetNotice(notice: null);
         if (Callers is null && Callees is null)
         {
             return;
