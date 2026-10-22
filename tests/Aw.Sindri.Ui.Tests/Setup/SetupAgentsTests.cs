@@ -100,12 +100,12 @@ public sealed class SetupAgentsTests
     [Fact]
     public async Task Connect_your_agents_is_the_command_to_copy_when_the_catalog_has_no_ready_row_for_it()
     {
-        var f = new SetupFixture();   // RegisterMcp is pending in the served catalog
+        var f = new SetupFixture("extra-approve-all-ready");   // this catalog has no RegisterMcp row (the served one is ready since api #612)
         f.Serve(With("all-done", "mcp", "failed", "RegisterMcp"));
 
         var action = Mcp(await f.Read(Token)).Action!;
 
-        Assert.Equal((false, "sindri mcp register --apply"), (action.IsInApp, action.Cli?.Cli));
+        Assert.Equal((false, "sindri-app mcp register --apply"), (action.IsInApp, action.Cli?.Cli));
     }
 
     [Fact]

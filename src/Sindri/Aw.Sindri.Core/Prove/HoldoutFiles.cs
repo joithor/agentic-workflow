@@ -112,7 +112,7 @@ public static class HoldoutFiles
     /// <summary>The error for a file of the store that can't be read.</summary>
     /// <param name="file">The file's name.</param>
     /// <param name="why">What is wrong.</param>
-    /// <returns>SND-BLOCK-021.</returns>
+    /// <returns>SND-BLOCK-006.</returns>
     public static Error Unreadable(string file, string why) => WorkflowErrors.HoldoutStoreUnavailable.With($"the hidden-scenario store's {file} can't be used: {why} (fix: the owner replaces the phase's hidden set)");
 
     private static HoldoutScenario Scenario(JsonObject s) => new(
