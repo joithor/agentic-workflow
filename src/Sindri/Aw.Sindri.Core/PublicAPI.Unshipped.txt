@@ -15542,6 +15542,11 @@ static Aw.Sindri.Core.Review.ReviewPackOrigin.operator !=(Aw.Sindri.Core.Review.
 static Aw.Sindri.Core.Review.ReviewPackOrigin.operator ==(Aw.Sindri.Core.Review.ReviewPackOrigin? left, Aw.Sindri.Core.Review.ReviewPackOrigin? right) -> bool
 static Aw.Sindri.Core.Review.ReviewPack.Problems(Aw.Sindri.Core.Review.ReviewFacts! facts) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Sindri.Core.Review.ReviewPack.Verdict(System.Text.Json.Nodes.JsonNode! review) -> string?
+Aw.Sindri.Core.Worktrees.ITrackedFiles
+Aw.Sindri.Core.Worktrees.ITrackedFiles.Paths(string! checkout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!>
+Aw.Sindri.Core.Workflow.Engine.Runtime.IDiffContent
+Aw.Sindri.Core.Workflow.Engine.Runtime.IDiffContent.AddedLines(string! worktree, string! baseCommit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<(string! Path, int Line, string! Text)>!>!>
+Aw.Sindri.Core.Workflow.Engine.Runtime.IDiffContent.DeletedPaths(string! worktree, string! baseCommit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!>
 static readonly Aw.Sindri.Core.SindriErrors.LaunchPrePushForeign -> Aw.Kernel.ErrorDefinition!
 const Aw.Sindri.Core.Launch.LaunchEnvironment.GhConfigDirectory = "GH_CONFIG_DIR" -> string!
 const Aw.Sindri.Core.Launch.LaunchEnvironment.Worktree = "AW_SINDRI_WORKTREE" -> string!
