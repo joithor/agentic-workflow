@@ -12250,6 +12250,10 @@ Aw.Sindri.Core.Packets.PacketRef.Repo.get -> string?
 Aw.Sindri.Core.Packets.PacketRef.Repo.init -> void
 Aw.Sindri.Core.Packets.PacketRef.RepoSlug.get -> string?
 Aw.Sindri.Core.Packets.PacketRef.RepoSlug.init -> void
+Aw.Sindri.Core.Packets.PacketSlugs
+static Aw.Sindri.Core.Packets.PacketSlugs.InstanceSlug(string! address) -> string!
+static Aw.Sindri.Core.Packets.PacketSlugs.RepoSlug(Aw.Sindri.Core.Ids.RepoName? repo) -> string?
+static Aw.Sindri.Core.Packets.PacketSlugs.Slug(string! text, int maxLength = 40) -> string!
 Aw.Sindri.Core.Packets.PacketValidation
 Aw.Sindri.Core.Packets.PacketValidation.<Clone>$() -> Aw.Sindri.Core.Packets.PacketValidation!
 Aw.Sindri.Core.Packets.PacketValidation.Deconstruct(out bool Passed, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Packets.PacketFailure!>! Failures) -> void
