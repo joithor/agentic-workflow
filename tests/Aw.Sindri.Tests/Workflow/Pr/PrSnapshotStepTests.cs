@@ -424,6 +424,18 @@ public sealed class PrSnapshotStepTests
     }
 
     [Fact]
+    public async Task The_passed_and_pending_counts_are_the_forges()
+    {
+        _pull.Checks = new PullChecks(PullChecksState.Pending, Head, [], Passed: 7, Pending: 3);
+
+        var checks = Status(await Snapshot()).GetProperty("checks");
+
+        Assert.Equal(7, checks.GetProperty("passed").GetInt32());
+        Assert.Equal(3, checks.GetProperty("pending").GetInt32());
+        Assert.Equal(0, checks.GetProperty("failed").GetInt32());
+    }
+
+    [Fact]
     public async Task The_review_counts_are_the_unresolved_threads_that_are_not_sindris_and_the_resolved_ones()
     {
         _pull.Threads.Add(Thread("t1"));
@@ -438,13 +450,8 @@ public sealed class PrSnapshotStepTests
     }
 
     [Fact]
-    public async Task The_proof_is_none_when_the_instance_holds_no_recheck()
-    {
-        var proof = Status(await Snapshot()).GetProperty("proof");
-
-        Assert.Equal("none", proof.GetProperty("status").GetString());
-        Assert.False(proof.TryGetProperty("link", out _));
-    }
+    public async Task The_proof_is_null_when_the_instance_holds_no_recheck() =>
+        Assert.Equal(JsonValueKind.Null, Status(await Snapshot()).GetProperty("proof").ValueKind);
 
     [Theory]
     [InlineData("held", "passed")]
@@ -460,13 +467,13 @@ public sealed class PrSnapshotStepTests
     }
 
     [Fact]
-    public async Task A_recheck_of_another_commit_is_no_proof_of_the_head()
+    public async Task A_recheck_of_another_commit_says_nothing_of_the_head()
     {
         var recheck = """{ "headSha": "old00000", "verdict": "held" }""";
 
         var proof = Status(await Snapshot(more: new(StringComparer.Ordinal) { ["recheck"] = recheck })).GetProperty("proof");
 
-        Assert.Equal("none", proof.GetProperty("status").GetString());
+        Assert.Equal(JsonValueKind.Null, proof.ValueKind);
     }
 
     [Fact]
