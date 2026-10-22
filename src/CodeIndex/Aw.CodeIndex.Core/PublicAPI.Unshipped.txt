@@ -912,6 +912,12 @@ Aw.CodeIndex.Core.Ports.IIndexStore.Sweep(Aw.CodeIndex.Core.Values.RepoName repo
 Aw.CodeIndex.Core.Ports.IManifestReader
 Aw.CodeIndex.Core.Ports.IManifestReader.Handles(string! path) -> bool
 Aw.CodeIndex.Core.Ports.IManifestReader.Read(string! path, string! text) -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.DepRecord!>!
+Aw.CodeIndex.Core.Ports.IParseQuarantine
+Aw.CodeIndex.Core.Ports.IParseQuarantine.Begin(Aw.CodeIndex.Core.Values.RepoName repo, string! blob) -> void
+Aw.CodeIndex.Core.Ports.IParseQuarantine.Contains(Aw.CodeIndex.Core.Values.RepoName repo, string! blob) -> bool
+Aw.CodeIndex.Core.Ports.IParseQuarantine.End(Aw.CodeIndex.Core.Values.RepoName repo) -> void
+Aw.CodeIndex.Core.Ports.IParseQuarantine.Keep(Aw.CodeIndex.Core.Values.RepoName repo, System.Collections.Generic.IReadOnlySet<string!>! blobsInHead) -> int
+Aw.CodeIndex.Core.Ports.IParseQuarantine.Recover(Aw.CodeIndex.Core.Values.RepoName repo) -> int
 Aw.CodeIndex.Core.Ports.IRepoHeads
 Aw.CodeIndex.Core.Ports.IRepoHeads.Heads(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CodeIndexRepo!>! repos, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.RepoHead!>!>!>
 Aw.CodeIndex.Core.Ports.IRepoHeads.OnDefaultBranch(Aw.CodeIndex.Core.Facade.CodeIndexRepo! repo, Aw.CodeIndex.Core.Values.CommitSha commit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Model.DefaultBranchCheck!>!>
@@ -939,6 +945,9 @@ Aw.CodeIndex.Core.Ports.SymbolPage.Hits.init -> void
 Aw.CodeIndex.Core.Ports.SymbolPage.SymbolPage(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.SymbolHit!>! Hits, bool Truncated) -> void
 Aw.CodeIndex.Core.Ports.SymbolPage.Truncated.get -> bool
 Aw.CodeIndex.Core.Ports.SymbolPage.Truncated.init -> void
+Aw.CodeIndex.Core.Resolution.CallResolver
+Aw.CodeIndex.Core.Resolution.CallResolver.CallResolver(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.ResolutionSymbol!>! symbols, System.Collections.Generic.IReadOnlyCollection<string!>! projectDirectories) -> void
+Aw.CodeIndex.Core.Resolution.CallResolver.Resolve(System.Collections.Generic.IEnumerable<Aw.CodeIndex.Core.Model.CallSiteRow!>! rows) -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.EdgeRecord!>!
 Aw.CodeIndex.Core.Similarity.CloneTokenizer
 Aw.CodeIndex.Core.Similarity.Clones
 Aw.CodeIndex.Core.Similarity.SimilarClones
@@ -986,6 +995,7 @@ const Aw.CodeIndex.Core.CodeIndexRules.MaxFileSymbolPaths = 200 -> int
 const Aw.CodeIndex.Core.CodeIndexRules.MaxFiles = 100000 -> int
 const Aw.CodeIndex.Core.CodeIndexRules.MaxIndexBytes = 2147483648 -> long
 const Aw.CodeIndex.Core.CodeIndexRules.MaxNeighbors = 100 -> int
+const Aw.CodeIndex.Core.CodeIndexRules.MaxQuarantined = 100 -> int
 const Aw.CodeIndex.Core.CodeIndexRules.MaxSymbolHits = 200 -> int
 const Aw.CodeIndex.Core.CodeIndexRules.MaxSymbolsPerFile = 5000 -> int
 const Aw.CodeIndex.Core.CodeIndexRules.MinCloneTokens = 30 -> int
@@ -1308,6 +1318,7 @@ static Aw.CodeIndex.Core.Ports.MinHashCandidate.operator !=(Aw.CodeIndex.Core.Po
 static Aw.CodeIndex.Core.Ports.MinHashCandidate.operator ==(Aw.CodeIndex.Core.Ports.MinHashCandidate? left, Aw.CodeIndex.Core.Ports.MinHashCandidate? right) -> bool
 static Aw.CodeIndex.Core.Ports.SymbolPage.operator !=(Aw.CodeIndex.Core.Ports.SymbolPage? left, Aw.CodeIndex.Core.Ports.SymbolPage? right) -> bool
 static Aw.CodeIndex.Core.Ports.SymbolPage.operator ==(Aw.CodeIndex.Core.Ports.SymbolPage? left, Aw.CodeIndex.Core.Ports.SymbolPage? right) -> bool
+static Aw.CodeIndex.Core.Resolution.CallResolver.RankText(int rank, int candidates) -> string!
 static Aw.CodeIndex.Core.Similarity.CloneTokenizer.Tokenize(string! text) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.CodeIndex.Core.Similarity.CloneTokenizer.TokenizeLines(string! text, int startLine, int endLine) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.CodeIndex.Core.Similarity.Clones.BandKeys(System.ReadOnlySpan<byte> signature) -> System.Collections.Generic.IReadOnlyList<string!>!

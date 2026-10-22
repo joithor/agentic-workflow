@@ -30,3 +30,4 @@ transitions:
   - { from: running, to: done, on: wait.satisfied, when: { outcome: resolved } }
 loops: { revisions: { cap: 3 } }
 budget: { tokens: 2M }
+displayName: Test recipe

@@ -66,6 +66,9 @@ public static class CodeIndexRules
     /// <summary>Most dependency rows one manifest gives; the rest are dropped.</summary>
     public const int MaxDepsPerManifest = 5_000;
 
+    /// <summary>Most blobs the parse quarantine keeps per repo; the oldest go first (spec §9 CI12).</summary>
+    public const int MaxQuarantined = 100;
+
     /// <summary>The index schema version; a different one is rebuilt, never migrated.</summary>
     public const int SchemaVersion = 1;
 }
