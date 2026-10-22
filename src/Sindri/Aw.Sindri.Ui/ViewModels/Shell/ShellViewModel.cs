@@ -78,7 +78,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         Strip = new WorkflowsStripViewModel(clipboard, clock);
         InitStrip();
         window ??= WindowPorts.None;
-        Setup = new SetupViewModel(api, Health.Catalog, clock, OpensInApp, window.Folders);
+        Setup = new SetupViewModel(api, Health.Catalog, clock, OpensInApp, window.Folders, () => Health.LiveProfile, () => NeedsYou.Seen.ReducedMotion);
         InitSetup();
         Workflows = new WorkflowsViewModel(api, clipboard, clock);
         InitWorkflows();

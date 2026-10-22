@@ -51,6 +51,33 @@ public abstract partial class SindriApiContract
     }
 
     [Fact]
+    public async Task Setup_reads_a_running_maps_retry_note_and_its_catalog_action()
+    {
+        var server = new FakeSindriApi { SetupAnswer = RouteAnswer.Api("setup", "map-retrying") };
+
+        var map = (await Reach(server).Setup(_api, Token)).Value.Steps.Single(s => s.Id == "map");
+
+        Expect.Equal(("running", "RefreshContextMap", 0, 1, "Retrying in 5 minutes: the code index was busy."), (map.State, map.Action, map.Progress!.Done, map.Progress.Total, map.Detail));
+    }
+
+    [Fact]
+    public async Task Setup_reads_the_profile_waiting_for_approval_and_a_skipped_onyx()
+    {
+        var waiting = (await Reach(new FakeSindriApi { SetupAnswer = RouteAnswer.Api("setup", "profile-needs-approval") }).Setup(_api, Token)).Value.Steps.Single(s => s.Id == "profile");
+        var skipped = (await Reach(new FakeSindriApi { SetupAnswer = RouteAnswer.Api("setup", "onyx-skipped") }).Setup(_api, Token)).Value.Steps.Single(s => s.Id == "onyx");
+
+        Expect.Equal(("needs-you", "ApproveProfile", "skipped", "SetupOnyx"), (waiting.State, waiting.Action, skipped.State, skipped.Action));
+    }
+
+    [Fact]
+    public async Task Setup_reads_the_agents_a_done_mcp_step_names_per_repo()
+    {
+        var mcp = (await Reach(new FakeSindriApi { SetupAnswer = RouteAnswer.Api("setup", "all-done") }).Setup(_api, Token)).Value.Steps.Single(s => s.Id == "mcp");
+
+        Expect.Equal(("demo", "done", "Claude Code"), (mcp.Items![0].Repo, mcp.Items[0].State, mcp.Items[0].Detail));
+    }
+
+    [Fact]
     public async Task Setup_from_a_sindri_without_the_route_is_a_not_found_refusal()
     {
         var server = new FakeSindriApi { SetupAnswer = RouteAnswer.Problem(HttpStatusCode.NotFound, "SND-API-004", "The API answered without an error code") };
