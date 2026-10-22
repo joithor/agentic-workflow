@@ -5,6 +5,8 @@ using Aw.Forge.Core.Refs;
 using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Forge;
+using Results = Aw.Kernel.Results;
+using System.Diagnostics;
 
 namespace Aw.Sindri.Host.Forge;
 
@@ -72,7 +74,7 @@ internal sealed class ForgePullRequests(IForge forge) : IPullRequests
             return SindriErrors.ForgeRefused.With("the pull request's head branch is on a fork; Sindri doesn't push to forks");
         }
 
-        return await PushTo(pull.Value, push.Workspace, push.Sha, snapshot.Value.Head.Ref, push.LeaseSha, cancellationToken).ConfigureAwait(false);
+        return await PushTo(new PushTarget(pull.Value, push.Workspace, push.Sha, snapshot.Value.Head.Ref, push.LeaseSha), cancellationToken).ConfigureAwait(false);
     }
 
     public async ValueTask<Result<PullPushOutcome>> PushBranch(PullBranchPush push, CancellationToken cancellationToken)
@@ -81,7 +83,7 @@ internal sealed class ForgePullRequests(IForge forge) : IPullRequests
         var repo = forge.Parse($"https://{push.Repo.Host}/{push.Repo.Owner}/{push.Repo.Name}/pull/1");
         return repo.IsError
             ? PullErrors.From(repo.Error)
-            : await PushTo(repo.Value, push.Workspace, push.Sha, push.Branch, push.LeaseSha, cancellationToken).ConfigureAwait(false);
+            : await PushTo(new PushTarget(repo.Value, push.Workspace, push.Sha, push.Branch, push.LeaseSha), cancellationToken).ConfigureAwait(false);
     }
 
     public async ValueTask<Result<PullMergeOutcome>> Merge(PullMerge request, CancellationToken cancellationToken)
@@ -155,7 +157,7 @@ internal sealed class ForgePullRequests(IForge forge) : IPullRequests
             return PullErrors.From(found.Error);
         }
 
-        return found.Value is { } pull ? Results.Success<OpenedPull?>(new OpenedPull(pull.Link, pull.Number)) : Results.Success<OpenedPull?>(null);
+        return found.Value is { } pull ? Results.Success<OpenedPull?>(new OpenedPull(pull.Link, pull.Number)) : Results.Success<OpenedPull?>(value: null);
     }
 
     public async ValueTask<Result<OpenedPull>> Open(OpenPull request, CancellationToken cancellationToken)
@@ -188,11 +190,11 @@ internal sealed class ForgePullRequests(IForge forge) : IPullRequests
         return updated.IsError ? PullErrors.From(updated.Error) : Results.Ok();
     }
 
-    private async ValueTask<Result<PullPushOutcome>> PushTo(ForgeRef pull, string workspace, string sha, string branch, string? leaseSha, CancellationToken cancellationToken)
+    private async ValueTask<Result<PullPushOutcome>> PushTo(PushTarget target, CancellationToken cancellationToken)
     {
         // why: the remote is the repository on a host the profile allows (Parse checked it), never what the worktree's git config says.
-        var remote = $"https://{pull.Host}/{pull.Owner}/{pull.Repo}.git";
-        var pushed = await forge.Push(new PushRequest(workspace, sha, remote, branch, leaseSha), cancellationToken).ConfigureAwait(false);
+        var remote = $"https://{target.Pull.Host}/{target.Pull.Owner}/{target.Pull.Repo}.git";
+        var pushed = await forge.Push(new PushRequest(target.Workspace, target.Sha, remote, target.Branch, target.LeaseSha), cancellationToken).ConfigureAwait(false);
         if (pushed.IsSuccess)
         {
             return pushed.Value == PushOutcome.Pushed ? PullPushOutcome.Pushed : PullPushOutcome.HeadMoved;
@@ -206,16 +208,16 @@ internal sealed class ForgePullRequests(IForge forge) : IPullRequests
     {
         PullMergeMethod.Squash => MergeMethod.Squash,
         PullMergeMethod.Rebase => MergeMethod.Rebase,
-        PullMergeMethod.Merge => throw new NotImplementedException(),
-        _ => MergeMethod.Merge,
+        PullMergeMethod.Merge => MergeMethod.Merge,
+        _ => throw new UnreachableException($"merge method {method} has no mapping"),
     };
 
     private static PullMergeStatus MergeStatusOf(MergeStatus status) => status switch
     {
         MergeStatus.Merged => PullMergeStatus.Merged,
         MergeStatus.HeadMoved => PullMergeStatus.HeadMoved,
-        MergeStatus.Blocked => throw new NotImplementedException(),
-        _ => PullMergeStatus.Blocked,
+        MergeStatus.Blocked => PullMergeStatus.Blocked,
+        _ => throw new UnreachableException($"merge status {status} has no mapping"),
     };
 
     private static PullDelivery Delivered(Delivery delivery) => delivery == Delivery.Delivered ? PullDelivery.Delivered : PullDelivery.AlreadyDelivered;
@@ -226,16 +228,16 @@ internal sealed class ForgePullRequests(IForge forge) : IPullRequests
     {
         CommentKind.Thread => PullCommentKind.Thread,
         CommentKind.Review => PullCommentKind.Review,
-        CommentKind.Comment => throw new NotImplementedException(),
-        _ => PullCommentKind.Comment,
+        CommentKind.Comment => PullCommentKind.Comment,
+        _ => throw new UnreachableException($"comment kind {kind} has no mapping"),
     };
 
     private static PullState State(PullStatus status) => status switch
     {
         PullStatus.Open => PullState.Open,
         PullStatus.Closed => PullState.Closed,
-        PullStatus.Merged => throw new NotImplementedException(),
-        _ => PullState.Merged,
+        PullStatus.Merged => PullState.Merged,
+        _ => throw new UnreachableException($"pull status {status} has no mapping"),
     };
 
     private static PullChecksState Checks(ChecksState state) => state switch
@@ -243,7 +245,7 @@ internal sealed class ForgePullRequests(IForge forge) : IPullRequests
         ChecksState.None => PullChecksState.None,
         ChecksState.Pending => PullChecksState.Pending,
         ChecksState.Passing => PullChecksState.Passing,
-        ChecksState.Failing => throw new NotImplementedException(),
-        _ => PullChecksState.Failing,
+        ChecksState.Failing => PullChecksState.Failing,
+        _ => throw new UnreachableException($"checks state {state} has no mapping"),
     };
 }
