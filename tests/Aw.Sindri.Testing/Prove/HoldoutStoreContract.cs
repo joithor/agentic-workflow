@@ -65,7 +65,7 @@ public abstract class HoldoutStoreContract
         Expect.True(unsealed.IsError && unsealed.Error.Code == WorkflowErrors.HoldoutSetMissing.Code);
     }
 
-    /// <summary>A phase nothing was written for is SND-BLOCK-020, never an empty set.</summary>
+    /// <summary>A phase nothing was written for is SND-BLOCK-005, never an empty set.</summary>
     /// <returns>The test.</returns>
     [Fact]
     public async Task A_phase_with_no_set_is_not_found()
@@ -76,7 +76,7 @@ public abstract class HoldoutStoreContract
         Expect.Equal(WorkflowErrors.HoldoutSetMissing.Code, read.Error.Code);
     }
 
-    /// <summary>A set file that is not a set is SND-BLOCK-021.</summary>
+    /// <summary>A set file that is not a set is SND-BLOCK-006.</summary>
     /// <param name="text">The file's text.</param>
     /// <returns>The test.</returns>
     [Theory]
