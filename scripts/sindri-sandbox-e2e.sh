@@ -12,7 +12,8 @@
 #   --title TEXT     the item's title (default: the feature file's first heading)
 #   --stall SECONDS  no progress for this long is a stop (default 300)
 #   --max-wait SEC   the whole follow gives up after this long (default 3600)
-#   --auto-desk      answer a desk state with its default outcome (the first the status offers), recording each
+#   --auto-desk      answer a desk state with its default outcome (the first the status offers), and a budget park
+#                    with a grant of 300k tokens, recording each
 #   --map FILE       the context map to import (authored map format, docs/sindri/demo-handoff.md 5b); default: a small
 #                    map generated for the feature (its doc, one surface, one code node)
 #   --code FILE      the repo file the generated map says the feature changes (default: the first repo file the
@@ -476,6 +477,9 @@ follow() {
       if { [ "$chip" = "WITH YOU" ] || [ "$chip" = DECISION ]; } && [ "$AUTO_DESK" = 1 ]; then   # a desk task shows as DECISION or WITH YOU
         if auto_desk "$addr"; then last_change="$(date +%s)"; sleep 1; continue; fi
       fi
+      if [ "$chip" = PARKED ] && [ "$AUTO_DESK" = 1 ]; then   # a budget park gets a grant: a scratch home, the point is the next stop
+        case "$reason" in budget*) if auto_grant "$addr"; then last_change="$(date +%s)"; sleep 1; continue; fi ;; esac
+      fi
       case "$chip" in
         "WITH YOU" | DECISION) stop_block "desk" "$recipe has an open desk task (chip $chip) in state $state: a Step the line can't run itself, answered by a human or an agent" "$addr" ;;
         PARKED)     stop_block "parked" "$recipe parked in $state: ${reason:-unknown}" "$addr" ;;
@@ -488,10 +492,23 @@ follow() {
   done
 }
 
+# Answers a budget park with a token grant of $GRANT_TOKENS (an answer on a parent is forwarded to the parked child).
+# Shares --desk-max with the desk answers; each grant is in the summary's desk list. Returns 1 at --desk-max.
+GRANT_TOKENS=300000
+auto_grant() {
+  local addr="$1"
+  [ "${#DESK_LOG[@]}" -lt "$DESK_MAX" ] || return 1
+  say "auto-desk: $addr grant $GRANT_TOKENS tokens"
+  DESK_LOG+=("$addr grant-tokens $GRANT_TOKENS")
+  human workflow answer "$addr" --grant-tokens "$GRANT_TOKENS" 2>&1 | tail -2 | sed 's/^/  /' >&2
+  return 0
+}
+
 # Answers a desk state with the first outcome its status offers: the status text prints the command ("sindri workflow
-# complete <address> --run <token> --outcome <o> --output fact:<name>=<file> ..."), and each output gets a file holding
-# {} (the placeholder: whatever checks the fact next says so, and that stop is the finding). Returns 1 when the status
-# offers no complete command or --desk-max answers were given.
+# complete <address> --run <token> --outcome <o> --output fact:<name>=<file> ..."), where <o> may be a choice
+# ("<answered|doneAsking>"); an interview's choice takes doneAsking, which closes it instead of asking again. Each output
+# gets a placeholder file: [] for fact:answers (no answers), {} for any other (whatever checks the fact next says so, and
+# that stop is the finding). Returns 1 when the status offers no complete command or --desk-max answers were given.
 auto_desk() {
   local addr="$1" st text run outcome outs=() key f n=${#DESK_LOG[@]} args=()
   [ "$n" -lt "$DESK_MAX" ] || return 1
@@ -500,14 +517,30 @@ auto_desk() {
   case "$text" in *"workflow complete"*) ;; *) return 1 ;; esac
   run="$(printf '%s' "$text" | grep -oE -- '--run [^ ]+' | head -1 | cut -d' ' -f2)"
   outcome="$(printf '%s' "$text" | grep -oE -- '--outcome [^ ]+' | head -1 | cut -d' ' -f2)"
+  case "$outcome" in
+    "<"*">") outcome="${outcome#<}"; outcome="${outcome%>}"
+             case "|$outcome|" in *"|doneAsking|"*) outcome=doneAsking ;; *) outcome="${outcome%%|*}" ;; esac ;;
+  esac
   [ -n "$run" ] && [ -n "$outcome" ] || return 1
   mkdir -p "$SCRATCH/desk"
   for key in $(printf '%s' "$text" | grep -oE -- '--output fact:[A-Za-z0-9_]+=' | sed 's/--output //; s/=$//'); do
-    f="$SCRATCH/desk/$n-${key#fact:}.json"; printf '{}\n' > "$f"; args+=(--output "$key=$f")
+    f="$SCRATCH/desk/$n-${key#fact:}.json"; args+=(--output "$key=$f")
+    if [ "$key" = fact:answers ]; then printf '[]\n' > "$f"; else printf '{}\n' > "$f"; fi
   done
   say "auto-desk: $addr run $run outcome $outcome ${args[*]:-}"
   DESK_LOG+=("$addr run $run -> $outcome ${args[*]:-}")
-  human workflow complete "$addr" --run "$run" --outcome "$outcome" ${args[@]+"${args[@]}"} 2>&1 | tail -2 | sed 's/^/  /' >&2
+  # The printed command can leave out an output the outcome needs (an interview's doneAsking also writes
+  # fact:interviewClosed); a refusal that names one gets its placeholder and one more try per fact.
+  local out tries=0
+  while :; do
+    out="$(human workflow complete "$addr" --run "$run" --outcome "$outcome" ${args[@]+"${args[@]}"} 2>&1 | tail -2)"
+    key="$(printf '%s' "$out" | grep -oE 'required output fact:[A-Za-z0-9_]+' | head -1 | sed 's/required output //')"
+    [ -n "$key" ] && [ "$tries" -lt 3 ] || break
+    tries=$((tries + 1)); f="$SCRATCH/desk/$n-${key#fact:}.json"; printf '{}\n' > "$f"; args+=(--output "$key=$f")
+    say "auto-desk: $addr also needs $key"
+    DESK_LOG[${#DESK_LOG[@]}-1]="$addr run $run -> $outcome ${args[*]}"
+  done
+  printf '%s\n' "$out" | sed 's/^/  /' >&2
   return 0
 }
 
