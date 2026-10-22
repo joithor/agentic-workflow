@@ -43,6 +43,15 @@ public sealed class FakeCodeIndex : ICodeIndex
         return this;
     }
 
+    /// <summary>Marks a repo's graph layer as unavailable (SND-CODEIDX-008): the structure still answers.</summary>
+    /// <param name="repo">The repo.</param>
+    /// <returns>This fake.</returns>
+    public FakeCodeIndex WithGraphUnavailable(RepoName repo)
+    {
+        _repos[repo].GraphDown = true;
+        return this;
+    }
+
     /// <summary>Marks a repo's index as damaged.</summary>
     /// <param name="repo">The repo.</param>
     /// <returns>This fake.</returns>
@@ -98,7 +107,17 @@ public sealed class FakeCodeIndex : ICodeIndex
     }
 
     public ValueTask<Result<FileSymbolsAnswer>> FileSymbols(CodeIndexScope scope, RepoName repo, IReadOnlyList<string> paths, CancellationToken cancellationToken)
-        => Fail<FileSymbolsAnswer>(scope, CodeIndexErrors.IndexNotBuilt);
+    {
+        ArgumentNullException.ThrowIfNull(scope);
+        ArgumentNullException.ThrowIfNull(paths);
+        _scopes.Add(scope);
+        if (scope.Repos.All(r => r.Name != repo) || Readable(repo) is not { } index)
+        {
+            return Fail<FileSymbolsAnswer>(CodeIndexErrors.IndexNotBuilt);
+        }
+
+        return Ok(new FileSymbolsAnswer(Stamp(index), [.. paths.Select(p => new FileSymbolsEntry(p, [.. index.Symbols.Where(s => s.File == p).OrderBy(static s => s.StartLine)]))]));
+    }
 
     public ValueTask<Result<CallsAnswer>> Callers(CodeIndexScope scope, SymbolRef symbol, CallDepth depth, bool includeImplementations, CancellationToken cancellationToken)
         => Calls(scope, symbol, CallDirection.Callers);
@@ -138,11 +157,15 @@ public sealed class FakeCodeIndex : ICodeIndex
     private RepoStatus StatusOf(RepoName name)
         => !_repos.TryGetValue(name, out var repo) ? new RepoStatus(name, IndexState.Missing, Commit: null, BuiltAt: null, [], Counts: null)
             : repo.Damaged ? new RepoStatus(name, IndexState.Damaged, Commit: null, BuiltAt: null, [], Counts: null)
-            : new RepoStatus(name, IndexState.Ok, repo.Commit, BuiltAt, [new LayerStatus(LayerName.Structure, LayerState.Ok, Code: null, "ok")], new IndexCounts(Files: 1, repo.Symbols.Count, Edges: repo.Edges.Count));
+            : new RepoStatus(name, IndexState.Ok, repo.Commit, BuiltAt, repo.GraphDown ? [new LayerStatus(LayerName.Structure, LayerState.Ok, Code: null, "ok"), GraphOf(repo)] : [new LayerStatus(LayerName.Structure, LayerState.Ok, Code: null, "ok")], new IndexCounts(Files: 1, repo.Symbols.Count, Edges: repo.Edges.Count));
 
     private static DateTimeOffset BuiltAt { get; } = new(2026, 10, 20, 12, 0, 0, TimeSpan.Zero);
 
-    private static AnswerStamp Stamp(Repo repo) => new(repo.Name, repo.Commit!.Value, BuiltAt, IndexState.Ok, new LayerStatus(LayerName.Graph, LayerState.Ok, Code: null, "ok"));
+    private static AnswerStamp Stamp(Repo repo) => new(repo.Name, repo.Commit!.Value, BuiltAt, IndexState.Ok, GraphOf(repo));
+
+    private static LayerStatus GraphOf(Repo repo) => repo.GraphDown
+        ? new LayerStatus(LayerName.Graph, LayerState.Unavailable, "SND-CODEIDX-008", "graphify is missing")
+        : new LayerStatus(LayerName.Graph, LayerState.Ok, Code: null, "ok");
 
     private static RepoName? RepoOf(SymbolRef symbol)
     {
@@ -168,6 +191,8 @@ public sealed class FakeCodeIndex : ICodeIndex
     private sealed record Repo(RepoName Name, CommitSha? Commit, List<SymbolHit> Symbols)
     {
         internal bool Damaged { get; init; }
+
+        internal bool GraphDown { get; set; }
 
         internal Dictionary<(SymbolRef, CallDirection), (int Unresolved, List<CallEdge> Edges)> Edges { get; } = [];
     }

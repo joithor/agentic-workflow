@@ -221,6 +221,16 @@
               </StackPanel>
             </Panel>
           </WrapPanel>
+          <!-- The shared confirmation controls (F3 needs-you spec §8.3): the typed box of a drifted profile and the hold of approve-all, shown only when the catalog lets the app confirm.
+               A moves focus here and nothing more; the control approves, and the bar sends what it reports. -->
+          <StackPanel x:Name="NeedsYouConfirm" Spacing="6" IsVisible="{Binding Bar.ShowsConfirm}" IsEnabled="{Binding Bar.ConfirmEnabled}">
+            <Border x:Name="NeedsYouTypedRow" IsVisible="{Binding Bar.ShowsTyped}">
+              <ctl:TypedConfirmBox x:Name="NeedsYouTypedBox" PartPrefix="NeedsYouTyped" DataContext="{Binding Bar.TypedBox}" />
+            </Border>
+            <Border x:Name="NeedsYouHoldRow" IsVisible="{Binding Bar.ShowsHold}">
+              <ctl:HoldButton x:Name="NeedsYouHoldControl" PartName="NeedsYouHold" DataContext="{Binding Bar.HoldBox}" HorizontalAlignment="Left" />
+            </Border>
+          </StackPanel>
           <StackPanel x:Name="NeedsYouReasonBox" Spacing="6" IsVisible="{Binding Bar.IsSendingBack}">
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Classes="body-strong" Text="{Binding Bar.ReasonLabel}" />

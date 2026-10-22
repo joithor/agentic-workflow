@@ -128,6 +128,9 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     /// <summary>The followed control plane answered a ping: it is there, so the views are fresh (§4.1).</summary>
     internal void Answered() => Heard();
 
+    /// <summary>The live profile's hash from the last status, when it loads; the typed approval is tied to it.</summary>
+    internal string? LiveProfile { get; private set; }
+
     /// <summary>A status: the card's words, or a version mismatch.</summary>
     /// <param name="url">Where the API answered.</param>
     /// <param name="status">The status.</param>
@@ -154,6 +157,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
         ProfileState = StatusText.ProfileState(status.Profile);
         ProfileDetail = StatusText.ProfileDetail(status.Profile);
         ProfileFix = StatusText.ProfileFix(status.Profile);
+        LiveProfile = status.Profile.Live;
         Services = [.. status.Services.Select(StatusText.Service)];
         if (status.Running)
         {
