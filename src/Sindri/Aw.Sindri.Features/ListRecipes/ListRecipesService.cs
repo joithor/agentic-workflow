@@ -3,7 +3,6 @@ using Aw.Kernel.Services;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Core.Workflow.Stats;
-using Aw.Sindri.Features.WorkflowStats;
 
 namespace Aw.Sindri.Features.ListRecipes;
 

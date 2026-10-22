@@ -28,7 +28,7 @@ internal sealed class SqliteRecipeStatsCache(ViewsDatabase database, IViewReader
 
         if (row.Value is not { } found)
         {
-            return Results.Success<RecipeStats?>(null);
+            return Results.Success<RecipeStats?>(value: null);
         }
 
         var age = now - found.CachedAt;

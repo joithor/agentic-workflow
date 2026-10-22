@@ -1,8 +1,7 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Core.Workflow.Stats;
 
-namespace Aw.Sindri.Features.WorkflowStats;
+namespace Aw.Sindri.Core.Workflow.Stats;
 
 /// <summary>
 /// A recipe's stats for one request (API spec §3.8, P12): the views.db cache first for a recipe that is not pinned as a child, else counted from the
@@ -12,7 +11,7 @@ namespace Aw.Sindri.Features.WorkflowStats;
 /// <param name="rows">The ledger's workflow rows.</param>
 /// <param name="clock">The read's time.</param>
 /// <param name="cache">The stats cache; null counts on every read.</param>
-internal sealed class RecipeStatsSource(IWorkflowStatRows rows, TimeProvider clock, IRecipeStatsCache? cache = null)
+public sealed class RecipeStatsSource(IWorkflowStatRows rows, TimeProvider clock, IRecipeStatsCache? cache = null)
 {
     private (long Head, IReadOnlyList<StatEvent> Events)? _snapshot;
 
@@ -27,10 +26,10 @@ internal sealed class RecipeStatsSource(IWorkflowStatRows rows, TimeProvider clo
     {
         ArgumentNullException.ThrowIfNull(window);
         var now = clock.GetUtcNow();
-        var cached = cache is not null && !pinned;
-        if (cached)
+        var keeping = pinned ? null : cache;
+        if (keeping is { } reader)
         {
-            var kept = await cache!.Get(recipe, hash, window, now, cancellationToken).ConfigureAwait(false);
+            var kept = await reader.Get(recipe, hash, window, now, cancellationToken).ConfigureAwait(false);
             if (kept is { IsSuccess: true, Value: { } hit })
             {
                 return hit with { AsOf = now };
@@ -50,9 +49,9 @@ internal sealed class RecipeStatsSource(IWorkflowStatRows rows, TimeProvider clo
         }
 
         var counted = RecipeStatsCounter.Count(events, recipe, hash, window, now);
-        if (cached)
+        if (keeping is { } writer)
         {
-            _ = await cache!.Put(counted, head, now, cancellationToken).ConfigureAwait(false);   // best effort: a read that can't keep its result still answers
+            _ = await writer.Put(counted, head, now, cancellationToken).ConfigureAwait(false);   // best effort: a read that can't keep its result still answers
         }
 
         return counted;
