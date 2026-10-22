@@ -161,14 +161,14 @@ public sealed class PrMergeReplyEffectTests
     }
 
     [Fact]
-    public async Task Hold_writes_a_hold_mark_with_its_reason_and_posts_nothing()
+    public async Task Hold_writes_a_held_mark_with_its_reason_and_posts_nothing()
     {
         var context = await Context("effect.pr.reply", new Dictionary<string, string> { ["form"] = "hold", ["reason"] = "\"type\"", ["comment"] = """{"id":"c1","key":"t9"}""" });
 
         _ = await Reply().Dispatch(context, Token);
         var mark = Assert.Single((await _marks.Latest(_pr, Token)).Value);
 
-        Assert.Equal(("hold", "type"), (mark.Outcome, mark.Reason));
+        Assert.Equal(("held", "type"), (mark.Outcome, mark.Reason));
         Assert.Empty(_pulls.Replies);
     }
 
