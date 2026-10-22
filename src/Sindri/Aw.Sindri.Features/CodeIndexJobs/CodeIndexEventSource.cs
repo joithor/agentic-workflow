@@ -1,4 +1,3 @@
-using System.Globalization;
 using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Events;
@@ -21,7 +20,7 @@ internal sealed class CodeIndexEventSource(HeldLease held, ILedgerStore ledger, 
             return SindriErrors.NotRunning.With("the control plane doesn't hold the lease (fix: sindri)");
         }
 
-        var key = string.Create(CultureInfo.InvariantCulture, $"{EventTypes.CodeIndexBuilt}:{payload.Repo}:{payload.Commit}:{attempt}");
+        var key = $"{EventTypes.CodeIndexBuilt}:{payload.Repo}:{payload.Commit}:{attempt}";
         return await ledger.Append(events.Entry(EventTypes.CodeIndexBuilt, payload, key), grant, cancellationToken).ConfigureAwait(false);
     }
 }

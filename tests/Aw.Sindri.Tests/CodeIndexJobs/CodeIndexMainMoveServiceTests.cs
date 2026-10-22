@@ -1,13 +1,12 @@
-using Aw.CodeIndex.Core.Values;
 using Aw.Kernel;
 using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features.CodeIndexJobs;
-using Aw.Sindri.Testing;
 using Microsoft.Extensions.Logging;
 
 namespace Aw.Sindri.Tests.CodeIndexJobs;
@@ -20,7 +19,10 @@ public sealed class CodeIndexMainMoveServiceTests
     private readonly Starter _start;
     private Core.Lease.LeaseGrant? _grant;
 
-    public CodeIndexMainMoveServiceTests() => _start = new Starter(_rig.Harness);
+    public CodeIndexMainMoveServiceTests()
+    {
+        _start = new Starter(_rig.Harness);
+    }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -87,7 +89,7 @@ public sealed class CodeIndexMainMoveServiceTests
 
         _ = await Run();
 
-        Assert.Equal(["other"], _start.Requests.Select(static r => r.Repo));
+        Assert.Equal<string>(["other"], [.. _start.Requests.Select(static r => r.Repo)], StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -96,7 +98,7 @@ public sealed class CodeIndexMainMoveServiceTests
         _ = _rig.Heads.With(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New, onDefaultBranch: true);
         _rig.Job("other", JobState.Running, TimeSpan.Zero);
         _ = await Run();
-        Assert.Single(_start.Requests);
+        _ = Assert.Single(_start.Requests);
 
         _rig.Job("demo", JobState.Running, TimeSpan.Zero);
         _start.Requests.Clear();
@@ -134,7 +136,7 @@ public sealed class CodeIndexMainMoveServiceTests
         _rig.Harness.Clock.Advance(TimeSpan.FromMinutes(2));
         _ = await Run();
 
-        Assert.Single(_start.Requests);
+        _ = Assert.Single(_start.Requests);
     }
 
     [Fact, Trait("Lane", "unit")]

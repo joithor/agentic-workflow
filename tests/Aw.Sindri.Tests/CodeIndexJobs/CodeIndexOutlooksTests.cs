@@ -23,7 +23,7 @@ public sealed class CodeIndexOutlooksTests
     private async Task<IndexOutlookDetail> Read(MapHoldState hold)
     {
         await _rig.Approve(Ct);
-        _rig.Heads.With(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New, onDefaultBranch: true).With(CodeIndexJobsRig.Other, CodeIndexJobsRig.New, onDefaultBranch: true);
+        _ = _rig.Heads.With(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New, onDefaultBranch: true).With(CodeIndexJobsRig.Other, CodeIndexJobsRig.New, onDefaultBranch: true);
         var outlooks = new CodeIndexOutlooks(_rig.Scopes, _rig.Index, _rig.Heads, _rig.Jobs, _pauses, _rig.Harness.Clock);
         var read = await outlooks.Read(hold, Ct);
         return read.Value[hold.Heads.Keys.Single()];
@@ -120,7 +120,7 @@ public sealed class CodeIndexOutlooksTests
     public async Task A_paused_service_leaves_the_repo_absent()
     {
         _ = _rig.Index.WithIndex(CodeIndexJobsRig.Demo, CodeIndexJobsRig.Old);
-        _pauses = new Paused(ServiceName.From("code-index-main-move"));
+        _pauses = new PausedServices(ServiceName.From("code-index-main-move"));
 
         Assert.Equal(IndexOutlook.Absent, (await Read(Hold("demo", CodeIndexJobsRig.New))).Outlook);
     }
@@ -143,10 +143,10 @@ public sealed class CodeIndexOutlooksTests
 
         var commits = (await outlooks.IndexCommits(["demo", "other"], Ct)).Value;
 
-        Assert.Equal(new Dictionary<string, string> { ["demo"] = CodeIndexJobsRig.Old.Value }, commits);
+        Assert.Equal(("demo", CodeIndexJobsRig.Old.Value), (commits.Keys.Single(), commits.Values.Single()));
     }
 
-    private sealed class Paused(ServiceName name) : IServicePauses
+    private sealed class PausedServices(ServiceName name) : IServicePauses
     {
         public ValueTask<Result<IReadOnlySet<ServiceName>>> Paused(CancellationToken cancellationToken) =>
             ValueTask.FromResult(Results.Success<IReadOnlySet<ServiceName>>(new HashSet<ServiceName> { name }));

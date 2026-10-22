@@ -1,7 +1,7 @@
-using System.Text.Json;
 using Aw.CodeIndex.Testing;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Tests.ApiGoldens;
@@ -61,7 +61,7 @@ public sealed class CodeIndexBuildHostTests : IDisposable
         var service = scope.ServiceProvider.GetServices<IScheduledService>().Single(s => s.Identity().Value == "code-index-main-move");
         var grant = host.App.Services.GetRequiredService<HeldLease>().Current!;   // why: the started host holds the lease
         using var caller = host.App.Services.GetRequiredService<ICallerContextAccessor>().EnterService("code-index-main-move");
-        return await service.Run(new ScheduledRun(grant, DateTimeOffset.UtcNow), ct);
+        return await service.Run(new ScheduledRun(grant, host.App.Services.GetRequiredService<TimeProvider>().GetUtcNow()), ct);
     }
 
     private static string? Field(JobRow job, string name) => job.Result?.TryGetProperty(name, out var value) == true ? value.GetString() : null;
@@ -86,6 +86,6 @@ public sealed class CodeIndexBuildHostTests : IDisposable
     private static async Task<int> Built(GoldenHost host, CancellationToken ct)
     {
         var ledger = host.App.Services.GetRequiredService<ILedgerStore>();
-        return (await ledger.ReadAfter(0, 1000, ct)).Value!.Count(static e => e.Envelope.Type == EventTypes.CodeIndexBuilt);
+        return (await ledger.ReadAfter(0, 1000, ct)).Value.Count(static e => e.Envelope.Type == EventTypes.CodeIndexBuilt);
     }
 }

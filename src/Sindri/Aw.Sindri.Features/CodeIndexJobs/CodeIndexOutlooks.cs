@@ -2,11 +2,9 @@ using IndexRepoHead = Aw.CodeIndex.Core.Model.RepoHead;
 using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Ports;
 using Aw.Kernel;
-using Aw.Sindri.Core;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Views;
-using Aw.Sindri.Features.CodeIndexReads;
 
 namespace Aw.Sindri.Features.CodeIndexJobs;
 
@@ -46,7 +44,7 @@ internal sealed class CodeIndexOutlooks(CodeIndexScopes scopes, ICodeIndex index
         var now = clock.GetUtcNow();
         IReadOnlyDictionary<string, IndexOutlookDetail> all = hold.Heads.ToDictionary(
             static h => h.Key,
-            h => IndexOutlookRules.Classify(Input(h.Key, h.Value, scope.Value, recorded.Value, live.Value, builds.Value, active), now),
+            h => IndexOutlookRules.Classify(Input(h.Key, h.Value, new Facts(scope.Value, recorded.Value, live.Value, builds.Value, active)), now),
             StringComparer.Ordinal);
         return Results.Success(all);
     }
@@ -68,7 +66,7 @@ internal sealed class CodeIndexOutlooks(CodeIndexScopes scopes, ICodeIndex index
 
         IReadOnlyDictionary<string, string> commits = recorded.Value
             .Where(h => h.Commit is not null && repos.Contains(h.Repo.Value, StringComparer.Ordinal))
-            .ToDictionary(static h => h.Repo.Value, static h => h.Commit!.Value.Value, StringComparer.Ordinal);
+            .ToDictionary(static h => h.Repo.Value, static h => h.Commit?.Value ?? string.Empty, StringComparer.Ordinal);
         return Results.Success(commits);
     }
 
@@ -79,9 +77,9 @@ internal sealed class CodeIndexOutlooks(CodeIndexScopes scopes, ICodeIndex index
         return paused.IsError || !paused.Value.Contains(CodeIndexMainMoveService.ServiceId);
     }
 
-    private static IndexOutlookInput Input(string repo, MapRepoHead hold, CodeIndexScope scope, IReadOnlyList<RecordedHead> recorded,
-        IReadOnlyList<IndexRepoHead> live, IReadOnlyList<JobRow> builds, bool serviceActive)
+    private static IndexOutlookInput Input(string repo, MapRepoHead hold, Facts facts)
     {
+        var (scope, recorded, live, builds, serviceActive) = facts;
         var stored = recorded.FirstOrDefault(h => string.Equals(h.Repo.Value, repo, StringComparison.Ordinal))?.Commit?.Value;
         var mine = builds.Where(j => IndexJobs.IsOf(j, repo)).ToList();
         var finished = mine.Where(static j => j.State != JobState.Running && j.EndedAt is not null).OrderByDescending(static j => j.EndedAt).Take(RecentJobs)
@@ -95,4 +93,6 @@ internal sealed class CodeIndexOutlooks(CodeIndexScopes scopes, ICodeIndex index
             NeverBuilt: stored is null && !mine.Exists(IndexJobs.Published),
             finished);
     }
+
+    private sealed record Facts(CodeIndexScope Scope, IReadOnlyList<RecordedHead> Recorded, IReadOnlyList<IndexRepoHead> Live, IReadOnlyList<JobRow> Builds, bool ServiceActive);
 }

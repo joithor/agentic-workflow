@@ -1,6 +1,7 @@
-using System.Globalization;
+using IndexRepoHead = Aw.CodeIndex.Core.Model.RepoHead;
 using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Ports;
+using Aw.CodeIndex.Core.Values;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
@@ -9,7 +10,6 @@ using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Views;
-using Aw.Sindri.Features.CodeIndexReads;
 using Microsoft.Extensions.Logging;
 
 namespace Aw.Sindri.Features.CodeIndexJobs;
@@ -48,45 +48,41 @@ internal sealed partial class CodeIndexMainMoveService(CodeIndexScopes scopes, I
             return scope.IsError && scope.Error.Code != SindriErrors.ProfileNotApproved.Code ? scope.Error : ScheduledResult.Quiet;
         }
 
-        var live = await heads.Heads(scope.Value.Repos, cancellationToken).ConfigureAwait(false);
-        var recorded = await index.Heads(scope.Value, cancellationToken).ConfigureAwait(false);
+        var read = await Read(scope.Value, cancellationToken).ConfigureAwait(false);
+        if (read.IsError)
+        {
+            return read.Error;
+        }
+
+        var (live, recorded, builds) = read.Value;
+        var tally = new Tally();
+        foreach (var head in live)
+        {
+            var step = await Step(head, recorded, builds, cancellationToken).ConfigureAwait(false);
+            if (step.IsError)
+            {
+                return step.Error;
+            }
+
+            tally.Add(head.Repo.Value, step.Value);
+        }
+
+        return tally.Failing.Count > 0
+            ? SindriErrors.ServiceFailed.With($"{ServiceId.Value}: the last builds of {string.Join(", ", tally.Failing)} failed {IndexOutlookRules.FailuresToBroken} times in a row; the next try backs off")
+            : new ScheduledResult(tally.Started.Count == 0, tally.Summary());
+    }
+
+    private async ValueTask<Result<Reads>> Read(CodeIndexScope scope, CancellationToken cancellationToken)
+    {
+        var live = await heads.Heads(scope.Repos, cancellationToken).ConfigureAwait(false);
+        var recorded = await index.Heads(scope, cancellationToken).ConfigureAwait(false);
         var builds = await jobs.List(state: null, IndexJobs.BuildKind, cancellationToken).ConfigureAwait(false);
         if (live.IsError || recorded.IsError || builds.IsError)
         {
             return live.IsError ? live.Error : recorded.IsError ? recorded.Error : builds.Error;
         }
 
-        var started = new List<string>();
-        var elsewhere = new List<string>();
-        var failing = new List<string>();
-        foreach (var head in live.Value)
-        {
-            var step = await Step(head, recorded.Value, builds.Value, cancellationToken).ConfigureAwait(false);
-            if (step.IsError)
-            {
-                return step.Error;
-            }
-
-            (step.Value.Started ? started : step.Value.Elsewhere ? elsewhere : step.Value.Failing ? failing : []).Add(head.Repo.Value);
-        }
-
-        if (failing.Count > 0)
-        {
-            return SindriErrors.ServiceFailed.With(string.Create(CultureInfo.InvariantCulture, $"{ServiceId.Value}: the last builds of {string.Join(", ", failing)} failed {IndexOutlookRules.FailuresToBroken} times in a row; the next try backs off"));
-        }
-
-        var notes = new List<string>();
-        if (started.Count > 0)
-        {
-            notes.Add("ok: index build started for " + string.Join(", ", started));
-        }
-
-        if (elsewhere.Count > 0)
-        {
-            notes.Add("not on trunk, left out: " + string.Join(", ", elsewhere));
-        }
-
-        return new ScheduledResult(started.Count == 0, notes.Count == 0 ? null : string.Join("; ", notes));
+        return new Reads(live.Value, recorded.Value, builds.Value);
     }
 
     private async ValueTask<Result<RepoStep>> Step(IndexRepoHead head, IReadOnlyList<RecordedHead> recorded, IReadOnlyList<JobRow> builds, CancellationToken cancellationToken)
@@ -97,20 +93,7 @@ internal sealed partial class CodeIndexMainMoveService(CodeIndexScopes scopes, I
         }
 
         var repo = head.Repo.Value;
-        var mine = builds.Where(j => IndexJobs.IsOf(j, repo)).ToList();
-        var finished = mine.Where(static j => j.State != JobState.Running && j.EndedAt is not null).OrderByDescending(static j => j.EndedAt).Take(RecentRuns).ToList();
-        var now = clock.GetUtcNow();
-        var stored = recorded.FirstOrDefault(h => h.Repo == head.Repo)?.Commit;
-        var onDefault = new Dictionary<string, string>(StringComparer.Ordinal) { [repo] = commit.Value };
-        IReadOnlyDictionary<string, string>? last = stored is { } sha ? new Dictionary<string, string>(StringComparer.Ordinal) { [repo] = sha.Value } : null;
-        var attempts = finished.Select(static j => new SyncAttempt(j.State == JobState.Failed, j.EndedAt ?? default)).ToList();
-        var action = MainMoveDecision.Decide(onDefault, last, mine.Exists(static j => j.State == JobState.Running), attempts, now);
-        if (action == MainMoveAction.Start && finished is [var newest, ..] && IndexJobs.Deferred(newest) && now < newest.EndedAt + IndexOutlookRules.DeferredSuppress)
-        {
-            action = MainMoveAction.BackoffNotDue;
-        }
-
-        var failing = action != MainMoveAction.Nothing && MainMoveDecision.FailedInARow(attempts) >= IndexOutlookRules.FailuresToBroken;
+        var (action, failing) = Decide(repo, commit, recorded.FirstOrDefault(h => h.Repo == head.Repo)?.Commit, [.. builds.Where(j => IndexJobs.IsOf(j, repo))]);
         if (action != MainMoveAction.Start)
         {
             return new RepoStep(Failing: failing);
@@ -123,6 +106,23 @@ internal sealed partial class CodeIndexMainMoveService(CodeIndexScopes scopes, I
         }
 
         return new RepoStep(Started: true, Failing: failing);
+    }
+
+    // The repo's own decision: the stored index against the head, the key's running and ended builds, and the deferred hold on top.
+    private (MainMoveAction Action, bool Failing) Decide(string repo, CommitSha commit, CommitSha? stored, List<JobRow> mine)
+    {
+        var finished = mine.Where(static j => j.State != JobState.Running && j.EndedAt is not null).OrderByDescending(static j => j.EndedAt).Take(RecentRuns).ToList();
+        var now = clock.GetUtcNow();
+        var onDefault = new Dictionary<string, string>(StringComparer.Ordinal) { [repo] = commit.Value };
+        IReadOnlyDictionary<string, string>? last = stored is { } sha ? new Dictionary<string, string>(StringComparer.Ordinal) { [repo] = sha.Value } : null;
+        var attempts = finished.Select(static j => new SyncAttempt(j.State == JobState.Failed, j.EndedAt ?? default)).ToList();
+        var action = MainMoveDecision.Decide(onDefault, last, mine.Exists(static j => j.State == JobState.Running), attempts, now);
+        if (action == MainMoveAction.Start && finished is [var newest, ..] && IndexJobs.Deferred(newest) && now < newest.EndedAt + IndexOutlookRules.DeferredSuppress)
+        {
+            action = MainMoveAction.BackoffNotDue;
+        }
+
+        return (action, action != MainMoveAction.Nothing && MainMoveDecision.FailedInARow(attempts) >= IndexOutlookRules.FailuresToBroken);
     }
 
     // 409 with 'runningJob' is the same build running: nothing to say. Any other 409 is logged, and not retried this tick.
@@ -139,5 +139,50 @@ internal sealed partial class CodeIndexMainMoveService(CodeIndexScopes scopes, I
     [LoggerMessage(Level = LogLevel.Warning, Message = "code-index-main-move: the build was refused with {Code} and is not retried this tick: {Detail}")]
     private static partial void LogConflict(ILogger logger, string code, string? detail);
 
+    private sealed record Reads(IReadOnlyList<IndexRepoHead> Live, IReadOnlyList<RecordedHead> Recorded, IReadOnlyList<JobRow> Builds);
+
     private readonly record struct RepoStep(bool Started = false, bool Elsewhere = false, bool Failing = false);
+
+    private sealed class Tally
+    {
+        internal List<string> Started { get; } = [];
+
+        internal List<string> Elsewhere { get; } = [];
+
+        internal List<string> Failing { get; } = [];
+
+        internal void Add(string repo, RepoStep step)
+        {
+            if (step.Started)
+            {
+                Started.Add(repo);
+            }
+
+            if (step.Elsewhere)
+            {
+                Elsewhere.Add(repo);
+            }
+
+            if (step.Failing)
+            {
+                Failing.Add(repo);
+            }
+        }
+
+        internal string? Summary()
+        {
+            var notes = new List<string>();
+            if (Started.Count > 0)
+            {
+                notes.Add("ok: index build started for " + string.Join(", ", Started));
+            }
+
+            if (Elsewhere.Count > 0)
+            {
+                notes.Add("not on trunk, left out: " + string.Join(", ", Elsewhere));
+            }
+
+            return notes.Count == 0 ? null : string.Join("; ", notes);
+        }
+    }
 }

@@ -6,7 +6,6 @@ using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Jobs;
-using Aw.Sindri.Features.CodeIndexReads;
 
 namespace Aw.Sindri.Features.CodeIndexJobs;
 
@@ -34,24 +33,26 @@ internal sealed class BuildCodeIndexService(CodeIndexScopes scopes, ICodeIndex i
             return scope.Error;
         }
 
-        var progress = jobs.Current?.Progress ?? new Progress<string>();
-        var built = await index.Build(scope.Value, repo, commit, progress, cancellationToken).ConfigureAwait(false);
+        var built = await index.Build(scope.Value, repo, commit, jobs.Current?.Progress ?? new Progress<string>(), cancellationToken).ConfigureAwait(false);
         if (built.IsError)
         {
             return built.Error;
         }
 
-        var report = built.Value;
-        if (report.Outcome == BuildOutcome.Published && report.Commit is { } published)
+        var appended = await Record(built.Value, cancellationToken).ConfigureAwait(false);
+        return appended.IsError ? appended.Error : Result(built.Value);
+    }
+
+    // A published index is announced just before the runner appends 'job.finished'; a deferred or skipped build changed nothing.
+    private async ValueTask<Result<Unit>> Record(BuildReport report, CancellationToken cancellationToken)
+    {
+        if (report.Outcome != BuildOutcome.Published || report.Commit is not { } published)
         {
-            var appended = await events.Built(Payload(report, published), jobs.Current?.Job.Value ?? Guid.NewGuid().ToString("N"), cancellationToken).ConfigureAwait(false);
-            if (appended.IsError)
-            {
-                return appended.Error;
-            }
+            return Unit.Value;
         }
 
-        return Result(report);
+        var appended = await events.Built(Payload(report, published), jobs.Current?.Job.Value ?? Guid.NewGuid().ToString("N"), cancellationToken).ConfigureAwait(false);
+        return appended.IsError ? appended.Error : Unit.Value;
     }
 
     private static CodeIndexBuilt Payload(BuildReport report, CommitSha commit) => new(report.Repo.Value, commit.Value,
@@ -66,7 +67,8 @@ internal sealed class BuildCodeIndexService(CodeIndexScopes scopes, ICodeIndex i
     {
         BuildOutcome.Published => "published",
         BuildOutcome.NotOnMain => "not-on-main",
-        _ => BuildCodeIndexResult.Deferred,
+        BuildOutcome.Deferred => BuildCodeIndexResult.Deferred,
+        _ => throw new ArgumentOutOfRangeException(nameof(outcome), outcome, message: null),
     };
 
     private static string Word(LayerName layer) => layer.ToString().ToLowerInvariant();
