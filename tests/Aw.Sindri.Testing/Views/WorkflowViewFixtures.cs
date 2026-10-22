@@ -54,7 +54,7 @@ public static class WorkflowViewFixtures
     {
         var states = cells.Select(c => owned is not null && c.State == state && c.Badge is null ? c with { Badge = owned } : c).ToList();
         var deskOpen = states.Exists(c => c.Desk && c.Glyph == StateGlyph.Active);
-        var outcome = states.Exists(c => c.Terminal && c.Glyph == StateGlyph.Done && c.State == state) ? OutcomeName.From("resolved") : null;
+        var outcome = states.Exists(c => c.Terminal && c.Glyph == StateGlyph.Done && c.State == state) ? (OutcomeName?)OutcomeName.From("resolved") : null;
         var chip = StateChip.For(owned, deskOpen, outcome);
         return new(InstanceAddress.From(address), WorkflowInstanceId.Of(InstanceAddress.From(address)), ItemKey.From(address[..address.IndexOf('/', StringComparison.Ordinal)]), shape.Stamp, state,
             chip, since, owned, subject, shape.InputRows(), states, now.Length > 80 ? now[..79] + "…" : now, null, Acts(actions),
