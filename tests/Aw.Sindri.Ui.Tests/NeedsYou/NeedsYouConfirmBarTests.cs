@@ -207,9 +207,9 @@ public sealed class NeedsYouConfirmBarTests
     [Fact]
     public void The_version_waiting_for_approval_is_the_one_asked_for()
     {
-        var approved = new Aw.Sindri.Ui.Api.Workflow.RecipeSummaryView("workflow.step", 4, "sha256:aa", "approved", Name: null);
-        var waiting = new Aw.Sindri.Ui.Api.Workflow.RecipeSummaryView("workflow.step", 3, "sha256:bb", "unapproved", Name: null);
-        var other = new Aw.Sindri.Ui.Api.Workflow.RecipeSummaryView("workflow.other", 9, "sha256:cc", "unapproved", Name: null);
+        var approved = new Ui.Api.Workflow.RecipeSummaryView("workflow.step", 4, "sha256:aa", "approved", Name: null);
+        var waiting = new Ui.Api.Workflow.RecipeSummaryView("workflow.step", 3, "sha256:bb", "unapproved", Name: null);
+        var other = new Ui.Api.Workflow.RecipeSummaryView("workflow.other", 9, "sha256:cc", "unapproved", Name: null);
 
         Assert.Same(waiting, NeedsYouConfirm.Pick([approved, waiting, other], "workflow.step"));
         Assert.Null(NeedsYouConfirm.Pick([other], "workflow.step"));

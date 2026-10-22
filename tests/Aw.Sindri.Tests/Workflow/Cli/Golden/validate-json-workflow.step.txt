@@ -8,7 +8,7 @@ exit 0
   "normalized": {
     "schema": 1,
     "id": "workflow.step",
-    "version": 3,
+    "version": 4,
     "description": null,
     "base": null,
     "urgency": "work",
@@ -217,7 +217,8 @@ exit 0
       "evals/workflow.step/happy.jsonl",
       "evals/workflow.step/no-progress.jsonl",
       "evals/workflow.step/rounds.jsonl"
-    ]
+    ],
+    "displayName": "Do one step, check it and review it"
   }
 }
 --- stderr

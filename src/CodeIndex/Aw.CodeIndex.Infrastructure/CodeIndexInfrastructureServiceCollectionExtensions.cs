@@ -25,6 +25,7 @@ public static class CodeIndexInfrastructureServiceCollectionExtensions
         return services
             .AddSingleton(settings)
             .AddSingleton<IRepoSnapshot, GitRepoSnapshot>()
+            .AddSingleton<IRepoHeads, GitRepoHeads>()
             .AddSingleton<ISymbolParser, CSharpParser>()
             .AddSingleton<IBodyScrubber, RedactingBodyScrubber>()
             .AddSingleton<IEmbedder, OllamaEmbedder>()

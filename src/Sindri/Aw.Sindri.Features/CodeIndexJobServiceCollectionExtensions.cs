@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Features;
 
-/// <summary>Registers the code index's job and service on Sindri's runtime (code index spec §6, §8, CI-9): 'BuildCodeIndex', the 'code-index-main-move' service, the heavy-slot and head adapters and the map gate's outlooks.</summary>
+/// <summary>Registers the code index's job and service on Sindri's runtime (code index spec §6, §8, CI-9): 'BuildCodeIndex', the 'code-index-main-move' service, the heavy-slot adapter and the map gate's outlooks.</summary>
 internal static class CodeIndexJobServiceCollectionExtensions
 {
     /// <summary>Adds the job (keyed 'index:&lt;repo&gt;'), the service and the adapters of the code index's ports; the host registers the facade itself.</summary>
@@ -15,7 +15,6 @@ internal static class CodeIndexJobServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
         return services
-            .AddSingleton<IRepoHeads, ContextRepoHeads>()
             .AddSingleton<IHeavyJobLock, SindriCodeIndexHeavyLock>()
             .AddScoped<CodeIndexJobScopes>()
             .AddScoped<CodeIndexEventSource>()

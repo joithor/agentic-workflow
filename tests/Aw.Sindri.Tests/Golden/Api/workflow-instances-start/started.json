@@ -141,7 +141,8 @@
         "child": false,
         "children": null,
         "outcome": null,
-        "terminal": false
+        "terminal": false,
+        "enteredAt": "<timestamp>"
       },
       {
         "id": "checks",
