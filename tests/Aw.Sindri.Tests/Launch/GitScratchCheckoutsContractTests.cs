@@ -27,13 +27,13 @@ public sealed class GitScratchCheckoutsContractTests : ScratchCheckoutsContract,
     {
         repoPath = Path.Combine(_root, "repo");
         _ = Directory.CreateDirectory(repoPath);
-        Git(repoPath, "init", "-q");
+        _ = Git(repoPath, "init", "-q");
         File.WriteAllText(Path.Combine(repoPath, "a.txt"), "one");
-        Git(repoPath, "add", "a.txt");
-        Git(repoPath, "-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "-m", "one");
+        _ = Git(repoPath, "add", "a.txt");
+        _ = Git(repoPath, "-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "-m", "one");
         var first = Git(repoPath, "rev-parse", "HEAD");
         File.WriteAllText(Path.Combine(repoPath, "a.txt"), "two");
-        Git(repoPath, "-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "-am", "two");
+        _ = Git(repoPath, "-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "-am", "two");
         commits = (first, Git(repoPath, "rev-parse", "HEAD"));
         return new GitScratchCheckouts();
     }
@@ -44,7 +44,7 @@ public sealed class GitScratchCheckoutsContractTests : ScratchCheckoutsContract,
 
     private static string Git(string directory, params string[] arguments)
     {
-        var info = new ProcessStartInfo("git") { RedirectStandardOutput = true, RedirectStandardError = true, WorkingDirectory = directory };
+        var info = new ProcessStartInfo("git") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, WorkingDirectory = directory };
         foreach (var argument in arguments)
         {
             info.ArgumentList.Add(argument);

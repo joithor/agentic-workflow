@@ -3,7 +3,6 @@ using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launch.Argv;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
-using Aw.Sindri.Infrastructure;
 using Aw.Sindri.Infrastructure.Launch;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Launch;
@@ -35,7 +34,7 @@ public sealed class EvaluatorLaunchTests : IDisposable
 
     private static LaunchRequest Request(AgentEntry entry)
     {
-        var step = AgentLaunches.RequestFor(Run(), new AgentStepTarget(A.FirstItemId, entry.Id, "/work/repo"), descriptor: null, _evaluator);
+        var step = AgentLaunches.EvaluatorRequestFor(Run(), new AgentStepTarget(A.FirstItemId, entry.Id, "/work/repo"), _evaluator);
         return A.LaunchRequest().WithAgent(entry.Id).Unattended(step.Step!).AsEvaluator(_evaluator).Build();
     }
 
@@ -60,7 +59,7 @@ public sealed class EvaluatorLaunchTests : IDisposable
         _ = await Make(AgentEntries.ClaudeCode).Stop(request.Launch, Token);
 
         Expect.Equal(0, _scratch.Checkouts.Count);
-        Expect.Equal([path], _scratch.Removed);
+        Expect.True(_scratch.Removed.SequenceEqual([path], StringComparer.Ordinal));
     }
 
     [Fact]
@@ -117,25 +116,25 @@ public sealed class EvaluatorLaunchTests : IDisposable
     [Fact]
     public void A_policy_with_a_denied_or_read_only_path_is_refused_by_every_form_but_the_settings_file()
     {
-        var step = new StepArgs(Model: null, new StepPolicy([], StepPermissionMode.Default, null, ReadOnlyPaths: ["/h"]), new StepRef("s", "b"));
+        var step = new StepArgs(Model: null, new StepPolicy([], StepPermissionMode.Default, WritablePath: null, ReadOnlyPaths: ["/h"]), new StepRef("s", "b"));
 
         foreach (var entry in new[] { AgentEntries.Codex, AgentEntries.Cursor, AgentEntries.Aider })
         {
-            Expect.Equal("SND-LAUNCH-013", StepForms.Arguments(entry, step, null).Error.Code);
+            Expect.Equal("SND-LAUNCH-013", StepForms.Arguments(entry, step, policyFilePath: null).Error.Code);
         }
     }
 
     [Fact]
     public void The_evaluators_request_has_no_commit_rights_and_names_its_set_and_denied_worktree()
     {
-        var request = AgentLaunches.RequestFor(Run(), new AgentStepTarget(A.FirstItemId, AgentEntries.ClaudeCode.Id, "/work/repo"), descriptor: null, _evaluator);
+        var request = AgentLaunches.EvaluatorRequestFor(Run(), new AgentStepTarget(A.FirstItemId, AgentEntries.ClaudeCode.Id, "/work/repo"), _evaluator);
         var policy = request.Step!.Policy!;
 
         Expect.Equal(_evaluator, request.Evaluator);
         Assert.Null(request.Worktree);
-        Assert.Contains("Bash(ui-evidence:*)", policy.AllowedTools);
-        Assert.DoesNotContain("Bash(git commit:*)", policy.AllowedTools);
-        Expect.Equal([_evaluator.HoldoutPath], policy.ReadOnlyPaths);
-        Expect.Equal([_evaluator.PhaseWorktree], policy.DeniedPaths);
+        Expect.True(policy.AllowedTools.Contains("Bash(ui-evidence:*)", StringComparer.Ordinal));
+        Expect.True(!policy.AllowedTools.Contains("Bash(git commit:*)", StringComparer.Ordinal));
+        Expect.True(policy.ReadOnlyPaths!.SequenceEqual([_evaluator.HoldoutPath], StringComparer.Ordinal));
+        Expect.True(policy.DeniedPaths!.SequenceEqual([_evaluator.PhaseWorktree], StringComparer.Ordinal));
     }
 }

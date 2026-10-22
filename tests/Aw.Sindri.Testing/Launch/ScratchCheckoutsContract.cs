@@ -68,7 +68,7 @@ public abstract class ScratchCheckoutsContract
         var never = await checkouts.Remove(PathFor("never"), TestContext.Current.CancellationToken);
 
         Expect.True(first.IsSuccess && second.IsSuccess && never.IsSuccess);
-        Assert.Null(HeadAt(path));
+        Expect.True(HeadAt(path) is null);
     }
 
     /// <summary>A relative path and a commit that isn't hex are SND-REQ-001, with nothing made.</summary>
@@ -83,6 +83,6 @@ public abstract class ScratchCheckoutsContract
 
         Expect.Equal("SND-REQ-001", relative.Error.Code);
         Expect.Equal("SND-REQ-001", option.Error.Code);
-        Assert.Null(HeadAt(path));
+        Expect.True(HeadAt(path) is null);
     }
 }

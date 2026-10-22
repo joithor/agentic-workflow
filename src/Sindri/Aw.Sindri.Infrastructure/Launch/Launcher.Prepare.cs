@@ -13,33 +13,13 @@ internal sealed partial class Launcher
 {
     private async ValueTask<Result<Prepared>> Prepare(LaunchRequest request, AgentEntry entry, CancellationToken cancellationToken)
     {
-        string workDir;
-        if (request.Evaluator is { } evaluator)
+        var located = await WorkDirectory(request, cancellationToken).ConfigureAwait(false);
+        if (located.IsError)
         {
-            if (request.Attended || request.Step?.Policy is null)
-            {
-                return SindriErrors.RequestInvalid.With("the holdout evaluator launches unattended and with a policy (fix: build the request with AgentLaunches.RequestFor)");
-            }
-
-            // The evaluator never runs in the phase worktree: its own checkout at the head sha, removed with the launch (LN-LCH2).
-            var scratch = await parts.Scratch.Create(request.RepoPath, ScratchPath(request.Launch), evaluator.HeadSha, cancellationToken).ConfigureAwait(false);
-            if (scratch.IsError)
-            {
-                return scratch.Error;
-            }
-
-            workDir = scratch.Value;
-        }
-        else
-        {
-            if (await LaunchWorktree.Ensure(request, cancellationToken).ConfigureAwait(false) is { } missing)
-            {
-                return missing;
-            }
-
-            workDir = request.Worktree ?? request.RepoPath;
+            return located.Error;
         }
 
+        var workDir = located.Value;
         if (!request.Attended && request.Step is not null && await PrePushGuard.Install(workDir, cancellationToken).ConfigureAwait(false) is { } foreign)
         {
             return foreign;
@@ -69,6 +49,22 @@ internal sealed partial class Launcher
         {
             return KernelErrors.Unavailable.With($"the launch's files could not be written: {e.Message}");
         }
+    }
+
+    /// <summary>Where the session runs: the holdout evaluator's own scratch checkout at the head sha (removed with the launch, LN-LCH2), else the launch's worktree or the repo.</summary>
+    private async ValueTask<Result<string>> WorkDirectory(LaunchRequest request, CancellationToken cancellationToken)
+    {
+        if (request.Evaluator is not { } evaluator)
+        {
+            return await LaunchWorktree.Ensure(request, cancellationToken).ConfigureAwait(false) is { } missing ? missing : request.Worktree ?? request.RepoPath;
+        }
+
+        if (request.Attended || request.Step?.Policy is null)
+        {
+            return SindriErrors.RequestInvalid.With("the holdout evaluator launches unattended and with a policy (fix: build the request with AgentLaunches.EvaluatorRequestFor)");
+        }
+
+        return await parts.Scratch.Create(request.RepoPath, ScratchPath(request.Launch), evaluator.HeadSha, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>A claude-code Step's worktree is marked trusted before the CLI starts: it would stop at "do you trust this project?" with no one to answer. Other entries and human opens need nothing.</summary>
