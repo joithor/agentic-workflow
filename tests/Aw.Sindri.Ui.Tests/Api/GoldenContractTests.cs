@@ -84,7 +84,7 @@ public sealed class GoldenContractTests
     // context routes U9 does not read (eval, proposals, query).
     private static readonly HashSet<string> _notRead = new(StringComparer.Ordinal)
     {
-        "stop", "profile-approve", "profile",
+        "stop", "profile",
         "setup-repos",   // POST /setup/repos (Add repo): the app's call and the job's progress are U3's (SO-U3)
         "context-eval", "context-map-proposals", "context-query", "context-code", "context-history", "context-subgraph",   // not U9's: eval, proposals (U13) and the query routes are read by the phases that call them
         "items",   // GET /items (the list) is never called; POST /items' created* goldens are read (see the loop)
