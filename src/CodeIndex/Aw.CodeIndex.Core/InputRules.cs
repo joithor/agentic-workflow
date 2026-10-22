@@ -43,10 +43,18 @@ public static class InputRules
     /// <param name="path">The repo-relative path.</param>
     /// <param name="addedGlobs">The profile's and the repo's globs.</param>
     /// <returns>True when the path is denied.</returns>
-    public static bool IsDenied(string path, IReadOnlyList<string> addedGlobs)
+    public static bool IsDenied(string path, IReadOnlyList<string> addedGlobs) => MatchesAny(path, SecretGlobs.Concat(addedGlobs));
+
+    /// <summary>Whether a path matches any of the globs, ignoring case ('*' and '?' inside a segment, '**' across segments).</summary>
+    /// <param name="path">The repo-relative path, with '/' separators.</param>
+    /// <param name="globs">The globs; an empty one matches nothing.</param>
+    /// <returns>True when one matches.</returns>
+    public static bool MatchesAny(string path, IEnumerable<string> globs)
     {
+        ArgumentNullException.ThrowIfNull(path);
+        ArgumentNullException.ThrowIfNull(globs);
         var segments = path.Split('/');
-        return SecretGlobs.Concat(addedGlobs).Any(glob => glob.Length > 0 && Matches(glob.Split('/'), 0, segments, 0));
+        return globs.Any(glob => glob.Length > 0 && Matches(glob.Split('/'), 0, segments, 0));
     }
 
     /// <summary>Applies the rules to a commit's tree.</summary>

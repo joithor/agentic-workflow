@@ -76,11 +76,28 @@ internal sealed partial class ShellViewModel
         {
             OpenApproveAll();
         }
-        else if (request.Action.OptionId.Length > 0 && NeedsYou.Row(request.RowId) is { } row)
+        else if (request.Action.OptionId.Length > 0)
         {
-            Decision.Show(row);
-            _ = Decision.Choose(request.Action.OptionId);
+            _ = AnswerDecision(request.RowId, request.Action.OptionId, note: null);
         }
+    }
+
+    // A decision answered from a key, a button or the inbox's action bar: the sheet takes the option (and the note, when the bar has one) and sends them once.
+    private async Task<string> AnswerDecision(string rowId, string optionId, string? note)
+    {
+        if (NeedsYou.Row(rowId) is not { } row)
+        {
+            return "";
+        }
+
+        Decision.Show(row);
+        if (note is not null)
+        {
+            Decision.Note = note;
+        }
+
+        await Decision.Choose(optionId).ConfigureAwait(true);
+        return Decision.Refusal;   // what the sheet shows after the answer: empty when it was accepted
     }
 
     // A decision row opens the decision sheet (by the decision's id); every other row opens its own, keyed on the row id.

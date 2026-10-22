@@ -31,7 +31,6 @@ using Aw.Sindri.Features.CompleteStep;
 using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Features.CreateItem;
 using Aw.Sindri.Features.Decide;
-using Aw.Sindri.Features.EvalRecipe;
 using Aw.Sindri.Features.FileRequest;
 using Aw.Sindri.Features.GetApproveAllPlan;
 using Aw.Sindri.Features.GetEventCatalog;
@@ -78,7 +77,6 @@ using Aw.Sindri.Features.PingProcess;
 using Aw.Sindri.Features.ReadInjection;
 using Aw.Sindri.Features.ReadLedger;
 using Aw.Sindri.Features.RebuildViews;
-using Aw.Sindri.Features.RecordEval;
 using Aw.Sindri.Features.RecordHeartbeat;
 using Aw.Sindri.Features.RegisterMcp;
 using Aw.Sindri.Features.RegisterRecipe;
@@ -99,7 +97,6 @@ using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Features.StreamEvents;
 using Aw.Sindri.Features.SweepLostSessions;
 using Aw.Sindri.Features.ValidateProfile;
-using Aw.Sindri.Features.ValidateRecipe;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -144,18 +141,17 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddSingleton(static sp => new JobRecovery(sp.GetRequiredService<IJobViews>(), sp.GetRequiredService<ILedgerReader>(), sp.GetRequiredService<IProjectorStatus>(),
                 sp.GetRequiredService<HeldLease>(), sp.GetRequiredService<JobEventWriter>(), sp.GetRequiredService<JobRegistry>()))
             .AddSingleton<IJobRunner>(static sp => sp.GetRequiredService<JobRunner>()).AddSingleton<IJobCancellation>(static sp => sp.GetRequiredService<JobRunner>())
-            .AddScoped<IService<ValidateRecipeRequest, ValidateRecipeResponse>, ValidateRecipeService>()
-            .AddScoped<IService<EvalRecipeRequest, EvalRecipeResponse>, EvalRecipeService>()
-            .AddScoped<IService<RecordEvalRequest, RecordEvalResponse>, RecordEvalService>()
+            .AddRecipeTools()
             .AddRecipeBlocks()
             .AddRegistrySlices()
-            .AddContextSlices()
+            .AddContextSlices().AddCodeIndexReads()
             .AddContextJobs()
             .AddEngineSlices()
             .AddSessionSlices()
             .AddLaunchSlices()
             .AddLaunchTargetJob()
             .AddScoped<IRepoCheckouts, ProfileRepoCheckouts>()
+            .AddAddRepo().AddRegisterMcpJob()
             .AddStationSlices();
         return services;
     }
@@ -187,7 +183,7 @@ public static class SindriFeaturesServiceCollectionExtensions
     {
         // ---- queries (one line per slice) ----
         _ = services.AddScoped<IValidator<GetEventCatalogRequest>, AcceptAllValidator<GetEventCatalogRequest>>().AddQuery<GetEventCatalogRequest, EventCatalogView, GetEventCatalogService>();
-        _ = services.AddScoped<IValidator<GetNeedsYouRequest>, AcceptAllValidator<GetNeedsYouRequest>>().AddQuery<GetNeedsYouRequest, GetNeedsYouResponse, GetNeedsYouService>();
+        _ = services.AddScoped<IValidator<GetNeedsYouRequest>, AcceptAllValidator<GetNeedsYouRequest>>().AddQuery<GetNeedsYouRequest, GetNeedsYouResponse, GetNeedsYouService>().AddScoped<NeedsYouJoins>().AddScoped<NeedsYouLiveRows>();
         _ = services.AddScoped<IValidator<ListDecisionsRequest>, AcceptAllValidator<ListDecisionsRequest>>().AddQuery<ListDecisionsRequest, ListDecisionsResponse, ListDecisionsService>();
         _ = services.AddScoped<IValidator<ListRequestsRequest>, AcceptAllValidator<ListRequestsRequest>>().AddQuery<ListRequestsRequest, ListRequestsResponse, ListRequestsService>();
         _ = services.AddScoped<IValidator<GetJobRequest>, AcceptAllValidator<GetJobRequest>>().AddQuery<GetJobRequest, JobView, GetJobService>();
