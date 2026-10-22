@@ -88,6 +88,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         InitRecipe();
         InitAgents(clipboard);
         InitContext(api, clipboard);
+        InitRunPage(api, clipboard);
         Queue.PropertyChanged += OnQueueChanged;
         InitAnnouncements();
         Attention = AttentionSummary.For(feed: null, State, _clock.GetUtcNow());
@@ -229,6 +230,11 @@ internal sealed partial class ShellViewModel : ObservableObject
         if (page == PageId.Settings)
         {
             Setup.RevealChecklist();   // every way into Settings (the rail, ⌘,, G U, the setup link, Home's line) shows the checklist, its first section
+        }
+
+        if (page != PageId.Workflows || page == CurrentPage)
+        {
+            CloseRunPage();   // any other page, and the Workflows tab again, leaves a run for the list
         }
 
         if (page == CurrentPage)

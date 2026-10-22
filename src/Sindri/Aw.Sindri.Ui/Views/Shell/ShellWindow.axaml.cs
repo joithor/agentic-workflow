@@ -152,6 +152,17 @@ internal sealed partial class ShellWindow : Window
             return true;
         }
 
+        if (shell.IsRunPageShown && !shell.IsSheetOpen)
+        {
+            // Esc on the run page clears the selection, then leaves the run for the Workflows list.
+            if (!shell.RunPage.ClearSelection())
+            {
+                shell.CloseRunPage();
+            }
+
+            return true;
+        }
+
         if (EscapeSheetOrInbox(shell))
         {
             return true;
