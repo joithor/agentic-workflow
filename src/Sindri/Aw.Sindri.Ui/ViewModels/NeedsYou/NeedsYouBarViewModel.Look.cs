@@ -40,7 +40,7 @@ internal sealed partial class NeedsYouBarViewModel
     public string BarName => Labels.NeedsYouBarGroupName(Subject);
 
     /// <summary>True when the request has a bar of its own.</summary>
-    public bool HasBar => Kind != BarKind.None && (ShowsPrimary || ShowsTerminal || ShowsSendBack || IsApproved);
+    public bool HasBar => Kind != BarKind.None && (ShowsPrimary || ShowsTerminal || ShowsSendBack || ShowsConfirm || IsApproved);
 
     /// <summary>True in the resting modes (Approve and Send back show).</summary>
     public bool IsPending => Mode is NeedsYouBarMode.Pending or NeedsYouBarMode.Confirming;
@@ -78,8 +78,8 @@ internal sealed partial class NeedsYouBarViewModel
     /// <summary>True when the primary can be pressed now.</summary>
     public bool PrimaryEnabled => ShowsPrimary && Enabled && !IsSending && (Kind != BarKind.Desk || _target is not null) && (Kind != BarKind.Decision || AcceptControl is { IsEnabled: true });
 
-    /// <summary>True when the terminal button shows: a merge, or a protected action; it copies the served command and sends nothing.</summary>
-    public bool ShowsTerminal => TerminalOnly || (Kind is BarKind.Settings or BarKind.Run && PrimaryControl is { IsProtected: true });
+    /// <summary>True when the terminal button shows: a merge, or a protected action the app does not confirm itself (yet); it copies the served command and sends nothing.</summary>
+    public bool ShowsTerminal => !ShowsConfirm && (TerminalOnly || ConfirmKind == NeedsYouConfirmKind.Terminal || (Kind is BarKind.Settings or BarKind.Run && PrimaryControl is { IsProtected: true }));
 
     /// <summary>The terminal button's action words ("Allow more tries").</summary>
     public string TerminalWord => Kind == BarKind.Desk ? Labels.NeedsYouApproveMerge : PrimaryControl is { } primary ? WordsOf(primary.Action) : "";
@@ -125,7 +125,7 @@ internal sealed partial class NeedsYouBarViewModel
     public bool ShowsDrop => Kind == BarKind.Desk && _target is not null && !TerminalOnly;
 
     /// <summary>True when the card keeps the row's own controls: no bar takes the request's primary.</summary>
-    public bool ShowsRowControls => Kind == BarKind.None || (Kind is BarKind.Settings or BarKind.Run && !ShowsTerminal);
+    public bool ShowsRowControls => Kind == BarKind.None || (Kind is BarKind.Settings or BarKind.Run && !ShowsTerminal && !ShowsConfirm);
 
     /// <summary>The line under the buttons.</summary>
     public string Hint => Mode switch
