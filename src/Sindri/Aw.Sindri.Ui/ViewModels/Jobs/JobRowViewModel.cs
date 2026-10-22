@@ -65,11 +65,29 @@ internal sealed class JobRowViewModel : ObservableObject
     /// <summary>True when the row has a summary.</summary>
     public bool HasSummary => SummaryText.Length > 0;
 
+    /// <summary>True when the row has a summary and room for it.</summary>
+    public bool HasWideSummary => HasSummary && IsWide;
+
     /// <summary>True when the row has an error code.</summary>
     public bool HasCode => CodeText.Length > 0;
 
+    /// <summary>True under 760 px: the row keeps only its job, status and rounds.</summary>
+    public bool IsCompact { get; private set => Set(ref field, value); }
+
+    /// <summary>True when the row keeps every column.</summary>
+    public bool IsWide => !IsCompact;
+
     /// <summary>True when the row has a Cancel control.</summary>
     public bool HasCancel => Cancel is not null;
+
+    /// <summary>Narrows or widens the row (the page crossed 760 px).</summary>
+    /// <param name="compact">True under 760 px.</param>
+    internal void SetCompact(bool compact)
+    {
+        IsCompact = compact;
+        OnChanged(nameof(IsWide));
+        OnChanged(nameof(HasWideSummary));
+    }
 
     /// <summary>Takes a newer serving of the same job and redraws only what changed.</summary>
     /// <param name="row">The row as served now.</param>
@@ -96,7 +114,7 @@ internal sealed class JobRowViewModel : ObservableObject
         (SummaryText, CodeText) = (Row.Summary ?? string.Empty, Row.Code ?? string.Empty);
         Cancel = IsRunning ? Cancel ?? _cancel(Row.Id, TitleText) : null;
         Name = Labels.JobRowName(TitleText, word.ToLowerInvariant(), WhenText, Labels.JobStartedBy(Row.StartedBy), SummaryText);
-        foreach (var name in (string[])[nameof(IsRunning), nameof(HasSummary), nameof(HasCode), nameof(HasCancel)])
+        foreach (var name in (string[])[nameof(IsRunning), nameof(HasSummary), nameof(HasWideSummary), nameof(HasCode), nameof(HasCancel)])
         {
             OnChanged(name);
         }

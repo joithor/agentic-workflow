@@ -63,6 +63,28 @@ public sealed class ShellJobsTests
     }, Token);
 
     [Fact]
+    public Task A_job_link_opens_the_Jobs_page_with_that_jobs_sheet() => UiThread.Run(async () =>
+    {
+        _server.JobAnswers[Id] = RouteAnswer.Api("jobs-id", "running");
+        var shell = await Shell(connect: true);
+
+        shell.Navigate(Link("job/" + Id));
+
+        Assert.Equal((PageId.Jobs, true), (shell.CurrentPage, shell.IsJobSheet));
+    }, Token);
+
+    [Fact]
+    public Task The_Services_link_on_the_empty_Jobs_page_opens_System_on_its_Services_tab() => UiThread.Run(async () =>
+    {
+        var shell = await Shell(connect: true);
+        shell.GoTo(PageId.Jobs);
+
+        shell.Jobs.RequestServices();
+
+        Assert.Equal((PageId.System, true), (shell.CurrentPage, shell.Health.ShowServicesTab));
+    }, Token);
+
+    [Fact]
     public Task A_job_link_before_the_app_is_connected_names_the_job_by_its_id() => UiThread.Run(async () =>
     {
         var shell = await Shell(connect: false);
