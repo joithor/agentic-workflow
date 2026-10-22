@@ -54,6 +54,12 @@
       <Panel IsVisible="{Binding Repo, Converter={x:Static ObjectConverters.IsNotNull}}">
         <sw:SetupRepoForm x:Name="SetupStepRepoForm" DataContext="{Binding Repo}" />
       </Panel>
+      <Panel IsVisible="{Binding Profile, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <sw:SetupProfileConfirmView x:Name="SetupStepProfileConfirm" DataContext="{Binding Profile}" />
+      </Panel>
+      <Panel IsVisible="{Binding Workflows, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <sw:SetupWorkflowsConfirmView x:Name="SetupStepWorkflowsConfirm" DataContext="{Binding Workflows}" />
+      </Panel>
       <Panel IsVisible="{Binding Onyx, Converter={x:Static ObjectConverters.IsNotNull}}">
         <sw:SetupOnyxForm x:Name="SetupStepOnyxForm" DataContext="{Binding Onyx}" />
       </Panel>
