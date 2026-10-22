@@ -28,7 +28,7 @@ internal sealed partial class ContextPageViewModel
     /// <summary>Esc, or a click on the empty canvas: the inspector closes and nothing is chosen.</summary>
     internal void CloseInspector()
     {
-        _ = Map?.Select(null);
+        _ = Map?.Select(key: null);
         Node.Close();
         Sources.Close();
         OnChanged(nameof(InspectorOpen));

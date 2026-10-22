@@ -1,5 +1,4 @@
 using Aw.Sindri.Ui.Api.Context;
-using Aw.Sindri.Ui.ViewModels.Context.Layout;
 
 namespace Aw.Sindri.Ui.ViewModels.Context;
 
@@ -18,9 +17,6 @@ internal sealed partial class ContextMapViewModel
 
     /// <summary>The keys of the edges drawn dimmed.</summary>
     internal IReadOnlySet<string> DimmedEdges { get; private set; } = _none;
-
-    /// <summary>Gets the layout this map was drawn from.</summary>
-    internal MapLayout Layout => _layout;
 
     /// <summary>Gets or sets what the view calls when a node is chosen by the pointer (the page reads the node and opens the inspector).</summary>
     internal Action<string>? Chosen { get; set; }
@@ -69,20 +65,20 @@ internal sealed partial class ContextMapViewModel
     /// <param name="key">The node's key.</param>
     /// <returns>The sentence.</returns>
     internal string PathSentence(string key) =>
-        MapPath.Sentence(k => Node(k)?.Label ?? k, MapPath.Find(_links, _layout.Nodes.Where(n => n.IsAnchor).Select(n => n.Key), key));
+        MapPath.Sentence(k => Node(k)?.Label ?? k, MapPath.Find(_links, Layout.Nodes.Where(n => n.IsAnchor).Select(n => n.Key), key));
 
     /// <summary>The conflicts a node is part of: its own decision, the one it disagrees with, or the node both apply to.</summary>
     /// <param name="key">The node's key.</param>
     /// <returns>The conflicts, as served.</returns>
     internal IReadOnlyList<LensConflict> ConflictsFor(string key) =>
-        [.. _conflicts.Where(c => string.Equals(c.Node, key, StringComparison.Ordinal) || string.Equals(c.Decision, key, StringComparison.Ordinal) || string.Equals(c.Other, key, StringComparison.Ordinal))];
+        [.. Conflicts.Where(c => string.Equals(c.Node, key, StringComparison.Ordinal) || string.Equals(c.Decision, key, StringComparison.Ordinal) || string.Equals(c.Other, key, StringComparison.Ordinal))];
 
     /// <summary>The link a suggestion on this node waits on: its own (a suggested file) or the first suggested edge at it.</summary>
     /// <param name="key">The node's key.</param>
     /// <returns>The link id, or null when nothing here waits for a person.</returns>
     internal string? SuggestionLink(string key) =>
         Node(key)?.Layout.LinkId
-        ?? _layout.Edges.FirstOrDefault(e => e.Dashed && e.Link is not null && (string.Equals(e.From, key, StringComparison.Ordinal) || string.Equals(e.To, key, StringComparison.Ordinal)))?.Link;
+        ?? Layout.Edges.FirstOrDefault(e => e.Dashed && e.Link is not null && (string.Equals(e.From, key, StringComparison.Ordinal) || string.Equals(e.To, key, StringComparison.Ordinal)))?.Link;
 
     private string? Step(int by, bool first)
     {

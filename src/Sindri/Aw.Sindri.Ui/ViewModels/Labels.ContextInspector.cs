@@ -16,13 +16,13 @@ internal static partial class Labels
     /// <param name="hops">One phrase per step, in order.</param>
     /// <returns>"Starts at Tab manager, then TabManager.ts (implemented in)."</returns>
     internal static string ContextMapPathSentence(string start, IEnumerable<string> hops) =>
-        string.Create(CultureInfo.InvariantCulture, $"Starts at {start}, then {string.Join(", then ", hops)}.");
+        $"Starts at {start}, then {string.Join(", then ", hops)}.";
 
     /// <summary>One step of the path sentence.</summary>
     /// <param name="label">The node reached.</param>
     /// <param name="word">The edge's words.</param>
     /// <returns>"TabManager.ts (implemented in)".</returns>
-    internal static string ContextMapPathHop(string label, string word) => string.Create(CultureInfo.InvariantCulture, $"{label} ({word})");
+    internal static string ContextMapPathHop(string label, string word) => $"{label} ({word})";
 
     /// <summary>The inspector section: what the node is.</summary>
     internal const string ContextInspWhat = "What it is";
@@ -68,14 +68,14 @@ internal static partial class Labels
     /// <param name="node">What both apply to.</param>
     /// <returns>The sentence.</returns>
     internal static string ContextInspConflictBody(string other, string node) =>
-        string.Create(CultureInfo.InvariantCulture, $"This decision disagrees with {other}. Both apply to {node}. Settle which one wins before approving.");
+        $"This decision disagrees with {other}. Both apply to {node}. Settle which one wins before approving.";
 
     /// <summary>The conflict on a node two decisions disagree about.</summary>
     /// <param name="first">One decision.</param>
     /// <param name="second">The other decision.</param>
     /// <returns>The sentence.</returns>
     internal static string ContextInspConflictNode(string first, string second) =>
-        string.Create(CultureInfo.InvariantCulture, $"Two decisions disagree about this: {first} and {second}. Settle which one wins before approving.");
+        $"Two decisions disagree about this: {first} and {second}. Settle which one wins before approving.";
 
     /// <summary>The note on a link nobody confirmed.</summary>
     internal const string ContextInspNotConfirmed = "not confirmed";

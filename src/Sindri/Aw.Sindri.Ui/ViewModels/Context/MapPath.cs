@@ -1,15 +1,5 @@
 namespace Aw.Sindri.Ui.ViewModels.Context;
 
-/// <summary>One step of a path: the node reached and the type of the edge walked to reach it.</summary>
-/// <param name="Key">The node reached.</param>
-/// <param name="Type">The edge's served type.</param>
-internal sealed record MapPathHop(string Key, string Type);
-
-/// <summary>The way from a starting point to a node.</summary>
-/// <param name="Start">The starting point it begins at.</param>
-/// <param name="Hops">The steps, in order; none when the node is a starting point.</param>
-internal sealed record MapRoute(string Start, IReadOnlyList<MapPathHop> Hops);
-
 /// <summary>The shortest path from the nearest starting point to a node, over the map's edges walked in either direction (the inspector's "why it is in this map"). Plain C#.</summary>
 internal static class MapPath
 {
@@ -19,6 +9,27 @@ internal static class MapPath
     /// <param name="target">The node to reach.</param>
     /// <returns>The path, or null when no starting point reaches the node.</returns>
     internal static MapRoute? Find(IEnumerable<MapLink> links, IEnumerable<string> starts, string target)
+    {
+        var (came, seen) = Walk(links, starts);
+        if (!seen.Contains(target))
+        {
+            return null;
+        }
+
+        var hops = new List<MapPathHop>();
+        var here = target;
+        while (came.TryGetValue(here, out var step))
+        {
+            hops.Add(new MapPathHop(here, step.Type));
+            here = step.Prev;
+        }
+
+        hops.Reverse();
+        return new MapRoute(here, hops);
+    }
+
+    // A breadth-first walk from all the starts at once; came[x] is the node x was first reached from.
+    private static (Dictionary<string, (string Prev, string Type)> Came, HashSet<string> Seen) Walk(IEnumerable<MapLink> links, IEnumerable<string> starts)
     {
         var next = new Dictionary<string, List<(string To, string Type)>>(StringComparer.Ordinal);
         foreach (var link in links)
@@ -48,21 +59,7 @@ internal static class MapPath
             }
         }
 
-        if (!seen.Contains(target))
-        {
-            return null;
-        }
-
-        var hops = new List<MapPathHop>();
-        var here = target;
-        while (came.TryGetValue(here, out var step))
-        {
-            hops.Add(new MapPathHop(here, step.Type));
-            here = step.Prev;
-        }
-
-        hops.Reverse();
-        return new MapRoute(here, hops);
+        return (came, seen);
     }
 
     /// <summary>The path in plain words.</summary>

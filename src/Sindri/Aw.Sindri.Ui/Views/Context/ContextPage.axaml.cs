@@ -62,34 +62,39 @@ internal sealed partial class ContextPage : UserControl
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        if (e.Handled || e.Source is TextBox || _page is not { } page || e.KeyModifiers != KeyModifiers.None)
+        if (!e.Handled && e.Source is not TextBox && e.KeyModifiers == KeyModifiers.None && _page is { } page)
         {
-            return;
+            e.Handled = Handle(page, e.Key);
+        }
+    }
+
+    // Esc closes the inspector; J and K walk the nodes; F and M choose the view (F3 spec 1 §5).
+    private bool Handle(ContextPageViewModel page, Key key)
+    {
+        if (key == Key.Escape)
+        {
+            if (!page.InspectorOpen)
+            {
+                return false;
+            }
+
+            page.CloseInspector();
+            return true;
         }
 
-        // Esc closes the inspector; J and K walk the nodes; F and M choose the view (F3 spec 1 §5).
-        e.Handled = true;
-        switch (e.Key)
+        if (key is Key.F or Key.M)
         {
-            case Key.Escape when page.InspectorOpen:
-                page.CloseInspector();
-                break;
-            case Key.J when page.MapVisible:
-                _ = RevealAfter(page.SelectNext());
-                break;
-            case Key.K when page.MapVisible:
-                _ = RevealAfter(page.SelectPrevious());
-                break;
-            case Key.F:
-                page.ChooseView(files: true);
-                break;
-            case Key.M:
-                page.ChooseView(files: false);
-                break;
-            default:
-                e.Handled = false;
-                break;
+            page.ChooseView(files: key == Key.F);
+            return true;
         }
+
+        if (key is Key.J or Key.K && page.MapVisible)
+        {
+            _ = RevealAfter(key == Key.J ? page.SelectNext() : page.SelectPrevious());
+            return true;
+        }
+
+        return false;
     }
 
     // The canvas pans the chosen node out from under the inspector (480 px over the right edge).
