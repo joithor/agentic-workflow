@@ -27,7 +27,7 @@ public sealed class LensesSymbolCoverageTests
     {
         using var world = new MapWorld(new FakeRepoReader(MapWorld.Repos[0], MapWorld.Head, _tree), symbols: new FakeCodeSymbolSource(index is null ? [] : [index]));
         _ = await world.ImportYaml(string.Concat("{\"commit\": \"", MapWorld.Head, "\", ", MapWorld.TabsMap.TrimStart().AsSpan(1)));
-        return (await world.Engine.Lenses(Anchor, MapRead.Current, depth: null, MapWorld.Human, MapWorld.None)).Value;
+        return (await world.Engine.Lenses(Anchor, MapRead.Current, depth: null, MapWorld.HumanWith(MapWorld.OnlyFixtureRepo), MapWorld.None)).Value;
     }
 
     [Fact, Trait("Lane", "unit")]
