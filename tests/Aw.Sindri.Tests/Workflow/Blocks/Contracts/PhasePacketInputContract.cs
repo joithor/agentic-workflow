@@ -23,7 +23,7 @@ public sealed class PhasePacketInputContract : BlockContract
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await new PhasePacketInput(new Aw.Sindri.Testing.Scoping.InMemoryBriefFiles(), new Aw.Sindri.Testing.Scoping.InMemoryRepoCheckouts(), new ContextInputFixtures.MemoryFacts()).Fill(
+        _ = await new PhasePacketInput(new Testing.Scoping.InMemoryBriefFiles(), new Testing.Scoping.InMemoryRepoCheckouts(), new ContextInputFixtures.MemoryFacts()).Fill(
             new StepInputContext(BlockId.From(PhasePacketInput.Id), BlockId.From("step.pr.ci-fix"), new Dictionary<string, JsonElement>(StringComparer.Ordinal), new Dictionary<FactKey, JsonElement>()),
             cancellationToken);
 }

@@ -52,7 +52,7 @@ internal sealed class ForgeDoctorChecks(IApprovedProfile approved, IPullRequests
         }
     }
 
-    private static DoctorCheck Refused(Aw.Kernel.Error error, string source) => error.Code == SindriErrors.ForgeUnavailable.Code
+    private static DoctorCheck Refused(Kernel.Error error, string source) => error.Code == SindriErrors.ForgeUnavailable.Code
         ? new DoctorCheck(Name, CheckState.Warn, $"the forge could not be reached with {source}: {error.Message}", "check the network and workflow.forge.hosts")
         : new DoctorCheck(Name, CheckState.Fail, $"the forge refused the credential {source}: {error.Message}", $"check that {source} holds a valid token for the forge");
 
