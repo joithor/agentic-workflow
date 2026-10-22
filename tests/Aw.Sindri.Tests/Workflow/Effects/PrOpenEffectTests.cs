@@ -27,7 +27,7 @@ public sealed class PrOpenEffectTests
     private const string Sha = "0123456789abcdef0123456789abcdef01234567";
     private static readonly PullRepo _repo = new("github.com", "acme", "web");
 
-    private readonly FakePullRequests _pulls = new();
+    private readonly FakePullRequests _pulls = new(["github.com"]);
     private readonly InMemoryFactStore _facts = new();
     private readonly InMemoryProfiles _profiles = new();
     private readonly InMemoryPacketFiles _files = new InMemoryPacketFiles()
