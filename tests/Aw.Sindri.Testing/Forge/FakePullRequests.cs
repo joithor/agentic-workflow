@@ -62,6 +62,7 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
         pull.Body = request.Body;
         pull.Draft = request.Draft;
         pull.Marker = request.Marker;
+        _tips[$"{request.Repo.Host}/{request.Repo.Owner}/{request.Repo.Name}#{request.Head}"] = request.HeadSha;
         return new OpenedPull(pull.Link, pull.Number);
     }
 

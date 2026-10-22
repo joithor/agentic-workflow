@@ -16,7 +16,7 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 /// 'effect.pr.open' (line spec §7.5, PB spec BD1): opens the phase's pull request from the frozen hand-off ('fact:handoff' names the packet directory holding pr.json and body.md;
 /// 'fact:workspace' is the phase worktree, whose 'origin' names the repository), or updates the open one for the same head branch after a rework. It replies 'pr.opened' with
 /// 'opened' or 'updated' and 'fact:pr' ({ link, number, state, base, head }); a forge that refuses the call replies 'refused', and any other forge failure fails the effect. The
-/// head branch is pushed first (PushBranch); a moved or rejected push replies 'refused'. The pull request is found again by its head branch and a marker
+/// pull request is found first; the head branch is then pushed (PushBranch, leased on the found pull request's head); a moved or rejected push replies 'refused'. The pull request is found again by its head branch and a marker
 /// derived from it, so a retry or a second dispatch opens nothing twice.
 /// </summary>
 /// <param name="pulls">The forge.</param>
@@ -55,31 +55,46 @@ internal sealed class PrOpenEffect(IPullRequests pulls, IForgeRepos repos, IPack
             : done;
     }
 
-    /// <summary>Pushes the head branch at the hand-off's head first (the forge opens a pull request only for a branch that is on the remote); a moved or rejected push is a refusal.</summary>
+    /// <summary>
+    /// Finds the open pull request for the head branch first. With none, the branch is pushed with no lease (it must not exist yet) and a pull request opened; with one, the branch is
+    /// pushed with a lease on that pull request's current head (a rework updates it) and the pull request updated. A moved or rejected push is a refusal.
+    /// </summary>
     private async ValueTask<Result<EffectDone>> Push((OpenPull Request, string Workspace) plan, CancellationToken cancellationToken)
     {
         var (wanted, workspace) = plan;
-        var pushed = await pulls.PushBranch(new PullBranchPush(wanted.Repo, workspace, wanted.Head, wanted.HeadSha, LeaseSha: null), cancellationToken).ConfigureAwait(false);
-        if (pushed.IsError)
-        {
-            return pushed.Error;
-        }
-
-        return pushed.Value == PullPushOutcome.Pushed
-            ? await OpenOrUpdate(wanted, cancellationToken).ConfigureAwait(false)
-            : new EffectDone(_refused, Existed: false);
-    }
-
-    /// <summary>Finds the open pull request for the head, and updates it, or opens one.</summary>
-    private async ValueTask<Result<EffectDone>> OpenOrUpdate(OpenPull wanted, CancellationToken cancellationToken)
-    {
         var found = await pulls.Find(new FindPull(wanted.Repo, wanted.Head, wanted.Marker), cancellationToken).ConfigureAwait(false);
         if (found.IsError)
         {
             return found.Error;
         }
 
+        string? lease = null;
         if (found.Value is { } existing)
+        {
+            var view = await pulls.Get(existing.Link, cancellationToken).ConfigureAwait(false);
+            if (view.IsError)
+            {
+                return view.Error;
+            }
+
+            lease = view.Value.HeadSha;
+        }
+
+        var pushed = await pulls.PushBranch(new PullBranchPush(wanted.Repo, workspace, wanted.Head, wanted.HeadSha, lease), cancellationToken).ConfigureAwait(false);
+        if (pushed.IsError)
+        {
+            return pushed.Error;
+        }
+
+        return pushed.Value == PullPushOutcome.Pushed
+            ? await OpenOrUpdate(wanted, found.Value, cancellationToken).ConfigureAwait(false)
+            : new EffectDone(_refused, Existed: false);
+    }
+
+    /// <summary>Updates the pull request found for the head, or opens one.</summary>
+    private async ValueTask<Result<EffectDone>> OpenOrUpdate(OpenPull wanted, OpenedPull? existing, CancellationToken cancellationToken)
+    {
+        if (existing is not null)
         {
             // why: an update replaces the body whole, marker included, and the forge port appends the marker only on open.
             var updated = await pulls.Update(existing.Link, wanted.Title, wanted.Body.TrimEnd() + "\n\n<!-- aw-marker:" + wanted.Marker + " -->", cancellationToken).ConfigureAwait(false);

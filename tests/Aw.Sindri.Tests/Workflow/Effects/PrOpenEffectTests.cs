@@ -66,11 +66,25 @@ public sealed class PrOpenEffectTests
     }
 
     [Fact]
-    public async Task The_head_branch_is_pushed_before_the_pull_request_is_looked_for()
+    public async Task A_head_branch_with_no_pull_request_is_pushed_without_a_lease_before_the_pull_request_is_opened()
     {
         _ = await Dispatch();
 
         Assert.Equal(new PullBranchPush(_repo, Workspace, "sindri/l1/p1", Sha, LeaseSha: null), Assert.Single(_pulls.Pushed));
+        Assert.Equal(["Find", "PushBranch", "Open"], _pulls.Calls.ToArray());
+    }
+
+    [Fact]
+    public async Task A_rework_pushes_the_head_branch_leased_on_the_open_pull_requests_head_and_updates_it()
+    {
+        const string OldSha = "fedcba9876543210fedcba9876543210fedcba98";
+        var seeded = _pulls.Seed(new OpenPull(_repo, "sindri/l1/p1", "main", OldSha, "Old", "Old body", Draft: false, Marker: "sindri.pr:sindri-l1-p1"));
+
+        var done = await Dispatch();
+
+        Assert.Equal("updated", done.Reply?.Value);
+        Assert.Equal(new PullBranchPush(_repo, Workspace, "sindri/l1/p1", Sha, LeaseSha: OldSha), Assert.Single(_pulls.Pushed));
+        Assert.Equal(seeded.Link, Assert.Single(_pulls.Updated).Link);
     }
 
     [Theory]
