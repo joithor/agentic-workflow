@@ -660,7 +660,7 @@ edges:
   - from: CodeIndex
     to: Redaction
     kind: project
-    status: planned
+    status: current
     note: "the scrubber behind IBodyScrubber: bodies, signatures, deps text and graph names are scrubbed before they are stored (Aw.CodeIndex.Infrastructure only; code-index spec §9)"
   # ---- the code index (code-index spec §5, §7; CI-10a flipped the project edge, CI-9 flips the compose edge) ----
   - from: Sindri

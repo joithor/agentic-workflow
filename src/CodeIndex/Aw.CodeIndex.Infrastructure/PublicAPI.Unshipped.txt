@@ -12,3 +12,9 @@ Aw.CodeIndex.Infrastructure.Parsing.FileParseQuarantine.End(Aw.CodeIndex.Core.Va
 Aw.CodeIndex.Infrastructure.Parsing.FileParseQuarantine.FileParseQuarantine(string! directory) -> void
 Aw.CodeIndex.Infrastructure.Parsing.FileParseQuarantine.Keep(Aw.CodeIndex.Core.Values.RepoName repo, System.Collections.Generic.IReadOnlySet<string!>! blobsInHead) -> int
 Aw.CodeIndex.Infrastructure.Parsing.FileParseQuarantine.Recover(Aw.CodeIndex.Core.Values.RepoName repo) -> int
+Aw.CodeIndex.Infrastructure.Parsing.CSharpParser.Version.get -> string!
+const Aw.CodeIndex.Infrastructure.Parsing.CSharpParser.ParserVersion = "csharp-1" -> string!
+Aw.CodeIndex.Infrastructure.Scrubbing.RedactingBodyScrubber
+Aw.CodeIndex.Infrastructure.Scrubbing.RedactingBodyScrubber.RedactingBodyScrubber() -> void
+Aw.CodeIndex.Infrastructure.Scrubbing.RedactingBodyScrubber.RedactingBodyScrubber(Aw.Redaction.IRedactor! redactor) -> void
+Aw.CodeIndex.Infrastructure.Scrubbing.RedactingBodyScrubber.Scrub(string! text, int maxCharacters) -> string!

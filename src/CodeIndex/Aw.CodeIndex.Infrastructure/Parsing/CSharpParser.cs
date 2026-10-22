@@ -15,6 +15,9 @@ public sealed class CSharpParser : ISymbolParser
 {
     private static readonly CSharpParseOptions _options = new(LanguageVersion.Latest, DocumentationMode.None, SourceCodeKind.Regular);
 
+    /// <summary>The parser's version word; a new version re-parses every file (spec §5.2).</summary>
+    public const string ParserVersion = "csharp-1";
+
     private readonly ParseLimits _limits;
 
     /// <summary>Creates the parser with the limits of a real build.</summary>
@@ -27,6 +30,9 @@ public sealed class CSharpParser : ISymbolParser
     {
         _limits = limits;
     }
+
+    /// <inheritdoc />
+    public string Version => ParserVersion;
 
     /// <inheritdoc />
     public bool Handles(string path) => path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase);
