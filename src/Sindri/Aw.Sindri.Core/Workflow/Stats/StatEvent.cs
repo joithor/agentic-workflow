@@ -1,5 +1,6 @@
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Stats;
 
@@ -26,7 +27,7 @@ public sealed record StatEvent(
     DateTimeOffset At,
     string From,
     string To,
-    string? RecipeId,
+    RecipeId? RecipeId,
     string? RecipeHash,
     bool HasDetail,
     SuspensionKind? Suspension,

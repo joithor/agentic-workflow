@@ -16062,7 +16062,7 @@ Aw.Sindri.Core.Workflow.Stats.StatEvent.From.get -> string!
 Aw.Sindri.Core.Workflow.Stats.StatEvent.From.init -> void
 Aw.Sindri.Core.Workflow.Stats.StatEvent.To.get -> string!
 Aw.Sindri.Core.Workflow.Stats.StatEvent.To.init -> void
-Aw.Sindri.Core.Workflow.Stats.StatEvent.RecipeId.get -> string?
+Aw.Sindri.Core.Workflow.Stats.StatEvent.RecipeId.get -> Aw.Sindri.Core.Workflow.Ids.RecipeId?
 Aw.Sindri.Core.Workflow.Stats.StatEvent.RecipeId.init -> void
 Aw.Sindri.Core.Workflow.Stats.StatEvent.RecipeHash.get -> string?
 Aw.Sindri.Core.Workflow.Stats.StatEvent.RecipeHash.init -> void
@@ -16082,9 +16082,9 @@ Aw.Sindri.Core.Workflow.Stats.StatEvent.TokensSpent.get -> int?
 Aw.Sindri.Core.Workflow.Stats.StatEvent.TokensSpent.init -> void
 Aw.Sindri.Core.Workflow.Stats.StatEvent.Gates.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Stats.StatGate!>!
 Aw.Sindri.Core.Workflow.Stats.StatEvent.Gates.init -> void
-Aw.Sindri.Core.Workflow.Stats.StatEvent.Deconstruct(out string! Address, out System.DateTimeOffset At, out string! From, out string! To, out string? RecipeId, out string? RecipeHash, out bool HasDetail, out Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind? Suspension, out Aw.Sindri.Core.Workflow.Engine.ParkReason? ParkReason, out Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation, out bool Answered, out string? Outcome, out int? TokensSpent, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Stats.StatGate!>! Gates) -> void
+Aw.Sindri.Core.Workflow.Stats.StatEvent.Deconstruct(out string! Address, out System.DateTimeOffset At, out string! From, out string! To, out Aw.Sindri.Core.Workflow.Ids.RecipeId? RecipeId, out string? RecipeHash, out bool HasDetail, out Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind? Suspension, out Aw.Sindri.Core.Workflow.Engine.ParkReason? ParkReason, out Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation, out bool Answered, out string? Outcome, out int? TokensSpent, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Stats.StatGate!>! Gates) -> void
 Aw.Sindri.Core.Workflow.Stats.StatEvent.Equals(Aw.Sindri.Core.Workflow.Stats.StatEvent? other) -> bool
-Aw.Sindri.Core.Workflow.Stats.StatEvent.StatEvent(string! Address, System.DateTimeOffset At, string! From, string! To, string? RecipeId, string? RecipeHash, bool HasDetail, Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind? Suspension, Aw.Sindri.Core.Workflow.Engine.ParkReason? ParkReason, Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation, bool Answered, string? Outcome, int? TokensSpent, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Stats.StatGate!>! Gates) -> void
+Aw.Sindri.Core.Workflow.Stats.StatEvent.StatEvent(string! Address, System.DateTimeOffset At, string! From, string! To, Aw.Sindri.Core.Workflow.Ids.RecipeId? RecipeId, string? RecipeHash, bool HasDetail, Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind? Suspension, Aw.Sindri.Core.Workflow.Engine.ParkReason? ParkReason, Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation, bool Answered, string? Outcome, int? TokensSpent, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Stats.StatGate!>! Gates) -> void
 override Aw.Sindri.Core.Workflow.Stats.StatEvent.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Stats.StatEvent.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Stats.StatEvent.ToString() -> string!

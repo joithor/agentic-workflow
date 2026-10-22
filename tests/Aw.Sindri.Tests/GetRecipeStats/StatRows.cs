@@ -1,6 +1,7 @@
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Stats;
 
 namespace Aw.Sindri.Tests.GetRecipeStats;
@@ -42,5 +43,5 @@ internal static class StatRows
 
     private static StatEvent Row(string address, DateTimeOffset at, string from, string to, string? recipe = null, string? hash = null, SuspensionKind? suspension = null, ParkReason? park = null,
         EscalationKind? escalation = null, bool answered = false, string? outcome = null, int? tokens = null, StatGate[]? gates = null) =>
-        new(address, at, from, to, recipe, hash, HasDetail: true, suspension, park, escalation, answered, outcome, tokens, gates ?? []);
+        new(address, at, from, to, recipe is null ? null : RecipeId.From(recipe), hash, HasDetail: true, suspension, park, escalation, answered, outcome, tokens, gates ?? []);
 }

@@ -15,11 +15,10 @@ public sealed record RecipeStatus(string Word, string? Detail)
         ArgumentNullException.ThrowIfNull(line);
         return line.Standing switch
         {
-            RecipeStanding.Revoked => new RecipeStatus("revoked", null),
-            RecipeStanding.Unapproved => new RecipeStatus("draft", null),
+            RecipeStanding.Revoked => new RecipeStatus("revoked", Detail: null),
+            RecipeStanding.Unapproved => new RecipeStatus("draft", Detail: null),
             _ when line.Stale.Count > 0 => new RecipeStatus("changed", string.Join(", ", line.Stale.Select(Reason))),
-            RecipeStanding.Approved => throw new NotImplementedException(),
-            _ => new RecipeStatus("approved", null),
+            _ => new RecipeStatus("approved", Detail: null),
         };
     }
 

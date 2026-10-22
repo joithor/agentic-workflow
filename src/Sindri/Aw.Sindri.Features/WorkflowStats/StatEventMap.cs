@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Stats;
 
 namespace Aw.Sindri.Features.WorkflowStats;
@@ -37,7 +38,7 @@ internal static class StatEventMap
             at,
             payload.From,
             payload.To,
-            delta?.Recipe,
+            delta?.Recipe is { } recipe && RecipeId.TryFrom(recipe, out var recipeId) ? recipeId : null,
             delta?.RecipeHash,
             HasDetail: delta is not null,
             delta?.Suspension?.Kind,
