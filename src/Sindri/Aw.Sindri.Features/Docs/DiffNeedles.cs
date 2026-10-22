@@ -27,18 +27,18 @@ internal static partial class DiffNeedles
 
     private static IEnumerable<string> Of(string line)
     {
-        foreach (var pattern in new[] { TypeDeclaration(), FunctionDeclaration(), MemberDeclaration() })
+        foreach (var pattern in new[] { TypeDeclaration, FunctionDeclaration, MemberDeclaration })
         {
             foreach (Match match in pattern.Matches(line))
             {
-                if (match.Groups[1].Length >= MinName)
+                if (match.Groups["name"].Length >= MinName)
                 {
-                    yield return match.Groups[1].Value;
+                    yield return match.Groups["name"].Value;
                 }
             }
         }
 
-        foreach (Match match in Flag().Matches(line))
+        foreach (Match match in Flag.Matches(line))
         {
             if (match.Length >= MinFlag)
             {
@@ -46,7 +46,7 @@ internal static partial class DiffNeedles
             }
         }
 
-        foreach (Match match in EnvVar().Matches(line))
+        foreach (Match match in EnvVar.Matches(line))
         {
             if (match.Length >= MinEnvVar)
             {
@@ -54,30 +54,30 @@ internal static partial class DiffNeedles
             }
         }
 
-        foreach (Match match in ConfigKey().Matches(line))
+        foreach (Match match in ConfigKey.Matches(line))
         {
-            if (match.Groups[1].Length >= MinKey)
+            if (match.Groups["key"].Length >= MinKey)
             {
-                yield return match.Groups[1].Value;
+                yield return match.Groups["key"].Value;
             }
         }
     }
 
-    [GeneratedRegex(@"\b(?:class|interface|struct|record|enum|trait)\s+([A-Za-z_]\w*)", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 200)]
-    private static partial Regex TypeDeclaration();
+    [GeneratedRegex(@"\b(?:class|interface|struct|record|enum|trait)\s+(?<name>[A-Za-z_]\w*)", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 200)]
+    private static partial Regex TypeDeclaration { get; }
 
-    [GeneratedRegex(@"\b(?:function|def|fn|func)\s+([A-Za-z_]\w*)\s*[(<]", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 200)]
-    private static partial Regex FunctionDeclaration();
+    [GeneratedRegex(@"\b(?:function|def|fn|func)\s+(?<name>[A-Za-z_]\w*)\s*[(<]", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 200)]
+    private static partial Regex FunctionDeclaration { get; }
 
-    [GeneratedRegex(@"\b(?:public|protected|internal|export)\b[^(=;{]*?\b([A-Za-z_]\w*)\s*[(<]", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 200)]
-    private static partial Regex MemberDeclaration();
+    [GeneratedRegex(@"\b(?:public|protected|internal|export)\b[^(=;{]*?\b(?<name>[A-Za-z_]\w*)\s*[(<]", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 200)]
+    private static partial Regex MemberDeclaration { get; }
 
     [GeneratedRegex(@"(?<![\w-])--[a-z][a-z0-9]*(?:-[a-z0-9]+)*", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 200)]
-    private static partial Regex Flag();
+    private static partial Regex Flag { get; }
 
     [GeneratedRegex(@"\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 200)]
-    private static partial Regex EnvVar();
+    private static partial Regex EnvVar { get; }
 
-    [GeneratedRegex(@"[""'`]([a-z][a-z0-9]*(?:\.[a-z][A-Za-z0-9-]*){2,})[""'`]", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 200)]
-    private static partial Regex ConfigKey();
+    [GeneratedRegex(@"[""'`](?<key>[a-z][a-z0-9]*(?:\.[a-z][A-Za-z0-9-]*){2,})[""'`]", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 200)]
+    private static partial Regex ConfigKey { get; }
 }
