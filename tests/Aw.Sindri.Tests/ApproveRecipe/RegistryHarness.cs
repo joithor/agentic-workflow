@@ -223,6 +223,7 @@ file static class EffectPortRegistrations
             .AddSingleton<Core.Scoping.IRepoCheckouts>(new Testing.Scoping.InMemoryRepoCheckouts())
             .AddSingleton<Core.Forge.IPullRequests>(new Testing.Forge.FakePullRequests(["forge.test"]))
             .AddSingleton<Core.LensPacks.IChangedPaths>(new Testing.LensPacks.FakeChangedPaths())
+            .AddSingleton<Core.Workflow.Engine.Runtime.IDiffContent>(new FakeDiffContent())
             .AddSingleton<Core.Text.ITextScrubber>(new Testing.PassThroughScrubber());
     }
 }
