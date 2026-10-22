@@ -108,6 +108,7 @@ public sealed class SetupRepoFormTests
     [InlineData("not-absolute", "That folder isn't a git checkout, or can't be read.")]
     [InlineData("already-added", "That repository is already added, or another repository has its name.")]
     [InlineData("name-taken", "That repository is already added, or another repository has its name.")]
+    [InlineData("profile-changed", "The profile changed while Sindri was writing it. Try again.")]
     [InlineData("refused-session", "Only you can do this from the app. An agent session can't.")]
     public async Task A_refusal_is_said_in_words_under_the_field_with_the_path_kept_and_focus_back_in_it(string scenario, string sentence)
     {

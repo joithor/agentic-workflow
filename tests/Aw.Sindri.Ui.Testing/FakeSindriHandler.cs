@@ -85,6 +85,7 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
     {
         var uri = request.RequestUri!; // why: HttpClient always sets it on a sent request
         var after = long.TryParse(Header(request, "X-Sindri-After"), NumberStyles.None, CultureInfo.InvariantCulture, out var carried) ? carried : 0;
+        // Order matters: CoreRoute answers first, so the lane-anchored arms below only see paths it declined.
         if (await CoreRoute(request, uri, after, cancellationToken) is { } core)
         {
             return core;
