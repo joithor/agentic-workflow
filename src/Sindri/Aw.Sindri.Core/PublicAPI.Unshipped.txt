@@ -15232,3 +15232,9 @@ static Aw.Sindri.Core.Review.ReviewPackOrigin.operator !=(Aw.Sindri.Core.Review.
 static Aw.Sindri.Core.Review.ReviewPackOrigin.operator ==(Aw.Sindri.Core.Review.ReviewPackOrigin? left, Aw.Sindri.Core.Review.ReviewPackOrigin? right) -> bool
 static Aw.Sindri.Core.Review.ReviewPack.Problems(Aw.Sindri.Core.Review.ReviewFacts! facts) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Sindri.Core.Review.ReviewPack.Verdict(System.Text.Json.Nodes.JsonNode! review) -> string?
+static readonly Aw.Sindri.Core.SindriErrors.LaunchPrePushForeign -> Aw.Kernel.ErrorDefinition!
+const Aw.Sindri.Core.Launch.LaunchEnvironment.GhConfigDirectory = "GH_CONFIG_DIR" -> string!
+const Aw.Sindri.Core.Launch.LaunchEnvironment.Worktree = "AW_SINDRI_WORKTREE" -> string!
+Aw.Sindri.Core.Launch.LaunchEnvironment
+static Aw.Sindri.Core.Launch.LaunchEnvironment.Credentials.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Launch.LaunchEnvironment.Scrub(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! env, string! worktree, string! ghConfigDir) -> System.Collections.Generic.Dictionary<string!, string!>!
