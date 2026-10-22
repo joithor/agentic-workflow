@@ -12061,9 +12061,11 @@ Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.Detail.init -> void
 const Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.LaunchReason = "launch" -> string!
 Aw.Sindri.Core.Launch.StepArgs.Brief.get -> string?
 Aw.Sindri.Core.Launch.StepArgs.Brief.init -> void
-Aw.Sindri.Core.Launch.StepArgs.Deconstruct(out string? Model, out Aw.Sindri.Core.Launch.StepPolicy? Policy, out Aw.Sindri.Core.Launch.StepRef! Ref, out string? Brief) -> void
-Aw.Sindri.Core.Launch.StepArgs.StepArgs(string? Model, Aw.Sindri.Core.Launch.StepPolicy? Policy, Aw.Sindri.Core.Launch.StepRef! Ref, string? Brief = null) -> void
-static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.RequestFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget! target, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? descriptor = null) -> Aw.Sindri.Core.Launch.LaunchRequest!
+Aw.Sindri.Core.Launch.StepArgs.Deconstruct(out string? Model, out Aw.Sindri.Core.Launch.StepPolicy? Policy, out Aw.Sindri.Core.Launch.StepRef! Ref, out string? Brief, out Aw.Sindri.Core.LensPacks.PackBundle? Bundle) -> void
+Aw.Sindri.Core.Launch.StepArgs.Bundle.get -> Aw.Sindri.Core.LensPacks.PackBundle?
+Aw.Sindri.Core.Launch.StepArgs.Bundle.init -> void
+Aw.Sindri.Core.Launch.StepArgs.StepArgs(string? Model, Aw.Sindri.Core.Launch.StepPolicy? Policy, Aw.Sindri.Core.Launch.StepRef! Ref, string? Brief = null, Aw.Sindri.Core.LensPacks.PackBundle? Bundle = null) -> void
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.RequestFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget! target, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? descriptor = null, Aw.Sindri.Core.LensPacks.PackBundle? bundle = null) -> Aw.Sindri.Core.Launch.LaunchRequest!
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepBrief
 static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepBrief.Render(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? descriptor) -> string!
 Aw.Sindri.Core.Scoping.BriefFile
@@ -15886,3 +15888,46 @@ static Aw.Sindri.Core.LensPacks.StylePack.operator ==(Aw.Sindri.Core.LensPacks.S
 Aw.Sindri.Core.LensPacks.IStylePacks
 Aw.Sindri.Core.LensPacks.IStylePacks.Find(string! id) -> Aw.Kernel.Result<Aw.Sindri.Core.LensPacks.StylePack!>!
 Aw.Sindri.Core.LensPacks.IStylePacks.Resolve(Aw.Sindri.Core.Ids.RepoName? repo, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.LensPacks.StylePack!>!>
+Aw.Sindri.Core.LensPacks.PackBundle
+Aw.Sindri.Core.LensPacks.PackBundle.<Clone>$() -> Aw.Sindri.Core.LensPacks.PackBundle!
+Aw.Sindri.Core.LensPacks.PackBundle.Deconstruct(out string! Directory, out string! PackId, out string! Hash, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Files) -> void
+Aw.Sindri.Core.LensPacks.PackBundle.Equals(Aw.Sindri.Core.LensPacks.PackBundle? other) -> bool
+Aw.Sindri.Core.LensPacks.PackBundle.PackBundle(string! Directory, string! PackId, string! Hash, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Files) -> void
+override Aw.Sindri.Core.LensPacks.PackBundle.Equals(object? obj) -> bool
+override Aw.Sindri.Core.LensPacks.PackBundle.GetHashCode() -> int
+override Aw.Sindri.Core.LensPacks.PackBundle.ToString() -> string!
+static Aw.Sindri.Core.LensPacks.PackBundle.operator !=(Aw.Sindri.Core.LensPacks.PackBundle? left, Aw.Sindri.Core.LensPacks.PackBundle? right) -> bool
+static Aw.Sindri.Core.LensPacks.PackBundle.operator ==(Aw.Sindri.Core.LensPacks.PackBundle? left, Aw.Sindri.Core.LensPacks.PackBundle? right) -> bool
+Aw.Sindri.Core.LensPacks.PackBundle.Directory.get -> string!
+Aw.Sindri.Core.LensPacks.PackBundle.Directory.init -> void
+Aw.Sindri.Core.LensPacks.PackBundle.Files.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Sindri.Core.LensPacks.PackBundle.Files.init -> void
+Aw.Sindri.Core.LensPacks.PackBundle.Hash.get -> string!
+Aw.Sindri.Core.LensPacks.PackBundle.Hash.init -> void
+Aw.Sindri.Core.LensPacks.PackBundle.PackId.get -> string!
+Aw.Sindri.Core.LensPacks.PackBundle.PackId.init -> void
+Aw.Sindri.Core.LensPacks.PackBundleRequest
+Aw.Sindri.Core.LensPacks.PackBundleRequest.<Clone>$() -> Aw.Sindri.Core.LensPacks.PackBundleRequest!
+Aw.Sindri.Core.LensPacks.PackBundleRequest.Deconstruct(out string! Bundle, out Aw.Sindri.Core.Ids.RepoName? Repo, out string? Subject, out string? Lens) -> void
+Aw.Sindri.Core.LensPacks.PackBundleRequest.Equals(Aw.Sindri.Core.LensPacks.PackBundleRequest? other) -> bool
+Aw.Sindri.Core.LensPacks.PackBundleRequest.PackBundleRequest(string! Bundle, Aw.Sindri.Core.Ids.RepoName? Repo, string? Subject, string? Lens) -> void
+override Aw.Sindri.Core.LensPacks.PackBundleRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Core.LensPacks.PackBundleRequest.GetHashCode() -> int
+override Aw.Sindri.Core.LensPacks.PackBundleRequest.ToString() -> string!
+static Aw.Sindri.Core.LensPacks.PackBundleRequest.operator !=(Aw.Sindri.Core.LensPacks.PackBundleRequest? left, Aw.Sindri.Core.LensPacks.PackBundleRequest? right) -> bool
+static Aw.Sindri.Core.LensPacks.PackBundleRequest.operator ==(Aw.Sindri.Core.LensPacks.PackBundleRequest? left, Aw.Sindri.Core.LensPacks.PackBundleRequest? right) -> bool
+Aw.Sindri.Core.LensPacks.PackBundleRequest.Bundle.get -> string!
+Aw.Sindri.Core.LensPacks.PackBundleRequest.Bundle.init -> void
+Aw.Sindri.Core.LensPacks.PackBundleRequest.Lens.get -> string?
+Aw.Sindri.Core.LensPacks.PackBundleRequest.Lens.init -> void
+Aw.Sindri.Core.LensPacks.PackBundleRequest.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
+Aw.Sindri.Core.LensPacks.PackBundleRequest.Repo.init -> void
+Aw.Sindri.Core.LensPacks.PackBundleRequest.Subject.get -> string?
+Aw.Sindri.Core.LensPacks.PackBundleRequest.Subject.init -> void
+Aw.Sindri.Core.LensPacks.IPackBundles
+Aw.Sindri.Core.LensPacks.IPackBundles.Resolve(Aw.Sindri.Core.LensPacks.PackBundleRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.LensPacks.PackBundle!>!>
+Aw.Sindri.Core.LensPacks.PackBundleNames
+const Aw.Sindri.Core.LensPacks.PackBundleNames.Lenses = "lenses" -> string!
+const Aw.Sindri.Core.LensPacks.PackBundleNames.Style = "style" -> string!
+static Aw.Sindri.Core.LensPacks.PackBundleNames.DirectoryOf(string! bundle) -> string?
+static Aw.Sindri.Core.LensPacks.PackBundleNames.Problem(string! block, string! bundle) -> string?
