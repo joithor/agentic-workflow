@@ -31,6 +31,9 @@ internal sealed partial class TypedConfirmBox : UserControl
         }
     }
 
+    /// <summary>Moves focus to the field (a host's A key), on the keyboard's ring.</summary>
+    internal void FocusField() => _ = TypedField.Focus(NavigationMethod.Tab);
+
     private void OnKey(object? sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter)
