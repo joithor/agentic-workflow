@@ -9,6 +9,11 @@ namespace Aw.CodeIndex.Core.Ports;
 /// </summary>
 public interface IEmbedder
 {
+    /// <summary>The name of the model <see cref="Embed"/> uses for these settings (the settings' model, else the pinned one); a layer's stamp and every stored vector carry it.</summary>
+    /// <param name="settings">The embeddings settings.</param>
+    /// <returns>The model name.</returns>
+    public string ModelFor(EmbeddingsSettings settings);
+
     /// <summary>The check a build does before it embeds anything, with no work.</summary>
     /// <param name="settings">The embeddings settings.</param>
     /// <param name="cancellationToken">Cancels the check.</param>

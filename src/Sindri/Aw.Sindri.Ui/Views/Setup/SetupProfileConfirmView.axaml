@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sv="using:Aw.Sindri.Ui.ViewModels.Setup"
+             xmlns:ctl="using:Aw.Sindri.Ui.Views.Controls"
+             x:Class="Aw.Sindri.Ui.Views.Setup.SetupProfileConfirmView"
+             x:DataType="sv:SetupProfileConfirmViewModel">
+  <!-- The profile row's typed approval (setup spec §2.1): the shared typed box while the catalog lets the app approve settings. It sends nothing until the exact phrase is pressed. -->
+  <StackPanel Spacing="6">
+    <Border x:Name="SetupProfileWaiting" IsVisible="{Binding IsWaiting}" AutomationProperties.Name="{Binding WaitingText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+      <TextBlock Classes="caption subtle" Text="{Binding WaitingText}" AutomationProperties.AccessibilityView="Raw" />
+    </Border>
+    <Border x:Name="SetupProfileTypedRow" IsVisible="{Binding ShowsTyped}">
+      <ctl:TypedConfirmBox x:Name="SetupProfileTypedBox" PartPrefix="SetupProfileTyped" DataContext="{Binding TypedBox}" />
+    </Border>
+    <Border x:Name="SetupProfileRefusal" IsVisible="{Binding HasRefusal}" AutomationProperties.Name="{Binding Refusal}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+      <TextBlock Classes="caption error" Text="{Binding Refusal}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+    </Border>
+  </StackPanel>
+</UserControl>

@@ -18,6 +18,12 @@ public static class CodeRules
     /// <summary>The most entries one list of the view carries.</summary>
     public const int MaxListed = 100;
 
+    /// <summary>The most symbols whose callers and callees the code lens asks the code index for (exported ones first).</summary>
+    public const int MaxCallSymbols = 20;
+
+    /// <summary>The most files one symbol read of the code index carries.</summary>
+    public const int MaxSymbolFiles = 200;
+
     /// <summary>The longest search term, in characters.</summary>
     public const int MaxTermLength = 200;
 
