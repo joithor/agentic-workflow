@@ -4,7 +4,7 @@ Sindri is built new in C# as one application (factory addendum §17.29, decision
 `sindri/`, which stays the reference for *what* a part does and keeps running until the switch. This page is the C#
 contract for stage S1, the app shell: the `sindri` binary, the control-plane process, the host lease, the ledger, the
 profile, the command layer and its API, the scheduler and `doctor`. The workflow engine (S2), context retrieval (S3),
-blocks and workflows come later and plug into it. The Avalonia UI is its own package, `SindriUi` (stage S1b, `docs/csharp/sindri-ui.md`).
+blocks and workflows come later and plug into it. The Avalonia UI is its own package, `SindriUi` (stage S1b, `docs/csharp/sindri-ui.md`). The PR babysitter's blocks and merge record: `docs/csharp/sindri-pr.md`.
 
 Tier 3 in `deps.yaml` (`src/Sindri`, full shape: Core · Features · Infrastructure · Host). Nothing installs it before
 the switch: the providers and launchd don't point at it, and `setup.sh` only through `./setup.sh --with-sindri`, whose Onyx step
