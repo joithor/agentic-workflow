@@ -14,7 +14,7 @@ public sealed class NeedsYouConfirmViewTests : FrameHost
 {
     private const string Phrase = "approve profile 70e158";
 
-    [Fact(Skip = "typed box: Dispatcher.UIThread.RunJobs() blocks after Select on a confirm row under headless; follow-up")]
+    [Fact]
     public Task The_typed_box_follows_the_bar_takes_focus_on_A_and_its_press_reaches_the_bar() => OnUi(async () =>
     {
         Server.AppChallengeAnswer = RouteAnswer.Api("workflow-challenges-app", "profile");
@@ -24,7 +24,7 @@ public sealed class NeedsYouConfirmViewTests : FrameHost
         Dispatcher.UIThread.RunJobs();
         window.UpdateLayout();
         Dispatcher.UIThread.RunJobs();
-        foreach (var pr in new[] { DispatcherPriority.Send, DispatcherPriority.Normal, DispatcherPriority.Loaded, DispatcherPriority.Layout, DispatcherPriority.Render, DispatcherPriority.Background })
+        foreach (var pr in new[] { DispatcherPriority.Send, DispatcherPriority.Normal, DispatcherPriority.Loaded, DispatcherPriority.Render, DispatcherPriority.Background })
         {
             Mark("pre " + pr);
             Dispatcher.UIThread.RunJobs(pr);
@@ -54,7 +54,7 @@ public sealed class NeedsYouConfirmViewTests : FrameHost
         Assert.False(Visible(window, "NeedsYouConfirm"));
     });
 
-    [Fact(Skip = "hold: focus lands on a Loaded-priority post, IsFocused unproven under headless; follow-up")]
+    [Fact]
     public Task The_hold_follows_the_bar_and_a_complete_hold_reaches_the_bar() => OnUi(async () =>
     {
         Server.Catalog = RouteAnswer.SpecShaped("commands", "extra-approve-all-ready");
@@ -83,5 +83,5 @@ public sealed class NeedsYouConfirmViewTests : FrameHost
         Assert.Equal(hold.MinHoldMs, Assert.Single(Server.Approvals).HeldMs);
     });
 
-    private static void Mark(string s) => File.AppendAllText("/tmp/ny3-marks.txt", s + "\n");
+    private static void Mark(string s) => System.IO.File.AppendAllText("/home/thor/repos/aw-wt/sindri-ui-needs-you-3/ny3-marks.txt", s + "\n");
 }
