@@ -1,3 +1,4 @@
+using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Features.BuildCodeIndex;
 using Aw.CodeIndex.Testing;
@@ -32,5 +33,26 @@ public sealed class BuildCodeIndexGraphEmbeddingsTests
         var texts = embedder.Batches.SelectMany(b => b).ToList();
         Assert.Contains(texts, t => t.Contains("return computeTotal();", StringComparison.Ordinal));
         Assert.Contains(texts, t => t.Contains("return 42;", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_graph_class_is_stored_class_like_and_not_embedded()
+    {
+        const string classFile = "export class Cart {\n  private marker = 'class-body-line';\n}\n";
+        using var git = A.GitRepo().WithFile("src/a.ts", classFile).WithFile("src/b.ts", FileB).Build();
+        var embedder = new FakeEmbedder();
+        var graph = new GraphSnapshot([new GraphNode("src_a_cart", "src/a.ts", "Cart", 1, 0, IsClass: true), new GraphNode("src_b_total", "src/b.ts", "computeTotal", 1, 0)], []);
+        using var index = new RealIndex(embedder: embedder, graph: new FakeGraphRunner { Graph = graph });
+        var repo = git.AsRepo("web");
+
+        var report = (await index.Service.Handle(new BuildCodeIndexRequest(repo, git.Head, new Progress<string>()), Token)).Value;
+
+        var layer = report.Layers.Single(l => l.Layer == LayerName.Embeddings);
+        Assert.Equal((1, 1, LayerState.Ok), (report.Embedded, report.Embeddable, layer.State));
+        var texts = embedder.Batches.SelectMany(b => b).ToList();
+        Assert.Contains(texts, t => t.Contains("return 42;", StringComparison.Ordinal));
+        Assert.DoesNotContain(texts, t => t.Contains("class-body-line", StringComparison.Ordinal));
+        var found = (await index.Facade.FindSymbols(RealIndex.ScopeOf(repo), new SymbolQuery("Cart", SymbolMatch.Exact, Repo: null), Token)).Value;
+        Assert.Equal(SymbolKind.Class, found.Hits.Single().Kind);
     }
 }
