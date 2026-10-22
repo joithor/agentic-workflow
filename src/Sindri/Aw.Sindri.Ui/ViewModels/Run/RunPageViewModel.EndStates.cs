@@ -7,7 +7,6 @@ namespace Aw.Sindri.Ui.ViewModels.Run;
 internal sealed partial class RunPageViewModel
 {
     private string? _failureInstance;   // the instance whose events say why: the failed stage's child, else the line
-    private string? _failureToken;      // the run token of the failed step, when its instance served one
     private long _failureAt;            // a Show counter: an events answer for an older Show is dropped
     private bool _failureHeard;
 
@@ -37,12 +36,12 @@ internal sealed partial class RunPageViewModel
         var end = graph.Nodes.FirstOrDefault(n => n.Kind == RunNodeKind.End && IsReached(line, n));
         HasEnded = end is not null;
         var bad = RunEndStates.BadStage(graph);
-        var failed = bad is { State: RunNodeState.Failed } || end?.State == RunNodeState.Failed || (end?.State == RunNodeState.DidntWorkOut && bad is not null);
+        var failed = HasFailed(end, bad);
         _failureAt++;
         _failureHeard = false;
-        (_failureInstance, _failureToken) = failed ? FailureSource(line, bad, children) : (null, null);
+        _failureInstance = failed ? bad?.ChildId ?? line.Id : null;
         HasFailure = failed;
-        FailureStep = bad is null ? string.Empty : bad.Steps.FirstOrDefault(s => s.State == RunNodeState.Failed)?.Name ?? bad.Name;
+        FailureStep = FailedStepName(bad);
         FailureText = failed ? Labels.RunNoDetail : string.Empty;
         NextOptions = end is null ? [] : OptionsOf(line);
         if (end is not null)
@@ -52,21 +51,15 @@ internal sealed partial class RunPageViewModel
         }
     }
 
-    // The failed stage's child holds the step runs; with none read the line's own events are all there is.
-    private static (string Instance, string? Token) FailureSource(InstanceDetail line, RunNode? bad, IReadOnlyDictionary<string, InstanceDetail> children)
-    {
-        if (bad?.ChildId is { } id && children.TryGetValue(id, out var child))
-        {
-            var run = child.StepRuns?.LastOrDefault(r => r.State is "failed" or "refused");
-            return (id, run?.Token);
-        }
+    private static bool HasFailed(RunNode? end, RunNode? bad) =>
+        bad?.State == RunNodeState.Failed || end?.State == RunNodeState.Failed || (end?.State == RunNodeState.DidntWorkOut && bad is not null);
 
-        return (bad?.ChildId ?? line.Id, null);
-    }
+    private static string FailedStepName(RunNode? bad) =>
+        bad is null ? string.Empty : bad.Steps.Where(s => s.State == RunNodeState.Failed).Select(s => s.Name).FirstOrDefault() ?? bad.Name;
 
     private string Took(InstanceDetail line, IReadOnlyDictionary<string, InstanceDetail> children)
     {
-        var began = children.Values.SelectMany(c => c.StepRuns ?? []).Select(r => (DateTimeOffset?)r.StartedAt).Min();
+        var began = children.Values.SelectMany(c => c.StepRuns ?? []).Min(r => (DateTimeOffset?)r.StartedAt);
         return began is { } from
             ? Labels.RunTook(Labels.Duration((long)Math.Max(0, (line.Since - from).TotalSeconds)))
             : Labels.RunEndedAgo(Labels.Duration((long)Math.Max(0, (clock.GetUtcNow() - line.Since).TotalSeconds)));
@@ -79,7 +72,7 @@ internal sealed partial class RunPageViewModel
     // Reads the events of the failed instance and puts the reason of its last failed step in the block.
     private async Task ReadWhatWentWrong(Uri url, long at, CancellationToken cancellationToken)
     {
-        if (!HasFailure || _failureInstance is not { } instance || _failureHeard)
+        if (_failureHeard || !HasFailure || _failureInstance is not { } instance)
         {
             return;
         }
@@ -90,9 +83,8 @@ internal sealed partial class RunPageViewModel
             return;
         }
 
-        var failures = events.Value.Events.Where(e => string.Equals(e.Transition?.Trigger, "step.failed", StringComparison.Ordinal)).ToList();
-        var own = failures.LastOrDefault(e => _failureToken is not null && string.Equals(e.Transition?.Run, _failureToken, StringComparison.Ordinal));
-        if ((own ?? failures.LastOrDefault())?.Transition?.Reason is { Length: > 0 } reason)
+        var last = events.Value.Events.LastOrDefault(e => string.Equals(e.Transition?.Trigger, "step.failed", StringComparison.Ordinal));
+        if (last?.Transition?.Reason is { Length: > 0 } reason)
         {
             FailureText = Labels.RunReason(reason);
         }
@@ -100,8 +92,3 @@ internal sealed partial class RunPageViewModel
         _failureHeard = true;
     }
 }
-
-/// <summary>One thing to do after a run ended.</summary>
-/// <param name="Text">The words.</param>
-/// <param name="Link">Where it goes.</param>
-internal sealed record RunNextOption(string Text, DeepLink Link);

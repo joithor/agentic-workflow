@@ -4,6 +4,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
+using Labels = Aw.Sindri.Ui.ViewModels.Labels;
 using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.ViewModels.Run;
 using Microsoft.Extensions.Time.Testing;
@@ -36,7 +37,7 @@ public sealed class RunPageEndStatesTests
     private static InstanceDetail FailedPlanChild()
     {
         var child = RunFixtures.Child("plan", ("produce", StateGlyph.Active, false), ("check", StateGlyph.Pending, false));
-        var run = new StepRun("review.1", "produce", 1, null, "failed", "agent", A.Noon.AddHours(-4), A.Noon.AddHours(-3), 3_600_000, null, null, null);
+        var run = new StepRun("review.1", "produce", Attempt: 1, MaxAttempts: null, "failed", "agent", A.Noon.AddHours(-4), A.Noon.AddHours(-3), DurationMs: 3_600_000, Outcome: null, Tokens: null, Actor: null);
         return child with { StepRuns = [run] };
     }
 
