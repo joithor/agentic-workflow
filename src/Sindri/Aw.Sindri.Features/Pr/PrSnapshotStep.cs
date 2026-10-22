@@ -69,11 +69,42 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
         var work = threads.Value.Where(t => !t.Resolved && !Own(t) && !latest.Value.ContainsKey(t.Key)).ToList();   // a marked comment is handled (spec: a mark not superseded by an edit); the forge port has no login, so Sindri's replies are told apart by their markers alone
         var outcome = Outcome(pull.Value, work.Count, docs.Value);
         var state = State(pull.Value, outcome, new Conversation(threads.Value, work, latest.Value), docs.Value);
-        state["workspaceAhead"] = await WorkspaceAhead(context, pull.Value.HeadSha, cancellationToken).ConfigureAwait(false);
+        return await Report(context, new Snapshot(pull.Value, outcome, state), cancellationToken).ConfigureAwait(false);
+    }
+
+    private async ValueTask<BlockStepResult> Report(StepContext context, Snapshot snapshot, CancellationToken cancellationToken)
+    {
+        var (pull, outcome, state) = snapshot;
+        state["workspaceAhead"] = await WorkspaceAhead(context, pull.HeadSha, cancellationToken).ConfigureAwait(false);
+        state["outcome"] = outcome;
+        var recorded = await Record(context, snapshot, cancellationToken).ConfigureAwait(false);
+        if (recorded.IsError)
+        {
+            return BlockStepResult.Failed($"step.pr.snapshot can't append to the merge record: {recorded.Error.Message}");
+        }
+
         return outcome is "merged" or "mergedDocsOpen"
-            ? StepFacts.Done(outcome, ("fact:prState", state), ("fact:mergedSha", JsonValue.Create(StepFacts.Field(StepFacts.Read(context, "fact:merge"), "mergedSha") ?? pull.Value.HeadSha)))
+            ? StepFacts.Done(outcome, ("fact:prState", state), ("fact:mergedSha", JsonValue.Create(StepFacts.Field(StepFacts.Read(context, "fact:merge"), "mergedSha") ?? pull.HeadSha)))
             : StepFacts.Done(outcome, ("fact:prState", state));
     }
+
+    // The snapshot row (spec §4.7), when the outcome or the head differs from the previous snapshot's. Its identity is the previous snapshot's time, so a retry of this Step writes it once.
+    private async ValueTask<Result<bool>> Record(StepContext context, Snapshot snapshot, CancellationToken cancellationToken)
+    {
+        var (pull, outcome, state) = snapshot;
+        var previous = StepFacts.Read(context, "fact:prState");
+        if (context.Address is not { Length: > 0 } address
+            || (string.Equals(StepFacts.Field(previous, "outcome"), outcome, StringComparison.Ordinal) && string.Equals(StepFacts.Field(previous, "headSha"), pull.HeadSha, StringComparison.Ordinal)))
+        {
+            return false;
+        }
+
+        var fields = new JsonObject { ["outcome"] = outcome, ["checks"] = state["checks"]?.DeepClone(), ["queue"] = state["queue"]?.DeepClone() };
+        var identity = $"{address}:snapshot:{StepFacts.Field(previous, "at") ?? "first"}";
+        return await record.Append(new MergeRow(address, identity, "snapshot", pull.HeadSha, fields), cancellationToken).ConfigureAwait(false);
+    }
+
+    private sealed record Snapshot(PullView Pull, string Outcome, JsonObject State);
 
     // The docs pull request the instance holds, with whether the owner skipped the docs; null when it holds none.
     private async ValueTask<Result<DocsRead?>> ReadDocs(StepContext context, CancellationToken cancellationToken)
