@@ -18,7 +18,7 @@ public sealed class SetupMeasuresTests : IDisposable
 
     private async Task<SetupMeasured> Tick()
     {
-        _ = await _rig.Slice.HoldLease();
+        await _rig.Lease();
         _rig.Enter();
         var steps = await new SetupDeriver(_facts).Derive(AddRepoRig.Token);
         var recorder = new SetupStepRecorder(_rig.Slice.Held, _rig.Slice.Store, _rig.Slice.Store, _rig.Slice.Events, _rig.Slice.Callers, _log);
@@ -65,7 +65,7 @@ public sealed class SetupMeasuresTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task First_item_is_the_time_from_done_to_the_first_workflow_start_after_it_and_is_measured_once()
     {
-        _ = await _rig.Slice.HoldLease();
+        await _rig.Lease();
         await StartWorkflow();
         var done = InMemorySetupFacts.AllDone();
         (_facts.RepoAnswer, _facts.ProfileAnswer, _facts.RecipesAnswer, _facts.McpAnswer, _facts.MapAnswer, _facts.OnyxAnswer) = (done.RepoAnswer, done.ProfileAnswer, done.RecipesAnswer, done.McpAnswer, done.MapAnswer, done.OnyxAnswer);
