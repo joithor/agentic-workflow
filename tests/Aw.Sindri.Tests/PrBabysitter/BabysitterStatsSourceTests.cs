@@ -43,7 +43,7 @@ public sealed class BabysitterStatsSourceTests
                 return ValueTask.FromResult<Result<IReadOnlyList<StatEvent>>>(KernelErrors.NotFound.With("no ledger"));
             }
 
-            return ValueTask.FromResult(Results.Success<IReadOnlyList<StatEvent>>(events ?? []));
+            return ValueTask.FromResult(Results.Success(events ?? []));
         }
     }
 

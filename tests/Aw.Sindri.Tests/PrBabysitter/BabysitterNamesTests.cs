@@ -9,7 +9,7 @@ namespace Aw.Sindri.Tests.PrBabysitter;
 [Lane(TestLane.Unit)]
 public sealed class BabysitterNamesTests
 {
-    private static readonly Aw.Sindri.Core.Workflow.Recipes.Recipe _recipe =
+    private static readonly Core.Workflow.Recipes.Recipe _recipe =
         RecipeReaderTests.Reader.Read(ShippedRecipes.Read("sindri/workflow.pr-babysitter.yaml"), "workflow.pr-babysitter.yaml").Document!.Recipe;   // why: the shipped recipes bind (ShippedRecipesTests)
 
     [Fact]
