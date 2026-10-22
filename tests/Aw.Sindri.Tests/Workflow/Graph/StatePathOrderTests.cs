@@ -208,7 +208,7 @@ public sealed class StatePathOrderTests
     public static IReadOnlyDictionary<string, string> PinnedHashes { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         ["sindri/workflow.phase.yaml"] = "sha256:03a8d5cafcc171938c4ba29881867f8fc6b904fab5d31d1651f6a3cb5233c803",
-        ["sindri/workflow.pr-babysitter.yaml"] = "sha256:b1d039e3de49a6515cf87e960b3942f029bf9528dbe1a1b2b8d7ca098a959d7c",
+        ["sindri/workflow.pr-babysitter.yaml"] = "sha256:c8ef713dafde63e15e59531daea9fe6ad256ee1458aee5120f5e6821af1dd86f",
         ["sindri/workflow.build.yaml"] = "sha256:72a55242fb5faeabd18c0b02a1f65a185ba5fdc851137910a1a1be94d83879e0",
         ["sindri/workflow.prove.yaml"] = "sha256:b1fcb181fdaed9795555cd342511d64154eb98bfe6fc0ccff6314f3f5a81f648",
         ["sindri/workflow.item.yaml"] = "sha256:fbd360859893f44e3d8c2bd83de7ee8edd760fb66f5541c99f5edb0e89406176",
