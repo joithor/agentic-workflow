@@ -5824,7 +5824,7 @@ const Aw.Sindri.Core.Views.ViewNames.NeedsYou = "needs_you" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Profile = "profile" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Requests = "requests" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Services = "services" -> string!
-const Aw.Sindri.Core.Views.ViewSchema.Version = 7 -> int
+const Aw.Sindri.Core.Views.ViewSchema.Version = 8 -> int
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Cancelled = "outbox.cancelled" -> string!
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Dispatched = "outbox.dispatched" -> string!
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Pending = "outbox.pending" -> string!
@@ -16568,7 +16568,30 @@ Aw.Sindri.Core.Events.WorkflowEventDelta.Recipe.init -> void
 Aw.Sindri.Core.Events.WorkflowEventDelta.RecipeHash.get -> string?
 Aw.Sindri.Core.Events.WorkflowEventDelta.RecipeHash.init -> void
 Aw.Sindri.Core.Workflow.Registry.RecipeRegistryReader.ChildRecipeIds(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Ids.RecipeId>!>!>
+const Aw.Sindri.Core.Views.ViewNames.RecipeStats = "recipe-stats" -> string!
+Aw.Sindri.Core.Views.IViewRows.Clear(string! view, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Workflow.Stats.IRecipeStatsCache
+Aw.Sindri.Core.Workflow.Stats.IRecipeStatsCache.Get(Aw.Sindri.Core.Workflow.Ids.RecipeId recipe, string? hash, Aw.Sindri.Core.Workflow.Stats.StatsWindow! window, System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Stats.RecipeStats?>!>
+Aw.Sindri.Core.Workflow.Stats.IRecipeStatsCache.Put(Aw.Sindri.Core.Workflow.Stats.RecipeStats! stats, long head, System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+readonly Aw.Sindri.Core.Workflow.Stats.IRecipeStatsCache.MaxAge -> System.TimeSpan
+Aw.Sindri.Core.Workflow.Stats.RecipeStatsKey
+static Aw.Sindri.Core.Workflow.Stats.RecipeStatsKey.Of(string! recipe, string? hash, string! window) -> string!
+Aw.Sindri.Core.Workflow.Stats.RecipeStatsRow
+Aw.Sindri.Core.Workflow.Stats.RecipeStatsRow.<Clone>$() -> Aw.Sindri.Core.Workflow.Stats.RecipeStatsRow!
+Aw.Sindri.Core.Workflow.Stats.RecipeStatsRow.Stats.get -> Aw.Sindri.Core.Workflow.Stats.RecipeStats!
+Aw.Sindri.Core.Workflow.Stats.RecipeStatsRow.Stats.init -> void
+Aw.Sindri.Core.Workflow.Stats.RecipeStatsRow.CachedAt.get -> System.DateTimeOffset
+Aw.Sindri.Core.Workflow.Stats.RecipeStatsRow.CachedAt.init -> void
+Aw.Sindri.Core.Workflow.Stats.RecipeStatsRow.Deconstruct(out Aw.Sindri.Core.Workflow.Stats.RecipeStats! Stats, out System.DateTimeOffset CachedAt) -> void
+Aw.Sindri.Core.Workflow.Stats.RecipeStatsRow.Equals(Aw.Sindri.Core.Workflow.Stats.RecipeStatsRow? other) -> bool
+Aw.Sindri.Core.Workflow.Stats.RecipeStatsRow.RecipeStatsRow(Aw.Sindri.Core.Workflow.Stats.RecipeStats! Stats, System.DateTimeOffset CachedAt) -> void
+override Aw.Sindri.Core.Workflow.Stats.RecipeStatsRow.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Stats.RecipeStatsRow.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Stats.RecipeStatsRow.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Stats.RecipeStatsRow.operator !=(Aw.Sindri.Core.Workflow.Stats.RecipeStatsRow? left, Aw.Sindri.Core.Workflow.Stats.RecipeStatsRow? right) -> bool
+static Aw.Sindri.Core.Workflow.Stats.RecipeStatsRow.operator ==(Aw.Sindri.Core.Workflow.Stats.RecipeStatsRow? left, Aw.Sindri.Core.Workflow.Stats.RecipeStatsRow? right) -> bool
 Aw.Sindri.Core.Workflow.Stats.IWorkflowStatRows
+Aw.Sindri.Core.Workflow.Stats.IWorkflowStatRows.Head(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<long>!>
 Aw.Sindri.Core.Workflow.Stats.IWorkflowStatRows.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Stats.StatEvent!>!>!>
 Aw.Sindri.Core.Forge.PullThread.CreatedAt.get -> System.DateTimeOffset
 Aw.Sindri.Core.Forge.PullThread.CreatedAt.init -> void
@@ -16752,3 +16775,6 @@ Aw.Sindri.Core.Forge.IPullRequests.DefaultBranch(Aw.Sindri.Core.Forge.PullRepo! 
 Aw.Sindri.Core.Forge.IPullRequests.Digest(System.Collections.Generic.IReadOnlyList<string!>! links, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Forge.PullDigest!>!>!>
 Aw.Sindri.Core.Forge.PullView.Base.get -> string!
 Aw.Sindri.Core.Forge.PullView.Base.init -> void
+Aw.Sindri.Core.Workflow.Stats.RecipeStatsSource
+Aw.Sindri.Core.Workflow.Stats.RecipeStatsSource.Of(Aw.Sindri.Core.Workflow.Ids.RecipeId recipe, string? hash, Aw.Sindri.Core.Workflow.Stats.StatsWindow! window, bool pinned, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Stats.RecipeStats!>!>
+Aw.Sindri.Core.Workflow.Stats.RecipeStatsSource.RecipeStatsSource(Aw.Sindri.Core.Workflow.Stats.IWorkflowStatRows! rows, System.TimeProvider! clock, Aw.Sindri.Core.Workflow.Stats.IRecipeStatsCache? cache = null) -> void

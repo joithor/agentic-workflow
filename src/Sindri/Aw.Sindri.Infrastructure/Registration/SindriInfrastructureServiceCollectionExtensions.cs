@@ -25,12 +25,13 @@ using Aw.Sindri.Core.Secrets;
 using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
+using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Core.Workflow.Shipped;
-using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Workflow.Stats;
 using Aw.Sindri.Core.Worktrees;
 using Aw.Sindri.Infrastructure.Auth;
 using Aw.Sindri.Infrastructure.Forge;
@@ -126,6 +127,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<ViewsDatabase>()
             .AddSingleton<IViewStore, SqliteViewStore>()
             .AddSingleton<IViewReader, SqliteViewReader>()
+            .AddSingleton<IRecipeStatsCache, SqliteRecipeStatsCache>()
             .AddSingleton<IJobViews, SqliteJobViews>().AddSingleton<IServicePauses, ViewServicePauses>()
             .AddSingleton<IProfileSource>(sp => new YamlProfileSource(sp.GetRequiredService<SindriSettings>(), sp.GetRequiredService<JsonSerializerOptions>(), () => HeavyCap.Read(environment, sp.GetRequiredService<SindriSettings>().StateDirectory)))
             .AddSingleton<IApprovals, FileApprovals>()
