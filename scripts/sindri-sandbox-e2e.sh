@@ -193,7 +193,19 @@ publish_sindri() {
   (cd "$tree" && $pre dotnet publish src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj -c Release --no-self-contained \
     -p:AwRecipesDir="$tree/recipes/sindri" -o "$out") </dev/null >"$log" 2>&1 || { tail -20 "$log" >&2; die "publishing sindri failed"; }
   [ -x "$out/sindri" ] || die "the publish left no sindri in $out"
-  say "published sindri at $commit"
+  # The C# judge beside it (NativeAOT, as sindri-app.sh publishes it): step.judge.choose runs `judge choose` through
+  # AW_SINDRI_JUDGE, and the judge on the PATH is the TypeScript one, which has no choose. Published apart, then the
+  # binary and its bundled e_sqlite3 are copied next to sindri.
+  local jout="$SCRATCH/judge-bin" rid f
+  rid="$(dotnet --info | awk '/^ *RID:/ {print $2; exit}')"
+  say "publishing judge (NativeAOT, $rid) into $out"
+  # shellcheck disable=SC2086 # $pre is the heavy launcher and its flag
+  (cd "$tree" && $pre dotnet publish src/Judge/Aw.Judge.Host/Aw.Judge.Host.csproj -c Release -r "$rid" \
+    -p:RestoreLockedMode=false -o "$jout") </dev/null >>"$log" 2>&1 || { tail -20 "$log" >&2; die "publishing judge failed"; }
+  [ -x "$jout/judge" ] || die "the publish left no judge in $jout"
+  cp "$jout/judge" "$out/judge"
+  for f in "$jout"/libe_sqlite3.*; do if [ -f "$f" ]; then cp "$f" "$out/"; fi; done
+  say "published sindri and judge at $commit"
   SINDRI_CMD="$out/sindri"
 }
 
@@ -214,9 +226,8 @@ write_profile() {
       echo "  sessions: { enabled: true }"
     fi
     echo "workflow:"
-    # the effect ids the code registers (grep '\"effect\\.' src/Sindri); effect.pr.open and effect.line.start-phase, which the docs
-    # name, are not registered
-    echo "  effects: [effect.line.report, effect.claim.ref, effect.notify.desk, effect.pr.push, effect.pr.reply, effect.pr.record, effect.pr.rerun-checks, effect.pr.restack, effect.pr.create-stacked, effect.pr.merge, effect.pr.merge-docs]"
+    # the effect ids the code registers (grep '\"effect\\.' src/Sindri)
+    echo "  effects: [effect.line.report, effect.claim.ref, effect.pr.open, effect.notify.desk, effect.pr.push, effect.pr.reply, effect.pr.record, effect.pr.rerun-checks, effect.pr.restack, effect.pr.create-stacked, effect.pr.merge, effect.pr.merge-docs, effect.pr.purge-marks, effect.line.start-phase]"
     echo "  forge: { adapter: file, hosts: [forge.test] }"
     if [ -n "$AGENT" ]; then echo "  agent: { target: $AGENT }"; fi
   } > "$file"
@@ -398,6 +409,14 @@ main() {
   # 2. the binary
   if [ -n "$sindri_cmd" ]; then SINDRI_CMD="$sindri_cmd"; else publish_sindri; fi
   export SINDRI="$SINDRI_CMD"
+  # serve (started by the first human call) runs step.judge.choose: point it at the C# judge beside the binary (published
+  # here, or next to --sindri), unless the caller named one.
+  if [ -z "${AW_SINDRI_JUDGE:-}" ] && [ -x "$(dirname "$SINDRI_CMD")/judge" ]; then AW_SINDRI_JUDGE="$(dirname "$SINDRI_CMD")/judge"; fi
+  if [ -n "${AW_SINDRI_JUDGE:-}" ]; then
+    export AW_SINDRI_JUDGE; say "judge: $AW_SINDRI_JUDGE"
+  else
+    say "judge: none beside sindri and AW_SINDRI_JUDGE unset; step.judge.choose falls back to the judge on the PATH"
+  fi
 
   # 3. the target repo: a local clone on a new branch
   REPO="$SCRATCH/repo"

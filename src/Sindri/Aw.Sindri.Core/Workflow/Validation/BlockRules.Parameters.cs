@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using Aw.Sindri.Core.LensPacks;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Recipes;
 
@@ -61,6 +62,30 @@ internal sealed partial class BlockRules
             {
                 yield return source.Finding("RCP-BLOCK-003", path, $"provider '{name}' isn't one of {known}", $"use one of {known}");
             }
+        }
+    }
+
+    /// <summary>
+    /// A Step's 'bundle' names the pack the runtime copies into its directory (LN-WF5): the plain word 'style' or 'lenses', and the one its Step works from, so a lens Step
+    /// can't be handed the style pack. Checked against the descriptor's 'bundle' parameter (RCP-BLOCK-003).
+    /// </summary>
+    private static IEnumerable<RecipeFinding> Bundles(BlockReference reference, BlockDescriptor descriptor, RecipeSource source)
+    {
+        const string name = "bundle";
+        if (!reference.With.TryGetValue(name, out var value) || !descriptor.Parameters.Any(static p => p.Name == name))
+        {
+            yield break;
+        }
+
+        var path = $"{reference.Path}.with.{name}";
+        var id = descriptor.Id.Value;
+        if (value.Fact is not null)
+        {
+            yield return source.Finding("RCP-BLOCK-003", path, $"parameter '{name}' of '{id}' takes the plain word '{PackBundleNames.Style}' or '{PackBundleNames.Lenses}', not a fact", $"give it {PackBundleNames.Style} or {PackBundleNames.Lenses}");
+        }
+        else if (value.Literal is { ValueKind: JsonValueKind.String } literal && PackBundleNames.Problem(id, literal.GetString() ?? string.Empty) is { } problem)
+        {
+            yield return source.Finding("RCP-BLOCK-003", path, $"parameter '{name}' of '{id}' {problem}", $"give it {(id.StartsWith("step.lens.", StringComparison.Ordinal) ? PackBundleNames.Lenses : PackBundleNames.Style)}");
         }
     }
 

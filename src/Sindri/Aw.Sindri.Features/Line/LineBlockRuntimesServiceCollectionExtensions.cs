@@ -14,6 +14,8 @@ internal static class LineBlockRuntimesServiceCollectionExtensions
         .AddBlockRuntime<DesignCheckStep>()
         .AddBlockRuntime<DesignEvidenceStep>()
         .AddBlockRuntime<DesignIntakeStep>()
+        .AddBlockRuntime<LineDispatchStep>()
+        .AddBlockRuntime<LineSeedStep>()
         .AddBlockRuntime<PlanCheckStep>()
         .AddBlockRuntime<PlanEvidenceStep>()
         .AddBlockRuntime<PlanFreezeStep>()
