@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Map;
+using Aw.Kernel.Ids;
 using Aw.Kernel.Json;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
@@ -31,10 +32,12 @@ internal sealed class SetupFactsRig : IAsyncDisposable
         Facts = new SetupFacts(
             new ProfileSetupReader(Profiles, Profiles),
             _scope.ServiceProvider.GetRequiredService<Core.Workflow.Registry.RecipeRegistryReader>(),
-            new OnyxStatusReader(Onyx.Pins, new OnyxFacts(Onyx.Runtime, Onyx.Probes, new FakeSindriHome(OnyxUpRig.Home)), Onyx.Health, Onyx.Workspace),
+            new OnyxSetupReader(new OnyxStatusReader(Onyx.Pins, new OnyxFacts(Onyx.Runtime, Onyx.Probes, new FakeSindriHome(OnyxUpRig.Home)), Onyx.Health, Onyx.Workspace), Slice.Store, Slice.Events, Jobs),
             new McpSetupReader(Profiles, Host),
             new MapSetupReader(Profiles, Engine.Proxy, Jobs));
     }
+
+    internal SliceHarness Slice { get; } = new();
 
     internal InMemoryProfiles Profiles { get; } = new();
 
@@ -49,6 +52,16 @@ internal sealed class SetupFactsRig : IAsyncDisposable
     internal OnyxUpRig Onyx { get; } = new();
 
     internal SetupFacts Facts { get; }
+
+    /// <summary>Records the owner's choice about Onyx ('onyx.deferred') as the ledger holds it.</summary>
+    /// <param name="deferred">The choice.</param>
+    /// <returns>A task.</returns>
+    internal async Task Choose(bool deferred)
+    {
+        var grant = Slice.Held.Current!;
+        var id = Slice.Ids.New<CommandId>();
+        _ = await Slice.Store.Append(Slice.Events.Entry(Core.Events.EventTypes.OnyxDeferred, new Core.Events.OnyxDeferred(id, deferred), "onyx.deferred:" + id.Value), grant, Token);
+    }
 
     internal static CancellationToken Token => TestContext.Current.CancellationToken;
 

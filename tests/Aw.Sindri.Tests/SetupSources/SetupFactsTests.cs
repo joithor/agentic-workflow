@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Setup;
+using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.SetupSources;
 
@@ -111,7 +112,7 @@ public sealed class SetupFactsTests
     [Fact, Trait("Lane", "unit")]
     public async Task Mcp_counts_a_repo_registered_only_when_every_installed_provider_has_it_and_lists_where()
     {
-        var host = new Testing.FakeProviderHost();
+        var host = new FakeProviderHost();
         var withAll = new SetupFactsRig(host);
         await using (withAll)
         {
@@ -222,5 +223,29 @@ public sealed class SetupFactsTests
 
         Assert.Equal(("SND-ONYX-001", false), (blocked.BlockedByCode, blocked.Unreachable));
         Assert.True(silent.Unreachable);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    public async Task Onyx_is_deferred_when_the_latest_choice_in_the_ledger_says_so(bool latest, bool expected)
+    {
+        await using var rig = new SetupFactsRig();
+        _ = await rig.Slice.HoldLease();
+        using var entered = rig.Slice.Callers.Enter(A.Caller().Human().Build());
+        await rig.Choose(deferred: true);
+        await rig.Choose(latest);
+
+        var fact = (await rig.Facts.Onyx(Token)).Value;
+
+        Assert.Equal(expected, fact.Deferred);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Onyx_is_not_deferred_before_any_choice()
+    {
+        await using var rig = new SetupFactsRig();
+
+        Assert.False((await rig.Facts.Onyx(Token)).Value.Deferred);
     }
 }

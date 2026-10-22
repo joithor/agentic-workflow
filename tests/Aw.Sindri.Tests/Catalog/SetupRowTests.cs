@@ -9,14 +9,21 @@ public sealed class SetupRowTests
     [Theory, Trait("Lane", "unit")]
     [InlineData("AddRepo", "POST", "/setup/repos", "sindri repo add <path>", "pending:SO-A3")]
     [InlineData("RegisterMcp", "POST", "/setup/mcp", "sindri mcp register --apply", "pending:SO-A4")]
-    [InlineData("SetupOnyx", "POST", "/onyx/setup", "sindri onyx up", "pending:SO-A5")]
-    [InlineData("ConnectOnyx", "POST", "/onyx/account", "sindri onyx connect", "pending:SO-A5")]
-    [InlineData("DeferOnyx", "POST", "/onyx/defer", "sindri onyx defer", "pending:SO-A5")]
-    public void Each_desk_action_has_a_pending_row_with_its_route_and_cli_form(string action, string method, string route, string cli, string ui)
+    [InlineData("ConnectOnyx", "POST", "/onyx/account", "sindri onyx connect", "ready")]
+    [InlineData("DeferOnyx", "POST", "/onyx/defer", "sindri onyx defer", "ready")]
+    public void Each_desk_action_has_a_row_with_its_route_and_cli_form(string action, string method, string route, string cli, string ui)
     {
         var row = Assert.Single(new CommandCatalog().Rows, r => r.Action.Value == action);
 
         Assert.Equal((ActionClass.Desk, method, "/sindri" + route, cli, ui, false, false), (row.Class, row.Method, row.Route, row.Cli.Text, row.Ui, row.NeedsTerminal, row.Destructive));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_Onyx_setup_is_a_ready_job_row()
+    {
+        var row = Assert.Single(new CommandCatalog().Rows, r => r.Action.Value == "SetupOnyx");
+
+        Assert.Equal((ActionClass.Job, "POST", "/sindri/onyx/setup", "sindri onyx up", "ready"), (row.Class, row.Method, row.Route, row.Cli.Text, row.Ui));
     }
 
     [Fact, Trait("Lane", "unit")]
