@@ -37,6 +37,24 @@ public sealed class FakePull(PullRepo repo, int number, string head, string head
     /// <summary>Gets or sets the marker the pull request was opened with.</summary>
     public string? Marker { get; set; }
 
+    /// <summary>Gets or sets whether the forge says it merges cleanly; null while it computes.</summary>
+    public bool? Mergeable { get; set; } = true;
+
+    /// <summary>Gets or sets the review decision.</summary>
+    public string? ReviewDecision { get; set; }
+
+    /// <summary>Gets or sets the checks' state.</summary>
+    public PullChecksState ChecksState { get; set; } = PullChecksState.None;
+
+    /// <summary>Gets or sets the commit the checks ran on; null means the head.</summary>
+    public string? ChecksSha { get; set; }
+
+    /// <summary>Gets the names of the failing checks.</summary>
+    public IList<string> FailingChecks { get; } = [];
+
+    /// <summary>Gets the conversation, oldest first.</summary>
+    public IList<PullThread> Threads { get; } = [];
+
     /// <summary>Gets the pull request's link.</summary>
     public string Link => string.Create(CultureInfo.InvariantCulture, $"https://{Repo.Host}/{Repo.Owner}/{Repo.Name}/pull/{Number}");
 }

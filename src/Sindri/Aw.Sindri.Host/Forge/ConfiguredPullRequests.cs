@@ -22,6 +22,12 @@ internal sealed class ConfiguredPullRequests(IApprovedProfile approved, Func<str
     public ValueTask<Result<PullView>> Get(string link, CancellationToken cancellationToken)
         => Call(pulls => pulls.Get(link, cancellationToken), cancellationToken);
 
+    public ValueTask<Result<IReadOnlyList<PullThread>>> Threads(string link, CancellationToken cancellationToken)
+        => Call(pulls => pulls.Threads(link, cancellationToken), cancellationToken);
+
+    public ValueTask<Result<string>> Self(CancellationToken cancellationToken)
+        => Call(pulls => pulls.Self(cancellationToken), cancellationToken);
+
     public ValueTask<Result<string>> CheckLog(string link, string check, CancellationToken cancellationToken)
         => Call(pulls => pulls.CheckLog(link, check, cancellationToken), cancellationToken);
 

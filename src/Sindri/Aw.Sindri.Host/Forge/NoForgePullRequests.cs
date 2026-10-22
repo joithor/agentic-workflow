@@ -9,6 +9,10 @@ internal sealed class NoForgePullRequests : IPullRequests
 {
     public ValueTask<Result<PullView>> Get(string link, CancellationToken cancellationToken) => None<PullView>();
 
+    public ValueTask<Result<IReadOnlyList<PullThread>>> Threads(string link, CancellationToken cancellationToken) => None<IReadOnlyList<PullThread>>();
+
+    public ValueTask<Result<string>> Self(CancellationToken cancellationToken) => None<string>();
+
     public ValueTask<Result<string>> CheckLog(string link, string check, CancellationToken cancellationToken) => None<string>();
 
     public ValueTask<Result<PullPushOutcome>> Push(PullPush push, CancellationToken cancellationToken) => None<PullPushOutcome>();

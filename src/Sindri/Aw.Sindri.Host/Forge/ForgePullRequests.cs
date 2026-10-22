@@ -41,6 +41,28 @@ internal sealed class ForgePullRequests(IForge forge) : IPullRequests
         return new PullView(pull.Link, State(s.Status), s.Head.Sha, s.Mergeable, s.ReviewDecision, open, new PullChecks(Checks(s.Checks.State), s.Checks.Sha, s.Checks.Failing));
     }
 
+    public async ValueTask<Result<IReadOnlyList<PullThread>>> Threads(string link, CancellationToken cancellationToken)
+    {
+        var parsed = forge.Parse(link);
+        if (parsed.IsError)
+        {
+            return PullErrors.From(parsed.Error);
+        }
+
+        var threads = await forge.ListThreads(parsed.Value, cancellationToken).ConfigureAwait(false);
+        if (threads.IsError)
+        {
+            return PullErrors.From(threads.Error);
+        }
+
+        IReadOnlyList<PullThread> list = [.. threads.Value.Select(static t => new PullThread(t.Key, t.Kind.ToString().ToLowerInvariant(), t.Author, t.Association, t.IsBot, t.Resolved, t.Outdated, t.Path, t.Body, t.Markers))];
+        return Results.Success(list);
+    }
+
+    // why: the forge package has no identity call yet; until it does, the snapshot goes without Sindri's login and the queue's marker check still keeps its own replies out.
+    public ValueTask<Result<string>> Self(CancellationToken cancellationToken)
+        => ValueTask.FromResult<Result<string>>(SindriErrors.ForgeUnavailable.With("the forge port does not report which login the credential acts as"));
+
     public async ValueTask<Result<string>> CheckLog(string link, string check, CancellationToken cancellationToken)
     {
         var pull = forge.Parse(link);

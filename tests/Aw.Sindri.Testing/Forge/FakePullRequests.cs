@@ -38,7 +38,24 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     public ValueTask<Result<PullView>> Get(string link, CancellationToken cancellationToken)
     {
         Calls.Add("Get");
-        return Done(Locate(link).Map(p => new PullView(p.Link, p.State, p.HeadSha, Mergeable: true, ReviewDecision: null, UnresolvedThreads: 0, new PullChecks(PullChecksState.None, p.HeadSha, []))));
+        return Done(Locate(link).Map(p => new PullView(p.Link, p.State, p.HeadSha, p.Mergeable, p.ReviewDecision, p.Threads.Count(static t => t.Kind == "thread" && !t.Resolved), new PullChecks(p.ChecksState, p.ChecksSha ?? p.HeadSha, [.. p.FailingChecks]))));
+    }
+
+    /// <summary>Gets or sets the login the fake credential acts as; null answers an error.</summary>
+    public string? SelfLogin { get; set; }
+
+    /// <inheritdoc />
+    public ValueTask<Result<IReadOnlyList<PullThread>>> Threads(string link, CancellationToken cancellationToken)
+    {
+        Calls.Add("Threads");
+        return Done(Locate(link).Map(p => (IReadOnlyList<PullThread>)[.. p.Threads]));
+    }
+
+    /// <inheritdoc />
+    public ValueTask<Result<string>> Self(CancellationToken cancellationToken)
+    {
+        Calls.Add("Self");
+        return Done<string>(SelfLogin is { } login ? Results.Success(login) : SindriErrors.ForgeUnavailable.With("no login"));
     }
 
     /// <inheritdoc />
