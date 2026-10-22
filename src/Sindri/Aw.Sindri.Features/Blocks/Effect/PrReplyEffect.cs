@@ -24,8 +24,6 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 /// <param name="scrubber">Takes secrets out of a reply's text before the forge gets it.</param>
 internal sealed class PrReplyEffect(IPullRequests pulls, IFactContents facts, IPrCommentMarks marks, TimeProvider clock, ITextScrubber scrubber) : IEffectKind, IDescribedBlock
 {
-    private readonly ITextScrubber _scrubber = scrubber;   // red: not applied yet
-
     private const int MarkerLimit = 128;
 
     /// <inheritdoc/>
@@ -74,7 +72,7 @@ internal sealed class PrReplyEffect(IPullRequests pulls, IFactContents facts, IP
 
         var delivered = reaction
             ? await pulls.React(new PullReaction(link, thread, text, marker), cancellationToken).ConfigureAwait(false)
-            : await pulls.Reply(new PullReply(link, thread, text, marker), cancellationToken).ConfigureAwait(false);
+            : await pulls.Reply(new PullReply(link, thread, scrubber.Scrub(text), marker), cancellationToken).ConfigureAwait(false);
         if (delivered.IsError)
         {
             return delivered.Error;
@@ -155,7 +153,7 @@ internal sealed class PrReplyEffect(IPullRequests pulls, IFactContents facts, IP
         var commit = mark.Commit!;   // why: the caller filtered to marks with a commit
         var effect = $"{context.Identity}:{mark.CommentId.Value}";
         var text = $"Fixed in {(commit.Length > 7 ? commit[..7] : commit)}.";
-        var delivered = await pulls.Reply(new PullReply(link, mark.CommentId.Value, text, Marker(effect)), cancellationToken).ConfigureAwait(false);
+        var delivered = await pulls.Reply(new PullReply(link, mark.CommentId.Value, scrubber.Scrub(text), Marker(effect)), cancellationToken).ConfigureAwait(false);
         if (delivered.IsError)
         {
             return delivered.Error;
