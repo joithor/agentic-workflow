@@ -30,9 +30,9 @@ public sealed class PrePushGuardTests : IDisposable
 
         Assert.Null(error);
         var hook = HookPath(repo);
-        var refused = await RunHook(hook, worktree: "/work/wt");
-        Assert.Equal(1, refused.Exit);
-        Assert.Contains(SindriErrors.LaunchPushRefused.Code, refused.Error, StringComparison.Ordinal);
+        var (Exit, Error) = await RunHook(hook, worktree: "/work/wt");
+        Assert.Equal(1, Exit);
+        Assert.Contains(SindriErrors.LaunchPushRefused.Code, Error, StringComparison.Ordinal);
     }
 
     [Fact]
