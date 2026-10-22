@@ -53,6 +53,7 @@ internal static class BlockRegistrations
         .AddRecipeGates()
         .AddEffect<ClaimRefEffect>()      // engine P6 unit (d)
         .AddEffect<NotifyDeskEffect>()    // engine P6 unit (c)
+        .AddEffect<LineReportEffect>()    // LN-WF1: a phase's shipped and merged, recorded for its line
         .AddEvent(RecipeEvents.ItemRouted)
         .AddEvent(RecipeEvents.ClaimCreated)
         .AddEvent(RecipeEvents.NotifyDelivered)
@@ -90,8 +91,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PhaseSteps.Seed)
         .AddBlockDescriptor(PhaseSteps.Drift)
         .AddBlockDescriptor(PhaseSteps.Decide)
-        .AddBlockDescriptor(BabysitSteps.Watch)
-        .AddBlockDescriptor(LineEffects.Report);
+        .AddBlockDescriptor(BabysitSteps.Watch);
 
     /// <summary>Registers the line's build and prove stations' Steps (line spec §7.2, §7.3), descriptors only.</summary>
     /// <param name="services">The service collection.</param>
@@ -108,6 +108,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(ProveSteps.BeforeAfter)
         .AddBlockDescriptor(ProveSteps.Holdout)
         .AddBlockDescriptor(ProveSteps.HoldoutLog)
+        .AddBlockDescriptor(ProveSteps.Collect)
         .AddBlockDescriptor(ProveSteps.Evidence)
         .AddBlockDescriptor(ProveSteps.FailLog);
 
