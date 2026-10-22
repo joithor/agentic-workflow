@@ -22,7 +22,7 @@ public sealed class JudgeStepTests
         return rig;
     }
 
-    private static Aw.Sindri.Core.Workflow.Blocks.StepContext Context(params (string Key, string Json)[] extra) =>
+    private static Core.Workflow.Blocks.StepContext Context(params (string Key, string Json)[] extra) =>
         BugFixRig.Context("step.bugfix.judge", [("check", BugFixRig.Check), ("candidate", Candidate), ("evidenceSummary", BugFixRig.Evidence), .. extra]);
 
     [Theory]
@@ -42,7 +42,7 @@ public sealed class JudgeStepTests
         Assert.Equal("c1", (string?)verdict["candidate"]);
         Assert.Equal(outcome, (string?)verdict["decision"]);
         Assert.Equal("fake-reason", (string?)verdict["reasonCode"]);
-        Assert.Equal<string?>(["the fake judged it"], verdict["reasons"]!.AsArray().Select(static r => (string?)r), StringComparer.Ordinal);
+        Assert.Equal(["the fake judged it"], verdict["reasons"]!.AsArray().Select(static r => (string?)r), StringComparer.Ordinal);
         Assert.True((bool?)verdict["asked"]);
     }
 
