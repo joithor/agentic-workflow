@@ -2,7 +2,6 @@ using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Checks;
 using Aw.Sindri.Core.Ids;
-using Aw.Sindri.Core.Locks;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Prove;
