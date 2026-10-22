@@ -229,6 +229,7 @@ internal sealed class SetupStepViewModel : ObservableObject
         DetailText = IsFinished || running ? string.Empty : Step.Detail ?? string.Empty;
         ErrorText = running ? string.Empty : Step.Error?.Sentence ?? string.Empty;
         Name = Labels.SetupStepName(Title, said, Sub);
+        Preview = IsFinished ? [] : [.. (Step.Preview ?? []).Select(l => new SetupPreviewLineViewModel(l.Kind, l.Text))];
         DeriveProgress();
     }
 
@@ -246,31 +247,10 @@ internal sealed class SetupStepViewModel : ObservableObject
         Action = _overrideNote is null ? _action(Step, Action) : null;
         Fields = Details();
         HintText = IsFailed && string.Equals(Step.Id, "map", StringComparison.Ordinal) && _overrideNote is null ? Labels.SetupMapRetries : string.Empty;
-        Agents = string.Equals(Step.Id, "mcp", StringComparison.Ordinal) ? AgentLines() : [];
+        Agents = string.Equals(Step.Id, "mcp", StringComparison.Ordinal) ? SetupAgentLines.For(Step.Items ?? [], _overrideNote is not null || IsRunning) : [];
         Repo?.Update(Step);
         Onyx?.Update(Step, _overrideNote is not null);
     }
-
-    // Claude Code, Codex and Cursor: connected when every repo line names the agent, connecting while the step runs, else not started.
-    private List<SetupAgentViewModel> AgentLines()
-    {
-        var items = Step.Items ?? [];
-        var running = _overrideNote is not null || IsRunning;
-        return
-        [
-            .. Labels.SetupAgentNames.Select(agent =>
-            {
-                var connected = items.Count > 0 && items.All(i => Names(i.Detail, agent));
-                var (word, chip) = connected ? (Labels.SetupAgentConnected, Labels.SetupChip("done"))
-                    : running ? (Labels.SetupAgentConnecting, Labels.SetupChip("running"))
-                    : (Labels.SetupAgentNotStarted, Labels.SetupChip("todo"));
-                return new SetupAgentViewModel(agent, word, new StateChip(chip.Word, chip.Tone));
-            }),
-        ];
-    }
-
-    private static bool Names(string? detail, string agent) =>
-        detail is not null && detail.Split(',', StringSplitOptions.TrimEntries).Contains(agent, StringComparer.OrdinalIgnoreCase);
 
     private List<SetupFieldViewModel> Details()
     {
