@@ -445,6 +445,8 @@ catalog itself lands in P1. Every domain payload carries `commandId` (or the `se
 | `job.progress` | job, round, line, item?, repo? | `job.progress:<jobId>:<n>` | yes | P6 |
 | `job.finished` | job, outcome, summary, code?, result?, item?, repo? | `job.finished:<jobId>` | yes (result left out of the public form) | P6 |
 | `job.cancelled` | job, by, item?, repo? | `job.cancelled:<jobId>` | yes | P6 |
+| `job.waiting` **(SO-A5)** | job, signal, item?, repo? | `job.waiting:<jobId>:<n>` | yes | setup-once SO-A5 |
+| `job.resumed` **(SO-A5)** | job, signal, item?, repo? | `job.resumed:<jobId>:<n>` | yes | setup-once SO-A5 |
 | `service.paused`, `service.resumed` | service | `service.paused:<name>:<commandId>` | yes | P6 |
 | `item.linked` | item, record key, alias | `item.linked:<itemId>:<record>` | yes | context Phase 6 only (`service:context-sync`); a `CreateItem` with `link` stores it on `item.created` and gives no alias, so `GET /items/<tracker key>` resolves only after a later `item.linked` |
 | `item.open-requested` | `launchId`, item, mode, target, chosenBy | `item.open-requested:<launchId>` | yes | P10 |

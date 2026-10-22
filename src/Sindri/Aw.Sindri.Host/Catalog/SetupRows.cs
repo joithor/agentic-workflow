@@ -1,5 +1,8 @@
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Features.ConnectOnyx;
+using Aw.Sindri.Features.DeferOnyx;
+using Aw.Sindri.Features.SetupOnyx;
 
 namespace Aw.Sindri.Host.Catalog;
 
@@ -13,10 +16,14 @@ internal static class SetupRows
     [
         Pending("AddRepo", "/sindri/setup/repos", "sindri repo add <path>", "SO-A3"),
         Pending("RegisterMcp", "/sindri/setup/mcp", "sindri mcp register --apply", "SO-A4") with { ServiceGrants = ["setup"] },
-        Pending("SetupOnyx", "/sindri/onyx/setup", "sindri onyx up", "SO-A5"),
-        Pending("ConnectOnyx", "/sindri/onyx/account", "sindri onyx connect", "SO-A5"),
-        Pending("DeferOnyx", "/sindri/onyx/defer", "sindri onyx defer", "SO-A5"),
+        JobRows.Job("SetupOnyx", typeof(SetupOnyxRequest), "/sindri/onyx/setup", "sindri onyx up"),
+        Ready("ConnectOnyx", typeof(ConnectOnyxRequest), "/sindri/onyx/account", "sindri onyx connect"),
+        Ready("DeferOnyx", typeof(DeferOnyxRequest), "/sindri/onyx/defer", "sindri onyx defer"),
     ];
+
+    private static CommandRow Ready(string action, Type request, string route, string cli) =>
+        new(ActionId.From(action), request, Variant: null, ActionClass.Desk, ServiceGrants: [], NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false,
+            Shortcut: null, "POST", route, ShellRows.Form(cli), "ready");
 
     private static CommandRow Pending(string action, string route, string cli, string unit) =>
         new(ActionId.From(action), CommandType: null, Variant: null, ActionClass.Desk, ServiceGrants: [], NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false,
