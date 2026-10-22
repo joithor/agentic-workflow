@@ -101,10 +101,7 @@ internal static class CommandTable
             ["status", .. var rest] when Follow(rest) is { } json => await new FollowVerbs(client, probe, output, services.GetRequiredService<TimeProvider>()).Run(json, ct).ConfigureAwait(false),
             ["status", .. var rest] when Json(rest) is { } json => await verbs.Status(json, ct).ConfigureAwait(false),
             ["stop"] => await verbs.Stop(ct).ConfigureAwait(false),
-            ["profile", "validate", .. var rest] when Json(rest) is { } json => await verbs.Validate(json, ct).ConfigureAwait(false),
-            ["profile", "init", .. var rest] when Json(rest) is { } json => await verbs.InitProfile(json, ct).ConfigureAwait(false),
-            ["profile", "approve", .. var rest] when Approval(rest) is { } a => await new Verbs(client, probe, output, services, c => start.EnsureRunning(!a.NoStart, c))
-                .Approve(a.Hash, Interactive(), Console.In, ct).ConfigureAwait(false),
+            ["profile", ..] => await Profile(args, verbs, a => new Verbs(client, probe, output, services, c => start.EnsureRunning(!a.NoStart, c)), output, ct).ConfigureAwait(false),
             ["views", "rebuild", .. var rest] when NoStart(rest) is { } noStart => await new Verbs(client, probe, output, services, c => start.EnsureRunning(!noStart, c))
                 .RebuildViews(ct).ConfigureAwait(false),
             ["open", .. var rest] => await new OpenCommand(client, output, start.EnsureRunning, services.GetRequiredService<TimeProvider>()).Run(rest, ct).ConfigureAwait(false),
@@ -125,6 +122,15 @@ internal static class CommandTable
             _ => await UnknownVerb(args, output).ConfigureAwait(false),
         };
     }
+
+    /// <summary>'sindri profile validate|init|approve …'.</summary>
+    private static async Task<int> Profile(string[] args, Verbs verbs, Func<(string? Hash, bool NoStart), Verbs> approving, Output output, CancellationToken ct) => args switch
+    {
+        ["profile", "validate", .. var rest] when Json(rest) is { } json => await verbs.Validate(json, ct).ConfigureAwait(false),
+        ["profile", "init", .. var rest] when Json(rest) is { } json => await verbs.InitProfile(json, ct).ConfigureAwait(false),
+        ["profile", "approve", .. var rest] when Approval(rest) is { } a => await approving(a).Approve(a.Hash, Interactive(), Console.In, ct).ConfigureAwait(false),
+        _ => await UnknownVerb(args, output).ConfigureAwait(false),
+    };
 
     /// <summary>'sindri agents|setup|code-index …': the read-only verbs that only call the control plane.</summary>
     private static async Task<int> ReadVerbs(string[] args, ControlPlaneClient client, Output output, CancellationToken ct) => args switch
