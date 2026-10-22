@@ -16,7 +16,7 @@ public sealed class RankerArmsTests
     [Fact, Trait("Lane", "unit")]
     public void The_arms_have_their_names_and_run_today()
     {
-        Assert.Equal(["ranker-rrf", "ranker-features", "ranker-rerank"], Arms.Ranker.Select(Arms.Name));
+        Assert.Equal(["ranker-rrf", "ranker-features", "ranker-rerank"], Arms.Ranker.Select(Arms.Name), StringComparer.Ordinal);
         Assert.All(Arms.Ranker, a => Assert.Null(Arms.PendingStage(a)));
     }
 

@@ -18,15 +18,13 @@ public sealed class RankFeaturesTests
 
     [Fact, Trait("Lane", "unit")]
     public void Edge_type_ranks_a_deciding_record_over_a_quoting_one_over_a_mentioning_one()
-    {
-        Assert.Equal([1d, 0.7, 0.4, 0.2, 0d], [RankFeatures.Edge(EdgeType.Decides), RankFeatures.Edge(EdgeType.Quotes), RankFeatures.Edge(EdgeType.Mentions), RankFeatures.Edge(EdgeType.Implements), RankFeatures.Edge(null)]);
-    }
+    =>
+        Assert.Equal([1d, 0.7, 0.4, 0.2, 0d], [RankFeatures.Edge(EdgeType.Decides), RankFeatures.Edge(EdgeType.Quotes), RankFeatures.Edge(EdgeType.Mentions), RankFeatures.Edge(EdgeType.Implements), RankFeatures.Edge(edge: null)]);
 
     [Fact, Trait("Lane", "unit")]
     public void Provenance_ranks_human_over_deterministic_over_model()
-    {
-        Assert.Equal([1d, 0.7, 0.4, 0d], [RankFeatures.Source(Provenance.Human), RankFeatures.Source(Provenance.Deterministic), RankFeatures.Source(Provenance.Model), RankFeatures.Source(null)]);
-    }
+    =>
+        Assert.Equal([1d, 0.7, 0.4, 0d], [RankFeatures.Source(Provenance.Human), RankFeatures.Source(Provenance.Deterministic), RankFeatures.Source(Provenance.Model), RankFeatures.Source(provenance: null)]);
 
     [Fact, Trait("Lane", "unit")]
     public void A_superseded_record_scores_zero_and_one_that_stands_scores_one() =>
@@ -41,5 +39,5 @@ public sealed class RankFeaturesTests
         Assert.Equal(expected, RankFeatures.Recency(_now.AddDays(-daysAgo), _now), 12);
 
     [Fact, Trait("Lane", "unit")]
-    public void An_unknown_link_date_scores_zero_recency() => Assert.Equal(0d, RankFeatures.Recency(null, _now));
+    public void An_unknown_link_date_scores_zero_recency() => Assert.Equal(0d, RankFeatures.Recency(linked: null, _now));
 }

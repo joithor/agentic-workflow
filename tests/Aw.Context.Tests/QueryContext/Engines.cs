@@ -68,7 +68,7 @@ internal static class Engines
         var intents = intentStore ?? new FakeIntentStore();
         var graphs = new MapReader(store, intents);
         var repos = new FakeRepoReader(Repos[0], "0a1b2c3d4e5f60718293a4b5c6d7e8f901234567", new Dictionary<string, string>(StringComparer.Ordinal));
-        return new ContextEngine(new QueryContextService(catalog, scrubbers, new SequentialIdGenerator(), clock, graphs, intents, repos),
+        return new ContextEngine(new QueryContextService(scrubbers, new SequentialIdGenerator(), clock, new LiveInputs(graphs, catalog, repos), intents, new FakeModelPort()),
             new ContextSources(new SourcesStatusService(docs, catalog, scrubbers, intents, clock), new RefreshDocsService(docs, scrubbers), new SyncSourcesService(catalog, scrubbers, graphs, intents, new FakeModelPort(), new SyncLocks(), clock), intents), scrubbers, Map(clock, store, scrubbers),
             new ContextGraph(new ShowNodeService(graphs, scrubbers), new ListNeighborsService(graphs, scrubbers), new FindPathService(graphs, scrubbers),
                 new GetLensesService(graphs, new LensBasisReader(repos, intents, clock), scrubbers), new GetLensesSetService(graphs, new LensBasisReader(repos, intents, clock), scrubbers), new GetFileMapService(graphs, repos, new NoCodeSymbolSource()),

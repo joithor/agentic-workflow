@@ -34,8 +34,8 @@ public sealed class FeatureRankerTests
         var ranked = FeatureRanker.Apply(fused, new Dictionary<string, RecordSignals>(StringComparer.Ordinal) { ["repo:b"] = _best }, new FeatureWeights(), _now);
 
         Assert.Equal(["repo:b", "repo:a"], ranked.Select(r => r.Key.Value), StringComparer.Ordinal);
-        Assert.Equal((1d / 62) * 2, ranked[0].Score, 12);
-        Assert.Equal((1d / 61) * 1.2, ranked[1].Score, 12);
+        Assert.Equal(1d / 62 * 2, ranked[0].Score, 12);
+        Assert.Equal(1d / 61 * 1.2, ranked[1].Score, 12);
     }
 
     [Fact, Trait("Lane", "unit")]

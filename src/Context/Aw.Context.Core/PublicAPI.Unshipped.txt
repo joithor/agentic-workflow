@@ -627,10 +627,8 @@ Aw.Context.Core.Eval.Backtest.ArmPassLine.Tokens.get -> string!
 Aw.Context.Core.Eval.Backtest.ArmPassLine.Tokens.init -> void
 Aw.Context.Core.Eval.Backtest.ArmQuestion
 Aw.Context.Core.Eval.Backtest.ArmQuestion.<Clone>$() -> Aw.Context.Core.Eval.Backtest.ArmQuestion!
-Aw.Context.Core.Eval.Backtest.ArmQuestion.ArmQuestion(Aw.Context.Core.Engine.ContextScope! Scope, Aw.Context.Core.Engine.ContextQuery! Query, Aw.Context.Core.Map.VisibleMap? Map, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.IContextSource!>! Sources, System.DateTimeOffset AsOf) -> void
 Aw.Context.Core.Eval.Backtest.ArmQuestion.AsOf.get -> System.DateTimeOffset
 Aw.Context.Core.Eval.Backtest.ArmQuestion.AsOf.init -> void
-Aw.Context.Core.Eval.Backtest.ArmQuestion.Deconstruct(out Aw.Context.Core.Engine.ContextScope! Scope, out Aw.Context.Core.Engine.ContextQuery! Query, out Aw.Context.Core.Map.VisibleMap? Map, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.IContextSource!>! Sources, out System.DateTimeOffset AsOf) -> void
 Aw.Context.Core.Eval.Backtest.ArmQuestion.Equals(Aw.Context.Core.Eval.Backtest.ArmQuestion? other) -> bool
 Aw.Context.Core.Eval.Backtest.ArmQuestion.Map.get -> Aw.Context.Core.Map.VisibleMap?
 Aw.Context.Core.Eval.Backtest.ArmQuestion.Map.init -> void
@@ -6473,3 +6471,8 @@ static Aw.Context.Core.Ranking.RecordSignals.operator !=(Aw.Context.Core.Ranking
 static Aw.Context.Core.Ranking.RecordSignals.operator ==(Aw.Context.Core.Ranking.RecordSignals? left, Aw.Context.Core.Ranking.RecordSignals? right) -> bool
 static Aw.Context.Core.Ranking.RerankOrder.Apply(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Ranking.FusedItem!>! items, int top, System.Collections.Generic.IReadOnlyList<int>! order) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Ranking.FusedItem!>!
 static Aw.Context.Core.Ranking.RerankOrder.Parse(string! answer, int asked) -> System.Collections.Generic.IReadOnlyList<int>?
+Aw.Context.Core.Eval.Backtest.ArmQuestion.ArmQuestion(Aw.Context.Core.Engine.ContextScope! Scope, Aw.Context.Core.Engine.ContextQuery! Query, Aw.Context.Core.Map.VisibleMap? Map, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.IContextSource!>! Sources, System.DateTimeOffset AsOf, Aw.Context.Core.Ranking.RankerMode? Ranker = null) -> void
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Deconstruct(out Aw.Context.Core.Engine.ContextScope! Scope, out Aw.Context.Core.Engine.ContextQuery! Query, out Aw.Context.Core.Map.VisibleMap? Map, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.IContextSource!>! Sources, out System.DateTimeOffset AsOf, out Aw.Context.Core.Ranking.RankerMode? Ranker) -> void
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Ranker.get -> Aw.Context.Core.Ranking.RankerMode?
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Ranker.init -> void
+static readonly Aw.Context.Core.ContextErrors.RerankUnavailable -> Aw.Kernel.ErrorDefinition!

@@ -14,5 +14,16 @@ internal sealed record RankerPlan(bool Features, FeatureWeights Weights, bool Re
     /// <param name="settings">The profile's ranker settings.</param>
     /// <param name="mode">The arm's mode, or null.</param>
     /// <returns>The plan.</returns>
-    internal static RankerPlan For(RankerSettings settings, RankerMode? mode) => throw new NotSupportedException();
+    internal static RankerPlan For(RankerSettings settings, RankerMode? mode)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        return mode switch
+        {
+            null => new RankerPlan(settings.Features, settings.Weights, settings.Rerank, settings.RerankTop),
+            RankerMode.Rrf => new RankerPlan(Features: false, settings.Weights, Rerank: false, settings.RerankTop),
+            RankerMode.Features => new RankerPlan(Features: true, settings.Weights, Rerank: false, settings.RerankTop),
+            RankerMode.Rerank => new RankerPlan(Features: true, settings.Weights, Rerank: true, settings.RerankTop),
+            _ => throw new ArgumentOutOfRangeException(nameof(mode)),
+        };
+    }
 }
