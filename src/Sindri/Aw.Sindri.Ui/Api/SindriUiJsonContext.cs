@@ -73,4 +73,9 @@ namespace Aw.Sindri.Ui.Api;
 [JsonSerializable(typeof(Jobs.JobView))]
 [JsonSerializable(typeof(JobStarted))]
 [JsonSerializable(typeof(Setup.SetupView))]
+[JsonSerializable(typeof(Setup.AddRepoRequest))]
+[JsonSerializable(typeof(Setup.RegisterMcpRequest))]
+[JsonSerializable(typeof(Setup.OnyxLogin))]
+[JsonSerializable(typeof(Setup.OnyxDeferRequest))]
+[JsonSerializable(typeof(Setup.OnyxDeferView))]
 internal sealed partial class SindriUiJsonContext : JsonSerializerContext;

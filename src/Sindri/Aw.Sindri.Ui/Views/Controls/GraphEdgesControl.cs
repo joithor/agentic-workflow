@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Rendering;
+using Aw.Sindri.Ui.ViewModels.Context.Layout;
 
 namespace Aw.Sindri.Ui.Views.Controls;
 
@@ -82,7 +83,7 @@ internal sealed class GraphEdgesControl : Control, ICustomHitTest
     {
         for (var i = _built.Count - 1; i >= 0; i--)
         {
-            if (_built[i].Edge.Route.DistanceTo(point) <= _built[i].Edge.HitWidth / 2)
+            if (_built[i].Edge.Route.DistanceTo(point.ToMap()) <= _built[i].Edge.HitWidth / 2)
             {
                 return _built[i].Edge.Key;
             }
@@ -125,7 +126,7 @@ internal sealed class GraphEdgesControl : Control, ICustomHitTest
                 context.DrawGeometry(brush: null, StrokePen(edge, lit ? hi : EdgeBrush(edge, wire)), geometry);
             }
 
-            foreach (var end in new[] { edge.Route.Start, edge.Route.End })
+            foreach (var end in new[] { edge.Route.Start.ToAvalonia(), edge.Route.End.ToAvalonia() })
             {
                 ports[end] = ports.TryGetValue(end, out var seen) ? (seen.Lit || lit, seen.Dimmed && dim) : (lit, dim);
             }

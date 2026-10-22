@@ -90,7 +90,7 @@ public sealed class RecipeDeclarationsTests
         var legacy = LegacyJson(yaml);
         var current = JsonNode.Parse(AwJson.Serialize(RecipeReaderTests.Bind(yaml) with { Hash = null }, SliceHarness.Json))!.AsObject();
 
-        Assert.Equal(["name", "outputs", "urgency"], current.Select(p => p.Key).Except(legacy.Select(p => p.Key), StringComparer.Ordinal).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal(["displayName", "name", "outputs", "urgency"], current.Select(p => p.Key).Except(legacy.Select(p => p.Key), StringComparer.Ordinal).Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.NotEqual(LegacyHash(yaml), RecipeHashing.Of(RecipeReaderTests.Bind(yaml), SliceHarness.Json));
     }
 }

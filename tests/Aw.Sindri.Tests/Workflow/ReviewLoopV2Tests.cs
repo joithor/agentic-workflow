@@ -13,11 +13,11 @@ public sealed class ReviewLoopV2Tests
     private static Recipe Load() => RecipeComposition.ReadClean(ShippedRecipes.Read(Path), "workflow.review-loop.yaml").Recipe;
 
     [Fact, Trait("Lane", "unit")]
-    public void The_recipe_is_version_3_and_validates_against_the_shipped_catalog()
+    public void The_recipe_is_version_4_and_validates_against_the_shipped_catalog()
     {
         var document = RecipeComposition.ReadClean(ShippedRecipes.Read(Path), "workflow.review-loop.yaml");
 
-        Assert.Equal(3, document.Recipe.Version);   // 3: the typed escalation (BS-12)
+        Assert.Equal(4, document.Recipe.Version);   // 4: the round log is an input, so round 1 holds fact:lensRounds (LN-PK lite); the typed escalation (BS-12) and the display fields (SO-E1) came with it
         Assert.Empty(RecipeComposition.Errors(document, FixtureCatalog.Shipped(), new InMemoryChildRecipes()));
     }
 
@@ -32,8 +32,21 @@ public sealed class ReviewLoopV2Tests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Both_inputs_stay_required_and_the_change_carries_the_branch()
-        => Assert.Equal(["fact:change", "fact:phasePacket"], Load().Inputs.Select(static i => i.Key.Value), StringComparer.Ordinal);
+    public void The_inputs_are_the_change_the_phase_packet_and_the_round_log_so_round_one_holds_it()
+        => Assert.Equal(["fact:change", "fact:phasePacket", "fact:lensRounds"], Load().Inputs.Select(static i => i.Key.Value), StringComparer.Ordinal);
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_phase_starts_each_review_with_an_empty_round_log()
+    {
+        var phase = RecipeComposition.ReadClean(ShippedRecipes.Read("sindri/workflow.phase.yaml"), "workflow.phase.yaml").Recipe;
+
+        var inputs = phase.States["review"].WaitFor!.Child!.Inputs;   // why: 'review' is the phase's child wait
+
+        Assert.Equal(2, phase.Version);   // 2: passes the empty round log (LN-PK lite)
+        var log = inputs[FactKey.From("fact:lensRounds")];
+        Assert.Equal("[]", log.Literal!.Value.GetRawText());
+        Assert.Null(log.Fact);
+    }
 
     [Fact, Trait("Lane", "unit")]
     public void The_graph_runs_round_lens_log_and_ends_clean_through_record()

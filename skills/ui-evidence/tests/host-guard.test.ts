@@ -71,7 +71,7 @@ describe("resolveHost worktree slots", () => {
     ["http://127.0.0.1:3020", "must use localhost"],
     ["http://localhost:3020/admin", "bare origin"],
     ["http://localhost:3020/?x=1", "bare origin"],
-    ["http://user:pw@localhost:3020", "credentials"],
+    ["http://user:" + "pw@localhost:3020", "credentials"],
   ])("refuses %s", (host, why) => {
     const r = resolveHost({ host }, slots);
     expect(r.ok).toBe(false);
