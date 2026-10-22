@@ -72,6 +72,25 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
         return Done(Locate(link).Map(_ => 0));
     }
 
+    /// <summary>Plays the reviewer: adds an inline thread to the pull request at a link.</summary>
+    /// <param name="link">The pull request's link.</param>
+    /// <param name="body">The thread's text.</param>
+    /// <returns>The thread's key.</returns>
+    public string SeedThread(string link, string body)
+    {
+        var pull = Locate(link).Value;
+        var key = string.Create(CultureInfo.InvariantCulture, $"thread-{pull.Threads.Count + 1}");
+        pull.Threads.Add(new PullThread(key, PullCommentKind.Thread, "reviewer", "MEMBER", IsBot: false, Resolved: false, Outdated: false, "src/a.cs", body, []));
+        return key;
+    }
+
+    /// <inheritdoc />
+    public ValueTask<Result<IReadOnlyList<PullThread>>> Threads(string link, CancellationToken cancellationToken)
+    {
+        Calls.Add("Threads");
+        return Done(Locate(link).Map<IReadOnlyList<PullThread>>(p => [.. p.Threads]));
+    }
+
     /// <inheritdoc />
     public ValueTask<Result<OpenedPull?>> Find(FindPull query, CancellationToken cancellationToken)
     {

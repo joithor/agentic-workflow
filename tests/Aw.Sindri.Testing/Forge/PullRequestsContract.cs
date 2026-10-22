@@ -68,6 +68,29 @@ public abstract class PullRequestsContract
         Expect.Equal(opened, byHead);
     }
 
+    /// <summary>Threads lists none for a new pull request and, after a reviewer comments, the thread with its key, author and untouched body.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task Threads_lists_what_a_reviewer_wrote()
+    {
+        var (run, opened) = await Open();
+
+        var before = Ok(await run.Pulls.Threads(opened.Link, Ct), "Threads before");
+        var key = run.SeedThread(opened.Link, "Please fix this");
+        var after = Ok(await run.Pulls.Threads(opened.Link, Ct), "Threads after");
+        var view = Ok(await run.Pulls.Get(opened.Link, Ct), "Get");
+
+        Expect.Equal(0, before.Count);
+        var thread = Expect.Only(after);
+        Expect.Equal(key, thread.Key);
+        Expect.Equal(PullCommentKind.Thread, thread.Kind);
+        Expect.Equal("reviewer", thread.Author);
+        Expect.Equal("Please fix this", thread.Body);
+        Expect.True(!thread.Resolved && !thread.IsBot);
+        Expect.Equal(1, view.UnresolvedThreads);
+        Expect.Equal("SND-FORGE-003", Failure(await run.Pulls.Threads(MissingLink(run), Ct)));
+    }
+
     /// <summary>Update succeeds on a pull request and answers SND-FORGE-003 for one that isn't there.</summary>
     /// <returns>A task.</returns>
     [Fact]

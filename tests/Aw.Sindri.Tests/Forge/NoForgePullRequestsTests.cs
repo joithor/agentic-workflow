@@ -23,6 +23,7 @@ public sealed class NoForgePullRequestsTests
         Assert.Equal("SND-FORGE-001", Code(await pulls.RerunChecks(Link, "a", ct)));
         Assert.Equal("SND-FORGE-001", Code(await pulls.Find(new FindPull(Repo, "feature/x", Marker: null), ct)));
         Assert.Equal("SND-FORGE-001", Code(await pulls.Open(new OpenPull(Repo, "feature/x", "main", "a", "T", "B", Draft: false, Marker: null), ct)));
+        Assert.Equal("SND-FORGE-001", Code(await pulls.Threads(Link, ct)));
         Assert.Equal("SND-FORGE-001", Code(await pulls.Update(Link, "T", body: null, ct)));
     }
 

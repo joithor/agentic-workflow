@@ -96,6 +96,20 @@ internal sealed class ForgePullRequests(IForge forge) : IPullRequests
         return count.IsError ? PullErrors.From(count.Error) : count.Value;
     }
 
+    public async ValueTask<Result<IReadOnlyList<PullThread>>> Threads(string link, CancellationToken cancellationToken)
+    {
+        var pull = forge.Parse(link);
+        if (pull.IsError)
+        {
+            return PullErrors.From(pull.Error);
+        }
+
+        var threads = await forge.ListThreads(pull.Value, cancellationToken).ConfigureAwait(false);
+        return threads.IsError
+            ? PullErrors.From(threads.Error)
+            : Results.Success<IReadOnlyList<PullThread>>([.. threads.Value.Select(static t => new PullThread(t.Key, Kind(t.Kind), t.Author, t.Association, t.IsBot, t.Resolved, t.Outdated, t.Path, t.Body, t.Markers))]);
+    }
+
     public async ValueTask<Result<OpenedPull?>> Find(FindPull query, CancellationToken cancellationToken)
     {
         var found = await forge.FindPull(new FindPullQuery(Repo(query.Repo), query.Head, Author: null, query.Marker), cancellationToken).ConfigureAwait(false);
@@ -138,6 +152,14 @@ internal sealed class ForgePullRequests(IForge forge) : IPullRequests
     }
 
     private static ForgeRepo Repo(PullRepo repo) => new(repo.Host, repo.Owner, repo.Name);
+
+    private static PullCommentKind Kind(CommentKind kind) => kind switch
+    {
+        CommentKind.Thread => PullCommentKind.Thread,
+        CommentKind.Review => PullCommentKind.Review,
+        CommentKind.Comment => throw new NotImplementedException(),
+        _ => PullCommentKind.Comment,
+    };
 
     private static PullState State(PullStatus status) => status switch
     {

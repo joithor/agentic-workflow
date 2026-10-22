@@ -6,4 +6,5 @@ namespace Aw.Sindri.Testing.Forge;
 /// <param name="Pulls">The port.</param>
 /// <param name="Repo">A repository on an allowed host that the run may use.</param>
 /// <param name="ForeignHost">A host the port's host list does not allow.</param>
-public sealed record PullRequestsUnderTest(IPullRequests Pulls, PullRepo Repo, string ForeignHost);
+/// <param name="SeedThread">Plays the reviewer: adds an inline thread with a body to the pull request at a link and returns its key.</param>
+public sealed record PullRequestsUnderTest(IPullRequests Pulls, PullRepo Repo, string ForeignHost, Func<string, string, string> SeedThread);
