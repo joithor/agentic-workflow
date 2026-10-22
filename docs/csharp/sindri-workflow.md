@@ -785,7 +785,7 @@ family and review-loop) are listed with their inputs, outputs and terminals in `
 A route is a `step.judge.choose` state that picks one of a recipe's branches, and a desk twin, a `step.desk.choose` state
 that lets a person pick when the judge is unsure or fails. `step.judge.choose` is a block runtime (`JudgeChooseStep`,
 `Aw.Sindri.Features/Blocks/Step/`): it redacts and caps the named facts (16,000 characters each), asks `judge choose --providers …` through the `IJudgeChoice`
-port (the `judge` named by `AW_SINDRI_JUDGE`, else on the PATH, with its decision rows under `$AW_SINDRI_HOME/judge`), and reports the
+port (the C# `judge` named by `AW_SINDRI_JUDGE`, which `sindri-app` and the sandbox e2e set to the one published next to `sindri` (the `judge` on the PATH is the TypeScript one and has no `choose`), with its decision rows under `$AW_SINDRI_HOME/judge`), and reports the
 choice as the outcome. The threshold is 0.6 unless the Step gives one. An escalation for `below-threshold`, `no-provider-decided` or
 `rule-timeout` is `uncertain`; `invalid-input`, `question-disabled`, a judge error or a timeout fails the Step, and the route sends either to its desk
 twin. `fact:decision` is `{ choice, reason, confidence, confidenceKind, probabilities, provider, decisionId }` on every outcome (`confidenceKind` is
