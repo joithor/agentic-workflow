@@ -54,7 +54,7 @@ internal sealed class PrEffectRig
 
     public static FactText Fact(string json) => new(json);
 
-    public static string PrState(string head, string checksSha) => $$"""{"head":{"ref":"feat/x","sha":"{{head}}"},"checks":{"state":"failing","sha":"{{checksSha}}","failing":["unit"]}}""";
+    public static string PrState(string head, string checksSha) => $$$"""{"head":{"ref":"feat/x","sha":"{{{head}}}"},"checks":{"state":"failing","sha":"{{{checksSha}}}","failing":["unit"]}}""";
 
     private JsonElement Stored(string json)
     {
