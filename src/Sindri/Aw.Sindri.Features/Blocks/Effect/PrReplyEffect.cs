@@ -102,7 +102,8 @@ internal sealed class PrReplyEffect(IPullRequests pulls, IFactContents facts, IP
         }
 
         var detail = new MarkDetail(PrReplyFacts.Text(reason.Value, "reason"), form == "fixed" ? PrReplyFacts.Text(fix.Value, "commit", "sha") : null, context.Identity);
-        var written = await Record(target.Value, form, detail, cancellationToken).ConfigureAwait(false);
+        var outcome = form == "hold" ? "held" : form;   // spec 5.3: the form is 'hold', the mark's outcome 'held'
+        var written = await Record(target.Value, outcome, detail, cancellationToken).ConfigureAwait(false);
         return written.IsError ? written.Error : new EffectDone(Reply: null, Existed: !written.Value);
     }
 

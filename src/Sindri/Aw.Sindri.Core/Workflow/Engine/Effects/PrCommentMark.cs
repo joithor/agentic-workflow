@@ -8,7 +8,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Effects;
 /// <param name="CommentId">The comment (or its thread's) id on the forge.</param>
 /// <param name="EditedAt">The comment's edit stamp the mark answers, or null for one never edited.</param>
 /// <param name="Instance">The babysitter instance that wrote the mark.</param>
-/// <param name="Outcome">The outcome ('thread', 'reaction', 'fixed', 'fixedReplies', 'none', 'hold').</param>
+/// <param name="Outcome">The outcome ('thread', 'reaction', 'fixed', 'fixedReplies', 'none', 'held').</param>
 /// <param name="Reason">Why (a held comment's type or failed branch), or null.</param>
 /// <param name="Commit">The commit that fixed it, or null.</param>
 /// <param name="At">When the mark was written.</param>
