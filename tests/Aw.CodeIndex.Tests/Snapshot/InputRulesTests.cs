@@ -143,6 +143,15 @@ public sealed class InputRulesTests
         Assert.Equal("SND-CODEIDX-003", over.Error.Code);
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("src/Util/Strings.cs", "src/Util/**", true)]
+    [InlineData("src/util/strings.cs", "SRC/UTIL/*.cs", true)]
+    [InlineData("src/Other/Strings.cs", "src/Util/**", false)]
+    [InlineData("a/b/c.cs", "**/c.cs", true)]
+    [InlineData("a.cs", "", false)]
+    public void MatchesAny_applies_a_glob_ignoring_case(string path, string glob, bool expected)
+        => Assert.Equal(expected, InputRules.MatchesAny(path, [glob]));
+
     private static TreeEntry Regular(string path, string blob, long? size) => Entry("100644", path, blob, size);
 
     private static TreeEntry Entry(string mode, string path, string blob, long? size) => new(mode, path, blob, size);
