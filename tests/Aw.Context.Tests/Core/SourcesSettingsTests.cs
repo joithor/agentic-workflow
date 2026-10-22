@@ -41,7 +41,8 @@ public sealed class SourcesSettingsTests
         var native = Read("""{"sources":{"linear":{"token":"keychain:linear/work-read","teams":["SPL"]}}}""").Value;
         var teamsOnly = Read("""{"sources":{"linear":{"teams":["SPL"]}}}""").Value;
 
-        Assert.Equal(("keychain:linear/work-read", "api.linear.app", ["SPL"]), (native.Linear!.Token, native.Linear.Address, native.Linear.Teams));
+        Assert.Equal(("keychain:linear/work-read", "api.linear.app"), (native.Linear!.Token, native.Linear.Address));
+        Assert.Equal(["SPL"], native.Linear.Teams, StringComparer.Ordinal);
         Assert.Equal(["SPL"], native.LinearTeams, StringComparer.Ordinal);
         Assert.Null(teamsOnly.Linear);
         Assert.Equal(["SPL"], teamsOnly.LinearTeams, StringComparer.Ordinal);
