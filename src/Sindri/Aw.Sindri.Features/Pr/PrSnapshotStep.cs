@@ -99,7 +99,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
     {
         if (StepFacts.Text(context, "fact:workspace") is not { Length: > 0 } workspace)
         {
-            return JsonValue.Create(false);
+            return JsonValue.Create(value: false);
         }
 
         var head = await diff.Head(workspace, cancellationToken).ConfigureAwait(false);
