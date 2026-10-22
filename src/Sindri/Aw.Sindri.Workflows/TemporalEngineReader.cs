@@ -28,6 +28,9 @@ internal sealed class TemporalEngineReader(TemporalFrontend frontend, TemporalSe
 {
     private const string Running = "WorkflowType = 'RecipeWorkflow' AND ExecutionStatus = 'Running'";
 
+    /// <summary>The deadline of each Temporal RPC an engine read makes: past it the server counts as not answering.</summary>
+    internal static readonly TimeSpan Deadline = TimeSpan.FromSeconds(5);
+
     private const int Concurrency = 8;
 
     private static readonly TimeSpan _polling = TimeSpan.FromMinutes(1);
@@ -59,7 +62,7 @@ internal sealed class TemporalEngineReader(TemporalFrontend frontend, TemporalSe
         {
             return await read(client.Value).ConfigureAwait(false);
         }
-        catch (RpcException e) // boundary: a frontend that went away, a namespace that isn't serve's, a call that timed out
+        catch (Exception e) when (e is RpcException or TimeoutException or InvalidOperationException || (e is OperationCanceledException && !cancellationToken.IsCancellationRequested)) // boundary: a frontend that went away, a namespace that isn't serve's, a deadline, a closed connection
         {
             return SindriErrors.EngineUnavailable.With($"Temporal didn't answer: {e.Message} (fix: sindri doctor)");
         }
@@ -67,7 +70,7 @@ internal sealed class TemporalEngineReader(TemporalFrontend frontend, TemporalSe
 
     private async Task<Result<EngineServer>> ServerFacts(ITemporalClient client, CancellationToken cancellationToken)
     {
-        _ = await TemporalReads.Run(rpc => client.WorkflowService.DescribeNamespaceAsync(new DescribeNamespaceRequest { Namespace = settings.Namespace }, rpc), cancellationToken).ConfigureAwait(false);
+        _ = await TemporalReads.Run(rpc => client.WorkflowService.DescribeNamespaceAsync(new DescribeNamespaceRequest { Namespace = settings.Namespace }, rpc), cancellationToken, Deadline).ConfigureAwait(false);
         var recorded = await endpoints.Read(cancellationToken).ConfigureAwait(false);
         var temporal = recorded.IsSuccess ? recorded.Value?.Temporal : null;
         var database = new FileInfo(Path.Combine(settings.Home, SindriTemporal.DatabaseFile));
@@ -98,7 +101,7 @@ internal sealed class TemporalEngineReader(TemporalFrontend frontend, TemporalSe
     {
         var queue = new ApiTaskQueue { Name = settings.TaskQueue, Kind = TaskQueueKind.Normal };
         var request = new DescribeTaskQueueRequest { Namespace = settings.Namespace, TaskQueue = queue, TaskQueueType = TaskQueueType.Workflow, ReportStats = true };
-        var described = await TemporalReads.Run(rpc => client.WorkflowService.DescribeTaskQueueAsync(request, rpc), cancellationToken).ConfigureAwait(false);
+        var described = await TemporalReads.Run(rpc => client.WorkflowService.DescribeTaskQueueAsync(request, rpc), cancellationToken, Deadline).ConfigureAwait(false);
         var now = clock.GetUtcNow();
         var pollers = described.Pollers.Select(static p => (p.Identity, At: p.LastAccessTime.ToDateTimeOffset())).OrderByDescending(static p => p.At).ToList();
         var recent = pollers.Where(p => now - p.At <= _polling).ToList();
@@ -108,7 +111,7 @@ internal sealed class TemporalEngineReader(TemporalFrontend frontend, TemporalSe
 
     private async Task<Result<IReadOnlyList<EngineInstanceFacts>>> InstanceFacts(ITemporalClient client, CancellationToken cancellationToken)
     {
-        var executions = await TemporalReads.List(client, Running, cancellationToken).ConfigureAwait(false);
+        var executions = await TemporalReads.List(client, Running, cancellationToken, Deadline).ConfigureAwait(false);
         using var gate = new SemaphoreSlim(Concurrency);
         var reads = executions.Select(async execution =>
         {
@@ -140,7 +143,7 @@ internal sealed class TemporalEngineReader(TemporalFrontend frontend, TemporalSe
 
         try
         {
-            var described = await TemporalReads.Run(rpc => client.GetWorkflowHandle(resolved.Value.Value).DescribeAsync(new() { Rpc = rpc }), cancellationToken).ConfigureAwait(false);
+            var described = await TemporalReads.Run(rpc => client.GetWorkflowHandle(resolved.Value.Value).DescribeAsync(new() { Rpc = rpc }), cancellationToken, Deadline).ConfigureAwait(false);
             var events = await Page(client, resolved.Value, page, pageSize, cancellationToken).ConfigureAwait(false);
             return new EngineHistoryFacts(resolved.Value, described.RunId ?? string.Empty, [.. events.Select(EngineHistoryEvents.Facts)], described.HistoryLength);
         }
@@ -157,7 +160,7 @@ internal sealed class TemporalEngineReader(TemporalFrontend frontend, TemporalSe
         for (var number = 1; ; number++)
         {
             var request = new GetWorkflowExecutionHistoryReverseRequest { Namespace = settings.Namespace, Execution = new ApiExecution { WorkflowId = address.Value }, MaximumPageSize = pageSize, NextPageToken = continuation };
-            var response = await TemporalReads.Run(rpc => client.WorkflowService.GetWorkflowExecutionHistoryReverseAsync(request, rpc), cancellationToken).ConfigureAwait(false);
+            var response = await TemporalReads.Run(rpc => client.WorkflowService.GetWorkflowExecutionHistoryReverseAsync(request, rpc), cancellationToken, Deadline).ConfigureAwait(false);
             if (number == page)
             {
                 return [.. response.History.Events];
@@ -176,7 +179,7 @@ internal sealed class TemporalEngineReader(TemporalFrontend frontend, TemporalSe
     {
         if (WorkflowInstanceId.TryFrom(reference, out var id))   // first: 'WFI-…' has an item key's shape too
         {
-            var match = await TemporalReads.Find(client, "WorkflowType = 'RecipeWorkflow'", e => InstanceAddress.TryFrom(e.Id, out var address) && WorkflowInstanceId.Of(address) == id, cancellationToken).ConfigureAwait(false);
+            var match = await TemporalReads.Find(client, "WorkflowType = 'RecipeWorkflow'", e => InstanceAddress.TryFrom(e.Id, out var address) && WorkflowInstanceId.Of(address) == id, cancellationToken, Deadline).ConfigureAwait(false);
             return match is null ? SindriErrors.EngineNotFound.With($"Temporal has no execution with the id {reference}") : InstanceAddress.From(match.Id);
         }
 
