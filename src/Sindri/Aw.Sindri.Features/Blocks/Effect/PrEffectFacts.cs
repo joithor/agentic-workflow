@@ -62,6 +62,28 @@ internal static class PrEffectFacts
         return null;
     }
 
+    /// <summary>The commit shas a push fact carries: the strings (or objects' 'sha') of its 'commits' array.</summary>
+    /// <param name="push">The push fact's content.</param>
+    /// <returns>The shas; empty when there are none.</returns>
+    public static List<string> Commits(JsonElement push)
+    {
+        var shas = new List<string>();
+        if (push.ValueKind != JsonValueKind.Object || !push.TryGetProperty("commits", out var commits) || commits.ValueKind != JsonValueKind.Array)
+        {
+            return shas;
+        }
+
+        foreach (var commit in commits.EnumerateArray())
+        {
+            if (Text(commit, "sha") is { Length: > 0 } sha)
+            {
+                shas.Add(sha);
+            }
+        }
+
+        return shas;
+    }
+
     private static async ValueTask<Result<JsonElement>> Content(IFactContents facts, JsonElement value, CancellationToken cancellationToken)
     {
         if (Reference(value) is not { } fact)
