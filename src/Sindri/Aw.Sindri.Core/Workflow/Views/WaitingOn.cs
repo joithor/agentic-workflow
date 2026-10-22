@@ -13,7 +13,7 @@ public static class WaitingOn
     public const string Engine = "engine";
 
     // The chip words that mean the human has the next move.
-    private static readonly HashSet<string> YourWords = new([StateChip.Decision, StateChip.Parked, StateChip.Escalated, StateChip.WithYou], StringComparer.Ordinal);
+    private static readonly HashSet<string> _yourWords = new([StateChip.Decision, StateChip.Parked, StateChip.Escalated, StateChip.WithYou], StringComparer.Ordinal);
 
     /// <summary>Who the instance waits on.</summary>
     /// <param name="chip">The row's state chip.</param>
@@ -23,7 +23,7 @@ public static class WaitingOn
     /// <returns><see cref="You"/> for DECISION, PARKED, ESCALATED, WITH YOU or an open desk run, <see cref="Agent"/> for an open agent run, <see cref="Engine"/> otherwise, null once it ended.</returns>
     public static string? Of(StateChip chip, bool deskOpen, bool agentRunOpen, bool ended) => ended
         ? null
-        : deskOpen || YourWords.Contains(chip.Word)
+        : deskOpen || _yourWords.Contains(chip.Word)
             ? You
             : agentRunOpen ? Agent : Engine;
 }
