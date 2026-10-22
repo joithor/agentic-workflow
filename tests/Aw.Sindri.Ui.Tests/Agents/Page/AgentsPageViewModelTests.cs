@@ -68,7 +68,7 @@ public sealed class AgentsPageViewModelTests
 
         var row = RowOf(page, Codex);
 
-        Assert.Equal("◐ ASKING YOU", row.ChipText);
+        Assert.Equal("◐ Asking you", row.ChipText);
         Assert.Equal(Labels.AskingDetail((string)served["reason"]!, (string)served["tool"]!), row.AskingText);
         Assert.Contains(row.AskingText, row.Name, StringComparison.Ordinal);
         Assert.Contains("asking", row.Name, StringComparison.Ordinal);
