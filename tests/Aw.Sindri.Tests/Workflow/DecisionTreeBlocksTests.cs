@@ -33,7 +33,7 @@ public sealed class DecisionTreeBlocksTests
     [InlineData("step.evidence.combine", BlockRuntime.Block, false, "fact:evidenceUi,fact:evidenceApi,fact:evidenceDb", "done", "", "fact:evidenceSummary=done", Capability.None)]
     [InlineData("step.evidence.desk", BlockRuntime.Desk, true, "fact:built", "recorded,noneFound", "fact:evidenceSummary,fact:evidenceReason", "", Capability.None)]
     [InlineData("step.lens.run", BlockRuntime.Agent, false, "fact:lensQueue,fact:lensRounds", "reviewed", "", "fact:lensReport=reviewed", Capability.Tools)]
-    [InlineData("step.review.round", BlockRuntime.Block, false, "fact:change,fact:phasePacket", "ready,noLens", "", "fact:lensQueue=ready;fact:lensRounds=ready", Capability.None)]
+    [InlineData("step.review.round", BlockRuntime.Block, false, "fact:change,fact:phasePacket,fact:lensRounds", "ready,noLens", "", "fact:lensQueue=ready;fact:lensRounds=ready", Capability.None)]
     [InlineData("step.review.log", BlockRuntime.Block, false, "fact:lensReport,fact:lensRounds,fact:lensQueue", "next,clean,findings,behaviourWrong,needsOwner", "fact:lensRounds", "fact:lensQueue=next;fact:review=clean,findings,behaviourWrong,needsOwner;fact:escalation=needsOwner", Capability.None)]
     [InlineData("step.review.record", BlockRuntime.Block, false, "fact:change,fact:review,fact:lensRounds,fact:phasePacket", "recorded,recordedWrong", "", "fact:review=recorded,recordedWrong", Capability.Tools)]
     [InlineData("step.review.fix", BlockRuntime.Agent, false, "fact:change,fact:review", "fixed,needsOwner", "", "fact:change=fixed;fact:escalation=needsOwner", Capability.Tools | Capability.WriteScope)]

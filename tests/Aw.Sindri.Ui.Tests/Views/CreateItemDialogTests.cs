@@ -264,7 +264,7 @@ public sealed class CreateItemDialogTests : IDisposable
         var (window, shell) = await Connected();
         var opener = Named<Button>(window, "CreateButton");
         Assert.True(opener.Focus(NavigationMethod.Tab));
-        window.KeyPress(Key.K, RawInputModifiers.Control, PhysicalKey.K, "k");
+        window.KeyPress(Key.K, _command, PhysicalKey.K, "k");
         Settle(window);
         Assert.True(shell.Palette.IsOpen);
         var entry = shell.Palette.Entries.Single(e => e.Id == "CreateItem");
