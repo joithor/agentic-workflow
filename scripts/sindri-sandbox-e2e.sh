@@ -502,7 +502,8 @@ auto_grant() {
   [ "${#DESK_LOG[@]}" -lt "$DESK_MAX" ] || return 1
   say "auto-desk: $addr grant $GRANT_TOKENS tokens"
   DESK_LOG+=("$addr grant-tokens $GRANT_TOKENS")
-  human workflow answer "$addr" --grant-tokens "$GRANT_TOKENS" 2>&1 | tail -2 | sed 's/^/  /' >&2
+  # a grant is a protected answer: the human types the challenge's action back at the terminal
+  printf 'grant-tokens %s %s\n' "$GRANT_TOKENS" "$addr" | human workflow answer "$addr" --grant-tokens "$GRANT_TOKENS" 2>&1 | tail -2 | sed 's/^/  /' >&2
   return 0
 }
 
