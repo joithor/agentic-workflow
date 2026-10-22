@@ -91,7 +91,8 @@ internal static class CommandTable
         using var client = new ControlPlaneClient(probe, options, Headers(session, services), cap.IsError ? null : cap.Value, refusal: cap.IsError ? cap.Error : null);
         StartCommand Start(bool headless) => NewStart(services, session, (client, probe, output), UiOpener(headless, environment), headless);
         var start = Start(headless: true);   // 'sindri --headless', and the start a human 'profile approve' may need
-        var (verbs, ct) = (new Verbs(client, probe, output, services), interrupt.Token);
+        var verbs = new Verbs(client, probe, output, services);
+        var ct = interrupt.Token;
         var harnesses = new ProbeCommands(services.GetRequiredService<IProcessAncestry>(), services.GetRequiredService<IHarnessVersions>(), environment, Interactive());
         return args switch
         {
