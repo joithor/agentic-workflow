@@ -157,6 +157,11 @@ internal sealed partial class ShellWindow : Window
             return true;
         }
 
+        if (shell.IsWorkflows && shell.Workflows.Press("Esc"))
+        {
+            return true;   // the run drawer closes before Esc leaves anything else
+        }
+
         if (!shell.LeaveSettings())
         {
             return false;

@@ -108,6 +108,8 @@ internal sealed partial class WorkflowsViewModel
             case "/":
                 SearchFocusRequested?.Invoke(this, EventArgs.Empty);
                 return true;
+            case "Esc":
+                return CloseInspector();
             default:
                 return false;
         }
@@ -119,7 +121,7 @@ internal sealed partial class WorkflowsViewModel
         switch (key)
         {
             case "Enter":
-                OpenRequested?.Invoke(this, new OpenRequestedEventArgs(row.Link));
+                EnterOn(row);
                 return true;
             case "A" when row.Protected is { } locked:
                 locked.SetOpen(open: true);
@@ -212,6 +214,7 @@ internal sealed partial class WorkflowsViewModel
 
     private void Mark()
     {
+        FollowInspector();
         foreach (var row in Shown)
         {
             row.IsSelected = string.Equals(row.Address, SelectedAddress, StringComparison.Ordinal);

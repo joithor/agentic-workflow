@@ -29,4 +29,10 @@ internal enum FrameIntent
 
     /// <summary>"Answer in the child" with no child to open: the parent's frame opens with focus in its Children panel, when it has one.</summary>
     FocusChildren,
+
+    /// <summary>Take over from the run drawer: the frame opens where the take-over command is; the app sends nothing.</summary>
+    TakeOver,
+
+    /// <summary>Hand back from the run drawer: the frame opens where the hand-back command is; the app sends nothing.</summary>
+    HandBack,
 }
