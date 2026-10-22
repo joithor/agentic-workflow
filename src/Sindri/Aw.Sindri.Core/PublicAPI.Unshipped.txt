@@ -14624,6 +14624,164 @@ static Aw.Sindri.Core.Profile.RepoStatus.operator ==(Aw.Sindri.Core.Profile.Repo
 static Aw.Sindri.Core.Profile.RepoStatusRules.ExitCode(Aw.Sindri.Core.Profile.RepoStatus! status) -> int
 static Aw.Sindri.Core.Profile.RepoStatusRules.NudgeLine(Aw.Sindri.Core.Profile.RepoStatus! status) -> string!
 static Aw.Sindri.Core.Profile.RepoStatusRules.Text(Aw.Sindri.Core.Profile.RepoStatus! status) -> string!
+Aw.Sindri.Core.BugFix.AttemptMode
+Aw.Sindri.Core.BugFix.AttemptMode.Split = 2 -> Aw.Sindri.Core.BugFix.AttemptMode
+Aw.Sindri.Core.BugFix.AttemptMode.Whole = 1 -> Aw.Sindri.Core.BugFix.AttemptMode
+Aw.Sindri.Core.BugFix.AttemptStarted
+Aw.Sindri.Core.BugFix.AttemptStarted.Attempt.get -> int
+Aw.Sindri.Core.BugFix.AttemptStarted.Attempt.init -> void
+Aw.Sindri.Core.BugFix.AttemptStarted.AttemptStarted(int Attempt, Aw.Sindri.Core.BugFix.AttemptMode Mode) -> void
+Aw.Sindri.Core.BugFix.AttemptStarted.<Clone>$() -> Aw.Sindri.Core.BugFix.AttemptStarted!
+Aw.Sindri.Core.BugFix.AttemptStarted.Deconstruct(out int Attempt, out Aw.Sindri.Core.BugFix.AttemptMode Mode) -> void
+Aw.Sindri.Core.BugFix.AttemptStarted.Equals(Aw.Sindri.Core.BugFix.AttemptStarted? other) -> bool
+Aw.Sindri.Core.BugFix.AttemptStarted.Mode.get -> Aw.Sindri.Core.BugFix.AttemptMode
+Aw.Sindri.Core.BugFix.AttemptStarted.Mode.init -> void
+Aw.Sindri.Core.BugFix.BugFixAnswers
+Aw.Sindri.Core.BugFix.BugFixAnswerStatus
+Aw.Sindri.Core.BugFix.BugFixAnswerStatus.Ok = 1 -> Aw.Sindri.Core.BugFix.BugFixAnswerStatus
+Aw.Sindri.Core.BugFix.BugFixAnswerStatus.Refused = 2 -> Aw.Sindri.Core.BugFix.BugFixAnswerStatus
+Aw.Sindri.Core.BugFix.BugFixAnswerStatus.Unavailable = 3 -> Aw.Sindri.Core.BugFix.BugFixAnswerStatus
+Aw.Sindri.Core.BugFix.BugFixAnswer<T>
+Aw.Sindri.Core.BugFix.BugFixAnswer<T>.Bind<TNext>(System.Func<T, Aw.Sindri.Core.BugFix.BugFixAnswer<TNext>!>! next) -> Aw.Sindri.Core.BugFix.BugFixAnswer<TNext>!
+Aw.Sindri.Core.BugFix.BugFixAnswer<T>.<Clone>$() -> Aw.Sindri.Core.BugFix.BugFixAnswer<T>!
+Aw.Sindri.Core.BugFix.BugFixAnswer<T>.Equals(Aw.Sindri.Core.BugFix.BugFixAnswer<T>? other) -> bool
+Aw.Sindri.Core.BugFix.BugFixAnswer<T>.Refusal.get -> Aw.Sindri.Core.BugFix.BugFixRefusal?
+Aw.Sindri.Core.BugFix.BugFixAnswer<T>.Status.get -> Aw.Sindri.Core.BugFix.BugFixAnswerStatus
+Aw.Sindri.Core.BugFix.BugFixAnswer<T>.Unavailable.get -> string?
+Aw.Sindri.Core.BugFix.BugFixAnswer<T>.Value.get -> T?
+Aw.Sindri.Core.BugFix.BugFixRefusal
+Aw.Sindri.Core.BugFix.BugFixRefusal.BugFixRefusal(string! Code, Aw.Sindri.Core.BugFix.RefusalKind Kind, string! Message) -> void
+Aw.Sindri.Core.BugFix.BugFixRefusal.<Clone>$() -> Aw.Sindri.Core.BugFix.BugFixRefusal!
+Aw.Sindri.Core.BugFix.BugFixRefusal.Code.get -> string!
+Aw.Sindri.Core.BugFix.BugFixRefusal.Code.init -> void
+Aw.Sindri.Core.BugFix.BugFixRefusal.Deconstruct(out string! Code, out Aw.Sindri.Core.BugFix.RefusalKind Kind, out string! Message) -> void
+Aw.Sindri.Core.BugFix.BugFixRefusal.Equals(Aw.Sindri.Core.BugFix.BugFixRefusal? other) -> bool
+Aw.Sindri.Core.BugFix.BugFixRefusal.Kind.get -> Aw.Sindri.Core.BugFix.RefusalKind
+Aw.Sindri.Core.BugFix.BugFixRefusal.Kind.init -> void
+Aw.Sindri.Core.BugFix.BugFixRefusal.Message.get -> string!
+Aw.Sindri.Core.BugFix.BugFixRefusal.Message.init -> void
+Aw.Sindri.Core.BugFix.CandidateRecorded
+Aw.Sindri.Core.BugFix.CandidateRecorded.Attempt.get -> int
+Aw.Sindri.Core.BugFix.CandidateRecorded.Attempt.init -> void
+Aw.Sindri.Core.BugFix.CandidateRecorded.Candidate.get -> string!
+Aw.Sindri.Core.BugFix.CandidateRecorded.Candidate.init -> void
+Aw.Sindri.Core.BugFix.CandidateRecorded.CandidateRecorded(string! Candidate, string! Commit, int Attempt, System.Collections.Generic.IReadOnlyList<string!>! ChangedFiles) -> void
+Aw.Sindri.Core.BugFix.CandidateRecorded.ChangedFiles.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.BugFix.CandidateRecorded.ChangedFiles.init -> void
+Aw.Sindri.Core.BugFix.CandidateRecorded.<Clone>$() -> Aw.Sindri.Core.BugFix.CandidateRecorded!
+Aw.Sindri.Core.BugFix.CandidateRecorded.Commit.get -> string!
+Aw.Sindri.Core.BugFix.CandidateRecorded.Commit.init -> void
+Aw.Sindri.Core.BugFix.CandidateRecorded.Deconstruct(out string! Candidate, out string! Commit, out int Attempt, out System.Collections.Generic.IReadOnlyList<string!>! ChangedFiles) -> void
+Aw.Sindri.Core.BugFix.CandidateRecorded.Equals(Aw.Sindri.Core.BugFix.CandidateRecorded? other) -> bool
+Aw.Sindri.Core.BugFix.CandidateSource
+Aw.Sindri.Core.BugFix.CandidateSource.AllowTestChanges.get -> bool
+Aw.Sindri.Core.BugFix.CandidateSource.AllowTestChanges.init -> void
+Aw.Sindri.Core.BugFix.CandidateSource.Branch.get -> string!
+Aw.Sindri.Core.BugFix.CandidateSource.Branch.init -> void
+Aw.Sindri.Core.BugFix.CandidateSource.CandidateSource(string! Branch, string! Worktree, int? Hypothesis = null, bool AllowTestChanges = false) -> void
+Aw.Sindri.Core.BugFix.CandidateSource.<Clone>$() -> Aw.Sindri.Core.BugFix.CandidateSource!
+Aw.Sindri.Core.BugFix.CandidateSource.Deconstruct(out string! Branch, out string! Worktree, out int? Hypothesis, out bool AllowTestChanges) -> void
+Aw.Sindri.Core.BugFix.CandidateSource.Equals(Aw.Sindri.Core.BugFix.CandidateSource? other) -> bool
+Aw.Sindri.Core.BugFix.CandidateSource.Hypothesis.get -> int?
+Aw.Sindri.Core.BugFix.CandidateSource.Hypothesis.init -> void
+Aw.Sindri.Core.BugFix.CandidateSource.Worktree.get -> string!
+Aw.Sindri.Core.BugFix.CandidateSource.Worktree.init -> void
+Aw.Sindri.Core.BugFix.CheckRun
+Aw.Sindri.Core.BugFix.CheckRun.Candidate.get -> string!
+Aw.Sindri.Core.BugFix.CheckRun.Candidate.init -> void
+Aw.Sindri.Core.BugFix.CheckRun.CheckRun(string! Candidate, bool Passed, int ExitCode, string! Evidence) -> void
+Aw.Sindri.Core.BugFix.CheckRun.<Clone>$() -> Aw.Sindri.Core.BugFix.CheckRun!
+Aw.Sindri.Core.BugFix.CheckRun.Deconstruct(out string! Candidate, out bool Passed, out int ExitCode, out string! Evidence) -> void
+Aw.Sindri.Core.BugFix.CheckRun.Equals(Aw.Sindri.Core.BugFix.CheckRun? other) -> bool
+Aw.Sindri.Core.BugFix.CheckRun.Evidence.get -> string!
+Aw.Sindri.Core.BugFix.CheckRun.Evidence.init -> void
+Aw.Sindri.Core.BugFix.CheckRun.ExitCode.get -> int
+Aw.Sindri.Core.BugFix.CheckRun.ExitCode.init -> void
+Aw.Sindri.Core.BugFix.CheckRun.Passed.get -> bool
+Aw.Sindri.Core.BugFix.CheckRun.Passed.init -> void
+Aw.Sindri.Core.BugFix.FrozenCheck
+Aw.Sindri.Core.BugFix.FrozenCheck.<Clone>$() -> Aw.Sindri.Core.BugFix.FrozenCheck!
+Aw.Sindri.Core.BugFix.FrozenCheck.Command.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.BugFix.FrozenCheck.Command.init -> void
+Aw.Sindri.Core.BugFix.FrozenCheck.Deconstruct(out string! Kind, out string! File, out System.Collections.Generic.IReadOnlyList<string!>! Command, out string! Directory) -> void
+Aw.Sindri.Core.BugFix.FrozenCheck.Directory.get -> string!
+Aw.Sindri.Core.BugFix.FrozenCheck.Directory.init -> void
+Aw.Sindri.Core.BugFix.FrozenCheck.Equals(Aw.Sindri.Core.BugFix.FrozenCheck? other) -> bool
+Aw.Sindri.Core.BugFix.FrozenCheck.File.get -> string!
+Aw.Sindri.Core.BugFix.FrozenCheck.File.init -> void
+Aw.Sindri.Core.BugFix.FrozenCheck.FrozenCheck(string! Kind, string! File, System.Collections.Generic.IReadOnlyList<string!>! Command, string! Directory) -> void
+Aw.Sindri.Core.BugFix.FrozenCheck.Kind.get -> string!
+Aw.Sindri.Core.BugFix.FrozenCheck.Kind.init -> void
+Aw.Sindri.Core.BugFix.IBugFixState
+Aw.Sindri.Core.BugFix.IBugFixState.Judge(string! stateDirectory, string! candidate, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.BugFix.BugFixAnswer<Aw.Sindri.Core.BugFix.ResolutionVerdict!>!>
+Aw.Sindri.Core.BugFix.IBugFixState.Recheck(string! stateDirectory, string! candidate, string! worktree, Aw.Sindri.Core.BugFix.FrozenCheck! check, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.BugFix.BugFixAnswer<Aw.Sindri.Core.BugFix.CheckRun!>!>
+Aw.Sindri.Core.BugFix.IBugFixState.RecordCandidate(string! stateDirectory, Aw.Sindri.Core.BugFix.CandidateSource! source, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.BugFix.BugFixAnswer<Aw.Sindri.Core.BugFix.CandidateRecorded!>!>
+Aw.Sindri.Core.BugFix.IBugFixState.StartAttempt(string! stateDirectory, Aw.Sindri.Core.BugFix.AttemptMode mode, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.BugFix.BugFixAnswer<Aw.Sindri.Core.BugFix.AttemptStarted!>!>
+Aw.Sindri.Core.BugFix.JudgeDecision
+Aw.Sindri.Core.BugFix.JudgeDecision.Escalated = 4 -> Aw.Sindri.Core.BugFix.JudgeDecision
+Aw.Sindri.Core.BugFix.JudgeDecision.Partial = 2 -> Aw.Sindri.Core.BugFix.JudgeDecision
+Aw.Sindri.Core.BugFix.JudgeDecision.Resolved = 1 -> Aw.Sindri.Core.BugFix.JudgeDecision
+Aw.Sindri.Core.BugFix.JudgeDecision.Unresolved = 3 -> Aw.Sindri.Core.BugFix.JudgeDecision
+Aw.Sindri.Core.BugFix.RefusalKind
+Aw.Sindri.Core.BugFix.RefusalKind.AttemptCap = 1 -> Aw.Sindri.Core.BugFix.RefusalKind
+Aw.Sindri.Core.BugFix.RefusalKind.NoPassingRun = 2 -> Aw.Sindri.Core.BugFix.RefusalKind
+Aw.Sindri.Core.BugFix.RefusalKind.Other = 0 -> Aw.Sindri.Core.BugFix.RefusalKind
+Aw.Sindri.Core.BugFix.ResolutionVerdict
+Aw.Sindri.Core.BugFix.ResolutionVerdict.Candidate.get -> string!
+Aw.Sindri.Core.BugFix.ResolutionVerdict.Candidate.init -> void
+Aw.Sindri.Core.BugFix.ResolutionVerdict.<Clone>$() -> Aw.Sindri.Core.BugFix.ResolutionVerdict!
+Aw.Sindri.Core.BugFix.ResolutionVerdict.Decision.get -> Aw.Sindri.Core.BugFix.JudgeDecision
+Aw.Sindri.Core.BugFix.ResolutionVerdict.Decision.init -> void
+Aw.Sindri.Core.BugFix.ResolutionVerdict.Deconstruct(out string! Candidate, out Aw.Sindri.Core.BugFix.JudgeDecision Decision, out string! ReasonCode, out System.Collections.Generic.IReadOnlyList<string!>! Reasons) -> void
+Aw.Sindri.Core.BugFix.ResolutionVerdict.Equals(Aw.Sindri.Core.BugFix.ResolutionVerdict? other) -> bool
+Aw.Sindri.Core.BugFix.ResolutionVerdict.ReasonCode.get -> string!
+Aw.Sindri.Core.BugFix.ResolutionVerdict.ReasonCode.init -> void
+Aw.Sindri.Core.BugFix.ResolutionVerdict.Reasons.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.BugFix.ResolutionVerdict.Reasons.init -> void
+Aw.Sindri.Core.BugFix.ResolutionVerdict.ResolutionVerdict(string! Candidate, Aw.Sindri.Core.BugFix.JudgeDecision Decision, string! ReasonCode, System.Collections.Generic.IReadOnlyList<string!>! Reasons) -> void
+override Aw.Sindri.Core.BugFix.AttemptStarted.Equals(object? obj) -> bool
+override Aw.Sindri.Core.BugFix.AttemptStarted.GetHashCode() -> int
+override Aw.Sindri.Core.BugFix.AttemptStarted.ToString() -> string!
+override Aw.Sindri.Core.BugFix.BugFixAnswer<T>.Equals(object? obj) -> bool
+override Aw.Sindri.Core.BugFix.BugFixAnswer<T>.GetHashCode() -> int
+override Aw.Sindri.Core.BugFix.BugFixAnswer<T>.ToString() -> string!
+override Aw.Sindri.Core.BugFix.BugFixRefusal.Equals(object? obj) -> bool
+override Aw.Sindri.Core.BugFix.BugFixRefusal.GetHashCode() -> int
+override Aw.Sindri.Core.BugFix.BugFixRefusal.ToString() -> string!
+override Aw.Sindri.Core.BugFix.CandidateRecorded.Equals(object? obj) -> bool
+override Aw.Sindri.Core.BugFix.CandidateRecorded.GetHashCode() -> int
+override Aw.Sindri.Core.BugFix.CandidateRecorded.ToString() -> string!
+override Aw.Sindri.Core.BugFix.CandidateSource.Equals(object? obj) -> bool
+override Aw.Sindri.Core.BugFix.CandidateSource.GetHashCode() -> int
+override Aw.Sindri.Core.BugFix.CandidateSource.ToString() -> string!
+override Aw.Sindri.Core.BugFix.CheckRun.Equals(object? obj) -> bool
+override Aw.Sindri.Core.BugFix.CheckRun.GetHashCode() -> int
+override Aw.Sindri.Core.BugFix.CheckRun.ToString() -> string!
+override Aw.Sindri.Core.BugFix.FrozenCheck.Equals(object? obj) -> bool
+override Aw.Sindri.Core.BugFix.FrozenCheck.GetHashCode() -> int
+override Aw.Sindri.Core.BugFix.FrozenCheck.ToString() -> string!
+override Aw.Sindri.Core.BugFix.ResolutionVerdict.Equals(object? obj) -> bool
+override Aw.Sindri.Core.BugFix.ResolutionVerdict.GetHashCode() -> int
+override Aw.Sindri.Core.BugFix.ResolutionVerdict.ToString() -> string!
+static Aw.Sindri.Core.BugFix.AttemptStarted.operator !=(Aw.Sindri.Core.BugFix.AttemptStarted? left, Aw.Sindri.Core.BugFix.AttemptStarted? right) -> bool
+static Aw.Sindri.Core.BugFix.AttemptStarted.operator ==(Aw.Sindri.Core.BugFix.AttemptStarted? left, Aw.Sindri.Core.BugFix.AttemptStarted? right) -> bool
+static Aw.Sindri.Core.BugFix.BugFixAnswers.Failed<T>(string! reason) -> Aw.Sindri.Core.BugFix.BugFixAnswer<T>!
+static Aw.Sindri.Core.BugFix.BugFixAnswers.Ok<T>(T value) -> Aw.Sindri.Core.BugFix.BugFixAnswer<T>!
+static Aw.Sindri.Core.BugFix.BugFixAnswers.Refused<T>(Aw.Sindri.Core.BugFix.BugFixRefusal! refusal) -> Aw.Sindri.Core.BugFix.BugFixAnswer<T>!
+static Aw.Sindri.Core.BugFix.BugFixAnswer<T>.operator !=(Aw.Sindri.Core.BugFix.BugFixAnswer<T>? left, Aw.Sindri.Core.BugFix.BugFixAnswer<T>? right) -> bool
+static Aw.Sindri.Core.BugFix.BugFixAnswer<T>.operator ==(Aw.Sindri.Core.BugFix.BugFixAnswer<T>? left, Aw.Sindri.Core.BugFix.BugFixAnswer<T>? right) -> bool
+static Aw.Sindri.Core.BugFix.BugFixRefusal.operator !=(Aw.Sindri.Core.BugFix.BugFixRefusal? left, Aw.Sindri.Core.BugFix.BugFixRefusal? right) -> bool
+static Aw.Sindri.Core.BugFix.BugFixRefusal.operator ==(Aw.Sindri.Core.BugFix.BugFixRefusal? left, Aw.Sindri.Core.BugFix.BugFixRefusal? right) -> bool
+static Aw.Sindri.Core.BugFix.CandidateRecorded.operator !=(Aw.Sindri.Core.BugFix.CandidateRecorded? left, Aw.Sindri.Core.BugFix.CandidateRecorded? right) -> bool
+static Aw.Sindri.Core.BugFix.CandidateRecorded.operator ==(Aw.Sindri.Core.BugFix.CandidateRecorded? left, Aw.Sindri.Core.BugFix.CandidateRecorded? right) -> bool
+static Aw.Sindri.Core.BugFix.CandidateSource.operator !=(Aw.Sindri.Core.BugFix.CandidateSource? left, Aw.Sindri.Core.BugFix.CandidateSource? right) -> bool
+static Aw.Sindri.Core.BugFix.CandidateSource.operator ==(Aw.Sindri.Core.BugFix.CandidateSource? left, Aw.Sindri.Core.BugFix.CandidateSource? right) -> bool
+static Aw.Sindri.Core.BugFix.CheckRun.operator !=(Aw.Sindri.Core.BugFix.CheckRun? left, Aw.Sindri.Core.BugFix.CheckRun? right) -> bool
+static Aw.Sindri.Core.BugFix.CheckRun.operator ==(Aw.Sindri.Core.BugFix.CheckRun? left, Aw.Sindri.Core.BugFix.CheckRun? right) -> bool
+static Aw.Sindri.Core.BugFix.FrozenCheck.operator !=(Aw.Sindri.Core.BugFix.FrozenCheck? left, Aw.Sindri.Core.BugFix.FrozenCheck? right) -> bool
+static Aw.Sindri.Core.BugFix.FrozenCheck.operator ==(Aw.Sindri.Core.BugFix.FrozenCheck? left, Aw.Sindri.Core.BugFix.FrozenCheck? right) -> bool
+static Aw.Sindri.Core.BugFix.ResolutionVerdict.operator !=(Aw.Sindri.Core.BugFix.ResolutionVerdict? left, Aw.Sindri.Core.BugFix.ResolutionVerdict? right) -> bool
+static Aw.Sindri.Core.BugFix.ResolutionVerdict.operator ==(Aw.Sindri.Core.BugFix.ResolutionVerdict? left, Aw.Sindri.Core.BugFix.ResolutionVerdict? right) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceStart.StartedBy.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceStart.StartedBy.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaryContext.Deconstruct(out System.DateTimeOffset Now, out bool NotStarted, out string? ItemTitle, out string? RecipeDisplayName, out string? LineStage) -> void
