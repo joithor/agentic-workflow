@@ -1674,6 +1674,7 @@ Aw.Sindri.Core.LensPacks.LensWhen.Paths.get -> System.Collections.Generic.IReadO
 Aw.Sindri.Core.LensPacks.LensWhen.Paths.init -> void
 Aw.Sindri.Core.LensPacks.LensWhen.SurfaceKinds.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.LensPacks.LensWhen.SurfaceKinds.init -> void
+Aw.Sindri.Core.LensPacks.PackErrors
 Aw.Sindri.Core.LensPacks.PackLens
 Aw.Sindri.Core.LensPacks.PackLens.<Clone>$() -> Aw.Sindri.Core.LensPacks.PackLens!
 Aw.Sindri.Core.LensPacks.PackLens.Deconstruct(out Aw.Sindri.Core.LensPacks.LensId Id, out string! Title, out string! Prompt, out Aw.Sindri.Core.LensPacks.LensWhen! When) -> void
@@ -1726,6 +1727,7 @@ static Aw.Sindri.Core.LensPacks.LensSelection.operator ==(Aw.Sindri.Core.LensPac
 static Aw.Sindri.Core.LensPacks.LensWhen.Always.get -> Aw.Sindri.Core.LensPacks.LensWhen!
 static Aw.Sindri.Core.LensPacks.LensWhen.operator !=(Aw.Sindri.Core.LensPacks.LensWhen? left, Aw.Sindri.Core.LensPacks.LensWhen? right) -> bool
 static Aw.Sindri.Core.LensPacks.LensWhen.operator ==(Aw.Sindri.Core.LensPacks.LensWhen? left, Aw.Sindri.Core.LensPacks.LensWhen? right) -> bool
+static Aw.Sindri.Core.LensPacks.PackErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
 static Aw.Sindri.Core.LensPacks.PackLens.operator !=(Aw.Sindri.Core.LensPacks.PackLens? left, Aw.Sindri.Core.LensPacks.PackLens? right) -> bool
 static Aw.Sindri.Core.LensPacks.PackLens.operator ==(Aw.Sindri.Core.LensPacks.PackLens? left, Aw.Sindri.Core.LensPacks.PackLens? right) -> bool
 Aw.Sindri.Core.Locks.HeavySlotTaken
@@ -13897,6 +13899,10 @@ static Aw.Sindri.Core.Line.PacketIdentity.operator !=(Aw.Sindri.Core.Line.Packet
 static Aw.Sindri.Core.Line.PacketIdentity.operator ==(Aw.Sindri.Core.Line.PacketIdentity? left, Aw.Sindri.Core.Line.PacketIdentity? right) -> bool
 static Aw.Sindri.Core.Packets.FrozenPacket.operator !=(Aw.Sindri.Core.Packets.FrozenPacket? left, Aw.Sindri.Core.Packets.FrozenPacket? right) -> bool
 static Aw.Sindri.Core.Packets.FrozenPacket.operator ==(Aw.Sindri.Core.Packets.FrozenPacket? left, Aw.Sindri.Core.Packets.FrozenPacket? right) -> bool
+static readonly Aw.Sindri.Core.LensPacks.PackErrors.Invalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.LensPacks.PackErrors.NotFound -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.LensPacks.PackErrors.PinMismatch -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.LensPacks.PackErrors.WrongKind -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Line.LineErrors.PacketMismatch -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Line.LineErrors.PhaseBlocked -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Line.LineErrors.SetupMissing -> Aw.Kernel.ErrorDefinition!
