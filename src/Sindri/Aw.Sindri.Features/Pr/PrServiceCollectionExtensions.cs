@@ -7,11 +7,13 @@ namespace Aw.Sindri.Features.Pr;
 /// <summary>Registers the PR babysitter's Step runtimes (babysitter spec §10.1) and what its agent Steps are told (Appendix A).</summary>
 internal static class PrServiceCollectionExtensions
 {
-    /// <summary>Adds the PR Steps' runtimes by block id (their descriptors are registered with the blocks) and the instructions of the babysitter's agent Steps.</summary>
+    /// <summary>Adds the PR Steps' runtimes by block id (their descriptors are registered with the blocks) and the agent Steps' instructions.</summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
     internal static IServiceCollection AddPrSlices(this IServiceCollection services) => services
         .AddBlockRuntime<PrIntakeStep>()
         .AddBlockRuntime<PrSnapshotStep>()
-        .AddSingleton<IAgentStepInstructions, CiFixInstructions>();
+        .AddSingleton<IAgentStepInstructions, CiFixInstructions>()
+        .AddBlockRuntime<PrNextCommentStep>()
+        .AddBlockRuntime<PrHeldCommentStep>();
 }

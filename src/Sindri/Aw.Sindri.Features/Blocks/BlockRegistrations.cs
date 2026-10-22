@@ -56,12 +56,14 @@ internal static class BlockRegistrations
         .AddEvent(RecipeEvents.NotifyDelivered)
         .AddPrEvents();
 
-    /// <summary>Registers the shipped gates and the P6 effects.</summary>
+    /// <summary>Registers the shipped gates and the P6 and PB-E effects.</summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
     private static IServiceCollection AddGatesAndEffects(this IServiceCollection services) => services
         .AddGate<BudgetAvailableGate>()
         .AddGate<RouteStartableGate>()     // engine P7 unit U1: a stub over the profile's workflow.route
+        .AddGate<RevisionBoundGate>()
+        .AddGate<PrAutofixCapGate>()
         .AddEffect<ClaimRefEffect>()      // engine P6 unit (d)
         .AddEffect<NotifyDeskEffect>()    // engine P6 unit (c)
         .AddEffect<PrMergeEffect>()       // PB-E: the merge, expected-head checked
@@ -220,11 +222,9 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(RecheckSteps.Plan)
         .AddBlockDescriptor(RecheckSteps.RerunScripts)
         .AddBlockDescriptor(RecheckSteps.Log)
-        .AddBlockDescriptor(PrGates.RevisionBound)
         .AddBlockDescriptor(PrGates.BaseIsDefault)
-        .AddBlockDescriptor(PrGates.AutofixCap)
-        .AddBlockDescriptor(PrGates.DiffScope)
-        .AddBlockDescriptor(PrGates.SecretScan)
+        .AddGate<PrDiffScopeGate>()
+        .AddGate<PrSecretScanGate>()
         .AddBlockDescriptor(PrEffects.Restack)
         .AddBlockDescriptor(PrEffects.CreateStacked)
         .AddBlockDescriptor(PrEffects.MergeDocs)
