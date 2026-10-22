@@ -99,8 +99,20 @@ internal sealed partial class FakeSindriApi
     /// <returns>The answer.</returns>
     internal RouteAnswer CodeFor(CodeQuery query) => CodeAnswer ?? ContextAnswers.Code(query);
 
-    public Task<Result<CodeView>> Code(Uri api, CodeQuery query, CancellationToken cancellationToken) =>
-        Context<CodeView>(api, "/sindri/context/code", CodeFor(query), CodeGate, cancellationToken);
+    /// <summary>Every code lens read, in order.</summary>
+    public IReadOnlyList<CodeQuery> CodeQueries { get { lock (_gate) { return [.. _codeQueries]; } } }
+
+    private readonly List<CodeQuery> _codeQueries = [];
+
+    public Task<Result<CodeView>> Code(Uri api, CodeQuery query, CancellationToken cancellationToken)
+    {
+        lock (_gate)
+        {
+            _codeQueries.Add(query);
+        }
+
+        return Context<CodeView>(api, "/sindri/context/code", CodeFor(query), CodeGate, cancellationToken);
+    }
 
     public Task<Result<FileMapView>> FileMap(Uri api, FileMapQuery query, CancellationToken cancellationToken) =>
         Context<FileMapView>(api, "/sindri/context/filemap", FileMapFor(query), FileMapGate, cancellationToken);

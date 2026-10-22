@@ -14,7 +14,9 @@ public sealed class ContextCodeSelectionTests
     private const string ManagerFile = "code:src/tabs/TabManager.ts";
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static async Task<ContextPageViewModel> Open()
+    private static async Task<ContextPageViewModel> Open() => (await OpenWith()).Page;
+
+    private static async Task<(ContextPageViewModel Page, FakeSindriApi Api)> OpenWith()
     {
         var api = new FakeSindriApi { CodeAnswer = RouteAnswer.Api("context-code", "edges-and-lexical") };
         var clipboard = new FakeClipboard();
@@ -22,18 +24,19 @@ public sealed class ContextCodeSelectionTests
         var page = new ContextPageViewModel(new ContextPorts(api, () => new Uri("http://127.0.0.1:1/"), clipboard, clock, new CatalogViewModel(clipboard, clock), _ => { })) { AnchorText = Manager };
         await page.Submit(Token);
         Assert.NotNull(page.Map);
-        return page;
+        return (page, api);
     }
 
     [Fact]
     public async Task Choosing_a_file_reads_the_code_lens_and_shows_the_panels()
     {
-        var page = await Open();
+        var (page, api) = await OpenWith();
         Assert.False(page.Code.HasPanels);
 
         await page.Select(ManagerFile, Token);
 
         Assert.True(page.Code.HasPanels);
+        Assert.Equal([ManagerFile], Assert.Single(api.CodeQueries).Anchors);
     }
 
     [Fact]
