@@ -1,8 +1,8 @@
 using System.Globalization;
 using Aw.CodeIndex.Core;
 using Aw.CodeIndex.Core.Model;
-using Aw.CodeIndex.Tests.Build;
 using Aw.CodeIndex.Testing;
+using Aw.CodeIndex.Tests.Build;
 
 namespace Aw.CodeIndex.Tests.Embedding;
 
@@ -34,7 +34,7 @@ public sealed class EmbeddingsLayerTests
 
         var report = await harness.Build(BuildHarness.First, cancellationToken: Token);
 
-        Assert.Equal(["M0000\nvoid M0000()\n{ Work(0); }", "M0001\nvoid M0001()\n{ Work(1); }"], Assert.Single(embedder.Batches), StringComparer.Ordinal);
+        Assert.Equal(["M0000\nvoid M0000()\n{ Work(0000); }", "M0001\nvoid M0001()\n{ Work(0001); }"], Assert.Single(embedder.Batches), StringComparer.Ordinal);
         Assert.Equal((2, 2), (report.Embedded, report.Embeddable));
         var layer = await Layer(harness);
         Assert.Equal(LayerState.Ok, layer.State);
