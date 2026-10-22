@@ -226,8 +226,8 @@ write_profile() {
       echo "  sessions: { enabled: true }"
     fi
     echo "workflow:"
-    # the effect ids the code registers (grep '\"effect\\.' src/Sindri); effect.line.start-phase, which the docs name, is not registered
-    echo "  effects: [effect.line.report, effect.claim.ref, effect.pr.open, effect.notify.desk, effect.pr.push, effect.pr.reply, effect.pr.record, effect.pr.rerun-checks, effect.pr.restack, effect.pr.create-stacked, effect.pr.merge, effect.pr.merge-docs]"
+    # the effect ids the code registers (grep '\"effect\\.' src/Sindri)
+    echo "  effects: [effect.line.report, effect.claim.ref, effect.pr.open, effect.notify.desk, effect.pr.push, effect.pr.reply, effect.pr.record, effect.pr.rerun-checks, effect.pr.restack, effect.pr.create-stacked, effect.pr.merge, effect.pr.merge-docs, effect.pr.purge-marks, effect.line.start-phase]"
     echo "  forge: { adapter: file, hosts: [forge.test] }"
     if [ -n "$AGENT" ]; then echo "  agent: { target: $AGENT }"; fi
   } > "$file"
