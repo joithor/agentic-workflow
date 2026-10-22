@@ -49,8 +49,10 @@ internal sealed partial class CodeIndexCardViewModel(ISindriApi api, TimeProvide
         }
 
         var repos = read.Value.Repos;
-        Lines = [.. repos.Select(r => new CodeIndexLine(Line(r)))];
-        Word = repos.Count == 0 ? string.Empty : repos.All(Fine) ? Labels.CodeIndexOk : Labels.CodeIndexNeedsLook;
+        var health = (read.Value.Health ?? []).ToDictionary(h => h.Repo, StringComparer.Ordinal);
+        var views = repos.Select(r => (Repo: r, Health: health.GetValueOrDefault(r.Repo))).ToList();
+        Lines = [.. views.Select(v => new CodeIndexLine(Line(v.Repo, v.Health)))];
+        Word = repos.Count == 0 ? string.Empty : views.TrueForAll(v => Fine(v.Repo, v.Health)) ? Labels.CodeIndexOk : Labels.CodeIndexNeedsLook;
         Show(repos.Count == 0 ? Labels.CodeIndexNone : string.Empty);
     }
 
@@ -62,25 +64,42 @@ internal sealed partial class CodeIndexCardViewModel(ISindriApi api, TimeProvide
 
     private static bool One(string state, params string[] words) => words.Contains(state, StringComparer.Ordinal);
 
-    private static bool Fine(CodeIndexRepoView repo) =>
-        string.Equals(repo.State, "ok", StringComparison.Ordinal) && repo.Layers.All(static l => One(l.State, "ok", "disabled", "pending"));
+    // stale, building and waiting override the file state; the other health states are the file's own.
+    private static string StateOf(CodeIndexRepoView repo, CodeIndexHealthView? health) =>
+        health is { } h && One(h.State, "stale", "building", "waiting") ? h.State : repo.State;
 
-    private string Line(CodeIndexRepoView repo)
+    private static bool Fine(CodeIndexRepoView repo, CodeIndexHealthView? health) =>
+        string.Equals(StateOf(repo, health), "ok", StringComparison.Ordinal) && repo.Layers.All(static l => One(l.State, "ok", "disabled", "pending"));
+
+    private string Line(CodeIndexRepoView repo, CodeIndexHealthView? health)
     {
+        var word = StateWords(StateOf(repo, health), health);
         if (repo.Commit is not { Length: > 0 } commit)
         {
-            return repo.Repo + ": " + Labels.CodeIndexState(repo.State);
+            return repo.Repo + ": " + word;
         }
 
         var age = repo.BuiltAt is { } built ? ", " + Labels.CodeIndexAge(clock.GetUtcNow() - built) : string.Empty;
-        var state = string.Equals(repo.State, "ok", StringComparison.Ordinal) ? string.Empty : " (" + Labels.CodeIndexState(repo.State) + ")";
-        var layers = string.Join(" · ", repo.Layers.Where(Shown).Select(Words));
+        var state = string.Equals(StateOf(repo, health), "ok", StringComparison.Ordinal) ? string.Empty : " (" + word + ")";
+        var shown = repo.Layers.Where(Shown).Select(l => Words(l, health)).ToList();
+        if (health?.EmbeddingsPercent is { } percent && !repo.Layers.Any(static l => string.Equals(l.Layer, "embeddings", StringComparison.Ordinal)))
+        {
+            shown.Add(Labels.CodeIndexEmbeddings(percent));
+        }
+
+        var layers = string.Join(" · ", shown);
         return repo.Repo + " @ " + commit[..Math.Min(ShortSha, commit.Length)] + age + state + (layers.Length == 0 ? string.Empty : ", " + layers);
     }
 
     private static bool Shown(CodeIndexLayerView layer) => _named.Contains(layer.Layer, StringComparer.Ordinal) || !One(layer.State, "ok", "disabled");
 
-    private static string Words(CodeIndexLayerView layer) => Labels.CodeIndexLayer(layer.Layer, layer.State, layer.Code, Percent(layer));
+    // While waiting, the server's own words ("waiting for a free build slot", "retrying in N min") replace the state's.
+    private static string StateWords(string state, CodeIndexHealthView? health) =>
+        string.Equals(state, "waiting", StringComparison.Ordinal) && health?.Waiting is { Length: > 0 } waiting ? waiting : Labels.CodeIndexState(state);
+
+    // The health's percent is the server's figure for the embeddings layer; the layer's own detail is the fallback.
+    private static string Words(CodeIndexLayerView layer, CodeIndexHealthView? health) =>
+        Labels.CodeIndexLayer(layer.Layer, layer.State, layer.Code, string.Equals(layer.Layer, "embeddings", StringComparison.Ordinal) ? health?.EmbeddingsPercent ?? Percent(layer) : Percent(layer));
 
     // The embeddings layer says "31 of 100 embedded"; that is the only percentage the status view carries.
     [GeneratedRegex(@"^(?<done>\d+) of (?<all>\d+) embedded$", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]

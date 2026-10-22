@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
@@ -25,9 +26,14 @@ public sealed class CodeIndexCardTests
     private string Repo(string name, string state, string? commit, int builtMinutesAgo, params string[] layers) =>
         $$"""{"repo":"{{name}}","state":"{{state}}","commit":{{(commit is null ? "null" : "\"" + commit + "\"")}},"builtAt":"{{_clock.GetUtcNow().AddMinutes(-builtMinutesAgo):O}}","layers":[{{string.Join(',', layers)}}],"counts":null}""";
 
-    private async Task<CodeIndexCardViewModel> Read(params string[] repos)
+    private static string Health(string name, string state, int? embeddingsPercent = null, string? waiting = null) =>
+        $$"""{"repo":"{{name}}","state":"{{state}}","embeddingsPercent":{{(embeddingsPercent is { } p ? p.ToString(CultureInfo.InvariantCulture) : "null")}},"waiting":{{(waiting is null ? "null" : "\"" + waiting + "\"")}}}""";
+
+    private async Task<CodeIndexCardViewModel> Read(params string[] repos) => await ReadWithHealth(repos, []);
+
+    private async Task<CodeIndexCardViewModel> ReadWithHealth(string[] repos, string[] health)
     {
-        _server.CodeIndexStatusAnswer = new RouteAnswer(HttpStatusCode.OK, $$"""{"repos":[{{string.Join(',', repos)}}]}""");
+        _server.CodeIndexStatusAnswer = new RouteAnswer(HttpStatusCode.OK, $$"""{"repos":[{{string.Join(',', repos)}}],"health":[{{string.Join(',', health)}}]}""");
         var card = new CodeIndexCardViewModel(_server, _clock);
         await card.Refresh(_api, Token);
         return card;
@@ -119,5 +125,52 @@ public sealed class CodeIndexCardTests
         var card = new CodeIndexCardViewModel(_server, _clock);
 
         Assert.Equal((Labels.ReadingCodeIndex, 0), (card.Message, card.Lines.Count));
+    }
+
+    [Theory]
+    [InlineData("stale", "repo @ abcdef0, 3 min old (behind main), structure ok")]
+    [InlineData("building", "repo @ abcdef0, 3 min old (building), structure ok")]
+    public async Task A_health_overlay_overrides_the_file_state(string state, string expected)
+    {
+        var card = await ReadWithHealth([Repo("repo", "ok", Sha, 3, Layer("structure", "ok"))], [Health("repo", state)]);
+
+        Assert.Equal(expected, Assert.Single(card.Lines).Text);
+        Assert.Equal(Labels.CodeIndexNeedsLook, card.Word);
+    }
+
+    [Theory]
+    [InlineData("waiting for a free build slot")]
+    [InlineData("retrying in 4 min")]
+    public async Task A_waiting_repo_shows_the_servers_waiting_words(string waiting)
+    {
+        var card = await ReadWithHealth([Repo("repo", "ok", Sha, 3, Layer("structure", "ok"))], [Health("repo", "waiting", waiting: waiting)]);
+
+        Assert.Equal($"repo @ abcdef0, 3 min old ({waiting}), structure ok", Assert.Single(card.Lines).Text);
+    }
+
+    [Fact]
+    public async Task A_waiting_repo_with_no_commit_shows_the_servers_waiting_words()
+    {
+        const string waiting = "retrying in 2 min";
+
+        var card = await ReadWithHealth([Repo("repo", "missing", commit: null, 0)], [Health("repo", "waiting", waiting: waiting)]);
+
+        Assert.Equal("repo: " + waiting, Assert.Single(card.Lines).Text);
+    }
+
+    [Fact]
+    public async Task The_embeddings_percent_shows_when_the_health_carries_one()
+    {
+        var card = await ReadWithHealth([Repo("repo", "ok", Sha, 3, Layer("structure", "ok"))], [Health("repo", "ok", embeddingsPercent: 42)]);
+
+        Assert.Equal("repo @ abcdef0, 3 min old, structure ok · embeddings 42%", Assert.Single(card.Lines).Text);
+    }
+
+    [Fact]
+    public async Task A_healthy_overlay_changes_nothing()
+    {
+        var card = await ReadWithHealth([Repo("repo", "ok", Sha, 3, Layer("structure", "ok"))], [Health("repo", "ok")]);
+
+        Assert.Equal(("repo @ abcdef0, 3 min old, structure ok", Labels.CodeIndexOk), (Assert.Single(card.Lines).Text, card.Word));
     }
 }

@@ -51,6 +51,11 @@ internal static partial class Labels
         _ => string.Create(CultureInfo.InvariantCulture, $"{(int)age.TotalDays} d old"),
     };
 
+    /// <summary>The embeddings figure on a line whose index has no embeddings layer to carry it.</summary>
+    /// <param name="percent">How much is done.</param>
+    /// <returns>"embeddings 42%".</returns>
+    internal static string CodeIndexEmbeddings(int percent) => string.Create(CultureInfo.InvariantCulture, $"embeddings {percent}%");
+
     /// <summary>One layer's words: "graph ok", "graph unavailable (SND-CODEIDX-020)", "embeddings pending 31%".</summary>
     /// <param name="layer">The layer's name.</param>
     /// <param name="state">The layer's state.</param>
