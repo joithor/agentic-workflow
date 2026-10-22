@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Platform;
@@ -9,6 +10,7 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// protected, so its button copies the row's served command with the stepper's rounds filled in and sends nothing; a hint and a stop go
 /// to the instance as ApplyCommand:answer-text and ApplyCommand:answer-reject, once per press.
 /// </summary>
+#pragma warning disable MA0182 // until the needs-you card places the answer form
 internal sealed partial class PausedAnswerViewModel : ObservableObject
 {
     internal const int MinTries = 1;
@@ -123,7 +125,7 @@ internal sealed partial class PausedAnswerViewModel : ObservableObject
     public bool HasLine => Line.Length > 0;
 
     /// <summary>The command more tries copies: the row's served command with the stepper's rounds.</summary>
-    public string TerminalCli => GrantFlag.Replace(_cli, $"--grant {ExtraTries}");
+    public string TerminalCli => GrantFlag.Replace(_cli, string.Create(CultureInfo.InvariantCulture, $"--grant {ExtraTries}"));
 
     /// <summary>True when the button can be pressed: not sending, not sent, and the chosen option has what it needs.</summary>
     public bool CanSend => _instance is not null && !IsSending && !IsSent && Option switch
@@ -141,7 +143,7 @@ internal sealed partial class PausedAnswerViewModel : ObservableObject
     /// <param name="entry">The row; null, or a row that is not a paused run, for none.</param>
     internal void Show(NeedsYouEntry? entry)
     {
-        var instance = entry is not null && entry.Id.StartsWith("park:", StringComparison.Ordinal) && entry.Subject is { Kind: "instance" } subject ? subject.Id : null;
+        var instance = entry is not null && entry.Id.StartsWith("park:", StringComparison.Ordinal) && entry.Subject is { } subject && string.Equals(subject.Kind, "instance", StringComparison.Ordinal) ? subject.Id : null;
         var same = instance is not null && string.Equals(instance, _instance, StringComparison.Ordinal);
         (_instance, _cli) = (instance, entry?.Cli ?? "");
         if (!same)

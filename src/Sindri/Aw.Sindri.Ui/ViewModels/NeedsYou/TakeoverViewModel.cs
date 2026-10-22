@@ -7,8 +7,9 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// <summary>
 /// A run the user took over (F3 needs-you spec §3, §4): the clock text from the served time left, the footer and badge that say
 /// whether the clock stands still, the 2-hour nudge from the served "takeover:" row, and Hand back, which sends
-/// <c>ApplyCommand:handback</c> and nothing else. The run canvas hosts the inspector block these properties fill.
+/// "ApplyCommand:handback" and nothing else. The run canvas hosts the inspector block these properties fill.
 /// </summary>
+#pragma warning disable MA0182 // until the run view places the inspector block
 internal sealed class TakeoverViewModel : ObservableObject
 {
     private const string TakenOverState = "taken-over";
@@ -20,13 +21,13 @@ internal sealed class TakeoverViewModel : ObservableObject
         nameof(IsSending), nameof(Refusal), nameof(HasRefusal),
     ];
 
+    private long? Left { get; set; }
     private readonly ISindriApi _api;
     private readonly Func<Uri?> _apiUrl;
     private readonly InstanceCommander _commands;
     private readonly TimeProvider _clock;
     private string? _instance;
-    private long? _left;
-    private bool _nudge;
+    private bool Nudge { get; set; }
     private DateTimeOffset _since;
     private DateTimeOffset? _dismissed;
 
@@ -63,10 +64,10 @@ internal sealed class TakeoverViewModel : ObservableObject
     public string Badge => IsTakenOver ? Labels.NeedsYouTookOver : Labels.NeedsYouRunning;
 
     /// <summary>The time left as the engine says it ("2h 50m"); empty when none is served.</summary>
-    public string TimeLeft => _left is { } left ? Labels.Duration(left) : "";
+    public string TimeLeft => Left is { } left ? Labels.Duration(left) : "";
 
     /// <summary>The node footer: the clock stands still while the user has the run, runs again after.</summary>
-    public string Footer => _left is null
+    public string Footer => Left is null
         ? Labels.NeedsYouClockPausedNoTime
         : IsTakenOver ? Labels.NeedsYouClockPaused(TimeLeft) : Labels.NeedsYouClockRunning(TimeLeft);
 
@@ -77,7 +78,7 @@ internal sealed class TakeoverViewModel : ObservableObject
     public string HandBackBox => Labels.NeedsYouHandBackBox(TimeLeft);
 
     /// <summary>True while the 2-hour nudge shows.</summary>
-    public bool NudgeVisible => _nudge && IsTakenOver;
+    public bool NudgeVisible => Nudge && IsTakenOver;
 
     /// <summary>The nudge's title: whole hours since the served row's time, at least two.</summary>
     public string NudgeTitle => Labels.NeedsYouNudgeTitle(Math.Max(2, (int)(_clock.GetUtcNow() - _since).TotalHours));
@@ -116,7 +117,7 @@ internal sealed class TakeoverViewModel : ObservableObject
 
         var status = read.Value.Current.Status;
         IsTakenOver = status.Paused is not null || string.Equals(status.Header.State, TakenOverState, StringComparison.Ordinal);
-        _left = status.Paused?.TimeoutLeftSeconds ?? _left;   // handed back, the instance serves none: the footer keeps the time that was left
+        Left = status.Paused?.TimeoutLeftSeconds ?? Left;   // handed back, the instance serves none: the footer keeps the time that was left
         Refresh();
     }
 
@@ -126,7 +127,7 @@ internal sealed class TakeoverViewModel : ObservableObject
     {
         ArgumentNullException.ThrowIfNull(rows);
         var row = _instance is null ? null : rows.FirstOrDefault(r => string.Equals(r.Id, RowPrefix + _instance, StringComparison.Ordinal));
-        _nudge = row is not null && _dismissed != row.Since;
+        Nudge = row is not null && _dismissed != row.Since;
         _since = row?.Since ?? _since;
         if (row is null)
         {
@@ -140,11 +141,11 @@ internal sealed class TakeoverViewModel : ObservableObject
     internal void NotYet()
     {
         _dismissed = _since;
-        _nudge = false;
+        Nudge = false;
         Refresh();
     }
 
-    /// <summary>Hand back, in the inspector or the nudge: sends <c>ApplyCommand:handback</c>, once per press, and nothing else.</summary>
+    /// <summary>Hand back, in the inspector or the nudge: sends "ApplyCommand:handback", once per press, and nothing else.</summary>
     /// <returns>A task that completes when the answer came.</returns>
     internal async Task HandBack()
     {
@@ -156,13 +157,13 @@ internal sealed class TakeoverViewModel : ObservableObject
         var answer = await Send(new ApplyCommandBody(instance, CommandKind.Handback)).ConfigureAwait(true);
         if (answer is { IsError: false })
         {
-            (IsTakenOver, _nudge, ToastVisible) = (false, false, true);
+            (IsTakenOver, Nudge, ToastVisible) = (false, false, true);
             ToastExpiry = DropToast();
             Refresh();
         }
     }
 
-    /// <summary>Cancel run, in the inspector: sends <c>ApplyCommand:cancel</c>. The caller asks first.</summary>
+    /// <summary>Cancel run, in the inspector: sends "ApplyCommand:cancel". The caller asks first.</summary>
     /// <returns>A task that completes when the answer came.</returns>
     internal async Task CancelRun()
     {
