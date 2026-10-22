@@ -16678,7 +16678,6 @@ override Aw.Sindri.Core.LensPacks.PackDirectory.GetHashCode() -> int
 override Aw.Sindri.Core.LensPacks.PackDirectory.ToString() -> string!
 static Aw.Sindri.Core.LensPacks.PackDirectory.operator !=(Aw.Sindri.Core.LensPacks.PackDirectory? left, Aw.Sindri.Core.LensPacks.PackDirectory? right) -> bool
 static Aw.Sindri.Core.LensPacks.PackDirectory.operator ==(Aw.Sindri.Core.LensPacks.PackDirectory? left, Aw.Sindri.Core.LensPacks.PackDirectory? right) -> bool
-
 Aw.Sindri.Core.Scheduling.ServiceActions
 const Aw.Sindri.Core.Scheduling.ServiceActions.Pause = "pause" -> string!
 const Aw.Sindri.Core.Scheduling.ServiceActions.Resume = "resume" -> string!
@@ -16762,8 +16761,6 @@ Aw.Sindri.Core.Launch.IAgentTrust.Untrust(string! directory, System.Threading.Ca
 Aw.Sindri.Core.Launch.ILaunchShutdown
 Aw.Sindri.Core.Launch.ILaunchShutdown.StopAll(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int>
 static readonly Aw.Sindri.Core.SindriErrors.LaunchTrustUnavailable -> Aw.Kernel.ErrorDefinition!
-
-
 Aw.Sindri.Core.Launch.EvaluatorLaunch
 Aw.Sindri.Core.Launch.EvaluatorLaunch.<Clone>$() -> Aw.Sindri.Core.Launch.EvaluatorLaunch!
 Aw.Sindri.Core.Launch.EvaluatorLaunch.Deconstruct(out string! HeadSha, out string! HoldoutPath, out string! PhaseWorktree) -> void
@@ -16923,13 +16920,13 @@ static Aw.Sindri.Core.EngineReads.EngineView.operator !=(Aw.Sindri.Core.EngineRe
 static Aw.Sindri.Core.EngineReads.EngineView.operator ==(Aw.Sindri.Core.EngineReads.EngineView? left, Aw.Sindri.Core.EngineReads.EngineView? right) -> bool
 Aw.Sindri.Core.EngineReads.EngineRecipeRef
 Aw.Sindri.Core.EngineReads.EngineRecipeRef.<Clone>$() -> Aw.Sindri.Core.EngineReads.EngineRecipeRef!
-Aw.Sindri.Core.EngineReads.EngineRecipeRef.Id.get -> string!
+Aw.Sindri.Core.EngineReads.EngineRecipeRef.Id.get -> Aw.Sindri.Core.Workflow.Ids.RecipeId
 Aw.Sindri.Core.EngineReads.EngineRecipeRef.Id.init -> void
 Aw.Sindri.Core.EngineReads.EngineRecipeRef.Hash.get -> string?
 Aw.Sindri.Core.EngineReads.EngineRecipeRef.Hash.init -> void
-Aw.Sindri.Core.EngineReads.EngineRecipeRef.Deconstruct(out string! Id, out string? Hash) -> void
+Aw.Sindri.Core.EngineReads.EngineRecipeRef.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out string? Hash) -> void
 Aw.Sindri.Core.EngineReads.EngineRecipeRef.Equals(Aw.Sindri.Core.EngineReads.EngineRecipeRef? other) -> bool
-Aw.Sindri.Core.EngineReads.EngineRecipeRef.EngineRecipeRef(string! Id, string? Hash) -> void
+Aw.Sindri.Core.EngineReads.EngineRecipeRef.EngineRecipeRef(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, string? Hash) -> void
 override Aw.Sindri.Core.EngineReads.EngineRecipeRef.Equals(object? obj) -> bool
 override Aw.Sindri.Core.EngineReads.EngineRecipeRef.GetHashCode() -> int
 override Aw.Sindri.Core.EngineReads.EngineRecipeRef.ToString() -> string!
@@ -17118,11 +17115,11 @@ Aw.Sindri.Core.EngineReads.EngineEventFacts.Name.get -> string?
 Aw.Sindri.Core.EngineReads.EngineEventFacts.Name.init -> void
 Aw.Sindri.Core.EngineReads.EngineEventFacts.Summary.get -> string!
 Aw.Sindri.Core.EngineReads.EngineEventFacts.Summary.init -> void
-Aw.Sindri.Core.EngineReads.EngineEventFacts.ActivityId.get -> string?
-Aw.Sindri.Core.EngineReads.EngineEventFacts.ActivityId.init -> void
-Aw.Sindri.Core.EngineReads.EngineEventFacts.Deconstruct(out long EventId, out System.DateTimeOffset Time, out string! Type, out string? Name, out string! Summary, out string? ActivityId) -> void
+Aw.Sindri.Core.EngineReads.EngineEventFacts.Activity.get -> string?
+Aw.Sindri.Core.EngineReads.EngineEventFacts.Activity.init -> void
+Aw.Sindri.Core.EngineReads.EngineEventFacts.Deconstruct(out long EventId, out System.DateTimeOffset Time, out string! Type, out string? Name, out string! Summary, out string? Activity) -> void
 Aw.Sindri.Core.EngineReads.EngineEventFacts.Equals(Aw.Sindri.Core.EngineReads.EngineEventFacts? other) -> bool
-Aw.Sindri.Core.EngineReads.EngineEventFacts.EngineEventFacts(long EventId, System.DateTimeOffset Time, string! Type, string? Name, string! Summary, string? ActivityId) -> void
+Aw.Sindri.Core.EngineReads.EngineEventFacts.EngineEventFacts(long EventId, System.DateTimeOffset Time, string! Type, string? Name, string! Summary, string? Activity) -> void
 override Aw.Sindri.Core.EngineReads.EngineEventFacts.Equals(object? obj) -> bool
 override Aw.Sindri.Core.EngineReads.EngineEventFacts.GetHashCode() -> int
 override Aw.Sindri.Core.EngineReads.EngineEventFacts.ToString() -> string!
@@ -17132,15 +17129,15 @@ Aw.Sindri.Core.EngineReads.EngineHistoryFacts
 Aw.Sindri.Core.EngineReads.EngineHistoryFacts.<Clone>$() -> Aw.Sindri.Core.EngineReads.EngineHistoryFacts!
 Aw.Sindri.Core.EngineReads.EngineHistoryFacts.Address.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
 Aw.Sindri.Core.EngineReads.EngineHistoryFacts.Address.init -> void
-Aw.Sindri.Core.EngineReads.EngineHistoryFacts.RunId.get -> string!
-Aw.Sindri.Core.EngineReads.EngineHistoryFacts.RunId.init -> void
+Aw.Sindri.Core.EngineReads.EngineHistoryFacts.Run.get -> string!
+Aw.Sindri.Core.EngineReads.EngineHistoryFacts.Run.init -> void
 Aw.Sindri.Core.EngineReads.EngineHistoryFacts.Events.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.EngineReads.EngineEventFacts!>!
 Aw.Sindri.Core.EngineReads.EngineHistoryFacts.Events.init -> void
 Aw.Sindri.Core.EngineReads.EngineHistoryFacts.Total.get -> long
 Aw.Sindri.Core.EngineReads.EngineHistoryFacts.Total.init -> void
-Aw.Sindri.Core.EngineReads.EngineHistoryFacts.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out string! RunId, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.EngineReads.EngineEventFacts!>! Events, out long Total) -> void
+Aw.Sindri.Core.EngineReads.EngineHistoryFacts.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out string! Run, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.EngineReads.EngineEventFacts!>! Events, out long Total) -> void
 Aw.Sindri.Core.EngineReads.EngineHistoryFacts.Equals(Aw.Sindri.Core.EngineReads.EngineHistoryFacts? other) -> bool
-Aw.Sindri.Core.EngineReads.EngineHistoryFacts.EngineHistoryFacts(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, string! RunId, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.EngineReads.EngineEventFacts!>! Events, long Total) -> void
+Aw.Sindri.Core.EngineReads.EngineHistoryFacts.EngineHistoryFacts(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, string! Run, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.EngineReads.EngineEventFacts!>! Events, long Total) -> void
 override Aw.Sindri.Core.EngineReads.EngineHistoryFacts.Equals(object? obj) -> bool
 override Aw.Sindri.Core.EngineReads.EngineHistoryFacts.GetHashCode() -> int
 override Aw.Sindri.Core.EngineReads.EngineHistoryFacts.ToString() -> string!
@@ -17153,7 +17150,7 @@ Aw.Sindri.Core.EngineReads.IEngineReader.Mirror(System.Threading.CancellationTok
 Aw.Sindri.Core.EngineReads.IEngineReader.Server(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.EngineReads.EngineServer!>!>
 Aw.Sindri.Core.EngineReads.IEngineReader.Worker(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.EngineReads.EngineWorker!>!>
 Aw.Sindri.Core.EngineReads.IMirroredSequences
-Aw.Sindri.Core.EngineReads.IMirroredSequences.Of(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, string! runId, System.Collections.Generic.IReadOnlyCollection<string!>! activityIds, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyDictionary<string!, long>!>!>
+Aw.Sindri.Core.EngineReads.IMirroredSequences.Of(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, string! run, System.Collections.Generic.IReadOnlyCollection<string!>! activities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyDictionary<string!, long>!>!>
 Aw.Sindri.Core.EngineReads.EngineStuck
 static Aw.Sindri.Core.EngineReads.EngineStuck.Is(Aw.Sindri.Core.EngineReads.EngineWaiting? waiting, int timers, System.DateTimeOffset now) -> bool
 static readonly Aw.Sindri.Core.EngineReads.EngineStuck.After -> System.TimeSpan
@@ -17163,6 +17160,10 @@ const Aw.Sindri.Core.EngineReads.EngineWaitKinds.Child = "child" -> string!
 const Aw.Sindri.Core.EngineReads.EngineWaitKinds.Signal = "signal" -> string!
 const Aw.Sindri.Core.EngineReads.EngineWaitKinds.Timer = "timer" -> string!
 const Aw.Sindri.Core.EngineReads.EngineWaitKinds.Update = "update" -> string!
+Aw.Sindri.Core.EngineReads.EngineProjection
+static Aw.Sindri.Core.EngineReads.EngineProjection.Instance(Aw.Sindri.Core.EngineReads.EngineInstanceFacts! facts, System.DateTimeOffset now) -> Aw.Sindri.Core.EngineReads.EngineInstance!
+static Aw.Sindri.Core.EngineReads.EngineProjection.Pending(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.EngineReads.EngineInstanceFacts!>! running, System.DateTimeOffset now) -> Aw.Sindri.Core.EngineReads.EnginePending!
+static Aw.Sindri.Core.EngineReads.EngineProjection.Stuck(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.EngineReads.EngineInstanceFacts!>! running, System.DateTimeOffset now) -> int
 static readonly Aw.Sindri.Core.SindriErrors.EngineNotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.EngineUnavailable -> Aw.Kernel.ErrorDefinition!
 static Aw.Sindri.Core.Health.HealthSummary.WithStuck(Aw.Sindri.Core.Health.HealthReport! report, int stuck) -> Aw.Sindri.Core.Health.HealthReport!

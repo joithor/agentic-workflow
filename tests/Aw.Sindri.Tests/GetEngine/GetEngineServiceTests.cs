@@ -39,6 +39,7 @@ public sealed class GetEngineServiceTests
         var served = await Service().Handle(new GetEngineRequest(), TestContext.Current.CancellationToken);
 
         Assert.Equal(new EnginePending(Updates: 1, Signals: 2, Stuck: 2, ContinueAsNew: 0), served.Value.Pending);
+        Assert.Equal(1, served.Value.Worker.ActivitiesRunning);   // counted from the instances that wait on an activity, not taken from the worker's facts
     }
 
     [Fact]

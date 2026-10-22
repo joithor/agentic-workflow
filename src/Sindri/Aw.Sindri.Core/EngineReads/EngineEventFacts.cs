@@ -6,5 +6,5 @@ namespace Aw.Sindri.Core.EngineReads;
 /// <param name="Type">The event type.</param>
 /// <param name="Name">The activity, timer or signal it concerns.</param>
 /// <param name="Summary">One line of what happened.</param>
-/// <param name="ActivityId">The activity id of a RecordEvent marker, which the ledger row records as its Temporal event id; null for any other event.</param>
-public sealed record EngineEventFacts(long EventId, DateTimeOffset Time, string Type, string? Name, string Summary, string? ActivityId);
+/// <param name="Activity">The activity id of a RecordEvent marker, which the ledger row records as its Temporal event id; null for any other event.</param>
+public sealed record EngineEventFacts(long EventId, DateTimeOffset Time, string Type, string? Name, string Summary, string? Activity);

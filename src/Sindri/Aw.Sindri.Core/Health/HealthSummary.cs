@@ -53,7 +53,15 @@ public static class HealthSummary
     public static HealthReport WithStuck(HealthReport report, int stuck)
     {
         ArgumentNullException.ThrowIfNull(report);
-        throw new NotSupportedException();
+        if (stuck <= 0)
+        {
+            return report;
+        }
+
+        var clause = stuck == 1 ? "1 workflow instance is stuck waiting" : string.Create(CultureInfo.InvariantCulture, $"{stuck} workflow instances are stuck waiting");
+        var problems = report.Problems.Append(new HealthProblem("SND-ENGINE-002", $"{clause} on a signal or update with no timer: open the engine screen", clause)).ToList();
+        var word = report.Word == HealthWord.Healthy ? HealthWord.Degraded : report.Word;
+        return new HealthReport(word, problems, Sentence(word, problems));
     }
 
     private static IEnumerable<HealthProblem> Views(ViewsStatus views)

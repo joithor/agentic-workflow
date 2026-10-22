@@ -11,9 +11,9 @@ public interface IMirroredSequences
 {
     /// <summary>The ledger sequence of each activity id that has a mirrored row (the newest row when a replay left two).</summary>
     /// <param name="address">The instance.</param>
-    /// <param name="runId">The run the events belong to.</param>
-    /// <param name="activityIds">The activity ids to look up.</param>
+    /// <param name="run">The run the events belong to.</param>
+    /// <param name="activities">The activity ids to look up.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The sequence of each id that has a row; an id with none is absent.</returns>
-    public ValueTask<Result<IReadOnlyDictionary<string, long>>> Of(InstanceAddress address, string runId, IReadOnlyCollection<string> activityIds, CancellationToken cancellationToken);
+    public ValueTask<Result<IReadOnlyDictionary<string, long>>> Of(InstanceAddress address, string run, IReadOnlyCollection<string> activities, CancellationToken cancellationToken);
 }

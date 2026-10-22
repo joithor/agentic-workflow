@@ -55,7 +55,7 @@ public sealed class GetEngineHistoryServiceTests
     {
         Events(2);
 
-        var served = await Service().Handle(new GetEngineHistoryRequest(Id: WorkflowInstanceId.Of(_address).Value), Token);
+        var served = await Service().Handle(new GetEngineHistoryRequest(Instance: WorkflowInstanceId.Of(_address).Value), Token);
 
         Assert.Equal(2, served.Value.Events.Count);
     }

@@ -32,7 +32,7 @@ public sealed class ListEngineInstancesServiceTests
 
         Assert.Equal(new EngineWaitingOn("activity", "step.checks", 120), instance.WaitingOn);
         Assert.Equal(new EngineRetries(2, "exit 1"), instance.Retries);
-        Assert.Equal(("ITM-01JE9/item/1/step.4", "workflow.step", 88L, false), (instance.Address.Value, instance.Recipe.Id, instance.HistoryLength, instance.Stuck));
+        Assert.Equal(("ITM-01JE9/item/1/step.4", "workflow.step", 88L, false), (instance.Address.Value, instance.Recipe.Id.Value, instance.HistoryLength, instance.Stuck));
         Assert.StartsWith("WFI-", instance.Id.Value, StringComparison.Ordinal);
     }
 

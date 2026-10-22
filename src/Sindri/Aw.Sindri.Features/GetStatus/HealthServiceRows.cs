@@ -7,8 +7,14 @@ namespace Aw.Sindri.Features.GetStatus;
 /// <summary>The 'services' rows health judges: those of the approved profile's services and of the build's built-ins (<see cref="ApprovedServices"/>).</summary>
 /// <param name="views">Reads the services view.</param>
 /// <param name="builtIns">The build's built-in services.</param>
-internal sealed class HealthServiceRows(IViewReader views, IEnumerable<BuiltInService> builtIns)
+/// <param name="stuck">The engine's stuck instances (API P13); none when this build has no engine read side.</param>
+internal sealed class HealthServiceRows(IViewReader views, IEnumerable<BuiltInService> builtIns, StuckInstanceCount? stuck = null)
 {
+    /// <summary>How many workflow instances are stuck on a signal or update (API spec §3.8, E-30).</summary>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The count; 0 when the engine doesn't answer.</returns>
+    public ValueTask<int> Stuck(CancellationToken cancellationToken) => stuck is null ? ValueTask.FromResult(0) : stuck.Current(cancellationToken);
+
     /// <summary>The rows that count for health.</summary>
     /// <param name="approved">The approved profile, or null before the first approval.</param>
     /// <param name="cancellationToken">Cancels the read.</param>

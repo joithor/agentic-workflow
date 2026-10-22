@@ -1,5 +1,6 @@
 using Aw.Sindri.Core.EngineReads;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Testing.Engine;
 
@@ -14,7 +15,7 @@ public static class EngineFacts
     /// <param name="retries">The retries of its pending activity.</param>
     /// <returns>The facts.</returns>
     public static EngineInstanceFacts Instance(string address, EngineWaiting? waiting, string state = "checks", EngineTimer[]? timers = null, EngineRetries? retries = null) =>
-        new(InstanceAddress.From(address), new EngineRecipeRef("workflow.step", "3f1c09"), state, waiting, timers ?? [], retries, 88);
+        new(InstanceAddress.From(address), new EngineRecipeRef(RecipeId.From("workflow.step"), "3f1c09"), state, waiting, timers ?? [], retries, 88);
 
     /// <summary>A wait that began at <paramref name="since"/>.</summary>
     /// <param name="kind">One of <see cref="EngineWaitKinds"/>.</param>

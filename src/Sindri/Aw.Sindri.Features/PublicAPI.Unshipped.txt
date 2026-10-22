@@ -4490,15 +4490,15 @@ static Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest.operato
 static Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest.operator ==(Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest? left, Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest? right) -> bool
 Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest
 Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.<Clone>$() -> Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest!
-Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.Id.get -> string?
-Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.Id.init -> void
+Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.Instance.get -> string?
+Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.Instance.init -> void
 Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.Address.get -> string?
 Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.Address.init -> void
 Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.Page.get -> string?
 Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.Page.init -> void
-Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.Deconstruct(out string? Id, out string? Address, out string? Page) -> void
+Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.Deconstruct(out string? Instance, out string? Address, out string? Page) -> void
 Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.Equals(Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest? other) -> bool
-Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.GetEngineHistoryRequest(string? Id = null, string? Address = null, string? Page = null) -> void
+Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.GetEngineHistoryRequest(string? Instance = null, string? Address = null, string? Page = null) -> void
 override Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.Equals(object? obj) -> bool
 override Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.GetHashCode() -> int
 override Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.ToString() -> string!
