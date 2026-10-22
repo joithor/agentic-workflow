@@ -100,11 +100,15 @@ public sealed class DesignEvidenceStepTests
     [Fact]
     public async Task A_design_with_no_spec_text_is_incomplete_and_names_the_fix()
     {
-        var result = await new LineStation().DesignEvidenceRun(design =>
+        var station = new LineStation();
+        var facts = await station.DesignFacts(design =>
         {
             _ = design.Remove("spec");
             return design;
         });
+        facts["packs"] = "{}"; // no pinned style pack, so the style check doesn't stop the run before the packet is assembled
+
+        var result = await station.DesignEvidence().Run(LineStation.Context("step.design.evidence", LineStation.DesignAddress, facts), TestContext.Current.CancellationToken);
 
         Assert.Equal("incomplete", result.Result!.Outcome.Value);
         var finding = JsonNode.Parse(LineStation.Fact(result, "findings"))![0]!;

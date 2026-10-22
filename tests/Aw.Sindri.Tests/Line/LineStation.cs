@@ -77,7 +77,7 @@ internal sealed class LineStation
 
     internal PlanFreezeStep PlanFreeze() => new(Packets, Checkouts);
 
-    /// <summary>The design station's evidence facts: the scope the intake loaded, empty packs, the sound design, the round log and no accepted risks.</summary>
+    /// <summary>The design station's evidence facts: the scope and the packs the intake pinned, the sound design, the round log and no accepted risks.</summary>
     internal async Task<ScopingFacts> DesignFacts(Func<JsonObject, JsonObject>? edit = null)
     {
         var intake = await DesignIntake().Run(Context("step.design.intake", DesignAddress, new ScopingFacts { ["scopePacket"] = ScopePacket, ["designRevision"] = "First pass." }), TestContext.Current.CancellationToken);
@@ -85,7 +85,7 @@ internal sealed class LineStation
         return new ScopingFacts
         {
             ["scope"] = intake.Result!.Outputs[FactKey.From("fact:scope")].GetRawText(),
-            ["packs"] = "{}",
+            ["packs"] = intake.Result!.Outputs[FactKey.From("fact:packs")].GetRawText(),
             ["design"] = (edit?.Invoke(design) ?? design).ToJsonString(),
             ["findings"] = "[]",
             ["lensRounds"] = LensRounds,
