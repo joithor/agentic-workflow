@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Kernel;
 using Aw.Sindri.Core.Checks;
@@ -136,7 +137,7 @@ internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchCh
             return workspace.IsError ? workspace.Error : previous.Error;
         }
 
-        var cause = context.Arguments.TryGetValue("cause", out var text) && text.ValueKind == System.Text.Json.JsonValueKind.String ? text.GetString()! : "ci";   // why: checked to be a string just above
+        var cause = context.Arguments.TryGetValue("cause", out var text) && text.ValueKind == JsonValueKind.String ? text.GetString()! : "ci";   // why: checked to be a string just above
         return PrEffectFacts.Link(pr.Value) is { Length: > 0 } link && PrEffectFacts.Head(lease.Value) is { Length: > 0 } seen && PrEffectFacts.Path(workspace.Value) is { Length: > 0 } path
             ? new Request(link, seen, path, cause, CiFixesOf(previous.Value), ShaOf(previous.Value))
             : PrEffectFacts.Missing(context, "fact:pr (a link), fact:prState (head.sha) and fact:workspace (a path)");
@@ -144,10 +145,10 @@ internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchCh
 
     /// <summary>The counter the previous 'fact:push' carried; 0 when the instance holds none.</summary>
     private static int CiFixesOf(JsonElement? previous) =>
-        previous is { ValueKind: System.Text.Json.JsonValueKind.Object } fact && fact.TryGetProperty("ciFixes", out var count) && count.TryGetInt32(out var value) ? value : 0;
+        previous is { ValueKind: JsonValueKind.Object } fact && fact.TryGetProperty("ciFixes", out var count) && count.TryGetInt32(out var value) ? value : 0;
 
     private static string? ShaOf(JsonElement? previous) =>
-        previous is { ValueKind: System.Text.Json.JsonValueKind.Object } fact && fact.TryGetProperty("sha", out var sha) && sha.ValueKind == System.Text.Json.JsonValueKind.String ? sha.GetString() : null;
+        previous is { ValueKind: JsonValueKind.Object } fact && fact.TryGetProperty("sha", out var sha) && sha.ValueKind == JsonValueKind.String ? sha.GetString() : null;
 
     private sealed record Request(string Link, string Lease, string Workspace, string Cause, int CiFixes, string? PreviousSha);
 
