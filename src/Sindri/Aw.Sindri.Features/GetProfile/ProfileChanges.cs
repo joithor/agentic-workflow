@@ -78,6 +78,6 @@ internal sealed record ProfileChanges(IReadOnlyList<RepoEntry> NewRepos, IReadOn
 
     private static string Words(string every) =>
         Split(every) is { } split
-            ? string.Create(CultureInfo.InvariantCulture, $"{split.Count} {(split.Unit switch { 'h' => "hour", 'm' => "minute", _ => "second" })}{(split.Count == 1 ? string.Empty : "s")}")
+            ? string.Create(CultureInfo.InvariantCulture, $"{split.Count} {split.Unit switch { 'h' => "hour", 'm' => "minute", _ => "second" }}{(split.Count == 1 ? string.Empty : "s")}")
             : every;
 }

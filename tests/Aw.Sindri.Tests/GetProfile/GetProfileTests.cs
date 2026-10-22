@@ -81,7 +81,7 @@ public sealed class GetProfileTests
     public async Task Nothing_approved_yet_it_summarises_the_live_profile_with_the_real_path_and_file_facts()
     {
         var live = Live(new SindriProfile(1, "t", Repos: [new RepoEntry("web", "/link/web")], Workflow: new WorkflowSettings(Effects: ["effect.claim.ref"])));
-        _git.Has("/link/web", "/work/web").Weighs("/link/web", files: 120, bytes: 5 * 1024 * 1024 + 300_000, realPath: "/work/web");
+        _ = _git.Has("/link/web", "/work/web").Weighs("/link/web", files: 120, bytes: (5 * 1024 * 1024) + 300_000, realPath: "/work/web");
 
         var summary = (await Service(live: live).Handle(new GetProfileRequest(), Token)).Value.Summary;
 
@@ -103,7 +103,7 @@ public sealed class GetProfileTests
 
         var summary = (await Service(profile: approved, live: live).Handle(new GetProfileRequest(), Token)).Value.Summary;
 
-        Assert.Equal(["api"], summary!.Repos.Select(static r => r.Name));
+        Assert.Equal(["api"], summary!.Repos.Select(static r => r.Name), StringComparer.Ordinal);
         Assert.Equal(1, _git.Weighed);
     }
 

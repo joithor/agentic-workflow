@@ -14,11 +14,11 @@ public sealed class ProfileChangesTests
     [Fact, Trait("Lane", "unit")]
     public void With_nothing_approved_every_repo_service_and_effect_is_new()
     {
-        var live = Profile(repos: [new RepoEntry("web", "/work/web")], services: new() { ["heartbeat"] = new ServiceSettings("5s") }, effects: ["effect.claim.ref"]);
+        var live = Profile(repos: [new RepoEntry("web", "/work/web")], services: new(StringComparer.Ordinal) { ["heartbeat"] = new ServiceSettings("5s") }, effects: ["effect.claim.ref"]);
 
         var changes = ProfileChanges.Between(approved: null, live, _sentences);
 
-        Assert.Equal(["web"], changes.NewRepos.Select(static r => r.Name));
+        Assert.Equal(["web"], changes.NewRepos.Select(static r => r.Name), StringComparer.Ordinal);
         Assert.Equal(["Sindri will run the heartbeat service every 5 seconds"], changes.Services);
         Assert.Equal(["Reserves a work item so no other run starts on it"], changes.Allowance);
     }
@@ -31,14 +31,14 @@ public sealed class ProfileChangesTests
 
         var changes = ProfileChanges.Between(approved, live, _sentences);
 
-        Assert.Equal(["api"], changes.NewRepos.Select(static r => r.Name));
+        Assert.Equal(["api"], changes.NewRepos.Select(static r => r.Name), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
     public void A_service_run_more_often_is_said_with_both_cadences_and_a_slower_one_is_not_said()
     {
-        var approved = Profile(services: new() { ["heartbeat"] = new ServiceSettings("1h"), ["observe"] = new ServiceSettings("5m") });
-        var live = Profile(services: new() { ["heartbeat"] = new ServiceSettings("1m"), ["observe"] = new ServiceSettings("1h") });
+        var approved = Profile(services: new(StringComparer.Ordinal) { ["heartbeat"] = new ServiceSettings("1h"), ["observe"] = new ServiceSettings("5m") });
+        var live = Profile(services: new(StringComparer.Ordinal) { ["heartbeat"] = new ServiceSettings("1m"), ["observe"] = new ServiceSettings("1h") });
 
         var changes = ProfileChanges.Between(approved, live, _sentences);
 
