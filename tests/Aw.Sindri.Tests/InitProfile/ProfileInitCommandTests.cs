@@ -36,7 +36,7 @@ public sealed class ProfileInitCommandTests : IDisposable
     public async Task The_first_run_writes_the_profile_and_names_the_next_steps_and_the_second_is_refused()
     {
         var first = await Run("profile", "init");
-        var written = File.ReadAllText(ProfilePath);
+        var written = await File.ReadAllTextAsync(ProfilePath, TestContext.Current.CancellationToken);
         var second = await Run("profile", "init");
 
         Assert.Equal(0, first);
@@ -44,7 +44,7 @@ public sealed class ProfileInitCommandTests : IDisposable
         Assert.Contains("sindri repo add <path>, then sindri profile approve", _out.ToString(), StringComparison.Ordinal);
         Assert.Equal(2, second);
         Assert.Contains("SND-PROFILE-002", _error.ToString(), StringComparison.Ordinal);
-        Assert.Equal(written, File.ReadAllText(ProfilePath));
+        Assert.Equal(written, await File.ReadAllTextAsync(ProfilePath, TestContext.Current.CancellationToken));
     }
 
     [Fact, Trait("Lane", "integration")]

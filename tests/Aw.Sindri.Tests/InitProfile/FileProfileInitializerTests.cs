@@ -34,7 +34,7 @@ public sealed class FileProfileInitializerTests : IDisposable
 
         Assert.True(done.IsSuccess, done.IsError ? done.Error.Message : null);
         Assert.Equal(ProfilePath, done.Value);
-        Assert.Null(YamlToJson.TryConvert(File.ReadAllText(ProfilePath), out var json));
+        Assert.Null(YamlToJson.TryConvert(await File.ReadAllTextAsync(ProfilePath, Token), out var json));
         var loaded = ProfileReading.FromJson(json, ProfilePath, ProfileFiles.Options);
         Assert.True(loaded.IsSuccess, loaded.IsSuccess ? null : loaded.Error.Message);
         Assert.Empty(loaded.Value.Profile.Repos ?? []);
@@ -45,19 +45,19 @@ public sealed class FileProfileInitializerTests : IDisposable
     public async Task A_file_that_is_there_is_refused_and_left_as_it_was()
     {
         _ = Directory.CreateDirectory(Path.GetDirectoryName(ProfilePath)!);
-        File.WriteAllText(ProfilePath, "schemaVersion: 1\nuser: \"mine\"\n");
+        await File.WriteAllTextAsync(ProfilePath, "schemaVersion: 1\nuser: \"mine\"\n", Token);
 
         var done = await Initializer().Create(_effects, Token);
 
         Assert.Equal("SND-PROFILE-002", done.Error.Code);
-        Assert.Equal("schemaVersion: 1\nuser: \"mine\"\n", File.ReadAllText(ProfilePath));
+        Assert.Equal("schemaVersion: 1\nuser: \"mine\"\n", await File.ReadAllTextAsync(ProfilePath, Token));
     }
 
     [Fact]
     public async Task A_folder_that_cannot_be_written_is_SND_PROFILE_002_with_the_reason()
     {
         _ = Directory.CreateDirectory(_dir);
-        File.WriteAllText(Path.Combine(_dir, "profile"), "a file where the folder should be");
+        await File.WriteAllTextAsync(Path.Combine(_dir, "profile"), "a file where the folder should be", Token);
 
         var done = await Initializer().Create(_effects, Token);
 

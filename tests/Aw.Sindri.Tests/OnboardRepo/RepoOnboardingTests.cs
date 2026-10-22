@@ -43,7 +43,7 @@ public sealed class RepoOnboardingTests : IDisposable
         await onboarding.Ensure(Token);
         await onboarding.Ensure(Token);
 
-        Assert.Equal(["repo.onboarded:demo:" + new string('a', 64), "repo.onboarded:other:" + new string('a', 64)], Recorded());
+        Assert.Equal(["repo.onboarded:demo:" + new string('a', 64), "repo.onboarded:other:" + new string('a', 64)], Recorded(), StringComparer.Ordinal);
         Assert.Equal(2, _hooks.Installed);
     }
 
@@ -59,7 +59,7 @@ public sealed class RepoOnboardingTests : IDisposable
         await Approve('b', "demo");
         await onboarding.Ensure(Token);
 
-        Assert.Equal(["repo.onboarded:demo:" + new string('a', 64), "repo.onboarded:demo:" + new string('b', 64)], Recorded());
+        Assert.Equal(["repo.onboarded:demo:" + new string('a', 64), "repo.onboarded:demo:" + new string('b', 64)], Recorded(), StringComparer.Ordinal);
     }
 
     [Fact]

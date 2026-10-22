@@ -1,6 +1,7 @@
 using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Host;
 using Aw.Sindri.Testing;
+using Microsoft.Extensions.DependencyInjection;
 using static Aw.Sindri.Tests.Callers.CallerRequests;
 
 namespace Aw.Sindri.Tests.ApiGoldens;
