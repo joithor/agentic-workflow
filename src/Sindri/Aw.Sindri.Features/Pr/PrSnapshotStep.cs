@@ -18,7 +18,7 @@ namespace Aw.Sindri.Features.Pr;
 /// The docs pull request ('fact:docsPr', when the instance holds one) is read too: a merged pull request whose docs pull request is open is 'mergedDocsOpen', a red docs pull request is 'docsRed'
 /// (after the comments, before pending; not when the owner skipped the docs, 'fact:docsResult' result 'skippedByOwner'), and checks still running on it keep the snapshot pending; 'docs' carries it
 /// (link, state, headSha, checks). 'workspaceAhead' says the workspace ('fact:workspace') is on another commit than the pull request's head (null when its head can't be read).
-/// Not read yet, for want of a port: the base branch, so 'restack' is never reported (TODO: the forge port's PullView has no base branch or default branch).
+/// Not read yet, for want of a port: the base branch, so 'restack' is never reported and 'base' { ref, sha, defaultRef, onto } and 'head.ref', which effect.pr.restack reads, are not written (TODO: the forge port's PullView has no base branch or default branch).
 /// </summary>
 /// <param name="pulls">The forge, through Sindri's port.</param>
 /// <param name="marks">The comment marks.</param>
@@ -182,6 +182,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
         return new JsonObject
         {
             ["link"] = pull.Link,
+            ["url"] = pull.Link,
             ["state"] = outcome is "green" ? "green" : pullState,
             ["pullState"] = pullState,
             ["headSha"] = pull.HeadSha,

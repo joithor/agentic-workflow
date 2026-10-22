@@ -366,6 +366,14 @@ public sealed class PrSnapshotStepTests
     }
 
     [Fact]
+    public async Task The_snapshot_carries_the_link_as_url_and_the_head_sha_for_the_restack_effect()
+    {
+        var state = Fact(await Snapshot(), "fact:prState");
+
+        Assert.Equal((_pull.Link, Head), (state.GetProperty("url").GetString(), state.GetProperty("head").GetProperty("sha").GetString()));
+    }
+
+    [Fact]
     public async Task A_missing_link_or_an_unreadable_pull_request_fails_the_Step()
     {
         var missing = await Snapshot(pr: "");
