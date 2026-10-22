@@ -7,8 +7,6 @@ namespace Aw.CodeIndex.Tests.Build;
 
 public sealed class CodeIndexFacadeTests
 {
-    private static readonly SymbolRef _run = SymbolRef.From("api:src/A.cs#A.Run");
-
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     private static async Task<BuildHarness> Built()
