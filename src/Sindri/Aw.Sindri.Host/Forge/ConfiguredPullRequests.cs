@@ -34,6 +34,18 @@ internal sealed class ConfiguredPullRequests(IApprovedProfile approved, Func<str
     public ValueTask<Result<IReadOnlyList<PullThread>>> Threads(string link, CancellationToken cancellationToken)
         => Call(pulls => pulls.Threads(link, cancellationToken), cancellationToken);
 
+    public ValueTask<Result<PullMergeOutcome>> Merge(PullMerge request, CancellationToken cancellationToken)
+        => Call(pulls => pulls.Merge(request, cancellationToken), cancellationToken);
+
+    public ValueTask<Result<PullDelivery>> Reply(PullReply request, CancellationToken cancellationToken)
+        => Call(pulls => pulls.Reply(request, cancellationToken), cancellationToken);
+
+    public ValueTask<Result<PullDelivery>> React(PullReaction request, CancellationToken cancellationToken)
+        => Call(pulls => pulls.React(request, cancellationToken), cancellationToken);
+
+    public ValueTask<Result<PullPushOutcome>> PushBranch(PullBranchPush push, CancellationToken cancellationToken)
+        => Call(pulls => pulls.PushBranch(push, cancellationToken), cancellationToken);
+
     public ValueTask<Result<OpenedPull?>> Find(FindPull query, CancellationToken cancellationToken)
         => Call(pulls => pulls.Find(query, cancellationToken), cancellationToken);
 

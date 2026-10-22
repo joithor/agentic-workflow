@@ -10,6 +10,6 @@ public sealed class FakePullRequestsContractTests : PullRequestsContract
     protected override PullRequestsUnderTest Create()
     {
         var pulls = new FakePullRequests(["forge.test"]);
-        return new(pulls, new PullRepo("forge.test", "acme", "widgets"), "elsewhere.test", pulls.SeedThread);
+        return new(pulls, new PullRepo("forge.test", "acme", "widgets"), "elsewhere.test", pulls.SeedThread, CanPush: true);
     }
 }

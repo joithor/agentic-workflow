@@ -26,7 +26,7 @@ public sealed class ForgePullRequestsContractTests : PullRequestsContract, IDisp
         var forge = provider.GetRequiredService<IForge>();
         var seed = provider.GetRequiredService<IForgeSeed>();
         string SeedThread(string link, string body) => seed.SeedThread(new SeedThreadRequest(forge.Parse(link).Value, CommentKind.Thread, "reviewer", "MEMBER", IsBot: false, "src/a.cs", body)).Value;
-        return new PullRequestsUnderTest(new ForgePullRequests(forge), new PullRepo("forge.test", "acme", "widgets"), "elsewhere.test", SeedThread);
+        return new PullRequestsUnderTest(new ForgePullRequests(forge), new PullRepo("forge.test", "acme", "widgets"), "elsewhere.test", SeedThread, CanPush: false);
     }
 
     public void Dispose()
