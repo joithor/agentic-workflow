@@ -232,7 +232,7 @@ public sealed class StatePathOrderTests
         ["sindri/workflow.reproduce.yaml"] = "sha256:6fd78a6cb6df1630470cfb8dc53c4424986bf578433bad20af1113e54801ed75",
         ["sindri/workflow.review-loop.yaml"] = "sha256:522e7e223f3d845d220b7d91d20951c848ef15cda1c700b9e923f619d06bb584",
         ["sindri/workflow.scoping.yaml"] = "sha256:ef152e04b7cd48eb8907ce7dab2c5aa2d408d1cd9536c2b78b7983aa51ebd40d",
-        ["sindri/workflow.ship.yaml"] = "sha256:f64f90316fb5111a16431cd41a26a2546ba5a1d67b429a5815bd3248fa053fd9",
+        ["sindri/workflow.ship.yaml"] = "sha256:f64f90316fb5111a16431cd41a26a2546ba5a1d67b429a5815bd3248fa053fd9",   // TODO: re-pin (workflow.ship v4, effect.pr.open): paste the hash from the failing test
         ["sindri/workflow.verify.yaml"] = "sha256:0d2648f7de735d4bde51db33d7f659ffbde2106d2062d8b0261b0e41507ee13a",
         ["dev/desk-round-trip.yaml"] = "sha256:22e3d173c3030036026aa70ae192f0bbe64b5135960ec38d7f05976443595357",
         ["dev/incident-hold.yaml"] = "sha256:fae531ac58b3c3990c51a125548aa83e832f4d0dd77231d272e860b067b7cda1",

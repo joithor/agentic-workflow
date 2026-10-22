@@ -54,6 +54,7 @@ internal static class BlockRegistrations
         .AddGate<RouteStartableGate>()     // engine P7 unit U1: a stub over the profile's workflow.route
         .AddEffect<ClaimRefEffect>()      // engine P6 unit (d)
         .AddEffect<NotifyDeskEffect>()    // engine P6 unit (c)
+        .AddEffect<PrOpenEffect>()        // PB-O (BD1)
         .AddEvent(RecipeEvents.ItemRouted)
         .AddEvent(RecipeEvents.ClaimCreated)
         .AddEvent(RecipeEvents.NotifyDelivered)
@@ -68,7 +69,8 @@ internal static class BlockRegistrations
         .AddEvent(RecipeEvents.PrRestacked)
         .AddEvent(RecipeEvents.PrMergeResult)
         .AddEvent(RecipeEvents.PrDocsMerged)
-        .AddEvent(RecipeEvents.PrStacked);
+        .AddEvent(RecipeEvents.PrStacked)
+        .AddEvent(RecipeEvents.PrOpened);
 
     /// <summary>Registers the line's blocks (the build and prove stations' and the per-phase child's).</summary>
     /// <param name="services">The service collection.</param>
