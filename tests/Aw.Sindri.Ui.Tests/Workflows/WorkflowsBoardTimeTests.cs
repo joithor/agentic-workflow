@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
@@ -29,7 +30,7 @@ public sealed class WorkflowsBoardTimeTests
         var a = new InstanceRowViewModel(served, new FakeClipboard(), new FakeTimeProvider(A.Noon));
         var b = new InstanceRowViewModel(served with { Since = served.Since.AddHours(-1) }, new FakeClipboard(), new FakeTimeProvider(A.Noon));
 
-        Assert.NotEqual(a.Signature, b.Signature);
+        Assert.NotEqual(a.Signature, b.Signature, StringComparer.Ordinal);
     }
 
     [Fact]
@@ -41,10 +42,10 @@ public sealed class WorkflowsBoardTimeTests
         card.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
         var before = card.TimeText;
 
-        clock.Advance(TimeSpan.FromMinutes(1));
+        clock.Advance(TimeSpan.FromDays(400));   // the golden's since is later than the fake noon, so the age reads 0s until the clock passes it
 
-        Assert.Contains(nameof(InstanceRowViewModel.TimeText), changed);
-        Assert.NotEqual(before, card.TimeText);
+        Assert.Contains(nameof(InstanceRowViewModel.TimeText), changed, StringComparer.Ordinal);
+        Assert.NotEqual(before, card.TimeText, StringComparer.Ordinal);
     }
 
     [Fact]
@@ -56,7 +57,7 @@ public sealed class WorkflowsBoardTimeTests
         var off = open - onBoard;
 
         Assert.True(off > 1);
-        Assert.Equal($"{off} runs not on the board — switch to list", list.OffBoardText);
+        Assert.Equal(string.Create(CultureInfo.InvariantCulture, $"{off} runs not on the board — switch to list"), list.OffBoardText);
         Assert.True(list.HasOffBoard);
         Assert.False(list.IsBoardEmpty);
     }
@@ -64,7 +65,7 @@ public sealed class WorkflowsBoardTimeTests
     [Fact]
     public async Task No_run_on_any_lane_is_an_empty_board_that_points_at_the_list()
     {
-        var (list, _) = await Shown(body => StripLineStage(body));
+        var (list, _) = await Shown(StripLineStage);
 
         Assert.True(list.IsBoardEmpty);
         Assert.False(list.ShowBoard);
@@ -76,7 +77,7 @@ public sealed class WorkflowsBoardTimeTests
     [Fact]
     public async Task The_list_does_not_show_the_off_board_line()
     {
-        var (list, _) = await Shown(body => StripLineStage(body));
+        var (list, _) = await Shown(StripLineStage);
 
         list.SetViewMode(WorkflowViewMode.List);
 
@@ -88,7 +89,7 @@ public sealed class WorkflowsBoardTimeTests
         var list = JsonNode.Parse(body)!;
         foreach (var row in list["instances"]!.AsArray().Select(r => r!.AsObject()))
         {
-            row.Remove("lineStage");
+            _ = row.Remove("lineStage");
         }
 
         return list.ToJsonString();
