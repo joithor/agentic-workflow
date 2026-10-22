@@ -19,7 +19,7 @@ public sealed class PrReadyCheckStepTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static PullView Green() => new(Link, PullState.Open, Head, Mergeable: true, ReviewDecision: "APPROVED", UnresolvedThreads: 0, new PullChecks(PullChecksState.Passing, Head, []));
+    private static PullView Green() => new(Link, PullState.Open, Head, Mergeable: true, ReviewDecision: "APPROVED", UnresolvedThreads: 0, new PullChecks(PullChecksState.Passing, Head, []), [], "main");
 
     // The snapshot fact: the pull request's fields in camelCase, enums by name.
     private static string Snapshot(PullView pull) => new JsonObject

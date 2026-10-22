@@ -67,8 +67,12 @@ internal sealed class PrReadyCheckStep(IPullRequests pulls) : IBlockStep, IBlock
                 Flag(root["mergeable"]),
                 Text(root["reviewDecision"]),
                 Count(root["unresolvedThreads"]),
-                new PullChecks(checksState, checksSha, []));
+                new PullChecks(checksState, checksSha, []),
+                Labels(root["labels"]),
+                Text(root["base"]) ?? string.Empty);
         }
+
+        private static string[] Labels(JsonNode? node) => node is JsonArray names ? [.. names.Select(Text).OfType<string>()] : [];
 
         private static string? Text(JsonNode? node) => node is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
 
