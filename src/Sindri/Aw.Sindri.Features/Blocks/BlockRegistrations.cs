@@ -75,6 +75,7 @@ internal static class BlockRegistrations
         .AddEffect<PrRerunChecksEffect>() // PB-E: re-run a flaky check
         .AddEffect<PrMergeEffect>()       // PB-E: the merge, expected-head checked
         .AddEffect<PrReplyEffect>()       // PB-E: replies, reactions and marks
+        .AddEffect<PrPurgeMarksEffect>()  // PB-E: W26's terminal cleanup of a PR's marks
         .AddEffect<PrOpenEffect>();       // PB-O (BD1)
 
     /// <summary>Registers the gates that have runtimes in this build.</summary>
@@ -110,7 +111,18 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PhaseSteps.Seed)
         .AddBlockDescriptor(PhaseSteps.Drift)
         .AddBlockDescriptor(PhaseSteps.Decide)
-        .AddBlockDescriptor(BabysitSteps.Watch);
+        .AddBlockDescriptor(BabysitSteps.Watch)
+        .AddDispatchBlocks();
+
+    /// <summary>Registers the line's dispatcher Steps and the event the line waits on to start its next phases (line spec §8.2, LN-WF1), descriptors only.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    private static IServiceCollection AddDispatchBlocks(this IServiceCollection services) => services
+        .AddEffect<StartPhaseEffect>()    // the runtime starts a line's phase as a linked instance
+        .AddBlockDescriptor(LineSteps.Seed)
+        .AddBlockDescriptor(LineSteps.Dispatch)
+        .AddBlockDescriptor(LineSteps.Decide)
+        .AddEvent(RecipeEvents.LinePhaseChanged);
 
     /// <summary>Registers the line's build and prove stations' Steps (line spec §7.2, §7.3), descriptors only.</summary>
     /// <param name="services">The service collection.</param>

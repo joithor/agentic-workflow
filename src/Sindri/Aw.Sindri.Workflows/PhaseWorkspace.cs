@@ -9,17 +9,24 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 internal static class PhaseWorkspace
 {
     private const string PhaseRecipe = "workflow.phase";
+    private const string DocsRecipe = "workflow.docs-sync";
     private static readonly FactKey _workspace = FactKey.From("fact:workspace");
     private static readonly FactKey _pr = FactKey.From("fact:pr");
     private static readonly OutcomeName _merged = OutcomeName.From("resolved");   // the phase's 'merged' terminal
 
-    /// <summary>The workspace an ended instance removes: only a 'workflow.phase' instance owns one, and it keeps it while its pull request may still be open: unless it merged, an instance that holds 'fact:pr' keeps the tree (the owner may still be working in it), the reversible default.</summary>
+    /// <summary>The workspace an ended instance removes: only a 'workflow.phase' instance or a 'workflow.docs-sync' one (its own, W28) owns one; a phase keeps it while its pull request may still be open: unless it merged, an instance that holds 'fact:pr' keeps the tree (the owner may still be working in it), the reversible default.</summary>
     /// <param name="recipe">The instance's recipe.</param>
     /// <param name="facts">The instance's facts.</param>
     /// <param name="outcome">The terminal outcome; null when the instance did not reach one (a cancel).</param>
     /// <returns>The stored workspace to remove; null when the instance owns none or keeps it.</returns>
     public static FactValue? ToRemove(RecipeId recipe, IReadOnlyDictionary<FactKey, FactValue> facts, OutcomeName? outcome) =>
-        recipe.Value == PhaseRecipe && facts.TryGetValue(_workspace, out var held) && (outcome == _merged || !facts.ContainsKey(_pr)) ? held : null;
+        recipe.Value switch
+        {
+            // W28: docs sync cut its own worktree ('step.docs.scope'); its 'fact:pr' is the source pull request, not one it opened, and the docs branch outlives the tree
+            DocsRecipe => facts.GetValueOrDefault(_workspace),
+            PhaseRecipe => facts.TryGetValue(_workspace, out var held) && (outcome == _merged || !facts.ContainsKey(_pr)) ? held : null,
+            _ => null,
+        };
 
     /// <summary>The worktree path a stored 'fact:workspace' holds (plain text or a JSON string).</summary>
     /// <param name="contents">Reads the stored fact.</param>

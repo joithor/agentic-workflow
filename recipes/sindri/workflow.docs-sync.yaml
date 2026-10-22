@@ -1,6 +1,6 @@
 schema: 1
 id: workflow.docs-sync
-version: 2
+version: 3
 description: "Block recipe: update the docs a pull request leaves stale, in its own worktree, as a docs PR stacked on that pull request's head branch."
 displayName: "Update the docs a pull request leaves stale"
 inputs:
@@ -37,7 +37,7 @@ states:
     kind: active
     step: { use: step.docs.update, inputs: [input.pr.context, input.handoff-note, input.phase-packet] }
     loop: edits
-    budget: { tokens: 300k }
+    budget: { tokens: 1M }
     timeout: { after: 2h, then: park }
     next: "Update the listed docs for {item}'s pull request (try {loop.edits}/{loop.edits.cap}). Commit in the docs worktree; Sindri opens the PR."
   check:
@@ -88,7 +88,6 @@ transitions:
 loops:
   edits:   { cap: 2 }
   retries: { cap: 3 }
-budget: { tokens: 700k }
 evals:
   - evals/workflow.docs-sync/happy.jsonl
   - evals/workflow.docs-sync/opened.jsonl
