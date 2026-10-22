@@ -149,7 +149,7 @@ internal static class ContextLensText
         }
 
         var t = view.Totals;
-        _ = text.AppendLine(Invariant($"{t.Mapped} mapped, {t.Suggested} suggested, {t.Unmapped} unmapped · symbols: {view.Symbols.State.ToString().ToLowerInvariant()} ({view.Symbols.Reason})"));
+        _ = text.AppendLine(Invariant($"{t.Mapped} mapped, {t.Suggested} suggested, {t.Unmapped} unmapped · symbols: {view.Symbols.State.ToString().ToLowerInvariant()}{SymbolWords.Why(view.Symbols.Reason, view.Symbols.Commit, view.Symbols.AsOfCommit)}"));
         return text.ToString();
     }
 
@@ -191,7 +191,7 @@ internal static class ContextLensText
 
     private static void Code(StringBuilder text, CodeBand band)
     {
-        _ = text.AppendLine(Invariant($"code (files {band.Counts.Files}, features with no code {band.Counts.FeaturesWithNoCode}{(band.Truncated ? ", truncated" : string.Empty)}; symbols {band.Symbols.State.ToString().ToLowerInvariant()}: {band.Symbols.Reason}):"));
+        _ = text.AppendLine(Invariant($"code (files {band.Counts.Files}, features with no code {band.Counts.FeaturesWithNoCode}{(band.Truncated ? ", truncated" : string.Empty)}; symbols {band.Symbols.State.ToString().ToLowerInvariant()}{(band.Symbols.Reason is null ? string.Empty : $": {band.Symbols.Reason}")}):"));
         if (band.Files.Count == 0)
         {
             _ = text.AppendLine("  none");
