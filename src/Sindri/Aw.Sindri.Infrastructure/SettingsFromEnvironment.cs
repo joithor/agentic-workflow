@@ -23,7 +23,10 @@ internal static class SettingsFromEnvironment
         };
     }
 
-    private static string StateRoot(Func<string, string?> environment) =>
+    /// <summary>The state root: AW_STATE_DIR, else ~/.agentic-workflow.</summary>
+    /// <param name="environment">Reads an environment variable.</param>
+    /// <returns>The directory.</returns>
+    internal static string StateRoot(Func<string, string?> environment) =>
         environment("AW_STATE_DIR") is { Length: > 0 } root
             ? root
             : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".agentic-workflow");
