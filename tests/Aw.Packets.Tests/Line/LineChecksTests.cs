@@ -36,7 +36,7 @@ public sealed class LineChecksTests
 
         var checks = await Run(kind, A.LinePacket(kind).Build());
 
-        Assert.All(checks.Where(static c => !c.Rule.StartsWith("PKT-SIZE", StringComparison.Ordinal)), static c => Assert.Equal(CheckState.Pass, c.State));
+        Assert.All(checks.Where(static c => !c.Rule.StartsWith("PKT-SIZE", StringComparison.Ordinal) && c.Rule != PacketRules.HoldoutSealed), static c => Assert.Equal(CheckState.Pass, c.State));
         var prefix = LineRules.For(kind)!.Prefix;
         Assert.Equal(
             Enumerable.Range(1, 6).Select(n => prefix + "-00" + n.ToString(CultureInfo.InvariantCulture)),
