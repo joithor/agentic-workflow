@@ -3,19 +3,17 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Kernel;
-using Aw.Sindri.Core;
-using Aw.Sindri.Core.LensPacks;
 
-namespace Aw.Sindri.Infrastructure.LensPacks;
+namespace Aw.Sindri.Core.LensPacks;
 
 /// <summary>Reads a lens pack from its files (line spec §5.2): <c language="text">pack.json</c> and one prompt file a lens, checking the shape the loops rely on.</summary>
-internal static class LensPackReader
+public static class LensPackReader
 {
     /// <summary>The pack the files hold.</summary>
     /// <param name="id">The id the pack was asked for; the file must say the same.</param>
     /// <param name="files">Each file's path inside the pack and its text.</param>
     /// <returns>The pack; an error naming what is wrong with the file.</returns>
-    internal static Result<LensPack> Read(string id, IReadOnlyDictionary<string, string> files)
+    public static Result<LensPack> Read(string id, IReadOnlyDictionary<string, string> files)
     {
         ArgumentNullException.ThrowIfNull(id);
         ArgumentNullException.ThrowIfNull(files);
@@ -45,7 +43,7 @@ internal static class LensPackReader
     /// <summary>The hash of a pack's files: each path and the SHA-256 of its UTF-8 bytes as 'path NUL hex LF', in ordinal path order, hashed again.</summary>
     /// <param name="files">The files.</param>
     /// <returns>'sha256:' and 64 lower-case hex digits.</returns>
-    internal static string Hash(IReadOnlyDictionary<string, string> files)
+    public static string Hash(IReadOnlyDictionary<string, string> files)
     {
         var manifest = new StringBuilder();
         foreach (var path in files.Keys.Order(StringComparer.Ordinal))
