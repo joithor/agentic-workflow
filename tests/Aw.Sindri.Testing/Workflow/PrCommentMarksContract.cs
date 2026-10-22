@@ -45,7 +45,7 @@ public abstract class PrCommentMarksContract
         var latest = await marks.Latest(_pr, Token);
 
         Expect.True(written.Value);
-        Expect.Equal(mark, Assert.Single(latest.Value));
+        Expect.Equal(mark, Expect.Only(latest.Value));
     }
 
     /// <summary>The later row of a comment is its state.</summary>
@@ -77,8 +77,8 @@ public abstract class PrCommentMarksContract
         var latest = (await marks.Latest(_pr, Token)).Value;
 
         Expect.Equal(2, latest.Count);
-        Expect.True(latest.Exists(m => m.EditedAt is null && m.Outcome == "thread"));
-        Expect.True(latest.Exists(m => m.EditedAt is not null && m.Outcome == "hold"));
+        Expect.True(latest.Any(m => m.EditedAt is null && m.Outcome == "thread"));
+        Expect.True(latest.Any(m => m.EditedAt is not null && m.Outcome == "hold"));
     }
 
     /// <summary>Writing the same effect identity twice records one row.</summary>
@@ -92,7 +92,7 @@ public abstract class PrCommentMarksContract
         var again = await marks.Write(Mark("c1", "none", 9, "e:0"), Token);
 
         Expect.True(again.IsSuccess && !again.Value);
-        Expect.Equal("thread", Assert.Single((await marks.Latest(_pr, Token)).Value).Outcome);
+        Expect.Equal("thread", Expect.Only((await marks.Latest(_pr, Token)).Value).Outcome);
     }
 
     /// <summary>Marks are per pull request.</summary>
@@ -105,8 +105,8 @@ public abstract class PrCommentMarksContract
         _ = await marks.Write(Mark("c1", "thread", 0, "e:0"), Token);
         _ = await marks.Write(Mark("c1", "hold", 0, "e:1", pr: other), Token);
 
-        Expect.Equal("thread", Assert.Single((await marks.Latest(_pr, Token)).Value).Outcome);
-        Expect.Equal("hold", Assert.Single((await marks.Latest(other, Token)).Value).Outcome);
+        Expect.Equal("thread", Expect.Only((await marks.Latest(_pr, Token)).Value).Outcome);
+        Expect.Equal("hold", Expect.Only((await marks.Latest(other, Token)).Value).Outcome);
     }
 
     /// <summary>A purge deletes one PR's rows and no other's.</summary>
