@@ -99,5 +99,5 @@ internal static class PrEffectFacts
     private static string? Text(JsonElement element, string property) =>
         element.ValueKind == JsonValueKind.Object && element.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
 
-    private static Aw.Sindri.Core.Workflow.Ids.FactKey Ids(string key) => Aw.Sindri.Core.Workflow.Ids.FactKey.From(key);
+    private static Core.Workflow.Ids.FactKey Ids(string key) => Core.Workflow.Ids.FactKey.From(key);
 }
