@@ -404,8 +404,6 @@ Aw.Sindri.Core.Events.ContextMapPromoted.Version.get -> int
 Aw.Sindri.Core.Events.ContextMapPromoted.Version.init -> void
 Aw.Sindri.Core.Events.ContextMapRefreshed
 Aw.Sindri.Core.Events.ContextMapRefreshed.<Clone>$() -> Aw.Sindri.Core.Events.ContextMapRefreshed!
-Aw.Sindri.Core.Events.ContextMapRefreshed.ContextMapRefreshed(string! Repo, int Version, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Heads, int Accepted, int Removed, int Dropped, string! Cleanup) -> void
-Aw.Sindri.Core.Events.ContextMapRefreshed.Deconstruct(out string! Repo, out int Version, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Heads, out int Accepted, out int Removed, out int Dropped, out string! Cleanup) -> void
 Aw.Sindri.Core.Events.ContextMapRefreshed.Equals(Aw.Sindri.Core.Events.ContextMapRefreshed? other) -> bool
 Aw.Sindri.Core.Events.ContextMapRefreshed.Repo.get -> string!
 Aw.Sindri.Core.Events.ContextMapRefreshed.Repo.init -> void
@@ -15542,6 +15540,96 @@ static Aw.Sindri.Core.Review.ReviewPackOrigin.operator !=(Aw.Sindri.Core.Review.
 static Aw.Sindri.Core.Review.ReviewPackOrigin.operator ==(Aw.Sindri.Core.Review.ReviewPackOrigin? left, Aw.Sindri.Core.Review.ReviewPackOrigin? right) -> bool
 static Aw.Sindri.Core.Review.ReviewPack.Problems(Aw.Sindri.Core.Review.ReviewFacts! facts) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Sindri.Core.Review.ReviewPack.Verdict(System.Text.Json.Nodes.JsonNode! review) -> string?
+Aw.Sindri.Core.Events.ContextMapHeld
+Aw.Sindri.Core.Events.ContextMapHeld.<Clone>$() -> Aw.Sindri.Core.Events.ContextMapHeld!
+Aw.Sindri.Core.Events.ContextMapHeld.Chained.get -> bool
+Aw.Sindri.Core.Events.ContextMapHeld.Chained.init -> void
+Aw.Sindri.Core.Events.ContextMapHeld.ContextMapHeld(string! Repo, int Version, int Repos, int WaitingOn, int WaitMinutes, bool Chained) -> void
+Aw.Sindri.Core.Events.ContextMapHeld.Deconstruct(out string! Repo, out int Version, out int Repos, out int WaitingOn, out int WaitMinutes, out bool Chained) -> void
+Aw.Sindri.Core.Events.ContextMapHeld.Equals(Aw.Sindri.Core.Events.ContextMapHeld? other) -> bool
+Aw.Sindri.Core.Events.ContextMapHeld.Repo.get -> string!
+Aw.Sindri.Core.Events.ContextMapHeld.Repo.init -> void
+Aw.Sindri.Core.Events.ContextMapHeld.Repos.get -> int
+Aw.Sindri.Core.Events.ContextMapHeld.Repos.init -> void
+Aw.Sindri.Core.Events.ContextMapHeld.Version.get -> int
+Aw.Sindri.Core.Events.ContextMapHeld.Version.init -> void
+Aw.Sindri.Core.Events.ContextMapHeld.WaitMinutes.get -> int
+Aw.Sindri.Core.Events.ContextMapHeld.WaitMinutes.init -> void
+Aw.Sindri.Core.Events.ContextMapHeld.WaitingOn.get -> int
+Aw.Sindri.Core.Events.ContextMapHeld.WaitingOn.init -> void
+Aw.Sindri.Core.Events.ContextMapHoldDropped
+Aw.Sindri.Core.Events.ContextMapHoldDropped.<Clone>$() -> Aw.Sindri.Core.Events.ContextMapHoldDropped!
+Aw.Sindri.Core.Events.ContextMapHoldDropped.ContextMapHoldDropped(int Version, string! Reason) -> void
+Aw.Sindri.Core.Events.ContextMapHoldDropped.Deconstruct(out int Version, out string! Reason) -> void
+Aw.Sindri.Core.Events.ContextMapHoldDropped.Equals(Aw.Sindri.Core.Events.ContextMapHoldDropped? other) -> bool
+Aw.Sindri.Core.Events.ContextMapHoldDropped.Reason.get -> string!
+Aw.Sindri.Core.Events.ContextMapHoldDropped.Reason.init -> void
+Aw.Sindri.Core.Events.ContextMapHoldDropped.Version.get -> int
+Aw.Sindri.Core.Events.ContextMapHoldDropped.Version.init -> void
+Aw.Sindri.Core.Events.ContextMapPublished
+Aw.Sindri.Core.Events.ContextMapPublished.<Clone>$() -> Aw.Sindri.Core.Events.ContextMapPublished!
+Aw.Sindri.Core.Events.ContextMapPublished.AnyStale.get -> bool
+Aw.Sindri.Core.Events.ContextMapPublished.ContextMapPublished(string! Repo, int Version, string! Reason, string! Via, int Repos, int StaleRepos, int WaitedSeconds, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Heads) -> void
+Aw.Sindri.Core.Events.ContextMapPublished.Deconstruct(out string! Repo, out int Version, out string! Reason, out string! Via, out int Repos, out int StaleRepos, out int WaitedSeconds, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Heads) -> void
+Aw.Sindri.Core.Events.ContextMapPublished.Equals(Aw.Sindri.Core.Events.ContextMapPublished? other) -> bool
+Aw.Sindri.Core.Events.ContextMapPublished.Heads.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Sindri.Core.Events.ContextMapPublished.Heads.init -> void
+Aw.Sindri.Core.Events.ContextMapPublished.Reason.get -> string!
+Aw.Sindri.Core.Events.ContextMapPublished.Reason.init -> void
+Aw.Sindri.Core.Events.ContextMapPublished.Repo.get -> string!
+Aw.Sindri.Core.Events.ContextMapPublished.Repo.init -> void
+Aw.Sindri.Core.Events.ContextMapPublished.Repos.get -> int
+Aw.Sindri.Core.Events.ContextMapPublished.Repos.init -> void
+Aw.Sindri.Core.Events.ContextMapPublished.StaleRepos.get -> int
+Aw.Sindri.Core.Events.ContextMapPublished.StaleRepos.init -> void
+Aw.Sindri.Core.Events.ContextMapPublished.Version.get -> int
+Aw.Sindri.Core.Events.ContextMapPublished.Version.init -> void
+Aw.Sindri.Core.Events.ContextMapPublished.Via.get -> string!
+Aw.Sindri.Core.Events.ContextMapPublished.Via.init -> void
+Aw.Sindri.Core.Events.ContextMapPublished.WaitedSeconds.get -> int
+Aw.Sindri.Core.Events.ContextMapPublished.WaitedSeconds.init -> void
+Aw.Sindri.Core.Events.ContextMapPublishedPublic
+Aw.Sindri.Core.Events.ContextMapPublishedPublic.<Clone>$() -> Aw.Sindri.Core.Events.ContextMapPublishedPublic!
+Aw.Sindri.Core.Events.ContextMapPublishedPublic.AnyStale.get -> bool
+Aw.Sindri.Core.Events.ContextMapPublishedPublic.AnyStale.init -> void
+Aw.Sindri.Core.Events.ContextMapPublishedPublic.ContextMapPublishedPublic(int Version, string! Reason, string! Via, int WaitedSeconds, bool AnyStale) -> void
+Aw.Sindri.Core.Events.ContextMapPublishedPublic.Deconstruct(out int Version, out string! Reason, out string! Via, out int WaitedSeconds, out bool AnyStale) -> void
+Aw.Sindri.Core.Events.ContextMapPublishedPublic.Equals(Aw.Sindri.Core.Events.ContextMapPublishedPublic? other) -> bool
+Aw.Sindri.Core.Events.ContextMapPublishedPublic.Reason.get -> string!
+Aw.Sindri.Core.Events.ContextMapPublishedPublic.Reason.init -> void
+Aw.Sindri.Core.Events.ContextMapPublishedPublic.Version.get -> int
+Aw.Sindri.Core.Events.ContextMapPublishedPublic.Version.init -> void
+Aw.Sindri.Core.Events.ContextMapPublishedPublic.Via.get -> string!
+Aw.Sindri.Core.Events.ContextMapPublishedPublic.Via.init -> void
+Aw.Sindri.Core.Events.ContextMapPublishedPublic.WaitedSeconds.get -> int
+Aw.Sindri.Core.Events.ContextMapPublishedPublic.WaitedSeconds.init -> void
+Aw.Sindri.Core.Events.ContextMapRefreshed.ContextMapRefreshed(string! Repo, int Version, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Heads, int Accepted, int Removed, int Dropped, string! Cleanup, bool Held) -> void
+Aw.Sindri.Core.Events.ContextMapRefreshed.Deconstruct(out string! Repo, out int Version, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Heads, out int Accepted, out int Removed, out int Dropped, out string! Cleanup, out bool Held) -> void
+Aw.Sindri.Core.Events.ContextMapRefreshed.Held.get -> bool
+Aw.Sindri.Core.Events.ContextMapRefreshed.Held.init -> void
+const Aw.Sindri.Core.Events.EventTypes.ContextMapHeld = "context.map.held" -> string!
+const Aw.Sindri.Core.Events.EventTypes.ContextMapHoldDropped = "context.map.hold.dropped" -> string!
+const Aw.Sindri.Core.Events.EventTypes.ContextMapPublished = "context.map.published" -> string!
+override Aw.Sindri.Core.Events.ContextMapHeld.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ContextMapHeld.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ContextMapHeld.ToString() -> string!
+override Aw.Sindri.Core.Events.ContextMapHoldDropped.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ContextMapHoldDropped.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ContextMapHoldDropped.ToString() -> string!
+override Aw.Sindri.Core.Events.ContextMapPublished.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ContextMapPublished.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ContextMapPublished.ToString() -> string!
+override Aw.Sindri.Core.Events.ContextMapPublishedPublic.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ContextMapPublishedPublic.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ContextMapPublishedPublic.ToString() -> string!
+static Aw.Sindri.Core.Events.ContextMapHeld.operator !=(Aw.Sindri.Core.Events.ContextMapHeld? left, Aw.Sindri.Core.Events.ContextMapHeld? right) -> bool
+static Aw.Sindri.Core.Events.ContextMapHeld.operator ==(Aw.Sindri.Core.Events.ContextMapHeld? left, Aw.Sindri.Core.Events.ContextMapHeld? right) -> bool
+static Aw.Sindri.Core.Events.ContextMapHoldDropped.operator !=(Aw.Sindri.Core.Events.ContextMapHoldDropped? left, Aw.Sindri.Core.Events.ContextMapHoldDropped? right) -> bool
+static Aw.Sindri.Core.Events.ContextMapHoldDropped.operator ==(Aw.Sindri.Core.Events.ContextMapHoldDropped? left, Aw.Sindri.Core.Events.ContextMapHoldDropped? right) -> bool
+static Aw.Sindri.Core.Events.ContextMapPublished.operator !=(Aw.Sindri.Core.Events.ContextMapPublished? left, Aw.Sindri.Core.Events.ContextMapPublished? right) -> bool
+static Aw.Sindri.Core.Events.ContextMapPublished.operator ==(Aw.Sindri.Core.Events.ContextMapPublished? left, Aw.Sindri.Core.Events.ContextMapPublished? right) -> bool
+static Aw.Sindri.Core.Events.ContextMapPublishedPublic.operator !=(Aw.Sindri.Core.Events.ContextMapPublishedPublic? left, Aw.Sindri.Core.Events.ContextMapPublishedPublic? right) -> bool
+static Aw.Sindri.Core.Events.ContextMapPublishedPublic.operator ==(Aw.Sindri.Core.Events.ContextMapPublishedPublic? left, Aw.Sindri.Core.Events.ContextMapPublishedPublic? right) -> bool
 Aw.Sindri.Core.Worktrees.ITrackedFiles
 Aw.Sindri.Core.Worktrees.ITrackedFiles.Paths(string! checkout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.IDiffContent
