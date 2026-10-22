@@ -6,6 +6,9 @@ namespace Aw.Sindri.Ui.ViewModels;
 internal static partial class Labels
 {
     /// <summary>The symbols column's heading.</summary>
+    /// <summary>The line under the file when the code index could not be asked.</summary>
+    internal const string ContextCodeUnavailable = "code lens unavailable";
+
     internal const string ContextSymbolsColumn = "symbols";
 
     /// <summary>The cell and caption when no index file exists yet.</summary>

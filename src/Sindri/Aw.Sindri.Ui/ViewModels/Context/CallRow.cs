@@ -8,5 +8,5 @@ namespace Aw.Sindri.Ui.ViewModels.Context;
 internal sealed record CallRow(string Name, string Path, string Detail, int Depth)
 {
     /// <summary>The second line of the row: the file, and how the index knows it.</summary>
-    public string Caption => string.Join(" · ", new[] { Path, Detail }.Where(static t => t.Length > 0));
+    public string Caption => Labels.Dots(Path, Detail);
 }

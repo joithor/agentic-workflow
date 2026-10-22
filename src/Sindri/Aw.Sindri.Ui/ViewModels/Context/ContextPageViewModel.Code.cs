@@ -7,9 +7,16 @@ internal sealed partial class ContextPageViewModel
 {
     private async Task ShowCode(ContextMapViewModel map, string key, CancellationToken cancellationToken)
     {
-        if (map.Node(key)?.Layout.Band != MapBand.Code || !await ReadCode([key], map.Draft, cancellationToken).ConfigureAwait(true))
+        if (map.Node(key)?.Layout.Band != MapBand.Code)
         {
             Code.Clear();
+            return;
+        }
+
+        var generation = Code.Begin();
+        if (!await ReadCode(generation, [key], map.Draft, cancellationToken).ConfigureAwait(true) && Code.IsCurrent(generation))
+        {
+            Code.Fail();
         }
     }
 }

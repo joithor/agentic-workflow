@@ -20,7 +20,11 @@ internal sealed partial class ContextPageViewModel
     /// <param name="draft">Read the draft map.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>True when the panels now show this answer.</returns>
-    internal async Task<bool> ReadCode(IReadOnlyList<string> anchors, bool draft, CancellationToken cancellationToken)
+    internal Task<bool> ReadCode(IReadOnlyList<string> anchors, bool draft, CancellationToken cancellationToken) =>
+        ReadCode(Code.Begin(), anchors, draft, cancellationToken);
+
+    // A read that is no longer the latest (a newer selection, Esc) draws nothing.
+    private async Task<bool> ReadCode(int generation, IReadOnlyList<string> anchors, bool draft, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(anchors);
         if (Ports.ApiUrl() is not { } api)
@@ -29,7 +33,7 @@ internal sealed partial class ContextPageViewModel
         }
 
         var result = await Ports.Api.Code(api, new CodeQuery(anchors, draft, MapVersion: null), cancellationToken).ConfigureAwait(true);
-        if (!result.IsSuccess)
+        if (!result.IsSuccess || !Code.IsCurrent(generation))
         {
             return false;
         }

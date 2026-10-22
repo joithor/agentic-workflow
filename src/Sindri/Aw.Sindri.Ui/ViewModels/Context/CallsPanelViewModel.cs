@@ -53,7 +53,7 @@ internal sealed class CallsPanelViewModel
     private static CallRow Row(JsonElement item)
     {
         var symbol = item.TryGetProperty("symbol", out var s) ? s : default;
-        return new CallRow(Text(symbol, "name"), Text(symbol, "path"), string.Join(" · ", new[] { Text(item, "basis"), Text(item, "coverage") }.Where(static t => t.Length > 0)),
+        return new CallRow(Text(symbol, "name"), Text(symbol, "path"), Labels.Dots(Text(item, "basis"), Text(item, "coverage")),
             item.TryGetProperty("depth", out var depth) && depth.TryGetInt32(out var level) ? level : 1);
     }
 

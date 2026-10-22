@@ -225,5 +225,5 @@ internal static partial class Labels
 
     private static string Count(int n, string one, string many) => string.Create(CultureInfo.InvariantCulture, $"{n} {(n == 1 ? one : many)}");
 
-    private static string Dots(params string?[] parts) => string.Join(" · ", parts.Where(p => !string.IsNullOrEmpty(p)));
+    internal static string Dots(params string?[] parts) => string.Join(" · ", parts.Where(p => !string.IsNullOrEmpty(p)));
 }
