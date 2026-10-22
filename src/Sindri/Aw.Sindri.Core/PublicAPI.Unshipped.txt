@@ -16106,6 +16106,10 @@ override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras.GetHashCode() 
 override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras.ToString() -> string!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras? right) -> bool
+
+Aw.Sindri.Core.Launch.StepDenials
+const Aw.Sindri.Core.Launch.StepDenials.HoldoutDirectory = "holdout" -> string!
+static Aw.Sindri.Core.Launch.StepDenials.For(string! worktree, System.Collections.Generic.IReadOnlyList<string!>! siblingWorktrees, string? sindriHome) -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Scheduling.ServiceActions
 const Aw.Sindri.Core.Scheduling.ServiceActions.Pause = "pause" -> string!
 const Aw.Sindri.Core.Scheduling.ServiceActions.Resume = "resume" -> string!
