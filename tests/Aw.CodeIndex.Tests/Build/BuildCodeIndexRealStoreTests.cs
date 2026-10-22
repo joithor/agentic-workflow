@@ -66,4 +66,25 @@ public sealed class BuildCodeIndexRealStoreTests
         Assert.Equal(IndexState.Missing, (await index.Facade.Status(RealIndex.ScopeOf(repo), Token)).Value.Repos.Single().State);
         Assert.Equal(0, index.Heavy.Held);
     }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task The_embeddings_layer_and_Neighbors_work_over_the_real_store_and_the_stored_bodies_go_once_embedded()
+    {
+        using var git = A.GitRepo().WithFile("src/Orders.cs", Orders).WithFile("src/Api.cs", Api).Build();
+        var embedder = new FakeEmbedder();
+        using var index = new RealIndex(embedder: embedder);
+        var repo = git.AsRepo("shop");
+
+        var report = await Build(index, repo, git.Head);
+        var texts = embedder.Batches.Single();
+        var answer = (await index.Facade.Neighbors(RealIndex.ScopeOf(repo), repo.Name, texts[0], 3, Token)).Value;
+        await using var next = (await index.Store.BeginBuild(repo.Name, incremental: true, Token)).Value;
+
+        Assert.Equal((3, 3), (report.Embedded, report.Embeddable));
+        Assert.Equal(LayerState.Ok, report.Layers.Single(l => l.Layer == LayerName.Embeddings).State);
+        Assert.Equal(3, answer.Neighbors.Count);
+        Assert.Equal(1.0, answer.Neighbors[0].Score, 4);
+        Assert.All(texts, t => Assert.Contains("\n", t, StringComparison.Ordinal));
+        Assert.Empty((await next.EmbedCandidates(10, Token)).Value);
+    }
 }
