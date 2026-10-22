@@ -11,6 +11,9 @@ internal static class ContextRoutes
     /// <summary>POST and GET /sindri/context/map/review.</summary>
     internal const string Review = Root + "/map/review";
 
+    /// <summary>GET /sindri/context/map/publish.</summary>
+    internal const string MapPublish = Root + "/map/publish";
+
     /// <summary>GET /sindri/context/sources.</summary>
     internal const string Sources = Root + "/sources";
 

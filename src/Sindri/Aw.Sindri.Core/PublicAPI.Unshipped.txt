@@ -17389,6 +17389,8 @@ static Aw.Sindri.Core.EngineReads.EngineProjection.Stuck(System.Collections.Gene
 static readonly Aw.Sindri.Core.SindriErrors.EngineNotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.EngineUnavailable -> Aw.Kernel.ErrorDefinition!
 static Aw.Sindri.Core.Health.HealthSummary.WithStuck(Aw.Sindri.Core.Health.HealthReport! report, int stuck) -> Aw.Sindri.Core.Health.HealthReport!
+Aw.Sindri.Core.Doctor.IMapPublishCheck
+Aw.Sindri.Core.Doctor.IMapPublishCheck.Check(Aw.Sindri.Core.Profile.LoadedProfile? approved, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Doctor.DoctorCheck!>
 Aw.Sindri.Core.Workflow.Engine.Evals.LedgerRecording
 Aw.Sindri.Core.Workflow.Engine.Evals.LedgerRecording.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Evals.LedgerRecording!
 Aw.Sindri.Core.Workflow.Engine.Evals.LedgerRecording.Catalog.get -> Aw.Sindri.Core.Workflow.Blocks.BlockCatalog!
