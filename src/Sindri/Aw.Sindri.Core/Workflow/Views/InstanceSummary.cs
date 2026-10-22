@@ -23,6 +23,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="StartedAt">When it started; null for an older instance.</param>
 /// <param name="LineStage">The current state id of the root workflow.line instance the row belongs to (its own state for a root line row); null when its root is not a line instance.</param>
 /// <param name="RootAddress">The address of its root instance; its own for a root.</param>
+/// <param name="WaitingOn">Who the instance waits on: 'you', 'agent' or 'engine'; null once it ended (see <see cref="Views.WaitingOn"/>).</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record InstanceSummary(
     InstanceAddress Address,
@@ -42,4 +43,5 @@ public sealed record InstanceSummary(
     string? StartedBy = null,
     DateTimeOffset? StartedAt = null,
     string? LineStage = null,
-    string? RootAddress = null);
+    string? RootAddress = null,
+    string? WaitingOn = null);

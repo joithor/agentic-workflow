@@ -53,9 +53,12 @@ public static class WorkflowViewFixtures
         EngineOwnedBadge? owned, SubjectRef subject, IReadOnlyList<StateCell> cells, string now, params string[] actions)
     {
         var states = cells.Select(c => owned is not null && c.State == state && c.Badge is null ? c with { Badge = owned } : c).ToList();
+        var deskOpen = states.Exists(c => c.Desk && c.Glyph == StateGlyph.Active);
+        var outcome = states.Exists(c => c.Terminal && c.Glyph == StateGlyph.Done && c.State == state) ? OutcomeName.From("resolved") : null;
+        var chip = StateChip.For(owned, deskOpen, outcome);
         return new(InstanceAddress.From(address), WorkflowInstanceId.Of(InstanceAddress.From(address)), ItemKey.From(address[..address.IndexOf('/', StringComparison.Ordinal)]), shape.Stamp, state,
-            StateChip.For(owned, states.Exists(c => c.Desk && c.Glyph == StateGlyph.Active), states.Exists(c => c.Terminal && c.Glyph == StateGlyph.Done && c.State == state) ? OutcomeName.From("resolved") : null),
-            since, owned, subject, shape.InputRows(), states, now.Length > 80 ? now[..79] + "…" : now, null, Acts(actions));
+            chip, since, owned, subject, shape.InputRows(), states, now.Length > 80 ? now[..79] + "…" : now, null, Acts(actions),
+            WaitingOn: Aw.Sindri.Core.Workflow.Views.WaitingOn.Of(chip, deskOpen, agentRunOpen: false, ended: outcome is not null));
     }
 
     private static InstanceSummary DoneTriage(string address, string label, DateTimeOffset since) =>

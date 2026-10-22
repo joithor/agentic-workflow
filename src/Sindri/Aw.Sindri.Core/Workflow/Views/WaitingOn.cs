@@ -18,5 +18,9 @@ public static class WaitingOn
     /// <param name="agentRunOpen">Whether an agent step run is open.</param>
     /// <param name="ended">Whether the instance ended.</param>
     /// <returns><see cref="You"/> for DECISION, PARKED, ESCALATED, WITH YOU or an open desk run, <see cref="Agent"/> for an open agent run, <see cref="Engine"/> otherwise, null once it ended.</returns>
-    public static string? Of(StateChip chip, bool deskOpen, bool agentRunOpen, bool ended) => throw new NotSupportedException();
+    public static string? Of(StateChip chip, bool deskOpen, bool agentRunOpen, bool ended) => ended
+        ? null
+        : deskOpen || chip.Word is StateChip.Decision or StateChip.Parked or StateChip.Escalated or StateChip.WithYou
+            ? You
+            : agentRunOpen ? Agent : Engine;
 }
