@@ -4,8 +4,8 @@ using Aw.Sindri.Core.Workflow.Ids;
 namespace Aw.Sindri.Features.Blocks.Effect;
 
 /// <summary>
-/// The line's report effect (line spec BD7, LN-WF1): descriptor only until the line's dispatcher gives it a runtime. A recipe that
-/// names it validates and evals; a served instance's dispatch of it is refused as an effect with no runtime.
+/// The line's report effect (line spec BD7, LN-WF1): its runtime is LineReportEffect: it records the report in the phase's run area for the
+/// line's dispatcher (LN-WF1) to deliver.
 /// </summary>
 internal static class LineEffects
 {
