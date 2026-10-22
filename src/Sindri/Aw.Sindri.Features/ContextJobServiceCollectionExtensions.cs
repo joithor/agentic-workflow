@@ -23,7 +23,6 @@ internal static class ContextJobServiceCollectionExtensions
         return services
             .AddScoped<MapEventSource>()
             .AddScoped<MapJobStarts>()
-            .AddSingleton<IIndexOutlooks, NoIndexOutlooks>()   // until CI-9 composes the code index: every repo absent, so the map publishes at once
             .AddJob<SyncContextSourcesRequest, SyncContextSourcesResult, SyncContextSourcesService>(
                 static _ => JobKey.From("sync"), static r => SyncSummary(r), PrecheckSync)
             .AddJob<BuildContextMapRequest, BuildContextMapResult, BuildContextMapService>(

@@ -71,6 +71,9 @@ public static class EventTypes
     /// <summary>A hold ended without a promote: a rebuild replaced the draft, or it was already current (code index spec 6.4).</summary>
     public const string ContextMapHoldDropped = "context.map.hold.dropped";
 
+    /// <summary>A code index build published an index (code index spec §8); appended by the job just before it finishes.</summary>
+    public const string CodeIndexBuilt = "codeindex.built";
+
     /// <summary>The owner approved a scope packet (scoping spec §3, SC3); written by the freeze Step.</summary>
     public const string ScopingApproved = "scoping.approved";
 

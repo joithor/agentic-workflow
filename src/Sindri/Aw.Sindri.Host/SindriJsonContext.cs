@@ -44,6 +44,7 @@ using Aw.Sindri.Features.ApproveRecipe;
 using Aw.Sindri.Features.CancelJob;
 using Aw.Sindri.Features.CloseItem;
 using Aw.Sindri.Features.CompleteStep;
+using Aw.Sindri.Features.CodeIndexJobs;
 using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Features.CreateItem;
 using Aw.Sindri.Features.Decide;
@@ -205,6 +206,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(SyncContextSourcesRequest)), JsonSerializable(typeof(SyncContextSourcesResult))]
 [JsonSerializable(typeof(BuildContextMapRequest)), JsonSerializable(typeof(BuildContextMapResult))]
 [JsonSerializable(typeof(RefreshContextMapRequest)), JsonSerializable(typeof(RefreshContextMapResult)), JsonSerializable(typeof(ContextMapRefreshed))]
+[JsonSerializable(typeof(BuildCodeIndexRequest)), JsonSerializable(typeof(BuildCodeIndexResult)), JsonSerializable(typeof(CodeIndexBuilt)), JsonSerializable(typeof(CodeIndexBuiltLayer))]
 [JsonSerializable(typeof(PublishContextMapRequest)), JsonSerializable(typeof(PublishContextMapResult)), JsonSerializable(typeof(ContextMapHeld)), JsonSerializable(typeof(ContextMapPublished)), JsonSerializable(typeof(ContextMapPublishedPublic)), JsonSerializable(typeof(ContextMapHoldDropped))]
 [JsonSerializable(typeof(Context.Core.Eval.MapQuality.MapQualityRun)), JsonSerializable(typeof(Context.Core.Eval.Backtest.BacktestRun)), JsonSerializable(typeof(Context.Core.Eval.Backtest.EvalPurgeReport))]
 [JsonSerializable(typeof(RunContextBacktestRequest)), JsonSerializable(typeof(RunContextBacktestResult)), JsonSerializable(typeof(BacktestArmLine))]

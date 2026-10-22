@@ -146,6 +146,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddRegistrySlices()
             .AddContextSlices().AddCodeIndexReads()
             .AddContextJobs()
+            .AddCodeIndexJobs()
             .AddEngineSlices()
             .AddSessionSlices()
             .AddLaunchSlices()
