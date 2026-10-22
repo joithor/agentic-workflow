@@ -2,6 +2,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.Tests.Controls;
 using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
 
 namespace Aw.Sindri.Ui.Tests.NeedsYou;
@@ -14,10 +15,12 @@ public sealed class NeedsYouConfirmBarTests
     private readonly AppConfirmFixture _fixture = new();
     private readonly FakeSindriApi _server = new();
     private int _focusRequests;
+    private CatalogViewModel _catalog = null!;   // the catalog the last bar was made over
 
     private async Task<NeedsYouBarViewModel> Bar(NeedsYouEntry entry, string ui = "ready")
     {
-        var confirm = new NeedsYouConfirm(_fixture.Catalog(ui), () => _api, _server, _fixture.Clock);
+        _catalog = _fixture.Catalog(ui);
+        var confirm = new NeedsYouConfirm(_catalog, () => _api, _server, _fixture.Clock);
         var bar = new NeedsYouBarViewModel(new DeskReporter(_server, () => _api), _fixture.Clipboard, _fixture.Clock, confirm);
         bar.ConfirmFocusRequested += (_, _) => _ = ++_focusRequests;
         bar.Show(new NeedsYouRowViewModel(entry, seen: true, reducedMotion: false, arrived: false, _fixture.Clock));
@@ -128,5 +131,90 @@ public sealed class NeedsYouConfirmBarTests
         await bar.CopyTerminal();
 
         Assert.Equal("sindri recipe approve workflow.step", _fixture.Clipboard.Text);
+    }
+
+    [Fact]
+    public async Task Text_that_is_not_the_phrase_passed_straight_to_the_bar_sends_nothing()
+    {
+        ServeProfileChallenge();
+        var bar = await Bar(NeedsYouRows.ProfileReady());
+
+        await bar.SubmitTyped("approve profile 000000");
+
+        Assert.Empty(_server.ProfileApprovals);
+    }
+
+    [Fact]
+    public async Task An_answer_that_did_not_approve_is_a_refusal_not_an_approval()
+    {
+        ServeProfileChallenge();
+        _server.ApproveProfileAnswer = RouteAnswer.Api("profile-approve", "preview");   // 200 with approved:false
+        var bar = await Bar(NeedsYouRows.ProfileReady());
+
+        await bar.SubmitTyped("approve profile 70e158");
+
+        Assert.Equal((false, Labels.NeedsYouNotApproved, 2), (bar.IsApproved, bar.Refusal, _server.Challenges.Count));   // a fresh challenge is asked for
+    }
+
+    [Fact]
+    public async Task A_row_shown_before_the_catalog_is_ready_gets_its_control_once_the_catalog_loads()
+    {
+        ServeProfileChallenge();
+        var bar = await Bar(NeedsYouRows.ProfileReady(), ui: "cli-only");
+        Assert.Equal((true, false), (bar.ShowsTerminal, bar.ShowsTyped));
+
+        AppConfirmFixture.Reread(_catalog, "ready");
+        await bar.Loaded;
+
+        Assert.Equal((false, true), (bar.ShowsTerminal, bar.ShowsTyped));
+        Assert.Equal("approve profile 932d87", Assert.Single(_server.Challenges).Action);
+    }
+
+    [Fact]
+    public async Task A_challenge_that_ran_out_sends_nothing_and_a_new_one_is_asked_for()
+    {
+        ServeProfileChallenge();
+        var bar = await Bar(NeedsYouRows.ProfileReady());
+        _fixture.Clock.Advance(TimeSpan.FromMinutes(6));
+
+        await bar.SubmitTyped("approve profile 70e158");
+
+        Assert.Equal((0, 2, Labels.NeedsYouTypedExpired), (_server.ProfileApprovals.Count, _server.Challenges.Count, bar.Refusal));
+    }
+
+    [Fact]
+    public async Task A_second_press_while_the_first_is_in_flight_sends_nothing()
+    {
+        ServeProfileChallenge();
+        var gate = _server.ApproveProfileGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var bar = await Bar(NeedsYouRows.ProfileReady());
+
+        var first = bar.SubmitTyped("approve profile 70e158");
+        await bar.SubmitTyped("approve profile 70e158");
+        gate.SetResult();
+        await first;
+
+        _ = Assert.Single(_server.ProfileApprovals);
+        Assert.True(bar.IsApproved);
+    }
+
+    [Fact]
+    public async Task A_not_ready_approve_all_row_stays_the_terminal_copy_and_reads_no_plan()
+    {
+        var bar = await Bar(NeedsYouRows.SetupRecipes(), ui: "cli-only");
+
+        Assert.Equal((true, false, 0, 0), (bar.ShowsTerminal, bar.ShowsHold, _server.Challenges.Count, _server.PlanCalls));
+    }
+
+    [Fact]
+    public async Task A_hold_the_server_refuses_shows_the_refusal_and_leaves_the_row_open()
+    {
+        _server.ApproveAllStartAnswer = RouteAnswer.Problem(System.Net.HttpStatusCode.Forbidden, "SND-SETUP-003", "Hold the button for the full time.");
+        var bar = await Bar(NeedsYouRows.SetupRecipes());
+
+        await bar.HoldReached(1500);
+
+        Assert.Equal((false, true), (bar.IsApproved, bar.HasRefusal));
+        _ = Assert.Single(_server.Approvals);
     }
 }

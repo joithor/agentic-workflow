@@ -13,6 +13,8 @@ public sealed class SindriApiClientProfileApproveTests
 {
     private static readonly Uri _api = new("http://127.0.0.1:7410/");
 
+    private const string Hash = "70e1581b3ecaf617318482f6b0844b67f79a287a7136b4e4b6ff5d26005e4261";
+
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact]
@@ -21,13 +23,13 @@ public sealed class SindriApiClientProfileApproveTests
         var canned = new Canned(HttpStatusCode.OK, GoldenFiles.Api("profile-approve", "approved"));
         var client = new SindriApiClient(new HttpClient(canned), new InMemoryHumanToken("tok-1"), TimeProvider.System);
 
-        var done = await client.ApproveProfile(_api, new ApproveProfileRequest("70e1581b", new ProfileAnswer("CHL-1", "approve profile 70e158")), Token);
+        var done = await client.ApproveProfile(_api, new ApproveProfileRequest(Hash, new ProfileAnswer("CHL-1", "approve profile 70e158")), Token);
 
         Assert.True(done.IsSuccess);
         Assert.Equal((true, 3L), (done.Value.Approved, done.Value.Sequence));
         Assert.Equal((HttpMethod.Post, "/sindri/profile/approve", "human", "ui"), (canned.Method, canned.Path, canned.Caller, canned.Client));
         var body = JsonNode.Parse(canned.Body!)!;
-        Assert.Equal(("70e1581b", "CHL-1", "approve profile 70e158"), (body["hash"]!.GetValue<string>(), body["answer"]!["challenge"]!.GetValue<string>(), body["answer"]!["typed"]!.GetValue<string>()));
+        Assert.Equal((Hash, "CHL-1", "approve profile 70e158"), (body["hash"]!.GetValue<string>(), body["answer"]!["challenge"]!.GetValue<string>(), body["answer"]!["typed"]!.GetValue<string>()));
     }
 
     [Fact]
@@ -36,7 +38,7 @@ public sealed class SindriApiClientProfileApproveTests
         var canned = new Canned(HttpStatusCode.Forbidden, GoldenFiles.Api("profile-approve", "refused-session"));
         var client = new SindriApiClient(new HttpClient(canned), new InMemoryHumanToken("tok-1"), TimeProvider.System);
 
-        var done = await client.ApproveProfile(_api, new ApproveProfileRequest("70e1581b", new ProfileAnswer("CHL-1", "x")), Token);
+        var done = await client.ApproveProfile(_api, new ApproveProfileRequest(Hash, new ProfileAnswer("CHL-1", "x")), Token);
 
         Assert.True(done.IsError);
         Assert.Equal("SND-AUTH-002", done.Error.Code);

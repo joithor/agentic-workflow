@@ -31,6 +31,7 @@ internal sealed class NeedsYouConfirm : ObservableObject
     private bool _profileDone;
     private bool _sending;
     private string ProfileRefusal { get; set; } = "";
+    private NeedsYouRowViewModel? _row;
     private int _session;   // which row this is; an answer is for the one that asked
 
     /// <summary>The confirmations over their ports.</summary>
@@ -46,6 +47,7 @@ internal sealed class NeedsYouConfirm : ObservableObject
         TypedBox = new TypedConfirmBoxViewModel(ProfileAction, catalog, clock);
         All = new ApproveAllViewModel(catalog, url, api, clock, reducedMotion);
         All.PropertyChanged += OnAllChanged;
+        catalog.PropertyChanged += OnCatalogChanged;
     }
 
     /// <summary>Raised when what the bar shows of the confirmation changed: the kind, a refusal, or an approval that went through.</summary>
@@ -84,6 +86,7 @@ internal sealed class NeedsYouConfirm : ObservableObject
     internal Task Show(NeedsYouRowViewModel? row)
     {
         _session++;
+        _row = row;
         All.Close();
         (_challenge, _hash, _profileDone, _sending) = (null, "", false, false);
         ProfileRefusal = "";
@@ -112,6 +115,11 @@ internal sealed class NeedsYouConfirm : ObservableObject
         if (Kind != NeedsYouConfirmKind.Typed || _sending || _profileDone || _challenge is not { } challenge || _url() is not { } api)
         {
             return;
+        }
+
+        if (!string.Equals(typed.Trim(), TypedBox.Phrase, StringComparison.Ordinal))
+        {
+            return;   // only the served text, exactly, is an answer: the box checks it and so does this
         }
 
         var session = _session;
@@ -145,20 +153,25 @@ internal sealed class NeedsYouConfirm : ObservableObject
             }
         }
 
-        if (session != _session)
+        if (session == _session)
         {
-            return;
+            await Settle(sent, session).ConfigureAwait(true);
         }
+    }
 
-        if (sent.IsSuccess)
+    // What the server said: an approval is the row's end; anything else, a refusal in words, and (but for an agent session) a fresh challenge.
+    private async Task Settle(Result<ProfileApproved> sent, int session)
+    {
+        if (sent.IsSuccess && sent.Value.Approved)
         {
             _profileDone = true;
             Changed?.Invoke(this, EventArgs.Empty);
             return;
         }
 
-        ProfileRefusal = Words(sent.Error);
-        if (!string.Equals(sent.Error.Code, SessionRefusal, StringComparison.Ordinal))
+        var refused = sent.IsError ? sent.Error : null;
+        ProfileRefusal = refused is null ? Labels.NeedsYouNotApproved : Words(refused);
+        if (refused is null || !string.Equals(refused.Code, SessionRefusal, StringComparison.Ordinal))
         {
             await AskProfile(session).ConfigureAwait(true);   // a fresh challenge: asking again helps unless every session is refused
         }
@@ -200,6 +213,7 @@ internal sealed class NeedsYouConfirm : ObservableObject
             return;
         }
 
+        // hash6 is the first six characters of the hash, as the server writes the challenge text
         var asked = await _api.IssueAppChallenge(api, new AppChallengeRequest("approve profile " + (_hash.Length > ShortHash ? _hash[..ShortHash] : _hash)), CancellationToken.None).ConfigureAwait(true);
         if (session != _session)
         {
@@ -221,6 +235,15 @@ internal sealed class NeedsYouConfirm : ObservableObject
 
     // A refusal in words: an agent session is told in plain words that the app is the person's.
     private static string Words(Error error) => string.Equals(error.Code, SessionRefusal, StringComparison.Ordinal) ? Labels.ApproveSessionRefused : error.Message;
+
+    // The catalog was read (or read again) after the row showed: a row that waited on it is offered its control now, and one whose row went cli-only is the terminal copy.
+    private void OnCatalogChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (_row is { } row && string.Equals(e.PropertyName, nameof(CatalogViewModel.Controls), StringComparison.Ordinal) && KindOf(row) != Kind)
+        {
+            _ = Show(row);
+        }
+    }
 
     // The approve-all VM moved on (its phase, a refusal or a line): the bar reads it again.
     private void OnAllChanged(object? sender, PropertyChangedEventArgs e)

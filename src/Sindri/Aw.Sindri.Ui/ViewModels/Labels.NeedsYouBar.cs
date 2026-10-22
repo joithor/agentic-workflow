@@ -12,6 +12,9 @@ internal static partial class Labels
     /// <summary>Said when the typed challenge ran out before it was sent: a new phrase is shown.</summary>
     internal const string NeedsYouTypedExpired = "That took too long. A new phrase is shown: type it again.";
 
+    /// <summary>Said when Sindri answered but did not approve the profile.</summary>
+    internal const string NeedsYouNotApproved = "Sindri did not approve it. Ask again from the box.";
+
     /// <summary>The secondary action of a request.</summary>
     internal const string NeedsYouSendBack = "Send back";
 
