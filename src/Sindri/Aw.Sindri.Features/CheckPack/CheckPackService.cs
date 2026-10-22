@@ -1,5 +1,6 @@
 using Aw.Kernel;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.LensPacks;
 
 namespace Aw.Sindri.Features.CheckPack;
@@ -32,7 +33,9 @@ internal sealed class CheckPackService(IPackDirectories directories) : IService<
         [
             .. read.Value.Outside.Select(static path => new PackFinding(Code, $"{path} points outside the pack (fix: copy the file into the pack, a pack holds only its own files)")),
         ];
-        var pack = LensPackReader.Read(id, read.Value.Files);
+        Result<LensPack> pack = LensPackId.TryFrom(id, out var packId)
+            ? LensPackReader.Read(packId, read.Value.Files)
+            : SindriErrors.InvalidInput.With($"the lens pack '{id}' is not a pack id (a lowercase letter, then lowercase letters, digits or '-', 2 to 40 characters; fix: name the directory after the pack id)");
         if (pack.IsError)
         {
             findings.Add(new PackFinding(Code, pack.Error.Message));
