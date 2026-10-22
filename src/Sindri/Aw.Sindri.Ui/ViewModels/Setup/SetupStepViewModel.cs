@@ -229,7 +229,7 @@ internal sealed class SetupStepViewModel : ObservableObject
         DetailText = IsFinished || running ? string.Empty : Step.Detail ?? string.Empty;
         ErrorText = running ? string.Empty : Step.Error?.Sentence ?? string.Empty;
         Name = Labels.SetupStepName(Title, said, Sub);
-        Preview = IsFinished ? [] : [.. (Step.Preview ?? []).Select(l => new SetupPreviewLineViewModel(l.Kind, l.Text))];
+        Preview = PreviewLines();
         DeriveProgress();
     }
 
@@ -246,11 +246,20 @@ internal sealed class SetupStepViewModel : ObservableObject
         Items = [.. (Step.Items ?? []).Select(i => new SetupItemViewModel(i.Repo, i.State, i.Detail))];
         Action = _overrideNote is null ? _action(Step, Action) : null;
         Fields = Details();
-        HintText = IsFailed && string.Equals(Step.Id, "map", StringComparison.Ordinal) && _overrideNote is null ? Labels.SetupMapRetries : string.Empty;
-        Agents = string.Equals(Step.Id, "mcp", StringComparison.Ordinal) ? SetupAgentLines.For(Step.Items ?? [], _overrideNote is not null || IsRunning) : [];
+        HintText = Hint();
+        Agents = AgentLines();
         Repo?.Update(Step);
         Onyx?.Update(Step, _overrideNote is not null);
     }
+
+    private List<SetupPreviewLineViewModel> PreviewLines() =>
+        IsFinished ? [] : [.. (Step.Preview ?? []).Select(l => new SetupPreviewLineViewModel(l.Kind, l.Text))];
+
+    private string Hint() =>
+        IsFailed && string.Equals(Step.Id, "map", StringComparison.Ordinal) && _overrideNote is null ? Labels.SetupMapRetries : string.Empty;
+
+    private List<SetupAgentViewModel> AgentLines() =>
+        string.Equals(Step.Id, "mcp", StringComparison.Ordinal) ? SetupAgentLines.For(Step.Items ?? [], _overrideNote is not null || IsRunning) : [];
 
     private List<SetupFieldViewModel> Details()
     {
