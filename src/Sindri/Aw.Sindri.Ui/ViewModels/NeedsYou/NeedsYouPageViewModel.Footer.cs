@@ -12,7 +12,7 @@ internal sealed partial class NeedsYouPageViewModel
         var now = _clock.GetUtcNow();
         var waited = Labels.NeedsYouWaited(now - since);
         return entry.Timeout is { } timeout
-            ? Labels.NeedsYouFootTimeout(waited, timeout.Kind, Labels.Duration((long)(timeout.Due - now).TotalSeconds))
+            ? Labels.NeedsYouFootTimeout(waited, timeout.Kind, Labels.NeedsYouTimeLeft(timeout.Due - now))
             : Labels.NeedsYouFootRight(waited);
     }
 }

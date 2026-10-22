@@ -120,6 +120,13 @@ internal static partial class Labels
         _ => string.Create(CultureInfo.InvariantCulture, $"{(int)age.TotalDays}d {age.Hours}h"),
     };
 
+    /// <summary>What is left of a row's timeout, in the same two units as the wait; seconds under a minute, never below zero.</summary>
+    /// <param name="left">The time left.</param>
+    /// <returns>The words, e.g. "6d 18h", "30m" or "0s".</returns>
+    internal static string NeedsYouTimeLeft(TimeSpan left) => left.TotalMinutes < 1
+        ? string.Create(CultureInfo.InvariantCulture, $"{(int)Math.Max(0, left.TotalSeconds)}s")
+        : NeedsYouWaited(left);
+
     /// <summary>The detail column's sentence when the list is empty and serves none.</summary>
     internal const string NeedsYouEmptyFallback = "Nothing needs you";
 
