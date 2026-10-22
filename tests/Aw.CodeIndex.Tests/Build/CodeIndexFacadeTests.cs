@@ -25,7 +25,7 @@ public sealed class CodeIndexFacadeTests
     }
 
     private static CodeIndexScope OtherScope()
-        => new([new CodeIndexRepo(RepoName.From("web"), "/work/web", Aw.CodeIndex.Core.CodeIndexSettings.Default)], new CodeIndexCaller(CallerKind.Session, RepoName.From("web")));
+        => new([new CodeIndexRepo(RepoName.From("web"), "/work/web", Core.CodeIndexSettings.Default)], new CodeIndexCaller(CallerKind.Session, RepoName.From("web")));
 
     private static async Task<SymbolRef> SymbolOf(BuildHarness harness, string name)
         => (await harness.Facade.FindSymbols(harness.Scope, new SymbolQuery(name, SymbolMatch.Exact, Repo: null), Token)).Value.Hits.Single().Ref;

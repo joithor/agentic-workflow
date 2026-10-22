@@ -131,8 +131,8 @@ public sealed class BuildCodeIndexServiceTests
         var newer = new BuildHarness { Parser = new FakeSymbolParser { Version = "fake-2" }.With("src/A.cs", new ParseOutcome([])).With("src/B.cs", new ParseOutcome([])) };
 
         // The same store and snapshot, a parser that reports another version.
-        var service = new Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexService(harness.Heads, harness.Snapshot, new Aw.CodeIndex.Features.BuildCodeIndex.StructureWriter(harness.Snapshot, [newer.Parser], harness.Quarantine, harness.Scrubber), harness.Store, harness.Heavy, harness.Clock);
-        var result = await service.Handle(new Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexRequest(harness.Repo, BuildHarness.Second, new Progress<string>()), Token);
+        var service = new Features.BuildCodeIndex.BuildCodeIndexService(harness.Heads, harness.Snapshot, new Features.BuildCodeIndex.StructureWriter(harness.Snapshot, [newer.Parser], harness.Quarantine, harness.Scrubber), harness.Store, harness.Heavy, harness.Clock);
+        var result = await service.Handle(new Features.BuildCodeIndex.BuildCodeIndexRequest(harness.Repo, BuildHarness.Second, new Progress<string>()), Token);
 
         Assert.Equal(["src/A.cs", "src/B.cs"], newer.Parser.ParsedPaths);
         Assert.Equal(0, result.Value.Counts.Symbols);

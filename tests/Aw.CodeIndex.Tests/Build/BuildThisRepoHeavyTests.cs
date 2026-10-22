@@ -17,7 +17,7 @@ public sealed class BuildThisRepoHeavyTests(ITestOutputHelper output)
     {
         var root = RepositoryRoot();
         var head = CommitSha.From(HeadOf(root));
-        var repo = new CodeIndexRepo(RepoName.From("agentic-workflow"), root, Aw.CodeIndex.Core.CodeIndexSettings.Default);
+        var repo = new CodeIndexRepo(RepoName.From("agentic-workflow"), root, Core.CodeIndexSettings.Default);
         using var index = new RealIndex();
         var lines = new Lines();
 

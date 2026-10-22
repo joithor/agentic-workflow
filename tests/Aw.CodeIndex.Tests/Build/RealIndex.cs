@@ -1,7 +1,7 @@
 using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Ports;
-using Aw.CodeIndex.Features.BuildCodeIndex;
 using Aw.CodeIndex.Features;
+using Aw.CodeIndex.Features.BuildCodeIndex;
 using Aw.CodeIndex.Infrastructure.Parsing;
 using Aw.CodeIndex.Infrastructure.Scrubbing;
 using Aw.CodeIndex.Infrastructure.Snapshot;

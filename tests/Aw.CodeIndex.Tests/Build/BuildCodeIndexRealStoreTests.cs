@@ -13,7 +13,7 @@ public sealed class BuildCodeIndexRealStoreTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static async Task<BuildReport> Build(RealIndex index, CodeIndexRepo repo, Aw.CodeIndex.Core.Values.CommitSha commit)
+    private static async Task<BuildReport> Build(RealIndex index, CodeIndexRepo repo, Core.Values.CommitSha commit)
         => (await index.Service.Handle(new BuildCodeIndexRequest(repo, commit, new Progress<string>()), Token)).Value;
 
     [Fact, Trait("Lane", "integration")]
@@ -60,7 +60,7 @@ public sealed class BuildCodeIndexRealStoreTests
         using var index = new RealIndex();
         var repo = git.AsRepo("shop");
 
-        var result = await index.Service.Handle(new BuildCodeIndexRequest(repo, Aw.CodeIndex.Core.Values.CommitSha.From(new string('a', 40)), new Progress<string>()), Token);
+        var result = await index.Service.Handle(new BuildCodeIndexRequest(repo, Core.Values.CommitSha.From(new string('a', 40)), new Progress<string>()), Token);
 
         Assert.Equal("SND-CODEIDX-002", result.Error.Code);
         Assert.Equal(IndexState.Missing, (await index.Facade.Status(RealIndex.ScopeOf(repo), Token)).Value.Repos.Single().State);

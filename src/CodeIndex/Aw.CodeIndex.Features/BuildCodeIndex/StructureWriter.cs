@@ -1,6 +1,6 @@
-using Aw.CodeIndex.Core.Facade;
 using System.Text;
 using Aw.CodeIndex.Core;
+using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Planning;
 using Aw.CodeIndex.Core.Ports;
