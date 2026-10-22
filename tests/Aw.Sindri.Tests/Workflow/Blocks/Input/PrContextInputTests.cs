@@ -3,7 +3,6 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Forge;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Workflow.Blocks;
-using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Blocks.Input;
 using Aw.Sindri.Testing.Forge;
@@ -15,7 +14,7 @@ namespace Aw.Sindri.Tests.Workflow.Blocks.Input;
 [Lane(TestLane.Unit)]
 public sealed class PrContextInputTests
 {
-    private static readonly PullRepo Repo = new("forge.test", "acme", "widgets");
+    private static readonly PullRepo _repo = new("forge.test", "acme", "widgets");
 
     private sealed class Redacting : ITextScrubber
     {
@@ -57,7 +56,7 @@ public sealed class PrContextInputTests
     public async Task Serves_failing_check_logs_and_the_fenced_scrubbed_thread()
     {
         var pulls = new FakePullRequests(["forge.test"]);
-        var pull = pulls.Add(Repo, "feat/x", new string('a', 40));
+        var pull = pulls.Add(_repo, "feat/x", new string('a', 40));
         pull.FailingChecks.Add("build");
         _ = pulls.SeedThread(pull.Link, "please drop hunter2 from the config");
 
@@ -74,7 +73,7 @@ public sealed class PrContextInputTests
     public async Task Lists_the_changed_paths_between_the_prs_base_and_head_in_the_workspace()
     {
         var pulls = new FakePullRequests(["forge.test"]);
-        var pull = pulls.Add(Repo, "feat/x", "headsha");
+        var pull = pulls.Add(_repo, "feat/x", "headsha");
         var paths = new FakeChangedPaths().With("/work/web", "main", "headsha", "src/a.cs", "docs/b.md");
 
         var text = await Text(Input(pulls, paths), Context(pull.Link, "/work/web", "{\"title\":\"Add a\",\"body\":\"why\",\"base\":\"main\"}"));
@@ -88,7 +87,7 @@ public sealed class PrContextInputTests
     public async Task Caps_each_check_excerpt()
     {
         var pulls = new FakePullRequests(["forge.test"]);
-        var pull = pulls.Add(Repo, "feat/x", new string('a', 40));
+        var pull = pulls.Add(_repo, "feat/x", new string('a', 40));
         pull.FailingChecks.Add(new string('n', 6000));
 
         var text = await Text(Input(pulls), Context(pull.Link));
