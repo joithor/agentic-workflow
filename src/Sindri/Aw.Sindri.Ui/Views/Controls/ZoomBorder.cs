@@ -65,6 +65,9 @@ internal sealed partial class ZoomBorder : Border
     /// <summary>Gets the current view.</summary>
     internal ZoomView View { get; private set; } = ZoomView.Identity;
 
+    /// <summary>Gets where the view is going: the end of an unfinished transition, else the view itself.</summary>
+    internal ZoomView Target => _move?.To ?? View;
+
     /// <summary>Gets or sets the world's rectangle.</summary>
     internal Rect WorldBounds
     {

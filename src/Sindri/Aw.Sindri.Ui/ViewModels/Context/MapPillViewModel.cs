@@ -1,4 +1,4 @@
-using Aw.Sindri.Ui.Views.Context.Map;
+using Aw.Sindri.Ui.ViewModels.Context.Layout;
 
 namespace Aw.Sindri.Ui.ViewModels.Context;
 

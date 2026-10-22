@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Ui.Views.Controls;
+namespace Aw.Sindri.Ui.ViewModels.Context.Layout;
 
 /// <summary>The side of a node's box an edge's port sits on; the edge leaves or arrives along that side's outward normal.</summary>
 internal enum PortSide

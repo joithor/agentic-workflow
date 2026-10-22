@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Ui.Views.Controls;
+namespace Aw.Sindri.Ui.ViewModels.Context.Layout;
 
 /// <summary>How fully an area was searched.</summary>
 internal enum CoverageLevel

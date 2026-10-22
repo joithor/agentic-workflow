@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Ui.Views.Controls;
+namespace Aw.Sindri.Ui.ViewModels.Context.Layout;
 
 /// <summary>One area the strip reports on.</summary>
 /// <param name="Name">The area's plain name.</param>
