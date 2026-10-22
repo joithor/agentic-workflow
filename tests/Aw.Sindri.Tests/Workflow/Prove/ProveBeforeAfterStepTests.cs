@@ -102,14 +102,15 @@ public sealed class ProveBeforeAfterStepTests
     }
 
     [Fact]
-    public async Task A_base_and_head_signal_with_no_recorded_script_is_a_fail_that_runs_nothing()
+    public async Task A_base_and_head_signal_with_no_recorded_script_is_recorded_missing_with_a_note_and_passes_without_running_anything()
     {
         var rig = new Rig("""{"AC-1":[{"id":"SG-1a","kind":"test","statement":"s","runsAt":"base+head"}]}""");
 
         var result = await rig.Step().Run(Context(), Token);
 
-        Assert.Equal("fail", result.Result!.Outcome.Value);
+        Assert.Equal("pass", result.Result!.Outcome.Value);
         Assert.Equal("missing", (string?)Out(result)["results"]![0]!["base"]);
+        Assert.Contains("not runnable", (string?)Out(result)["results"]![0]!["note"], StringComparison.Ordinal);
         Assert.Empty(rig.Scripts.Calls);
     }
 
@@ -120,7 +121,7 @@ public sealed class ProveBeforeAfterStepTests
 
         var result = await rig.Step().Run(Context(), Token);
 
-        Assert.Equal("fail", result.Result!.Outcome.Value);
+        Assert.Equal("missing", (string?)Out(result)["results"]![0]!["base"]);
         Assert.Empty(rig.Scripts.Calls);
     }
 

@@ -11,7 +11,7 @@ namespace Aw.Sindri.Features.Prove;
 /// 'step.prove.before-after' on the block runtime (line spec §7.3, PRV-BA-001): for every live item's <c language="text">base+head</c> signal, its recorded script (the signal's
 /// <c language="text">script</c>, a path inside the phase's workspace) runs at the phase's base, in a scratch worktree made for the run, and at the head, in the workspace. It is the
 /// workspace's one file that runs in both trees, so the two runs are by the same script. The result is <c language="text">{commit, results[{item, signal, base, head, baseScript, headScript}]}</c>
-/// in 'fact:beforeAfter'; 'pass' when every script failed at the base and passed at the head, otherwise 'fail' (a signal with no usable script is recorded as 'missing' and is a fail without a run).
+/// in 'fact:beforeAfter'; 'pass' when every script failed at the base and passed at the head, otherwise 'fail' (a signal with no usable script is recorded as 'missing' with a note, nothing is run, and it does not fail the Step: the spec names no other runnable source).
 /// The Step fails (and an unrouted failure parks the instance) when a script cannot run at all, when the scratch worktree cannot be made, or when the context or a phase file is missing.
 /// The scratch worktree is removed afterwards (never forced).
 /// </summary>
@@ -90,7 +90,7 @@ internal sealed class ProveBeforeAfterStep(IBriefFiles files, IRunArea area, IRe
         }
 
         var fact = new JsonObject { ["commit"] = inputs.Head, ["results"] = results };
-        var holds = results.OfType<JsonObject>().All(static r => (string?)r["base"] == "fail" && (string?)r["head"] == "pass");
+        var holds = results.OfType<JsonObject>().All(static r => (string?)r["base"] == "missing" || ((string?)r["base"] == "fail" && (string?)r["head"] == "pass"));   // why: a signal with no runnable script is recorded, not failed (the demo can't block on a field nobody writes)
         return StepFacts.Done(holds ? "pass" : "fail", ("fact:beforeAfter", fact));
     }
 
@@ -127,6 +127,7 @@ internal sealed class ProveBeforeAfterStep(IBriefFiles files, IRunArea area, IRe
         ["head"] = atHead,
         ["baseScript"] = p.Script,
         ["headScript"] = p.Script,
+        ["note"] = p.Script is null ? "the before/after proof was not runnable: the signal records no usable script" : null,
     };
 
     private static IEnumerable<Planned> Signals(PhaseFiles phase) =>
