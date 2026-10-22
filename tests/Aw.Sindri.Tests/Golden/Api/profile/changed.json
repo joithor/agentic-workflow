@@ -37,6 +37,8 @@
     "services": [
       "Sindri will run the scorer service every 1 hour"
     ],
-    "effects": []
+    "allowance": [],
+    "connections": [],
+    "humanOnly": []
   }
 }

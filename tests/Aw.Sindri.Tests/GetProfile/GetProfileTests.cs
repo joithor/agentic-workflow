@@ -88,7 +88,9 @@ public sealed class GetProfileTests
         var repo = Assert.Single(summary!.Repos);
         Assert.Equal(("web", "/work/web", 120, 5.3), (repo.Name, repo.Path, repo.Files, repo.Megabytes));
         Assert.Equal(ProfileChanges.RepoSentences("web", "/work/web"), repo.Sentences);
-        Assert.Equal(["Reserves a work item so no other run starts on it"], summary.Effects);
+        Assert.Equal(["Reserves a work item so no other run starts on it"], summary.Allowance);
+        Assert.Empty(summary.Connections);
+        Assert.Empty(summary.HumanOnly);
     }
 
     [Fact, Trait("Lane", "unit")]

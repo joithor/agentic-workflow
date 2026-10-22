@@ -60,7 +60,7 @@ internal sealed class GetProfileService(IViewReader views, IProjectorStatus stat
             repos.Add(new RepoPreview(repo.Name, path, weight?.Files ?? 0, Math.Round((weight?.Bytes ?? 0) / MebiByte, 1), ProfileChanges.RepoSentences(repo.Name, path)));
         }
 
-        return new ProfileSummary(repos, changes.Services, changes.Effects);
+        return new ProfileSummary(repos, changes.Services, changes.Allowance, changes.Connections, changes.HumanOnly);
     }
 
 

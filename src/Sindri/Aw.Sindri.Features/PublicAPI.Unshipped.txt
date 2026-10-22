@@ -4510,15 +4510,19 @@ Aw.Sindri.Features.GetProfile.GetProfileResponse.Summary.get -> Aw.Sindri.Featur
 Aw.Sindri.Features.GetProfile.GetProfileResponse.Summary.init -> void
 Aw.Sindri.Features.GetProfile.ProfileSummary
 Aw.Sindri.Features.GetProfile.ProfileSummary.<Clone>$() -> Aw.Sindri.Features.GetProfile.ProfileSummary!
-Aw.Sindri.Features.GetProfile.ProfileSummary.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetProfile.RepoPreview!>! Repos, out System.Collections.Generic.IReadOnlyList<string!>! Services, out System.Collections.Generic.IReadOnlyList<string!>! Effects) -> void
+Aw.Sindri.Features.GetProfile.ProfileSummary.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetProfile.RepoPreview!>! Repos, out System.Collections.Generic.IReadOnlyList<string!>! Services, out System.Collections.Generic.IReadOnlyList<string!>! Allowance, out System.Collections.Generic.IReadOnlyList<string!>! Connections, out System.Collections.Generic.IReadOnlyList<string!>! HumanOnly) -> void
 Aw.Sindri.Features.GetProfile.ProfileSummary.Equals(Aw.Sindri.Features.GetProfile.ProfileSummary? other) -> bool
 Aw.Sindri.Features.GetProfile.ProfileSummary.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetProfile.RepoPreview!>!
 Aw.Sindri.Features.GetProfile.ProfileSummary.Repos.init -> void
 Aw.Sindri.Features.GetProfile.ProfileSummary.Services.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Features.GetProfile.ProfileSummary.Services.init -> void
-Aw.Sindri.Features.GetProfile.ProfileSummary.Effects.get -> System.Collections.Generic.IReadOnlyList<string!>!
-Aw.Sindri.Features.GetProfile.ProfileSummary.Effects.init -> void
-Aw.Sindri.Features.GetProfile.ProfileSummary.ProfileSummary(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetProfile.RepoPreview!>! Repos, System.Collections.Generic.IReadOnlyList<string!>! Services, System.Collections.Generic.IReadOnlyList<string!>! Effects) -> void
+Aw.Sindri.Features.GetProfile.ProfileSummary.Allowance.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.GetProfile.ProfileSummary.Allowance.init -> void
+Aw.Sindri.Features.GetProfile.ProfileSummary.Connections.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.GetProfile.ProfileSummary.Connections.init -> void
+Aw.Sindri.Features.GetProfile.ProfileSummary.HumanOnly.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.GetProfile.ProfileSummary.HumanOnly.init -> void
+Aw.Sindri.Features.GetProfile.ProfileSummary.ProfileSummary(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetProfile.RepoPreview!>! Repos, System.Collections.Generic.IReadOnlyList<string!>! Services, System.Collections.Generic.IReadOnlyList<string!>! Allowance, System.Collections.Generic.IReadOnlyList<string!>! Connections, System.Collections.Generic.IReadOnlyList<string!>! HumanOnly) -> void
 override Aw.Sindri.Features.GetProfile.ProfileSummary.Equals(object? obj) -> bool
 override Aw.Sindri.Features.GetProfile.ProfileSummary.GetHashCode() -> int
 override Aw.Sindri.Features.GetProfile.ProfileSummary.ToString() -> string!

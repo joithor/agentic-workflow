@@ -35,6 +35,8 @@
     "services": [
       "Sindri will run the heartbeat service every 5 seconds"
     ],
-    "effects": []
+    "allowance": [],
+    "connections": [],
+    "humanOnly": []
   }
 }

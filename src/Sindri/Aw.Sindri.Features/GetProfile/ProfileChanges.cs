@@ -8,11 +8,13 @@ namespace Aw.Sindri.Features.GetProfile;
 /// <summary>What the live profile asks for beyond the approved one, and the words for it (setup-once spec §5.2 "Preview"). Pure: file facts come from the caller.</summary>
 /// <param name="NewRepos">The repos the live profile names and the approved one does not.</param>
 /// <param name="Services">One sentence per service enabled or run more often.</param>
-/// <param name="Effects">One sentence per effect newly allowed.</param>
-internal sealed record ProfileChanges(IReadOnlyList<RepoEntry> NewRepos, IReadOnlyList<string> Services, IReadOnlyList<string> Effects)
+/// <param name="Allowance">One sentence per effect newly allowed, then one per budget or limit added or raised.</param>
+/// <param name="Connections">One sentence per outside connection added or changed.</param>
+/// <param name="HumanOnly">One sentence per step the profile keeps for the owner alone, newly.</param>
+internal sealed record ProfileChanges(IReadOnlyList<RepoEntry> NewRepos, IReadOnlyList<string> Services, IReadOnlyList<string> Allowance, IReadOnlyList<string> Connections, IReadOnlyList<string> HumanOnly)
 {
     /// <summary>Gets a value indicating whether the live profile asks for nothing new.</summary>
-    public bool IsEmpty => NewRepos.Count == 0 && Services.Count == 0 && Effects.Count == 0;
+    public bool IsEmpty => NewRepos.Count == 0 && Services.Count == 0 && Allowance.Count == 0 && Connections.Count == 0 && HumanOnly.Count == 0;
 
     /// <summary>What <paramref name="live"/> asks for that <paramref name="approved"/> does not.</summary>
     /// <param name="approved">The approved profile, or null when nothing is approved yet.</param>
@@ -28,7 +30,9 @@ internal sealed record ProfileChanges(IReadOnlyList<RepoEntry> NewRepos, IReadOn
         return new ProfileChanges(
             [.. (live.Repos ?? []).Where(r => !named.Contains(r.Name))],
             [.. ServiceSentences(approved?.Services ?? SindriProfile.NoServices, live.Services ?? SindriProfile.NoServices)],
-            [.. (live.Workflow?.Effects ?? []).Where(e => !allowed.Contains(e)).Distinct(StringComparer.Ordinal).Select(e => EffectSentence(e, sentences))]);
+            [.. (live.Workflow?.Effects ?? []).Where(e => !allowed.Contains(e)).Distinct(StringComparer.Ordinal).Select(e => EffectSentence(e, sentences)).Concat(ProfileGroups.Allowance(approved, live))],
+            [.. ProfileGroups.Connections(approved, live)],
+            [.. ProfileGroups.HumanOnly(approved, live)]);
     }
 
     /// <summary>The three sentences of a repo the approval would add, in reading order.</summary>

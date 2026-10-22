@@ -1,3 +1,5 @@
+using System.Text.Json;
+using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.Blocks;
 using Aw.Sindri.Features.GetProfile;
@@ -18,7 +20,7 @@ public sealed class ProfileChangesTests
 
         Assert.Equal(["web"], changes.NewRepos.Select(static r => r.Name));
         Assert.Equal(["Sindri will run the heartbeat service every 5 seconds"], changes.Services);
-        Assert.Equal(["Reserves a work item so no other run starts on it"], changes.Effects);
+        Assert.Equal(["Reserves a work item so no other run starts on it"], changes.Allowance);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -51,7 +53,7 @@ public sealed class ProfileChangesTests
 
         var changes = ProfileChanges.Between(approved, live, _sentences);
 
-        Assert.Equal(["Puts a question or notice in your Needs you list", "Allows the effect \"deploy canary ring\""], changes.Effects);
+        Assert.Equal(["Puts a question or notice in your Needs you list", "Allows the effect \"deploy canary ring\""], changes.Allowance);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -72,6 +74,97 @@ public sealed class ProfileChangesTests
             ProfileChanges.RepoSentences("web", "/work/web"));
     }
 
-    private static SindriProfile Profile(IReadOnlyList<RepoEntry>? repos = null, Dictionary<string, ServiceSettings>? services = null, IReadOnlyList<string>? effects = null) =>
-        new(1, "t", Repos: repos, Services: services, Workflow: effects is null ? null : new WorkflowSettings(Effects: effects));
+    [Fact, Trait("Lane", "unit")]
+    public void Allowance_says_a_budget_or_limit_the_live_profile_adds_or_raises_and_nothing_for_one_that_stays_or_drops()
+    {
+        var approved = Profile(agents: Agents(("claude", 5m), ("codex", 8m)), line: new LineSettings(Parallel: 2, MaxOpenPrs: 6), pr: new PrSettings(AutofixCap: 3));
+        var live = Profile(agents: Agents(("claude", 10m), ("codex", 8m), ("cursor", 3m)), line: new LineSettings(Parallel: 4, MaxOpenPrs: 4, MaxStack: 6), pr: new PrSettings(AutofixCap: 5));
+
+        var changes = ProfileChanges.Between(approved, live, _sentences);
+
+        Assert.Equal(
+            ["claude may spend up to $10 a day", "cursor may spend up to $3 a day", "Sindri may run up to 4 phases at once", "Sindri may stack phases up to 6 deep", "Sindri may push up to 5 CI fixes for one pull request"],
+            changes.Allowance);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Allowance_says_a_removed_daily_budget_and_a_raised_size_budget()
+    {
+        var approved = Profile(agents: Agents(("claude", 5m)), plan: new PlanSettings(Sizes: new() { ["S"] = new SizeSettings(Budget: new BudgetSettings(Tokens: 1000, Turns: 10)) }));
+        var live = Profile(agents: Agents(("claude", null)), plan: new PlanSettings(Sizes: new() { ["S"] = new SizeSettings(Budget: new BudgetSettings(Tokens: 2000, Turns: 10, WallMinutes: 30)) }));
+
+        var changes = ProfileChanges.Between(approved, live, _sentences);
+
+        Assert.Equal(["claude will have no daily spending limit", "A S phase may use up to 2000 tokens, 30 minutes"], changes.Allowance);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void With_nothing_approved_every_limit_the_profile_sets_is_said()
+    {
+        var live = Profile(agents: Agents(("claude", 5m)), line: new LineSettings(MaxStack: 2));
+
+        Assert.Equal(["claude may spend up to $5 a day", "Sindri may stack phases up to 2 deep"], ProfileChanges.Between(approved: null, live, _sentences).Allowance);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Connections_say_the_forge_onyx_judge_providers_and_agents_the_live_profile_adds()
+    {
+        var context = JsonDocument.Parse("""{"sources":{"onyx":{"url":"http://127.0.0.1:3000","token":"keychain:onyx/x","managed":true}}}""").RootElement;
+        var live = new SindriProfile(
+            1,
+            "t",
+            Workflow: new WorkflowSettings(
+                Judge: new JudgeSettings(["claude-cli", "jev"]),
+                Agent: new WorkflowAgentSettings(AgentId.From("claude")),
+                Forge: new ForgeSettings("github", ["github.com"], "env:GH_TOKEN")),
+            Context: context,
+            Setup: new SetupSettings(SetupSettings.Auto));
+
+        var changes = ProfileChanges.Between(approved: null, live, _sentences);
+
+        Assert.Equal(
+            ["Sindri will send what it reads to your Onyx at http://127.0.0.1:3000", "Sindri will start and look after Onyx on this machine", "Sindri will use the github forge at github.com, with the token in GH_TOKEN", "Judge steps may ask claude-cli", "Judge steps may ask jev", "Workflow steps will launch the claude agent", "Sindri will register its MCP server in each repo on its own"],
+            changes.Connections);
+        Assert.DoesNotContain(changes.Connections, static c => c.Contains("keychain", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Connections_leave_out_what_the_approved_profile_already_has()
+    {
+        var live = new SindriProfile(1, "t", Workflow: new WorkflowSettings(Judge: new JudgeSettings(["claude-cli", "jev"]), Forge: new ForgeSettings("github", ["github.com"])));
+        var approved = new SindriProfile(1, "t", Workflow: new WorkflowSettings(Judge: new JudgeSettings(["claude-cli"]), Forge: new ForgeSettings("github", ["github.com", "ghe.example"])));
+
+        var changes = ProfileChanges.Between(approved, live, _sentences);
+
+        Assert.Equal(["Judge steps may ask jev"], changes.Connections);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Human_only_says_the_steps_the_profile_keeps_for_the_owner_and_not_ones_already_approved()
+    {
+        var live = new SindriProfile(1, "t", Workflow: new WorkflowSettings(Pr: new PrSettings(Replies: "desk", HeldBlocksMerge: true), Route: new RouteSettings(RouteSettings.None)));
+
+        var fresh = ProfileChanges.Between(approved: null, live, _sentences);
+        var same = ProfileChanges.Between(live, live, _sentences);
+
+        Assert.Equal(["You send every reply to a pull request comment yourself", "A held comment stops the merge until you clear it", "Routed items stop at the router until you start them"], fresh.HumanOnly);
+        Assert.Empty(same.HumanOnly);
+        Assert.True(same.IsEmpty);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_profile_with_no_such_settings_has_empty_groups()
+    {
+        var changes = ProfileChanges.Between(approved: null, Profile(repos: [new RepoEntry("web", "/work/web")]), _sentences);
+
+        Assert.Empty(changes.Allowance);
+        Assert.Empty(changes.Connections);
+        Assert.Empty(changes.HumanOnly);
+    }
+
+    private static AgentSettings Agents(params (string Id, decimal? Budget)[] targets) =>
+        new(Targets: targets.ToDictionary(static t => t.Id, static t => new AgentLimits(t.Budget), StringComparer.Ordinal));
+
+    private static SindriProfile Profile(IReadOnlyList<RepoEntry>? repos = null, Dictionary<string, ServiceSettings>? services = null, IReadOnlyList<string>? effects = null, AgentSettings? agents = null, LineSettings? line = null, PrSettings? pr = null, PlanSettings? plan = null) =>
+        new(1, "t", Repos: repos, Services: services, Workflow: effects is null && line is null && pr is null && plan is null ? null : new WorkflowSettings(Effects: effects, Line: line, Pr: pr, Plan: plan), Agents: agents);
 }
