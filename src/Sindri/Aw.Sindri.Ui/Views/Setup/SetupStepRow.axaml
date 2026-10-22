@@ -44,6 +44,15 @@
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
+      <ItemsControl x:Name="SetupStepPreview" ItemsSource="{Binding Preview}" IsVisible="{Binding HasPreview}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="sv:SetupPreviewLineViewModel">
+            <Border AutomationProperties.Name="{Binding Text}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="ListItem">
+              <TextBlock Classes="caption" Text="{Binding Text}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
       <Border x:Name="SetupStepError" Classes="error-panel" IsVisible="{Binding HasError}" AutomationProperties.Name="{Binding ErrorText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
         <TextBlock Classes="caption" Text="{Binding ErrorText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
       </Border>
