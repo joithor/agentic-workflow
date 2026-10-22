@@ -99,6 +99,12 @@ internal sealed partial class AgentsPageViewModel(ISindriApi api, IClipboard cli
 #pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
     public string UnreadableText => Labels.SessionsUnreadable;
 
+    /// <summary>The column captions above the rows.</summary>
+    public AgentColumns Columns { get; } = new(Labels.ColumnStatus, Labels.ColumnAgent, Labels.ColumnWhere, Labels.ColumnDoing, Labels.ColumnFor);
+
+    /// <summary>True when there are rows to put the captions over.</summary>
+    public bool HasColumns => Groups.Count > 0;
+
     /// <summary>The stale note's words.</summary>
     public string StaleText => Labels.Stale;
 #pragma warning restore CA1822, MA0041
@@ -242,6 +248,7 @@ internal sealed partial class AgentsPageViewModel(ISindriApi api, IClipboard cli
         }
 
         Patch.To(Groups, shown);
+        OnChanged(nameof(HasColumns));
         ShowEnded(list);
         IsEmpty = kept.Count == 0;
         EmptyText = IsEmpty ? (list.Sessions.Count == 0 ? list.Empty ?? Labels.NoSessionsMatch : Labels.NoSessionsMatch) : string.Empty;

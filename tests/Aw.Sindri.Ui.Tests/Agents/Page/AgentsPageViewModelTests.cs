@@ -372,4 +372,18 @@ public sealed class AgentsPageViewModelTests
         Assert.False(page.IsUnreadable);
         Assert.Equal(2, page.Groups.Count);
     }
+
+    [Fact]
+    public async Task The_column_captions_show_only_when_there_are_rows()
+    {
+        var page = await _f.Shown(Token);
+
+        Assert.True(page.HasColumns);
+        Assert.Equal(("Status", "Agent", "Where it runs", "What it is doing", "For"), (page.Columns.Status, page.Columns.Agent, page.Columns.Where, page.Columns.Doing, page.Columns.For));
+
+        _f.Serve("empty");
+        var empty = await _f.Shown(Token);
+
+        Assert.False(empty.HasColumns);
+    }
 }
