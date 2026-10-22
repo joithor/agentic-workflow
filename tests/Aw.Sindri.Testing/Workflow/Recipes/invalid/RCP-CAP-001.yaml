@@ -1,7 +1,7 @@
 schema: 1
 id: workflow.cap-001
 version: 1
-base: { id: workflow.cap-base, hash: "sha256:b8f01b2b6c69841891d80bb45cf9a3f29b64c95d89bf81c0f24b564df323eadc" }
+base: { id: workflow.cap-base, hash: "sha256:16d368e1cdf8ff55142d7c3cb030494a73ad289715cb6f3d5000ae15e631fe23" }
 initial: produce
 states:
   produce:
@@ -53,3 +53,4 @@ transitions:
 loops: { revisions: { cap: 2 } }
 budget: { tokens: 300k }
 inputs: [{ key: fact:item, type: item, kind: item }]
+displayName: Test recipe
