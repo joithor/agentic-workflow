@@ -5,7 +5,6 @@ using Aw.Context.Core.Extract;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Symbols;
-using Aw.Context.Features.GetCode;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 
@@ -36,7 +35,7 @@ internal sealed class GetFileMapService(MapReader reader, IRepoReader repos, ICo
     // The symbols column (S-9a): what the code index says about the files this listing shows, as of the map version's commit. A directory row has none; a read that fails is a column that says so, never an error of the route.
     private async ValueTask<LensSymbols> Symbols(ContextRepo repo, MapVersion version, FileMapView view, CancellationToken cancellationToken)
     {
-        var asOf = repo.Name == version.Repo && CodeLexicalSearch.IsSha(version.Commit) ? version.Commit : null;
+        var asOf = repo.Name == version.Repo && CodeIndexReading.IsCommit(version.Commit) ? version.Commit : null;
         var head = await symbols.Heads(repo.Name, asOf, cancellationToken).ConfigureAwait(false);
         if (head.IsError)
         {

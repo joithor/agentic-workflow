@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Context.Core;
 using Aw.Context.Core.Code;
 using Aw.Context.Core.Engine;
@@ -18,9 +19,9 @@ public sealed class GetCodeSymbolsTests
     private const string AheadCommit = "7c3e1a2f4b5d6e7081920a1b2c3d4e5f60718293";
 
     private static readonly SymbolSite _links = new("src/sharing/links.ts#createLink", "createLink", "function", "src/sharing/links.ts", 3, 20, "createLink(owner: string): Link", Exported: true);
-    private static readonly SymbolSite _routes = new("src/sharing/routes.ts#register", "register", "function", "src/sharing/routes.ts", 1, 9, null, Exported: true);
-    private static readonly SymbolSite _audit = new("src/audit.ts#record", "record", "function", "src/audit.ts", 1, 5, null, Exported: false);
-    private static readonly SymbolSite _main = new("src/main.ts#boot", "boot", "function", "src/main.ts", 1, 5, null, Exported: true);
+    private static readonly SymbolSite _routes = new("src/sharing/routes.ts#register", "register", "function", "src/sharing/routes.ts", StartLine: 1, EndLine: 9, Signature: null, Exported: true);
+    private static readonly SymbolSite _audit = new("src/audit.ts#record", "record", "function", "src/audit.ts", StartLine: 1, EndLine: 5, Signature: null, Exported: false);
+    private static readonly SymbolSite _main = new("src/main.ts#boot", "boot", "function", "src/main.ts", StartLine: 1, EndLine: 5, Signature: null, Exported: true);
 
     private static FakeIndexedRepo Index(string commit, CodeIndexState state = CodeIndexState.Ok, IReadOnlyList<SymbolSite>? symbols = null, IReadOnlyList<FakeCall>? calls = null) =>
         new(_repo, state, commit, symbols ?? [_links, _routes, _audit, _main],
@@ -42,13 +43,13 @@ public sealed class GetCodeSymbolsTests
         var (world, view) = await Lens(new FakeCodeSymbolSource([Index(MapCommit)]));
         using var _ = world;
 
-        Assert.Equal((SearchedState.Ok, (string?)null, (string?)null), (Row(view).State, Row(view).Reason, Row(view).Code));
-        Assert.Equal((SymbolsState.Ok, MapCommit, (string?)null, false, 4), (view.Callers.State, view.Callers.Commit, view.Callers.AsOfCommit, view.Callers.AsOfMismatch, view.Callers.Unresolved));
+        Assert.Equal((SearchedState.Ok, null, null), (Row(view).State, Row(view).Reason, Row(view).Code));
+        Assert.Equal((SymbolsState.Ok, MapCommit, null, false, 4), (view.Callers.State, view.Callers.Commit, view.Callers.AsOfCommit, view.Callers.AsOfMismatch, view.Callers.Unresolved));
         // callers of createLink and register: boot calls register, register calls createLink
         Assert.Contains(view.Callers.Items, e => e.Symbol.Ref == _routes.Ref && e.Depth == 1);
         Assert.Contains(view.Callers.Items, e => e.Symbol.Ref == _main.Ref);
-        Assert.Contains(view.Callees.Items, e => e.Symbol.Ref == _audit.Ref && e is { Basis: "syntax", Coverage: "partial" });
-        Assert.All(view.Callers.Items.Concat(view.Callees.Items), e => Assert.Equal((MapCommit, (string?)null, SymbolsState.Ok), (e.Commit, e.AsOfCommit, e.State)));
+        Assert.Contains(view.Callees.Items, e => e.Symbol.Ref == _audit.Ref && string.Equals(e.Basis, "syntax", StringComparison.Ordinal) && string.Equals(e.Coverage, "partial", StringComparison.Ordinal));
+        Assert.All(view.Callers.Items.Concat(view.Callees.Items), e => Assert.Equal((MapCommit, null, SymbolsState.Ok), (e.Commit, e.AsOfCommit, e.State)));
         Assert.Empty(view.Degraded);
     }
 
@@ -62,7 +63,7 @@ public sealed class GetCodeSymbolsTests
         Assert.Equal((SymbolsState.Stale, "stale", AheadCommit, MapCommit, true), (view.Callers.State, view.Callers.Reason, view.Callers.Commit, view.Callers.AsOfCommit, view.Callers.AsOfMismatch));
         Assert.NotEmpty(view.Callers.Items);
         Assert.All(view.Callers.Items.Concat(view.Callees.Items), e => Assert.Equal((AheadCommit, MapCommit, SymbolsState.Stale), (e.Commit, e.AsOfCommit, e.State)));
-        Assert.Contains("code-index: stale", view.Degraded);
+        Assert.Contains("code-index: stale", view.Degraded, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -76,7 +77,7 @@ public sealed class GetCodeSymbolsTests
         fake.Land(_repo, MapCommit);
         var fresh = (await world.Code()).Value;
 
-        Assert.Equal((SearchedState.Ok, SymbolsState.Ok, (string?)null), (Row(fresh).State, fresh.Callers.State, fresh.Callers.AsOfCommit));
+        Assert.Equal((SearchedState.Ok, SymbolsState.Ok, null), (Row(fresh).State, fresh.Callers.State, fresh.Callers.AsOfCommit));
         Assert.All(fresh.Callers.Items, e => Assert.Equal(SymbolsState.Ok, e.State));
     }
 
@@ -102,7 +103,7 @@ public sealed class GetCodeSymbolsTests
         Assert.Equal((SearchedState.Degraded, "graph", "SND-CODEIDX-020"), (Row(view).State, Row(view).Reason, Row(view).Code));
         Assert.Equal((SymbolsState.Ok, "graph-unavailable"), (view.Callers.State, view.Callers.Reason));
         Assert.NotEmpty(view.Callers.Items);
-        Assert.Contains("code-index: SND-CODEIDX-020", view.Degraded);
+        Assert.Contains("code-index: SND-CODEIDX-020", view.Degraded, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -119,7 +120,7 @@ public sealed class GetCodeSymbolsTests
     [Fact, Trait("Lane", "unit")]
     public async Task The_lens_asks_the_map_versions_commit_and_only_the_files_repo_and_never_more_than_the_symbol_cap()
     {
-        var many = Enumerable.Range(0, 30).Select(i => new SymbolSite($"src/sharing/links.ts#f{i:D2}", $"f{i:D2}", "function", "src/sharing/links.ts", i + 1, i + 1, null, Exported: i % 2 == 0)).ToList();
+        var many = Enumerable.Range(0, 30).Select(i => new SymbolSite($"src/sharing/links.ts#f{i.ToString("D2", CultureInfo.InvariantCulture)}", $"f{i.ToString("D2", CultureInfo.InvariantCulture)}", "function", "src/sharing/links.ts", StartLine: i + 1, EndLine: i + 1, Signature: null, Exported: i % 2 == 0)).ToList();
         var recording = new RecordingSymbolSource(new FakeCodeSymbolSource([Index(MapCommit, symbols: many, calls: [])]));
         var (world, _) = await Lens(recording);
         using var __ = world;
@@ -163,7 +164,7 @@ public sealed class GetCodeSymbolsTests
 
         _ = await world.Code(anchors: ["surface:screen/share"]);
 
-        Assert.Equal(["heads"], recording.Calls.Select(c => c.Call).Distinct());
+        Assert.Equal(["heads"], recording.Calls.Select(c => c.Call).Distinct(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     // Golden files: the code lens as the wire carries it, with the index at the map's commit and with a map published ahead of its index.

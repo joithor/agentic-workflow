@@ -23,7 +23,7 @@ internal sealed class RecordingSymbolSource(ICodeSymbolSource inner) : ICodeSymb
 
     public ValueTask<Result<SymbolAnswer<FileSymbolsRow>>> FileSymbols(ContextRepoName repo, IReadOnlyList<string> paths, string? asOf, CancellationToken cancellationToken)
     {
-        Calls.Add(("files", repo.Value, asOf, string.Join(",", paths)));
+        Calls.Add(("files", repo.Value, asOf, string.Join(',', paths)));
         return inner.FileSymbols(repo, paths, asOf, cancellationToken);
     }
 

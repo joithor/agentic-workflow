@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Lenses;
@@ -29,8 +30,8 @@ public sealed class GetFileMapSymbolsTests
     };
 
     private static readonly SymbolSite _manager = new("src/tabs/TabManager.ts#restoreLayout", "restoreLayout", "method", "src/tabs/TabManager.ts", 4, 20, "restoreLayout(): void", Exported: true);
-    private static readonly SymbolSite _groups = new("src/tabs/TabGroups.ts#group", "group", "function", "src/tabs/TabGroups.ts", 1, 3, null, Exported: false);
-    private static readonly SymbolSite _deep = new("src/layout/inner/Deep.ts#deep", "deep", "function", "src/layout/inner/Deep.ts", 1, 3, null, Exported: false);
+    private static readonly SymbolSite _groups = new("src/tabs/TabGroups.ts#group", "group", "function", "src/tabs/TabGroups.ts", StartLine: 1, EndLine: 3, Signature: null, Exported: false);
+    private static readonly SymbolSite _deep = new("src/layout/inner/Deep.ts#deep", "deep", "function", "src/layout/inner/Deep.ts", StartLine: 1, EndLine: 3, Signature: null, Exported: false);
 
     private static FakeIndexedRepo Index(string commit, CodeIndexState state = CodeIndexState.Ok) => new(_repo, state, commit, [_manager, _groups, _deep], []);
 
@@ -47,9 +48,9 @@ public sealed class GetFileMapSymbolsTests
         var (world, view) = await Ask(new FakeCodeSymbolSource([Index(MapCommit)]));
         using var _ = world;
 
-        Assert.Equal((SymbolsState.Ok, (string?)null, MapCommit, (string?)null, false), (view.Symbols.State, view.Symbols.Reason, view.Symbols.Commit, view.Symbols.AsOfCommit, view.Symbols.AsOfMismatch));
+        Assert.Equal((SymbolsState.Ok, null, MapCommit, null, false), (view.Symbols.State, view.Symbols.Reason, view.Symbols.Commit, view.Symbols.AsOfCommit, view.Symbols.AsOfMismatch));
         Assert.Equal(["src/tabs/TabGroups.ts", "src/tabs/TabManager.ts"], view.Symbols.Files!.Select(f => f.Path), StringComparer.Ordinal);
-        Assert.Equal(["restoreLayout"], view.Symbols.Files!.Single(f => f.Path.EndsWith("TabManager.ts", StringComparison.Ordinal)).Symbols.Select(s => s.Name));
+        Assert.Equal(["restoreLayout"], view.Symbols.Files!.Single(f => f.Path.EndsWith("TabManager.ts", StringComparison.Ordinal)).Symbols.Select(s => s.Name), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -89,7 +90,7 @@ public sealed class GetFileMapSymbolsTests
         var (world, view) = await Ask(new FakeCodeSymbolSource([Index(MapCommit, CodeIndexState.Stale)]));
         using var _ = world;
 
-        Assert.Equal((SymbolsState.Stale, "stale", MapCommit, (string?)null, false), (view.Symbols.State, view.Symbols.Reason, view.Symbols.Commit, view.Symbols.AsOfCommit, view.Symbols.AsOfMismatch));
+        Assert.Equal((SymbolsState.Stale, "stale", MapCommit, null, false), (view.Symbols.State, view.Symbols.Reason, view.Symbols.Commit, view.Symbols.AsOfCommit, view.Symbols.AsOfMismatch));
         Assert.Equal(2, view.Symbols.Files!.Count);
     }
 
@@ -116,7 +117,7 @@ public sealed class GetFileMapSymbolsTests
     [Fact, Trait("Lane", "unit")]
     public async Task A_listing_of_many_files_asks_for_at_most_200()
     {
-        var wide = Enumerable.Range(0, 250).ToDictionary(i => $"src/wide/f{i:D3}.ts", _ => "export {};", StringComparer.Ordinal);
+        var wide = Enumerable.Range(0, 250).ToDictionary(i => $"src/wide/f{i.ToString("D3", CultureInfo.InvariantCulture)}.ts", _ => "export {};", StringComparer.Ordinal);
         var recording = new RecordingSymbolSource(new FakeCodeSymbolSource([Index(MapCommit)]));
         using var world = new MapWorld(new FakeRepoReader(MapWorld.Repos[0], MapWorld.Head, wide), symbols: recording);
         _ = await world.ImportYaml($"commit: {MapCommit}\nschemaVersion: 1\nkind: authored\nrepo: aw-split-panes\nnodes:\n  - {{key: \"feature:tabs\", label: \"Tabs\"}}\n");

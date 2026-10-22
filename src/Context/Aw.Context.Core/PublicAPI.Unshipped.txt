@@ -6293,6 +6293,7 @@ static Aw.Context.Core.Symbols.CodeIndexReading.AsOfMismatch(Aw.Context.Core.Sym
 static Aw.Context.Core.Symbols.CodeIndexReading.Calls(Aw.Context.Core.Symbols.CodeIndexHead! head, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.CallEdgeRow!>! rows, int unresolved) -> Aw.Context.Core.Code.CodeSymbols!
 static Aw.Context.Core.Symbols.CodeIndexReading.FailedRow(string! code) -> Aw.Context.Core.Lenses.SearchedSource!
 static Aw.Context.Core.Symbols.CodeIndexReading.FileMap(Aw.Context.Core.Symbols.CodeIndexHead! head, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.FileSymbolsRow!>! files) -> Aw.Context.Core.Lenses.LensSymbols!
+static Aw.Context.Core.Symbols.CodeIndexReading.IsCommit(string? commit) -> bool
 static Aw.Context.Core.Symbols.CodeIndexReading.Head(Aw.Context.Core.Symbols.CodeIndexHead! own, string? asOf) -> Aw.Context.Core.Symbols.CodeIndexHead!
 static Aw.Context.Core.Symbols.CodeIndexReading.Readable(Aw.Context.Core.Symbols.CodeIndexHead! head) -> bool
 static Aw.Context.Core.Symbols.CodeIndexReading.Row(Aw.Context.Core.Symbols.CodeIndexHead! head) -> Aw.Context.Core.Lenses.SearchedSource!

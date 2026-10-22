@@ -1,4 +1,3 @@
-using Aw.Context.Core;
 using Aw.Context.Core.Code;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Map;
@@ -7,7 +6,7 @@ using Aw.Context.Core.Symbols;
 namespace Aw.Context.Features.GetCode;
 
 /// <summary>
-/// The code index's half of the code lens (S-9a): the callers and callees of the symbols the listed files define, asked of <see cref="ICodeSymbolSource"/> with the map version's commit as <c>asOf</c>, so rows from an index
+/// The code index's half of the code lens (S-9a): the callers and callees of the symbols the listed files define, asked of <see cref="ICodeSymbolSource"/> with the map version's commit as 'asOf', so rows from an index
 /// at another commit say so with both commits. Bounded: the files one repo's read carries, the symbols asked about (exported first) and the rows listed are capped by <see cref="CodeRules"/>. A repo with no index, a build in
 /// progress or a read that fails is a row of 'searched', never an error of the route.
 /// </summary>
@@ -18,6 +17,7 @@ internal sealed class CodeSymbolSearch(ICodeSymbolSource source)
         var inScope = ScopeRules.Resolve(settings, scope.Repos, scope.Caller);
         var allowed = inScope.IsError ? [] : inScope.Value;
         var version = map.Snapshot.Version;
+        // why: the Where keeps only the files whose repo resolved, so Repo is never null in the grouping.
         var byRepo = view.Files.Select(f => (File: f, Repo: CodeLexicalSearch.RepoOf(map.Graph, f.Path, allowed))).Where(f => f.Repo is not null)
             .GroupBy(f => f.Repo!.Name.Value, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.Select(f => f.File.Path).ToList(), StringComparer.Ordinal);
         var targets = allowed.Where(r => byRepo.ContainsKey(r.Name.Value)).ToList();
@@ -29,7 +29,7 @@ internal sealed class CodeSymbolSearch(ICodeSymbolSource source)
         var read = new SymbolRead();
         foreach (var repo in targets)
         {
-            var asOf = repo.Name == version.Repo && CodeLexicalSearch.IsSha(version.Commit) ? version.Commit : null;
+            var asOf = repo.Name == version.Repo && CodeIndexReading.IsCommit(version.Commit) ? version.Commit : null;
             await Repo(read, repo.Name, asOf, byRepo.GetValueOrDefault(repo.Name.Value) ?? [], cancellationToken).ConfigureAwait(false);
         }
 

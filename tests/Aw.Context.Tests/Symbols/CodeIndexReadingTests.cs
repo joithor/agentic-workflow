@@ -39,7 +39,7 @@ public sealed class CodeIndexReadingTests
 
         Assert.Equal(CodeIndexState.Ok, head.State);
         Assert.False(CodeIndexReading.AsOfMismatch(head));
-        Assert.Equal((SymbolsState.Ok, (string?)null), CodeIndexReading.Stamp(head));
+        Assert.Equal((SymbolsState.Ok, null), CodeIndexReading.Stamp(head));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -47,8 +47,8 @@ public sealed class CodeIndexReadingTests
     {
         var head = Head(CodeIndexState.Stale);
 
-        Assert.Equal((SymbolsState.Stale, (string?)null), CodeIndexReading.Stamp(head));
-        Assert.Equal((SymbolsState.Stale, (string?)null), CodeIndexReading.Stamp(Head(CodeIndexState.CheckoutNotOnMain)));
+        Assert.Equal((SymbolsState.Stale, null), CodeIndexReading.Stamp(head));
+        Assert.Equal((SymbolsState.Stale, null), CodeIndexReading.Stamp(Head(CodeIndexState.CheckoutNotOnMain)));
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -92,7 +92,7 @@ public sealed class CodeIndexReadingTests
     {
         var row = CodeIndexReading.Row(Head(CodeIndexState.Ok, asOf: Other));
 
-        Assert.Equal((SearchedState.Degraded, "stale", (string?)null, (DateTimeOffset?)_built), (row.State, row.Reason, row.Code, row.AsOf));
+        Assert.Equal((SearchedState.Degraded, "stale", null, (DateTimeOffset?)_built), (row.State, row.Reason, row.Code, row.AsOf));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -100,7 +100,7 @@ public sealed class CodeIndexReadingTests
     {
         var row = CodeIndexReading.Row(new CodeIndexHead(CodeIndexState.Missing, Commit: null, BuiltAt: null, AsOfCommit: null, Layer: null, Code: null));
 
-        Assert.Equal(("code-index", SearchedState.Unavailable, "index-not-built", (string?)null, (DateTimeOffset?)null), (row.Id.Value, row.State, row.Reason, row.Code, row.AsOf));
+        Assert.Equal(("code-index", SearchedState.Unavailable, "index-not-built", null, null), (row.Id.Value, row.State, row.Reason, row.Code, row.AsOf));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -114,18 +114,18 @@ public sealed class CodeIndexReadingTests
     [Fact, Trait("Lane", "unit")]
     public void Calls_of_a_missing_index_are_the_unavailable_the_lens_had_before_the_port()
     {
-        var calls = CodeIndexReading.Calls(new CodeIndexHead(CodeIndexState.Missing, null, null, null, null, null), [], 0);
+        var calls = CodeIndexReading.Calls(new CodeIndexHead(CodeIndexState.Missing, Commit: null, BuiltAt: null, AsOfCommit: null, Layer: null, Code: null), [], 0);
 
-        Assert.Equal(Core.Code.CodeSymbols.Unavailable, calls);
+        Assert.Equal(Aw.Context.Core.Code.CodeSymbols.Unavailable, calls);
     }
 
     [Fact, Trait("Lane", "unit")]
     public void Calls_of_a_damaged_or_building_index_name_why()
     {
         Assert.Equal((SymbolsState.Unavailable, "index-damaged", "SND-CODEIDX-010"),
-            Pick(CodeIndexReading.Calls(new CodeIndexHead(CodeIndexState.Damaged, null, null, null, null, "SND-CODEIDX-010"), [], 0)));
-        Assert.Equal((SymbolsState.Unavailable, "index-building", (string?)null),
-            Pick(CodeIndexReading.Calls(new CodeIndexHead(CodeIndexState.Building, null, null, null, null, null), [], 0)));
+            Pick(CodeIndexReading.Calls(new CodeIndexHead(CodeIndexState.Damaged, Commit: null, BuiltAt: null, AsOfCommit: null, Layer: null, Code: "SND-CODEIDX-010"), [], 0)));
+        Assert.Equal((SymbolsState.Unavailable, "index-building", null),
+            Pick(CodeIndexReading.Calls(new CodeIndexHead(CodeIndexState.Building, Commit: null, BuiltAt: null, AsOfCommit: null, Layer: null, Code: null), [], 0)));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -133,7 +133,7 @@ public sealed class CodeIndexReadingTests
     {
         var calls = CodeIndexReading.Calls(Head(CodeIndexState.Ok, asOf: Indexed), [Edge(SymbolsState.Ok, asOf: null)], unresolved: 3);
 
-        Assert.Equal((SymbolsState.Ok, (string?)null, Indexed, (string?)null, false, 3, 1), (calls.State, calls.Reason, calls.Commit, calls.AsOfCommit, calls.AsOfMismatch, calls.Unresolved, calls.Items.Count));
+        Assert.Equal((SymbolsState.Ok, null, Indexed, null, false, 3, 1), (calls.State, calls.Reason, calls.Commit, calls.AsOfCommit, calls.AsOfMismatch, calls.Unresolved, calls.Items.Count));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -147,21 +147,21 @@ public sealed class CodeIndexReadingTests
     [Fact, Trait("Lane", "unit")]
     public void Calls_while_the_graph_layer_is_down_are_ok_with_a_note()
     {
-        var calls = CodeIndexReading.Calls(Head(CodeIndexState.LayerUnavailable, asOf: Indexed, layer: "graph"), [Edge(SymbolsState.Ok, null)], 0);
+        var calls = CodeIndexReading.Calls(Head(CodeIndexState.LayerUnavailable, asOf: Indexed, layer: "graph"), [Edge(SymbolsState.Ok, asOf: null)], 0);
 
         Assert.Equal((SymbolsState.Ok, "graph-unavailable"), (calls.State, calls.Reason));
     }
 
     [Fact, Trait("Lane", "unit")]
     public void The_file_map_column_of_a_missing_index_is_the_unavailable_the_map_had_before_the_port() =>
-        Assert.Equal(LensSymbols.Unavailable, CodeIndexReading.FileMap(new CodeIndexHead(CodeIndexState.Missing, null, null, null, null, null), []));
+        Assert.Equal(LensSymbols.Unavailable, CodeIndexReading.FileMap(new CodeIndexHead(CodeIndexState.Missing, Commit: null, BuiltAt: null, AsOfCommit: null, Layer: null, Code: null), []));
 
     [Fact, Trait("Lane", "unit")]
     public void The_file_map_column_names_why_it_is_empty()
     {
-        Assert.Equal((SymbolsState.Unavailable, "index building"), Words(CodeIndexReading.FileMap(new CodeIndexHead(CodeIndexState.Building, null, null, null, null, null), [])));
-        Assert.Equal((SymbolsState.Unavailable, "index damaged"), Words(CodeIndexReading.FileMap(new CodeIndexHead(CodeIndexState.Damaged, null, null, null, null, "SND-CODEIDX-010"), [])));
-        Assert.Equal((SymbolsState.Unavailable, "not configured"), Words(CodeIndexReading.FileMap(new CodeIndexHead(CodeIndexState.NotConfigured, null, null, null, null, null), [])));
+        Assert.Equal((SymbolsState.Unavailable, "index building"), Words(CodeIndexReading.FileMap(new CodeIndexHead(CodeIndexState.Building, Commit: null, BuiltAt: null, AsOfCommit: null, Layer: null, Code: null), [])));
+        Assert.Equal((SymbolsState.Unavailable, "index damaged"), Words(CodeIndexReading.FileMap(new CodeIndexHead(CodeIndexState.Damaged, Commit: null, BuiltAt: null, AsOfCommit: null, Layer: null, Code: "SND-CODEIDX-010"), [])));
+        Assert.Equal((SymbolsState.Unavailable, "not configured"), Words(CodeIndexReading.FileMap(new CodeIndexHead(CodeIndexState.NotConfigured, Commit: null, BuiltAt: null, AsOfCommit: null, Layer: null, Code: null), [])));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -175,9 +175,9 @@ public sealed class CodeIndexReadingTests
     [Fact, Trait("Lane", "unit")]
     public void The_file_map_column_over_a_fresh_index_is_ok_with_the_files()
     {
-        var column = CodeIndexReading.FileMap(Head(CodeIndexState.Ok, asOf: Indexed), [File(SymbolsState.Ok, null)]);
+        var column = CodeIndexReading.FileMap(Head(CodeIndexState.Ok, asOf: Indexed), [File(SymbolsState.Ok, asOf: null)]);
 
-        Assert.Equal((SymbolsState.Ok, (string?)null, Indexed, (string?)null, false, 1), (column.State, column.Reason, column.Commit, column.AsOfCommit, column.AsOfMismatch, column.Files!.Count));
+        Assert.Equal((SymbolsState.Ok, null, Indexed, null, false, 1), (column.State, column.Reason, column.Commit, column.AsOfCommit, column.AsOfMismatch, column.Files!.Count));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -185,14 +185,14 @@ public sealed class CodeIndexReadingTests
     {
         var ok = Head(CodeIndexState.Ok);
         var stale = Head(CodeIndexState.Stale);
-        var missing = new CodeIndexHead(CodeIndexState.Missing, null, null, null, null, null);
+        var missing = new CodeIndexHead(CodeIndexState.Missing, Commit: null, BuiltAt: null, AsOfCommit: null, Layer: null, Code: null);
 
         Assert.Equal(CodeIndexState.Missing, CodeIndexReading.Worst([ok, missing, stale]).State);
         Assert.Equal(CodeIndexState.Stale, CodeIndexReading.Worst([ok, stale]).State);
         Assert.Equal(CodeIndexState.Ok, CodeIndexReading.Worst([ok]).State);
     }
 
-    private static (SymbolsState, string?, string?) Pick(Core.Code.CodeSymbols s) => (s.State, s.Reason, s.Code);
+    private static (SymbolsState, string?, string?) Pick(Aw.Context.Core.Code.CodeSymbols s) => (s.State, s.Reason, s.Code);
 
     private static (SymbolsState, string?) Words(LensSymbols s) => (s.State, s.Reason);
 

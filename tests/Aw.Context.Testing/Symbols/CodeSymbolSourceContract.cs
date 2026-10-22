@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Symbols;
@@ -26,7 +27,7 @@ public abstract class CodeSymbolSourceContract
     [
         new("src/layout/SplitPane.ts#setOrientation", "setOrientation", "method", "src/layout/SplitPane.ts", 12, 30, "setOrientation(o: Orientation): void", Exported: true),
         new("src/layout/SplitPane.ts#resize", "resize", "method", "src/layout/SplitPane.ts", 32, 60, "resize(px: number): void", Exported: true),
-        new("src/layout/paneStore.ts#save", "save", "function", "src/layout/paneStore.ts", 5, 20, null, Exported: false),
+        new("src/layout/paneStore.ts#save", "save", "function", "src/layout/paneStore.ts", 5, 20, Signature: null, Exported: false),
         new("src/tabs/Manager.ts#restoreLayout", "restoreLayout", "method", "src/tabs/Manager.ts", 40, 70, "restoreLayout(): Promise<void>", Exported: true),
     ];
 
@@ -123,7 +124,8 @@ public abstract class CodeSymbolSourceContract
         var files = Expect.Ok(await source.FileSymbols(Repo, ["src/layout/SplitPane.ts"], Indexed, None), test);
 
         Expect.That(files.Head.State == CodeIndexState.Stale && files.Head.AsOfCommit is null, test, $"{files.Head.State} {files.Head.AsOfCommit}");
-        var row = Assert.Single(files.Rows);
+        Expect.That(files.Rows.Count == 1, test, "one row");
+        var row = files.Rows[0];
         Expect.That((row.Commit, row.AsOfCommit, row.State) == (Indexed, null, SymbolsState.Stale), test, $"{row.Commit} {row.AsOfCommit} {row.State}");
     }
 
@@ -160,8 +162,8 @@ public abstract class CodeSymbolSourceContract
         var capped = Expect.Ok(await source.FindSymbols(Repo, new SymbolQuery("s", Prefix: true, Max: 1), Indexed, None), test);
 
         Expect.That(exact.Rows.Count == 0, test, "an exact name is not a prefix");
-        Expect.That(prefix.Rows.Select(r => r.Site.Name).SequenceEqual(["resize", "restoreLayout"]), test, string.Join(",", prefix.Rows.Select(r => r.Site.Name)));
-        Expect.That(byRef.Rows.Select(r => r.Site.Ref).SequenceEqual(["src/tabs/Manager.ts#restoreLayout"]), test, "by ref");
+        Expect.That(prefix.Rows.Select(r => r.Site.Name).SequenceEqual(["resize", "restoreLayout"], StringComparer.Ordinal), test, string.Join(',', prefix.Rows.Select(r => r.Site.Name)));
+        Expect.That(byRef.Rows.Select(r => r.Site.Ref).SequenceEqual(["src/tabs/Manager.ts#restoreLayout"], StringComparer.Ordinal), test, "by ref");
         Expect.That(capped.Rows.Count == 1, test, "the cap");
     }
 
@@ -175,8 +177,8 @@ public abstract class CodeSymbolSourceContract
 
         var answer = Expect.Ok(await source.FileSymbols(Repo, ["src/layout/SplitPane.ts", "src/none.ts", "src/layout/paneStore.ts"], Indexed, None), test);
 
-        Expect.That(answer.Rows.Select(r => r.Path).SequenceEqual(["src/layout/SplitPane.ts", "src/layout/paneStore.ts"]), test, string.Join(",", answer.Rows.Select(r => r.Path)));
-        Expect.That(answer.Rows[0].Symbols.Select(s => s.Name).SequenceEqual(["setOrientation", "resize"]), test, "file order");
+        Expect.That(answer.Rows.Select(r => r.Path).SequenceEqual(["src/layout/SplitPane.ts", "src/layout/paneStore.ts"], StringComparer.Ordinal), test, string.Join(',', answer.Rows.Select(r => r.Path)));
+        Expect.That(answer.Rows[0].Symbols.Select(s => s.Name).SequenceEqual(["setOrientation", "resize"], StringComparer.Ordinal), test, "file order");
         Expect.That(answer.Rows[0].Symbols[0].Signature == "setOrientation(o: Orientation): void" && answer.Rows[0].Symbols[0].Exported, test, "signature and export");
     }
 
@@ -191,10 +193,10 @@ public abstract class CodeSymbolSourceContract
         var one = Expect.Ok(await source.Callers(Repo, "src/layout/paneStore.ts#save", 1, Indexed, None), test);
         var three = Expect.Ok(await source.Callers(Repo, "src/layout/paneStore.ts#save", 3, Indexed, None), test);
 
-        Expect.That(one.Rows.Select(r => r.Symbol.Name).SequenceEqual(["resize"]), test, "depth 1");
-        Expect.That(three.Rows.Select(r => (r.Symbol.Name, r.Depth)).SequenceEqual([("resize", 1), ("setOrientation", 2), ("restoreLayout", 3)]), test, string.Join(",", three.Rows.Select(r => r.Symbol.Name)));
-        Expect.That(one.Rows[0] is { Basis: "syntax", Coverage: "partial", Confidence: 0.6 }, test, "basis, coverage, confidence");
-        Expect.That(three.Unresolved == 2, test, $"unresolved {three.Unresolved}");
+        Expect.That(one.Rows.Select(r => r.Symbol.Name).SequenceEqual(["resize"], StringComparer.Ordinal), test, "depth 1");
+        Expect.That(three.Rows.Select(r => (r.Symbol.Name, r.Depth)).SequenceEqual([("resize", 1), ("setOrientation", 2), ("restoreLayout", 3)]), test, string.Join(',', three.Rows.Select(r => r.Symbol.Name)));
+        Expect.That((one.Rows[0].Basis, one.Rows[0].Coverage, one.Rows[0].Confidence) == ("syntax", "partial", 0.6), test, "basis, coverage, confidence");
+        Expect.That(three.Unresolved == 2, test, $"unresolved {three.Unresolved.ToString(CultureInfo.InvariantCulture)}");
     }
 
     /// <summary>Callees go down the edges.</summary>
@@ -207,8 +209,8 @@ public abstract class CodeSymbolSourceContract
 
         var two = Expect.Ok(await source.Callees(Repo, "src/tabs/Manager.ts#restoreLayout", 2, Indexed, None), test);
 
-        Expect.That(two.Rows.Select(r => (r.Symbol.Name, r.Depth)).SequenceEqual([("setOrientation", 1), ("resize", 2)]), test, string.Join(",", two.Rows.Select(r => r.Symbol.Name)));
-        Expect.That(two.Rows[0] is { Basis: "semantic", Coverage: "full" }, test, "basis and coverage");
+        Expect.That(two.Rows.Select(r => (r.Symbol.Name, r.Depth)).SequenceEqual([("setOrientation", 1), ("resize", 2)]), test, string.Join(',', two.Rows.Select(r => r.Symbol.Name)));
+        Expect.That((two.Rows[0].Basis, two.Rows[0].Coverage) == ("semantic", "full"), test, "basis and coverage");
     }
 
     /// <summary>An index whose graph layer is down still answers, and says which layer.</summary>
@@ -221,7 +223,7 @@ public abstract class CodeSymbolSourceContract
 
         var callers = Expect.Ok(await source.Callers(Repo, "src/layout/SplitPane.ts#resize", 1, Indexed, None), test);
 
-        Expect.That(callers.Head is { State: CodeIndexState.LayerUnavailable, Layer: "graph", Code: "SND-CODEIDX-020" } && callers.Rows.Count == 1, test, $"{callers.Head.State} {callers.Head.Layer} {callers.Rows.Count}");
+        Expect.That((callers.Head.State, callers.Head.Layer, callers.Head.Code) == (CodeIndexState.LayerUnavailable, "graph", "SND-CODEIDX-020") && callers.Rows.Count == 1, test, $"{callers.Head.State} {callers.Head.Layer} {callers.Rows.Count.ToString(CultureInfo.InvariantCulture)}");
     }
 
     /// <summary>A damaged or still-building index answers its state and no rows.</summary>

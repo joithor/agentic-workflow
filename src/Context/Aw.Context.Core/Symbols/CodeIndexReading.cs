@@ -9,6 +9,11 @@ public static class CodeIndexReading
 {
     private const int MinCommitLength = 7;
 
+    /// <summary>Whether a text is a commit sha (7 to 64 lowercase hex characters), the only kind of 'as of' a source is asked for.</summary>
+    /// <param name="commit">The text.</param>
+    /// <returns>True for a sha.</returns>
+    public static bool IsCommit(string? commit) => commit is { Length: >= 7 and <= 64 } && commit.All(char.IsAsciiHexDigitLower);
+
     /// <summary>Whether two commits name the same commit; either may be abbreviated (seven characters or more).</summary>
     /// <param name="left">A commit.</param>
     /// <param name="right">Another commit.</param>
