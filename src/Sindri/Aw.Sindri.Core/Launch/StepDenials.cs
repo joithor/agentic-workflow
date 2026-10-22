@@ -13,6 +13,14 @@ public static class StepDenials
     /// <returns>Absolute paths, the siblings first, no duplicates.</returns>
     public static IReadOnlyList<string> For(string worktree, IReadOnlyList<string> siblingWorktrees, string? sindriHome)
     {
-        throw new NotSupportedException();
+        ArgumentNullException.ThrowIfNull(siblingWorktrees);
+        var own = worktree.TrimEnd('/');
+        List<string> denied = [.. siblingWorktrees.Where(w => !string.Equals(w.TrimEnd('/'), own, StringComparison.Ordinal))];
+        if (sindriHome is not null)
+        {
+            denied.Add(sindriHome.TrimEnd('/') + "/" + HoldoutDirectory);
+        }
+
+        return [.. denied.Distinct(StringComparer.Ordinal)];
     }
 }

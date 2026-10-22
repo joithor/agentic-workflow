@@ -16,10 +16,7 @@ public sealed class StepDenialsTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_trailing_slash_on_the_own_worktree_still_matches()
-    {
-        Assert.Empty(StepDenials.For(Own + "/", [Own], sindriHome: null));
-    }
+    public void A_trailing_slash_on_the_own_worktree_still_matches() => Assert.Empty(StepDenials.For(Own + "/", [Own], sindriHome: null));
 
     [Fact, Trait("Lane", "unit")]
     public void The_holdout_store_under_the_Sindri_home_is_denied()
