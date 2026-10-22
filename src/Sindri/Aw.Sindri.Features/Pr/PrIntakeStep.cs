@@ -11,7 +11,8 @@ namespace Aw.Sindri.Features.Pr;
 /// A pull request it can't read fails the Step. The hand-off hash check and cutting a workspace from the PR head are not done here: no port reaches them yet.
 /// </summary>
 /// <param name="pulls">The forge, through Sindri's port.</param>
-internal sealed class PrIntakeStep(IPullRequests pulls) : IBlockStep, IBlockStepId
+/// <param name="record">The merge record, where the start row goes.</param>
+internal sealed class PrIntakeStep(IPullRequests pulls, IMergeRecord record) : IBlockStep, IBlockStepId
 {
     private static readonly string[] _seeds = ["fact:decision", "fact:ownerNote", "fact:handoffNote", "fact:fix", "fact:reply", "fact:recheck"];
 

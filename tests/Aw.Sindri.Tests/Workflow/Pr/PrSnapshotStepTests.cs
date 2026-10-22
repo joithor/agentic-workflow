@@ -38,7 +38,7 @@ public sealed class PrSnapshotStepTests
 
     private Task<BlockStepResult> Snapshot(string? pr = null, Dictionary<string, string>? more = null) => Run(new PrSnapshotStep(_pulls, _marks, _diff, _clock, new MergeRecord(_area, _clock)), "step.pr.snapshot", pr, more: more);
 
-    private Task<BlockStepResult> Intake(string? pr = null, string? workspace = null) => Run(new PrIntakeStep(_pulls), "step.pr.intake", pr, workspace);
+    private Task<BlockStepResult> Intake(string? pr = null, string? workspace = null, Dictionary<string, string>? more = null) => Run(new PrIntakeStep(_pulls, new MergeRecord(_area, _clock)), "step.pr.intake", pr, workspace, more);
 
     private async Task<BlockStepResult> Run(IBlockStep step, string id, string? pr, string? workspace = null, Dictionary<string, string>? more = null)
     {
@@ -113,6 +113,48 @@ public sealed class PrSnapshotStepTests
         var result = await new PrSnapshotStep(_pulls, _marks, _diff, _clock, new MergeRecord(_area, _clock)).Run(BuildShipContexts.Of("step.pr.snapshot", new Dictionary<string, string> { ["pr"] = _pull.Link }), Token);
 
         Assert.NotNull(result.Result);
+        Assert.Empty(await Rows());
+    }
+
+    [Fact]
+    public async Task Intake_appends_a_start_row_with_the_pull_request_the_handoff_hash_the_phase_and_the_line()
+    {
+        _ = await Intake(more: new() { ["handoff"] = "the hand-off text", ["phasePacket"] = """{"id":"P1"}""", ["lineContext"] = """{"runArea":"line/run"}""" });
+
+        var row = Single(await Rows());
+        Assert.Equal("start", row.GetProperty("kind").GetString());
+        Assert.Equal(Head, row.GetProperty("headSha").GetString());
+        Assert.Equal(_pull.Link, row.GetProperty("pr").GetString());
+        Assert.StartsWith("sha256:", row.GetProperty("handoffHash").GetString(), StringComparison.Ordinal);
+        Assert.Equal("P1", row.GetProperty("phase").GetString());
+        Assert.Equal("line", row.GetProperty("startedBy").GetString());
+    }
+
+    [Fact]
+    public async Task Intake_of_a_hand_started_pull_request_records_no_handoff_and_no_phase()
+    {
+        _ = await Intake();
+
+        var row = Single(await Rows());
+        Assert.Equal("hand", row.GetProperty("startedBy").GetString());
+        Assert.Equal(JsonValueKind.Null, row.GetProperty("handoffHash").ValueKind);
+        Assert.Equal(JsonValueKind.Null, row.GetProperty("phase").ValueKind);
+    }
+
+    [Fact]
+    public async Task A_retried_intake_appends_its_start_row_once()
+    {
+        _ = await Intake();
+        _ = await Intake();
+
+        _ = Single(await Rows());
+    }
+
+    [Fact]
+    public async Task Intake_of_a_pull_request_it_cannot_read_appends_nothing()
+    {
+        _ = await Intake(pr: "https://forge.test/acme/app/pull/99");
+
         Assert.Empty(await Rows());
     }
 
