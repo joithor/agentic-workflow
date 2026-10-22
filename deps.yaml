@@ -655,7 +655,7 @@ edges:
   - from: CodeIndex
     to: KernelData
     kind: project
-    status: planned
+    status: current
     note: "the per-repo index files (Aw.CodeIndex.Infrastructure only; CI-3 SqliteIndexStore, code-index spec §4.1)"
   - from: CodeIndex
     to: Redaction

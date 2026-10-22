@@ -803,6 +803,32 @@ Aw.CodeIndex.Core.Model.TreeEntry.Path.init -> void
 Aw.CodeIndex.Core.Model.TreeEntry.Size.get -> long?
 Aw.CodeIndex.Core.Model.TreeEntry.Size.init -> void
 Aw.CodeIndex.Core.Model.TreeEntry.TreeEntry(string! Mode, string! Path, string! Blob, long? Size) -> void
+Aw.CodeIndex.Core.Planning.BuildPlan
+Aw.CodeIndex.Core.Planning.BuildPlan.<Clone>$() -> Aw.CodeIndex.Core.Planning.BuildPlan!
+Aw.CodeIndex.Core.Planning.BuildPlan.BuildPlan(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>! ToParse, System.Collections.Generic.IReadOnlyList<string!>! ToDrop, System.Collections.Generic.IReadOnlyDictionary<Aw.CodeIndex.Core.Model.LayerName, bool>! LayersCurrent) -> void
+Aw.CodeIndex.Core.Planning.BuildPlan.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>! ToParse, out System.Collections.Generic.IReadOnlyList<string!>! ToDrop, out System.Collections.Generic.IReadOnlyDictionary<Aw.CodeIndex.Core.Model.LayerName, bool>! LayersCurrent) -> void
+Aw.CodeIndex.Core.Planning.BuildPlan.Equals(Aw.CodeIndex.Core.Planning.BuildPlan? other) -> bool
+Aw.CodeIndex.Core.Planning.BuildPlan.LayersCurrent.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.CodeIndex.Core.Model.LayerName, bool>!
+Aw.CodeIndex.Core.Planning.BuildPlan.LayersCurrent.init -> void
+Aw.CodeIndex.Core.Planning.BuildPlan.ToDrop.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.CodeIndex.Core.Planning.BuildPlan.ToDrop.init -> void
+Aw.CodeIndex.Core.Planning.BuildPlan.ToParse.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>!
+Aw.CodeIndex.Core.Planning.BuildPlan.ToParse.init -> void
+Aw.CodeIndex.Core.Planning.BuildPlanInput
+Aw.CodeIndex.Core.Planning.BuildPlanInput.<Clone>$() -> Aw.CodeIndex.Core.Planning.BuildPlanInput!
+Aw.CodeIndex.Core.Planning.BuildPlanInput.BuildPlanInput(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>! Snapshot, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.StoredFile!>! Stored, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.LayerRecord!>! StoredLayers, System.Collections.Generic.IReadOnlyDictionary<Aw.CodeIndex.Core.Model.LayerName, string!>! WantedStamps) -> void
+Aw.CodeIndex.Core.Planning.BuildPlanInput.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>! Snapshot, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.StoredFile!>! Stored, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.LayerRecord!>! StoredLayers, out System.Collections.Generic.IReadOnlyDictionary<Aw.CodeIndex.Core.Model.LayerName, string!>! WantedStamps) -> void
+Aw.CodeIndex.Core.Planning.BuildPlanInput.Equals(Aw.CodeIndex.Core.Planning.BuildPlanInput? other) -> bool
+Aw.CodeIndex.Core.Planning.BuildPlanInput.Snapshot.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>!
+Aw.CodeIndex.Core.Planning.BuildPlanInput.Snapshot.init -> void
+Aw.CodeIndex.Core.Planning.BuildPlanInput.Stored.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.StoredFile!>!
+Aw.CodeIndex.Core.Planning.BuildPlanInput.Stored.init -> void
+Aw.CodeIndex.Core.Planning.BuildPlanInput.StoredLayers.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.LayerRecord!>!
+Aw.CodeIndex.Core.Planning.BuildPlanInput.StoredLayers.init -> void
+Aw.CodeIndex.Core.Planning.BuildPlanInput.WantedStamps.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.CodeIndex.Core.Model.LayerName, string!>!
+Aw.CodeIndex.Core.Planning.BuildPlanInput.WantedStamps.init -> void
+Aw.CodeIndex.Core.Planning.BuildPlanner
+Aw.CodeIndex.Core.Planning.StructureStamp
 Aw.CodeIndex.Core.Ports.CallWalk
 Aw.CodeIndex.Core.Ports.CallWalk.<Clone>$() -> Aw.CodeIndex.Core.Ports.CallWalk!
 Aw.CodeIndex.Core.Ports.CallWalk.CallWalk(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.CallEdge!>! Edges, int UnresolvedCount, bool Truncated, Aw.CodeIndex.Core.Model.Coverage Coverage) -> void
@@ -1122,6 +1148,12 @@ override Aw.CodeIndex.Core.Model.SymbolRecord.ToString() -> string!
 override Aw.CodeIndex.Core.Model.TreeEntry.Equals(object? obj) -> bool
 override Aw.CodeIndex.Core.Model.TreeEntry.GetHashCode() -> int
 override Aw.CodeIndex.Core.Model.TreeEntry.ToString() -> string!
+override Aw.CodeIndex.Core.Planning.BuildPlan.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Planning.BuildPlan.GetHashCode() -> int
+override Aw.CodeIndex.Core.Planning.BuildPlan.ToString() -> string!
+override Aw.CodeIndex.Core.Planning.BuildPlanInput.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Planning.BuildPlanInput.GetHashCode() -> int
+override Aw.CodeIndex.Core.Planning.BuildPlanInput.ToString() -> string!
 override Aw.CodeIndex.Core.Ports.CallWalk.Equals(object? obj) -> bool
 override Aw.CodeIndex.Core.Ports.CallWalk.GetHashCode() -> int
 override Aw.CodeIndex.Core.Ports.CallWalk.ToString() -> string!
@@ -1260,6 +1292,12 @@ static Aw.CodeIndex.Core.Model.SymbolRecord.operator !=(Aw.CodeIndex.Core.Model.
 static Aw.CodeIndex.Core.Model.SymbolRecord.operator ==(Aw.CodeIndex.Core.Model.SymbolRecord? left, Aw.CodeIndex.Core.Model.SymbolRecord? right) -> bool
 static Aw.CodeIndex.Core.Model.TreeEntry.operator !=(Aw.CodeIndex.Core.Model.TreeEntry? left, Aw.CodeIndex.Core.Model.TreeEntry? right) -> bool
 static Aw.CodeIndex.Core.Model.TreeEntry.operator ==(Aw.CodeIndex.Core.Model.TreeEntry? left, Aw.CodeIndex.Core.Model.TreeEntry? right) -> bool
+static Aw.CodeIndex.Core.Planning.BuildPlan.operator !=(Aw.CodeIndex.Core.Planning.BuildPlan? left, Aw.CodeIndex.Core.Planning.BuildPlan? right) -> bool
+static Aw.CodeIndex.Core.Planning.BuildPlan.operator ==(Aw.CodeIndex.Core.Planning.BuildPlan? left, Aw.CodeIndex.Core.Planning.BuildPlan? right) -> bool
+static Aw.CodeIndex.Core.Planning.BuildPlanInput.operator !=(Aw.CodeIndex.Core.Planning.BuildPlanInput? left, Aw.CodeIndex.Core.Planning.BuildPlanInput? right) -> bool
+static Aw.CodeIndex.Core.Planning.BuildPlanInput.operator ==(Aw.CodeIndex.Core.Planning.BuildPlanInput? left, Aw.CodeIndex.Core.Planning.BuildPlanInput? right) -> bool
+static Aw.CodeIndex.Core.Planning.BuildPlanner.Plan(Aw.CodeIndex.Core.Planning.BuildPlanInput! input) -> Aw.CodeIndex.Core.Planning.BuildPlan!
+static Aw.CodeIndex.Core.Planning.StructureStamp.Compute(string! parserVersion, System.Collections.Generic.IReadOnlyList<string!>! utilityGlobs, System.Collections.Generic.IReadOnlyList<string!>! scrubPatterns) -> string!
 static Aw.CodeIndex.Core.Ports.CallWalk.operator !=(Aw.CodeIndex.Core.Ports.CallWalk? left, Aw.CodeIndex.Core.Ports.CallWalk? right) -> bool
 static Aw.CodeIndex.Core.Ports.CallWalk.operator ==(Aw.CodeIndex.Core.Ports.CallWalk? left, Aw.CodeIndex.Core.Ports.CallWalk? right) -> bool
 static Aw.CodeIndex.Core.Ports.CloneCandidates.operator !=(Aw.CodeIndex.Core.Ports.CloneCandidates? left, Aw.CodeIndex.Core.Ports.CloneCandidates? right) -> bool
