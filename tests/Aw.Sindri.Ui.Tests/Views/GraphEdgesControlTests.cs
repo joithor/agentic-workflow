@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Threading;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.ViewModels.Context.Layout;
 using Aw.Sindri.Ui.Views.Controls;
 
 namespace Aw.Sindri.Ui.Tests.Views;
@@ -15,7 +16,7 @@ public sealed class GraphEdgesControlTests
     private static Task<T> OnUi<T>(Func<T> body) =>
         HeadlessUnitTestSession.GetOrStartForAssembly(typeof(GraphEdgesControlTests).Assembly).Dispatch(body, TestContext.Current.CancellationToken);
 
-    private static MapEdge Edge(string key, Point from, Point to, bool dashed = false) => new(key, EdgeRoute.Straight(from, to), dashed);
+    private static MapEdge Edge(string key, MapPoint from, MapPoint to, bool dashed = false) => new(key, EdgeRoute.Straight(from, to), dashed);
 
     private static (Window Window, GraphEdgesControl Edges) Show(params MapEdge[] edges)
     {
@@ -29,7 +30,7 @@ public sealed class GraphEdgesControlTests
     [Fact]
     public async Task A_point_within_6_px_of_the_line_is_on_the_edge_and_one_further_is_not() => await OnUi(() =>
     {
-        var (window, edges) = Show(Edge("a", new Point(20, 50), new Point(220, 50)));
+        var (window, edges) = Show(Edge("a", new MapPoint(20, 50), new MapPoint(220, 50)));
 
         Assert.Equal("a", edges.EdgeAt(new Point(100, 50)));
         Assert.Equal("a", edges.EdgeAt(new Point(100, 55.5)));
@@ -42,7 +43,7 @@ public sealed class GraphEdgesControlTests
     [Fact]
     public async Task An_edge_with_a_wider_hit_width_is_hit_from_further_away() => await OnUi(() =>
     {
-        var wide = new MapEdge("wide", EdgeRoute.Straight(new Point(20, 50), new Point(220, 50)), Dashed: false, HitWidth: 24);
+        var wide = new MapEdge("wide", EdgeRoute.Straight(new MapPoint(20, 50), new MapPoint(220, 50)), Dashed: false, HitWidth: 24);
         var (window, edges) = Show(wide);
 
         Assert.Equal("wide", edges.EdgeAt(new Point(100, 61)));
@@ -54,7 +55,7 @@ public sealed class GraphEdgesControlTests
     [Fact]
     public async Task Where_two_edges_overlap_the_one_drawn_last_is_on_top() => await OnUi(() =>
     {
-        var (window, edges) = Show(Edge("under", new Point(0, 100), new Point(200, 100)), Edge("over", new Point(100, 100), new Point(300, 100)));
+        var (window, edges) = Show(Edge("under", new MapPoint(0, 100), new MapPoint(200, 100)), Edge("over", new MapPoint(100, 100), new MapPoint(300, 100)));
 
         Assert.Equal("over", edges.EdgeAt(new Point(150, 100)));
         Assert.Equal("under", edges.EdgeAt(new Point(50, 100)));
@@ -65,7 +66,7 @@ public sealed class GraphEdgesControlTests
     [Fact]
     public async Task The_hit_test_is_the_edge_test() => await OnUi(() =>
     {
-        var (window, edges) = Show(Edge("a", new Point(20, 50), new Point(220, 50)));
+        var (window, edges) = Show(Edge("a", new MapPoint(20, 50), new MapPoint(220, 50)));
 
         Assert.True(edges.HitTest(new Point(100, 50)));
         Assert.False(edges.HitTest(new Point(100, 200)));
@@ -76,7 +77,7 @@ public sealed class GraphEdgesControlTests
     [Fact]
     public async Task Hovering_an_edge_names_it_and_leaving_clears_it() => await OnUi(() =>
     {
-        var (window, edges) = Show(Edge("a", new Point(20, 50), new Point(220, 50)));
+        var (window, edges) = Show(Edge("a", new MapPoint(20, 50), new MapPoint(220, 50)));
 
         window.MouseMove(new Point(100, 52));
         Assert.Equal("a", edges.Hovered);
@@ -91,8 +92,8 @@ public sealed class GraphEdgesControlTests
     public async Task A_curve_and_an_elbow_are_hit_along_their_whole_path() => await OnUi(() =>
     {
         var (window, edges) = Show(
-            new MapEdge("curve", EdgeRoute.Curve(new Point(50, 20), new Point(250, 220)), Dashed: false),
-            new MapEdge("elbow", EdgeRoute.Bus(new Point(350, 20), new Point(300, 220), 120), Dashed: true));
+            new MapEdge("curve", EdgeRoute.Curve(new MapPoint(50, 20), new MapPoint(250, 220)), Dashed: false),
+            new MapEdge("elbow", EdgeRoute.Bus(new MapPoint(350, 20), new MapPoint(300, 220), 120), Dashed: true));
 
         Assert.Equal("curve", edges.EdgeAt(new Point(150, 120)));
         Assert.Equal("elbow", edges.EdgeAt(new Point(350, 60)));
@@ -106,9 +107,9 @@ public sealed class GraphEdgesControlTests
     [Fact]
     public async Task Changing_the_edges_changes_what_can_be_hit() => await OnUi(() =>
     {
-        var (window, edges) = Show(Edge("a", new Point(20, 50), new Point(220, 50)));
+        var (window, edges) = Show(Edge("a", new MapPoint(20, 50), new MapPoint(220, 50)));
 
-        edges.Edges = [Edge("b", new Point(20, 150), new Point(220, 150))];
+        edges.Edges = [Edge("b", new MapPoint(20, 150), new MapPoint(220, 150))];
 
         Assert.Null(edges.EdgeAt(new Point(100, 50)));
         Assert.Equal("b", edges.EdgeAt(new Point(100, 150)));
