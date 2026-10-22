@@ -104,7 +104,8 @@ internal static class RunCanvasLayout
             return 0;
         }
 
-        return outcome is "resolved" or "alreadySatisfied" or "unresolved" or "failed" ? ++used.Right : -(++used.Left);
+        var toTheRight = outcome is "resolved" or "alreadySatisfied" or "unresolved" or "failed";
+        return toTheRight ? ++used.Right : -(++used.Left);
     }
 
     private static Dictionary<string, EdgePorts> Ports(RunGraph graph, Dictionary<string, int> columns)
