@@ -16,13 +16,13 @@ internal static class PrStatusFact
     private static readonly string[] _noDocsNeeded = ["none", "disabled", "skippedByOwner"];
 
     /// <summary>The fact.</summary>
-    /// <param name="context">The Step's context.</param>
+    /// <param name="recheck">'fact:recheck', when the instance holds one.</param>
+    /// <param name="docsResult">'fact:docsResult', when the instance holds one.</param>
     /// <param name="pull">The pull request.</param>
     /// <param name="threads">Its conversation.</param>
     /// <param name="docs">The docs pull request, when the instance holds one.</param>
-    /// <param name="own">Whether a thread is Sindri's own.</param>
     /// <returns>The fact.</returns>
-    public static JsonObject Of(StepContext context, PullView pull, IReadOnlyList<PullThread> threads, PullView? docs, Func<PullThread, bool> own) => new()
+    public static JsonObject Of(JsonNode? recheck, JsonNode? docsResult, PullView pull, IReadOnlyList<PullThread> threads, PullView? docs) => new()
     {
         ["pr"] = Number(pull.Link),
         ["url"] = pull.Link,
@@ -32,9 +32,9 @@ internal static class PrStatusFact
             ["failed"] = pull.Checks.Failing.Count,
             ["pending"] = pull.Checks.Pending,
         },
-        ["review"] = new JsonObject { ["open"] = threads.Count(t => !t.Resolved && !own(t)), ["resolved"] = threads.Count(static t => t.Resolved) },
-        ["proof"] = Proof(StepFacts.Read(context, "fact:recheck"), pull.HeadSha),
-        ["docs"] = new JsonObject { ["status"] = Docs(StepFacts.Read(context, "fact:docsResult"), docs) },
+        ["review"] = new JsonObject { ["open"] = threads.Count(t => !t.Resolved && !PrSnapshotStep.Own(t)), ["resolved"] = threads.Count(static t => t.Resolved) },
+        ["proof"] = Proof(recheck, pull.HeadSha),
+        ["docs"] = new JsonObject { ["status"] = Docs(docsResult, docs) },
     };
 
     // Null when no recheck covers this head: the babysitter then knows nothing of the proof, which is not the same as no proof having run.

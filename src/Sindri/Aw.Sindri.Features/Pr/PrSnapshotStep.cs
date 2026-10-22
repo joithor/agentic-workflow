@@ -69,7 +69,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
         var work = threads.Value.Where(t => !t.Resolved && !Own(t) && !latest.Value.ContainsKey(t.Key)).ToList();   // a marked comment is handled (spec: a mark not superseded by an edit); the forge port has no login, so Sindri's replies are told apart by their markers alone
         var outcome = Outcome(pull.Value, work.Count, docs.Value);
         var state = State(pull.Value, outcome, new Conversation(threads.Value, work, latest.Value), docs.Value);
-        var status = PrStatusFact.Of(context, pull.Value, threads.Value, docs.Value?.View, Own);
+        var status = PrStatusFact.Of(StepFacts.Read(context, "fact:recheck"), StepFacts.Read(context, "fact:docsResult"), pull.Value, threads.Value, docs.Value?.View);
         return await Report(context, new Snapshot(pull.Value, outcome, state), status, cancellationToken).ConfigureAwait(false);
     }
 
@@ -290,7 +290,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
     };
 
     // Sindri's replies never come back as work: a marker it wrote.
-    private static bool Own(PullThread thread) =>
+    internal static bool Own(PullThread thread) =>
         thread.Markers.Any(static m => m.StartsWith("sindri", StringComparison.Ordinal));
 
     private sealed record DocsRead(PullView View, bool Skipped);
