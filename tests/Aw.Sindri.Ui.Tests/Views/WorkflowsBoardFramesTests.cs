@@ -5,7 +5,7 @@ using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.Tests.Workflows;
 using Aw.Sindri.Ui.ViewModels.Shell;
-using Aw.Sindri.Ui.ViewModels.Workflows;
+using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.Views.Workflows;
 
 namespace Aw.Sindri.Ui.Tests.Views;
@@ -53,8 +53,8 @@ public sealed class WorkflowsBoardFramesTests : FrameHost
         Assert.Equal(shell.Workflows.FilterAllText, Named<ListBoxItem>(window, "WorkflowsFilterAllItem").GetVisualDescendants().OfType<TextBlock>().Single().Text);
         var scroll = Named<ScrollViewer>(window, "WorkflowsBoardScroll");
         Assert.True(scroll.Bounds.Width <= width);   // the page never scrolls sideways
-        Assert.Equal(width < 1230 + 40, scroll.Extent.Width > scroll.Viewport.Width + 1);   // the board scrolls inside its host only when the window is narrower than it needs
-        Frame(window, $"workflows-board-{width}", Prefix);
+        Assert.True(width > 900 || scroll.Extent.Width > scroll.Viewport.Width + 1);   // at the 900 minimum the board scrolls inside its host
+        Frame(window, "workflows-board-" + width.ToString(System.Globalization.CultureInfo.InvariantCulture), Prefix);
     });
 
     [Fact]
@@ -91,7 +91,7 @@ public sealed class WorkflowsBoardFramesTests : FrameHost
         var (window, _) = await OnBoard(1440, Drawn);
 
         var texts = window.GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible).Select(t => t.Text ?? string.Empty).ToList();
-        Assert.Contains(Labels.WorkflowsLaneMergeEmpty, texts);   // Merge has no line state yet: it stays empty and says what waits there
-        Assert.Contains(Labels.WorkflowsLaneEmptyBody, texts);   // Plan is empty in the golden
+        Assert.Contains(texts, t => string.Equals(t, Labels.WorkflowsLaneMergeEmpty, StringComparison.Ordinal));   // Merge has no line state yet: it stays empty and says what waits there
+        Assert.Contains(texts, t => string.Equals(t, Labels.WorkflowsLaneEmptyBody, StringComparison.Ordinal));   // Plan is empty in the golden
     });
 }

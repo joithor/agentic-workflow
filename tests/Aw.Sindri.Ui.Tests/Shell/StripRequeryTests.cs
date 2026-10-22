@@ -61,8 +61,9 @@ public sealed class StripRequeryTests
     {
         _ = await Connected();
 
-        Assert.NotEmpty(_server.InstanceQueries);
-        Assert.All(_server.InstanceQueries, q => Assert.Equal(new Ui.Api.Workflow.InstanceQuery(Root: true, Open: true), q));
+        Assert.Contains(new Ui.Api.Workflow.InstanceQuery(Root: true, Open: true), _server.InstanceQueries);
+        // The board's Done lane reads the roots without the open filter and keeps the finished ones; every other read is the open one.
+        Assert.All(_server.InstanceQueries, q => Assert.True(q is { Root: true } && (q.Open || q == new Ui.Api.Workflow.InstanceQuery(Root: true))));
     }, Token);
 
     [Fact]
