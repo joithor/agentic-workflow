@@ -12,6 +12,10 @@ internal sealed partial class SindriApiClient
         Get<LensesView>(api, ContextRoutes.Lenses(query), cancellationToken);
 
     /// <inheritdoc />
+    public Task<Result<CodeView>> Code(Uri api, CodeQuery query, CancellationToken cancellationToken) =>
+        Get<CodeView>(api, ContextRoutes.Code(query), cancellationToken);
+
+    /// <inheritdoc />
     public Task<Result<ItemScopeView>> ItemScope(Uri api, string itemId, CancellationToken cancellationToken) =>
         Get<ItemScopeView>(api, "/sindri/items/" + Uri.EscapeDataString(itemId) + "/scope", cancellationToken);
 
@@ -34,6 +38,10 @@ internal sealed partial class SindriApiClient
     /// <inheritdoc />
     public Task<Result<MapStatusView>> MapStatus(Uri api, string? anchor, CancellationToken cancellationToken) =>
         Get<MapStatusView>(api, ContextRoutes.MapStatus(anchor), cancellationToken);
+
+    /// <inheritdoc />
+    public Task<Result<MapPublishView>> MapPublish(Uri api, CancellationToken cancellationToken) =>
+        Get<MapPublishView>(api, ContextRoutes.MapPublish, cancellationToken);
 
     /// <inheritdoc />
     public Task<Result<NodeView>> Node(Uri api, string key, CancellationToken cancellationToken) =>

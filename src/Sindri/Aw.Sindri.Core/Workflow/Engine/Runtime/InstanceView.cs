@@ -134,6 +134,10 @@ public sealed record InstanceView(
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? StartedBy { get; init; }
 
+    /// <summary>The instance this one reruns (its address); null for any other. Recorded at start, so it survives a restart.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public InstanceAddress? Again { get; init; }
+
     /// <summary>What each Step state reads and produces (the detail's 'steps'), in the recipe's state order.</summary>
     public IReadOnlyList<StateStep> Steps { get; init; } = [];
 

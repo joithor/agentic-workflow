@@ -22,7 +22,8 @@ public sealed class PlanEvidenceStepTests
         var result = await station.PlanEvidenceRun();
 
         Assert.Equal("complete", result.Result!.Outcome.Value);
-        Assert.Equal(["planPacket"], ScopingStepContexts.Keys(result));
+        Assert.Equal(["planPacket", "recommendation"], ScopingStepContexts.Keys(result));
+        Assert.Equal("approve", (string?)JsonNode.Parse(LineStation.Fact(result, "recommendation"))!["outcome"]);   // complete evidence: every check passed
         var packet = JsonNode.Parse(LineStation.Fact(result, "planPacket"))!;
         Assert.Equal(InMemoryPackets.HashOf(new PacketRef(PacketKind.Plan, PlanLocation)), (string?)packet["hash"]);
         Assert.Equal(PlanLocation, (string?)packet["dir"]);
