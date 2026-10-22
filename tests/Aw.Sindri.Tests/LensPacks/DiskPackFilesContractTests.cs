@@ -13,7 +13,7 @@ public sealed class DiskPackFilesContractTests : PackFilesContract, IDisposable
 
     public void Dispose() => _scratch.Delete(recursive: true);
 
-    protected override IOutsidePackFiles Create() => new DiskPackFiles();
+    private protected override IOutsidePackFiles Create() => new DiskPackFiles();
 
     protected override void Seed(string id, string path, string text)
     {

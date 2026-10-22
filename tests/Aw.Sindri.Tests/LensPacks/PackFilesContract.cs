@@ -7,7 +7,7 @@ public abstract class PackFilesContract
 {
     protected abstract string Root { get; }
 
-    protected abstract IOutsidePackFiles Create();
+    private protected abstract IOutsidePackFiles Create();
 
     protected abstract void Seed(string id, string path, string text);
 

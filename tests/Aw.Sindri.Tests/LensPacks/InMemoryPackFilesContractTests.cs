@@ -10,7 +10,7 @@ public sealed class InMemoryPackFilesContractTests : PackFilesContract
 
     protected override string Root => "/packs";
 
-    protected override IOutsidePackFiles Create() => _files;
+    private protected override IOutsidePackFiles Create() => _files;
 
     protected override void Seed(string id, string path, string text) => _files.Put(Root, id, path, text);
 }
