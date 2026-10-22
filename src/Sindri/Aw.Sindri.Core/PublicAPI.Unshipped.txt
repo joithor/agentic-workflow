@@ -3751,6 +3751,8 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.IItems
 Aw.Sindri.Core.Workflow.Engine.Runtime.IItems.Resolve(string! reference, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.ResolvedItem!>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.ILaunchRequests
 Aw.Sindri.Core.Workflow.Engine.Runtime.ILaunchRequests.Requested(Aw.Sindri.Core.Workflow.Engine.ItemKey item, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.LaunchId?>!>
+Aw.Sindri.Core.Workflow.Engine.Runtime.IStartFactCheck
+Aw.Sindri.Core.Workflow.Engine.Runtime.IStartFactCheck.Check(Aw.Sindri.Core.Workflow.Ids.RecipeId recipe, Aw.Sindri.Core.Workflow.Ids.FactKey fact, System.ReadOnlyMemory<byte> content) -> Aw.Sindri.Core.Workflow.Engine.Runtime.StartFactProblem?
 Aw.Sindri.Core.Workflow.Engine.Runtime.InputFact
 Aw.Sindri.Core.Workflow.Engine.Runtime.InputFact.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.InputFact!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InputFact.Deconstruct(out string! Name, out Aw.Sindri.Core.Workflow.Engine.FactValue! Value, out bool Generated) -> void
@@ -3960,6 +3962,10 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.ResolvedItem.Equals(Aw.Sindri.Core.Workfl
 Aw.Sindri.Core.Workflow.Engine.Runtime.ResolvedItem.Id.get -> Aw.Sindri.Core.Workflow.Engine.ItemKey
 Aw.Sindri.Core.Workflow.Engine.Runtime.ResolvedItem.Id.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.ResolvedItem.ResolvedItem(Aw.Sindri.Core.Workflow.Engine.ItemKey Id, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.ItemKey>! Aliases) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.StartFactProblem
+Aw.Sindri.Core.Workflow.Engine.Runtime.StartFactProblem.Errors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Workflow.Engine.Runtime.StartFactProblem.Fix.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.StartFactProblem.StartFactProblem(System.Collections.Generic.IReadOnlyList<string!>! errors, string! fix) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.StateCells
 Aw.Sindri.Core.Workflow.Engine.Runtime.StatusLayout
 Aw.Sindri.Core.Workflow.Engine.Runtime.StatusText
