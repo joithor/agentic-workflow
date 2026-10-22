@@ -1,3 +1,5 @@
+using Aw.Sindri.Core;
+
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>The verb groups Dispatch hands a whole family to.</summary>
@@ -19,5 +21,12 @@ internal static partial class CommandTable
         ["setup", .. var rest] => await new SetupVerbs(client, output).Run(rest, ct).ConfigureAwait(false),
         ["code-index", .. var rest] => await new CodeIndexVerbs(client, output).Run(rest, ct).ConfigureAwait(false),
         _ => await UnknownVerb(args, output).ConfigureAwait(false),
+    };
+
+    /// <summary>'sindri pr babysit &lt;url&gt; …': the hand start of the PR babysitter (API16).</summary>
+    private static async Task<int> Pr(string[] args, IServiceProvider services, Output output, RecipeDesk desk, CancellationToken ct) => args switch
+    {
+        ["pr", "babysit", .. var rest] => await HandStartCommand.Babysit(rest, desk, services, output, ct).ConfigureAwait(false),
+        _ => await output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', args)}' is not a sindri command ({HandStartCommand.BabysitUsage})")).ConfigureAwait(false),
     };
 }
