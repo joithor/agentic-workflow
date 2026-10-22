@@ -9,7 +9,7 @@ namespace Aw.CodeIndex.Infrastructure.Scrubbing;
 /// the redactor's placeholder, never as the input.
 /// </summary>
 /// <param name="redactor">The redactor, with its built-in rules and the profile's extra patterns.</param>
-public sealed class RedactingBodyScrubber(IRedactor redactor) : IBodyScrubber
+internal sealed class RedactingBodyScrubber(IRedactor redactor) : IBodyScrubber
 {
     /// <summary>Creates the scrubber with the built-in rules.</summary>
     public RedactingBodyScrubber()

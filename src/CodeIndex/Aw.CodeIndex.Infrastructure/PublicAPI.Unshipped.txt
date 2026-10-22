@@ -1,20 +1,3 @@
 #nullable enable
 Aw.CodeIndex.Infrastructure.CodeIndexInfrastructureServiceCollectionExtensions
 static Aw.CodeIndex.Infrastructure.CodeIndexInfrastructureServiceCollectionExtensions.AddCodeIndexInfrastructure(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Func<string!, string?>! environment) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
-Aw.CodeIndex.Infrastructure.Parsing.CSharpParser
-Aw.CodeIndex.Infrastructure.Parsing.CSharpParser.CSharpParser() -> void
-Aw.CodeIndex.Infrastructure.Parsing.CSharpParser.Handles(string! path) -> bool
-Aw.CodeIndex.Infrastructure.Parsing.CSharpParser.Parse(string! path, string! text, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<Aw.CodeIndex.Core.Model.ParseOutcome!>!
-Aw.CodeIndex.Infrastructure.Parsing.FileParseQuarantine
-Aw.CodeIndex.Infrastructure.Parsing.FileParseQuarantine.Begin(Aw.CodeIndex.Core.Values.RepoName repo, string! blob) -> void
-Aw.CodeIndex.Infrastructure.Parsing.FileParseQuarantine.Contains(Aw.CodeIndex.Core.Values.RepoName repo, string! blob) -> bool
-Aw.CodeIndex.Infrastructure.Parsing.FileParseQuarantine.End(Aw.CodeIndex.Core.Values.RepoName repo) -> void
-Aw.CodeIndex.Infrastructure.Parsing.FileParseQuarantine.FileParseQuarantine(string! directory) -> void
-Aw.CodeIndex.Infrastructure.Parsing.FileParseQuarantine.Keep(Aw.CodeIndex.Core.Values.RepoName repo, System.Collections.Generic.IReadOnlySet<string!>! blobsInHead) -> int
-Aw.CodeIndex.Infrastructure.Parsing.FileParseQuarantine.Recover(Aw.CodeIndex.Core.Values.RepoName repo) -> int
-Aw.CodeIndex.Infrastructure.Parsing.CSharpParser.Version.get -> string!
-const Aw.CodeIndex.Infrastructure.Parsing.CSharpParser.ParserVersion = "csharp-1" -> string!
-Aw.CodeIndex.Infrastructure.Scrubbing.RedactingBodyScrubber
-Aw.CodeIndex.Infrastructure.Scrubbing.RedactingBodyScrubber.RedactingBodyScrubber() -> void
-Aw.CodeIndex.Infrastructure.Scrubbing.RedactingBodyScrubber.RedactingBodyScrubber(Aw.Redaction.IRedactor! redactor) -> void
-Aw.CodeIndex.Infrastructure.Scrubbing.RedactingBodyScrubber.Scrub(string! text, int maxCharacters) -> string!

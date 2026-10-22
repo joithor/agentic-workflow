@@ -9,7 +9,7 @@ namespace Aw.CodeIndex.Infrastructure.Parsing;
 /// <see cref="IParseQuarantine"/> on two files per repo in one directory: '&lt;repo&gt;.inflight' (the blob being parsed) and
 /// '&lt;repo&gt;.quarantine' (one blob id per line, replaced atomically and fsynced). A repo name is file-safe by construction.
 /// </summary>
-public sealed class FileParseQuarantine : IParseQuarantine
+internal sealed class FileParseQuarantine : IParseQuarantine
 {
     private readonly string _directory;
     private readonly Dictionary<string, List<string>> _lists = new(StringComparer.Ordinal);
