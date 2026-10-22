@@ -47,7 +47,7 @@ public sealed class ListColumnsTests
     {
         var sizes = ListColumns.For(1440).Sizes;
 
-        Assert.Equal(new (double, bool, double)[] { (2.2, true, 200), (128, false, 0), (148, false, 0), (1.8, true, 150), (124, false, 0), (80, false, 0) }, sizes.Select(s => (s.Value, s.IsStar, s.Min)));
+        Assert.Equal([(2.2, true, 200), (128, false, 0), (148, false, 0), (1.8, true, 150), (124, false, 0), (80, false, 0)], sizes.Select(s => (s.Value, s.IsStar, s.Min)));
     }
 
     [Fact]

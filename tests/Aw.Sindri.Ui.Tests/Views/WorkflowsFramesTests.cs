@@ -1,6 +1,5 @@
 using System.Net;
 using System.Text.Json.Nodes;
-using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
@@ -80,7 +79,7 @@ public sealed class WorkflowsFramesTests : FrameHost
     // What assistive tech hears, from each control's automation peer (a TextBlock's peer ignores a Name, so these sit on wrappers): review run 2, W5 and W6.
     private static void AssistiveNames(Window window, ShellViewModel shell)
     {
-        Assert.Equal(WorkflowsLegend.Name, Heard.Wrapper(Assert.Single(window.GetVisualDescendants().OfType<Border>().Where(b => b.Name == "WorkflowsLegendName" && b.IsEffectivelyVisible))));
+        Assert.Equal(WorkflowsLegend.Name, Heard.Wrapper(Assert.Single(window.GetVisualDescendants().OfType<Border>(), b => b.Name == "WorkflowsLegendName" && b.IsEffectivelyVisible)));
         var row = shell.Workflows.Groups[0].Rows[0];
         var title = window.GetVisualDescendants().OfType<Button>().First(b => b.Name == "WorkflowRowOpen" && b.IsEffectivelyVisible && ReferenceEquals(b.DataContext, row));
         Assert.Equal(row.OpenName, Heard.Name(title));
