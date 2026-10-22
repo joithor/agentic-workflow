@@ -89,19 +89,19 @@ internal static partial class Labels
     internal const string HealthPanel = "SINDRI HEALTH";
 
     /// <summary>The Health page's process card.</summary>
-    internal const string ControlPlaneCard = "CONTROL PLANE";
+    internal const string ControlPlaneCard = "Control plane";
 
     /// <summary>The Health page's lease card.</summary>
-    internal const string LeaseCard = "LEASE";
+    internal const string LeaseCard = "Lease";
 
     /// <summary>The Health page's profile card.</summary>
-    internal const string ProfileCard = "PROFILE";
+    internal const string ProfileCard = "Profile";
 
     /// <summary>The Health page's services card.</summary>
-    internal const string ServicesCard = "SERVICES";
+    internal const string ServicesCard = "Services";
 
     /// <summary>The Health page's last-event card.</summary>
-    internal const string LastEventCard = "LAST EVENT";
+    internal const string LastEventCard = "Last event";
 
     /// <summary>The services card with none scheduled.</summary>
     internal const string NoServices = "none scheduled (the approved profile names no services)";
