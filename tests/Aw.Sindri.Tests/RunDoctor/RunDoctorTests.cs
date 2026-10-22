@@ -22,7 +22,7 @@ public sealed class RunDoctorTests
 
     private RunDoctorService Service(ILedgerStore? ledger = null) =>
         new(_h.Store, _h.Probe, new LedgerFacts(_h.Store, _views), new ProfileFacts(_h.Profiles, _h.Profiles, ledger ?? _h.Store, _h.Events,
-            new ContextEngineChecks(FakeContextEngine.Instance, new OnyxDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))), new Aw.Sindri.Features.CodeIndexJobs.CodeIndexDoctor(new Aw.CodeIndex.Testing.FakeCodeIndex(), new Aw.CodeIndex.Testing.FakeRepoHeads(), new Aw.Sindri.Testing.InMemoryJobViews(), _h.Clock))), _api, _temporal, _h.Clock);
+            new ContextEngineChecks(FakeContextEngine.Instance, new OnyxDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))), new Aw.Sindri.Features.CodeIndexJobs.CodeIndexDoctor(new Aw.CodeIndex.Testing.FakeCodeIndex(), new Aw.CodeIndex.Testing.FakeRepoHeads(), new Aw.Sindri.Testing.InMemoryJobViews(), new Aw.CodeIndex.Testing.FakeEmbedder(), new Aw.CodeIndex.Testing.FakePins(), _h.Clock))), _api, _temporal, _h.Clock);
 
     [Fact, Trait("Lane", "unit")]
     public async Task RunDoctor_is_green_when_running_approved_and_answering()

@@ -27,10 +27,12 @@ internal static class IndexJobs
     internal static bool Published(JobRow job) => job.State == JobState.Succeeded && OutcomeOf(job) == "published";
 
     /// <summary>What an ended build job says about continuing the repo's layers (code index spec §6.3).</summary>
-    internal static IndexJobOutcome OutcomeFor(JobRow job) => new(job.EndedAt ?? default, job.State == JobState.Failed, Deferred(job), PendingLayers(job), EmbeddedOf(job));
+    internal static IndexJobOutcome OutcomeFor(JobRow job) => new(job.EndedAt ?? default, job.State == JobState.Failed, Deferred(job), PendingLayers(job), EmbeddedOf(job), CommitOf(job));
 
     private static bool PendingLayers(JobRow job) =>
         job.State == JobState.Succeeded && Property(job, "layersPending") is { ValueKind: JsonValueKind.Array } pending && pending.GetArrayLength() > 0;
+
+    private static string? CommitOf(JobRow job) => Property(job, "commit") is { ValueKind: JsonValueKind.String } commit ? commit.GetString() : null;
 
     private static int EmbeddedOf(JobRow job) => Property(job, "embedded") is { ValueKind: JsonValueKind.Number } n && n.TryGetInt32(out var count) ? count : 0;
 

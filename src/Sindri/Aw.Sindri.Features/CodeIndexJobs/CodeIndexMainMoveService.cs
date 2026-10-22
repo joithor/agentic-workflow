@@ -34,6 +34,9 @@ internal sealed partial class CodeIndexMainMoveService(CodeIndexScopes scopes, I
 {
     private const int RecentRuns = 8;
 
+    // graphify, the sandbox or the model pin are missing: setup can fix them (spec §6.3)
+    private static readonly HashSet<string> _fixableCodes = new(StringComparer.Ordinal) { "SND-CODEIDX-007", "SND-CODEIDX-008", "SND-CODEIDX-009" };
+
     internal static ServiceName ServiceId { get; } = ServiceName.From("code-index-main-move");
 
     /// <summary>Runs without a profile entry, every minute: a tick is one heads read, one stored-heads read and one jobs read.</summary>
@@ -85,14 +88,15 @@ internal sealed partial class CodeIndexMainMoveService(CodeIndexScopes scopes, I
             return live.IsError ? live.Error : recorded.IsError ? recorded.Error : builds.Error;
         }
 
-        return new Reads(live.Value, recorded.Value, builds.Value, await Buildable(scope, cancellationToken).ConfigureAwait(false));
+        return new Reads(live.Value, recorded.Value, builds.Value, await Buildable(scope, builds.Value, cancellationToken).ConfigureAwait(false));
     }
 
-    // The probe runs only for a repo whose stored index has an unavailable layer, and a probe that fails is no news: the layer stays as it is.
-    private async ValueTask<HashSet<string>> Buildable(CodeIndexScope scope, CancellationToken cancellationToken)
+    // The probe runs only when a graph or embeddings layer is unavailable for a fixable cause (SND-CODEIDX-007 to 009) and that repo's newest build ended at least ten minutes ago; a probe that fails is no news.
+    private async ValueTask<HashSet<string>> Buildable(CodeIndexScope scope, IReadOnlyList<JobRow> builds, CancellationToken cancellationToken)
     {
         var status = await index.Status(scope, cancellationToken).ConfigureAwait(false);
-        if (status.IsError || !status.Value.Repos.Any(static r => r.Layers.Any(static l => l.State == LayerState.Unavailable)))
+        var now = clock.GetUtcNow();
+        if (status.IsError || !status.Value.Repos.Any(r => Fixable(r) && Settled(builds, r.Repo.Value, now)))
         {
             return [];
         }
@@ -100,6 +104,12 @@ internal sealed partial class CodeIndexMainMoveService(CodeIndexScopes scopes, I
         var probes = await index.ProbeLayers(scope, cancellationToken).ConfigureAwait(false);
         return probes.IsError ? [] : [.. probes.Value.Where(static p => p.Buildable.Count > 0).Select(static p => p.Repo.Value)];
     }
+
+    private static bool Fixable(Aw.CodeIndex.Core.Facade.RepoStatus repo) => repo.Layers.Any(static l =>
+        l.Layer is LayerName.Graph or LayerName.Embeddings && l.State == LayerState.Unavailable && l.Code is not null && _fixableCodes.Contains(l.Code));
+
+    private static bool Settled(IReadOnlyList<JobRow> builds, string repo, DateTimeOffset now) =>
+        !builds.Any(j => IndexJobs.IsOf(j, repo) && (j.State == JobState.Running || (j.EndedAt is { } ended && now < ended + IndexContinuationDecision.Hold)));
 
     private async ValueTask<Result<RepoStep>> Step(IndexRepoHead head, IReadOnlyList<RecordedHead> recorded, IReadOnlyList<JobRow> builds, HashSet<string> buildable, CancellationToken cancellationToken)
     {

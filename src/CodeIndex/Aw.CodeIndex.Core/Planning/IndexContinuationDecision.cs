@@ -29,17 +29,25 @@ public static class IndexContinuationDecision
         }
 
         var newest = newestFirst[0];
-        if (newest.Deferred)
+        if (newest.Deferred && now < newest.EndedAt + Hold)
         {
-            return now < newest.EndedAt + Hold ? ContinuationAction.Suppress : ContinuationAction.Pass;
+            return ContinuationAction.Suppress;
         }
 
-        if (newest.Failed || !newest.LayersPending)
+        // A failed or deferred job published nothing: the continuation is read from the newest job that did, and the shared decision's backoff paces the retry.
+        var published = newestFirst.TakeWhile(static j => j.Failed || j.Deferred).Count();
+        if (published == newestFirst.Count || !newestFirst[published].LayersPending)
         {
             return ContinuationAction.Pass;
         }
 
-        return Continuing(newestFirst, moved: recordedHead is null || !string.Equals(head, recordedHead, StringComparison.Ordinal), now);
+        var moved = recordedHead is null || !string.Equals(head, recordedHead, StringComparison.Ordinal);
+        if (published > 0)
+        {
+            return moved ? ContinuationAction.Pass : ContinuationAction.WithholdRecorded;
+        }
+
+        return Continuing(newestFirst, moved, now);
     }
 
     // The newest job left a layer pending. A moved head starts on its own, unless the hold applies to it too.
@@ -90,7 +98,7 @@ public static class IndexContinuationDecision
         {
             if (!newestFirst[i].Failed && !newestFirst[i].Deferred)
             {
-                return newestFirst[i].Embedded;
+                return string.Equals(newestFirst[i].Commit, newestFirst[index].Commit, StringComparison.Ordinal) ? newestFirst[i].Embedded : 0;
             }
         }
 

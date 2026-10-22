@@ -88,9 +88,13 @@ public sealed class FakeCodeIndex : ICodeIndex
         return Ok<IReadOnlyList<RecordedHead>>([.. scope.Repos.Select(r => new RecordedHead(r.Name, Readable(r.Name)?.Commit))]);
     }
 
+    /// <summary>How many times <see cref="ProbeLayers"/> was called.</summary>
+    public int ProbeCalls { get; private set; }
+
     public ValueTask<Result<IReadOnlyList<LayerProbe>>> ProbeLayers(CodeIndexScope scope, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(scope);
+        ProbeCalls++;
         _scopes.Add(scope);
         return Ok<IReadOnlyList<LayerProbe>>([.. scope.Repos.Select(r => new LayerProbe(r.Name, _buildable.Contains(r.Name) ? [LayerName.Graph] : []))]);
     }

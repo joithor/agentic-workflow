@@ -45,10 +45,17 @@ public sealed record RepoHealth(string Repo, string State, int? EmbeddingsPercen
         }
 
         var missing = status.State == IndexState.Missing;
-        var behind = missing || (live?.Head is { } head && head != status.Commit);
-        var waiting = behind ? IndexBuildWords.Waiting([.. builds.Where(static j => j.EndedAt is not null).OrderByDescending(static j => j.EndedAt)], now) : null;
-        return (waiting is not null ? "waiting" : missing ? "missing" : behind ? "stale" : "ok", waiting);
+        var behind = missing || Moved(status, live);
+        var waiting = behind || status.Layers.Any(static l => l.State == LayerState.Pending) ? WaitingWords(builds, now) : null;
+        return (Word(waiting, missing, behind), waiting);
     }
+
+    private static bool Moved(RepoStatus status, IndexRepoHead? live) => live?.Head is { } head && head != status.Commit;
+
+    private static string Word(string? waiting, bool missing, bool behind) => waiting is not null ? "waiting" : missing ? "missing" : behind ? "stale" : "ok";
+
+    private static string? WaitingWords(IReadOnlyList<JobRow> builds, DateTimeOffset now) =>
+        IndexBuildWords.Waiting([.. builds.Where(static j => j.EndedAt is not null).OrderByDescending(static j => j.EndedAt)], now);
 
     // The embeddings layer's detail is 'N of M embedded' (spec §5.5): anything else states no count.
     private static int? Percent(string? detail)

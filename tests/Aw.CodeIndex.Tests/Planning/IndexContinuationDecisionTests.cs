@@ -65,8 +65,28 @@ public sealed class IndexContinuationDecisionTests
         Assert.Equal(ContinuationAction.WithholdRecorded, Decide("a", "a", Job(5, embedded: 30), Job(60, embedded: 20), Job(120, embedded: 20), Job(180, embedded: 20)));
 
     [Fact, Trait("Lane", "unit")]
-    public void A_failed_newest_job_is_left_to_the_backoff() =>
-        Assert.Equal(ContinuationAction.Pass, Decide("a", "a", Job(1, failed: true, pending: false), Job(30, embedded: 5)));
+    public void A_failed_continuation_is_retried_at_the_same_commit_and_left_to_the_shared_backoff() =>
+        Assert.Equal(ContinuationAction.WithholdRecorded, Decide("a", "a", Job(1, failed: true, pending: false), Job(30, embedded: 5)));
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_deferred_continuation_is_held_ten_minutes_then_retried()
+    {
+        Assert.Equal(ContinuationAction.Suppress, Decide("a", "a", Job(5, deferred: true, pending: false), Job(30, embedded: 5)));
+        Assert.Equal(ContinuationAction.WithholdRecorded, Decide("a", "a", Job(10, deferred: true, pending: false), Job(30, embedded: 5)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_failed_job_after_a_complete_build_passes() =>
+        Assert.Equal(ContinuationAction.Pass, Decide("a", "a", Job(1, failed: true, pending: false), Job(30, embedded: 5, pending: false)));
+
+    [Fact, Trait("Lane", "unit")]
+    public void Embedded_counts_at_different_commits_are_not_compared()
+    {
+        var newest = new IndexJobOutcome(_now.AddMinutes(-3), Failed: false, Deferred: false, LayersPending: true, Embedded: 10, Commit: "b");
+        var older = new IndexJobOutcome(_now.AddMinutes(-60), Failed: false, Deferred: false, LayersPending: true, Embedded: 20, Commit: "a");
+
+        Assert.Equal(ContinuationAction.WithholdRecorded, Decide("b", "b", newest, older));
+    }
 
     [Fact, Trait("Lane", "unit")]
     public void Failed_and_deferred_jobs_between_are_skipped_when_reading_progress() =>

@@ -1,5 +1,6 @@
 using System.Globalization;
 using Aw.CodeIndex.Core.Facade;
+using Aw.Kernel;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Ports;
 using Aw.Sindri.Core.Doctor;
@@ -19,8 +20,10 @@ namespace Aw.Sindri.Features.CodeIndexJobs;
 /// <param name="index">The code index: its status, from the files only.</param>
 /// <param name="heads">The repos' live heads.</param>
 /// <param name="jobs">The 'jobs' view.</param>
+/// <param name="embedder">Probed for reachability and the model digest: a live check, never a build.</param>
+/// <param name="pins">Reads the lock file and compares it with the build's pins.</param>
 /// <param name="clock">Dates the retry words.</param>
-internal sealed class CodeIndexDoctor(ICodeIndex index, IRepoHeads heads, IJobViews jobs, TimeProvider clock) : ICodeIndexChecks
+internal sealed class CodeIndexDoctor(ICodeIndex index, IRepoHeads heads, IJobViews jobs, IEmbedder embedder, ICodeIndexPins pins, TimeProvider clock) : ICodeIndexChecks
 {
     private const string GraphCheck = "code-index:graphify";
     private const string OllamaCheck = "code-index:ollama";
@@ -45,23 +48,36 @@ internal sealed class CodeIndexDoctor(ICodeIndex index, IRepoHeads heads, IJobVi
         }
 
         var status = await index.Status(scope.Value, cancellationToken).ConfigureAwait(false);
-        var live = await heads.Heads(scope.Value.Repos, cancellationToken).ConfigureAwait(false);
-        var builds = await jobs.List(state: null, IndexJobs.BuildKind, cancellationToken).ConfigureAwait(false);
         if (status.IsError)
         {
             return [new DoctorCheck("code-index", CheckState.Fail, $"{status.Error.Code}: {status.Error.Message}", "check $AW_STATE_DIR/code-index")];
         }
 
-        return Rows(status.Value.Repos, live.IsError ? [] : live.Value, builds.IsError ? [] : builds.Value, clock.GetUtcNow());
+        var live = await heads.Heads(scope.Value.Repos, cancellationToken).ConfigureAwait(false);
+        var builds = await jobs.List(state: null, IndexJobs.BuildKind, cancellationToken).ConfigureAwait(false);
+        var embeddings = scope.Value.Repos.Select(static r => r.Settings.Embeddings).FirstOrDefault();
+        var model = embeddings is { Enabled: true } ? new ModelProbe(Enabled: true, await embedder.Probe(embeddings, cancellationToken).ConfigureAwait(false)) : new ModelProbe(Enabled: false, Unit.Value);
+        return Rows(status.Value.Repos, live.IsError ? [] : live.Value, builds.IsError ? [] : builds.Value, clock.GetUtcNow(), new Probes(model, pins.Check()));
     }
+
+    /// <summary>What the live checks found: the embedding server and model, and the lock file.</summary>
+    /// <param name="Model">The embeddings probe.</param>
+    /// <param name="Lock">The lock file check.</param>
+    internal sealed record Probes(ModelProbe Model, LockState Lock);
+
+    /// <summary>The embeddings probe: whether the layer is on, and the answer when it is.</summary>
+    /// <param name="Enabled">False when the profile turns embeddings off.</param>
+    /// <param name="Result">The probe's answer.</param>
+    internal sealed record ModelProbe(bool Enabled, Result<Unit> Result);
 
     /// <summary>The rows for what was read; pure, so the words are tested without a box.</summary>
     /// <param name="repos">Each repo's index status.</param>
     /// <param name="live">The repos' live heads (empty when unreadable).</param>
     /// <param name="builds">The build jobs of every repo.</param>
     /// <param name="now">The time.</param>
+    /// <param name="probes">The live checks, or null when none was made (the ollama and lock rows then read the stored layers only).</param>
     /// <returns>The rows.</returns>
-    internal static DoctorCheck[] Rows(IReadOnlyList<IndexRepoStatus> repos, IReadOnlyList<IndexRepoHead> live, IReadOnlyList<JobRow> builds, DateTimeOffset now)
+    internal static DoctorCheck[] Rows(IReadOnlyList<IndexRepoStatus> repos, IReadOnlyList<IndexRepoHead> live, IReadOnlyList<JobRow> builds, DateTimeOffset now, Probes? probes = null)
     {
         ArgumentNullException.ThrowIfNull(repos);
         ArgumentNullException.ThrowIfNull(live);
@@ -76,8 +92,8 @@ internal sealed class CodeIndexDoctor(ICodeIndex index, IRepoHeads heads, IJobVi
         [
             .. repos.Select(r => Repo(r, live.FirstOrDefault(h => h.Repo == r.Repo), [.. builds.Where(j => IndexJobs.IsOf(j, r.Repo.Value))], now)),
             Layer(GraphCheck, "graph", layers, LayerName.Graph),
-            Layer(OllamaCheck, "embeddings", layers, LayerName.Embeddings),
-            Lock(layers),
+            probes is null ? Layer(OllamaCheck, "embeddings", layers, LayerName.Embeddings) : Ollama(probes.Model),
+            probes is null ? new DoctorCheck(LockCheck, CheckState.Ok, "lock not checked", Fix: null) : Lock(probes.Lock),
         ];
     }
 
@@ -91,8 +107,7 @@ internal sealed class CodeIndexDoctor(ICodeIndex index, IRepoHeads heads, IJobVi
         {
             IndexState.Damaged => new DoctorCheck(name, CheckState.Fail, "index damaged, rebuilding (SND-CODEIDX-010)", "none needed: the next tick deletes and rebuilds it; sindri jobs shows the build"),
             IndexState.Missing => new DoctorCheck(name, CheckState.Warn, running ? "building the first index" : IndexBuildWords.Waiting(finished, now) ?? "first build queued", Fix: null),
-            IndexState.Ok => Readable(name, repo, live, buildWords, now),
-            _ => Readable(name, repo, live, buildWords, now),
+            IndexState.Ok or _ => Readable(name, repo, live, buildWords, now),
         };
     }
 
@@ -121,9 +136,20 @@ internal sealed class CodeIndexDoctor(ICodeIndex index, IRepoHeads heads, IJobVi
         return new DoctorCheck(name, CheckState.Ok, mine.Count == 0 ? "no index built yet" : $"{word} {Word(mine[0].State)}", Fix: null);
     }
 
-    private static DoctorCheck Lock(List<LayerStatus> layers) => layers.Find(static l => l.Code == "SND-CODEIDX-009") is { } mismatch
-        ? new DoctorCheck(LockCheck, CheckState.Warn, $"a tool or model does not match context/code-index.lock ({mismatch.Layer.ToString().ToLowerInvariant()})", Setup + " re-installs the pin")
-        : new DoctorCheck(LockCheck, CheckState.Ok, "every built layer matches context/code-index.lock", Fix: null);
+    // A live check, and a warning whatever it finds: embeddings are an extra, never a failure.
+    private static DoctorCheck Ollama(ModelProbe probe) => !probe.Enabled
+        ? new DoctorCheck(OllamaCheck, CheckState.Warn, "embeddings are off in the profile", "set context.codeIndex.embeddings.enabled: true to turn them on")
+        : probe.Result.IsSuccess
+            ? new DoctorCheck(OllamaCheck, CheckState.Ok, "Ollama is reachable and the model matches the pin", Fix: null)
+            : new DoctorCheck(OllamaCheck, CheckState.Warn, $"embeddings unavailable ({probe.Result.Error.Code}): {probe.Result.Error.Message}", Fix(probe.Result.Error.Code));
+
+    private static DoctorCheck Lock(LockState state) => state switch
+    {
+        LockState.Matches => new DoctorCheck(LockCheck, CheckState.Ok, "context/code-index.lock parses and matches the pins this build carries", Fix: null),
+        LockState.Mismatch => new DoctorCheck(LockCheck, CheckState.Warn, "context/code-index.lock does not match the pins this build carries", Setup + " re-installs the pin"),
+        LockState.Unparsable => new DoctorCheck(LockCheck, CheckState.Warn, "context/code-index.lock does not parse", "restore it from the toolkit's checkout (scripts/code-index-lock.sh check)"),
+        LockState.Missing or _ => new DoctorCheck(LockCheck, CheckState.Warn, "context/code-index.lock was not found", "set AW_CODE_INDEX_LOCK to the file in the toolkit's checkout"),
+    };
 
     private static string? Fix(string? code) => code switch
     {

@@ -27,6 +27,7 @@ public static class CodeIndexInfrastructureServiceCollectionExtensions
             .AddSingleton<ISymbolParser, CSharpParser>()
             .AddSingleton<IBodyScrubber, RedactingBodyScrubber>()
             .AddSingleton<IEmbedder, OllamaEmbedder>()
+            .AddSingleton<ICodeIndexPins>(new FileCodeIndexPins(environment))
             .AddSingleton<IParseQuarantine>(_ => new FileParseQuarantine(settings.IndexDirectory))
             .AddSingleton<IManifestReader, PackageJsonReader>()
             .AddSingleton<IManifestReader, CsprojReader>()

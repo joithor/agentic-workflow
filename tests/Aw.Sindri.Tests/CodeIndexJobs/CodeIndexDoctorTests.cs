@@ -1,5 +1,6 @@
 using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Model;
+using Aw.CodeIndex.Core.Ports;
 using Aw.CodeIndex.Core.Values;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Features.CodeIndexJobs;
@@ -87,4 +88,39 @@ public sealed class CodeIndexDoctorTests
     [Fact, Trait("Lane", "unit")]
     public void No_repos_is_one_ok_row() =>
         Assert.Equal([("code-index", CheckState.Ok)], CodeIndexDoctor.Rows([], [], [], _now).Select(static c => (c.Name, c.State)));
+
+    private static DoctorCheck Row(string name, CodeIndexDoctor.Probes probes) =>
+        CodeIndexDoctor.Rows([Built(Ok(LayerName.Structure))], [], [], _now, probes).Single(c => c.Name == name);
+
+    private static CodeIndexDoctor.Probes Probes(LockState state, Aw.Kernel.Result<Aw.Kernel.Unit>? model = null, bool enabled = true) =>
+        new(new CodeIndexDoctor.ModelProbe(enabled, model ?? Aw.Kernel.Unit.Value), state);
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(LockState.Matches, CheckState.Ok, "parses and matches")]
+    [InlineData(LockState.Mismatch, CheckState.Warn, "does not match")]
+    [InlineData(LockState.Unparsable, CheckState.Warn, "does not parse")]
+    [InlineData(LockState.Missing, CheckState.Warn, "was not found")]
+    public void The_lock_row_reports_what_the_lock_file_check_found(LockState state, CheckState expected, string words)
+    {
+        var row = Row("code-index:lock", Probes(state));
+
+        Assert.Equal(expected, row.State);
+        Assert.Contains(words, row.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_unreachable_embedding_server_is_a_warning_from_the_live_probe()
+    {
+        var row = Row("code-index:ollama", Probes(LockState.Matches, Aw.CodeIndex.Core.CodeIndexErrors.EmbeddingServerFailed.With("no answer")));
+
+        Assert.Equal(CheckState.Warn, row.State);
+        Assert.Contains("SND-CODEIDX-006", row.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_reachable_server_with_the_pinned_model_is_ok_and_embeddings_off_is_a_warning()
+    {
+        Assert.Equal(CheckState.Ok, Row("code-index:ollama", Probes(LockState.Matches)).State);
+        Assert.Equal(CheckState.Warn, Row("code-index:ollama", Probes(LockState.Matches, enabled: false)).State);
+    }
 }

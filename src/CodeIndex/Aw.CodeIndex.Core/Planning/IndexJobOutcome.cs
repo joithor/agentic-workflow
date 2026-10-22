@@ -6,4 +6,5 @@ namespace Aw.CodeIndex.Core.Planning;
 /// <param name="Deferred">True when it ended deferred (every heavy-job slot stayed busy: nothing published).</param>
 /// <param name="LayersPending">True when the result recorded a pending layer (embeddings).</param>
 /// <param name="Embedded">Symbols with a vector after the job; 0 when the result has none.</param>
-public sealed record IndexJobOutcome(DateTimeOffset EndedAt, bool Failed, bool Deferred, bool LayersPending, int Embedded);
+/// <param name="Commit">The commit the job published, or null: embedded counts of jobs at different commits are not compared.</param>
+public sealed record IndexJobOutcome(DateTimeOffset EndedAt, bool Failed, bool Deferred, bool LayersPending, int Embedded, string? Commit = null);

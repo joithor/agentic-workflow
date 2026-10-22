@@ -219,6 +219,72 @@ public sealed class CodeIndexMainMoveServiceTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_probe_is_not_made_while_the_newest_build_ended_under_ten_minutes_ago()
+    {
+        _ = _rig.Index.WithIndex(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New).WithGraphUnavailable(CodeIndexJobsRig.Demo).WithGraphBuildable(CodeIndexJobsRig.Demo);
+        _ = _rig.Heads.With(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New, onDefaultBranch: true);
+        _rig.Job("demo", JobState.Succeeded, TimeSpan.FromMinutes(4), outcome: "published");
+
+        _ = await Run();
+
+        Assert.Equal(0, _rig.Index.ProbeCalls);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_probe_is_not_made_when_no_layer_is_unavailable()
+    {
+        _ = _rig.Index.WithIndex(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New);
+        _ = _rig.Heads.With(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New, onDefaultBranch: true);
+        _rig.Job("demo", JobState.Succeeded, TimeSpan.FromMinutes(30), outcome: "published");
+
+        _ = await Run();
+
+        Assert.Equal(0, _rig.Index.ProbeCalls);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_failed_continuation_is_retried_at_the_same_commit_once_its_backoff_has_passed()
+    {
+        _ = _rig.Index.WithIndex(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New);
+        _ = _rig.Heads.With(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New, onDefaultBranch: true);
+        _rig.Job("demo", JobState.Succeeded, TimeSpan.FromMinutes(40), outcome: "published", embedded: 100, pending: true);
+        _rig.Job("demo", JobState.Failed, TimeSpan.FromMinutes(6));
+
+        _ = await Run();
+
+        Assert.Equal([new BuildCodeIndexRequest("demo", CodeIndexJobsRig.New.Value)], _start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_deferred_continuation_is_retried_after_its_ten_minute_hold()
+    {
+        _ = _rig.Index.WithIndex(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New);
+        _ = _rig.Heads.With(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New, onDefaultBranch: true);
+        _rig.Job("demo", JobState.Succeeded, TimeSpan.FromMinutes(40), outcome: "published", embedded: 100, pending: true);
+        _rig.Job("demo", JobState.Succeeded, TimeSpan.FromMinutes(11), outcome: "deferred");
+
+        _ = await Run();
+
+        Assert.Equal([new BuildCodeIndexRequest("demo", CodeIndexJobsRig.New.Value)], _start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Three_failed_continuations_in_a_row_fail_the_run()
+    {
+        _ = _rig.Index.WithIndex(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New);
+        _ = _rig.Heads.With(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New, onDefaultBranch: true);
+        _rig.Job("demo", JobState.Succeeded, TimeSpan.FromMinutes(40), outcome: "published", embedded: 100, pending: true);
+        _rig.Job("demo", JobState.Failed, _minute);
+        _rig.Job("demo", JobState.Failed, TimeSpan.FromSeconds(50));
+        _rig.Job("demo", JobState.Failed, TimeSpan.FromSeconds(40));
+
+        var alarm = await Run();
+
+        Assert.Equal(SindriErrors.ServiceFailed.Code, alarm.Error.Code);
+        Assert.Empty(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_409_with_the_running_job_is_quiet()
     {
         _ = _rig.Heads.With(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New, onDefaultBranch: true);
