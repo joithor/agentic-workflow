@@ -159,6 +159,30 @@ takeover all work; T3 Code just isn't the window.
 { "schema": 1, "viewer": { "kind": "print" } }
 ```
 
+## What a launched Step can't do
+
+A Sindri-launched agent Step (an unattended launch; line spec LN-LCH1) can't hold a forge credential or push. Sindri pushes. Three things enforce it,
+all built in one place when the launch is prepared:
+
+| Change | What it is for |
+|--------|----------------|
+| `GH_TOKEN`, `GITHUB_TOKEN` | the GitHub CLI's and API's tokens: set to the empty string (the host only adds variables, it can't remove one) |
+| `GH_ENTERPRISE_TOKEN` | the same for a GitHub Enterprise host |
+| `AW_FORGE_TOKEN` | the forge port's default credential variable (`AW_FORGE_CREDENTIAL` defaults to `env:AW_FORGE_TOKEN`) |
+| `GH_CONFIG_DIR` | an empty directory `launch/<launch>.gh` under the Sindri home, so `gh` finds no stored login; deleted with the launch |
+| `AW_SINDRI_WORKTREE` | the Step's worktree (the phase worktree, else its working directory); the pre-push hook refuses wherever it is set |
+
+The scrub is the pure `LaunchEnvironment.Scrub` in Core. The **pre-push hook** is written to the hooks directory git resolves for the Step's working directory
+(`git rev-parse --git-path hooks`, so `core.hooksPath` and a linked worktree's shared directory are respected). It prints `SND-LAUNCH-023: agent Steps can't push; Sindri pushes`
+and exits 1 where `AW_SINDRI_WORKTREE` is set, and exits 0 otherwise, so the owner's pushes from the same repo pass. It is installed only when missing or ours (marker line
+`# aw-sindri pre-push guard (LN-LCH1)`); a `pre-push` hook that isn't ours refuses the launch with `SND-LAUNCH-022` and is never changed. An attended open gets none of this.
+
+**Writable and denied paths.** The `claude-settings-file` policy allows `Edit`/`Write` under the policy's writable path (the Step's worktree), and renders
+`StepPolicy.DeniedPaths` as `Read(//path/**)` and `Edit(//path/**)` deny rules. An entry that can't express a denied read (`codex-overrides`, `cursor-config`, `none`)
+refuses a Step whose `DeniedPaths` is non-empty with `SND-LAUNCH-013`. The engine does not fill the list yet: it has no source for other phases' worktrees (the
+sibling worktrees under the line's phase area) or the holdout store's location, so `AgentLaunches.RequestFor` passes none. Plumbing and rendering are in place; the
+engine fills the list when those locations exist.
+
 ## C# ports
 
 The C# side is `Aw.Sindri.Core/Launch` (the catalog, `BuildArgv`, the ports), `Aw.Sindri.Infrastructure/Launch` (the launcher, the tmux host, the
@@ -182,3 +206,9 @@ viewers, detection, `launch init` and `show`) and `Aw.Sindri.Features/Launching`
 ## Stop ends the session
 
 `Launcher.Stop` kills the tmux session (one already gone counts as stopped), and only then records `session.ended` with reason `exit` (exit code null) through `LaunchStopEnd`, so the launch stops being live at once and the 120 s silence sweep never marks it `lost`. It records nothing when the host stop failed (the agent may still run: its heartbeat or the sweep decides), when the launch's row isn't live (never started, failed, or already ended), or when the sweep ended it first.
+
+When `sindri serve` stops, it ends every session it launched on its own tmux socket (`ILaunchShutdown.StopAll`, bounded to 20 s), each through the same `Stop`, so none outlives the process that supervises it. A host it can't ask (a terminal window) is left to the heartbeat sweep.
+
+## Claude Code's trust prompt
+
+Claude Code stops at "Is this a project you created or one you trust?" in a directory it hasn't seen, and a launched Step has no one to answer. Before a `claude-code` Step starts, the launcher marks its worktree trusted: `projects[<absolute path>].hasTrustDialogAccepted = true` in `~/.claude.json` (`$CLAUDE_CONFIG_DIR/.claude.json` when that variable is set). `ClaudeCodeTrust` edits only that key: it takes the advisory lock `.claude.json.sindri.lock`, re-reads the file right before writing (a running Claude rewrites it too), writes a temp file in the same directory and renames it over the original keeping its mode, and writes nothing when the key is already true. A file that doesn't parse, or isn't an object at those keys, is left untouched and the launch fails with SND-LAUNCH-024 (fix: accept the prompt once by hand, or repair the file). When the worktree is removed, its entry is removed the same way. Human opens and other agents trust nothing.

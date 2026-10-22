@@ -15,6 +15,8 @@ namespace Aw.CodeIndex.Features.BuildCodeIndex;
 /// </summary>
 public sealed class StructureWriter
 {
+    private static readonly HashSet<SymbolKind> _classLike = [SymbolKind.Class, SymbolKind.Record, SymbolKind.Struct, SymbolKind.Interface, SymbolKind.Enum];
+
     private readonly IRepoSnapshot _snapshot;
     private readonly ISymbolParser[] _parsers;
     private readonly IParseQuarantine _quarantine;
@@ -163,12 +165,19 @@ public sealed class StructureWriter
             }
 
             var s = symbols[i];
+            var body = StoredBody(repo.Settings, s);
             records.Add(new SymbolRecord(
                 reference, s.Name, s.Qualified, s.Kind, s.Arity, s.StartLine, s.EndLine, s.Exported, utility,
                 _scrubber.Scrub(s.Signature, CodeIndexRules.SignatureMaxCharacters), s.ShapeHash, s.Tokens.Count, s.Complexity,
-                ReadOnlyMemory<byte>.Empty, [], Body: null, s.CallSites));
+                ReadOnlyMemory<byte>.Empty, [], body, s.CallSites));
         }
 
         return records;
     }
+
+    // The text kept until the symbol is embedded (spec §4.2, Q7): scrubbed, then cut, and only while the embeddings layer is on;
+    // a class-like symbol is never embedded, so its text is never kept. A symbol with no body of its own (a field, an
+    // enum member) keeps an empty one, so its name and signature are still embedded and the layer can finish.
+    private string? StoredBody(CodeIndexSettings settings, ParsedSymbol symbol)
+        => !settings.Embeddings.Enabled || _classLike.Contains(symbol.Kind) ? null : _scrubber.Scrub(symbol.Body ?? string.Empty, CodeIndexRules.EmbedTextMaxCharacters);
 }
