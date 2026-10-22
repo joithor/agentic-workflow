@@ -1,14 +1,6 @@
 {
   "types": [
     {
-      "type": "codeindex.built",
-      "keyShape": "codeindex.built:<repo>:<commit>:<ulid>",
-      "invalidates": [
-        "code-index",
-        "jobs"
-      ]
-    },
-    {
       "type": "context.map.published",
       "keyShape": "context.map.published:<repo>:v<version>",
       "invalidates": [
