@@ -76,7 +76,7 @@ internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchCh
         {
             PullPushOutcome.Pushed => await Reply(PushedOutcome(source), pushed with { CiFixes = Counted(request, head, existed: false) }, existed: false, cancellationToken).ConfigureAwait(false),
             PullPushOutcome.HeadMoved => await AfterHeadMoved(pushed, cancellationToken).ConfigureAwait(false),
-            _ => await Reply("rejected", pushed with { Commits = [] }, existed: false, cancellationToken).ConfigureAwait(false),
+            PullPushOutcome.Rejected or _ => await Reply("rejected", pushed with { Commits = [] }, existed: false, cancellationToken).ConfigureAwait(false),
         };
     }
 
