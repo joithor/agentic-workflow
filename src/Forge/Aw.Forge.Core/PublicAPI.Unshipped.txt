@@ -93,9 +93,9 @@ Aw.Forge.Core.Pulls.ForgeThread.Author.init -> void
 Aw.Forge.Core.Pulls.ForgeThread.Body.get -> string!
 Aw.Forge.Core.Pulls.ForgeThread.Body.init -> void
 Aw.Forge.Core.Pulls.ForgeThread.<Clone>$() -> Aw.Forge.Core.Pulls.ForgeThread!
-Aw.Forge.Core.Pulls.ForgeThread.Deconstruct(out string! Key, out Aw.Forge.Core.Pulls.CommentKind Kind, out string! Author, out string! Association, out bool IsBot, out bool Resolved, out bool Outdated, out string? Path, out string! Body, out System.Collections.Generic.IReadOnlyList<string!>! Markers) -> void
+Aw.Forge.Core.Pulls.ForgeThread.Deconstruct(out string! Key, out Aw.Forge.Core.Pulls.CommentKind Kind, out string! Author, out string! Association, out bool IsBot, out bool Resolved, out bool Outdated, out string? Path, out string! Body, out System.Collections.Generic.IReadOnlyList<string!>! Markers, out System.DateTimeOffset CreatedAt, out int? Line, out System.DateTimeOffset? EditedAt, out string? Url) -> void
 Aw.Forge.Core.Pulls.ForgeThread.Equals(Aw.Forge.Core.Pulls.ForgeThread? other) -> bool
-Aw.Forge.Core.Pulls.ForgeThread.ForgeThread(string! Key, Aw.Forge.Core.Pulls.CommentKind Kind, string! Author, string! Association, bool IsBot, bool Resolved, bool Outdated, string? Path, string! Body, System.Collections.Generic.IReadOnlyList<string!>! Markers) -> void
+Aw.Forge.Core.Pulls.ForgeThread.ForgeThread(string! Key, Aw.Forge.Core.Pulls.CommentKind Kind, string! Author, string! Association, bool IsBot, bool Resolved, bool Outdated, string? Path, string! Body, System.Collections.Generic.IReadOnlyList<string!>! Markers, System.DateTimeOffset CreatedAt, int? Line, System.DateTimeOffset? EditedAt, string? Url) -> void
 Aw.Forge.Core.Pulls.ForgeThread.IsBot.get -> bool
 Aw.Forge.Core.Pulls.ForgeThread.IsBot.init -> void
 Aw.Forge.Core.Pulls.ForgeThread.Key.get -> string!
@@ -283,7 +283,7 @@ Aw.Forge.Core.Pulls.SeedThreadRequest.Author.init -> void
 Aw.Forge.Core.Pulls.SeedThreadRequest.Body.get -> string!
 Aw.Forge.Core.Pulls.SeedThreadRequest.Body.init -> void
 Aw.Forge.Core.Pulls.SeedThreadRequest.<Clone>$() -> Aw.Forge.Core.Pulls.SeedThreadRequest!
-Aw.Forge.Core.Pulls.SeedThreadRequest.Deconstruct(out Aw.Forge.Core.Refs.ForgeRef! Pull, out Aw.Forge.Core.Pulls.CommentKind Kind, out string! Author, out string! Association, out bool IsBot, out string? Path, out string! Body) -> void
+Aw.Forge.Core.Pulls.SeedThreadRequest.Deconstruct(out Aw.Forge.Core.Refs.ForgeRef! Pull, out Aw.Forge.Core.Pulls.CommentKind Kind, out string! Author, out string! Association, out bool IsBot, out string? Path, out string! Body, out System.DateTimeOffset? CreatedAt, out int? Line, out System.DateTimeOffset? EditedAt) -> void
 Aw.Forge.Core.Pulls.SeedThreadRequest.Equals(Aw.Forge.Core.Pulls.SeedThreadRequest? other) -> bool
 Aw.Forge.Core.Pulls.SeedThreadRequest.IsBot.get -> bool
 Aw.Forge.Core.Pulls.SeedThreadRequest.IsBot.init -> void
@@ -293,7 +293,7 @@ Aw.Forge.Core.Pulls.SeedThreadRequest.Path.get -> string?
 Aw.Forge.Core.Pulls.SeedThreadRequest.Path.init -> void
 Aw.Forge.Core.Pulls.SeedThreadRequest.Pull.get -> Aw.Forge.Core.Refs.ForgeRef!
 Aw.Forge.Core.Pulls.SeedThreadRequest.Pull.init -> void
-Aw.Forge.Core.Pulls.SeedThreadRequest.SeedThreadRequest(Aw.Forge.Core.Refs.ForgeRef! Pull, Aw.Forge.Core.Pulls.CommentKind Kind, string! Author, string! Association, bool IsBot, string? Path, string! Body) -> void
+Aw.Forge.Core.Pulls.SeedThreadRequest.SeedThreadRequest(Aw.Forge.Core.Refs.ForgeRef! Pull, Aw.Forge.Core.Pulls.CommentKind Kind, string! Author, string! Association, bool IsBot, string? Path, string! Body, System.DateTimeOffset? CreatedAt = null, int? Line = null, System.DateTimeOffset? EditedAt = null) -> void
 Aw.Forge.Core.Pulls.UpdatePullRequest
 Aw.Forge.Core.Pulls.UpdatePullRequest.Body.get -> string?
 Aw.Forge.Core.Pulls.UpdatePullRequest.Body.init -> void
@@ -456,3 +456,18 @@ static readonly Aw.Forge.Core.ForgeErrors.RateLimited -> Aw.Kernel.ErrorDefiniti
 static readonly Aw.Forge.Core.ForgeErrors.Rejected -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Forge.Core.ForgeErrors.Unauthorized -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Forge.Core.ForgeErrors.Unavailable -> Aw.Kernel.ErrorDefinition!
+Aw.Forge.Core.Pulls.ForgeThread.CreatedAt.get -> System.DateTimeOffset
+Aw.Forge.Core.Pulls.ForgeThread.CreatedAt.init -> void
+Aw.Forge.Core.Pulls.ForgeThread.Line.get -> int?
+Aw.Forge.Core.Pulls.ForgeThread.Line.init -> void
+Aw.Forge.Core.Pulls.ForgeThread.EditedAt.get -> System.DateTimeOffset?
+Aw.Forge.Core.Pulls.ForgeThread.EditedAt.init -> void
+Aw.Forge.Core.Pulls.ForgeThread.Url.get -> string?
+Aw.Forge.Core.Pulls.ForgeThread.Url.init -> void
+Aw.Forge.Core.Pulls.SeedThreadRequest.CreatedAt.get -> System.DateTimeOffset?
+Aw.Forge.Core.Pulls.SeedThreadRequest.CreatedAt.init -> void
+Aw.Forge.Core.Pulls.SeedThreadRequest.Line.get -> int?
+Aw.Forge.Core.Pulls.SeedThreadRequest.Line.init -> void
+Aw.Forge.Core.Pulls.SeedThreadRequest.EditedAt.get -> System.DateTimeOffset?
+Aw.Forge.Core.Pulls.SeedThreadRequest.EditedAt.init -> void
+Aw.Forge.Core.Ports.IForge.Self(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>

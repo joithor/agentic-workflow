@@ -15,6 +15,8 @@ internal sealed class NoForgePullRequests : IPullRequests
 
     public ValueTask<Result<int>> RerunChecks(string link, string sha, CancellationToken cancellationToken) => None<int>();
 
+    public ValueTask<Result<string>> Self(CancellationToken cancellationToken) => None<string>();
+
     public ValueTask<Result<IReadOnlyList<PullThread>>> Threads(string link, CancellationToken cancellationToken) => None<IReadOnlyList<PullThread>>();
 
     public ValueTask<Result<PullMergeOutcome>> Merge(PullMerge request, CancellationToken cancellationToken) => None<PullMergeOutcome>();

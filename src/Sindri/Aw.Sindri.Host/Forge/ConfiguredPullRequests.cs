@@ -31,6 +31,9 @@ internal sealed class ConfiguredPullRequests(IApprovedProfile approved, Func<str
     public ValueTask<Result<int>> RerunChecks(string link, string sha, CancellationToken cancellationToken)
         => Call(pulls => pulls.RerunChecks(link, sha, cancellationToken), cancellationToken);
 
+    public ValueTask<Result<string>> Self(CancellationToken cancellationToken)
+        => Call(pulls => pulls.Self(cancellationToken), cancellationToken);
+
     public ValueTask<Result<IReadOnlyList<PullThread>>> Threads(string link, CancellationToken cancellationToken)
         => Call(pulls => pulls.Threads(link, cancellationToken), cancellationToken);
 

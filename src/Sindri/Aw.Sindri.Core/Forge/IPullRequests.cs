@@ -37,6 +37,11 @@ public interface IPullRequests
     /// <returns>How many checks were asked to run again, or the error.</returns>
     public ValueTask<Result<int>> RerunChecks(string link, string sha, CancellationToken cancellationToken);
 
+    /// <summary>The login Sindri acts as on the forge.</summary>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The login, or the error.</returns>
+    public ValueTask<Result<string>> Self(CancellationToken cancellationToken);
+
     /// <summary>Lists the pull request's review threads, review bodies and top-level comments, oldest first. The texts are untrusted.</summary>
     /// <param name="link">The pull request's link.</param>
     /// <param name="cancellationToken">Cancels the read.</param>

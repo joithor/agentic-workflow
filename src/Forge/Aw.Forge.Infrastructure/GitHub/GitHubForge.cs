@@ -18,6 +18,7 @@ namespace Aw.Forge.Infrastructure.GitHub;
 internal sealed partial class GitHubForge(GitHubApi api, ICredentialSource credentials, GitPusher git, IRedactor redactor) : IForge
 {
     private readonly GitHubApi _api = api;
+    private string? _login;   // why: one adapter holds one credential (one bound host), so the login GET /user reports never changes
 
     public ForgeKind Kind => ForgeKind.GitHub;
 

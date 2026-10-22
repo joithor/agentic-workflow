@@ -309,4 +309,42 @@ public sealed class GitHubForgeTests
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{\"sha\":\"s\"}") };
         }
     }
+
+    [Fact]
+    public async Task Threads_are_ordered_by_creation_across_kinds_and_carry_line_edit_time_and_link()
+    {
+        var http = new StubHandler()
+            .On(HttpMethod.Get, "/repos/acme/widgets/pulls/7/comments", HttpStatusCode.OK,
+                "[{\"id\":1,\"body\":\"fix\",\"path\":\"a.cs\",\"position\":3,\"line\":null,\"original_line\":12,\"created_at\":\"2026-10-01T10:00:00Z\",\"updated_at\":\"2026-10-01T10:30:00Z\",\"html_url\":\"https://github.com/acme/widgets/pull/7#discussion_r1\",\"author_association\":\"MEMBER\",\"user\":{\"login\":\"rev\",\"type\":\"User\"}}]")
+            .On(HttpMethod.Get, "/repos/acme/widgets/pulls/7/reviews", HttpStatusCode.OK,
+                "[{\"id\":2,\"body\":\"LGTM\",\"submitted_at\":\"2026-10-01T11:00:00Z\",\"html_url\":\"https://github.com/acme/widgets/pull/7#pullrequestreview-2\",\"author_association\":\"MEMBER\",\"user\":{\"login\":\"rev\",\"type\":\"User\"}}]")
+            .On(HttpMethod.Get, "/repos/acme/widgets/issues/7/comments", HttpStatusCode.OK,
+                "[{\"id\":3,\"body\":\"hi\",\"created_at\":\"2026-10-01T09:00:00Z\",\"updated_at\":\"2026-10-01T09:00:00Z\",\"html_url\":\"https://github.com/acme/widgets/pull/7#issuecomment-3\",\"author_association\":\"NONE\",\"user\":{\"login\":\"someone\",\"type\":\"User\"}}]")
+            .On(HttpMethod.Post, "/graphql", HttpStatusCode.OK, "{\"data\":{\"repository\":{\"pullRequest\":{\"reviewThreads\":{\"nodes\":[]}}}}}");
+        var (forge, _, _) = Build(http);
+
+        var threads = (await forge.ListThreads(Pull(), TestContext.Current.CancellationToken)).Value;
+
+        Assert.Equal(["comment:3", "thread:1", "review:2"], threads.Select(t => t.Key), StringComparer.Ordinal);
+        Assert.Null(threads[0].Line);
+        Assert.Null(threads[0].EditedAt);
+        Assert.Equal(12, threads[1].Line);
+        Assert.Equal(new DateTimeOffset(2026, 10, 1, 10, 30, 0, TimeSpan.Zero), threads[1].EditedAt);
+        Assert.Equal("https://github.com/acme/widgets/pull/7#discussion_r1", threads[1].Url);
+        Assert.Equal(new DateTimeOffset(2026, 10, 1, 11, 0, 0, TimeSpan.Zero), threads[2].CreatedAt);
+    }
+
+    [Fact]
+    public async Task Self_reads_the_login_once()
+    {
+        var http = new StubHandler().On(HttpMethod.Get, "/user", HttpStatusCode.OK, "{\"login\":\"sindri-bot\"}");
+        var (forge, _, _) = Build(http);
+
+        var first = await forge.Self(TestContext.Current.CancellationToken);
+        var second = await forge.Self(TestContext.Current.CancellationToken);
+
+        Assert.Equal("sindri-bot", first.Value);
+        Assert.Equal("sindri-bot", second.Value);
+        _ = Assert.Single(http.Seen);
+    }
 }

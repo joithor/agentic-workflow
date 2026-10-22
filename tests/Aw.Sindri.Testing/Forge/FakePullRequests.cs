@@ -82,8 +82,15 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     {
         var pull = Locate(link).Value;
         var key = string.Create(CultureInfo.InvariantCulture, $"thread-{pull.Threads.Count + 1}");
-        pull.Threads.Add(new PullThread(key, PullCommentKind.Thread, "reviewer", "MEMBER", IsBot: false, Resolved: false, Outdated: false, "src/a.cs", body, []));
+        pull.Threads.Add(new PullThread(key, PullCommentKind.Thread, "reviewer", "MEMBER", IsBot: false, Resolved: false, Outdated: false, "src/a.cs", body, [], new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero).AddMinutes(pull.Threads.Count), Line: 12, EditedAt: null, $"{pull.Link}#{key}"));
         return key;
+    }
+
+    /// <inheritdoc />
+    public ValueTask<Result<string>> Self(CancellationToken cancellationToken)
+    {
+        Calls.Add("Self");
+        return Done(Results.Success("sindri"));
     }
 
     /// <inheritdoc />

@@ -133,6 +133,12 @@ internal sealed class ForgePullRequests(IForge forge) : IPullRequests
         return count.IsError ? PullErrors.From(count.Error) : count.Value;
     }
 
+    public async ValueTask<Result<string>> Self(CancellationToken cancellationToken)
+    {
+        var login = await forge.Self(cancellationToken).ConfigureAwait(false);
+        return login.IsError ? PullErrors.From(login.Error) : login.Value;
+    }
+
     public async ValueTask<Result<IReadOnlyList<PullThread>>> Threads(string link, CancellationToken cancellationToken)
     {
         var pull = forge.Parse(link);
@@ -144,7 +150,7 @@ internal sealed class ForgePullRequests(IForge forge) : IPullRequests
         var threads = await forge.ListThreads(pull.Value, cancellationToken).ConfigureAwait(false);
         return threads.IsError
             ? PullErrors.From(threads.Error)
-            : Results.Success<IReadOnlyList<PullThread>>([.. threads.Value.Select(static t => new PullThread(t.Key, Kind(t.Kind), t.Author, t.Association, t.IsBot, t.Resolved, t.Outdated, t.Path, t.Body, t.Markers))]);
+            : Results.Success<IReadOnlyList<PullThread>>([.. threads.Value.Select(static t => new PullThread(t.Key, Kind(t.Kind), t.Author, t.Association, t.IsBot, t.Resolved, t.Outdated, t.Path, t.Body, t.Markers, t.CreatedAt, t.Line, t.EditedAt, t.Url))]);
     }
 
     public async ValueTask<Result<OpenedPull?>> Find(FindPull query, CancellationToken cancellationToken)

@@ -86,9 +86,40 @@ public abstract class PullRequestsContract
         Expect.Equal(PullCommentKind.Thread, thread.Kind);
         Expect.Equal("reviewer", thread.Author);
         Expect.Equal("Please fix this", thread.Body);
+        Expect.True(thread.CreatedAt > DateTimeOffset.MinValue);
+        Expect.True(thread.Url is not null && thread.Url.StartsWith(opened.Link, StringComparison.Ordinal));
         Expect.True(!thread.Resolved && !thread.IsBot);
         Expect.Equal(1, view.UnresolvedThreads);
         Expect.Equal("SND-FORGE-003", Failure(await run.Pulls.Threads(MissingLink(run), Ct)));
+    }
+
+    /// <summary>Self names the login Sindri acts as, and the same one every time.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task Self_names_the_acting_login()
+    {
+        var run = Create();
+
+        var first = Ok(await run.Pulls.Self(Ct), "Self");
+        var again = Ok(await run.Pulls.Self(Ct), "Self again");
+
+        Expect.True(first.Length > 0);
+        Expect.Equal(first, again);
+    }
+
+    /// <summary>Threads come oldest first, whatever order they were written in.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task Threads_come_oldest_first()
+    {
+        var (run, opened) = await Open();
+
+        var first = run.SeedThread(opened.Link, "one");
+        var second = run.SeedThread(opened.Link, "two");
+        var threads = Ok(await run.Pulls.Threads(opened.Link, Ct), "Threads");
+
+        Expect.Sequence([first, second], threads.Select(t => t.Key));
+        Expect.True(threads[0].CreatedAt <= threads[1].CreatedAt);
     }
 
     /// <summary>A merge with the right head lands and reads back merged; a stale head is HeadMoved and changes nothing.</summary>
