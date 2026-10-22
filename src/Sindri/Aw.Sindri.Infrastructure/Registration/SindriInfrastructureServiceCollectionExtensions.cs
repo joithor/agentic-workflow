@@ -82,7 +82,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
     /// <summary>LN-PK lite: the built-in lens and style packs (and the machine packs under the state root) and the review loop's changed paths.</summary>
     private static IServiceCollection AddLensPackAdapters(this IServiceCollection services, Func<string, string?> environment) =>
         services.AddSingleton<ILensPackSource, EmbeddedLensPackSource>().AddSingleton<IOutsidePackFiles, DiskPackFiles>().AddSingleton<ILensPacks>(sp => new ProfileLensPacks(sp.GetRequiredService<IApprovedProfile>(), sp.GetRequiredService<ILensPackSource>(), sp.GetRequiredService<IOutsidePackFiles>(), Path.Combine(SettingsFromEnvironment.StateRoot(environment), "packs")))
-            .AddSingleton<IStylePackSource, EmbeddedStylePackSource>().AddSingleton<IStylePacks, ProfileStylePacks>().AddSingleton<IChangedPaths, GitChangedPaths>();
+            .AddSingleton<IStylePackSource, EmbeddedStylePackSource>().AddSingleton<IStylePacks, ProfileStylePacks>().AddSingleton<IPackBundles, PackBundles>().AddSingleton<IChangedPaths, GitChangedPaths>();
 
     /// <summary>The bugfix block Steps' port over the bugfix-state program (deps.yaml Sindri to BugFix, kind cli).</summary>
     private static IServiceCollection AddBugFixInfrastructure(this IServiceCollection services, Func<string, string?> environment) =>

@@ -20,6 +20,11 @@ internal sealed partial class Launcher
         var workDir = request.Worktree ?? request.RepoPath;
         try
         {
+            if (request is { Attended: false, Step.Bundle: { } bundle } && PackBundleFiles.Write(StepEnvironment.For(request).GetValueOrDefault(StepEnvironment.RunDirectory, workDir), bundle) is { } refused)   // LN-WF5: the Step's pack, in its directory before the session starts
+            {
+                return refused;
+            }
+
             var composed = await Compose(request, entry, workDir, cancellationToken).ConfigureAwait(false);
             if (composed.IsError)
             {

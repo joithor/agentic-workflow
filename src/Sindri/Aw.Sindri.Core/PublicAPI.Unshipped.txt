@@ -10844,8 +10844,10 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget!
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Agent.get -> Aw.Sindri.Core.Launch.AgentId
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Agent.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.AgentStepTarget(Aw.Sindri.Core.Ids.ItemId Item, Aw.Sindri.Core.Launch.AgentId Agent, string! RepoPath) -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Deconstruct(out Aw.Sindri.Core.Ids.ItemId Item, out Aw.Sindri.Core.Launch.AgentId Agent, out string! RepoPath) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.AgentStepTarget(Aw.Sindri.Core.Ids.ItemId Item, Aw.Sindri.Core.Launch.AgentId Agent, string! RepoPath, Aw.Sindri.Core.Ids.RepoName? Repo = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Repo.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Deconstruct(out Aw.Sindri.Core.Ids.ItemId Item, out Aw.Sindri.Core.Launch.AgentId Agent, out string! RepoPath, out Aw.Sindri.Core.Ids.RepoName? Repo) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget? other) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Item.get -> Aw.Sindri.Core.Ids.ItemId
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Item.init -> void

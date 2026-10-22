@@ -74,3 +74,10 @@ An `<address>` of `design check` or `plan check` is looked up (a serve that is d
 ## Profile
 
 The line's keys are in `docs/csharp/sindri-profile.md`. `ProfileRules.Check(profile, box)` refuses `workflow.line.parallel` above the box's heavy-slot cap; the live profile source reads the cap each time (`$AW_STATE_DIR/heavy-slots-cap`, else `AW_HEAVY_SLOTS`). `LineProfile` reads the values with their defaults and writes the sizes file for `aw-packets validate --sizes`.
+
+## Pack bundles (LN-WF5)
+
+An agent Step's `with: { bundle: style | lenses }` makes the runtime copy the resolved pack into the Step's directory before its session starts. The recipe check (RCP-BLOCK-003) accepts only the plain words `style` and `lenses`, and only the one the Step works from (`step.lens.*` bundle `lenses`, the other agent Steps `style`); a fact is refused. At launch `AgentLaunching` asks `IPackBundles` (`Aw.Sindri.Infrastructure/LensPacks/PackBundles.cs`) for the files: a style bundle is the pack's own files under `style/`; a lens bundle is `lens/pack.json` (the resolved pack: id, hash, applies, lens ids and titles) and `lens/prompt.md`, the prompt of the head of `fact:lensQueue`. The pack's `subject` (`change` asks for the review pack, anything else the design one) and the item's repo choose which pack. The launcher writes the files (`PackBundleFiles`) after it creates the worktree, replacing a retry's leftovers, and refuses a path that leaves the folder. A pack that does not resolve fails the Step; one whose pin is missing or moved (`SND-PACK-002`) parks it.
+
+Not done yet: `lens/reference.md` (the pack reader keeps no reference file), recording the bundle's `{ id, hash }` on the launch record and in `fact:packs`, and keeping `style/` and `lens/` out of the worktree's commits.
+
