@@ -74,7 +74,7 @@ public sealed class DocsScopeStepTests
         Assert.Equal(Tree, (string?)Out(result, "workspace"));
         var scope = Out(result, "docsScope");
         Assert.Equal(Head, (string?)scope["base"]);
-        Assert.Equal(["docs/**", "*.md"], scope["paths"]!.AsArray().Select(static p => (string?)p));
+        Assert.Equal(["docs/**", "*.md"], scope["paths"]!.AsArray().Select(static p => (string?)p).ToArray());
         var candidate = Assert.Single(scope["candidates"]!.AsArray());
         Assert.Equal("docs/guide.md", (string?)candidate!["path"]);
         Assert.False((bool?)candidate["designNamed"]);
