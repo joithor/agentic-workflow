@@ -20,8 +20,10 @@ public sealed class LineReportEffectContract : BlockContract
 
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
-    protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
+    protected override async Task InvokeAsync(CancellationToken cancellationToken)
+    {
         var facts = new InMemoryFactStore();
-    _ = await new LineReportEffect(new InMemoryRunArea(), facts, facts, TimeProvider.System)
+        _ = await new LineReportEffect(new InMemoryRunArea(), facts, facts, TimeProvider.System)
             .Dispatch(ShippedComposition.Effect("effect.line.report"), cancellationToken);
+    }
 }
