@@ -7,5 +7,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(ItemFact))]
 [JsonSerializable(typeof(RegisteredEventPayload))]
+[JsonSerializable(typeof(PrWatchFile))]
+[JsonSerializable(typeof(PrEventFact))]
 [JsonSerializable(typeof(FactValue))]   // engine P6 unit (a): a fact as an effect argument
 internal sealed partial class WorkflowsJsonContext : JsonSerializerContext;
