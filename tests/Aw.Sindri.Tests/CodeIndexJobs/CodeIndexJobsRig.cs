@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Aw.CodeIndex.Core.Values;
-using RepoName = Aw.CodeIndex.Core.Values.RepoName;
 using Aw.CodeIndex.Testing;
 using Aw.Kernel.Json;
 using Aw.Sindri.Core.Ids;
@@ -8,6 +7,7 @@ using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features;
 using Aw.Sindri.Testing;
+using RepoName = Aw.CodeIndex.Core.Values.RepoName;
 
 namespace Aw.Sindri.Tests.CodeIndexJobs;
 

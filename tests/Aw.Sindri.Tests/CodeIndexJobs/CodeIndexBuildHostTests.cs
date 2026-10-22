@@ -1,14 +1,14 @@
 using Aw.CodeIndex.Testing;
-using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Lease;
-using Aw.Sindri.Tests.ApiGoldens;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Infrastructure.Locks;
+using Aw.Sindri.Tests.ApiGoldens;
 using Aw.Sindri.Tests.ContextCalls;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -55,7 +55,7 @@ public sealed class CodeIndexBuildHostTests : IDisposable
     }
 
     // One scheduler tick of the service, as the lease holder: the host runs no scheduler of its own in a test.
-    private static async Task<Aw.Kernel.Result<ScheduledResult>> Tick(GoldenHost host, CancellationToken ct)
+    private static async Task<Kernel.Result<ScheduledResult>> Tick(GoldenHost host, CancellationToken ct)
     {
         await using var scope = host.App.Services.CreateAsyncScope();
         var service = scope.ServiceProvider.GetServices<IScheduledService>().Single(s => s.Identity().Value == "code-index-main-move");

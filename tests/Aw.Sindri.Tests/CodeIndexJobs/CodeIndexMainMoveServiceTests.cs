@@ -89,7 +89,7 @@ public sealed class CodeIndexMainMoveServiceTests
 
         _ = await Run();
 
-        Assert.Equal<string>(["other"], [.. _start.Requests.Select(static r => r.Repo)], StringComparer.Ordinal);
+        Assert.Equal(["other"], [.. _start.Requests.Select(static r => r.Repo)], StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -173,7 +173,7 @@ public sealed class CodeIndexMainMoveServiceTests
         }
     }
 
-    private sealed class Starter(Aw.Sindri.Tests.SliceHarness harness) : IService<BuildCodeIndexRequest, JobStartedResponse>
+    private sealed class Starter(SliceHarness harness) : IService<BuildCodeIndexRequest, JobStartedResponse>
     {
         internal List<BuildCodeIndexRequest> Requests { get; } = [];
 

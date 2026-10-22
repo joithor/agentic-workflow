@@ -22,7 +22,7 @@ internal static class CodeIndexJobServiceCollectionExtensions
             .AddScoped<IScheduledService, CodeIndexMainMoveService>()
             .AddSingleton(CodeIndexMainMoveService.BuiltIn)
             .AddJob<BuildCodeIndexRequest, BuildCodeIndexResult, BuildCodeIndexService>(
-                static r => IndexJobs.KeyOf(r.Repo), static r => Summary(r), precheck: null, repo: static r => Aw.Sindri.Core.Ids.RepoName.TryFrom(r.Repo, out var repo) ? repo : null);
+                static r => IndexJobs.KeyOf(r.Repo), static r => Summary(r), precheck: null, repo: static r => Core.Ids.RepoName.TryFrom(r.Repo, out var repo) ? repo : null);
     }
 
     private static string Summary(BuildCodeIndexResult result) => result.Outcome switch

@@ -1,10 +1,10 @@
-using IndexRepoHead = Aw.CodeIndex.Core.Model.RepoHead;
 using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Ports;
 using Aw.Kernel;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Views;
+using IndexRepoHead = Aw.CodeIndex.Core.Model.RepoHead;
 
 namespace Aw.Sindri.Features.CodeIndexJobs;
 

@@ -1,4 +1,3 @@
-using IndexRepoHead = Aw.CodeIndex.Core.Model.RepoHead;
 using Aw.CodeIndex.Core;
 using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Model;
@@ -7,6 +6,7 @@ using Aw.CodeIndex.Core.Values;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Extract;
 using Aw.Kernel;
+using IndexRepoHead = Aw.CodeIndex.Core.Model.RepoHead;
 
 namespace Aw.Sindri.Features.CodeIndexJobs;
 
