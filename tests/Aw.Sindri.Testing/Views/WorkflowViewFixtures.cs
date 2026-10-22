@@ -455,8 +455,11 @@ public static class WorkflowViewFixtures
     // ---- the instance views (E-20) -----------------------------------------------------------------------------------
 
     private static InstanceDetail Detail(InstanceSummary row, string title, PathOrdering ordering, CurrentState current, IReadOnlyList<FactRow> facts,
-        IReadOnlyList<ChildGroup> children, ViewCounts counts, ParentRef? parent = null, IReadOnlyList<StepRun>? stepRuns = null) =>
-        new(row.Address, row.Id, parent, row.ItemId, title, row.Recipe, row.State, row.Since, row.EngineOwned, row.Subject, ordering, row.States, current, facts, children, counts, row.Actions, stepRuns ?? [], Now);
+        IReadOnlyList<ChildGroup> children, ViewCounts counts, ParentRef? parent = null, IReadOnlyList<StepRun>? stepRuns = null, IReadOnlyList<StateStep>? steps = null) =>
+        new(row.Address, row.Id, parent, row.ItemId, title, row.Recipe, row.State, row.Since, row.EngineOwned, row.Subject, ordering, row.States, current, facts, children, counts, row.Actions, stepRuns ?? [], Now, steps ?? []);
+
+    /// <summary>One Step state's card: what it reads and the facts leaving it records, each only by key (nothing recorded yet).</summary>
+    private static StateStep Card(string state, string[] needs, params string[] produces) => new(state, needs, [.. produces.Select(static k => Ref(factKey: k))]);
 
     private static FactRow Fake(RecipeShape recipe, string key, FactStatus status, string summary, DateTimeOffset? at = null, string? by = null, FactRef? reference = null, Progress? progress = null, FactPending? pending = null) =>
         recipe.Fact(key, status, summary, at, by, reference, progress, pending);
@@ -613,7 +616,7 @@ public static class WorkflowViewFixtures
             _devDesk.Facts(
                 Produced(_devDesk, "fact:request", "Summarize the week", At(10, 12, 12, 0), "human:cli"),
                 Fake(_devDesk, "fact:output", FactStatus.Pending, "awaiting your file", pending: new FactPending(true, ["output.file"], Act("CompleteStep")))),
-            [], Counts(2, 0, 0));
+            [], Counts(2, 0, 0), steps: [Card("export", [], "fact:output"), Card("import", ["fact:output"], "fact:findings")]);
     }
 
     /// <summary>The three-state triage dev recipe, at its desk.</summary>
@@ -629,7 +632,7 @@ public static class WorkflowViewFixtures
                 Produced(_devTriage, "fact:scope", "Crash on launch", At(10, 12, 12, 0), "human:cli"),
                 Produced(_devTriage, "fact:item", "ITM-01JL2 Crash on launch", At(10, 12, 12, 0), "human:cli", Ref(item: "ITM-01JL2")),
                 Fake(_devTriage, "fact:output", FactStatus.Pending, "awaiting your file", pending: new FactPending(true, ["output.file"], Act("CompleteStep")))),
-            [], Counts(2, 0, 0));
+            [], Counts(2, 0, 0), steps: [Card("desk", [], "fact:output")]);
     }
 
     /// <summary>A recipe with two initial paths: the band says transition-list and folds 'right' under 'left' (a branch has no order).</summary>

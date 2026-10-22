@@ -213,9 +213,10 @@ public sealed class AgentRuntimeLauncherTests : IDisposable
 
     private async Task InitRepo(CancellationToken ct)
     {
+        // Independent of the box's git config: an empty template copies no hooks (the box's init.templateDir installs the sindri pre-commit hook, which runs a scrub that can overrun the probe budget under load).
         _ = Directory.CreateDirectory(Checkout);
-        Assert.NotNull(await ViewerProcess.Output("git", ["-C", Checkout, "init", "-q"], ct));
-        Assert.NotNull(await ViewerProcess.Output("git", ["-C", Checkout, "-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "--allow-empty", "-m", "init"], ct));
+        Assert.NotNull(await ViewerProcess.Output("git", ["-C", Checkout, .. IsolatedGit.Init()], ct));
+        Assert.NotNull(await ViewerProcess.Output("git", ["-C", Checkout, .. IsolatedGit.NoHooks, "-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "--allow-empty", "-m", "init"], ct));
     }
 
     private sealed class LauncherRig(ServiceProvider sindri, FactValue? item) : IAsyncDisposable

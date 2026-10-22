@@ -8,8 +8,6 @@ namespace Aw.CodeIndex.Testing;
 /// <summary>A build over a private copy of the fake index; <see cref="Publish"/> swaps it in, disposing without it discards it.</summary>
 internal sealed class FakeIndexBuild(FakeIndexData data, IndexHeader? previous, bool incremental, Action<FakeIndexData> publish) : IIndexBuild
 {
-    private static readonly HashSet<SymbolKind> _classLike = [SymbolKind.Class, SymbolKind.Record, SymbolKind.Struct, SymbolKind.Interface, SymbolKind.Enum];
-
     public bool Incremental { get; } = incremental;
 
     public IndexHeader? Previous { get; } = previous;
@@ -19,23 +17,23 @@ internal sealed class FakeIndexBuild(FakeIndexData data, IndexHeader? previous, 
 
     public ValueTask<Result<Unit>> WriteFiles(IReadOnlyList<FileRecord> files, CancellationToken cancellationToken)
     {
+        data.Detach(files.Select(f => f.Path));
         foreach (var file in files)
         {
             data.Files[file.Path] = file;
         }
 
-        PruneEdges();
         return Done();
     }
 
     public ValueTask<Result<Unit>> RemoveFiles(IReadOnlyList<string> paths, CancellationToken cancellationToken)
     {
+        data.Detach(paths);
         foreach (var path in paths)
         {
             _ = data.Files.Remove(path);
         }
 
-        PruneEdges();
         return Done();
     }
 
@@ -71,9 +69,15 @@ internal sealed class FakeIndexBuild(FakeIndexData data, IndexHeader? previous, 
 
     public ValueTask<Result<Unit>> AddEdges(IReadOnlyList<EdgeRecord> edges, CancellationToken cancellationToken)
     {
-        foreach (var edge in edges.Where(e => !data.Edges.Contains(e)))
+        var live = data.Symbols.Select(x => x.Symbol.Ref).ToHashSet();
+        var keys = data.Edges.Select(FakeIndexData.Key).ToHashSet();
+        foreach (var edge in edges.Where(e => live.Contains(e.Source)))
         {
-            data.Edges.Add(edge);
+            var stored = edge.Target is { } target && !live.Contains(target) ? edge with { Target = null } : edge;
+            if (keys.Add(FakeIndexData.Key(stored)))
+            {
+                data.Edges.Add(stored);
+            }
         }
 
         return Done();
@@ -87,19 +91,21 @@ internal sealed class FakeIndexBuild(FakeIndexData data, IndexHeader? previous, 
 
     public ValueTask<Result<IReadOnlyList<EmbedCandidate>>> EmbedCandidates(int limit, CancellationToken cancellationToken)
         => Ok<IReadOnlyList<EmbedCandidate>>([.. data.Symbols
-            .Where(x => x.Symbol.Body is not null && !_classLike.Contains(x.Symbol.Kind) && !data.Embeddings.ContainsKey(x.Symbol.Ref))
+            .Where(x => x.Symbol.Body is not null && !FakeIndexData.ClassLike.Contains(x.Symbol.Kind) && !data.Embeddings.ContainsKey(x.Symbol.Ref))
             .OrderBy(x => x.Symbol.Ref.Value, StringComparer.Ordinal)
             .Take(limit)
             .Select(x => new EmbedCandidate(x.Symbol.Ref, x.Symbol.Name, x.Symbol.Signature, x.Symbol.Body!))]);
 
     public ValueTask<Result<Unit>> WriteEmbeddings(IReadOnlyList<EmbeddingRecord> vectors, CancellationToken cancellationToken)
     {
-        foreach (var vector in vectors)
+        var live = data.Symbols.Select(x => x.Symbol.Ref).ToHashSet();
+        var written = vectors.Where(v => live.Contains(v.Symbol)).ToList();
+        foreach (var vector in written)
         {
             data.Embeddings[vector.Symbol] = vector;
         }
 
-        var embedded = vectors.Select(v => v.Symbol).ToHashSet();
+        var embedded = written.Select(v => v.Symbol).ToHashSet();
         foreach (var file in data.Files.Values.ToList())
         {
             if (file.Symbols.Any(s => embedded.Contains(s.Ref)))
@@ -112,7 +118,7 @@ internal sealed class FakeIndexBuild(FakeIndexData data, IndexHeader? previous, 
     }
 
     public ValueTask<Result<EmbeddingProgress>> CountEmbeddings(CancellationToken cancellationToken)
-        => Ok(new EmbeddingProgress(data.Embeddings.Count, data.Symbols.Count(x => !_classLike.Contains(x.Symbol.Kind))));
+        => Ok(new EmbeddingProgress(data.Embeddings.Count, data.Symbols.Count(x => !FakeIndexData.ClassLike.Contains(x.Symbol.Kind))));
 
     public ValueTask<Result<Unit>> SetLayer(LayerRecord layer, CancellationToken cancellationToken)
     {
@@ -129,20 +135,6 @@ internal sealed class FakeIndexBuild(FakeIndexData data, IndexHeader? previous, 
     }
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
-
-    // A file's symbols cascade away with it, and an edge to a vanished symbol loses its target.
-    private void PruneEdges()
-    {
-        var live = data.Symbols.Select(x => x.Symbol.Ref).ToHashSet();
-        _ = data.Edges.RemoveAll(e => !live.Contains(e.Source));
-        for (var i = 0; i < data.Edges.Count; i++)
-        {
-            if (data.Edges[i].Target is { } target && !live.Contains(target))
-            {
-                data.Edges[i] = data.Edges[i] with { Target = null };
-            }
-        }
-    }
 
     private static ValueTask<Result<T>> Ok<T>(T value) => ValueTask.FromResult<Result<T>>(value);
 

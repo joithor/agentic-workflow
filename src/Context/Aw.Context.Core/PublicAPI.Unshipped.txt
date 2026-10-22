@@ -81,6 +81,7 @@ Aw.Context.Core.Code.CodeLensCounts.Things.init -> void
 Aw.Context.Core.Code.CodeLensCounts.Unlocated.get -> int
 Aw.Context.Core.Code.CodeLensCounts.Unlocated.init -> void
 Aw.Context.Core.Code.CodeLensMerge
+Aw.Context.Core.Code.CodeLensSymbols
 Aw.Context.Core.Code.CodeLensTruncated
 Aw.Context.Core.Code.CodeLensTruncated.<Clone>$() -> Aw.Context.Core.Code.CodeLensTruncated!
 Aw.Context.Core.Code.CodeLensTruncated.CodeLensTruncated(bool Files, bool Tests, bool Things, bool SchemaFiles, bool SearchedFiles) -> void
@@ -162,17 +163,38 @@ Aw.Context.Core.Code.CodeSearchQuery.Terms.init -> void
 Aw.Context.Core.Code.CodeSearchQuery.TermsProblem() -> Aw.Kernel.Error?
 Aw.Context.Core.Code.CodeSearchQuery.Within.get -> System.Collections.Generic.IReadOnlyList<string!>?
 Aw.Context.Core.Code.CodeSearchQuery.Within.init -> void
+Aw.Context.Core.Code.CodeSymbolFindings
+Aw.Context.Core.Code.CodeSymbolFindings.<Clone>$() -> Aw.Context.Core.Code.CodeSymbolFindings!
+Aw.Context.Core.Code.CodeSymbolFindings.Callees.get -> Aw.Context.Core.Code.CodeSymbols!
+Aw.Context.Core.Code.CodeSymbolFindings.Callees.init -> void
+Aw.Context.Core.Code.CodeSymbolFindings.Callers.get -> Aw.Context.Core.Code.CodeSymbols!
+Aw.Context.Core.Code.CodeSymbolFindings.Callers.init -> void
+Aw.Context.Core.Code.CodeSymbolFindings.CodeSymbolFindings(Aw.Context.Core.Lenses.SearchedSource! Row, Aw.Context.Core.Code.CodeSymbols! Callers, Aw.Context.Core.Code.CodeSymbols! Callees) -> void
+Aw.Context.Core.Code.CodeSymbolFindings.Deconstruct(out Aw.Context.Core.Lenses.SearchedSource! Row, out Aw.Context.Core.Code.CodeSymbols! Callers, out Aw.Context.Core.Code.CodeSymbols! Callees) -> void
+Aw.Context.Core.Code.CodeSymbolFindings.Equals(Aw.Context.Core.Code.CodeSymbolFindings? other) -> bool
+Aw.Context.Core.Code.CodeSymbolFindings.Row.get -> Aw.Context.Core.Lenses.SearchedSource!
+Aw.Context.Core.Code.CodeSymbolFindings.Row.init -> void
 Aw.Context.Core.Code.CodeSymbols
 Aw.Context.Core.Code.CodeSymbols.<Clone>$() -> Aw.Context.Core.Code.CodeSymbols!
-Aw.Context.Core.Code.CodeSymbols.CodeSymbols(Aw.Context.Core.Lenses.SymbolsState State, string! Reason, System.Collections.Generic.IReadOnlyList<string!>! Items) -> void
-Aw.Context.Core.Code.CodeSymbols.Deconstruct(out Aw.Context.Core.Lenses.SymbolsState State, out string! Reason, out System.Collections.Generic.IReadOnlyList<string!>! Items) -> void
+Aw.Context.Core.Code.CodeSymbols.AsOfCommit.get -> string?
+Aw.Context.Core.Code.CodeSymbols.AsOfCommit.init -> void
+Aw.Context.Core.Code.CodeSymbols.AsOfMismatch.get -> bool
+Aw.Context.Core.Code.CodeSymbols.AsOfMismatch.init -> void
+Aw.Context.Core.Code.CodeSymbols.Code.get -> string?
+Aw.Context.Core.Code.CodeSymbols.Code.init -> void
+Aw.Context.Core.Code.CodeSymbols.CodeSymbols(Aw.Context.Core.Symbols.SymbolsState State, string? Reason, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.CallEdgeRow!>! Items) -> void
+Aw.Context.Core.Code.CodeSymbols.Commit.get -> string?
+Aw.Context.Core.Code.CodeSymbols.Commit.init -> void
+Aw.Context.Core.Code.CodeSymbols.Deconstruct(out Aw.Context.Core.Symbols.SymbolsState State, out string? Reason, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.CallEdgeRow!>! Items) -> void
 Aw.Context.Core.Code.CodeSymbols.Equals(Aw.Context.Core.Code.CodeSymbols? other) -> bool
-Aw.Context.Core.Code.CodeSymbols.Items.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Code.CodeSymbols.Items.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.CallEdgeRow!>!
 Aw.Context.Core.Code.CodeSymbols.Items.init -> void
-Aw.Context.Core.Code.CodeSymbols.Reason.get -> string!
+Aw.Context.Core.Code.CodeSymbols.Reason.get -> string?
 Aw.Context.Core.Code.CodeSymbols.Reason.init -> void
-Aw.Context.Core.Code.CodeSymbols.State.get -> Aw.Context.Core.Lenses.SymbolsState
+Aw.Context.Core.Code.CodeSymbols.State.get -> Aw.Context.Core.Symbols.SymbolsState
 Aw.Context.Core.Code.CodeSymbols.State.init -> void
+Aw.Context.Core.Code.CodeSymbols.Unresolved.get -> int
+Aw.Context.Core.Code.CodeSymbols.Unresolved.init -> void
 Aw.Context.Core.Code.CodeTerms
 Aw.Context.Core.Code.CodeTest
 Aw.Context.Core.Code.CodeTest.<Clone>$() -> Aw.Context.Core.Code.CodeTest!
@@ -447,9 +469,9 @@ Aw.Context.Core.Engine.ContextSettings.CascadeComponentFanOut.get -> int
 Aw.Context.Core.Engine.ContextSettings.CascadeComponentFanOut.init -> void
 Aw.Context.Core.Engine.ContextSettings.CascadeDepth.get -> int
 Aw.Context.Core.Engine.ContextSettings.CascadeDepth.init -> void
-Aw.Context.Core.Engine.ContextSettings.ContextSettings() -> void
 Aw.Context.Core.Engine.ContextSettings.CodeDeadline.get -> System.TimeSpan
 Aw.Context.Core.Engine.ContextSettings.CodeDeadline.init -> void
+Aw.Context.Core.Engine.ContextSettings.ContextSettings() -> void
 Aw.Context.Core.Engine.ContextSettings.Deadline.get -> System.TimeSpan
 Aw.Context.Core.Engine.ContextSettings.Deadline.init -> void
 Aw.Context.Core.Engine.ContextSettings.DocGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -637,6 +659,7 @@ Aw.Context.Core.Eval.Backtest.ArmReport.Samples.get -> System.Collections.Generi
 Aw.Context.Core.Eval.Backtest.ArmReport.Samples.init -> void
 Aw.Context.Core.Eval.Backtest.ArmReport.Score.get -> Aw.Context.Core.Eval.Backtest.ArmScore?
 Aw.Context.Core.Eval.Backtest.ArmReport.Score.init -> void
+Aw.Context.Core.Eval.Backtest.Arms
 Aw.Context.Core.Eval.Backtest.ArmScore
 Aw.Context.Core.Eval.Backtest.ArmScore.<Clone>$() -> Aw.Context.Core.Eval.Backtest.ArmScore!
 Aw.Context.Core.Eval.Backtest.ArmScore.AdjudicatedPrecision.get -> double?
@@ -658,7 +681,6 @@ Aw.Context.Core.Eval.Backtest.ArmScore.Samples.get -> int
 Aw.Context.Core.Eval.Backtest.ArmScore.Samples.init -> void
 Aw.Context.Core.Eval.Backtest.ArmScore.Tokens.get -> int
 Aw.Context.Core.Eval.Backtest.ArmScore.Tokens.init -> void
-Aw.Context.Core.Eval.Backtest.Arms
 Aw.Context.Core.Eval.Backtest.AsOfDocsRequest
 Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.<Clone>$() -> Aw.Context.Core.Eval.Backtest.AsOfDocsRequest!
 Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.AsOfDocsRequest(Aw.Context.Core.Engine.ContextRepo! Repo, string! Commit, System.Collections.Generic.IReadOnlyList<string!>! Globs, Aw.Context.Core.Trust.Scrubbers! Scrubbers) -> void
@@ -1111,9 +1133,9 @@ Aw.Context.Core.Eval.ProbeSet
 Aw.Context.Core.Eval.ProbeSet.<Clone>$() -> Aw.Context.Core.Eval.ProbeSet!
 Aw.Context.Core.Eval.ProbeSet.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.ProbeCase!>! Probes, out int? SchemaVersion) -> void
 Aw.Context.Core.Eval.ProbeSet.Equals(Aw.Context.Core.Eval.ProbeSet? other) -> bool
-Aw.Context.Core.Eval.ProbeSet.ProbeSet(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.ProbeCase!>! Probes, int? SchemaVersion = null) -> void
 Aw.Context.Core.Eval.ProbeSet.Probes.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.ProbeCase!>!
 Aw.Context.Core.Eval.ProbeSet.Probes.init -> void
+Aw.Context.Core.Eval.ProbeSet.ProbeSet(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.ProbeCase!>! Probes, int? SchemaVersion = null) -> void
 Aw.Context.Core.Eval.ProbeSet.SchemaVersion.get -> int?
 Aw.Context.Core.Eval.ProbeSet.SchemaVersion.init -> void
 Aw.Context.Core.Eval.ProbeTotals
@@ -1126,9 +1148,9 @@ Aw.Context.Core.Eval.ProbeTotals.Deconstruct(out double PrecisionAt5, out double
 Aw.Context.Core.Eval.ProbeTotals.Equals(Aw.Context.Core.Eval.ProbeTotals? other) -> bool
 Aw.Context.Core.Eval.ProbeTotals.PrecisionAt5.get -> double
 Aw.Context.Core.Eval.ProbeTotals.PrecisionAt5.init -> void
-Aw.Context.Core.Eval.ProbeTotals.ProbeTotals(double PrecisionAt5, double CitationCorrectness, int Probes, System.DateTimeOffset RunAt, int AbsentReturned = 0) -> void
 Aw.Context.Core.Eval.ProbeTotals.Probes.get -> int
 Aw.Context.Core.Eval.ProbeTotals.Probes.init -> void
+Aw.Context.Core.Eval.ProbeTotals.ProbeTotals(double PrecisionAt5, double CitationCorrectness, int Probes, System.DateTimeOffset RunAt, int AbsentReturned = 0) -> void
 Aw.Context.Core.Eval.ProbeTotals.RunAt.get -> System.DateTimeOffset
 Aw.Context.Core.Eval.ProbeTotals.RunAt.init -> void
 Aw.Context.Core.Extract.ClusterFeatures
@@ -1153,9 +1175,9 @@ Aw.Context.Core.Extract.ClusterSet
 Aw.Context.Core.Extract.ClusterSet.<Clone>$() -> Aw.Context.Core.Extract.ClusterSet!
 Aw.Context.Core.Extract.ClusterSet.Available.get -> bool
 Aw.Context.Core.Extract.ClusterSet.Available.init -> void
-Aw.Context.Core.Extract.ClusterSet.ClusterSet(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.FileCluster!>! Clusters, bool Available, string? Reason = null) -> void
 Aw.Context.Core.Extract.ClusterSet.Clusters.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.FileCluster!>!
 Aw.Context.Core.Extract.ClusterSet.Clusters.init -> void
+Aw.Context.Core.Extract.ClusterSet.ClusterSet(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.FileCluster!>! Clusters, bool Available, string? Reason = null) -> void
 Aw.Context.Core.Extract.ClusterSet.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.FileCluster!>! Clusters, out bool Available, out string? Reason) -> void
 Aw.Context.Core.Extract.ClusterSet.Equals(Aw.Context.Core.Extract.ClusterSet? other) -> bool
 Aw.Context.Core.Extract.ClusterSet.Reason.get -> string?
@@ -1237,10 +1259,10 @@ Aw.Context.Core.Extract.Recognizer.Find.init -> void
 Aw.Context.Core.Extract.Recognizer.Name.get -> string!
 Aw.Context.Core.Extract.Recognizer.Name.init -> void
 Aw.Context.Core.Extract.Recognizer.Recognizer(string! Name, System.Func<Aw.Context.Core.Extract.RepoFile!, bool>! Applies, System.Func<Aw.Context.Core.Extract.RepoFile!, System.Collections.Generic.IEnumerable<Aw.Context.Core.Extract.Found!>!>! Find) -> void
+Aw.Context.Core.Extract.Recognizers
 Aw.Context.Core.Extract.RecognizerSet
 Aw.Context.Core.Extract.RecognizerSet.Hash.get -> string!
 Aw.Context.Core.Extract.RecognizerSet.Wants(string! path) -> bool
-Aw.Context.Core.Extract.Recognizers
 Aw.Context.Core.Extract.RepoChange
 Aw.Context.Core.Extract.RepoChange.<Clone>$() -> Aw.Context.Core.Extract.RepoChange!
 Aw.Context.Core.Extract.RepoChange.Change.get -> Aw.Context.Core.Results.ChangeKind
@@ -1502,15 +1524,6 @@ Aw.Context.Core.Graph.NeighborFact.Equals(Aw.Context.Core.Graph.NeighborFact? ot
 Aw.Context.Core.Graph.NeighborFact.NeighborFact(Aw.Context.Core.Graph.NodeFact! Node, int Depth) -> void
 Aw.Context.Core.Graph.NeighborFact.Node.get -> Aw.Context.Core.Graph.NodeFact!
 Aw.Context.Core.Graph.NeighborFact.Node.init -> void
-Aw.Context.Core.Graph.NeighborNode
-Aw.Context.Core.Graph.NeighborNode.<Clone>$() -> Aw.Context.Core.Graph.NeighborNode!
-Aw.Context.Core.Graph.NeighborNode.Deconstruct(out Aw.Context.Core.Graph.GraphNode! Node, out int Depth) -> void
-Aw.Context.Core.Graph.NeighborNode.Depth.get -> int
-Aw.Context.Core.Graph.NeighborNode.Depth.init -> void
-Aw.Context.Core.Graph.NeighborNode.Equals(Aw.Context.Core.Graph.NeighborNode? other) -> bool
-Aw.Context.Core.Graph.NeighborNode.NeighborNode(Aw.Context.Core.Graph.GraphNode! Node, int Depth) -> void
-Aw.Context.Core.Graph.NeighborNode.Node.get -> Aw.Context.Core.Graph.GraphNode!
-Aw.Context.Core.Graph.NeighborNode.Node.init -> void
 Aw.Context.Core.Graph.Neighborhood
 Aw.Context.Core.Graph.Neighborhood.<Clone>$() -> Aw.Context.Core.Graph.Neighborhood!
 Aw.Context.Core.Graph.Neighborhood.Center.get -> Aw.Context.Core.Graph.NodeKey
@@ -1522,6 +1535,15 @@ Aw.Context.Core.Graph.Neighborhood.Equals(Aw.Context.Core.Graph.Neighborhood? ot
 Aw.Context.Core.Graph.Neighborhood.Neighborhood(Aw.Context.Core.Graph.NodeKey Center, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NeighborNode!>! Nodes, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphEdge!>! Edges) -> void
 Aw.Context.Core.Graph.Neighborhood.Nodes.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NeighborNode!>!
 Aw.Context.Core.Graph.Neighborhood.Nodes.init -> void
+Aw.Context.Core.Graph.NeighborNode
+Aw.Context.Core.Graph.NeighborNode.<Clone>$() -> Aw.Context.Core.Graph.NeighborNode!
+Aw.Context.Core.Graph.NeighborNode.Deconstruct(out Aw.Context.Core.Graph.GraphNode! Node, out int Depth) -> void
+Aw.Context.Core.Graph.NeighborNode.Depth.get -> int
+Aw.Context.Core.Graph.NeighborNode.Depth.init -> void
+Aw.Context.Core.Graph.NeighborNode.Equals(Aw.Context.Core.Graph.NeighborNode? other) -> bool
+Aw.Context.Core.Graph.NeighborNode.NeighborNode(Aw.Context.Core.Graph.GraphNode! Node, int Depth) -> void
+Aw.Context.Core.Graph.NeighborNode.Node.get -> Aw.Context.Core.Graph.GraphNode!
+Aw.Context.Core.Graph.NeighborNode.Node.init -> void
 Aw.Context.Core.Graph.NeighborsView
 Aw.Context.Core.Graph.NeighborsView.<Clone>$() -> Aw.Context.Core.Graph.NeighborsView!
 Aw.Context.Core.Graph.NeighborsView.Center.get -> Aw.Context.Core.Graph.NodeKey
@@ -1957,7 +1979,6 @@ Aw.Context.Core.History.RecordTimes.Equals(Aw.Context.Core.History.RecordTimes? 
 Aw.Context.Core.History.RecordTimes.RecordTimes(System.DateTimeOffset? CreatedAt, System.DateTimeOffset? UpdatedAt) -> void
 Aw.Context.Core.History.RecordTimes.UpdatedAt.get -> System.DateTimeOffset?
 Aw.Context.Core.History.RecordTimes.UpdatedAt.init -> void
-Aw.Context.Core.LensSupport.LensTexts
 Aw.Context.Core.Lenses.BandSearched
 Aw.Context.Core.Lenses.BandSearched.<Clone>$() -> Aw.Context.Core.Lenses.BandSearched!
 Aw.Context.Core.Lenses.BandSearched.BandSearched(bool Empty) -> void
@@ -2326,6 +2347,79 @@ Aw.Context.Core.Lenses.LensEdge.To.get -> Aw.Context.Core.Graph.NodeKey
 Aw.Context.Core.Lenses.LensEdge.To.init -> void
 Aw.Context.Core.Lenses.LensEdge.Type.get -> Aw.Context.Core.Graph.EdgeType
 Aw.Context.Core.Lenses.LensEdge.Type.init -> void
+Aw.Context.Core.Lenses.LensesBuilder
+Aw.Context.Core.Lenses.LensesSetView
+Aw.Context.Core.Lenses.LensesSetView.<Clone>$() -> Aw.Context.Core.Lenses.LensesSetView!
+Aw.Context.Core.Lenses.LensesSetView.Anchors.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensAnchor!>!
+Aw.Context.Core.Lenses.LensesSetView.Anchors.init -> void
+Aw.Context.Core.Lenses.LensesSetView.AsOf.get -> System.DateTimeOffset
+Aw.Context.Core.Lenses.LensesSetView.AsOf.init -> void
+Aw.Context.Core.Lenses.LensesSetView.Bands.get -> Aw.Context.Core.Lenses.LensBands!
+Aw.Context.Core.Lenses.LensesSetView.Bands.init -> void
+Aw.Context.Core.Lenses.LensesSetView.Cites.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>!
+Aw.Context.Core.Lenses.LensesSetView.Cites.init -> void
+Aw.Context.Core.Lenses.LensesSetView.Conflicts.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensConflict!>!
+Aw.Context.Core.Lenses.LensesSetView.Conflicts.init -> void
+Aw.Context.Core.Lenses.LensesSetView.Coverage.get -> Aw.Context.Core.Lenses.LensCoverage!
+Aw.Context.Core.Lenses.LensesSetView.Coverage.init -> void
+Aw.Context.Core.Lenses.LensesSetView.Deconstruct(out int SchemaVersion, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensAnchor!>! Anchors, out System.Collections.Generic.IReadOnlyList<string!>! MissingAnchors, out string! MapVersion, out bool Draft, out int Depth, out System.DateTimeOffset AsOf, out Aw.Context.Core.Lenses.LensBands! Bands, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensConflict!>! Conflicts, out Aw.Context.Core.Lenses.LensCoverage! Coverage, out Aw.Context.Core.Lenses.LensSearched! Searched, out System.Collections.Generic.IReadOnlyList<string!>! Degraded, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites) -> void
+Aw.Context.Core.Lenses.LensesSetView.Degraded.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Lenses.LensesSetView.Degraded.init -> void
+Aw.Context.Core.Lenses.LensesSetView.Depth.get -> int
+Aw.Context.Core.Lenses.LensesSetView.Depth.init -> void
+Aw.Context.Core.Lenses.LensesSetView.Draft.get -> bool
+Aw.Context.Core.Lenses.LensesSetView.Draft.init -> void
+Aw.Context.Core.Lenses.LensesSetView.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>!
+Aw.Context.Core.Lenses.LensesSetView.Edges.init -> void
+Aw.Context.Core.Lenses.LensesSetView.Equals(Aw.Context.Core.Lenses.LensesSetView? other) -> bool
+Aw.Context.Core.Lenses.LensesSetView.LensesSetView(int SchemaVersion, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensAnchor!>! Anchors, System.Collections.Generic.IReadOnlyList<string!>! MissingAnchors, string! MapVersion, bool Draft, int Depth, System.DateTimeOffset AsOf, Aw.Context.Core.Lenses.LensBands! Bands, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensConflict!>! Conflicts, Aw.Context.Core.Lenses.LensCoverage! Coverage, Aw.Context.Core.Lenses.LensSearched! Searched, System.Collections.Generic.IReadOnlyList<string!>! Degraded, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites) -> void
+Aw.Context.Core.Lenses.LensesSetView.MapCommit.get -> string?
+Aw.Context.Core.Lenses.LensesSetView.MapCommit.init -> void
+Aw.Context.Core.Lenses.LensesSetView.MapVersion.get -> string!
+Aw.Context.Core.Lenses.LensesSetView.MapVersion.init -> void
+Aw.Context.Core.Lenses.LensesSetView.MissingAnchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Lenses.LensesSetView.MissingAnchors.init -> void
+Aw.Context.Core.Lenses.LensesSetView.SchemaVersion.get -> int
+Aw.Context.Core.Lenses.LensesSetView.SchemaVersion.init -> void
+Aw.Context.Core.Lenses.LensesSetView.Searched.get -> Aw.Context.Core.Lenses.LensSearched!
+Aw.Context.Core.Lenses.LensesSetView.Searched.init -> void
+Aw.Context.Core.Lenses.LensesSetView.SkippedComponents.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SkippedComponent!>?
+Aw.Context.Core.Lenses.LensesSetView.SkippedComponents.init -> void
+Aw.Context.Core.Lenses.LensesView
+Aw.Context.Core.Lenses.LensesView.<Clone>$() -> Aw.Context.Core.Lenses.LensesView!
+Aw.Context.Core.Lenses.LensesView.Anchor.get -> Aw.Context.Core.Lenses.LensAnchor!
+Aw.Context.Core.Lenses.LensesView.Anchor.init -> void
+Aw.Context.Core.Lenses.LensesView.AsOf.get -> System.DateTimeOffset
+Aw.Context.Core.Lenses.LensesView.AsOf.init -> void
+Aw.Context.Core.Lenses.LensesView.Bands.get -> Aw.Context.Core.Lenses.LensBands!
+Aw.Context.Core.Lenses.LensesView.Bands.init -> void
+Aw.Context.Core.Lenses.LensesView.Cites.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>!
+Aw.Context.Core.Lenses.LensesView.Cites.init -> void
+Aw.Context.Core.Lenses.LensesView.Conflicts.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensConflict!>!
+Aw.Context.Core.Lenses.LensesView.Conflicts.init -> void
+Aw.Context.Core.Lenses.LensesView.Coverage.get -> Aw.Context.Core.Lenses.LensCoverage!
+Aw.Context.Core.Lenses.LensesView.Coverage.init -> void
+Aw.Context.Core.Lenses.LensesView.Deconstruct(out int SchemaVersion, out Aw.Context.Core.Lenses.LensAnchor! Anchor, out string! MapVersion, out bool Draft, out int Depth, out System.DateTimeOffset AsOf, out Aw.Context.Core.Lenses.LensBands! Bands, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensConflict!>! Conflicts, out Aw.Context.Core.Lenses.LensCoverage! Coverage, out Aw.Context.Core.Lenses.LensSearched! Searched, out System.Collections.Generic.IReadOnlyList<string!>! Degraded, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites) -> void
+Aw.Context.Core.Lenses.LensesView.Degraded.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Lenses.LensesView.Degraded.init -> void
+Aw.Context.Core.Lenses.LensesView.Depth.get -> int
+Aw.Context.Core.Lenses.LensesView.Depth.init -> void
+Aw.Context.Core.Lenses.LensesView.Draft.get -> bool
+Aw.Context.Core.Lenses.LensesView.Draft.init -> void
+Aw.Context.Core.Lenses.LensesView.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>!
+Aw.Context.Core.Lenses.LensesView.Edges.init -> void
+Aw.Context.Core.Lenses.LensesView.Equals(Aw.Context.Core.Lenses.LensesView? other) -> bool
+Aw.Context.Core.Lenses.LensesView.LensesView(int SchemaVersion, Aw.Context.Core.Lenses.LensAnchor! Anchor, string! MapVersion, bool Draft, int Depth, System.DateTimeOffset AsOf, Aw.Context.Core.Lenses.LensBands! Bands, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensConflict!>! Conflicts, Aw.Context.Core.Lenses.LensCoverage! Coverage, Aw.Context.Core.Lenses.LensSearched! Searched, System.Collections.Generic.IReadOnlyList<string!>! Degraded, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites) -> void
+Aw.Context.Core.Lenses.LensesView.MapCommit.get -> string?
+Aw.Context.Core.Lenses.LensesView.MapCommit.init -> void
+Aw.Context.Core.Lenses.LensesView.MapVersion.get -> string!
+Aw.Context.Core.Lenses.LensesView.MapVersion.init -> void
+Aw.Context.Core.Lenses.LensesView.SchemaVersion.get -> int
+Aw.Context.Core.Lenses.LensesView.SchemaVersion.init -> void
+Aw.Context.Core.Lenses.LensesView.Searched.get -> Aw.Context.Core.Lenses.LensSearched!
+Aw.Context.Core.Lenses.LensesView.Searched.init -> void
+Aw.Context.Core.Lenses.LensesView.SkippedComponents.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SkippedComponent!>?
+Aw.Context.Core.Lenses.LensesView.SkippedComponents.init -> void
 Aw.Context.Core.Lenses.LensFile
 Aw.Context.Core.Lenses.LensFile.<Clone>$() -> Aw.Context.Core.Lenses.LensFile!
 Aw.Context.Core.Lenses.LensFile.Anchors.get -> System.Collections.Generic.IReadOnlyList<string!>?
@@ -2480,88 +2574,25 @@ Aw.Context.Core.Lenses.LensSearched.Sources.get -> System.Collections.Generic.IR
 Aw.Context.Core.Lenses.LensSearched.Sources.init -> void
 Aw.Context.Core.Lenses.LensSymbols
 Aw.Context.Core.Lenses.LensSymbols.<Clone>$() -> Aw.Context.Core.Lenses.LensSymbols!
-Aw.Context.Core.Lenses.LensSymbols.Deconstruct(out Aw.Context.Core.Lenses.SymbolsState State, out string! Reason, out System.Collections.Generic.IReadOnlyList<string!>! Items) -> void
+Aw.Context.Core.Lenses.LensSymbols.AsOfCommit.get -> string?
+Aw.Context.Core.Lenses.LensSymbols.AsOfCommit.init -> void
+Aw.Context.Core.Lenses.LensSymbols.AsOfMismatch.get -> bool
+Aw.Context.Core.Lenses.LensSymbols.AsOfMismatch.init -> void
+Aw.Context.Core.Lenses.LensSymbols.Code.get -> string?
+Aw.Context.Core.Lenses.LensSymbols.Code.init -> void
+Aw.Context.Core.Lenses.LensSymbols.Commit.get -> string?
+Aw.Context.Core.Lenses.LensSymbols.Commit.init -> void
+Aw.Context.Core.Lenses.LensSymbols.Deconstruct(out Aw.Context.Core.Symbols.SymbolsState State, out string? Reason, out System.Collections.Generic.IReadOnlyList<string!>! Items) -> void
 Aw.Context.Core.Lenses.LensSymbols.Equals(Aw.Context.Core.Lenses.LensSymbols? other) -> bool
+Aw.Context.Core.Lenses.LensSymbols.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.FileSymbolsRow!>?
+Aw.Context.Core.Lenses.LensSymbols.Files.init -> void
 Aw.Context.Core.Lenses.LensSymbols.Items.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Context.Core.Lenses.LensSymbols.Items.init -> void
-Aw.Context.Core.Lenses.LensSymbols.LensSymbols(Aw.Context.Core.Lenses.SymbolsState State, string! Reason, System.Collections.Generic.IReadOnlyList<string!>! Items) -> void
-Aw.Context.Core.Lenses.LensSymbols.Reason.get -> string!
+Aw.Context.Core.Lenses.LensSymbols.LensSymbols(Aw.Context.Core.Symbols.SymbolsState State, string? Reason, System.Collections.Generic.IReadOnlyList<string!>! Items) -> void
+Aw.Context.Core.Lenses.LensSymbols.Reason.get -> string?
 Aw.Context.Core.Lenses.LensSymbols.Reason.init -> void
-Aw.Context.Core.Lenses.LensSymbols.State.get -> Aw.Context.Core.Lenses.SymbolsState
+Aw.Context.Core.Lenses.LensSymbols.State.get -> Aw.Context.Core.Symbols.SymbolsState
 Aw.Context.Core.Lenses.LensSymbols.State.init -> void
-Aw.Context.Core.Lenses.LensesBuilder
-Aw.Context.Core.Lenses.LensesSetView
-Aw.Context.Core.Lenses.LensesSetView.<Clone>$() -> Aw.Context.Core.Lenses.LensesSetView!
-Aw.Context.Core.Lenses.LensesSetView.Anchors.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensAnchor!>!
-Aw.Context.Core.Lenses.LensesSetView.Anchors.init -> void
-Aw.Context.Core.Lenses.LensesSetView.AsOf.get -> System.DateTimeOffset
-Aw.Context.Core.Lenses.LensesSetView.AsOf.init -> void
-Aw.Context.Core.Lenses.LensesSetView.Bands.get -> Aw.Context.Core.Lenses.LensBands!
-Aw.Context.Core.Lenses.LensesSetView.Bands.init -> void
-Aw.Context.Core.Lenses.LensesSetView.Cites.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>!
-Aw.Context.Core.Lenses.LensesSetView.Cites.init -> void
-Aw.Context.Core.Lenses.LensesSetView.Conflicts.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensConflict!>!
-Aw.Context.Core.Lenses.LensesSetView.Conflicts.init -> void
-Aw.Context.Core.Lenses.LensesSetView.Coverage.get -> Aw.Context.Core.Lenses.LensCoverage!
-Aw.Context.Core.Lenses.LensesSetView.Coverage.init -> void
-Aw.Context.Core.Lenses.LensesSetView.Deconstruct(out int SchemaVersion, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensAnchor!>! Anchors, out System.Collections.Generic.IReadOnlyList<string!>! MissingAnchors, out string! MapVersion, out bool Draft, out int Depth, out System.DateTimeOffset AsOf, out Aw.Context.Core.Lenses.LensBands! Bands, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensConflict!>! Conflicts, out Aw.Context.Core.Lenses.LensCoverage! Coverage, out Aw.Context.Core.Lenses.LensSearched! Searched, out System.Collections.Generic.IReadOnlyList<string!>! Degraded, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites) -> void
-Aw.Context.Core.Lenses.LensesSetView.Degraded.get -> System.Collections.Generic.IReadOnlyList<string!>!
-Aw.Context.Core.Lenses.LensesSetView.Degraded.init -> void
-Aw.Context.Core.Lenses.LensesSetView.Depth.get -> int
-Aw.Context.Core.Lenses.LensesSetView.Depth.init -> void
-Aw.Context.Core.Lenses.LensesSetView.Draft.get -> bool
-Aw.Context.Core.Lenses.LensesSetView.Draft.init -> void
-Aw.Context.Core.Lenses.LensesSetView.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>!
-Aw.Context.Core.Lenses.LensesSetView.Edges.init -> void
-Aw.Context.Core.Lenses.LensesSetView.Equals(Aw.Context.Core.Lenses.LensesSetView? other) -> bool
-Aw.Context.Core.Lenses.LensesSetView.LensesSetView(int SchemaVersion, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensAnchor!>! Anchors, System.Collections.Generic.IReadOnlyList<string!>! MissingAnchors, string! MapVersion, bool Draft, int Depth, System.DateTimeOffset AsOf, Aw.Context.Core.Lenses.LensBands! Bands, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensConflict!>! Conflicts, Aw.Context.Core.Lenses.LensCoverage! Coverage, Aw.Context.Core.Lenses.LensSearched! Searched, System.Collections.Generic.IReadOnlyList<string!>! Degraded, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites) -> void
-Aw.Context.Core.Lenses.LensesSetView.MapCommit.get -> string?
-Aw.Context.Core.Lenses.LensesSetView.MapCommit.init -> void
-Aw.Context.Core.Lenses.LensesSetView.MapVersion.get -> string!
-Aw.Context.Core.Lenses.LensesSetView.MapVersion.init -> void
-Aw.Context.Core.Lenses.LensesSetView.MissingAnchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
-Aw.Context.Core.Lenses.LensesSetView.MissingAnchors.init -> void
-Aw.Context.Core.Lenses.LensesSetView.SchemaVersion.get -> int
-Aw.Context.Core.Lenses.LensesSetView.SchemaVersion.init -> void
-Aw.Context.Core.Lenses.LensesSetView.Searched.get -> Aw.Context.Core.Lenses.LensSearched!
-Aw.Context.Core.Lenses.LensesSetView.Searched.init -> void
-Aw.Context.Core.Lenses.LensesSetView.SkippedComponents.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SkippedComponent!>?
-Aw.Context.Core.Lenses.LensesSetView.SkippedComponents.init -> void
-Aw.Context.Core.Lenses.LensesView
-Aw.Context.Core.Lenses.LensesView.<Clone>$() -> Aw.Context.Core.Lenses.LensesView!
-Aw.Context.Core.Lenses.LensesView.Anchor.get -> Aw.Context.Core.Lenses.LensAnchor!
-Aw.Context.Core.Lenses.LensesView.Anchor.init -> void
-Aw.Context.Core.Lenses.LensesView.AsOf.get -> System.DateTimeOffset
-Aw.Context.Core.Lenses.LensesView.AsOf.init -> void
-Aw.Context.Core.Lenses.LensesView.Bands.get -> Aw.Context.Core.Lenses.LensBands!
-Aw.Context.Core.Lenses.LensesView.Bands.init -> void
-Aw.Context.Core.Lenses.LensesView.Cites.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>!
-Aw.Context.Core.Lenses.LensesView.Cites.init -> void
-Aw.Context.Core.Lenses.LensesView.Conflicts.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensConflict!>!
-Aw.Context.Core.Lenses.LensesView.Conflicts.init -> void
-Aw.Context.Core.Lenses.LensesView.Coverage.get -> Aw.Context.Core.Lenses.LensCoverage!
-Aw.Context.Core.Lenses.LensesView.Coverage.init -> void
-Aw.Context.Core.Lenses.LensesView.Deconstruct(out int SchemaVersion, out Aw.Context.Core.Lenses.LensAnchor! Anchor, out string! MapVersion, out bool Draft, out int Depth, out System.DateTimeOffset AsOf, out Aw.Context.Core.Lenses.LensBands! Bands, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensConflict!>! Conflicts, out Aw.Context.Core.Lenses.LensCoverage! Coverage, out Aw.Context.Core.Lenses.LensSearched! Searched, out System.Collections.Generic.IReadOnlyList<string!>! Degraded, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites) -> void
-Aw.Context.Core.Lenses.LensesView.Degraded.get -> System.Collections.Generic.IReadOnlyList<string!>!
-Aw.Context.Core.Lenses.LensesView.Degraded.init -> void
-Aw.Context.Core.Lenses.LensesView.Depth.get -> int
-Aw.Context.Core.Lenses.LensesView.Depth.init -> void
-Aw.Context.Core.Lenses.LensesView.Draft.get -> bool
-Aw.Context.Core.Lenses.LensesView.Draft.init -> void
-Aw.Context.Core.Lenses.LensesView.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>!
-Aw.Context.Core.Lenses.LensesView.Edges.init -> void
-Aw.Context.Core.Lenses.LensesView.Equals(Aw.Context.Core.Lenses.LensesView? other) -> bool
-Aw.Context.Core.Lenses.LensesView.LensesView(int SchemaVersion, Aw.Context.Core.Lenses.LensAnchor! Anchor, string! MapVersion, bool Draft, int Depth, System.DateTimeOffset AsOf, Aw.Context.Core.Lenses.LensBands! Bands, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensConflict!>! Conflicts, Aw.Context.Core.Lenses.LensCoverage! Coverage, Aw.Context.Core.Lenses.LensSearched! Searched, System.Collections.Generic.IReadOnlyList<string!>! Degraded, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites) -> void
-Aw.Context.Core.Lenses.LensesView.MapCommit.get -> string?
-Aw.Context.Core.Lenses.LensesView.MapCommit.init -> void
-Aw.Context.Core.Lenses.LensesView.MapVersion.get -> string!
-Aw.Context.Core.Lenses.LensesView.MapVersion.init -> void
-Aw.Context.Core.Lenses.LensesView.SchemaVersion.get -> int
-Aw.Context.Core.Lenses.LensesView.SchemaVersion.init -> void
-Aw.Context.Core.Lenses.LensesView.Searched.get -> Aw.Context.Core.Lenses.LensSearched!
-Aw.Context.Core.Lenses.LensesView.Searched.init -> void
-Aw.Context.Core.Lenses.LensesView.SkippedComponents.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SkippedComponent!>?
-Aw.Context.Core.Lenses.LensesView.SkippedComponents.init -> void
 Aw.Context.Core.Lenses.MapCoverage
 Aw.Context.Core.Lenses.MapCoverage.<Clone>$() -> Aw.Context.Core.Lenses.MapCoverage!
 Aw.Context.Core.Lenses.MapCoverage.AgeDays.get -> int
@@ -2655,10 +2686,10 @@ Aw.Context.Core.Lenses.SearchedSync.JobId.init -> void
 Aw.Context.Core.Lenses.SearchedSync.SearchedSync(string! State, Aw.Context.Core.Lenses.SyncJobId JobId) -> void
 Aw.Context.Core.Lenses.SearchedSync.State.get -> string!
 Aw.Context.Core.Lenses.SearchedSync.State.init -> void
-Aw.Context.Core.Lenses.SymbolsState
-Aw.Context.Core.Lenses.SymbolsState.Ok = 2 -> Aw.Context.Core.Lenses.SymbolsState
-Aw.Context.Core.Lenses.SymbolsState.Stale = 1 -> Aw.Context.Core.Lenses.SymbolsState
-Aw.Context.Core.Lenses.SymbolsState.Unavailable = 0 -> Aw.Context.Core.Lenses.SymbolsState
+Aw.Context.Core.Symbols.SymbolsState
+Aw.Context.Core.Symbols.SymbolsState.Ok = 2 -> Aw.Context.Core.Symbols.SymbolsState
+Aw.Context.Core.Symbols.SymbolsState.Stale = 1 -> Aw.Context.Core.Symbols.SymbolsState
+Aw.Context.Core.Symbols.SymbolsState.Unavailable = 0 -> Aw.Context.Core.Symbols.SymbolsState
 Aw.Context.Core.Lenses.SyncJobId
 Aw.Context.Core.Lenses.SyncJobId.Equals(Aw.Context.Core.Lenses.SyncJobId other) -> bool
 Aw.Context.Core.Lenses.SyncJobId.Equals(Aw.Context.Core.Lenses.SyncJobId other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Lenses.SyncJobId>! comparer) -> bool
@@ -2667,6 +2698,7 @@ Aw.Context.Core.Lenses.SyncJobId.IsInitialized() -> bool
 Aw.Context.Core.Lenses.SyncJobId.SyncJobId() -> void
 Aw.Context.Core.Lenses.SyncJobId.ToString(System.IFormatProvider? provider) -> string!
 Aw.Context.Core.Lenses.SyncJobId.Value.get -> string!
+Aw.Context.Core.LensSupport.LensTexts
 Aw.Context.Core.Linking.ConflictChecker
 Aw.Context.Core.Linking.ConflictVerdict
 Aw.Context.Core.Linking.ConflictVerdict.Agrees = 1 -> Aw.Context.Core.Linking.ConflictVerdict
@@ -3195,6 +3227,7 @@ Aw.Context.Core.Map.ProposedNode.Key.init -> void
 Aw.Context.Core.Map.ProposedNode.ProposedNode(Aw.Context.Core.Graph.NodeKey Key, Aw.Context.Core.Results.Provenance Provenance, double Confidence, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Files) -> void
 Aw.Context.Core.Map.ProposedNode.Provenance.get -> Aw.Context.Core.Results.Provenance
 Aw.Context.Core.Map.ProposedNode.Provenance.init -> void
+Aw.Context.Core.Map.PublishAccess
 Aw.Context.Core.Map.PurgeReport
 Aw.Context.Core.Map.PurgeReport.<Clone>$() -> Aw.Context.Core.Map.PurgeReport!
 Aw.Context.Core.Map.PurgeReport.Deconstruct(out int Exports, out int Versions) -> void
@@ -3390,11 +3423,11 @@ Aw.Context.Core.Proposals.GraphStatus.Surface.get -> string!
 Aw.Context.Core.Proposals.GraphStatus.Surface.init -> void
 Aw.Context.Core.Proposals.GraphStatus.Trust.get -> Aw.Context.Core.Results.Trust
 Aw.Context.Core.Proposals.GraphStatus.Trust.init -> void
+Aw.Context.Core.Proposals.GraphStatuses
 Aw.Context.Core.Proposals.GraphStatusKind
 Aw.Context.Core.Proposals.GraphStatusKind.Mapped = 0 -> Aw.Context.Core.Proposals.GraphStatusKind
 Aw.Context.Core.Proposals.GraphStatusKind.New = 1 -> Aw.Context.Core.Proposals.GraphStatusKind
 Aw.Context.Core.Proposals.GraphStatusKind.Unmapped = 2 -> Aw.Context.Core.Proposals.GraphStatusKind
-Aw.Context.Core.Proposals.GraphStatuses
 Aw.Context.Core.Proposals.IProposalRuns
 Aw.Context.Core.Proposals.IProposalRuns.Propose(Aw.Context.Core.Proposals.ScopeProposal! proposal, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! rows, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<int>!>
 Aw.Context.Core.Proposals.IProposalRuns.Run(string! run, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Proposals.ScopeProposal?>!>
@@ -3427,6 +3460,23 @@ Aw.Context.Core.Proposals.ProposalsView.Run.get -> string!
 Aw.Context.Core.Proposals.ProposalsView.Run.init -> void
 Aw.Context.Core.Proposals.ProposalsView.Surfaces.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Proposals.GraphStatus!>!
 Aw.Context.Core.Proposals.ProposalsView.Surfaces.init -> void
+Aw.Context.Core.Proposals.ProposedSurface
+Aw.Context.Core.Proposals.ProposedSurface.<Clone>$() -> Aw.Context.Core.Proposals.ProposedSurface!
+Aw.Context.Core.Proposals.ProposedSurface.Deconstruct(out string! Name, out Aw.Context.Core.Graph.NodeKey? Key, out Aw.Context.Core.Graph.NodeKind? Kind, out Aw.Context.Core.Graph.NodeKey? Parent, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? Evidence, out string? Quote) -> void
+Aw.Context.Core.Proposals.ProposedSurface.Equals(Aw.Context.Core.Proposals.ProposedSurface? other) -> bool
+Aw.Context.Core.Proposals.ProposedSurface.Evidence.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>?
+Aw.Context.Core.Proposals.ProposedSurface.Evidence.init -> void
+Aw.Context.Core.Proposals.ProposedSurface.Key.get -> Aw.Context.Core.Graph.NodeKey?
+Aw.Context.Core.Proposals.ProposedSurface.Key.init -> void
+Aw.Context.Core.Proposals.ProposedSurface.Kind.get -> Aw.Context.Core.Graph.NodeKind?
+Aw.Context.Core.Proposals.ProposedSurface.Kind.init -> void
+Aw.Context.Core.Proposals.ProposedSurface.Name.get -> string!
+Aw.Context.Core.Proposals.ProposedSurface.Name.init -> void
+Aw.Context.Core.Proposals.ProposedSurface.Parent.get -> Aw.Context.Core.Graph.NodeKey?
+Aw.Context.Core.Proposals.ProposedSurface.Parent.init -> void
+Aw.Context.Core.Proposals.ProposedSurface.ProposedSurface(string! Name, Aw.Context.Core.Graph.NodeKey? Key = null, Aw.Context.Core.Graph.NodeKind? Kind = null, Aw.Context.Core.Graph.NodeKey? Parent = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? Evidence = null, string? Quote = null) -> void
+Aw.Context.Core.Proposals.ProposedSurface.Quote.get -> string?
+Aw.Context.Core.Proposals.ProposedSurface.Quote.init -> void
 Aw.Context.Core.Proposals.ProposeResult
 Aw.Context.Core.Proposals.ProposeResult.<Clone>$() -> Aw.Context.Core.Proposals.ProposeResult!
 Aw.Context.Core.Proposals.ProposeResult.Added.get -> int
@@ -3449,23 +3499,6 @@ Aw.Context.Core.Proposals.ProposeResult.Withdrawn.get -> int
 Aw.Context.Core.Proposals.ProposeResult.Withdrawn.init -> void
 Aw.Context.Core.Proposals.ProposeResult.WithdrawnRows.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>?
 Aw.Context.Core.Proposals.ProposeResult.WithdrawnRows.init -> void
-Aw.Context.Core.Proposals.ProposedSurface
-Aw.Context.Core.Proposals.ProposedSurface.<Clone>$() -> Aw.Context.Core.Proposals.ProposedSurface!
-Aw.Context.Core.Proposals.ProposedSurface.Deconstruct(out string! Name, out Aw.Context.Core.Graph.NodeKey? Key, out Aw.Context.Core.Graph.NodeKind? Kind, out Aw.Context.Core.Graph.NodeKey? Parent, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? Evidence, out string? Quote) -> void
-Aw.Context.Core.Proposals.ProposedSurface.Equals(Aw.Context.Core.Proposals.ProposedSurface? other) -> bool
-Aw.Context.Core.Proposals.ProposedSurface.Evidence.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>?
-Aw.Context.Core.Proposals.ProposedSurface.Evidence.init -> void
-Aw.Context.Core.Proposals.ProposedSurface.Key.get -> Aw.Context.Core.Graph.NodeKey?
-Aw.Context.Core.Proposals.ProposedSurface.Key.init -> void
-Aw.Context.Core.Proposals.ProposedSurface.Kind.get -> Aw.Context.Core.Graph.NodeKind?
-Aw.Context.Core.Proposals.ProposedSurface.Kind.init -> void
-Aw.Context.Core.Proposals.ProposedSurface.Name.get -> string!
-Aw.Context.Core.Proposals.ProposedSurface.Name.init -> void
-Aw.Context.Core.Proposals.ProposedSurface.Parent.get -> Aw.Context.Core.Graph.NodeKey?
-Aw.Context.Core.Proposals.ProposedSurface.Parent.init -> void
-Aw.Context.Core.Proposals.ProposedSurface.ProposedSurface(string! Name, Aw.Context.Core.Graph.NodeKey? Key = null, Aw.Context.Core.Graph.NodeKind? Kind = null, Aw.Context.Core.Graph.NodeKey? Parent = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? Evidence = null, string? Quote = null) -> void
-Aw.Context.Core.Proposals.ProposedSurface.Quote.get -> string?
-Aw.Context.Core.Proposals.ProposedSurface.Quote.init -> void
 Aw.Context.Core.Proposals.ScopeProposal
 Aw.Context.Core.Proposals.ScopeProposal.<Clone>$() -> Aw.Context.Core.Proposals.ScopeProposal!
 Aw.Context.Core.Proposals.ScopeProposal.Deconstruct(out string! Run, out Aw.Context.Core.Engine.ContextRepoName Repo, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Proposals.ProposedSurface!>! Surfaces) -> void
@@ -3803,6 +3836,17 @@ Aw.Context.Core.Results.SourceStatusRow.State.get -> Aw.Context.Core.Sources.Sou
 Aw.Context.Core.Results.SourceStatusRow.State.init -> void
 Aw.Context.Core.Results.SourceStatusRow.Sync.get -> Aw.Context.Core.Results.SourceSyncStatus?
 Aw.Context.Core.Results.SourceStatusRow.Sync.init -> void
+Aw.Context.Core.Results.SourcesView
+Aw.Context.Core.Results.SourcesView.<Clone>$() -> Aw.Context.Core.Results.SourcesView!
+Aw.Context.Core.Results.SourcesView.AsOf.get -> System.DateTimeOffset
+Aw.Context.Core.Results.SourcesView.AsOf.init -> void
+Aw.Context.Core.Results.SourcesView.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SourceStatusRow!>! Sources, out bool SessionsEnabled, out System.DateTimeOffset AsOf) -> void
+Aw.Context.Core.Results.SourcesView.Equals(Aw.Context.Core.Results.SourcesView? other) -> bool
+Aw.Context.Core.Results.SourcesView.SessionsEnabled.get -> bool
+Aw.Context.Core.Results.SourcesView.SessionsEnabled.init -> void
+Aw.Context.Core.Results.SourcesView.Sources.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SourceStatusRow!>!
+Aw.Context.Core.Results.SourcesView.Sources.init -> void
+Aw.Context.Core.Results.SourcesView.SourcesView(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SourceStatusRow!>! Sources, bool SessionsEnabled, System.DateTimeOffset AsOf) -> void
 Aw.Context.Core.Results.SourceSync
 Aw.Context.Core.Results.SourceSync.<Clone>$() -> Aw.Context.Core.Results.SourceSync!
 Aw.Context.Core.Results.SourceSync.Code.get -> string?
@@ -3851,17 +3895,6 @@ Aw.Context.Core.Results.SourceSyncStatus.Records.init -> void
 Aw.Context.Core.Results.SourceSyncStatus.SourceSyncStatus(System.DateTimeOffset? LastSync, Aw.Context.Core.Sources.SourceState State, int Records, int Linked, int Decisions, int Queued, string? Code) -> void
 Aw.Context.Core.Results.SourceSyncStatus.State.get -> Aw.Context.Core.Sources.SourceState
 Aw.Context.Core.Results.SourceSyncStatus.State.init -> void
-Aw.Context.Core.Results.SourcesView
-Aw.Context.Core.Results.SourcesView.<Clone>$() -> Aw.Context.Core.Results.SourcesView!
-Aw.Context.Core.Results.SourcesView.AsOf.get -> System.DateTimeOffset
-Aw.Context.Core.Results.SourcesView.AsOf.init -> void
-Aw.Context.Core.Results.SourcesView.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SourceStatusRow!>! Sources, out bool SessionsEnabled, out System.DateTimeOffset AsOf) -> void
-Aw.Context.Core.Results.SourcesView.Equals(Aw.Context.Core.Results.SourcesView? other) -> bool
-Aw.Context.Core.Results.SourcesView.SessionsEnabled.get -> bool
-Aw.Context.Core.Results.SourcesView.SessionsEnabled.init -> void
-Aw.Context.Core.Results.SourcesView.Sources.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SourceStatusRow!>!
-Aw.Context.Core.Results.SourcesView.Sources.init -> void
-Aw.Context.Core.Results.SourcesView.SourcesView(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SourceStatusRow!>! Sources, bool SessionsEnabled, System.DateTimeOffset AsOf) -> void
 Aw.Context.Core.Results.SyncReport
 Aw.Context.Core.Results.SyncReport.<Clone>$() -> Aw.Context.Core.Results.SyncReport!
 Aw.Context.Core.Results.SyncReport.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SourceSync!>! Sources) -> void
@@ -4131,9 +4164,9 @@ Aw.Context.Core.Review.ReviewVersion.Number.init -> void
 Aw.Context.Core.Review.ReviewVersion.ReviewVersion(int Number, string? Commit) -> void
 Aw.Context.Core.Sources.ChangePage
 Aw.Context.Core.Sources.ChangePage.<Clone>$() -> Aw.Context.Core.Sources.ChangePage!
-Aw.Context.Core.Sources.ChangePage.ChangePage(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceRef!>! Changed, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.ExternalId>! Removed, Aw.Context.Core.Sources.SourceCursor Next) -> void
 Aw.Context.Core.Sources.ChangePage.Changed.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceRef!>!
 Aw.Context.Core.Sources.ChangePage.Changed.init -> void
+Aw.Context.Core.Sources.ChangePage.ChangePage(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceRef!>! Changed, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.ExternalId>! Removed, Aw.Context.Core.Sources.SourceCursor Next) -> void
 Aw.Context.Core.Sources.ChangePage.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceRef!>! Changed, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.ExternalId>! Removed, out Aw.Context.Core.Sources.SourceCursor Next) -> void
 Aw.Context.Core.Sources.ChangePage.Equals(Aw.Context.Core.Sources.ChangePage? other) -> bool
 Aw.Context.Core.Sources.ChangePage.Next.get -> Aw.Context.Core.Sources.SourceCursor
@@ -4365,6 +4398,147 @@ Aw.Context.Core.Subgraph.SubgraphView.Searched.get -> Aw.Context.Core.Lenses.Len
 Aw.Context.Core.Subgraph.SubgraphView.Searched.init -> void
 Aw.Context.Core.Subgraph.SubgraphView.SubgraphView(int SchemaVersion, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Nodes, System.Collections.Generic.IReadOnlyList<string!>! Missing, string! MapVersion, int Depth, System.DateTimeOffset AsOf, Aw.Context.Core.Lenses.LensBands! Bands, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensConflict!>! Conflicts, Aw.Context.Core.Lenses.LensCoverage! Coverage, Aw.Context.Core.Lenses.LensSearched! Searched, System.Collections.Generic.IReadOnlyList<string!>! Degraded, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites) -> void
 Aw.Context.Core.SurfaceKindList
+Aw.Context.Core.Symbols.CallAnswer
+Aw.Context.Core.Symbols.CallAnswer.<Clone>$() -> Aw.Context.Core.Symbols.CallAnswer!
+Aw.Context.Core.Symbols.CallAnswer.CallAnswer(Aw.Context.Core.Symbols.CodeIndexHead! Head, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.CallEdgeRow!>! Rows, int Unresolved) -> void
+Aw.Context.Core.Symbols.CallAnswer.Deconstruct(out Aw.Context.Core.Symbols.CodeIndexHead! Head, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.CallEdgeRow!>! Rows, out int Unresolved) -> void
+Aw.Context.Core.Symbols.CallAnswer.Equals(Aw.Context.Core.Symbols.CallAnswer? other) -> bool
+Aw.Context.Core.Symbols.CallAnswer.Head.get -> Aw.Context.Core.Symbols.CodeIndexHead!
+Aw.Context.Core.Symbols.CallAnswer.Head.init -> void
+Aw.Context.Core.Symbols.CallAnswer.Rows.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.CallEdgeRow!>!
+Aw.Context.Core.Symbols.CallAnswer.Rows.init -> void
+Aw.Context.Core.Symbols.CallAnswer.Unresolved.get -> int
+Aw.Context.Core.Symbols.CallAnswer.Unresolved.init -> void
+Aw.Context.Core.Symbols.CallEdgeRow
+Aw.Context.Core.Symbols.CallEdgeRow.<Clone>$() -> Aw.Context.Core.Symbols.CallEdgeRow!
+Aw.Context.Core.Symbols.CallEdgeRow.AsOfCommit.get -> string?
+Aw.Context.Core.Symbols.CallEdgeRow.AsOfCommit.init -> void
+Aw.Context.Core.Symbols.CallEdgeRow.Basis.get -> string!
+Aw.Context.Core.Symbols.CallEdgeRow.Basis.init -> void
+Aw.Context.Core.Symbols.CallEdgeRow.CallEdgeRow(Aw.Context.Core.Symbols.SymbolSite! Symbol, string! Basis, double Confidence, string! Coverage, int Depth, string! Commit, string? AsOfCommit, Aw.Context.Core.Symbols.SymbolsState State) -> void
+Aw.Context.Core.Symbols.CallEdgeRow.Commit.get -> string!
+Aw.Context.Core.Symbols.CallEdgeRow.Commit.init -> void
+Aw.Context.Core.Symbols.CallEdgeRow.Confidence.get -> double
+Aw.Context.Core.Symbols.CallEdgeRow.Confidence.init -> void
+Aw.Context.Core.Symbols.CallEdgeRow.Coverage.get -> string!
+Aw.Context.Core.Symbols.CallEdgeRow.Coverage.init -> void
+Aw.Context.Core.Symbols.CallEdgeRow.Deconstruct(out Aw.Context.Core.Symbols.SymbolSite! Symbol, out string! Basis, out double Confidence, out string! Coverage, out int Depth, out string! Commit, out string? AsOfCommit, out Aw.Context.Core.Symbols.SymbolsState State) -> void
+Aw.Context.Core.Symbols.CallEdgeRow.Depth.get -> int
+Aw.Context.Core.Symbols.CallEdgeRow.Depth.init -> void
+Aw.Context.Core.Symbols.CallEdgeRow.Equals(Aw.Context.Core.Symbols.CallEdgeRow? other) -> bool
+Aw.Context.Core.Symbols.CallEdgeRow.State.get -> Aw.Context.Core.Symbols.SymbolsState
+Aw.Context.Core.Symbols.CallEdgeRow.State.init -> void
+Aw.Context.Core.Symbols.CallEdgeRow.Symbol.get -> Aw.Context.Core.Symbols.SymbolSite!
+Aw.Context.Core.Symbols.CallEdgeRow.Symbol.init -> void
+Aw.Context.Core.Symbols.CodeIndexHead
+Aw.Context.Core.Symbols.CodeIndexHead.<Clone>$() -> Aw.Context.Core.Symbols.CodeIndexHead!
+Aw.Context.Core.Symbols.CodeIndexHead.AsOfCommit.get -> string?
+Aw.Context.Core.Symbols.CodeIndexHead.AsOfCommit.init -> void
+Aw.Context.Core.Symbols.CodeIndexHead.BuiltAt.get -> System.DateTimeOffset?
+Aw.Context.Core.Symbols.CodeIndexHead.BuiltAt.init -> void
+Aw.Context.Core.Symbols.CodeIndexHead.Code.get -> string?
+Aw.Context.Core.Symbols.CodeIndexHead.Code.init -> void
+Aw.Context.Core.Symbols.CodeIndexHead.CodeIndexHead(Aw.Context.Core.Symbols.CodeIndexState State, string? Commit, System.DateTimeOffset? BuiltAt, string? AsOfCommit, string? Layer, string? Code) -> void
+Aw.Context.Core.Symbols.CodeIndexHead.Commit.get -> string?
+Aw.Context.Core.Symbols.CodeIndexHead.Commit.init -> void
+Aw.Context.Core.Symbols.CodeIndexHead.Deconstruct(out Aw.Context.Core.Symbols.CodeIndexState State, out string? Commit, out System.DateTimeOffset? BuiltAt, out string? AsOfCommit, out string? Layer, out string? Code) -> void
+Aw.Context.Core.Symbols.CodeIndexHead.Equals(Aw.Context.Core.Symbols.CodeIndexHead? other) -> bool
+Aw.Context.Core.Symbols.CodeIndexHead.Layer.get -> string?
+Aw.Context.Core.Symbols.CodeIndexHead.Layer.init -> void
+Aw.Context.Core.Symbols.CodeIndexHead.State.get -> Aw.Context.Core.Symbols.CodeIndexState
+Aw.Context.Core.Symbols.CodeIndexHead.State.init -> void
+Aw.Context.Core.Code.CodeIndexReading
+Aw.Context.Core.Symbols.CodeIndexState
+Aw.Context.Core.Symbols.CodeIndexState.Building = 6 -> Aw.Context.Core.Symbols.CodeIndexState
+Aw.Context.Core.Symbols.CodeIndexState.CheckoutNotOnMain = 2 -> Aw.Context.Core.Symbols.CodeIndexState
+Aw.Context.Core.Symbols.CodeIndexState.Damaged = 5 -> Aw.Context.Core.Symbols.CodeIndexState
+Aw.Context.Core.Symbols.CodeIndexState.LayerUnavailable = 3 -> Aw.Context.Core.Symbols.CodeIndexState
+Aw.Context.Core.Symbols.CodeIndexState.Missing = 4 -> Aw.Context.Core.Symbols.CodeIndexState
+Aw.Context.Core.Symbols.CodeIndexState.NotConfigured = 7 -> Aw.Context.Core.Symbols.CodeIndexState
+Aw.Context.Core.Symbols.CodeIndexState.Ok = 0 -> Aw.Context.Core.Symbols.CodeIndexState
+Aw.Context.Core.Symbols.CodeIndexState.Stale = 1 -> Aw.Context.Core.Symbols.CodeIndexState
+Aw.Context.Core.Symbols.FileSymbolsRow
+Aw.Context.Core.Symbols.FileSymbolsRow.<Clone>$() -> Aw.Context.Core.Symbols.FileSymbolsRow!
+Aw.Context.Core.Symbols.FileSymbolsRow.AsOfCommit.get -> string?
+Aw.Context.Core.Symbols.FileSymbolsRow.AsOfCommit.init -> void
+Aw.Context.Core.Symbols.FileSymbolsRow.Commit.get -> string!
+Aw.Context.Core.Symbols.FileSymbolsRow.Commit.init -> void
+Aw.Context.Core.Symbols.FileSymbolsRow.Deconstruct(out string! Path, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.SymbolSite!>! Symbols, out string! Commit, out string? AsOfCommit, out Aw.Context.Core.Symbols.SymbolsState State) -> void
+Aw.Context.Core.Symbols.FileSymbolsRow.Equals(Aw.Context.Core.Symbols.FileSymbolsRow? other) -> bool
+Aw.Context.Core.Symbols.FileSymbolsRow.FileSymbolsRow(string! Path, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.SymbolSite!>! Symbols, string! Commit, string? AsOfCommit, Aw.Context.Core.Symbols.SymbolsState State) -> void
+Aw.Context.Core.Symbols.FileSymbolsRow.Path.get -> string!
+Aw.Context.Core.Symbols.FileSymbolsRow.Path.init -> void
+Aw.Context.Core.Symbols.FileSymbolsRow.State.get -> Aw.Context.Core.Symbols.SymbolsState
+Aw.Context.Core.Symbols.FileSymbolsRow.State.init -> void
+Aw.Context.Core.Symbols.FileSymbolsRow.Symbols.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.SymbolSite!>!
+Aw.Context.Core.Symbols.FileSymbolsRow.Symbols.init -> void
+Aw.Context.Core.Symbols.ICodeSymbolSource
+Aw.Context.Core.Symbols.ICodeSymbolSource.Callees(Aw.Context.Core.Engine.ContextRepoName repo, string! symbolRef, int depth, string? asOf, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Symbols.CallAnswer!>!>
+Aw.Context.Core.Symbols.ICodeSymbolSource.Callers(Aw.Context.Core.Engine.ContextRepoName repo, string! symbolRef, int depth, string? asOf, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Symbols.CallAnswer!>!>
+Aw.Context.Core.Symbols.ICodeSymbolSource.FileSymbols(Aw.Context.Core.Engine.ContextRepoName repo, System.Collections.Generic.IReadOnlyList<string!>! paths, string? asOf, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Symbols.SymbolAnswer<Aw.Context.Core.Symbols.FileSymbolsRow!>!>!>
+Aw.Context.Core.Symbols.ICodeSymbolSource.FindSymbols(Aw.Context.Core.Engine.ContextRepoName repo, Aw.Context.Core.Symbols.SymbolQuery! query, string? asOf, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Symbols.SymbolAnswer<Aw.Context.Core.Symbols.SymbolHit!>!>!>
+Aw.Context.Core.Symbols.ICodeSymbolSource.Heads(Aw.Context.Core.Engine.ContextRepoName repo, string? asOf, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Symbols.CodeIndexHead!>!>
+Aw.Context.Core.Symbols.NoCodeSymbolSource
+Aw.Context.Core.Symbols.NoCodeSymbolSource.Callees(Aw.Context.Core.Engine.ContextRepoName repo, string! symbolRef, int depth, string? asOf, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Symbols.CallAnswer!>!>
+Aw.Context.Core.Symbols.NoCodeSymbolSource.Callers(Aw.Context.Core.Engine.ContextRepoName repo, string! symbolRef, int depth, string? asOf, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Symbols.CallAnswer!>!>
+Aw.Context.Core.Symbols.NoCodeSymbolSource.FileSymbols(Aw.Context.Core.Engine.ContextRepoName repo, System.Collections.Generic.IReadOnlyList<string!>! paths, string? asOf, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Symbols.SymbolAnswer<Aw.Context.Core.Symbols.FileSymbolsRow!>!>!>
+Aw.Context.Core.Symbols.NoCodeSymbolSource.FindSymbols(Aw.Context.Core.Engine.ContextRepoName repo, Aw.Context.Core.Symbols.SymbolQuery! query, string? asOf, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Symbols.SymbolAnswer<Aw.Context.Core.Symbols.SymbolHit!>!>!>
+Aw.Context.Core.Symbols.NoCodeSymbolSource.Heads(Aw.Context.Core.Engine.ContextRepoName repo, string? asOf, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Symbols.CodeIndexHead!>!>
+Aw.Context.Core.Symbols.NoCodeSymbolSource.NoCodeSymbolSource() -> void
+Aw.Context.Core.Symbols.SymbolAnswer<T>
+Aw.Context.Core.Symbols.SymbolAnswer<T>.<Clone>$() -> Aw.Context.Core.Symbols.SymbolAnswer<T>!
+Aw.Context.Core.Symbols.SymbolAnswer<T>.Deconstruct(out Aw.Context.Core.Symbols.CodeIndexHead! Head, out System.Collections.Generic.IReadOnlyList<T>! Rows) -> void
+Aw.Context.Core.Symbols.SymbolAnswer<T>.Equals(Aw.Context.Core.Symbols.SymbolAnswer<T>? other) -> bool
+Aw.Context.Core.Symbols.SymbolAnswer<T>.Head.get -> Aw.Context.Core.Symbols.CodeIndexHead!
+Aw.Context.Core.Symbols.SymbolAnswer<T>.Head.init -> void
+Aw.Context.Core.Symbols.SymbolAnswer<T>.Rows.get -> System.Collections.Generic.IReadOnlyList<T>!
+Aw.Context.Core.Symbols.SymbolAnswer<T>.Rows.init -> void
+Aw.Context.Core.Symbols.SymbolAnswer<T>.SymbolAnswer(Aw.Context.Core.Symbols.CodeIndexHead! Head, System.Collections.Generic.IReadOnlyList<T>! Rows) -> void
+Aw.Context.Core.Symbols.SymbolHit
+Aw.Context.Core.Symbols.SymbolHit.<Clone>$() -> Aw.Context.Core.Symbols.SymbolHit!
+Aw.Context.Core.Symbols.SymbolHit.AsOfCommit.get -> string?
+Aw.Context.Core.Symbols.SymbolHit.AsOfCommit.init -> void
+Aw.Context.Core.Symbols.SymbolHit.Commit.get -> string!
+Aw.Context.Core.Symbols.SymbolHit.Commit.init -> void
+Aw.Context.Core.Symbols.SymbolHit.Deconstruct(out Aw.Context.Core.Symbols.SymbolSite! Site, out string! Commit, out string? AsOfCommit, out Aw.Context.Core.Symbols.SymbolsState State) -> void
+Aw.Context.Core.Symbols.SymbolHit.Equals(Aw.Context.Core.Symbols.SymbolHit? other) -> bool
+Aw.Context.Core.Symbols.SymbolHit.Site.get -> Aw.Context.Core.Symbols.SymbolSite!
+Aw.Context.Core.Symbols.SymbolHit.Site.init -> void
+Aw.Context.Core.Symbols.SymbolHit.State.get -> Aw.Context.Core.Symbols.SymbolsState
+Aw.Context.Core.Symbols.SymbolHit.State.init -> void
+Aw.Context.Core.Symbols.SymbolHit.SymbolHit(Aw.Context.Core.Symbols.SymbolSite! Site, string! Commit, string? AsOfCommit, Aw.Context.Core.Symbols.SymbolsState State) -> void
+Aw.Context.Core.Symbols.SymbolQuery
+Aw.Context.Core.Symbols.SymbolQuery.<Clone>$() -> Aw.Context.Core.Symbols.SymbolQuery!
+Aw.Context.Core.Symbols.SymbolQuery.Deconstruct(out string! Text, out bool Prefix, out int Max) -> void
+Aw.Context.Core.Symbols.SymbolQuery.Equals(Aw.Context.Core.Symbols.SymbolQuery? other) -> bool
+Aw.Context.Core.Symbols.SymbolQuery.Max.get -> int
+Aw.Context.Core.Symbols.SymbolQuery.Max.init -> void
+Aw.Context.Core.Symbols.SymbolQuery.Prefix.get -> bool
+Aw.Context.Core.Symbols.SymbolQuery.Prefix.init -> void
+Aw.Context.Core.Symbols.SymbolQuery.SymbolQuery(string! Text, bool Prefix, int Max) -> void
+Aw.Context.Core.Symbols.SymbolQuery.Text.get -> string!
+Aw.Context.Core.Symbols.SymbolQuery.Text.init -> void
+Aw.Context.Core.Symbols.SymbolSite
+Aw.Context.Core.Symbols.SymbolSite.<Clone>$() -> Aw.Context.Core.Symbols.SymbolSite!
+Aw.Context.Core.Symbols.SymbolSite.Deconstruct(out string! Ref, out string! Name, out string! Kind, out string! Path, out int StartLine, out int EndLine, out string? Signature, out bool Exported) -> void
+Aw.Context.Core.Symbols.SymbolSite.EndLine.get -> int
+Aw.Context.Core.Symbols.SymbolSite.EndLine.init -> void
+Aw.Context.Core.Symbols.SymbolSite.Equals(Aw.Context.Core.Symbols.SymbolSite? other) -> bool
+Aw.Context.Core.Symbols.SymbolSite.Exported.get -> bool
+Aw.Context.Core.Symbols.SymbolSite.Exported.init -> void
+Aw.Context.Core.Symbols.SymbolSite.Kind.get -> string!
+Aw.Context.Core.Symbols.SymbolSite.Kind.init -> void
+Aw.Context.Core.Symbols.SymbolSite.Name.get -> string!
+Aw.Context.Core.Symbols.SymbolSite.Name.init -> void
+Aw.Context.Core.Symbols.SymbolSite.Path.get -> string!
+Aw.Context.Core.Symbols.SymbolSite.Path.init -> void
+Aw.Context.Core.Symbols.SymbolSite.Ref.get -> string!
+Aw.Context.Core.Symbols.SymbolSite.Ref.init -> void
+Aw.Context.Core.Symbols.SymbolSite.Signature.get -> string?
+Aw.Context.Core.Symbols.SymbolSite.Signature.init -> void
+Aw.Context.Core.Symbols.SymbolSite.StartLine.get -> int
+Aw.Context.Core.Symbols.SymbolSite.StartLine.init -> void
+Aw.Context.Core.Symbols.SymbolSite.SymbolSite(string! Ref, string! Name, string! Kind, string! Path, int StartLine, int EndLine, string? Signature, bool Exported) -> void
 Aw.Context.Core.Trust.IEgressScrubber
 Aw.Context.Core.Trust.IEgressScrubber.Scrub(string! value) -> Aw.Context.Core.Trust.ScrubbedField!
 Aw.Context.Core.Trust.IIngestFilter
@@ -4372,23 +4546,6 @@ Aw.Context.Core.Trust.IIngestFilter.Clean(string! raw, bool singleLine) -> Aw.Co
 Aw.Context.Core.Trust.IScrubberFactory
 Aw.Context.Core.Trust.IScrubberFactory.For(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Trust.ScrubPattern!>! extraPatterns) -> Aw.Kernel.Result<Aw.Context.Core.Trust.Scrubbers!>!
 Aw.Context.Core.Trust.Permalinks
-Aw.Context.Core.Trust.ScrubPattern
-Aw.Context.Core.Trust.ScrubPattern.<Clone>$() -> Aw.Context.Core.Trust.ScrubPattern!
-Aw.Context.Core.Trust.ScrubPattern.Deconstruct(out string? Rule, out string? Pattern) -> void
-Aw.Context.Core.Trust.ScrubPattern.Equals(Aw.Context.Core.Trust.ScrubPattern? other) -> bool
-Aw.Context.Core.Trust.ScrubPattern.Pattern.get -> string?
-Aw.Context.Core.Trust.ScrubPattern.Pattern.init -> void
-Aw.Context.Core.Trust.ScrubPattern.Rule.get -> string?
-Aw.Context.Core.Trust.ScrubPattern.Rule.init -> void
-Aw.Context.Core.Trust.ScrubPattern.ScrubPattern(string? Rule, string? Pattern) -> void
-Aw.Context.Core.Trust.ScrubRuleset
-Aw.Context.Core.Trust.ScrubRuleset.Equals(Aw.Context.Core.Trust.ScrubRuleset other) -> bool
-Aw.Context.Core.Trust.ScrubRuleset.Equals(Aw.Context.Core.Trust.ScrubRuleset other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Trust.ScrubRuleset>! comparer) -> bool
-Aw.Context.Core.Trust.ScrubRuleset.GetTypeCode() -> System.TypeCode
-Aw.Context.Core.Trust.ScrubRuleset.IsInitialized() -> bool
-Aw.Context.Core.Trust.ScrubRuleset.ScrubRuleset() -> void
-Aw.Context.Core.Trust.ScrubRuleset.ToString(System.IFormatProvider? provider) -> string!
-Aw.Context.Core.Trust.ScrubRuleset.Value.get -> string!
 Aw.Context.Core.Trust.ScrubbedField
 Aw.Context.Core.Trust.ScrubbedField.<Clone>$() -> Aw.Context.Core.Trust.ScrubbedField!
 Aw.Context.Core.Trust.ScrubbedField.Blocked.get -> bool
@@ -4411,12 +4568,31 @@ Aw.Context.Core.Trust.Scrubbers.Ingest.init -> void
 Aw.Context.Core.Trust.Scrubbers.Ruleset.get -> Aw.Context.Core.Trust.ScrubRuleset
 Aw.Context.Core.Trust.Scrubbers.Ruleset.init -> void
 Aw.Context.Core.Trust.Scrubbers.Scrubbers(Aw.Context.Core.Trust.IIngestFilter! Ingest, Aw.Context.Core.Trust.IEgressScrubber! Egress, Aw.Context.Core.Trust.ScrubRuleset Ruleset) -> void
+Aw.Context.Core.Trust.ScrubPattern
+Aw.Context.Core.Trust.ScrubPattern.<Clone>$() -> Aw.Context.Core.Trust.ScrubPattern!
+Aw.Context.Core.Trust.ScrubPattern.Deconstruct(out string? Rule, out string? Pattern) -> void
+Aw.Context.Core.Trust.ScrubPattern.Equals(Aw.Context.Core.Trust.ScrubPattern? other) -> bool
+Aw.Context.Core.Trust.ScrubPattern.Pattern.get -> string?
+Aw.Context.Core.Trust.ScrubPattern.Pattern.init -> void
+Aw.Context.Core.Trust.ScrubPattern.Rule.get -> string?
+Aw.Context.Core.Trust.ScrubPattern.Rule.init -> void
+Aw.Context.Core.Trust.ScrubPattern.ScrubPattern(string? Rule, string? Pattern) -> void
+Aw.Context.Core.Trust.ScrubRuleset
+Aw.Context.Core.Trust.ScrubRuleset.Equals(Aw.Context.Core.Trust.ScrubRuleset other) -> bool
+Aw.Context.Core.Trust.ScrubRuleset.Equals(Aw.Context.Core.Trust.ScrubRuleset other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Trust.ScrubRuleset>! comparer) -> bool
+Aw.Context.Core.Trust.ScrubRuleset.GetTypeCode() -> System.TypeCode
+Aw.Context.Core.Trust.ScrubRuleset.IsInitialized() -> bool
+Aw.Context.Core.Trust.ScrubRuleset.ScrubRuleset() -> void
+Aw.Context.Core.Trust.ScrubRuleset.ToString(System.IFormatProvider? provider) -> string!
+Aw.Context.Core.Trust.ScrubRuleset.Value.get -> string!
 Aw.Context.Core.Trust.UntrustedFence
+const Aw.Context.Core.Code.CodeRules.MaxCallSymbols = 20 -> int
 const Aw.Context.Core.Code.CodeRules.MaxCandidates = 100 -> int
 const Aw.Context.Core.Code.CodeRules.MaxFileChars = 512000 -> int
 const Aw.Context.Core.Code.CodeRules.MaxFilesPerThing = 20 -> int
 const Aw.Context.Core.Code.CodeRules.MaxImplementingFiles = 50 -> int
 const Aw.Context.Core.Code.CodeRules.MaxListed = 100 -> int
+const Aw.Context.Core.Code.CodeRules.MaxSymbolFiles = 200 -> int
 const Aw.Context.Core.Code.CodeRules.MaxTermLength = 200 -> int
 const Aw.Context.Core.Code.CodeRules.MaxTermsPerCall = 200 -> int
 const Aw.Context.Core.Code.CodeRules.MaxThings = 30 -> int
@@ -4513,6 +4689,9 @@ override Aw.Context.Core.Code.CodeSearchHits.ToString() -> string!
 override Aw.Context.Core.Code.CodeSearchQuery.Equals(object? obj) -> bool
 override Aw.Context.Core.Code.CodeSearchQuery.GetHashCode() -> int
 override Aw.Context.Core.Code.CodeSearchQuery.ToString() -> string!
+override Aw.Context.Core.Code.CodeSymbolFindings.Equals(object? obj) -> bool
+override Aw.Context.Core.Code.CodeSymbolFindings.GetHashCode() -> int
+override Aw.Context.Core.Code.CodeSymbolFindings.ToString() -> string!
 override Aw.Context.Core.Code.CodeSymbols.Equals(object? obj) -> bool
 override Aw.Context.Core.Code.CodeSymbols.GetHashCode() -> int
 override Aw.Context.Core.Code.CodeSymbols.ToString() -> string!
@@ -4758,12 +4937,12 @@ override Aw.Context.Core.Graph.LinkId.ToString() -> string!
 override Aw.Context.Core.Graph.NeighborFact.Equals(object? obj) -> bool
 override Aw.Context.Core.Graph.NeighborFact.GetHashCode() -> int
 override Aw.Context.Core.Graph.NeighborFact.ToString() -> string!
-override Aw.Context.Core.Graph.NeighborNode.Equals(object? obj) -> bool
-override Aw.Context.Core.Graph.NeighborNode.GetHashCode() -> int
-override Aw.Context.Core.Graph.NeighborNode.ToString() -> string!
 override Aw.Context.Core.Graph.Neighborhood.Equals(object? obj) -> bool
 override Aw.Context.Core.Graph.Neighborhood.GetHashCode() -> int
 override Aw.Context.Core.Graph.Neighborhood.ToString() -> string!
+override Aw.Context.Core.Graph.NeighborNode.Equals(object? obj) -> bool
+override Aw.Context.Core.Graph.NeighborNode.GetHashCode() -> int
+override Aw.Context.Core.Graph.NeighborNode.ToString() -> string!
 override Aw.Context.Core.Graph.NeighborsView.Equals(object? obj) -> bool
 override Aw.Context.Core.Graph.NeighborsView.GetHashCode() -> int
 override Aw.Context.Core.Graph.NeighborsView.ToString() -> string!
@@ -4914,6 +5093,12 @@ override Aw.Context.Core.Lenses.LensDecision.ToString() -> string!
 override Aw.Context.Core.Lenses.LensEdge.Equals(object? obj) -> bool
 override Aw.Context.Core.Lenses.LensEdge.GetHashCode() -> int
 override Aw.Context.Core.Lenses.LensEdge.ToString() -> string!
+override Aw.Context.Core.Lenses.LensesSetView.Equals(object? obj) -> bool
+override Aw.Context.Core.Lenses.LensesSetView.GetHashCode() -> int
+override Aw.Context.Core.Lenses.LensesSetView.ToString() -> string!
+override Aw.Context.Core.Lenses.LensesView.Equals(object? obj) -> bool
+override Aw.Context.Core.Lenses.LensesView.GetHashCode() -> int
+override Aw.Context.Core.Lenses.LensesView.ToString() -> string!
 override Aw.Context.Core.Lenses.LensFile.Equals(object? obj) -> bool
 override Aw.Context.Core.Lenses.LensFile.GetHashCode() -> int
 override Aw.Context.Core.Lenses.LensFile.ToString() -> string!
@@ -4941,12 +5126,6 @@ override Aw.Context.Core.Lenses.LensSearched.ToString() -> string!
 override Aw.Context.Core.Lenses.LensSymbols.Equals(object? obj) -> bool
 override Aw.Context.Core.Lenses.LensSymbols.GetHashCode() -> int
 override Aw.Context.Core.Lenses.LensSymbols.ToString() -> string!
-override Aw.Context.Core.Lenses.LensesSetView.Equals(object? obj) -> bool
-override Aw.Context.Core.Lenses.LensesSetView.GetHashCode() -> int
-override Aw.Context.Core.Lenses.LensesSetView.ToString() -> string!
-override Aw.Context.Core.Lenses.LensesView.Equals(object? obj) -> bool
-override Aw.Context.Core.Lenses.LensesView.GetHashCode() -> int
-override Aw.Context.Core.Lenses.LensesView.ToString() -> string!
 override Aw.Context.Core.Lenses.MapCoverage.Equals(object? obj) -> bool
 override Aw.Context.Core.Lenses.MapCoverage.GetHashCode() -> int
 override Aw.Context.Core.Lenses.MapCoverage.ToString() -> string!
@@ -5102,12 +5281,12 @@ override Aw.Context.Core.Proposals.ProposalPlan.ToString() -> string!
 override Aw.Context.Core.Proposals.ProposalsView.Equals(object? obj) -> bool
 override Aw.Context.Core.Proposals.ProposalsView.GetHashCode() -> int
 override Aw.Context.Core.Proposals.ProposalsView.ToString() -> string!
-override Aw.Context.Core.Proposals.ProposeResult.Equals(object? obj) -> bool
-override Aw.Context.Core.Proposals.ProposeResult.GetHashCode() -> int
-override Aw.Context.Core.Proposals.ProposeResult.ToString() -> string!
 override Aw.Context.Core.Proposals.ProposedSurface.Equals(object? obj) -> bool
 override Aw.Context.Core.Proposals.ProposedSurface.GetHashCode() -> int
 override Aw.Context.Core.Proposals.ProposedSurface.ToString() -> string!
+override Aw.Context.Core.Proposals.ProposeResult.Equals(object? obj) -> bool
+override Aw.Context.Core.Proposals.ProposeResult.GetHashCode() -> int
+override Aw.Context.Core.Proposals.ProposeResult.ToString() -> string!
 override Aw.Context.Core.Proposals.ScopeProposal.Equals(object? obj) -> bool
 override Aw.Context.Core.Proposals.ScopeProposal.GetHashCode() -> int
 override Aw.Context.Core.Proposals.ScopeProposal.ToString() -> string!
@@ -5168,15 +5347,15 @@ override Aw.Context.Core.Results.SkippedComponent.ToString() -> string!
 override Aw.Context.Core.Results.SourceStatusRow.Equals(object? obj) -> bool
 override Aw.Context.Core.Results.SourceStatusRow.GetHashCode() -> int
 override Aw.Context.Core.Results.SourceStatusRow.ToString() -> string!
+override Aw.Context.Core.Results.SourcesView.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.SourcesView.GetHashCode() -> int
+override Aw.Context.Core.Results.SourcesView.ToString() -> string!
 override Aw.Context.Core.Results.SourceSync.Equals(object? obj) -> bool
 override Aw.Context.Core.Results.SourceSync.GetHashCode() -> int
 override Aw.Context.Core.Results.SourceSync.ToString() -> string!
 override Aw.Context.Core.Results.SourceSyncStatus.Equals(object? obj) -> bool
 override Aw.Context.Core.Results.SourceSyncStatus.GetHashCode() -> int
 override Aw.Context.Core.Results.SourceSyncStatus.ToString() -> string!
-override Aw.Context.Core.Results.SourcesView.Equals(object? obj) -> bool
-override Aw.Context.Core.Results.SourcesView.GetHashCode() -> int
-override Aw.Context.Core.Results.SourcesView.ToString() -> string!
 override Aw.Context.Core.Results.SyncReport.Equals(object? obj) -> bool
 override Aw.Context.Core.Results.SyncReport.GetHashCode() -> int
 override Aw.Context.Core.Results.SyncReport.ToString() -> string!
@@ -5273,18 +5452,42 @@ override Aw.Context.Core.Subgraph.SubgraphQuery.ToString() -> string!
 override Aw.Context.Core.Subgraph.SubgraphView.Equals(object? obj) -> bool
 override Aw.Context.Core.Subgraph.SubgraphView.GetHashCode() -> int
 override Aw.Context.Core.Subgraph.SubgraphView.ToString() -> string!
-override Aw.Context.Core.Trust.ScrubPattern.Equals(object? obj) -> bool
-override Aw.Context.Core.Trust.ScrubPattern.GetHashCode() -> int
-override Aw.Context.Core.Trust.ScrubPattern.ToString() -> string!
-override Aw.Context.Core.Trust.ScrubRuleset.Equals(object? obj) -> bool
-override Aw.Context.Core.Trust.ScrubRuleset.GetHashCode() -> int
-override Aw.Context.Core.Trust.ScrubRuleset.ToString() -> string!
+override Aw.Context.Core.Symbols.CallAnswer.Equals(object? obj) -> bool
+override Aw.Context.Core.Symbols.CallAnswer.GetHashCode() -> int
+override Aw.Context.Core.Symbols.CallAnswer.ToString() -> string!
+override Aw.Context.Core.Symbols.CallEdgeRow.Equals(object? obj) -> bool
+override Aw.Context.Core.Symbols.CallEdgeRow.GetHashCode() -> int
+override Aw.Context.Core.Symbols.CallEdgeRow.ToString() -> string!
+override Aw.Context.Core.Symbols.CodeIndexHead.Equals(object? obj) -> bool
+override Aw.Context.Core.Symbols.CodeIndexHead.GetHashCode() -> int
+override Aw.Context.Core.Symbols.CodeIndexHead.ToString() -> string!
+override Aw.Context.Core.Symbols.FileSymbolsRow.Equals(object? obj) -> bool
+override Aw.Context.Core.Symbols.FileSymbolsRow.GetHashCode() -> int
+override Aw.Context.Core.Symbols.FileSymbolsRow.ToString() -> string!
+override Aw.Context.Core.Symbols.SymbolAnswer<T>.Equals(object? obj) -> bool
+override Aw.Context.Core.Symbols.SymbolAnswer<T>.GetHashCode() -> int
+override Aw.Context.Core.Symbols.SymbolAnswer<T>.ToString() -> string!
+override Aw.Context.Core.Symbols.SymbolHit.Equals(object? obj) -> bool
+override Aw.Context.Core.Symbols.SymbolHit.GetHashCode() -> int
+override Aw.Context.Core.Symbols.SymbolHit.ToString() -> string!
+override Aw.Context.Core.Symbols.SymbolQuery.Equals(object? obj) -> bool
+override Aw.Context.Core.Symbols.SymbolQuery.GetHashCode() -> int
+override Aw.Context.Core.Symbols.SymbolQuery.ToString() -> string!
+override Aw.Context.Core.Symbols.SymbolSite.Equals(object? obj) -> bool
+override Aw.Context.Core.Symbols.SymbolSite.GetHashCode() -> int
+override Aw.Context.Core.Symbols.SymbolSite.ToString() -> string!
 override Aw.Context.Core.Trust.ScrubbedField.Equals(object? obj) -> bool
 override Aw.Context.Core.Trust.ScrubbedField.GetHashCode() -> int
 override Aw.Context.Core.Trust.ScrubbedField.ToString() -> string!
 override Aw.Context.Core.Trust.Scrubbers.Equals(object? obj) -> bool
 override Aw.Context.Core.Trust.Scrubbers.GetHashCode() -> int
 override Aw.Context.Core.Trust.Scrubbers.ToString() -> string!
+override Aw.Context.Core.Trust.ScrubPattern.Equals(object? obj) -> bool
+override Aw.Context.Core.Trust.ScrubPattern.GetHashCode() -> int
+override Aw.Context.Core.Trust.ScrubPattern.ToString() -> string!
+override Aw.Context.Core.Trust.ScrubRuleset.Equals(object? obj) -> bool
+override Aw.Context.Core.Trust.ScrubRuleset.GetHashCode() -> int
+override Aw.Context.Core.Trust.ScrubRuleset.ToString() -> string!
 static Aw.Context.Core.Code.CodeData.operator !=(Aw.Context.Core.Code.CodeData? left, Aw.Context.Core.Code.CodeData? right) -> bool
 static Aw.Context.Core.Code.CodeData.operator ==(Aw.Context.Core.Code.CodeData? left, Aw.Context.Core.Code.CodeData? right) -> bool
 static Aw.Context.Core.Code.CodeDataFile.operator !=(Aw.Context.Core.Code.CodeDataFile? left, Aw.Context.Core.Code.CodeDataFile? right) -> bool
@@ -5297,6 +5500,7 @@ static Aw.Context.Core.Code.CodeLensBuilder.ThingTerms(Aw.Context.Core.Graph.Gra
 static Aw.Context.Core.Code.CodeLensCounts.operator !=(Aw.Context.Core.Code.CodeLensCounts? left, Aw.Context.Core.Code.CodeLensCounts? right) -> bool
 static Aw.Context.Core.Code.CodeLensCounts.operator ==(Aw.Context.Core.Code.CodeLensCounts? left, Aw.Context.Core.Code.CodeLensCounts? right) -> bool
 static Aw.Context.Core.Code.CodeLensMerge.With(Aw.Context.Core.Code.CodeView! view, Aw.Context.Core.Code.CodeLexicalFindings! findings) -> Aw.Context.Core.Code.CodeView!
+static Aw.Context.Core.Code.CodeLensSymbols.With(Aw.Context.Core.Code.CodeView! view, Aw.Context.Core.Code.CodeSymbolFindings! findings) -> Aw.Context.Core.Code.CodeView!
 static Aw.Context.Core.Code.CodeLensTruncated.operator !=(Aw.Context.Core.Code.CodeLensTruncated? left, Aw.Context.Core.Code.CodeLensTruncated? right) -> bool
 static Aw.Context.Core.Code.CodeLensTruncated.operator ==(Aw.Context.Core.Code.CodeLensTruncated? left, Aw.Context.Core.Code.CodeLensTruncated? right) -> bool
 static Aw.Context.Core.Code.CodeLexical.operator !=(Aw.Context.Core.Code.CodeLexical? left, Aw.Context.Core.Code.CodeLexical? right) -> bool
@@ -5307,9 +5511,11 @@ static Aw.Context.Core.Code.CodeSearchHits.operator !=(Aw.Context.Core.Code.Code
 static Aw.Context.Core.Code.CodeSearchHits.operator ==(Aw.Context.Core.Code.CodeSearchHits? left, Aw.Context.Core.Code.CodeSearchHits? right) -> bool
 static Aw.Context.Core.Code.CodeSearchQuery.operator !=(Aw.Context.Core.Code.CodeSearchQuery? left, Aw.Context.Core.Code.CodeSearchQuery? right) -> bool
 static Aw.Context.Core.Code.CodeSearchQuery.operator ==(Aw.Context.Core.Code.CodeSearchQuery? left, Aw.Context.Core.Code.CodeSearchQuery? right) -> bool
-static Aw.Context.Core.Code.CodeSymbols.Unavailable.get -> Aw.Context.Core.Code.CodeSymbols!
+static Aw.Context.Core.Code.CodeSymbolFindings.operator !=(Aw.Context.Core.Code.CodeSymbolFindings? left, Aw.Context.Core.Code.CodeSymbolFindings? right) -> bool
+static Aw.Context.Core.Code.CodeSymbolFindings.operator ==(Aw.Context.Core.Code.CodeSymbolFindings? left, Aw.Context.Core.Code.CodeSymbolFindings? right) -> bool
 static Aw.Context.Core.Code.CodeSymbols.operator !=(Aw.Context.Core.Code.CodeSymbols? left, Aw.Context.Core.Code.CodeSymbols? right) -> bool
 static Aw.Context.Core.Code.CodeSymbols.operator ==(Aw.Context.Core.Code.CodeSymbols? left, Aw.Context.Core.Code.CodeSymbols? right) -> bool
+static Aw.Context.Core.Code.CodeSymbols.Unavailable.get -> Aw.Context.Core.Code.CodeSymbols!
 static Aw.Context.Core.Code.CodeTerms.Forms(System.Collections.Generic.IEnumerable<string!>! names) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Context.Core.Code.CodeTerms.KeyName(string! key) -> string!
 static Aw.Context.Core.Code.CodeTest.operator !=(Aw.Context.Core.Code.CodeTest? left, Aw.Context.Core.Code.CodeTest? right) -> bool
@@ -5349,11 +5555,11 @@ static Aw.Context.Core.Engine.ContextQuery.operator ==(Aw.Context.Core.Engine.Co
 static Aw.Context.Core.Engine.ContextRepo.operator !=(Aw.Context.Core.Engine.ContextRepo? left, Aw.Context.Core.Engine.ContextRepo? right) -> bool
 static Aw.Context.Core.Engine.ContextRepo.operator ==(Aw.Context.Core.Engine.ContextRepo? left, Aw.Context.Core.Engine.ContextRepo? right) -> bool
 static Aw.Context.Core.Engine.ContextRepoName.From(string! value) -> Aw.Context.Core.Engine.ContextRepoName
+static Aw.Context.Core.Engine.ContextRepoName.operator !=(Aw.Context.Core.Engine.ContextRepoName left, Aw.Context.Core.Engine.ContextRepoName right) -> bool
+static Aw.Context.Core.Engine.ContextRepoName.operator ==(Aw.Context.Core.Engine.ContextRepoName left, Aw.Context.Core.Engine.ContextRepoName right) -> bool
 static Aw.Context.Core.Engine.ContextRepoName.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Engine.ContextRepoName
 static Aw.Context.Core.Engine.ContextRepoName.TryFrom(string? value, out Aw.Context.Core.Engine.ContextRepoName vo) -> bool
 static Aw.Context.Core.Engine.ContextRepoName.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Engine.ContextRepoName result) -> bool
-static Aw.Context.Core.Engine.ContextRepoName.operator !=(Aw.Context.Core.Engine.ContextRepoName left, Aw.Context.Core.Engine.ContextRepoName right) -> bool
-static Aw.Context.Core.Engine.ContextRepoName.operator ==(Aw.Context.Core.Engine.ContextRepoName left, Aw.Context.Core.Engine.ContextRepoName right) -> bool
 static Aw.Context.Core.Engine.ContextScope.operator !=(Aw.Context.Core.Engine.ContextScope? left, Aw.Context.Core.Engine.ContextScope? right) -> bool
 static Aw.Context.Core.Engine.ContextScope.operator ==(Aw.Context.Core.Engine.ContextScope? left, Aw.Context.Core.Engine.ContextScope? right) -> bool
 static Aw.Context.Core.Engine.ContextSettings.DefaultDocGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -5361,9 +5567,9 @@ static Aw.Context.Core.Engine.ContextSettings.DefaultSchemaGlobs.get -> System.C
 static Aw.Context.Core.Engine.ContextSettings.DefaultTestGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Context.Core.Engine.ContextSettings.operator !=(Aw.Context.Core.Engine.ContextSettings? left, Aw.Context.Core.Engine.ContextSettings? right) -> bool
 static Aw.Context.Core.Engine.ContextSettings.operator ==(Aw.Context.Core.Engine.ContextSettings? left, Aw.Context.Core.Engine.ContextSettings? right) -> bool
-static Aw.Context.Core.Engine.DiffRange.Parse(string? text) -> Aw.Kernel.Result<Aw.Context.Core.Engine.DiffRange!>!
 static Aw.Context.Core.Engine.DiffRange.operator !=(Aw.Context.Core.Engine.DiffRange? left, Aw.Context.Core.Engine.DiffRange? right) -> bool
 static Aw.Context.Core.Engine.DiffRange.operator ==(Aw.Context.Core.Engine.DiffRange? left, Aw.Context.Core.Engine.DiffRange? right) -> bool
+static Aw.Context.Core.Engine.DiffRange.Parse(string? text) -> Aw.Kernel.Result<Aw.Context.Core.Engine.DiffRange!>!
 static Aw.Context.Core.Engine.LabelingSettings.operator !=(Aw.Context.Core.Engine.LabelingSettings? left, Aw.Context.Core.Engine.LabelingSettings? right) -> bool
 static Aw.Context.Core.Engine.LabelingSettings.operator ==(Aw.Context.Core.Engine.LabelingSettings? left, Aw.Context.Core.Engine.LabelingSettings? right) -> bool
 static Aw.Context.Core.Engine.PathDenylist.Defaults.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -5407,13 +5613,13 @@ static Aw.Context.Core.Eval.Backtest.ArmQuestion.operator !=(Aw.Context.Core.Eva
 static Aw.Context.Core.Eval.Backtest.ArmQuestion.operator ==(Aw.Context.Core.Eval.Backtest.ArmQuestion? left, Aw.Context.Core.Eval.Backtest.ArmQuestion? right) -> bool
 static Aw.Context.Core.Eval.Backtest.ArmReport.operator !=(Aw.Context.Core.Eval.Backtest.ArmReport? left, Aw.Context.Core.Eval.Backtest.ArmReport? right) -> bool
 static Aw.Context.Core.Eval.Backtest.ArmReport.operator ==(Aw.Context.Core.Eval.Backtest.ArmReport? left, Aw.Context.Core.Eval.Backtest.ArmReport? right) -> bool
-static Aw.Context.Core.Eval.Backtest.ArmScore.operator !=(Aw.Context.Core.Eval.Backtest.ArmScore? left, Aw.Context.Core.Eval.Backtest.ArmScore? right) -> bool
-static Aw.Context.Core.Eval.Backtest.ArmScore.operator ==(Aw.Context.Core.Eval.Backtest.ArmScore? left, Aw.Context.Core.Eval.Backtest.ArmScore? right) -> bool
 static Aw.Context.Core.Eval.Backtest.Arms.Available.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.Arm>!
 static Aw.Context.Core.Eval.Backtest.Arms.Name(Aw.Context.Core.Eval.Backtest.Arm arm) -> string!
 static Aw.Context.Core.Eval.Backtest.Arms.NotAvailable.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.Arm>!
 static Aw.Context.Core.Eval.Backtest.Arms.Parse(string! text) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.Arm>!>!
 static Aw.Context.Core.Eval.Backtest.Arms.PendingStage(Aw.Context.Core.Eval.Backtest.Arm arm) -> string?
+static Aw.Context.Core.Eval.Backtest.ArmScore.operator !=(Aw.Context.Core.Eval.Backtest.ArmScore? left, Aw.Context.Core.Eval.Backtest.ArmScore? right) -> bool
+static Aw.Context.Core.Eval.Backtest.ArmScore.operator ==(Aw.Context.Core.Eval.Backtest.ArmScore? left, Aw.Context.Core.Eval.Backtest.ArmScore? right) -> bool
 static Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.operator !=(Aw.Context.Core.Eval.Backtest.AsOfDocsRequest? left, Aw.Context.Core.Eval.Backtest.AsOfDocsRequest? right) -> bool
 static Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.operator ==(Aw.Context.Core.Eval.Backtest.AsOfDocsRequest? left, Aw.Context.Core.Eval.Backtest.AsOfDocsRequest? right) -> bool
 static Aw.Context.Core.Eval.Backtest.AsOfMapCache.Key(Aw.Context.Core.Engine.ContextRepoName repo, string! commit, int extractorVersion, bool clustered) -> string!
@@ -5479,11 +5685,11 @@ static Aw.Context.Core.Eval.ProbeExpect.operator ==(Aw.Context.Core.Eval.ProbeEx
 static Aw.Context.Core.Eval.ProbeFile.operator !=(Aw.Context.Core.Eval.ProbeFile? left, Aw.Context.Core.Eval.ProbeFile? right) -> bool
 static Aw.Context.Core.Eval.ProbeFile.operator ==(Aw.Context.Core.Eval.ProbeFile? left, Aw.Context.Core.Eval.ProbeFile? right) -> bool
 static Aw.Context.Core.Eval.ProbeId.From(string! value) -> Aw.Context.Core.Eval.ProbeId
+static Aw.Context.Core.Eval.ProbeId.operator !=(Aw.Context.Core.Eval.ProbeId left, Aw.Context.Core.Eval.ProbeId right) -> bool
+static Aw.Context.Core.Eval.ProbeId.operator ==(Aw.Context.Core.Eval.ProbeId left, Aw.Context.Core.Eval.ProbeId right) -> bool
 static Aw.Context.Core.Eval.ProbeId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Eval.ProbeId
 static Aw.Context.Core.Eval.ProbeId.TryFrom(string? value, out Aw.Context.Core.Eval.ProbeId vo) -> bool
 static Aw.Context.Core.Eval.ProbeId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Eval.ProbeId result) -> bool
-static Aw.Context.Core.Eval.ProbeId.operator !=(Aw.Context.Core.Eval.ProbeId left, Aw.Context.Core.Eval.ProbeId right) -> bool
-static Aw.Context.Core.Eval.ProbeId.operator ==(Aw.Context.Core.Eval.ProbeId left, Aw.Context.Core.Eval.ProbeId right) -> bool
 static Aw.Context.Core.Eval.ProbeReport.operator !=(Aw.Context.Core.Eval.ProbeReport? left, Aw.Context.Core.Eval.ProbeReport? right) -> bool
 static Aw.Context.Core.Eval.ProbeReport.operator ==(Aw.Context.Core.Eval.ProbeReport? left, Aw.Context.Core.Eval.ProbeReport? right) -> bool
 static Aw.Context.Core.Eval.ProbeRun.operator !=(Aw.Context.Core.Eval.ProbeRun? left, Aw.Context.Core.Eval.ProbeRun? right) -> bool
@@ -5500,11 +5706,11 @@ static Aw.Context.Core.Eval.ProbeTotals.operator !=(Aw.Context.Core.Eval.ProbeTo
 static Aw.Context.Core.Eval.ProbeTotals.operator ==(Aw.Context.Core.Eval.ProbeTotals? left, Aw.Context.Core.Eval.ProbeTotals? right) -> bool
 static Aw.Context.Core.Extract.ClusterFeatures.Propose(Aw.Context.Core.Engine.ContextRepoName repo, Aw.Context.Core.Extract.ClusterSet! clusters, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.ClusterLabel!>! labels, Aw.Context.Core.Extract.ExtractedMap! extracted) -> Aw.Context.Core.Extract.ExtractedMap!
 static Aw.Context.Core.Extract.ClusterId.From(string! value) -> Aw.Context.Core.Extract.ClusterId
+static Aw.Context.Core.Extract.ClusterId.operator !=(Aw.Context.Core.Extract.ClusterId left, Aw.Context.Core.Extract.ClusterId right) -> bool
+static Aw.Context.Core.Extract.ClusterId.operator ==(Aw.Context.Core.Extract.ClusterId left, Aw.Context.Core.Extract.ClusterId right) -> bool
 static Aw.Context.Core.Extract.ClusterId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Extract.ClusterId
 static Aw.Context.Core.Extract.ClusterId.TryFrom(string? value, out Aw.Context.Core.Extract.ClusterId vo) -> bool
 static Aw.Context.Core.Extract.ClusterId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Extract.ClusterId result) -> bool
-static Aw.Context.Core.Extract.ClusterId.operator !=(Aw.Context.Core.Extract.ClusterId left, Aw.Context.Core.Extract.ClusterId right) -> bool
-static Aw.Context.Core.Extract.ClusterId.operator ==(Aw.Context.Core.Extract.ClusterId left, Aw.Context.Core.Extract.ClusterId right) -> bool
 static Aw.Context.Core.Extract.ClusterLabel.operator !=(Aw.Context.Core.Extract.ClusterLabel? left, Aw.Context.Core.Extract.ClusterLabel? right) -> bool
 static Aw.Context.Core.Extract.ClusterLabel.operator ==(Aw.Context.Core.Extract.ClusterLabel? left, Aw.Context.Core.Extract.ClusterLabel? right) -> bool
 static Aw.Context.Core.Extract.ClusterSet.operator !=(Aw.Context.Core.Extract.ClusterSet? left, Aw.Context.Core.Extract.ClusterSet? right) -> bool
@@ -5524,11 +5730,11 @@ static Aw.Context.Core.Extract.MapExtractor.Extract(Aw.Context.Core.Engine.Conte
 static Aw.Context.Core.Extract.MapExtractor.Extract(Aw.Context.Core.Engine.ContextRepoName repo, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.RepoFile!>! files, Aw.Context.Core.Extract.RecognizerSet! recognizers) -> Aw.Context.Core.Extract.MapExtraction!
 static Aw.Context.Core.Extract.Recognizer.operator !=(Aw.Context.Core.Extract.Recognizer? left, Aw.Context.Core.Extract.Recognizer? right) -> bool
 static Aw.Context.Core.Extract.Recognizer.operator ==(Aw.Context.Core.Extract.Recognizer? left, Aw.Context.Core.Extract.Recognizer? right) -> bool
-static Aw.Context.Core.Extract.RecognizerSet.From(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ProfileRecognizer!>! recognizers) -> Aw.Context.Core.Extract.RecognizerSet!
-static Aw.Context.Core.Extract.RecognizerSet.None.get -> Aw.Context.Core.Extract.RecognizerSet!
 static Aw.Context.Core.Extract.Recognizers.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.Recognizer!>!
 static Aw.Context.Core.Extract.Recognizers.MayRead(string! path) -> bool
 static Aw.Context.Core.Extract.Recognizers.Source(Aw.Context.Core.Extract.RepoFile! file) -> bool
+static Aw.Context.Core.Extract.RecognizerSet.From(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ProfileRecognizer!>! recognizers) -> Aw.Context.Core.Extract.RecognizerSet!
+static Aw.Context.Core.Extract.RecognizerSet.None.get -> Aw.Context.Core.Extract.RecognizerSet!
 static Aw.Context.Core.Extract.RepoChange.operator !=(Aw.Context.Core.Extract.RepoChange? left, Aw.Context.Core.Extract.RepoChange? right) -> bool
 static Aw.Context.Core.Extract.RepoChange.operator ==(Aw.Context.Core.Extract.RepoChange? left, Aw.Context.Core.Extract.RepoChange? right) -> bool
 static Aw.Context.Core.Extract.RepoChanges.operator !=(Aw.Context.Core.Extract.RepoChanges? left, Aw.Context.Core.Extract.RepoChanges? right) -> bool
@@ -5569,18 +5775,18 @@ static Aw.Context.Core.Graph.GraphWalk.ShortestPath(Aw.Context.Core.Graph.GraphS
 static Aw.Context.Core.Graph.KeyMigrations.Apply(Aw.Context.Core.Graph.GraphSnapshot! graph, int from, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.IKeyMigration!>! chain) -> (Aw.Context.Core.Graph.GraphSnapshot! Graph, int Version)
 static Aw.Context.Core.Graph.KeyMigrations.Shipped.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.IKeyMigration!>!
 static Aw.Context.Core.Graph.LinkId.From(string! value) -> Aw.Context.Core.Graph.LinkId
+static Aw.Context.Core.Graph.LinkId.operator !=(Aw.Context.Core.Graph.LinkId left, Aw.Context.Core.Graph.LinkId right) -> bool
+static Aw.Context.Core.Graph.LinkId.operator ==(Aw.Context.Core.Graph.LinkId left, Aw.Context.Core.Graph.LinkId right) -> bool
 static Aw.Context.Core.Graph.LinkId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Graph.LinkId
 static Aw.Context.Core.Graph.LinkId.TryFrom(string? value, out Aw.Context.Core.Graph.LinkId vo) -> bool
 static Aw.Context.Core.Graph.LinkId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Graph.LinkId result) -> bool
-static Aw.Context.Core.Graph.LinkId.operator !=(Aw.Context.Core.Graph.LinkId left, Aw.Context.Core.Graph.LinkId right) -> bool
-static Aw.Context.Core.Graph.LinkId.operator ==(Aw.Context.Core.Graph.LinkId left, Aw.Context.Core.Graph.LinkId right) -> bool
 static Aw.Context.Core.Graph.LinkIds.For(Aw.Context.Core.Graph.GraphEdge! edge) -> Aw.Context.Core.Graph.LinkId
 static Aw.Context.Core.Graph.NeighborFact.operator !=(Aw.Context.Core.Graph.NeighborFact? left, Aw.Context.Core.Graph.NeighborFact? right) -> bool
 static Aw.Context.Core.Graph.NeighborFact.operator ==(Aw.Context.Core.Graph.NeighborFact? left, Aw.Context.Core.Graph.NeighborFact? right) -> bool
-static Aw.Context.Core.Graph.NeighborNode.operator !=(Aw.Context.Core.Graph.NeighborNode? left, Aw.Context.Core.Graph.NeighborNode? right) -> bool
-static Aw.Context.Core.Graph.NeighborNode.operator ==(Aw.Context.Core.Graph.NeighborNode? left, Aw.Context.Core.Graph.NeighborNode? right) -> bool
 static Aw.Context.Core.Graph.Neighborhood.operator !=(Aw.Context.Core.Graph.Neighborhood? left, Aw.Context.Core.Graph.Neighborhood? right) -> bool
 static Aw.Context.Core.Graph.Neighborhood.operator ==(Aw.Context.Core.Graph.Neighborhood? left, Aw.Context.Core.Graph.Neighborhood? right) -> bool
+static Aw.Context.Core.Graph.NeighborNode.operator !=(Aw.Context.Core.Graph.NeighborNode? left, Aw.Context.Core.Graph.NeighborNode? right) -> bool
+static Aw.Context.Core.Graph.NeighborNode.operator ==(Aw.Context.Core.Graph.NeighborNode? left, Aw.Context.Core.Graph.NeighborNode? right) -> bool
 static Aw.Context.Core.Graph.NeighborsView.operator !=(Aw.Context.Core.Graph.NeighborsView? left, Aw.Context.Core.Graph.NeighborsView? right) -> bool
 static Aw.Context.Core.Graph.NeighborsView.operator ==(Aw.Context.Core.Graph.NeighborsView? left, Aw.Context.Core.Graph.NeighborsView? right) -> bool
 static Aw.Context.Core.Graph.NodeAlias.operator !=(Aw.Context.Core.Graph.NodeAlias? left, Aw.Context.Core.Graph.NodeAlias? right) -> bool
@@ -5588,11 +5794,11 @@ static Aw.Context.Core.Graph.NodeAlias.operator ==(Aw.Context.Core.Graph.NodeAli
 static Aw.Context.Core.Graph.NodeFact.operator !=(Aw.Context.Core.Graph.NodeFact? left, Aw.Context.Core.Graph.NodeFact? right) -> bool
 static Aw.Context.Core.Graph.NodeFact.operator ==(Aw.Context.Core.Graph.NodeFact? left, Aw.Context.Core.Graph.NodeFact? right) -> bool
 static Aw.Context.Core.Graph.NodeKey.From(string! value) -> Aw.Context.Core.Graph.NodeKey
+static Aw.Context.Core.Graph.NodeKey.operator !=(Aw.Context.Core.Graph.NodeKey left, Aw.Context.Core.Graph.NodeKey right) -> bool
+static Aw.Context.Core.Graph.NodeKey.operator ==(Aw.Context.Core.Graph.NodeKey left, Aw.Context.Core.Graph.NodeKey right) -> bool
 static Aw.Context.Core.Graph.NodeKey.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Graph.NodeKey
 static Aw.Context.Core.Graph.NodeKey.TryFrom(string? value, out Aw.Context.Core.Graph.NodeKey vo) -> bool
 static Aw.Context.Core.Graph.NodeKey.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Graph.NodeKey result) -> bool
-static Aw.Context.Core.Graph.NodeKey.operator !=(Aw.Context.Core.Graph.NodeKey left, Aw.Context.Core.Graph.NodeKey right) -> bool
-static Aw.Context.Core.Graph.NodeKey.operator ==(Aw.Context.Core.Graph.NodeKey left, Aw.Context.Core.Graph.NodeKey right) -> bool
 static Aw.Context.Core.Graph.NodeKinds.FromScheme(string! scheme) -> Aw.Context.Core.Graph.NodeKind
 static Aw.Context.Core.Graph.NodeKinds.HasValidSurfaceKind(Aw.Context.Core.Graph.NodeKey key) -> bool
 static Aw.Context.Core.Graph.NodeKinds.SurfaceKinds.get -> System.Collections.Generic.IReadOnlySet<string!>!
@@ -5651,15 +5857,12 @@ static Aw.Context.Core.History.HistoryWindow.Of(string? since, string? before) -
 static Aw.Context.Core.History.HistoryWindow.Open.get -> Aw.Context.Core.History.HistoryWindow!
 static Aw.Context.Core.History.HistoryWindow.operator !=(Aw.Context.Core.History.HistoryWindow? left, Aw.Context.Core.History.HistoryWindow? right) -> bool
 static Aw.Context.Core.History.HistoryWindow.operator ==(Aw.Context.Core.History.HistoryWindow? left, Aw.Context.Core.History.HistoryWindow? right) -> bool
-static Aw.Context.Core.History.MergeSubject.Parse(string! subject) -> Aw.Context.Core.History.MergeSubject!
 static Aw.Context.Core.History.MergeSubject.operator !=(Aw.Context.Core.History.MergeSubject? left, Aw.Context.Core.History.MergeSubject? right) -> bool
 static Aw.Context.Core.History.MergeSubject.operator ==(Aw.Context.Core.History.MergeSubject? left, Aw.Context.Core.History.MergeSubject? right) -> bool
+static Aw.Context.Core.History.MergeSubject.Parse(string! subject) -> Aw.Context.Core.History.MergeSubject!
 static Aw.Context.Core.History.RecordTimes.Of(System.DateTimeOffset? createdAt, string! version) -> Aw.Context.Core.History.RecordTimes!
 static Aw.Context.Core.History.RecordTimes.operator !=(Aw.Context.Core.History.RecordTimes? left, Aw.Context.Core.History.RecordTimes? right) -> bool
 static Aw.Context.Core.History.RecordTimes.operator ==(Aw.Context.Core.History.RecordTimes? left, Aw.Context.Core.History.RecordTimes? right) -> bool
-static Aw.Context.Core.LensSupport.LensTexts.Clean(Aw.Context.Core.Lenses.LensesSetView! view, Aw.Context.Core.Map.MapText! text) -> Aw.Context.Core.Lenses.LensesSetView!
-static Aw.Context.Core.LensSupport.LensTexts.Clean(Aw.Context.Core.Lenses.LensesView! view, Aw.Context.Core.Map.MapText! text) -> Aw.Context.Core.Lenses.LensesView!
-static Aw.Context.Core.LensSupport.LensTexts.Clean(Aw.Context.Core.Subgraph.SubgraphView! view, Aw.Context.Core.Map.MapText! text) -> Aw.Context.Core.Subgraph.SubgraphView!
 static Aw.Context.Core.Lenses.BandSearched.operator !=(Aw.Context.Core.Lenses.BandSearched? left, Aw.Context.Core.Lenses.BandSearched? right) -> bool
 static Aw.Context.Core.Lenses.BandSearched.operator ==(Aw.Context.Core.Lenses.BandSearched? left, Aw.Context.Core.Lenses.BandSearched? right) -> bool
 static Aw.Context.Core.Lenses.CodeBand.operator !=(Aw.Context.Core.Lenses.CodeBand? left, Aw.Context.Core.Lenses.CodeBand? right) -> bool
@@ -5711,6 +5914,12 @@ static Aw.Context.Core.Lenses.LensDecision.operator !=(Aw.Context.Core.Lenses.Le
 static Aw.Context.Core.Lenses.LensDecision.operator ==(Aw.Context.Core.Lenses.LensDecision? left, Aw.Context.Core.Lenses.LensDecision? right) -> bool
 static Aw.Context.Core.Lenses.LensEdge.operator !=(Aw.Context.Core.Lenses.LensEdge? left, Aw.Context.Core.Lenses.LensEdge? right) -> bool
 static Aw.Context.Core.Lenses.LensEdge.operator ==(Aw.Context.Core.Lenses.LensEdge? left, Aw.Context.Core.Lenses.LensEdge? right) -> bool
+static Aw.Context.Core.Lenses.LensesBuilder.Build(Aw.Context.Core.Lenses.LensBasis! basis, Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Graph.NodeKey anchor, int depth, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.DecisionConflict!>? checkedPairs = null) -> Aw.Kernel.Result<Aw.Context.Core.Lenses.LensesView!>!
+static Aw.Context.Core.Lenses.LensesBuilder.BuildSet(Aw.Context.Core.Lenses.LensBasis! basis, Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<string!>! anchors, int depth, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.DecisionConflict!>? checkedPairs = null) -> Aw.Kernel.Result<Aw.Context.Core.Lenses.LensesSetView!>!
+static Aw.Context.Core.Lenses.LensesSetView.operator !=(Aw.Context.Core.Lenses.LensesSetView? left, Aw.Context.Core.Lenses.LensesSetView? right) -> bool
+static Aw.Context.Core.Lenses.LensesSetView.operator ==(Aw.Context.Core.Lenses.LensesSetView? left, Aw.Context.Core.Lenses.LensesSetView? right) -> bool
+static Aw.Context.Core.Lenses.LensesView.operator !=(Aw.Context.Core.Lenses.LensesView? left, Aw.Context.Core.Lenses.LensesView? right) -> bool
+static Aw.Context.Core.Lenses.LensesView.operator ==(Aw.Context.Core.Lenses.LensesView? left, Aw.Context.Core.Lenses.LensesView? right) -> bool
 static Aw.Context.Core.Lenses.LensFile.operator !=(Aw.Context.Core.Lenses.LensFile? left, Aw.Context.Core.Lenses.LensFile? right) -> bool
 static Aw.Context.Core.Lenses.LensFile.operator ==(Aw.Context.Core.Lenses.LensFile? left, Aw.Context.Core.Lenses.LensFile? right) -> bool
 static Aw.Context.Core.Lenses.LensGap.operator !=(Aw.Context.Core.Lenses.LensGap? left, Aw.Context.Core.Lenses.LensGap? right) -> bool
@@ -5727,15 +5936,9 @@ static Aw.Context.Core.Lenses.LensRecord.operator !=(Aw.Context.Core.Lenses.Lens
 static Aw.Context.Core.Lenses.LensRecord.operator ==(Aw.Context.Core.Lenses.LensRecord? left, Aw.Context.Core.Lenses.LensRecord? right) -> bool
 static Aw.Context.Core.Lenses.LensSearched.operator !=(Aw.Context.Core.Lenses.LensSearched? left, Aw.Context.Core.Lenses.LensSearched? right) -> bool
 static Aw.Context.Core.Lenses.LensSearched.operator ==(Aw.Context.Core.Lenses.LensSearched? left, Aw.Context.Core.Lenses.LensSearched? right) -> bool
-static Aw.Context.Core.Lenses.LensSymbols.Unavailable.get -> Aw.Context.Core.Lenses.LensSymbols!
 static Aw.Context.Core.Lenses.LensSymbols.operator !=(Aw.Context.Core.Lenses.LensSymbols? left, Aw.Context.Core.Lenses.LensSymbols? right) -> bool
 static Aw.Context.Core.Lenses.LensSymbols.operator ==(Aw.Context.Core.Lenses.LensSymbols? left, Aw.Context.Core.Lenses.LensSymbols? right) -> bool
-static Aw.Context.Core.Lenses.LensesBuilder.Build(Aw.Context.Core.Lenses.LensBasis! basis, Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Graph.NodeKey anchor, int depth, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.DecisionConflict!>? checkedPairs = null) -> Aw.Kernel.Result<Aw.Context.Core.Lenses.LensesView!>!
-static Aw.Context.Core.Lenses.LensesBuilder.BuildSet(Aw.Context.Core.Lenses.LensBasis! basis, Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<string!>! anchors, int depth, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.DecisionConflict!>? checkedPairs = null) -> Aw.Kernel.Result<Aw.Context.Core.Lenses.LensesSetView!>!
-static Aw.Context.Core.Lenses.LensesSetView.operator !=(Aw.Context.Core.Lenses.LensesSetView? left, Aw.Context.Core.Lenses.LensesSetView? right) -> bool
-static Aw.Context.Core.Lenses.LensesSetView.operator ==(Aw.Context.Core.Lenses.LensesSetView? left, Aw.Context.Core.Lenses.LensesSetView? right) -> bool
-static Aw.Context.Core.Lenses.LensesView.operator !=(Aw.Context.Core.Lenses.LensesView? left, Aw.Context.Core.Lenses.LensesView? right) -> bool
-static Aw.Context.Core.Lenses.LensesView.operator ==(Aw.Context.Core.Lenses.LensesView? left, Aw.Context.Core.Lenses.LensesView? right) -> bool
+static Aw.Context.Core.Lenses.LensSymbols.Unavailable.get -> Aw.Context.Core.Lenses.LensSymbols!
 static Aw.Context.Core.Lenses.MapCoverage.operator !=(Aw.Context.Core.Lenses.MapCoverage? left, Aw.Context.Core.Lenses.MapCoverage? right) -> bool
 static Aw.Context.Core.Lenses.MapCoverage.operator ==(Aw.Context.Core.Lenses.MapCoverage? left, Aw.Context.Core.Lenses.MapCoverage? right) -> bool
 static Aw.Context.Core.Lenses.ProductBand.operator !=(Aw.Context.Core.Lenses.ProductBand? left, Aw.Context.Core.Lenses.ProductBand? right) -> bool
@@ -5755,11 +5958,14 @@ static Aw.Context.Core.Lenses.SearchedSources.Unlinked(Aw.Context.Core.Lenses.Se
 static Aw.Context.Core.Lenses.SearchedSync.operator !=(Aw.Context.Core.Lenses.SearchedSync? left, Aw.Context.Core.Lenses.SearchedSync? right) -> bool
 static Aw.Context.Core.Lenses.SearchedSync.operator ==(Aw.Context.Core.Lenses.SearchedSync? left, Aw.Context.Core.Lenses.SearchedSync? right) -> bool
 static Aw.Context.Core.Lenses.SyncJobId.From(string! value) -> Aw.Context.Core.Lenses.SyncJobId
+static Aw.Context.Core.Lenses.SyncJobId.operator !=(Aw.Context.Core.Lenses.SyncJobId left, Aw.Context.Core.Lenses.SyncJobId right) -> bool
+static Aw.Context.Core.Lenses.SyncJobId.operator ==(Aw.Context.Core.Lenses.SyncJobId left, Aw.Context.Core.Lenses.SyncJobId right) -> bool
 static Aw.Context.Core.Lenses.SyncJobId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Lenses.SyncJobId
 static Aw.Context.Core.Lenses.SyncJobId.TryFrom(string? value, out Aw.Context.Core.Lenses.SyncJobId vo) -> bool
 static Aw.Context.Core.Lenses.SyncJobId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Lenses.SyncJobId result) -> bool
-static Aw.Context.Core.Lenses.SyncJobId.operator !=(Aw.Context.Core.Lenses.SyncJobId left, Aw.Context.Core.Lenses.SyncJobId right) -> bool
-static Aw.Context.Core.Lenses.SyncJobId.operator ==(Aw.Context.Core.Lenses.SyncJobId left, Aw.Context.Core.Lenses.SyncJobId right) -> bool
+static Aw.Context.Core.LensSupport.LensTexts.Clean(Aw.Context.Core.Lenses.LensesSetView! view, Aw.Context.Core.Map.MapText! text) -> Aw.Context.Core.Lenses.LensesSetView!
+static Aw.Context.Core.LensSupport.LensTexts.Clean(Aw.Context.Core.Lenses.LensesView! view, Aw.Context.Core.Map.MapText! text) -> Aw.Context.Core.Lenses.LensesView!
+static Aw.Context.Core.LensSupport.LensTexts.Clean(Aw.Context.Core.Subgraph.SubgraphView! view, Aw.Context.Core.Map.MapText! text) -> Aw.Context.Core.Subgraph.SubgraphView!
 static Aw.Context.Core.Linking.ConflictChecker.Pairs(Aw.Context.Core.Linking.IntentLayer! layer, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.DecisionRow!>! added) -> System.Collections.Generic.IReadOnlyList<(Aw.Context.Core.Graph.DecisionRow! First, Aw.Context.Core.Graph.DecisionRow! Second, Aw.Context.Core.Graph.NodeKey Node)>!
 static Aw.Context.Core.Linking.ConflictChecker.Prompt(Aw.Context.Core.Graph.DecisionRow! first, Aw.Context.Core.Graph.DecisionRow! second) -> string!
 static Aw.Context.Core.Linking.ConflictChecker.Read(string! answer) -> Aw.Context.Core.Linking.ConflictVerdict?
@@ -5849,12 +6055,13 @@ static Aw.Context.Core.Map.MapStatusView.operator !=(Aw.Context.Core.Map.MapStat
 static Aw.Context.Core.Map.MapStatusView.operator ==(Aw.Context.Core.Map.MapStatusView? left, Aw.Context.Core.Map.MapStatusView? right) -> bool
 static Aw.Context.Core.Map.MapVersion.operator !=(Aw.Context.Core.Map.MapVersion? left, Aw.Context.Core.Map.MapVersion? right) -> bool
 static Aw.Context.Core.Map.MapVersion.operator ==(Aw.Context.Core.Map.MapVersion? left, Aw.Context.Core.Map.MapVersion? right) -> bool
-static Aw.Context.Core.Map.MapVersionRef.Parse(string? text) -> Aw.Kernel.Result<Aw.Context.Core.Map.MapVersionRef>!
-static Aw.Context.Core.Map.MapVersionRef.Tag(int number) -> string!
 static Aw.Context.Core.Map.MapVersionRef.operator !=(Aw.Context.Core.Map.MapVersionRef left, Aw.Context.Core.Map.MapVersionRef right) -> bool
 static Aw.Context.Core.Map.MapVersionRef.operator ==(Aw.Context.Core.Map.MapVersionRef left, Aw.Context.Core.Map.MapVersionRef right) -> bool
+static Aw.Context.Core.Map.MapVersionRef.Parse(string? text) -> Aw.Kernel.Result<Aw.Context.Core.Map.MapVersionRef>!
+static Aw.Context.Core.Map.MapVersionRef.Tag(int number) -> string!
 static Aw.Context.Core.Map.ProposedNode.operator !=(Aw.Context.Core.Map.ProposedNode? left, Aw.Context.Core.Map.ProposedNode? right) -> bool
 static Aw.Context.Core.Map.ProposedNode.operator ==(Aw.Context.Core.Map.ProposedNode? left, Aw.Context.Core.Map.ProposedNode? right) -> bool
+static Aw.Context.Core.Map.PublishAccess.Gate(Aw.Context.Core.Engine.ContextScope! scope, string! what) -> Aw.Kernel.Error?
 static Aw.Context.Core.Map.PurgeReport.operator !=(Aw.Context.Core.Map.PurgeReport? left, Aw.Context.Core.Map.PurgeReport? right) -> bool
 static Aw.Context.Core.Map.PurgeReport.operator ==(Aw.Context.Core.Map.PurgeReport? left, Aw.Context.Core.Map.PurgeReport? right) -> bool
 static Aw.Context.Core.Map.VisibleMap.operator !=(Aw.Context.Core.Map.VisibleMap? left, Aw.Context.Core.Map.VisibleMap? right) -> bool
@@ -5873,16 +6080,16 @@ static Aw.Context.Core.Onyx.OnyxSettings.operator ==(Aw.Context.Core.Onyx.OnyxSe
 static Aw.Context.Core.Overrides.AppliedMap.operator !=(Aw.Context.Core.Overrides.AppliedMap? left, Aw.Context.Core.Overrides.AppliedMap? right) -> bool
 static Aw.Context.Core.Overrides.AppliedMap.operator ==(Aw.Context.Core.Overrides.AppliedMap? left, Aw.Context.Core.Overrides.AppliedMap? right) -> bool
 static Aw.Context.Core.Overrides.Confirmation.Of(Aw.Context.Core.Results.Provenance provenance, bool accepted = false) -> bool
-static Aw.Context.Core.Overrides.MapOverride.UndoingCut(Aw.Context.Core.Overrides.MapOverride! decision, System.DateTimeOffset at) -> Aw.Context.Core.Overrides.MapOverride!
 static Aw.Context.Core.Overrides.MapOverride.operator !=(Aw.Context.Core.Overrides.MapOverride? left, Aw.Context.Core.Overrides.MapOverride? right) -> bool
 static Aw.Context.Core.Overrides.MapOverride.operator ==(Aw.Context.Core.Overrides.MapOverride? left, Aw.Context.Core.Overrides.MapOverride? right) -> bool
+static Aw.Context.Core.Overrides.MapOverride.UndoingCut(Aw.Context.Core.Overrides.MapOverride! decision, System.DateTimeOffset at) -> Aw.Context.Core.Overrides.MapOverride!
 static Aw.Context.Core.Overrides.OverrideApplier.Apply(Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides) -> Aw.Context.Core.Overrides.AppliedMap!
 static Aw.Context.Core.Overrides.OverrideId.From(string! value) -> Aw.Context.Core.Overrides.OverrideId
+static Aw.Context.Core.Overrides.OverrideId.operator !=(Aw.Context.Core.Overrides.OverrideId left, Aw.Context.Core.Overrides.OverrideId right) -> bool
+static Aw.Context.Core.Overrides.OverrideId.operator ==(Aw.Context.Core.Overrides.OverrideId left, Aw.Context.Core.Overrides.OverrideId right) -> bool
 static Aw.Context.Core.Overrides.OverrideId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Overrides.OverrideId
 static Aw.Context.Core.Overrides.OverrideId.TryFrom(string? value, out Aw.Context.Core.Overrides.OverrideId vo) -> bool
 static Aw.Context.Core.Overrides.OverrideId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Overrides.OverrideId result) -> bool
-static Aw.Context.Core.Overrides.OverrideId.operator !=(Aw.Context.Core.Overrides.OverrideId left, Aw.Context.Core.Overrides.OverrideId right) -> bool
-static Aw.Context.Core.Overrides.OverrideId.operator ==(Aw.Context.Core.Overrides.OverrideId left, Aw.Context.Core.Overrides.OverrideId right) -> bool
 static Aw.Context.Core.Overrides.OverrideLog.Active(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>!
 static Aw.Context.Core.Overrides.OverrideLog.Decides(Aw.Context.Core.Overrides.MapOverride! o) -> bool
 static Aw.Context.Core.Overrides.OverrideLog.Ordered(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>!
@@ -5911,10 +6118,10 @@ static Aw.Context.Core.Proposals.ProposalPlanner.Plan(Aw.Context.Core.Proposals.
 static Aw.Context.Core.Proposals.ProposalPlanner.Withdraw(string! run, Aw.Context.Core.Engine.ContextRepoName repo, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, string! who, System.DateTimeOffset at) -> (System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Rows, int Kept)
 static Aw.Context.Core.Proposals.ProposalsView.operator !=(Aw.Context.Core.Proposals.ProposalsView? left, Aw.Context.Core.Proposals.ProposalsView? right) -> bool
 static Aw.Context.Core.Proposals.ProposalsView.operator ==(Aw.Context.Core.Proposals.ProposalsView? left, Aw.Context.Core.Proposals.ProposalsView? right) -> bool
-static Aw.Context.Core.Proposals.ProposeResult.operator !=(Aw.Context.Core.Proposals.ProposeResult? left, Aw.Context.Core.Proposals.ProposeResult? right) -> bool
-static Aw.Context.Core.Proposals.ProposeResult.operator ==(Aw.Context.Core.Proposals.ProposeResult? left, Aw.Context.Core.Proposals.ProposeResult? right) -> bool
 static Aw.Context.Core.Proposals.ProposedSurface.operator !=(Aw.Context.Core.Proposals.ProposedSurface? left, Aw.Context.Core.Proposals.ProposedSurface? right) -> bool
 static Aw.Context.Core.Proposals.ProposedSurface.operator ==(Aw.Context.Core.Proposals.ProposedSurface? left, Aw.Context.Core.Proposals.ProposedSurface? right) -> bool
+static Aw.Context.Core.Proposals.ProposeResult.operator !=(Aw.Context.Core.Proposals.ProposeResult? left, Aw.Context.Core.Proposals.ProposeResult? right) -> bool
+static Aw.Context.Core.Proposals.ProposeResult.operator ==(Aw.Context.Core.Proposals.ProposeResult? left, Aw.Context.Core.Proposals.ProposeResult? right) -> bool
 static Aw.Context.Core.Proposals.ScopeProposal.operator !=(Aw.Context.Core.Proposals.ScopeProposal? left, Aw.Context.Core.Proposals.ScopeProposal? right) -> bool
 static Aw.Context.Core.Proposals.ScopeProposal.operator ==(Aw.Context.Core.Proposals.ScopeProposal? left, Aw.Context.Core.Proposals.ScopeProposal? right) -> bool
 static Aw.Context.Core.Ranking.FusedItem.operator !=(Aw.Context.Core.Ranking.FusedItem? left, Aw.Context.Core.Ranking.FusedItem? right) -> bool
@@ -5942,11 +6149,11 @@ static Aw.Context.Core.Results.DiffNode.operator ==(Aw.Context.Core.Results.Diff
 static Aw.Context.Core.Results.DiffPart.operator !=(Aw.Context.Core.Results.DiffPart? left, Aw.Context.Core.Results.DiffPart? right) -> bool
 static Aw.Context.Core.Results.DiffPart.operator ==(Aw.Context.Core.Results.DiffPart? left, Aw.Context.Core.Results.DiffPart? right) -> bool
 static Aw.Context.Core.Results.QueryId.From(string! value) -> Aw.Context.Core.Results.QueryId
+static Aw.Context.Core.Results.QueryId.operator !=(Aw.Context.Core.Results.QueryId left, Aw.Context.Core.Results.QueryId right) -> bool
+static Aw.Context.Core.Results.QueryId.operator ==(Aw.Context.Core.Results.QueryId left, Aw.Context.Core.Results.QueryId right) -> bool
 static Aw.Context.Core.Results.QueryId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Results.QueryId
 static Aw.Context.Core.Results.QueryId.TryFrom(string? value, out Aw.Context.Core.Results.QueryId vo) -> bool
 static Aw.Context.Core.Results.QueryId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Results.QueryId result) -> bool
-static Aw.Context.Core.Results.QueryId.operator !=(Aw.Context.Core.Results.QueryId left, Aw.Context.Core.Results.QueryId right) -> bool
-static Aw.Context.Core.Results.QueryId.operator ==(Aw.Context.Core.Results.QueryId left, Aw.Context.Core.Results.QueryId right) -> bool
 static Aw.Context.Core.Results.RefreshReport.operator !=(Aw.Context.Core.Results.RefreshReport? left, Aw.Context.Core.Results.RefreshReport? right) -> bool
 static Aw.Context.Core.Results.RefreshReport.operator ==(Aw.Context.Core.Results.RefreshReport? left, Aw.Context.Core.Results.RefreshReport? right) -> bool
 static Aw.Context.Core.Results.RepoRefresh.operator !=(Aw.Context.Core.Results.RepoRefresh? left, Aw.Context.Core.Results.RepoRefresh? right) -> bool
@@ -5964,12 +6171,12 @@ static Aw.Context.Core.Results.SourceCalls.Degraded(Aw.Context.Core.Sources.Sour
 static Aw.Context.Core.Results.SourceCalls.Within<T>(Aw.Context.Core.Sources.IContextSource! source, (System.TimeSpan Left, System.TimeProvider! Clock) deadline, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<Aw.Kernel.Result<T>!>>! call, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<T>!>
 static Aw.Context.Core.Results.SourceStatusRow.operator !=(Aw.Context.Core.Results.SourceStatusRow? left, Aw.Context.Core.Results.SourceStatusRow? right) -> bool
 static Aw.Context.Core.Results.SourceStatusRow.operator ==(Aw.Context.Core.Results.SourceStatusRow? left, Aw.Context.Core.Results.SourceStatusRow? right) -> bool
+static Aw.Context.Core.Results.SourcesView.operator !=(Aw.Context.Core.Results.SourcesView? left, Aw.Context.Core.Results.SourcesView? right) -> bool
+static Aw.Context.Core.Results.SourcesView.operator ==(Aw.Context.Core.Results.SourcesView? left, Aw.Context.Core.Results.SourcesView? right) -> bool
 static Aw.Context.Core.Results.SourceSync.operator !=(Aw.Context.Core.Results.SourceSync? left, Aw.Context.Core.Results.SourceSync? right) -> bool
 static Aw.Context.Core.Results.SourceSync.operator ==(Aw.Context.Core.Results.SourceSync? left, Aw.Context.Core.Results.SourceSync? right) -> bool
 static Aw.Context.Core.Results.SourceSyncStatus.operator !=(Aw.Context.Core.Results.SourceSyncStatus? left, Aw.Context.Core.Results.SourceSyncStatus? right) -> bool
 static Aw.Context.Core.Results.SourceSyncStatus.operator ==(Aw.Context.Core.Results.SourceSyncStatus? left, Aw.Context.Core.Results.SourceSyncStatus? right) -> bool
-static Aw.Context.Core.Results.SourcesView.operator !=(Aw.Context.Core.Results.SourcesView? left, Aw.Context.Core.Results.SourcesView? right) -> bool
-static Aw.Context.Core.Results.SourcesView.operator ==(Aw.Context.Core.Results.SourcesView? left, Aw.Context.Core.Results.SourcesView? right) -> bool
 static Aw.Context.Core.Results.SyncReport.operator !=(Aw.Context.Core.Results.SyncReport? left, Aw.Context.Core.Results.SyncReport? right) -> bool
 static Aw.Context.Core.Results.SyncReport.operator ==(Aw.Context.Core.Results.SyncReport? left, Aw.Context.Core.Results.SyncReport? right) -> bool
 static Aw.Context.Core.Review.CleanupReport.operator !=(Aw.Context.Core.Review.CleanupReport? left, Aw.Context.Core.Review.CleanupReport? right) -> bool
@@ -6026,23 +6233,23 @@ static Aw.Context.Core.Review.ReviewVersion.operator ==(Aw.Context.Core.Review.R
 static Aw.Context.Core.Sources.ChangePage.operator !=(Aw.Context.Core.Sources.ChangePage? left, Aw.Context.Core.Sources.ChangePage? right) -> bool
 static Aw.Context.Core.Sources.ChangePage.operator ==(Aw.Context.Core.Sources.ChangePage? left, Aw.Context.Core.Sources.ChangePage? right) -> bool
 static Aw.Context.Core.Sources.ExternalId.From(string! value) -> Aw.Context.Core.Sources.ExternalId
+static Aw.Context.Core.Sources.ExternalId.operator !=(Aw.Context.Core.Sources.ExternalId left, Aw.Context.Core.Sources.ExternalId right) -> bool
+static Aw.Context.Core.Sources.ExternalId.operator ==(Aw.Context.Core.Sources.ExternalId left, Aw.Context.Core.Sources.ExternalId right) -> bool
 static Aw.Context.Core.Sources.ExternalId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Sources.ExternalId
 static Aw.Context.Core.Sources.ExternalId.TryFrom(string? value, out Aw.Context.Core.Sources.ExternalId vo) -> bool
 static Aw.Context.Core.Sources.ExternalId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Sources.ExternalId result) -> bool
-static Aw.Context.Core.Sources.ExternalId.operator !=(Aw.Context.Core.Sources.ExternalId left, Aw.Context.Core.Sources.ExternalId right) -> bool
-static Aw.Context.Core.Sources.ExternalId.operator ==(Aw.Context.Core.Sources.ExternalId left, Aw.Context.Core.Sources.ExternalId right) -> bool
 static Aw.Context.Core.Sources.RecordKey.From(string! value) -> Aw.Context.Core.Sources.RecordKey
+static Aw.Context.Core.Sources.RecordKey.operator !=(Aw.Context.Core.Sources.RecordKey left, Aw.Context.Core.Sources.RecordKey right) -> bool
+static Aw.Context.Core.Sources.RecordKey.operator ==(Aw.Context.Core.Sources.RecordKey left, Aw.Context.Core.Sources.RecordKey right) -> bool
 static Aw.Context.Core.Sources.RecordKey.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Sources.RecordKey
 static Aw.Context.Core.Sources.RecordKey.TryFrom(string? value, out Aw.Context.Core.Sources.RecordKey vo) -> bool
 static Aw.Context.Core.Sources.RecordKey.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Sources.RecordKey result) -> bool
-static Aw.Context.Core.Sources.RecordKey.operator !=(Aw.Context.Core.Sources.RecordKey left, Aw.Context.Core.Sources.RecordKey right) -> bool
-static Aw.Context.Core.Sources.RecordKey.operator ==(Aw.Context.Core.Sources.RecordKey left, Aw.Context.Core.Sources.RecordKey right) -> bool
 static Aw.Context.Core.Sources.SourceCursor.From(string! value) -> Aw.Context.Core.Sources.SourceCursor
+static Aw.Context.Core.Sources.SourceCursor.operator !=(Aw.Context.Core.Sources.SourceCursor left, Aw.Context.Core.Sources.SourceCursor right) -> bool
+static Aw.Context.Core.Sources.SourceCursor.operator ==(Aw.Context.Core.Sources.SourceCursor left, Aw.Context.Core.Sources.SourceCursor right) -> bool
 static Aw.Context.Core.Sources.SourceCursor.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Sources.SourceCursor
 static Aw.Context.Core.Sources.SourceCursor.TryFrom(string? value, out Aw.Context.Core.Sources.SourceCursor vo) -> bool
 static Aw.Context.Core.Sources.SourceCursor.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Sources.SourceCursor result) -> bool
-static Aw.Context.Core.Sources.SourceCursor.operator !=(Aw.Context.Core.Sources.SourceCursor left, Aw.Context.Core.Sources.SourceCursor right) -> bool
-static Aw.Context.Core.Sources.SourceCursor.operator ==(Aw.Context.Core.Sources.SourceCursor left, Aw.Context.Core.Sources.SourceCursor right) -> bool
 static Aw.Context.Core.Sources.SourceDescriptor.operator !=(Aw.Context.Core.Sources.SourceDescriptor? left, Aw.Context.Core.Sources.SourceDescriptor? right) -> bool
 static Aw.Context.Core.Sources.SourceDescriptor.operator ==(Aw.Context.Core.Sources.SourceDescriptor? left, Aw.Context.Core.Sources.SourceDescriptor? right) -> bool
 static Aw.Context.Core.Sources.SourceHealth.operator !=(Aw.Context.Core.Sources.SourceHealth? left, Aw.Context.Core.Sources.SourceHealth? right) -> bool
@@ -6050,11 +6257,11 @@ static Aw.Context.Core.Sources.SourceHealth.operator ==(Aw.Context.Core.Sources.
 static Aw.Context.Core.Sources.SourceHit.operator !=(Aw.Context.Core.Sources.SourceHit? left, Aw.Context.Core.Sources.SourceHit? right) -> bool
 static Aw.Context.Core.Sources.SourceHit.operator ==(Aw.Context.Core.Sources.SourceHit? left, Aw.Context.Core.Sources.SourceHit? right) -> bool
 static Aw.Context.Core.Sources.SourceId.From(string! value) -> Aw.Context.Core.Sources.SourceId
+static Aw.Context.Core.Sources.SourceId.operator !=(Aw.Context.Core.Sources.SourceId left, Aw.Context.Core.Sources.SourceId right) -> bool
+static Aw.Context.Core.Sources.SourceId.operator ==(Aw.Context.Core.Sources.SourceId left, Aw.Context.Core.Sources.SourceId right) -> bool
 static Aw.Context.Core.Sources.SourceId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Sources.SourceId
 static Aw.Context.Core.Sources.SourceId.TryFrom(string? value, out Aw.Context.Core.Sources.SourceId vo) -> bool
 static Aw.Context.Core.Sources.SourceId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Sources.SourceId result) -> bool
-static Aw.Context.Core.Sources.SourceId.operator !=(Aw.Context.Core.Sources.SourceId left, Aw.Context.Core.Sources.SourceId right) -> bool
-static Aw.Context.Core.Sources.SourceId.operator ==(Aw.Context.Core.Sources.SourceId left, Aw.Context.Core.Sources.SourceId right) -> bool
 static Aw.Context.Core.Sources.SourceLimits.operator !=(Aw.Context.Core.Sources.SourceLimits? left, Aw.Context.Core.Sources.SourceLimits? right) -> bool
 static Aw.Context.Core.Sources.SourceLimits.operator ==(Aw.Context.Core.Sources.SourceLimits? left, Aw.Context.Core.Sources.SourceLimits? right) -> bool
 static Aw.Context.Core.Sources.SourceQuery.operator !=(Aw.Context.Core.Sources.SourceQuery? left, Aw.Context.Core.Sources.SourceQuery? right) -> bool
@@ -6064,30 +6271,58 @@ static Aw.Context.Core.Sources.SourceRecord.operator ==(Aw.Context.Core.Sources.
 static Aw.Context.Core.Sources.SourceRef.operator !=(Aw.Context.Core.Sources.SourceRef? left, Aw.Context.Core.Sources.SourceRef? right) -> bool
 static Aw.Context.Core.Sources.SourceRef.operator ==(Aw.Context.Core.Sources.SourceRef? left, Aw.Context.Core.Sources.SourceRef? right) -> bool
 static Aw.Context.Core.Sources.SourceVersion.From(string! value) -> Aw.Context.Core.Sources.SourceVersion
+static Aw.Context.Core.Sources.SourceVersion.operator !=(Aw.Context.Core.Sources.SourceVersion left, Aw.Context.Core.Sources.SourceVersion right) -> bool
+static Aw.Context.Core.Sources.SourceVersion.operator ==(Aw.Context.Core.Sources.SourceVersion left, Aw.Context.Core.Sources.SourceVersion right) -> bool
 static Aw.Context.Core.Sources.SourceVersion.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Sources.SourceVersion
 static Aw.Context.Core.Sources.SourceVersion.TryFrom(string? value, out Aw.Context.Core.Sources.SourceVersion vo) -> bool
 static Aw.Context.Core.Sources.SourceVersion.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Sources.SourceVersion result) -> bool
-static Aw.Context.Core.Sources.SourceVersion.operator !=(Aw.Context.Core.Sources.SourceVersion left, Aw.Context.Core.Sources.SourceVersion right) -> bool
-static Aw.Context.Core.Sources.SourceVersion.operator ==(Aw.Context.Core.Sources.SourceVersion left, Aw.Context.Core.Sources.SourceVersion right) -> bool
 static Aw.Context.Core.Subgraph.SubgraphBuilder.Build(Aw.Context.Core.Lenses.LensBasis! basis, Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<string!>! keys, int depth, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.DecisionConflict!>! conflicts) -> Aw.Kernel.Result<Aw.Context.Core.Subgraph.SubgraphView!>!
 static Aw.Context.Core.Subgraph.SubgraphQuery.operator !=(Aw.Context.Core.Subgraph.SubgraphQuery? left, Aw.Context.Core.Subgraph.SubgraphQuery? right) -> bool
 static Aw.Context.Core.Subgraph.SubgraphQuery.operator ==(Aw.Context.Core.Subgraph.SubgraphQuery? left, Aw.Context.Core.Subgraph.SubgraphQuery? right) -> bool
 static Aw.Context.Core.Subgraph.SubgraphView.operator !=(Aw.Context.Core.Subgraph.SubgraphView? left, Aw.Context.Core.Subgraph.SubgraphView? right) -> bool
 static Aw.Context.Core.Subgraph.SubgraphView.operator ==(Aw.Context.Core.Subgraph.SubgraphView? left, Aw.Context.Core.Subgraph.SubgraphView? right) -> bool
 static Aw.Context.Core.SurfaceKindList.All.get -> System.Collections.Generic.IReadOnlySet<string!>!
+static Aw.Context.Core.Symbols.CallAnswer.operator !=(Aw.Context.Core.Symbols.CallAnswer? left, Aw.Context.Core.Symbols.CallAnswer? right) -> bool
+static Aw.Context.Core.Symbols.CallAnswer.operator ==(Aw.Context.Core.Symbols.CallAnswer? left, Aw.Context.Core.Symbols.CallAnswer? right) -> bool
+static Aw.Context.Core.Symbols.CallEdgeRow.operator !=(Aw.Context.Core.Symbols.CallEdgeRow? left, Aw.Context.Core.Symbols.CallEdgeRow? right) -> bool
+static Aw.Context.Core.Symbols.CallEdgeRow.operator ==(Aw.Context.Core.Symbols.CallEdgeRow? left, Aw.Context.Core.Symbols.CallEdgeRow? right) -> bool
+static Aw.Context.Core.Symbols.CodeIndexHead.None.get -> Aw.Context.Core.Symbols.CodeIndexHead!
+static Aw.Context.Core.Symbols.CodeIndexHead.operator !=(Aw.Context.Core.Symbols.CodeIndexHead? left, Aw.Context.Core.Symbols.CodeIndexHead? right) -> bool
+static Aw.Context.Core.Symbols.CodeIndexHead.operator ==(Aw.Context.Core.Symbols.CodeIndexHead? left, Aw.Context.Core.Symbols.CodeIndexHead? right) -> bool
+static Aw.Context.Core.Code.CodeIndexReading.AsOfMismatch(Aw.Context.Core.Symbols.CodeIndexHead! head) -> bool
+static Aw.Context.Core.Code.CodeIndexReading.Calls(Aw.Context.Core.Symbols.CodeIndexHead! head, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.CallEdgeRow!>! rows, int unresolved) -> Aw.Context.Core.Code.CodeSymbols!
+static Aw.Context.Core.Code.CodeIndexReading.FailedRow(string! code) -> Aw.Context.Core.Lenses.SearchedSource!
+static Aw.Context.Core.Code.CodeIndexReading.FileMap(Aw.Context.Core.Symbols.CodeIndexHead! head, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.FileSymbolsRow!>! files) -> Aw.Context.Core.Lenses.LensSymbols!
+static Aw.Context.Core.Code.CodeIndexReading.IsCommit(string? commit) -> bool
+static Aw.Context.Core.Code.CodeIndexReading.Head(Aw.Context.Core.Symbols.CodeIndexHead! own, string? asOf) -> Aw.Context.Core.Symbols.CodeIndexHead!
+static Aw.Context.Core.Code.CodeIndexReading.Readable(Aw.Context.Core.Symbols.CodeIndexHead! head) -> bool
+static Aw.Context.Core.Code.CodeIndexReading.Row(Aw.Context.Core.Symbols.CodeIndexHead! head) -> Aw.Context.Core.Lenses.SearchedSource!
+static Aw.Context.Core.Code.CodeIndexReading.Same(string! left, string! right) -> bool
+static Aw.Context.Core.Code.CodeIndexReading.Stamp(Aw.Context.Core.Symbols.CodeIndexHead! head) -> (Aw.Context.Core.Symbols.SymbolsState State, string? AsOfCommit)
+static Aw.Context.Core.Code.CodeIndexReading.Worst(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.CodeIndexHead!>! heads) -> Aw.Context.Core.Symbols.CodeIndexHead!
+static Aw.Context.Core.Symbols.FileSymbolsRow.operator !=(Aw.Context.Core.Symbols.FileSymbolsRow? left, Aw.Context.Core.Symbols.FileSymbolsRow? right) -> bool
+static Aw.Context.Core.Symbols.FileSymbolsRow.operator ==(Aw.Context.Core.Symbols.FileSymbolsRow? left, Aw.Context.Core.Symbols.FileSymbolsRow? right) -> bool
+static Aw.Context.Core.Symbols.SymbolAnswer<T>.operator !=(Aw.Context.Core.Symbols.SymbolAnswer<T>? left, Aw.Context.Core.Symbols.SymbolAnswer<T>? right) -> bool
+static Aw.Context.Core.Symbols.SymbolAnswer<T>.operator ==(Aw.Context.Core.Symbols.SymbolAnswer<T>? left, Aw.Context.Core.Symbols.SymbolAnswer<T>? right) -> bool
+static Aw.Context.Core.Symbols.SymbolHit.operator !=(Aw.Context.Core.Symbols.SymbolHit? left, Aw.Context.Core.Symbols.SymbolHit? right) -> bool
+static Aw.Context.Core.Symbols.SymbolHit.operator ==(Aw.Context.Core.Symbols.SymbolHit? left, Aw.Context.Core.Symbols.SymbolHit? right) -> bool
+static Aw.Context.Core.Symbols.SymbolQuery.operator !=(Aw.Context.Core.Symbols.SymbolQuery? left, Aw.Context.Core.Symbols.SymbolQuery? right) -> bool
+static Aw.Context.Core.Symbols.SymbolQuery.operator ==(Aw.Context.Core.Symbols.SymbolQuery? left, Aw.Context.Core.Symbols.SymbolQuery? right) -> bool
+static Aw.Context.Core.Symbols.SymbolSite.operator !=(Aw.Context.Core.Symbols.SymbolSite? left, Aw.Context.Core.Symbols.SymbolSite? right) -> bool
+static Aw.Context.Core.Symbols.SymbolSite.operator ==(Aw.Context.Core.Symbols.SymbolSite? left, Aw.Context.Core.Symbols.SymbolSite? right) -> bool
 static Aw.Context.Core.Trust.Permalinks.Allowed(System.Uri? link) -> System.Uri?
-static Aw.Context.Core.Trust.ScrubPattern.operator !=(Aw.Context.Core.Trust.ScrubPattern? left, Aw.Context.Core.Trust.ScrubPattern? right) -> bool
-static Aw.Context.Core.Trust.ScrubPattern.operator ==(Aw.Context.Core.Trust.ScrubPattern? left, Aw.Context.Core.Trust.ScrubPattern? right) -> bool
-static Aw.Context.Core.Trust.ScrubRuleset.From(string! value) -> Aw.Context.Core.Trust.ScrubRuleset
-static Aw.Context.Core.Trust.ScrubRuleset.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Trust.ScrubRuleset
-static Aw.Context.Core.Trust.ScrubRuleset.TryFrom(string? value, out Aw.Context.Core.Trust.ScrubRuleset vo) -> bool
-static Aw.Context.Core.Trust.ScrubRuleset.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Trust.ScrubRuleset result) -> bool
-static Aw.Context.Core.Trust.ScrubRuleset.operator !=(Aw.Context.Core.Trust.ScrubRuleset left, Aw.Context.Core.Trust.ScrubRuleset right) -> bool
-static Aw.Context.Core.Trust.ScrubRuleset.operator ==(Aw.Context.Core.Trust.ScrubRuleset left, Aw.Context.Core.Trust.ScrubRuleset right) -> bool
 static Aw.Context.Core.Trust.ScrubbedField.operator !=(Aw.Context.Core.Trust.ScrubbedField? left, Aw.Context.Core.Trust.ScrubbedField? right) -> bool
 static Aw.Context.Core.Trust.ScrubbedField.operator ==(Aw.Context.Core.Trust.ScrubbedField? left, Aw.Context.Core.Trust.ScrubbedField? right) -> bool
 static Aw.Context.Core.Trust.Scrubbers.operator !=(Aw.Context.Core.Trust.Scrubbers? left, Aw.Context.Core.Trust.Scrubbers? right) -> bool
 static Aw.Context.Core.Trust.Scrubbers.operator ==(Aw.Context.Core.Trust.Scrubbers? left, Aw.Context.Core.Trust.Scrubbers? right) -> bool
+static Aw.Context.Core.Trust.ScrubPattern.operator !=(Aw.Context.Core.Trust.ScrubPattern? left, Aw.Context.Core.Trust.ScrubPattern? right) -> bool
+static Aw.Context.Core.Trust.ScrubPattern.operator ==(Aw.Context.Core.Trust.ScrubPattern? left, Aw.Context.Core.Trust.ScrubPattern? right) -> bool
+static Aw.Context.Core.Trust.ScrubRuleset.From(string! value) -> Aw.Context.Core.Trust.ScrubRuleset
+static Aw.Context.Core.Trust.ScrubRuleset.operator !=(Aw.Context.Core.Trust.ScrubRuleset left, Aw.Context.Core.Trust.ScrubRuleset right) -> bool
+static Aw.Context.Core.Trust.ScrubRuleset.operator ==(Aw.Context.Core.Trust.ScrubRuleset left, Aw.Context.Core.Trust.ScrubRuleset right) -> bool
+static Aw.Context.Core.Trust.ScrubRuleset.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Trust.ScrubRuleset
+static Aw.Context.Core.Trust.ScrubRuleset.TryFrom(string? value, out Aw.Context.Core.Trust.ScrubRuleset vo) -> bool
+static Aw.Context.Core.Trust.ScrubRuleset.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Trust.ScrubRuleset result) -> bool
 static Aw.Context.Core.Trust.UntrustedFence.Cap(string! text, int max = 200) -> string!
 static Aw.Context.Core.Trust.UntrustedFence.Escape(string! text) -> string!
 static Aw.Context.Core.Trust.UntrustedFence.Prefix(string! text, int length) -> string!
@@ -6155,5 +6390,3 @@ static readonly Aw.Context.Core.ContextErrors.UnknownArm -> Aw.Kernel.ErrorDefin
 ~override Aw.Context.Core.Map.MapRead.ToString() -> string
 ~override Aw.Context.Core.Map.MapVersionRef.Equals(object obj) -> bool
 ~override Aw.Context.Core.Map.MapVersionRef.ToString() -> string
-Aw.Context.Core.Map.PublishAccess
-static Aw.Context.Core.Map.PublishAccess.Gate(Aw.Context.Core.Engine.ContextScope! scope, string! what) -> Aw.Kernel.Error?

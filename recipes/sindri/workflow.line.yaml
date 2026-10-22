@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.line
-version: 1
+version: 3
 description: "Spec-to-proven-PR, end to end. Sequential stations (LN-WF8): scoping, design, plan and one workflow.phase child; parallel phase dispatch comes with LN-WF1."
+displayName: "Idea to merged pull request"
 urgency: work
 inputs:
   - { key: fact:scopeInput,  label: "What to build",  type: payload, kind: payload }
@@ -13,24 +14,24 @@ outputs:
   - { key: fact:pr,           label: "Pull request",  type: link,   from: phase }
 initial: scoping
 states:
-  scoping: { kind: wait, timeout: { after: 30d, then: park },
+  scoping: { displayName: "Scope", why: "Decides exactly what will change before any design or code, so nobody builds the wrong thing.", kind: wait, timeout: { after: 30d, then: park },
              waitFor: { child: { recipe: workflow.scoping, onParked: propagate, inputs: { "fact:scopeInput": { fact: fact:scopeInput } } } },
              next: "Waiting for {child}: scoping {item}, ending at your after-scoping stop." }
-  design: { kind: wait, timeout: { after: 7d, then: park },
-             waitFor: { child: { recipe: workflow.design, onParked: propagate, inputs: { "fact:scopePacket": { fact: fact:scopePacket }, "fact:designRevision": { literal: "First pass: no revision yet." } } } },
+  design: { displayName: "Design", why: "Turns the locked scope into a spec reviewed from several angles.", kind: wait, timeout: { after: 7d, then: park },
+             waitFor: { child: { recipe: workflow.design, onParked: propagate, inputs: { "fact:scopePacket": { fact: fact:scopePacket }, "fact:designRevision": { literal: "First pass: no revision yet." }, "fact:priorDesignPacket": { literal: "First pass: no previous design." } } } },
              next: "Waiting for {child}: {item}'s spec draft and its lens rounds." }
-  redesign: { kind: wait, loop: redesign, timeout: { after: 7d, then: park },
-             waitFor: { child: { recipe: workflow.design, onParked: propagate, inputs: { "fact:scopePacket": { fact: fact:scopePacket }, "fact:designRevision": { fact: fact:designRevision } } } },
+  redesign: { displayName: "Redesign", why: "Goes back to the design when planning finds problems the plan cannot work around.", kind: wait, loop: redesign, timeout: { after: 7d, then: park },
+             waitFor: { child: { recipe: workflow.design, onParked: propagate, inputs: { "fact:scopePacket": { fact: fact:scopePacket }, "fact:designRevision": { fact: fact:designRevision }, "fact:priorDesignPacket": { fact: fact:designPacket } } } },
              next: "Waiting for {child}: {item}'s redesign after the plan sent it back (pass {loop.redesign}/{loop.redesign.cap})." }
-  plan: { kind: wait, timeout: { after: 30d, then: park },
+  plan: { displayName: "Plan", why: "Splits the design into buildable pull-request-sized phases.", kind: wait, timeout: { after: 30d, then: park },
              waitFor: { child: { recipe: workflow.plan, onParked: propagate, inputs: { "fact:scopePacket": { fact: fact:scopePacket }, "fact:designPacket": { fact: fact:designPacket } } } },
              next: "Waiting for {child}: {item}'s plan graph, ending at your after-design stop." }
-  phase: { kind: wait, timeout: { after: 14d, then: park },
+  phase: { displayName: "Build, prove and ship one phase", why: "Builds, proves, reviews and opens the pull request for one phase, then waits for your merge.", kind: wait, timeout: { after: 14d, then: park },
              waitFor: { child: { recipe: workflow.phase, onParked: propagate, inputs: { "fact:phasePacket": { fact: fact:phasePackets }, "fact:lineContext": { fact: fact:lineContext } } } },
              next: "Waiting for {child}: building, proving and shipping {item}'s phase, ending at your merge stop." }
-  done:    { kind: terminal, outcome: resolved }
-  dropped: { kind: terminal, outcome: unresolved }
-  stuck:   { kind: terminal, outcome: unresolved }
+  done:    { displayName: "Merged", kind: terminal, outcome: resolved }
+  dropped: { displayName: "Dropped", kind: terminal, outcome: unresolved }
+  stuck:   { displayName: "Stuck", kind: terminal, outcome: unresolved }
 transitions:
   - { from: scoping, to: design, on: wait.satisfied, when: { outcome: resolved }, produces: [fact:scopePacket] }
   - { from: scoping, to: dropped, on: wait.satisfied, when: { outcome: unresolved } }
@@ -42,11 +43,11 @@ transitions:
   - { from: redesign, to: dropped, on: wait.satisfied, when: { outcome: unresolved } }
   - { from: redesign, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
   - { from: plan, to: phase, on: wait.satisfied, when: { outcome: resolved }, produces: [fact:planPacket, fact:phasePackets] }
-  - { from: plan, to: redesign, on: wait.satisfied, when: { outcome: unresolved }, produces: [fact:designRevision] }
+  - { label: "planning found design problems: redesign", from: plan, to: redesign, on: wait.satisfied, when: { outcome: unresolved }, produces: [fact:designRevision] }
   - { from: plan, to: dropped, on: wait.satisfied, when: { outcome: failed } }
   - { from: plan, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
   - { from: phase, to: done, on: wait.satisfied, when: { outcome: resolved }, produces: [fact:pr, fact:handoff, fact:proofPack, fact:mergedSha] }
-  - { from: phase, to: stuck, on: wait.satisfied, when: { outcome: unresolved } }
+  - { label: "phase didn't work out", from: phase, to: stuck, on: wait.satisfied, when: { outcome: unresolved } }
   - { from: phase, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
 loops: { redesign: { cap: 2 } }
 evals:
