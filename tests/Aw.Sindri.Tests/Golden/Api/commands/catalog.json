@@ -352,7 +352,7 @@
       "method": "POST",
       "route": "/sindri/onyx/account",
       "cli": "sindri onyx connect",
-      "ui": "pending:SO-A5",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null,
@@ -403,7 +403,7 @@
       "method": "POST",
       "route": "/sindri/onyx/defer",
       "cli": "sindri onyx defer",
-      "ui": "pending:SO-A5",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null,
@@ -1101,16 +1101,17 @@
     },
     {
       "action": "SetupOnyx",
-      "class": "desk",
+      "class": "job",
       "allowedCallers": [
         "human+terminal",
-        "human"
+        "human",
+        "service"
       ],
       "terminal": false,
       "method": "POST",
       "route": "/sindri/onyx/setup",
       "cli": "sindri onyx up",
-      "ui": "pending:SO-A5",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null,
