@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.ViewModels;
@@ -12,7 +13,7 @@ public sealed class StepRunsProjectionTests
     private static readonly DateTimeOffset _now = new(2026, 10, 22, 12, 0, 0, TimeSpan.Zero);
 
     private static StepRun Run(string state, int attempt = 1, int? max = null, string? runtime = "agent", string? actor = null, long? ms = null, DateTimeOffset? ended = null, string? outcome = null, int? tokens = null, string step = "produce") =>
-        new($"{step}.{attempt}", step, attempt, max, state, runtime, _now.AddMinutes(-30), ended, ms, outcome, tokens, actor);
+        new(string.Create(CultureInfo.InvariantCulture, $"{step}.{attempt}"), step, attempt, max, state, runtime, _now.AddMinutes(-30), ended, ms, outcome, tokens, actor);
 
     private static RunTimelineRow Only(params StepRun[] runs) => Assert.Single(RunTimeline.Of(runs, "produce", _now));
 
@@ -67,10 +68,8 @@ public sealed class StepRunsProjectionTests
     }
 
     [Fact]
-    public void A_closed_run_with_no_duration_shows_the_no_times_copy()
-    {
+    public void A_closed_run_with_no_duration_shows_the_no_times_copy() =>
         Assert.Equal(Labels.RunNoTimes, Only(Run("passed")).TimesText);
-    }
 
     [Theory]
     [InlineData("agent:session", "agent", "AI agent")]

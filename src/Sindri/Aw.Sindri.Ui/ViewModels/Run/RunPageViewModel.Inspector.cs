@@ -55,7 +55,7 @@ internal sealed partial class RunPageViewModel
     internal void CentreOnSelection()
     {
         var id = SelectedKey?.Split('/')[0];
-        if (id is not null && _layout.Rects.TryGetValue(id, out var rect))
+        if (id is not null && Layout.Rects.TryGetValue(id, out var rect))
         {
             Raise(RunViewport.FocusActive(rect, Viewport.Width, Viewport.Height, Viewport.RightInset));
         }

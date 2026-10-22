@@ -9,6 +9,7 @@ using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.ViewModels.Run;
 using Microsoft.Extensions.Time.Testing;
+using StateGlyph = Aw.Sindri.Ui.Api.Workflow.StateGlyph;
 
 namespace Aw.Sindri.Ui.Tests.Run;
 
@@ -25,7 +26,7 @@ public sealed class RunInspectorViewModelTests
     private static RouteAnswer Body<T>(T value) => new(HttpStatusCode.OK, JsonSerializer.Serialize(value, SindriApiClient.Json));
 
     private static StepRun Running() =>
-        new("produce.1", "produce", 1, 3, "running", "agent", A.Noon.AddMinutes(-5), null, null, null, null, null);
+        new("produce.1", "produce", 1, 3, "running", "agent", A.Noon.AddMinutes(-5), EndedAt: null, DurationMs: null, Outcome: null, Tokens: null, Actor: null);
 
     private async Task<RunPageViewModel> Opened(StepRun[]? runs = null, FactRow[]? facts = null)
     {
@@ -60,7 +61,7 @@ public sealed class RunInspectorViewModelTests
         Assert.Null(page.Inspector);
         page.Select("plan/produce");
         Assert.NotNull(page.Inspector);
-        page.ClearSelection();
+        _ = page.ClearSelection();
         Assert.Null(page.Inspector);
     }
 
