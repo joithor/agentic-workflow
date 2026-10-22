@@ -237,6 +237,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         Note = terminal is null ? string.Empty : Labels.InstanceFinished(terminal.Outcome);
         ProblemText = string.Empty;
         ShowParts(detail);
+        ShowGrant(detail);
         Phase = FramePhase.Shown;
         ApplyIntent();
     }
@@ -278,6 +279,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         (Title, Recipe, Hash12, Version, StateText, Detail, SinceText, Identity, ProblemText, Note) = (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
         (WorkflowName, DetailsText, AddressCopy) = (string.Empty, string.Empty, null);
         (Subject, Band, Expanded, StepRuns) = (null, null, null, null);
+        (Grant, _grantSignature) = (null, string.Empty);
         ClearPanels();
         (_eventsFor, _eventRows) = (null, []);
         WantedFocus = null;

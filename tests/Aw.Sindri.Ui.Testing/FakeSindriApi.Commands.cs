@@ -17,6 +17,33 @@ internal sealed partial class FakeSindriApi
     /// <summary>Every report received, in order: the instance of the route and the body.</summary>
     public IReadOnlyList<(string Instance, CompleteStepBody Body)> CompleteCalls { get { lock (_gate) { return [.. _completed]; } } }
 
+    private readonly List<(string Instance, ApplyCommandBody Body)> _applied = [];
+
+    /// <summary>POST .../commands' answer.</summary>
+    public RouteAnswer ApplyAnswer { get; set; } = RouteAnswer.SpecShaped("workflow-command", "applied");
+
+    /// <summary>Held open until set: a command received while it was set waits for it (the app is sending meanwhile).</summary>
+    public TaskCompletionSource? ApplyGate { get; set; }
+
+    /// <summary>Every command received, in order: the instance of the route and the body.</summary>
+    public IReadOnlyList<(string Instance, ApplyCommandBody Body)> ApplyCalls { get { lock (_gate) { return [.. _applied]; } } }
+
+    public async Task<Result<CommandApplied>> ApplyCommand(Uri api, string instanceId, ApplyCommandBody body, CancellationToken cancellationToken)
+    {
+        if (NotReceived<CommandApplied>(api) is { } unanswered)
+        {
+            return unanswered;
+        }
+
+        lock (_gate)
+        {
+            _applied.Add((instanceId, body));
+        }
+
+        await WaitFor(ApplyGate, cancellationToken).ConfigureAwait(false);
+        return Answer<CommandApplied>(api, WorkflowRoutes.Commands(instanceId), ApplyAnswer);
+    }
+
     public async Task<Result<CompleteStepAccepted>> CompleteStep(Uri api, string instanceId, CompleteStepBody body, CancellationToken cancellationToken)
     {
         if (NotReceived<CompleteStepAccepted>(api) is { } unanswered)

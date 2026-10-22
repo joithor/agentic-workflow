@@ -80,7 +80,6 @@ transitions:
   - { from: freeze, to: planned, on: step.completed, when: { outcome: frozen },   produces: [fact:planPacket, fact:phasePackets] }
   - { from: freeze, to: evidence, on: step.completed, when: { outcome: mismatch }, produces: [fact:findings] }
 loops: { rounds: { cap: 5 }, refreeze: { cap: 2 }, revisions: { cap: 5 } }
-budget: { tokens: 15M }
 evals:   # the 7 cases of Appendix B.1 (plan's happy-assumed is assumed-happy: the shipped-recipe test wants a *-happy name) and two more
   - evals/workflow.plan/assumed-happy.jsonl
   - evals/workflow.plan/changed-decision.jsonl

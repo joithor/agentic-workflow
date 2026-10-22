@@ -68,7 +68,6 @@ transitions:
       produces: [fact:designPacket, fact:design, fact:lensRounds] }
   - { from: evidence, to: draft,    on: step.completed, when: { outcome: incomplete }, produces: [fact:findings] }
 loops: { rounds: { cap: 5 }, lens: { cap: 4 }, lens-runs: { cap: 40 } }
-budget: { tokens: 160M }
 evals:   # the 7 cases of Appendix B.1 (plan's happy-assumed is assumed-happy: the shipped-recipe test wants a *-happy name) and two more
   - evals/workflow.design/check-gaps-twice.jsonl
   - evals/workflow.design/evidence-incomplete.jsonl

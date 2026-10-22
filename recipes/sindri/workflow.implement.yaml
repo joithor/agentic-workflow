@@ -21,7 +21,6 @@ transitions:
   - { from: checks,  to: produce, on: step.completed, when: { all: [ { outcome: failed }, { loop: revisions, below: cap } ] }, produces: [fact:findings] }
   - { from: checks,  to: stuck,   on: step.completed, when: { all: [ { outcome: failed }, { not: { loop: revisions, below: cap } } ] }, produces: [fact:findings] }
 loops: { revisions: { cap: 3 } }
-budget: { tokens: 3M }
 evals:
   - evals/workflow.implement/happy.jsonl
   - evals/workflow.implement/rounds.jsonl

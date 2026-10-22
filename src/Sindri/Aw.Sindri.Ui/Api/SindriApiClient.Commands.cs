@@ -10,4 +10,8 @@ internal sealed partial class SindriApiClient
     /// <inheritdoc />
     public Task<Result<CompleteStepAccepted>> CompleteStep(Uri api, string instanceId, CompleteStepBody body, CancellationToken cancellationToken) =>
         Call<CompleteStepAccepted>(api, HttpMethod.Post, WorkflowRoutes.Complete(instanceId, body.Run), cancellationToken, new CallOptions(Content: AwJson.Serialize(body, Json)));
+
+    /// <inheritdoc />
+    public Task<Result<CommandApplied>> ApplyCommand(Uri api, string instanceId, ApplyCommandBody body, CancellationToken cancellationToken) =>
+        Call<CommandApplied>(api, HttpMethod.Post, WorkflowRoutes.Commands(instanceId), cancellationToken, new CallOptions(Content: AwJson.Serialize(body, Json)));
 }

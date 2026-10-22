@@ -374,12 +374,12 @@ public static class WorkflowViewFixtures
         {
             Inputs = [_alertInput],
             Timeout = new StatusTimeout(TimeoutKind.Parks, 172_560, "classify"),
-            Budget = new StatusBudget("state", 0, 200_000, new BudgetFigures(0, 400_000)),
+            Budget = new StatusBudget("state", 0, 1_000_000, new BudgetFigures(0, null)),
         });
 
     /// <summary>Layout 3: a budget park; the answer grants tokens.</summary>
-    public static StatusFields StatusParkedBudget() => Status(_budgetStep, "budget", "Parked (budget): produce used 200k of 200k tokens.",
-        new OpenWork(), new StatusLines { Answer = Answer(AnswerKind.GrantTokens, "ITM-01JH5/step/1"), Budget = new StatusBudget("state", 200_000, 200_000, new BudgetFigures(200_000, 400_000)) });
+    public static StatusFields StatusParkedBudget() => Status(_budgetStep, "budget", "Parked (budget): produce used 1M of 1M tokens.",
+        new OpenWork(), new StatusLines { Answer = Answer(AnswerKind.GrantTokens, "ITM-01JH5/step/1"), Budget = new StatusBudget("state", 1_000_000, 1_000_000, new BudgetFigures(1_000_000, null)) });
 
     /// <summary>Layout 4: an escalated gate; the answer accepts at a terminal.</summary>
     public static StatusFields StatusEscalatedGate() => Status(_p2211, "gate",
@@ -389,7 +389,7 @@ public static class WorkflowViewFixtures
     /// <summary>Layout 5: a taken-over instance with its timeout paused.</summary>
     public static StatusFields StatusTakenOver() => Status(_takenOver, null,
         "With you since 12:01. Run `sindri workflow handback ITM-01JA1/step/1` when you're done.", new OpenWork(),
-        new StatusLines { Paused = new StatusPaused(40), Budget = new StatusBudget("state", 40_000, 200_000, new BudgetFigures(40_000, 400_000)) });
+        new StatusLines { Paused = new StatusPaused(40), Budget = new StatusBudget("state", 40_000, 1_000_000, new BudgetFigures(40_000, null)) });
 
     /// <summary>Layout 6: a finished instance, the header only.</summary>
     public static StatusFields StatusDone() => Status(_sentry8809, "resolved", null, new OpenWork());
@@ -591,7 +591,7 @@ public static class WorkflowViewFixtures
             _step.Cells("produce", round: 1, Shape(("produce", c => c with { Round = new Round(2, 3) }))),
             "your output for the Step (desk) · round 2/3", "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
         var status = DeskStatus(row, "Produce the Step output for ITM-01JE7 (round 2/3)", "3.1", ("fact:output", "<file>"),
-            DeskLines(new StatusInput("fact:spec", "spec.md", Hash("1c0e5a77")), 172_440, "produce", new StatusBudget("state", 0, 200_000, new BudgetFigures(0, 400_000))));
+            DeskLines(new StatusInput("fact:spec", "spec.md", Hash("1c0e5a77")), 172_440, "produce", new StatusBudget("state", 0, 1_000_000, new BudgetFigures(0, null))));
         return Detail(row, "Add needs-you ack route", PathOrdering.Path,
             new CurrentState("produce", new StepDeclaration("active", "step.produce", "produce the output for the item"), [],
                 new DeskForm(RunToken.From("3.1"), [new DeskOutput("fact:output", FactType.File, true)], ["output.file"], Act("CompleteStep")), status),

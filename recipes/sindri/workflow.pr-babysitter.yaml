@@ -361,7 +361,6 @@ loops:
   held:        { cap: 40 }
   docs-merges: { cap: 3 }
   retries:     { cap: 5 }
-budget: { tokens: 18M }
 evals:
   - evals/workflow.pr-babysitter/happy.jsonl
   - evals/workflow.pr-babysitter/every-comment-type.jsonl

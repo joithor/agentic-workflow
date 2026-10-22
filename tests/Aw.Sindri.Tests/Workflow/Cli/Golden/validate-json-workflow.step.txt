@@ -3,12 +3,12 @@ exit 0
 --- stdout
 {
   "passed": true,
-  "hash": "sha256:1c1173a162a77736c33620e985d6d75473cf3755963adc5c46eb9049434f5276",
+  "hash": "sha256:acb1e1fdc4e6153925d51fc60e3aa28d951d514e4052eabcfccba3d63210c659",
   "findings": [],
   "normalized": {
     "schema": 1,
     "id": "workflow.step",
-    "version": 2,
+    "version": 3,
     "description": null,
     "base": null,
     "urgency": "work",
@@ -39,7 +39,7 @@ exit 0
         },
         "loop": "revisions",
         "budget": {
-          "tokens": 200000
+          "tokens": 1000000
         },
         "next": "Produce the Step output for {item} (round {loop.revisions}/{loop.revisions.cap}).",
         "outcome": null
@@ -212,9 +212,7 @@ exit 0
         ]
       }
     },
-    "budget": {
-      "tokens": 400000
-    },
+    "budget": null,
     "evals": [
       "evals/workflow.step/happy.jsonl",
       "evals/workflow.step/no-progress.jsonl",

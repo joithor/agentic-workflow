@@ -87,7 +87,6 @@ transitions:
 loops:
   edits:   { cap: 2 }
   retries: { cap: 3 }
-budget: { tokens: 2M }
 evals:
   - evals/workflow.docs-sync/happy.jsonl
   - evals/workflow.docs-sync/opened.jsonl

@@ -8,6 +8,15 @@ internal sealed partial class FakeSindriHandler
     private static bool IsComplete(HttpRequestMessage request, string path) =>
         request.Method == HttpMethod.Post && path.StartsWith("/sindri/workflow/instances/", StringComparison.Ordinal) && path.EndsWith("/complete", StringComparison.Ordinal);
 
+    private static bool IsApply(HttpRequestMessage request, string path) =>
+        request.Method == HttpMethod.Post && path.StartsWith("/sindri/workflow/instances/", StringComparison.Ordinal) && path.EndsWith("/commands", StringComparison.Ordinal);
+
+    private async Task<HttpResponseMessage> ApplyRoute(HttpRequestMessage request, string path, CancellationToken cancellationToken)
+    {
+        var id = Uri.UnescapeDataString(path["/sindri/workflow/instances/".Length..^"/commands".Length]);
+        return Answer(Counted(await server.ApplyCommand(request.RequestUri!, id, await Body<ApplyCommandBody>(request, cancellationToken), cancellationToken), server.ApplyAnswer));
+    }
+
     private async Task<HttpResponseMessage> CompleteRoute(HttpRequestMessage request, string path, CancellationToken cancellationToken)
     {
         var parts = path["/sindri/workflow/instances/".Length..].Split('/').Select(Uri.UnescapeDataString).ToArray();   // {id}/runs/{run}/complete

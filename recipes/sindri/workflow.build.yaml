@@ -49,7 +49,6 @@ transitions:
   - { from: scope-desk, to: stopped, on: step.completed, when: { outcome: stop } }
   - { from: amend, to: checks, on: step.completed, when: { outcome: amended }, produces: [fact:activePacket] }
 loops: { tests: { cap: 3 }, revisions: { cap: 4 }, grants: { cap: 3 } }
-budget: { tokens: 8M }
 evals:
   - evals/workflow.build/blocked-stop.jsonl
   - evals/workflow.build/happy.jsonl

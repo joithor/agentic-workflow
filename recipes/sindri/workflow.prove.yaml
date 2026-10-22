@@ -62,7 +62,6 @@ transitions:
   - { from: evidence-pack, to: proven,   on: step.completed, when: { outcome: complete },   produces: [fact:proofPack] }
   - { from: evidence-pack, to: fail-log, on: step.completed, when: { outcome: incomplete }, produces: [fact:findings] }
   - { from: fail-log, to: failed, on: step.completed, when: { outcome: logged }, produces: [fact:findings] }
-budget: { tokens: 1M }
 evals:
   - evals/workflow.prove/before-after-fail.jsonl
   - evals/workflow.prove/cancelled.jsonl
