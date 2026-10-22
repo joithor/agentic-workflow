@@ -30,6 +30,32 @@ public static class BabysitterStatsCounter
         ArgumentNullException.ThrowIfNull(events);
         ArgumentNullException.ThrowIfNull(records);
         ArgumentNullException.ThrowIfNull(window);
-        throw new NotSupportedException("not counted yet: " + now.UtcTicks.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        var addresses = Instances(events, window, now);
+        var byAddress = events.GroupBy(static e => e.Address, StringComparer.Ordinal).ToDictionary(static g => g.Key, static g => (IReadOnlyList<StatEvent>)[.. g], StringComparer.Ordinal);
+        var runs = addresses.Select(a => BabysitterRunWalker.Walk(byAddress[a])).ToList();
+        var tally = new BabysitterRecordTally();
+        foreach (var address in addresses.Where(records.ContainsKey))
+        {
+            tally.Add(records[address]);
+        }
+
+        var fix = new CiFixStats(runs.Sum(static r => r.CiFix.Attempts), runs.Sum(static r => r.CiFix.Succeeded), runs.Sum(static r => r.CiFix.StillRed), Rate: null);
+        return new BabysitterStats(
+            runs.Count,
+            Spread(runs.Select(static r => r.ReadyAfter)),
+            Spread(runs.Select(static r => r.MergeAfter)),
+            Spread(runs.Select(static r => (double?)r.Tokens)),
+            tally.Comments(),
+            fix with { Rate = fix.Succeeded + fix.StillRed == 0 ? null : (double)fix.Succeeded / (fix.Succeeded + fix.StillRed) },
+            new RecheckStats(runs.Sum(static r => r.Rechecks.Runs), runs.Sum(static r => r.Rechecks.Resolved), runs.Sum(static r => r.Rechecks.Unresolved)),
+            new OwnerActionStats(runs.Sum(static r => r.Owner.Merge), runs.Sum(static r => r.Owner.Rework), runs.Sum(static r => r.Owner.Comments), runs.Sum(static r => r.Owner.ResyncDocs), runs.Sum(static r => r.Owner.Check)),
+            new BabysitterDocsStats(runs.Sum(static r => r.DocsWithMerge), runs.Sum(static r => r.DocsOwnerDesk), tally.DocsOutcomes()),
+            tally.Errors);
+    }
+
+    private static BabysitterSpread Spread(IEnumerable<double?> values)
+    {
+        var sorted = values.OfType<double>().Order().ToList();
+        return new BabysitterSpread(StatsMath.Median(sorted), StatsMath.Rank(sorted, 0.9));
     }
 }
