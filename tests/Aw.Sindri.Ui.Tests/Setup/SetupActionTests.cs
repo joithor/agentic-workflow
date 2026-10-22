@@ -82,9 +82,10 @@ public sealed class SetupActionTests
     [Fact]
     public async Task An_action_on_a_done_step_reads_again_or_another()
     {
-        _f.Serve(With("first-run", "repo", "done", "AddRepo"));
+        var f = new SetupFixture("extra-approve-all-ready");   // this catalog has no AddRepo row; where the served one is ready the form stands in for the button
+        f.Serve(With("first-run", "repo", "done", "AddRepo"));
 
-        var action = Step(await _f.Read(Token), "repo").Action!;
+        var action = Step(await f.Read(Token), "repo").Action!;
 
         Assert.Equal("Add another repo", action.Label);
     }
