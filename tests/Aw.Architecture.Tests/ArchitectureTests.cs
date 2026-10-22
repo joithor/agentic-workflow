@@ -19,6 +19,10 @@ public sealed class ArchitectureTests
     public void The_ui_uses_no_sindri_type_view_models_no_avalonia_type_and_heads_no_views() => Verify.None(UiRules.Check(Production.Edges));
 
     [Fact]
+    public void Only_the_temporal_adapter_uses_a_temporal_sdk_type() =>
+        Verify.None(EngineBoundaryRules.CheckTypes(Production.Edges.Select(static e => (TypeNames.Qualified(e.Origin), e.Target.FullName))));
+
+    [Fact]
     public void No_slice_uses_another_slice() => Verify.None(SliceRules.Check(Production.Edges));
 
     [Fact]
