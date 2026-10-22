@@ -73,14 +73,14 @@ public sealed class ExpandedStateSendTests
     [Fact]
     public async Task A_second_press_while_the_cancel_is_out_sends_nothing_more()
     {
-        _server.CommandGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _server.WorkflowCommandGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var expanded = Expanded("project-build");
         expanded.AskCancel();
         var first = expanded.ConfirmCancelAsync();
         expanded.AskCancel();
 
         await expanded.ConfirmCancelAsync();
-        _server.CommandGate.SetResult();
+        _server.WorkflowCommandGate.SetResult();
         await first;
 
         _ = Assert.Single(_server.CommandCalls);
