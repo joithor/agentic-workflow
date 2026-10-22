@@ -69,6 +69,7 @@ using Aw.Sindri.Features.GetRepoStatus;
 using Aw.Sindri.Features.GetSession;
 using Aw.Sindri.Features.GetSetup;
 using Aw.Sindri.Features.GetStatus;
+using Aw.Sindri.Features.InitProfile;
 using Aw.Sindri.Features.IssueChallenge;
 using Aw.Sindri.Features.IssueNonce;
 using Aw.Sindri.Features.ListCommands;
@@ -81,6 +82,7 @@ using Aw.Sindri.Features.ListRequests;
 using Aw.Sindri.Features.ListServices;
 using Aw.Sindri.Features.LineHoldout;
 using Aw.Sindri.Features.ListSessions;
+using Aw.Sindri.Features.OnboardRepo;
 using Aw.Sindri.Features.OnyxAccount;
 using Aw.Sindri.Features.OnyxDown;
 using Aw.Sindri.Features.OnyxStatus;
@@ -133,7 +135,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ItemRow)), JsonSerializable(typeof(AliasRow)), JsonSerializable(typeof(RequestRow)), JsonSerializable(typeof(HumanDecisionRow))]
 [JsonSerializable(typeof(NeedsYouRowRecord)), JsonSerializable(typeof(NeedsYouRow)), JsonSerializable(typeof(NeedsYouStop)), JsonSerializable(typeof(NeedsYouSubject)), JsonSerializable(typeof(TimelineRow))]
 [JsonSerializable(typeof(HealthReport)), JsonSerializable(typeof(CommandAccepted)), JsonSerializable(typeof(GetStatusResponse)), JsonSerializable(typeof(StopProcessResponse))]
-[JsonSerializable(typeof(ApproveProfileRequest)), JsonSerializable(typeof(ApproveProfileResponse)), JsonSerializable(typeof(ValidateProfileResponse)), JsonSerializable(typeof(RunDoctorResponse))]
+[JsonSerializable(typeof(ApproveProfileRequest)), JsonSerializable(typeof(ApproveProfileResponse)), JsonSerializable(typeof(ValidateProfileResponse)), JsonSerializable(typeof(InitProfileResponse)), JsonSerializable(typeof(RunDoctorResponse))]
 [JsonSerializable(typeof(PublicEvent)), JsonSerializable(typeof(LedgerPage)), JsonSerializable(typeof(EventCatalogView)), JsonSerializable(typeof(EventTypeView))]
 [JsonSerializable(typeof(StreamErrorFrame)), JsonSerializable(typeof(InstanceChanged)), JsonSerializable(typeof(ListCommandsRequest)), JsonSerializable(typeof(ListCommandsResponse)), JsonSerializable(typeof(CommandListRow))]
 [JsonSerializable(typeof(ListServicesRequest)), JsonSerializable(typeof(ListServicesResponse)), JsonSerializable(typeof(ServiceView)), JsonSerializable(typeof(GetProfileRequest))]
@@ -172,6 +174,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(IssueNonceResponse)), JsonSerializable(typeof(RecipeRegistered)), JsonSerializable(typeof(RecipeApproved)), JsonSerializable(typeof(RecipeRevoked))]
 [JsonSerializable(typeof(RegisterRecipeRequest)), JsonSerializable(typeof(RegisterRecipeResponse)), JsonSerializable(typeof(ListRecipesResponse)), JsonSerializable(typeof(ApproveRecipeRequest))]
 [JsonSerializable(typeof(RegisterMcpJobRequest))]   // setup-once §5.4: register Sindri in a repo from the app
+[JsonSerializable(typeof(OnboardRepoRequest)), JsonSerializable(typeof(OnboardedRepo))]   // setup-once §5.1: onboard a repo of the approved profile by hand
 [JsonSerializable(typeof(AddRepoRequest)), JsonSerializable(typeof(AddedRepo))]   // setup-once §5.1: add a repo from the app
 [JsonSerializable(typeof(ApproveAllRecipesRequest)), JsonSerializable(typeof(ApproveAllPlan)), JsonSerializable(typeof(ApproveAllResult)), JsonSerializable(typeof(ShippedRecipePlan))]   // setup-once §7.2: the plan, the hold's job and its result
 [JsonSerializable(typeof(ApproveRecipeResponse)), JsonSerializable(typeof(RevokeRecipeRequest)), JsonSerializable(typeof(RevokeRecipeResponse)), JsonSerializable(typeof(IssueChallengeRequest))]

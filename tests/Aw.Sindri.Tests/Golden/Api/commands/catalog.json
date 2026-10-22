@@ -462,6 +462,20 @@
       "confirm": null
     },
     {
+      "action": "InitProfile",
+      "class": "local",
+      "allowedCallers": [],
+      "terminal": false,
+      "method": null,
+      "route": null,
+      "cli": "sindri profile init",
+      "ui": "cli-only:local",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null,
+      "confirm": null
+    },
+    {
       "action": "IssueAppChallenge",
       "class": "desk",
       "allowedCallers": [
@@ -535,6 +549,24 @@
       "route": null,
       "cli": "sindri launch show [<id>] [--json]",
       "ui": "cli-only:local",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null,
+      "confirm": null
+    },
+    {
+      "action": "OnboardRepo",
+      "class": "job",
+      "allowedCallers": [
+        "human+terminal",
+        "human",
+        "service"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/setup/repos/onboard",
+      "cli": "sindri repo onboard [<path>]",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null,
