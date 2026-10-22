@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.design
-version: 3
+version: 4
 description: "Station 2 of the line: one spec draft from a frozen scope packet, in the repo's style pack, reviewed by the repo's design lens pack on another model until no CRITICAL or HIGH finding is left; ends with a hashed candidate design packet."
+displayName: "Turn the scope into a design"
 urgency: work
 inputs:
   - { key: fact:scopePacket,    label: "Scope packet (frozen)", type: packet, kind: packet }
@@ -15,7 +16,7 @@ initial: intake
 states:
   intake:    { kind: active, step: step.design.intake, timeout: { after: 1h, then: park },
                next: "Load {item}'s frozen scope packet and its style and lens packs." }
-  draft:     { kind: active, step: { use: step.design.draft, with: { bundle: style } }, loop: rounds,
+  draft:     { displayName: "Write the design", why: "Gives the reviews something concrete to check.", kind: active, step: { use: step.design.draft, with: { bundle: style } }, loop: rounds,
                budget: { tokens: 400k }, timeout: { after: 3h, then: park },
                next: "Write {item}'s spec draft in the house style (round {loop.rounds}/{loop.rounds.cap})." }
   apply:     { kind: active, step: { use: step.design.apply, with: { bundle: style } }, budget: { tokens: 200k },
@@ -26,22 +27,22 @@ states:
   round:     { kind: active, step: { use: step.lens.round, with: { pack: { profile: workflow.packs.lenses.design } } },
                loop: lens, timeout: { after: 1h, then: park },
                next: "Start lens round {loop.lens}/{loop.lens.cap} on {item}'s draft." }
-  lens:      { kind: active, step: { use: step.lens.run, with: { subject: design, bundle: lenses } }, loop: lens-runs,
+  lens:      { displayName: "Review pass", why: "Independent reviewers find serious problems before a plan is built on them.", kind: active, step: { use: step.lens.run, with: { subject: design, bundle: lenses } }, loop: lens-runs,
                budget: { tokens: 150k }, timeout: { after: 2h, then: park },
                next: "Review {item}'s draft through the next lens in the pack." }
   lens-log:  { kind: active, step: step.lens.log, timeout: { after: 1h, then: park },
                next: "Append the lens report to {item}'s lens rounds." }
-  revise:    { kind: active, step: { use: step.design.revise, with: { bundle: style } }, budget: { tokens: 300k },
+  revise:    { displayName: "Fix the design", why: "Fixes the problems the reviews found, or answers them in writing.", kind: active, step: { use: step.design.revise, with: { bundle: style } }, budget: { tokens: 300k },
                timeout: { after: 3h, then: park },
                next: "Fix the CRITICAL and HIGH findings on {item}'s draft; answer the rest in writing." }
-  lens-desk: { kind: active, step: step.design.lens-desk, timeout: { after: 7d, then: park },
+  lens-desk: { displayName: "Accept the risk?", why: "The reviews ran out of tries with problems left; you decide.", kind: active, step: step.design.lens-desk, timeout: { after: 7d, then: park },
                next: "The lens rounds on {item} hit their cap with findings left: accept them as known risks, revise with notes, or drop." }
-  ask:       { kind: active, step: step.lens.ask, timeout: { after: 7d, then: park },
+  ask:       { displayName: "Answer a question", why: "A reviewer needs your decision.", kind: active, step: step.lens.ask, timeout: { after: 7d, then: park },
                next: "A lens can't settle a finding on {item}'s draft alone (an ambiguous fix or a product question): answer it, or drop the design." }
   evidence:  { kind: active, step: step.design.evidence, timeout: { after: 1h, then: park },
                next: "Check {item}'s design evidence and assemble the candidate design packet." }
-  designed:  { kind: terminal, outcome: resolved }
-  dropped:   { kind: terminal, outcome: unresolved }
+  designed:  { displayName: "Design ready", kind: terminal, outcome: resolved }
+  dropped:   { displayName: "Dropped", kind: terminal, outcome: unresolved }
 transitions:
   - { from: intake, to: draft, on: step.completed, when: { outcome: fresh },
       produces: [fact:scope, fact:packs, fact:design, fact:findings, fact:lensRounds, fact:changedSections, fact:answers, fact:accepted] }
@@ -49,25 +50,25 @@ transitions:
       produces: [fact:scope, fact:packs, fact:design, fact:findings, fact:lensRounds, fact:changedSections, fact:answers, fact:accepted] }
   - { from: draft,  to: check, on: step.completed, when: { outcome: drafted }, produces: [fact:design] }
   - { from: apply,  to: check, on: step.completed, when: { outcome: applied }, produces: [fact:design, fact:changedSections] }
-  - { from: check,  to: draft, on: step.completed, when: { outcome: gaps },    produces: [fact:findings] }
+  - { label: "gaps found: draft again", from: check,  to: draft, on: step.completed, when: { outcome: gaps },    produces: [fact:findings] }
   - { from: check,  to: round, on: step.completed, when: { outcome: pass } }
   - { from: round,  to: lens,  on: step.completed, when: { outcome: ready },   produces: [fact:lensQueue] }
   - { from: lens,   to: lens-log, on: step.completed, when: { outcome: reviewed }, produces: [fact:lensReport] }
-  - { from: lens-log, to: lens,      on: step.completed, when: { outcome: next },  produces: [fact:lensRounds, fact:lensQueue] }
+  - { label: "next review pass", from: lens-log, to: lens,      on: step.completed, when: { outcome: next },  produces: [fact:lensRounds, fact:lensQueue] }
   - { from: lens-log, to: evidence,  on: step.completed, when: { outcome: clean }, produces: [fact:lensRounds] }
   - { from: lens-log, to: ask,       on: step.completed, when: { outcome: needsOwner }, produces: [fact:lensRounds, fact:findings, fact:escalation] }
   - { from: ask,      to: revise,    on: step.completed, when: { outcome: answered }, produces: [fact:answers] }
   - { from: ask,      to: dropped,   on: step.completed, when: { outcome: stop } }
-  - { from: lens-log, to: revise,    on: step.completed,
+  - { label: "problems found: fix them", from: lens-log, to: revise,    on: step.completed,
       when: { all: [ { outcome: findings }, { loop: lens, below: cap } ] }, produces: [fact:lensRounds, fact:findings] }
-  - { from: lens-log, to: lens-desk, on: step.completed, when: { outcome: findings }, produces: [fact:lensRounds, fact:findings] }
+  - { label: "tries used up: you decide", from: lens-log, to: lens-desk, on: step.completed, when: { outcome: findings }, produces: [fact:lensRounds, fact:findings] }
   - { from: revise,    to: check,    on: step.completed, when: { outcome: revised }, produces: [fact:design, fact:changedSections] }
   - { from: lens-desk, to: evidence, on: step.completed, when: { outcome: accept },  produces: [fact:accepted] }
-  - { from: lens-desk, to: revise,   on: step.completed, when: { outcome: revise },  produces: [fact:answers] }
-  - { from: lens-desk, to: dropped,  on: step.completed, when: { outcome: drop } }
+  - { label: "you asked for changes", from: lens-desk, to: revise,   on: step.completed, when: { outcome: revise },  produces: [fact:answers] }
+  - { label: "you dropped it", from: lens-desk, to: dropped,  on: step.completed, when: { outcome: drop } }
   - { from: evidence, to: designed, on: step.completed, when: { outcome: complete },
       produces: [fact:designPacket, fact:design, fact:lensRounds] }
-  - { from: evidence, to: draft,    on: step.completed, when: { outcome: incomplete }, produces: [fact:findings] }
+  - { label: "proof is incomplete: draft again", from: evidence, to: draft,    on: step.completed, when: { outcome: incomplete }, produces: [fact:findings] }
 loops: { rounds: { cap: 5 }, lens: { cap: 4 }, lens-runs: { cap: 40 } }
 budget: { tokens: 1500k }
 evals:   # the 7 cases of Appendix B.1 (plan's happy-assumed is assumed-happy: the shipped-recipe test wants a *-happy name) and two more

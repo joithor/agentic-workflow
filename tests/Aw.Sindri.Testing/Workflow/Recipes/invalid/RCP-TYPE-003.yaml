@@ -15,3 +15,4 @@ states:
     outcome: resolved
 transitions:
   - { from: produce, to: done, on: step.completed, when: { outcome: done } }
+displayName: Test recipe
