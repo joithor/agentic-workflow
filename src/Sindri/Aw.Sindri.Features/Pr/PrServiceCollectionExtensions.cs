@@ -11,5 +11,7 @@ internal static class PrServiceCollectionExtensions
     /// <returns>The same collection.</returns>
     internal static IServiceCollection AddPrBlocks(this IServiceCollection services) => services
         .AddBlockRuntime<PrIntakeStep>()
-        .AddBlockRuntime<PrSnapshotStep>();
+        .AddBlockRuntime<PrSnapshotStep>()
+        .AddBlockRuntime<PrNextCommentStep>()
+        .AddBlockRuntime<PrHeldCommentStep>();
 }
