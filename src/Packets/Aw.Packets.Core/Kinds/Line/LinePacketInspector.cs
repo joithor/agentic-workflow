@@ -21,17 +21,16 @@ public sealed class LinePacketInspector(ILinePacketSource source, IRepoSnapshot 
     /// <returns>The inspection; the read error; or AW-PACKETS-006 when the repository can't be read. A base commit
     /// missing from the repository is a PKT-BASE-001 failure, not an error.</returns>
     public ValueTask<Result<LineInspection>> Inspect(PacketKind kind, string packetDirectory, string repoDirectory, SizesFile? sizes, CancellationToken cancellationToken) =>
-        Inspect(kind, packetDirectory, repoDirectory, sizes, sealedSet: null, cancellationToken);
+        Inspect(kind, packetDirectory, repoDirectory, new LineInspectOptions(sizes, SealedSet: null), cancellationToken);
 
     /// <summary>Reads and checks the packet in <paramref name="packetDirectory"/>, comparing a phase packet's holdout set hash with its seal (PKT-HOLD-003).</summary>
     /// <param name="kind">A line kind.</param>
     /// <param name="packetDirectory">The packet directory.</param>
     /// <param name="repoDirectory">A directory inside the repository.</param>
-    /// <param name="sizes">The sizes file for a plan graph's PKT-SIZE-001; null leaves the rule unchecked.</param>
-    /// <param name="sealedSet">The hash the seal names for the phase's set; null leaves PKT-HOLD-003 unchecked.</param>
+    /// <param name="options">The sizes file and the sealed set hash; a null member leaves its rule unchecked.</param>
     /// <param name="cancellationToken">Cancels the reads.</param>
     /// <returns>The inspection; the read error; or AW-PACKETS-006 when the repository can't be read.</returns>
-    public async ValueTask<Result<LineInspection>> Inspect(PacketKind kind, string packetDirectory, string repoDirectory, SizesFile? sizes, PacketHash? sealedSet, CancellationToken cancellationToken)
+    public async ValueTask<Result<LineInspection>> Inspect(PacketKind kind, string packetDirectory, string repoDirectory, LineInspectOptions options, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(kind);
         var files = await source.Read(kind, packetDirectory, cancellationToken).ConfigureAwait(false);
@@ -54,6 +53,6 @@ public sealed class LinePacketInspector(ILinePacketSource source, IRepoSnapshot 
             tree = loaded.Value;
         }
 
-        return new LineInspection(kind, files.Value, manifest, LinePacketChecks.Run(kind, files.Value, new LineInputs(read, tree, sizes, sealedSet), json));
+        return new LineInspection(kind, files.Value, manifest, LinePacketChecks.Run(kind, files.Value, new LineInputs(read, tree, options.Sizes, options.SealedSet), json));
     }
 }

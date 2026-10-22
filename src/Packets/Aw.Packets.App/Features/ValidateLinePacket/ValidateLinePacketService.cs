@@ -37,7 +37,7 @@ internal sealed class ValidateLinePacketService(LinePacketInspector inspector, I
             sealedSet = read.Value;
         }
 
-        var inspection = await inspector.Inspect(kind, request.PacketDirectory, request.RepoDirectory ?? request.PacketDirectory, sizes, sealedSet, cancellationToken)
+        var inspection = await inspector.Inspect(kind, request.PacketDirectory, request.RepoDirectory ?? request.PacketDirectory, new LineInspectOptions(sizes, sealedSet), cancellationToken)
             .ConfigureAwait(false);
         return inspection.Map(static i => new ValidateLinePacketResponse(1, i.Kind.Name, i.Manifest?.Id, i.Passed, i.Checks));
     }
