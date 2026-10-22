@@ -15540,6 +15540,51 @@ static Aw.Sindri.Core.Review.ReviewPackOrigin.operator !=(Aw.Sindri.Core.Review.
 static Aw.Sindri.Core.Review.ReviewPackOrigin.operator ==(Aw.Sindri.Core.Review.ReviewPackOrigin? left, Aw.Sindri.Core.Review.ReviewPackOrigin? right) -> bool
 static Aw.Sindri.Core.Review.ReviewPack.Problems(Aw.Sindri.Core.Review.ReviewFacts! facts) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Sindri.Core.Review.ReviewPack.Verdict(System.Text.Json.Nodes.JsonNode! review) -> string?
+Aw.Sindri.Core.Setup.McpConnection
+Aw.Sindri.Core.Setup.McpConnection.Connected = 0 -> Aw.Sindri.Core.Setup.McpConnection
+Aw.Sindri.Core.Setup.McpConnection.Connecting = 1 -> Aw.Sindri.Core.Setup.McpConnection
+Aw.Sindri.Core.Setup.McpConnection.Failed = 3 -> Aw.Sindri.Core.Setup.McpConnection
+Aw.Sindri.Core.Setup.McpConnection.NotStarted = 2 -> Aw.Sindri.Core.Setup.McpConnection
+Aw.Sindri.Core.Setup.McpProviderState
+Aw.Sindri.Core.Setup.McpProviderState.<Clone>$() -> Aw.Sindri.Core.Setup.McpProviderState!
+Aw.Sindri.Core.Setup.McpProviderState.Deconstruct(out string! Provider, out Aw.Sindri.Core.Setup.McpConnection State, out string? Detail) -> void
+Aw.Sindri.Core.Setup.McpProviderState.Detail.get -> string?
+Aw.Sindri.Core.Setup.McpProviderState.Detail.init -> void
+Aw.Sindri.Core.Setup.McpProviderState.Equals(Aw.Sindri.Core.Setup.McpProviderState? other) -> bool
+Aw.Sindri.Core.Setup.McpProviderState.McpProviderState(string! Provider, Aw.Sindri.Core.Setup.McpConnection State, string? Detail = null) -> void
+Aw.Sindri.Core.Setup.McpProviderState.Provider.get -> string!
+Aw.Sindri.Core.Setup.McpProviderState.Provider.init -> void
+Aw.Sindri.Core.Setup.McpProviderState.State.get -> Aw.Sindri.Core.Setup.McpConnection
+Aw.Sindri.Core.Setup.McpProviderState.State.init -> void
+Aw.Sindri.Core.Setup.SetupItem.Providers.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.McpProviderState!>?
+Aw.Sindri.Core.Setup.SetupItem.Providers.init -> void
+override Aw.Sindri.Core.Setup.McpProviderState.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Setup.McpProviderState.GetHashCode() -> int
+override Aw.Sindri.Core.Setup.McpProviderState.ToString() -> string!
+static Aw.Sindri.Core.Setup.McpProviderState.operator !=(Aw.Sindri.Core.Setup.McpProviderState? left, Aw.Sindri.Core.Setup.McpProviderState? right) -> bool
+static Aw.Sindri.Core.Setup.McpProviderState.operator ==(Aw.Sindri.Core.Setup.McpProviderState? left, Aw.Sindri.Core.Setup.McpProviderState? right) -> bool
+Aw.Sindri.Core.Setup.ISetupJobSlots
+Aw.Sindri.Core.Setup.ISetupJobSlots.Holds(Aw.Sindri.Core.Ids.JobKind kind, Aw.Sindri.Core.Ids.JobKey key) -> bool
+Aw.Sindri.Core.Setup.ProfileFact.Preview.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupPreviewLine!>?
+Aw.Sindri.Core.Setup.ProfileFact.Preview.init -> void
+Aw.Sindri.Core.Setup.SetupStep.Preview.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupPreviewLine!>?
+Aw.Sindri.Core.Setup.SetupStep.Preview.init -> void
+Aw.Sindri.Core.Setup.ProfilePreview
+static Aw.Sindri.Core.Setup.ProfilePreview.Lines(Aw.Sindri.Core.Profile.SindriProfile! profile) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupPreviewLine!>!
+Aw.Sindri.Core.Setup.SetupPreviewLine
+Aw.Sindri.Core.Setup.SetupPreviewLine.<Clone>$() -> Aw.Sindri.Core.Setup.SetupPreviewLine!
+Aw.Sindri.Core.Setup.SetupPreviewLine.Deconstruct(out string! Kind, out string! Text) -> void
+Aw.Sindri.Core.Setup.SetupPreviewLine.Equals(Aw.Sindri.Core.Setup.SetupPreviewLine? other) -> bool
+Aw.Sindri.Core.Setup.SetupPreviewLine.Kind.get -> string!
+Aw.Sindri.Core.Setup.SetupPreviewLine.Kind.init -> void
+Aw.Sindri.Core.Setup.SetupPreviewLine.SetupPreviewLine(string! Kind, string! Text) -> void
+Aw.Sindri.Core.Setup.SetupPreviewLine.Text.get -> string!
+Aw.Sindri.Core.Setup.SetupPreviewLine.Text.init -> void
+override Aw.Sindri.Core.Setup.SetupPreviewLine.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Setup.SetupPreviewLine.GetHashCode() -> int
+override Aw.Sindri.Core.Setup.SetupPreviewLine.ToString() -> string!
+static Aw.Sindri.Core.Setup.SetupPreviewLine.operator !=(Aw.Sindri.Core.Setup.SetupPreviewLine? left, Aw.Sindri.Core.Setup.SetupPreviewLine? right) -> bool
+static Aw.Sindri.Core.Setup.SetupPreviewLine.operator ==(Aw.Sindri.Core.Setup.SetupPreviewLine? left, Aw.Sindri.Core.Setup.SetupPreviewLine? right) -> bool
 Aw.Sindri.Core.Events.ContextMapHeld
 Aw.Sindri.Core.Events.ContextMapHeld.<Clone>$() -> Aw.Sindri.Core.Events.ContextMapHeld!
 Aw.Sindri.Core.Events.ContextMapHeld.Chained.get -> bool
@@ -15943,6 +15988,13 @@ Aw.Sindri.Core.Setup.RepoEvents.Onboarded(Aw.Sindri.Core.Ids.RepoName repo, Aw.S
 static Aw.Sindri.Core.Setup.RepoEvents.OnboardedKeyOf(Aw.Sindri.Core.Ids.RepoName repo, Aw.Sindri.Core.Ids.ProfileHash approved) -> string!
 Aw.Sindri.Core.Setup.IRepoOnboardingTick
 Aw.Sindri.Core.Setup.IRepoOnboardingTick.Ensure(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+Aw.Sindri.Core.Scheduling.ServiceActions
+const Aw.Sindri.Core.Scheduling.ServiceActions.Pause = "pause" -> string!
+const Aw.Sindri.Core.Scheduling.ServiceActions.Resume = "resume" -> string!
+const Aw.Sindri.Core.Scheduling.ServiceActions.Run = "run" -> string!
+static Aw.Sindri.Core.Scheduling.ServiceActions.Allowed(bool namedByProfile, bool builtIn, bool paused, bool jobRunning) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Scheduling.ServiceActions.CanPauseOrResume(bool namedByProfile) -> bool
+static Aw.Sindri.Core.Scheduling.ServiceActions.CanRun(bool namedByProfile, bool builtIn) -> bool
 Aw.Sindri.Core.Setup.RecordedStep
 Aw.Sindri.Core.Setup.RecordedStep.<Clone>$() -> Aw.Sindri.Core.Setup.RecordedStep!
 Aw.Sindri.Core.Setup.RecordedStep.Deconstruct(out Aw.Sindri.Core.Setup.SetupState State, out string? Code, out int Count) -> void
