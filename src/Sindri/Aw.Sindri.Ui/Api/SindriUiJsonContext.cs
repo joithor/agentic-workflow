@@ -11,6 +11,7 @@ namespace Aw.Sindri.Ui.Api;
 [JsonSerializable(typeof(PreferencesFile))]
 [JsonSerializable(typeof(CommandList))]
 [JsonSerializable(typeof(ServiceList))]
+[JsonSerializable(typeof(StopAcceptedView))]
 [JsonSerializable(typeof(CommandAcceptedView))]
 [JsonSerializable(typeof(ProblemView))]
 [JsonSerializable(typeof(QueueView))]
