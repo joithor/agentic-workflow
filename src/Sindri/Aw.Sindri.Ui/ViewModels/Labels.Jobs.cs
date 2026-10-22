@@ -81,6 +81,30 @@ internal static partial class Labels
     /// <summary>The cancel's terminal form.</summary>
     internal const string JobCliField = "To cancel from a terminal";
 
+    /// <summary>The table's column heads, in order.</summary>
+    internal static readonly string[] JobColumns = ["Job", "Status", "When", "Started by", "What happened", "Rounds"];
+
+    /// <summary>The status filter's choices: the first is no filter; the rest are the states' words.</summary>
+    internal static readonly string[] JobStateChoices = ["All statuses", "Running", "Done", "Failed", "Cancelled"];
+
+    /// <summary>The kind filter's first choice: no filter.</summary>
+    internal const string AllKinds = "All kinds";
+
+    /// <summary>The line above a table of ended jobs.</summary>
+    internal const string NoRunningJobs = "No running jobs.";
+
+    /// <summary>A status choice's served state; null for "all".</summary>
+    /// <param name="choice">The choice as shown.</param>
+    /// <returns>The served state, or null.</returns>
+    internal static string? JobStateServed(string choice) => choice switch
+    {
+        "Running" => "running",
+        "Done" => "succeeded",
+        "Failed" => "failed",
+        "Cancelled" => "cancelled",
+        _ => null,
+    };
+
     /// <summary>The page's head: "2 running · 5 jobs".</summary>
     /// <param name="running">Running jobs.</param>
     /// <param name="total">Jobs listed.</param>
