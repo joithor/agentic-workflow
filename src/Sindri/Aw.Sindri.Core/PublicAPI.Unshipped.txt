@@ -15828,3 +15828,54 @@ Aw.Sindri.Core.Forge.IPullRequests.Merge(Aw.Sindri.Core.Forge.PullMerge! request
 Aw.Sindri.Core.Forge.IPullRequests.Reply(Aw.Sindri.Core.Forge.PullReply! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullDelivery>!>
 Aw.Sindri.Core.Forge.IPullRequests.React(Aw.Sindri.Core.Forge.PullReaction! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullDelivery>!>
 Aw.Sindri.Core.Forge.IPullRequests.PushBranch(Aw.Sindri.Core.Forge.PullBranchPush! push, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullPushOutcome>!>
+Aw.Sindri.Core.LensPacks.StyleSection
+Aw.Sindri.Core.LensPacks.StyleSection.<Clone>$() -> Aw.Sindri.Core.LensPacks.StyleSection!
+Aw.Sindri.Core.LensPacks.StyleSection.Heading.get -> string!
+Aw.Sindri.Core.LensPacks.StyleSection.Heading.init -> void
+Aw.Sindri.Core.LensPacks.StyleSection.Required.get -> bool
+Aw.Sindri.Core.LensPacks.StyleSection.Required.init -> void
+Aw.Sindri.Core.LensPacks.StyleSection.MaxWords.get -> int?
+Aw.Sindri.Core.LensPacks.StyleSection.MaxWords.init -> void
+Aw.Sindri.Core.LensPacks.StyleSection.Deconstruct(out string! Heading, out bool Required, out int? MaxWords) -> void
+Aw.Sindri.Core.LensPacks.StyleSection.Equals(Aw.Sindri.Core.LensPacks.StyleSection? other) -> bool
+Aw.Sindri.Core.LensPacks.StyleSection.StyleSection(string! Heading, bool Required, int? MaxWords) -> void
+override Aw.Sindri.Core.LensPacks.StyleSection.Equals(object? obj) -> bool
+override Aw.Sindri.Core.LensPacks.StyleSection.GetHashCode() -> int
+override Aw.Sindri.Core.LensPacks.StyleSection.ToString() -> string!
+static Aw.Sindri.Core.LensPacks.StyleSection.operator !=(Aw.Sindri.Core.LensPacks.StyleSection? left, Aw.Sindri.Core.LensPacks.StyleSection? right) -> bool
+static Aw.Sindri.Core.LensPacks.StyleSection.operator ==(Aw.Sindri.Core.LensPacks.StyleSection? left, Aw.Sindri.Core.LensPacks.StyleSection? right) -> bool
+Aw.Sindri.Core.LensPacks.StyleRules
+Aw.Sindri.Core.LensPacks.StyleRules.<Clone>$() -> Aw.Sindri.Core.LensPacks.StyleRules!
+Aw.Sindri.Core.LensPacks.StyleRules.Forbidden.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.LensPacks.StyleRules.Forbidden.init -> void
+Aw.Sindri.Core.LensPacks.StyleRules.MaxLines.get -> int?
+Aw.Sindri.Core.LensPacks.StyleRules.MaxLines.init -> void
+Aw.Sindri.Core.LensPacks.StyleRules.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Forbidden, out int? MaxLines) -> void
+Aw.Sindri.Core.LensPacks.StyleRules.Equals(Aw.Sindri.Core.LensPacks.StyleRules? other) -> bool
+Aw.Sindri.Core.LensPacks.StyleRules.StyleRules(System.Collections.Generic.IReadOnlyList<string!>! Forbidden, int? MaxLines) -> void
+override Aw.Sindri.Core.LensPacks.StyleRules.Equals(object? obj) -> bool
+override Aw.Sindri.Core.LensPacks.StyleRules.GetHashCode() -> int
+override Aw.Sindri.Core.LensPacks.StyleRules.ToString() -> string!
+static Aw.Sindri.Core.LensPacks.StyleRules.operator !=(Aw.Sindri.Core.LensPacks.StyleRules? left, Aw.Sindri.Core.LensPacks.StyleRules? right) -> bool
+static Aw.Sindri.Core.LensPacks.StyleRules.operator ==(Aw.Sindri.Core.LensPacks.StyleRules? left, Aw.Sindri.Core.LensPacks.StyleRules? right) -> bool
+Aw.Sindri.Core.LensPacks.StylePack
+Aw.Sindri.Core.LensPacks.StylePack.<Clone>$() -> Aw.Sindri.Core.LensPacks.StylePack!
+Aw.Sindri.Core.LensPacks.StylePack.Id.get -> Aw.Sindri.Core.LensPacks.LensPackId
+Aw.Sindri.Core.LensPacks.StylePack.Id.init -> void
+Aw.Sindri.Core.LensPacks.StylePack.Hash.get -> string!
+Aw.Sindri.Core.LensPacks.StylePack.Hash.init -> void
+Aw.Sindri.Core.LensPacks.StylePack.Sections.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.LensPacks.StyleSection!>!
+Aw.Sindri.Core.LensPacks.StylePack.Sections.init -> void
+Aw.Sindri.Core.LensPacks.StylePack.Rules.get -> Aw.Sindri.Core.LensPacks.StyleRules!
+Aw.Sindri.Core.LensPacks.StylePack.Rules.init -> void
+Aw.Sindri.Core.LensPacks.StylePack.Deconstruct(out Aw.Sindri.Core.LensPacks.LensPackId Id, out string! Hash, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.LensPacks.StyleSection!>! Sections, out Aw.Sindri.Core.LensPacks.StyleRules! Rules) -> void
+Aw.Sindri.Core.LensPacks.StylePack.Equals(Aw.Sindri.Core.LensPacks.StylePack? other) -> bool
+Aw.Sindri.Core.LensPacks.StylePack.StylePack(Aw.Sindri.Core.LensPacks.LensPackId Id, string! Hash, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.LensPacks.StyleSection!>! Sections, Aw.Sindri.Core.LensPacks.StyleRules! Rules) -> void
+override Aw.Sindri.Core.LensPacks.StylePack.Equals(object? obj) -> bool
+override Aw.Sindri.Core.LensPacks.StylePack.GetHashCode() -> int
+override Aw.Sindri.Core.LensPacks.StylePack.ToString() -> string!
+static Aw.Sindri.Core.LensPacks.StylePack.operator !=(Aw.Sindri.Core.LensPacks.StylePack? left, Aw.Sindri.Core.LensPacks.StylePack? right) -> bool
+static Aw.Sindri.Core.LensPacks.StylePack.operator ==(Aw.Sindri.Core.LensPacks.StylePack? left, Aw.Sindri.Core.LensPacks.StylePack? right) -> bool
+Aw.Sindri.Core.LensPacks.IStylePacks
+Aw.Sindri.Core.LensPacks.IStylePacks.Find(string! id) -> Aw.Kernel.Result<Aw.Sindri.Core.LensPacks.StylePack!>!
+Aw.Sindri.Core.LensPacks.IStylePacks.Resolve(Aw.Sindri.Core.Ids.RepoName? repo, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.LensPacks.StylePack!>!>
