@@ -55,7 +55,7 @@ public sealed class RecipesPageTests
         var page = await _f.Shown(Token);
 
         page.Query = "babysit";
-        Assert.Equal(["Pull request babysitter"], page.Rows.Select(r => r.Name));
+        Expect.Sequence(["Pull request babysitter"], page.Rows.Select(r => r.Name));
         Assert.False(page.IsNoMatch);
 
         page.Query = "zzz";
@@ -84,6 +84,7 @@ public sealed class RecipesPageTests
         DeepLink? opened = null;
         page.OpenRequested += (_, e) => opened = e.Link;
 
+        Assert.True(page.Press("J"));
         Assert.True(page.Press("J"));
         Assert.True(page.Press("J"));
         Assert.True(page.Press("K"));
