@@ -43,7 +43,7 @@ public sealed class AgentsPageViewModelTests
     {
         var page = await _f.Shown(Token);
 
-        var outside = page.Groups[0];
+        var outside = page.Groups[1];
         Assert.Equal(Labels.OutsideWorkflow, outside.Name);
         Assert.Equal([Claude, Codex], Providers(outside.Rows), StringComparer.Ordinal);
         Assert.Equal(Labels.GroupHeader(Labels.OutsideWorkflow, 2), outside.Header);
@@ -54,7 +54,7 @@ public sealed class AgentsPageViewModelTests
     {
         var page = await _f.Shown(Token);
 
-        var launched = page.Groups[1];
+        var launched = page.Groups[0];
         Assert.Equal(Labels.StartedBySindri, launched.Name);
         var row = Assert.Single(launched.Rows);
         Assert.Equal(Labels.LaunchLine, row.LaneText);
