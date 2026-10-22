@@ -1,3 +1,5 @@
+using Aw.CodeIndex.Features;
+using Aw.CodeIndex.Infrastructure;
 using Aw.Context.Core;
 using Aw.Context.Core.Models;
 using Aw.Context.Features;
@@ -29,6 +31,8 @@ internal static class Composition
             .AddContextCore()
             .AddContextFeatures()
             .AddContextInfrastructure(ContextEnvironment(environment))   // context engine: $AW_SINDRI_HOME/context (compose edge); pointers resolve here
+            .AddCodeIndexFeatures()
+            .AddCodeIndexInfrastructure(environment)   // the code index: $AW_SINDRI_HOME/code-index (compose edge); Features supplies the heavy-slot port it needs (IHeavyJobLock)
             .AddContextLabeling()   // the labeling pass over IModelPort; a build asks it only when the approved profile turns 'context.labeling' on
             .AddSingleton<IModelPort>(sp => new JudgeModelPort(new JudgeCatalog(environment, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<System.Text.Json.JsonSerializerOptions>()).Get))
             .AddPullRequests(environment)   // IPullRequests over the forge the approved profile names (workflow.forge; compose edge to Aw.Forge.Infrastructure in Forge/ForgeAdapters)
