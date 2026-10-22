@@ -46,5 +46,9 @@ internal sealed class RecordingPulls : IPullRequests
 
     public ValueTask<Result<OpenedPull>> Open(OpenPull request, CancellationToken cancellationToken) => throw new NotSupportedException();
 
+    public ValueTask<Result<IReadOnlyList<PullThread>>> Threads(string link, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+    public ValueTask<Result<PullPushOutcome>> PushBranch(PullBranchPush push, CancellationToken cancellationToken) => throw new NotSupportedException();
+
     public ValueTask<Result<Unit>> Update(string link, string? title, string? body, CancellationToken cancellationToken) => throw new NotSupportedException();
 }
