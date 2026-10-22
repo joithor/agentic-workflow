@@ -12,7 +12,9 @@ namespace Aw.Sindri.Infrastructure.LensPacks;
 /// </summary>
 /// <param name="approved">The approved profile.</param>
 /// <param name="source">The built-in packs' files.</param>
-internal sealed class ProfileLensPacks(IApprovedProfile approved, ILensPackSource source) : ILensPacks
+/// <param name="outside">The files of the packs a repo or the machine supplies; null for built-in packs only.</param>
+/// <param name="machineRoot">The machine's packs root ('$AW_STATE_DIR/packs'); null for none.</param>
+internal sealed class ProfileLensPacks(IApprovedProfile approved, ILensPackSource source, IOutsidePackFiles? outside = null, string? machineRoot = null) : ILensPacks
 {
     /// <summary>The built-in design pack's id.</summary>
     internal const string DefaultDesign = "design-five";
@@ -22,6 +24,7 @@ internal sealed class ProfileLensPacks(IApprovedProfile approved, ILensPackSourc
 
     public async ValueTask<Result<LensPack>> Resolve(LensPackKind kind, RepoName? repo, CancellationToken cancellationToken)
     {
+        _ = (outside, machineRoot);
         var latest = await approved.Latest(cancellationToken).ConfigureAwait(false);
         return latest.IsError ? latest.Error : Read(kind, Chosen(kind, repo, latest.Value?.Profile.Workflow?.Packs?.Lenses));
     }
