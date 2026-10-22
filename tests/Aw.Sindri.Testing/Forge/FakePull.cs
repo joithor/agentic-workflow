@@ -37,6 +37,15 @@ public sealed class FakePull(PullRepo repo, int number, string head, string head
     /// <summary>Gets or sets the marker the pull request was opened with.</summary>
     public string? Marker { get; set; }
 
+    /// <summary>Gets or sets whether the forge says it merges cleanly.</summary>
+    public bool? Mergeable { get; set; } = true;
+
+    /// <summary>Gets or sets the review decision.</summary>
+    public string? ReviewDecision { get; set; }
+
+    /// <summary>Gets or sets the checks; null reads as none, on the head's tip.</summary>
+    public PullChecks? Checks { get; set; }
+
     /// <summary>Gets the threads, oldest first.</summary>
     public IList<PullThread> Threads { get; } = [];
 

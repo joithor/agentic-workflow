@@ -37,7 +37,7 @@ internal sealed class PrReadyCheckStep(IPullRequests pulls) : IBlockStep, IBlock
         return StepFacts.Done(then is not null && Snapshot.Matches(then, now.Value) ? "same" : "changed");
     }
 
-    /// <summary>The one place that reads the snapshot fact's keys (camelCase of the pull request view: link, pullState (the pull request's own state; the older snapshot kept it in state, which now holds the outcome word), headSha, mergeable, reviewDecision, unresolvedThreads, checks { state, sha, failing }, mergedSha).</summary>
+    /// <summary>The one place that reads the snapshot fact's keys (camelCase of the pull request view: link, pullState (the pull request's own state; the older snapshot kept it in state, which now holds the outcome word), headSha, mergeable, reviewDecision, unresolvedThreads, checks { state, sha, failing }).</summary>
     private static class Snapshot
     {
         /// <summary>What the babysitter waits on: everything that moves the snapshot's outcome or the ready view.</summary>
@@ -67,8 +67,7 @@ internal sealed class PrReadyCheckStep(IPullRequests pulls) : IBlockStep, IBlock
                 Flag(root["mergeable"]),
                 Text(root["reviewDecision"]),
                 Count(root["unresolvedThreads"]),
-                new PullChecks(checksState, checksSha, []),
-                Text(root["mergedSha"]));
+                new PullChecks(checksState, checksSha, []));
         }
 
         private static string? Text(JsonNode? node) => node is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;

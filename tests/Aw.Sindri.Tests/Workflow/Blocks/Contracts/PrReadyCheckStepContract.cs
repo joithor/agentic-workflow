@@ -23,5 +23,5 @@ public sealed class PrReadyCheckStepContract : BlockContract
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await new PrReadyCheckStep(new FakePullRequests()).Run(BuildShipContexts.Of("step.pr.ready-check", []), cancellationToken);
+        _ = await new PrReadyCheckStep(new FakePullRequests(["forge.test"])).Run(BuildShipContexts.Of("step.pr.ready-check", []), cancellationToken);
 }

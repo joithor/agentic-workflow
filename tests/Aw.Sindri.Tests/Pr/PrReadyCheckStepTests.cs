@@ -12,14 +12,14 @@ namespace Aw.Sindri.Tests.Pr;
 [Lane(TestLane.Unit)]
 public sealed class PrReadyCheckStepTests
 {
-    private const string Link = "https://forge.test/acme/app/pull/7";
+    private const string Link = "https://forge.test/acme/app/pull/1";
     private const string Head = "aaaa1111";
 
-    private readonly FakePullRequests _pulls = new();
+    private readonly FakePullRequests _pulls = new(["forge.test"]);
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static PullView Green() => new(Link, PullState.Open, Head, Mergeable: true, ReviewDecision: "APPROVED", UnresolvedThreads: 0, new PullChecks(PullChecksState.Passing, Head, []), MergedSha: null);
+    private static PullView Green() => new(Link, PullState.Open, Head, Mergeable: true, ReviewDecision: "APPROVED", UnresolvedThreads: 0, new PullChecks(PullChecksState.Passing, Head, []));
 
     // The snapshot fact: the pull request's fields in camelCase, enums by name.
     private static string Snapshot(PullView pull) => new JsonObject
@@ -37,8 +37,17 @@ public sealed class PrReadyCheckStepTests
             ["sha"] = pull.Checks.Sha,
             ["failing"] = new JsonArray([.. pull.Checks.Failing.Select(static f => (JsonNode)JsonValue.Create(f)!)]),
         },
-        ["mergedSha"] = pull.MergedSha,
     }.ToJsonString();
+
+    private static readonly PullRepo Repo = new("forge.test", "acme", "app");
+
+    private FakePull Seed()
+    {
+        var pull = _pulls.Add(Repo, "feat/x", Head);
+        pull.ReviewDecision = "APPROVED";
+        pull.Checks = new PullChecks(PullChecksState.Passing, Head, []);
+        return pull;
+    }
 
     private Task<BlockStepResult> Run(string? at, string? pr = Link)
     {
@@ -59,13 +68,13 @@ public sealed class PrReadyCheckStepTests
     [Fact]
     public async Task A_pull_request_that_still_matches_its_snapshot_is_the_same_and_writes_nothing()
     {
-        _pulls.Add(Green());
+        Seed();
 
         var result = await Run(Snapshot(Green()));
 
         Assert.Equal("same", result.Result!.Outcome.Value);
         Assert.Empty(result.Result.Outputs);
-        Assert.Equal(1, _pulls.Reads);
+        Assert.Equal(1, _pulls.Calls.Count(static c => c == "Get"));
     }
 
     public static TheoryData<string> Changes => new()
@@ -78,17 +87,18 @@ public sealed class PrReadyCheckStepTests
     public async Task Any_change_since_the_snapshot_is_changed(string change)
     {
         var then = Green();
-        _pulls.Add(change switch
+        var pull = Seed();
+        switch (change)
         {
-            "head" => then with { HeadSha = "bbbb2222" },
-            "checksSha" => then with { Checks = then.Checks with { Sha = "bbbb2222" } },
-            "checksState" => then with { Checks = then.Checks with { State = PullChecksState.Failing, Failing = ["build"] } },
-            "review" => then with { ReviewDecision = "CHANGES_REQUESTED" },
-            "mergeable" => then with { Mergeable = false },
-            "threads" => then with { UnresolvedThreads = 1 },
-            "merged" => then with { State = PullState.Merged, MergedSha = "cccc3333" },
-            _ => then with { State = PullState.Closed },
-        });
+            case "head": pull.HeadSha = "bbbb2222"; break;
+            case "checksSha": pull.Checks = pull.Checks! with { Sha = "bbbb2222" }; break;   // why: Seed sets the checks
+            case "checksState": pull.Checks = new PullChecks(PullChecksState.Failing, Head, ["build"]); break;
+            case "review": pull.ReviewDecision = "CHANGES_REQUESTED"; break;
+            case "mergeable": pull.Mergeable = false; break;
+            case "threads": _pulls.SeedThread(pull.Link, "please fix"); break;
+            case "merged": pull.State = PullState.Merged; break;
+            default: pull.State = PullState.Closed; break;
+        }
 
         var result = await Run(Snapshot(then));
 
@@ -98,7 +108,7 @@ public sealed class PrReadyCheckStepTests
     [Fact]
     public async Task A_snapshot_that_is_not_a_pull_request_view_counts_as_changed()
     {
-        _pulls.Add(Green());
+        Seed();
 
         Assert.Equal("changed", (await Run("{\"unexpected\":true}")).Result!.Outcome.Value);
         Assert.Equal("changed", (await Run(at: null)).Result!.Outcome.Value);
