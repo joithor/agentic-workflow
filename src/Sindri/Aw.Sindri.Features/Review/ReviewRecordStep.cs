@@ -56,11 +56,12 @@ internal sealed class ReviewRecordStep(IBriefFiles files, IRunArea area, IPacket
 
         var origin = new ReviewPackOrigin(phase.Id + "-review", phase.Repo, phase.BaseSha, inputs.PacketHash, ProofPack.Sha256(phase.AcceptanceText));
         var outcome = string.Equals(ReviewPack.Verdict(inputs.Facts.Review), "clean", StringComparison.Ordinal) ? "recorded" : "recordedWrong";
-        return await Freeze(inputs.Address, ReviewPack.Files(inputs.Facts, origin), checkout.Value, outcome, inputs.Facts.Head, cancellationToken).ConfigureAwait(false);
+        return await Freeze(inputs, ReviewPack.Files(inputs.Facts, origin), checkout.Value, outcome, cancellationToken).ConfigureAwait(false);
     }
 
-    private async ValueTask<BlockStepResult> Freeze(string address, IReadOnlyDictionary<string, string> pack, string checkout, string outcome, string head, CancellationToken cancellationToken)
+    private async ValueTask<BlockStepResult> Freeze(ReviewRecordInputs inputs, IReadOnlyDictionary<string, string> pack, string checkout, string outcome, CancellationToken cancellationToken)
     {
+        var address = inputs.Address;
         foreach (var (name, text) in pack)
         {
             var written = await area.Write(address, $"{PackName}/{name}", text, append: false, cancellationToken).ConfigureAwait(false);
@@ -83,7 +84,7 @@ internal sealed class ReviewRecordStep(IBriefFiles files, IRunArea area, IPacket
         }
 
         return frozen.Value is { Frozen: true, Hash: { } hash }
-            ? StepFacts.Done(outcome, ("fact:review", new JsonObject { ["hash"] = hash, ["dir"] = dir.Value, ["head"] = head }))
+            ? StepFacts.Done(outcome, ("fact:review", new JsonObject { ["hash"] = hash, ["dir"] = dir.Value, ["head"] = inputs.Facts.Head }))
             : BlockStepResult.Failed($"step.review.record: aw-packets refused the review packet Sindri assembled, which nothing can fix by retrying: {string.Join("; ", frozen.Value.Failures.Select(static f => $"{f.Rule} {f.Subject}: {f.Message}"))}");
     }
 }
