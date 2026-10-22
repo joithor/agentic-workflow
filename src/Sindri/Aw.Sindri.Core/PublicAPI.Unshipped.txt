@@ -17063,6 +17063,8 @@ override Aw.Sindri.Core.Setup.RepoWeight.GetHashCode() -> int
 override Aw.Sindri.Core.Setup.RepoWeight.ToString() -> string!
 static Aw.Sindri.Core.Setup.RepoWeight.operator !=(Aw.Sindri.Core.Setup.RepoWeight? left, Aw.Sindri.Core.Setup.RepoWeight? right) -> bool
 static Aw.Sindri.Core.Setup.RepoWeight.operator ==(Aw.Sindri.Core.Setup.RepoWeight? left, Aw.Sindri.Core.Setup.RepoWeight? right) -> bool
+Aw.Sindri.Core.Doctor.IMapPublishCheck
+Aw.Sindri.Core.Doctor.IMapPublishCheck.Check(Aw.Sindri.Core.Profile.LoadedProfile? approved, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Doctor.DoctorCheck!>
 Aw.Sindri.Core.Workflow.Engine.Evals.LedgerRecording
 Aw.Sindri.Core.Workflow.Engine.Evals.LedgerRecording.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Evals.LedgerRecording!
 Aw.Sindri.Core.Workflow.Engine.Evals.LedgerRecording.Catalog.get -> Aw.Sindri.Core.Workflow.Blocks.BlockCatalog!

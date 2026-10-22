@@ -40,6 +40,10 @@ internal sealed partial class SindriApiClient
         Get<MapStatusView>(api, ContextRoutes.MapStatus(anchor), cancellationToken);
 
     /// <inheritdoc />
+    public Task<Result<MapPublishView>> MapPublish(Uri api, CancellationToken cancellationToken) =>
+        Get<MapPublishView>(api, ContextRoutes.MapPublish, cancellationToken);
+
+    /// <inheritdoc />
     public Task<Result<NodeView>> Node(Uri api, string key, CancellationToken cancellationToken) =>
         Get<NodeView>(api, ContextRoutes.Node(key), cancellationToken);
 

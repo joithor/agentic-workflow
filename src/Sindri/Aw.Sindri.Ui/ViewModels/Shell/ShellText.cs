@@ -153,6 +153,9 @@ internal sealed class ShellText
     /// <summary><see cref="Labels.Services"/>.</summary>
     public string Services { get; } = Labels.Services;
 
+    /// <summary><see cref="Labels.ContextMapCard"/>.</summary>
+    public string ContextMapCard { get; } = Labels.ContextMapCard;
+
     /// <summary><see cref="Labels.ServicesCard"/>.</summary>
     public string ServicesCard { get; } = Labels.ServicesCard;
 
