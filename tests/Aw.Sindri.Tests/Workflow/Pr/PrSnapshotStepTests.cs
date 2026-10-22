@@ -148,6 +148,16 @@ public sealed class PrSnapshotStepTests
     }
 
     [Fact]
+    public async Task A_merged_pull_request_the_instance_merged_reports_the_merge_commit_not_the_head()
+    {
+        _pull.State = PullState.Merged;
+
+        var result = await Snapshot(more: new() { ["merge"] = """{ "mergedSha": "mmmm9999", "method": "squash", "headSha": "aaaa1111" }""" });
+
+        Assert.Equal("mmmm9999", Fact(result, "fact:mergedSha").GetString());
+    }
+
+    [Fact]
     public async Task A_closed_pull_request_reports_closed()
     {
         _pull.State = PullState.Closed;
