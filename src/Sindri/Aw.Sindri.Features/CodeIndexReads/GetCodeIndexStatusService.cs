@@ -4,7 +4,6 @@ using Aw.CodeIndex.Core.Ports;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Ids;
-using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Scheduling;
 
