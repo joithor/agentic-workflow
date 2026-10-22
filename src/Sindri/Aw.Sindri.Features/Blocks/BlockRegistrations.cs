@@ -50,6 +50,12 @@ internal static class BlockRegistrations
         .AddScopingBlocks()
         .AddLineBlocks().AddLineDesignBlocks()
         .AddBlockDescriptor(EvidenceProviders.Check)
+        .AddEngineBlocks();
+
+    /// <summary>Registers the engine's gates, effects and events.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    private static IServiceCollection AddEngineBlocks(this IServiceCollection services) => services
         .AddGate<BudgetAvailableGate>()
         .AddGate<RouteStartableGate>()     // engine P7 unit U1: a stub over the profile's workflow.route
         .AddEffect<ClaimRefEffect>()      // engine P6 unit (d)
