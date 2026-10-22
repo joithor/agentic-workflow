@@ -35,6 +35,16 @@ public sealed class DeepLinkTests
         Assert.Equal(text, link.ToString());
     }
 
+    [Fact]
+    public void A_context_link_names_the_item_whose_scope_it_opens()
+    {
+        Assert.True(DeepLink.TryParse("context?item=ITM-01JC8", out var link));
+        Assert.Equal(new DeepLink(DeepLinkKind.ContextItem, "ITM-01JC8"), link);
+        Assert.Equal("context?item=ITM-01JC8", link.ToString());
+        Assert.False(DeepLink.TryParse("context?item=", out _));
+        Assert.False(DeepLink.TryParse("context?item=a/b", out _));
+    }
+
     [Theory]
     [InlineData("session/claude-code/aaaaaaaa-0000-4000-8000-000000000001")]
     [InlineData("session/codex/bbbbbbbb-0000-4000-8000-000000000002")]
