@@ -16204,7 +16204,6 @@ const Aw.Sindri.Core.Launch.StepDenials.HoldoutDirectory = "holdout" -> string!
 static Aw.Sindri.Core.Launch.StepDenials.For(string! worktree, System.Collections.Generic.IReadOnlyList<string!>! siblingWorktrees, string? sindriHome) -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions
 Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions.Lines.get -> System.Collections.Generic.IReadOnlyList<string!>!
-Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions.Step.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
 Aw.Sindri.Core.Workflow.Stats.RecipeStats
 Aw.Sindri.Core.Workflow.Stats.RecipeStats.<Clone>$() -> Aw.Sindri.Core.Workflow.Stats.RecipeStats!
 Aw.Sindri.Core.Workflow.Stats.RecipeStats.Recipe.get -> string!
@@ -16501,8 +16500,6 @@ Aw.Sindri.Core.Events.WorkflowEventDelta.Recipe.init -> void
 Aw.Sindri.Core.Events.WorkflowEventDelta.RecipeHash.get -> string?
 Aw.Sindri.Core.Events.WorkflowEventDelta.RecipeHash.init -> void
 Aw.Sindri.Core.Workflow.Registry.RecipeRegistryReader.ChildRecipeIds(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Ids.RecipeId>!>!>
-Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions
-Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions.Lines.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Workflow.Stats.IWorkflowStatRows
 Aw.Sindri.Core.Workflow.Stats.IWorkflowStatRows.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Stats.StatEvent!>!>!>
 Aw.Sindri.Core.Forge.PullThread.CreatedAt.get -> System.DateTimeOffset
@@ -16544,9 +16541,6 @@ override Aw.Sindri.Core.LensPacks.PackDirectory.ToString() -> string!
 static Aw.Sindri.Core.LensPacks.PackDirectory.operator !=(Aw.Sindri.Core.LensPacks.PackDirectory? left, Aw.Sindri.Core.LensPacks.PackDirectory? right) -> bool
 static Aw.Sindri.Core.LensPacks.PackDirectory.operator ==(Aw.Sindri.Core.LensPacks.PackDirectory? left, Aw.Sindri.Core.LensPacks.PackDirectory? right) -> bool
 
-Aw.Sindri.Core.Launch.StepDenials
-const Aw.Sindri.Core.Launch.StepDenials.HoldoutDirectory = "holdout" -> string!
-static Aw.Sindri.Core.Launch.StepDenials.For(string! worktree, System.Collections.Generic.IReadOnlyList<string!>! siblingWorktrees, string? sindriHome) -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Scheduling.ServiceActions
 const Aw.Sindri.Core.Scheduling.ServiceActions.Pause = "pause" -> string!
 const Aw.Sindri.Core.Scheduling.ServiceActions.Resume = "resume" -> string!
