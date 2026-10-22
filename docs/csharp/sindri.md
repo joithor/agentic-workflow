@@ -18,6 +18,12 @@ relative to recipes/sindri>` (`/` separated, `README.md` left out, nothing embed
 working-tree recipe is never embedded; a dirty tree publishes and says so. The build stamp includes the commit and the git
 tree hash of `recipes/sindri`, and the build dir holds both in `build-info`. A tree that is not a git checkout is refused.
 
+The eval step runs before the build becomes current, with the published binary over the staged set: `recipe manifest <staged dir> --json`
+gives the digest, and when it differs from the last successful publish's (`$AW_STATE_DIR/bin/sindri-app/recipes-digest`) the publish runs
+`recipe eval --shipped --json`. A failing eval, or an embedded recipe count that differs from the number of `recipes/sindri/*.yaml` files in
+the staged archive, fails the publish with exit 1: no build for the stamp, the last good build stays current and the digest is not
+recorded. A matching digest skips the evals and the count check (the set was verified by the publish that recorded it).
+
 ## The binary
 
 One binary, `sindri`, is both the control plane and its CLI. It publishes framework-dependent, not NativeAOT: the Temporal .NET SDK its worker runs has no trimming support (temporalio/sdk-dotnet#286; `.agents/rules/csharp.md` "AOT scope").

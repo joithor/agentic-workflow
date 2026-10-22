@@ -346,7 +346,7 @@ check "eval: an unchanged digest skips the evals (they would fail), the build st
   "$RC:$(grep -c '^eval-call$' "$CALLS"):$(grep -c '^manifest-call$' "$CALLS"):$(publishes):$([ "$(cat "$B/current")" != "$S_D" ] && echo new)" "0:0:1:1:new"
 
 echo 'id: a4' > "$R/recipes/sindri/a.yaml"; ccommit -am "recipe 4"
-echo 'id: b' > "$R/recipes/sindri/b.yaml"; ccommit -Am "recipe b"
+echo 'id: b' > "$R/recipes/sindri/b.yaml"; git -C "$R" add -A; ccommit -m "recipe b"
 BEFORE="$(cat "$B/current")"; D_BEFORE="$(cat "$DG")"; : > "$CALLS"
 EVAL_COUNT_DELTA=1 bash "$R/scripts/sindri-app.sh" --publish-only >/dev/null 2>"$WORK/err"; RC=$?
 check "eval: an embedded count that differs from the staged yaml count fails (2 staged, 3 embedded)" \
