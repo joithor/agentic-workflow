@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Sandbox;
 using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
@@ -31,7 +32,8 @@ internal sealed class AgentLaunchRecorder(ILedgerStore ledger, HeldLease lease, 
         var chosen = started.ChosenSession is { } id && SessionId.TryFrom(id, out var session) ? session : (SessionId?)null;
         var viewer = new LaunchViewer("none", Label: null, started.Viewer.Kind, started.Viewer.Code, started.Viewer.Detail);
         var payload = new LaunchStarted(request.Launch, request.Item, request.Mode, request.Agent, chosen, "sindri " + request.Item.Value, viewer, started.Attach, started.CatalogSource, started.ArgvHash,
-            request.Instance, request.Step?.Ref.State, request.Run?.Number);
+            request.Instance, request.Step?.Ref.State, request.Run?.Number,
+            Reason: SandboxRefusal.ReasonOf(failed.Error), Source: SandboxRefusal.SourceTextOf(failed.Error));
         var appended = await Append(events.Entry(EventTypes.LaunchStarted, payload, Key(request.Launch), request.Item.Value), cancellationToken).ConfigureAwait(false);
         if (!appended.AlreadyRecorded)
         {

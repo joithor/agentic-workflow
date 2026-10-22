@@ -8,7 +8,7 @@ namespace Aw.Sindri.Tests.Sandbox;
 /// <summary>The sandbox launch codes -014 to -021, their kinds and reasons (sandbox spec SB11, §6; SB-0).</summary>
 public sealed class SandboxCodesTests
 {
-    private static readonly string[] _numbers = ["014", "015", "016", "017", "018", "019", "020", "021"];
+    private static readonly string[] _numbers = ["014", "025", "016", "017", "018", "019", "020", "021"];
 
     [Fact, Trait("Lane", "unit")]
     public void The_eight_codes_are_unique_in_All_and_pass_the_catalogue_check()
