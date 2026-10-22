@@ -18,7 +18,7 @@ public interface IRecipeStatsCache
     /// <param name="window">The window.</param>
     /// <param name="now">The read's time.</param>
     /// <param name="cancellationToken">Cancels the operation.</param>
-    /// <returns>The stats as counted, with the <c>AsOf</c> of the counting; the caller restamps it.</returns>
+    /// <returns>The stats as counted, with the <c language="text">AsOf</c> of the counting; the caller restamps it.</returns>
     public ValueTask<Result<RecipeStats?>> Get(RecipeId recipe, string? hash, StatsWindow window, DateTimeOffset now, CancellationToken cancellationToken);
 
     /// <summary>Keeps <paramref name="stats"/>, unless the projector has folded past <paramref name="head"/> (an end it did not count may have emptied the cache) or no views store exists.</summary>

@@ -16442,7 +16442,7 @@ Aw.Sindri.Core.Views.IViewRows.Clear(string! view, System.Threading.Cancellation
 Aw.Sindri.Core.Workflow.Stats.IRecipeStatsCache
 Aw.Sindri.Core.Workflow.Stats.IRecipeStatsCache.Get(Aw.Sindri.Core.Workflow.Ids.RecipeId recipe, string? hash, Aw.Sindri.Core.Workflow.Stats.StatsWindow! window, System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Stats.RecipeStats?>!>
 Aw.Sindri.Core.Workflow.Stats.IRecipeStatsCache.Put(Aw.Sindri.Core.Workflow.Stats.RecipeStats! stats, long head, System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
-static readonly Aw.Sindri.Core.Workflow.Stats.IRecipeStatsCache.MaxAge -> System.TimeSpan
+readonly Aw.Sindri.Core.Workflow.Stats.IRecipeStatsCache.MaxAge -> System.TimeSpan
 Aw.Sindri.Core.Workflow.Stats.RecipeStatsKey
 static Aw.Sindri.Core.Workflow.Stats.RecipeStatsKey.Of(string! recipe, string? hash, string! window) -> string!
 Aw.Sindri.Core.Workflow.Stats.RecipeStatsRow
