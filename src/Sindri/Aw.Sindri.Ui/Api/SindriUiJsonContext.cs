@@ -37,6 +37,7 @@ namespace Aw.Sindri.Ui.Api;
 // LANE ANCHOR U3': one [JsonSerializable] per Needs you record. Insert immediately above this marker, never between the markers.
 // LANE ANCHOR U8: one [JsonSerializable] per command send body and reply. Insert immediately below this marker, never between the markers.
 [JsonSerializable(typeof(Workflow.RecipeList))]
+[JsonSerializable(typeof(Workflow.RecipeStatsView))]
 [JsonSerializable(typeof(Workflow.StartInstanceRequest))]
 [JsonSerializable(typeof(Workflow.StartedView))]
 
@@ -60,6 +61,7 @@ namespace Aw.Sindri.Ui.Api;
 [JsonSerializable(typeof(OpenItemRequest))]
 [JsonSerializable(typeof(OpenAcceptedView))]
 [JsonSerializable(typeof(Workflow.InstanceEventsView))]
+[JsonSerializable(typeof(Workflow.FrameSummary))]
 [JsonSerializable(typeof(Workflow.ApproveAllPlan))]
 [JsonSerializable(typeof(Workflow.AppChallengeRequest))]
 [JsonSerializable(typeof(Workflow.AppChallengeView))]
@@ -69,6 +71,7 @@ namespace Aw.Sindri.Ui.Api;
 [JsonSerializable(typeof(ApproveProfileRequest))]
 [JsonSerializable(typeof(ProfileAnswer))]
 [JsonSerializable(typeof(ProfileApproved))]
+[JsonSerializable(typeof(RecipeApproved))]
 [JsonSerializable(typeof(Workflow.CompleteStepBody))]
 [JsonSerializable(typeof(Workflow.CompleteStepAccepted))]
 [JsonSerializable(typeof(Workflow.ApplyCommandBody))]
