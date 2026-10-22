@@ -162,7 +162,7 @@ public static partial class InstanceViews
             Name = from.Recipe.Recipe.Name is null ? null : subject?.Label,
             Inputs = legacy ? [] : InputSlots.Of(from.Instance, from.Recipe),
             OrderedBy = StatePathOrder.Of(from.Recipe.Recipe).OrderedBy == "transition-list" ? PathOrdering.TransitionList : PathOrdering.Path,
-            States = StateCells.Of(from.Instance, from.Recipe, badge),
+            States = StateCells.Of(from.Instance, from.Recipe, badge, context.StateVisits),
             Facts = facts,
             Steps = CurrentStates.Steps(from.Recipe, facts),
             ChildGroups = [],

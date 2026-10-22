@@ -5,10 +5,10 @@ using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
-using Labels = Aw.Sindri.Ui.ViewModels.Labels;
 using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.ViewModels.Run;
 using Microsoft.Extensions.Time.Testing;
+using Labels = Aw.Sindri.Ui.ViewModels.Labels;
 
 namespace Aw.Sindri.Ui.Tests.Run;
 

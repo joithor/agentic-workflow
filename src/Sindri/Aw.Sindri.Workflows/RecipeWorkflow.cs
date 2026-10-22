@@ -227,7 +227,7 @@ internal sealed partial class RecipeWorkflow
         {
             _since = Now;
         }
-
+        Visited(before, instance);
         var recipe = _context!.Recipe; // why: Begin sets the context before the first entry
         var kept = before is null
             ? First(instance, recipe)
