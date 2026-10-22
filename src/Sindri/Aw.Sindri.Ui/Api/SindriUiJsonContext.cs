@@ -53,6 +53,7 @@ namespace Aw.Sindri.Ui.Api;
 [JsonSerializable(typeof(Context.ReviewHistoryView))]
 [JsonSerializable(typeof(Context.PromotePreview))]
 [JsonSerializable(typeof(Context.MapStatusView))]
+[JsonSerializable(typeof(Context.MapPublishView))]
 [JsonSerializable(typeof(Context.NodeView))]
 [JsonSerializable(typeof(Context.SourcesView))]
 // LANE ANCHOR U11a: one [JsonSerializable] per Agents record. Insert immediately below this marker, never between the markers.

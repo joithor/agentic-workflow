@@ -13,6 +13,8 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// <param name="StartedBy">Who started it, in the actor form of the step runs; null when nobody is recorded.</param>
 /// <param name="Subject">The subject the workflow named from the first input's stored content; null names it from the recipe alone (the fact key for a text, link or payload).</param>
 /// <param name="StateVisits">The latest visit to each state the instance entered, by state id; null names none (a history replayed without visits), and the cells carry no times.</param>
+/// <param name="Recommendation">The stored text of 'fact:recommendation', which a desk task's form turns into its recommended outcome; null names none.</param>
+/// <param name="Again">The instance this one is a rerun of; null for any other.</param>
 public sealed record InstanceViewContext(
     int Version = 0,
     IReadOnlyDictionary<FactKey, FactProvenance>? Provenance = null,
@@ -22,4 +24,6 @@ public sealed record InstanceViewContext(
     InjectionPlan? Injection = null,
     DateTimeOffset? StartedAt = null,
     string? StartedBy = null,
-    IReadOnlyDictionary<string, StateVisit>? StateVisits = null);
+    IReadOnlyDictionary<string, StateVisit>? StateVisits = null,
+    string? Recommendation = null,
+    InstanceAddress? Again = null);

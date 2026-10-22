@@ -15,6 +15,7 @@ internal sealed partial class FakeSindriApi
     private readonly Dictionary<string, (int Index, JsonNode Entry)> _decidedEntries = new(StringComparer.Ordinal);
     private JsonObject? _queue;
     private int _contextCalls;
+    private int _mapPublishCalls;
 
     /// <summary>GET /sindri/context/lenses's answer per query (the goldens by default).</summary>
     public Func<LensesQuery, RouteAnswer> LensesAnswer { get; set; } = ContextAnswers.Lenses;
@@ -41,6 +42,12 @@ internal sealed partial class FakeSindriApi
 
     /// <summary>GET /sindri/context/map's answer.</summary>
     public RouteAnswer MapStatusAnswer { get; set; } = RouteAnswer.Api("context-map", "map-tabs-anchor");
+
+    /// <summary>GET /sindri/context/map/publish's answer (the Health page's Context map card).</summary>
+    public RouteAnswer MapPublishAnswer { get; set; } = RouteAnswer.Api("context-map-publish", "published");
+
+    /// <summary>How many times the publish state was read; counted apart from <see cref="ContextCalls"/>, which the Context page's tests hold at zero.</summary>
+    public int MapPublishCalls => Volatile.Read(ref _mapPublishCalls);
 
     /// <summary>GET /sindri/context/node's answer.</summary>
     public RouteAnswer NodeAnswer { get; set; } = RouteAnswer.Api("context-node", "tab-manager");
@@ -169,6 +176,12 @@ internal sealed partial class FakeSindriApi
 
     public Task<Result<MapStatusView>> MapStatus(Uri api, string? anchor, CancellationToken cancellationToken) =>
         Context<MapStatusView>(api, "/sindri/context/map", MapStatusAnswer, MapStatusGate, cancellationToken);
+
+    public Task<Result<MapPublishView>> MapPublish(Uri api, CancellationToken cancellationToken)
+    {
+        _ = Interlocked.Increment(ref _mapPublishCalls);
+        return Task.FromResult(Answer<MapPublishView>(api, "/sindri/context/map/publish", MapPublishAnswer));
+    }
 
     public Task<Result<NodeView>> Node(Uri api, string key, CancellationToken cancellationToken)
     {
