@@ -12250,6 +12250,10 @@ Aw.Sindri.Core.Packets.PacketRef.Repo.get -> string?
 Aw.Sindri.Core.Packets.PacketRef.Repo.init -> void
 Aw.Sindri.Core.Packets.PacketRef.RepoSlug.get -> string?
 Aw.Sindri.Core.Packets.PacketRef.RepoSlug.init -> void
+Aw.Sindri.Core.Packets.PacketSlugs
+static Aw.Sindri.Core.Packets.PacketSlugs.InstanceSlug(string! address) -> string!
+static Aw.Sindri.Core.Packets.PacketSlugs.RepoSlug(Aw.Sindri.Core.Ids.RepoName? repo) -> string?
+static Aw.Sindri.Core.Packets.PacketSlugs.Slug(string! text, int maxLength = 40) -> string!
 Aw.Sindri.Core.Packets.PacketValidation
 Aw.Sindri.Core.Packets.PacketValidation.<Clone>$() -> Aw.Sindri.Core.Packets.PacketValidation!
 Aw.Sindri.Core.Packets.PacketValidation.Deconstruct(out bool Passed, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Packets.PacketFailure!>! Failures) -> void
@@ -16015,9 +16019,13 @@ Aw.Sindri.Core.Forge.PullChecks.Sha.get -> string!
 Aw.Sindri.Core.Forge.PullChecks.Sha.init -> void
 Aw.Sindri.Core.Forge.PullChecks.Failing.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Forge.PullChecks.Failing.init -> void
-Aw.Sindri.Core.Forge.PullChecks.Deconstruct(out Aw.Sindri.Core.Forge.PullChecksState State, out string! Sha, out System.Collections.Generic.IReadOnlyList<string!>! Failing) -> void
+Aw.Sindri.Core.Forge.PullChecks.Passed.get -> int
+Aw.Sindri.Core.Forge.PullChecks.Passed.init -> void
+Aw.Sindri.Core.Forge.PullChecks.Pending.get -> int
+Aw.Sindri.Core.Forge.PullChecks.Pending.init -> void
+Aw.Sindri.Core.Forge.PullChecks.Deconstruct(out Aw.Sindri.Core.Forge.PullChecksState State, out string! Sha, out System.Collections.Generic.IReadOnlyList<string!>! Failing, out int Passed, out int Pending) -> void
 Aw.Sindri.Core.Forge.PullChecks.Equals(Aw.Sindri.Core.Forge.PullChecks? other) -> bool
-Aw.Sindri.Core.Forge.PullChecks.PullChecks(Aw.Sindri.Core.Forge.PullChecksState State, string! Sha, System.Collections.Generic.IReadOnlyList<string!>! Failing) -> void
+Aw.Sindri.Core.Forge.PullChecks.PullChecks(Aw.Sindri.Core.Forge.PullChecksState State, string! Sha, System.Collections.Generic.IReadOnlyList<string!>! Failing, int Passed, int Pending) -> void
 override Aw.Sindri.Core.Forge.PullChecks.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Forge.PullChecks.GetHashCode() -> int
 override Aw.Sindri.Core.Forge.PullChecks.ToString() -> string!

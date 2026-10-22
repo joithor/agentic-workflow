@@ -199,16 +199,16 @@ up_variant() { # <variant>
   number="$(open_fake "$repo" "$BRANCH" "$base" "$head" "feat: print results as JSON with --json")"
   link="https://$HOST/$OWNER/$repo/pull/$number"
   proven="$head"
-  forge seed checks "$link" --state passing >/dev/null
+  forge seed checks "$link" --state passing --passed 7 >/dev/null   # counts the UI shows beside the PR: 7 passed
 
   case "$v" in
     comments)
       threads="$(seed_threads "$repo" "$number")" ;;
     ciRed)
-      forge seed checks "$link" --state failing --failing unit >/dev/null
+      forge seed checks "$link" --state failing --failing unit --passed 5 >/dev/null
       patch_pull "$repo" "$number" '.logs = {unit: $log}' --arg log $'not ok 2 - prints json\n  expected: [{"file":"a","count":7}]\n  actual:   [{"file":"a","count":"7"}]\n  at test/format.test.js:7:3\n# fail 1' ;;
     ciFlaky)
-      forge seed checks "$link" --state failing --failing integration >/dev/null
+      forge seed checks "$link" --state failing --failing integration --passed 6 --pending 1 >/dev/null
       patch_pull "$repo" "$number" '.logs = {integration: $log}' --arg log $'Error: connect ETIMEDOUT 10.0.0.7:5432\n    at TCPConnectWrap.afterConnect (node:net:1611:16)\nrunner: shared-pool-4, retry 0 of 0\n# fail 1 (no test under test/ reads the network)'
       flaky=true ;;
     conflict)
@@ -229,7 +229,7 @@ up_variant() { # <variant>
       git_fx "$w" reviewer-kai add -A
       git_fx "$w" reviewer-kai commit -q -m "tweak: pretty-print the json output"
       forge seed advance "$link" --sha "$(git -C "$w" rev-parse "$BRANCH")" >/dev/null
-      forge seed checks "$link" --state passing >/dev/null ;;
+      forge seed checks "$link" --state passing --passed 7 >/dev/null ;;
     secret)
       local out key token; out="$(forge seed thread "$link" --author maintainer-ines --association OWNER --kind thread --path src/cli.js \
         --body "Please read the API endpoint and its credential from a config file, so the tool can post the counts.")"
