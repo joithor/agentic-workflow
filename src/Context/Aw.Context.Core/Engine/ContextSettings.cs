@@ -1,3 +1,4 @@
+using Aw.Context.Core.Linear;
 using Aw.Context.Core.Onyx;
 using Aw.Context.Core.Trust;
 
@@ -49,6 +50,9 @@ public sealed record ContextSettings
 
     /// <summary>The checked 'context.sources.onyx' entry, or null when the profile names no onyx source.</summary>
     public OnyxSettings? Onyx { get; init; }
+
+    /// <summary>The checked 'context.sources.linear' entry for the native Linear adapter (S-6), or null when the profile names no Linear token.</summary>
+    public LinearSettings? Linear { get; init; }
 
     /// <summary>The Linear team keys ('context.sources.linear.teams') an Onyx identifier alias may name; empty for none.</summary>
     public IReadOnlyList<string> LinearTeams { get; init; } = [];
