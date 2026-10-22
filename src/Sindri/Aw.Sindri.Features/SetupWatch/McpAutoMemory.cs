@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using Aw.Sindri.Core.Ids;
-using Aw.Sindri.Core.Profile;
 
 namespace Aw.Sindri.Features.SetupWatch;
 
