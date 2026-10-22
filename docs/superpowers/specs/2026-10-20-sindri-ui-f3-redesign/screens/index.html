@@ -101,12 +101,13 @@ body.annot [data-gap]::after{content:attr(data-gap);position:absolute;top:-10px;
 <div class="app">
   <nav class="rail" aria-label="Sindri pages">
     <div class="ws" aria-hidden="true">S</div>
-    <a href="needs-you.html" aria-label="Home"><svg class="ico" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg><span class="tip">Home</span></a>
-    <a href="not-mocked.html?page=Work" aria-label="Work"><svg class="ico" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12"/><path d="M3 6l1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2"/></svg><span class="tip">Work</span></a>
+    <a href="home.html" aria-label="Home"><svg class="ico" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg><span class="tip">Home</span></a>
+    <a href="work.html" aria-label="Work"><svg class="ico" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12"/><path d="M3 6l1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2"/></svg><span class="tip">Work</span></a>
     <a href="workflows.html" aria-label="Workflows"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="6" rx="1.5"/><rect x="14" y="15" width="7" height="6" rx="1.5"/><path d="M6.5 9v3a3 3 0 003 3H14"/></svg><span class="tip">Workflows</span></a>
+    <a href="recipes.html" aria-label="Recipes"><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span class="tip">Recipes</span></a>
     <a href="context.html" aria-label="Context"><svg class="ico" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="8" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M8 7l8 1M7 8l4 8M17 10.5l-4 5.5"/></svg><span class="tip">Context</span></a>
-    <a href="not-mocked.html?page=Agents" aria-label="Agents"><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 14h.01M15 14h.01M2 13v2M22 13v2"/></svg><span class="tip">Agents</span></a>
-    <a href="not-mocked.html?page=System" aria-label="System"><svg class="ico" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span class="tip">System</span></a>
+    <a href="agents.html" aria-label="Agents"><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 14h.01M15 14h.01M2 13v2M22 13v2"/></svg><span class="tip">Agents</span></a>
+    <a href="system.html" aria-label="System"><svg class="ico" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span class="tip">System</span></a>
     <a href="setup.html" aria-label="Settings"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 01-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 010-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 014 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 010 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg><span class="tip">Settings</span></a>
     <div class="sp"></div>
     <a href="questions.html" aria-label="Questions for the owner"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 114 2c-.9.6-1.5 1-1.5 2M12 17h.01"/></svg><span class="tip">Questions for the owner</span></a>
@@ -137,6 +138,17 @@ body.annot [data-gap]::after{content:attr(data-gap);position:absolute;top:-10px;
 <li><a class="stop" href="context.html?tour=10#files"><span class="num">10</span><span class="st"><b>File map</b><span>The same context as files and folders.</span></span><span class="go mono">context.html</span></a></li>
 <li><a class="stop" href="setup.html?tour=11#approveall"><span class="num">11</span><span class="st"><b>Setup: the two approvals</b><span>Approve your settings, then hold to approve all new workflows.</span></span><span class="go mono">setup.html</span></a></li>
 <li><a class="stop" href="questions.html?tour=12"><span class="num">12</span><span class="st"><b>Questions for the owner</b><span>Every open decision, with the recommended answer and the app it copies.</span></span><span class="go mono">questions.html</span></a></li>
+      </ol>
+      <h2>Every other screen</h2>
+      <p class="sub">Not in the tour, but part of the app. Each has a state switcher in its bar and the same data shapes the server serves.</p>
+      <ol class="stops">
+<li><a class="stop" href="home.html"><span class="num">+</span><span class="st"><b>Home</b><span>What needs you, what is running and what is queued, with the health strip. States: busy, first run, nothing needs you, loading, out of date, not running.</span></span><span class="go mono">home.html</span></a></li>
+<li><a class="stop" href="work.html"><span class="num">+</span><span class="st"><b>Work</b><span>Every item as a table: waiting on you, with you, running, queued, closed. Item sheet and New item dialog. States: loading, empty, rebuilding, stalled, not running.</span></span><span class="go mono">work.html</span></a></li>
+<li><a class="stop" href="recipes.html"><span class="num">+</span><span class="st"><b>Recipes</b><span>Every workflow template with its standing, and how each one works. States: loading, empty, out of date, unreadable.</span></span><span class="go mono">recipes.html</span></a></li>
+<li><a class="stop" href="agents.html"><span class="num">+</span><span class="st"><b>Agents</b><span>Every coding agent on this computer, which one is asking you, and the session sheet. States: loading, empty, a source failed, cannot see sessions.</span></span><span class="go mono">agents.html</span></a></li>
+<li><a class="stop" href="system.html"><span class="num">+</span><span class="st"><b>System</b><span>Is Sindri healthy: control plane, profile, views, services and actions. Ten states from healthy to not running.</span></span><span class="go mono">system.html</span></a></li>
+<li><a class="stop" href="jobs.html"><span class="num">+</span><span class="st"><b>Background jobs</b><span>What Sindri does in the background and whether it worked. Job sheet with progress and cancel.</span></span><span class="go mono">jobs.html</span></a></li>
+<li><a class="stop" href="setup.html#thisapp"><span class="num">+</span><span class="st"><b>Settings: This app</b><span>Reduce motion and text size, kept on this computer. Under the setup checklist.</span></span><span class="go mono">setup.html</span></a></li>
       </ol>
       <div class="note"><svg class="ico" viewBox="0 0 24 24" style="margin-top:2px;color:var(--annot)"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><p><b data-gap="demo of an outline">Annotations</b> (top right, on every screen) outlines what needs new data from Sindri. Turn it on to see which parts of a screen the API does not serve yet.</p></div>
     </main>
