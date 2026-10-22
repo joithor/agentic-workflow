@@ -17,8 +17,14 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// </summary>
 internal static class EngineInstanceScan
 {
-    /// <summary>How many of the newest events are read to find the open timers and when the instance last settled.</summary>
-    private const int Recent = 100;
+    /// <summary>How many events one history page holds.</summary>
+    private const int PageSize = 100;
+
+    /// <summary>
+    /// How many pages back from the newest event are read to find the open timers: 50 pages, 5000 events. Describe doesn't list timers, so a timer started before
+    /// the bound and still open is missed, and an instance whose open timer is that old reads as a signal wait. A history that short of the bound is read whole.
+    /// </summary>
+    private const int MaxPages = 50;
 
     /// <summary>The facts of the instance <paramref name="execution"/> lists; null when it isn't a Sindri recipe instance (no recipe id, or an address that isn't one).</summary>
     /// <param name="client">The client.</param>
@@ -36,7 +42,7 @@ internal static class EngineInstanceScan
             return null;
         }
 
-        var described = await TemporalReads.Run(rpc => client.GetWorkflowHandle(execution.Id).DescribeAsync(new() { Rpc = rpc }), cancellationToken).ConfigureAwait(false);
+        var described = await TemporalReads.Run(rpc => client.GetWorkflowHandle(execution.Id).DescribeAsync(new() { Rpc = rpc }), cancellationToken, TemporalEngineReader.Deadline).ConfigureAwait(false);
         var events = await Newest(client, settings, execution.Id, cancellationToken).ConfigureAwait(false);
         var timers = OpenTimers(events);
         var settled = events.FirstOrDefault(static e => e.EventType == EventType.WorkflowTaskCompleted) ?? events.FirstOrDefault();
@@ -92,10 +98,23 @@ internal static class EngineInstanceScan
         return open;
     }
 
+    /// <summary>The newest events, newest first: page after page back through the history until its start, or <see cref="MaxPages"/> pages.</summary>
     private static async Task<List<HistoryEvent>> Newest(ITemporalClient client, TemporalSettings settings, string workflowId, CancellationToken cancellationToken)
     {
-        var request = new GetWorkflowExecutionHistoryReverseRequest { Namespace = settings.Namespace, Execution = new ApiExecution { WorkflowId = workflowId }, MaximumPageSize = Recent, NextPageToken = ByteString.Empty };
-        var response = await TemporalReads.Run(rpc => client.WorkflowService.GetWorkflowExecutionHistoryReverseAsync(request, rpc), cancellationToken).ConfigureAwait(false);
-        return [.. response.History.Events];
+        var events = new List<HistoryEvent>();
+        var continuation = ByteString.Empty;
+        for (var page = 0; page < MaxPages; page++)
+        {
+            var request = new GetWorkflowExecutionHistoryReverseRequest { Namespace = settings.Namespace, Execution = new ApiExecution { WorkflowId = workflowId }, MaximumPageSize = PageSize, NextPageToken = continuation };
+            var response = await TemporalReads.Run(rpc => client.WorkflowService.GetWorkflowExecutionHistoryReverseAsync(request, rpc), cancellationToken, TemporalEngineReader.Deadline).ConfigureAwait(false);
+            events.AddRange(response.History.Events);
+            continuation = response.NextPageToken;
+            if (continuation.IsEmpty)
+            {
+                break;
+            }
+        }
+
+        return events;
     }
 }
