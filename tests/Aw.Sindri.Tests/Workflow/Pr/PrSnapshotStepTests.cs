@@ -54,7 +54,7 @@ public sealed class PrSnapshotStepTests
 
     private static string Outcome(BlockStepResult result) => result.Result!.Outcome.Value;
 
-    private ValueTask<Aw.Kernel.Result<bool>> Mark(string comment, string outcome, int minutes, string effect, string? reason = null, string? commit = null) =>
+    private ValueTask<Result<bool>> Mark(string comment, string outcome, int minutes, string effect, string? reason = null, string? commit = null) =>
         _marks.Write(new PrCommentMark(new PrRef(Host, "acme/app", _pull.Number), PrCommentId.From(comment), EditedAt: null, InstanceAddress.From("T-3/item/1"), outcome, reason, commit, new DateTimeOffset(2026, 10, 22, 7, minutes, 0, TimeSpan.Zero), effect), Token);
 
     private static JsonElement CommentOf(JsonElement state, string key) => state.GetProperty("comments").EnumerateArray().Single(c => string.Equals(c.GetProperty("key").GetString(), key, StringComparison.Ordinal));

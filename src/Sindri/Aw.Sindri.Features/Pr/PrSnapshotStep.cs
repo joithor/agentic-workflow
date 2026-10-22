@@ -1,7 +1,9 @@
 using System.Globalization;
 using System.Text.Json.Nodes;
+using Aw.Kernel;
 using Aw.Sindri.Core.Forge;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine.Effects;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Features.Pr;
@@ -11,11 +13,13 @@ namespace Aw.Sindri.Features.Pr;
 /// spec's order, with 'fact:prState' on every outcome and 'fact:mergedSha' when merged. The fact is the pull request view in camelCase (link, state, headSha, mergeable,
 /// reviewDecision, unresolvedThreads, checks { state, sha, failing }), 'pullState' (open, closed or merged), 'comments' (the threads, oldest first, as the queue Steps parse
 /// them), 'self' (null), 'queue' counts, 'mergeBlockedBy' and 'at'. 'state' is 'green' when the outcome is green (the merge gate reads it), else the pull request's own state.
-/// Not read yet, for want of a port: the base branch (restack), the docs pull request (mergedDocsOpen, docsRed), the proven head (stale), the comment marks and the workspace.
+/// Each comment carries its latest mark (outcome, reason, commit, at) from the comment marks, queue.held counts the comments whose latest mark is 'hold', and 'stale' says the checks ran on another commit than the head.
+/// Not read yet, for want of a port: the base branch (restack), the docs pull request (mergedDocsOpen, docsRed) and the workspace.
 /// </summary>
 /// <param name="pulls">The forge, through Sindri's port.</param>
+/// <param name="marks">The comment marks.</param>
 /// <param name="clock">The clock.</param>
-internal sealed class PrSnapshotStep(IPullRequests pulls, TimeProvider clock) : IBlockStep, IBlockStepId
+internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks, TimeProvider clock) : IBlockStep, IBlockStepId
 {
     private static readonly string[] _trusted = ["OWNER", "MEMBER", "COLLABORATOR"];
 
@@ -44,12 +48,51 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, TimeProvider clock) : 
             return BlockStepResult.Failed($"step.pr.snapshot can't read the conversation of {link}: {threads.Error.Message}");
         }
 
+        var latest = await LatestMarks(link, cancellationToken).ConfigureAwait(false);
+        if (latest.IsError)
+        {
+            return BlockStepResult.Failed($"step.pr.snapshot can't read the comment marks of {link}: {latest.Error.Message}");
+        }
+
         var work = threads.Value.Where(static t => !t.Resolved && !Own(t)).ToList();   // the forge port has no login, so Sindri's replies are told apart by their markers alone
         var outcome = Outcome(pull.Value, work.Count);
-        var state = State(pull.Value, outcome, threads.Value, work);
+        var state = State(pull.Value, outcome, threads.Value, work, latest.Value);
         return outcome is "merged"
             ? StepFacts.Done(outcome, ("fact:prState", state), ("fact:mergedSha", JsonValue.Create(pull.Value.HeadSha)!))
             : StepFacts.Done(outcome, ("fact:prState", state));
+    }
+
+    // The latest mark per comment across its edits, keyed by the thread key (a mark's CommentId).
+    private async ValueTask<Result<Dictionary<string, PrCommentMark>>> LatestMarks(string link, CancellationToken cancellationToken)
+    {
+        var result = new Dictionary<string, PrCommentMark>(StringComparer.Ordinal);
+        if (!Uri.TryCreate(link, UriKind.Absolute, out var uri))
+        {
+            return result;
+        }
+
+        var parts = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 4 || parts[^2] != "pull" || !int.TryParse(parts[^1], NumberStyles.None, CultureInfo.InvariantCulture, out var number))
+        {
+            return result;
+        }
+
+        var rows = await marks.Latest(new PrRef(uri.Host, $"{parts[^4]}/{parts[^3]}", number), cancellationToken).ConfigureAwait(false);
+        if (rows.IsError)
+        {
+            return rows.Error;
+        }
+
+        foreach (var row in rows.Value)
+        {
+            var key = row.CommentId.Value;
+            if (!result.TryGetValue(key, out var seen) || row.At >= seen.At)
+            {
+                result[key] = row;
+            }
+        }
+
+        return result;
     }
 
     private static string Outcome(PullView pull, int unhandled)
@@ -79,7 +122,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, TimeProvider clock) : 
         return !onHead || pull.Checks.State == PullChecksState.Pending ? "pending" : "green";
     }
 
-    private JsonObject State(PullView pull, string outcome, IReadOnlyList<PullThread> threads, List<PullThread> work)
+    private JsonObject State(PullView pull, string outcome, IReadOnlyList<PullThread> threads, List<PullThread> work, Dictionary<string, PrCommentMark> marked)
     {
         var pullState = pull.State.ToString().ToLowerInvariant();
         return new JsonObject
@@ -88,6 +131,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, TimeProvider clock) : 
             ["state"] = outcome is "green" ? "green" : pullState,
             ["pullState"] = pullState,
             ["headSha"] = pull.HeadSha,
+            ["stale"] = !string.Equals(pull.Checks.Sha, pull.HeadSha, StringComparison.Ordinal),
             ["head"] = new JsonObject { ["sha"] = pull.HeadSha },
             ["mergeable"] = pull.Mergeable,
             ["reviewDecision"] = pull.ReviewDecision,
@@ -101,11 +145,11 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, TimeProvider clock) : 
             ["queue"] = new JsonObject
             {
                 ["unhandled"] = work.Count,
-                ["held"] = 0,
+                ["held"] = threads.Count(t => marked.TryGetValue(t.Key, out var m) && string.Equals(m.Outcome, "hold", StringComparison.Ordinal)),
                 ["untrusted"] = work.Count(static t => !t.IsBot && !_trusted.Contains(t.Association, StringComparer.OrdinalIgnoreCase)),
                 ["bots"] = work.Count(static t => t.IsBot),
             },
-            ["comments"] = new JsonArray([.. threads.Select(static t => (JsonNode)Comment(t))]),
+            ["comments"] = new JsonArray([.. threads.Select(t => (JsonNode)Comment(t, marked.GetValueOrDefault(t.Key)))]),
             ["self"] = null,
             ["mergeBlockedBy"] = new JsonArray([.. BlockedBy(pull).Select(static b => (JsonNode)JsonValue.Create(b)!)]),
             ["heldBlocksMerge"] = false,
@@ -121,7 +165,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, TimeProvider clock) : 
         }
     }
 
-    private static JsonObject Comment(PullThread thread) => new()
+    private static JsonObject Comment(PullThread thread, PrCommentMark? mark) => new()
     {
         ["key"] = thread.Key,
         ["kind"] = thread.Kind.ToString().ToLowerInvariant(),
@@ -132,6 +176,13 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, TimeProvider clock) : 
         ["outdated"] = thread.Outdated,
         ["path"] = thread.Path,
         ["body"] = thread.Body,
+        ["mark"] = mark is null ? null : new JsonObject
+        {
+            ["outcome"] = mark.Outcome,
+            ["reason"] = mark.Reason,
+            ["commit"] = mark.Commit,
+            ["at"] = mark.At.ToString("O", CultureInfo.InvariantCulture),
+        },
         ["markers"] = new JsonArray([.. thread.Markers.Select(static m => (JsonNode)JsonValue.Create(m)!)]),
     };
 
