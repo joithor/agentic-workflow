@@ -197,7 +197,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(LoopPair)), JsonSerializable(typeof(Progress)), JsonSerializable(typeof(RecipeInputView)), JsonSerializable(typeof(RecipeLoopView))]
 [JsonSerializable(typeof(RecipeTransitionLabelView)), JsonSerializable(typeof(RecipeManifest)), JsonSerializable(typeof(ManifestEntry)), JsonSerializable(typeof(ManifestInvalid))]
 [JsonSerializable(typeof(EvalShippedResponse)), JsonSerializable(typeof(ShippedRecipeEval))]
-[JsonSerializable(typeof(RecipeOutputView)), JsonSerializable(typeof(RecipeStateView)), JsonSerializable(typeof(RecipeView)), JsonSerializable(typeof(Round)), JsonSerializable(typeof(RecipeStats))]   // API P12: GET /workflow/recipes/{id}/stats
+[JsonSerializable(typeof(RecipeOutputView)), JsonSerializable(typeof(RecipeStateView)), JsonSerializable(typeof(RecipeView)), JsonSerializable(typeof(Round)), JsonSerializable(typeof(RecipeStats)), JsonSerializable(typeof(RecipeStatsRow))]   // API P12: GET /workflow/recipes/{id}/stats
 [JsonSerializable(typeof(StateCell)), JsonSerializable(typeof(StatusAnswer)), JsonSerializable(typeof(StatusBudget)), JsonSerializable(typeof(StatusChild))]
 [JsonSerializable(typeof(StatusCommand)), JsonSerializable(typeof(StatusDrift)), JsonSerializable(typeof(StatusFields)), JsonSerializable(typeof(StatusHeader))]
 [JsonSerializable(typeof(StatusInput)), JsonSerializable(typeof(StatusInjection)), JsonSerializable(typeof(StatusPaused)), JsonSerializable(typeof(StatusTimeout)), JsonSerializable(typeof(StepDeclaration))]
