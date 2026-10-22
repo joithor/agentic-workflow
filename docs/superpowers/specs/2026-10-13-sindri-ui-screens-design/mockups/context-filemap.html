@@ -302,7 +302,7 @@ body{min-width:1280px}
 .collapsed .section{margin-top:0}
 .collapsed .section>.sh{margin-bottom:0;align-items:center}
 .collapsed .sh .meta{margin-left:auto}
-.fm-h,.fm{display:grid;grid-template-columns:300px 360px minmax(0,1fr) auto;column-gap:16px;align-items:center;padding:4px 16px}
+.fm-h,.fm{display:grid;grid-template-columns:260px 300px 220px minmax(0,1fr) auto;column-gap:16px;align-items:center;padding:4px 16px}
 .fm-h{height:32px;color:var(--ink-subtle);font-size:12px;font-weight:500;border-bottom:1px solid var(--line1)}
 .fm{min-height:40px;border-top:1px solid var(--line1)}
 .fm-h + .fm{border-top:0}
@@ -316,6 +316,15 @@ body{min-width:1280px}
 .fm .keys{font-family:var(--mono);font-size:12px;letter-spacing:-.1px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fm .keys i{font-style:normal;color:var(--ink-subtle);margin:0 2px}
 .fm .keys .dim,.fm .cnt .dim{color:var(--ink-subtle)}
+.fm .sym{font-family:var(--mono);font-size:12px;letter-spacing:-.1px;color:var(--ink-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fm .sym i{font-style:normal;color:var(--ink-subtle);margin:0 2px}
+.fm .sym.stale{color:var(--ink-subtle)}
+.sym-states{margin:16px 16px 0;border:1px solid var(--line1);border-radius:8px;overflow:hidden}
+.sym-states h3{margin:0;padding:8px 12px;font-size:12px;font-weight:500;color:var(--ink-subtle);border-bottom:1px solid var(--line1);background:var(--s2)}
+.sym-states .st{display:grid;grid-template-columns:160px 220px minmax(0,1fr);column-gap:16px;padding:6px 12px;font-size:12px;border-top:1px solid var(--line1);align-items:center}
+.sym-states .st:first-of-type{border-top:0}
+.sym-states .st .w{font-family:var(--mono);color:var(--ink-muted)}
+.sym-states .st .why{color:var(--ink-subtle)}
 .fm .cnt{color:var(--ink-subtle);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fm .acts{gap:6px}
 .fm.anchor-row{background:var(--s3)}
@@ -382,7 +391,7 @@ body{min-width:1280px}
       <label class="lens"><input type="checkbox" checked>intent</label>
       <label class="lens"><input type="checkbox" checked>product</label>
       <label class="lens"><input type="checkbox" checked>files</label>
-      <label class="lens disabled" title="index not built (CTX phase 9)"><input type="checkbox" disabled aria-describedby="sym-why">symbols <span class="why" id="sym-why">· index not built</span></label>
+      <label class="lens"><input type="checkbox" checked aria-describedby="sym-why">symbols <span class="why" id="sym-why">· from 7c3e1a2</span></label>
       <label class="lens off"><input type="checkbox">draft</label>
     </div>
     <div class="view" role="group" aria-label="Files lens form: graph or tree"><button aria-pressed="false">graph</button><button aria-pressed="true">tree</button></div>
@@ -403,23 +412,36 @@ body{min-width:1280px}
         </div>
       </div>
 
-      <div class="fm-h"><span>path</span><span>implements</span><span>intent</span><span></span></div>
+      <div class="fm-h"><span>path</span><span>implements</span><span>symbols</span><span>intent</span><span></span></div>
 
       <!-- the tree: one row per path, indentation by level, ▾ open · ▸ closed on directories, a blank slot on files so names align -->
-      <div class="fm dir"><span class="tree" style="--d:0"><button class="disc" aria-expanded="true" aria-label="Collapse src/">▾</button><span class="name">src/</span></span><span class="keys"></span><span class="cnt"></span><span></span></div>
-      <div class="fm dir"><span class="tree" style="--d:1"><button class="disc" aria-expanded="true" aria-label="Collapse layout/">▾</button><span class="name">layout/</span></span><span class="keys">feature:layout</span><span class="cnt">ENG 4 · PRD 2</span><span></span></div>
-      <div class="fm"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">SplitPane.ts</span></span><span class="keys">feature:layout.split-pane <i>·</i> .orientation</span><span class="cnt">ENG-482 · PRD-tabs §3</span><span></span></div>
-      <div class="fm"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">paneStore.ts</span></span><span class="keys">thing:pane-layout</span><span class="cnt">PRD-tabs §3</span><span></span></div>
-      <div class="fm"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">Resize.ts</span></span><span class="keys">feature:layout.split-pane.resize</span><span class="cnt"><span class="tag" style="color:var(--attn)">No intent</span></span><span></span></div>
-      <div class="fm dir"><span class="tree" style="--d:1"><button class="disc" aria-expanded="true" aria-label="Collapse tabs/">▾</button><span class="name">tabs/</span></span><span class="keys"></span><span class="cnt"></span><span></span></div>
-      <div class="fm anchor-row" aria-current="true"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">Manager.ts</span></span><span class="keys">feature:tabs.tab-manager <i>·</i> action:…restore-layout</span><span class="cnt">ENG-482 · #tabs-design</span><span></span></div>
-      <div class="fm"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">Strip.tsx</span></span><span class="keys">surface:screen/tab-strip</span><span class="cnt">PRD-tabs §2</span><span></span></div>
-      <div class="fm dir"><span class="tree" style="--d:1"><button class="disc" aria-expanded="true" aria-label="Collapse session/">▾</button><span class="name">session/</span></span><span class="keys"></span><span class="cnt"></span><span></span></div>
-      <div class="fm sugg"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">restore.ts</span></span><span class="keys"><span class="dim">◇</span> feature:session.restore <span class="dim">(suggested 0.74)</span></span><span class="cnt">no intent cites it</span>
+      <div class="fm dir"><span class="tree" style="--d:0"><button class="disc" aria-expanded="true" aria-label="Collapse src/">▾</button><span class="name">src/</span></span><span class="keys"></span><span class="sym"></span><span class="cnt"></span><span></span></div>
+      <div class="fm dir"><span class="tree" style="--d:1"><button class="disc" aria-expanded="true" aria-label="Collapse layout/">▾</button><span class="name">layout/</span></span><span class="keys">feature:layout</span><span class="sym"></span><span class="cnt">ENG 4 · PRD 2</span><span></span></div>
+      <div class="fm"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">SplitPane.ts</span></span><span class="keys">feature:layout.split-pane <i>·</i> .orientation</span><span class="sym">setOrientation <i>·</i> resize <i>·</i> +3</span><span class="cnt">ENG-482 · PRD-tabs §3</span><span></span></div>
+      <div class="fm"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">paneStore.ts</span></span><span class="keys">thing:pane-layout</span><span class="sym">save <i>·</i> load</span><span class="cnt">PRD-tabs §3</span><span></span></div>
+      <div class="fm"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">Resize.ts</span></span><span class="keys">feature:layout.split-pane.resize</span><span class="sym">onDrag</span><span class="cnt"><span class="tag" style="color:var(--attn)">No intent</span></span><span></span></div>
+      <div class="fm dir"><span class="tree" style="--d:1"><button class="disc" aria-expanded="true" aria-label="Collapse tabs/">▾</button><span class="name">tabs/</span></span><span class="keys"></span><span class="sym"></span><span class="cnt"></span><span></span></div>
+      <div class="fm anchor-row" aria-current="true"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">Manager.ts</span></span><span class="keys">feature:tabs.tab-manager <i>·</i> action:…restore-layout</span><span class="sym">restoreLayout <i>·</i> +6</span><span class="cnt">ENG-482 · #tabs-design</span><span></span></div>
+      <div class="fm"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">Strip.tsx</span></span><span class="keys">surface:screen/tab-strip</span><span class="sym">TabStrip</span><span class="cnt">PRD-tabs §2</span><span></span></div>
+      <div class="fm dir"><span class="tree" style="--d:1"><button class="disc" aria-expanded="true" aria-label="Collapse session/">▾</button><span class="name">session/</span></span><span class="keys"></span><span class="sym"></span><span class="cnt"></span><span></span></div>
+      <div class="fm sugg"><span class="tree" style="--d:2"><i class="nodisc" aria-hidden="true"></i><span class="name">restore.ts</span></span><span class="keys"><span class="dim">◇</span> feature:session.restore <span class="dim">(suggested 0.74)</span></span><span class="sym">restore</span><span class="cnt">no intent cites it</span>
         <span class="acts"><span class="split"><button class="btn sm main" title="Writes one map_override row">Accept</button><button class="btn sm chev" aria-label="Reject">▾</button></span></span></div>
-      <div class="fm dir unmapped"><span class="tree" style="--d:1"><button class="disc" aria-expanded="false" aria-label="Expand billing/, 14 files">▸</button><span class="name">billing/</span></span><span class="keys"><span class="dim">░ unmapped</span> · 14 files</span><span class="cnt"></span>
+      <div class="fm dir unmapped"><span class="tree" style="--d:1"><button class="disc" aria-expanded="false" aria-label="Expand billing/, 14 files">▸</button><span class="name">billing/</span></span><span class="keys"><span class="dim">░ unmapped</span> · 14 files</span><span class="sym"></span><span class="cnt"></span>
         <span class="acts"><button class="btn sm">Propose features</button></span></div>
-      <div class="fm tests"><span class="tree" style="--d:0"><i class="nodisc" aria-hidden="true"></i><span class="name">tests/tabs/restore.test.ts</span></span><span class="keys"><span class="dim">tests →</span> action:tab-manager.restore-layout</span><span class="cnt"></span><span></span></div>
+      <div class="fm tests"><span class="tree" style="--d:0"><i class="nodisc" aria-hidden="true"></i><span class="name">tests/tabs/restore.test.ts</span></span><span class="keys"><span class="dim">tests →</span> action:tab-manager.restore-layout</span><span class="sym"></span><span class="cnt"></span><span></span></div>
+
+
+      <!-- the symbols column when the code index cannot give it: the cell says why in words, the footer says from which commit.
+           A cell is never blank without a reason, and a stale cell is dimmed, not hidden. -->
+      <div class="sym-states" role="group" aria-label="The symbols column, when the index cannot answer">
+        <h3>Symbols column · what a cell says</h3>
+        <div class="st"><span class="w">fresh</span><span class="mono">setOrientation · resize · +3</span><span class="why">the index describes the map's commit; the lens toggle reads "· from 7c3e1a2"</span></div>
+        <div class="st"><span class="w">not built</span><span class="mono">index not built</span><span class="why">no index file yet for this repo (first build queued); the toggle reads "· index not built"</span></div>
+        <div class="st"><span class="w">building</span><span class="mono">index building</span><span class="why">the first build is running; there is no older index to show</span></div>
+        <div class="st"><span class="w">stale</span><span class="mono sym stale">setOrientation · resize · +3</span><span class="why">dimmed; the checkout moved on and the build is not done: "from 7c3e1a2, stale"</span></div>
+        <div class="st"><span class="w">as-of mismatch</span><span class="mono sym stale">setOrientation · resize · +3</span><span class="why">dimmed; the map was published ahead of its index (or the index is ahead of the map): "from abcdef0, not 1234567". It clears itself when the index for the map's commit lands</span></div>
+        <div class="st"><span class="w">damaged</span><span class="mono">index damaged</span><span class="why">the next tick rebuilds it; the toggle reads "· index damaged"</span></div>
+      </div>
 
       <p class="footnote">Each Accept or Reject is one <span class="mono">map_override</span> row; the next map build reads them.</p>
     </div>
