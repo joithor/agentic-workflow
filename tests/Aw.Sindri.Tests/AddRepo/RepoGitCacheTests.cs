@@ -71,4 +71,32 @@ public sealed class RepoGitCacheTests
         Assert.Equal("main", (await cache.Of("/work/demo", Token))!.DefaultBranch);
         Assert.Equal("dev", (await cache.Of("/work/other", Token))!.DefaultBranch);
     }
+
+    [Fact]
+    public async Task The_weight_of_a_repo_is_kept_30_seconds_and_forgotten_on_a_repo_event()
+    {
+        _ = _git.Weighs("/work/demo", files: 3, bytes: 2048);
+        var cache = new RepoGitCache(_git, _clock);
+
+        var first = await cache.WeightOf("/work/demo", Token);
+        _clock.Advance(TimeSpan.FromSeconds(29));
+        _ = await cache.WeightOf("/work/demo", Token);
+        Assert.Equal(1, _git.Weighed);
+
+        cache.Invalidate();
+        _ = await cache.WeightOf("/work/demo", Token);
+
+        Assert.Equal((3, 2048L), (first!.Files, first.Bytes));
+        Assert.Equal(2, _git.Weighed);
+    }
+
+    [Fact]
+    public async Task A_folder_git_cannot_weigh_has_no_weight_and_is_not_asked_again_for_30_seconds()
+    {
+        var cache = new RepoGitCache(_git, _clock);
+
+        Assert.Null(await cache.WeightOf("/work/gone", Token));
+        Assert.Null(await cache.WeightOf("/work/gone", Token));
+        Assert.Equal(1, _git.Weighed);
+    }
 }
