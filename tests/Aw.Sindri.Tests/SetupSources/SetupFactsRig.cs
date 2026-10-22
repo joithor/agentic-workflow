@@ -32,7 +32,7 @@ internal sealed class SetupFactsRig : IAsyncDisposable
             new ProfileSetupReader(Profiles, Profiles, new Core.Setup.RepoGitCache(Inspector, Clock)),
             _scope.ServiceProvider.GetRequiredService<Core.Workflow.Registry.RecipeRegistryReader>(),
             new OnyxStatusReader(Onyx.Pins, new OnyxFacts(Onyx.Runtime, Onyx.Probes, new FakeSindriHome(OnyxUpRig.Home)), Onyx.Health, Onyx.Workspace),
-            new McpSetupReader(Profiles, Host),
+            new McpSetupReader(Profiles, Host, Jobs, Queue),
             new MapSetupReader(Profiles, Engine.Proxy, Jobs));
     }
 
@@ -45,6 +45,8 @@ internal sealed class SetupFactsRig : IAsyncDisposable
     internal FakeProviderHost Host { get; }
 
     internal InMemoryJobViews Jobs { get; } = new();
+
+    internal Features.SetupWatch.SetupJobQueue Queue { get; } = new(() => 0);
 
     internal MapEngineProxy Engine { get; }
 
@@ -98,6 +100,18 @@ internal sealed class SetupFactsRig : IAsyncDisposable
             "human:cli", at, state == JobState.Running ? null : at.AddMinutes(1), [.. lines.Select((l, i) => new JobLine(i + 1, l, at))], lines.Length, Summary: null, code, Result: null, CancelledBy: null, Sequence: _jobs));
     }
 
+    /// <summary>Puts a RegisterMcp job for <paramref name="repo"/> into the jobs view.</summary>
+    /// <param name="repo">The repo it registers.</param>
+    /// <param name="state">Its state.</param>
+    /// <param name="summary">How a failed one ended.</param>
+    internal void RegisterJob(string repo, JobState state, string? summary = null)
+    {
+        _jobs++;
+        var at = new DateTimeOffset(2026, 10, 19, 9, _jobs, 0, TimeSpan.Zero);
+        Jobs.Put(new JobRow(JobId.From($"JOB-{_jobs:x32}"), JobKind.From("RegisterMcp"), Core.Setup.McpJobKeys.For(RepoName.From(repo)), Item: null, RepoName.From(repo), Service: null, state,
+            "human:cli", at, state == JobState.Running ? null : at.AddMinutes(1), [], 0, summary, Code: null, Result: null, CancelledBy: null, Sequence: _jobs));
+    }
+
     /// <summary>The map status the engine answers once a map is current.</summary>
     /// <returns>A status.</returns>
     internal static MapStatusView CurrentMap() =>
@@ -105,6 +119,7 @@ internal sealed class SetupFactsRig : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        Queue.Dispose();
         await _scope.DisposeAsync();
         await Registry.DisposeAsync();
     }
