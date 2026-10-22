@@ -266,4 +266,16 @@ public sealed class WorkflowGoldenTests
         Assert.Equal(("exit", "agent"), (failed.Transition!.Reason, failed.Transition.Via));
         Assert.Equal(61000, events.Events.Select(e => e.Transition?.Tokens).Single(t => t is not null));
     }
+
+    [Fact]
+    public void A_block_run_frame_reads_its_actor_and_attempt_and_writes_back_without_the_fields_it_lacks()
+    {
+        var opened = AwJson.Deserialize<FrameSummary>(Encoding.UTF8.GetBytes(GoldenFiles.SpecShaped("workflow-event-frame", "block-attempt-3")), SindriApiClient.Json).Value;
+        var quiet = AwJson.Deserialize<FrameSummary>(Encoding.UTF8.GetBytes(GoldenFiles.SpecShaped("workflow-event-frame", "no-run-open")), SindriApiClient.Json).Value;
+
+        Assert.Equal(("verify", "block", "block", 3, 3), (opened.State, opened.Runtime, opened.Actor, opened.Attempt, opened.MaxAttempts));
+        Assert.Equal((null, null, null, null), (quiet.Runtime, quiet.Actor, quiet.Attempt, quiet.MaxAttempts));
+        var written = JsonNode.Parse(AwJson.Serialize(quiet, SindriApiClient.Json).Value)!.AsObject(); // why: a record writes a JSON object
+        Assert.Equal(["state", "entry", "run", "child"], written.Select(p => p.Key), StringComparer.Ordinal);
+    }
 }

@@ -43,5 +43,17 @@ internal static partial class Labels
     /// <summary>The pill on an edge, from the outcome it leaves on; an outcome this build does not know shows as served.</summary>
     /// <param name="outcome">The outcome.</param>
     /// <returns>"scope approved".</returns>
-    internal static string EdgeLabel(string outcome) => throw new NotSupportedException();
+    internal static string EdgeLabel(string outcome) => _edgeLabels.TryGetValue(outcome, out var label) ? label : outcome;
+
+    // Provisional until the engine serves a label for every transition (spec 3 §6); a test pins that none leaks an internal term.
+    private static readonly Dictionary<string, string> _edgeLabels = new(StringComparer.Ordinal)
+    {
+        ["scoped"] = "scope approved",
+        ["designed"] = "design approved",
+        ["planned"] = "plan approved",
+        ["resolved"] = "merged",
+        ["unresolved"] = "could not finish",
+        ["redesign"] = "needs a redesign",
+        ["cancelled"] = "stopped",
+    };
 }

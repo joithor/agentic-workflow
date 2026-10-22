@@ -58,6 +58,7 @@ namespace Aw.Sindri.Ui.Api;
 [JsonSerializable(typeof(OpenItemRequest))]
 [JsonSerializable(typeof(OpenAcceptedView))]
 [JsonSerializable(typeof(Workflow.InstanceEventsView))]
+[JsonSerializable(typeof(Workflow.FrameSummary))]
 [JsonSerializable(typeof(Workflow.ApproveAllPlan))]
 [JsonSerializable(typeof(Workflow.AppChallengeRequest))]
 [JsonSerializable(typeof(Workflow.AppChallengeView))]

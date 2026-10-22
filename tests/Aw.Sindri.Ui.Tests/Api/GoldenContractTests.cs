@@ -41,6 +41,7 @@ public sealed class GoldenContractTests
         ["workflow-instances"] = As<InstanceList>,
         ["workflow-instance"] = As<InstanceDetail>,
         ["workflow-instance-fact"] = As<FactView>,
+        ["workflow-event-frame"] = As<FrameSummary>,   // a ledger row's delta frame (engine #564): the open run's actor, attempt and maxAttempts (spec-shaped; the engine has no golden)
         ["workflow-instance-events"] = As<InstanceEventsView>,   // GET /workflow/instances/{id}/events: the run canvas's "What went wrong" (spec-shaped until the engine has a golden)
         ["workflow-status"] = As<StatusFields>,
         ["workflow-recipe"] = As<RecipeView>,

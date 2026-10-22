@@ -1,7 +1,6 @@
-using Avalonia;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.ViewModels.Context.Layout;
 using Aw.Sindri.Ui.ViewModels.Run;
-using Aw.Sindri.Ui.Views.Controls;
 
 namespace Aw.Sindri.Ui.Tests.Run;
 
@@ -64,15 +63,15 @@ public sealed class RunCanvasLayoutTests
 
         // The prototype: y runs down the main path with 104 between cards; the stages are 320 wide and centred on x = 0; redesign is
         // 280 wide at +470 and 60 above the bottom of design; the ends sit 104 under phase at 0, +470 and -470.
-        Assert.Equal(new Rect(-160, 0, 320, 236), layout.Rects["scoping"]);
-        Assert.Equal(new Rect(-160, 340, 320, 228), layout.Rects["design"]);
-        Assert.Equal(new Rect(-160, 672, 320, 196), layout.Rects["plan"]);
-        Assert.Equal(new Rect(-160, 972, 320, 260), layout.Rects["phase"]);
-        Assert.Equal(new Rect(330, 508, 280, 96), layout.Rects["redesign"]);
-        Assert.Equal(new Rect(-140, 1336, 280, 92), layout.Rects["done"]);
-        Assert.Equal(new Rect(330, 1336, 280, 92), layout.Rects["stuck"]);
-        Assert.Equal(new Rect(-610, 1336, 280, 92), layout.Rects["dropped"]);
-        Assert.Equal(new Rect(-730, -120, 1460, 1668), layout.World);
+        Assert.Equal(new MapRect(-160, 0, 320, 236), layout.Rects["scoping"]);
+        Assert.Equal(new MapRect(-160, 340, 320, 228), layout.Rects["design"]);
+        Assert.Equal(new MapRect(-160, 672, 320, 196), layout.Rects["plan"]);
+        Assert.Equal(new MapRect(-160, 972, 320, 260), layout.Rects["phase"]);
+        Assert.Equal(new MapRect(330, 508, 280, 96), layout.Rects["redesign"]);
+        Assert.Equal(new MapRect(-140, 1336, 280, 92), layout.Rects["done"]);
+        Assert.Equal(new MapRect(330, 1336, 280, 92), layout.Rects["stuck"]);
+        Assert.Equal(new MapRect(-610, 1336, 280, 92), layout.Rects["dropped"]);
+        Assert.Equal(new MapRect(-730, -120, 1460, 1668), layout.World);
     }
 
     [Fact]
@@ -83,7 +82,7 @@ public sealed class RunCanvasLayoutTests
 
         var layout = RunCanvasLayout.Of(Sample(), taller);
 
-        Assert.Equal(new Rect(-160, 340, 320, 300), layout.Rects["design"]);
+        Assert.Equal(new MapRect(-160, 340, 320, 300), layout.Rects["design"]);
         Assert.Equal(744, layout.Rects["plan"].Y);
         Assert.Equal(1044, layout.Rects["phase"].Y);
         Assert.Equal(1408, layout.Rects["done"].Y);
@@ -120,7 +119,7 @@ public sealed class RunCanvasLayoutTests
         var layout = RunCanvasLayout.Of(graph, Only("a", "b"));
 
         Assert.Equal(["a", "b"], layout.Rects.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);
-        Assert.Equal(new Rect(-280, -120, 560, 544), layout.World);
+        Assert.Equal(new MapRect(-280, -120, 560, 544), layout.World);
     }
 
     [Fact]
