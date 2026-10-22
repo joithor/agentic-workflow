@@ -38,7 +38,8 @@
       "action": null,
       "progress": {
         "done": 26,
-        "total": 26
+        "total": 26,
+        "unit": "workflows"
       },
       "items": []
     },
@@ -69,7 +70,8 @@
       "action": "RefreshContextMap",
       "progress": {
         "done": 0,
-        "total": 1
+        "total": 1,
+        "unit": "files"
       },
       "items": [
         {

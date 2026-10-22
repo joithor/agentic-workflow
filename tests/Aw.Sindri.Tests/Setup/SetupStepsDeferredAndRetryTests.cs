@@ -9,7 +9,7 @@ public sealed class SetupStepsDeferredAndRetryTests
     [Fact, Trait("Lane", "unit")]
     public void A_map_build_waiting_to_retry_is_running_with_the_wait_and_the_reason_and_offers_the_retry()
     {
-        var fact = new MapFact(MapPhase.Building, new SetupProgress(0, 1)) { Retry = new MapRetry(TimeSpan.FromMinutes(5), "the code index was busy") };
+        var fact = new MapFact(MapPhase.Building, new SetupProgress(0, 1, "files")) { Retry = new MapRetry(TimeSpan.FromMinutes(5), "the code index was busy") };
 
         var step = SetupSteps.Map(fact);
 
