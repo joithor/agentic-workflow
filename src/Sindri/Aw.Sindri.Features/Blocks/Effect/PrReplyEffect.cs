@@ -13,7 +13,7 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 /// 'effect.pr.reply' (PB spec §5, §10.1): the 'thread' form posts 'body' on the comment's thread, the 'reaction' form reacts to it, both once per effect
 /// identity (Sindri's reply marker is derived from it, and the forge says when it was already delivered). The 'fixed', 'hold' and 'none' forms post
 /// nothing. Every form writes its mark on delivery (spec §5.4, W26) keyed by the effect identity, so a re-delivery writes none twice; 'fixedReplies' answers
-/// each 'fixed' mark whose commit the push carried (replying on the mark's comment id) and marks it 'thread'. The recipe's transitions don't wait on a reply,
+/// each 'fixed' mark whose commit the push carried (replying on the mark's thread key) and marks it 'thread'. The recipe's transitions don't wait on a reply,
 /// so it replies nothing.
 /// </summary>
 /// <param name="pulls">The pull requests port.</param>
@@ -54,15 +54,15 @@ internal sealed class PrReplyEffect(IPullRequests pulls, IFactContents facts, IP
         }
 
         var link = PrEffectFacts.Text(pr.Value, "link", "url", "pr");
-        var thread = PrEffectFacts.Text(comment.Value, "threadId", "thread", "id");
+        var thread = PrEffectFacts.Text(comment.Value, "key", "threadId", "thread");
         var text = reaction ? "+1" : PrEffectFacts.Text(body.Value, "body", "text", "reply");
         if (string.IsNullOrEmpty(link) || string.IsNullOrEmpty(thread) || string.IsNullOrWhiteSpace(text))
         {
-            return WorkflowErrors.NoRuntime.With($"effect.pr.reply of {context.Instance} needs the pull request ('fact:pr'), the comment's thread and, for a thread reply, its body");
+            return WorkflowErrors.NoRuntime.With($"effect.pr.reply of {context.Instance} needs the pull request ('fact:pr'), the comment's thread key and, for a thread reply, its body");
         }
 
         var marker = Marker(context.Identity);
-        var target = Target(context, link, PrEffectFacts.Text(comment.Value, "id", "commentId"), PrEffectFacts.Text(comment.Value, "editedAt", "edited_at"));
+        var target = Target(context, link, thread, PrEffectFacts.Text(comment.Value, "editedAt", "edited_at"));
         if (target.IsError)
         {
             return target.Error;
@@ -92,7 +92,7 @@ internal sealed class PrReplyEffect(IPullRequests pulls, IFactContents facts, IP
             return pr.IsError ? pr.Error : comment.IsError ? comment.Error : fix.IsError ? fix.Error : reason.Error;
         }
 
-        var id = PrEffectFacts.Text(fix.Value, "comment") ?? PrEffectFacts.Text(comment.Value, "id", "commentId");
+        var id = PrEffectFacts.Text(fix.Value, "thread") ?? PrEffectFacts.Text(comment.Value, "key", "threadId", "thread");
         var target = Target(context, PrEffectFacts.Text(pr.Value, "link", "url", "pr"), id, PrEffectFacts.Text(comment.Value, "editedAt", "edited_at"));
         if (target.IsError)
         {
@@ -173,7 +173,7 @@ internal sealed class PrReplyEffect(IPullRequests pulls, IFactContents facts, IP
         if (parts.Length < 4 || parts[^2] != "pull" || !int.TryParse(parts[^1], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out number)
             || !PrCommentId.TryFrom(comment, out var id) || !InstanceAddress.TryFrom(context.Instance, out var instance))
         {
-            return WorkflowErrors.NoRuntime.With($"effect.pr.reply of {context.Instance} needs a pull request link ('.../pull/N') and the comment's id to mark it");
+            return WorkflowErrors.NoRuntime.With($"effect.pr.reply of {context.Instance} needs a pull request link ('.../pull/N') and the comment's thread key to mark it");
         }
 
         return new MarkTarget(new PrRef(uri!.Host, $"{parts[^4]}/{parts[^3]}", number), id, string.IsNullOrEmpty(editedAt) ? null : editedAt, instance);   // why: a parsed link has a uri
