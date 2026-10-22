@@ -48,3 +48,4 @@ transitions:
       gates: [{ use: gate.direction.verdict, threshold: 0.7 }], produces: [fact:verdict] }
   - { from: delivering, to: delivered, on: wait.satisfied, when: { outcome: acknowledged } }
 loops: { exchanges: { cap: 2 } }
+displayName: Test recipe

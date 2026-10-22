@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.phase
-version: 1
+version: 2
 description: "The per-phase child of the line: build, prove, review and ship one phase as one PR, then babysit it (docs sync inside) to the owner's ready-to-merge stop and the merge."
+displayName: "Build, prove and ship one phase"
 urgency: work
 inputs:
   - { key: fact:phasePacket, label: "Phase packet (frozen)", type: packet, kind: packet }
@@ -15,29 +16,29 @@ initial: seed
 states:
   seed:    { kind: active, step: step.phase.seed, timeout: { after: 1h, then: park },
              next: "Check {item}'s phase packet and dependencies, and prepare its worktree." }
-  build:   { kind: wait, loop: stage, timeout: { after: 3d, then: park },
+  build:   { displayName: "Build", why: "Writes failing tests first, then the code inside the allowed files.", kind: wait, loop: stage, timeout: { after: 3d, then: park },
              waitFor: { child: { recipe: workflow.build, onParked: propagate,
                                  inputs: { "fact:phasePacket": { fact: fact:phasePacket }, "fact:workspace": { fact: fact:workspace },
                                            "fact:buildNotes": { fact: fact:buildNotes }, "fact:lineContext": { fact: fact:lineContext } } } },
              next: "Waiting for {child}: {item}'s builder (pass {loop.stage}/{loop.stage.cap})." }
-  prove:   { kind: wait, timeout: { after: 3d, then: park },
+  prove:   { displayName: "Prove it works", why: "Shows it works in the running app, not only in tests.", kind: wait, timeout: { after: 3d, then: park },
              waitFor: { child: { recipe: workflow.prove, onParked: propagate,
                                  inputs: { "fact:phasePacket": { fact: fact:phasePacket }, "fact:built": { fact: fact:built },
                                            "fact:workspace": { fact: fact:workspace }, "fact:redTests": { fact: fact:redTests } } } },
              next: "Waiting for {child}: proving {item} on its head." }
-  review:  { kind: wait, timeout: { after: 3d, then: park },
+  review:  { displayName: "Code review", why: "Reviewers check the code, and fixes repeat until no blocking issues remain.", kind: wait, timeout: { after: 3d, then: park },
              waitFor: { child: { recipe: workflow.review-loop, onParked: propagate,
                                  inputs: { "fact:change": { fact: fact:change }, "fact:phasePacket": { fact: fact:phasePacket } } } },
              next: "Waiting for {child}: {item}'s review to zero blocking and issue findings." }
   drift:   { kind: active, step: step.phase.drift, loop: reprove, timeout: { after: 1h, then: park },
              next: "Check that {item}'s review left the proven head unchanged." }
-  ship:    { kind: wait, timeout: { after: 1d, then: park },
+  ship:    { displayName: "Open the pull request", why: "Checks that the proof and review are for the exact commit being shipped, then opens the pull request.", kind: wait, timeout: { after: 1d, then: park },
              waitFor: { child: { recipe: workflow.ship, onParked: propagate,
                                  inputs: { "fact:phasePacket": { fact: fact:phasePacket }, "fact:proofPack": { fact: fact:proofPack },
                                            "fact:review": { fact: fact:review }, "fact:workspace": { fact: fact:workspace },
                                            "fact:lineContext": { fact: fact:lineContext } } } },
              next: "Waiting for {child}: {item}'s GREEN gate and its PR." }
-  babysit: { kind: wait, timeout: { after: 30d, then: escalate },
+  babysit: { displayName: "Watch the pull request", why: "Waits for the checks to go green and the docs to sync before you merge.", kind: wait, timeout: { after: 30d, then: escalate },
              waitFor: { child: { recipe: workflow.pr-babysitter, onParked: propagate,
                                  inputs: { "fact:pr": { fact: fact:pr }, "fact:handoff": { fact: fact:handoff },
                                            "fact:phasePacket": { fact: fact:phasePacket }, "fact:lineContext": { fact: fact:lineContext },
@@ -45,33 +46,33 @@ states:
              next: "Waiting for {child}: docs sync and green CI on {item}'s PR, then your ready-to-merge stop." }
   owner:   { kind: active, step: step.phase.decide, timeout: { after: 7d, then: park },
              next: "{item}'s phase needs you: run `sindri workflow status {instance}` for why, then rebuild with notes or stop." }
-  merged:  { kind: terminal, outcome: resolved }
-  dropped: { kind: terminal, outcome: unresolved }
+  merged:  { displayName: "Merged", kind: terminal, outcome: resolved }
+  dropped: { displayName: "Dropped", kind: terminal, outcome: unresolved }
 transitions:
   - { from: seed, to: build, on: step.completed, when: { outcome: seeded },
       produces: [fact:buildNotes, fact:workspace, fact:built, fact:change, fact:redTests] }
   - { from: build, to: prove,   on: wait.satisfied, when: { outcome: resolved },
       produces: [fact:built, fact:change, fact:redTests, { fact: fact:phasePacket, from: fact:activePacket }] }
-  - { from: build, to: owner,   on: wait.satisfied, when: { outcome: unresolved } }
+  - { label: "build got stuck: you decide", from: build, to: owner,   on: wait.satisfied, when: { outcome: unresolved } }
   - { from: build, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
   - { from: prove, to: review,  on: wait.satisfied, when: { outcome: resolved },   produces: [fact:proofPack] }
-  - { from: prove, to: build,   on: wait.satisfied, when: { outcome: unresolved }, produces: [{ fact: fact:buildNotes, from: fact:findings }] }
+  - { label: "proof failed: back to build", from: prove, to: build,   on: wait.satisfied, when: { outcome: unresolved }, produces: [{ fact: fact:buildNotes, from: fact:findings }] }
   - { from: prove, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
   - { from: review, to: drift,   on: wait.satisfied, when: { outcome: resolved },   produces: [fact:review] }
-  - { from: review, to: build,   on: wait.satisfied, when: { outcome: failed },     produces: [{ fact: fact:buildNotes, from: fact:review }] }
+  - { label: "review found wrong behavior: back to build", from: review, to: build,   on: wait.satisfied, when: { outcome: failed },     produces: [{ fact: fact:buildNotes, from: fact:review }] }
   - { from: review, to: owner,   on: wait.satisfied, when: { outcome: unresolved } }
   - { from: review, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
   - { from: drift, to: ship,  on: step.completed, when: { outcome: same } }
-  - { from: drift, to: prove, on: step.completed, when: { outcome: moved }, produces: [fact:built, fact:change] }
+  - { label: "code changed after proof: prove again", from: drift, to: prove, on: step.completed, when: { outcome: moved }, produces: [fact:built, fact:change] }
   - { from: ship, to: babysit, on: wait.satisfied, when: { outcome: resolved }, produces: [fact:pr, fact:handoff] }   # line report effect: restore with LN-WF1 when effect.line.report has a runtime
-  - { from: ship, to: build,   on: wait.satisfied, when: { outcome: unresolved }, produces: [{ fact: fact:buildNotes, from: fact:returnNotes }] }
+  - { label: "final checks failed: back to build", from: ship, to: build,   on: wait.satisfied, when: { outcome: unresolved }, produces: [{ fact: fact:buildNotes, from: fact:returnNotes }] }
   - { from: ship, to: owner,   on: wait.satisfied, when: { outcome: failed } }
   - { from: ship, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
   - { from: babysit, to: merged,  on: wait.satisfied, when: { outcome: resolved }, produces: [fact:mergedSha] }   # line report effect: restore with LN-WF1 when effect.line.report has a runtime
-  - { from: babysit, to: build,   on: wait.satisfied, when: { outcome: failed },   produces: [{ fact: fact:buildNotes, from: fact:reworkNotes }] }
+  - { label: "needs rework: back to build", from: babysit, to: build,   on: wait.satisfied, when: { outcome: failed },   produces: [{ fact: fact:buildNotes, from: fact:reworkNotes }] }
   - { from: babysit, to: owner,   on: wait.satisfied, when: { outcome: unresolved } }
   - { from: babysit, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
-  - { from: owner, to: build,   on: step.completed, when: { outcome: rebuild }, produces: [fact:buildNotes] }
+  - { label: "rebuild with your notes", from: owner, to: build,   on: step.completed, when: { outcome: rebuild }, produces: [fact:buildNotes] }
   - { from: owner, to: dropped, on: step.completed, when: { outcome: stop } }
 loops: { stage: { cap: 3 }, reprove: { cap: 3 } }
 evals:
