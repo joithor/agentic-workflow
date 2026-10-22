@@ -15,7 +15,7 @@ internal sealed class StuckInstanceCount(IEngineReader engine, TimeProvider cloc
     // A connect to a Temporal that isn't there can retry for seconds, and status is the page a CLI waits on: past this the engine counts as not answering.
     private static readonly TimeSpan _bound = TimeSpan.FromSeconds(2);
 
-    private readonly object _gate = new();
+    private readonly Lock _gate = new();
     private volatile Counted? _last;
     private Task<int>? _refresh;
 

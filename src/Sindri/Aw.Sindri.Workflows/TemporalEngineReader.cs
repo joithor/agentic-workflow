@@ -75,7 +75,7 @@ internal sealed class TemporalEngineReader(TemporalFrontend frontend, TemporalSe
         var temporal = recorded.IsSuccess ? recorded.Value?.Temporal : null;
         var database = new FileInfo(Path.Combine(settings.Home, SindriTemporal.DatabaseFile));
         return new EngineServer("temporal-dev", settings.Namespace, UpSeconds(temporal), database.Exists ? database.Length : 0,
-            temporal is { UiPort: > 0 } ? $"http://127.0.0.1:{temporal.UiPort}" : null);
+            temporal is { UiPort: > 0 } ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"http://127.0.0.1:{temporal.UiPort}") : null);
     }
 
     /// <summary>How long the dev server process has run; 0 when it can't be told (no pid recorded, or the process is gone).</summary>

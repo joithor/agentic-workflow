@@ -36,27 +36,45 @@ internal static class EngineInstanceScan
     {
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(execution);
+        if (Identify(execution) is not { } who)
+        {
+            return null;
+        }
+
+        var request = new DescribeWorkflowExecutionRequest { Namespace = settings.Namespace, Execution = new ApiExecution { WorkflowId = execution.Id } };
+        var described = await TemporalReads.Run(rpc => client.WorkflowService.DescribeWorkflowExecutionAsync(request, rpc), cancellationToken, TemporalEngineReader.Deadline).ConfigureAwait(false);
+        var events = await Newest(client, settings, execution.Id, cancellationToken).ConfigureAwait(false);
+        return Facts(who, described, events, new DateTimeOffset(DateTime.SpecifyKind(execution.StartTime, DateTimeKind.Utc)));
+    }
+
+    private static Identity? Identify(WorkflowExecution execution)
+    {
         var attributes = execution.TypedSearchAttributes;
         if (!InstanceAddress.TryFrom(execution.Id, out var address) || !attributes.TryGetValue(SindriTemporal.RecipeKey, out var recipe) || !RecipeId.TryFrom(recipe, out var recipeId))
         {
             return null;
         }
 
-        var described = await TemporalReads.Run(rpc => client.GetWorkflowHandle(execution.Id).DescribeAsync(new() { Rpc = rpc }), cancellationToken, TemporalEngineReader.Deadline).ConfigureAwait(false);
-        var events = await Newest(client, settings, execution.Id, cancellationToken).ConfigureAwait(false);
+        return new Identity(address, recipeId, attributes.TryGetValue(SindriTemporal.RecipeHashKey, out var hash) ? hash : null, attributes.TryGetValue(SindriTemporal.StateKey, out var state) ? state : null);
+    }
+
+    private static EngineInstanceFacts Facts(Identity who, DescribeWorkflowExecutionResponse described, List<HistoryEvent> events, DateTimeOffset started)
+    {
         var timers = OpenTimers(events);
         var settled = events.FirstOrDefault(static e => e.EventType == EventType.WorkflowTaskCompleted) ?? events.FirstOrDefault();
-        var since = settled?.EventTime.ToDateTimeOffset() ?? new DateTimeOffset(DateTime.SpecifyKind(execution.StartTime, DateTimeKind.Utc));
-        var pending = described.RawDescription.PendingActivities.FirstOrDefault();
+        var since = settled?.EventTime.ToDateTimeOffset() ?? started;
+        var pending = described.PendingActivities.FirstOrDefault();
         return new EngineInstanceFacts(
-            address,
-            new EngineRecipeRef(recipeId, attributes.TryGetValue(SindriTemporal.RecipeHashKey, out var hash) ? hash : null),
-            attributes.TryGetValue(SindriTemporal.StateKey, out var state) ? state : null,
-            Waiting(described.RawDescription, pending, timers, since),
+            who.Address,
+            new EngineRecipeRef(who.Recipe, who.Hash),
+            who.State,
+            Waiting(described, pending, timers, since),
             timers,
             pending is { Attempt: > 1 } retrying ? new EngineRetries(retrying.Attempt, retrying.LastFailure?.Message) : null,
-            described.HistoryLength);
+            described.WorkflowExecutionInfo.HistoryLength);
     }
+
+    private sealed record Identity(InstanceAddress Address, RecipeId Recipe, string? Hash, string? State);
 
     /// <summary>What an instance waits on: its pending activity, else a pending child, else an open timer, else a signal.</summary>
     /// <param name="description">The execution's description.</param>
@@ -68,10 +86,10 @@ internal static class EngineInstanceScan
         activity is not null
             ? new EngineWaiting(EngineWaitKinds.Activity, activity.ActivityType.Name, (activity.LastStartedTime ?? activity.ScheduledTime)?.ToDateTimeOffset() ?? since)
             : description.PendingChildren.Count > 0
-                ? new EngineWaiting(EngineWaitKinds.Child, null, since)
+                ? new EngineWaiting(EngineWaitKinds.Child, name: null, since)
                 : timers.Count > 0
                     ? new EngineWaiting(EngineWaitKinds.Timer, timers[0].Name, since)
-                    : new EngineWaiting(EngineWaitKinds.Signal, null, since);
+                    : new EngineWaiting(EngineWaitKinds.Signal, name: null, since);
 
     /// <summary>The timers started and neither fired nor cancelled in <paramref name="newestFirst"/>.</summary>
     /// <param name="newestFirst">The newest events, newest first.</param>
@@ -83,20 +101,18 @@ internal static class EngineInstanceScan
         var open = new List<EngineTimer>();
         foreach (var e in newestFirst)
         {
-            switch (e.EventType)
+            if (e.EventType == EventType.TimerFired)
             {
-                case EventType.TimerFired:
-                    _ = closed.Add(e.TimerFiredEventAttributes.TimerId);
-                    break;
-                case EventType.TimerCanceled:
-                    _ = closed.Add(e.TimerCanceledEventAttributes.TimerId);
-                    break;
-                case EventType.TimerStarted when !closed.Contains(e.TimerStartedEventAttributes.TimerId):
-                    var started = e.TimerStartedEventAttributes;
-                    open.Add(new EngineTimer($"timer-{started.TimerId}", e.EventTime.ToDateTimeOffset() + started.StartToFireTimeout.ToTimeSpan(), "timeout"));
-                    break;
-                default:
-                    break;
+                _ = closed.Add(e.TimerFiredEventAttributes.TimerId);
+            }
+            else if (e.EventType == EventType.TimerCanceled)
+            {
+                _ = closed.Add(e.TimerCanceledEventAttributes.TimerId);
+            }
+            else if (e.EventType == EventType.TimerStarted && !closed.Contains(e.TimerStartedEventAttributes.TimerId))
+            {
+                var started = e.TimerStartedEventAttributes;
+                open.Add(new EngineTimer($"timer-{started.TimerId}", e.EventTime.ToDateTimeOffset() + started.StartToFireTimeout.ToTimeSpan(), "timeout"));
             }
         }
 

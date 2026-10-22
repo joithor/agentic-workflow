@@ -27,16 +27,36 @@ internal static class EngineHistoryEvents
         return new EngineEventFacts(historyEvent.EventId, historyEvent.EventTime.ToDateTimeOffset(), historyEvent.EventType.ToString(), name, summary ?? Words(historyEvent.EventType.ToString()), activity);
     }
 
-    private static (string? Name, string? Summary, string? Activity) Describe(HistoryEvent e) => e.EventType switch
+    private static (string? Name, string? Summary, string? Activity) Describe(HistoryEvent e)
     {
-        EventType.ActivityTaskScheduled => (e.ActivityTaskScheduledEventAttributes.ActivityType.Name, $"scheduled {e.ActivityTaskScheduledEventAttributes.ActivityType.Name}", null),
-        EventType.ActivityTaskStarted => (null, Attempt(e.ActivityTaskStartedEventAttributes), null),
-        EventType.ActivityTaskFailed => (null, $"failed: {e.ActivityTaskFailedEventAttributes.Failure?.Message}", null),
-        EventType.TimerStarted => ($"timer-{e.TimerStartedEventAttributes.TimerId}", string.Create(CultureInfo.InvariantCulture, $"timer set for {e.TimerStartedEventAttributes.StartToFireTimeout.ToTimeSpan().TotalSeconds:0.#} s"), null),
-        EventType.WorkflowExecutionSignaled => (e.WorkflowExecutionSignaledEventAttributes.SignalName, $"signal {e.WorkflowExecutionSignaledEventAttributes.SignalName}", null),
-        EventType.MarkerRecorded => Marker(e.MarkerRecordedEventAttributes),
-        _ => (null, null, null),
-    };
+        if (e.EventType == EventType.ActivityTaskScheduled)
+        {
+            var name = e.ActivityTaskScheduledEventAttributes.ActivityType.Name;
+            return (name, $"scheduled {name}", null);
+        }
+
+        if (e.EventType == EventType.ActivityTaskStarted)
+        {
+            return (null, Attempt(e.ActivityTaskStartedEventAttributes), null);
+        }
+
+        if (e.EventType == EventType.ActivityTaskFailed)
+        {
+            return (null, $"failed: {e.ActivityTaskFailedEventAttributes.Failure?.Message}", null);
+        }
+
+        if (e.EventType == EventType.TimerStarted)
+        {
+            return ($"timer-{e.TimerStartedEventAttributes.TimerId}", string.Create(CultureInfo.InvariantCulture, $"timer set for {e.TimerStartedEventAttributes.StartToFireTimeout.ToTimeSpan().TotalSeconds:0.#} s"), null);
+        }
+
+        if (e.EventType == EventType.WorkflowExecutionSignaled)
+        {
+            return (e.WorkflowExecutionSignaledEventAttributes.SignalName, $"signal {e.WorkflowExecutionSignaledEventAttributes.SignalName}", null);
+        }
+
+        return e.EventType == EventType.MarkerRecorded ? Marker(e.MarkerRecordedEventAttributes) : (null, null, null);
+    }
 
     private static string Attempt(ActivityTaskStartedEventAttributes started) => started.LastFailure is { } failure
         ? string.Create(CultureInfo.InvariantCulture, $"attempt {started.Attempt} · retry after {failure.Message}")

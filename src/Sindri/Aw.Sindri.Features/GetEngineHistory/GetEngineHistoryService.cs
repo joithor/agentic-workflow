@@ -18,17 +18,13 @@ internal sealed class GetEngineHistoryService(IEngineReader engine, IMirroredSeq
     public async ValueTask<Result<EngineHistory>> Handle(GetEngineHistoryRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var page = 1;
-        if (request.Page is { } text && (!int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out page) || page < 1))
+        var asked = Parse(request);
+        if (asked.IsError)
         {
-            return SindriErrors.InvalidQuery.With($"page is a number from 1, not '{text}'");
+            return asked.Error;
         }
 
-        if ((request.Address is { Length: > 0 } address ? address : request.Instance) is not { Length: > 0 } reference)
-        {
-            return SindriErrors.InvalidQuery.With("name the instance by its id in the path or by ?address=");
-        }
-
+        var (page, reference) = asked.Value;
         var read = await engine.History(reference, page, EngineHistory.PageSize, cancellationToken).ConfigureAwait(false);
         if (read.IsError)
         {
@@ -36,10 +32,7 @@ internal sealed class GetEngineHistoryService(IEngineReader engine, IMirroredSeq
         }
 
         var facts = read.Value;
-        var activities = facts.Events.Select(static e => e.Activity).OfType<string>().ToList();
-        var rows = activities.Count == 0
-            ? Results.Success<IReadOnlyDictionary<string, long>>(new Dictionary<string, long>(StringComparer.Ordinal))
-            : await mirrored.Of(facts.Address, facts.Run, activities, cancellationToken).ConfigureAwait(false);
+        var rows = await Mirrored(facts, cancellationToken).ConfigureAwait(false);
         if (rows.IsError)
         {
             return rows.Error;
@@ -48,5 +41,26 @@ internal sealed class GetEngineHistoryService(IEngineReader engine, IMirroredSeq
         var events = facts.Events.Select(e => new EngineEvent(e.EventId, e.Time, e.Type, e.Name, e.Summary,
             e.Activity is { } id && rows.Value.TryGetValue(id, out var sequence) ? sequence : null)).ToList();
         return new EngineHistory(events, page, facts.Total, (long)page * EngineHistory.PageSize < facts.Total ? page + 1 : null);
+    }
+
+    private static Result<(int Page, string Reference)> Parse(GetEngineHistoryRequest request)
+    {
+        var page = 1;
+        if (request.Page is { } text && (!int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out page) || page < 1))
+        {
+            return SindriErrors.InvalidQuery.With($"page is a number from 1, not '{text}'");
+        }
+
+        return (request.Address is { Length: > 0 } address ? address : request.Instance) is { Length: > 0 } reference
+            ? (page, reference)
+            : SindriErrors.InvalidQuery.With("name the instance by its id in the path or by ?address=");
+    }
+
+    private async ValueTask<Result<IReadOnlyDictionary<string, long>>> Mirrored(EngineHistoryFacts facts, CancellationToken cancellationToken)
+    {
+        var activities = facts.Events.Select(static e => e.Activity).OfType<string>().ToList();
+        return activities.Count == 0
+            ? Results.Success<IReadOnlyDictionary<string, long>>(new Dictionary<string, long>(StringComparer.Ordinal))
+            : await mirrored.Of(facts.Address, facts.Run, activities, cancellationToken).ConfigureAwait(false);
     }
 }
