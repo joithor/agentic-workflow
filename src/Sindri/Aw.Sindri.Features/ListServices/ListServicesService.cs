@@ -56,6 +56,6 @@ internal sealed class ListServicesService(IApprovedProfile approvals, IViewReade
         var cadence = Cadence.Parse(every);
         var paused = row?.Paused == true;
         DateTimeOffset? next = !paused && row?.ScheduledSlot is { } slot && cadence.IsSuccess ? slot + cadence.Value.Interval : null;
-        return new ServiceView(ServiceName.From(name), every, paused, row?.LastRun, next, job);
+        return new ServiceView(ServiceName.From(name), every, paused, row?.LastRun, next, job, []);
     }
 }
