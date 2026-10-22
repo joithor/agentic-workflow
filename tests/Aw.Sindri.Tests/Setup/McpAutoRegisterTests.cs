@@ -18,7 +18,7 @@ namespace Aw.Sindri.Tests.Setup;
 /// leave a repo whose newest job failed to the owner, and start nothing for a registration that is already there.
 /// </summary>
 [Lane(TestLane.Unit)]
-public sealed class McpAutoRegisterTests
+public sealed class McpAutoRegisterTests : IDisposable
 {
     private readonly SliceHarness _slice = new();
     private readonly FakeProviderHost _host = new FakeProviderHost().WithoutProvider(Core.Mcp.ProviderFile.Codex).WithoutProvider(Core.Mcp.ProviderFile.Claude);
@@ -27,8 +27,11 @@ public sealed class McpAutoRegisterTests
     private readonly Switch _switch = new();
     private readonly InMemoryEndpointFile _endpoint = new();
     private readonly McpAutoMemory _memory = new();
+    private readonly SetupJobQueue _queue = new(() => 0);   // one queue for the test, as serve has one: a job left waiting starts on a later tick
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
+
+    public void Dispose() => _queue.Dispose();
 
     [Fact]
     public async Task With_consent_a_repo_that_is_not_registered_gets_one_job_through_the_queue()
@@ -196,10 +199,9 @@ public sealed class McpAutoRegisterTests
 
     private async Task Run(McpAutoMemory memory)
     {
-        using var queue = new SetupJobQueue(() => 0);
         var need = new McpNeed(new AutomaticMcpRegistration(new RegisterMcpService(_slice.Profiles, new FakeRepoLocator(), _endpoint, new FakeClaudeCli(), _host) { WriteCodexTrust = false }));
         var changed = new ChangedMcpNeed(need, _slice.Profiles, _endpoint, memory);
-        await new McpAutoRegister(Gate(), changed, queue, _starter, new NothingRunning()).Run(Token);
+        await new McpAutoRegister(Gate(), changed, _queue, _starter, new NothingRunning()).Run(Token);
     }
 
     private async Task<LoadedProfile> Approve(string[] repos, string? mcp = null)
