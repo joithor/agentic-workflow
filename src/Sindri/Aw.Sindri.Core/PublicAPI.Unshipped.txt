@@ -12504,13 +12504,15 @@ Aw.Sindri.Core.Setup.SetupError.Sentence.init -> void
 Aw.Sindri.Core.Setup.SetupError.SetupError(string! Code, string! Sentence) -> void
 Aw.Sindri.Core.Setup.SetupProgress
 Aw.Sindri.Core.Setup.SetupProgress.<Clone>$() -> Aw.Sindri.Core.Setup.SetupProgress!
-Aw.Sindri.Core.Setup.SetupProgress.Deconstruct(out int Done, out int Total) -> void
+Aw.Sindri.Core.Setup.SetupProgress.Deconstruct(out int Done, out int Total, out string! Unit) -> void
 Aw.Sindri.Core.Setup.SetupProgress.Done.get -> int
 Aw.Sindri.Core.Setup.SetupProgress.Done.init -> void
 Aw.Sindri.Core.Setup.SetupProgress.Equals(Aw.Sindri.Core.Setup.SetupProgress? other) -> bool
-Aw.Sindri.Core.Setup.SetupProgress.SetupProgress(int Done, int Total) -> void
+Aw.Sindri.Core.Setup.SetupProgress.SetupProgress(int Done, int Total, string! Unit) -> void
 Aw.Sindri.Core.Setup.SetupProgress.Total.get -> int
 Aw.Sindri.Core.Setup.SetupProgress.Total.init -> void
+Aw.Sindri.Core.Setup.SetupProgress.Unit.get -> string!
+Aw.Sindri.Core.Setup.SetupProgress.Unit.init -> void
 Aw.Sindri.Core.Setup.SetupState
 Aw.Sindri.Core.Setup.SetupState.Done = 2 -> Aw.Sindri.Core.Setup.SetupState
 Aw.Sindri.Core.Setup.SetupState.Failed = 3 -> Aw.Sindri.Core.Setup.SetupState

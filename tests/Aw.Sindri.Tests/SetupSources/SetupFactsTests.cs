@@ -253,7 +253,7 @@ public sealed class SetupFactsTests
 
         Assert.Equal(MapPhase.NotBuilt, notBuilt.Phase);
         Assert.Equal((MapPhase.Failed, "SND-CONTEXT-040", null), (failed.Phase, failed.FailureCode, failed.Progress));
-        Assert.Equal((MapPhase.Building, new SetupProgress(40, 100)), (running.Phase, running.Progress));
+        Assert.Equal((MapPhase.Building, new SetupProgress(40, 100, "files")), (running.Phase, running.Progress));
     }
 
     [Fact, Trait("Lane", "unit")]
