@@ -97,11 +97,11 @@ public static class WorkflowErrors
     /// <summary>SND-BLOCK-004: a Step's run area file can't be written or read; the Step fails with the message, and a line is never dropped.</summary>
     public static readonly ErrorDefinition BlockRunAreaUnavailable = new("SND-BLOCK-004", ErrorKind.Unavailable, "A Step's run area file can't be written or read");
 
-    /// <summary>SND-BLOCK-020: the phase has no hidden set in the holdout store (nothing was written or sealed for it); the Step fails with the message.</summary>
-    public static readonly ErrorDefinition HoldoutSetMissing = new("SND-BLOCK-020", ErrorKind.NotFound, "The phase has no hidden set in the holdout store");
+    /// <summary>SND-BLOCK-005: the phase has no hidden set in the holdout store (nothing was written or sealed for it); the Step fails with the message.</summary>
+    public static readonly ErrorDefinition HoldoutSetMissing = new("SND-BLOCK-005", ErrorKind.NotFound, "The phase has no hidden set in the holdout store");
 
-    /// <summary>SND-BLOCK-021: a file of the holdout store can't be read, parsed or written; the Step fails with the message, and the owner replaces the phase's hidden set.</summary>
-    public static readonly ErrorDefinition HoldoutStoreUnavailable = new("SND-BLOCK-021", ErrorKind.Unavailable, "The holdout store can't be read or written");
+    /// <summary>SND-BLOCK-006: a file of the holdout store can't be read, parsed or written; the Step fails with the message, and the owner replaces the phase's hidden set.</summary>
+    public static readonly ErrorDefinition HoldoutStoreUnavailable = new("SND-BLOCK-006", ErrorKind.Unavailable, "The holdout store can't be read or written");
 
     /// <summary>SND-RECIPE-011: a recipe is not one this build ships (its 'id@hash' is not in the embedded set); approve-all names it (setup-once spec §7.6).</summary>
     public static readonly ErrorDefinition RecipeNotShipped = new("SND-RECIPE-011", ErrorKind.Conflict, "The recipe is not one this build ships");
