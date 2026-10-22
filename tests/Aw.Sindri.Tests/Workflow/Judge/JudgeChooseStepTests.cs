@@ -20,7 +20,10 @@ public sealed class JudgeChooseStepTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static readonly string[] value = new[] { "fact:built" };
+    private static readonly string[] _defaultFacts = ["fact:built"];
+    private static readonly string[] _twoFacts = ["fact:built", "fact:phasePacket"];
+    private static readonly string[] _codexAndRules = ["codex-cli", "rules"];
+    private static readonly string[] _badChoices = ["ui", "api: x"];
 
     private sealed class MaskingScrubber : ITextScrubber
     {
@@ -33,7 +36,7 @@ public sealed class JudgeChooseStepTests
         {
             ["prompt"] = JsonSerializer.SerializeToElement("Which evidence proves this change works?"),
             ["choices"] = JsonSerializer.SerializeToElement(_choices),
-            ["facts"] = JsonSerializer.SerializeToElement(value),
+            ["facts"] = JsonSerializer.SerializeToElement(_defaultFacts),
         };
         foreach (var (name, value) in arguments ?? [])
         {
@@ -133,7 +136,7 @@ public sealed class JudgeChooseStepTests
     public async Task A_fact_the_instance_does_not_hold_fails_the_Step_and_the_judge_is_never_asked()
     {
         var judge = new FakeJudgeChoice();
-        var context = Context(With("facts", new[] { "fact:built", "fact:phasePacket" }));
+        var context = Context(With("facts", _twoFacts));
 
         var result = await Run(judge, context);
 
@@ -183,7 +186,7 @@ public sealed class JudgeChooseStepTests
     {
         var judge = new FakeJudgeChoice().Answers(new ChooseAnswer(ChooseStatus.Escalated, Choice: null, "no-provider-decided"));
 
-        _ = await Run(judge, Context(With("providers", new[] { "codex-cli", "rules" })));
+        _ = await Run(judge, Context(With("providers", _codexAndRules)));
 
         Assert.Equal(["codex-cli", "rules"], Assert.Single(judge.Requests).Providers, StringComparer.Ordinal);
     }
@@ -234,7 +237,7 @@ public sealed class JudgeChooseStepTests
     {
         var judge = new FakeJudgeChoice();
 
-        var result = await Run(judge, Context(With("choices", new[] { "ui", "api: x" })));
+        var result = await Run(judge, Context(With("choices", _badChoices)));
 
         Assert.Equal("step.judge.choose: the choice 'ui' is not '<outcome>: <criterion>'", result.Failure);
     }

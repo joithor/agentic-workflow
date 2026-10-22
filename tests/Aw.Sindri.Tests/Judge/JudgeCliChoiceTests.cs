@@ -92,7 +92,7 @@ public sealed class JudgeCliChoiceTests
     [InlineData("rule-timeout")]
     public async Task These_escalations_are_escalated_with_the_probabilities_the_providers_sent(string reason)
     {
-        var (port, _) = Port(new ToolRun(ToolOutcome.Exited, 2, $$"""{"escalated":true,"reasonCode":"{{reason}}","id":"d-2","probabilities":{"ui":0.4}}"""));
+        var (port, _) = Port(new ToolRun(ToolOutcome.Exited, 2, $$$"""{"escalated":true,"reasonCode":"{{{reason}}}","id":"d-2","probabilities":{"ui":0.4}}"""));
 
         var answer = await port.Choose(_request, Token);
 
@@ -116,10 +116,11 @@ public sealed class JudgeCliChoiceTests
     }
 
     [Theory]
-    [InlineData(ToolOutcome.Missing)]
-    [InlineData(ToolOutcome.TimedOut)]
-    public async Task A_missing_or_timed_out_judge_is_a_failure_naming_the_fix(ToolOutcome outcome)
+    [InlineData("Missing")]
+    [InlineData("TimedOut")]
+    public async Task A_missing_or_timed_out_judge_is_a_failure_naming_the_fix(string outcomeName)
     {
+        var outcome = Enum.Parse<ToolOutcome>(outcomeName);
         var (port, _) = Port(new ToolRun(outcome, -1, ""));
 
         var answer = await port.Choose(_request, Token);

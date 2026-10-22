@@ -33,19 +33,19 @@ internal sealed class JudgeChooseStep(IJudgeChoice judge, ITextScrubber scrubber
     {
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();
-        var built = Request(context);
-        if (built.Failure is not null)
+        var (request, failure) = Request(context);
+        if (failure is not null || request is null)
         {
-            return BlockStepResult.Failed(built.Failure);
+            return BlockStepResult.Failed(failure ?? $"{Name} has no request");
         }
 
-        var answer = await judge.Choose(built.Request!, cancellationToken).ConfigureAwait(false);
+        var answer = await judge.Choose(request, cancellationToken).ConfigureAwait(false);
         return answer.Status switch
         {
-            ChooseStatus.Decided when answer.Choice is { } choice && built.Request!.Choices.Any(c => string.Equals(c.Name, choice, StringComparison.Ordinal)) => Decision(choice, answer),
+            ChooseStatus.Decided when answer.Choice is { } choice && request.Choices.Any(c => string.Equals(c.Name, choice, StringComparison.Ordinal)) => Decision(choice, answer),
             ChooseStatus.Decided => BlockStepResult.Failed($"{Name}: the judge chose '{answer.Choice}', which is not one of the choices"),
             ChooseStatus.Escalated => Decision(Uncertain, answer),
-            ChooseStatus.Failed => throw new NotImplementedException(),
+            ChooseStatus.Failed => BlockStepResult.Failed($"{Name}: {answer.Reason}"),
             _ => BlockStepResult.Failed($"{Name}: {answer.Reason}"),
         };
     }

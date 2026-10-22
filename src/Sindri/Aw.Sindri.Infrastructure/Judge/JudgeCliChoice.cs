@@ -7,7 +7,7 @@ using Aw.Sindri.Infrastructure.Processes;
 namespace Aw.Sindri.Infrastructure.Judge;
 
 /// <summary>
-/// <see cref="IJudgeChoice"/> over the judge program (AW_SINDRI_JUDGE, else 'judge' on the PATH), run through <see cref="IToolRunner"/> as <c>judge choose --providers a,b</c> with the question on standard input (DT spec 8.3).
+/// <see cref="IJudgeChoice"/> over the judge program (AW_SINDRI_JUDGE, else 'judge' on the PATH), run through <see cref="IToolRunner"/> as 'judge choose --providers a,b' with the question on standard input (DT spec 8.3).
 /// It runs with AW_JUDGE_STATE_DIR set to Sindri's own judge directory, so its decision rows never join the hooks' store. Exit 0 is a decided envelope and exit 2 an escalated one; anything else, a missing program or a timeout is a failed answer.
 /// </summary>
 /// <param name="runner">Runs the judge.</param>
@@ -84,7 +84,7 @@ internal sealed class JudgeCliChoice(IToolRunner runner, Func<string, string?> e
             return Failed($"judge choose exited 2 without an escalated envelope: {Tail(output)}");
         }
 
-        return reason is "invalid-input" or "question-disabled"
+        return string.Equals(reason, "invalid-input", StringComparison.Ordinal) || string.Equals(reason, "question-disabled", StringComparison.Ordinal)
             ? new ChooseAnswer(ChooseStatus.Failed, Choice: null, reason, DecisionRef: Text(envelope, "id"))
             : new ChooseAnswer(ChooseStatus.Escalated, Choice: null, reason, DecisionRef: Text(envelope, "id"), Probabilities: Probabilities(envelope));
     }
@@ -106,7 +106,7 @@ internal sealed class JudgeCliChoice(IToolRunner runner, Func<string, string?> e
     private static string? Text(JsonObject json, string name) => json[name] is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
 
     private static Dictionary<string, double>? Probabilities(JsonObject json) => json["probabilities"] is JsonObject map
-        ? map.Select(static e => (e.Key, Value: e.Value is JsonValue v && v.TryGetValue<double>(out var p) ? p : (double?)null)).Where(static e => e.Value is not null).ToDictionary(static e => e.Key, static e => e.Value!.Value, StringComparer.Ordinal)
+        ? map.Select(static e => (e.Key, Value: e.Value is JsonValue v && v.TryGetValue<double>(out var p) ? p : (double?)null)).Where(static e => e.Value is not null).ToDictionary(static e => e.Key, static e => e.Value.GetValueOrDefault(), StringComparer.Ordinal)
         : null;
 
     private static string Tail(string text) => text.Trim() is { Length: > 300 } trimmed ? trimmed[^300..] : text.Trim();
