@@ -17,6 +17,11 @@ internal sealed class WorkflowStatRows(ILedgerReader ledger, EventFactory events
     private const int Page = 500;
     private static readonly LedgerFilter _filter = new(TypeFilter.Parse("workflow.*").Value, Item: null);
 
+    /// <summary>The ledger's head: read before <see cref="Read"/>, it is a point the rows are no older than.</summary>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The head sequence.</returns>
+    public ValueTask<Result<long>> Head(CancellationToken cancellationToken) => ledger.Head(cancellationToken);
+
     /// <summary>Every workflow row in the ledger, oldest first.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The rows.</returns>

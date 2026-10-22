@@ -5,7 +5,7 @@ using Aw.Kernel.Json;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Profile;
-using Aw.Sindri.Features;
+using Aw.Sindri.Features.CodeIndexJobs;
 using Aw.Sindri.Testing;
 using RepoName = Aw.CodeIndex.Core.Values.RepoName;
 
@@ -31,7 +31,7 @@ internal sealed class CodeIndexJobsRig
 
     internal FakeRepoHeads Heads { get; } = new();
 
-    internal CodeIndexScopes Scopes => new(Harness.Profiles, Harness.Callers);
+    internal CodeIndexJobScopes Scopes => new(Harness.Profiles, Harness.Callers);
 
     internal async Task Approve(CancellationToken cancellationToken)
     {

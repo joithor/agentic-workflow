@@ -30,7 +30,7 @@ namespace Aw.Sindri.Features.CodeIndexJobs;
 /// <param name="start">The BuildCodeIndex command chain.</param>
 /// <param name="clock">Dates the backoff.</param>
 /// <param name="logger">Logs a 409 that is not "the build is already running".</param>
-internal sealed partial class CodeIndexMainMoveService(CodeIndexScopes scopes, ICodeIndex index, IRepoHeads heads, IJobViews jobs, IService<BuildCodeIndexRequest, JobStartedResponse> start, TimeProvider clock, ILogger<CodeIndexMainMoveService> logger) : IScheduledService
+internal sealed partial class CodeIndexMainMoveService(CodeIndexJobScopes scopes, ICodeIndex index, IRepoHeads heads, IJobViews jobs, IService<BuildCodeIndexRequest, JobStartedResponse> start, TimeProvider clock, ILogger<CodeIndexMainMoveService> logger) : IScheduledService
 {
     private const int RecentRuns = 8;
 
