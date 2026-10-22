@@ -126,6 +126,7 @@ internal static class EndpointTable
         _ = commands.MapIssueAppChallenge();
         _ = commands.MapRegisterRecipe();
         _ = commands.MapStartInstance();
+        _ = commands.MapRerunInstance();
         _ = commands.MapIssueNonce();
         _ = commands.MapApplyCommand();
         _ = commands.MapCompleteStep();

@@ -39,6 +39,7 @@ public sealed class EngineRowTests
         ("RevokeRecipe", ActionClass.Protected, "cli-only:typed-confirmation"),
         ("IssueChallenge", ActionClass.Issue, "ready"),
         ("StartInstance", ActionClass.Desk, "ready"),
+        ("RerunInstance", ActionClass.Desk, "ready"),
         ("IssueNonce", ActionClass.Issue, "ready"),
         ("ApplyCommand:answer-text", ActionClass.Desk, "ready"),
         ("ApplyCommand:answer-resume", ActionClass.Desk, "ready"),

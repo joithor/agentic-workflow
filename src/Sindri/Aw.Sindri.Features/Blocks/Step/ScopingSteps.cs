@@ -108,7 +108,7 @@ internal static class ScopingSteps
     public static BlockDescriptor Evidence { get; } = BlockStep("step.scope.evidence", Capability.Tools)
         .Reads("fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:answers", "fact:answerLog", "fact:challenge", "fact:openQuestions", "fact:decision", "fact:anchors", "fact:questions")
         .Reports("complete", "incomplete", "regather")
-        .Writes(On("fact:scopeMap", "complete"), On("fact:acceptance", "complete"), On("fact:coverage", "complete"), On("fact:openQuestions", "complete"), On("fact:scopePacket", "complete"), On("fact:findings", "incomplete", "regather"));
+        .Writes(On("fact:scopeMap", "complete"), On("fact:acceptance", "complete"), On("fact:coverage", "complete"), On("fact:openQuestions", "complete"), On("fact:scopePacket", "complete"), On("fact:recommendation"), On("fact:findings", "incomplete", "regather"));
 
     /// <summary>'step.scope.review': the owner's stop, human-only: approve, revise (notes become answers) or drop.</summary>
     public static BlockDescriptor Review { get; } = HumanDeskStep("step.scope.review", Capability.None)

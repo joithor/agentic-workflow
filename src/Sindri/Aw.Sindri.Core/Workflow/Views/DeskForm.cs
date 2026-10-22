@@ -9,9 +9,11 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="Outputs">The outputs asked for.</param>
 /// <param name="Checks">The checks run on complete.</param>
 /// <param name="CompleteAction">The action id that completes it.</param>
+/// <param name="Recommended">The outcome the step before the stop recommends, or null (left out of the JSON) when it made no valid recommendation.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record DeskForm(
     RunToken Run,
     IReadOnlyList<DeskOutput> Outputs,
     IReadOnlyList<string> Checks,
-    ActionId CompleteAction);
+    ActionId CompleteAction,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] DeskRecommendation? Recommended = null);

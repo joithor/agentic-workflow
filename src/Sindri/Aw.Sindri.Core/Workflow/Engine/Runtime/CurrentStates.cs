@@ -56,13 +56,14 @@ internal static class CurrentStates
     ];
 
     /// <summary>The desk form of the open task: its run, the outputs required on the outcome the form's command reports (API spec §3.8 'Desk runtime until P8'), the checks the engine runs on a report and the action that completes it.</summary>
-    public static DeskForm? Desk(DeskTask? task, InterpretedRecipe interpreted) => task is null
+    public static DeskForm? Desk(DeskTask? task, InterpretedRecipe interpreted, string? recommendation = null) => task is null
         ? null
         : new DeskForm(
             task.Run,
             [.. task.Outputs.Where(o => DeskChecks.Applies(task, o)).Select(o => new DeskOutput(o.Fact.Value, FactTypes.Parse(TypeOf(interpreted, o.Fact)), Required: true))],
             [.. task.Outputs.Where(o => DeskChecks.Applies(task, o)).Select(o => DeskChecks.Id(interpreted, o.Fact))],
-            ActionId.From("CompleteStep"));
+            ActionId.From("CompleteStep"),
+            Recommendations.Of(recommendation, task.Outcomes));
 
     private static string? TypeOf(InterpretedRecipe interpreted, FactKey fact) => interpreted.Recipe.Outputs.FirstOrDefault(r => r.Key == fact)?.Type ?? Recipes.FactTypes.Default;
 }

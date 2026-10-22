@@ -83,7 +83,7 @@ internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipe
         }
 
         var started = await runtime.Start(
-            new InstanceStart(recipe.Version, item.Id, plan.Attempt, inputs.Value.Inputs, Tenant, Ring: 0) { OpenLaunch = launch.Value?.Value, StartedAt = inputs.Value.StartedAt, StartedBy = inputs.Value.StartedBy },
+            new InstanceStart(recipe.Version, item.Id, plan.Attempt, inputs.Value.Inputs, Tenant, Ring: 0) { OpenLaunch = launch.Value?.Value, StartedAt = inputs.Value.StartedAt, StartedBy = inputs.Value.StartedBy, Again = request.Again },
             cancellationToken).ConfigureAwait(false);
         return started.IsError ? started.Error : new StartInstanceResponse(started.Value, plan.Existing, Finished: false);
     }

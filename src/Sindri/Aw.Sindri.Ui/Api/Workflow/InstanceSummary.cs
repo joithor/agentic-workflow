@@ -3,6 +3,7 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <summary>One row of the instance list.</summary>
 /// <param name="Address">Address, as served.</param>
 /// <param name="Id">Id, as served.</param>
+/// <param name="Again">The address of the instance this one reruns; read as optional.</param>
 /// <param name="ItemId">ItemId, as served.</param>
 /// <param name="Recipe">Recipe, as served.</param>
 /// <param name="State">State, as served.</param>
@@ -37,4 +38,5 @@ internal sealed record InstanceSummary(
     string? StartedBy = null,
     DateTimeOffset? StartedAt = null,
     string? LineStage = null,
-    string? RootAddress = null);
+    string? RootAddress = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? Again = null);

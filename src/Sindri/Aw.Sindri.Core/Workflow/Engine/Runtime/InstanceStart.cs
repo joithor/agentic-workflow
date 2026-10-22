@@ -43,6 +43,9 @@ public sealed record InstanceStart(
     /// <summary>The parent of a child instance (engine P7 plan D1); null for a root instance.</summary>
     public WorkflowInstanceId? ParentId { get; init; }
 
+    /// <summary>The instance this one reruns (a 'RerunInstance'); null for any other start. It is workflow input, so it is in the history and survives a restart.</summary>
+    public InstanceAddress? Again { get; init; }
+
     /// <summary>The workflow id: the instance's address, '{item}/{recipe name}/{attempt}', or a child's own address.</summary>
     /// <returns>The address.</returns>
     public InstanceAddress WorkflowId() => ChildAddress ?? InstanceAddress.Root(Item, Recipe.Id, Attempt);
