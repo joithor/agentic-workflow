@@ -2,9 +2,9 @@ using Aw.Forge.Core.Ports;
 using Aw.Forge.Core.Pulls;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Forge;
+using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Host.Forge;
 using Aw.Sindri.Testing.Forge;
-using Aw.Sindri.Core.Profile;
 
 namespace Aw.Sindri.Tests.Forge;
 

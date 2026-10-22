@@ -40,7 +40,7 @@ public sealed class SealCliTests : IDisposable
 
         Assert.Equal((0, 1), (okExit, badExit));
         Assert.Contains("pass      PKT-HOLD-003", okOutput, StringComparison.Ordinal);
-        Assert.Contains("fail      PKT-HOLD-003", badOutput, StringComparison.Ordinal);
+        Assert.Contains("FAIL      PKT-HOLD-003", badOutput, StringComparison.Ordinal);
     }
 
     [Fact]
