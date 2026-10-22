@@ -52,14 +52,14 @@ internal sealed class ServiceRowViewModel(string name) : ObservableObject
     public string ViewJobName { get; } = Labels.ViewJobName(name);
 
     /// <summary>Raised when View job is pressed; the shell opens the Jobs page on that job's sheet.</summary>
-    internal event EventHandler<DeepLink>? JobRequested;
+    internal event EventHandler<JobRequestedEventArgs>? JobRequested;
 
     /// <summary>Asks the shell to open the job of the manual run in flight; does nothing when none is.</summary>
     internal void RequestJob()
     {
         if (JobId.Length > 0)
         {
-            JobRequested?.Invoke(this, new DeepLink(DeepLinkKind.Job, JobId));
+            JobRequested?.Invoke(this, new JobRequestedEventArgs(new DeepLink(DeepLinkKind.Job, JobId)));
         }
     }
 

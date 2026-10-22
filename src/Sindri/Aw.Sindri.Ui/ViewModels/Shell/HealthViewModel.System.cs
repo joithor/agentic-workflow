@@ -1,5 +1,4 @@
 using Aw.Sindri.Ui.Api;
-using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.ViewModels.Controls;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
@@ -63,7 +62,7 @@ internal sealed partial class HealthViewModel
     public bool IsWide => !IsCompact;
 
     /// <summary>Raised when a row's View job is pressed; the shell opens the Jobs page on that job's sheet.</summary>
-    internal event EventHandler<DeepLink>? JobRequested;
+    internal event EventHandler<JobRequestedEventArgs>? JobRequested;
 
     /// <summary>The page's width changed: under 900 px the Services table keeps three columns.</summary>
     /// <param name="width">The page's width in px.</param>
@@ -212,7 +211,7 @@ internal sealed partial class HealthViewModel
             {
                 vm = _serviceRows[row.Name] = new ServiceRowViewModel(row.Name);
                 vm.SetCompact(IsCompact);   // a row that arrives after the page narrowed is narrow too
-                vm.JobRequested += (_, link) => JobRequested?.Invoke(this, link);
+                vm.JobRequested += (_, e) => JobRequested?.Invoke(this, e);
             }
 
             vm.Show(row);

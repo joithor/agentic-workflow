@@ -25,7 +25,7 @@ internal sealed partial class HealthPage : UserControl
 
         if (page.MoveTab(e.Key == Key.Right ? 1 : -1))
         {
-            (page.ShowServicesTab ? ServicesTab : OverviewTab).Focus();
+            _ = (page.ShowServicesTab ? ServicesTab : OverviewTab).Focus();
         }
 
         e.Handled = true;
@@ -33,7 +33,7 @@ internal sealed partial class HealthPage : UserControl
 
     private void OnViewJob(object? sender, RoutedEventArgs e)
     {
-        if ((sender as Control)?.DataContext is ServiceRowViewModel row)
+        if (sender is Control { DataContext: ServiceRowViewModel row })
         {
             row.RequestJob();
         }

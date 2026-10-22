@@ -45,7 +45,7 @@ public sealed class ServicesTabLayoutTests
         var system = new SystemTestHarness("running-job");
         await system.Show();
         var asked = new List<DeepLink>();
-        system.Vm.JobRequested += (_, link) => asked.Add(link);
+        system.Vm.JobRequested += (_, e) => asked.Add(e.Link);
         var stuck = system.Vm.ServiceTable.Single(r => string.Equals(r.Name, "stuck", StringComparison.Ordinal));
 
         stuck.RequestJob();
