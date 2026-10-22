@@ -29,8 +29,8 @@ public sealed class ContextHoverTests
     {
         var around = MapHighlight.Around(_links, ["b"]);
 
-        Assert.Equal(["a", "b", "c"], around.Nodes.Order(StringComparer.Ordinal));
-        Assert.Equal(["e1", "e2"], around.Edges.Order(StringComparer.Ordinal));
+        Assert.Equal(["a", "b", "c"], around.Nodes.Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal(["e1", "e2"], around.Edges.Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -49,8 +49,8 @@ public sealed class ContextHoverTests
     {
         var cited = MapHighlight.Among(_links, ["a", "b", "d"]);
 
-        Assert.Equal(["a", "b", "d"], cited.Nodes.Order(StringComparer.Ordinal));
-        Assert.Equal(["e1"], cited.Edges.Order(StringComparer.Ordinal));
+        Assert.Equal(["a", "b", "d"], cited.Nodes.Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal(["e1"], cited.Edges.Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.True(cited.Dims("c"));
     }
 

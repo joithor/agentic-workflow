@@ -26,7 +26,7 @@ public sealed class MapPathTests
         var route = MapPath.Find(_chain, ["c"], "a");
 
         Assert.NotNull(route);
-        Assert.Equal(["b", "a"], route.Hops.Select(h => h.Key));
+        Assert.Equal(["b", "a"], route.Hops.Select(h => h.Key), StringComparer.Ordinal);
     }
 
     [Fact]

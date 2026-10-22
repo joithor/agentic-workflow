@@ -26,8 +26,7 @@ public sealed class ContextSelectionTests
     {
         var clipboard = new FakeClipboard();
         var clock = new FakeTimeProvider(A.Noon);
-        var page = new ContextPageViewModel(new ContextPorts(api, () => new Uri("http://127.0.0.1:1/"), clipboard, clock, new CatalogViewModel(clipboard, clock), _ => { }));
-        page.AnchorText = Manager;
+        var page = new ContextPageViewModel(new ContextPorts(api, () => new Uri("http://127.0.0.1:1/"), clipboard, clock, new CatalogViewModel(clipboard, clock), _ => { })) { AnchorText = Manager };
         await page.Submit(Token);
         Assert.NotNull(page.Map);
         return page;
@@ -45,7 +44,7 @@ public sealed class ContextSelectionTests
         Assert.True(page.InspectorOpen);
         Assert.Equal(ManagerFile, page.Map!.SelectedKey);
         Assert.True(page.Map.Node(ManagerFile)!.IsSelected);
-        Assert.Contains("node:" + ManagerFile, api.ContextLog);
+        Assert.Contains("node:" + ManagerFile, api.ContextLog, StringComparer.Ordinal);
         Assert.Equal("TabManager.ts", page.Node.Title);
     }
 
@@ -122,7 +121,7 @@ public sealed class ContextSelectionTests
     [Fact]
     public async Task The_connected_list_is_the_nodes_own_edges_in_and_out()
     {
-        var served = Aw.Kernel.Testing.GoldenFiles.Node("context-node", "tab-manager");
+        var served = GoldenFiles.Node("context-node", "tab-manager");
         var page = await Open(new FakeSindriApi());
 
         await page.Select(Manager, Token);
@@ -178,7 +177,7 @@ public sealed class ContextSelectionTests
         await page.Node.Reject(Token);
 
         Assert.Equal(DeskVerb.Reject, Assert.Single(api.ReviewCalls).Verb);
-        Assert.NotEqual(Labels.ContextInspSaved, page.Node.Status);
+        Assert.NotEqual(Labels.ContextInspSaved, page.Node.Status, StringComparer.Ordinal);
         Assert.NotEmpty(page.Node.Problem);
     }
 
