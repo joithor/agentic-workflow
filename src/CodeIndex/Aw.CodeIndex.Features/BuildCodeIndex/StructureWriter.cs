@@ -21,6 +21,7 @@ public sealed class StructureWriter
     private readonly IRepoSnapshot _snapshot;
     private readonly ISymbolParser[] _parsers;
     private readonly IParseQuarantine _quarantine;
+    private readonly IBodyScrubber _scrubber;
 
     /// <summary>Creates the writer over its ports.</summary>
     /// <param name="snapshot">The repo's blobs.</param>
@@ -33,11 +34,8 @@ public sealed class StructureWriter
         _snapshot = snapshot;
         _parsers = [.. parsers];
         _quarantine = quarantine;
-        Scrubber = scrubber;
+        _scrubber = scrubber;
     }
-
-    /// <summary>The scrubber every stored text goes through; the graph layer reuses it for graph symbols' bodies.</summary>
-    public IBodyScrubber Scrubber { get; }
 
     /// <summary>The parsers' versions, joined; part of the structure stamp.</summary>
     public string ParserVersion => string.Join('+', _parsers.Select(p => p.Version).Order(StringComparer.Ordinal));
@@ -172,7 +170,7 @@ public sealed class StructureWriter
             var minHash = Clones.Signature(s.Tokens);
             records.Add(new SymbolRecord(
                 reference, s.Name, s.Qualified, s.Kind, s.Arity, s.StartLine, s.EndLine, s.Exported, utility,
-                Scrubber.Scrub(s.Signature, CodeIndexRules.SignatureMaxCharacters), s.ShapeHash, s.Tokens.Count, s.Complexity,
+                _scrubber.Scrub(s.Signature, CodeIndexRules.SignatureMaxCharacters), s.ShapeHash, s.Tokens.Count, s.Complexity,
                 minHash, Clones.BandKeys(minHash), body, s.CallSites));
         }
 
@@ -183,5 +181,5 @@ public sealed class StructureWriter
     // a class-like symbol is never embedded, so its text is never kept. A symbol with no body of its own (a field, an
     // enum member) keeps an empty one, so its name and signature are still embedded and the layer can finish.
     private string? StoredBody(CodeIndexSettings settings, ParsedSymbol symbol)
-        => !settings.Embeddings.Enabled || _classLike.Contains(symbol.Kind) ? null : Scrubber.Scrub(symbol.Body ?? string.Empty, CodeIndexRules.EmbedTextMaxCharacters);
+        => !settings.Embeddings.Enabled || _classLike.Contains(symbol.Kind) ? null : _scrubber.Scrub(symbol.Body ?? string.Empty, CodeIndexRules.EmbedTextMaxCharacters);
 }

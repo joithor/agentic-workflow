@@ -50,11 +50,10 @@ Aw.CodeIndex.Features.BuildCodeIndex.BuildLayers.Equals(Aw.CodeIndex.Features.Bu
 Aw.CodeIndex.Features.BuildCodeIndex.BuildLayers.Graph.get -> Aw.CodeIndex.Features.BuildCodeIndex.GraphLayer!
 Aw.CodeIndex.Features.BuildCodeIndex.BuildLayers.Graph.init -> void
 Aw.CodeIndex.Features.BuildCodeIndex.GraphLayer
-Aw.CodeIndex.Features.BuildCodeIndex.GraphLayer.GraphLayer(Aw.CodeIndex.Core.Ports.IRepoSnapshot! snapshot, System.TimeProvider! clock, Aw.CodeIndex.Core.Ports.IGraphRunner? graph = null) -> void
-Aw.CodeIndex.Features.BuildCodeIndex.GraphLayer.Run(Aw.CodeIndex.Core.Ports.IIndexBuild! build, Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexRequest! request, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>! code, Aw.CodeIndex.Core.Ports.IBodyScrubber! scrubber, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Model.LayerRecord!>!>
+Aw.CodeIndex.Features.BuildCodeIndex.GraphLayer.GraphLayer(Aw.CodeIndex.Core.Ports.IRepoSnapshot! snapshot, System.TimeProvider! clock, Aw.CodeIndex.Core.Ports.IBodyScrubber! scrubber, Aw.CodeIndex.Core.Ports.IGraphRunner? graph = null) -> void
+Aw.CodeIndex.Features.BuildCodeIndex.GraphLayer.Run(Aw.CodeIndex.Core.Ports.IIndexBuild! build, Aw.CodeIndex.Features.BuildCodeIndex.BuildCodeIndexRequest! request, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.SnapshotFile!>! code, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Model.LayerRecord!>!>
 override Aw.CodeIndex.Features.BuildCodeIndex.BuildLayers.Equals(object? obj) -> bool
 override Aw.CodeIndex.Features.BuildCodeIndex.BuildLayers.GetHashCode() -> int
 override Aw.CodeIndex.Features.BuildCodeIndex.BuildLayers.ToString() -> string!
 static Aw.CodeIndex.Features.BuildCodeIndex.BuildLayers.operator !=(Aw.CodeIndex.Features.BuildCodeIndex.BuildLayers? left, Aw.CodeIndex.Features.BuildCodeIndex.BuildLayers? right) -> bool
 static Aw.CodeIndex.Features.BuildCodeIndex.BuildLayers.operator ==(Aw.CodeIndex.Features.BuildCodeIndex.BuildLayers? left, Aw.CodeIndex.Features.BuildCodeIndex.BuildLayers? right) -> bool
-Aw.CodeIndex.Features.BuildCodeIndex.StructureWriter.Scrubber.get -> Aw.CodeIndex.Core.Ports.IBodyScrubber!

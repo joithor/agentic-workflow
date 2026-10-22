@@ -102,7 +102,7 @@ public sealed partial class BuildCodeIndexService(IRepoHeads heads, IRepoSnapsho
             return edges.Error;
         }
 
-        var graphLayer = await layers.Graph.Run(build, request, code, structure.Scrubber, cancellationToken).ConfigureAwait(false);
+        var graphLayer = await layers.Graph.Run(build, request, code, cancellationToken).ConfigureAwait(false);
         if (graphLayer.IsError)
         {
             return graphLayer.Error;
