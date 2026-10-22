@@ -108,6 +108,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(ProveSteps.BeforeAfter)
         .AddBlockDescriptor(ProveSteps.Holdout)
         .AddBlockDescriptor(ProveSteps.HoldoutLog)
+        .AddBlockDescriptor(ProveSteps.Collect)
         .AddBlockDescriptor(ProveSteps.Evidence)
         .AddBlockDescriptor(ProveSteps.FailLog);
 
