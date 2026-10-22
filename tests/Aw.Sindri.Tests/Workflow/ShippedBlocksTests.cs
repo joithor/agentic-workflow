@@ -44,7 +44,7 @@ public sealed class ShippedBlocksTests
                 "step.lens.ask", "step.lens.log", "step.lens.round", "step.lens.run", "step.owner.decide", "step.phase.decide",
                 "step.phase.drift", "step.phase.seed", "step.plan.check", "step.plan.evidence", "step.plan.exec-review", "step.plan.freeze",
                 "step.plan.graph", "step.plan.holdout", "step.plan.intake", "step.plan.questions", "step.plan.review", "step.plan.settle",
-                "step.pr.ci-fix", "step.pr.docs-decide", "step.pr.docs-merge-decide", "step.pr.fix-comment", "step.pr.held-comment",
+                "step.pr.ci-fix", "step.pr.ci-log", "step.pr.docs-decide", "step.pr.docs-merge-decide", "step.pr.fix-comment", "step.pr.held-comment",
                 "step.pr.intake", "step.pr.next-comment", "step.pr.owner-comment", "step.pr.ready-check", "step.pr.reply-draft",
                 "step.pr.rework-notes", "step.pr.snapshot", "step.produce", "step.prove.before-after", "step.prove.evidence",
                 "step.prove.fail-log", "step.prove.holdout", "step.prove.holdout-log", "step.prove.intake", "step.prove.rerun-scripts",
@@ -166,10 +166,10 @@ public sealed class ShippedBlocksTests
         Assert.Empty(scope.ServiceProvider.GetServices<IStep>());   // no runtime until the block runtime (DT-J)
         // the scoping station's and the design lens loop's Steps listed here are the block runtimes of this build (BS-1, BS-4); the judge's comes with J3 and moves its contract to BlockContract
         Assert.Equal(
-            ["step.brief.seed", "step.bugfix.judge", "step.bugfix.recheck", "step.bugfix.record-candidate", "step.bugfix.start-attempt", "step.build.amend", "step.build.checks", "step.build.prepare", "step.build.red-check", "step.design.check", "step.design.evidence", "step.design.intake", "step.docs.check", "step.evidence.combine", "step.evidence.none", "step.interview.record", "step.lens.log", "step.lens.round", "step.phase.drift", "step.phase.seed", "step.plan.check", "step.plan.evidence", "step.plan.freeze", "step.plan.intake", "step.plan.questions", "step.plan.settle", "step.prove.evidence", "step.prove.fail-log", "step.prove.holdout-log", "step.prove.intake", "step.review.log", "step.review.record", "step.review.round", "step.scope.anchor", "step.scope.challenge-log", "step.scope.check", "step.scope.evidence", "step.scope.freeze", "step.scope.gather", "step.scope.intake", "step.scope.propose", "step.scope.read-brief", "step.scope.read-change", "step.scope.read-tracker", "step.scope.reanchor", "step.scope.withdraw", "step.ship.freeze", "step.ship.green", "step.ship.return"],
+            ["step.brief.seed", "step.bugfix.judge", "step.bugfix.recheck", "step.bugfix.record-candidate", "step.bugfix.start-attempt", "step.build.amend", "step.build.checks", "step.build.prepare", "step.build.red-check", "step.design.check", "step.design.evidence", "step.design.intake", "step.docs.check", "step.evidence.combine", "step.evidence.none", "step.interview.record", "step.lens.log", "step.lens.round", "step.phase.drift", "step.phase.seed", "step.plan.check", "step.plan.evidence", "step.plan.freeze", "step.plan.intake", "step.plan.questions", "step.plan.settle", "step.pr.ci-log", "step.prove.evidence", "step.prove.fail-log", "step.prove.holdout-log", "step.prove.intake", "step.review.log", "step.review.record", "step.review.round", "step.scope.anchor", "step.scope.challenge-log", "step.scope.check", "step.scope.evidence", "step.scope.freeze", "step.scope.gather", "step.scope.intake", "step.scope.propose", "step.scope.read-brief", "step.scope.read-change", "step.scope.read-tracker", "step.scope.reanchor", "step.scope.withdraw", "step.ship.freeze", "step.ship.green", "step.ship.return"],
             provider.GetServices<BlockStepRegistration>().Select(static r => r.Step.Value).Order(StringComparer.Ordinal),
             StringComparer.Ordinal);
-        Assert.Equal(49, scope.ServiceProvider.GetServices<IBlockStep>().Count());
+        Assert.Equal(50, scope.ServiceProvider.GetServices<IBlockStep>().Count());
     }
 
     [Fact, Trait("Lane", "unit")]

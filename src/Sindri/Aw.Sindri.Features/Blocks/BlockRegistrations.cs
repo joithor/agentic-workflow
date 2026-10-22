@@ -198,6 +198,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PrSteps.ReadyCheck)
         .AddBlockDescriptor(PrSteps.NextComment)
         .AddBlockDescriptor(PrSteps.HeldComment)
+        .AddBlockDescriptor(PrSteps.CiLog)
         .AddBlockDescriptor(PrSteps.CiFix)
         .AddBlockDescriptor(PrSteps.FixComment)
         .AddBlockDescriptor(PrSteps.ReplyDraft)

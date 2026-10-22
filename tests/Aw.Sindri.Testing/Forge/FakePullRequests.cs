@@ -20,6 +20,9 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     /// <summary>Gets the operations called, in order.</summary>
     public IList<string> Calls { get; } = [];
 
+    /// <summary>Gets the log CheckLog answers for a check by name; a check not listed answers "log of NAME".</summary>
+    public IDictionary<string, string> CheckLogs { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
+
     /// <summary>Gets the pull requests, with what Open and Update gave them.</summary>
     public IReadOnlyList<FakePull> Pulls => _pulls;
 
@@ -47,7 +50,7 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     public ValueTask<Result<string>> CheckLog(string link, string check, CancellationToken cancellationToken)
     {
         Calls.Add("CheckLog");
-        return Done(Locate(link).Map(_ => $"log of {check}"));
+        return Done(Locate(link).Map(_ => CheckLogs.TryGetValue(check, out var log) ? log : $"log of {check}"));
     }
 
     /// <inheritdoc />
