@@ -122,7 +122,6 @@ internal sealed partial class ShellWindow
 
     private void FocusRow(FocusRequestedEventArgs request)
     {
-        Dbg.M("FocusRow");
         _rowRequests--;
         if (request.OnlyIfLost && HasUsableFocus)
         {
@@ -149,7 +148,6 @@ internal sealed partial class ShellWindow
     // (run 4, a11y-2). Over a covering sheet the page is disabled and cannot take focus: the usual keep-focus rule applies.
     private void KeepFocusOrReannounce()
     {
-        Dbg.M("KeepFocusOrReannounce");
         var page = this.Get<Border>("Page");
         if (!page.IsEffectivelyEnabled)
         {
@@ -173,7 +171,6 @@ internal sealed partial class ShellWindow
     // or nothing has focus after something had it), focus its region's neighbour.
     private void KeepFocus()
     {
-        Dbg.M("KeepFocus");
         // A row request is pending (the pill pressed: its row asks for focus right after the pill hides): it moves focus, once.
         if (_rowRequests > 0 || HasUsableFocus || _lastFocused is not { } last)
         {

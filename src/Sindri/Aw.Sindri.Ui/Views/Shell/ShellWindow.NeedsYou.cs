@@ -44,7 +44,6 @@ internal sealed partial class ShellWindow
     // when the user is in the search field, the top bar or Mark all seen (§3.3, §5).
     private void OnNeedsYouChanged(object? sender, PropertyChangedEventArgs e)
     {
-        Dbg.M("OnNeedsYouChanged");
         if (!string.Equals(e.PropertyName, nameof(NeedsYouViewModel.SelectedId), StringComparison.Ordinal))
         {
             return;
@@ -109,14 +108,12 @@ internal sealed partial class ShellWindow
     // The inbox opened or closed: focus goes to the selected row, on the inbox or back on Home, so it is never lost.
     private void FollowInbox()
     {
-        Dbg.M("FollowInbox");
         var selected = Shell?.NeedsYou.SelectedId;
         Dispatcher.UIThread.Post(() => (selected is null ? KeepFocus : (Action)(() => FocusNeedsYouRow(selected)))(), DispatcherPriority.Loaded);
     }
 
     private void FocusNeedsYouRow(string rowId)
     {
-        Dbg.M("FocusNeedsYouRow");
         if (Shell?.IsNeedsYouInbox == true)
         {
             if (!this.Get<NeedsYouPage>("NeedsYouInboxPage").FocusRow(rowId))
