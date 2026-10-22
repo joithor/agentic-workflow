@@ -38,7 +38,7 @@ Every row carries `kind`, `identity`, `instance`, `headSha` and `at`; the kind a
 
 | Row `kind` | Written by | Fields besides the fixed ones |
 |---|---|---|
-| `start` | `step.pr.intake` | `pr`, `base` (always null: `PullView` has none), `handoffHash` (`sha256:` of `fact:handoff`, null without one), `phase` (`fact:phasePacket` id), `startedBy` (`line` when `fact:lineContext` is non-empty, else `hand`) |
+| `start` | `step.pr.intake` | `pr`, `base` (always null for now: `PullView.Base` exists since #674, but the row does not read it yet), `handoffHash` (`sha256:` of `fact:handoff`, null without one), `phase` (`fact:phasePacket` id), `startedBy` (`line` when `fact:lineContext` is non-empty, else `hand`) |
 | `snapshot` | `step.pr.snapshot`, when the outcome or the head differs from the previous `fact:prState` | `outcome`, `checks`, `queue` |
 | `push` | `effect.pr.push` | `cause`, `commits`, `comments` (empty for now), `source` |
 | `comment` | `effect.pr.reply` | `comment`, `type` (the `decision` argument's `type`), `outcome` (`replied`, `reacted`, `fixed`, `held`, `skipped`), `commit` |
@@ -52,7 +52,7 @@ A step with no instance address still runs and writes nothing.
 
 | Gap | Why |
 |---|---|
-| `base` on `PullView` | The forge port has no base or default branch, so `start.base` is null, `step.pr.snapshot` never reports `restack` and `head.ref` and `base` are not in `fact:prState` |
+| Reading `PullView.Base` | `PullView` carries `Base` since #674, but the rows don't read it yet, so `start.base` is null, `step.pr.snapshot` never reports `restack` and `head.ref` and `base` are not in `fact:prState` |
 | `restack`, `docsMerge` and `merge-docs` rows | `effect.pr.restack`, `effect.pr.create-stacked` and `effect.pr.merge-docs` are descriptors only until the engine's Retarget lands |
 | `effect.pr.open` labels | The open effect does not apply labels yet |
 | `pr-watch` poller | Nothing polls a waiting PR; `ready-check` and the `await` wake-ups wait on it |
