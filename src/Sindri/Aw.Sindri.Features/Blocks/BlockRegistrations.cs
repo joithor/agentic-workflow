@@ -54,16 +54,22 @@ internal static class BlockRegistrations
         .AddGate<RouteStartableGate>()     // engine P7 unit U1: a stub over the profile's workflow.route
         .AddEffect<ClaimRefEffect>()      // engine P6 unit (d)
         .AddEffect<NotifyDeskEffect>()    // engine P6 unit (c)
+        .AddPrEffects()
+        .AddEvent(RecipeEvents.ItemRouted)
+        .AddEvent(RecipeEvents.ClaimCreated)
+        .AddEvent(RecipeEvents.NotifyDelivered)
+        .AddPrEvents();
+
+    /// <summary>Registers the PR babysitter's and docs sync's effect runtimes (PB spec §10.1).</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    private static IServiceCollection AddPrEffects(this IServiceCollection services) => services
         .AddEffect<PrPushEffect>()        // PB-E: the lease push
         .AddEffect<PrRecordEffect>()      // PB-E: the merge record's recheck and docs rows
         .AddEffect<PrRerunChecksEffect>() // PB-E: re-run a flaky check
         .AddEffect<PrMergeEffect>()       // PB-E: the merge, expected-head checked
         .AddEffect<PrReplyEffect>()       // PB-E: replies, reactions and marks
-        .AddEffect<PrOpenEffect>()        // PB-O (BD1)
-        .AddEvent(RecipeEvents.ItemRouted)
-        .AddEvent(RecipeEvents.ClaimCreated)
-        .AddEvent(RecipeEvents.NotifyDelivered)
-        .AddPrEvents();
+        .AddEffect<PrOpenEffect>();       // PB-O (BD1)
 
     /// <summary>Registers the PR babysitter's and docs sync's events (PB spec §6.1, W25).</summary>
     /// <param name="services">The service collection.</param>
