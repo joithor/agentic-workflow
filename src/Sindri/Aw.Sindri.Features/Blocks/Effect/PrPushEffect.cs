@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Kernel;
 using Aw.Sindri.Core.Checks;
@@ -72,23 +73,28 @@ internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchCh
         }
 
         var pushed = new Pushed(request, head, [.. range.Value.Commits.Select(static c => c.Sha)], source, request.CiFixes);
-        var counted = pushed with { CiFixes = Counted(request, head, existed: false) };
-        var found = pushed with { CiFixes = Counted(request, head, existed: true) };
-        switch (sent.Value)
+        return sent.Value switch
         {
-            case PullPushOutcome.Pushed:
-                return await Reply(source ? "pushedSource" : "pushed", counted, existed: false, cancellationToken).ConfigureAwait(false);
-            case PullPushOutcome.HeadMoved:
-                var landed = await Landed(request.Link, head, cancellationToken).ConfigureAwait(false);   // why: a repeated dispatch finds its own push as a moved lease
-                return landed.IsError
-                    ? landed.Error
-                    : landed.Value
-                        ? await Reply(source ? "pushedSource" : "pushed", found, existed: true, cancellationToken).ConfigureAwait(false)
-                        : await Reply("headMoved", pushed with { Commits = [] }, existed: false, cancellationToken).ConfigureAwait(false);
-            case PullPushOutcome.Rejected:
-            default:
-                return await Reply("rejected", pushed with { Commits = [] }, existed: false, cancellationToken).ConfigureAwait(false);
+            PullPushOutcome.Pushed => await Reply(PushedOutcome(source), pushed with { CiFixes = Counted(request, head, existed: false) }, existed: false, cancellationToken).ConfigureAwait(false),
+            PullPushOutcome.HeadMoved => await AfterHeadMoved(pushed, cancellationToken).ConfigureAwait(false),
+            PullPushOutcome.Rejected or _ => await Reply("rejected", pushed with { Commits = [] }, existed: false, cancellationToken).ConfigureAwait(false),
+        };
+    }
+
+    private static string PushedOutcome(bool source) => source ? "pushedSource" : "pushed";
+
+    private async ValueTask<Result<EffectDone>> AfterHeadMoved(Pushed pushed, CancellationToken cancellationToken)
+    {
+        var request = pushed.Request;
+        var landed = await Landed(request.Link, pushed.Sha, cancellationToken).ConfigureAwait(false);   // why: a repeated dispatch finds its own push as a moved lease
+        if (landed.IsError)
+        {
+            return landed.Error;
         }
+
+        return landed.Value
+            ? await Reply(PushedOutcome(pushed.Source), pushed with { CiFixes = Counted(request, pushed.Sha, existed: true) }, existed: true, cancellationToken).ConfigureAwait(false)
+            : await Reply("headMoved", pushed with { Commits = [] }, existed: false, cancellationToken).ConfigureAwait(false);
     }
 
     // The counter after this dispatch: one more for a new ci push; a push found already made is counted once, so a retry that finds the earlier 'fact:push' (same sha) keeps it.
@@ -153,18 +159,23 @@ internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchCh
             return workspace.IsError ? workspace.Error : previous.Error;
         }
 
-        var cause = context.Arguments.TryGetValue("cause", out var text) && text.ValueKind == System.Text.Json.JsonValueKind.String ? text.GetString()! : "ci";   // why: checked to be a string just above
-        return PrEffectFacts.Link(pr.Value) is { Length: > 0 } link && PrEffectFacts.Head(lease.Value) is { Length: > 0 } seen && PrEffectFacts.Path(workspace.Value) is { Length: > 0 } path
-            ? new Request(context.Instance, context.Identity, link, seen, path, cause, CiFixesOf(previous.Value), ShaOf(previous.Value))
-            : PrEffectFacts.Missing(context, "fact:pr (a link), fact:prState (head.sha) and fact:workspace (a path)");
+        return Build(context, pr.Value, lease.Value, workspace.Value, previous.Value);
     }
+
+    private static string CauseOf(EffectContext context) =>
+        context.Arguments.TryGetValue("cause", out var text) && text.ValueKind == JsonValueKind.String ? text.GetString()! : "ci";   // why: checked to be a string just above
+
+    private static Result<Request> Build(EffectContext context, JsonElement pr, JsonElement lease, JsonElement workspace, JsonElement? previous) =>
+        PrEffectFacts.Link(pr) is { Length: > 0 } link && PrEffectFacts.Head(lease) is { Length: > 0 } seen && PrEffectFacts.Path(workspace) is { Length: > 0 } path
+            ? new Request(context.Instance, context.Identity, link, seen, path, CauseOf(context), CiFixesOf(previous), ShaOf(previous))
+            : PrEffectFacts.Missing(context, "fact:pr (a link), fact:prState (head.sha) and fact:workspace (a path)");
 
     /// <summary>The counter the previous 'fact:push' carried; 0 when the instance holds none.</summary>
     private static int CiFixesOf(JsonElement? previous) =>
-        previous is { ValueKind: System.Text.Json.JsonValueKind.Object } fact && fact.TryGetProperty("ciFixes", out var count) && count.TryGetInt32(out var value) ? value : 0;
+        previous is { ValueKind: JsonValueKind.Object } fact && fact.TryGetProperty("ciFixes", out var count) && count.TryGetInt32(out var value) ? value : 0;
 
     private static string? ShaOf(JsonElement? previous) =>
-        previous is { ValueKind: System.Text.Json.JsonValueKind.Object } fact && fact.TryGetProperty("sha", out var sha) && sha.ValueKind == System.Text.Json.JsonValueKind.String ? sha.GetString() : null;
+        previous is { ValueKind: JsonValueKind.Object } fact && fact.TryGetProperty("sha", out var sha) && sha.ValueKind == JsonValueKind.String ? sha.GetString() : null;
 
     private sealed record Request(string Instance, string Identity, string Link, string Lease, string Workspace, string Cause, int CiFixes, string? PreviousSha);
 
