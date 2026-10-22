@@ -144,7 +144,11 @@
         "ApplyCommand:answer-text",
         "ApplyCommand:takeover",
         "ApplyCommand:cancel"
-      ]
+      ],
+      "startedBy": null,
+      "startedAt": null,
+      "lineStage": null,
+      "rootAddress": null
     }
   ],
   "counts": {
