@@ -45,7 +45,7 @@ public sealed class SetupMeasuresTests : IDisposable
         var done = InMemorySetupFacts.AllDone();
         (_facts.ProfileAnswer, _facts.RecipesAnswer, _facts.McpAnswer, _facts.MapAnswer, _facts.OnyxAnswer) = (done.ProfileAnswer, done.RecipesAnswer, done.McpAnswer, done.MapAnswer, done.OnyxAnswer);
 
-        Assert.Equal(new SetupMeasured(TimeSpan.FromMinutes(15), null), await Tick());
+        Assert.Equal(new SetupMeasured(TimeSpan.FromMinutes(15), FirstItem: null), await Tick());
         Assert.Equal(new SetupMeasured(Done: null, FirstItem: null), await Tick());
     }
 
@@ -75,7 +75,7 @@ public sealed class SetupMeasuresTests : IDisposable
         _rig.Slice.Clock.Advance(TimeSpan.FromMinutes(5));
         await StartWorkflow(2);
 
-        Assert.Equal(new SetupMeasured(null, TimeSpan.FromMinutes(5)), await Tick());
+        Assert.Equal(new SetupMeasured(Done: null, TimeSpan.FromMinutes(5)), await Tick());
         Assert.Equal(new SetupMeasured(Done: null, FirstItem: null), await Tick());
     }
 }
