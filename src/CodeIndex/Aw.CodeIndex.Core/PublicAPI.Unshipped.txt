@@ -1334,3 +1334,9 @@ static Aw.CodeIndex.Core.InputRules.IsSafePath(string! path) -> bool
 static Aw.CodeIndex.Core.InputRules.SecretGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.CodeIndex.Core.Model.TreeEntry.operator !=(Aw.CodeIndex.Core.Model.TreeEntry? left, Aw.CodeIndex.Core.Model.TreeEntry? right) -> bool
 static Aw.CodeIndex.Core.Model.TreeEntry.operator ==(Aw.CodeIndex.Core.Model.TreeEntry? left, Aw.CodeIndex.Core.Model.TreeEntry? right) -> bool
+Aw.CodeIndex.Core.Planning.LanguageTable
+Aw.CodeIndex.Core.Planning.ProjectManifests
+Aw.CodeIndex.Core.Ports.ISymbolParser.Version.get -> string!
+static Aw.CodeIndex.Core.InputRules.MatchesAny(string! path, System.Collections.Generic.IEnumerable<string!>! globs) -> bool
+static Aw.CodeIndex.Core.Planning.LanguageTable.Of(string! path) -> string?
+static Aw.CodeIndex.Core.Planning.ProjectManifests.Directories(System.Collections.Generic.IEnumerable<string!>! paths) -> System.Collections.Generic.IReadOnlySet<string!>!

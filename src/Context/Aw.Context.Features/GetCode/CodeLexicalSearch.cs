@@ -84,7 +84,7 @@ internal sealed class CodeLexicalSearch(IRepoReader repos, ICodeSearch search, L
     }
 
     // The repo a file belongs to: the one its implements edge's evidence names ('repo:<name>/<path>'), when the caller may read it.
-    private static ContextRepo? RepoOf(GraphSnapshot graph, string path, IReadOnlyList<ContextRepo> allowed)
+    internal static ContextRepo? RepoOf(GraphSnapshot graph, string path, IReadOnlyList<ContextRepo> allowed)
     {
         var key = "code:" + path;
         return graph.Edges.Where(e => e.Type == EdgeType.Implements && e.From.Value == key)
@@ -132,5 +132,5 @@ internal sealed class CodeLexicalSearch(IRepoReader repos, ICodeSearch search, L
         pass.Running = null;
     }
 
-    private static bool IsSha(string? commit) => commit is { Length: >= 7 and <= 64 } && commit.All(char.IsAsciiHexDigitLower);
+    internal static bool IsSha(string? commit) => commit is { Length: >= 7 and <= 64 } && commit.All(char.IsAsciiHexDigitLower);
 }
