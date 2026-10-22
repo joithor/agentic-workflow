@@ -1334,3 +1334,10 @@ static readonly Aw.Packets.Core.PacketsErrors.SizesUnusable -> Aw.Kernel.ErrorDe
 static readonly Aw.Packets.Core.PacketsErrors.Unreadable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Packets.Core.PacketsErrors.UnsupportedSchema -> Aw.Kernel.ErrorDefinition!
 virtual Aw.Packets.Core.PacketReader.FileReader.Invoke(string! relativePath) -> Aw.Kernel.Result<System.ReadOnlyMemory<byte>?>!
+Aw.Packets.Core.ISealSource
+Aw.Packets.Core.ISealSource.Read(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Values.PacketHash>!>
+Aw.Packets.Core.SealReader
+Aw.Packets.Core.Kinds.Line.LinePacketInspector.Inspect(Aw.Packets.Core.Kinds.PacketKind! kind, string! packetDirectory, string! repoDirectory, Aw.Packets.Core.Model.SizesFile? sizes, Aw.Packets.Core.Values.PacketHash? sealedSet, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Kinds.Line.LineInspection!>!>
+static Aw.Packets.Core.SealReader.Parse(string! name, System.ReadOnlyMemory<byte> bytes) -> Aw.Kernel.Result<Aw.Packets.Core.Values.PacketHash>!
+static readonly Aw.Packets.Core.PacketsErrors.SealUnusable -> Aw.Kernel.ErrorDefinition!
+const Aw.Packets.Core.Checks.PacketRules.HoldoutSealed = "PKT-HOLD-003" -> string!

@@ -54,7 +54,7 @@ public sealed class LineChecksTests
         var plan = await Run(Kind("plan"), A.LinePacket(PacketKinds.Plan).Build());
 
         Assert.Equal(
-            ["PKT-PHS-001", "PKT-PHS-002", "PKT-PHS-003", "PKT-PHS-004", "PKT-PHS-005", "PKT-PHS-006", "PKT-PHS-007", "PKT-PHS-008", "PKT-PHS-009", "PKT-PHS-010", "PKT-PHS-011", "PKT-PHS-012", "PKT-BASE-001"],
+            ["PKT-PHS-001", "PKT-PHS-002", "PKT-PHS-003", "PKT-PHS-004", "PKT-PHS-005", "PKT-PHS-006", "PKT-PHS-007", "PKT-PHS-008", "PKT-PHS-009", "PKT-PHS-010", "PKT-PHS-011", "PKT-PHS-012", "PKT-HOLD-003", "PKT-BASE-001"],
             phase.Select(static c => c.Rule), StringComparer.Ordinal);
         Assert.Equal(["PKT-PRF-007", "PKT-PRF-008"], proof.Select(static c => c.Rule).Where(static r => Is(r, "PKT-PRF-007", "PKT-PRF-008")), StringComparer.Ordinal);
         Assert.Equal(["PKT-DSN-007", "PKT-DSN-008"], design.Select(static c => c.Rule).Where(static r => Is(r, "PKT-DSN-007", "PKT-DSN-008")), StringComparer.Ordinal);

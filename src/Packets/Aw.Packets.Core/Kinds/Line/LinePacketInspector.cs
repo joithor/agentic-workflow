@@ -2,6 +2,7 @@ using System.Text.Json;
 using Aw.Kernel;
 using Aw.Packets.Core.Checks;
 using Aw.Packets.Core.Model;
+using Aw.Packets.Core.Values;
 
 namespace Aw.Packets.Core.Kinds.Line;
 
@@ -19,8 +20,20 @@ public sealed class LinePacketInspector(ILinePacketSource source, IRepoSnapshot 
     /// <param name="cancellationToken">Cancels the reads.</param>
     /// <returns>The inspection; the read error; or AW-PACKETS-006 when the repository can't be read. A base commit
     /// missing from the repository is a PKT-BASE-001 failure, not an error.</returns>
-    public async ValueTask<Result<LineInspection>> Inspect(PacketKind kind, string packetDirectory, string repoDirectory, SizesFile? sizes, CancellationToken cancellationToken)
+    public ValueTask<Result<LineInspection>> Inspect(PacketKind kind, string packetDirectory, string repoDirectory, SizesFile? sizes, CancellationToken cancellationToken) =>
+        Inspect(kind, packetDirectory, repoDirectory, sizes, sealedSet: null, cancellationToken);
+
+    /// <summary>Reads and checks the packet in <paramref name="packetDirectory"/>, comparing a phase packet's holdout set hash with its seal (PKT-HOLD-003).</summary>
+    /// <param name="kind">A line kind.</param>
+    /// <param name="packetDirectory">The packet directory.</param>
+    /// <param name="repoDirectory">A directory inside the repository.</param>
+    /// <param name="sizes">The sizes file for a plan graph's PKT-SIZE-001; null leaves the rule unchecked.</param>
+    /// <param name="sealedSet">The hash the seal names for the phase's set; null leaves PKT-HOLD-003 unchecked.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    /// <returns>The inspection; the read error; or AW-PACKETS-006 when the repository can't be read.</returns>
+    public async ValueTask<Result<LineInspection>> Inspect(PacketKind kind, string packetDirectory, string repoDirectory, SizesFile? sizes, PacketHash? sealedSet, CancellationToken cancellationToken)
     {
+        _ = sealedSet;   // red: not read yet
         ArgumentNullException.ThrowIfNull(kind);
         var files = await source.Read(kind, packetDirectory, cancellationToken).ConfigureAwait(false);
         if (files.IsError)
