@@ -13,27 +13,27 @@ internal static class LinearResolver
     private static readonly HashSet<string> _singleArguments = new(StringComparer.Ordinal) { "id" };
 
     /// <summary>The field's value, or the GraphQL error message for a node that isn't there.</summary>
-    public static (JsonNode? Value, string? Error) Resolve(GraphQlField field)
+    public static (JsonNode? Value, string? Error) Resolve(GraphQlField field, FakeServerOptions? options = null)
     {
         if (LinearRecordings.Connections.ContainsKey(field.Name))
         {
-            return (LinearShape.Select(Connection(field), field, field.Name), null);
+            return (LinearShape.Select(Connection(field, options), field, field.Name), null);
         }
 
         if (LinearRecordings.Singles.TryGetValue(field.Name, out var connection))
         {
-            return Single(field, connection);
+            return Single(field, connection, options);
         }
 
         throw FakeRequestException.Invalid(
             $"Cannot query field \"{field.Name}\" on type \"Query\". The fake Linear server answers only: {LinearRecordings.Supported}.");
     }
 
-    private static (JsonNode? Value, string? Error) Single(GraphQlField field, string connection)
+    private static (JsonNode? Value, string? Error) Single(GraphQlField field, string connection, FakeServerOptions? options)
     {
         Known(field, _singleArguments);
         var id = Text(field, "id") ?? throw FakeRequestException.Invalid($"Field \"{field.Name}\" needs a string 'id' argument.");
-        var node = LinearRecordings.Nodes(connection).Find(n =>
+        var node = LinearRecordings.Nodes(connection, options).Find(n =>
             (string?)n["id"] == id || string.Equals((string?)n["identifier"], id, StringComparison.OrdinalIgnoreCase));
         var type = char.ToUpperInvariant(field.Name[0]) + field.Name[1..];
         return node is null
@@ -41,7 +41,7 @@ internal static class LinearResolver
             : (LinearShape.Select(node, field, field.Name), null);
     }
 
-    private static JsonObject Connection(GraphQlField field)
+    private static JsonObject Connection(GraphQlField field, FakeServerOptions? options)
     {
         Known(field, _connectionArguments);
         var filter = field.Arguments.GetValueOrDefault("filter") switch
@@ -56,12 +56,34 @@ internal static class LinearResolver
             throw FakeRequestException.Invalid($"orderBy '{order}' isn't a PaginationOrderBy; use createdAt or updatedAt.");
         }
 
-        var nodes = LinearRecordings.Nodes(field.Name)
-            .Where(n => filter is null || LinearFilter.Matches(n, filter))
-            .OrderBy(n => (string?)n[order], StringComparer.Ordinal)
-            .ThenBy(n => (string?)n["id"], StringComparer.Ordinal)
+        var found = JoinProjectTeams(LinearRecordings.Nodes(field.Name, options), field.Name, options)
+            .Where(n => filter is null || LinearFilter.Matches(n, filter));
+        var nodes = (options?.LinearNewestFirst == true
+            ? found.OrderByDescending(n => (string?)n[order], StringComparer.Ordinal).ThenBy(n => (string?)n["id"], StringComparer.Ordinal)
+            : found.OrderBy(n => (string?)n[order], StringComparer.Ordinal).ThenBy(n => (string?)n["id"], StringComparer.Ordinal))
             .ToList();
         return Page(field, nodes);
+    }
+
+    // A document or a project update belongs to a project, and Linear filters it by that project's teams ('project: { accessibleTeams: ... }'):
+    // the recordings hold only the project's id and name there, so the fake joins the teams of the project from its own recording.
+    private static List<JsonNode> JoinProjectTeams(List<JsonNode> nodes, string connection, FakeServerOptions? options)
+    {
+        if (connection is not ("documents" or "projectUpdates"))
+        {
+            return nodes;
+        }
+
+        var teams = LinearRecordings.Nodes("projects", options).ToDictionary(p => (string?)p["id"] ?? "", p => p["teams"], StringComparer.Ordinal);
+        foreach (var node in nodes)
+        {
+            if (node["project"] is JsonObject project && teams.TryGetValue((string?)project["id"] ?? "", out var joined) && joined is not null)
+            {
+                project["teams"] = joined.DeepClone();
+            }
+        }
+
+        return nodes;
     }
 
     private static JsonObject Page(GraphQlField field, List<JsonNode> nodes)

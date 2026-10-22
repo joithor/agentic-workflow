@@ -166,7 +166,7 @@ public sealed class LinearSourceContractTests : ContextSourceContract<IContextSo
     }
 
     [Fact]
-    public async Task Versions_asks_once_per_kind_and_answers_null_for_a_record_that_is_gone()
+    public async Task Versions_asks_once_per_kind_and_once_more_for_the_projects_of_documents_and_updates_and_answers_null_for_a_record_that_is_gone()
     {
         var (linear, harness) = await Start();
         var issue = (await harness.Source.Search(LinearSourceHarness.Query("keyboard"), TestContext.Current.CancellationToken)).Value.Single();
@@ -183,7 +183,7 @@ public sealed class LinearSourceContractTests : ContextSourceContract<IContextSo
         var versions = (await harness.Source.Versions(refs, TestContext.Current.CancellationToken)).Value;
 
         Assert.Equal(["2026-08-12T15:00:00.0000000Z", "2026-07-20T12:00:00.0000000Z", "2026-08-14T16:00:00.0000000Z", null, "2026-07-17T16:00:00.0000000Z"], versions.Select(v => v?.Value), StringComparer.Ordinal);
-        Assert.Equal(4, linear.Requests.Count - before);
+        Assert.Equal(6, linear.Requests.Count - before);   // four kinds, and a project read each for the documents and the updates
     }
 
     [Fact]

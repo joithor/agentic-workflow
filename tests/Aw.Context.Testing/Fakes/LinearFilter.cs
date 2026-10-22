@@ -47,6 +47,11 @@ internal static class LinearFilter
             throw FakeRequestException.Invalid($"Filter field '{key}' is applied to a scalar value; compare it with eq, in, gt and the like.");
         }
 
+        if (key == "accessibleTeams" && !o.ContainsKey(key) && o.ContainsKey("teams"))
+        {
+            key = "teams";   // Linear's ProjectFilter names a project's teams 'accessibleTeams'; the recordings call them 'teams'
+        }
+
         if (!o.TryGetPropertyValue(key, out var value))
         {
             throw FakeRequestException.Invalid(o.ContainsKey("nodes")

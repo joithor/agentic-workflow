@@ -22,7 +22,10 @@ namespace Aw.Context.Infrastructure.Linear;
 internal sealed partial class LinearClient(LinearSettings settings, LinearSourceParts parts)
 {
     private const string TokenKey = "context.sources.linear.token";
-    private readonly Lazy<Task<string?>> _key = new(() => Task.Run(() => parts.Environment(settings.Token)));
+    private const int PageSize = 250;
+    private const int MaxPages = 20;
+    private readonly Lock _keyLock = new();
+    private Task<string?>? _key;
 
     /// <summary>The checked settings.</summary>
     public LinearSettings Settings { get; } = settings;
@@ -65,7 +68,7 @@ internal sealed partial class LinearClient(LinearSettings settings, LinearSource
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            var what = _key.Value.IsCompleted
+            var what = _key is { IsCompleted: true }
                 ? $"didn't answer {operation}"
                 : $"wasn't called: the {TokenKey} pointer didn't resolve (a locked keychain, or op waiting for a sign-in?)";
             return Failed(operation, Unavailable(string.Create(CultureInfo.InvariantCulture, $"{what} within {deadline.TotalSeconds:0.###} s")), status: null);
@@ -76,16 +79,82 @@ internal sealed partial class LinearClient(LinearSettings settings, LinearSource
         }
     }
 
-    /// <summary>The resolved key, or null when the resolution failed; a resolution that throws counts as not resolved (002), never as an exception.</summary>
+    /// <summary>
+    /// Reads a list a page at a time until the wanted nodes are in hand, Linear says there are no more, or <see cref="MaxPages"/> pages were read (the log says so then).
+    /// The filter is copied for each page; <paramref name="left"/> is asked before every call, so the pages share one deadline.
+    /// </summary>
+    /// <param name="list">What to read.</param>
+    /// <param name="left">What is left of the deadline.</param>
+    /// <param name="cancellationToken">The caller's cancellation.</param>
+    /// <typeparam name="TData">The operation's data record.</typeparam>
+    /// <typeparam name="TNode">The node record.</typeparam>
+    /// <returns>The nodes in the order Linear gave them, or the first error.</returns>
+    public async ValueTask<Result<List<TNode>>> Pages<TData, TNode>(LinearList<TData, TNode> list, Func<TimeSpan> left, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(list);
+        ArgumentNullException.ThrowIfNull(left);
+        List<TNode> nodes = [];
+        string? after = null;
+        for (var page = 1; ; page++)
+        {
+            var variables = LinearFilters.Variables((JsonObject?)list.Filter?.DeepClone(), Math.Clamp(list.Want - nodes.Count, 1, PageSize), after);
+            var data = await Query<TData>(list.Operation, variables, left(), cancellationToken).ConfigureAwait(false);
+            if (data.IsError)
+            {
+                return data.Error;
+            }
+
+            var connection = list.Pick(data.Value);
+            nodes.AddRange(connection.Nodes);
+            if (nodes.Count >= list.Want || connection.PageInfo is not { HasNextPage: true, EndCursor: { } cursor })
+            {
+                return nodes.Count > list.Want ? nodes[..list.Want] : nodes;
+            }
+
+            after = cursor;
+            if (page >= MaxPages)
+            {
+                LogTruncated(parts.Logger, list.Operation, nodes.Count);
+                return nodes;
+            }
+        }
+    }
+
+    /// <summary>The resolved key, or null when the resolution failed; a resolution that throws counts as not resolved (002), never as an exception. A failed resolution is asked again on the next call.</summary>
     private async Task<string?> Key(CancellationToken cancellationToken)
     {
+        Task<string?> resolving;
+        lock (_keyLock)
+        {
+            resolving = _key ??= Task.Run(() => parts.Environment(Settings.Token), CancellationToken.None);
+        }
+
         try
         {
-            return await _key.Value.WaitAsync(cancellationToken).ConfigureAwait(false);
+            var key = await resolving.WaitAsync(cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrEmpty(key))
+            {
+                Forget(resolving);
+            }
+
+            return key;
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
+            Forget(resolving);
             return null;
+        }
+    }
+
+    // A resolution that gave nothing is not kept, so a keychain that was locked a moment ago is asked again.
+    private void Forget(Task<string?> resolving)
+    {
+        lock (_keyLock)
+        {
+            if (ReferenceEquals(_key, resolving))
+            {
+                _key = null;
+            }
         }
     }
 
@@ -97,6 +166,11 @@ internal sealed partial class LinearClient(LinearSettings settings, LinearSource
         if (status is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
         {
             return Failed(operation, KeyRefused(), code);
+        }
+
+        if (status == HttpStatusCode.TooManyRequests)
+        {
+            return Failed(operation, Unavailable("is rate limited, retry later"), code);
         }
 
         if (code >= 500)
@@ -127,6 +201,11 @@ internal sealed partial class LinearClient(LinearSettings settings, LinearSource
             return KeyRefused();
         }
 
+        if (errors.Any(static e => string.Equals(e.Extensions?.Code, "RATELIMITED", StringComparison.Ordinal)))
+        {
+            return Unavailable("is rate limited, retry later");
+        }
+
         return errors.All(e => e.Message.StartsWith("Entity not found", StringComparison.Ordinal))
             ? ContextErrors.LinearRecordNotFound.With($"Linear at {Settings.Address} has no such record.")
             : Unexpected($"answered with GraphQL errors ({string.Join("; ", errors.Take(2).Select(e => Shown(e.Message)))})");
@@ -153,6 +232,9 @@ internal sealed partial class LinearClient(LinearSettings settings, LinearSource
         LogFailed(parts.Logger, operation, status, error.Code, error.Message);
         return error;
     }
+
+    [LoggerMessage(EventId = 2, Level = LogLevel.Warning, Message = "Linear operation {Operation} was cut at {Count} nodes: more pages exist than the adapter reads")]
+    private static partial void LogTruncated(ILogger logger, string operation, int count);
 
     [LoggerMessage(EventId = 1, Level = LogLevel.Warning, Message = "Linear operation {Operation} failed (HTTP {Status}): {Code} {Reason}")]
     private static partial void LogFailed(ILogger logger, string operation, int? status, string code, string reason);
