@@ -53,6 +53,18 @@ public sealed class SetupStepsTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Profile_carries_the_preview_it_was_given_and_none_without_one()
+    {
+        SetupPreviewLine[] lines = [new("repo", "Works in demo (/work/demo).")];
+
+        var with = SetupSteps.Profile(new ProfileFact(ProfilePresence.Unapproved) { Preview = lines }, Repos("demo"));
+        var without = SetupSteps.Profile(new ProfileFact(ProfilePresence.Missing), Repos("demo"));
+
+        Assert.Equal(lines, with.Preview);
+        Assert.Null(without.Preview);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Recipes_wait_for_an_approved_profile_then_count_what_waits()
     {
         var none = SetupSteps.Recipes(new RecipesFact(0, 0), profileApproved: true);
