@@ -67,12 +67,13 @@ public sealed class SymbolsColumnTests
     }
 
     [Fact]
-    public void The_file_map_takes_its_column_from_the_answer()
+    public async Task The_file_map_takes_its_column_from_the_answer()
     {
-        var view = new FileMapView(1, "demo", "7c3e1a2", "v1", Draft: false, "", [], [], [], new FileMapTotals(0, 0, 0, 0), new SymbolsView("unavailable", "index-not-built", []));
-        var map = new FileMapViewModel(null!);
+        var clipboard = new FakeClipboard();
+        var clock = new FakeTimeProvider(A.Noon);
+        var map = new FileMapViewModel(new ContextPorts(new FakeSindriApi(), () => new Uri("http://127.0.0.1:1/"), clipboard, clock, new CatalogViewModel(clipboard, clock), _ => { }));
 
-        map.Show(view);
+        await map.Load("src/tabs/", TestContext.Current.CancellationToken);
 
         Assert.Equal("index not built", map.Symbols!.Caption);
     }
