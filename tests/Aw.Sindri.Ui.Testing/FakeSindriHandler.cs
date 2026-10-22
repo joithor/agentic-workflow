@@ -97,9 +97,11 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
             // LANE ANCHOR U8: add the workflow command routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately below this marker, never between the markers.
             var path when IsApproval(request, path) => await ApprovalRoute(request, path, cancellationToken),
             var path when IsComplete(request, path) => await CompleteRoute(request, path, cancellationToken),
+            var path when IsCommand(request, path) => await CommandRoute(request, path, cancellationToken),
             "/sindri/workflow/recipes" when request.Method == HttpMethod.Get => Answer(Counted(await server.Recipes(uri, cancellationToken), server.RecipeListAnswer)),
             "/sindri/workflow/instances" when request.Method == HttpMethod.Post =>
                 Answer(Counted(await server.StartInstance(uri, await Body<StartInstanceRequest>(request, cancellationToken), cancellationToken), server.StartAnswer)),
+            var path when IsServiceCommand(request, path) => await ServiceCommand(request, path, cancellationToken),
             "/sindri/context/map/refresh" when request.Method == HttpMethod.Post => Answer(Counted(await server.RefreshContextMap(uri, cancellationToken), server.RefreshContextMapAnswer)),
             { } path when path.StartsWith("/sindri/context/", StringComparison.Ordinal) => await ContextRoute(request, cancellationToken),
             // LANE ANCHOR U11a: the session reads, as arms above the workflow-read arm. Insert immediately below this marker, never between the markers.
