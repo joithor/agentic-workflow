@@ -12,5 +12,6 @@ public static class EngineStuck
     /// <param name="now">The time to measure the wait against.</param>
     /// <returns>True when it waits on a signal or update for <see cref="After"/> or longer and has no timer.</returns>
     public static bool Is(EngineWaiting? waiting, int timers, DateTimeOffset now) =>
-        waiting is { Kind: EngineWaitKinds.Signal or EngineWaitKinds.Update } wait && timers == 0 && now - wait.Since >= After;
+        waiting is { } wait && (string.Equals(wait.Kind, EngineWaitKinds.Signal, StringComparison.Ordinal) || string.Equals(wait.Kind, EngineWaitKinds.Update, StringComparison.Ordinal))
+        && timers == 0 && now - wait.Since >= After;
 }

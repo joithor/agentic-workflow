@@ -26,8 +26,8 @@ public static class EngineProjection
         ArgumentNullException.ThrowIfNull(running);
         List<EngineInstanceFacts> list = [.. running];
         return new EnginePending(
-            list.Count(static i => i.Waiting is { Kind: EngineWaitKinds.Update }),
-            list.Count(static i => i.Waiting is { Kind: EngineWaitKinds.Signal }),
+            list.Count(static i => i.Waiting is { } w && string.Equals(w.Kind, EngineWaitKinds.Update, StringComparison.Ordinal)),
+            list.Count(static i => i.Waiting is { } w && string.Equals(w.Kind, EngineWaitKinds.Signal, StringComparison.Ordinal)),
             Stuck(list, now),
             ContinueAsNew: 0);
     }
