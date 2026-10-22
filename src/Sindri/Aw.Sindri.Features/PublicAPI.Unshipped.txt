@@ -4390,6 +4390,47 @@ static Aw.Sindri.Features.ContextCalls.PublishContextMapRequest.operator !=(Aw.S
 static Aw.Sindri.Features.ContextCalls.PublishContextMapRequest.operator ==(Aw.Sindri.Features.ContextCalls.PublishContextMapRequest? left, Aw.Sindri.Features.ContextCalls.PublishContextMapRequest? right) -> bool
 static Aw.Sindri.Features.ContextCalls.PublishContextMapResult.operator !=(Aw.Sindri.Features.ContextCalls.PublishContextMapResult? left, Aw.Sindri.Features.ContextCalls.PublishContextMapResult? right) -> bool
 static Aw.Sindri.Features.ContextCalls.PublishContextMapResult.operator ==(Aw.Sindri.Features.ContextCalls.PublishContextMapResult? left, Aw.Sindri.Features.ContextCalls.PublishContextMapResult? right) -> bool
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexRequest
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexRequest.<Clone>$() -> Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexRequest!
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexRequest.Equals(Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexRequest? other) -> bool
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexRequest.BuildCodeIndexRequest(string! Repo, string! Commit) -> void
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexRequest.Deconstruct(out string! Repo, out string! Commit) -> void
+override Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexRequest.GetHashCode() -> int
+override Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexRequest.ToString() -> string!
+static Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexRequest.operator !=(Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexRequest? left, Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexRequest? right) -> bool
+static Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexRequest.operator ==(Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexRequest? left, Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexRequest? right) -> bool
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexRequest.Repo.get -> string!
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexRequest.Repo.init -> void
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexRequest.Commit.get -> string!
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexRequest.Commit.init -> void
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.<Clone>$() -> Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult!
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Equals(Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult? other) -> bool
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.BuildCodeIndexResult(string! Repo, string? Commit, string! Outcome, int Files, int Symbols, int Edges, bool Incremental, long Milliseconds) -> void
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Deconstruct(out string! Repo, out string? Commit, out string! Outcome, out int Files, out int Symbols, out int Edges, out bool Incremental, out long Milliseconds) -> void
+override Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Equals(object? obj) -> bool
+override Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.GetHashCode() -> int
+override Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.ToString() -> string!
+static Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.operator !=(Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult? left, Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult? right) -> bool
+static Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.operator ==(Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult? left, Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult? right) -> bool
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Repo.get -> string!
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Repo.init -> void
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Commit.get -> string?
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Commit.init -> void
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Outcome.get -> string!
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Outcome.init -> void
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Files.get -> int
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Files.init -> void
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Symbols.get -> int
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Symbols.init -> void
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Edges.get -> int
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Edges.init -> void
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Incremental.get -> bool
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Incremental.init -> void
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Milliseconds.get -> long
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Milliseconds.init -> void
+const Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Deferred = "deferred" -> string!
 Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest
 Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest.<Clone>$() -> Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest!
 Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest.Deconstruct(out string? Repo) -> void
