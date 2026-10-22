@@ -15,6 +15,7 @@ using Aw.Sindri.Core.Mcp;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Packets;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Prove;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Secrets;
@@ -42,6 +43,7 @@ using Aw.Sindri.Infrastructure.Onyx;
 using Aw.Sindri.Infrastructure.Packets;
 using Aw.Sindri.Infrastructure.Processes;
 using Aw.Sindri.Infrastructure.Profile;
+using Aw.Sindri.Infrastructure.Prove;
 using Aw.Sindri.Infrastructure.Scoping;
 using Aw.Sindri.Infrastructure.Secrets;
 using Aw.Sindri.Infrastructure.Sessions;
@@ -69,7 +71,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
 
     /// <summary>Engine P8: the diff signal of an agent run (git) and an agent session's end and spend (the ledger).</summary>
     private static IServiceCollection AddAgentRuntimeAdapters(this IServiceCollection services) =>
-        services.AddSingleton<IRunDiff, GitRunDiff>().AddSingleton<IAgentSessions, LedgerAgentSessions>()
+        services.AddSingleton<IRunDiff, GitRunDiff>().AddSingleton<IProofScripts, BashProofScripts>().AddSingleton<IAgentSessions, LedgerAgentSessions>()
             .AddSingleton<ILensPackSource, EmbeddedLensPackSource>().AddSingleton<ILensPacks, ProfileLensPacks>().AddSingleton<IChangedPaths, GitChangedPaths>();   // LN-PK lite: the built-in lens packs and the review loop's changed paths
 
     /// <summary>The bugfix block Steps' port over the bugfix-state program (deps.yaml Sindri to BugFix, kind cli).</summary>
