@@ -25,7 +25,7 @@ internal sealed partial class InstanceFrameViewModel
             return;
         }
 
-        var grant = new GrantTokensViewModel(api, catalog, clock, () => _url, id, detail.Address, answer.Cli);
+        var grant = new GrantTokensViewModel(api, catalog, clock, () => _url, (id, detail.Address), answer.Cli);
         grant.Granted += async (_, _) => await AfterGrant().ConfigureAwait(true);
         (Grant, _grantSignature) = (grant, signature);
     }
@@ -33,7 +33,7 @@ internal sealed partial class InstanceFrameViewModel
     // The grant was applied: read the instance again, so the park is gone from the frame.
     private async Task AfterGrant()
     {
-        if (_url is { } url)
+        if (_url is not null)
         {
             await Read(CancellationToken.None).ConfigureAwait(true);
         }

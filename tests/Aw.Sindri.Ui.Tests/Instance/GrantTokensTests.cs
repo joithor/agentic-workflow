@@ -1,8 +1,7 @@
+using System.Globalization;
 using System.Net;
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Ui.Api;
-using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.Tests.Controls;
 using Aw.Sindri.Ui.ViewModels.Confirmations;
@@ -26,16 +25,16 @@ public sealed class GrantTokensTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private GrantTokensViewModel Grant(string ui = "ready") => new(_server, _f.Catalog(ui), _f.Clock, () => _api, "WFI-44393da815f188cea9c6fe30ae2a30a6", Address, Served);
+    private GrantTokensViewModel Grant(string ui = "ready") => new(_server, _f.Catalog(ui), _f.Clock, () => _api, ("WFI-44393da815f188cea9c6fe30ae2a30a6", Address), Served);
 
-    private void Serves(string action, int minHoldMs = 1500) => _server.AppChallengeAnswer = new RouteAnswer(HttpStatusCode.OK, 
-        $$"""{"challenge":"CHL-00000000000000000000000000000003","action":"{{action}}","expiresAt":"2026-01-01T00:05:00+00:00","confirm":"held","minHoldMs":{{minHoldMs}},"typedAlternative":"{{action}}"}""");
+    private void Serves(string action, int minHoldMs = 1500) => _server.AppChallengeAnswer = new RouteAnswer(HttpStatusCode.OK,
+        string.Create(CultureInfo.InvariantCulture, $$"""{"challenge":"CHL-00000000000000000000000000000003","action":"{{action}}","expiresAt":"2026-01-01T00:05:00+00:00","confirm":"held","minHoldMs":{{minHoldMs}},"typedAlternative":"{{action}}"}"""));
 
     [Fact]
     public void The_app_confirms_the_token_grant_itself()
     {
         Assert.Equal(AppConfirm.GrantTokens, AppConfirm.Require(AppConfirm.GrantTokens));
-        Assert.Contains(AppConfirm.GrantTokens, AppConfirm.Actions);
+        Assert.Contains(AppConfirm.GrantTokens, AppConfirm.Actions, StringComparer.Ordinal);
     }
 
     [Fact]
@@ -196,7 +195,11 @@ public sealed class GrantTokensTests
         var node = GoldenFiles.Node("workflow-instance", "item-produce");
         node["current"]!["status"]!["answer"] = new JsonObject
         {
-            ["kind"] = "grantTokens", ["actionId"] = "answer-grant-tokens", ["class"] = "protected", ["cli"] = "sindri workflow answer ITM-01JE7/item/1/step.4 --grant-tokens 1M", ["atTerminal"] = false,
+            ["kind"] = "grantTokens",
+            ["actionId"] = "answer-grant-tokens",
+            ["class"] = "protected",
+            ["cli"] = "sindri workflow answer ITM-01JE7/item/1/step.4 --grant-tokens 1M",
+            ["atTerminal"] = false,
         };
         _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, node.ToJsonString());
         var frame = new GrantFrame(_server, _f).Frame;
@@ -204,7 +207,7 @@ public sealed class GrantTokensTests
         await frame.Open(_api, (string)node["address"]!, (string)node["id"]!, Token);
 
         Assert.Equal("1M", frame.Grant!.Suggested);
-        Assert.Equal(true, frame.Grant.IsReady);
+        Assert.True(frame.Grant.IsReady);
     }
 
     [Fact]

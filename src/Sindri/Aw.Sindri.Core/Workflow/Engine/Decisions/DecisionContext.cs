@@ -40,6 +40,12 @@ public sealed record DecisionContext(
     public bool PooledBudget { get; init; }
 
     /// <summary>
+    /// Whether a Step whose launch failed still counts a loop round (the behavior before the 'launch-failure-keeps-round-v1' patch, which a history recorded without the
+    /// marker replays). Off: the round stays, and the third failed launch in a row parks.
+    /// </summary>
+    public bool LegacyLaunchRound { get; init; }
+
+    /// <summary>
     /// Where this build runs a Step that is not at the desk (P8 D5, one map): <see cref="StepRuntime.Block"/> for a registered block runtime whose descriptor says
     /// <see cref="BlockRuntime.Block"/>, <see cref="StepRuntime.Agent"/> for a Step an agent session runs. A Step in neither is at the desk when it is deskCapable.
     /// </summary>

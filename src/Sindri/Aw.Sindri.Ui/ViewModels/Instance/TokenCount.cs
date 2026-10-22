@@ -13,8 +13,7 @@ internal static class TokenCount
     {
         tokens = 0;
         var trimmed = text?.Trim() ?? string.Empty;
-        var scale = trimmed.EndsWith('M') ? 1_000_000L : trimmed.EndsWith('k') ? 1_000L : 1L;
-        var digits = scale == 1 ? trimmed : trimmed[..^1];
+        var (scale, digits) = trimmed.EndsWith('M') ? (1_000_000L, trimmed[..^1]) : trimmed.EndsWith('k') ? (1_000L, trimmed[..^1]) : (1L, trimmed);
         if (digits.Length == 0 || !long.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out var count) || count > int.MaxValue || count * scale is < 1 or > int.MaxValue)
         {
             return false;

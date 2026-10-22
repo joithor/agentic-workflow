@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.idea-to-brief
-version: 2
+version: 3
 description: "Block recipe: turn a rough idea typed in the app into a cited brief through a short interview."
+displayName: "Turn a rough idea into a brief"
 inputs:
   - { key: fact:idea,      label: "The idea",        type: payload, kind: payload }
 outputs:

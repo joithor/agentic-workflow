@@ -2,7 +2,6 @@ using System.Globalization;
 using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
-using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.Components;
 using Aw.Sindri.Ui.ViewModels.Confirmations;
 using Aw.Sindri.Ui.ViewModels.Controls;
@@ -32,22 +31,21 @@ internal sealed class GrantTokensViewModel : ObservableObject
     /// <param name="catalog">The command catalog: its grant-tokens row says whether the app may confirm.</param>
     /// <param name="clock">The clock for the hold, the challenge's expiry and the terminal copy.</param>
     /// <param name="url">The API now, or null when none is running.</param>
-    /// <param name="instanceId">The instance's id (the route).</param>
-    /// <param name="address">The instance's address (the challenge's subject).</param>
+    /// <param name="instance">The instance's id (the route) and its address (the challenge's subject).</param>
     /// <param name="served">The status answer's served command line, which carries the suggested amount ("--grant-tokens 1M").</param>
     /// <param name="reducedMotion">True when motion is reduced.</param>
-    internal GrantTokensViewModel(ISindriApi api, CatalogViewModel catalog, TimeProvider clock, Func<Uri?> url, string instanceId, string address, string served, Func<bool>? reducedMotion = null)
+    internal GrantTokensViewModel(ISindriApi api, CatalogViewModel catalog, TimeProvider clock, Func<Uri?> url, (string InstanceId, string Address) instance, string served, Func<bool>? reducedMotion = null)
     {
         ArgumentNullException.ThrowIfNull(api);
         ArgumentNullException.ThrowIfNull(catalog);
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(url);
-        (_api, _clock, _url, _instanceId, _address) = (api, clock, url, instanceId, address);
+        (_api, _clock, _url, _instanceId, _address) = (api, clock, url, instance.InstanceId, instance.Address);
         Suggested = SuggestionOf(served);
         Amount = Suggested;
         Hold = new HoldButtonViewModel(AppConfirm.GrantTokens, catalog, clock, reducedMotion) { Gate = BeginGate };
         TypedBox = new TypedConfirmBoxViewModel(AppConfirm.GrantTokens, catalog, clock);
-        Terminal = Hold.IsReady ? null : new ProtectedActionViewModel(new ProtectedAction(Labels.TerminalVerb(AppConfirm.GrantTokens), served, address), catalog.Clipboard, clock);
+        Terminal = Hold.IsReady ? null : new ProtectedActionViewModel(new ProtectedAction(Labels.TerminalVerb(AppConfirm.GrantTokens), served, instance.Address), catalog.Clipboard, clock);
         Hold.Cancelled += (_, _) => Notice = Labels.ApproveHoldAgain;
     }
 

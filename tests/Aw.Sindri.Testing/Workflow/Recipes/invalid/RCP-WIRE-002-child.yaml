@@ -11,3 +11,4 @@ transitions:
   - { from: run, to: done, on: wait.satisfied, when: { outcome: resolved }, produces: [fact:findings] }
   - { from: run, to: dropped, on: wait.satisfied, when: { outcome: unresolved } }
   - { from: run, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
+displayName: Test recipe

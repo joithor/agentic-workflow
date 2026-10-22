@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.docs-sync
-version: 2
+version: 3
 description: "Block recipe: update the docs a pull request leaves stale, in its own worktree, as a docs PR stacked on that pull request's head branch."
+displayName: "Update the docs a pull request leaves stale"
 inputs:
   - { key: fact:pr,          label: "Source pull request", type: link, kind: link }
   - { key: fact:phasePacket, label: "Phase packet (empty when started by hand)", type: packet, kind: packet }
