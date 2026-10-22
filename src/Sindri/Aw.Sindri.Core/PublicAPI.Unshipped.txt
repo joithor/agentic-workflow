@@ -15120,11 +15120,13 @@ Aw.Sindri.Core.NeedsYou.NeedsYouRow.Timeout.get -> Aw.Sindri.Core.Workflow.Views
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Timeout.init -> void
 Aw.Sindri.Core.NeedsYou.NeedsYouStop
 Aw.Sindri.Core.NeedsYou.NeedsYouStop.<Clone>$() -> Aw.Sindri.Core.NeedsYou.NeedsYouStop!
-Aw.Sindri.Core.NeedsYou.NeedsYouStop.Deconstruct(out int N, out int Of) -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouStop.Deconstruct(out int N, out int Of, out string! State) -> void
 Aw.Sindri.Core.NeedsYou.NeedsYouStop.Equals(Aw.Sindri.Core.NeedsYou.NeedsYouStop? other) -> bool
 Aw.Sindri.Core.NeedsYou.NeedsYouStop.N.get -> int
 Aw.Sindri.Core.NeedsYou.NeedsYouStop.N.init -> void
-Aw.Sindri.Core.NeedsYou.NeedsYouStop.NeedsYouStop(int N, int Of) -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouStop.NeedsYouStop(int N, int Of, string! State) -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouStop.State.get -> string!
+Aw.Sindri.Core.NeedsYou.NeedsYouStop.State.init -> void
 Aw.Sindri.Core.NeedsYou.NeedsYouStop.Of.get -> int
 Aw.Sindri.Core.NeedsYou.NeedsYouStop.Of.init -> void
 override Aw.Sindri.Core.NeedsYou.NeedsYouStop.Equals(object? obj) -> bool
