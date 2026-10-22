@@ -18,8 +18,6 @@ public sealed class SetupMeasuresTests : IDisposable
 
     private async Task<SetupMeasured> Tick()
     {
-        await _rig.Lease();
-        _rig.Enter();
         var steps = await new SetupDeriver(_facts).Derive(AddRepoRig.Token);
         var recorder = new SetupStepRecorder(_rig.Slice.Held, _rig.Slice.Store, _rig.Slice.Store, _rig.Slice.Events, _rig.Slice.Callers, _log);
         var appended = (await recorder.Record(steps, AddRepoRig.Token)).Value;
@@ -35,6 +33,8 @@ public sealed class SetupMeasuresTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Done_is_the_time_from_the_first_look_to_the_change_that_finished_every_step()
     {
+        _ = await _rig.Slice.HoldLease();
+        _rig.Enter();
         Assert.Equal(new SetupMeasured(Done: null, FirstItem: null), await Tick());
 
         _rig.Slice.Clock.Advance(TimeSpan.FromMinutes(12));
@@ -52,6 +52,8 @@ public sealed class SetupMeasuresTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task A_process_that_starts_on_a_finished_setup_measures_nothing()
     {
+        _ = await _rig.Slice.HoldLease();
+        _rig.Enter();
         var done = InMemorySetupFacts.AllDone();
         (_facts.RepoAnswer, _facts.ProfileAnswer, _facts.RecipesAnswer, _facts.McpAnswer, _facts.MapAnswer, _facts.OnyxAnswer) = (done.RepoAnswer, done.ProfileAnswer, done.RecipesAnswer, done.McpAnswer, done.MapAnswer, done.OnyxAnswer);
         _ = await Tick();
@@ -65,7 +67,8 @@ public sealed class SetupMeasuresTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task First_item_is_the_time_from_done_to_the_first_workflow_start_after_it_and_is_measured_once()
     {
-        await _rig.Lease();
+        _ = await _rig.Slice.HoldLease();
+        _rig.Enter();
         await StartWorkflow();
         var done = InMemorySetupFacts.AllDone();
         (_facts.RepoAnswer, _facts.ProfileAnswer, _facts.RecipesAnswer, _facts.McpAnswer, _facts.MapAnswer, _facts.OnyxAnswer) = (done.RepoAnswer, done.ProfileAnswer, done.RecipesAnswer, done.McpAnswer, done.MapAnswer, done.OnyxAnswer);
