@@ -3,8 +3,8 @@ using Aw.CodeIndex.Core;
 using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Values;
-using Aw.CodeIndex.Tests.Build;
 using Aw.CodeIndex.Testing;
+using Aw.CodeIndex.Tests.Build;
 
 namespace Aw.CodeIndex.Tests.Similarity;
 
