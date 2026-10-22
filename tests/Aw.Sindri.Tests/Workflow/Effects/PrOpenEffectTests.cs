@@ -65,6 +65,27 @@ public sealed class PrOpenEffectTests
     }
 
     [Fact]
+    public async Task The_head_branch_is_pushed_before_the_pull_request_is_looked_for()
+    {
+        _ = await Dispatch();
+
+        Assert.Equal(new PullBranchPush(_repo, Workspace, "sindri/l1/p1", Sha, LeaseSha: null), Assert.Single(_pulls.Pushed));
+    }
+
+    [Theory]
+    [InlineData(PullPushOutcome.HeadMoved)]
+    [InlineData(PullPushOutcome.Rejected)]
+    public async Task A_branch_push_that_does_not_land_replies_refused_and_opens_nothing(PullPushOutcome outcome)
+    {
+        _pulls.PushOutcome = outcome;
+
+        var done = await Dispatch();
+
+        Assert.Equal("refused", done.Reply?.Value);
+        Assert.Empty(_pulls.Opened);
+    }
+
+    [Fact]
     public async Task Dispatching_twice_opens_one_pull_request()
     {
         _ = await Dispatch();

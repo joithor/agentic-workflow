@@ -16,7 +16,7 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 /// 'effect.pr.open' (line spec §7.5, PB spec BD1): opens the phase's pull request from the frozen hand-off ('fact:handoff' names the packet directory holding pr.json and body.md;
 /// 'fact:workspace' is the phase worktree, whose 'origin' names the repository), or updates the open one for the same head branch after a rework. It replies 'pr.opened' with
 /// 'opened' or 'updated' and 'fact:pr' ({ link, number, state, base, head }); a forge that refuses the call replies 'refused', and any other forge failure fails the effect. The
-/// head branch must already be on the remote at the hand-off's head (the forge port opens, it doesn't push). The pull request is found again by its head branch and a marker
+/// head branch is pushed first (PushBranch); a moved or rejected push replies 'refused'. The pull request is found again by its head branch and a marker
 /// derived from it, so a retry or a second dispatch opens nothing twice.
 /// </summary>
 /// <param name="pulls">The forge.</param>
@@ -49,10 +49,25 @@ internal sealed class PrOpenEffect(IPullRequests pulls, IForgeRepos repos, IPack
             return plan.Error;
         }
 
-        var done = await OpenOrUpdate(plan.Value, cancellationToken).ConfigureAwait(false);
+        var done = await Push(plan.Value, cancellationToken).ConfigureAwait(false);
         return done.IsError && string.Equals(done.Error.Code, SindriErrors.ForgeRefused.Code, StringComparison.Ordinal)
             ? new EffectDone(_refused, Existed: false)
             : done;
+    }
+
+    /// <summary>Pushes the head branch at the hand-off's head first (the forge opens a pull request only for a branch that is on the remote); a moved or rejected push is a refusal.</summary>
+    private async ValueTask<Result<EffectDone>> Push((OpenPull Request, string Workspace) plan, CancellationToken cancellationToken)
+    {
+        var (wanted, workspace) = plan;
+        var pushed = await pulls.PushBranch(new PullBranchPush(wanted.Repo, workspace, wanted.Head, wanted.HeadSha, LeaseSha: null), cancellationToken).ConfigureAwait(false);
+        if (pushed.IsError)
+        {
+            return pushed.Error;
+        }
+
+        return pushed.Value == PullPushOutcome.Pushed
+            ? await OpenOrUpdate(wanted, cancellationToken).ConfigureAwait(false)
+            : new EffectDone(_refused, Existed: false);
     }
 
     /// <summary>Finds the open pull request for the head, and updates it, or opens one.</summary>
@@ -93,7 +108,7 @@ internal sealed class PrOpenEffect(IPullRequests pulls, IForgeRepos repos, IPack
     }
 
     /// <summary>What to open: the hand-off's pr.json and body.md, the workspace's repository, and the profile's draft setting.</summary>
-    private async ValueTask<Result<OpenPull>> Plan(EffectContext context, CancellationToken cancellationToken)
+    private async ValueTask<Result<(OpenPull Request, string Workspace)>> Plan(EffectContext context, CancellationToken cancellationToken)
     {
         var handoff = await Fact(context, "fact:handoff", cancellationToken).ConfigureAwait(false);
         var workspace = await Fact(context, "fact:workspace", cancellationToken).ConfigureAwait(false);
@@ -119,8 +134,10 @@ internal sealed class PrOpenEffect(IPullRequests pulls, IForgeRepos repos, IPack
             return Fail($"the hand-off in {dir} has no readable body.md: {body.Error.Message}");
         }
 
-        var repo = await repos.OfWorkspace(Path(workspace.Value), cancellationToken).ConfigureAwait(false);
-        return repo.IsError ? repo.Error : await Request(Parse(pr.Value), body.Value, repo.Value, cancellationToken).ConfigureAwait(false);
+        var path = Path(workspace.Value);
+        var repo = await repos.OfWorkspace(path, cancellationToken).ConfigureAwait(false);
+        var request = repo.IsError ? default : await Request(Parse(pr.Value), body.Value, repo.Value, cancellationToken).ConfigureAwait(false);
+        return repo.IsError ? repo.Error : request.IsError ? request.Error : (request.Value, path);
     }
 
     private async ValueTask<Result<OpenPull>> Request(JsonObject? pr, string body, PullRepo repo, CancellationToken cancellationToken)

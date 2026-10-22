@@ -18,6 +18,12 @@ public sealed class FakePullRequests : IPullRequests
     /// <summary>The requests Open received, in order.</summary>
     public List<OpenPull> Opened { get; } = [];
 
+    /// <summary>The branch pushes PushBranch received, in order.</summary>
+    public List<PullBranchPush> Pushed { get; } = [];
+
+    /// <summary>What PushBranch answers.</summary>
+    public PullPushOutcome PushOutcome { get; set; } = PullPushOutcome.Pushed;
+
     /// <summary>The (link, title, body) triples Update received, in order.</summary>
     public List<(string Link, string? Title, string? Body)> Updated { get; } = [];
 
@@ -29,6 +35,18 @@ public sealed class FakePullRequests : IPullRequests
         var pull = new OpenedPull($"https://{request.Repo.Host}/{request.Repo.Owner}/{request.Repo.Name}/pull/{(_open.Count + 1).ToString(System.Globalization.CultureInfo.InvariantCulture)}", _open.Count + 1);
         _open.Add((request, pull));
         return pull;
+    }
+
+    /// <inheritdoc/>
+    public ValueTask<Result<PullPushOutcome>> PushBranch(PullBranchPush push, CancellationToken cancellationToken)
+    {
+        if (Failure is { } failure)
+        {
+            return ValueTask.FromResult<Result<PullPushOutcome>>(failure);
+        }
+
+        Pushed.Add(push);
+        return ValueTask.FromResult<Result<PullPushOutcome>>(PushOutcome);
     }
 
     /// <inheritdoc/>
