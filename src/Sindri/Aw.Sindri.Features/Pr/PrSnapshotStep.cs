@@ -13,7 +13,7 @@ namespace Aw.Sindri.Features.Pr;
 /// spec's order, with 'fact:prState' on every outcome and 'fact:mergedSha' when merged. The fact is the pull request view in camelCase (link, state, headSha, mergeable,
 /// reviewDecision, unresolvedThreads, checks { state, sha, failing }), 'pullState' (open, closed or merged), 'comments' (the threads, oldest first, as the queue Steps parse
 /// them), 'self' (null), 'queue' counts, 'mergeBlockedBy' and 'at'. 'state' is 'green' when the outcome is green (the merge gate reads it), else the pull request's own state.
-/// Each comment carries its latest mark (outcome, reason, commit, at) from the comment marks, queue.held counts the comments whose latest mark is 'hold', and 'stale' says the checks ran on another commit than the head.
+/// Each comment carries its latest mark (outcome, reason, commit, at) from the comment marks, queue.held counts the comments whose latest mark is 'hold'; a marked comment is handled and is not in queue.unhandled or the 'comments' outcome, and 'stale' says the checks ran on another commit than the head.
 /// Not read yet, for want of a port: the base branch (restack), the docs pull request (mergedDocsOpen, docsRed) and the workspace.
 /// </summary>
 /// <param name="pulls">The forge, through Sindri's port.</param>
@@ -54,7 +54,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
             return BlockStepResult.Failed($"step.pr.snapshot can't read the comment marks of {link}: {latest.Error.Message}");
         }
 
-        var work = threads.Value.Where(static t => !t.Resolved && !Own(t)).ToList();   // the forge port has no login, so Sindri's replies are told apart by their markers alone
+        var work = threads.Value.Where(t => !t.Resolved && !Own(t) && !latest.Value.ContainsKey(t.Key)).ToList();   // a marked comment is handled (spec: a mark not superseded by an edit); the forge port has no login, so Sindri's replies are told apart by their markers alone
         var outcome = Outcome(pull.Value, work.Count);
         var state = State(pull.Value, outcome, threads.Value, work, latest.Value);
         return outcome is "merged"
@@ -145,7 +145,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
             ["queue"] = new JsonObject
             {
                 ["unhandled"] = work.Count,
-                ["held"] = threads.Count(t => marked.TryGetValue(t.Key, out var m) && string.Equals(m.Outcome, "hold", StringComparison.Ordinal)),
+                ["held"] = threads.Count(t => !t.Resolved && !Own(t) && marked.TryGetValue(t.Key, out var m) && string.Equals(m.Outcome, "hold", StringComparison.Ordinal)),
                 ["untrusted"] = work.Count(static t => !t.IsBot && !_trusted.Contains(t.Association, StringComparer.OrdinalIgnoreCase)),
                 ["bots"] = work.Count(static t => t.IsBot),
             },
