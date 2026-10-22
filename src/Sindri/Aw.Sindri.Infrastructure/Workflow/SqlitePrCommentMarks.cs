@@ -27,7 +27,7 @@ internal sealed class SqlitePrCommentMarks(LedgerDatabase database) : IPrComment
     public ValueTask<Result<IReadOnlyList<PrCommentMark>>> Latest(PrRef pr, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(pr);
-        return RecipeSessions.Read(database, LedgerDatabase.PrCommentMarksVersion, (IReadOnlyList<PrCommentMark>)[],
+        return RecipeSessions.Read(database, LedgerDatabase.PrCommentMarksVersion, [],
             (session, token) => RecipeSessions.List(session, new SqlStatement(PrCommentMarkSql.SelectLatest, c => ByPr(c, pr)), PrCommentMarkMapper.Instance, token), cancellationToken);
     }
 
