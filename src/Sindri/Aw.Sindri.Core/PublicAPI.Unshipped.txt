@@ -15238,3 +15238,4 @@ const Aw.Sindri.Core.Launch.LaunchEnvironment.Worktree = "AW_SINDRI_WORKTREE" ->
 Aw.Sindri.Core.Launch.LaunchEnvironment
 static Aw.Sindri.Core.Launch.LaunchEnvironment.Credentials.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Sindri.Core.Launch.LaunchEnvironment.Scrub(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! env, string! worktree, string! ghConfigDir) -> System.Collections.Generic.Dictionary<string!, string!>!
+static readonly Aw.Sindri.Core.SindriErrors.LaunchPushRefused -> Aw.Kernel.ErrorDefinition!

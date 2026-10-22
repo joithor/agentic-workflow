@@ -32,7 +32,7 @@ public sealed class PrePushGuardTests : IDisposable
         var hook = HookPath(repo);
         var refused = await RunHook(hook, worktree: "/work/wt");
         Assert.Equal(1, refused.Exit);
-        Assert.Contains("SND-LAUNCH-022", refused.Error, StringComparison.Ordinal);
+        Assert.Contains(SindriErrors.LaunchPushRefused.Code, refused.Error, StringComparison.Ordinal);
     }
 
     [Fact]
