@@ -50,7 +50,7 @@ public enum SymbolKind
     [JsonStringEnumMemberName("enum")]
     Enum,
 
-    /// <summary>A node graphify named; no parser, no clone rows.</summary>
+    /// <summary>A function or method node graphify named in a file no parser covers; no clone rows. Its text is its source span up to the next graph symbol (graphify gives no end line). A graphify class node is stored as <see cref="Class"/> instead.</summary>
     [JsonStringEnumMemberName("graph-symbol")]
     GraphSymbol,
 }

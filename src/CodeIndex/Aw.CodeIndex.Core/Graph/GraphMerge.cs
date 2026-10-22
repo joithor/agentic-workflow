@@ -6,7 +6,7 @@ using Aw.CodeIndex.Core.Values;
 namespace Aw.CodeIndex.Core.Graph;
 
 /// <summary>
-/// Turns a checked graph into index rows (spec §5.5): each node in a file no parser covers becomes a 'graph-symbol' symbol (no
+/// Turns a checked graph into index rows (spec §5.5): each node in a file no parser covers becomes a 'graph-symbol' symbol, or a 'class' symbol when graphify marks it a class (no
 /// signature, no clone rows, end line = its line) and each call edge a 'graphify' edge whose confidence follows graphify's word
 /// (EXTRACTED is certain, anything else likely). Nodes in C# files are ignored: the syntax edges describe those.
 /// </summary>
