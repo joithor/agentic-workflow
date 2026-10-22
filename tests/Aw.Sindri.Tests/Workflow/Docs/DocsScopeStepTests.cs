@@ -185,39 +185,27 @@ public sealed class DocsScopeStepTests
 
     [Fact]
     public async Task A_doc_naming_a_type_the_diff_adds_is_listed()
-    {
-        Assert.Equal(["docs/guide.md"], await Listed(new Rig(), "# Guide\nThe WidgetRegistry holds them.\n", "public sealed class WidgetRegistry : IRegistry"));
-    }
+        => Assert.Equal(["docs/guide.md"], await Listed(new Rig(), "# Guide\nThe WidgetRegistry holds them.\n", "public sealed class WidgetRegistry : IRegistry"));
 
     [Fact]
     public async Task A_doc_naming_a_method_the_diff_adds_is_listed()
-    {
-        Assert.Equal(["docs/guide.md"], await Listed(new Rig(), "# Guide\nCall RegisterWidgets first.\n", "    public static void RegisterWidgets(int count)"));
-    }
+        => Assert.Equal(["docs/guide.md"], await Listed(new Rig(), "# Guide\nCall RegisterWidgets first.\n", "    public static void RegisterWidgets(int count)"));
 
     [Fact]
     public async Task A_doc_naming_a_flag_the_diff_adds_is_listed()
-    {
-        Assert.Equal(["docs/guide.md"], await Listed(new Rig(), "# Guide\nPass --dry-run to preview.\n", "  if (arg == \"--dry-run\") preview = true;"));
-    }
+        => Assert.Equal(["docs/guide.md"], await Listed(new Rig(), "# Guide\nPass --dry-run to preview.\n", "  if (arg == \"--dry-run\") preview = true;"));
 
     [Fact]
     public async Task A_doc_naming_an_environment_variable_the_diff_adds_is_listed()
-    {
-        Assert.Equal(["docs/guide.md"], await Listed(new Rig(), "# Guide\nSet AW_WIDGET_HOME to move it.\n", "var home = Environment.GetEnvironmentVariable(\"AW_WIDGET_HOME\");"));
-    }
+        => Assert.Equal(["docs/guide.md"], await Listed(new Rig(), "# Guide\nSet AW_WIDGET_HOME to move it.\n", "var home = Environment.GetEnvironmentVariable(\"AW_WIDGET_HOME\");"));
 
     [Fact]
     public async Task A_doc_naming_a_dotted_config_key_the_diff_adds_is_listed()
-    {
-        Assert.Equal(["docs/guide.md"], await Listed(new Rig(), "# Guide\nSet workflow.widgets.limit in the profile.\n", "  [\"workflow.widgets.limit\"] = 3,"));
-    }
+        => Assert.Equal(["docs/guide.md"], await Listed(new Rig(), "# Guide\nSet workflow.widgets.limit in the profile.\n", "  [\"workflow.widgets.limit\"] = 3,"));
 
     [Fact]
     public async Task A_short_or_common_name_in_the_diff_does_not_list_a_doc()
-    {
-        Assert.Empty(await Listed(new Rig(), "# Guide\nThe Run of a Cache with an id and a -x flag. MAX_N.\n", "class Cache", "void Run(int id)", "if (a == \"-x\") { }", "const MAX_N = 3;"));
-    }
+        => Assert.Empty(await Listed(new Rig(), "# Guide\nThe Run of a Cache with an id and a -x flag. MAX_N.\n", "class Cache", "void Run(int id)", "if (a == \"-x\") { }", "const MAX_N = 3;"));
 
     [Fact]
     public async Task Lines_a_changed_doc_adds_are_not_searched_for_names()
