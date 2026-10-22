@@ -20,7 +20,7 @@ internal sealed class CentralPackagesReader : IManifestReader
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var rows = new List<DepRecord>();
         var items = root.Descendants()
-            .Where(e => e.Name.LocalName is "PackageVersion" or "GlobalPackageReference");
+            .Where(e => e.Name.LocalName == "PackageVersion" || e.Name.LocalName == "GlobalPackageReference");
         foreach (var item in items)
         {
             var name = ManifestXml.Attribute(item, "Include");

@@ -8,7 +8,7 @@ namespace Aw.CodeIndex.Infrastructure.Deps;
 /// <summary>Reads the dependencies of package.json files.</summary>
 internal sealed class PackageJsonReader : IManifestReader
 {
-    private static readonly (string Section, string Kind)[] Sections =
+    private static readonly (string Section, string Kind)[] _sections =
     [
         ("dependencies", "runtime"),
         ("devDependencies", "dev"),
@@ -16,7 +16,7 @@ internal sealed class PackageJsonReader : IManifestReader
         ("optionalDependencies", "optional"),
     ];
 
-    private static readonly string[] UrlPrefixes = ["git+", "git:", "github:", "gitlab:", "bitbucket:", "http:", "https:", "ssh:"];
+    private static readonly string[] _urlPrefixes = ["git+", "git:", "github:", "gitlab:", "bitbucket:", "http:", "https:", "ssh:"];
 
     public bool Handles(string path) => ManifestXml.NameIs(path, "package.json");
 
@@ -37,7 +37,7 @@ internal sealed class PackageJsonReader : IManifestReader
     {
         var seen = new HashSet<string>(StringComparer.Ordinal);
         var rows = new List<DepRecord>();
-        foreach (var (section, kind) in Sections)
+        foreach (var (section, kind) in _sections)
         {
             if (!root.TryGetProperty(section, out var block) || block.ValueKind != JsonValueKind.Object)
             {
@@ -67,7 +67,7 @@ internal sealed class PackageJsonReader : IManifestReader
     {
         _ when version.StartsWith("workspace:", StringComparison.Ordinal) => "workspace",
         _ when version.StartsWith("file:", StringComparison.Ordinal) || version.StartsWith("link:", StringComparison.Ordinal) => "local",
-        _ when UrlPrefixes.Any(p => version.StartsWith(p, StringComparison.Ordinal)) => "url",
+        _ when _urlPrefixes.Any(p => version.StartsWith(p, StringComparison.Ordinal)) => "url",
         _ => string.Empty,
     };
 }

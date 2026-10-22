@@ -6,14 +6,14 @@ namespace Aw.CodeIndex.Infrastructure.Deps;
 /// <summary>Shared reading for the MSBuild manifests: DTDs refused, namespaces ignored, a malformed file gives nothing.</summary>
 internal static class ManifestXml
 {
-    private static readonly XmlReaderSettings Settings = new() { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null };
+    private static readonly XmlReader_settings _settings = new() { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null };
 
     /// <summary>Parses the text, or returns null for malformed XML or one with a DTD.</summary>
     internal static XElement? Parse(string text)
     {
         try
         {
-            using var reader = XmlReader.Create(new StringReader(text), Settings);
+            using var reader = XmlReader.Create(new StringReader(text), _settings);
             return XDocument.Load(reader).Root;
         }
         catch (XmlException)
