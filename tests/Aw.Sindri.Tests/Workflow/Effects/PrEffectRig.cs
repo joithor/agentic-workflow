@@ -44,7 +44,7 @@ internal sealed class PrEffectRig
         }
 
         var held = new Dictionary<FactKey, JsonElement>();
-        foreach (var (key, json) in facts ?? new Dictionary<string, string>())
+        foreach (var (key, json) in facts ?? new Dictionary<string, string>(StringComparer.Ordinal))
         {
             held[FactKey.From(key)] = Stored(json);
         }

@@ -1,9 +1,9 @@
 using System.Text;
 using System.Text.Json;
-using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Forge;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -59,9 +59,9 @@ public sealed class PrOpenEffectTests
 
         Assert.Equal("updated", done.Reply?.Value);
         Assert.Empty(_pulls.Opened);
-        var update = Assert.Single(_pulls.Updated);
-        Assert.Equal((seeded.Link, "Add login"), (update.Link, update.Title));
-        Assert.Equal("Evidence pack body\n\n<!-- aw-marker:sindri.pr:sindri-l1-p1 -->", update.Body);
+        var (updatedLink, updatedTitle, updatedBody) = Assert.Single(_pulls.Updated);
+        Assert.Equal((seeded.Link, "Add login"), (updatedLink, updatedTitle));
+        Assert.Equal("Evidence pack body\n\n<!-- aw-marker:sindri.pr:sindri-l1-p1 -->", updatedBody);
         Assert.Contains(seeded.Link, Content(done, "fact:pr"), StringComparison.Ordinal);
     }
 
@@ -71,7 +71,8 @@ public sealed class PrOpenEffectTests
         _ = await Dispatch();
 
         Assert.Equal(new PullBranchPush(_repo, Workspace, "sindri/l1/p1", Sha, LeaseSha: null), Assert.Single(_pulls.Pushed));
-        Assert.Equal(["Find", "PushBranch", "Open"], _pulls.Calls.ToArray());
+        string[] calls = ["Find", "PushBranch", "Open"];
+        Assert.Equal(calls, _pulls.Calls, StringComparer.Ordinal);
     }
 
     [Fact]
@@ -108,7 +109,7 @@ public sealed class PrOpenEffectTests
         var again = await Dispatch();
 
         Assert.Equal("updated", again.Reply?.Value);
-        Assert.Single(_pulls.Opened);
+        _ = Assert.Single(_pulls.Opened);
     }
 
     [Fact]

@@ -12,7 +12,7 @@ internal sealed class RecordingPulls : IPullRequests
 
     public List<PullReaction> Reactions { get; } = [];
 
-    public Result<PullMergeOutcome> MergeAnswer { get; set; } = new PullMergeOutcome(PullMergeStatus.Merged, "abc123", null);
+    public Result<PullMergeOutcome> MergeAnswer { get; set; } = new PullMergeOutcome(PullMergeStatus.Merged, "abc123", Reason: null);
 
     public PullDelivery Delivery { get; set; } = PullDelivery.Delivered;
 

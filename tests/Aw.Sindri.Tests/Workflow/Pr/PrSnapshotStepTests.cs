@@ -19,7 +19,10 @@ public sealed class PrSnapshotStepTests
     private readonly FakePullRequests _pulls = new([Host]);
     private readonly FakePull _pull;
 
-    public PrSnapshotStepTests() => _pull = _pulls.Add(new PullRepo(Host, "acme", "app"), "feat/x", Head);
+    public PrSnapshotStepTests()
+    {
+        _pull = _pulls.Add(new PullRepo(Host, "acme", "app"), "feat/x", Head);
+    }
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -122,7 +125,8 @@ public sealed class PrSnapshotStepTests
 
         var state = Fact(result, "fact:prState");
         Assert.Equal("comments", Outcome(result));
-        Assert.Equal(["thread:1", "thread:2", "thread:3"], state.GetProperty("comments").EnumerateArray().Select(c => c.GetProperty("key").GetString()));
+        string[] keys = ["thread:1", "thread:2", "thread:3"];
+        Assert.Equal(keys, state.GetProperty("comments").EnumerateArray().Select(c => c.GetProperty("key").GetString()), StringComparer.Ordinal);
         Assert.Equal("alice", state.GetProperty("comments")[0].GetProperty("author").GetString());
         Assert.Equal(2, state.GetProperty("queue").GetProperty("unhandled").GetInt32());
     }
@@ -165,7 +169,8 @@ public sealed class PrSnapshotStepTests
         var result = await Snapshot();
 
         Assert.Equal("green", Outcome(result));
-        Assert.Equal(["reviewRequired"], Fact(result, "fact:prState").GetProperty("mergeBlockedBy").EnumerateArray().Select(b => b.GetString()));
+        string[] blockedBy = ["reviewRequired"];
+        Assert.Equal(blockedBy, Fact(result, "fact:prState").GetProperty("mergeBlockedBy").EnumerateArray().Select(b => b.GetString()), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -200,9 +205,10 @@ public sealed class PrSnapshotStepTests
 
         Assert.Equal("seeded", Outcome(result));
         Assert.Equal("/work/tree", Fact(result, "fact:workspace").GetString());
+        string[] outputs = ["fact:decision", "fact:fix", "fact:handoffNote", "fact:ownerNote", "fact:recheck", "fact:reply", "fact:workspace"];
         Assert.Equal(
-            ["fact:decision", "fact:fix", "fact:handoffNote", "fact:ownerNote", "fact:recheck", "fact:reply", "fact:workspace"],
-            result.Result!.Outputs.Select(o => o.Key.Value).Order(StringComparer.Ordinal));
+            outputs,
+            result.Result!.Outputs.Select(o => o.Key.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     [Fact]

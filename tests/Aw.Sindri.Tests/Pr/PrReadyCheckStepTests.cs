@@ -35,15 +35,15 @@ public sealed class PrReadyCheckStepTests
         {
             ["state"] = pull.Checks.State.ToString(),
             ["sha"] = pull.Checks.Sha,
-            ["failing"] = new JsonArray([.. pull.Checks.Failing.Select(static f => (JsonNode)JsonValue.Create(f)!)]),
+            ["failing"] = new JsonArray([.. pull.Checks.Failing.Select(static f => (JsonNode)JsonValue.Create(f))]),
         },
     }.ToJsonString();
 
-    private static readonly PullRepo Repo = new("forge.test", "acme", "app");
+    private static readonly PullRepo _repo = new("forge.test", "acme", "app");
 
     private FakePull Seed()
     {
-        var pull = _pulls.Add(Repo, "feat/x", Head);
+        var pull = _pulls.Add(_repo, "feat/x", Head);
         pull.ReviewDecision = "APPROVED";
         pull.Checks = new PullChecks(PullChecksState.Passing, Head, []);
         return pull;
@@ -68,7 +68,7 @@ public sealed class PrReadyCheckStepTests
     [Fact]
     public async Task A_pull_request_that_still_matches_its_snapshot_is_the_same_and_writes_nothing()
     {
-        Seed();
+        _ = Seed();
 
         var result = await Run(Snapshot(Green()));
 
@@ -77,10 +77,10 @@ public sealed class PrReadyCheckStepTests
         Assert.Equal(1, _pulls.Calls.Count(static c => c == "Get"));
     }
 
-    public static TheoryData<string> Changes => new()
-    {
+    public static TheoryData<string> Changes =>
+    [
         "head", "checksSha", "checksState", "review", "mergeable", "threads", "merged", "closed",
-    };
+    ];
 
     [Theory]
     [MemberData(nameof(Changes))]
@@ -95,7 +95,7 @@ public sealed class PrReadyCheckStepTests
             case "checksState": pull.Checks = new PullChecks(PullChecksState.Failing, Head, ["build"]); break;
             case "review": pull.ReviewDecision = "CHANGES_REQUESTED"; break;
             case "mergeable": pull.Mergeable = false; break;
-            case "threads": _pulls.SeedThread(pull.Link, "please fix"); break;
+            case "threads": _ = _pulls.SeedThread(pull.Link, "please fix"); break;
             case "merged": pull.State = PullState.Merged; break;
             default: pull.State = PullState.Closed; break;
         }
@@ -108,7 +108,7 @@ public sealed class PrReadyCheckStepTests
     [Fact]
     public async Task A_snapshot_that_is_not_a_pull_request_view_counts_as_changed()
     {
-        Seed();
+        _ = Seed();
 
         Assert.Equal("changed", (await Run("{\"unexpected\":true}")).Result!.Outcome.Value);
         Assert.Equal("changed", (await Run(at: null)).Result!.Outcome.Value);
