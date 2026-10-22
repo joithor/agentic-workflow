@@ -160,4 +160,19 @@ check "cleanup: ends this home's sessions, a child's too, and no other" "$(sort 
 : > "$KILLED"; kill_launched_sessions "" 2>/dev/null
 check "cleanup: no home kills nothing" "$(wc -c < "$KILLED" | tr -d ' ')" "0"
 
+
+# auto-desk: a choice outcome takes doneAsking where offered, else its first; fact:answers gets [] and any other {}
+SCRATCH="$WORK/desk-scratch"; DESK_MAX=5; DESK_LOG=(); COMPLETED="$WORK/completed"; mkdir -p "$SCRATCH"
+say() { :; }
+human() { printf '%s\n' "$*" >> "$COMPLETED"; }
+DESK_NEXT='Answer the questions, then run: sindri workflow complete A/1 --run 7.1 --outcome
+<answered|doneAsking> --output fact:answers=<file>'
+status_json() { jq -n --arg n "$DESK_NEXT" '{next: $n}'; }
+auto_desk A/1 2>/dev/null
+check "auto-desk: an interview's choice closes it" "$(cat "$COMPLETED")" "workflow complete A/1 --run 7.1 --outcome doneAsking --output fact:answers=$SCRATCH/desk/0-answers.json"
+check "auto-desk: fact:answers is an empty list" "$(cat "$SCRATCH/desk/0-answers.json")" "[]"
+: > "$COMPLETED"; DESK_NEXT='run: sindri workflow complete B/1 --run 2.1 --outcome <pass|fail> --output fact:verdict=<file>'
+auto_desk B/1 2>/dev/null
+check "auto-desk: another choice takes its first" "$(cat "$COMPLETED")" "workflow complete B/1 --run 2.1 --outcome pass --output fact:verdict=$SCRATCH/desk/1-verdict.json"
+check "auto-desk: another fact is an empty object" "$(cat "$SCRATCH/desk/1-verdict.json")" "{}"
 exit "$fail"
