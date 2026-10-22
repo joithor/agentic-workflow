@@ -35,7 +35,6 @@ internal sealed class GitRepoHeads : IRepoHeads
     public async ValueTask<Result<DefaultBranchCheck>> OnDefaultBranch(CodeIndexRepo repo, CommitSha commit, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(repo);
-        ArgumentNullException.ThrowIfNull(commit);
         var known = await Run(repo.Path, cancellationToken, "cat-file", "-e", commit.Value + "^{commit}").ConfigureAwait(false);
         if (known.IsError || known.Value.Exit != 0)
         {
@@ -46,7 +45,7 @@ internal sealed class GitRepoHeads : IRepoHeads
         return reaches.IsError ? reaches.Error : new DefaultBranchCheck(reaches.Value.Ref, reaches.Value.Contains);
     }
 
-    private async ValueTask<RepoHead> One(CodeIndexRepo repo, CancellationToken cancellationToken)
+    private static async ValueTask<RepoHead> One(CodeIndexRepo repo, CancellationToken cancellationToken)
     {
         var head = await Run(repo.Path, cancellationToken, "rev-parse", "--verify", "--quiet", "HEAD^{commit}").ConfigureAwait(false);
         if (head.IsError || head.Value.Exit != 0 || !CommitSha.TryFrom(head.Value.Stdout.Trim(), out var sha))

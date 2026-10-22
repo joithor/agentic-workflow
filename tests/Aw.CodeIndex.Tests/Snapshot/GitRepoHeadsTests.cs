@@ -3,6 +3,7 @@ using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Values;
 using Aw.CodeIndex.Infrastructure.Snapshot;
 using Aw.CodeIndex.Testing;
+using Aw.Kernel.Testing;
 
 namespace Aw.CodeIndex.Tests.Snapshot;
 
@@ -42,7 +43,7 @@ public sealed class GitRepoHeadsTests
     [Fact]
     public async Task A_path_git_cannot_read_has_no_head_and_is_not_on_the_default_branch()
     {
-        var missing = new CodeIndexRepo(RepoName.From("gone"), Path.Combine(Path.GetTempPath(), "aw-no-repo-" + Guid.NewGuid().ToString("N")), CodeIndexSettings.Default);
+        var missing = new CodeIndexRepo(RepoName.From("gone"), Path.Combine(Path.GetTempPath(), "aw-no-repo-" + RealTime.NewGuid().ToString("N")), CodeIndexSettings.Default);
 
         var heads = await _heads.Heads([missing], TestContext.Current.CancellationToken);
 
