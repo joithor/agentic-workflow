@@ -200,7 +200,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
             ["queue"] = new JsonObject
             {
                 ["unhandled"] = work.Count,
-                ["held"] = threads.Count(t => !t.Resolved && !Own(t) && marked.TryGetValue(t.Key, out var m) && string.Equals(m.Outcome, "hold", StringComparison.Ordinal)),
+                ["held"] = threads.Count(t => !t.Resolved && !Own(t) && marked.TryGetValue(t.Key, out var m) && string.Equals(m.Outcome, "held", StringComparison.Ordinal)),
                 ["untrusted"] = work.Count(static t => !t.IsBot && !_trusted.Contains(t.Association, StringComparer.OrdinalIgnoreCase)),
                 ["bots"] = work.Count(static t => t.IsBot),
             },
