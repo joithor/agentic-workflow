@@ -15,7 +15,7 @@ public sealed class ShippedBudgetsTests
     private static IEnumerable<(string Path, Recipe Recipe)> Shipped() =>
         ShippedRecipes.Recipes
             .Where(p => p.StartsWith("sindri/", StringComparison.Ordinal))
-            .Select(p => (p, RecipeComposition.ReadClean(ShippedRecipes.Read(p), System.IO.Path.GetFileName(p)).Recipe));
+            .Select(p => (p, RecipeComposition.ReadClean(ShippedRecipes.Read(p), Path.GetFileName(p)).Recipe));
 
     [Fact, Trait("Lane", "unit")]
     public void No_shipped_recipe_declares_a_recipe_level_token_budget()
