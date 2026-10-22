@@ -363,6 +363,16 @@
               "null"
             ],
             "default": null
+          },
+          "onOutcome": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": null
           }
         },
         "required": [
@@ -751,6 +761,13 @@
       "pattern": "^sha256:[0-9a-f]{64}$"
     },
     "displayName": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    },
+    "why": {
       "type": [
         "string",
         "null"
