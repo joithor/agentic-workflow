@@ -25,7 +25,7 @@ internal sealed partial class Launcher
 
         try
         {
-            if (request is { Attended: false, Step.Bundle: { } bundle } && PackBundleFiles.Write(StepEnvironment.For(request).GetValueOrDefault(StepEnvironment.RunDirectory, workDir), bundle) is { } refused)   // LN-WF5: the Step's pack, in its directory before the session starts
+            if (WriteBundle(request, workDir) is { } refused)
             {
                 return refused;
             }
@@ -48,6 +48,12 @@ internal sealed partial class Launcher
             return KernelErrors.Unavailable.With($"the launch's files could not be written: {e.Message}");
         }
     }
+
+    /// <summary>LN-WF5: the Step's pack, in its directory before the session starts (an attended launch has none); an error when the pack is refused.</summary>
+    private static Error? WriteBundle(LaunchRequest request, string workDir) =>
+        request is { Attended: false, Step.Bundle: { } bundle }
+            ? PackBundleFiles.Write(StepEnvironment.For(request).GetValueOrDefault(StepEnvironment.RunDirectory, workDir), bundle)
+            : null;
 
     private async ValueTask<Result<(IReadOnlyList<string> Argv, SessionId? Session)>> Compose(LaunchRequest request, AgentEntry entry, string workDir, CancellationToken cancellationToken)
     {
