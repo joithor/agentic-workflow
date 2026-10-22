@@ -1302,6 +1302,38 @@ public sealed class ShellWindowTests : IDisposable
         Frame(window, "health");
     });
 
+    // F1P-c (code index spec 6.4): the Context map card is up front on Health, a glyph and a word for the state with Sindri's sentence under it, every part named.
+    [Fact]
+    public Task The_context_map_card_shows_the_publish_state_in_a_word_and_a_glyph_with_Sindris_sentence() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        _server.MapPublishAnswer = new(System.Net.HttpStatusCode.OK,
+            """{"state":"held","word":"held for the code index","reason":null,"stale":false,"staleRepos":[],"version":14,"until":"2026-10-21T12:15:00Z","lines":["Map v14 is held for the code index until 12:15Z.","aw-split-panes: building (the map is for 1234567, the index is at abcdef0)"]}""");
+        var (window, shell) = await Show(s => s.State == ShellState.Normal && s.Health.ContextMap.IsVisible);
+        shell.GoTo(PageId.System);
+        Settle(window);
+
+        Assert.True(Visible(window, "ContextMapPanel"));
+        Assert.Equal((StateGlyph.Stale, "Held for the code index", Labels.ContextMapCard), (Glyph(window, "ContextMapGlyph"), Text(window, "ContextMapState"), Text(window, "ContextMapEyebrow")));
+        Assert.Equal(["Map v14 is held for the code index until 12:15Z.", "aw-split-panes: building (the map is for 1234567, the index is at abcdef0)"],
+            [.. Named<ItemsControl>(window, "ContextMapLines").GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text ?? string.Empty)]);
+        Assert.StartsWith("CONTEXT MAP: Held for the code index. Map v14", AutomationProperties.GetName(Named<Border>(window, "ContextMapPanel")), StringComparison.Ordinal);
+        EveryControlIsNamed(window);
+    });
+
+    // The card shows nothing while there is no map to publish.
+    [Fact]
+    public Task The_context_map_card_is_absent_while_there_is_no_map() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        _server.MapPublishAnswer = RouteAnswer.Problem(System.Net.HttpStatusCode.NotFound, "SND-CONTEXT-030", "there is no map yet");
+        var (window, shell) = await Show(s => s.State == ShellState.Normal && s.Health.ViewReads > 0);
+        shell.GoTo(PageId.System);
+        Settle(window);
+
+        Assert.False(Visible(window, "ContextMapPanel"));
+    });
+
     // F3 review (456-1): what the person must act on stays up front; only the per-service detail waits behind Details.
     [Fact]
     public Task The_profile_fix_and_the_actions_are_up_front_with_the_cards() => OnUi(async () =>
