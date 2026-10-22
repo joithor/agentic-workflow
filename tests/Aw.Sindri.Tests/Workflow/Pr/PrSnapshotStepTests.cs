@@ -24,7 +24,7 @@ public sealed class PrSnapshotStepTests
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     private static PullThread Thread(string key, string author = "alice", bool resolved = false, IReadOnlyList<string>? markers = null) =>
-        new(key, "thread", author, "MEMBER", IsBot: false, resolved, Outdated: false, "a.cs", $"fix {key}", markers ?? []);
+        new(key, PullCommentKind.Thread, author, "MEMBER", IsBot: false, resolved, Outdated: false, "a.cs", $"fix {key}", markers ?? []);
 
     private Task<BlockStepResult> Snapshot(string? pr = null) => Run(new PrSnapshotStep(_pulls, new FakeTimeProvider(DateTimeOffset.Parse("2026-10-22T08:00:00Z", System.Globalization.CultureInfo.InvariantCulture))), "step.pr.snapshot", pr);
 
@@ -128,18 +128,17 @@ public sealed class PrSnapshotStepTests
     }
 
     [Fact]
-    public async Task Sindris_own_replies_and_resolved_threads_are_not_work()
+    public async Task Sindris_marked_replies_and_resolved_threads_are_not_work()
     {
         _pull.ChecksState = PullChecksState.Passing;
-        _pulls.SelfLogin = "sindri-bot";
-        _pull.Threads.Add(Thread("thread:1", author: "sindri-bot"));
+        _pull.Threads.Add(Thread("thread:1", markers: ["sindri:reply:0"]));
         _pull.Threads.Add(Thread("thread:2", markers: ["sindri:reply:1"]));
         _pull.Threads.Add(Thread("thread:3", resolved: true));
 
         var result = await Snapshot();
 
         Assert.Equal("green", Outcome(result));
-        Assert.Equal("sindri-bot", Fact(result, "fact:prState").GetProperty("self").GetString());
+        Assert.Equal(JsonValueKind.Null, Fact(result, "fact:prState").GetProperty("self").ValueKind);
     }
 
     [Fact]

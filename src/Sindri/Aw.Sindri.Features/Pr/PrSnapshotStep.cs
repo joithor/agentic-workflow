@@ -10,7 +10,7 @@ namespace Aw.Sindri.Features.Pr;
 /// 'step.pr.snapshot' on the block runtime (babysitter spec §4.3): one forge read of the pull request and its conversation, reported as the first outcome that holds, in the
 /// spec's order, with 'fact:prState' on every outcome and 'fact:mergedSha' when merged. The fact is the pull request view in camelCase (link, state, headSha, mergeable,
 /// reviewDecision, unresolvedThreads, checks { state, sha, failing }), 'pullState' (open, closed or merged), 'comments' (the threads, oldest first, as the queue Steps parse
-/// them), 'self', 'queue' counts, 'mergeBlockedBy' and 'at'. 'state' is 'green' when the outcome is green (the merge gate reads it), else the pull request's own state.
+/// them), 'self' (null), 'queue' counts, 'mergeBlockedBy' and 'at'. 'state' is 'green' when the outcome is green (the merge gate reads it), else the pull request's own state.
 /// Not read yet, for want of a port: the base branch (restack), the docs pull request (mergedDocsOpen, docsRed), the proven head (stale), the comment marks and the workspace.
 /// </summary>
 /// <param name="pulls">The forge, through Sindri's port.</param>
@@ -44,11 +44,9 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, TimeProvider clock) : 
             return BlockStepResult.Failed($"step.pr.snapshot can't read the conversation of {link}: {threads.Error.Message}");
         }
 
-        var self = await pulls.Self(cancellationToken).ConfigureAwait(false);   // an unknown login only means Sindri's replies are told apart by their markers alone
-        var login = self.IsSuccess ? self.Value : null;
-        var work = threads.Value.Where(t => !t.Resolved && !Own(t, login)).ToList();
+        var work = threads.Value.Where(static t => !t.Resolved && !Own(t)).ToList();   // the forge port has no login, so Sindri's replies are told apart by their markers alone
         var outcome = Outcome(pull.Value, work.Count);
-        var state = State(pull.Value, outcome, threads.Value, work, login);
+        var state = State(pull.Value, outcome, threads.Value, work);
         return outcome is "merged"
             ? StepFacts.Done(outcome, ("fact:prState", state), ("fact:mergedSha", JsonValue.Create(pull.Value.HeadSha)!))
             : StepFacts.Done(outcome, ("fact:prState", state));
@@ -81,7 +79,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, TimeProvider clock) : 
         return !onHead || pull.Checks.State == PullChecksState.Pending ? "pending" : "green";
     }
 
-    private JsonObject State(PullView pull, string outcome, IReadOnlyList<PullThread> threads, List<PullThread> work, string? self)
+    private JsonObject State(PullView pull, string outcome, IReadOnlyList<PullThread> threads, List<PullThread> work)
     {
         var pullState = pull.State.ToString().ToLowerInvariant();
         return new JsonObject
@@ -108,7 +106,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, TimeProvider clock) : 
                 ["bots"] = work.Count(static t => t.IsBot),
             },
             ["comments"] = new JsonArray([.. threads.Select(static t => (JsonNode)Comment(t))]),
-            ["self"] = self,
+            ["self"] = null,
             ["mergeBlockedBy"] = new JsonArray([.. BlockedBy(pull).Select(static b => (JsonNode)JsonValue.Create(b)!)]),
             ["heldBlocksMerge"] = false,
             ["at"] = clock.GetUtcNow().ToString("O", CultureInfo.InvariantCulture),
@@ -126,7 +124,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, TimeProvider clock) : 
     private static JsonObject Comment(PullThread thread) => new()
     {
         ["key"] = thread.Key,
-        ["kind"] = thread.Kind,
+        ["kind"] = thread.Kind.ToString().ToLowerInvariant(),
         ["author"] = thread.Author,
         ["association"] = thread.Association,
         ["isBot"] = thread.IsBot,
@@ -137,8 +135,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, TimeProvider clock) : 
         ["markers"] = new JsonArray([.. thread.Markers.Select(static m => (JsonNode)JsonValue.Create(m)!)]),
     };
 
-    // Sindri's replies never come back as work: its forge account, or a marker it wrote.
-    private static bool Own(PullThread thread, string? self) =>
-        (self is not null && string.Equals(thread.Author, self, StringComparison.OrdinalIgnoreCase))
-        || thread.Markers.Any(static m => m.StartsWith("sindri", StringComparison.Ordinal));
+    // Sindri's replies never come back as work: a marker it wrote.
+    private static bool Own(PullThread thread) =>
+        thread.Markers.Any(static m => m.StartsWith("sindri", StringComparison.Ordinal));
 }
