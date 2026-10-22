@@ -1,9 +1,8 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ledger;
-using Aw.Sindri.Core.Views;
 
-namespace Aw.Sindri.Core.Workflow.Stats;
+namespace Aw.Sindri.Core.Views;
 
 /// <summary>
 /// Keeps the 'recipe-stats' view honest (API spec §3.8, P12): the view is a cache the stats reads fill, so this fold only empties it, when a run starts
