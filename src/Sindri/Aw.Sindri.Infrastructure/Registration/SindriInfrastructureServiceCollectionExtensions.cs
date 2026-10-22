@@ -70,7 +70,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
     public static IServiceCollection AddSindriInfrastructure(this IServiceCollection services, Func<string, string?> environment)
     {
         var settings = SettingsFromEnvironment.Read(environment);
-        return services.AddSingleton(settings).AddSindriSessions(environment, settings).AddSindriLauncher(environment, settings).AddSindriAdapters(environment).AddRecipeAdapters().AddAgentRuntimeAdapters().AddSindriMcp(environment).AddOnyxInfrastructure(environment).AddScopingInfrastructure(environment).AddBugFixInfrastructure(environment);
+        return services.AddSingleton(settings).AddSindriSessions(environment, settings).AddSindriLauncher(environment, settings).AddSindriAdapters(environment).AddPrAdapters().AddAgentRuntimeAdapters().AddSindriMcp(environment).AddOnyxInfrastructure(environment).AddScopingInfrastructure(environment).AddBugFixInfrastructure(environment);
     }
 
     /// <summary>Engine P8: the diff signal of an agent run (git) and an agent session's end and spend (the ledger).</summary>
@@ -91,8 +91,22 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<ITrackerSource>(_ => new FileTrackerSource(environment("AW_SINDRI_TRACKER_DIR"))).AddSingleton<IChangeSource, GitChangeSource>();
 
     /// <summary>The PR babysitter's comment marks (W26): 'pr_comment_marks' in ledger.db.</summary>
-    private static IServiceCollection AddRecipeAdapters(this IServiceCollection services) =>
+    private static IServiceCollection AddPrAdapters(this IServiceCollection services) =>
         services.AddSingleton<IPrCommentMarks, SqlitePrCommentMarks>();
+
+    /// <summary>The recipe store, approvals, claims and the worktree and script adapters the blocks use.</summary>
+    private static IServiceCollection AddRecipeAdapters(this IServiceCollection services, Func<string, string?> environment) => services
+            .AddSingleton<IRecipeReader, YamlRecipeReader>()
+            .AddSingleton<IRecipeFiles, FileRecipeFiles>()
+            .AddSingleton<IRecipeDirectories, FileRecipeDirectories>()
+            .AddSingleton(CreateSecretPointers(environment))
+            .AddSingleton<IRecipeWake, NoOpRecipeWake>()
+            .AddSingleton<IRecipeStore, SqliteRecipeStore>()
+            .AddSingleton<IRecipeApprovals, SqliteRecipeApprovals>()
+            .AddSingleton<IWorkflowClaims, SqliteWorkflowClaims>()   // engine P6 unit (d): workflow_claims in ledger.db
+            .AddSingleton<IClaimRefs, GitClaimRefs>()                // engine P6 unit (d): the claim's marker ref
+            .AddSingleton<IScriptRuns>(_ => new BashScriptRuns(new ProcessToolRunner()))   // the prove station's before/after scripts
+            .AddSingleton<IWorktrees, GitWorktrees>();              // per-run and phase worktrees (engine spec §6.5); nothing calls it until BS-10
 
     private static IServiceCollection AddSindriAdapters(this IServiceCollection services, Func<string, string?> environment)
     {
@@ -118,16 +132,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IProcessAncestry, PosixProcessAncestry>()
             .AddSingleton<IRepoLocator, GitRepoLocator>().AddSingleton<IRepoInspector, GitRepoInspector>().AddSingleton<IProfileRepoWriter, YamlProfileRepoWriter>()   // setup-once §5.1: AddRepo's folder checks and the profile's repos[] appender
             .AddSingleton<ICommandOrigins, LedgerCommandOrigins>()   // engine P4 unit (d): the bridge's causation route
-            .AddSingleton<IRecipeReader, YamlRecipeReader>()
-            .AddSingleton<IRecipeFiles, FileRecipeFiles>()
-            .AddSingleton<IRecipeDirectories, FileRecipeDirectories>()
-            .AddSingleton(CreateSecretPointers(environment))
-            .AddSingleton<IRecipeWake, NoOpRecipeWake>()
-            .AddSingleton<IRecipeStore, SqliteRecipeStore>()
-            .AddSingleton<IRecipeApprovals, SqliteRecipeApprovals>()
-            .AddSingleton<IWorkflowClaims, SqliteWorkflowClaims>()   // engine P6 unit (d): workflow_claims in ledger.db
-            .AddSingleton<IClaimRefs, GitClaimRefs>()                // engine P6 unit (d): the claim's marker ref
-            .AddSingleton<IWorktrees, GitWorktrees>()               // per-run and phase worktrees (engine spec §6.5); nothing calls it until BS-10
+            .AddRecipeAdapters(environment)
             .AddSingleton<IChallenges, ProcessChallenges>()
             .AddSingleton(sp => HeavyLockSettings.Read(environment, sp.GetRequiredService<SindriSettings>().StateDirectory))
             .AddSingleton<IHeavySlots, DirectoryHeavySlots>()

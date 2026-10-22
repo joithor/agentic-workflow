@@ -18,6 +18,9 @@ internal sealed partial class SetupViewModel : ObservableObject
     private const string MapStep = "map";
     private const string McpStep = "mcp";
     private const string OnyxStep = "onyx";
+    private const string ProfileStep = "profile";
+    private const string RecipesStep = "recipes";
+    private const string ProfileAction = "ApproveProfile";
     private const string MapRefresh = "RefreshContextMap";
     private const string RegisterAction = "RegisterMcp";
     private const string ConflictRefusal = "SND-JOB-409";
@@ -29,6 +32,8 @@ internal sealed partial class SetupViewModel : ObservableObject
     private readonly TimeProvider _clock;
     private readonly Func<string, bool> _opensInApp;
     private readonly IFolderPicker _folders;
+    private readonly Func<string?> _profileHash;
+    private readonly Func<bool>? _reducedMotion;
     private bool _registering;
     private int _reads;
     private bool _hasRead;
@@ -43,9 +48,12 @@ internal sealed partial class SetupViewModel : ObservableObject
     /// <param name="clock">The clock for the Copy controls' timings.</param>
     /// <param name="opensInApp">Whether the app can do an action itself (a button) rather than show the command; the shell decides.</param>
     /// <param name="folders">The folder chooser of the repo step; a head with none shows the typed path only.</param>
-    internal SetupViewModel(ISindriApi api, CatalogViewModel catalog, TimeProvider clock, Func<string, bool> opensInApp, IFolderPicker folders)
+    /// <param name="profileHash">The live profile's hash the typed approval is tied to, or null when not known; none means never known.</param>
+    /// <param name="reducedMotion">True when motion is reduced: the approve-all hold counts in words and shows no fill. None means motion is allowed.</param>
+    internal SetupViewModel(ISindriApi api, CatalogViewModel catalog, TimeProvider clock, Func<string, bool> opensInApp, IFolderPicker folders, Func<string?>? profileHash = null, Func<bool>? reducedMotion = null)
     {
         (_api, _catalog, _clock, _opensInApp, _folders) = (api, catalog, clock, opensInApp, folders);
+        (_profileHash, _reducedMotion) = (profileHash ?? (static () => null), reducedMotion);
         Launcher = new ControlViewModel(new CommandRowView("StartSindri", "desk", [], Terminal: false, Method: null, Route: null, Labels.SetupLauncher, "cli-only:launcher", Destructive: false, ReadsViews: false, Shortcut: null), send: null, catalog.Clipboard, clock);
         Footnote = new ControlViewModel(new CommandRowView("SetupOnyx", "desk", [], Terminal: false, Method: null, Route: null, Labels.SetupOnyxFootCommand, "cli-only:footnote", Destructive: false, ReadsViews: false, Shortcut: null), send: null, catalog.Clipboard, clock);
     }
@@ -189,6 +197,7 @@ internal sealed partial class SetupViewModel : ObservableObject
             row.Rederive();
             row.Repo?.Refresh();
             row.Onyx?.Refresh();
+            Confirm(row);
         }
     }
 

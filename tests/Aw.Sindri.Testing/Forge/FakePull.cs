@@ -49,7 +49,7 @@ public sealed class FakePull(PullRepo repo, int number, string head, string head
     /// <summary>Gets or sets the commit the checks ran on; null means the head.</summary>
     public string? ChecksSha { get; set; }
 
-    /// <summary>Gets the names of the failing checks.</summary>
+    /// <summary>Gets the names of the failing checks (none by default); any name makes an unset state read as failing.</summary>
     public IList<string> FailingChecks { get; } = [];
 
     /// <summary>Gets the threads, oldest first.</summary>

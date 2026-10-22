@@ -148,14 +148,12 @@ public sealed class CodeIndexFacadeTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task The_layers_that_need_a_later_unit_answer_not_built_not_an_empty_list()
+    public async Task Similar_answers_not_built_until_the_clones_layer_is_written_not_an_empty_list()
     {
         var harness = await Built();
 
         var similar = await harness.Facade.Similar(harness.Scope, _run, Token);
-        var neighbors = await harness.Facade.Neighbors(harness.Scope, BuildHarness.Name, "x", 5, Token);
 
         Assert.Equal("SND-CODEIDX-013", similar.Error.Code);
-        Assert.Equal("SND-CODEIDX-013", neighbors.Error.Code);
     }
 }
