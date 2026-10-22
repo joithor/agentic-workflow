@@ -24,5 +24,6 @@ public sealed class PrePatchReplayTests
 
         Assert.Null(result.ReplayFailure);
         Assert.DoesNotContain("step-inputs", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("launch-failure-keeps-round", json, StringComparison.Ordinal);   // no marker: a failed launch in such a history counts its round as it did
     }
 }

@@ -38,4 +38,8 @@ internal sealed partial class SindriApiClient
     /// <inheritdoc />
     public Task<Result<SourcesView>> Sources(Uri api, CancellationToken cancellationToken) =>
         Get<SourcesView>(api, ContextRoutes.Sources, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<Result<QueryAnchorsView>> QueryAnchors(Uri api, string text, CancellationToken cancellationToken) =>
+        Get<QueryAnchorsView>(api, ContextRoutes.Query(text), cancellationToken);
 }

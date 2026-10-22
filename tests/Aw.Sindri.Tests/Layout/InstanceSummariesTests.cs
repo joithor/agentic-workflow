@@ -1,4 +1,5 @@
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Tests.GetInstance;
 
@@ -30,5 +31,29 @@ public sealed class InstanceSummariesTests
         var activity = new string('x', 75 - Prefix.Length) + "\U0001F600" + new string('y', 10);   // units at 75 and 76, both before the cut at 77
 
         Assert.Equal(Prefix + new string('x', 75 - Prefix.Length) + "\U0001F600...", Now(activity));
+    }
+
+    [Fact]
+    public void The_row_names_who_started_it_when_and_its_root()
+    {
+        var started = new DateTimeOffset(2026, 10, 20, 9, 30, 0, TimeSpan.Zero);
+        var view = StatusCases.View("taken-over") with { Address = InstanceAddress.From("ITM-7/step/1/child.2"), StartedBy = "human:prover", StartedAt = started };
+
+        var row = InstanceSummaries.Of(view, new InstanceSummaryContext(StatusCases.Now));
+
+        Assert.Equal("human:prover", row.StartedBy);
+        Assert.Equal(started, row.StartedAt);
+        Assert.Equal("ITM-7/step/1", row.RootAddress);
+    }
+
+    [Fact]
+    public void A_root_is_its_own_root_and_an_unrecorded_start_reads_null()
+    {
+        var row = InstanceSummaries.Of(StatusCases.View("taken-over") with { Address = InstanceAddress.From("ITM-7/step/1") }, new InstanceSummaryContext(StatusCases.Now));
+
+        Assert.Equal("ITM-7/step/1", row.RootAddress);
+        Assert.Null(row.StartedBy);
+        Assert.Null(row.StartedAt);
+        Assert.Null(row.LineStage);
     }
 }

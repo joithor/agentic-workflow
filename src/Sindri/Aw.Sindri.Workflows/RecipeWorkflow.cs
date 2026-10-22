@@ -105,6 +105,7 @@ internal sealed partial class RecipeWorkflow
         var agentRuntime = Workflow.Patched("p8-agent-runtime");
         var keepsReport = Workflow.Patched("token-budget-keeps-report-v1");   // an accepted report over budget keeps its transition (the next Step start parks); a history without the marker parks on the report as it did
         _heavy = Workflow.Patched("ln-wf3-heavy-slot");   // LN-WF3: the heavy allocator; last, after every marker main has; a history without it never takes or grants a slot
+        var keepsRoundOnLaunchFailure = Workflow.Patched("launch-failure-keeps-round-v1");   // a launch that never started a session counts no loop round, and the third in a row parks; a history without the marker counts the round as it did.
         var loaded = await Workflow.ExecuteLocalActivityAsync(
             (RunStepActivities a) => a.LoadRecipeAsync(start.Recipe),
             new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(30) }).ConfigureAwait(true);
@@ -114,8 +115,7 @@ internal sealed partial class RecipeWorkflow
         _deskTimeout = loaded.DeskTimeout;
         _eventHold = loaded.EventHold;
         _dispatchDelay = loaded.DispatchDelay;
-        var runtimes = Runtimes(loaded, blockRuntime, agentRuntime);
-        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, runtimes, pins.Resolver()) { DeskTimeout = loaded.DeskTimeout, LegacyBudgetPark = !keepsReport };
+        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, Runtimes(loaded, blockRuntime, agentRuntime), pins.Resolver()) { DeskTimeout = loaded.DeskTimeout, LegacyBudgetPark = !keepsReport, LegacyLaunchRound = !keepsRoundOnLaunchFailure };
         _context = new Interpreting(loaded.Recipe, decisions);
         (_repo, _repoUnreadable) = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : (null, false);
         (_subject, _contents) = await NamedSubject(_recipe, start).ConfigureAwait(true);
@@ -127,7 +127,7 @@ internal sealed partial class RecipeWorkflow
             _provenance[key] = new FactProvenance(GenerateActor, Now);   // a generated input was made by the engine, not supplied (spec section 3.11)
         }
 
-        await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null, Detail: Named(WorkflowEventDetail.Of(change.Event, trigger: null), start), Causation: start.OpenLaunch), NeedsYou(instance)).ConfigureAwait(true);
+        await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null, Detail: Named(WorkflowEventDetail.Of(change.Event, trigger: null).WithRunOpening(change.After, loaded.Recipe), start), Causation: start.OpenLaunch), NeedsYou(instance)).ConfigureAwait(true);
         Emit(before: null, instance, []);
         Spawn(decided);
         return (instance, _context);

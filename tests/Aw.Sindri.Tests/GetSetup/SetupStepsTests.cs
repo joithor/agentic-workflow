@@ -61,10 +61,10 @@ public sealed class SetupStepsTests
         var done = SetupSteps.Recipes(new RecipesFact(26, 26), profileApproved: true);
 
         Assert.Equal((SetupState.Todo, null), (none.State, none.Action));
-        Assert.Equal((SetupState.Todo, null, null, "After the profile is approved.", "26 recipes registered."), (early.State, early.Action, early.Progress, early.Why, early.Detail));
-        Assert.Equal((SetupState.NeedsYou, SetupActions.ApproveAllRecipes, new SetupProgress(20, 26), "6 recipes wait for your approval."), (waiting.State, waiting.Action, waiting.Progress, waiting.Why));
+        Assert.Equal((SetupState.Todo, null, null, "After the profile is approved.", "26 workflows registered."), (early.State, early.Action, early.Progress, early.Why, early.Detail));
+        Assert.Equal((SetupState.NeedsYou, SetupActions.ApproveAllRecipes, new SetupProgress(20, 26), "6 workflows wait for your approval."), (waiting.State, waiting.Action, waiting.Progress, waiting.Why));
         Assert.Equal((SetupState.Done, null, new SetupProgress(26, 26)), (done.State, done.Action, done.Progress));
-        Assert.Equal("1 recipe waits for your approval.", SetupSteps.Recipes(new RecipesFact(3, 2), profileApproved: true).Why);
+        Assert.Equal("1 workflow waits for your approval.", SetupSteps.Recipes(new RecipesFact(3, 2), profileApproved: true).Why);
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -1,0 +1,5 @@
+# Aw.CodeIndex.Tests only (tests/.editorconfig and the root file still apply).
+[*.cs]
+# The parser samples are raw string literals, and the tests assert symbol and call LINE numbers, which don't depend on the
+# end-of-line characters a checkout uses, so MA0136 (implicit end of line in a raw string) guards nothing here.
+dotnet_diagnostic.MA0136.severity = none

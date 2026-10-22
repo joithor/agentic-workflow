@@ -248,9 +248,9 @@ internal static partial class ViewerProcess
         }
     }
 
-    internal static bool HasGuiSession(Func<string, string?>? getEnv)
+    internal static bool HasGuiSession(Func<string, string?>? getEnv, bool isMac)
     {
-        if (OperatingSystem.IsMacOS())
+        if (isMac)
         {
             return true;
         }

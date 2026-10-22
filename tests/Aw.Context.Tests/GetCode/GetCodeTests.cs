@@ -138,12 +138,26 @@ public sealed class GetCodeTests : IDisposable
         using var slow = new CodeWorld(decorateTimed: (inner, expire) => new StallingSearch(inner, _ => true, expire));
         _ = await slow.ImportSharing();
 
-        var view = (await slow.Code(MapWorld.HumanWith("""{"deadline":"100ms"}"""))).Value;
+        var view = (await slow.Code(MapWorld.HumanWith("""{"code":{"deadline":"100ms"}}"""))).Value;
 
         var row = Row(view, "lexical-tests");
         Assert.Equal((SearchedState.Degraded, ContextErrors.CodeSearchTimedOut.Code), (row.State, row.Code));
         Assert.Contains(view.Degraded, d => d.StartsWith("lexical-tests", StringComparison.Ordinal));
         Assert.Equal(2, view.Files.Count);
+        Assert.Contains(view.Tests, t => t.Path == "tests/routes.test.ts");
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_search_that_runs_past_the_query_deadline_but_within_the_code_deadline_is_not_expired()
+    {
+        CodeWorld? world = null;
+        using var slow = new CodeWorld(decorateTimed: (inner, _) => new AdvancingSearch(inner, () => world!.World.Clock.Advance(TimeSpan.FromSeconds(10))));
+        world = slow;
+        _ = await slow.ImportSharing();
+
+        var view = (await slow.Code(MapWorld.HumanWith("""{"deadline":"4s"}"""))).Value;
+
+        Assert.All(["lexical-tests", "lexical-schema"], id => Assert.NotEqual(ContextErrors.CodeSearchTimedOut.Code, Row(view, id).Code, StringComparer.Ordinal));
         Assert.Contains(view.Tests, t => t.Path == "tests/routes.test.ts");
     }
 

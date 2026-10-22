@@ -76,7 +76,7 @@ internal static class LensGather
         lens.Records(ScopeJson.Items(intent, "records"), "record", "key", "label", altLabelField: null);
         lens.Records(ScopeJson.Items(intent, "decisions"), "decision", "node", "label", "text");
         lens.Source(MapSource(lenses));
-        lens.Sources(Sources(lenses).Where(static s => !string.Equals(ScopeJson.Str(s, "id"), "map", StringComparison.Ordinal)));
+        lens.Sources(Sources(lenses).Where(static s => !IsMapOrCodeIndex(ScopeJson.Str(s, "id"))));
         lens.Edges(ScopeJson.Items(product, "edges"));
         return lens;
     }
@@ -100,6 +100,10 @@ internal static class LensGather
         lens.Edges(ScopeJson.Items(code, "edges").Concat(ScopeJson.Items(lenses, "edges")).Concat(Implements(files)));
         return lens;
     }
+
+    /// <summary>The map feeds every lens as its own source; the code index feeds only the code band's symbols, which the code lens records.</summary>
+    private static bool IsMapOrCodeIndex(string? id) =>
+        string.Equals(id, "map", StringComparison.Ordinal) || string.Equals(id, "code-index", StringComparison.Ordinal);
 
     private static JsonObject NotConfigured(string id) => new() { ["id"] = id, ["state"] = "not-configured", ["reason"] = "not-configured" };
 
