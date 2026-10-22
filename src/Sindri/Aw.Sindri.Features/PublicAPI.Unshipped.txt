@@ -786,11 +786,30 @@ Aw.Sindri.Features.GetProfile.GetProfileResponse.ChangedPaths.get -> System.Coll
 Aw.Sindri.Features.GetProfile.GetProfileResponse.ChangedPaths.init -> void
 Aw.Sindri.Features.GetProfile.GetProfileResponse.CheckedAt.get -> System.DateTimeOffset?
 Aw.Sindri.Features.GetProfile.GetProfileResponse.CheckedAt.init -> void
-Aw.Sindri.Features.GetProfile.GetProfileResponse.Deconstruct(out Aw.Sindri.Core.Ids.ProfileHash? Approved, out System.DateTimeOffset? ApprovedAt, out Aw.Sindri.Core.Ids.ProfileHash? Live, out System.DateTimeOffset? CheckedAt, out bool Changed, out System.Collections.Generic.IReadOnlyList<string!>! ChangedPaths, out Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.GetProfile.GetProfileResponse.Deconstruct(out Aw.Sindri.Core.Ids.ProfileHash? Approved, out System.DateTimeOffset? ApprovedAt, out Aw.Sindri.Core.Ids.ProfileHash? Live, out System.DateTimeOffset? CheckedAt, out bool Changed, out System.Collections.Generic.IReadOnlyList<string!>! ChangedPaths, out Aw.Sindri.Core.Views.AsOf! AsOf, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetProfile.ProfilePack!>! Packs) -> void
 Aw.Sindri.Features.GetProfile.GetProfileResponse.Equals(Aw.Sindri.Features.GetProfile.GetProfileResponse? other) -> bool
-Aw.Sindri.Features.GetProfile.GetProfileResponse.GetProfileResponse(Aw.Sindri.Core.Ids.ProfileHash? Approved, System.DateTimeOffset? ApprovedAt, Aw.Sindri.Core.Ids.ProfileHash? Live, System.DateTimeOffset? CheckedAt, bool Changed, System.Collections.Generic.IReadOnlyList<string!>! ChangedPaths, Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.GetProfile.GetProfileResponse.GetProfileResponse(Aw.Sindri.Core.Ids.ProfileHash? Approved, System.DateTimeOffset? ApprovedAt, Aw.Sindri.Core.Ids.ProfileHash? Live, System.DateTimeOffset? CheckedAt, bool Changed, System.Collections.Generic.IReadOnlyList<string!>! ChangedPaths, Aw.Sindri.Core.Views.AsOf! AsOf, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetProfile.ProfilePack!>! Packs) -> void
 Aw.Sindri.Features.GetProfile.GetProfileResponse.Live.get -> Aw.Sindri.Core.Ids.ProfileHash?
 Aw.Sindri.Features.GetProfile.GetProfileResponse.Live.init -> void
+Aw.Sindri.Features.GetProfile.GetProfileResponse.Packs.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetProfile.ProfilePack!>!
+Aw.Sindri.Features.GetProfile.GetProfileResponse.Packs.init -> void
+Aw.Sindri.Features.GetProfile.ProfilePack
+Aw.Sindri.Features.GetProfile.ProfilePack.<Clone>$() -> Aw.Sindri.Features.GetProfile.ProfilePack!
+Aw.Sindri.Features.GetProfile.ProfilePack.Deconstruct(out string! Kind, out string! Id, out string! Source, out string? Hash, out string! Pin, out string! Status) -> void
+Aw.Sindri.Features.GetProfile.ProfilePack.Equals(Aw.Sindri.Features.GetProfile.ProfilePack? other) -> bool
+Aw.Sindri.Features.GetProfile.ProfilePack.Hash.get -> string?
+Aw.Sindri.Features.GetProfile.ProfilePack.Hash.init -> void
+Aw.Sindri.Features.GetProfile.ProfilePack.Id.get -> string!
+Aw.Sindri.Features.GetProfile.ProfilePack.Id.init -> void
+Aw.Sindri.Features.GetProfile.ProfilePack.Kind.get -> string!
+Aw.Sindri.Features.GetProfile.ProfilePack.Kind.init -> void
+Aw.Sindri.Features.GetProfile.ProfilePack.Pin.get -> string!
+Aw.Sindri.Features.GetProfile.ProfilePack.Pin.init -> void
+Aw.Sindri.Features.GetProfile.ProfilePack.Source.get -> string!
+Aw.Sindri.Features.GetProfile.ProfilePack.Source.init -> void
+Aw.Sindri.Features.GetProfile.ProfilePack.Status.get -> string!
+Aw.Sindri.Features.GetProfile.ProfilePack.Status.init -> void
+Aw.Sindri.Features.GetProfile.ProfilePack.ProfilePack(string! Kind, string! Id, string! Source, string? Hash, string! Pin, string! Status) -> void
 Aw.Sindri.Features.GetQueue.GetQueueRequest
 Aw.Sindri.Features.GetQueue.GetQueueRequest.<Clone>$() -> Aw.Sindri.Features.GetQueue.GetQueueRequest!
 Aw.Sindri.Features.GetQueue.GetQueueRequest.Equals(Aw.Sindri.Features.GetQueue.GetQueueRequest? other) -> bool
