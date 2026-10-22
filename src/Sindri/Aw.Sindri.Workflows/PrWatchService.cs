@@ -41,8 +41,6 @@ internal sealed partial class PrWatchService(IWatchedPulls watched, IPullRequest
     /// <summary>The unanswered polls in a row after which the service reports SND-FORGE-004.</summary>
     internal const int UnreachablePolls = 3;
 
-    private static readonly bool _redStub = Environment.ProcessId > 0;
-
     /// <summary>The service's name in the schedule.</summary>
     public static readonly ServiceName ServiceId = ServiceName.From("pr-watch");
 
@@ -54,7 +52,6 @@ internal sealed partial class PrWatchService(IWatchedPulls watched, IPullRequest
     public async ValueTask<Result<ScheduledResult>> Run(ScheduledRun run, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(run);
-        if (_redStub) { throw new NotSupportedException(); }
         if (await Settings(cancellationToken).ConfigureAwait(false) is not { } settings)
         {
             return ScheduledResult.Quiet;   // no approved profile names no forge and no pull request: nothing to watch

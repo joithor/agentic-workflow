@@ -51,7 +51,8 @@ public sealed class PrWatchServiceTests : IDisposable
         var recorded = Assert.Single(await rig.Events());
         Assert.Equal((Item, "review"), (recorded.Item, Outcome(recorded)));
         var fact = JsonDocument.Parse((await rig.Contents.Read(Fact(recorded), Token)).Value.ToArray()).RootElement;
-        Assert.Equal((pull.Link, "a1", ["review"]), (fact.GetProperty("subject").GetString(), fact.GetProperty("headSha").GetString(), fact.GetProperty("changes").EnumerateArray().Select(c => c.GetString()).ToArray()));
+        Assert.Equal((pull.Link, "a1"), (fact.GetProperty("subject").GetString(), fact.GetProperty("headSha").GetString()));
+        Assert.Equal(["review"], fact.GetProperty("changes").EnumerateArray().Select(c => c.GetString()), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -147,23 +148,21 @@ public sealed class PrWatchServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task A_host_that_did_not_answer_is_not_asked_again_until_its_back_off_ends_and_the_wait_doubles()
+    public async Task A_host_that_did_not_answer_is_left_alone_for_a_wait_that_doubles_with_each_unanswered_poll()
     {
         await using var rig = await Rig();
         rig.Watching(_forge.Add(_repo, "feature", "a1").Link);
-        _forge.Failure = SindriErrors.ForgeUnavailable.With("rate limited");
-        _ = await rig.Poll();
-        var asked = _forge.Calls.Count(c => c == "Digest");
+        _forge.Failure = SindriErrors.ForgeUnavailable.With("rate limited");   // the poll interval is 5 s; each poll below starts 6 s after the last unless it says otherwise
 
-        _ = await rig.Poll(wait: TimeSpan.FromSeconds(5));   // the first wait is one poll interval (5 s): the poll interval itself has passed, the back-off has not (now + 5 s is the edge)
-        var after = await rig.Poll(wait: TimeSpan.FromSeconds(5));
-        var second = _forge.Calls.Count(c => c == "Digest");
-        _ = await rig.Poll(wait: TimeSpan.FromSeconds(6));   // the second wait is 10 s
-        var third = _forge.Calls.Count(c => c == "Digest");
+        _ = await rig.Poll();                                  // t=6: the first unanswered poll: asked again after 5 s
+        _ = await rig.Poll();                                  // t=12: asked; the second: asked again after 10 s
+        var asked = _forge.Calls.Count(static c => c == "Digest");
+        _ = await rig.Poll();                                  // t=18: the poll interval has passed, the back-off (until t=22) has not
+        var during = _forge.Calls.Count(static c => c == "Digest");
+        _ = await rig.Poll(wait: TimeSpan.FromSeconds(5));     // t=23: the back-off is over
+        var after = _forge.Calls.Count(static c => c == "Digest");
 
-        Assert.Equal(1, asked);
-        Assert.Equal(ScheduledResult.Quiet, after.Value);
-        Assert.True(second >= asked && third <= second + 1);
+        Assert.Equal((2, 2, 3), (asked, during, after));
     }
 
     [Fact]
