@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Sindri.Core.EngineReads;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -31,5 +32,5 @@ public static class EngineFacts
     /// <param name="activityId">The RecordEvent activity id of a marker, or null.</param>
     /// <returns>The event.</returns>
     public static EngineEventFacts Event(long id, DateTimeOffset time, string type = "ActivityTaskScheduled", string? activityId = null) =>
-        new(id, time, type, "step.checks", $"{type} {id}", activityId);
+        new(id, time, type, "step.checks", $"{type} {id.ToString(CultureInfo.InvariantCulture)}", activityId);
 }

@@ -8,6 +8,7 @@ namespace Aw.Sindri.Testing.Engine;
 /// <summary>The Temporal engine in memory: the server, worker and mirror a test sets, the running instances, and each instance's history (newest first).</summary>
 public sealed class FakeEngineReader : IEngineReader
 {
+    private readonly Dictionary<string, int> _calls = new(StringComparer.Ordinal);
     private readonly Dictionary<InstanceAddress, (string RunId, IReadOnlyList<EngineEventFacts> Events)> _histories = [];
 
     /// <summary>The server it reports.</summary>
@@ -20,13 +21,13 @@ public sealed class FakeEngineReader : IEngineReader
     public EngineMirror MirrorFacts { get; set; } = new(0, 0);
 
     /// <summary>The running instances.</summary>
-    public List<EngineInstanceFacts> Running { get; } = [];
+    public IList<EngineInstanceFacts> Running { get; } = [];
 
     /// <summary>When true, every call fails as a server that doesn't answer would (SND-ENGINE-001).</summary>
     public bool Down { get; set; }
 
     /// <summary>How many times each kind of call ran, by method name.</summary>
-    public Dictionary<string, int> Calls { get; } = new(StringComparer.Ordinal);
+    public IDictionary<string, int> Calls => _calls;
 
     /// <summary>Gives <paramref name="address"/> a history.</summary>
     /// <param name="address">The instance.</param>
@@ -52,7 +53,7 @@ public sealed class FakeEngineReader : IEngineReader
     /// <inheritdoc/>
     public async ValueTask<Result<IReadOnlyList<EngineInstanceFacts>>> Instances(CancellationToken cancellationToken)
     {
-        Calls["Instances"] = Calls.GetValueOrDefault("Instances") + 1;
+        _calls["Instances"] = _calls.GetValueOrDefault("Instances") + 1;
         if (Hold is { } hold)
         {
             await hold.Task.ConfigureAwait(false);
@@ -67,13 +68,13 @@ public sealed class FakeEngineReader : IEngineReader
     public ValueTask<Result<EngineHistoryFacts>> History(string reference, int page, int pageSize, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(reference);
-        Calls["History"] = Calls.GetValueOrDefault("History") + 1;
+        _calls["History"] = _calls.GetValueOrDefault("History") + 1;
         if (Down)
         {
             return ValueTask.FromResult<Result<EngineHistoryFacts>>(SindriErrors.EngineUnavailable.With("the fake engine is down"));
         }
 
-        var found = _histories.Keys.Where(a => a.Value == reference || WorkflowInstanceId.Of(a).Value == reference).Select(a => (InstanceAddress?)a).FirstOrDefault();
+        var found = _histories.Keys.Where(a => a.Value == reference || WorkflowInstanceId.Of(a).Value == reference).Cast<InstanceAddress?>().FirstOrDefault();
         if (found is not { } address)
         {
             return ValueTask.FromResult<Result<EngineHistoryFacts>>(SindriErrors.EngineNotFound.With($"no execution for '{reference}'"));
@@ -85,7 +86,7 @@ public sealed class FakeEngineReader : IEngineReader
 
     private ValueTask<Result<T>> Answer<T>(string call, T value)
     {
-        Calls[call] = Calls.GetValueOrDefault(call) + 1;
+        _calls[call] = _calls.GetValueOrDefault(call) + 1;
         return ValueTask.FromResult<Result<T>>(Down ? SindriErrors.EngineUnavailable.With("the fake engine is down") : value);
     }
 }
