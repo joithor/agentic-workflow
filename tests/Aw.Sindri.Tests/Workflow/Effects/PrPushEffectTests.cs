@@ -115,6 +115,19 @@ public sealed class PrPushEffectTests
     }
 
     [Fact]
+    public async Task A_redispatch_that_finds_its_own_push_already_counted_does_not_count_it_again()
+    {
+        _rig.Diff.Advance(PrEffectRig.Workspace);
+        var held = new Dictionary<string, string> { ["fact:push"] = """{ "sha": "aaa111+", "commits": ["aaa111+"], "comments": [], "source": false, "cause": "ci", "ciFixes": 1 }""" };
+
+        _ = await Dispatch();
+        var again = await Dispatch(held: held);
+
+        Assert.True(again.Existed);
+        Assert.Equal(1, (await Pushed(again)).GetProperty("ciFixes").GetInt32());
+    }
+
+    [Fact]
     public async Task A_push_for_a_comment_carries_ciFixes_unchanged()
     {
         _rig.Diff.Advance(PrEffectRig.Workspace);
