@@ -12,7 +12,8 @@
 #   --title TEXT     the item's title (default: the feature file's first heading)
 #   --stall SECONDS  no progress for this long is a stop (default 300)
 #   --max-wait SEC   the whole follow gives up after this long (default 3600)
-#   --auto-desk      answer a desk state with its default outcome (the first the status offers), recording each
+#   --auto-desk      answer a desk state with its default outcome (the first the status offers), and a budget park
+#                    with a grant of 300k tokens, recording each
 #   --map FILE       the context map to import (authored map format, docs/sindri/demo-handoff.md 5b); default: a small
 #                    map generated for the feature (its doc, one surface, one code node)
 #   --code FILE      the repo file the generated map says the feature changes (default: the first repo file the
@@ -476,6 +477,9 @@ follow() {
       if { [ "$chip" = "WITH YOU" ] || [ "$chip" = DECISION ]; } && [ "$AUTO_DESK" = 1 ]; then   # a desk task shows as DECISION or WITH YOU
         if auto_desk "$addr"; then last_change="$(date +%s)"; sleep 1; continue; fi
       fi
+      if [ "$chip" = PARKED ] && [ "$AUTO_DESK" = 1 ]; then   # a budget park gets a grant: a scratch home, the point is the next stop
+        case "$reason" in budget*) if auto_grant "$addr"; then last_change="$(date +%s)"; sleep 1; continue; fi ;; esac
+      fi
       case "$chip" in
         "WITH YOU" | DECISION) stop_block "desk" "$recipe has an open desk task (chip $chip) in state $state: a Step the line can't run itself, answered by a human or an agent" "$addr" ;;
         PARKED)     stop_block "parked" "$recipe parked in $state: ${reason:-unknown}" "$addr" ;;
@@ -486,6 +490,18 @@ follow() {
     [ $((now - last_change)) -le "$STALL" ] || { stop_block "stalled" "no change for ${STALL}s" "$ADDRESS"; exit 1; }
     sleep 3
   done
+}
+
+# Answers a budget park with a token grant of $GRANT_TOKENS (an answer on a parent is forwarded to the parked child).
+# Shares --desk-max with the desk answers; each grant is in the summary's desk list. Returns 1 at --desk-max.
+GRANT_TOKENS=300000
+auto_grant() {
+  local addr="$1"
+  [ "${#DESK_LOG[@]}" -lt "$DESK_MAX" ] || return 1
+  say "auto-desk: $addr grant $GRANT_TOKENS tokens"
+  DESK_LOG+=("$addr grant-tokens $GRANT_TOKENS")
+  human workflow answer "$addr" --grant-tokens "$GRANT_TOKENS" 2>&1 | tail -2 | sed 's/^/  /' >&2
+  return 0
 }
 
 # Answers a desk state with the first outcome its status offers: the status text prints the command ("sindri workflow
