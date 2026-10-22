@@ -18,7 +18,7 @@ Every block reads its inputs as stored facts through the block runtime and talks
 | Block | Replies | Does |
 |---|---|---|
 | `effect.pr.push` | `pushed`, `pushedSource`, `nothing`, `headMoved`, `rejected` | Pushes the workspace head to the PR head with a lease on the head `fact:prState` saw; never forces and never rebases. Carries `fact:push` (`sha`, `commits`, `comments`, `source`, `cause`, `ciFixes`; `ciFixes` counts a `ci` push once, what `gate.pr.autofix-cap` reads). A dispatch repeated after its push landed is `pushed` with `Existed`. Appends the `push` row on `pushed` and `pushedSource` |
-| `effect.pr.record` | none | Appends a `recheck` or `docs` row from the fact the child returned (`kind`, `result`) |
+| `effect.pr.record` | none | Appends a `recheck` or `docs` row from the fact the child returned (`kind`, `result`), or an `end` row on a transition into a terminal (`kind: end`, `terminal`, and `notes` on `rework`) |
 | `effect.pr.rerun-checks` | none | Asks the forge to run the failed checks again on the commit they failed on (`checks.sha`, else `head.sha`). Writes no row |
 | `effect.pr.merge` | `merged`, `blocked`, `headMoved` | Merges with the forge's expected-head check; the method is the recipe's `method`, else the profile's `workflow.pr.mergeMethod`, else squash. Human caller only (W23). Appends the `merge` row on `merged` |
 | `effect.pr.reply` | none | Forms `thread`, `reaction`, `fixed`, `fixedReplies`, `hold` and `none`. A post is made once per effect identity (Sindri's marker is derived from it); every form writes its comment mark (W26) keyed by the identity, so a redelivery writes none twice; reply text is scrubbed first. Appends a `comment` row |
@@ -43,6 +43,7 @@ Every row carries `kind`, `identity`, `instance`, `headSha` and `at`; the kind a
 | `push` | `effect.pr.push` | `cause`, `commits`, `comments` (empty for now), `source` |
 | `comment` | `effect.pr.reply` | `comment`, `type` (the `decision` argument's `type`), `outcome` (`replied`, `reacted`, `fixed`, `held`, `skipped`), `commit` |
 | `recheck`, `docs` | `effect.pr.record` | `result` |
+| `end` | `effect.pr.record` | `terminal` (`merged`, `closed`, `stopped`, `rework`), `reworkNotesHash` (`sha256:` of `fact:reworkNotes`' content, on `rework` only) |
 | `merge` | `effect.pr.merge` | `method`, `sha`, `actor` (the optional `actor` argument; null without one) |
 
 A step with no instance address still runs and writes nothing.
@@ -51,7 +52,6 @@ A step with no instance address still runs and writes nothing.
 
 | Gap | Why |
 |---|---|
-| `end` row | Nothing runs on the transitions into a terminal. It needs an effect on each of them and either `effect.pr.record` accepting `kind: end` or a new `effect.pr.end`; both move the recipe pins |
 | `base` on `PullView` | The forge port has no base or default branch, so `start.base` is null, `step.pr.snapshot` never reports `restack` and `head.ref` and `base` are not in `fact:prState` |
 | `restack`, `docsMerge` and `merge-docs` rows | `effect.pr.restack`, `effect.pr.create-stacked` and `effect.pr.merge-docs` are descriptors only until the engine's Retarget lands |
 | `effect.pr.open` labels | The open effect does not apply labels yet |

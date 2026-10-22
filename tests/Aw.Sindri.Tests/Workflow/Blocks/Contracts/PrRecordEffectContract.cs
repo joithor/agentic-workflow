@@ -15,6 +15,7 @@ public sealed class PrRecordEffectContract : BlockContract
 
     protected override BlockDescriptor Descriptor => PrEffects.Record;
 
+    // PENDING repin: the descriptor gained the 'terminal' and 'notes' parameters (end row), so its hash moved
     protected override string ExpectedHash => "sha256:6cccfc9b02bd6d8d2c3fc14270043193dbba32f1016ad049bc67593f9ed91643";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
