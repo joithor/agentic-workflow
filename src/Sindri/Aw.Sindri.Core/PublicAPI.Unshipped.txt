@@ -16348,3 +16348,6 @@ Aw.Sindri.Core.Forge.IPullRequests.DefaultBranch(Aw.Sindri.Core.Forge.PullRepo! 
 Aw.Sindri.Core.Forge.IPullRequests.Digest(System.Collections.Generic.IReadOnlyList<string!>! links, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Forge.PullDigest!>!>!>
 Aw.Sindri.Core.Forge.PullView.Base.get -> string!
 Aw.Sindri.Core.Forge.PullView.Base.init -> void
+Aw.Sindri.Core.Scheduling.IndexBuildWords
+static Aw.Sindri.Core.Scheduling.IndexBuildWords.IsBuildOf(Aw.Sindri.Core.Jobs.JobRow! job, string! repo) -> bool
+static Aw.Sindri.Core.Scheduling.IndexBuildWords.Waiting(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Jobs.JobRow!>! finishedNewestFirst, System.DateTimeOffset now) -> string?

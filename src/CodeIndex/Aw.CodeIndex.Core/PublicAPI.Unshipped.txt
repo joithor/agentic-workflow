@@ -1370,8 +1370,6 @@ static Aw.CodeIndex.Core.Planning.ProjectManifests.Directories(System.Collection
 Aw.CodeIndex.Core.Embedding.EmbedText
 Aw.CodeIndex.Core.EmbeddingTarget
 static Aw.CodeIndex.Core.Embedding.EmbedText.Of(Aw.CodeIndex.Core.Model.EmbedCandidate! candidate) -> string!
-static Aw.CodeIndex.Core.Embedding.EmbeddingTarget.Check(Aw.CodeIndex.Core.Model.EmbeddingsSettings! settings) -> Aw.Kernel.Error?
-static Aw.CodeIndex.Core.Embedding.EmbeddingTarget.IsLoopbackUrl(string! url) -> bool
 Aw.CodeIndex.Core.Planning.ContinuationAction
 Aw.CodeIndex.Core.Planning.ContinuationAction.Pass = 0 -> Aw.CodeIndex.Core.Planning.ContinuationAction
 Aw.CodeIndex.Core.Planning.ContinuationAction.Suppress = 1 -> Aw.CodeIndex.Core.Planning.ContinuationAction

@@ -86,11 +86,11 @@ internal sealed class CodeIndexDoctor(ICodeIndex index, IRepoHeads heads, IJobVi
         var name = "code-index:" + repo.Repo.Value;
         var running = mine.Exists(static j => j.State == JobState.Running);
         var finished = mine.Where(static j => j.State != JobState.Running && j.EndedAt is not null).OrderByDescending(static j => j.EndedAt).ToList();
-        var buildWords = running ? "building" : Waiting(finished, now) ?? "build queued";
+        var buildWords = running ? "building" : IndexBuildWords.Waiting(finished, now) ?? "build queued";
         return repo.State switch
         {
             IndexState.Damaged => new DoctorCheck(name, CheckState.Fail, "index damaged, rebuilding (SND-CODEIDX-010)", "none needed: the next tick deletes and rebuilds it; sindri jobs shows the build"),
-            IndexState.Missing => new DoctorCheck(name, CheckState.Warn, running ? "building the first index" : Waiting(finished, now) ?? "first build queued", Fix: null),
+            IndexState.Missing => new DoctorCheck(name, CheckState.Warn, running ? "building the first index" : IndexBuildWords.Waiting(finished, now) ?? "first build queued", Fix: null),
             IndexState.Ok => Readable(name, repo, live, buildWords, now),
             _ => Readable(name, repo, live, buildWords, now),
         };
@@ -108,24 +108,6 @@ internal sealed class CodeIndexDoctor(ICodeIndex index, IRepoHeads heads, IJobVi
         return live?.Head is { } head && head != repo.Commit
             ? new DoctorCheck(name, CheckState.Warn, $"stale: index at {short7}, head at {head.Value[..7]}; {buildWords}", "none needed: the next tick builds it")
             : new DoctorCheck(name, CheckState.Ok, $"{short7}, {Age(repo.BuiltAt, now)}, {string.Join(" · ", repo.Layers.Select(static l => $"{Word(l.Layer)} {Word(l.State)}"))}", Fix: null);
-    }
-
-    // "retrying in N min" after failures in a row, "waiting for a free build slot" after a deferred build; null when neither holds.
-    private static string? Waiting(List<JobRow> finished, DateTimeOffset now)
-    {
-        if (finished is not [var newest, ..] || newest.EndedAt is not { } ended)
-        {
-            return null;
-        }
-
-        if (IndexJobs.Deferred(newest))
-        {
-            return "waiting for a free build slot";
-        }
-
-        var failures = finished.TakeWhile(static j => j.State == JobState.Failed).Count();
-        var due = ended + SyncGapDecision.Wait(failures);
-        return failures > 0 && now < due ? string.Create(CultureInfo.InvariantCulture, $"retrying in {Math.Ceiling((due - now).TotalMinutes)} min") : null;
     }
 
     private static DoctorCheck Layer(string name, string word, List<LayerStatus> layers, LayerName which)
