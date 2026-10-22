@@ -3,6 +3,7 @@ using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Features.AddRepo;
 using Aw.Sindri.Features.ConnectOnyx;
 using Aw.Sindri.Features.DeferOnyx;
+using Aw.Sindri.Features.OnboardRepo;
 using Aw.Sindri.Features.RegisterMcp;
 using Aw.Sindri.Features.SetupOnyx;
 
@@ -17,6 +18,7 @@ internal static class SetupRows
     internal static IReadOnlyList<CommandRow> All { get; } =
     [
         JobRows.Job("AddRepo", typeof(AddRepoRequest), "/sindri/setup/repos", "sindri repo add <path>"),   // a job-class row: a session is refused (SND-AUTH-002), the app and the terminal start it
+        JobRows.Job("OnboardRepo", typeof(OnboardRepoRequest), "/sindri/setup/repos/onboard", "sindri repo onboard [<path>]"),   // a job-class row like AddRepo: the terminal and the app start it, a session is refused; the setup service onboards on its own after an approval
         JobRows.Job("RegisterMcp", typeof(RegisterMcpJobRequest), "/sindri/setup/mcp", "sindri mcp register --apply") with { ServiceGrants = ["setup"] },
         JobRows.Job("SetupOnyx", typeof(SetupOnyxRequest), "/sindri/onyx/setup", "sindri onyx up"),
         Ready("ConnectOnyx", typeof(ConnectOnyxRequest), "/sindri/onyx/account", "sindri onyx connect"),
