@@ -1,6 +1,7 @@
 using System.Text;
 using Aw.Kernel;
 using Aw.Sindri.Core.Forge;
+using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -20,8 +21,11 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 /// <param name="facts">Reads 'fact:pr', 'comment' and 'body' back.</param>
 /// <param name="marks">The comment marks (W26).</param>
 /// <param name="clock">Stamps a mark.</param>
-internal sealed class PrReplyEffect(IPullRequests pulls, IFactContents facts, IPrCommentMarks marks, TimeProvider clock) : IEffectKind, IDescribedBlock
+/// <param name="scrubber">Takes secrets out of a reply's text before the forge gets it.</param>
+internal sealed class PrReplyEffect(IPullRequests pulls, IFactContents facts, IPrCommentMarks marks, TimeProvider clock, ITextScrubber scrubber) : IEffectKind, IDescribedBlock
 {
+    private readonly ITextScrubber _scrubber = scrubber;   // red: not applied yet
+
     private const int MarkerLimit = 128;
 
     /// <inheritdoc/>
