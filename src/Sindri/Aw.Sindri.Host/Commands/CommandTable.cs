@@ -102,6 +102,7 @@ internal static class CommandTable
             ["status", .. var rest] when Json(rest) is { } json => await verbs.Status(json, ct).ConfigureAwait(false),
             ["stop"] => await verbs.Stop(ct).ConfigureAwait(false),
             ["profile", "validate", .. var rest] when Json(rest) is { } json => await verbs.Validate(json, ct).ConfigureAwait(false),
+            ["profile", "init", .. var rest] when Json(rest) is { } json => await verbs.InitProfile(json, ct).ConfigureAwait(false),
             ["profile", "approve", .. var rest] when Approval(rest) is { } a => await new Verbs(client, probe, output, services, c => start.EnsureRunning(!a.NoStart, c))
                 .Approve(a.Hash, Interactive(), Console.In, ct).ConfigureAwait(false),
             ["views", "rebuild", .. var rest] when NoStart(rest) is { } noStart => await new Verbs(client, probe, output, services, c => start.EnsureRunning(!noStart, c))
@@ -212,7 +213,7 @@ internal static class CommandTable
     private static async Task<int> Repo(string[] args, ControlPlaneClient client, Output output, IServiceProvider services, (CancellationToken Interrupt, CancellationToken Again) signals) =>
         args switch
         {
-            ["repo", "add", .. var rest] => await new RepoVerbs(client, output, new JobFollower(client, output, services.GetRequiredService<TimeProvider>())).Run(["add", .. rest], signals.Interrupt, signals.Again).ConfigureAwait(false),
+            ["repo", "add" or "onboard", ..] => await new RepoVerbs(client, output, new JobFollower(client, output, services.GetRequiredService<TimeProvider>())).Run(args[1..], signals.Interrupt, signals.Again).ConfigureAwait(false),
             ["repo", "status", .. var rest] => await new RepoStatusVerb(services, output).Run(rest, signals.Interrupt).ConfigureAwait(false),
             _ => await UnknownVerb(args, output).ConfigureAwait(false),
         };
