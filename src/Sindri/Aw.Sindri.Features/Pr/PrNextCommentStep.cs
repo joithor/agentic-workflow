@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 
@@ -15,6 +16,19 @@ internal sealed class PrNextCommentStep : IBlockStep, IBlockStepId
     /// <inheritdoc/>
     public ValueTask<BlockStepResult> Run(StepContext context, CancellationToken cancellationToken)
     {
-        throw new NotSupportedException();
+        ArgumentNullException.ThrowIfNull(context);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (PrCommentQueue.Parse(StepFacts.Read(context, "fact:prState")) is not { } queue)
+        {
+            return ValueTask.FromResult(BlockStepResult.Failed("step.pr.next-comment needs fact:prState, an object, which the instance does not hold"));
+        }
+
+        if (queue.NextUnhandled() is not { } entry)
+        {
+            return ValueTask.FromResult(StepFacts.Done(queue.WorkspaceAhead ? "drainedUnpushed" : "drained"));
+        }
+
+        var bots = context.Arguments.TryGetValue("bots", out var argument) ? PrCommentQueue.Bots(JsonNode.Parse(argument.GetRawText())) : [];
+        return ValueTask.FromResult(StepFacts.Done(PrCommentQueue.Classify(entry, bots), ("fact:comment", PrCommentQueue.ToFact(entry))));
     }
 }

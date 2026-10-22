@@ -12,6 +12,15 @@ internal sealed class PrHeldCommentStep : IBlockStep, IBlockStepId
     /// <inheritdoc/>
     public ValueTask<BlockStepResult> Run(StepContext context, CancellationToken cancellationToken)
     {
-        throw new NotSupportedException();
+        ArgumentNullException.ThrowIfNull(context);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (PrCommentQueue.Parse(StepFacts.Read(context, "fact:prState")) is not { } queue)
+        {
+            return ValueTask.FromResult(BlockStepResult.Failed("step.pr.held-comment needs fact:prState, an object, which the instance does not hold"));
+        }
+
+        return ValueTask.FromResult(queue.NextHeld() is { } entry
+            ? StepFacts.Done("comment", ("fact:comment", PrCommentQueue.ToFact(entry)))
+            : StepFacts.Done(queue.WorkspaceAhead ? "drainedUnpushed" : "drained"));
     }
 }
