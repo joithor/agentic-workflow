@@ -1,6 +1,7 @@
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Views;
+using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Features.GetJob;
 using Aw.Sindri.Features.ListJobs;
 using Aw.Sindri.Host.Commands;
@@ -21,6 +22,14 @@ public sealed class HeldRefreshLinksTests
     private static JobSummary Publish(int id, string summary, int minutes = 5) =>
         new(Job(id), JobKind.From("PublishContextMap"), JobKey.From("map-publish"), Item: null, Repo: null, Service: null, JobState.Succeeded, "service:context-map-refresh",
             _at.AddMinutes(minutes), _at.AddMinutes(minutes).AddSeconds(5), Rounds: 2, summary, Code: null);
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_summaries_the_jobs_write_are_the_ones_the_link_reads()
+    {
+        var link = HeldRefreshLinks.Publish(Refresh(summary: MapJobSummaries.Held(14)), HeldRefreshLinks.HeldVersion(Refresh(summary: MapJobSummaries.Held(14))) ?? -1, [Publish(2, MapJobSummaries.Promoted(14, "IndexReady"), minutes: 6)]);
+
+        Assert.Equal($"publish: {Job(2).Value} map v14 promoted · IndexReady (sindri jobs show {Job(2).Value})\n", link);
+    }
 
     [Fact, Trait("Lane", "unit")]
     public void Only_a_succeeded_refresh_that_ended_held_has_a_held_version()

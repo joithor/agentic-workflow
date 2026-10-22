@@ -47,7 +47,7 @@ internal sealed class MapPublishStatusReader(IContextEngine engine, IIndexOutloo
         var facts = view.Value.Hold is { } hold
             ? await Held(view.Value, hold, settings.Value, cancellationToken).ConfigureAwait(false)
             : await Current(view.Value, cancellationToken).ConfigureAwait(false);
-        return facts.IsError ? facts.Error : MapPublishStatusRules.Of(facts.Value, clock.GetUtcNow());
+        return facts.IsError ? facts.Error : MapPublishStatusRules.Of(facts.Value, clock.GetUtcNow(), clock.LocalTimeZone);
     }
 
     private async ValueTask<Result<MapPublishFacts>> Held(MapPublishView view, MapHold hold, ContextSettings settings, CancellationToken cancellationToken)
@@ -64,7 +64,7 @@ internal sealed class MapPublishStatusReader(IContextEngine engine, IIndexOutloo
         {
             var outlook = read.Value.TryGetValue(h.Repo.Value, out var detail) ? detail : null;
             var waiting = outlook is { Outlook: IndexOutlook.Coming or IndexOutlook.Backoff };
-            return new PublishRepoFact(h.Repo.Value, h.Commit, commits.Value.GetValueOrDefault(h.Repo.Value), waiting, outlook?.Word ?? RepoWait.None);
+            return new PublishRepoFact(h.Repo.Value, h.Commit, commits.Value.GetValueOrDefault(h.Repo.Value), waiting, outlook?.Word ?? RepoWait.None, outlook?.RetryAt);
         });
         return new MapPublishFacts(hold.Version, hold.Since, TimeSpan.FromMinutes(settings.Publish.WaitForIndexMinutes), view.Current, [.. repos], Reason: null, ByHand: false);
     }
@@ -72,30 +72,78 @@ internal sealed class MapPublishStatusReader(IContextEngine engine, IIndexOutloo
     private async ValueTask<Result<MapPublishFacts>> Current(MapPublishView view, CancellationToken cancellationToken)
     {
         var commits = await outlooks.IndexCommits([.. view.CurrentHeads.Select(static h => h.Repo.Value)], cancellationToken).ConfigureAwait(false);
-        var published = await ledger.Latest(EventTypes.ContextMapPublished, cancellationToken).ConfigureAwait(false);
-        var promoted = await ledger.Latest(EventTypes.ContextMapPromoted, cancellationToken).ConfigureAwait(false);
-        if (commits.IsError || published.IsError || promoted.IsError)
+        var window = await MapEvents(cancellationToken).ConfigureAwait(false);
+        if (commits.IsError || window.IsError)
         {
-            return commits.IsError ? commits.Error : published.IsError ? published.Error : promoted.Error;
+            return commits.IsError ? commits.Error : window.Error;
         }
 
         var repos = view.CurrentHeads.Select(h => new PublishRepoFact(h.Repo.Value, h.Commit, commits.Value.GetValueOrDefault(h.Repo.Value), Waiting: false, RepoWait.None));
-        var reason = published.Value is { } last && About(last, view.Current) is { } p ? Text(p, "reason") : null;
-        var byHand = promoted.Value is { } latest && About(latest, view.Current) is not null && latest.Envelope.Actor.StartsWith("human:", StringComparison.Ordinal);
-        return new MapPublishFacts(HeldVersion: null, default, TimeSpan.Zero, view.Current, [.. repos], reason, byHand);
+        var names = view.Repos.Select(static r => r.Value).ToHashSet(StringComparer.Ordinal);
+        return Settled(view.Current, [.. repos], [.. window.Value.Where(e => BelongsTo(e, names))]);
     }
 
-    // The event's payload, when it is about <version>; the ledger keeps the latest of the type, which may be an older version's.
-    private static JsonElement? About(LedgerEvent recorded, int? version)
+    private static MapPublishFacts Settled(int? current, IReadOnlyList<PublishRepoFact> repos, List<LedgerEvent> mine)
     {
-        if (version is null)
+        var published = Newest(mine, EventTypes.ContextMapPublished, current);
+        var promoted = Newest(mine, EventTypes.ContextMapPromoted, current);
+        var reason = published is null ? null : Text(Payload(published), "reason");
+        var byHand = promoted is not null && promoted.Envelope.Actor.StartsWith("human:", StringComparison.Ordinal);
+        return new MapPublishFacts(HeldVersion: null, default, TimeSpan.Zero, current, repos, reason, byHand, published?.Envelope.OccurredAt, DroppedHold(mine));
+    }
+
+    // The held map a newer build replaced, when that drop is the newest map event.
+    private static int? DroppedHold(List<LedgerEvent> mine) =>
+        mine.MaxBy(static e => e.Sequence) is { } newest && newest.Envelope.Type == EventTypes.ContextMapHoldDropped && Payload(newest).TryGetProperty("version", out var v) && v.TryGetInt32(out var n) ? n : null;
+
+    // The map events of the ledger's recent tail, oldest first: the latest of a type may belong to another repo, so the reader looks through a bounded window.
+    private async ValueTask<Result<List<LedgerEvent>>> MapEvents(CancellationToken cancellationToken)
+    {
+        var head = await ledger.Head(cancellationToken).ConfigureAwait(false);
+        if (head.IsError)
         {
-            return null;
+            return head.Error;
         }
 
+        List<LedgerEvent> found = [];
+        var cursor = Math.Max(0, head.Value - TailWindow);
+        while (true)
+        {
+            var page = await ledger.ReadAfter(cursor, PageSize, cancellationToken).ConfigureAwait(false);
+            if (page.IsError)
+            {
+                return page.Error;
+            }
+
+            if (page.Value.Count == 0)
+            {
+                return found;
+            }
+
+            found.AddRange(page.Value.Where(static e => _mapTypes.Contains(e.Envelope.Type)));
+            cursor = page.Value[^1].Sequence;
+        }
+    }
+
+    private const int TailWindow = 5000;
+    private const int PageSize = 500;
+
+    private static readonly HashSet<string> _mapTypes = new(StringComparer.Ordinal)
+    {
+        EventTypes.ContextMapPublished, EventTypes.ContextMapPromoted, EventTypes.ContextMapHeld, EventTypes.ContextMapHoldDropped, EventTypes.ContextMapImported,
+    };
+
+    private static LedgerEvent? Newest(List<LedgerEvent> events, string type, int? version) =>
+        version is null ? null : events.Where(e => e.Envelope.Type == type && Payload(e).TryGetProperty("version", out var n) && n.TryGetInt32(out var number) && number == version).MaxBy(static e => e.Sequence);
+
+    // True when the event's repo is one the caller sees (an event without a repo is everyone's); the ledger holds every repo's events.
+    private static bool BelongsTo(LedgerEvent recorded, HashSet<string> repos) =>
+        !Payload(recorded).TryGetProperty("repo", out var repo) || repo.ValueKind != JsonValueKind.String || repos.Contains(repo.GetString() ?? string.Empty);
+
+    private static JsonElement Payload(LedgerEvent recorded)
+    {
         using var document = JsonDocument.Parse(recorded.Envelope.Payload);
-        var root = document.RootElement.Clone();
-        return root.TryGetProperty("version", out var number) && number.TryGetInt32(out var n) && n == version ? root : null;
+        return document.RootElement.Clone();
     }
 
     private static string? Text(JsonElement payload, string name) => payload.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;

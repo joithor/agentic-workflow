@@ -67,7 +67,7 @@ public sealed class ContextMapApiTests
         Assert.Equal(HttpStatusCode.OK, status.Status);
         var root = JsonDocument.Parse(status.Body).RootElement;
         Assert.Equal(("published", false, 1), (root.GetProperty("state").GetString(), root.GetProperty("stale").GetBoolean(), root.GetProperty("version").GetInt32()));
-        Assert.Equal("Map v1 is published.", root.GetProperty("lines")[0].GetString());
+        Assert.Equal("Map v1 is current.", root.GetProperty("lines")[0].GetString());
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]

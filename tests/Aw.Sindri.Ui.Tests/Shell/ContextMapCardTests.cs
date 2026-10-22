@@ -36,8 +36,8 @@ public sealed class ContextMapCardTests
         var card = await Shown(RouteAnswer.Api("context-map-publish", "published"));
 
         Assert.True(card.IsVisible);
-        Assert.Equal(("Published", StateGlyph.Ok, "Map v1 is published."), (card.State, card.Glyph, Assert.Single(card.Lines)));
-        Assert.Equal("CONTEXT MAP: Published. Map v1 is published.", card.Name);
+        Assert.Equal(("Published", StateGlyph.Ok, "Map v1 is current."), (card.State, card.Glyph, Assert.Single(card.Lines)));
+        Assert.Equal("CONTEXT MAP: Published. Map v1 is current.", card.Name);
     }
 
     [Theory]

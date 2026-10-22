@@ -7,6 +7,8 @@
   "version": 1,
   "until": null,
   "lines": [
-    "Map v1 is published."
-  ]
+    "Map v1 is current."
+  ],
+  "publishedAt": null,
+  "waitingOn": null
 }

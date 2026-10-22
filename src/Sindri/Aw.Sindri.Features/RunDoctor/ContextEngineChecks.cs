@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
@@ -15,8 +16,12 @@ namespace Aw.Sindri.Features.RunDoctor;
 /// <param name="context">The context engine.</param>
 /// <param name="onyx">The onyx check.</param>
 /// <param name="publish">The map's publish status.</param>
-internal sealed class ContextEngineChecks(IContextEngine context, OnyxDoctor onyx, MapPublishStatusReader publish)
+/// <param name="clock">The time.</param>
+internal sealed class ContextEngineChecks(IContextEngine context, OnyxDoctor onyx, MapPublishStatusReader publish, TimeProvider clock)
 {
+    /// <summary>The name of the publish row.</summary>
+    internal const string PublishName = "context:publish";
+
     /// <summary>The checks, in the order doctor prints them.</summary>
     /// <param name="approved">The approved profile, or null.</param>
     /// <param name="cancellationToken">Cancels the reads and the probe.</param>
@@ -29,8 +34,7 @@ internal sealed class ContextEngineChecks(IContextEngine context, OnyxDoctor ony
         await onyx.Check(approved, cancellationToken).ConfigureAwait(false),
     ];
 
-    /// <summary>The name of the publish row.</summary>
-    internal const string PublishName = "context:publish";
+    private static readonly TimeSpan _staleGrace = TimeSpan.FromMinutes(5);
 
     // Held inside its wait and every published state read as ok; overdue (the map service is paused or the publish is failing) and code answers from another commit than the index warn.
     private async ValueTask<DoctorCheck> Publish(LoadedProfile? approved, CancellationToken cancellationToken)
@@ -49,14 +53,20 @@ internal sealed class ContextEngineChecks(IContextEngine context, OnyxDoctor ony
         }
 
         var view = status.Value;
-        var detail = view.Lines[0];
+        var last = view.Reason is { } reason ? $" (last publish: {reason})" : string.Empty;
         return view.State switch
         {
-            MapPublishStatusRules.Overdue => new DoctorCheck(PublishName, CheckState.Warn, detail, "sindri services resume context-map-refresh, then sindri jobs --kind PublishContextMap"),
-            MapPublishStatusRules.PublishedStale => new DoctorCheck(PublishName, CheckState.Warn, detail, "sindri code-index status; it clears when the index reaches the map's commit"),
-            _ => new DoctorCheck(PublishName, CheckState.Ok, detail, Fix: null),
+            MapPublishStatusRules.Held => new DoctorCheck(PublishName, CheckState.Ok, string.Create(CultureInfo.InvariantCulture, $"v{view.Version} held until {view.Until:HH:mm}Z"), Fix: null),
+            MapPublishStatusRules.Overdue => new DoctorCheck(PublishName, CheckState.Warn, view.Lines[0], "sindri services resume context-map-refresh, then sindri jobs --kind PublishContextMap"),
+            MapPublishStatusRules.PublishedStale when StillStale(view) => new DoctorCheck(PublishName, CheckState.Warn, FirstLine(view) + last, "sindri code-index status; it clears when the index reaches the map's commit"),
+            _ => new DoctorCheck(PublishName, CheckState.Ok, FirstLine(view) + last, Fix: null),
         };
     }
+
+    // More than five minutes after the publish the rows should have caught up; inside that window the index is just a little ahead.
+    private bool StillStale(MapPublishStatusView view) => view.PublishedAt is not { } at || clock.GetUtcNow() - at > _staleGrace;
+
+    private static string FirstLine(MapPublishStatusView view) => view.Lines.Count > 0 ? view.Lines[0] : view.Word;
 
     // The approved profile's scope as a service reads it (the deny globs apply); null while no profile is approved.
     private static ContextScope? ScopeOf(LoadedProfile? approved) => approved is null

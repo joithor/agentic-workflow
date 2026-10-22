@@ -11,5 +11,7 @@ namespace Aw.Sindri.Features;
 /// <param name="StaleRepos">Those repos with both commits; empty when <paramref name="Stale"/> is false.</param>
 /// <param name="Version">The held map's number, else the current map's.</param>
 /// <param name="Until">While held, when the wait ends; otherwise null.</param>
+/// <param name="PublishedAt">When the current map was published, or null while held or when no event says.</param>
+/// <param name="WaitingOn">While held, each repo the wait is on with its word, such as "web (building)".</param>
 /// <param name="Lines">The sentences to show, at most two repos' lines and then "and N more".</param>
-internal sealed record MapPublishStatusView(string State, string Word, string? Reason, bool Stale, IReadOnlyList<StaleRepo> StaleRepos, int Version, DateTimeOffset? Until, IReadOnlyList<string> Lines);
+internal sealed record MapPublishStatusView(string State, string Word, string? Reason, bool Stale, IReadOnlyList<StaleRepo> StaleRepos, int Version, DateTimeOffset? Until, IReadOnlyList<string> Lines, DateTimeOffset? PublishedAt = null, IReadOnlyList<string>? WaitingOn = null);

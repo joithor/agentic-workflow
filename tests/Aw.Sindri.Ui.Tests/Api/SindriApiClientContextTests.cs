@@ -217,7 +217,7 @@ public sealed class SindriApiClientContextTests
         Assert.Equal(("GET", "/sindri/context/map/publish"), (seen.Method, seen.Path));
         Assert.Null(seen.After);
         Assert.Equal(((string)GoldenFiles.Node("context-map-publish", "published")["state"]!, 1), (publish.State, publish.Version));
-        Assert.Equal(["Map v1 is published."], publish.Lines);
+        Assert.Equal(["Map v1 is current."], publish.Lines);
     }
 
     [Fact]

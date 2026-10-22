@@ -34,14 +34,14 @@ public sealed class ContextMapTextTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void The_publish_state_reads_as_its_id_and_word_then_Sindris_sentences_indented()
+    public void The_publish_state_reads_in_the_specs_short_form_then_Sindris_sentences_indented()
     {
         var view = new MapPublishStatusView("published-stale", "published, code answers stale", "TimedOut", Stale: true, [new StaleRepo("aw-split-panes", "abcdef0", "1234567")], 14, Until: null,
             ["Code answers are from abcdef0 (older than map v14, which is for 1234567)."]);
 
         var text = ContextMapText.Publish(view);
 
-        Assert.Equal("publish: published-stale (published, code answers stale)\n  Code answers are from abcdef0 (older than map v14, which is for 1234567).\n", text);
+        Assert.Equal("publish: published stale: v14 (reason timed-out, aw-split-panes stale)\n  Code answers are from abcdef0 (older than map v14, which is for 1234567).\n", text);
     }
 
     [Fact, Trait("Lane", "unit")]
