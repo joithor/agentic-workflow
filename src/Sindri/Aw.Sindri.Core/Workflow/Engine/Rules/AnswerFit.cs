@@ -47,7 +47,7 @@ internal static class AnswerFit
             return FitRefusals.Refuse($"{Spelled(answer.Variant)} doesn't fit {address}, {row.Shown}", row.Fix);
         }
 
-        if (OutOfBounds(instance.Frame, suspension, recipe, answer, address) is { } bounded)
+        if (OutOfBounds(instance, suspension, recipe, answer, address) is { } bounded)
         {
             return bounded;
         }
@@ -72,8 +72,8 @@ internal static class AnswerFit
             : null;
     }
 
-    // W7: '--grant n' is 1 to the loop's cap; '--grant-tokens n' is 1 to the original budget. Once per park holds because the grant ends the park.
-    private static Error? OutOfBounds(Frame frame, Suspension suspension, Recipe? recipe, AnswerGiven answer, string address)
+    // W7: '--grant n' is 1 to the loop's cap; '--grant-tokens n' is 1 to the original budget (a per-round instance: 4x it). Once per park holds because the grant ends the park.
+    private static Error? OutOfBounds(WorkflowInstance instance, Suspension suspension, Recipe? recipe, AnswerGiven answer, string address)
     {
         if (answer.Variant is not (AnswerVariant.Grant or AnswerVariant.GrantTokens))
         {
@@ -81,7 +81,7 @@ internal static class AnswerFit
         }
 
         var rounds = answer.Variant == AnswerVariant.Grant;
-        var upper = recipe is null ? int.MaxValue : rounds ? LoopCap(frame, suspension, recipe) : Budget(frame, recipe);
+        var upper = recipe is null ? int.MaxValue : rounds ? LoopCap(instance.Frame, suspension, recipe) : Budget(instance, recipe);
         if (answer.Amount is { } n && n >= 1 && n <= upper)
         {
             return null;
@@ -102,11 +102,12 @@ internal static class AnswerFit
             : int.MaxValue;
     }
 
-    // The original budget: the parked state's own, else the recipe's.
-    private static int Budget(Frame frame, Recipe recipe)
+    // The original budget: the parked state's own, else the recipe's; under the per-round rule one grant may add up to 4x it (BudgetRules.GrantTokens).
+    private static int Budget(WorkflowInstance instance, Recipe recipe)
     {
-        var own = recipe.States.TryGetValue(frame.State, out var state) ? state.Budget?.Tokens : null;
-        return own ?? recipe.Budget?.Tokens ?? int.MaxValue;
+        var own = recipe.States.TryGetValue(instance.Frame.State, out var state) ? state.Budget?.Tokens : null;
+        var original = own ?? recipe.Budget?.Tokens;
+        return (instance.Spent.IsPerRound ? BudgetRules.GrantBound(original) : original) ?? int.MaxValue;
     }
 
     private static string Spelled(AnswerVariant variant) => variant switch

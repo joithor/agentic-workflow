@@ -266,7 +266,7 @@ public static class WorkflowViewFixtures
         "ApplyCommand:answer-resume" => "--resume",
         "ApplyCommand:answer-reject" => "--reject",
         "ApplyCommand:answer-grant" => "--grant 1",
-        "ApplyCommand:answer-grant-tokens" => "--grant-tokens 200k",
+        "ApplyCommand:answer-grant-tokens" => "--grant-tokens 1M",
         "ApplyCommand:answer-accept" => "--accept",
         _ => throw new InvalidOperationException($"{action} is not an answer variant"),
     };
@@ -287,7 +287,7 @@ public static class WorkflowViewFixtures
     private static StatusAnswer Answer(AnswerKind kind, string address, string? arguments = null) => kind switch
     {
         AnswerKind.Grant => new(kind, Act("ApplyCommand:answer-grant"), ActionClass.Protected, $"sindri workflow answer {address} {arguments ?? "--grant 1"}", AtTerminal: true),
-        AnswerKind.GrantTokens => new(kind, Act("ApplyCommand:answer-grant-tokens"), ActionClass.Protected, $"sindri workflow answer {address} {arguments ?? "--grant-tokens 200k"}", AtTerminal: true),
+        AnswerKind.GrantTokens => new(kind, Act("ApplyCommand:answer-grant-tokens"), ActionClass.Protected, $"sindri workflow answer {address} {arguments ?? "--grant-tokens 1M"}", AtTerminal: true),
         AnswerKind.Accept => new(kind, Act("ApplyCommand:answer-accept"), ActionClass.Protected, $"sindri workflow answer {address} {arguments ?? "--accept"}", AtTerminal: true),
         AnswerKind.Resume => new(kind, Act("ApplyCommand:answer-resume"), ActionClass.Desk, $"sindri workflow answer {address} {arguments ?? "--resume"}", AtTerminal: false),
         AnswerKind.Text => new(kind, Act("ApplyCommand:answer-text"), ActionClass.Desk, $"sindri workflow answer {address} {arguments ?? "--text <answer>"}", AtTerminal: false),
