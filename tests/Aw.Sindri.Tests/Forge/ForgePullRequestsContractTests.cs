@@ -1,12 +1,10 @@
 using Aw.Forge.Core.Ports;
 using Aw.Forge.Core.Pulls;
-using Aw.Forge.Core.Refs;
-using Aw.Forge.Infrastructure;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Forge;
 using Aw.Sindri.Host.Forge;
 using Aw.Sindri.Testing.Forge;
-using Microsoft.Extensions.DependencyInjection;
+using Aw.Sindri.Core.Profile;
 
 namespace Aw.Sindri.Tests.Forge;
 
@@ -20,11 +18,9 @@ public sealed class ForgePullRequestsContractTests : PullRequestsContract, IDisp
     {
         var directory = Directory.CreateTempSubdirectory("aw-sindri-pulls-");
         _directories.Add(directory);
-        var provider = new ServiceCollection()
-            .AddForgeFileInfrastructure(name => name == "AW_STATE_DIR" ? directory.FullName : null, new ForgeHosts(["forge.test"]))
-            .BuildServiceProvider();
-        var forge = provider.GetRequiredService<IForge>();
-        var seed = provider.GetRequiredService<IForgeSeed>();
+        var created = ForgeAdapters.Create(new ForgeSettings("file", ["forge.test"]), name => name == "AW_STATE_DIR" ? directory.FullName : null, TimeProvider.System);
+        var forge = created.Value;
+        var seed = (IForgeSeed)forge;
         string SeedThread(string link, string body) => seed.SeedThread(new SeedThreadRequest(forge.Parse(link).Value, CommentKind.Thread, "reviewer", "MEMBER", IsBot: false, "src/a.cs", body)).Value;
         return new PullRequestsUnderTest(new ForgePullRequests(forge), new PullRepo("forge.test", "acme", "widgets"), "elsewhere.test", SeedThread, CanPush: false);
     }
