@@ -41,9 +41,11 @@ public sealed class GoldenContractTests
         ["workflow-instances"] = As<InstanceList>,
         ["workflow-instance"] = As<InstanceDetail>,
         ["workflow-instance-fact"] = As<FactView>,
+        ["workflow-instance-events"] = As<InstanceEventsView>,   // GET /workflow/instances/{id}/events: the run canvas's "What went wrong" (spec-shaped until the engine has a golden)
         ["workflow-status"] = As<StatusFields>,
         ["workflow-recipe"] = As<RecipeView>,
         ["workflow-recipes"] = As<RecipeList>,
+        ["workflow-recipes-id-stats"] = As<RecipeStatsView>,   // API P12: one recipe's stats, on the recipe sheet
         ["workflow-instances-start"] = AsStart,   // POST /workflow/instances: the request golden, and the started answer (which also carries the engine's whole view)
         ["needs-you"] = As<NeedsYouList>,
         ["decisions"] = As<DecisionList>,
@@ -77,6 +79,7 @@ public sealed class GoldenContractTests
         ["recipes-approve-all-start"] = As<ApproveAllStarted>,   // POST /workflow/recipes/approve-all's 202
         ["approve-all-job"] = As<ApproveAllJob>,   // GET /jobs/{id} of the approval
         ["profile-approve"] = As<ProfileApproved>,   // POST /profile/approve's approved and preview answers (needs-you slice 3: the typed approve on a drifted-profile row); the refusals are ProblemDetails
+        ["recipe-approve"] = As<RecipeApproved>,   // POST /workflow/recipes/{id}@{hash}/approve's accepted answer (needs-you slice 3b: the typed approve on a changed-workflow row; spec-shaped)
         ["workflow-complete"] = As<CompleteStepAccepted>,   // POST /workflow/instances/{id}/runs/{run}/complete's accepted answer (spec-shaped; the engine has no golden for it)
     };
 
