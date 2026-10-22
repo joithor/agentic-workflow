@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.ViewModels;
 
@@ -95,6 +96,18 @@ internal static partial class Labels
     /// <param name="waited">How long the row has waited, as <see cref="NeedsYouWaited"/> words it.</param>
     /// <returns>The words.</returns>
     internal static string NeedsYouFootRight(string waited) => "waiting " + waited;
+
+    /// <summary>The footer's right side once the row serves a timeout.</summary>
+    /// <param name="waited">How long the row has waited, as <see cref="NeedsYouWaited"/> words it.</param>
+    /// <param name="timeout">What the timeout does.</param>
+    /// <param name="left">The time left, as <see cref="Duration(long)"/> words it.</param>
+    /// <returns>"waiting 5h 51m · pauses and asks again in 6d 18h".</returns>
+    internal static string NeedsYouFootTimeout(string waited, TimeoutKind timeout, string left) => timeout switch
+    {
+        TimeoutKind.Parks => NeedsYouFootRight(waited) + " · pauses and asks again in " + left,
+        TimeoutKind.Escalates => NeedsYouFootRight(waited) + " · escalates in " + left,
+        _ => NeedsYouFootRight(waited),
+    };
 
     /// <summary>How long a row has waited, to the minute: "26m", "5h 51m", "6d 18h".</summary>
     /// <param name="age">How long.</param>
