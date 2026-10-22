@@ -83,6 +83,7 @@ internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchCh
                     : landed.Value
                         ? await Reply(source ? "pushedSource" : "pushed", counted, existed: true, cancellationToken).ConfigureAwait(false)
                         : await Reply("headMoved", pushed with { Commits = [] }, existed: false, cancellationToken).ConfigureAwait(false);
+            case PullPushOutcome.Rejected:
             default:
                 return await Reply("rejected", pushed with { Commits = [] }, existed: false, cancellationToken).ConfigureAwait(false);
         }
