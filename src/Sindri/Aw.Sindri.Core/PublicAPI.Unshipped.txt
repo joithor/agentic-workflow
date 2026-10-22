@@ -15167,13 +15167,13 @@ Aw.Sindri.Core.Judge.ChooseAnswer.Confidence.get -> double?
 Aw.Sindri.Core.Judge.ChooseAnswer.Confidence.init -> void
 Aw.Sindri.Core.Judge.ChooseAnswer.Provider.get -> string?
 Aw.Sindri.Core.Judge.ChooseAnswer.Provider.init -> void
-Aw.Sindri.Core.Judge.ChooseAnswer.DecisionId.get -> string?
-Aw.Sindri.Core.Judge.ChooseAnswer.DecisionId.init -> void
+Aw.Sindri.Core.Judge.ChooseAnswer.DecisionRef.get -> string?
+Aw.Sindri.Core.Judge.ChooseAnswer.DecisionRef.init -> void
 Aw.Sindri.Core.Judge.ChooseAnswer.Probabilities.get -> System.Collections.Generic.IReadOnlyDictionary<string!, double>?
 Aw.Sindri.Core.Judge.ChooseAnswer.Probabilities.init -> void
-Aw.Sindri.Core.Judge.ChooseAnswer.ChooseAnswer(Aw.Sindri.Core.Judge.ChooseStatus Status, string? Choice, string! Reason, double? Confidence = null, string? Provider = null, string? DecisionId = null, System.Collections.Generic.IReadOnlyDictionary<string!, double>? Probabilities = null) -> void
+Aw.Sindri.Core.Judge.ChooseAnswer.ChooseAnswer(Aw.Sindri.Core.Judge.ChooseStatus Status, string? Choice, string! Reason, double? Confidence = null, string? Provider = null, string? DecisionRef = null, System.Collections.Generic.IReadOnlyDictionary<string!, double>? Probabilities = null) -> void
 Aw.Sindri.Core.Judge.ChooseAnswer.<Clone>$() -> Aw.Sindri.Core.Judge.ChooseAnswer!
-Aw.Sindri.Core.Judge.ChooseAnswer.Deconstruct(out Aw.Sindri.Core.Judge.ChooseStatus Status, out string? Choice, out string! Reason, out double? Confidence, out string? Provider, out string? DecisionId, out System.Collections.Generic.IReadOnlyDictionary<string!, double>? Probabilities) -> void
+Aw.Sindri.Core.Judge.ChooseAnswer.Deconstruct(out Aw.Sindri.Core.Judge.ChooseStatus Status, out string? Choice, out string! Reason, out double? Confidence, out string? Provider, out string? DecisionRef, out System.Collections.Generic.IReadOnlyDictionary<string!, double>? Probabilities) -> void
 Aw.Sindri.Core.Judge.ChooseAnswer.Equals(Aw.Sindri.Core.Judge.ChooseAnswer? other) -> bool
 override Aw.Sindri.Core.Judge.ChooseAnswer.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Judge.ChooseAnswer.GetHashCode() -> int

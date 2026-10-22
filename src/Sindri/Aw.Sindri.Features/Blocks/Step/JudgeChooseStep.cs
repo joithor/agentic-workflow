@@ -63,7 +63,7 @@ internal sealed class JudgeChooseStep(IJudgeChoice judge, ITextScrubber scrubber
             ["confidenceKind"] = ConfidenceKind(answer.Provider),
             ["probabilities"] = probabilities,
             ["provider"] = answer.Provider,
-            ["decisionId"] = answer.DecisionId,
+            ["decisionId"] = answer.DecisionRef,
         }));
     }
 

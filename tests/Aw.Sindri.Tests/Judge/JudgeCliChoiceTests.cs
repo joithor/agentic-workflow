@@ -82,7 +82,7 @@ public sealed class JudgeCliChoiceTests
         Assert.Equal("model", answer.Reason);
         Assert.Equal(0.83, answer.Confidence);
         Assert.Equal("claude-cli", answer.Provider);
-        Assert.Equal("d-9", answer.DecisionId);
+        Assert.Equal("d-9", answer.DecisionRef);
         Assert.Equal(0.83, answer.Probabilities!["api"]);
     }
 
@@ -98,7 +98,7 @@ public sealed class JudgeCliChoiceTests
 
         Assert.Equal(ChooseStatus.Escalated, answer.Status);
         Assert.Equal(reason, answer.Reason);
-        Assert.Equal("d-2", answer.DecisionId);
+        Assert.Equal("d-2", answer.DecisionRef);
         Assert.Equal(0.4, answer.Probabilities!["ui"]);
     }
 

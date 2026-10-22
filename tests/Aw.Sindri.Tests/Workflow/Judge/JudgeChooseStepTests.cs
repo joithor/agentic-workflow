@@ -90,7 +90,7 @@ public sealed class JudgeChooseStepTests
     [InlineData("rule-timeout")]
     public async Task An_escalation_is_uncertain_and_the_decision_names_the_reason_and_the_probabilities(string reason)
     {
-        var judge = new FakeJudgeChoice().Answers(new ChooseAnswer(ChooseStatus.Escalated, Choice: null, reason, DecisionId: "d-3", Probabilities: new Dictionary<string, double>(StringComparer.Ordinal) { ["ui"] = 0.4, ["api"] = 0.35 }));
+        var judge = new FakeJudgeChoice().Answers(new ChooseAnswer(ChooseStatus.Escalated, Choice: null, reason, DecisionRef: "d-3", Probabilities: new Dictionary<string, double>(StringComparer.Ordinal) { ["ui"] = 0.4, ["api"] = 0.35 }));
 
         var result = await Run(judge, Context());
 

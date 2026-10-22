@@ -85,8 +85,8 @@ internal sealed class JudgeCliChoice(IToolRunner runner, Func<string, string?> e
         }
 
         return reason is "invalid-input" or "question-disabled"
-            ? new ChooseAnswer(ChooseStatus.Failed, Choice: null, reason, DecisionId: Text(envelope, "id"))
-            : new ChooseAnswer(ChooseStatus.Escalated, Choice: null, reason, DecisionId: Text(envelope, "id"), Probabilities: Probabilities(envelope));
+            ? new ChooseAnswer(ChooseStatus.Failed, Choice: null, reason, DecisionRef: Text(envelope, "id"))
+            : new ChooseAnswer(ChooseStatus.Escalated, Choice: null, reason, DecisionRef: Text(envelope, "id"), Probabilities: Probabilities(envelope));
     }
 
     private static ChooseAnswer Failed(string reason) => new(ChooseStatus.Failed, Choice: null, reason);
