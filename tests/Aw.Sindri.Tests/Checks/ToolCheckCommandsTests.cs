@@ -86,7 +86,7 @@ public sealed class ToolCheckCommandsTests
     {
         var tools = new FakeToolRunner(new ToolRun(ToolOutcome.Exited, 0, "ok"));
 
-        _ = await new ToolCheckCommands(tools, new Aw.Sindri.Testing.Checks.IdentityScrubber(), new FakeTimeProvider()).Run(new CheckInvocation("c", ["c"], TimeSpan.FromSeconds(1)), "/work", Token);
+        _ = await new ToolCheckCommands(tools, new Testing.Checks.IdentityScrubber(), new FakeTimeProvider()).Run(new CheckInvocation("c", ["c"], TimeSpan.FromSeconds(1)), "/work", Token);
 
         Assert.Equal("1", tools.Calls.Single().Environment!["AW_HEAVY_LOCK_HELD"]);
     }
