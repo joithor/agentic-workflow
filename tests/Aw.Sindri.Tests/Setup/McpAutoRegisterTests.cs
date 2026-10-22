@@ -189,7 +189,7 @@ public sealed class McpAutoRegisterTests
 
     private McpEvents Events() => new(_slice.Held, _slice.Store, _slice.Events, _slice.Callers);
 
-    private Task Listen(int port) => _endpoint.Write(new ControlEndpoint(new Uri("http://127.0.0.1:" + port.ToString(System.Globalization.CultureInfo.InvariantCulture)), Pid: 1, Epoch: 1), Token).AsTask();
+    private Task<Result<Unit>> Listen(int port) => _endpoint.Write(new ControlEndpoint(new Uri("http://127.0.0.1:" + port.ToString(System.Globalization.CultureInfo.InvariantCulture)), Pid: 1, Epoch: 1), Token).AsTask();
 
     private Task Run() => Run(_memory);
 
