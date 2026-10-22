@@ -88,17 +88,38 @@ internal static partial class Labels
     internal static string JobsHead(int running, int total) =>
         string.Create(CultureInfo.InvariantCulture, $"{running} running · {total} {(total == 1 ? "job" : "jobs")}");
 
-    /// <summary>A job's chip: a glyph and the state's word. A state this build doesn't know shows as itself in capitals, so a newer Sindri never fails the read.</summary>
+    /// <summary>A job's chip: a glyph and the state's word. A state this build doesn't know shows as itself, capitalised, so a newer Sindri never fails the read.</summary>
     /// <param name="state">The state as served.</param>
     /// <returns>The glyph and the word.</returns>
     internal static (string Glyph, string Word) JobChip(string state) => state switch
     {
-        "running" => ("●", "RUNNING"),
-        "succeeded" => ("✓", "DONE"),
-        "failed" => ("✕", "FAILED"),
-        "cancelled" => ("○", "CANCELLED"),
-        _ => ("○", state.ToUpperInvariant()),
+        "running" => ("●", "Running"),
+        "succeeded" => ("✓", "Done"),
+        "failed" => ("✕", "Failed"),
+        "cancelled" => ("○", "Cancelled"),
+        _ => ("○", state.Length == 0 ? state : char.ToUpperInvariant(state[0]) + state[1..]),
     };
+
+    /// <summary>A job kind in plain words. A kind this build has no name for reads as its humanised id.</summary>
+    /// <param name="kind">The kind as served (a catalog action id).</param>
+    /// <returns>The words.</returns>
+    internal static string JobKind(string kind) => kind switch
+    {
+        "SyncSources" => "Sync sources",
+        "RefreshContextMap" => "Refresh the context map",
+        "BuildContextMap" => "Build the context map",
+        "RunService" => "Run a service",
+        "ApproveAllRecipes" => "Approve all workflows",
+        "AddRepo" => "Add a repository",
+        "CheckLaunchTargets" => "Check agent launch targets",
+        "TestContextMap" => "Test the context map",
+        _ => Action(kind),
+    };
+
+    /// <summary>A job's rounds column.</summary>
+    /// <param name="rounds">The highest progress round.</param>
+    /// <returns>"1 round", "3 rounds".</returns>
+    internal static string JobRounds(int rounds) => string.Create(CultureInfo.InvariantCulture, $"{rounds} {(rounds == 1 ? "round" : "rounds")}");
 
     /// <summary>Who started a job, in words.</summary>
     /// <param name="startedBy">The served value ("service:host", "human", "session:...").</param>
