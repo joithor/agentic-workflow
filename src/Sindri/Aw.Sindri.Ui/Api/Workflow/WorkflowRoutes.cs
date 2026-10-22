@@ -59,6 +59,9 @@ internal static class WorkflowRoutes
         return (string.IsNullOrEmpty(hash) ? path : path.Append('@').Append(Uri.EscapeDataString(hash))).ToString();
     }
 
+    /// <summary>POST: approve one recipe hash (a protected command; the body is the challenge and its typed text).</summary>
+    internal static string ApproveRecipe(string recipe, string hash) => Recipe(recipe, hash) + "/approve";
+
     private static void Add(List<string> parts, string name, string? value)
     {
         if (!string.IsNullOrEmpty(value))
