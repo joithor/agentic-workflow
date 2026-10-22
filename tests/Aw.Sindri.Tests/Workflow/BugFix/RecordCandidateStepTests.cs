@@ -25,7 +25,7 @@ public sealed class RecordCandidateStepTests
         Assert.Equal(1, (int?)candidate["attempt"]);
         Assert.Equal("fix-1", (string?)candidate["branch"]);
         Assert.Equal("/work/fix-1", (string?)candidate["worktree"]);
-        Assert.Equal<string?>(["src/app.txt"], candidate["changedFiles"]!.AsArray().Select(static f => (string?)f), StringComparer.Ordinal);
+        Assert.Equal(["src/app.txt"], candidate["changedFiles"]!.AsArray().Select(static f => (string?)f), StringComparer.Ordinal);
     }
 
     [Fact]

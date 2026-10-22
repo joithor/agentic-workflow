@@ -59,7 +59,7 @@ public sealed class BundleRulesTests
     private static IReadOnlyList<Core.Workflow.Validation.RecipeFinding> Check(string step, WithValue bundle) =>
         CheckBlocks(RecipeOf(step, With(("bundle", bundle))), new Located("r.yaml", [], _catalog));
 
-    private static Core.Workflow.Recipes.Recipe RecipeOf(string step, Dictionary<string, WithValue> with) =>
+    private static Recipe RecipeOf(string step, Dictionary<string, WithValue> with) =>
         Of("run", [("run", Active(step, with: with)), ("done", Terminal())], [Go("run", "done", when: Outcome("done"))]);
 
     private static BlockDescriptor Bundling(string id) => new(

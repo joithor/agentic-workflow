@@ -71,7 +71,7 @@ public sealed class WorkflowReadVerbsTests : IDisposable
         Assert.Equal("            sindri workflow complete T-1/step/1 --run 1.1 --outcome done --output fact:output=<file>", lines[2]);
         Assert.Equal("  inputs    fact:spec  spec.md  sha256:aaaa...", lines[3]);
         Assert.Matches(@"^  timeout   parks in .+ \(desk\)$", lines[4]);
-        Assert.Equal("  budget    tokens 0 / 200k (state), 0 / 400k (instance)", lines[5]);
+        Assert.Equal("  budget    tokens 0 / 1M (state, this round), 0 used (instance)", lines[5]);
         Assert.Equal("  commands  complete, takeover, cancel", lines[6]);
     }
 

@@ -208,4 +208,29 @@ public sealed class JobSheetTests
 
         Assert.Equal(Labels.Copy, sheet.CopyLabel);
     }
+
+    [Fact]
+    public async Task The_job_id_has_its_own_copy_chip()
+    {
+        _f.ServeJob("running");
+        var sheet = _f.Sheet();
+        await sheet.Open(Url, Id, Token);
+
+        await sheet.CopyJobId(Token);
+
+        Assert.Equal((Id, Labels.Copied, Labels.Copied, Labels.Copy), (_f.Clipboard.Text, sheet.CopyIdLabel, sheet.CopyIdName, sheet.CopyLabel));
+    }
+
+    [Fact]
+    public async Task Copied_on_the_id_chip_does_not_carry_over_to_another_job()
+    {
+        _f.ServeJob("running");
+        var sheet = _f.Sheet();
+        await sheet.Open(Url, Id, Token);
+        await sheet.CopyJobId(Token);
+
+        sheet.Show("JOB-2");
+
+        Assert.Equal(Labels.Copy, sheet.CopyIdLabel);
+    }
 }
