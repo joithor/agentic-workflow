@@ -176,6 +176,26 @@ public abstract class ForgeContract : ForgeReadContract
         Expect.That(after.State == ChecksState.Pending && after.Failing.Count == 0, "re-run checks are pending");
     }
 
+    /// <summary>Seeded check counts show on the pull request; a re-run turns the failed checks into pending ones and a new head clears them.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task Check_counts_follow_the_seed_and_the_rerun()
+    {
+        var (run, pull) = await Open();
+        var seed = new SeedChecksRequest(pull, ChecksState.Failing, ["build"], new Dictionary<string, string>(StringComparer.Ordinal), Passed: 3, Pending: 2);
+
+        _ = Expect.Ok(run.Seed!.SeedChecks(seed), "SeedChecks");
+        var seeded = Expect.Ok(await run.Forge.GetPull(pull, Ct), "GetPull").Checks;
+        _ = Expect.Ok(await run.Forge.RerunChecks(pull, Sha('a'), Ct), "RerunChecks");
+        var rerun = Expect.Ok(await run.Forge.GetPull(pull, Ct), "GetPull after the re-run").Checks;
+        _ = Expect.Ok(run.Seed.AdvanceHead(pull, Sha('c')), "AdvanceHead");
+        var moved = Expect.Ok(await run.Forge.GetPull(pull, Ct), "GetPull after the head moved").Checks;
+
+        Expect.That(seeded.Passed == 3 && seeded.Pending == 2 && seeded.Failing.Count == 1, "the seeded counts show beside the failing names");
+        Expect.That(rerun.Passed == 3 && rerun.Pending == 3 && rerun.Failing.Count == 0, "a re-run turns the failed check into a pending one");
+        Expect.That(moved.Passed == 0 && moved.Pending == 0, "a new head has no counts");
+    }
+
     /// <summary>The digest's version changes with the pull request, and its comment count follows the threads.</summary>
     /// <returns>A task.</returns>
     [Fact]

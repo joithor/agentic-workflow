@@ -7,4 +7,6 @@ namespace Aw.Forge.Core.Pulls;
 /// <param name="State">The overall state.</param>
 /// <param name="Failing">The names of the failing checks.</param>
 /// <param name="Logs">Check name to log text.</param>
-public sealed record SeedChecksRequest(ForgeRef Pull, ChecksState State, IReadOnlyList<string> Failing, IReadOnlyDictionary<string, string> Logs);
+/// <param name="Passed">How many checks passed (the failing ones are not counted here).</param>
+/// <param name="Pending">How many checks have not finished.</param>
+public sealed record SeedChecksRequest(ForgeRef Pull, ChecksState State, IReadOnlyList<string> Failing, IReadOnlyDictionary<string, string> Logs, int Passed = 0, int Pending = 0);
