@@ -19,7 +19,7 @@ public sealed class PrReadyCheckStepTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static PullView Green() => new(Link, PullState.Open, Head, Mergeable: true, ReviewDecision: "APPROVED", UnresolvedThreads: 0, new PullChecks(PullChecksState.Passing, Head, []), [], "main");
+    private static PullView Green() => new(Link, PullState.Open, Head, Mergeable: true, ReviewDecision: "APPROVED", UnresolvedThreads: 0, new PullChecks(PullChecksState.Passing, Head, [], Passed: 0, Pending: 0), [], "main");
 
     // The snapshot fact: the pull request's fields in camelCase, enums by name.
     private static string Snapshot(PullView pull) => new JsonObject
@@ -45,7 +45,7 @@ public sealed class PrReadyCheckStepTests
     {
         var pull = _pulls.Add(_repo, "feat/x", Head);
         pull.ReviewDecision = "APPROVED";
-        pull.Checks = new PullChecks(PullChecksState.Passing, Head, []);
+        pull.Checks = new PullChecks(PullChecksState.Passing, Head, [], Passed: 0, Pending: 0);
         return pull;
     }
 
@@ -92,7 +92,7 @@ public sealed class PrReadyCheckStepTests
         {
             case "head": pull.HeadSha = "bbbb2222"; break;
             case "checksSha": pull.Checks = pull.Checks! with { Sha = "bbbb2222" }; break;   // why: Seed sets the checks
-            case "checksState": pull.Checks = new PullChecks(PullChecksState.Failing, Head, ["build"]); break;
+            case "checksState": pull.Checks = new PullChecks(PullChecksState.Failing, Head, ["build"], Passed: 0, Pending: 0); break;
             case "review": pull.ReviewDecision = "CHANGES_REQUESTED"; break;
             case "mergeable": pull.Mergeable = false; break;
             case "threads": _ = _pulls.SeedThread(pull.Link, "please fix"); break;

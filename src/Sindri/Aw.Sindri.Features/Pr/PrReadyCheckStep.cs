@@ -67,7 +67,7 @@ internal sealed class PrReadyCheckStep(IPullRequests pulls) : IBlockStep, IBlock
                 Flag(root["mergeable"]),
                 Text(root["reviewDecision"]),
                 Count(root["unresolvedThreads"]),
-                new PullChecks(checksState, checksSha, []),
+                new PullChecks(checksState, checksSha, [], Passed: 0, Pending: 0),
                 Labels(root["labels"]),
                 Text(root["base"]) ?? string.Empty);
         }

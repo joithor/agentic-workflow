@@ -40,7 +40,7 @@ internal sealed partial class ForgePullRequests(IForge forge) : IPullRequests
 
         var s = snapshot.Value;
         var open = threads.Value.Count(static t => t.Kind == CommentKind.Thread && !t.Resolved);
-        return new PullView(pull.Link, State(s.Status), s.Head.Sha, s.Mergeable, s.ReviewDecision, open, new PullChecks(Checks(s.Checks.State), s.Checks.Sha, s.Checks.Failing), s.Labels, s.Base.Ref);
+        return new PullView(pull.Link, State(s.Status), s.Head.Sha, s.Mergeable, s.ReviewDecision, open, new PullChecks(Checks(s.Checks.State), s.Checks.Sha, s.Checks.Failing, s.Checks.Passed, s.Checks.Pending), s.Labels, s.Base.Ref);
     }
 
     public async ValueTask<Result<string>> CheckLog(string link, string check, CancellationToken cancellationToken)

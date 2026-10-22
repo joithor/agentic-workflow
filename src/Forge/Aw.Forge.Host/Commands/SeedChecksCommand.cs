@@ -13,7 +13,7 @@ internal static class SeedChecksCommand
     internal const string Name = "seed checks";
 
     internal static readonly CommandSpec Spec = new(
-        "seed checks <link> --state none|pending|passing|failing [--failing <name,name>]", ["state"], ["failing"], [], Positionals: 1);
+        "seed checks <link> --state none|pending|passing|failing [--failing <name,name>] [--passed <n>] [--pending <n>]", ["state"], ["failing", "passed", "pending"], [], Positionals: 1);
 
     internal static Task<int> Run(CommandLine line, IServiceProvider services, JsonSerializerOptions json)
     {
@@ -23,9 +23,16 @@ internal static class SeedChecksCommand
             ? parsed
             : ForgeErrors.Invalid.With("state: none, pending, passing or failing");
         var failing = (line["failing"] ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        var result = forge.Parse(line.Positionals[0]).Bind(pull => state.Bind(s =>
-            seed.SeedChecks(new SeedChecksRequest(pull, s, failing, new Dictionary<string, string>(StringComparer.Ordinal)))))
+        var result = forge.Parse(line.Positionals[0]).Bind(pull => state.Bind(s => Count(line, "passed").Bind(passed => Count(line, "pending").Bind(pending =>
+            seed.SeedChecks(new SeedChecksRequest(pull, s, failing, new Dictionary<string, string>(StringComparer.Ordinal), passed, pending))))))
             .Map(_ => new Applied(Ok: true));
         return Task.FromResult(CommandOutput.Write(result, json));
     }
+
+    private static Result<int> Count(CommandLine line, string option) =>
+        line[option] is not { } text
+            ? 0
+            : int.TryParse(text, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var count)
+            ? count
+            : ForgeErrors.Invalid.With($"{option}: a whole number");
 }

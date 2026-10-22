@@ -47,6 +47,10 @@ internal sealed class WorldPull
 
     public List<string> Failing { get; set; } = [];
 
+    public int PassedChecks { get; set; }
+
+    public int PendingChecks { get; set; }
+
     public Dictionary<string, string> Logs { get; set; } = [];
 
     public List<WorldThread> Threads { get; set; } = [];
