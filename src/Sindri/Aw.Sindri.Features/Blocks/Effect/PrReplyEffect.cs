@@ -22,7 +22,8 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 /// <param name="marks">The comment marks (W26).</param>
 /// <param name="clock">Stamps a mark.</param>
 /// <param name="scrubber">Takes secrets out of a reply's text before the forge gets it.</param>
-internal sealed class PrReplyEffect(IPullRequests pulls, IFactContents facts, IPrCommentMarks marks, TimeProvider clock, ITextScrubber scrubber) : IEffectKind, IDescribedBlock
+/// <param name="record">The merge record, where the comment rows go.</param>
+internal sealed class PrReplyEffect(IPullRequests pulls, IFactContents facts, IPrCommentMarks marks, TimeProvider clock, ITextScrubber scrubber, MergeRecord record) : IEffectKind, IDescribedBlock
 {
     private const int MarkerLimit = 128;
 

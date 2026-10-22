@@ -17,7 +17,8 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 /// <param name="pulls">The pull requests port.</param>
 /// <param name="facts">Reads 'pr' and 'at' back.</param>
 /// <param name="profile">The approved profile: the merge method when the recipe names none.</param>
-internal sealed class PrMergeEffect(IPullRequests pulls, IFactContents facts, IApprovedProfile profile) : IEffectKind, IDescribedBlock
+/// <param name="record">The merge record, where the merge row goes.</param>
+internal sealed class PrMergeEffect(IPullRequests pulls, IFactContents facts, IApprovedProfile profile, MergeRecord record) : IEffectKind, IDescribedBlock
 {
     /// <inheritdoc/>
     public static BlockDescriptor Descriptor => PrEffects.Merge;
