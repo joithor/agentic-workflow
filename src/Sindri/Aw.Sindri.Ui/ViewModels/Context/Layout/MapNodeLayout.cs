@@ -1,4 +1,3 @@
-using Avalonia;
 
 namespace Aw.Sindri.Ui.ViewModels.Context.Layout;
 
@@ -25,7 +24,7 @@ internal sealed record MapNodeLayout(
     string Kind,
     MapBand Band,
     MapShape Shape,
-    Rect Bounds,
+    MapRect Bounds,
     bool IsAnchor,
     bool Confirmed,
     string Provenance,

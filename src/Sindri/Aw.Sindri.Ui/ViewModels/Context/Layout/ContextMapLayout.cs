@@ -1,4 +1,3 @@
-using Avalonia;
 using Aw.Sindri.Ui.Api.Context;
 
 namespace Aw.Sindri.Ui.ViewModels.Context.Layout;
@@ -40,8 +39,8 @@ internal static partial class ContextMapLayout
             new(MapBand.Code, places.CodeTop, places.CodeHeight, Labels.ContextMapBandCode, Labels.ContextMapMetaCode(view.Bands.Code.Files.Count(f => f.Tests.Count == 0), view.Bands.Code.Files.Count(f => f.Tests.Count > 0), namesAvailable: !string.Equals(view.Bands.Code.Symbols.State, "unavailable", StringComparison.Ordinal))),
         };
         var laid = Route(edges, nodes);
-        return new MapLayout(new Rect(0, 0, WorldWidth, places.CodeTop + places.CodeHeight), bands, nodes, laid);
+        return new MapLayout(new MapRect(0, 0, WorldWidth, places.CodeTop + places.CodeHeight), bands, nodes, laid);
     }
 
-    private sealed record Places(IReadOnlyDictionary<string, Rect> Rects, double IntentHeight, double ProductTop, double ProductHeight, double CodeTop, double CodeHeight);
+    private sealed record Places(IReadOnlyDictionary<string, MapRect> Rects, double IntentHeight, double ProductTop, double ProductHeight, double CodeTop, double CodeHeight);
 }

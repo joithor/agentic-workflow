@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.Json.Nodes;
-using Avalonia;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
@@ -44,7 +43,7 @@ public sealed class ContextMapLayoutTests
     {
         var layout = Layout();
 
-        Assert.Equal(new Rect(0, 0, 1360, 872), layout.World);
+        Assert.Equal(new MapRect(0, 0, 1360, 872), layout.World);
         Assert.Equal([(MapBand.Intent, 0d, 252d), (MapBand.Product, 304d, 336d), (MapBand.Code, 688d, 184d)], layout.Bands.Select(b => (b.Band, b.Top, b.Height)));
         Assert.Equal([Labels.ContextMapBandIntent, Labels.ContextMapBandProduct, Labels.ContextMapBandCode], layout.Bands.Select(b => b.Title), StringComparer.Ordinal);
     }
@@ -275,7 +274,7 @@ public sealed class ContextMapLayoutTests
         });
     }
 
-    private static bool OnEdge(Rect r, Point p) =>
+    private static bool OnEdge(MapRect r, MapPoint p) =>
         ((Math.Abs(p.Y - r.Top) < 0.01 || Math.Abs(p.Y - r.Bottom) < 0.01) && p.X >= r.Left && p.X <= r.Right)
         || ((Math.Abs(p.X - r.Left) < 0.01 || Math.Abs(p.X - r.Right) < 0.01) && p.Y >= r.Top && p.Y <= r.Bottom);
 

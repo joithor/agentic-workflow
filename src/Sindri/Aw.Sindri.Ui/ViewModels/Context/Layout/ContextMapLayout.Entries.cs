@@ -1,5 +1,4 @@
 using System.Globalization;
-using Avalonia;
 using Aw.Sindri.Ui.Api.Context;
 
 namespace Aw.Sindri.Ui.ViewModels.Context.Layout;
@@ -19,7 +18,7 @@ internal static partial class ContextMapLayout
 
     private sealed record Entry(string Key, string Label, string Kind, MapBand Band, Row Row, MapShape Shape, double Width, bool IsAnchor, bool Confirmed, string Provenance, double Confidence, string Detail, string Path, bool HasConflict, string? LinkId, int Order, bool Untrusted = false)
     {
-        internal MapNodeLayout ToLayout(Rect bounds) => new(Key, Label, Kind, Band, Shape, bounds, IsAnchor, Confirmed, Provenance, Confidence, Detail, Path, Row == Row.Tests, HasConflict, LinkId, Untrusted);
+        internal MapNodeLayout ToLayout(MapRect bounds) => new(Key, Label, Kind, Band, Shape, bounds, IsAnchor, Confirmed, Provenance, Confidence, Detail, Path, Row == Row.Tests, HasConflict, LinkId, Untrusted);
     }
 
     private static List<Entry> Entries(LensesView view)

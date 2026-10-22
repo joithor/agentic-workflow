@@ -1,5 +1,3 @@
-using Avalonia;
-using Aw.Sindri.Ui.Views.Controls;
 
 namespace Aw.Sindri.Ui.ViewModels.Context.Layout;
 
@@ -14,7 +12,7 @@ namespace Aw.Sindri.Ui.ViewModels.Context.Layout;
 /// <param name="Label">The pill's words.</param>
 /// <param name="Middle">Where the pill's centre sits.</param>
 /// <param name="Link">The link id when served, else null.</param>
-internal sealed record MapEdgeLayout(string Key, string From, string To, string Type, EdgeRoute Route, bool Dashed, bool CrossesBands, string Label, Point Middle, string? Link)
+internal sealed record MapEdgeLayout(string Key, string From, string To, string Type, EdgeRoute Route, bool Dashed, bool CrossesBands, string Label, MapPoint Middle, string? Link)
 {
     /// <summary>Gets the pill's centre x, px.</summary>
     internal double MiddleX => Middle.X;

@@ -1,6 +1,4 @@
-using Avalonia;
 using Aw.Sindri.Ui.Api.Context;
-using Aw.Sindri.Ui.Views.Controls;
 
 namespace Aw.Sindri.Ui.ViewModels.Context.Layout;
 
@@ -49,9 +47,9 @@ internal static partial class ContextMapLayout
         return laid;
     }
 
-    private static Point Top(Rect r) => new(r.Center.X, r.Top);
+    private static MapPoint Top(MapRect r) => new(r.Center.X, r.Top);
 
-    private static Point Bottom(Rect r) => new(r.Center.X, r.Bottom);
+    private static MapPoint Bottom(MapRect r) => new(r.Center.X, r.Bottom);
 
     private static EdgeRoute Path(MapNodeLayout a, MapNodeLayout b)
     {
@@ -65,7 +63,7 @@ internal static partial class ContextMapLayout
         var sameRow = Math.Abs(a.Bounds.Center.Y - b.Bounds.Center.Y) < 1;
         if (sameRow && right.Left - left.Right <= 110)
         {
-            return EdgeRoute.Straight(new Point(left.Right, left.Center.Y), new Point(right.Left, right.Center.Y));
+            return EdgeRoute.Straight(new MapPoint(left.Right, left.Center.Y), new MapPoint(right.Left, right.Center.Y));
         }
 
         if (sameRow)
@@ -80,8 +78,8 @@ internal static partial class ContextMapLayout
         }
 
         // Rows that overlap in height (a ticket beside a decision): out of one side, in at the other.
-        var (from, to) = (new Point(left.Right, left.Center.Y), new Point(right.Left, right.Center.Y));
+        var (from, to) = (new MapPoint(left.Right, left.Center.Y), new MapPoint(right.Left, right.Center.Y));
         var middle = (from.X + to.X) / 2;
-        return EdgeRoute.Elbow([from, new Point(middle, from.Y), new Point(middle, to.Y), to]);
+        return EdgeRoute.Elbow([from, new MapPoint(middle, from.Y), new MapPoint(middle, to.Y), to]);
     }
 }
