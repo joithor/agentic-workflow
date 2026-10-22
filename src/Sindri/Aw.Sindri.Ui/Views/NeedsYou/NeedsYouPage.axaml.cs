@@ -41,6 +41,7 @@ internal sealed partial class NeedsYouPage : UserControl
     /// <returns>True when focus moved to the row, or was already in it.</returns>
     internal bool FocusRow(string rowId)
     {
+        Dbg.M("FocusRow");
         var row = NeedsYouGroups.GetVisualDescendants().OfType<NeedsYouInboxRow>()
             .FirstOrDefault(r => r.IsEffectivelyVisible && string.Equals(r.RowId, rowId, StringComparison.Ordinal));
         if (row is null)
@@ -87,6 +88,7 @@ internal sealed partial class NeedsYouPage : UserControl
     // Another request on the card starts it at the top, and what "read to the end" means is read again once it is drawn.
     private void OnPageChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        Dbg.M("OnPageChanged " + e.PropertyName);
         if (string.Equals(e.PropertyName, nameof(NeedsYouPageViewModel.Card), StringComparison.Ordinal))
         {
             NeedsYouCardScroll.ScrollToHome();
@@ -99,6 +101,7 @@ internal sealed partial class NeedsYouPage : UserControl
     // §5 open item 4: "read" is the scroll flag only, and a card shorter than its viewport is read at once. A card that is not drawn says nothing.
     private void UpdateRead()
     {
+        Dbg.M("UpdateRead");
         var scroll = NeedsYouCardScroll;
         if (_page is not null && scroll.IsEffectivelyVisible && scroll.Viewport.Height > 0)
         {
@@ -128,6 +131,7 @@ internal sealed partial class NeedsYouPage : UserControl
     // list row, so focus never falls to the window.
     private void OnBarChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        Dbg.Deep("OnBarChanged " + e.PropertyName);
         if (_page is null || !string.Equals(e.PropertyName, nameof(NeedsYouBarViewModel.Mode), StringComparison.Ordinal) || _page.Bar.Mode == _mode)
         {
             return;
@@ -208,6 +212,7 @@ internal sealed partial class NeedsYouPage : UserControl
     // A row is seen once it has been on screen and focused, in the active window, for a second (the list's rule, as on Home).
     private void Look(RoutedEventArgs e, bool looking)
     {
+        Dbg.M("Look");
         if (_page is not null && (e.Source as Visual)?.GetSelfAndVisualAncestors().OfType<NeedsYouInboxRow>().FirstOrDefault() is { RowId.Length: > 0 } row)
         {
             _page.Watch(row.RowId, looking && row.IsEffectivelyVisible && TopLevel.GetTopLevel(this) is Window { IsActive: true });
