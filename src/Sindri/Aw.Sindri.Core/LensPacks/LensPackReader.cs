@@ -141,5 +141,5 @@ public static class LensPackReader
 
     private static string? Text(JsonObject? obj, string name) => obj?[name] is JsonValue v && v.TryGetValue<string>(out var s) ? s : null;
 
-    private static Error Bad(string id, string problem) => SindriErrors.InvalidInput.With($"the lens pack '{id}' {problem}");
+    private static Error Bad(string id, string problem) => PackErrors.Invalid.With($"the lens pack '{id}' {problem}");
 }

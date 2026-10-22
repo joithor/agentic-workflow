@@ -3,6 +3,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks.Step;
 using Aw.Sindri.Features.Line;
+using Aw.Sindri.Testing.LensPacks;
 using Aw.Sindri.Testing.Packets;
 using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Workflow;
@@ -25,5 +26,5 @@ public sealed class DesignEvidenceStepContract : BlockContract
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await new DesignEvidenceStep(new InMemoryPackets(), new InMemoryRunArea(), new InMemoryRepoCheckouts()).Run(ScopingStepContexts.Of("step.design.evidence", []), cancellationToken);
+        _ = await new DesignEvidenceStep(new InMemoryPackets(), new InMemoryRunArea(), new InMemoryRepoCheckouts(), new FakeStylePacks()).Run(ScopingStepContexts.Of("step.design.evidence", []), cancellationToken);
 }

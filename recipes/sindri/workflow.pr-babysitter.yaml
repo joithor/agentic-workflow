@@ -38,7 +38,7 @@ states:
     kind: active
     step: { use: step.pr.ci-fix, inputs: [input.pr.context, input.handoff-note, input.phase-packet] }
     loop: ci
-    budget: { tokens: 400k }
+    budget: { tokens: 1M }
     timeout: { after: 4h, then: park }
     next: "Fix the failing checks on {item}'s pull request, attempt {loop.ci}/{loop.ci.cap}. Commit in the workspace; Sindri pushes."
   next-comment:
@@ -76,25 +76,25 @@ states:
   fix:
     kind: active
     step: { use: step.pr.fix-comment, with: { effort: full }, inputs: [input.pr.context, input.handoff-note, input.phase-packet] }
-    budget: { tokens: 300k }
+    budget: { tokens: 1M }
     timeout: { after: 4h, then: park }
     next: "Make the change this comment asks for on {item}'s pull request. Commit with its trailer; Sindri pushes."
   fix-nit:
     kind: active
     step: { use: step.pr.fix-comment, with: { effort: cheap }, inputs: [input.pr.context, input.handoff-note, input.phase-packet] }
-    budget: { tokens: 60k }
+    budget: { tokens: 1M }
     timeout: { after: 1h, then: park }
     next: "Fix this nit if it is cheap; otherwise decline it with a one-line reason."
   fix-bot:
     kind: active
     step: { use: step.pr.fix-comment, with: { effort: bot }, inputs: [input.pr.context, input.handoff-note, input.phase-packet] }
-    budget: { tokens: 200k }
+    budget: { tokens: 1M }
     timeout: { after: 2h, then: park }
     next: "Fix this automated finding, or decline it with the reason it doesn't apply."
   reply:
     kind: active
     step: { use: step.pr.reply-draft, inputs: [input.pr.context, input.handoff-note] }
-    budget: { tokens: 60k }
+    budget: { tokens: 1M }
     timeout: { after: 1h, then: park }
     next: "Draft the reply to this comment on {item}'s pull request. Sindri checks and posts it."
   pushing:
@@ -165,7 +165,7 @@ states:
     why: "Fixes a held comment the way you decided."
     kind: active
     step: { use: step.pr.fix-comment, with: { effort: full }, inputs: [input.pr.context, input.handoff-note, input.phase-packet] }
-    budget: { tokens: 300k }
+    budget: { tokens: 1M }
     timeout: { after: 4h, then: park }
     next: "Make the fix the owner asked for on this held comment. Commit with its trailer; Sindri pushes when the walk ends."
   rework-notes:
@@ -390,7 +390,6 @@ loops:
   held:        { cap: 40 }
   docs-merges: { cap: 3 }
   retries:     { cap: 5 }
-budget: { tokens: 3M }
 evals:
   - evals/workflow.pr-babysitter/happy.jsonl
   - evals/workflow.pr-babysitter/every-comment-type.jsonl
