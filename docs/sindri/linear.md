@@ -14,7 +14,7 @@ Onyx's Linear connector reads issues and comments only. The native source also r
 |---|---|---|
 | Projects | `linear:project/<uuid>` | project structure: which issues belong to which project |
 | Linear Documents | `linear:doc/<uuid>` | where PRDs and TDDs live; cited with their `updatedAt` |
-| Project updates | `linear:update/<uuid>` | status history of a project |
+| Project updates | `linear:update/<uuid>` | status history of a project; its latest five are listed in the project's record (an update has no title, so search never lists one by itself) |
 | Issue and pull request attachments | on the issue | the PRs that shipped an issue |
 | Issues with their comments | `linear:issue/<uuid>` | the same issues Onyx returns, cited once (below) |
 
@@ -89,6 +89,9 @@ Whether Linear accepts the key is `context sources status`, not doctor:
 | `SND-CONTEXT-071` | Linear refused the key (missing, revoked, or it can't read): create a new read-only key |
 | `SND-CONTEXT-072` | Linear answered with an unexpected shape; the query goes on without it |
 | `SND-CONTEXT-073` | Linear has no record at the cited version (deleted, left the teams, or changed) |
+| `SND-CONTEXT-010` | Linear was unreachable, missed the deadline or said `rate limited, retry later` (HTTP 429 or a `RATELIMITED` error); the query goes on without it |
+
+The profile's `teams` are applied by Linear in the filter of each read, so the source finds its records however many other projects the workspace has. Lists are read a page at a time (250 nodes, at most 20 pages; the log says when that cut one). An issue's first 50 comments and attachments are read, and its record ends with `(more comments not shown)` when there are more.
 
 An `env:` pointer is read from the control plane's environment as it was when `serve` started, while doctor reads the
 calling shell's, so the two can disagree; `file:` and (on macOS) `keychain:` read the same in both.
