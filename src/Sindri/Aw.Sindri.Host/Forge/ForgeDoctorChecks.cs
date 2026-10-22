@@ -1,5 +1,4 @@
 using System.Globalization;
-using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Forge;
@@ -50,7 +49,7 @@ internal sealed class ForgeDoctorChecks(IApprovedProfile approved, IPullRequests
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            return new DoctorCheck(Name, CheckState.Warn, $"the forge did not answer within {limit.TotalSeconds:0} s", "check the network and workflow.forge.hosts");
+            return new DoctorCheck(Name, CheckState.Warn, $"the forge did not answer within {limit.TotalSeconds.ToString("0", System.Globalization.CultureInfo.InvariantCulture)} s", "check the network and workflow.forge.hosts");
         }
     }
 
