@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.verify
-version: 1
+version: 2
 description: "Block recipe: the verify journey with its lenses and evidence pack, then the design check when screen baselines match. Always runs."
+displayName: "Check the change in the running app"
 inputs:
   - { key: fact:phasePacket, label: "Phase packet", type: packet, kind: packet }
   - { key: fact:workspace, label: "Workspace", type: text, kind: text }
