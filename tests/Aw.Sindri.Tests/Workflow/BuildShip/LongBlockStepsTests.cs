@@ -28,10 +28,10 @@ public sealed class LongBlockStepsTests
     public static TheoryData<string> Ids => ["step.build.red-check", "step.build.checks", "step.ship.green"];
 
     // before-after runs the recorded scripts (20 minutes each, at the base and at the head) rather than the repo's commands, so it has no command budget and its own limit
-    public static TheoryData<string> Long => ["step.build.red-check", "step.build.checks", "step.ship.green", "step.prove.before-after"];
+    public static TheoryData<string> AllLongIds => ["step.build.red-check", "step.build.checks", "step.ship.green", "step.prove.before-after"];
 
     [Theory]
-    [MemberData(nameof(Long))]
+    [MemberData(nameof(AllLongIds))]
     public void A_long_Step_runs_on_the_block_runtime_with_a_maxDuration_above_the_default_and_within_the_cap(string step)
     {
         using var provider = ShippedComposition.Compose();
@@ -59,7 +59,7 @@ public sealed class LongBlockStepsTests
         using var provider = ShippedComposition.Compose();
         var max = BlockLimits.MaxDuration(provider.GetRequiredService<BlockCatalog>().Find(BlockId.From("step.prove.before-after"))!);
 
-        Assert.True(max >= 2 * TimeSpan.FromMinutes(20) + TimeSpan.FromMinutes(1));   // one signal: its script at the base and at the head, each up to the script timeout
+        Assert.True(max >= (2 * TimeSpan.FromMinutes(20)) + TimeSpan.FromMinutes(1));   // one signal: its script at the base and at the head, each up to the script timeout
     }
 
     [Theory]
