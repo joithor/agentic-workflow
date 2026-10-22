@@ -26,10 +26,9 @@ internal sealed class PrCiLogStep(IPullRequests pulls) : IBlockStep, IBlockStepI
     {
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();
-        var link = Link(context);
-        if (link is null || StepFacts.Read(context, "fact:prState") is not JsonObject state)
+        if (StepFacts.Read(context, "fact:prState") is not JsonObject state || Link(context, state) is not { } link)
         {
-            return BlockStepResult.Failed("step.pr.ci-log needs the 'pr' argument (the pull request's link) and fact:prState");
+            return BlockStepResult.Failed("step.pr.ci-log needs fact:prState (with its link) or the 'pr' argument");
         }
 
         var checks = new JsonArray();
@@ -45,14 +44,14 @@ internal sealed class PrCiLogStep(IPullRequests pulls) : IBlockStep, IBlockStepI
             checks.Add((JsonNode)new JsonObject { ["name"] = name, ["excerpt"] = excerpt });
         }
 
-        return StepFacts.Done(checks.Count == 0 ? "none" : "logged", ("fact:ciLog", new JsonObject { ["head"] = StepFacts.Field(state["head"], "sha"), ["checks"] = checks }));
+        return StepFacts.Done(checks.Count == 0 ? "none" : "logged", ("fact:ciLog", new JsonObject { ["head"] = StepFacts.Field(state["head"], "sha") ?? StepFacts.Field(state, "headSha"), ["checks"] = checks }));
     }
 
     private static IEnumerable<string> FailingChecks(JsonObject state) =>
         (state["checks"]?["failing"] as JsonArray ?? []).Select(static n => n is JsonValue v && v.TryGetValue<string>(out var name) ? name : null).OfType<string>().Where(static n => n.Length > 0).Distinct(StringComparer.Ordinal);
 
-    private static string? Link(StepContext context) =>
+    private static string? Link(StepContext context, JsonObject state) =>
         context.Arguments.TryGetValue("pr", out var argument) && argument.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(argument.GetString())
             ? argument.GetString()
-            : StepFacts.Text(context, "fact:pr");
+            : StepFacts.Field(state, "link");
 }

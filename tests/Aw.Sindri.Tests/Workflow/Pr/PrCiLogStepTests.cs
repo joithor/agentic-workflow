@@ -65,6 +65,21 @@ public sealed class PrCiLogStepTests
     }
 
     [Fact]
+    public async Task Ci_log_takes_the_link_from_the_snapshot_when_no_argument_names_it()
+    {
+        var pull = _pulls.Add(_repo, "feature/x", "abc");
+        var state = JsonNode.Parse(State("abc", "build"))!.AsObject();
+        state["link"] = pull.Link;
+        var result = await new PrCiLogStep(_pulls).Run(new StepContext(
+            BlockId.From("step.pr.ci-log"),
+            new Dictionary<string, JsonElement>(StringComparer.Ordinal),
+            new Dictionary<FactKey, JsonElement> { [FactKey.From("fact:prState")] = JsonSerializer.SerializeToElement(state.ToJsonString()) },
+            InjectionSections.Empty), TestContext.Current.CancellationToken);
+
+        Assert.Equal("logged", result.Result?.Outcome.Value);
+    }
+
+    [Fact]
     public async Task Ci_log_fails_without_the_pull_request_link_or_the_snapshot()
     {
         var step = new PrCiLogStep(_pulls);

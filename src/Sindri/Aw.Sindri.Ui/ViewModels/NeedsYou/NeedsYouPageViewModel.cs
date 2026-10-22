@@ -17,12 +17,12 @@ internal sealed partial class NeedsYouPageViewModel : ObservableObject
     private NeedsYouRowViewModel? _lastRow;   // the row the card last showed as selected
     private NeedsYouRowViewModel? _cleared;   // that row, once it left the list under the card, until the user moves on
 
-    internal NeedsYouPageViewModel(NeedsYouViewModel list, TimeProvider clock, IClipboard clipboard, DeskReporter desk)
+    internal NeedsYouPageViewModel(NeedsYouViewModel list, TimeProvider clock, IClipboard clipboard, DeskReporter desk, NeedsYouConfirm? confirm = null)
     {
         _list = list;
         _clock = clock;
         _clipboard = clipboard;
-        Bar = new NeedsYouBarViewModel(desk, clipboard, clock);
+        Bar = new NeedsYouBarViewModel(desk, clipboard, clock, confirm);
         _list.PropertyChanged += OnListChanged;
         Rebuild();
         _lastRow = Selected;

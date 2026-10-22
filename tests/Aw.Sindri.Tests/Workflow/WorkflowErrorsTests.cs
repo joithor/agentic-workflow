@@ -14,7 +14,7 @@ public sealed class WorkflowErrorsTests
     [Theory, Trait("Lane", "unit")]
     [InlineData("SND-RECIPE", 11)]
     [InlineData("SND-WF", 19)]
-    [InlineData("SND-BLOCK", 4)]
+    [InlineData("SND-BLOCK", 6)]
     public void Every_code_of_an_area_is_live_or_retired_and_none_is_both(string area, int last)
     {
         var live = WorkflowErrors.All.Select(e => e.Code).Where(c => c.StartsWith(area + "-", StringComparison.Ordinal)).ToHashSet(StringComparer.Ordinal);
