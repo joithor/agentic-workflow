@@ -470,7 +470,7 @@ main() {
   out="$(human item add "$title" --repo repo 2>&1)"
   ITEM="$(printf '%s\n' "$out" | grep -oE 'ITM-[0-9a-f]+' | head -1)"
   [ -n "$ITEM" ] || die "item add gave no id: $out"
-  printf '{"kind":"brief","repo":"repo","path":"%s"}\n' "$FEATURE_REL" > "$SCRATCH/facts/scopeInput.json"
+  printf '{"kind":"brief","repo":"repo","path":"%s"}\n' "$FEATURE_REL" > "$SCRATCH/facts/scopeInput.json"   # repo: scope-input.json requires it (the profile names the clone "repo")
   local base; base="$(git -C "$REPO" rev-parse HEAD)"
   printf '{"line":"line","phase":"1","attempt":1,"base":"%s","runArea":{}}\n' "$base" > "$SCRATCH/facts/lineContext.json"
   local facts=(--fact "fact:scopeInput=$SCRATCH/facts/scopeInput.json")
