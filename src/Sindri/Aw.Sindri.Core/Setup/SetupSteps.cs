@@ -133,6 +133,11 @@ public static class SetupSteps
     public static SetupStep Onyx(OnyxFact fact)
     {
         ArgumentNullException.ThrowIfNull(fact);
+        if (OnyxJobStep(fact) is { } job)
+        {
+            return job;
+        }
+
         if (fact.State == OnyxState.Running)
         {
             return fact.Unreachable
@@ -162,6 +167,17 @@ public static class SetupSteps
         return new SetupStep(SetupStepId.Onyx, OnyxTitle, SetupState.Todo, "Docker is ready. Set up Onyx when you want search.",
             fact.State == OnyxState.Stopped ? "Onyx is set up but stopped." : "Onyx isn't set up yet.", Error: null, SetupActions.SetupOnyx, Progress: null);
     }
+
+    // The Onyx setup job's own states win over what Docker shows: the stack is up while the job still waits for the owner's login, and that is not "done".
+    private static SetupStep? OnyxJobStep(OnyxFact fact) => fact.Job switch
+    {
+        OnyxJobPhase.Working => new SetupStep(SetupStepId.Onyx, OnyxTitle, SetupState.Running, "Sindri is setting up Onyx.", fact.JobLine ?? "Starting Onyx.", Error: null, Action: null, Progress: null),
+        OnyxJobPhase.WaitingForLogin => new SetupStep(SetupStepId.Onyx, OnyxTitle, SetupState.NeedsYou, "Create your Onyx account in the browser, then enter your login here.",
+            "Sign up at " + OnyxSetupJob.SignupUrl(fact.Port), Error: null, SetupActions.ConnectOnyx, Progress: null),
+        OnyxJobPhase.Failed when fact.JobFailure is { } failure => new SetupStep(SetupStepId.Onyx, OnyxTitle, SetupState.Failed, failure.Sentence, Detail: null, new SetupError(failure.Code, failure.Sentence), SetupActions.SetupOnyx, Progress: null),
+        OnyxJobPhase.None or OnyxJobPhase.Failed => null,
+        _ => null,
+    };
 
     /// <summary>The step for a source that couldn't be read: failed, with one plain sentence and the error's code.</summary>
     /// <param name="id">Which step.</param>
