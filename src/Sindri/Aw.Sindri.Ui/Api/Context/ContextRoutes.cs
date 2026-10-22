@@ -33,6 +33,20 @@ internal static class ContextRoutes
         return With(Root + "/lenses", parts);
     }
 
+    internal static string Code(CodeQuery query)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        var parts = new List<string>();
+        parts.AddRange(query.Anchors.Select(a => "anchor=" + Uri.EscapeDataString(a)));
+        if (query.Draft)
+        {
+            parts.Add("draft=true");
+        }
+
+        Add(parts, "mapVersion", query.MapVersion);
+        return With(Root + "/code", parts);
+    }
+
     internal static string FileMap(FileMapQuery query)
     {
         ArgumentNullException.ThrowIfNull(query);

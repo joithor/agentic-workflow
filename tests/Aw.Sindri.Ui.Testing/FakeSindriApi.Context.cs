@@ -43,6 +43,12 @@ internal sealed partial class FakeSindriApi
     /// <summary>Held open until set: the lenses read waits for it (a read in flight); null answers at once. Cancelling the call completes it as cancelled.</summary>
     public TaskCompletionSource? LensesGate { get; set; }
 
+    /// <summary>GET /sindri/context/code's answer: null serves the golden for a known anchor and SND-CONTEXT-003 for another.</summary>
+    public RouteAnswer? CodeAnswer { get; set; }
+
+    /// <summary>Held open until set: the code lens read waits for it.</summary>
+    public TaskCompletionSource? CodeGate { get; set; }
+
     /// <summary>Held open until set: the file map read waits for it.</summary>
     public TaskCompletionSource? FileMapGate { get; set; }
 
@@ -87,6 +93,14 @@ internal sealed partial class FakeSindriApi
         Log("lenses:" + string.Join(' ', query.Anchors));
         return Context<LensesView>(api, "/sindri/context/lenses", LensesAnswer(query), LensesGate, cancellationToken);
     }
+
+    /// <summary>The code lens answer for a query.</summary>
+    /// <param name="query">What was asked.</param>
+    /// <returns>The answer.</returns>
+    internal RouteAnswer CodeFor(CodeQuery query) => CodeAnswer ?? ContextAnswers.Code(query);
+
+    public Task<Result<CodeView>> Code(Uri api, CodeQuery query, CancellationToken cancellationToken) =>
+        Context<CodeView>(api, "/sindri/context/code", CodeFor(query), CodeGate, cancellationToken);
 
     public Task<Result<FileMapView>> FileMap(Uri api, FileMapQuery query, CancellationToken cancellationToken) =>
         Context<FileMapView>(api, "/sindri/context/filemap", FileMapFor(query), FileMapGate, cancellationToken);

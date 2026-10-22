@@ -1,7 +1,10 @@
 using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api.Context;
+using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels.Context;
+using Aw.Sindri.Ui.ViewModels.Controls;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Ui.Tests.Context;
 
@@ -118,6 +121,20 @@ public sealed class SymbolsColumnTests
         lens.Show(Calls("ok", unresolved: 0), Calls("ok", unresolved: 2));
 
         Assert.Equal(("Callers", "Callees", "2 calls not resolved"), (lens.Callers!.Title, lens.Callees!.Title, lens.Callees.Unresolved));
+    }
+
+    [Fact]
+    public async Task Reading_the_code_lens_fills_both_panels_and_a_refusal_leaves_them_alone()
+    {
+        var clipboard = new FakeClipboard();
+        var clock = new FakeTimeProvider(A.Noon);
+        var page = new ContextPageViewModel(new ContextPorts(new FakeSindriApi(), () => new Uri("http://127.0.0.1:1/"), clipboard, clock, new CatalogViewModel(clipboard, clock), _ => { }));
+        var key = (string)GoldenFiles.Node("context-code", "edges-and-lexical")["anchors"]![0]!["key"]!;
+
+        Assert.False(await page.ReadCode(["feature:nope"], draft: false, TestContext.Current.CancellationToken));
+        Assert.Null(page.Code.Callers);
+        Assert.True(await page.ReadCode([key], draft: false, TestContext.Current.CancellationToken));
+        Assert.Equal("index not built", page.Code.Callers!.Caption);
     }
 
     private static SymbolsView Served(string state, string? asOf, bool mismatch, params FileSymbolsEntry[] files) =>

@@ -12,6 +12,10 @@ internal sealed partial class SindriApiClient
         Get<LensesView>(api, ContextRoutes.Lenses(query), cancellationToken);
 
     /// <inheritdoc />
+    public Task<Result<CodeView>> Code(Uri api, CodeQuery query, CancellationToken cancellationToken) =>
+        Get<CodeView>(api, ContextRoutes.Code(query), cancellationToken);
+
+    /// <inheritdoc />
     public Task<Result<FileMapView>> FileMap(Uri api, FileMapQuery query, CancellationToken cancellationToken) =>
         Get<FileMapView>(api, ContextRoutes.FileMap(query), cancellationToken);
 

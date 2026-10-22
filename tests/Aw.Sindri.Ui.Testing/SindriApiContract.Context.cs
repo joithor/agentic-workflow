@@ -73,6 +73,27 @@ public abstract partial class SindriApiContract
         Expect.Sequence(Names(unmapped), only.Entries.Select(e => e.Name));
     }
 
+    [Fact]
+    public async Task Code_answers_the_callers_and_callees_of_a_known_anchor()
+    {
+        var api = Reach(new FakeSindriApi());
+        var served = GoldenFiles.Node("context-code", "edges-and-lexical");
+
+        var code = (await api.Code(_api, new CodeQuery([(string)served["anchors"]![0]!["key"]!], Draft: false, MapVersion: null), Token)).Value;
+
+        Expect.Equal(((string)served["mapVersion"]!, (string)served["callers"]!["state"]!, (string)served["callees"]!["reason"]!), (code.MapVersion, code.Callers.State, code.Callees.Reason));
+    }
+
+    [Fact]
+    public async Task Code_answers_003_for_an_unknown_anchor()
+    {
+        var api = Reach(new FakeSindriApi());
+
+        var code = await api.Code(_api, new CodeQuery(["feature:nope"], Draft: false, MapVersion: null), Token);
+
+        Expect.Equal("SND-CONTEXT-003", code.Error.Code);
+    }
+
     // The server answers a set with some unresolved anchors as a 200 that names them in missingAnchors; only "nothing resolves" is 003.
     [Fact]
     public async Task Lenses_answers_200_with_missingAnchors_when_only_some_of_a_set_resolves()
