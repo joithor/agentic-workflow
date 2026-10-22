@@ -10,6 +10,6 @@ internal static class StartInstanceEndpoint
     {
         _ = group.MapPost("/workflow/instances", static async (StartInstanceRequest request, IService<StartInstanceRequest, StartInstanceResponse> service, CancellationToken ct)
             => (await service.Handle(request, ct).ConfigureAwait(false)).ToHttpResult());
-        return group;
+        return group.MapRerunInstance();   // the rerun is the same slice
     }
 }
