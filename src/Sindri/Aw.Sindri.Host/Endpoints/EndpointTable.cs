@@ -21,8 +21,6 @@ internal static class EndpointTable
     {
         // ---- queries: one line per slice, sorted ----
         _ = queries.MapGetApproveAllPlan();
-        _ = queries.MapGetEngine();
-        _ = queries.MapGetEngineHistory();
         _ = queries.MapGetEventCatalog();
         _ = queries.MapGetItem();
         _ = queries.MapGetJob();
@@ -48,7 +46,6 @@ internal static class EndpointTable
         _ = queries.MapGetStatus();
         _ = queries.MapListCommands();
         _ = queries.MapListItems();
-        _ = queries.MapListEngineInstances();
         _ = queries.MapListInstances();
         _ = queries.MapListOutbox();
         _ = queries.MapListServices();
@@ -59,8 +56,17 @@ internal static class EndpointTable
         _ = queries.MapShowRecipe();
         _ = queries.MapGetRecipeStats();
         _ = queries.MapStreamEvents();
+        _ = MapEngineQueries(queries);
         _ = MapCodeIndexQueries(queries);
         return MapContextQueries(queries);
+    }
+
+    private static RouteGroupBuilder MapEngineQueries(RouteGroupBuilder queries)
+    {
+        _ = queries.MapGetEngine();
+        _ = queries.MapGetEngineHistory();
+        _ = queries.MapListEngineInstances();
+        return queries;
     }
 
     private static RouteGroupBuilder MapCodeIndexQueries(RouteGroupBuilder queries)
