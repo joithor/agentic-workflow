@@ -120,7 +120,7 @@ public sealed class NeedsYouConfirmBarTests
         Assert.Empty(_server.Approvals);
     }
 
-    private const string StepHash = "sha256:d39861bd12222fcc4b74432567eabfd7b58660c4b8d714be71528b6a1353ba2a";   // workflow.step v3 in the served recipe list
+    private const string StepHash = "sha256:f039848fd714d2a46a4d3d216083bff1815821cd3e3b4f1bc6402bbb44bd54fa";   // workflow.step v3 in the served recipe list
 
     private void ServeRecipeChallenge() => _server.AppChallengeAnswer = RouteAnswer.SpecShaped("challenges-app", "recipe");
 
@@ -149,7 +149,7 @@ public sealed class NeedsYouConfirmBarTests
 
         var bar = await Bar(NeedsYouRows.Recipe());
 
-        Assert.Equal("approve workflow.step 3", Assert.Single(_server.Challenges).Action);
+        Assert.Equal("approve workflow.step 4", Assert.Single(_server.Challenges).Action);
         Assert.Equal((true, false, false, "approve workflow.step 3"), (bar.ShowsTyped, bar.ShowsHold, bar.ShowsTerminal, bar.TypedBox!.Phrase));
         Assert.Empty(_server.RecipeApprovals);   // showing the box approves nothing
     }

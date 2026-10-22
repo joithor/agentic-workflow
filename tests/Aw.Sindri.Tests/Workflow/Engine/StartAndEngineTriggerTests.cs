@@ -14,6 +14,18 @@ namespace Aw.Sindri.Tests.Workflow.Engine;
 /// <summary>A new instance (spec §5.1, §5.2), and the engine triggers the decision hands to the frame and child rules (§5.7).</summary>
 public sealed class StartAndEngineTriggerTests
 {
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void Start_counts_budgets_per_round_unless_the_history_predates_the_marker(bool pooledBudget, bool perRound)
+    {
+        var context = EngineFixture.Context() with { PooledBudget = pooledBudget };
+
+        var applied = Assert.IsType<Applied>(TransitionDecision.Start(Request(), Step, context, new FakeEngineRules()));
+
+        Assert.Equal(perRound, applied.Changes[0].After.Spent.IsPerRound);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void Start_enters_the_initial_state_as_entry_one()
     {

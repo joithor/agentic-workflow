@@ -90,13 +90,13 @@ public sealed partial class PhaseTreeTests
         Assert.Contains(errors, static e => e.Contains("RCP-WIRE-003", StringComparison.Ordinal));
     }
 
-    /// <summary>BD7, LN-WF1: the phase reports 'shipped' on ship to babysit and 'merged' on babysit to merged, each with line = fact:lineContext, and no other transition carries an effect.</summary>
+    /// <summary>BD7, LN-WF1: the phase reports 'shipped' on ship to babysit and 'merged' on babysit to merged, and 'failed' when the owner stops it, each with line = fact:lineContext, and no other transition carries an effect.</summary>
     [Fact, Trait("Lane", "unit")]
-    public void The_phase_reports_shipped_and_merged_to_its_line_and_no_other_transition_carries_an_effect()
+    public void The_phase_reports_shipped_merged_and_failed_to_its_line_and_no_other_transition_carries_an_effect()
     {
         var withEffects = LineTree.Recipe("workflow.phase").Transitions.Where(static t => t.Effects.Count > 0).ToList();
 
-        Assert.Equal([("ship", "babysit"), ("babysit", "merged")], withEffects.Select(static t => (Assert.Single(t.From), t.To)));
+        Assert.Equal([("ship", "babysit", "shipped"), ("babysit", "merged", "merged"), ("owner", "dropped", "failed")], withEffects.Select(static t => (Assert.Single(t.From), t.To, Assert.Single(t.Effects).With["status"].Literal!.Value.GetString())));
         Assert.All(withEffects, static t => Assert.Equal("effect.line.report", Assert.Single(t.Effects).Use.Value));
     }
 

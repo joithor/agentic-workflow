@@ -280,9 +280,9 @@ public sealed class InstanceViewProducerTests
 
         Assert.Equal([new StatusInput("fact:spec", "spec.md", $"sha256:{EngineFixture.Fact("the spec").Sha256}")], status.Inputs);
         Assert.Equal(new StatusTimeout(TimeoutKind.Parks, 3 * 3600, "produce"), status.Timeout);
-        Assert.Equal(new StatusBudget("state", 0, 200_000, new BudgetFigures(0, 400_000)), status.Budget);
+        Assert.Equal(new StatusBudget("state", 0, 1_000_000, new BudgetFigures(0, Limit: null)), status.Budget);
         Assert.Contains("  timeout   parks in 3h 0m (desk)\n".Replace("0m (desk)", "(desk)", StringComparison.Ordinal), status.Text, StringComparison.Ordinal);
-        Assert.Contains("tokens 0 / 200k (state), 0 / 400k (instance)", status.Text, StringComparison.Ordinal);
+        Assert.Contains("tokens 0 / 1M (state)", status.Text, StringComparison.Ordinal);
         Assert.Null(status.Answer);
         Assert.Equal("CompleteStep", status.Commands[0].ActionId.Value);
     }
@@ -292,7 +292,7 @@ public sealed class InstanceViewProducerTests
     {
         var parked = InstanceViews.Status(StatusCases.View("parked-budget"), StatusCases.Now);
 
-        Assert.Contains("200k", parked.Text, StringComparison.Ordinal);
+        Assert.Contains("1M", parked.Text, StringComparison.Ordinal);
         Assert.Equal("1.5k", StatusText.Tokens(1500));
     }
 
@@ -323,7 +323,7 @@ public sealed class InstanceViewProducerTests
     [Theory]
     [InlineData("parked-rounds", AnswerKind.Grant, "ApplyCommand:answer-grant", ActionClass.Protected, "sindri workflow answer T-3/step/1 --grant 1", true)]
     [InlineData("parked-no-progress-child", AnswerKind.Grant, "ApplyCommand:answer-grant", ActionClass.Protected, "sindri workflow answer T-3/step/1 --grant 1", true)]
-    [InlineData("parked-budget", AnswerKind.GrantTokens, "ApplyCommand:answer-grant-tokens", ActionClass.Protected, "sindri workflow answer T-3/step/1 --grant-tokens 100k", true)]
+    [InlineData("parked-budget", AnswerKind.GrantTokens, "ApplyCommand:answer-grant-tokens", ActionClass.Protected, "sindri workflow answer T-3/step/1 --grant-tokens 1M", true)]
     [InlineData("escalated-gate", AnswerKind.Accept, "ApplyCommand:answer-accept", ActionClass.Protected, "sindri workflow answer T-3/step/1 --accept", true)]
     [InlineData("parked-needs-answer-step", AnswerKind.Text, "ApplyCommand:answer-text", ActionClass.Desk, "sindri workflow answer T-3/step/1 --text <answer>", false)]
     [InlineData("parked-needs-answer-wait", AnswerKind.Resume, "ApplyCommand:answer-resume", ActionClass.Desk, "sindri workflow answer T-3/step/1 --resume [--text <answer>]", false)]
