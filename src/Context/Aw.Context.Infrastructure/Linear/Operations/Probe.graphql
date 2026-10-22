@@ -1,0 +1,5 @@
+query Probe($filter: IssueFilter) {
+  projects(first: 1) { nodes { id } }
+  documents(first: 1) { nodes { id } }
+  issues(first: 1, filter: $filter) { nodes { id } }
+}

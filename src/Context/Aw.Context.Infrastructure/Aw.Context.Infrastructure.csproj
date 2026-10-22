@@ -24,6 +24,8 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Store/Migrations/*.sql" />
+    <!-- The native Linear adapter's GraphQL operations (D18), read by name: linear.<Operation>.graphql. -->
+    <EmbeddedResource Include="Linear/Operations/*.graphql" LogicalName="linear.%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

@@ -78,7 +78,7 @@ public sealed class LinearSourceContractTests : ContextSourceContract<IContextSo
         Assert.Equal(["SPL-103"], hits[0].Aliases);
         Assert.Equal(1, hits.Count(h => h.Ref.Canonical.Value == "linear:issue/" + Spl103));
         Assert.Empty(other);
-        Assert.DoesNotContain(linear.Requests.Skip(before), r => r.Operation.Contains("issue ", StringComparison.Ordinal) && !r.Operation.Contains("issues", StringComparison.Ordinal));
+        Assert.DoesNotContain(linear.Requests.Skip(before), r => string.Equals(r.Operation, "issue", StringComparison.Ordinal));
     }
 
     [Fact]

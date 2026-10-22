@@ -1,0 +1,6 @@
+query Projects($filter: ProjectFilter, $first: Int) {
+  projects(filter: $filter, first: $first, orderBy: updatedAt) {
+    nodes { id name slugId description url state createdAt updatedAt startDate targetDate lead { id name } teams { nodes { id key name } } }
+    pageInfo { hasNextPage endCursor }
+  }
+}
