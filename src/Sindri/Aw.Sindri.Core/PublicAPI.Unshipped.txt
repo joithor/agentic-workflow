@@ -15122,3 +15122,56 @@ static Aw.Sindri.Core.Review.ReviewPackOrigin.operator !=(Aw.Sindri.Core.Review.
 static Aw.Sindri.Core.Review.ReviewPackOrigin.operator ==(Aw.Sindri.Core.Review.ReviewPackOrigin? left, Aw.Sindri.Core.Review.ReviewPackOrigin? right) -> bool
 static Aw.Sindri.Core.Review.ReviewPack.Problems(Aw.Sindri.Core.Review.ReviewFacts! facts) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Sindri.Core.Review.ReviewPack.Verdict(System.Text.Json.Nodes.JsonNode! review) -> string?
+Aw.Sindri.Core.Forge.IPullRequests
+Aw.Sindri.Core.Forge.IPullRequests.Get(string! link, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Forge.PullView!>!>
+Aw.Sindri.Core.Forge.PullChecks
+Aw.Sindri.Core.Forge.PullChecks.<Clone>$() -> Aw.Sindri.Core.Forge.PullChecks!
+Aw.Sindri.Core.Forge.PullChecks.Deconstruct(out Aw.Sindri.Core.Forge.PullChecksState State, out string! Sha, out System.Collections.Generic.IReadOnlyList<string!>! Failing) -> void
+Aw.Sindri.Core.Forge.PullChecks.Equals(Aw.Sindri.Core.Forge.PullChecks? other) -> bool
+Aw.Sindri.Core.Forge.PullChecks.Failing.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Forge.PullChecks.Failing.init -> void
+Aw.Sindri.Core.Forge.PullChecks.PullChecks(Aw.Sindri.Core.Forge.PullChecksState State, string! Sha, System.Collections.Generic.IReadOnlyList<string!>! Failing) -> void
+Aw.Sindri.Core.Forge.PullChecks.Sha.get -> string!
+Aw.Sindri.Core.Forge.PullChecks.Sha.init -> void
+Aw.Sindri.Core.Forge.PullChecks.State.get -> Aw.Sindri.Core.Forge.PullChecksState
+Aw.Sindri.Core.Forge.PullChecks.State.init -> void
+Aw.Sindri.Core.Forge.PullChecksState
+Aw.Sindri.Core.Forge.PullChecksState.Failing = 4 -> Aw.Sindri.Core.Forge.PullChecksState
+Aw.Sindri.Core.Forge.PullChecksState.None = 1 -> Aw.Sindri.Core.Forge.PullChecksState
+Aw.Sindri.Core.Forge.PullChecksState.Passing = 3 -> Aw.Sindri.Core.Forge.PullChecksState
+Aw.Sindri.Core.Forge.PullChecksState.Pending = 2 -> Aw.Sindri.Core.Forge.PullChecksState
+Aw.Sindri.Core.Forge.PullState
+Aw.Sindri.Core.Forge.PullState.Closed = 2 -> Aw.Sindri.Core.Forge.PullState
+Aw.Sindri.Core.Forge.PullState.Merged = 3 -> Aw.Sindri.Core.Forge.PullState
+Aw.Sindri.Core.Forge.PullState.Open = 1 -> Aw.Sindri.Core.Forge.PullState
+Aw.Sindri.Core.Forge.PullView
+Aw.Sindri.Core.Forge.PullView.<Clone>$() -> Aw.Sindri.Core.Forge.PullView!
+Aw.Sindri.Core.Forge.PullView.Checks.get -> Aw.Sindri.Core.Forge.PullChecks!
+Aw.Sindri.Core.Forge.PullView.Checks.init -> void
+Aw.Sindri.Core.Forge.PullView.Deconstruct(out string! Link, out Aw.Sindri.Core.Forge.PullState State, out string! HeadSha, out bool? Mergeable, out string? ReviewDecision, out int UnresolvedThreads, out Aw.Sindri.Core.Forge.PullChecks! Checks, out string? MergedSha) -> void
+Aw.Sindri.Core.Forge.PullView.Equals(Aw.Sindri.Core.Forge.PullView? other) -> bool
+Aw.Sindri.Core.Forge.PullView.HeadSha.get -> string!
+Aw.Sindri.Core.Forge.PullView.HeadSha.init -> void
+Aw.Sindri.Core.Forge.PullView.Link.get -> string!
+Aw.Sindri.Core.Forge.PullView.Link.init -> void
+Aw.Sindri.Core.Forge.PullView.Mergeable.get -> bool?
+Aw.Sindri.Core.Forge.PullView.Mergeable.init -> void
+Aw.Sindri.Core.Forge.PullView.MergedSha.get -> string?
+Aw.Sindri.Core.Forge.PullView.MergedSha.init -> void
+Aw.Sindri.Core.Forge.PullView.PullView(string! Link, Aw.Sindri.Core.Forge.PullState State, string! HeadSha, bool? Mergeable, string? ReviewDecision, int UnresolvedThreads, Aw.Sindri.Core.Forge.PullChecks! Checks, string? MergedSha) -> void
+Aw.Sindri.Core.Forge.PullView.ReviewDecision.get -> string?
+Aw.Sindri.Core.Forge.PullView.ReviewDecision.init -> void
+Aw.Sindri.Core.Forge.PullView.State.get -> Aw.Sindri.Core.Forge.PullState
+Aw.Sindri.Core.Forge.PullView.State.init -> void
+Aw.Sindri.Core.Forge.PullView.UnresolvedThreads.get -> int
+Aw.Sindri.Core.Forge.PullView.UnresolvedThreads.init -> void
+override Aw.Sindri.Core.Forge.PullChecks.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Forge.PullChecks.GetHashCode() -> int
+override Aw.Sindri.Core.Forge.PullChecks.ToString() -> string!
+override Aw.Sindri.Core.Forge.PullView.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Forge.PullView.GetHashCode() -> int
+override Aw.Sindri.Core.Forge.PullView.ToString() -> string!
+static Aw.Sindri.Core.Forge.PullChecks.operator !=(Aw.Sindri.Core.Forge.PullChecks? left, Aw.Sindri.Core.Forge.PullChecks? right) -> bool
+static Aw.Sindri.Core.Forge.PullChecks.operator ==(Aw.Sindri.Core.Forge.PullChecks? left, Aw.Sindri.Core.Forge.PullChecks? right) -> bool
+static Aw.Sindri.Core.Forge.PullView.operator !=(Aw.Sindri.Core.Forge.PullView? left, Aw.Sindri.Core.Forge.PullView? right) -> bool
+static Aw.Sindri.Core.Forge.PullView.operator ==(Aw.Sindri.Core.Forge.PullView? left, Aw.Sindri.Core.Forge.PullView? right) -> bool
