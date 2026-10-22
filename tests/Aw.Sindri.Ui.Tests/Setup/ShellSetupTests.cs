@@ -112,17 +112,16 @@ public sealed class ShellSetupTests
     }, Token);
 
     [Fact]
-    public Task The_approve_all_button_in_its_row_opens_the_dialog_and_approves_nothing() => UiThread.Run(async () =>
+    public Task The_workflows_row_reads_its_plan_in_the_row_and_approves_nothing() => UiThread.Run(async () =>
     {
         var list = SetupFixture.With("profile-needs-approval", "recipes", "needs-you", "ApproveAllRecipes");
         _server.SetupAnswer = new RouteAnswer(System.Net.HttpStatusCode.OK, list.ToJsonString());
         var shell = await Connected();
-        await ShellWait.Until(shell, () => shell.Health.Catalog.Controls.Count > 0, Token);
+        await ShellWait.Until(shell, () => shell.Setup.Steps.Any(s => s.Id == "recipes" && s.Workflows!.Phase == ApproveAllPhase.Plan), Token);
+        var row = shell.Setup.Steps.Single(s => s.Id == "recipes");
 
-        shell.Setup.Steps.Single(s => s.Id == "recipes").Action!.Open();
-        await ShellWait.Until(shell, () => shell.ApproveAll.Phase == ApproveAllPhase.Plan, Token);
-
-        Assert.True(shell.ApproveAll.IsOpen);
+        Assert.Null(row.Action);   // the catalog lets the app confirm: the plan and hold stand in for the button
+        Assert.False(shell.ApproveAll.IsOpen);   // and the dialog stays shut
         Assert.Empty(_server.Approvals);
     }, Token);
 
