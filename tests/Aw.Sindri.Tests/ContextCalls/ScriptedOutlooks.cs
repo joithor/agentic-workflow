@@ -12,6 +12,9 @@ internal sealed class ScriptedOutlooks : IIndexOutlooks
     /// <summary>Per repo overrides.</summary>
     internal Dictionary<string, IndexOutlook> ByRepo { get; } = new(StringComparer.Ordinal);
 
+    /// <summary>The commit each repo's index is at; a repo with no entry is not indexed.</summary>
+    internal Dictionary<string, string> Commits { get; } = new(StringComparer.Ordinal);
+
     /// <summary>When set, the read fails with it.</summary>
     internal Error? Failure { get; set; }
 
@@ -33,7 +36,7 @@ internal sealed class ScriptedOutlooks : IIndexOutlooks
 
     public ValueTask<Result<IReadOnlyDictionary<string, string>>> IndexCommits(IReadOnlyList<string> repos, CancellationToken cancellationToken)
     {
-        IReadOnlyDictionary<string, string> none = new Dictionary<string, string>(StringComparer.Ordinal);
-        return ValueTask.FromResult(Results.Success(none));
+        IReadOnlyDictionary<string, string> answer = Commits.Where(c => repos.Contains(c.Key, StringComparer.Ordinal)).ToDictionary(static c => c.Key, static c => c.Value, StringComparer.Ordinal);
+        return ValueTask.FromResult(Results.Success(answer));
     }
 }

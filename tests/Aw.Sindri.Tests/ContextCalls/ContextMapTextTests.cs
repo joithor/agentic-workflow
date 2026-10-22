@@ -1,5 +1,6 @@
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Map;
+using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Host.Commands;
 
 namespace Aw.Sindri.Tests.ContextCalls;
@@ -31,4 +32,31 @@ public sealed class ContextMapTextTests
         Assert.DoesNotContain("'s scope", text, StringComparison.Ordinal);
         Assert.DoesNotContain("scoped to", text, StringComparison.Ordinal);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_publish_state_reads_in_the_specs_short_form_then_Sindris_sentences_indented()
+    {
+        var view = new MapPublishStatusView("published-stale", "published, code answers stale", "TimedOut", Stale: true, [new StaleRepo("aw-split-panes", "abcdef0", "1234567")], 14, Until: null,
+            ["Code answers are from abcdef0 (older than map v14, which is for 1234567)."]);
+
+        var text = ContextMapText.Publish(view);
+
+        Assert.Equal("publish: published stale: v14 (reason timed-out, aw-split-panes stale)\n  Code answers are from abcdef0 (older than map v14, which is for 1234567).\n", text);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_json_carries_the_map_status_and_the_publish_fields_with_its_version_apart()
+    {
+        var status = """{"version":{"number":13},"counts":{"nodes":1}}"""u8.ToArray();
+        var publish = """{"state":"held","word":"held for the code index","reason":null,"stale":false,"staleRepos":[],"version":14,"until":null,"lines":["Map v14 is held; none of your repos are waiting."]}"""u8.ToArray();
+
+        using var merged = System.Text.Json.JsonDocument.Parse(ContextMapText.WithPublish(status, publish));
+
+        var root = merged.RootElement;
+        Assert.Equal(13, root.GetProperty("version").GetProperty("number").GetInt32());
+        Assert.Equal(("held", false, 14), (root.GetProperty("state").GetString(), root.GetProperty("stale").GetBoolean(), root.GetProperty("publishedVersion").GetInt32()));
+        Assert.Equal(JsonValueKindNull, root.GetProperty("reason").ValueKind);
+    }
+
+    private const System.Text.Json.JsonValueKind JsonValueKindNull = System.Text.Json.JsonValueKind.Null;
 }
