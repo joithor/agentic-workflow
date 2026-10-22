@@ -450,8 +450,8 @@ public sealed class PrSnapshotStepTests
     }
 
     [Fact]
-    public async Task The_proof_is_none_when_the_instance_holds_no_recheck() =>
-        Assert.Equal("none", Status(await Snapshot()).GetProperty("proof").GetProperty("status").GetString());
+    public async Task The_proof_is_null_when_the_instance_holds_no_recheck() =>
+        Assert.Equal(JsonValueKind.Null, Status(await Snapshot()).GetProperty("proof").ValueKind);
 
     [Theory]
     [InlineData("held", "passed")]
@@ -467,13 +467,13 @@ public sealed class PrSnapshotStepTests
     }
 
     [Fact]
-    public async Task A_recheck_of_another_commit_is_no_proof_of_the_head()
+    public async Task A_recheck_of_another_commit_says_nothing_of_the_head()
     {
         var recheck = """{ "headSha": "old00000", "verdict": "held" }""";
 
         var proof = Status(await Snapshot(more: new(StringComparer.Ordinal) { ["recheck"] = recheck })).GetProperty("proof");
 
-        Assert.Equal("none", proof.GetProperty("status").GetString());
+        Assert.Equal(JsonValueKind.Null, proof.ValueKind);
     }
 
     [Fact]
