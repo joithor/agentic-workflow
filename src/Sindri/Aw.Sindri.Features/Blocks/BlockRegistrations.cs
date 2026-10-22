@@ -50,14 +50,33 @@ internal static class BlockRegistrations
         .AddScopingBlocks()
         .AddLineBlocks().AddLineDesignBlocks()
         .AddBlockDescriptor(EvidenceProviders.Check)
+        .AddEngineBlocks();
+
+    /// <summary>Registers the engine's gates, effects and events.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    private static IServiceCollection AddEngineBlocks(this IServiceCollection services) => services
         .AddRecipeGates()
         .AddEffect<ClaimRefEffect>()      // engine P6 unit (d)
         .AddEffect<NotifyDeskEffect>()    // engine P6 unit (c)
+        .AddPrEffects()
         .AddEffect<LineReportEffect>()    // LN-WF1: a phase's shipped and merged, recorded for its line
         .AddEvent(RecipeEvents.ItemRouted)
         .AddEvent(RecipeEvents.ClaimCreated)
         .AddEvent(RecipeEvents.NotifyDelivered)
         .AddPrEvents();
+
+    /// <summary>Registers the PR babysitter's and docs sync's effect runtimes (PB spec §10.1).</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    private static IServiceCollection AddPrEffects(this IServiceCollection services) => services
+        .AddEffect<PrPushEffect>()        // PB-E: the lease push
+        .AddEffect<PrRecordEffect>()      // PB-E: the merge record's recheck and docs rows
+        .AddEffect<PrRerunChecksEffect>() // PB-E: re-run a flaky check
+        .AddEffect<PrMergeEffect>()       // PB-E: the merge, expected-head checked
+        .AddEffect<PrReplyEffect>()       // PB-E: replies, reactions and marks
+        .AddEffect<PrPurgeMarksEffect>()  // PB-E: W26's terminal cleanup of a PR's marks
+        .AddEffect<PrOpenEffect>();       // PB-O (BD1)
 
     /// <summary>Registers the gates that have runtimes in this build.</summary>
     /// <param name="services">The service collection.</param>
@@ -77,7 +96,8 @@ internal static class BlockRegistrations
         .AddEvent(RecipeEvents.PrRestacked)
         .AddEvent(RecipeEvents.PrMergeResult)
         .AddEvent(RecipeEvents.PrDocsMerged)
-        .AddEvent(RecipeEvents.PrStacked);
+        .AddEvent(RecipeEvents.PrStacked)
+        .AddEvent(RecipeEvents.PrOpened);
 
     /// <summary>Registers the line's blocks (the build and prove stations' and the per-phase child's).</summary>
     /// <param name="services">The service collection.</param>
@@ -91,7 +111,18 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PhaseSteps.Seed)
         .AddBlockDescriptor(PhaseSteps.Drift)
         .AddBlockDescriptor(PhaseSteps.Decide)
-        .AddBlockDescriptor(BabysitSteps.Watch);
+        .AddBlockDescriptor(BabysitSteps.Watch)
+        .AddDispatchBlocks();
+
+    /// <summary>Registers the line's dispatcher Steps and the event the line waits on to start its next phases (line spec §8.2, LN-WF1), descriptors only.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    private static IServiceCollection AddDispatchBlocks(this IServiceCollection services) => services
+        .AddEffect<StartPhaseEffect>()    // the runtime starts a line's phase as a linked instance
+        .AddBlockDescriptor(LineSteps.Seed)
+        .AddBlockDescriptor(LineSteps.Dispatch)
+        .AddBlockDescriptor(LineSteps.Decide)
+        .AddEvent(RecipeEvents.LinePhaseChanged);
 
     /// <summary>Registers the line's build and prove stations' Steps (line spec §7.2, §7.3), descriptors only.</summary>
     /// <param name="services">The service collection.</param>
@@ -221,13 +252,8 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PrGates.BaseIsDefault)
         .AddGate<PrDiffScopeGate>()
         .AddGate<PrSecretScanGate>()
-        .AddBlockDescriptor(PrEffects.Push)
-        .AddBlockDescriptor(PrEffects.Reply)
-        .AddBlockDescriptor(PrEffects.Record)
-        .AddBlockDescriptor(PrEffects.RerunChecks)
         .AddBlockDescriptor(PrEffects.Restack)
         .AddBlockDescriptor(PrEffects.CreateStacked)
-        .AddBlockDescriptor(PrEffects.Merge)
         .AddBlockDescriptor(PrEffects.MergeDocs)
         .AddStepInput<PrContextInput>()
         .AddStepInput<PhasePacketInput>()

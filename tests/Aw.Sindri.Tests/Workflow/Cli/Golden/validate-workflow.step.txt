@@ -1,5 +1,5 @@
 $ sindri recipe validate <tmp>/workflow.step.yaml
 exit 0
 --- stdout
-hash sha256:d39861bd12222fcc4b74432567eabfd7b58660c4b8d714be71528b6a1353ba2a
+hash sha256:f039848fd714d2a46a4d3d216083bff1815821cd3e3b4f1bc6402bbb44bd54fa
 --- stderr
