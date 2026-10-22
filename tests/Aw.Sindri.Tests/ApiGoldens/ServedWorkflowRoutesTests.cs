@@ -33,6 +33,7 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
         ("workflow-instances", "start-item-mismatch"), ("workflow-instances", "start-earlier-attempt-live"),
         ("workflow-instances", "start-recipe-legacy"), ("workflow-instances", "start-recipe-revoked"), ("workflow-instances", "start-recipe-drifted"),
         ("workflow-instance-scoping", "expiry-stop"),   // recorded by ScopingShowTests (API2 serves that view as is)
+        ("needs-you", "desk-with-stop"), ("needs-you", "park-with-timeout"),   // recorded by NeedsYouJoinsTests (the read-time joins of GetNeedsYou)
         ("workflow-instance-design-stop", "gold-stop"),   // recorded by DesignStopViewTests (LN-API2 serves that view as is)
     ];
 
@@ -245,7 +246,7 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
     {
         var step = WorkflowsHarness.Shipped("sindri/workflow.step.yaml");
         var original = _harness.Approve(step);
-        _ = _harness.Approve(Changed(step, "version: 2\n", "version: 3\n"));
+        _ = _harness.Approve(Changed(step, "version: 3\n", "version: 4\n"));
         _harness.Revoke(original);   // v3 stays approved, so the pinned v2 is found and then refused as revoked
         _ = _harness.RegisterLegacy(Changed(Changed(step, "id: workflow.step\n", "id: workflow.legacy\n"),
             "inputs:\n  - { key: fact:spec, label: \"Spec\", type: text, kind: text }\n", "inputs: [fact:spec]\n"));

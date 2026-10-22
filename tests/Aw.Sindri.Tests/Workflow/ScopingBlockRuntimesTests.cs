@@ -25,8 +25,8 @@ public sealed class ScopingBlockRuntimesTests
 {
     private static readonly string[] _registered =
     [
-        "step.brief.seed", "step.build.prepare", "step.interview.record", "step.phase.drift", "step.phase.seed", "step.prove.evidence", "step.prove.fail-log", "step.prove.intake", "step.scope.anchor", "step.scope.challenge-log", "step.scope.check", "step.scope.freeze", "step.scope.gather",
-        "step.scope.intake", "step.scope.propose", "step.scope.read-brief", "step.scope.reanchor", "step.scope.withdraw", "step.ship.return",
+        "step.brief.seed", "step.bugfix.judge", "step.bugfix.recheck", "step.bugfix.record-candidate", "step.bugfix.start-attempt", "step.build.amend", "step.build.checks", "step.build.prepare", "step.build.red-check", "step.docs.check", "step.evidence.combine", "step.evidence.none", "step.interview.record", "step.phase.drift", "step.phase.seed", "step.prove.evidence", "step.prove.fail-log", "step.prove.intake", "step.scope.anchor", "step.scope.challenge-log",
+        "step.scope.check", "step.scope.evidence", "step.scope.freeze", "step.scope.gather", "step.scope.intake", "step.scope.propose", "step.scope.read-brief", "step.scope.read-change", "step.scope.read-tracker", "step.scope.reanchor", "step.scope.withdraw", "step.ship.freeze", "step.ship.green", "step.ship.return",
     ];
 
     [Fact]
@@ -49,7 +49,7 @@ public sealed class ScopingBlockRuntimesTests
         using var provider = ShippedComposition.Compose();
         var (recipe, context) = Scoping(provider);
 
-        var scoping = context.Runtimes.Keys.Select(static k => k.Value).Where(static k => !k.StartsWith("step.lens.", StringComparison.Ordinal) && !k.StartsWith("step.review.", StringComparison.Ordinal));   // the lens loops' block Steps are the design and review recipes'
+        var scoping = context.Runtimes.Keys.Select(static k => k.Value).Where(static k => !k.StartsWith("step.design.", StringComparison.Ordinal) && !k.StartsWith("step.plan.", StringComparison.Ordinal) && !k.StartsWith("step.review.", StringComparison.Ordinal) && !k.StartsWith("step.lens.", StringComparison.Ordinal));   // the design and plan stations' runtimes are BS2's, the lens loop's block Step is the design recipe's
         Assert.Equal(_registered, scoping.Order(StringComparer.Ordinal), StringComparer.Ordinal);
         var used = recipe.States.Values.Select(static s => s.Step?.Use.Value).OfType<string>().ToHashSet(StringComparer.Ordinal);
         Assert.Empty(_registered.Where(static id => id.StartsWith("step.scope.", StringComparison.Ordinal) || string.Equals(id, "step.brief.seed", StringComparison.Ordinal) || string.Equals(id, "step.interview.record", StringComparison.Ordinal)).Except(used.Concat(["step.brief.seed", "step.scope.anchor"]), StringComparer.Ordinal));   // brief.seed and anchor are the idea child's (workflow.idea-to-brief), not this recipe's

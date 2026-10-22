@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.Json;
 using Aw.Kernel;
 using Aw.Sindri.Ui.Api.Context;
@@ -11,17 +10,8 @@ internal sealed partial class ContextPageViewModel
     private const int MaxAnchors = 20;
     private int _generation;
 
-    /// <summary>The three bands, in order: intent, product, code. Empty before a read.</summary>
-    public IReadOnlyList<ContextBandViewModel> Bands { get; private set; } = [];
-
-    /// <summary>The edges between the nodes on screen.</summary>
-    public IReadOnlyList<ContextLine> Edges { get; private set; } = [];
-
-    /// <summary>The coverage strip's bars.</summary>
-    public IReadOnlyList<ContextLine> Coverage { get; private set; } = [];
-
-    /// <summary>The searched sources, one chip each.</summary>
-    public IReadOnlyList<ContextLine> Searched { get; private set; } = [];
+    /// <summary>The map of the last answer (F3 spec 1), or null before a read and after a refusal.</summary>
+    internal ContextMapViewModel? Map { get; private set; }
 
     /// <summary>The anchors the map does not hold, each as "not found".</summary>
     public IReadOnlyList<ContextLine> Missing { get; private set; } = [];
@@ -32,8 +22,14 @@ internal sealed partial class ContextPageViewModel
     /// <summary>The refusal's own words, or empty.</summary>
     public string Problem { get; private set; } = string.Empty;
 
-    /// <summary>Whether a stack is drawn.</summary>
-    public bool HasStack => Bands.Count > 0;
+    /// <summary>Whether a map is drawn.</summary>
+    public bool HasStack => Map is not null;
+
+    /// <summary>Whether the map drawn is the draft one (the page head says so).</summary>
+    public bool IsDraft => Map?.Draft == true;
+
+    /// <summary>The page head's draft mark.</summary>
+    public string DraftTag { get; } = Labels.ContextMapDraftTag;
 
     /// <summary>Whether the refusal offers choices.</summary>
     public bool HasChoices => Choices.Count > 0;
@@ -41,45 +37,34 @@ internal sealed partial class ContextPageViewModel
     /// <summary>Whether there is a refusal to show.</summary>
     public bool HasProblem => Problem.Length > 0;
 
-    /// <summary>The closed disclosure's header.</summary>
-    public string MoreLabel { get; } = Labels.ContextMore;
-
-    /// <summary>The map's version, inside the disclosure; empty until a read.</summary>
-    public string MapLine { get; private set; } = string.Empty;
-
-    /// <summary>The edges list's header.</summary>
-    public string EdgesHeader => Labels.ContextBandHeader(Labels.ContextEdges, Edges.Count);
-
-    /// <summary>The coverage strip's name.</summary>
-    public string CoverageName { get; } = Labels.ContextCoverage;
-
-    /// <summary>The searched sources' name.</summary>
-    public string SearchedName { get; } = Labels.ContextSearched;
-
     /// <summary>The choices' name.</summary>
     public string ChoicesName { get; } = Labels.ContextSuggestions;
 
-    /// <summary>Reads the lenses for the anchors in the box (Enter): one read, the newest answer wins.</summary>
+    /// <summary>Reads the lenses for what is in the box (Enter): a question is asked first for its anchors, anchor-shaped text is read as it is. One read, the newest answer wins.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>When the answer is drawn.</returns>
     public async Task Submit(CancellationToken cancellationToken = default)
     {
-        var anchors = AnchorText.Split([' ', ',', '\t', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct(StringComparer.Ordinal).ToList();
-        if (anchors.Count == 0 || Ports.ApiUrl() is not { } api)
+        var words = Words(AnchorText);
+        if (words.Count == 0 || Ports.ApiUrl() is not { } api)
+        {
+            return;
+        }
+
+        var generation = ++_generation;   // a read still in flight must not draw over this one
+        if (await Resolve(api, words, generation, cancellationToken).ConfigureAwait(true) is not var (anchors, fromQuestion))
         {
             return;
         }
 
         if (anchors.Count > MaxAnchors)
         {
-            _generation++;   // a read still in flight must not draw over the refusal
             Show(view: null, choices: []);
             Problem = Labels.ContextTooMany(MaxAnchors);
             Refresh();
             return;
         }
 
-        var generation = ++_generation;
         var result = await Ports.Api.Lenses(api, new LensesQuery(anchors, Depth: null, Draft: false, MapVersion: null), cancellationToken).ConfigureAwait(true);
         if (generation != _generation)
         {
@@ -88,7 +73,7 @@ internal sealed partial class ContextPageViewModel
 
         if (result.IsSuccess)
         {
-            Show(result.Value, choices: []);
+            Show(result.Value, choices: [], fromQuestion);
         }
         else
         {
@@ -123,154 +108,40 @@ internal sealed partial class ContextPageViewModel
             .SelectMany(m => m.Value.EnumerateArray()).Where(v => v.ValueKind == JsonValueKind.String).Select(v => v.GetString() ?? string.Empty)];
     }
 
-    private void Show(LensesView? view, List<string> choices)
+    private void Show(LensesView? view, List<string> choices, bool fromQuestion = false)
     {
+        ForgetSelection();
         Problem = string.Empty;
         Choices = choices;
         if (view is null)
         {
             Head = string.Empty;
-            MapLine = string.Empty;
-            Bands = [];
-            Edges = [];
-            Coverage = [];
-            Searched = [];
+            AsOfLiveHint = null;
+            Map = null;
             Missing = [];
             return;
         }
 
-        var version = view.MapCommit is { Length: > 0 } commit ? $"{view.MapVersion}@{commit}" : view.MapVersion;
-        MapLine = Labels.ContextMapLine(version);
-        Head = Labels.ContextHead(view.Anchors.Count) + (view.Draft ? " · " + Labels.ContextDraftMark : string.Empty);
-        var names = Names(view);
-        Bands = [Intent(view), Product(view), Code(view)];
-        Edges = EdgeLines(view, names);
-        Coverage = CoverageLines(view.Coverage);
-        Searched = [.. view.Searched.Sources.Select(s => new ContextLine(string.Join(" · ", new[] { s.Id, s.State, s.Reason ?? s.Code }.Where(w => !string.IsNullOrEmpty(w)))))];
+        Head = fromQuestion ? Labels.ContextFromQuestion(view.Anchors.Count) : Labels.ContextHead(view.Anchors.Count);
+        AsOfLiveHint = Labels.ContextMapVersionLine(view.MapVersion, view.MapCommit);
+        Map = new ContextMapViewModel(view) { Chosen = key => _ = Select(key) };
         Missing = [.. (view.MissingAnchors ?? []).Select(a => new ContextLine($"{a} · {Labels.ContextNotFound}"))];
     }
 
     private void Refresh()
     {
-        OnChanged(nameof(MapLine));
+        OnChanged(nameof(Map));
         OnChanged(nameof(Head));
+        OnChanged(nameof(AsOfLiveHint));
         OnChanged(nameof(HasHead));
-        OnChanged(nameof(Bands));
-        OnChanged(nameof(Edges));
-        OnChanged(nameof(EdgesHeader));
-        OnChanged(nameof(Coverage));
-        OnChanged(nameof(Searched));
         OnChanged(nameof(Missing));
         OnChanged(nameof(Choices));
         OnChanged(nameof(Problem));
         OnChanged(nameof(HasStack));
+        OnChanged(nameof(MapVisible));
+        OnChanged(nameof(InspectorOpen));
+        OnChanged(nameof(IsDraft));
         OnChanged(nameof(HasChoices));
         OnChanged(nameof(HasProblem));
     }
-
-    private static Dictionary<string, string> Names(LensesView view)
-    {
-        var names = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var a in view.Anchors)
-        {
-            names[a.Key] = a.Label;
-        }
-
-        foreach (var r in view.Bands.Intent.Records)
-        {
-            names[r.Key] = r.Label;
-        }
-
-        foreach (var d in view.Bands.Intent.Decisions)
-        {
-            names[d.Node] = d.Label;
-        }
-
-        foreach (var n in view.Bands.Product.Own.Concat(view.Bands.Product.Neighbors).Concat(view.Bands.Product.Affects))
-        {
-            names[n.Node] = n.Label;
-        }
-
-        foreach (var f in view.Bands.Code.Files)
-        {
-            names[CodeKey(f)] = f.Path;
-        }
-
-        return names;
-    }
-
-    private static string CodeKey(CodeFile file) => "code:" + file.Path;
-
-    private static string Inv(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
-
-    private static string Join(params string?[] words) => string.Join(" · ", words.Where(w => !string.IsNullOrEmpty(w)));
-
-    private static ContextBandViewModel Intent(LensesView view)
-    {
-        var intent = view.Bands.Intent;
-        List<ContextLine> lines =
-        [
-            .. intent.Records.Select(r => new ContextLine(Join(r.Label, r.Source, Untrusted(r.Trust)))),
-            .. intent.Decisions.Select(d => new ContextLine(Join(d.Label, d.At.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), d.Confirmed ? null : Labels.ContextUnconfirmed, Untrusted(d.Trust)))),
-            .. view.Conflicts.Select(c => new ContextLine(Join(Labels.ContextConflict, c.Kind, c.Node, c.Summary))),
-        ];
-        if (intent.Truncated)
-        {
-            lines.Add(new ContextLine(Labels.ContextTruncated));
-        }
-
-        return new ContextBandViewModel(Labels.ContextBandHeader(Labels.ContextIntent, intent.Records.Count + intent.Decisions.Count), lines);
-    }
-
-    private static string? Untrusted(string trust) => string.Equals(trust, "untrusted", StringComparison.Ordinal) ? Labels.ContextUntrusted : null;
-
-    private static ContextBandViewModel Product(LensesView view)
-    {
-        var product = view.Bands.Product;
-        var anchors = view.Anchors.Select(a => a.Key).ToHashSet(StringComparer.Ordinal);
-        ContextLine Row(ProductNode n, string? list) => new(Join(n.Label, n.Kind, anchors.Contains(n.Node) ? Labels.ContextAnchorTag : null, list,
-            n.Depth is { } depth && depth > 0 ? Inv($"depth {depth}") : null, n.Confirmed ? null : Labels.ContextUnconfirmed, Untrusted(n.Trust)));
-        List<ContextLine> lines =
-        [
-            .. product.Own.Select(n => Row(n, list: null)),
-            .. product.Neighbors.Select(n => Row(n, "neighbor")),
-            .. product.Affects.Select(n => Row(n, "affects")),
-        ];
-        if (product.Truncated)
-        {
-            lines.Add(new ContextLine(Labels.ContextTruncated));
-        }
-
-        return new ContextBandViewModel(Labels.ContextBandHeader(Labels.ContextProduct, product.Own.Count + product.Neighbors.Count + product.Affects.Count), lines);
-    }
-
-    private static ContextBandViewModel Code(LensesView view)
-    {
-        var code = view.Bands.Code;
-        List<ContextLine> lines =
-        [
-            .. code.Files.Select(f => new ContextLine(Join(f.Path, f.Suggested ? Inv($"{Labels.ContextSuggestedFile} {f.Confidence:0.00}") : null, f.Implements.Count > 0 ? "implements " + string.Join(", ", f.Implements) : null))),
-            new ContextLine(Join(Labels.ContextSymbols, string.Equals(code.Symbols.State, "unavailable", StringComparison.Ordinal) ? Labels.ContextIndexNotBuilt : code.Symbols.State)),
-        ];
-        if (code.Truncated)
-        {
-            lines.Add(new ContextLine(Labels.ContextTruncated));
-        }
-
-        return new ContextBandViewModel(Labels.ContextBandHeader(Labels.ContextCode, code.Files.Count), lines);
-    }
-
-    private static List<ContextLine> EdgeLines(LensesView view, Dictionary<string, string> names) =>
-        [.. view.Bands.Product.Edges.Concat(view.Edges)
-            .Where(e => names.ContainsKey(e.From) && names.ContainsKey(e.To))
-            .DistinctBy(e => (e.From, e.To, e.Type))
-            .Select(e => new ContextLine(Join($"{names[e.From]} {e.Type} {names[e.To]}",
-                string.Equals(e.Provenance, "model", StringComparison.Ordinal) && !e.Confirmed ? Inv($"{Labels.ContextModelSuggested} {e.Confidence:0.00}") : null)))];
-
-    private static List<ContextLine> CoverageLines(CoverageView c) =>
-    [
-        new(Labels.ContextCoverIntent(c.Intent.Covered, c.Intent.Of)),
-        new(Labels.ContextCoverProduct(c.Product.Confirmed, c.Product.Of)),
-        new(Labels.ContextCoverCode(c.Code.Implemented, c.Code.Of, c.Code.Suggested)),
-    ];
 }

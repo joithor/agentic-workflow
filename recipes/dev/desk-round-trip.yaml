@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.dev-desk-round-trip
-version: 2
+version: 3
 description: "Export a file at the desk, import and check it, and go back to the export with the findings when the check fails: a desk round trip with a loop of two rounds (UI screens, E-22)."
+displayName: "Export, check and import a file at the desk"
 urgency: work
 inputs:
   - { key: fact:request, label: "Request", type: text, kind: text }

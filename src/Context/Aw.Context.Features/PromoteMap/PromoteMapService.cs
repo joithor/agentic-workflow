@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Context.Core;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
@@ -30,7 +31,12 @@ internal sealed class PromoteMapService(IGraphStore store, TimeProvider clock) :
 
         if (found.Value is not { } draft)
         {
-            return PromoteReadiness.Check(queue: null).Error;
+            return request.ExpectedVersion is { } wanted ? Changed(wanted, latest: null) : PromoteReadiness.Check(queue: null).Error;
+        }
+
+        if (request.ExpectedVersion is { } expected && expected != draft.Version.Number)
+        {
+            return Changed(expected, draft.Version.Number);
         }
 
         // The queue the review shows: an item a deny glob hides is neither decidable nor blocking, and the stored map loses what the globs hide.
@@ -43,6 +49,10 @@ internal sealed class PromoteMapService(IGraphStore store, TimeProvider clock) :
         var ready = PromoteReadiness.Check(seen.Value.Queue);
         return ready.IsError ? ready.Error : await Promote(draft, seen.Value.View, cancellationToken).ConfigureAwait(false);
     }
+
+    // The caller decided about one draft; a rebuild replaced it or it was promoted (retrieval spec §8.7a).
+    private static Error Changed(int expected, int? latest) => ContextErrors.DraftChanged.With(string.Create(CultureInfo.InvariantCulture,
+        $"draft {expected} was expected, {(latest is { } n ? $"the latest draft is {n}" : "there is no draft")} (a rebuild replaced it, or it was promoted); nothing was promoted"));
 
     private async ValueTask<Result<MapPromoted>> Promote(MapSnapshot draft, MapView view, CancellationToken cancellationToken)
     {

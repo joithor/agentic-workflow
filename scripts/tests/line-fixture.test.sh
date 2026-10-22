@@ -50,6 +50,10 @@ mutate() { # mutate <name> <expect-text> <command run inside the copy of tests/f
   local name="$1" expect="$2" cmd="$3" copy="$WORK/m-$1"
   mkdir -p "$copy" && cp -R "$ROOT/tests/fixtures/line" "$copy/line" && cp -R "$ROOT/tests/fixtures/scoping" "$copy/scoping"
   ( cd "$copy/line" && eval "$cmd" ) >/dev/null 2>&1
+  # a mutation that edits nothing proves nothing (BSD sed accepts GNU-only scripts and changes nothing)
+  if diff -rq "$ROOT/tests/fixtures/line" "$copy/line" >/dev/null && diff -rq "$ROOT/tests/fixtures/scoping" "$copy/scoping" >/dev/null; then
+    echo "not ok - the mutation $name changed no file"; fail=1; return
+  fi
   local got rc; got="$(node "$copy/line/selfcheck.mjs" 2>&1)"; rc=$?
   check "a broken fixture fails selfcheck: $name" "$rc" "1"
   if printf '%s\n' "$got" | grep '^not ok - ' | grep -qF -- "$expect"; then echo "ok - ...and a failing check names: $expect"; else echo "not ok - expected a failing check to name: $expect"; printf '%s\n' "$got" | grep -A1 '^not ok' | head -6; fail=1; fi
@@ -73,7 +77,7 @@ mutate pl-leak-report-clean "PL-LEAK" "node -e 'const f=\"gold/prove/holdout-res
 mutate related-path-not-a-cascade-path "related is a cascade lens" "sedi 's/reads action:audit.report/reads action:export.run/' gold/scope-trace/expiry.related-trace.json"
 mutate hops-not-hop-kinds "hop-kind arrays" "sedi 's/\"dependency\"/\"walk\"/' gold/scope/expiry/lenses.json gold/scope/expiry/coverage.json"
 mutate malformed-gold-is-a-check "crashed" "echo '{' > gold/design/expiry/signals.json"
-mutate design-parent-not-the-frozen-scope "index.json: kind design, parent is the frozen" "sedi '0,/sha256:[0-9a-f]\\{64\\}/s//sha256:0000000000000000000000000000000000000000000000000000000000000000/' gold/design/expiry/index.json"
+mutate design-parent-not-the-frozen-scope "index.json: kind design, parent is the frozen" "node -e 'const f=process.argv[1],fs=require(\"fs\");fs.writeFileSync(f,fs.readFileSync(f,\"utf8\").replace(/sha256:[0-9a-f]{64}/,\"sha256:\"+\"0\".repeat(64)))' gold/design/expiry/index.json"
 mutate plan-index-self-set "index.json: kind plan" "sedi 's/\"self\": null/\"self\": \"sha256:0000000000000000000000000000000000000000000000000000000000000000\"/' gold/plan/expiry/index.json"
 
 # --- the history: reproducible, with the planted items ---
