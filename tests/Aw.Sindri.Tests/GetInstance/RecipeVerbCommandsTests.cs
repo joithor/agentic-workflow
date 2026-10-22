@@ -98,7 +98,7 @@ public sealed class RecipeVerbCommandsTests
 
         Assert.Equal(
             [("merge", true), ("rework", null), ("comments", null), ("resync-docs", null), ("check", null)],
-            view.AllowedCommands.Where(c => c.Verb is not null).Select(c => (c.Verb!, c.Destructive)));
+            view.AllowedCommands.Where(c => c.Verb is not null).Select(c => (c.Verb, c.Destructive)));
     }
 
     [Fact]
