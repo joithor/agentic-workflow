@@ -235,7 +235,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PrEffects.Restack)
         .AddBlockDescriptor(PrEffects.CreateStacked)
         .AddBlockDescriptor(PrEffects.MergeDocs)
-        .AddBlockDescriptor(PrInputs.Context)
-        .AddBlockDescriptor(PrInputs.PhasePacket)
-        .AddBlockDescriptor(PrInputs.HandoffNote);
+        .AddStepInput<PrContextInput>()
+        .AddStepInput<PhasePacketInput>()
+        .AddStepInput<HandoffNoteInput>();
 }
