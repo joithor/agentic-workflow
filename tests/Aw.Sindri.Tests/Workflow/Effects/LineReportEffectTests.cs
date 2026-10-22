@@ -2,7 +2,7 @@ using System.Text;
 using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
-using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Blocks.Effect;
 using Aw.Sindri.Testing.Scoping;
@@ -106,7 +106,7 @@ public sealed class LineReportEffectTests
         Assert.True(done.IsError);
     }
 
-    private string[] Rows() => (_area.Read(Instance, Record, Token).AsTask().GetAwaiter().GetResult()).Value.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+    private string[] Rows() => _area.Read(Instance, Record, Token).AsTask().GetAwaiter().GetResult().Value.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
     private async Task<Aw.Kernel.Result<EffectDone>> Report(string status, string lineContext)
     {
