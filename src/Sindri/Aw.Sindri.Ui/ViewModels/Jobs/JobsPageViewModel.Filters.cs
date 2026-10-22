@@ -112,7 +112,7 @@ internal sealed partial class JobsPageViewModel
     }
 
     // The kinds a read served become the kind filter's choices, so the choice list is what Sindri has run.
-    private void NoteKinds(IEnumerable<Api.Jobs.JobRowView> jobs)
+    private void NoteKinds(IEnumerable<JobRowView> jobs)
     {
         foreach (var kind in jobs.Select(j => j.Kind).Distinct(StringComparer.Ordinal))
         {

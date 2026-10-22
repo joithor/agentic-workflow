@@ -148,7 +148,7 @@ internal sealed class RunCardView : Border
             BorderBrush = this.Brush("Brush.HairlineStrong"),
             BorderThickness = new Thickness(1),
             VerticalAlignment = VerticalAlignment.Center,
-            Child = new TextBlock { Text = step.Number.ToString(System.Globalization.CultureInfo.InvariantCulture), FontSize = 11, LineHeight = 14, FontWeight = FontWeight.SemiBold, Foreground = this.Brush("Brush.InkMuted"), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
+            Child = new TextBlock { Text = step.Number.ToString(CultureInfo.InvariantCulture), FontSize = 11, LineHeight = 14, FontWeight = FontWeight.SemiBold, Foreground = this.Brush("Brush.InkMuted"), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
         };
         var name = RunResources.Text(step.Name, 12, 16, FontWeight.Medium, this.Brush("Brush.Ink"));
         name.VerticalAlignment = VerticalAlignment.Center;
