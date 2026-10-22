@@ -13,7 +13,7 @@ internal static class PrEffects
     /// <summary>'effect.pr.push': pushes the workspace head to the PR head with a lease; never rebases onto commits it didn't make.</summary>
     public static BlockDescriptor Push { get; } = Of("effect.pr.push", humanTrigger: false, "pr", "lease", "workspace", "cause")
         with
-    { Outputs = [new OutputSpec(FactKey.From("fact:push"), [])] };
+    { Outputs = [new OutputSpec(FactKey.From("fact:push"), []),], };
 
     /// <summary>'effect.pr.reply': thread, reaction, fixed, fixedReplies, none or hold forms.</summary>
     public static BlockDescriptor Reply { get; } = Of("effect.pr.reply", humanTrigger: false, "form", "reason", "comment", "decision", "fix", "body", "pr", "push");

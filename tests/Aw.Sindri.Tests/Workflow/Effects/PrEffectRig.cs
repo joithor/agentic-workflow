@@ -3,6 +3,7 @@ using System.Text.Json;
 using Aw.Sindri.Core.Forge;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Testing.Checks;
 using Aw.Sindri.Testing.Forge;
 using Aw.Sindri.Testing.Workflow;
 
@@ -28,6 +29,8 @@ internal sealed class PrEffectRig
     public InMemoryFactStore Facts { get; } = new();
 
     public FakeRunDiff Diff { get; } = new();
+
+    public InMemoryBranchChanges Changes { get; } = new();
 
     public string Link => Pull.Link;
 

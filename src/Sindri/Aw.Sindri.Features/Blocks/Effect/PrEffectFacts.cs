@@ -36,7 +36,7 @@ internal static class PrEffectFacts
     {
         if (!context.Facts.TryGetValue(Ids(key), out var stored))
         {
-            return Results.Success<JsonElement?>(null);
+            return Results.Success<JsonElement?>(value: null);
         }
 
         var content = await Content(context, stored, key, contents, cancellationToken).ConfigureAwait(false);

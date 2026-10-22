@@ -58,5 +58,5 @@ internal sealed class PrRecordEffect(IRunArea area, IFactContents contents, Time
     }
 
     private static bool Written(string record, string identity) =>
-        record.Split('\n', StringSplitOptions.RemoveEmptyEntries).Any(line => line.Contains("\"identity\":" + JsonValue.Create(identity)!.ToJsonString(), StringComparison.Ordinal));
+        record.Split('\n', StringSplitOptions.RemoveEmptyEntries).Any(line => line.Contains("\"identity\":" + JsonValue.Create(identity).ToJsonString(), StringComparison.Ordinal));
 }
