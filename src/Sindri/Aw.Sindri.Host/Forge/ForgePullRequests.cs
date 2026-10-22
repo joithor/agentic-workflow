@@ -72,16 +72,53 @@ internal sealed class ForgePullRequests(IForge forge) : IPullRequests
             return SindriErrors.ForgeRefused.With("the pull request's head branch is on a fork; Sindri doesn't push to forks");
         }
 
-        // why: the remote is the pull request's own repository on a host the profile allows (Parse checked it), never what the worktree's git config says.
-        var remote = $"https://{pull.Value.Host}/{pull.Value.Owner}/{pull.Value.Repo}.git";
-        var pushed = await forge.Push(new PushRequest(push.Workspace, push.Sha, remote, snapshot.Value.Head.Ref, push.LeaseSha), cancellationToken).ConfigureAwait(false);
-        if (pushed.IsSuccess)
+        return await PushTo(pull.Value, push.Workspace, push.Sha, snapshot.Value.Head.Ref, push.LeaseSha, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async ValueTask<Result<PullPushOutcome>> PushBranch(PullBranchPush push, CancellationToken cancellationToken)
+    {
+        // why: Parse is the forge's one check of a host against the profile's list and of owner and repo names; a pull number stands in because no pull request exists yet.
+        var repo = forge.Parse($"https://{push.Repo.Host}/{push.Repo.Owner}/{push.Repo.Name}/pull/1");
+        return repo.IsError
+            ? PullErrors.From(repo.Error)
+            : await PushTo(repo.Value, push.Workspace, push.Sha, push.Branch, push.LeaseSha, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async ValueTask<Result<PullMergeOutcome>> Merge(PullMerge request, CancellationToken cancellationToken)
+    {
+        var pull = forge.Parse(request.Link);
+        if (pull.IsError)
         {
-            return pushed.Value == PushOutcome.Pushed ? PullPushOutcome.Pushed : PullPushOutcome.HeadMoved;
+            return PullErrors.From(pull.Error);
         }
 
-        // A push git ran and the remote turned away (a protected branch, a hook) is an outcome the caller acts on; any other failure is an error.
-        return pushed.Error.Code == ForgeErrors.PushFailed.Code ? PullPushOutcome.Rejected : PullErrors.From(pushed.Error);
+        var merged = await forge.Merge(new MergeRequest(pull.Value, Method(request.Method), request.ExpectedHead), cancellationToken).ConfigureAwait(false);
+        return merged.IsError ? PullErrors.From(merged.Error) : new PullMergeOutcome(MergeStatusOf(merged.Value.Status), merged.Value.MergedSha, merged.Value.Reason);
+    }
+
+    public async ValueTask<Result<PullDelivery>> Reply(PullReply request, CancellationToken cancellationToken)
+    {
+        var pull = forge.Parse(request.Link);
+        if (pull.IsError)
+        {
+            return PullErrors.From(pull.Error);
+        }
+
+        // The forge adapter redacts the text; it is not scrubbed again here.
+        var delivery = await forge.Reply(new ReplyRequest(pull.Value, request.ThreadKey, request.Text, request.Marker), cancellationToken).ConfigureAwait(false);
+        return delivery.IsError ? PullErrors.From(delivery.Error) : Delivered(delivery.Value);
+    }
+
+    public async ValueTask<Result<PullDelivery>> React(PullReaction request, CancellationToken cancellationToken)
+    {
+        var pull = forge.Parse(request.Link);
+        if (pull.IsError)
+        {
+            return PullErrors.From(pull.Error);
+        }
+
+        var delivery = await forge.React(new ReactionRequest(pull.Value, request.ThreadKey, request.Reaction, request.Marker), cancellationToken).ConfigureAwait(false);
+        return delivery.IsError ? PullErrors.From(delivery.Error) : Delivered(delivery.Value);
     }
 
     public async ValueTask<Result<int>> RerunChecks(string link, string sha, CancellationToken cancellationToken)
@@ -94,6 +131,20 @@ internal sealed class ForgePullRequests(IForge forge) : IPullRequests
 
         var count = await forge.RerunChecks(pull.Value, sha, cancellationToken).ConfigureAwait(false);
         return count.IsError ? PullErrors.From(count.Error) : count.Value;
+    }
+
+    public async ValueTask<Result<IReadOnlyList<PullThread>>> Threads(string link, CancellationToken cancellationToken)
+    {
+        var pull = forge.Parse(link);
+        if (pull.IsError)
+        {
+            return PullErrors.From(pull.Error);
+        }
+
+        var threads = await forge.ListThreads(pull.Value, cancellationToken).ConfigureAwait(false);
+        return threads.IsError
+            ? PullErrors.From(threads.Error)
+            : Results.Success<IReadOnlyList<PullThread>>([.. threads.Value.Select(static t => new PullThread(t.Key, Kind(t.Kind), t.Author, t.Association, t.IsBot, t.Resolved, t.Outdated, t.Path, t.Body, t.Markers))]);
     }
 
     public async ValueTask<Result<OpenedPull?>> Find(FindPull query, CancellationToken cancellationToken)
@@ -137,7 +188,47 @@ internal sealed class ForgePullRequests(IForge forge) : IPullRequests
         return updated.IsError ? PullErrors.From(updated.Error) : Results.Ok();
     }
 
+    private async ValueTask<Result<PullPushOutcome>> PushTo(ForgeRef pull, string workspace, string sha, string branch, string? leaseSha, CancellationToken cancellationToken)
+    {
+        // why: the remote is the repository on a host the profile allows (Parse checked it), never what the worktree's git config says.
+        var remote = $"https://{pull.Host}/{pull.Owner}/{pull.Repo}.git";
+        var pushed = await forge.Push(new PushRequest(workspace, sha, remote, branch, leaseSha), cancellationToken).ConfigureAwait(false);
+        if (pushed.IsSuccess)
+        {
+            return pushed.Value == PushOutcome.Pushed ? PullPushOutcome.Pushed : PullPushOutcome.HeadMoved;
+        }
+
+        // A push git ran and the remote turned away (a protected branch, a hook) is an outcome the caller acts on; any other failure is an error.
+        return pushed.Error.Code == ForgeErrors.PushFailed.Code ? PullPushOutcome.Rejected : PullErrors.From(pushed.Error);
+    }
+
+    private static MergeMethod Method(PullMergeMethod method) => method switch
+    {
+        PullMergeMethod.Squash => MergeMethod.Squash,
+        PullMergeMethod.Rebase => MergeMethod.Rebase,
+        PullMergeMethod.Merge => throw new NotImplementedException(),
+        _ => MergeMethod.Merge,
+    };
+
+    private static PullMergeStatus MergeStatusOf(MergeStatus status) => status switch
+    {
+        MergeStatus.Merged => PullMergeStatus.Merged,
+        MergeStatus.HeadMoved => PullMergeStatus.HeadMoved,
+        MergeStatus.Blocked => throw new NotImplementedException(),
+        _ => PullMergeStatus.Blocked,
+    };
+
+    private static PullDelivery Delivered(Delivery delivery) => delivery == Delivery.Delivered ? PullDelivery.Delivered : PullDelivery.AlreadyDelivered;
+
     private static ForgeRepo Repo(PullRepo repo) => new(repo.Host, repo.Owner, repo.Name);
+
+    private static PullCommentKind Kind(CommentKind kind) => kind switch
+    {
+        CommentKind.Thread => PullCommentKind.Thread,
+        CommentKind.Review => PullCommentKind.Review,
+        CommentKind.Comment => throw new NotImplementedException(),
+        _ => PullCommentKind.Comment,
+    };
 
     private static PullState State(PullStatus status) => status switch
     {
