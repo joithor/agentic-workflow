@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sv="using:Aw.Sindri.Ui.ViewModels.Setup"
+             x:Class="Aw.Sindri.Ui.Views.Setup.SetupRepoForm"
+             x:DataType="sv:SetupRepoFormViewModel">
+  <!-- The repo step's form (setup spec §2.4, §5): a labelled folder field, Browse where the head has a chooser, and Add. A refusal is said under the field in words. -->
+  <StackPanel Spacing="8" IsVisible="{Binding IsAvailable}">
+    <Border AutomationProperties.Name="{Binding BodyText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+      <TextBlock Classes="caption" Text="{Binding BodyText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+    </Border>
+    <StackPanel Spacing="4">
+      <TextBlock Classes="caption muted" Text="{Binding FolderLabel}" AutomationProperties.AccessibilityView="Raw" />
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBox x:Name="SetupRepoPath" Text="{Binding Path, Mode=TwoWay}" AutomationProperties.Name="{Binding FolderLabel}" KeyDown="OnPathKey" />
+        <Button x:Name="SetupRepoBrowse" Grid.Column="1" Click="OnBrowse" IsVisible="{Binding CanBrowse}" AutomationProperties.Name="{Binding BrowseText}">
+          <TextBlock Classes="button" Text="{Binding BrowseText}" AutomationProperties.AccessibilityView="Raw" />
+        </Button>
+      </Grid>
+      <Border x:Name="SetupRepoError" Classes="error-panel" IsVisible="{Binding HasError}" AutomationProperties.Name="{Binding ErrorText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+        <TextBlock Classes="caption" Text="{Binding ErrorText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+      </Border>
+    </StackPanel>
+    <Button x:Name="SetupRepoAdd" Classes="command-control primary" HorizontalAlignment="Left" IsEnabled="{Binding CanAdd}" Click="OnAdd" AutomationProperties.Name="{Binding AddText}">
+      <TextBlock Classes="button" Text="{Binding AddText}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+    </Button>
+    <Border AutomationProperties.Name="{Binding NoteText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+      <TextBlock Classes="caption subtle" Text="{Binding NoteText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+    </Border>
+  </StackPanel>
+</UserControl>

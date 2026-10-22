@@ -112,6 +112,8 @@ internal static class EndpointTable
         _ = commands.MapReviewContextMap();
         _ = commands.MapStopProcess();
         _ = commands.MapApproveAllRecipes();
+        _ = commands.MapAddRepo();
+        _ = commands.MapRegisterMcp();
         _ = commands.MapApproveRecipe();
         _ = commands.MapRevokeRecipe();
         _ = commands.MapIssueChallenge();

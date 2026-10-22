@@ -1,4 +1,5 @@
 using Aw.Forge.Core.Ports;
+using Aw.Forge.Core.Pulls;
 using Aw.Forge.Core.Refs;
 using Aw.Forge.Infrastructure;
 using Aw.Kernel.Testing;
@@ -19,11 +20,13 @@ public sealed class ForgePullRequestsContractTests : PullRequestsContract, IDisp
     {
         var directory = Directory.CreateTempSubdirectory("aw-sindri-pulls-");
         _directories.Add(directory);
-        var forge = new ServiceCollection()
+        var provider = new ServiceCollection()
             .AddForgeFileInfrastructure(name => name == "AW_STATE_DIR" ? directory.FullName : null, new ForgeHosts(["forge.test"]))
-            .BuildServiceProvider()
-            .GetRequiredService<IForge>();
-        return new PullRequestsUnderTest(new ForgePullRequests(forge), new PullRepo("forge.test", "acme", "widgets"), "elsewhere.test");
+            .BuildServiceProvider();
+        var forge = provider.GetRequiredService<IForge>();
+        var seed = provider.GetRequiredService<IForgeSeed>();
+        string SeedThread(string link, string body) => seed.SeedThread(new SeedThreadRequest(forge.Parse(link).Value, CommentKind.Thread, "reviewer", "MEMBER", IsBot: false, "src/a.cs", body)).Value;
+        return new PullRequestsUnderTest(new ForgePullRequests(forge), new PullRepo("forge.test", "acme", "widgets"), "elsewhere.test", SeedThread, CanPush: false);
     }
 
     public void Dispose()

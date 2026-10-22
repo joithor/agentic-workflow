@@ -68,6 +68,93 @@ public abstract class PullRequestsContract
         Expect.Equal(opened, byHead);
     }
 
+    /// <summary>Threads lists none for a new pull request and, after a reviewer comments, the thread with its key, author and untouched body.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task Threads_lists_what_a_reviewer_wrote()
+    {
+        var (run, opened) = await Open();
+
+        var before = Ok(await run.Pulls.Threads(opened.Link, Ct), "Threads before");
+        var key = run.SeedThread(opened.Link, "Please fix this");
+        var after = Ok(await run.Pulls.Threads(opened.Link, Ct), "Threads after");
+        var view = Ok(await run.Pulls.Get(opened.Link, Ct), "Get");
+
+        Expect.Equal(0, before.Count);
+        var thread = Expect.Only(after);
+        Expect.Equal(key, thread.Key);
+        Expect.Equal(PullCommentKind.Thread, thread.Kind);
+        Expect.Equal("reviewer", thread.Author);
+        Expect.Equal("Please fix this", thread.Body);
+        Expect.True(!thread.Resolved && !thread.IsBot);
+        Expect.Equal(1, view.UnresolvedThreads);
+        Expect.Equal("SND-FORGE-003", Failure(await run.Pulls.Threads(MissingLink(run), Ct)));
+    }
+
+    /// <summary>A merge with the right head lands and reads back merged; a stale head is HeadMoved and changes nothing.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task A_merge_checks_the_expected_head()
+    {
+        var (run, opened) = await Open();
+
+        var moved = Ok(await run.Pulls.Merge(new PullMerge(opened.Link, PullMergeMethod.Squash, Sha('b')), Ct), "Merge with a stale head");
+        var merged = Ok(await run.Pulls.Merge(new PullMerge(opened.Link, PullMergeMethod.Squash, Sha('a')), Ct), "Merge");
+        var view = Ok(await run.Pulls.Get(opened.Link, Ct), "Get");
+
+        Expect.Equal(PullMergeStatus.HeadMoved, moved.Status);
+        Expect.Equal(PullMergeStatus.Merged, merged.Status);
+        Expect.True(!string.IsNullOrEmpty(merged.MergedSha));
+        Expect.Equal(PullState.Merged, view.State);
+        Expect.Equal("SND-FORGE-003", Failure(await run.Pulls.Merge(new PullMerge(MissingLink(run), PullMergeMethod.Merge, Sha('a')), Ct)));
+    }
+
+    /// <summary>A reply or a reaction posts once per marker.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task A_reply_and_a_reaction_are_delivered_once_per_marker()
+    {
+        var (run, opened) = await Open();
+        var key = run.SeedThread(opened.Link, "Please fix this");
+
+        var first = Ok(await run.Pulls.Reply(new PullReply(opened.Link, key, "Fixed", "r1"), Ct), "Reply");
+        var again = Ok(await run.Pulls.Reply(new PullReply(opened.Link, key, "Fixed", "r1"), Ct), "Reply again");
+        var onPull = Ok(await run.Pulls.Reply(new PullReply(opened.Link, "pull", "Summary", "s1"), Ct), "Reply on the pull request");
+        var reacted = Ok(await run.Pulls.React(new PullReaction(opened.Link, key, "+1", "x1"), Ct), "React");
+        var reactedAgain = Ok(await run.Pulls.React(new PullReaction(opened.Link, key, "+1", "x1"), Ct), "React again");
+
+        Expect.Equal(PullDelivery.Delivered, first);
+        Expect.Equal(PullDelivery.AlreadyDelivered, again);
+        Expect.Equal(PullDelivery.Delivered, onPull);
+        Expect.Equal(PullDelivery.Delivered, reacted);
+        Expect.Equal(PullDelivery.AlreadyDelivered, reactedAgain);
+    }
+
+    /// <summary>A branch pushed before any pull request exists can then be opened and found; the lease rules decide a second push.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task A_pushed_branch_opens_and_is_found()
+    {
+        var run = Create();
+        if (run.CanPush)
+        {
+            var created = Ok(await run.Pulls.PushBranch(new PullBranchPush(run.Repo, "/unused", Feature, Sha('a'), LeaseSha: null), Ct), "PushBranch of a new branch");
+            var exists = Ok(await run.Pulls.PushBranch(new PullBranchPush(run.Repo, "/unused", Feature, Sha('b'), LeaseSha: null), Ct), "PushBranch of an existing branch with no lease");
+            var stale = Ok(await run.Pulls.PushBranch(new PullBranchPush(run.Repo, "/unused", Feature, Sha('b'), Sha('z')), Ct), "PushBranch with a stale lease");
+            var leased = Ok(await run.Pulls.PushBranch(new PullBranchPush(run.Repo, "/unused", Feature, Sha('c'), Sha('a')), Ct), "PushBranch with the right lease");
+
+            Expect.Equal(PullPushOutcome.Pushed, created);
+            Expect.Equal(PullPushOutcome.HeadMoved, exists);
+            Expect.Equal(PullPushOutcome.HeadMoved, stale);
+            Expect.Equal(PullPushOutcome.Pushed, leased);
+        }
+
+        var opened = Ok(await run.Pulls.Open(Request(run, "run-1"), Ct), "Open");
+        var found = Ok(await run.Pulls.Find(new FindPull(run.Repo, Feature, "run-1"), Ct), "Find");
+
+        Expect.Equal(opened, found);
+    }
+
     /// <summary>Update succeeds on a pull request and answers SND-FORGE-003 for one that isn't there.</summary>
     /// <returns>A task.</returns>
     [Fact]
@@ -105,6 +192,7 @@ public abstract class PullRequestsContract
         Expect.Equal("SND-FORGE-002", Failure(await run.Pulls.Find(new FindPull(foreign, Feature, Marker: null), Ct)));
         Expect.Equal("SND-FORGE-002", Failure(await run.Pulls.Open(Request(run) with { Repo = foreign }, Ct)));
         Expect.Equal("SND-FORGE-002", Failure(await run.Pulls.Get("not a link", Ct)));
+        Expect.Equal("SND-FORGE-002", Failure(await run.Pulls.PushBranch(new PullBranchPush(foreign, "/unused", Feature, Sha('a'), LeaseSha: null), Ct)));
     }
 
     private static string Sha(char c) => new(c, 40);

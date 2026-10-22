@@ -15,6 +15,16 @@ internal sealed class NoForgePullRequests : IPullRequests
 
     public ValueTask<Result<int>> RerunChecks(string link, string sha, CancellationToken cancellationToken) => None<int>();
 
+    public ValueTask<Result<IReadOnlyList<PullThread>>> Threads(string link, CancellationToken cancellationToken) => None<IReadOnlyList<PullThread>>();
+
+    public ValueTask<Result<PullMergeOutcome>> Merge(PullMerge request, CancellationToken cancellationToken) => None<PullMergeOutcome>();
+
+    public ValueTask<Result<PullDelivery>> Reply(PullReply request, CancellationToken cancellationToken) => None<PullDelivery>();
+
+    public ValueTask<Result<PullDelivery>> React(PullReaction request, CancellationToken cancellationToken) => None<PullDelivery>();
+
+    public ValueTask<Result<PullPushOutcome>> PushBranch(PullBranchPush push, CancellationToken cancellationToken) => None<PullPushOutcome>();
+
     public ValueTask<Result<OpenedPull?>> Find(FindPull query, CancellationToken cancellationToken) => None<OpenedPull?>();
 
     public ValueTask<Result<OpenedPull>> Open(OpenPull request, CancellationToken cancellationToken) => None<OpenedPull>();

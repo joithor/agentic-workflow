@@ -52,7 +52,7 @@ public sealed class FakePull(PullRepo repo, int number, string head, string head
     /// <summary>Gets the names of the failing checks.</summary>
     public IList<string> FailingChecks { get; } = [];
 
-    /// <summary>Gets the conversation, oldest first.</summary>
+    /// <summary>Gets the threads, oldest first.</summary>
     public IList<PullThread> Threads { get; } = [];
 
     /// <summary>Gets the pull request's link.</summary>
