@@ -25,4 +25,19 @@ internal sealed class CodeLensViewModel : ObservableObject
         OnChanged(nameof(Callees));
         OnChanged(nameof(HasPanels));
     }
+
+    /// <summary>Hides the panels: nothing is chosen that the code index answers for.</summary>
+    internal void Clear()
+    {
+        if (Callers is null && Callees is null)
+        {
+            return;
+        }
+
+        Callers = null;
+        Callees = null;
+        OnChanged(nameof(Callers));
+        OnChanged(nameof(Callees));
+        OnChanged(nameof(HasPanels));
+    }
 }

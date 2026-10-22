@@ -31,6 +31,7 @@ internal sealed partial class ContextPageViewModel
         _ = Map?.Select(key: null);
         Node.Close();
         Sources.Close();
+        Code.Clear();
         OnChanged(nameof(InspectorOpen));
     }
 
@@ -39,12 +40,13 @@ internal sealed partial class ContextPageViewModel
     {
         Node.Close();
         Sources.Close();
+        Code.Clear();
         OnChanged(nameof(InspectorOpen));
     }
 
     private async Task Inspect(ContextMapViewModel map, string key, CancellationToken cancellationToken)
     {
         OnChanged(nameof(InspectorOpen));
-        await Task.WhenAll(Node.Show(map, key, cancellationToken), Sources.Show(map, key, cancellationToken)).ConfigureAwait(true);
+        await Task.WhenAll(Node.Show(map, key, cancellationToken), Sources.Show(map, key, cancellationToken), ShowCode(map, key, cancellationToken)).ConfigureAwait(true);
     }
 }
