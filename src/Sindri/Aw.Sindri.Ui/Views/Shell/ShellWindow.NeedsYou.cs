@@ -54,7 +54,7 @@ internal sealed partial class ShellWindow
         var follows = FocusFollowsSelection(id);
         Dispatcher.UIThread.Post(() =>
         {
-            if (id is not null && !string.Equals(id, Shell?.NeedsYou.SelectedId, StringComparison.Ordinal))
+            if (SelectionMovedOn(id))
             {
                 return;   // the selection moved on before this ran: a stale job would focus its row, select it again and post another, two such jobs ping-pong forever
             }
@@ -109,8 +109,18 @@ internal sealed partial class ShellWindow
     private void FollowInbox()
     {
         var selected = Shell?.NeedsYou.SelectedId;
-        Dispatcher.UIThread.Post(() => (selected is null ? KeepFocus : (Action)(() => FocusNeedsYouRow(selected)))(), DispatcherPriority.Loaded);
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!SelectionMovedOn(selected))   // a row picked since is the one that takes focus, not the one the inbox opened on
+            {
+                (selected is null ? KeepFocus : (Action)(() => FocusNeedsYouRow(selected)))();
+            }
+        }, DispatcherPriority.Loaded);
     }
+
+    // True when a focus job was queued for a row that is no longer the selected one.
+    private bool SelectionMovedOn(string? queuedFor) =>
+        queuedFor is not null && !string.Equals(queuedFor, Shell?.NeedsYou.SelectedId, StringComparison.Ordinal);
 
     private void FocusNeedsYouRow(string rowId)
     {
