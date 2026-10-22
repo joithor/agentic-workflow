@@ -16,7 +16,8 @@ namespace Aw.CodeIndex.Features;
 /// </summary>
 /// <param name="build">The build slice.</param>
 /// <param name="store">The index files.</param>
-public sealed class CodeIndexFacade(IService<BuildCodeIndexRequest, BuildReport> build, IIndexStore store) : ICodeIndex
+/// <param name="embedder">Embeds a Neighbors query with the model the index was embedded with.</param>
+public sealed class CodeIndexFacade(IService<BuildCodeIndexRequest, BuildReport> build, IIndexStore store, IEmbedder embedder) : ICodeIndex
 {
     /// <inheritdoc />
     public async ValueTask<Result<BuildReport>> Build(CodeIndexScope scope, RepoName repo, CommitSha commit, IProgress<string> progress, CancellationToken cancellationToken)
@@ -170,7 +171,10 @@ public sealed class CodeIndexFacade(IService<BuildCodeIndexRequest, BuildReport>
 
     /// <inheritdoc />
     public ValueTask<Result<NeighborsAnswer>> Neighbors(CodeIndexScope scope, RepoName repo, string text, int k, CancellationToken cancellationToken)
-        => ValueTask.FromResult<Result<NeighborsAnswer>>(CodeIndexErrors.IndexNotBuilt.With("the embeddings layer is not built by this version"));
+    {
+        _ = embedder;
+        return ValueTask.FromResult<Result<NeighborsAnswer>>(CodeIndexErrors.IndexNotBuilt.With("the embeddings layer is not built by this version"));
+    }
 
     private async ValueTask<Result<CallsAnswer>> Walk(CodeIndexScope scope, WalkQuery query, CancellationToken cancellationToken)
     {

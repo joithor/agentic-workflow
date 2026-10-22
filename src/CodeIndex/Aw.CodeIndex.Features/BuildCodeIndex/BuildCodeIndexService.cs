@@ -16,10 +16,11 @@ namespace Aw.CodeIndex.Features.BuildCodeIndex;
 /// <param name="heads">Whether a commit is still on the default branch.</param>
 /// <param name="snapshot">The repo's tree at a commit.</param>
 /// <param name="structure">Parses and writes the planned files.</param>
+/// <param name="embeddings">Embeds the symbols with stored text.</param>
 /// <param name="store">The index files.</param>
 /// <param name="heavy">The box-wide heavy-job slots.</param>
 /// <param name="clock">The time source.</param>
-public sealed partial class BuildCodeIndexService(IRepoHeads heads, IRepoSnapshot snapshot, StructureWriter structure, IIndexStore store, IHeavyJobLock heavy, TimeProvider clock) : IService<BuildCodeIndexRequest, BuildReport>
+public sealed partial class BuildCodeIndexService(IRepoHeads heads, IRepoSnapshot snapshot, StructureWriter structure, EmbeddingsLayer embeddings, IIndexStore store, IHeavyJobLock heavy, TimeProvider clock) : IService<BuildCodeIndexRequest, BuildReport>
 {
     private static readonly LayerName[] _laterLayers = [LayerName.Clones, LayerName.Deps, LayerName.Graph, LayerName.Embeddings];
 
@@ -30,6 +31,7 @@ public sealed partial class BuildCodeIndexService(IRepoHeads heads, IRepoSnapsho
     public async ValueTask<Result<BuildReport>> Handle(BuildCodeIndexRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        _ = embeddings;
         var started = clock.GetTimestamp();
         var slot = await heavy.Take("sindri code-index:" + request.Repo.Name.Value, CodeIndexRules.HeavySlotWait, waiting: null, cancellationToken).ConfigureAwait(false);
         if (slot.IsError)
