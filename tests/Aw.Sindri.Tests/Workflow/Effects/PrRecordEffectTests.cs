@@ -113,7 +113,7 @@ public sealed class PrRecordEffectTests
     private async Task<JsonElement> ReadRow() =>
         JsonDocument.Parse(Assert.Single((await _area.Read(PrEffectRig.Instance, "babysit.jsonl", Token)).Value.Split('\n', StringSplitOptions.RemoveEmptyEntries))).RootElement;
 
-    private async Task<Aw.Sindri.Core.Workflow.Blocks.EffectDone> End(string terminal, string? notes)
+    private async Task<Core.Workflow.Blocks.EffectDone> End(string terminal, string? notes)
     {
         var arguments = new Dictionary<string, object>(StringComparer.Ordinal) { ["kind"] = "end", ["terminal"] = terminal };
         if (notes is not null)
@@ -125,7 +125,7 @@ public sealed class PrRecordEffectTests
         return (await new PrRecordEffect(new MergeRecord(_area, _clock), _rig.Facts).Dispatch(context, Token)).Value;
     }
 
-    private async Task<Aw.Sindri.Core.Workflow.Blocks.EffectDone> Record(string kind)
+    private async Task<Core.Workflow.Blocks.EffectDone> Record(string kind)
     {
         var context = _rig.Context("effect.pr.record", new Dictionary<string, object>(StringComparer.Ordinal)
         {
