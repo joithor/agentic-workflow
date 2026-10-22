@@ -20,4 +20,6 @@ internal sealed class HoldoutAuthorInstructions : IAgentStepInstructions
 
     /// <inheritdoc/>
     public IReadOnlyList<string> Lines => _lines;
+
+    public bool IsFor(BlockId step) => throw new NotImplementedException();
 }

@@ -61,7 +61,7 @@ public sealed class PlanFreezeStepTests
 
         Assert.Equal("frozen", result.Result!.Outcome.Value);
         var sealedSet = await station.Holdouts.Seal("T-1", "expiry-p1", TestContext.Current.CancellationToken);
-        Assert.Equal((Aw.Sindri.Core.Prove.HoldoutFiles.Hash(set), InMemoryPackets.HashOf(new PacketRef(PacketKind.Plan, PlanLocation))), (sealedSet.Value.SetHash, sealedSet.Value.PlanHash));
+        Assert.Equal((Core.Prove.HoldoutFiles.Hash(set), InMemoryPackets.HashOf(new PacketRef(PacketKind.Plan, PlanLocation))), (sealedSet.Value.SetHash, sealedSet.Value.PlanHash));
     }
 
     [Fact]
