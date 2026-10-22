@@ -16,28 +16,29 @@ internal sealed class RecipeRowViewModel : ObservableObject
         Hash = served.Hash;
         Name = RecipeNames.Of(served.Id, served.DisplayName);
         ShortId = served.Id.StartsWith("workflow.", StringComparison.Ordinal) ? served.Id["workflow.".Length..] : served.Id;
-        Standing = served.Standing switch
-        {
-            "approved" => RecipeStanding.Approved,
-            "revoked" => RecipeStanding.Revoked,
-            _ => RecipeStanding.NotApproved,
-        };
-        StandingText = Standing switch
-        {
-            RecipeStanding.Approved => Labels.StandingApproved,
-            RecipeStanding.Revoked => Labels.StandingRevoked,
-            RecipeStanding.NotApproved => Labels.StandingNotApproved,
-            _ => throw new ArgumentOutOfRangeException(nameof(served), Standing, message: null),
-        };
-        StaleReasons = [.. (served.Stale ?? []).Select(Labels.StaleReason)];
+        Standing = StandingOf(served.Standing);
+        StandingText = Labels.StandingWord(Standing);
+        StaleReasons = [.. Listed(served.Stale).Select(Labels.StaleReason)];
         VersionText = string.Create(CultureInfo.InvariantCulture, $"v{served.Version}");
-        StepsText = Labels.StepsWord(served.States?.Count ?? 0);
-        FlowText = Labels.FlowWord(served.Inputs?.Count ?? 0, served.Outputs?.Count ?? 0);
+        StepsText = Labels.StepsWord(Listed(served.States).Count);
+        FlowText = Labels.FlowWord(Listed(served.Inputs).Count, Listed(served.Outputs).Count);
         Fingerprint = Labels.Fingerprint(served.Hash);
         AccessibleName = Labels.RecipeRowName(Name, Id, StandingText, IsOutOfDate, served.Version);
         Link = new DeepLink(DeepLinkKind.Recipe, Standing == RecipeStanding.Approved ? Id : Id + "@" + Labels.Hash12(served.Hash));
-        Signature = string.Join('|', served.Id, served.Version, served.Hash, served.Standing, served.DisplayName, string.Join(',', served.Stale ?? []), served.States?.Count, served.Inputs?.Count, served.Outputs?.Count);
+        Signature = SignatureOf(served);
     }
+
+    private static IReadOnlyList<T> Listed<T>(IReadOnlyList<T>? served) => served ?? [];
+
+    private static RecipeStanding StandingOf(string served) => served switch
+    {
+        "approved" => RecipeStanding.Approved,
+        "revoked" => RecipeStanding.Revoked,
+        _ => RecipeStanding.NotApproved,
+    };
+
+    private static string SignatureOf(RecipeSummaryView served) =>
+        string.Join('|', served.Id, served.Version, served.Hash, served.Standing, served.DisplayName, string.Join(',', Listed(served.Stale)), Listed(served.States).Count, Listed(served.Inputs).Count, Listed(served.Outputs).Count);
 
     /// <summary>The recipe id.</summary>
     public string Id { get; }
@@ -60,11 +61,17 @@ internal sealed class RecipeRowViewModel : ObservableObject
     /// <summary>The standing word.</summary>
     public string StandingText { get; }
 
-    /// <summary>True when the standing is Approved (the badge's style).</summary>
+    /// <summary>True when the standing is Approved.</summary>
     public bool IsApproved => Standing == RecipeStanding.Approved;
 
-    /// <summary>True when the standing is Revoked (the badge's style).</summary>
-    public bool IsRevoked => Standing == RecipeStanding.Revoked;
+    /// <summary>The standing as a chip: green when approved, the attention colour when not approved, red when revoked.</summary>
+    public StateChip StandingChip => new(StandingText, Standing switch
+    {
+        RecipeStanding.Approved => ChipTone.Ok,
+        RecipeStanding.Revoked => ChipTone.Fail,
+        RecipeStanding.NotApproved => ChipTone.Attn,
+        _ => throw new InvalidOperationException("Unknown standing"),
+    });
 
     /// <summary>True when something it relies on changed since it was approved (or it is in an old format).</summary>
     public bool IsOutOfDate => StaleReasons.Count > 0;

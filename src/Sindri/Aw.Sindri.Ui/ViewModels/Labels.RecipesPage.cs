@@ -1,5 +1,6 @@
 using System.Globalization;
 using Aw.Kernel;
+using Aw.Sindri.Ui.ViewModels.Recipes;
 
 namespace Aw.Sindri.Ui.ViewModels;
 
@@ -30,6 +31,17 @@ internal static partial class Labels
 
     /// <summary>The second, grey word of an approved workflow that has changed since.</summary>
     internal const string OutOfDate = "Out of date";
+
+    /// <summary>The word for a standing.</summary>
+    /// <param name="standing">The standing.</param>
+    /// <returns>"Approved", "Not approved" or "Revoked".</returns>
+    internal static string StandingWord(RecipeStanding standing) => standing switch
+    {
+        RecipeStanding.Approved => StandingApproved,
+        RecipeStanding.Revoked => StandingRevoked,
+        RecipeStanding.NotApproved => StandingNotApproved,
+        _ => throw new ArgumentOutOfRangeException(nameof(standing), standing, message: null),
+    };
 
     /// <summary>Why a workflow is out of date, in words.</summary>
     /// <param name="reason">The served reason: pin-drift, child-stale or legacy-shape.</param>
