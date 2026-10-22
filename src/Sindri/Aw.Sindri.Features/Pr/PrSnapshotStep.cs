@@ -47,8 +47,8 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, TimeProvider clock) : 
         var work = threads.Value.Where(static t => !t.Resolved && !Own(t)).ToList();   // the forge port has no login, so Sindri's replies are told apart by their markers alone
         var outcome = Outcome(pull.Value, work.Count);
         var state = State(pull.Value, outcome, threads.Value, work);
-        return outcome is "merged"
-            ? StepFacts.Done(outcome, ("fact:prState", state), ("fact:mergedSha", JsonValue.Create(pull.Value.HeadSha)!))
+        return string.Equals(outcome, "merged", StringComparison.Ordinal)
+            ? StepFacts.Done(outcome, ("fact:prState", state), ("fact:mergedSha", JsonValue.Create(pull.Value.HeadSha)))
             : StepFacts.Done(outcome, ("fact:prState", state));
     }
 
@@ -85,7 +85,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, TimeProvider clock) : 
         return new JsonObject
         {
             ["link"] = pull.Link,
-            ["state"] = outcome is "green" ? "green" : pullState,
+            ["state"] = string.Equals(outcome, "green", StringComparison.Ordinal) ? "green" : pullState,
             ["pullState"] = pullState,
             ["headSha"] = pull.HeadSha,
             ["head"] = new JsonObject { ["sha"] = pull.HeadSha },
@@ -96,7 +96,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, TimeProvider clock) : 
             {
                 ["state"] = pull.Checks.State.ToString().ToLowerInvariant(),
                 ["sha"] = pull.Checks.Sha,
-                ["failing"] = new JsonArray([.. pull.Checks.Failing.Select(static f => (JsonNode)JsonValue.Create(f)!)]),
+                ["failing"] = new JsonArray([.. pull.Checks.Failing.Select(static f => JsonValue.Create(f))]),
             },
             ["queue"] = new JsonObject
             {
@@ -107,7 +107,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, TimeProvider clock) : 
             },
             ["comments"] = new JsonArray([.. threads.Select(static t => (JsonNode)Comment(t))]),
             ["self"] = null,
-            ["mergeBlockedBy"] = new JsonArray([.. BlockedBy(pull).Select(static b => (JsonNode)JsonValue.Create(b)!)]),
+            ["mergeBlockedBy"] = new JsonArray([.. BlockedBy(pull).Select(static b => JsonValue.Create(b))]),
             ["heldBlocksMerge"] = false,
             ["at"] = clock.GetUtcNow().ToString("O", CultureInfo.InvariantCulture),
         };
@@ -132,7 +132,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, TimeProvider clock) : 
         ["outdated"] = thread.Outdated,
         ["path"] = thread.Path,
         ["body"] = thread.Body,
-        ["markers"] = new JsonArray([.. thread.Markers.Select(static m => (JsonNode)JsonValue.Create(m)!)]),
+        ["markers"] = new JsonArray([.. thread.Markers.Select(static m => JsonValue.Create(m))]),
     };
 
     // Sindri's replies never come back as work: a marker it wrote.
