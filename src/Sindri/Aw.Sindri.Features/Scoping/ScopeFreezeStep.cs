@@ -15,7 +15,7 @@ namespace Aw.Sindri.Features.Scoping;
 /// </summary>
 /// <param name="area">The instance's run area, where the scope packet is kept.</param>
 /// <param name="packets">Hashes and freezes the packet.</param>
-internal sealed class ScopeFreezeStep(IRunArea area, IPackets packets) : IBlockStep, IBlockStepId
+internal sealed class ScopeFreezeStep(IRunArea area, IPackets packets) : IBlockStep, IBlockStepId, IRepoStep
 {
     private const string FactPrefix = "fact:";
     private const string PacketName = "scope-packet";
