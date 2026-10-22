@@ -54,4 +54,19 @@ public sealed class FileConflictTests
 
         Assert.Empty(Conflicts(graph));
     }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("feature:parent")]
+    [InlineData("feature:child")]
+    public void A_file_that_implements_the_decided_nodes_part_of_parent_or_child_is_no_conflict(string implemented)
+    {
+        var graph = Graph(
+            Edge("feature:a", "feature:parent", EdgeType.PartOf),
+            Edge("feature:child", "feature:a", EdgeType.PartOf),
+            Edge("decision:d1", "feature:a", EdgeType.Decides),
+            Edge("decision:d1", "code:src/x.ts", EdgeType.Decides),
+            Edge("code:src/x.ts", implemented, EdgeType.Implements));
+
+        Assert.Empty(Conflicts(graph));
+    }
 }

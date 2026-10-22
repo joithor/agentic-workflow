@@ -30,14 +30,16 @@ internal static class LensConflicts
             .Select(x => new LensConflict(ConflictKind.Contradicts, x.Node, x.Pair.A, x.Pair.B.Value, $"{Short(x.Pair.A)} contradicts {Short(x.Pair.B)}", [], []))];
     }
 
-    // S-CF: a decision that decides an own-scope node and also cites a file (decides → code) which implements other nodes but not that one.
+    // S-CF: a decision that decides an own-scope node and also cites a file (decides → code) which implements other nodes but not that one or anything in its part-of chain (ancestors and descendants count as the same feature).
     private static List<LensConflict> FileConflicts(GraphSnapshot graph, HashSet<string> own)
     {
         var implemented = graph.Edges.Where(e => e.Type == EdgeType.Implements).ToLookup(e => e.From.Value, e => e.To, StringComparer.Ordinal);
         var cited = graph.Edges.Where(e => e.Type == EdgeType.Decides && e.To.Kind == NodeKind.Code && implemented.Contains(e.To.Value)).ToLookup(e => e.From.Value, e => e.To, StringComparer.Ordinal);
+        var chains = new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal);
+        IReadOnlySet<string> Chain(NodeKey node) => chains.TryGetValue(node.Value, out var c) ? c : chains[node.Value] = RepoScope.WithHierarchy(graph, new HashSet<string>([node.Value], StringComparer.Ordinal));
         return [.. Into(graph, own, EdgeType.Decides)
             .SelectMany(decides => cited[decides.From.Value]
-                .Where(file => implemented[file.Value].All(i => i.Value != decides.To.Value))
+                .Where(file => !implemented[file.Value].Any(i => Chain(decides.To).Contains(i.Value)))
                 .Select(file => (Node: decides.To, Decision: decides.From, File: file, Targets: implemented[file.Value].Select(i => i.Value).Order(StringComparer.Ordinal).ToList())))
             .OrderBy(c => c.Node.Value, StringComparer.Ordinal).ThenBy(c => c.Decision.Value, StringComparer.Ordinal).ThenBy(c => c.File.Value, StringComparer.Ordinal)
             .Select(c => new LensConflict(ConflictKind.Contradicts, c.Node, c.Decision, c.File.Value, $"{Short(c.Decision)} cites {c.File.Value}, which implements {string.Join(", ", c.Targets)}", [], []))];
