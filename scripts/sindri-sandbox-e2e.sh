@@ -102,8 +102,10 @@ resolve_sindri() {
 
 # ---- the run -------------------------------------------------------------------------------------------------
 
-SCRATCH="" SERVE_PID="" HOME_DIR="" REPO="" ITEM="" ADDRESS="" EVENTS_SEEN=0
+SCRATCH="" SERVE_PID="" HOME_DIR="" REPO="" ITEM="" ADDRESS="" EVENTS_SEEN=0 AW_STATE_DIR_REAL="" FEATURE_REL=""
 DESK_LOG=() FINDINGS=()
+# The script's own globals are set above, so they read plainly: check-env-example.sh takes a default-value expansion for an env read.
+or_none() { if [ -n "$1" ]; then printf '%s' "$1"; else printf none; fi; }
 
 # The agent sessions serve launches run in tmux sessions snd-LCH-* on the socket sindri-launch, shared with the owner's Sindri.
 # Only a session whose pane process (or a descendant) has AW_SINDRI_HOME equal to $1 is killed. launch_tmux, proc_children and
@@ -169,7 +171,7 @@ human() { "$PROVE" human "$@"; }
 hjson() { human "$@" | sed -n '/^[{[]/,$p'; }   # the JSON part of a human call (the pty may add a line before it)
 
 heavy_prefix() {
-  local h="${AW_STATE_DIR_REAL:-$HOME/.agentic-workflow}/bin-r1b/heavy"
+  local h="$AW_STATE_DIR_REAL"; [ -n "$h" ] || h="$HOME/.agentic-workflow"; h="$h/bin-r1b/heavy"
   [ -x "$h" ] && printf '%s\n' "$h --expensive"
 }
 
@@ -353,7 +355,7 @@ stop_block() { # $1 = state, $2 = reason, $3 = address (may be empty)
   echo "=================== STOP ==================="
   echo "state:   $state"
   echo "reason:  $reason"
-  echo "item:    ${ITEM:-none}   root: ${ADDRESS:-none}   scratch: ${SCRATCH:-none}"
+  echo "item:    $(or_none "$ITEM")   root: $(or_none "$ADDRESS")   scratch: $(or_none "$SCRATCH")"
   if [ -n "$ITEM" ]; then
     echo "--- instances"; instances | sed 's/^/  /'
     if [ -n "$addr" ]; then
@@ -377,7 +379,7 @@ main() {
   if [ "$PRINT_CONFIG" = 1 ]; then
     guard_scratch "${TMPDIR:-/tmp}" 2>/dev/null || true
     printf 'feature=%s\nsindri=%s\nrepo=%s\nstart=%s\nstall=%s\nmax-wait=%s\nauto-desk=%s\ndesk-max=%s\nagent=%s\ncontext=%s\nkeep=%s\n' \
-      "$FEATURE" "${sindri_cmd:-publish}" "$REPO_SRC" "$START" "$STALL" "$MAX_WAIT" "$AUTO_DESK" "$DESK_MAX" "${AGENT:-none}" "$CONTEXT" "$KEEP"
+      "$FEATURE" "${sindri_cmd:-publish}" "$REPO_SRC" "$START" "$STALL" "$MAX_WAIT" "$AUTO_DESK" "$DESK_MAX" "$(or_none "$AGENT")" "$CONTEXT" "$KEEP"
     exit 0
   fi
   for t in git jq curl script; do command -v "$t" >/dev/null || die "$t is required"; done
@@ -407,7 +409,7 @@ main() {
     "$(cd -P "$REPO_SRC" && pwd -P)"/*) FEATURE_REL="${FEATURE#"$REPO_SRC"/}"; [ -f "$REPO/$FEATURE_REL" ] || FEATURE_REL="" ;;
     *) FEATURE_REL="" ;;
   esac
-  if [ -z "${FEATURE_REL:-}" ]; then FEATURE_REL="docs/sandbox-feature.md"; mkdir -p "$REPO/docs"; cp "$FEATURE" "$REPO/$FEATURE_REL"; fi
+  if [ -z "$FEATURE_REL" ]; then FEATURE_REL="docs/sandbox-feature.md"; mkdir -p "$REPO/docs"; cp "$FEATURE" "$REPO/$FEATURE_REL"; fi
   git -C "$REPO" add -A >/dev/null 2>&1; git -C "$REPO" commit -qm "sandbox: the feature brief" >/dev/null 2>&1 || true
 
   # 4. the forge: the file adapter's world is $AW_STATE_DIR/forge/file, inside the scratch dir
@@ -428,7 +430,7 @@ main() {
 
   # 6. the item and the start
   local title out
-  title="${TITLE:-$(feature_title)}"
+  title="$TITLE"; [ -n "$title" ] || title="$(feature_title)"
   out="$(human item add "$title" --repo repo 2>&1)"
   ITEM="$(printf '%s\n' "$out" | grep -oE 'ITM-[0-9a-f]+' | head -1)"
   [ -n "$ITEM" ] || die "item add gave no id: $out"
