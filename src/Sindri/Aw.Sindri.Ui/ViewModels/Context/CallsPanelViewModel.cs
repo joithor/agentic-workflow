@@ -21,25 +21,34 @@ internal sealed class CallsPanelViewModel
     }
 
     /// <summary>"Callers" or "Callees".</summary>
-    internal string Title { get; }
+    public string Title { get; }
 
     /// <summary>"from 7c3e1a2", "from abcdef0, not 1234567", "index not built".</summary>
-    internal string Caption { get; }
+    public string Caption { get; }
 
     /// <summary>Whether the rows are drawn dimmed.</summary>
-    internal bool Dimmed { get; }
+    public bool Dimmed { get; }
 
     /// <summary>Whether the index cannot answer.</summary>
-    internal bool Unavailable { get; }
+    public bool Unavailable { get; }
 
     /// <summary>The edges, strongest first as served.</summary>
-    internal IReadOnlyList<CallRow> Rows { get; }
+    public IReadOnlyList<CallRow> Rows { get; }
 
     /// <summary>"3 calls not resolved", or null when none.</summary>
-    internal string? Unresolved { get; }
+    public string? Unresolved { get; }
 
     /// <summary>"none found" when the index answered with no edges, else null.</summary>
-    internal string? Empty { get; }
+    public string? Empty { get; }
+
+    /// <summary>Whether the unresolved count is shown.</summary>
+    public bool HasUnresolved => Unresolved is not null;
+
+    /// <summary>Whether the none-found line is shown.</summary>
+    public bool HasEmpty => Empty is not null;
+
+    /// <summary>The panel's opacity: dimmed when the rows come from another commit than the map's.</summary>
+    public double Opacity => Dimmed ? 0.6 : 1.0;
 
     private static CallRow Row(JsonElement item)
     {

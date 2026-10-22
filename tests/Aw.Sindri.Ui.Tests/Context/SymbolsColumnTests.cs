@@ -124,6 +124,31 @@ public sealed class SymbolsColumnTests
     }
 
     [Fact]
+    public void A_row_captions_its_file_and_how_the_index_knows_it_and_a_dimmed_panel_draws_at_reduced_opacity()
+    {
+        var stale = new CallsPanelViewModel(callers: true, Calls("stale", unresolved: 0, """{"symbol":{"name":"a","path":"src/a.ts"},"basis":"graphify","coverage":"partial","depth":1}"""));
+        var fresh = new CallsPanelViewModel(callers: true, Calls("ok", unresolved: 0));
+
+        Assert.Equal("src/a.ts · graphify · partial", Assert.Single(stale.Rows).Caption);
+        Assert.Equal((0.6, 1.0), (stale.Opacity, fresh.Opacity));
+        Assert.Equal((false, true), (stale.HasEmpty, fresh.HasEmpty));
+    }
+
+    [Fact]
+    public void The_code_lens_raises_its_changes_when_an_answer_is_shown()
+    {
+        var lens = new CodeLensViewModel();
+        var raised = new List<string?>();
+        lens.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+        Assert.False(lens.HasPanels);
+
+        lens.Show(Calls("ok", unresolved: 0), Calls("ok", unresolved: 0));
+
+        Assert.True(lens.HasPanels);
+        Assert.Equal([nameof(CodeLensViewModel.Callers), nameof(CodeLensViewModel.Callees), nameof(CodeLensViewModel.HasPanels)], raised);
+    }
+
+    [Fact]
     public async Task Reading_the_code_lens_fills_both_panels_and_a_refusal_leaves_them_alone()
     {
         var clipboard = new FakeClipboard();

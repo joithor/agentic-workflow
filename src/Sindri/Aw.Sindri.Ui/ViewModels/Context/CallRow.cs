@@ -5,4 +5,8 @@ namespace Aw.Sindri.Ui.ViewModels.Context;
 /// <param name="Path">Its file.</param>
 /// <param name="Detail">How the index knows: "syntax · full", "graphify · partial".</param>
 /// <param name="Depth">How many calls away.</param>
-internal sealed record CallRow(string Name, string Path, string Detail, int Depth);
+internal sealed record CallRow(string Name, string Path, string Detail, int Depth)
+{
+    /// <summary>The second line of the row: the file, and how the index knows it.</summary>
+    public string Caption => string.Join(" · ", new[] { Path, Detail }.Where(static t => t.Length > 0));
+}

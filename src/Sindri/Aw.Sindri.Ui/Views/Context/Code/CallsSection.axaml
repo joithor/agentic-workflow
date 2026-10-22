@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctx="using:Aw.Sindri.Ui.ViewModels.Context"
+             x:Class="Aw.Sindri.Ui.Views.Context.Code.CallsSection"
+             x:DataType="ctx:CallsPanelViewModel">
+  <!-- One of the two panels: the title with where the index read from (never colour alone: a dimmed panel still says "from X, not Y"), the edges, the calls
+       the index could not resolve, and the words for an index that cannot answer. -->
+  <StackPanel Spacing="4" Opacity="{Binding Opacity}">
+    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+      <TextBlock Classes="eyebrow" Text="{Binding Title}" />
+      <TextBlock Grid.Column="1" Classes="caption subtle" Text="{Binding Caption}" />
+    </Grid>
+    <ItemsControl x:Name="CallRows" ItemsSource="{Binding Rows}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="ctx:CallRow">
+          <Border MinHeight="36" Padding="0,4" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource Brush.Hairline}"
+                  AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+            <StackPanel VerticalAlignment="Center">
+              <TextBlock Classes="body" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+              <TextBlock Classes="caption subtle" Text="{Binding Caption}" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <TextBlock IsVisible="{Binding HasEmpty}" Classes="caption subtle" Text="{Binding Empty}" />
+    <TextBlock IsVisible="{Binding HasUnresolved}" Classes="caption subtle" Text="{Binding Unresolved}" />
+  </StackPanel>
+</UserControl>
