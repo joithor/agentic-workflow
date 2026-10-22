@@ -212,8 +212,8 @@ public static partial class SindriErrors
     /// <summary>SND-LAUNCH-014: the sandbox isn't available on this box (sandbox spec §6; kind no-runtime); detail 'reason' is no-bwrap, no-user-namespace, no-user-manager, no-cgroup-controllers, no-forwarder or unsupported-platform.</summary>
     public static readonly ErrorDefinition LaunchSandboxUnavailable = new("SND-LAUNCH-014", ErrorKind.Unavailable, "The sandbox isn't available on this machine");
 
-    /// <summary>SND-LAUNCH-015: the target or its form can't be confined to this policy (kind launch-park; Resume starts a new run).</summary>
-    public static readonly ErrorDefinition LaunchUnconfinable = new("SND-LAUNCH-015", ErrorKind.Conflict, "The agent can't be confined to this Step's policy");
+    /// <summary>SND-LAUNCH-025: the target or its form can't be confined to this policy (kind launch-park; Resume starts a new run).</summary>   // not -015: that one is the session id pattern timeout (SND-LAUNCH-015), shipped before the sandbox contracts merged
+    public static readonly ErrorDefinition LaunchUnconfinable = new("SND-LAUNCH-025", ErrorKind.Conflict, "The agent can't be confined to this Step's policy");
 
     /// <summary>SND-LAUNCH-016: the sandbox self-check failed; 'reason' names the canary (kind launch-park).</summary>
     public static readonly ErrorDefinition LaunchSelfCheckFailed = new("SND-LAUNCH-016", ErrorKind.Conflict, "The sandbox self-check failed");
