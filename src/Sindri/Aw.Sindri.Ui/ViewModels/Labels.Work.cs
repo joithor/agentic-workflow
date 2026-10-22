@@ -49,4 +49,9 @@ internal static partial class Labels
     /// <param name="count">How many items run.</param>
     /// <returns>"Running 3".</returns>
     internal static string QueueRunningSegment(int count) => string.Create(CultureInfo.InvariantCulture, $"Running {count}");
+
+    /// <summary>The Closed fold's row.</summary>
+    /// <param name="count">How many closed items were read; null before the first read.</param>
+    /// <returns>"Closed" or "Closed (3)".</returns>
+    internal static string ClosedHeader(int? count) => count is { } n ? string.Create(CultureInfo.InvariantCulture, $"Closed ({n})") : "Closed";
 }
