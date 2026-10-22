@@ -100,7 +100,7 @@ internal static class FrameFixture
                 new(["await"], "done", "wait.satisfied", When: null, [], [], [], []),
             ],
             new Dictionary<string, LoopSpec>(StringComparer.Ordinal) { ["fix"] = new(3, LoopSpec.DefaultNoProgress) },
-            new BudgetSpec(400_000), Evals: [], Hash: null);
+            new BudgetSpec(400_000), Evals: [], Hash: null, DisplayName: "Test frames");
     }
 
     private static StepUse Step(BlockId use) => new(use, new Dictionary<string, WithValue>(StringComparer.Ordinal), []);

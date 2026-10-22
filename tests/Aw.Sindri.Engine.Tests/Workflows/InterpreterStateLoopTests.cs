@@ -124,7 +124,7 @@ public sealed class InterpreterStateLoopTests(SindriTimeSkippingServer server) :
         var env = server.Environment;
         await using var sindri = _harness.Sindri();
         await WorkflowsHarness.HoldLease(sindri, ct);
-        _harness.Recipe("workflow.item", WorkflowsHarness.Shipped("sindri/workflow.item.yaml").Replace("version: 2", "version: 3", StringComparison.Ordinal).Replace("gates: [gate.route.startable]", "gates: [gate.test.check]", StringComparison.Ordinal));   // a gate with no runtime refuses (the shipped gate has one since engine P7)
+        _harness.Recipe("workflow.item", WorkflowsHarness.Shipped("sindri/workflow.item.yaml").Replace("version: 3", "version: 4", StringComparison.Ordinal).Replace("gates: [gate.route.startable]", "gates: [gate.test.check]", StringComparison.Ordinal));   // a gate with no runtime refuses (the shipped gate has one since engine P7)
         using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
 
         await worker.ExecuteAsync(async () =>
