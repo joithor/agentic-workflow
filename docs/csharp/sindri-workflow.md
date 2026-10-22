@@ -226,6 +226,13 @@ A generated recipe whose base was revoked after it was registered is refused too
 id and version are registered with other content (edited without raising its version), the CLI refuses before the preview
 with the register call's `SND-RECIPE-007` and its `RCP-VERSION-001` line.
 
+`sindri recipe approve-all [--json]` is the same hold for every shipped recipe at once (setup-once spec §5.3): it reads
+`GET /sindri/workflow/recipes/approve-all`, asks `POST /sindri/workflow/challenges` for `approve-all <digest6>`, prints the
+plan (each recipe and version in the order approval happens, children first, then the recipes approved one at a time), reads
+the typed phrase and posts it to `POST /sindri/workflow/recipes/approve-all`, which starts the `ApproveAllRecipes` job; the
+CLI prints the job id and `sindri jobs show <id>` (`--json`: the started job). A session or a CLI without a terminal gets
+`SND-AUTH-002`, a wrong phrase `SND-RECIPE-009`, and an empty plan prints its sentence, asks nothing and exits 2.
+
 `sindri recipe revoke <id@hash>` (the hash by 8 or more digits) previews the instances that will park, the takeovers it
 ends, the generated recipes approved from it (revoked with it, recursively) and the parents pinning it as a child
 (marked `child-stale`), asks for `revoke <id>@<hash12>`, and prints `revoked …; N instances parked` (N counts the running instances
