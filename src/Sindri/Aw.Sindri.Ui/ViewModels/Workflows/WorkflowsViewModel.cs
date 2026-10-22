@@ -154,6 +154,10 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
             {
                 await ReadDone(cancellationToken).ConfigureAwait(true);
             }
+            else
+            {
+                _doneFor = null;   // the finished rows are left behind by this refresh; the board reads them when it is shown
+            }
         }
         else if (string.Equals(list.Error.Code, SindriUiErrors.BadAnswer.Code, StringComparison.Ordinal) && list.Error.Kind == ErrorKind.Invalid)
         {
@@ -194,6 +198,7 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
         else
         {
             _doneReads++;   // a read on its way is no longer wanted
+            _doneFor = null;
             DoneRows.Clear();
         }
     }

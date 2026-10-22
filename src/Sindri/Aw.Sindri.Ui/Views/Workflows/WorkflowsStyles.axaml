@@ -18,6 +18,22 @@
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
     <Setter Property="BorderThickness" Value="0,1,0,0" />
   </Style>
+  <!-- The list's group row (F3 workflows spec §2 "List"): 32 high on Surface2, a hairline under it. Its toggle and recipe link sit inside. -->
+  <Style Selector="Border.group-row">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="0,1,0,1" />
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="Padding" Value="0,0,16,0" />
+  </Style>
+  <Style Selector="Border.group-row Button.group-toggle">
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="16,6" />
+  </Style>
+  <!-- A list row: hover on Surface2; selected is the shared item-row look. -->
+  <Style Selector="Border.workflow-row:pointerover">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+  </Style>
   <Style Selector="Button.group-toggle">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />

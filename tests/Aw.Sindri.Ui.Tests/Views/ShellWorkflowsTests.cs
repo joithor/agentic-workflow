@@ -28,6 +28,7 @@ public sealed class ShellWorkflowsTests : FrameHost
     public Task G_W_shows_the_Workflows_page_not_the_placeholder() => OnUi(async () =>
     {
         var (window, shell) = await Connected(s => s.Workflows.Groups.Count > 0);
+        shell.Workflows.SetViewMode(WorkflowViewMode.List);   // the grouped list; the board has its own tests
 
         Press(window, Key.G);
         Press(window, Key.W);
@@ -43,6 +44,7 @@ public sealed class ShellWorkflowsTests : FrameHost
     {
         var (window, shell) = await Connected(s => s.Workflows.Groups.Count > 0);
         shell.GoTo(PageId.Workflows);
+        shell.Workflows.SetViewMode(WorkflowViewMode.List);   // the grouped list; the board has its own tests
         var reads = shell.Workflows.Drawn;
 
         Server.Push(A.Event(80, "workflow.started"));
@@ -55,6 +57,7 @@ public sealed class ShellWorkflowsTests : FrameHost
     {
         var (window, shell) = await Connected(s => s.Workflows.Groups.Count > 0, height: 420);
         shell.GoTo(PageId.Workflows);
+        shell.Workflows.SetViewMode(WorkflowViewMode.List);   // the grouped list; the board has its own tests
         Settle(window);
         var open = Named<Button>(window, "WorkflowRowOpen");
         Assert.True(open.Focus(NavigationMethod.Tab));

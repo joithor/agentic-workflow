@@ -9,7 +9,7 @@ namespace Aw.Sindri.Ui.ViewModels.Workflows;
 /// One row of the Workflows list (screens §4.2): the subject, the inputs, a cell per state, and the served now and chip. It decides
 /// nothing: every word is the row's own.
 /// </summary>
-internal sealed class InstanceRowViewModel : ObservableObject
+internal sealed partial class InstanceRowViewModel : ObservableObject
 {
     private const string CancelCommand = "ApplyCommand:cancel";
 
@@ -174,7 +174,7 @@ internal sealed class InstanceRowViewModel : ObservableObject
     public bool IsStale { get; private set => Set(ref field, value); }
 
     /// <summary>Everything the row draws: two rows with the same signature look the same.</summary>
-    internal string Signature => string.Join('|', Address, DisplayName, Who, MissingInputsText, Subject, Chip, Now, string.Join(',', Inputs.Select(i => i.Name)), string.Join(',', Stages.Select(s => s.Name)), StateWord, Chip.Word, Protected?.Cli, ChildAnswer?.Target, ChildAnswer?.Intent, CanAnswerAtDesk, CanCancel);
+    internal string Signature => string.Join('|', Address, StageName, DisplayName, Who, MissingInputsText, Subject, Chip, Now, string.Join(',', Inputs.Select(i => i.Name)), string.Join(',', Stages.Select(s => s.Name)), StateWord, Chip.Word, Protected?.Cli, ChildAnswer?.Target, ChildAnswer?.Intent, CanAnswerAtDesk, CanCancel);
 
     /// <summary>Sets what the list knows of the row.</summary>
     /// <param name="stale">The views are stalled or rebuilding.</param>
