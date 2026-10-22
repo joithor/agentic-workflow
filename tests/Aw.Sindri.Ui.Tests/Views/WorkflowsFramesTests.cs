@@ -23,6 +23,7 @@ public sealed class WorkflowsFramesTests : FrameHost
     {
         var (window, shell) = await Connected(ready);
         shell.GoTo(PageId.Workflows);
+        shell.Workflows.SetViewMode(WorkflowViewMode.List);   // these frames are the grouped list; the board has WorkflowsBoardFramesTests
         Settle(window);
         return (window, shell);
     }

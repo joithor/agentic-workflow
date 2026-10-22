@@ -26,6 +26,7 @@ public sealed class WorkflowsFinishedReadTests
     public Task A_finished_answer_for_the_old_filter_is_dropped_once_a_new_filter_is_asked() => UiThread.Run(async () =>
     {
         var list = new WorkflowsViewModel(_server, new FakeClipboard(), new FakeTimeProvider(A.Noon));
+        list.SetViewMode(WorkflowViewMode.List);   // the grouped list; the board has its own tests
         await list.Refresh(_api, Token);
         var recipe = (string)GoldenFiles.Node("workflow-instances", "recipe-filter")["instances"]![0]!["recipe"]!["id"]!;
         var oldFinished = Hold(new InstanceQuery(Root: true));

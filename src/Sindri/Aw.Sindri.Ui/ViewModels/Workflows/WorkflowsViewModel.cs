@@ -265,6 +265,7 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
         Reselect(before);
         IsEmpty = rows.Count == 0;
         EmptyText = IsEmpty ? list.Empty ?? Labels.NoWorkflowsMatch : string.Empty;
+        NotifyBoardStates();
     }
 
     // A choice list the human is picking from keeps its items (and the control its selection) unless the recipes themselves changed.

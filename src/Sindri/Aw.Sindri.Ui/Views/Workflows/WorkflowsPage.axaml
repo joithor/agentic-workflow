@@ -56,7 +56,11 @@
 
     <TextBlock x:Name="WorkflowsNoRunsMatch" Classes="caption quiet" Text="{Binding NoRunsMatchText}" IsVisible="{Binding NoRunsMatch}" TextWrapping="Wrap"
                AutomationProperties.Name="{Binding NoRunsMatchText}" />
-    <wfv:BoardView x:Name="WorkflowsBoard" IsVisible="{Binding IsBoard}" />
+    <TextBlock x:Name="WorkflowsBoardEmpty" Classes="caption quiet" Text="{Binding EmptyText}" IsVisible="{Binding IsBoardEmpty}" TextWrapping="Wrap"
+               AutomationProperties.Name="{Binding EmptyText}" />
+    <TextBlock x:Name="WorkflowsBoardUnreadable" Classes="caption quiet" Text="{Binding UnreadableText}" IsVisible="{Binding IsBoardUnreadable}" TextWrapping="Wrap"
+               AutomationProperties.Name="{Binding UnreadableText}" />
+    <wfv:BoardView x:Name="WorkflowsBoard" IsVisible="{Binding ShowBoard}" />
 
     <Border x:Name="WorkflowsPanel" Classes="panel" IsVisible="{Binding IsList}" AutomationProperties.Name="Workflows" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
       <StackPanel>

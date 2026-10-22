@@ -82,8 +82,8 @@ public sealed class WorkflowFiltersTests
     [Fact]
     public async Task A_filter_that_hides_every_run_says_so_in_every_lane()
     {
-        var list = await Shown();
-        list.SetViewMode(WorkflowViewMode.Board);
+        var list = new WorkflowsViewModel(new FakeSindriApi { InstancesRewrite = LineGolden.AsLine }, new FakeClipboard(), new FakeTimeProvider(A.Noon));
+        await list.Refresh(_api, Token);
 
         list.SetSearch("no such run");
 

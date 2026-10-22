@@ -34,6 +34,7 @@ internal sealed partial class WorkflowsViewModel
     {
         IsUnreadable = true;
         OnChanged(nameof(UnreadableText));
+        NotifyBoardStates();
         // The last good data stays, marked stale (screens §4.1): the next readable answer rebuilds nothing the human was on.
         foreach (var row in _rows.Values.Concat(DoneRows))
         {

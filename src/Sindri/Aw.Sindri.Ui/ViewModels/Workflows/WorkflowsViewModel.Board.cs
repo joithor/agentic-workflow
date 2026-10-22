@@ -73,6 +73,15 @@ internal sealed partial class WorkflowsViewModel
     /// <summary>True when a filter or the search hides every run the page holds, in the view it draws.</summary>
     public bool NoRunsMatch { get; private set => Set(ref field, value); }
 
+    /// <summary>True while the board draws its lanes: not when there are no runs at all, which says so in its place.</summary>
+    public bool ShowBoard => IsBoard && !IsEmpty;
+
+    /// <summary>True when the board is chosen and there is no run to draw.</summary>
+    public bool IsBoardEmpty => IsBoard && IsEmpty;
+
+    /// <summary>True when the board is chosen and the last read could not be read; the lanes keep the last good runs, marked stale.</summary>
+    public bool IsBoardUnreadable => IsBoard && IsUnreadable;
+
     /// <summary>Switches between the board and the list (the V key).</summary>
     internal void ToggleView() => SetViewMode(IsBoard ? WorkflowViewMode.List : WorkflowViewMode.Board);
 
@@ -89,6 +98,7 @@ internal sealed partial class WorkflowsViewModel
         OnChanged(nameof(IsBoard));
         OnChanged(nameof(IsList));
         OnChanged(nameof(ViewIndex));
+        NotifyBoardStates();
         Redraw();
         if (mode == WorkflowViewMode.Board && DoneRows.Count == 0 && Url is not null)
         {
@@ -124,6 +134,13 @@ internal sealed partial class WorkflowsViewModel
         Redraw();
     }
 
+    private void NotifyBoardStates()
+    {
+        OnChanged(nameof(ShowBoard));
+        OnChanged(nameof(IsBoardEmpty));
+        OnChanged(nameof(IsBoardUnreadable));
+    }
+
     private bool Passes(InstanceRowViewModel row) => WorkflowFilters.Matches(row, Filter, _search);
 
     // The filter or the view changed: the loaded list is drawn again.
@@ -146,7 +163,7 @@ internal sealed partial class WorkflowsViewModel
             var cards = lane.Id == LaneId.Done
                 ? finished
                 : [.. line.Where(r => LineStages.LaneOf(r.LineStage) == lane.Id)];
-            lane.Show([.. cards.Where(Passes)], anyHidden && cards.Count > 0);
+            lane.Show([.. cards.Where(Passes)], anyHidden);
         }
 
         var counted = IsBoard ? [.. line, .. finished] : _loaded;
