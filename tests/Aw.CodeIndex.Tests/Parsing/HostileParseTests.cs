@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text;
+using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Infrastructure.Parsing;
 using Aw.Kernel.Testing;
 
@@ -20,7 +21,7 @@ public sealed class HostileParseTests : IDisposable
 
     public void Dispose() => Directory.Delete(_directory, recursive: true);
 
-    private Aw.CodeIndex.Core.Model.ParseOutcome ParseFile(string relative)
+    private ParseOutcome ParseFile(string relative)
     {
         var text = Encoding.UTF8.GetString(File.ReadAllBytes(Path.Combine(_directory, relative)));
         return _parser.Parse(relative, text, TestContext.Current.CancellationToken).Value;

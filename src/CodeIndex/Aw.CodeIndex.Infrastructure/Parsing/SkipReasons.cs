@@ -1,6 +1,8 @@
+using Aw.CodeIndex.Core.Model;
+
 namespace Aw.CodeIndex.Infrastructure.Parsing;
 
-/// <summary>The words a skipped file carries in <see cref="Aw.CodeIndex.Core.Model.ParseOutcome.Skip"/> (spec §9 CI12, §5.1 ceilings).</summary>
+/// <summary>The words a skipped file carries in <see cref="ParseOutcome.Skip"/> (spec §9 CI12, §5.1 ceilings).</summary>
 internal static class SkipReasons
 {
     /// <summary>The syntax nests deeper than the cap, or the stack ran short.</summary>
