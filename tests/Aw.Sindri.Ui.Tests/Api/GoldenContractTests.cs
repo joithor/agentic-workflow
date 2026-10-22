@@ -55,6 +55,7 @@ public sealed class GoldenContractTests
         ["sessions-id"] = As<SessionView>,   // GET /sessions/{provider}/{id}; the 404 is ProblemDetails
         ["context-lenses"] = As<LensesView>,
         ["context-filemap"] = As<FileMapView>,
+        ["context-code"] = As<CodeView>,   // GET /sindri/context/code: the code lens' callers and callees (S-9)
         ["context-map"] = As<MapStatusView>,
         ["context-map-promote"] = As<PromotePreview>,
         ["context-map-review"] = AsReview,
