@@ -4,9 +4,7 @@ using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Stats;
 using Aw.Sindri.Infrastructure.Views;
-using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Ledger;
-using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests.Views;
 

@@ -144,7 +144,7 @@ public sealed class RecipeStatsRouteTests : IAsyncLifetime
 
         Assert.NotNull(kept);
         Assert.True(JsonNode.DeepEquals(WithoutAsOf(first), WithoutAsOf(second)));
-        Assert.NotEqual((string?)first["asOf"], (string?)second["asOf"]);
+        Assert.NotEqual((string?)first["asOf"], (string?)second["asOf"], StringComparer.Ordinal);
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
@@ -157,7 +157,7 @@ public sealed class RecipeStatsRouteTests : IAsyncLifetime
         var before = await Body("?window=30d");
         var open = (await Cache().Get(RecipeId.From("workflow.item"), hash: null, StatsWindow.ThirtyDays, Clock.GetUtcNow(), ct)).Value;
 
-        await _ledger.End("T-5/item/1", 18 * 24 + 1, "produce", "done", "resolved");
+        await _ledger.End("T-5/item/1", (18 * 24) + 1, "produce", "done", "resolved");
         await ViewScenarios.CatchUp(_host, ct);
         var emptied = (await Cache().Get(RecipeId.From("workflow.item"), hash: null, StatsWindow.ThirtyDays, Clock.GetUtcNow(), ct)).Value;
         _ledger.At(19 * 24);
@@ -189,7 +189,7 @@ public sealed class RecipeStatsRouteTests : IAsyncLifetime
 
     private IRecipeStatsCache Cache() => _host.App.Services.GetRequiredService<IRecipeStatsCache>();
 
-    private static JsonNode WithoutAsOf(JsonObject body)
+    private static JsonObject WithoutAsOf(JsonObject body)
     {
         var copy = body.DeepClone().AsObject();
         _ = copy.Remove("asOf");
