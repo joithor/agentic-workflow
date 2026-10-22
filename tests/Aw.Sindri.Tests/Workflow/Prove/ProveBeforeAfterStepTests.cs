@@ -56,7 +56,8 @@ public sealed class ProveBeforeAfterStepTests
             ["phasePacket"] = $$"""{"hash":"sha256:{{new string('b', 64)}}","dir":"{{Dir}}"}""",
             ["built"] = $$"""{"head":"{{Head}}"}""",
             ["workspace"] = workspace ? $"\"{Workspace}\"" : "null",
-        }) with { Address = address ? Address : null, Repo = RepoName.From("name") };
+        }) with
+        { Address = address ? Address : null, Repo = RepoName.From("name") };
 
     private static JsonNode Out(BlockStepResult result) => JsonNode.Parse(result.Result!.Outputs[FactKey.From("fact:beforeAfter")].GetRawText())!;
 
