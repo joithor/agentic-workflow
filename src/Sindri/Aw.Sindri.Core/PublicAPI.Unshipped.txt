@@ -15232,3 +15232,26 @@ static Aw.Sindri.Core.Review.ReviewPackOrigin.operator !=(Aw.Sindri.Core.Review.
 static Aw.Sindri.Core.Review.ReviewPackOrigin.operator ==(Aw.Sindri.Core.Review.ReviewPackOrigin? left, Aw.Sindri.Core.Review.ReviewPackOrigin? right) -> bool
 static Aw.Sindri.Core.Review.ReviewPack.Problems(Aw.Sindri.Core.Review.ReviewFacts! facts) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Sindri.Core.Review.ReviewPack.Verdict(System.Text.Json.Nodes.JsonNode! review) -> string?
+Aw.Sindri.Core.Setup.McpConnection
+Aw.Sindri.Core.Setup.McpConnection.Connected = 0 -> Aw.Sindri.Core.Setup.McpConnection
+Aw.Sindri.Core.Setup.McpConnection.Connecting = 1 -> Aw.Sindri.Core.Setup.McpConnection
+Aw.Sindri.Core.Setup.McpConnection.Failed = 3 -> Aw.Sindri.Core.Setup.McpConnection
+Aw.Sindri.Core.Setup.McpConnection.NotStarted = 2 -> Aw.Sindri.Core.Setup.McpConnection
+Aw.Sindri.Core.Setup.McpProviderState
+Aw.Sindri.Core.Setup.McpProviderState.<Clone>$() -> Aw.Sindri.Core.Setup.McpProviderState!
+Aw.Sindri.Core.Setup.McpProviderState.Deconstruct(out string! Provider, out Aw.Sindri.Core.Setup.McpConnection State, out string? Detail) -> void
+Aw.Sindri.Core.Setup.McpProviderState.Detail.get -> string?
+Aw.Sindri.Core.Setup.McpProviderState.Detail.init -> void
+Aw.Sindri.Core.Setup.McpProviderState.Equals(Aw.Sindri.Core.Setup.McpProviderState? other) -> bool
+Aw.Sindri.Core.Setup.McpProviderState.McpProviderState(string! Provider, Aw.Sindri.Core.Setup.McpConnection State, string? Detail = null) -> void
+Aw.Sindri.Core.Setup.McpProviderState.Provider.get -> string!
+Aw.Sindri.Core.Setup.McpProviderState.Provider.init -> void
+Aw.Sindri.Core.Setup.McpProviderState.State.get -> Aw.Sindri.Core.Setup.McpConnection
+Aw.Sindri.Core.Setup.McpProviderState.State.init -> void
+Aw.Sindri.Core.Setup.SetupItem.Providers.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.McpProviderState!>?
+Aw.Sindri.Core.Setup.SetupItem.Providers.init -> void
+override Aw.Sindri.Core.Setup.McpProviderState.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Setup.McpProviderState.GetHashCode() -> int
+override Aw.Sindri.Core.Setup.McpProviderState.ToString() -> string!
+static Aw.Sindri.Core.Setup.McpProviderState.operator !=(Aw.Sindri.Core.Setup.McpProviderState? left, Aw.Sindri.Core.Setup.McpProviderState? right) -> bool
+static Aw.Sindri.Core.Setup.McpProviderState.operator ==(Aw.Sindri.Core.Setup.McpProviderState? left, Aw.Sindri.Core.Setup.McpProviderState? right) -> bool
