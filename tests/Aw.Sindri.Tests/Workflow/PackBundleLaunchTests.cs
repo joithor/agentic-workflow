@@ -22,7 +22,7 @@ public sealed class PackBundleLaunchTests
     {
         var bundle = new PackBundle("style", "plain", "sha256:" + new string('b', 64), new Dictionary<string, string>(StringComparer.Ordinal) { ["pack.json"] = "{}" });
 
-        var request = AgentLaunches.RequestFor(Run(), _target, descriptor: null, bundle);
+        var request = AgentLaunches.RequestFor(Run(), _target, descriptor: null, new AgentLaunchExtras(Bundle: bundle));
 
         Assert.Same(bundle, request.Step?.Bundle);
     }

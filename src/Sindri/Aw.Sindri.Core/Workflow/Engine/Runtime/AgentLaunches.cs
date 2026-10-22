@@ -31,31 +31,28 @@ public static class AgentLaunches
         return LaunchId.From("LCH-" + Convert.ToHexStringLower(digest)[..32]);
     }
 
-    /// <summary>The worktree the launcher creates for the run: '&lt;repo&gt;/.claude/worktrees/sindri-&lt;instance&gt;-&lt;run&gt;'.</summary>
+    /// <summary>The worktree the run works in: the workspace the Step reads when it names one ('fact:workspace', an existing worktree the launcher then uses as it is), else the one the launcher creates, '&lt;repo&gt;/.claude/worktrees/sindri-&lt;instance&gt;-&lt;run&gt;'.</summary>
     /// <param name="run">The run.</param>
     /// <param name="target">Where it runs.</param>
+    /// <param name="workspace">The workspace the Step reads; null when it reads none.</param>
     /// <returns>The path.</returns>
-    public static string WorktreeFor(AgentStepRun run, AgentStepTarget target)
+    public static string WorktreeFor(AgentStepRun run, AgentStepTarget target, string? workspace = null)
     {
         ArgumentNullException.ThrowIfNull(run);
         ArgumentNullException.ThrowIfNull(target);
-        return target.RepoPath.TrimEnd('/') + "/.claude/worktrees/sindri-" + run.Workflow.Value + "-" + run.Run.Value;
+        return !string.IsNullOrWhiteSpace(workspace) ? workspace : target.RepoPath.TrimEnd('/') + "/.claude/worktrees/sindri-" + run.Workflow.Value + "-" + run.Run.Value;
     }
 
     /// <summary>The launcher's request: unattended, Open, the worktree, the Step's reference and the policy its capability gives.</summary>
     /// <param name="run">The run.</param>
     /// <param name="target">Where it runs.</param>
     /// <param name="descriptor">The Step's descriptor, for the brief; null when the catalog doesn't know it.</param>
-    /// <param name="bundle">The pack the Step bundles (LN-WF5), resolved; null for none.</param>
-    /// <returns>The request.</returns>
-    public static LaunchRequest RequestFor(AgentStepRun run, AgentStepTarget target, BlockDescriptor? descriptor = null, PackBundle? bundle = null)
     {
-        var worktree = WorktreeFor(run, target);
-        // Never plan mode: plan mode runs read-only tools only, so the session couldn't run 'sindri workflow complete'. A Step only tightens the
-        // profile: every Step may report, a write Step may write its own worktree and commit it, and nothing else is allowed (no build tools: SC-R).
-        var policy = new StepPolicy(run.WriteScope ? [.. _report, .. _commit] : _report, StepPermissionMode.Default, run.WriteScope ? worktree : null);
+        var worktree = WorktreeFor(run, target, extras?.Workspace);
+    // Never plan mode: plan mode runs read-only tools only, so the session couldn't run 'sindri workflow complete'. A Step only tightens the
+    // profile: every Step may report, a write Step may write its own worktree and commit it, and nothing else is allowed (no build tools: SC-R).
+    var policy = new StepPolicy(run.WriteScope ? [.. _report, .. _commit] : _report, StepPermissionMode.Default, run.WriteScope ? worktree : null);
         return new LaunchRequest(
             LaunchIdFor(run), target.Item, target.Agent, LaunchMode.Open, Attended: false, target.RepoPath, run.Address, worktree,
-            new StepArgs(Model: null, policy, run.Step, AgentStepBrief.Render(run, descriptor), bundle), run.Run);   // Model null: per-Step models are SC-R
     }
 }

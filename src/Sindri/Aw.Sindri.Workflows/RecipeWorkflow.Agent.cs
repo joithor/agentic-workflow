@@ -31,6 +31,11 @@ internal sealed partial class RecipeWorkflow
     private AgentRunning? _held;   // the launched run whose session is still live, so the interpreter loop can stop it when the instance ends or the run is replaced while it is parked or taken over (D11)
     private (string Token, AgentLaunched Launched)? _agent;   // the open run's launch, kept across a park or a takeover so the watch resumes without a second launch
 
+    private static readonly BlockId _ciFix = BlockId.From("step.pr.ci-fix");   // the one Step that launches in 'fact:workspace' (opt-in); every other agent Step launches as it always did
+    private static readonly FactKey _workspaceKey = FactKey.From("fact:workspace");
+    private bool? _agentWorkspace;
+    private bool AgentWorkspace => _agentWorkspace ??= Workflow.Patched("ci-fix-agent-workspace");   // read only for ci-fix, after every other marker
+
     private enum AgentEnd
     {
         Finished,
@@ -84,7 +89,8 @@ internal sealed partial class RecipeWorkflow
         using var cancel = new CancellationTokenSource();
         var run = AgentRunOf(instance, open, step);
         var item = instance.Facts.TryGetValue(FactKey.From("fact:item"), out var fact) ? fact : null;
-        var launching = Workflow.ExecuteActivityAsync((AgentStepActivities a) => a.LaunchAsync(Launch(run, item, step, instance)), AgentOptions(_launchCall, open, state, cancel.Token));
+        var workspace = step.Use == _ciFix && AgentWorkspace && instance.Facts.TryGetValue(_workspaceKey, out var held) ? held : null;
+        var launching = Workflow.ExecuteActivityAsync((AgentStepActivities a) => a.LaunchAsync(Launch(run, item, step, instance, workspace)), AgentOptions(_launchCall, open, state, cancel.Token));
         var (applied, end) = await AwaitAgent(instance, open, new Awaited(launching, cancel, Reports: false), context).ConfigureAwait(true);
         if (end == AgentEnd.Over)
         {
@@ -104,9 +110,9 @@ internal sealed partial class RecipeWorkflow
         return (filled, false);
     }
 
-    // What the launch activity is given: the run, the item, and what the Step's 'bundle' needs of the pack (LN-WF5): its 'subject' and the stored lens queue.
-    private static AgentLaunchRun Launch(AgentStepRun run, FactValue? item, StepUse step, WorkflowInstance instance) =>
-        new(run, item, Literal(step, "bundle"), Literal(step, "subject"), instance.Facts.TryGetValue(FactKey.From("fact:lensQueue"), out var queue) ? queue : null);
+    // What the launch activity is given: the run, the item, the workspace the Step launches in, and what the Step's 'bundle' needs of the pack (LN-WF5): its 'subject' and the stored lens queue.
+    private static AgentLaunchRun Launch(AgentStepRun run, FactValue? item, StepUse step, WorkflowInstance instance, FactValue? workspace) =>
+        new(run, item, workspace, Literal(step, "bundle"), Literal(step, "subject"), instance.Facts.TryGetValue(FactKey.From("fact:lensQueue"), out var queue) ? queue : null);
 
     private static string? Literal(StepUse step, string name) =>
         step.With.TryGetValue(name, out var value) && value.Literal is { ValueKind: System.Text.Json.JsonValueKind.String } text ? text.GetString() : null;

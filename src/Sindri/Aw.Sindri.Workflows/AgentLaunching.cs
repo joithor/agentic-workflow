@@ -17,9 +17,8 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="recorder">Records 'launch.started' and 'launch.failed'.</param>
 /// <param name="diff">Reads the start commit.</param>
 /// <param name="catalog">The blocks' descriptors, for the Step's brief.</param>
-/// <param name="bundles">Resolves the pack a Step bundles into its directory (LN-WF5).</param>
-/// <param name="contents">Reads the stored 'fact:lensQueue' whose head lens a 'lenses' bundle holds.</param>
-internal sealed class AgentLaunching(ILauncher launcher, AgentTargetResolver targets, AgentLaunchRecorder recorder, IRunDiff diff, BlockCatalog catalog, IPackBundles bundles, IFactContents contents)
+/// <param name="inputs">What a launch reads beside the target: the pack bundles, the stored facts and the Steps' instructions.</param>
+internal sealed class AgentLaunching(ILauncher launcher, AgentTargetResolver targets, AgentLaunchRecorder recorder, IRunDiff diff, BlockCatalog catalog, AgentLaunchInputs inputs)
 {
     /// <summary>Launches the run's session.</summary>
     /// <param name="run">The run.</param>
@@ -34,13 +33,21 @@ internal sealed class AgentLaunching(ILauncher launcher, AgentTargetResolver tar
             return new AgentLaunched(Worktree: null, StartHead: null, new AgentLaunchFailure(AgentLaunchFailureKind.StepFailed, target.Error.Code, target.Error.Message));   // nothing was asked of the launcher, so there is no outcome to record
         }
 
+        var workspace = await WorkspaceOf(run, cancellationToken).ConfigureAwait(false);
+        if (workspace.IsError)
+        {
+            return new AgentLaunched(Worktree: null, StartHead: null, new AgentLaunchFailure(AgentLaunchFailureKind.StepFailed, workspace.Error.Code, workspace.Error.Message));
+        }
+
         var bundle = await Bundle(run, target.Value, cancellationToken).ConfigureAwait(false);
         if (bundle.IsError)
         {
             return new AgentLaunched(Worktree: null, StartHead: null, new AgentLaunchFailure(string.Equals(bundle.Error.Code, PackErrors.PinMismatch.Code, StringComparison.Ordinal) ? AgentLaunchFailureKind.Park : AgentLaunchFailureKind.StepFailed, bundle.Error.Code, bundle.Error.Message));   // an unpinned or changed pack parks for the owner (SND-PACK-002); any other pack failure ends the Step
         }
 
-        var request = AgentLaunches.RequestFor(run.Run, target.Value, catalog.Find(BlockId.From(run.Run.Step.Block)), bundle.Value);
+        var block = BlockId.From(run.Run.Step.Block);
+        var told = inputs.Instructions.FirstOrDefault(i => i.Step == block)?.Lines;
+        var request = AgentLaunches.RequestFor(run.Run, target.Value, catalog.Find(block), new AgentLaunchExtras(told, workspace.Value, bundle.Value));
         var result = await launcher.Launch(request, cancellationToken).ConfigureAwait(false);
         switch (result)
         {
@@ -64,7 +71,7 @@ internal sealed class AgentLaunching(ILauncher launcher, AgentTargetResolver tar
             return (PackBundle?)null;
         }
 
-        var resolved = await bundles.Resolve(new PackBundleRequest(name, target.Repo, run.Subject, await HeadLens(run.LensQueue, cancellationToken).ConfigureAwait(false)), cancellationToken).ConfigureAwait(false);
+        var resolved = await inputs.Bundles.Resolve(new PackBundleRequest(name, target.Repo, run.Subject, await HeadLens(run.LensQueue, cancellationToken).ConfigureAwait(false)), cancellationToken).ConfigureAwait(false);
         if (resolved.IsError)
         {
             return resolved.Error;
@@ -76,7 +83,7 @@ internal sealed class AgentLaunching(ILauncher launcher, AgentTargetResolver tar
     // The first lens id of the stored lens queue, a JSON array of ids; null when there is no queue, it can't be read or it is empty.
     private async ValueTask<string?> HeadLens(FactValue? queue, CancellationToken cancellationToken)
     {
-        if (queue is null || (await contents.Read(queue, cancellationToken).ConfigureAwait(false)) is not { IsError: false } bytes)
+        if (queue is null || (await inputs.Contents.Read(queue, cancellationToken).ConfigureAwait(false)) is not { IsError: false } bytes)
         {
             return null;
         }
@@ -91,5 +98,23 @@ internal sealed class AgentLaunching(ILauncher launcher, AgentTargetResolver tar
         {
             return null;
         }
+    }
+
+    /// <summary>The worktree path the stored 'fact:workspace' holds; null when the Step reads none.</summary>
+    private async Task<Result<string?>> WorkspaceOf(AgentLaunchRun run, CancellationToken cancellationToken)
+    {
+        if (run.Workspace is not { } stored)
+        {
+            return (string?)null;
+        }
+
+        var read = await inputs.Contents.Read(stored, cancellationToken).ConfigureAwait(false);
+        if (read.IsError)
+        {
+            return read.Error;
+        }
+
+        var text = System.Text.Encoding.UTF8.GetString(read.Value.Span).Trim();
+        return text.Length >= 2 && text[0] == '"' && text[^1] == '"' ? System.Text.Json.JsonSerializer.Deserialize<string>(text) : text;
     }
 }
