@@ -36,7 +36,7 @@ public sealed class WorkflowsInspectorKeysTests
         Assert.Equal((true, address), (list.IsInspectorOpen, list.Inspector.Address));
 
         Assert.True(list.Press("Enter"));
-        Assert.Equal([address], opened.Select(o => o.Link.Subject));
+        Assert.Equal([address], opened.Select(o => o.Link.Subject), StringComparer.Ordinal);
     }
 
     [Fact]

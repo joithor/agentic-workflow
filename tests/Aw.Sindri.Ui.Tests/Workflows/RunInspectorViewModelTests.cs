@@ -42,8 +42,8 @@ public sealed class RunInspectorViewModelTests
         var inspector = Inspector();
         await inspector.Show(_api, Row(Served(Build)), Token);
 
-        Assert.Equal(["Intake", "Scoping", "Design", "Build", "Verify"], inspector.Stages.Select(s => s.Name));
-        Assert.Equal(["Done", "Done", "Done", "Waiting for you", "Not started"], inspector.Stages.Select(s => s.Status.Word));   // the build stage has a child waiting on the user
+        Assert.Equal(["Intake", "Scoping", "Design", "Build", "Verify"], inspector.Stages.Select(s => s.Name), StringComparer.Ordinal);
+        Assert.Equal(["Done", "Done", "Done", "Waiting for you", "Not started"], inspector.Stages.Select(s => s.Status.Word), StringComparer.Ordinal);   // the build stage has a child waiting on the user
         Assert.Equal([1, 2, 3, 4, 5], inspector.Stages.Select(s => s.Index));
         Assert.Equal("3 of 5 done", inspector.StagesDoneText);
     }
@@ -65,9 +65,10 @@ public sealed class RunInspectorViewModelTests
     {
         var detail = FixtureInstances.Detail("item-produce");
         var inspector = Inspector();
-        await inspector.Show(_api, Row(Served(detail)), Token);
+        var row = Served(Build) with { Id = detail.Id, Address = detail.Address };   // item-produce is a child, not a root row
+        await inspector.Show(_api, Row(row), Token);
 
-        Assert.Equal(["Produce", "Checks", "Verify"], inspector.Stages.Select(s => s.Name));
+        Assert.Equal(["Produce", "Checks", "Verify"], inspector.Stages.Select(s => s.Name), StringComparer.Ordinal);
         Assert.Equal("0 of 3 done", inspector.StagesDoneText);
     }
 
@@ -82,7 +83,7 @@ public sealed class RunInspectorViewModelTests
     [InlineData("DONE", InspectorCalloutKind.None)]
     [InlineData("QUEUED", InspectorCalloutKind.None)]
     [InlineData("CANCELLED", InspectorCalloutKind.None)]
-    public async Task A_callout_per_kind_of_status(string word, InspectorCalloutKind kind)
+    internal async Task A_callout_per_kind_of_status(string word, InspectorCalloutKind kind)
     {
         var inspector = await Shown(word);
 

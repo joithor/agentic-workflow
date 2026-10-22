@@ -17,9 +17,6 @@ internal static partial class Labels
     /// <summary>The drawer's next-run button.</summary>
     internal const string RunNextRun = "Next run";
 
-    /// <summary>The button that copies the run's reference.</summary>
-    internal const string RunCopyReference = "Copy reference";
-
     /// <summary>The drawer's primary action: go to the run.</summary>
     internal const string RunOpen = "Open run";
 
