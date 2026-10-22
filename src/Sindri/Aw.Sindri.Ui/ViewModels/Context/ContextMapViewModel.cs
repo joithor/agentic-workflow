@@ -6,11 +6,12 @@ namespace Aw.Sindri.Ui.ViewModels.Context;
 /// <summary>
 /// The context map (F3 spec 1): the lenses answer laid out on the world, as the nodes, edges, label pills and band frames the page
 /// draws, plus the draft mark, the starting points and the coverage words of the control row. Built once per read; selection and
-/// hover are the next stage's.
+/// hover are in <c>ContextMapViewModel.Selection.cs</c>.
 /// </summary>
-internal sealed class ContextMapViewModel : ObservableObject
+internal sealed partial class ContextMapViewModel : ObservableObject
 {
     private readonly MapLayout _layout;
+    private readonly IReadOnlyList<LensConflict> _conflicts;
 
     /// <summary>The map of one answer.</summary>
     /// <param name="view">The lenses answer.</param>
@@ -18,6 +19,8 @@ internal sealed class ContextMapViewModel : ObservableObject
     {
         ArgumentNullException.ThrowIfNull(view);
         _layout = ContextMapLayout.Build(view);
+        _conflicts = view.Conflicts;
+        _links = [.. _layout.Edges.Select(e => new MapLink(e.Key, e.From, e.To, e.Type))];
         Nodes = [.. _layout.Nodes.Select(n => new MapNodeViewModel(n))];
         Pills = [.. _layout.Edges.Select(e => new MapPillViewModel(e))];
         Edges = [.. _layout.Edges.Select(e => new MapEdge(e.Key, e.Route, e.Dashed))];

@@ -22,6 +22,7 @@ internal sealed partial class ContextPage : UserControl
     public ContextPage()
     {
         InitializeComponent();
+        ContextStack.Canvas.EmptyClicked += (_, _) => _page?.CloseInspector();   // a click on the empty canvas closes the inspector
         StartingPoints.Flyout = new Flyout { Content = _startingRows, Placement = PlacementMode.BottomEdgeAlignedLeft };   // a closed flyout's content is not in the tree, so it is built here
     }
 
@@ -55,6 +56,50 @@ internal sealed partial class ContextPage : UserControl
         _scroller = null;
 
         base.OnDetachedFromVisualTree(e);
+    }
+
+    /// <inheritdoc/>
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        if (e.Handled || e.Source is TextBox || _page is not { } page || e.KeyModifiers != KeyModifiers.None)
+        {
+            return;
+        }
+
+        // Esc closes the inspector; J and K walk the nodes; F and M choose the view (F3 spec 1 §5).
+        e.Handled = true;
+        switch (e.Key)
+        {
+            case Key.Escape when page.InspectorOpen:
+                page.CloseInspector();
+                break;
+            case Key.J when page.MapVisible:
+                _ = RevealAfter(page.SelectNext());
+                break;
+            case Key.K when page.MapVisible:
+                _ = RevealAfter(page.SelectPrevious());
+                break;
+            case Key.F:
+                page.ChooseView(files: true);
+                break;
+            case Key.M:
+                page.ChooseView(files: false);
+                break;
+            default:
+                e.Handled = false;
+                break;
+        }
+    }
+
+    // The canvas pans the chosen node out from under the inspector (480 px over the right edge).
+    private async Task RevealAfter(Task choose)
+    {
+        await choose.ConfigureAwait(true);
+        if (_page?.Map is { SelectedKey: { } key } map && map.Node(key) is { } node)
+        {
+            ContextStack.Canvas.Reveal(new Avalonia.Rect(node.X, node.Y, node.Width, node.Height), rightInset: 480);
+        }
     }
 
     // Enter in the anchor box reads the lenses for what is typed.

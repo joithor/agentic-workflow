@@ -50,7 +50,7 @@ public sealed class ContextHoverTests
         var cited = MapHighlight.Among(_links, ["a", "b", "d"]);
 
         Assert.Equal(["a", "b", "d"], cited.Nodes.Order(StringComparer.Ordinal));
-        Assert.Equal(["e1"], cited.Edges);
+        Assert.Equal(["e1"], cited.Edges.Order(StringComparer.Ordinal));
         Assert.True(cited.Dims("c"));
     }
 

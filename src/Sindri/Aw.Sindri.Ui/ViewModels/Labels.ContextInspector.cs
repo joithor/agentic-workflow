@@ -77,6 +77,9 @@ internal static partial class Labels
     internal static string ContextInspConflictNode(string first, string second) =>
         string.Create(CultureInfo.InvariantCulture, $"Two decisions disagree about this: {first} and {second}. Settle which one wins before approving.");
 
+    /// <summary>The note on a link nobody confirmed.</summary>
+    internal const string ContextInspNotConfirmed = "not confirmed";
+
     /// <summary>The accept button.</summary>
     internal const string ContextInspAccept = "Accept";
 
