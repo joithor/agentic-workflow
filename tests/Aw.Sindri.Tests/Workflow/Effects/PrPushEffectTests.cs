@@ -4,6 +4,8 @@ using Aw.Sindri.Core.Checks;
 using Aw.Sindri.Core.Forge;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Blocks.Effect;
+using Aw.Sindri.Testing.Scoping;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests.Workflow.Effects;
 
@@ -12,6 +14,9 @@ namespace Aw.Sindri.Tests.Workflow.Effects;
 public sealed class PrPushEffectTests
 {
     private readonly PrEffectRig _rig = new();
+    private readonly InMemoryRunArea _area = new();
+
+    private MergeRecord Record => new(_area, new FakeTimeProvider(KnownInstants.Epoch));
 
     public PrPushEffectTests() => Range("aaa111+", "aaa111+");
 
@@ -80,17 +85,57 @@ public sealed class PrPushEffectTests
     }
 
     [Fact]
+    public async Task A_landed_push_appends_a_push_row_with_the_cause_the_commits_and_the_source_flag()
+    {
+        _rig.Diff.Touch(PrEffectRig.Workspace, "src/Aw.X/Foo.cs");
+        _rig.Diff.Advance(PrEffectRig.Workspace);
+        Range("aaa111+", "fix1", "fix2");
+
+        _ = await Dispatch(cause: "review");
+
+        var row = JsonDocument.Parse(Assert.Single((await _area.Read(PrEffectRig.Instance, "babysit.jsonl", Token)).Value.Split('\n', StringSplitOptions.RemoveEmptyEntries))).RootElement;
+        Assert.Equal("push", row.GetProperty("kind").GetString());
+        Assert.Equal("aaa111+", row.GetProperty("headSha").GetString());
+        Assert.Equal("review", row.GetProperty("cause").GetString());
+        Assert.True(row.GetProperty("source").GetBoolean());
+        Assert.Equal(["fix1", "fix2"], row.GetProperty("commits").EnumerateArray().Select(static c => c.GetString()).ToArray());
+        Assert.Equal(0, row.GetProperty("comments").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task A_dispatch_repeated_after_the_push_landed_leaves_one_push_row()
+    {
+        _rig.Diff.Advance(PrEffectRig.Workspace);
+        _ = await Dispatch();
+
+        _ = await Dispatch();
+
+        _ = Assert.Single((await _area.Read(PrEffectRig.Instance, "babysit.jsonl", Token)).Value.Split('\n', StringSplitOptions.RemoveEmptyEntries));
+    }
+
+    [Fact]
+    public async Task A_push_of_nothing_and_a_moved_head_write_no_row()
+    {
+        _ = await Dispatch();
+        _rig.Diff.Advance(PrEffectRig.Workspace);
+        _rig.Pull.HeadSha = "someone-else";
+        _ = await Dispatch();
+
+        Assert.Equal(string.Empty, (await _area.Read(PrEffectRig.Instance, "babysit.jsonl", Token)).Value);
+    }
+
+    [Fact]
     public async Task A_forge_error_is_the_dispatch_error()
     {
         _rig.Diff.Advance(PrEffectRig.Workspace);
-        var effect = new PrPushEffect(new Aw.Sindri.Testing.Forge.FakePullRequests([]), _rig.Diff, _rig.Changes, _rig.Facts, _rig.Facts);
+        var effect = new PrPushEffect(new Aw.Sindri.Testing.Forge.FakePullRequests([]), _rig.Diff, _rig.Changes, _rig.Facts, _rig.Facts, Record);
 
         var result = await effect.Dispatch(Context(), Token);
 
         Assert.True(result.IsError);
     }
 
-    private PrPushEffect Effect() => new(_rig.Forge, _rig.Diff, _rig.Changes, _rig.Facts, _rig.Facts);
+    private PrPushEffect Effect() => new(_rig.Forge, _rig.Diff, _rig.Changes, _rig.Facts, _rig.Facts, Record);
 
     [Fact]
     public async Task Every_commit_between_the_lease_and_the_head_is_listed_oldest_first()

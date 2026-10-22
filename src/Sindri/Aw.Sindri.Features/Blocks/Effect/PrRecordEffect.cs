@@ -11,10 +11,9 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 /// the child returned. A row carries its kind, the effect identity (what keeps a repeated dispatch from writing twice), the instance, the head 'fact:prState' holds,
 /// the time and the result. It replies nothing.
 /// </summary>
-/// <param name="area">The instance's run area, where the merge record lives.</param>
+/// <param name="record">The merge record's writer.</param>
 /// <param name="contents">Reads the facts it takes.</param>
-/// <param name="clock">When a row is written.</param>
-internal sealed class PrRecordEffect(IRunArea area, IFactContents contents, TimeProvider clock) : IEffectKind, IDescribedBlock
+internal sealed class PrRecordEffect(MergeRecord record, IFactContents contents) : IEffectKind, IDescribedBlock
 {
     private const string Record = "babysit.jsonl";
 

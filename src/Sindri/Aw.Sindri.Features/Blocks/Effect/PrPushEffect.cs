@@ -21,7 +21,8 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 /// <param name="changes">Lists the commits a push carries.</param>
 /// <param name="contents">Reads the facts it takes.</param>
 /// <param name="facts">Stores the fact it replies with.</param>
-internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchChanges changes, IFactContents contents, IFactStore facts) : IEffectKind, IDescribedBlock
+/// <param name="record">The merge record, where the push row goes.</param>
+internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchChanges changes, IFactContents contents, IFactStore facts, MergeRecord record) : IEffectKind, IDescribedBlock
 {
     private static readonly FactKey _push = FactKey.From("fact:push");
 

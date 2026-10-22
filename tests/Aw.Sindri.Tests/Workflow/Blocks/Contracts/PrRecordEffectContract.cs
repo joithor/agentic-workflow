@@ -22,6 +22,6 @@ public sealed class PrRecordEffectContract : BlockContract
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await new PrRecordEffect(new InMemoryRunArea(), new InMemoryFactStore(), TimeProvider.System)
+        _ = await new PrRecordEffect(new MergeRecord(new InMemoryRunArea(), TimeProvider.System), new InMemoryFactStore())
             .Dispatch(ShippedComposition.Effect("effect.pr.record"), cancellationToken);
 }

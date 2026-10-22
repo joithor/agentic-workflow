@@ -46,7 +46,7 @@ public sealed class PrRecordEffectTests
     {
         var context = _rig.Context("effect.pr.record", new Dictionary<string, object>(StringComparer.Ordinal) { ["kind"] = "push", ["result"] = PrEffectRig.Fact("{}") });
 
-        var done = await new PrRecordEffect(_area, _rig.Facts, _clock).Dispatch(context, Token);
+        var done = await new PrRecordEffect(new MergeRecord(_area, _clock), _rig.Facts).Dispatch(context, Token);
 
         Assert.True(done.IsError);
     }
@@ -58,6 +58,6 @@ public sealed class PrRecordEffectTests
             ["kind"] = kind,
             ["result"] = PrEffectRig.Fact("""{"verdict":"resolved"}"""),
         }, new Dictionary<string, string>(StringComparer.Ordinal) { ["fact:prState"] = PrEffectRig.PrState("h1", "h1") });
-        return (await new PrRecordEffect(_area, _rig.Facts, _clock).Dispatch(context, Token)).Value;
+        return (await new PrRecordEffect(new MergeRecord(_area, _clock), _rig.Facts).Dispatch(context, Token)).Value;
     }
 }
