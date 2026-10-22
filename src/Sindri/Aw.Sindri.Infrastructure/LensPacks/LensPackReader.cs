@@ -3,7 +3,6 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Kernel;
-using Aw.Sindri.Core;
 using Aw.Sindri.Core.LensPacks;
 
 namespace Aw.Sindri.Infrastructure.LensPacks;
@@ -144,5 +143,5 @@ internal static class LensPackReader
 
     private static string? Text(JsonObject? obj, string name) => obj?[name] is JsonValue v && v.TryGetValue<string>(out var s) ? s : null;
 
-    private static Error Bad(string id, string problem) => SindriErrors.InvalidInput.With($"the lens pack '{id}' {problem}");
+    private static Error Bad(string id, string problem) => PackErrors.Invalid.With($"the lens pack '{id}' {problem}");
 }

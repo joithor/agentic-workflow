@@ -1,5 +1,4 @@
 using Aw.Kernel;
-using Aw.Sindri.Core;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.LensPacks;
 using Aw.Sindri.Core.Profile;
@@ -41,13 +40,13 @@ internal sealed class ProfileLensPacks(IApprovedProfile approved, ILensPackSourc
     {
         if (source.Files(id) is not { } files)
         {
-            return SindriErrors.InvalidInput.With($"the lens pack '{id}' is not a built-in pack (built in: {string.Join(", ", source.Ids())}; fix: set workflow.packs.lenses.{Loop(kind)} to one of them)");
+            return PackErrors.NotFound.With($"the lens pack '{id}' is not a built-in pack (built in: {string.Join(", ", source.Ids())}; fix: set workflow.packs.lenses.{Loop(kind)} to one of them)");
         }
 
         var pack = LensPackReader.Read(id, files);
         return pack.IsError || pack.Value.Applies == kind
             ? pack
-            : SindriErrors.InvalidInput.With($"the lens pack '{id}' serves the {Loop(pack.Value.Applies)} loop, not the {Loop(kind)} one (fix: name a pack that applies to {Loop(kind)})");
+            : PackErrors.WrongKind.With($"the lens pack '{id}' serves the {Loop(pack.Value.Applies)} loop, not the {Loop(kind)} one (fix: name a pack that applies to {Loop(kind)})");
     }
 
     private static string Loop(LensPackKind kind) => kind == LensPackKind.Design ? "design" : "review";
