@@ -66,7 +66,7 @@ internal static class GraphJsonParser
         public int Dropped { get; set; }
     }
 
-    private sealed record RawNode(string Id, string Label, string SourceFile, int Line, int? Community, bool Callable);
+    private sealed record RawNode(string Id, string Label, string SourceFile, int Line, int? Community, bool Callable, bool IsClass);
 
     private static Dictionary<string, GraphNode> ReadNodes(JsonElement nodes, GraphPaths paths, Func<string, int, string> scrub, Tally tally)
     {
@@ -113,7 +113,7 @@ internal static class GraphJsonParser
         }
 
         return Optional(element, "community", out var community) && Flag(element, "_callable", out var callable) && Flag(element, "_callable_class", out var callableClass)
-            ? new RawNode(id, label, sourceFile, line, community, callable || callableClass)
+            ? new RawNode(id, label, sourceFile, line, community, callable || callableClass, callableClass)
             : null;
     }
 
@@ -126,7 +126,7 @@ internal static class GraphJsonParser
 
         var name = raw.Label.EndsWith("()", StringComparison.Ordinal) ? raw.Label[..^2] : raw.Label;
         name = name.StartsWith('.') ? name[1..] : name;
-        return name.Length == 0 ? null : new GraphNode(raw.Id, file, scrub(name, NameLimit), raw.Line, raw.Community);
+        return name.Length == 0 ? null : new GraphNode(raw.Id, file, scrub(name, NameLimit), raw.Line, raw.Community, raw.IsClass);
     }
 
     private static List<GraphEdge> ReadEdges(JsonElement links, Dictionary<string, GraphNode> kept, Tally tally)

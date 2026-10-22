@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using Aw.CodeIndex.Core;
 using Aw.CodeIndex.Core.Graph;
 using Aw.CodeIndex.Core.Model;
@@ -25,13 +26,15 @@ public sealed class GraphLayer(IRepoSnapshot snapshot, TimeProvider clock, IGrap
     /// <param name="build">The build file.</param>
     /// <param name="request">The build request.</param>
     /// <param name="code">The snapshot's code files.</param>
+    /// <param name="scrubber">Scrubs each graph symbol's source text before it is stored.</param>
     /// <param name="cancellationToken">Cancels the layer.</param>
     /// <returns>The layer's row for the caller to record; an error only when the index file cannot be written.</returns>
-    public async ValueTask<Result<LayerRecord>> Run(IIndexBuild build, BuildCodeIndexRequest request, IReadOnlyList<SnapshotFile> code, CancellationToken cancellationToken)
+    public async ValueTask<Result<LayerRecord>> Run(IIndexBuild build, BuildCodeIndexRequest request, IReadOnlyList<SnapshotFile> code, IBodyScrubber scrubber, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(build);
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(code);
+        ArgumentNullException.ThrowIfNull(scrubber);
         var now = clock.GetUtcNow();
         if (!request.Repo.Settings.Graph.Enabled)
         {
@@ -57,15 +60,67 @@ public sealed class GraphLayer(IRepoSnapshot snapshot, TimeProvider clock, IGrap
             return Unavailable(ran.Error, now);
         }
 
-        var merged = GraphMerge.Plan(request.Repo.Name, ran.Value, code);
-        var stored = await StoreGraph(build, (ran.Value, merged), cancellationToken).ConfigureAwait(false);
-        if (stored.IsError)
+        var merged = await PlanAndStore(build, request, (ran.Value, code), scrubber, cancellationToken).ConfigureAwait(false);
+        if (merged.IsError)
         {
-            return stored.Error;
+            return merged.Error;
         }
 
-        var detail = string.Create(CultureInfo.InvariantCulture, $"{merged.Files.Sum(f => f.Symbols.Count)} symbols, {merged.Edges.Count} calls, {ran.Value.Dropped + merged.Dropped} dropped");
+        var detail = string.Create(CultureInfo.InvariantCulture, $"{merged.Value.Files.Sum(f => f.Symbols.Count)} symbols, {merged.Value.Edges.Count} calls, {ran.Value.Dropped + merged.Value.Dropped} dropped");
         return new LayerRecord(LayerName.Graph, request.Commit.Value, LayerState.Ok, Code: null, detail, now);
+    }
+
+    private async ValueTask<Result<GraphMerged>> PlanAndStore(IIndexBuild build, BuildCodeIndexRequest request, (GraphSnapshot Graph, IReadOnlyList<SnapshotFile> Code) input, IBodyScrubber scrubber, CancellationToken cancellationToken)
+    {
+        var (graphJson, code) = input;
+        var planned = GraphMerge.Plan(request.Repo.Name, graphJson, code);
+        var withBodies = await AttachBodies(planned, request, scrubber, cancellationToken).ConfigureAwait(false);
+        if (withBodies.IsError)
+        {
+            return withBodies.Error;
+        }
+
+        var stored = await StoreGraph(build, (graphJson, withBodies.Value), cancellationToken).ConfigureAwait(false);
+        return stored.IsError ? stored.Error : withBodies.Value;
+    }
+
+    // A graph symbol's stored text (the 'bodies' row the embed candidates come from) is its span of the snapshot file, scrubbed and cut; kept only while embeddings are on.
+    private async ValueTask<Result<GraphMerged>> AttachBodies(GraphMerged merged, BuildCodeIndexRequest request, IBodyScrubber scrubber, CancellationToken cancellationToken)
+    {
+        if (!request.Repo.Settings.Embeddings.Enabled || merged.Files.All(f => f.Symbols.Count == 0))
+        {
+            return merged;
+        }
+
+        var blobs = await snapshot.OpenBlobs(request.Repo, cancellationToken).ConfigureAwait(false);
+        if (blobs.IsError)
+        {
+            return blobs.Error;
+        }
+
+        var files = new List<FileRecord>(merged.Files.Count);
+        await using (blobs.Value.ConfigureAwait(false))
+        {
+            foreach (var file in merged.Files)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (file.Symbols.Count == 0)
+                {
+                    files.Add(file);
+                    continue;
+                }
+
+                var bytes = await blobs.Value.Read(file.Blob, cancellationToken).ConfigureAwait(false);
+                if (bytes.IsError)
+                {
+                    return bytes.Error;
+                }
+
+                files.Add(bytes.Value is { } raw ? GraphBodies.Attach(file, Encoding.UTF8.GetString(raw), t => scrubber.Scrub(t, CodeIndexRules.EmbedTextMaxCharacters)) : file);
+            }
+        }
+
+        return merged with { Files = files };
     }
 
     private async ValueTask<Result<GraphSnapshot>> RunGraph(IGraphRunner tool, BuildCodeIndexRequest request, IReadOnlyList<SnapshotFile> code, CancellationToken cancellationToken)
