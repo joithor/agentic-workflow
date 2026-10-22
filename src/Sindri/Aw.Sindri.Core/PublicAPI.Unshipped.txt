@@ -8966,14 +8966,16 @@ static Aw.Sindri.Core.Launch.TargetFacts.operator !=(Aw.Sindri.Core.Launch.Targe
 static Aw.Sindri.Core.Launch.TargetFacts.operator ==(Aw.Sindri.Core.Launch.TargetFacts? left, Aw.Sindri.Core.Launch.TargetFacts? right) -> bool
 Aw.Sindri.Core.Launch.StartedLaunch.Deconstruct(out Aw.Sindri.Core.Launch.HostRef! Host, out Aw.Sindri.Core.Launch.ViewerOutcome! Viewer, out System.Collections.Generic.IReadOnlyList<string!>! Attach, out Aw.Sindri.Core.Launch.CatalogSource CatalogSource, out string! ArgvHash) -> void
 Aw.Sindri.Core.Launch.StartedLaunch.StartedLaunch(Aw.Sindri.Core.Launch.HostRef! Host, Aw.Sindri.Core.Launch.ViewerOutcome! Viewer, System.Collections.Generic.IReadOnlyList<string!>! Attach, Aw.Sindri.Core.Launch.CatalogSource CatalogSource, string! ArgvHash) -> void
-Aw.Sindri.Core.Launch.StepPolicy.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! AllowedTools, out Aw.Sindri.Core.Launch.StepPermissionMode Mode, out string? WritablePath) -> void
+Aw.Sindri.Core.Launch.StepPolicy.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! AllowedTools, out Aw.Sindri.Core.Launch.StepPermissionMode Mode, out string? WritablePath, out System.Collections.Generic.IReadOnlyList<string!>? DeniedPaths) -> void
 Aw.Sindri.Core.Launch.StepPolicy.AllowedTools.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Launch.StepPolicy.AllowedTools.init -> void
 Aw.Sindri.Core.Launch.StepPolicy.Mode.get -> Aw.Sindri.Core.Launch.StepPermissionMode
 Aw.Sindri.Core.Launch.StepPolicy.Mode.init -> void
 Aw.Sindri.Core.Launch.StepPolicy.WritablePath.get -> string?
 Aw.Sindri.Core.Launch.StepPolicy.WritablePath.init -> void
-Aw.Sindri.Core.Launch.StepPolicy.StepPolicy(System.Collections.Generic.IReadOnlyList<string!>! AllowedTools, Aw.Sindri.Core.Launch.StepPermissionMode Mode, string? WritablePath) -> void
+Aw.Sindri.Core.Launch.StepPolicy.DeniedPaths.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Launch.StepPolicy.DeniedPaths.init -> void
+Aw.Sindri.Core.Launch.StepPolicy.StepPolicy(System.Collections.Generic.IReadOnlyList<string!>! AllowedTools, Aw.Sindri.Core.Launch.StepPermissionMode Mode, string? WritablePath, System.Collections.Generic.IReadOnlyList<string!>? DeniedPaths = null) -> void
 Aw.Sindri.Core.Launch.StepPermissionMode
 Aw.Sindri.Core.Launch.StepPermissionMode.ReadOnly = 0 -> Aw.Sindri.Core.Launch.StepPermissionMode
 Aw.Sindri.Core.Launch.StepPermissionMode.Plan = 1 -> Aw.Sindri.Core.Launch.StepPermissionMode
@@ -15535,6 +15537,15 @@ static Aw.Sindri.Core.Review.ReviewPackOrigin.operator !=(Aw.Sindri.Core.Review.
 static Aw.Sindri.Core.Review.ReviewPackOrigin.operator ==(Aw.Sindri.Core.Review.ReviewPackOrigin? left, Aw.Sindri.Core.Review.ReviewPackOrigin? right) -> bool
 static Aw.Sindri.Core.Review.ReviewPack.Problems(Aw.Sindri.Core.Review.ReviewFacts! facts) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Sindri.Core.Review.ReviewPack.Verdict(System.Text.Json.Nodes.JsonNode! review) -> string?
+static readonly Aw.Sindri.Core.SindriErrors.LaunchPrePushForeign -> Aw.Kernel.ErrorDefinition!
+const Aw.Sindri.Core.Launch.LaunchEnvironment.GhConfigDirectory = "GH_CONFIG_DIR" -> string!
+const Aw.Sindri.Core.Launch.LaunchEnvironment.Worktree = "AW_SINDRI_WORKTREE" -> string!
+Aw.Sindri.Core.Launch.LaunchEnvironment
+static Aw.Sindri.Core.Launch.LaunchEnvironment.Credentials.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Launch.LaunchEnvironment.Scrub(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! env, string! worktree, string! ghConfigDir) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+static readonly Aw.Sindri.Core.SindriErrors.LaunchPushRefused -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Prove.IScriptRuns
+Aw.Sindri.Core.Prove.IScriptRuns.Run(string! directory, string! script, System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int?>
 Aw.Sindri.Core.Forge.PullChecks
 Aw.Sindri.Core.Forge.PullChecks.<Clone>$() -> Aw.Sindri.Core.Forge.PullChecks!
 Aw.Sindri.Core.Forge.PullChecks.State.get -> Aw.Sindri.Core.Forge.PullChecksState
