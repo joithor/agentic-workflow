@@ -83,8 +83,8 @@ public sealed class PrSnapshotStepTests
         _pull.Threads.Add(Thread("t1"));
         _pull.Threads.Add(Thread("t2"));
         _pull.Threads.Add(Thread("t3"));
-        await Mark("t1", "hold", minutes: 1, effect: "e1", reason: "type");
-        await Mark("t2", "hold", minutes: 1, effect: "e2", reason: "type");
+        await Mark("t1", "held", minutes: 1, effect: "e1", reason: "type");
+        await Mark("t2", "held", minutes: 1, effect: "e2", reason: "type");
         await Mark("t2", "fixed", minutes: 2, effect: "e3");
 
         var state = Fact(await Snapshot(), "fact:prState");
@@ -113,7 +113,7 @@ public sealed class PrSnapshotStepTests
         _pull.Threads.Add(Thread("t1"));
         _pull.Threads.Add(Thread("t2"));
         _pull.Threads.Add(Thread("t3"));
-        await Mark("t1", "hold", minutes: 1, effect: "e1", reason: "type");
+        await Mark("t1", "held", minutes: 1, effect: "e1", reason: "type");
         await Mark("t2", "fixed", minutes: 1, effect: "e2", commit: "bbbb2222");
 
         var state = Fact(await Snapshot(), "fact:prState");
@@ -128,7 +128,7 @@ public sealed class PrSnapshotStepTests
         _pull.ChecksState = PullChecksState.Passing;
         _pull.Threads.Add(Thread("t1"));
         _pull.Threads.Add(Thread("t2"));
-        await Mark("t1", "hold", minutes: 1, effect: "e1", reason: "type");
+        await Mark("t1", "held", minutes: 1, effect: "e1", reason: "type");
         await Mark("t2", "fixed", minutes: 1, effect: "e2", commit: "bbbb2222");
 
         Assert.Equal("green", Outcome(await Snapshot()));
