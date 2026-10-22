@@ -15,6 +15,7 @@ public sealed class FakeCodeIndex : ICodeIndex
 {
     private readonly Dictionary<RepoName, Repo> _repos = [];
     private readonly List<CodeIndexScope> _scopes = [];
+    private readonly HashSet<RepoName> _buildable = [];
 
     /// <summary>The scopes the calls came with, in order (a test asserts a session's scope held only its repo).</summary>
     public IReadOnlyList<CodeIndexScope> Scopes => _scopes;
@@ -52,6 +53,15 @@ public sealed class FakeCodeIndex : ICodeIndex
         return this;
     }
 
+    /// <summary>Makes <see cref="ProbeLayers"/> report the repo's graph layer as buildable now (the box was fixed).</summary>
+    /// <param name="repo">The repo.</param>
+    /// <returns>This fake.</returns>
+    public FakeCodeIndex WithGraphBuildable(RepoName repo)
+    {
+        _ = _buildable.Add(repo);
+        return this;
+    }
+
     /// <summary>Marks a repo's index as damaged.</summary>
     /// <param name="repo">The repo.</param>
     /// <returns>This fake.</returns>
@@ -82,7 +92,7 @@ public sealed class FakeCodeIndex : ICodeIndex
     {
         ArgumentNullException.ThrowIfNull(scope);
         _scopes.Add(scope);
-        return Ok<IReadOnlyList<LayerProbe>>([.. scope.Repos.Select(r => new LayerProbe(r.Name, []))]);
+        return Ok<IReadOnlyList<LayerProbe>>([.. scope.Repos.Select(r => new LayerProbe(r.Name, _buildable.Contains(r.Name) ? [LayerName.Graph] : []))]);
     }
 
     public ValueTask<Result<FindSymbolsAnswer>> FindSymbols(CodeIndexScope scope, SymbolQuery query, CancellationToken cancellationToken)

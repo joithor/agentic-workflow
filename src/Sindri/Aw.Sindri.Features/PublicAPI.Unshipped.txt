@@ -4282,6 +4282,10 @@ Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Incremental.get -> bool
 Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Incremental.init -> void
 Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Milliseconds.get -> long
 Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Milliseconds.init -> void
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.LayersPending.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.LayersPending.init -> void
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Embedded.get -> int
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Embedded.init -> void
 const Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Deferred = "deferred" -> string!
 Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest
 Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest.<Clone>$() -> Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest!

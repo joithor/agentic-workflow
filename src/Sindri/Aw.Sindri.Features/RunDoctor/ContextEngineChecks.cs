@@ -13,17 +13,19 @@ namespace Aw.Sindri.Features.RunDoctor;
 /// </summary>
 /// <param name="context">The context engine.</param>
 /// <param name="onyx">The onyx check.</param>
-internal sealed class ContextEngineChecks(IContextEngine context, OnyxDoctor onyx)
+/// <param name="codeIndex">The code index checks.</param>
+internal sealed class ContextEngineChecks(IContextEngine context, OnyxDoctor onyx, ICodeIndexChecks codeIndex)
 {
     /// <summary>The checks, in the order doctor prints them.</summary>
     /// <param name="approved">The approved profile, or null.</param>
     /// <param name="cancellationToken">Cancels the reads and the probe.</param>
-    /// <returns>The three checks.</returns>
+    /// <returns>The three context checks, then the code index's.</returns>
     internal async ValueTask<DoctorCheck[]> Check(LoadedProfile? approved, CancellationToken cancellationToken) =>
     [
         Line("context:map", await context.CheckMap(ScopeOf(approved), cancellationToken).ConfigureAwait(false)),
         Line("context:retention", await context.CheckRetention(cancellationToken).ConfigureAwait(false)),
         await onyx.Check(approved, cancellationToken).ConfigureAwait(false),
+        .. await codeIndex.Check(approved, cancellationToken).ConfigureAwait(false),
     ];
 
     // The approved profile's scope as a service reads it (the deny globs apply); null while no profile is approved.

@@ -1,4 +1,6 @@
 using Aw.CodeIndex.Core.Facade;
+using Aw.CodeIndex.Core.Model;
+using Aw.CodeIndex.Core.Planning;
 using Aw.CodeIndex.Core.Ports;
 using Aw.CodeIndex.Core.Values;
 using Aw.Kernel;
@@ -17,7 +19,8 @@ namespace Aw.Sindri.Features.CodeIndexJobs;
 /// <summary>
 /// The 'code-index-main-move' background service (code index spec §6.1): when a registered repo's checkout moved along its default branch past the commit its index describes, it starts a 'BuildCodeIndex'
 /// job of key 'index:&lt;repo&gt;' as itself, through the command chain. Each repo is decided on its own by <see cref="MainMoveDecision"/> (a running build first, then nothing when the index is at the head, then the
-/// backoff after failures in a row); a build that ended deferred (heavy-busy) holds the next start for <see cref="IndexOutlookRules.DeferredSuppress"/>. A repo on a feature branch starts nothing and is named in the summary.
+/// backoff after failures in a row). Before that, <see cref="IndexContinuationDecision"/> (spec §6.3) holds a repo whose last build was deferred or embedded nothing, and withholds the stored head so a repo with embeddings
+/// still pending (or a layer that became buildable, found by the facade's probe) continues like a moved head. A repo on a feature branch starts nothing and is named in the summary.
 /// Three failed builds in a row for a repo that still needs one fail the run (needs-you 'failure:service:code-index-main-move'). A tick reads the heads, the stored index heads and the jobs once.
 /// </summary>
 /// <param name="scopes">The profile's scope and the caller.</param>
@@ -54,11 +57,11 @@ internal sealed partial class CodeIndexMainMoveService(CodeIndexScopes scopes, I
             return read.Error;
         }
 
-        var (live, recorded, builds) = read.Value;
+        var (live, recorded, builds, buildable) = read.Value;
         var tally = new Tally();
         foreach (var head in live)
         {
-            var step = await Step(head, recorded, builds, cancellationToken).ConfigureAwait(false);
+            var step = await Step(head, recorded, builds, buildable, cancellationToken).ConfigureAwait(false);
             if (step.IsError)
             {
                 return step.Error;
@@ -82,10 +85,23 @@ internal sealed partial class CodeIndexMainMoveService(CodeIndexScopes scopes, I
             return live.IsError ? live.Error : recorded.IsError ? recorded.Error : builds.Error;
         }
 
-        return new Reads(live.Value, recorded.Value, builds.Value);
+        return new Reads(live.Value, recorded.Value, builds.Value, await Buildable(scope, cancellationToken).ConfigureAwait(false));
     }
 
-    private async ValueTask<Result<RepoStep>> Step(IndexRepoHead head, IReadOnlyList<RecordedHead> recorded, IReadOnlyList<JobRow> builds, CancellationToken cancellationToken)
+    // The probe runs only for a repo whose stored index has an unavailable layer, and a probe that fails is no news: the layer stays as it is.
+    private async ValueTask<HashSet<string>> Buildable(CodeIndexScope scope, CancellationToken cancellationToken)
+    {
+        var status = await index.Status(scope, cancellationToken).ConfigureAwait(false);
+        if (status.IsError || !status.Value.Repos.Any(static r => r.Layers.Any(static l => l.State == LayerState.Unavailable)))
+        {
+            return [];
+        }
+
+        var probes = await index.ProbeLayers(scope, cancellationToken).ConfigureAwait(false);
+        return probes.IsError ? [] : [.. probes.Value.Where(static p => p.Buildable.Count > 0).Select(static p => p.Repo.Value)];
+    }
+
+    private async ValueTask<Result<RepoStep>> Step(IndexRepoHead head, IReadOnlyList<RecordedHead> recorded, IReadOnlyList<JobRow> builds, HashSet<string> buildable, CancellationToken cancellationToken)
     {
         if (head.Head is not { } commit || !head.OnDefaultBranch)
         {
@@ -93,7 +109,7 @@ internal sealed partial class CodeIndexMainMoveService(CodeIndexScopes scopes, I
         }
 
         var repo = head.Repo.Value;
-        var (action, failing) = Decide(repo, commit, recorded.FirstOrDefault(h => h.Repo == head.Repo)?.Commit, [.. builds.Where(j => IndexJobs.IsOf(j, repo))]);
+        var (action, failing) = Decide(repo, commit, recorded.FirstOrDefault(h => h.Repo == head.Repo)?.Commit, [.. builds.Where(j => IndexJobs.IsOf(j, repo))], buildable.Contains(repo));
         if (action != MainMoveAction.Start)
         {
             return new RepoStep(Failing: failing);
@@ -109,21 +125,26 @@ internal sealed partial class CodeIndexMainMoveService(CodeIndexScopes scopes, I
     }
 
     // The repo's own decision: the stored index against the head, the key's running and ended builds, and the deferred hold on top.
-    private (MainMoveAction Action, bool Failing) Decide(string repo, CommitSha commit, CommitSha? stored, List<JobRow> mine)
+    private (MainMoveAction Action, bool Failing) Decide(string repo, CommitSha commit, CommitSha? stored, List<JobRow> mine, bool layerBuildable)
     {
         var finished = mine.Where(static j => j.State != JobState.Running && j.EndedAt is not null).OrderByDescending(static j => j.EndedAt).Take(RecentRuns).ToList();
         var now = clock.GetUtcNow();
         var onDefault = new Dictionary<string, string>(StringComparer.Ordinal) { [repo] = commit.Value };
-        IReadOnlyDictionary<string, string>? last = stored is { } sha ? new Dictionary<string, string>(StringComparer.Ordinal) { [repo] = sha.Value } : null;
         var attempts = finished.Select(static j => new SyncAttempt(j.State == JobState.Failed, j.EndedAt ?? default)).ToList();
-        var action = MainMoveDecision.Decide(onDefault, last, mine.Exists(static j => j.State == JobState.Running), attempts, now);
-        if (action == MainMoveAction.Start && finished is [var newest, ..] && IndexJobs.Deferred(newest) && now < newest.EndedAt + IndexOutlookRules.DeferredSuppress)
-        {
-            action = MainMoveAction.BackoffNotDue;
-        }
-
+        var next = IndexContinuationDecision.Decide(commit.Value, stored?.Value, [.. finished.Select(IndexJobs.OutcomeFor)], now);
+        var action = next == ContinuationAction.Suppress
+            ? MainMoveAction.BackoffNotDue
+            : MainMoveDecision.Decide(onDefault, Recorded(repo, stored, withheld: next == ContinuationAction.WithholdRecorded || Recovers(layerBuildable, stored, commit, finished, now)), mine.Exists(static j => j.State == JobState.Running), attempts, now);
         return (action, action != MainMoveAction.Nothing && MainMoveDecision.FailedInARow(attempts) >= IndexOutlookRules.FailuresToBroken);
     }
+
+    // The stored head as the shared decision reads it: none when the repo continues, so the same function starts the continuation.
+    private static Dictionary<string, string>? Recorded(string repo, CommitSha? stored, bool withheld) =>
+        stored is { } sha && !withheld ? new Dictionary<string, string>(StringComparer.Ordinal) { [repo] = sha.Value } : null;
+
+    // A layer that was unavailable and can be built now starts a layers-only build at the same commit, at most every ten minutes (the newest job decides).
+    private static bool Recovers(bool layerBuildable, CommitSha? stored, CommitSha commit, List<JobRow> finished, DateTimeOffset now) =>
+        layerBuildable && stored == commit && (finished.Count == 0 || now >= finished[0].EndedAt + IndexContinuationDecision.Hold);
 
     // 409 with 'runningJob' is the same build running: nothing to say. Any other 409 is logged, and not retried this tick.
     private RepoStep Conflict(Error error)
@@ -139,7 +160,7 @@ internal sealed partial class CodeIndexMainMoveService(CodeIndexScopes scopes, I
     [LoggerMessage(Level = LogLevel.Warning, Message = "code-index-main-move: the build was refused with {Code} and is not retried this tick: {Detail}")]
     private static partial void LogConflict(ILogger logger, string code, string? detail);
 
-    private sealed record Reads(IReadOnlyList<IndexRepoHead> Live, IReadOnlyList<RecordedHead> Recorded, IReadOnlyList<JobRow> Builds);
+    private sealed record Reads(IReadOnlyList<IndexRepoHead> Live, IReadOnlyList<RecordedHead> Recorded, IReadOnlyList<JobRow> Builds, HashSet<string> Buildable);
 
     private readonly record struct RepoStep(bool Started = false, bool Elsewhere = false, bool Failing = false);
 

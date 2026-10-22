@@ -129,13 +129,93 @@ public sealed class CodeIndexMainMoveServiceTests
     {
         _ = _rig.Heads.With(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New, onDefaultBranch: true);
         _rig.Job("demo", JobState.Succeeded, TimeSpan.FromMinutes(9), outcome: "deferred");
-        _ = await Run();
-        Assert.Empty(_start.Requests);
 
+        _ = await Run();
+
+        Assert.Empty(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_deferred_build_older_than_ten_minutes_no_longer_holds()
+    {
+        _ = _rig.Heads.With(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New, onDefaultBranch: true);
         _rig.Job("demo", JobState.Succeeded, TimeSpan.FromMinutes(11), outcome: "deferred");
+
         _ = await Run();
 
         _ = Assert.Single(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_build_that_left_embeddings_pending_waits_two_minutes()
+    {
+        _ = _rig.Index.WithIndex(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New);
+        _ = _rig.Heads.With(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New, onDefaultBranch: true);
+        _rig.Job("demo", JobState.Succeeded, TimeSpan.FromSeconds(90), outcome: "published", embedded: 100, pending: true);
+
+        _ = await Run();
+
+        Assert.Empty(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_build_that_left_embeddings_pending_continues_at_the_same_commit_after_two_minutes()
+    {
+        _ = _rig.Index.WithIndex(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New);
+        _ = _rig.Heads.With(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New, onDefaultBranch: true);
+        _rig.Job("demo", JobState.Succeeded, TimeSpan.FromMinutes(3), outcome: "published", embedded: 100, pending: true);
+
+        _ = await Run();
+
+        Assert.Equal([new BuildCodeIndexRequest("demo", CodeIndexJobsRig.New.Value)], _start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_build_that_embedded_nothing_holds_a_moved_head_for_ten_minutes()
+    {
+        _ = _rig.Index.WithIndex(CodeIndexJobsRig.Demo, CodeIndexJobsRig.Old);
+        _ = _rig.Heads.With(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New, onDefaultBranch: true);
+        _rig.Job("demo", JobState.Succeeded, TimeSpan.FromMinutes(5), outcome: "published", embedded: 0, pending: true);
+
+        _ = await Run();
+
+        Assert.Empty(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_layer_that_became_buildable_starts_a_layers_only_build_at_the_same_commit()
+    {
+        _ = _rig.Index.WithIndex(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New).WithGraphUnavailable(CodeIndexJobsRig.Demo).WithGraphBuildable(CodeIndexJobsRig.Demo);
+        _ = _rig.Heads.With(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New, onDefaultBranch: true);
+        _rig.Job("demo", JobState.Succeeded, TimeSpan.FromMinutes(30), outcome: "published");
+
+        _ = await Run();
+
+        Assert.Equal([new BuildCodeIndexRequest("demo", CodeIndexJobsRig.New.Value)], _start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_layer_that_is_still_unavailable_starts_nothing()
+    {
+        _ = _rig.Index.WithIndex(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New).WithGraphUnavailable(CodeIndexJobsRig.Demo);
+        _ = _rig.Heads.With(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New, onDefaultBranch: true);
+        _rig.Job("demo", JobState.Succeeded, TimeSpan.FromMinutes(30), outcome: "published");
+
+        _ = await Run();
+
+        Assert.Empty(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_layers_only_build_that_just_ended_is_not_started_again_within_ten_minutes()
+    {
+        _ = _rig.Index.WithIndex(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New).WithGraphUnavailable(CodeIndexJobsRig.Demo).WithGraphBuildable(CodeIndexJobsRig.Demo);
+        _ = _rig.Heads.With(CodeIndexJobsRig.Demo, CodeIndexJobsRig.New, onDefaultBranch: true);
+        _rig.Job("demo", JobState.Succeeded, TimeSpan.FromMinutes(4), outcome: "published");
+
+        _ = await Run();
+
+        Assert.Empty(_start.Requests);
     }
 
     [Fact, Trait("Lane", "unit")]
