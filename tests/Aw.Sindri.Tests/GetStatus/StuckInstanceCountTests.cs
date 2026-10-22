@@ -51,4 +51,40 @@ public sealed class StuckInstanceCountTests
 
         Assert.Equal(0, await new StuckInstanceCount(_engine, _clock).Current(Token));
     }
+
+    [Fact(Timeout = 20_000)]
+    public async Task A_read_that_never_answers_counts_none_after_two_seconds()
+    {
+        _engine.Hold = new TaskCompletionSource();
+
+        Assert.Equal(0, await new StuckInstanceCount(_engine, _clock).Current(Token));
+    }
+
+    [Fact]
+    public async Task A_read_that_throws_something_other_than_an_error_result_counts_none()
+    {
+        _engine.Throws = new InvalidOperationException("closed");
+
+        Assert.Equal(0, await new StuckInstanceCount(_engine, _clock).Current(Token));
+    }
+
+    [Fact]
+    public async Task Concurrent_misses_share_one_read()
+    {
+        Stuck("T-1/step/1");
+        _engine.Hold = new TaskCompletionSource();
+        var count = new StuckInstanceCount(_engine, _clock);
+
+        var first = count.Current(Token).AsTask();
+        var second = count.Current(Token).AsTask();
+        while (!_engine.Calls.ContainsKey("Instances"))
+        {
+            await Task.Delay(5, Token);
+        }
+
+        _engine.Hold.SetResult();
+
+        Assert.Equal([1, 1], await Task.WhenAll(first, second));
+        Assert.Equal(1, _engine.Calls["Instances"]);
+    }
 }

@@ -43,8 +43,25 @@ public sealed class FakeEngineReader : IEngineReader
     /// <inheritdoc/>
     public ValueTask<Result<EngineMirror>> Mirror(CancellationToken cancellationToken) => Answer("Mirror", MirrorFacts);
 
+    /// <summary>When set, <see cref="Instances"/> waits for it (and ignores its token), so a test holds a read open or never answers.</summary>
+    public TaskCompletionSource? Hold { get; set; }
+
+    /// <summary>When set, <see cref="Instances"/> throws it, as a failure that isn't an error result would.</summary>
+    public Exception? Throws { get; set; }
+
     /// <inheritdoc/>
-    public ValueTask<Result<IReadOnlyList<EngineInstanceFacts>>> Instances(CancellationToken cancellationToken) => Answer<IReadOnlyList<EngineInstanceFacts>>("Instances", [.. Running]);
+    public async ValueTask<Result<IReadOnlyList<EngineInstanceFacts>>> Instances(CancellationToken cancellationToken)
+    {
+        Calls["Instances"] = Calls.GetValueOrDefault("Instances") + 1;
+        if (Hold is { } hold)
+        {
+            await hold.Task.ConfigureAwait(false);
+        }
+
+        return Throws is { } failure
+            ? throw failure
+            : Down ? SindriErrors.EngineUnavailable.With("the fake engine is down") : Results.Success<IReadOnlyList<EngineInstanceFacts>>([.. Running]);
+    }
 
     /// <inheritdoc/>
     public ValueTask<Result<EngineHistoryFacts>> History(string reference, int page, int pageSize, CancellationToken cancellationToken)
