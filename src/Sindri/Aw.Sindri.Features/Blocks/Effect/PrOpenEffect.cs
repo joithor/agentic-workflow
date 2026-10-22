@@ -138,6 +138,25 @@ internal sealed class PrOpenEffect(IPullRequests pulls, IForgeRepos repos, IPack
             return Fail("fact:handoff names no packet directory (expected { hash, dir })");
         }
 
+        var handoffFiles = await HandoffFiles(dir, cancellationToken).ConfigureAwait(false);
+        if (handoffFiles.IsError)
+        {
+            return handoffFiles.Error;
+        }
+
+        var path = Path(workspace.Value);
+        var repo = await repos.OfWorkspace(path, cancellationToken).ConfigureAwait(false);
+        if (repo.IsError)
+        {
+            return repo.Error;
+        }
+
+        var request = await Request(Parse(handoffFiles.Value.Pr), handoffFiles.Value.Body, repo.Value, cancellationToken).ConfigureAwait(false);
+        return request.IsError ? request.Error : (request.Value, path);
+    }
+
+    private async ValueTask<Result<(string Pr, string Body)>> HandoffFiles(string dir, CancellationToken cancellationToken)
+    {
         var pr = await files.Read(dir, "pr.json", cancellationToken).ConfigureAwait(false);
         if (pr.IsError)
         {
@@ -145,15 +164,9 @@ internal sealed class PrOpenEffect(IPullRequests pulls, IForgeRepos repos, IPack
         }
 
         var body = await files.Read(dir, "body.md", cancellationToken).ConfigureAwait(false);
-        if (body.IsError)
-        {
-            return Fail($"the hand-off in {dir} has no readable body.md: {body.Error.Message}");
-        }
-
-        var path = Path(workspace.Value);
-        var repo = await repos.OfWorkspace(path, cancellationToken).ConfigureAwait(false);
-        var request = repo.IsError ? default : await Request(Parse(pr.Value), body.Value, repo.Value, cancellationToken).ConfigureAwait(false);
-        return repo.IsError ? repo.Error : request.IsError ? request.Error : (request.Value, path);
+        return body.IsError
+            ? Fail($"the hand-off in {dir} has no readable body.md: {body.Error.Message}")
+            : (pr.Value, body.Value);
     }
 
     private async ValueTask<Result<OpenPull>> Request(JsonObject? pr, string body, PullRepo repo, CancellationToken cancellationToken)
