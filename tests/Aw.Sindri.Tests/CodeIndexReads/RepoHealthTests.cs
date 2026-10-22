@@ -6,6 +6,7 @@ using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Features.CodeIndexReads;
 using IndexRepoHead = Aw.CodeIndex.Core.Model.RepoHead;
+using RepoName = Aw.CodeIndex.Core.Values.RepoName;
 
 namespace Aw.Sindri.Tests.CodeIndexReads;
 
@@ -74,12 +75,10 @@ public sealed class RepoHealthTests
     {
         var health = Of(new RepoStatus(_repo, IndexState.Missing, Commit: null, BuiltAt: null, [], Counts: null), head: null);
 
-        Assert.Equal(("missing", (int?)null), (health.State, health.EmbeddingsPercent));
+        Assert.Equal(("missing", null), (health.State, health.EmbeddingsPercent));
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_detail_that_is_not_a_count_gives_no_percent()
-    {
+    public void A_detail_that_is_not_a_count_gives_no_percent() =>
         Assert.Null(Of(Built("unavailable", "SND-CODEIDX-006"), new IndexRepoHead(_repo, _old, OnDefaultBranch: true)).EmbeddingsPercent);
-    }
 }
