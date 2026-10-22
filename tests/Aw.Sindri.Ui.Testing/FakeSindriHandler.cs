@@ -186,6 +186,10 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
     {
         switch (uri.AbsolutePath["/sindri/context/".Length..])
         {
+            case "code":
+                var code = new CodeQuery([.. query.GetValues("anchor") ?? []], Draft: query["draft"] == "true", MapVersion: query["mapVersion"]);
+                _ = await server.Code(uri, code, cancellationToken);
+                return Answer(server.CodeFor(code));
             case "map":
                 _ = await server.MapStatus(uri, query["anchor"], cancellationToken);
                 return Answer(server.MapStatusAnswer);
