@@ -32,12 +32,12 @@ public abstract partial class SindriApiContract
 
         Expect.Equal(expected: false, applied.AlreadyApplied);
         var (instance, sent) = server.CommandCalls.Single();
-        Expect.Equal((DeskInstance, CommandKind.Answer, AnswerVariant.GrantTokens, (int?)1_000_000), (instance, sent.Kind, sent.Answer, sent.Amount));
+        Expect.Equal((DeskInstance, CommandKind.Answer, AnswerVariant.GrantTokens, 1_000_000), (instance, sent.Kind, sent.Answer, sent.Amount));
         Expect.Equal(("CHL-00000000000000000000000000000001", 1500L), (sent.Challenge!.Challenge, sent.Challenge.HeldMs ?? -1));
     }
 
     [Fact]
-    public async Task ApplyCommand_refused_is_a_problem_with_the_served_words_not_an_exception()
+    public async Task ApplyCommand_refused_grant_is_a_problem_with_the_served_words_not_an_exception()
     {
         var server = new FakeSindriApi { CommandAnswer = RouteAnswer.Problem(HttpStatusCode.UnprocessableEntity, "SND-WF-003", "--grant-tokens 9M is outside 1..4M (fix: use --grant-tokens 1 to --grant-tokens 4M)") };
 

@@ -42,9 +42,9 @@ internal sealed class GrantTokensViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(url);
         (_api, _clock, _url, _instanceId, _address) = (api, clock, url, instance.InstanceId, instance.Address);
         Suggested = SuggestionOf(served);
-        Amount = Suggested;
         Hold = new HoldButtonViewModel(AppConfirm.GrantTokens, catalog, clock, reducedMotion) { Gate = BeginGate };
         TypedBox = new TypedConfirmBoxViewModel(AppConfirm.GrantTokens, catalog, clock);
+        Amount = Suggested;   // after the boxes: setting an amount clears the typed one
         Terminal = Hold.IsReady ? null : new ProtectedActionViewModel(new ProtectedAction(Labels.TerminalVerb(AppConfirm.GrantTokens), served, instance.Address), catalog.Clipboard, clock);
         Hold.Cancelled += (_, _) => Notice = Labels.ApproveHoldAgain;
     }

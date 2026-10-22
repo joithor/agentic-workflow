@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.Tests.Controls;
 using Aw.Sindri.Ui.ViewModels.Confirmations;
@@ -116,7 +117,7 @@ public sealed class GrantTokensTests
         await grant.Tick();
 
         var (instance, sent) = _server.CommandCalls.Single();
-        Assert.Equal(("WFI-44393da815f188cea9c6fe30ae2a30a6", CommandKind.Answer, AnswerVariant.GrantTokens, (int?)1_000_000, (long?)1500L), (instance, sent.Kind, sent.Answer, sent.Amount, sent.Challenge!.HeldMs));
+        Assert.Equal(("WFI-44393da815f188cea9c6fe30ae2a30a6", CommandKind.Answer, AnswerVariant.GrantTokens, 1_000_000, 1500L), (instance, sent.Kind, sent.Answer, sent.Amount, sent.Challenge!.HeldMs));
         Assert.Equal((Address, "CHL-00000000000000000000000000000003"), (sent.Instance, sent.Challenge!.Challenge));
         Assert.Equal((1, true), (granted, grant.IsDone));
     }

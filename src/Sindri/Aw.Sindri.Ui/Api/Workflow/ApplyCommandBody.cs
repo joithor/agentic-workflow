@@ -17,5 +17,5 @@ internal sealed record ApplyCommandBody(string Instance, CommandKind Kind, Answe
     /// <param name="amount">The tokens.</param>
     /// <param name="challenge">The challenge and its answer.</param>
     /// <returns>The body.</returns>
-    internal static ApplyCommandBody GrantTokens(string address, int amount, ChallengeAnswerBody challenge) => new(address, CommandKind.Answer, AnswerVariant.GrantTokens, null, amount, challenge);
+    internal static ApplyCommandBody GrantTokens(string address, int amount, ChallengeAnswerBody challenge) => new(address, CommandKind.Answer, AnswerVariant.GrantTokens, Text: null, Amount: amount, Challenge: challenge);
 }

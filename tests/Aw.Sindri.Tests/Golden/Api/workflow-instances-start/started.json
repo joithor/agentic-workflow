@@ -3,7 +3,7 @@
     "address": "T-1/step/1",
     "recipe": {
       "id": "workflow.step",
-      "version": 2,
+      "version": 4,
       "hash": "sha256:f039848fd714d2a46a4d3d216083bff1815821cd3e3b4f1bc6402bbb44bd54fa"
     },
     "state": "produce",
@@ -63,9 +63,9 @@
     "drift": null,
     "budget": {
       "state": 0,
-      "stateCap": 200000,
+      "stateCap": 1000000,
       "instance": 0,
-      "instanceCap": 400000,
+      "instanceCap": null,
       "perRound": true,
       "overrun": null
     },
