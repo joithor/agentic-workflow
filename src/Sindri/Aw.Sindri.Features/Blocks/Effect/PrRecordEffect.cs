@@ -8,15 +8,12 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 
 /// <summary>
 /// 'effect.pr.record' (PB spec §4.7): appends a 'recheck' or 'docs' row to the merge record, 'babysit.jsonl' in the instance's run area, written from the fact
-/// the child returned. A row carries its kind, the effect identity (what keeps a repeated dispatch from writing twice), the instance, the head 'fact:prState' holds,
-/// the time and the result. It replies nothing.
+/// the child returned. The shared 'MergeRecord' writes it, keyed by the effect identity so a repeated dispatch writes once; the row carries the head 'fact:prState' holds and the result. It replies nothing.
 /// </summary>
 /// <param name="record">The merge record's writer.</param>
 /// <param name="contents">Reads the facts it takes.</param>
 internal sealed class PrRecordEffect(MergeRecord record, IFactContents contents) : IEffectKind, IDescribedBlock
 {
-    private const string Record = "babysit.jsonl";
-
     /// <inheritdoc/>
     public static BlockDescriptor Descriptor => PrEffects.Record;
 
@@ -32,30 +29,14 @@ internal sealed class PrRecordEffect(MergeRecord record, IFactContents contents)
 
         var result = await PrEffectFacts.Content(context, "result", contents, cancellationToken).ConfigureAwait(false);
         var state = result.IsError ? result.Error : await PrEffectFacts.Held(context, "fact:prState", contents, cancellationToken).ConfigureAwait(false);
-        var before = state.IsError ? state.Error : await area.Read(context.Instance, Record, cancellationToken).ConfigureAwait(false);
-        if (before.IsError)
+        if (state.IsError)
         {
-            return before.Error;
+            return state.Error;
         }
 
-        if (Written(before.Value, context.Identity))
-        {
-            return new EffectDone(Reply: null, Existed: true);
-        }
-
-        var row = new JsonObject
-        {
-            ["kind"] = kind.GetString(),
-            ["identity"] = context.Identity,
-            ["instance"] = context.Instance,
-            ["headSha"] = state.Value is { } held ? PrEffectFacts.Head(held) : null,
-            ["at"] = clock.GetUtcNow().ToString("O", System.Globalization.CultureInfo.InvariantCulture),
-            ["result"] = JsonNode.Parse(result.Value.GetRawText()),
-        };
-        var written = await area.Write(context.Instance, Record, row.ToJsonString() + "\n", append: true, cancellationToken).ConfigureAwait(false);
-        return written.IsError ? written.Error : new EffectDone(Reply: null, Existed: false);
+        var fields = new JsonObject { ["result"] = JsonNode.Parse(result.Value.GetRawText()) };
+        var row = new MergeRow(context.Instance, context.Identity, kind.GetString()!, state.Value is { } held ? PrEffectFacts.Head(held) : null, fields);   // why: checked to be a string just above
+        var written = await record.Append(row, cancellationToken).ConfigureAwait(false);
+        return written.IsError ? written.Error : new EffectDone(Reply: null, Existed: !written.Value);
     }
-
-    private static bool Written(string record, string identity) =>
-        record.Split('\n', StringSplitOptions.RemoveEmptyEntries).Any(line => line.Contains("\"identity\":" + JsonValue.Create(identity).ToJsonString(), StringComparison.Ordinal));
 }

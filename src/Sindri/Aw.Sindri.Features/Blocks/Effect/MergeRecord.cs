@@ -35,8 +35,42 @@ internal sealed class MergeRecord(IRunArea area, TimeProvider clock)
     /// <returns>True when the row was written, false when its identity was already recorded; an error for an unknown kind or a run area that can't be read or written.</returns>
     public async ValueTask<Result<bool>> Append(MergeRow row, CancellationToken cancellationToken)
     {
-        await Task.CompletedTask.ConfigureAwait(false);
-        throw new NotSupportedException();
+        ArgumentNullException.ThrowIfNull(row);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!_kinds.Contains(row.Kind))
+        {
+            return WorkflowErrors.EffectFailed.With($"the merge record of {row.Instance} has no row kind '{row.Kind}' (PB spec §4.7)");
+        }
+
+        var before = await area.Read(row.Instance, FileName, cancellationToken).ConfigureAwait(false);
+        if (before.IsError)
+        {
+            return before.Error;
+        }
+
+        if (Written(before.Value, row.Identity))
+        {
+            return false;
+        }
+
+        var line = new JsonObject
+        {
+            ["kind"] = row.Kind,
+            ["identity"] = row.Identity,
+            ["instance"] = row.Instance,
+            ["headSha"] = row.HeadSha,
+            ["at"] = clock.GetUtcNow().ToString("O", System.Globalization.CultureInfo.InvariantCulture),
+        };
+        foreach (var (name, value) in row.Fields)
+        {
+            if (!line.ContainsKey(name))
+            {
+                line[name] = value?.DeepClone();
+            }
+        }
+
+        var written = await area.Write(row.Instance, FileName, line.ToJsonString() + "\n", append: true, cancellationToken).ConfigureAwait(false);
+        return written.IsError ? written.Error : true;
     }
 
     private static bool Written(string record, string identity)

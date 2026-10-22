@@ -54,6 +54,7 @@ internal static class BlockRegistrations
         .AddGate<RouteStartableGate>()     // engine P7 unit U1: a stub over the profile's workflow.route
         .AddEffect<ClaimRefEffect>()      // engine P6 unit (d)
         .AddEffect<NotifyDeskEffect>()    // engine P6 unit (c)
+        .AddSingleton<MergeRecord>()      // PB-B: the merge record's one writer
         .AddEffect<PrPushEffect>()        // PB-E: the lease push
         .AddEffect<PrRecordEffect>()      // PB-E: the merge record's recheck and docs rows
         .AddEffect<PrRerunChecksEffect>() // PB-E: re-run a flaky check
