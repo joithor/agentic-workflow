@@ -56,7 +56,14 @@
         {
           "repo": "demo",
           "state": "done",
-          "detail": "Claude Code"
+          "detail": "Claude Code",
+          "providers": [
+            {
+              "provider": "claude",
+              "state": "connected",
+              "detail": null
+            }
+          ]
         }
       ]
     },
