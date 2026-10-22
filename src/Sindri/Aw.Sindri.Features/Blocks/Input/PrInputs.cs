@@ -4,7 +4,7 @@ using Aw.Sindri.Core.Workflow.Ids;
 namespace Aw.Sindri.Features.Blocks.Input;
 
 /// <summary>
-/// The Step inputs of the PR babysitter's agent Steps (PB spec §10.1): 'input.pr.context' is descriptor-only until the forge port lands; 'input.phase-packet' and 'input.handoff-note' have their runtimes in <see cref="PhasePacketInput"/> and <see cref="HandoffNoteInput"/> (their descriptors live here, so the pinned hashes stay).
+/// The Step inputs of the PR babysitter's agent Steps (PB spec §10.1): 'input.pr.context' has its runtime in <see cref="PrContextInput"/>, 'input.phase-packet' and 'input.handoff-note' in <see cref="PhasePacketInput"/> and <see cref="HandoffNoteInput"/> (their descriptors live here, so the pinned hashes stay).
 /// </summary>
 internal static class PrInputs
 {
