@@ -5,5 +5,5 @@ namespace Aw.Sindri.Features.Docs;
 internal sealed record DocsCheckResponse(IReadOnlyList<DocsCheckFinding> Findings)
 {
     /// <summary>Whether the docs pass: exit 0.</summary>
-    internal bool Passed => Findings.Count == 0;
+    public bool Passed => Findings.Count == 0;
 }
