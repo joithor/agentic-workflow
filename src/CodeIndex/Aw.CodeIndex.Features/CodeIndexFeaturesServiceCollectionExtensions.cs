@@ -16,6 +16,9 @@ public static class CodeIndexFeaturesServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         return services
             .AddSingleton<StructureWriter>()
+            .AddSingleton<EmbeddingsLayer>()
+            .AddSingleton<GraphLayer>()
+            .AddSingleton<BuildLayers>()
             .AddSingleton<IService<BuildCodeIndexRequest, BuildReport>, BuildCodeIndexService>()
             .AddSingleton<ICodeIndex, CodeIndexFacade>();
     }

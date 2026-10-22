@@ -32,4 +32,20 @@ internal partial interface ISindriApi
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The job, the API's refusal, or SND-UI-002/003.</returns>
     public Task<Result<ApproveAllJob>> ApproveAllJob(Uri api, string id, CancellationToken cancellationToken);
+
+    /// <summary>POST /sindri/profile/approve: approves the live profile by redeeming its typed challenge. A human token only; sent once, never retried by the app.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="request">The full hash and the answer.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The approval, SND-AUTH-002 for an agent session, the API's other refusals (a stale hash, a wrong answer), or SND-UI-002/003.</returns>
+    public Task<Result<ProfileApproved>> ApproveProfile(Uri api, ApproveProfileRequest request, CancellationToken cancellationToken);
+
+    /// <summary>POST /sindri/workflow/recipes/{id}@{hash}/approve: approves one changed workflow by redeeming its typed challenge. A human token only; sent once, never retried by the app.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="id">The recipe's id.</param>
+    /// <param name="hash">The hash to approve, as the recipe list serves it.</param>
+    /// <param name="answer">The challenge and the text the person typed.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The accepted approval, SND-AUTH-002 for an agent session, the API's other refusals, or SND-UI-002/003.</returns>
+    public Task<Result<RecipeApproved>> ApproveRecipe(Uri api, string id, string hash, ProfileAnswer answer, CancellationToken cancellationToken);
 }

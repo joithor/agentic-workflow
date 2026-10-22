@@ -12,7 +12,8 @@
 #   --title TEXT     the item's title (default: the feature file's first heading)
 #   --stall SECONDS  no progress for this long is a stop (default 300)
 #   --max-wait SEC   the whole follow gives up after this long (default 3600)
-#   --auto-desk      answer a desk state with its default outcome (the first the status offers), recording each
+#   --auto-desk      answer a desk state with its default outcome (the first the status offers), and a budget park
+#                    with a grant of 200k tokens (the most one grant may give), recording each
 #   --map FILE       the context map to import (authored map format, docs/sindri/demo-handoff.md 5b); default: a small
 #                    map generated for the feature (its doc, one surface, one code node)
 #   --code FILE      the repo file the generated map says the feature changes (default: the first repo file the
@@ -101,8 +102,43 @@ resolve_sindri() {
 
 # ---- the run -------------------------------------------------------------------------------------------------
 
-SCRATCH="" SERVE_PID="" HOME_DIR="" REPO="" ITEM="" ADDRESS="" EVENTS_SEEN=0
+SCRATCH="" SERVE_PID="" HOME_DIR="" REPO="" ITEM="" ADDRESS="" EVENTS_SEEN=0 AW_STATE_DIR_REAL="" FEATURE_REL=""
 DESK_LOG=() FINDINGS=()
+# The script's own globals are set above, so they read plainly: check-env-example.sh takes a default-value expansion for an env read.
+or_none() { if [ -n "$1" ]; then printf '%s' "$1"; else printf none; fi; }
+
+# The agent sessions serve launches run in tmux sessions snd-LCH-* on the socket sindri-launch, shared with the owner's Sindri.
+# Only a session whose pane process (or a descendant) has AW_SINDRI_HOME equal to $1 is killed. launch_tmux, proc_children and
+# proc_environ are seams the test overrides.
+launch_tmux() { tmux -L sindri-launch "$@"; }
+proc_children() { pgrep -P "$1" 2>/dev/null || true; }
+proc_environ() { # one NAME=value per line
+  if [ "$(uname -s)" = Darwin ]; then ps eww -p "$1" -o command= 2>/dev/null | tr ' ' '\n'
+  else tr '\0' '\n' < "/proc/$1/environ" 2>/dev/null; fi
+}
+pid_has_home() { # the pid or a descendant (three levels) has AW_SINDRI_HOME=$2
+  local c g
+  proc_environ "$1" | grep -qxF "AW_SINDRI_HOME=$2" && return 0
+  for c in $(proc_children "$1"); do
+    proc_environ "$c" | grep -qxF "AW_SINDRI_HOME=$2" && return 0
+    for g in $(proc_children "$c"); do proc_environ "$g" | grep -qxF "AW_SINDRI_HOME=$2" && return 0; done
+  done
+  return 1
+}
+kill_launched_sessions() {
+  local home="$1" s p
+  [ -n "$home" ] || return 0
+  while IFS= read -r s; do
+    case "$s" in snd-LCH-*) ;; *) continue ;; esac
+    while IFS= read -r p; do
+      [ -n "$p" ] || continue
+      if pid_has_home "$p" "$home"; then
+        launch_tmux kill-session -t "=$s" > /dev/null 2>&1 && say "ended agent session $s"
+        break
+      fi
+    done < <(launch_tmux list-panes -t "=$s" -F '#{pane_pid}' 2>/dev/null)
+  done < <(launch_tmux list-sessions -F '#{session_name}' 2>/dev/null)
+}
 
 cleanup() {
   local rc=$?
@@ -116,6 +152,9 @@ cleanup() {
         kill -0 "$pid" 2>/dev/null && kill "$pid" 2>/dev/null
       fi
     fi
+    # the agent sessions serve launched outlive it: end this home's, with --keep too (a live agent with no serve is useless)
+    [ "$KEEP" != 1 ] || say "--keep keeps $SCRATCH, but the agent sessions serve launched are ended: they are useless without serve"
+    kill_launched_sessions "$HOME_DIR"
   fi
   if [ -n "$SCRATCH" ]; then
     if [ "$KEEP" = 1 ]; then say "kept $SCRATCH"; else
@@ -132,7 +171,7 @@ human() { "$PROVE" human "$@"; }
 hjson() { human "$@" | sed -n '/^[{[]/,$p'; }   # the JSON part of a human call (the pty may add a line before it)
 
 heavy_prefix() {
-  local h="${AW_STATE_DIR_REAL:-$HOME/.agentic-workflow}/bin-r1b/heavy"
+  local h="$AW_STATE_DIR_REAL"; [ -n "$h" ] || h="$HOME/.agentic-workflow"; h="$h/bin-r1b/heavy"
   [ -x "$h" ] && printf '%s\n' "$h --expensive"
 }
 
@@ -216,30 +255,69 @@ approve_recipes() {
   for f in $pending; do id="$(sed -n 's/^id: *//p' "$f" | head -1)"; REFUSED+=("$id"); done
 }
 
-# Writes a small authored map for the feature to $1 (outside any git worktree: the scratch dir).
-generate_map() {
-  local file="$1" code="$CODE_FILE" c
-  if [ -z "$code" ]; then
+# Picks the files the generated map joins to the feature: CODE (up to three, existing, not tests) and TESTF (at most one test
+# file). --code FILE comes first, then the files the feature names in backticks, then fallbacks that exist in the clone.
+is_test_path() { case "$1" in tests/* | */tests/* | */test/* | *Test.* | *Tests.* | *.test.* | *.spec.*) return 0 ;; *) return 1 ;; esac; }
+add_code() {
+  local x
+  for x in "${CODE[@]:-}"; do [ "$x" = "$1" ] && return 0; done
+  [ "${#CODE[@]}" -ge 3 ] || CODE+=("$1")
+  return 0
+}
+pick_map_files() {
+  local c f; CODE=() TESTF=""
+  if [ -n "$CODE_FILE" ]; then
+    [ -f "$REPO/$CODE_FILE" ] || die "the code file $CODE_FILE is not in the clone (--code)"
+    add_code "$CODE_FILE"
+  else
     for c in $(grep -oE '`[A-Za-z0-9_./-]+\.[a-z]+`' "$REPO/$FEATURE_REL" | tr -d '`'); do
-      if [ -f "$REPO/$c" ]; then code="$c"; break; fi
+      [ -f "$REPO/$c" ] || continue
+      if is_test_path "$c"; then [ -n "$TESTF" ] || TESTF="$c"; else add_code "$c"; fi
     done
   fi
-  code="${code:-docs/sindri/README.md}"
-  [ -f "$REPO/$code" ] || die "the code file $code is not in the clone (--code)"
-  cat > "$file" <<EOF
+  if [ "${#CODE[@]}" -lt 2 ]; then
+    [ ! -f "$REPO/docs/sindri/README.md" ] || add_code docs/sindri/README.md
+    while IFS= read -r f; do
+      [ "${#CODE[@]}" -ge 2 ] && break
+      is_test_path "$f" || add_code "$f"
+    done < <(git -C "$REPO" ls-files 'src/*.cs' 2>/dev/null)
+  fi
+  [ "${#CODE[@]}" -ge 1 ] || die "no code file for the map: the clone has none to fall back to (--code)"
+  [ -n "$TESTF" ] || TESTF="$(git -C "$REPO" ls-files 'tests/*Tests.cs' 2>/dev/null | head -1)"
+  return 0
+}
+
+# Writes an authored map for the feature to $1 (outside any git worktree: the scratch dir): a feature, two surfaces that are
+# part-of it, code nodes that implement them, a test file joined by a tests edge, and the record that mentions the feature.
+generate_map() {
+  local file="$1" i=0 c surf
+  pick_map_files
+  {
+    cat <<EOF
 schemaVersion: 1
 kind: authored
 repo: repo
 nodes:
   - {key: "feature:sandbox", label: "Sandbox feature"}
   - {key: "surface:screen/sandbox", label: "The page the feature changes"}
-  - {key: "code:$code", label: "$(basename "$code")", provenance: deterministic}
+  - {key: "surface:report/sandbox-docs", label: "The docs the feature changes"}
+EOF
+    for c in "${CODE[@]}"; do printf '  - {key: "code:%s", label: "%s", provenance: deterministic}\n' "$c" "$(basename "$c")"; done
+    [ -z "$TESTF" ] || printf '  - {key: "code:%s", label: "%s", provenance: deterministic}\n' "$TESTF" "$(basename "$TESTF")"
+    cat <<EOF
   - {key: "record:repo:repo/$FEATURE_REL", label: "$(feature_title)"}
 edges:
-  - {from: "record:repo:repo/$FEATURE_REL", to: "surface:screen/sandbox", type: mentions}
   - {from: "surface:screen/sandbox", to: "feature:sandbox", type: part-of}
-  - {from: "code:$code", to: "surface:screen/sandbox", type: implements, evidence: [{key: "repo:repo/$code"}]}
+  - {from: "surface:report/sandbox-docs", to: "feature:sandbox", type: part-of}
+  - {from: "record:repo:repo/$FEATURE_REL", to: "feature:sandbox", type: mentions}
 EOF
+    for c in "${CODE[@]}"; do
+      surf="surface:screen/sandbox"; [ $((i % 2)) = 1 ] && surf="surface:report/sandbox-docs"
+      printf '  - {from: "code:%s", to: "%s", type: implements, evidence: [{key: "repo:repo/%s"}]}\n' "$c" "$surf" "$c"
+      i=$((i + 1))
+    done
+    [ -z "$TESTF" ] || printf '  - {from: "code:%s", to: "surface:screen/sandbox", type: tests, evidence: [{key: "repo:repo/%s"}]}\n' "$TESTF" "$TESTF"
+  } > "$file"
 }
 
 # Imports the map as the human: the first call types a wrong line (the prompt waits for one; end of input hangs it), which
@@ -277,7 +355,7 @@ stop_block() { # $1 = state, $2 = reason, $3 = address (may be empty)
   echo "=================== STOP ==================="
   echo "state:   $state"
   echo "reason:  $reason"
-  echo "item:    ${ITEM:-none}   root: ${ADDRESS:-none}   scratch: ${SCRATCH:-none}"
+  echo "item:    $(or_none "$ITEM")   root: $(or_none "$ADDRESS")   scratch: $(or_none "$SCRATCH")"
   if [ -n "$ITEM" ]; then
     echo "--- instances"; instances | sed 's/^/  /'
     if [ -n "$addr" ]; then
@@ -301,7 +379,7 @@ main() {
   if [ "$PRINT_CONFIG" = 1 ]; then
     guard_scratch "${TMPDIR:-/tmp}" 2>/dev/null || true
     printf 'feature=%s\nsindri=%s\nrepo=%s\nstart=%s\nstall=%s\nmax-wait=%s\nauto-desk=%s\ndesk-max=%s\nagent=%s\ncontext=%s\nkeep=%s\n' \
-      "$FEATURE" "${sindri_cmd:-publish}" "$REPO_SRC" "$START" "$STALL" "$MAX_WAIT" "$AUTO_DESK" "$DESK_MAX" "${AGENT:-none}" "$CONTEXT" "$KEEP"
+      "$FEATURE" "${sindri_cmd:-publish}" "$REPO_SRC" "$START" "$STALL" "$MAX_WAIT" "$AUTO_DESK" "$DESK_MAX" "$(or_none "$AGENT")" "$CONTEXT" "$KEEP"
     exit 0
   fi
   for t in git jq curl script; do command -v "$t" >/dev/null || die "$t is required"; done
@@ -331,7 +409,7 @@ main() {
     "$(cd -P "$REPO_SRC" && pwd -P)"/*) FEATURE_REL="${FEATURE#"$REPO_SRC"/}"; [ -f "$REPO/$FEATURE_REL" ] || FEATURE_REL="" ;;
     *) FEATURE_REL="" ;;
   esac
-  if [ -z "${FEATURE_REL:-}" ]; then FEATURE_REL="docs/sandbox-feature.md"; mkdir -p "$REPO/docs"; cp "$FEATURE" "$REPO/$FEATURE_REL"; fi
+  if [ -z "$FEATURE_REL" ]; then FEATURE_REL="docs/sandbox-feature.md"; mkdir -p "$REPO/docs"; cp "$FEATURE" "$REPO/$FEATURE_REL"; fi
   git -C "$REPO" add -A >/dev/null 2>&1; git -C "$REPO" commit -qm "sandbox: the feature brief" >/dev/null 2>&1 || true
 
   # 4. the forge: the file adapter's world is $AW_STATE_DIR/forge/file, inside the scratch dir
@@ -352,7 +430,7 @@ main() {
 
   # 6. the item and the start
   local title out
-  title="${TITLE:-$(feature_title)}"
+  title="$TITLE"; [ -n "$title" ] || title="$(feature_title)"
   out="$(human item add "$title" --repo repo 2>&1)"
   ITEM="$(printf '%s\n' "$out" | grep -oE 'ITM-[0-9a-f]+' | head -1)"
   [ -n "$ITEM" ] || die "item add gave no id: $out"
@@ -401,6 +479,9 @@ follow() {
       if { [ "$chip" = "WITH YOU" ] || [ "$chip" = DECISION ]; } && [ "$AUTO_DESK" = 1 ]; then   # a desk task shows as DECISION or WITH YOU
         if auto_desk "$addr"; then last_change="$(date +%s)"; sleep 1; continue; fi
       fi
+      if [ "$chip" = PARKED ] && [ "$AUTO_DESK" = 1 ]; then   # a budget park gets a grant: a scratch home, the point is the next stop
+        case "$reason" in budget*) if auto_grant "$addr"; then last_change="$(date +%s)"; sleep 1; continue; fi ;; esac
+      fi
       case "$chip" in
         "WITH YOU" | DECISION) stop_block "desk" "$recipe has an open desk task (chip $chip) in state $state: a Step the line can't run itself, answered by a human or an agent" "$addr" ;;
         PARKED)     stop_block "parked" "$recipe parked in $state: ${reason:-unknown}" "$addr" ;;
@@ -413,10 +494,29 @@ follow() {
   done
 }
 
+# Answers a budget park with a token grant of $GRANT_TOKENS (an answer on a parent is forwarded to the parked child).
+# Shares --desk-max with the desk answers; each grant is in the summary's desk list. Returns 1 at --desk-max.
+GRANT_TOKENS=200000   # the most one grant may give (SND-WF-003)
+auto_grant() {
+  local addr="$1"
+  [ "${#DESK_LOG[@]}" -lt "$DESK_MAX" ] || return 1
+  say "auto-desk: $addr grant $GRANT_TOKENS tokens"
+  DESK_LOG+=("$addr grant-tokens $GRANT_TOKENS")
+  # a grant is a protected answer: the human types the challenge's action back at the terminal. The challenge names the
+  # parked child (an answer on a parent is forwarded), so a first call that types an empty line (refused, nothing
+  # recorded) reads it from the preview. Not </dev/null: the pty never passes the end of input on, so that call waits.
+  local challenge
+  challenge="$(printf '\n' | human workflow answer "$addr" --grant-tokens "$GRANT_TOKENS" 2>&1 | sed -n "s/.*type '\([^']*\)' to confirm.*/\1/p" | head -1)"
+  [ -n "$challenge" ] || challenge="grant-tokens $GRANT_TOKENS $addr"
+  printf '%s\n' "$challenge" | human workflow answer "$addr" --grant-tokens "$GRANT_TOKENS" 2>&1 | tail -2 | sed 's/^/  /' >&2
+  return 0
+}
+
 # Answers a desk state with the first outcome its status offers: the status text prints the command ("sindri workflow
-# complete <address> --run <token> --outcome <o> --output fact:<name>=<file> ..."), and each output gets a file holding
-# {} (the placeholder: whatever checks the fact next says so, and that stop is the finding). Returns 1 when the status
-# offers no complete command or --desk-max answers were given.
+# complete <address> --run <token> --outcome <o> --output fact:<name>=<file> ..."), where <o> may be a choice
+# ("<answered|doneAsking>"); an interview's choice takes doneAsking, which closes it instead of asking again. Each output
+# gets a placeholder file: [] for fact:answers (no answers), {} for any other (whatever checks the fact next says so, and
+# that stop is the finding). Returns 1 when the status offers no complete command or --desk-max answers were given.
 auto_desk() {
   local addr="$1" st text run outcome outs=() key f n=${#DESK_LOG[@]} args=()
   [ "$n" -lt "$DESK_MAX" ] || return 1
@@ -425,14 +525,30 @@ auto_desk() {
   case "$text" in *"workflow complete"*) ;; *) return 1 ;; esac
   run="$(printf '%s' "$text" | grep -oE -- '--run [^ ]+' | head -1 | cut -d' ' -f2)"
   outcome="$(printf '%s' "$text" | grep -oE -- '--outcome [^ ]+' | head -1 | cut -d' ' -f2)"
+  case "$outcome" in
+    "<"*">") outcome="${outcome#<}"; outcome="${outcome%>}"
+             case "|$outcome|" in *"|doneAsking|"*) outcome=doneAsking ;; *) outcome="${outcome%%|*}" ;; esac ;;
+  esac
   [ -n "$run" ] && [ -n "$outcome" ] || return 1
   mkdir -p "$SCRATCH/desk"
   for key in $(printf '%s' "$text" | grep -oE -- '--output fact:[A-Za-z0-9_]+=' | sed 's/--output //; s/=$//'); do
-    f="$SCRATCH/desk/$n-${key#fact:}.json"; printf '{}\n' > "$f"; args+=(--output "$key=$f")
+    f="$SCRATCH/desk/$n-${key#fact:}.json"; args+=(--output "$key=$f")
+    if [ "$key" = fact:answers ]; then printf '[]\n' > "$f"; else printf '{}\n' > "$f"; fi
   done
   say "auto-desk: $addr run $run outcome $outcome ${args[*]:-}"
   DESK_LOG+=("$addr run $run -> $outcome ${args[*]:-}")
-  human workflow complete "$addr" --run "$run" --outcome "$outcome" ${args[@]+"${args[@]}"} 2>&1 | tail -2 | sed 's/^/  /' >&2
+  # The printed command can leave out an output the outcome needs (an interview's doneAsking also writes
+  # fact:interviewClosed); a refusal that names one gets its placeholder and one more try per fact.
+  local out tries=0
+  while :; do
+    out="$(human workflow complete "$addr" --run "$run" --outcome "$outcome" ${args[@]+"${args[@]}"} 2>&1 | tail -2)"
+    key="$(printf '%s' "$out" | grep -oE 'required output fact:[A-Za-z0-9_]+' | head -1 | sed 's/required output //')"
+    [ -n "$key" ] && [ "$tries" -lt 3 ] || break
+    tries=$((tries + 1)); f="$SCRATCH/desk/$n-${key#fact:}.json"; printf '{}\n' > "$f"; args+=(--output "$key=$f")
+    say "auto-desk: $addr also needs $key"
+    DESK_LOG[${#DESK_LOG[@]}-1]="$addr run $run -> $outcome ${args[*]}"
+  done
+  printf '%s\n' "$out" | sed 's/^/  /' >&2
   return 0
 }
 

@@ -1,5 +1,7 @@
 using Aw.CodeIndex.Core.Ports;
 using Aw.CodeIndex.Infrastructure.Deps;
+using Aw.CodeIndex.Infrastructure.Embedding;
+using Aw.CodeIndex.Infrastructure.Graph;
 using Aw.CodeIndex.Infrastructure.Parsing;
 using Aw.CodeIndex.Infrastructure.Scrubbing;
 using Aw.CodeIndex.Infrastructure.Snapshot;
@@ -25,7 +27,9 @@ public static class CodeIndexInfrastructureServiceCollectionExtensions
             .AddSingleton<IRepoSnapshot, GitRepoSnapshot>()
             .AddSingleton<ISymbolParser, CSharpParser>()
             .AddSingleton<IBodyScrubber, RedactingBodyScrubber>()
+            .AddSingleton<IEmbedder, OllamaEmbedder>()
             .AddSingleton<IParseQuarantine>(_ => new FileParseQuarantine(settings.IndexDirectory))
+            .AddSingleton<IGraphRunner>(provider => new GraphifyRunner(GraphifyOptions.FromEnvironment(environment), provider.GetRequiredService<IBodyScrubber>()))
             .AddSingleton<IManifestReader, PackageJsonReader>()
             .AddSingleton<IManifestReader, CsprojReader>()
             .AddSingleton<IManifestReader, CentralPackagesReader>()

@@ -31,15 +31,21 @@ internal sealed class BuildHarness
 
     public FakeBodyScrubber Scrubber { get; init; } = new();
 
+    public FakeGraphRunner? Graph { get; init; }
+
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 10, 21, 9, 0, 0, TimeSpan.Zero));
 
-    public CodeIndexRepo Repo { get; } = new(Name, "/work/api", CodeIndexSettings.Default);
+    public FakeEmbedder Embedder { get; init; } = new();
+
+    public CodeIndexSettings Settings { get; init; } = CodeIndexSettings.Default;
+
+    public CodeIndexRepo Repo => new(Name, "/work/api", Settings);
 
     public CodeIndexScope Scope => new([Repo], new CodeIndexCaller(CallerKind.Service, Repo: null));
 
-    public BuildCodeIndexService Service => new(Heads, Snapshot, new StructureWriter(Snapshot, [Parser], Quarantine, Scrubber), Store, Heavy, Clock);
+    public BuildCodeIndexService Service => new(Heads, Snapshot, new StructureWriter(Snapshot, [Parser], Quarantine, Scrubber), new BuildLayers(new EmbeddingsLayer(Embedder, Clock), new GraphLayer(Snapshot, Clock, Graph)), Store, Heavy, Clock);
 
-    public CodeIndexFacade Facade => new(Service, Store);
+    public CodeIndexFacade Facade => new(Service, Store, Embedder, Graph);
 
     public async Task<BuildReport> Build(CommitSha commit, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
     {

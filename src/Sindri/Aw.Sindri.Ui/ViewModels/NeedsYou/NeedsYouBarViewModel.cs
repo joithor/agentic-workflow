@@ -9,7 +9,7 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// only its command copied. A, D and Ctrl+Enter reach the same methods the buttons do. This file holds the state and what the bar
 /// shows for a request; the words are in NeedsYouBarViewModel.Look.cs and the presses in NeedsYouBarViewModel.Actions.cs.
 /// </summary>
-internal sealed partial class NeedsYouBarViewModel(DeskReporter desk, IClipboard clipboard, TimeProvider clock) : ObservableObject
+internal sealed partial class NeedsYouBarViewModel : ObservableObject
 {
     private const string InstanceKind = "instance";
     private const string CompleteStepAction = "CompleteStep";
@@ -20,13 +20,27 @@ internal sealed partial class NeedsYouBarViewModel(DeskReporter desk, IClipboard
         nameof(Mode), nameof(IsPending), nameof(IsSendingBack), nameof(IsConfirmingDrop), nameof(IsApproved), nameof(ShowsActions), nameof(ApproveWord), nameof(ApproveName), nameof(IsAsking), nameof(ShowsPrimary), nameof(PrimaryEnabled),
         nameof(ShowsTerminal), nameof(TerminalWord), nameof(TerminalButton), nameof(TerminalName), nameof(ShowsSendBack), nameof(SendBackEnabled), nameof(SendBackWord), nameof(SendBackName), nameof(SendBackTooltip), nameof(ShowsEditChip),
         nameof(ShowsDrop), nameof(ShowsRowControls), nameof(Hint), nameof(HasHint), nameof(HintIsAttention), nameof(HintIsSuccess), nameof(Refusal), nameof(HasRefusal), nameof(ReasonRequired), nameof(ReasonPlaceholder), nameof(CanSend),
-        nameof(SendWord), nameof(IsSending), nameof(DoneTitle), nameof(DoneBody), nameof(HasBar), nameof(MoreName), nameof(BarName),
+        nameof(SendWord), nameof(IsSending), nameof(DoneTitle), nameof(DoneBody), nameof(HasBar), nameof(MoreName), nameof(BarName), nameof(ShowsTyped), nameof(TypedBox), nameof(ShowsHold), nameof(ShowsConfirm), nameof(ConfirmEnabled),
     ];
 
+    private readonly DeskReporter _desk;
+    private readonly IClipboard _clipboard;
+    private readonly TimeProvider _clock;
+    private readonly NeedsYouConfirm? _confirm;
     private NeedsYouRowViewModel? _row;
     private DeskTarget? _target;
     private bool _targetKnown;
     private NeedsYouBarOutcome _done;
+
+    /// <param name="desk">Reports an open desk run.</param>
+    /// <param name="clipboard">Copies a protected action's command.</param>
+    /// <param name="clock">The clock for "Copied".</param>
+    /// <param name="confirm">The typed and held confirmations of the three protected approvals the app confirms; null shows their terminal copy only.</param>
+    internal NeedsYouBarViewModel(DeskReporter desk, IClipboard clipboard, TimeProvider clock, NeedsYouConfirm? confirm = null)
+    {
+        (_desk, _clipboard, _clock, _confirm) = (desk, clipboard, clock, confirm);
+        _confirm?.Changed += OnConfirmChanged;
+    }
 
     /// <summary>Raised when the bar asks to answer a decision: the shell sends it as the decision sheet would.</summary>
     internal event EventHandler<NeedsYouDecisionEventArgs>? DecisionRequested;
@@ -115,7 +129,7 @@ internal sealed partial class NeedsYouBarViewModel(DeskReporter desk, IClipboard
         NeedsYouGroupKind.Decisions => BarKind.Decision,
         NeedsYouGroupKind.Settings => BarKind.Settings,
         NeedsYouGroupKind.Runs => BarKind.Run,
-        NeedsYouGroupKind.Failures or NeedsYouGroupKind.Other => BarKind.None,
+        NeedsYouGroupKind.Failures or NeedsYouGroupKind.Other => NeedsYouConfirm.IsApproval(_row.Entry) ? BarKind.Settings : BarKind.None,
         _ => throw new InvalidOperationException("a group the app doesn't know"),
     };
 
@@ -154,7 +168,8 @@ internal sealed partial class NeedsYouBarViewModel(DeskReporter desk, IClipboard
         (_target, _targetKnown, _done) = (null, false, NeedsYouBarOutcome.None);
         (IsSending, HintIsSuccess) = (false, false);
         (Mode, ReasonText, Refusal, ReadToEnd) = (NeedsYouBarMode.Pending, "", "", false);
-        Loaded = row is not null && Kind == BarKind.Desk && InstanceOf(row) is { } instance ? Read(instance, row.Id) : Task.CompletedTask;
+        var read = row is not null && Kind == BarKind.Desk && InstanceOf(row) is { } instance ? Read(instance, row.Id) : Task.CompletedTask;
+        Loaded = Task.WhenAll(read, _confirm?.Show(row) ?? Task.CompletedTask);
         Refresh();
     }
 
@@ -163,7 +178,7 @@ internal sealed partial class NeedsYouBarViewModel(DeskReporter desk, IClipboard
 
     private async Task Read(string instance, string rowId)
     {
-        var target = await desk.Load(instance).ConfigureAwait(true);
+        var target = await _desk.Load(instance).ConfigureAwait(true);
         if (_row is not null && string.Equals(_row.Id, rowId, StringComparison.Ordinal))
         {
             (_target, _targetKnown) = (target, true);

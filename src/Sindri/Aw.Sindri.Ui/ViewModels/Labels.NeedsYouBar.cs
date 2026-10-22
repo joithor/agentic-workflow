@@ -9,6 +9,15 @@ internal static partial class Labels
     /// <summary>The primary action while it asks first (the request was not read to the end).</summary>
     internal const string NeedsYouApproveAsk = "Approve?";
 
+    /// <summary>Said when the typed challenge ran out before it was sent: a new phrase is shown.</summary>
+    internal const string NeedsYouTypedExpired = "That took too long. A new phrase is shown: type it again.";
+
+    /// <summary>Said when Sindri answered but did not approve the profile.</summary>
+    internal const string NeedsYouNotApproved = "Sindri did not approve it. Ask again from the box.";
+
+    /// <summary>Said when the workflow a row names is not in the list Sindri serves any more.</summary>
+    internal const string NeedsYouRecipeGone = "Sindri doesn't list that workflow any more. Reload and try again.";
+
     /// <summary>The secondary action of a request.</summary>
     internal const string NeedsYouSendBack = "Send back";
 

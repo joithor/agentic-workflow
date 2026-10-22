@@ -27,7 +27,7 @@ internal sealed partial class ShellViewModel
     public bool IsInboxShown => IsNeedsYouInbox && IsPageVisible;
 
     /// <summary>The pages' scrolling region shows: the pages are visible and the inbox, which scrolls itself, does not take their place.</summary>
-    public bool IsPagesShown => IsPageVisible && !IsNeedsYouInbox;
+    public bool IsPagesShown => IsPageVisible && !IsNeedsYouInbox && !IsRunPageShown;
 
     /// <summary>Opens the inbox, on a row when one is named and listed, else on the first row.</summary>
     /// <param name="rowId">The row to select; null for the first.</param>
@@ -72,7 +72,9 @@ internal sealed partial class ShellViewModel
 
     private NeedsYouPageViewModel InitInbox(ISindriApi api, IClipboard clipboard)
     {
-        var inbox = new NeedsYouPageViewModel(NeedsYou, _clock, clipboard, new DeskReporter(api, Health.ApiUrl));
+        var commands = new InstanceCommander(api, Health.ApiUrl);
+        var inbox = new NeedsYouPageViewModel(NeedsYou, _clock, clipboard, new DeskReporter(api, Health.ApiUrl), new NeedsYouConfirm(Health.Catalog, Health.ApiUrl, api, _clock, () => NeedsYou.Seen.ReducedMotion),
+            new PausedAnswerViewModel(commands, clipboard, _clock), new TakeoverViewModel(api, Health.ApiUrl, commands, _clock));
         inbox.LeaveRequested += (_, _) => LeaveNeedsYouInbox();
         inbox.Bar.DecisionRequested += (_, e) => e.Settled = AnswerDecision(e.RowId, e.OptionId, e.Note);
         inbox.ItemRequested += (_, e) =>

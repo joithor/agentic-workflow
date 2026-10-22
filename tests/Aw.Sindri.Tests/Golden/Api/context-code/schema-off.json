@@ -157,12 +157,14 @@
   "callers": {
     "state": "unavailable",
     "reason": "index-not-built",
-    "items": []
+    "items": [],
+    "code": "SND-CODEIDX-013"
   },
   "callees": {
     "state": "unavailable",
     "reason": "index-not-built",
-    "items": []
+    "items": [],
+    "code": "SND-CODEIDX-013"
   },
   "counts": {
     "files": 2,
@@ -376,7 +378,7 @@
         "id": "code-index",
         "state": "unavailable",
         "reason": "index-not-built",
-        "code": null,
+        "code": "SND-CODEIDX-013",
         "asOf": null
       },
       {
