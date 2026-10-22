@@ -614,7 +614,7 @@ The table also lists the ship and phase Steps. Three of them have block runtimes
 | `step.phase.drift` | block | `built`, `change`, `workspace` | `same`, `moved` | `built`, `change` on moved |
 | `step.phase.decide` | desk, human-only | `phasePacket` | `rebuild`, `stop` | `buildNotes` on rebuild |
 | `step.babysit.watch` | desk, human-only (stub of `workflow.pr-babysitter`) | `pr`, `handoff`, `phasePacket`, `lineContext`, `workspace` | `merged`, `rework`, `stuck` | `mergedSha` on merged; `reworkNotes` on rework |
-| `effect.line.report` | effect (descriptor only) | - | - | parameters `status`, `line` |
+| `effect.line.report` | effect | - | - | parameters `status`, `line` |
 
 `step.interview.answer` and `step.scope.review` carry no form yet: the answer form built from `fact:questions` and the stop's fixed form (approve, revise, drop) await W2, so at the desk they complete with plain outcomes and outputs. The output schemas, their fact-or-packet-file design and field-name choices are in `schemas/scoping/README.md`.
 
@@ -1442,6 +1442,15 @@ usage, the measured empty diff, and the stop of the session) before it decides.
   parks the instance with `needs-answer` (kind step, resume `rerun`) and the last launch error as the question. The decision
   is `TransitionDecision`'s re-entry; `Workflow.Patched("launch-failure-keeps-round-v1")` (after `ln-wf3-heavy-slot`) sets
   `DecisionContext.LegacyLaunchRound` for a history recorded without it, which counts the round as it did.
+- **The phase worktree (LN-WF2):** an instance that holds `fact:workspace` launches every agent Step in that path instead of a
+  per-run worktree (`AgentLaunches.RequestFor`'s `workspace`), and the launcher sets `AW_SINDRI_WORKTREE` to it. A line phase's
+  `seed` makes the worktree and passes it to `build`, `prove`, `review-loop` and `pr-babysitter`; docs sync's own `fact:workspace`
+  is its own tree. An instance with no `fact:workspace` launches as it always did. `step.pr.ci-fix` keeps its own marker
+  (`ci-fix-agent-workspace`); every other Step reads `Workflow.Patched("ln-wf2-phase-workspace-launch")`, so an older history
+  replays with per-run worktrees. When a `workflow.phase` instance ends, `RemovePhaseWorkspace` (`Workflow.Patched("ln-wf2-phase-workspace-removal")`)
+  removes its worktree with `git worktree remove` (never forced; a tree with uncommitted files stays) if it merged, or ended
+  without ever holding `fact:pr`. A dropped or cancelled phase that holds `fact:pr` keeps the tree, because its pull request
+  may still be open.
 - **The dev recipe:** the interpreter tests (`AgentRuntimeInterpreterTests`) run an inline `workflow.dev-agent`: a `write`
   state whose Step is `step.report.write` (agent runtime), a state budget of 1000 tokens and a 1 minute timeout, with a fake
   launcher and fake sessions. It is not a shipped recipe.

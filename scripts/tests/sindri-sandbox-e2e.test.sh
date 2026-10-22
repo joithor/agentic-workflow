@@ -191,8 +191,9 @@ check "auto-desk: two calls in all" "$(wc -l < "$COMPLETED" | tr -d ' ')" "2"
 check "auto-desk: the log shows the outputs sent last" "${DESK_LOG[0]}" "C/1 run 7.1 -> doneAsking --output fact:answers=$SCRATCH/desk/0-answers.json --output fact:interviewClosed=$SCRATCH/desk/0-interviewClosed.json"
 # auto-grant: a budget park gets a token grant, logged with the desk answers, and stops at --desk-max
 : > "$COMPLETED"; DESK_LOG=(); DESK_MAX=2
-human() { printf '%s\n' "$*" >> "$COMPLETED"; }
+human() { printf '%s\n' "$*" >> "$COMPLETED"; cat > "$WORK/typed"; }
 auto_grant P/1 2>/dev/null
+check "auto-grant: types the challenge's action" "$(cat "$WORK/typed")" "grant-tokens 300000 P/1"
 check "auto-grant: answers with a token grant" "$(cat "$COMPLETED")" "workflow answer P/1 --grant-tokens 300000"
 check "auto-grant: logged" "${DESK_LOG[0]}" "P/1 grant-tokens 300000"
 auto_grant P/1 2>/dev/null

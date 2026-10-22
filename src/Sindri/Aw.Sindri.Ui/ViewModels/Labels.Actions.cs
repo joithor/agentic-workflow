@@ -44,6 +44,7 @@ internal static partial class Labels
         ["IssueNonce"] = "Get command nonce",
         ["OpenItem:attach"] = "Attach",
         ["SetupOnyx"] = "Set up Onyx",
+        ["ShowLineHoldout"] = "Show hidden scenarios",
         ["SessionExit"] = "Report session exit",
         ["SessionHeartbeat"] = "Report session heartbeat",
         ["OpenItem:open"] = "Open",
