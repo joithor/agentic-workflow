@@ -13,11 +13,11 @@ public sealed class ReviewLoopV2Tests
     private static Recipe Load() => RecipeComposition.ReadClean(ShippedRecipes.Read(Path), "workflow.review-loop.yaml").Recipe;
 
     [Fact, Trait("Lane", "unit")]
-    public void The_recipe_is_version_3_and_validates_against_the_shipped_catalog()
+    public void The_recipe_is_version_4_and_validates_against_the_shipped_catalog()
     {
         var document = RecipeComposition.ReadClean(ShippedRecipes.Read(Path), "workflow.review-loop.yaml");
 
-        Assert.Equal(3, document.Recipe.Version);   // 3: the typed escalation (BS-12)
+        Assert.Equal(4, document.Recipe.Version);   // 4: the typed escalation (BS-12) plus the display fields (SO-E1)
         Assert.Empty(RecipeComposition.Errors(document, FixtureCatalog.Shipped(), new InMemoryChildRecipes()));
     }
 

@@ -2,6 +2,7 @@
 schema: 1
 id: workflow.human-trigger-fact
 version: 1
+displayName: Produce and finish
 initial: ask
 states:
   ask:
