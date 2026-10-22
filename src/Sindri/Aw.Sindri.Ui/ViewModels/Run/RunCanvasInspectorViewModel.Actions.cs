@@ -88,7 +88,7 @@ internal sealed partial class RunCanvasInspectorViewModel
     {
         if (_line.ItemId is { } item)
         {
-            _ports.Go(new DeepLink(DeepLinkKind.Node, item));
+            _ports.Go(new DeepLink(DeepLinkKind.ContextItem, item));
         }
     }
 
