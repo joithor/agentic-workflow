@@ -8,10 +8,14 @@ using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.Scoping;
 using Aw.Sindri.Features.StartInstance;
+using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Testing.Workflow.Registry;
+using Aw.Sindri.Tests.GetInstance;
+using Aw.Sindri.Tests.ListInstances;
 
 namespace Aw.Sindri.Tests.StartInstance;
 
@@ -23,6 +27,8 @@ public sealed class StartInstanceFactCheckTests
 {
     private const string Brief = """{"kind":"brief","repo":"acme/web","path":"briefs/expiry.md"}""";
     private const string NoRepo = """{"kind":"brief","path":"briefs/expiry.md"}""";
+    private const string ItemSha = "0000000000000000000000000000000000000000000000000000000000000001";
+    private const string NoRepoSha = "0000000000000000000000000000000000000000000000000000000000000002";
     private static readonly FactKey _item = FactKey.From("fact:item");
     private static readonly FactKey _scopeInput = FactKey.From("fact:scopeInput");
 
@@ -76,6 +82,32 @@ public sealed class StartInstanceFactCheckTests
         Assert.NotNull(runtime.Started);   // nothing is registered for the fact, so the bad one starts as it always did
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_rerun_whose_stored_scope_input_fails_its_check_is_refused_the_same_way_and_nothing_is_started()
+    {
+        var (start, runtime) = Service();
+        var ended = StatusCases.View("cancelled") with
+        {
+            ItemId = ItemKey.From("T-1"),
+            Inputs =
+            [
+                new InputPresence("fact:item", "Item", "item", Required: true, Present: true),
+                new InputPresence("fact:scopeInput", "Scope input", "payload", Required: true, Present: true),
+            ],
+            FactShas = new Dictionary<string, string>(StringComparer.Ordinal) { ["fact:item"] = ItemSha, ["fact:scopeInput"] = NoRepoSha },
+        };
+        var instances = new SomeInstances(ended);
+        var rerun = new RerunInstanceService(instances, instances, new Stored(), start, new FixedCaller(new CallerContextBuilder().Human().Build()), new FixedRepos());
+
+        var started = await rerun.Handle(new RerunInstanceRequest(ended.Id.Value), Token);
+
+        Assert.Equal(SindriErrors.InvalidInput.Code, started.Error.Code);
+        Assert.Contains("fact:scopeInput", started.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("repo", started.Error.Message, StringComparison.Ordinal);
+        Assert.Null(runtime.Started);
+        Assert.False(runtime.Asked);
+    }
+
     private static StartInstanceRequest Request(string scopeInput) =>
         new("workflow.checked", "T-1", NextAttempt: false, new Dictionary<FactKey, StartFact>
         {
@@ -120,6 +152,13 @@ public sealed class StartInstanceFactCheckTests
         public ValueTask<Result<CommandResult>> OpenRequest(InstanceAddress address, LaunchId launch, CancellationToken cancellationToken) => throw new NotSupportedException();
 
         public ValueTask<Result<Unit>> Signal(InstanceAddress address, WaitSatisfied delivered, CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
+    /// <summary>The ended instance's stored input content: its item and a scope input without its repo.</summary>
+    private sealed class Stored : IFactContents
+    {
+        public ValueTask<Result<ReadOnlyMemory<byte>>> Read(FactValue fact, CancellationToken cancellationToken) =>
+            ValueTask.FromResult(Results.Success((ReadOnlyMemory<byte>)Encoding.UTF8.GetBytes(fact.Sha256 == ItemSha ? "{\"id\":\"T-1\"}" : NoRepo)));
     }
 
     private sealed class OneItem : IItems
