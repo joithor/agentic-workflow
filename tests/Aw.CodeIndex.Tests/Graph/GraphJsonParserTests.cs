@@ -47,6 +47,21 @@ public sealed class GraphJsonParserTests
     }
 
     [Fact]
+    public void A_graph_the_pinned_graphify_wrote_inside_bubblewrap_parses_to_its_two_symbols_and_one_call()
+    {
+        // tests/fixtures/code-index/graphify/two-files: a.ts's f calls b.ts's g; recorded from graphify 0.9.67 run under the runner's own bwrap argv.
+        var json = File.ReadAllText(Path.Combine(FixtureSupport.FixtureRoot(), "graphify", "two-files", "graph.json.recorded"));
+        var files = new HashSet<string>(["src/a.ts", "src/b.ts"], StringComparer.Ordinal);
+
+        var graph = Parse(json, files).Value;
+
+        Assert.Equal(["f", "g"], graph.Nodes.Select(n => n.Name).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        var edge = Assert.Single(graph.Edges);
+        Assert.Equal(("src_a_f", "src_b_g", "EXTRACTED", 3), (edge.Source, edge.Target, edge.Confidence, edge.Line));
+        Assert.Equal(0, graph.Dropped);
+    }
+
+    [Fact]
     public void A_wrong_top_level_shape_is_the_shape_failure()
     {
         foreach (var text in new[] { "[]", "{\"nodes\": 1, \"links\": []}", "{\"nodes\": []}", "not json" })
