@@ -26,7 +26,7 @@ public static class GraphBodies
             return file;
         }
 
-        var lines = text.Split('\n');
+        var lines = text.TrimStart('\uFEFF').Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
         var starts = file.Symbols.Select(s => s.StartLine).Distinct().Order().ToList();
         var symbols = file.Symbols.Select(s => s.Kind is SymbolKind.Class ? s : s with { Body = scrub(Span(lines, s.StartLine, NextStart(starts, s.StartLine))) }).ToList();
         return file with { Symbols = symbols };
@@ -48,7 +48,7 @@ public static class GraphBodies
         }
 
         var end = nextStart > 0 ? Math.Min(nextStart - 1, lines.Length) : lines.Length;
-        var span = string.Join('\n', lines[first..Math.Max(end, first + 1)]);
+        var span = string.Join('\n', lines[first..end]);
         return span.Length <= RawSpanMaxCharacters ? span : span[..RawSpanMaxCharacters];
     }
 }

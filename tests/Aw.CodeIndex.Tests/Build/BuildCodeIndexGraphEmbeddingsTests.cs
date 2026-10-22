@@ -31,7 +31,7 @@ public sealed class BuildCodeIndexGraphEmbeddingsTests
         var layer = report.Layers.Single(l => l.Layer == LayerName.Embeddings);
         Assert.Equal((2, 2, LayerState.Ok), (report.Embedded, report.Embeddable, layer.State));
         var texts = embedder.Batches.SelectMany(b => b).ToList();
-        Assert.Contains(texts, t => t.Contains("return computeTotal();", StringComparison.Ordinal));
+        Assert.Contains(texts, t => t.Contains("export function placeOrder", StringComparison.Ordinal) && t.Contains("return computeTotal();", StringComparison.Ordinal));
         Assert.Contains(texts, t => t.Contains("return 42;", StringComparison.Ordinal));
     }
 
