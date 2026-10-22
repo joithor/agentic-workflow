@@ -7,6 +7,9 @@ internal sealed partial class QueueViewModel
 {
     private bool _closedRead;
 
+    /// <summary>The API the last refresh read from; the fold reads through it.</summary>
+    internal Uri? LastUrl { get; private set; }
+
     /// <summary>True while the fold is open.</summary>
     public bool IsClosedOpen { get; private set => Set(ref field, value); }
 

@@ -37,6 +37,9 @@ internal static partial class Labels
     /// <returns>"Updated up to event 8 of 9."</returns>
     internal static string QueueBehind(long cursor, long head) => string.Create(CultureInfo.InvariantCulture, $"Updated up to event {cursor} of {head}.");
 
+    /// <summary>The link from an item's open decision to the page where it is answered.</summary>
+    internal const string OpenNeedsYou = "Answer in Needs you";
+
     /// <summary>The repo chip's accessible name.</summary>
     internal const string RepoChipName = "Repo";
 

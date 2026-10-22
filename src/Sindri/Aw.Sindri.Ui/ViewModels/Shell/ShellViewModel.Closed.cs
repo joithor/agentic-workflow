@@ -7,5 +7,5 @@ internal sealed partial class ShellViewModel
     /// <param name="cancellationToken">Cancels the reads.</param>
     /// <returns>A task that completes when the fold shows.</returns>
     internal Task ToggleClosed(CancellationToken cancellationToken) =>
-        _url is { } url ? Queue.ToggleClosed(url, cancellationToken) : Task.CompletedTask;
+        Queue.LastUrl is { } url ? Queue.ToggleClosed(url, cancellationToken) : Task.CompletedTask;
 }

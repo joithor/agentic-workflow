@@ -106,6 +106,7 @@ internal sealed partial class QueueViewModel(ISindriApi api, CatalogViewModel ca
     /// <returns>A task that completes when the view is shown.</returns>
     internal async Task Refresh(Uri url, CancellationToken cancellationToken)
     {
+        LastUrl = url;
         var answer = await api.Queue(url, cancellationToken).ConfigureAwait(true);
         if (answer.IsError)
         {

@@ -63,11 +63,7 @@ internal partial interface ISindriApi
     /// <returns>The view, the API's refusal, or SND-UI-002/003.</returns>
     public Task<Result<QueueView>> Queue(Uri api, CancellationToken cancellationToken);
 
-    /// <summary>GET /sindri/items?state= (API P3): the items in one state.</summary>
-    /// <param name="api">The base URL.</param>
-    /// <param name="state">The item state (done, cancelled, ...).</param>
-    /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>The list, the API's refusal, or SND-UI-002/003.</returns>
+    /// <summary>GET /sindri/items?state= (API P3): the items in one state; the API's refusal, or SND-UI-002/003.</summary>
     public Task<Result<ItemListView>> ListItems(Uri api, string state, CancellationToken cancellationToken);
 
     /// <summary>GET /sindri/items/{itemId} (API P3).</summary>
