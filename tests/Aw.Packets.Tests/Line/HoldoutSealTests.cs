@@ -15,7 +15,7 @@ public sealed class HoldoutSealTests
             new InMemoryLinePacketSource().With("pkt", files),
             new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles),
             PacketFiles.Json);
-        var inspection = await inspector.Inspect(PacketKinds.Phase, "pkt", "repo", sizes: null, sealedHash is null ? null : PacketHash.From(sealedHash), CancellationToken.None);
+        var inspection = await inspector.Inspect(PacketKinds.Phase, "pkt", "repo", new LineInspectOptions(Sizes: null, sealedHash is null ? null : PacketHash.From(sealedHash)), CancellationToken.None);
         return Assert.Single(inspection.Value.Checks, static c => c.Rule == PacketRules.HoldoutSealed);
     }
 
@@ -62,7 +62,7 @@ public sealed class HoldoutSealTests
             new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles),
             PacketFiles.Json);
 
-        var inspection = await inspector.Inspect(PacketKinds.Plan, "pkt", "repo", sizes: null, PacketHash.From(LinePacketBuilder.Hash), CancellationToken.None);
+        var inspection = await inspector.Inspect(PacketKinds.Plan, "pkt", "repo", new LineInspectOptions(Sizes: null, PacketHash.From(LinePacketBuilder.Hash)), CancellationToken.None);
 
         Assert.DoesNotContain(inspection.Value.Checks, static c => c.Rule == PacketRules.HoldoutSealed);
     }
