@@ -2,6 +2,8 @@ using System.Text;
 using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Blocks.Effect;
 using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Workflow;
@@ -11,8 +13,8 @@ namespace Aw.Sindri.Tests.Workflow.Effects;
 
 /// <summary>
 /// 'effect.line.report' (line spec BD7, LN-WF1, Q13): a phase that belongs to a line records 'shipped' or 'merged' once per effect identity in
-/// 'line-report.jsonl' of its run area and replies nothing (the 'line.phaseChanged' delivery to the linked parent is the dispatcher's, later); a
-/// phase with no line records nothing.
+/// 'line-report.jsonl' of its run area (the audit trail) and replies the status with 'fact:phaseEvent' { line, phase, status, instance, at }, which
+/// the 'line.phaseChanged' event carries to the line; a phase with no line records and replies nothing.
 /// </summary>
 [Lane(TestLane.Unit)]
 public sealed class LineReportEffectTests
@@ -32,7 +34,8 @@ public sealed class LineReportEffectTests
     {
         var done = await Report("shipped", LineContext);
 
-        Assert.Equal(new EffectDone(Reply: null, Existed: false), done.Value);
+        Assert.Equal(OutcomeName.From("shipped"), done.Value.Reply);
+        Assert.False(done.Value.Existed);
         var row = JsonDocument.Parse(Assert.Single(Rows())).RootElement;
         Assert.Equal("shipped", row.GetProperty("status").GetString());
         Assert.Equal("L1", row.GetProperty("line").GetString());
@@ -40,14 +43,36 @@ public sealed class LineReportEffectTests
         Assert.Equal(Instance, row.GetProperty("instance").GetString());
     }
 
-    [Fact]
-    public async Task A_repeated_identity_writes_one_row()
+    [Theory]
+    [InlineData("shipped")]
+    [InlineData("merged")]
+    public async Task A_report_replies_its_status_with_the_phase_storedfact(string status)
     {
-        _ = await Report("merged", LineContext);
+        var done = await Report(status, LineContext);
+
+        Assert.Equal(OutcomeName.From(status), done.Value.Reply);
+        var fact = Assert.Single(done.Value.Facts!);
+        Assert.Equal(FactKey.From("fact:phaseEvent"), fact.Key);
+        var stored = await _facts.Read(new FactValue(fact.Value.Ref, fact.Value.Sha256, fact.Value.HeadSha), Token);
+        var payload = JsonDocument.Parse(stored.Value).RootElement;
+        Assert.Equal("L1", payload.GetProperty("line").GetString());
+        Assert.Equal("p2", payload.GetProperty("phase").GetString());
+        Assert.Equal(status, payload.GetProperty("status").GetString());
+        Assert.Equal(Instance, payload.GetProperty("instance").GetString());
+        Assert.Equal(JsonDocument.Parse(Assert.Single(Rows())).RootElement.GetProperty("at").GetString(), payload.GetProperty("at").GetString());
+    }
+
+    [Fact]
+    public async Task A_repeated_identity_writes_one_row_and_replies_the_same_storedagain()
+    {
+        var first = await Report("merged", LineContext);
+        _clock.Advance(TimeSpan.FromMinutes(5));
 
         var again = await Report("merged", LineContext);
 
         Assert.True(again.Value.Existed);
+        Assert.Equal(OutcomeName.From("merged"), again.Value.Reply);
+        Assert.Equal(Assert.Single(first.Value.Facts!).Value.Sha256, Assert.Single(again.Value.Facts!).Value.Sha256);
         _ = Assert.Single(Rows());
     }
 
@@ -76,7 +101,7 @@ public sealed class LineReportEffectTests
     {
         var context = Context("shipped", JsonDocument.Parse("\"L1\"").RootElement.Clone());
 
-        var done = await new LineReportEffect(_area, _facts, _clock).Dispatch(context, Token);
+        var done = await new LineReportEffect(_area, _facts, _facts, _clock).Dispatch(context, Token);
 
         Assert.True(done.IsError);
     }
@@ -87,7 +112,7 @@ public sealed class LineReportEffectTests
     {
         var put = (await _facts.Put(Encoding.UTF8.GetBytes(lineContext), Token)).Value;
         var stored = JsonDocument.Parse($$"""{"ref":"{{put.Ref}}","sha256":"{{put.Sha256}}"}""").RootElement.Clone();
-        return await new LineReportEffect(_area, _facts, _clock).Dispatch(Context(status, stored), Token);
+        return await new LineReportEffect(_area, _facts, _facts, _clock).Dispatch(Context(status, stored), Token);
     }
 
     private static EffectContext Context(string status, JsonElement line) => new(
@@ -97,5 +122,5 @@ public sealed class LineReportEffectTests
             ["status"] = JsonDocument.Parse(JsonSerializer.Serialize(status)).RootElement.Clone(),
             ["line"] = line,
         },
-        new Dictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, JsonElement>(), Text: null);
+        new Dictionary<FactKey, JsonElement>(), Text: null);
 }

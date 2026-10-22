@@ -17,8 +17,9 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 /// </summary>
 /// <param name="area">The instance's run area, where the report is recorded.</param>
 /// <param name="contents">Reads the line context fact.</param>
+/// <param name="store">Stores the 'fact:phaseEvent' the reply carries.</param>
 /// <param name="clock">When a report is written.</param>
-internal sealed class LineReportEffect(IRunArea area, IFactContents contents, TimeProvider clock) : IEffectKind, IDescribedBlock
+internal sealed class LineReportEffect(IRunArea area, IFactContents contents, IFactStore store, TimeProvider clock) : IEffectKind, IDescribedBlock
 {
     private const string Record = "line-report.jsonl";
 
