@@ -30,8 +30,8 @@ public sealed class PlainWordsTests
     [Fact]
     public void The_context_page_words_are_plain() =>
         Assert.Equal(
-            ["Look up", "Type what to look up, such as feature:name", "No context map yet", "1 topic", "4 topics", "Why", "What it covers", "Links", "How well it is backed", "What was searched", "More about this answer"],
-            [Labels.ContextAnchor, Labels.ContextAnchorHint, Labels.ContextNoMap, Labels.ContextHead(1), Labels.ContextHead(4), Labels.ContextIntent, Labels.ContextProduct, Labels.ContextEdges, Labels.ContextCoverage, Labels.ContextSearched, Labels.ContextMore]);
+            ["Ask or look up", "Ask a question, or type a topic such as feature:name", "No context map yet", "1 topic", "4 topics", "From your question: 1 topic", "From your question: 3 topics", "Why we're doing this", "What it touches in the product", "What it touches in the code", "Suggested by AI, not confirmed", "Why this matters", "No summary written for this map yet."],
+            [Labels.ContextAnchor, Labels.ContextAnchorHint, Labels.ContextNoMap, Labels.ContextHead(1), Labels.ContextHead(4), Labels.ContextFromQuestion(1), Labels.ContextFromQuestion(3), Labels.ContextMapBandIntent, Labels.ContextMapBandProduct, Labels.ContextMapBandCode, Labels.ContextMapLegendSuggested, Labels.ContextMapWhyTitle, Labels.ContextMapWhyNone]);
 
     [Fact]
     public void The_context_page_calls_an_anchor_a_topic_everywhere_it_is_read() =>

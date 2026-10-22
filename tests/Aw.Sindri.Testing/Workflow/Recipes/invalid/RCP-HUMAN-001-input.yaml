@@ -2,6 +2,7 @@
 schema: 1
 id: workflow.human-trigger-input
 version: 1
+displayName: Produce and finish
 initial: ready
 states:
   ready:

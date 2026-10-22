@@ -80,8 +80,8 @@ public sealed partial class PhaseTreeTests
     public void Taking_the_proof_pack_from_an_unresolved_prove_is_refused_by_RCP_WIRE_003()
     {
         var text = ShippedRecipes.Read("sindri/workflow.phase.yaml").Replace(
-            "{ from: prove, to: build,   on: wait.satisfied, when: { outcome: unresolved }, produces: [{ fact: fact:buildNotes, from: fact:findings }] }",
-            "{ from: prove, to: build,   on: wait.satisfied, when: { outcome: unresolved }, produces: [{ fact: fact:buildNotes, from: fact:findings }, fact:proofPack] }",
+            "{ label: \"proof failed: back to build\", from: prove, to: build,   on: wait.satisfied, when: { outcome: unresolved }, produces: [{ fact: fact:buildNotes, from: fact:findings }] }",
+            "{ label: \"proof failed: back to build\", from: prove, to: build,   on: wait.satisfied, when: { outcome: unresolved }, produces: [{ fact: fact:buildNotes, from: fact:findings }, fact:proofPack] }",
             StringComparison.Ordinal);
         Assert.NotEqual(ShippedRecipes.Read("sindri/workflow.phase.yaml"), text, StringComparer.Ordinal);
 
@@ -96,14 +96,13 @@ public sealed partial class PhaseTreeTests
         Assert.All(LineTree.Recipe("workflow.phase").Transitions, static t => Assert.Empty(t.Effects));
 
     [Fact, Trait("Lane", "unit")]
-    public void The_stub_babysitter_parks_before_phase_gives_up_on_it_so_the_park_propagates()
+    public void The_babysitter_gives_up_before_phase_gives_up_on_it_so_the_outcome_propagates()
     {
-        var stub = LineTree.Recipe("workflow.pr-babysitter").States["watch"].Timeout!;
         var phase = LineTree.Recipe("workflow.phase").States["babysit"].Timeout!;
+        var longWaits = LineTree.Recipe("workflow.pr-babysitter").States.Where(s => s.Value.Timeout is not null).ToList();
 
-        Assert.Equal("park", stub.Then.ToString(), ignoreCase: true);
         Assert.Equal("escalate", phase.Then.ToString(), ignoreCase: true);
-        Assert.True(stub.After.Span < phase.After.Span, $"stub {stub.After.Value} must be shorter than phase {phase.After.Value}");
+        Assert.All(longWaits, s => Assert.True(s.Value.Timeout!.After.Span < phase.After.Span, $"{s.Key}: {s.Value.Timeout.After.Value} must be shorter than phase {phase.After.Value}"));
     }
 
     private static string RepoRecipes()

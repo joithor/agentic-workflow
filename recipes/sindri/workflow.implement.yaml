@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.implement
-version: 1
+version: 2
 description: "Block recipe: build the change test first, looping on the deterministic checks."
+displayName: "Build a change, tests first"
 inputs:
   - { key: fact:issue, label: "Issue", type: text, kind: text }
   - { key: fact:rootCause, label: "Root cause", type: text, kind: text }

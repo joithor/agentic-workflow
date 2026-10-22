@@ -31,6 +31,9 @@ internal static class WorkflowRoutes
 
     internal static string Instance(string id) => $"{Root}/instances/{Uri.EscapeDataString(id)}";
 
+    /// <summary>POST: the report for an open desk run.</summary>
+    internal static string Complete(string id, string run) => $"{Instance(id)}/runs/{Uri.EscapeDataString(run)}/complete";
+
     internal static string Events(string id) => $"{Instance(id)}/events";
 
     internal static string Fact(string id, string key) => $"{Instance(id)}/facts/{Uri.EscapeDataString(key)}";

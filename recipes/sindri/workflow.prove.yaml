@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.prove
-version: 1
+version: 3
 description: "Block recipe: prove every acceptance item of one phase on its head commit: a hand test and the verify journey in the running app, the evidence route, before and after for fixes, and the hidden scenarios; ends with a frozen proof pack."
+displayName: "Prove a phase works in the running app"
 inputs:
   - { key: fact:phasePacket, label: "Phase packet",  type: packet, kind: packet }
   - { key: fact:built,       label: "Built head",    type: payload, kind: payload }
@@ -10,7 +11,6 @@ inputs:
 outputs:
   - { key: fact:proofPack, label: "Proof pack", type: packet,  from: evidence-pack }
   - { key: fact:findings,  label: "Why not proven", type: payload, from: fail-log }
-# heavy grant: restore the slot wait when a heavy allocator exists (no allocator in a served build today; the wait would never be granted)
 initial: intake
 states:
   intake:        { kind: active, step: step.prove.intake, timeout: { after: 1h, then: park },
@@ -27,6 +27,8 @@ states:
                    waitFor: { child: { recipe: workflow.evidence, onParked: propagate,
                                        inputs: { "fact:phasePacket": { fact: fact:phasePacket }, "fact:built": { fact: fact:built } } } },
                    next: "Waiting for {child}: the evidence that proves {item}." }
+  slot:          { kind: wait, waitFor: { resource: heavy }, timeout: { after: 1d, then: park },
+                   next: "Waiting for a heavy-job slot for {item}'s before/after and hidden-scenario runs." }
   before-after:  { kind: active, step: step.prove.before-after, timeout: { after: 2h, then: park },
                    next: "Run {item}'s fix checks at its base (must fail) and its head (must pass)." }
   holdout:       { kind: active, step: step.prove.holdout, budget: { tokens: 200k }, timeout: { after: 3h, then: park },
@@ -48,9 +50,10 @@ transitions:
   - { from: verify, to: evidence, on: wait.satisfied, when: { outcome: resolved },   produces: [fact:evidencePack] }
   - { from: verify, to: fail-log, on: wait.satisfied, when: { outcome: unresolved }, produces: [fact:evidencePack] }
   - { from: verify, to: failed,   on: wait.satisfied, when: { outcome: cancelled } }
-  - { from: evidence, to: before-after, on: wait.satisfied, when: { outcome: resolved },   produces: [fact:evidenceSummary, fact:decision] }
+  - { from: evidence, to: slot,         on: wait.satisfied, when: { outcome: resolved },   produces: [fact:evidenceSummary, fact:decision] }
   - { from: evidence, to: fail-log,     on: wait.satisfied, when: { outcome: unresolved } }
   - { from: evidence, to: failed,       on: wait.satisfied, when: { outcome: cancelled } }
+  - { from: slot, to: before-after, on: wait.satisfied }
   - { from: before-after, to: holdout,  on: step.completed, when: { outcome: pass }, produces: [fact:beforeAfter] }
   - { from: before-after, to: fail-log, on: step.completed, when: { outcome: fail }, produces: [fact:beforeAfter] }
   - { from: holdout, to: holdout-log, on: step.completed, when: { outcome: ran }, produces: [fact:holdoutResult] }
