@@ -15544,6 +15544,8 @@ Aw.Sindri.Core.Launch.LaunchEnvironment
 static Aw.Sindri.Core.Launch.LaunchEnvironment.Credentials.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Sindri.Core.Launch.LaunchEnvironment.Scrub(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! env, string! worktree, string! ghConfigDir) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 static readonly Aw.Sindri.Core.SindriErrors.LaunchPushRefused -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Prove.IScriptRuns
+Aw.Sindri.Core.Prove.IScriptRuns.Run(string! directory, string! script, System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int?>
 Aw.Sindri.Core.Forge.PullChecks
 Aw.Sindri.Core.Forge.PullChecks.<Clone>$() -> Aw.Sindri.Core.Forge.PullChecks!
 Aw.Sindri.Core.Forge.PullChecks.State.get -> Aw.Sindri.Core.Forge.PullChecksState
