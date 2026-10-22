@@ -10,7 +10,7 @@ namespace Aw.Sindri.Infrastructure.Ledger;
 /// <summary>
 /// <see cref="IMirroredSequences"/> over the ledger, read-only like <see cref="SqliteLedgerReader"/> (API spec §3.8, E-30). A mirrored row's 'temporal_event_id' is the activity id of the
 /// RecordEvent that wrote it and its idempotency key is 'workflow:{address}:{run}:{activity}' (optionally ':{content hash}' after a replay), so the rows of one run's activities are
-/// those whose key starts with 'workflow:{address}:{run}:' and whose temporal_event_id is one asked for; the newest row of an activity wins.
+/// those of the instance (the payload's 'instance' member, which the events_instance_temporal index serves) whose key starts with 'workflow:{address}:{run}:' (an exact, case-sensitive match) and whose temporal_event_id is one asked for; the newest row of an activity wins.
 /// </summary>
 internal sealed class SqliteMirroredSequences(LedgerDatabase database) : IMirroredSequences
 {
@@ -56,13 +56,14 @@ internal sealed class SqliteMirroredSequences(LedgerDatabase database) : IMirror
     internal static SqlStatement Statement(InstanceAddress address, string run, IReadOnlyList<string> activities)
     {
         var names = Enumerable.Range(0, activities.Count).Select(static i => "$a" + i.ToString(System.Globalization.CultureInfo.InvariantCulture)).ToList();
-        var sql = new StringBuilder("SELECT temporal_event_id, MAX(seq) FROM events WHERE temporal_event_id IN (")
+        var sql = new StringBuilder("SELECT temporal_event_id, MAX(seq) FROM events WHERE json_extract(payload_json, '$.instance') = $address AND temporal_event_id IN (")
             .AppendJoin(", ", names)
-            .Append(") AND idempotency_key LIKE $prefix ESCAPE '\\' GROUP BY temporal_event_id")
+            .Append(") AND substr(idempotency_key, 1, length($prefix)) = $prefix GROUP BY temporal_event_id")
             .ToString();
-        var prefix = $"workflow:{Escape(address.Value)}:{Escape(run)}:%";
+        var prefix = $"workflow:{address.Value}:{run}:";
         return new SqlStatement(sql, command =>
         {
+            _ = command.Bind("$address", address.Value);
             _ = command.Bind("$prefix", prefix);
             for (var i = 0; i < activities.Count; i++)
             {
@@ -70,8 +71,6 @@ internal sealed class SqliteMirroredSequences(LedgerDatabase database) : IMirror
             }
         });
     }
-
-    private static string Escape(string text) => text.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("%", "\\%", StringComparison.Ordinal).Replace("_", "\\_", StringComparison.Ordinal);
 
     private sealed class Pairs : IRowMapper<KeyValuePair<string, long>>
     {

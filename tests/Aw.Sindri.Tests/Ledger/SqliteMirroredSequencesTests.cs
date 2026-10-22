@@ -33,13 +33,13 @@ public sealed class SqliteMirroredSequencesTests : IDisposable
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private async Task<long> Append(string key, string? activity)
+    private async Task<long> Append(string key, string? activity, string instance = "ITM-1/item/1/step.4")
     {
         _stores ??= SqliteStores.Create(_home.Path, _clock, _probe);
         var grant = _grant ??= (await _stores.Lease.Acquire(_probe.Self(), Token)).Value;
         var context = EventContext.Create("host:sindri", "local", 0, _ids.NewId()).Value;
         _clock.Advance(TimeSpan.FromMilliseconds(1));
-        return (await _stores.Ledger.Append(new LedgerEntry(context.Envelope("workflow.step", """{"instance":"x"}""", _clock, _ids), key, null, activity), grant, Token)).Value.Sequence;
+        return (await _stores.Ledger.Append(new LedgerEntry(context.Envelope("workflow.step", $$"""{"instance":"{{instance}}"}""", _clock, _ids), key, null, activity), grant, Token)).Value.Sequence;
     }
 
     private async Task<IReadOnlyDictionary<string, long>> Of(string run, params string[] activities) =>
@@ -50,7 +50,7 @@ public sealed class SqliteMirroredSequencesTests : IDisposable
     {
         var mine = await Append("workflow:ITM-1/item/1/step.4:run-1:7", "7");
         _ = await Append("workflow:ITM-1/item/1/step.4:run-2:7", "7");        // another run
-        _ = await Append("workflow:ITM-2/item/1/step.4:run-1:7", "7");        // another instance
+        _ = await Append("workflow:ITM-2/item/1/step.4:run-1:7", "7", "ITM-2/item/1/step.4");        // another instance
         _ = await Append("workflow:ITM-1/item/1/step.4:run-1:8", "8");
 
         var found = await Of("run-1", "7", "9");
@@ -75,6 +75,14 @@ public sealed class SqliteMirroredSequencesTests : IDisposable
         _ = await Append("workflow:ITM-1/item/1/step.4:run-1:7", activity: null);
 
         Assert.Empty(await Of("run-1", "7"));
+    }
+
+    [Fact]
+    public async Task A_run_that_differs_only_in_letter_case_is_another_run()
+    {
+        _ = await Append("workflow:ITM-1/item/1/step.4:Run-A:7", "7");
+
+        Assert.Empty(await Of("run-a", "7"));
     }
 
     [Fact]
