@@ -37,7 +37,7 @@ internal sealed class GetEngineService(IEngineReader engine, TimeProvider clock)
         }
 
         var now = clock.GetUtcNow();
-        var running = instances.Value.Count(static i => i.Waiting is { Kind: EngineWaitKinds.Activity });   // the task queue doesn't say how many activities run, the instances do
+        var running = instances.Value.Count(static i => i.Waiting is { } w && string.Equals(w.Kind, EngineWaitKinds.Activity, StringComparison.Ordinal));   // the task queue doesn't say how many activities run, the instances do
         return new EngineView(server.Value, worker.Value with { ActivitiesRunning = running }, mirror.Value, EngineProjection.Pending(instances.Value, now), now);
     }
 }
