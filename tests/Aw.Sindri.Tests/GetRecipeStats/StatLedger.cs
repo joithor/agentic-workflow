@@ -55,6 +55,6 @@ internal sealed class StatLedger(GoldenHost host, string recipe, string hash)
         var detail = new WorkflowEventDetail(TriggerKey.For(WorkflowInstanceId.Of(InstanceAddress.From(address)), "t"), "human:owner", SourceSequence: null, ArgumentsSha256: null, ReportSha256: null, answer, Amount: null, Reason: null,
             Gates: [], Evidence: [], Grant: null, Override: null, Refusal: null, Effects: [], delta);
         var id = WorkflowInstanceId.Of(InstanceAddress.From(address)).Value;
-        return ViewScenarios.Append(host, type, new WorkflowEventPayload(id, from, to, trigger, delta.Outcome, Run: null, detail), $"workflow:{address}:{++_next}:{_next}", TestContext.Current.CancellationToken);
+        return ViewScenarios.Append(host, type, new WorkflowEventPayload(id, from, to, trigger, delta.Outcome, Run: null, detail), string.Create(System.Globalization.CultureInfo.InvariantCulture, $"workflow:{address}:{++_next}:{_next}"), TestContext.Current.CancellationToken);
     }
 }
