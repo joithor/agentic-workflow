@@ -8,6 +8,9 @@ internal sealed partial class ContextPageViewModel
     /// <summary>The file map.</summary>
     public FileMapViewModel FileMap { get; private set; }
 
+    /// <summary>The code lens' callers and callees panels (S-9).</summary>
+    internal CodeLensViewModel Code { get; } = new();
+
     [MemberNotNull(nameof(FileMap))]
     private void InitFileMap() => FileMap = new FileMapViewModel(Ports);
 }
