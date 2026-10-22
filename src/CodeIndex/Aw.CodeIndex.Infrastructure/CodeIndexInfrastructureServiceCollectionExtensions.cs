@@ -1,7 +1,7 @@
 using Aw.CodeIndex.Core.Ports;
 using Aw.CodeIndex.Infrastructure.Deps;
-using Aw.CodeIndex.Infrastructure.Graph;
 using Aw.CodeIndex.Infrastructure.Embedding;
+using Aw.CodeIndex.Infrastructure.Graph;
 using Aw.CodeIndex.Infrastructure.Parsing;
 using Aw.CodeIndex.Infrastructure.Scrubbing;
 using Aw.CodeIndex.Infrastructure.Snapshot;
