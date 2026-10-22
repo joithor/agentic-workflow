@@ -55,12 +55,16 @@ Aw.Forge.Core.Pulls.ChecksState.None = 1 -> Aw.Forge.Core.Pulls.ChecksState
 Aw.Forge.Core.Pulls.ChecksState.Passing = 3 -> Aw.Forge.Core.Pulls.ChecksState
 Aw.Forge.Core.Pulls.ChecksState.Pending = 2 -> Aw.Forge.Core.Pulls.ChecksState
 Aw.Forge.Core.Pulls.ChecksSummary
-Aw.Forge.Core.Pulls.ChecksSummary.ChecksSummary(Aw.Forge.Core.Pulls.ChecksState State, string! Sha, System.Collections.Generic.IReadOnlyList<string!>! Failing) -> void
+Aw.Forge.Core.Pulls.ChecksSummary.ChecksSummary(Aw.Forge.Core.Pulls.ChecksState State, string! Sha, System.Collections.Generic.IReadOnlyList<string!>! Failing, int Passed, int Pending) -> void
 Aw.Forge.Core.Pulls.ChecksSummary.<Clone>$() -> Aw.Forge.Core.Pulls.ChecksSummary!
-Aw.Forge.Core.Pulls.ChecksSummary.Deconstruct(out Aw.Forge.Core.Pulls.ChecksState State, out string! Sha, out System.Collections.Generic.IReadOnlyList<string!>! Failing) -> void
+Aw.Forge.Core.Pulls.ChecksSummary.Deconstruct(out Aw.Forge.Core.Pulls.ChecksState State, out string! Sha, out System.Collections.Generic.IReadOnlyList<string!>! Failing, out int Passed, out int Pending) -> void
 Aw.Forge.Core.Pulls.ChecksSummary.Equals(Aw.Forge.Core.Pulls.ChecksSummary? other) -> bool
 Aw.Forge.Core.Pulls.ChecksSummary.Failing.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Forge.Core.Pulls.ChecksSummary.Failing.init -> void
+Aw.Forge.Core.Pulls.ChecksSummary.Passed.get -> int
+Aw.Forge.Core.Pulls.ChecksSummary.Passed.init -> void
+Aw.Forge.Core.Pulls.ChecksSummary.Pending.get -> int
+Aw.Forge.Core.Pulls.ChecksSummary.Pending.init -> void
 Aw.Forge.Core.Pulls.ChecksSummary.Sha.get -> string!
 Aw.Forge.Core.Pulls.ChecksSummary.Sha.init -> void
 Aw.Forge.Core.Pulls.ChecksSummary.State.get -> Aw.Forge.Core.Pulls.ChecksState
@@ -264,15 +268,19 @@ Aw.Forge.Core.Pulls.ReplyRequest.ThreadKey.get -> string!
 Aw.Forge.Core.Pulls.ReplyRequest.ThreadKey.init -> void
 Aw.Forge.Core.Pulls.SeedChecksRequest
 Aw.Forge.Core.Pulls.SeedChecksRequest.<Clone>$() -> Aw.Forge.Core.Pulls.SeedChecksRequest!
-Aw.Forge.Core.Pulls.SeedChecksRequest.Deconstruct(out Aw.Forge.Core.Refs.ForgeRef! Pull, out Aw.Forge.Core.Pulls.ChecksState State, out System.Collections.Generic.IReadOnlyList<string!>! Failing, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Logs) -> void
+Aw.Forge.Core.Pulls.SeedChecksRequest.Deconstruct(out Aw.Forge.Core.Refs.ForgeRef! Pull, out Aw.Forge.Core.Pulls.ChecksState State, out System.Collections.Generic.IReadOnlyList<string!>! Failing, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Logs, out int Passed, out int Pending) -> void
 Aw.Forge.Core.Pulls.SeedChecksRequest.Equals(Aw.Forge.Core.Pulls.SeedChecksRequest? other) -> bool
 Aw.Forge.Core.Pulls.SeedChecksRequest.Failing.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Forge.Core.Pulls.SeedChecksRequest.Failing.init -> void
 Aw.Forge.Core.Pulls.SeedChecksRequest.Logs.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 Aw.Forge.Core.Pulls.SeedChecksRequest.Logs.init -> void
+Aw.Forge.Core.Pulls.SeedChecksRequest.Passed.get -> int
+Aw.Forge.Core.Pulls.SeedChecksRequest.Passed.init -> void
+Aw.Forge.Core.Pulls.SeedChecksRequest.Pending.get -> int
+Aw.Forge.Core.Pulls.SeedChecksRequest.Pending.init -> void
 Aw.Forge.Core.Pulls.SeedChecksRequest.Pull.get -> Aw.Forge.Core.Refs.ForgeRef!
 Aw.Forge.Core.Pulls.SeedChecksRequest.Pull.init -> void
-Aw.Forge.Core.Pulls.SeedChecksRequest.SeedChecksRequest(Aw.Forge.Core.Refs.ForgeRef! Pull, Aw.Forge.Core.Pulls.ChecksState State, System.Collections.Generic.IReadOnlyList<string!>! Failing, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Logs) -> void
+Aw.Forge.Core.Pulls.SeedChecksRequest.SeedChecksRequest(Aw.Forge.Core.Refs.ForgeRef! Pull, Aw.Forge.Core.Pulls.ChecksState State, System.Collections.Generic.IReadOnlyList<string!>! Failing, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Logs, int Passed = 0, int Pending = 0) -> void
 Aw.Forge.Core.Pulls.SeedChecksRequest.State.get -> Aw.Forge.Core.Pulls.ChecksState
 Aw.Forge.Core.Pulls.SeedChecksRequest.State.init -> void
 Aw.Forge.Core.Pulls.SeedThreadRequest
