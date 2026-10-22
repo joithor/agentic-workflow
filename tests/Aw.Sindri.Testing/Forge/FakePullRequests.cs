@@ -20,6 +20,12 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     /// <summary>Gets the operations called, in order.</summary>
     public IList<string> Calls { get; } = [];
 
+    /// <summary>Gets or sets the error <see cref="Self"/> answers, or null for the login.</summary>
+    public Error? SelfError { get; set; }
+
+    /// <summary>Gets or sets a task <see cref="Self"/> awaits first (a test makes the forge hang with it).</summary>
+    public Func<CancellationToken, Task>? BeforeSelf { get; set; }
+
     /// <summary>Gets the pull requests, with what Open and Update gave them.</summary>
     public IReadOnlyList<FakePull> Pulls => _pulls;
 
@@ -87,10 +93,15 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<string>> Self(CancellationToken cancellationToken)
+    public async ValueTask<Result<string>> Self(CancellationToken cancellationToken)
     {
         Calls.Add("Self");
-        return Done(Results.Success("sindri"));
+        if (BeforeSelf is { } wait)
+        {
+            await wait(cancellationToken).ConfigureAwait(false);
+        }
+
+        return SelfError is { } error ? error : "sindri";
     }
 
     /// <inheritdoc />
