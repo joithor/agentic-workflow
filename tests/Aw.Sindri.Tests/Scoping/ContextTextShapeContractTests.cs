@@ -49,7 +49,7 @@ public sealed class ContextTextShapeContractTests : ScopingTextShapeContract, IA
         var anchors = await Create().Anchors(Repo, "How does the Tab manager restore a layout?", TestContext.Current.CancellationToken);
 
         Assert.True(anchors.IsSuccess);
-        Assert.Contains("feature:tabs.tab-manager", anchors.Value);
+        Assert.Contains("feature:tabs.tab-manager", anchors.Value, StringComparer.Ordinal);
     }
 
     protected override IScopingTextShape Create() => _scope.ServiceProvider.GetRequiredService<IScopingTextShape>();
