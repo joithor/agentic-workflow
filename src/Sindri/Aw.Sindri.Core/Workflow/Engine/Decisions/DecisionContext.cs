@@ -34,6 +34,12 @@ public sealed record DecisionContext(
     public bool LegacyBudgetPark { get; init; }
 
     /// <summary>
+    /// Whether an instance that starts counts a state's budget over its lifetime (the pooled rule before the 'token-budget-per-round-v1' patch, which a history
+    /// recorded without the marker replays). Off: it starts under the per-round rule, where each round of a state has its own allowance (BudgetRules).
+    /// </summary>
+    public bool PooledBudget { get; init; }
+
+    /// <summary>
     /// Whether a Step whose launch failed still counts a loop round (the behavior before the 'launch-failure-keeps-round-v1' patch, which a history recorded without the
     /// marker replays). Off: the round stays, and the third failed launch in a row parks.
     /// </summary>

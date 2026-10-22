@@ -36,6 +36,9 @@ internal sealed record NeedsYouEntry(string Id, NeedsYouUrgency Urgency)
     /// <summary>When the row began waiting; the age is read from it. Default for unknown.</summary>
     internal DateTimeOffset Since { get; init; }
 
+    /// <summary>What the row's timeout does and when it fires, dated from when the list was read; null when the row serves none.</summary>
+    internal RowTimeout? Timeout { get; init; }
+
     /// <summary>The catalog id of the row's primary action; empty for none.</summary>
     internal string PrimaryAction { get; init; } = "";
 
@@ -75,7 +78,7 @@ internal sealed record NeedsYouEntry(string Id, NeedsYouUrgency Urgency)
     public bool Equals(NeedsYouEntry? other) =>
         other is not null
         && ((Id, Urgency, Kind, Chip, ShownId, Title, Repo, Label, Reason) == (other.Id, other.Urgency, other.Kind, other.Chip, other.ShownId, other.Title, other.Repo, other.Label, other.Reason))
-        && ((Since, PrimaryAction, Subject, ItemId, Cli, Question, RecordedOnly, Notice, Via, Child) == (other.Since, other.PrimaryAction, other.Subject, other.ItemId, other.Cli, other.Question, other.RecordedOnly, other.Notice, other.Via, other.Child))
+        && ((Since, PrimaryAction, Subject, ItemId, Cli, Question, RecordedOnly, Notice, Via, Child, Timeout) == (other.Since, other.PrimaryAction, other.Subject, other.ItemId, other.Cli, other.Question, other.RecordedOnly, other.Notice, other.Via, other.Child, other.Timeout))
         && Actions.SequenceEqual(other.Actions);
 
     /// <inheritdoc />
