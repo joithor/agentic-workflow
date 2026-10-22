@@ -123,6 +123,7 @@ internal static partial class Labels
         "heartbeat" => "Records that Sindri is alive.",
         "context-map-refresh" => "Builds the context map again so it stays current.",
         "context-sync-gaps" => "Starts a sync for a source that has never synced.",
+        "pr-watch" => "Watches the pull requests that wait on the forge.",
         "router-stub" => "Routes each started item to its workflow.",
         "setup" => "Keeps the setup checklist in step with the profile.",
         "workflow-events" => "Passes ledger events to the running workflows.",
