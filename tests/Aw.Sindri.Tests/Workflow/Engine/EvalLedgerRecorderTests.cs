@@ -37,7 +37,9 @@ public sealed class EvalLedgerRecorderTests
         Assert.False(recorded.IsError, recorded.IsError ? recorded.Error.Message : null);
         var outputs = Assert.IsType<IReadOnlyDictionary<FactKey, JsonElement>>(recorded.Value.Steps[0].Trigger.Outputs, exactMatch: false);
         Assert.Equal(["fact:acceptance", "fact:openQuestions", "fact:scopeMap"], outputs.Keys.Select(static k => k.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
-        Assert.Equal("""{"items":[]}""", outputs[FactKey.From("fact:acceptance")].GetString(), StringComparer.Ordinal);
+        var acceptance = outputs[FactKey.From("fact:acceptance")];   // JSON text is written as the JSON value, not as a string holding it
+        Assert.Equal(JsonValueKind.Object, acceptance.ValueKind);
+        Assert.Equal("""{"items":[]}""", acceptance.GetRawText(), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -56,6 +58,18 @@ public sealed class EvalLedgerRecorderTests
         Assert.False(recorded.IsError, recorded.IsError ? recorded.Error.Message : null);
         Assert.Equal(["fact:answerLog"], recorded.Value.Steps[0].Trigger.Outputs!.Keys.Select(static k => k.Value), StringComparer.Ordinal);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Content_that_is_JSON_text_becomes_a_value_and_other_text_stays_a_string()
+    {
+        Assert.Equal(JsonValueKind.Array, Content("[\n  1\n]\n").ValueKind);
+        Assert.Equal(JsonValueKind.Object, Content("""{"a":1}""").ValueKind);
+        Assert.Equal(JsonValueKind.String, Content("the brief").ValueKind);
+        Assert.Equal(JsonValueKind.String, Content("{not json").ValueKind);
+        Assert.Equal("42", Content("42").GetString());
+    }
+
+    private static JsonElement Content(string text) => EvalLedgerRecorder.ContentOf(Encoding.UTF8.GetBytes(text));
 
     private static string Stored(Dictionary<string, JsonElement> contents, string text)
     {

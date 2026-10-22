@@ -176,10 +176,32 @@ public static class EvalLedgerRecorder
         };
     }
 
-    /// <summary>A stored fact's content as an eval line spells it: its text.</summary>
+    /// <summary>A stored fact's content as an eval line spells it: JSON text of an object or array as that JSON value (the schemas and the recipe's readers see the value), any other text as a JSON string.</summary>
     /// <param name="content">The stored bytes.</param>
-    /// <returns>The content as a JSON string.</returns>
-    public static JsonElement ContentOf(ReadOnlySpan<byte> content) => EvalFacts.OfText(System.Text.Encoding.UTF8.GetString(content));
+    /// <returns>The content as a JSON value.</returns>
+    public static JsonElement ContentOf(ReadOnlySpan<byte> content)
+    {
+        var text = System.Text.Encoding.UTF8.GetString(content);
+        return AsJson(text) ?? EvalFacts.OfText(text);
+    }
+
+    private static JsonElement? AsJson(string text)
+    {
+        if (text.AsSpan().TrimStart() is not ['{' or '[', ..])
+        {
+            return null;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(text);
+            return document.RootElement.Clone();
+        }
+        catch (JsonException)
+        {
+            return null; // why: text that only starts like JSON is still text
+        }
+    }
 
     private static string Text(int value) => value.ToString(CultureInfo.InvariantCulture);
 
