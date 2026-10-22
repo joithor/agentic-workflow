@@ -37,6 +37,39 @@ public interface IPullRequests
     /// <returns>How many checks were asked to run again, or the error.</returns>
     public ValueTask<Result<int>> RerunChecks(string link, string sha, CancellationToken cancellationToken);
 
+    /// <summary>Lists the pull request's review threads, review bodies and top-level comments, oldest first. The texts are untrusted.</summary>
+    /// <param name="link">The pull request's link.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The threads, or the error.</returns>
+    public ValueTask<Result<IReadOnlyList<PullThread>>> Threads(string link, CancellationToken cancellationToken);
+
+    /// <summary>Merges a pull request if its head is still the one the caller saw and the forge's rules allow it.</summary>
+    /// <param name="request">The merge.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>How it ended, or the error.</returns>
+    public ValueTask<Result<PullMergeOutcome>> Merge(PullMerge request, CancellationToken cancellationToken);
+
+    /// <summary>Replies on a thread or on the pull request, once per marker. The forge adapter redacts the text.</summary>
+    /// <param name="request">The reply.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>Whether it was posted now or before, or the error.</returns>
+    public ValueTask<Result<PullDelivery>> Reply(PullReply request, CancellationToken cancellationToken);
+
+    /// <summary>Reacts to a thread, once per marker.</summary>
+    /// <param name="request">The reaction.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>Whether it was posted now or before, or the error.</returns>
+    public ValueTask<Result<PullDelivery>> React(PullReaction request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Pushes a branch to the repository before any pull request exists, with a lease on the tip the caller saw (a null lease means the branch must not exist yet).
+    /// Never forces past the lease. A host outside the profile's list is SND-FORGE-002.
+    /// </summary>
+    /// <param name="push">The push.</param>
+    /// <param name="cancellationToken">Cancels the push.</param>
+    /// <returns>How it ended when git itself worked, or the error.</returns>
+    public ValueTask<Result<PullPushOutcome>> PushBranch(PullBranchPush push, CancellationToken cancellationToken);
+
     /// <summary>Finds the open pull request for a head branch (and the marker its body carries, when the query names one).</summary>
     /// <param name="query">What to look for.</param>
     /// <param name="cancellationToken">Cancels the call.</param>

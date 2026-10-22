@@ -14,6 +14,7 @@ using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Review;
 using Aw.Context.Core.Subgraph;
+using Aw.Context.Core.Symbols;
 using Aw.Context.Features.Adjudicate;
 using Aw.Context.Features.ApplyReviewFile;
 using Aw.Context.Features.BuildMap;
@@ -70,6 +71,7 @@ public static class ContextFeaturesServiceCollectionExtensions
     public static IServiceCollection AddContextFeatures(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
+        services.TryAddSingleton<ICodeSymbolSource, NoCodeSymbolSource>();   // the host that wires the code index (Sindri's Host adapter) replaces it
         services.TryAddSingleton<ILabeler, DisabledLabeler>();   // a host that sets up labeling (AddContextLabeling) replaces it
         services.TryAddSingleton<IHeavyJobLock, UnconfiguredHeavyJobLock>();   // a host that wires the box-wide lock replaces it
         services.TryAddSingleton<UnconfiguredBacktest>();   // hosts that wire the backtest ports (Infrastructure) replace these
@@ -147,6 +149,7 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<ContextCodeHistory>()
         .AddScoped<IService<GetCodeRequest, CodeView>, GetCodeService>()
         .AddScoped<CodeLexicalSearch>()
+        .AddScoped<CodeSymbolSearch>()
         .AddScoped<LexicalCandidates>()
         .AddScoped<LexicalTestsRule>()
         .AddScoped<LexicalSchemaRule>()
