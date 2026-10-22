@@ -14,6 +14,7 @@ internal static class SetupWatchServiceCollectionExtensions
         services
             .AddScoped<IScheduledService, SetupService>()
             .AddScoped<McpAutoGate>().AddScoped<McpAutoRegister>()
+            .AddSingleton<SetupStepLog>().AddScoped<SetupStepRecorder>().AddScoped<SetupStepWatch>()
             .AddSingleton(SetupService.BuiltIn)   // runs without a profile entry, so PauseService refuses it
             .AddSingleton(sp => new SetupJobQueue(() => running(sp)));
 }

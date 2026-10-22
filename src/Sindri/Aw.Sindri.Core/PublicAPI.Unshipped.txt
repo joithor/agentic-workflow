@@ -15941,6 +15941,59 @@ Aw.Sindri.Core.Forge.IPullRequests.PushBranch(Aw.Sindri.Core.Forge.PullBranchPus
 Aw.Sindri.Core.Launch.StepDenials
 const Aw.Sindri.Core.Launch.StepDenials.HoldoutDirectory = "holdout" -> string!
 static Aw.Sindri.Core.Launch.StepDenials.For(string! worktree, System.Collections.Generic.IReadOnlyList<string!>! siblingWorktrees, string? sindriHome) -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Setup.RecordedStep
+Aw.Sindri.Core.Setup.RecordedStep.<Clone>$() -> Aw.Sindri.Core.Setup.RecordedStep!
+Aw.Sindri.Core.Setup.RecordedStep.Deconstruct(out Aw.Sindri.Core.Setup.SetupState State, out string? Code, out int Count) -> void
+Aw.Sindri.Core.Setup.RecordedStep.Equals(Aw.Sindri.Core.Setup.RecordedStep? other) -> bool
+Aw.Sindri.Core.Setup.RecordedStep.RecordedStep(Aw.Sindri.Core.Setup.SetupState State, string? Code, int Count) -> void
+Aw.Sindri.Core.Setup.RecordedStep.State.get -> Aw.Sindri.Core.Setup.SetupState
+Aw.Sindri.Core.Setup.RecordedStep.State.init -> void
+Aw.Sindri.Core.Setup.RecordedStep.Code.get -> string?
+Aw.Sindri.Core.Setup.RecordedStep.Code.init -> void
+Aw.Sindri.Core.Setup.RecordedStep.Count.get -> int
+Aw.Sindri.Core.Setup.RecordedStep.Count.init -> void
+override Aw.Sindri.Core.Setup.RecordedStep.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Setup.RecordedStep.GetHashCode() -> int
+override Aw.Sindri.Core.Setup.RecordedStep.ToString() -> string!
+static Aw.Sindri.Core.Setup.RecordedStep.operator !=(Aw.Sindri.Core.Setup.RecordedStep? left, Aw.Sindri.Core.Setup.RecordedStep? right) -> bool
+static Aw.Sindri.Core.Setup.RecordedStep.operator ==(Aw.Sindri.Core.Setup.RecordedStep? left, Aw.Sindri.Core.Setup.RecordedStep? right) -> bool
+Aw.Sindri.Core.Setup.StepChange
+Aw.Sindri.Core.Setup.StepChange.<Clone>$() -> Aw.Sindri.Core.Setup.StepChange!
+Aw.Sindri.Core.Setup.StepChange.Deconstruct(out Aw.Sindri.Core.Setup.SetupStepId Id, out Aw.Sindri.Core.Setup.SetupState State, out string? Code, out int Count) -> void
+Aw.Sindri.Core.Setup.StepChange.Equals(Aw.Sindri.Core.Setup.StepChange? other) -> bool
+Aw.Sindri.Core.Setup.StepChange.StepChange(Aw.Sindri.Core.Setup.SetupStepId Id, Aw.Sindri.Core.Setup.SetupState State, string? Code, int Count) -> void
+Aw.Sindri.Core.Setup.StepChange.Id.get -> Aw.Sindri.Core.Setup.SetupStepId
+Aw.Sindri.Core.Setup.StepChange.Id.init -> void
+Aw.Sindri.Core.Setup.StepChange.State.get -> Aw.Sindri.Core.Setup.SetupState
+Aw.Sindri.Core.Setup.StepChange.State.init -> void
+Aw.Sindri.Core.Setup.StepChange.Code.get -> string?
+Aw.Sindri.Core.Setup.StepChange.Code.init -> void
+Aw.Sindri.Core.Setup.StepChange.Count.get -> int
+Aw.Sindri.Core.Setup.StepChange.Count.init -> void
+override Aw.Sindri.Core.Setup.StepChange.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Setup.StepChange.GetHashCode() -> int
+override Aw.Sindri.Core.Setup.StepChange.ToString() -> string!
+static Aw.Sindri.Core.Setup.StepChange.operator !=(Aw.Sindri.Core.Setup.StepChange? left, Aw.Sindri.Core.Setup.StepChange? right) -> bool
+static Aw.Sindri.Core.Setup.StepChange.operator ==(Aw.Sindri.Core.Setup.StepChange? left, Aw.Sindri.Core.Setup.StepChange? right) -> bool
+Aw.Sindri.Core.Setup.SetupStepChanges
+static Aw.Sindri.Core.Setup.SetupStepChanges.KeyOf(Aw.Sindri.Core.Setup.SetupStepId id, Aw.Sindri.Core.Setup.SetupState state, int count) -> string!
+static Aw.Sindri.Core.Setup.SetupStepChanges.Plan(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupStep!>! steps, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Setup.SetupStepId, Aw.Sindri.Core.Setup.RecordedStep!>! recorded) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.StepChange!>!
+static Aw.Sindri.Core.Setup.SetupStepChanges.TryState(string! word, out Aw.Sindri.Core.Setup.SetupState state) -> bool
+static Aw.Sindri.Core.Setup.SetupStepChanges.TryStep(string! word, out Aw.Sindri.Core.Setup.SetupStepId id) -> bool
+static Aw.Sindri.Core.Setup.SetupStepChanges.Word(Aw.Sindri.Core.Setup.SetupState state) -> string!
+static Aw.Sindri.Core.Setup.SetupStepChanges.Word(Aw.Sindri.Core.Setup.SetupStepId id) -> string!
+Aw.Sindri.Core.Setup.SetupDeriver
+Aw.Sindri.Core.Setup.SetupDeriver.Derive(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupStep!>!>
+Aw.Sindri.Core.Setup.SetupDeriver.SetupDeriver(Aw.Sindri.Core.Ports.ISetupFacts! facts, System.Action<string!, System.Exception!>? sourceFailed = null) -> void
+Aw.Sindri.Core.Setup.SetupStepLog
+Aw.Sindri.Core.Setup.SetupStepLog.Add(Aw.Sindri.Core.Setup.SetupStepId id, Aw.Sindri.Core.Setup.SetupState state, string? code) -> void
+Aw.Sindri.Core.Setup.SetupStepLog.Loaded.get -> bool
+Aw.Sindri.Core.Setup.SetupStepLog.MarkLoaded() -> void
+Aw.Sindri.Core.Setup.SetupStepLog.SetupStepLog() -> void
+Aw.Sindri.Core.Setup.SetupStepLog.Snapshot() -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Setup.SetupStepId, Aw.Sindri.Core.Setup.RecordedStep!>!
+Aw.Sindri.Core.Setup.SetupStepRecorder
+Aw.Sindri.Core.Setup.SetupStepRecorder.Record(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupStep!>! steps, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<int>!>
+Aw.Sindri.Core.Setup.SetupStepRecorder.SetupStepRecorder(Aw.Sindri.Core.Lease.HeldLease! held, Aw.Sindri.Core.Ledger.ILedgerStore! ledger, Aw.Sindri.Core.Ledger.ILedgerReader! reader, Aw.Sindri.Core.Events.EventFactory! events, Aw.Sindri.Core.Commands.ICallerContextAccessor! callers, Aw.Sindri.Core.Setup.SetupStepLog! log) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions
 Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions.Lines.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions.Step.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
