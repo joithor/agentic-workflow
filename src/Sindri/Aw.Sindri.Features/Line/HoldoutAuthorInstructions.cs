@@ -15,11 +15,11 @@ internal sealed class HoldoutAuthorInstructions : IAgentStepInstructions
         "Report written with fact:holdoutDraft, a file holding { \"dir\": \"<the value of $AW_SINDRI_RUN_DIR>\" } and nothing else.",
     ];
 
-    /// <inheritdoc/>
-    public BlockId Step { get; } = BlockId.From("step.plan.holdout");
+    private static readonly BlockId _step = BlockId.From("step.plan.holdout");
 
     /// <inheritdoc/>
     public IReadOnlyList<string> Lines => _lines;
 
-    public bool IsFor(BlockId step) => throw new NotImplementedException();
+    /// <inheritdoc/>
+    public bool IsFor(BlockId step) => step == _step;
 }
