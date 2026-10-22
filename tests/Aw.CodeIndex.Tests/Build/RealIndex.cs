@@ -16,14 +16,14 @@ internal sealed class RealIndex : IDisposable
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "aw-codeindex-" + RealTime.NewGuid().ToString("N"));
 
-    public RealIndex(FakeHeavyJobLock? heavy = null)
+    public RealIndex(FakeHeavyJobLock? heavy = null, IGraphRunner? graph = null)
     {
         _ = Directory.CreateDirectory(_directory);
         var snapshot = new GitRepoSnapshot();
         Store = new SqliteIndexStore(Path.Combine(_directory, "index"), TimeProvider.System);
         Heavy = heavy ?? new FakeHeavyJobLock();
-        Service = new BuildCodeIndexService(new FakeRepoHeads(), snapshot, new StructureWriter(snapshot, [new CSharpParser()], new FileParseQuarantine(Path.Combine(_directory, "index")), new RedactingBodyScrubber()), Store, Heavy, TimeProvider.System);
-        Facade = new CodeIndexFacade(Service, Store);
+        Service = new BuildCodeIndexService(new FakeRepoHeads(), snapshot, new StructureWriter(snapshot, [new CSharpParser()], new FileParseQuarantine(Path.Combine(_directory, "index")), new RedactingBodyScrubber()), Store, Heavy, TimeProvider.System, graph);
+        Facade = new CodeIndexFacade(Service, Store, graph);
     }
 
     public IIndexStore Store { get; }
