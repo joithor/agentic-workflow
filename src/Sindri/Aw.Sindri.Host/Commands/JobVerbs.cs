@@ -64,7 +64,19 @@ internal sealed class JobVerbs(ControlPlaneClient client, Output output, Func<bo
         var code = answer.Value.Value.AsOf.Rebuilding || answer.Value.Value.AsOf.Stalled ? 1 : 0;
         return command.Json
             ? await output.Raw(answer.Value.Body, code).ConfigureAwait(false)
-            : await output.Text(JobText.Render(answer.Value.Value), code).ConfigureAwait(false);
+            : await output.Text(JobText.Render(answer.Value.Value) + await PublishLink(answer.Value.Value, ct).ConfigureAwait(false), code).ConfigureAwait(false);
+    }
+
+    // A map refresh that ended held for the code index points at the publish job that finished it; a failed publish read leaves the job's own text alone.
+    private async Task<string> PublishLink(JobView job, CancellationToken ct)
+    {
+        if (HeldRefreshLinks.HeldVersion(job) is not { } version)
+        {
+            return string.Empty;
+        }
+
+        var publishes = await client.GetView<JobList>("/sindri/jobs" + UrlQuery.Of([("kind", HeldRefreshLinks.PublishJobKind)]), ct).ConfigureAwait(false);
+        return publishes.IsError ? string.Empty : HeldRefreshLinks.Publish(job, version, publishes.Value.Value.Jobs);
     }
 
     private async Task<int> Cancel(JobCommandLine command, CancellationToken ct)

@@ -37,6 +37,7 @@ using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Core.Workflow.Shipped;
 using Aw.Sindri.Core.Workflow.Views;
+using Aw.Sindri.Features;
 using Aw.Sindri.Features.AddRepo;
 using Aw.Sindri.Features.ApplyCommand;
 using Aw.Sindri.Features.ApproveAllRecipes;
@@ -174,7 +175,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ProbeReport)), JsonSerializable(typeof(ProbeRun)), JsonSerializable(typeof(SourcesView)), JsonSerializable(typeof(SourceSyncStatus))]
 [JsonSerializable(typeof(McpToolError)), JsonSerializable(typeof(McpSourcesAnswer)), JsonSerializable(typeof(RegisterMcpResponse)), JsonSerializable(typeof(Core.Mcp.ProviderResult)), JsonSerializable(typeof(ContextSourcesSynced))]
 [JsonSerializable(typeof(ContextLinksSynced)), JsonSerializable(typeof(ContextMapImported)), JsonSerializable(typeof(MapDocument)), JsonSerializable(typeof(ReviewFile))]
-[JsonSerializable(typeof(MapStatusView)), JsonSerializable(typeof(MapExported)), JsonSerializable(typeof(MapHealth)), JsonSerializable(typeof(PurgeReport))]
+[JsonSerializable(typeof(MapStatusView)), JsonSerializable(typeof(MapPublishStatusView)), JsonSerializable(typeof(StaleRepo)), JsonSerializable(typeof(MapExported)), JsonSerializable(typeof(MapHealth)), JsonSerializable(typeof(PurgeReport))]
 [JsonSerializable(typeof(ImportContextMapRequest)), JsonSerializable(typeof(ImportContextMapResponse))]
 // Two RecordKey types meet here: Sindri's item link key and the context lane's source key; name Sindri's apart (SYSLIB1031).
 [JsonSerializable(typeof(Core.Ids.RecordKey), TypeInfoPropertyName = "ItemRecordKey")]

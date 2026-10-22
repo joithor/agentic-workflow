@@ -95,6 +95,7 @@ internal static class ContextApiScenarios
         ("context-filemap", "repo-outside-045", async (s, ct) => await s.Fetch("/sindri/context/filemap?repo=elsewhere", ct)),
         ("context-filemap", "no-draft-044", async (s, ct) => await s.Fetch($"/sindri/context/filemap?repo={Repo}&draft=true", ct)),
         ("context-map", "map-tabs-anchor", async (s, ct) => await s.Fetch($"/sindri/context/map?anchor={Anchor}", ct)),
+        ("context-map-publish", "published", async (s, ct) => await s.Fetch("/sindri/context/map/publish", ct)),
         ("context-query", "diff-spl-103", async (s, ct) => await s.Fetch($"/sindri/context/query?diff={DiffRange(s)}&repo={FixtureMap.Repo}", ct)),
         ("context-query", "diff-unknown-sha-110", async (s, ct) => await s.Fetch($"/sindri/context/query?diff={_unknownBase}..{HeadOf(s)}&repo={FixtureMap.Repo}", ct)),
         ("context-query", "diff-spl-103-hops-component", async (s, ct) => await s.Fetch($"/sindri/context/query?diff={DiffRange(s)}&repo={FixtureMap.Repo}&hops=component", ct)),

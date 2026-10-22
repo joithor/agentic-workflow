@@ -54,6 +54,7 @@ public sealed class GoldenContractTests
         ["context-lenses"] = As<LensesView>,
         ["context-filemap"] = As<FileMapView>,
         ["context-map"] = As<MapStatusView>,
+        ["context-map-publish"] = As<MapPublishView>,
         ["context-map-promote"] = As<PromotePreview>,
         ["context-map-review"] = AsReview,
         ["context-map-review-history"] = As<ReviewHistoryView>,

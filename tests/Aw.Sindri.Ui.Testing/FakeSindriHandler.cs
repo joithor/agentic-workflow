@@ -186,6 +186,9 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
             case "map":
                 _ = await server.MapStatus(uri, query["anchor"], cancellationToken);
                 return Answer(server.MapStatusAnswer);
+            case "map/publish":
+                _ = await server.MapPublish(uri, cancellationToken);
+                return Answer(server.MapPublishAnswer);
             case "node":
                 _ = await server.Node(uri, query["key"] ?? string.Empty, cancellationToken);
                 return Answer(server.NodeAnswer);

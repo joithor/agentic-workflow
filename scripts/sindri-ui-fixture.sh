@@ -43,6 +43,18 @@
 #                                  context.db through down, so the next draft's number depends on earlier runs); up and down
 #                                  approve whenever the profile is not approved
 #
+#   sindri-ui-fixture.sh context publish held|overdue|published|without-waiting|stale|by-hand|pause|resume
+#                                  the Health page's Context map card (F1P-c, code index spec 6.4; run after 'context up'): puts the
+#                                  map into one of the six publish states by writing the stored state the card reads, then prints the
+#                                  words 'sindri context map status' should give. held writes a draft (copied heads) with a hold whose
+#                                  wait just began into <home>/context/context.db and pauses the context-map-refresh service so no
+#                                  tick publishes it; overdue does the same with the wait started an hour ago; published, without-waiting
+#                                  (a 'context.map.published' FirstMap event), by-hand (a 'context.map.promoted' by human:fixture) and
+#                                  stale (the current version's recorded head changed to 1234567, and a TimedOut published event)
+#                                  drop the hold and resume the service first; stale reads stale only while a code index is built for
+#                                  the repo at another commit (sindri code-index status), else the repo reads 'not indexed yet';
+#                                  pause and resume only toggle the service
+#
 #   sindri-ui-fixture.sh sessions up|ask <pid>|end <pid>|back <pid>|disable|enable|down
 #                                  the Agents page's data (U11a; run after 'up', and run 'sessions up' right after every 'up': a
 #                                  control plane started without it reads the real box). up copies tests/fixtures/sessions/
@@ -90,9 +102,14 @@ need() { command -v "$1" >/dev/null 2>&1 || die "$1 is needed for '$verb'"; }
 use_cli() { [ "${SINDRI_UI_FIXTURE_SQL:-}" != python ] && command -v sqlite3 >/dev/null 2>&1; }
 need_sql() { use_cli || { command -v python3 >/dev/null 2>&1 && python3 -I -c 'import sqlite3' >/dev/null 2>&1; } || die "sqlite3 (or python3) is needed for '$verb'"; }
 
+# $1 db file, $2 statements.
+sql_on() {
+  if use_cli; then sqlite3 -bail "$1" "$2"; else python_sql "$1" "$2"; fi
+}
+
 ledger() {
   [ -f "$AW_SINDRI_HOME/ledger.db" ] || die "no ledger at $AW_SINDRI_HOME/ledger.db: run 'up' first"
-  if use_cli; then sqlite3 -bail "$AW_SINDRI_HOME/ledger.db" "$1"; else python_sql "$AW_SINDRI_HOME/ledger.db" "$1"; fi
+  sql_on "$AW_SINDRI_HOME/ledger.db" "$1"
 }
 
 python_sql() {
@@ -405,8 +422,75 @@ context_down() {
   return 0
 }
 
+# --- context publish: the six states of the Health page's Context map card (F1P-c, code index spec 6.4) ---
+PUBLISH_SERVICE="context-map-refresh"
+
+context_db() { printf '%s\n' "$AW_SINDRI_HOME/context/context.db"; }
+
+# One ledger row of a registered map event for the current version, the same row every time (INSERT OR IGNORE on its key).
+# $1 key suffix, $2 type, $3 actor, $4 payload JSON. The id and correlation id are GUIDs and the time has seven fractional digits (see stall).
+publish_event() {
+  local key="sindri-ui-fixture:publish:$1:v$version" id corr
+  id="$(printf '%s' "$key" | cksum | awk '{printf "5c0f1e00-%04x-4d1e-9a55-3c2f6d8e1b04", $1 % 65536}')"
+  corr="${id%?}5"
+  ledger "INSERT OR IGNORE INTO events (id, type, schema_version, occurred_at, actor, tenant, ring, correlation_id, epoch, idempotency_key, payload_json)
+          VALUES ('$id', '$2', 1, strftime('%Y-%m-%dT%H:%M:%S', 'now') || '.0000000Z', '$3', 'local', 0, '$corr',
+                  COALESCE((SELECT MAX(epoch) FROM events), 0), '$key', '$4');" >/dev/null
+}
+
+# Removes the hold, its chain and the draft this fixture wrote; the current version stays.
+publish_clear() {
+  sql_on "$(context_db)" "DELETE FROM map_hold; DELETE FROM map_publish_chain; DELETE FROM map_version WHERE status = 'draft' AND commit_sha = 'fixture-hold'; DELETE FROM map_version_head WHERE version NOT IN (SELECT id FROM map_version);"
+}
+
+# A draft with the current version's heads, held, with the wait started $1 seconds ago.
+publish_hold() {
+  local ago="$1" db
+  db="$(context_db)"
+  publish_clear || return
+  sql_on "$db" "INSERT INTO map_version (repo, commit_sha, key_version, created, status)
+                  SELECT repo, 'fixture-hold', key_version, strftime('%Y-%m-%dT%H:%M:%S', 'now') || '.0000000Z', 'draft' FROM map_version WHERE status = 'current';
+                INSERT INTO map_version_head (version, repo, commit_sha, on_default)
+                  SELECT d.id, h.repo, h.commit_sha, h.on_default FROM map_version d, map_version_head h, map_version c
+                  WHERE d.commit_sha = 'fixture-hold' AND c.status = 'current' AND h.version = c.id;
+                INSERT INTO map_hold (version) SELECT id FROM map_version WHERE commit_sha = 'fixture-hold';
+                INSERT OR REPLACE INTO map_publish_chain (id, since) VALUES (1, strftime('%Y-%m-%dT%H:%M:%S', 'now', '-$ago seconds') || '.0000000Z');" >/dev/null
+}
+
+context_publish() {
+  need jq
+  local db state current repo
+  db="$(context_db)"
+  [ -f "$db" ] || die "no context store at $db: run 'context up' first"
+  current="$(sql_on "$db" "SELECT id || '|' || repo FROM map_version WHERE status = 'current'")"
+  [ -n "$current" ] || die "no current map: run 'context up' first"
+  version="${current%%|*}"; repo="${current#*|}"
+  case "$1" in
+    pause) "$PROVE" human services pause "$PUBLISH_SERVICE"; return ;;
+    resume) "$PROVE" human services resume "$PUBLISH_SERVICE"; return ;;
+    held) publish_hold 0 && "$PROVE" human services pause "$PUBLISH_SERVICE" >/dev/null && state="held" ;;
+    overdue) publish_hold 3600 && "$PROVE" human services pause "$PUBLISH_SERVICE" >/dev/null && state="overdue" ;;
+    *)
+      publish_clear || return
+      "$PROVE" human services resume "$PUBLISH_SERVICE" >/dev/null 2>&1 || true
+      case "$1" in
+        published) state="published" ;;
+        without-waiting)
+          publish_event firstmap context.map.published "service:$PUBLISH_SERVICE" "{\"repo\":\"$repo\",\"version\":$version,\"reason\":\"FirstMap\",\"via\":\"refresh\",\"repos\":1,\"staleRepos\":0,\"waitedSeconds\":0,\"heads\":{}}" \
+            && state="published-without-waiting" ;;
+        by-hand)
+          publish_event byhand context.map.promoted "human:fixture" "{\"version\":$version,\"repo\":\"$repo\",\"retained\":null}" && state="published-by-hand" ;;
+        stale)
+          sql_on "$db" "UPDATE map_version_head SET commit_sha = '1234567' WHERE version = $version;" >/dev/null \
+            && publish_event timedout context.map.published "service:$PUBLISH_SERVICE" "{\"repo\":\"$repo\",\"version\":$version,\"reason\":\"TimedOut\",\"via\":\"check\",\"repos\":1,\"staleRepos\":1,\"waitedSeconds\":900,\"heads\":{}}" \
+            && state="published-stale" ;;
+      esac ;;
+  esac || return
+  printf '%s\n' "$state"
+}
+
 context() {
-  case "$1" in up) context_up ;; draft) context_draft ;; down) context_down ;; esac
+  case "$1" in up) context_up ;; draft) context_draft ;; down) context_down ;; publish) context_publish "$2" ;; esac
 }
 
 SESSIONS_DIRNAME="ui-fixture-sessions"
@@ -530,7 +614,14 @@ case "$verb" in
   workflows) [ "$#" -eq 1 ] || { [ "$#" -eq 2 ] && [ "$2" = "--large" ]; } || die "usage: workflows [--large]" ;;
   incident) { [ "$#" -eq 2 ] && { [ "$2" = start ] || [ "$2" = stop ]; }; } || die "usage: incident start|stop" ;;
   request) [ "$#" -ge 2 ] || die "usage: request [--item ID] [--repo R] <text>" ;;
-  context) { [ "$#" -eq 2 ] && { [ "$2" = up ] || [ "$2" = draft ] || [ "$2" = down ]; }; } || die "usage: context up|draft|down" ;;
+  context)
+    case "${2:-}" in
+      up | draft | down) [ "$#" -eq 2 ] || die "usage: context up|draft|down|publish <state>" ;;
+      publish)
+        [ "$#" -eq 3 ] || die "usage: context publish held|overdue|published|without-waiting|stale|by-hand|pause|resume"
+        case "$3" in held | overdue | published | without-waiting | stale | by-hand | pause | resume) ;; *) die "context publish: '$3' is not a state (held, overdue, published, without-waiting, stale, by-hand, pause, resume)" ;; esac ;;
+      *) die "usage: context up|draft|down|publish <state>" ;;
+    esac ;;
   sessions)
     case "${2:-}" in
       up | disable | enable | down) [ "$#" -eq 2 ] || die "usage: sessions up|ask <pid>|end <pid>|back <pid>|disable|enable|down" ;;
