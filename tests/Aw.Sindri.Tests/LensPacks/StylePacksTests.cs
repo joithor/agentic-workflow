@@ -11,12 +11,14 @@ namespace Aw.Sindri.Tests.LensPacks;
 [Lane(TestLane.Unit)]
 public sealed class StylePacksTests
 {
+#pragma warning disable MA0136 // a raw string with line ends is the readable form of this JSON
     private const string PackJson = """
         {"kind":"style","id":"mini","version":"1.0.0","title":"Mini",
          "sections":[{"id":"summary","heading":"Summary","required":true,"guidance":"Short.","maxWords":50},{"id":"notes","heading":"Notes","required":false,"guidance":"Optional."}],
          "rules":{"forbidden":["shall","in order to"],"maxLines":40,"tables":"allow","voice":"voice.md"},
          "template":"template.md","examples":["examples/a.md"]}
         """;
+#pragma warning restore MA0136
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -47,7 +49,7 @@ public sealed class StylePacksTests
         Assert.Equal(["Summary", "Behaviour", "Data", "Proof", "Rows to other lanes"], plain.Value.Sections.Select(static s => s.Heading), StringComparer.Ordinal);
         Assert.All(plain.Value.Sections, static s => Assert.True(s.Required));
         Assert.Equal(100, plain.Value.Sections[0].MaxWords);
-        Assert.Contains("shall", plain.Value.Rules.Forbidden);
+        Assert.Contains("shall", plain.Value.Rules.Forbidden, StringComparer.Ordinal);
         Assert.Equal(120, plain.Value.Rules.MaxLines);
         Assert.Matches("^sha256:[0-9a-f]{64}$", plain.Value.Hash);
     }
@@ -108,8 +110,8 @@ public sealed class StylePacksTests
 
         var hash = StylePackReader.Read("mini", files).Value.Hash;
 
-        Assert.Equal(hash, StylePackReader.Read("mini", reordered).Value.Hash);
-        Assert.NotEqual(hash, StylePackReader.Read("mini", edited).Value.Hash);
+        Assert.Equal(hash, StylePackReader.Read("mini", reordered).Value.Hash, StringComparer.Ordinal);
+        Assert.NotEqual(hash, StylePackReader.Read("mini", edited).Value.Hash, StringComparer.Ordinal);
     }
 
     [Fact]
@@ -130,9 +132,7 @@ public sealed class StylePacksTests
 
     [Fact]
     public void A_pack_json_that_is_not_json_is_refused()
-    {
-        Assert.Contains("not JSON", Problem(static _ => "{"), StringComparison.Ordinal);
-    }
+        => Assert.Contains("not JSON", Problem(static _ => "{"), StringComparison.Ordinal);
 
     [Fact]
     public void A_pack_with_no_section_or_a_section_without_a_heading_is_refused()
@@ -143,9 +143,7 @@ public sealed class StylePacksTests
 
     [Fact]
     public void A_heading_named_twice_is_refused()
-    {
-        Assert.Contains("twice", Problem(static j => j.Replace("\"heading\":\"Notes\"", "\"heading\":\"Summary\"", StringComparison.Ordinal)), StringComparison.Ordinal);
-    }
+        => Assert.Contains("twice", Problem(static j => j.Replace("\"heading\":\"Notes\"", "\"heading\":\"Summary\"", StringComparison.Ordinal)), StringComparison.Ordinal);
 
     [Fact]
     public void A_section_whose_required_flag_is_not_a_boolean_or_whose_limit_is_not_a_positive_number_is_refused()

@@ -35,9 +35,9 @@ public sealed class PackBundlesTests
         Assert.Equal("style", bundle.Value.Directory);
         Assert.Equal(LensPackId.From("plain"), bundle.Value.PackId);
         Assert.Equal(new ProfileStylePacks(new NoProfile(), new EmbeddedStylePackSource()).Find(LensPackId.From("plain")).Value.Hash, bundle.Value.Hash);
-        Assert.Contains("pack.json", bundle.Value.Files.Keys);
-        Assert.Contains("template.md", bundle.Value.Files.Keys);
-        Assert.Contains("voice.md", bundle.Value.Files.Keys);
+        Assert.Contains("pack.json", bundle.Value.Files.Keys, StringComparer.Ordinal);
+        Assert.Contains("template.md", bundle.Value.Files.Keys, StringComparer.Ordinal);
+        Assert.Contains("voice.md", bundle.Value.Files.Keys, StringComparer.Ordinal);
     }
 
     [Fact]
@@ -61,7 +61,7 @@ public sealed class PackBundlesTests
     {
         var bundle = await Bundles(new FakeLensPacks().With(Design())).Resolve(new PackBundleRequest("lenses", Repo: null, Subject: "design", Lens: null), Token);
 
-        Assert.Equal(["pack.json"], bundle.Value.Files.Keys);
+        Assert.Equal(["pack.json"], bundle.Value.Files.Keys, StringComparer.Ordinal);
     }
 
     [Fact]

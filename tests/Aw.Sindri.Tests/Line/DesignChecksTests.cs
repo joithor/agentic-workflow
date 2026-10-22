@@ -1,7 +1,7 @@
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Features.Line;
 using Aw.Sindri.Core.LensPacks;
+using Aw.Sindri.Features.Line;
 
 namespace Aw.Sindri.Tests.Line;
 
@@ -278,9 +278,7 @@ public sealed class DesignChecksTests
 
     [Fact]
     public void A_spec_that_follows_the_style_pack_has_no_DSN_STYLE_001_finding_and_no_warning()
-    {
-        Assert.Empty(StyleFailures(Spec, Style(maxWords: 10)));
-    }
+        => Assert.Empty(StyleFailures(Spec, Style(maxWords: 10)));
 
     [Fact]
     public void A_missing_required_section_fails_DSN_STYLE_001_naming_it()
@@ -293,9 +291,7 @@ public sealed class DesignChecksTests
 
     [Fact]
     public void A_missing_optional_section_is_fine()
-    {
-        Assert.Empty(StyleFailures(Spec, Style()));
-    }
+        => Assert.Empty(StyleFailures(Spec, Style()));
 
     [Fact]
     public void Sections_out_of_order_fail_DSN_STYLE_001()

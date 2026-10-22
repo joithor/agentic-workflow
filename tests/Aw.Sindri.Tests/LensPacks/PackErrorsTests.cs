@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
@@ -67,14 +68,14 @@ public sealed class PackErrorsTests
 
     private static Dictionary<string, string> PackFiles(int lenses)
     {
-        var entries = string.Join(",", Enumerable.Range(0, lenses).Select(static i => $$"""{"id":"l{{i}}","title":"Lens {{i}}","prompt":"lenses/l{{i}}.md","when":"always"}"""));
+        var entries = string.Join(',', Enumerable.Range(0, lenses).Select(static i => $$"""{"id":"l{{i.ToString(CultureInfo.InvariantCulture)}}","title":"Lens {{i.ToString(CultureInfo.InvariantCulture)}}","prompt":"lenses/l{{i.ToString(CultureInfo.InvariantCulture)}}.md","when":"always"}"""));
         var files = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["pack.json"] = $$"""{"kind":"lenses","id":"big-pack","version":1,"applies":"design","lenses":[{{entries}}]}""",
         };
         for (var i = 0; i < lenses; i++)
         {
-            files[$"lenses/l{i}.md"] = "look for " + Encoding.UTF8.GetString([(byte)('a' + i)]);
+            files[$"lenses/l{i.ToString(CultureInfo.InvariantCulture)}.md"] = "look for " + Encoding.UTF8.GetString([(byte)('a' + i)]);
         }
 
         return files;

@@ -52,7 +52,7 @@ public sealed class OutsideLensPacksTests
     {
         Put(RepoPacks, "house", "taste");
 
-        var pack = await Packs("house", new() { ["lenses/house"] = HashOf("house", "taste") }).Resolve(LensPackKind.Design, Web, Token);
+        var pack = await Packs("house", new(StringComparer.Ordinal) { ["lenses/house"] = HashOf("house", "taste") }).Resolve(LensPackKind.Design, Web, Token);
 
         Assert.Equal("taste", Assert.Single(pack.Value.Lenses).Id.Value);
     }
@@ -62,7 +62,7 @@ public sealed class OutsideLensPacksTests
     {
         Put(MachinePacks, "house", "taste");
 
-        var pack = await Packs("house", new() { ["lenses/house"] = HashOf("house", "taste") }).Resolve(LensPackKind.Design, Web, Token);
+        var pack = await Packs("house", new(StringComparer.Ordinal) { ["lenses/house"] = HashOf("house", "taste") }).Resolve(LensPackKind.Design, Web, Token);
 
         Assert.Equal("taste", Assert.Single(pack.Value.Lenses).Id.Value);
     }
@@ -73,7 +73,7 @@ public sealed class OutsideLensPacksTests
         Put(MachinePacks, "house", "machine-lens");
         Put(RepoPacks, "house", "repo-lens");
 
-        var pack = await Packs("house", new() { ["lenses/house"] = HashOf("house", "repo-lens") }).Resolve(LensPackKind.Design, Web, Token);
+        var pack = await Packs("house", new(StringComparer.Ordinal) { ["lenses/house"] = HashOf("house", "repo-lens") }).Resolve(LensPackKind.Design, Web, Token);
 
         Assert.Equal("repo-lens", Assert.Single(pack.Value.Lenses).Id.Value);
     }
@@ -83,7 +83,7 @@ public sealed class OutsideLensPacksTests
     {
         Put(RepoPacks, "house", "taste");
 
-        var pack = await Packs("house", new() { ["lenses/house"] = HashOf("house", "taste") }).Resolve(LensPackKind.Design, repo: null, Token);
+        var pack = await Packs("house", new(StringComparer.Ordinal) { ["lenses/house"] = HashOf("house", "taste") }).Resolve(LensPackKind.Design, repo: null, Token);
 
         Assert.Equal("SND-PACK-001", pack.Error.Code);
     }
@@ -104,7 +104,7 @@ public sealed class OutsideLensPacksTests
     {
         Put(MachinePacks, "house", "taste");
 
-        var pack = await Packs("house", new() { ["lenses/house"] = "sha256:" + new string('0', 64) }).Resolve(LensPackKind.Design, Web, Token);
+        var pack = await Packs("house", new(StringComparer.Ordinal) { ["lenses/house"] = "sha256:" + new string('0', 64) }).Resolve(LensPackKind.Design, Web, Token);
 
         Assert.Equal("SND-PACK-002", pack.Error.Code);
     }

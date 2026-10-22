@@ -13,7 +13,7 @@ public sealed class PackBundleFilesTests : IDisposable
     public void Dispose() => Directory.Delete(_step, recursive: true);
 
     private static PackBundle Bundle(params (string Path, string Text)[] files) =>
-        new("style", "plain", "sha256:" + new string('b', 64), files.ToDictionary(static f => f.Path, static f => f.Text, StringComparer.Ordinal));
+        new("style", LensPackId.From("plain"), "sha256:" + new string('b', 64), files.ToDictionary(static f => f.Path, static f => f.Text, StringComparer.Ordinal));
 
     [Fact]
     public void The_files_are_written_under_the_bundles_folder_nested_paths_included()
