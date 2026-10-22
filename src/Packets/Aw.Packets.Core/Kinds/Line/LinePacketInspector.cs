@@ -33,7 +33,6 @@ public sealed class LinePacketInspector(ILinePacketSource source, IRepoSnapshot 
     /// <returns>The inspection; the read error; or AW-PACKETS-006 when the repository can't be read.</returns>
     public async ValueTask<Result<LineInspection>> Inspect(PacketKind kind, string packetDirectory, string repoDirectory, SizesFile? sizes, PacketHash? sealedSet, CancellationToken cancellationToken)
     {
-        _ = sealedSet;   // red: not read yet
         ArgumentNullException.ThrowIfNull(kind);
         var files = await source.Read(kind, packetDirectory, cancellationToken).ConfigureAwait(false);
         if (files.IsError)
@@ -55,6 +54,6 @@ public sealed class LinePacketInspector(ILinePacketSource source, IRepoSnapshot 
             tree = loaded.Value;
         }
 
-        return new LineInspection(kind, files.Value, manifest, LinePacketChecks.Run(kind, files.Value, new LineInputs(read, tree, sizes), json));
+        return new LineInspection(kind, files.Value, manifest, LinePacketChecks.Run(kind, files.Value, new LineInputs(read, tree, sizes, sealedSet), json));
     }
 }
