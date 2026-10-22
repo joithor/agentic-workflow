@@ -19,7 +19,7 @@
 
     <!-- The setup line (setup spec §2.4): one 40 px line above Needs you while any step is open, no card. It opens Settings at the checklist. -->
     <Border x:Name="SetupHomeLine" Classes="setup-line" IsVisible="{Binding Setup.IsHomeLineShown}">
-      <Grid ColumnDefinitions="*,Auto" MinHeight="40" ColumnSpacing="12">
+      <Grid ColumnDefinitions="*,Auto,Auto" MinHeight="48" ColumnSpacing="12">
         <Button x:Name="SetupHomeLink" Classes="setup-link" Click="OnSetupLink" AutomationProperties.Name="{Binding Setup.HomeLineName}">
           <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw">
             <TextBlock Classes="body-strong" Text="{Binding Setup.HomeLineText}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
@@ -27,7 +27,9 @@
             <TextBlock Classes="caption muted" Text="{Binding Setup.HomeStepText}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
           </StackPanel>
         </Button>
-        <Button x:Name="SetupHomeContinue" Grid.Column="1" Classes="command-control primary" Click="OnSetupContinue" VerticalAlignment="Center" Margin="0,0,8,0" AutomationProperties.Name="{Binding Setup.ContinueName}">
+        <!-- F3 home spec §1 Q6: the 120 px meter after the words, done steps of all of them; the words above carry the same count. -->
+        <ProgressBar x:Name="SetupHomeMeter" Grid.Column="1" Classes="map-meter" Width="120" VerticalAlignment="Center" Minimum="0" Maximum="{Binding Setup.MeterMax}" Value="{Binding Setup.MeterDone}" AutomationProperties.AccessibilityView="Raw" />
+        <Button x:Name="SetupHomeContinue" Grid.Column="2" Classes="command-control primary" Click="OnSetupContinue" VerticalAlignment="Center" Margin="0,0,8,0" AutomationProperties.Name="{Binding Setup.ContinueName}">
           <TextBlock Classes="button" Text="{Binding Setup.ContinueText}" AutomationProperties.AccessibilityView="Raw" />
         </Button>
       </Grid>
@@ -74,8 +76,13 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <TextBlock x:Name="NeedsYouEmpty" Classes="caption quiet" Text="{Binding NeedsYou.EmptyText}" Margin="16,8"
-                       IsVisible="{Binding NeedsYou.IsEmpty}" AutomationProperties.Name="{Binding NeedsYou.EmptyText}" />
+            <StackPanel x:Name="NeedsYouSkeleton" IsVisible="{Binding NeedsYou.IsLoading}" AutomationProperties.AccessibilityView="Raw">
+              <Grid Classes="skrow" ColumnDefinitions="70,*,40"><Border Classes="skeleton" Width="60" /><Border Grid.Column="1" Classes="skeleton" Width="300" /><Border Grid.Column="2" Classes="skeleton" Width="32" /></Grid>
+              <Grid Classes="skrow" ColumnDefinitions="70,*,40"><Border Classes="skeleton" Width="60" /><Border Grid.Column="1" Classes="skeleton" Width="220" /><Border Grid.Column="2" Classes="skeleton" Width="32" /></Grid>
+              <Grid Classes="skrow" ColumnDefinitions="70,*,40"><Border Classes="skeleton" Width="60" /><Border Grid.Column="1" Classes="skeleton" Width="260" /><Border Grid.Column="2" Classes="skeleton" Width="32" /></Grid>
+            </StackPanel>
+            <TextBlock x:Name="NeedsYouEmpty" Classes="caption quiet" Text="{Binding NeedsYou.EmptyLine}" Margin="16,8"
+                       IsVisible="{Binding NeedsYou.EmptyLine, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" AutomationProperties.Name="{Binding NeedsYou.EmptyLine}" />
             <Button x:Name="NeedsYouShowAll" HorizontalAlignment="Left" Classes="copy" Click="OnShowAllNeedsYou" IsVisible="{Binding NeedsYou.HasOverflow}"
                     AutomationProperties.Name="{Binding NeedsYou.OverflowText}" Margin="16,6">
               <TextBlock Classes="caption" Text="{Binding NeedsYou.OverflowText}" />
@@ -108,8 +115,13 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <TextBlock x:Name="WorkflowsEmpty" Classes="caption quiet" Text="{Binding Strip.EmptyText}" Margin="16,8"
-                       IsVisible="{Binding Strip.IsEmpty}" AutomationProperties.Name="{Binding Strip.EmptyText}" />
+            <StackPanel x:Name="WorkflowsSkeleton" IsVisible="{Binding Strip.IsLoading}" AutomationProperties.AccessibilityView="Raw">
+              <Grid Classes="skrow" ColumnDefinitions="70,*,40"><Border Classes="skeleton" Width="60" /><Border Grid.Column="1" Classes="skeleton" Width="300" /><Border Grid.Column="2" Classes="skeleton" Width="32" /></Grid>
+              <Grid Classes="skrow" ColumnDefinitions="70,*,40"><Border Classes="skeleton" Width="60" /><Border Grid.Column="1" Classes="skeleton" Width="220" /><Border Grid.Column="2" Classes="skeleton" Width="32" /></Grid>
+              <Grid Classes="skrow" ColumnDefinitions="70,*,40"><Border Classes="skeleton" Width="60" /><Border Grid.Column="1" Classes="skeleton" Width="260" /><Border Grid.Column="2" Classes="skeleton" Width="32" /></Grid>
+            </StackPanel>
+            <TextBlock x:Name="WorkflowsEmpty" Classes="caption quiet" Text="{Binding Strip.EmptyLine}" Margin="16,8"
+                       IsVisible="{Binding Strip.EmptyLine, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" AutomationProperties.Name="{Binding Strip.EmptyLine}" />
             <TextBlock x:Name="WorkflowsNotServed" Classes="caption quiet" Text="{Binding Strip.NotServedText}" Margin="16,8"
                        IsVisible="{Binding Strip.IsNotServed}" AutomationProperties.Name="{Binding Strip.NotServedText}" />
             <TextBlock x:Name="WorkflowsUnreadable" Classes="caption quiet" Text="{Binding Strip.UnreadableText}" Margin="16,8" TextWrapping="Wrap"
@@ -229,7 +241,7 @@
             <DataTemplate x:DataType="vm:HealthCell">
               <Border Classes="cell">
                 <StackPanel>
-                  <TextBlock Classes="caption subtle" Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Classes="eyebrow" Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
                   <StackPanel Orientation="Horizontal" Spacing="6">
                     <icons:StateIcon Glyph="{Binding Glyph}" IsVisible="{Binding HasGlyph}" VerticalAlignment="Center" />
                     <TextBlock Classes="body-strong" Text="{Binding Value}" TextTrimming="CharacterEllipsis" />
