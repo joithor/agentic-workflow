@@ -38,7 +38,7 @@ public sealed class RecipesPageStatesTests
         _f.ServeThree();
         var page = await _f.Shown(Token);
 
-        _f.Server.RecipeListAnswer = new RouteAnswer(HttpStatusCode.InternalServerError, "{}");
+        _f.Server.RecipeListAnswer = RouteAnswer.Problem(HttpStatusCode.ServiceUnavailable, "SND-API-011", "The views have not caught up");
         await page.Refresh(RecipesPageFixture.Url, Token);
 
         Assert.Equal((true, false, 3), (page.IsStale, page.IsFailed, page.Rows.Count));
@@ -47,7 +47,7 @@ public sealed class RecipesPageStatesTests
     [Fact]
     public async Task A_first_read_that_fails_says_so_and_offers_to_try_again()
     {
-        _f.Server.RecipeListAnswer = new RouteAnswer(HttpStatusCode.InternalServerError, "{}");
+        _f.Server.RecipeListAnswer = RouteAnswer.Problem(HttpStatusCode.ServiceUnavailable, "SND-API-011", "The views have not caught up");
         var page = await _f.Shown(Token);
 
         Assert.Equal((true, false), (page.IsFailed, page.IsReading));

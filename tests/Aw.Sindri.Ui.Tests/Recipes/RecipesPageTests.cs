@@ -1,4 +1,5 @@
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.Navigation;
 
 namespace Aw.Sindri.Ui.Tests.Recipes;

@@ -73,7 +73,7 @@ public sealed class RecipeSheetLayoutTests
     [Fact]
     public async Task A_list_that_cannot_be_read_leaves_the_sheet_without_a_standing()
     {
-        _server.RecipeListAnswer = new RouteAnswer(HttpStatusCode.InternalServerError, "{}");
+        _server.RecipeListAnswer = RouteAnswer.Problem(HttpStatusCode.ServiceUnavailable, "SND-API-011", "The views have not caught up");
         var sheet = new RecipeSheetViewModel(_server, _clipboard);
 
         await sheet.Open(_api, Id, Token);

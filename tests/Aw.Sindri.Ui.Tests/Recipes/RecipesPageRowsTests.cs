@@ -1,4 +1,5 @@
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.ViewModels.Recipes;
@@ -15,7 +16,7 @@ public sealed class RecipesPageRowsTests
         new(id, Version: 2, Hash, standing, Name: null, displayName, stale ?? [],
             [new RecipeInputView("fact:a", "A", FactType.Text, "text", Required: true, Generate: null), new RecipeInputView("fact:b", "B", FactType.Text, "text", Required: false, Generate: null)],
             [new RecipeOutputView("fact:o", "O", FactType.Text, "done")],
-            [new RecipeStateView("seed", 1, null), new RecipeStateView("done", 2, null), new RecipeStateView("alt", null, "seed")]);
+            [new RecipeStateView("seed", Order: 1, BranchOf: null), new RecipeStateView("done", Order: 2, BranchOf: null), new RecipeStateView("alt", Order: null, BranchOf: "seed")]);
 
     [Theory]
     [InlineData("workflow.phase", null, "Build and prove")]
@@ -35,7 +36,7 @@ public sealed class RecipesPageRowsTests
     [InlineData("unapproved", RecipeStanding.NotApproved, "Not approved")]
     [InlineData("revoked", RecipeStanding.Revoked, "Revoked")]
     [InlineData("something-new", RecipeStanding.NotApproved, "Not approved")]
-    public void Standing_reads_in_one_word(string served, RecipeStanding standing, string word)
+    internal void Standing_reads_in_one_word(string served, RecipeStanding standing, string word)
     {
         var row = new RecipeRowViewModel(Served(standing: served));
 
