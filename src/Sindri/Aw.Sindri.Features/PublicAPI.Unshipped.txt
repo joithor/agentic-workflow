@@ -3950,6 +3950,132 @@ static Aw.Sindri.Features.GetSetup.GetSetupRequest.operator !=(Aw.Sindri.Feature
 static Aw.Sindri.Features.GetSetup.GetSetupRequest.operator ==(Aw.Sindri.Features.GetSetup.GetSetupRequest? left, Aw.Sindri.Features.GetSetup.GetSetupRequest? right) -> bool
 static Aw.Sindri.Features.GetSetup.GetSetupResponse.operator !=(Aw.Sindri.Features.GetSetup.GetSetupResponse? left, Aw.Sindri.Features.GetSetup.GetSetupResponse? right) -> bool
 static Aw.Sindri.Features.GetSetup.GetSetupResponse.operator ==(Aw.Sindri.Features.GetSetup.GetSetupResponse? left, Aw.Sindri.Features.GetSetup.GetSetupResponse? right) -> bool
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.<Clone>$() -> Aw.Sindri.Features.CodeIndexReads.CodeCallRow!
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Basis.get -> Aw.CodeIndex.Core.Model.EdgeBasis
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Basis.init -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Candidates.get -> int
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Candidates.init -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.CodeCallRow(int Level, Aw.CodeIndex.Core.Facade.SymbolHit? Other, string! Name, Aw.CodeIndex.Core.Model.EdgeKind Kind, Aw.CodeIndex.Core.Model.EdgeBasis Basis, Aw.CodeIndex.Core.Model.Confidence Confidence, Aw.CodeIndex.Core.Model.Coverage Coverage, int Line, int Candidates) -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Confidence.get -> Aw.CodeIndex.Core.Model.Confidence
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Confidence.init -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Coverage.get -> Aw.CodeIndex.Core.Model.Coverage
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Coverage.init -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Deconstruct(out int Level, out Aw.CodeIndex.Core.Facade.SymbolHit? Other, out string! Name, out Aw.CodeIndex.Core.Model.EdgeKind Kind, out Aw.CodeIndex.Core.Model.EdgeBasis Basis, out Aw.CodeIndex.Core.Model.Confidence Confidence, out Aw.CodeIndex.Core.Model.Coverage Coverage, out int Line, out int Candidates) -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Equals(Aw.Sindri.Features.CodeIndexReads.CodeCallRow? other) -> bool
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Kind.get -> Aw.CodeIndex.Core.Model.EdgeKind
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Kind.init -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Level.get -> int
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Level.init -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Line.get -> int
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Line.init -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Name.get -> string!
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Name.init -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Other.get -> Aw.CodeIndex.Core.Facade.SymbolHit?
+Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Other.init -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallsView
+Aw.Sindri.Features.CodeIndexReads.CodeCallsView.<Clone>$() -> Aw.Sindri.Features.CodeIndexReads.CodeCallsView!
+Aw.Sindri.Features.CodeIndexReads.CodeCallsView.CodeCallsView(Aw.CodeIndex.Core.Facade.AnswerStamp! Stamp, Aw.CodeIndex.Core.Values.SymbolRef Subject, Aw.CodeIndex.Core.Model.Coverage Coverage, string! Note, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.CodeIndexReads.CodeCallRow!>! Edges, int UnresolvedCount, bool Truncated) -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Coverage.get -> Aw.CodeIndex.Core.Model.Coverage
+Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Coverage.init -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Deconstruct(out Aw.CodeIndex.Core.Facade.AnswerStamp! Stamp, out Aw.CodeIndex.Core.Values.SymbolRef Subject, out Aw.CodeIndex.Core.Model.Coverage Coverage, out string! Note, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.CodeIndexReads.CodeCallRow!>! Edges, out int UnresolvedCount, out bool Truncated) -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.CodeIndexReads.CodeCallRow!>!
+Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Edges.init -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Equals(Aw.Sindri.Features.CodeIndexReads.CodeCallsView? other) -> bool
+Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Note.get -> string!
+Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Note.init -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Stamp.get -> Aw.CodeIndex.Core.Facade.AnswerStamp!
+Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Stamp.init -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Subject.get -> Aw.CodeIndex.Core.Values.SymbolRef
+Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Subject.init -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Truncated.get -> bool
+Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Truncated.init -> void
+Aw.Sindri.Features.CodeIndexReads.CodeCallsView.UnresolvedCount.get -> int
+Aw.Sindri.Features.CodeIndexReads.CodeCallsView.UnresolvedCount.init -> void
+Aw.Sindri.Features.CodeIndexReads.CodeIndexStatusView
+Aw.Sindri.Features.CodeIndexReads.CodeIndexStatusView.<Clone>$() -> Aw.Sindri.Features.CodeIndexReads.CodeIndexStatusView!
+Aw.Sindri.Features.CodeIndexReads.CodeIndexStatusView.CodeIndexStatusView(System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.RepoStatus!>! Repos) -> void
+Aw.Sindri.Features.CodeIndexReads.CodeIndexStatusView.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.RepoStatus!>! Repos) -> void
+Aw.Sindri.Features.CodeIndexReads.CodeIndexStatusView.Equals(Aw.Sindri.Features.CodeIndexReads.CodeIndexStatusView? other) -> bool
+Aw.Sindri.Features.CodeIndexReads.CodeIndexStatusView.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Facade.RepoStatus!>!
+Aw.Sindri.Features.CodeIndexReads.CodeIndexStatusView.Repos.init -> void
+Aw.Sindri.Features.CodeIndexReads.FindCodeSymbolsRequest
+Aw.Sindri.Features.CodeIndexReads.FindCodeSymbolsRequest.<Clone>$() -> Aw.Sindri.Features.CodeIndexReads.FindCodeSymbolsRequest!
+Aw.Sindri.Features.CodeIndexReads.FindCodeSymbolsRequest.Deconstruct(out string! Query, out string? Repo, out string? Match) -> void
+Aw.Sindri.Features.CodeIndexReads.FindCodeSymbolsRequest.Equals(Aw.Sindri.Features.CodeIndexReads.FindCodeSymbolsRequest? other) -> bool
+Aw.Sindri.Features.CodeIndexReads.FindCodeSymbolsRequest.FindCodeSymbolsRequest(string! Query, string? Repo = null, string? Match = null) -> void
+Aw.Sindri.Features.CodeIndexReads.FindCodeSymbolsRequest.Match.get -> string?
+Aw.Sindri.Features.CodeIndexReads.FindCodeSymbolsRequest.Match.init -> void
+Aw.Sindri.Features.CodeIndexReads.FindCodeSymbolsRequest.Query.get -> string!
+Aw.Sindri.Features.CodeIndexReads.FindCodeSymbolsRequest.Query.init -> void
+Aw.Sindri.Features.CodeIndexReads.FindCodeSymbolsRequest.Repo.get -> string?
+Aw.Sindri.Features.CodeIndexReads.FindCodeSymbolsRequest.Repo.init -> void
+Aw.Sindri.Features.CodeIndexReads.GetCodeCalleesRequest
+Aw.Sindri.Features.CodeIndexReads.GetCodeCalleesRequest.<Clone>$() -> Aw.Sindri.Features.CodeIndexReads.GetCodeCalleesRequest!
+Aw.Sindri.Features.CodeIndexReads.GetCodeCalleesRequest.Deconstruct(out string! Ref, out int Depth, out string? Repo) -> void
+Aw.Sindri.Features.CodeIndexReads.GetCodeCalleesRequest.Depth.get -> int
+Aw.Sindri.Features.CodeIndexReads.GetCodeCalleesRequest.Depth.init -> void
+Aw.Sindri.Features.CodeIndexReads.GetCodeCalleesRequest.Equals(Aw.Sindri.Features.CodeIndexReads.GetCodeCalleesRequest? other) -> bool
+Aw.Sindri.Features.CodeIndexReads.GetCodeCalleesRequest.GetCodeCalleesRequest(string! Ref, int Depth = 1, string? Repo = null) -> void
+Aw.Sindri.Features.CodeIndexReads.GetCodeCalleesRequest.Ref.get -> string!
+Aw.Sindri.Features.CodeIndexReads.GetCodeCalleesRequest.Ref.init -> void
+Aw.Sindri.Features.CodeIndexReads.GetCodeCalleesRequest.Repo.get -> string?
+Aw.Sindri.Features.CodeIndexReads.GetCodeCalleesRequest.Repo.init -> void
+Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest
+Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest.<Clone>$() -> Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest!
+Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest.Deconstruct(out string! Ref, out int Depth, out string? Repo, out bool Implementations) -> void
+Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest.Depth.get -> int
+Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest.Depth.init -> void
+Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest.Equals(Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest? other) -> bool
+Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest.GetCodeCallersRequest(string! Ref, int Depth = 1, string? Repo = null, bool Implementations = false) -> void
+Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest.Implementations.get -> bool
+Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest.Implementations.init -> void
+Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest.Ref.get -> string!
+Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest.Ref.init -> void
+Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest.Repo.get -> string?
+Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest.Repo.init -> void
+Aw.Sindri.Features.CodeIndexReads.GetCodeIndexStatusRequest
+Aw.Sindri.Features.CodeIndexReads.GetCodeIndexStatusRequest.<Clone>$() -> Aw.Sindri.Features.CodeIndexReads.GetCodeIndexStatusRequest!
+Aw.Sindri.Features.CodeIndexReads.GetCodeIndexStatusRequest.Deconstruct(out string? Repo) -> void
+Aw.Sindri.Features.CodeIndexReads.GetCodeIndexStatusRequest.Equals(Aw.Sindri.Features.CodeIndexReads.GetCodeIndexStatusRequest? other) -> bool
+Aw.Sindri.Features.CodeIndexReads.GetCodeIndexStatusRequest.GetCodeIndexStatusRequest(string? Repo = null) -> void
+Aw.Sindri.Features.CodeIndexReads.GetCodeIndexStatusRequest.Repo.get -> string?
+Aw.Sindri.Features.CodeIndexReads.GetCodeIndexStatusRequest.Repo.init -> void
+override Aw.Sindri.Features.CodeIndexReads.CodeCallRow.Equals(object? obj) -> bool
+override Aw.Sindri.Features.CodeIndexReads.CodeCallRow.GetHashCode() -> int
+override Aw.Sindri.Features.CodeIndexReads.CodeCallRow.ToString() -> string!
+override Aw.Sindri.Features.CodeIndexReads.CodeCallsView.Equals(object? obj) -> bool
+override Aw.Sindri.Features.CodeIndexReads.CodeCallsView.GetHashCode() -> int
+override Aw.Sindri.Features.CodeIndexReads.CodeCallsView.ToString() -> string!
+override Aw.Sindri.Features.CodeIndexReads.CodeIndexStatusView.Equals(object? obj) -> bool
+override Aw.Sindri.Features.CodeIndexReads.CodeIndexStatusView.GetHashCode() -> int
+override Aw.Sindri.Features.CodeIndexReads.CodeIndexStatusView.ToString() -> string!
+override Aw.Sindri.Features.CodeIndexReads.FindCodeSymbolsRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.CodeIndexReads.FindCodeSymbolsRequest.GetHashCode() -> int
+override Aw.Sindri.Features.CodeIndexReads.FindCodeSymbolsRequest.ToString() -> string!
+override Aw.Sindri.Features.CodeIndexReads.GetCodeCalleesRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.CodeIndexReads.GetCodeCalleesRequest.GetHashCode() -> int
+override Aw.Sindri.Features.CodeIndexReads.GetCodeCalleesRequest.ToString() -> string!
+override Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest.GetHashCode() -> int
+override Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest.ToString() -> string!
+override Aw.Sindri.Features.CodeIndexReads.GetCodeIndexStatusRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.CodeIndexReads.GetCodeIndexStatusRequest.GetHashCode() -> int
+override Aw.Sindri.Features.CodeIndexReads.GetCodeIndexStatusRequest.ToString() -> string!
+static Aw.Sindri.Features.CodeIndexReads.CodeCallRow.operator !=(Aw.Sindri.Features.CodeIndexReads.CodeCallRow? left, Aw.Sindri.Features.CodeIndexReads.CodeCallRow? right) -> bool
+static Aw.Sindri.Features.CodeIndexReads.CodeCallRow.operator ==(Aw.Sindri.Features.CodeIndexReads.CodeCallRow? left, Aw.Sindri.Features.CodeIndexReads.CodeCallRow? right) -> bool
+static Aw.Sindri.Features.CodeIndexReads.CodeCallsView.operator !=(Aw.Sindri.Features.CodeIndexReads.CodeCallsView? left, Aw.Sindri.Features.CodeIndexReads.CodeCallsView? right) -> bool
+static Aw.Sindri.Features.CodeIndexReads.CodeCallsView.operator ==(Aw.Sindri.Features.CodeIndexReads.CodeCallsView? left, Aw.Sindri.Features.CodeIndexReads.CodeCallsView? right) -> bool
+static Aw.Sindri.Features.CodeIndexReads.CodeIndexStatusView.operator !=(Aw.Sindri.Features.CodeIndexReads.CodeIndexStatusView? left, Aw.Sindri.Features.CodeIndexReads.CodeIndexStatusView? right) -> bool
+static Aw.Sindri.Features.CodeIndexReads.CodeIndexStatusView.operator ==(Aw.Sindri.Features.CodeIndexReads.CodeIndexStatusView? left, Aw.Sindri.Features.CodeIndexReads.CodeIndexStatusView? right) -> bool
+static Aw.Sindri.Features.CodeIndexReads.FindCodeSymbolsRequest.operator !=(Aw.Sindri.Features.CodeIndexReads.FindCodeSymbolsRequest? left, Aw.Sindri.Features.CodeIndexReads.FindCodeSymbolsRequest? right) -> bool
+static Aw.Sindri.Features.CodeIndexReads.FindCodeSymbolsRequest.operator ==(Aw.Sindri.Features.CodeIndexReads.FindCodeSymbolsRequest? left, Aw.Sindri.Features.CodeIndexReads.FindCodeSymbolsRequest? right) -> bool
+static Aw.Sindri.Features.CodeIndexReads.GetCodeCalleesRequest.operator !=(Aw.Sindri.Features.CodeIndexReads.GetCodeCalleesRequest? left, Aw.Sindri.Features.CodeIndexReads.GetCodeCalleesRequest? right) -> bool
+static Aw.Sindri.Features.CodeIndexReads.GetCodeCalleesRequest.operator ==(Aw.Sindri.Features.CodeIndexReads.GetCodeCalleesRequest? left, Aw.Sindri.Features.CodeIndexReads.GetCodeCalleesRequest? right) -> bool
+static Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest.operator !=(Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest? left, Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest? right) -> bool
+static Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest.operator ==(Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest? left, Aw.Sindri.Features.CodeIndexReads.GetCodeCallersRequest? right) -> bool
+static Aw.Sindri.Features.CodeIndexReads.GetCodeIndexStatusRequest.operator !=(Aw.Sindri.Features.CodeIndexReads.GetCodeIndexStatusRequest? left, Aw.Sindri.Features.CodeIndexReads.GetCodeIndexStatusRequest? right) -> bool
+static Aw.Sindri.Features.CodeIndexReads.GetCodeIndexStatusRequest.operator ==(Aw.Sindri.Features.CodeIndexReads.GetCodeIndexStatusRequest? left, Aw.Sindri.Features.CodeIndexReads.GetCodeIndexStatusRequest? right) -> bool
 Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest
 Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest.<Clone>$() -> Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest!
 Aw.Sindri.Features.IssueChallenge.IssueAppChallengeRequest.Action.get -> string!

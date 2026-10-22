@@ -106,9 +106,17 @@ internal sealed class ContextEngine(
     public ValueTask<Result<ReviewResult>> ApplyReviewFile(string path, ContextScope scope, CancellationToken cancellationToken) =>
         map.ApplyReviewFile(path, scope, cancellationToken);
 
-    public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken) => map.Promote(scope, cancellationToken);
+    public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken, int? expectedVersion = null) => map.Promote(scope, cancellationToken, expectedVersion);
 
-    public ValueTask<Result<CleanupReport>> CleanDraft(ContextScope scope, CancellationToken cancellationToken) => map.CleanDraft(scope, cancellationToken);
+    public ValueTask<Result<CleanupReport>> CleanDraft(ContextScope scope, CancellationToken cancellationToken, int? expectedVersion = null) => map.CleanDraft(scope, cancellationToken, expectedVersion);
+
+    public ValueTask<Result<MapPublishState>> Held(ContextScope scope, CancellationToken cancellationToken) => map.Held(scope, cancellationToken);
+
+    public ValueTask<Result<MapHold>> Hold(MapHold hold, ContextScope scope, CancellationToken cancellationToken) => map.Hold(hold, scope, cancellationToken);
+
+    public ValueTask<Result<Unit>> Release(int version, ContextScope scope, CancellationToken cancellationToken) => map.Release(version, scope, cancellationToken);
+
+    public ValueTask<Result<MapPublishView>> PublishStatus(ContextScope scope, CancellationToken cancellationToken) => map.PublishStatus(scope, cancellationToken);
 
     public ValueTask<Result<IReadOnlyList<RepoHead>>> MapHeads(ContextScope scope, CancellationToken cancellationToken) =>
         heads.Handle(new MapHeadsRequest(scope), cancellationToken);

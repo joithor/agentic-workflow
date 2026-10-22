@@ -1,0 +1,7 @@
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "SND-CODEIDX-012",
+  "status": 400,
+  "detail": "match 'like' is not 'exact' or 'prefix'",
+  "traceId": "<trace>"
+}

@@ -655,18 +655,18 @@ edges:
   - from: CodeIndex
     to: KernelData
     kind: project
-    status: planned
+    status: current
     note: "the per-repo index files (Aw.CodeIndex.Infrastructure only; CI-3 SqliteIndexStore, code-index spec §4.1)"
   - from: CodeIndex
     to: Redaction
     kind: project
     status: planned
     note: "the scrubber behind IBodyScrubber: bodies, signatures, deps text and graph names are scrubbed before they are stored (Aw.CodeIndex.Infrastructure only; code-index spec §9)"
-  # ---- the code index (code-index spec §5, §7; CI-9 flips both) ----
+  # ---- the code index (code-index spec §5, §7; CI-10a flipped the project edge, CI-9 flips the compose edge) ----
   - from: Sindri
     to: CodeIndex
     kind: project
-    status: planned
+    status: current
     note: "Sindri's Features and Host use the ICodeIndex facade and its records in Aw.CodeIndex.Core (BuildCodeIndexService, code-index-main-move, the reads)"
   - from: Sindri
     to: CodeIndex
