@@ -1,8 +1,10 @@
 using System.Text.Json.Nodes;
 using Aw.Kernel;
 using Aw.Sindri.Core.Packets;
+using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Features.Scoping;
@@ -12,11 +14,20 @@ namespace Aw.Sindri.Features.Scoping;
 /// and on 'complete' the packet is assembled in the instance's run area as the desk assembles it, so the owner's stop reads files, not a claim. A run area that cannot be written fails the Step.
 /// </summary>
 /// <param name="area">The instance's run area.</param>
+/// <param name="checkouts">Where the item's repo checkout is.</param>
+/// <param name="diff">Names the checkout's head, the scope map's baseSha.</param>
 /// <param name="packets">Hashes the assembled packet, which 'complete' records as fact:scopePacket for the owner's approval and the freeze.</param>
-internal sealed class ScopeEvidenceStep(IRunArea area, IPackets packets) : ScopingCodeStep(Id), IBlockStepId
+internal sealed class ScopeEvidenceStep(IRunArea area, IPackets packets, IRepoCheckouts checkouts, IRunDiff diff) : ScopingCodeStep(Id), IBlockStepId, IRepoStep
 {
     /// <inheritdoc/>
     public static BlockId Id { get; } = BlockId.From("step.scope.evidence");
+
+    /// <inheritdoc/>
+    protected override ValueTask<Result<IReadOnlyDictionary<string, string>>> Extra(StepContext context, CancellationToken cancellationToken)
+    {
+        _ = (checkouts, diff);   // stub: the green commit stamps baseSha
+        return base.Extra(context, cancellationToken);
+    }
 
     /// <inheritdoc/>
     protected override ValueTask<Result<bool>> Keep(StepContext context, ScopingDeskResponse response, CancellationToken cancellationToken) =>
