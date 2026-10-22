@@ -15,6 +15,10 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="Now">Now, as served.</param>
 /// <param name="Answer">Answer, as served.</param>
 /// <param name="Actions">Actions, as served.</param>
+/// <param name="StartedBy">StartedBy, as served; null when nobody is recorded.</param>
+/// <param name="StartedAt">StartedAt, as served; null for an older instance.</param>
+/// <param name="LineStage">LineStage, as served; null when the item has none.</param>
+/// <param name="RootAddress">RootAddress, as served.</param>
 internal sealed record InstanceSummary(
     string Address,
     string Id,
@@ -29,4 +33,8 @@ internal sealed record InstanceSummary(
     IReadOnlyList<StateCell> States,
     string Now,
     StatusAnswer? Answer,
-    IReadOnlyList<string> Actions);
+    IReadOnlyList<string> Actions,
+    string? StartedBy = null,
+    DateTimeOffset? StartedAt = null,
+    string? LineStage = null,
+    string? RootAddress = null);

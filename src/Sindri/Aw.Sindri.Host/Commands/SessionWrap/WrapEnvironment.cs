@@ -10,8 +10,9 @@ internal static class WrapEnvironment
     /// <summary>The variables to set on top of the inherited environment.</summary>
     /// <param name="launch">The launch.</param>
     /// <param name="environment">Wrap's own environment.</param>
-    /// <returns>AW_SINDRI_CHILD and AW_SINDRI_LAUNCH, and whichever of the item, the launch secret and the home wrap itself was given.</returns>
-    internal static IReadOnlyDictionary<string, string> For(LaunchId launch, Func<string, string?> environment)
+    /// <param name="wrapExecutable">The path of the executable wrap runs as.</param>
+    /// <returns>AW_SINDRI_CHILD and AW_SINDRI_LAUNCH, whichever of the item, the launch secret and the home wrap itself was given, and, when wrap runs as the C# 'sindri', a PATH with its directory first so the agent's bare 'sindri' is this one and not the TS CLI.</returns>
+    internal static IReadOnlyDictionary<string, string> For(LaunchId launch, Func<string, string?> environment, string wrapExecutable)
     {
         var set = new Dictionary<string, string>(StringComparer.Ordinal) { ["AW_SINDRI_CHILD"] = "1", ["AW_SINDRI_LAUNCH"] = launch.Value };
         foreach (var name in _passedOn)
@@ -22,6 +23,25 @@ internal static class WrapEnvironment
             }
         }
 
+        if (SindriDirectory(wrapExecutable) is { } own)
+        {
+            set["PATH"] = PathFirst(own, environment("PATH"));
+        }
+
         return set;
+    }
+
+    /// <summary>The directory of <paramref name="wrapExecutable"/> when wrap runs as the C# 'sindri' (not as the dotnet host), else null.</summary>
+    private static string? SindriDirectory(string wrapExecutable) =>
+        string.Equals(Path.GetFileName(wrapExecutable), "sindri", StringComparison.Ordinal) ? Path.GetDirectoryName(wrapExecutable) : null;
+
+    private static string PathFirst(string directory, string? inherited)
+    {
+        if (string.IsNullOrEmpty(inherited))
+        {
+            return directory;
+        }
+
+        return string.Equals(inherited.Split(Path.PathSeparator)[0], directory, StringComparison.Ordinal) ? inherited : directory + Path.PathSeparator + inherited;
     }
 }

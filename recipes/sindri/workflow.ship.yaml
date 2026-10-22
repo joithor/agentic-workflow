@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.ship
-version: 3
+version: 4
 description: "Block recipe: the GREEN gate on a reviewed, proven head, then the PR opens with its evidence pack as the body. No owner stop."
+displayName: "Open the pull request with its proof"
 inputs:
   - { key: fact:phasePacket, label: "Phase packet", type: packet, kind: packet }
   - { key: fact:proofPack, label: "Proof pack", type: packet, kind: packet }

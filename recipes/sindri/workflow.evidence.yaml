@@ -1,7 +1,8 @@
 schema: 1
 id: workflow.evidence
-version: 1
+version: 2
 description: "Block recipe: pick the evidence that proves the change (UI, API, database, all three, none or other) and run it as a child."
+displayName: "Pick and run the proof for a change"
 inputs:
   - { key: fact:phasePacket, label: "Phase packet", type: packet, kind: packet }
   - { key: fact:built, label: "Built change", type: link, kind: link }

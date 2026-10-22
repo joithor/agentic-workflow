@@ -51,8 +51,8 @@ internal sealed class ExecTemplateViewer(ExecTemplateOptions options, ISessionHo
     /// <inheritdoc/>
     public async ValueTask<TerminalFacts> Probe(CancellationToken cancellationToken)
     {
-        var found = await ViewerProcess.OnLoginPath(options.Argv[0], cancellationToken).ConfigureAwait(false);
-        var gui = ViewerProcess.HasGuiSession(options.GetEnv);
+        var found = await (options.OnPath ?? ViewerProcess.OnLoginPath)(options.Argv[0], cancellationToken).ConfigureAwait(false);
+        var gui = ViewerProcess.HasGuiSession(options.GetEnv, options.IsMac);
         var problem = !found ? "not-installed" : gui ? null : "no-gui-session";
         var detail = options.Argv.Any(a => a.Contains("{title}", StringComparison.Ordinal))
             ? null
