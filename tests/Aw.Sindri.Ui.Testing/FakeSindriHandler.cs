@@ -187,7 +187,7 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
         switch (uri.AbsolutePath["/sindri/context/".Length..])
         {
             case "code":
-                var code = new CodeQuery([.. query.GetValues("anchor") ?? []], Draft: query["draft"] == "true", MapVersion: query["mapVersion"]);
+                var code = Code(query);
                 _ = await server.Code(uri, code, cancellationToken);
                 return Answer(server.CodeFor(code));
             case "map":
@@ -210,6 +210,9 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
                 return Text(HttpStatusCode.NotFound, "{}", "application/json");
         }
     }
+
+    private static CodeQuery Code(System.Collections.Specialized.NameValueCollection query) =>
+        new([.. query.GetValues("anchor") ?? []], Draft: query["draft"] == "true", MapVersion: query["mapVersion"]);
 
     private static LensesQuery Lenses(System.Collections.Specialized.NameValueCollection query) =>
         new([.. query.GetValues("anchor") ?? []], Depth: int.TryParse(query["depth"], NumberStyles.None, CultureInfo.InvariantCulture, out var depth) ? depth : null, Draft: query["draft"] == "true", MapVersion: query["mapVersion"]);
