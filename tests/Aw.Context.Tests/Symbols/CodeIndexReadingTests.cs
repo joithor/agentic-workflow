@@ -1,3 +1,4 @@
+using Aw.Context.Core.Code;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Symbols;
 using Aw.Context.Testing.Symbols;
@@ -116,7 +117,7 @@ public sealed class CodeIndexReadingTests
     {
         var calls = CodeIndexReading.Calls(new CodeIndexHead(CodeIndexState.Missing, Commit: null, BuiltAt: null, AsOfCommit: null, Layer: null, Code: null), [], 0);
 
-        Assert.Equal(Aw.Context.Core.Code.CodeSymbols.Unavailable, calls);
+        Assert.Equal(CodeSymbols.Unavailable, calls);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -192,7 +193,7 @@ public sealed class CodeIndexReadingTests
         Assert.Equal(CodeIndexState.Ok, CodeIndexReading.Worst([ok]).State);
     }
 
-    private static (SymbolsState, string?, string?) Pick(Aw.Context.Core.Code.CodeSymbols s) => (s.State, s.Reason, s.Code);
+    private static (SymbolsState, string?, string?) Pick(CodeSymbols s) => (s.State, s.Reason, s.Code);
 
     private static (SymbolsState, string?) Words(LensSymbols s) => (s.State, s.Reason);
 

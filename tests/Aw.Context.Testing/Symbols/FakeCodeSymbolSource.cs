@@ -23,7 +23,7 @@ public sealed class FakeCodeSymbolSource : ICodeSymbolSource
     public void Land(ContextRepoName repo, string commit) => _repos[repo.Value] = _repos[repo.Value] with { State = CodeIndexState.Ok, Commit = commit };
 
     /// <inheritdoc/>
-    public ValueTask<Result<CodeIndexHead>> Heads(ContextRepoName repo, string? asOf, CancellationToken cancellationToken) => Done<CodeIndexHead>(HeadOf(repo, asOf));
+    public ValueTask<Result<CodeIndexHead>> Heads(ContextRepoName repo, string? asOf, CancellationToken cancellationToken) => Done(HeadOf(repo, asOf));
 
     /// <inheritdoc/>
     public ValueTask<Result<SymbolAnswer<SymbolHit>>> FindSymbols(ContextRepoName repo, SymbolQuery query, string? asOf, CancellationToken cancellationToken)

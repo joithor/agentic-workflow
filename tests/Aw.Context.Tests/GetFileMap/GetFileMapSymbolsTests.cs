@@ -6,8 +6,8 @@ using Aw.Context.Core.Symbols;
 using Aw.Context.Testing.Extract;
 using Aw.Context.Testing.Map;
 using Aw.Context.Testing.Symbols;
-using Aw.Context.Tests.GetCode;
 using Aw.Context.Tests.Contract;
+using Aw.Context.Tests.GetCode;
 using Aw.Context.Tests.Map;
 using Aw.Kernel.Testing;
 

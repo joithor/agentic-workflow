@@ -1,7 +1,7 @@
-using Aw.Context.Core.Symbols;
 using Aw.Context.Core.Code;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Extract;
+using Aw.Context.Core.Symbols;
 using Aw.Context.Testing.Code;
 using Aw.Context.Tests.Map;
 using Aw.Kernel;

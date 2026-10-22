@@ -1,4 +1,3 @@
-using Aw.Context.Core.Symbols;
 using Aw.Context.Core.Code;
 using Aw.Context.Core.Docs;
 using Aw.Context.Core.Engine;
@@ -13,6 +12,7 @@ using Aw.Context.Core.Models;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Review;
 using Aw.Context.Core.Sources;
+using Aw.Context.Core.Symbols;
 using Aw.Context.Core.Trust;
 using Aw.Context.Features;
 using Aw.Context.Testing.Code;

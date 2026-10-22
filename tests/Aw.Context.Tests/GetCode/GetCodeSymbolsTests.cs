@@ -129,7 +129,7 @@ public sealed class GetCodeSymbolsTests
         Assert.Equal(CodeRules.MaxCallSymbols, recording.Calls.Count(c => c.Call == "callers"));
         Assert.Equal(CodeRules.MaxCallSymbols, recording.Calls.Count(c => c.Call == "callees"));
         // exported symbols come first, then by position
-        Assert.Equal(many.OrderByDescending(s => s.Exported).ThenBy(s => s.StartLine).Select(s => s.Ref).Take(CodeRules.MaxCallSymbols), recording.Calls.Where(c => c.Call == "callers").Select(c => c.Subject!), StringComparer.Ordinal);
+        Assert.Equal(many.OrderByDescending(s => s.Exported).ThenBy(s => s.StartLine).Select(s => s.Ref).Take(CodeRules.MaxCallSymbols), recording.Calls.Where(c => c.Call == "callers").Select(c => c.Subject), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

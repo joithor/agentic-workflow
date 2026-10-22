@@ -1,5 +1,6 @@
 using Aw.Context.Core.Code;
 using Aw.Context.Core.Lenses;
+using Aw.Context.Core.Sources;
 using Aw.Context.Core.Symbols;
 using Aw.Context.Testing.Symbols;
 
@@ -16,7 +17,7 @@ public sealed class CodeLensSymbolsTests
     public void The_findings_fill_callers_callees_and_replace_only_the_code_index_row()
     {
         var view = Half();
-        var row = new SearchedSource(Aw.Context.Core.Sources.SourceId.From("code-index"), SearchedState.Ok, Reason: null, Code: null, new DateTimeOffset(2026, 10, 20, 8, 0, 0, TimeSpan.Zero));
+        var row = new SearchedSource(SourceId.From("code-index"), SearchedState.Ok, Reason: null, Code: null, new DateTimeOffset(2026, 10, 20, 8, 0, 0, TimeSpan.Zero));
 
         var merged = CodeLensSymbols.With(view, new CodeSymbolFindings(row, Ok(CodeSymbolSourceContract.Indexed), CodeSymbols.Unavailable));
 
@@ -34,7 +35,7 @@ public sealed class CodeLensSymbolsTests
     [Fact, Trait("Lane", "unit")]
     public void A_degraded_row_is_listed_in_degraded_with_its_code_or_reason()
     {
-        var stale = new SearchedSource(Aw.Context.Core.Sources.SourceId.From("code-index"), SearchedState.Degraded, "stale", Code: null, AsOf: null);
+        var stale = new SearchedSource(SourceId.From("code-index"), SearchedState.Degraded, "stale", Code: null, AsOf: null);
         var layer = stale with { Reason = "graph", Code = "SND-CODEIDX-020" };
 
         Assert.Equal(["code-index: stale"], CodeLensSymbols.With(Half(), new CodeSymbolFindings(stale, CodeSymbols.Unavailable, CodeSymbols.Unavailable)).Degraded);
