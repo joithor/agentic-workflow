@@ -6,8 +6,8 @@ namespace Aw.Sindri.Ui.ViewModels.Run;
 internal sealed partial class RunCanvasInspectorViewModel
 {
 #pragma warning disable CA1822, MA0041 // fixed words are properties because the view binds them
-    /// <summary>The why block: nothing writes it down yet, so it says so.</summary>
-    public string WhyText => Labels.RunWhyNotServed;
+    /// <summary>The why block: the stage's served why, else the words that say nothing writes it down.</summary>
+    public string WhyText => string.IsNullOrWhiteSpace(_why) ? Labels.RunWhyNotServed : _why;
 
     /// <summary>The line that says the facts are the stage's.</summary>
     public string FactsHeading => Labels.RunFactsWholeStage;

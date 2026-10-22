@@ -31,8 +31,15 @@ internal sealed class DeskReporter(ISindriApi api, Func<Uri?> apiUrl)
             return null;
         }
 
-        return new DeskTarget(instanceId, desk.Run, read.Value.Current.Status.Commands.FirstOrDefault(c => c.Verb == StatusVerb.Complete));
+        var complete = read.Value.Current.Status.Commands.FirstOrDefault(c => c.Verb == StatusVerb.Complete);
+        var recipe = await api.Recipe(url, read.Value.Recipe.Id, hash: null, CancellationToken.None).ConfigureAwait(true);
+        var state = recipe.IsSuccess ? recipe.Value.States.FirstOrDefault(s => string.Equals(s.State, read.Value.Current.State, StringComparison.Ordinal)) : null;
+        return new DeskTarget(instanceId, desk.Run, complete, state?.Why, OutcomeText(state, "approve"), OutcomeText(state, "revise"));
     }
+
+    // What the state says an outcome does: the outcome named exactly, or (for send back) the first one that starts with the word, as the recipe words it.
+    private static string? OutcomeText(RecipeStateView? state, string outcome) =>
+        state?.OnOutcome?.FirstOrDefault(o => o.Outcome.StartsWith(outcome, StringComparison.OrdinalIgnoreCase) && o.Text.Length > 0)?.Text;
 
     /// <summary>True when a report for the instance is in flight.</summary>
     /// <param name="instanceId">The instance.</param>

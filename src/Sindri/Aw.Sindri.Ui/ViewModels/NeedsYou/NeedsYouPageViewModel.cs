@@ -58,6 +58,12 @@ internal sealed partial class NeedsYouPageViewModel : ObservableObject
     /// <summary>The caption of the card's first section.</summary>
     public string WhyCaption { get; } = Labels.NeedsYouWhyCaption;
 
+    /// <summary>The caption of the box that says what approving does.</summary>
+    public string IfApproveCaption { get; } = Labels.NeedsYouIfApprove;
+
+    /// <summary>The caption of the box that says what sending it back does.</summary>
+    public string IfSendBackCaption { get; } = Labels.NeedsYouIfSendBack;
+
     /// <summary>The caption of the section that says what a decision asks.</summary>
     public string RequestCaption { get; } = Labels.NeedsYouRequestCaption;
 
@@ -129,7 +135,7 @@ internal sealed partial class NeedsYouPageViewModel : ObservableObject
     public string Reference => Card is { } row ? (row.ShownId.Length > 0 ? row.ShownId : row.Id) : "";
 
     /// <summary>The first section: why the request needs the user, as the row serves it.</summary>
-    public string Why => Card?.Entry is { } entry ? (entry.Reason.Length > 0 ? entry.Reason : entry.Label) : "";
+    public string Why => Bar.DeskWhy.Length > 0 ? Bar.DeskWhy : Card?.Entry is { } entry ? (entry.Reason.Length > 0 ? entry.Reason : entry.Label) : "";
 
     /// <summary>What a decision asks; empty for any other row.</summary>
     public string Question => Card?.Entry.Question ?? "";

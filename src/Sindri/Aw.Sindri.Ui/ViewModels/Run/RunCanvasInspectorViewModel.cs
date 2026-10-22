@@ -15,10 +15,11 @@ internal sealed partial class RunCanvasInspectorViewModel
     private readonly RunInspectorPorts _ports;
     private readonly InstanceDetail _line;
     private readonly InstanceDetail? _owner;
+    private readonly string? _why;
 
-    internal RunCanvasInspectorViewModel(RunCardViewModel card, RunStepViewModel? step, InstanceDetail line, InstanceDetail? owner, RunInspectorPorts ports, IClipboard clipboard, TimeProvider clock)
+    internal RunCanvasInspectorViewModel(RunCardViewModel card, RunStepViewModel? step, InstanceDetail line, InstanceDetail? owner, RunInspectorPorts ports, IClipboard clipboard, TimeProvider clock, string? why = null)
     {
-        (_ports, _line, _owner) = (ports, line, owner);
+        (_ports, _line, _owner, _why) = (ports, line, owner, why);
         var shown = Describe(card, step);
         (State, Title, Place, Word, Icon, TextBrush, Kind) = (shown.State, shown.Title, shown.Place, shown.Word, shown.Icon, shown.TextBrush, shown.Kind);
         SoftBrush = RunStates.Brushes(State).Soft;
