@@ -229,6 +229,6 @@ public sealed class GetNeedsYouTests
 
     private sealed class NoProfileFacts : Core.Workflow.Validation.IRecipeProfileFacts
     {
-        public ValueTask<Kernel.Result<Core.Workflow.Validation.RecipeProfileFacts>> Current(CancellationToken cancellationToken) => throw new NotSupportedException();
+        public ValueTask<Result<Core.Workflow.Validation.RecipeProfileFacts>> Current(CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 }
