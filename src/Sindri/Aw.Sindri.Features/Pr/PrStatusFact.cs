@@ -8,7 +8,7 @@ namespace Aw.Sindri.Features.Pr;
 /// <summary>
 /// 'fact:prStatus', the merge-stop summary the run view shows, written by 'step.pr.snapshot' on every outcome: pr and url, checks { passed, failed, pending }, review { open, resolved },
 /// proof { status } and docs { status }. review.open counts the unresolved threads that are not Sindri's own, handled or not (what the owner sees on the forge; the snapshot's queue.unhandled is the subset still to work).
-/// proof is the recheck's verdict ('fact:recheck') on this head, 'held' passed, 'broken' failed, 'nothing' none, and null when no recheck covers the head (the original proof isn't held here); a running recheck is a child instance and no snapshot runs while it does, so 'running' is never written here, and no link is held.
+/// proof is the recheck's verdict ('fact:recheck') on this head, 'held' passed, 'broken' failed, 'nothing' none, and none when no recheck covers the head; a running recheck is a child instance and no snapshot runs while it does, so 'running' is never written here, and no link is held.
 /// docs is 'updated' for a merged or green docs pull request, 'notNeeded' when docs sync found nothing ('none', 'disabled') or the owner skipped it (an owner's skip means they judged no docs needed), else 'missing'.
 /// </summary>
 internal static class PrStatusFact
@@ -37,11 +37,11 @@ internal static class PrStatusFact
         ["docs"] = new JsonObject { ["status"] = Docs(StepFacts.Read(context, "fact:docsResult"), docs) },
     };
 
-    // Null when no recheck covers this head: the babysitter then knows nothing of the proof, which is not the same as no proof having run.
-    private static JsonObject? Proof(JsonNode? recheck, string headSha) =>
-        string.Equals(StepFacts.Field(recheck, "headSha"), headSha, StringComparison.Ordinal)
-            ? new JsonObject { ["status"] = Verdict(StepFacts.Field(recheck, "verdict")) }
-            : null;
+    // No recheck of this head: none ran, so none.
+    private static JsonObject Proof(JsonNode? recheck, string headSha) => new()
+    {
+        ["status"] = string.Equals(StepFacts.Field(recheck, "headSha"), headSha, StringComparison.Ordinal) ? Verdict(StepFacts.Field(recheck, "verdict")) : "none",
+    };
 
     private static string Verdict(string? verdict) =>
         string.Equals(verdict, "held", StringComparison.Ordinal) ? "passed" : string.Equals(verdict, "broken", StringComparison.Ordinal) ? "failed" : "none";
