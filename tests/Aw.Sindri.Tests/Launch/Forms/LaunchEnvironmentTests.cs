@@ -10,7 +10,7 @@ public sealed class LaunchEnvironmentTests
     [Fact, Trait("Lane", "unit")]
     public void Every_forge_credential_is_blanked_even_when_the_launch_set_one()
     {
-        var env = LaunchEnvironment.Scrub(new Dictionary<string, string> { ["GH_TOKEN"] = "ghp_secret" }, "/work/wt", "/gh");
+        var env = LaunchEnvironment.Scrub(new Dictionary<string, string>(StringComparer.Ordinal) { ["GH_TOKEN"] = "ghp_secret" }, "/work/wt", "/gh");
 
         foreach (var name in _credentials)
         {
@@ -21,7 +21,7 @@ public sealed class LaunchEnvironmentTests
     [Fact, Trait("Lane", "unit")]
     public void The_gh_config_directory_and_the_worktree_are_set()
     {
-        var env = LaunchEnvironment.Scrub(new Dictionary<string, string>(), "/work/wt", "/gh");
+        var env = LaunchEnvironment.Scrub(new Dictionary<string, string>(StringComparer.Ordinal), "/work/wt", "/gh");
 
         Assert.Equal("/gh", env["GH_CONFIG_DIR"]);
         Assert.Equal("/work/wt", env["AW_SINDRI_WORKTREE"]);
@@ -30,7 +30,7 @@ public sealed class LaunchEnvironmentTests
     [Fact, Trait("Lane", "unit")]
     public void Other_variables_stay_and_the_input_is_not_changed()
     {
-        var input = new Dictionary<string, string> { ["AW_SINDRI_ITEM"] = "ITM-1", ["GITHUB_TOKEN"] = "x" };
+        var input = new Dictionary<string, string>(StringComparer.Ordinal) { ["AW_SINDRI_ITEM"] = "ITM-1", ["GITHUB_TOKEN"] = "x" };
 
         var env = LaunchEnvironment.Scrub(input, "/work/wt", "/gh");
 

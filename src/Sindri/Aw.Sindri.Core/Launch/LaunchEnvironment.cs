@@ -14,14 +14,14 @@ public static class LaunchEnvironment
 
     /// <summary>
     /// <paramref name="env"/> scrubbed for a Step: each credential variable is set to the empty string (the host only adds variables to the session it starts,
-    /// so a variable can't be removed; an empty token is no token to <c>gh</c> and <c>git</c>), <see cref="GhConfigDirectory"/> points at an empty directory
+    /// so a variable can't be removed; an empty token is no token to `gh` and `git`), <see cref="GhConfigDirectory"/> points at an empty directory
     /// and <see cref="Worktree"/> names the Step's worktree.
     /// </summary>
     /// <param name="env">The variables the launch already sets.</param>
     /// <param name="worktree">The Step's worktree (the phase worktree, else its working directory).</param>
     /// <param name="ghConfigDir">An empty directory for the GitHub CLI's config.</param>
     /// <returns>A new dictionary; <paramref name="env"/> is not changed.</returns>
-    public static Dictionary<string, string> Scrub(IReadOnlyDictionary<string, string> env, string worktree, string ghConfigDir)
+    public static IReadOnlyDictionary<string, string> Scrub(IReadOnlyDictionary<string, string> env, string worktree, string ghConfigDir)
     {
         ArgumentNullException.ThrowIfNull(env);
         Dictionary<string, string> scrubbed = new(env, StringComparer.Ordinal);

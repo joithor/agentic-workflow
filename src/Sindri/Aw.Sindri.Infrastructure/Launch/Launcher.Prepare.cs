@@ -104,7 +104,7 @@ internal sealed partial class Launcher
 
         var ghConfig = GhConfigPath(request.Launch);
         _ = Directory.CreateDirectory(ghConfig);   // empty: the Step's gh has no login to find
-        return LaunchEnvironment.Scrub(env, request.Worktree ?? request.RepoPath, ghConfig);
+        return new Dictionary<string, string>(LaunchEnvironment.Scrub(env, request.Worktree ?? request.RepoPath, ghConfig), StringComparer.Ordinal);
     }
 
     private string GhConfigPath(LaunchId launch) => Path.Combine(parts.Options.LaunchDirectory, launch.Value + ".gh");

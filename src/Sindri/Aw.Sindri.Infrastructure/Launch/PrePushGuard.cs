@@ -32,7 +32,8 @@ internal static class PrePushGuard
             return null;
         }
 
-        var hook = Path.Combine(Path.GetFullPath(hooks, workDir), "pre-push");
+        var hooksDirectory = Path.GetFullPath(hooks, workDir);
+        var hook = Path.Combine(hooksDirectory, "pre-push");
         try
         {
             if (File.Exists(hook) && !(await File.ReadAllTextAsync(hook, cancellationToken).ConfigureAwait(false)).Contains(Marker, StringComparison.Ordinal))
@@ -40,7 +41,7 @@ internal static class PrePushGuard
                 return SindriErrors.LaunchPrePushForeign.With($"{hook} is not Sindri's (fix: move it aside or fold its checks into the repo's own tooling; a Step is never launched over it)");
             }
 
-            _ = Directory.CreateDirectory(Path.GetDirectoryName(hook)!);
+            _ = Directory.CreateDirectory(hooksDirectory);
             await File.WriteAllTextAsync(hook, _script, cancellationToken).ConfigureAwait(false);
             if (!OperatingSystem.IsWindows())
             {
