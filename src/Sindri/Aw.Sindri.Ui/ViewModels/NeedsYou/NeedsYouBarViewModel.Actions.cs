@@ -14,7 +14,11 @@ internal sealed partial class NeedsYouBarViewModel
             return;
         }
 
-        if (ShowsTerminal)
+        if (ShowsConfirm)
+        {
+            ConfirmFocusRequested?.Invoke(this, EventArgs.Empty);   // a protected row's A only moves to its control: the hold or the typed box does the approving
+        }
+        else if (ShowsTerminal)
         {
             await CopyTerminal().ConfigureAwait(true);
         }
@@ -156,7 +160,7 @@ internal sealed partial class NeedsYouBarViewModel
             return;
         }
 
-        if (await clipboard.SetText(TerminalCli, CancellationToken.None).ConfigureAwait(true))
+        if (await _clipboard.SetText(TerminalCli, CancellationToken.None).ConfigureAwait(true))
         {
             HintIsSuccess = true;
             Refresh();
@@ -166,7 +170,7 @@ internal sealed partial class NeedsYouBarViewModel
 
     private async Task DropCopied()
     {
-        await Task.Delay(_copiedShown, clock).ConfigureAwait(true);
+        await Task.Delay(_copiedShown, _clock).ConfigureAwait(true);
         HintIsSuccess = false;
         Refresh();
     }
@@ -182,7 +186,7 @@ internal sealed partial class NeedsYouBarViewModel
         var shown = _row.Id;
         (IsSending, Refusal) = (true, "");
         Refresh();
-        var answer = await desk.Complete(target, WordOf(outcome), answers).ConfigureAwait(true);
+        var answer = await _desk.Complete(target, WordOf(outcome), answers).ConfigureAwait(true);
         if (_row is null || !string.Equals(_row.Id, shown, StringComparison.Ordinal))
         {
             return;   // another request is shown now, and it owns the flag
