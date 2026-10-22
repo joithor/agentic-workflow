@@ -7,7 +7,10 @@ namespace Aw.Sindri.Ui.Views.Workflows;
 /// <summary>The run drawer: each button asks the view model, which only ever asks the shell to open the run or copies text.</summary>
 internal sealed partial class RunInspectorView : UserControl
 {
-    public RunInspectorView() => InitializeComponent();
+    public RunInspectorView()
+    {
+        InitializeComponent();
+    }
 
     private RunInspectorViewModel? Inspector => DataContext as RunInspectorViewModel;
 

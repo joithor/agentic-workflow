@@ -28,6 +28,7 @@ internal sealed partial class RunInspectorViewModel
             {
                 ApiGlyph.Done => Of("DONE"),
                 ApiGlyph.Active => ActiveStatus(detail, cell.State),
+                ApiGlyph.Pending => Of("QUEUED"),
                 _ => Of("QUEUED"),
             };
             stages.Add(new InspectorStageViewModel(
@@ -77,6 +78,7 @@ internal sealed partial class RunInspectorViewModel
             RunStatusKind.Failed or RunStatusKind.DidntWorkOut => new(InspectorCalloutKind.Failed, status.Class, status.Icon, status.Word, Labels.RunFailedBody),
             RunStatusKind.TookOver => new(InspectorCalloutKind.TookOver, status.Class, status.Icon, Labels.RunTookTitle, next),
             RunStatusKind.Running => new(InspectorCalloutKind.Running, "neutral", status.Icon, what, next),
+            RunStatusKind.Unknown or RunStatusKind.NotStarted or RunStatusKind.Done or RunStatusKind.Cancelled => null,
             _ => null,
         };
     }

@@ -43,7 +43,10 @@ internal sealed partial class WorkflowsPage : UserControl
     {
         if (TopLevel.GetTopLevel(this) is { } top)
         {
-            this.FindControl<Border>("WorkflowsInspectorHost")?.Width = InspectorWidth.For(top.ClientSize.Width);
+            if (this.FindControl<Border>("WorkflowsInspectorHost") is { Child: RunInspectorView drawer })
+            {
+                drawer.Width = InspectorWidth.For(top.ClientSize.Width);
+            }
         }
     }
 

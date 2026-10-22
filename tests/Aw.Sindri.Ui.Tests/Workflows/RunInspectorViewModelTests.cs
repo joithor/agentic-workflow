@@ -215,7 +215,7 @@ public sealed class RunInspectorViewModelTests
     {
         var inspector = await Shown("RUNNING");
         var steps = new List<int>();
-        inspector.StepRequested += (_, step) => steps.Add(step);
+        inspector.StepRequested += (_, e) => steps.Add(e.Step);
 
         inspector.SetPosition(3, 12);
         inspector.Previous();

@@ -6,10 +6,8 @@ namespace Aw.Sindri.Ui.ViewModels.Workflows;
 /// </summary>
 internal sealed partial class WorkflowsViewModel
 {
-    private RunInspectorViewModel? _inspector;
-
     /// <summary>The run drawer's view model.</summary>
-    public RunInspectorViewModel Inspector => _inspector ??= CreateInspector();
+    public RunInspectorViewModel Inspector => field ??= CreateInspector();
 
     /// <summary>True while the drawer shows.</summary>
     public bool IsInspectorOpen { get; private set => Set(ref field, value); }
@@ -22,7 +20,7 @@ internal sealed partial class WorkflowsViewModel
         var inspector = new RunInspectorViewModel(api, clipboard, clock);
         inspector.OpenRequested += (_, e) => OpenRequested?.Invoke(this, e);
         inspector.CloseRequested += (_, _) => CloseInspector();
-        inspector.StepRequested += (_, step) => _ = Move(step);
+        inspector.StepRequested += (_, e) => _ = Move(e.Step);
         return inspector;
     }
 

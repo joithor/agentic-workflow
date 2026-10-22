@@ -23,7 +23,7 @@ internal sealed partial class RunInspectorViewModel(ISindriApi api, IClipboard c
     internal event EventHandler? CloseRequested;
 
     /// <summary>Raised when Previous (-1) or Next (1) was pressed; the page moves its selection and the drawer follows.</summary>
-    internal event EventHandler<int>? StepRequested;
+    internal event EventHandler<StepRequestedEventArgs>? StepRequested;
 
     /// <summary>The run shown; null before the first.</summary>
     public InstanceRowViewModel? Row { get; private set => Set(ref field, value); }
@@ -180,10 +180,10 @@ internal sealed partial class RunInspectorViewModel(ISindriApi api, IClipboard c
     internal void Close() => CloseRequested?.Invoke(this, EventArgs.Empty);
 
     /// <summary>Asks for the previous run.</summary>
-    internal void Previous() => StepRequested?.Invoke(this, -1);
+    internal void Previous() => StepRequested?.Invoke(this, new StepRequestedEventArgs(-1));
 
     /// <summary>Asks for the next run.</summary>
-    internal void Next() => StepRequested?.Invoke(this, 1);
+    internal void Next() => StepRequested?.Invoke(this, new StepRequestedEventArgs(1));
 
     /// <summary>Open run: the run's frame.</summary>
     internal void OpenRun() => Ask(FrameIntent.None);
