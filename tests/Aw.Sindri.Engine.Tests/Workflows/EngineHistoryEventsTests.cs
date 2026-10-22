@@ -1,10 +1,13 @@
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.EngineReads;
 using Aw.Sindri.Infrastructure.Workflows;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Temporalio.Api.Common.V1;
 using Temporalio.Api.Enums.V1;
 using Temporalio.Api.History.V1;
+using Temporalio.Api.Workflow.V1;
+using Temporalio.Api.WorkflowService.V1;
 
 namespace Aw.Sindri.Tests.Workflows;
 
@@ -85,4 +88,32 @@ public sealed class EngineHistoryEventsTests
         var timer = Assert.Single(open);
         Assert.Equal(("timer-4", "timeout", KnownInstants.Epoch.AddSeconds(7 + 300)), (timer.Name, timer.Kind, timer.FiresAt));
     }
+
+    [Fact]
+    public void A_timer_started_more_than_a_hundred_events_back_is_still_open()
+    {
+        List<HistoryEvent> newestFirst = [.. Enumerable.Range(0, 130).Select(static i => Timer(1000 - i, EventType.TimerFired, "other"))];
+        newestFirst.Add(Timer(5, EventType.TimerStarted, "1", 600));
+
+        var timer = Assert.Single(EngineInstanceScan.OpenTimers(newestFirst));
+
+        Assert.Equal("timer-1", timer.Name);
+    }
+
+    [Fact]
+    public void An_instance_waits_on_its_activity_then_a_child_then_a_timer_then_a_signal()
+    {
+        var since = KnownInstants.Epoch;
+        var activity = new PendingActivityInfo { ActivityType = new ActivityType { Name = "step.checks" } };
+        var withChild = new DescribeWorkflowExecutionResponse();
+        withChild.PendingChildren.Add(new PendingChildExecutionInfo());
+        List<EngineTimer> timer = [new EngineTimer("timer-1", since, "timeout")];
+
+        Assert.Equal(("activity", "step.checks"), Kind(EngineInstanceScan.Waiting(withChild, activity, timer, since)));
+        Assert.Equal("child", EngineInstanceScan.Waiting(withChild, null, timer, since).Kind);
+        Assert.Equal("timer", EngineInstanceScan.Waiting(new DescribeWorkflowExecutionResponse(), null, timer, since).Kind);
+        Assert.Equal("signal", EngineInstanceScan.Waiting(new DescribeWorkflowExecutionResponse(), null, [], since).Kind);
+    }
+
+    private static (string Kind, string? Name) Kind(EngineWaiting waiting) => (waiting.Kind, waiting.Name);
 }

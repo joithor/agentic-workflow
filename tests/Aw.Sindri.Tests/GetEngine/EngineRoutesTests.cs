@@ -100,6 +100,16 @@ public sealed class EngineRoutesTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task The_address_query_wins_over_a_different_id_in_the_path()
+    {
+        var other = WorkflowInstanceId.Of(InstanceAddress.From("T-9/step/1")).Value;
+
+        var history = await Read($"/sindri/engine/instances/{other}/history?address=" + Uri.EscapeDataString(Address));
+
+        Assert.Equal(2, history.GetProperty("events").GetArrayLength());
+    }
+
+    [Fact]
     public async Task An_address_that_never_ran_is_404_SND_ENGINE_404()
     {
         var served = await _host.Http.Ask(Get("/sindri/engine/instances/-/history?address=T-9%2Fstep%2F1", _human));

@@ -58,7 +58,13 @@ internal static class EngineInstanceScan
             described.HistoryLength);
     }
 
-    private static EngineWaiting Waiting(DescribeWorkflowExecutionResponse description, Temporalio.Api.Workflow.V1.PendingActivityInfo? activity, List<EngineTimer> timers, DateTimeOffset since) =>
+    /// <summary>What an instance waits on: its pending activity, else a pending child, else an open timer, else a signal.</summary>
+    /// <param name="description">The execution's description.</param>
+    /// <param name="activity">Its first pending activity, if any.</param>
+    /// <param name="timers">Its open timers.</param>
+    /// <param name="since">When it last settled.</param>
+    /// <returns>The wait.</returns>
+    internal static EngineWaiting Waiting(DescribeWorkflowExecutionResponse description, Temporalio.Api.Workflow.V1.PendingActivityInfo? activity, List<EngineTimer> timers, DateTimeOffset since) =>
         activity is not null
             ? new EngineWaiting(EngineWaitKinds.Activity, activity.ActivityType.Name, (activity.LastStartedTime ?? activity.ScheduledTime)?.ToDateTimeOffset() ?? since)
             : description.PendingChildren.Count > 0

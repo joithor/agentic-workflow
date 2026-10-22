@@ -23,6 +23,11 @@ public sealed class ArchitectureTests
         Verify.None(EngineBoundaryRules.CheckTypes(Production.Edges.Select(static e => (TypeNames.Qualified(e.Origin), e.Target.FullName))));
 
     [Fact]
+    public void The_temporal_rule_sees_external_targets_so_it_cannot_pass_for_want_of_them() =>
+        Assert.Contains(Production.Edges, e => TypeNames.NamespaceOf(e.Origin).StartsWith(EngineBoundaryRules.AllowedNamespace, StringComparison.Ordinal)
+            && e.Target.FullName.StartsWith(EngineBoundaryRules.Package + ".", StringComparison.Ordinal));
+
+    [Fact]
     public void No_slice_uses_another_slice() => Verify.None(SliceRules.Check(Production.Edges));
 
     [Fact]

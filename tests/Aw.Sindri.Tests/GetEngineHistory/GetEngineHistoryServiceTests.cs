@@ -51,6 +51,31 @@ public sealed class GetEngineHistoryServiceTests
     }
 
     [Fact]
+    public async Task Page_two_holds_the_next_fifty_older_events_and_points_on_to_page_three()
+    {
+        Events(120);
+
+        var first = (await Service().Handle(new GetEngineHistoryRequest(Address: _address.Value, Page: "1"), Token)).Value;
+        var second = (await Service().Handle(new GetEngineHistoryRequest(Address: _address.Value, Page: "2"), Token)).Value;
+
+        Assert.Equal(2, first.Next);
+        Assert.Equal((50, 2, 3), (second.Events.Count, second.Page, second.Next));
+        Assert.Equal((70L, 21L), (second.Events[0].EventId, second.Events[^1].EventId));
+        Assert.True(first.Events[^1].EventId > second.Events[0].EventId);
+    }
+
+    [Fact]
+    public async Task An_address_wins_over_a_different_id_in_the_path()
+    {
+        Events(2);
+        var other = WorkflowInstanceId.Of(InstanceAddress.From("T-9/step/1")).Value;
+
+        var served = await Service().Handle(new GetEngineHistoryRequest(Instance: other, Address: _address.Value), Token);
+
+        Assert.Equal(2, served.Value.Events.Count);
+    }
+
+    [Fact]
     public async Task The_opaque_id_finds_the_instance_as_the_address_does()
     {
         Events(2);
