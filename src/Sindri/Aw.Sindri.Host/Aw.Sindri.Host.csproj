@@ -26,6 +26,8 @@
     <ProjectReference Include="../Aw.Sindri.Infrastructure/Aw.Sindri.Infrastructure.csproj" />
     <ProjectReference Include="../../Context/Aw.Context.Core/Aw.Context.Core.csproj" />
     <ProjectReference Include="../../CodeIndex/Aw.CodeIndex.Core/Aw.CodeIndex.Core.csproj" />
+    <ProjectReference Include="../../CodeIndex/Aw.CodeIndex.Features/Aw.CodeIndex.Features.csproj" />
+    <ProjectReference Include="../../CodeIndex/Aw.CodeIndex.Infrastructure/Aw.CodeIndex.Infrastructure.csproj" />
     <!-- compose edge (deps.yaml): only AddContextFeatures and AddContextInfrastructure, in Composition (ARCH-COMPOSE-001) -->
     <ProjectReference Include="../../Context/Aw.Context.Features/Aw.Context.Features.csproj" />
     <ProjectReference Include="../../Context/Aw.Context.Infrastructure/Aw.Context.Infrastructure.csproj" />

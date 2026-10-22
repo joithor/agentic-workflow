@@ -120,5 +120,15 @@ public sealed class UsageTests
     public void Usage_lists_the_onyx_verbs(string verb) =>
         Assert.Single(Lines(), l => l.StartsWith($"sindri {verb} ", StringComparison.Ordinal) || l.StartsWith($"sindri {verb}\t", StringComparison.Ordinal));
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("pr babysit")]
+    [InlineData("docs sync")]
+    public void Usage_lists_the_hand_start_verbs_with_the_workflow_start_exit_codes(string verb)
+    {
+        var line = Assert.Single(Lines(), l => l.StartsWith($"sindri {verb} <url> [--item <id>] [--json]", StringComparison.Ordinal));
+
+        Assert.Contains("1 not running, 2 invalid, refused or error", line, StringComparison.Ordinal);
+    }
+
     private static IEnumerable<string> Lines() => Usage.Text.Split('\n').Select(static l => l.Trim().Replace("usage: ", string.Empty, StringComparison.Ordinal));
 }
