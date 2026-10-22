@@ -1,6 +1,7 @@
 using Aw.CodeIndex.Core.Ports;
 using Aw.CodeIndex.Infrastructure.Deps;
 using Aw.CodeIndex.Infrastructure.Parsing;
+using Aw.CodeIndex.Infrastructure.Scrubbing;
 using Aw.CodeIndex.Infrastructure.Snapshot;
 using Aw.CodeIndex.Infrastructure.Store;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,7 @@ public static class CodeIndexInfrastructureServiceCollectionExtensions
             .AddSingleton(settings)
             .AddSingleton<IRepoSnapshot, GitRepoSnapshot>()
             .AddSingleton<ISymbolParser, CSharpParser>()
+            .AddSingleton<IBodyScrubber, RedactingBodyScrubber>()
             .AddSingleton<IParseQuarantine>(_ => new FileParseQuarantine(settings.IndexDirectory))
             .AddSingleton<IManifestReader, PackageJsonReader>()
             .AddSingleton<IManifestReader, CsprojReader>()
