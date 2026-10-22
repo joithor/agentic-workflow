@@ -5,7 +5,6 @@ using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Core.Workflow.Stats;
-using Aw.Sindri.Features.WorkflowStats;
 
 namespace Aw.Sindri.Features.GetRecipeStats;
 
@@ -17,7 +16,7 @@ namespace Aw.Sindri.Features.GetRecipeStats;
 /// <param name="registry">Which recipes are registered, and which are started as children.</param>
 /// <param name="rows">The ledger's workflow rows.</param>
 /// <param name="clock">The read's time.</param>
-internal sealed class GetRecipeStatsService(RecipeRegistryReader registry, WorkflowStatRows rows, TimeProvider clock) : IService<GetRecipeStatsRequest, RecipeStats>
+internal sealed class GetRecipeStatsService(RecipeRegistryReader registry, IWorkflowStatRows rows, TimeProvider clock) : IService<GetRecipeStatsRequest, RecipeStats>
 {
     public async ValueTask<Result<RecipeStats>> Handle(GetRecipeStatsRequest request, CancellationToken cancellationToken)
     {

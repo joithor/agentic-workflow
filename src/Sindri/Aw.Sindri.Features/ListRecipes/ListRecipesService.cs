@@ -3,7 +3,6 @@ using Aw.Kernel.Services;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Core.Workflow.Stats;
-using Aw.Sindri.Features.WorkflowStats;
 
 namespace Aw.Sindri.Features.ListRecipes;
 
@@ -16,7 +15,7 @@ namespace Aw.Sindri.Features.ListRecipes;
 /// <param name="registry">Reads where the registered recipes stand.</param>
 /// <param name="rows">The ledger's workflow rows; null serves the lines without stats.</param>
 /// <param name="clock">The read's time.</param>
-internal sealed class ListRecipesService(RecipeRegistryReader registry, WorkflowStatRows? rows = null, TimeProvider? clock = null) : IService<ListRecipesRequest, ListRecipesResponse>
+internal sealed class ListRecipesService(RecipeRegistryReader registry, IWorkflowStatRows? rows = null, TimeProvider? clock = null) : IService<ListRecipesRequest, ListRecipesResponse>
 {
     public async ValueTask<Result<ListRecipesResponse>> Handle(ListRecipesRequest request, CancellationToken cancellationToken)
     {
@@ -47,18 +46,22 @@ internal sealed class ListRecipesService(RecipeRegistryReader registry, Workflow
         }
 
         var now = (clock ?? TimeProvider.System).GetUtcNow();
+        return new ListRecipesResponse([.. WithStats(kept, children.Value, read.Value, window.Value, now)], window.Value.Text);
+    }
+
+    private static IEnumerable<RecipeSummary> WithStats(List<RecipeSummary> kept, IReadOnlySet<RecipeId> children, IReadOnlyList<StatEvent> rows, StatsWindow window, DateTimeOffset now)
+    {
         var counted = new Dictionary<RecipeId, RecipeListStats?>();
-        var listed = kept.Select(line =>
+        return kept.Select(line =>
         {
-            var childOnly = children.Value.Contains(line.Id) && !RecipeStatsCounter.HasRoot(read.Value, line.Id);
+            var childOnly = children.Contains(line.Id) && !RecipeStatsCounter.HasRoot(rows, line.Id);
             if (!counted.TryGetValue(line.Id, out var stats))
             {
-                counted[line.Id] = stats = childOnly ? null : RecipeListStats.Of(RecipeStatsCounter.Count(read.Value, line.Id, hashPrefix: null, window.Value, now));
+                counted[line.Id] = stats = childOnly ? null : RecipeListStats.Of(RecipeStatsCounter.Count(rows, line.Id, hashPrefix: null, window, now));
             }
 
             return WithStatus(line) with { ChildOnly = childOnly, Stats = line.Standing == RecipeStanding.Unapproved || childOnly ? null : stats };
         });
-        return new ListRecipesResponse([.. listed], window.Value.Text);
     }
 
     private static RecipeSummary WithStatus(RecipeSummary line)

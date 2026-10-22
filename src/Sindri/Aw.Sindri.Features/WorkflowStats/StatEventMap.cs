@@ -32,21 +32,30 @@ internal static class StatEventMap
     public static StatEvent Of(string address, DateTimeOffset at, WorkflowEventPayload payload)
     {
         ArgumentNullException.ThrowIfNull(payload);
-        var delta = payload.Detail?.Delta;
+        var answered = payload.Detail?.Answer is not null;
+        StatGate[] gates = [.. (payload.Detail?.Gates ?? []).Select(static g => new StatGate(g.Gate.Value, g.Outcome, g.Threshold))];
+        if (payload.Detail?.Delta is not { } delta)
+        {
+            return new StatEvent(address, at, payload.From, payload.To, null, null, HasDetail: false, null, null, null, answered, null, null, gates);
+        }
+
+        var suspension = delta.Suspension;
         return new StatEvent(
             address,
             at,
             payload.From,
             payload.To,
-            delta?.Recipe is { } recipe && RecipeId.TryFrom(recipe, out var recipeId) ? recipeId : null,
-            delta?.RecipeHash,
-            HasDetail: delta is not null,
-            delta?.Suspension?.Kind,
-            delta?.Suspension?.Reason,
-            delta?.Suspension?.Escalation,
-            Answered: payload.Detail?.Answer is not null,
-            delta?.Outcome,
-            delta?.TokensSpent,
-            [.. (payload.Detail?.Gates ?? []).Select(static g => new StatGate(g.Gate.Value, g.Outcome, g.Threshold))]);
+            RecipeOf(delta.Recipe),
+            delta.RecipeHash,
+            HasDetail: true,
+            suspension?.Kind,
+            suspension?.Reason,
+            suspension?.Escalation,
+            answered,
+            delta.Outcome,
+            delta.TokensSpent,
+            gates);
     }
+
+    private static RecipeId? RecipeOf(string? recipe) => recipe is not null && RecipeId.TryFrom(recipe, out var id) ? id : null;
 }
