@@ -17,7 +17,7 @@ namespace Aw.Sindri.Features.CodeIndexJobs;
 /// <param name="index">The code index.</param>
 /// <param name="events">Appends 'codeindex.built' under the held lease.</param>
 /// <param name="jobs">The running job: its progress takes the step lines and its id keys the event.</param>
-internal sealed class BuildCodeIndexService(CodeIndexScopes scopes, ICodeIndex index, CodeIndexEventSource events, IJobContextAccessor jobs) : IService<BuildCodeIndexRequest, BuildCodeIndexResult>
+internal sealed class BuildCodeIndexService(CodeIndexJobScopes scopes, ICodeIndex index, CodeIndexEventSource events, IJobContextAccessor jobs) : IService<BuildCodeIndexRequest, BuildCodeIndexResult>
 {
     public async ValueTask<Result<BuildCodeIndexResult>> Handle(BuildCodeIndexRequest request, CancellationToken cancellationToken)
     {
