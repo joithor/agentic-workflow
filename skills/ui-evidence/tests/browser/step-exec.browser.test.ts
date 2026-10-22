@@ -272,3 +272,33 @@ describe("executeStep drag", () => {
     expect(await dropped()).toBe("");
   });
 });
+
+describe("executeStep press", () => {
+  const press = (over: Partial<Extract<ScriptStep, { action: "press" }>> = {}): ScriptStep => ({ action: "press", key: "ArrowRight", target: "tab-day", expectedState: { kind: "url-search", param: "timeFilter", value: "Night" }, ...over });
+  const selected = (): Promise<string | null> => page.locator('[aria-selected="true"]').getAttribute("data-testid");
+  beforeEach(async () => {
+    await page.goto(`${fixture.host}/tabs`);
+  });
+
+  it("focuses the target, presses the key, and waits for the lagging URL query", async () => {
+    expect(await executeStep(page, press(), fixture.host, never, T)).toBe("passed");
+    expect(await selected()).toBe("tab-night");
+  });
+
+  it("without a target, presses the key wherever focus already is", async () => {
+    expect(await executeStep(page, press(), fixture.host, never, T)).toBe("passed");
+    expect(await executeStep(page, press({ key: "ArrowLeft", target: undefined, expectedState: { kind: "url-search", param: "timeFilter", value: "Day" } }), fixture.host, never, T)).toBe("passed");
+    expect(await selected()).toBe("tab-day");
+  });
+
+  it("FAILS when the key works but the query never takes the expected value", async () => {
+    expect(await executeStep(page, press({ expectedState: { kind: "url-search", param: "timeFilter", value: "Mid" } }), fixture.host, never, T)).toBe("failed");
+  });
+
+  it("marks a missing target broken without asking for repair or sending the key", async () => {
+    const repair: RepairFn = vi.fn(async () => null);
+    expect(await executeStep(page, press({ target: "no-such-tab" }), fixture.host, repair, T)).toBe("broken");
+    expect(repair).not.toHaveBeenCalled();
+    expect(await selected()).toBe("tab-day");
+  });
+});

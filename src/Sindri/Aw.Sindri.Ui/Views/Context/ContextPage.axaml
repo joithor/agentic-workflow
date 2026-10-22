@@ -86,10 +86,12 @@
           <TextBlock Classes="eyebrow" Text="{Binding AsOfLabel}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
           <Border x:Name="ContextAsOf" Background="{DynamicResource Brush.Surface2}" CornerRadius="{StaticResource Radius.MD}" Padding="2">
             <StackPanel Orientation="Horizontal">
-              <RadioButton x:Name="AsOfPinned" GroupName="AsOf" Classes="segment" IsEnabled="False" IsChecked="False" Content="{Binding AsOfPinned}" ToolTip.Tip="{Binding AsOfPinnedHint}" ToolTip.ShowOnDisabled="True" AutomationProperties.Name="{Binding AsOfPinned}" />
-              <RadioButton x:Name="AsOfLive" GroupName="AsOf" Classes="segment" IsChecked="True" Content="{Binding AsOfLive}" ToolTip.Tip="{Binding AsOfLiveHint}" AutomationProperties.Name="{Binding AsOfLive}" />
+              <RadioButton x:Name="AsOfPinned" GroupName="AsOf" Classes="segment" IsEnabled="{Binding PinnedEnabled}" IsChecked="{Binding IsPinned, Mode=TwoWay}" Content="{Binding AsOfPinned}" ToolTip.Tip="{Binding AsOfPinnedHint}" ToolTip.ShowOnDisabled="True" AutomationProperties.Name="{Binding AsOfPinned}" />
+              <RadioButton x:Name="AsOfLive" GroupName="AsOf" Classes="segment" IsChecked="{Binding IsLive, Mode=OneWay}" Content="{Binding AsOfLive}" ToolTip.Tip="{Binding AsOfLiveHint}" AutomationProperties.Name="{Binding AsOfLive}" />
             </StackPanel>
           </Border>
+          <TextBlock x:Name="PinnedNoteText" Classes="caption subtle" Text="{Binding PinnedNote}" IsVisible="{Binding HasPinnedNote}" VerticalAlignment="Center" TextWrapping="Wrap"
+                     AutomationProperties.Name="{Binding PinnedNote}" />
         </StackPanel>
         <Border x:Name="ContextViewSwitch" Background="{DynamicResource Brush.Surface2}" CornerRadius="{StaticResource Radius.MD}" Padding="2" Margin="0,0,16,8" VerticalAlignment="Center"
                 AutomationProperties.Name="{Binding ViewName}">
