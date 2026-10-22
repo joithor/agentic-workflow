@@ -517,6 +517,16 @@ out="$(pub stale 2>&1)"; check "publish stale exits 0" "$?" "0"
 check "stale prints its state id" "$out" "published-stale"
 check "stale moves the current version's recorded head off the index's commit" "$(sqlq "$CDB" "SELECT commit_sha FROM map_version_head WHERE version = 1")" "1234567"
 check "stale records a TimedOut published event" "$(sqlq "$P/ledger.db" "SELECT json_extract(payload_json, '$.reason') FROM events WHERE idempotency_key LIKE 'sindri-ui-fixture:publish:timedout:%'")" "TimedOut"
+IXDB="$P/code-index/aw-split-panes.0123456789ABCDEFGHJKMNPQRS.db"
+check "stale writes the code index file beside the pointer" "$(ls "$P/code-index" | sort | tr '\n' ' ')" "aw-split-panes.0123456789ABCDEFGHJKMNPQRS.db aw-split-panes.current "
+check "the pointer names the file and is private" "$(cat "$P/code-index/aw-split-panes.current") $(stat -c %a "$P/code-index/aw-split-panes.current" 2>/dev/null || stat -f %Lp "$P/code-index/aw-split-panes.current")" "0123456789ABCDEFGHJKMNPQRS 600"
+check "the index header reads back at abcdef0 under schema 1" "$(sqlq "$IXDB" "SELECT value FROM meta WHERE key = 'commit'") $(sqlq "$IXDB" "PRAGMA user_version")" "abcdef0000000000000000000000000000000000 1"
+pub published >/dev/null 2>&1
+check "any other state removes the index file and its pointer" "$(ls "$P/code-index" | wc -l | tr -d ' ')" "0"
+pub stale >/dev/null 2>&1
+printf '%s\n' "OTHERULID" > "$P/code-index/other.current"
+pub by-hand >/dev/null 2>&1
+check "clearing leaves a pointer that is not the fixture's" "$(ls "$P/code-index")" "other.current"
 
 : > "$STUB_LOG"
 pub pause >/dev/null 2>&1; pub resume >/dev/null 2>&1

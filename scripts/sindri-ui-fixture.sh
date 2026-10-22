@@ -50,9 +50,9 @@
 #                                  wait just began into <home>/context/context.db and pauses the context-map-refresh service so no
 #                                  tick publishes it; overdue does the same with the wait started an hour ago; published, without-waiting
 #                                  (a 'context.map.published' FirstMap event), by-hand (a 'context.map.promoted' by human:fixture) and
-#                                  stale (the current version's recorded head changed to 1234567, and a TimedOut published event)
-#                                  drop the hold and resume the service first; stale reads stale only while a code index is built for
-#                                  the repo at another commit (sindri code-index status), else the repo reads 'not indexed yet';
+#                                  stale (the current version's recorded head changed to 1234567, a header-only code index file at
+#                                  abcdef0 under <home>/code-index so the real outlook reads it, and a TimedOut published event)
+#                                  drop the hold and resume the service first; every other state removes the index file again;
 #                                  pause and resume only toggle the service
 #
 #   sindri-ui-fixture.sh sessions up|ask <pid>|end <pid>|back <pid>|disable|enable|down
@@ -410,6 +410,7 @@ context_down() {
   local dir profile
   dir="$(context_dir)"
   case "$dir" in */ui-fixture-context) [ ! -d "$dir" ] || rm -rf -- "$dir" ;; *) die "context down: refusing to delete $dir" ;; esac
+  index_clear
   profile="$(profile_path)"
   if [ -f "$profile" ] && grep -q "name: $CONTEXT_REPO" "$profile"; then
     grep -v "name: $CONTEXT_REPO" "$profile" | awk '{l[NR]=$0} END {for (i=1;i<=NR;i++) if (!(l[i]=="repos:" && (i==NR || l[i+1] !~ /^  /))) print l[i]}' > "$profile.new" \
@@ -438,8 +439,40 @@ publish_event() {
                   COALESCE((SELECT MAX(epoch) FROM events), 0), '$key', '$4');" >/dev/null
 }
 
+# The stale state's code index (code index spec 6.4): a header-only index file (the meta and layers tables, user_version 1) and its 0600 pointer, in
+# the layout the real store reads ($AW_SINDRI_HOME/code-index/<repo>.<ulid>.db and <repo>.current), so the real outlook path reads the commit.
+# The ULID is this fixture's own, so clearing removes only what it wrote.
+INDEX_ULID="0123456789ABCDEFGHJKMNPQRS"
+INDEX_COMMIT="abcdef0000000000000000000000000000000000"
+index_dir() { printf '%s\n' "$AW_SINDRI_HOME/code-index"; }
+
+index_write() { # $1 repo
+  local dir db
+  dir="$(index_dir)"
+  db="$dir/$1.$INDEX_ULID.db"
+  mkdir -p -m 700 "$dir" && rm -f -- "$db" || return
+  sql_on "$db" "PRAGMA user_version = 1;
+    CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+    CREATE TABLE layers (layer TEXT PRIMARY KEY, stamp TEXT NOT NULL, status TEXT NOT NULL, code TEXT NULL, detail TEXT NOT NULL, built_at TEXT NOT NULL);
+    INSERT INTO meta VALUES ('commit', '$INDEX_COMMIT'), ('default_branch', 'main'), ('built_at', strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+      ('schema', '1'), ('parser_id', 'fixture'), ('files', '0'), ('symbols', '0'), ('edges', '0');" >/dev/null || return
+  chmod 600 "$db" && (umask 077; printf '%s\n' "$INDEX_ULID" > "$dir/$1.current")
+}
+
+# Removes the index files index_write made, and a pointer only while it still names this fixture's file.
+index_clear() {
+  local dir f
+  dir="$(index_dir)"
+  [ -d "$dir" ] || return 0
+  for f in "$dir"/*."$INDEX_ULID".db; do [ ! -e "$f" ] || rm -f -- "$f"; done
+  for f in "$dir"/*.current; do
+    [ ! -f "$f" ] || [ "$(cat "$f")" != "$INDEX_ULID" ] || rm -f -- "$f"
+  done
+}
+
 # Removes the hold, its chain and the draft this fixture wrote; the current version stays.
 publish_clear() {
+  index_clear
   sql_on "$(context_db)" "DELETE FROM map_hold; DELETE FROM map_publish_chain; DELETE FROM map_version WHERE status = 'draft' AND commit_sha = 'fixture-hold'; DELETE FROM map_version_head WHERE version NOT IN (SELECT id FROM map_version);"
 }
 
@@ -482,6 +515,7 @@ context_publish() {
           publish_event byhand context.map.promoted "human:fixture" "{\"version\":$version,\"repo\":\"$repo\",\"retained\":null}" && state="published-by-hand" ;;
         stale)
           sql_on "$db" "UPDATE map_version_head SET commit_sha = '1234567' WHERE version = $version;" >/dev/null \
+            && index_write "$repo" \
             && publish_event timedout context.map.published "service:$PUBLISH_SERVICE" "{\"repo\":\"$repo\",\"version\":$version,\"reason\":\"TimedOut\",\"via\":\"check\",\"repos\":1,\"staleRepos\":1,\"waitedSeconds\":900,\"heads\":{}}" \
             && state="published-stale" ;;
       esac ;;
