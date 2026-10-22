@@ -6,6 +6,7 @@
              xmlns:fv="using:Aw.Sindri.Ui.Views.Context.FileMap"
              xmlns:nv="using:Aw.Sindri.Ui.Views.Context.Node"
              xmlns:sv="using:Aw.Sindri.Ui.Views.Context.Sources"
+             xmlns:cv="using:Aw.Sindri.Ui.Views.Context.Code"
              xmlns:mv="using:Aw.Sindri.Ui.Views.Context.Map"
              xmlns:ctl="using:Aw.Sindri.Ui.Views.Controls"
              xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
@@ -167,6 +168,7 @@
             <rv:MapReviewPanel x:Name="ReviewHost" DataContext="{Binding Review}" />
             <nv:NodeCard x:Name="NodeHost" DataContext="{Binding Node}" />
             <sv:SourcesPanel x:Name="SourcesHost" DataContext="{Binding Sources}" />
+            <cv:CodeCallsPanel x:Name="CodeHost" DataContext="{Binding Code}" />
           </StackPanel>
         </Border>
       </Panel>
