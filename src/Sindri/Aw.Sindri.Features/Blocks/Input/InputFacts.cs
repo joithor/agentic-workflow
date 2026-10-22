@@ -69,7 +69,7 @@ internal static class InputFacts
         }
         catch (JsonException)   // boundary: a fact that isn't JSON is its text
         {
-            return (JsonNode?)JsonValue.Create(text.Trim());
+            return JsonValue.Create(text.Trim());
         }
     }
 

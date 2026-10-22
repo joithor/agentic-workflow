@@ -4,7 +4,6 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
-using Aw.Sindri.Features.Prove;
 
 namespace Aw.Sindri.Features.Blocks.Input;
 
@@ -34,29 +33,27 @@ internal sealed class PhasePacketInput(IBriefFiles files, IRepoCheckouts checkou
             return InputFacts.Fails(packet.Error) ? packet.Error : Unavailable(packet.Error.Code + ": " + packet.Error.Message);
         }
 
-        if (packet.Value is null)
+        if (DirOf(packet.Value) is not { } named)
         {
-            return Unavailable("the instance has no fact:phasePacket");
-        }
-
-        if ((packet.Value is JsonObject obj ? obj["dir"] : packet.Value) is not JsonValue value || !value.TryGetValue<string>(out var named) || string.IsNullOrWhiteSpace(named))
-        {
-            return Unavailable("fact:phasePacket names no dir");
+            return Unavailable(packet.Value is null ? "the instance has no fact:phasePacket" : "fact:phasePacket names no dir");
         }
 
         var dir = await Resolve(context, named, cancellationToken).ConfigureAwait(false);
-        if (dir.IsError)
-        {
-            return Unavailable(dir.Error.Message);
-        }
+        return dir.IsError ? Unavailable(dir.Error.Message) : await Serve(dir.Value, cancellationToken).ConfigureAwait(false);
+    }
 
-        var phase = await files.Read("phase.json", [dir.Value], cancellationToken).ConfigureAwait(false);
+    private static string? DirOf(JsonNode? packet) =>
+        (packet is JsonObject obj ? obj["dir"] : packet) is JsonValue value && value.TryGetValue<string>(out var dir) && !string.IsNullOrWhiteSpace(dir) ? dir : null;
+
+    private async ValueTask<InjectionSections> Serve(string dir, CancellationToken cancellationToken)
+    {
+        var phase = await files.Read("phase.json", [dir], cancellationToken).ConfigureAwait(false);
         if (phase.IsError)
         {
             return Unavailable("phase.json: " + phase.Error.Message);
         }
 
-        var design = await files.Read("design.md", [dir.Value], cancellationToken).ConfigureAwait(false);
+        var design = await files.Read("design.md", [dir], cancellationToken).ConfigureAwait(false);
         return design.IsError
             ? Unavailable("design.md: " + design.Error.Message)
             : new InjectionSections(new Dictionary<string, string>(StringComparer.Ordinal) { [Section] = "## phase.json\n" + phase.Value.Text.TrimEnd() + "\n\n## design.md\n" + design.Value.Text.TrimEnd() + "\n" });
@@ -83,6 +80,6 @@ internal sealed class PhasePacketInput(IBriefFiles files, IRepoCheckouts checkou
             return checkout.Error;
         }
 
-        return PhaseDir.Of(dir, checkout.Value);
+        return Path.Combine(checkout.Value, dir);
     }
 }
