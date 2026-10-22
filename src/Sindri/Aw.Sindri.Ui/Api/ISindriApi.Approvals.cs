@@ -32,4 +32,11 @@ internal partial interface ISindriApi
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The job, the API's refusal, or SND-UI-002/003.</returns>
     public Task<Result<ApproveAllJob>> ApproveAllJob(Uri api, string id, CancellationToken cancellationToken);
+
+    /// <summary>POST /sindri/profile/approve: approves the live profile by redeeming its typed challenge. A human token only; sent once, never retried by the app.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="request">The full hash and the answer.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The approval, SND-AUTH-002 for an agent session, the API's other refusals (a stale hash, a wrong answer), or SND-UI-002/003.</returns>
+    public Task<Result<ProfileApproved>> ApproveProfile(Uri api, ApproveProfileRequest request, CancellationToken cancellationToken);
 }

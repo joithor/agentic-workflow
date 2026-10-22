@@ -70,7 +70,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
         var state = State(pull.Value, outcome, new Conversation(threads.Value, work, latest.Value), docs.Value);
         state["workspaceAhead"] = await WorkspaceAhead(context, pull.Value.HeadSha, cancellationToken).ConfigureAwait(false);
         return outcome is "merged" or "mergedDocsOpen"
-            ? StepFacts.Done(outcome, ("fact:prState", state), ("fact:mergedSha", JsonValue.Create(StepFacts.Field(StepFacts.Read(context, "fact:merge"), "mergedSha") ?? pull.Value.HeadSha)!))
+            ? StepFacts.Done(outcome, ("fact:prState", state), ("fact:mergedSha", JsonValue.Create(StepFacts.Field(StepFacts.Read(context, "fact:merge"), "mergedSha") ?? pull.Value.HeadSha)))
             : StepFacts.Done(outcome, ("fact:prState", state));
     }
 
@@ -183,7 +183,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
         {
             ["link"] = pull.Link,
             ["url"] = pull.Link,
-            ["state"] = outcome is "green" ? "green" : pullState,
+            ["state"] = string.Equals(outcome, "green", StringComparison.Ordinal) ? "green" : pullState,
             ["pullState"] = pullState,
             ["headSha"] = pull.HeadSha,
             ["stale"] = !string.Equals(pull.Checks.Sha, pull.HeadSha, StringComparison.Ordinal),
@@ -195,7 +195,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
             {
                 ["state"] = pull.Checks.State.ToString().ToLowerInvariant(),
                 ["sha"] = pull.Checks.Sha,
-                ["failing"] = new JsonArray([.. pull.Checks.Failing.Select(static f => (JsonNode)JsonValue.Create(f)!)]),
+                ["failing"] = new JsonArray([.. pull.Checks.Failing.Select(static f => JsonValue.Create(f))]),
             },
             ["queue"] = new JsonObject
             {
@@ -207,7 +207,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
             ["comments"] = new JsonArray([.. threads.Select(t => (JsonNode)Comment(t, marked.GetValueOrDefault(t.Key)))]),
             ["docs"] = docs is null ? null : DocsState(docs.View),
             ["self"] = null,
-            ["mergeBlockedBy"] = new JsonArray([.. BlockedBy(pull).Select(static b => (JsonNode)JsonValue.Create(b)!)]),
+            ["mergeBlockedBy"] = new JsonArray([.. BlockedBy(pull).Select(static b => JsonValue.Create(b))]),
             ["heldBlocksMerge"] = false,
             ["at"] = clock.GetUtcNow().ToString("O", CultureInfo.InvariantCulture),
         };
@@ -222,7 +222,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
         {
             ["state"] = docs.Checks.State.ToString().ToLowerInvariant(),
             ["sha"] = docs.Checks.Sha,
-            ["failing"] = new JsonArray([.. docs.Checks.Failing.Select(static f => (JsonNode)JsonValue.Create(f)!)]),
+            ["failing"] = new JsonArray([.. docs.Checks.Failing.Select(static f => JsonValue.Create(f))]),
         },
     };
 
@@ -252,7 +252,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
             ["commit"] = mark.Commit,
             ["at"] = mark.At.ToString("O", CultureInfo.InvariantCulture),
         },
-        ["markers"] = new JsonArray([.. thread.Markers.Select(static m => (JsonNode)JsonValue.Create(m)!)]),
+        ["markers"] = new JsonArray([.. thread.Markers.Select(static m => JsonValue.Create(m))]),
     };
 
     // Sindri's replies never come back as work: a marker it wrote.

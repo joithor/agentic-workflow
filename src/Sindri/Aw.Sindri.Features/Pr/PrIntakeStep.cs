@@ -34,7 +34,7 @@ internal sealed class PrIntakeStep(IPullRequests pulls) : IBlockStep, IBlockStep
             return BlockStepResult.Failed($"step.pr.intake can't read {link}: {pull.Error.Message}");
         }
 
-        var outputs = new List<(string Key, JsonNode Value)> { ("fact:workspace", JsonValue.Create(StepFacts.Text(context, "fact:workspace") ?? string.Empty)!) };
+        var outputs = new List<(string Key, JsonNode Value)> { ("fact:workspace", JsonValue.Create(StepFacts.Text(context, "fact:workspace") ?? string.Empty)) };
         outputs.AddRange(_seeds.Select(static key => (key, (JsonNode)new JsonObject())));
         return StepFacts.Done("seeded", [.. outputs]);
     }
