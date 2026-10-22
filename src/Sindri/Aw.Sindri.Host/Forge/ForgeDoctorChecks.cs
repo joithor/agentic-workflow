@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Forge;
@@ -22,39 +23,40 @@ internal sealed class ForgeDoctorChecks(IApprovedProfile approved, IPullRequests
     public async ValueTask<IReadOnlyList<DoctorCheck>> Run(CancellationToken cancellationToken)
     {
         var latest = await approved.Latest(cancellationToken).ConfigureAwait(false);
-        if (latest.IsError || latest.Value?.Profile.Workflow?.Forge is not { Adapter: { } adapter } forge)
+        if (latest.IsError || latest.Value?.Profile.Workflow?.Forge is not { Adapter: not null } forge)
         {
             return [new DoctorCheck(Name, CheckState.Ok, "no forge configured", Fix: null)];
         }
 
-        var github = adapter == "github";
+        var github = forge.Adapter == "github";
         var credential = forge.Credential is { Length: > 0 } named ? named : DefaultCredential;
-        var source = Source(credential);
         if (github && credential.StartsWith("env:", StringComparison.Ordinal) && string.IsNullOrEmpty(environment(credential[4..])))
         {
-            return [new DoctorCheck(Name, CheckState.Fail, $"the forge credential {source} is not set", $"export {credential[4..]}=<token> where sindri runs, or set workflow.forge.credential")];
+            return [new DoctorCheck(Name, CheckState.Fail, $"the forge credential {Source(credential)} is not set", $"export {credential[4..]}=<token> where sindri runs, or set workflow.forge.credential")];
         }
 
+        return [await Ask(forge, github, Source(credential), cancellationToken).ConfigureAwait(false)];
+    }
+
+    private async ValueTask<DoctorCheck> Ask(ForgeSettings forge, bool github, string source, CancellationToken cancellationToken)
+    {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(limit);
         try
         {
             var self = await pulls.Self(timeout.Token).ConfigureAwait(false);
-            if (self.IsSuccess)
-            {
-                var host = forge.Hosts is { Count: > 0 } hosts ? hosts[0] : github ? "github.com" : "forge.test";
-                return [new DoctorCheck(Name, CheckState.Ok, $"forge {host} as {self.Value}", Fix: null)];
-            }
-
-            return [self.Error.Code == SindriErrors.ForgeUnavailable.Code
-                ? new DoctorCheck(Name, CheckState.Warn, $"the forge could not be reached with {source}: {self.Error.Message}", "check the network and workflow.forge.hosts")
-                : new DoctorCheck(Name, CheckState.Fail, $"the forge refused the credential {source}: {self.Error.Message}", $"check that {source} holds a valid token for the forge")];
+            var host = forge.Hosts is { Count: > 0 } hosts ? hosts[0] : github ? "github.com" : "forge.test";
+            return self.IsSuccess ? new DoctorCheck(Name, CheckState.Ok, $"forge {host} as {self.Value}", Fix: null) : Refused(self.Error, source);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            return [new DoctorCheck(Name, CheckState.Warn, string.Create(CultureInfo.InvariantCulture, $"the forge did not answer within {limit.TotalSeconds:0} s"), "check the network and workflow.forge.hosts")];
+            return new DoctorCheck(Name, CheckState.Warn, $"the forge did not answer within {limit.TotalSeconds:0} s", "check the network and workflow.forge.hosts");
         }
     }
+
+    private static DoctorCheck Refused(Error error, string source) => error.Code == SindriErrors.ForgeUnavailable.Code
+        ? new DoctorCheck(Name, CheckState.Warn, $"the forge could not be reached with {source}: {error.Message}", "check the network and workflow.forge.hosts")
+        : new DoctorCheck(Name, CheckState.Fail, $"the forge refused the credential {source}: {error.Message}", $"check that {source} holds a valid token for the forge");
 
     private static string Source(string credential)
     {
