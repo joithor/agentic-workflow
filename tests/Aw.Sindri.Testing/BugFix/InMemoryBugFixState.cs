@@ -61,6 +61,12 @@ public sealed class InMemoryBugFixState : IBugFixState
             return Answer(BugFixAnswers.Refused<AttemptStarted>(Missing));
         }
 
+        if (bug.Current.FirstOrDefault(static c => !c.Ran) is { } unrun)
+        {
+            // why: bugfix-state stays in the fix phase until the candidate's run is recorded, and the step is not allowed there (AW-BUGFIX-005)
+            return Answer(BugFixAnswers.Refused<AttemptStarted>(new BugFixRefusal("AW-BUGFIX-005", RefusalKind.Other, $"start-attempt is not allowed in the fix phase: candidate {unrun.Id} has no run yet")));
+        }
+
         if (bug.Current.FirstOrDefault(static c => !c.Evaluated) is { } pending)
         {
             return Answer(BugFixAnswers.Refused<AttemptStarted>(new BugFixRefusal("AW-BUGFIX-010", RefusalKind.Other, $"candidate {pending.Id} has not been evaluated yet")));

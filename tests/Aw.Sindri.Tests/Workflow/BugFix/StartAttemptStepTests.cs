@@ -69,8 +69,8 @@ public sealed class StartAttemptStepTests
         var second = await step.Run(BugFixRig.Context("step.bugfix.start-attempt", ("decision", BugFixRig.Decision("single"))), Token);
 
         Assert.Null(second.Result);
-        Assert.Contains("AW-BUGFIX-010", second.Failure, StringComparison.Ordinal);
-        Assert.Contains("c1 has not been evaluated", second.Failure, StringComparison.Ordinal);
+        Assert.Contains("AW-BUGFIX-005", second.Failure, StringComparison.Ordinal);
+        Assert.Contains("candidate c1 has no run yet", second.Failure, StringComparison.Ordinal);
     }
 
     [Fact]

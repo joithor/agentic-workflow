@@ -120,8 +120,7 @@ public abstract class BugFixStateContract
 
         Expect.Equal(BugFixAnswerStatus.Refused, second.Status);
         Expect.Equal(RefusalKind.Other, second.Refusal!.Kind);
-        // why: the real bugfix-state is still in the fix phase until the run is recorded and refuses the step (005); the fake refuses the open candidate (010)
-        Expect.True(string.Equals(second.Refusal.Code, "AW-BUGFIX-005", StringComparison.Ordinal) || string.Equals(second.Refusal.Code, "AW-BUGFIX-010", StringComparison.Ordinal));
+        Expect.Equal("AW-BUGFIX-005", second.Refusal.Code);   // still the fix phase until the candidate's run is recorded
     }
 
     /// <summary>Three attempts open; the fourth is refused with the cap's kind.</summary>
