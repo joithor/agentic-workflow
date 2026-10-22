@@ -4,8 +4,8 @@ using Aw.Sindri.Core.Workflow.Ids;
 namespace Aw.Sindri.Features.Blocks.Effect;
 
 /// <summary>
-/// The PR babysitter's and docs sync's effects (PB spec §10.1): their descriptors. Push, record and rerun-checks have runtimes (PrPushEffect, PrRecordEffect,
-/// PrRerunChecksEffect); the rest are descriptors only until the forge port gives them one, and a served instance's dispatch of one is refused as an effect with no runtime. 'effect.pr.merge' and 'effect.pr.merge-docs' act with a
+/// The PR babysitter's and docs sync's effects (PB spec §10.1): their descriptors. Push, record, rerun-checks, merge and reply have runtimes (PrPushEffect, PrRecordEffect,
+/// PrRerunChecksEffect, PrMergeEffect, PrReplyEffect); the rest are descriptors only until the forge port gives them one, and a served instance's dispatch of one is refused as an effect with no runtime. 'effect.pr.merge' and 'effect.pr.merge-docs' act with a
 /// human's authority (W23, RCP-HUMAN-001).
 /// </summary>
 internal static class PrEffects
