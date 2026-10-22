@@ -71,7 +71,8 @@ internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchCh
         }
 
         var pushed = new Pushed(request, head, [.. range.Value.Commits.Select(static c => c.Sha)], source, request.CiFixes);
-        var counted = pushed with { CiFixes = request.CiFixes + (string.Equals(request.Cause, "ci", StringComparison.Ordinal) ? 1 : 0) };
+        var counted = pushed with { CiFixes = Counted(request, head, existed: false) };
+        var found = pushed with { CiFixes = Counted(request, head, existed: true) };
         switch (sent.Value)
         {
             case PullPushOutcome.Pushed:
@@ -81,13 +82,19 @@ internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchCh
                 return landed.IsError
                     ? landed.Error
                     : landed.Value
-                        ? await Reply(source ? "pushedSource" : "pushed", counted, existed: true, cancellationToken).ConfigureAwait(false)
+                        ? await Reply(source ? "pushedSource" : "pushed", found, existed: true, cancellationToken).ConfigureAwait(false)
                         : await Reply("headMoved", pushed with { Commits = [] }, existed: false, cancellationToken).ConfigureAwait(false);
             case PullPushOutcome.Rejected:
             default:
                 return await Reply("rejected", pushed with { Commits = [] }, existed: false, cancellationToken).ConfigureAwait(false);
         }
     }
+
+    // The counter after this dispatch: one more for a new ci push; a push found already made is counted once, so a retry that finds the earlier 'fact:push' (same sha) keeps it.
+    private static int Counted(Request request, string head, bool existed) =>
+        !string.Equals(request.Cause, "ci", StringComparison.Ordinal) || (existed && string.Equals(request.PreviousSha, head, StringComparison.Ordinal))
+            ? request.CiFixes
+            : request.CiFixes + 1;
 
     private async ValueTask<Result<bool>> Landed(string link, string head, CancellationToken cancellationToken)
     {
@@ -131,7 +138,7 @@ internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchCh
 
         var cause = context.Arguments.TryGetValue("cause", out var text) && text.ValueKind == System.Text.Json.JsonValueKind.String ? text.GetString()! : "ci";   // why: checked to be a string just above
         return PrEffectFacts.Link(pr.Value) is { Length: > 0 } link && PrEffectFacts.Head(lease.Value) is { Length: > 0 } seen && PrEffectFacts.Path(workspace.Value) is { Length: > 0 } path
-            ? new Request(link, seen, path, cause, CiFixesOf(previous.Value))
+            ? new Request(link, seen, path, cause, CiFixesOf(previous.Value), ShaOf(previous.Value))
             : PrEffectFacts.Missing(context, "fact:pr (a link), fact:prState (head.sha) and fact:workspace (a path)");
     }
 
@@ -139,7 +146,10 @@ internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchCh
     private static int CiFixesOf(JsonElement? previous) =>
         previous is { ValueKind: System.Text.Json.JsonValueKind.Object } fact && fact.TryGetProperty("ciFixes", out var count) && count.TryGetInt32(out var value) ? value : 0;
 
-    private sealed record Request(string Link, string Lease, string Workspace, string Cause, int CiFixes);
+    private static string? ShaOf(JsonElement? previous) =>
+        previous is { ValueKind: System.Text.Json.JsonValueKind.Object } fact && fact.TryGetProperty("sha", out var sha) && sha.ValueKind == System.Text.Json.JsonValueKind.String ? sha.GetString() : null;
+
+    private sealed record Request(string Link, string Lease, string Workspace, string Cause, int CiFixes, string? PreviousSha);
 
     private sealed record Pushed(Request Request, string Sha, IReadOnlyList<string> Commits, bool Source, int CiFixes);
 }
