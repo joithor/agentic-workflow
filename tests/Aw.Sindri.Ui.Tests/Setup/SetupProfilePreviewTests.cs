@@ -1,5 +1,4 @@
 using Aw.Kernel.Testing;
-using Aw.Sindri.Ui.ViewModels.Setup;
 using static Aw.Sindri.Ui.Tests.Setup.SetupFixture;
 
 namespace Aw.Sindri.Ui.Tests.Setup;
