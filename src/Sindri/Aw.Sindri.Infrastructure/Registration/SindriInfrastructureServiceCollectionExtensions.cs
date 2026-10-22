@@ -117,6 +117,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IRecipeStore, SqliteRecipeStore>()
             .AddSingleton<IRecipeApprovals, SqliteRecipeApprovals>()
             .AddSingleton<IWorkflowClaims, SqliteWorkflowClaims>()   // engine P6 unit (d): workflow_claims in ledger.db
+            .AddSingleton<IPrCommentMarks, SqlitePrCommentMarks>()   // W26: pr_comment_marks in ledger.db
             .AddSingleton<IClaimRefs, GitClaimRefs>()                // engine P6 unit (d): the claim's marker ref
             .AddSingleton<IWorktrees, GitWorktrees>()               // per-run and phase worktrees (engine spec §6.5); nothing calls it until BS-10
             .AddSingleton<IChallenges, ProcessChallenges>()
