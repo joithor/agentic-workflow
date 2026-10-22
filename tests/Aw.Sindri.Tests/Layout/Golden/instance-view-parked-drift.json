@@ -2,13 +2,13 @@
   "address": "T-3/step/1",
   "recipe": {
     "id": "workflow.step",
-    "version": 3,
-    "hash": "sha256:d39861bd12222fcc4b74432567eabfd7b58660c4b8d714be71528b6a1353ba2a"
+    "version": 4,
+    "hash": "sha256:f039848fd714d2a46a4d3d216083bff1815821cd3e3b4f1bc6402bbb44bd54fa"
   },
   "state": "parked",
   "detail": "spec-conflict (drift)",
   "since": "2026-10-11T11:56:00.0000000Z",
-  "next": "step.produce changed since workflow.step@d39861bd1222 was approved.\nRe-approve it (\u0060sindri recipe approve workflow.step@d39861bd1222\u0060); the approval resumes this instance.",
+  "next": "step.produce changed since workflow.step@f039848fd714 was approved.\nRe-approve it (\u0060sindri recipe approve workflow.step@f039848fd714\u0060); the approval resumes this instance.",
   "allowedCommands": [
     {
       "actionId": "ApplyCommand:takeover",
@@ -30,13 +30,15 @@
   "outcome": null,
   "id": "WFI-95a5c2820bd88ec39379892be8909567",
   "version": 4,
-  "answer": "none (drift): sindri recipe approve workflow.step@d39861bd1222     (at a terminal; the approval resumes it)",
+  "answer": "none (drift): sindri recipe approve workflow.step@f039848fd714     (at a terminal; the approval resumes it)",
   "drift": null,
   "budget": {
     "state": 0,
-    "stateCap": 200000,
+    "stateCap": 1000000,
     "instance": 0,
-    "instanceCap": 400000
+    "instanceCap": null,
+    "perRound": false,
+    "overrun": null
   },
   "paused": null,
   "runningSteps": 0,
@@ -164,7 +166,7 @@
     "verb": "approve",
     "actionId": "ApproveRecipe",
     "class": "protected",
-    "cli": "sindri recipe approve workflow.step@d39861bd1222",
+    "cli": "sindri recipe approve workflow.step@f039848fd714",
     "confirm": null
   },
   "activity": "produce the Step output for T-3 (round 1/3)",
