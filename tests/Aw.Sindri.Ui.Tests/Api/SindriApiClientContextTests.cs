@@ -111,6 +111,18 @@ public sealed class SindriApiClientContextTests
     }
 
     [Fact]
+    public async Task Code_sends_each_anchor_the_draft_flag_and_the_map_version()
+    {
+        var (client, _, handler) = Reach();
+        var key = (string)GoldenFiles.Node("context-code", "edges-and-lexical")["anchors"]![0]!["key"]!;
+
+        _ = await client.Code(_api, new CodeQuery([key, "feature:other"], Draft: true, MapVersion: "v2"), Token);
+
+        Assert.Equal("/sindri/context/code", Assert.Single(handler.Requests).Path);
+        Assert.Equal($"?anchor={key}&anchor=feature:other&draft=true&mapVersion=v2", Query(handler));
+    }
+
+    [Fact]
     public async Task FileMap_maps_045()
     {
         var (client, server, _) = Reach();
@@ -218,5 +230,32 @@ public sealed class SindriApiClientContextTests
         var repo = Assert.Single(status.Value.Repos);
         Assert.Equal(("other", "ok"), (repo.Repo, repo.State));
         Assert.Equal(("structure", "ok"), (repo.Layers[0].Layer, repo.Layers[0].State));
+    }
+
+    [Fact]
+    public async Task The_publish_state_reads_its_golden_from_the_publish_route_and_never_waits_on_the_views()
+    {
+        var (client, _, handler) = Reach();
+        _ = await client.RebuildViews(_api, Token);   // a command: the next view query would carry its sequence
+
+        var publish = (await client.MapPublish(_api, Token)).Value;
+
+        var seen = handler.Requests[^1];
+        Assert.Equal(("GET", "/sindri/context/map/publish"), (seen.Method, seen.Path));
+        Assert.Null(seen.After);
+        Assert.Equal(((string)GoldenFiles.Node("context-map-publish", "published")["state"]!, 1), (publish.State, publish.Version));
+        Assert.Equal(["Map v1 is current."], publish.Lines);
+    }
+
+    [Fact]
+    public async Task No_map_yet_is_the_APIs_refusal_with_its_code()
+    {
+        var (client, server, _) = Reach();
+        server.MapPublishAnswer = RouteAnswer.Problem(HttpStatusCode.NotFound, "SND-CONTEXT-030", "there is no map yet");
+
+        var publish = await client.MapPublish(_api, Token);
+
+        Assert.True(publish.IsError);
+        Assert.Equal("SND-CONTEXT-030", publish.Error.Code);
     }
 }

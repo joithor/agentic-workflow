@@ -73,6 +73,30 @@
           </Border>
         </Border>
       </Border>
+      <!-- Code index spec 6.4 (F1P-c): the Context map card. The state is a glyph and a word, never colour alone; the sentences under it are Sindri's.
+           It shows once the map's publish state has been read (a map exists), and stays up front: whether a map waits for the code index is what the person looks for. -->
+      <Border x:Name="ContextMapPanel" Classes="panel" IsVisible="{Binding ContextMap.IsVisible}" AutomationProperties.Name="{Binding ContextMap.Name}">
+        <Border Classes="section last">
+          <StackPanel Spacing="{StaticResource Space.XS}">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock x:Name="ContextMapEyebrow" Classes="eyebrow head-eyebrow" Text="{Binding Text.ContextMapCard}"
+                         AutomationProperties.Name="{Binding Text.ContextMapCard}" />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                <icons:StateIcon x:Name="ContextMapGlyph" Glyph="{Binding ContextMap.Glyph}" VerticalAlignment="Center" />
+                <TextBlock x:Name="ContextMapState" Classes="body-strong" Text="{Binding ContextMap.State}" TextWrapping="Wrap"
+                           AutomationProperties.Name="{Binding ContextMap.State}" />
+              </StackPanel>
+            </Grid>
+            <ItemsControl x:Name="ContextMapLines" ItemsSource="{Binding ContextMap.Lines}" AutomationProperties.Name="{Binding Text.ContextMapCard}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <TextBlock Classes="body" Text="{Binding}" TextWrapping="Wrap" Margin="0,0,0,4" AutomationProperties.Name="{Binding}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </Border>
       <Border x:Name="ProblemsCard" Classes="panel" IsVisible="{Binding HasProblemLines}">
         <Border Classes="section last">
           <StackPanel Spacing="{StaticResource Space.XS}">

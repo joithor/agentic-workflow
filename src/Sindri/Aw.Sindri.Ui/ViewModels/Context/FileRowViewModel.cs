@@ -9,7 +9,8 @@ internal sealed class FileRowViewModel
 
     /// <summary>The row for one entry of the file map.</summary>
     /// <param name="entry">The entry as served.</param>
-    internal FileRowViewModel(FileMapEntry entry)
+    /// <param name="symbols">The symbols column of the folder, or null for none.</param>
+    internal FileRowViewModel(FileMapEntry entry, SymbolsColumnViewModel? symbols = null)
     {
         ArgumentNullException.ThrowIfNull(entry);
         Name = entry.Name;
@@ -20,7 +21,9 @@ internal sealed class FileRowViewModel
         FilesText = Labels.ContextFilesCount(entry.Files);
         ForText = For(entry.Features);
         IntentText = entry.Intent is { } intent ? Labels.ContextFilesIntent(intent.Records, intent.Decisions) : Labels.ContextFilesIntentNone;
-        AutomationName = Dots(Name, StatusWord, ForText, IntentText);
+        SymbolsText = IsDirectory ? string.Empty : symbols?.Cell(Path) ?? string.Empty;
+        SymbolsOpacity = symbols?.Dimmed == true ? MapHighlightStyle.DimmedOpacity : 1;
+        AutomationName = Dots(Name, StatusWord, ForText, IntentText, SymbolsText);
     }
 
     /// <summary>The name, as served.</summary>
@@ -49,6 +52,12 @@ internal sealed class FileRowViewModel
 
     /// <summary>Its tickets and decisions.</summary>
     public string IntentText { get; }
+
+    /// <summary>The names the code index gave for the file, or why it cannot (empty for a folder and for a file the index does not know).</summary>
+    public string SymbolsText { get; }
+
+    /// <summary>1, or the dimmed opacity when the index is stale.</summary>
+    public double SymbolsOpacity { get; }
 
     /// <summary>The row's accessible name: everything the row says, in order.</summary>
     public string AutomationName { get; }

@@ -43,7 +43,7 @@ internal static class PlanSteps
     /// <summary>'step.plan.evidence': checks the design and plan evidence and assembles the candidate plan packet; 'complete' or 'incomplete' with findings.</summary>
     public static BlockDescriptor Evidence { get; } = BlockStep("step.plan.evidence", Capability.Tools)
         .Reads("fact:scopePacket", "fact:design", "fact:plan", "fact:holdoutSets", "fact:findings", "fact:answerLog").Reports("complete", "incomplete")
-        .Writes(On("fact:planPacket", "complete"), On("fact:findings", "incomplete"));
+        .Writes(On("fact:planPacket", "complete"), On("fact:recommendation"), On("fact:findings", "incomplete"));
 
     /// <summary>'step.plan.questions': turns the open decisions into the stop's questions; 'asked' or 'none'.</summary>
     public static BlockDescriptor Questions { get; } = BlockStep("step.plan.questions", Capability.None)

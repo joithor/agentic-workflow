@@ -70,6 +70,9 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     /// <summary>The stalled and rebuilding banners (§4.1), from the services view's asOf.</summary>
     public ViewsBanner Banner { get; } = new();
 
+    /// <summary>The Context map card (code index spec 6.4): how the current map was published, or that it is held for the code index.</summary>
+    public ContextMapCardViewModel ContextMap { get; } = new(api);
+
     /// <summary>The status as labelled values: Home's strip and the Health page's rows.</summary>
     public HealthDetail Detail { get; } = new();
 

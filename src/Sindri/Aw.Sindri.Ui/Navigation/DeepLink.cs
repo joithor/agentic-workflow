@@ -49,18 +49,26 @@ internal sealed record DeepLink(DeepLinkKind Kind, string? Subject)
     // The links that name a page and have no subject: 'home/needs-you' and 'setup'.
     private static bool TryParsePage(string? text, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out DeepLink? link)
     {
-        link = string.Equals(text, HomeNeedsYouText, StringComparison.Ordinal) ? HomeNeedsYou : string.Equals(text, SetupText, StringComparison.Ordinal) ? Setup : null;
+        link = string.Equals(text, HomeNeedsYouText, StringComparison.Ordinal) ? HomeNeedsYou : string.Equals(text, SetupText, StringComparison.Ordinal) ? Setup : ContextItemOf(text);
         return link is not null;
     }
+
+    // 'context?item=<ItemId>': the Context page for an item.
+    private static DeepLink? ContextItemOf(string? text) =>
+        text is not null && text.StartsWith(ContextItemPrefix, StringComparison.Ordinal) && IsSubject(text[ContextItemPrefix.Length..])
+            ? new DeepLink(DeepLinkKind.ContextItem, text[ContextItemPrefix.Length..])
+            : null;
 
     /// <summary>The link's text, the form <see cref="TryParse"/> reads.</summary>
     /// <returns>The text.</returns>
     public override string ToString() =>
-        Kind == DeepLinkKind.HomeNeedsYou ? HomeNeedsYouText : Kind == DeepLinkKind.Setup ? SetupText : _kinds.First(k => k.Kind == Kind).Prefix + "/" + Subject;
+        Kind == DeepLinkKind.HomeNeedsYou ? HomeNeedsYouText : Kind == DeepLinkKind.Setup ? SetupText : Kind == DeepLinkKind.ContextItem ? ContextItemPrefix + Subject : _kinds.First(k => k.Kind == Kind).Prefix + "/" + Subject;
 
     private const string HomeNeedsYouText = "home/needs-you";
 
     private const string SetupText = "setup";
+
+    private const string ContextItemPrefix = "context?item=";
 
     private const int MaxSubject = 128;
 
