@@ -181,12 +181,15 @@ internal sealed partial class GitHubForge(GitHubApi api, ICredentialSource crede
     private static ChecksSummary Summarise(string sha, IReadOnlyList<JsonElement> runs)
     {
         string[] bad = ["failure", "timed_out", "cancelled", "action_required", "startup_failure"];
+        string[] passes = ["success", "neutral", "skipped"];
         var failing = runs.Where(r => bad.Contains(r.Str("conclusion"))).Select(r => r.Str("name")).ToList();
         var state = runs.Count == 0 ? ChecksState.None
             : failing.Count > 0 ? ChecksState.Failing
             : runs.Any(r => r.Str("status") != "completed") ? ChecksState.Pending
             : ChecksState.Passing;
-        return new ChecksSummary(state, sha, failing);
+        var passed = runs.Count(r => passes.Contains(r.Str("conclusion")));
+        var pending = runs.Count(r => r.Str("status") != "completed");
+        return new ChecksSummary(state, sha, failing, passed, pending);
     }
 
     private async ValueTask<Result<string?>> ReviewDecision(ForgeRef pull, CancellationToken cancellationToken)

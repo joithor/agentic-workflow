@@ -21,6 +21,7 @@ internal sealed partial class HealthViewModel
     /// <returns>A task that completes when every view is shown.</returns>
     internal async Task RefreshViews(Uri url, CancellationToken cancellationToken)
     {
+        await ContextMap.Refresh(url, cancellationToken).ConfigureAwait(true);
         foreach (var view in _views)
         {
             await view(url, cancellationToken).ConfigureAwait(true);

@@ -1122,6 +1122,8 @@ own slots that come due meanwhile are skipped, never overlapped.
 
 Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
 
+`sindri pr babysit <url>` and `sindri docs sync <url>` are `workflow start` with the facts of the PR babysitter's hand start built for you (`docs/csharp/sindri-pr.md`, API16).
+
 - **`workflow start <recipe> --item <id> [--attempt next] [--fact <key>=<file>]…`** runs the `StartInstance` slice: it
   resolves the item (`IItems`) and the approved recipe (the latest, or `id@hash`, a hash prefix of 8 or more digits),
   refuses a recipe registered before input kinds (`SND-RECIPE-001` with the fix; checked before a pin-drift refusal), a `fact:item` whose `id` isn't the item (`SND-WF-014`) and a missing declared input (`SND-CLI-003`; an input with a `generate` template is exempt, the start renders it, produced by `engine:generate`), stores

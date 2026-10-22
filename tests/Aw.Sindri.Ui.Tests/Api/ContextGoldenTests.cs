@@ -13,7 +13,7 @@ namespace Aw.Sindri.Ui.Tests.Api;
 public sealed class ContextGoldenTests
 {
     private static readonly string[] _slugs =
-        ["context-lenses", "context-filemap", "context-map-review", "context-map-review-history", "context-map", "context-node", "context-map-promote"];
+        ["context-lenses", "context-filemap", "context-map-review", "context-map-review-history", "context-map", "context-map-publish", "context-node", "context-map-promote", "context-code"];
 
     private static T Read<T>(string slug, string scenario)
         where T : class => Read<T>(GoldenFiles.Api(slug, scenario));
@@ -33,9 +33,11 @@ public sealed class ContextGoldenTests
     {
         "context-lenses" => Read<LensesView>,
         "context-filemap" => Read<FileMapView>,
+        "context-code" => Read<CodeView>,
         "context-map-review" => scenario.StartsWith("post-", StringComparison.Ordinal) ? Read<ReviewDecisionResponse> : Read<ReviewQueueView>,
         "context-map-review-history" => Read<ReviewHistoryView>,
         "context-map" => Read<MapStatusView>,
+        "context-map-publish" => Read<MapPublishView>,
         "context-node" => Read<NodeView>,
         "context-map-promote" => Read<PromotePreview>,
         _ => throw new InvalidOperationException(slug),

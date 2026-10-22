@@ -55,7 +55,9 @@ public sealed class GoldenContractTests
         ["sessions-id"] = As<SessionView>,   // GET /sessions/{provider}/{id}; the 404 is ProblemDetails
         ["context-lenses"] = As<LensesView>,
         ["context-filemap"] = As<FileMapView>,
+        ["context-code"] = As<CodeView>,   // GET /sindri/context/code: the code lens' callers and callees (S-9)
         ["context-map"] = As<MapStatusView>,
+        ["context-map-publish"] = As<MapPublishView>,
         ["context-map-promote"] = As<PromotePreview>,
         ["context-map-review"] = AsReview,
         ["context-map-review-history"] = As<ReviewHistoryView>,
@@ -89,7 +91,7 @@ public sealed class GoldenContractTests
     {
         "stop", "profile",
         "setup-repos",   // POST /setup/repos (Add repo): the app's call and the job's progress are U3's (SO-U3)
-        "context-eval", "context-map-proposals", "context-query", "context-code", "context-history", "context-subgraph",   // not U9's: eval, proposals (U13) and the query routes are read by the phases that call them
+        "context-eval", "context-map-proposals", "context-query", "context-history", "context-subgraph",   // not U9's: eval, proposals (U13) and the query routes are read by the phases that call them
         "items",   // GET /items (the list) is never called; POST /items' created* goldens are read (see the loop)
         "ledger",   // API P5: the audit read is the CLI's; the app follows the stream and re-queries
         "services-name-run", "services-name-pause", "services-name-resume",   // API P6: the services calls are U4's (Services); the job calls are read below

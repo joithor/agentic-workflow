@@ -17,10 +17,11 @@ internal static class DocsCommandTable
 {
     private const string CheckUsage = "usage: sindri docs check --facts <dir> [--json]";
 
-    internal static Task<int> Run(string[] args, IServiceProvider services, Output output, CancellationToken ct) => args switch
+    internal static Task<int> Run(string[] args, IServiceProvider services, Output output, RecipeDesk desk, CancellationToken ct) => args switch
     {
         ["check", .. var rest] => Check(rest, services, output, ct),
-        _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["docs", .. args])}' is not a sindri command ({CheckUsage})")),
+        ["sync", .. var rest] => HandStartCommand.DocsSync(rest, desk, services, output, ct),
+        _ => output.Error(SindriErrors.UnknownVerb.With($"'{string.Join(' ', ["docs", .. args])}' is not a sindri command ({CheckUsage}; {HandStartCommand.SyncUsage})")),
     };
 
     private static async Task<int> Check(IReadOnlyList<string> args, IServiceProvider services, Output output, CancellationToken ct)
