@@ -6415,3 +6415,51 @@ static Aw.Context.Core.Linear.LinearRecordKeys.Issue(Aw.Context.Core.Sources.Ext
 static Aw.Context.Core.Linear.LinearRecordKeys.Document(Aw.Context.Core.Sources.ExternalId id) -> Aw.Context.Core.Sources.RecordKey?
 static Aw.Context.Core.Linear.LinearRecordKeys.Project(Aw.Context.Core.Sources.ExternalId id) -> Aw.Context.Core.Sources.RecordKey?
 static Aw.Context.Core.Linear.LinearRecordKeys.Update(Aw.Context.Core.Sources.ExternalId id) -> Aw.Context.Core.Sources.RecordKey?
+Aw.Context.Core.Lenses.LensSymbols.Implements.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.SymbolImplements!>?
+Aw.Context.Core.Lenses.LensSymbols.Implements.init -> void
+Aw.Context.Core.Symbols.SymbolImplements
+Aw.Context.Core.Symbols.SymbolImplements.<Clone>$() -> Aw.Context.Core.Symbols.SymbolImplements!
+Aw.Context.Core.Symbols.SymbolImplements.Confidence.get -> double
+Aw.Context.Core.Symbols.SymbolImplements.Confidence.init -> void
+Aw.Context.Core.Symbols.SymbolImplements.Deconstruct(out Aw.Context.Core.Graph.NodeKey Node, out string! Ref, out string! Name, out string! Path, out int StartLine, out double Confidence) -> void
+Aw.Context.Core.Symbols.SymbolImplements.Equals(Aw.Context.Core.Symbols.SymbolImplements? other) -> bool
+Aw.Context.Core.Symbols.SymbolImplements.Name.get -> string!
+Aw.Context.Core.Symbols.SymbolImplements.Name.init -> void
+Aw.Context.Core.Symbols.SymbolImplements.Node.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.Symbols.SymbolImplements.Node.init -> void
+Aw.Context.Core.Symbols.SymbolImplements.Path.get -> string!
+Aw.Context.Core.Symbols.SymbolImplements.Path.init -> void
+Aw.Context.Core.Symbols.SymbolImplements.Ref.get -> string!
+Aw.Context.Core.Symbols.SymbolImplements.Ref.init -> void
+Aw.Context.Core.Symbols.SymbolImplements.StartLine.get -> int
+Aw.Context.Core.Symbols.SymbolImplements.StartLine.init -> void
+Aw.Context.Core.Symbols.SymbolImplements.SymbolImplements(Aw.Context.Core.Graph.NodeKey Node, string! Ref, string! Name, string! Path, int StartLine, double Confidence) -> void
+Aw.Context.Core.Symbols.SymbolLinks
+const Aw.Context.Core.Symbols.SymbolLinks.MaxPerLink = 5 -> int
+const Aw.Context.Core.Symbols.SymbolLinks.NameMatch = 0.9 -> double
+override Aw.Context.Core.Symbols.SymbolImplements.Equals(object? obj) -> bool
+override Aw.Context.Core.Symbols.SymbolImplements.GetHashCode() -> int
+override Aw.Context.Core.Symbols.SymbolImplements.ToString() -> string!
+static Aw.Context.Core.Symbols.SymbolImplements.operator !=(Aw.Context.Core.Symbols.SymbolImplements? left, Aw.Context.Core.Symbols.SymbolImplements? right) -> bool
+static Aw.Context.Core.Symbols.SymbolImplements.operator ==(Aw.Context.Core.Symbols.SymbolImplements? left, Aw.Context.Core.Symbols.SymbolImplements? right) -> bool
+static Aw.Context.Core.Symbols.SymbolLinks.For(System.Collections.Generic.IReadOnlyList<(string! Path, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Nodes)>! links, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.FileSymbolsRow!>! rows) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Symbols.SymbolImplements!>!
+Aw.Context.Core.Code.SymbolColumn
+Aw.Context.Core.Code.SymbolColumnReading
+Aw.Context.Core.Code.SymbolColumnReading.<Clone>$() -> Aw.Context.Core.Code.SymbolColumnReading!
+Aw.Context.Core.Code.SymbolColumnReading.Deconstruct(out Aw.Context.Core.Engine.ContextRepo! Repo, out Aw.Context.Core.Map.MapVersion! Version, out System.Collections.Generic.IReadOnlyList<string!>! Paths, out System.Collections.Generic.IReadOnlyList<(string! Path, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Nodes)>! Links) -> void
+Aw.Context.Core.Code.SymbolColumnReading.Equals(Aw.Context.Core.Code.SymbolColumnReading? other) -> bool
+Aw.Context.Core.Code.SymbolColumnReading.Links.get -> System.Collections.Generic.IReadOnlyList<(string! Path, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Nodes)>!
+Aw.Context.Core.Code.SymbolColumnReading.Links.init -> void
+Aw.Context.Core.Code.SymbolColumnReading.Paths.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Code.SymbolColumnReading.Paths.init -> void
+Aw.Context.Core.Code.SymbolColumnReading.Repo.get -> Aw.Context.Core.Engine.ContextRepo!
+Aw.Context.Core.Code.SymbolColumnReading.Repo.init -> void
+Aw.Context.Core.Code.SymbolColumnReading.SymbolColumnReading(Aw.Context.Core.Engine.ContextRepo! Repo, Aw.Context.Core.Map.MapVersion! Version, System.Collections.Generic.IReadOnlyList<string!>! Paths, System.Collections.Generic.IReadOnlyList<(string! Path, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Nodes)>! Links) -> void
+Aw.Context.Core.Code.SymbolColumnReading.Version.get -> Aw.Context.Core.Map.MapVersion!
+Aw.Context.Core.Code.SymbolColumnReading.Version.init -> void
+override Aw.Context.Core.Code.SymbolColumnReading.Equals(object? obj) -> bool
+override Aw.Context.Core.Code.SymbolColumnReading.GetHashCode() -> int
+override Aw.Context.Core.Code.SymbolColumnReading.ToString() -> string!
+static Aw.Context.Core.Code.SymbolColumn.Read(Aw.Context.Core.Symbols.ICodeSymbolSource! source, Aw.Context.Core.Code.SymbolColumnReading! reading, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Context.Core.Lenses.LensSymbols!>
+static Aw.Context.Core.Code.SymbolColumnReading.operator !=(Aw.Context.Core.Code.SymbolColumnReading? left, Aw.Context.Core.Code.SymbolColumnReading? right) -> bool
+static Aw.Context.Core.Code.SymbolColumnReading.operator ==(Aw.Context.Core.Code.SymbolColumnReading? left, Aw.Context.Core.Code.SymbolColumnReading? right) -> bool
