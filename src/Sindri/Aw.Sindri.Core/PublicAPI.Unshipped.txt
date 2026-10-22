@@ -3635,6 +3635,8 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.AllowedCommand(string! Act
 Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.Cli.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.Cli.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.Deconstruct(out string! Action, out string! Cli) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.Destructive.get -> bool?
+Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.Destructive.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand? other) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.Verb.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.Verb.init -> void
