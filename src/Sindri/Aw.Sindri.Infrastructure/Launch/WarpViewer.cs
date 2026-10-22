@@ -57,9 +57,9 @@ internal sealed partial class WarpViewer(WarpViewerOptions options, ISessionHost
     /// <inheritdoc/>
     public async ValueTask<TerminalFacts> Probe(CancellationToken cancellationToken)
     {
-        var opener = await ViewerProcess.OnLoginPath(options.Opener, cancellationToken).ConfigureAwait(false);
-        var handler = opener && (options.IsMac || await HasLinuxHandler(cancellationToken).ConfigureAwait(false));
-        var gui = ViewerProcess.HasGuiSession(options.GetEnv);
+        var opener = await (options.OnPath ?? ViewerProcess.OnLoginPath)(options.Opener, cancellationToken).ConfigureAwait(false);
+        var handler = opener && (options.IsMac || await (options.HasHandler ?? HasLinuxHandler)(cancellationToken).ConfigureAwait(false));
+        var gui = ViewerProcess.HasGuiSession(options.GetEnv, options.IsMac);
         var problem = !handler ? "not-installed" : gui ? null : "no-gui-session";
         return new TerminalFacts(Kind, "Warp", problem is null, "file", ConfigPath: null, problem, Detail: null);
     }

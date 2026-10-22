@@ -1,9 +1,12 @@
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Onyx;
+using Aw.Sindri.Core.Setup;
+using Aw.Sindri.Core.Workflow.Shipped;
 using Aw.Sindri.Host.Catalog;
 using Aw.Sindri.Host.Onyx;
 using Aw.Sindri.Host.Server;
+using Aw.Sindri.Host.Shipped;
 
 namespace Aw.Sindri.Host.Registration;
 
@@ -18,6 +21,8 @@ internal static class SindriHostServiceCollectionExtensions
         .AddSingleton<IShutdown>(static sp => sp.GetRequiredService<ProcessShutdown>())
         .AddSingleton<IExitCode, ProcessExitCode>()
         .AddSingleton<ICommandCatalog, CommandCatalog>()
+        .AddSingleton<IShippedEffects, EmbeddedShippedEffects>()   // the default profile allows the effects the embedded recipes declare (setup-once §5.1)
+        .AddSingleton<IEmbeddedRecipes>(static _ => new ManifestEmbeddedRecipes(typeof(ManifestEmbeddedRecipes).Assembly))   // the recipes this build ships; nothing at run time reads recipes/sindri from disk
         .AddSingleton<Projector>()
         .AddSingleton<ScheduleInputs>()
         .AddSingleton<CodeIndex.Core.Facade.ICodeIndex, CodeIndexHost.UnbuiltCodeIndex>()   // no index store yet: every read answers 'no index' until CI-9 registers the real facade

@@ -12,4 +12,10 @@ internal sealed record WarpViewerOptions(string LaunchDir)
 
     /// <summary>Reads an environment variable of this process (the GUI-session check); the real environment when null.</summary>
     public Func<string, string?>? GetEnv { get; init; }
+
+    /// <summary>Answers whether a handler for warp:// is registered (the non-macOS check, <c lang="text">xdg-mime</c>); the real query when null.</summary>
+    public Func<CancellationToken, ValueTask<bool>>? HasHandler { get; init; }
+
+    /// <summary>Answers whether a program resolves on the login path; <c lang="text">ViewerProcess.OnLoginPath</c> (a real login shell) when null.</summary>
+    public Func<string, CancellationToken, ValueTask<bool>>? OnPath { get; init; }
 }

@@ -2,11 +2,13 @@ using System.Text.Json;
 using Aw.Kernel.Ids;
 using Aw.Redaction;
 using Aw.Sindri.Core.Auth;
+using Aw.Sindri.Core.BugFix;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.LensPacks;
 using Aw.Sindri.Core.Line;
 using Aw.Sindri.Core.Locks;
 using Aw.Sindri.Core.Mcp;
@@ -16,6 +18,7 @@ using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Secrets;
+using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow;
@@ -23,13 +26,16 @@ using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Registry;
+using Aw.Sindri.Core.Workflow.Shipped;
 using Aw.Sindri.Core.Worktrees;
 using Aw.Sindri.Infrastructure.Auth;
+using Aw.Sindri.Infrastructure.BugFix;
 using Aw.Sindri.Infrastructure.Challenges;
 using Aw.Sindri.Infrastructure.Control;
 using Aw.Sindri.Infrastructure.Launch;
 using Aw.Sindri.Infrastructure.Lease;
 using Aw.Sindri.Infrastructure.Ledger;
+using Aw.Sindri.Infrastructure.LensPacks;
 using Aw.Sindri.Infrastructure.Locks;
 using Aw.Sindri.Infrastructure.Mcp;
 using Aw.Sindri.Infrastructure.Notifications;
@@ -40,6 +46,7 @@ using Aw.Sindri.Infrastructure.Profile;
 using Aw.Sindri.Infrastructure.Scoping;
 using Aw.Sindri.Infrastructure.Secrets;
 using Aw.Sindri.Infrastructure.Sessions;
+using Aw.Sindri.Infrastructure.Setup;
 using Aw.Sindri.Infrastructure.Text;
 using Aw.Sindri.Infrastructure.Views;
 using Aw.Sindri.Infrastructure.Workflow;
@@ -59,12 +66,17 @@ public static class SindriInfrastructureServiceCollectionExtensions
     public static IServiceCollection AddSindriInfrastructure(this IServiceCollection services, Func<string, string?> environment)
     {
         var settings = SettingsFromEnvironment.Read(environment);
-        return services.AddSingleton(settings).AddSindriSessions(environment, settings).AddSindriLauncher(environment, settings).AddSindriAdapters(environment).AddAgentRuntimeAdapters().AddSindriMcp(environment).AddOnyxInfrastructure(environment).AddScopingInfrastructure(environment);
+        return services.AddSingleton(settings).AddSindriSessions(environment, settings).AddSindriLauncher(environment, settings).AddSindriAdapters(environment).AddAgentRuntimeAdapters().AddSindriMcp(environment).AddOnyxInfrastructure(environment).AddScopingInfrastructure(environment).AddBugFixInfrastructure(environment);
     }
 
     /// <summary>Engine P8: the diff signal of an agent run (git) and an agent session's end and spend (the ledger).</summary>
     private static IServiceCollection AddAgentRuntimeAdapters(this IServiceCollection services) =>
-        services.AddSingleton<IRunDiff, GitRunDiff>().AddSingleton<IAgentSessions, LedgerAgentSessions>();
+        services.AddSingleton<IRunDiff, GitRunDiff>().AddSingleton<IAgentSessions, LedgerAgentSessions>()
+            .AddSingleton<ILensPackSource, EmbeddedLensPackSource>().AddSingleton<ILensPacks, ProfileLensPacks>().AddSingleton<IChangedPaths, GitChangedPaths>();   // LN-PK lite: the built-in lens packs and the review loop's changed paths
+
+    /// <summary>The bugfix block Steps' port over the bugfix-state program (deps.yaml Sindri to BugFix, kind cli).</summary>
+    private static IServiceCollection AddBugFixInfrastructure(this IServiceCollection services, Func<string, string?> environment) =>
+        services.AddSingleton<IBugFixState>(_ => new BugFixStateTool(new ProcessToolRunner(), environment));
 
     private static IServiceCollection AddScopingInfrastructure(this IServiceCollection services, Func<string, string?> environment) =>
         services.AddSingleton<IPackets>(_ => new AwPacketsTool(new ProcessToolRunner(), environment))
@@ -95,10 +107,11 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton(static sp => new ProverLabel(sp.GetRequiredService<SindriSettings>().ProverLabelAllowed, sp.GetRequiredService<SindriSettings>().ProverMayConfirm))
             .AddScoped<IDoctorChecks, TokenFileDoctorChecks>()
             .AddSingleton<IProcessAncestry, PosixProcessAncestry>()
-            .AddSingleton<IRepoLocator, GitRepoLocator>()
+            .AddSingleton<IRepoLocator, GitRepoLocator>().AddSingleton<IRepoInspector, GitRepoInspector>().AddSingleton<IProfileRepoWriter, YamlProfileRepoWriter>()   // setup-once §5.1: AddRepo's folder checks and the profile's repos[] appender
             .AddSingleton<ICommandOrigins, LedgerCommandOrigins>()   // engine P4 unit (d): the bridge's causation route
             .AddSingleton<IRecipeReader, YamlRecipeReader>()
             .AddSingleton<IRecipeFiles, FileRecipeFiles>()
+            .AddSingleton<IRecipeDirectories, FileRecipeDirectories>()
             .AddSingleton(CreateSecretPointers(environment))
             .AddSingleton<IRecipeWake, NoOpRecipeWake>()
             .AddSingleton<IRecipeStore, SqliteRecipeStore>()

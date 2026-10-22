@@ -24,6 +24,7 @@ namespace Aw.Sindri.Core.Workflow.Recipes;
 /// <param name="Budget">The recipe-wide budget.</param>
 /// <param name="Evals">The eval files, relative to the recipe's directory (spec §9.2).</param>
 /// <param name="Hash">The hash the file states, checked when present (RCP-HASH-001).</param>
+/// <param name="DisplayName">The name the app shows instead of the id: sentence case, at most 60 characters, what the recipe does (RCP-DISPLAY-001 requires it of a new recipe; the parameter has a default, so a recipe stored before the field existed still reads, with none).</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record Recipe(
     int Schema,
@@ -41,4 +42,5 @@ public sealed record Recipe(
     IReadOnlyDictionary<string, LoopSpec> Loops,
     BudgetSpec? Budget,
     IReadOnlyList<string> Evals,
-    RecipeHash? Hash);
+    RecipeHash? Hash,
+    string? DisplayName = null);

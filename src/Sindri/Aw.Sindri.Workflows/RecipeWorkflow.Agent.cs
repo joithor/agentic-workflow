@@ -94,7 +94,7 @@ internal sealed partial class RecipeWorkflow
         var launched = await Launching(launching).ConfigureAwait(true);
         if (launched.Failure is { } failure)
         {
-            return (await Decided(applied, open, AgentFailed(open, step, "launch", tokens: 0, $"{failure.Code}: {failure.Message}"), reportId: null, context).ConfigureAwait(true), true);
+            return (await Decided(applied, open, AgentFailed(open, step, StepFailed.LaunchReason, tokens: 0, $"{failure.Code}: {failure.Message}"), reportId: null, context).ConfigureAwait(true), true);
         }
 
         _agent = (open.Token.Value, launched);
