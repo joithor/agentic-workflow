@@ -1,6 +1,5 @@
 using Aw.Sindri.Ui.Api.Context;
-using Aw.Sindri.Ui.Views.Context.Map;
-using Aw.Sindri.Ui.Views.Controls;
+using Aw.Sindri.Ui.ViewModels.Context.Layout;
 
 namespace Aw.Sindri.Ui.ViewModels.Context;
 
