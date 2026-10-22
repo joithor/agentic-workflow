@@ -4,7 +4,6 @@ using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Values;
 using Aw.CodeIndex.Testing;
 using Aw.Context.Core.Engine;
-using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Symbols;
 using Aw.Kernel;
 using Aw.Sindri.Host.CodeIndexHost;
