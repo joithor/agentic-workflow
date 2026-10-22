@@ -130,7 +130,7 @@ P3 (#180) keeps its pure decisions and drops the frame, fold and store work. P4 
 | W4 | **The rung comes from the block's descriptor.** Rung-2 and rung-3 gates must have a `threshold` | A recipe can't promote a judge question to deterministic |
 | W5 | **Fail closed.** An unknown block is a validation error. An unavailable gate or evidence runtime refuses. A Step with no runtime parks with `SND-WF-010`, unless its descriptor declares `deskCapable`, in which case it runs on the desk runtime (W20) | Nothing passes silently, and the desk fallback is opt-in per block |
 | W6 | **Outcomes are a closed set:** `resolved`, `unresolved`, `alreadySatisfied` and `failed` for recipe terminals, plus the engine's `cancelled` | Receipts count outcomes |
-| W7 | **Grants are explicit and need a terminal.** `--grant n` (1 ≤ n ≤ the loop's cap) answers a `rounds` or `no-progress` park. `--grant-tokens n` (at most the original budget, once per park) answers a `budget` park | Every park has a useful answer (E10). A session can never grant itself anything |
+| W7 | **Grants are explicit and need a terminal or the app's confirm.** `--grant n` (1 ≤ n ≤ the loop's cap) answers a `rounds` or `no-progress` park. `--grant-tokens n` (at most 4x the original budget, once per park; it applies to the round it answers) answers a `budget` park. In the app the same answer is a typed or held confirm (SO-12) that redeems the §4.2 challenge, so the app is a human surface too | Every park has a useful answer (E10). A session can never grant itself anything |
 | W8 | **Every recipe needs a human approval to run.** Approvals are stored keyed by `(id, version, hash)`, never in the file | §17.19: workflow templates are approval-tier |
 | W9 | **Hand-written recipes are approved with `sindri recipe approve`**, through a server-issued challenge. **Generated recipes are approved by the packet freeze**, from a `base` that Sindri code picks | Invariant 13 |
 | W10 | **`RCP-CAP-001`–`007` keep a generated recipe at or below its base** (§4.3), comparing guards by path and loops by state | C16, C17, E19 |
@@ -333,7 +333,15 @@ names come from the trigger's source: a Step, an event, or a child's terminal ou
   7.2):** no progress is detected only from identical findings (the digest of the whole findings value) and a repeated
   failure reason (a `step.failed` or a gate refusal); there is no superset check, and `emptyDiff` never fires. The
   agent runtime (P8) adds finding keys and a diff signal to Step reports, and the full A §17.23.13 rule lands there.
-- **Budgets:** exhausting one is `→ parked(budget)`.
+- **Budgets:** exhausting one is `→ parked(budget)`. **A state's `budget.tokens` is each round's allowance** (decision of
+  2026-10-21; the first run of the line showed pooling starve a loop: `questions` took 139k of 100k in round 1, was kept,
+  and round 2 parked before it ran a token). Spend is counted by (state, loop round); a fresh allowance starts when the
+  round starts (a state with no loop has one round); a run is checked only when it reports, so a round can overspend, its
+  report is kept (§5.5), and the overrun is recorded on the instance and shown by status ("round 1 used 139k of 100k").
+  The recipe's `budget.tokens` stays the cap over the whole instance. A grant applies to the round it answers and also
+  raises the recipe's allowance by the same amount. The rule is a version marker, not a reinterpretation: an instance
+  that began before it (Temporal patch `token-budget-per-round-v1`; its spend has no per-round record) replays and
+  keeps counting a state's lifetime total, with grants raising both allowances and capped at the original budget.
 - **Recipe `next` variables:** `{item}`, `{instance}`, `{state}`, `{user}`, `{child}`, `{loop.<n>}`,
   `{loop.<n>.cap}`, `{budget.tokens.left}`.
 - **Engine-only variables** (in §3.8 texts): `{reason}`, `{question}`, `{gate}`, `{score}`, `{threshold}`,
@@ -347,7 +355,7 @@ names come from the trigger's source: a Step, an event, or a child's terminal ou
 | State | Entered by | `next` | Ways out (resume action, §5.8) |
 |---|---|---|---|
 | `parked` (`rounds`, `no-progress`) | A loop cap or no progress, either on the transition back into a looped state (kind `loop`) or on a gate refusal at the cap (kind `refusal`); the frame records which | "Parked ({reason}): {question}. Grant more rounds at a terminal, or cancel." | `answer --grant n` (protected): kind `loop` performs the withheld loop transition, and kind `refusal` re-runs the Step. Either way, the round it starts is the first of the n. `answer --text` on `no-progress`: the same, once per loop (§13). `takeover`, `cancel` |
-| `parked` (`budget`) | A budget, or a `gate.budget.*` refusal | "Parked (budget): {question}. Grant tokens at a terminal, or cancel." | `answer --grant-tokens n` (protected): re-runs the Step, or re-evaluates the withheld transition. A re-run that would pass the loop's cap parks `rounds` (kind `refusal`) instead; `--grant n` is the way on (W7, §5.8, §13). `takeover`, `cancel` |
+| `parked` (`budget`) | A budget, or a `gate.budget.*` refusal | "Parked (budget): {question}. Grant tokens at a terminal or in the app, or cancel." | `answer --grant-tokens n` (protected; the suggestion is at least a whole round's budget, the most is 4x the original, named in the error): re-runs the Step, or re-evaluates the withheld transition. A re-run that would pass the loop's cap parks `rounds` (kind `refusal`) instead; `--grant n` is the way on (W7, §5.8, §13). `takeover`, `cancel` |
 | `parked` (`needs-answer`, Step) | A refusal without a loop, `step.failed` | "Parked (needs-answer): {question}. Answer with --text; the Step runs again with your answer." | `answer --text`: re-runs the Step with `fact:answer`. A re-run that would pass the loop's cap parks `rounds` (kind `refusal`) instead; `--grant n` is the way on (W7, §5.8, §13). `takeover`, `cancel` |
 | `parked` (`needs-answer`, wait) | A gate refused the transition out of a wait | "Parked: {gate} refused {from} -> {to} ({reasons}). Fix the cause, then resume to check again, or cancel." | `answer --resume [--text]`: re-checks every gate and evidence at the current head under the answer's key (§5.8). `takeover`, `cancel` |
 | `parked` (`timeout`) | `then: park`, or any timeout in desk mode, whatever `then:` says (*rev 8.2*, *owner, 2026-10-14*) | "Parked (timeout): {state} ran past {after}. Resume to give it the full time again, or cancel." | `answer --resume`: back to the frame (the same run token) with a fresh deadline. `takeover`, `cancel` |
@@ -898,14 +906,14 @@ T-3/item/1/step.4  workflow.step@9ab2d40c1e77  v4  produce: desk task  since 10:
             sindri workflow complete T-3/item/1/step.4 --run 1.1 --outcome done --output fact:output=<file>
   inputs    fact:spec  spec.md  sha256:1c0e…
   timeout   parks in 1d 22h 48m (desk)
-  budget    tokens 0 / 200k (state), 0 / 400k (instance)
+  budget    tokens 0 / 200k (state, this round), 0 / 400k (instance)
   commands  complete, takeover, cancel
 ```
 
 ```
 T-1/step/1  workflow.step@9ab2d40c1e77  v9  parked: budget  since 11:54 (3m)
   next      Parked (budget): produce used 200k of 200k tokens.
-  answer    sindri workflow answer T-1/step/1 --grant-tokens 100k     (at a terminal; once per park)
+  answer    sindri workflow answer T-1/step/1 --grant-tokens 200k     (at a terminal; once per park)
   commands  answer, takeover, cancel
 ```
 
@@ -932,7 +940,7 @@ The answer line depends on the park reason:
 - `timeout` and `SND-WF-010` suggest `--resume`;
 - `spec-conflict` names its kind and next step (§3.8);
 - `rounds` and `no-progress` suggest `--grant 1`;
-- `budget` suggests `--grant-tokens`;
+- `budget` suggests `--grant-tokens` of a whole round's budget (the state's, else the recipe's);
 - `needs-answer` from a Step suggests `--text`; from a wait it suggests `--resume [--text]`;
 - a drift recorded on a parked frame adds a `drift` line naming the block, and says the answer needs the
   re-approval first;

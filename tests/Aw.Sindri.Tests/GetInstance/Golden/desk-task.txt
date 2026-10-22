@@ -1,7 +1,7 @@
-T-3/step/1  workflow.step@d39861bd1222  v4  produce: desk task  since 10:48 (1h 12m)
+T-3/step/1  workflow.step@f039848fd714  v4  produce: desk task  since 10:48 (1h 12m)
   next      Produce the Step output for T-3 (round 1/3), then run:
             sindri workflow complete T-3/step/1 --run 1.1 --outcome done --output fact:output=<file>
   inputs    fact:spec  spec.md  sha256:688b...
   timeout   parks in 1d 22h 48m (desk)
-  budget    tokens 0 / 200k (state), 0 / 400k (instance)
+  budget    tokens 0 / 1M (state), 0 used (instance)
   commands  complete, takeover, cancel
