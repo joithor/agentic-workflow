@@ -2,7 +2,6 @@ using System.Text.Json;
 using Aw.Kernel;
 using Aw.Packets.Core.Checks;
 using Aw.Packets.Core.Model;
-using Aw.Packets.Core.Values;
 
 namespace Aw.Packets.Core.Kinds.Line;
 
