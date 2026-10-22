@@ -28,25 +28,25 @@ public sealed class SetupMeasuresTests : IDisposable
 
     private async Task StartWorkflow(int n = 1)
     {
-        var payload = new WorkflowEventPayload($"item/step/{n}", "produce", "produce", "start", Outcome: null, Run: null, Detail: null);
-        _ = await _rig.Slice.Store.Append(_rig.Slice.Events.Entry(EventTypes.WorkflowStarted, payload, $"workflow.started:item/step/{n}"), _rig.Slice.Held.Current!, AddRepoRig.Token);
+        var payload = new WorkflowEventPayload($"item/step/{n.ToString(System.Globalization.CultureInfo.InvariantCulture)}", "produce", "produce", "start", Outcome: null, Run: null, Detail: null);
+        _ = await _rig.Slice.Store.Append(_rig.Slice.Events.Entry(EventTypes.WorkflowStarted, payload, $"workflow.started:item/step/{n.ToString(System.Globalization.CultureInfo.InvariantCulture)}"), _rig.Slice.Held.Current!, AddRepoRig.Token);
     }
 
     [Fact, Trait("Lane", "unit")]
     public async Task Done_is_the_time_from_the_first_look_to_the_change_that_finished_every_step()
     {
-        Assert.Equal(new SetupMeasured(null, null), await Tick());
+        Assert.Equal(new SetupMeasured(Done: null, FirstItem: null), await Tick());
 
         _rig.Slice.Clock.Advance(TimeSpan.FromMinutes(12));
         _facts.RepoAnswer = InMemorySetupFacts.OneRepo;
-        Assert.Equal(new SetupMeasured(null, null), await Tick());
+        Assert.Equal(new SetupMeasured(Done: null, FirstItem: null), await Tick());
 
         _rig.Slice.Clock.Advance(TimeSpan.FromMinutes(3));
         var done = InMemorySetupFacts.AllDone();
         (_facts.ProfileAnswer, _facts.RecipesAnswer, _facts.McpAnswer, _facts.MapAnswer, _facts.OnyxAnswer) = (done.ProfileAnswer, done.RecipesAnswer, done.McpAnswer, done.MapAnswer, done.OnyxAnswer);
 
         Assert.Equal(new SetupMeasured(TimeSpan.FromMinutes(15), null), await Tick());
-        Assert.Equal(new SetupMeasured(null, null), await Tick());
+        Assert.Equal(new SetupMeasured(Done: null, FirstItem: null), await Tick());
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -59,7 +59,7 @@ public sealed class SetupMeasuresTests : IDisposable
 
         _measureLog.Reset();
 
-        Assert.Equal(new SetupMeasured(null, null), await Tick());
+        Assert.Equal(new SetupMeasured(Done: null, FirstItem: null), await Tick());
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -70,12 +70,12 @@ public sealed class SetupMeasuresTests : IDisposable
         var done = InMemorySetupFacts.AllDone();
         (_facts.RepoAnswer, _facts.ProfileAnswer, _facts.RecipesAnswer, _facts.McpAnswer, _facts.MapAnswer, _facts.OnyxAnswer) = (done.RepoAnswer, done.ProfileAnswer, done.RecipesAnswer, done.McpAnswer, done.MapAnswer, done.OnyxAnswer);
         Assert.Equal(TimeSpan.Zero, (await Tick()).Done);
-        Assert.Equal(new SetupMeasured(null, null), await Tick());
+        Assert.Equal(new SetupMeasured(Done: null, FirstItem: null), await Tick());
 
         _rig.Slice.Clock.Advance(TimeSpan.FromMinutes(5));
         await StartWorkflow(2);
 
         Assert.Equal(new SetupMeasured(null, TimeSpan.FromMinutes(5)), await Tick());
-        Assert.Equal(new SetupMeasured(null, null), await Tick());
+        Assert.Equal(new SetupMeasured(Done: null, FirstItem: null), await Tick());
     }
 }

@@ -1,6 +1,5 @@
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Ports;
-using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Testing;
 
@@ -66,10 +65,8 @@ public sealed class SetupDoctorTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_box_without_a_repo_has_no_hook_row()
-    {
+    public async Task A_box_without_a_repo_has_no_hook_row() =>
         Assert.DoesNotContain(await All(new InMemorySetupFacts()), static c => c.Name == "setup:repo-hook");
-    }
 
     [Fact, Trait("Lane", "unit")]
     public async Task An_embedded_recipe_set_that_differs_from_the_checkouts_head_warns_with_both_hashes()
