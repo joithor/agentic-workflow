@@ -151,6 +151,17 @@ internal sealed class InMemoryViewRows(Dictionary<string, SortedDictionary<strin
         return ValueTask.FromResult<Result<Unit>>(Unit.Value);
     }
 
+    public ValueTask<Result<Unit>> Clear(string view, CancellationToken cancellationToken)
+    {
+        if (!tables.TryGetValue(view, out var table))
+        {
+            return ValueTask.FromResult<Result<Unit>>(Unknown(view));
+        }
+
+        table.Clear();
+        return ValueTask.FromResult<Result<Unit>>(Unit.Value);
+    }
+
     private static Result<TRow?> Found<TRow>(TRow? row)
         where TRow : class => row;
 
