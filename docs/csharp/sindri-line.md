@@ -69,7 +69,7 @@ An `<address>` of `design check` or `plan check` is looked up (a serve that is d
 
 ## Codes
 
-`SND-LINE-001` a packet's hash does not match its freeze record, or a parent resolves to no frozen packet. `SND-LINE-002` a phase start is blocked (LN-L). `SND-LINE-003` a line view asked of the wrong recipe's instance. `SND-LINE-004` `line doctor` found missing setup. The `SND-PACK-*` codes are `PackErrors`' (`Aw.Sindri.Core.LensPacks`): `-001` no pack resolves (not found), `-002` a repo or machine pack has no pin or a different hash (conflict; nothing raises it yet, as only built-in packs resolve), `-003` a pack is not valid (a file missing, bad schema, more than 10 lenses), `-004` a pack serves the other loop.
+`SND-LINE-001` a packet's hash does not match its freeze record, or a parent resolves to no frozen packet. `SND-LINE-002` a phase start is blocked (LN-L). `SND-LINE-003` a line view asked of the wrong recipe's instance. `SND-LINE-004` `line doctor` found missing setup. The `SND-PACK-*` codes are `PackErrors`' (`Aw.Sindri.Core.LensPacks`): `-001` no pack resolves (not found), `-002` a repo or machine pack has no pin or a different hash (conflict; its message carries the pin line to approve), `-003` a pack is not valid (a file missing, bad schema, more than 10 lenses), `-004` a pack serves the other loop.
 
 ## Profile
 
