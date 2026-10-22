@@ -64,11 +64,13 @@ transitions:
   - { from: review, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
   - { from: drift, to: ship,  on: step.completed, when: { outcome: same } }
   - { label: "code changed after proof: prove again", from: drift, to: prove, on: step.completed, when: { outcome: moved }, produces: [fact:built, fact:change] }
-  - { from: ship, to: babysit, on: wait.satisfied, when: { outcome: resolved }, produces: [fact:pr, fact:handoff] }   # line report effect: restore with LN-WF1 when effect.line.report has a runtime
+  - { from: ship, to: babysit, on: wait.satisfied, when: { outcome: resolved }, produces: [fact:pr, fact:handoff],
+      effects: [{ use: effect.line.report, with: { status: shipped, line: { fact: fact:lineContext } } }] }
   - { label: "final checks failed: back to build", from: ship, to: build,   on: wait.satisfied, when: { outcome: unresolved }, produces: [{ fact: fact:buildNotes, from: fact:returnNotes }] }
   - { from: ship, to: owner,   on: wait.satisfied, when: { outcome: failed } }
   - { from: ship, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
-  - { from: babysit, to: merged,  on: wait.satisfied, when: { outcome: resolved }, produces: [fact:mergedSha] }   # line report effect: restore with LN-WF1 when effect.line.report has a runtime
+  - { from: babysit, to: merged,  on: wait.satisfied, when: { outcome: resolved }, produces: [fact:mergedSha],
+      effects: [{ use: effect.line.report, with: { status: merged, line: { fact: fact:lineContext } } }] }
   - { label: "needs rework: back to build", from: babysit, to: build,   on: wait.satisfied, when: { outcome: failed },   produces: [{ fact: fact:buildNotes, from: fact:reworkNotes }] }
   - { from: babysit, to: owner,   on: wait.satisfied, when: { outcome: unresolved } }
   - { from: babysit, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
