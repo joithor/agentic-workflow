@@ -27,7 +27,7 @@ internal sealed class InstanceJoins(ILaunchViews launches, IFactContents content
         }
 
         var row = await launches.Get(id, cancellationToken).ConfigureAwait(false);
-        return row is { IsSuccess: true, Value: { ResumableId: { } session } found } ? new SessionHandle(found.Target.Value, session.Value) : null;
+        return row is { IsSuccess: true, Value: { ResumableId: { } session } found } ? new SessionHandle(found.Target, session) : null;
     }
 
     /// <summary>Where each fact the open desk reviews opens.</summary>

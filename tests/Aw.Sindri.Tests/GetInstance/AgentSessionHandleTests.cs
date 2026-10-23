@@ -1,4 +1,6 @@
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -10,7 +12,7 @@ namespace Aw.Sindri.Tests.GetInstance;
 [Lane(TestLane.Unit)]
 public sealed class AgentSessionHandleTests
 {
-    private static readonly SessionHandle _session = new("claude-code", "0b1c2d3e-0000-4000-8000-000000000001");
+    private static readonly SessionHandle _session = new(AgentId.From("claude-code"), SessionId.From("0b1c2d3e-0000-4000-8000-000000000001"));
 
     [Fact]
     public void An_agent_run_serves_the_session_on_its_run()
@@ -58,7 +60,7 @@ public sealed class AgentSessionHandleTests
     {
         var run = RunOf(AgentRun("desk-task", suspended: false), _session);
 
-        Assert.Equal("""{"runtime":"agent","launch":"LCH-0123456789abcdef","session":{"provider":"claude-code","id":"0b1c2d3e-0000-4000-8000-000000000001"}}""", System.Text.Json.JsonSerializer.Serialize(run, Aw.Sindri.Testing.SliceHarness.Json));
+        Assert.Equal("""{"runtime":"agent","launch":"LCH-0123456789abcdef","session":{"provider":"claude-code","id":"0b1c2d3e-0000-4000-8000-000000000001"}}""", System.Text.Json.JsonSerializer.Serialize(run, SliceHarness.Json));
     }
 
     private static StatusRun? RunOf(WorkflowInstance instance, SessionHandle? session) => StatusOf(instance, session).Run;

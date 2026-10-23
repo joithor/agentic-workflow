@@ -117,15 +117,21 @@ public sealed class WorkflowViewGoldenTests : IAsyncLifetime
         ("workflow-instance", "f5-rerun-failed") => Json(WorkflowViewFixtures.F5RerunFailed(), options),
         ("workflow-instance", "f5-desk-recommended") => Json(WorkflowViewFixtures.F5DeskRecommended(), options),
         ("workflow-instance", "lens-ask-multi") => Json(WorkflowViewFixtures.LensAskMulti(), options),
-        ("workflow-instance", "desk-reviews") => Json(WorkflowViewFixtures.DeskReviews(), options),
-        ("workflow-instance", "agent-run-session") => Json(WorkflowViewFixtures.AgentRunSession(), options),
-        ("workflow-status", "parked-dispatch-refused") => Json(WorkflowViewFixtures.StatusParkedDispatchRefused(), options),
-        ("workflow-status", "agent-run-session") => Json(WorkflowViewFixtures.StatusAgentRunSession(), options),
         ("workflow-recipe", "workflow.no-outputs") => Json(WorkflowViewFixtures.NoOutputsRecipe(), options),
         ("workflow-recipe", "workflow.f5-fields") => Json(WorkflowViewFixtures.F5FieldsRecipe(), options),
         ("workflow-instance", "f5-state-times") => Json(WorkflowViewFixtures.F5StateTimes(), options),
         ("workflow-recipe", var id) when FixtureRecipes.All.Any(r => r.Id == id) => Json(WorkflowViewFixtures.Recipe(id), options),
         ("workflow-instance-fact", _) => Json(WorkflowViewFixtures.Fact(scenario), options),
+        _ => Opened(slug, scenario, options),
+    };
+
+    /// <summary>The q65 goldens: what a desk reviews, the run's session and a park's reason code.</summary>
+    private static string Opened(string slug, string scenario, JsonSerializerOptions options) => (slug, scenario) switch
+    {
+        ("workflow-instance", "desk-reviews") => Json(WorkflowViewFixtures.DeskReviews(), options),
+        ("workflow-instance", "agent-run-session") => Json(WorkflowViewFixtures.AgentRunSession(), options),
+        ("workflow-status", "parked-dispatch-refused") => Json(WorkflowViewFixtures.StatusParkedDispatchRefused(), options),
+        ("workflow-status", "agent-run-session") => Json(WorkflowViewFixtures.StatusAgentRunSession(), options),
         _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "no such workflow view scenario"),
     };
 

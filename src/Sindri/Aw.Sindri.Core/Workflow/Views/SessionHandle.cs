@@ -1,4 +1,6 @@
 using System.Text.Json.Serialization;
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Launch;
 
 namespace Aw.Sindri.Core.Workflow.Views;
 
@@ -6,4 +8,4 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="Provider">The agent ('claude-code').</param>
 /// <param name="Id">The provider's session id.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed record SessionHandle(string Provider, string Id);
+public sealed record SessionHandle(AgentId Provider, SessionId Id);

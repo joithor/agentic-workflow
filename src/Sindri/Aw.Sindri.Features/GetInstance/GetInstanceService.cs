@@ -24,8 +24,7 @@ namespace Aw.Sindri.Features.GetInstance;
 /// <param name="callers">The caller, whose repo scope decides what it may read.</param>
 /// <param name="contexts">Builds the detail context at the time of the read, with the recipe's display name (null serves none).</param>
 /// <param name="stepRuns">The instance's Step runs, folded from its ledger events.</param>
-/// <param name="joins">The session of the open run and the targets of the reviewed facts (q65); null serves neither.</param>
-internal sealed class GetInstanceService(IInstanceDirectory directory, IInstanceReader runtime, IViewReader views, IItemRepos repos, ICallerContextAccessor callers, DetailContexts contexts, StepRunReader stepRuns, InstanceJoins? joins = null)
+internal sealed class GetInstanceService(IInstanceDirectory directory, IInstanceReader runtime, IViewReader views, IItemRepos repos, ICallerContextAccessor callers, DetailContexts contexts, StepRunReader stepRuns)
     : IService<GetInstanceRequest, InstanceDetail>
 {
     public async ValueTask<Result<InstanceDetail>> Handle(GetInstanceRequest request, CancellationToken cancellationToken)
@@ -67,9 +66,8 @@ internal sealed class GetInstanceService(IInstanceDirectory directory, IInstance
             return runs.Error;
         }
 
-        var session = joins is null ? null : await joins.Session(view.Value, cancellationToken).ConfigureAwait(false);
-        var targets = joins is null ? null : await joins.ReviewTargets(view.Value, cancellationToken).ConfigureAwait(false);
-        return InstanceViews.Detail(view.Value, contexts.Of(title, parent, counts.Value, view.Value.Recipe.Id, runs.Value, session, targets));
+        var context = await contexts.Of(view.Value, new DetailInputs(title, parent, counts.Value, runs.Value), cancellationToken).ConfigureAwait(false);
+        return InstanceViews.Detail(view.Value, context);
     }
 
     /// <summary>The title of the item the instance is on; its address when it has none or the view has no row.</summary>

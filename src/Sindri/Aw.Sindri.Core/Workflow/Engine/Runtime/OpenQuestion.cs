@@ -7,4 +7,5 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// <param name="Reason">A park's reason.</param>
 /// <param name="Question">The question or detail the human reads, scrubbed.</param>
 /// <param name="Code">A park's typed code (<see cref="ParkCodes.Of"/>); null when it has none.</param>
-public sealed record OpenQuestion(SuspensionKind Kind, ParkReason? Reason, string Question, string? Code = null);
+public sealed record OpenQuestion(SuspensionKind Kind, ParkReason? Reason, string Question,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? Code = null);

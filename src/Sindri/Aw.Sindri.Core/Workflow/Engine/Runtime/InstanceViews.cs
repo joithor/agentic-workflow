@@ -107,7 +107,7 @@ public static partial class InstanceViews
     {
         ArgumentNullException.ThrowIfNull(view);
         ArgumentNullException.ThrowIfNull(context);
-        var status = WithSession(Status(view, context.AsOf), context.Session);
+        var status = DetailParts.WithSession(Status(view, context.AsOf), context.Session);
         return new InstanceDetail(
             view.Address,
             view.Id,
@@ -121,7 +121,7 @@ public static partial class InstanceViews
             InstanceSummaries.SubjectOf(view, context.Title),
             view.OrderedBy,
             view.States,
-            new CurrentState(view.State, view.Step, view.Gates, WithTargets(view.Desk, context.ReviewTargets), status),
+            new CurrentState(view.State, view.Step, view.Gates, DetailParts.WithTargets(view.Desk, context.ReviewTargets), status),
             view.Facts,
             view.ChildGroups,
             context.Counts,
@@ -134,14 +134,6 @@ public static partial class InstanceViews
             Again = view.Again,
         };
     }
-
-    /// <summary>The desk form with each review's path and url filled from the targets read for it; the form as it is without any.</summary>
-    private static DeskForm? WithTargets(DeskForm? desk, IReadOnlyDictionary<string, DeskReviewTarget>? targets) =>
-        desk is { Reviews: { } reviews } ? desk with { Reviews = DeskReviewTargets.Fill(reviews, targets) } : desk;
-
-    /// <summary>The status with the open agent run's session; a status with no agent run has no run to carry it.</summary>
-    private static StatusFields WithSession(StatusFields status, SessionHandle? session) =>
-        status is { Run: { } run } && session is not null ? status with { Run = run with { Session = session } } : status;
 
     /// <summary>The status layout of <paramref name="view"/> as fields, as of <paramref name="now"/>: a pure function of the view and the time, so the ages, the timeout and the text move with the caller's clock.</summary>
     /// <param name="view">The instance view.</param>

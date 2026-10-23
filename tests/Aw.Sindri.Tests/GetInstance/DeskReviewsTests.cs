@@ -31,7 +31,7 @@ public sealed class DeskReviewsTests
     [Fact]
     public void The_path_and_url_are_filled_from_the_facts_stored_values_and_stay_null_for_a_fact_with_no_target()
     {
-        var targets = new Dictionary<string, DeskReviewTarget>
+        var targets = new Dictionary<string, DeskReviewTarget>(StringComparer.Ordinal)
         {
             ["fact:design"] = new("/work/design/1", Url: null),
             ["fact:prStatus"] = new(Path: null, "https://github.com/o/r/pull/7"),
@@ -44,7 +44,7 @@ public sealed class DeskReviewsTests
             reviews);
         Assert.Equal(
             [new DeskReview("fact:design", DeskReviewKind.Design), new DeskReview("fact:prStatus", DeskReviewKind.Pr)],
-            DetailOf("desk-task", _context with { ReviewTargets = new Dictionary<string, DeskReviewTarget> { ["fact:other"] = new("/x", Url: null) } }).Current.Desk!.Reviews);
+            DetailOf("desk-task", _context with { ReviewTargets = new Dictionary<string, DeskReviewTarget>(StringComparer.Ordinal) { ["fact:other"] = new("/x", Url: null) } }).Current.Desk!.Reviews);
     }
 
     [Fact]

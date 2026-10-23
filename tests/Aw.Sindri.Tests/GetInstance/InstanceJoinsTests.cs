@@ -5,7 +5,6 @@ using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Workflow.Engine;
-using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.GetInstance;
@@ -29,7 +28,7 @@ public sealed class InstanceJoinsTests
 
         var session = await joins.Session(AgentView(), TestContext.Current.CancellationToken);
 
-        Assert.Equal(new SessionHandle("claude-code", _started.Value), session);
+        Assert.Equal(new SessionHandle(AgentId.From("claude-code"), _started), session);
     }
 
     [Fact]
@@ -37,7 +36,7 @@ public sealed class InstanceJoinsTests
     {
         var session = await Joins(Launched(started: null, _reported)).Session(AgentView(), TestContext.Current.CancellationToken);
 
-        Assert.Equal(new SessionHandle("claude-code", _reported.Value), session);
+        Assert.Equal(new SessionHandle(AgentId.From("claude-code"), _reported), session);
     }
 
     [Fact]
@@ -63,7 +62,7 @@ public sealed class InstanceJoinsTests
     [Fact]
     public async Task Each_reviewed_facts_stored_value_gives_its_target()
     {
-        var contents = new Contents(new Dictionary<string, string>
+        var contents = new Contents(new Dictionary<string, string>(StringComparer.Ordinal)
         {
             [DesignSha] = """{"hash":"sha256:ab","dir":"/packets/design/2"}""",
             [PrSha] = """{"pr":7,"url":"https://github.com/o/r/pull/7"}""",
@@ -80,15 +79,15 @@ public sealed class InstanceJoinsTests
     public async Task A_fact_not_held_or_not_readable_has_no_target_and_a_desk_without_reviews_reads_nothing()
     {
         var cancel = TestContext.Current.CancellationToken;
-        var contents = new Contents(new Dictionary<string, string> { [PrSha] = """{"url":"https://github.com/o/r/pull/7"}""" });
-        var onlyPr = DeskView() with { FactShas = new Dictionary<string, string> { ["fact:prStatus"] = PrSha, ["fact:design"] = "not-stored" } };
+        var contents = new Contents(new Dictionary<string, string>(StringComparer.Ordinal) { [PrSha] = """{"url":"https://github.com/o/r/pull/7"}""" });
+        var onlyPr = DeskView() with { FactShas = new Dictionary<string, string>(StringComparer.Ordinal) { ["fact:prStatus"] = PrSha, ["fact:design"] = "not-stored" } };
 
         var targets = await new InstanceJoins(new Launches(row: null), contents).ReviewTargets(onlyPr, cancel);
         var plain = InstanceViews.Of(StatusCases.Instance("desk-task"), StatusCases.Recipe, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
 
-        Assert.Equal(["fact:prStatus"], targets.Keys.ToArray());
+        Assert.Equal(["fact:prStatus"], [.. targets.Keys]);
         Assert.Empty(await new InstanceJoins(new Launches(row: null), contents).ReviewTargets(plain, cancel));
-        Assert.Empty(contents.Asked.Where(sha => sha != PrSha && sha != "not-stored"));
+        Assert.DoesNotContain(contents.Asked, sha => sha is not (PrSha or "not-stored"));
     }
 
     private static InstanceJoins Joins(Launches launches) => new(launches, new Contents([]));
@@ -104,10 +103,11 @@ public sealed class InstanceJoinsTests
         return InstanceViews.Of(instance, StatusCases.Recipe, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
     }
 
-    private static InstanceView DeskView() =>
-        InstanceViews.Of(StatusCases.Instance("desk-task"), DeskReviewsTests.Reviewed(), StatusCases.Now, timeoutAt: null, new InstanceViewContext())
-        with
-        { FactShas = new Dictionary<string, string> { ["fact:design"] = DesignSha, ["fact:prStatus"] = PrSha } };
+    private static InstanceView DeskView()
+    {
+        var view = InstanceViews.Of(StatusCases.Instance("desk-task"), DeskReviewsTests.Reviewed(), StatusCases.Now, timeoutAt: null, new InstanceViewContext());
+        return view with { FactShas = new Dictionary<string, string>(StringComparer.Ordinal) { ["fact:design"] = DesignSha, ["fact:prStatus"] = PrSha } };
+    }
 
     private sealed class Launches(LaunchRow? row, Error? failure = null) : ILaunchViews
     {

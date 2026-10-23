@@ -1,12 +1,13 @@
 #pragma warning disable MA0003, MA0127 // fixture records are positional; their literals are named by the record
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
-using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.GetInstanceFact;
+using DeskReviewKind = Aw.Sindri.Core.Workflow.Blocks.DeskReviewKind;
 
 namespace Aw.Sindri.Testing.Views;
 
@@ -419,7 +420,7 @@ public static class WorkflowViewFixtures
         new StatusLines { Answer = Answer(AnswerKind.Resume, "ITM-01JKF/project/1"), ReasonCode = "SND-WF-010" });
 
     /// <summary>q65: the agent run once its launch knows the session: provider and id, the handle the Agents page opens (session/claude-code/{id}).</summary>
-    public static StatusFields StatusAgentRunSession() => StatusAgentRun() with { Run = new StatusRun("agent", "LCH-01JM3A4B5C6D7E8F", new SessionHandle("claude-code", "0b1c2d3e-0000-4000-8000-000000000001")) };
+    public static StatusFields StatusAgentRunSession() => StatusAgentRun() with { Run = new StatusRun("agent", "LCH-01JM3A4B5C6D7E8F", new SessionHandle(AgentId.From("claude-code"), SessionId.From("0b1c2d3e-0000-4000-8000-000000000001"))) };
 
     /// <summary>A park with a recorded drift: it takes no answer (API Q-API-4): the recipe re-approval is its own protected command, and the approval resumes the instance.</summary>
     public static StatusFields StatusParkedDrift() => Status(_prjCache, "spec-conflict (drift)",
@@ -635,7 +636,7 @@ public static class WorkflowViewFixtures
     public static InstanceDetail AgentRunSession()
     {
         var detail = TransitionList();
-        return detail with { Current = detail.Current with { Status = detail.Current.Status with { Run = new StatusRun("agent", "LCH-01JL3A4B5C6D7E8F", new SessionHandle("claude-code", "0b1c2d3e-0000-4000-8000-000000000001")) } } };
+        return detail with { Current = detail.Current with { Status = detail.Current.Status with { Run = new StatusRun("agent", "LCH-01JL3A4B5C6D7E8F", new SessionHandle(AgentId.From("claude-code"), SessionId.From("0b1c2d3e-0000-4000-8000-000000000001"))) } } };
     }
 
     /// <summary>pagerduty P-2211: escalated at the severity gate; the accept needs a terminal.</summary>

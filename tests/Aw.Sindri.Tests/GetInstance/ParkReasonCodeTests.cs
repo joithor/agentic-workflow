@@ -38,8 +38,8 @@ public sealed class ParkReasonCodeTests
         var parked = StatusOf(StatusCases.Instance("parked-no-runtime"));
         var none = StatusOf(StatusCases.Instance("parked-budget"));
 
-        Assert.Contains("\"reasonCode\":\"SND-WF-010\"", System.Text.Json.JsonSerializer.Serialize(parked, Aw.Sindri.Testing.SliceHarness.Json), StringComparison.Ordinal);
-        Assert.DoesNotContain("reasonCode", System.Text.Json.JsonSerializer.Serialize(none, Aw.Sindri.Testing.SliceHarness.Json), StringComparison.Ordinal);
+        Assert.Contains("\"reasonCode\":\"SND-WF-010\"", System.Text.Json.JsonSerializer.Serialize(parked, SliceHarness.Json), StringComparison.Ordinal);
+        Assert.DoesNotContain("reasonCode", System.Text.Json.JsonSerializer.Serialize(none, SliceHarness.Json), StringComparison.Ordinal);
     }
 
     private static StatusFields StatusOf(WorkflowInstance instance) =>
