@@ -1,11 +1,13 @@
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Packets;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Scoping;
 using Aw.Sindri.Testing.Packets;
 using Aw.Sindri.Testing.Scoping;
+using Aw.Sindri.Testing.Workflow;
 
 namespace Aw.Sindri.Tests.Scoping.Steps;
 
@@ -17,8 +19,23 @@ public sealed class ScopeEvidenceStepTests
 
     private static ScopingFacts Gold() => ScopingFacts.Expiry().Without("rounds").Without("scopePacket");
 
-    private static Task<BlockStepResult> Run(IRunArea area, ScopingFacts facts, IPackets? packets = null) =>
-        new ScopeEvidenceStep(area, packets ?? new InMemoryPackets()).Run(ScopingStepContexts.Of("step.scope.evidence", facts), Token).AsTask();
+    private const string Head = "3288642cd47359fff2642b8bf429976915ca4894";
+
+    private static readonly RepoName _web = RepoName.From("web");
+
+    private static ScopingFacts WithHead(ScopingFacts facts)
+    {
+        facts["baseSha"] = $"\"{Head}\"";
+        return facts;
+    }
+
+    private static Task<BlockStepResult> Run(IRunArea area, ScopingFacts facts, IPackets? packets = null)
+    {
+        var diff = new FakeRunDiff();
+        diff.Add("/work/web", Head);
+        return new ScopeEvidenceStep(area, packets ?? new InMemoryPackets(), new InMemoryRepoCheckouts().With("web", "/work/web"), diff)
+            .Run(ScopingStepContexts.Of("step.scope.evidence", facts) with { Repo = _web }, Token).AsTask();
+    }
 
     [Fact]
     public async Task Gold_facts_complete_and_the_packet_files_land_in_the_run_area()
@@ -28,8 +45,8 @@ public sealed class ScopeEvidenceStepTests
         var result = await Run(area, Gold());
 
         Assert.Equal("complete", result.Result!.Outcome.Value);
-        Assert.Equal(["acceptance", "coverage", "openQuestions", "scopeMap", "scopePacket"], ScopingStepContexts.Keys(result), StringComparer.Ordinal);
-        var expected = ScopePacket.Build(new ScopeFacts(Gold()));
+        Assert.Equal(["acceptance", "coverage", "openQuestions", "recommendation", "scopeMap", "scopePacket"], ScopingStepContexts.Keys(result), StringComparer.Ordinal);
+        var expected = ScopePacket.Build(new ScopeFacts(WithHead(Gold())));
         Assert.NotEmpty(expected);
         foreach (var file in expected)
         {
@@ -59,6 +76,18 @@ public sealed class ScopeEvidenceStepTests
     }
 
     [Fact]
+    public async Task A_complete_packet_recommends_approve_when_no_question_is_open_and_revise_when_one_is()
+    {
+        var result = await Run(new InMemoryRunArea(), Gold());
+
+        var open = JsonNode.Parse(result.Result!.Outputs[FactKey.From("fact:openQuestions")].GetRawText())!.AsArray().Count;
+        var recommended = JsonNode.Parse(result.Result.Outputs[FactKey.From("fact:recommendation")].GetRawText())!;
+
+        Assert.Equal(open == 0 ? "approve" : "revise", (string?)recommended["outcome"]);
+        Assert.False(string.IsNullOrWhiteSpace((string?)recommended["why"]));
+    }
+
+    [Fact]
     public async Task Complete_records_fact_scopePacket_with_the_hash_aw_packets_gives_the_run_areas_scope_packet()
     {
         var area = new InMemoryRunArea();
@@ -80,5 +109,37 @@ public sealed class ScopeEvidenceStepTests
 
         Assert.Null(result.Result);
         Assert.Contains("not a readable packet", result.Failure, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_scope_map_carries_the_checkouts_head_as_baseSha_and_the_change_slug_of_the_briefs_subject()
+    {
+        var area = new InMemoryRunArea();
+
+        _ = await Run(area, Gold());
+
+        var map = JsonNode.Parse((await area.Read(ScopingStepContexts.Address, "scope-packet/scope-map.json", Token)).Value)!;
+        Assert.Equal(Head, (string?)map["baseSha"]);
+        Assert.Equal("shared-links-expire-after-a-chosen-time", (string?)map["change"]);
+    }
+
+    [Fact]
+    public void A_model_written_baseSha_in_the_scope_map_fact_is_replaced_by_the_stamped_one_or_dropped()
+    {
+        var stamped = WithHead(Gold().Edit("scopeMap", n => n["baseSha"] = "deadbeef"));
+        var bare = Gold().Edit("scopeMap", n => n["baseSha"] = "deadbeef");
+
+        Assert.Equal(Head, (string?)JsonNode.Parse(ScopePacket.Build(new ScopeFacts(stamped))[0].Content)!["baseSha"]);
+        Assert.Null(JsonNode.Parse(ScopePacket.Build(new ScopeFacts(bare))[0].Content)!["baseSha"]);
+    }
+
+    [Fact]
+    public async Task A_checkout_with_no_head_fails_the_Step()
+    {
+        var result = await new ScopeEvidenceStep(new InMemoryRunArea(), new InMemoryPackets(), new InMemoryRepoCheckouts().With("web", "/work/web"), new FakeRunDiff())
+            .Run(ScopingStepContexts.Of("step.scope.evidence", Gold()) with { Repo = _web }, Token);
+
+        Assert.Null(result.Result);
+        Assert.Contains("/work/web", result.Failure, StringComparison.Ordinal);
     }
 }

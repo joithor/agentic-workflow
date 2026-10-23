@@ -93,6 +93,24 @@ Every row carries `kind`, `identity`, `instance`, `headSha` and `at`; the kind a
 
 A step with no instance address still runs and writes nothing.
 
+## Babysitter stats (API19)
+
+`GET /sindri/workflow/recipes/workflow.pr-babysitter/stats` answers the usual `RecipeStats` plus a `babysitter` section for the window, which PB-P2 reads to tune the caps and Q5, Q9 and Q12. The section is counted on **every read and never cached**: the merge records are files the effects append to, so no ledger head says when they changed. It is absent for every other recipe and for a child-only answer.
+
+| Field | Meaning |
+|---|---|
+| `pulls` | babysitter instances started in the window |
+| `sinceStartToReadySeconds`, `sinceStartToMergeSeconds` | `{ median, p90 }` of seconds **since the babysitter started** to the first `ready` and to `merged`, over the instances that got there. A pull request opened by hand is started when it is opened; one a line opened is started a little after, so these are not "since the PR was opened" |
+| `tokensPerPull` | `{ median, p90 }` of the tokens an instance spent (the ledger's running total) |
+| `comments` | `{ total, held, withoutOwner, byType[] }` from the merge records' `comment` rows: `held` is outcome `held`, `withoutOwner` every other outcome; `byType[]` is `{ type, fixed, replied, reacted, held, skipped }` by judge type (`none` for a row with no type) |
+| `ciFix` | `{ attempts, succeeded, stillRed, rate }`: an attempt is an entry into `ci-fix`; the next snapshot decides it (back to `ci-fix` is still red, anything else succeeded, none yet is open); `rate` is succeeded over succeeded plus still red |
+| `rechecks` | `{ runs, resolved, unresolved }` from the `recheck` state: back to `snapshot` is resolved, to `recheck-owner` unresolved |
+| `ownerActionsAtReady` | `{ merge, rework, comments, resyncDocs, check }`: the transitions out of `ready`, by where each verb leads |
+| `docs` | `{ withMerge, ownerDesk, byOutcome[] }`: entries into `docs-merging` and `docs-merge-owner`, and the `docsMerge` rows by outcome |
+| `recordErrors` | merge-record lines that were not JSON with a `kind`, or a record that could not be read; they are left out of the figures and the call does not fail. A missing file is an empty record |
+
+The times, tokens, owner actions, CI fixes, rechecks and docs counts come from the ledger's `workflow.transition` rows; only the comment figures and the docs outcomes need `babysit.jsonl` (read back by `IMergeRecordReader`). The state and command names the counter keys on are the constants of `BabysitterNames`; `BabysitterNamesTests` loads `recipes/sindri/workflow.pr-babysitter.yaml` and fails when one is renamed, so a rename cannot silently zero a figure.
+
 ## Not yet
 
 | Gap | Why |

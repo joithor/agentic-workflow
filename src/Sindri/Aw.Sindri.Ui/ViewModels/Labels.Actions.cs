@@ -19,6 +19,7 @@ internal static partial class Labels
         ["ApplyCommand:command"] = "Send workflow command",
         ["ApplyCommand:handback"] = "Hand back",
         ["ApplyCommand:takeover"] = "Take over",
+        ["RerunInstance"] = "Run again",
         ["AddRepo"] = "Add repo",
         ["OnboardRepo"] = "Onboard repo",
         ["InitProfile"] = "Create profile",
