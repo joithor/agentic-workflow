@@ -1,6 +1,5 @@
 using Aw.Kernel;
 using Aw.Kernel.Services;
-using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 
 namespace Aw.Sindri.Features.Commands;
