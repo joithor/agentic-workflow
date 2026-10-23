@@ -22,6 +22,7 @@ internal sealed partial class NeedsYouBarViewModel : ObservableObject
         nameof(ShowsDrop), nameof(ShowsRowControls), nameof(Hint), nameof(HasHint), nameof(HintIsAttention), nameof(HintIsSuccess), nameof(Refusal), nameof(HasRefusal), nameof(ReasonRequired), nameof(ReasonPlaceholder), nameof(CanSend),
         nameof(SendWord), nameof(IsSending), nameof(DoneTitle), nameof(DoneBody), nameof(HasBar), nameof(MoreName), nameof(BarName), nameof(ShowsTyped), nameof(TypedBox), nameof(ShowsHold), nameof(ShowsConfirm), nameof(ConfirmEnabled),
         nameof(DeskWhy), nameof(IfApprove), nameof(IfSendBack), nameof(HasIfApprove), nameof(HasIfSendBack),
+        nameof(ApproveSuggested), nameof(SendBackSuggested),
     ];
 
     private readonly DeskReporter _desk;

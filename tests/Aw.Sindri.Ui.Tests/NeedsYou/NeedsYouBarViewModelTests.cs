@@ -44,6 +44,39 @@ public sealed class NeedsYouBarViewModelTests
         _server.InstanceBody = _ => new RouteAnswer(System.Net.HttpStatusCode.OK, instance.ToJsonString());
     }
 
+    // The f5 desk golden whose step before the stop recommends an outcome, with the outcome replaced (or dropped).
+    private void ServeRecommending(string? outcome)
+    {
+        var instance = JsonNode.Parse(GoldenFiles.Api("workflow-instance", "f5-desk-recommended"))!;
+        var desk = instance["current"]!["desk"]!.AsObject();
+        if (outcome is null)
+        {
+            _ = desk.Remove("recommended");
+        }
+        else
+        {
+            desk["recommended"]!["outcome"] = outcome;
+        }
+
+        _server.InstanceBody = _ => new RouteAnswer(System.Net.HttpStatusCode.OK, instance.ToJsonString());
+    }
+
+    [Theory]
+    [InlineData("approve", true, false)]
+    [InlineData("reviseDesign", false, true)]
+    [InlineData("done", false, false)]
+    [InlineData(null, false, false)]
+    public async Task The_recommended_outcome_marks_its_button_suggested_and_its_why_is_the_hint(string? outcome, bool approve, bool sendBack)
+    {
+        ServeRecommending(outcome);
+
+        var bar = await Bar(NeedsYouRows.Desk());
+
+        Assert.Equal((approve, sendBack), (bar.ApproveSuggested, bar.SendBackSuggested));
+        Assert.Equal(approve || sendBack ? "Every check passed and no question is left open." : "", bar.Hint);
+        Assert.Equal("Suggested", bar.SuggestedTag);
+    }
+
     // The desk instance of the f5-fields recipe, waiting in one of its states.
     private void ServeDeskIn(string state)
     {

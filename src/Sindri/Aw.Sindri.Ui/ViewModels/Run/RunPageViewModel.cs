@@ -18,6 +18,7 @@ namespace Aw.Sindri.Ui.ViewModels.Run;
 internal sealed partial class RunPageViewModel(ISindriApi api, CatalogViewModel catalog, IClipboard clipboard, TimeProvider clock) : ObservableObject
 {
     private const string CancelAction = "ApplyCommand:cancel";
+    private const string RerunAction = "RerunInstance";
 
     private Uri? _url;
     private string? _id;

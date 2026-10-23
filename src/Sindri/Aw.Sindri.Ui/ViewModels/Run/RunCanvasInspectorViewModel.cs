@@ -71,10 +71,10 @@ internal sealed partial class RunCanvasInspectorViewModel
     public bool HasTimeline => Timeline.Count > 0 || TimelineNote.Length > 0;
 
     /// <summary>What the step needs, from the stage's facts.</summary>
-    public IReadOnlyList<RunFactItem> Needs { get; }
+    public IReadOnlyList<RunFactItem> Needs { get; private set; }
 
     /// <summary>What the step produced, from the stage's facts.</summary>
-    public IReadOnlyList<RunFactItem> Produced { get; }
+    public IReadOnlyList<RunFactItem> Produced { get; private set; }
 
     /// <summary>The heading of the how-it-ended block.</summary>
     public string EndHeading => State is RunNodeState.Cancelled ? Labels.RunHowItEnded : Labels.RunWentWrong;
@@ -149,6 +149,24 @@ internal sealed partial class RunCanvasInspectorViewModel
 
         return lines;
     }
+
+    /// <summary>The stage's recipe state: when it names what the stage reads and writes, those facts are the lists, each joined to the fact of that key.</summary>
+    internal RecipeStateView? RecipeState
+    {
+        get;
+        init
+        {
+            field = value;
+            Needs = value?.Inputs is { } inputs ? Named(inputs, FactDirection.Input) : Needs;
+            Produced = value?.Outputs is { } outputs ? Named(outputs, FactDirection.Output) : Produced;
+        }
+    }
+
+    // A fact the recipe names is found by its key among the stage's facts, then the line's; one that does not exist yet reads as not there yet, under the recipe's label.
+    private List<RunFactItem> Named(IReadOnlyList<RecipeFactView> named, FactDirection direction) =>
+        [.. named.Select(r => (_owner?.Facts ?? []).Concat(_line.Facts).FirstOrDefault(f => string.Equals(f.Key, r.Key, StringComparison.Ordinal)) is { } fact
+            ? Item(fact) with { Label = r.Label is { Length: > 0 } label ? label : fact.Label }
+            : new RunFactItem(r.Label is { Length: > 0 } text ? text : r.Key, string.Empty, direction == FactDirection.Output ? Labels.FactNotProduced : Labels.FactNotYet, "Brush.InkSubtle"))];
 
     private static List<RunFactItem> Facts(InstanceDetail? owner, FactDirection direction) =>
         [.. (owner?.Facts ?? []).Where(f => f.Direction == direction).Select(Item)];
