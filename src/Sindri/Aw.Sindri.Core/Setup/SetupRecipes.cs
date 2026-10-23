@@ -7,7 +7,7 @@ public static class SetupRecipes
 {
     /// <summary>
     /// Each recipe id once, at its highest registered version (the one that would run); a recipe whose highest version is revoked can't be approved and isn't counted.
-    /// Approved means that version is approved at its current hash.
+    /// Approved means that version is approved at its current hash and the approval isn't stale (a stale approval needs approving again).
     /// </summary>
     /// <param name="lines">Every registered recipe line, by id and version.</param>
     /// <returns>How many can be approved and how many of those are.</returns>
@@ -17,6 +17,6 @@ public static class SetupRecipes
         var current = lines.GroupBy(static l => l.Id).Select(static g => g.MaxBy(static l => l.Version)).OfType<RecipeSummary>()
             .Where(static l => l.Standing != RecipeStanding.Revoked)
             .ToList();
-        return new RecipesFact(current.Count, current.Count(static l => l.Standing == RecipeStanding.Approved));
+        return new RecipesFact(current.Count, current.Count(static l => l is { Standing: RecipeStanding.Approved, Stale.Count: 0 }));
     }
 }
