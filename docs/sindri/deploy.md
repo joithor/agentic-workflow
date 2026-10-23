@@ -11,7 +11,7 @@ The `Dockerfile` at the repo root has three stages, every `FROM` pinned by diges
 |---|---|
 | build | Publishes the Sindri host the way `scripts/sindri-app.sh` does (framework-dependent, the shipped recipes embedded through `AwRecipesDir`), then `judge` and `aw-packets` NativeAOT for the target platform, then runs `sindri recipe eval --shipped` and fails the build if an eval fails or the embedded recipe count differs from `recipes/sindri/*.yaml`. `sindri-ui` is not built: the image has no desktop |
 | tools | The `temporal` CLI from `binaries.lock` (downloaded and sha256-checked by `scripts/binaries-lock.sh fetch temporal`), and graphify in a hash-pinned venv at `context/code-index.lock`'s pin (`uv`, the same install `scripts/install-deps.sh` does) |
-| runtime | `aspnet` plus `git`, `bubblewrap` and `tini`; uid 10001; everything Sindri ships under `/opt/sindri` |
+| runtime | `aspnet` plus `git`, `bubblewrap`, `tini` and `procps` (the Temporal dev server is found and signalled with `ps` and `kill`); uid 10001; everything Sindri ships under `/opt/sindri` |
 
 `ENTRYPOINT ["tini", "--", "/opt/sindri/start.sh"]`. `start.sh` (source: `deploy/start.sh`) copies the baked-in Temporal binary to
 `$AW_STATE_DIR/cache/bin/temporal-<version>/` when the volume does not hold it (Sindri looks for it only there), then `exec`s

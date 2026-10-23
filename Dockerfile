@@ -60,10 +60,10 @@ RUN set -eu; \
  && test "$(/opt/sindri/graphify/bin/graphify --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)" = "$ver"
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble@sha256:8af87eba5e7cdafb1514d7388be287365da97c132509e84dfe252ffd552398ca AS runtime
-# git (repos), bubblewrap (the code graph's sandbox), tini (PID 1: it reaps the detached Temporal process). No procps: Sindri's
-# Linux code does not shell out to ps or kill.
+# git (repos), bubblewrap (the code graph's sandbox), tini (PID 1: it reaps the detached Temporal process), procps (/bin/ps
+# and /bin/kill: the Temporal dev server's lifecycle finds and signals its process through them, DevServerProcesses).
 RUN apt-get update \
- && apt-get install -y --no-install-recommends git bubblewrap tini ca-certificates \
+ && apt-get install -y --no-install-recommends git bubblewrap tini procps ca-certificates \
  && rm -rf /var/lib/apt/lists/* \
  && useradd --uid 10001 --user-group --no-create-home --home-dir /data/home --shell /usr/sbin/nologin sindri \
  && mkdir -p /opt/sindri /data \
