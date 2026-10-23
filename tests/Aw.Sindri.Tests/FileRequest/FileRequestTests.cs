@@ -129,10 +129,10 @@ public sealed class FileRequestTests
     }
 
     [Fact]
-    public async Task FileRequest_twenty_first_open_in_repo_is_SND_REQ_002()
+    public async Task FileRequest_one_past_the_repo_cap_is_SND_REQ_002()
     {
         _ = await _h.Slice.HoldLease();
-        await Open(20, "web");
+        await Open(RequestRules.MaxOpenPerRepo, "web");
         var before = _h.Slice.Store.Events.Count;
         using var entered = Session("web");
 
@@ -143,11 +143,11 @@ public sealed class FileRequestTests
     }
 
     [Fact]
-    public async Task The_twentieth_in_a_repo_is_still_accepted_and_other_repos_have_their_own_count()
+    public async Task The_last_under_the_repo_cap_is_still_accepted_and_other_repos_have_their_own_count()
     {
         _ = await _h.Slice.HoldLease();
-        await Open(19, "web");
-        await Open(19, "api");
+        await Open(RequestRules.MaxOpenPerRepo - 1, "web");
+        await Open(RequestRules.MaxOpenPerRepo - 1, "api");
         using var entered = Session("web");
 
         var result = await Service().Handle(A.FileRequestRequest().Build(), Token);
@@ -156,12 +156,12 @@ public sealed class FileRequestTests
     }
 
     [Fact]
-    public async Task The_fifty_first_open_request_overall_is_SND_REQ_002()
+    public async Task One_past_the_total_cap_is_SND_REQ_002()
     {
         _ = await _h.Slice.HoldLease();
-        await Open(19, "a");
-        await Open(19, "b");
-        await Open(12, "c");
+        await Open(RequestRules.MaxOpenPerRepo - 1, "a");
+        await Open(RequestRules.MaxOpenPerRepo - 1, "b");
+        await Open(RequestRules.MaxOpenTotal - (2 * (RequestRules.MaxOpenPerRepo - 1)), "c");
         using var entered = Session("d");
 
         var result = await Service().Handle(A.FileRequestRequest().Build(), Token);
