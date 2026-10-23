@@ -122,7 +122,7 @@ public sealed class ContextPageWindowTests
     private static void AssertHosts(ShellViewModel shell, Control page)
     {
         AssertSeams(shell, page);
-        Assert.False(page.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "ContextHead").IsEffectivelyVisible);
+        Assert.Equal(shell.Context.HasHead, page.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "ContextHead").IsEffectivelyVisible);   // the head shows once the whole map is read (and not before)
         string[] hosts = ["LensStackHost", "FileMapHost", "ReviewHost", "NodeHost", "SourcesHost"];
         Assert.All(hosts, h => Assert.Contains(page.GetVisualDescendants().OfType<Control>(), c => c.Name == h));
     }
