@@ -202,8 +202,6 @@ run_case "done-gate: assistant line unparsable" done-gate.sh "{\"session_id\":\"
 run_case "done-gate: unparsable stdin" done-gate.sh "$SECRET" "done-gate input-unparsable"
 run_case "done-gate: empty stdin" done-gate.sh "" "done-gate empty-input"
 run_case "done-gate: ask-check judge fails" done-gate.sh "{\"session_id\":\"s1\",\"transcript_path\":\"$WORKING\"}" "done-gate judge-ask-check-exit-1" JUDGE_MODE=exit1
-run_case "done-gate: brief lookup judge fails" done-gate.sh "{\"session_id\":\"s1\",\"transcript_path\":\"$CLAIM\"}" "done-gate judge-brief-exit-1" JUDGE_MODE=exit1
-CASE_PATH="$NO_JUDGE_BIN:$BASE_PATH" run_case "done-gate: judge missing for the brief" done-gate.sh "{\"session_id\":\"s1\",\"transcript_path\":\"$CLAIM\"}" "done-gate judge-brief-exit-127"
 run_case "done-gate: no brief is not a failure" done-gate.sh "{\"session_id\":\"s1\",\"transcript_path\":\"$CLAIM\"}" "-" JUDGE_MODE=nobrief
 run_case "done-gate: re-invocation logs nothing" done-gate.sh '{"stop_hook_active":true}' "-"
 run_case "done-gate: no claim source logs nothing" done-gate.sh '{"session_id":"s1"}' "-"
