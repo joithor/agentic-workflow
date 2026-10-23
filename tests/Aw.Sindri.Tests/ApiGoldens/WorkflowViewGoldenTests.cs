@@ -30,7 +30,9 @@ public sealed class WorkflowViewGoldenTests : IAsyncLifetime
         ("workflow-status", "parked-child"), ("workflow-status", "unreachable-child"), ("workflow-status", "escalated-child"), ("workflow-status", "mirrored-budget"), ("workflow-status", "mirrored-budget-no-child"), ("workflow-status", "desk-task"), ("workflow-status", "parked-budget"),
         ("workflow-status", "escalated-gate"), ("workflow-status", "taken-over"), ("workflow-status", "done"), ("workflow-status", "agent-run"),
         ("workflow-status", "parked-drift"), ("workflow-status", "needs-answer-step"), ("workflow-status", "needs-answer-wait"),
->>>>>>> jthorare/main
+        ("workflow-recipe", "workflow.no-outputs"), ("workflow-recipe", "workflow.f5-fields"), ("workflow-instance", "f5-state-times"), ("workflow-instance", "f5-rerun-failed"), ("workflow-instance", "f5-desk-recommended"), ("workflow-instance", "lens-ask-multi"), ("workflow-instance", "desk-reviews"), ("workflow-instance", "agent-run-session"), ("workflow-status", "parked-dispatch-refused"), ("workflow-status", "agent-run-session"), ("workflow-instance", "babysitter-ready-verbs"), ("workflow-recipe", "workflow.pr-babysitter"), ("workflow-recipe", "workflow.design"),
+        .. FixtureRecipes.All.Select(r => ("workflow-recipe", r.Id)),
+        ("workflow-instance-fact", "scope-map"), ("workflow-instance-fact", "packet"), ("workflow-instance-fact", "evidence"), ("workflow-instance-fact", "payload"), ("workflow-instance-fact", "packet-unfrozen"),
         ("workflow-instance-fact", "text"), ("workflow-instance-fact", "truncated"), ("workflow-instance-fact", "pr-status"), ("workflow-instance-fact", "lens-ask-escalation"),
     ];
 
