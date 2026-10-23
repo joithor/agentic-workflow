@@ -31,6 +31,10 @@ internal static class PrSteps
     public static BlockDescriptor HeldComment { get; } = BlockStep("step.pr.held-comment", Capability.Network).Takes(Text("pr")).Reads("fact:prState")
         .Reports("comment", "drainedUnpushed", "drained").Writes(On("fact:comment", "comment"));
 
+    /// <summary>'step.pr.ci-log': keeps a capped excerpt of each failing check's log (fact:ciLog, as data for the fix); 'logged' or 'none' when nothing is failing.</summary>
+    public static BlockDescriptor CiLog { get; } = BlockStep("step.pr.ci-log", Capability.Network).Takes(Text("pr")).Reads("fact:prState")
+        .Reports("logged", "none").Writes(Every("fact:ciLog"));
+
     /// <summary>'step.pr.ci-fix': an agent fixes the failing checks in the workspace; Sindri pushes.</summary>
     public static BlockDescriptor CiFix { get; } = AgentStep("step.pr.ci-fix", Capability.Tools | Capability.WriteScope).Reads("fact:prState")
         .Reports("fixed", "flaky", "cannotFix").Writes(Every("fact:handoffNote"));
