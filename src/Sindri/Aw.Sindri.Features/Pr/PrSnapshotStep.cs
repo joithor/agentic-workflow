@@ -18,7 +18,7 @@ namespace Aw.Sindri.Features.Pr;
 /// The docs pull request ('fact:docsPr', when the instance holds one) is read too: a merged pull request whose docs pull request is open is 'mergedDocsOpen', a red docs pull request is 'docsRed'
 /// (after the comments, before pending; not when the owner skipped the docs, 'fact:docsResult' result 'skippedByOwner'), and checks still running on it keep the snapshot pending; 'docs' carries it
 /// (link, state, headSha, checks). 'workspaceAhead' says the workspace ('fact:workspace') is on another commit than the pull request's head (null when its head can't be read).
-/// Not read yet, for want of a port: the base branch, so 'restack' is never reported and 'base' { ref, sha, defaultRef, onto } and 'head.ref', which effect.pr.restack reads, are not written (TODO: the forge port's PullView has no base branch or default branch).
+/// 'base' ({ ref, sha, tip, was }, see <see cref="PrBaseFact"/>) carries the base branch and the tip the pull request was built on, which effect.pr.restack replays after. Not read yet, for want of a port: the default branch, so 'restack' is never reported and 'base.defaultRef', 'base.onto' and 'head.ref' are not written.
 /// </summary>
 /// <param name="pulls">The forge, through Sindri's port.</param>
 /// <param name="marks">The comment marks.</param>
@@ -69,6 +69,7 @@ internal sealed class PrSnapshotStep(IPullRequests pulls, IPrCommentMarks marks,
         var work = threads.Value.Where(t => !t.Resolved && !Own(t) && !latest.Value.ContainsKey(t.Key)).ToList();   // a marked comment is handled (spec: a mark not superseded by an edit); the forge port has no login, so Sindri's replies are told apart by their markers alone
         var outcome = Outcome(pull.Value, work.Count, docs.Value);
         var state = State(pull.Value, outcome, new Conversation(threads.Value, work, latest.Value), docs.Value);
+        state["base"] = PrBaseFact.Of(pull.Value, StepFacts.Read(context, "fact:prState"), StepFacts.Read(context, "fact:restack"));
         var status = PrStatusFact.Of(StepFacts.Read(context, "fact:recheck"), StepFacts.Read(context, "fact:docsResult"), pull.Value, threads.Value, docs.Value?.View);
         return await Report(context, new Snapshot(pull.Value, outcome, state), status, cancellationToken).ConfigureAwait(false);
     }
