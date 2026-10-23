@@ -19,19 +19,3 @@ public sealed record NeedsYouOpen(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] NeedsYouOpenArtifact? Artifact = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Session = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ReasonCode = null);
-
-/// <summary>A pull request a row opens.</summary>
-/// <param name="Url">Its address.</param>
-/// <param name="Number">Its number.</param>
-public sealed record NeedsYouOpenPr(string Url, int Number);
-
-/// <summary>An artifact a row opens.</summary>
-/// <param name="Kind">The kind of artifact.</param>
-/// <param name="Fact">The fact it evidences.</param>
-/// <param name="Path">Its path; null (omitted) when it has none.</param>
-/// <param name="Url">Its address; null (omitted) when it has none.</param>
-public sealed record NeedsYouOpenArtifact(
-    string Kind,
-    string Fact,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Path = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Url = null);

@@ -34,13 +34,15 @@ public static partial class NeedsYouRows
         var at = park.Descendant ?? park.Address;
         var answer = AnswerOf(park);
         var (label, words) = Words(suspension, park.Refusal);
-        var open = answer?.Child is { } child   // a parked descendant, or a mirrored child that decides: the row opens that instance
-            ? new NeedsYouOpen("workflow/" + child, "Answer in the child")
-            : new NeedsYouOpen(WorkflowRoute(at), "Open the workflow");
         var shape = new EngineRow(NeedsYouRowId.Park(park.Address), label, $"{words} ({at.Value})", Urgency.Pulse, answer?.Kind,
-            answer?.ActionId ?? _approveRecipe, answer is null ? [_approveRecipe, _cancel] : [answer.ActionId], answer?.Cli ?? Status(at), open, answer?.Via, answer?.Child);
+            answer?.ActionId ?? _approveRecipe, answer is null ? [_approveRecipe, _cancel] : [answer.ActionId], answer?.Cli ?? Status(at), OpenOf(answer, at), answer?.Via, answer?.Child);
         return Row(item, park.Address, shape, since, scrubber);
     }
+
+    /// <summary>Where a park row opens: a parked descendant, or a mirrored child that decides, opens that instance; any other park its own.</summary>
+    private static NeedsYouOpen OpenOf(Workflow.Views.StatusAnswer? answer, InstanceAddress at) => answer?.Child is { } child
+        ? new NeedsYouOpen("workflow/" + child, "Answer in the child")
+        : new NeedsYouOpen(WorkflowRoute(at), "Open the workflow");
 
     /// <summary>
     /// The answer a park row offers: the instance's own, or for a parked descendant a pointer to it (`via: "child"`) whose cli is

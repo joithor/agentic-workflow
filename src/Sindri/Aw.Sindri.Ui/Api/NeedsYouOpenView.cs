@@ -14,15 +14,3 @@ internal sealed record NeedsYouOpenView(
     NeedsYouOpenArtifactView? Artifact = null,
     string? Session = null,
     string? ReasonCode = null);
-
-/// <summary>A pull request an 'open' target names.</summary>
-/// <param name="Url">Its address.</param>
-/// <param name="Number">Its number.</param>
-internal sealed record NeedsYouOpenPrView(string? Url = null, int? Number = null);
-
-/// <summary>An artifact an 'open' target names.</summary>
-/// <param name="Kind">The kind of artifact.</param>
-/// <param name="Fact">The fact it evidences.</param>
-/// <param name="Path">Its path, when it has one.</param>
-/// <param name="Url">Its address, when it has one.</param>
-internal sealed record NeedsYouOpenArtifactView(string? Kind = null, string? Fact = null, string? Path = null, string? Url = null);
