@@ -26,7 +26,7 @@ internal static partial class NotifierCommand
     /// <returns>The command.</returns>
     internal static BannerProcess For(string title, string text, string? deepLink, string? terminalNotifier, string uiBinary)
     {
-        if (terminalNotifier is { Length: > 0 } && deepLink is { Length: > 0 } && Safe().IsMatch(deepLink))
+        if (terminalNotifier is { Length: > 0 } && deepLink is { Length: > 0 } && Safe.IsMatch(deepLink))
         {
             return new BannerProcess(terminalNotifier, ["-title", title, "-message", text, "-execute", Quote(uiBinary) + " " + deepLink]);
         }
@@ -51,5 +51,5 @@ internal static partial class NotifierCommand
     private static string Quote(string path) => "'" + path.Replace("'", "'\\''", StringComparison.Ordinal) + "'";
 
     [GeneratedRegex("^[A-Za-z0-9/_.:@?=-]{1,200}$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex Safe();
+    private static partial Regex Safe { get; }
 }

@@ -79,14 +79,13 @@ public sealed class ShellOpenTargetTests
     }, Token);
 
     [Fact]
-    public Task Clicking_any_other_row_opens_its_sheet() => UiThread.Run(async () =>
+    public Task Clicking_any_other_row_opens_the_inbox_on_that_row() => UiThread.Run(async () =>
     {
         var shell = await Connected("park");
-        var row = shell.NeedsYou.Seen.Rows[0];
 
-        shell.OpenNeedsYouRow(row.Id);
+        shell.OpenNeedsYouRow(shell.NeedsYou.Seen.Rows[0].Id);
 
-        Assert.Equal(new DeepLink(DeepLinkKind.NeedsYou, row.Id), shell.SheetLink);
+        Assert.True(shell.IsNeedsYouInbox);
     }, Token);
 
     [Fact]
