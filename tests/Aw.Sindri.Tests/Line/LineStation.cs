@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Line;
 using Aw.Sindri.Testing.LensPacks;
 using Aw.Sindri.Testing.Packets;
+using Aw.Sindri.Testing.Prove;
 using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Tests.Scoping.Steps;
 
@@ -75,7 +76,11 @@ internal sealed class LineStation
 
     internal PlanEvidenceStep PlanEvidence() => new(Packets, Files, Area, Checkouts);
 
-    internal PlanFreezeStep PlanFreeze() => new(Packets, Checkouts);
+    internal PlanFreezeStep PlanFreeze() => new(Packets, Checkouts, Holdouts);
+
+    internal InMemoryHoldoutStore Holdouts { get; } = new();
+
+    internal PlanHoldoutStoreStep PlanHoldoutStore(InMemoryBriefFiles drafts) => new(Packets, Files, drafts, Holdouts);
 
     /// <summary>The design station's evidence facts: the scope and the packs the intake pinned, the sound design, the round log and no accepted risks.</summary>
     internal async Task<ScopingFacts> DesignFacts(Func<JsonObject, JsonObject>? edit = null)

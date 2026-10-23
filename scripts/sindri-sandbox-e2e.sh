@@ -10,8 +10,8 @@
 #   --repo PATH      the repo to clone (default: this one); the clone gets a new branch sandbox/e2e-<stamp>
 #   --start RECIPE   the recipe to start (default workflow.line)
 #   --title TEXT     the item's title (default: the feature file's first heading)
-#   --stall SECONDS  no progress for this long is a stop (default 300)
-#   --max-wait SEC   the whole follow gives up after this long (default 3600)
+#   --stall SECONDS  no progress for this long is a stop (default 900: an agent Step can run 5-15 min with no ledger change)
+#   --max-wait SEC   the whole follow gives up after this long (default 10800: the whole line takes hours)
 #   --auto-desk      answer a desk state with its default outcome (the first the status offers), and a budget park
 #                    with a grant of 200k tokens (the most one grant may give), recording each
 #   --map FILE       the context map to import (authored map format, docs/sindri/demo-handoff.md 5b); default: a small
@@ -43,7 +43,7 @@ PROVE="$ROOT/scripts/sindri-prove.sh"
 die() { echo "sindri-sandbox-e2e: $*" >&2; exit 2; }
 say() { echo "sindri-sandbox-e2e: $*" >&2; }
 
-FEATURE="" SINDRI_ARG="" REPO_SRC="$ROOT" START="workflow.line" TITLE="" STALL=300 MAX_WAIT=3600
+FEATURE="" SINDRI_ARG="" REPO_SRC="$ROOT" START="workflow.line" TITLE="" STALL=900 MAX_WAIT=10800
 AUTO_DESK=0 DESK_MAX=25 AGENT="" KEEP=0 PRINT_CONFIG=0 CONTEXT=1 MAP_FILE="" CODE_FILE=""
 BUILD_COMMANDS=() DEFAULT_BUILD_COMMAND="bash scripts/tests/binaries-lock.test.sh"
 

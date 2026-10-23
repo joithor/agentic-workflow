@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.ViewModels.Components;
 using Aw.Sindri.Ui.ViewModels.Controls;
@@ -17,6 +18,7 @@ internal sealed class HoldButtonViewModel : ObservableObject
 
     private readonly TimeProvider _clock;
     private readonly Func<bool> _reducedMotion;
+    private readonly CatalogViewModel _catalog;
     private long _started;
     private bool _complete;
     private int _count;
@@ -30,10 +32,23 @@ internal sealed class HoldButtonViewModel : ObservableObject
     {
         ArgumentNullException.ThrowIfNull(catalog);
         ArgumentNullException.ThrowIfNull(clock);
-        (Action, _clock) = (AppConfirm.Require(action), clock);
+        (Action, _clock, _catalog) = (AppConfirm.Require(action), clock, catalog);
         _reducedMotion = reducedMotion ?? (() => false);
         Text = Labels.ApproveHold(MinHoldMs);
-        Terminal = AppConfirm.Terminal(catalog, action, Labels.TerminalVerb(action), Labels.ConfirmSubject(action), clock);
+        Terminal = MakeTerminal();
+        catalog.PropertyChanged += OnCatalogChanged;
+    }
+
+    // The button can be made before the catalog is read (the inbox page is built with the shell): the row decides again when it arrives.
+    private ProtectedActionViewModel? MakeTerminal() => AppConfirm.Terminal(_catalog, Action, Labels.TerminalVerb(Action), Labels.ConfirmSubject(Action), _clock);
+
+    private void OnCatalogChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (string.Equals(e.PropertyName, nameof(CatalogViewModel.Controls), StringComparison.Ordinal) && (Terminal is null) != AppConfirm.IsReady(_catalog, Action))
+        {
+            Terminal = MakeTerminal();
+            OnChanged(nameof(IsReady));
+        }
     }
 
     /// <summary>The host's say on whether a hold may start now (a challenge is there and has not run out); it may do what it must to get one. Null means always.</summary>
@@ -52,7 +67,7 @@ internal sealed class HoldButtonViewModel : ObservableObject
     public bool IsReady => Terminal is null;
 
     /// <summary>The terminal copy for a row that is not ready; null when it is.</summary>
-    public ProtectedActionViewModel? Terminal { get; }
+    public ProtectedActionViewModel? Terminal { get; private set => Set(ref field, value); }
 
     /// <summary>The shortest hold the server accepts, in milliseconds.</summary>
     public int MinHoldMs { get; private set => Set(ref field, value); } = DefaultHoldMs;

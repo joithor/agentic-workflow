@@ -1,6 +1,8 @@
 using System.Text.Json.Nodes;
 using Aw.Sindri.Core.Packets;
+using Aw.Sindri.Core.Prove;
 using Aw.Sindri.Core.Scoping;
+using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 
@@ -11,11 +13,12 @@ namespace Aw.Sindri.Features.Line;
 /// still hash to the facts' hashes), re-runs the plan checks, and has aw-packets freeze, in order, the design packet, the plan packet and each phase packet, as 'owner': the Step runs only on stop 2's
 /// human-only approve, and a freeze is write-once, so a machine freeze first would never be upgraded. A hash frozen by someone else first, a failed check or a hash that moved is 'mismatch' with the
 /// findings (the recipe loops to evidence). 'frozen' writes 'fact:planPacket' (frozen) and 'fact:phasePackets' ([{ phase, id, hash, dir }]). Not done here, for want of a Step-side port: the
-/// design.approved and plan.approved ledger rows, sealing the holdout sets, and LN-CTX1's proposals to the context map.
+/// design.approved and plan.approved ledger rows and LN-CTX1's proposals to the context map.
 /// </summary>
 /// <param name="packets">aw-packets.</param>
 /// <param name="checkouts">Where the repo's checkout is.</param>
-internal sealed class PlanFreezeStep(IPackets packets, IRepoCheckouts checkouts) : IBlockStep, IBlockStepId, IRepoStep
+/// <param name="holdouts">The holdout store the frozen plan packet's hash seals each phase's set in.</param>
+internal sealed class PlanFreezeStep(IPackets packets, IRepoCheckouts checkouts, IHoldoutStore holdouts) : IBlockStep, IBlockStepId, IRepoStep
 {
     /// <inheritdoc/>
     public static BlockId Id { get; } = BlockId.From("step.plan.freeze");
@@ -41,7 +44,7 @@ internal sealed class PlanFreezeStep(IPackets packets, IRepoCheckouts checkouts)
         }
 
         var recheck = PlanChecks.Run(design, StepFacts.Read(context, "fact:plan"), StepFacts.Read(context, "fact:holdoutSets"), evidence: true).Failures;
-        return recheck.Count > 0 ? LinePackets.Gaps("mismatch", recheck) : await Freeze(Targets(plan.Value, designPacket.Value, LineJson.Items(planFact, "phases")), checkout.Value, cancellationToken).ConfigureAwait(false);
+        return recheck.Count > 0 ? LinePackets.Gaps("mismatch", recheck) : await Freeze(Targets(plan.Value, designPacket.Value, LineJson.Items(planFact, "phases")), checkout.Value, context.Address?.Split('/')[0], cancellationToken).ConfigureAwait(false);
     }
 
     private static List<Target> Targets(PacketFact plan, PacketFact design, IEnumerable<JsonNode> phases) =>
@@ -51,7 +54,7 @@ internal sealed class PlanFreezeStep(IPackets packets, IRepoCheckouts checkouts)
         .. phases.Select(static p => new Target(PacketKind.Phase, "phase packet " + LineJson.Str(p, "phase"), LineJson.Str(p, "dir") ?? string.Empty, LineJson.Str(p, "hash"), p)),
     ];
 
-    private async ValueTask<BlockStepResult> Freeze(List<Target> targets, string checkout, CancellationToken cancellationToken)
+    private async ValueTask<BlockStepResult> Freeze(List<Target> targets, string checkout, string? line, CancellationToken cancellationToken)
     {
         if (await Verify(targets, checkout, cancellationToken).ConfigureAwait(false) is { } stale)
         {
@@ -83,10 +86,36 @@ internal sealed class PlanFreezeStep(IPackets packets, IRepoCheckouts checkouts)
             }
         }
 
+        if (await Seal(line, frozen, planHash, cancellationToken).ConfigureAwait(false) is { } unsealed)
+        {
+            return unsealed;
+        }
+
         var plan = targets.Find(static t => t.Kind == PacketKind.Plan);
         var planFact = new PacketFact(planHash, plan?.Directory ?? string.Empty).ToJson();
         planFact["frozen"] = true;
         return StepFacts.Done("frozen", ("fact:planPacket", planFact), ("fact:phasePackets", frozen));
+    }
+
+    // The hidden set of each phase is sealed to the plan packet just frozen (spec §9.1). A phase with no set in the store (facts that name a set the author never delivered) is left unsealed:
+    // PLN-HOLD-003 already checked the sets by hash, and a missing file is for holdout-log and the evaluator to find.
+    private async ValueTask<BlockStepResult?> Seal(string? line, JsonArray frozen, string planHash, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(line))
+        {
+            return null;
+        }
+
+        foreach (var id in frozen.Select(static p => LineJson.Str(p, "id")).OfType<string>())
+        {
+            var sealedSet = await holdouts.SealWith(line, id, planHash, cancellationToken).ConfigureAwait(false);
+            if (sealedSet.IsError && sealedSet.Error.Code != WorkflowErrors.HoldoutSetMissing.Code)
+            {
+                return BlockStepResult.Failed($"{Id.Value} can't seal the hidden set of phase {id} to the plan packet: {sealedSet.Error.Message}");
+            }
+        }
+
+        return null;
     }
 
     // Every packet still hashes to what the evidence checked, before the first freeze: a freeze is write-once, so a mismatch found after one would leave a half-frozen set.

@@ -20,7 +20,7 @@ internal sealed partial class WorkflowsViewModel
     // A re-read serves the same row again: it stays (so does the control with focus) unless something it draws changed.
     private InstanceRowViewModel Row(InstanceSummary summary)
     {
-        var row = new InstanceRowViewModel(summary, clipboard, clock);
+        var row = new InstanceRowViewModel(summary, clipboard, clock, _names);
         var old = Groups.SelectMany(g => g.Rows).FirstOrDefault(r => string.Equals(r.Address, row.Address, StringComparison.Ordinal));
         var kept = old is not null && string.Equals(old.Signature, row.Signature, StringComparison.Ordinal) ? old : row;
         kept.SetStale(IsStale);

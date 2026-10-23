@@ -171,6 +171,10 @@ public sealed class ScopingCommandTests : IDisposable
         Assert.Equal("gaps", report.RootElement.GetProperty("outcome").GetString());
         Assert.Equal("findings.json", report.RootElement.GetProperty("outputs").GetProperty("fact:findings").GetString());
         Assert.True(File.Exists(Path.Combine(outDir, "findings.json")));
+        var byOutcome = report.RootElement.GetProperty("outputsByOutcome");   // what a complete on each outcome takes, from the descriptor
+        Assert.Equal(["fact:findings"], byOutcome.GetProperty("gaps").EnumerateArray().Select(static e => e.GetString()), StringComparer.Ordinal);
+        Assert.Equal(["fact:findings"], byOutcome.GetProperty("regather").EnumerateArray().Select(static e => e.GetString()), StringComparer.Ordinal);
+        Assert.Empty(byOutcome.GetProperty("pass").EnumerateArray());
     }
 
     [Fact, Trait("Lane", "integration")]

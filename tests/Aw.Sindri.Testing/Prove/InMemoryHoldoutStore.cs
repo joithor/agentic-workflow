@@ -75,6 +75,63 @@ public sealed class InMemoryHoldoutStore : IHoldoutStore
         return true;
     }
 
+    /// <inheritdoc/>
+    public async ValueTask<Result<HoldoutSet>> Save(string line, string phase, string setText, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(setText);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (Check(line, phase) is { } refused)
+        {
+            return refused;
+        }
+
+        var accepted = HoldoutFiles.Accept(phase, setText);
+        if (accepted.IsError)
+        {
+            return accepted.Error;
+        }
+
+        if ((await Seal(line, phase, cancellationToken).ConfigureAwait(false)).IsSuccess)
+        {
+            return SindriErrors.InvalidInput.With($"the hidden set of phase '{phase}' is sealed and is not replaced");
+        }
+
+        if (Unwritable)
+        {
+            return HoldoutFiles.Unreadable(HoldoutFiles.SetName, "it can't be written");
+        }
+
+        _files[(line, phase)] = (setText, null);
+        return accepted.Value;
+    }
+
+    /// <inheritdoc/>
+    public async ValueTask<Result<HoldoutSeal>> SealWith(string line, string phase, string planHash, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(planHash);
+        var set = await Set(line, phase, cancellationToken).ConfigureAwait(false);
+        if (set.IsError)
+        {
+            return set.Error;
+        }
+
+        var existing = await Seal(line, phase, cancellationToken).ConfigureAwait(false);
+        if (existing.IsSuccess)
+        {
+            return string.Equals(existing.Value.PlanHash, planHash, StringComparison.Ordinal) && string.Equals(existing.Value.SetHash, set.Value.Hash, StringComparison.Ordinal)
+                ? existing.Value
+                : SindriErrors.InvalidInput.With($"the hidden set of phase '{phase}' is already sealed to another plan packet");
+        }
+
+        if (Unwritable)
+        {
+            return HoldoutFiles.Unreadable(HoldoutFiles.SealName, "it can't be written");
+        }
+
+        _files[(line, phase)] = (_files[(line, phase)].Set, HoldoutFiles.SealJson(phase, set.Value.Hash, planHash));
+        return new HoldoutSeal(set.Value.Hash, planHash);
+    }
+
     private static Error? Check(string line, string phase) =>
         HoldoutFiles.IsKey(line) && HoldoutFiles.IsKey(phase) ? null : SindriErrors.InvalidInput.With("a holdout line and phase are each one path segment");
 
