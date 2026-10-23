@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Infrastructure.Notifications;
 
@@ -23,12 +24,9 @@ internal sealed class OsascriptNotifier : IOsNotifier
         }
 
         var command = NotifierCommand.For(title, text, deepLink, NotifierCommand.OnPath("terminal-notifier"), NotifierCommand.UiBinary(Environment.GetEnvironmentVariable, AppContext.BaseDirectory));
-        var start = new ProcessStartInfo(command.File, command.Arguments)
-        {
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
+        var start = ChildEnvironment.Start(command.File, command.Arguments);
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
         try
         {
             using var osascript = Process.Start(start);

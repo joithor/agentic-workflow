@@ -15,10 +15,11 @@ internal sealed partial class DockerCliRuntime(IToolRunner runner, Func<string, 
     /// <inheritdoc />
     public ContainerRuntimeFacts Inspect(CancellationToken cancellationToken)
     {
-        var server = Docker(["version", "--format", "{{.Server.Version}}"]);
+        var server = runner.Run("docker", ["version", "--format", "{{.Server.Version}}"], _timeout, cancellationToken: cancellationToken);
         if (server.Outcome == ToolOutcome.TimedOut)
         {
-            // A Docker Desktop waking from Resource Saver can take longer than the first budget: one retry with a longer one.
+            // A Docker Desktop waking from Resource Saver can take longer than the first budget: one retry with a longer one. A hung OrbStack doesn't answer
+            // either; its context endpoint is still read below (`docker context inspect` reads only the CLI's own files), so the row can name it.
             server = runner.Run("docker", ["version", "--format", "{{.Server.Version}}"], _retryTimeout, cancellationToken: cancellationToken);
         }
 

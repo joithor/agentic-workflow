@@ -76,7 +76,8 @@ OUT="$(printf 'not json' | PATH="$FAKE_BIN:$PATH" bash "$HOOK" 2>&1)"; RC=$?
 check "unparsable input: fails open" "$RC/$OUT" "0/"
 
 rm -f "$FAKE_ARGS"
-OUT="$(printf '%s' '{"hook_event_name":"Stop"}' | AW_JUDGE_CHILD=1 PATH="$FAKE_BIN:$PATH" bash "$HOOK" 2>&1)"; RC=$?
+# A here-string, not a pipe: the guard exits before reading stdin, so a piped printf could die of SIGPIPE.
+OUT="$(AW_JUDGE_CHILD=1 PATH="$FAKE_BIN:$PATH" bash "$HOOK" 2>&1 <<<'{"hook_event_name":"Stop"}')"; RC=$?
 check "AW_JUDGE_CHILD: recursion guard exits 0" "$RC" "0"
 check "AW_JUDGE_CHILD: judge not called" "$(args)" ""
 

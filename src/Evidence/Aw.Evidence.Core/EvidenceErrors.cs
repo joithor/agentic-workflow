@@ -77,11 +77,14 @@ public static class EvidenceErrors
     /// <summary>AW-EVIDENCE-024: a database can't be reached or copied.</summary>
     public static readonly ErrorDefinition DatabaseUnavailable = new("AW-EVIDENCE-024", ErrorKind.Unavailable, "Database unavailable");
 
+    /// <summary>AW-EVIDENCE-025: pushing images to the evidence branch through gh failed (nothing is published).</summary>
+    public static readonly ErrorDefinition GhPublishFailed = new("AW-EVIDENCE-025", ErrorKind.Unavailable, "gh publish failed");
+
     /// <summary>Every Evidence error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
         Invalid, ScriptInvalid, ManifestInvalid, HostRefused, StepsRefused, CredentialsMissing, RegionOutside,
         SizeMismatch, LockBusy, FileNotFound, FileUnavailable, ImageInvalid, BrowserFailed, ProbeFailed, RunFailed, PublishRefused,
-        ApiScriptInvalid, DbScriptInvalid, CliRefused, DatabaseRefused, IdentityMismatch, TargetsInvalid, RequestFailed, DatabaseUnavailable,
+        ApiScriptInvalid, DbScriptInvalid, CliRefused, DatabaseRefused, IdentityMismatch, TargetsInvalid, RequestFailed, DatabaseUnavailable, GhPublishFailed,
     ];
 }

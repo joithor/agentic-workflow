@@ -2353,3 +2353,59 @@ static Aw.Evidence.Core.Data.ValueText.Day(System.DateOnly day) -> string!
 static Aw.Evidence.Core.Data.ValueText.Time(System.TimeOnly time) -> string!
 static Aw.Evidence.Core.Data.ValueText.Moment(System.DateTime moment) -> string!
 static Aw.Evidence.Core.Data.ValueText.Moment(System.DateTimeOffset moment) -> string!
+Aw.Evidence.Core.Publishing.GhCall
+Aw.Evidence.Core.Publishing.GhCall.<Clone>$() -> Aw.Evidence.Core.Publishing.GhCall!
+Aw.Evidence.Core.Publishing.GhCall.Args.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Core.Publishing.GhCall.Args.init -> void
+Aw.Evidence.Core.Publishing.GhCall.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Args, out string? Stdin) -> void
+Aw.Evidence.Core.Publishing.GhCall.Equals(Aw.Evidence.Core.Publishing.GhCall? other) -> bool
+Aw.Evidence.Core.Publishing.GhCall.GhCall(System.Collections.Generic.IReadOnlyList<string!>! Args, string? Stdin = null) -> void
+Aw.Evidence.Core.Publishing.GhCall.Stdin.get -> string?
+Aw.Evidence.Core.Publishing.GhCall.Stdin.init -> void
+Aw.Evidence.Core.Publishing.GhOutcome
+Aw.Evidence.Core.Publishing.GhOutcome.<Clone>$() -> Aw.Evidence.Core.Publishing.GhOutcome!
+Aw.Evidence.Core.Publishing.GhOutcome.Deconstruct(out int ExitCode, out string! Stdout, out string! Stderr) -> void
+Aw.Evidence.Core.Publishing.GhOutcome.Equals(Aw.Evidence.Core.Publishing.GhOutcome? other) -> bool
+Aw.Evidence.Core.Publishing.GhOutcome.ExitCode.get -> int
+Aw.Evidence.Core.Publishing.GhOutcome.ExitCode.init -> void
+Aw.Evidence.Core.Publishing.GhOutcome.GhOutcome(int ExitCode, string! Stdout, string! Stderr) -> void
+Aw.Evidence.Core.Publishing.GhOutcome.Stderr.get -> string!
+Aw.Evidence.Core.Publishing.GhOutcome.Stderr.init -> void
+Aw.Evidence.Core.Publishing.GhOutcome.Stdout.get -> string!
+Aw.Evidence.Core.Publishing.GhOutcome.Stdout.init -> void
+Aw.Evidence.Core.Publishing.IGhRunner
+Aw.Evidence.Core.Publishing.IGhRunner.RunAsync(Aw.Evidence.Core.Publishing.GhCall! call, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Evidence.Core.Publishing.GhOutcome!>!>
+Aw.Evidence.Core.Settings.IEvidenceSettings.Slots.get -> Aw.Evidence.Core.Settings.SlotSettings?
+Aw.Evidence.Core.Settings.SlotSettings
+Aw.Evidence.Core.Settings.SlotSettings.<Clone>$() -> Aw.Evidence.Core.Settings.SlotSettings!
+Aw.Evidence.Core.Settings.SlotSettings.Count.get -> int
+Aw.Evidence.Core.Settings.SlotSettings.Count.init -> void
+Aw.Evidence.Core.Settings.SlotSettings.Database.get -> string?
+Aw.Evidence.Core.Settings.SlotSettings.Database.init -> void
+Aw.Evidence.Core.Settings.SlotSettings.Deconstruct(out string! FileName, out string! Key, out int Count, out int PortStep, out string? Database) -> void
+Aw.Evidence.Core.Settings.SlotSettings.Equals(Aw.Evidence.Core.Settings.SlotSettings? other) -> bool
+Aw.Evidence.Core.Settings.SlotSettings.FileName.get -> string!
+Aw.Evidence.Core.Settings.SlotSettings.FileName.init -> void
+Aw.Evidence.Core.Settings.SlotSettings.Key.get -> string!
+Aw.Evidence.Core.Settings.SlotSettings.Key.init -> void
+Aw.Evidence.Core.Settings.SlotSettings.PortStep.get -> int
+Aw.Evidence.Core.Settings.SlotSettings.PortStep.init -> void
+Aw.Evidence.Core.Settings.SlotSettings.SlotSettings(string! FileName, string! Key, int Count, int PortStep, string? Database) -> void
+Aw.Evidence.Core.Stack.IStackProbe.DatabaseExistsAsync(string! database, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Evidence.Core.Stack.IStackProbe.ListenerDirectoryAsync(int port, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string?>!>
+override Aw.Evidence.Core.Publishing.GhCall.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Publishing.GhCall.GetHashCode() -> int
+override Aw.Evidence.Core.Publishing.GhCall.ToString() -> string!
+override Aw.Evidence.Core.Publishing.GhOutcome.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Publishing.GhOutcome.GetHashCode() -> int
+override Aw.Evidence.Core.Publishing.GhOutcome.ToString() -> string!
+override Aw.Evidence.Core.Settings.SlotSettings.Equals(object? obj) -> bool
+override Aw.Evidence.Core.Settings.SlotSettings.GetHashCode() -> int
+override Aw.Evidence.Core.Settings.SlotSettings.ToString() -> string!
+static Aw.Evidence.Core.Publishing.GhCall.operator !=(Aw.Evidence.Core.Publishing.GhCall? left, Aw.Evidence.Core.Publishing.GhCall? right) -> bool
+static Aw.Evidence.Core.Publishing.GhCall.operator ==(Aw.Evidence.Core.Publishing.GhCall? left, Aw.Evidence.Core.Publishing.GhCall? right) -> bool
+static Aw.Evidence.Core.Publishing.GhOutcome.operator !=(Aw.Evidence.Core.Publishing.GhOutcome? left, Aw.Evidence.Core.Publishing.GhOutcome? right) -> bool
+static Aw.Evidence.Core.Publishing.GhOutcome.operator ==(Aw.Evidence.Core.Publishing.GhOutcome? left, Aw.Evidence.Core.Publishing.GhOutcome? right) -> bool
+static Aw.Evidence.Core.Settings.SlotSettings.operator !=(Aw.Evidence.Core.Settings.SlotSettings? left, Aw.Evidence.Core.Settings.SlotSettings? right) -> bool
+static Aw.Evidence.Core.Settings.SlotSettings.operator ==(Aw.Evidence.Core.Settings.SlotSettings? left, Aw.Evidence.Core.Settings.SlotSettings? right) -> bool
+static readonly Aw.Evidence.Core.EvidenceErrors.GhPublishFailed -> Aw.Kernel.ErrorDefinition!

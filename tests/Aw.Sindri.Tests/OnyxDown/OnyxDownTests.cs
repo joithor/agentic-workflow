@@ -191,7 +191,7 @@ public sealed class OnyxDownTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Down_with_a_daemon_that_may_be_starting_says_to_wait()
+    public async Task Down_with_a_daemon_that_may_be_starting_says_it_is_not_answering()
     {
         var rig = await RunningRig();
         rig.Runtime.Facts = FakeContainerRuntime.Starting;
@@ -199,7 +199,7 @@ public sealed class OnyxDownTests
         var error = (await Down(rig)).Error;
 
         Assert.Equal("SND-ONYX-001", error.Code);
-        Assert.Contains("may still be starting", error.Message, StringComparison.Ordinal);
+        Assert.Contains("isn't answering (no reply within 25 s)", error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

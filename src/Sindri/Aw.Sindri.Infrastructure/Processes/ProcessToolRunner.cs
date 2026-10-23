@@ -17,14 +17,10 @@ internal sealed class ProcessToolRunner : IToolRunner
             return ToolRun.Cancelled;
         }
 
-        var start = new ProcessStartInfo(fileName, arguments)
-        {
-            UseShellExecute = false,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
-        ApplyEnvironment(start, options?.Environment);
+        var start = ChildEnvironment.Start(fileName, arguments, options?.Environment);
+        start.RedirectStandardInput = true;
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
         if (options?.WorkingDirectory is { } directory)
         {
             start.WorkingDirectory = directory;
@@ -48,26 +44,6 @@ internal sealed class ProcessToolRunner : IToolRunner
         using (process)
         {
             return Wait(process, timeout, options, cancellationToken);
-        }
-    }
-
-    private static void ApplyEnvironment(ProcessStartInfo start, IReadOnlyDictionary<string, string?>? changes)
-    {
-        if (changes is null)
-        {
-            return;
-        }
-
-        foreach (var (name, value) in changes)
-        {
-            if (value is null)
-            {
-                _ = start.Environment.Remove(name);
-            }
-            else
-            {
-                start.Environment[name] = value;
-            }
         }
     }
 
