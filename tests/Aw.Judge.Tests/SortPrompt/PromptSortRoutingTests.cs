@@ -1,4 +1,5 @@
 using Aw.Judge.Core.Ids;
+using Aw.Judge.Core.Providers;
 using Aw.Judge.Features.SetPromptSort;
 using Aw.Judge.Features.SortPrompt;
 using Aw.Kernel.Services;
@@ -40,7 +41,7 @@ public sealed class PromptSortRoutingTests : IDisposable
         Assert.Equal(new CliRun(0, """{"context":"scaffold note"}""" + "\n", ""), run);
         var request = Assert.Single(sorter.Requests);
         Assert.Equal(("fix the login bug", SessionId.From("sess-7")), (request.Prompt, request.Session));
-        Assert.Equal([Aw.Judge.Core.Providers.ProviderName.Rules], request.Providers);
+        Assert.Equal([ProviderName.Rules], request.Providers);
     }
 
     [Fact, Trait("Lane", "integration")]
