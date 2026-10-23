@@ -242,7 +242,7 @@ public sealed class FileRequestTests
     {
         _ = await _h.Slice.HoldLease();
         using var entered = Human();
-        var text = new string('a', 1990) + "hunter2" + new string('b', 3);
+        var text = new string('a', RequestRules.TextMax - 10) + "hunter2" + new string('b', 3);
 
         var result = await Service(new MaskScrubber("hunter2")).Handle(A.FileRequestRequest().WithText(text).Build(), Token);
 
@@ -279,10 +279,10 @@ public sealed class FileRequestTests
         Expect.Equal(SindriErrors.RequestInvalid.Code, new FileRequestValidator().Validate(A.FileRequestRequest().WithText(text).Build()).Error.Code);
 
     [Fact]
-    public void The_validator_refuses_more_than_2000_characters_and_takes_exactly_2000()
+    public void The_validator_refuses_more_than_65536_characters_and_takes_exactly_65536()
     {
-        Expect.Equal(SindriErrors.RequestInvalid.Code, new FileRequestValidator().Validate(A.FileRequestRequest().WithText(new string('x', 2001)).Build()).Error.Code);
-        Assert.True(new FileRequestValidator().Validate(A.FileRequestRequest().WithText(new string('x', 2000)).Build()).IsSuccess);
+        Expect.Equal(SindriErrors.RequestInvalid.Code, new FileRequestValidator().Validate(A.FileRequestRequest().WithText(new string('x', RequestRules.TextMax + 1)).Build()).Error.Code);
+        Assert.True(new FileRequestValidator().Validate(A.FileRequestRequest().WithText(new string('x', RequestRules.TextMax)).Build()).IsSuccess);
     }
 
     [Fact]

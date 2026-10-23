@@ -5,6 +5,7 @@ using Aw.Kernel;
 using Aw.Kernel.Telemetry;
 using Aw.Kernel.Telemetry.Testing;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Requests;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Host;
 using Aw.Sindri.Tests.ApiGoldens;
@@ -94,12 +95,12 @@ public sealed class SindriRequestToolTests(SharedMcpWorld shared) : IClassFixtur
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task The_21st_open_request_in_a_repo_is_SND_REQ_002()
+    public async Task The_201st_open_request_in_a_repo_is_SND_REQ_002()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var world = await McpWorld.Start(ct);
         await using var mcp = await McpSession.Open(world.Host, "alpha", ct);
-        for (var n = 1; n <= 20; n++)
+        for (var n = 1; n <= RequestRules.MaxOpenPerRepo; n++)
         {
             var filed = await mcp.Call("sindri_request", Request("note", string.Create(CultureInfo.InvariantCulture, $"Note {n}")), ct);
             Assert.NotEqual(true, filed.IsError);

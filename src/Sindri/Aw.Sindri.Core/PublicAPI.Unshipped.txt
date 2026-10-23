@@ -5869,12 +5869,10 @@ const Aw.Sindri.Core.Events.EventTypes.WorkflowRefused = "workflow.refused" -> s
 const Aw.Sindri.Core.Events.EventTypes.WorkflowShifted = "workflow.shifted" -> string!
 const Aw.Sindri.Core.Events.EventTypes.WorkflowStarted = "workflow.started" -> string!
 const Aw.Sindri.Core.Events.EventTypes.WorkflowTransition = "workflow.transition" -> string!
-const Aw.Sindri.Core.Events.StreamLimits.HumanReserved = 4 -> int
-const Aw.Sindri.Core.Events.StreamLimits.Session = 12 -> int
-const Aw.Sindri.Core.Events.StreamLimits.Total = 16 -> int
+const Aw.Sindri.Core.Events.StreamLimits.Total = 64 -> int
 const Aw.Sindri.Core.Jobs.JobLimits.LineChars = 200 -> int
 const Aw.Sindri.Core.Jobs.JobLimits.MaxProgressEvents = 2000 -> int
-const Aw.Sindri.Core.Jobs.JobLimits.MaxRunning = 8 -> int
+const Aw.Sindri.Core.Jobs.JobLimits.MaxRunning = 64 -> int
 const Aw.Sindri.Core.Jobs.JobLimits.QueueLines = 256 -> int
 const Aw.Sindri.Core.Jobs.JobLimits.ResultBytes = 16384 -> int
 const Aw.Sindri.Core.Jobs.JobLimits.ViewLines = 200 -> int
@@ -5882,10 +5880,10 @@ const Aw.Sindri.Core.Mcp.McpScope.ServerName = "sindri" -> string!
 const Aw.Sindri.Core.Profile.ApiSettings.DefaultPort = 7410 -> int
 const Aw.Sindri.Core.Profile.SindriProfile.CurrentSchemaVersion = 1 -> int
 const Aw.Sindri.Core.Profile.SindriProfile.DefaultTenant = "local" -> string!
-const Aw.Sindri.Core.Requests.RequestRules.MaxOpenPerRepo = 20 -> int
-const Aw.Sindri.Core.Requests.RequestRules.MaxOpenTotal = 50 -> int
-const Aw.Sindri.Core.Requests.RequestRules.TextMax = 2000 -> int
-const Aw.Sindri.Core.Views.DecisionRules.NoteMax = 2000 -> int
+const Aw.Sindri.Core.Requests.RequestRules.MaxOpenPerRepo = 200 -> int
+const Aw.Sindri.Core.Requests.RequestRules.MaxOpenTotal = 500 -> int
+const Aw.Sindri.Core.Requests.RequestRules.TextMax = 65536 -> int
+const Aw.Sindri.Core.Views.DecisionRules.NoteMax = 65536 -> int
 const Aw.Sindri.Core.Views.ViewNames.Decisions = "decisions" -> string!
 const Aw.Sindri.Core.Views.ViewNames.ItemAliases = "item-aliases" -> string!
 const Aw.Sindri.Core.Views.ViewNames.ItemTimeline = "item-timeline" -> string!
@@ -7277,7 +7275,7 @@ static Aw.Sindri.Core.Events.ServiceRan.operator !=(Aw.Sindri.Core.Events.Servic
 static Aw.Sindri.Core.Events.ServiceRan.operator ==(Aw.Sindri.Core.Events.ServiceRan? left, Aw.Sindri.Core.Events.ServiceRan? right) -> bool
 static Aw.Sindri.Core.Events.ServiceResumed.operator !=(Aw.Sindri.Core.Events.ServiceResumed? left, Aw.Sindri.Core.Events.ServiceResumed? right) -> bool
 static Aw.Sindri.Core.Events.ServiceResumed.operator ==(Aw.Sindri.Core.Events.ServiceResumed? left, Aw.Sindri.Core.Events.ServiceResumed? right) -> bool
-static Aw.Sindri.Core.Events.StreamLimits.Admits(Aw.Sindri.Core.Commands.CallerClass caller, int open, int openSessions) -> bool
+static Aw.Sindri.Core.Events.StreamLimits.Admits(int open) -> bool
 static Aw.Sindri.Core.Events.SuspensionSummary.operator !=(Aw.Sindri.Core.Events.SuspensionSummary? left, Aw.Sindri.Core.Events.SuspensionSummary? right) -> bool
 static Aw.Sindri.Core.Events.SuspensionSummary.operator ==(Aw.Sindri.Core.Events.SuspensionSummary? left, Aw.Sindri.Core.Events.SuspensionSummary? right) -> bool
 static Aw.Sindri.Core.Events.ViewsRebuilt.operator !=(Aw.Sindri.Core.Events.ViewsRebuilt? left, Aw.Sindri.Core.Events.ViewsRebuilt? right) -> bool
