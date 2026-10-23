@@ -13,6 +13,7 @@ internal sealed partial class WholeMapCanvas
     private const double DotRadius = 5;
     private const double TextSize = 12;
     private const double AreaLabelSize = 16;
+    private const double Behind = 0.42;   // what is not part of the answer stays drawn, dimmed (whole-map spec §3.1)
 
     /// <inheritdoc/>
     public override void Render(DrawingContext context)
@@ -24,25 +25,32 @@ internal sealed partial class WholeMapCanvas
         }
 
         var view = Viewport.Width > 0 ? new WholeRect(Viewport.X, Viewport.Y, Viewport.Width, Viewport.Height) : geometry.World;
-        if (geometry.ByArea)
+        if (geometry.Tiles.Count > 0)
         {
             DrawTiles(context, geometry, view);
-            return;
         }
 
-        var dots = WholeMapViewModel.UsesDots(Scale);
-        DrawEdges(context, geometry, view);
-        DrawHeaders(context, geometry, view, dots);
-        DrawNodes(context, geometry, view, dots);
+        if (geometry.Nodes.Count > 0 || geometry.Columns.Count > 0)
+        {
+            var dots = WholeMapViewModel.UsesDots(Scale);
+            DrawEdges(context, geometry, view);
+            DrawHeaders(context, geometry, view, dots);
+            DrawNodes(context, geometry, view, dots);
+        }
     }
 
     private void DrawEdges(DrawingContext context, WholeMapGeometry geometry, WholeRect view)
     {
         var solid = new Pen(Brush("Brush.WireHi"), 1.2 / Math.Max(Scale, 0.2));
         var dashed = new Pen(Brush("Brush.Wire"), 1.2 / Math.Max(Scale, 0.2), new DashStyle([6, 4], 0));
+        var hits = Map?.HitKeys ?? new HashSet<string>(StringComparer.Ordinal);
+        var zoomed = Map?.IsZoomed == true;
         foreach (var edge in geometry.Edges.Where(e => Overlaps(view, e.X1, e.Y1, e.X2, e.Y2)))
         {
-            context.DrawLine(edge.Confirmed ? solid : dashed, new Point(edge.X1, edge.Y1), new Point(edge.X2, edge.Y2));
+            using (context.PushOpacity(zoomed && !(hits.Contains(edge.From) && hits.Contains(edge.To)) ? Behind : 1))
+            {
+                context.DrawLine(edge.Confirmed ? solid : dashed, new Point(edge.X1, edge.Y1), new Point(edge.X2, edge.Y2));
+            }
         }
     }
 
@@ -62,19 +70,24 @@ internal sealed partial class WholeMapCanvas
     {
         var chip = Brush("Brush.Surface2");
         var ink = Brush("Brush.Ink");
+        var hits = Map?.HitKeys ?? new HashSet<string>(StringComparer.Ordinal);
+        var zoomed = Map?.IsZoomed == true;
         foreach (var node in geometry.Nodes.Where(n => n.Rect.Intersects(view)))
         {
             var (colour, pattern) = WholePalette.For(node.AreaIndex);
             var area = Brush(PaletteKey(colour));
-            if (dots)
+            using (context.PushOpacity(zoomed && !hits.Contains(node.Key) ? Behind : 1))
             {
-                DrawDot(context, node, area, pattern);
-                continue;
-            }
+                if (dots)
+                {
+                    DrawDot(context, node, area, pattern);
+                    continue;
+                }
 
-            var rect = new Rect(node.Rect.X, node.Rect.Y, node.Rect.Width, node.Rect.Height);
-            context.DrawRectangle(chip, new Pen(area, node.Confirmed ? 1.6 : 1, node.Confirmed ? null : new DashStyle([3, 2], 0)), rect, radiusX: Radius, radiusY: Radius);
-            context.DrawText(Text(node.Label, TextSize, ink, node.Rect.Width - 12), new Point(node.Rect.X + 6, node.Rect.Y + 6));
+                var rect = new Rect(node.Rect.X, node.Rect.Y, node.Rect.Width, node.Rect.Height);
+                context.DrawRectangle(chip, new Pen(area, node.Confirmed ? 1.6 : 1, node.Confirmed ? null : new DashStyle([3, 2], 0)), rect, radiusX: Radius, radiusY: Radius);
+                context.DrawText(Text(node.Label, TextSize, ink, node.Rect.Width - 12), new Point(node.Rect.X + 6, node.Rect.Y + 6));
+            }
         }
     }
 
