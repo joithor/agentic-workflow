@@ -273,12 +273,7 @@ unhandled exception in a handler is logged and answered 500 with `SND-API-005`, 
 binding refuses (JSON that doesn't read as the request, a malformed hash or id) is a 400 with `SND-CLI-003` and fixed
 text naming the method and path (a framework's message is logged, never answered). The loopback guard's 400 and 403, an
 unknown route's 404, a wrong method's 405 and a wrong `Content-Type`'s 415 carry no ProblemDetails body; the CLI
-reports an error answer without a code as `SND-API-004`, never as "not running". Every protected action confirms the same way (engine spec §4.2, S1-D5): the CLI
-asks `POST /sindri/workflow/challenges` for a challenge, shows its preview, reads the action text the human types and
-sends both back; a mistyped, expired, used or stale challenge is refused (`SND-RECIPE-009` for a recipe,
-`SND-PROFILE-004` for the profile) and records nothing. Since API P1 every request is classed from its caller headers and every command runs through the command
-chain (Callers and auth, Command chain, below): approving is a `protected` action, so only a `human` caller at a
-terminal with this start's token gets past the chain. The threat model guards honest mistakes (`docs/csharp/bugfix.md`).
+reports an error answer without a code as `SND-API-004`, never as "not running". No protected action asks for a typed phrase any more (owner decision q93): the CLI prints the preview and calls the route, and the request's `challenge`, `typed` and `heldMs` are ignored. Since API P1 every request is classed from its caller headers and every command runs through the command chain (Callers and auth, Command chain, below). The threat model guards honest mistakes (`docs/csharp/bugfix.md`).
 Device-bound approvals for the UI (passkeys, §17.21 D6) come with the UI's action forms.
 
 ## Callers and auth
@@ -697,7 +692,6 @@ There is no decision, desk, protected, job or step-report tool, and no `sindri_c
 | `SND-PROFILE-001` | No profile file, or it can't be read |
 | `SND-PROFILE-002` | The profile doesn't parse or doesn't match the schema (file, key path, expected type, fix) |
 | `SND-PROFILE-003` | The hash to approve isn't the live profile's |
-| `SND-PROFILE-004` | Approving needs an interactive terminal and the typed confirmation |
 | `SND-PROFILE-005` | No profile is approved, or the latest approval's snapshot is missing or changed |
 | `SND-PROFILE-006` | The approved snapshots can't be read or written (permissions, a full disk) |
 | `SND-LEDGER-001` | The ledger's schema doesn't match this build |

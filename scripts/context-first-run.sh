@@ -14,7 +14,7 @@
 #      1. Scratch home: AW_SINDRI_HOME=$AW_STATE_DIR/sindri-app-firstrun (0700, marker .first-run-scratch), port 7481.
 #      2. Profile: `sindri profile init`, then this repo as the one repo, the context-docs-refresh service, and the
 #         `index:` and `context:` sections. Written only when the home has no profile yet.
-#      3. STOP for approval. Approval is the human's: a session is refused (SND-AUTH-002), so the script prints the exact
+#      3. STOP for approval. Approval needs no typed phrase, but the script stops so you read what changed first; it prints the exact
 #         `sindri profile approve <hash>` for you to type, and exits 3. Run `continue` after.
 #      4. Serve: `sindri --headless` (the control plane and its Temporal dev server), then `sindri status --json`.
 #      5. First code index build: `sindri services run code-index-main-move` (there is no build verb: the service starts the
@@ -288,7 +288,7 @@ approval_gate() {
   fi
   if [ "$PROFILE_RC" = 0 ]; then note "the profile is approved ($HASH)"; return 0; fi
   cat >&2 <<EOF
-The profile needs your approval. Approval is human-only (SND-AUTH-002 refuses a session), so type this at your own terminal:
+The profile needs your approval. Read what changed, then approve it with:
 
   AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port $sindri_cmd profile approve $HASH
 
@@ -418,7 +418,7 @@ recipes_gate() {
   sx_out recipe list
   if printf '%s\n' "$OUT" | grep -Eq '^workflow\.scoping@[0-9a-f]+ approved'; then note "workflow.scoping is approved"; return 0; fi
   cat >&2 <<EOF
-The scoping recipe isn't approved yet. Approval is human-only, so type this at your own terminal:
+The scoping recipe isn't approved yet. Approve it with:
 
   AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port $sindri_cmd recipe approve-all
 
