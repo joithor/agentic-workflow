@@ -1,0 +1,56 @@
+{
+  "id": "workflow.design",
+  "hash": "sha256:e3b5a1c400000000000000000000000000000000000000000000000000000000",
+  "version": 7,
+  "name": null,
+  "inputs": [
+    {
+      "key": "fact:scopePacket",
+      "label": "Scope packet (frozen)",
+      "type": "packet",
+      "kind": "packet",
+      "required": true,
+      "generate": null
+    }
+  ],
+  "outputs": [
+    {
+      "key": "fact:escalation",
+      "label": "Questions",
+      "type": "payload",
+      "from": "lens-log"
+    },
+    {
+      "key": "fact:answers",
+      "label": "Answers",
+      "type": "payload",
+      "from": "ask"
+    }
+  ],
+  "urgency": "work",
+  "orderedBy": "path",
+  "states": [
+    {
+      "id": "lens-log",
+      "order": 1,
+      "branchOf": null
+    },
+    {
+      "id": "ask",
+      "order": 2,
+      "branchOf": null
+    },
+    {
+      "id": "revise",
+      "order": 3,
+      "branchOf": null
+    },
+    {
+      "id": "designed",
+      "order": 4,
+      "branchOf": null
+    }
+  ],
+  "loops": [],
+  "displayName": "Design"
+}
