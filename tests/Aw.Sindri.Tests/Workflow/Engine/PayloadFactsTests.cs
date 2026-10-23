@@ -1,6 +1,5 @@
 using System.Text;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Prove;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -102,11 +101,10 @@ public sealed class PayloadFactsTests
         var lines = PayloadFacts.WithShapes(["Goal: failing tests."], PayloadFacts.OutputsOf(recipe, red));
 
         var shape = Assert.Single(lines!, static l => l.Contains("fact:redTests", StringComparison.Ordinal));
-        Assert.Contains("keyed by item id", shape, StringComparison.Ordinal);
-        Assert.Contains("\"tests\"", shape, StringComparison.Ordinal);
-        Assert.Contains("\"commit\"", shape, StringComparison.Ordinal);
-        Assert.Contains("\"appOnly\"", shape, StringComparison.Ordinal);
-        Assert.Contains(RedTestsFact.Shape, shape, StringComparison.Ordinal);
+        Assert.Contains("one key per acceptance item, and nothing else at the top level", shape, StringComparison.Ordinal);
+        Assert.Contains("\"AC-1\": { \"tests\": [\"<test id>\"], \"commit\": \"<red commit sha>\" }", shape, StringComparison.Ordinal);
+        Assert.Contains("\"AC-3\": { \"appOnly\": { \"signal\": \"<signal id>\" }, \"commit\": \"<red commit sha>\" }", shape, StringComparison.Ordinal);
+        Assert.Contains("write the commit on every item", shape, StringComparison.Ordinal);
     }
 
     private static BlockDescriptor Descriptor(params FactKey[] outputs) =>

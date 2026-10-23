@@ -17595,7 +17595,7 @@ Aw.Sindri.Core.Prove.RedTestsFact.Entries.get -> System.Collections.Generic.IRea
 Aw.Sindri.Core.Prove.RedTestsFact.Problem.get -> string?
 Aw.Sindri.Core.Prove.RedTestsFact.RedCommit() -> (string? Commit, string? Problem)
 Aw.Sindri.Core.Prove.RedTestsFact.RedTestsFact(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Prove.RedEntry!>! Entries, string? Problem) -> void
-const Aw.Sindri.Core.Prove.RedTestsFact.Shape = "" -> string!
+const Aw.Sindri.Core.Prove.RedTestsFact.Shape = "{ \"<acceptance item id>\": { \"tests\": [\"<test id>\" | { \"id\": \"<test id>\", \"path\": \"<test file>\" }], \"appOnly\": { \"signal\": \"<signal id>\" }, \"commit\": \"<red commit sha>\", \"output\": \"<failing run, trimmed>\" } } (one key per acceptance item and nothing else at the top level; the value may also be just a list of test ids)" -> string!
 static Aw.Sindri.Core.Prove.RedTestsFact.Parse(System.Text.Json.Nodes.JsonNode? fact) -> Aw.Sindri.Core.Prove.RedTestsFact!
 Aw.Sindri.Core.Prove.RedEntry
 Aw.Sindri.Core.Prove.RedEntry.AppOnly.get -> bool
