@@ -206,6 +206,15 @@ public static partial class SindriErrors
     /// <summary>SND-LAUNCH-024: the agent CLI's trust file can't be updated for the Step's worktree (unparseable, locked or not writable); the file is left untouched and the launch is refused.</summary>
     public static readonly ErrorDefinition LaunchTrustUnavailable = new("SND-LAUNCH-024", ErrorKind.Unavailable, "The agent CLI's trust file couldn't be updated");
 
+    /// <summary>SND-LAUNCH-025: the launcher's host is T3 and T3 Code can't be reached (not running, its 't3' CLI missing, or a tool call failed); nothing starts.</summary>
+    public static readonly ErrorDefinition LaunchT3Unavailable = new("SND-LAUNCH-025", ErrorKind.Unavailable, "T3 Code can't be reached");
+
+    /// <summary>SND-LAUNCH-026: the launcher's host is T3 and no T3 Code project contains the repo; nothing starts (fix: 't3 project add &lt;repo&gt;').</summary>
+    public static readonly ErrorDefinition LaunchT3NoProject = new("SND-LAUNCH-026", ErrorKind.Invalid, "The repo isn't a T3 Code project");
+
+    /// <summary>SND-LAUNCH-027: the launcher's host is T3 and T3 has no enabled provider for the launch's agent (claude-code, codex, cursor); nothing starts.</summary>
+    public static readonly ErrorDefinition LaunchT3NoProvider = new("SND-LAUNCH-027", ErrorKind.Invalid, "T3 Code can't run that agent");
+
     /// <summary>SND-LAUNCH-013: a Step asked for a model or a policy, and the entry's matching form is 'none'; nothing launches (launcher L-17).</summary>
     public static readonly ErrorDefinition LaunchFormUnsupported = new("SND-LAUNCH-013", ErrorKind.Invalid, "The agent entry can't express the Step's model or policy");
 
@@ -275,6 +284,12 @@ public static partial class SindriErrors
     /// <summary>SND-FORGE-004: the forge can't be reached, is rate limiting, or a push failed.</summary>
     public static readonly ErrorDefinition ForgeUnavailable = new("SND-FORGE-004", ErrorKind.Unavailable, "The forge is unavailable");
 
+    /// <summary>SND-ENGINE-001: the Temporal server, or the SDK call to it, didn't answer (API spec §3.8, E-30).</summary>
+    public static readonly ErrorDefinition EngineUnavailable = new("SND-ENGINE-001", ErrorKind.Unavailable, "The Temporal server didn't answer (fix: sindri doctor; sindri serve starts the dev server)");
+
+    /// <summary>SND-ENGINE-404: Temporal has no execution for that address, a retention edge (API spec §3.8, E-30).</summary>
+    public static readonly ErrorDefinition EngineNotFound = new("SND-ENGINE-404", ErrorKind.NotFound, "Temporal has no execution for that address");
+
     /// <summary>Every Sindri error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
@@ -285,6 +300,6 @@ public static partial class SindriErrors
         LaunchNotFound, LaunchViewerFailed, LaunchNoViewer, LaunchAgentMissing, LaunchRepoMissing, LaunchNoSession, LaunchInterrupted, LaunchInProgress, LaunchTimedOut, LaunchBudgetReached,
         LauncherInvalid, LaunchNotApproved, LaunchFormUnsupported, LaunchPrePushForeign, LaunchPushRefused, LaunchTrustUnavailable, LaunchSessionIdTimedOut, AuthLaunchSecret, SessionSourceFailed, SessionsUnavailable, SessionsTestOverride, SessionNotFound, SessionConflict,
         WorktreeInvalid, WorktreeConflict, WorktreeGitFailed, WorktreeDirty, SetupFolderInvalid, SetupRepoExists, SetupConfirmationRefused, SetupRepoNotInProfile, SetupOnyxCredentialsMissing, SetupOnyxNotWaiting, SetupProfileNotApproved,
-        NoForge, ForgeRefused, ForgeNotFound, ForgeUnavailable,
+        NoForge, ForgeRefused, ForgeNotFound, ForgeUnavailable, EngineUnavailable, EngineNotFound,
     ];
 }

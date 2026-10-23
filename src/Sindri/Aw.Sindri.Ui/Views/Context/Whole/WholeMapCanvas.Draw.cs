@@ -148,8 +148,8 @@ internal sealed partial class WholeMapCanvas
         }
     }
 
-    private static string Labels(PlacedTile tile) => Aw.Sindri.Ui.ViewModels.Labels.ContextWholeMembers(tile.Members) + " · " +
-        string.Join(", ", tile.KindCounts.Take(3).Select(k => Aw.Sindri.Ui.ViewModels.Labels.ContextWholeKindCount(k.Key, k.Value)));
+    private static string Labels(PlacedTile tile) => ViewModels.Labels.ContextWholeMembers(tile.Members) + " · " +
+        string.Join(", ", tile.KindCounts.Take(3).Select(k => ViewModels.Labels.ContextWholeKindCount(k.Key, k.Value)));
 
     private static bool Overlaps(WholeRect view, double x1, double y1, double x2, double y2) =>
         Math.Max(x1, x2) >= view.X && Math.Min(x1, x2) <= view.Right && Math.Max(y1, y2) >= view.Y && Math.Min(y1, y2) <= view.Bottom;

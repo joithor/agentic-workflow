@@ -50,7 +50,7 @@ public sealed class WholeMapSizeTests
     {
         using var world = new MapWorld();
         _ = await world.ImportYaml(FiveHundredNodes());
-        var query = new WholeMapQuery(Detail: null, [], Aw.Context.Core.Map.MapRead.Current);
+        var query = new WholeMapQuery(Detail: null, [], Context.Core.Map.MapRead.Current);
 
         var cold = Stopwatch.StartNew();
         var first = (await world.Engine.WholeMap(query, MapWorld.Human, MapWorld.None)).Value;

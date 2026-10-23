@@ -59,17 +59,18 @@ internal sealed partial class NeedsYouProjection
 
     private async ValueTask<Result<Unit>> Settle(IViewRows rows, (ItemRow Item, EngineItemPart? Part) at, WorkflowEventPayload payload, LedgerEvent recorded, CancellationToken cancellationToken)
     {
-        var instance = WorkflowInstanceId.Of(InstanceAddress.From(payload.Instance)).Value;
-        var existing = await rows.Get<NeedsYouRowRecord>(ViewNames.NeedsYou, ParkPrefix + instance, cancellationToken).ConfigureAwait(false);
+        var address = InstanceAddress.From(payload.Instance);
+        var existing = await rows.Get<NeedsYouRowRecord>(ViewNames.NeedsYou, NeedsYouRowIds.Park(address).Value, cancellationToken).ConfigureAwait(false);
         if (existing.IsError)
         {
             return existing.Error;
         }
 
-        var plan = new SettlePlan(instance, at.Item, at.Part,
-            at.Part is { } part ? Wanted(at.Item, part, payload) : null,
+        var nested = at.Part is { Ended: false } ? existing.Value?.Nested : null;   // the parked descendants outlive the root's own park, not the root
+        var plan = new SettlePlan(address, at.Item, at.Part,
+            at.Part is { } part ? Wanted(at.Item, part, payload, nested) : null,
             at.Part is { Ended: false } live ? Kept(live, payload) : null,   // a takeover row stays until the handback or the end; a park row stays across a row that doesn't say
-            at.Part is { Ended: false } ? existing.Value?.Nested : null);   // the parked descendants outlive the root's own park, not the root
+            nested);
         foreach (var prefix in new[] { ParkPrefix, "desk:", "takeover:" })
         {
             var outcome = await SettlePrefix(rows, plan, prefix, recorded, cancellationToken).ConfigureAwait(false);
@@ -82,8 +83,8 @@ internal sealed partial class NeedsYouProjection
         return Unit.Value;
     }
 
-    /// <summary>What a root's event settles: the instance, the item and part, the row it wants, the prefix that stays and the parked descendants its park row carries.</summary>
-    private sealed record SettlePlan(string Instance, ItemRow Item, EngineItemPart? Part, (string Prefix, Func<DateTimeOffset, NeedsYouRow> Build)? Wanted, string? Keeps, IReadOnlyList<NestedPark>? Nested);
+    /// <summary>What a root's event settles: the instance's address, the item and part, the row it wants, the prefix that stays and the parked descendants its park row carries.</summary>
+    private sealed record SettlePlan(InstanceAddress Address, ItemRow Item, EngineItemPart? Part, (string Prefix, Func<DateTimeOffset, NeedsYouRow> Build)? Wanted, string? Keeps, IReadOnlyList<NestedPark>? Nested);
 
     /// <summary>One row to put: its id, how to build it and the parked descendants its record carries.</summary>
     private sealed record RowPut(string Id, Func<DateTimeOffset, NeedsYouRow> Build, IReadOnlyList<NestedPark>? Nested);
@@ -94,7 +95,7 @@ internal sealed partial class NeedsYouProjection
         var park = string.Equals(prefix, ParkPrefix, StringComparison.Ordinal);
         if (plan.Wanted is { } wanted && string.Equals(wanted.Prefix, prefix, StringComparison.Ordinal))
         {
-            return await PutEngine(rows, new RowPut(prefix + plan.Instance, wanted.Build, park ? plan.Nested : null), recorded, cancellationToken).ConfigureAwait(false);
+            return await PutEngine(rows, new RowPut(IdOf(prefix, plan.Address), wanted.Build, park ? plan.Nested : null), recorded, cancellationToken).ConfigureAwait(false);
         }
 
         if (string.Equals(plan.Keeps, prefix, StringComparison.Ordinal))
@@ -104,8 +105,16 @@ internal sealed partial class NeedsYouProjection
 
         return park && plan.Nested is { Count: > 0 } parked && plan.Part is { } part
             ? await PutEngine(rows, NestedPut(plan.Item, InstanceAddress.From(part.Address), parked), recorded, cancellationToken).ConfigureAwait(false)   // the root doesn't park: the deepest parked descendant does
-            : await rows.Delete(ViewNames.NeedsYou, prefix + plan.Instance, cancellationToken).ConfigureAwait(false);
+            : await rows.Delete(ViewNames.NeedsYou, IdOf(prefix, plan.Address), cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>The stored id of the row with <paramref name="prefix"/> for the instance at <paramref name="address"/>.</summary>
+    private static string IdOf(string prefix, InstanceAddress address) => prefix switch
+    {
+        "desk:" => NeedsYouRowIds.Desk(address).Value,
+        "takeover:" => NeedsYouRowIds.Takeover(address).Value,
+        _ => NeedsYouRowIds.Park(address).Value,
+    };
 
     /// <summary>The row prefix that stays as it is: a takeover's while the instance is taken over, a park's or escalation's when this row carries no detail to say what changed.</summary>
     private static string? Kept(EngineItemPart part, WorkflowEventPayload payload) => part.Suspension switch
@@ -115,7 +124,8 @@ internal sealed partial class NeedsYouProjection
         _ => null,
     };
 
-    private (string Prefix, Func<DateTimeOffset, NeedsYouRow> Build)? Wanted(ItemRow item, EngineItemPart part, WorkflowEventPayload payload)
+    /// <summary>The row a root's event wants. A park that only points at a child (a mirror) describes the deepest parked descendant instead, when one is known, so its cli is that descendant's own answer.</summary>
+    private (string Prefix, Func<DateTimeOffset, NeedsYouRow> Build)? Wanted(ItemRow item, EngineItemPart part, WorkflowEventPayload payload, IReadOnlyList<NestedPark>? nested)
     {
         var address = InstanceAddress.From(part.Address);
         if (part.Ended)
@@ -125,6 +135,8 @@ internal sealed partial class NeedsYouProjection
 
         return part.Suspension switch
         {
+            SuspensionKind.Park or SuspensionKind.Escalation when payload.Detail?.Delta.Suspension is { } suspension && nested is { Count: > 0 } parked && NeedsYouRows.PointsAtChild(suspension, address) =>
+                (ParkPrefix, NestedPut(item, address, parked).Build),
             SuspensionKind.Park or SuspensionKind.Escalation when payload.Detail?.Delta.Suspension is { } suspension =>
                 (ParkPrefix, since => NeedsYouRows.ForPark(item, new ParkRowInput(address, suspension, payload.Detail?.Reason), since, scrubber)),
             SuspensionKind.Takeover when string.Equals(payload.Trigger, TriggerNames.TakeoverIdle, StringComparison.Ordinal) =>
@@ -149,7 +161,7 @@ internal sealed partial class NeedsYouProjection
     /// <summary>
     /// A descendant's row (API spec section 3.6): its park, if its delta shows one, joins the parked descendants of its root and its leaving the park
     /// (a resume, an answer, a cancel, its end) leaves them. The root's 'park' row then describes the deepest parked descendant (the longest address, the
-    /// later park on a tie), unless the root parks itself, when its own row wins and the descendants wait on the record. A row stored without detail says nothing.
+    /// later park on a tie), unless the root parks itself with an answer of its own, when its own row wins and the descendants wait on the record (a root whose park only points at a child gives way to the deepest one). A row stored without detail says nothing.
     /// </summary>
     private async ValueTask<Result<Unit>> Nested(LedgerEvent recorded, IViewRows rows, string key, WorkflowEventPayload payload, CancellationToken cancellationToken)
     {
@@ -165,8 +177,37 @@ internal sealed partial class NeedsYouProjection
             return item.Error;
         }
 
-        return item.Value is { } row && EngineItemStates.PartOf(row.Engine, root) is { Ended: false } part   // no live root holding this descendant: nothing to do
-            ? await Descended(rows, new DescendantRow(row, part, InstanceAddress.From(root), payload, recorded), cancellationToken).ConfigureAwait(false)
+        if (item.Value is not { } row || EngineItemStates.PartOf(row.Engine, root) is not { Ended: false } part)   // no live root holding this descendant: nothing to do
+        {
+            return Unit.Value;
+        }
+
+        var descendant = new DescendantRow(row, part, InstanceAddress.From(root), payload, recorded);
+        var parked = await Descended(rows, descendant, cancellationToken).ConfigureAwait(false);
+        return parked.IsError ? parked : await ChildDesk(rows, descendant, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// A descendant's own 'desk:' row (q65): its delta shows an open desk run (a frame with a run and the desk runtime, the same reading a root's part has), so the row is
+    /// put; a frame whose run closed or whose runtime is the agent's, a park or takeover, or an outcome deletes it; a row that says none of these leaves it standing.
+    /// </summary>
+    private async ValueTask<Result<Unit>> ChildDesk(IViewRows rows, DescendantRow descendant, CancellationToken cancellationToken)
+    {
+        if (!InstanceAddress.TryFrom(descendant.Payload.Instance, out var address))
+        {
+            return Unit.Value;   // not an engine address: no desk row to settle, and never a stall
+        }
+
+        var id = NeedsYouRowIds.Desk(address).Value;
+        var delta = descendant.Payload.Detail!.Delta;   // why: Nested returns before this when the row has no detail
+        var idle = delta.Outcome is not null || delta.Suspension is not null;
+        if (!idle && delta.Frame is { Run: not null } frame && (frame.Runtime ?? StepRuntime.Desk) == StepRuntime.Desk)
+        {
+            return await PutEngine(rows, new RowPut(id, since => NeedsYouRows.ForDeskTask(descendant.Item, address, since, scrubber), Nested: null), descendant.Recorded, cancellationToken).ConfigureAwait(false);
+        }
+
+        return idle || delta.Frame is not null
+            ? await rows.Delete(ViewNames.NeedsYou, id, cancellationToken).ConfigureAwait(false)
             : Unit.Value;
     }
 
@@ -175,7 +216,7 @@ internal sealed partial class NeedsYouProjection
 
     private async ValueTask<Result<Unit>> Descended(IViewRows rows, DescendantRow descendant, CancellationToken cancellationToken)
     {
-        var id = ParkPrefix + WorkflowInstanceId.Of(descendant.Root).Value;
+        var id = NeedsYouRowIds.Park(descendant.Root).Value;
         var existing = await rows.Get<NeedsYouRowRecord>(ViewNames.NeedsYou, id, cancellationToken).ConfigureAwait(false);
         if (existing.IsError)
         {
@@ -185,9 +226,12 @@ internal sealed partial class NeedsYouProjection
         var parked = ParkedDescendants(existing.Value?.Nested, descendant);
         if (descendant.Part.Suspension is SuspensionKind.Park or SuspensionKind.Escalation)
         {
-            return existing.Value is { } own
-                ? await rows.Put(ViewNames.NeedsYou, id, own with { Nested = parked.Count == 0 ? null : parked }, cancellationToken).ConfigureAwait(false)   // the root's own row wins; the descendants wait on its record
-                : Unit.Value;
+            return existing.Value switch
+            {
+                { Row.Via: not null } when parked.Count > 0 => await PutEngine(rows, NestedPut(descendant.Item, descendant.Root, parked), descendant.Recorded, cancellationToken).ConfigureAwait(false),   // the root only points at a child: the deepest parked descendant says more
+                { } own => await rows.Put(ViewNames.NeedsYou, id, own with { Nested = parked.Count == 0 ? null : parked }, cancellationToken).ConfigureAwait(false),   // the root's own row wins; the descendants wait on its record
+                null => Unit.Value,
+            };
         }
 
         return parked.Count == 0
@@ -209,7 +253,7 @@ internal sealed partial class NeedsYouProjection
     }
 
     private RowPut NestedPut(ItemRow item, InstanceAddress root, IReadOnlyList<NestedPark> parked) =>
-        new(ParkPrefix + WorkflowInstanceId.Of(root).Value, since => NeedsYouRows.ForPark(item, Deepest(root, parked), since, scrubber), parked);
+        new(NeedsYouRowIds.Park(root).Value, since => NeedsYouRows.ForPark(item, Deepest(root, parked), since, scrubber), parked);
 
     /// <summary>The input of the row that describes the deepest of the parked descendants: the longest address, the later park on a tie.</summary>
     private static ParkRowInput Deepest(InstanceAddress root, IReadOnlyList<NestedPark> parked)
