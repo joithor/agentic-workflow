@@ -1,5 +1,6 @@
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
+using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.Components;
 
 namespace Aw.Sindri.Ui.ViewModels.Instance;
@@ -32,6 +33,24 @@ internal sealed partial class ExpandedStateViewModel
 
     /// <summary>The run line's accessible name.</summary>
     public string RunName { get; private set; } = string.Empty;
+
+    /// <summary>Raised when a review has nothing to open and the person is taken to its fact; the frame opens its facts panel there.</summary>
+    internal event EventHandler<FrameFactEventArgs>? FactRequested;
+
+    /// <summary>Opens links and files for the reviews; the frame gives its own, nothing opens without one.</summary>
+    internal ILauncher Launcher { get; init; } = NullLauncher.Instance;
+
+    /// <summary>A button for each thing the desk step asks the person to read (the design, the plan, the PR); empty when it asks none.</summary>
+    public IReadOnlyList<DeskReviewViewModel> Reviews => field ??= DeskReviewViewModel.Of(_current.Desk?.Reviews, Launcher, fact => FactRequested?.Invoke(this, new FrameFactEventArgs(fact)));
+
+    /// <summary>True when there is a review button.</summary>
+    public bool HasReviews => Reviews.Count > 0;
+
+    /// <summary>Why the step stands as it does, in words for a code this build knows and as the code for any other; empty when the engine serves none.</summary>
+    public string ReasonLine => _current.Status.ReasonCode is { Length: > 0 } code ? Labels.ReasonCodeWords(code) : string.Empty;
+
+    /// <summary>True when there is a reason line.</summary>
+    public bool HasReasonLine => ReasonLine.Length > 0;
 
     /// <summary>Raised when the session link is followed.</summary>
     internal event EventHandler<FrameSessionEventArgs>? SessionRequested;

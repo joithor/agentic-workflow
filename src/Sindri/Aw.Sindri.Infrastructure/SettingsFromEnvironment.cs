@@ -21,7 +21,7 @@ internal static class SettingsFromEnvironment
         {
             TempDirectory = environment("TMPDIR") is { Length: > 0 } temp ? Path.GetFullPath(temp) : Path.GetTempPath(),
             StateDirectory = Path.GetFullPath(StateRoot(environment)),
-            Deploy = string.Equals(environment("AW_SINDRI_DEPLOY"), "pod", StringComparison.OrdinalIgnoreCase) ? DeployMode.Pod : DeployMode.Desktop,
+            Deploy = DeployModes.Of(environment("AW_SINDRI_DEPLOY")),
         };
     }
 
