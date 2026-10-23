@@ -72,4 +72,12 @@ public sealed class SetupRecipesTests
 
         Assert.Equal(new RecipesFact(0, 0), fact);
     }
+
+    [Fact]
+    public void A_stale_approval_is_not_approved_even_when_the_plan_does_not_name_it()
+    {
+        var fact = SetupRecipes.Count([Line(Step, 2, RecipeStanding.Approved, StaleReason.PinDrift)], _nothingWaits);
+
+        Assert.Equal(new RecipesFact(1, 0), fact);
+    }
 }
