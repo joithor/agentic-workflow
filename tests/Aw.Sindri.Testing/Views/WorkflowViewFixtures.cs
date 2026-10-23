@@ -41,6 +41,7 @@ public static class WorkflowViewFixtures
     private static readonly RecipeShape _devTriage = FixtureRecipes.DevTriage;
     private static readonly RecipeShape _devDesk = FixtureRecipes.DevDesk;
     private static readonly RecipeShape _fork = FixtureRecipes.Fork;
+    private static readonly RecipeShape _design = FixtureRecipes.Design;
 
     private static Func<StateCell, StateCell> Shape(params (string State, Func<StateCell, StateCell> Change)[] changes) =>
         cell => changes.Where(c => c.State == cell.State).Aggregate(cell, (acc, c) => c.Change(acc));
@@ -570,6 +571,27 @@ public static class WorkflowViewFixtures
                 Produced(_triage, "fact:alert", "sentry #8812 TypeError in tabs.layout", At(10, 12, 12, 22), "service:webhook", Ref(factKey: "fact:alert")),
                 Fake(_triage, "fact:severity", FactStatus.Pending, "awaiting your answer", pending: pending)),
             [], Counts(3, 0, 1));
+    }
+
+    /// <summary>
+    /// ITM-01JN2: the design review's ask desk after a round in which two lenses raised three questions (owner decision q60, 2026-10-23): ONE desk, 'fact:escalation' holds all three
+    /// (a list: kind, question, options, lens, finding) and the desk asks for 'fact:answers', one {question, answer} entry per question.
+    /// </summary>
+    public static InstanceDetail LensAskMulti()
+    {
+        var row = Row("ITM-01JN2/design/1", _design, "ask", Today(12, 22), null, Subject("text", "ITM-01JN2", "Add expiry to sessions"),
+            _design.Cells("ask"), "needs your answers (desk)", "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
+        var status = DeskStatus(row, "Answer the 3 questions the reviewers raised on ITM-01JN2", "4.1", ("fact:answers", "<file>"),
+            DeskLines(new StatusInput("fact:escalation", "escalation.json", Hash("5c1e9a30")), 604_560, "ask"));
+        var pending = new FactPending(true, ["answers.payload"], Act("CompleteStep"));
+        return Detail(row, "Add expiry to sessions", PathOrdering.Path,
+            new CurrentState("ask", new StepDeclaration("active", "step.lens.ask", "asks you to decide questions the reviewers could not settle"), [],
+                new DeskForm(RunToken.From("4.1"), [new DeskOutput("fact:answers", FactType.Payload, true)], ["answers.payload"], Act("CompleteStep")), status),
+            _design.Facts(
+                Produced(_design, "fact:scopePacket", "scope packet, frozen", At(10, 12, 9, 0), "step.design.intake", Ref(factKey: "fact:scopePacket")),
+                Produced(_design, "fact:escalation", "3 questions: Keep the legacy flow? · Which table owns expiry? · Who is the expiry for?", At(10, 12, 12, 22), "step.lens.log", Ref(factKey: "fact:escalation")),
+                Fake(_design, "fact:answers", FactStatus.Pending, "awaiting your answers", pending: pending)),
+            [], Counts(9, 0, 1));
     }
 
     /// <summary>pagerduty P-2211: escalated at the severity gate; the accept needs a terminal.</summary>
