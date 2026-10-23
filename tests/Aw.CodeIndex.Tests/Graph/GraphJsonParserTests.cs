@@ -121,6 +121,14 @@ public sealed class GraphJsonParserTests
     }
 
     [Fact]
+    public void A_callable_class_node_is_a_class_and_a_plain_callable_is_not()
+    {
+        var parsed = Parse(Graph([Node("c", "Report", extra: "\"_callable\": true, \"_callable_class\": true"), Node("f", "run()", extra: "\"_callable\": true")], []));
+
+        Assert.Equal([("c", true), ("f", false)], Real(parsed).Select(n => (n.NodeKey, n.IsClass)));
+    }
+
+    [Fact]
     public void A_file_node_is_not_a_symbol_and_a_call_from_it_is_dropped_and_counted()
     {
         var parsed = Parse(Graph([Node("file", "a.ts", extra: "\"file_type\": \"code\""), Node("f", "f()")], [Calls("file", "f")]));

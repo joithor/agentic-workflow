@@ -19,6 +19,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="Now">The engine's next sentence, at most 80 characters.</param>
 /// <param name="Answer">The answer the instance waits for, as on its status.</param>
 /// <param name="Actions">The action ids allowed now.</param>
+/// <param name="Again">The address of the instance this one reruns; null (left out of the JSON) for any other.</param>
 /// <param name="StartedBy">Who started the instance, in the actor form of the step runs; null when nobody is recorded.</param>
 /// <param name="StartedAt">When it started; null for an older instance.</param>
 /// <param name="LineStage">The current state id of the root workflow.line instance the row belongs to (its own state for a root line row); null when its root is not a line instance.</param>
@@ -42,4 +43,5 @@ public sealed record InstanceSummary(
     string? StartedBy = null,
     DateTimeOffset? StartedAt = null,
     string? LineStage = null,
-    string? RootAddress = null);
+    string? RootAddress = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] InstanceAddress? Again = null);

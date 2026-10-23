@@ -23,7 +23,7 @@ internal sealed class RealIndex : IDisposable
         var snapshot = new GitRepoSnapshot();
         Store = new SqliteIndexStore(Path.Combine(_directory, "index"), TimeProvider.System);
         Heavy = heavy ?? new FakeHeavyJobLock();
-        Service = new BuildCodeIndexService(new FakeRepoHeads(), snapshot, new StructureWriter(snapshot, [new CSharpParser()], new FileParseQuarantine(Path.Combine(_directory, "index")), new RedactingBodyScrubber()), new BuildLayers(new EmbeddingsLayer(Embedder, TimeProvider.System), new GraphLayer(snapshot, TimeProvider.System, graph)), Store, Heavy, TimeProvider.System);
+        Service = new BuildCodeIndexService(new FakeRepoHeads(), snapshot, new StructureWriter(snapshot, [new CSharpParser()], new FileParseQuarantine(Path.Combine(_directory, "index")), new RedactingBodyScrubber()), new BuildLayers(new EmbeddingsLayer(Embedder, TimeProvider.System), new GraphLayer(snapshot, TimeProvider.System, new RedactingBodyScrubber(), graph)), Store, Heavy, TimeProvider.System);
         Facade = new CodeIndexFacade(Service, Store, Embedder, graph);
     }
 
