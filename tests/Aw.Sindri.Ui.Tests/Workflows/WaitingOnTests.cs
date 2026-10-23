@@ -22,7 +22,7 @@ public sealed class WaitingOnTests
     [Fact]
     public void A_server_that_serves_none_keeps_the_word_worked_out_from_the_status()
     {
-        var row = Row(null);
+        var row = Row(waitingOn: null);
 
         Assert.Equal(row.Status.Kind == RunStatusKind.Running ? "AI agent" : row.WaitingOn, row.WaitingOn);
     }
@@ -32,8 +32,8 @@ public sealed class WaitingOnTests
     {
         var words = FixtureInstances.Rows.Select(r => new InstanceRowViewModel(r, new FakeClipboard(), new FakeTimeProvider(A.Noon))).Select(r => r.WaitingOn).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
 
-        Assert.Contains("You", words);
-        Assert.Contains("Sindri", words);
-        Assert.Contains(string.Empty, words);
+        Assert.Contains("You", words, StringComparer.Ordinal);
+        Assert.Contains("Sindri", words, StringComparer.Ordinal);
+        Assert.Contains(string.Empty, words, StringComparer.Ordinal);
     }
 }

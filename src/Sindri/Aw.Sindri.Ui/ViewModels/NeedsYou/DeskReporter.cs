@@ -36,11 +36,21 @@ internal sealed class DeskReporter(ISindriApi api, Func<Uri?> apiUrl, ILauncher?
         var desk = read.Value.Current.Desk;
 
         var complete = read.Value.Current.Status.Commands.FirstOrDefault(c => c.Verb == StatusVerb.Complete);
-        var recipe = await api.Recipe(url, read.Value.Recipe.Id, hash: null, CancellationToken.None).ConfigureAwait(true);
-        var state = recipe.IsSuccess ? recipe.Value.States.FirstOrDefault(s => string.Equals(s.State, read.Value.Current.State, StringComparison.Ordinal)) : null;
-        var card = read.Value.Facts.Any(f => string.Equals(f.Key, PrStatusReader.Key, StringComparison.Ordinal)) ? await MergeCard(url, instanceId).ConfigureAwait(true) : null;
+        var state = await StateOf(url, read.Value).ConfigureAwait(true);
+        var card = await MergeCardOf(url, read.Value).ConfigureAwait(true);
         return new DeskTarget(instanceId, desk?.Run ?? string.Empty, complete, state?.Why, OutcomeText(state, "approve"), OutcomeText(state, "revise"), desk?.Recommended, card) { Verbs = verbs };
     }
+
+    // The recipe state the instance is in, for its why and its outcomes; null when the recipe cannot be read.
+    private async Task<RecipeStateView?> StateOf(Uri url, InstanceDetail detail)
+    {
+        var recipe = await api.Recipe(url, detail.Recipe.Id, hash: null, CancellationToken.None).ConfigureAwait(true);
+        return recipe.IsSuccess ? recipe.Value.States.FirstOrDefault(s => string.Equals(s.State, detail.Current.State, StringComparison.Ordinal)) : null;
+    }
+
+    // The pull request card, when the instance lists the fact.
+    private async Task<MergeCardViewModel?> MergeCardOf(Uri url, InstanceDetail detail) =>
+        detail.Facts.Any(f => string.Equals(f.Key, PrStatusReader.Key, StringComparison.Ordinal)) ? await MergeCard(url, detail.Id).ConfigureAwait(true) : null;
 
     // The recipe verbs of the instance: one per distinct verb the engine serves, in its order. The merge asks first until the engine marks which verbs are destructive.
     private static List<DeskVerb> VerbsOf(IReadOnlyList<AllowedCommandView>? commands) =>

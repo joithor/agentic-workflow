@@ -5,7 +5,6 @@ using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api.Workflow;
-using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 
 namespace Aw.Sindri.Ui.Tests.Views;
@@ -14,6 +13,8 @@ namespace Aw.Sindri.Ui.Tests.Views;
 [Lane(TestLane.Integration)]
 public sealed class NeedsYouVerbsViewTests : FrameHost
 {
+    private static readonly string[] _verbs = ["merge", "rework", "comments", "resync-docs", "check"];
+
     private async Task<(Window Window, ViewModels.Shell.ShellViewModel Shell)> MergeStop()
     {
         var instance = JsonNode.Parse(GoldenFiles.Api("workflow-instance", "dev-desk-round-trip"))!;
@@ -23,7 +24,7 @@ public sealed class NeedsYouVerbsViewTests : FrameHost
         }
 
         instance["allowedCommands"] = new JsonArray(
-            new[] { "merge", "rework", "comments", "resync-docs", "check" }
+            _verbs
                 .Select(v => (JsonNode)new JsonObject { ["actionId"] = "ApplyCommand:command", ["cli"] = "sindri workflow command ITM-1/pr-babysitter/1 " + v, ["verb"] = v }).ToArray());
         Server.NeedsYouView = RouteAnswer.Api("needs-you", "desk-task");
         Server.InstanceBody = _ => new RouteAnswer(HttpStatusCode.OK, instance.ToJsonString());
@@ -45,8 +46,8 @@ public sealed class NeedsYouVerbsViewTests : FrameHost
 
         Assert.Equal(["Merge", "Send back to rework", "Held comments", "Resync docs", "Check now"],
             Verbs(window).Select(b => b.GetVisualDescendants().OfType<TextBlock>().Single().Text), StringComparer.Ordinal);
-        Assert.True(Verbs(window)[0].Classes.Contains("destructive"));
-        Assert.All(Verbs(window).Skip(1), b => Assert.False(b.Classes.Contains("destructive")));
+        Assert.Contains("destructive", Verbs(window)[0].Classes, StringComparer.Ordinal);
+        Assert.All(Verbs(window).Skip(1), b => Assert.DoesNotContain("destructive", b.Classes, StringComparer.Ordinal));
         Assert.False(Visible(window, "NeedsYouTerminal"));
     });
 
