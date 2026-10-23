@@ -33,7 +33,7 @@ internal sealed class ReadLedgerService(ILedgerReader ledger, CallerEventView vi
         }
 
         var (filter, head) = checkedInput.Value;
-        var page = await view.Read(new EventQuery(request.After, request.Max, filter, true), cancellationToken).ConfigureAwait(false);
+        var page = await view.Read(new EventQuery(request.After, request.Max, filter, IncludeNonPublic: true), cancellationToken).ConfigureAwait(false);
         return page.IsError ? page.Error : new LedgerPage(page.Value.Events, MoreAfter(page.Value, request.Max, head) ? page.Value.ScannedTo : null);
     }
 
