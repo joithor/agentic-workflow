@@ -7,6 +7,7 @@ namespace Aw.Sindri.Infrastructure.Launch;
 internal static class StepFactWriter
 {
     private const string Extension = ".json";
+    private const string Marker = "# sindri step fact files (written by the launcher)";
 
     /// <summary>
     /// Writes each file under <paramref name="runDirectory"/>, replacing our own file an earlier attempt left. When the directory is in a git worktree, a name git
@@ -78,6 +79,7 @@ internal static class StepFactWriter
 
         _ = Directory.CreateDirectory(Path.GetDirectoryName(exclude)!);   // why: a path always has a directory
         var lead = File.Exists(exclude) && new FileInfo(exclude).Length > 0 && !(await File.ReadAllTextAsync(exclude, cancellationToken).ConfigureAwait(false)).EndsWith('\n') ? "\n" : string.Empty;
-        await File.AppendAllTextAsync(exclude, lead + string.Join('\n', missing) + "\n", cancellationToken).ConfigureAwait(false);
+        var marker = present.Contains(Marker, StringComparer.Ordinal) ? string.Empty : Marker + "\n";   // a person can see what added the lines, and remove them
+        await File.AppendAllTextAsync(exclude, lead + marker + string.Join('\n', missing) + "\n", cancellationToken).ConfigureAwait(false);
     }
 }

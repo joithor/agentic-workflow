@@ -43,6 +43,7 @@ public sealed class StepFactWriterGitTests : IDisposable
         Assert.Equal("\"newer\"", File.ReadAllText(Path.Combine(_repo, "brief.json")));
         var exclude = await File.ReadAllLinesAsync(Path.Combine(_repo, ".git", "info", "exclude"));
         Assert.Single(exclude, "/brief.json");
+        Assert.Single(exclude, "# sindri step fact files (written by the launcher)");
     }
 
     [Fact]
