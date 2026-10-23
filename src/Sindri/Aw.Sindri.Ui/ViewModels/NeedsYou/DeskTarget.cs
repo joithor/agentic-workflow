@@ -11,7 +11,7 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// <param name="IfSendBack">What sending it back does, as the state's first revise outcome says; null when not served.</param>
 /// <param name="Recommended">The outcome the step before the stop recommends, with its why; null when none is served.</param>
 /// <param name="MergeCard">The pull request card, when the instance lists the fact "fact:prStatus" and it read; null otherwise.</param>
-internal sealed record DeskTarget(string InstanceId, string Run, StatusCommand? Complete, string? Why = null, string? IfApprove = null, string? IfSendBack = null, DeskRecommendation? Recommended = null, MergeCardViewModel? MergeCard = null)
+internal sealed record DeskTarget(string InstanceId, string Run, StatusCommand? Complete, string? Why = null, string? IfApprove = null, string? IfSendBack = null, DeskRecommendation? Recommended = null, MergeCardViewModel? MergeCard = null, IReadOnlyList<DeskQuestion>? Questions = null)
 {
     /// <summary>True when the step serves its complete command as protected: only the user's terminal may send it (a merge), so the app shows the served command and sends nothing.</summary>
     internal bool IsTerminalOnly => Complete is { } command && string.Equals(command.Class, "protected", StringComparison.Ordinal);

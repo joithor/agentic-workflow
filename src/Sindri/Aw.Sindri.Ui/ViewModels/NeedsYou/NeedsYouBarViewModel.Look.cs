@@ -60,8 +60,25 @@ internal sealed partial class NeedsYouBarViewModel
     /// <summary>True while the primary asks first.</summary>
     public bool IsAsking => Mode == NeedsYouBarMode.Confirming;
 
-    /// <summary>The primary button's words: the decision's own, else "Approve", or "Approve?" while it asks.</summary>
-    public string ApproveWord => Kind == BarKind.Decision ? AcceptControl?.Action.Label ?? Labels.NeedsYouApprove : IsAsking ? Labels.NeedsYouApproveAsk : Labels.NeedsYouApprove;
+    /// <summary>The ask step's questions, each with its answer field; empty for every other request.</summary>
+    public IReadOnlyList<DeskQuestionViewModel> Questions { get; private set; } = [];
+
+    /// <summary>True while the card asks questions: the answers are what the step needs.</summary>
+    public bool HasQuestions => Kind == BarKind.Desk && Questions.Count > 0;
+
+#pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
+    /// <summary>The heading over the questions.</summary>
+    public string QuestionsHeading => Labels.NeedsYouQuestionsHeading;
+#pragma warning restore CA1822, MA0041
+
+    /// <summary>True when every question has an answer.</summary>
+    public bool AllAnswered => Questions.All(q => q.IsAnswered);
+
+    /// <summary>The line that says every question needs an answer, while one is open; empty otherwise.</summary>
+    public string QuestionsHint => HasQuestions && !AllAnswered ? Labels.NeedsYouAnswerAll : string.Empty;
+
+    /// <summary>The primary button's words: the decision's own, "Send answers" for the ask step, else "Approve", or "Approve?" while it asks.</summary>
+    public string ApproveWord => HasQuestions ? Labels.NeedsYouSendAnswers : Kind == BarKind.Decision ? AcceptControl?.Action.Label ?? Labels.NeedsYouApprove : IsAsking ? Labels.NeedsYouApproveAsk : Labels.NeedsYouApprove;
 
     /// <summary>The primary button's accessible name: the words and the request.</summary>
     public string ApproveName => Labels.NeedsYouBarName(ApproveWord, Subject);
@@ -76,7 +93,7 @@ internal sealed partial class NeedsYouBarViewModel
     };
 
     /// <summary>True when the primary can be pressed now.</summary>
-    public bool PrimaryEnabled => ShowsPrimary && Enabled && !IsSending && (Kind != BarKind.Desk || _target is not null) && (Kind != BarKind.Decision || AcceptControl is { IsEnabled: true });
+    public bool PrimaryEnabled => ShowsPrimary && Enabled && !IsSending && (Kind != BarKind.Desk || _target is not null) && (!HasQuestions || AllAnswered) && (Kind != BarKind.Decision || AcceptControl is { IsEnabled: true });
 
     /// <summary>True when the terminal button shows: a merge, or a protected action the app does not confirm itself (yet); it copies the served command and sends nothing.</summary>
     public bool ShowsTerminal => !ShowsConfirm && (TerminalOnly || ConfirmKind == NeedsYouConfirmKind.Terminal || (Kind is BarKind.Settings or BarKind.Run && PrimaryControl is { IsProtected: true }));
@@ -93,7 +110,7 @@ internal sealed partial class NeedsYouBarViewModel
     /// <summary>True when the send back button shows (disabled with its reason on a settings request).</summary>
     public bool ShowsSendBack => Kind switch
     {
-        BarKind.Desk => DeskControl is not null || TerminalOnly,
+        BarKind.Desk => (DeskControl is not null || TerminalOnly) && !HasQuestions,
         BarKind.Decision => RejectControl is not null,
         BarKind.Settings => true,
         BarKind.None or BarKind.Run => false,
