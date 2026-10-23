@@ -8,6 +8,12 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// <summary>The facts a recipe declares 'payload' (spec §3.2): JSON a later Step reads as a structure, so an agent that writes one must write a JSON object or array.</summary>
 public static class PayloadFacts
 {
+    // What a payload's fields are, for the facts whose readers need more than "JSON": appended to the shape line of every Step that writes the fact.
+    private static readonly Dictionary<string, string> _shapes = new(StringComparer.Ordinal)
+    {
+        ["fact:design"] = "Shape: { \"spec\": \"<the whole design as Markdown, following the style pack>\", \"sections\": [...], \"coverage\": {...}, \"decisions\": [...], \"deferred\": [...], \"resolutions\": [...], \"signals\": [...], \"contracts\": [...], \"acceptance\": {...}, \"escapes\": [...], \"runs\": [...] }; the spec text is required (it becomes spec.md), and the design checks read each other field by name, so keep the ones already in the fact.",
+    };
+
     private const string Fix = "write the structure itself, with any text inside a field, and report again";
 
     /// <summary>The facts <paramref name="recipe"/> declares with type 'payload', in its inputs and outputs.</summary>
@@ -44,7 +50,8 @@ public static class PayloadFacts
     /// <summary>The brief line that states <paramref name="fact"/>'s shape.</summary>
     /// <param name="fact">The fact.</param>
     /// <returns>The line.</returns>
-    public static string Instruction(FactKey fact) => $"{fact.Value} must hold a JSON object or array, not prose or Markdown; put any text inside a field.";
+    public static string Instruction(FactKey fact) =>
+        $"{fact.Value} must hold a JSON object or array, not prose or Markdown; put any text inside a field." + (_shapes.TryGetValue(fact.Value, out var shape) ? " " + shape : string.Empty);
 
     /// <summary>The payload facts <paramref name="descriptor"/>'s Step writes under <paramref name="recipe"/>: its declared outputs the recipe types 'payload', in the descriptor's order.</summary>
     /// <param name="recipe">The recipe.</param>

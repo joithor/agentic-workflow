@@ -72,6 +72,16 @@ public sealed class PayloadFactsTests
     }
 
     [Fact]
+    public void The_design_fact_says_its_spec_field_holds_the_Markdown_and_other_facts_get_no_hint()
+    {
+        var line = PayloadFacts.Instruction(_design);
+
+        Assert.Contains("\"spec\": \"<the whole design as Markdown", line, StringComparison.Ordinal);
+        Assert.Contains("\"sections\"", line, StringComparison.Ordinal);
+        Assert.DoesNotContain("Shape:", PayloadFacts.Instruction(_notes), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Shapes_follow_the_Steps_own_instructions_and_a_Step_without_either_has_none()
     {
         var lines = PayloadFacts.WithShapes(["Goal: draft."], [_design]);
