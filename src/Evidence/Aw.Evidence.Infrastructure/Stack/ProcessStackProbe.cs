@@ -71,6 +71,14 @@ internal sealed partial class ProcessStackProbe(string docker, DatabaseSettings 
     }
 
     /// <inheritdoc/>
+    public ValueTask<Result<Unit>> DatabaseExistsAsync(string database, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("the slot database check is not built yet (cutover unit 1.4)");
+
+    /// <inheritdoc/>
+    public ValueTask<Result<string?>> ListenerDirectoryAsync(int port, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("the slot checkout check is not built yet (cutover unit 1.4)");
+
+    /// <inheritdoc/>
     public void Dispose() => _http.Dispose();
 
     [GeneratedRegex("<title[^>]*>(?<text>.*?)</title>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]

@@ -9,6 +9,9 @@ internal sealed partial class WholeMapViewModel
     /// <summary>The nodes a query's answer holds, drawn at full strength while the rest of the map stays behind them; empty when nothing is zoomed to.</summary>
     internal IReadOnlySet<string> HitKeys { get; private set; } = new HashSet<string>(StringComparer.Ordinal);
 
+    /// <summary>Whether the map read is the overview of features, which a query reaches through "locate". It stays so while zoomed, when the drawn geometry holds nodes.</summary>
+    internal bool AnswerByArea => Answer is { } answer && string.Equals(answer.Detail, "areas", StringComparison.Ordinal);
+
     /// <summary>Whether the camera is on a query's answer.</summary>
     public bool IsZoomed { get; private set; }
 
