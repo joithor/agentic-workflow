@@ -14,6 +14,7 @@ using Aw.Kernel;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.EngineReads;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Health;
 using Aw.Sindri.Core.Items;
@@ -124,7 +125,7 @@ namespace Aw.Sindri.Host;
 /// <summary>The package's one source-generated JSON context (spec §4b.3): through AwJson.CreateOptions, and an http host's resolver after ASP.NET's ProblemDetails context.</summary>
 [JsonSerializable(typeof(AgentLimits))]
 [JsonSerializable(typeof(Error)), JsonSerializable(typeof(SindriProfile)), JsonSerializable(typeof(ControlEndpoint)), JsonSerializable(typeof(Ping))]
-[JsonSerializable(typeof(ApiProblem)), JsonSerializable(typeof(ProcessStarted)), JsonSerializable(typeof(ProcessStopped)), JsonSerializable(typeof(WorkflowEventPayload))]
+[JsonSerializable(typeof(ApiProblem)), JsonSerializable(typeof(ApiProblemBuilding)), JsonSerializable(typeof(ApiProblemNoMap)), JsonSerializable(typeof(ProcessStarted)), JsonSerializable(typeof(ProcessStopped)), JsonSerializable(typeof(WorkflowEventPayload))]
 [JsonSerializable(typeof(ProfileApproved)), JsonSerializable(typeof(Heartbeat)), JsonSerializable(typeof(CommandHandled)), JsonSerializable(typeof(ServiceRan))]
 [JsonSerializable(typeof(ProfileChecked)), JsonSerializable(typeof(ViewsRebuilt)), JsonSerializable(typeof(ItemCreated)), JsonSerializable(typeof(ItemCreatedPublic))]
 [JsonSerializable(typeof(ItemStateChanged)), JsonSerializable(typeof(ItemLinked)), JsonSerializable(typeof(RequestFiled)), JsonSerializable(typeof(RequestFiledPublic))]
@@ -201,6 +202,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(RecipeTransitionLabelView)), JsonSerializable(typeof(RecipeTransitionView)), JsonSerializable(typeof(RecipeOutcomeText)), JsonSerializable(typeof(RecipeFactView)), JsonSerializable(typeof(RecipeManifest)), JsonSerializable(typeof(ManifestEntry)), JsonSerializable(typeof(ManifestInvalid))]
 [JsonSerializable(typeof(EvalShippedResponse)), JsonSerializable(typeof(ShippedRecipeEval))]
 [JsonSerializable(typeof(RecipeOutputView)), JsonSerializable(typeof(RecipeStateView)), JsonSerializable(typeof(RecipeView)), JsonSerializable(typeof(Round)), JsonSerializable(typeof(RecipeStats)), JsonSerializable(typeof(RecipeStatsRow))]   // API P12: GET /workflow/recipes/{id}/stats
+[JsonSerializable(typeof(EngineView)), JsonSerializable(typeof(EngineInstanceList)), JsonSerializable(typeof(EngineHistory))]   // API P13: GET /engine, /engine/instances, /engine/instances/{id}/history (their members are reached through these)
 [JsonSerializable(typeof(StateCell)), JsonSerializable(typeof(StatusAnswer)), JsonSerializable(typeof(StatusBudget)), JsonSerializable(typeof(StatusChild))]
 [JsonSerializable(typeof(StatusCommand)), JsonSerializable(typeof(StatusDrift)), JsonSerializable(typeof(StatusFields)), JsonSerializable(typeof(StatusHeader))]
 [JsonSerializable(typeof(StatusInput)), JsonSerializable(typeof(StatusInjection)), JsonSerializable(typeof(StatusPaused)), JsonSerializable(typeof(StatusTimeout)), JsonSerializable(typeof(StepDeclaration))]

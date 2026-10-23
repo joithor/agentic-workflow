@@ -4508,6 +4508,45 @@ override Aw.Sindri.Features.InitProfile.InitProfileResponse.GetHashCode() -> int
 override Aw.Sindri.Features.InitProfile.InitProfileResponse.ToString() -> string!
 static Aw.Sindri.Features.InitProfile.InitProfileResponse.operator !=(Aw.Sindri.Features.InitProfile.InitProfileResponse? left, Aw.Sindri.Features.InitProfile.InitProfileResponse? right) -> bool
 static Aw.Sindri.Features.InitProfile.InitProfileResponse.operator ==(Aw.Sindri.Features.InitProfile.InitProfileResponse? left, Aw.Sindri.Features.InitProfile.InitProfileResponse? right) -> bool
+Aw.Sindri.Features.GetEngine.GetEngineRequest
+Aw.Sindri.Features.GetEngine.GetEngineRequest.<Clone>$() -> Aw.Sindri.Features.GetEngine.GetEngineRequest!
+Aw.Sindri.Features.GetEngine.GetEngineRequest.Equals(Aw.Sindri.Features.GetEngine.GetEngineRequest? other) -> bool
+Aw.Sindri.Features.GetEngine.GetEngineRequest.GetEngineRequest() -> void
+override Aw.Sindri.Features.GetEngine.GetEngineRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetEngine.GetEngineRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetEngine.GetEngineRequest.ToString() -> string!
+static Aw.Sindri.Features.GetEngine.GetEngineRequest.operator !=(Aw.Sindri.Features.GetEngine.GetEngineRequest? left, Aw.Sindri.Features.GetEngine.GetEngineRequest? right) -> bool
+static Aw.Sindri.Features.GetEngine.GetEngineRequest.operator ==(Aw.Sindri.Features.GetEngine.GetEngineRequest? left, Aw.Sindri.Features.GetEngine.GetEngineRequest? right) -> bool
+Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest
+Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest.<Clone>$() -> Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest!
+Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest.State.get -> string?
+Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest.State.init -> void
+Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest.Stuck.get -> string?
+Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest.Stuck.init -> void
+Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest.Deconstruct(out string? State, out string? Stuck) -> void
+Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest.Equals(Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest? other) -> bool
+Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest.ListEngineInstancesRequest(string? State = null, string? Stuck = null) -> void
+override Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest.ToString() -> string!
+static Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest.operator !=(Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest? left, Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest? right) -> bool
+static Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest.operator ==(Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest? left, Aw.Sindri.Features.ListEngineInstances.ListEngineInstancesRequest? right) -> bool
+Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest
+Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.<Clone>$() -> Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest!
+Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.Instance.get -> string?
+Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.Instance.init -> void
+Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.Address.get -> string?
+Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.Address.init -> void
+Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.Page.get -> string?
+Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.Page.init -> void
+Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.Deconstruct(out string? Instance, out string? Address, out string? Page) -> void
+Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.Equals(Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest? other) -> bool
+Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.GetEngineHistoryRequest(string? Instance = null, string? Address = null, string? Page = null) -> void
+override Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.ToString() -> string!
+static Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.operator !=(Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest? left, Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest? right) -> bool
+static Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.operator ==(Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest? left, Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest? right) -> bool
 Aw.Sindri.Features.CodeIndexReads.CodeIndexStatusView.Health.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.CodeIndexReads.RepoHealth!>!
 Aw.Sindri.Features.CodeIndexReads.CodeIndexStatusView.Health.init -> void
 Aw.Sindri.Features.CodeIndexReads.RepoHealth
