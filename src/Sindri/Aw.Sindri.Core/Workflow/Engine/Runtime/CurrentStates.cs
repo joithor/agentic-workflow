@@ -63,7 +63,14 @@ internal static class CurrentStates
             [.. task.Outputs.Where(o => DeskChecks.Applies(task, o)).Select(o => new DeskOutput(o.Fact.Value, FactTypes.Parse(TypeOf(interpreted, o.Fact)), Required: true))],
             [.. task.Outputs.Where(o => DeskChecks.Applies(task, o)).Select(o => DeskChecks.Id(interpreted, o.Fact))],
             ActionId.From("CompleteStep"),
-            Recommendations.Of(recommendation, task.Outcomes));
+            Recommendations.Of(recommendation, task.Outcomes),
+            Reviews(task, interpreted));
+
+    /// <summary>What the Step's block declares its desk reviews, as the form lists it (path and url are filled at read time); null when the block declares none.</summary>
+    private static List<DeskReview>? Reviews(DeskTask task, InterpretedRecipe interpreted) =>
+        interpreted.Catalog.Find(task.Step)?.Reviews is { Count: > 0 } declared
+            ? [.. declared.Select(static r => new DeskReview(r.Fact.Value, r.Kind))]
+            : null;
 
     private static string? TypeOf(InterpretedRecipe interpreted, FactKey fact) => interpreted.Recipe.Outputs.FirstOrDefault(r => r.Key == fact)?.Type ?? Recipes.FactTypes.Default;
 }

@@ -9,6 +9,6 @@ namespace Aw.Sindri.Features.GetInstance;
 /// <param name="names">The recipes' display names; null serves none.</param>
 internal sealed class DetailContexts(TimeProvider clock, IRecipeDisplayNames? names = null)
 {
-    public InstanceDetailContext Of(string title, ParentRef? parent, ViewCounts counts, RecipeId recipe, IReadOnlyList<StepRun> stepRuns) =>
-        new(title, parent, counts, clock.GetUtcNow(), stepRuns, names?.Of(recipe));
+    public InstanceDetailContext Of(string title, ParentRef? parent, ViewCounts counts, RecipeId recipe, IReadOnlyList<StepRun> stepRuns, SessionHandle? session = null, IReadOnlyDictionary<string, DeskReviewTarget>? reviewTargets = null) =>
+        new(title, parent, counts, clock.GetUtcNow(), stepRuns, names?.Of(recipe), session, reviewTargets);
 }

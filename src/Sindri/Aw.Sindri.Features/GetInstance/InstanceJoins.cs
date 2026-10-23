@@ -1,4 +1,6 @@
+using System.Text;
 using Aw.Sindri.Core.Launches;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Views;
 
@@ -15,22 +17,41 @@ internal sealed class InstanceJoins(ILaunchViews launches, IFactContents content
     /// <summary>The session of <paramref name="view"/>'s open agent run.</summary>
     /// <param name="view">The instance's view.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
-    /// <returns>The provider and id once the launch knows them; null for a desk run, a run not yet launched, or a launch that can't be read.</returns>
-    public ValueTask<SessionHandle?> Session(InstanceView view, CancellationToken cancellationToken)
+    /// <returns>The launch's agent and session id (the one known at start, else the reported one), the handle the Agents page addresses it by; null for a desk run, a launch that knows no id yet, a missing launch or one that can't be read.</returns>
+    public async ValueTask<SessionHandle?> Session(InstanceView view, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(view);
-        _ = (launches, cancellationToken);
-        return ValueTask.FromResult<SessionHandle?>(null);
+        if (view.AgentRun?.Launch is not { } launch || !LaunchId.TryFrom(launch, out var id))
+        {
+            return null;
+        }
+
+        var row = await launches.Get(id, cancellationToken).ConfigureAwait(false);
+        return row is { IsSuccess: true, Value: { ResumableId: { } session } found } ? new SessionHandle(found.Target.Value, session.Value) : null;
     }
 
     /// <summary>Where each fact the open desk reviews opens.</summary>
     /// <param name="view">The instance's view.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
-    /// <returns>The targets by fact key; empty when the desk reviews nothing or none can be read.</returns>
-    public ValueTask<IReadOnlyDictionary<string, DeskReviewTarget>> ReviewTargets(InstanceView view, CancellationToken cancellationToken)
+    /// <returns>The targets by fact key; empty when the desk reviews nothing, and no entry for a fact that is not held or can't be read.</returns>
+    public async ValueTask<IReadOnlyDictionary<string, DeskReviewTarget>> ReviewTargets(InstanceView view, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(view);
-        _ = (contents, cancellationToken);
-        return ValueTask.FromResult<IReadOnlyDictionary<string, DeskReviewTarget>>(new Dictionary<string, DeskReviewTarget>());
+        var targets = new Dictionary<string, DeskReviewTarget>(StringComparer.Ordinal);
+        foreach (var review in view.Desk?.Reviews ?? [])
+        {
+            if (view.FactShas?.GetValueOrDefault(review.Fact) is not { } sha)
+            {
+                continue;
+            }
+
+            var bytes = await contents.Read(new FactValue("fact:sha256:" + sha, sha, HeadSha: null), cancellationToken).ConfigureAwait(false);
+            if (bytes.IsSuccess)
+            {
+                targets[review.Fact] = DeskReviewTargets.Of(Encoding.UTF8.GetString(bytes.Value.Span));
+            }
+        }
+
+        return targets;
     }
 }

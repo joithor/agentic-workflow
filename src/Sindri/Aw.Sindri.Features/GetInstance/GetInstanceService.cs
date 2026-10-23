@@ -67,7 +67,9 @@ internal sealed class GetInstanceService(IInstanceDirectory directory, IInstance
             return runs.Error;
         }
 
-        return InstanceViews.Detail(view.Value, contexts.Of(title, parent, counts.Value, view.Value.Recipe.Id, runs.Value));
+        var session = joins is null ? null : await joins.Session(view.Value, cancellationToken).ConfigureAwait(false);
+        var targets = joins is null ? null : await joins.ReviewTargets(view.Value, cancellationToken).ConfigureAwait(false);
+        return InstanceViews.Detail(view.Value, contexts.Of(title, parent, counts.Value, view.Value.Recipe.Id, runs.Value, session, targets));
     }
 
     /// <summary>The title of the item the instance is on; its address when it has none or the view has no row.</summary>

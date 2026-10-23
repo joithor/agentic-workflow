@@ -120,7 +120,7 @@ internal sealed class StepSpec
     /// <param name="fact">The fact key.</param>
     /// <param name="kind">What it is.</param>
     /// <returns>The review.</returns>
-    public static ReviewSpec Review(string fact, DeskReviewKind kind) => new(FactKey.From(fact), kind);
+    public static ReviewSpec ReviewOf(string fact, DeskReviewKind kind) => new(FactKey.From(fact), kind);
 
     /// <summary>The facts the Step writes, and the descriptor.</summary>
     /// <param name="outputs">The outputs.</param>
