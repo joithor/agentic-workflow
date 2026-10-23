@@ -194,6 +194,21 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-133: a 'context.extract.graphify' limit (timeoutMinutes, maxSnapshotMB, maxFileMB, maxGraphMB) isn't a whole number from 0 (no limit) up. The message names the key path.</summary>
     public static readonly ErrorDefinition GraphifyLimitInvalid = new("SND-CONTEXT-133", ErrorKind.Invalid, "A graphify limit is invalid");
 
+    /// <summary>
+    /// SND-CONTEXT-070: the Linear url isn't Linear's own API host over https, or a loopback address whose token is an 'env:' or 'file:' pointer (spec §14 S-L2: the real keychain key never goes to a local listener).
+    /// The message names the key path 'context.sources.linear.url' and the fix, never the token.
+    /// </summary>
+    public static readonly ErrorDefinition LinearUrlRefused = new("SND-CONTEXT-070", ErrorKind.Invalid, "The Linear url isn't Linear's API host, or a loopback address with an env or file token");
+
+    /// <summary>SND-CONTEXT-071: Linear refused the key (HTTP 401 or 403, or an authentication error): it is missing, revoked or lacks read access. Fix: create a read-only personal API key and store it behind 'context.sources.linear.token'.</summary>
+    public static readonly ErrorDefinition LinearKeyRefused = new("SND-CONTEXT-071", ErrorKind.Forbidden, "Linear refused the key: it is missing, revoked or can't read");
+
+    /// <summary>SND-CONTEXT-072: Linear answered with an unexpected status or shape, or GraphQL errors on a query the adapter wrote. The query goes on without Linear (Unavailable).</summary>
+    public static readonly ErrorDefinition LinearUnexpectedReply = new("SND-CONTEXT-072", ErrorKind.Unavailable, "Linear answered with an unexpected shape");
+
+    /// <summary>SND-CONTEXT-073: Linear has no such record at the cited version: it was deleted, left the profile's teams, or changed since it was cited.</summary>
+    public static readonly ErrorDefinition LinearRecordNotFound = new("SND-CONTEXT-073", ErrorKind.NotFound, "Linear has no such record at that version");
+
     /// <summary>SND-CONTEXT-090: the query's rerank (Phase 8, 'context.ranker.rerank') could not order the items: the model was unavailable, over budget, or answered no order. The query went on in its feature or fusion order; the answer lists 'rerank' as degraded (never a route failure).</summary>
     public static readonly ErrorDefinition RerankUnavailable = new("SND-CONTEXT-090", ErrorKind.Unavailable, "The rerank could not order the items");
 
@@ -209,7 +224,7 @@ public static class ContextErrors
          McpRepoMissing, McpArgumentsInvalid, McpToolUnknown, McpRegisterRepoUnknown, McpRegisterFailed, McpUserWide,
          NoMap, MapFileInvalid, MapNodeUndefined, ExportOutsideHome, MapFileChanged, ProbeFileInvalid, NoProbeFile, AmbiguousAnchor, ProbesRegressed,
          HeavyLockBusy, LabelingUnavailable, ReviewFileNoMatch, NoDraftMap, RepoOutsideScope, PromoteRefused, ReviewTargetStale, ExtractionUnreadable,
-         OnyxKeyRefused, OnyxUnexpectedReply, OnyxDocumentNotFound, OnyxKeyNotServiceAccount, OnyxNotPinnedOrLoopback, SyncRunning, ModelAnswerRefused, SyncSourceUnknown, SyncCapped,
+         OnyxKeyRefused, OnyxUnexpectedReply, OnyxDocumentNotFound, OnyxKeyNotServiceAccount, OnyxNotPinnedOrLoopback, LinearUrlRefused, LinearKeyRefused, LinearUnexpectedReply, LinearRecordNotFound, SyncRunning, ModelAnswerRefused, SyncSourceUnknown, SyncCapped,
          NoEligibleSample, NoBriefSource, UnknownArm, AdjudicationCapped, CommitUnknown, NoMergeBase, MapVersionNotRetained, HistoryDeadline, IntentNotSynced, CodeGlobInvalid, CodeGlobsTooMany, CodeSearchTimedOut, RecognizerInvalid, RecognizerOverCap, DraftChanged, MapHeadInvalid, GraphifyLimitInvalid, RerankUnavailable];
 
     /// <summary>

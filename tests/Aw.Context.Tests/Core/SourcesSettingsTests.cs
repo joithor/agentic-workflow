@@ -36,6 +36,19 @@ public sealed class SourcesSettingsTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_linear_entry_with_a_token_gives_the_native_adapters_settings_and_teams_alone_give_none()
+    {
+        var native = Read("""{"sources":{"linear":{"token":"keychain:linear/work-read","teams":["SPL"]}}}""").Value;
+        var teamsOnly = Read("""{"sources":{"linear":{"teams":["SPL"]}}}""").Value;
+
+        Assert.Equal(("keychain:linear/work-read", "api.linear.app"), (native.Linear!.Token, native.Linear.Address));
+        Assert.Equal(["SPL"], native.Linear.Teams, StringComparer.Ordinal);
+        Assert.Equal(["SPL"], native.LinearTeams, StringComparer.Ordinal);
+        Assert.Null(teamsOnly.Linear);
+        Assert.Equal(["SPL"], teamsOnly.LinearTeams, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_managed_onyx_entry_as_sindri_onyx_up_writes_it_is_read_with_managed_set()
     {
         // The same four keys YamlOnyxProfileWriter writes: url, token, version, managed: true.
@@ -56,7 +69,9 @@ public sealed class SourcesSettingsTests
     [Theory, Trait("Lane", "unit")]
     [InlineData("""{"sources":{"slack":{}}}""", "SND-CONTEXT-001", "context.sources.slack:")]
     [InlineData("""{"sources":{"onyx":{"url":"http://127.0.0.1:3000","token":"env:K","version":"v4.9.0","apiKey":"x"}}}""", "SND-CONTEXT-001", "context.sources.onyx.apiKey:")]
-    [InlineData("""{"sources":{"linear":{"teams":["SPL"],"token":"env:K"}}}""", "SND-CONTEXT-001", "context.sources.linear.token:")]
+    [InlineData("""{"sources":{"linear":{"teams":["SPL"],"apiKey":"x"}}}""", "SND-CONTEXT-001", "context.sources.linear.apiKey:")]
+    [InlineData("""{"sources":{"linear":{"teams":["SPL"],"url":"https://evil.example/graphql","token":"env:K"}}}""", "SND-CONTEXT-070", "context.sources.linear.url:")]
+    [InlineData("""{"sources":{"linear":{"teams":["SPL"],"url":"https://api.linear.app/graphql"}}}""", "SND-CONTEXT-002", "context.sources.linear.token:")]
     [InlineData("""{"sources":[]}""", "SND-CONTEXT-001", "context.sources:")]
     [InlineData("""{"sources":{"onyx":"http://127.0.0.1:3000"}}""", "SND-CONTEXT-001", "context.sources.onyx:")]
     [InlineData("""{"sources":{"linear":{"teams":["eng team"]}}}""", "SND-CONTEXT-001", "context.sources.linear.teams:")]

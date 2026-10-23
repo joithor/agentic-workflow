@@ -40,14 +40,14 @@ public sealed class FakeLinearServer : IAsyncDisposable
     public static async Task<FakeLinearServer> Start(FakeServerOptions? options = null)
     {
         var token = options?.Token ?? DefaultToken;
-        var server = await LoopbackServer.Start("fake-linear", r => Handle(r, token)).ConfigureAwait(false);
+        var server = await LoopbackServer.Start("fake-linear", r => Handle(r, token, options), options?.Delay ?? default).ConfigureAwait(false);
         return new FakeLinearServer(server, token);
     }
 
     /// <inheritdoc />
     public ValueTask DisposeAsync() => _server.DisposeAsync();
 
-    private static FakeHttpReply Handle(FakeHttpRequest request, string token)
+    private static FakeHttpReply Handle(FakeHttpRequest request, string token, FakeServerOptions? options)
     {
         if (!string.Equals(request.Authorization, token, StringComparison.Ordinal)
             && !string.Equals(request.Authorization, "Bearer " + token, StringComparison.Ordinal))
@@ -60,9 +60,14 @@ public sealed class FakeLinearServer : IAsyncDisposable
             return Error(404, "NOT_FOUND", $"The fake Linear server answers POST /graphql only, not {request.Method} {request.Path}.", "refused: route");
         }
 
+        if (options?.LinearRateLimit is LinearRateLimit.Http429 or LinearRateLimit.GraphQl)
+        {
+            return Error(options.LinearRateLimit == LinearRateLimit.Http429 ? 429 : 400, "RATELIMITED", "Rate limit exceeded.", "refused: rate limited");
+        }
+
         try
         {
-            return Answer(request.Body);
+            return Answer(request.Body, options);
         }
         catch (FakeRequestException e)
         {
@@ -70,7 +75,7 @@ public sealed class FakeLinearServer : IAsyncDisposable
         }
     }
 
-    private static FakeHttpReply Answer(string body)
+    private static FakeHttpReply Answer(string body, FakeServerOptions? options)
     {
         var document = Parse(body);
         var query = document["query"] is JsonValue q && q.GetValueKind() == JsonValueKind.String
@@ -81,7 +86,7 @@ public sealed class FakeLinearServer : IAsyncDisposable
         var errors = new JsonArray();
         foreach (var field in fields)
         {
-            var (value, error) = LinearResolver.Resolve(field);
+            var (value, error) = LinearResolver.Resolve(field, options);
             data[field.ResponseKey] = value;
             if (error is not null)
             {

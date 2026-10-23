@@ -203,6 +203,17 @@ internal static partial class DeskBlocks
         return Reply("step.interview.record", "recorded", Outputs(("answerLog", log)), []);
     }
 
+    /// <summary>'fact:recommendation' for the owner's stop: approve when no question is left open, else revise (the stop's form shows it as the recommended outcome).</summary>
+    private static JsonObject Recommendation(JsonNode openQuestions)
+    {
+        var open = ScopeJson.Items(openQuestions).Count();
+        return new JsonObject
+        {
+            ["outcome"] = open == 0 ? "approve" : "revise",
+            ["why"] = open == 0 ? "Every check passed and no question is left open." : string.Create(CultureInfo.InvariantCulture, $"{open} question(s) are still open."),
+        };
+    }
+
     private static Result<ScopingDeskResponse> Evidence(ScopeFacts facts)
     {
         var assembled = ScopeEvidence.FlagUncited(facts);
@@ -224,7 +235,8 @@ internal static partial class DeskBlocks
             ("scopeMap", assembled.Require("scopeMap")),
             ("acceptance", assembled.Require("acceptance")),
             ("coverage", assembled.Require("coverage")),
-            ("openQuestions", assembled.Require("openQuestions")));
+            ("openQuestions", assembled.Require("openQuestions")),
+            ("recommendation", Recommendation(assembled.Require("openQuestions"))));
         return Reply("step.scope.evidence", "complete", outputs, ScopePacket.Build(assembled), report);
     }
 }

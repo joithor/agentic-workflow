@@ -31,11 +31,12 @@ public static class InstanceSummaries
             view.States,
             Cut(RowSentences.Now(view, chip)),
             view.AnswerLine,
-            StatusRecords.ActionIds(view),
+            [.. StatusRecords.ActionIds(view), .. Reruns.Of(view)],
             view.StartedBy,
             view.StartedAt,
             context.LineStage,
-            RootOf(view.Address));
+            RootOf(view.Address),
+            view.Again);
     }
 
     /// <summary>

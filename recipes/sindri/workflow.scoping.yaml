@@ -1,6 +1,6 @@
 schema: 1
 id: workflow.scoping
-version: 8
+version: 9
 description: "Station 1 of the line: scope a change from a brief, a tracker item, a rough idea or a PR, close the behaviour gaps by interview, and park at the owner's after-scoping stop with a cited, covered and challenged scope packet."
 displayName: "Decide what will change"
 why: "Pins down exactly what will change and what done means, then waits for your approval before anything is designed."
@@ -133,7 +133,7 @@ transitions:
   - { from: size, to: size-desk, on: step.failed }
   - { from: propose, to: evidence, on: step.completed, when: { any: [ { outcome: proposed }, { outcome: skipped } ] }, produces: [fact:scopeMap] }
   - { from: evidence, to: stop, on: step.completed, when: { outcome: complete },
-      produces: [fact:scopeMap, fact:acceptance, fact:coverage, fact:openQuestions, fact:scopePacket] }
+      produces: [fact:scopeMap, fact:acceptance, fact:coverage, fact:openQuestions, fact:scopePacket, fact:recommendation] }
   - { label: "a source is missing: gather again", from: evidence, to: gather, on: step.completed, when: { outcome: regather },   produces: [fact:findings] }
   - { label: "proof is incomplete: draft again", from: evidence, to: draft,  on: step.completed, when: { outcome: incomplete }, produces: [fact:findings] }
   - { from: stop, to: freeze,   on: step.completed, when: { outcome: approve } }
