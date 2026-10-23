@@ -17261,6 +17261,8 @@ static Aw.Sindri.Core.Scheduling.IndexBuildWords.Waiting(System.Collections.Gene
 Aw.Sindri.Core.Workflow.Stats.RecipeStatsSource
 Aw.Sindri.Core.Workflow.Stats.RecipeStatsSource.Of(Aw.Sindri.Core.Workflow.Ids.RecipeId recipe, string? hash, Aw.Sindri.Core.Workflow.Stats.StatsWindow! window, bool pinned, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Stats.RecipeStats!>!>
 Aw.Sindri.Core.Workflow.Stats.RecipeStatsSource.RecipeStatsSource(Aw.Sindri.Core.Workflow.Stats.IWorkflowStatRows! rows, System.TimeProvider! clock, Aw.Sindri.Core.Workflow.Stats.IRecipeStatsCache? cache = null) -> void
+Aw.Sindri.Core.Workflow.Blocks.DeskOutputs
+static Aw.Sindri.Core.Workflow.Blocks.DeskOutputs.ByOutcome(Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! catalog, string! block) -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>!
 Aw.Sindri.Core.Setup.IRepoInspector.Weight(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.RepoWeight!>!>
 Aw.Sindri.Core.Setup.RepoGitCache.WeightOf(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Setup.RepoWeight?>
 Aw.Sindri.Core.Setup.RepoWeight

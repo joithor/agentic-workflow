@@ -7,6 +7,7 @@ namespace Aw.Sindri.Host.Commands.Scoping;
 /// <param name="Block">The full Step id.</param>
 /// <param name="Outcome">The outcome.</param>
 /// <param name="Outputs">Each fact key ('fact:findings') to the file in the out directory that holds it.</param>
+/// <param name="OutputsByOutcome">Each outcome the Step can report to the fact keys a 'complete' on it has to give (from the block descriptor), so a caller who picks another outcome knows what it needs.</param>
 /// <param name="Files">The other files written, relative to the out directory.</param>
 /// <param name="Findings">The failing findings.</param>
 /// <param name="Warnings">The warnings.</param>
@@ -15,6 +16,7 @@ internal sealed record ScopingDeskReport(
     string Block,
     string Outcome,
     IReadOnlyDictionary<string, string> Outputs,
+    IReadOnlyDictionary<string, IReadOnlyList<string>> OutputsByOutcome,
     IReadOnlyList<string> Files,
     IReadOnlyList<ScopeFinding> Findings,
     IReadOnlyList<ScopeFinding> Warnings);
