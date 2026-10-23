@@ -1406,7 +1406,8 @@
     {
       "actionId": "ApplyCommand:command",
       "cli": "sindri workflow command T-3/pr-babysitter/1 merge",
-      "verb": "merge"
+      "verb": "merge",
+      "destructive": true
     },
     {
       "actionId": "ApplyCommand:command",

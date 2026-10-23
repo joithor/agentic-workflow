@@ -23,7 +23,7 @@ internal sealed partial class ContextPageViewModel
         }
 
         IReadOnlyList<string> keys = [.. map.Nodes.Select(n => n.Key)];
-        var zoomed = Whole.ByArea ? await ZoomIntoAreas(api, keys, cancellationToken).ConfigureAwait(true) : Whole.Zoom(keys);
+        var zoomed = Whole.AnswerByArea ? await ZoomIntoAreas(api, keys, cancellationToken).ConfigureAwait(true) : Whole.Zoom(keys);
         if (!zoomed)
         {
             Problem = Labels.ContextWholeNoMatch;

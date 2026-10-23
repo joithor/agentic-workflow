@@ -25,6 +25,9 @@ public sealed class FakeEvidenceSettings : IEvidenceSettings
     public int? ApiPort { get; set; }
 
     /// <inheritdoc/>
+    public SlotSettings? Slots { get; set; }
+
+    /// <inheritdoc/>
     public SeedPolicy SeedPolicy { get; set; } = SeedPolicy.Default;
 
     /// <inheritdoc/>
