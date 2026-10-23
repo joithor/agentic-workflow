@@ -59,12 +59,12 @@ public sealed class MapPublishTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_session_reads_the_held_map_but_holds_and_releases_stay_a_services
+    public async Task Held_hold_and_release_refuse_a_session()
     {
         var report = await BuildAndSettle();
         var session = MapWorld.Session(_repo.Value);
 
-        Assert.True((await _world.Map.Held(session, MapWorld.None)).IsSuccess);
+        Assert.Equal(ContextErrors.SessionsDisabled.Code, (await _world.Map.Held(session, MapWorld.None)).Error.Code);
         Assert.Equal(ContextErrors.SessionsDisabled.Code, (await _world.Map.Hold(new MapHold(report.Draft.Number, _world.Clock.GetUtcNow(), []), session, MapWorld.None)).Error.Code);
         Assert.Equal(ContextErrors.SessionsDisabled.Code, (await _world.Map.Release(report.Draft.Number, session, MapWorld.None)).Error.Code);
         Assert.Null((await _world.Map.Held(_service, MapWorld.None)).Value.Hold);
