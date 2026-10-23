@@ -59,4 +59,9 @@ public sealed record InstanceDetail(
     /// </summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public NeedsYouOpen? Open { get; init; }
+
+    /// The recipe verbs the instance accepts now, one entry per verb in the view's order (<c language="text">{ actionId: "ApplyCommand:command", verb, cli }</c>), so the app can show one button per verb. Always written,
+    /// <c language="text">[]</c> when the state takes none. A verb is listed even when the server refuses an agent session's call of it (merge, rework).
+    /// </summary>
+    public IReadOnlyList<AllowedCommand> AllowedCommands { get; init; } = [];
 }

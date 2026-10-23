@@ -255,5 +255,6 @@
       ]
     }
   ],
-  "startedBy": null
+  "startedBy": null,
+  "allowedCommands": []
 }

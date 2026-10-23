@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Temporalio.Client;
+using Temporalio.Exceptions;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
@@ -29,11 +30,46 @@ internal sealed class TemporalCommands(TemporalFrontend frontend)
     {
         AnswerGiven answer => Execute(address, nonce, wf => wf.AnswerAsync(answer), cancellationToken),
         CommandFired fired => Execute(address, nonce, wf => wf.CommandAsync(fired), cancellationToken),
-        CancelRequested cancel => Execute(address, nonce, wf => wf.CancelAsync(cancel), cancellationToken),
+        CancelRequested cancel => Cancel(address, nonce, cancel, cancellationToken),
         TakeoverRequested takeover => Execute(address, nonce, wf => wf.TakeoverAsync(takeover), cancellationToken),
         HandbackRequested handback => Execute(address, nonce, wf => wf.HandbackAsync(handback), cancellationToken),
         _ => throw new NotSupportedException($"the '{command.Name}' trigger is no command Update"),
     };
+
+    /// <summary>
+    /// The cancel Update, then the wait for the execution to close: the Update returns while the loop is still winding down, and a
+    /// start or '--attempt next' right after would still find the attempt running (live), not finished. Bounded by <see cref="TemporalUpdates.Patience"/>;
+    /// an execution that stays open longer (children still cancelling) is the caller's answer all the same.
+    /// </summary>
+    private async ValueTask<Result<CommandResult>> Cancel(InstanceAddress address, CommandNonce nonce, CancelRequested cancel, CancellationToken cancellationToken)
+    {
+        var sent = await Execute(address, nonce, wf => wf.CancelAsync(cancel), cancellationToken).ConfigureAwait(false);
+        if (!sent.IsError)
+        {
+            await Closed(address, cancellationToken).ConfigureAwait(false);
+        }
+
+        return sent;
+    }
+
+    private async ValueTask Closed(InstanceAddress address, CancellationToken cancellationToken)
+    {
+        var client = await frontend.Connect(flag: null, cancellationToken).ConfigureAwait(false);
+        if (client.IsError)
+        {
+            return;
+        }
+
+        using var patience = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        patience.CancelAfter(TemporalUpdates.Patience);
+        try
+        {
+            _ = await client.Value.GetWorkflowHandle(address.Value).GetResultAsync<RecipeResult>(followRuns: false, new RpcOptions { CancellationToken = patience.Token }).ConfigureAwait(false);
+        }
+        catch (Exception e) when (e is OperationCanceledException or RpcException or WorkflowFailedException) // boundary: still open after Patience, or ended some other way; the cancel itself was applied
+        {
+        }
+    }
 
     /// <summary>
     /// The 'open-request' Update (UI spec E-6, spec §5.2) with update id 'wf:{instance}:open:{launch}': no nonce, and

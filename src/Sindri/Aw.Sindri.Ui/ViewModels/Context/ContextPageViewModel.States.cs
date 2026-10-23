@@ -135,6 +135,7 @@ internal sealed partial class ContextPageViewModel
         (IsBuilding, _buildJob) = (false, null);
         NoMap = false;
         ChangedStates();
+        await ReadWhole(cancellationToken).ConfigureAwait(true);   // the map that was missing or building is the whole map now
         if (AnchorText.Length > 0)
         {
             await Submit(cancellationToken).ConfigureAwait(true);
@@ -148,6 +149,8 @@ internal sealed partial class ContextPageViewModel
         OnChanged(nameof(Overlay));
         OnChanged(nameof(ShowEmpty));
         OnChanged(nameof(ShowBuilding));
+        OnChanged(nameof(ShowWhole));
+        OnChanged(nameof(ShowWholeStatus));
         OnChanged(nameof(BuildControl));
         OnChanged(nameof(HasProblem));
         OnChanged(nameof(Problem));

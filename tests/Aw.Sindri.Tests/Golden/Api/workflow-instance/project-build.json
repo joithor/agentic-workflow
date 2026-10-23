@@ -557,5 +557,6 @@
   "open": {
     "route": "workflow/ITM-01JK3/project/1/step.6",
     "label": "Answer in the child"
-  }
+  },
+  "allowedCommands": []
 }
