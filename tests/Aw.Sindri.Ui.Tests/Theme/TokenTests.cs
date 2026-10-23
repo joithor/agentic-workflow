@@ -44,6 +44,12 @@ public sealed class TokenTests
         { "RingAnchor", "#d0d6e0" },
         { "Violet", "#a78bfa" },
         { "VioletSoft", "#170f2a" },
+        { "Area1", "#7aa2f7" },
+        { "Area2", "#e0af68" },
+        { "Area3", "#7bd88f" },
+        { "Area4", "#c792ea" },
+        { "Area5", "#5fd4e0" },
+        { "Area6", "#ff9e8f" },
     };
 
     [Theory]
