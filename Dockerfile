@@ -59,6 +59,10 @@ RUN set -eu; \
  && uv pip install --quiet --python /opt/sindri/graphify/bin/python --require-hashes -r context/code-index-requirements.txt --exclude-newer "$date" \
  && test "$(/opt/sindri/graphify/bin/graphify --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)" = "$ver"
 
+# The docker CLI and the Compose plugin (>= 2.24), copied only: Sindri's managed Onyx mode runs `docker compose` against the rootless
+# Docker-in-Docker sidecar in the same pod (spec §A.1, §A.3). No daemon is installed here.
+FROM docker.io/library/docker:29.9.2-cli@sha256:5e6baf67325a79f64ed3bed6863954d5e05d0f3d4e57cbdb14809346814bbfdb AS dockercli
+
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble@sha256:8af87eba5e7cdafb1514d7388be287365da97c132509e84dfe252ffd552398ca AS runtime
 # git (repos), bubblewrap (the code graph's sandbox), tini (PID 1: it reaps the detached Temporal process), procps (/bin/ps
 # and /bin/kill: the Temporal dev server's lifecycle finds and signals its process through them, DevServerProcesses).
@@ -72,6 +76,8 @@ COPY --from=build /out/sindri /opt/sindri
 COPY --from=tools /opt/sindri/graphify /opt/sindri/graphify
 COPY --from=tools /opt/sindri/python /opt/sindri/python
 COPY --from=tools /out/seed /opt/sindri/seed
+COPY --from=dockercli /usr/local/bin/docker /usr/local/bin/docker
+COPY --from=dockercli /usr/local/libexec/docker/cli-plugins/docker-compose /usr/local/libexec/docker/cli-plugins/docker-compose
 COPY context/code-index.lock /opt/sindri/context/code-index.lock
 COPY deploy/start.sh /opt/sindri/start.sh
 RUN chmod 0755 /opt/sindri/start.sh /opt/sindri/sindri /opt/sindri/judge /opt/sindri/aw-packets

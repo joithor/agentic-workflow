@@ -3,8 +3,8 @@
 # Rows (whitespace-separated; '#' comments and blank lines are ignored):
 #   image <repository> <tag> <platform> <sha256:digest>   platform is `index` (the multi-arch image index: what a Dockerfile FROM and a
 #                                                         chart name, as <repository>@<digest>) or linux/amd64 or linux/arm64 (the
-#                                                         manifest the index lists for it). A repository has one tag, one index row
-#                                                         and both platform rows.
+#                                                         manifest the index lists for it). A repository may carry several tags; each
+#                                                         tag has one index row and both platform rows.
 #   todo <repository> <phase>                             an image the deployment will pull whose digests are not resolved yet; the
 #                                                         phase (K-C1: the charts) fills it in. `check` lists these and still passes.
 # Resolved 2026-10-23 from the registries' manifest APIs (mcr.microsoft.com, registry-1.docker.io, ghcr.io), anonymous reads:
@@ -31,9 +31,13 @@ image docker.io/ollama/ollama 0.40.9 index sha256:5c6707fcf2e1a30cffe2ecb7e31558
 image docker.io/ollama/ollama 0.40.9 linux/amd64 sha256:1914dade358389ce67f527f8d54914f0872fdafdc7a95980096ad0ff6a381196
 image docker.io/ollama/ollama 0.40.9 linux/arm64 sha256:bb90a41181172b7b18ec151674dd30f7242c03cd8675e680ae2daebe49bc3c65
 
-# Onyx's chart images (chart 0.8.40 at the context/onyx.lock pin): resolved in K-C1, when the charts are written. Not guessed here.
-todo docker.io/onyxdotapp/onyx-backend K-C1
-todo docker.io/onyxdotapp/onyx-web-server K-C1
-todo docker.io/onyxdotapp/onyx-model-server K-C1
-todo docker.io/library/redis K-C1
-todo docker.io/library/nginx K-C1
+# The Docker sidecar (§A.3): a rootless Docker-in-Docker daemon in the Sindri pod, which Sindri's managed Onyx Compose mode talks to.
+# Onyx's own images are pinned in context/onyx.lock and pulled by this daemon, not by the kubelet. 29.9.2 was the newest x.y.z tag on 2026-10-23.
+image docker.io/library/docker 29.9.2-dind-rootless index sha256:ae083cc7de51e7a8e5a597f8fb774ca7914c408a95fc0f1477826a913479518a
+image docker.io/library/docker 29.9.2-dind-rootless linux/amd64 sha256:e1c31ace384338f30fa76546f70e824f0bf39c31d1844d7908e0efa4f69af8e7
+image docker.io/library/docker 29.9.2-dind-rootless linux/arm64 sha256:e8099e5b5fe43b6f25b915a673405262bf4c14548d2080bbd47daa127e4f1713
+
+# The docker CLI and Compose plugin the Dockerfile copies into the runtime stage (§A.1, §A.3), the same version as the sidecar. No daemon is used from it.
+image docker.io/library/docker 29.9.2-cli index sha256:5e6baf67325a79f64ed3bed6863954d5e05d0f3d4e57cbdb14809346814bbfdb
+image docker.io/library/docker 29.9.2-cli linux/amd64 sha256:98776017a505b6d89c0adff8c63b0d8701ca10280c41315dbb0638fe3b5cf6e5
+image docker.io/library/docker 29.9.2-cli linux/arm64 sha256:d54eb9ef0f4cbcd82bfb87c6f8d8951c04ce5a01daf38682f3f57ed6a03acd6d
