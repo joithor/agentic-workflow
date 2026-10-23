@@ -511,11 +511,13 @@ Aw.CodeIndex.Core.Model.GraphNode
 Aw.CodeIndex.Core.Model.GraphNode.<Clone>$() -> Aw.CodeIndex.Core.Model.GraphNode!
 Aw.CodeIndex.Core.Model.GraphNode.Community.get -> int?
 Aw.CodeIndex.Core.Model.GraphNode.Community.init -> void
-Aw.CodeIndex.Core.Model.GraphNode.Deconstruct(out string! NodeKey, out string? File, out string? Name, out int? Line, out int? Community) -> void
+Aw.CodeIndex.Core.Model.GraphNode.Deconstruct(out string! NodeKey, out string? File, out string? Name, out int? Line, out int? Community, out bool IsClass) -> void
 Aw.CodeIndex.Core.Model.GraphNode.Equals(Aw.CodeIndex.Core.Model.GraphNode? other) -> bool
 Aw.CodeIndex.Core.Model.GraphNode.File.get -> string?
 Aw.CodeIndex.Core.Model.GraphNode.File.init -> void
-Aw.CodeIndex.Core.Model.GraphNode.GraphNode(string! NodeKey, string? File, string? Name, int? Line, int? Community) -> void
+Aw.CodeIndex.Core.Model.GraphNode.GraphNode(string! NodeKey, string? File, string? Name, int? Line, int? Community, bool IsClass = false) -> void
+Aw.CodeIndex.Core.Model.GraphNode.IsClass.get -> bool
+Aw.CodeIndex.Core.Model.GraphNode.IsClass.init -> void
 Aw.CodeIndex.Core.Model.GraphNode.Line.get -> int?
 Aw.CodeIndex.Core.Model.GraphNode.Line.init -> void
 Aw.CodeIndex.Core.Model.GraphNode.Name.get -> string?
@@ -1394,3 +1396,6 @@ Aw.CodeIndex.Core.EmbeddingTarget
 static Aw.CodeIndex.Core.Embedding.EmbedText.Of(Aw.CodeIndex.Core.Model.EmbedCandidate! candidate) -> string!
 static Aw.CodeIndex.Core.EmbeddingTarget.Check(Aw.CodeIndex.Core.Model.EmbeddingsSettings! settings) -> Aw.Kernel.Error?
 static Aw.CodeIndex.Core.EmbeddingTarget.IsLoopbackUrl(string! url) -> bool
+Aw.CodeIndex.Core.Graph.GraphBodies
+const Aw.CodeIndex.Core.Graph.GraphBodies.RawSpanMaxCharacters = 64000 -> int
+static Aw.CodeIndex.Core.Graph.GraphBodies.Attach(Aw.CodeIndex.Core.Model.FileRecord! file, string! text, System.Func<string!, string!>! scrub) -> Aw.CodeIndex.Core.Model.FileRecord!
