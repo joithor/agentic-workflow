@@ -18153,6 +18153,34 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.PayloadFacts.Instruction(Aw.Sindri
 static Aw.Sindri.Core.Workflow.Engine.Runtime.PayloadFacts.Violation(Aw.Sindri.Core.Workflow.Ids.FactKey fact, System.ReadOnlySpan<byte> content) -> string?
 static Aw.Sindri.Core.Workflow.Engine.Runtime.PayloadFacts.OutputsOf(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor! descriptor) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.PayloadFacts.WithShapes(System.Collections.Generic.IReadOnlyList<string!>? instructions, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>? payload) -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Setup.HookKind
+Aw.Sindri.Core.Setup.HookKind.Foreign = 4 -> Aw.Sindri.Core.Setup.HookKind
+Aw.Sindri.Core.Setup.HookKind.None = 0 -> Aw.Sindri.Core.Setup.HookKind
+Aw.Sindri.Core.Setup.HookKind.V1 = 3 -> Aw.Sindri.Core.Setup.HookKind
+Aw.Sindri.Core.Setup.HookKind.V2 = 2 -> Aw.Sindri.Core.Setup.HookKind
+Aw.Sindri.Core.Setup.HookKind.V3 = 1 -> Aw.Sindri.Core.Setup.HookKind
+Aw.Sindri.Core.Setup.IRepoHookStates
+Aw.Sindri.Core.Setup.IRepoHookStates.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.RepoHookState!>!>
+Aw.Sindri.Core.Setup.RepoHookState
+Aw.Sindri.Core.Setup.RepoHookState.<Clone>$() -> Aw.Sindri.Core.Setup.RepoHookState!
+Aw.Sindri.Core.Setup.RepoHookState.Deconstruct(out string! Repo, out string! Path, out Aw.Sindri.Core.Setup.HookKind Kind) -> void
+Aw.Sindri.Core.Setup.RepoHookState.Equals(Aw.Sindri.Core.Setup.RepoHookState? other) -> bool
+Aw.Sindri.Core.Setup.RepoHookState.Kind.get -> Aw.Sindri.Core.Setup.HookKind
+Aw.Sindri.Core.Setup.RepoHookState.Kind.init -> void
+Aw.Sindri.Core.Setup.RepoHookState.Path.get -> string!
+Aw.Sindri.Core.Setup.RepoHookState.Path.init -> void
+Aw.Sindri.Core.Setup.RepoHookState.Repo.get -> string!
+Aw.Sindri.Core.Setup.RepoHookState.Repo.init -> void
+Aw.Sindri.Core.Setup.RepoHookState.RepoHookState(string! Repo, string! Path, Aw.Sindri.Core.Setup.HookKind Kind) -> void
+override Aw.Sindri.Core.Setup.RepoHookState.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Setup.RepoHookState.GetHashCode() -> int
+override Aw.Sindri.Core.Setup.RepoHookState.ToString() -> string!
+static Aw.Sindri.Core.Setup.RepoHookState.operator !=(Aw.Sindri.Core.Setup.RepoHookState? left, Aw.Sindri.Core.Setup.RepoHookState? right) -> bool
+static Aw.Sindri.Core.Setup.RepoHookState.operator ==(Aw.Sindri.Core.Setup.RepoHookState? left, Aw.Sindri.Core.Setup.RepoHookState? right) -> bool
+static readonly Aw.Sindri.Core.SindriErrors.ScrubForeignHook -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.ScrubGitFailed -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.ScrubNotARepo -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.ScrubStagedSecrets -> Aw.Kernel.ErrorDefinition!
 Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals
 Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals.Take(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> string?
 Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals.Discard(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> void
