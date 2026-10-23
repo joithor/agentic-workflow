@@ -280,8 +280,8 @@ only under a sandbox that denies the network and confines writes to the snapshot
 `SND-CODEIDX-007` and graphify never runs unsandboxed. `graph.json` is size-capped (`index.graph.maxMB`) and read with a streaming reader that stops at the node and edge caps, read as a regular
 file through no symlink, parsed with `System.Text.Json` into a strict DTO (a wrong top-level shape is `SND-CODEIDX-008`; a malformed record is dropped and counted, below), and
 treated as untrusted. Nodes with a file and line are matched to `symbols` by file and the enclosing span; an unmatched node
-becomes a `symbols` row of kind `graph-symbol` (ref as §3, `signature` empty, `end_line` = its line, no clone rows) when graphify's file is a
-language no parser covers (every language but C#). Node ids and files are kept only if the file is in the snapshot's
+becomes a `symbols` row (ref as §3, `signature` empty, `end_line` = its line, no clone rows) when graphify's file is a
+language no parser covers (every language but C#): a node marked `_callable_class` is stored as kind `class` (never embedded, it keeps no text), every other node as kind `graph-symbol`. Node ids and files are kept only if the file is in the snapshot's
 file list; names are scrubbed and cut like signatures, and a name with a control character or a newline is malformed; a colon is allowed, since the ref is read from the right (`path:name:startLine`). `graph.json` also has node and edge caps
 (`index.graph.maxNodes` 500,000, edges four times that; over either is `SND-CODEIDX-008`). graphify runs with a memory limit
 (`RLIMIT_AS`) as well as the time limit. What graphify emits was measured, not guessed: the CI-0d spike ran the pinned graphify (0.9.67) on a TypeScript and a Python fixture (`tests/fixtures/code-index/graphify/`, `SPIKE.md`), and the recorded `graph.json` files are the contract fixtures CI-7's tests replay. `graph.json` is NetworkX node-link JSON: top-level `directed` (false), `multigraph` (false), `graph` (an object), `hyperedges` (an array, ignored), `nodes` and `links` (the edge list is `links`). The strict DTO requires these fields on each record, ignores any other field (the size cap still counts it), and drops a malformed record rather than failing the layer:
@@ -305,7 +305,7 @@ it can resolve elsewhere) and not a model whose name contains `cloud`; redirects
 `SND-CODEIDX-009`. Texts are `name + scrubbed signature + scrubbed body`, cut at 2,000 characters, in batches of 32, written to the
 store as each batch returns. At most 4,096 symbols are embedded per build (a first build of a big repo finishes over
 several builds: `pending`, "N of M embedded", and the service schedules a continuation, §6.3). The
-embedding step skips `class`-like symbols, as the TS index does. Nothing in the unit lane talks to Ollama (§11).
+embedding step skips `class`-like symbols, as the TS index does. A graph symbol's embed text is its source span from its line to the line before the next graph symbol in the same file (or the end of the file), scrubbed then cut; this is an approximation, since graphify gives no end line. A file whose blob cannot be read leaves its graph symbols without text, and the graph layer's detail counts those files. Nothing in the unit lane talks to Ollama (§11).
 
 ### 5.7 The build slice (`BuildCodeIndex`, Features)
 

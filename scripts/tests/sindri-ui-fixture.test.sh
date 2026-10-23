@@ -457,4 +457,85 @@ process.exit(v(JSON.parse(fs.readFileSync(process.argv[3], "utf8"))) ? 0 : 1);' 
   check "the fixture tree in the repo is untouched" "$(git -C "$ROOT" status --porcelain -- tests/fixtures/sessions)" ""
 fi
 
+# --- context publish: the Context map card's six states (F1P-c, code index spec 6.4) ---
+P="$TMPDIR/pub"
+mkdir -p "$P/context"
+migrate "$P/ledger.db" "$ROOT/src/Sindri/Aw.Sindri.Infrastructure/Ledger/Migrations/0001_events.sql"
+migrate "$P/context/context.db" "$ROOT/src/Context/Aw.Context.Infrastructure/Store/Migrations/0002_s3a_graph.sql"
+migrate "$P/context/context.db" "$ROOT/src/Context/Aw.Context.Infrastructure/Store/Migrations/0010_s4p_map_publish.sql"
+CDB="$P/context/context.db"
+sqlq "$P/ledger.db" "INSERT INTO events (id, type, schema_version, occurred_at, actor, tenant, ring, correlation_id, epoch, idempotency_key, payload_json)
+  VALUES ('e1', 'process.started', 1, '2026-10-12T12:00:00Z', 'host:sindri', 'local', 0, 'c1', 3, 'process.started:3', '{}');"
+pub() { AW_SINDRI_HOME="$P" SINDRI="$STUB" bash "$FIXTURE" context publish "$@"; }
+
+out="$(AW_SINDRI_HOME="$WORK/elsewhere" bash "$FIXTURE" context publish held 2>&1)"; check "context publish refuses outside a guarded home" "$?" "2"
+contains "the refusal is the prover's" "$out" "sindri-prove:"
+AW_SINDRI_HOME="$P" bash "$FIXTURE" context publish >/dev/null 2>&1; check "context publish needs a state (exit 2)" "$?" "2"
+out="$(AW_SINDRI_HOME="$P" bash "$FIXTURE" context publish sideways 2>&1)"; check "context publish refuses another state (exit 2)" "$?" "2"
+contains "the refusal names the states" "$out" "held, overdue, published, without-waiting, stale, by-hand"
+out="$(pub held 2>&1)"; check "context publish with no store exits 2" "$?" "2"
+contains "it says to run context up" "$out" "run 'context up' first"
+
+sqlq "$CDB" "INSERT INTO map_version (repo, commit_sha, key_version, created, status) VALUES ('aw-split-panes', NULL, 1, '2026-10-01T00:00:00.0000000Z', 'current');"
+sqlq "$CDB" "INSERT INTO map_version_head (version, repo, commit_sha, on_default) VALUES (1, 'aw-split-panes', 'abcdef0', 1);"
+: > "$STUB_LOG"
+out="$(pub held 2>&1)"; check "publish held exits 0" "$?" "0"
+check "held prints its state id" "$out" "held"
+check "held writes a draft headed at the repo's live commit (a stand-in outside a git repo) and a hold on it" "$(sqlq "$CDB" "SELECT d.id, d.status, h.repo, h.commit_sha FROM map_hold m JOIN map_version d ON d.id = m.version JOIN map_version_head h ON h.version = d.id")" "2|draft|aw-split-panes|9999999999999999999999999999999999999999"
+check "held writes the code index at another commit, so the repo waits" "$(ls "$P/code-index" | wc -l | tr -d ' ')" "2"
+check "held starts the wait now" "$(sqlq "$CDB" "SELECT since >= strftime('%Y-%m-%dT%H:%M:%S', 'now', '-30 seconds') FROM map_publish_chain")" "1"
+check "held pauses the map service so no tick publishes it" "$(cat "$STUB_LOG")" "services pause context-map-refresh"
+check "held leaves the current version" "$(sqlq "$CDB" "SELECT id, status FROM map_version WHERE status = 'current'")" "1|current"
+pub held >/dev/null 2>&1
+check "a second held writes one draft and one hold" "$(sqlq "$CDB" "SELECT COUNT(*) FROM map_hold") $(sqlq "$CDB" "SELECT COUNT(*) FROM map_version WHERE status = 'draft'") $(sqlq "$CDB" "SELECT COUNT(*) FROM map_version_head")" "1 1 2"
+
+out="$(pub overdue 2>&1)"; check "publish overdue exits 0" "$?" "0"
+check "overdue prints its state id" "$out" "overdue"
+check "overdue starts the wait an hour ago" "$(sqlq "$CDB" "SELECT since <= strftime('%Y-%m-%dT%H:%M:%S', 'now', '-3500 seconds') FROM map_publish_chain")" "1"
+
+: > "$STUB_LOG"
+out="$(pub published 2>&1)"; check "publish published exits 0" "$?" "0"
+check "published prints its state id" "$out" "published"
+check "published drops the hold, the chain and the draft with its heads" "$(sqlq "$CDB" "SELECT (SELECT COUNT(*) FROM map_hold), (SELECT COUNT(*) FROM map_publish_chain), (SELECT COUNT(*) FROM map_version WHERE status = 'draft'), (SELECT COUNT(*) FROM map_version_head)")" "0|0|0|1"
+check "published resumes the map service" "$(cat "$STUB_LOG")" "services resume context-map-refresh"
+
+out="$(pub without-waiting 2>&1)"; check "publish without-waiting exits 0" "$?" "0"
+check "without-waiting prints its state id" "$out" "published-without-waiting"
+check "without-waiting records a FirstMap published event for the current version" "$(sqlq "$P/ledger.db" "SELECT type, actor, json_extract(payload_json, '$.version'), json_extract(payload_json, '$.reason') FROM events WHERE idempotency_key LIKE 'sindri-ui-fixture:publish:firstmap:%'")" "context.map.published|service:context-map-refresh|1|FirstMap"
+shape="$(sqlq "$P/ledger.db" "SELECT id, correlation_id, occurred_at FROM events WHERE idempotency_key LIKE 'sindri-ui-fixture:publish:firstmap:%'")"
+IFS='|' read -r row_id row_correlation row_at <<< "$shape"
+[[ "$row_id" =~ $guid ]]; check "the published event's id is a GUID" "$?" "0"
+[[ "$row_correlation" =~ $guid ]]; check "the published event's correlation_id is a GUID" "$?" "0"
+[[ "$row_at" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{7}Z$ ]]; check "the published event's occurred_at has seven fractional digits" "$?" "0"
+pub without-waiting >/dev/null 2>&1
+check "a second without-waiting adds nothing" "$(sqlq "$P/ledger.db" "SELECT COUNT(*) FROM events WHERE idempotency_key LIKE 'sindri-ui-fixture:publish:firstmap:%'")" "1"
+
+out="$(pub by-hand 2>&1)"; check "publish by-hand exits 0" "$?" "0"
+check "by-hand prints its state id" "$out" "published-by-hand"
+check "by-hand records a promoted event by a human for the current version" "$(sqlq "$P/ledger.db" "SELECT type, actor, json_extract(payload_json, '$.version') FROM events WHERE idempotency_key LIKE 'sindri-ui-fixture:publish:byhand:%'")" "context.map.promoted|human:fixture|1"
+
+out="$(pub stale 2>&1)"; check "publish stale exits 0" "$?" "0"
+check "stale prints its state id" "$out" "published-stale"
+check "stale moves the current version's recorded head off the index's commit" "$(sqlq "$CDB" "SELECT commit_sha FROM map_version_head WHERE version = 1")" "1234567"
+check "stale records a TimedOut published event" "$(sqlq "$P/ledger.db" "SELECT json_extract(payload_json, '$.reason') FROM events WHERE idempotency_key LIKE 'sindri-ui-fixture:publish:timedout:%'")" "TimedOut"
+IXDB="$P/code-index/aw-split-panes.0123456789ABCDEFGHJKMNPQRS.db"
+check "stale writes the code index file beside the pointer" "$(ls "$P/code-index" | sort | tr '\n' ' ')" "aw-split-panes.0123456789ABCDEFGHJKMNPQRS.db aw-split-panes.current "
+check "the pointer names the file and is private" "$(cat "$P/code-index/aw-split-panes.current") $(stat -c %a "$P/code-index/aw-split-panes.current" 2>/dev/null || stat -f %Lp "$P/code-index/aw-split-panes.current")" "0123456789ABCDEFGHJKMNPQRS 600"
+check "the index header reads back at abcdef0 under schema 1" "$(sqlq "$IXDB" "SELECT value FROM meta WHERE key = 'commit'") $(sqlq "$IXDB" "PRAGMA user_version")" "abcdef0000000000000000000000000000000000 1"
+pub by-hand >/dev/null 2>&1
+pub published >/dev/null 2>&1
+check "published after by-hand leaves no map event, so the newest state is published" "$(sqlq "$P/ledger.db" "SELECT COUNT(*) FROM events WHERE idempotency_key LIKE 'sindri-ui-fixture:publish:%'")" "0"
+pub stale >/dev/null 2>&1
+check "stale after published records its TimedOut event again" "$(sqlq "$P/ledger.db" "SELECT COUNT(*) FROM events WHERE idempotency_key LIKE 'sindri-ui-fixture:publish:timedout:%'")" "1"
+pub published >/dev/null 2>&1
+check "any other state removes the index file and its pointer" "$(ls "$P/code-index" | wc -l | tr -d ' ')" "0"
+pub stale >/dev/null 2>&1
+printf '%s\n' "OTHERULID" > "$P/code-index/other.current"
+pub by-hand >/dev/null 2>&1
+check "clearing leaves a pointer that is not the fixture's" "$(ls "$P/code-index")" "other.current"
+
+: > "$STUB_LOG"
+pub pause >/dev/null 2>&1; pub resume >/dev/null 2>&1
+check "pause and resume only toggle the service" "$(tr '\n' ';' < "$STUB_LOG")" "services pause context-map-refresh;services resume context-map-refresh;"
+
 exit "$fail"

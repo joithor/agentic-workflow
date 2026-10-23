@@ -661,6 +661,32 @@ public static class WorkflowViewFixtures
                 Produced(_triage, "fact:item", "ITM-01JF0 startable", At(10, 12, 11, 58), "step.route", Ref(item: "ITM-01JF0"))),
             [], Counts(7, 0, 0));
 
+    /// <summary>
+    /// A root instance that ended failed: its actions offer 'RerunInstance'. It is its own instance, so no list or fact lookup by id finds two.
+    /// </summary>
+    public static InstanceDetail F5RerunFailed()
+    {
+        var detail = Done();
+        var address = InstanceAddress.From("ITM-01JKX/triage-alert/1");
+        return detail with { Address = address, Id = WorkflowInstanceId.Of(address), ItemId = ItemKey.From("ITM-01JKX"), Title = "429s on stream (failed)", Actions = [Act("RerunInstance")] };
+    }
+
+    /// <summary>A rerun waiting at its desk: it carries <c language="text">again</c>, the address of the failed instance it reruns, and the form recommends an outcome.</summary>
+    public static InstanceDetail F5DeskRecommended()
+    {
+        var detail = TriageDesk();
+        var address = InstanceAddress.From("ITM-01JKY/triage-alert/2");
+        var form = detail.Current.Desk! with { Recommended = new DeskRecommendation("done", "Every check passed and no question is left open.") };
+        return detail with
+        {
+            Address = address,
+            Id = WorkflowInstanceId.Of(address),
+            ItemId = ItemKey.From("ITM-01JKY"),
+            Current = detail.Current with { Desk = form },
+            Again = InstanceAddress.From("ITM-01JKX/triage-alert/1"),
+        };
+    }
+
     // ---- the recipe additions (E-22) ---------------------------------------------------------------------------------
 
     /// <summary>workflow.project: a Linear project input, outputs with their producing states, urgency work.</summary>

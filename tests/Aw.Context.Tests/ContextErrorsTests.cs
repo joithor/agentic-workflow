@@ -39,6 +39,17 @@ public sealed class ContextErrorsTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void The_S6_Linear_codes_are_070_to_073_and_none_is_attention()
+    {
+        ErrorDefinition[] linear = [ContextErrors.LinearUrlRefused, ContextErrors.LinearKeyRefused, ContextErrors.LinearUnexpectedReply, ContextErrors.LinearRecordNotFound];
+
+        Assert.Equal(["SND-CONTEXT-070", "SND-CONTEXT-071", "SND-CONTEXT-072", "SND-CONTEXT-073"], linear.Select(e => e.Code), StringComparer.Ordinal);
+        Assert.Equal([ErrorKind.Invalid, ErrorKind.Forbidden, ErrorKind.Unavailable, ErrorKind.NotFound], linear.Select(e => e.Kind));
+        Assert.All(linear, e => Assert.Contains(e, ContextErrors.All));
+        Assert.All(linear, e => Assert.DoesNotContain(e.Code, ContextErrors.Attention));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void The_S_SK_recognizer_codes_are_130_and_131_and_132_stays_reserved()
     {
         Assert.Equal(["SND-CONTEXT-130", "SND-CONTEXT-131"], new[] { ContextErrors.RecognizerInvalid, ContextErrors.RecognizerOverCap }.Select(e => e.Code), StringComparer.Ordinal);

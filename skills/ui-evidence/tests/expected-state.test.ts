@@ -40,6 +40,12 @@ describe("assertExpectedState", () => {
     expect(locator).toHaveBeenCalledTimes(2);
     expect(locator).toHaveBeenCalledWith("visible=true");
   });
+  it("checks one query parameter, via a waiting predicate, ignoring the path", async () => {
+    const url = "http://localhost:3000/hospital?date=2026-01-14&timeFilter=Night";
+    await assertExpectedState(fakePage({ url }), { kind: "url-search", param: "timeFilter", value: "Night" });
+    await expect(assertExpectedState(fakePage({ url }), { kind: "url-search", param: "timeFilter", value: "Day" })).rejects.toThrow("timeout");
+    await expect(assertExpectedState(fakePage({ url }), { kind: "url-search", param: "view", value: "" })).rejects.toThrow("timeout");
+  });
   it("checks input value exactly", async () => {
     await assertExpectedState(fakePage({ inputValue: "hi" }), { kind: "input-value", testId: "t", value: "hi" });
     await expect(assertExpectedState(fakePage({ inputValue: "no" }), { kind: "input-value", testId: "t", value: "hi" })).rejects.toThrow("expected input");

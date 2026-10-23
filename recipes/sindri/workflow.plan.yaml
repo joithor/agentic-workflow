@@ -1,6 +1,6 @@
 schema: 1
 id: workflow.plan
-version: 5
+version: 6
 description: "Station 3 of the line: the phase graph for a candidate design, its executability review and hidden scenarios, then the owner's after-design stop, which freezes the design, the plan and every phase packet together."
 displayName: "Plan the build in phases"
 why: "Breaks the approved design into phases small enough to build and prove one at a time, then waits for your approval."
@@ -70,7 +70,7 @@ transitions:
   - { from: exec-review, to: holdout, on: step.completed, when: { outcome: executable } }
   - { label: "a builder would struggle: plan again", from: exec-review, to: graph,   on: step.completed, when: { outcome: objections }, produces: [fact:findings] }
   - { from: holdout,  to: evidence,  on: step.completed, when: { outcome: written },    produces: [fact:holdoutSets] }
-  - { from: evidence, to: questions, on: step.completed, when: { outcome: complete },   produces: [fact:planPacket] }
+  - { from: evidence, to: questions, on: step.completed, when: { outcome: complete },   produces: [fact:planPacket, fact:recommendation] }
   - { from: evidence, to: graph,     on: step.completed, when: { outcome: incomplete }, produces: [fact:findings] }
   - { from: questions, to: decide, on: step.completed, when: { outcome: asked }, produces: [fact:questions] }
   - { from: questions, to: stop,   on: step.completed, when: { outcome: none } }

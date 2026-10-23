@@ -799,6 +799,23 @@
       "confirm": null
     },
     {
+      "action": "RerunInstance",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/workflow/instances/{instanceId}/rerun",
+      "cli": "sindri workflow start <recipe> --item <itemId> --attempt next",
+      "ui": "ready",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null,
+      "confirm": null
+    },
+    {
       "action": "ResumeService",
       "class": "desk",
       "allowedCallers": [
