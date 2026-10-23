@@ -33,8 +33,11 @@ internal static class ScopeRules
         (Ans1, ScopeStage.Draft), (Trust1, ScopeStage.Draft), (Chal1, ScopeStage.Evidence), (Chal2, ScopeStage.Evidence), (Map1, ScopeStage.Draft),
     ];
 
-    /// <summary>The rounds of the recipe's challenge loop (workflow.scoping loops.challenge.cap); the last round found something new only warns once this many ran.</summary>
-    internal const int ChallengeRounds = 3;
+    /// <summary>The recipe loop whose cap SCP-CHAL-001 reads (workflow.scoping loops.challenge): the last round found something new only warns once that many rounds ran.</summary>
+    internal const string ChallengeLoop = "challenge";
+
+    /// <summary>The shipped cap of <see cref="ChallengeLoop"/> (owner decision q40), used only where no recipe runs the check: the standalone 'scoping check' and 'scoping show --facts', and the stop's read model. A Step on the block runtime reads the running recipe's cap instead.</summary>
+    internal const int DefaultChallengeRounds = 3;
 
     /// <summary>The four lenses, in the order the coverage and the lens file list them.</summary>
     internal static IReadOnlyList<string> Lenses { get; } = ["code", "product", "related", "history"];
