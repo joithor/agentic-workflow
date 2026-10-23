@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json.Nodes;
+using Aw.Sindri.Core.Packets;
 
 namespace Aw.Sindri.Features.Scoping;
 
@@ -73,6 +74,7 @@ internal static class ScopePacket
     private static JsonObject StampedMap(ScopeFacts facts)
     {
         var map = Plain(facts.ObjectCopy("scopeMap"));
+        Envelope(map, facts);
         foreach (var surface in ScopeJson.Items(map, "surfaces").OfType<JsonObject>())
         {
             surface["trust"] = ScopeTrust.For($"{ScopeJson.Str(surface, "title")} {ScopeJson.Str(surface, "detail")}", [.. ScopeJson.Strings(surface, "citations")], facts);
@@ -89,6 +91,22 @@ internal static class ScopePacket
         }
 
         return map;
+    }
+
+    // The envelope the line reads (LineScope): the commit the scoping read (the evidence Step's 'baseSha' fact, never the model's) and the change's slug, the design packet's id.
+    private static void Envelope(JsonObject map, ScopeFacts facts)
+    {
+        _ = map.Remove("baseSha");
+        _ = map.Remove("change");
+        if (facts["baseSha"] is JsonValue sha && sha.TryGetValue<string>(out var baseSha) && !string.IsNullOrWhiteSpace(baseSha))
+        {
+            map["baseSha"] = baseSha;
+        }
+
+        if (ScopeJson.Str(facts["brief"], "subject") is { } subject && !string.IsNullOrWhiteSpace(subject))
+        {
+            map["change"] = PacketSlugs.Slug(subject);
+        }
     }
 
     private static JsonObject StampedAcceptance(ScopeFacts facts)
