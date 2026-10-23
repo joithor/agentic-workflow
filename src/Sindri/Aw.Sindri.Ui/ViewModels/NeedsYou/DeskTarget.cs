@@ -13,6 +13,18 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// <param name="MergeCard">The pull request card, when the instance lists the fact "fact:prStatus" and it read; null otherwise.</param>
 internal sealed record DeskTarget(string InstanceId, string Run, StatusCommand? Complete, string? Why = null, string? IfApprove = null, string? IfSendBack = null, DeskRecommendation? Recommended = null, MergeCardViewModel? MergeCard = null)
 {
+    /// <summary>The instance's address, for taking the person to its frame; empty when not read.</summary>
+    internal string Address { get; init; } = string.Empty;
+
+    /// <summary>What the step asks the person to read, as served; empty when none.</summary>
+    internal IReadOnlyList<DeskReview> Reviews { get; init; } = [];
+
+    /// <summary>The ref (provider/id) of the agent session that runs the step, when the engine names it; null otherwise.</summary>
+    internal string? SessionRef { get; init; }
+
+    /// <summary>The code of why the step stands as it does; null when none is served.</summary>
+    internal string? ReasonCode { get; init; }
+
     /// <summary>The recipe verbs the instance accepts now, in the order it serves them; empty when it serves none.</summary>
     internal IReadOnlyList<DeskVerb> Verbs { get; init; } = [];
 

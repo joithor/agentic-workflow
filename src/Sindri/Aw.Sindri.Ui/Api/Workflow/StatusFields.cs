@@ -15,6 +15,7 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="Text">Text, as served.</param>
 /// <param name="Run">The agent run the state is on, or null (omitted by a server before engine P8, and when no agent runs the Step).</param>
 /// <param name="TakenOverAt">When a person took the instance over, or null (omitted) when it is not taken over.</param>
+/// <param name="ReasonCode">The code of why the step stands as it does (SND-WF-010); omitted when there is none.</param>
 /// <param name="TakenOverBy">Who took the instance over (the takeover's actor), or null (omitted) when it is not taken over.</param>
 internal sealed record StatusFields(
     StatusHeader Header,
@@ -31,7 +32,8 @@ internal sealed record StatusFields(
     IReadOnlyList<StatusInjection>? Injection = null,
     [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] StatusRun? Run = null,
     [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] DateTimeOffset? TakenOverAt = null,
-    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? TakenOverBy = null)
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? TakenOverBy = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? ReasonCode = null)
 {
     /// <summary>The injection sections, never null.</summary>
     public IReadOnlyList<StatusInjection> Injection { get; init; } = Injection ?? [];

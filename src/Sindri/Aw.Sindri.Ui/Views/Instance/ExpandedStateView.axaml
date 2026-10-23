@@ -28,6 +28,19 @@
               AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
         <TextBlock x:Name="ExpandedRunLine" Classes="body" Text="{Binding RunLine}" AutomationProperties.AccessibilityView="Raw" />
       </Border>
+      <TextBlock x:Name="ExpandedReason" Classes="body" Text="{Binding ReasonLine}" IsVisible="{Binding HasReasonLine}" TextWrapping="Wrap" AutomationProperties.Name="{Binding ReasonLine}" />
+      <ItemsControl x:Name="ExpandedReviews" ItemsSource="{Binding Reviews}" IsVisible="{Binding HasReviews}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="inst:DeskReviewViewModel">
+            <Button Classes="row-title" Margin="0,0,8,4" Content="{Binding Label}" Click="OnReview" AutomationProperties.Name="{Binding Name}" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
       <Button x:Name="ExpandedSession" Classes="row-title" HorizontalAlignment="Left" Content="{Binding SessionLinkText}" Click="OnSession" IsVisible="{Binding HasSession}"
               AutomationProperties.Name="{Binding SessionLinkName}" />
       <TextBlock x:Name="ExpandedLaunch" Classes="caption" Text="{Binding LaunchLine}" IsVisible="{Binding HasLaunchLine}" TextWrapping="Wrap"

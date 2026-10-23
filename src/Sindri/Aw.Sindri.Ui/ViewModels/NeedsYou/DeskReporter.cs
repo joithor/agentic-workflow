@@ -13,6 +13,9 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// </summary>
 internal sealed class DeskReporter(ISindriApi api, Func<Uri?> apiUrl, ILauncher? launcher = null)
 {
+    /// <summary>Opens a link or a file for a review button.</summary>
+    internal ILauncher Launcher { get; } = launcher ?? NullLauncher.Instance;
+
     private const string AnswersKey = "fact:answers";
     private readonly HashSet<string> _inFlight = new(StringComparer.Ordinal);
 

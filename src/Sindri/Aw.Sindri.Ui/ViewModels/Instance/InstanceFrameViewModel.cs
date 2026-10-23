@@ -260,11 +260,12 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
 
         ShowPanels(detail);
         ShowStepRuns(detail);
-        var expanded = new ExpandedStateViewModel(detail.Current, detail.Address, clipboard, clock) { Commander = _commander ??= new NeedsYou.InstanceCommander(api, () => _url), InstanceId = detail.Id };
+        var expanded = new ExpandedStateViewModel(detail.Current, detail.Address, clipboard, clock) { Commander = _commander ??= new NeedsYou.InstanceCommander(api, () => _url), InstanceId = detail.Id, Launcher = _launcher };
         if (Expanded is null || !string.Equals(Expanded.Signature, expanded.Signature, StringComparison.Ordinal))
         {
             expanded.ChildRequested += (_, e) => OpenRequested?.Invoke(this, e);
             expanded.SessionRequested += (_, e) => SessionRequested?.Invoke(this, e);
+            expanded.FactRequested += (_, e) => ShowFact(e.Fact);
             expanded.ChildrenRequested += (_, _) => Focus(ChildrenFocus, key: null);
             Expanded = expanded;
         }

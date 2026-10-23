@@ -171,6 +171,7 @@ internal sealed partial class NeedsYouBarViewModel : ObservableObject
         _row = row;
         (_target, _targetKnown, _done) = (null, false, NeedsYouBarOutcome.None);
         DrawVerbs();
+        DrawReviews();
         (IsSending, HintIsSuccess) = (false, false);
         (Mode, ReasonText, Refusal, ReadToEnd) = (NeedsYouBarMode.Pending, "", "", false);
         var read = row is not null && Kind == BarKind.Desk && InstanceOf(row) is { } instance ? Read(instance, row.Id) : Task.CompletedTask;
@@ -188,6 +189,7 @@ internal sealed partial class NeedsYouBarViewModel : ObservableObject
         {
             (_target, _targetKnown) = (target, true);
             DrawVerbs();
+            DrawReviews();
             Refresh();
         }
     }
