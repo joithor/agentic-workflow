@@ -15,7 +15,8 @@ namespace Aw.Sindri.Features.CompleteStep;
 /// </summary>
 /// <param name="recipes">Loads the instance's recipe, whose declarations say which outputs are payloads.</param>
 /// <param name="launcher">Ends the session after its second bad report.</param>
-internal sealed class ReportOutputTypes(IApprovedRecipes recipes, ILauncher launcher)
+/// <param name="refusals">Keeps the second refusal's text for the watch that sees the session exit, so the failed Step names it.</param>
+internal sealed class ReportOutputTypes(IApprovedRecipes recipes, ILauncher launcher, ReportRefusals refusals)
 {
     private readonly ConcurrentDictionary<(string Instance, string Run), int> _refused = [];
 

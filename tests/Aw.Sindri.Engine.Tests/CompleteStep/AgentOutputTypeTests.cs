@@ -36,6 +36,7 @@ public sealed class AgentOutputTypeTests
     private readonly InMemoryCommandNonces _nonces = new(new FakeTimeProvider());
     private readonly FakeLaunchFiles _files = new();
     private readonly FakeLauncher _launcher = new();
+    private readonly ReportRefusals _refusals = new();
 
     [Fact(Timeout = 30_000)]
     public async Task A_payload_written_as_prose_is_refused_with_the_fix_and_nothing_is_stored_or_sent()
@@ -96,6 +97,34 @@ public sealed class AgentOutputTypeTests
     }
 
     [Fact(Timeout = 30_000)]
+    public async Task The_session_ended_for_a_second_bad_report_has_a_one_line_refusal_naming_the_output_for_the_failed_Step()
+    {
+        var run = new AgentRun();
+        var service = Service(run);
+
+        _ = await service.Handle(Report(1, (_design, "prose")), TestContext.Current.CancellationToken);
+        _ = await service.Handle(Report(2, (_design, "more\nprose " + new string('x', 1000))), TestContext.Current.CancellationToken);
+
+        var recorded = _refusals.For(_launch);
+        Assert.NotNull(recorded);
+        Assert.Contains("fact:design", recorded, StringComparison.Ordinal);
+        Assert.Contains("isn't JSON", recorded, StringComparison.Ordinal);
+        Assert.DoesNotContain('\n', recorded);
+        Assert.True(recorded.Length <= ReportRefusals.MaxLength);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task A_first_refusal_that_the_agent_corrects_leaves_no_refusal_on_the_launch()
+    {
+        var run = new AgentRun();
+        var service = Service(run);
+
+        _ = await service.Handle(Report(1, (_design, "prose")), TestContext.Current.CancellationToken);
+
+        Assert.Null(_refusals.For(_launch));
+    }
+
+    [Fact(Timeout = 30_000)]
     public async Task Text_outputs_and_undeclared_facts_are_unchanged()
     {
         var run = new AgentRun();
@@ -109,7 +138,7 @@ public sealed class AgentOutputTypeTests
     private CompleteStepService Service(AgentRun run)
     {
         _files.Open(_launch, Proof);
-        return new(run, run, run, _facts, _nonces, new FixedCaller(A.Caller().Session().Build()), new EngineFilledReport(EvalComposition.Catalog, EvalComposition.Options, _files, new ReportOutputTypes(run, _launcher)));
+        return new(run, run, run, _facts, _nonces, new FixedCaller(A.Caller().Session().Build()), new EngineFilledReport(EvalComposition.Catalog, EvalComposition.Options, _files, new ReportOutputTypes(run, _launcher, _refusals)));
     }
 
     private static CommandNonce Nonce(int n) => CommandNonce.From(n.ToString("x32", System.Globalization.CultureInfo.InvariantCulture));
