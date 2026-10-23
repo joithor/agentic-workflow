@@ -1,8 +1,9 @@
 schema: 1
 id: workflow.line
-version: 4
+version: 5
 description: "Spec-to-proven-PR, end to end. Scoping, design and plan, then a dispatcher (LN-WF1) that starts every ready phase as its own workflow.phase run, up to the profile's parallel limit (default 2), stacking a phase on the open pull request it depends on, until every phase is merged or skipped."
 displayName: "Idea to merged pull request"
+why: "Takes a spec all the way to merged pull requests, stopping for your approval after scoping and after planning."
 urgency: work
 inputs:
   - { key: fact:scopeInput,  label: "What to build",  type: payload, kind: payload }

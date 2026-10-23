@@ -44,6 +44,33 @@ public sealed class ContextMapApiTests
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    public async Task Without_a_map_the_publish_status_is_SND_CONTEXT_030()
+    {
+        await using var host = await Approved(sessions: false, TestContext.Current.CancellationToken);
+
+        var status = await host.Http.Ask(Get("/sindri/context/map/publish", Human(host.Token.Value)));
+
+        Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-030"), (status.Status, status.Code));
+    }
+
+    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    public async Task After_an_import_the_publish_status_is_published_by_nobodys_hand_with_the_maps_sentence()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Approved(sessions: false, ct);
+        var file = FixtureMap.WriteTo(host.Home);
+        var (hash, challenge, action) = Issued(await PreviewBody(host, file));
+        _ = await host.Http.Ask(Post("/sindri/context/map/import", Body(file, hash, (challenge, action)), Human(host.Token.Value)));
+
+        var status = await host.Http.Ask(Get("/sindri/context/map/publish", Human(host.Token.Value)));
+
+        Assert.Equal(HttpStatusCode.OK, status.Status);
+        var root = JsonDocument.Parse(status.Body).RootElement;
+        Assert.Equal(("published", false, 1), (root.GetProperty("state").GetString(), root.GetProperty("stale").GetBoolean(), root.GetProperty("version").GetInt32()));
+        Assert.Equal("Map v1 is current.", root.GetProperty("lines")[0].GetString());
+    }
+
+    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
     public async Task A_human_at_a_terminal_previews_then_imports_by_answering_the_challenge_and_the_import_is_recorded()
     {
         var ct = TestContext.Current.CancellationToken;

@@ -1,0 +1,14 @@
+{
+  "state": "published",
+  "word": "published",
+  "reason": null,
+  "stale": false,
+  "staleRepos": [],
+  "version": 1,
+  "until": null,
+  "lines": [
+    "Map v1 is current."
+  ],
+  "publishedAt": null,
+  "waitingOn": null
+}

@@ -143,7 +143,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(StreamErrorFrame)), JsonSerializable(typeof(InstanceChanged)), JsonSerializable(typeof(ListCommandsRequest)), JsonSerializable(typeof(ListCommandsResponse)), JsonSerializable(typeof(CommandListRow))]
 [JsonSerializable(typeof(ListServicesRequest)), JsonSerializable(typeof(ListServicesResponse)), JsonSerializable(typeof(ServiceView)), JsonSerializable(typeof(GetProfileRequest))]
 [JsonSerializable(typeof(GetSetupRequest)), JsonSerializable(typeof(GetSetupResponse)), JsonSerializable(typeof(GetRepoStatusResponse)), JsonSerializable(typeof(RepoStatus))]
-[JsonSerializable(typeof(GetProfileResponse)), JsonSerializable(typeof(ProfilePack)), JsonSerializable(typeof(RebuildViewsRequest)), JsonSerializable(typeof(CreateItemRequest)), JsonSerializable(typeof(ItemCreatedResponse))]
+[JsonSerializable(typeof(GetProfileResponse)), JsonSerializable(typeof(ProfilePack)), JsonSerializable(typeof(ProfileSummary)), JsonSerializable(typeof(RepoPreview)), JsonSerializable(typeof(RebuildViewsRequest)), JsonSerializable(typeof(CreateItemRequest)), JsonSerializable(typeof(ItemCreatedResponse))]
 [JsonSerializable(typeof(DeferOnyxRequest)), JsonSerializable(typeof(DeferOnyxResponse)), JsonSerializable(typeof(DeferOnyxBody)), JsonSerializable(typeof(SetupOnyxRequest)), JsonSerializable(typeof(SetupOnyxResult)), JsonSerializable(typeof(ConnectOnyxRequest))]
 [JsonSerializable(typeof(CloseItemRequest)), JsonSerializable(typeof(CloseItemBody)), JsonSerializable(typeof(GetQueueRequest)), JsonSerializable(typeof(QueueResponse))]
 [JsonSerializable(typeof(QueueGroupView)), JsonSerializable(typeof(ItemSummary)), JsonSerializable(typeof(ListItemsRequest)), JsonSerializable(typeof(ListItemsResponse))]
@@ -174,7 +174,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(RoutedItem))]           // engine P7 plan D8: the router stub's item.routed event
 [JsonSerializable(typeof(EffectReply))]          // engine P6 unit (a): an effect's reply event (notify.delivered, claim.created)
 [JsonSerializable(typeof(GetInstanceEventsResponse)), JsonSerializable(typeof(InstanceEventView)), JsonSerializable(typeof(InstanceEventFields)), JsonSerializable(typeof(StartInstanceResponse))]
-[JsonSerializable(typeof(StartInstanceRequest)), JsonSerializable(typeof(ApplyCommandRequest)), JsonSerializable(typeof(CompleteStepRequest)), JsonSerializable(typeof(ApplyCommandResponse))]
+[JsonSerializable(typeof(StartInstanceRequest)), JsonSerializable(typeof(RerunInstanceRequest)), JsonSerializable(typeof(DeskRecommendation)), JsonSerializable(typeof(ApplyCommandRequest)), JsonSerializable(typeof(CompleteStepRequest)), JsonSerializable(typeof(ApplyCommandResponse))]
 [JsonSerializable(typeof(IssueNonceResponse)), JsonSerializable(typeof(RecipeRegistered)), JsonSerializable(typeof(RecipeApproved)), JsonSerializable(typeof(RecipeRevoked))]
 [JsonSerializable(typeof(RegisterRecipeRequest)), JsonSerializable(typeof(RegisterRecipeResponse)), JsonSerializable(typeof(ListRecipesResponse)), JsonSerializable(typeof(ApproveRecipeRequest))]
 [JsonSerializable(typeof(RegisterMcpJobRequest))]   // setup-once §5.4: register Sindri in a repo from the app
@@ -187,7 +187,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ProbeReport)), JsonSerializable(typeof(ProbeRun)), JsonSerializable(typeof(SourcesView)), JsonSerializable(typeof(SourceSyncStatus))]
 [JsonSerializable(typeof(McpToolError)), JsonSerializable(typeof(McpSourcesAnswer)), JsonSerializable(typeof(RegisterMcpResponse)), JsonSerializable(typeof(Core.Mcp.ProviderResult)), JsonSerializable(typeof(ContextSourcesSynced))]
 [JsonSerializable(typeof(ContextLinksSynced)), JsonSerializable(typeof(ContextMapImported)), JsonSerializable(typeof(MapDocument)), JsonSerializable(typeof(ReviewFile))]
-[JsonSerializable(typeof(MapStatusView)), JsonSerializable(typeof(MapExported)), JsonSerializable(typeof(MapHealth)), JsonSerializable(typeof(PurgeReport))]
+[JsonSerializable(typeof(MapStatusView)), JsonSerializable(typeof(MapPublishStatusView)), JsonSerializable(typeof(StaleRepo)), JsonSerializable(typeof(MapExported)), JsonSerializable(typeof(MapHealth)), JsonSerializable(typeof(PurgeReport))]
 [JsonSerializable(typeof(ImportContextMapRequest)), JsonSerializable(typeof(ImportContextMapResponse))]
 // Two RecordKey types meet here: Sindri's item link key and the context lane's source key; name Sindri's apart (SYSLIB1031).
 [JsonSerializable(typeof(Core.Ids.RecordKey), TypeInfoPropertyName = "ItemRecordKey")]
@@ -196,7 +196,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(FactRef)), JsonSerializable(typeof(FactRow)), JsonSerializable(typeof(GateLine)), JsonSerializable(typeof(InputPresence))]
 [JsonSerializable(typeof(InstanceDetail)), JsonSerializable(typeof(InstanceList)), JsonSerializable(typeof(InstanceRecipe)), JsonSerializable(typeof(InstanceSummary))]
 [JsonSerializable(typeof(LoopPair)), JsonSerializable(typeof(Progress)), JsonSerializable(typeof(RecipeInputView)), JsonSerializable(typeof(RecipeLoopView))]
-[JsonSerializable(typeof(RecipeTransitionLabelView)), JsonSerializable(typeof(RecipeManifest)), JsonSerializable(typeof(ManifestEntry)), JsonSerializable(typeof(ManifestInvalid))]
+[JsonSerializable(typeof(RecipeTransitionLabelView)), JsonSerializable(typeof(RecipeTransitionView)), JsonSerializable(typeof(RecipeOutcomeText)), JsonSerializable(typeof(RecipeFactView)), JsonSerializable(typeof(RecipeManifest)), JsonSerializable(typeof(ManifestEntry)), JsonSerializable(typeof(ManifestInvalid))]
 [JsonSerializable(typeof(EvalShippedResponse)), JsonSerializable(typeof(ShippedRecipeEval))]
 [JsonSerializable(typeof(RecipeOutputView)), JsonSerializable(typeof(RecipeStateView)), JsonSerializable(typeof(RecipeView)), JsonSerializable(typeof(Round)), JsonSerializable(typeof(RecipeStats)), JsonSerializable(typeof(RecipeStatsRow))]   // API P12: GET /workflow/recipes/{id}/stats
 [JsonSerializable(typeof(StateCell)), JsonSerializable(typeof(StatusAnswer)), JsonSerializable(typeof(StatusBudget)), JsonSerializable(typeof(StatusChild))]

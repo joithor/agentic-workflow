@@ -52,6 +52,8 @@ internal sealed class GetLensesService(MapReader reader, LensBasisReader bases, 
         return view.Map(v => LensTexts.Clean(v, new MapText(built.Value, FencePolicies.For(request.Scope.Caller))));
     }
 
+    private const string SymbolLevel = "symbol";
+
     // Phase 9: the code band's symbols for a scope of one repo (a file's repo is not on the lens row, so a wider scope stays file-level). The links come from the files' file-level 'implements'.
     private async Task<Result<LensesView>> WithSymbols(LensesView view, ContextSettings settings, ContextScope scope, MapVersion version, CancellationToken cancellationToken)
     {
@@ -64,6 +66,8 @@ internal sealed class GetLensesService(MapReader reader, LensBasisReader bases, 
 
         var links = code.Files.Where(f => f.Implements.Count > 0).Select(f => (f.Path, f.Implements)).ToList();
         var column = await SymbolColumn.Read(symbols, new SymbolColumnReading(repos.Value[0], version, [.. code.Files.Select(f => f.Path)], links), cancellationToken).ConfigureAwait(false);
-        return view with { Bands = view.Bands with { Code = code with { Symbols = column } } };
+        var answered = column.State != SymbolsState.Unavailable;   // an index that answers (ok, or stale with both commits named) makes the code coverage symbol-level
+        var coverage = answered ? view.Coverage with { Code = view.Coverage.Code with { Level = SymbolLevel } } : view.Coverage;
+        return view with { Bands = view.Bands with { Code = code with { Symbols = column } }, Coverage = coverage };
     }
 }

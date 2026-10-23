@@ -89,4 +89,29 @@ public sealed class RecipeDisplayFieldsTests
             RecipeComposition.Errors(reading.Document, new BlockCatalog([TestBlocks.Step("step.produce")], []), InMemoryChildRecipes.None),
             line => line.StartsWith("RCP-DISPLAY-001: the recipe has no displayName", StringComparison.Ordinal));
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_recipe_why_and_a_states_on_outcome_read_into_the_long_form_and_join_the_hash()
+    {
+        var yaml = Named
+            .Replace("displayName: Produce and finish\n", "displayName: Produce and finish\nwhy: Gets the work from idea to done.\n", StringComparison.Ordinal)
+            .Replace("    displayName: Write the draft\n", "    displayName: Write the draft\n    onOutcome: { done: \"Moves on to the end.\" }\n", StringComparison.Ordinal);
+
+        var reading = RecipeReaderTests.Reader.Read(yaml, "n.yaml");
+
+        Assert.Empty(reading.Findings);
+        Assert.Equal("Gets the work from idea to done.", reading.Document!.Recipe.Why);
+        Assert.Equal("Moves on to the end.", reading.Document.Recipe.States["produce"].OnOutcome!["done"]);
+        Assert.Null(reading.Document.Recipe.States["done"].OnOutcome);
+        Assert.NotEqual(RecipeReaderTests.Reader.Read(Named, "n.yaml").Document!.Hash, reading.Document.Hash);
+        Assert.NotEqual(reading.Document.Hash, RecipeReaderTests.Reader.Read(yaml.Replace("Moves on to the end.", "Ends it.", StringComparison.Ordinal), "n.yaml").Document!.Hash);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_on_outcome_that_is_not_a_mapping_of_texts_is_a_reader_finding()
+    {
+        var yaml = Named.Replace("    displayName: Write the draft\n", "    displayName: Write the draft\n    onOutcome: [done]\n", StringComparison.Ordinal);
+
+        Assert.NotEmpty(RecipeReaderTests.Reader.Read(yaml, "n.yaml").Findings);
+    }
 }

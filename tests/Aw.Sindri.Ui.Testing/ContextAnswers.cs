@@ -61,6 +61,18 @@ internal static class ContextAnswers
         };
     }
 
+    /// <summary>The code lens for a query: the golden when every anchor is the one it holds, else the unknown-anchor refusal.</summary>
+    /// <param name="query">What was asked.</param>
+    /// <returns>The answer.</returns>
+    internal static RouteAnswer Code(CodeQuery query)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        var known = GoldenFiles.Node("context-code", "edges-and-lexical")["anchors"]!.AsArray().Select(a => (string)a!["key"]!).ToList();
+        return query.Anchors.Count > 0 && query.Anchors.All(a => known.Contains(a, StringComparer.Ordinal))
+            ? RouteAnswer.Api("context-code", "edges-and-lexical")
+            : RouteAnswer.Problem("context-code", "unknown-anchor-003");
+    }
+
     /// <summary>The file map for a query: the golden whose path matches, the unmapped one, or a refusal golden.</summary>
     /// <param name="query">What was asked.</param>
     /// <returns>The answer.</returns>

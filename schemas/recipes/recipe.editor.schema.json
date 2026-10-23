@@ -15,6 +15,7 @@
         "version": { "type": "integer", "minimum": 1 },
         "description": { "type": ["string", "null"] },
         "displayName": { "type": "string", "minLength": 1, "maxLength": 60, "description": "The name the app shows instead of the id: sentence case, at most 60 characters, what the recipe does, no id or code name (RCP-DISPLAY-001)." },
+        "why": { "type": ["string", "null"], "maxLength": 200, "description": "One plain sentence on why the recipe exists; no id or code name (RCP-DISPLAY-002)." },
         "base": { "oneOf": [{ "$ref": "#/$defs/RecipeRef" }, { "type": "null" }] },
         "urgency": { "enum": ["incident", "triage", "work"] },
         "name": { "type": ["string", "null"], "maxLength": 200, "description": "A template for the instance's name: literals, {fact:<input>}, {start:date}, {start:time}; {{ and }} write a brace (spec section 3.11)." },
@@ -79,7 +80,8 @@
         "next": { "type": ["string", "null"] },
         "outcome": { "enum": ["resolved", "unresolved", "alreadySatisfied", "failed", null] },
         "why": { "type": ["string", "null"], "maxLength": 200, "description": "One plain sentence on why the state is in the recipe; no id or code name (RCP-DISPLAY-002)." },
-        "displayName": { "type": ["string", "null"], "maxLength": 60, "description": "A plain name for the step, in sentence case, instead of the state id (RCP-DISPLAY-003)." }
+        "displayName": { "type": ["string", "null"], "maxLength": 60, "description": "A plain name for the step, in sentence case, instead of the state id (RCP-DISPLAY-003)." },
+        "onOutcome": { "type": ["object", "null"], "additionalProperties": { "type": "string", "maxLength": 200 }, "description": "Plain words for what each outcome of a desk state does, keyed by an outcome of the state's step: { approve: \"Moves on to planning\" } (RCP-DISPLAY-002)." }
       },
       "allOf": [
         { "if": { "properties": { "kind": { "const": "active" } } }, "then": { "required": ["step", "timeout", "next"] } },

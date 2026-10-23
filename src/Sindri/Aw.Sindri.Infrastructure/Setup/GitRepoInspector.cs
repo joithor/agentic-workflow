@@ -54,6 +54,38 @@ internal sealed class GitRepoInspector(SindriSettings settings) : IRepoInspector
         return inside.Exit == 0 ? await Git(checkout, cancellationToken).ConfigureAwait(false) : Invalid("that folder is not a git checkout");
     }
 
+    public async ValueTask<Result<RepoWeight>> Weight(string path, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        var real = RealPath.Of(path) ?? path;
+        if (!Directory.Exists(real))
+        {
+            return Invalid("that folder doesn't exist");
+        }
+
+        var listed = await GitProcess.Run(real, ["ls-files", "-z"], cancellationToken, hardened: true).ConfigureAwait(false);
+        if (listed.Exit != 0)
+        {
+            return Invalid("that folder is not a git checkout");
+        }
+
+        var files = listed.Output.Split('\0', StringSplitOptions.RemoveEmptyEntries);
+        return new RepoWeight(real, files.Length, files.Sum(file => SizeOf(Path.Combine(real, file))));
+    }
+
+    private static long SizeOf(string file)
+    {
+        try
+        {
+            var info = new FileInfo(file);
+            return info.Exists ? info.Length : 0;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return 0;
+        }
+    }
+
     private static async ValueTask<Result<string>> Checkout(string real, CancellationToken cancellationToken)
     {
         var common = await GitProcess.Run(real, ["rev-parse", "--path-format=absolute", "--git-common-dir"], cancellationToken, hardened: true).ConfigureAwait(false);
