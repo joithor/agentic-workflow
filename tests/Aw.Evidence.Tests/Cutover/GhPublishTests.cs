@@ -23,12 +23,7 @@ public sealed class GhPublishTests
     private readonly InMemoryRunFiles _files = new();
     private readonly FakeGhRunner _gh = new FakeGhRunner().WithGitData("o/n");
 
-    // 1.2 passes the run files, the gh runner and the JSON options: new GhPublishService(_files, _gh, TestJson.Options).
-    private GhPublishService Service()
-    {
-        _ = (_files, _gh);
-        return new GhPublishService();
-    }
+    private GhPublishService Service() => new(_files, _gh, TestJson.Options);
 
     private static GhPublishRequest Request(DbProvenance? provenance = DbProvenance.Seeded, params string[] reviewed) =>
         new(Run, "o/n", 7, provenance, reviewed);
