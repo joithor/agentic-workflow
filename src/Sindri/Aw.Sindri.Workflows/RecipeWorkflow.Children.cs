@@ -1,4 +1,3 @@
-using System.Globalization;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
@@ -147,9 +146,7 @@ internal sealed partial class RecipeWorkflow
             return;
         }
 
-        var open = after.Suspension;
-        var change = new ChildChanged(Inbox, after.Id, kind, open?.Reason, open?.Question, TriggerKey.For(after.Id, string.Create(CultureInfo.InvariantCulture, $"child-{_mirrored}")),
-            open?.ParkKind ?? open?.MirroredParkKind, open?.MirroredEscalation ?? open?.Escalation);
+        var change = ChildAnnouncement.Of(after, kind, _mirrored);
         _effects.Add(Tell(parent.WorkflowId, change));
     }
 

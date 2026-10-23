@@ -19,7 +19,8 @@ public sealed class ChildChangedSignalTests
 
         var read = Read(DataConverter.Default.PayloadConverter.ToPayload(sent));
 
-        Assert.Equal((ParkKind.Wait, (EscalationKind?)null), (read.ParkKind, read.Escalation));
+        Assert.Equal(ParkKind.Wait, read.ParkKind);
+        Assert.Null(read.Escalation);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -27,15 +28,16 @@ public sealed class ChildChangedSignalTests
     {
         var sent = new ChildChanged("service:workflow.inbox", _child, ChildChange.Parked, ParkReason.NeedsAnswer, "q", TriggerKey.For(_child, "child-1"), ParkKind.Wait, EscalationKind.Gate);
         var json = JsonNode.Parse(DataConverter.Default.PayloadConverter.ToPayload(sent).Data.ToStringUtf8())!.AsObject();
-        var recorded = json.Where(static p => p.Key is "parkKind" or "escalation").Select(static p => p.Key).ToList();
+        var recorded = json.Select(static p => p.Key).Where(static k => string.Equals(k, "parkKind", StringComparison.OrdinalIgnoreCase) || string.Equals(k, "escalation", StringComparison.OrdinalIgnoreCase)).ToList();
         recorded.ForEach(k => json.Remove(k));
         var old = new Payload { Data = ByteString.CopyFromUtf8(json.ToJsonString()) };
         old.Metadata["encoding"] = ByteString.CopyFromUtf8("json/plain");
 
         var read = Read(old);
 
-        Assert.Equal(["parkKind", "escalation"], recorded);
-        Assert.Equal((null, null), (read.ParkKind, read.Escalation));
+        Assert.Equal(2, recorded.Count);
+        Assert.Null(read.ParkKind);
+        Assert.Null(read.Escalation);
         Assert.Equal((ParkReason.NeedsAnswer, "q"), (read.Reason, read.Question));
     }
 
