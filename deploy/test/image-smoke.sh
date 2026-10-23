@@ -69,7 +69,7 @@ else
 fi
 
 # 2. the user, PID 1, the filesystem, the seeded Temporal binary
-[ "$(docker exec "$name" id -u)" = 10001 ] && ok "runs as uid 10001" || bad "does not run as uid 10001"
+[ "$(docker exec "$name" id -u)" = 1000 ] && ok "runs as uid 1000" || bad "does not run as uid 1000"
 [ "$(docker exec "$name" cat /proc/1/comm)" = tini ] && ok "tini is PID 1" || bad "PID 1 is not tini"
 if docker exec "$name" sh -c 'touch /opt/sindri/x' 2>/dev/null; then bad "the root filesystem is writable"; else ok "the root filesystem is read-only"; fi
 if docker exec "$name" sh -c 'test -x /data/state/cache/bin/temporal-*/temporal'; then ok "start.sh seeded the temporal binary on the volume"; else bad "no temporal binary on the volume"; fi

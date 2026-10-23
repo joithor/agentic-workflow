@@ -6,7 +6,7 @@
 #   build    publishes the Sindri host exactly as scripts/sindri-app.sh does (framework-dependent, the shipped recipes embedded),
 #            then judge and aw-packets NativeAOT for the target platform, then runs the shipped recipes' evals
 #   tools    the temporal CLI from binaries.lock (sha256-checked) and graphify at the code index's pin (context/code-index.lock)
-#   runtime  aspnet + git, bubblewrap, tini; uid 10001; read-only-root friendly (all state under /data)
+#   runtime  aspnet + git, bubblewrap, tini; uid 1000 (the rootless Docker daemon's user, spec §A.1); read-only-root friendly (all state under /data)
 # sindri-ui is not built: the image has no desktop.
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0.401-noble@sha256:e70cdb7f80b0348f5cb85f19a8f670fca061f033d57eed12fa003d58b0e06317 AS build
@@ -65,13 +65,15 @@ FROM docker.io/library/docker:29.9.2-cli@sha256:5e6baf67325a79f64ed3bed6863954d5
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble@sha256:8af87eba5e7cdafb1514d7388be287365da97c132509e84dfe252ffd552398ca AS runtime
 # git (repos), bubblewrap (the code graph's sandbox), tini (PID 1: it reaps the detached Temporal process), procps (/bin/ps
-# and /bin/kill: the Temporal dev server's lifecycle finds and signals its process through them, DevServerProcesses).
+# and /bin/kill: the Temporal dev server's lifecycle finds and signals its process through them, DevServerProcesses). The base
+# image's `ubuntu` user holds uid 1000, so it is removed and `sindri` takes the uid (the rootless Docker daemon's, spec §A.1).
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git bubblewrap tini procps ca-certificates \
  && rm -rf /var/lib/apt/lists/* \
- && useradd --uid 10001 --user-group --no-create-home --home-dir /data/home --shell /usr/sbin/nologin sindri \
+ && { userdel --remove ubuntu 2>/dev/null || true; } \
+ && useradd --uid 1000 --user-group --no-create-home --home-dir /data/home --shell /usr/sbin/nologin sindri \
  && mkdir -p /opt/sindri /data \
- && chown 10001:10001 /data
+ && chown 1000:1000 /data
 COPY --from=build /out/sindri /opt/sindri
 COPY --from=tools /opt/sindri/graphify /opt/sindri/graphify
 COPY --from=tools /opt/sindri/python /opt/sindri/python
@@ -80,7 +82,9 @@ COPY --from=dockercli /usr/local/bin/docker /usr/local/bin/docker
 COPY --from=dockercli /usr/local/libexec/docker/cli-plugins/docker-compose /usr/local/libexec/docker/cli-plugins/docker-compose
 COPY context/code-index.lock /opt/sindri/context/code-index.lock
 COPY deploy/start.sh /opt/sindri/start.sh
-RUN chmod 0755 /opt/sindri/start.sh /opt/sindri/sindri /opt/sindri/judge /opt/sindri/aw-packets
+# /opt/sindri is world-readable, so any uid the pod runs the image as can read what Sindri ships.
+RUN chmod -R a+rX /opt/sindri \
+ && chmod 0755 /opt/sindri/start.sh /opt/sindri/sindri /opt/sindri/judge /opt/sindri/aw-packets
 
 # State is under /data (the volume); the root is read-only, /tmp is the only other writable path. Every variable a `kubectl exec`
 # needs is set here, not in start.sh (an exec doesn't run it); the chart adds DOCKER_HOST and the rest (spec §A.1).
@@ -98,7 +102,7 @@ ENV AW_SINDRI_DEPLOY=pod \
     AW_CODE_INDEX_LOCK=/opt/sindri/context/code-index.lock \
     DOTNET_EnableDiagnostics=0 \
     DOTNET_CLI_TELEMETRY_OPTOUT=1
-USER 10001:10001
+USER 1000:1000
 WORKDIR /data
 VOLUME ["/data"]
 ENTRYPOINT ["tini", "--", "/opt/sindri/start.sh"]

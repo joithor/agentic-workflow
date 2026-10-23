@@ -11,7 +11,7 @@ The `Dockerfile` at the repo root has three stages, every `FROM` pinned by diges
 |---|---|
 | build | Publishes the Sindri host the way `scripts/sindri-app.sh` does (framework-dependent, the shipped recipes embedded through `AwRecipesDir`), then `judge` and `aw-packets` NativeAOT for the target platform, then runs `sindri recipe eval --shipped` and fails the build if an eval fails or the embedded recipe count differs from `recipes/sindri/*.yaml`. `sindri-ui` is not built: the image has no desktop |
 | tools | The `temporal` CLI from `binaries.lock` (downloaded and sha256-checked by `scripts/binaries-lock.sh fetch temporal`), and graphify in a hash-pinned venv at `context/code-index.lock`'s pin (`uv`, the same install `scripts/install-deps.sh` does) |
-| runtime | `aspnet` plus `git`, `bubblewrap`, `tini` and `procps` (the Temporal dev server is found and signalled with `ps` and `kill`); uid 10001; everything Sindri ships under `/opt/sindri` |
+| runtime | `aspnet` plus `git`, `bubblewrap`, `tini` and `procps` (the Temporal dev server is found and signalled with `ps` and `kill`); uid 1000; everything Sindri ships under `/opt/sindri` |
 
 `ENTRYPOINT ["tini", "--", "/opt/sindri/start.sh"]`. `start.sh` (source: `deploy/start.sh`) copies the baked-in Temporal binary to
 `$AW_STATE_DIR/cache/bin/temporal-<version>/` when the volume does not hold it (Sindri looks for it only there), then `exec`s
@@ -26,13 +26,13 @@ All set by the image; override with `docker run -e` or the chart's values.
 | `AW_SINDRI_DEPLOY` | `pod` | The pod-mode switch. Unset (any desktop install) is today's behaviour; `sindri doctor` echoes `deploy:mode` in pod mode. Nothing else keys on it yet |
 | `AW_STATE_DIR` | `/data/state` | State root; Temporal's binary is seeded under `cache/bin/` |
 | `AW_SINDRI_HOME` | `/data/state/sindri-app` | Ledger, views, approvals, endpoint record, token |
-| `HOME`, `XDG_CACHE_HOME`, `UV_CACHE_DIR` | under `/data/home` | The git, uv and graphify caches; a read-only root with uid 10001 has no other writable home |
+| `HOME`, `XDG_CACHE_HOME`, `UV_CACHE_DIR` | under `/data/home` | The git, uv and graphify caches; a read-only root with uid 1000 has no other writable home |
 | `AW_SINDRI_JUDGE`, `AW_PACKETS_BIN` | `/opt/sindri/judge`, `/opt/sindri/aw-packets` | The NativeAOT tools the recipes run |
 | `AW_CODEINDEX_GRAPHIFY`, `AW_CODE_INDEX_LOCK` | `/opt/sindri/graphify/bin/graphify`, `/opt/sindri/context/code-index.lock` | The code index's graphify and its pin file |
 
 ## Volume layout
 
-One volume at `/data` (writable by uid 10001), nothing else but `/tmp` is writable (run with `--read-only --tmpfs /tmp`):
+One volume at `/data` (writable by uid 1000), nothing else but `/tmp` is writable (run with `--read-only --tmpfs /tmp`):
 
 ```
 /data/state/sindri-app/   ledger.db, views.db, approved/, auth/, control.json, logs   (back this up; views and the code index rebuild)
