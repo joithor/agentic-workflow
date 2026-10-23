@@ -11,7 +11,6 @@ namespace Aw.Sindri.Ui.ViewModels.Workflows;
 internal sealed class StageCellViewModel
 {
     private readonly StateCell _cell;
-    private readonly string _stateName;
 
     /// <summary>A cell of a row.</summary>
     /// <param name="cell">The served cell.</param>
@@ -22,13 +21,15 @@ internal sealed class StageCellViewModel
     internal StageCellViewModel(StateCell cell, bool isCurrent, bool isBlocked, StateNames? names = null, string recipeId = "")
     {
         _cell = cell;
-        _stateName = names is null ? cell.State : names.Of(recipeId, cell.State);
+        StateName = names is null ? cell.State : names.Of(recipeId, cell.State);
         IsCurrent = isCurrent;
         IsBlocked = isBlocked;
         var badge = cell.Badge is { } b ? Labels.CellBadge(b.Kind, b.Reason) : string.Empty;
         Glyph = isBlocked ? Labels.BlockedMark : badge.Length > 0 ? badge : Mark(cell.Glyph);
         Detail = string.Join(' ', new[] { isBlocked ? badge : string.Empty, Parts(cell) }.Where(p => p.Length > 0));
     }
+
+    private string StateName { get; }
 
     /// <summary>The state this cell is.</summary>
     public string State => _cell.State;
@@ -49,7 +50,7 @@ internal sealed class StageCellViewModel
     public bool IsCurrent { get; }
 
     /// <summary>The name screen readers hear: the state in the recipe's words (its id when no names are known), what the cell says in words, and "current" for the state the instance is in.</summary>
-    public string Name => $"{_stateName}, {Words()}{(IsCurrent ? ", " + Labels.StageCurrent : string.Empty)}";
+    public string Name => $"{StateName}, {Words()}{(IsCurrent ? ", " + Labels.StageCurrent : string.Empty)}";
 
     internal static string Mark(Api.Workflow.StateGlyph glyph) => glyph switch
     {

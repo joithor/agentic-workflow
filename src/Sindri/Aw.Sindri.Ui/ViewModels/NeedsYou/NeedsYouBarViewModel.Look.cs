@@ -157,7 +157,7 @@ internal sealed partial class NeedsYouBarViewModel
     {
         NeedsYouBarOutcome.Revise or NeedsYouBarOutcome.Rework => Labels.NeedsYouSentBackHint,
         NeedsYouBarOutcome.Drop => Labels.NeedsYouDroppedHint,
-        NeedsYouBarOutcome.None or NeedsYouBarOutcome.Approve => Labels.NeedsYouApprovedHint,
+        NeedsYouBarOutcome.None or NeedsYouBarOutcome.Approve or NeedsYouBarOutcome.Answer => Labels.NeedsYouApprovedHint,
         _ => throw new InvalidOperationException("an outcome the bar doesn't know"),
     };
 
@@ -195,7 +195,7 @@ internal sealed partial class NeedsYouBarViewModel
     {
         NeedsYouBarOutcome.Revise or NeedsYouBarOutcome.Rework => Labels.NeedsYouSentBackTitle(_row.Title),
         NeedsYouBarOutcome.Drop => Labels.NeedsYouDroppedTitle(_row.Title),
-        NeedsYouBarOutcome.None or NeedsYouBarOutcome.Approve => Labels.NeedsYouApprovedTitle(_row.Title),
+        NeedsYouBarOutcome.None or NeedsYouBarOutcome.Approve or NeedsYouBarOutcome.Answer => Labels.NeedsYouApprovedTitle(_row.Title),
         _ => throw new InvalidOperationException("an outcome the bar doesn't know"),
     };
 
@@ -204,7 +204,7 @@ internal sealed partial class NeedsYouBarViewModel
     {
         NeedsYouBarOutcome.Revise or NeedsYouBarOutcome.Rework => Labels.NeedsYouSentBackBody,
         NeedsYouBarOutcome.Drop => Labels.NeedsYouDroppedBody,
-        NeedsYouBarOutcome.None or NeedsYouBarOutcome.Approve => Labels.NeedsYouApprovedBody,
+        NeedsYouBarOutcome.None or NeedsYouBarOutcome.Approve or NeedsYouBarOutcome.Answer => Labels.NeedsYouApprovedBody,
         _ => throw new InvalidOperationException("an outcome the bar doesn't know"),
     };
 }

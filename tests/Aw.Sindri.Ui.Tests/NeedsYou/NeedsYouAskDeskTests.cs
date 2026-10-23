@@ -18,11 +18,10 @@ public sealed class NeedsYouAskDeskTests
 
     private static string Fact(string body) => $$"""{"key":"fact:escalation","type":"payload","body":{{body}},"truncated":false}""";
 
-    private const string ThreeQuestions = """
-        [{"id":"q1","kind":"productQuestion","question":"Keep the legacy flow?","options":["Keep it","Drop it"],"lens":"product","finding":"F-1"},
-         {"id":"q2","kind":"ambiguousFix","question":"Which table owns expiry?","lens":"data"},
-         {"id":"q3","kind":"ambiguousFix","question":"Who is the expiry for?"}]
-        """;
+    private const string ThreeQuestions =
+        """[{"id":"q1","kind":"productQuestion","question":"Keep the legacy flow?","options":["Keep it","Drop it"],"lens":"product","finding":"F-1"},""" +
+        """{"id":"q2","kind":"ambiguousFix","question":"Which table owns expiry?","lens":"data"},""" +
+        """{"id":"q3","kind":"ambiguousFix","question":"Who is the expiry for?"}]""";
 
     // The lens-ask-multi golden: the escalation fact is listed as an input; its full list comes from the fact read.
     private async Task<NeedsYouBarViewModel> Bar(string escalationBody)

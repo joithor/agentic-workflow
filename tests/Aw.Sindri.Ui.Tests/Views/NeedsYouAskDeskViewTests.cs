@@ -30,7 +30,7 @@ public sealed class NeedsYouAskDeskViewTests : FrameHost
         Assert.Equal(["Keep the legacy flow?", "Which table owns expiry?"], prompts, StringComparer.Ordinal);
         Assert.Equal(2, window.GetVisualDescendants().OfType<TextBox>().Count(t => t.Name == "NeedsYouQuestionAnswer" && t.IsEffectivelyVisible));
         var approve = Named<Button>(window, "NeedsYouApprove");
-        Assert.Equal(false, approve.IsEnabled);
+        Assert.False(approve.IsEnabled);
 
         var option = window.GetVisualDescendants().OfType<Button>().First(b => b.IsEffectivelyVisible && string.Equals(b.Content as string, "Drop it", StringComparison.Ordinal));
         option.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));

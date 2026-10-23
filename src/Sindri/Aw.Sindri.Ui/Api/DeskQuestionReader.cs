@@ -16,12 +16,16 @@ internal static class DeskQuestionReader
     {
         ArgumentNullException.ThrowIfNull(fact);
         var body = fact.Body;
-        var entries = body.ValueKind switch
+        List<JsonElement> entries = [];
+        if (body.ValueKind == JsonValueKind.Array)
         {
-            JsonValueKind.Array => body.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.Object).ToList(),
-            JsonValueKind.Object => [body],
-            _ => [],
-        };
+            entries.AddRange(body.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.Object));
+        }
+        else if (body.ValueKind == JsonValueKind.Object)
+        {
+            entries.Add(body);
+        }
+
         var questions = new List<DeskQuestion>();
         foreach (var entry in entries)
         {

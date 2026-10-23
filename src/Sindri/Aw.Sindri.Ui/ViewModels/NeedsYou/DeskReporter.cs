@@ -38,9 +38,13 @@ internal sealed class DeskReporter(ISindriApi api, Func<Uri?> apiUrl, ILauncher?
         var complete = read.Value.Current.Status.Commands.FirstOrDefault(c => c.Verb == StatusVerb.Complete);
         var state = await StateOf(url, read.Value).ConfigureAwait(true);
         var card = await MergeCardOf(url, read.Value).ConfigureAwait(true);
-        var questions = desk is not null && AsksQuestions(desk, read.Value.Current.Status.Inputs) ? await Questions(url, instanceId).ConfigureAwait(true) : null;
+        var questions = await QuestionsOf(url, read.Value).ConfigureAwait(true);
         return new DeskTarget(instanceId, desk?.Run ?? string.Empty, complete, state?.Why, OutcomeText(state, "approve"), OutcomeText(state, "revise"), desk?.Recommended, card, questions) { Verbs = verbs };
     }
+
+    // The ask step's questions; null for a desk that does not ask.
+    private async Task<IReadOnlyList<DeskQuestion>?> QuestionsOf(Uri url, InstanceDetail detail) =>
+        detail.Current.Desk is { } desk && AsksQuestions(desk, detail.Current.Status.Inputs) ? await Questions(url, detail.Id).ConfigureAwait(true) : null;
 
     // The ask step: the person's answers are the desk's required output and the questions are the escalation fact it was given.
     private static bool AsksQuestions(DeskForm desk, IReadOnlyList<StatusInput> inputs) =>

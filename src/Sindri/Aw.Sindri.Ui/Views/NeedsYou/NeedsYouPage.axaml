@@ -290,7 +290,7 @@
        <!-- The action bar (F3 needs-you spec §2, §5): fixed under the card, outside it, always in view. A and D reach the same methods as its buttons. -->
        <Border x:Name="NeedsYouActionBar" Grid.Row="1" Classes="action-bar" IsVisible="{Binding Bar.HasBar}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group" AutomationProperties.Name="{Binding Bar.BarName}">
         <StackPanel MaxWidth="760" Spacing="8">
-          <!-- The ask step (engine #817): every question with its answer field, options as choices; Send answers waits for them all. -->
+          <!-- The ask step (engine 817): every question with its answer field, options as choices; Send answers waits for them all. -->
           <StackPanel x:Name="NeedsYouQuestions" Spacing="8" IsVisible="{Binding Bar.HasQuestions}">
             <TextBlock Classes="body-strong" Text="{Binding Bar.QuestionsHeading}" />
             <ItemsControl x:Name="NeedsYouQuestionList" ItemsSource="{Binding Bar.Questions}">
