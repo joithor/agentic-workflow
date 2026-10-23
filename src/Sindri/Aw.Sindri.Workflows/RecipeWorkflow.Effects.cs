@@ -155,8 +155,7 @@ internal sealed partial class RecipeWorkflow
 
             var run = new EffectRun(after.Address.Value, after.Item.Value, after.Attempt, effect, row.Command, TextOf(after, effect), after.Facts, _recipe!.Version, ReplyFacts);   // why: effects run only after Begin set _recipe
             var options = (ActivityOptions)EffectActivities.RunOptions.Clone();
-            // a cancel of the instance stops the retries too, not only the delay; but the report of a cancelled end to its line is that cancel's own
-            options.CancellationToken = IsLineReport(effect) ? Workflow.CancellationToken : Effects().Token;
+            options.CancellationToken = RunToken(effect);
             options.TaskQueue = Workflow.Info.TaskQueue;   // the instance's queue, from settings (never a constant)
             try
             {
@@ -182,6 +181,13 @@ internal sealed partial class RecipeWorkflow
             _ = _effectsOpen.Remove(row.Identity);
         }
     }
+
+    /// <summary>
+    /// What cancels an effect's 'RunEffect': a cancel of the instance stops a recipe effect's retries too, not only its delay. An engine notice (a desk task, a park)
+    /// and the report of a cancelled end to its line are never cancelled by it: a cancel Update shares its activation with the resolution of a notice that just
+    /// completed, and the server fails the workflow task that cancels an activity it has already completed (ACTIVITY_UNKNOWN) over and over, so the cancel never returned.
+    /// </summary>
+    private CancellationToken RunToken(EffectCommand effect) => effect.Origin == CommandOrigin.Engine ? Workflow.CancellationToken : Effects().Token;
 
     /// <summary>The code and message an ended 'RunEffect' is refused with: its own SND code, else SND-WF-015.</summary>
     // Deterministic in practice: the scrub's rules are linear and its result only feeds activity inputs, never a value compared on replay.
