@@ -5,6 +5,7 @@ using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.ViewModels.Agents;
 using Aw.Sindri.Ui.Views.Agents;
 
 namespace Aw.Sindri.Ui.Tests.Views;
@@ -70,7 +71,7 @@ public sealed class AgentsEndedFoldTests : FrameHost
         shell.GoTo(PageId.Agents);
         await Until(window, () => shell.Agents.HasEnded);
         var reference = (string)list["recentlyEnded"]![0]!["session"]!["ref"]!;
-        shell.Agents.RequestOpen(new Aw.Sindri.Ui.ViewModels.Agents.SessionOpenRequestedEventArgs(new DeepLink(DeepLinkKind.Session, reference)));
+        shell.Agents.RequestOpen(new SessionOpenRequestedEventArgs(new DeepLink(DeepLinkKind.Session, reference)));
         await Until(window, () => shell.IsSheetShown && shell.AgentSheet.IsEnded, "the sheet never said the session ended");
         return (window, shell);
     }
@@ -103,7 +104,7 @@ public sealed class AgentsEndedFoldTests : FrameHost
         shell.GoTo(PageId.Agents);
         await Until(window, () => shell.Agents.Groups.Count > 0);
 
-        shell.Agents.RequestOpen(new Aw.Sindri.Ui.ViewModels.Agents.SessionOpenRequestedEventArgs(new DeepLink(DeepLinkKind.Session, "claude-code/aaaaaaaa-0000-4000-8000-000000000001")));
+        shell.Agents.RequestOpen(new SessionOpenRequestedEventArgs(new DeepLink(DeepLinkKind.Session, "claude-code/aaaaaaaa-0000-4000-8000-000000000001")));
         await Until(window, () => shell.IsSheetShown && shell.AgentSheet.IsEnded, "the sheet never said the session ended");
 
         Assert.Equal(string.Empty, shell.AgentSheet.EndedResumeText);
