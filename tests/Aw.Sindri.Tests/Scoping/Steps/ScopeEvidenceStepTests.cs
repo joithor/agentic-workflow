@@ -58,7 +58,7 @@ public sealed class ScopeEvidenceStepTests
     private static ScopingFacts FoundLast() => Gold().Edit("challenge", n => n["rounds"]![1]!["verdict"] = "found");
 
     private static Task<BlockStepResult> RunWithCap(ScopingFacts facts, int? cap) =>
-        new ScopeEvidenceStep(new InMemoryRunArea(), new InMemoryPackets())
+        new ScopeEvidenceStep(new InMemoryRunArea(), new InMemoryPackets(), new InMemoryRepoCheckouts().With("web", "/work/web"), new FakeRunDiff())
             .Run(ScopingStepContexts.Of("step.scope.evidence", facts, loopCaps: cap is { } n ? new Dictionary<string, int>(StringComparer.Ordinal) { ["challenge"] = n } : null), Token).AsTask();
 
     [Fact]
