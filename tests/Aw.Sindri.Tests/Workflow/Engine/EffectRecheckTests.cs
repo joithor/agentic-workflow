@@ -47,6 +47,15 @@ public sealed class EffectRecheckTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Engine_origin_limited_to_notify_desk() =>
+    public void The_engines_line_report_of_a_linked_phase_is_exempt_too()
+    {
+        var report = BlockId.From("effect.line.report");
+
+        Assert.Null(EffectRules.Recheck(CommandOrigin.Engine, ApprovalCheck.Revoked, _none, report));
+        Assert.Equal("SND-WF-011", EffectRules.Recheck(CommandOrigin.Recipe, ApprovalCheck.Holds, _none, report));   // a recipe's own report still needs the allowlist
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Engine_origin_limited_to_notify_desk_and_the_line_report() =>
         Assert.Equal("SND-WF-011", EffectRules.Recheck(CommandOrigin.Engine, ApprovalCheck.Holds, _allowed, _claim));
 }
