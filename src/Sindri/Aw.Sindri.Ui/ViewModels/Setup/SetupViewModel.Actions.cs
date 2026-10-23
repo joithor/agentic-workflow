@@ -68,11 +68,11 @@ internal sealed partial class SetupViewModel
         }
         else if (string.Equals(row.Id, ProfileStep, StringComparison.Ordinal))
         {
-            row.Profile = new SetupProfileConfirmViewModel(_catalog, () => _url, _profileHash, _api, _clock);
+            row.Profile = new SetupProfileConfirmViewModel(() => _url, _profileHash, _api);
         }
         else if (string.Equals(row.Id, RecipesStep, StringComparison.Ordinal))
         {
-            row.Workflows = new ApproveAllViewModel(_catalog, () => _url, _api, _clock, _reducedMotion);
+            row.Workflows = new ApproveAllViewModel(_catalog, () => _url, _api, _clock);
         }
         else if (string.Equals(row.Id, OnyxStep, StringComparison.Ordinal))
         {
@@ -98,7 +98,7 @@ internal sealed partial class SetupViewModel
         }
         else if (row.Workflows is { } all)
         {
-            if (row.NeedsYou && all.IsReady)
+            if (row.NeedsYou)
             {
                 if (!all.IsOpen)
                 {
