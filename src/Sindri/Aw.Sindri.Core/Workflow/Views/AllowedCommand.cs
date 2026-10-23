@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
+namespace Aw.Sindri.Core.Workflow.Views;
 
 /// <summary>
 /// One command the instance accepts now (engine spec rev 8 §5.1, §6.3; UI spec E-13 '{ actionId, cli }'): the API

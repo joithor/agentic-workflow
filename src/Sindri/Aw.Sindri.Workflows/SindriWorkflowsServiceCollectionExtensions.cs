@@ -9,6 +9,7 @@ using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Registry;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
@@ -108,11 +109,15 @@ public static class SindriWorkflowsServiceCollectionExtensions
     }
 
     // Engine P8 U3: LaunchAgentStep, WatchAgentStep, CloseAgentStep and what they use, and the worker's set of activity classes.
-    private static IServiceCollection AddAgentRuntime(this IServiceCollection services) => services
+    private static IServiceCollection AddAgentRuntime(this IServiceCollection services)
+    {
+        services.TryAddSingleton<ReportRefusals>();   // one instance with the CompleteStep check that records into it (Features registers it the same way)
+        return services
         .AddSingleton<AgentStepActivities>().AddSingleton<AgentLaunching>().AddSingleton<AgentLaunchInputs>().AddSingleton<AgentClosing>()
         .AddSingleton<UsageFlush>(static provider => (launch, ct) => FlushScoped(provider, launch, ct))
         .AddSingleton<AgentTargetResolver>().AddSingleton<AgentLaunchRecorder>().AddSingleton(AgentRuntimeOptions.Default)
         .AddSingleton<WorkerActivities>();
+    }
 
     private static async ValueTask FlushScoped(IServiceProvider provider, LaunchId launch, CancellationToken cancellationToken)
     {

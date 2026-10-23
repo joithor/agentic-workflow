@@ -259,5 +259,6 @@
   "asOf": "2026-10-12T12:26:00.0000000Z",
   "steps": [],
   "startedBy": null,
-  "again": "ITM-01JKX/triage-alert/1"
+  "again": "ITM-01JKX/triage-alert/1",
+  "allowedCommands": []
 }
