@@ -52,13 +52,13 @@ public abstract partial class IndexStoreContract
             Succeeds(await build.WriteFiles([FileOf("src/A.cs", run, stop, type, bare)], _none), "writing");
 
             var first = Ok(await build.EmbedCandidates(10, _none), "candidates");
-            Expect.That(first.Select(c => (c.Symbol.Value, c.Body)).SequenceEqual([(run.Ref.Value, "run body"), (stop.Ref.Value, "stop body"), (type.Ref.Value, "class body")]), "bodied symbols in ref order, with their text, a type among them");
+            Expect.That(first.Select(c => (c.Symbol.Value, c.Body)).SequenceEqual([(type.Ref.Value, "class body"), (run.Ref.Value, "run body"), (stop.Ref.Value, "stop body")]), "bodied symbols in ref order, with their text, a type among them");
             Expect.That(Ok(await build.EmbedCandidates(1, _none), "one candidate").Count == 1, "the limit caps the list");
             Expect.That(Ok(await build.CountEmbeddings(_none), "counting") == new EmbeddingProgress(0, 4), "none embedded; all four symbols should be");
 
             Succeeds(await build.WriteEmbeddings([new EmbeddingRecord(run.Ref, "model-1", new float[] { 1, 0 })], _none), "writing a vector");
 
-            Expect.That(Ok(await build.EmbedCandidates(10, _none), "candidates").Select(c => c.Symbol).SequenceEqual([stop.Ref, type.Ref]), "an embedded symbol is no longer a candidate");
+            Expect.That(Ok(await build.EmbedCandidates(10, _none), "candidates").Select(c => c.Symbol).SequenceEqual([type.Ref, stop.Ref]), "an embedded symbol is no longer a candidate");
             Expect.That(Ok(await build.CountEmbeddings(_none), "counting") == new EmbeddingProgress(1, 4), "one of four is embedded");
         }
     }
