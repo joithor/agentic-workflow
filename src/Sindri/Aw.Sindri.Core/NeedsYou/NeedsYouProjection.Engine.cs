@@ -190,7 +190,11 @@ internal sealed partial class NeedsYouProjection
     /// </summary>
     private async ValueTask<Result<Unit>> ChildDesk(IViewRows rows, DescendantRow descendant, CancellationToken cancellationToken)
     {
-        var address = InstanceAddress.From(descendant.Payload.Instance);
+        if (!InstanceAddress.TryFrom(descendant.Payload.Instance, out var address))
+        {
+            return Unit.Value;   // not an engine address: no desk row to settle, and never a stall
+        }
+
         var id = NeedsYouRowId.Desk(address).Value;
         var delta = descendant.Payload.Detail!.Delta;   // why: Nested returns before this when the row has no detail
         var idle = delta.Outcome is not null || delta.Suspension is not null;
