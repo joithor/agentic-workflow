@@ -1,4 +1,5 @@
 using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.ViewModels.Controls;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
@@ -37,6 +38,38 @@ internal sealed class ServiceRowViewModel(string name) : ObservableObject
 
     /// <summary>The job of the manual run in flight, or empty.</summary>
     public string JobId { get; private set => Set(ref field, value); } = string.Empty;
+
+    /// <summary>True under the page width where the table keeps three columns.</summary>
+    public bool IsCompact { get; private set => Set(ref field, value); }
+
+    /// <summary>True when every column shows.</summary>
+    public bool IsWide => !IsCompact;
+
+    /// <summary>The link that opens the running job's sheet.</summary>
+    public string ViewJobText { get; } = Labels.ViewJob;
+
+    /// <summary>The link's accessible name.</summary>
+    public string ViewJobName { get; } = Labels.ViewJobName(name);
+
+    /// <summary>Raised when View job is pressed; the shell opens the Jobs page on that job's sheet.</summary>
+    internal event EventHandler<JobRequestedEventArgs>? JobRequested;
+
+    /// <summary>Asks the shell to open the job of the manual run in flight; does nothing when none is.</summary>
+    internal void RequestJob()
+    {
+        if (JobId.Length > 0)
+        {
+            JobRequested?.Invoke(this, new JobRequestedEventArgs(new DeepLink(DeepLinkKind.Job, JobId)));
+        }
+    }
+
+    /// <summary>Sets the row's layout for the page's width.</summary>
+    /// <param name="compact">True under the width where the table keeps three columns.</param>
+    internal void SetCompact(bool compact)
+    {
+        IsCompact = compact;
+        OnChanged(nameof(IsWide));
+    }
 
     /// <summary>Run now for this service, or null before the catalog is read.</summary>
     public ControlViewModel? Run

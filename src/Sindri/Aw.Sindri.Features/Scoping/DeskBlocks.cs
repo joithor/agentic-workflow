@@ -38,12 +38,15 @@ internal static partial class DeskBlocks
     internal static string? Resolve(string name) => _ids.Values.Contains(name, StringComparer.Ordinal) ? name : _ids.GetValueOrDefault(name);
 
     /// <summary>Runs the Step's code.</summary>
-    internal static Result<ScopingDeskResponse> Run(string block, ScopeFacts facts) => block switch
+    /// <param name="block">The Step's id.</param>
+    /// <param name="facts">The facts.</param>
+    /// <param name="challengeCap">The running recipe's loops.challenge.cap; the shipped default where no recipe runs the helper (the desk).</param>
+    internal static Result<ScopingDeskResponse> Run(string block, ScopeFacts facts, int challengeCap = ScopeRules.DefaultChallengeRounds) => block switch
     {
         "step.scope.intake" => Intake(facts),
         "step.scope.check" => Check(facts),
         "step.scope.challenge-log" => ChallengeLog(facts),
-        "step.scope.evidence" => Evidence(facts),
+        "step.scope.evidence" => Evidence(facts, challengeCap),
         "step.interview.record" => Record(facts),
         "step.brief.seed" => Seed(),
         "step.scope.gather" => Gather(facts),
@@ -214,10 +217,10 @@ internal static partial class DeskBlocks
         };
     }
 
-    private static Result<ScopingDeskResponse> Evidence(ScopeFacts facts)
+    private static Result<ScopingDeskResponse> Evidence(ScopeFacts facts, int challengeCap)
     {
         var assembled = ScopeEvidence.FlagUncited(facts);
-        var report = ScopePacketChecks.Run(assembled, ScopeStage.Evidence);
+        var report = ScopePacketChecks.Run(assembled, ScopeStage.Evidence, challengeCap);
         if (report.Outcome is not ScopeOutcome.Complete)
         {
             var outcome = report.Outcome == ScopeOutcome.Regather ? "regather" : "incomplete";

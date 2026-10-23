@@ -53,4 +53,8 @@ public sealed record RecipeStats(
         return new RecipeStats(recipe.Value, hash, window.Text, ChildOnly: true, Runs: null, Done: null, Failed: null, Cancelled: null, Outcomes: null, HumanRate: null, MedianSeconds: null,
             Tokens: null, BudgetHits: null, HumanTime: null, ByState: [], Buckets: [], AsOf: asOf);
     }
+
+    /// <summary>The babysitter's own figures: set only for 'workflow.pr-babysitter', computed on each read (never cached), omitted from the JSON otherwise (PR babysitter spec API19).</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public BabysitterStats? Babysitter { get; init; }
 }

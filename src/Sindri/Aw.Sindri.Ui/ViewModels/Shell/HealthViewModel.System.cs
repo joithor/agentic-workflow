@@ -55,6 +55,48 @@ internal sealed partial class HealthViewModel
         }
     }
 
+    /// <summary>True under the page width where the Services table keeps three columns.</summary>
+    public bool IsCompact { get; private set => Set(ref field, value); }
+
+    /// <summary>True when every column shows.</summary>
+    public bool IsWide => !IsCompact;
+
+    /// <summary>Raised when a row's View job is pressed; the shell opens the Jobs page on that job's sheet.</summary>
+    internal event EventHandler<JobRequestedEventArgs>? JobRequested;
+
+    /// <summary>The page's width changed: under 900 px the Services table keeps three columns.</summary>
+    /// <param name="width">The page's width in px.</param>
+    internal void Resize(double width)
+    {
+        var compact = width < Labels.SystemWideFrom;
+        if (compact == IsCompact)
+        {
+            return;
+        }
+
+        IsCompact = compact;
+        OnChanged(nameof(IsWide));
+        foreach (var row in _serviceRows.Values)
+        {
+            row.SetCompact(compact);
+        }
+    }
+
+    /// <summary>Left or Right on the focused tab: moves to the neighbouring tab.</summary>
+    /// <param name="step">-1 for Left, 1 for Right.</param>
+    /// <returns>True when the other tab is now shown (false at an end).</returns>
+    internal bool MoveTab(int step)
+    {
+        var target = step > 0;
+        if (target == ShowServicesTab)
+        {
+            return false;
+        }
+
+        ShowServicesTab = target;
+        return true;
+    }
+
     /// <summary>The Services table's columns.</summary>
     public IReadOnlyList<string> ServiceColumns { get; } = [Labels.ServiceColumnName, Labels.ServiceColumnEvery, Labels.ServiceColumnStatus, Labels.ServiceColumnWhat, Labels.ServiceColumnLastRun];
 
@@ -168,6 +210,8 @@ internal sealed partial class HealthViewModel
             if (!_serviceRows.TryGetValue(row.Name, out var vm))
             {
                 vm = _serviceRows[row.Name] = new ServiceRowViewModel(row.Name);
+                vm.SetCompact(IsCompact);   // a row that arrives after the page narrowed is narrow too
+                vm.JobRequested += (_, e) => JobRequested?.Invoke(this, e);
             }
 
             vm.Show(row);

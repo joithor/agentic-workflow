@@ -124,7 +124,8 @@ public sealed class ShellTrailTests
         var address = shell.Instance.Address;
         Assert.True(shell.Workflows.Select(address));
 
-        Assert.True(shell.Press("Enter"));
+        Assert.True(shell.Press("Enter"));   // the first Enter opens the run drawer
+        Assert.True(shell.Press("Enter"));   // the second goes into the run
 
         Assert.Equal(address, shell.OpenerWorkflow);
     }, Token);

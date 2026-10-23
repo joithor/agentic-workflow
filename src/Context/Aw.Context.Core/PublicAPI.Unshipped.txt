@@ -6388,6 +6388,31 @@ static readonly Aw.Context.Core.ContextErrors.UnknownArm -> Aw.Kernel.ErrorDefin
 ~override Aw.Context.Core.Map.MapRead.ToString() -> string
 ~override Aw.Context.Core.Map.MapVersionRef.Equals(object obj) -> bool
 ~override Aw.Context.Core.Map.MapVersionRef.ToString() -> string
+static readonly Aw.Context.Core.ContextErrors.LinearKeyRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.LinearUrlRefused -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.LinearRecordNotFound -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.LinearUnexpectedReply -> Aw.Kernel.ErrorDefinition!
+Aw.Context.Core.Linear.LinearRecordKeys
+Aw.Context.Core.Linear.LinearSettings
+override Aw.Context.Core.Linear.LinearSettings.ToString() -> string!
+static Aw.Context.Core.Linear.LinearSettings.operator !=(Aw.Context.Core.Linear.LinearSettings? left, Aw.Context.Core.Linear.LinearSettings? right) -> bool
+static Aw.Context.Core.Linear.LinearSettings.operator ==(Aw.Context.Core.Linear.LinearSettings? left, Aw.Context.Core.Linear.LinearSettings? right) -> bool
+override Aw.Context.Core.Linear.LinearSettings.GetHashCode() -> int
+override Aw.Context.Core.Linear.LinearSettings.Equals(object? obj) -> bool
+Aw.Context.Core.Linear.LinearSettings.Equals(Aw.Context.Core.Linear.LinearSettings? other) -> bool
+Aw.Context.Core.Linear.LinearSettings.<Clone>$() -> Aw.Context.Core.Linear.LinearSettings!
+Aw.Context.Core.Linear.LinearSettings.Url.get -> System.Uri!
+Aw.Context.Core.Linear.LinearSettings.Token.get -> string!
+Aw.Context.Core.Linear.LinearSettings.Teams.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Linear.LinearSettings.Address.get -> string!
+static Aw.Context.Core.Linear.LinearSettings.Create(string? url, string? token, System.Collections.Generic.IReadOnlyList<string!>! teams) -> Aw.Kernel.Result<Aw.Context.Core.Linear.LinearSettings!>!
+static Aw.Context.Core.Linear.LinearRecordKeys.KindOf(Aw.Context.Core.Sources.RecordKey canonical) -> Aw.Context.Core.Sources.RecordKind
+Aw.Context.Core.Engine.ContextSettings.Linear.init -> void
+Aw.Context.Core.Engine.ContextSettings.Linear.get -> Aw.Context.Core.Linear.LinearSettings?
+static Aw.Context.Core.Linear.LinearRecordKeys.Issue(Aw.Context.Core.Sources.ExternalId id) -> Aw.Context.Core.Sources.RecordKey?
+static Aw.Context.Core.Linear.LinearRecordKeys.Document(Aw.Context.Core.Sources.ExternalId id) -> Aw.Context.Core.Sources.RecordKey?
+static Aw.Context.Core.Linear.LinearRecordKeys.Project(Aw.Context.Core.Sources.ExternalId id) -> Aw.Context.Core.Sources.RecordKey?
+static Aw.Context.Core.Linear.LinearRecordKeys.Update(Aw.Context.Core.Sources.ExternalId id) -> Aw.Context.Core.Sources.RecordKey?
 Aw.Context.Core.Engine.ContextSettings.Ranker.get -> Aw.Context.Core.Engine.RankerSettings!
 Aw.Context.Core.Engine.ContextSettings.Ranker.init -> void
 Aw.Context.Core.Engine.RankerSettings
