@@ -1,6 +1,7 @@
 using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Features.BuildCodeIndex;
+using Aw.CodeIndex.Features.EmbedCodeIndex;
 using Aw.CodeIndex.Testing;
 
 namespace Aw.CodeIndex.Tests.Build;
@@ -75,13 +76,14 @@ public sealed class BuildCodeIndexRealStoreTests
         using var index = new RealIndex(embedder: embedder);
         var repo = git.AsRepo("shop");
 
-        var report = await Build(index, repo, git.Head);
+        _ = await Build(index, repo, git.Head);
+        var report = (await index.Embed.Handle(new EmbedCodeIndexRequest(repo, new Progress<string>()), Token)).Value;
         var texts = embedder.Batches.Single();
         var answer = (await index.Facade.Neighbors(RealIndex.ScopeOf(repo), repo.Name, texts[0], 3, Token)).Value;
         await using var next = (await index.Store.BeginBuild(repo.Name, incremental: true, Token)).Value;
 
         Assert.Equal((3, 3), (report.Embedded, report.Embeddable));
-        Assert.Equal(LayerState.Ok, report.Layers.Single(l => l.Layer == LayerName.Embeddings).State);
+        Assert.Equal(LayerState.Ok, report.Embeddings);
         Assert.Equal(3, answer.Neighbors.Count);
         Assert.Equal(1.0, answer.Neighbors[0].Score, 4);
         Assert.All(texts, t => Assert.Contains("\n", t, StringComparison.Ordinal));

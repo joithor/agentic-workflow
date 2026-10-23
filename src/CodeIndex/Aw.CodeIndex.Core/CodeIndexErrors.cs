@@ -2,7 +2,7 @@ using Aw.Kernel;
 
 namespace Aw.CodeIndex.Core;
 
-/// <summary>The code index's error catalogue (spec §12), codes SND-CODEIDX-NNN; 014 to 029 are reserved. Layer codes (006 to 009) are carried in a layer row and the build report and fail only the call that depends on the layer.</summary>
+/// <summary>The code index's error catalogue (spec §12), codes SND-CODEIDX-NNN; 015 to 029 are reserved. Layer codes (006 to 009) are carried in a layer row and the build report and fail only the call that depends on the layer.</summary>
 public static class CodeIndexErrors
 {
     /// <summary>SND-CODEIDX-001: the 'index:' section has a bad key or value, or a repo name is not a file-safe name; the message starts with the key path.</summary>
@@ -44,10 +44,13 @@ public static class CodeIndexErrors
     /// <summary>SND-CODEIDX-013: no index for this repo yet (also a repo outside the caller's scope).</summary>
     public static readonly ErrorDefinition IndexNotBuilt = new("SND-CODEIDX-013", ErrorKind.NotFound, "No index for this repo yet");
 
+    /// <summary>SND-CODEIDX-016: the repo's index stayed locked by another build or embed run past the wait; the caller tries again later.</summary>
+    public static readonly ErrorDefinition IndexBusy = new("SND-CODEIDX-016", ErrorKind.Unavailable, "The repo's index is locked by another build or embed run");
+
     /// <summary>Every code-index error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
         SettingsInvalid, RepoNotFound, InputTooLarge, HeavyBusy, EmbeddingTargetRefused, EmbeddingServerFailed, NoSandbox,
-        GraphUnavailable, PinMismatch, IndexDamaged, SymbolNotFound, QueryInvalid, IndexNotBuilt,
+        GraphUnavailable, PinMismatch, IndexDamaged, SymbolNotFound, QueryInvalid, IndexNotBuilt, IndexBusy,
     ];
 }

@@ -17153,7 +17153,6 @@ override Aw.Sindri.Core.LensPacks.PackDirectory.GetHashCode() -> int
 override Aw.Sindri.Core.LensPacks.PackDirectory.ToString() -> string!
 static Aw.Sindri.Core.LensPacks.PackDirectory.operator !=(Aw.Sindri.Core.LensPacks.PackDirectory? left, Aw.Sindri.Core.LensPacks.PackDirectory? right) -> bool
 static Aw.Sindri.Core.LensPacks.PackDirectory.operator ==(Aw.Sindri.Core.LensPacks.PackDirectory? left, Aw.Sindri.Core.LensPacks.PackDirectory? right) -> bool
-
 Aw.Sindri.Core.Scheduling.ServiceActions
 const Aw.Sindri.Core.Scheduling.ServiceActions.Pause = "pause" -> string!
 const Aw.Sindri.Core.Scheduling.ServiceActions.Resume = "resume" -> string!
@@ -17489,5 +17488,29 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.Reruns.Action.get -> Aw.Sindri.Cor
 static Aw.Sindri.Core.Workflow.Engine.Runtime.Reruns.Of(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>!
 static Aw.Sindri.Core.Workflow.Views.DeskRecommendation.operator !=(Aw.Sindri.Core.Workflow.Views.DeskRecommendation? left, Aw.Sindri.Core.Workflow.Views.DeskRecommendation? right) -> bool
 static Aw.Sindri.Core.Workflow.Views.DeskRecommendation.operator ==(Aw.Sindri.Core.Workflow.Views.DeskRecommendation? left, Aw.Sindri.Core.Workflow.Views.DeskRecommendation? right) -> bool
+Aw.Sindri.Core.Scheduling.EmbedAttempt
+Aw.Sindri.Core.Scheduling.EmbedAttempt.<Clone>$() -> Aw.Sindri.Core.Scheduling.EmbedAttempt!
+Aw.Sindri.Core.Scheduling.EmbedAttempt.Deconstruct(out Aw.Sindri.Core.Scheduling.EmbedAttemptKind Kind, out System.DateTimeOffset EndedAt) -> void
+Aw.Sindri.Core.Scheduling.EmbedAttempt.EmbedAttempt(Aw.Sindri.Core.Scheduling.EmbedAttemptKind Kind, System.DateTimeOffset EndedAt) -> void
+Aw.Sindri.Core.Scheduling.EmbedAttempt.EndedAt.get -> System.DateTimeOffset
+Aw.Sindri.Core.Scheduling.EmbedAttempt.EndedAt.init -> void
+Aw.Sindri.Core.Scheduling.EmbedAttempt.Equals(Aw.Sindri.Core.Scheduling.EmbedAttempt? other) -> bool
+Aw.Sindri.Core.Scheduling.EmbedAttempt.Kind.get -> Aw.Sindri.Core.Scheduling.EmbedAttemptKind
+Aw.Sindri.Core.Scheduling.EmbedAttempt.Kind.init -> void
+Aw.Sindri.Core.Scheduling.EmbedAttemptKind
+Aw.Sindri.Core.Scheduling.EmbedAttemptKind.Failed = 0 -> Aw.Sindri.Core.Scheduling.EmbedAttemptKind
+Aw.Sindri.Core.Scheduling.EmbedAttemptKind.NoProgress = 2 -> Aw.Sindri.Core.Scheduling.EmbedAttemptKind
+Aw.Sindri.Core.Scheduling.EmbedAttemptKind.Progress = 3 -> Aw.Sindri.Core.Scheduling.EmbedAttemptKind
+Aw.Sindri.Core.Scheduling.EmbedAttemptKind.TryLater = 1 -> Aw.Sindri.Core.Scheduling.EmbedAttemptKind
+Aw.Sindri.Core.Scheduling.EmbedDecision
+override Aw.Sindri.Core.Scheduling.EmbedAttempt.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.EmbedAttempt.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.EmbedAttempt.ToString() -> string!
+static Aw.Sindri.Core.Scheduling.EmbedAttempt.operator !=(Aw.Sindri.Core.Scheduling.EmbedAttempt? left, Aw.Sindri.Core.Scheduling.EmbedAttempt? right) -> bool
+static Aw.Sindri.Core.Scheduling.EmbedAttempt.operator ==(Aw.Sindri.Core.Scheduling.EmbedAttempt? left, Aw.Sindri.Core.Scheduling.EmbedAttempt? right) -> bool
+static Aw.Sindri.Core.Scheduling.EmbedDecision.Decide(bool pending, bool running, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.EmbedAttempt!>! finishedNewestFirst, System.DateTimeOffset now) -> Aw.Sindri.Core.Scheduling.MainMoveAction
+static Aw.Sindri.Core.Scheduling.EmbedDecision.FailedInARow(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.EmbedAttempt!>! finishedNewestFirst) -> int
+static Aw.Sindri.Core.Scheduling.EmbedDecision.NoProgressWait.get -> System.TimeSpan
+static Aw.Sindri.Core.Scheduling.EmbedDecision.TryLaterWait.get -> System.TimeSpan
 Aw.Sindri.Core.Forge.PullView.BaseSha.get -> string?
 Aw.Sindri.Core.Forge.PullView.BaseSha.init -> void
