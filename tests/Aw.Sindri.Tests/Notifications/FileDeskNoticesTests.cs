@@ -119,7 +119,7 @@ public sealed class FileDeskNoticesTests : IDisposable
         Assert.False(again.Value);
         var added = JsonDocument.Parse((await File.ReadAllLinesAsync(Path.Combine(_home.Path, "notifications.jsonl"), Token))[1]).RootElement;
         Assert.False(added.TryGetProperty("rowId", out _) || added.TryGetProperty("deepLink", out _));
-        Assert.Null(Assert.Single(_os.Links));
+        Assert.Equal("workflow/T-4/dev-notify/1", Assert.Single(_os.Links));   // no row: the instance link
     }
 
     private FileDeskNotices Notices() =>
