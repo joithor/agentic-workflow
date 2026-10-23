@@ -23,7 +23,10 @@ public sealed class SqliteMirroredSequencesTests : IDisposable
     private SindriStores? _stores;
     private LeaseGrant? _grant;
 
-    public SqliteMirroredSequencesTests() => _database = new LedgerDatabase(new SindriSettings(_home.Path, Path.Combine(_home.Path, "profile.yaml")), _clock);
+    public SqliteMirroredSequencesTests()
+    {
+        _database = new LedgerDatabase(new SindriSettings(_home.Path, Path.Combine(_home.Path, "profile.yaml")), _clock);
+    }
 
     public void Dispose()
     {
@@ -39,7 +42,7 @@ public sealed class SqliteMirroredSequencesTests : IDisposable
         var grant = _grant ??= (await _stores.Lease.Acquire(_probe.Self(), Token)).Value;
         var context = EventContext.Create("host:sindri", "local", 0, _ids.NewId()).Value;
         _clock.Advance(TimeSpan.FromMilliseconds(1));
-        return (await _stores.Ledger.Append(new LedgerEntry(context.Envelope("workflow.step", $$"""{"instance":"{{instance}}"}""", _clock, _ids), key, null, activity), grant, Token)).Value.Sequence;
+        return (await _stores.Ledger.Append(new LedgerEntry(context.Envelope("workflow.step", $$"""{"instance":"{{instance}}"}""", _clock, _ids), key, Item: null, activity), grant, Token)).Value.Sequence;
     }
 
     private async Task<IReadOnlyDictionary<string, long>> Of(string run, params string[] activities) =>
@@ -55,7 +58,7 @@ public sealed class SqliteMirroredSequencesTests : IDisposable
 
         var found = await Of("run-1", "7", "9");
 
-        Assert.Equal(new Dictionary<string, long> { ["7"] = mine }, found);
+        Assert.Equal(new Dictionary<string, long>(StringComparer.Ordinal) { ["7"] = mine }, found);
     }
 
     [Fact]

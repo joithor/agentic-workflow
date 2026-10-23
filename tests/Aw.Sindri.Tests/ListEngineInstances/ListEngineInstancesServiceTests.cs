@@ -80,10 +80,10 @@ public sealed class ListEngineInstancesServiceTests
         _engine.Running.Add(EngineFacts.Instance("T-1/step/1", EngineFacts.Wait(EngineWaitKinds.Signal, KnownInstants.Epoch.AddMinutes(-10)), state: "produce"));
         _engine.Running.Add(EngineFacts.Instance("T-2/step/1", EngineFacts.Wait(EngineWaitKinds.Activity, KnownInstants.Epoch.AddMinutes(-1), "step.checks"), state: "checks"));
 
-        Assert.Equal(["T-1/step/1"], (await List(stuck: "true")).Instances.Select(static i => i.Address.Value));
-        Assert.Equal(["T-2/step/1"], (await List(stuck: "false")).Instances.Select(static i => i.Address.Value));
+        Assert.Equal(["T-1/step/1"], (await List(stuck: "true")).Instances.Select(static i => i.Address.Value), StringComparer.Ordinal);
+        Assert.Equal(["T-2/step/1"], (await List(stuck: "false")).Instances.Select(static i => i.Address.Value), StringComparer.Ordinal);
         var checks = await List(state: "checks");
-        Assert.Equal(["T-2/step/1"], checks.Instances.Select(static i => i.Address.Value));
+        Assert.Equal(["T-2/step/1"], checks.Instances.Select(static i => i.Address.Value), StringComparer.Ordinal);
         Assert.Equal(new EnginePending(0, 1, 1, 0), checks.Pending);
     }
 
@@ -93,7 +93,7 @@ public sealed class ListEngineInstancesServiceTests
         _engine.Running.Add(EngineFacts.Instance("T-2/step/1", waiting: null));
         _engine.Running.Add(EngineFacts.Instance("T-1/step/1", waiting: null));
 
-        Assert.Equal(["T-1/step/1", "T-2/step/1"], (await List()).Instances.Select(static i => i.Address.Value));
+        Assert.Equal(["T-1/step/1", "T-2/step/1"], (await List()).Instances.Select(static i => i.Address.Value), StringComparer.Ordinal);
     }
 
     [Theory]
