@@ -12164,8 +12164,8 @@ Aw.Sindri.Core.Events.SuspensionSummary.MirrorsAddress.init -> void
 Aw.Sindri.Core.Events.SuspensionSummary.SuspensionSummary(Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind Kind, Aw.Sindri.Core.Workflow.Engine.ParkReason? Reason, Aw.Sindri.Core.Workflow.Engine.ParkKind? ParkKind, Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation, string? Mirrors, string? MirrorsAddress = null) -> void
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Child.get -> string?
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Child.init -> void
-Aw.Sindri.Core.NeedsYou.NeedsYouRow.Deconstruct(out Aw.Sindri.Core.Ids.NeedsYouRowId Id, out Aw.Sindri.Core.NeedsYou.NeedsYouKind Kind, out string! Label, out Aw.Sindri.Core.NeedsYou.NeedsYouSubject! Subject, out Aw.Sindri.Core.Ids.ItemId? Item, out string! Title, out string! Reason, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.NeedsYou.Urgency Urgency, out System.DateTimeOffset Since, out bool RecordedOnly, out string? Notice, out Aw.Sindri.Core.Workflow.Views.AnswerKind? AnswerKind, out Aw.Sindri.Core.Ids.ActionId? PrimaryAction, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, out string! Cli, out string? Via, out string? Child, out Aw.Sindri.Core.NeedsYou.NeedsYouStop? Stop, out Aw.Sindri.Core.Workflow.Views.StatusTimeout? Timeout) -> void
-Aw.Sindri.Core.NeedsYou.NeedsYouRow.NeedsYouRow(Aw.Sindri.Core.Ids.NeedsYouRowId Id, Aw.Sindri.Core.NeedsYou.NeedsYouKind Kind, string! Label, Aw.Sindri.Core.NeedsYou.NeedsYouSubject! Subject, Aw.Sindri.Core.Ids.ItemId? Item, string! Title, string! Reason, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.NeedsYou.Urgency Urgency, System.DateTimeOffset Since, bool RecordedOnly, string? Notice, Aw.Sindri.Core.Workflow.Views.AnswerKind? AnswerKind, Aw.Sindri.Core.Ids.ActionId? PrimaryAction, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, string! Cli, string? Via = null, string? Child = null, Aw.Sindri.Core.NeedsYou.NeedsYouStop? Stop = null, Aw.Sindri.Core.Workflow.Views.StatusTimeout? Timeout = null) -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouRow.Deconstruct(out Aw.Sindri.Core.Ids.NeedsYouRowId Id, out Aw.Sindri.Core.NeedsYou.NeedsYouKind Kind, out string! Label, out Aw.Sindri.Core.NeedsYou.NeedsYouSubject! Subject, out Aw.Sindri.Core.Ids.ItemId? Item, out string! Title, out string! Reason, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.NeedsYou.Urgency Urgency, out System.DateTimeOffset Since, out bool RecordedOnly, out string? Notice, out Aw.Sindri.Core.Workflow.Views.AnswerKind? AnswerKind, out Aw.Sindri.Core.Ids.ActionId? PrimaryAction, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, out string! Cli, out Aw.Sindri.Core.NeedsYou.NeedsYouOpen! Open, out string? Via, out string? Child, out Aw.Sindri.Core.NeedsYou.NeedsYouStop? Stop, out Aw.Sindri.Core.Workflow.Views.StatusTimeout? Timeout) -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouRow.NeedsYouRow(Aw.Sindri.Core.Ids.NeedsYouRowId Id, Aw.Sindri.Core.NeedsYou.NeedsYouKind Kind, string! Label, Aw.Sindri.Core.NeedsYou.NeedsYouSubject! Subject, Aw.Sindri.Core.Ids.ItemId? Item, string! Title, string! Reason, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.NeedsYou.Urgency Urgency, System.DateTimeOffset Since, bool RecordedOnly, string? Notice, Aw.Sindri.Core.Workflow.Views.AnswerKind? AnswerKind, Aw.Sindri.Core.Ids.ActionId? PrimaryAction, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, string! Cli, Aw.Sindri.Core.NeedsYou.NeedsYouOpen! Open, string? Via = null, string? Child = null, Aw.Sindri.Core.NeedsYou.NeedsYouStop? Stop = null, Aw.Sindri.Core.Workflow.Views.StatusTimeout? Timeout = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalLedgerRecorder
 static Aw.Sindri.Core.Workflow.Engine.Evals.EvalLedgerRecorder.ContentOf(System.ReadOnlySpan<byte> content) -> System.Text.Json.JsonElement
 static Aw.Sindri.Core.Workflow.Engine.Evals.EvalLedgerRecorder.Record(string! name, Aw.Sindri.Core.Workflow.Engine.Evals.LedgerRecording! pinned, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.WorkflowEventPayload!>! events, System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! contents) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Evals.EvalCase!>!
@@ -17584,3 +17584,37 @@ static Aw.Sindri.Core.Scheduling.EmbedDecision.NoProgressWait.get -> System.Time
 static Aw.Sindri.Core.Scheduling.EmbedDecision.TryLaterWait.get -> System.TimeSpan
 Aw.Sindri.Core.Forge.PullView.BaseSha.get -> string?
 Aw.Sindri.Core.Forge.PullView.BaseSha.init -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouRow.Open.get -> Aw.Sindri.Core.NeedsYou.NeedsYouOpen!
+Aw.Sindri.Core.NeedsYou.NeedsYouRow.Open.init -> void
+static Aw.Sindri.Core.Ids.NeedsYouRowId.Desk(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address) -> Aw.Sindri.Core.Ids.NeedsYouRowId
+static Aw.Sindri.Core.Ids.NeedsYouRowId.Park(Aw.Sindri.Core.Workflow.Engine.InstanceAddress root) -> Aw.Sindri.Core.Ids.NeedsYouRowId
+static Aw.Sindri.Core.Ids.NeedsYouRowId.Takeover(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address) -> Aw.Sindri.Core.Ids.NeedsYouRowId
+Aw.Sindri.Core.NeedsYou.NeedsYouOpen
+Aw.Sindri.Core.NeedsYou.NeedsYouOpen.<Clone>$() -> Aw.Sindri.Core.NeedsYou.NeedsYouOpen!
+Aw.Sindri.Core.NeedsYou.NeedsYouOpen.Deconstruct(out string! Kind, out string! Id, out string! Route, out string! Label, out string? Instance) -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouOpen.Equals(Aw.Sindri.Core.NeedsYou.NeedsYouOpen? other) -> bool
+Aw.Sindri.Core.NeedsYou.NeedsYouOpen.Id.get -> string!
+Aw.Sindri.Core.NeedsYou.NeedsYouOpen.Id.init -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouOpen.Instance.get -> string?
+Aw.Sindri.Core.NeedsYou.NeedsYouOpen.Instance.init -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouOpen.Kind.get -> string!
+Aw.Sindri.Core.NeedsYou.NeedsYouOpen.Kind.init -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouOpen.Label.get -> string!
+Aw.Sindri.Core.NeedsYou.NeedsYouOpen.Label.init -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouOpen.NeedsYouOpen(string! Kind, string! Id, string! Route, string! Label, string? Instance = null) -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouOpen.Route.get -> string!
+Aw.Sindri.Core.NeedsYou.NeedsYouOpen.Route.init -> void
+override Aw.Sindri.Core.NeedsYou.NeedsYouOpen.Equals(object? obj) -> bool
+override Aw.Sindri.Core.NeedsYou.NeedsYouOpen.GetHashCode() -> int
+override Aw.Sindri.Core.NeedsYou.NeedsYouOpen.ToString() -> string!
+static Aw.Sindri.Core.NeedsYou.NeedsYouOpen.operator !=(Aw.Sindri.Core.NeedsYou.NeedsYouOpen? left, Aw.Sindri.Core.NeedsYou.NeedsYouOpen? right) -> bool
+static Aw.Sindri.Core.NeedsYou.NeedsYouOpen.operator ==(Aw.Sindri.Core.NeedsYou.NeedsYouOpen? left, Aw.Sindri.Core.NeedsYou.NeedsYouOpen? right) -> bool
+Aw.Sindri.Core.NeedsYou.NeedsYouOpenKinds
+const Aw.Sindri.Core.NeedsYou.NeedsYouOpenKinds.Decision = "decision" -> string!
+const Aw.Sindri.Core.NeedsYou.NeedsYouOpenKinds.Instance = "instance" -> string!
+const Aw.Sindri.Core.NeedsYou.NeedsYouOpenKinds.Job = "job" -> string!
+const Aw.Sindri.Core.NeedsYou.NeedsYouOpenKinds.Profile = "profile" -> string!
+const Aw.Sindri.Core.NeedsYou.NeedsYouOpenKinds.Questions = "questions" -> string!
+const Aw.Sindri.Core.NeedsYou.NeedsYouOpenKinds.Recipe = "recipe" -> string!
+const Aw.Sindri.Core.NeedsYou.NeedsYouOpenKinds.Service = "service" -> string!
+const Aw.Sindri.Core.NeedsYou.NeedsYouOpenKinds.Setup = "setup" -> string!

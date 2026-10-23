@@ -35,7 +35,7 @@ public static partial class NeedsYouRows
         var answer = AnswerOf(park);
         var (label, words) = Words(suspension, park.Refusal);
         var shape = new EngineRow("park:", label, $"{words} ({at.Value})", Urgency.Pulse, answer?.Kind,
-            answer?.ActionId ?? _approveRecipe, answer is null ? [_approveRecipe, _cancel] : [answer.ActionId], answer?.Cli ?? Status(at), answer?.Via, answer?.Child);
+            answer?.ActionId ?? _approveRecipe, answer is null ? [_approveRecipe, _cancel] : [answer.ActionId], answer?.Cli ?? Status(at), Unset, answer?.Via, answer?.Child);
         return Row(item, park.Address, shape, since, scrubber);
     }
 
@@ -64,7 +64,7 @@ public static partial class NeedsYouRows
     /// <param name="scrubber">Scrubs the text the row stores.</param>
     /// <returns>The row.</returns>
     public static NeedsYouRow ForDeskTask(ItemRow item, InstanceAddress address, DateTimeOffset since, ITextScrubber scrubber) =>
-        Row(item, address, new EngineRow("desk:", "desk task", $"a desk task is open ({address.Value})", Urgency.Colour, AnswerKind: null, _completeStep, [_completeStep], Status(address)), since, scrubber);
+        Row(item, address, new EngineRow("desk:", "desk task", $"a desk task is open ({address.Value})", Urgency.Colour, AnswerKind: null, _completeStep, [_completeStep], Status(address), Unset), since, scrubber);
 
     /// <summary>The 'park' row of a takeover that went idle.</summary>
     /// <param name="item">The item's row.</param>
@@ -73,11 +73,14 @@ public static partial class NeedsYouRows
     /// <param name="scrubber">Scrubs the text the row stores.</param>
     /// <returns>The row.</returns>
     public static NeedsYouRow ForIdleTakeover(ItemRow item, InstanceAddress address, DateTimeOffset since, ITextScrubber scrubber) =>
-        Row(item, address, new EngineRow("takeover:", "taken over", $"a takeover is idle ({address.Value})", Urgency.Calm, AnswerKind: null, _handback, [_handback, _cancel], $"sindri handback {address.Value}"), since, scrubber);
+        Row(item, address, new EngineRow("takeover:", "taken over", $"a takeover is idle ({address.Value})", Urgency.Calm, AnswerKind: null, _handback, [_handback, _cancel], $"sindri handback {address.Value}", Unset), since, scrubber);
+
+    /// <summary>Placeholder until the open targets are built.</summary>
+    internal static NeedsYouOpen Unset { get; } = new(string.Empty, string.Empty, string.Empty, string.Empty);
 
     private static string Status(InstanceAddress address) => $"sindri workflow status {address.Value}";
 
-    private sealed record EngineRow(string Prefix, string Label, string Reason, Urgency Urgency, Workflow.Views.AnswerKind? AnswerKind, ActionId Primary, IReadOnlyList<ActionId> Actions, string Cli, string? Via = null, string? Child = null);
+    private sealed record EngineRow(string Prefix, string Label, string Reason, Urgency Urgency, Workflow.Views.AnswerKind? AnswerKind, ActionId Primary, IReadOnlyList<ActionId> Actions, string Cli, NeedsYouOpen Open, string? Via = null, string? Child = null);
 
     private static NeedsYouRow Row(ItemRow item, InstanceAddress address, EngineRow shape, DateTimeOffset since, ITextScrubber scrubber)
     {
@@ -101,6 +104,7 @@ public static partial class NeedsYouRows
             shape.Primary,
             shape.Actions,
             shape.Cli,
+            shape.Open,
             shape.Via,
             shape.Child);
     }

@@ -39,6 +39,7 @@ public static partial class NeedsYouRows
             AnswerKind: null,
             notice.Action is null ? null : ActionId.From(notice.Action),
             notice.Action is null ? [] : [ActionId.From(notice.Action)],
-            cli.Value.Text);
+            cli.Value.Text,
+            NeedsYouRows.Unset);
     }
 }
