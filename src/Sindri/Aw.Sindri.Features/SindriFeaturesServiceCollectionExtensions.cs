@@ -238,7 +238,7 @@ public static class SindriFeaturesServiceCollectionExtensions
     private static IServiceCollection AddDoctor(this IServiceCollection services) => services
         .AddScoped<ProfileFacts>()
         .AddScoped<LedgerFacts>()
-        .AddScoped<OnyxDoctor>()
+        .AddScoped<OnyxDoctor>().AddScoped<LinearDoctor>()
         .AddScoped<ContextEngineChecks>()
         .AddScoped<RunDoctorService>()
         .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>>(static sp =>
