@@ -62,7 +62,7 @@ The answer, `WholeMapView` (one record set in `SindriJsonContext`, mirrored in `
 { schemaVersion: 1, mapVersion, mapCommit?, draft, asOf, repo,
   detail: "nodes" | "areas", fallback?: "over-budget",
   counts: { nodes, edges, byKind: { feature, surface, action, thing, flow, decision, record, code } },
-  areas: [ { key, label, trust, members, byKind: {…}, unassigned: bool } ],          // always present, sorted by key; members = nodes whose primary area it is (they sum to counts.nodes); trust = the weakest of the area feature's own trust and its members' (trusted | untrusted, as the nodes')
+  areas: [ { key, label, trust, members, byKind: {…}, unassigned: bool } ],          // always present, sorted by key (`area:unassigned` sorts first); members = nodes whose primary area it is (they sum to counts.nodes); trust = the trust of the area feature's own node (the only text the tile shows; `area:unassigned`, whose label is fixed text, is trusted)
   areaEdges: [ { from, to, type, count, confirmed } ],                                 // between areas; confirmed = how many of count
   nodes?: [ { key, label, kind, area, alsoIn: [area], trust, provenance, confidence, confirmed } ],   // detail=nodes, or the one area
   edges?: [ { from, to, type, link, provenance, confidence, confirmed } ],

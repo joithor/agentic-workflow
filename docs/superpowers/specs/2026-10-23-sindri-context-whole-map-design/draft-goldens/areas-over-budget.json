@@ -7,18 +7,116 @@
   "repo": "my-app",
   "detail": "areas",
   "fallback": "over-budget",
-  "counts": { "nodes": 1840, "edges": 3122, "byKind": { "feature": 41, "surface": 388, "action": 210, "thing": 96, "flow": 22, "decision": 63, "record": 402, "code": 618 } },
+  "counts": {
+    "nodes": 1840,
+    "edges": 3122,
+    "byKind": {
+      "feature": 41,
+      "surface": 388,
+      "action": 210,
+      "thing": 96,
+      "flow": 22,
+      "decision": 63,
+      "record": 402,
+      "code": 618
+    }
+  },
   "areas": [
-    { "key": "area:unassigned", "label": "Not linked to a feature yet", "trust": "trusted", "members": 214, "byKind": { "record": 160, "code": 54 }, "unassigned": true },
-    { "key": "feature:billing", "label": "Billing", "trust": "trusted", "members": 312, "byKind": { "feature": 6, "surface": 70, "action": 41, "thing": 18, "flow": 4, "decision": 9, "record": 64, "code": 100 }, "unassigned": false },
-    { "key": "feature:search", "label": "Search", "trust": "untrusted", "members": 188, "byKind": { "feature": 3, "surface": 40, "action": 22, "thing": 9, "flow": 2, "decision": 5, "record": 37, "code": 70 }, "unassigned": false },
-    { "key": "feature:tabs", "label": "Tabs", "trust": "trusted", "members": 800, "byKind": { "feature": 24, "surface": 188, "action": 97, "thing": 49, "flow": 10, "decision": 35, "record": 100, "code": 297 }, "unassigned": false },
-    { "key": "feature:reports", "label": "Reports", "trust": "trusted", "members": 326, "byKind": { "feature": 8, "surface": 90, "action": 50, "thing": 20, "flow": 6, "decision": 14, "record": 41, "code": 97 }, "unassigned": false }
+    {
+      "key": "area:unassigned",
+      "label": "Not linked to a feature yet",
+      "trust": "trusted",
+      "members": 214,
+      "byKind": {
+        "record": 160,
+        "code": 54
+      },
+      "unassigned": true
+    },
+    {
+      "key": "feature:billing",
+      "label": "Billing",
+      "trust": "trusted",
+      "members": 312,
+      "byKind": {
+        "feature": 6,
+        "surface": 70,
+        "action": 41,
+        "thing": 18,
+        "flow": 4,
+        "decision": 9,
+        "record": 64,
+        "code": 100
+      },
+      "unassigned": false
+    },
+    {
+      "key": "feature:reports",
+      "label": "Reports",
+      "trust": "trusted",
+      "members": 326,
+      "byKind": {
+        "feature": 8,
+        "surface": 90,
+        "action": 50,
+        "thing": 20,
+        "flow": 6,
+        "decision": 14,
+        "record": 41,
+        "code": 97
+      },
+      "unassigned": false
+    },
+    {
+      "key": "feature:search",
+      "label": "Search",
+      "trust": "untrusted",
+      "members": 188,
+      "byKind": {
+        "feature": 3,
+        "surface": 40,
+        "action": 22,
+        "thing": 9,
+        "flow": 2,
+        "decision": 5,
+        "record": 37,
+        "code": 70
+      },
+      "unassigned": false
+    },
+    {
+      "key": "feature:tabs",
+      "label": "Tabs",
+      "trust": "trusted",
+      "members": 800,
+      "byKind": {
+        "feature": 24,
+        "surface": 188,
+        "action": 97,
+        "thing": 49,
+        "flow": 10,
+        "decision": 35,
+        "record": 100,
+        "code": 297
+      },
+      "unassigned": false
+    }
   ],
   "areaEdges": [
-    { "from": "feature:search", "to": "feature:tabs", "type": "depends-on", "count": 3, "confirmed": 2 },
-    { "from": "feature:tabs", "to": "feature:billing", "type": "depends-on", "count": 1, "confirmed": 1 },
-    { "from": "area:unassigned", "to": "feature:tabs", "type": "mentions", "count": 12, "confirmed": 12 }
+    {
+      "from": "feature:search",
+      "to": "feature:tabs",
+      "type": "depends-on",
+      "count": 3,
+      "confirmed": 2
+    },
+    {
+      "from": "feature:tabs",
+      "to": "feature:billing",
+      "type": "depends-on",
+      "count": 1,
+      "confirmed": 1
+    }
   ],
   "truncated": false
 }

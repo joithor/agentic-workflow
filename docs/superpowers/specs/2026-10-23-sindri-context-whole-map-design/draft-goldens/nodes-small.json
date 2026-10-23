@@ -6,33 +6,215 @@
   "asOf": "2026-10-23T06:00:00Z",
   "repo": "my-app",
   "detail": "nodes",
-  "counts": { "nodes": 7, "edges": 7, "byKind": { "feature": 2, "surface": 2, "action": 0, "thing": 0, "flow": 0, "decision": 1, "record": 0, "code": 2 } },
+  "counts": {
+    "nodes": 7,
+    "edges": 7,
+    "byKind": {
+      "feature": 2,
+      "surface": 2,
+      "action": 0,
+      "thing": 0,
+      "flow": 0,
+      "decision": 1,
+      "record": 0,
+      "code": 2
+    }
+  },
   "areas": [
-    { "key": "feature:billing", "label": "Billing", "trust": "trusted", "members": 3, "byKind": { "feature": 1, "surface": 1, "code": 1 }, "unassigned": false },
-    { "key": "feature:tabs", "label": "Tabs", "trust": "trusted", "members": 3, "byKind": { "feature": 1, "surface": 1, "decision": 1 }, "unassigned": false },
-    { "key": "area:unassigned", "label": "Not linked to a feature yet", "trust": "trusted", "members": 1, "byKind": { "code": 1 }, "unassigned": true }
+    {
+      "key": "area:unassigned",
+      "label": "Not linked to a feature yet",
+      "trust": "trusted",
+      "members": 1,
+      "byKind": {
+        "code": 1
+      },
+      "unassigned": true
+    },
+    {
+      "key": "feature:billing",
+      "label": "Billing",
+      "trust": "trusted",
+      "members": 3,
+      "byKind": {
+        "feature": 1,
+        "surface": 1,
+        "code": 1
+      },
+      "unassigned": false
+    },
+    {
+      "key": "feature:tabs",
+      "label": "Tabs",
+      "trust": "trusted",
+      "members": 3,
+      "byKind": {
+        "feature": 1,
+        "surface": 1,
+        "decision": 1
+      },
+      "unassigned": false
+    }
   ],
   "areaEdges": [
-    { "from": "feature:tabs", "to": "feature:billing", "type": "depends-on", "count": 1, "confirmed": 1 },
-    { "from": "feature:billing", "to": "feature:tabs", "type": "moves-to", "count": 1, "confirmed": 1 }
+    {
+      "from": "feature:tabs",
+      "to": "feature:billing",
+      "type": "depends-on",
+      "count": 1,
+      "confirmed": 1
+    },
+    {
+      "from": "feature:billing",
+      "to": "feature:tabs",
+      "type": "moves-to",
+      "count": 1,
+      "confirmed": 0
+    }
   ],
   "nodes": [
-    { "key": "feature:billing", "label": "Billing", "kind": "feature", "area": "feature:billing", "alsoIn": [], "trust": "trusted", "provenance": "human", "confidence": 1.0, "confirmed": true },
-    { "key": "surface:screen/invoices", "label": "Invoices screen", "kind": "surface", "area": "feature:billing", "alsoIn": [], "trust": "trusted", "provenance": "deterministic", "confidence": 0.9, "confirmed": true },
-    { "key": "code:src/billing/Invoices.ts", "label": "src/billing/Invoices.ts", "kind": "code", "area": "feature:billing", "alsoIn": [], "trust": "untrusted", "provenance": "model", "confidence": 0.81, "confirmed": false },
-    { "key": "feature:tabs", "label": "Tabs", "kind": "feature", "area": "feature:tabs", "alsoIn": [], "trust": "trusted", "provenance": "human", "confidence": 1.0, "confirmed": true },
-    { "key": "surface:command/switch-tab", "label": "Switch tab", "kind": "surface", "area": "feature:tabs", "alsoIn": [], "trust": "trusted", "provenance": "deterministic", "confidence": 0.9, "confirmed": true },
-    { "key": "decision:3f1c0d2e9a7b", "label": "Tabs stay per window", "kind": "decision", "area": "feature:tabs", "alsoIn": [], "trust": "trusted", "provenance": "human", "confidence": 1.0, "confirmed": true },
-    { "key": "code:src/util/strings.ts", "label": "src/util/strings.ts", "kind": "code", "area": "area:unassigned", "alsoIn": [], "trust": "trusted", "provenance": "deterministic", "confidence": 0.5, "confirmed": true }
+    {
+      "key": "feature:billing",
+      "label": "Billing",
+      "kind": "feature",
+      "area": "feature:billing",
+      "alsoIn": [],
+      "trust": "trusted",
+      "provenance": "human",
+      "confidence": 1.0,
+      "confirmed": true
+    },
+    {
+      "key": "surface:screen/invoices",
+      "label": "Invoices screen",
+      "kind": "surface",
+      "area": "feature:billing",
+      "alsoIn": [],
+      "trust": "trusted",
+      "provenance": "deterministic",
+      "confidence": 0.9,
+      "confirmed": false
+    },
+    {
+      "key": "code:src/billing/Invoices.ts",
+      "label": "src/billing/Invoices.ts",
+      "kind": "code",
+      "area": "feature:billing",
+      "alsoIn": [],
+      "trust": "untrusted",
+      "provenance": "model",
+      "confidence": 0.81,
+      "confirmed": false
+    },
+    {
+      "key": "feature:tabs",
+      "label": "Tabs",
+      "kind": "feature",
+      "area": "feature:tabs",
+      "alsoIn": [],
+      "trust": "trusted",
+      "provenance": "human",
+      "confidence": 1.0,
+      "confirmed": true
+    },
+    {
+      "key": "surface:command/switch-tab",
+      "label": "Switch tab",
+      "kind": "surface",
+      "area": "feature:tabs",
+      "alsoIn": [],
+      "trust": "trusted",
+      "provenance": "deterministic",
+      "confidence": 0.9,
+      "confirmed": false
+    },
+    {
+      "key": "decision:3f1c0d2e9a7b",
+      "label": "Tabs stay per window",
+      "kind": "decision",
+      "area": "feature:tabs",
+      "alsoIn": [],
+      "trust": "trusted",
+      "provenance": "human",
+      "confidence": 1.0,
+      "confirmed": true
+    },
+    {
+      "key": "code:src/util/strings.ts",
+      "label": "src/util/strings.ts",
+      "kind": "code",
+      "area": "area:unassigned",
+      "alsoIn": [],
+      "trust": "trusted",
+      "provenance": "deterministic",
+      "confidence": 0.5,
+      "confirmed": false
+    }
   ],
   "edges": [
-    { "from": "surface:screen/invoices", "to": "feature:billing", "type": "part-of", "link": "edge:0a1b2c3d4e5f6071", "provenance": "deterministic", "confidence": 0.9, "confirmed": true },
-    { "from": "code:src/billing/Invoices.ts", "to": "surface:screen/invoices", "type": "implements", "link": "edge:1b2c3d4e5f607182", "provenance": "model", "confidence": 0.81, "confirmed": false },
-    { "from": "surface:command/switch-tab", "to": "feature:tabs", "type": "part-of", "link": "edge:2c3d4e5f60718293", "provenance": "deterministic", "confidence": 0.9, "confirmed": true },
-    { "from": "decision:3f1c0d2e9a7b", "to": "feature:tabs", "type": "decides", "link": "edge:3d4e5f60718293a4", "provenance": "human", "confidence": 1.0, "confirmed": true },
-    { "from": "feature:tabs", "to": "feature:billing", "type": "depends-on", "link": "edge:4e5f60718293a4b5", "provenance": "human", "confidence": 1.0, "confirmed": true },
-    { "from": "code:src/billing/Invoices.ts", "to": "feature:billing", "type": "tests", "link": "edge:5f60718293a4b5c6", "provenance": "deterministic", "confidence": 0.7, "confirmed": true },
-    { "from": "surface:screen/invoices", "to": "surface:command/switch-tab", "type": "moves-to", "link": "edge:60718293a4b5c6d7", "provenance": "deterministic", "confidence": 0.6, "confirmed": true }
+    {
+      "from": "surface:screen/invoices",
+      "to": "feature:billing",
+      "type": "part-of",
+      "link": "edge:0a1b2c3d4e5f6071",
+      "provenance": "deterministic",
+      "confidence": 0.9,
+      "confirmed": false
+    },
+    {
+      "from": "code:src/billing/Invoices.ts",
+      "to": "surface:screen/invoices",
+      "type": "implements",
+      "link": "edge:1b2c3d4e5f607182",
+      "provenance": "model",
+      "confidence": 0.81,
+      "confirmed": false
+    },
+    {
+      "from": "surface:command/switch-tab",
+      "to": "feature:tabs",
+      "type": "part-of",
+      "link": "edge:2c3d4e5f60718293",
+      "provenance": "deterministic",
+      "confidence": 0.9,
+      "confirmed": false
+    },
+    {
+      "from": "decision:3f1c0d2e9a7b",
+      "to": "feature:tabs",
+      "type": "decides",
+      "link": "edge:3d4e5f60718293a4",
+      "provenance": "human",
+      "confidence": 1.0,
+      "confirmed": true
+    },
+    {
+      "from": "feature:tabs",
+      "to": "feature:billing",
+      "type": "depends-on",
+      "link": "edge:4e5f60718293a4b5",
+      "provenance": "human",
+      "confidence": 1.0,
+      "confirmed": true
+    },
+    {
+      "from": "code:src/billing/Invoices.ts",
+      "to": "feature:billing",
+      "type": "tests",
+      "link": "edge:5f60718293a4b5c6",
+      "provenance": "deterministic",
+      "confidence": 0.7,
+      "confirmed": false
+    },
+    {
+      "from": "surface:screen/invoices",
+      "to": "surface:command/switch-tab",
+      "type": "moves-to",
+      "link": "edge:60718293a4b5c6d7",
+      "provenance": "deterministic",
+      "confidence": 0.6,
+      "confirmed": false
+    }
   ],
   "truncated": false
 }
