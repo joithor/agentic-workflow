@@ -43,7 +43,12 @@ public static class WorkflowViewFixtures
     private static readonly RecipeShape _devTriage = FixtureRecipes.DevTriage;
     private static readonly RecipeShape _devDesk = FixtureRecipes.DevDesk;
     private static readonly RecipeShape _fork = FixtureRecipes.Fork;
-    private static readonly RecipeShape _design = FixtureRecipes.Design;
+    // this instance was started on the scope packet alone and lists fact:answers (no declared output of the shipped recipe) as the ask desk's pending output, so its shape narrows the inputs and adds it
+    private static readonly RecipeShape _design = FixtureRecipes.Design with
+    {
+        Inputs = [.. FixtureRecipes.Design.Inputs.Take(1)],
+        Outputs = [.. FixtureRecipes.Design.Outputs, new ShapeOutput("fact:answers", "Answers", FactType.Payload, "ask")],
+    };
 
     private static Func<StateCell, StateCell> Shape(params (string State, Func<StateCell, StateCell> Change)[] changes) =>
         cell => changes.Where(c => c.State == cell.State).Aggregate(cell, (acc, c) => c.Change(acc));
@@ -603,7 +608,7 @@ public static class WorkflowViewFixtures
         var status = DeskStatus(row, "Answer the 3 questions the reviewers raised on ITM-01JN2", "4.1", ("fact:answers", "<file>"),
             DeskLines(new StatusInput("fact:escalation", "escalation.json", Hash("5c1e9a30")), 604_560, "ask"));
         var pending = new FactPending(true, ["answers.payload"], Act("CompleteStep"));
-        return Detail(row, "Add expiry to sessions", PathOrdering.Path,
+        return Detail(row, "Add expiry to sessions", PathOrdering.TransitionList,
             new CurrentState("ask", new StepDeclaration("active", "step.lens.ask", "asks you to decide questions the reviewers could not settle"), [],
                 new DeskForm(RunToken.From("4.1"), [new DeskOutput("fact:answers", FactType.Payload, true)], ["answers.payload"], Act("CompleteStep")), status),
             _design.Facts(
@@ -769,9 +774,9 @@ public static class WorkflowViewFixtures
         [], RecipeUrgency.Work, PathOrdering.Path, [new RecipeStateView("intake", 1, null), new RecipeStateView("classify", 2, null), new RecipeStateView("done", 3, null)], [], "No outputs");
 
     /// <summary>The recipe view of one fixture recipe, by recipe id ('workflow.step'): the same declaration its instances and list rows are built from.</summary>
-    /// <param name="id">A recipe id of <see cref="FixtureRecipes.All"/>.</param>
+    /// <param name="id">A recipe id of <see cref="FixtureRecipes.All"/>, or workflow.design.</param>
     /// <returns>The view.</returns>
-    public static RecipeView Recipe(string id) => FixtureRecipes.All.Single(r => r.Id == id).View();
+    public static RecipeView Recipe(string id) => FixtureRecipes.All.Append(FixtureRecipes.Design).Single(r => r.Id == id).View();
 
     /// <summary>
     /// workflow.f5-fields, a fixture-only recipe that sets every F5 field the app reads: the recipe's why, each kind of state (agent, automatic, you, onlyYou, subWorkflow), outcome texts,

@@ -17674,3 +17674,9 @@ Aw.Sindri.Core.Workflow.Views.SessionHandle.Deconstruct(out Aw.Sindri.Core.Launc
 Aw.Sindri.Core.Workflow.Views.SessionHandle.Id.get -> Aw.Sindri.Core.Ids.SessionId
 Aw.Sindri.Core.Workflow.Views.SessionHandle.Provider.get -> Aw.Sindri.Core.Launch.AgentId
 Aw.Sindri.Core.Workflow.Views.SessionHandle.SessionHandle(Aw.Sindri.Core.Launch.AgentId Provider, Aw.Sindri.Core.Ids.SessionId Id) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.PayloadFacts
+static Aw.Sindri.Core.Workflow.Engine.Runtime.PayloadFacts.DeclaredIn(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe) -> System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Ids.FactKey>!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.PayloadFacts.Instruction(Aw.Sindri.Core.Workflow.Ids.FactKey fact) -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.PayloadFacts.Violation(Aw.Sindri.Core.Workflow.Ids.FactKey fact, System.ReadOnlySpan<byte> content) -> string?
+static Aw.Sindri.Core.Workflow.Engine.Runtime.PayloadFacts.OutputsOf(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor! descriptor) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.PayloadFacts.WithShapes(System.Collections.Generic.IReadOnlyList<string!>? instructions, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>? payload) -> System.Collections.Generic.IReadOnlyList<string!>?
