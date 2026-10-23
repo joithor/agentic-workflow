@@ -7263,7 +7263,6 @@ static Aw.Sindri.Core.Health.HealthProblem.operator !=(Aw.Sindri.Core.Health.Hea
 static Aw.Sindri.Core.Health.HealthProblem.operator ==(Aw.Sindri.Core.Health.HealthProblem? left, Aw.Sindri.Core.Health.HealthProblem? right) -> bool
 static Aw.Sindri.Core.Health.HealthReport.operator !=(Aw.Sindri.Core.Health.HealthReport? left, Aw.Sindri.Core.Health.HealthReport? right) -> bool
 static Aw.Sindri.Core.Health.HealthReport.operator ==(Aw.Sindri.Core.Health.HealthReport? left, Aw.Sindri.Core.Health.HealthReport? right) -> bool
-static Aw.Sindri.Core.Health.HealthSummary.For(bool running, Aw.Sindri.Core.Views.ViewsStatus! views, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>? services, bool profileNeedsApproval, bool profileChanged) -> Aw.Sindri.Core.Health.HealthReport!
 static Aw.Sindri.Core.Ids.ActionId.From(string! value) -> Aw.Sindri.Core.Ids.ActionId
 static Aw.Sindri.Core.Ids.ActionId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Ids.ActionId
 static Aw.Sindri.Core.Ids.ActionId.TryFrom(string? value, out Aw.Sindri.Core.Ids.ActionId vo) -> bool
@@ -16895,7 +16894,6 @@ override Aw.Sindri.Core.LensPacks.PackDirectory.GetHashCode() -> int
 override Aw.Sindri.Core.LensPacks.PackDirectory.ToString() -> string!
 static Aw.Sindri.Core.LensPacks.PackDirectory.operator !=(Aw.Sindri.Core.LensPacks.PackDirectory? left, Aw.Sindri.Core.LensPacks.PackDirectory? right) -> bool
 static Aw.Sindri.Core.LensPacks.PackDirectory.operator ==(Aw.Sindri.Core.LensPacks.PackDirectory? left, Aw.Sindri.Core.LensPacks.PackDirectory? right) -> bool
-
 Aw.Sindri.Core.Scheduling.ServiceActions
 const Aw.Sindri.Core.Scheduling.ServiceActions.Pause = "pause" -> string!
 const Aw.Sindri.Core.Scheduling.ServiceActions.Resume = "resume" -> string!
@@ -17206,3 +17204,10 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.Reruns.Action.get -> Aw.Sindri.Cor
 static Aw.Sindri.Core.Workflow.Engine.Runtime.Reruns.Of(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>!
 static Aw.Sindri.Core.Workflow.Views.DeskRecommendation.operator !=(Aw.Sindri.Core.Workflow.Views.DeskRecommendation? left, Aw.Sindri.Core.Workflow.Views.DeskRecommendation? right) -> bool
 static Aw.Sindri.Core.Workflow.Views.DeskRecommendation.operator ==(Aw.Sindri.Core.Workflow.Views.DeskRecommendation? left, Aw.Sindri.Core.Workflow.Views.DeskRecommendation? right) -> bool
+static Aw.Sindri.Core.Health.HealthSummary.For(bool running, Aw.Sindri.Core.Views.ViewsStatus! views, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Views.ServiceRow!>? services, Aw.Sindri.Core.Health.ProfileApproval profile, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Health.HealthProblem!>? codeIndex = null) -> Aw.Sindri.Core.Health.HealthReport!
+Aw.Sindri.Core.Health.ProfileApproval
+Aw.Sindri.Core.Health.ProfileApproval.Approved = 0 -> Aw.Sindri.Core.Health.ProfileApproval
+Aw.Sindri.Core.Health.ProfileApproval.Changed = 1 -> Aw.Sindri.Core.Health.ProfileApproval
+Aw.Sindri.Core.Health.ProfileApproval.NeedsApproval = 2 -> Aw.Sindri.Core.Health.ProfileApproval
+Aw.Sindri.Core.Health.ICodeIndexHealth
+Aw.Sindri.Core.Health.ICodeIndexHealth.Problems(Aw.Sindri.Core.Profile.LoadedProfile? approved, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Health.HealthProblem!>!>

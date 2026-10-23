@@ -2,7 +2,7 @@ using Aw.Kernel;
 
 namespace Aw.CodeIndex.Core;
 
-/// <summary>The code index's error catalogue (spec §12), codes SND-CODEIDX-NNN; 014 to 029 are reserved. Layer codes (006 to 009) are carried in a layer row and the build report and fail only the call that depends on the layer.</summary>
+/// <summary>The code index's error catalogue (spec §12), codes SND-CODEIDX-NNN; 016 to 029 are reserved. Layer codes (006 to 009) are carried in a layer row and the build report and fail only the call that depends on the layer.</summary>
 public static class CodeIndexErrors
 {
     /// <summary>SND-CODEIDX-001: the 'index:' section has a bad key or value, or a repo name is not a file-safe name; the message starts with the key path.</summary>
@@ -44,10 +44,16 @@ public static class CodeIndexErrors
     /// <summary>SND-CODEIDX-013: no index for this repo yet (also a repo outside the caller's scope).</summary>
     public static readonly ErrorDefinition IndexNotBuilt = new("SND-CODEIDX-013", ErrorKind.NotFound, "No index for this repo yet");
 
+    /// <summary>SND-CODEIDX-014: the index describes an older commit than the repo's main; only ever a health row, the index still answers.</summary>
+    public static readonly ErrorDefinition IndexBehind = new("SND-CODEIDX-014", ErrorKind.Unavailable, "The index is behind main");
+
+    /// <summary>SND-CODEIDX-015: a build failed and is retrying after its backoff; only ever a health row.</summary>
+    public static readonly ErrorDefinition BuildFailed = new("SND-CODEIDX-015", ErrorKind.Unavailable, "An index build failed");
+
     /// <summary>Every code-index error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
         SettingsInvalid, RepoNotFound, InputTooLarge, HeavyBusy, EmbeddingTargetRefused, EmbeddingServerFailed, NoSandbox,
-        GraphUnavailable, PinMismatch, IndexDamaged, SymbolNotFound, QueryInvalid, IndexNotBuilt,
+        GraphUnavailable, PinMismatch, IndexDamaged, SymbolNotFound, QueryInvalid, IndexNotBuilt, IndexBehind, BuildFailed,
     ];
 }

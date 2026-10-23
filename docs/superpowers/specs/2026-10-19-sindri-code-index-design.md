@@ -745,7 +745,9 @@ Area `SND-CODEIDX` (new; free: the TS `SND-INDEX-*` codes stay documented until 
 | `SND-CODEIDX-011` | NotFound | the symbol ref names no symbol in this index | `sindri code-index symbols <name>` |
 | `SND-CODEIDX-012` | Invalid | a query is empty, too broad, or over a limit | narrow it |
 | `SND-CODEIDX-013` | NotFound | no index for this repo yet | none; the first build is queued |
-| `SND-CODEIDX-014..029` | | reserved | |
+| `SND-CODEIDX-014` | Unavailable | the index describes an older commit than the repo's main; only a health row on `GET /status`, the index still answers | rebuild it from the System page; the next tick also builds it |
+| `SND-CODEIDX-015` | Unavailable | a build failed and is retrying after its backoff; only a health row on `GET /status` | `sindri jobs` shows the failed build; `sindri doctor` names the cause |
+| `SND-CODEIDX-016..029` | | reserved | |
 
 Revision 4 adds none: the map's gate reads `Heads`, whose failure is "no index" (`Coming` or `Absent`), never an error to the map (§6.4 "Errors"; the map side reserves `SND-CONTEXT-190..194`).
 
