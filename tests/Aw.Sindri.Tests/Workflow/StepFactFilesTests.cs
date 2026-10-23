@@ -22,7 +22,7 @@ public sealed class StepFactFilesTests
         public string Scrub(string text) => text.Replace("hunter2", "[redacted]", StringComparison.Ordinal);
     }
 
-    private ValueTask<Aw.Kernel.Result<IReadOnlyDictionary<string, string>>> Build(Dictionary<FactKey, FactValue> facts, BlockDescriptor? descriptor = null) =>
+    private ValueTask<Kernel.Result<IReadOnlyDictionary<string, string>>> Build(Dictionary<FactKey, FactValue> facts, BlockDescriptor? descriptor = null) =>
         StepFactFiles.Build(descriptor ?? _draft, facts, _stored, new Redacting(), CancellationToken.None);
 
     [Fact]
