@@ -23,7 +23,7 @@
 #   --pod P         the pod (default: sindri-0)
 #   --port PORT     the local port the owner port is forwarded to (default: the pod's own port)
 #   --onyx          also forward the pod's Onyx web port (Onyx runs as sibling containers in the pod, started by the kubelet;
-#                   it is published on the pod's 127.0.0.1; default 3000, AW_SINDRI_POD_ONYX_PORT, the same port on your
+#                   it is published on the pod's 127.0.0.1; default 8081, AW_SINDRI_POD_ONYX_PORT, the same port on your
 #                   machine) and run `kubectl exec -it <pod> -c sindri -- sindri onyx attach` at this terminal: it checks
 #                   Onyx answers and runs the pinned release, then the account steps; at the sign-up step you sign up in the
 #                   browser at the forwarded address and press Enter. Nothing is pulled or started; re-running is safe.
@@ -64,7 +64,7 @@ case "$lport" in ''|*[!0-9]*) [ -z "$lport" ] || { say "--port must be a number"
 retries="${AW_SINDRI_POD_RETRIES:-30}"
 retry_wait="${AW_SINDRI_POD_RETRY_WAIT:-10}"
 poll="${AW_SINDRI_POD_POLL:-5}"
-onyx_port="${AW_SINDRI_POD_ONYX_PORT:-3000}"
+onyx_port="${AW_SINDRI_POD_ONYX_PORT:-8081}"
 state="${AW_STATE_DIR:-$HOME/.agentic-workflow}"
 
 kargs=()   # --context and --namespace, once both are resolved
@@ -231,7 +231,7 @@ attach_rc=0
 if [ "$onyx" = 1 ]; then
   kubectl "${kargs[@]}" port-forward "pod/$pod" "$onyx_port:$onyx_port" >> "$logs/onyx-port-forward.log" 2>&1 &
   onyx_pf_pid=$!
-  say "Onyx: forwarded http://127.0.0.1:$onyx_port; 'sindri onyx attach' now runs in the pod and asks you to sign up there"
+  say "Onyx is at http://127.0.0.1:$onyx_port — sign up there when attach asks"
   trap ':' INT   # Ctrl-C reaches attach (and this shell) but ends only attach
   kc exec -it "$pod" -c sindri -- sindri onyx attach
   rc=$?

@@ -31,7 +31,7 @@ shows "control plane not running" meanwhile. It ends when you close the app, on 
 stops only the port-forwards it started.
 
 `--onyx` also forwards the pod's Onyx web port (Onyx runs as sibling containers in the pod, started by the kubelet at install;
-the same port on your machine, default 3000, `AW_SINDRI_POD_ONYX_PORT`) and runs
+the same port on your machine, default 8081, `AW_SINDRI_POD_ONYX_PORT`) and runs
 `kubectl exec -it <pod> -c sindri -- sindri onyx attach` at the same terminal: it checks Onyx answers and runs the pinned
 release, then the account steps. At the sign-up step, sign up in the browser at the forwarded address and press Enter.
 Nothing is pulled or started, so it takes seconds, and re-running it is safe. Ctrl-C during `attach` stops that command only; the

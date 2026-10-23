@@ -158,7 +158,7 @@ SEQ="$(awk '
 check "--onyx: pod read, owner forward, then attach" "$SEQ" "read,forward,attach"
 waitfor 10 has_line 'port-forward pod/sindri-0 43000:43000'; check "--onyx: the Onyx port is forwarded from the pod" "$?" "0"
 check "--onyx: no Service forward" "$(count 'port-forward svc/')" "0"
-check "--onyx: the forwarded address is printed" "$(said d 'http://127.0.0.1:43000')" "1"
+check "--onyx: the forwarded address is printed" "$(said d 'Onyx is at http://127.0.0.1:43000 — sign up there when attach asks')" "1"
 check "--onyx: the app is still connected after attach" "$(jq -r .epoch "$(mirror_dir)/control.json")" "7"
 check "--onyx: success ends with exit 0" "$(finish d)" "0"
 
@@ -213,7 +213,20 @@ s=socket.socket(); s.bind(("127.0.0.1",48999)); s.listen(1); open(sys.argv[1],"w
   check "local port taken: exit 2, one line naming the port and --port" \
     "$RC:$(lines "$OUT"):$(printf '%s' "$OUT" | grep -c 'local port 48999 is taken; pick another with --port'):$(count port-forward)" "2:1:1:0"
   kill "$(cat "$WORK/runs/listener.pid")" 2>/dev/null
+  python3 -I -c 'import socket,sys,time
+s=socket.socket(); s.bind(("127.0.0.1",48998)); s.listen(1); open(sys.argv[1],"w").write("up"); time.sleep(120)' "$WORK/listening2" &
+  echo $! > "$WORK/runs/listener2.pid"
+  waitfor 10 test -e "$WORK/listening2"
+  reset
+  OUT="$(AW_SINDRI_POD_ONYX_PORT=48998 conn --onyx)"; RC=$?
+  check "Onyx port taken: exit 2, names the port and AW_SINDRI_POD_ONYX_PORT, attach never runs" \
+    "$RC:$(printf '%s' "$OUT" | grep -c 'local port 48998 (Onyx) is taken; set AW_SINDRI_POD_ONYX_PORT'):$(count 'exec -it'):$(count '^ui home=')" "2:1:0:0"
+  kill "$(cat "$WORK/runs/listener2.pid")" 2>/dev/null
 fi
+
+# --- the default Onyx port is 8081
+OUT="$(env -u AW_SINDRI_POD_ONYX_PORT PATH="/usr/bin:/bin" bash "$DIR/sindri-pod.sh" connect --dry-run --onyx 2>&1)"
+check "--onyx: the default Onyx port is 8081" "$(printf '%s' "$OUT" | grep -c 'pod/sindri-0 8081:8081')" "1"
 
 # --- --check: every prerequisite, exit 0 or 2, nothing started
 reset
