@@ -217,4 +217,40 @@ public abstract partial class SindriApiContract
 
         Expect.Equal("SND-ITEM-404", result.Error.Code);
     }
+
+    [Fact]
+    public async Task WholeMap_answers_the_draft_golden_with_its_counts_areas_nodes_and_edges()
+    {
+        var api = Reach(new FakeSindriApi());
+        var golden = GoldenFiles.SpecShapedNode("context-whole", "draft-nodes-small");
+
+        var map = (await api.WholeMap(_api, new WholeMapQuery("auto", Area: null, [], MapVersion: null, Draft: false), Token)).Value;
+
+        Expect.Equal(((string)golden["mapVersion"]!, (string)golden["detail"]!, (int)golden["counts"]!["nodes"]!), (map.MapVersion, map.Detail, map.Counts.Nodes));
+        Expect.Sequence(golden["areas"]!.AsArray().Select(a => (string)a!["key"]!), map.Areas.Select(a => a.Key));
+        Expect.Equal((golden["nodes"]!.AsArray().Count, golden["edges"]!.AsArray().Count), (map.Nodes!.Count, map.Edges!.Count));   // why: a node-level answer has both
+    }
+
+    [Fact]
+    public async Task WholeMap_answers_an_over_budget_map_by_area_with_the_reason_and_no_nodes()
+    {
+        var api = Reach(new FakeSindriApi { WholeMapAnswer = _ => new RouteAnswer(System.Net.HttpStatusCode.OK, GoldenFiles.SpecShaped("context-whole", "draft-areas-over-budget")) });
+
+        var map = (await api.WholeMap(_api, new WholeMapQuery("nodes", Area: null, [], MapVersion: null, Draft: false), Token)).Value;
+
+        Expect.Equal(("areas", "over-budget", true), (map.Detail, map.Fallback!, map.Nodes is null));   // why: the golden names the fallback
+    }
+
+    [Fact]
+    public async Task WholeMap_sends_the_detail_the_area_and_every_key_to_locate()
+    {
+        var server = new FakeSindriApi();
+        var api = Reach(server);
+
+        _ = await api.WholeMap(_api, new WholeMapQuery("areas", "feature:tabs", ["code:a.ts", "code:b.ts"], "v2", Draft: true), Token);
+
+        var asked = server.WholeMapAsked[^1];
+        Expect.Equal(("areas", "feature:tabs", "v2", true), (asked.Detail!, asked.Area!, asked.MapVersion!, asked.Draft));   // why: it was asked with all four
+        Expect.Sequence(["code:a.ts", "code:b.ts"], asked.Locate);
+    }
 }

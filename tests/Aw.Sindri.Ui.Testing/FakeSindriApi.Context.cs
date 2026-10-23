@@ -28,6 +28,14 @@ internal sealed partial class FakeSindriApi
 
     private readonly List<string> _scopeAsked = [];
 
+    /// <summary>GET /sindri/context/map/whole's answer per query (the draft nodes-small golden by default; a draft until context's real goldens land).</summary>
+    public Func<WholeMapQuery, RouteAnswer> WholeMapAnswer { get; set; } = _ => new RouteAnswer(HttpStatusCode.OK, GoldenFiles.SpecShaped("context-whole", "draft-nodes-small"));
+
+    /// <summary>The whole-map reads asked, in order.</summary>
+    public IReadOnlyList<WholeMapQuery> WholeMapAsked { get { lock (_gate) { return [.. _wholeAsked]; } } }
+
+    private readonly List<WholeMapQuery> _wholeAsked = [];
+
     /// <summary>GET /sindri/context/filemap's answer, or null for the golden the query names.</summary>
     public RouteAnswer? FileMapAnswer { get; set; }
 
@@ -138,6 +146,21 @@ internal sealed partial class FakeSindriApi
 
         return Context<ItemScopeView>(api, "/sindri/items/{id}/scope", ItemScopeAnswer(itemId), gate: null, cancellationToken);
     }
+
+    // Counted apart from ContextCalls (like the publish state), which the Context page's tests hold at zero before a read of the lenses.
+    public async Task<Result<WholeMapView>> WholeMap(Uri api, WholeMapQuery query, CancellationToken cancellationToken)
+    {
+        lock (_gate)
+        {
+            _wholeAsked.Add(query);
+        }
+
+        await WaitFor(WholeMapGate, cancellationToken).ConfigureAwait(false);
+        return NotReceived<WholeMapView>(api) ?? Answer<WholeMapView>(api, "/sindri/context/map/whole", WholeMapAnswer(query));
+    }
+
+    /// <summary>Held open until set: a whole-map read that started while it was set waits for it.</summary>
+    public TaskCompletionSource? WholeMapGate { get; set; }
 
     public Task<Result<FileMapView>> FileMap(Uri api, FileMapQuery query, CancellationToken cancellationToken) =>
         Context<FileMapView>(api, "/sindri/context/filemap", FileMapFor(query), FileMapGate, cancellationToken);

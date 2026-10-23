@@ -16,6 +16,7 @@ internal sealed partial class ContextPageViewModel : ObservableObject
         InitFileMap();
         InitSide();
         InitStates();
+        InitWhole();
     }
 
     /// <summary>What the page and its stages read through.</summary>
