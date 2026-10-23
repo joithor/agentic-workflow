@@ -77,6 +77,46 @@ public sealed class NeedsYouBarViewModelTests
         Assert.Equal("Suggested", bar.SuggestedTag);
     }
 
+    // The desk instance of the f5-fields recipe, waiting in one of its states.
+    private void ServeDeskIn(string state)
+    {
+        var instance = JsonNode.Parse(GoldenFiles.Api("workflow-instance", "dev-desk-round-trip"))!;
+        instance["recipe"]!["id"] = "workflow.f5-fields";
+        instance["current"]!["state"] = state;
+        _server.InstanceBody = _ => new RouteAnswer(System.Net.HttpStatusCode.OK, instance.ToJsonString());
+    }
+
+    [Fact]
+    public async Task A_desk_request_shows_its_states_why_and_what_approving_and_sending_back_do()
+    {
+        ServeDeskIn("approve");
+
+        var bar = await Bar(NeedsYouRows.Desk());
+
+        Assert.Equal(("You decide whether it goes on.", "Moves on to the hand-over.", "Sends your notes back to the AI.", true, true), (bar.DeskWhy, bar.IfApprove, bar.IfSendBack, bar.HasIfApprove, bar.HasIfSendBack));
+    }
+
+    [Fact]
+    public async Task A_box_with_no_outcome_text_is_hidden_and_a_state_with_no_why_says_nothing()
+    {
+        ServeDeskIn("check");
+
+        var bar = await Bar(NeedsYouRows.Desk());
+
+        Assert.Equal(("", "", "", false, false), (bar.DeskWhy, bar.IfApprove, bar.IfSendBack, bar.HasIfApprove, bar.HasIfSendBack));
+    }
+
+    [Fact]
+    public async Task A_recipe_that_cannot_be_read_leaves_the_texts_empty_and_the_request_working()
+    {
+        _server.RecipeBody = _ => new RouteAnswer(System.Net.HttpStatusCode.NotFound, "{}");
+
+        var bar = await Bar(NeedsYouRows.Desk());
+
+        Assert.Equal(("", false, false), (bar.DeskWhy, bar.HasIfApprove, bar.HasIfSendBack));
+        Assert.True(bar.PrimaryEnabled);
+    }
+
     [Fact]
     public async Task A_on_a_desk_request_not_read_to_the_end_asks_before_approving()
     {

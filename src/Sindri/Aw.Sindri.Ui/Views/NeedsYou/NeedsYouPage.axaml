@@ -113,6 +113,20 @@
                   <TextBlock x:Name="NeedsYouWhyText" Classes="body" Text="{Binding Why}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Why}" />
                 </StackPanel>
               </Border>
+              <UniformGrid x:Name="NeedsYouOutcomes" Columns="2" IsVisible="{Binding Bar.HasIfApprove}" Margin="20,8">
+                <Border x:Name="NeedsYouIfApprove" Classes="card-section" IsVisible="{Binding Bar.HasIfApprove}">
+                  <StackPanel Spacing="4">
+                    <TextBlock Classes="eyebrow" Text="{Binding IfApproveCaption}" />
+                    <TextBlock x:Name="NeedsYouIfApproveText" Classes="body" Text="{Binding Bar.IfApprove}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Bar.IfApprove}" />
+                  </StackPanel>
+                </Border>
+                <Border x:Name="NeedsYouIfSendBack" Classes="card-section" IsVisible="{Binding Bar.HasIfSendBack}">
+                  <StackPanel Spacing="4">
+                    <TextBlock Classes="eyebrow" Text="{Binding IfSendBackCaption}" />
+                    <TextBlock x:Name="NeedsYouIfSendBackText" Classes="body" Text="{Binding Bar.IfSendBack}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Bar.IfSendBack}" />
+                  </StackPanel>
+                </Border>
+              </UniformGrid>
               <Border Classes="hairline" />
               <Border x:Name="NeedsYouRequest" Classes="card-section" IsVisible="{Binding Question, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                 <StackPanel Spacing="4">
