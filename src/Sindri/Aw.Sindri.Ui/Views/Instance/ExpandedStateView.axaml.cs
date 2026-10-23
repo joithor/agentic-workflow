@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Aw.Sindri.Ui.ViewModels.Components;
 using Aw.Sindri.Ui.ViewModels.Instance;
 
 namespace Aw.Sindri.Ui.Views.Instance;

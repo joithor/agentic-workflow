@@ -1,7 +1,7 @@
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Platform;
 
-namespace Aw.Sindri.Ui.ViewModels.Instance;
+namespace Aw.Sindri.Ui.ViewModels.Components;
 
 /// <summary>
 /// One button for a thing a desk step asks the person to read ("Open the design"): a link opens in the browser, a path opens as a file, and a review with

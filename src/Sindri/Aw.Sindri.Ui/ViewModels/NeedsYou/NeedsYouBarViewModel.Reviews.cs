@@ -1,4 +1,4 @@
-using Aw.Sindri.Ui.ViewModels.Instance;
+using Aw.Sindri.Ui.ViewModels.Components;
 
 namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 

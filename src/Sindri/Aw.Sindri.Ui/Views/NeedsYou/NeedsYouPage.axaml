@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ny="using:Aw.Sindri.Ui.ViewModels.NeedsYou"
-             xmlns:inst="using:Aw.Sindri.Ui.ViewModels.Instance"
+             xmlns:comps="using:Aw.Sindri.Ui.ViewModels.Components"
              xmlns:nyv="using:Aw.Sindri.Ui.Views.NeedsYou"
              xmlns:ctl="using:Aw.Sindri.Ui.Views.Controls"
              xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
@@ -300,7 +300,7 @@
                 </ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="inst:DeskReviewViewModel">
+                <DataTemplate x:DataType="comps:DeskReviewViewModel">
                   <Button Classes="bar-button" Margin="0,0,6,4" Content="{Binding Label}" Click="OnReview" AutomationProperties.Name="{Binding Name}" />
                 </DataTemplate>
               </ItemsControl.ItemTemplate>

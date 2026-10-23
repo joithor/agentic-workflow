@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:inst="using:Aw.Sindri.Ui.ViewModels.Instance"
+             xmlns:comps="using:Aw.Sindri.Ui.ViewModels.Components"
              xmlns:comp="using:Aw.Sindri.Ui.Views.Components"
              x:Class="Aw.Sindri.Ui.Views.Instance.ExpandedStateView"
              x:DataType="inst:ExpandedStateViewModel">
@@ -36,7 +37,7 @@
           </ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="inst:DeskReviewViewModel">
+          <DataTemplate x:DataType="comps:DeskReviewViewModel">
             <Button Classes="row-title" Margin="0,0,8,4" Content="{Binding Label}" Click="OnReview" AutomationProperties.Name="{Binding Name}" />
           </DataTemplate>
         </ItemsControl.ItemTemplate>
