@@ -383,10 +383,16 @@ mkdir -p "$home/auth" "$logs" || die "can't create $home"
 pf_pid="" onyx_pf_pid="" ui_pid=""
 cur_pid="" cur_epoch="" cur_token="" remote_port=""
 
-stop_own() {   # only the port-forwards this run recorded
+stop_own() {   # only the port-forwards and the app this run recorded
   [ -z "$pf_pid" ] || kill "$pf_pid" 2>/dev/null
   [ -z "$onyx_pf_pid" ] || kill "$onyx_pf_pid" 2>/dev/null
   pf_pid="" onyx_pf_pid=""
+  if [ -n "$ui_pid" ]; then   # the app is useless once the mirror home is gone
+    kill "$ui_pid" 2>/dev/null
+    local n=0; while alive "$ui_pid" && [ "$n" -lt 50 ]; do sleep 0.1; n=$((n + 1)); done
+    ! alive "$ui_pid" || kill -KILL "$ui_pid" 2>/dev/null
+    ui_pid=""
+  fi
 }
 cleanup() { stop_own; case "$home" in "$tmp"/aw-sindri-pod.*) rm -rf "$home" ;; esac; }
 trap 'cleanup' EXIT

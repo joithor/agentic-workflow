@@ -83,6 +83,7 @@ EOS
 cat > "$WORK/bin/sindri-ui" <<'EOS'
 #!/usr/bin/env bash
 echo "ui home=$AW_SINDRI_HOME" >> "$CALLS"
+echo $$ > "$POD/ui.pid"
 end=$((SECONDS + 120))   # bounded: the test's temp dir going away ends it too
 while [ ! -e "$STOP" ] && [ -d "$POD" ] && [ "$SECONDS" -lt "$end" ]; do sleep 0.1; done
 EOS
@@ -154,6 +155,7 @@ touch "$POD/down"; sleep 0.6; rm -f "$POD/down"; pod_state 53 10 tok-two 47481
 waitfor 10 has_epoch 10; check "pod down then up: recovered without exiting" "$?" "0"
 check "exit: closing the app ends the script cleanly" "$(finish a)" "0"
 check "exit: the script said the app was closed" "$(said a 'the app was closed')" "1"
+check "exit: the app process is gone" "$(kill -0 "$(cat "$POD/ui.pid")" 2>/dev/null && echo alive || echo gone)" "gone"
 check "connect: prints the connected line" "$(said a 'connected: sindri-0 at http://127.0.0.1:47480; Ctrl-C to stop')" "1"
 check "pod down then up: the attempts were announced and the reconnect said" \
   "$([ "$(said a 'pod restarting, reconnecting (attempt 1 of 5)')" -ge 1 ] && [ "$(said a 'reconnected to sindri-0')" = 1 ] && echo yes)" "yes"
@@ -295,6 +297,7 @@ waitfor 10 has_ui; M="$(mirror_dir)"
 check "cleanup: the mirror home is 0700 and holds the owner pid" "$(mode "$M"):$(test -s "$M/owner.pid" && echo pid)" "700:pid"
 kill -TERM "$(cat "$M/owner.pid")"
 waitfor 10 test -s "$WORK/runs/f.rc"; check "cleanup: TERM ends the script with exit 0" "$(cat "$WORK/runs/f.rc")" "0"
+check "cleanup: TERM stops the app the script opened" "$(kill -0 "$(cat "$POD/ui.pid")" 2>/dev/null && echo alive || echo gone)" "gone"
 check "cleanup: the mirror home is gone" "$(mirror_dir)" ""
 touch "$STOP"
 
