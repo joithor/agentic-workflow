@@ -69,4 +69,28 @@ public abstract class RepoInspectorContract
 
         Expect.Equal("SND-SETUP-001", facts.Error.Code);
     }
+
+    /// <summary>The weight of a checkout is its real path and a count of tracked files.</summary>
+    [Fact]
+    public async Task The_weight_of_a_checkout_is_its_path_and_tracked_files()
+    {
+        var (inspector, checkout, _) = await Create();
+
+        var weight = await inspector.Weight(checkout, Token);
+
+        Expect.True(weight.IsSuccess);
+        Expect.Equal(checkout, weight.Value.Path);
+        Expect.True(weight.Value.Files >= 0 && weight.Value.Bytes >= 0);
+    }
+
+    /// <summary>The weight of a folder that is not a checkout is SND-SETUP-001.</summary>
+    [Fact]
+    public async Task The_weight_of_a_folder_outside_git_is_refused()
+    {
+        var (inspector, _, outside) = await Create();
+
+        var weight = await inspector.Weight(outside, Token);
+
+        Expect.Equal("SND-SETUP-001", weight.Error.Code);
+    }
 }
