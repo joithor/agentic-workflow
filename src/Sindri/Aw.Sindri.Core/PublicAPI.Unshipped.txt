@@ -8976,7 +8976,20 @@ static Aw.Sindri.Core.Views.EngineItemPart.operator ==(Aw.Sindri.Core.Views.Engi
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkAnswers
 static Aw.Sindri.Core.NeedsYou.NeedsYouRows.ForDeskTask(Aw.Sindri.Core.Views.ItemRow! item, Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, System.DateTimeOffset since, Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> Aw.Sindri.Core.NeedsYou.NeedsYouRow!
 static Aw.Sindri.Core.NeedsYou.NeedsYouRows.ForIdleTakeover(Aw.Sindri.Core.Views.ItemRow! item, Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, System.DateTimeOffset since, Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> Aw.Sindri.Core.NeedsYou.NeedsYouRow!
-static Aw.Sindri.Core.NeedsYou.NeedsYouRows.ForPark(Aw.Sindri.Core.Views.ItemRow! item, Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, Aw.Sindri.Core.Events.SuspensionSummary! suspension, System.DateTimeOffset since, Aw.Sindri.Core.Text.ITextScrubber! scrubber, string? refusal = null) -> Aw.Sindri.Core.NeedsYou.NeedsYouRow!
+static Aw.Sindri.Core.NeedsYou.NeedsYouRows.ForPark(Aw.Sindri.Core.Views.ItemRow! item, Aw.Sindri.Core.NeedsYou.ParkRowInput! park, System.DateTimeOffset since, Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> Aw.Sindri.Core.NeedsYou.NeedsYouRow!
+Aw.Sindri.Core.NeedsYou.ParkRowInput
+Aw.Sindri.Core.NeedsYou.ParkRowInput.<Clone>$() -> Aw.Sindri.Core.NeedsYou.ParkRowInput!
+Aw.Sindri.Core.NeedsYou.ParkRowInput.Address.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress!
+Aw.Sindri.Core.NeedsYou.ParkRowInput.Address.init -> void
+Aw.Sindri.Core.NeedsYou.ParkRowInput.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress! Address, out Aw.Sindri.Core.Events.SuspensionSummary! Suspension, out string? Refusal, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Descendant) -> void
+Aw.Sindri.Core.NeedsYou.ParkRowInput.Descendant.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress?
+Aw.Sindri.Core.NeedsYou.ParkRowInput.Descendant.init -> void
+Aw.Sindri.Core.NeedsYou.ParkRowInput.Equals(Aw.Sindri.Core.NeedsYou.ParkRowInput? other) -> bool
+Aw.Sindri.Core.NeedsYou.ParkRowInput.ParkRowInput(Aw.Sindri.Core.Workflow.Engine.InstanceAddress! Address, Aw.Sindri.Core.Events.SuspensionSummary! Suspension, string? Refusal = null, Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Descendant = null) -> void
+Aw.Sindri.Core.NeedsYou.ParkRowInput.Refusal.get -> string?
+Aw.Sindri.Core.NeedsYou.ParkRowInput.Refusal.init -> void
+Aw.Sindri.Core.NeedsYou.ParkRowInput.Suspension.get -> Aw.Sindri.Core.Events.SuspensionSummary!
+Aw.Sindri.Core.NeedsYou.ParkRowInput.Suspension.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape!
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind Kind, out Aw.Sindri.Core.Workflow.Engine.ParkReason? Reason, out Aw.Sindri.Core.Workflow.Engine.ParkKind? ParkKind, out Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation, out bool Mirrors) -> void

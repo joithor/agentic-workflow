@@ -21,22 +21,24 @@ public static partial class NeedsYouRows
     private static readonly ActionId _cancel = ActionId.From("ApplyCommand:cancel");
     private static readonly ActionId _approveRecipe = ActionId.From("ApproveRecipe");
 
-    /// <summary>The 'park' row of a root instance's park or escalation.</summary>
+    /// <summary>The 'park' row of a root instance's park or escalation, or of its deepest parked descendant (<see cref="ParkRowInput.Descendant"/>).</summary>
     /// <param name="item">The item's row, for its title, repo and id.</param>
-    /// <param name="address">The instance's address.</param>
-    /// <param name="suspension">The suspension the ledger row shows. A budget park's grant is a placeholder (the ledger row has no recipe in the fold to halve the state's budget from), so its row carries the answer kind and action, and the status line has the real amount.</param>
+    /// <param name="park">The instance, its suspension and the refusal or descendant that shape the row.</param>
     /// <param name="since">When the row appeared.</param>
     /// <param name="scrubber">Scrubs the text the row stores.</param>
-    /// <param name="refusal">The recorded refusal (code and message) of a dispatch park's effect; null when the transition recorded none.</param>
     /// <returns>The row.</returns>
-    public static NeedsYouRow ForPark(ItemRow item, InstanceAddress address, SuspensionSummary suspension, DateTimeOffset since, ITextScrubber scrubber, string? refusal = null)
+    public static NeedsYouRow ForPark(ItemRow item, ParkRowInput park, DateTimeOffset since, ITextScrubber scrubber)
     {
-        ArgumentNullException.ThrowIfNull(suspension);
-        var answer = ParkAnswers.For(new ParkShape(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors is not null), address, child: suspension.MirrorsAddress);
-        var (label, words) = Words(suspension, refusal);
-        var shape = new EngineRow("park:", label, $"{words} ({address.Value})", Urgency.Pulse, answer?.Kind,
-            answer?.ActionId ?? _approveRecipe, answer is null ? [_approveRecipe, _cancel] : [answer.ActionId], answer?.Cli ?? Status(address), answer?.Via, answer?.Child);
-        return Row(item, address, shape, since, scrubber);
+        ArgumentNullException.ThrowIfNull(park);
+        var suspension = park.Suspension;
+        var at = park.Descendant ?? park.Address;
+        var answer = park.Descendant is { } descendant
+            ? ParkAnswers.For(new ParkShape(SuspensionKind.Escalation, Reason: null, ParkKind: null, EscalationKind.Child, Mirrors: false), descendant, child: descendant.Value)   // the descendant decides: a pointer to it
+            : ParkAnswers.For(new ParkShape(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors is not null), at, child: suspension.MirrorsAddress);
+        var (label, words) = Words(suspension, park.Refusal);
+        var shape = new EngineRow("park:", label, $"{words} ({at.Value})", Urgency.Pulse, answer?.Kind,
+            answer?.ActionId ?? _approveRecipe, answer is null ? [_approveRecipe, _cancel] : [answer.ActionId], answer?.Cli ?? Status(at), answer?.Via, answer?.Child);
+        return Row(item, park.Address, shape, since, scrubber);
     }
 
     /// <summary>The 'park' row of an open desk task.</summary>

@@ -96,7 +96,7 @@ internal sealed partial class NeedsYouProjection
         return part.Suspension switch
         {
             SuspensionKind.Park or SuspensionKind.Escalation when payload.Detail?.Delta.Suspension is { } suspension =>
-                ("park:", since => NeedsYouRows.ForPark(item, address, suspension, since, scrubber, payload.Detail?.Reason)),
+                ("park:", since => NeedsYouRows.ForPark(item, new ParkRowInput(address, suspension, payload.Detail?.Reason), since, scrubber)),
             SuspensionKind.Takeover when string.Equals(payload.Trigger, TriggerNames.TakeoverIdle, StringComparison.Ordinal) =>
                 ("takeover:", since => NeedsYouRows.ForIdleTakeover(item, address, since, scrubber)),
             null when part is { RunOpen: true, Runtime: StepRuntime.Desk } => ("desk:", since => NeedsYouRows.ForDeskTask(item, address, since, scrubber)),
