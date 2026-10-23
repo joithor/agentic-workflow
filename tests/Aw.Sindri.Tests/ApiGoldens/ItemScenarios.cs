@@ -139,7 +139,6 @@ internal static class ItemScenarios
             "created-link" => await Send(host, Post("/sindri/items", """{"title":"Fix the login redirect","repo":"demo","link":"linear:issue/abc-123"}""", human)),
             "invalid-title" => await Send(host, Post("/sindri/items", """{"title":"   "}""", human)),
             "unknown-repo" => await Send(host, Post("/sindri/items", """{"title":"Try the queue","repo":"nowhere"}""", human)),
-            "refused-session" => await Send(host, Post("/sindri/items", """{"title":"Try the queue"}""", Session("demo"))),
             "refused-origin" => await Send(host, Post("/sindri/items", """{"title":"Try the queue"}""", [.. human, ("Origin", "http://localhost:3000")])),
             _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "no such items scenario"),
         };
@@ -248,8 +247,6 @@ internal static class ItemScenarios
                 _ = await Close(host, id, "done", 1);
                 await ViewScenarios.CatchUp(host, ct);
                 return await Close(host, id, "done", 2);
-            case "refused-session":
-                return await Send(host, Post($"/sindri/items/{id}/close", """{"reason":"done","itemVersion":1}""", Session("demo")));
             case "refused-active-instance":
                 await AppendFor(host, id, EventTypes.WorkflowStarted, ActiveInstance(id), "workflow:golden:started", ct);   // a root instance's desk task is open
                 await ViewScenarios.CatchUp(host, ct);

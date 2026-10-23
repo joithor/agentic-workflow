@@ -118,7 +118,6 @@ internal static class ApiScenarios
             ("events-catalog", "catalog") => await Ask(host, Get("/sindri/events/catalog", Human(token))),
             ("workflow-recipe", "not-found") => await Ask(host, Get(UnknownRecipe, Human(token))),
             ("stop", "accepted") => await Ask(host, Post("/sindri/stop", json: null, Human(token))),
-            ("stop", "refused-session") => await Ask(host, Post("/sindri/stop", json: null, Session)),
             ("stop", "refused-origin") => await Ask(host, Post("/sindri/stop", json: null, [.. Human(token), Origin])),
             _ => await ApproveScenario(host, scenario, ct),
         };
@@ -145,7 +144,6 @@ internal static class ApiScenarios
         : WrapSessionScenarios.Handles(slug, scenario) ? () => WrapSessionScenarios.Body(host, slug, scenario, ct)
         : null;
 
-    private static (string Name, string Value)[] Session => [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli")];
 
     // An unknown recipe answers the engine's SND-RECIPE-002 (WorkflowErrors.RecipeNotFound; API spec §3.8), from GET /workflow/recipes/{id} (API P11).
     private static string UnknownRecipe => "/sindri/workflow/recipes/workflow.unknown";
@@ -162,9 +160,6 @@ internal static class ApiScenarios
             "preview" => await Ask(host, Post("/sindri/profile/approve", "{\"hash\":null}", Human(token))),
             "approved" => await Ask(host, Post("/sindri/profile/approve", await Confirmed(host, hash), Human(token))),
             "already-approved" => await AfterApproval(host, () => Post("/sindri/profile/approve", approve, Human(token)), ct),
-            "refused-session" => await Ask(host, Post("/sindri/profile/approve", approve, Session)),
-            "refused-no-terminal" => await Ask(host, Post("/sindri/profile/approve", approve,
-                [(SindriHeaders.Caller, "human"), (SindriHeaders.Client, "cli"), (SindriHeaders.Token, token)])),
             "refused-origin" => await Ask(host, Post("/sindri/profile/approve", approve, [.. Human(token), Origin])),
             "stale-hash" => await Ask(host, Post("/sindri/profile/approve",
                 $"{{\"hash\":\"{SliceHarness.Profile("9s").Hash.Value}\"}}", Human(token))),

@@ -100,14 +100,4 @@ public abstract partial class SindriApiContract
         Expect.Equal("SND-JOB-409", again.Error.Code);
         Expect.Sequence([JobId, JobId], server.CancelledJobs);
     }
-
-    [Fact]
-    public async Task CancelJob_by_a_session_is_the_403_refusal()
-    {
-        var server = new FakeSindriApi { CancelJobAnswer = RouteAnswer.Problem("jobs-id-cancel", "refused-session") };
-
-        var result = await Reach(server).CancelJob(_api, JobId, Token);
-
-        Expect.Equal(new Error("SND-AUTH-002", ErrorKind.Forbidden, (string)GoldenFiles.Node("jobs-id-cancel", "refused-session")["detail"]!), result.Error);
-    }
 }

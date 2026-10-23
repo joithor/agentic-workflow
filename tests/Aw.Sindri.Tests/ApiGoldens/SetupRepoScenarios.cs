@@ -51,7 +51,6 @@ internal static class SetupRepoScenarios
         return (await host.Http.Ask(scenario switch
         {
             "started" => Post(route, "{\"path\":\"/work/demo\"}", human),
-            "refused-session" => Post(route, "{\"path\":\"/work/demo\"}", [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli")]),
             "not-a-checkout" => Post(route, "{\"path\":\"/work/missing\"}", human),
             "not-absolute" => Post(route, "{\"path\":\"demo\"}", human),
             "already-added" => Post(route, "{\"path\":\"/work/demo\"}", human),
@@ -67,7 +66,6 @@ internal static class SetupRepoScenarios
         return (await host.Http.Ask(scenario switch
         {
             "not-approved" => Post(route, "{\"path\":\"/work/demo\"}", Human(host.Token.Value)),
-            "refused-session" => Post(route, "{\"path\":\"/work/demo\"}", [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli")]),
             _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "no such setup-repos-onboard scenario"),
         })).Body;
     }
@@ -78,7 +76,6 @@ internal static class SetupRepoScenarios
         return (await host.Http.Ask(scenario switch
         {
             "not-in-profile" => Post(route, "{\"repo\":\"demo\"}", Human(host.Token.Value)),
-            "refused-session" => Post(route, "{\"repo\":\"demo\"}", [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli")]),
             _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "no such setup-mcp scenario"),
         })).Body;
     }

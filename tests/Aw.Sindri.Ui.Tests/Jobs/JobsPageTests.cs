@@ -211,13 +211,13 @@ public sealed class JobsPageTests
     [Fact]
     public async Task Cancel_by_a_session_shows_the_refusal_as_served()
     {
-        _f.Server.CancelJobAnswer = RouteAnswer.Problem("jobs-id-cancel", "refused-session");
+        _f.Server.CancelJobAnswer = RouteAnswer.Refused("CancelJob is not available to this caller.");
         var page = await _f.Shown(Token);
 
         await page.Rows[0].Cancel!.Press(Token);
 
         var cancel = page.Rows[0].Cancel!;
-        Assert.Equal(("SND-AUTH-002", (string)Golden("jobs-id-cancel", "refused-session")["detail"]!), (cancel.ErrorCode, cancel.ErrorDetail));
+        Assert.Equal(("SND-AUTH-002", "CancelJob is not available to this caller."), (cancel.ErrorCode, cancel.ErrorDetail));
     }
 
     [Fact]

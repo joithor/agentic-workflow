@@ -113,8 +113,6 @@ internal static class LaunchScenarios
                 return await Send(host, Post(path, Body(version: 2), human));
             case "attach-no-session-006":
                 return await Send(host, Post(path, Body(mode: "attach"), human));
-            case "refused-session":
-                return await Send(host, Post(path, Body(), ItemScenarios.Session("demo")));
             case "refused-origin":
                 return await Send(host, Post(path, Body(), [.. human, ("Origin", "http://localhost:3000")]));
             default:

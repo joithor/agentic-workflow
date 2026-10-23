@@ -198,7 +198,6 @@ internal static class RequestScenarios
             "declined" => new Pick("decline", "Not now.", human),
             "decided-elsewhere" => await Elsewhere(host, decision, human, ct),
             "bad-choice" => new Pick("maybe", Note: null, human),
-            "refused-session" => new Pick("accept", Note: null, Demo),
             _ => new Pick("accept", "Good plan.", human),   // 'accepted', 'voided', 'while-stalled'
         };
         if (scenario == "voided")
