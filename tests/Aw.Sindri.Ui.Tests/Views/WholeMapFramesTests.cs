@@ -45,7 +45,7 @@ public sealed class WholeMapFramesTests : FrameHost
         whole.Canvas.Settle();
         Assert.Equal(shell.Context.Whole.Geometry!.World.Width, whole.Canvas.WorldBounds.Width);
         Assert.InRange(whole.Canvas.View.Scale, WholeMapViewModel.FirstOpenFloor, WholeMapViewModel.MaxScale);
-        Assert.Equal(shell.Context.Whole.Areas.Count, Named<ItemsControl>(window, "WholeAreas").ItemCount);
+        Assert.DoesNotContain(window.GetVisualDescendants().OfType<Control>(), c => c.Name == "WholeAreas");   // the page is the graph: no row of feature chips
         Assert.Equal(shell.Context.Whole.Head, shell.Context.Head);
         Assert.False(Visible(window, "WholeStatus"));
         Assert.False(Visible(window, "ContextEmpty"));
@@ -176,5 +176,31 @@ public sealed class WholeMapFramesTests : FrameHost
         _ = Directory.CreateDirectory(dir);
         await File.WriteAllTextAsync(Path.Combine(dir, "w3-first-frame-ms.txt"), clock.ElapsedMilliseconds.ToString(CultureInfo.InvariantCulture), Token);
         Assert.True(clock.ElapsedMilliseconds < 1000, string.Create(CultureInfo.InvariantCulture, $"first frame took {clock.ElapsedMilliseconds} ms"));
+    });
+
+    // The proof of whole-map spec §8 for W4: the camera on a query's answer with the rest dimmed behind it, then back on the whole map after Esc in the starting-point box.
+    [Fact]
+    public Task A_query_zooms_into_the_map_and_esc_in_the_box_goes_back_to_the_whole_map_at_1440() => OnUi(async () =>
+    {
+        var (window, shell) = await Open(1440, 900);
+        shell.Context.AnchorText = (string)GoldenFiles.Node("context-lenses", "map-tabs")["anchor"]!["key"]!;
+        var whole = Named<WholeMapView>(window, "WholeMap");
+        var fitted = whole.Canvas.View;
+
+        await shell.Context.Submit(Token);
+        await Until(window, () => shell.Context.IsZoomedIn);
+        whole.Canvas.Settle();
+        Frame(window, "zoomed-1440", "w4-");
+
+        Assert.Equal((true, true, true), (Visible(window, "WholeMapBack"), shell.Context.ShowWhole, shell.Context.Whole.HitKeys.Count > 0));
+        Assert.True(whole.Canvas.View.Scale > fitted.Scale || whole.Canvas.View != fitted);
+        var box = Named<TextBox>(window, "AnchorBox");
+        box.RaiseEvent(new Avalonia.Input.KeyEventArgs { RoutedEvent = Avalonia.Input.InputElement.KeyDownEvent, Key = Avalonia.Input.Key.Escape });
+        Settle(window);
+        whole.Canvas.Settle();
+        Frame(window, "back-1440", "w4-");
+
+        Assert.Equal((false, false, false), (shell.Context.IsZoomedIn, Visible(window, "WholeMapBack"), shell.Context.Whole.IsZoomed));
+        Assert.Equal(shell.Context.Whole.Head, shell.Context.Head);
     });
 }

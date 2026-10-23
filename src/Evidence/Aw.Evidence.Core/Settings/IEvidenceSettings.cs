@@ -24,6 +24,9 @@ public interface IEvidenceSettings
     /// <summary>A localhost port (an API server) doctor must reach, or null to skip that check.</summary>
     public int? ApiPort { get; }
 
+    /// <summary>The worktree-slot convention, or null when the deployment configures no slots: then localhost:3000 is the only local host.</summary>
+    public SlotSettings? Slots { get; }
+
     /// <summary>What counts as seed data in the local database (fails closed when unconfigured).</summary>
     public SeedPolicy SeedPolicy { get; }
 

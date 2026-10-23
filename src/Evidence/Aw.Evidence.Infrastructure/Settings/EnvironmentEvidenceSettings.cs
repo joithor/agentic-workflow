@@ -38,6 +38,9 @@ internal sealed class EnvironmentEvidenceSettings(Func<string, string?> environm
             : null;
 
     /// <inheritdoc/>
+    public SlotSettings? Slots => null;   // stub: cutover unit 1.4 reads the UI_EVIDENCE_SLOT_* variables
+
+    /// <inheritdoc/>
     public SeedPolicy SeedPolicy => SeedPolicy.From(Set(DomainsVariable), Set(PatternVariable));
 
     /// <inheritdoc/>
