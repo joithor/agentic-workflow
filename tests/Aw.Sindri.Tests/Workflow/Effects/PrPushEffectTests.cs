@@ -2,10 +2,10 @@ using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Checks;
 using Aw.Sindri.Core.Forge;
-using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Features.Blocks.Effect;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
+using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Features.Blocks.Effect;
 using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Workflow;
 using Microsoft.Extensions.Time.Testing;
@@ -237,7 +237,7 @@ public sealed class PrPushEffectTests
     private async Task<JsonElement> Pushed(Core.Workflow.Blocks.EffectDone done)
     {
         var reply = done.Facts![FactKey.From("fact:push")];
-        var content = await _rig.Facts.Read(new Core.Workflow.Engine.FactValue(reply.Ref, reply.Sha256, HeadSha: null), Token);
+        var content = await _rig.Facts.Read(new FactValue(reply.Ref, reply.Sha256, HeadSha: null), Token);
         return JsonDocument.Parse(content.Value).RootElement.Clone();
     }
 }
