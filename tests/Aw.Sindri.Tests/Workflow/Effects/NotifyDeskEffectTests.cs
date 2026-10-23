@@ -1,6 +1,6 @@
 using System.Text.Json;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
@@ -76,7 +76,7 @@ public sealed class NotifyDeskEffectTests
     {
         var notice = await Engine(Root, "desk");
 
-        Assert.Equal(NeedsYouRowId.Desk(InstanceAddress.From(Root)).Value, notice.RowId?.Value);
+        Assert.Equal(NeedsYouRowIds.Desk(InstanceAddress.From(Root)).Value, notice.RowId?.Value);
         Assert.Equal("needs-you/" + notice.RowId?.Value, notice.DeepLink);
     }
 
@@ -85,8 +85,8 @@ public sealed class NotifyDeskEffectTests
     {
         var notice = await Engine(Child, "desk");
 
-        Assert.Equal(NeedsYouRowId.Desk(InstanceAddress.From(Child)).Value, notice.RowId?.Value);
-        Assert.NotEqual(NeedsYouRowId.Desk(InstanceAddress.From(Root)), notice.RowId);
+        Assert.Equal(NeedsYouRowIds.Desk(InstanceAddress.From(Child)).Value, notice.RowId?.Value);
+        Assert.NotEqual(NeedsYouRowIds.Desk(InstanceAddress.From(Root)), notice.RowId);
         Assert.Equal("needs-you/" + notice.RowId?.Value, notice.DeepLink);
     }
 
@@ -95,7 +95,7 @@ public sealed class NotifyDeskEffectTests
     {
         var notice = await Engine(Nested, "park");
 
-        Assert.Equal(NeedsYouRowId.Park(InstanceAddress.From(Root)).Value, notice.RowId?.Value);
+        Assert.Equal(NeedsYouRowIds.Park(InstanceAddress.From(Root)).Value, notice.RowId?.Value);
         Assert.Equal("needs-you/" + notice.RowId?.Value, notice.DeepLink);
     }
 
@@ -104,7 +104,7 @@ public sealed class NotifyDeskEffectTests
     {
         var notice = await Engine(Child, "takeover");
 
-        Assert.Equal(NeedsYouRowId.Takeover(InstanceAddress.From(Child)).Value, notice.RowId?.Value);
+        Assert.Equal(NeedsYouRowIds.Takeover(InstanceAddress.From(Child)).Value, notice.RowId?.Value);
         Assert.Equal("needs-you/" + notice.RowId?.Value, notice.DeepLink);
     }
 

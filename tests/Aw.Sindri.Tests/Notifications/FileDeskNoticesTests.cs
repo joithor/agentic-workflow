@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
 using Aw.Sindri.Infrastructure;
@@ -85,7 +86,7 @@ public sealed class FileDeskNoticesTests : IDisposable
     [Fact]
     public async Task A_notice_with_a_row_writes_both_fields_and_hands_the_deep_link_to_the_notifier()
     {
-        var row = NeedsYouRowId.Park(InstanceAddress.From("T-4/dev-notify/1")).Value;
+        var row = NeedsYouRowIds.Park(InstanceAddress.From("T-4/dev-notify/1")).Value;
         var notice = DeskNoticesContract.Notice("WFI-a:1:n1") with { RowId = NeedsYouRowId.From(row), DeepLink = "needs-you/" + row };
 
         _ = await Notices().Send(notice, Token);

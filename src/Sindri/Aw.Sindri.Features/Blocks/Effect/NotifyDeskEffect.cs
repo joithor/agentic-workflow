@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Kernel;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
@@ -52,9 +53,9 @@ internal sealed class NotifyDeskEffect(IDeskNotices notices, TimeProvider clock)
     /// <summary>The needs-you row an engine notice is about, built only through <see cref="NeedsYouRowId"/>: a desk task's own row, a takeover's own row, and a park's or escalation's (a nested one too) on the root's row. A recipe's notice is about no row.</summary>
     private static NeedsYouRowId? RowOf(EffectContext context, InstanceAddress address) => !context.FromEngine ? null : Argument(context, "row") switch
     {
-        "desk" => NeedsYouRowId.Desk(address),
-        "takeover" => NeedsYouRowId.Takeover(address),
-        "park" => NeedsYouRowId.Park(InstanceAddress.From(InstanceSummaries.RootOf(address))),
+        "desk" => NeedsYouRowIds.Desk(address),
+        "takeover" => NeedsYouRowIds.Takeover(address),
+        "park" => NeedsYouRowIds.Park(InstanceAddress.From(InstanceSummaries.RootOf(address))),
         _ => null,
     };
 
