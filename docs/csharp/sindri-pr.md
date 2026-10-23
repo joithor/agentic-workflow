@@ -147,6 +147,5 @@ The times, tokens, owner actions, CI fixes, rechecks and docs counts come from t
 |---|---|
 | Reading `PullView.Base` | `PullView` carries `Base` since #674, but the rows don't read it yet, so `start.base` is null, `step.pr.snapshot` never reports `restack` and `head.ref`, `base.defaultRef` and `base.onto` are not in `fact:prState` (`base.ref`, `base.sha`, `base.tip` and `base.was` are) |
 | `merge-docs` rebase | `effect.pr.merge-docs` has no workspace, so it neither rebases the docs PR nor scans it before the merge (a conflict shows as `pending`) |
-| `effect.pr.open` labels | The open effect does not apply labels yet |
 | Hand-off hash check, workspace cut | Intake records the hash but does not check it, and does not cut a workspace from the PR head: no port reaches either |
 | `merge.actor`, `push.comments` | The engine's effect context carries no actor and the push effect has no comment ids; both stay null or empty |
