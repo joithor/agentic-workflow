@@ -106,7 +106,7 @@ public sealed class LineReportEffectTests
     {
         var put = (await _facts.Put(Encoding.UTF8.GetBytes(LineContext), Token)).Value;
         var stored = JsonDocument.Parse($$"""{"ref":"{{put.Ref}}","sha256":"{{put.Sha256}}"}""").RootElement.Clone();
-        var context = Context("ended", stored, new Dictionary<string, string> { ["ended"] = "resolved", ["packet"] = "sha256:abc", ["parkReason"] = "budget" }, "T-4/line/1/phase.p2.3");
+        var context = Context("ended", stored, new Dictionary<string, string>(StringComparer.Ordinal) { ["ended"] = "resolved", ["packet"] = "sha256:abc", ["parkReason"] = "budget" }, "T-4/line/1/phase.p2.3");
 
         var done = await new LineReportEffect(_area, _facts, _facts, _clock).Dispatch(context, Token);
 

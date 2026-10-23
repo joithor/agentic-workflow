@@ -46,16 +46,32 @@ internal sealed partial class RecipeWorkflow
         ArgumentNullException.ThrowIfNull(after);
         ArgumentNullException.ThrowIfNull(effects);
         List<Task> running = [];
+        List<EffectCommand> later = [];
         foreach (var effect in effects)
         {
-            if (!_effectsSent.Contains(effect.Identity.Text) && _effectsOpen.Add(effect.Identity.Text))
+            if (IsLineReport(effect))
+            {
+                later.Add(effect);   // LN-WF1: the report follows the others, so two effects of one change never race for the history's order
+            }
+            else if (!_effectsSent.Contains(effect.Identity.Text) && _effectsOpen.Add(effect.Identity.Text))
             {
                 running.Add(DispatchOne(after, effect));
             }
         }
 
-        return Workflow.WhenAllAsync(running);
+        return later.Count == 0 ? Workflow.WhenAllAsync(running) : ThenReport(after, running, later);
     }
+
+    private async Task ThenReport(WorkflowInstance after, List<Task> first, List<EffectCommand> reports)
+    {
+        await Workflow.WhenAllAsync(first).ConfigureAwait(true);
+        foreach (var report in reports.Where(r => !_effectsSent.Contains(r.Identity.Text) && _effectsOpen.Add(r.Identity.Text)))
+        {
+            await DispatchOne(after, report).ConfigureAwait(true);
+        }
+    }
+
+    private static bool IsLineReport(EffectCommand effect) => effect.Origin == CommandOrigin.Engine && effect.Effect.Value == "effect.line.report";
 
     /// <summary>
     /// Starts the effects of a change just mirrored: the recipe's effects for this instance and the engine's own notices.
@@ -140,7 +156,7 @@ internal sealed partial class RecipeWorkflow
             var run = new EffectRun(after.Address.Value, after.Item.Value, after.Attempt, effect, row.Command, TextOf(after, effect), after.Facts, _recipe!.Version, ReplyFacts);   // why: effects run only after Begin set _recipe
             var options = (ActivityOptions)EffectActivities.RunOptions.Clone();
             // a cancel of the instance stops the retries too, not only the delay; but the report of a cancelled end to its line is that cancel's own
-            options.CancellationToken = effect.Origin == CommandOrigin.Engine && effect.Effect.Value == "effect.line.report" ? Workflow.CancellationToken : Effects().Token;
+            options.CancellationToken = IsLineReport(effect) ? Workflow.CancellationToken : Effects().Token;
             options.TaskQueue = Workflow.Info.TaskQueue;   // the instance's queue, from settings (never a constant)
             try
             {

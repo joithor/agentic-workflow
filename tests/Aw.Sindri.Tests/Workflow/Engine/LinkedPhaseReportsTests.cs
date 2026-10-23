@@ -82,8 +82,8 @@ public sealed class LinkedPhaseReportsTests
         var first = LinkedPhaseReports.For(open, parked, version: 4)!;
         var second = LinkedPhaseReports.For(open, parked, version: 8)!;
 
-        Assert.NotEqual(first.Identity.Text, second.Identity.Text);
-        Assert.NotEqual(EngineNotices.For(open, parked, version: 4, deskTaskNotified: true).Single().Command.Identity.Text, first.Identity.Text);
+        Assert.NotEqual(first.Identity.Text, second.Identity.Text, StringComparer.Ordinal);
+        Assert.NotEqual(EngineNotices.For(open, parked, version: 4, deskTaskNotified: true).Single().Command.Identity.Text, first.Identity.Text, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

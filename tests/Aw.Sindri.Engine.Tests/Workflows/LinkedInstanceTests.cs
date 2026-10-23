@@ -6,10 +6,9 @@ using Aw.Sindri.Core.Workflow.Engine.Effects;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Infrastructure.Workflows;
-using Aw.Sindri.Tests.Workflows.ApplyCommand;
+using Aw.Sindri.Tests.ApplyCommand;
 using Aw.Sindri.Tests.Workflows.Effects;
 using Microsoft.Extensions.DependencyInjection;
-using Temporalio.Client;
 using Temporalio.Worker;
 
 namespace Aw.Sindri.Tests.Workflows;
@@ -51,7 +50,7 @@ public sealed class LinkedInstanceTests : IDisposable
             var reports = await Reports(sindri, 3);
 
             Assert.Equal(("done", "resolved"), (result.State, result.Outcome));
-            Assert.Equal(["parked", "resumed", "ended"], reports.Select(static r => r.Outcome));
+            Assert.Equal(["parked", "resumed", "ended"], reports.Select(static r => r.Outcome), StringComparer.Ordinal);
             Assert.All(reports, r => Assert.Equal(("L1", "p1", 1, LinkedAddress("T-81")), (r.Event.GetProperty("line").GetString(), r.Event.GetProperty("phase").GetString(), r.Event.GetProperty("attempt").GetInt32(), r.Event.GetProperty("instance").GetString())));
             Assert.Equal("timeout", reports[0].Event.GetProperty("parkReason").GetString());
             Assert.Equal("resolved", reports[2].Event.GetProperty("ended").GetString());
@@ -67,7 +66,7 @@ public sealed class LinkedInstanceTests : IDisposable
         _ = _harness.Approve(Recipe());
         _ = _harness.Approve(ChildRecipes.Child());
         await using var env = await WorkflowsHarness.StartDevServer(ct: ct);
-        await using var served = await ApplyCommand.Served.Start(_harness.Home, env, ct);
+        await using var served = await Served.Start(_harness.Home, env, ct);
         var sindri = served.Sindri;
         var tree = new ChildTree(sindri, env, _harness);
 
@@ -84,8 +83,8 @@ public sealed class LinkedInstanceTests : IDisposable
 
         Assert.Equal(("cancelled", "cancelled"), (cancelled.State, cancelled.Outcome));
         Assert.Equal(Temporalio.Api.Enums.V1.WorkflowExecutionStatus.Completed, (await phase.DescribeAsync()).Status);   // its own cancelled, not a terminate
-        var ended = (await Reports(sindri, 1)).Single();
-        Assert.Equal(("ended", "cancelled"), (ended.Outcome, ended.Event.GetProperty("ended").GetString()));   // the cancelled end reaches the line too
+        var (outcome, _, report) = (await Reports(sindri, 1)).Single();
+        Assert.Equal(("ended", "cancelled"), (outcome, report.GetProperty("ended").GetString()));   // the cancelled end reaches the line too
     }
 
     private static string LinkedAddress(string item) => InstanceAddress.From(item + "/t-child/1").Linked(RecipeId.From(Phase), "p1", 1).Value;

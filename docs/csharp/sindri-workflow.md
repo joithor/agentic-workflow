@@ -1258,8 +1258,9 @@ Unit (b), as built:
   `IApprovedProfile.Latest`, never the live file. It reads `workflow.effects` straight from `WorkflowSettings.Effects`
   (unit (d) validates the key; an id that doesn't parse is not allowlisted). A read that fails throws, so the local
   activity retries; a running recipe with no approval row is treated as revoked. Engine-origin effects read neither.
-- **`EffectRules.Recheck`** is pure: an engine-origin `effect.notify.desk` passes; any other engine-origin kind is
-  `SND-WF-011` (`Engine_origin_limited_to_notify_desk`); a recipe effect is `SND-RECIPE-005` when revoked,
+- **`EffectRules.Recheck`** is pure: an engine-origin `effect.notify.desk` passes, and so does `effect.line.report` (LN-WF1: a linked
+  instance's report to its line); any other engine-origin kind is
+  `SND-WF-011` (`Engine_origin_limited_to_notify_desk_and_the_line_report`); a recipe effect is `SND-RECIPE-005` when revoked,
   `SND-RECIPE-006` when drifted, and `SND-WF-011` when its kind isn't allowlisted or the approved profile has no
   `workflow.effects` (or none is approved).
 - **The refusal** writes `outbox.refused` (code and reason) and hands the loop `OutboxRefused`, which carries the
