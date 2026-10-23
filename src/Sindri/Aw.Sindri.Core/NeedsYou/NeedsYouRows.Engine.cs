@@ -46,7 +46,7 @@ public static partial class NeedsYouRows
     private static Workflow.Views.StatusAnswer? AnswerOf(ParkRowInput park)
     {
         var suspension = park.Suspension;
-        var shape = new ParkShape(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors is not null);
+        var shape = ShapeOf(suspension);
         if (park.Descendant is not { } descendant)
         {
             return ParkAnswers.For(shape, park.Address, child: suspension.MirrorsAddress);
@@ -56,6 +56,19 @@ public static partial class NeedsYouRows
             ? own with { Via = "child", Child = descendant.Value }
             : ParkAnswers.For(new ParkShape(SuspensionKind.Escalation, Reason: null, ParkKind: null, EscalationKind.Child, Mirrors: false), descendant, child: descendant.Value);   // no answer of its own (a drift, a revoked child): a pointer to it
     }
+
+    /// <summary>Whether an instance's own park row would only point at a child that decides (`via: "child"`): a parked descendant's row then says more.</summary>
+    /// <param name="suspension">The instance's suspension.</param>
+    /// <param name="address">The instance's address.</param>
+    /// <returns>True for a pointer.</returns>
+    public static bool PointsAtChild(SuspensionSummary suspension, InstanceAddress address)
+    {
+        ArgumentNullException.ThrowIfNull(suspension);
+        return ParkAnswers.For(ShapeOf(suspension), address)?.Via is not null;
+    }
+
+    private static ParkShape ShapeOf(SuspensionSummary suspension) =>
+        new(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors is not null);
 
     /// <summary>The 'park' row of an open desk task.</summary>
     /// <param name="item">The item's row.</param>
