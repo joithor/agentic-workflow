@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Infrastructure.Control;
 
@@ -50,10 +51,7 @@ internal sealed class ServeLauncher : IControlPlaneLauncher
 
         var start = File.Exists(log) ? new FileInfo(log).Length : 0;
         var detach = File.Exists(Perl) ? $"exec {Perl} -MPOSIX -e 'POSIX::setsid(); exec @ARGV or die \"SND-CLI-002 exec $ARGV[0]: $!\\n\"'" : "exec";
-        var process = Process.Start(new ProcessStartInfo("/bin/sh", ["-c", $"umask 077; {detach} \"$0\" serve </dev/null >>\"$1\" 2>&1", self, log])
-        {
-            UseShellExecute = false,
-        });
+        var process = Process.Start(ChildEnvironment.Start("/bin/sh", ["-c", $"umask 077; {detach} \"$0\" serve </dev/null >>\"$1\" 2>&1", self, log]));
         if (process is null)
         {
             return SindriErrors.StartFailed.With("/bin/sh didn't start");

@@ -25,7 +25,7 @@ internal sealed partial record InstanceWords
     /// <summary>The answer the open park or escalation takes; null when none (a drift or a revoked child takes no answer, a desk task completes).</summary>
     /// <returns>The kind, the catalog action, its class and the command the answer line prints.</returns>
     public StatusAnswer? AnswerLine() => Instance.Suspension is { } suspension && !Instance.Ended
-        ? ParkAnswers.For(new ParkShape(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors is not null), Instance.Address, GrantTokens(), Child?.Address.Value)
+        ? ParkAnswers.For(ParkShape.Of(suspension), Instance.Address, GrantTokens(), Child?.Address.Value)
         : null;
 
     /// <summary>A drift recorded behind the open park, as fields: the block, and that the answer needs the re-approval first.</summary>

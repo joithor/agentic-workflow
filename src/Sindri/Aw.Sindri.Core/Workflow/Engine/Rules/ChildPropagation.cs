@@ -180,7 +180,12 @@ internal static class ChildPropagation
 
     private static ParentEffect Effect(ParentEffectKind kind) => new(kind, Suspend: null);
 
+    // The mirror's own ParkKind and Escalation stay as the root's rules read them (none; Child); the child's are carried beside them.
     private static Suspension Mirror(ChildChanged change, SuspensionKind kind, EscalationKind? escalation) => new(
         kind, kind == SuspensionKind.Park ? change.Reason : null, ParkKind: null, escalation, change.Question ?? string.Empty, change.Actor, change.Child,
-        new ResumeAction(ResumeKind.Forward, Withheld: null, Gate: null, Effects: []));
+        new ResumeAction(ResumeKind.Forward, Withheld: null, Gate: null, Effects: []))
+    {
+        MirroredParkKind = kind == SuspensionKind.Park ? change.ParkKind : null,
+        MirroredEscalation = kind == SuspensionKind.Escalation ? change.Escalation : null,
+    };
 }

@@ -65,7 +65,7 @@ public static partial class InstanceViews
             since,
             words.Next(task),
             Allowed(instance, recipe, task, words.GrantTokens()),
-            instance.Suspension is { } s ? new OpenQuestion(s.Kind, s.Reason, s.Question) : null,
+            instance.Suspension is { } s ? new OpenQuestion(s.Kind, s.Reason, s.Question, ParkCodes.Of(s)) : null,
             task,
             instance.Frame.Run?.Token,
             children,
@@ -107,7 +107,7 @@ public static partial class InstanceViews
     {
         ArgumentNullException.ThrowIfNull(view);
         ArgumentNullException.ThrowIfNull(context);
-        var status = Status(view, context.AsOf);
+        var status = DetailParts.WithSession(Status(view, context.AsOf), context.Session);
         return new InstanceDetail(
             view.Address,
             view.Id,
@@ -121,7 +121,7 @@ public static partial class InstanceViews
             InstanceSummaries.SubjectOf(view, context.Title),
             view.OrderedBy,
             view.States,
-            new CurrentState(view.State, view.Step, view.Gates, view.Desk, status),
+            new CurrentState(view.State, view.Step, view.Gates, DetailParts.WithTargets(view.Desk, context.ReviewTargets), status),
             view.Facts,
             view.ChildGroups,
             context.Counts,
@@ -236,14 +236,17 @@ public static partial class InstanceViews
 
     /// <summary>
     /// The recipe's verbs out of the current state, one entry per distinct verb in recipe order, all the generic 'ApplyCommand:command' (one desk row serves every verb).
-    /// A verb whose transition carries a human-trigger effect (merge, rework) is listed too: the server refuses an agent session's call.
+    /// A verb whose transition carries a human-trigger effect (the babysitter's 'merge') is listed too, marked destructive: the server refuses an agent session's call. 'rework' carries no effect and is not.
     /// </summary>
     private static IEnumerable<AllowedCommand> VerbCommands(WorkflowInstance instance, InterpretedRecipe recipe) =>
         recipe.Recipe.Transitions
             .Where(t => t.On.StartsWith(TriggerNames.CommandPrefix, StringComparison.Ordinal) && t.From.Contains(instance.State, StringComparer.Ordinal))
-            .Select(t => t.On[TriggerNames.CommandPrefix.Length..])
-            .Distinct(StringComparer.Ordinal)
-            .Select(verb => new AllowedCommand("ApplyCommand:command", $"sindri workflow command {instance.Address.Value} {verb}") { Verb = verb });
+            .GroupBy(static t => t.On[TriggerNames.CommandPrefix.Length..], StringComparer.Ordinal)
+            .Select(verb => new AllowedCommand("ApplyCommand:command", $"sindri workflow command {instance.Address.Value} {verb.Key}")
+            {
+                Verb = verb.Key,
+                Destructive = verb.Any(t => t.Effects.Any(e => recipe.Catalog.Find(e.Use) is { Kind: BlockKind.Effect, HumanTrigger: true })) ? true : null,
+            });
 
     /// <summary>
     /// The complete command with the outcome it reports (every one the Step can report when there are several) and an '--output &lt;fact&gt;=&lt;file&gt;' flag for each

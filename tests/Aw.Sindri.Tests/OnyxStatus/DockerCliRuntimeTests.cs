@@ -83,6 +83,25 @@ public sealed class DockerCliRuntimeTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Inspect_reads_the_endpoint_of_a_hung_OrbStack_so_the_row_can_name_it()
+    {
+        // OrbStack says Running but its engine is wedged: `docker version` hangs, while `docker context inspect` reads only the CLI's own files.
+        var runner = new FakeToolRunner((_, arguments) => arguments[0] switch
+        {
+            "version" => ToolRun.TimedOut,
+            "compose" => Ok("v2.40.3"),
+            "context" => Ok("unix:///Users/u/.orbstack/run/docker.sock"),
+            _ => Fails,
+        });
+
+        var facts = Cli(runner).Inspect(Token);
+
+        Assert.Equal(DaemonProblem.Starting, facts.DaemonProblem);
+        Assert.Equal("unix:///Users/u/.orbstack/run/docker.sock", facts.Endpoint);
+        Assert.Equal(ContainerRuntimeKind.OrbStack, facts.Kind);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Inspect_retries_a_timed_out_version_once_with_a_longer_budget_and_succeeds()
     {
         var versionCalls = 0;
