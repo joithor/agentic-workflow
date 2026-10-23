@@ -162,7 +162,7 @@ sindri onyx down [--json]               # Stop it (containers only; data, images
 scripts/install-deps.sh                 # AW_DRY_RUN=1 prints only; missing system packages are installed (brew on macOS; sudo + apt-get, dnf, yum, pacman or zypper on Linux); AW_NO_SYSTEM_INSTALL=1 prints the commands and exits 1 instead
 
 # Code index pins (context/code-index.lock: graphify version, date and requirements hash, the Ollama embedding model and digest, disk need; context/code-index-requirements.txt is the hash-pinned requirements; spec docs/superpowers/specs/2026-10-19-sindri-code-index-design.md §9)
-scripts/code-index-lock.sh check        # Shape of the lock, the requirements file's sha256, and parity with sindri/package.json's graphifyPin and graphifyPinDate; exit 0 ok, 1 a check failed, 2 usage
+scripts/code-index-lock.sh check        # Shape of the lock, the requirements file's sha256, and parity with context/graphify.pin (the graphify pin install-deps.sh reads); exit 0 ok, 1 a check failed, 2 usage
 scripts/code-index-lock.sh get <graphify-version|graphify-date|requirements-sha256|model|model-digest|disk-bytes>   # One pinned value (install-deps.sh reads these)
 
 # Rule records (rules/engineering/csharp/*.yaml + schemas/rule-record.schema.json; docs/csharp/rule-records.md)
