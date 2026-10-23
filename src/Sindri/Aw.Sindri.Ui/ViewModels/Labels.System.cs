@@ -86,10 +86,21 @@ internal static partial class Labels
     /// <summary>The Actions card's name for what arrives later.</summary>
     internal const string ActionsLater = "arriving later";
 
+    /// <summary>The page width under which the Services table keeps three columns (system spec §2).</summary>
+    internal const double SystemWideFrom = 900;
+
+    /// <summary>The link on a row whose manual run is in flight.</summary>
+    internal const string ViewJob = "View job";
+
     /// <summary>The Services tab: "Services (6)".</summary>
     /// <param name="count">How many services are scheduled.</param>
     /// <returns>The tab's label.</returns>
     internal static string ServicesTab(int count) => string.Create(CultureInfo.InvariantCulture, $"{Services} ({count})");
+
+    /// <summary>The View job link's accessible name.</summary>
+    /// <param name="service">The service's name.</param>
+    /// <returns>"View job for heartbeat".</returns>
+    internal static string ViewJobName(string service) => "View job for " + service;
 
     /// <summary>The Services card's link: "6 scheduled".</summary>
     /// <param name="count">How many services are scheduled.</param>
