@@ -91,7 +91,7 @@ internal sealed class Served : IAsyncDisposable
     /// <summary>Runs 'sindri workflow &lt;args&gt;' inside an agent session working in <paramref name="repo"/> (it sends X-Sindri-Repo).</summary>
     public async Task<CliRun> AsSessionIn(string reason, string repo, params string[] args)
     {
-        var (exit, stdout, stderr) = await WorkflowsHarness.Cli(Sindri, new AgentSession(reason, Terminal: true, Prover: false), typed: null, Core.Ids.RepoName.From(repo), args);
+        var (exit, stdout, stderr) = await WorkflowsHarness.Cli(Sindri, new AgentSession(Terminal: true, Prover: false), human: false, typed: null, Core.Ids.RepoName.From(repo), args);
         return new CliRun(exit, stdout, stderr);
     }
 
@@ -155,7 +155,7 @@ internal sealed class Served : IAsyncDisposable
 
     private async Task<CliRun> As(string? session, bool terminal, string? typed, string[] args)
     {
-        var (exit, stdout, stderr) = await WorkflowsHarness.Cli(Sindri, new AgentSession(session, terminal, Prover: false), typed, args);
+        var (exit, stdout, stderr) = await WorkflowsHarness.Cli(Sindri, new AgentSession(terminal, Prover: false), session is null, typed, args);
         return new CliRun(exit, stdout, stderr);
     }
 

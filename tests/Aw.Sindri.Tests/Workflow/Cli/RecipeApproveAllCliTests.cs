@@ -92,10 +92,10 @@ public sealed class RecipeApproveAllCliTests : IDisposable
     {
         var store = host.App.Services.GetRequiredService<IHumanTokenStore>();
         host.App.Services.GetRequiredService<HeldHumanToken>().Hold((await store.Mint(ct)).Value);   // the CLI reads the stored token, so the host holds that one
-        var session = new AgentSession(human ? null : "CLAUDECODE is set", Terminal: true, Prover: false);
+        var session = new AgentSession(Terminal: true, Prover: false);
         var endpoint = new ControlEndpoint(new Uri(host.App.Urls.First()), GoldenHost.Pid, 1);
         var client = new ControlPlaneClient(FakeControlPlaneProbe.For(endpoint, new Ping(GoldenHost.Pid, 1)), SliceHarness.Json,
-            CallerHeaders.For(session, store, static _ => ValueTask.FromResult<Core.Ids.RepoName?>(null)));
+            CallerHeaders.For(session, human ? store : new InMemoryHumanTokenStore(), static _ => ValueTask.FromResult<Core.Ids.RepoName?>(null)));
         host.Own(client);
         var desk = new RecipeDesk(client, new StringReader(typed + "\n"), static _ => Task.FromResult<Error?>(null));
         return new ApproveAllCommand(desk, new Output(_out, _error, SliceHarness.Json));

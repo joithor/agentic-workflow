@@ -194,7 +194,7 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
             return down;
         }
 
-        if (hash is not { } h || client.SessionReason is not null)
+        if (hash is not { } h || await client.ResolveSessionReason(ct).ConfigureAwait(false) is not null)
         {
             return Kernel.Results.Success<ChallengeAnswer?>(value: null);
         }

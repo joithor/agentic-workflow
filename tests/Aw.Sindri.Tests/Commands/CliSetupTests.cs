@@ -31,7 +31,7 @@ public sealed class CliSetupTests : IDisposable
 
     private SetupVerbs Verbs(FakeControlPlaneProbe probe, Api api) =>
         new(new ControlPlaneClient(probe, SliceHarness.Json,
-            CallerHeaders.For(new AgentSession(Signal: null, Terminal: true, Prover: false), new InMemoryHumanTokenStore(), _ => ValueTask.FromResult((Core.Ids.RepoName?)null)), handler: api),
+            CallerHeaders.For(new AgentSession(Terminal: true, Prover: false), InMemoryHumanTokenStore.WithToken(), _ => ValueTask.FromResult((Core.Ids.RepoName?)null)), handler: api),
             new Output(_out, _error, SliceHarness.Json));
 
     [Fact, Trait("Lane", "unit")]

@@ -80,7 +80,7 @@ This design adds to these. Where it has to change one of them, §10 lists the co
 | D1 | Resource model | **CQRS** over resource paths:<ul><li>commands are `POST`s that append one domain event, plus the audit row, and return `CommandAccepted`;</li><li>queries are `GET`s that read projections, or `QUERY`s (the HTTP method for a safe read with a body, an IETF draft) when the question is too large for a URL (today only `QUERY /sindri/context/subgraph`); a command is never a `GET` or a `QUERY`, and a query is never a `POST`, with no carve-out list; clients use `new HttpMethod("QUERY")` or `curl -X QUERY`;</li><li>one route = one slice = one `IService` (§2, §3).</li></ul> |
 | D2 | Commands vs queries, decisions vs requests | <ul><li>Every command declares an **action class**.</li><li>Every caller has a **caller class**, and humans also have a **terminal** flag.</li><li>One table authorizes the combination.</li><li>Sessions may run queries, file **requests** and **pause** automation, but never make decisions (§4).</li></ul> |
 | D3 | Event stream | **Server-Sent Events**, `GET /events?after=`. The cursor is the ledger sequence, and events go out in a public envelope. It's a "go re-read" signal for live clients, never the source of truth (§5) |
-| D4 | Local auth | **v0 is local-only, with one token:**<ul><li>the caller class comes from `X-Sindri-Caller`, and a missing header counts as `session`;</li><li>only the CLI at a terminal and the app send `human`, and `human` also needs the per-start `X-Sindri-Token` (P1, §6);</li><li>the CLI also sends `X-Sindri-Terminal: 1`;</li><li>commands refuse any `Origin` header.</li></ul>Session-class tokens, passkeys and the tailnet come later (§11) |
+| D4 | Local auth | **v0 is local-only, with one token:**<ul><li>the caller class comes from `X-Sindri-Caller`, and a missing header counts as `session`;</li><li>the CLI that can read the per-start token and the app send `human`, and `human` also needs the per-start `X-Sindri-Token` (P1, §6);</li><li>the CLI also sends `X-Sindri-Terminal: 1` when stdin is a terminal (informational);</li><li>commands refuse any `Origin` header.</li></ul>Session-class tokens, passkeys and the tailnet come later (§11) |
 | D5 | Finding or starting the process | S1's `control.json`, spawn and ping check, plus one rule for which verbs may start the process. Nothing run inside an agent session starts it (§7) |
 | D6 | MCP server | **One MCP endpoint, `/sindri/mcp`**: Streamable HTTP in stateless mode on the API port (the MCP C# SDK), shared with the context engine's `context_*` tools. Every call is stamped `session`. It offers queries and `sindri_request` only. **It is proven by a real Claude Code subagent**, run as a fresh `claude -p` process (§8) |
 | D7 | Webhooks | **Cut for now** (§11) |
@@ -1063,23 +1063,16 @@ mistakes. That's the repo's threat model: gates guard against honest mistakes, n
 | Header | Values | Meaning |
 |---|---|---|
 | `X-Sindri-Caller` | `human`; `session` or **none**; any other value | `human` gives `human`. `session`, or a missing header, gives `session`, which is the safe default for an agent's `curl`, a script it wrote, or a fetch tool. Any other value is `SND-API-007` (400) |
-| `X-Sindri-Terminal` | `1` | Sent only by the CLI when stdin and stdout are a terminal. It's honoured only alongside `human` |
+| `X-Sindri-Terminal` | `1` | Sent by the CLI with `human` when stdin is a terminal. Informational: it decides no authority |
 | `X-Sindri-Client` | `cli`, `ui`, `prover` | Labels the actor (`human:cli`, `human:ui`, `human:prover`). With no label, a human caller is `human:http` |
 | `X-Sindri-Repo` | a repo name | Scopes a `session` caller (§3.1) |
 | `X-Sindri-Token` | the per-start token | Required with `human` (P1); `SND-AUTH-001` when missing or stale |
 | `X-Sindri-Launch-Secret` | a launch's secret | Proves `step-report` and `session wrap`'s calls for that launch (§8.1); `SND-AUTH-003` when it doesn't match an open launch |
 
 **Who sends what.**
-- **The CLI** sends `human` with `X-Sindri-Terminal: 1` only when stdin and stdout are a terminal **and** none of these
-  agent-session variables is set:
-  - `CLAUDECODE` (Claude Code);
-  - `AW_SINDRI_CHILD` (Sindri);
-  - `CODEX_SANDBOX` (Codex);
-  - `CURSOR_AGENT` (Cursor's agent).
-
-  Otherwise it sends `session`. The list comes from the engine's harness probe (engine §6.2, P2), golden-tested, and
-  a parent process that is an agent harness also counts. These are variables the tools set, not ones Sindri reads as config. They go in
-  `scripts/env-scan-ignore.txt`, next to the existing `CLAUDECODE` and `AW_SINDRI_CHILD` lines, not in `.env.example`.
+- **The CLI** sends `human` with the per-start token whenever it can read the token file, whatever the terminal or the agent
+  around it (decision q93, 2026-10-23: an agent session the owner starts uses the CLI as the owner would). Otherwise it
+  sends `session` with no token. No agent variable or parent process is read.
 - **The Avalonia app** sends `human` with no terminal.
 - **The MCP endpoint** stamps `session` whatever the request's headers say, keeping only `X-Sindri-Repo`.
 

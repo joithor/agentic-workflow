@@ -14,14 +14,15 @@
 # context:mcp-scope row never reads the real provider files);
 # then recipe validate on the shipped recipes (their hashes; workflow.item reads its child beside it) and on an invalid
 # fixture (RCP-REACH-001, exit 1), then Onyx P2: onyx status --json with no docker on PATH (state not-set-up, the docker row fail
-# SND-ONYX-001) and onyx up and down refused to a session and to a CLI with no terminal (SND-AUTH-002). The normalized output (pids, ports, hashes, times, the host name and the temp path
+# SND-ONYX-001). The normalized output (pids, ports, hashes, times, the host name and the temp path
 # masked) must equal expected.txt.
 # The apphost, not 'dotnet sindri.dll': start re-launches its own executable as 'serve' (Environment.ProcessPath), which
 # under 'dotnet sindri.dll' is the dotnet muxer.
-# Callers (API spec §6): the run unsets the agent variables (the pinned probe's markers, as sindri-prove.sh human does:
-# CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_EXECPATH, CLAUDE_CODE_SESSION_ID, CLAUDE_PID, AW_SINDRI_CHILD, CODEX_SANDBOX, CURSOR_AGENT)
-# and sets AW_SINDRI_PROVER=1, so the binary is the human; a "(human, terminal)" step runs under a pty
-# (scripts/lib/with-tty.sh: CRs and terminal control sequences stripped, stderr merged), a "(session)" step sets CLAUDECODE=1 with stdin from /dev/null.
+# Callers (API spec §6): a CLI that reads the per-start token calls as a human, whatever its terminal or environment; the run
+# unsets the agent variables (as sindri-prove.sh human does: CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_EXECPATH,
+# CLAUDE_CODE_SESSION_ID, CLAUDE_PID, AW_SINDRI_CHILD, CODEX_SANDBOX, CURSOR_AGENT) and sets AW_SINDRI_PROVER=1 (the 'prover' label);
+# a "(human, terminal)" step runs under a pty (scripts/lib/with-tty.sh: CRs and terminal control sequences stripped, stderr
+# merged), a "(session)" step moves the token file aside for the call (without_token), with stdin from /dev/null.
 # Every invocation of the binary is bounded (30 s, perl's alarm); one that runs over prints 'exit 124'.
 # The publish runs on a copy of the files it needs, in a temp dir under $TMPDIR that is deleted on exit, so the
 # checkout's lock files and build output are never touched.
@@ -129,10 +130,17 @@ human_run_service() { # $1 = service: `human services run`, retried while a sche
   [ -z "$out" ] || printf '%s\n' "$out"
   exit_line "$rc"
 }
-session() { # an agent session (CLAUDECODE set), no terminal
+without_token() { # runs a command while the per-start token file is out of the way: the CLI can't read it, so it calls as a session
+  local file="$AW_SINDRI_HOME/auth/human.token" rc=0
+  mv "$file" "$file.aside"
+  "$@" || rc=$?
+  mv "$file.aside" "$file"
+  return "$rc"
+}
+session() { # a CLI that can't read the token (an agent's environment changes nothing now), no terminal
   echo "## sindri $* (session)"
   local rc=0
-  CLAUDECODE=1 bounded "$bin" "$@" </dev/null 2>&1 || rc=$?
+  without_token bounded "$bin" "$@" </dev/null 2>&1 || rc=$?
   exit_line "$rc"
 }
 doctor() { # doctor reads the providers' user-wide MCP files: point it at an empty scratch home, never the real one
@@ -163,10 +171,10 @@ items_in() { # $1 = state, $2 = count: the items view lists that many in that st
   done
   echo "## items_in: the items view didn't list $2 '$1' item(s) after 60 s"
 }
-session_tty() { # an agent session at a terminal (the CLI's own terminal check passes, so the server decides)
+session_tty() { # a CLI that can't read the token, at a terminal (the server decides)
   echo "## sindri $* (session, terminal)"
   local rc=0
-  with_tty env CLAUDECODE=1 "${alarm[@]}" "$bin" "$@" || rc=$?
+  without_token with_tty "${alarm[@]}" "$bin" "$@" || rc=$?
   exit_line "$rc"
 }
 {
@@ -217,7 +225,7 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   echo "## sindri ledger --json --after 0 | jq (human: command.handled is listed)"
   with_tty "${alarm[@]}" "$bin" ledger --json --after 0 </dev/null | jq -c '[.events[].type] | any(. == "command.handled")'
   echo "## sindri ledger --json --after 0 | jq (session: public types only)"
-  CLAUDECODE=1 bounded "$bin" ledger --json --after 0 </dev/null | jq -c '[.events[].type] | any(. == "command.handled")'
+  without_token bounded "$bin" ledger --json --after 0 </dev/null | jq -c '[.events[].type] | any(. == "command.handled")'
   echo "## sindri ledger --item <closed item> --json | jq (the item's events)"
   with_tty "${alarm[@]}" "$bin" ledger --item "$item" --type 'item.*' --json </dev/null | jq -c '[.events[].type]'
   echo "## GET /sindri/events/catalog | jq (public types, their invalidates)"
@@ -252,15 +260,12 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   run recipe validate "$root/recipes/sindri/workflow.review-loop.yaml"
   run recipe validate "$root/recipes/sindri/workflow.evidence.yaml"
   run recipe validate "$root/tests/Aw.Sindri.Testing/Workflow/Recipes/invalid/RCP-REACH-001.yaml"
-  # Onyx P2: status with no docker on PATH (a scratch dir holding only perl, which the alarm wrapper needs), only its deterministic rows; up and down are the human's.
+  # Onyx P2: status with no docker on PATH (a scratch dir holding only perl, which the alarm wrapper needs), only its deterministic rows (up and down run Docker, so they are not driven here).
   mkdir -p "$work/nodocker"
   ln -s "$(command -v perl)" "$work/nodocker/perl"
   echo "## sindri onyx status --json | jq '{state, docker}' (no docker on PATH; a check's state 2 is fail)"
   json="$({ PATH="$work/nodocker" bounded "$bin" onyx status --json </dev/null 2>&1 || true; })"
   jq -c '{state, docker: (.checks[] | select(.name == "docker") | {failed: (.state == 2), code: .problem.code})}' <<<"$json" 2>/dev/null || printf '%s\n' "$json"
-  session onyx up
-  run onyx up
-  session onyx down
 } >"$out/actual.raw"
 
 bash "$here/normalize.sh" "$work" "$root" <"$out/actual.raw" >"$out/actual.txt"

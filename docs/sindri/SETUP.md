@@ -11,7 +11,7 @@ Examples use `~/code/my-app` as the work repo and `my-app` as its name in the pr
 
 ## Who runs what
 
-Some commands only a person may run, at a real terminal. Sindri refuses them in an agent session with
+Some commands only a person may run, at a real terminal. Sindri refuses them to a CLI that can't read its token with
 `SND-AUTH-002` (see [Troubleshooting](#9-troubleshooting)). Each command below is marked:
 
 - **Human-only**: you type it in your own terminal (Terminal, iTerm, Warp), not inside Claude Code, Codex or Cursor.
@@ -386,18 +386,16 @@ decisions. An agent that could run them could approve its own recipes, widen its
 tasks and merge its own work. That is also why desk tasks are human-only by design: an agent may prepare a desk task's
 output files, but only you submit them with `workflow complete`. (An agent Step's own launched session reports its
 run with its launch secret; that is a different path, class `step-report`.)
-So the CLI checks two things before it calls as `human`: stdin and stdout are a terminal, and there is no agent signal
-(an agent variable such as `CLAUDECODE` or `CODEX_SANDBOX`, or an agent harness among its parent processes). Anything
-else calls as `session`, and the API refuses those classes with `SND-AUTH-002`, naming what it saw.
+The CLI calls as `human` whenever it can read Sindri's per-start token file, so an agent session you start uses it as you
+would. A CLI that can't read the token calls as `session`, and the API refuses those classes with `SND-AUTH-002`.
 
-Fix: run the command yourself, in your own terminal. Don't try to get around the check: unsetting variables doesn't
-help (the parent-process check still sees the agent), and the check is there on purpose.
+Fix: run Sindri first (`sindri-app`), then run the command.
 
 ### The codes you're most likely to meet
 
 | Code | What it means | Fix |
 |---|---|---|
-| `SND-API-001` | The control plane isn't running (or an agent session tried to start it) | `sindri-app` (Human-only) |
+| `SND-API-001` | The control plane isn't running | `sindri-app` (Human-only) |
 | `SND-API-002` | It didn't answer in time | `sindri-app status`; check `logs/serve.log` |
 | `SND-AUTH-001` | The per-start human token is missing or stale | Rerun the command, or restart the app, after a restart of the control plane |
 | `SND-LEASE-001` | Another live process holds the host lease | One control plane per box: use the running one, or `sindri-app stop` |

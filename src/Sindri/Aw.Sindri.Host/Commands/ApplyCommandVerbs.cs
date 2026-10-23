@@ -65,7 +65,7 @@ internal sealed class ApplyCommandVerbs(RecipeDesk desk, IServiceProvider servic
 
         var (variant, text, amount, nonce) = parsed.Value;
         var request = new ApplyCommandRequest(address, ApplyCommandKind.Answer, variant, text, amount, Verb: null, nonce, Challenge: null);
-        if (ApplyCommandChallenge.IsProtected(request.Kind, variant) && desk.Client.SessionReason is null)
+        if (ApplyCommandChallenge.IsProtected(request.Kind, variant) && await desk.Client.ResolveSessionReason(ct).ConfigureAwait(false) is null)
         {
             var challenge = await Challenge(request, ct).ConfigureAwait(false);
             if (challenge.IsError)

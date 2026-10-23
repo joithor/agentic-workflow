@@ -52,7 +52,7 @@ exit 1
 SND-PROFILE-004 approving needs an interactive terminal: run it yourself and type the action the challenge asks for
 exit 2
 ## sindri profile approve HASH (session, terminal)
-SND-AUTH-002 ApproveProfile is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri profile approve [<hash>] (this CLI ran as a session: CLAUDECODE is set)
+SND-AUTH-002 ApproveProfile is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri profile approve [<hash>] (this CLI ran as a session: the per-start human token isn't readable)
 exit 2
 ## sindri profile approve HASH (human, terminal)
 Type 'approve profile HASH6' to approve it: approve profile HASH6
@@ -76,7 +76,7 @@ Approved HASH
 {"isError":true,"code":"SND-CLI-003"}
 {"isError":true,"code":"SND-CONTEXT-023"}
 ## sindri views rebuild (session)
-SND-AUTH-002 RebuildViews is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri views rebuild (this CLI ran as a session: CLAUDECODE is set)
+SND-AUTH-002 RebuildViews is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri views rebuild (this CLI ran as a session: the per-start human token isn't readable)
 exit 2
 ## sindri views rebuild (human, terminal)
 views rebuild requested (sequence SEQ)
@@ -102,7 +102,7 @@ queued
 ## sindri items --state new
 ITM-ID  Smoke item  new  since TIME
 ## sindri item add Refused by the desk (session)
-SND-AUTH-002 CreateItem is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri item add <title> [--repo <repo>] (this CLI ran as a session: CLAUDECODE is set)
+SND-AUTH-002 CreateItem is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri item add <title> [--repo <repo>] (this CLI ran as a session: the per-start human token isn't readable)
 exit 2
 ## sindri item close ITM-ID (human, terminal)
 ITM-ID closed: done (sequence SEQ)
@@ -126,7 +126,7 @@ decision · note  Smoke request  since TIME
   recorded; acted on once the workflow engine runs
   sindri decide DEC-ID accept
 ## sindri decide DEC-ID accept (session)
-SND-AUTH-002 Decide is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri decide <decisionId> <choice> [--note <note>] (this CLI ran as a session: CLAUDECODE is set)
+SND-AUTH-002 Decide is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri decide <decisionId> <choice> [--note <note>] (this CLI ran as a session: the per-start human token isn't readable)
 exit 2
 ## sindri decide DEC-ID accept (human, terminal)
 DEC-ID decided: accept (sequence SEQ)
@@ -154,7 +154,7 @@ job JOB-ID started
 run heartbeat (manual)
 succeeded: ok: worked
 ## sindri services run heartbeat (session)
-SND-AUTH-002 RunService is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri services run <name> (this CLI ran as a session: CLAUDECODE is set)
+SND-AUTH-002 RunService is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri services run <name> (this CLI ran as a session: the per-start human token isn't readable)
 exit 2
 ## sindri jobs show JOB-ID
 JOB-ID  succeeded  RunService  heartbeat
@@ -167,7 +167,7 @@ JOB-ID  succeeded  RunService  heartbeat  TIME  1 line  ok: worked
 ## sindri services pause heartbeat (human, terminal)
 heartbeat paused (sequence SEQ)
 ## sindri services pause heartbeat (session)
-SND-AUTH-002 PauseService is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri services pause <name> (this CLI ran as a session: CLAUDECODE is set)
+SND-AUTH-002 PauseService is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri services pause <name> (this CLI ran as a session: the per-start human token isn't readable)
 exit 2
 ## sindri services
 code-index-embed  every 1m  last: ok  next: TIME
@@ -192,7 +192,7 @@ router-stub  every 5s  last: ok  next: TIME
 setup  every 1m  last: ok  next: TIME
 workflow-events  every 5s  last: ok  next: TIME
 ## sindri stop (session)
-SND-AUTH-002 StopProcess is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri stop (this CLI ran as a session: CLAUDECODE is set)
+SND-AUTH-002 StopProcess is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri stop (this CLI ran as a session: the per-start human token isn't readable)
 exit 2
 ## sindri stop (human, terminal)
 stopped (pid PID, epoch 1 released)
@@ -244,12 +244,3 @@ hash sha256:HASH
 exit 1
 ## sindri onyx status --json | jq '{state, docker}' (no docker on PATH; a check's state 2 is fail)
 {"state":"not-set-up","docker":{"failed":true,"code":"SND-ONYX-001"}}
-## sindri onyx up (session)
-SND-AUTH-002 `sindri onyx up` runs Docker and writes Onyx's files, so only a human at a terminal runs it (this CLI ran as a session: CLAUDECODE is set; fix: ask the human to run `sindri onyx up`)
-exit 1
-## sindri onyx up
-SND-AUTH-002 `sindri onyx up` runs Docker and writes Onyx's files, so only a human at a terminal runs it (this CLI ran as a session: no terminal; fix: ask the human to run `sindri onyx up`)
-exit 1
-## sindri onyx down (session)
-SND-AUTH-002 `sindri onyx down` stops Docker containers, so only a human at a terminal runs it (this CLI ran as a session: CLAUDECODE is set; fix: ask the human to run `sindri onyx down`)
-exit 1

@@ -15,6 +15,7 @@ using Aw.Sindri.Features.GetQueue;
 using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.ListItems;
 using Aw.Sindri.Host;
+using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Server;
@@ -32,7 +33,7 @@ public sealed class CliItemVerbsTests : IDisposable
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static AgentSession Human => new(Signal: null, Terminal: true, Prover: false);
+    private static IHumanTokenStore Human => InMemoryHumanTokenStore.WithToken();
 
     public void Dispose()
     {
@@ -246,23 +247,6 @@ public sealed class CliItemVerbsTests : IDisposable
         Assert.Equal("?state=done&repo=demo", api.Calls[^1].Query);
     }
 
-    [Fact(Timeout = 10_000), Trait("Lane", "unit")]
-    public async Task Cli_in_an_agent_session_never_starts_the_process()
-    {
-        var launcher = new FakeControlPlaneLauncher();
-        var down = new FakeControlPlaneProbe();
-        var api = new RoutedApi();
-        using var client = new ControlPlaneClient(down, SliceHarness.Json, handler: api);
-        var inAgent = new AgentSession(Signal: "CLAUDECODE is set", Terminal: true, Prover: false);
-        var start = new StartCommand(down, launcher, client, new Output(_out, _error, SliceHarness.Json), new SteppedClock(new FakeTimeProvider(KnownInstants.Epoch)), inAgent);
-        var verbs = new ItemVerbs(client, new Output(_out, _error, SliceHarness.Json), (launch, ct) => start.EnsureRunning(launch, ct));
-
-        var code = await verbs.Run(["queue"], TestContext.Current.CancellationToken);
-
-        Assert.Equal((1, 0, 0), (code, launcher.Launches, api.Calls.Count));
-        Assert.StartsWith("SND-API-001 ", _error.ToString(), StringComparison.Ordinal);
-    }
-
     [Fact, Trait("Lane", "unit")]
     public void Usage_and_the_catalog_name_the_same_verbs()
     {
@@ -278,10 +262,10 @@ public sealed class CliItemVerbsTests : IDisposable
         new(A.FirstItemId, "Try the queue", Repo: null, ItemState.New, Step: null, KnownInstants.Epoch, PrimaryAction: null, Actions: [], Owner: null,
             version, "human:desk", WaitingOn: null, Instance: null, KnownInstants.Epoch, KnownInstants.Epoch, Body: null, Link: null, new Core.Launches.ItemLaunch(Modes: [], Core.Launch.AgentId.From("claude-code"), ChosenBy: "builtIn", Attach: null, Resumable: null, InFlight: null, LastStarted: null, Confirm: null, RepoPath: null, Blockers: []), _fresh);
 
-    private ItemVerbs Verbs(RoutedApi api, AgentSession session)
+    private ItemVerbs Verbs(RoutedApi api, IHumanTokenStore tokens)
     {
         var client = new ControlPlaneClient(_probe, SliceHarness.Json,
-            CallerHeaders.For(session, new InMemoryHumanTokenStore(), _ => ValueTask.FromResult((RepoName?)null)), handler: api);
+            CallerHeaders.For(new AgentSession(Terminal: true, Prover: false), tokens, _ => ValueTask.FromResult((RepoName?)null)), handler: api);
         return new ItemVerbs(client, new Output(_out, _error, SliceHarness.Json), (_, _) => Task.FromResult<Kernel.Error?>(null));
     }
 }
