@@ -68,7 +68,7 @@ internal sealed partial class ContextPageViewModel
     }
 
     /// <summary>Whether the canvas is on the stage: there is a map and the map view is the one chosen.</summary>
-    public bool MapVisible => HasStack && ShowMap;
+    public bool MapVisible => HasStack && ShowMap && !Whole.IsReady;
 
     /// <summary>Chooses the view.</summary>
     /// <param name="files">True for the files view, false for the map.</param>
