@@ -26,7 +26,7 @@ public static partial class TransitionDecision
             return new Absorbed(d.Key, $"{instance.Address.Value} has ended; the outbox.refused row records the refusal");
         }
 
-        var park = RefusalPark(d, refused);
+        var park = RefusalPark(d, refused) with { Code = refused.Code };   // why: the typed code travels with the park, so a reader never parses its question
         if (park.ParkKind == ParkKind.Revoked && instance.Suspension is { Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Revoked })
         {
             return new Absorbed(d.Key, "already parked for the revoke");

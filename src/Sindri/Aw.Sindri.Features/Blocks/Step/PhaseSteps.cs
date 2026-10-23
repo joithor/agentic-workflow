@@ -24,6 +24,7 @@ internal static class PhaseSteps
     /// <summary>'step.phase.decide': the owner rebuilds the phase with notes or stops it.</summary>
     public static BlockDescriptor Decide { get; } = HumanDeskStep("step.phase.decide", Capability.None)
         .Reads("fact:phasePacket")
+        .Reviewing(ReviewOf("fact:phasePacket", DeskReviewKind.Packet))
         .Reports("rebuild", "stop")
         .Writes(On("fact:buildNotes", "rebuild"));
 }
