@@ -23,13 +23,13 @@ internal sealed partial class SessionSheetViewModel
     public string EndedResumeText { get; private set => Set(ref field, value); } = string.Empty;
 
     /// <summary>The Host group's caption.</summary>
-    public string HostHeading => Labels.SheetHost;
+    public string HostHeading { get; } = Labels.SheetHost;
 
     /// <summary>True when the session is asking: the amber callout shows.</summary>
     public bool IsAsking { get; private set => Set(ref field, value); }
 
     /// <summary>What the callout says.</summary>
-    public string CalloutText => Labels.SheetAskingCallout;
+    public string CalloutText { get; } = Labels.SheetAskingCallout;
 
     /// <summary>"In this status for 4m"; empty before the clock is wired.</summary>
     public string InStatusText { get; private set => Set(ref field, value); } = string.Empty;
