@@ -5,7 +5,7 @@
 #   user-level, installed here (no root):
 #     uv           Linux: astral.sh installer into ~/.local/bin; macOS: brew
 #     graphify     the code index's feature-cluster tool, `uv tool install graphifyy==<pin> --exclude-newer <date>`;
-#                  the pin is sindri/package.json's "sindri.graphifyPin" (what `sindri index setup` installs)
+#                  the pin is context/graphify.pin's graphify row (what `sindri index setup` installs)
 #     code-index graphify  the new code index's own copy: a virtual environment at ${AW_STATE_DIR:-~/.agentic-workflow}/cache/code-index/
 #                  graphify-<version>-<requirements sha12>/, `uv pip install --require-hashes` from context/code-index-requirements.txt
 #                  with the lock's --exclude-newer date (context/code-index.lock, scripts/code-index-lock.sh); the build checks that binary
@@ -103,12 +103,12 @@ else
   fi
 fi
 
-# --- graphify at the pin sindri/package.json declares ---
-PKG="$ROOT/sindri/package.json"
-PIN="$(jq -r '.sindri.graphifyPin // empty' "$PKG" 2>/dev/null)"
-PIN_DATE="$(jq -r '.sindri.graphifyPinDate // empty' "$PKG" 2>/dev/null)"
+# --- graphify at the pin context/graphify.pin declares ---
+GPIN="$ROOT/context/graphify.pin"
+PIN="$(awk '$1 == "graphify" && NF == 3 { print $2; exit }' "$GPIN" 2>/dev/null || true)"
+PIN_DATE="$(awk '$1 == "graphify" && NF == 3 { print $3; exit }' "$GPIN" 2>/dev/null || true)"
 if [ -z "$PIN" ] || [ -z "$PIN_DATE" ]; then
-  echo "  WARN: sindri/package.json has no sindri.graphifyPin; skipping graphify"; FAILED=1
+  echo "  WARN: context/graphify.pin has no graphify row; skipping graphify"; FAILED=1
 elif command -v graphify &>/dev/null && [ "$(graphify --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)" = "$PIN" ]; then
   echo "  graphify: already installed ($PIN)"
 elif dry; then
