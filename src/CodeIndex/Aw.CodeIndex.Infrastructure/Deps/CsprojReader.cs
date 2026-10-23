@@ -1,4 +1,3 @@
-using Aw.CodeIndex.Core;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Ports;
 
