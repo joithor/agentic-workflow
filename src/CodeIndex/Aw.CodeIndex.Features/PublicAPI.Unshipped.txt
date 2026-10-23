@@ -57,3 +57,38 @@ override Aw.CodeIndex.Features.BuildCodeIndex.BuildLayers.GetHashCode() -> int
 override Aw.CodeIndex.Features.BuildCodeIndex.BuildLayers.ToString() -> string!
 static Aw.CodeIndex.Features.BuildCodeIndex.BuildLayers.operator !=(Aw.CodeIndex.Features.BuildCodeIndex.BuildLayers? left, Aw.CodeIndex.Features.BuildCodeIndex.BuildLayers? right) -> bool
 static Aw.CodeIndex.Features.BuildCodeIndex.BuildLayers.operator ==(Aw.CodeIndex.Features.BuildCodeIndex.BuildLayers? left, Aw.CodeIndex.Features.BuildCodeIndex.BuildLayers? right) -> bool
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexRequest
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexRequest.<Clone>$() -> Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexRequest!
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexRequest.Deconstruct(out Aw.CodeIndex.Core.Facade.CodeIndexRepo! Repo, out System.IProgress<string!>! Progress) -> void
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexRequest.EmbedCodeIndexRequest(Aw.CodeIndex.Core.Facade.CodeIndexRepo! Repo, System.IProgress<string!>! Progress) -> void
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexRequest.Equals(Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexRequest? other) -> bool
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexRequest.Progress.get -> System.IProgress<string!>!
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexRequest.Progress.init -> void
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexRequest.Repo.get -> Aw.CodeIndex.Core.Facade.CodeIndexRepo!
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexRequest.Repo.init -> void
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse.<Clone>$() -> Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse!
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse.Deconstruct(out Aw.CodeIndex.Core.Values.RepoName Repo, out int Embedded, out int Embeddable, out Aw.CodeIndex.Core.Model.LayerState Embeddings) -> void
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse.EmbedCodeIndexResponse(Aw.CodeIndex.Core.Values.RepoName Repo, int Embedded, int Embeddable, Aw.CodeIndex.Core.Model.LayerState Embeddings) -> void
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse.Embeddable.get -> int
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse.Embeddable.init -> void
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse.Embedded.get -> int
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse.Embedded.init -> void
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse.Embeddings.get -> Aw.CodeIndex.Core.Model.LayerState
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse.Embeddings.init -> void
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse.Equals(Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse? other) -> bool
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse.Repo.get -> Aw.CodeIndex.Core.Values.RepoName
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse.Repo.init -> void
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexService
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexService.EmbedCodeIndexService() -> void
+Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexService.Handle(Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse!>!>
+override Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexRequest.Equals(object? obj) -> bool
+override Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexRequest.GetHashCode() -> int
+override Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexRequest.ToString() -> string!
+override Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse.Equals(object? obj) -> bool
+override Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse.GetHashCode() -> int
+override Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse.ToString() -> string!
+static Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexRequest.operator !=(Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexRequest? left, Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexRequest? right) -> bool
+static Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexRequest.operator ==(Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexRequest? left, Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexRequest? right) -> bool
+static Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse.operator !=(Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse? left, Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse? right) -> bool
+static Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse.operator ==(Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse? left, Aw.CodeIndex.Features.EmbedCodeIndex.EmbedCodeIndexResponse? right) -> bool

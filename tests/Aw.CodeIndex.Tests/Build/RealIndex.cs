@@ -2,11 +2,13 @@ using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Ports;
 using Aw.CodeIndex.Features;
 using Aw.CodeIndex.Features.BuildCodeIndex;
+using Aw.CodeIndex.Features.EmbedCodeIndex;
 using Aw.CodeIndex.Infrastructure.Parsing;
 using Aw.CodeIndex.Infrastructure.Scrubbing;
 using Aw.CodeIndex.Infrastructure.Snapshot;
 using Aw.CodeIndex.Infrastructure.Store;
 using Aw.CodeIndex.Testing;
+using Aw.Kernel.Services;
 using Aw.Kernel.Testing;
 
 namespace Aw.CodeIndex.Tests.Build;
@@ -25,6 +27,7 @@ internal sealed class RealIndex : IDisposable
         Heavy = heavy ?? new FakeHeavyJobLock();
         Service = new BuildCodeIndexService(new FakeRepoHeads(), snapshot, new StructureWriter(snapshot, [new CSharpParser()], new FileParseQuarantine(Path.Combine(_directory, "index")), new RedactingBodyScrubber()), new BuildLayers(new EmbeddingsLayer(Embedder, TimeProvider.System), new GraphLayer(snapshot, TimeProvider.System, new RedactingBodyScrubber(), graph)), Store, Heavy, TimeProvider.System);
         Facade = new CodeIndexFacade(Service, Store, Embedder, graph);
+        Embed = new EmbedCodeIndexService();
     }
 
     public IEmbedder Embedder { get; }
@@ -36,6 +39,8 @@ internal sealed class RealIndex : IDisposable
     public BuildCodeIndexService Service { get; }
 
     public CodeIndexFacade Facade { get; }
+
+    public IService<EmbedCodeIndexRequest, EmbedCodeIndexResponse> Embed { get; }
 
     public static CodeIndexScope ScopeOf(CodeIndexRepo repo) => new([repo], new CodeIndexCaller(CallerKind.Service, Repo: null));
 
