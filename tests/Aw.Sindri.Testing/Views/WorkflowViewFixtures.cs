@@ -634,7 +634,8 @@ public static class WorkflowViewFixtures
                 new DeskReview("fact:prStatus", DeskReviewKind.Pr, Url: "https://github.com/acme/web/pull/412"),
             ],
         };
-        return detail with { Current = detail.Current with { Desk = form } };
+        var address = InstanceAddress.From("ITM-01JN3/design/1");   // its own instance: the UI fake finds an instance by id
+        return detail with { Address = address, Id = WorkflowInstanceId.Of(address), ItemId = ItemKey.From("ITM-01JN3"), Current = detail.Current with { Desk = form } };
     }
 
     /// <summary>q65: an agent run of a running branch with its session handle on the run.</summary>
