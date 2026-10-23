@@ -31,7 +31,7 @@ public sealed class JobSheetLayoutTests : FrameHost
 
         var callout = Named<Border>(window, "JobSummary");
         Assert.True(callout.IsEffectivelyVisible);
-        Assert.Contains("failed", callout.Classes);
+        Assert.Contains(callout.Classes, c => string.Equals(c, "failed", StringComparison.Ordinal));
         Assert.Equal("it broke", ((TextBlock)((StackPanel)callout.Child!).Children[0]).Text);
         Assert.Equal("SND-SCHED-001", Named<TextBlock>(window, "JobSummaryCode").Text);
         Assert.True(Visible(window, "JobSummaryCode"));

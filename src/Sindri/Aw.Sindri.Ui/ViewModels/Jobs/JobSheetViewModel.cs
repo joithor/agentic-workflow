@@ -256,7 +256,7 @@ internal sealed partial class JobSheetViewModel(ISindriApi api) : ObservableObje
 
     private ControlViewModel? CancelFor(JobView job) =>
         job.Actions.Contains("CancelJob", StringComparer.Ordinal)
-            ? _catalog?.On("CancelJob", Heading, ct => _url is { } url ? Api.CancelJob(url, job.Id, ct) : Task.FromResult<Result<CommandAcceptedView>>(SindriUiErrors.Unreachable.With("Sindri isn't reachable yet")))
+            ? _catalog?.On("CancelJob", Heading, ct => _url is { } url ? Api.CancelJob(url, job.Id, ct) : Task.FromResult<Result<CommandAcceptedView>>(SindriUiErrors.Unreachable.With("Sindri isn't reachable yet")), confirm: true)
             : null;
 
     private void Failed(Error error)
