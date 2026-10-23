@@ -73,7 +73,7 @@ public static partial class NeedsYouRows
     }
 
     private static ParkShape ShapeOf(SuspensionSummary suspension) =>
-        new(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors is not null);
+        new(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors is not null, suspension.MirroredParkKind, suspension.MirroredEscalation);
 
     /// <summary>The 'park' row of an open desk task.</summary>
     /// <param name="item">The item's row.</param>

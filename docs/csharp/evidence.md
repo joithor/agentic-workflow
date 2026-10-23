@@ -28,6 +28,8 @@ every path it writes into a run file is absolute.
 | `parity-stale --attachments <file.json> --keep id,id` | Prints the JSON array of `Pixel diff: ` attachments not kept, from a JSON array of `{id, title}` (other fields ignored) | 0 · 1 |
 | `parity-put --upload <file.json> --file <png>` | Prints the JSON argv of the signed PUT (`curl … -H "<name>: <value>"` for every signed header, verbatim; run it within a minute of signing) from `{url, headers}` | 0 · 1 |
 | `publish-plan <run-dir> --provenance seeded\|unknown [--linear-issue id]` | Prints the publish plan for `summary.json` (below) | 0 · 1 |
+| `gh-publish <run-dir> --repo owner/name --pr N [--provenance seeded\|unknown] [--reviewed file,file]` | **Contract only (cutover unit 1.2 builds it; until then it answers AW-EVIDENCE-015, exit 4).** Pushes a run's images (the step screenshots of `summary.json`, else the side-by-side image of each `parity.json` frame) to the PR's evidence branch `ui-evidence/pr-<n>` through `gh api` (the git data API: no checkout, never force-pushed, on top of earlier runs) under `pr-<n>/<run-id>/`, writes `<run-dir>/pr-comment.md` with each image embedded by a commit-pinned `https://github.com/<repo>/blob/<sha>/…?raw=true` URL, and prints `{provenance, branch, commit, urls, commentFile, post}` (`post` is the `gh pr comment` argv). Seeded data only: a `summary.json` run needs `--provenance seeded` on a local host, a `parity.json` run carries its own; every image must be in `--reviewed` first | 0 pushed · 1 bad usage or input, or provenance not seeded (nothing pushed) · 3 an image is not in `--reviewed` (nothing pushed; `unreviewed` lists them) · 4 `gh` failed (AW-EVIDENCE-025) |
+| `version` | **Contract only (cutover unit 1.4 builds it).** Prints the build stamp on one line, `ui-evidence commit <sha>, built <time>` (Sindri's stamp: the binary ships in Sindri's install) | 0 · 1 usage |
 | `doctor` | Prints `{healthy, failures[]}` for the local stack; each failure is also a stderr line `ui-evidence: doctor: <failure>` | 0 healthy · 2 not · 1 usage |
 | `provenance` | Prints `{provenance: seeded\|unknown, reason}` for the local database | 0 |
 | `install-browser` | Installs the browser the run and parity commands drive; the installer's download progress goes to stderr, so stdout is only `{installed}`. Ctrl-C returns at once (a download already running finishes in Playwright's driver) | 0 · 4 |
@@ -45,7 +47,7 @@ One scheme for every command:
 | 0 | Done; every check passed | — |
 | 1 | Usage error, invalid input, or a guard refused | `ui-evidence: usage: ui-evidence <shape>`; AW-EVIDENCE-001…006, 010, 012, 016, 017, 018, 019, 020, 021, 022 |
 | 2 | A check failed: a step failed or broke (`run`), an expectation did not hold (`api-run`, `db-run`), a box check failed (`parity`), the stack is unhealthy (`doctor`) | the document is still written and printed |
-| 3 | Blocked on review (`parity-plan`) | the plan is still printed |
+| 3 | Blocked on review (`parity-plan`, `gh-publish`) | the plan is still printed |
 | 4 | The run itself errored, or the environment's I/O failed: the browser failed to start or crashed, a frame's anchor is missing, a region runs past the viewport, a file couldn't be read or written (the script included), a lock directory couldn't be made; `api-run`: a request failed, timed out or was redirected off its origin (AW-EVIDENCE-023), a golden file could not be read (011), a CLI call would not start or ran past its limit, or its temporary directory could not be made (AW-EVIDENCE-015, the same code the unexpected-exception line uses); `db-run`: the database cannot be reached or copied (AW-EVIDENCE-024), a script, seed or golden file could not be read (011) or a query fails for a reason other than a refused write (AW-EVIDENCE-015) | AW-EVIDENCE-011, 013, 015, 023, 024 (a stack probe failure, AW-EVIDENCE-014, is never an exit: `doctor` and `provenance` report it in their document) |
 | 75 | A machine lock stayed busy past `--lock-timeout` | AW-EVIDENCE-009 |
 | 130 | Interrupted (SIGINT, SIGTERM, SIGHUP, SIGQUIT): a browser call in flight is abandoned at once and the locks are released on the way out. A second signal terminates the process without waiting (a lock it held is then left for a person to remove) | `ui-evidence: interrupted` |
@@ -500,10 +502,11 @@ Selector repair and visual critique go through the Core port `IJudge` (`IsAvaila
 don't call it and record nothing in `invocations[]`, because no model ran. A wired judge's null answer means the call
 failed (timed out, errored or answered out of contract); that call is recorded with `ok: false`. Either way every caller
 fails closed: no repair (the step stays `broken`), and the verdict stays `unchecked`. A recorded call carries null
-token counts when the answer reports none. Until `docs/csharp/judge.md` lands, the composition registers
-`UnavailableJudge` (`IsAvailable` false, every answer null; it logs once that it isn't wired), so a run records no
-`selector-repair` or `visual-critique` invocation; the CLI adapter over the C# `judge` binary is BLOCKED on that
-contract.
+token counts when the answer reports none. The CLI adapter over the C# `judge` binary (`JudgeCliJudge`, cutover unit 1.3) runs
+`judge <question>` with the input record on stdin and parses the envelope (`docs/csharp/judge.md`, 'Questions': `ui-element-repair`,
+`visual-critique`); until it lands the composition registers its stub, which reports `IsAvailable` false (every answer null), so a run
+records no `selector-repair` or `visual-critique` invocation and the verdict stays `unchecked`. `UnavailableJudge` stays in the tree as
+the contract's reference for an unwired judge.
 
 ## Host guard
 
@@ -576,7 +579,8 @@ move behind an AOT host if the browser adapter ever allowed it.
 | `IImageCodec` | `PngCodec` | `FakeImageCodec` |
 | `IVerdictCacheStore` | `FileVerdictCacheStore` | `InMemoryVerdictCacheStore` |
 | `IMachineLocks` | `DirectoryLocks` | `InMemoryMachineLocks` |
-| `IJudge` | `UnavailableJudge` (CLI adapter blocked, above) | `FakeJudge` |
+| `IJudge` | `JudgeCliJudge` (a stub until cutover unit 1.3; `UnavailableJudge` is the unwired reference) | `FakeJudge` |
+| `IGhRunner` (`gh`, one call: arguments and stdin in, exit code and both streams out) | `ProcessGhRunner` (a stub until cutover unit 1.2) | `FakeGhRunner` (scripted, or an in-memory repository answering the git data API) |
 | `IStackProbe`, `IProvenanceQuery` | `ProcessStackProbe`, `DockerPsqlProvenance` | `FakeStackProbe`, `FakeProvenanceQuery` |
 | `ISecretsSource` (credentials by the name the manifest gives) | `EnvironmentSecrets` | `FakeSecrets` |
 | `IEvidenceSettings` (user agent, visual model, preview host pattern, API port, seed policy, app title) | `EnvironmentEvidenceSettings` | `FakeEvidenceSettings` |
@@ -591,7 +595,7 @@ move behind an AOT host if the browser adapter ever allowed it.
 Each port with behaviour to pin has a contract suite in `tests/Aw.Evidence.Testing` that the fake and the adapter both
 run: `BrowserSessionContract` (fake: unit; Playwright on the fixture site: heavy), `BrowserInstallerContract` (fake: unit;
 Playwright: heavy), `RunFilesContract`, `ImageCodecContract`, `VerdictCacheStoreContract`, `MachineLocksContract`,
-`JudgeContract`, `StackProbeContract` (the adapter over a local HTTP server, a stub `docker` and a loopback listener),
+`JudgeContract`, `GhRunnerContract`, `StackProbeContract` (the adapter over a local HTTP server, a stub `docker` and a loopback listener),
 `ProvenanceQueryContract` (the adapter over a stub `docker` playing `psql -At`), `SecretsSourceContract`, `IdGeneratorContract`, `ApiTransportContract` (the adapter over a loopback server), `CliRunnerContract` (over stub programs),
 `ExecutableLocatorContract`, `EvidenceTargetsContract`, `TextScrubberContract` and `ReadOnlyDatabaseContract` (a writing CTE, a side-effecting function, `nextval`, `COPY … TO`, a `PRAGMA` assignment, `VACUUM INTO`, `ATTACH`, `SET transaction_read_only = off` and `COMMIT; INSERT …` each refused with the data and the directory unchanged; the fake and the SQLite adapter run it as unit and integration, Postgres against a throwaway container as heavy). `IEvidenceSettings` has none: its fake is a set of plain values with no behaviour that could
 drift; the adapter's names, defaults, blank-as-unset and env-file fallback are pinned by `EnvironmentEvidenceSettingsTests`.
