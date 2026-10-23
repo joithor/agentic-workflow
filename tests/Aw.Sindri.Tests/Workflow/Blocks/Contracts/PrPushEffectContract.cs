@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks.Effect;
 using Aw.Sindri.Testing.Checks;
 using Aw.Sindri.Testing.Forge;
+using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Workflow;
 
 namespace Aw.Sindri.Tests.Workflow.Blocks.Contracts;
@@ -22,6 +23,6 @@ public sealed class PrPushEffectContract : BlockContract
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await new PrPushEffect(new FakePullRequests([]), new FakeRunDiff(), new InMemoryBranchChanges(), new InMemoryFactStore(), new InMemoryFactStore())
+        _ = await new PrPushEffect(new FakePullRequests([]), new FakeRunDiff(), new InMemoryBranchChanges(), new InMemoryFactStore(), new InMemoryFactStore(), new MergeRecord(new InMemoryRunArea(), TimeProvider.System))
             .Dispatch(ShippedComposition.Effect("effect.pr.push"), cancellationToken);
 }

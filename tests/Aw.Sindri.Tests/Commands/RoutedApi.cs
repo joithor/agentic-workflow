@@ -22,6 +22,7 @@ internal sealed class RoutedApi : HttpMessageHandler
     {
         ["/sindri/status"] = (HttpStatusCode.OK, Encoding.UTF8.GetString(AwJson.Serialize(StatusAtHead7, SliceHarness.Json))),   // every view read asks for the head first
     };
+    private readonly Dictionary<string, (HttpStatusCode Status, string Body)> _posts = new(StringComparer.Ordinal);
     private long? _cursor;
     public List<Call> Calls { get; } = [];
 
@@ -35,6 +36,13 @@ internal sealed class RoutedApi : HttpMessageHandler
     public RoutedApi On<T>(string path, HttpStatusCode status, T body)
     {
         _routes[path] = (status, Encoding.UTF8.GetString(AwJson.Serialize(body, SliceHarness.Json)));
+        return this;
+    }
+
+    /// <summary>Answers a POST to <paramref name="path"/> with its own body, where the same path answers a GET differently.</summary>
+    public RoutedApi OnPost<T>(string path, HttpStatusCode status, T body)
+    {
+        _posts[path] = (status, Encoding.UTF8.GetString(AwJson.Serialize(body, SliceHarness.Json)));
         return this;
     }
 
@@ -57,7 +65,8 @@ internal sealed class RoutedApi : HttpMessageHandler
             };
         }
 
-        var (status, text) = _routes.TryGetValue(uri.AbsolutePath, out var found) ? found : (HttpStatusCode.NotFound, """{"title":"SND-API-404","detail":"no route"}""");
+        var (status, text) = request.Method == HttpMethod.Post && _posts.TryGetValue(uri.AbsolutePath, out var posted) ? posted
+            : _routes.TryGetValue(uri.AbsolutePath, out var found) ? found : (HttpStatusCode.NotFound, """{"title":"SND-API-404","detail":"no route"}""");
         return new HttpResponseMessage(status) { Content = new StringContent(text, Encoding.UTF8, (int)status >= 400 ? "application/problem+json" : "application/json") };
     }
 }

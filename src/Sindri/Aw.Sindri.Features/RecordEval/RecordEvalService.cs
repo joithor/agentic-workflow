@@ -6,6 +6,7 @@ using Aw.Kernel.Services;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Evals;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -19,7 +20,7 @@ namespace Aw.Sindri.Features.RecordEval;
 /// the stored content of the facts they name, and writes them back as an eval case (<see cref="EvalLedgerRecorder"/>) against the
 /// recipe the address names, as it is approved now, with its pinned children. An address the ledger never saw is SND-WF-001.
 /// </summary>
-internal sealed class RecordEvalService(ILedgerReader ledger, IApprovedRecipes recipes, RecipeRegistryReader registry, IFactContents facts, JsonSerializerOptions options)
+internal sealed class RecordEvalService(ILedgerReader ledger, IApprovedRecipes recipes, RecipeRegistryReader registry, BlockCatalog catalog, IFactContents facts, JsonSerializerOptions options)
     : IService<RecordEvalRequest, RecordEvalResponse>
 {
     private const int Page = 500;
@@ -61,7 +62,7 @@ internal sealed class RecordEvalService(ILedgerReader ledger, IApprovedRecipes r
             return contents.Error;
         }
 
-        var recorded = EvalLedgerRecorder.Record("recorded", approved.Value.Recipe, children.Value, rows.Value, contents.Value);
+        var recorded = EvalLedgerRecorder.Record("recorded", new LedgerRecording(approved.Value.Recipe, children.Value, catalog), rows.Value, contents.Value);
         return recorded.IsError ? recorded.Error : new RecordEvalResponse(EvalLines.Write(recorded.Value, options));
     }
 
@@ -84,7 +85,8 @@ internal sealed class RecordEvalService(ILedgerReader ledger, IApprovedRecipes r
                 return page.Error;
             }
 
-            foreach (var row in page.Value.Where(r => string.Equals(r.Item, item, StringComparison.Ordinal) && r.Envelope.Type.StartsWith("workflow.", StringComparison.Ordinal)))
+            foreach (var row in page.Value.Where(r => string.Equals(r.Item, item, StringComparison.Ordinal) && r.Envelope.Type.StartsWith("workflow.", StringComparison.Ordinal)
+                && !string.Equals(r.Envelope.Type, EventTypes.WorkflowInjection, StringComparison.Ordinal))) // why: the injection row is the engine's own mirror of a run's inputs, not a trigger an eval line names
             {
                 var payload = AwJson.Deserialize<WorkflowEventPayload>(Encoding.UTF8.GetBytes(row.Envelope.Payload), options);
                 if (payload.IsSuccess && string.Equals(payload.Value.Instance, address.Value, StringComparison.Ordinal))

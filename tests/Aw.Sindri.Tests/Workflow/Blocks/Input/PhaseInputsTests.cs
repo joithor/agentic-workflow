@@ -33,7 +33,7 @@ public sealed class PhaseInputsTests
     private static JsonElement Stored(FactValue fact) =>
         JsonSerializer.SerializeToElement(new Dictionary<string, string?>(StringComparer.Ordinal) { ["ref"] = fact.Ref, ["sha256"] = fact.Sha256, ["headSha"] = fact.HeadSha });
 
-    private static PhasePacketInput Packet(ContextInputFixtures.MemoryFacts facts, Aw.Sindri.Core.Scoping.IBriefFiles? files = null) =>
+    private static PhasePacketInput Packet(ContextInputFixtures.MemoryFacts facts, Core.Scoping.IBriefFiles? files = null) =>
         new(files ?? new InMemoryBriefFiles().With("phase.json", "{\"goal\":\"ship it\"}").With("design.md", "# Design\nthe plan"), new InMemoryRepoCheckouts().With("web", "/work/web"), facts);
 
     [Fact]
@@ -136,9 +136,9 @@ public sealed class PhaseInputsTests
         Assert.Contains("left the branch green", filled.Value.Sections[HandoffNoteInput.Section], StringComparison.Ordinal);
     }
 
-    private sealed class RootRecordingFiles(Aw.Sindri.Core.Scoping.IBriefFiles inner, List<string> roots) : Aw.Sindri.Core.Scoping.IBriefFiles
+    private sealed class RootRecordingFiles(Core.Scoping.IBriefFiles inner, List<string> roots) : Core.Scoping.IBriefFiles
     {
-        public ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Scoping.BriefFile>> Read(string path, IReadOnlyList<string> directories, CancellationToken cancellationToken)
+        public ValueTask<Kernel.Result<Core.Scoping.BriefFile>> Read(string path, IReadOnlyList<string> directories, CancellationToken cancellationToken)
         {
             roots.AddRange(directories);
             return inner.Read(path, directories, cancellationToken);

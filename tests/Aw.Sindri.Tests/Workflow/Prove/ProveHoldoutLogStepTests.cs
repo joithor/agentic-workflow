@@ -72,7 +72,7 @@ public sealed class ProveHoldoutLogStepTests
         Assert.Equal("passed", result.Result!.Outcome.Value);
         Assert.Equal(["holdoutResult"], result.Result.Outputs.Keys.Select(static k => k.Value[5..]), StringComparer.Ordinal);
         var recorded = Out(result, "holdoutResult");
-        Assert.Equal<(string?, string?)>((Head, "clean"), ((string?)recorded["commit"], (string?)recorded["canary"]));
+        Assert.Equal((Head, "clean"), ((string?)recorded["commit"], (string?)recorded["canary"]));
         Assert.Equal(["P1-H1", "P1-H2", "P1-C"], recorded["results"]!.AsArray().Select(static r => (string?)r!["scenario"]), StringComparer.Ordinal);
         Assert.Empty((await rig.Store.Spent(Line, Phase, Token)).Value);
     }
@@ -83,7 +83,7 @@ public sealed class ProveHoldoutLogStepTests
         var result = await new Rig().Step().Run(Context(BothPass()), Token);
 
         var canary = Out(result, "holdoutResult")["results"]!.AsArray().Single(static r => (string?)r!["scenario"] == "P1-C")!;
-        Assert.Equal<(string?, string?)>(("canary", null), ((string?)canary["kind"], (string?)canary["item"]));
+        Assert.Equal(("canary", null), ((string?)canary["kind"], (string?)canary["item"]));
         Assert.Equal(["AC-1", "AC-2"], ProofChecks.HiddenResults(Out(result, "holdoutResult")).Select(static r => (string?)r["item"]), StringComparer.Ordinal);   // PRV-HOLD-001 counts these only
     }
 
@@ -98,9 +98,9 @@ public sealed class ProveHoldoutLogStepTests
         Assert.Equal("failed", result.Result!.Outcome.Value);
         Assert.Equal("P1-H2", Assert.Single((await rig.Store.Spent(Line, Phase, Token)).Value));
         var results = Out(result, "holdoutResult")["results"]!.AsArray();
-        Assert.Equal<bool?>([null, true], results.Where(static r => (string?)r!["kind"] != "canary").Select(static r => (bool?)r!["spent"]));
+        Assert.Equal([null, true], results.Where(static r => (string?)r!["kind"] != "canary").Select(static r => (bool?)r!["spent"]));
         var finding = Assert.Single(Out(result, "findings").AsArray())!;
-        Assert.Equal<(string?, string?)>(("PRV-HOLD-001", "AC-2"), ((string?)finding["rule"], (string?)finding["item"]));
+        Assert.Equal(("PRV-HOLD-001", "AC-2"), ((string?)finding["rule"], (string?)finding["item"]));
         Assert.Contains("saving twice made two records", (string?)finding["message"], StringComparison.Ordinal);
         Assert.DoesNotContain("P1-H2", finding.ToJsonString(), StringComparison.Ordinal);
         Assert.DoesNotContain("click save twice", finding.ToJsonString(), StringComparison.Ordinal);
@@ -115,7 +115,7 @@ public sealed class ProveHoldoutLogStepTests
         var result = await rig.Step().Run(Context(BothPass()), Token);
 
         Assert.Equal("passed", result.Result!.Outcome.Value);
-        Assert.Equal<bool?>([true, null], Out(result, "holdoutResult")["results"]!.AsArray().Where(static r => (string?)r!["kind"] != "canary").Select(static r => (bool?)r!["spent"]));
+        Assert.Equal([true, null], Out(result, "holdoutResult")["results"]!.AsArray().Where(static r => (string?)r!["kind"] != "canary").Select(static r => (bool?)r!["spent"]));
     }
 
     [Fact]
@@ -129,7 +129,7 @@ public sealed class ProveHoldoutLogStepTests
         Assert.Equal("leaked", result.Result!.Outcome.Value);
         Assert.Equal(["findings"], result.Result.Outputs.Keys.Select(static k => k.Value[5..]), StringComparer.Ordinal);
         var finding = Assert.Single(Out(result, "findings").AsArray())!;
-        Assert.Equal<(string?, string?)>(("PRV-HOLD-003", null), ((string?)finding["rule"], (string?)finding["item"]));
+        Assert.Equal(("PRV-HOLD-003", null), ((string?)finding["rule"], (string?)finding["item"]));
         Assert.DoesNotContain(Canary, finding.ToJsonString(), StringComparison.OrdinalIgnoreCase);
         Assert.Empty((await rig.Store.Spent(Line, Phase, Token)).Value);
     }

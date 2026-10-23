@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Packets;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -31,7 +32,7 @@ public sealed class ScopeFreezeStepTests
     }
 
     private Task<BlockStepResult> Run(ScopingFacts facts) =>
-        new ScopeFreezeStep(_area, _packets).Run(ScopingStepContexts.Of("step.scope.freeze", facts), Token).AsTask();
+        new ScopeFreezeStep(_area, _packets).Run(Freeze(facts), Token).AsTask();
 
     private static JsonNode Out(BlockStepResult result, string key) => JsonNode.Parse(result.Result!.Outputs[FactKey.From("fact:" + key)].GetRawText())!;
 
@@ -45,6 +46,27 @@ public sealed class ScopeFreezeStepTests
         Assert.Equal((InMemoryPackets.HashOf(Packet), Dir), (packet["hash"]!.GetValue<string>(), packet["dir"]!.GetValue<string>()));
         var freeze = Assert.Single(_packets.Calls, static c => c.Verb == "freeze");
         Assert.Equal((PacketKind.Scoping, Dir, PacketFreezer.Owner), (freeze.Packet.Kind, freeze.Packet.Directory, freeze.By));
+    }
+
+    [Fact]
+    public async Task The_freeze_carries_the_repo_slug_and_the_instance_slug_aw_packets_files_a_scoping_packet_under()
+    {
+        _ = await Run(Facts());
+
+        var freeze = Assert.Single(_packets.Calls, static c => c.Verb == "freeze").Packet;
+        Assert.Equal(("sindri/demo", "t-1-scoping-1"), (freeze.RepoSlug, freeze.Instance));
+    }
+
+    [Fact]
+    public async Task An_instance_with_no_repo_fails_the_step_before_aw_packets_is_called()
+    {
+        var context = Freeze(Facts()) with { Repo = null };
+
+        var result = await new ScopeFreezeStep(_area, _packets).Run(context, Token);
+
+        Assert.Null(result.Result);
+        Assert.Contains("repo", result.Failure, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(_packets.Calls);
     }
 
     [Fact]
@@ -94,7 +116,7 @@ public sealed class ScopeFreezeStepTests
     {
         var missing = await Run(Facts().Without("scopePacket"));
         var step = new ScopeFreezeStep(_area, _packets);
-        var noAddress = await step.Run(ScopingStepContexts.Of("step.scope.freeze", Facts()) with { Address = null }, Token);
+        var noAddress = await step.Run(Freeze(Facts()) with { Address = null }, Token);
 
         Assert.Null(missing.Result);
         Assert.Null(noAddress.Result);
@@ -106,7 +128,7 @@ public sealed class ScopeFreezeStepTests
         var other = "sha256:" + new string('c', 64);
         var step = new ScopeFreezeStep(_area, new FreezesAs(_packets, other));
 
-        var result = await step.Run(ScopingStepContexts.Of("step.scope.freeze", Facts()), Token);
+        var result = await step.Run(Freeze(Facts()), Token);
 
         Assert.Equal("mismatch", result.Result!.Outcome.Value);
         Assert.Contains(other, Out(result, "findings").ToJsonString(), StringComparison.Ordinal);
@@ -122,4 +144,12 @@ public sealed class ScopeFreezeStepTests
         public ValueTask<Result<PacketFreeze>> Freeze(PacketRef packet, PacketFreezer by, CancellationToken cancellationToken) =>
             ValueTask.FromResult<Result<PacketFreeze>>(new PacketFreeze(Frozen: true, hash, by, AlreadyFrozen: false, AlreadyFrozenBy: null, Failures: []));
     }
+
+    // A child scoping instance has no fact:item, so the runtime looks its repo up only for a Step that says it needs one.
+    [Fact]
+    public void The_freeze_is_a_repo_step_so_a_child_instance_gets_its_repo() =>
+        Assert.True(typeof(IRepoStep).IsAssignableFrom(typeof(ScopeFreezeStep)));
+
+    // The freeze files the packet under its repo, so these contexts carry one (the shared helper's have none).
+    private static StepContext Freeze(ScopingFacts facts) => ScopingStepContexts.Of("step.scope.freeze", facts) with { Repo = RepoName.From("demo") };
 }

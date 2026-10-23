@@ -288,6 +288,7 @@ needs re-approval.
 | `version` | yes | An integer. Same id and version with another hash, or a version not above the highest registered, is refused once the registry exists (`RCP-VERSION-001`/`-002`, P2) |
 | `description` | no | |
 | `displayName` | yes | The name the app shows instead of the id (setup-once SO-10): sentence case, at most 60 characters, what the recipe does (`Idea to merged pull request`), no id or code name (`RCP-DISPLAY-001`). It is part of the hash, so adding or changing it needs a new `version`: **a content change bumps the version** (`recipe validate --against`) |
+| `why` | no | One plain sentence on why the recipe exists (at most 200 characters, no id or code name; `RCP-DISPLAY-002`). Served as `RecipeView.why`; written into the hashed form only when set, so adding it needs a new `version` |
 | `base` | generated recipes only | Written by Sindri's generator; on a hand-written recipe it is `RCP-CAP-004`, and `recipe validate` treats every recipe as hand-written |
 | `urgency` | no | `incident`, `triage` or `work` (default `work`; UI E-21). The app orders its Workflows strip by it; the engine never reads it. The normalizer writes `work` when it is absent, so an absent urgency and `urgency: work` hash the same. Any other value is `RCP-URG-001` |
 | `inputs` | yes | At least one (`RCP-INPUT-002`): `{ key, label?, type?, kind, generate? }`. `kind` is a subject kind and required (`RCP-INPUT-001`); `type` is a fact type and defaults to the type `kind` pairs with; `generate` is a template that supplies the value when the start gives none (text inputs only, `RCP-NAME-005`/`-006`). The bare-key short form (`[fact:item]`) normalizes to an input with no `kind`, so it fails `RCP-INPUT-001`. The first input is the instance's subject (UI E-22) |
@@ -337,6 +338,11 @@ Every state has `kind: active | wait | terminal`. State, loop and parameter (`wi
 Any state may also carry two optional plain-words fields the app shows (setup-once SO-E1; each is written into the hashed form only when set):
 `displayName` (sentence case, at most 60 characters, no id; `RCP-DISPLAY-003`) names the step instead of the state id, and `why` (one plain sentence, at most 200
 characters, no id or code name; `RCP-DISPLAY-002`) says why the state is in the recipe. Neither is on a block descriptor.
+
+A state that runs a Step may also carry `onOutcome`, a map from an outcome of its Step to one plain sentence (at most 200 characters, no id or code name) on what choosing that outcome does:
+`onOutcome: { approve: "Locks the scope in and moves on to design.", revise: "Sends your notes back, then asks you again." }`. Each key must be an outcome of the state's Step
+(`StepOutcomes`, so a choice Step's own choices count) and each text plain words, both `RCP-DISPLAY-002`. The app shows the texts on the desk state's outcome buttons, in the Step's outcome
+order (`RecipeStateView.onOutcome`). Written into the hashed form only when set.
 
 `waitFor` is one of `{ event: <kind> }`, `{ answer: { id, question } }`, `{ resource: heavy | slot }` or
 `{ child: { recipe, inputs, onParked: propagate | ignore } }`. The `heavy` resource is allocated over the box's heavy-job lock
@@ -475,7 +481,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-NAME-005` | A `generate` template has no `{fact:…}` placeholder | Use only literals, `{start:date}` and `{start:time}` |
 | `RCP-NAME-006` | `generate` is only on an input of kind `text` | Supply that input at start |
 | `RCP-DISPLAY-001` | A recipe has a `displayName`: required, sentence case, at most 60 characters, no id or code name | Write the name the app shows (`Idea to merged pull request`) |
-| `RCP-DISPLAY-002` | A state's `why` is one plain line of at most 200 characters, with no id or code name | Say in plain words why the state is there |
+| `RCP-DISPLAY-002` | A recipe's or state's `why`, and each `onOutcome` text, is one plain line of at most 200 characters, with no id or code name; each `onOutcome` key is an outcome of the state's Step | Say in plain words why the state is there; key `onOutcome` by the Step's outcomes |
 | `RCP-DISPLAY-003` | A state's `displayName` (sentence case) and a transition's `label` are at most 60 characters, with no id or code name | Use plain words |
 | `RCP-HASH-001` | A `hash` in the file matches the content | Set it to the hash the message names, or remove it |
 | `RCP-VERSION-001` | Same id and version, same hash (registry, P2; and `recipe validate --against <manifest.json>`: a content change bumps the version) | Raise `version` |
@@ -1115,6 +1121,8 @@ own slots that come due meanwhile are skipped, never overlapped.
 ## Start, answer, command and cancel (engine P4 unit (b))
 
 Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
+
+`sindri pr babysit <url>` and `sindri docs sync <url>` are `workflow start` with the facts of the PR babysitter's hand start built for you (`docs/csharp/sindri-pr.md`, API16).
 
 - **`workflow start <recipe> --item <id> [--attempt next] [--fact <key>=<file>]…`** runs the `StartInstance` slice: it
   resolves the item (`IItems`) and the approved recipe (the latest, or `id@hash`, a hash prefix of 8 or more digits),

@@ -202,7 +202,7 @@ public sealed class ProveEvidenceStepTests
     [Fact, Trait("Lane", "unit")]
     public void The_descriptor_declares_every_fact_the_step_reads()
     {
-        var inputs = Aw.Sindri.Features.Blocks.Step.ProveSteps.Evidence.Inputs.Select(static k => k.Value).ToList();
+        var inputs = Features.Blocks.Step.ProveSteps.Evidence.Inputs.Select(static k => k.Value).ToList();
 
         Assert.Equal(["fact:phasePacket", "fact:built", "fact:proof", "fact:redTests", "fact:beforeAfter", "fact:holdoutResult"], inputs);
     }

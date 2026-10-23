@@ -3,13 +3,13 @@ using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Forge;
-using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Blocks.Effect;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Workflow;
 using Microsoft.Extensions.Time.Testing;
 
@@ -28,9 +28,12 @@ public sealed class PrMergeReplyEffectTests
     private readonly RecordingPulls _pulls = new();
     private readonly InMemoryFactStore _facts = new();
     private readonly InMemoryProfiles _profiles = new();
+    private readonly InMemoryRunArea _area = new();
     private readonly InMemoryPrCommentMarks _marks = new();
     private readonly FakeTimeProvider _clock = new(KnownInstants.Epoch);
     private readonly PrRef _pr = new("forge.example", "acme/web", 7);
+
+    private MergeRecord Record => new(_area, _clock);
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -39,7 +42,7 @@ public sealed class PrMergeReplyEffectTests
     {
         var context = await Context("effect.pr.merge", new Dictionary<string, string>(StringComparer.Ordinal) { ["pr"] = "\"" + Link + "\"", ["at"] = """{"headSha":"deadbeef"}""" });
 
-        var done = await new PrMergeEffect(_pulls, _facts, _profiles).Dispatch(context, Token);
+        var done = await new PrMergeEffect(_pulls, _facts, _profiles, Record).Dispatch(context, Token);
 
         Assert.Equal(new EffectDone(OutcomeName.From("merged"), Existed: false), done.Value);
         Assert.Equal(new PullMerge(Link, PullMergeMethod.Squash, "deadbeef"), Assert.Single(_pulls.Merges));
@@ -51,7 +54,7 @@ public sealed class PrMergeReplyEffectTests
         var context = await Context("effect.pr.merge", new Dictionary<string, string>(StringComparer.Ordinal) { ["pr"] = Link, ["at"] = """{"headSha":"deadbeef"}""" });
         context = context with { Arguments = new Dictionary<string, JsonElement>(context.Arguments, StringComparer.Ordinal) { ["method"] = Literal("rebase") } };
 
-        _ = await new PrMergeEffect(_pulls, _facts, _profiles).Dispatch(context, Token);
+        _ = await new PrMergeEffect(_pulls, _facts, _profiles, Record).Dispatch(context, Token);
 
         Assert.Equal(PullMergeMethod.Rebase, Assert.Single(_pulls.Merges).Method);
     }
@@ -64,7 +67,7 @@ public sealed class PrMergeReplyEffectTests
         _pulls.MergeAnswer = new PullMergeOutcome(status, MergedSha: null, "why");
         var context = await Context("effect.pr.merge", new Dictionary<string, string>(StringComparer.Ordinal) { ["pr"] = Link, ["at"] = """{"headSha":"deadbeef"}""" });
 
-        var done = await new PrMergeEffect(_pulls, _facts, _profiles).Dispatch(context, Token);
+        var done = await new PrMergeEffect(_pulls, _facts, _profiles, Record).Dispatch(context, Token);
 
         Assert.Equal(OutcomeName.From(outcome), done.Value.Reply);
         _ = Assert.Single(_pulls.Merges);
@@ -76,7 +79,7 @@ public sealed class PrMergeReplyEffectTests
         _pulls.MergeAnswer = SindriErrors.ForgeUnavailable.With("down");
         var context = await Context("effect.pr.merge", new Dictionary<string, string>(StringComparer.Ordinal) { ["pr"] = Link, ["at"] = """{"headSha":"deadbeef"}""" });
 
-        var done = await new PrMergeEffect(_pulls, _facts, _profiles).Dispatch(context, Token);
+        var done = await new PrMergeEffect(_pulls, _facts, _profiles, Record).Dispatch(context, Token);
 
         Assert.True(done.IsError);
     }
@@ -86,42 +89,11 @@ public sealed class PrMergeReplyEffectTests
     {
         var context = await Context("effect.pr.merge", new Dictionary<string, string>(StringComparer.Ordinal) { ["pr"] = Link, ["at"] = """{"state":"open"}""" });
 
-        var done = await new PrMergeEffect(_pulls, _facts, _profiles).Dispatch(context, Token);
+        var done = await new PrMergeEffect(_pulls, _facts, _profiles, Record).Dispatch(context, Token);
 
         Assert.True(done.IsError);
         Assert.Empty(_pulls.Merges);
     }
-
-    [Fact]
-    public async Task Purge_marks_deletes_the_marks_of_the_pr_the_link_names_and_keeps_another_prs()
-    {
-        var other = new PrRef("forge.example", "acme/web", 8);
-        _ = await _marks.Write(Mark(_pr, "t9", "id-1"), Token);
-        _ = await _marks.Write(Mark(other, "t1", "id-2"), Token);
-        var context = await Context("effect.pr.purge-marks", new Dictionary<string, string>(StringComparer.Ordinal) { ["pr"] = "\"" + Link + "\"" });
-
-        var done = await new PrPurgeMarksEffect(_facts, _marks).Dispatch(context, Token);
-
-        Assert.True(done.IsSuccess);
-        Assert.Null(done.Value.Reply);
-        Assert.Empty((await _marks.Latest(_pr, Token)).Value);
-        _ = Assert.Single((await _marks.Latest(other, Token)).Value);
-    }
-
-    [Fact]
-    public async Task Purge_marks_without_a_pull_request_link_is_an_error_and_deletes_nothing()
-    {
-        _ = await _marks.Write(Mark(_pr, "t9", "id-1"), Token);
-        var context = await Context("effect.pr.purge-marks", new Dictionary<string, string>(StringComparer.Ordinal) { ["pr"] = "\"not a link\"" });
-
-        var done = await new PrPurgeMarksEffect(_facts, _marks).Dispatch(context, Token);
-
-        Assert.True(done.IsError);
-        _ = Assert.Single((await _marks.Latest(_pr, Token)).Value);
-    }
-
-    private static PrCommentMark Mark(PrRef pr, string comment, string effect) =>
-        new(pr, PrCommentId.From(comment), EditedAt: null, InstanceAddress.From("T-4/pr/1"), "thread", Reason: null, Commit: null, KnownInstants.Epoch, effect);
 
     [Fact]
     public async Task A_thread_reply_posts_the_drafted_text_with_a_marker_derived_from_the_identity()
@@ -283,12 +255,93 @@ public sealed class PrMergeReplyEffectTests
         Assert.Equal("Value [masked] fixed.", Assert.Single(_pulls.Replies).Text);
     }
 
-    private sealed class Mask : ITextScrubber
+    [Fact]
+    public async Task A_merge_appends_a_merge_row_with_the_method_the_merged_sha_and_the_expected_head()
+    {
+        var context = await Context("effect.pr.merge", new Dictionary<string, string>(StringComparer.Ordinal) { ["pr"] = Link, ["at"] = """{"headSha":"deadbeef"}""" });
+
+        _ = await new PrMergeEffect(_pulls, _facts, _profiles, Record).Dispatch(context, Token);
+
+        var row = Single(await Rows());
+        Assert.Equal("merge", row.GetProperty("kind").GetString());
+        Assert.Equal("deadbeef", row.GetProperty("headSha").GetString());
+        Assert.Equal("squash", row.GetProperty("method").GetString());
+        Assert.Equal("abc123", row.GetProperty("sha").GetString());
+    }
+
+    [Theory]
+    [InlineData(PullMergeStatus.Blocked)]
+    [InlineData(PullMergeStatus.HeadMoved)]
+    public async Task A_merge_the_forge_refused_writes_no_row(PullMergeStatus status)
+    {
+        _pulls.MergeAnswer = new PullMergeOutcome(status, MergedSha: null, "why");
+        var context = await Context("effect.pr.merge", new Dictionary<string, string>(StringComparer.Ordinal) { ["pr"] = Link, ["at"] = """{"headSha":"deadbeef"}""" });
+
+        _ = await new PrMergeEffect(_pulls, _facts, _profiles, Record).Dispatch(context, Token);
+
+        Assert.Empty(await Rows());
+    }
+
+    [Theory]
+    [InlineData("thread", "replied")]
+    [InlineData("reaction", "reacted")]
+    [InlineData("fixed", "fixed")]
+    [InlineData("hold", "held")]
+    [InlineData("none", "skipped")]
+    public async Task Each_reply_form_appends_a_comment_row_with_its_outcome_the_comment_and_its_type(string form, string outcome)
+    {
+        var context = await Context("effect.pr.reply", new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["form"] = form,
+            ["comment"] = """{"id":"c1","key":"t9"}""",
+            ["decision"] = """{"type":"design"}""",
+            ["body"] = "\"Done.\"",
+            ["fix"] = """{"thread":"t9","commit":"abc1234"}""",
+        });
+
+        _ = await Reply().Dispatch(context, Token);
+
+        var row = Single(await Rows());
+        Assert.Equal("comment", row.GetProperty("kind").GetString());
+        Assert.Equal(outcome, row.GetProperty("outcome").GetString());
+        Assert.Equal("t9", row.GetProperty("comment").GetString());
+        Assert.Equal("design", row.GetProperty("type").GetString());
+        Assert.Equal(form == "fixed" ? "abc1234" : null, row.TryGetProperty("commit", out var commit) ? commit.GetString() : null);
+    }
+
+    [Fact]
+    public async Task A_redelivered_reply_writes_its_comment_row_once()
+    {
+        var context = await Context("effect.pr.reply", new Dictionary<string, string>(StringComparer.Ordinal) { ["form"] = "none", ["comment"] = """{"id":"c1","key":"t9"}""" });
+
+        _ = await Reply().Dispatch(context, Token);
+        _ = await Reply().Dispatch(context, Token);
+
+        _ = Single(await Rows());
+    }
+
+    [Fact]
+    public async Task FixedReplies_appends_a_replied_comment_row_for_each_comment_it_answers()
+    {
+        _ = await _marks.Write(Marked("t9", "fixed", "abc1234", "e:1"), Token);
+        var context = await Context("effect.pr.reply", new Dictionary<string, string>(StringComparer.Ordinal) { ["form"] = "fixedReplies", ["push"] = """{"sha":"abc1234","commits":["abc1234"]}""" });
+
+        _ = await Reply().Dispatch(context, Token);
+
+        var row = Single(await Rows());
+        Assert.Equal(("replied", "t9", "abc1234"), (row.GetProperty("outcome").GetString(), row.GetProperty("comment").GetString(), row.GetProperty("commit").GetString()));
+    }
+
+    private async Task<string[]> Rows() => (await _area.Read("T-4/pr/1", "babysit.jsonl", Token)).Value.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+    private static JsonElement Single(string[] lines) => JsonDocument.Parse(Assert.Single(lines)).RootElement.Clone();
+
+    private sealed class Mask : Core.Text.ITextScrubber
     {
         public string Scrub(string text) => text.Replace(Hidden, "[masked]", StringComparison.Ordinal);
     }
 
-    private PrReplyEffect Reply() => new(_pulls, _facts, _marks, _clock, new Mask());
+    private PrReplyEffect Reply() => new(_pulls, _facts, _marks, _clock, new Mask(), Record);
 
     private PrCommentMark Marked(string comment, string outcome, string commit, string effect) =>
         new(_pr, PrCommentId.From(comment), EditedAt: null, InstanceAddress.From("T-4/pr/1"), outcome, Reason: null, commit, KnownInstants.Epoch, effect);

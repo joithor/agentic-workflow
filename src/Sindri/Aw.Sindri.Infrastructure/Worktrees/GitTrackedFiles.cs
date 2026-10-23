@@ -1,6 +1,6 @@
 using Aw.Kernel;
-using Aw.Sindri.Core.Worktrees;
 using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Worktrees;
 using Aw.Sindri.Infrastructure.Workflow;
 
 namespace Aw.Sindri.Infrastructure.Worktrees;

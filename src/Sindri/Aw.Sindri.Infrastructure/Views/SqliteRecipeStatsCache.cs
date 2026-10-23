@@ -32,7 +32,7 @@ internal sealed class SqliteRecipeStatsCache(ViewsDatabase database, IViewReader
         }
 
         var age = now - found.CachedAt;
-        return Results.Success<RecipeStats?>(age >= TimeSpan.Zero && age < IRecipeStatsCache.MaxAge ? found.Stats : null);
+        return Results.Success(age >= TimeSpan.Zero && age < IRecipeStatsCache.MaxAge ? found.Stats : null);
     }
 
     public async ValueTask<Result<Unit>> Put(RecipeStats stats, long head, DateTimeOffset now, CancellationToken cancellationToken)

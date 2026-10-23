@@ -186,6 +186,32 @@ public sealed class RealFontTextFitTests : IDisposable
         });
     });
 
+    // The Context map card: a long served sentence wraps whole (nothing trimmed), the state word is whole, and every part stays in the window at 900 px and scale 1.3.
+    [Fact]
+    public Task Context_map_card_wraps_its_sentences_whole_and_stays_in_the_window_at_900_px_and_text_scale_1_3() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        _server.MapPublishAnswer = new(System.Net.HttpStatusCode.OK,
+            """{"state":"published-stale","word":"published, code answers stale","reason":"TimedOut","stale":true,"staleRepos":[],"version":14,"until":null,"lines":["aw-split-panes: Code answers are from abcdef0 (older than map v14, which is for 1234567), and this sentence runs on long enough that no window the app allows can show it on one line, so the card has to wrap it","and 3 more"]}""");
+        var (window, shell) = await Show(900, s => s.State == ShellState.Normal && s.Health.ContextMap.IsVisible);
+        shell.GoTo(PageId.System);
+        Scaled(1.3, () =>
+        {
+            Settle(window);
+            var state = Named<TextBlock>(window, "ContextMapState");
+            Assert.False(state.TextLayout.TextLines.Any(l => l.HasCollapsed), state.Text + " is trimmed");
+            var lines = Named<ItemsControl>(window, "ContextMapLines").GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible).ToList();
+            Assert.Equal(2, lines.Count);
+            Assert.True(lines[0].TextLayout.TextLines.Count > 1, "the long sentence did not wrap");
+            foreach (var part in (Control[])[state, .. lines])
+            {
+                Assert.False(part is TextBlock t && t.TextLayout.TextLines.Any(l => l.HasCollapsed), part.Name + " is trimmed");
+                var box = Box(window, part);
+                Assert.True(box.Left >= 0 && box.Right <= window.Bounds.Width + 0.5, $"a part of the card runs out of the window: {box} in {window.Bounds.Size}");
+            }
+        });
+    });
+
     // Two texts of a row share a baseline (the real fonts' ascents differ between Inter and mono).
     [Fact]
     public Task Health_labels_and_values_share_a_baseline_with_the_real_fonts() => OnUi(async () =>

@@ -48,14 +48,17 @@ internal sealed class CliWorkspace : IDisposable
 
     private RunningCli Start(IReadOnlyDictionary<string, string> environment, string[] args)
     {
-        var start = new ProcessStartInfo(DotnetHost())
+        // A background job (the heavy wrapper's 'setsid … &') starts with SIGINT and SIGQUIT ignored, the child inherits that, and .NET
+        // keeps an inherited ignore for those two, so the signal tests would hang. On Linux, env resets them and execs dotnet in place (same pid).
+        string[] host = OperatingSystem.IsLinux() ? ["/usr/bin/env", "--default-signal=INT,QUIT", DotnetHost()] : [DotnetHost()];
+        var start = new ProcessStartInfo(host[0])
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
             WorkingDirectory = Root,
         };
-        foreach (var arg in (string[])["exec", Path.Combine(AppContext.BaseDirectory, "ui-evidence.dll"), .. args])
+        foreach (var arg in (string[])[.. host[1..], "exec", Path.Combine(AppContext.BaseDirectory, "ui-evidence.dll"), .. args])
         {
             start.ArgumentList.Add(arg);
         }

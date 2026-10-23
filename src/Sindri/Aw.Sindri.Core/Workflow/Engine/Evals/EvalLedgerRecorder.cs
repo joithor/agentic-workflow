@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using Aw.Kernel;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -19,22 +20,21 @@ namespace Aw.Sindri.Core.Workflow.Engine.Evals;
 /// </summary>
 public static class EvalLedgerRecorder
 {
+    private static readonly Dictionary<string, string> _noFacts = new(StringComparer.Ordinal);
+
     /// <summary>The case that replays <paramref name="events"/>.</summary>
     /// <param name="name">The case's name.</param>
-    /// <param name="recipe">The instance's recipe, which says which state waits on a child.</param>
-    /// <param name="children">The pinned child recipes, whose declared outputs a child's end may carry.</param>
+    /// <param name="pinned">What the events ran against: the recipe, its pinned children and the build's descriptors.</param>
     /// <param name="events">The instance's 'workflow.*' ledger payloads, oldest first, from its start.</param>
     /// <param name="contents">The stored fact content, by SHA-256.</param>
     /// <returns>The case, or why the events can't be one.</returns>
     public static Result<EvalCase> Record(
         string name,
-        Recipe recipe,
-        IChildRecipeResolver children,
+        LedgerRecording pinned,
         IReadOnlyList<WorkflowEventPayload> events,
         IReadOnlyDictionary<string, JsonElement> contents)
     {
-        ArgumentNullException.ThrowIfNull(recipe);
-        ArgumentNullException.ThrowIfNull(children);
+        ArgumentNullException.ThrowIfNull(pinned);
         ArgumentNullException.ThrowIfNull(events);
         ArgumentNullException.ThrowIfNull(contents);
         if (events.Count == 0 || events[0].Detail is not { } started || !string.Equals(events[0].Trigger, "start", StringComparison.Ordinal))
@@ -48,16 +48,25 @@ public static class EvalLedgerRecorder
             return inputs.Error;
         }
 
-        var steps = Steps(recipe, children, events, started.Delta.Frame?.State ?? recipe.Initial, contents);
+        var replay = new Replay(pinned, contents, new Dictionary<string, string>(started.Delta.Facts ?? _noFacts, StringComparer.Ordinal));
+        var steps = Steps(replay, events, started.Delta.Frame?.State ?? pinned.Recipe.Initial);
         return steps.IsError ? steps.Error : new EvalCase(name, new EvalStartLine(new EvalStart(inputs.Value), Scaffold: null), steps.Value);
     }
 
-    private static Result<List<EvalStepLine>> Steps(Recipe recipe, IChildRecipeResolver children, IReadOnlyList<WorkflowEventPayload> events, string state, IReadOnlyDictionary<string, JsonElement> contents)
+    /// <summary>What a recording reads while it walks the events: what they ran against, the stored content, and the facts the instance kept so far (by SHA-256).</summary>
+    private sealed record Replay(LedgerRecording Pinned, IReadOnlyDictionary<string, JsonElement> Contents, Dictionary<string, string> Kept);
+
+    private static Result<List<EvalStepLine>> Steps(Replay replay, IReadOnlyList<WorkflowEventPayload> events, string state)
     {
         var steps = new List<EvalStepLine>(events.Count - 1);
         for (var i = 1; i < events.Count; i++)
         {
-            var step = Step(events[i], i + 1, recipe.States.GetValueOrDefault(state), children, contents);
+            foreach (var (key, sha) in events[i].Detail?.Delta.Facts ?? _noFacts)
+            {
+                replay.Kept[key] = sha;
+            }
+
+            var step = Step(events[i], i + 1, replay.Pinned.Recipe.States.GetValueOrDefault(state), replay);
             if (step.IsError)
             {
                 return step.Error;
@@ -70,20 +79,26 @@ public static class EvalLedgerRecorder
         return steps;
     }
 
-    private static Result<EvalStepLine> Step(WorkflowEventPayload row, int number, RecipeState? at, IChildRecipeResolver children, IReadOnlyDictionary<string, JsonElement> contents)
+    private static Result<EvalStepLine> Step(WorkflowEventPayload row, int number, RecipeState? at, Replay replay)
     {
         if (row.Detail is not { } detail)
         {
             return KernelErrors.Invalid.With($"event {Text(number)} ({row.Trigger}) carries no detail, so it can't be an eval line (fix: record a history without it)");
         }
 
-        var facts = Facts(detail.Delta.Facts, contents);
+        var facts = Facts(detail.Delta.Facts, replay.Contents);
         if (facts.IsError)
         {
             return facts.Error;
         }
 
-        var trigger = Trigger(row, detail, Outputs(row, at, children, facts.Value), number);
+        var carried = Carried(row, at, replay, Outputs(row, at, replay.Pinned.Children, facts.Value));
+        if (carried.IsError)
+        {
+            return carried.Error;
+        }
+
+        var trigger = Trigger(row, detail, carried.Value, number);
         if (trigger.IsError)
         {
             return trigger.Error;
@@ -104,6 +119,39 @@ public static class EvalLedgerRecorder
             : facts;
         return reported.Count == 0 ? null : reported;
     }
+
+    /// <summary>
+    /// A completed Step's report with the outputs its descriptor requires on the outcome: a delta holds only the facts a report added or
+    /// changed, so one reported again unchanged (the answer log of a round that added nothing, the map an apply left as it was) is
+    /// missing from it, and the line takes it from the facts the instance kept at that point.
+    /// </summary>
+    private static Result<Dictionary<FactKey, JsonElement>?> Carried(WorkflowEventPayload row, RecipeState? at, Replay replay, Dictionary<FactKey, JsonElement>? reported)
+    {
+        if (Reporting(row, at, replay.Pinned.Catalog) is not var (descriptor, outcome))
+        {
+            return reported;
+        }
+
+        var outputs = reported ?? [];
+        foreach (var spec in descriptor.Outputs.Where(o => StepOutputs.CallerWritesOn(o, outcome) && !outputs.ContainsKey(o.Fact) && replay.Kept.ContainsKey(o.Fact.Value))) // why: a fact never written stays out, so the replay reports the same gap the run had
+        {
+            var sha = replay.Kept[spec.Fact.Value];
+            if (!replay.Contents.TryGetValue(sha, out var content))
+            {
+                return KernelErrors.Invalid.With($"no stored content for {spec.Fact.Value} (sha256 {sha}) (fix: record while the instance's facts are kept)");
+            }
+
+            outputs[spec.Fact] = content;
+        }
+
+        return outputs.Count == 0 ? null : outputs;
+    }
+
+    /// <summary>The descriptor of the Step a completed report is on, and the outcome it reports; none for any other row.</summary>
+    private static (BlockDescriptor Descriptor, OutcomeName Outcome)? Reporting(WorkflowEventPayload row, RecipeState? at, BlockCatalog catalog) =>
+        string.Equals(row.Trigger, TriggerNames.StepCompleted, StringComparison.Ordinal) && row.Outcome is { } named && at?.Step is { } step && catalog.Find(step.Use) is { } descriptor
+            ? (descriptor, OutcomeName.From(named))
+            : null;
 
     private static Dictionary<FactKey, JsonElement> Declared(IChildRecipeResolver children, ChildWait wait, Dictionary<FactKey, JsonElement> facts)
     {
@@ -128,10 +176,32 @@ public static class EvalLedgerRecorder
         };
     }
 
-    /// <summary>A stored fact's content as an eval line spells it: its text.</summary>
+    /// <summary>A stored fact's content as an eval line spells it: JSON text of an object or array as that JSON value (the schemas and the recipe's readers see the value), any other text as a JSON string.</summary>
     /// <param name="content">The stored bytes.</param>
-    /// <returns>The content as a JSON string.</returns>
-    public static JsonElement ContentOf(ReadOnlySpan<byte> content) => EvalFacts.OfText(System.Text.Encoding.UTF8.GetString(content));
+    /// <returns>The content as a JSON value.</returns>
+    public static JsonElement ContentOf(ReadOnlySpan<byte> content)
+    {
+        var text = System.Text.Encoding.UTF8.GetString(content);
+        return AsJson(text) ?? EvalFacts.OfText(text);
+    }
+
+    private static JsonElement? AsJson(string text)
+    {
+        if (text.AsSpan().TrimStart() is not ['{' or '[', ..])
+        {
+            return null;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(text);
+            return document.RootElement.Clone();
+        }
+        catch (JsonException)
+        {
+            return null; // why: text that only starts like JSON is still text
+        }
+    }
 
     private static string Text(int value) => value.ToString(CultureInfo.InvariantCulture);
 

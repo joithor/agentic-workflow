@@ -12,6 +12,14 @@ internal sealed partial class JobSheetView : UserControl
         InitializeComponent();
     }
 
+    private void OnCopyId(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is JobSheetViewModel sheet)
+        {
+            _ = sheet.CopyJobId(CancellationToken.None);
+        }
+    }
+
     private void OnCopyCli(object? sender, RoutedEventArgs e)
     {
         if (DataContext is JobSheetViewModel sheet)

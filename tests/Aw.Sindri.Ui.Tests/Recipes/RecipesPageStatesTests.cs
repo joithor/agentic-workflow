@@ -84,7 +84,7 @@ public sealed class RecipesPageStatesTests
     {
         var page = _f.Page();
 
-        Assert.Equal(Aw.Sindri.Ui.ViewModels.Labels.RecipesPageTitle, page.Title);
-        Assert.Equal(Aw.Sindri.Ui.ViewModels.Labels.Recipes, Aw.Sindri.Ui.ViewModels.Labels.Page(Aw.Sindri.Ui.Navigation.PageId.Recipes));
+        Assert.Equal(ViewModels.Labels.RecipesPageTitle, page.Title);
+        Assert.Equal(ViewModels.Labels.Recipes, ViewModels.Labels.Page(Ui.Navigation.PageId.Recipes));
     }
 }

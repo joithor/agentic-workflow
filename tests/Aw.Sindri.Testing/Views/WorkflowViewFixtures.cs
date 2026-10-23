@@ -661,6 +661,32 @@ public static class WorkflowViewFixtures
                 Produced(_triage, "fact:item", "ITM-01JF0 startable", At(10, 12, 11, 58), "step.route", Ref(item: "ITM-01JF0"))),
             [], Counts(7, 0, 0));
 
+    /// <summary>
+    /// A root instance that ended failed: its actions offer 'RerunInstance'. It is its own instance, so no list or fact lookup by id finds two.
+    /// </summary>
+    public static InstanceDetail F5RerunFailed()
+    {
+        var detail = Done();
+        var address = InstanceAddress.From("ITM-01JKX/triage-alert/1");
+        return detail with { Address = address, Id = WorkflowInstanceId.Of(address), ItemId = ItemKey.From("ITM-01JKX"), Title = "429s on stream (failed)", Actions = [Act("RerunInstance")] };
+    }
+
+    /// <summary>A rerun waiting at its desk: it carries <c language="text">again</c>, the address of the failed instance it reruns, and the form recommends an outcome.</summary>
+    public static InstanceDetail F5DeskRecommended()
+    {
+        var detail = TriageDesk();
+        var address = InstanceAddress.From("ITM-01JKY/triage-alert/2");
+        var form = detail.Current.Desk! with { Recommended = new DeskRecommendation("done", "Every check passed and no question is left open.") };
+        return detail with
+        {
+            Address = address,
+            Id = WorkflowInstanceId.Of(address),
+            ItemId = ItemKey.From("ITM-01JKY"),
+            Current = detail.Current with { Desk = form },
+            Again = InstanceAddress.From("ITM-01JKX/triage-alert/1"),
+        };
+    }
+
     // ---- the recipe additions (E-22) ---------------------------------------------------------------------------------
 
     /// <summary>workflow.project: a Linear project input, outputs with their producing states, urgency work.</summary>
@@ -679,6 +705,63 @@ public static class WorkflowViewFixtures
     /// <param name="id">A recipe id of <see cref="FixtureRecipes.All"/>.</param>
     /// <returns>The view.</returns>
     public static RecipeView Recipe(string id) => FixtureRecipes.All.Single(r => r.Id == id).View();
+
+    /// <summary>
+    /// workflow.f5-fields, a fixture-only recipe that sets every F5 field the app reads: the recipe's why, each kind of state (agent, automatic, you, onlyYou, subWorkflow), outcome texts,
+    /// inputs and outputs with and without a label, and transitions with and without an outcome and a label. A terminal state has no kind.
+    /// </summary>
+    public static RecipeView F5FieldsRecipe() => new(
+        RecipeId.From("workflow.f5-fields"), RecipeHash.From("sha256:" + "f5f1e1d5".PadRight(64, '0')), 1, Name: null,
+        [new RecipeInputView("fact:brief", "Brief", FactType.Text, "text", true, Generate: null)],
+        [new RecipeOutputView("fact:report", "Report", FactType.Text, "write")],
+        RecipeUrgency.Work, PathOrdering.Path,
+        [
+            new RecipeStateView("write", 1, null, "An AI writes the first draft.", "Write the draft", RecipeStateKind.Agent, OnOutcome: null,
+                Inputs: [new RecipeFactView("fact:brief", "Brief")], Outputs: [new RecipeFactView("fact:report", "Report"), new RecipeFactView("fact:notes")]),
+            new RecipeStateView("check", 2, null, Why: null, DisplayName: "Check the draft", Kind: RecipeStateKind.Automatic, OnOutcome: null,
+                Inputs: [new RecipeFactView("fact:report", "Report")], Outputs: null),
+            new RecipeStateView("approve", 3, null, "You decide whether it goes on.", "Approve the draft", RecipeStateKind.You,
+                [new RecipeOutcomeText("approve", "Moves on to the hand-over."), new RecipeOutcomeText("revise", "Sends your notes back to the AI.")],
+                [new RecipeFactView("fact:report", "Report")], Outputs: null),
+            new RecipeStateView("confirm", 4, null, Why: null, DisplayName: null, Kind: RecipeStateKind.OnlyYou, OnOutcome: null, Inputs: null, Outputs: [new RecipeFactView("fact:decision")]),
+            new RecipeStateView("handover", 5, null, Why: null, DisplayName: "Hand it over", Kind: RecipeStateKind.SubWorkflow, OnOutcome: null, Inputs: null, Outputs: null),
+            new RecipeStateView("done", 6, null),
+        ],
+        [new RecipeLoopView("revisions", "approve", "write", 3)], "Write, check and hand over",
+        TransitionLabels: [new RecipeTransitionLabelView(["approve"], "write", "step.completed", "you asked for changes")],
+        Why: "Takes a brief to an approved, handed-over report.",
+        Transitions:
+        [
+            new RecipeTransitionView(["write"], "step.completed", "check", Outcome: "done"),
+            new RecipeTransitionView(["check"], "step.completed", "approve", Outcome: "passed"),
+            new RecipeTransitionView(["check"], "step.completed", "write", Outcome: "failed", Label: "problems found: write it again"),
+            new RecipeTransitionView(["approve"], "step.completed", "confirm", Outcome: "approve"),
+            new RecipeTransitionView(["approve"], "step.completed", "write", Outcome: "revise", Label: "you asked for changes"),
+            new RecipeTransitionView(["confirm"], "step.completed", "handover", Outcome: "confirmed"),
+            new RecipeTransitionView(["handover"], "wait.satisfied", "done"),
+            new RecipeTransitionView(["write", "check", "approve", "confirm", "handover"], "command.cancel", "done"),
+        ]);
+
+    /// <summary>
+    /// The incident-loop instance with the state band's times: a state it left carries both enteredAt and leftAt, the current one only enteredAt, and a state not reached neither.
+    /// </summary>
+    public static InstanceDetail F5StateTimes()
+    {
+        var detail = IncidentLoop();
+        var index = 0;
+        var states = detail.States.Select(cell =>
+        {
+            var entered = Today(9, 0) + TimeSpan.FromMinutes(10 * index++);
+            if (cell.Glyph == StateGlyph.Done)
+            {
+                return cell with { EnteredAt = entered, LeftAt = entered + TimeSpan.FromMinutes(10) };
+            }
+
+            return cell.Glyph == StateGlyph.Active ? cell with { EnteredAt = entered } : cell;
+        }).ToList();
+        var address = InstanceAddress.From("ITM-01JK9/incident-response/1");   // its own instance, so no list or fact lookup by id finds two
+        return detail with { Address = address, Id = WorkflowInstanceId.Of(address), ItemId = ItemKey.From("ITM-01JK9"), States = states };
+    }
 
     // ---- the facts route (GetInstanceFact) ---------------------------------------------------------------------------
 

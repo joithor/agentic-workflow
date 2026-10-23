@@ -1,4 +1,6 @@
+using System.Buffers;
 using System.Globalization;
+using System.Text.Json;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Map;
 using Aw.Sindri.Features.ContextCalls;
@@ -22,6 +24,70 @@ internal static class ContextMapText
         $"map v{s.Version.Number} {Word(s.Version.Status)} · {s.Version.Repo.Value} · created {s.Version.Created:O}{(s.ScopedTo is { } repo ? $" · scoped to {repo.Value}" : string.Empty)}\n"
         + $"{Counts(s.Counts)}{Scope(s.ScopedTo)}; {s.Orphaned} orphaned overrides; {s.Retained} retained versions\n")
         + (s.Coverage is { } coverage ? ContextLensText.Coverage(coverage) : string.Empty);
+
+    /// <summary>The publish state as lines under the map's own status: the state in the spec's short form, then the sentences (code index spec 6.4).</summary>
+    internal static string Publish(MapPublishStatusView p) => $"publish: {PublishShort(p)}\n" + string.Concat(p.Lines.Select(static l => "  " + l + "\n"));
+
+    private static string PublishShort(MapPublishStatusView p)
+    {
+        var version = string.Create(CultureInfo.InvariantCulture, $"v{p.Version}");
+        var at = p.Until?.ToLocalTime().ToString("HH:mm", CultureInfo.InvariantCulture);
+        return p.State switch
+        {
+            MapPublishStatusRules.Held => $"held: {version}, until {at}" + (p.WaitingOn is { Count: > 0 } on ? ", on " + string.Join(", ", on) : string.Empty),
+            MapPublishStatusRules.Overdue => $"overdue: {version}, was due {at}",
+            MapPublishStatusRules.PublishedWithoutWaiting => $"published: {version} without waiting ({WithoutWaiting(p.Reason)})",
+            MapPublishStatusRules.PublishedStale => $"published stale: {version} (reason {Kebab(p.Reason)}, {string.Join(", ", p.StaleRepos.Select(static r => r.Repo))} stale)",
+            MapPublishStatusRules.PublishedByHand => $"published by hand: {version}",
+            _ => $"published: {version}",
+        };
+    }
+
+    private static string WithoutWaiting(string? reason) => reason switch
+    {
+        "FirstMap" => "first map",
+        "NoIndex" => "no code index",
+        "WaitOff" => "waiting is off",
+        "IndexBroken" => "code index broken",
+        _ => Kebab(reason),
+    };
+
+    private static string Kebab(string? reason) => reason is null
+        ? "unknown"
+        : string.Concat(reason.Select(static (c, i) => char.IsUpper(c) ? (i == 0 ? string.Empty : "-") + char.ToLowerInvariant(c) : c.ToString()));
+
+    /// <summary>The status document with the publish document's fields beside its own (state, word, reason, stale, staleRepos, until, lines; its version is 'publishedVersion', as 'version' is the map's).</summary>
+    internal static ReadOnlyMemory<byte> WithPublish(ReadOnlyMemory<byte> status, ReadOnlyMemory<byte> publish)
+    {
+        using var map = JsonDocument.Parse(status);
+        using var published = JsonDocument.Parse(publish);
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            writer.WriteStartObject();
+            foreach (var property in map.RootElement.EnumerateObject())
+            {
+                property.WriteTo(writer);
+            }
+
+            foreach (var property in published.RootElement.EnumerateObject())
+            {
+                if (property.NameEquals("version"))
+                {
+                    writer.WritePropertyName("publishedVersion");
+                    property.Value.WriteTo(writer);
+                }
+                else
+                {
+                    property.WriteTo(writer);
+                }
+            }
+
+            writer.WriteEndObject();
+        }
+
+        return buffer.WrittenMemory;
+    }
 
     internal static string Exported(MapExported e) => string.Create(CultureInfo.InvariantCulture,
         $"Exported map v{e.Version} to {e.Path}: {Counts(e.Counts)}\n");

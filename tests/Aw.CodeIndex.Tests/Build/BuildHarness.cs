@@ -43,7 +43,7 @@ internal sealed class BuildHarness
 
     public CodeIndexScope Scope => new([Repo], new CodeIndexCaller(CallerKind.Service, Repo: null));
 
-    public BuildCodeIndexService Service => new(Heads, Snapshot, new StructureWriter(Snapshot, [Parser], Quarantine, Scrubber), new BuildLayers(new EmbeddingsLayer(Embedder, Clock), new GraphLayer(Snapshot, Clock, Graph)), Store, Heavy, Clock);
+    public BuildCodeIndexService Service => new(Heads, Snapshot, new StructureWriter(Snapshot, [Parser], Quarantine, Scrubber), new BuildLayers(new EmbeddingsLayer(Embedder, Clock), new GraphLayer(Snapshot, Clock, Scrubber, Graph)), Store, Heavy, Clock);
 
     public CodeIndexFacade Facade => new(Service, Store, Embedder, Graph);
 

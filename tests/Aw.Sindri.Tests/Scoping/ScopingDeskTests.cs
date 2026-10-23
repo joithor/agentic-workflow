@@ -70,7 +70,7 @@ public sealed class ScopingDeskTests
         Assert.Equal(
             ["acceptance.json", "answers.jsonl", "brief.md", "challenge.json", "coverage.json", "lenses.json", "questions.json", "rounds.jsonl", "runs.json", "scope-map.json", "size.json", "sources.json"],
             response.Files.Where(f => f.Path.StartsWith("scope-packet/", StringComparison.Ordinal)).Select(f => f.Path["scope-packet/".Length..]).Order(StringComparer.Ordinal), StringComparer.Ordinal);
-        Assert.Equal(["acceptance", "coverage", "openQuestions", "scopeMap"], response.Outputs.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);   // fact:scopePacket is the hash the CLI adds
+        Assert.Equal(["acceptance", "coverage", "openQuestions", "recommendation", "scopeMap"], response.Outputs.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);   // fact:scopePacket is the hash the CLI adds
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -137,7 +137,7 @@ public sealed class ScopingDeskTests
     [Fact, Trait("Lane", "unit")]
     public async Task Evidence_with_a_failing_rule_reports_incomplete_with_the_findings_and_writes_no_packet()
     {
-        var facts = ScopingFacts.Expiry().Edit("challenge", n => n["rounds"]![1]!["verdict"] = "found");
+        var facts = ScopingFacts.Expiry().Edit("challenge", n => { var rounds = n["rounds"]!.AsArray(); rounds.RemoveAt(0); rounds[0]!["verdict"] = "found"; });
 
         var response = await Run("evidence", facts);
 

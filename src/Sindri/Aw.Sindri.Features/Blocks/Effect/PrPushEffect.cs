@@ -15,14 +15,15 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 /// that moved is 'headMoved' and nothing is forced. It replies 'pr.pushed' with 'pushed', 'pushedSource' (a commit touches non-test source), 'nothing'
 /// (the workspace is still at the seen head), 'headMoved' or 'rejected', and carries 'fact:push' ('{ sha, commits, comments, source, cause, ciFixes }'): every commit from the lease to the pushed head, oldest first, and 'ciFixes', the previous
 /// 'fact:push' counter plus one when a push whose cause is 'ci' landed (what 'gate.pr.autofix-cap' counts). A dispatch
-/// repeated after its push landed finds the branch at the commit and reads 'pushed' with <see cref="EffectDone.Existed"/>.
+/// repeated after its push landed finds the branch at the commit and reads 'pushed' with <see cref="EffectDone.Existed"/>. A landed push appends a 'push' row to the merge record (BD7), once per effect identity.
 /// </summary>
 /// <param name="pulls">The forge port.</param>
 /// <param name="diff">Reads the workspace's head and changed paths.</param>
 /// <param name="changes">Lists the commits a push carries.</param>
 /// <param name="contents">Reads the facts it takes.</param>
 /// <param name="facts">Stores the fact it replies with.</param>
-internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchChanges changes, IFactContents contents, IFactStore facts) : IEffectKind, IDescribedBlock
+/// <param name="record">The merge record, where the push row goes.</param>
+internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchChanges changes, IFactContents contents, IFactStore facts, IMergeRecord record) : IEffectKind, IDescribedBlock
 {
     private static readonly FactKey _push = FactKey.From("fact:push");
 
@@ -125,6 +126,22 @@ internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchCh
             ["cause"] = pushed.Request.Cause,
             ["ciFixes"] = pushed.CiFixes,
         };
+        if (string.Equals(outcome, "pushed", StringComparison.Ordinal) || string.Equals(outcome, "pushedSource", StringComparison.Ordinal))
+        {
+            var row = new MergeRow(pushed.Request.Instance, pushed.Request.Identity, "push", pushed.Sha, new JsonObject
+            {
+                ["cause"] = pushed.Request.Cause,
+                ["commits"] = commits.DeepClone(),
+                ["comments"] = new JsonArray(),
+                ["source"] = pushed.Source,
+            });
+            var recorded = await record.Append(row, cancellationToken).ConfigureAwait(false);
+            if (recorded.IsError)
+            {
+                return recorded.Error;
+            }
+        }
+
         var stored = await facts.Put(Encoding.UTF8.GetBytes(fact.ToJsonString()), cancellationToken).ConfigureAwait(false);
         return stored.IsError
             ? stored.Error
@@ -150,7 +167,7 @@ internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchCh
 
     private static Result<Request> Build(EffectContext context, JsonElement pr, JsonElement lease, JsonElement workspace, JsonElement? previous) =>
         PrEffectFacts.Link(pr) is { Length: > 0 } link && PrEffectFacts.Head(lease) is { Length: > 0 } seen && PrEffectFacts.Path(workspace) is { Length: > 0 } path
-            ? new Request(link, seen, path, CauseOf(context), CiFixesOf(previous), ShaOf(previous))
+            ? new Request(context.Instance, context.Identity, link, seen, path, CauseOf(context), CiFixesOf(previous), ShaOf(previous))
             : PrEffectFacts.Missing(context, "fact:pr (a link), fact:prState (head.sha) and fact:workspace (a path)");
 
     /// <summary>The counter the previous 'fact:push' carried; 0 when the instance holds none.</summary>
@@ -160,7 +177,7 @@ internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchCh
     private static string? ShaOf(JsonElement? previous) =>
         previous is { ValueKind: JsonValueKind.Object } fact && fact.TryGetProperty("sha", out var sha) && sha.ValueKind == JsonValueKind.String ? sha.GetString() : null;
 
-    private sealed record Request(string Link, string Lease, string Workspace, string Cause, int CiFixes, string? PreviousSha);
+    private sealed record Request(string Instance, string Identity, string Link, string Lease, string Workspace, string Cause, int CiFixes, string? PreviousSha);
 
     private sealed record Pushed(Request Request, string Sha, IReadOnlyList<string> Commits, bool Source, int CiFixes);
 }
