@@ -15,7 +15,8 @@ namespace Aw.Sindri.Features.GetRecipeStats;
 /// </summary>
 /// <param name="registry">Which recipes are registered, and which are started as children.</param>
 /// <param name="source">The stats: cached, or counted from the ledger's workflow rows.</param>
-internal sealed class GetRecipeStatsService(RecipeRegistryReader registry, RecipeStatsSource source) : IService<GetRecipeStatsRequest, RecipeStats>
+/// <param name="babysitter">Counts the babysitter's own figures for 'workflow.pr-babysitter'.</param>
+internal sealed class GetRecipeStatsService(RecipeRegistryReader registry, RecipeStatsSource source, BabysitterStatsSource babysitter) : IService<GetRecipeStatsRequest, RecipeStats>
 {
     public async ValueTask<Result<RecipeStats>> Handle(GetRecipeStatsRequest request, CancellationToken cancellationToken)
     {
@@ -48,6 +49,16 @@ internal sealed class GetRecipeStatsService(RecipeRegistryReader registry, Recip
             return children.Error;
         }
 
-        return await source.Of(request.Id, request.Hash, window.Value, children.Value.Contains(request.Id), cancellationToken).ConfigureAwait(false);
+        var stats = await source.Of(request.Id, request.Hash, window.Value, children.Value.Contains(request.Id), cancellationToken).ConfigureAwait(false);
+        return stats.IsError || !string.Equals(request.Id.Value, BabysitterNames.Recipe, StringComparison.Ordinal) || stats.Value.ChildOnly
+            ? stats
+            : await Babysitter(stats.Value, window.Value, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>The babysitter's own figures, counted on every read (they are never in the cache).</summary>
+    private async ValueTask<Result<RecipeStats>> Babysitter(RecipeStats stats, StatsWindow window, CancellationToken cancellationToken)
+    {
+        var own = await babysitter.Of(window, cancellationToken).ConfigureAwait(false);
+        return own.IsError ? own.Error : stats with { Babysitter = own.Value };
     }
 }

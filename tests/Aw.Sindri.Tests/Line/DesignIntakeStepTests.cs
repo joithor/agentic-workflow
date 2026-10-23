@@ -81,6 +81,22 @@ public sealed class DesignIntakeStepTests
         Assert.Equal("revise", result.Result!.Outcome.Value);
     }
 
+    [Theory]
+    [InlineData("""{"schemaVersion":1,"change":"expiry","surfaces":[]}""")]
+    [InlineData("""{"schemaVersion":1,"change":"expiry","baseSha":"  ","surfaces":[]}""")]
+    public async Task A_scope_map_with_a_blank_baseSha_fails_the_Step_at_intake_naming_the_scope_packet(string scopeMap)
+    {
+        var station = new LineStation();
+        _ = station.Files.Put(LineStation.ScopeDirectory, "scope-map.json", scopeMap);
+
+        var result = await Run(station);
+
+        Assert.Null(result.Result);
+        Assert.Contains("SND-LINE-001", result.Failure, StringComparison.Ordinal);
+        Assert.Contains("baseSha", result.Failure, StringComparison.Ordinal);
+        Assert.Contains(LineStation.ScopeDirectory, result.Failure, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task A_scope_packet_that_hashes_to_something_else_fails_the_Step_naming_both_hashes()
     {
