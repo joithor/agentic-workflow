@@ -201,24 +201,6 @@ public sealed class WholeMapViewModelTests
     }
 
     [Fact]
-    public void A_zoom_filters_the_chips_to_the_answers_features_keeps_every_node_drawn_and_Unzoom_restores_the_chips()
-    {
-        var map = new WholeMapViewModel(() => _utc);
-        var answer = WholeMapLayoutTests.Draft("nodes-small");
-        map.Show(answer);
-        var (nodes, chips) = (map.Geometry!.Nodes.Count, map.Chips.Select(c => c.Key).ToList());
-        var hit = answer.Nodes!.First(n => n.Area == "feature:tabs.tab-groups").Key;
-
-        Assert.True(map.Zoom([hit]));
-
-        Assert.Equal(["feature:tabs.tab-groups"], map.Chips.Select(c => c.Key).ToList());
-        Assert.Equal(nodes, map.Geometry.Nodes.Count);
-        Assert.Equal([hit], [.. map.HitKeys]);
-        map.Unzoom();
-        Assert.Equal(chips, [.. map.Chips.Select(c => c.Key)]);
-    }
-
-    [Fact]
     public void Zooming_into_features_opens_them_beside_the_tiles_that_stay_and_counts_the_ones_left_out()
     {
         var map = new WholeMapViewModel(() => _utc);

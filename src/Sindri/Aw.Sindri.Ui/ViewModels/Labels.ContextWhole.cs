@@ -35,11 +35,6 @@ internal static partial class Labels
     /// <summary>The line when what was asked is not on the whole map.</summary>
     internal const string ContextWholeNoMatch = "None of those items are on the map.";
 
-    /// <summary>The last chip of the one-line feature row: how many chips did not fit.</summary>
-    /// <param name="hidden">How many chips are hidden.</param>
-    /// <returns>"+12 more".</returns>
-    internal static string ContextWholeMoreChips(int hidden) => string.Create(CultureInfo.InvariantCulture, $"+{hidden} more");
-
     /// <summary>The chip when more features were touched than were opened.</summary>
     /// <param name="more">How many features were not opened.</param>
     /// <returns>"2 more features touched".</returns>
@@ -72,9 +67,6 @@ internal static partial class Labels
     /// <param name="members">How many items.</param>
     /// <returns>"Billing, 34 items. Press Enter to open."</returns>
     internal static string ContextWholeTileName(string label, int members) => $"{label}, {ContextWholeMembers(members)}. Press Enter to open.";
-
-    /// <summary>The accessible list of features.</summary>
-    internal const string ContextWholeAreasName = "Features on the map";
 
     /// <summary>The map's accessible name.</summary>
     internal const string ContextWholeCanvasName = "The whole map";

@@ -182,7 +182,7 @@ page must have. The ui lane writes the visual slice spec (in its F3 spec, beside
 | Refusal | 003, 037 and friends from the query | the existing banner with its suggestions, over the whole map instead of an empty stage |
 
 Selecting a node, the inspector, the Files view, the pinned/live switch and the "Why this matters" card keep their F3 behaviour.
-The chip row above the map is one line with a "+N more" chip (N is how many did not fit; a click shows the rest), whichever state the page is in, so the graph is never pushed out of the stage; a search filters it to the answer's chips (owner, 2026-10-23, q84).
+The whole-map page has no chip row: it is the graph (the size line above it, the zoom pill and mini-map over it); a feature is opened from its tile on the map. A search keeps the rest of the map drawn, dimmed (owner, 2026-10-23, q84 and q85).
 
 The card keeps the explain spec's rule: it shows for one starting point only, so on the whole map with nothing chosen it reads
 "Pick a starting point to see why it matters."
@@ -205,7 +205,7 @@ The card keeps the explain spec's rule: it shows for one starting point only, so
   opening on the owner's box for a 500-node map, and panning at the display's frame rate.
 - **Mini-map.** The existing `MiniMapControl` (its node type is the Run canvas's `MiniMapNode`, and it is not focusable) gets an adapter from `areas` and `areaEdges` to `MiniMapNode`, and a keyboard story (arrow keys move the view box), so it works at both levels.
 - **First-open zoom.** "Fit the whole world" may fall below the detail threshold on a 500-node map; the first open therefore fits the world but never below the threshold's floor, and shows area labels (not node labels) when it is under it, so a person always reads something on opening.
-- **Accessibility.** Every area tile is focusable, has an accessible name (label, member count) and opens on Enter; Tab order is columns left to right, then the control row; the dots have no per-dot accessible nodes, so the page keeps an accessible list of areas (and of the answer's nodes when zoomed in) that J and K walk; an area is identified by its label and a shape or pattern as well as its colour, from a bounded palette in `Theme/` (more than the palette's colours reuse with a distinct pattern, no hex outside `Theme/`); focus moves to the zoom target when a query zooms in and back to the starting-point box on zoom out.
+- **Accessibility.** Every area tile is focusable, has an accessible name (label, member count) and opens on Enter; Tab order is columns left to right, then the control row; the dots have no per-dot accessible nodes, so the page keeps an accessible list of the answer's nodes when zoomed in that J and K walk; an area is identified by its label and a shape or pattern as well as its colour, from a bounded palette in `Theme/` (more than the palette's colours reuse with a distinct pattern, no hex outside `Theme/`); focus moves to the zoom target when a query zooms in and back to the starting-point box on zoom out.
 
 ### 3.3 One click
 

@@ -34,7 +34,6 @@ internal sealed partial class WholeMapView : UserControl
         };
         WholeCanvas.SizeChanged += (_, _) => Arrange();
         WholeMiniMap.Centred += (_, e) => Centre(e.Value);
-        WholeAreas.AddHandler(OneLinePanel.VisibleCountChangedEvent, OnChipsFit);
         ViewChanged();
     }
 
@@ -178,36 +177,6 @@ internal sealed partial class WholeMapView : UserControl
             e.Handled = true;
         }
     }
-
-    private void OnAreaChip(object? sender, RoutedEventArgs e)
-    {
-        if (sender is Control { DataContext: WholeAreaTileViewModel tile })
-        {
-            WholeMoreChipsPopup.IsOpen = false;
-            tile.Open();
-        }
-    }
-
-    // The row fits so many chips; the rest are behind "+N more".
-    private void OnChipsFit(object? sender, RoutedEventArgs e)
-    {
-        if (e.Source is not OneLinePanel panel)
-        {
-            return;
-        }
-
-        var hidden = panel.Children.Skip(panel.VisibleCount).Select(c => c.DataContext).OfType<WholeAreaTileViewModel>().ToList();
-        WholeHiddenChips.ItemsSource = hidden;
-        WholeMoreChips.Content = Labels.ContextWholeMoreChips(hidden.Count);
-        AutomationProperties.SetName(WholeMoreChips, Labels.ContextWholeMoreChips(hidden.Count));
-        WholeMoreChips.IsVisible = hidden.Count > 0;
-        if (hidden.Count == 0)
-        {
-            WholeMoreChipsPopup.IsOpen = false;
-        }
-    }
-
-    private void OnMoreChips(object? sender, RoutedEventArgs e) => WholeMoreChipsPopup.IsOpen = !WholeMoreChipsPopup.IsOpen;
 
     private void OnAllFeatures(object? sender, RoutedEventArgs e) => _map?.CloseArea();
 

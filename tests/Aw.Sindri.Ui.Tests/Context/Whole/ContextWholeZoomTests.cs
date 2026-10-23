@@ -161,37 +161,19 @@ public sealed class ContextWholeZoomTests
     }
 
     [Fact]
-    public async Task A_query_filters_the_chips_to_the_features_of_its_answer_while_the_rest_of_the_map_stays_drawn_and_Whole_map_restores_them()
+    public async Task A_query_keeps_every_node_of_the_map_drawn_behind_the_answer_to_be_dimmed_and_Whole_map_restores_it()
     {
         var page = Page(new FakeSindriApi());
         await page.Opened(Token);
-        var (nodes, chips) = (page.Whole.Geometry!.Nodes.Count, page.Whole.Chips.Count);
+        var nodes = page.Whole.Geometry!.Nodes.Count;
         page.AnchorText = Anchor;
 
         await page.Submit(Token);
 
-        var geometry = page.Whole.Geometry!;
-        var answerAreas = geometry.Nodes.Where(n => page.Whole.HitKeys.Contains(n.Key)).Select(n => geometry.Order[n.AreaIndex]).ToHashSet(StringComparer.Ordinal);
-        Assert.Equal(nodes, geometry.Nodes.Count);
-        Assert.Contains(geometry.Nodes, n => !page.Whole.HitKeys.Contains(n.Key));
-        Assert.Equal(answerAreas, page.Whole.Chips.Select(c => c.Key).ToHashSet(StringComparer.Ordinal));
+        Assert.Equal(nodes, page.Whole.Geometry!.Nodes.Count);
+        Assert.Contains(page.Whole.Geometry.Nodes, n => !page.Whole.HitKeys.Contains(n.Key));
         _ = page.BackToWholeMap();
-        Assert.Equal(chips, page.Whole.Chips.Count);
-    }
-
-    [Fact]
-    public async Task By_feature_the_chips_are_the_features_the_answer_is_in_and_the_other_tiles_stay_drawn()
-    {
-        var page = Page(ByArea());
-        await page.Opened(Token);
-        var tiles = page.Whole.Areas.Count;
-        page.AnchorText = Anchor;
-
-        await page.Submit(Token);
-
-        Assert.Equal([ContextAnswers.OpenArea], [.. page.Whole.Chips.Select(c => c.Key)]);
-        Assert.Equal(tiles, page.Whole.Areas.Count);
-        Assert.NotEmpty(page.Whole.Geometry!.Tiles);
+        Assert.Empty(page.Whole.HitKeys);
     }
 
     [Fact]

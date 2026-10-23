@@ -12,21 +12,6 @@ internal sealed partial class WholeMapViewModel
     /// <summary>Whether the map read is the overview of features, which a query reaches through "locate". It stays so while zoomed, when the drawn geometry holds nodes.</summary>
     internal bool AnswerByArea => Answer is { } answer && string.Equals(answer.Detail, "areas", StringComparison.Ordinal);
 
-    /// <summary>The chips of the row over the map: every feature, and while a query is zoomed to, only the features that hold a node of its answer.</summary>
-    public IReadOnlyList<WholeAreaTileViewModel> Chips
-    {
-        get
-        {
-            if (!IsZoomed || Geometry is not { } geometry)
-            {
-                return Areas;
-            }
-
-            var hitAreas = geometry.Nodes.Where(n => HitKeys.Contains(n.Key) && n.AreaIndex < geometry.Order.Count).Select(n => geometry.Order[n.AreaIndex]).ToHashSet(StringComparer.Ordinal);
-            return [.. Areas.Where(a => hitAreas.Contains(a.Key))];
-        }
-    }
-
     /// <summary>Whether the camera is on a query's answer.</summary>
     public bool IsZoomed { get; private set; }
 
