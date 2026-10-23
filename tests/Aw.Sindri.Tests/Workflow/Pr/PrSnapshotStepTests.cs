@@ -228,7 +228,7 @@ public sealed class PrSnapshotStepTests
 
         var state = Fact(await Snapshot(more: more), "fact:prState").GetProperty("base");
 
-        Assert.Equal(("main", "tip-main"), (state.GetProperty("sha").GetString(), state.GetProperty("tip").GetString()));
+        Assert.Equal(("tip-main", "tip-main"), (state.GetProperty("sha").GetString(), state.GetProperty("tip").GetString()));
         Assert.False(state.TryGetProperty("was", out var was) && was.ValueKind == JsonValueKind.String);
     }
 

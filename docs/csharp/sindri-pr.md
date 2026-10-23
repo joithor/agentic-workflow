@@ -51,7 +51,7 @@ Exit codes: 0 no findings, 1 findings, 2 usage or a tool error (a missing direct
 | `step.pr.intake` | `seeded` | Reads the pull request once, outputs `fact:workspace` (empty when none given) and seeds the empty facts every later Step reads (`decision`, `ownerNote`, `handoffNote`, `fix`, `reply`, `recheck`). Appends the `start` row. An unreadable PR fails the Step |
 | `step.pr.snapshot` | `mergedDocsOpen`, `merged`, `closed`, `restack`, `conflict`, `ciRed`, `comments`, `stale`, `docsRed`, `pending`, `green` | One forge read of the PR, its threads, its comment marks and (when the instance holds `fact:docsPr`) the docs PR; the first outcome that holds in §4.3's order. Writes `fact:prState` on every outcome and `fact:mergedSha` when merged (the merge commit `fact:merge` holds, else the head). Appends the `snapshot` row |
 
-`fact:prState` is the PR view in camelCase: `link`, `state` (`green` when the outcome is, else the PR's own), `pullState`, `headSha`, `stale`, `head`, `mergeable`, `reviewDecision`, `unresolvedThreads`, `checks` (`state`, `sha`, `failing`), `queue` (`unhandled`, `held`, `untrusted`, `bots`), `comments` (each with its latest mark), `docs`, `mergeBlockedBy`, `workspaceAhead`, `outcome` and `at`. A comment with a mark is handled; a thread carrying a Sindri marker is Sindri's own and never queued.
+`fact:prState` is the PR view in camelCase: `link`, `state` (`green` when the outcome is, else the PR's own), `pullState`, `headSha`, `stale`, `head`, `mergeable`, `reviewDecision`, `unresolvedThreads`, `checks` (`state`, `sha`, `failing`), `queue` (`unhandled`, `held`, `untrusted`, `bots`), `comments` (each with its latest mark), `base`, `docs`, `mergeBlockedBy`, `workspaceAhead`, `outcome` and `at`. `base` is `{ ref, sha, tip, was }`: `ref` and `tip` are the base branch and its head as the forge reports them now (`PullView.Base`, `PullView.BaseSha`); `sha` is the tip of the base the PR was built on, which `effect.pr.restack` replays after. It follows `tip` on the first snapshot and is then kept: a base that moved on keeps the old tip, and a base that merged and was deleted (the forge moves the PR to the default branch, whose tip says nothing about the old base) keeps its last tip with `was` naming the old branch. A restack that settled at this head (`fact:restack` `restacked` or `nothing`, its `head` the PR's head) sets `sha` to `tip` and clears `was`. A PR first seen after its base merged has no earlier tip to keep. A comment with a mark is handled; a thread carrying a Sindri marker is Sindri's own and never queued.
 
 ## Effects (`Features/Blocks/Effect`)
 
@@ -113,7 +113,7 @@ The times, tokens, owner actions, CI fixes, rechecks and docs counts come from t
 
 | Gap | Why |
 |---|---|
-| Reading `PullView.Base` | `PullView` carries `Base` since #674, but the rows don't read it yet, so `start.base` is null, `step.pr.snapshot` never reports `restack` and `head.ref` and `base` are not in `fact:prState` |
+| Reading `PullView.Base` | `PullView` carries `Base` since #674, but the rows don't read it yet, so `start.base` is null, `step.pr.snapshot` never reports `restack` and `head.ref`, `base.defaultRef` and `base.onto` are not in `fact:prState` (`base.ref`, `base.sha`, `base.tip` and `base.was` are) |
 | `restack` row | `effect.pr.restack` is a descriptor only until the engine's Retarget lands |
 | `docsMerge` row of `docs-merge-owner` | The owner's desk step writes no `doneByHand` or `left` row yet |
 | `effect.pr.open` labels | The open effect does not apply labels yet |
