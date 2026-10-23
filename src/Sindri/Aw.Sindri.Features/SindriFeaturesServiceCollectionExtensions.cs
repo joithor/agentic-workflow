@@ -12,6 +12,7 @@ using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Workflow.ApproveAll;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Stats;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ApplyCommand;
@@ -221,7 +222,7 @@ public static class SindriFeaturesServiceCollectionExtensions
     {
         _ = services.AddScoped<IValidator<StartInstanceRequest>, AcceptAllValidator<StartInstanceRequest>>().AddCommand<StartInstanceRequest, StartInstanceResponse, StartInstanceService>();
         _ = services.AddScoped<IValidator<RerunInstanceRequest>, AcceptAllValidator<RerunInstanceRequest>>().AddCommand<RerunInstanceRequest, StartInstanceResponse, RerunInstanceService>();
-        _ = services.AddScoped<StartFacts>().AddScoped<ClaimHolders>().AddScoped<EngineFilledReport>();   // engine P6 unit (d): SND-WF-012 against workflow_claims
+        _ = services.AddScoped<StartFacts>().AddSingleton<IStartFactCheck, ScopeInputStartCheck>().AddScoped<ClaimHolders>().AddScoped<EngineFilledReport>();   // engine P6 unit (d): SND-WF-012 against workflow_claims
         _ = services.AddScoped<IValidator<ApplyCommandRequest>, AcceptAllValidator<ApplyCommandRequest>>().AddCommand<ApplyCommandRequest, ApplyCommandResponse, ApplyCommandService>();
         _ = services.AddScoped<IValidator<CompleteStepRequest>, AcceptAllValidator<CompleteStepRequest>>().AddCommand<CompleteStepRequest, CompleteStepResponse, CompleteStepService>();
         _ = services.AddScoped<IValidator<IssueNonceRequest>, AcceptAllValidator<IssueNonceRequest>>().AddIssue<IssueNonceRequest, IssueNonceResponse, IssueNonceService>();
@@ -279,7 +280,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddJob<ApproveAllRecipesRequest, ApproveAllResult, ApproveAllRecipesService>(static _ => ApproveAllRecipesAdmission.Key, static r => ApproveAllRecipesService.Summary(r));
         _ = services.AddScoped<IValidator<ListRecipesRequest>, AcceptAllValidator<ListRecipesRequest>>().AddQuery<ListRecipesRequest, ListRecipesResponse, ListRecipesService>();
         _ = services.AddScoped<IValidator<ShowRecipeRequest>, AcceptAllValidator<ShowRecipeRequest>>().AddQuery<ShowRecipeRequest, RecipeView, ShowRecipeService>();
-        _ = services.AddScoped<WorkflowStatRows>().AddScoped<IWorkflowStatRows>(static sp => sp.GetRequiredService<WorkflowStatRows>()).AddScoped<RecipeStatsSource>().AddScoped<IValidator<GetRecipeStatsRequest>, AcceptAllValidator<GetRecipeStatsRequest>>().AddQuery<GetRecipeStatsRequest, RecipeStats, GetRecipeStatsService>();   // API P12
+        _ = services.AddScoped<WorkflowStatRows>().AddScoped<IWorkflowStatRows>(static sp => sp.GetRequiredService<WorkflowStatRows>()).AddScoped<RecipeStatsSource>().AddScoped<BabysitterStatsSource>().AddScoped<IValidator<GetRecipeStatsRequest>, AcceptAllValidator<GetRecipeStatsRequest>>().AddQuery<GetRecipeStatsRequest, RecipeStats, GetRecipeStatsService>();   // API P12
         _ = services.AddScoped<IValidator<ReadInjectionRequest>, AcceptAllValidator<ReadInjectionRequest>>().AddQuery<ReadInjectionRequest, InjectionView, ReadInjectionService>();
         _ = services.AddScoped<IValidator<GetInstanceFactRequest>, AcceptAllValidator<GetInstanceFactRequest>>().AddQuery<GetInstanceFactRequest, FactView, GetInstanceFactService>();
         _ = services.AddScoped<IValidator<GetInstanceScopingRequest>, AcceptAllValidator<GetInstanceScopingRequest>>().AddQuery<GetInstanceScopingRequest, ScopingView, GetInstanceScopingService>();
