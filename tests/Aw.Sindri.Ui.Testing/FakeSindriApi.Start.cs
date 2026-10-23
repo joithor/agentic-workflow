@@ -7,6 +7,7 @@ namespace Aw.Sindri.Ui.Testing;
 internal sealed partial class FakeSindriApi
 {
     private readonly List<StartInstanceRequest> _started = [];
+    private readonly List<string> _reruns = [];
     private int _recipesCalls;
 
     /// <summary>GET /sindri/workflow/recipes' answer.</summary>
@@ -20,6 +21,12 @@ internal sealed partial class FakeSindriApi
 
     /// <summary>Held open until set: a start waits for it (the form is sending meanwhile).</summary>
     public TaskCompletionSource? StartGate { get; set; }
+
+    /// <summary>What a rerun answers: the same started view a start does.</summary>
+    public RouteAnswer RerunAnswer { get; set; } = RouteAnswer.Api("workflow-instances-start", "started");
+
+    /// <summary>The instances asked to run again, in order.</summary>
+    public IReadOnlyList<string> Reruns { get { lock (_gate) { return [.. _reruns]; } } }
 
     /// <summary>Every start body received, in order (a start that never got there is not recorded).</summary>
     public IReadOnlyList<StartInstanceRequest> Started { get { lock (_gate) { return [.. _started]; } } }
@@ -48,5 +55,21 @@ internal sealed partial class FakeSindriApi
 
         await WaitFor(StartGate, cancellationToken).ConfigureAwait(false);
         return Answer<StartedView>(api, WorkflowRoutes.Start, StartAnswer);
+    }
+
+    public async Task<Result<StartedView>> RerunInstance(Uri api, string instanceId, CancellationToken cancellationToken)
+    {
+        if (NotReceived<StartedView>(api) is { } unanswered)
+        {
+            return unanswered;
+        }
+
+        lock (_gate)
+        {
+            _reruns.Add(instanceId);
+        }
+
+        await WaitFor(StartGate, cancellationToken).ConfigureAwait(false);
+        return Answer<StartedView>(api, WorkflowRoutes.Rerun(instanceId), RerunAnswer);
     }
 }
