@@ -8,7 +8,7 @@ namespace Aw.Sindri.Ui.ViewModels.Context.Whole;
 /// It is loading while the read is in flight, ready with an answer (nodes in columns, or one tile per feature when the map is over the node budget),
 /// or failed with Retry, keeping whatever was drawn before.
 /// </summary>
-internal sealed class WholeMapViewModel : ObservableObject
+internal sealed partial class WholeMapViewModel : ObservableObject
 {
     /// <summary>Below this zoom the nodes are drawn as dots in their area's colour with one label per area (spec §3.2, about 35 %).</summary>
     internal const double DotsBelow = 0.35;
@@ -31,6 +31,9 @@ internal sealed class WholeMapViewModel : ObservableObject
 
     /// <summary>Raised when a tile (or its entry in the list) is opened: the page reads that feature in full (area=).</summary>
     internal event EventHandler<ValueEventArgs<string>>? AreaOpenRequested;
+
+    /// <summary>Raised when the camera should show the whole world again.</summary>
+    internal event EventHandler? FitRequested;
 
     /// <summary>Raised when a node of the map is clicked.</summary>
     internal event EventHandler<ValueEventArgs<string>>? NodeChosen;
@@ -130,7 +133,8 @@ internal sealed class WholeMapViewModel : ObservableObject
     internal void Show(WholeMapView answer)
     {
         ArgumentNullException.ThrowIfNull(answer);
-        (_overview, IsAreaOpen, AreaTitle) = (null, false, string.Empty);
+        (_overview, _beforeZoom, IsAreaOpen, AreaTitle) = (null, null, false, string.Empty);
+        (HitKeys, IsZoomed, MoreTouchedText) = (new HashSet<string>(StringComparer.Ordinal), false, string.Empty);
         Answer = answer;
         Geometry = WholeMapLayout.Place(answer);
         Head = Labels.ContextWholeHead(answer.MapVersion);
@@ -204,7 +208,7 @@ internal sealed class WholeMapViewModel : ObservableObject
 
     private void Changed()
     {
-        foreach (var name in (string[])[nameof(IsReady), nameof(IsLoading), nameof(IsFailed), nameof(Head), nameof(ByAreaNote), nameof(HasNote), nameof(SizeText), nameof(ByArea), nameof(Areas), nameof(IsAreaOpen), nameof(AreaTitle)])
+        foreach (var name in (string[])[nameof(IsReady), nameof(IsLoading), nameof(IsFailed), nameof(Head), nameof(ByAreaNote), nameof(HasNote), nameof(SizeText), nameof(ByArea), nameof(Areas), nameof(IsAreaOpen), nameof(AreaTitle), nameof(IsZoomed), nameof(CardText), nameof(MoreTouchedText), nameof(HasMoreTouched)])
         {
             OnChanged(name);
         }

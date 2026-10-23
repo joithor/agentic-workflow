@@ -12,7 +12,7 @@ internal sealed partial class ContextPageViewModel
     public WholeMapViewModel Whole { get; } = new();
 
     /// <summary>Whether the whole map is on the stage: it is read, and neither a query's neighbourhood, the No map state nor a running build covers it.</summary>
-    public bool ShowWhole => ShowMap && Whole.IsReady && !HasStack && !NoMap && !IsBuilding;
+    public bool ShowWhole => ShowMap && Whole.IsReady && !NoMap && !IsBuilding;
 
     /// <summary>Whether the quiet loading row or the failure row shows over the stage.</summary>
     public bool ShowWholeStatus => ShowMap && !HasStack && !NoMap && !IsBuilding && (Whole.IsLoading || Whole.IsFailed);
@@ -21,6 +21,7 @@ internal sealed partial class ContextPageViewModel
     private void InitWhole()
     {
         Whole.AreaOpenRequested += (_, e) => _ = OpenWholeArea(e.Value, CancellationToken.None);
+        Whole.NodeChosen += (_, e) => _ = ChooseWholeNode(e.Value, CancellationToken.None);
         Ports.Follow((_, cancellationToken) => _wholeWanted && !Whole.IsReady && !Whole.IsLoading && !Whole.IsFailed ? ReadWhole(cancellationToken) : Task.CompletedTask);
     }
 

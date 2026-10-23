@@ -73,13 +73,7 @@ internal sealed partial class ContextPage : UserControl
     {
         if (key == Key.Escape)
         {
-            if (!page.InspectorOpen)
-            {
-                return false;
-            }
-
-            page.CloseInspector();
-            return true;
+            return page.Back();   // the inspector closes first, then the camera goes back to the whole map
         }
 
         if (key is Key.F or Key.M)
@@ -114,6 +108,19 @@ internal sealed partial class ContextPage : UserControl
         {
             e.Handled = true;
             _ = page.Submit();
+        }
+        else if (e.Key == Key.Escape && DataContext is ContextPageViewModel back && back.Back())
+        {
+            e.Handled = true;   // the page's own handler skips keys typed in a text box, which is where focus sits after a query
+        }
+    }
+
+    // "Whole map": the answer stops standing out and the camera fits the world again.
+    private void OnWholeMapBack(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is ContextPageViewModel page)
+        {
+            _ = page.BackToWholeMap();
         }
     }
 

@@ -81,6 +81,7 @@ internal sealed partial class ContextPageViewModel
         {
             Show(result.Value, choices: [], fromQuestion);
             NoteRead();
+            await ZoomIntoWhole(api, cancellationToken).ConfigureAwait(true);
         }
         else if (PinnedVersion is not null && string.Equals(result.Error.Code, MapVersionNotRetained, StringComparison.Ordinal))
         {
