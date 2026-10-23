@@ -68,7 +68,7 @@ public sealed class NeedsYouVerbsTests
         var bar = await Bar();
 
         Assert.Equal((true, words), (bar.HasVerbs, Verb(bar, verb).Label));
-        Assert.EndsWith(" " + bar.Verbs[0].Name[(words.Length + 1)..], bar.Verbs[0].Name, StringComparison.Ordinal);
+        Assert.StartsWith(words, bar.Verbs[0].Name, StringComparison.Ordinal);
     }
 
     [Fact]
