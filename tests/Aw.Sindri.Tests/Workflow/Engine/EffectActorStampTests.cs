@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -27,7 +28,7 @@ public sealed class EffectActorStampTests
     [Fact, Trait("Lane", "unit")]
     public void A_recipe_that_sets_actor_keeps_its_own()
     {
-        var own = new Dictionary<string, WithValue> { ["actor"] = new(JsonSerializer.SerializeToElement("human:owner"), Fact: null, Profile: null) };
+        var own = new Dictionary<string, WithValue>(StringComparer.Ordinal) { ["actor"] = new(JsonSerializer.SerializeToElement("human:owner"), Fact: null, Profile: null) };
 
         var applied = Emit(new BlockUse(_merge, own));
 
@@ -39,16 +40,16 @@ public sealed class EffectActorStampTests
     {
         var applied = Emit(new BlockUse(_claim, Empty()));
 
-        Assert.False(Assert.Single(applied.Effects).With.ContainsKey("actor"));
+        Assert.DoesNotContain("actor", Assert.Single(applied.Effects).With.Keys, StringComparer.Ordinal);
     }
 
-    private static Dictionary<string, WithValue> Empty() => [];
+    private static Dictionary<string, WithValue> Empty() => new(StringComparer.Ordinal);
 
     private static Applied Emit(params BlockUse[] effects)
     {
         var recipe = Item with
         {
-            Transitions = [.. Item.Transitions.Select(t => t.From.Contains("startable") && t.To == "claimed" ? t with { Effects = effects } : t)],
+            Transitions = [.. Item.Transitions.Select(t => t.From.Contains("startable", StringComparer.Ordinal) && string.Equals(t.To, "claimed", StringComparison.Ordinal) ? t with { Effects = effects } : t)],
         };
         var trigger = new WaitSatisfied(Inbox, new ResourceWaitSource(ResourceKind.Slot, 3), Outcome: null, new Dictionary<FactKey, FactValue>());
         return Assert.IsType<Applied>(Decide(At(recipe, "startable", entry: 2), recipe, trigger, Gates(("gate.budget.available", GateVerdict.Pass, null))));

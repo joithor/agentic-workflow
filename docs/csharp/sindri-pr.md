@@ -92,8 +92,8 @@ Every row carries `kind`, `identity`, `instance`, `headSha` and `at`; the kind a
 | `recheck`, `docs` | `effect.pr.record` | `result` |
 | `end` | `effect.pr.record` | `terminal` (`merged`, `closed`, `stopped`, `rework`), `reworkNotesHash` (`sha256:` of `fact:reworkNotes`' content, on `rework` only) |
 | `restack` | `effect.pr.restack` | `oldBase`, `newBase`, `outcome`. `headSha` is the pushed head (the seen head when nothing was pushed) |
-| `merge` | `effect.pr.merge` | `method`, `sha`, `actor` (the optional `actor` argument; null without one) |
-| `docsMerge` | `effect.pr.merge-docs` | `docsPr` (null when there is none), `outcome` (`merged`, `pending`, `none`), `trigger` (the babysitter passes `command.merge` after the click and `ownerDesk` from the owner's desk step) and `actor` (an optional argument; null, since the recipe language has no reference to the caller). `headSha` is the docs PR's head. `docs-merge-owner` writes no row yet |
+| `merge` | `effect.pr.merge` | `method`, `sha`, `actor` (the optional `actor` argument, which the engine fills with the trigger's actor when the recipe sets none; null only when a hand-run effect has none) |
+| `docsMerge` | `effect.pr.merge-docs` | `docsPr` (null when there is none), `outcome` (`merged`, `pending`, `none`), `trigger` (the babysitter passes `command.merge` after the click and `ownerDesk` from the owner's desk step) and `actor` (the optional `actor` argument, which the engine fills with the trigger's actor when the recipe sets none). `headSha` is the docs PR's head. `docs-merge-owner` writes no row yet |
 
 A step with no instance address still runs and writes nothing.
 
@@ -150,4 +150,4 @@ The times, tokens, owner actions, CI fixes, rechecks and docs counts come from t
 | `docsMerge` row of `docs-merge-owner` | The owner's desk step writes no `doneByHand` or `left` row yet |
 | `effect.pr.open` labels | The open effect does not apply labels yet |
 | Hand-off hash check, workspace cut | Intake records the hash but does not check it, and does not cut a workspace from the PR head: no port reaches either |
-| `merge.actor`, `push.comments` | The engine's effect context carries no actor and the push effect has no comment ids; both stay null or empty |
+| `push.comments` | The push effect has no comment ids; it stays empty |
