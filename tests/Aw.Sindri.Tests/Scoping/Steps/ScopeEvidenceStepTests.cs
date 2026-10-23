@@ -23,6 +23,12 @@ public sealed class ScopeEvidenceStepTests
 
     private static readonly RepoName _web = RepoName.From("web");
 
+    private static ScopingFacts WithHead(ScopingFacts facts)
+    {
+        facts["baseSha"] = $"\"{Head}\"";
+        return facts;
+    }
+
     private static Task<BlockStepResult> Run(IRunArea area, ScopingFacts facts, IPackets? packets = null)
     {
         var diff = new FakeRunDiff();
@@ -40,7 +46,7 @@ public sealed class ScopeEvidenceStepTests
 
         Assert.Equal("complete", result.Result!.Outcome.Value);
         Assert.Equal(["acceptance", "coverage", "openQuestions", "recommendation", "scopeMap", "scopePacket"], ScopingStepContexts.Keys(result), StringComparer.Ordinal);
-        var expected = ScopePacket.Build(new ScopeFacts(Gold()));
+        var expected = ScopePacket.Build(new ScopeFacts(WithHead(Gold())));
         Assert.NotEmpty(expected);
         foreach (var file in expected)
         {
@@ -118,14 +124,13 @@ public sealed class ScopeEvidenceStepTests
     }
 
     [Fact]
-    public async Task A_model_written_baseSha_in_the_facts_never_reaches_the_scope_map()
+    public void A_model_written_baseSha_in_the_scope_map_fact_is_replaced_by_the_stamped_one_or_dropped()
     {
-        var area = new InMemoryRunArea();
+        var stamped = WithHead(Gold().Edit("scopeMap", n => n["baseSha"] = "deadbeef"));
+        var bare = Gold().Edit("scopeMap", n => n["baseSha"] = "deadbeef");
 
-        _ = await Run(area, Gold().Edit("scopeMap", n => n["baseSha"] = "deadbeef"));
-
-        var map = JsonNode.Parse((await area.Read(ScopingStepContexts.Address, "scope-packet/scope-map.json", Token)).Value)!;
-        Assert.Equal(Head, (string?)map["baseSha"]);
+        Assert.Equal(Head, (string?)JsonNode.Parse(ScopePacket.Build(new ScopeFacts(stamped))[0].Content)!["baseSha"]);
+        Assert.Null(JsonNode.Parse(ScopePacket.Build(new ScopeFacts(bare))[0].Content)!["baseSha"]);
     }
 
     [Fact]
