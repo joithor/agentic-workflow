@@ -148,6 +148,22 @@ public sealed class ContextWholeZoomTests
     }
 
     [Fact]
+    public async Task A_second_query_while_zoomed_by_feature_zooms_again_and_is_not_refused()
+    {
+        var page = Page(ByArea());
+        await page.Opened(Token);
+        page.AnchorText = Anchor;
+        await page.Submit(Token);
+
+        await page.Submit(Token);
+
+        Assert.Equal((string.Empty, true), (page.Problem, page.IsZoomedIn));
+        Assert.All(page.Whole.Geometry!.Nodes, n => Assert.Contains(n.Key, page.Whole.HitKeys));
+        _ = page.BackToWholeMap();
+        Assert.Equal((true, 0), (page.Whole.ByArea, page.Whole.Geometry!.Nodes.Count));
+    }
+
+    [Fact]
     public async Task An_answer_whose_nodes_are_in_no_feature_is_a_refusal_over_the_overview()
     {
         var api = new FakeSindriApi
