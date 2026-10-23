@@ -730,9 +730,9 @@ public static class WorkflowViewFixtures
         [], RecipeUrgency.Work, PathOrdering.Path, [new RecipeStateView("intake", 1, null), new RecipeStateView("classify", 2, null), new RecipeStateView("done", 3, null)], [], "No outputs");
 
     /// <summary>The recipe view of one fixture recipe, by recipe id ('workflow.step'): the same declaration its instances and list rows are built from.</summary>
-    /// <param name="id">A recipe id of <see cref="FixtureRecipes.All"/>.</param>
+    /// <param name="id">A recipe id of <see cref="FixtureRecipes.All"/>, or workflow.design.</param>
     /// <returns>The view.</returns>
-    public static RecipeView Recipe(string id) => FixtureRecipes.All.Single(r => r.Id == id).View();
+    public static RecipeView Recipe(string id) => FixtureRecipes.All.Append(FixtureRecipes.Design).Single(r => r.Id == id).View();
 
     /// <summary>
     /// workflow.f5-fields, a fixture-only recipe that sets every F5 field the app reads: the recipe's why, each kind of state (agent, automatic, you, onlyYou, subWorkflow), outcome texts,

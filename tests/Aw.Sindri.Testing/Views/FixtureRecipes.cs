@@ -82,7 +82,7 @@ public static class FixtureRecipes
         [In("fact:request", "Request", FactType.Text, "text")], []);
 
     /// <summary>
-    /// workflow.design v7 as far as the ask desk goes (fixture-only; the ask desk is as far as it goes): the lens log's 'needsOwner' leaves every question of the round in fact:escalation (a list),
+    /// workflow.design v7 as far as the ask desk goes (fixture-only, not in <see cref="All"/>: it is not held to its file, which has more states and inputs; its golden is registered by name): the lens log's 'needsOwner' leaves every question of the round in fact:escalation (a list),
     /// and the ask desk collects fact:answers, one entry per question. Neither fact is a declared output of the shipped recipe; the fixture declares them so the facts list shows them.
     /// </summary>
     public static RecipeShape Design { get; } = new("workflow.design", 7, "e3b5a1c4", RecipeUrgency.Work,
@@ -92,5 +92,5 @@ public static class FixtureRecipes
         [Out("fact:escalation", "Questions", FactType.Payload, "lens-log"), Out("fact:answers", "Answers", FactType.Payload, "ask")]);
 
     /// <summary>Every shape.</summary>
-    public static IReadOnlyList<RecipeShape> All { get; } = [Step, Item, DevDesk, DevTriage, Incident, Triage, Project, Intake, Fork, Design];
+    public static IReadOnlyList<RecipeShape> All { get; } = [Step, Item, DevDesk, DevTriage, Incident, Triage, Project, Intake, Fork];
 }
