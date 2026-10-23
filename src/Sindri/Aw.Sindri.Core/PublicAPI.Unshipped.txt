@@ -17590,21 +17590,3 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.PayloadFacts.Instruction(Aw.Sindri
 static Aw.Sindri.Core.Workflow.Engine.Runtime.PayloadFacts.Violation(Aw.Sindri.Core.Workflow.Ids.FactKey fact, System.ReadOnlySpan<byte> content) -> string?
 static Aw.Sindri.Core.Workflow.Engine.Runtime.PayloadFacts.OutputsOf(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor! descriptor) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.PayloadFacts.WithShapes(System.Collections.Generic.IReadOnlyList<string!>? instructions, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>? payload) -> System.Collections.Generic.IReadOnlyList<string!>?
-Aw.Sindri.Core.Prove.RedTestsFact
-Aw.Sindri.Core.Prove.RedTestsFact.Entries.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Prove.RedEntry!>!
-Aw.Sindri.Core.Prove.RedTestsFact.Problem.get -> string?
-Aw.Sindri.Core.Prove.RedTestsFact.RedCommit() -> (string? Commit, string? Problem)
-Aw.Sindri.Core.Prove.RedTestsFact.RedTestsFact(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Prove.RedEntry!>! Entries, string? Problem) -> void
-const Aw.Sindri.Core.Prove.RedTestsFact.Shape = "{ \"<acceptance item id>\": { \"tests\": [\"<test id>\" | { \"id\": \"<test id>\", \"path\": \"<test file>\" }], \"appOnly\": { \"signal\": \"<signal id>\" }, \"commit\": \"<red commit sha>\", \"output\": \"<failing run, trimmed>\" } } (one key per acceptance item and nothing else at the top level; the value may also be just a list of test ids)" -> string!
-static Aw.Sindri.Core.Prove.RedTestsFact.Parse(System.Text.Json.Nodes.JsonNode? fact) -> Aw.Sindri.Core.Prove.RedTestsFact!
-Aw.Sindri.Core.Prove.RedEntry
-Aw.Sindri.Core.Prove.RedEntry.AppOnly.get -> bool
-Aw.Sindri.Core.Prove.RedEntry.Commit.get -> string?
-Aw.Sindri.Core.Prove.RedEntry.Item.get -> string!
-Aw.Sindri.Core.Prove.RedEntry.Problem.get -> string?
-Aw.Sindri.Core.Prove.RedEntry.RedEntry(string! Item, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Prove.RedTest!>! Tests, bool AppOnly, string? Commit, string? Problem) -> void
-Aw.Sindri.Core.Prove.RedEntry.Tests.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Prove.RedTest!>!
-Aw.Sindri.Core.Prove.RedTest
-Aw.Sindri.Core.Prove.RedTest.Id.get -> string!
-Aw.Sindri.Core.Prove.RedTest.Path.get -> string?
-Aw.Sindri.Core.Prove.RedTest.RedTest(string! Id, string? Path) -> void

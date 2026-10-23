@@ -8,26 +8,26 @@ namespace Aw.Sindri.Core.Prove;
 /// </summary>
 /// <param name="Entries">One entry per key, in the fact's order.</param>
 /// <param name="Problem">Why the fact as a whole is not an object; null otherwise.</param>
-public sealed record RedTestsFact(IReadOnlyList<RedEntry> Entries, string? Problem)
+internal sealed record RedTestsFact(IReadOnlyList<RedEntry> Entries, string? Problem)
 {
     /// <summary>The shape, as the agent and every refusal state it.</summary>
-    public const string Shape = "{ \"<acceptance item id>\": { \"tests\": [\"<test id>\" | { \"id\": \"<test id>\", \"path\": \"<test file>\" }], \"appOnly\": { \"signal\": \"<signal id>\" }, \"commit\": \"<red commit sha>\", \"output\": \"<failing run, trimmed>\" } } (one key per acceptance item and nothing else at the top level; the value may also be just a list of test ids)";
+    internal const string Shape = "{ \"<acceptance item id>\": { \"tests\": [\"<test id>\" | { \"id\": \"<test id>\", \"path\": \"<test file>\" }], \"appOnly\": { \"signal\": \"<signal id>\" }, \"commit\": \"<red commit sha>\", \"output\": \"<failing run, trimmed>\" } } (one key per acceptance item and nothing else at the top level; the value may also be just a list of test ids)";
 
     /// <summary>Parses <paramref name="fact"/>; null and <c language="text">{}</c> hold no entry.</summary>
     /// <param name="fact">The fact.</param>
     /// <returns>The parsed fact.</returns>
-    public static RedTestsFact Parse(JsonNode? fact) => fact switch
+    internal static RedTestsFact Parse(JsonNode? fact) => fact switch
     {
-        null => new RedTestsFact([], null),
-        JsonObject obj => new RedTestsFact([.. obj.Select(static e => Entry(e.Key, e.Value))], null),
+        null => new RedTestsFact([], Problem: null),
+        JsonObject obj => new RedTestsFact([.. obj.Select(static e => Entry(e.Key, e.Value))], Problem: null),
         _ => new RedTestsFact([], $"fact:redTests must be an object keyed by item id, not {(fact is JsonArray ? "a list" : "a value")}: {Shape}"),
     };
 
     /// <summary>The red commit the entries name and why they can't be used as one, if they can't: none named, or two different ones.</summary>
     /// <returns>The commit, or the problem.</returns>
-    public (string? Commit, string? Problem) RedCommit()
+    internal (string? Commit, string? Problem) RedCommit()
     {
-        var named = Entries.Where(static e => e.Commit is not null).Select(static e => (e.Item, Commit: e.Commit!)).ToList();
+        var named = Entries.Select(static e => (e.Item, e.Commit)).Where(static e => e.Commit is not null).Select(static e => (e.Item, Commit: e.Commit ?? string.Empty)).ToList();
         return named.Select(static n => n.Commit).Distinct(StringComparer.Ordinal).Count() switch
         {
             0 => (null, $"no item names the red commit the tests are run on; put \"commit\" on each item: {Shape}"),
@@ -61,7 +61,7 @@ public sealed record RedTestsFact(IReadOnlyList<RedEntry> Entries, string? Probl
         var commitName = string.IsNullOrWhiteSpace(text) ? null : text;
         return body["tests"] switch
         {
-            null => new RedEntry(item, [], appOnly is not null, commitName, null),
+            null => new RedEntry(item, [], appOnly is not null, commitName, Problem: null),
             JsonArray list => Tested(item, list, appOnly is not null, commitName),
             _ => Wrong(item, "has \"tests\" that is not a list"),
         };
@@ -72,36 +72,24 @@ public sealed record RedTestsFact(IReadOnlyList<RedEntry> Entries, string? Probl
         var tests = new List<RedTest>();
         foreach (var t in list)
         {
-            if (t is JsonValue v && v.TryGetValue<string>(out var id) && !string.IsNullOrWhiteSpace(id))
-            {
-                tests.Add(new RedTest(id, null));
-            }
-            else if (t is JsonObject o && o["id"] is JsonValue idValue && idValue.TryGetValue<string>(out var named) && !string.IsNullOrWhiteSpace(named))
-            {
-                tests.Add(new RedTest(named, o["path"] is JsonValue p && p.TryGetValue<string>(out var path) ? path : null));
-            }
-            else
+            if (Test(t) is not { } test)
             {
                 return Wrong(item, "lists a test that is neither an id nor { id, path }");
             }
+
+            tests.Add(test);
         }
 
-        return new RedEntry(item, tests, appOnly, commit, null);
+        return new RedEntry(item, tests, appOnly, commit, Problem: null);
     }
+
+    private static RedTest? Test(JsonNode? node) => node switch
+    {
+        JsonValue v when v.TryGetValue<string>(out var id) && !string.IsNullOrWhiteSpace(id) => new RedTest(id, Path: null),
+        JsonObject o when o["id"] is JsonValue i && i.TryGetValue<string>(out var named) && !string.IsNullOrWhiteSpace(named) => new RedTest(named, o["path"] is JsonValue p && p.TryGetValue<string>(out var path) ? path : null),
+        _ => null,
+    };
 
     private static RedEntry Wrong(string item, string what) =>
         new(item, [], AppOnly: false, Commit: null, $"fact:redTests: \"{item}\" {what}; expected {Shape}");
 }
-
-/// <summary>One item's entry of <see cref="RedTestsFact"/>.</summary>
-/// <param name="Item">The key.</param>
-/// <param name="Tests">The tests it names.</param>
-/// <param name="AppOnly">Whether it records an app-only signal instead of (or beside) tests.</param>
-/// <param name="Commit">The entry's red commit; null when it names none.</param>
-/// <param name="Problem">Why the entry is in none of the accepted shapes, naming the item; null otherwise.</param>
-public sealed record RedEntry(string Item, IReadOnlyList<RedTest> Tests, bool AppOnly, string? Commit, string? Problem);
-
-/// <summary>One red test.</summary>
-/// <param name="Id">The test id.</param>
-/// <param name="Path">The file it is in; null for the short form.</param>
-public sealed record RedTest(string Id, string? Path);
