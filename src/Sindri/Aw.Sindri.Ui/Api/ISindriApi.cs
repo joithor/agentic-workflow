@@ -178,13 +178,6 @@ internal partial interface ISindriApi
     /// <returns>The started (or existing) instance, the API's refusal (SND-WF-012, SND-WF-014, SND-RECIPE-001/005/006, SND-CLI-003) as served, or SND-UI-002/003.</returns>
     public Task<Result<StartedView>> StartInstance(Uri api, StartInstanceRequest request, CancellationToken cancellationToken);
 
-    /// <summary>POST /sindri/workflow/instances/{instanceId}/rerun (RerunInstance, desk): starts the same recipe again on the same item with the same inputs, as the next attempt; sent once, never retried, no nonce.</summary>
-    /// <param name="api">The base URL.</param>
-    /// <param name="instanceId">The ended instance.</param>
-    /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>The new instance, the API's refusal as served, or SND-UI-002/003.</returns>
-    public Task<Result<StartedView>> RerunInstance(Uri api, string instanceId, CancellationToken cancellationToken);
-
     // LANE ANCHOR U9: the context reads and the review send, one method each (the client's are in SindriApiClient.Context.cs, the routes in ContextRoutes); U9e adds Subgraph. Insert immediately below this marker, never between the markers.
 
     /// <summary>GET /sindri/context/lenses (context spec §8): the three bands around an anchor or a set of them. A read of the context database, so it never waits on the views.</summary>

@@ -66,15 +66,21 @@ internal sealed partial class RunPageViewModel
         FailureStep = FailedStepName(bad);
         FailureText = failed ? Labels.RunNoDetail : string.Empty;
         NextOptions = end is null ? [] : OptionsOf(line);
-        Rerun = end is not null && line.Actions.Contains(RerunAction, StringComparer.Ordinal) ? catalog.On(RerunAction, line.Address, ct => RerunLine(line.Id, ct)) : null;
-        _again = line.Again;
-        AgainText = line.Again is { Length: > 0 } old ? Labels.RunAgainOf(old) : string.Empty;
-        OnChanged(nameof(HasAgain));
+        Attempts(line, ended: end is not null);
         if (end is not null)
         {
             Cancel = null;   // nothing left to cancel
             StartedText = Took(line, children);
         }
+    }
+
+    // Run again (an ended run that lists it) and the link back to the run this one is another attempt of.
+    private void Attempts(InstanceDetail line, bool ended)
+    {
+        Rerun = ended && line.Actions.Contains(RerunAction, StringComparer.Ordinal) ? catalog.On(RerunAction, line.Address, ct => RerunLine(line.Id, ct)) : null;
+        _again = line.Again;
+        AgainText = line.Again is { Length: > 0 } old ? Labels.RunAgainOf(old) : string.Empty;
+        OnChanged(nameof(HasAgain));
     }
 
     // Run again: the server starts the next attempt; when it answers, this page goes to the new run.
