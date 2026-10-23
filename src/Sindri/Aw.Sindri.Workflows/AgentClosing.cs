@@ -13,8 +13,9 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="diff">The diff signal.</param>
 /// <param name="launcher">Stops the session.</param>
 /// <param name="flushUsage">Takes the final usage sample (the sampler is scoped, this class is not).</param>
+/// <param name="refusals">Forgets a refusal the watch never took.</param>
 /// <param name="logger">Where a failed flush or stop is logged.</param>
-internal sealed partial class AgentClosing(IAgentSessions sessions, IRunDiff diff, ILauncher launcher, UsageFlush flushUsage, ILogger<AgentClosing> logger)
+internal sealed partial class AgentClosing(IAgentSessions sessions, IRunDiff diff, ILauncher launcher, UsageFlush flushUsage, ReportRefusals refusals, ILogger<AgentClosing> logger)
 {
     /// <summary>Measures (when asked) and stops.</summary>
     /// <param name="run">The run.</param>
@@ -25,6 +26,7 @@ internal sealed partial class AgentClosing(IAgentSessions sessions, IRunDiff dif
         ArgumentNullException.ThrowIfNull(run);
         var launch = LaunchId.From(run.Launch);
         var closed = run.Measure ? await Measure(run, launch, cancellationToken).ConfigureAwait(false) : new AgentClosed(Tokens: 0, EmptyDiff: false);
+        refusals.Discard(launch);   // the Step has failed or reported by now; nothing will ask for it
         var stopped = await launcher.Stop(launch, cancellationToken).ConfigureAwait(false);
         if (stopped.IsError)
         {

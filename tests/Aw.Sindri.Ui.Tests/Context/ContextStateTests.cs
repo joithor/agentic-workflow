@@ -148,6 +148,6 @@ public sealed class ContextStateTests
             await follow(new Uri("http://127.0.0.1:1/"), Token);
         }
 
-        Assert.Equal((ContextOverlay.None, true), (page.Overlay, page.MapVisible));
+        Assert.Equal((ContextOverlay.None, true), (page.Overlay, page.ShowWhole));   // the map is read again: the whole map is what shows, the query zoomed into it
     }
 }

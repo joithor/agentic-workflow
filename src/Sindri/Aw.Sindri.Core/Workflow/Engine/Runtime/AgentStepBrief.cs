@@ -13,8 +13,9 @@ public static class AgentStepBrief
     /// <param name="run">The run: the instance, the run token and the Step.</param>
     /// <param name="descriptor">The Step's descriptor, or null when the catalog doesn't know it.</param>
     /// <param name="instructions">What the Step is told to do (<see cref="IAgentStepInstructions.Lines"/>), after the first line; none for a Step that has no instructions.</param>
+    /// <param name="factFiles">The names of the fact files the launch wrote into the run folder (generated for every Step, never per recipe); none when it wrote none.</param>
     /// <returns>The brief.</returns>
-    public static string Render(AgentStepRun run, BlockDescriptor? descriptor, IReadOnlyList<string>? instructions = null)
+    public static string Render(AgentStepRun run, BlockDescriptor? descriptor, IReadOnlyList<string>? instructions = null, IEnumerable<string>? factFiles = null)
     {
         ArgumentNullException.ThrowIfNull(run);
         var lines = new List<string> { $"Sindri Step brief. Instance {run.Address.Value}, run {run.Run.Value}, state {run.Step.State}." };
@@ -22,6 +23,11 @@ public static class AgentStepBrief
         if (descriptor is { Inputs.Count: > 0 })
         {
             lines.Add("You read: " + string.Join(", ", descriptor.Inputs.Select(static i => i.Value)) + ".");
+        }
+
+        if (factFiles?.Order(StringComparer.Ordinal).ToArray() is { Length: > 0 } written)
+        {
+            lines.Add($"The facts you read that are set are already in the run folder {RunFolder}, one JSON file each: {string.Join(", ", written)}.");
         }
 
         var outcomes = descriptor?.Outcomes ?? [];

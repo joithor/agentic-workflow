@@ -132,6 +132,7 @@ public static partial class InstanceViews
             view.StartedBy)
         {
             Again = view.Again,
+            AllowedCommands = [.. view.AllowedCommands.Where(static c => c.Verb is not null)],
         };
     }
 
