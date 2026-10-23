@@ -6,4 +6,5 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// <param name="Kind">Park, escalation or takeover.</param>
 /// <param name="Reason">A park's reason.</param>
 /// <param name="Question">The question or detail the human reads, scrubbed.</param>
-public sealed record OpenQuestion(SuspensionKind Kind, ParkReason? Reason, string Question);
+/// <param name="Code">A park's typed code (<see cref="ParkCodes.Of"/>); null when it has none.</param>
+public sealed record OpenQuestion(SuspensionKind Kind, ParkReason? Reason, string Question, string? Code = null);

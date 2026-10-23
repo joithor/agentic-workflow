@@ -29,6 +29,10 @@ public sealed record Suspension(
     /// </summary>
     public RemainingTimer? Remaining { get; init; }
 
+    /// <summary>The typed code of the refusal that made this park (SND-WF-010, SND-WF-011, SND-RECIPE-005, SND-RECIPE-006), where one did; null (not written) otherwise. <see cref="ParkCodes.Of"/> adds the code a reason implies.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? Code { get; init; }
+
     /// <summary>
     /// A drift park the re-approval already ended while a takeover held the instance: it waits in the queue only to
     /// re-send its effects once nothing else holds the instance, and is never made the current suspension (spec §3.8).
