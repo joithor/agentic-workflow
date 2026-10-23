@@ -11,7 +11,8 @@ namespace Aw.Sindri.Core.NeedsYou;
 /// <summary>
 /// The 'park' rows (API spec section 3.6, API P11): an engine park or escalation, an open desk task and an idle takeover, each keyed
 /// by the instance's opaque id. The title is the item's (already scrubbed), the reason is words for the park's reason: the ledger
-/// holds no question text, so none reaches a row.
+/// holds no question text, so none reaches a row. A dispatch park's row carries the recorded refusal (code and message), which is
+/// the effect's own error, not question text.
 /// </summary>
 public static partial class NeedsYouRows
 {
@@ -32,7 +33,7 @@ public static partial class NeedsYouRows
     {
         ArgumentNullException.ThrowIfNull(suspension);
         var answer = ParkAnswers.For(new ParkShape(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors is not null), address, child: suspension.MirrorsAddress);
-        var (label, words) = Words(suspension);
+        var (label, words) = Words(suspension, refusal);
         var shape = new EngineRow("park:", label, $"{words} ({address.Value})", Urgency.Pulse, answer?.Kind,
             answer?.ActionId ?? _approveRecipe, answer is null ? [_approveRecipe, _cancel] : [answer.ActionId], answer?.Cli ?? Status(address), answer?.Via, answer?.Child);
         return Row(item, address, shape, since, scrubber);
@@ -86,7 +87,7 @@ public static partial class NeedsYouRows
             shape.Child);
     }
 
-    private static (string Label, string Words) Words(SuspensionSummary s) => s switch
+    private static (string Label, string Words) Words(SuspensionSummary s, string? refusal) => s switch
     {
         { Kind: SuspensionKind.Escalation, Escalation: EscalationKind.Gate } => ("escalated · gate", "a gate escalated: accept or reject"),
         { Kind: SuspensionKind.Escalation, Escalation: EscalationKind.Timeout } => ("escalated · timeout", "a timeout escalated"),
@@ -98,6 +99,7 @@ public static partial class NeedsYouRows
         { Reason: ParkReason.Timeout } => ("park · timeout", "it ran past its time"),
         { Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Revoked } => ("park · spec conflict", "its recipe was revoked"),
         { Reason: ParkReason.SpecConflict, ParkKind: ParkKind.ChildRevoked } => ("park · spec conflict", "a child's recipe was revoked"),
+        { Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Dispatch } => ("park · dispatch refused", refusal ?? "an effect was refused"),
         { Reason: ParkReason.SpecConflict } => ("park · spec conflict", "its recipe drifted since approval"),
         { Reason: ParkReason.NoRuntime } => ("park · no runtime", "no runtime runs its step"),
         _ => ("park", "it is parked"),

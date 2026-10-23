@@ -133,7 +133,7 @@ public sealed class ParkRowsTests
     {
         var row = NeedsYouRows.ForPark(Item(), _address, Park(ParkReason.SpecConflict, ParkKind.Dispatch), _since, _plain, refusal: "SND-WF-010: fact:nextPhase must be a phase");
 
-        Assert.Equal("park \u00b7 dispatch refused", row.Label);
+        Assert.Equal("park · dispatch refused", row.Label);
         Assert.Contains("SND-WF-010: fact:nextPhase must be a phase", row.Reason, StringComparison.Ordinal);
         Assert.DoesNotContain("drifted", row.Reason, StringComparison.Ordinal);
     }
