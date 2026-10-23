@@ -18,10 +18,11 @@ internal sealed class StageCellViewModel
     /// <param name="isBlocked">True when a required input is missing and this is the state the instance waits in.</param>
     /// <param name="names">The recipes' state names; null names the state by its id.</param>
     /// <param name="recipeId">The recipe the cell belongs to, for <paramref name="names"/>.</param>
-    internal StageCellViewModel(StateCell cell, bool isCurrent, bool isBlocked, StateNames? names = null, string recipeId = "")
+    /// <param name="stateName">The state in the recipe's words when the caller already has them (the frame's recipe lookup); it wins over <paramref name="names"/>.</param>
+    internal StageCellViewModel(StateCell cell, bool isCurrent, bool isBlocked, StateNames? names = null, string recipeId = "", string? stateName = null)
     {
         _cell = cell;
-        StateName = names is null ? cell.State : names.Of(recipeId, cell.State);
+        StateName = stateName ?? (names is null ? cell.State : names.Of(recipeId, cell.State));
         IsCurrent = isCurrent;
         IsBlocked = isBlocked;
         var badge = cell.Badge is { } b ? Labels.CellBadge(b.Kind, b.Reason) : string.Empty;
@@ -29,10 +30,11 @@ internal sealed class StageCellViewModel
         Detail = string.Join(' ', new[] { isBlocked ? badge : string.Empty, Parts(cell) }.Where(p => p.Length > 0));
     }
 
-    private string StateName { get; }
-
     /// <summary>The state this cell is.</summary>
     public string State => _cell.State;
+
+    /// <summary>The state in words: the recipe's name for it when served, else its id.</summary>
+    public string StateName { get; }
 
     /// <summary>The leading mark: the progress glyph, the engine badge, or the blocked dash.</summary>
     public string Glyph { get; }
