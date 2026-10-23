@@ -77,8 +77,11 @@ agentic-workflow` afterwards for the layer words (`structure ok, graph ok, embed
 
 **6. Context map.** `sindri context map refresh` builds a draft map, cleans the review queue with the cleanup agent, and
 promotes the draft as you (no typed phrase; see `docs/sindri/context.md`, "Refreshing the map with no human step"). With
-the index built, the map isn't held for it. The script then reads `context map status --json` and wants a `published*` state.
-If no model answers, the job still finishes and says `cleanup unavailable`.
+the index built, the map isn't held for it. The script then reads `context map status --json`, which is the map's status with
+the publish fields beside it: `state` must be `published`, `published-without-waiting` or `published-by-hand`. While it is
+`held` or `overdue` the script waits up to 17 minutes (the 15 minute wait for the index plus two ticks); `published-stale` or
+anything else fails the step. If no model answers, the job still finishes and says `cleanup unavailable`. (`context map build`
+only makes a draft that you review and `promote` with a typed phrase; `refresh` is the no-human-step job.)
 
 **7. The app.** Starts `sindri-ui` on the scratch home (`AW_SINDRI_UI`, else the newest
 `$AW_STATE_DIR/bin/sindri-app/*/sindri-ui`) and keeps its pid in `<home>/first-run/ui.pid`. Click Context in the rail: you
@@ -90,7 +93,8 @@ Type it at your terminal; it prints the plan and asks for a phrase. Then `contin
 
 **9. An item and the scoping recipe.** Writes `<home>/first-run/scope-input.json`
 (`{"kind":"brief","repo":"agentic-workflow","path":"docs/sindri/README.md"}`, or your `FIRST_RUN_BRIEF`), runs
-`sindri item add "First context run: scope <file>" --repo agentic-workflow --no-start`, then
+`sindri item add "First context run: scope <file>" --repo agentic-workflow --no-start` (`--no-start` means do not start the
+control plane for this call; it is running, so a stopped plane fails loudly; it has nothing to do with recipes), then
 `sindri workflow start workflow.scoping --item <ITM-id> --fact fact:scopeInput=<file>`. The item id is kept in
 `<home>/first-run/item.id`, so a second run doesn't add another. The scoping run reads the brief, gathers the four lenses
 from the map and the code index, drafts a scope, and stops at your after-scoping desk step. Open it in the app (Work), or
@@ -111,11 +115,11 @@ the check to run (`lsof -nP -iTCP:7481 -sTCP:LISTEN`) and exits 1; stop that pro
 
 These are marked here so the first real run checks them, not assumes them:
 
-- `sindri context map status --json` is assumed to exit non-zero when there is no map yet, and to carry a `state` field that
-  starts with `published` once published (the field comes from the publish document in `docs/sindri/context.md`).
+- `sindri context map status --json` is read from the code (`ContextMapText.WithPublish`, `MapPublishStatusRules`): the answer
+  to "no map yet" is an error answer, assumed here to be a non-zero exit; not run against a live host.
 - `sindri code-index status ... --json` is assumed to exit 0 only when the repo is `ok`, as `CodeIndexVerbs` says.
-- `sindri item add --no-start` is assumed to create an item without starting the item recipe, so the scoping recipe is the
-  first workflow on it.
+- `item add` only appends `item.created` (`CreateItemService`); nothing in the code reacts to it by starting a recipe, so the
+  scoping recipe is the first workflow on the item. Not run live.
 - `sindri-ui` takes the home from `AW_SINDRI_HOME` and the port from `AW_SINDRI_PORT` in its environment, and a bare
   start shows the last page; there is no flag for the Context page, only the deep link `context?item=<ITM-id>`.
 - The first `sindri services run code-index-main-move` is assumed to start a build when the repo's checkout is on `main`

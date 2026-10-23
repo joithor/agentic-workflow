@@ -315,26 +315,39 @@ build_index() {
 }
 
 # ---- 6. context map ----
+# 'context map status --json' is the map's own status with the publish document's fields beside it (ContextMapText.WithPublish):
+# .state is held, overdue, published, published-without-waiting, published-stale or published-by-hand; .publishedVersion is the
+# published map's number (.version is the map's own version record). No map yet is an error answer (exit non-zero).
+map_state() { printf '%s' "$OUT" | jq -r '.state // empty' 2>/dev/null; }
+map_ok() { case "$(map_state)" in published | published-without-waiting | published-by-hand) return 0 ;; *) return 1 ;; esac; }
 publish_map() {
   step "6. publish the context map"
   if [ "$dry" = 1 ]; then
     sx context map status --json
-    check "skip when a map is published"
+    check "skip when .state is published, published-without-waiting or published-by-hand (no map is a non-zero exit)"
     sx context map refresh
-    check "builds a draft, cleans the review queue and promotes it as you (no typed phrase); exit 0"
+    check "builds a draft, cleans the review queue and promotes it as you (no typed phrase); with the index built it is not held; exit 0"
     sx context map status --json
-    check "state is published* (a held map waits for the code index; the index is built, so it should publish at once)"
+    check "wait up to 17 min while .state is held or overdue (waitForIndexMinutes 15 plus two ticks); fail on published-stale or anything else"
     return 0
   fi
   sx_out context map status --json
-  if [ "$RC" = 0 ] && printf '%s' "$OUT" | jq -e '(.state // "") | startswith("published")' >/dev/null 2>&1; then
-    note "a map is published"; return 0
-  fi
+  if [ "$RC" = 0 ] && map_ok; then note "a map is published ($(map_state))"; return 0; fi
   sx context map refresh || broke "step 6 (map): 'context map refresh' failed; see $(shown) jobs"
-  sx_out context map status --json
-  printf '%s' "$OUT" | jq -e '(.state // "") | startswith("published")' >/dev/null 2>&1 \
-    || broke "step 6 (map): the map isn't published (state: $(printf '%s' "$OUT" | jq -r '.state // "unknown"' 2>/dev/null)); run: $(shown) context map status"
-  echo "  map published"
+  local waited=0
+  while :; do
+    sx_out context map status --json
+    [ "$RC" = 0 ] || broke "step 6 (map): 'context map status' exited $RC after the refresh; run: $(shown) context map status"
+    map_ok && break
+    case "$(map_state)" in
+      held | overdue) ;;
+      *) broke "step 6 (map): the map's state is '$(map_state)', not published; run: $(shown) context map status" ;;
+    esac
+    [ "$waited" -lt 1020 ] || broke "step 6 (map): the map was still $(map_state) after ${waited}s; run: $(shown) context map status   (to publish by hand: context map promote)"
+    sleep 10; waited=$((waited + 10))
+    note "the map is $(map_state), waiting for the code index (${waited}s)"
+  done
+  echo "  map published (v$(printf '%s' "$OUT" | jq -r '.publishedVersion // "?"' 2>/dev/null), $(map_state))"
 }
 
 # ---- 7. the app ----
@@ -399,6 +412,8 @@ start_scoping() {
   local item
   item="$(cat "$home/first-run/item.id" 2>/dev/null || true)"
   if [ -z "$item" ]; then
+    # --no-start: do not start the control plane for this call (it runs already, so a stopped plane fails loudly here). It does not
+    # affect recipes: 'item add' only appends item.created, and nothing starts a workflow on it.
     sx_out item add "$title" --repo "$repo" --no-start
     [ "$RC" = 0 ] || broke "step 9 (scoping): 'item add' exited $RC"
     item="$(printf '%s' "$OUT" | grep -Eo 'ITM-[A-Za-z0-9]+' | head -1)"
