@@ -94,7 +94,7 @@ public sealed class GitWorkspaceRebaseTests : IDisposable
 
         var reset = await _rebase.Reset(workspace.Path, baseTip, Token);
 
-        Assert.True(reset.IsSuccess);
+        Assert.True(reset.IsSuccess, reset.IsError ? reset.Error.Message : null);
         Assert.Equal(baseTip, await workspace.Git("rev-parse", "HEAD"));
         Assert.False(File.Exists(Path.Combine(workspace.Path, "b.txt")));
     }

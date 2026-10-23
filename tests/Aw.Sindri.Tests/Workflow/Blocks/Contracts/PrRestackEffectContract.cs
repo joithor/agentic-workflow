@@ -16,7 +16,7 @@ public sealed class PrRestackEffectContract : BlockContract
 
     protected override BlockDescriptor Descriptor => PrEffects.Restack;
 
-    protected override string ExpectedHash => "sha256:eecb4203443224d586e11f27893f4938672fec9080e73055d793050368515410";
+    protected override string ExpectedHash => "sha256:81e427bc1b7c11eaf4451d90580379e9358db60bca4cf9921c064634e8cfc6fd";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 
