@@ -2,7 +2,6 @@ using Avalonia.Controls;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
-using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.Tests.Workflows;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.ViewModels.Workflows;
@@ -41,8 +40,8 @@ public sealed class WorkflowsBoardLayoutTests : FrameHost
         var grid = Assert.Single(window.GetVisualDescendants().OfType<LaneGrid>());
         Assert.Equal(6, grid.Children.Count);
         var widths = grid.Children.Select(c => c.Bounds.Width).ToList();
-        Assert.All(widths.Take(5), w => Assert.True(w >= LaneMin - 0.5, $"a lane is {w} wide, under {LaneMin}"));
-        Assert.True(widths[5] >= LaneMinLast - 0.5, $"the Done lane is {widths[5]} wide, under {LaneMinLast}");
+        Assert.All(widths.Take(5), w => Assert.True(w >= LaneMin - 0.5, "a lane is narrower than Size.LaneMin"));
+        Assert.True(widths[5] >= LaneMinLast - 0.5, "the Done lane is narrower than Size.LaneMinLast");
         Assert.True(widths[5] < widths[0]);   // Done is the narrower lane (star 0.6)
         Assert.True(Named<ItemsControl>(window, "WorkflowsBoardLanes").Bounds.Width >= BoardMin - 0.5);
         Assert.True(Named<ScrollViewer>(window, "WorkflowsBoardScroll").Bounds.Width <= width + 0.5);   // the page itself never scrolls sideways
