@@ -22,6 +22,21 @@ public sealed class SetupRecipesTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_recipe_approved_at_an_older_hash_than_the_shipped_one_counts_as_needing_approval()
+    {
+        var approved = Line("workflow.step", 1, RecipeStanding.Approved, []);
+        var shipped = Line("workflow.step", 1, RecipeStanding.Unapproved, []) with { Hash = ApproveAllFixtures.Hash("ffee") };
+
+        Assert.Equal(new RecipesFact(1, 0), SetupRecipes.Count([approved, shipped]));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_recipe_never_approved_counts_as_needing_approval()
+    {
+        Assert.Equal(new RecipesFact(1, 0), SetupRecipes.Count([Line("workflow.item", 1, RecipeStanding.Unapproved, [])]));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Only_the_highest_version_of_a_recipe_counts_and_a_revoked_one_is_left_out()
     {
         var older = Line("workflow.step", 1, RecipeStanding.Approved, []);
