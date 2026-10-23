@@ -1352,7 +1352,16 @@
         "docs-merge-owner"
       ],
       "on": "step.completed",
-      "to": "merged"
+      "to": "merged",
+      "outcome": "done"
+    },
+    {
+      "from": [
+        "docs-merge-owner"
+      ],
+      "on": "step.completed",
+      "to": "merged",
+      "outcome": "leave"
     },
     {
       "from": [
