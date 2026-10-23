@@ -18165,7 +18165,6 @@ Aw.Sindri.Core.Workflow.Registry.ApprovalBatch.Equals(Aw.Sindri.Core.Workflow.Re
 override Aw.Sindri.Core.Workflow.Registry.ApprovalBatch.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Registry.ApprovalBatch.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Registry.ApprovalBatch.ToString() -> string!
-static Aw.Sindri.Core.Setup.SetupRecipes.Count(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeSummary!>! lines, Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan! waiting) -> Aw.Sindri.Core.Setup.RecipesFact!
 static Aw.Sindri.Core.Workflow.ApproveAll.RecipeCapabilitySet.Delta(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.CapabilityLine!>! before, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.CapabilityLine!>! now) -> Aw.Sindri.Core.Workflow.ApproveAll.CapabilityDelta!
 static Aw.Sindri.Core.Workflow.ApproveAll.RecipeCapabilitySet.Of(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! catalog) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.CapabilityLine!>!
 static Aw.Sindri.Core.Workflow.Registry.ApprovalBatch.operator !=(Aw.Sindri.Core.Workflow.Registry.ApprovalBatch? left, Aw.Sindri.Core.Workflow.Registry.ApprovalBatch? right) -> bool
