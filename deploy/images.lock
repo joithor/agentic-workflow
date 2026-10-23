@@ -3,8 +3,8 @@
 # Rows (whitespace-separated; '#' comments and blank lines are ignored):
 #   image <repository> <tag> <platform> <sha256:digest>   platform is `index` (the multi-arch image index: what a Dockerfile FROM and a
 #                                                         chart name, as <repository>@<digest>) or linux/amd64 or linux/arm64 (the
-#                                                         manifest the index lists for it). A repository has one tag, one index row
-#                                                         and both platform rows.
+#                                                         manifest the index lists for it). A repository may carry several tags; each
+#                                                         tag has one index row and both platform rows.
 #   todo <repository> <phase>                             an image the deployment will pull whose digests are not resolved yet; the
 #                                                         phase (K-C1: the charts) fills it in. `check` lists these and still passes.
 # Resolved 2026-10-23 from the registries' manifest APIs (mcr.microsoft.com, registry-1.docker.io, ghcr.io), anonymous reads:
@@ -31,9 +31,4 @@ image docker.io/ollama/ollama 0.40.9 index sha256:5c6707fcf2e1a30cffe2ecb7e31558
 image docker.io/ollama/ollama 0.40.9 linux/amd64 sha256:1914dade358389ce67f527f8d54914f0872fdafdc7a95980096ad0ff6a381196
 image docker.io/ollama/ollama 0.40.9 linux/arm64 sha256:bb90a41181172b7b18ec151674dd30f7242c03cd8675e680ae2daebe49bc3c65
 
-# Onyx's chart images (chart 0.8.40 at the context/onyx.lock pin): resolved in K-C1, when the charts are written. Not guessed here.
-todo docker.io/onyxdotapp/onyx-backend K-C1
-todo docker.io/onyxdotapp/onyx-web-server K-C1
-todo docker.io/onyxdotapp/onyx-model-server K-C1
-todo docker.io/library/redis K-C1
-todo docker.io/library/nginx K-C1
+# Onyx's containers are not listed here: they run as siblings in the pod and are pinned in context/onyx.lock.

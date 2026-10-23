@@ -4,7 +4,9 @@
 #
 # Sindri looks for the temporal CLI only at $AW_STATE_DIR/cache/bin/temporal-<version>/temporal, with no override, and the
 # image's root is read-only, so the binary baked into /opt/sindri/seed is copied there when the volume does not hold it yet.
-# Idempotent: a restart on an old volume copies nothing and replaces nothing.
+# The destination is versioned (temporal-<version>), so a new volume gets the binary and so does a new temporal pin after an upgrade;
+# a restart on a volume that already holds this version copies nothing and replaces nothing.
+# The environment (AW_STATE_DIR, HOME, ...) is the image's ENV, not set here: a `kubectl exec` doesn't run this script.
 set -euo pipefail
 
 : "${AW_STATE_DIR:?AW_STATE_DIR must be set (the image sets /data/state)}"

@@ -3,7 +3,7 @@
 # (spec docs/superpowers/specs/2026-10-23-sindri-deployable-context-design.md decision K11), and that the Dockerfile uses only them.
 #
 # Usage: scripts/images-lock.sh check [--file F] [--dockerfile D]
-#   check  every row is well formed; every `image` repository has one tag, one `index` row and both linux/amd64 and linux/arm64
+#   check  every row is well formed; every `image` repository:tag has one `index` row and both linux/amd64 and linux/arm64
 #          rows, each once; every `todo` row names a repository without an `image` row; and every `FROM` and `COPY --from=` in the
 #          Dockerfile that names an image (not a build stage) is <repository>:<tag>@<digest> with exactly an `index` row of the lock.
 #          Prints one line per problem 'IMAGES-LOCK-00n <line>: <what>', then the unresolved `todo` rows as a note (they pass).
@@ -54,10 +54,9 @@ out="$(LC_ALL=C awk '
     if ($3 !~ /^[A-Za-z0-9_][A-Za-z0-9_.-]*$/ || length($3) > 128) bad("IMAGES-LOCK-002", "tag \"" $3 "\" does not match ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$")
     if ($4 != "index" && $4 != "linux/arm64" && $4 != "linux/amd64") { bad("IMAGES-LOCK-002", "platform \"" $4 "\" is not index, linux/arm64 or linux/amd64"); next }
     if ($5 !~ /^sha256:[0-9a-f]+$/ || length($5) != 71) bad("IMAGES-LOCK-002", "digest is not sha256: and 64 lowercase hex digits")
-    if (($2 SUBSEP $4) in seen) bad("IMAGES-LOCK-003", $2 " " $4 " is listed twice")
-    if (($2 in tagof) && tagof[$2] != $3) bad("IMAGES-LOCK-002", $2 " is listed with tags " tagof[$2] " and " $3)
-    tagof[$2] = $3
-    seen[$2, $4] = 1; repos[$2] = 1; images++
+    k = $2 ":" $3
+    if ((k SUBSEP $4) in seen) bad("IMAGES-LOCK-003", k " " $4 " is listed twice")
+    seen[k, $4] = 1; repos[k] = 1; repoof[k] = $2; images++
     next
   }
   $1 == "todo" {
@@ -73,7 +72,7 @@ out="$(LC_ALL=C awk '
       if (!((r SUBSEP "index") in seen)) { printf "IMAGES-LOCK-003 %s: no index row\n", r; failed = 1 }
       if (!((r SUBSEP "linux/arm64") in seen)) { printf "IMAGES-LOCK-003 %s: no linux/arm64 row\n", r; failed = 1 }
       if (!((r SUBSEP "linux/amd64") in seen)) { printf "IMAGES-LOCK-003 %s: no linux/amd64 row\n", r; failed = 1 }
-      if (r in todo) { printf "IMAGES-LOCK-004 %s: has an image row and a todo row\n", r; failed = 1 }
+      if (repoof[r] in todo) { printf "IMAGES-LOCK-004 %s: has an image row and a todo row\n", r; failed = 1 }
     }
     exit failed
   }

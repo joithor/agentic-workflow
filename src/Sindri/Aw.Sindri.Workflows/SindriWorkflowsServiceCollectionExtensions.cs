@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Aw.Kernel;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.EngineReads;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Workflow.Blocks;
@@ -10,6 +11,7 @@ using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Registry;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
@@ -45,6 +47,7 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<IInstanceReader>(provider => provider.GetRequiredService<IInstanceRuntime>())   // the queries' read port (ARCH-CQRS-002)
             .AddSingleton<IWorkflowInstances, TemporalWorkflowInstances>()
             .AddSingleton<ITemporalWorker, SindriWorkerHost>()
+            .AddSingleton<EngineMirrorLag>().AddSingleton<IEngineReader, TemporalEngineReader>()   // API P13: the engine in depth's read side (the only Temporal client but the worker)
             .AddSingleton<HomeFactStore>()
             .AddSingleton<IFactStore>(static sp => sp.GetRequiredService<HomeFactStore>())   // engine P4 unit (c): facts stored 0600 before the report
             .AddSingleton<IFactContents>(static sp => sp.GetRequiredService<HomeFactStore>()) // engine P6 unit (d): read back for effect.claim.ref
@@ -110,11 +113,15 @@ public static class SindriWorkflowsServiceCollectionExtensions
     }
 
     // Engine P8 U3: LaunchAgentStep, WatchAgentStep, CloseAgentStep and what they use, and the worker's set of activity classes.
-    private static IServiceCollection AddAgentRuntime(this IServiceCollection services) => services
+    private static IServiceCollection AddAgentRuntime(this IServiceCollection services)
+    {
+        services.TryAddSingleton<ReportRefusals>();   // one instance with the CompleteStep check that records into it (Features registers it the same way)
+        return services
         .AddSingleton<AgentStepActivities>().AddSingleton<AgentLaunching>().AddSingleton<AgentLaunchInputs>().AddSingleton<AgentClosing>()
         .AddSingleton<UsageFlush>(static provider => (launch, ct) => FlushScoped(provider, launch, ct))
         .AddSingleton<AgentTargetResolver>().AddSingleton<AgentLaunchRecorder>().AddSingleton(AgentRuntimeOptions.Default)
         .AddSingleton<WorkerActivities>();
+    }
 
     private static async ValueTask FlushScoped(IServiceProvider provider, LaunchId launch, CancellationToken cancellationToken)
     {

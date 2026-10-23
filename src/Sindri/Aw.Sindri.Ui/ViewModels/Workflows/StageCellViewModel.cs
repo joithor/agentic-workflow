@@ -12,9 +12,17 @@ internal sealed class StageCellViewModel
 {
     private readonly StateCell _cell;
 
-    internal StageCellViewModel(StateCell cell, bool isCurrent, bool isBlocked)
+    /// <summary>A cell of a row.</summary>
+    /// <param name="cell">The served cell.</param>
+    /// <param name="isCurrent">True for the state the instance is in.</param>
+    /// <param name="isBlocked">True when a required input is missing and this is the state the instance waits in.</param>
+    /// <param name="names">The recipes' state names; null names the state by its id.</param>
+    /// <param name="recipeId">The recipe the cell belongs to, for <paramref name="names"/>.</param>
+    /// <param name="stateName">The state in the recipe's words when the caller already has them (the frame's recipe lookup); it wins over <paramref name="names"/>.</param>
+    internal StageCellViewModel(StateCell cell, bool isCurrent, bool isBlocked, StateNames? names = null, string recipeId = "", string? stateName = null)
     {
         _cell = cell;
+        StateName = stateName ?? (names is null ? cell.State : names.Of(recipeId, cell.State));
         IsCurrent = isCurrent;
         IsBlocked = isBlocked;
         var badge = cell.Badge is { } b ? Labels.CellBadge(b.Kind, b.Reason) : string.Empty;
@@ -24,6 +32,9 @@ internal sealed class StageCellViewModel
 
     /// <summary>The state this cell is.</summary>
     public string State => _cell.State;
+
+    /// <summary>The state in words: the recipe's name for it when served, else its id.</summary>
+    public string StateName { get; }
 
     /// <summary>The leading mark: the progress glyph, the engine badge, or the blocked dash.</summary>
     public string Glyph { get; }
@@ -40,8 +51,8 @@ internal sealed class StageCellViewModel
     /// <summary>True for the state the instance is in.</summary>
     public bool IsCurrent { get; }
 
-    /// <summary>The name screen readers hear: the state, what the cell says in words, and "current" for the state the instance is in.</summary>
-    public string Name => $"{_cell.State}, {Words()}{(IsCurrent ? ", " + Labels.StageCurrent : string.Empty)}";
+    /// <summary>The name screen readers hear: the state in the recipe's words (its id when no names are known), what the cell says in words, and "current" for the state the instance is in.</summary>
+    public string Name => $"{StateName}, {Words()}{(IsCurrent ? ", " + Labels.StageCurrent : string.Empty)}";
 
     internal static string Mark(Api.Workflow.StateGlyph glyph) => glyph switch
     {

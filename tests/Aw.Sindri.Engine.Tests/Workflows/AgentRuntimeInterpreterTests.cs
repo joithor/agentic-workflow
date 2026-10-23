@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Testing.Workflow;
@@ -61,6 +62,26 @@ public sealed class AgentRuntimeInterpreterTests : AgentRuntimeTestBase
             Assert.Equal("exit", await rig.FailureReason(ct));
             Assert.Equal(ParkReason.NeedsAnswer, parked.Question?.Reason);
             await WaitFor(() => _launcher.Stops.Contains(rig.Launch), ct);   // the run closed, so its session is stopped
+        });
+    }
+
+    [Fact(Timeout = 120_000)]
+    public async Task A_session_ended_for_a_refused_report_fails_the_Step_with_the_refusal_in_the_question()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var rig = await Rig(ct);
+        await rig.Run(async handle =>
+        {
+            _ = await WorkflowsHarness.Until(handle, static v => v.Run is not null && v.State == "write");
+            await Launched(ct);
+            rig.Sindri.GetRequiredService<ReportRefusals>().Record(rig.Launch, "fact:design is a payload, so it must be a JSON object or array, and it isn't JSON at all");
+            _sessions.End(rig.Launch, SessionEndReason.Exit, exitCode: 0);
+
+            var parked = await WorkflowsHarness.Until(handle, static v => v.Question is not null);
+
+            Assert.Equal("exit", await rig.FailureReason(ct));
+            Assert.Contains("failed: exit: fact:design is a payload", parked.Question?.Question, StringComparison.Ordinal);
+            Assert.Contains("isn't JSON at all", parked.Question?.Question, StringComparison.Ordinal);
         });
     }
 
