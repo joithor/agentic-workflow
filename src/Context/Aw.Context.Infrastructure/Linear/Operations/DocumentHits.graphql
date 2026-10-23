@@ -1,0 +1,6 @@
+query DocumentHits($filter: DocumentFilter, $first: Int, $after: String) {
+  documents(filter: $filter, first: $first, after: $after, orderBy: updatedAt) {
+    nodes { id title url createdAt updatedAt project { id name } }
+    pageInfo { hasNextPage endCursor }
+  }
+}
