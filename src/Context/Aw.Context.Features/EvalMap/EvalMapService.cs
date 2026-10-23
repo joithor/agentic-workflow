@@ -24,10 +24,6 @@ internal sealed class EvalMapService(MapReader reader, IMergeHistory history, IE
     public async ValueTask<Result<MapQualityRun>> Handle(MapQualityRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        if (request.Scope.Caller.Kind == ContextCallerKind.Session)
-        {
-            return ContextErrors.SessionsDisabled.With("measuring the map is a human or service call: a session can't start one");
-        }
 
         var map = await reader.Read(request.Scope, draft: false, cancellationToken).ConfigureAwait(false);
         if (map.IsError)

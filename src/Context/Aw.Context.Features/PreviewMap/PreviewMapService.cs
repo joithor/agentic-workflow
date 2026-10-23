@@ -12,11 +12,6 @@ internal sealed class PreviewMapService(IMapFileReader reader) : IService<Previe
 {
     public async ValueTask<Result<MapFilePreview>> Handle(PreviewMapRequest request, CancellationToken cancellationToken)
     {
-        if (request.Scope.Caller.Kind == ContextCallerKind.Session)
-        {
-            return ContextErrors.SessionsDisabled.With("importing a map is a human decision: a session can't preview or import one");
-        }
-
         var file = await reader.Read(request.Path, cancellationToken).ConfigureAwait(false);
         if (file.IsError)
         {

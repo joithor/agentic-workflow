@@ -47,7 +47,8 @@ public static class Authorization
         ArgumentNullException.ThrowIfNull(row);
         var who = WhoIs(caller);
         var app = row.AppConfirm ? Who.App : Who.None;   // the three rows the app confirms (setup-once spec §4 item 7): the handler redeems the challenge before its first write
-        var allowed = (((Allowed(actionClass) | app) & who) != Who.None || Granted(actionClass, caller, row))
+        var session = row.SessionOk ? Who.Session : Who.None;   // the context rows an agent session may run (owner q93, 2026-10-23)
+        var allowed = (((Allowed(actionClass) | app | session) & who) != Who.None || Granted(actionClass, caller, row))
             && (!row.NeedsTerminal || who == Who.Terminal || (who == Who.App && row.AppConfirm));
         return new AuthorizationDecision(caller?.Actor ?? "none", allowed ? null : Refusal(row));
     }
@@ -72,6 +73,11 @@ public static class Authorization
     {
         ArgumentNullException.ThrowIfNull(row);
         var callers = CallersFor(row.Class, row.ServiceGrants);
+        if (row.SessionOk && !callers.Contains("session", StringComparer.Ordinal))
+        {
+            callers = [.. callers, "session"];
+        }
+
         if (row.AppConfirm)
         {
             return [HumanAtTerminal, HumanInApp];   // a flagged row is a human's, at a terminal or in the app, and nobody else's

@@ -25,7 +25,6 @@ public sealed class ScopeRulesTests
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("unknown-repo")]
-    [InlineData(null)]
     [InlineData("other")]
     public void A_session_outside_its_mapped_repo_gets_003_the_same_way(string? repo)
     {
@@ -35,6 +34,15 @@ public sealed class ScopeRulesTests
 
         Assert.Equal(ContextErrors.UnknownAnchor.Code, scoped.Error.Code);
         Assert.Equal("no context is mapped for this session's repo (X-Sindri-Repo)", scoped.Error.Message);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_session_that_names_no_repo_is_told_which_header_names_it()
+    {
+        var scoped = ScopeRules.Resolve(new ContextSettings(), _repos, new(ContextCallerKind.Session, Repo: null, ContextClient.Http));
+
+        Assert.Equal(ContextErrors.McpRepoMissing.Code, scoped.Error.Code);
+        Assert.Contains("X-Sindri-Repo: <repo> (e.g. X-Sindri-Repo: agentic-workflow)", scoped.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
