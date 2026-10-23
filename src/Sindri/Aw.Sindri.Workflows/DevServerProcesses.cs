@@ -86,12 +86,13 @@ internal static partial class DevServerProcesses
     }
 
     /// <summary>Runs <paramref name="file"/> to completion (at most 10 s) and returns its standard output.</summary>
+    /// <param name="start">Makes the start info (the Infrastructure child-environment factory, passed in by the composition).</param>
     /// <param name="file">The executable.</param>
     /// <param name="arguments">Its arguments.</param>
     /// <returns>Its standard output.</returns>
-    public static string Capture(string file, params string[] arguments)
+    public static string Capture(Func<string, IEnumerable<string>?, IReadOnlyDictionary<string, string?>?, ProcessStartInfo> start, string file, params string[] arguments)
     {
-        var info = ChildEnvironment.Start(file, arguments);
+        var info = start(file, arguments, null);
         info.RedirectStandardOutput = true;
         info.RedirectStandardError = true;
         using var process = Process.Start(info) ?? throw new InvalidOperationException($"{file} didn't start");

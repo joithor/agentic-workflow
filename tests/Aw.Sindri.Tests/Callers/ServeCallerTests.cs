@@ -13,6 +13,7 @@ using Aw.Sindri.Tests.Workflows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using static Aw.Sindri.Tests.Callers.CallerRequests;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Tests.Callers;
 
@@ -55,7 +56,7 @@ public sealed class ServeCallerTests : IDisposable
     public async Task Stop_takes_the_real_dev_server_down_with_serve()
     {
         var ct = TestContext.Current.CancellationToken;
-        var temporal = new DevServerTemporal(new TemporalSettings(_home.Path, PinnedTemporal.Path()), new TemporalDevServer());
+        var temporal = new DevServerTemporal(new TemporalSettings(_home.Path, PinnedTemporal.Path()), new TemporalDevServer(ChildEnvironment.Start));
         var serve = ServeCommand.Run(Environment, TimeProvider.System, TextWriter.Null, services =>
         {
             NoTemporal.Use(services);

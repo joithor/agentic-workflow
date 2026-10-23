@@ -21,19 +21,23 @@ internal sealed class TemporalDevServer
     private readonly TimeSpan _readyWait = TimeSpan.FromSeconds(30);
     private readonly TimeSpan _stopWait = TimeSpan.FromSeconds(10);
     private readonly Func<int> _pickPort;
+    private readonly Func<string, IEnumerable<string>?, IReadOnlyDictionary<string, string?>?, ProcessStartInfo> _start;
 
     /// <summary>How many times a start picks fresh ports when the server exits because one was taken (the pick-then-bind race).</summary>
     internal const int MaxPortAttempts = 3;
 
     /// <summary>The production server: free ports come from the OS (bind 0, read, release).</summary>
-    public TemporalDevServer() : this(FreePort)
+    /// <param name="start">Makes the start info of the detaching shell (the child-environment factory).</param>
+    public TemporalDevServer(Func<string, IEnumerable<string>?, IReadOnlyDictionary<string, string?>?, ProcessStartInfo> start) : this(start, FreePort)
     {
     }
 
     /// <summary>A server whose ports come from <paramref name="pickPort"/> (tests inject one that loses the race).</summary>
+    /// <param name="start">Makes the start info of the detaching shell.</param>
     /// <param name="pickPort">Returns a loopback port believed free.</param>
-    internal TemporalDevServer(Func<int> pickPort)
+    internal TemporalDevServer(Func<string, IEnumerable<string>?, IReadOnlyDictionary<string, string?>?, ProcessStartInfo> start, Func<int> pickPort)
     {
+        _start = start;
         _pickPort = pickPort;
     }
 
@@ -191,13 +195,13 @@ internal sealed class TemporalDevServer
     ];
 
     /// <summary>Starts the server detached (see the class summary) and returns its pid, which /bin/sh prints.</summary>
-    private static int Detach(string executable, string[] server, string log)
+    private int Detach(string executable, string[] server, string log)
     {
         const string Script = "umask 077; log=$1; shift; "
             + "if [ -x /usr/bin/perl ]; then /usr/bin/perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV or die \"exec $ARGV[0]: $!\\n\"' \"$@\" </dev/null >>\"$log\" 2>&1 & "
             + "else \"$@\" </dev/null >>\"$log\" 2>&1 & fi; echo $!";
         string[] arguments = [.. new[] { "-c", Script, "sh", log, executable }, .. server];
-        var printed = DevServerProcesses.Capture("/bin/sh", arguments).Trim();
+        var printed = DevServerProcesses.Capture(_start, "/bin/sh", arguments).Trim();
         return int.TryParse(printed, NumberStyles.None, CultureInfo.InvariantCulture, out var pid)
             ? pid
             : throw new InvalidOperationException($"/bin/sh didn't print the dev server's pid (it printed '{printed}')");

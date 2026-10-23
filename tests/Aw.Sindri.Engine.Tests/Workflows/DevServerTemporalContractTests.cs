@@ -3,6 +3,7 @@ using Aw.Sindri.Core.Control;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Ledger;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Tests.Workflows;
 
@@ -13,7 +14,7 @@ public sealed class DevServerTemporalContractTests : TemporalServerContract
     private readonly TempHome _home = new();
 
     protected override ITemporalServer Create() =>
-        new DevServerTemporal(new TemporalSettings(_home.Path, PinnedTemporal.Path()), new TemporalDevServer());
+        new DevServerTemporal(new TemporalSettings(_home.Path, PinnedTemporal.Path()), new TemporalDevServer(ChildEnvironment.Start));
 
     public override async ValueTask DisposeAsync()
     {

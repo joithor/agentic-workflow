@@ -11,7 +11,6 @@
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Aw.Sindri.Infrastructure.Workflows</RootNamespace>
     <AwAotCompatible>false</AwAotCompatible>
-    <DefineConstants>$(DefineConstants);AW_WORKFLOWS_COPY</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,13 +22,6 @@
     <ProjectReference Include="../Aw.Sindri.Core/Aw.Sindri.Core.csproj" />
     <ProjectReference Include="../../Aw.Kernel/Aw.Kernel.csproj" />
     <ProjectReference Include="../../Redaction/Aw.Redaction/Aw.Redaction.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- The one factory for child processes (ARCH-PROC-001), compiled into this assembly as well: a project reference to
-         Aw.Sindri.Infrastructure would bring its Aw.Sindri.Infrastructure.Workflow namespace, which hides Temporalio's Workflow class here. -->
-    <Compile Include="../Aw.Sindri.Infrastructure/Processes/ChildEnvironment.cs" Link="Processes/ChildEnvironment.cs" />
-    <!-- selects that file's namespace -->
   </ItemGroup>
 
   <ItemGroup>

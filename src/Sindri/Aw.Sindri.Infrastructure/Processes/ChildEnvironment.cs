@@ -1,11 +1,7 @@
 using System.Collections;
 using System.Diagnostics;
 
-#if AW_WORKFLOWS_COPY
-namespace Aw.Sindri.Infrastructure.Workflows;   // Aw.Sindri.Workflows compiles this file too (its csproj); a namespace of its own keeps the two internal types apart for the tests that see both
-#else
 namespace Aw.Sindri.Infrastructure.Processes;
-#endif
 
 /// <summary>
 /// The one place a <see cref="ProcessStartInfo"/> is made in src/Sindri (ARCH-PROC-001 fails any other), so the pod's child environment cannot be bypassed

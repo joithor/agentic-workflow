@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Tests.Ledger;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Tests.Workflows;
 
@@ -22,7 +23,7 @@ public sealed class TemporalDevServerTests : IDisposable
     public async Task Serve_starts_the_dev_server_on_loopback_with_its_database_under_the_home()
     {
         var temporal = PinnedTemporal.Path();
-        var server = new TemporalDevServer();
+        var server = new TemporalDevServer(ChildEnvironment.Start);
 
         var running = await server.StartAsync(new TemporalServerStart(temporal, _home.Path), TestContext.Current.CancellationToken);
         try
@@ -45,7 +46,7 @@ public sealed class TemporalDevServerTests : IDisposable
         var ct = TestContext.Current.CancellationToken;
         var slow = Path.Combine(_home.Path, "slow-temporal.sh");
         _ = ExecutableScript.Write(slow, $"sleep 4\nexec \"{PinnedTemporal.Path()}\" \"$@\"\n");   // the pinned CLI, 4 s after the process starts: a cold box
-        var server = new TemporalDevServer();
+        var server = new TemporalDevServer(ChildEnvironment.Start);
 
         var running = await server.StartAsync(new TemporalServerStart(slow, _home.Path), ct);
         try
@@ -63,8 +64,8 @@ public sealed class TemporalDevServerTests : IDisposable
     {
         var ct = TestContext.Current.CancellationToken;
         var start = new TemporalServerStart(PinnedTemporal.Path(), _home.Path);
-        var first = await new TemporalDevServer().StartAsync(start, ct);   // the serve that started it is gone; its server isn't
-        var next = new TemporalDevServer();
+        var first = await new TemporalDevServer(ChildEnvironment.Start).StartAsync(start, ct);   // the serve that started it is gone; its server isn't
+        var next = new TemporalDevServer(ChildEnvironment.Start);
         try
         {
             var adopted = await next.StartAsync(start, ct);
@@ -81,7 +82,7 @@ public sealed class TemporalDevServerTests : IDisposable
     public async Task A_server_on_the_home_database_that_doesnt_answer_is_replaced()
     {
         var ct = TestContext.Current.CancellationToken;
-        var server = new TemporalDevServer();
+        var server = new TemporalDevServer(ChildEnvironment.Start);
         var start = new TemporalServerStart(PinnedTemporal.Path(), _home.Path);
         var stuck = await server.StartAsync(start, ct);
         DevServerProcesses.Signal(stuck.ProcessId, "STOP");   // alive, holding the database, answering nothing
@@ -109,7 +110,7 @@ public sealed class TemporalDevServerTests : IDisposable
     public async Task A_restart_on_the_same_database_keeps_the_namespace_and_the_search_attributes()
     {
         var ct = TestContext.Current.CancellationToken;
-        var server = new TemporalDevServer();
+        var server = new TemporalDevServer(ChildEnvironment.Start);
         var start = new TemporalServerStart(PinnedTemporal.Path(), _home.Path);
         await server.StopAsync(await server.StartAsync(start, ct), ct);
 
@@ -134,7 +135,7 @@ public sealed class TemporalDevServerTests : IDisposable
         var ct = TestContext.Current.CancellationToken;
         using var rival = Occupy();
         var picks = 0;
-        var server = new TemporalDevServer(() => Interlocked.Increment(ref picks) == 1 ? PortOf(rival) : FreePort());   // the first pick (the frontend) loses the race
+        var server = new TemporalDevServer(ChildEnvironment.Start, () => Interlocked.Increment(ref picks) == 1 ? PortOf(rival) : FreePort());   // the first pick (the frontend) loses the race
 
         var running = await server.StartAsync(new TemporalServerStart(PinnedTemporal.Path(), _home.Path), ct);
         try
@@ -155,7 +156,7 @@ public sealed class TemporalDevServerTests : IDisposable
         var ct = TestContext.Current.CancellationToken;
         using var rival = Occupy();
         var picks = 0;
-        var server = new TemporalDevServer(() => Interlocked.Increment(ref picks) % 3 == 1 ? PortOf(rival) : FreePort());   // the frontend pick of every attempt loses
+        var server = new TemporalDevServer(ChildEnvironment.Start, () => Interlocked.Increment(ref picks) % 3 == 1 ? PortOf(rival) : FreePort());   // the frontend pick of every attempt loses
 
         var failure = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             server.StartAsync(new TemporalServerStart(PinnedTemporal.Path(), _home.Path), ct));
@@ -184,7 +185,7 @@ public sealed class TemporalDevServerTests : IDisposable
     public async Task Stop_takes_the_server_down()
     {
         var ct = TestContext.Current.CancellationToken;
-        var server = new TemporalDevServer();
+        var server = new TemporalDevServer(ChildEnvironment.Start);
         var running = await server.StartAsync(new TemporalServerStart(PinnedTemporal.Path(), _home.Path), ct);
 
         await server.StopAsync(running, ct);

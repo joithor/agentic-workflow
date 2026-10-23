@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Tests.Ledger;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Tests.Workflows;
 
@@ -19,7 +20,7 @@ public sealed class DevServerTemporalTests : IDisposable
     public async Task Doctor_reports_a_running_server_ok_at_the_pin_with_the_namespace()
     {
         var ct = TestContext.Current.CancellationToken;
-        var adapter = new DevServerTemporal(new TemporalSettings(_home.Path, PinnedTemporal.Path()), new TemporalDevServer());
+        var adapter = new DevServerTemporal(new TemporalSettings(_home.Path, PinnedTemporal.Path()), new TemporalDevServer(ChildEnvironment.Start));
         var started = (await adapter.Ensure(ct)).Value;
         try
         {
@@ -41,7 +42,7 @@ public sealed class DevServerTemporalTests : IDisposable
     public async Task A_stop_cancelled_while_it_waits_for_a_hung_worker_still_leaves_no_dev_server()
     {
         var ct = TestContext.Current.CancellationToken;
-        var adapter = new DevServerTemporal(new TemporalSettings(_home.Path, PinnedTemporal.Path()), new TemporalDevServer());
+        var adapter = new DevServerTemporal(new TemporalSettings(_home.Path, PinnedTemporal.Path()), new TemporalDevServer(ChildEnvironment.Start));
         var started = (await adapter.Ensure(ct)).Value;
         var runtime = new TemporalRuntime(adapter, TimeProvider.System);
         runtime.Track(new TaskCompletionSource().Task);   // a worker that never stops
@@ -65,7 +66,7 @@ public sealed class DevServerTemporalTests : IDisposable
     public async Task Ensure_without_the_pinned_binary_is_SND_CLI_002_naming_the_fetch()
     {
         var missing = Path.Combine(_home.Path, "no-such", "temporal");
-        var adapter = new DevServerTemporal(new TemporalSettings(_home.Path, missing), new TemporalDevServer());
+        var adapter = new DevServerTemporal(new TemporalSettings(_home.Path, missing), new TemporalDevServer(ChildEnvironment.Start));
 
         var refused = await adapter.Ensure(TestContext.Current.CancellationToken);
 
