@@ -34,6 +34,7 @@ public sealed class ContextMapFramesTests : FrameHost
 
     private async Task<(ShellWindow Window, ShellViewModel Shell)> Open(double width, double height)
     {
+        Server.WholeMapAnswer = _ => new RouteAnswer(System.Net.HttpStatusCode.InternalServerError, "{}");   // no whole map: a query draws its neighbourhood (the whole map is WholeMapFramesTests)
         var (window, shell) = await Connected(width: width, height: height);
         shell.GoTo(PageId.Context);
         shell.Context.AnchorText = Anchor;
