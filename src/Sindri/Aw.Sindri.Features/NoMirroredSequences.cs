@@ -8,5 +8,5 @@ namespace Aw.Sindri.Features;
 internal sealed class NoMirroredSequences : IMirroredSequences
 {
     public ValueTask<Result<IReadOnlyDictionary<string, long>>> Of(InstanceAddress address, string run, IReadOnlyCollection<string> activities, CancellationToken cancellationToken) =>
-        ValueTask.FromResult<Result<IReadOnlyDictionary<string, long>>>(Results.Success<IReadOnlyDictionary<string, long>>(new Dictionary<string, long>(StringComparer.Ordinal)));
+        ValueTask.FromResult(Results.Success<IReadOnlyDictionary<string, long>>(new Dictionary<string, long>(StringComparer.Ordinal)));
 }
