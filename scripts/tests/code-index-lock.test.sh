@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Tests for scripts/code-index-lock.sh: the repo's context/code-index.lock passes (shape, requirements hash, parity with
-# sindri/package.json), each malformed fixture fails with its code, and `get` prints each pinned value.
+# context/graphify.pin), each malformed fixture fails with its code, and `get` prints each pinned value.
 set -euo pipefail
 
 SCRIPT="$(cd "$(dirname "$0")/.." && pwd)/code-index-lock.sh"
@@ -20,10 +20,10 @@ expect() {   # <label> <rc> [<regex>]
   ok "$1"
 }
 
-# A fixture world: a requirements file, a package.json with the same pin, and a good lock naming both.
+# A fixture world: a requirements file, a graphify.pin with the same pin, and a good lock naming both.
 printf 'graphifyy==1.2.3 \\\n    --hash=sha256:00\n' >"$TMPROOT/code-index-requirements.txt"
 REQSHA="$(sha256sum "$TMPROOT/code-index-requirements.txt" | cut -d' ' -f1)"
-printf '{"sindri":{"graphifyPin":"1.2.3","graphifyPinDate":"2026-01-02T00:00:00Z"}}\n' >"$TMPROOT/package.json"
+printf 'graphify 1.2.3 2026-01-02T00:00:00Z\n' >"$TMPROOT/graphify.pin"
 DIGEST=sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 good_body() {
   echo "graphify 1.2.3 2026-01-02T00:00:00Z $REQSHA"
@@ -31,12 +31,12 @@ good_body() {
   echo "need disk-bytes 100"
 }
 lock() { local f="$TMPROOT/$1.lock"; cat >"$f"; echo "$f"; }
-chk() { run check --file "$1" --requirements "$TMPROOT/code-index-requirements.txt" --package "$TMPROOT/package.json"; }
+chk() { run check --file "$1" --requirements "$TMPROOT/code-index-requirements.txt" --pin "$TMPROOT/graphify.pin"; }
 
 echo "code-index-lock check"
 
 run check
-expect "the repo's context/code-index.lock passes (shape, requirements hash, package.json parity)" 0
+expect "the repo's context/code-index.lock passes (shape, requirements hash, graphify.pin parity)" 0
 
 f="$(good_body | lock good)"
 chk "$f"; expect "a well-formed file passes" 0
@@ -105,25 +105,32 @@ echo "code-index-lock requirements and parity"
 
 f="$(good_body | lock par)"
 printf 'changed\n' >"$TMPROOT/other-requirements.txt"
-run check --file "$f" --requirements "$TMPROOT/other-requirements.txt" --package "$TMPROOT/package.json"
+run check --file "$f" --requirements "$TMPROOT/other-requirements.txt" --pin "$TMPROOT/graphify.pin"
 expect "a requirements file with another hash fails" 1 'CODEIDX-LOCK-006 .*has sha256'
-run check --file "$f" --requirements "$TMPROOT/absent.txt" --package "$TMPROOT/package.json"
+run check --file "$f" --requirements "$TMPROOT/absent.txt" --pin "$TMPROOT/graphify.pin"
 expect "a missing requirements file fails" 1 'CODEIDX-LOCK-006 .*cannot read'
 
-printf '{"sindri":{"graphifyPin":"1.2.4","graphifyPinDate":"2026-01-02T00:00:00Z"}}\n' >"$TMPROOT/pkg-ver.json"
-run check --file "$f" --requirements "$TMPROOT/code-index-requirements.txt" --package "$TMPROOT/pkg-ver.json"
-expect "a graphify version that differs from package.json fails" 1 'CODEIDX-LOCK-007 .*version is 1.2.3, .*graphifyPin is 1.2.4'
-printf '{"sindri":{"graphifyPin":"1.2.3","graphifyPinDate":"2026-02-02T00:00:00Z"}}\n' >"$TMPROOT/pkg-date.json"
-run check --file "$f" --requirements "$TMPROOT/code-index-requirements.txt" --package "$TMPROOT/pkg-date.json"
-expect "a graphify date that differs from package.json fails" 1 'CODEIDX-LOCK-007 .*date is 2026-01-02T00:00:00Z, .*graphifyPinDate is 2026-02-02T00:00:00Z'
-printf '{"sindri":{}}\n' >"$TMPROOT/pkg-none.json"
-run check --file "$f" --requirements "$TMPROOT/code-index-requirements.txt" --package "$TMPROOT/pkg-none.json"
-expect "a package.json with no pin fails" 1 'CODEIDX-LOCK-007 .*absent'
+printf 'graphify 1.2.4 2026-01-02T00:00:00Z\n' >"$TMPROOT/pin-ver.pin"
+run check --file "$f" --requirements "$TMPROOT/code-index-requirements.txt" --pin "$TMPROOT/pin-ver.pin"
+expect "a graphify version that differs from graphify.pin fails" 1 'CODEIDX-LOCK-007 .*version is 1.2.3, .*is 1.2.4'
+printf 'graphify 1.2.3 2026-02-02T00:00:00Z\n' >"$TMPROOT/pin-date.pin"
+run check --file "$f" --requirements "$TMPROOT/code-index-requirements.txt" --pin "$TMPROOT/pin-date.pin"
+expect "a graphify date that differs from graphify.pin fails" 1 'CODEIDX-LOCK-007 .*date is 2026-01-02T00:00:00Z, .*is 2026-02-02T00:00:00Z'
+printf '# no row\n' >"$TMPROOT/pin-none.pin"
+run check --file "$f" --requirements "$TMPROOT/code-index-requirements.txt" --pin "$TMPROOT/pin-none.pin"
+expect "a graphify.pin with no row fails" 1 'CODEIDX-LOCK-007 .*absent'
+run check --file "$f" --requirements "$TMPROOT/code-index-requirements.txt" --pin "$TMPROOT/absent.pin"
+expect "a missing graphify.pin is a usage or I/O error" 2 'cannot read'
 
-# The shipped lock and package.json agree (the parity the spec asks for, stated directly).
-want="$(jq -r '.sindri.graphifyPin' "$REPO/sindri/package.json")"
+# The shipped lock, graphify.pin and (until the switch) sindri/package.json agree.
+want="$(awk '$1 == "graphify" { print $2 }' "$REPO/context/graphify.pin")"
+want_date="$(awk '$1 == "graphify" { print $3 }' "$REPO/context/graphify.pin")"
 got="$(bash "$SCRIPT" get graphify-version)"
-[ "$want" = "$got" ] && ok "the lock's graphify version is sindri/package.json's pin ($want)" || fail "lock $got, package.json $want"
+[ "$want" = "$got" ] && ok "the lock's graphify version is graphify.pin's ($want)" || fail "lock $got, graphify.pin $want"
+if [ -r "$REPO/sindri/package.json" ]; then   # the TS index reads it until the switch deletes sindri/
+  [ "$(jq -r '.sindri.graphifyPin' "$REPO/sindri/package.json")" = "$want" ] && [ "$(jq -r '.sindri.graphifyPinDate' "$REPO/sindri/package.json")" = "$want_date" ] \
+    && ok "sindri/package.json carries graphify.pin's pair" || fail "sindri/package.json's graphify pin differs from graphify.pin"
+fi
 
 echo "code-index-lock get"
 
