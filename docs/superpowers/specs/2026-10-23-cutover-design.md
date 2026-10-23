@@ -1,6 +1,6 @@
 # The cutover: the install moves from TypeScript to C# in one switch (spec)
 
-**Status:** draft for owner review, rev 2 (2026-10-23). Docs only. The code lands in the phases of §12.
+**Status:** draft for owner review, rev 3 (2026-10-23). Docs only. The code lands in the phases of §12.
 
 **Rev 2 (2026-10-23), /autoplan round 1.** Fixed: the install and the removal script now run in one safe order
 (publish, then clean up and delete the TS judge state, then link; §2, §7.1, §8), so no window has the C# `judge` reading the
@@ -12,6 +12,17 @@ profile and onboarding step and the printed record of what was deleted are speci
 `trait-check` registrations are removed (§7.4); `reflect` and `correct` go on `DEPRECATED_SKILLS` (§9, §15); the statusline keeps
 its judge segment without the scorer (§10); `ui-evidence` is granted per verb, not as a whole (§3.1); script exit codes and
 flags are defined (§7.1, §8.1); more consumers of `sindri-app` and the TS packages are listed (§9).
+
+**Rev 3 (2026-10-23), /autoplan round 2.** Fixed: `setup.sh` runs the removal script on every run, so each delete is now gated
+on the TS shape and the TS-only path, and a second run on a flipped box deletes nothing (§8, P2 proof: the C# state survives a
+second `./setup.sh`); the judge-state delete sits next to the link and is re-checked after it, with `judge health` as the
+last post-link step (§8); step 1 also refuses while a C# `sindri-app` serve runs from the build directory step 7 removes;
+the repo list, the judge config as `judge config set` lines and the profile text are logged when read, before any delete
+(§8); step 2 runs the stamped `sindri` with `DOTNET_ROOT` and bakes the stable path explicitly; the live-pane removal is
+inlined, since `install-live-pane.sh` is deleted by the same PR; the install sequence runs after `install-deps.sh`
+(§7.2); `bin/cs/current` moves at link time only (§7.1); profile links are unlinked, never followed (§8 step 8); the hook
+unmerge matches only `aw:` entries (§5.2); next steps are printed again at the end of `setup.sh` (§8 step 10); P0 asks
+only Q1, Q2, Q6, Q7 before P1 (§12).
 
 **Decision it implements (owner, 2026-10-20 and 2026-10-23):** the toolkit's install becomes the C# build. Plain `sindri`
 is the C# app (today `scripts/sindri-app.sh` and the name `sindri-app`). `setup.sh` and the provider installers install
@@ -286,7 +297,9 @@ and `scripts/install-judge.sh`; `config/hooks/prompt-sort.sh` and `trait-check.s
 installed keep a registered `aw:prompt-sort` / `trait-check` entry (Claude settings, Codex and Cursor hooks files) and a hook
 copy that calls a script that no longer exists: the provider installers remove those registrations and copies when they run
 (unit 3.1; §7.4). No unmerge helper for hook entries exists on main today (`providers/lib.sh` only removes retired dirs), so
-unit 3.1 writes it and tests it per provider.
+unit 3.1 writes it and tests it per provider: it matches only entries carrying the `aw:` marker, writes the file
+atomically and keeps one backup next to it. Between the link and that unmerge, the installed `trait-check` hook gets exit 64
+from the C# `judge` and fails open (`*) failopen`, `config/hooks/trait-check.sh`), as `prompt-sort` prints nothing.
 Alternative: port `prompt-sort` before the switch (J2: a question, its config block `promptSort`, the `prompt_sort_*`
 tables, `why|scaffold|promote`), and cut only `trait-check`, `label`, `adjudicate`, `eval`.
 
@@ -389,13 +402,15 @@ installers call it. It follows `scripts/install-meta.sh:101-140` and `scripts/si
 
    `aw-meta` stays opt-in through `--with-meta` and keeps `install-meta.sh`.
 3. Verify each binary answers `version` or `help` ("install didn't take" check as `install-meta.sh` does); keep the newest
-   two stamped dirs; mark one `current` (a symlink `bin/cs/current`, switched atomically).
+   two stamped dirs. `--publish` leaves `current` alone; `--link` switches the symlink `bin/cs/current` atomically and
+   writes the wrappers. The running-serve guard names build directories, not the symlink.
 4. **Link** (a separate step, §8 for where it runs): write the wrappers below to `~/.local/bin/{sindri,judge,bugfix-state,ui-evidence,aw-packets,aw-readiness}`
    (`CLAUDE_LOCAL_BIN`), each replacing any TS wrapper of the same name atomically (write a temp file, then `mv`). `judge`
    and `sindri` must be linked **before** the lever installers run, because each refuses to install without `judge` on PATH
    (`scripts/install-done-gate.sh:28,46`, `install-wake-gating.sh:68`, and the others in §5.1).
 5. `ui-evidence install-browser`, once per box (it needs the .NET runtime, not Node; it downloads Chromium, so it needs
-   network, and fails with a one-line message offline; the SDK and `temporal` downloads likewise).
+   network, and fails with a one-line message offline; the SDK and `temporal` downloads likewise). An offline browser download is a warning with the one command to re-run,
+   not an install failure; the SDK and `temporal` are required and fail it.
 
 Flags: `install-cs.sh [--publish | --link] [--rebuild] [--dry-run]`; with neither of `--publish` and `--link` it does both.
 `--publish` is A7a's `--publish-only`. Exit 0 done or current, 1 failed (nothing on PATH changed by a failed `--publish`),
@@ -423,7 +438,9 @@ resolved path, so bare `sindri` finds `sindri-ui` next to it (`UiLauncher.Locate
 | `providers/lib.sh:411` | drop `install-live-pane` from the lever list unless Q4 says otherwise |
 | `setup.sh:229,235` | remove `reflect` and `correct` from `MANAGED_SKILLS`; add them to `DEPRECATED_SKILLS`; the skill-count messages follow |
 
-All edits in this table are made in the switch PR (P3), not in P1.
+All edits in this table are made in the switch PR (P3), not in P1. The `install-cs.sh` publish needs the NativeAOT toolchain
+that `install-deps.sh` installs (`setup.sh:287` today, after the old build step), so the PR moves the `install-deps.sh` call
+above the §8 sequence.
 
 `--with-sindri` is no longer a switch. **Q8. Keep `--with-sindri` accepted?** Recommended: accept it as a no-op that prints one
 line ("the C# Sindri is always installed"), for one release, so owner scripts do not break. Alternative: remove it and let
@@ -436,7 +453,7 @@ embedded and approved at publish. A7a is **not on main** (`scripts/sindri-app.sh
 has no call; install.md §1.1 row 33). This spec reuses A7a's order and its exit codes (0 published or current, 1 failed; a failed
 publish stops `setup.sh` with exit 1; re-running is safe by the stamp check and never replaces a running `serve`). The
 `install-cs.sh` publish **is** A7a's publish, extended to the seven binaries, and the TS builds it ordered itself before no
-longer exist. Whichever of A7a and the cutover's phase 1.6 merges first owns the `setup.sh` call; the other rebases. The
+longer exist. Whichever of A7a and the cutover's switch PR (P3) merges first owns the `setup.sh` call; the other rebases. The
 Onyx default (`--no-onyx` today, `--with-onyx` after A7b) is not decided here.
 
 ### 7.4 The hook installers keep their hooks
@@ -465,8 +482,13 @@ Alternative: keep `sindri-app` as an alias to `sindri` for one release.
 ## 8. The removal script
 
 `scripts/cutover-clean-ts.sh`, idempotent, with `--dry-run` (the `aw_dry` style; the `aw_remove_retired_dir` pattern of
-`providers/lib.sh:391-406`). `setup.sh` calls it **after** `install-cs.sh` has published, linked and verified; never before.
-It removes by shape, never by name list alone. In this order:
+`providers/lib.sh:391-406`). `setup.sh` calls it **after** `install-cs.sh --publish` has published and verified, and links in the middle of it; never
+before. It removes by shape, never by name list alone, and **it runs on every `./setup.sh`**, so every delete is gated on
+something only the TS install has: the `sindri/`, `scorer/` and `audit/` directories are TS-only (the C# home is
+`$AW_STATE_DIR/sindri-app/`, and the C# profile lives under it, not at `$AW_STATE_DIR/profile`); `judge/decisions.sqlite`
+and `judge/config.json` share their paths with the C# judge, so they are deleted only when the database has tables but no
+`schema_version` (the TS shape, the test of AW-DATA-009). On a flipped box a second run finds nothing, deletes nothing and
+prints `cutover: nothing to remove`. In this order:
 
 Order in `setup.sh` (one sequence, so no window has the C# `judge` over the TS database or `setup.sh` stopped half
 switched): `install-cs.sh --publish` (nothing on PATH changes; a failure stops with the box untouched), then
@@ -476,16 +498,16 @@ by its stamped path, because nothing is linked yet.
 
 | Step | Action | Why this position |
 |---|---|---|
-| 1 | Refuse (exit 1, **nothing changed yet**) if a TS job is mid-run: on macOS a loaded `com.agentic-workflow.*` launchd job that `launchctl print` shows running; on any OS the TS ledger (`$AW_STATE_DIR/sindri/ledger.db`) answering busy to a `BEGIN IMMEDIATE` probe. The TS code writes no pid file (verified: no `control.json` in `sindri/src`), and there is no `pkill` or `pgrep -f` | first, so a refusal leaves the box exactly as it was |
-| 2 | For every repo of the TS profile (`$AW_STATE_DIR/profile/repos/*.yaml`, or `AW_PROFILE_DIR`; §6.2), install hook v3 with the stamped C# `sindri scrub --install-pre-commit --repo <path>` (replaces markers v2 and v1); a repo that is gone or unreadable is reported, not fatal | the TS profile is the only list; step 8 deletes it |
+| 1 | Refuse (exit 1, **nothing changed yet**; the message names the job, says nothing was changed, and gives the retry) if a TS job is mid-run, or a C# serve runs from `$AW_STATE_DIR/bin/sindri-app/` (the pid in its `control.json`, alive, build dir in its command line; `sindri-app stop` first): on macOS a loaded `com.agentic-workflow.*` launchd job that `launchctl print` shows running; on any OS the TS ledger (`$AW_STATE_DIR/sindri/ledger.db`) answering busy to a `BEGIN IMMEDIATE` probe. The TS code writes no pid file (verified: no `control.json` in `sindri/src`), and there is no `pkill` or `pgrep -f` | first, so a refusal leaves the box exactly as it was |
+| 2 | For every repo of the TS profile (`$AW_STATE_DIR/profile/repos/*.yaml`, or `AW_PROFILE_DIR`; §6.2), install hook v3 with the stamped C# `sindri scrub --install-pre-commit --repo <path>` (replaces markers v2 and v1). `install-cs.sh` exports `DOTNET_ROOT` for it, and `AW_SINDRI_HOOK_BIN=~/.local/bin/sindri` makes the stable wrapper path the baked one, not the stamped path it runs from; a repo that is gone or unreadable is reported, not fatal. Under `--dry-run` this step only prints `would install hook v3` (nothing is published then). Before it, the repo list (name, path), the judge config as `judge config set` lines and the text of `profile.yaml` and `repos/*.yaml` are written to the log (step 10's file), so a stop later loses nothing | the TS profile is the only list; step 8 deletes it |
 | 3 | macOS: `launchctl bootout gui/$(id -u)/<label>` and delete the six plists (`scorer`, `scorer-audit`, `sindri-observe`, `sindri-index-quick`, `sindri-index`, `sindri-evolve`) in `${AW_LAUNCH_AGENTS_DIR:-~/Library/LaunchAgents}`; Linux: print "remove any cron line you added by hand" | nothing is running when state goes |
 | 4 | `git config --global --get init.templateDir`; unset only when it equals `$AW_STATE_DIR/sindri/git-template` | the template copy lives in the TS state |
-| 5 | Delete `judge/decisions.sqlite{,-shm,-wal}` and `judge/config.json` (after printing the non-default values of the config for step 10) | before the link: no C# `judge` ever sees it (§5.3) |
-| 6 | `install-cs.sh --link`: the C# wrappers replace the TS `judge` and `sindri` in `~/.local/bin` atomically | the C# state is clean, hook v3 points at this path |
+| 5 | If `judge/decisions.sqlite` has the TS shape: delete it with `-shm`, `-wal` and `judge/config.json` (their values are already in the log), immediately before step 6 | before the link: no C# `judge` ever sees it (§5.3) |
+| 6 | `install-cs.sh --link`: the C# wrappers replace the TS `judge` and `sindri` in `~/.local/bin` atomically. Then, first thing of `--post-link`: a TS hook running in the gap between steps 5 and 6 can have recreated a TS-shaped database, so test the shape again, delete and retry once, and finish with `judge health` (it must answer `ok`, or `setup.sh` stops with exit 3) | the C# state is clean, hook v3 points at this path |
 | 7 | Remove the remaining TS wrappers when the file matches the TS shape (`exec <node> .../dist/cli.js`; `install-sindri.sh:97` refuses a symlink target): `scorer`, `sindri-next`, and the `sindri-app` link with `$AW_STATE_DIR/bin/sindri-app/`. Anything else (for example `sindri-view`, which no script in the repo creates) is left alone and reported | the links of step 6 already replaced `judge` and `sindri` |
-| 8 | Delete TS state: `$AW_STATE_DIR/sindri/` (ledger, index, channels, git-template, spool, logs), `$AW_STATE_DIR/profile` (the profile directory or link), `$AW_STATE_DIR/scorer/`, `$AW_STATE_DIR/audit/`, `<repo-slug>/bugfix/` (open bug fixes restart, §4.3 e) | one-way; no archive. Every delete is guarded: `AW_STATE_DIR` must be absolute and non-empty (the guard of `aw_remove_retired_dir`, `providers/lib.sh:391-406`) |
-| 9 | Run `scripts/install-live-pane.sh --uninstall` once (Claude marketplace `agentic-workflow-mods`, plugin `aw-live`), unless Q4 keeps the mod; `aw_remove_retired_dir` on `judge/`, `scorer/`, `sindri/` of an updated checkout for ignored build output (`dist/`, `node_modules/`) only | the mod's backend is gone; tracked content stays |
-| 10 | Print, and write to `$AW_STATE_DIR/logs/cutover-<timestamp>.log`: what was removed, what was kept, what was left alone, the repos found (name and path), the judge config values that were deleted, and the **next steps**: `sindri profile init` then the typed `sindri profile approve`, then `sindri repo onboard <path>` for each listed repo (the C# profile is new and starts empty; no TS profile is migrated) | the owner needs the list, and the C# side starts unapproved |
+| 8 | Delete TS state: `$AW_STATE_DIR/sindri/` (ledger, index, channels, git-template, spool, logs), `$AW_STATE_DIR/profile` (a link is unlinked, never followed or recursed into; any delete whose resolved path is outside `$AW_STATE_DIR` is refused), `$AW_STATE_DIR/scorer/`, `$AW_STATE_DIR/audit/`, `<repo-slug>/bugfix/` (open bug fixes restart, §4.3 e) | one-way; no archive. Every delete is guarded: `AW_STATE_DIR` must be absolute and non-empty (the guard of `aw_remove_retired_dir`, `providers/lib.sh:391-406`) |
+| 9 | Run `claude plugin uninstall aw-live@agentic-workflow-mods --scope user` and remove the marketplace `agentic-workflow-mods`, best effort (inlined here, because `install-live-pane.sh` is deleted by the same PR), unless Q4 keeps the mod; `aw_remove_retired_dir` on `judge/`, `scorer/`, `sindri/` of an updated checkout for ignored build output (`dist/`, `node_modules/`) only | the mod's backend is gone; tracked content stays |
+| 10 | Print, and write to `$AW_STATE_DIR/logs/cutover-<timestamp>.log`: what was removed, what was kept, what was left alone, the repos found (name and path), the judge config values that were deleted, and the **next steps** as copy-pasteable lines: `sindri profile init` then the typed `sindri profile approve`, then `sindri repo onboard <path>` for each listed repo, then `sindri doctor` (the C# profile is new and starts empty, so the session nudge says "not onboarded" in every repo until then; that is expected; no TS profile is migrated). `setup.sh` prints the same lines again as its last output, so the lever installers do not bury them. Printed only when something was removed | the owner needs the list, and the C# side starts unapproved |
 
 ### 8.1 Script contract
 
@@ -562,7 +584,7 @@ rename; becomes the install test); `config/lib/tests/install-wake-gating.test.sh
 `sindri-app`" notices go), and the TS command docs `index.md`, `evolve.md`, `scope.md`, `profile.md`, `linear.md`,
 `onyx.md`, `context.md`; `docs/csharp/{judge,bugfix,evidence,sindri,sindri-ui,sindri-profile,sindri-context}.md` (every
 "until the switch" sentence; evidence.md "At the switch" is adopted wholesale); `skills/_preamble.md:5,17,18,102`, the toolkit counts ("53 native skills" in AGENTS.md and READMEs), `.agents/rules/skills.md:148`,
-`.agents/rules/csharp.md:42`, `.agents/rules/mcp-servers.md`, `docs/devcontainer.md`, `docs/ui-evidence-cost.md`,
+`.agents/rules/csharp.md:42`, `.agents/rules/mcp-servers.md`, every other `install-judge`/`install-sindri` mention (`git grep` in README, ONBOARDING, `docs/sindri/SETUP.md`), `docs/devcontainer.md`, `docs/ui-evidence-cost.md`,
 `docs/dispatch-conventions.md`, `docs/readiness/*`. Comment-only citations: `config/hooks/context-guard.sh:9`,
 `probe-log.sh:6`, `done-gate.sh:65`, `config/lib/failopen.sh:11`. Historical specs under `docs/superpowers/` stay.
 
@@ -617,7 +639,7 @@ Each phase has exit criteria and a proof. Contract units come first (§13).
 
 This spec's tables become test lists, red first (`/new-slice` style). Exit: every §3.2, §4.2, §5.1 and §6.1 row marked
 equivalent has a named test or an existing one; every gap row has a red test or a stub. Proof: `dotnet build -warnaserror`
-zero warnings; the red tests are listed in the PR. Owner decisions Q1 to Q8 are answered before P1 opens.
+zero warnings; the red tests are listed in the PR. Owner decisions Q1, Q2, Q6 and Q7 are answered before P1 opens; Q3, Q4, Q5 and Q8 are answered before P3. A question left open takes its Recommended answer.
 
 ### P1. Close the gaps (parallel waves)
 
@@ -649,7 +671,7 @@ install seeded in it: wrappers, state, plists, a profile with one repo, one onbo
 Exit and proof: on the scratch box, `install-cs.sh` publishes, links and verifies; the cleanup removes exactly the §8
 list and leaves the §8 "kept" list byte-identical; the v2 hook is now v3 and refuses a staged secret and passes a clean
 commit; the real hooks, run against the installed binaries, pass the §10 suites; `./setup.sh --providers claude,codex,cursor
---dry-run` is clean; a second run changes nothing; a cold `sindri repo status --nudge` through the wrapper stays inside the nudge hook's time
+--dry-run` is clean; a second run changes nothing, and a flipped box with live C# judge state (a schema-versioned `decisions.sqlite`, a `config.json`) keeps it through a second `./setup.sh`; a cold `sindri repo status --nudge` through the wrapper stays inside the nudge hook's time
 budget (measured, not assumed; the framework-dependent `sindri` is the slowest binary); a failed `--publish` leaves the seeded
 TS install untouched, and a step-1 refusal changes nothing. The step runs in CI (§9). The macOS case (a wrapper exec of a
 NativeAOT `judge` finding `libe_sqlite3`) cannot run in Linux CI; it is the P4 check on the owner's Mac.
