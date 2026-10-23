@@ -162,6 +162,102 @@ public sealed class PrSnapshotStepTests
         Assert.Empty(await Rows());
     }
 
+    [Fact]
+    public async Task The_first_snapshot_records_the_base_branch_and_its_tip()
+    {
+        _pull.Base = "feat/a";
+        _pull.BaseSha = "tip-a1";
+
+        var state = Fact(await Snapshot(), "fact:prState").GetProperty("base");
+
+        Assert.Equal(("feat/a", "tip-a1", "tip-a1"), (state.GetProperty("ref").GetString(), state.GetProperty("sha").GetString(), state.GetProperty("tip").GetString()));
+    }
+
+    [Fact]
+    public async Task A_base_that_moved_keeps_the_tip_the_pull_request_was_built_on_and_shows_the_new_one()
+    {
+        _pull.Base = "feat/a";
+        _pull.BaseSha = "tip-a1";
+        var first = await Snapshot();
+        _pull.BaseSha = "tip-a2";
+
+        var state = Fact(await Snapshot(more: Previous(first)), "fact:prState").GetProperty("base");
+
+        Assert.Equal(("feat/a", "tip-a1", "tip-a2"), (state.GetProperty("ref").GetString(), state.GetProperty("sha").GetString(), state.GetProperty("tip").GetString()));
+    }
+
+    [Fact]
+    public async Task A_base_that_was_squash_merged_and_deleted_keeps_its_last_tip_and_names_the_branch_it_was()
+    {
+        _pull.Base = "feat/a";
+        _pull.BaseSha = "tip-a1";
+        var first = await Snapshot();
+        _pull.Base = "main";   // the base pull request merged, its branch is gone and the forge moved this one to main
+        _pull.BaseSha = "tip-main";
+
+        var state = Fact(await Snapshot(more: Previous(first)), "fact:prState").GetProperty("base");
+
+        Assert.Equal(("main", "tip-a1", "tip-main", "feat/a"), (state.GetProperty("ref").GetString(), state.GetProperty("sha").GetString(), state.GetProperty("tip").GetString(), state.GetProperty("was").GetString()));
+    }
+
+    [Fact]
+    public async Task The_old_tip_survives_further_snapshots_until_a_restack_settles()
+    {
+        _pull.Base = "feat/a";
+        _pull.BaseSha = "tip-a1";
+        var first = await Snapshot();
+        _pull.Base = "main";
+        _pull.BaseSha = "tip-main";
+        var second = await Snapshot(more: Previous(first));
+
+        var third = Fact(await Snapshot(more: Previous(second)), "fact:prState").GetProperty("base");
+
+        Assert.Equal(("tip-a1", "feat/a"), (third.GetProperty("sha").GetString(), third.GetProperty("was").GetString()));
+    }
+
+    [Fact]
+    public async Task A_restack_that_settled_at_this_head_makes_the_current_tip_the_one_the_pull_request_sits_on()
+    {
+        _pull.Base = "feat/a";
+        _pull.BaseSha = "tip-a1";
+        var first = await Snapshot();
+        _pull.Base = "main";
+        _pull.BaseSha = "tip-main";
+        var more = Previous(first);
+        more["restack"] = $$$"""{"outcome":"restacked","head":"{{{Head}}}","oldBase":"feat/a","newBase":"main"}""";
+
+        var state = Fact(await Snapshot(more: more), "fact:prState").GetProperty("base");
+
+        Assert.Equal(("main", "tip-main"), (state.GetProperty("sha").GetString(), state.GetProperty("tip").GetString()));
+        Assert.False(state.TryGetProperty("was", out var was) && was.ValueKind == JsonValueKind.String);
+    }
+
+    [Fact]
+    public async Task A_restack_of_another_head_does_not_settle_this_one()
+    {
+        _pull.Base = "feat/a";
+        _pull.BaseSha = "tip-a1";
+        var first = await Snapshot();
+        _pull.BaseSha = "tip-a2";
+        var more = Previous(first);
+        more["restack"] = """{"outcome":"restacked","head":"some-other-head","oldBase":"feat/a","newBase":"feat/a"}""";
+
+        var state = Fact(await Snapshot(more: more), "fact:prState").GetProperty("base");
+
+        Assert.Equal("tip-a1", state.GetProperty("sha").GetString());
+    }
+
+    [Fact]
+    public async Task A_forge_that_gives_no_base_tip_writes_the_branch_and_no_sha()
+    {
+        _pull.Base = "feat/a";
+
+        var state = Fact(await Snapshot(), "fact:prState").GetProperty("base");
+
+        Assert.Equal("feat/a", state.GetProperty("ref").GetString());
+        Assert.Equal(JsonValueKind.Null, state.GetProperty("sha").ValueKind);
+    }
+
     private static Dictionary<string, string> Previous(BlockStepResult result) => new(StringComparer.Ordinal) { ["prState"] = Fact(result, "fact:prState").GetRawText() };
 
     private async Task<string[]> Rows() => (await _area.Read(Address, "babysit.jsonl", Token)).Value.Split('\n', StringSplitOptions.RemoveEmptyEntries);
