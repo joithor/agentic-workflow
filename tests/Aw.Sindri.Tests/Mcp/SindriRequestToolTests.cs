@@ -234,8 +234,8 @@ public sealed class SindriRequestToolTests(SharedMcpWorld shared) : IClassFixtur
         var read = await mcp.Call("sindri_item", new JsonObject { ["itemId"] = item }.ToJsonString(), ct);
         runtime.Flush();
 
-        Assert.True(filed.IsError != true, Text(filed));
-        Assert.True(read.IsError != true, Text(read));
+        Assert.False(filed.IsError ?? false, Text(filed));
+        Assert.False(read.IsError ?? false, Text(read));
         Assert.NotEmpty(sink.Lines);
         Assert.DoesNotContain("zebra", sink.Text, StringComparison.Ordinal);
         Assert.DoesNotContain("Quagga", sink.Text, StringComparison.Ordinal);
