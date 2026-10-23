@@ -120,6 +120,7 @@ public sealed class StepInputWorkflowTests(SindriTimeSkippingServer server) : IC
         await Run("T-75", [ProbeInput.Id], async run =>
         {
             _ = await run.Desk.Until(static v => v.Task is not null);
+            await WaitForRunStep(run.Handle);   // the task is open before the FillInput activity has run; counting before it lets the fill land during the replay
             var calls = _probe.Calls.Count;
 
             var replay = await InterpreterEvalTests.Replay(run.Handle, TestContext.Current.CancellationToken);

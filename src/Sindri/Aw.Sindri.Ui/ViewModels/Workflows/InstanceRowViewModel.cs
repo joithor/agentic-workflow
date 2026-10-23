@@ -16,10 +16,11 @@ internal sealed partial class InstanceRowViewModel : ObservableObject
     private readonly InstanceSummary _row;
     private readonly IClipboard _clipboard;
     private readonly TimeProvider _clock;
+    private readonly StateNames? _names;
 
-    internal InstanceRowViewModel(InstanceSummary row, IClipboard clipboard, TimeProvider clock)
+    internal InstanceRowViewModel(InstanceSummary row, IClipboard clipboard, TimeProvider clock, StateNames? names = null)
     {
-        (_row, _clipboard, _clock) = (row, clipboard, clock);
+        (_row, _clipboard, _clock, _names) = (row, clipboard, clock, names);
         var blocked = row.Inputs.Any(i => i is { Required: true, Present: false });
         Inputs = [.. row.Inputs.Select(i => new InputCellViewModel(i))];
         var missing = row.Inputs.Count(i => !i.Present);
@@ -53,7 +54,19 @@ internal sealed partial class InstanceRowViewModel : ObservableObject
     public string StateWord => _row.State;
 
     /// <summary>The compact line a narrow page shows instead of the columns: the workflow and the stage.</summary>
-    public string Compact => $"{DisplayName} · {_row.State}";
+    public string Compact => $"{DisplayName} · {StateName}";
+
+    /// <summary>The state the instance is in, in words: the recipe's displayName for it once the recipe is read, else its id as served.</summary>
+    public string StateName => _names?.Served(_row.Recipe.Id, _row.State) ?? _row.State;
+
+    /// <summary>The recipes' state names were read: the words that name the state are drawn again.</summary>
+    internal void NamesChanged()
+    {
+        OnChanged(nameof(StateName));
+        OnChanged(nameof(StageName));
+        OnChanged(nameof(Compact));
+        OnChanged(nameof(AccessibleName));
+    }
 
     /// <summary>The recipe's id, as served (Details, and what the workflow filter sends).</summary>
     public string Recipe => _row.Recipe.Id;
@@ -150,7 +163,7 @@ internal sealed partial class InstanceRowViewModel : ObservableObject
     public string OpenName => Labels.OpenRunName(Subject, DisplayName);
 
     /// <summary>The name screen readers hear: the item (the visible title), the workflow, the served chip word, the stage and who is on it. The address is in Details.</summary>
-    public string AccessibleName => string.Join(", ", new[] { Subject, DisplayName, _row.Chip.Word, _row.State, Who, MissingInputsText }.Where(p => p.Length > 0));
+    public string AccessibleName => string.Join(", ", new[] { Subject, DisplayName, _row.Chip.Word, StateName, Who, MissingInputsText }.Where(p => p.Length > 0));
 
     /// <summary>Where Enter and a click go: the instance in the Workflows frame.</summary>
     public DeepLink Link => new(DeepLinkKind.Workflow, _row.Address);

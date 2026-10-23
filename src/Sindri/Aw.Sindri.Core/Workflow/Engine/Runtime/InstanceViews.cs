@@ -2,6 +2,7 @@ using System.Globalization;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
+using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Views;
@@ -63,7 +64,7 @@ public static partial class InstanceViews
             LegacyDetail(recipe) ?? (task is not null ? "desk task" : words.Detail()),
             since,
             words.Next(task),
-            Allowed(instance, task, words.GrantTokens()),
+            Allowed(instance, recipe, task, words.GrantTokens()),
             instance.Suspension is { } s ? new OpenQuestion(s.Kind, s.Reason, s.Question) : null,
             task,
             instance.Frame.Run?.Token,
@@ -183,17 +184,19 @@ public static partial class InstanceViews
     }
 
     /// <summary>
-    /// The commands the instance accepts now, its own verbs first in the order 'answer', 'complete', 'handback',
+    /// The commands the instance accepts now, its own verbs first in the order 'answer', 'complete', the recipe's verbs, 'handback',
     /// 'takeover', 'cancel' (§6.4). An ended instance accepts none. A park whose only way out is an approval or a
     /// cancel (spec-conflict: revoked, child revoked, drift; §3.8) takes no answer.
     /// </summary>
     /// <param name="instance">The interpreter's state.</param>
+    /// <param name="recipe">The recipe it runs: each 'command.&lt;verb&gt;' transition out of the current state is a verb the instance accepts (API18). A taken-over instance accepts none; the human has it.</param>
     /// <param name="task">The open desk task, if any.</param>
     /// <param name="grantTokens">The token amount a budget park's grant offers (the one the status line prints).</param>
     /// <returns>Each command's action id and CLI line; an open park or escalation gets one 'answer' entry per variant that fits, each with its full CLI.</returns>
-    public static IReadOnlyList<AllowedCommand> Allowed(WorkflowInstance instance, DeskTask? task, string grantTokens)
+    public static IReadOnlyList<AllowedCommand> Allowed(WorkflowInstance instance, InterpretedRecipe recipe, DeskTask? task, string grantTokens)
     {
         ArgumentNullException.ThrowIfNull(instance);
+        ArgumentNullException.ThrowIfNull(recipe);
         if (instance.Ended)
         {
             return [];
@@ -211,6 +214,11 @@ public static partial class InstanceViews
             commands.Add(new("CompleteStep", CompleteCli(address, task)));
         }
 
+        if (instance.Suspension is not { Kind: SuspensionKind.Takeover })
+        {
+            commands.AddRange(VerbCommands(instance, recipe));
+        }
+
         if (instance.Suspension is { Kind: SuspensionKind.Takeover })
         {
             commands.Add(new("ApplyCommand:handback", $"sindri workflow handback {address}"));
@@ -223,6 +231,17 @@ public static partial class InstanceViews
         commands.Add(new("ApplyCommand:cancel", $"sindri workflow cancel {address}"));
         return commands;
     }
+
+    /// <summary>
+    /// The recipe's verbs out of the current state, one entry per distinct verb in recipe order, all the generic 'ApplyCommand:command' (one desk row serves every verb).
+    /// A verb whose transition carries a human-trigger effect (merge, rework) is listed too: the server refuses an agent session's call.
+    /// </summary>
+    private static IEnumerable<AllowedCommand> VerbCommands(WorkflowInstance instance, InterpretedRecipe recipe) =>
+        recipe.Recipe.Transitions
+            .Where(t => t.On.StartsWith(TriggerNames.CommandPrefix, StringComparison.Ordinal) && t.From.Contains(instance.State, StringComparer.Ordinal))
+            .Select(t => t.On[TriggerNames.CommandPrefix.Length..])
+            .Distinct(StringComparer.Ordinal)
+            .Select(verb => new AllowedCommand("ApplyCommand:command", $"sindri workflow command {instance.Address.Value} {verb}") { Verb = verb });
 
     /// <summary>
     /// The complete command with the outcome it reports (every one the Step can report when there are several) and an '--output &lt;fact&gt;=&lt;file&gt;' flag for each

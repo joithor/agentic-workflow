@@ -109,6 +109,88 @@
     <Setter Property="Background" Value="{DynamicResource Brush.Surface3}" />
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
   </Style>
+  <!-- The run drawer (F3 workflows spec §2): Surface1 with a left hairline, 40 px chrome, a header and a callout by status (attention, error, violet for
+       "you took over", Surface2 otherwise), a sticky-looking STAGES caption and 40 px stage rows. Tokens only. -->
+  <Style Selector="Border.inspector">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="1,0,0,0" />
+  </Style>
+  <Style Selector="Border.inspector-chrome">
+    <Setter Property="Height" Value="40" />
+    <Setter Property="Padding" Value="8,0" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+  <Style Selector="Border.inspector-head">
+    <Setter Property="Padding" Value="16" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+  <Style Selector="Border.inspector-foot">
+    <Setter Property="Padding" Value="16,10" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="0,1,0,0" />
+  </Style>
+  <Style Selector="Button.inspector-button">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="Padding" Value="8,0" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.SM}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.inspector-button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+  </Style>
+  <Style Selector="Button.reference">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.XS}" />
+    <Setter Property="Padding" Value="6,2" />
+  </Style>
+  <Style Selector="Border.callout">
+    <Setter Property="Margin" Value="16,16,16,0" />
+    <Setter Property="Padding" Value="12" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.MD}" />
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="Border.callout.attn">
+    <Setter Property="Background" Value="{DynamicResource Brush.AttentionSoft}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Attention}" />
+  </Style>
+  <Style Selector="Border.callout.fail">
+    <Setter Property="Background" Value="{DynamicResource Brush.ErrorSoft}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Error}" />
+  </Style>
+  <Style Selector="Border.callout.violet">
+    <Setter Property="Background" Value="{DynamicResource Brush.VioletSoft}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Violet}" />
+  </Style>
+  <Style Selector="Border.inspector-stages-head">
+    <Setter Property="Margin" Value="0,16,0,0" />
+    <Setter Property="Padding" Value="16,8" />
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface1}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+  <Style Selector="Border.stage-row">
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="Padding" Value="16,8" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="0,0,0,1" />
+  </Style>
+  <Style Selector="Border.stage-row.current">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+  </Style>
+  <Style Selector="Border.stage-index">
+    <Setter Property="Width" Value="16" />
+    <Setter Property="Height" Value="16" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface3}" />
+  </Style>
   <Style Selector="TextBlock.current">
     <Setter Property="FontWeight" Value="SemiBold" />
   </Style>

@@ -6,6 +6,26 @@
              x:DataType="sv:SetupProfileConfirmViewModel">
   <!-- The profile row's typed approval (setup spec §2.1): the shared typed box while the catalog lets the app approve settings. It sends nothing until the exact phrase is pressed. -->
   <StackPanel Spacing="6">
+    <StackPanel x:Name="SetupProfileSummary" Spacing="6" IsVisible="{Binding Summary.HasSummary}">
+      <TextBlock Classes="caption subtle" Text="{Binding Summary.Title}" />
+      <ItemsControl ItemsSource="{Binding Summary.Groups}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="sv:ProfileSummaryGroupViewModel">
+            <StackPanel Spacing="2" AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
+              <TextBlock Classes="caption" FontWeight="SemiBold" Text="{Binding Heading}" AutomationProperties.AccessibilityView="Raw" />
+              <TextBlock Classes="caption subtle mono" Text="{Binding Detail}" IsVisible="{Binding HasDetail}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+              <ItemsControl ItemsSource="{Binding Lines}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="x:String">
+                    <TextBlock Classes="caption" Text="{Binding}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
     <Border x:Name="SetupProfileWaiting" IsVisible="{Binding IsWaiting}" AutomationProperties.Name="{Binding WaitingText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
       <TextBlock Classes="caption subtle" Text="{Binding WaitingText}" AutomationProperties.AccessibilityView="Raw" />
     </Border>

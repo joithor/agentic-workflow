@@ -215,6 +215,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(LaunchShowReport)), JsonSerializable(typeof(LaunchProbed)), JsonSerializable(typeof(SessionEnded)), JsonSerializable(typeof(SessionUsage)), JsonSerializable(typeof(LaunchSessionReported))]
 [JsonSerializable(typeof(LaunchViewerAttached))]
 [JsonSerializable(typeof(GetLaunchTargetsRequest)), JsonSerializable(typeof(LaunchTargets)), JsonSerializable(typeof(ProbeLaunchTargetsRequest)), JsonSerializable(typeof(ProbeLaunchTargetsResult))]   // API P10a (U11): the launch targets and their probe job
+[JsonSerializable(typeof(CodeIndexRow))]
 [JsonSerializable(typeof(LaunchRow)), JsonSerializable(typeof(LaunchEnd)), JsonSerializable(typeof(LaunchViewer)), JsonSerializable(typeof(LaunchViewerPublic))]   // API P10a (U8): the launches view
 [JsonSerializable(typeof(OpenItemRequest)), JsonSerializable(typeof(OpenItemBody)), JsonSerializable(typeof(LaunchRequested)), JsonSerializable(typeof(GetLaunchRequest)), JsonSerializable(typeof(LaunchView))]
 [JsonSerializable(typeof(SessionHeartbeatBody)), JsonSerializable(typeof(SessionHeartbeatResponse)), JsonSerializable(typeof(SessionExitBody)), JsonSerializable(typeof(SessionExitResponse)), JsonSerializable(typeof(CaptureRule))]   // API P10a (U10)
