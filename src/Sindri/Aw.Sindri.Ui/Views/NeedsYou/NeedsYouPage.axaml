@@ -314,6 +314,27 @@
                 <Border Classes="kbd"><TextBlock Classes="kbd" Text="D" /></Border>
               </StackPanel>
             </Button>
+            <!-- One button per recipe verb the instance accepts now (stop 3); the merge asks first, in the Destructive style. -->
+            <ItemsControl x:Name="NeedsYouVerbs" ItemsSource="{Binding Bar.Verbs}" IsVisible="{Binding Bar.HasVerbs}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="6" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="ny:DeskVerbViewModel">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="NeedsYouVerb" Classes="bar-button" Classes.destructive="{Binding IsDestructive}" IsVisible="{Binding ShowsButton}" IsEnabled="{Binding IsEnabled}"
+                            Click="OnVerb" AutomationProperties.Name="{Binding Name}">
+                      <TextBlock Text="{Binding Label}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                    </Button>
+                    <StackPanel x:Name="NeedsYouVerbAsk" Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsConfirming}">
+                      <TextBlock x:Name="NeedsYouVerbQuestion" Classes="body" Text="{Binding Question}" VerticalAlignment="Center" />
+                      <Button x:Name="NeedsYouVerbConfirm" Classes="bar-button destructive" Click="OnVerbConfirm" IsEnabled="{Binding IsEnabled}" Content="{Binding ConfirmLabel}" />
+                      <Button x:Name="NeedsYouVerbKeep" Classes="bar-button" Click="OnVerbKeep" Content="{Binding KeepLabel}" />
+                    </StackPanel>
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
             <!-- A feature that is not built yet: a dashed chip, not a control (no focus, no key). -->
             <Panel x:Name="NeedsYouEditChip" IsVisible="{Binding Bar.ShowsEditChip}" Focusable="False" AutomationProperties.AccessibilityView="Content">
               <Rectangle Classes="chip-dash" RadiusX="6" RadiusY="6" />
