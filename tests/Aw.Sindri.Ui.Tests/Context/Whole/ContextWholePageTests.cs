@@ -1,7 +1,6 @@
 using System.Net;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
-using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Context;
 using Aw.Sindri.Ui.ViewModels.Controls;
 using Microsoft.Extensions.Time.Testing;
@@ -114,7 +113,7 @@ public sealed class ContextWholePageTests
     }
 
     [Fact]
-    public async Task A_query_replaces_the_whole_map_on_the_stage_and_an_empty_refusal_puts_it_back()
+    public async Task A_query_no_longer_replaces_the_whole_map_it_zooms_into_it()
     {
         var api = new FakeSindriApi();
         var (page, _) = await Page(api);
@@ -123,8 +122,7 @@ public sealed class ContextWholePageTests
 
         await page.Submit(Token);
 
-        Assert.Equal((false, true), (page.ShowWhole, page.MapVisible));
-        Assert.Equal(ViewModelsLabelHead(1), page.Head);
+        Assert.Equal((true, false, "Context · the whole map · v1"), (page.ShowWhole, page.MapVisible, page.Head));
     }
 
     [Fact]
@@ -160,7 +158,6 @@ public sealed class ContextWholePageTests
         Assert.Equal(2, api.WholeMapAsked.Count);
     }
 
-    private static string ViewModelsLabelHead(int anchors) => Labels.ContextHead(anchors);
 
     [Fact]
     public async Task A_tile_click_reads_that_feature_in_full_with_area_and_draws_it()

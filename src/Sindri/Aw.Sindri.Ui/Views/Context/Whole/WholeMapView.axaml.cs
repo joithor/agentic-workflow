@@ -50,6 +50,7 @@ internal sealed partial class WholeMapView : UserControl
         if (_map is { } old)
         {
             old.ZoomRequested -= OnZoomRequested;
+            old.FitRequested -= OnFitRequested;
             old.PropertyChanged -= OnMapChanged;
         }
 
@@ -58,6 +59,7 @@ internal sealed partial class WholeMapView : UserControl
         if (_map is not null)
         {
             _map.ZoomRequested += OnZoomRequested;
+            _map.FitRequested += OnFitRequested;
             _map.PropertyChanged += OnMapChanged;
             _fitted = false;
             Arrange();
@@ -82,7 +84,11 @@ internal sealed partial class WholeMapView : UserControl
             _fitted = false;
             Arrange();
         }
+
+        WholeWorld.InvalidateVisual();   // the answer's nodes standing out is not a property the canvas watches
     }
+
+    private void OnFitRequested(object? sender, EventArgs e) => WholeCanvas.Fit();
 
     private void OnZoomRequested(object? sender, ValueEventArgs<WholeRect> e) =>
         WholeCanvas.FitBounds(new Rect(e.Value.X - 24, e.Value.Y - 24, e.Value.Width + 48, e.Value.Height + 48));

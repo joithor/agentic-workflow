@@ -74,6 +74,34 @@ internal static class WholeMapLayout
             : Tiles(map, order);
     }
 
+    /// <summary>
+    /// Places an overview with some features opened in full (a query zoomed into an answer by feature): the opened ones as columns of nodes, the rest still as
+    /// tiles in a block to their right, in the same order.
+    /// </summary>
+    /// <param name="overview">The answer by area.</param>
+    /// <param name="opened">The answers for the opened features (each read with area=).</param>
+    /// <returns>Where everything sits.</returns>
+    internal static WholeMapGeometry PlaceMixed(WholeMapView overview, IReadOnlyList<WholeMapView> opened)
+    {
+        ArgumentNullException.ThrowIfNull(overview);
+        ArgumentNullException.ThrowIfNull(opened);
+        var openKeys = opened.Where(o => o.Area is not null).Select(o => o.Area!.Key).ToHashSet(StringComparer.Ordinal);   // why: filtered on Area
+        var inOrder = WholeAreaOrder.Of(overview.Areas, overview.AreaEdges);
+        var open = inOrder.Where(openKeys.Contains).ToList();
+        var rest = overview.Areas.Where(a => !openKeys.Contains(a.Key)).ToList();
+        var restKeys = rest.Select(a => a.Key).ToHashSet(StringComparer.Ordinal);
+        var nodes = opened.SelectMany(o => o.Nodes ?? []).GroupBy(n => n.Key, StringComparer.Ordinal).Select(g => g.First()).ToList();
+        var edges = opened.SelectMany(o => o.Edges ?? []).GroupBy(e => e.Link, StringComparer.Ordinal).Select(g => g.First()).ToList();
+        var columns = Columns(overview with { Areas = [.. overview.Areas.Where(a => openKeys.Contains(a.Key))], AreaEdges = [], Nodes = nodes, Edges = edges, Detail = "nodes", Area = null }, open, nodes);
+        var restEdges = overview.AreaEdges.Where(e => restKeys.Contains(e.From) && restKeys.Contains(e.To)).ToList();
+        var tiles = Tiles(overview with { Areas = rest, AreaEdges = restEdges }, WholeAreaOrder.Of(rest, restEdges));
+        var shift = columns.World.Right + TileGap;
+        var placedTiles = tiles.Tiles.Select(t => t with { AreaIndex = t.AreaIndex + open.Count, Rect = t.Rect with { X = t.Rect.X + shift } }).ToList();
+        var areaEdges = tiles.AreaEdges.Select(e => e with { X1 = e.X1 + shift, X2 = e.X2 + shift }).ToList();
+        var world = new WholeRect(0, 0, shift + tiles.World.Width, Math.Max(columns.World.Height, tiles.World.Height));
+        return new WholeMapGeometry(world, ByArea: false, [.. columns.Order, .. tiles.Order], columns.Columns, columns.Nodes, placedTiles, columns.Edges, areaEdges, columns.Bands);
+    }
+
     private static WholeMapGeometry Tiles(WholeMapView map, IReadOnlyList<string> order)
     {
         var byKey = map.Areas.ToDictionary(a => a.Key, StringComparer.Ordinal);
