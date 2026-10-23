@@ -17,9 +17,16 @@ check() {
   fi
 }
 WORK="$(cd "$(mktemp -d)" && pwd -P)"
+descendants() {   # <pid>: every process below it, by ps parent links (no pattern matching)
+  ps -eo pid=,ppid= | awk -v root="$1" '{ kid[$2] = kid[$2] " " $1 } END {
+    n = split(root, todo, " "); while (n > 0) { p = todo[n--]; m = split(kid[p], k, " ")
+      for (i = 1; i <= m; i++) { print k[i]; todo[++n] = k[i] } } }'
+}
 cleanup() {
   local p
   for p in "$WORK"/runs/*.pid; do [ -f "$p" ] && kill "$(cat "$p")" 2>/dev/null; done
+  # whatever this run still has below it, found by parent links; nothing else is touched
+  for p in $(descendants "$$"); do kill "$p" 2>/dev/null; done
   rm -rf "$WORK"
 }
 trap cleanup EXIT
@@ -76,7 +83,8 @@ EOS
 cat > "$WORK/bin/sindri-ui" <<'EOS'
 #!/usr/bin/env bash
 echo "ui home=$AW_SINDRI_HOME" >> "$CALLS"
-while [ ! -e "$STOP" ]; do sleep 0.1; done
+end=$((SECONDS + 120))   # bounded: the test's temp dir going away ends it too
+while [ ! -e "$STOP" ] && [ -d "$POD" ] && [ "$SECONDS" -lt "$end" ]; do sleep 0.1; done
 EOS
 chmod +x "$WORK/bin/kubectl" "$WORK/bin/sindri-ui"
 export AW_SINDRI_UI="$WORK/bin/sindri-ui"
@@ -97,7 +105,7 @@ reset() { : > "$CALLS"; rm -rf "$AW_STATE_DIR/sindri-pod" "$TMPDIR"/aw-sindri-po
 run_connect() {   # <tag> args...: connect in the background with the fakes on the PATH; stdin is one Enter once $WORK/enter exists
   local tag="$1"; shift
   rm -f "$STOP" "$WORK/enter" "$WORK/runs/$tag.rc"
-  ( PATH="$WORK/bin:$PATH" bash "$DIR/sindri-pod.sh" connect "$@" < <(while [ ! -e "$WORK/enter" ]; do sleep 0.1; done; echo) \
+  ( PATH="$WORK/bin:$PATH" bash "$DIR/sindri-pod.sh" connect "$@" < <(end=$((SECONDS + 60)); while [ ! -e "$WORK/enter" ] && [ -d "$WORK" ] && [ "$SECONDS" -lt "$end" ]; do sleep 0.1; done; echo) \
       > "$WORK/runs/$tag.out" 2> "$WORK/runs/$tag.err"; echo $? > "$WORK/runs/$tag.rc" ) &
   echo $! > "$WORK/runs/$tag.pid"
 }
@@ -528,5 +536,21 @@ check "wait: the state was printed while waiting" "$([ "$(said w 'waiting for th
 finish w >/dev/null; rm -f "$POD/state"
 OUT="$(env -u AW_SINDRI_POD_RETRIES -u AW_SINDRI_POD_RETRY_WAIT PATH="/usr/bin:/bin" bash "$DIR/sindri-pod.sh" connect --dry-run 2>&1)"
 check "wait: the default is 40 attempts 15 s apart (10 minutes)" "$(printf '%s' "$OUT" | grep -c 'up to 40 attempts 15s apart')" "1"
+
+# --- no process of this run is left: each carries this run's STOP path in its environment (an orphan reparented to
+# systemd keeps it); the loops are bounded, so give them a moment to end on their own, then fail on any that remain
+left() {   # runs in this shell (no subshell of its own to find), results in $WORK/left
+  local d p
+  : > "$WORK/left"
+  for d in /proc/[0-9]*; do
+    p="${d#/proc/}"; [ "$p" != "$$" ] || continue
+    tr '\0' '\n' < "$d/environ" 2>/dev/null | grep -qx "STOP=$STOP" && echo "$p" >> "$WORK/left"
+  done
+}
+touch "$STOP"
+for _ in $(seq 1 50); do left; [ -s "$WORK/left" ] || break; sleep 0.1; done
+LEFT="$(tr '\n' ' ' < "$WORK/left")"
+check "no process of this run is left running" "$LEFT" ""
+for p in $LEFT; do kill "$p" 2>/dev/null; done
 
 exit "$fail"
