@@ -44,6 +44,93 @@ public sealed class NeedsYouBarViewModelTests
         _server.InstanceBody = _ => new RouteAnswer(System.Net.HttpStatusCode.OK, instance.ToJsonString());
     }
 
+    // The merge stop: the desk instance with its complete command protected, and (when listed) the fact "fact:prStatus" served.
+    private void ServeMergeStop(bool listed)
+    {
+        var instance = JsonNode.Parse(GoldenFiles.Api("workflow-instance", "dev-desk-round-trip"))!;
+        foreach (var command in instance["current"]!["status"]!["commands"]!.AsArray().Where(c => c!["verb"]!.GetValue<string>() == "complete"))
+        {
+            command!["class"] = "protected";
+        }
+
+        if (listed)
+        {
+            var row = JsonNode.Parse(instance["facts"]![0]!.ToJsonString())!;
+            row["key"] = "fact:prStatus";
+            row["type"] = "payload";
+            instance["facts"]!.AsArray().Add(row);
+        }
+
+        _server.InstanceBody = _ => new RouteAnswer(System.Net.HttpStatusCode.OK, instance.ToJsonString());
+        _server.FactBody = (_, key) => string.Equals(key, "fact:prStatus", StringComparison.Ordinal) ? new RouteAnswer(System.Net.HttpStatusCode.OK, GoldenFiles.Api("workflow-instance-fact", "pr-status")) : null;
+    }
+
+    [Fact]
+    public async Task The_merge_stop_shows_the_pull_request_card_when_the_instance_lists_its_status()
+    {
+        ServeMergeStop(listed: true);
+
+        var bar = await Bar(NeedsYouRows.Desk());
+
+        Assert.True(bar.HasMergeCard);
+        Assert.Equal(("#12", "5 passed, 2 failed, 1 pending"), (bar.MergeCard!.PrText, bar.MergeCard.Lines[0].Value));
+    }
+
+    [Fact]
+    public async Task A_request_whose_instance_lists_no_status_has_no_card()
+    {
+        ServeMergeStop(listed: false);
+
+        var bar = await Bar(NeedsYouRows.Desk());
+
+        Assert.False(bar.HasMergeCard);
+    }
+
+    [Fact]
+    public async Task A_status_that_cannot_be_read_leaves_the_card_out_and_the_request_working()
+    {
+        ServeMergeStop(listed: true);
+        _server.FactBody = (_, _) => new RouteAnswer(System.Net.HttpStatusCode.NotFound, "{}");
+
+        var bar = await Bar(NeedsYouRows.Desk());
+
+        Assert.False(bar.HasMergeCard);
+        Assert.NotNull(bar.Hint);
+    }
+
+    // The f5 desk golden whose step before the stop recommends an outcome, with the outcome replaced (or dropped).
+    private void ServeRecommending(string? outcome)
+    {
+        var instance = JsonNode.Parse(GoldenFiles.Api("workflow-instance", "f5-desk-recommended"))!;
+        var desk = instance["current"]!["desk"]!.AsObject();
+        if (outcome is null)
+        {
+            _ = desk.Remove("recommended");
+        }
+        else
+        {
+            desk["recommended"]!["outcome"] = outcome;
+        }
+
+        _server.InstanceBody = _ => new RouteAnswer(System.Net.HttpStatusCode.OK, instance.ToJsonString());
+    }
+
+    [Theory]
+    [InlineData("approve", true, false)]
+    [InlineData("reviseDesign", false, true)]
+    [InlineData("done", false, false)]
+    [InlineData(null, false, false)]
+    public async Task The_recommended_outcome_marks_its_button_suggested_and_its_why_is_the_hint(string? outcome, bool approve, bool sendBack)
+    {
+        ServeRecommending(outcome);
+
+        var bar = await Bar(NeedsYouRows.Desk());
+
+        Assert.Equal((approve, sendBack), (bar.ApproveSuggested, bar.SendBackSuggested));
+        Assert.Equal(approve || sendBack ? "Every check passed and no question is left open." : "", bar.Hint);
+        Assert.Equal("Suggested", bar.SuggestedTag);
+    }
+
     // The desk instance of the f5-fields recipe, waiting in one of its states.
     private void ServeDeskIn(string state)
     {

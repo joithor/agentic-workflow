@@ -9,6 +9,7 @@ public static class EffectRules
 {
     /// <summary>The one effect the engine's own origin may send (§5.7): its desk notice.</summary>
     private static readonly BlockId _engineNotice = BlockId.From("effect.notify.desk");
+    private static readonly BlockId _engineLineReport = BlockId.From("effect.line.report");   // LN-WF1: a linked instance tells its line it parked, resumed or ended
 
     /// <summary>
     /// The recheck before an effect's activity (§5.7; unit (b)): null when it may run, else the refusal's code. An
@@ -26,7 +27,7 @@ public static class EffectRules
         ArgumentNullException.ThrowIfNull(effects);
         if (origin == CommandOrigin.Engine)
         {
-            return kind == _engineNotice ? null : WorkflowErrors.EffectNotAllowed.Code;   // Engine_origin_limited_to_notify_desk (§10)
+            return kind == _engineNotice || kind == _engineLineReport ? null : WorkflowErrors.EffectNotAllowed.Code;   // Engine_origin_limited_to_notify_desk (§10)
         }
 
         if (approval == ApprovalCheck.Revoked)

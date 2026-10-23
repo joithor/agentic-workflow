@@ -28,6 +28,17 @@ internal sealed partial class RecipeSheetViewModel
     /// <summary>The groups after the figures: where a person came in, the steps and the weeks; empty when there is nothing to say.</summary>
     public IReadOnlyList<RecipeStatGroup> StatGroups { get; private set => Set(ref field, value); } = [];
 
+    /// <summary>The pull request babysitter's own figures, grouped in plain words; empty for every other workflow and when there is a note instead.</summary>
+    public IReadOnlyList<RecipeStatGroup> BabysitterGroups { get; private set { Set(ref field, value); OnChanged(nameof(HasBabysitter)); } } = [];
+
+    /// <summary>True when the babysitter's section shows.</summary>
+    public bool HasBabysitter => BabysitterGroups.Count > 0;
+
+    /// <summary>The heading over the babysitter's section.</summary>
+#pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
+    public string BabysitterHeading => Labels.BabysitterHeading;
+#pragma warning restore CA1822, MA0041
+
     /// <summary>A line instead of the figures (no runs, only runs inside others, or the figures can't be read); empty when the figures show.</summary>
     public string StatsNote { get; private set { Set(ref field, value); OnChanged(nameof(HasStatsNote)); } } = string.Empty;
 
@@ -65,7 +76,7 @@ internal sealed partial class RecipeSheetViewModel
 
         if (!answer.IsSuccess)
         {
-            (StatLines, StatGroups, StatsNote) = ([], [], Labels.StatsUnavailable);
+            (StatLines, StatGroups, StatsNote, BabysitterGroups) = ([], [], Labels.StatsUnavailable, []);
             return;
         }
 
@@ -76,15 +87,15 @@ internal sealed partial class RecipeSheetViewModel
     {
         if (stats.ChildOnly)
         {
-            (StatLines, StatGroups, StatsNote) = ([], [], Labels.StatsChildOnlyNote);
+            (StatLines, StatGroups, StatsNote, BabysitterGroups) = ([], [], Labels.StatsChildOnlyNote, []);
         }
         else if ((stats.Runs ?? 0) == 0)
         {
-            (StatLines, StatGroups, StatsNote) = ([], [], Labels.StatsNoRuns);
+            (StatLines, StatGroups, StatsNote, BabysitterGroups) = ([], [], Labels.StatsNoRuns, []);
         }
         else
         {
-            (StatLines, StatGroups, StatsNote) = (Lines(stats), RecipeStatGroup.Of(stats), string.Empty);
+            (StatLines, StatGroups, StatsNote, BabysitterGroups) = (Lines(stats), RecipeStatGroup.Of(stats), string.Empty, stats.Babysitter is { } babysitter ? RecipeBabysitterGroups.Of(babysitter) : []);
         }
     }
 
@@ -117,5 +128,5 @@ internal sealed partial class RecipeSheetViewModel
         }
     }
 
-    private void ClearStats() => (StatLines, StatGroups, StatsNote, _shownHash) = ([], [], string.Empty, string.Empty);
+    private void ClearStats() => (StatLines, StatGroups, StatsNote, BabysitterGroups, _shownHash) = ([], [], string.Empty, [], string.Empty);
 }

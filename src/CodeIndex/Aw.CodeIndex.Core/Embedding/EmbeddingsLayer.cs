@@ -1,45 +1,63 @@
 using System.Globalization;
-using Aw.CodeIndex.Core;
-using Aw.CodeIndex.Core.Embedding;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Ports;
 using Aw.Kernel;
 
-namespace Aw.CodeIndex.Features.BuildCodeIndex;
+namespace Aw.CodeIndex.Core.Embedding;
 
-/// <summary>The embeddings layer of a build (spec §5.6, §5.7): probes the model, embeds the symbols with stored text in batches and records the layer's row.</summary>
+/// <summary>
+/// The embeddings layer (spec §5.6, §5.7). A build only <see cref="Record(IIndexBuild, EmbeddingsSettings, CancellationToken)"/>s where the layer stands from the counts; the embed slice
+/// runs <see cref="Run"/> outside the heavy slot: it probes the model, embeds the symbols with stored text in batches and records the row.
+/// </summary>
 /// <param name="embedder">The embedding model.</param>
 /// <param name="clock">The time source.</param>
 public sealed class EmbeddingsLayer(IEmbedder embedder, TimeProvider clock)
 {
-    /// <summary>Runs the layer and records its row; a model that fails leaves the layer unavailable with the failure's code, never a failed build.</summary>
+    /// <summary>Records the layer's row from the counts, without calling the model: ok when every symbol has a vector, pending while some have not (the embed slice finishes them), disabled when the profile turns embeddings off.</summary>
+    /// <param name="build">The build file.</param>
+    /// <param name="settings">The embeddings settings.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>How many symbols have a vector and how many should; an error only when the build file cannot be read or written.</returns>
+    public async ValueTask<Result<EmbeddingProgress>> Record(IIndexBuild build, EmbeddingsSettings settings, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(build);
+        ArgumentNullException.ThrowIfNull(settings);
+        return settings.Enabled
+            ? await Settle(build, embedder.ModelFor(settings), failure: null, cancellationToken).ConfigureAwait(false)
+            : await Disabled(build, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Embeds up to <paramref name="limit"/> pending symbols and records the layer's row; a model that fails leaves the layer unavailable with the failure's code, never a failed build.</summary>
     /// <param name="build">The build file.</param>
     /// <param name="settings">The embeddings settings.</param>
     /// <param name="progress">Told a counts-only line per batch.</param>
+    /// <param name="limit">The most symbols to embed in this call.</param>
     /// <param name="cancellationToken">Cancels the layer between batches.</param>
     /// <returns>How many symbols have a vector and how many should; an error only when the build file cannot be read or written.</returns>
-    public async ValueTask<Result<EmbeddingProgress>> Run(IIndexBuild build, EmbeddingsSettings settings, IProgress<string> progress, CancellationToken cancellationToken)
+    public async ValueTask<Result<EmbeddingProgress>> Run(IIndexBuild build, EmbeddingsSettings settings, IProgress<string> progress, int limit, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(build);
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(progress);
-        var model = embedder.ModelFor(settings);
         if (!settings.Enabled)
         {
-            var off = await Record(build, new LayerRecord(LayerName.Embeddings, "none", LayerState.Disabled, Code: null, "disabled by the profile", clock.GetUtcNow()), cancellationToken).ConfigureAwait(false);
-            return off.IsError ? off.Error : new EmbeddingProgress(0, 0);
+            return await Disabled(build, cancellationToken).ConfigureAwait(false);
         }
 
+        var model = embedder.ModelFor(settings);
         var probed = await embedder.Probe(settings, cancellationToken).ConfigureAwait(false);
         return probed.IsError
             ? await Settle(build, model, probed.Error, cancellationToken).ConfigureAwait(false)
-            : await Embed(build, settings, model, progress, cancellationToken).ConfigureAwait(false);
+            : await Embed(build, new EmbedPass(settings, model, progress, limit), cancellationToken).ConfigureAwait(false);
     }
 
-    private async ValueTask<Result<EmbeddingProgress>> Embed(IIndexBuild build, EmbeddingsSettings settings, string model, IProgress<string> progress, CancellationToken cancellationToken)
+    private sealed record EmbedPass(EmbeddingsSettings Settings, string Model, IProgress<string> Progress, int Limit);
+
+    private async ValueTask<Result<EmbeddingProgress>> Embed(IIndexBuild build, EmbedPass pass, CancellationToken cancellationToken)
     {
+        var (settings, model, progress) = (pass.Settings, pass.Model, pass.Progress);
         var before = await build.CountEmbeddings(cancellationToken).ConfigureAwait(false);
-        var candidates = await build.EmbedCandidates(CodeIndexRules.MaxEmbeddedPerBuild, cancellationToken).ConfigureAwait(false);
+        var candidates = await build.EmbedCandidates(pass.Limit, cancellationToken).ConfigureAwait(false);
         if (before.IsError || candidates.IsError)
         {
             return before.IsError ? before.Error : candidates.Error;
@@ -83,6 +101,12 @@ public sealed class EmbeddingsLayer(IEmbedder embedder, TimeProvider clock)
         var detail = string.Create(CultureInfo.InvariantCulture, $"{embedded} of {embeddable} embedded");
         var recorded = await Record(build, new LayerRecord(LayerName.Embeddings, model, state, failure?.Code, detail, clock.GetUtcNow()), cancellationToken).ConfigureAwait(false);
         return recorded.IsError ? recorded.Error : counted.Value;
+    }
+
+    private async ValueTask<Result<EmbeddingProgress>> Disabled(IIndexBuild build, CancellationToken cancellationToken)
+    {
+        var off = await Record(build, new LayerRecord(LayerName.Embeddings, "none", LayerState.Disabled, Code: null, "disabled by the profile", clock.GetUtcNow()), cancellationToken).ConfigureAwait(false);
+        return off.IsError ? off.Error : new EmbeddingProgress(0, 0);
     }
 
     private static async ValueTask<Result<Unit>> Record(IIndexBuild build, LayerRecord layer, CancellationToken cancellationToken)

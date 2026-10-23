@@ -1,6 +1,5 @@
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Ports;
-using Aw.CodeIndex.Core.Values;
 using Aw.Kernel;
 using Microsoft.Data.Sqlite;
 
@@ -10,7 +9,7 @@ namespace Aw.CodeIndex.Infrastructure.Store;
 /// One build file in progress (spec §4.1, §5.7): the only way to write an index. The file is private to the owner and
 /// invisible to readers until <see cref="Publish"/> swaps the pointer; disposing without publishing deletes it.
 /// </summary>
-internal sealed partial class SqliteIndexBuild(IndexFiles files, RepoName repo, string ulid, SqliteConnection connection, IndexHeader? previous) : IIndexBuild
+internal sealed partial class SqliteIndexBuild(BuildTarget target, SqliteConnection connection, IndexHeader? previous) : IIndexBuild
 {
     private bool _published;
     private bool _closed;
@@ -44,9 +43,11 @@ internal sealed partial class SqliteIndexBuild(IndexFiles files, RepoName repo, 
 
         if (!_published)
         {
-            IndexFiles.DeleteWithSidecars(files.DbPath(repo, ulid));
-            files.ClearBuild(repo, ulid);
+            IndexFiles.DeleteWithSidecars(target.Files.DbPath(target.Repo, target.Ulid));
+            target.Files.ClearBuild(target.Repo, target.Ulid);
         }
+
+        await target.Hold.DisposeAsync().ConfigureAwait(false);
     }
 
     private async Task<Result<IReadOnlyList<StoredFile>>> ReadStoredFiles(CancellationToken cancellationToken)

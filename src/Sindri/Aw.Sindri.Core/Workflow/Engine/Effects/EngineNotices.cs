@@ -90,7 +90,10 @@ public static class EngineNotices
         return new WithValue(document.RootElement.Clone(), Fact: null, Profile: null);
     }
 
-    private static string Reason(ParkReason? reason) => reason switch
+    /// <summary>The word a park reason goes by in a notice and in a line's phase event.</summary>
+    /// <param name="reason">The reason, or null.</param>
+    /// <returns>The reason's word.</returns>
+    internal static string Reason(ParkReason? reason) => reason switch
     {
         ParkReason.Rounds => "rounds",
         ParkReason.NoProgress => "no-progress",

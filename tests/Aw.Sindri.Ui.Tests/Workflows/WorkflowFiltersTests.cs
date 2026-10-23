@@ -13,9 +13,9 @@ public sealed class WorkflowFiltersTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static async Task<WorkflowsViewModel> Shown()
+    private static async Task<WorkflowsViewModel> Shown(FakeSindriApi? server = null)
     {
-        var list = new WorkflowsViewModel(new FakeSindriApi(), new FakeClipboard(), new FakeTimeProvider(A.Noon));
+        var list = new WorkflowsViewModel(server ?? new FakeSindriApi(), new FakeClipboard(), new FakeTimeProvider(A.Noon));
         list.SetViewMode(WorkflowViewMode.List);
         await list.Refresh(_api, Token);
         return list;
@@ -44,14 +44,44 @@ public sealed class WorkflowFiltersTests
     }
 
     [Fact]
-    public async Task Mine_adds_the_runs_you_took_over()
+    public async Task Mine_is_the_runs_you_took_over_when_nobody_is_recorded_as_starter()
     {
         var list = await Shown();
 
         list.SetFilter(WorkflowFilter.Mine);
 
-        Assert.Equal(["DECISION", "ESCALATED", "WITH YOU"], Words(list));
-        Assert.Equal("Mine 3", list.FilterMineText);
+        Assert.Equal(["WITH YOU"], Words(list));
+        Assert.Equal("Mine 1", list.FilterMineText);
+    }
+
+    [Fact]
+    public async Task Mine_adds_the_runs_a_person_started_and_not_the_ones_an_agent_or_a_service_started()
+    {
+        var server = new FakeSindriApi { InstancesRewrite = StartedBy };
+
+        var list = await Shown(server);
+        list.SetFilter(WorkflowFilter.Mine);
+
+        Assert.Equal(["DECISION", "WITH YOU"], Words(list));
+        Assert.Equal("Mine 2", list.FilterMineText);
+    }
+
+    // The golden's DECISION run was started by a person (human:cli), its ESCALATED one by an agent session, its first RUNNING one by a service.
+    private static string StartedBy(string body)
+    {
+        var list = System.Text.Json.Nodes.JsonNode.Parse(body)!;
+        foreach (var row in list["instances"]!.AsArray().Select(r => r!.AsObject()))
+        {
+            row["startedBy"] = (string?)row["chip"]!["word"] switch
+            {
+                "DECISION" => "human:cli",
+                "ESCALATED" => "session:abc",
+                "RUNNING" => "service:host",
+                _ => null,
+            };
+        }
+
+        return list.ToJsonString();
     }
 
     [Fact]
@@ -62,7 +92,7 @@ public sealed class WorkflowFiltersTests
         list.SetFilter(WorkflowFilter.NeedsYou);
 
         Assert.Equal("All 8", list.FilterAllText);
-        Assert.Equal("Mine 3", list.FilterMineText);
+        Assert.Equal("Mine 1", list.FilterMineText);
     }
 
     [Theory]

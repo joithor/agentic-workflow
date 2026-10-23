@@ -41,6 +41,7 @@ public static class WorkflowViewFixtures
     private static readonly RecipeShape _devTriage = FixtureRecipes.DevTriage;
     private static readonly RecipeShape _devDesk = FixtureRecipes.DevDesk;
     private static readonly RecipeShape _fork = FixtureRecipes.Fork;
+    private static readonly RecipeShape _design = FixtureRecipes.Design;
 
     private static Func<StateCell, StateCell> Shape(params (string State, Func<StateCell, StateCell> Change)[] changes) =>
         cell => changes.Where(c => c.State == cell.State).Aggregate(cell, (acc, c) => c.Change(acc));
@@ -53,9 +54,12 @@ public static class WorkflowViewFixtures
         EngineOwnedBadge? owned, SubjectRef subject, IReadOnlyList<StateCell> cells, string now, params string[] actions)
     {
         var states = cells.Select(c => owned is not null && c.State == state && c.Badge is null ? c with { Badge = owned } : c).ToList();
+        var deskOpen = states.Exists(c => c.Desk && c.Glyph == StateGlyph.Active);
+        var outcome = states.Exists(c => c.Terminal && c.Glyph == StateGlyph.Done && c.State == state) ? (OutcomeName?)OutcomeName.From("resolved") : null;
+        var chip = StateChip.For(owned, deskOpen, outcome);
         return new(InstanceAddress.From(address), WorkflowInstanceId.Of(InstanceAddress.From(address)), ItemKey.From(address[..address.IndexOf('/', StringComparison.Ordinal)]), shape.Stamp, state,
-            StateChip.For(owned, states.Exists(c => c.Desk && c.Glyph == StateGlyph.Active), states.Exists(c => c.Terminal && c.Glyph == StateGlyph.Done && c.State == state) ? OutcomeName.From("resolved") : null),
-            since, owned, subject, shape.InputRows(), states, now.Length > 80 ? now[..79] + "…" : now, null, Acts(actions));
+            chip, since, owned, subject, shape.InputRows(), states, now.Length > 80 ? now[..79] + "…" : now, null, Acts(actions),
+            WaitingOn: WaitingOn.Of(chip, deskOpen, agentRunOpen: false, ended: outcome is not null));
     }
 
     private static InstanceSummary DoneTriage(string address, string label, DateTimeOffset since) =>
@@ -215,6 +219,7 @@ public static class WorkflowViewFixtures
         {
             Run = lines.Run,
             TakenOverAt = lines.TakenOverAt,
+            TakenOverBy = lines.TakenOverBy,
         };
         var name = FixtureRecipes.All.SingleOrDefault(r => r.Id == recipe.Id.Value)?.Name is null ? null : row.Subject.Label;
         return fields with { Text = StatusText.Render(fields, Now, name) };
@@ -324,6 +329,8 @@ public static class WorkflowViewFixtures
 
         public DateTimeOffset? TakenOverAt { get; init; }
 
+        public string? TakenOverBy { get; init; }
+
         public StatusRun? Run { get; init; }
     }
 
@@ -392,7 +399,7 @@ public static class WorkflowViewFixtures
     /// <summary>Layout 5: a taken-over instance with its timeout paused.</summary>
     public static StatusFields StatusTakenOver() => Status(_takenOver, null,
         "With you since 12:01. Run `sindri workflow handback ITM-01JA1/step/1` when you're done.", new OpenWork(),
-        new StatusLines { Paused = new StatusPaused(40), TakenOverAt = _takenOver.Since, Budget = new StatusBudget("state", 40_000, 1_000_000, new BudgetFigures(40_000, null)) });
+        new StatusLines { Paused = new StatusPaused(40), TakenOverAt = _takenOver.Since, TakenOverBy = "human:thor", Budget = new StatusBudget("state", 40_000, 1_000_000, new BudgetFigures(40_000, null)) });
 
     /// <summary>Layout 6: a finished instance, the header only.</summary>
     public static StatusFields StatusDone() => Status(_sentry8809, "resolved", null, new OpenWork());
@@ -570,6 +577,27 @@ public static class WorkflowViewFixtures
                 Produced(_triage, "fact:alert", "sentry #8812 TypeError in tabs.layout", At(10, 12, 12, 22), "service:webhook", Ref(factKey: "fact:alert")),
                 Fake(_triage, "fact:severity", FactStatus.Pending, "awaiting your answer", pending: pending)),
             [], Counts(3, 0, 1));
+    }
+
+    /// <summary>
+    /// ITM-01JN2: the design review's ask desk after a round in which two lenses raised three questions (owner decision q60, 2026-10-23): ONE desk, 'fact:escalation' holds all three
+    /// (a list: kind, question, options, lens, finding) and the desk asks for 'fact:answers', one {id, question, answer} entry per question, the id echoing the question's (q1, q2, q3).
+    /// </summary>
+    public static InstanceDetail LensAskMulti()
+    {
+        var row = Row("ITM-01JN2/design/1", _design, "ask", Today(12, 22), null, Subject("text", "ITM-01JN2", "Add expiry to sessions"),
+            _design.Cells("ask"), "needs your answers (desk)", "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
+        var status = DeskStatus(row, "Answer the 3 questions the reviewers raised on ITM-01JN2", "4.1", ("fact:answers", "<file>"),
+            DeskLines(new StatusInput("fact:escalation", "escalation.json", Hash("5c1e9a30")), 604_560, "ask"));
+        var pending = new FactPending(true, ["answers.payload"], Act("CompleteStep"));
+        return Detail(row, "Add expiry to sessions", PathOrdering.Path,
+            new CurrentState("ask", new StepDeclaration("active", "step.lens.ask", "asks you to decide questions the reviewers could not settle"), [],
+                new DeskForm(RunToken.From("4.1"), [new DeskOutput("fact:answers", FactType.Payload, true)], ["answers.payload"], Act("CompleteStep")), status),
+            _design.Facts(
+                Produced(_design, "fact:scopePacket", "scope packet, frozen", At(10, 12, 9, 0), "step.design.intake", Ref(factKey: "fact:scopePacket")),
+                Produced(_design, "fact:escalation", "3 questions: q1 Keep the legacy flow? · q2 Which table owns expiry? · q3 Who is the expiry for?", At(10, 12, 12, 22), "step.lens.log", Ref(factKey: "fact:escalation")),
+                Fake(_design, "fact:answers", FactStatus.Pending, "awaiting your answers", pending: pending)),
+            [], Counts(9, 0, 1));
     }
 
     /// <summary>pagerduty P-2211: escalated at the severity gate; the accept needs a terminal.</summary>

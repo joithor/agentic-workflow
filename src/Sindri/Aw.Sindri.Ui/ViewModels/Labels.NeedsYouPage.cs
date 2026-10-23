@@ -51,6 +51,13 @@ internal static partial class Labels
     /// <summary>The card's kind word for a desk task.</summary>
     internal const string NeedsYouKindApproval = "Your approval";
 
+    /// <summary>The kind word of an approval that is one of several stops of its run.</summary>
+    /// <param name="n">The stop's place, from 1.</param>
+    /// <param name="of">How many stops.</param>
+    /// <param name="state">The stop's state, made readable.</param>
+    /// <returns>"Approval 2 of 3 · Checks".</returns>
+    internal static string NeedsYouApprovalStop(int n, int of, string state) => string.Create(CultureInfo.InvariantCulture, $"Approval {n} of {of} · {state}");
+
     /// <summary>The card's kind word for a paused run.</summary>
     internal const string NeedsYouKindRun = "Paused run";
 
@@ -79,6 +86,9 @@ internal static partial class Labels
 
     /// <summary>The caption of the card's first section.</summary>
     internal const string NeedsYouWhyCaption = "Why this needs you";
+
+    /// <summary>The tag on the button of the outcome the step before the stop recommends.</summary>
+    internal const string NeedsYouSuggested = "Suggested";
 
     /// <summary>The caption of the box that says what approving does.</summary>
     internal const string NeedsYouIfApprove = "If you approve";

@@ -56,6 +56,21 @@ internal sealed partial class InstanceRowViewModel : ObservableObject
     /// <summary>The compact line a narrow page shows instead of the columns: the workflow and the stage.</summary>
     public string Compact => $"{DisplayName} · {StateName}";
 
+    /// <summary>"Started 11:02 by you": when the run began and who began it; a part that is not served is left out, and empty when neither is.</summary>
+    public string StartedText
+    {
+        get
+        {
+            var now = TimeZoneInfo.ConvertTime(_clock.GetUtcNow(), _clock.LocalTimeZone);
+            var clock = _row.StartedAt is { } at ? Labels.StartedClock(TimeZoneInfo.ConvertTime(at, _clock.LocalTimeZone), now) : null;
+            return Labels.WorkflowStarted(clock, _row.StartedBy);
+        }
+    }
+
+    /// <summary>True when a person started the run (the served starter begins with "human:").</summary>
+    // "Mine" also means runs you took over. takenOverBy (api #754) is served on the instance status only, not on the list rows, so the WITH YOU chip stands in for it here.
+    public bool StartedByYou => _row.StartedBy?.StartsWith("human:", StringComparison.Ordinal) == true;
+
     /// <summary>The state the instance is in, in words: the recipe's displayName for it once the recipe is read, else its id as served.</summary>
     public string StateName => _names?.Served(_row.Recipe.Id, _row.State) ?? _row.State;
 
@@ -163,7 +178,7 @@ internal sealed partial class InstanceRowViewModel : ObservableObject
     public string OpenName => Labels.OpenRunName(Subject, DisplayName);
 
     /// <summary>The name screen readers hear: the item (the visible title), the workflow, the served chip word, the stage and who is on it. The address is in Details.</summary>
-    public string AccessibleName => string.Join(", ", new[] { Subject, DisplayName, _row.Chip.Word, StateName, Who, MissingInputsText }.Where(p => p.Length > 0));
+    public string AccessibleName => string.Join(", ", new[] { Subject, DisplayName, _row.Chip.Word, StateName, Who, MissingInputsText, StartedText }.Where(p => p.Length > 0));
 
     /// <summary>Where Enter and a click go: the instance in the Workflows frame.</summary>
     public DeepLink Link => new(DeepLinkKind.Workflow, _row.Address);
@@ -187,7 +202,7 @@ internal sealed partial class InstanceRowViewModel : ObservableObject
     public bool IsStale { get; private set => Set(ref field, value); }
 
     /// <summary>Everything the row draws: two rows with the same signature look the same.</summary>
-    internal string Signature => string.Join('|', Address, StageName, _row.Since.UtcTicks, DisplayName, Who, MissingInputsText, Subject, Chip, Now, string.Join(',', Inputs.Select(i => i.Name)), string.Join(',', Stages.Select(s => s.Name)), StateWord, Chip.Word, Protected?.Cli, ChildAnswer?.Target, ChildAnswer?.Intent, CanAnswerAtDesk, CanCancel);
+    internal string Signature => string.Join('|', Address, StageName, _row.StartedBy, _row.StartedAt?.UtcTicks, _row.Since.UtcTicks, DisplayName, Who, MissingInputsText, Subject, Chip, Now, string.Join(',', Inputs.Select(i => i.Name)), string.Join(',', Stages.Select(s => s.Name)), StateWord, Chip.Word, Protected?.Cli, ChildAnswer?.Target, ChildAnswer?.Intent, CanAnswerAtDesk, CanCancel);
 
     /// <summary>Reads the time in stage anew.</summary>
     internal void Tick() => OnChanged(nameof(TimeText));

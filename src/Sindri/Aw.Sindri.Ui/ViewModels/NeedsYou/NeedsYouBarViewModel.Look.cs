@@ -40,7 +40,7 @@ internal sealed partial class NeedsYouBarViewModel
     public string BarName => Labels.NeedsYouBarGroupName(Subject);
 
     /// <summary>True when the request has a bar of its own.</summary>
-    public bool HasBar => Kind != BarKind.None && (ShowsPrimary || ShowsTerminal || ShowsSendBack || ShowsConfirm || IsApproved);
+    public bool HasBar => Kind != BarKind.None && (ShowsPrimary || ShowsTerminal || ShowsSendBack || ShowsConfirm || HasVerbs || IsApproved);
 
     /// <summary>True in the resting modes (Approve and Send back show).</summary>
     public bool IsPending => Mode is NeedsYouBarMode.Pending or NeedsYouBarMode.Confirming;
@@ -150,7 +150,7 @@ internal sealed partial class NeedsYouBarViewModel
         : TerminalOnly ? Labels.NeedsYouTerminalOnly
         : ShowsTerminal ? Labels.NeedsYouProtectedHint
         : Kind == BarKind.Settings ? Labels.NeedsYouKeepSettings
-        : "";
+        : SuggestedHint;
 
     /// <summary>True when there is a line to show.</summary>
     public bool HasHint => Hint.Length > 0;

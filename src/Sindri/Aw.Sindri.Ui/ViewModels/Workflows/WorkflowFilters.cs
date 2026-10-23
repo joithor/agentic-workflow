@@ -18,7 +18,7 @@ internal static class WorkflowFilters
     internal static bool InFilter(InstanceRowViewModel row, WorkflowFilter filter) => filter switch
     {
         WorkflowFilter.NeedsYou => NeedsYou(row),
-        WorkflowFilter.Mine => NeedsYou(row) || row.Status.Kind == RunStatusKind.TookOver,
+        WorkflowFilter.Mine => row.StartedByYou || row.Status.Kind == RunStatusKind.TookOver,
         WorkflowFilter.All => true,
         _ => true,
     };
