@@ -12,7 +12,7 @@ internal sealed class DeskQuestionViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(question);
         (Question, _changed) = (question, changed);
         Options = [.. question.Options.Select(o => new DeskQuestionOptionViewModel(this, o))];
-        Context = Labels.NeedsYouQuestionContext(question.Lens, question.Finding);
+        Context = Labels.NeedsYouQuestionContext(question.Lens);
     }
 
     /// <summary>The served question.</summary>

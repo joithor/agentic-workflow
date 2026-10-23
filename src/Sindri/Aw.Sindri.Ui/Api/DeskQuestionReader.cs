@@ -37,14 +37,14 @@ internal static class DeskQuestionReader
     private static string Text(JsonElement entry, string name) =>
         entry.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() ?? string.Empty : string.Empty;
 
-    // An option is a word, or an object that names its words.
-    private static List<string> Options(JsonElement entry)
+    // The engine serves options as a non-empty list of words, or none.
+    private static string[] Options(JsonElement entry)
     {
         if (!entry.TryGetProperty("options", out var options) || options.ValueKind != JsonValueKind.Array)
         {
             return [];
         }
 
-        return [.. options.EnumerateArray().Select(o => o.ValueKind == JsonValueKind.String ? o.GetString() ?? string.Empty : o.ValueKind == JsonValueKind.Object ? Text(o, "label") + Text(o, "value") + Text(o, "text") : string.Empty).Where(o => o.Length > 0)];
+        return [.. options.EnumerateArray().Where(o => o.ValueKind == JsonValueKind.String).Select(o => o.GetString() ?? string.Empty).Where(o => o.Length > 0)];
     }
 }

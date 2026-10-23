@@ -19,9 +19,9 @@ public sealed class NeedsYouAskDeskTests
     private static string Fact(string body) => $$"""{"key":"fact:escalation","type":"payload","body":{{body}},"truncated":false}""";
 
     private const string ThreeQuestions = """
-        [{"id":"q1","kind":"decision","question":"Keep the legacy flow?","options":["Keep it","Drop it"],"lens":"product","finding":"two flows overlap"},
-         {"id":"q2","kind":"open","question":"Which table owns expiry?","lens":"data"},
-         {"id":"q3","kind":"open","question":"Who is the expiry for?"}]
+        [{"id":"q1","kind":"productQuestion","question":"Keep the legacy flow?","options":["Keep it","Drop it"],"lens":"product","finding":"F-1"},
+         {"id":"q2","kind":"ambiguousFix","question":"Which table owns expiry?","lens":"data"},
+         {"id":"q3","kind":"ambiguousFix","question":"Who is the expiry for?"}]
         """;
 
     // The lens-ask-multi golden: the escalation fact is listed as an input; its full list comes from the fact read.
@@ -42,7 +42,7 @@ public sealed class NeedsYouAskDeskTests
 
         Assert.True(bar.HasQuestions);
         Assert.Equal(["Keep the legacy flow?", "Which table owns expiry?", "Who is the expiry for?"], bar.Questions.Select(q => q.Prompt), StringComparer.Ordinal);
-        Assert.Equal(["From the product review: two flows overlap", "From the data review", ""], bar.Questions.Select(q => q.Context), StringComparer.Ordinal);
+        Assert.Equal(["From the product review", "From the data review", ""], bar.Questions.Select(q => q.Context), StringComparer.Ordinal);
     }
 
     [Fact]
