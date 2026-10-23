@@ -48,7 +48,7 @@ internal sealed class GetWholeMapService(MapReader reader, IScrubberFactory scru
         var snapshot = map.Snapshot;
         var commit = snapshot.Version.Commit is { Length: > 0 } c ? c[..Math.Min(7, c.Length)] : null;
         var basis = new WholeMapBasis(snapshot.Tag, commit, asked.Query.Read.Draft, snapshot.Version.Created, repo.Name);
-        return WholeMapBuilder.Build(new WholeMapAsk(basis, asked.Detail, asked.Query.Locate, asked.Query.Area), graph, MapAreas.Assign(graph), rules, text);
+        return WholeMapBuilder.Build(new WholeMapAsk(basis, asked.Detail, asked.Query.Locate, asked.Query.Area), graph, MapAreas.Assign(graph, rules.AreaCap), rules, text);
     }
 
     private static string CacheKey(int version, WholeMapDetail detail, WholeMapQuery query, RepoChoice repo, ContextScope scope) =>

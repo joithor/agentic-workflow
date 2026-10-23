@@ -24,87 +24,52 @@
       "key": "area:unassigned",
       "label": "Not linked to a feature yet",
       "trust": "trusted",
-      "members": 2,
+      "members": 7,
       "byKind": {
-        "record": 2
+        "feature": 1,
+        "surface": 1,
+        "action": 1,
+        "record": 3,
+        "code": 1
       },
       "unassigned": true
     },
     {
-      "key": "feature:tabs.tab-manager",
-      "label": "Tab manager",
+      "key": "feature:tabs.tab-groups",
+      "label": "Tab groups",
       "trust": "trusted",
-      "members": 10,
+      "members": 5,
       "byKind": {
-        "feature": 2,
-        "surface": 2,
-        "action": 1,
+        "feature": 1,
+        "surface": 1,
         "decision": 2,
-        "record": 1,
-        "code": 2
+        "code": 1
       },
       "unassigned": false
     }
   ],
   "areaEdges": [
     {
-      "from": "feature:tabs.tab-manager",
+      "from": "feature:tabs.tab-groups",
+      "to": "area:unassigned",
+      "type": "part-of",
+      "count": 1,
+      "confirmed": 1
+    },
+    {
+      "from": "feature:tabs.tab-groups",
       "to": "area:unassigned",
       "type": "quotes",
       "count": 2,
-      "confirmed": 2
+      "confirmed": 0
     }
   ],
   "nodes": [
     {
-      "key": "record:linear:issue/0e5a1b00-0000-4000-8000-000000000201",
-      "label": "<untrusted source=\"map\">linear:issue/0e5a1b00-0000-4000-8000-000000000201</untrusted>",
-      "kind": "record",
-      "area": "area:unassigned",
-      "alsoIn": [],
-      "trust": "untrusted",
-      "provenance": "deterministic",
-      "confidence": 1,
-      "confirmed": true
-    },
-    {
-      "key": "record:linear:issue/0e5a1b00-0000-4000-8000-000000000202",
-      "label": "<untrusted source=\"map\">linear:issue/0e5a1b00-0000-4000-8000-000000000202</untrusted>",
-      "kind": "record",
-      "area": "area:unassigned",
-      "alsoIn": [],
-      "trust": "untrusted",
-      "provenance": "deterministic",
-      "confidence": 1,
-      "confirmed": true
-    },
-    {
-      "key": "feature:tabs.tab-groups",
-      "label": "Tab groups",
-      "kind": "feature",
-      "area": "feature:tabs.tab-manager",
-      "alsoIn": [],
-      "trust": "trusted",
-      "provenance": "human",
-      "confidence": 1,
-      "confirmed": true
-    },
-    {
       "key": "feature:tabs.tab-manager",
       "label": "Tab manager",
       "kind": "feature",
-      "area": "feature:tabs.tab-manager",
-      "alsoIn": [],
-      "trust": "trusted",
-      "provenance": "human",
-      "confidence": 1,
-      "confirmed": true
-    },
-    {
-      "key": "surface:command/group-tabs",
-      "label": "Group tabs (command)",
-      "kind": "surface",
-      "area": "feature:tabs.tab-manager",
+      "area": "area:unassigned",
       "alsoIn": [],
       "trust": "trusted",
       "provenance": "human",
@@ -115,7 +80,7 @@
       "key": "surface:command/switch-tab",
       "label": "Switch tab (command)",
       "kind": "surface",
-      "area": "feature:tabs.tab-manager",
+      "area": "area:unassigned",
       "alsoIn": [],
       "trust": "trusted",
       "provenance": "human",
@@ -126,7 +91,73 @@
       "key": "action:tab-manager.restore-layout",
       "label": "Restore a tab's pane layout",
       "kind": "action",
-      "area": "feature:tabs.tab-manager",
+      "area": "area:unassigned",
+      "alsoIn": [],
+      "trust": "trusted",
+      "provenance": "human",
+      "confidence": 1,
+      "confirmed": true
+    },
+    {
+      "key": "record:linear:issue/0e5a1b00-0000-4000-8000-000000000201",
+      "label": "<untrusted source=\"map\">linear:issue/0e5a1b00-0000-4000-8000-000000000201</untrusted>",
+      "kind": "record",
+      "area": "area:unassigned",
+      "alsoIn": [],
+      "trust": "untrusted",
+      "provenance": "deterministic",
+      "confidence": 1,
+      "confirmed": false
+    },
+    {
+      "key": "record:linear:issue/0e5a1b00-0000-4000-8000-000000000202",
+      "label": "<untrusted source=\"map\">linear:issue/0e5a1b00-0000-4000-8000-000000000202</untrusted>",
+      "kind": "record",
+      "area": "area:unassigned",
+      "alsoIn": [],
+      "trust": "untrusted",
+      "provenance": "deterministic",
+      "confidence": 1,
+      "confirmed": false
+    },
+    {
+      "key": "record:linear:issue/0e5a1b00-0000-4000-8000-000000000203",
+      "label": "<untrusted source=\"map\">Tab manager spec</untrusted>",
+      "kind": "record",
+      "area": "area:unassigned",
+      "alsoIn": [],
+      "trust": "untrusted",
+      "provenance": "human",
+      "confidence": 1,
+      "confirmed": true
+    },
+    {
+      "key": "code:src/tabs/TabManager.ts",
+      "label": "TabManager.ts",
+      "kind": "code",
+      "area": "area:unassigned",
+      "alsoIn": [],
+      "trust": "trusted",
+      "provenance": "deterministic",
+      "confidence": 1,
+      "confirmed": false
+    },
+    {
+      "key": "feature:tabs.tab-groups",
+      "label": "Tab groups",
+      "kind": "feature",
+      "area": "feature:tabs.tab-groups",
+      "alsoIn": [],
+      "trust": "trusted",
+      "provenance": "human",
+      "confidence": 1,
+      "confirmed": true
+    },
+    {
+      "key": "surface:command/group-tabs",
+      "label": "Group tabs (command)",
+      "kind": "surface",
+      "area": "feature:tabs.tab-groups",
       "alsoIn": [],
       "trust": "trusted",
       "provenance": "human",
@@ -137,7 +168,7 @@
       "key": "decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b",
       "label": "A tab group collapses to one tab in the strip.",
       "kind": "decision",
-      "area": "feature:tabs.tab-manager",
+      "area": "feature:tabs.tab-groups",
       "alsoIn": [],
       "trust": "trusted",
       "provenance": "human",
@@ -148,20 +179,9 @@
       "key": "decision:ef895edc359f6f847ce34baeacb3670a81a824b521e4cd14371b5dc8894ea1c2",
       "label": "A tab group stays expanded; collapsing is a per-user setting.",
       "kind": "decision",
-      "area": "feature:tabs.tab-manager",
+      "area": "feature:tabs.tab-groups",
       "alsoIn": [],
       "trust": "trusted",
-      "provenance": "human",
-      "confidence": 1,
-      "confirmed": true
-    },
-    {
-      "key": "record:linear:issue/0e5a1b00-0000-4000-8000-000000000203",
-      "label": "<untrusted source=\"map\">Tab manager spec</untrusted>",
-      "kind": "record",
-      "area": "feature:tabs.tab-manager",
-      "alsoIn": [],
-      "trust": "untrusted",
       "provenance": "human",
       "confidence": 1,
       "confirmed": true
@@ -170,23 +190,12 @@
       "key": "code:src/tabs/TabGroups.ts",
       "label": "TabGroups.ts",
       "kind": "code",
-      "area": "feature:tabs.tab-manager",
+      "area": "feature:tabs.tab-groups",
       "alsoIn": [],
       "trust": "trusted",
       "provenance": "deterministic",
       "confidence": 1,
-      "confirmed": true
-    },
-    {
-      "key": "code:src/tabs/TabManager.ts",
-      "label": "TabManager.ts",
-      "kind": "code",
-      "area": "feature:tabs.tab-manager",
-      "alsoIn": [],
-      "trust": "trusted",
-      "provenance": "deterministic",
-      "confidence": 1,
-      "confirmed": true
+      "confirmed": false
     }
   ],
   "edges": [
@@ -215,7 +224,7 @@
       "link": "edge:276346e72063de79",
       "provenance": "deterministic",
       "confidence": 1,
-      "confirmed": true
+      "confirmed": false
     },
     {
       "from": "code:src/tabs/TabManager.ts",
@@ -224,7 +233,7 @@
       "link": "edge:c04aa2c293906910",
       "provenance": "deterministic",
       "confidence": 1,
-      "confirmed": true
+      "confirmed": false
     },
     {
       "from": "decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b",
@@ -242,7 +251,7 @@
       "link": "edge:19f0a7a039b84d77",
       "provenance": "deterministic",
       "confidence": 1,
-      "confirmed": true
+      "confirmed": false
     },
     {
       "from": "decision:ef895edc359f6f847ce34baeacb3670a81a824b521e4cd14371b5dc8894ea1c2",
@@ -269,7 +278,7 @@
       "link": "edge:0afb34e14e512392",
       "provenance": "deterministic",
       "confidence": 1,
-      "confirmed": true
+      "confirmed": false
     },
     {
       "from": "feature:tabs.tab-groups",

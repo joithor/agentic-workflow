@@ -20,6 +20,10 @@ internal sealed class AreaGraph
         return this;
     }
 
-    public GraphSnapshot Build(bool reversed = false) =>
-        new(reversed ? [.. _nodes.AsEnumerable().Reverse()] : _nodes, reversed ? [.. _edges.AsEnumerable().Reverse()] : _edges, [], []);
+    /// <summary>The graph. Unless <paramref name="padded"/> is false it also holds a dozen lone features, so a rule under test is not in a map small enough for the adaptive depth to act.</summary>
+    public GraphSnapshot Build(bool reversed = false, bool padded = true)
+    {
+        var nodes = padded ? [.. _nodes, .. Enumerable.Range(0, 12).Select(i => new GraphNode(NodeKey.From("feature:zpad" + i.ToString(System.Globalization.CultureInfo.InvariantCulture)), "pad"))] : _nodes;
+        return new(reversed ? [.. nodes.AsEnumerable().Reverse()] : nodes, reversed ? [.. _edges.AsEnumerable().Reverse()] : _edges, [], []);
+    }
 }

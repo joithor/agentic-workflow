@@ -7,6 +7,7 @@ public sealed class MapAreasTests
 {
     private static readonly string[] _chain = ["feature:a", "feature:a.b", "feature:a.b.c", "feature:z"];
     private static readonly string[] _cycle = ["feature:m", "feature:b", "feature:c", "feature:leaf"];
+    private static readonly string[] _umbrella = ["feature:u", "surface:screen/own"];
     private static readonly string[] _loose = ["record:lonely", "code:orphan.ts", "surface:screen/s", "action:do", "decision:d"];
 
     private static string AreaOf(AreaIndex index, string key) => index.ByNode[key].Area;
@@ -151,6 +152,79 @@ public sealed class MapAreasTests
         Assert.Equal(Flat(first), Flat(again));
         Assert.Equal(Flat(first), Flat(reversed));
         Assert.Equal("feature:a", AreaOf(first, "code:x.ts"));   // one edge to each, the smallest key wins
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void One_umbrella_feature_is_replaced_by_its_children_and_it_and_what_reaches_only_it_are_unassigned()
+    {
+        var graph = new AreaGraph().Node("feature:u", "feature:u.a", "feature:u.b", "feature:u.c", "surface:screen/own", "surface:screen/sa", "code:x.ts")
+            .Edge("feature:u.a", EdgeType.PartOf, "feature:u").Edge("feature:u.b", EdgeType.PartOf, "feature:u").Edge("feature:u.c", EdgeType.PartOf, "feature:u")
+            .Edge("surface:screen/own", EdgeType.PartOf, "feature:u").Edge("surface:screen/sa", EdgeType.PartOf, "feature:u.a").Edge("code:x.ts", EdgeType.Implements, "surface:screen/sa")
+            .Build(padded: false);
+
+        var index = MapAreas.Assign(graph);
+
+        Assert.Equal("feature:u.a feature:u.b feature:u.c", string.Join(' ', index.ByNode.Values.Select(v => v.Area).Where(a => a != AreaIndex.UnassignedKey).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)));
+        Assert.Equal(("feature:u.a", "feature:u.a"), (AreaOf(index, "surface:screen/sa"), AreaOf(index, "code:x.ts")));
+        Assert.All(_umbrella, k => Assert.Equal(AreaIndex.UnassignedKey, AreaOf(index, k)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_root_holding_over_half_the_nodes_is_replaced_by_its_children_and_the_others_stay()
+    {
+        var graph = new AreaGraph().Node("feature:big", "feature:big.a", "feature:big.b", "surface:screen/s1", "surface:screen/s2", "feature:x", "feature:y", "feature:z")
+            .Edge("feature:big.a", EdgeType.PartOf, "feature:big").Edge("feature:big.b", EdgeType.PartOf, "feature:big")
+            .Edge("surface:screen/s1", EdgeType.PartOf, "feature:big.a").Edge("surface:screen/s2", EdgeType.PartOf, "feature:big.b").Build(padded: false);
+
+        var index = MapAreas.Assign(graph);
+
+        Assert.Equal(("feature:big.a", "feature:big.b", "feature:x", AreaIndex.UnassignedKey), (AreaOf(index, "surface:screen/s1"), AreaOf(index, "surface:screen/s2"), AreaOf(index, "feature:x"), AreaOf(index, "feature:big")));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_area_over_the_cap_is_replaced_by_its_children_even_when_it_is_not_half_the_map()
+    {
+        var builder = new AreaGraph().Node("feature:a", "feature:a.c1", "feature:a.c2").Edge("feature:a.c1", EdgeType.PartOf, "feature:a").Edge("feature:a.c2", EdgeType.PartOf, "feature:a");
+        for (var i = 0; i < 10; i++)
+        {
+            _ = builder.Node("feature:o" + i.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        var graph = builder.Build(padded: false);
+
+        Assert.Equal("feature:a", AreaOf(MapAreas.Assign(graph, areaCap: 3), "feature:a.c1"));
+        Assert.Equal("feature:a.c1", AreaOf(MapAreas.Assign(graph, areaCap: 2), "feature:a.c1"));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void With_fewer_than_three_roots_the_largest_that_has_children_is_replaced()
+    {
+        var graph = new AreaGraph().Node("feature:a", "feature:a.x", "feature:a.y", "feature:b", "feature:b.p")
+            .Edge("feature:a.x", EdgeType.PartOf, "feature:a").Edge("feature:a.y", EdgeType.PartOf, "feature:a").Edge("feature:b.p", EdgeType.PartOf, "feature:b").Build(padded: false);
+
+        var index = MapAreas.Assign(graph);
+
+        Assert.Equal(("feature:a.x", "feature:b"), (AreaOf(index, "feature:a.x"), AreaOf(index, "feature:b.p")));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_depth_goes_down_twice_at_most_and_a_dominant_area_after_that_stays()
+    {
+        var graph = new AreaGraph().Node("feature:u", "feature:u.v", "feature:u.v.w", "feature:u.v.w.leaf", "surface:screen/s")
+            .Edge("feature:u.v", EdgeType.PartOf, "feature:u").Edge("feature:u.v.w", EdgeType.PartOf, "feature:u.v").Edge("feature:u.v.w.leaf", EdgeType.PartOf, "feature:u.v.w")
+            .Edge("surface:screen/s", EdgeType.PartOf, "feature:u.v.w.leaf").Build(padded: false);
+
+        var index = MapAreas.Assign(graph);
+
+        Assert.Equal(("feature:u.v.w", "feature:u.v.w", AreaIndex.UnassignedKey, AreaIndex.UnassignedKey), (AreaOf(index, "feature:u.v.w.leaf"), AreaOf(index, "surface:screen/s"), AreaOf(index, "feature:u"), AreaOf(index, "feature:u.v")));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_dominant_root_with_no_children_stays()
+    {
+        var graph = new AreaGraph().Node("feature:a", "surface:screen/s1", "surface:screen/s2", "feature:b").Edge("surface:screen/s1", EdgeType.PartOf, "feature:a").Edge("surface:screen/s2", EdgeType.PartOf, "feature:a").Build(padded: false);
+
+        Assert.Equal("feature:a", AreaOf(MapAreas.Assign(graph), "surface:screen/s1"));
     }
 
     private static string Flat(AreaIndex index) => string.Join('\n', index.ByNode.OrderBy(p => p.Key, StringComparer.Ordinal).Select(p => p.Key + "=" + p.Value.Area + "+" + string.Join(',', p.Value.AlsoIn)));

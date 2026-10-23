@@ -280,13 +280,19 @@ public sealed class GetWholeMapTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task An_area_over_the_cap_keeps_the_first_nodes_and_says_so_with_its_full_counts()
     {
-        var world = await Imported(new WholeMapRules(AreaCap: 2));
+        var world = new MapWorld(wholeMapRules: new WholeMapRules(AreaCap: 2));
+        _worlds.Add(world);
+        _ = await world.ImportYaml(MapWorld.Yaml(
+            "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:",
+            "  - {key: \"feature:wide\", label: \"Wide\"}", "  - {key: \"surface:screen/s1\", label: \"S1\"}", "  - {key: \"surface:screen/s2\", label: \"S2\"}",
+            "  - {key: \"feature:a\", label: \"A\"}", "  - {key: \"feature:b\", label: \"B\"}", "  - {key: \"feature:c\", label: \"C\"}",
+            "edges:", "  - {from: \"surface:screen/s1\", to: \"feature:wide\", type: part-of}", "  - {from: \"surface:screen/s2\", to: \"feature:wide\", type: part-of}"));
 
-        var view = (await Ask(world, area: "feature:billing")).Value;
+        var view = (await Ask(world, area: "feature:wide")).Value;
 
         Assert.Equal(2, view.Nodes!.Count);
         Assert.Equal((true, true, 3), (view.Area!.Truncated, view.Truncated, view.Area.Counts.Nodes));
-        Assert.Equal(("feature:billing", "feature:billing.invoices"), (view.Nodes[0].Key.Value, view.Nodes[1].Key.Value));
+        Assert.Equal(("feature:wide", "surface:screen/s1"), (view.Nodes[0].Key.Value, view.Nodes[1].Key.Value));
         _ = Assert.Single(view.Edges!);
     }
 
