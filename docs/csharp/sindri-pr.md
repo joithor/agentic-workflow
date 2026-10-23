@@ -89,7 +89,7 @@ Every row carries `kind`, `identity`, `instance`, `headSha` and `at`; the kind a
 | `end` | `effect.pr.record` | `terminal` (`merged`, `closed`, `stopped`, `rework`), `reworkNotesHash` (`sha256:` of `fact:reworkNotes`' content, on `rework` only) |
 | `restack` | `effect.pr.restack` | `oldBase`, `newBase`, `outcome`. `headSha` is the pushed head (the seen head when nothing was pushed) |
 | `merge` | `effect.pr.merge` | `method`, `sha`, `actor` (the optional `actor` argument; null without one) |
-| `docsMerge` | `effect.pr.merge-docs` | `docsPr` (null when there is none), `outcome` (`merged`, `pending`, `none`), `trigger` and `actor` (the optional arguments; null without them). `headSha` is the docs PR's head. `docs-merge-owner` writes no row yet |
+| `docsMerge` | `effect.pr.merge-docs` | `docsPr` (null when there is none), `outcome` (`merged`, `pending`, `none`), `trigger` (the babysitter passes `command.merge` after the click and `ownerDesk` from the owner's desk step) and `actor` (an optional argument; null, since the recipe language has no reference to the caller). `headSha` is the docs PR's head. `docs-merge-owner` writes no row yet |
 
 A step with no instance address still runs and writes nothing.
 
