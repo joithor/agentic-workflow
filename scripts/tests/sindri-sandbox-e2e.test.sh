@@ -205,4 +205,9 @@ check "auto-grant: logged" "${DESK_LOG[0]}" "P/1 grant-tokens 200000"
 auto_grant P/1 2>/dev/null
 auto_grant P/1 2>/dev/null; rc=$?
 check "auto-grant: stops at --desk-max" "$rc $(wc -l < "$COMPLETED" | tr -d ' ')" "1 4"
+
+# the profile's effect allowlist covers every effect a shipped recipe uses (else that effect is refused at dispatch, SND-WF-011)
+allowed="$(grep -E '^ *echo "  effects: \[' "$SCRIPT" | grep -oE 'effect\.[a-z.-]+' | sort -u)"
+used="$(cat "$ROOT"/recipes/sindri/*.yaml | grep -oE 'effect\.[a-z][a-z.-]*[a-z]' | sort -u)"
+check "profile: allows every shipped recipe's effect" "$(comm -23 <(printf '%s\n' "$used") <(printf '%s\n' "$allowed") | tr '\n' ' ')" ""
 exit "$fail"

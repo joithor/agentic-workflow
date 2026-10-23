@@ -39,7 +39,7 @@ public sealed class ContextPublishDoctorTests
         var clock = new FakeTimeProvider(now);
         var engine = PublishStatusEngineProxy.Create(view);
         var reader = new MapPublishStatusReader(engine, outlooks, new ListLedger([Published()]), clock);
-        var checks = new ContextEngineChecks(FakeContextEngine.Instance, new OnyxDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))), new MapPublishDoctorCheck(reader, clock));
+        var checks = new ContextEngineChecks(FakeContextEngine.Instance, new OnyxDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))), new MapPublishDoctorCheck(reader, clock), new LinearDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))));
         var rows = await checks.Check(SliceHarness.Profile(), Ct);
         return rows.Single(static c => c.Name == MapPublishDoctorCheck.PublishName);
     }

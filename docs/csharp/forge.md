@@ -116,7 +116,7 @@ The write side is a second test, `GitHubForgeWriteContractTests`, and runs only 
 
 ## Sindri's port
 
-Sindri does not hand `IForge` to its steps and effects. `Aw.Sindri.Core.Forge.IPullRequests` is Sindri's own port, with Sindri's records (`PullView`, `PullChecks`, `PullPush`, `FindPull`, `OpenPull`, `OpenedPull`) and no `Aw.Forge` type in Core or Features. Its members are `Get`, `CheckLog`, `Push`, `PushBranch`, `RerunChecks`, `Find`, `Open`, `Update`, `Threads` (oldest first, with each thread's time, line, edit time and link), `Self` (the login Sindri acts as), `Merge`, `Reply` and `React`; every one answers a `Result<T>` and never throws.
+Sindri does not hand `IForge` to its steps and effects. `Aw.Sindri.Core.Forge.IPullRequests` is Sindri's own port, with Sindri's records (`PullView`, `PullChecks`, `PullPush`, `FindPull`, `OpenPull`, `OpenedPull`) and no `Aw.Forge` type in Core or Features. Its members are `Get`, `CheckLog`, `Push`, `PushBranch`, `RerunChecks`, `Find`, `Open`, `Update`, `Threads` (oldest first, with each thread's time, line, edit time and link), `Self` (the login Sindri acts as), `Merge`, `Reply` and `React` (and `Retarget` and `DefaultBranch`, which `effect.pr.merge-docs` uses to move a docs PR off its merged base); `Find`, `PushBranch` and `Open` also serve `effect.pr.create-stacked`, whose lease is `PushBranch`'s; every one answers a `Result<T>` and never throws.
 
 The adapter lives in `Aw.Sindri.Host/Forge` (the one project that references this package):
 
