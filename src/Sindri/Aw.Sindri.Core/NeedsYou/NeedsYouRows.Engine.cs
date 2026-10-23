@@ -26,8 +26,9 @@ public static partial class NeedsYouRows
     /// <param name="suspension">The suspension the ledger row shows. A budget park's grant is a placeholder (the ledger row has no recipe in the fold to halve the state's budget from), so its row carries the answer kind and action, and the status line has the real amount.</param>
     /// <param name="since">When the row appeared.</param>
     /// <param name="scrubber">Scrubs the text the row stores.</param>
+    /// <param name="refusal">The recorded refusal (code and message) of a dispatch park's effect; null when the transition recorded none.</param>
     /// <returns>The row.</returns>
-    public static NeedsYouRow ForPark(ItemRow item, InstanceAddress address, SuspensionSummary suspension, DateTimeOffset since, ITextScrubber scrubber)
+    public static NeedsYouRow ForPark(ItemRow item, InstanceAddress address, SuspensionSummary suspension, DateTimeOffset since, ITextScrubber scrubber, string? refusal = null)
     {
         ArgumentNullException.ThrowIfNull(suspension);
         var answer = ParkAnswers.For(new ParkShape(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors is not null), address, child: suspension.MirrorsAddress);

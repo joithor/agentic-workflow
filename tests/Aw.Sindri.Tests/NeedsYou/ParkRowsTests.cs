@@ -128,6 +128,35 @@ public sealed class ParkRowsTests
         Assert.Equal(Urgency.Pulse, row.Urgency);
     }
 
+    [Fact]
+    public void A_dispatch_park_row_says_the_refusal_not_drift()
+    {
+        var row = NeedsYouRows.ForPark(Item(), _address, Park(ParkReason.SpecConflict, ParkKind.Dispatch), _since, _plain, refusal: "SND-WF-010: fact:nextPhase must be a phase");
+
+        Assert.Equal("park \u00b7 dispatch refused", row.Label);
+        Assert.Contains("SND-WF-010: fact:nextPhase must be a phase", row.Reason, StringComparison.Ordinal);
+        Assert.DoesNotContain("drifted", row.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_dispatch_park_row_with_no_recorded_refusal_says_an_effect_was_refused()
+    {
+        var row = NeedsYouRows.ForPark(Item(), _address, Park(ParkReason.SpecConflict, ParkKind.Dispatch), _since, _plain);
+
+        Assert.Contains("an effect was refused", row.Reason, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(ParkKind.Drift, "its recipe drifted since approval")]
+    [InlineData(ParkKind.Revoked, "its recipe was revoked")]
+    [InlineData(ParkKind.ChildRevoked, "a child's recipe was revoked")]
+    public void The_other_spec_conflict_parks_keep_their_words_even_with_a_refusal(ParkKind kind, string words)
+    {
+        var row = NeedsYouRows.ForPark(Item(), _address, Park(ParkReason.SpecConflict, kind), _since, _plain, refusal: "SND-WF-010: x");
+
+        Assert.Contains(words, row.Reason, StringComparison.Ordinal);
+    }
+
     public static TheoryData<ParkReason, ParkKind> Parks()
     {
         var data = new TheoryData<ParkReason, ParkKind>();
