@@ -42,7 +42,7 @@ internal sealed class PrMergeEffect(IPullRequests pulls, IFactContents facts, IA
             return WorkflowErrors.NoRuntime.With($"effect.pr.merge of {context.Instance} needs the pull request's link ('pr') and the head the snapshot saw ('at': headSha)");
         }
 
-        var method = await Method(context, cancellationToken).ConfigureAwait(false);
+        var method = await PrMergeMethods.Resolve(context, profile, cancellationToken).ConfigureAwait(false);
         if (method.IsError)
         {
             return method.Error;
@@ -88,27 +88,4 @@ internal sealed class PrMergeEffect(IPullRequests pulls, IFactContents facts, IA
         PullMergeStatus.HeadMoved => "headMoved",
         _ => "blocked",   // a status this build doesn't know is not a merge
     });
-
-    private async ValueTask<Result<PullMergeMethod>> Method(EffectContext context, CancellationToken cancellationToken)
-    {
-        var named = context.Arguments.TryGetValue("method", out var literal) ? PrReplyFacts.Text(literal) : null;
-        if (named is null)
-        {
-            var approved = await profile.Latest(cancellationToken).ConfigureAwait(false);
-            if (approved.IsError)
-            {
-                return approved.Error;
-            }
-
-            named = approved.Value?.Profile.Workflow?.Pr?.MergeMethod;
-        }
-
-        return named?.ToLowerInvariant() switch
-        {
-            null or "squash" => PullMergeMethod.Squash,
-            "merge" => PullMergeMethod.Merge,
-            "rebase" => PullMergeMethod.Rebase,
-            _ => WorkflowErrors.NoRuntime.With($"merge method '{named}' is not squash, merge or rebase"),
-        };
-    }
 }
