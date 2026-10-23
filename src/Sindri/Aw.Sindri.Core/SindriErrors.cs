@@ -284,6 +284,12 @@ public static partial class SindriErrors
     /// <summary>SND-FORGE-004: the forge can't be reached, is rate limiting, or a push failed.</summary>
     public static readonly ErrorDefinition ForgeUnavailable = new("SND-FORGE-004", ErrorKind.Unavailable, "The forge is unavailable");
 
+    /// <summary>SND-ENGINE-001: the Temporal server, or the SDK call to it, didn't answer (API spec §3.8, E-30).</summary>
+    public static readonly ErrorDefinition EngineUnavailable = new("SND-ENGINE-001", ErrorKind.Unavailable, "The Temporal server didn't answer (fix: sindri doctor; sindri serve starts the dev server)");
+
+    /// <summary>SND-ENGINE-404: Temporal has no execution for that address, a retention edge (API spec §3.8, E-30).</summary>
+    public static readonly ErrorDefinition EngineNotFound = new("SND-ENGINE-404", ErrorKind.NotFound, "Temporal has no execution for that address");
+
     /// <summary>Every Sindri error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
@@ -294,6 +300,6 @@ public static partial class SindriErrors
         LaunchNotFound, LaunchViewerFailed, LaunchNoViewer, LaunchAgentMissing, LaunchRepoMissing, LaunchNoSession, LaunchInterrupted, LaunchInProgress, LaunchTimedOut, LaunchBudgetReached,
         LauncherInvalid, LaunchNotApproved, LaunchFormUnsupported, LaunchPrePushForeign, LaunchPushRefused, LaunchTrustUnavailable, LaunchSessionIdTimedOut, AuthLaunchSecret, SessionSourceFailed, SessionsUnavailable, SessionsTestOverride, SessionNotFound, SessionConflict,
         WorktreeInvalid, WorktreeConflict, WorktreeGitFailed, WorktreeDirty, SetupFolderInvalid, SetupRepoExists, SetupConfirmationRefused, SetupRepoNotInProfile, SetupOnyxCredentialsMissing, SetupOnyxNotWaiting, SetupProfileNotApproved,
-        NoForge, ForgeRefused, ForgeNotFound, ForgeUnavailable,
+        NoForge, ForgeRefused, ForgeNotFound, ForgeUnavailable, EngineUnavailable, EngineNotFound,
     ];
 }

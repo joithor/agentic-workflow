@@ -140,7 +140,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddRecipeTools()
             .AddRecipeBlocks()
             .AddRegistrySlices()
-            .AddContextSlices().AddCodeIndexReads()
+            .AddContextSlices().AddCodeIndexReads().AddEngineReads()
             .AddContextJobs()
             .AddCodeIndexJobs()
             .AddEngineSlices()
