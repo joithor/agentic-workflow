@@ -26,6 +26,20 @@ internal static partial class Labels
     internal static string ContextWholeAreaTruncated(int shown, int total) =>
         string.Create(CultureInfo.InvariantCulture, $"Showing {shown} of {total} items; the rest are not shown.");
 
+    /// <summary>The button that goes from a zoomed-in query back to the whole map.</summary>
+    internal const string ContextWholeBack = "Whole map";
+
+    /// <summary>The card on the whole map while no starting point is chosen.</summary>
+    internal const string ContextWholePick = "Pick a starting point to see why it matters.";
+
+    /// <summary>The line when what was asked is not on the whole map.</summary>
+    internal const string ContextWholeNoMatch = "None of those items are on the map.";
+
+    /// <summary>The chip when more features were touched than were opened.</summary>
+    /// <param name="more">How many features were not opened.</param>
+    /// <returns>"2 more features touched".</returns>
+    internal static string ContextWholeMoreTouched(int more) => string.Create(CultureInfo.InvariantCulture, $"{more} more {(more == 1 ? "feature" : "features")} touched");
+
     /// <summary>The line over the stage while the map is read.</summary>
     internal const string ContextWholeLoading = "Reading the map…";
 

@@ -96,6 +96,7 @@
           <TextBlock x:Name="PinnedNoteText" Classes="caption subtle" Text="{Binding PinnedNote}" IsVisible="{Binding HasPinnedNote}" VerticalAlignment="Center" TextWrapping="Wrap"
                      AutomationProperties.Name="{Binding PinnedNote}" />
         </StackPanel>
+        <Button x:Name="WholeMapBack" Margin="0,0,16,8" VerticalAlignment="Center" IsVisible="{Binding IsZoomedIn}" Click="OnWholeMapBack" Content="{Binding WholeBackText}" AutomationProperties.Name="{Binding WholeBackText}" />
         <Border x:Name="ContextViewSwitch" Background="{DynamicResource Brush.Surface2}" CornerRadius="{StaticResource Radius.MD}" Padding="2" Margin="0,0,16,8" VerticalAlignment="Center"
                 AutomationProperties.Name="{Binding ViewName}">
           <StackPanel Orientation="Horizontal">
