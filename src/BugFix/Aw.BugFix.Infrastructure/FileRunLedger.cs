@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Aw.BugFix.Core.Errors;
 using Aw.BugFix.Core.Ids;
 using Aw.BugFix.Core.Model;
@@ -15,6 +16,7 @@ namespace Aw.BugFix.Infrastructure;
 internal sealed class FileRunLedger(JsonSerializerOptions json) : IRunLedger
 {
     private const string KeyFile = "digest.key";
+    private const int JudgeDigestLength = 16;
 
     public Result<RunSlot> Reserve(string directory, DateTimeOffset at, CheckKind kind)
     {
@@ -104,7 +106,22 @@ internal sealed class FileRunLedger(JsonSerializerOptions json) : IRunLedger
     public JudgeQuestion WriteJudgeInput(string directory, CandidateId candidate, ResolutionCheckInput input)
     {
         var file = Path.Combine(directory, $"judge-{candidate.Value}.json");
-        return new JudgeQuestion(input, file, WriteFile(file, AwJson.Serialize(input, json)));
+        var canonical = Canonical(input);
+        File.WriteAllBytes(file, canonical);
+        return new JudgeQuestion(input, file, Convert.ToHexStringLower(SHA256.HashData(canonical))[..JudgeDigestLength]);
+    }
+
+    // The judge's canonical form: compact JSON through the AwJson profile, with its check kind (ui goes out as ui-evidence). The judge digests
+    // its re-serialization of the input, so writing this form makes the digest the one it will store.
+    private byte[] Canonical(ResolutionCheckInput input)
+    {
+        var node = JsonNode.Parse(AwJson.Serialize(input, json))!.AsObject(); // why: this process just wrote the object.
+        if (input.CheckKind == CheckKind.Ui)
+        {
+            node["checkKind"] = "ui-evidence";
+        }
+
+        return Encoding.UTF8.GetBytes(node.ToJsonString(json));
     }
 
     private static string WriteFile(string path, byte[] bytes)
