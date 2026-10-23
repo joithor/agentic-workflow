@@ -54,7 +54,7 @@ public static partial class NeedsYouRows
             _decide,
             [_decide],
             cli.Value.Text,
-            NeedsYouRows.Unset);
+            new NeedsYouOpen(NeedsYouOpenKinds.Decision, decision.Id.Value, "decision/" + decision.Id.Value, "Review and decide"));
     }
 
     /// <summary>The row for a service whose last run failed.</summary>
@@ -97,7 +97,7 @@ public static partial class NeedsYouRows
             unknown ? null : _runService,
             unknown ? [_pauseService] : builtIn ? [_runService] : [_runService, _pauseService],   // a built-in can't be paused
             cli.Value.Text,
-            NeedsYouRows.Unset);
+            new NeedsYouOpen(NeedsYouOpenKinds.Service, name, "service/" + name, "Open the failed service"));
     }
 
     /// <summary>The row for a live profile that drifted from the approved one.</summary>
@@ -137,7 +137,7 @@ public static partial class NeedsYouRows
             _approveProfile,
             [_approveProfile],
             cli.Value.Text,
-            NeedsYouRows.Unset));
+            new NeedsYouOpen(NeedsYouOpenKinds.Profile, "profile:drift", "needs-you/profile:drift", "Approve the profile")));
     }
 
     private static Result<CliForm> Cli<TId>(string form, string placeholder, TId id)

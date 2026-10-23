@@ -21,7 +21,13 @@
       "actions": [
         "Decide"
       ],
-      "cli": "sindri decide DEC-0000000000000000000000000000001c accept"
+      "cli": "sindri decide DEC-0000000000000000000000000000001c accept",
+      "open": {
+        "kind": "decision",
+        "id": "DEC-0000000000000000000000000000001c",
+        "route": "decision/DEC-0000000000000000000000000000001c",
+        "label": "Review and decide"
+      }
     }
   ],
   "empty": null,

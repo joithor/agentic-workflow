@@ -21,7 +21,13 @@
       "actions": [
         "PauseService"
       ],
-      "cli": "sindri profile validate"
+      "cli": "sindri profile validate",
+      "open": {
+        "kind": "service",
+        "id": "phantom",
+        "route": "service/phantom",
+        "label": "Open the failed service"
+      }
     }
   ],
   "empty": null,

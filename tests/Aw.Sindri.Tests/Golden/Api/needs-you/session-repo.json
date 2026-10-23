@@ -21,7 +21,13 @@
       "actions": [
         "Decide"
       ],
-      "cli": "sindri decide DEC-00000000000000000000000000000012 accept"
+      "cli": "sindri decide DEC-00000000000000000000000000000012 accept",
+      "open": {
+        "kind": "decision",
+        "id": "DEC-00000000000000000000000000000012",
+        "route": "decision/DEC-00000000000000000000000000000012",
+        "label": "Review and decide"
+      }
     },
     {
       "id": "failure:service:heartbeat",
@@ -45,7 +51,13 @@
         "RunService",
         "PauseService"
       ],
-      "cli": "sindri services run heartbeat"
+      "cli": "sindri services run heartbeat",
+      "open": {
+        "kind": "service",
+        "id": "heartbeat",
+        "route": "service/heartbeat",
+        "label": "Open the failed service"
+      }
     }
   ],
   "empty": null,

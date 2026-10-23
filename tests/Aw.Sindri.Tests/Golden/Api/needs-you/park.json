@@ -21,7 +21,13 @@
       "actions": [
         "ApplyCommand:answer-grant"
       ],
-      "cli": "sindri workflow answer ITM-0000000000000000000000000000000f/step/1 --grant 1"
+      "cli": "sindri workflow answer ITM-0000000000000000000000000000000f/step/1 --grant 1",
+      "open": {
+        "kind": "instance",
+        "id": "ITM-0000000000000000000000000000000f/step/1",
+        "route": "workflow/ITM-0000000000000000000000000000000f/step/1",
+        "label": "Open the parked workflow"
+      }
     }
   ],
   "empty": null,

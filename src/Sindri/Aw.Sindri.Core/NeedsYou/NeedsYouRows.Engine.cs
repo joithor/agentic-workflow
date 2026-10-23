@@ -34,8 +34,9 @@ public static partial class NeedsYouRows
         var at = park.Descendant ?? park.Address;
         var answer = AnswerOf(park);
         var (label, words) = Words(suspension, park.Refusal);
-        var shape = new EngineRow("park:", label, $"{words} ({at.Value})", Urgency.Pulse, answer?.Kind,
-            answer?.ActionId ?? _approveRecipe, answer is null ? [_approveRecipe, _cancel] : [answer.ActionId], answer?.Cli ?? Status(at), Unset, answer?.Via, answer?.Child);
+        var open = new NeedsYouOpen(NeedsYouOpenKinds.Instance, at.Value, WorkflowRoute(at), "Open the parked workflow", park.Descendant is null ? null : park.Address.Value);   // a parked descendant's row opens the descendant and names its root
+        var shape = new EngineRow(NeedsYouRowId.Park(park.Address), label, $"{words} ({at.Value})", Urgency.Pulse, answer?.Kind,
+            answer?.ActionId ?? _approveRecipe, answer is null ? [_approveRecipe, _cancel] : [answer.ActionId], answer?.Cli ?? Status(at), open, answer?.Via, answer?.Child);
         return Row(item, park.Address, shape, since, scrubber);
     }
 
@@ -64,7 +65,8 @@ public static partial class NeedsYouRows
     /// <param name="scrubber">Scrubs the text the row stores.</param>
     /// <returns>The row.</returns>
     public static NeedsYouRow ForDeskTask(ItemRow item, InstanceAddress address, DateTimeOffset since, ITextScrubber scrubber) =>
-        Row(item, address, new EngineRow("desk:", "desk task", $"a desk task is open ({address.Value})", Urgency.Colour, AnswerKind: null, _completeStep, [_completeStep], Status(address), Unset), since, scrubber);
+        Row(item, address, new EngineRow(NeedsYouRowId.Desk(address), "desk task", $"a desk task is open ({address.Value})", Urgency.Colour, AnswerKind: null, _completeStep, [_completeStep], Status(address),
+            new NeedsYouOpen(NeedsYouOpenKinds.Questions, address.Value, WorkflowRoute(address), "Answer the question")), since, scrubber);
 
     /// <summary>The 'park' row of a takeover that went idle.</summary>
     /// <param name="item">The item's row.</param>
@@ -73,14 +75,14 @@ public static partial class NeedsYouRows
     /// <param name="scrubber">Scrubs the text the row stores.</param>
     /// <returns>The row.</returns>
     public static NeedsYouRow ForIdleTakeover(ItemRow item, InstanceAddress address, DateTimeOffset since, ITextScrubber scrubber) =>
-        Row(item, address, new EngineRow("takeover:", "taken over", $"a takeover is idle ({address.Value})", Urgency.Calm, AnswerKind: null, _handback, [_handback, _cancel], $"sindri handback {address.Value}", Unset), since, scrubber);
+        Row(item, address, new EngineRow(NeedsYouRowId.Takeover(address), "taken over", $"a takeover is idle ({address.Value})", Urgency.Calm, AnswerKind: null, _handback, [_handback, _cancel], $"sindri handback {address.Value}",
+            new NeedsYouOpen(NeedsYouOpenKinds.Instance, address.Value, WorkflowRoute(address), "Open the taken-over workflow")), since, scrubber);
 
-    /// <summary>Placeholder until the open targets are built.</summary>
-    internal static NeedsYouOpen Unset { get; } = new(string.Empty, string.Empty, string.Empty, string.Empty);
+    private static string WorkflowRoute(InstanceAddress address) => "workflow/" + address.Value;
 
     private static string Status(InstanceAddress address) => $"sindri workflow status {address.Value}";
 
-    private sealed record EngineRow(string Prefix, string Label, string Reason, Urgency Urgency, Workflow.Views.AnswerKind? AnswerKind, ActionId Primary, IReadOnlyList<ActionId> Actions, string Cli, NeedsYouOpen Open, string? Via = null, string? Child = null);
+    private sealed record EngineRow(NeedsYouRowId Id, string Label, string Reason, Urgency Urgency, Workflow.Views.AnswerKind? AnswerKind, ActionId Primary, IReadOnlyList<ActionId> Actions, string Cli, NeedsYouOpen Open, string? Via = null, string? Child = null);
 
     private static NeedsYouRow Row(ItemRow item, InstanceAddress address, EngineRow shape, DateTimeOffset since, ITextScrubber scrubber)
     {
@@ -88,7 +90,7 @@ public static partial class NeedsYouRows
         ArgumentNullException.ThrowIfNull(scrubber);
         var instance = WorkflowInstanceId.Of(address).Value;
         return new NeedsYouRow(
-            NeedsYouRowId.From(shape.Prefix + instance),
+            shape.Id,
             NeedsYouKind.Park,
             shape.Label,
             new NeedsYouSubject(SubjectKind.Instance, SubjectId.From(instance)),

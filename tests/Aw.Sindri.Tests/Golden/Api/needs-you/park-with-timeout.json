@@ -22,6 +22,12 @@
         "ApplyCommand:answer-grant"
       ],
       "cli": "sindri workflow answer T-3/step/1 --grant 1",
+      "open": {
+        "kind": "instance",
+        "id": "T-3/step/1",
+        "route": "workflow/T-3/step/1",
+        "label": "Open the parked workflow"
+      },
       "timeout": {
         "kind": "parks",
         "inSeconds": 168480,
