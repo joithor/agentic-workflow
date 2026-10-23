@@ -1,8 +1,8 @@
 {
-  "address": "ITM-01JN2/design/1",
-  "id": "WFI-f9bdda4737968d6089b67b0810cd8936",
+  "address": "ITM-01JN3/design/1",
+  "id": "WFI-ae5ed762da3a8eee96bb1f7a011d3bd5",
   "parent": null,
-  "itemId": "ITM-01JN2",
+  "itemId": "ITM-01JN3",
   "title": "Add expiry to sessions",
   "recipe": {
     "id": "workflow.design",
@@ -461,5 +461,6 @@
   "stepRuns": [],
   "asOf": "2026-10-12T12:26:00.0000000Z",
   "steps": [],
-  "startedBy": null
+  "startedBy": null,
+  "allowedCommands": []
 }
