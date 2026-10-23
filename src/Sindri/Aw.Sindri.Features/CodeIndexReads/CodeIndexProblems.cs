@@ -6,7 +6,7 @@ using Aw.Sindri.Core.Health;
 namespace Aw.Sindri.Features.CodeIndexReads;
 
 /// <summary>
-/// The health row a repo's code index makes, if any (the Health card's words, code index spec §7.3): damaged, a build retrying after failures, a layer unavailable, or an index behind main.
+/// The health row a repo's code index makes, if any (the Health card's words, code index spec §7.3): damaged, a build retrying after failures, a failed code graph, or an index behind main.
 /// Missing, building, waiting for a build slot and pending embeddings are not problems. At most one row a repo: damaged, then retrying, then unavailable, then stale.
 /// </summary>
 internal static class CodeIndexProblems
@@ -32,9 +32,10 @@ internal static class CodeIndexProblems
             return new(CodeIndexErrors.BuildFailed.Code, $"{repo}: code index build failed; {waiting}", $"the code index for {repo} is retrying a build");
         }
 
-        if (status.Layers.FirstOrDefault(static l => l.State == LayerState.Unavailable) is { } layer)
+        // Only a graph that failed with a code: a layer this version didn't build has no code, and the embedding server is doctor's row.
+        if (status.Layers.FirstOrDefault(static l => l is { Layer: LayerName.Graph, State: LayerState.Unavailable, Code: not null }) is { Code: { } code })
         {
-            return new(layer.Code ?? CodeIndexErrors.GraphUnavailable.Code, $"{repo}: code graph is unavailable", $"the code index for {repo} is unavailable");
+            return new(code, $"{repo}: code graph is unavailable", $"the code index for {repo} is unavailable");
         }
 
         return health.State == "stale"

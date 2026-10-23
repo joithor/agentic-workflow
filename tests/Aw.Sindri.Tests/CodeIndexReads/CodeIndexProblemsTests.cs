@@ -74,12 +74,12 @@ public sealed class CodeIndexProblemsTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void An_unavailable_layer_without_a_code_still_names_one()
-    {
-        var problem = Problem(Built(new LayerStatus(LayerName.Embeddings, LayerState.Unavailable, Code: null, "off")), Current());
+    public void A_graph_not_built_by_this_version_is_no_problem()
+        => Assert.Null(Problem(Built(new LayerStatus(LayerName.Graph, LayerState.Unavailable, Code: null, "not built by this version")), Current()));
 
-        Assert.Equal("SND-CODEIDX-008", problem?.Code);
-    }
+    [Fact, Trait("Lane", "unit")]
+    public void Unavailable_embeddings_are_no_problem_here_because_doctor_names_the_embedding_server()
+        => Assert.Null(Problem(Built(new LayerStatus(LayerName.Embeddings, LayerState.Unavailable, "SND-CODEIDX-006", "the embedding server refused")), Current()));
 
     [Fact, Trait("Lane", "unit")]
     public void A_layer_unavailable_beats_a_stale_index()
