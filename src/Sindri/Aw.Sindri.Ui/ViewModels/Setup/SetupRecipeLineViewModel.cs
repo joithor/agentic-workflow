@@ -13,12 +13,11 @@ internal sealed class SetupRecipeLineViewModel
         ArgumentNullException.ThrowIfNull(served);
         Name = RecipeNames.Of(served.Id, served.DisplayName);
         var approved = string.Equals(served.Standing, "approved", StringComparison.Ordinal);
-        IsOutdated = approved && (served.Stale is { Count: > 0 } || served.ApprovedVersion < served.Version
-            || (served.ApprovedHash is { } hash && !string.Equals(hash, served.Hash, StringComparison.Ordinal)));
-        Status = !approved
-            ? Labels.StandingWord(string.Equals(served.Standing, "revoked", StringComparison.Ordinal) ? RecipeStanding.Revoked : RecipeStanding.NotApproved)
-            : !IsOutdated ? Labels.SetupRecipeApproved
-            : served.ApprovedVersion is { } was && was < served.Version ? Labels.SetupRecipeNewer(was, served.Version) : Labels.SetupRecipeOutOfDate;
+        var newer = served.ApprovedVersion is { } was && was < served.Version && !string.Equals(served.Standing, "revoked", StringComparison.Ordinal);   // the shipped version waits while an older one stays approved
+        IsOutdated = newer || (approved && (served.Stale is { Count: > 0 } || (served.ApprovedHash is { } hash && !string.Equals(hash, served.Hash, StringComparison.Ordinal))));
+        Status = newer ? Labels.SetupRecipeNewer(served.ApprovedVersion!.Value, served.Version)   // why: newer is true only when ApprovedVersion has a value
+            : !approved ? Labels.StandingWord(string.Equals(served.Standing, "revoked", StringComparison.Ordinal) ? RecipeStanding.Revoked : RecipeStanding.NotApproved)
+            : IsOutdated ? Labels.SetupRecipeOutOfDate : Labels.SetupRecipeApproved;
         AccessibleName = Name + ": " + Status;
     }
 

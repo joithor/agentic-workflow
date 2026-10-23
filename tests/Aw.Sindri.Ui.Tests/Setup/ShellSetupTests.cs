@@ -146,7 +146,7 @@ public sealed class ShellSetupTests
         _server.RecipeListAnswer = FakeSindriApi.OutdatedRecipeList();
         _server.SetupAnswer = new RouteAnswer(System.Net.HttpStatusCode.OK, SetupFixture.With("extra-priority-mix", "recipes", "done").ToJsonString());
         var shell = await Connected();
-        string? landed = "none";
+        var landed = "none";
         shell.Setup.RevealRequested += (_, e) => landed = e.StepId;
 
         shell.RecipesPage.RequestApproveNew();

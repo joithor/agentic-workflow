@@ -35,8 +35,8 @@ public sealed class SetupOutdatedWorkflowsTests
     {
         var row = await RecipesRow();
 
-        Assert.Equal(["approved", "approved v4, v5 available", "Out of date"], row.Recipes.Lines.Select(r => r.Status));
-        Assert.Equal(["Step", "Review", "Triage"], row.Recipes.Lines.Select(r => r.Name));
+        Assert.Equal(["approved", "approved v4, v5 available", "Out of date"], row.Recipes.Lines.Select(r => r.Status), StringComparer.Ordinal);
+        Assert.Equal(["Plain step", "Review", "Triage"], row.Recipes.Lines.Select(r => r.Name), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public sealed class SetupOutdatedWorkflowsTests
 
         var row = (await _f.Read(Token)).Steps.Single(s => s.Id == "recipes");
 
-        Assert.Equal(["approved"], row.Recipes.Lines.Select(r => r.Status));
+        Assert.Equal(["approved"], row.Recipes.Lines.Select(r => r.Status), StringComparer.Ordinal);
         Assert.True(row.IsDone);
         Assert.False(row.Workflows!.IsOpen);
     }
@@ -90,7 +90,7 @@ public sealed class SetupOutdatedWorkflowsTests
 
         var row = (await _f.Read(Token)).Steps.Single(s => s.Id == "recipes");
 
-        Assert.Equal(["Not approved", "approved v4, v5 available"], row.Recipes.Lines.Select(l => l.Status));
+        Assert.Equal(["Not approved", "approved v4, v5 available"], row.Recipes.Lines.Select(l => l.Status), StringComparer.Ordinal);
         Assert.Equal(("Needs you", true), (row.ChipWord, row.Workflows!.IsOpen));
     }
 }
