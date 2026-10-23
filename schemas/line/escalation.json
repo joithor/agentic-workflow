@@ -28,6 +28,11 @@
       "minLength": 1,
       "description": "Added by the log Step: the lens whose finding escalated."
     },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Added by step.lens.log in the list form: q1, q2... in round order, unique within the round; an answer echoes it."
+    },
     "finding": {
       "type": "string",
       "minLength": 1,

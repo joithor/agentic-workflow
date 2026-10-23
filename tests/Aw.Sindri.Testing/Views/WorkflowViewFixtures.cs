@@ -575,7 +575,7 @@ public static class WorkflowViewFixtures
 
     /// <summary>
     /// ITM-01JN2: the design review's ask desk after a round in which two lenses raised three questions (owner decision q60, 2026-10-23): ONE desk, 'fact:escalation' holds all three
-    /// (a list: kind, question, options, lens, finding) and the desk asks for 'fact:answers', one {question, answer} entry per question.
+    /// (a list: kind, question, options, lens, finding) and the desk asks for 'fact:answers', one {id, question, answer} entry per question, the id echoing the question's (q1, q2, q3).
     /// </summary>
     public static InstanceDetail LensAskMulti()
     {
@@ -589,7 +589,7 @@ public static class WorkflowViewFixtures
                 new DeskForm(RunToken.From("4.1"), [new DeskOutput("fact:answers", FactType.Payload, true)], ["answers.payload"], Act("CompleteStep")), status),
             _design.Facts(
                 Produced(_design, "fact:scopePacket", "scope packet, frozen", At(10, 12, 9, 0), "step.design.intake", Ref(factKey: "fact:scopePacket")),
-                Produced(_design, "fact:escalation", "3 questions: Keep the legacy flow? · Which table owns expiry? · Who is the expiry for?", At(10, 12, 12, 22), "step.lens.log", Ref(factKey: "fact:escalation")),
+                Produced(_design, "fact:escalation", "3 questions: q1 Keep the legacy flow? · q2 Which table owns expiry? · q3 Who is the expiry for?", At(10, 12, 12, 22), "step.lens.log", Ref(factKey: "fact:escalation")),
                 Fake(_design, "fact:answers", FactStatus.Pending, "awaiting your answers", pending: pending)),
             [], Counts(9, 0, 1));
     }

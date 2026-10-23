@@ -13,6 +13,7 @@ outputs:
   - { key: fact:designPacket, label: "Design packet (candidate)", type: packet,  from: evidence }
   - { key: fact:design,       label: "Design",                    type: payload, from: evidence }
   - { key: fact:lensRounds,   label: "Lens rounds",               type: payload, from: evidence }
+  - { key: fact:escalation,   label: "Questions for you",         type: payload, from: lens-log }
 initial: intake
 states:
   intake:    { kind: active, step: step.design.intake, timeout: { after: 1h, then: park },

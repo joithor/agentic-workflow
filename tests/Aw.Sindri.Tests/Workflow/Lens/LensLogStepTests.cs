@@ -189,6 +189,7 @@ public sealed class LensLogStepTests
         Assert.Equal(["Keep the legacy flow?", "Which table owns expiry?", "Who is the expiry for?"], questions.Select(static q => q!["question"]!.GetValue<string>()), StringComparer.Ordinal);
         Assert.Equal(["arch", "arch", "product"], questions.Select(static q => q!["lens"]!.GetValue<string>()), StringComparer.Ordinal);
         Assert.Equal(["A1", "A2", "P1"], questions.Select(static q => q!["finding"]!.GetValue<string>()), StringComparer.Ordinal);
+        Assert.Equal(["q1", "q2", "q3"], questions.Select(static q => q!["id"]!.GetValue<string>()), StringComparer.Ordinal);
         Assert.Equal(["keep", "drop"], questions[0]!["options"]!.AsArray().Select(static o => o!.GetValue<string>()), StringComparer.Ordinal);
         Assert.Equal(3, LensStepContexts.Out(result, "findings").AsArray().Count);
     }
@@ -201,6 +202,18 @@ public sealed class LensLogStepTests
         var result = await Run($$"""{"lens":"arch","findings":[{{findings}}]}""", "[]", """["arch"]""");
 
         Assert.Equal(12, LensStepContexts.Out(result, "escalation").AsArray().Count);
+    }
+
+    [Fact]
+    public async Task Two_questions_with_the_same_text_from_different_lenses_keep_distinct_ids()
+    {
+        const string earlier = """[{"round":1,"lens":"arch","findings":[{"severity":"HIGH","text":"a","escalate":{"kind":"productQuestion","question":"Keep the legacy flow?"}}]}]""";
+
+        var result = await Run("""{"lens":"product","findings":[{"severity":"HIGH","text":"b","escalate":{"kind":"productQuestion","question":"Keep the legacy flow?"}}]}""", earlier, """["product"]""");
+
+        var questions = LensStepContexts.Out(result, "escalation").AsArray();
+        Assert.Equal(["arch", "product"], questions.Select(static q => q!["lens"]!.GetValue<string>()), StringComparer.Ordinal);
+        Assert.Equal(["q1", "q2"], questions.Select(static q => q!["id"]!.GetValue<string>()), StringComparer.Ordinal);
     }
 
     [Fact]
