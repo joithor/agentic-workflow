@@ -14,10 +14,9 @@ namespace Aw.Sindri.Features.RevokeRecipe;
 /// Revokes an approved recipe hash (engine spec §4.1, §4.2, W11): plans the revoke again, redeems the challenge against
 /// that plan, then records 'recipe.revoked' (through RecipeEvents) and the row for the hash and for each generated
 /// recipe approved from it, and wakes their running instances so they park. Each event comes before its row, so a
-/// refused or failed append leaves no row behind. A refused plan or challenge records nothing.
+/// refused or failed append leaves no row behind. A refused plan records nothing.
 /// </summary>
 /// <param name="planner">Plans the revoke.</param>
-/// <param name="challenges">The server's challenges.</param>
 /// <param name="events">Appends the registry's events.</param>
 /// <param name="approvals">The approvals and revocations.</param>
 /// <param name="wake">Reaches the running instances.</param>
@@ -25,7 +24,6 @@ namespace Aw.Sindri.Features.RevokeRecipe;
 /// <param name="callers">The caller: who revoked it and the command id.</param>
 internal sealed class RevokeRecipeService(
     RecipeRevokePlanner planner,
-    IChallenges challenges,
     RecipeEvents events,
     IRecipeApprovals approvals,
     IRecipeWake wake,
@@ -45,12 +43,6 @@ internal sealed class RevokeRecipeService(
         if (plan.IsError)
         {
             return plan.Error;
-        }
-
-        var redeemed = challenges.Redeem(request.Answer, plan.Value.Action, plan.Value.Subject, WorkflowErrors.RecipeChallengeStale);
-        if (redeemed.IsError)
-        {
-            return redeemed.Error;
         }
 
         var written = await Record(plan.Value, caller.Actor, cancellationToken).ConfigureAwait(false);

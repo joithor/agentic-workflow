@@ -5,7 +5,7 @@ namespace Aw.Sindri.Features.ApplyCommand;
 
 /// <summary>
 /// The action class of a command (engine spec §4.2, §6.2): '--grant n', '--grant-tokens n' and '--accept' are protected
-/// and need a challenge (its text and subject are <see cref="InstanceChallenge"/>'s); every other answer, a recipe
+/// and need no typed challenge (owner decision q93); every other answer, a recipe
 /// command and a cancel are desk.
 /// </summary>
 public static class ApplyCommandChallenge

@@ -10,7 +10,7 @@ internal static partial class CommandTable
     {
         ["profile", "validate", .. var rest] when Json(rest) is { } json => await verbs.Validate(json, ct).ConfigureAwait(false),
         ["profile", "init", .. var rest] when Json(rest) is { } json => await verbs.InitProfile(json, ct).ConfigureAwait(false),
-        ["profile", "approve", .. var rest] when Approval(rest) is { } a => await approving(a).Approve(a.Hash, Interactive(), Console.In, ct).ConfigureAwait(false),
+        ["profile", "approve", .. var rest] when Approval(rest) is { } a => await approving(a).Approve(a.Hash, ct).ConfigureAwait(false),
         _ => await UnknownVerb(args, output).ConfigureAwait(false),
     };
 

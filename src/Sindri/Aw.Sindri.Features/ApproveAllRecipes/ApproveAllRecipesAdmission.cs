@@ -1,6 +1,5 @@
 using Aw.Kernel;
 using Aw.Sindri.Core;
-using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
@@ -14,11 +13,10 @@ namespace Aw.Sindri.Features.ApproveAllRecipes;
 /// not the owner's does not burn the hold; a failed claim after it is a clean refusal that burns the challenge. Nothing is written here.
 /// </summary>
 /// <param name="plans">Reads the plan, refusing before a profile is approved.</param>
-/// <param name="challenges">The server's challenges.</param>
 /// <param name="registry">The running jobs.</param>
 /// <param name="redeemed">Keeps the redeemed plan for the job.</param>
 /// <param name="callers">The caller, whose command id is the batch of the approvals.</param>
-internal sealed class ApproveAllRecipesAdmission(ApproveAllPlanReader plans, IChallenges challenges, IRunningJobs registry, RedeemedPlans redeemed, ICallerContextAccessor callers) : IJobAdmission<ApproveAllRecipesRequest>
+internal sealed class ApproveAllRecipesAdmission(ApproveAllPlanReader plans, IRunningJobs registry, RedeemedPlans redeemed, ICallerContextAccessor callers) : IJobAdmission<ApproveAllRecipesRequest>
 {
     /// <summary>The job's kind: the action id.</summary>
     internal static readonly JobKind Kind = JobKind.From("ApproveAllRecipes");
@@ -45,13 +43,7 @@ internal sealed class ApproveAllRecipesAdmission(ApproveAllPlanReader plans, ICh
             return SindriErrors.AuthRefused.With("approve-all needs a caller");
         }
 
-        var taken = RedeemedPlan.Redeem(challenges, request.Answer, plan.Value, caller.CommandId, request.Answer.HeldMs);
-        if (taken.IsError)
-        {
-            return taken.Error;
-        }
-
-        redeemed.Keep(request, taken.Value);
+        redeemed.Keep(request, RedeemedPlan.For(plan.Value, caller.CommandId));
         return (ServiceName?)null;
     }
 
