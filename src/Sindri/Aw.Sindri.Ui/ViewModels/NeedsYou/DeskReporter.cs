@@ -31,7 +31,7 @@ internal sealed class DeskReporter(ISindriApi api, Func<Uri?> apiUrl)
             return null;
         }
 
-        return new DeskTarget(instanceId, desk.Run, read.Value.Current.Status.Commands.FirstOrDefault(c => c.Verb == StatusVerb.Complete));
+        return new DeskTarget(instanceId, desk.Run, read.Value.Current.Status.Commands.FirstOrDefault(c => c.Verb == StatusVerb.Complete), desk.Recommended);
     }
 
     /// <summary>True when a report for the instance is in flight.</summary>

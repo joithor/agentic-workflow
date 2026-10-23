@@ -101,6 +101,8 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
             "/sindri/workflow/recipes" when request.Method == HttpMethod.Get => Answer(Counted(await server.Recipes(uri, cancellationToken), server.RecipeListAnswer)),
             "/sindri/workflow/instances" when request.Method == HttpMethod.Post =>
                 Answer(Counted(await server.StartInstance(uri, await Body<StartInstanceRequest>(request, cancellationToken), cancellationToken), server.StartAnswer)),
+            { } path when request.Method == HttpMethod.Post && path.StartsWith("/sindri/workflow/instances/", StringComparison.Ordinal) && path.EndsWith("/rerun", StringComparison.Ordinal) =>
+                Answer(Counted(await server.RerunInstance(uri, Uri.UnescapeDataString(path["/sindri/workflow/instances/".Length..^"/rerun".Length]), cancellationToken), server.RerunAnswer)),
             var path when IsServiceCommand(request, path) => await ServiceCommand(request, path, cancellationToken),
             "/sindri/context/map/refresh" when request.Method == HttpMethod.Post => Answer(Counted(await server.RefreshContextMap(uri, cancellationToken), server.RefreshContextMapAnswer)),
             { } path when path.StartsWith("/sindri/context/", StringComparison.Ordinal) => await ContextRoute(request, cancellationToken),

@@ -264,6 +264,7 @@
                     Click="OnApprove" AutomationProperties.Name="{Binding Bar.ApproveName}">
               <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.AccessibilityView="Raw">
                 <TextBlock Text="{Binding Bar.ApproveWord}" VerticalAlignment="Center" />
+                <TextBlock x:Name="NeedsYouApproveSuggested" Classes="caption" Text="{Binding Bar.SuggestedTag}" IsVisible="{Binding Bar.ApproveSuggested}" VerticalAlignment="Center" />
                 <Border Classes="kbd"><TextBlock Classes="kbd" Text="A" /></Border>
               </StackPanel>
             </Button>
@@ -278,6 +279,7 @@
                     ToolTip.Tip="{Binding Bar.SendBackTooltip}" ToolTip.ShowOnDisabled="True" AutomationProperties.Name="{Binding Bar.SendBackName}" AutomationProperties.HelpText="{Binding Bar.SendBackTooltip}">
               <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.AccessibilityView="Raw">
                 <TextBlock Text="{Binding Bar.SendBackWord}" VerticalAlignment="Center" />
+                <TextBlock x:Name="NeedsYouSendBackSuggested" Classes="caption" Text="{Binding Bar.SuggestedTag}" IsVisible="{Binding Bar.SendBackSuggested}" VerticalAlignment="Center" />
                 <Border Classes="kbd"><TextBlock Classes="kbd" Text="D" /></Border>
               </StackPanel>
             </Button>
