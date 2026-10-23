@@ -10,7 +10,7 @@ namespace Aw.CodeIndex.Features.BuildCodeIndex;
 
 /// <summary>
 /// The build slice (spec §5.7): a heavy slot, the snapshot, the incremental plan, the structure write in batches, the syntax
-/// edges and the publish. The graph layer (graphify) runs after the syntax edges and never fails the build; the clones rows are written with the structure; the embeddings layer is built here; the deps layer plugs in later; until then it is recorded as unavailable
+/// edges and the publish. The graph layer (graphify) runs after the syntax edges and never fails the build; the clones rows are written with the structure; the embeddings layer is only recorded here (bodies stay stored and vectors of unchanged files are carried; the embed slice embeds the rest outside the heavy slot); the deps layer plugs in later; until then it is recorded as unavailable
 /// with its reason, so a reader never mistakes a layer that was not built for one that is empty.
 /// </summary>
 /// <param name="heads">Whether a commit is still on the default branch.</param>
@@ -108,7 +108,7 @@ public sealed partial class BuildCodeIndexService(IRepoHeads heads, IRepoSnapsho
             return graphLayer.Error;
         }
 
-        var embedded = await layers.Embeddings.Run(build, settings.Embeddings, request.Progress, cancellationToken).ConfigureAwait(false);
+        var embedded = await layers.Embeddings.Record(build, settings.Embeddings, cancellationToken).ConfigureAwait(false);
         if (embedded.IsError)
         {
             return embedded.Error;

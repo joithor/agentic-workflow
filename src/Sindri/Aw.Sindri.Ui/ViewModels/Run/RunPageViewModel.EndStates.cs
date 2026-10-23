@@ -1,5 +1,8 @@
+using Aw.Kernel;
+using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Navigation;
+using Aw.Sindri.Ui.ViewModels.Controls;
 
 namespace Aw.Sindri.Ui.ViewModels.Run;
 
@@ -9,6 +12,7 @@ internal sealed partial class RunPageViewModel
     private string? _failureInstance;   // the instance whose events say why: the failed stage's child, else the line
     private long _failureAt;            // a Show counter: an events answer for an older Show is dropped
     private bool _failureHeard;
+    private string? _again;             // the address of the run this one is another attempt of
 
     /// <summary>True while a failed step is shown with its reason (or the line that none was recorded).</summary>
     public bool HasFailure { get; private set => Set(ref field, value); }
@@ -27,6 +31,24 @@ internal sealed partial class RunPageViewModel
     /// <summary>What the person can do next: only what the server serves, and the run's context.</summary>
     public IReadOnlyList<RunNextOption> NextOptions { get; private set => Set(ref field, value); } = [];
 
+    /// <summary>Run again, when the run ended and lists the command; null otherwise. A run that starts opens its page.</summary>
+    public ControlViewModel? Rerun { get; private set => Set(ref field, value); }
+
+    /// <summary>"again of ITM-…/1": this run is another attempt, and the link goes to the old one; empty when it is not.</summary>
+    public string AgainText { get; private set => Set(ref field, value); } = string.Empty;
+
+    /// <summary>True when this run is another attempt of an earlier one.</summary>
+    public bool HasAgain => AgainText.Length > 0;
+
+    /// <summary>Opens the run this one is another attempt of.</summary>
+    internal void OpenAgain()
+    {
+        if (_again is { } old)
+        {
+            Go(new DeepLink(DeepLinkKind.Workflow, old));
+        }
+    }
+
     /// <summary>True when the run has ended (a reached end card exists).</summary>
     public bool HasEnded { get; private set => Set(ref field, value); }
 
@@ -44,11 +66,38 @@ internal sealed partial class RunPageViewModel
         FailureStep = FailedStepName(bad);
         FailureText = failed ? Labels.RunNoDetail : string.Empty;
         NextOptions = end is null ? [] : OptionsOf(line);
+        Attempts(line, ended: end is not null);
         if (end is not null)
         {
             Cancel = null;   // nothing left to cancel
             StartedText = Took(line, children);
         }
+    }
+
+    // Run again (an ended run that lists it) and the link back to the run this one is another attempt of.
+    private void Attempts(InstanceDetail line, bool ended)
+    {
+        Rerun = ended && line.Actions.Contains(RerunAction, StringComparer.Ordinal) ? catalog.On(RerunAction, line.Address, ct => RerunLine(line.Id, ct)) : null;
+        _again = line.Again;
+        AgainText = line.Again is { Length: > 0 } old ? Labels.RunAgainOf(old) : string.Empty;
+        OnChanged(nameof(HasAgain));
+    }
+
+    // Run again: the server starts the next attempt; when it answers, this page goes to the new run.
+    private async Task<Result<CommandAcceptedView>> RerunLine(string id, CancellationToken cancellationToken)
+    {
+        if (_url is not { } url)
+        {
+            return SindriUiErrors.NotRunning.With("Sindri is not running, so this run can't start again.");
+        }
+
+        var started = await api.RerunInstance(url, id, cancellationToken).ConfigureAwait(true);
+        if (started.IsSuccess)
+        {
+            Go(new DeepLink(DeepLinkKind.Workflow, started.Value.Instance.Address));
+        }
+
+        return started.Map(_ => new CommandAcceptedView("rerun", 0));
     }
 
     private static bool HasFailed(RunNode? end, RunNode? bad) =>

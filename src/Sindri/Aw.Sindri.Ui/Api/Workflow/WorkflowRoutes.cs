@@ -31,6 +31,9 @@ internal static class WorkflowRoutes
 
     internal static string Instance(string id) => $"{Root}/instances/{Uri.EscapeDataString(id)}";
 
+    /// <summary>POST: start the same recipe again for an instance that ended.</summary>
+    internal static string Rerun(string id) => $"{Instance(id)}/rerun";
+
     /// <summary>POST: the report for an open desk run.</summary>
     internal static string Complete(string id, string run) => $"{Instance(id)}/runs/{Uri.EscapeDataString(run)}/complete";
 

@@ -428,6 +428,24 @@
       "confirm": null
     },
     {
+      "action": "EmbedCodeIndex",
+      "class": "job",
+      "allowedCallers": [
+        "human+terminal",
+        "human",
+        "service"
+      ],
+      "terminal": false,
+      "method": null,
+      "route": null,
+      "cli": "sindri services run code-index-embed",
+      "ui": "ready",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null,
+      "confirm": null
+    },
+    {
       "action": "FileRequest",
       "class": "request",
       "allowedCallers": [
