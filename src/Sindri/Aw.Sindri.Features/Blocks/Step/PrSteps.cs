@@ -48,7 +48,7 @@ internal static class PrSteps
         .Reports("drafted", "noReply", "needsOwner").Writes(On("fact:reply", "drafted", "needsOwner"));
 
     /// <summary>'step.pr.owner-comment': the owner decides a held comment: 'fix' (with a note), 'reply' (with the text), 'skip' or 'later'.</summary>
-    public static BlockDescriptor OwnerComment { get; } = HumanDeskStep("step.pr.owner-comment", Capability.None).Reads("fact:comment")
+    public static BlockDescriptor OwnerComment { get; } = HumanDeskStep("step.pr.owner-comment", Capability.None).Reads("fact:comment").Reviewing(ReviewOf("fact:comment", DeskReviewKind.Text))
         .Reports("fix", "reply", "skip", "later").Writes(On("fact:ownerNote", "fix"), On("fact:reply", "reply"));
 
     /// <summary>'step.pr.rework-notes': the owner writes what the phase must change ('noted') or sends the PR back to the babysitter ('back').</summary>
