@@ -101,6 +101,27 @@ public sealed class BuildCodeIndexGraphTests
         Assert.Empty(found.Hits);
     }
 
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_graphify_timeout_keeps_the_last_good_graph_instead_of_clearing_it()
+    {
+        using var git = Repo();
+        var tool = new FakeGraphRunner { Graph = _graph };
+        using var index = new RealIndex(graph: tool);
+        var repo = git.AsRepo("web");
+        _ = await Build(index, repo, git.Head);
+        var g = await Find(index, repo, "g");
+        git.WriteFile("src/a.ts", FileA + "// edit\n");
+        var second = git.Commit("edit");
+        tool.RunError = CodeIndexErrors.GraphUnavailable.With("timeout");
+
+        var report = await Build(index, repo, second);
+
+        var callers = (await index.Facade.Callers(RealIndex.ScopeOf(repo), g, CallDepth.One, includeImplementations: false, Token)).Value;
+        var layer = report.Layers.Single(l => l.Layer == LayerName.Graph);
+        Assert.Equal((LayerState.Unavailable, "SND-CODEIDX-008", "timeout"), (layer.State, layer.Code, layer.Detail));
+        Assert.Equal("f", Assert.Single(callers.Edges).Other!.Name);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task A_disabled_graph_layer_is_disabled_and_the_tool_does_not_run()
     {
