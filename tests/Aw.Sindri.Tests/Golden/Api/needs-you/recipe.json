@@ -21,7 +21,11 @@
       "actions": [
         "ApproveRecipe"
       ],
-      "cli": "sindri recipe approve workflow.ship"
+      "cli": "sindri recipe approve workflow.ship",
+      "open": {
+        "route": "recipe/workflow.ship",
+        "label": "Review the workflow change"
+      }
     }
   ],
   "empty": null,
