@@ -29,7 +29,7 @@ public sealed class RecipeBabysitterFramesTests : FrameHost
         {
             Assert.Equal("Babysitter", Named<TextBlock>(window, "RecipeBabysitterHeading").Text);
             var texts = Named<StackPanel>(window, "RecipeBabysitter").GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible).Select(t => t.Text).ToList();
-            Assert.Contains(texts, t => string.Equals(t, "typical 1h 30m, most under 4h", StringComparison.Ordinal));
+            Assert.Contains(texts, t => string.Equals(t, "typical 1h 30m, most under 4h 0m", StringComparison.Ordinal));
             Assert.Contains(texts, t => string.Equals(t, "1 merge record couldn't be read", StringComparison.Ordinal));
             Frame(window, "recipe-babysitter", "f3-");
         }

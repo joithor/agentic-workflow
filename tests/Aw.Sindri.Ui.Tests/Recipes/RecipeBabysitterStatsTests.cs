@@ -53,8 +53,8 @@ public sealed class RecipeBabysitterStatsTests
         Assert.Equal(
             [
                 ("Watched", "4"),
-                ("Time to ready", "typical 1h 30m, most under 4h"),
-                ("Time to merge", "typical 2h 30m, most under 6h"),
+                ("Time to ready", "typical 1h 30m, most under 4h 0m"),
+                ("Time to merge", "typical 2h 30m, most under 6h 0m"),
                 ("Tokens per pull request", "typical 42,000, most under 88,000"),
                 ("", "1 merge record couldn't be read"),
             ],

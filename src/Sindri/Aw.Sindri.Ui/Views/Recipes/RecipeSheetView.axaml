@@ -143,7 +143,7 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
-          <!-- The pull request babysitter's own figures (api #778), under the run figures: only for that workflow. -->
+          <!-- The pull request babysitter's own figures (api 778), under the run figures: only for that workflow. -->
           <StackPanel x:Name="RecipeBabysitter" Spacing="4" Margin="0,12,0,0" IsVisible="{Binding HasBabysitter}">
             <TextBlock x:Name="RecipeBabysitterHeading" Classes="eyebrow" Text="{Binding BabysitterHeading}" />
             <ItemsControl x:Name="RecipeBabysitterGroups" ItemsSource="{Binding BabysitterGroups}">
