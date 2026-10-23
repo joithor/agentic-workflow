@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Aw.Context.Core.Graph;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Host;
 using Aw.Sindri.Tests.Callers;
 using Aw.Sindri.Tests.ContextCalls;
@@ -63,7 +64,7 @@ internal sealed class Scenario(GoldenHost host)
         if (hung)
         {
             await using var scope = host.App.Services.CreateAsyncScope();
-            var jobs = scope.ServiceProvider.GetRequiredService<Aw.Sindri.Core.Views.IJobViews>();
+            var jobs = scope.ServiceProvider.GetRequiredService<IJobViews>();
             var waited = System.Diagnostics.Stopwatch.StartNew();
             do
             {
