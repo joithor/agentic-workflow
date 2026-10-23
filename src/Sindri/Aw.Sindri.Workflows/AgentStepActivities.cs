@@ -1,3 +1,4 @@
+using Aw.Redaction;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Temporalio.Activities;
@@ -14,7 +15,8 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="closing">Closes.</param>
 /// <param name="sessions">The session's state.</param>
 /// <param name="options">The poll interval.</param>
-internal sealed class AgentStepActivities(AgentLaunching launching, AgentClosing closing, IAgentSessions sessions, AgentRuntimeOptions options)
+/// <param name="refusals">Why a session was ended for a refused report, for the Step that fails on it.</param>
+internal sealed class AgentStepActivities(AgentLaunching launching, AgentClosing closing, IAgentSessions sessions, AgentRuntimeOptions options, ReportRefusals refusals)
 {
     /// <summary>Starts the run's session and records the outcome.</summary>
     /// <param name="run">The run.</param>
@@ -42,7 +44,7 @@ internal sealed class AgentStepActivities(AgentLaunching launching, AgentClosing
 
             if (!state.Value.IsLive)
             {
-                return state.Value;
+                return refusals.Take(id) is { } refusal ? state.Value with { Detail = Redactor.Default.Scrub(refusal).Text } : state.Value;   // a blocked scrub yields its placeholder, never the input
             }
 
             _ = await timer.WaitForNextTickAsync(context.CancellationToken).ConfigureAwait(false);
