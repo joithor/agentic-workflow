@@ -49,11 +49,8 @@ internal static class ParkScenarios
                 var mirrored = new SuspensionSummary(SuspensionKind.Park, ParkReason.NeedsAnswer, ParkKind.Step, Escalation: null, Mirrors: WorkflowInstanceId.Of(InstanceAddress.From(childAddress)).Value, MirrorsAddress: childAddress);
                 await Append(host, item, EventTypes.WorkflowTransition, Row(address, "running", "child.parked", frame: null, mirrored), "parked", ct);
                 break;
-            case "park-nested" or "park-nested-refused":   // the root runs; a descendant parks, and the root's row points at it
-                await Append(host, item, EventTypes.WorkflowStarted, Row(address, "running", "start", new FrameSummary("running", 1, Run: null, Child: null), suspension: null), "started", ct);
-                var nested = new SuspensionSummary(SuspensionKind.Park, scenario == "park-nested" ? ParkReason.NeedsAnswer : ParkReason.SpecConflict, scenario == "park-nested" ? ParkKind.Step : ParkKind.Dispatch, Escalation: null, Mirrors: null);
-                var refusal = scenario == "park-nested" ? null : "SND-WF-010: fact:nextPhase must be { phase, attempt, packet, base, stackParent } with a lowercase phase id and an attempt from 1";
-                await Append(host, item, EventTypes.WorkflowTransition, Row(address + "/phase.p1.1", "running", "step.completed", frame: null, nested, refusal), "nested-parked", ct);
+            case "park-nested" or "park-nested-refused":
+                await ParkNested(host, item, address, refused: scenario == "park-nested-refused", ct);
                 break;
             default:   // 'idle-takeover'
                 await Append(host, item, EventTypes.WorkflowStarted, Row(address, "produce", "start", Desk(), suspension: null), "started", ct);
@@ -66,6 +63,17 @@ internal static class ParkScenarios
         await ViewScenarios.CatchUp(host, ct);
         var route = slug == "items-id" ? "/sindri/items/" + item : "/sindri/" + slug;
         return (await host.Http.Ask(Get(route, ItemScenarios.Human(host)))).Body;
+    }
+
+    // The root runs; a descendant parks (needs-answer, or a refused effect), and the root's row points at it.
+    private static async Task ParkNested(GoldenHost host, string item, string address, bool refused, CancellationToken ct)
+    {
+        await Append(host, item, EventTypes.WorkflowStarted, Row(address, "running", "start", new FrameSummary("running", 1, Run: null, Child: null), suspension: null), "started", ct);
+        var nested = refused
+            ? new SuspensionSummary(SuspensionKind.Park, ParkReason.SpecConflict, ParkKind.Dispatch, Escalation: null, Mirrors: null)
+            : new SuspensionSummary(SuspensionKind.Park, ParkReason.NeedsAnswer, ParkKind.Step, Escalation: null, Mirrors: null);
+        var refusal = refused ? "SND-WF-010: fact:nextPhase must be { phase, attempt, packet, base, stackParent } with a lowercase phase id and an attempt from 1" : null;
+        await Append(host, item, EventTypes.WorkflowTransition, Row(address + "/phase.p1.1", "running", "step.completed", frame: null, nested, refusal), "nested-parked", ct);
     }
 
     /// <summary>Starts the item's instance in 'triaged', as the 'running' scenario does.</summary>
