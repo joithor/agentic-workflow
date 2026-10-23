@@ -49,7 +49,7 @@ internal sealed class DeskReporter(ISindriApi api, Func<Uri?> apiUrl, ILauncher?
     {
         Address = detail.Address,
         Reviews = detail.Current.Desk?.Reviews ?? [],
-        SessionRef = detail.Current.Status.Run?.Session?.Ref,
+        SessionRef = detail.Current.Status.Run?.Session?.Ref(),
         ReasonCode = detail.Current.Status.ReasonCode,
     };
 

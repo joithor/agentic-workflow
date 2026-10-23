@@ -77,7 +77,7 @@ internal sealed partial class InstanceFrameViewModel
     {
         if (run?.Session is { } served)
         {
-            return served.Ref;   // the engine names the session: no lookup
+            return served.Ref();   // the engine names the session: no lookup
         }
 
         if (run is null || !string.Equals(run.Runtime, "agent", StringComparison.Ordinal))

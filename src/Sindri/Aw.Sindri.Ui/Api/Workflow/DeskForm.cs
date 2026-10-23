@@ -5,8 +5,8 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="Outputs">Outputs, as served.</param>
 /// <param name="Checks">Checks, as served.</param>
 /// <param name="CompleteAction">CompleteAction, as served.</param>
-/// <param name="Reviews">What the person reads before answering; null or empty when none is served.</param>
 /// <param name="Recommended">The outcome the step before the stop recommends; read as optional.</param>
+/// <param name="Reviews">What the desk has the person review, or null (omitted) when its block declares none.</param>
 internal sealed record DeskForm(
     string Run,
     IReadOnlyList<DeskOutput> Outputs,

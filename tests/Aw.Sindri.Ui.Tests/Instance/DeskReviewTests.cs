@@ -140,7 +140,7 @@ public sealed class DeskReviewTests
 
         var session = detail.Current.Status.Run!.Session!;
 
-        Assert.Equal(("claude", "abc123", "claude/abc123"), (session.Provider, session.Id, session.Ref));
+        Assert.Equal(("claude", "abc123", "claude/abc123"), (session.Provider, session.Id, session.Ref()));
     }
 
     [Theory]

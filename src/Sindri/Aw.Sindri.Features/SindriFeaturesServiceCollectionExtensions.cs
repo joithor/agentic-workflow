@@ -230,7 +230,7 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<IStepRunSource, LedgerStepRunSource>();
         _ = services.AddScoped<StepRunReader>();
         _ = services.AddScoped<IValidator<GetInstanceRequest>, AcceptAllValidator<GetInstanceRequest>>().AddQuery<GetInstanceRequest, InstanceDetail, GetInstanceService>();
-        _ = services.AddScoped<InstanceRows>().AddScoped<DetailContexts>();
+        _ = services.AddScoped<InstanceRows>().AddScoped<DetailContexts>().AddScoped<InstanceJoins>();
         _ = services.AddScoped<IValidator<ListInstancesRequest>, AcceptAllValidator<ListInstancesRequest>>().AddQuery<ListInstancesRequest, InstanceList, ListInstancesService>();
         _ = services.AddScoped<IValidator<GetInstanceEventsRequest>, AcceptAllValidator<GetInstanceEventsRequest>>().AddQuery<GetInstanceEventsRequest, GetInstanceEventsResponse, GetInstanceEventsService>();
         return services;

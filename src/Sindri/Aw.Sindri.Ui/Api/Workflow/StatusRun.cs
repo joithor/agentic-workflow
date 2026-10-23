@@ -5,9 +5,6 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// only while such a run exists, so every reader treats its absence as the ordinary case.
 /// </summary>
 /// <param name="Runtime">The runtime that runs the Step ('agent').</param>
-/// <param name="Session">The session that runs the step, when the engine knows it; null otherwise.</param>
 /// <param name="Launch">The launch id (LCH-…) of the session; opaque.</param>
-internal sealed record StatusRun(
-    string Runtime,
-    string Launch,
-    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] StatusSession? Session = null);
+/// <param name="Session">The session the launch started (provider and id), once it knows it; read as optional.</param>
+internal sealed record StatusRun(string Runtime, string Launch, [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] SessionHandle? Session = null);
