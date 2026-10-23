@@ -3,6 +3,7 @@ using System.Diagnostics;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Infrastructure.Control;
 
@@ -67,12 +68,9 @@ internal sealed class GitRepoLocator : IRepoLocator
 
     private static async Task<string?> Git(string directory, string[] queries, CancellationToken cancellationToken)
     {
-        var start = new ProcessStartInfo("git", ["-C", directory, "rev-parse", "--path-format=absolute", .. queries])
-        {
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
+        var start = ChildEnvironment.Start("git", ["-C", directory, "rev-parse", "--path-format=absolute", .. queries]);
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
         Process? git;
         try
         {
