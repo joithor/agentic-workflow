@@ -645,7 +645,7 @@ None names an owner-only command. Wherever a text here (or `SND-CONTEXT-091`'s) 
 | `SND-CONTEXT-022` | "This tool does not take <argument> for you. See tools/list for its inputs." |
 | `SND-CONTEXT-023` | "<name> is not offered to this caller; tools/list names the tools you can call." |
 | `SND-CONTEXT-030` | "No map for <repo> yet: its first build has not started or did not finish. Retry in a few minutes; if this keeps answering, ask the owner of this Sindri to run the first map build." |
-| `SND-CONTEXT-200` | "No such area in this map. Call context_map_whole with no area to list the areas, and pass one area key from that answer." |
+| `SND-CONTEXT-200` | "No such area in this map. Call `context_map_whole` with no `area` and copy a key from `areas[].key`." |
 | `SND-CONTEXT-006`, a bad `budget` of `context_map_whole` | "budget must be between 1 and 400. Leave it out for the default of 150." |
 | note `setting up` (first clone or first build running) | "<repo> is being set up: its code is being fetched and its map built for the first time. Retry in a few minutes." |
 | note `stale` | "The map for <repo> is <lagSeconds> seconds behind the main branch." |
