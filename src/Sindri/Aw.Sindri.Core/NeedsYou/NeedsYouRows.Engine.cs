@@ -46,7 +46,7 @@ public static partial class NeedsYouRows
     private static Workflow.Views.StatusAnswer? AnswerOf(ParkRowInput park)
     {
         var suspension = park.Suspension;
-        var shape = new ParkShape(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors is not null);
+        var shape = ParkShape.Of(suspension);
         if (park.Descendant is not { } descendant)
         {
             return ParkAnswers.For(shape, park.Address, child: suspension.MirrorsAddress);

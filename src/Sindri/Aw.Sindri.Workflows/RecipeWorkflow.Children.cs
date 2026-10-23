@@ -148,7 +148,8 @@ internal sealed partial class RecipeWorkflow
         }
 
         var open = after.Suspension;
-        var change = new ChildChanged(Inbox, after.Id, kind, open?.Reason, open?.Question, TriggerKey.For(after.Id, string.Create(CultureInfo.InvariantCulture, $"child-{_mirrored}")));
+        var change = new ChildChanged(Inbox, after.Id, kind, open?.Reason, open?.Question, TriggerKey.For(after.Id, string.Create(CultureInfo.InvariantCulture, $"child-{_mirrored}")),
+            open?.ParkKind ?? open?.MirroredParkKind, open?.MirroredEscalation ?? open?.Escalation);
         _effects.Add(Tell(parent.WorkflowId, change));
     }
 
