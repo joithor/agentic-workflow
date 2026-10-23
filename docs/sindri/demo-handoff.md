@@ -10,9 +10,9 @@ All names are placeholders: `<work-repo>` is the repo name the owner picks for S
 
 **Goal.** The owner scopes a small project through Sindri from their local agent session. The session reaches Sindri over MCP and uses the `context_*` tools (`context_sources`, `context_query`, `context_lenses`, `context_node`, `context_neighbors`). Then the owner runs the project through the line recipe `workflow.line`. The Sindri app shows it read-only, on Home and on Workflows.
 
-**The split.** Sindri no longer detects an agent session: a CLI that reads the per-start token (an agent the owner started included) is a full caller, and one that can't is refused with `SND-AUTH-002`. Even so, the owner decides these, so don't type them for the owner without being asked:
+**The split.** Sindri no longer detects an agent session: a CLI that reads the per-start token (an agent the owner started included) is a full caller, and one that can't is refused with `SND-AUTH-002`.
 
-| Owner types (a real terminal, not an agent session) | Why |
+| Owner decisions | Why |
 |---|---|
 | `sindri profile approve <hash>`, then the typed line `approve profile <first 6 of hash>` | profile approval |
 | `sindri context map import <file>`, then `import map <first 6>`; `sindri context map promote` and its typed line | map import and promotion |
