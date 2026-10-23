@@ -59,7 +59,7 @@ public static class WorkflowViewFixtures
         var chip = StateChip.For(owned, deskOpen, outcome);
         return new(InstanceAddress.From(address), WorkflowInstanceId.Of(InstanceAddress.From(address)), ItemKey.From(address[..address.IndexOf('/', StringComparison.Ordinal)]), shape.Stamp, state,
             chip, since, owned, subject, shape.InputRows(), states, now.Length > 80 ? now[..79] + "…" : now, null, Acts(actions),
-            WaitingOn: Aw.Sindri.Core.Workflow.Views.WaitingOn.Of(chip, deskOpen, agentRunOpen: false, ended: outcome is not null));
+            WaitingOn: WaitingOn.Of(chip, deskOpen, agentRunOpen: false, ended: outcome is not null));
     }
 
     private static InstanceSummary DoneTriage(string address, string label, DateTimeOffset since) =>

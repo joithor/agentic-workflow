@@ -197,9 +197,14 @@ public sealed class LensLogStepTests
     [Fact]
     public async Task Any_number_of_questions_in_a_round_are_all_asked()
     {
-        var findings = string.Join(",", Enumerable.Range(1, 12).Select(static i => $$"""{"severity":"HIGH","text":"t{{i}}","escalate":{"kind":"ambiguousFix","question":"q{{i}}"}}"""));
+        var findings = new JsonArray([.. Enumerable.Range(1, 12).Select(static i => (JsonNode)new JsonObject
+        {
+            ["severity"] = "HIGH",
+            ["text"] = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"t{i}"),
+            ["escalate"] = new JsonObject { ["kind"] = "ambiguousFix", ["question"] = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"q{i}") },
+        })]);
 
-        var result = await Run($$"""{"lens":"arch","findings":[{{findings}}]}""", "[]", """["arch"]""");
+        var result = await Run(new JsonObject { ["lens"] = "arch", ["findings"] = findings }.ToJsonString(), "[]", """["arch"]""");
 
         Assert.Equal(12, LensStepContexts.Out(result, "escalation").AsArray().Count);
     }
