@@ -4,7 +4,7 @@ namespace Aw.Sindri.Ui.ViewModels.Workflows;
 internal sealed partial class InstanceRowViewModel
 {
     /// <summary>The Stage column: the board lane the run sits in, else the state it is in, made readable.</summary>
-    public string StageName => LineStages.LaneOf(_row.LineStage) is { } lane ? LineStages.Name(lane) : WorkflowNames.Of(_row.State, displayName: null);
+    public string StageName => LineStages.LaneOf(_row.LineStage) is { } lane ? LineStages.Name(lane) : StateName;
 
     /// <summary>The mono reference under the title: the run's address.</summary>
     public string Reference => _row.Address;
