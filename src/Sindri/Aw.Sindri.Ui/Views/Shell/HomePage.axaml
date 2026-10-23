@@ -19,7 +19,7 @@
 
     <!-- The setup line (setup spec §2.4): one 40 px line above Needs you while any step is open, no card. It opens Settings at the checklist. -->
     <Border x:Name="SetupHomeLine" Classes="setup-line" IsVisible="{Binding Setup.IsHomeLineShown}">
-      <Grid ColumnDefinitions="*,Auto" MinHeight="40" ColumnSpacing="12">
+      <Grid ColumnDefinitions="*,Auto,Auto" MinHeight="48" ColumnSpacing="12">
         <Button x:Name="SetupHomeLink" Classes="setup-link" Click="OnSetupLink" AutomationProperties.Name="{Binding Setup.HomeLineName}">
           <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw">
             <TextBlock Classes="body-strong" Text="{Binding Setup.HomeLineText}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
@@ -27,161 +27,182 @@
             <TextBlock Classes="caption muted" Text="{Binding Setup.HomeStepText}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
           </StackPanel>
         </Button>
-        <Button x:Name="SetupHomeContinue" Grid.Column="1" Classes="command-control primary" Click="OnSetupContinue" VerticalAlignment="Center" Margin="0,0,8,0" AutomationProperties.Name="{Binding Setup.ContinueName}">
+        <!-- F3 home spec §1 Q6: the 120 px meter after the words, done steps of all of them; the words above carry the same count. -->
+        <ProgressBar x:Name="SetupHomeMeter" Grid.Column="1" Classes="map-meter" Width="120" MinWidth="0" VerticalAlignment="Center" Minimum="0" Maximum="{Binding Setup.MeterMax}" Value="{Binding Setup.MeterDone}" AutomationProperties.AccessibilityView="Raw" />
+        <Button x:Name="SetupHomeContinue" Grid.Column="2" Classes="command-control primary" Click="OnSetupContinue" VerticalAlignment="Center" Margin="0,0,8,0" AutomationProperties.Name="{Binding Setup.ContinueName}">
           <TextBlock Classes="button" Text="{Binding Setup.ContinueText}" AutomationProperties.AccessibilityView="Raw" />
         </Button>
       </Grid>
     </Border>
 
-    <Border x:Name="NeedsYouPanel" Classes="panel" PointerEntered="OnNeedsYouPanelEntered" PointerExited="OnNeedsYouPanelExited" AutomationProperties.Name="{Binding Text.NeedsYouPanel}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
-      <StackPanel>
-        <Border Classes="phead">
-          <Grid ColumnDefinitions="*,Auto">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Classes="eyebrow" Text="{Binding Text.NeedsYouPanel}" AutomationProperties.Name="{Binding Text.NeedsYouPanel}" />
-              <TextBlock x:Name="NeedsYouSummary" Classes="caption subtle" Text="{Binding Attention.SummaryLine}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Attention.SummaryLine}" />
-            </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-              <!-- B2: "N marked seen · Undo" for 10 s after Mark all seen; the Undo button is a plain tab stop, and its words are spoken once by NeedsYouSeenLive. -->
-              <StackPanel x:Name="NeedsYouUndo" Orientation="Horizontal" Spacing="6" IsVisible="{Binding NeedsYou.Seen.UndoOffered}" VerticalAlignment="Center">
-                <TextBlock x:Name="NeedsYouUndoText" Classes="caption subtle" Text="{Binding NeedsYou.Seen.UndoText}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
-                <TextBlock Classes="caption subtle" Text="·" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
-                <Button x:Name="NeedsYouUndoButton" Classes="copy" Click="OnUndoSeen" GotFocus="OnUndoHeld" LostFocus="OnUndoReleased" PointerEntered="OnUndoHeld" PointerExited="OnUndoReleased" AutomationProperties.Name="{Binding Text.UndoMarkAllSeen}">
-                  <TextBlock Classes="caption" Text="{Binding Text.Undo}" />
-                </Button>
-              </StackPanel>
-              <Button x:Name="MarkAllSeen" Classes="copy" Click="OnMarkAllSeen" IsVisible="{Binding !NeedsYou.IsEmpty}"
-                      AutomationProperties.Name="{Binding Text.MarkAllSeen}">
-                <TextBlock Classes="caption" Text="{Binding Text.MarkAllSeen}" />
-              </Button>
-            </StackPanel>
-          </Grid>
-        </Border>
-        <TextBlock x:Name="NeedsYouBanner" Classes="caption" Text="{Binding NeedsYou.Banner}" IsVisible="{Binding NeedsYou.HasBanner}" Margin="16,6"
-                   TextWrapping="Wrap" AutomationProperties.Name="{Binding NeedsYou.Banner}" />
-        <Button x:Name="NeedsYouHeld" Classes="held-pill" Click="OnShowNeedsYouHeld" IsVisible="{Binding NeedsYou.HasHeld}" HorizontalAlignment="Center"
-                AutomationProperties.Name="{Binding NeedsYou.HeldText}">
-          <TextBlock Classes="caption" Text="{Binding NeedsYou.HeldText}" />
-        </Button>
-        <ItemsControl x:Name="NeedsYouRows" ItemsSource="{Binding NeedsYou.Rows}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="nyvm:NeedsYouRowViewModel">
-              <nyv:NeedsYouRow />
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-        <TextBlock x:Name="NeedsYouEmpty" Classes="caption quiet" Text="{Binding NeedsYou.EmptyText}" Margin="16,8"
-                   IsVisible="{Binding NeedsYou.IsEmpty}" AutomationProperties.Name="{Binding NeedsYou.EmptyText}" />
-        <Button x:Name="NeedsYouShowAll" HorizontalAlignment="Left" Classes="copy" Click="OnShowAllNeedsYou" IsVisible="{Binding NeedsYou.HasOverflow}"
-                AutomationProperties.Name="{Binding NeedsYou.OverflowText}" Margin="16,6">
-          <TextBlock Classes="caption" Text="{Binding NeedsYou.OverflowText}" />
-        </Button>
-      </StackPanel>
-    </Border>
-
-    <!-- The Workflows strip (screens spec §4.1): the open root instances as the API serves them, between Needs you and the columns. -->
-    <Border x:Name="WorkflowsPanel" Classes="panel" AutomationProperties.Name="{Binding Strip.Heading}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
-      <StackPanel>
-        <Border Classes="phead">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <TextBlock Classes="eyebrow" Text="{Binding Strip.Heading}" AutomationProperties.Name="{Binding Strip.Heading}" />
-            <TextBlock x:Name="WorkflowsOpen" Classes="caption subtle" Text="{Binding Strip.OpenText}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Strip.OpenText}" />
-            <Button x:Name="HomeStart" Classes="command-control" Click="OnStart" AutomationProperties.Name="{Binding Text.StartWorkflow}">
-              <TextBlock Classes="button" Text="{Binding Text.StartWorkflow}" VerticalAlignment="Center" />
+    <!-- F3 home spec §2: Needs you on the left; Running (the workflow strip, then With you) and Queued on the right; the health strip across the bottom.
+         Under 1100 px the columns stack (HomePage.axaml.cs). -->
+    <Grid x:Name="HomeColumns" ColumnDefinitions="*,16,*">
+      <StackPanel x:Name="HomeLeft" Spacing="{StaticResource Size.PanelGap}">
+        <Border x:Name="NeedsYouPanel" Classes="panel" PointerEntered="OnNeedsYouPanelEntered" PointerExited="OnNeedsYouPanelExited" AutomationProperties.Name="{Binding Text.NeedsYouPanel}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
+          <StackPanel>
+            <Border Classes="phead">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Classes="eyebrow" Text="{Binding Text.NeedsYouPanel}" AutomationProperties.Name="{Binding Text.NeedsYouPanel}" />
+                  <TextBlock x:Name="NeedsYouSummary" Classes="caption subtle" Text="{Binding Attention.SummaryLine}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Attention.SummaryLine}" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                  <!-- B2: "N marked seen · Undo" for 10 s after Mark all seen; the Undo button is a plain tab stop, and its words are spoken once by NeedsYouSeenLive. -->
+                  <StackPanel x:Name="NeedsYouUndo" Orientation="Horizontal" Spacing="6" IsVisible="{Binding NeedsYou.Seen.UndoOffered}" VerticalAlignment="Center">
+                    <TextBlock x:Name="NeedsYouUndoText" Classes="caption subtle" Text="{Binding NeedsYou.Seen.UndoText}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                    <TextBlock Classes="caption subtle" Text="·" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
+                    <Button x:Name="NeedsYouUndoButton" Classes="copy" Click="OnUndoSeen" GotFocus="OnUndoHeld" LostFocus="OnUndoReleased" PointerEntered="OnUndoHeld" PointerExited="OnUndoReleased" AutomationProperties.Name="{Binding Text.UndoMarkAllSeen}">
+                      <TextBlock Classes="caption" Text="{Binding Text.Undo}" />
+                    </Button>
+                  </StackPanel>
+                  <Button x:Name="MarkAllSeen" Classes="copy" Click="OnMarkAllSeen" IsVisible="{Binding !NeedsYou.IsEmpty}"
+                          AutomationProperties.Name="{Binding Text.MarkAllSeen}">
+                    <TextBlock Classes="caption" Text="{Binding Text.MarkAllSeen}" />
+                  </Button>
+                </StackPanel>
+              </Grid>
+            </Border>
+            <TextBlock x:Name="NeedsYouBanner" Classes="caption" Text="{Binding NeedsYou.Banner}" IsVisible="{Binding NeedsYou.HasBanner}" Margin="16,6"
+                       TextWrapping="Wrap" AutomationProperties.Name="{Binding NeedsYou.Banner}" />
+            <Button x:Name="NeedsYouHeld" Classes="held-pill" Click="OnShowNeedsYouHeld" IsVisible="{Binding NeedsYou.HasHeld}" HorizontalAlignment="Center"
+                    AutomationProperties.Name="{Binding NeedsYou.HeldText}">
+              <TextBlock Classes="caption" Text="{Binding NeedsYou.HeldText}" />
             </Button>
-            <StackPanel x:Name="WorkflowsStale" Orientation="Horizontal" Spacing="4" IsVisible="{Binding Health.Banner.IsStalled}">
-              <icons:StateIcon Glyph="Stale" VerticalAlignment="Center" />
-              <TextBlock Classes="caption subtle" Text="{Binding Text.Stale}" VerticalAlignment="Center" />
+            <ItemsControl x:Name="NeedsYouRows" ItemsSource="{Binding NeedsYou.Rows}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="nyvm:NeedsYouRowViewModel">
+                  <nyv:NeedsYouRow />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <StackPanel x:Name="NeedsYouSkeleton" IsVisible="{Binding NeedsYou.IsLoading}" AutomationProperties.AccessibilityView="Raw">
+              <Grid Classes="skrow" ColumnDefinitions="70,*,40"><Border Classes="skeleton" Width="60" /><Border Grid.Column="1" Classes="skeleton" Width="300" /><Border Grid.Column="2" Classes="skeleton" Width="32" /></Grid>
+              <Grid Classes="skrow" ColumnDefinitions="70,*,40"><Border Classes="skeleton" Width="60" /><Border Grid.Column="1" Classes="skeleton" Width="220" /><Border Grid.Column="2" Classes="skeleton" Width="32" /></Grid>
+              <Grid Classes="skrow" ColumnDefinitions="70,*,40"><Border Classes="skeleton" Width="60" /><Border Grid.Column="1" Classes="skeleton" Width="260" /><Border Grid.Column="2" Classes="skeleton" Width="32" /></Grid>
             </StackPanel>
+            <TextBlock x:Name="NeedsYouEmpty" Classes="caption quiet" Text="{Binding NeedsYou.EmptyLine}" Margin="16,8"
+                       IsVisible="{Binding NeedsYou.EmptyLine, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" AutomationProperties.Name="{Binding NeedsYou.EmptyLine}" />
+            <Button x:Name="NeedsYouShowAll" HorizontalAlignment="Left" Classes="copy" Click="OnShowAllNeedsYou" IsVisible="{Binding NeedsYou.HasOverflow}"
+                    AutomationProperties.Name="{Binding NeedsYou.OverflowText}" Margin="16,6">
+              <TextBlock Classes="caption" Text="{Binding NeedsYou.OverflowText}" />
+            </Button>
           </StackPanel>
         </Border>
-        <ItemsControl x:Name="WorkflowsRows" ItemsSource="{Binding Strip.Rows}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="wfvm:StripRowViewModel">
-              <wfv:StripRow />
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-        <TextBlock x:Name="WorkflowsEmpty" Classes="caption quiet" Text="{Binding Strip.EmptyText}" Margin="16,8"
-                   IsVisible="{Binding Strip.IsEmpty}" AutomationProperties.Name="{Binding Strip.EmptyText}" />
-        <TextBlock x:Name="WorkflowsNotServed" Classes="caption quiet" Text="{Binding Strip.NotServedText}" Margin="16,8"
-                   IsVisible="{Binding Strip.IsNotServed}" AutomationProperties.Name="{Binding Strip.NotServedText}" />
-        <TextBlock x:Name="WorkflowsUnreadable" Classes="caption quiet" Text="{Binding Strip.UnreadableText}" Margin="16,8" TextWrapping="Wrap"
-                   IsVisible="{Binding Strip.IsUnreadable}" AutomationProperties.Name="{Binding Strip.UnreadableText}" />
-        <Button x:Name="WorkflowsMore" HorizontalAlignment="Left" Classes="copy" Click="OnWorkflowsMore" IsVisible="{Binding Strip.HasMore}"
-                AutomationProperties.Name="{Binding Strip.MoreText}" Margin="16,6">
-          <TextBlock Classes="caption" Text="{Binding Strip.MoreText}" />
-        </Button>
+
       </StackPanel>
-    </Border>
-
-    <!-- §8: new rows wait behind this pill while the pointer is over Running or Queued. -->
-    <Button x:Name="HomeHeldPill" Classes="held-pill" Click="OnShowHeld" IsVisible="{Binding Queue.HasHeld}" HorizontalAlignment="Center"
-            AutomationProperties.Name="{Binding Queue.HeldText}">
-      <TextBlock Classes="caption" Text="{Binding Queue.HeldText}" />
-    </Button>
-
-    <Grid x:Name="PanelGrid" ColumnDefinitions="*,16,*" PointerEntered="OnPanelEntered" PointerExited="OnPanelExited">
-      <Border x:Name="RunningPanel" Classes="panel" AutomationProperties.Name="{Binding Text.RunningPanel}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
-        <!-- The panel stretches to its row's height; an empty group's sentence sits centred in the body (states.html .empty). -->
-        <DockPanel>
-          <Border Classes="phead" DockPanel.Dock="Top">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Classes="eyebrow" Text="{Binding Queue.RunningHeader}" AutomationProperties.Name="{Binding Queue.RunningHeader}" />
-              <StackPanel x:Name="RunningStale" Orientation="Horizontal" Spacing="4" IsVisible="{Binding Queue.IsStale}">
-                <icons:StateIcon Glyph="Stale" VerticalAlignment="Center" />
-                <TextBlock Classes="caption subtle" Text="{Binding Text.Stale}" VerticalAlignment="Center" />
+      <StackPanel x:Name="HomeRight" Grid.Column="2" Spacing="{StaticResource Size.PanelGap}">
+        <!-- The Workflows strip (screens spec §4.1): the open root instances as the API serves them, between Needs you and the columns. -->
+        <Border x:Name="WorkflowsPanel" Classes="panel" AutomationProperties.Name="{Binding Strip.Heading}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
+          <StackPanel>
+            <Border Classes="phead">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Classes="eyebrow" Text="{Binding Strip.Heading}" AutomationProperties.Name="{Binding Strip.Heading}" />
+                <TextBlock x:Name="WorkflowsOpen" Classes="caption subtle" Text="{Binding Strip.OpenText}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Strip.OpenText}" />
+                <Button x:Name="HomeStart" Classes="command-control" Click="OnStart" AutomationProperties.Name="{Binding Text.StartWorkflow}">
+                  <TextBlock Classes="button" Text="{Binding Text.StartWorkflow}" VerticalAlignment="Center" />
+                </Button>
+                <StackPanel x:Name="WorkflowsStale" Orientation="Horizontal" Spacing="4" IsVisible="{Binding Health.Banner.IsStalled}">
+                  <icons:StateIcon Glyph="Stale" VerticalAlignment="Center" />
+                  <TextBlock Classes="caption subtle" Text="{Binding Text.Stale}" VerticalAlignment="Center" />
+                </StackPanel>
               </StackPanel>
+            </Border>
+            <ItemsControl x:Name="WorkflowsRows" ItemsSource="{Binding Strip.Rows}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="wfvm:StripRowViewModel">
+                  <wfv:StripRow />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <StackPanel x:Name="WorkflowsSkeleton" IsVisible="{Binding Strip.IsLoading}" AutomationProperties.AccessibilityView="Raw">
+              <Grid Classes="skrow" ColumnDefinitions="70,*,40"><Border Classes="skeleton" Width="60" /><Border Grid.Column="1" Classes="skeleton" Width="300" /><Border Grid.Column="2" Classes="skeleton" Width="32" /></Grid>
+              <Grid Classes="skrow" ColumnDefinitions="70,*,40"><Border Classes="skeleton" Width="60" /><Border Grid.Column="1" Classes="skeleton" Width="220" /><Border Grid.Column="2" Classes="skeleton" Width="32" /></Grid>
+              <Grid Classes="skrow" ColumnDefinitions="70,*,40"><Border Classes="skeleton" Width="60" /><Border Grid.Column="1" Classes="skeleton" Width="260" /><Border Grid.Column="2" Classes="skeleton" Width="32" /></Grid>
             </StackPanel>
+            <TextBlock x:Name="WorkflowsEmpty" Classes="caption quiet" Text="{Binding Strip.EmptyLine}" Margin="16,8"
+                       IsVisible="{Binding Strip.EmptyLine, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" AutomationProperties.Name="{Binding Strip.EmptyLine}" />
+            <TextBlock x:Name="WorkflowsNotServed" Classes="caption quiet" Text="{Binding Strip.NotServedText}" Margin="16,8"
+                       IsVisible="{Binding Strip.IsNotServed}" AutomationProperties.Name="{Binding Strip.NotServedText}" />
+            <TextBlock x:Name="WorkflowsUnreadable" Classes="caption quiet" Text="{Binding Strip.UnreadableText}" Margin="16,8" TextWrapping="Wrap"
+                       IsVisible="{Binding Strip.IsUnreadable}" AutomationProperties.Name="{Binding Strip.UnreadableText}" />
+            <Button x:Name="WorkflowsMore" HorizontalAlignment="Left" Classes="copy" Click="OnWorkflowsMore" IsVisible="{Binding Strip.HasMore}"
+                    AutomationProperties.Name="{Binding Strip.MoreText}" Margin="16,6">
+              <TextBlock Classes="caption" Text="{Binding Strip.MoreText}" />
+            </Button>
+          </StackPanel>
+        </Border>
+
+        <!-- §8: new rows wait behind this pill while the pointer is over Running or Queued. -->
+        <Button x:Name="HomeHeldPill" Classes="held-pill" Click="OnShowHeld" IsVisible="{Binding Queue.HasHeld}" HorizontalAlignment="Center"
+                AutomationProperties.Name="{Binding Queue.HeldText}">
+          <TextBlock Classes="caption" Text="{Binding Queue.HeldText}" />
+        </Button>
+
+        <Grid x:Name="PanelGrid" ColumnDefinitions="*" RowDefinitions="Auto,16,Auto" PointerEntered="OnPanelEntered" PointerExited="OnPanelExited">
+          <Border x:Name="RunningPanel" Classes="panel" AutomationProperties.Name="{Binding Text.RunningPanel}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
+            <!-- The panel stretches to its row's height; an empty group's sentence sits centred in the body (states.html .empty). -->
+            <DockPanel>
+              <Border Classes="phead" DockPanel.Dock="Top">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Classes="eyebrow" Text="{Binding Queue.RunningHeader}" AutomationProperties.Name="{Binding Queue.RunningHeader}" />
+                  <StackPanel x:Name="RunningStale" Orientation="Horizontal" Spacing="4" IsVisible="{Binding Queue.IsStale}">
+                    <icons:StateIcon Glyph="Stale" VerticalAlignment="Center" />
+                    <TextBlock Classes="caption subtle" Text="{Binding Text.Stale}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+              <Button DockPanel.Dock="Bottom" HorizontalAlignment="Left" x:Name="RunningShowAll" Classes="copy" Tag="Running" Click="OnShowAll" IsVisible="{Binding Queue.HasMoreRunning}"
+                      AutomationProperties.Name="{Binding Queue.ShowAllRunning}" Margin="16,6">
+                <TextBlock Classes="caption" Text="{Binding Queue.ShowAllRunning}" />
+              </Button>
+              <Panel>
+              <ItemsControl VerticalAlignment="Top" x:Name="RunningRows" ItemsSource="{Binding Queue.RunningRows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="queue:ItemRowViewModel">
+                    <rows:CompactItemRow />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock VerticalAlignment="Center" x:Name="RunningEmpty" Classes="caption quiet" Text="{Binding Queue.RunningEmpty}"
+                         IsVisible="{Binding Queue.RunningEmpty, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                         AutomationProperties.Name="{Binding Queue.RunningEmpty}" />
+              </Panel>
+            </DockPanel>
           </Border>
-          <Button DockPanel.Dock="Bottom" HorizontalAlignment="Left" x:Name="RunningShowAll" Classes="copy" Tag="Running" Click="OnShowAll" IsVisible="{Binding Queue.HasMoreRunning}"
-                  AutomationProperties.Name="{Binding Queue.ShowAllRunning}" Margin="16,6">
-            <TextBlock Classes="caption" Text="{Binding Queue.ShowAllRunning}" />
-          </Button>
-          <Panel>
-          <ItemsControl VerticalAlignment="Top" x:Name="RunningRows" ItemsSource="{Binding Queue.RunningRows}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="queue:ItemRowViewModel">
-                <rows:CompactItemRow />
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <TextBlock VerticalAlignment="Center" x:Name="RunningEmpty" Classes="caption quiet" Text="{Binding Queue.RunningEmpty}"
-                     IsVisible="{Binding Queue.RunningEmpty, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                     AutomationProperties.Name="{Binding Queue.RunningEmpty}" />
-          </Panel>
-        </DockPanel>
-      </Border>
-      <Border x:Name="QueuedPanel" Grid.Column="2" Classes="panel" AutomationProperties.Name="{Binding Text.QueuedPanel}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
-        <!-- The panel stretches to its row's height; an empty group's sentence sits centred in the body (states.html .empty). -->
-        <DockPanel>
-          <Border Classes="phead" DockPanel.Dock="Top">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Classes="eyebrow" Text="{Binding Queue.QueuedHeader}" AutomationProperties.Name="{Binding Queue.QueuedHeader}" />
-              <StackPanel x:Name="QueuedStale" Orientation="Horizontal" Spacing="4" IsVisible="{Binding Queue.IsStale}">
-                <icons:StateIcon Glyph="Stale" VerticalAlignment="Center" />
-                <TextBlock Classes="caption subtle" Text="{Binding Text.Stale}" VerticalAlignment="Center" />
-              </StackPanel>
-            </StackPanel>
+          <Border x:Name="QueuedPanel" Grid.Row="2" Classes="panel" AutomationProperties.Name="{Binding Text.QueuedPanel}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Group">
+            <!-- The panel stretches to its row's height; an empty group's sentence sits centred in the body (states.html .empty). -->
+            <DockPanel>
+              <Border Classes="phead" DockPanel.Dock="Top">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Classes="eyebrow" Text="{Binding Queue.QueuedHeader}" AutomationProperties.Name="{Binding Queue.QueuedHeader}" />
+                  <StackPanel x:Name="QueuedStale" Orientation="Horizontal" Spacing="4" IsVisible="{Binding Queue.IsStale}">
+                    <icons:StateIcon Glyph="Stale" VerticalAlignment="Center" />
+                    <TextBlock Classes="caption subtle" Text="{Binding Text.Stale}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+              <Button DockPanel.Dock="Bottom" HorizontalAlignment="Left" x:Name="QueuedShowAll" Classes="copy" Tag="All" Click="OnShowAll" IsVisible="{Binding Queue.HasMoreQueued}"
+                      AutomationProperties.Name="{Binding Queue.ShowAllQueued}" Margin="16,6">
+                <TextBlock Classes="caption" Text="{Binding Queue.ShowAllQueued}" />
+              </Button>
+              <Panel>
+              <ItemsControl VerticalAlignment="Top" x:Name="QueuedRows" ItemsSource="{Binding Queue.QueuedRows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="queue:ItemRowViewModel">
+                    <rows:CompactItemRow />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock VerticalAlignment="Center" x:Name="QueuedEmpty" Classes="caption quiet" Text="{Binding Queue.QueuedEmpty}"
+                         IsVisible="{Binding Queue.QueuedEmpty, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                         AutomationProperties.Name="{Binding Queue.QueuedEmpty}" />
+              </Panel>
+            </DockPanel>
           </Border>
-          <Button DockPanel.Dock="Bottom" HorizontalAlignment="Left" x:Name="QueuedShowAll" Classes="copy" Tag="All" Click="OnShowAll" IsVisible="{Binding Queue.HasMoreQueued}"
-                  AutomationProperties.Name="{Binding Queue.ShowAllQueued}" Margin="16,6">
-            <TextBlock Classes="caption" Text="{Binding Queue.ShowAllQueued}" />
-          </Button>
-          <Panel>
-          <ItemsControl VerticalAlignment="Top" x:Name="QueuedRows" ItemsSource="{Binding Queue.QueuedRows}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="queue:ItemRowViewModel">
-                <rows:CompactItemRow />
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <TextBlock VerticalAlignment="Center" x:Name="QueuedEmpty" Classes="caption quiet" Text="{Binding Queue.QueuedEmpty}"
-                     IsVisible="{Binding Queue.QueuedEmpty, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                     AutomationProperties.Name="{Binding Queue.QueuedEmpty}" />
-          </Panel>
-        </DockPanel>
-      </Border>
+        </Grid>
+
+      </StackPanel>
     </Grid>
 
     <!-- Sindri health (home.html .strip): the eyebrow with its G . hint, the status as labelled cells, and a trailing ›;
@@ -220,7 +241,7 @@
             <DataTemplate x:DataType="vm:HealthCell">
               <Border Classes="cell">
                 <StackPanel>
-                  <TextBlock Classes="caption subtle" Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Classes="eyebrow" Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
                   <StackPanel Orientation="Horizontal" Spacing="6">
                     <icons:StateIcon Glyph="{Binding Glyph}" IsVisible="{Binding HasGlyph}" VerticalAlignment="Center" />
                     <TextBlock Classes="body-strong" Text="{Binding Value}" TextTrimming="CharacterEllipsis" />
