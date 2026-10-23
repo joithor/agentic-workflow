@@ -2,7 +2,6 @@ using Avalonia.Controls;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
-using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels.Agents;
 using Aw.Sindri.Ui.ViewModels.Instance;
 using Aw.Sindri.Ui.ViewModels.Shell;
@@ -76,7 +75,7 @@ public sealed class SessionSheetLayoutTests : FrameHost
         var heads = InSheet<ItemsControl>(window, "SessionFields").GetVisualDescendants().OfType<TextBlock>().Where(t => t.Classes.Contains("eyebrow")).Select(t => t.Text).ToList();
         Assert.Equal(["Where it is working", "Timing"], heads, StringComparer.Ordinal);
         Assert.True(InSheetVisible(window, "SessionHostHeading"));
-        var rows = Named<Control>(window, "SessionSheet").GetVisualDescendants().OfType<Border>().Where(b => (b.Name is "SessionField" or "SessionHostField") && b.IsEffectivelyVisible).ToList();
+        var rows = Named<Control>(window, "SessionSheet").GetVisualDescendants().OfType<Border>().Where(b => (string.Equals(b.Name, "SessionField", StringComparison.Ordinal) || string.Equals(b.Name, "SessionHostField", StringComparison.Ordinal)) && b.IsEffectivelyVisible).ToList();
         Assert.NotEmpty(rows);
         Assert.All(rows, r => Assert.Equal(150, r.GetVisualDescendants().OfType<Grid>().First().ColumnDefinitions[0].Width.Value));
     });
