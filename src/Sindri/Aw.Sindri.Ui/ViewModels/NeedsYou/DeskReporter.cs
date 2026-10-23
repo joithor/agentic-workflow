@@ -41,8 +41,17 @@ internal sealed class DeskReporter(ISindriApi api, Func<Uri?> apiUrl, ILauncher?
         var complete = read.Value.Current.Status.Commands.FirstOrDefault(c => c.Verb == StatusVerb.Complete);
         var state = await StateOf(url, read.Value).ConfigureAwait(true);
         var card = await MergeCardOf(url, read.Value).ConfigureAwait(true);
-        return new DeskTarget(instanceId, desk?.Run ?? string.Empty, complete, state?.Why, OutcomeText(state, "approve"), OutcomeText(state, "revise"), desk?.Recommended, card) { Verbs = verbs };
+        return Target(new DeskTarget(instanceId, desk?.Run ?? string.Empty, complete, state?.Why, OutcomeText(state, "approve"), OutcomeText(state, "revise"), desk?.Recommended, card) { Verbs = verbs }, read.Value);
     }
+
+    // What the step asks the person to read, the session that runs it and the code behind its state.
+    private static DeskTarget Target(DeskTarget target, InstanceDetail detail) => target with
+    {
+        Address = detail.Address,
+        Reviews = detail.Current.Desk?.Reviews ?? [],
+        SessionRef = detail.Current.Status.Run?.Session?.Ref,
+        ReasonCode = detail.Current.Status.ReasonCode,
+    };
 
     // The recipe state the instance is in, for its why and its outcomes; null when the recipe cannot be read.
     private async Task<RecipeStateView?> StateOf(Uri url, InstanceDetail detail)

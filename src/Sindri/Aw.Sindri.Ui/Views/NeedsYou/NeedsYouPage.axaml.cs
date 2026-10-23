@@ -185,6 +185,10 @@ internal sealed partial class NeedsYouPage : UserControl
 
     private void OnApprove(object? sender, RoutedEventArgs e) => _ = _page?.Bar.PressApprove();
 
+    private void OnReview(object? sender, RoutedEventArgs e) => _ = ((sender as Button)?.DataContext as ViewModels.Instance.DeskReviewViewModel)?.Open();
+
+    private void OnSession(object? sender, RoutedEventArgs e) => _page?.Bar.OpenSession();
+
     private void OnTerminal(object? sender, RoutedEventArgs e) => _ = _page?.Bar.CopyTerminal();
 
     private void OnSendBack(object? sender, RoutedEventArgs e) => _ = _page?.Bar.PressSendBack();

@@ -58,7 +58,7 @@ internal sealed class DeskReviewViewModel
 
     // A link opens only when it is a web address: nothing a fact serves is run as a program or a file URL.
     private static ReviewTarget Target(DeskReview review) =>
-        Uri.TryCreate(review.Url, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https" ? ReviewTarget.Link
+        Uri.TryCreate(review.Url, UriKind.Absolute, out var uri) && (string.Equals(uri.Scheme, "http", StringComparison.Ordinal) || string.Equals(uri.Scheme, "https", StringComparison.Ordinal)) ? ReviewTarget.Link
         : !string.IsNullOrWhiteSpace(review.Path) ? ReviewTarget.File
         : ReviewTarget.Fact;
 

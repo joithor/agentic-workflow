@@ -5,7 +5,6 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
-using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Instance;
 using Microsoft.Extensions.Time.Testing;
 
@@ -18,8 +17,6 @@ public sealed class DeskReviewTests
     private readonly FakeLauncher _launcher = new();
     private readonly List<string> _shown = [];
     private readonly FakeTimeProvider _clock = new(A.Noon);
-
-    private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     private IReadOnlyList<DeskReviewViewModel> Of(params DeskReview[] reviews) => DeskReviewViewModel.Of(reviews, _launcher, _shown.Add);
 
@@ -37,12 +34,12 @@ public sealed class DeskReviewTests
     [InlineData("packet", "Open the packet")]
     [InlineData("pr", "Open the PR")]
     public void Each_kind_has_its_own_button_words(string kind, string words) =>
-        Assert.Equal(words, Assert.Single(Of(new DeskReview("fact:x", kind, "/a/b", null))).Label);
+        Assert.Equal(words, Assert.Single(Of(new DeskReview("fact:x", kind, Path: "/a/b", Url: null))).Label);
 
     [Fact]
     public void A_kind_this_build_does_not_know_reads_as_served()
     {
-        var button = Assert.Single(Of(new DeskReview("fact:x", "diagram", null, null)));
+        var button = Assert.Single(Of(new DeskReview("fact:x", "diagram", Path: null, Url: null)));
 
         Assert.Equal("Open the diagram", button.Label);
     }
@@ -94,7 +91,7 @@ public sealed class DeskReviewTests
     public void Questions_with_nothing_to_open_stay_in_the_desk_form_and_get_no_button()
     {
         Assert.Empty(Of(new DeskReview("fact:escalation", "questions")));
-        Assert.Single(Of(new DeskReview("fact:escalation", "questions", Path: "/work/q.md")));
+        _ = Assert.Single(Of(new DeskReview("fact:escalation", "questions", Path: "/work/q.md")));
     }
 
     [Fact]

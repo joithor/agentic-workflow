@@ -1,6 +1,6 @@
 namespace Aw.Sindri.Ui.Api.Workflow;
 
-/// <summary>The agent session that runs a step (<c>current.status.run.session</c>).</summary>
+/// <summary>The agent session that runs a step (current.status.run.session).</summary>
 /// <param name="Provider">The provider (claude, codex, cursor).</param>
 /// <param name="Id">The session's id.</param>
 internal sealed record StatusSession(string Provider, string Id)

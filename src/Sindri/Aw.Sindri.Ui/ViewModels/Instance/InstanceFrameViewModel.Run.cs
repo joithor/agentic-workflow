@@ -63,11 +63,6 @@ internal sealed partial class InstanceFrameViewModel
 
     private async Task<LaunchView?> ReadLaunch(Uri url, StatusRun? run, CancellationToken cancellationToken)
     {
-        if (run?.Session is { } served)
-        {
-            return served.Ref;   // the engine names the session: no lookup
-        }
-
         if (run is null || !string.Equals(run.Runtime, "agent", StringComparison.Ordinal))
         {
             return null;
@@ -80,6 +75,11 @@ internal sealed partial class InstanceFrameViewModel
     // The session behind the run is known when the collector lists a row whose launch id is the run's; a list that can't be read is no link.
     private async Task<string?> ReadSessionRef(Uri url, StatusRun? run, CancellationToken cancellationToken)
     {
+        if (run?.Session is { } served)
+        {
+            return served.Ref;   // the engine names the session: no lookup
+        }
+
         if (run is null || !string.Equals(run.Runtime, "agent", StringComparison.Ordinal))
         {
             return null;
