@@ -45,14 +45,14 @@ internal sealed partial class InstanceFrameViewModel
 
     private void ShowFacts(InstanceDetail detail, FactViewerContext context)
     {
-        var fresh = new FactsPanelViewModel(detail, Viewers, context);
+        var fresh = new FactsPanelViewModel(detail, Viewers, context, nameOf: NameOf);
         if (Facts is not null && string.Equals(Facts.Signature, fresh.Signature, StringComparison.Ordinal))
         {
             return;
         }
 
         var wasOpen = Facts?.IsOpen == true;
-        Facts = Facts is { OpenKeys.Count: > 0 } shown ? new FactsPanelViewModel(detail, Viewers, context, shown.OpenKeys) : fresh;
+        Facts = Facts is { OpenKeys.Count: > 0 } shown ? new FactsPanelViewModel(detail, Viewers, context, shown.OpenKeys, NameOf) : fresh;
         Facts.IsOpen |= wasOpen;   // the person's choice survives a re-read
     }
 
