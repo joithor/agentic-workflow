@@ -57,7 +57,7 @@ public sealed class StuckInstanceCountTests
     {
         _engine.Hold = new TaskCompletionSource();
 
-        Assert.Equal(0, await new StuckInstanceCount(_engine, _clock).Current(Token));
+        Assert.Equal(0, await new StuckInstanceCount(_engine, _clock).Current(TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -84,7 +84,9 @@ public sealed class StuckInstanceCountTests
 
         _engine.Hold.SetResult();
 
-        Assert.Equal([1, 1], await Task.WhenAll(first, second));
+        var counts = await Task.WhenAll(first, second);
+
+        Assert.Equal([1, 1], counts);
         Assert.Equal(1, _engine.Calls["Instances"]);
     }
 }

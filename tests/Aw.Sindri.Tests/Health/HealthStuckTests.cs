@@ -7,13 +7,10 @@ namespace Aw.Sindri.Tests.Health;
 [Lane(TestLane.Unit)]
 public sealed class HealthStuckTests
 {
-    private static readonly HealthReport _healthy = new(HealthWord.Healthy, [], null);
+    private static readonly HealthReport _healthy = new(HealthWord.Healthy, [], Sentence: null);
 
     [Fact]
-    public void None_stuck_leaves_the_report_as_it_was()
-    {
-        Assert.Same(_healthy, HealthSummary.WithStuck(_healthy, 0));
-    }
+    public void None_stuck_leaves_the_report_as_it_was() => Assert.Same(_healthy, HealthSummary.WithStuck(_healthy, 0));
 
     [Fact]
     public void Some_stuck_make_a_healthy_report_degraded_with_a_problem_and_a_sentence()
@@ -28,10 +25,7 @@ public sealed class HealthStuckTests
     }
 
     [Fact]
-    public void One_stuck_instance_is_singular()
-    {
-        Assert.Equal("1 workflow instance is stuck waiting", Assert.Single(HealthSummary.WithStuck(_healthy, 1).Problems).Clause);
-    }
+    public void One_stuck_instance_is_singular() => Assert.Equal("1 workflow instance is stuck waiting", Assert.Single(HealthSummary.WithStuck(_healthy, 1).Problems).Clause);
 
     [Theory]
     [InlineData(HealthWord.Stalled)]
@@ -43,7 +37,7 @@ public sealed class HealthStuckTests
         var report = HealthSummary.WithStuck(worse, 3);
 
         Assert.Equal(word, report.Word);
-        Assert.Equal(["SND-VIEW-001", "SND-ENGINE-002"], report.Problems.Select(static p => p.Code));
+        Assert.Equal(["SND-VIEW-001", "SND-ENGINE-002"], report.Problems.Select(static p => p.Code), StringComparer.Ordinal);
         Assert.Equal($"Sindri is {word.ToString().ToLowerInvariant()}: the views stopped and 3 workflow instances are stuck waiting.", report.Sentence);
     }
 }

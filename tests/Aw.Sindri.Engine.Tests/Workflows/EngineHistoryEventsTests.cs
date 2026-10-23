@@ -31,17 +31,17 @@ public sealed class EngineHistoryEventsTests
     private static HistoryEvent Timer(long id, EventType type, string timerId, int seconds = 0)
     {
         var e = new HistoryEvent { EventId = id, EventTime = Timestamp.FromDateTimeOffset(KnownInstants.Epoch.AddSeconds(id)), EventType = type };
-        switch (type)
+        if (type == EventType.TimerStarted)
         {
-            case EventType.TimerStarted:
-                e.TimerStartedEventAttributes = new TimerStartedEventAttributes { TimerId = timerId, StartToFireTimeout = Duration.FromTimeSpan(TimeSpan.FromSeconds(seconds)) };
-                break;
-            case EventType.TimerFired:
-                e.TimerFiredEventAttributes = new TimerFiredEventAttributes { TimerId = timerId };
-                break;
-            default:
-                e.TimerCanceledEventAttributes = new TimerCanceledEventAttributes { TimerId = timerId };
-                break;
+            e.TimerStartedEventAttributes = new TimerStartedEventAttributes { TimerId = timerId, StartToFireTimeout = Duration.FromTimeSpan(TimeSpan.FromSeconds(seconds)) };
+        }
+        else if (type == EventType.TimerFired)
+        {
+            e.TimerFiredEventAttributes = new TimerFiredEventAttributes { TimerId = timerId };
+        }
+        else
+        {
+            e.TimerCanceledEventAttributes = new TimerCanceledEventAttributes { TimerId = timerId };
         }
 
         return e;
@@ -110,9 +110,9 @@ public sealed class EngineHistoryEventsTests
         List<EngineTimer> timer = [new EngineTimer("timer-1", since, "timeout")];
 
         Assert.Equal(("activity", "step.checks"), Kind(EngineInstanceScan.Waiting(withChild, activity, timer, since)));
-        Assert.Equal("child", EngineInstanceScan.Waiting(withChild, null, timer, since).Kind);
-        Assert.Equal("timer", EngineInstanceScan.Waiting(new DescribeWorkflowExecutionResponse(), null, timer, since).Kind);
-        Assert.Equal("signal", EngineInstanceScan.Waiting(new DescribeWorkflowExecutionResponse(), null, [], since).Kind);
+        Assert.Equal("child", EngineInstanceScan.Waiting(withChild, activity: null, timer, since).Kind);
+        Assert.Equal("timer", EngineInstanceScan.Waiting(new DescribeWorkflowExecutionResponse(), activity: null, timer, since).Kind);
+        Assert.Equal("signal", EngineInstanceScan.Waiting(new DescribeWorkflowExecutionResponse(), activity: null, [], since).Kind);
     }
 
     private static (string Kind, string? Name) Kind(EngineWaiting waiting) => (waiting.Kind, waiting.Name);

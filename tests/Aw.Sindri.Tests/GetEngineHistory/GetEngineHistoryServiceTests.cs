@@ -1,6 +1,6 @@
+using System.Globalization;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
-using Aw.Sindri.Core.EngineReads;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Features.GetEngineHistory;
 using Aw.Sindri.Testing.Engine;
@@ -19,10 +19,7 @@ public sealed class GetEngineHistoryServiceTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private void Events(int count)
-    {
-        _engine.Record(_address, "run-1", [.. Enumerable.Range(1, count).Reverse().Select(i => EngineFacts.Event(i, KnownInstants.Epoch.AddSeconds(i), activityId: i % 2 == 0 ? $"act-{i}" : null))]);
-    }
+    private void Events(int count) => _engine.Record(_address, "run-1", [.. Enumerable.Range(1, count).Reverse().Select(i => EngineFacts.Event(i, KnownInstants.Epoch.AddSeconds(i), activityId: i % 2 == 0 ? string.Create(CultureInfo.InvariantCulture, $"act-{i}") : null))]);
 
     [Fact]
     public async Task A_mirrored_event_names_its_ledger_sequence_and_an_unmirrored_one_has_none()
@@ -46,7 +43,7 @@ public sealed class GetEngineHistoryServiceTests
         var third = (await Service().Handle(new GetEngineHistoryRequest(Address: _address.Value, Page: "3"), Token)).Value;
 
         Assert.Equal((50, 1, 120L, 2), (first.Events.Count, first.Page, first.Total, first.Next));
-        Assert.Equal((20, 3, (int?)null), (third.Events.Count, third.Page, third.Next));
+        Assert.Equal((20, 3, null), (third.Events.Count, third.Page, third.Next));
         Assert.Equal(20L, third.Events[0].EventId);
     }
 

@@ -74,7 +74,7 @@ public sealed class EngineRoutesTests : IAsyncLifetime
     [Fact]
     public async Task The_stuck_filter_narrows_the_list()
     {
-        Assert.Single((await Read("/sindri/engine/instances?stuck=true")).GetProperty("instances").EnumerateArray().ToList());
+        _ = Assert.Single((await Read("/sindri/engine/instances?stuck=true")).GetProperty("instances").EnumerateArray().ToList());
         Assert.Empty((await Read("/sindri/engine/instances?stuck=false")).GetProperty("instances").EnumerateArray().ToList());
     }
 
