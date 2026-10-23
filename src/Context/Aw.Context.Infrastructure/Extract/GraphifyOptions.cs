@@ -1,7 +1,7 @@
 namespace Aw.Context.Infrastructure.Extract;
 
 /// <summary>How graphify is found. Its limits (time, snapshot, file and graph size) come from the profile on each build, as ClusterLimits.</summary>
-/// <param name="Pin">The version this build accepts (sindri/package.json's graphifyPin).</param>
+/// <param name="Pin">The version this build accepts (context/graphify.pin).</param>
 /// <param name="Binary">The graphify command name or absolute path.</param>
 internal sealed record GraphifyOptions(string Pin, string Binary)
 {
