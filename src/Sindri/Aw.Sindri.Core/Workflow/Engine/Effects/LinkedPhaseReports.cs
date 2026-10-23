@@ -36,25 +36,30 @@ public static class LinkedPhaseReports
             ["status"] = Literal(status),
             ["line"] = new WithValue(Literal: null, _lineContext, Profile: null),
         };
-        switch (status)
+        if (after.Facts.ContainsKey(_phasePacket))
         {
-            case "parked":
-                with["parkReason"] = Literal(EngineNotices.Reason(after.Suspension?.Reason));
-                break;
-            case "ended":
-                with["ended"] = Literal(after.Outcome?.Value ?? string.Empty);
-                // why: amendments (LN-PKT1) don't exist yet, so the packet in force is the one the phase started with
-                if (after.Facts.TryGetValue(_phasePacket, out var packet))
-                {
-                    with["packet"] = Literal(packet.Sha256);
-                }
-
-                break;
-            default:
-                break;
+            with["phasePacket"] = new WithValue(Literal: null, _phasePacket, Profile: null);   // the report reads the plan's phase id ("P1") from it, not from the lowercase address slug
         }
 
+        Extras(status, after, with);
         return new EffectCommand(_report, EffectIdentity.ForLineReport(after.Id, after.Frame.Entry, version), CommandOrigin.Engine, with);
+    }
+
+    private static void Extras(string status, WorkflowInstance after, Dictionary<string, WithValue> with)
+    {
+        if (status == "parked")
+        {
+            with["parkReason"] = Literal(EngineNotices.Reason(after.Suspension?.Reason));
+        }
+        else if (status == "ended")
+        {
+            with["ended"] = Literal(after.Outcome?.Value ?? string.Empty);
+            // why: amendments (LN-PKT1) don't exist yet, so the packet in force is the one the phase started with
+            if (after.Facts.TryGetValue(_phasePacket, out var packet))
+            {
+                with["packet"] = Literal(packet.Sha256);
+            }
+        }
     }
 
     private static string? Status(WorkflowInstance? before, WorkflowInstance after)

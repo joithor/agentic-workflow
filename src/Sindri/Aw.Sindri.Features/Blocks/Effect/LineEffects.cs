@@ -10,7 +10,7 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 /// </summary>
 internal static class LineEffects
 {
-    /// <summary>'effect.line.report': tells the line a phase has 'shipped', 'merged', 'failed', 'parked', 'resumed' or 'ended'; 'line' is the line context fact. 'parkReason' goes with 'parked'; 'ended' (the terminal outcome) and 'packet' (the phase packet's hash) with 'ended'.</summary>
+    /// <summary>'effect.line.report': tells the line a phase has 'shipped', 'merged', 'failed', 'parked', 'resumed' or 'ended'; 'line' is the line context fact. 'parkReason' goes with 'parked'; 'ended' (the terminal outcome) and 'packet' (the phase packet's hash) with 'ended'. The engine also passes 'phasePacket' (the stored packet), whose 'phase' is the plan's id.</summary>
     public static BlockDescriptor Report { get; } = new(
         BlockId.From("effect.line.report"), BlockKind.Effect, Version: 1, Inputs: [], Outputs: [new OutputSpec(FactKey.From("fact:phaseEvent"), [])], Outcomes: [],
         Capability.Effects,
@@ -21,6 +21,7 @@ internal static class LineEffects
             new ParameterSpec("parkReason", ParameterType.Text, Required: false, IsCapabilityField: false),
             new ParameterSpec("ended", ParameterType.Text, Required: false, IsCapabilityField: false),
             new ParameterSpec("packet", ParameterType.Text, Required: false, IsCapabilityField: false),
+            new ParameterSpec("phasePacket", ParameterType.Text, Required: false, IsCapabilityField: false),
         ],
         Rung: null,
         DeskCapable: false);

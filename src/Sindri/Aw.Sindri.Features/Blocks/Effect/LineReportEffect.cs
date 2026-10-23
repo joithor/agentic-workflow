@@ -49,9 +49,38 @@ internal sealed class LineReportEffect(IRunArea area, IFactContents contents, IF
             return line.Error;
         }
 
+        // The plan's phase id ("P1") is the packet's; the address carries a lowercase slug of it, so the packet wins over the line context when the engine passes it.
+        var phase = await PacketPhase(context, cancellationToken).ConfigureAwait(false) ?? Name(line.Value, "phase");
         return Name(line.Value, "line") is { } name
-            ? await Append(context, status, name, Name(line.Value, "phase"), cancellationToken).ConfigureAwait(false)
+            ? await Append(context, status, name, phase, cancellationToken).ConfigureAwait(false)
             : new EffectDone(Reply: null, Existed: false);
+    }
+
+    /// <summary>The 'phase' field of the stored 'phasePacket' argument (the engine's report passes the linked instance's packet); null when absent or unreadable.</summary>
+    private async ValueTask<string?> PacketPhase(EffectContext context, CancellationToken cancellationToken)
+    {
+        if (!context.Arguments.TryGetValue("phasePacket", out var stored) || stored.ValueKind != JsonValueKind.Object
+            || !stored.TryGetProperty("ref", out var reference) || reference.ValueKind != JsonValueKind.String
+            || !stored.TryGetProperty("sha256", out var sha) || sha.ValueKind != JsonValueKind.String)
+        {
+            return null;
+        }
+
+        var read = await contents.Read(new FactValue(reference.GetString()!, sha.GetString()!, HeadSha: null), cancellationToken).ConfigureAwait(false);   // why: both checked to be strings above
+        if (read.IsError)
+        {
+            return null;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(read.Value);
+            return Name(document.RootElement, "phase");
+        }
+        catch (JsonException)   // boundary: a packet that isn't JSON names no phase; the line context's is used
+        {
+            return null;
+        }
     }
 
     private static string? Status(EffectContext context)
@@ -152,7 +181,7 @@ internal sealed class LineReportEffect(IRunArea area, IFactContents contents, IF
     private static Dictionary<string, string> Extras(EffectContext context) => _extras
         .Select(name => (Name: name, Text: context.Arguments.TryGetValue(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null))
         .Where(static e => e.Text is { Length: > 0 })
-        .ToDictionary(static e => e.Name, static e => e.Text!, StringComparer.Ordinal);
+        .ToDictionary(static e => e.Name, static e => e.Text ?? string.Empty, StringComparer.Ordinal);   // Where kept only the non-empty ones
 
     /// <summary>The attempt a linked instance's address names, '{line}/phase.{id}.{attempt}'; null for anything else.</summary>
     private static int? AttemptOf(string instance) =>

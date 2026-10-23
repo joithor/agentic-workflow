@@ -119,6 +119,28 @@ public sealed class LineReportEffectTests
     }
 
     [Fact]
+    public async Task The_phase_is_the_packets_when_the_report_passes_one_not_the_line_contexts_or_the_addresss_slug()
+    {
+        var line = (await _facts.Put(Encoding.UTF8.GetBytes(LineContext), Token)).Value;
+        var packet = (await _facts.Put(Encoding.UTF8.GetBytes("""{"phase":"P2","id":"p2"}"""), Token)).Value;
+        var context = Context("parked", JsonDocument.Parse($$"""{"ref":"{{line.Ref}}","sha256":"{{line.Sha256}}"}""").RootElement.Clone(), instance: "T-4/line/1/phase.p2.1") with
+        {
+            Arguments = new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+            {
+                ["status"] = JsonDocument.Parse("\"parked\"").RootElement.Clone(),
+                ["line"] = JsonDocument.Parse($$"""{"ref":"{{line.Ref}}","sha256":"{{line.Sha256}}"}""").RootElement.Clone(),
+                ["phasePacket"] = JsonDocument.Parse($$"""{"ref":"{{packet.Ref}}","sha256":"{{packet.Sha256}}"}""").RootElement.Clone(),
+            },
+        };
+
+        var done = await new LineReportEffect(_area, _facts, _facts, _clock).Dispatch(context, Token);
+
+        var fact = Assert.Single(done.Value.Facts!).Value;
+        var payload = JsonDocument.Parse((await _facts.Read(new FactValue(fact.Ref, fact.Sha256, fact.HeadSha), Token)).Value).RootElement;
+        Assert.Equal("P2", payload.GetProperty("phase").GetString());
+    }
+
+    [Fact]
     public async Task A_line_that_is_not_a_stored_fact_is_the_dispatch_error()
     {
         var context = Context("shipped", JsonDocument.Parse("\"L1\"").RootElement.Clone());

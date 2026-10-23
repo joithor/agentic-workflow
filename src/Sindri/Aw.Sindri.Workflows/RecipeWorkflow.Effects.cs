@@ -68,7 +68,7 @@ internal sealed partial class RecipeWorkflow
     private void Emit(WorkflowInstance? before, WorkflowInstance after, IReadOnlyList<EffectCommand> effects, WorkflowEventType change = WorkflowEventType.Transition)
     {
         Announce(before, after);   // engine P7: a child tells its parent about a park, escalation or resume
-        List<EffectCommand> all = [.. effects.Where(e => e.Identity.Instance == after.Id), .. Notices(before, after, change)];
+        List<EffectCommand> all = [.. effects.Where(e => e.Identity.Instance == after.Id), .. Notices(before, after, change), .. LineReports(before, after)];
         if (all.Count > 0)
         {
             _effects.Add(Dispatch(after, all));

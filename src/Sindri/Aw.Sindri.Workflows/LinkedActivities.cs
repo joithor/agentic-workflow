@@ -1,4 +1,3 @@
-using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Temporalio.Activities;

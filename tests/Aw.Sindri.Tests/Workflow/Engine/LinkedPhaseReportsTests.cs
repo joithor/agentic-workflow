@@ -32,6 +32,16 @@ public sealed class LinkedPhaseReportsTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void The_report_passes_the_phase_packet_so_the_plans_phase_id_is_read_from_it()
+    {
+        var open = Linked();
+
+        var command = LinkedPhaseReports.For(open, Suspensions.Suspend(open, Park(ParkReason.Budget)), version: 4)!;
+
+        Assert.Equal(FactKey.From("fact:phasePacket"), command.With["phasePacket"].Fact);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_resume_reports_resumed()
     {
         var open = Linked();
