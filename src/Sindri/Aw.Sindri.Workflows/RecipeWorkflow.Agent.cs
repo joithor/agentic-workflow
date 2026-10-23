@@ -114,7 +114,7 @@ internal sealed partial class RecipeWorkflow
 
     // What the launch activity is given: the run, the item, the workspace the Step launches in, and what the Step's 'bundle' needs of the pack (LN-WF5): its 'subject' and the stored lens queue.
     private static AgentLaunchRun Launch(AgentStepRun run, FactValue? item, StepUse step, WorkflowInstance instance, FactValue? workspace) =>
-        new(run, item, workspace, Literal(step, "bundle"), Literal(step, "subject"), instance.Facts.TryGetValue(FactKey.From("fact:lensQueue"), out var queue) ? queue : null);
+        new(run, item, workspace, Literal(step, "bundle"), Literal(step, "subject"), instance.Facts.TryGetValue(FactKey.From("fact:lensQueue"), out var queue) ? queue : null, instance.Facts);
 
     private static string? Literal(StepUse step, string name) =>
         step.With.TryGetValue(name, out var value) && value.Literal is { ValueKind: System.Text.Json.JsonValueKind.String } text ? text.GetString() : null;

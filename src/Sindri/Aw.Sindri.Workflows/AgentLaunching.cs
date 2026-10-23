@@ -47,7 +47,14 @@ internal sealed class AgentLaunching(ILauncher launcher, AgentTargetResolver tar
 
         var block = BlockId.From(run.Run.Step.Block);
         var told = inputs.Instructions.FirstOrDefault(i => i.IsFor(block))?.Lines;
-        var request = AgentLaunches.RequestFor(run.Run, target.Value, catalog.Find(block), new AgentLaunchExtras(told, workspace.Value, bundle.Value));
+        var descriptor = catalog.Find(block);
+        var facts = await StepFactFiles.Build(descriptor, run.Facts, inputs.Contents, inputs.Scrubber, cancellationToken).ConfigureAwait(false);
+        if (facts.IsError)
+        {
+            return new AgentLaunched(Worktree: null, StartHead: null, new AgentLaunchFailure(AgentLaunchFailureKind.StepFailed, facts.Error.Code, facts.Error.Message));
+        }
+
+        var request = AgentLaunches.RequestFor(run.Run, target.Value, descriptor, new AgentLaunchExtras(told, workspace.Value, bundle.Value, facts.Value));
         var result = await launcher.Launch(request, cancellationToken).ConfigureAwait(false);
         switch (result)
         {
