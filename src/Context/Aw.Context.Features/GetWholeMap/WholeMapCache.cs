@@ -1,5 +1,6 @@
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.WholeMap;
+using Aw.Kernel;
 
 namespace Aw.Context.Features.GetWholeMap;
 
@@ -21,7 +22,7 @@ internal sealed class WholeMapCache
     /// <param name="key">The question and the caller's scope.</param>
     /// <param name="build">Builds the answer.</param>
     /// <returns>The answer.</returns>
-    internal WholeMapView Get(GraphSnapshot graph, string key, Func<WholeMapView> build)
+    internal Result<WholeMapView> Get(GraphSnapshot graph, string key, Func<Result<WholeMapView>> build)
     {
         lock (_gate)
         {
@@ -49,5 +50,5 @@ internal sealed class WholeMapCache
         return view;
     }
 
-    private sealed record Entry(GraphSnapshot Graph, string Key, WholeMapView View);
+    private sealed record Entry(GraphSnapshot Graph, string Key, Result<WholeMapView> View);
 }

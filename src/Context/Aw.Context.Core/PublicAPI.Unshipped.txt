@@ -6679,7 +6679,6 @@ Aw.Context.Core.WholeMap.WholeMapNode.Trust.init -> void
 Aw.Context.Core.WholeMap.WholeMapNode.WholeMapNode(Aw.Context.Core.Graph.NodeKey Key, string! Label, Aw.Context.Core.Graph.NodeKind Kind, string! Area, System.Collections.Generic.IReadOnlyList<string!>! AlsoIn, Aw.Context.Core.Results.Trust Trust, Aw.Context.Core.Results.Provenance Provenance, double Confidence, bool Confirmed) -> void
 Aw.Context.Core.WholeMap.WholeMapQuery
 Aw.Context.Core.WholeMap.WholeMapQuery.<Clone>$() -> Aw.Context.Core.WholeMap.WholeMapQuery!
-Aw.Context.Core.WholeMap.WholeMapQuery.Deconstruct(out string? Detail, out System.Collections.Generic.IReadOnlyList<string!>! Locate, out Aw.Context.Core.Map.MapRead Read, out string? Repo) -> void
 Aw.Context.Core.WholeMap.WholeMapQuery.Detail.get -> string?
 Aw.Context.Core.WholeMap.WholeMapQuery.Detail.init -> void
 Aw.Context.Core.WholeMap.WholeMapQuery.Equals(Aw.Context.Core.WholeMap.WholeMapQuery? other) -> bool
@@ -6689,7 +6688,6 @@ Aw.Context.Core.WholeMap.WholeMapQuery.Read.get -> Aw.Context.Core.Map.MapRead
 Aw.Context.Core.WholeMap.WholeMapQuery.Read.init -> void
 Aw.Context.Core.WholeMap.WholeMapQuery.Repo.get -> string?
 Aw.Context.Core.WholeMap.WholeMapQuery.Repo.init -> void
-Aw.Context.Core.WholeMap.WholeMapQuery.WholeMapQuery(string? Detail, System.Collections.Generic.IReadOnlyList<string!>! Locate, Aw.Context.Core.Map.MapRead Read, string? Repo = null) -> void
 Aw.Context.Core.WholeMap.WholeMapRules
 Aw.Context.Core.WholeMap.WholeMapRules.<Clone>$() -> Aw.Context.Core.WholeMap.WholeMapRules!
 Aw.Context.Core.WholeMap.WholeMapRules.AreaCap.get -> int
@@ -6828,16 +6826,23 @@ Aw.Context.Core.WholeMap.WholeMapAsk
 Aw.Context.Core.WholeMap.WholeMapAsk.<Clone>$() -> Aw.Context.Core.WholeMap.WholeMapAsk!
 Aw.Context.Core.WholeMap.WholeMapAsk.Basis.get -> Aw.Context.Core.WholeMap.WholeMapBasis!
 Aw.Context.Core.WholeMap.WholeMapAsk.Basis.init -> void
-Aw.Context.Core.WholeMap.WholeMapAsk.Deconstruct(out Aw.Context.Core.WholeMap.WholeMapBasis! Basis, out Aw.Context.Core.WholeMap.WholeMapDetail Detail, out System.Collections.Generic.IReadOnlyList<string!>! Locate) -> void
 Aw.Context.Core.WholeMap.WholeMapAsk.Detail.get -> Aw.Context.Core.WholeMap.WholeMapDetail
 Aw.Context.Core.WholeMap.WholeMapAsk.Detail.init -> void
 Aw.Context.Core.WholeMap.WholeMapAsk.Equals(Aw.Context.Core.WholeMap.WholeMapAsk? other) -> bool
 Aw.Context.Core.WholeMap.WholeMapAsk.Locate.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Context.Core.WholeMap.WholeMapAsk.Locate.init -> void
-Aw.Context.Core.WholeMap.WholeMapAsk.WholeMapAsk(Aw.Context.Core.WholeMap.WholeMapBasis! Basis, Aw.Context.Core.WholeMap.WholeMapDetail Detail, System.Collections.Generic.IReadOnlyList<string!>! Locate) -> void
 override Aw.Context.Core.WholeMap.WholeMapAsk.Equals(object? obj) -> bool
 override Aw.Context.Core.WholeMap.WholeMapAsk.GetHashCode() -> int
 override Aw.Context.Core.WholeMap.WholeMapAsk.ToString() -> string!
 static Aw.Context.Core.WholeMap.WholeMapAsk.operator !=(Aw.Context.Core.WholeMap.WholeMapAsk? left, Aw.Context.Core.WholeMap.WholeMapAsk? right) -> bool
 static Aw.Context.Core.WholeMap.WholeMapAsk.operator ==(Aw.Context.Core.WholeMap.WholeMapAsk? left, Aw.Context.Core.WholeMap.WholeMapAsk? right) -> bool
-static Aw.Context.Core.WholeMap.WholeMapBuilder.Build(Aw.Context.Core.WholeMap.WholeMapAsk! ask, Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.WholeMap.AreaIndex! areas, Aw.Context.Core.WholeMap.WholeMapRules! rules, Aw.Context.Core.Map.MapText! text) -> Aw.Context.Core.WholeMap.WholeMapView!
+Aw.Context.Core.WholeMap.WholeMapAsk.Area.get -> string?
+Aw.Context.Core.WholeMap.WholeMapAsk.Area.init -> void
+Aw.Context.Core.WholeMap.WholeMapAsk.Deconstruct(out Aw.Context.Core.WholeMap.WholeMapBasis! Basis, out Aw.Context.Core.WholeMap.WholeMapDetail Detail, out System.Collections.Generic.IReadOnlyList<string!>! Locate, out string? Area) -> void
+Aw.Context.Core.WholeMap.WholeMapAsk.WholeMapAsk(Aw.Context.Core.WholeMap.WholeMapBasis! Basis, Aw.Context.Core.WholeMap.WholeMapDetail Detail, System.Collections.Generic.IReadOnlyList<string!>! Locate, string? Area = null) -> void
+Aw.Context.Core.WholeMap.WholeMapQuery.Area.get -> string?
+Aw.Context.Core.WholeMap.WholeMapQuery.Area.init -> void
+Aw.Context.Core.WholeMap.WholeMapQuery.Deconstruct(out string? Detail, out System.Collections.Generic.IReadOnlyList<string!>! Locate, out Aw.Context.Core.Map.MapRead Read, out string? Repo, out string? Area) -> void
+Aw.Context.Core.WholeMap.WholeMapQuery.WholeMapQuery(string? Detail, System.Collections.Generic.IReadOnlyList<string!>! Locate, Aw.Context.Core.Map.MapRead Read, string? Repo = null, string? Area = null) -> void
+static Aw.Context.Core.WholeMap.WholeMapBuilder.Build(Aw.Context.Core.WholeMap.WholeMapAsk! ask, Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.WholeMap.AreaIndex! areas, Aw.Context.Core.WholeMap.WholeMapRules! rules, Aw.Context.Core.Map.MapText! text) -> Aw.Kernel.Result<Aw.Context.Core.WholeMap.WholeMapView!>!
+static readonly Aw.Context.Core.ContextErrors.AreaUnknown -> Aw.Kernel.ErrorDefinition!

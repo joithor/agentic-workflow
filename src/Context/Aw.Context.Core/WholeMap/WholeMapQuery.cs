@@ -7,4 +7,5 @@ namespace Aw.Context.Core.WholeMap;
 /// <param name="Locate">Node keys whose area the answer names (up to <see cref="WholeMapRules.MaxLocate"/>).</param>
 /// <param name="Read">Which map: the current version, the draft or a retained version.</param>
 /// <param name="Repo">A human caller's repo when the profile has more than one, else null (a session is always its own repo).</param>
-public sealed record WholeMapQuery(string? Detail, IReadOnlyList<string> Locate, MapRead Read, string? Repo = null);
+/// <param name="Area">The key of one area to open on its own (its nodes and edges in full, up to the area cap), or null.</param>
+public sealed record WholeMapQuery(string? Detail, IReadOnlyList<string> Locate, MapRead Read, string? Repo = null, string? Area = null);

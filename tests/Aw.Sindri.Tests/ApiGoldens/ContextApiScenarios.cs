@@ -92,7 +92,11 @@ internal static class ContextApiScenarios
         ("context-lenses", "hops-bogus-140", async (s, ct) => await s.Fetch("/sindri/context/lenses?anchor=feature%3Ashare.sharing&hops=bogus", ct)),
         ("context-whole", "nodes-small", async (s, ct) => await s.Fetch(WholeRoute(), ct)),
         ("context-whole", "areas-over-budget", async (s, ct) => await s.Fetch(WholeRoute(), ct)),
+        ("context-whole", "area-open", async (s, ct) => await s.Fetch(WholeRoute("area=feature%3Atabs.tab-manager"), ct)),
+        ("context-whole", "area-truncated", async (s, ct) => await s.Fetch(WholeRoute("area=feature%3Atabs.tab-manager"), ct)),
+        ("context-whole", "area-unknown-200", async (s, ct) => await s.Fetch(WholeRoute("area=feature%3Anope"), ct)),
         ("context-whole", "locate", async (s, ct) => await s.Fetch(WholeRoute("locate=surface%3Acommand%2Fswitch-tab&locate=feature%3Anope.x"), ct)),
+        ("context-whole", "draft", async (s, ct) => await s.FetchAfterDraft(WholeRoute("draft=true"), ct)),
         ("context-whole", "no-map-030", async (s, ct) => await s.Fetch(WholeRoute(), ct)),
         ("context-whole", "no-draft-044", async (s, ct) => await s.Fetch(WholeRoute("draft=true"), ct)),
         ("context-whole", "map-version-v1", async (s, ct) => await s.FetchAfterSecondMap(WholeRoute("mapVersion=v1"), ct)),
@@ -289,10 +293,10 @@ internal static class ContextApiScenarios
 
     private static Action<IServiceCollection> Wiring(string lockPath, string scenario = "") => services =>
     {
-        if (scenario == "areas-over-budget")
+        if (string.Equals(scenario, "areas-over-budget", StringComparison.Ordinal) || string.Equals(scenario, "area-truncated", StringComparison.Ordinal))
         {
             _ = services.RemoveAll<WholeMapRules>();
-            _ = services.AddSingleton(new WholeMapRules(NodeBudget: 5));   // the tabs map is a few more nodes than this
+            _ = services.AddSingleton(string.Equals(scenario, "area-truncated", StringComparison.Ordinal) ? new WholeMapRules(AreaCap: 5) : new WholeMapRules(NodeBudget: 5));   // the tabs map is a few more nodes than either
         }
 
         _ = services.RemoveAll<IClusterSource>();

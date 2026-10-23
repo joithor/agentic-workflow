@@ -4,4 +4,5 @@ namespace Aw.Context.Core.WholeMap;
 /// <param name="Basis">The map version the graph is.</param>
 /// <param name="Detail">What was asked: auto, nodes or areas.</param>
 /// <param name="Locate">The keys to place.</param>
-public sealed record WholeMapAsk(WholeMapBasis Basis, WholeMapDetail Detail, IReadOnlyList<string> Locate);
+/// <param name="Area">The key of one area to open on its own, or null.</param>
+public sealed record WholeMapAsk(WholeMapBasis Basis, WholeMapDetail Detail, IReadOnlyList<string> Locate, string? Area = null);

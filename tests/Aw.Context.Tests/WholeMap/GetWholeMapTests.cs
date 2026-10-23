@@ -44,8 +44,8 @@ public sealed class GetWholeMapTests : IDisposable
         return world;
     }
 
-    private static ValueTask<Kernel.Result<WholeMapView>> Ask(MapWorld world, string? detail = null, ContextScope? scope = null, string[]? locate = null, MapRead? read = null, string? repo = null) =>
-        world.Engine.WholeMap(new WholeMapQuery(detail, locate ?? [], read ?? MapRead.Current, repo), scope ?? MapWorld.Human, MapWorld.None);
+    private static ValueTask<Kernel.Result<WholeMapView>> Ask(MapWorld world, string? detail = null, ContextScope? scope = null, string[]? locate = null, MapRead? read = null, string? repo = null, string? area = null) =>
+        world.Engine.WholeMap(new WholeMapQuery(detail, locate ?? [], read ?? MapRead.Current, repo, area), scope ?? MapWorld.Human, MapWorld.None);
 
     [Fact, Trait("Lane", "unit")]
     public async Task A_map_inside_the_budget_answers_every_node_and_edge_with_its_areas()
@@ -259,5 +259,46 @@ public sealed class GetWholeMapTests : IDisposable
         var second = (await Ask(world)).Value;
 
         Assert.Same(first, second);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_area_opens_on_its_own_with_its_nodes_the_edges_among_them_and_the_overview_still_there()
+    {
+        var world = await Imported(new WholeMapRules(NodeBudget: 5));
+
+        var view = (await Ask(world, area: "feature:billing")).Value;
+
+        Assert.Equal(WholeMapDetail.Nodes, view.Detail);
+        Assert.Null(view.Fallback);
+        Assert.Equal("feature:billing feature:billing.invoices surface:screen/invoices", string.Join(' ', view.Nodes!.Select(n => n.Key.Value)));
+        Assert.Equal(2, view.Edges!.Count);
+        Assert.Equal(("feature:billing", false, 3, 2), (view.Area!.Key, view.Area.Truncated, view.Area.Counts.Nodes, view.Area.Counts.Edges));
+        Assert.Equal((6, 4), (view.Counts.Nodes, view.Areas.Count));
+        Assert.Contains(view.AreaEdges, e => e.From == "feature:tabs" && e.To == "feature:billing");
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_area_over_the_cap_keeps_the_first_nodes_and_says_so_with_its_full_counts()
+    {
+        var world = await Imported(new WholeMapRules(AreaCap: 2));
+
+        var view = (await Ask(world, area: "feature:billing")).Value;
+
+        Assert.Equal(2, view.Nodes!.Count);
+        Assert.Equal((true, true, 3), (view.Area!.Truncated, view.Truncated, view.Area.Counts.Nodes));
+        Assert.Equal(("feature:billing", "feature:billing.invoices"), (view.Nodes[0].Key.Value, view.Nodes[1].Key.Value));
+        _ = Assert.Single(view.Edges!);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_unassigned_group_opens_like_any_area_and_an_area_the_map_lacks_is_200()
+    {
+        var world = await Imported();
+
+        var loose = (await Ask(world, area: AreaIndex.UnassignedKey)).Value;
+        var missing = await Ask(world, area: "feature:nope");
+
+        Assert.Equal("code:src/util/strings.ts", Assert.Single(loose.Nodes!).Key.Value);
+        Assert.Equal(ContextErrors.AreaUnknown.Code, missing.Error.Code);
     }
 }

@@ -1,24 +1,23 @@
 {
   "schemaVersion": 1,
-  "mapVersion": "v12",
-  "mapCommit": "9c2e4f1",
+  "mapVersion": "v1",
   "draft": false,
-  "asOf": "2026-10-23T06:00:00Z",
-  "repo": "my-app",
+  "asOf": "2026-01-01T00:00:00.0000000Z",
+  "repo": "aw-split-panes",
   "detail": "areas",
   "fallback": "over-budget",
   "counts": {
-    "nodes": 1840,
-    "edges": 3122,
+    "nodes": 14,
+    "edges": 15,
     "byKind": {
-      "feature": 41,
-      "surface": 388,
-      "action": 210,
-      "thing": 96,
-      "flow": 22,
-      "decision": 63,
-      "record": 402,
-      "code": 618
+      "feature": 2,
+      "surface": 2,
+      "action": 2,
+      "thing": 1,
+      "flow": 0,
+      "decision": 2,
+      "record": 3,
+      "code": 2
     }
   },
   "areas": [
@@ -26,86 +25,36 @@
       "key": "area:unassigned",
       "label": "Not linked to a feature yet",
       "trust": "trusted",
-      "members": 214,
+      "members": 2,
       "byKind": {
-        "record": 160,
-        "code": 54
+        "record": 2
       },
       "unassigned": true
     },
     {
-      "key": "feature:billing",
-      "label": "Billing",
+      "key": "feature:tabs.tab-manager",
+      "label": "Tab manager",
       "trust": "trusted",
-      "members": 312,
+      "members": 12,
       "byKind": {
-        "feature": 6,
-        "surface": 70,
-        "action": 41,
-        "thing": 18,
-        "flow": 4,
-        "decision": 9,
-        "record": 64,
-        "code": 100
-      },
-      "unassigned": false
-    },
-    {
-      "key": "feature:search",
-      "label": "Search",
-      "trust": "untrusted",
-      "members": 188,
-      "byKind": {
-        "feature": 3,
-        "surface": 40,
-        "action": 22,
-        "thing": 9,
-        "flow": 2,
-        "decision": 5,
-        "record": 37,
-        "code": 70
-      },
-      "unassigned": false
-    },
-    {
-      "key": "feature:tabs",
-      "label": "Tabs",
-      "trust": "trusted",
-      "members": 1126,
-      "byKind": {
-        "feature": 32,
-        "surface": 278,
-        "action": 147,
-        "thing": 69,
-        "flow": 16,
-        "decision": 49,
-        "record": 141,
-        "code": 394
+        "feature": 2,
+        "surface": 2,
+        "action": 2,
+        "thing": 1,
+        "decision": 2,
+        "record": 1,
+        "code": 2
       },
       "unassigned": false
     }
   ],
   "areaEdges": [
     {
-      "from": "area:unassigned",
-      "to": "feature:tabs",
-      "type": "mentions",
-      "count": 12,
-      "confirmed": 12
-    },
-    {
-      "from": "feature:search",
-      "to": "feature:tabs",
-      "type": "depends-on",
-      "count": 3,
+      "from": "feature:tabs.tab-manager",
+      "to": "area:unassigned",
+      "type": "quotes",
+      "count": 2,
       "confirmed": 2
-    },
-    {
-      "from": "feature:tabs",
-      "to": "feature:billing",
-      "type": "depends-on",
-      "count": 1,
-      "confirmed": 1
     }
   ],
   "truncated": false

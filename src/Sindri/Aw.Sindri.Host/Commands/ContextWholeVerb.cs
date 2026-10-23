@@ -5,16 +5,16 @@ using Aw.Sindri.Core;
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
-/// 'sindri context map whole [--detail auto|nodes|areas] [--locate KEY]... [--map-version V | --draft] [--repo R] [--json]' (Part D): a client of GET /sindri/context/map/whole. Exit 0 with an answer;
+/// 'sindri context map whole [--detail auto|nodes|areas] [--area KEY] [--locate KEY]... [--map-version V | --draft] [--repo R] [--json]' (Part D): a client of GET /sindri/context/map/whole. Exit 0 with an answer;
 /// 1 for attention (not running, no map, no draft, a version not kept, a repo outside the scope, sessions off); 2 for usage or a tool error.
 /// </summary>
 /// <param name="client">The API client.</param>
 /// <param name="output">Where the verb writes.</param>
 internal sealed class ContextWholeVerb(ControlPlaneClient client, Output output)
 {
-    private const string Form = "context map whole [--detail auto|nodes|areas] [--locate <key>]... [--map-version <v> | --draft] [--repo <repo>] [--json]";
+    private const string Form = "context map whole [--detail auto|nodes|areas] [--area <key>] [--locate <key>]... [--map-version <v> | --draft] [--repo <repo>] [--json]";
 
-    private static readonly string[] _valued = ["--detail", "--map-version", "--repo"];
+    private static readonly string[] _valued = ["--detail", "--area", "--map-version", "--repo"];
     private static readonly string[] _bare = ["--draft", "--json"];
 
     internal async Task<int> Run(string[] args, CancellationToken ct)
@@ -41,6 +41,11 @@ internal sealed class ContextWholeVerb(ControlPlaneClient client, Output output)
         if (o.Detail is not null)
         {
             parts.Add("detail=" + Uri.EscapeDataString(o.Detail));
+        }
+
+        if (o.Area is not null)
+        {
+            parts.Add("area=" + Uri.EscapeDataString(o.Area));
         }
 
         parts.AddRange(o.Locate.Select(static k => "locate=" + Uri.EscapeDataString(k)));
@@ -88,10 +93,10 @@ internal sealed class ContextWholeVerb(ControlPlaneClient client, Output output)
             }
         }
 
-        return new Options(values.GetValueOrDefault("--detail"), locate, bare.Contains("--draft"), values.GetValueOrDefault("--map-version"), values.GetValueOrDefault("--repo"), bare.Contains("--json"));
+        return new Options(values.GetValueOrDefault("--detail"), values.GetValueOrDefault("--area"), locate, bare.Contains("--draft"), values.GetValueOrDefault("--map-version"), values.GetValueOrDefault("--repo"), bare.Contains("--json"));
     }
 
     private async Task<int> Failed(Kernel.Error error) => ContextExit.For(error, await output.Error(error).ConfigureAwait(false));
 
-    private sealed record Options(string? Detail, List<string> Locate, bool Draft, string? MapVersion, string? Repo, bool Json);
+    private sealed record Options(string? Detail, string? Area, List<string> Locate, bool Draft, string? MapVersion, string? Repo, bool Json);
 }

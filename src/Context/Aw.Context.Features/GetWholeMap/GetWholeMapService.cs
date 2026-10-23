@@ -39,20 +39,20 @@ internal sealed class GetWholeMapService(MapReader reader, IScrubberFactory scru
 
         var map = read.Value;
         var key = CacheKey(map.Snapshot.Version.Number, detail.Value, query, repo.Value, scope);
-        return cache.Get(map.Graph, key, () => Build(map, (detail.Value, query.Locate), repo.Value, new MapText(built.Value, FencePolicies.For(scope.Caller))));
+        return cache.Get(map.Graph, key, () => Build(map, (query, detail.Value), repo.Value, new MapText(built.Value, FencePolicies.For(scope.Caller))));
     }
 
-    private WholeMapView Build(VisibleMap map, (WholeMapDetail Detail, IReadOnlyList<string> Locate) asked, RepoChoice repo, MapText text)
+    private Result<WholeMapView> Build(VisibleMap map, (WholeMapQuery Query, WholeMapDetail Detail) asked, RepoChoice repo, MapText text)
     {
         var graph = repo.Cut is { } cut ? map.Graph.ScopedTo(cut) : map.Graph;
         var snapshot = map.Snapshot;
         var commit = snapshot.Version.Commit is { Length: > 0 } c ? c[..Math.Min(7, c.Length)] : null;
-        var basis = new WholeMapBasis(snapshot.Tag, commit, snapshot.Version.Status == MapVersionStatus.Draft, snapshot.Version.Created, repo.Name);
-        return WholeMapBuilder.Build(new WholeMapAsk(basis, asked.Detail, asked.Locate), graph, MapAreas.Assign(graph), rules, text);
+        var basis = new WholeMapBasis(snapshot.Tag, commit, asked.Query.Read.Draft, snapshot.Version.Created, repo.Name);
+        return WholeMapBuilder.Build(new WholeMapAsk(basis, asked.Detail, asked.Query.Locate, asked.Query.Area), graph, MapAreas.Assign(graph), rules, text);
     }
 
     private static string CacheKey(int version, WholeMapDetail detail, WholeMapQuery query, RepoChoice repo, ContextScope scope) =>
-        string.Join('\n', version, query.Read.Draft, detail, string.Join('\u001f', query.Locate), repo.Name, repo.Cut?.Value, FencePolicies.For(scope.Caller), scope.Caller.Kind, scope.Caller.Repo?.Value, scope.Settings?.GetRawText());
+        string.Join('\n', version, query.Read.Draft, detail, string.Join('\u001f', query.Locate), query.Area, repo.Name, repo.Cut?.Value, FencePolicies.For(scope.Caller), scope.Caller.Kind, scope.Caller.Repo?.Value, scope.Settings?.GetRawText());
 
     private static Result<WholeMapDetail> Detail(WholeMapQuery query)
     {

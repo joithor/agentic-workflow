@@ -20,6 +20,6 @@ internal sealed class GetContextWholeMapService(ContextScopes scopes, IContextEn
         var scope = await scopes.Current(cancellationToken).ConfigureAwait(false);
         return scope.IsError
             ? scope.Error
-            : await engine.WholeMap(new WholeMapQuery(request.Detail, request.Locate ?? [], read.Value, request.Repo), scope.Value, cancellationToken).ConfigureAwait(false);
+            : await engine.WholeMap(new WholeMapQuery(request.Detail, request.Locate ?? [], read.Value, request.Repo, request.Area), scope.Value, cancellationToken).ConfigureAwait(false);
     }
 }

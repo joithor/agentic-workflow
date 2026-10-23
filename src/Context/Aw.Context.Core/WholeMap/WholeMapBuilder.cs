@@ -1,6 +1,7 @@
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Overrides;
+using Aw.Kernel;
 
 namespace Aw.Context.Core.WholeMap;
 
@@ -10,13 +11,13 @@ public static class WholeMapBuilder
     private const string OverBudget = "over-budget";
 
     /// <summary>The answer for one graph.</summary>
-    /// <param name="ask">The map version, the detail and the keys to place.</param>
+    /// <param name="ask">The map version, the detail, the area to open and the keys to place.</param>
     /// <param name="graph">The graph the caller may see.</param>
     /// <param name="areas">Its areas.</param>
     /// <param name="rules">The limits.</param>
     /// <param name="text">The caller's text policy.</param>
-    /// <returns>The view.</returns>
-    public static WholeMapView Build(WholeMapAsk ask, GraphSnapshot graph, AreaIndex areas, WholeMapRules rules, MapText text)
+    /// <returns>The view, or SND-CONTEXT-200 when the area to open is not in the map.</returns>
+    public static Result<WholeMapView> Build(WholeMapAsk ask, GraphSnapshot graph, AreaIndex areas, WholeMapRules rules, MapText text)
     {
         ArgumentNullException.ThrowIfNull(ask);
         ArgumentNullException.ThrowIfNull(graph);
@@ -25,16 +26,47 @@ public static class WholeMapBuilder
         ArgumentNullException.ThrowIfNull(text);
         var known = graph.Nodes.GroupBy(n => n.Key.Value, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
         var edges = graph.Edges.Where(e => known.ContainsKey(e.From.Value) && known.ContainsKey(e.To.Value)).ToList();
-        var over = known.Count > rules.NodeBudget;
-        var level = ask.Detail == WholeMapDetail.Areas || over ? WholeMapDetail.Areas : WholeMapDetail.Nodes;
         var (listed, truncated) = ListAreas(known, areas, rules, text);
-        var kept = listed.Select(a => a.Key).ToHashSet(StringComparer.Ordinal);
         var basis = ask.Basis;
-        return new WholeMapView(
-            1, basis.MapVersion, basis.MapCommit, basis.Draft, basis.AsOf, basis.Repo, level,
-            level == WholeMapDetail.Areas && ask.Detail != WholeMapDetail.Areas ? OverBudget : null,
-            Counts(known.Values, edges.Count), listed, AreaEdges(edges, areas, kept), level == WholeMapDetail.Nodes ? Nodes(known.Values, areas, text) : null,
-            level == WholeMapDetail.Nodes ? Edges(edges) : null, Area: null, Located(ask.Locate, areas, text), truncated);
+        var overview = new WholeMapView(
+            1, basis.MapVersion, basis.MapCommit, basis.Draft, basis.AsOf, basis.Repo, WholeMapDetail.Areas, Fallback: null,
+            Counts(known.Values, edges.Count), listed, AreaEdges(edges, areas, listed.Select(a => a.Key).ToHashSet(StringComparer.Ordinal)), Nodes: null, Edges: null, Area: null, Located(ask.Locate, areas, text), truncated);
+        if (ask.Area is not null)
+        {
+            return Opened(ask.Area, overview, (known, edges), (areas, rules, text));
+        }
+
+        if (ask.Detail == WholeMapDetail.Areas)
+        {
+            return overview;
+        }
+
+        return known.Count > rules.NodeBudget
+            ? overview with { Fallback = OverBudget }
+            : overview with { Detail = WholeMapDetail.Nodes, Nodes = Nodes(known.Values, areas, text), Edges = Edges(edges) };
+    }
+
+    // One area on its own: its nodes in kind and key order up to the cap, and the edges among those.
+    private static Result<WholeMapView> Opened(string key, WholeMapView overview, (Dictionary<string, GraphNode> Known, List<GraphEdge> Edges) graph, (AreaIndex Areas, WholeMapRules Rules, MapText Text) how)
+    {
+        var members = graph.Known.Values.Where(n => how.Areas.ByNode[n.Key.Value].Area == key).ToList();
+        if (members.Count == 0)
+        {
+            return ContextErrors.AreaUnknown.With("that area isn't in this map (fix: read the areas from 'context map whole' first, and name one of their keys)");
+        }
+
+        var cut = members.Count > how.Rules.AreaCap;
+        var shown = members.OrderBy(n => n.Key.Kind).ThenBy(n => n.Key.Value, StringComparer.Ordinal).Take(how.Rules.AreaCap).ToList();
+        var shownKeys = shown.Select(n => n.Key.Value).ToHashSet(StringComparer.Ordinal);
+        var memberKeys = members.Select(n => n.Key.Value).ToHashSet(StringComparer.Ordinal);
+        return overview with
+        {
+            Detail = WholeMapDetail.Nodes,
+            Nodes = Nodes(shown, how.Areas, how.Text),
+            Edges = Edges([.. graph.Edges.Where(e => shownKeys.Contains(e.From.Value) && shownKeys.Contains(e.To.Value))]),
+            Area = new WholeMapAreaInfo(key, cut, Counts(members, graph.Edges.Count(e => memberKeys.Contains(e.From.Value) && memberKeys.Contains(e.To.Value)))),
+            Truncated = overview.Truncated || cut,
+        };
     }
 
     private static string KindName(NodeKind kind) => kind.ToString().ToLowerInvariant();
@@ -65,10 +97,10 @@ public static class WholeMapBuilder
         return new WholeMapArea(key, text.Label(root.Label, trust), trust, members.Count, kinds, Unassigned: false);
     }
 
-    private static List<WholeMapAreaEdge> AreaEdges(List<GraphEdge> edges, AreaIndex areas, HashSet<string> kept) =>
+    private static List<WholeMapAreaEdge> AreaEdges(List<GraphEdge> edges, AreaIndex areas, HashSet<string> listed) =>
         [.. edges
             .Select(e => (From: areas.ByNode[e.From.Value].Area, To: areas.ByNode[e.To.Value].Area, e.Type, Confirmed: Confirmation.Of(e.Provenance)))
-            .Where(e => e.From != e.To && kept.Contains(e.From) && kept.Contains(e.To))
+            .Where(e => e.From != e.To && listed.Contains(e.From) && listed.Contains(e.To))
             .GroupBy(e => (e.From, e.To, e.Type))
             .Select(g => new WholeMapAreaEdge(g.Key.From, g.Key.To, g.Key.Type, g.Count(), g.Count(e => e.Confirmed)))
             .OrderBy(e => e.From, StringComparer.Ordinal).ThenBy(e => e.To, StringComparer.Ordinal).ThenBy(e => EdgeRules.Name(e.Type), StringComparer.Ordinal)];
