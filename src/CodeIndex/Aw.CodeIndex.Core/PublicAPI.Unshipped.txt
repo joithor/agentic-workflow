@@ -1394,39 +1394,8 @@ static Aw.CodeIndex.Core.Graph.GraphMerged.operator ==(Aw.CodeIndex.Core.Graph.G
 Aw.CodeIndex.Core.Embedding.EmbedText
 Aw.CodeIndex.Core.EmbeddingTarget
 static Aw.CodeIndex.Core.Embedding.EmbedText.Of(Aw.CodeIndex.Core.Model.EmbedCandidate! candidate) -> string!
-Aw.CodeIndex.Core.Planning.ContinuationAction
-Aw.CodeIndex.Core.Planning.ContinuationAction.Pass = 0 -> Aw.CodeIndex.Core.Planning.ContinuationAction
-Aw.CodeIndex.Core.Planning.ContinuationAction.Suppress = 1 -> Aw.CodeIndex.Core.Planning.ContinuationAction
-Aw.CodeIndex.Core.Planning.ContinuationAction.WithholdRecorded = 2 -> Aw.CodeIndex.Core.Planning.ContinuationAction
-Aw.CodeIndex.Core.Planning.IndexContinuationDecision
-Aw.CodeIndex.Core.Planning.IndexJobOutcome
-Aw.CodeIndex.Core.Planning.IndexJobOutcome.Deferred.get -> bool
-Aw.CodeIndex.Core.Planning.IndexJobOutcome.Embedded.get -> int
-Aw.CodeIndex.Core.Planning.IndexJobOutcome.EndedAt.get -> System.DateTimeOffset
-Aw.CodeIndex.Core.Planning.IndexJobOutcome.Failed.get -> bool
-Aw.CodeIndex.Core.Planning.IndexJobOutcome.IndexJobOutcome(System.DateTimeOffset EndedAt, bool Failed, bool Deferred, bool LayersPending, int Embedded, string? Commit = null) -> void
-Aw.CodeIndex.Core.Planning.IndexJobOutcome.LayersPending.get -> bool
-const Aw.CodeIndex.Core.Planning.IndexContinuationDecision.GiveUpAfter = 3 -> int
-static Aw.CodeIndex.Core.Planning.IndexContinuationDecision.Decide(string? head, string? recordedHead, System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Planning.IndexJobOutcome!>! newestFirst, System.DateTimeOffset now) -> Aw.CodeIndex.Core.Planning.ContinuationAction
-static readonly Aw.CodeIndex.Core.Planning.IndexContinuationDecision.Continue -> System.TimeSpan
-static readonly Aw.CodeIndex.Core.Planning.IndexContinuationDecision.Hold -> System.TimeSpan
-Aw.CodeIndex.Core.Planning.IndexJobOutcome.<Clone>$() -> Aw.CodeIndex.Core.Planning.IndexJobOutcome!
-Aw.CodeIndex.Core.Planning.IndexJobOutcome.Deconstruct(out System.DateTimeOffset EndedAt, out bool Failed, out bool Deferred, out bool LayersPending, out int Embedded, out string? Commit) -> void
-Aw.CodeIndex.Core.Planning.IndexJobOutcome.Deferred.init -> void
-Aw.CodeIndex.Core.Planning.IndexJobOutcome.Embedded.init -> void
-Aw.CodeIndex.Core.Planning.IndexJobOutcome.EndedAt.init -> void
-Aw.CodeIndex.Core.Planning.IndexJobOutcome.Equals(Aw.CodeIndex.Core.Planning.IndexJobOutcome? other) -> bool
-Aw.CodeIndex.Core.Planning.IndexJobOutcome.Failed.init -> void
-Aw.CodeIndex.Core.Planning.IndexJobOutcome.LayersPending.init -> void
-override Aw.CodeIndex.Core.Planning.IndexJobOutcome.Equals(object? obj) -> bool
-override Aw.CodeIndex.Core.Planning.IndexJobOutcome.GetHashCode() -> int
-override Aw.CodeIndex.Core.Planning.IndexJobOutcome.ToString() -> string!
-static Aw.CodeIndex.Core.Planning.IndexJobOutcome.operator !=(Aw.CodeIndex.Core.Planning.IndexJobOutcome? left, Aw.CodeIndex.Core.Planning.IndexJobOutcome? right) -> bool
-static Aw.CodeIndex.Core.Planning.IndexJobOutcome.operator ==(Aw.CodeIndex.Core.Planning.IndexJobOutcome? left, Aw.CodeIndex.Core.Planning.IndexJobOutcome? right) -> bool
 static Aw.CodeIndex.Core.EmbeddingTarget.Check(Aw.CodeIndex.Core.Model.EmbeddingsSettings! settings) -> Aw.Kernel.Error?
 static Aw.CodeIndex.Core.EmbeddingTarget.IsLoopbackUrl(string! url) -> bool
-Aw.CodeIndex.Core.Planning.IndexJobOutcome.Commit.get -> string?
-Aw.CodeIndex.Core.Planning.IndexJobOutcome.Commit.init -> void
 Aw.CodeIndex.Core.Ports.ICodeIndexPins
 Aw.CodeIndex.Core.Ports.ICodeIndexPins.Check() -> Aw.CodeIndex.Core.Ports.LockState
 Aw.CodeIndex.Core.Ports.LockState
@@ -1437,3 +1406,30 @@ Aw.CodeIndex.Core.Ports.LockState.Unparsable = 1 -> Aw.CodeIndex.Core.Ports.Lock
 Aw.CodeIndex.Core.Graph.GraphBodies
 const Aw.CodeIndex.Core.Graph.GraphBodies.RawSpanMaxCharacters = 64000 -> int
 static Aw.CodeIndex.Core.Graph.GraphBodies.Attach(Aw.CodeIndex.Core.Model.FileRecord! file, string! text, System.Func<string!, string!>! scrub) -> Aw.CodeIndex.Core.Model.FileRecord!
+Aw.CodeIndex.Core.Ports.IRepoIndexLock
+Aw.CodeIndex.Core.Ports.IRepoIndexLock.Take(Aw.CodeIndex.Core.Values.RepoName repo, System.TimeSpan maxWait, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.IAsyncDisposable!>!>
+static readonly Aw.CodeIndex.Core.CodeIndexErrors.IndexBusy -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.CodeIndex.Core.CodeIndexRules.IndexLockWait -> System.TimeSpan
+Aw.CodeIndex.Core.Embedding.EmbeddingsLayer
+Aw.CodeIndex.Core.Embedding.EmbeddingsLayer.EmbeddingsLayer(Aw.CodeIndex.Core.Ports.IEmbedder! embedder, System.TimeProvider! clock) -> void
+Aw.CodeIndex.Core.Embedding.EmbeddingsLayer.Run(Aw.CodeIndex.Core.Ports.IIndexBuild! build, Aw.CodeIndex.Core.Model.EmbeddingsSettings! settings, System.IProgress<string!>! progress, int limit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Model.EmbeddingProgress!>!>
+Aw.CodeIndex.Core.Embedding.EmbeddingsLayer.Record(Aw.CodeIndex.Core.Ports.IIndexBuild! build, Aw.CodeIndex.Core.Model.EmbeddingsSettings! settings, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Model.EmbeddingProgress!>!>
+Aw.CodeIndex.Core.Facade.EmbedReport
+Aw.CodeIndex.Core.Facade.EmbedReport.<Clone>$() -> Aw.CodeIndex.Core.Facade.EmbedReport!
+Aw.CodeIndex.Core.Facade.EmbedReport.Deconstruct(out Aw.CodeIndex.Core.Values.RepoName Repo, out int Embedded, out int Embeddable, out Aw.CodeIndex.Core.Model.LayerState Embeddings) -> void
+Aw.CodeIndex.Core.Facade.EmbedReport.EmbedReport(Aw.CodeIndex.Core.Values.RepoName Repo, int Embedded, int Embeddable, Aw.CodeIndex.Core.Model.LayerState Embeddings) -> void
+Aw.CodeIndex.Core.Facade.EmbedReport.Embeddable.get -> int
+Aw.CodeIndex.Core.Facade.EmbedReport.Embeddable.init -> void
+Aw.CodeIndex.Core.Facade.EmbedReport.Embedded.get -> int
+Aw.CodeIndex.Core.Facade.EmbedReport.Embedded.init -> void
+Aw.CodeIndex.Core.Facade.EmbedReport.Embeddings.get -> Aw.CodeIndex.Core.Model.LayerState
+Aw.CodeIndex.Core.Facade.EmbedReport.Embeddings.init -> void
+Aw.CodeIndex.Core.Facade.EmbedReport.Equals(Aw.CodeIndex.Core.Facade.EmbedReport? other) -> bool
+Aw.CodeIndex.Core.Facade.EmbedReport.Repo.get -> Aw.CodeIndex.Core.Values.RepoName
+Aw.CodeIndex.Core.Facade.EmbedReport.Repo.init -> void
+override Aw.CodeIndex.Core.Facade.EmbedReport.Equals(object? obj) -> bool
+override Aw.CodeIndex.Core.Facade.EmbedReport.GetHashCode() -> int
+override Aw.CodeIndex.Core.Facade.EmbedReport.ToString() -> string!
+static Aw.CodeIndex.Core.Facade.EmbedReport.operator !=(Aw.CodeIndex.Core.Facade.EmbedReport? left, Aw.CodeIndex.Core.Facade.EmbedReport? right) -> bool
+static Aw.CodeIndex.Core.Facade.EmbedReport.operator ==(Aw.CodeIndex.Core.Facade.EmbedReport? left, Aw.CodeIndex.Core.Facade.EmbedReport? right) -> bool
+Aw.CodeIndex.Core.Facade.ICodeIndex.Embed(Aw.CodeIndex.Core.Facade.CodeIndexScope! scope, Aw.CodeIndex.Core.Values.RepoName repo, System.IProgress<string!>! progress, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Facade.EmbedReport!>!>

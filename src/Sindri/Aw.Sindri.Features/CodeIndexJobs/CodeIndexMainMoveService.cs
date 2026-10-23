@@ -1,6 +1,5 @@
 using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Model;
-using Aw.CodeIndex.Core.Planning;
 using Aw.CodeIndex.Core.Ports;
 using Aw.CodeIndex.Core.Values;
 using Aw.Kernel;
@@ -19,8 +18,8 @@ namespace Aw.Sindri.Features.CodeIndexJobs;
 /// <summary>
 /// The 'code-index-main-move' background service (code index spec §6.1): when a registered repo's checkout moved along its default branch past the commit its index describes, it starts a 'BuildCodeIndex'
 /// job of key 'index:&lt;repo&gt;' as itself, through the command chain. Each repo is decided on its own by <see cref="MainMoveDecision"/> (a running build first, then nothing when the index is at the head, then the
-/// backoff after failures in a row). Before that, <see cref="IndexContinuationDecision"/> (spec §6.3) holds a repo whose last build was deferred or embedded nothing, and withholds the stored head so a repo with embeddings
-/// still pending (or a layer that became buildable, found by the facade's probe) continues like a moved head. A repo on a feature branch starts nothing and is named in the summary.
+/// backoff after failures in a row). A build deferred because the heavy slot was busy holds the repo's next start for ten minutes, and a layer that became buildable
+/// (found by the facade's probe) starts a layers-only build at the same commit. Embeddings are not this service's: the 'code-index-embed' service finishes them (spec §6.3). A repo on a feature branch starts nothing and is named in the summary.
 /// Three failed builds in a row for a repo that still needs one fail the run (needs-you 'failure:service:code-index-main-move'). A tick reads the heads, the stored index heads and the jobs once.
 /// </summary>
 /// <param name="scopes">The profile's scope and the caller.</param>
@@ -33,6 +32,9 @@ namespace Aw.Sindri.Features.CodeIndexJobs;
 internal sealed partial class CodeIndexMainMoveService(CodeIndexJobScopes scopes, ICodeIndex index, IRepoHeads heads, IJobViews jobs, IService<BuildCodeIndexRequest, JobStartedResponse> start, TimeProvider clock, ILogger<CodeIndexMainMoveService> logger) : IScheduledService
 {
     private const int RecentRuns = 8;
+
+    // the wait after a build that was deferred, and between layers-only builds
+    private static readonly TimeSpan _hold = TimeSpan.FromMinutes(10);
 
     // graphify, the sandbox or the model pin are missing: setup can fix them (spec §6.3)
     private static readonly HashSet<string> _fixableCodes = new(StringComparer.Ordinal) { "SND-CODEIDX-007", "SND-CODEIDX-008", "SND-CODEIDX-009" };
@@ -109,7 +111,7 @@ internal sealed partial class CodeIndexMainMoveService(CodeIndexJobScopes scopes
         l.Layer is LayerName.Graph or LayerName.Embeddings && l.State == LayerState.Unavailable && l.Code is not null && _fixableCodes.Contains(l.Code));
 
     private static bool Settled(IReadOnlyList<JobRow> builds, string repo, DateTimeOffset now) =>
-        !builds.Any(j => IndexJobs.IsOf(j, repo) && (j.State == JobState.Running || (j.EndedAt is { } ended && now < ended + IndexContinuationDecision.Hold)));
+        !builds.Any(j => IndexJobs.IsOf(j, repo) && (j.State == JobState.Running || (j.EndedAt is { } ended && now < ended + _hold)));
 
     private async ValueTask<Result<RepoStep>> Step(IndexRepoHead head, IReadOnlyList<RecordedHead> recorded, IReadOnlyList<JobRow> builds, HashSet<string> buildable, CancellationToken cancellationToken)
     {
@@ -141,20 +143,19 @@ internal sealed partial class CodeIndexMainMoveService(CodeIndexJobScopes scopes
         var now = clock.GetUtcNow();
         var onDefault = new Dictionary<string, string>(StringComparer.Ordinal) { [repo] = commit.Value };
         var attempts = finished.Select(static j => new SyncAttempt(j.State == JobState.Failed, j.EndedAt ?? default)).ToList();
-        var next = IndexContinuationDecision.Decide(commit.Value, stored?.Value, [.. finished.Select(IndexJobs.OutcomeFor)], now);
-        var action = next == ContinuationAction.Suppress
+        var action = finished.Count > 0 && IndexJobs.Deferred(finished[0]) && now < finished[0].EndedAt + _hold
             ? MainMoveAction.BackoffNotDue
-            : MainMoveDecision.Decide(onDefault, Recorded(repo, stored, withheld: next == ContinuationAction.WithholdRecorded || Recovers(layerBuildable, stored, commit, finished, now)), mine.Exists(static j => j.State == JobState.Running), attempts, now);
+            : MainMoveDecision.Decide(onDefault, Recorded(repo, stored, withheld: Recovers(layerBuildable, stored, commit, finished, now)), mine.Exists(static j => j.State == JobState.Running), attempts, now);
         return (action, action != MainMoveAction.Nothing && MainMoveDecision.FailedInARow(attempts) >= IndexOutlookRules.FailuresToBroken);
     }
 
-    // The stored head as the shared decision reads it: none when the repo continues, so the same function starts the continuation.
+    // The stored head as the shared decision reads it: none when a layers-only build is due, so the same function starts it.
     private static Dictionary<string, string>? Recorded(string repo, CommitSha? stored, bool withheld) =>
         stored is { } sha && !withheld ? new Dictionary<string, string>(StringComparer.Ordinal) { [repo] = sha.Value } : null;
 
     // A layer that was unavailable and can be built now starts a layers-only build at the same commit, at most every ten minutes (the newest job decides).
     private static bool Recovers(bool layerBuildable, CommitSha? stored, CommitSha commit, List<JobRow> finished, DateTimeOffset now) =>
-        layerBuildable && stored == commit && (finished.Count == 0 || now >= finished[0].EndedAt + IndexContinuationDecision.Hold);
+        layerBuildable && stored == commit && (finished.Count == 0 || now >= finished[0].EndedAt + _hold);
 
     // 409 with 'runningJob' is the same build running: nothing to say. Any other 409 is logged, and not retried this tick.
     private RepoStep Conflict(Error error)

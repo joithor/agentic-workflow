@@ -6,7 +6,7 @@ internal static class ShippedDescriptorHashes
     public static IReadOnlyDictionary<string, string> Pinned { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         ["effect.claim.ref"] = "sha256:2a44426d862b3721014969dfcc03a7851f56551f2b9bec9f340e500353a9abd3",
-        ["effect.line.report"] = "sha256:7e5951377422c5c199863a5b9669d8ba5895100a52a87f876bf1fd56d174d63b",
+        ["effect.line.report"] = "sha256:8037e9f18af032ee865ecd62085229b4ca4b96d2dfc8e9cb75a7cfdda84de841",
         ["effect.notify.desk"] = "sha256:c3cb05f7d73c6c539b05acb87c15185c4a9b81d12fb27626b59f12b94e157b07",
         ["evidence.check"] = "sha256:5e8052c5aaf078f6a487a5822fa63d9821a011fa480205fe5bbc8e9f07092d62",
         ["gate.budget.available"] = "sha256:2e11428fb8765eb8e43f62db6dce8dd654cddd1b6685e6c61080037174408135",

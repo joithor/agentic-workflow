@@ -7,9 +7,14 @@
 | Project | Holds |
 |---|---|
 | `Aw.CodeIndex.Core` | The facade `ICodeIndex`, the records, the ports (`IRepoSnapshot`, `IIndexStore`, `ISymbolParser`, `IGraphRunner`, `IEmbedder`, `IRepoHeads`, `IHeavyJobLock`, `IBodyScrubber`), `CodeIndexSettings`, `CodeIndexErrors`, `CodeIndexRules` |
-| `Aw.CodeIndex.Features` | The `BuildCodeIndex` slice (CI-6) |
+| `Aw.CodeIndex.Features` | The `BuildCodeIndex` slice (CI-6) and the `EmbedCodeIndex` slice (no heavy slot; `ICodeIndex.Embed`) |
 | `Aw.CodeIndex.Infrastructure` | The adapters (CI-2 to CI-8) |
 | `Aw.CodeIndex.Testing` | The fakes, the temp-repo builder (`GitRepoBuilder`) and the contract bases |
+
+## Sindri services and jobs
+
+- `code-index-main-move` (built-in, every 1 minute) starts the `BuildCodeIndex` job (key `index:<repo>`, heavy slot) when a repo's trunk moved.
+- `code-index-embed` (built-in, every 1 minute) starts the `EmbedCodeIndex` job (key `embed:<repo>`, **no heavy slot**) for each repo whose embeddings layer is `pending`, and again after each job until the layer is `ok`, so a repo is fully embedded without a HEAD move. `EmbedDecision` (`Aw.Sindri.Core/Scheduling`) decides per repo: a running job, then a layer that is not pending, then the wait after the newest ended job (failures in a row: 5, 10, 20, 40, 60 minutes; a busy or unbuilt index, `SND-CODEIDX-016` or `013`: 2 minutes, not a failure; a pending layer with no more vectors than the job before: 10 minutes).
 
 ## Errors
 
