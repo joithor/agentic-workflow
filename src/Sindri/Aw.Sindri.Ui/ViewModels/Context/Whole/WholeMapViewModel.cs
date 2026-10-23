@@ -208,7 +208,7 @@ internal sealed partial class WholeMapViewModel : ObservableObject
 
     private void Changed()
     {
-        foreach (var name in (string[])[nameof(IsReady), nameof(IsLoading), nameof(IsFailed), nameof(Head), nameof(ByAreaNote), nameof(HasNote), nameof(SizeText), nameof(ByArea), nameof(Areas), nameof(IsAreaOpen), nameof(AreaTitle), nameof(IsZoomed), nameof(CardText), nameof(MoreTouchedText), nameof(HasMoreTouched)])
+        foreach (var name in (string[])[nameof(IsReady), nameof(IsLoading), nameof(IsFailed), nameof(Head), nameof(ByAreaNote), nameof(HasNote), nameof(SizeText), nameof(ByArea), nameof(Areas), nameof(Chips), nameof(IsAreaOpen), nameof(AreaTitle), nameof(IsZoomed), nameof(CardText), nameof(MoreTouchedText), nameof(HasMoreTouched)])
         {
             OnChanged(name);
         }

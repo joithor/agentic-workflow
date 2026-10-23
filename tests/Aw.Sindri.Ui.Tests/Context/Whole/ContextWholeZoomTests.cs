@@ -128,7 +128,7 @@ public sealed class ContextWholeZoomTests
     }
 
     [Fact]
-    public async Task By_feature_the_answers_nodes_are_located_and_only_that_feature_stays_on_the_map()
+    public async Task By_feature_the_answers_nodes_are_located_and_their_feature_is_opened_in_full_with_the_other_tiles_staying_tiles()
     {
         var api = ByArea();
         var page = Page(api);
@@ -140,9 +140,7 @@ public sealed class ContextWholeZoomTests
         Assert.Equal(ContextAnswers.OpenArea, api.WholeMapAsked.Single(q => q.Area is not null).Area);
         Assert.Equal(("areas", true), (api.WholeMapAsked.Single(q => q.Locate.Count > 0).Detail, page.IsZoomedIn));
         Assert.NotEmpty(page.Whole.Geometry!.Nodes);
-        Assert.Empty(page.Whole.Geometry.Tiles);
-        Assert.Equal([ContextAnswers.OpenArea], [.. page.Whole.Areas.Select(a => a.Key)]);
-        Assert.All(page.Whole.Geometry.Nodes, n => Assert.Contains(n.Key, page.Whole.HitKeys));
+        Assert.NotEmpty(page.Whole.Geometry.Tiles);
         _ = page.BackToWholeMap();
         Assert.Equal((true, 0), (page.Whole.ByArea, page.Whole.Geometry!.Nodes.Count));
     }
@@ -158,9 +156,42 @@ public sealed class ContextWholeZoomTests
         await page.Submit(Token);
 
         Assert.Equal((string.Empty, true), (page.Problem, page.IsZoomedIn));
-        Assert.All(page.Whole.Geometry!.Nodes, n => Assert.Contains(n.Key, page.Whole.HitKeys));
         _ = page.BackToWholeMap();
         Assert.Equal((true, 0), (page.Whole.ByArea, page.Whole.Geometry!.Nodes.Count));
+    }
+
+    [Fact]
+    public async Task A_query_filters_the_chips_to_the_features_of_its_answer_while_the_rest_of_the_map_stays_drawn_and_Whole_map_restores_them()
+    {
+        var page = Page(new FakeSindriApi());
+        await page.Opened(Token);
+        var (nodes, chips) = (page.Whole.Geometry!.Nodes.Count, page.Whole.Chips.Count);
+        page.AnchorText = Anchor;
+
+        await page.Submit(Token);
+
+        var geometry = page.Whole.Geometry!;
+        var answerAreas = geometry.Nodes.Where(n => page.Whole.HitKeys.Contains(n.Key)).Select(n => geometry.Order[n.AreaIndex]).ToHashSet(StringComparer.Ordinal);
+        Assert.Equal(nodes, geometry.Nodes.Count);
+        Assert.Contains(geometry.Nodes, n => !page.Whole.HitKeys.Contains(n.Key));
+        Assert.Equal(answerAreas, page.Whole.Chips.Select(c => c.Key).ToHashSet(StringComparer.Ordinal));
+        _ = page.BackToWholeMap();
+        Assert.Equal(chips, page.Whole.Chips.Count);
+    }
+
+    [Fact]
+    public async Task By_feature_the_chips_are_the_features_the_answer_is_in_and_the_other_tiles_stay_drawn()
+    {
+        var page = Page(ByArea());
+        await page.Opened(Token);
+        var tiles = page.Whole.Areas.Count;
+        page.AnchorText = Anchor;
+
+        await page.Submit(Token);
+
+        Assert.Equal([ContextAnswers.OpenArea], [.. page.Whole.Chips.Select(c => c.Key)]);
+        Assert.Equal(tiles, page.Whole.Areas.Count);
+        Assert.NotEmpty(page.Whole.Geometry!.Tiles);
     }
 
     [Fact]
@@ -192,25 +223,22 @@ public sealed class ContextWholeZoomTests
     };
 
     [Fact]
-    public async Task A_node_outside_the_answer_comes_back_with_the_whole_map_and_a_click_makes_it_the_new_starting_point()
+    public async Task A_click_on_a_dimmed_node_makes_it_the_new_starting_point_and_the_camera_goes_to_its_answer()
     {
         var asked = new List<string>();
         var page = Page(Recording(asked));
         await page.Opened(Token);
-        var all = page.Whole.Geometry!.Nodes.Select(n => n.Key).ToHashSet(StringComparer.Ordinal);
         page.AnchorText = Anchor;
         await page.Submit(Token);
-        var outside = all.First(key => !page.Whole.HitKeys.Contains(key));
-        Assert.DoesNotContain(page.Whole.Geometry!.Nodes, n => n.Key == outside);
-        Assert.True(page.BackToWholeMap());
+        var dimmed = page.Whole.Geometry!.Nodes.First(n => !page.Whole.HitKeys.Contains(n.Key)).Key;
         var moved = new List<WholeRect>();
         page.Whole.ZoomRequested += (_, e) => moved.Add(e.Value);
         asked.Clear();
 
-        await page.ChooseWholeNode(outside, Token);
+        await page.ChooseWholeNode(dimmed, Token);
 
-        Assert.Equal([outside], asked);
-        Assert.Equal(outside, page.AnchorText);
+        Assert.Equal([dimmed], asked);
+        Assert.Equal(dimmed, page.AnchorText);
         _ = Assert.Single(moved);
         Assert.True(page.IsZoomedIn);
     }

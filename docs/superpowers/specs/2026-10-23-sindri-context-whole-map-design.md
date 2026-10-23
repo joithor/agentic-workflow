@@ -182,6 +182,8 @@ page must have. The ui lane writes the visual slice spec (in its F3 spec, beside
 | Refusal | 003, 037 and friends from the query | the existing banner with its suggestions, over the whole map instead of an empty stage |
 
 Selecting a node, the inspector, the Files view, the pinned/live switch and the "Why this matters" card keep their F3 behaviour.
+The chip row above the map is one line with a "+N more" chip (N is how many did not fit; a click shows the rest), whichever state the page is in, so the graph is never pushed out of the stage; a search filters it to the answer's chips (owner, 2026-10-23, q84).
+
 The card keeps the explain spec's rule: it shows for one starting point only, so on the whole map with nothing chosen it reads
 "Pick a starting point to see why it matters."
 

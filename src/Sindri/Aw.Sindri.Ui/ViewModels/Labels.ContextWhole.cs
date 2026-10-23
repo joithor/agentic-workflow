@@ -35,6 +35,11 @@ internal static partial class Labels
     /// <summary>The line when what was asked is not on the whole map.</summary>
     internal const string ContextWholeNoMatch = "None of those items are on the map.";
 
+    /// <summary>The last chip of the one-line feature row: how many chips did not fit.</summary>
+    /// <param name="hidden">How many chips are hidden.</param>
+    /// <returns>"+12 more".</returns>
+    internal static string ContextWholeMoreChips(int hidden) => string.Create(CultureInfo.InvariantCulture, $"+{hidden} more");
+
     /// <summary>The chip when more features were touched than were opened.</summary>
     /// <param name="more">How many features were not opened.</param>
     /// <returns>"2 more features touched".</returns>

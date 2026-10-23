@@ -17,15 +17,15 @@
       <TextBlock x:Name="WholeNote" Classes="body" Text="{Binding ByAreaNote}" IsVisible="{Binding HasNote}" TextWrapping="Wrap" AutomationProperties.Name="{Binding ByAreaNote}" />
     </StackPanel>
 
-    <!-- Bounded so a repository of features cannot push the graph out of the fixed stage. The list scrolls inside itself. -->
-    <ScrollViewer x:Name="WholeAreasScroll" Grid.Row="1" MaxHeight="112" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" IsTabStop="False">
-      <ItemsControl x:Name="WholeAreas" ItemsSource="{Binding Areas}" AutomationProperties.Name="{Binding AreasName}">
+    <!-- One line, always: the chips that fit, then "+N more" (a popover with the rest), so the graph under the row is never pushed out of the stage. -->
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+      <ItemsControl x:Name="WholeAreas" ItemsSource="{Binding Chips}" AutomationProperties.Name="{Binding AreasName}" ClipToBounds="True">
         <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+          <ItemsPanelTemplate><ctl:OneLinePanel /></ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:WholeAreaTileViewModel">
-            <Button Classes="area-chip" Click="OnAreaChip" Margin="0,0,6,6" Padding="8,2" AutomationProperties.Name="{Binding Name}">
+            <Button Classes="area-chip" Click="OnAreaChip" Padding="8,2" AutomationProperties.Name="{Binding Name}">
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <Border Width="10" Height="10" CornerRadius="5" VerticalAlignment="Center" Background="{Binding Colour, Converter={x:Static wv:AreaBrush.Instance}}" />
                 <TextBlock Classes="caption" Text="{Binding Label}" AutomationProperties.AccessibilityView="Raw" />
@@ -35,7 +35,30 @@
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
-    </ScrollViewer>
+      <Button x:Name="WholeMoreChips" Grid.Column="1" Classes="area-chip" Padding="8,2" IsVisible="False" Click="OnMoreChips" />
+      <Popup x:Name="WholeMoreChipsPopup" PlacementTarget="{Binding #WholeMoreChips}" Placement="BottomEdgeAlignedRight" IsLightDismissEnabled="True">
+        <Border Background="{DynamicResource Brush.Surface1}" BorderBrush="{DynamicResource Brush.Hairline}" BorderThickness="1" CornerRadius="{StaticResource Radius.SM}" Padding="8" Width="380">
+          <ScrollViewer MaxHeight="280" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" IsTabStop="False">
+            <ItemsControl x:Name="WholeHiddenChips" AutomationProperties.Name="{Binding AreasName}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:WholeAreaTileViewModel">
+                  <Button Classes="area-chip" Click="OnAreaChip" Margin="0,0,6,6" Padding="8,2" AutomationProperties.Name="{Binding Name}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <Border Width="10" Height="10" CornerRadius="5" VerticalAlignment="Center" Background="{Binding Colour, Converter={x:Static wv:AreaBrush.Instance}}" />
+                      <TextBlock Classes="caption" Text="{Binding Label}" AutomationProperties.AccessibilityView="Raw" />
+                      <TextBlock Classes="caption subtle" Text="{Binding MembersText}" AutomationProperties.AccessibilityView="Raw" />
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Border>
+      </Popup>
+    </Grid>
 
     <Grid Grid.Row="2">
       <ctl:ZoomBorder x:Name="WholeCanvas" AutomationProperties.Name="{Binding CanvasName}">

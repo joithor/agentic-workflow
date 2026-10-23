@@ -201,7 +201,25 @@ public sealed class WholeMapViewModelTests
     }
 
     [Fact]
-    public void Zooming_into_features_keeps_the_answers_nodes_counts_features_left_unopened_and_restores_the_overview()
+    public void A_zoom_filters_the_chips_to_the_answers_features_keeps_every_node_drawn_and_Unzoom_restores_the_chips()
+    {
+        var map = new WholeMapViewModel(() => _utc);
+        var answer = WholeMapLayoutTests.Draft("nodes-small");
+        map.Show(answer);
+        var (nodes, chips) = (map.Geometry!.Nodes.Count, map.Chips.Select(c => c.Key).ToList());
+        var hit = answer.Nodes!.First(n => n.Area == "feature:tabs.tab-groups").Key;
+
+        Assert.True(map.Zoom([hit]));
+
+        Assert.Equal(["feature:tabs.tab-groups"], map.Chips.Select(c => c.Key).ToList());
+        Assert.Equal(nodes, map.Geometry.Nodes.Count);
+        Assert.Equal([hit], [.. map.HitKeys]);
+        map.Unzoom();
+        Assert.Equal(chips, [.. map.Chips.Select(c => c.Key)]);
+    }
+
+    [Fact]
+    public void Zooming_into_features_opens_them_beside_the_tiles_that_stay_and_counts_the_ones_left_out()
     {
         var map = new WholeMapViewModel(() => _utc);
         var overview = WholeMapLayoutTests.Draft("areas-over-budget");
@@ -212,8 +230,8 @@ public sealed class WholeMapViewModelTests
         Assert.True(map.ZoomIntoAreas(overview, [opened], [key], notOpened: 2));
 
         Assert.Equal(("2 more features touched", true), (map.MoreTouchedText, map.HasMoreTouched));
-        Assert.Equal([key], [.. map.Geometry!.Nodes.Select(n => n.Key)]);
-        Assert.Empty(map.Geometry.Tiles);
+        Assert.Equal(opened.Nodes.Count, map.Geometry!.Nodes.Count);
+        Assert.Equal(overview.Areas.Count - 1, map.Geometry.Tiles.Count);
         map.Unzoom();
         Assert.Equal((true, 0, string.Empty), (map.Geometry!.ByArea, map.Geometry.Nodes.Count, map.MoreTouchedText));
     }
