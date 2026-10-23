@@ -157,7 +157,7 @@ internal sealed partial class RecipeWorkflow
         var ended = await watching.ConfigureAwait(true);
         var closed = await Close(running, measure: true).ConfigureAwait(true);
         var reason = ended.EndedAs == AgentSessionEnd.Lost ? "lost" : "exit";
-        return await Decided(applied, open, AgentFailed(open, step, reason, closed.Tokens), reportId: null, context).ConfigureAwait(true);
+        return await Decided(applied, open, AgentFailed(open, step, reason, closed.Tokens, ended.Detail), reportId: null, context).ConfigureAwait(true);
     }
 
     // The session's own report: closes the run (usage, diff signal, stop), then decides it like a desk report and answers the Update that carried it.
