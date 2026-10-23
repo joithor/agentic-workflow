@@ -28,7 +28,7 @@ internal sealed partial class InstanceRowViewModel : ObservableObject
         Stages = [.. row.States.Select(s =>
         {
             var current = string.Equals(s.State, row.State, StringComparison.Ordinal);
-            return new StageCellViewModel(s, current, blocked && current);
+            return new StageCellViewModel(s, current, blocked && current, names, row.Recipe.Id);
         })];
         if (InstanceRules.IsChildPointer(row.Answer))
         {
