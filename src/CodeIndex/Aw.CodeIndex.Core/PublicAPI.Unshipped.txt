@@ -990,7 +990,7 @@ Aw.CodeIndex.Core.Values.SymbolRef.SymbolRef() -> void
 Aw.CodeIndex.Core.Values.SymbolRef.ToString(System.IFormatProvider? provider) -> string!
 Aw.CodeIndex.Core.Values.SymbolRef.Value.get -> string!
 const Aw.CodeIndex.Core.CodeIndexRules.EmbedBatchSize = 32 -> int
-const Aw.CodeIndex.Core.CodeIndexRules.EmbedTextMaxCharacters = 2000 -> int
+const Aw.CodeIndex.Core.CodeIndexRules.EmbedTextMaxCharacters = 6000 -> int
 const Aw.CodeIndex.Core.CodeIndexRules.FileBatchSize = 200 -> int
 const Aw.CodeIndex.Core.CodeIndexRules.MaxAmbiguousEdges = 64 -> int
 const Aw.CodeIndex.Core.CodeIndexRules.MaxClones = 1000 -> int
@@ -1005,7 +1005,7 @@ const Aw.CodeIndex.Core.CodeIndexRules.MinHashBands = 16 -> int
 const Aw.CodeIndex.Core.CodeIndexRules.MinHashLength = 64 -> int
 const Aw.CodeIndex.Core.CodeIndexRules.NearCloneThreshold = 0.8 -> double
 const Aw.CodeIndex.Core.CodeIndexRules.SchemaVersion = 1 -> int
-const Aw.CodeIndex.Core.CodeIndexRules.SignatureMaxCharacters = 400 -> int
+const Aw.CodeIndex.Core.CodeIndexRules.SignatureMaxCharacters = 2000 -> int
 const Aw.CodeIndex.Core.CodeIndexSettings.DefaultEmbeddingsUrl = "http://127.0.0.1:11434" -> string!
 override Aw.CodeIndex.Core.CodeIndexSettings.Equals(object? obj) -> bool
 override Aw.CodeIndex.Core.CodeIndexSettings.GetHashCode() -> int

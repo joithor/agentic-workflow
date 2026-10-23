@@ -13,7 +13,7 @@ namespace Aw.CodeIndex.Infrastructure.Graph;
 /// </summary>
 internal static class GraphJsonParser
 {
-    private const int NameLimit = 200;
+    private const int NameLimit = 512;
 
     /// <summary>Parses one graph.json.</summary>
     /// <param name="json">The file's bytes (already under the size cap).</param>

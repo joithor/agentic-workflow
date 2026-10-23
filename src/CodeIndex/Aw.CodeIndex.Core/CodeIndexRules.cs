@@ -31,10 +31,10 @@ public static class CodeIndexRules
     public const int FileBatchSize = 200;
 
     /// <summary>A stored signature is cut at this many characters.</summary>
-    public const int SignatureMaxCharacters = 400;
+    public const int SignatureMaxCharacters = 2_000;
 
     /// <summary>An embedded text (name, signature and body) is cut at this many characters.</summary>
-    public const int EmbedTextMaxCharacters = 2_000;
+    public const int EmbedTextMaxCharacters = 6_000;
 
     /// <summary>Texts per embedding request.</summary>
     public const int EmbedBatchSize = 32;
