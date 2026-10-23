@@ -65,8 +65,32 @@ internal sealed class CodeIndexScopes(IApprovedProfile approvals, ICallerContext
 
     private static Result<CodeIndexRepo> Repo(SindriProfile profile, RepoEntry entry, RepoName name)
     {
-        var settings = CodeIndexSettings.Create(new CodeIndexSettingsInput(DenyPaths: RepoDenyGlobs.For(profile, entry)));
+        var settings = CodeIndexSettings.Create(Input(profile, entry));
         return settings.IsError ? settings.Error : new CodeIndexRepo(name, entry.Path, settings.Value);
+    }
+
+    /// <summary>The whole 'index:' section a repo sees: the profile's list keys joined with the repo's, each scalar the repo names replacing the profile's (spec §13).</summary>
+    private static CodeIndexSettingsInput Input(SindriProfile profile, RepoEntry entry)
+    {
+        var top = profile.Index;
+        var own = entry.Index;
+        return new CodeIndexSettingsInput(
+            DenyPaths: RepoDenyGlobs.For(profile, entry),
+            UtilityGlobs: Join(top?.UtilityGlobs, own?.UtilityGlobs),
+            MaxFileKB: own?.MaxFileKB ?? top?.MaxFileKB,
+            MaxTotalMB: own?.MaxTotalMB ?? top?.MaxTotalMB,
+            EmbeddingsEnabled: own?.Embeddings?.Enabled ?? top?.Embeddings?.Enabled,
+            EmbeddingsUrl: own?.Embeddings?.Url ?? top?.Embeddings?.Url,
+            EmbeddingsModel: own?.Embeddings?.Model ?? top?.Embeddings?.Model,
+            GraphEnabled: own?.Graph?.Enabled ?? top?.Graph?.Enabled,
+            GraphMaxMB: own?.Graph?.MaxMB ?? top?.Graph?.MaxMB,
+            GraphMaxNodes: own?.Graph?.MaxNodes ?? top?.Graph?.MaxNodes);
+    }
+
+    private static IReadOnlyList<string>? Join(IReadOnlyList<string>? first, IReadOnlyList<string>? second)
+    {
+        string[] all = [.. first ?? [], .. second ?? []];
+        return all.Length == 0 ? null : all;
     }
 
     private static CallerKind Kind(CallerContext? caller) => caller?.Class switch
