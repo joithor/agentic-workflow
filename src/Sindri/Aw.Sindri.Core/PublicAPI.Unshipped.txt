@@ -3647,17 +3647,17 @@ Aw.Sindri.Core.Workflow.Engine.RunToken.Number.get -> int
 Aw.Sindri.Core.Workflow.Engine.RunToken.RunToken() -> void
 Aw.Sindri.Core.Workflow.Engine.RunToken.ToString(System.IFormatProvider? provider) -> string!
 Aw.Sindri.Core.Workflow.Engine.RunToken.Value.get -> string!
-Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand
-Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand!
-Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.Action.get -> string!
-Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.Action.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.AllowedCommand(string! Action, string! Cli) -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.Cli.get -> string!
-Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.Cli.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.Deconstruct(out string! Action, out string! Cli) -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand? other) -> bool
-Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.Verb.get -> string?
-Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.Verb.init -> void
+Aw.Sindri.Core.Workflow.Views.AllowedCommand
+Aw.Sindri.Core.Workflow.Views.AllowedCommand.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.AllowedCommand!
+Aw.Sindri.Core.Workflow.Views.AllowedCommand.Action.get -> string!
+Aw.Sindri.Core.Workflow.Views.AllowedCommand.Action.init -> void
+Aw.Sindri.Core.Workflow.Views.AllowedCommand.AllowedCommand(string! Action, string! Cli) -> void
+Aw.Sindri.Core.Workflow.Views.AllowedCommand.Cli.get -> string!
+Aw.Sindri.Core.Workflow.Views.AllowedCommand.Cli.init -> void
+Aw.Sindri.Core.Workflow.Views.AllowedCommand.Deconstruct(out string! Action, out string! Cli) -> void
+Aw.Sindri.Core.Workflow.Views.AllowedCommand.Equals(Aw.Sindri.Core.Workflow.Views.AllowedCommand? other) -> bool
+Aw.Sindri.Core.Workflow.Views.AllowedCommand.Verb.get -> string?
+Aw.Sindri.Core.Workflow.Views.AllowedCommand.Verb.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.ApprovedRecipe
 Aw.Sindri.Core.Workflow.Engine.Runtime.ApprovedRecipe.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.ApprovedRecipe!
 Aw.Sindri.Core.Workflow.Engine.Runtime.ApprovedRecipe.ApprovedRecipe(Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeVersion! Version, Aw.Sindri.Core.Workflow.Recipes.Recipe! Recipe) -> void
@@ -3845,7 +3845,7 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.AgentRun.get -> Aw.Sindri.Co
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.AgentRun.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Address.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Address.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.AllowedCommands.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand!>!
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.AllowedCommands.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.AllowedCommand!>!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.AllowedCommands.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Answer.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Answer.init -> void
@@ -3861,7 +3861,7 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.ChildPark.get -> Aw.Sindri.C
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.ChildPark.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Children.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Children.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeVersion! Recipe, out string! State, out string? Detail, out System.DateTimeOffset Since, out string! Next, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand!>! AllowedCommands, out Aw.Sindri.Core.Workflow.Engine.Runtime.OpenQuestion? Question, out Aw.Sindri.Core.Workflow.Engine.Runtime.DeskTask? Task, out Aw.Sindri.Core.Workflow.Engine.RunToken? Run, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>! Children, out Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeVersion! Recipe, out string! State, out string? Detail, out System.DateTimeOffset Since, out string! Next, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.AllowedCommand!>! AllowedCommands, out Aw.Sindri.Core.Workflow.Engine.Runtime.OpenQuestion? Question, out Aw.Sindri.Core.Workflow.Engine.Runtime.DeskTask? Task, out Aw.Sindri.Core.Workflow.Engine.RunToken? Run, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>! Children, out Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Desk.get -> Aw.Sindri.Core.Workflow.Views.DeskForm?
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Desk.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Detail.get -> string?
@@ -3881,7 +3881,7 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Id.get -> Aw.Sindri.Core.Wor
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Id.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Inputs.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.InputPresence!>!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Inputs.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.InstanceView(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeVersion! Recipe, string! State, string? Detail, System.DateTimeOffset Since, string! Next, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand!>! AllowedCommands, Aw.Sindri.Core.Workflow.Engine.Runtime.OpenQuestion? Question, Aw.Sindri.Core.Workflow.Engine.Runtime.DeskTask? Task, Aw.Sindri.Core.Workflow.Engine.RunToken? Run, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>! Children, Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.InstanceView(Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeVersion! Recipe, string! State, string? Detail, System.DateTimeOffset Since, string! Next, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.AllowedCommand!>! AllowedCommands, Aw.Sindri.Core.Workflow.Engine.Runtime.OpenQuestion? Question, Aw.Sindri.Core.Workflow.Engine.Runtime.DeskTask? Task, Aw.Sindri.Core.Workflow.Engine.RunToken? Run, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>! Children, Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.ItemId.get -> Aw.Sindri.Core.Workflow.Engine.ItemKey?
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.ItemId.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Name.get -> string?
@@ -6618,9 +6618,9 @@ override Aw.Sindri.Core.Workflow.Engine.RefusedEffect.ToString() -> string!
 override Aw.Sindri.Core.Workflow.Engine.RunToken.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Engine.RunToken.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Engine.RunToken.ToString() -> string!
-override Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.GetHashCode() -> int
-override Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Views.AllowedCommand.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.AllowedCommand.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.AllowedCommand.ToString() -> string!
 override Aw.Sindri.Core.Workflow.Engine.Runtime.ApprovedRecipe.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Engine.Runtime.ApprovedRecipe.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Engine.Runtime.ApprovedRecipe.ToString() -> string!
@@ -7893,8 +7893,8 @@ static Aw.Sindri.Core.Workflow.Engine.RunToken.TryFrom(string? value, out Aw.Sin
 static Aw.Sindri.Core.Workflow.Engine.RunToken.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Workflow.Engine.RunToken result) -> bool
 static Aw.Sindri.Core.Workflow.Engine.RunToken.operator !=(Aw.Sindri.Core.Workflow.Engine.RunToken left, Aw.Sindri.Core.Workflow.Engine.RunToken right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.RunToken.operator ==(Aw.Sindri.Core.Workflow.Engine.RunToken left, Aw.Sindri.Core.Workflow.Engine.RunToken right) -> bool
-static Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand? right) -> bool
-static Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.AllowedCommand.operator !=(Aw.Sindri.Core.Workflow.Views.AllowedCommand? left, Aw.Sindri.Core.Workflow.Views.AllowedCommand? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.AllowedCommand.operator ==(Aw.Sindri.Core.Workflow.Views.AllowedCommand? left, Aw.Sindri.Core.Workflow.Views.AllowedCommand? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.ApprovedRecipe.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.ApprovedRecipe? left, Aw.Sindri.Core.Workflow.Engine.Runtime.ApprovedRecipe? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.ApprovedRecipe.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.ApprovedRecipe? left, Aw.Sindri.Core.Workflow.Engine.Runtime.ApprovedRecipe? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AttemptState? right) -> bool
@@ -7937,7 +7937,7 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.operator !=(Aw.Sindri
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext? right) -> bool
-static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViews.Allowed(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! recipe, Aw.Sindri.Core.Workflow.Engine.Runtime.DeskTask? task, string! grantTokens) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand!>!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViews.Allowed(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! recipe, Aw.Sindri.Core.Workflow.Engine.Runtime.DeskTask? task, string! grantTokens) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.AllowedCommand!>!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViews.Detail(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view, Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext! context) -> Aw.Sindri.Core.Workflow.Views.InstanceDetail!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViews.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Engine.Runtime.InterpretedRecipe! recipe, System.DateTimeOffset since, System.DateTimeOffset? timeoutAt, Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext! context) -> Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViews.Starting(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeVersion! recipe, System.DateTimeOffset since, Aw.Sindri.Core.Workflow.Engine.ItemKey item, Aw.Sindri.Core.Workflow.Views.SubjectRef? subject) -> Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!
@@ -11079,11 +11079,13 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.operator !=(Aw.Sin
 static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget? right) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState!
-Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.AgentSessionState(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd? EndedAs = null, int? ExitCode = null) -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd? EndedAs, out int? ExitCode) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.AgentSessionState(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd? EndedAs = null, int? ExitCode = null, string? Detail = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd? EndedAs, out int? ExitCode, out string? Detail) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.EndedAs.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd?
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.EndedAs.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.Detail.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.Detail.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.ExitCode.get -> int?
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.ExitCode.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.IsLive.get -> bool
@@ -17587,6 +17589,8 @@ static Aw.Sindri.Core.Scheduling.EmbedDecision.NoProgressWait.get -> System.Time
 static Aw.Sindri.Core.Scheduling.EmbedDecision.TryLaterWait.get -> System.TimeSpan
 Aw.Sindri.Core.Forge.PullView.BaseSha.get -> string?
 Aw.Sindri.Core.Forge.PullView.BaseSha.init -> void
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.AllowedCommands.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.AllowedCommand!>!
+Aw.Sindri.Core.Workflow.Views.InstanceDetail.AllowedCommands.init -> void
 Aw.Sindri.Core.Launch.HostKind.T3 = 2 -> Aw.Sindri.Core.Launch.HostKind
 Aw.Sindri.Core.Launch.HostSession.RepoPath.get -> string?
 Aw.Sindri.Core.Launch.HostSession.RepoPath.init -> void
@@ -17622,3 +17626,9 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.PayloadFacts.Instruction(Aw.Sindri
 static Aw.Sindri.Core.Workflow.Engine.Runtime.PayloadFacts.Violation(Aw.Sindri.Core.Workflow.Ids.FactKey fact, System.ReadOnlySpan<byte> content) -> string?
 static Aw.Sindri.Core.Workflow.Engine.Runtime.PayloadFacts.OutputsOf(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor! descriptor) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.PayloadFacts.WithShapes(System.Collections.Generic.IReadOnlyList<string!>? instructions, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>? payload) -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals
+Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals.Take(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> string?
+Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals.Discard(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals.Record(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, string! text) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals.ReportRefusals() -> void
+const Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals.MaxLength = 300 -> int
