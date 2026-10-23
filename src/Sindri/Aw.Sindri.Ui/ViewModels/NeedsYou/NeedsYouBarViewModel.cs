@@ -24,6 +24,7 @@ internal sealed partial class NeedsYouBarViewModel : ObservableObject
         nameof(MergeCard), nameof(HasMergeCard),
         nameof(DeskWhy), nameof(IfApprove), nameof(IfSendBack), nameof(HasIfApprove), nameof(HasIfSendBack),
         nameof(ApproveSuggested), nameof(SendBackSuggested), nameof(Questions), nameof(HasQuestions), nameof(AllAnswered), nameof(QuestionsHint),
+        nameof(HasVerbs), nameof(HasMergeVerb), nameof(VerbsEnabled), nameof(VerbNote),
     ];
 
     private readonly DeskReporter _desk;
@@ -145,7 +146,7 @@ internal sealed partial class NeedsYouBarViewModel : ObservableObject
 
     private NeedsYouActionControl? RejectControl => _row?.Controls.FirstOrDefault(c => c.Action is { RejectLike: true, OptionId.Length: > 0 });
 
-    private bool TerminalOnly => Kind == BarKind.Desk && _target?.IsTerminalOnly == true;
+    private bool TerminalOnly => Kind == BarKind.Desk && _target?.IsTerminalOnly == true && !HasMergeVerb;
 
     // The command the terminal button copies: the step's served complete command for a merge, else the action's own served command.
     private string TerminalCli => TerminalOnly ? _target?.Complete?.Cli ?? "" : PrimaryControl?.Action.Cli is { Length: > 0 } cli ? cli : _row?.Cli ?? "";
@@ -169,6 +170,7 @@ internal sealed partial class NeedsYouBarViewModel : ObservableObject
 
         _row = row;
         (_target, _targetKnown, _done, Questions) = (null, false, NeedsYouBarOutcome.None, []);
+        DrawVerbs();
         (IsSending, HintIsSuccess) = (false, false);
         (Mode, ReasonText, Refusal, ReadToEnd) = (NeedsYouBarMode.Pending, "", "", false);
         var read = row is not null && Kind == BarKind.Desk && InstanceOf(row) is { } instance ? Read(instance, row.Id) : Task.CompletedTask;
@@ -186,6 +188,7 @@ internal sealed partial class NeedsYouBarViewModel : ObservableObject
         {
             (_target, _targetKnown) = (target, true);
             Questions = [.. (target?.Questions ?? []).Select(q => new DeskQuestionViewModel(q, Refresh))];
+            DrawVerbs();
             Refresh();
         }
     }
@@ -195,6 +198,11 @@ internal sealed partial class NeedsYouBarViewModel : ObservableObject
         foreach (var name in _all)
         {
             OnChanged(name);
+        }
+
+        foreach (var verb in Verbs)
+        {
+            verb.Changed();
         }
     }
 }
