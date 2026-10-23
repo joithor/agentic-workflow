@@ -59,7 +59,7 @@ one-user sizing), the pull and the start. Then it needs you twice:
    registering. A rerun after any failure resumes at this step (the user is reused, never doubled).
 
 Last it opens Onyx's connectors page and prints the checklist: connect Linear (the product's teams, with a start date that
-covers the backtests) Slack (the product's channels) and GitHub (the product's repositories, issues on, with a read-only personal access token) in Onyx's UI, using the company's OAuth for Linear and Slack. `$SINDRI doctor` then
+covers the backtests), Slack (the product's channels) and GitHub (the product's repositories, issues on, with a read-only personal access token) in Onyx's UI, using the company's OAuth for Linear and Slack. `$SINDRI doctor` then
 shows `context:onyx` and `onyx:stack`.
 
 Day to day:
@@ -179,7 +179,7 @@ GitHub: Onyx's GitHub connector signs in with a GitHub personal access token, no
 to the product's repositories and read-only: Issues, Pull requests and Metadata, plus Contents only if Onyx asks for it.
 Confirm the exact permissions on the first connect. Issues reach Sindri through this connector; Sindri has no GitHub-issue
 adapter. A GitHub document keys as `onyx:github/<document id>`, using the document id Onyx gives it, with kind Doc. It
-has no issue kind and no `#N` alias (only Linear and Slack get those, in `OnyxRecordKeys`), and nothing turns it into a
+has no issue kind and no `#N` alias (only Linear issues get those; Slack threads are kind Message), and nothing turns it into a
 Sindri item: items are added with `sindri item add`.
 
 Check first indexing and each connector's progress in Onyx's Admin → Connectors page. Sindri doesn't read Onyx's
