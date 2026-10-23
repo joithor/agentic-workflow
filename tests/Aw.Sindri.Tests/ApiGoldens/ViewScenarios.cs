@@ -32,7 +32,7 @@ internal static class ViewScenarios
         ("services", "unapproved"), ("services", "approved"), ("services", "ran-ok"), ("services", "ran-failed"),
         ("services", "rebuilding"), ("services", "stalled"), ("services", "after-not-reached"), ("services", "after-malformed"),
         ("profile", "unapproved"), ("profile", "approved"), ("profile", "changed"), ("profile", "stalled"), ("profile", "repo-added"),
-        ("views-rebuild", "accepted"), ("views-rebuild", "accepted-while-stalled"), ("views-rebuild", "refused-session"), ("views-rebuild", "refused-origin"),
+        ("views-rebuild", "accepted"), ("views-rebuild", "accepted-while-stalled"), ("views-rebuild", "refused-origin"),
         ("status", "views-stalled"), ("status", "views-rebuilding"), ("status", "service-failed"),
     ];
 

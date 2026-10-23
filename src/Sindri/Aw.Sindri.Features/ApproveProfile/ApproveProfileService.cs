@@ -14,8 +14,8 @@ namespace Aw.Sindri.Features.ApproveProfile;
 /// Shows or records an approval. The 'profile.approved' event is appended first and the snapshot saved second, so a
 /// failed append changes nothing and a retry after a failed save finds the event already recorded and only saves. Each
 /// approval's key names the event it follows ('profile.approved:&lt;hash&gt;:after:&lt;seq&gt;'), so approving A, B,
-/// A, B records every step and a retry computes the same key. Approving redeems the 'approve profile &lt;hash6&gt;'
-/// challenge (S1-D5) bound to the live hash; a missing, mistyped, expired or stale one is SND-PROFILE-004 and records nothing.
+/// A, B records every step and a retry computes the same key. Approving needs the live hash (a stale one is SND-PROFILE-003)
+/// and a profile that validates; it asks for no typed challenge (owner decision q93).
 /// </summary>
 internal sealed class ApproveProfileService(IProfileSource live, IApprovals approvals, HeldLease held, ILedgerStore ledger, EventFactory events, ProfileChecks checks)
     : IService<ApproveProfileRequest, ApproveProfileResponse>

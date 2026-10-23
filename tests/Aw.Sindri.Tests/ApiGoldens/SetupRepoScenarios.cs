@@ -16,10 +16,10 @@ internal static class SetupRepoScenarios
     /// <summary>The (slug, scenario) pairs of this class.</summary>
     public static IReadOnlyList<(string Slug, string Scenario)> All { get; } =
     [
-        ("setup-repos", "started"), ("setup-repos", "refused-session"), ("setup-repos", "not-a-checkout"), ("setup-repos", "not-absolute"),
+        ("setup-repos", "started"), ("setup-repos", "not-a-checkout"), ("setup-repos", "not-absolute"),
         ("setup-repos", "already-added"), ("setup-repos", "name-taken"), ("setup-repos", "bad-name"),
-        ("setup-repos-onboard", "refused-session"), ("setup-repos-onboard", "not-approved"),   // POST /setup/repos/onboard (§5.1): a session is refused, no approved profile is 409
-        ("setup-mcp", "not-in-profile"), ("setup-mcp", "refused-session"),   // POST /setup/mcp (§5.4): a repo the approved profile does not name is 409, a session is refused
+        ("setup-repos-onboard", "not-approved"),   // POST /setup/repos/onboard (§5.1): a session is refused, no approved profile is 409
+        ("setup-mcp", "not-in-profile"),   // POST /setup/mcp (§5.4): a repo the approved profile does not name is 409, a session is refused
     ];
 
     /// <summary>Whether <paramref name="slug"/> and <paramref name="scenario"/> belong to this class.</summary>

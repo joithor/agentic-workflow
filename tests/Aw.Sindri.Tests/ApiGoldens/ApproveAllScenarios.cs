@@ -29,7 +29,7 @@ internal static class ApproveAllScenarios
     /// <summary>The (slug, scenario) pairs of this class.</summary>
     public static IReadOnlyList<(string Slug, string Scenario)> All { get; } =
         [(Slug, "plan"), (Slug, "plan-first-approval"), (Slug, "applied"), (Slug, "refused"), (Slug, "empty"),
-            (AppSlug, "profile"), (AppSlug, "approve-all"), (AppSlug, "refused-session"), (AppSlug, "refused-action"), (AppSlug, "before-profile"),
+            (AppSlug, "profile"), (AppSlug, "approve-all"), (AppSlug, "refused-action"), (AppSlug, "before-profile"),
             (NeedsYouSlug, "setup-recipes"), (NeedsYouSlug, "recipe")];
 
     /// <summary>Whether <paramref name="slug"/> and <paramref name="scenario"/> belong to this class.</summary>

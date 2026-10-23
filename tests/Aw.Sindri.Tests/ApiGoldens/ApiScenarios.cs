@@ -17,9 +17,9 @@ internal static class ApiScenarios
         ("status", "running-unapproved"), ("status", "running-approved"), ("status", "human-no-token"),
         ("status", "human-stale-token"), ("status", "unknown-caller"), ("status", "prover-refused"),
         ("ping", "running"), ("commands", "catalog"), ("events", "process-started"), ("events-catalog", "catalog"),
-        ("stop", "accepted"), ("stop", "refused-session"), ("stop", "refused-origin"),
+        ("stop", "accepted"), ("stop", "refused-origin"),
         ("profile-approve", "preview"), ("profile-approve", "approved"), ("profile-approve", "already-approved"),
-        ("profile-approve", "refused-session"), ("profile-approve", "refused-no-terminal"), ("profile-approve", "refused-origin"),
+        ("profile-approve", "refused-origin"),
         ("profile-approve", "stale-hash"), ("profile-approve", "bad-body"),
         ("workflow-recipe", "not-found"),
     ];

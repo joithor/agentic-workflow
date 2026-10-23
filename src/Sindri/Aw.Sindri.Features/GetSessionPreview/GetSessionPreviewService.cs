@@ -47,11 +47,6 @@ internal sealed class GetSessionPreviewService(ISessionSnapshot snapshot, ICalle
             return SindriErrors.AuthRefused.With("a session needs a caller");
         }
 
-        if (SessionRows.RefuseSession(caller) is { } refused)
-        {
-            return refused;
-        }
-
         var now = snapshot.Current;   // one read: the check and the row come from the same pass
         if (now is not null && SessionRows.Unavailable(now.Problems) is { } unavailable)
         {

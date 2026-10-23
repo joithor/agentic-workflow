@@ -42,7 +42,7 @@ public sealed class AppConfirmChainTests
     public async Task The_prover_passes_with_or_without_the_scratch_marker()
     {
         var prover = A.Caller().Human().Client(ClientLabel.Prover).Build();
-        await using var unmarked = new ChainHarness(prover: new ProverLabel(Allowed: true, MayConfirm: false));
+        await using var unmarked = new ChainHarness(prover: new ProverLabel(Allowed: true));
         unmarked.H.Profiles.Live = SliceHarness.Profile();
         _ = await unmarked.H.HoldLease();
 

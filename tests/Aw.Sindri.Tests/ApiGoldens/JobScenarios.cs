@@ -28,14 +28,14 @@ internal static class JobScenarios
     /// <summary>The (slug, scenario) pairs of this class.</summary>
     public static IReadOnlyList<(string Slug, string Scenario)> All { get; } =
     [
-        ("services-name-run", "started"), ("services-name-run", "refused-session"), ("services-name-run", "refused-no-header"), ("services-name-run", "refused-origin"),
+        ("services-name-run", "started"), ("services-name-run", "refused-origin"),
         ("services-name-run", "unknown-service"), ("services-name-run", "already-running"), ("services-name-run", "scheduled-in-flight"), ("services-name-run", "too-many"),
-        ("services-name-pause", "accepted"), ("services-name-pause", "refused-session"), ("services-name-pause", "unknown-service"),
-        ("services-name-resume", "accepted"), ("services-name-resume", "refused-session"), ("services-name-resume", "unknown-service"),
+        ("services-name-pause", "accepted"), ("services-name-pause", "unknown-service"),
+        ("services-name-resume", "accepted"), ("services-name-resume", "unknown-service"),
         ("services", "paused"), ("services", "running-job"), ("services", "manual-ok"), ("needs-you", "after-manual-run"), ("needs-you", "unknown-service"), ("events", "job-lifecycle"),
         ("jobs-id", "running"), ("jobs-id", "succeeded"), ("jobs-id", "failed"), ("jobs-id", "cancelled"), ("jobs-id", "interrupted"), ("jobs-id", "progress-capped"),
         ("jobs-id", "context-backtest"), ("jobs-id", "ansi-escaped"), ("jobs-id", "result"), ("jobs-id", "not-found"), ("jobs-id", "bad-id"), ("jobs-id", "session-other-repo"), ("jobs-id", "stalled"),
-        ("jobs-id-cancel", "accepted"), ("jobs-id-cancel", "already-ended"), ("jobs-id-cancel", "not-found"), ("jobs-id-cancel", "refused-session"),
+        ("jobs-id-cancel", "accepted"), ("jobs-id-cancel", "already-ended"), ("jobs-id-cancel", "not-found"), 
         ("jobs", "running"), ("jobs", "empty"), ("jobs", "by-kind"), ("jobs", "empty-unfiltered"), ("jobs", "bad-kind"), ("jobs", "bad-state"),
     ];
 

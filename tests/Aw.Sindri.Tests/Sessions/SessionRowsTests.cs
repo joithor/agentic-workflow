@@ -22,13 +22,6 @@ public sealed class SessionRowsTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void RefuseSession_refuses_only_a_session_caller_with_SND_AUTH_002()
-    {
-        Assert.Equal(SindriErrors.AuthRefused.Code, SessionRows.RefuseSession(A.Caller().Session().InRepo("api").Build())!.Code);
-        Assert.Null(SessionRows.RefuseSession(A.Caller().Human().Build()));
-    }
-
-    [Fact, Trait("Lane", "unit")]
     public void Unavailable_reads_the_typed_reason_not_the_sentence()
     {
         var reworded = new SessionProblem("processes", "SND-SESSION-002", "any wording") { Reason = UnavailableReason.ProcUnreadable };

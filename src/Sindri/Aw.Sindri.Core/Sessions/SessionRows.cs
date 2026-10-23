@@ -29,15 +29,6 @@ public static class SessionRows
         return pass.Sessions.FirstOrDefault(s => s.Ref.Equals(reference)) is { } found && Visible(caller, found) ? found : null;
     }
 
-    /// <summary>SND-AUTH-002 for a session caller, else null: for a human-only read to call before it looks a ref up, so a session cannot probe which refs exist.</summary>
-    /// <param name="caller">The caller.</param>
-    /// <returns>The refusal, or null.</returns>
-    public static Kernel.Error? RefuseSession(CallerContext caller)
-    {
-        ArgumentNullException.ThrowIfNull(caller);
-        return caller.Class == CallerClass.Session ? SindriErrors.AuthRefused.With("a session caller can't read this; ask the human") : null;
-    }
-
     /// <summary>True when the caller gets the human-only fields (title, pid, tmux session and pane, resume, cwd, socket, history); a service caller is in-process and never serves a client.</summary>
     /// <param name="caller">The caller.</param>
     /// <returns>True for a human caller.</returns>

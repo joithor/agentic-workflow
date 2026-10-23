@@ -8345,7 +8345,6 @@ static readonly Aw.Sindri.Core.SindriErrors.PortInUse -> Aw.Kernel.ErrorDefiniti
 static readonly Aw.Sindri.Core.SindriErrors.ProfileHashMismatch -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.ProfileInvalid -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.ProfileMissing -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.Sindri.Core.SindriErrors.ProfileNeedsTerminal -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.ProfileNotApproved -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.RequestInvalid -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.RequestsRateLimited -> Aw.Kernel.ErrorDefinition!
@@ -11976,7 +11975,6 @@ static Aw.Sindri.Core.Sessions.StateHistoryRules.Next(System.Collections.Generic
 Aw.Sindri.Core.Sessions.SessionProblem.Reason.get -> Aw.Sindri.Core.Sessions.UnavailableReason?
 Aw.Sindri.Core.Sessions.SessionProblem.Reason.init -> void
 static Aw.Sindri.Core.Sessions.SessionRows.Find(Aw.Sindri.Core.Sessions.SessionSnapshot! pass, Aw.Sindri.Core.Sessions.SessionRef reference, Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Sindri.Core.Sessions.ObservedSession?
-static Aw.Sindri.Core.Sessions.SessionRows.RefuseSession(Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Kernel.Error?
 Aw.Sindri.Core.Scheduling.SyncAttempt
 Aw.Sindri.Core.Scheduling.SyncAttempt.<Clone>$() -> Aw.Sindri.Core.Scheduling.SyncAttempt!
 Aw.Sindri.Core.Scheduling.SyncAttempt.Deconstruct(out bool Failed, out System.DateTimeOffset EndedAt) -> void
@@ -15220,10 +15218,6 @@ Aw.Sindri.Core.Setup.RepoGitCache.Invalidate() -> void
 Aw.Sindri.Core.Setup.RepoGitCache.Of(string! checkout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Setup.RepoGit?>
 Aw.Sindri.Core.Setup.RepoGitCache.RepoGitCache(Aw.Sindri.Core.Setup.IRepoInspector! inspector, System.TimeProvider! clock) -> void
 Aw.Sindri.Core.Setup.RepoEvents.CanRecord() -> bool
-Aw.Sindri.Core.Auth.ProverLabel.Deconstruct(out bool Allowed, out bool MayConfirm) -> void
-Aw.Sindri.Core.Auth.ProverLabel.MayConfirm.get -> bool
-Aw.Sindri.Core.Auth.ProverLabel.MayConfirm.init -> void
-Aw.Sindri.Core.Auth.ProverLabel.ProverLabel(bool Allowed, bool MayConfirm = false) -> void
 Aw.Sindri.Core.Challenges.ChallengeAnswer.ChallengeAnswer(Aw.Sindri.Core.Challenges.ChallengeId Challenge, string! Typed = "", long? HeldMs = null) -> void
 Aw.Sindri.Core.Challenges.ChallengeAnswer.Deconstruct(out Aw.Sindri.Core.Challenges.ChallengeId Challenge, out string! Typed, out long? HeldMs) -> void
 Aw.Sindri.Core.Challenges.ChallengeAnswer.HeldMs.get -> long?
@@ -18167,3 +18161,5 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals.Discard(Aw.Sindri.Core.Wor
 Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals.Record(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, string! text) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals.ReportRefusals() -> void
 const Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals.MaxLength = 300 -> int
+Aw.Sindri.Core.Auth.ProverLabel.ProverLabel(bool Allowed) -> void
+Aw.Sindri.Core.Auth.ProverLabel.Deconstruct(out bool Allowed) -> void

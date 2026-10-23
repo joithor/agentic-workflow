@@ -30,11 +30,11 @@ internal static class ItemScenarios
     [
         ("queue", "fixture"), ("queue", "empty"), ("queue", "stalled"), ("queue", "large"), ("queue", "session-scoped"), ("queue", "rebuilding"),
         ("items", "list-empty"), ("items", "list-open"), ("items", "list-state-done"), ("items", "list-repo"), ("items", "list-session-other-repo"), ("items", "list-bad-state"),
-        ("items", "created"), ("items", "created-repo"), ("items", "created-link"), ("items", "invalid-title"), ("items", "unknown-repo"), ("items", "refused-session"), ("items", "refused-origin"),
+        ("items", "created"), ("items", "created-repo"), ("items", "created-link"), ("items", "invalid-title"), ("items", "unknown-repo"), ("items", "refused-origin"),
         ("items-id", "new"), ("items-id", "needs-decision"), ("items-id", "after-decide"), ("items-id", "after-close"), ("items-id", "not-found"), ("items-id", "cancelled"), ("items-id", "alias"), ("items-id", "with-body"), ("items-id", "session-other-repo"), ("items-id", "bad-id"),
         ("items-id-timeline", "fixture"), ("items-id-timeline", "page-2"), ("items-id-timeline", "closed"), ("items-id-timeline", "not-found"),
         ("items-id-close", "accepted"), ("items-id-close", "stale-version"), ("items-id-close", "accepted-cancelled"), ("items-id-close", "already-closed"), ("items-id-close", "not-found"),
-        ("items-id-close", "refused-session"), ("items-id-close", "while-stalled"), ("items-id-close", "while-rebuilding"), ("items-id-close", "refused-active-instance"),
+        ("items-id-close", "while-stalled"), ("items-id-close", "while-rebuilding"), ("items-id-close", "refused-active-instance"),
     ];
 
     /// <summary>Whether <paramref name="slug"/> and <paramref name="scenario"/> belong to this class.</summary>
