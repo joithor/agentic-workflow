@@ -108,14 +108,14 @@ public sealed class RunRecipeFieldsTests
     public async Task A_card_names_who_does_its_state_when_the_recipe_says()
     {
         var recipe = RunFixtures.LineRecipe();
-        recipe = recipe with { States = [.. recipe.States.Select(s => string.Equals(s.State, "plan", StringComparison.Ordinal) ? s with { Kind = RecipeStateKind.SubWorkflow } : s)] };
+        recipe = recipe with { States = [.. recipe.States.Select(s => string.Equals(s.State, "design", StringComparison.Ordinal) ? s with { Kind = RecipeStateKind.SubWorkflow } : s)] };
 
         var page = await Opened(RunFixtures.Line("plan"), recipe);
 
-        var plan = page.Cards.Single(c => c.Id == "plan");
-        Assert.Equal("Sub-workflow", plan.KindWord);
-        Assert.EndsWith(", Sub-workflow", plan.AutomationName, StringComparison.Ordinal);
-        Assert.Equal(string.Empty, page.Cards.Single(c => c.Id == "design").KindWord);
+        var design = page.Cards.Single(c => c.Id == "design");
+        Assert.Equal("Sub-workflow", design.KindWord);
+        Assert.EndsWith(", Sub-workflow", design.AutomationName, StringComparison.Ordinal);
+        Assert.Equal(string.Empty, page.Cards.Single(c => c.Id == "scoping").KindWord);
     }
 
     [Fact]
@@ -124,13 +124,13 @@ public sealed class RunRecipeFieldsTests
         var recipe = RunFixtures.LineRecipe();
         recipe = recipe with
         {
-            States = [.. recipe.States.Select(s => string.Equals(s.State, "plan", StringComparison.Ordinal)
+            States = [.. recipe.States.Select(s => string.Equals(s.State, "design", StringComparison.Ordinal)
                 ? s with { Inputs = [new RecipeFactView("fact:project", "The project")], Outputs = [new RecipeFactView("fact:never", "Never made")] }
                 : s)],
         };
         var page = await Opened(RunFixtures.Line("plan"), recipe);
 
-        page.Select("plan/produce");
+        page.Select("design/produce");
 
         var inspector = page.Inspector!;
         var need = Assert.Single(inspector.Needs);

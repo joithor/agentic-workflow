@@ -36,8 +36,10 @@ internal static partial class RunGraphBuilder
             .Where(c => c is { Terminal: true, Outcome: not null })
             .Select(c => new RunNode(c.State, RunNodeKind.End, NameOf(c.State), c.Order, BranchOf: null, EndState(c.Outcome), c.Outcome, WorkflowName: null, ChildId: null, ChildAddress: null, Steps: []));
         var nodes = Decorate(stages.Concat(sides).Concat(ends), line, recipe);
-        var served = recipe?.Transitions is { Count: > 0 };
-        return new RunGraph(nodes, served ? FromTransitions(nodes, recipe!) : Edges(nodes, recipe), BranchesServed: served);
+        var transitions = recipe?.Transitions;
+        return transitions is { Count: > 0 }
+            ? new RunGraph(nodes, FromTransitions(nodes, transitions), BranchesServed: true)
+            : new RunGraph(nodes, Edges(nodes, recipe), BranchesServed: false);
     }
 
     // What the recipe and the line's states say about each card: who does the state, and when its latest visit began and ended.

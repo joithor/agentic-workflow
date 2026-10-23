@@ -12,6 +12,9 @@ namespace Aw.Sindri.Ui.ViewModels.Run;
 /// <param name="ChildId">The instance id of the child the card shows (the first one not done), or null.</param>
 /// <param name="ChildAddress">That child's address, or null.</param>
 /// <param name="Steps">The step rows (stages only).</param>
+/// <param name="EnteredAt">When the latest visit to the state began; null when the line does not say.</param>
+/// <param name="LeftAt">When the latest visit ended; null while it is current or the line does not say.</param>
+/// <param name="StateKind">Who does the state, as its recipe says; null when the recipe serves none.</param>
 internal sealed record RunNode(
     string Id,
     RunNodeKind Kind,

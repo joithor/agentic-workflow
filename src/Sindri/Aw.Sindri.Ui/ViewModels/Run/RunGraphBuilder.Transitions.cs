@@ -6,11 +6,11 @@ internal static partial class RunGraphBuilder
 {
     // The engine serves the recipe's transitions: each (from, to) pair between two drawn cards is one edge, labelled by the first label served for it.
     // An edge to an end is an end edge, one that goes back up the path is a loop, and every other is the main way on.
-    private static List<RunEdge> FromTransitions(List<RunNode> nodes, RecipeView recipe)
+    private static List<RunEdge> FromTransitions(List<RunNode> nodes, IReadOnlyList<RecipeTransitionView> transitions)
     {
         var byId = nodes.ToDictionary(n => n.Id, StringComparer.Ordinal);
         var edges = new List<RunEdge>();
-        foreach (var transition in recipe.Transitions!)
+        foreach (var transition in transitions)
         {
             foreach (var from in transition.From)
             {
