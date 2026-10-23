@@ -194,11 +194,7 @@ internal sealed class SetupStepViewModel : ObservableObject
 
     /// <summary>Takes the workflows read with the list; read before <see cref="Update"/> so the row words itself with them.</summary>
     /// <param name="recipes">The workflows.</param>
-    internal void ShowRecipes(SetupRecipeListViewModel recipes)
-    {
-        Recipes = recipes;
-        OnChanged(nameof(Recipes));
-    }
+    internal void ShowRecipes(SetupRecipeListViewModel recipes) => Recipes = recipes;
 
     /// <summary>Shows the step as working with a note, until the next read says otherwise (a retry was started, or one was already running).</summary>
     /// <param name="note">The note.</param>
@@ -243,7 +239,7 @@ internal sealed class SetupStepViewModel : ObservableObject
         var state = running ? "running" : Step.State;
         var (word, said, tone) = Labels.SetupChip(state);
         (Title, Chip, ChipWord) = (Labels.SetupTitle(Step.Id, Step.Title), new StateChip(word, tone), said);
-        Sub = Recipes.HasOutdated && NeedsYou ? Labels.SetupOutdatedSub(Recipes.OutdatedCount) : Labels.SetupSubFor(Step.Id, state, Waiting, Step.Why, Step.Detail);
+        Sub = SubFor(state);
         Note = _overrideNote ?? string.Empty;
         DetailText = IsFinished || running ? string.Empty : Step.Detail ?? string.Empty;
         ErrorText = running ? string.Empty : Step.Error?.Sentence ?? string.Empty;
@@ -252,6 +248,7 @@ internal sealed class SetupStepViewModel : ObservableObject
         DeriveProgress();
     }
 
+    private string SubFor(string state) => Recipes.HasOutdated && NeedsYou ? Labels.SetupOutdatedSub(Recipes.OutdatedCount) : Labels.SetupSubFor(Step.Id, state, Waiting, Step.Why, Step.Detail);
     // A todo step with no action waits on another step.
     private bool Waiting => string.Equals(Step.State, "todo", StringComparison.Ordinal) && string.IsNullOrEmpty(Step.Action);
 

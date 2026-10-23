@@ -35,8 +35,8 @@ public sealed class SetupOutdatedWorkflowsTests
     {
         var row = await RecipesRow();
 
-        Assert.Equal(["approved", "approved v4, v5 available", "Out of date"], row.Recipes.Select(r => r.Status));
-        Assert.Equal(["Step", "Review", "Triage"], row.Recipes.Select(r => r.Name));
+        Assert.Equal(["approved", "approved v4, v5 available", "Out of date"], row.Recipes.Lines.Select(r => r.Status));
+        Assert.Equal(["Step", "Review", "Triage"], row.Recipes.Lines.Select(r => r.Name));
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public sealed class SetupOutdatedWorkflowsTests
 
         var row = (await _f.Read(Token)).Steps.Single(s => s.Id == "recipes");
 
-        Assert.Equal(["approved"], row.Recipes.Select(r => r.Status));
+        Assert.Equal(["approved"], row.Recipes.Lines.Select(r => r.Status));
         Assert.True(row.IsDone);
         Assert.False(row.Workflows!.IsOpen);
     }
@@ -80,5 +80,17 @@ public sealed class SetupOutdatedWorkflowsTests
 
         var sent = Assert.Single(_f.Server.Approvals);
         Assert.StartsWith(Sentence, sent.Typed, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_approved_older_golden_reads_the_newer_version_and_keeps_a_never_approved_workflow_as_it_is()
+    {
+        _f.Server.RecipeListAnswer = RouteAnswer.Api("workflow-recipes", "approved-older");
+        _f.Serve(With("profile-needs-approval", "recipes", "done"));
+
+        var row = (await _f.Read(Token)).Steps.Single(s => s.Id == "recipes");
+
+        Assert.Equal(["Not approved", "approved v4, v5 available"], row.Recipes.Lines.Select(l => l.Status));
+        Assert.Equal(("Needs you", true), (row.ChipWord, row.Workflows!.IsOpen));
     }
 }

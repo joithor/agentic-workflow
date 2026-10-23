@@ -13,6 +13,7 @@ internal sealed class SetupRecipeListViewModel
     internal SetupRecipeListViewModel(IReadOnlyList<RecipeSummaryView> served)
     {
         ArgumentNullException.ThrowIfNull(served);
+        // why: a group is never empty, so MaxBy finds a row
         Lines = [.. served.GroupBy(r => r.Id, StringComparer.Ordinal).Select(g => g.MaxBy(r => r.Version)!).Select(r => new SetupRecipeLineViewModel(r))];
         OutdatedCount = Lines.Count(l => l.IsOutdated);
     }
@@ -30,5 +31,7 @@ internal sealed class SetupRecipeListViewModel
     public bool HasOutdated => OutdatedCount > 0;
 
     /// <summary>The action over the outdated ones.</summary>
+#pragma warning disable CA1822, MA0041 // why: the view binds it as an instance property of the view model
     public string Heading => Labels.SetupReapproveAll;
+#pragma warning restore CA1822, MA0041
 }

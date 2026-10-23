@@ -197,9 +197,9 @@ internal static partial class Labels
 
     /// <summary>"approved v4, v5 available": the approved version and the shipped one.</summary>
     internal static string SetupRecipeNewer(int approved, int shipped) =>
-        string.Create(System.Globalization.CultureInfo.InvariantCulture, $"approved v{approved}, v{shipped} available");
+        string.Create(CultureInfo.InvariantCulture, $"approved v{approved}, v{shipped} available");
 
     /// <summary>The line under the workflows row when some approvals are older than what ships.</summary>
     internal static string SetupOutdatedSub(int count) =>
-        string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{count} {(count == 1 ? "workflow has a newer version" : "workflows have a newer version")} waiting for your approval.");
+        string.Create(CultureInfo.InvariantCulture, $"{count} {(count == 1 ? "workflow has a newer version" : "workflows have a newer version")} waiting for your approval.");
 }

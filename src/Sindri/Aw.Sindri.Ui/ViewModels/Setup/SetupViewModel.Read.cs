@@ -107,34 +107,8 @@ internal sealed partial class SetupViewModel
         var served = new List<SetupStepViewModel>(view.Steps.Count);
         foreach (var served0 in view.Steps)
         {
-            var step = Outdated(served0, string.Equals(served0.Id, RecipesStep, StringComparison.Ordinal) ? recipes : SetupRecipeListViewModel.Empty);
-            if (_rows.TryGetValue(step.Id, out var kept))
-            {
-                if (string.Equals(step.Id, RecipesStep, StringComparison.Ordinal))
-                {
-                    kept.ShowRecipes(recipes);
-                }
-
-                if (kept.Update(step, keepWorking: read <= _holdUntil) && _hasRead)
-                {
-                    said.Add(Labels.SetupChanged(kept.Title, kept.ChipWord));
-                }
-
-                served.Add(kept);
-            }
-            else
-            {
-                var row = new SetupStepViewModel(step, served.Count + 1, ActionOf);
-                if (string.Equals(step.Id, RecipesStep, StringComparison.Ordinal))
-                {
-                    row.ShowRecipes(recipes);
-                    row.Update(step);   // words itself with the workflows now that it has them
-                }
-
-                Attach(row);
-                _rows[step.Id] = row;
-                served.Add(row);
-            }
+            var own = string.Equals(served0.Id, RecipesStep, StringComparison.Ordinal) ? recipes : SetupRecipeListViewModel.Empty;
+            served.Add(Place(Outdated(served0, own), own, served.Count + 1, read, said));
         }
 
         Forget(view);
@@ -148,6 +122,28 @@ internal sealed partial class SetupViewModel
         {
             Live.Say(string.Join(". ", said));
         }
+    }
+
+    // The row of a step: the one kept from an earlier read, updated in place, or a new one; the workflows are given before it words itself.
+    private SetupStepViewModel Place(SetupStepView step, SetupRecipeListViewModel own, int number, int read, List<string> said)
+    {
+        if (_rows.TryGetValue(step.Id, out var kept))
+        {
+            kept.ShowRecipes(own);
+            if (kept.Update(step, keepWorking: read <= _holdUntil) && _hasRead)
+            {
+                said.Add(Labels.SetupChanged(kept.Title, kept.ChipWord));
+            }
+
+            return kept;
+        }
+
+        var row = new SetupStepViewModel(step, number, ActionOf);
+        row.ShowRecipes(own);
+        _ = row.Update(step);   // words itself with the workflows now that it has them
+        Attach(row);
+        _rows[step.Id] = row;
+        return row;
     }
 
     private void Forget(SetupView view)
