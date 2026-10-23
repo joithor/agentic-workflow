@@ -61,6 +61,6 @@ internal static class StepFactFiles
             // boundary: stored content that isn't JSON is a text fact
         }
 
-        return JsonValue.Create(text)!.ToJsonString();   // why: a string is never null
+        return JsonValue.Create(text).ToJsonString();
     }
 }

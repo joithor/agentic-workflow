@@ -19,8 +19,8 @@ public sealed class StepFactWriterTests : IDisposable
         var problem = await StepFactWriter.Write(_run, new Dictionary<string, string>(StringComparer.Ordinal) { ["workspace.json"] = "\"/work/docs\"", ["docsScope.json"] = """{"base":"abc"}""" }, CancellationToken.None);
 
         Assert.Null(problem);
-        Assert.Equal("\"/work/docs\"", File.ReadAllText(Path.Combine(_run, "workspace.json")));
-        Assert.Equal("""{"base":"abc"}""", File.ReadAllText(Path.Combine(_run, "docsScope.json")));
+        Assert.Equal("\"/work/docs\"", await File.ReadAllTextAsync(Path.Combine(_run, "workspace.json"), TestContext.Current.CancellationToken));
+        Assert.Equal("""{"base":"abc"}""", await File.ReadAllTextAsync(Path.Combine(_run, "docsScope.json"), TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -30,7 +30,7 @@ public sealed class StepFactWriterTests : IDisposable
 
         _ = await StepFactWriter.Write(_run, new Dictionary<string, string>(StringComparer.Ordinal) { ["brief.json"] = "\"new\"" }, CancellationToken.None);
 
-        Assert.Equal("\"new\"", File.ReadAllText(Path.Combine(_run, "brief.json")));
+        Assert.Equal("\"new\"", await File.ReadAllTextAsync(Path.Combine(_run, "brief.json"), TestContext.Current.CancellationToken));
     }
 
     [Theory]

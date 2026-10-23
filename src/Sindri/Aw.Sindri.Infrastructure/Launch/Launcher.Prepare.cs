@@ -27,14 +27,9 @@ internal sealed partial class Launcher
 
         try
         {
-            if (WriteBundle(request, workDir) is { } refused)
+            if (await WriteStepFiles(request, workDir, cancellationToken).ConfigureAwait(false) is { } refused)
             {
                 return refused;
-            }
-
-            if (await WriteFacts(request, workDir, cancellationToken).ConfigureAwait(false) is { } refusedFacts)
-            {
-                return refusedFacts;
             }
 
             var composed = await Compose(request, entry, workDir, cancellationToken).ConfigureAwait(false);
@@ -72,6 +67,10 @@ internal sealed partial class Launcher
         request is { Attended: false, Step.Bundle: { } bundle }
             ? PackBundleFiles.Write(StepEnvironment.For(request).GetValueOrDefault(StepEnvironment.RunDirectory, workDir), bundle)
             : null;
+
+    /// <summary>The Step's pack and its declared read facts, in its run directory before the session starts; the first refusal, else null.</summary>
+    private static async ValueTask<Error?> WriteStepFiles(LaunchRequest request, string workDir, CancellationToken cancellationToken) =>
+        WriteBundle(request, workDir) ?? await WriteFacts(request, workDir, cancellationToken).ConfigureAwait(false);
 
     /// <summary>The Step's declared read facts, as files in its run directory before the session starts (an attended launch has none, as it has no bundle: a human open has no Step directory and no brief to name the files); an error when a name is refused.</summary>
     private static async ValueTask<Error?> WriteFacts(LaunchRequest request, string workDir, CancellationToken cancellationToken) =>

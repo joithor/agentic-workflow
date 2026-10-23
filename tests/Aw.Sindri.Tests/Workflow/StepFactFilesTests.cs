@@ -36,7 +36,7 @@ public sealed class StepFactFilesTests
 
         var files = (await Build(facts)).Value;
 
-        Assert.Equal(["brief.json", "scopeMap.json"], files.Keys.Order(StringComparer.Ordinal));
+        Assert.Equal("brief.json,scopeMap.json", string.Join(',', files.Keys.Order(StringComparer.Ordinal)));
         Assert.Equal("""{"nodes":[1,2]}""", files["scopeMap.json"]);
         Assert.Equal("\"Add a retry to the sync.\"", files["brief.json"]);
     }
@@ -52,7 +52,7 @@ public sealed class StepFactFilesTests
 
         var files = (await Build(facts)).Value;
 
-        Assert.Equal(["brief.json"], files.Keys);
+        Assert.Equal("brief.json", Assert.Single(files.Keys));
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public sealed class StepFactFilesTests
     {
         var files = (await Build(new Dictionary<FactKey, FactValue> { [FactKey.From("fact:brief")] = _stored.Put("text") })).Value;
 
-        Assert.DoesNotContain("scopeMap.json", files.Keys);
+        Assert.False(files.ContainsKey("scopeMap.json"));
     }
 
     [Fact]

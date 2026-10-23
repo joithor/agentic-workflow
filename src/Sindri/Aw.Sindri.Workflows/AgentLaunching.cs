@@ -36,7 +36,7 @@ internal sealed class AgentLaunching(ILauncher launcher, AgentTargetResolver tar
         var workspace = await WorkspaceOf(run, cancellationToken).ConfigureAwait(false);
         if (workspace.IsError)
         {
-            return new AgentLaunched(Worktree: null, StartHead: null, new AgentLaunchFailure(AgentLaunchFailureKind.StepFailed, workspace.Error.Code, workspace.Error.Message));
+            return StepFailed(workspace.Error);
         }
 
         var bundle = await Bundle(run, target.Value, cancellationToken).ConfigureAwait(false);
@@ -45,16 +45,13 @@ internal sealed class AgentLaunching(ILauncher launcher, AgentTargetResolver tar
             return new AgentLaunched(Worktree: null, StartHead: null, new AgentLaunchFailure(string.Equals(bundle.Error.Code, PackErrors.PinMismatch.Code, StringComparison.Ordinal) ? AgentLaunchFailureKind.Park : AgentLaunchFailureKind.StepFailed, bundle.Error.Code, bundle.Error.Message));   // an unpinned or changed pack parks for the owner (SND-PACK-002); any other pack failure ends the Step
         }
 
-        var block = BlockId.From(run.Run.Step.Block);
-        var told = inputs.Instructions.FirstOrDefault(i => i.IsFor(block))?.Lines;
-        var descriptor = catalog.Find(block);
-        var facts = await StepFactFiles.Build(descriptor, run.Facts, inputs.Contents, inputs.Scrubber, cancellationToken).ConfigureAwait(false);
-        if (facts.IsError)
+        var asked = await Request(run, target.Value, workspace.Value, bundle.Value, cancellationToken).ConfigureAwait(false);
+        if (asked.IsError)
         {
-            return new AgentLaunched(Worktree: null, StartHead: null, new AgentLaunchFailure(AgentLaunchFailureKind.StepFailed, facts.Error.Code, facts.Error.Message));
+            return StepFailed(asked.Error);
         }
 
-        var request = AgentLaunches.RequestFor(run.Run, target.Value, descriptor, new AgentLaunchExtras(told, workspace.Value, bundle.Value, facts.Value));
+        var request = asked.Value;
         var result = await launcher.Launch(request, cancellationToken).ConfigureAwait(false);
         switch (result)
         {
@@ -69,6 +66,20 @@ internal sealed class AgentLaunching(ILauncher launcher, AgentTargetResolver tar
                 throw new InvalidOperationException($"the launcher answered {result.GetType().Name}");
         }
     }
+
+    // The launcher's request: the Step's brief and policy, its pack, and its declared read facts as files (read and scrubbed here); the failure when a fact can't be read.
+    private async ValueTask<Result<LaunchRequest>> Request(AgentLaunchRun run, AgentStepTarget target, string? workspace, PackBundle? bundle, CancellationToken cancellationToken)
+    {
+        var block = BlockId.From(run.Run.Step.Block);
+        var descriptor = catalog.Find(block);
+        var facts = await StepFactFiles.Build(descriptor, run.Facts, inputs.Contents, inputs.Scrubber, cancellationToken).ConfigureAwait(false);
+        return facts.IsError ? facts.Error : AgentLaunches.RequestFor(run.Run, target, descriptor, new AgentLaunchExtras(Told(block), workspace, bundle, facts.Value));
+    }
+
+    private static AgentLaunched StepFailed(Error error) => new(Worktree: null, StartHead: null, new AgentLaunchFailure(AgentLaunchFailureKind.StepFailed, error.Code, error.Message));
+
+    // What the Step is told to do (its instructions), after the brief's first line; null when it has none.
+    private IReadOnlyList<string>? Told(BlockId block) => inputs.Instructions.FirstOrDefault(i => i.IsFor(block))?.Lines;
 
     // The pack the Step's 'bundle' names, resolved and pin-checked at launch; none (a null bundle) when the Step bundles nothing.
     private async ValueTask<Result<PackBundle?>> Bundle(AgentLaunchRun run, AgentStepTarget target, CancellationToken cancellationToken)

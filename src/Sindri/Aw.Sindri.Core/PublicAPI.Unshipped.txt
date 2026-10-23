@@ -12269,13 +12269,10 @@ Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.Detail.init -> void
 const Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.LaunchReason = "launch" -> string!
 Aw.Sindri.Core.Launch.StepArgs.Brief.get -> string?
 Aw.Sindri.Core.Launch.StepArgs.Brief.init -> void
-Aw.Sindri.Core.Launch.StepArgs.Deconstruct(out string? Model, out Aw.Sindri.Core.Launch.StepPolicy? Policy, out Aw.Sindri.Core.Launch.StepRef! Ref, out string? Brief, out Aw.Sindri.Core.LensPacks.PackBundle? Bundle) -> void
 Aw.Sindri.Core.Launch.StepArgs.Bundle.get -> Aw.Sindri.Core.LensPacks.PackBundle?
 Aw.Sindri.Core.Launch.StepArgs.Bundle.init -> void
-Aw.Sindri.Core.Launch.StepArgs.StepArgs(string? Model, Aw.Sindri.Core.Launch.StepPolicy? Policy, Aw.Sindri.Core.Launch.StepRef! Ref, string? Brief = null, Aw.Sindri.Core.LensPacks.PackBundle? Bundle = null) -> void
 static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.RequestFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget! target, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? descriptor = null, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras? extras = null) -> Aw.Sindri.Core.Launch.LaunchRequest!
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepBrief
-static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepBrief.Render(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? descriptor, System.Collections.Generic.IReadOnlyList<string!>? instructions = null) -> string!
 Aw.Sindri.Core.Scoping.BriefFile
 Aw.Sindri.Core.Scoping.BriefFile.<Clone>$() -> Aw.Sindri.Core.Scoping.BriefFile!
 Aw.Sindri.Core.Scoping.BriefFile.BriefFile(string! Path, string! Text, string! Version) -> void
@@ -16753,10 +16750,8 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions
 Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentStepInstructions.Lines.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras!
-Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras.AgentLaunchExtras(System.Collections.Generic.IReadOnlyList<string!>? Instructions = null, string? Workspace = null, Aw.Sindri.Core.LensPacks.PackBundle? Bundle = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras.Bundle.get -> Aw.Sindri.Core.LensPacks.PackBundle?
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras.Bundle.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? Instructions, out string? Workspace, out Aw.Sindri.Core.LensPacks.PackBundle? Bundle) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras? other) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras.Instructions.get -> System.Collections.Generic.IReadOnlyList<string!>?
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras.Instructions.init -> void
@@ -17584,3 +17579,13 @@ static Aw.Sindri.Core.Scheduling.EmbedDecision.NoProgressWait.get -> System.Time
 static Aw.Sindri.Core.Scheduling.EmbedDecision.TryLaterWait.get -> System.TimeSpan
 Aw.Sindri.Core.Forge.PullView.BaseSha.get -> string?
 Aw.Sindri.Core.Forge.PullView.BaseSha.init -> void
+Aw.Sindri.Core.Launch.StepArgs.Deconstruct(out string? Model, out Aw.Sindri.Core.Launch.StepPolicy? Policy, out Aw.Sindri.Core.Launch.StepRef! Ref, out string? Brief, out Aw.Sindri.Core.LensPacks.PackBundle? Bundle, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Facts) -> void
+Aw.Sindri.Core.Launch.StepArgs.Facts.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
+Aw.Sindri.Core.Launch.StepArgs.Facts.init -> void
+Aw.Sindri.Core.Launch.StepArgs.StepArgs(string? Model, Aw.Sindri.Core.Launch.StepPolicy? Policy, Aw.Sindri.Core.Launch.StepRef! Ref, string? Brief = null, Aw.Sindri.Core.LensPacks.PackBundle? Bundle = null, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Facts = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras.AgentLaunchExtras(System.Collections.Generic.IReadOnlyList<string!>? Instructions = null, string? Workspace = null, Aw.Sindri.Core.LensPacks.PackBundle? Bundle = null, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Facts = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? Instructions, out string? Workspace, out Aw.Sindri.Core.LensPacks.PackBundle? Bundle, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>? Facts) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras.Facts.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchExtras.Facts.init -> void
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepBrief.Render(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? descriptor, System.Collections.Generic.IReadOnlyList<string!>? instructions = null, System.Collections.Generic.IEnumerable<string!>? factFiles = null) -> string!
+static readonly Aw.Sindri.Core.SindriErrors.LaunchFactFileTracked -> Aw.Kernel.ErrorDefinition!

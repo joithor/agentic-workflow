@@ -22,7 +22,7 @@ internal static class StepFactWriter
         var root = Path.GetFullPath(runDirectory);
         foreach (var name in files.Keys)
         {
-            if (!string.Equals(Path.GetFileName(name), name, StringComparison.Ordinal) || name is "" or "." or "..")
+            if (!string.Equals(Path.GetFileName(name), name, StringComparison.Ordinal) || name.AsSpan().Trim('.').IsEmpty)
             {
                 return SindriErrors.RequestInvalid.With($"the fact file '{name}' is not one file in the run directory, so no fact files were written");
             }
@@ -30,16 +30,9 @@ internal static class StepFactWriter
 
         _ = Directory.CreateDirectory(root);
         var exclude = await ExcludeFile(root, cancellationToken).ConfigureAwait(false);   // null outside a git checkout: nothing to guard
-        if (exclude is not null)
+        if (exclude is not null && await Tracked(root, files.Keys, cancellationToken).ConfigureAwait(false) is { } tracked)
         {
-            foreach (var name in files.Keys.Order(StringComparer.Ordinal))
-            {
-                if (await ViewerProcess.Output("git", ["-C", root, "ls-files", "--", name], cancellationToken).ConfigureAwait(false) is { Length: > 0 })
-                {
-                    var fact = name.EndsWith(Extension, StringComparison.Ordinal) ? name[..^Extension.Length] : name;
-                    return SindriErrors.LaunchFactFileTracked.With($"the fact 'fact:{fact}' would be written to {Path.Combine(root, name)}, which git tracks (fix: rename or untrack that file; a Step's fact files are never written over a tracked file)");
-                }
-            }
+            return tracked;
         }
 
         try
@@ -57,6 +50,21 @@ internal static class StepFactWriter
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             return KernelErrors.Unavailable.With($"the Step's fact files could not be written: {e.Message}");
+        }
+
+        return null;
+    }
+
+    // The refusal for the first name git tracks in the directory; null when none is.
+    private static async ValueTask<Error?> Tracked(string root, IEnumerable<string> names, CancellationToken cancellationToken)
+    {
+        foreach (var name in names.Order(StringComparer.Ordinal))
+        {
+            if (await ViewerProcess.Output("git", ["-C", root, "ls-files", "--", name], cancellationToken).ConfigureAwait(false) is { Length: > 0 })
+            {
+                var fact = name.EndsWith(Extension, StringComparison.Ordinal) ? name[..^Extension.Length] : name;
+                return SindriErrors.LaunchFactFileTracked.With($"the fact 'fact:{fact}' would be written to {Path.Combine(root, name)}, which git tracks (fix: rename or untrack that file; a Step's fact files are never written over a tracked file)");
+            }
         }
 
         return null;
