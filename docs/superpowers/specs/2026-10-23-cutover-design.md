@@ -1046,6 +1046,10 @@ Sindri's stamp), it stays a separate binary and not a `sindri evidence <verb>` s
 subcommand is rejected because it would put Playwright and Npgsql in the `sindri` host and widen every evidence step's grant to
 all `sindri` verbs (§3.1).
 
+### Owner approval
+
+On 2026-10-23 the owner approved this spec ("mark 853 good to go", relayed by the meta). Approval covers the text as of rev 12.
+
 ### Open questions
 
 None.
