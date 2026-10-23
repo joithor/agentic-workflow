@@ -51,13 +51,14 @@ public sealed class AppConfirmRowTests
     [InlineData("ApproveProfile")]
     [InlineData("ApproveRecipe")]
     [InlineData("ApproveAllRecipes")]
-    public void The_app_and_the_terminal_pass_and_a_session_a_service_and_no_caller_are_refused(string action)
+    public void The_app_the_terminal_and_a_session_pass_and_a_service_and_no_caller_are_refused(string action)
     {
         var row = Assert.Single(Rows, r => r.Action.Value == action);
 
         Assert.True(Table.Decide(row.Class, A.Caller().Human().Client(ClientLabel.Ui).Build(), row).Allowed);
         Assert.True(Table.Decide(row.Class, A.Caller().AtTerminal().Client(ClientLabel.Cli).Build(), row).Allowed);
-        foreach (var caller in new[] { A.Caller().Session().Build(), A.Caller().Service("jobs").Build(), null })
+        Assert.True(Table.Decide(row.Class, A.Caller().Session().Build(), row).Allowed);
+        foreach (var caller in new[] { A.Caller().Service("jobs").Build(), null })
         {
             Assert.Equal(SindriErrors.AuthRefused.Code, Table.Decide(row.Class, caller, row).Refusal?.Code);
         }

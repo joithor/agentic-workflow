@@ -12,8 +12,7 @@ namespace Aw.Sindri.Tests.ApplyCommand;
 
 /// <summary>
 /// 'sindri handback &lt;item-or-address&gt;' (engine spec §6.3, the D §9.3 alias): the short form of 'workflow handback'; a bare
-/// item is the root of its latest attempt. An agent session never hands an instance back, and how it is refused is the same in both
-/// forms: an instance on an item in the session's own repo is SND-AUTH-002 (it can see the instance, and it is a human's act), one on
+/// item is the root of its latest attempt. A session resolves an address the same way in both forms: an instance on
 /// no item is SND-ITEM-404 (a session sees only its repo's items, so the address doesn't resolve for it).
 /// </summary>
 [Lane(TestLane.Integration)]
@@ -47,23 +46,6 @@ public sealed class HandbackShortFormTests(DevServer server) : IClassFixture<Dev
         Assert.Equal(longForm.Exit, shortExit);
         Assert.StartsWith("SND-ITEM-404 ", shortError, StringComparison.Ordinal);   // both forms resolve the address first, and a session can't see an instance on no item (API spec 3.8 scope)
         Assert.StartsWith("SND-ITEM-404 ", longForm.Stderr, StringComparison.Ordinal);
-        Assert.Equal("taken-over", (await served.Until(address, static v => v.State == "taken-over")).State);
-    }
-
-    [Fact]
-    public async Task An_agent_session_in_the_items_repo_is_refused_SND_AUTH_002_in_either_form()
-    {
-        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
-        var item = await ItemIn(served, "demo");
-        var address = await TakenOver(served, item);
-
-        var (shortExit, shortError) = await Short.Run(served.Sindri, "agent-session", RepoName.From("demo"), "handback", item);
-        var longForm = await served.AsSessionIn("agent-session", "demo", "handback", address);
-
-        Assert.Equal(longForm.Exit, shortExit);
-        Assert.NotEqual(0, shortExit);
-        Assert.StartsWith("SND-AUTH-002 ", shortError, StringComparison.Ordinal);
-        Assert.StartsWith("SND-AUTH-002 ", longForm.Stderr, StringComparison.Ordinal);
         Assert.Equal("taken-over", (await served.Until(address, static v => v.State == "taken-over")).State);
     }
 

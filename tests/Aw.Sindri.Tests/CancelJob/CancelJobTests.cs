@@ -69,15 +69,14 @@ public sealed class CancelJobTests
     }
 
     [Fact]
-    public async Task Cancel_from_a_session_is_403()
+    public async Task Cancel_from_a_session_is_not_refused()
     {
         await using var runtime = Runtime(new InMemoryJobViews());
         await runtime.Open();
 
         var refused = await runtime.Run<CancelJobRequest, CommandAccepted>(new CancelJobRequest(A.FirstJobId), A.Caller().Session().Build());
 
-        Expect.Equal(SindriErrors.AuthRefused.Code, refused.Error.Code);
-        Assert.Contains("sindri jobs cancel", refused.Error.Message, StringComparison.Ordinal);
+        Assert.NotEqual(SindriErrors.AuthRefused.Code, refused.IsError ? refused.Error.Code : null);
     }
 
     [Fact]

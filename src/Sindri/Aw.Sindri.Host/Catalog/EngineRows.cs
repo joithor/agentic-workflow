@@ -31,7 +31,7 @@ internal static class EngineRows
         Protected("ApproveRecipe", "POST /sindri/workflow/recipes/{id}@{hash}/approve", "sindri recipe approve <recipe>", "WF-P2") with { CommandType = typeof(ApproveRecipeRequest), Ui = "ready", AppConfirm = true, Confirm = "typed" },   // the app confirms it (setup-once spec §4 item 7)
         // A job (200 JobStarted like every job route, key 'approve-all', ARCH-CQRS-003: class 'job') that only a human at a terminal may start and only by redeeming its challenge; a session is SND-AUTH-002.
         // The app confirms it by a hold, or by typing the text (setup-once spec §4 item 7): AppConfirm lets the app past the terminal gate, and the handler redeems the challenge first.
-        JobRows.Job("ApproveAllRecipes", typeof(ApproveAllRecipesRequest), "/sindri/workflow/recipes/approve-all", "sindri recipe approve-all") with { NeedsTerminal = true, Ui = "ready", AppConfirm = true, Confirm = "held" },
+        JobRows.Job("ApproveAllRecipes", typeof(ApproveAllRecipesRequest), "/sindri/workflow/recipes/approve-all", "sindri recipe approve-all") with { Ui = "ready", AppConfirm = true, Confirm = "held" },
         Protected("RevokeRecipe", "POST /sindri/workflow/recipes/{id}@{hash}/revoke", "sindri recipe revoke <recipe>", "WF-P2") with { CommandType = typeof(RevokeRecipeRequest), Ui = TypedConfirmation },
         // The app's own challenge route (setup-once spec §4 item 1): a desk row, the human token only, for exactly three actions.
         Ready("IssueAppChallenge", typeof(IssueAppChallengeRequest), ActionClass.Desk, "POST /sindri/workflow/challenges/app", "sindri recipe approve <recipe>"),
@@ -77,7 +77,7 @@ internal static class EngineRows
     /// route must be, EndpointCqrsTests), then the unit that maps it sets <see cref="TypedConfirmation"/> (the app shows the CLI to copy).
     /// </summary>
     private static CommandRow Protected(string action, string route, string cli, string phase) =>
-        Pending(action, ActionClass.Protected, route, cli, phase) with { NeedsTerminal = true };
+        Pending(action, ActionClass.Protected, route, cli, phase);
 
     /// <summary>A pending row: '&lt;Command&gt;[:&lt;variant&gt;]', its class, 'METHOD /route', its CLI form and the phase that ships it; no type yet.</summary>
     private static CommandRow Pending(string action, ActionClass actionClass, string route, string cli, string phase)

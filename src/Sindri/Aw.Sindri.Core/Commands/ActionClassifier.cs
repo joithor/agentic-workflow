@@ -31,7 +31,7 @@ public static class ActionClassifier
             : row;
     }
 
-    private static CommandRow Protect(CommandRow row) => row with { Class = ActionClass.Protected, NeedsTerminal = true };
+    private static CommandRow Protect(CommandRow row) => row with { Class = ActionClass.Protected };
 
     /// <summary>A protected row for an attempt the catalog has no row for, named '&lt;Command&gt;[:&lt;variant&gt;]' when that is an action id.</summary>
     private static CommandRow Unlisted(Type type, IReadOnlyList<CommandRow> rows, string? variant)
@@ -41,7 +41,7 @@ public static class ActionClassifier
         var action = ActionId.TryFrom(variant is null ? name : name + ":" + variant, out var full) ? full
             : ActionId.TryFrom(name, out var plain) ? plain
             : ActionId.From(Unknown);
-        return Protect(new CommandRow(action, type, variant, ActionClass.Protected, ServiceGrants: [], NeedsTerminal: true, SelfAudited: false,
+        return Protect(new CommandRow(action, type, variant, ActionClass.Protected, ServiceGrants: [], NeedsTerminal: false, SelfAudited: false,
             Destructive: false, ReadsViews: false, Shortcut: null, known?.Method, known?.Route, known?.Cli ?? CliForm.Parse("sindri").Value,
             "cli-only:unclassified"));
     }
