@@ -45,6 +45,48 @@ internal sealed class Scenario(GoldenHost host)
         return (await host.Http.Ask(Get(route, AppHeaders()))).Body;
     }
 
+    /// <summary>Lets the views follow the ledger (the golden host hosts no projector), then GET as the app: what the profile's approval row says is there.</summary>
+    public async Task<string> FetchWithViews(string route, CancellationToken ct)
+    {
+        await ViewScenarios.CatchUp(host, ct);
+        return await Fetch(route, ct);
+    }
+
+    /// <summary>
+    /// Starts a map build as the human, then GET as the app. A <paramref name="hung"/> build never ends (and is waited for until its first progress line is in the jobs view, so the answer
+    /// counts it); the other ends first, leaving a draft and no current map.
+    /// </summary>
+    public async Task<string> FetchAfterBuild(string route, bool hung, CancellationToken ct)
+    {
+        var started = await host.Http.Ask(Post("/sindri/context/map/build", "{}", TerminalHeaders()));
+        Assert.Equal(System.Net.HttpStatusCode.OK, started.Status);
+        if (hung)
+        {
+            await using var scope = host.App.Services.CreateAsyncScope();
+            var jobs = scope.ServiceProvider.GetRequiredService<Aw.Sindri.Core.Views.IJobViews>();
+            var waited = System.Diagnostics.Stopwatch.StartNew();
+            do
+            {
+                await ViewScenarios.CatchUp(host, ct);
+                var running = await jobs.Running(ct);
+                if (running.IsSuccess && running.Value.Any(j => j.Progress.Count > 0))
+                {
+                    break;
+                }
+
+                await Task.Delay(20, ct);
+            }
+            while (waited.Elapsed < Jobs.JobHost.Hang);
+        }
+        else
+        {
+            await Jobs.JobHost.Settle(host, ct);
+        }
+
+        await ViewScenarios.CatchUp(host, ct);
+        return await Fetch(route, ct);
+    }
+
     /// <summary>QUERY (the HTTP method with a body) a body query as the app (the subgraph route): a read, so the answer is the body of a GET for the same keys.</summary>
     public async Task<string> Query(string route, string json, CancellationToken ct)
     {
