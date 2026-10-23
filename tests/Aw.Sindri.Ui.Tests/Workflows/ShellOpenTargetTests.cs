@@ -67,6 +67,16 @@ public sealed class ShellOpenTargetTests
 
         Assert.True(shell.IsNeedsYouInbox);
         Assert.True(shell.Inbox.ShowsAnswer);   // the answer form, not the child's copy-only frame
+
+        var form = shell.Inbox.Answer!;   // typing there sends the answer-text for the parked step the row names
+        form.Choose(Aw.Sindri.Ui.ViewModels.NeedsYou.PausedAnswerOption.Hint);
+        form.HintText = " try the other recipe ";
+        await form.Send();
+
+        var (target, body) = Assert.Single(_server.CommandCalls);
+        Assert.Equal((string)GoldenFiles.Node("needs-you", "park-mirrored-child")["rows"]![0]!["subject"]!["id"]!, target);
+        Assert.Equal((Aw.Sindri.Ui.Api.Workflow.CommandKind.Answer, (Aw.Sindri.Ui.Api.Workflow.AnswerVariant?)Aw.Sindri.Ui.Api.Workflow.AnswerVariant.Text, (string?)"try the other recipe"), (body.Kind, body.Answer, body.Text));
+        Assert.True(form.IsSent);
     }, Token);
 
     [Fact]
