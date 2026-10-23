@@ -39,16 +39,22 @@ public static partial class NeedsYouRows
         return Row(item, park.Address, shape, since, scrubber);
     }
 
-    /// <summary>The answer a park row offers: a pointer to the descendant that decides, or the instance's own.</summary>
+    /// <summary>
+    /// The answer a park row offers: the instance's own, or for a parked descendant a pointer to it (`via: "child"`) whose cli is
+    /// the descendant's own answer (the deepest park mirrors nothing), so a terminal user runs it there.
+    /// </summary>
     private static Workflow.Views.StatusAnswer? AnswerOf(ParkRowInput park)
     {
-        if (park.Descendant is { } descendant)
+        var suspension = park.Suspension;
+        var shape = new ParkShape(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors is not null);
+        if (park.Descendant is not { } descendant)
         {
-            return ParkAnswers.For(new ParkShape(SuspensionKind.Escalation, Reason: null, ParkKind: null, EscalationKind.Child, Mirrors: false), descendant, child: descendant.Value);   // the descendant decides: a pointer to it
+            return ParkAnswers.For(shape, park.Address, child: suspension.MirrorsAddress);
         }
 
-        var suspension = park.Suspension;
-        return ParkAnswers.For(new ParkShape(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors is not null), park.Address, child: suspension.MirrorsAddress);
+        return ParkAnswers.For(shape, descendant) is { Via: null } own
+            ? own with { Via = "child", Child = descendant.Value }
+            : ParkAnswers.For(new ParkShape(SuspensionKind.Escalation, Reason: null, ParkKind: null, EscalationKind.Child, Mirrors: false), descendant, child: descendant.Value);   // no answer of its own (a drift, a revoked child): a pointer to it
     }
 
     /// <summary>The 'park' row of an open desk task.</summary>

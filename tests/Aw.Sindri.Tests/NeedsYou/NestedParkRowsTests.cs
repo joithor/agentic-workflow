@@ -1,9 +1,11 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Tests.Items;
 
 namespace Aw.Sindri.Tests.NeedsYou;
@@ -30,7 +32,7 @@ public sealed class NestedParkRowsTests
         Assert.Equal(("park:" + Instance(_root), "park · needs answer", "child", _phase), (row.Id.Value, row.Label, row.Via, row.Child));
         Assert.Equal(Instance(_root), row.Subject.Id.Value);
         Assert.Contains("it needs an answer (" + _phase + ")", row.Reason, StringComparison.Ordinal);
-        Assert.StartsWith("sindri workflow answer " + _phase + " ", row.Cli, StringComparison.Ordinal);
+        Assert.Equal(("sindri workflow answer " + _phase + " --text <answer>", ActionId.From("ApplyCommand:answer-text")), (row.Cli, row.PrimaryAction));
     }
 
     [Fact]
@@ -43,6 +45,7 @@ public sealed class NestedParkRowsTests
         var row = Assert.Single(await Rows(q)).Row;
         Assert.Equal(("park · dispatch refused", "child", _phase), (row.Label, row.Via, row.Child));
         Assert.Contains("SND-WF-010: fact:nextPhase must be a phase", row.Reason, StringComparison.Ordinal);
+        Assert.Equal(("sindri workflow answer " + _phase + " --resume", AnswerKind.Resume, ActionId.From("ApplyCommand:answer-resume")), (row.Cli, row.AnswerKind, row.PrimaryAction));
     }
 
     [Fact]
