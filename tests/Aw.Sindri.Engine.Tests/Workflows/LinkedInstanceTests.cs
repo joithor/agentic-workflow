@@ -9,8 +9,10 @@ using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Tests.ApplyCommand;
+using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Workflows.Effects;
 using Microsoft.Extensions.DependencyInjection;
+using Temporalio.Common;
 using Temporalio.Worker;
 
 namespace Aw.Sindri.Tests.Workflows;
@@ -92,6 +94,20 @@ public sealed class LinkedInstanceTests : IDisposable
             Assert.Empty(early);
             Assert.Equal(["parked", "resumed", "ended"], reports.Select(static r => r.Outcome), StringComparer.Ordinal);
         }, ct);
+    }
+
+    [Fact]
+    public async Task A_history_recorded_before_the_report_order_marker_replays_with_its_reports_concurrent()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var stream = typeof(RecipeFixtures).Assembly.GetManifestResourceStream("histories/linked-phase-pre-report-order.json")!;
+        using var reader = new StreamReader(stream);
+        var json = await reader.ReadToEndAsync(ct);
+
+        var replayed = await new WorkflowReplayer(new WorkflowReplayerOptions().AddWorkflow<RecipeWorkflow>())
+            .ReplayWorkflowAsync(WorkflowHistory.FromJson(LinkedAddress("T-83"), json), throwOnReplayFailure: false, ct);
+
+        Assert.Null(replayed.ReplayFailure);
     }
 
     [Fact(Timeout = 120_000)]
