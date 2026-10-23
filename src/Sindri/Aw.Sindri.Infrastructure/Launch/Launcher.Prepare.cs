@@ -32,7 +32,7 @@ internal sealed partial class Launcher
                 return refused;
             }
 
-            if (WriteFacts(request, workDir) is { } refusedFacts)
+            if (await WriteFacts(request, workDir, cancellationToken).ConfigureAwait(false) is { } refusedFacts)
             {
                 return refusedFacts;
             }
@@ -74,9 +74,9 @@ internal sealed partial class Launcher
             : null;
 
     /// <summary>The Step's declared read facts, as files in its run directory before the session starts (an attended launch has none, as it has no bundle: a human open has no Step directory and no brief to name the files); an error when a name is refused.</summary>
-    private static Error? WriteFacts(LaunchRequest request, string workDir) =>
+    private static async ValueTask<Error?> WriteFacts(LaunchRequest request, string workDir, CancellationToken cancellationToken) =>
         request is { Attended: false, Step.Facts: { Count: > 0 } facts }
-            ? StepFactWriter.Write(StepEnvironment.For(request).GetValueOrDefault(StepEnvironment.RunDirectory, workDir), facts)
+            ? await StepFactWriter.Write(StepEnvironment.For(request).GetValueOrDefault(StepEnvironment.RunDirectory, workDir), facts, cancellationToken).ConfigureAwait(false)
             : null;
 
     /// <summary>Where the session runs: the holdout evaluator's own scratch checkout at the head sha (removed with the launch, LN-LCH2), else the launch's worktree or the repo.</summary>

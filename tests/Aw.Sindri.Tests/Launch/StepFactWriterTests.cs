@@ -14,9 +14,9 @@ public sealed class StepFactWriterTests : IDisposable
     public void Dispose() => Directory.Delete(_run, recursive: true);
 
     [Fact]
-    public void The_files_are_written_into_the_run_directory()
+    public async Task The_files_are_written_into_the_run_directory()
     {
-        var problem = StepFactWriter.Write(_run, new Dictionary<string, string>(StringComparer.Ordinal) { ["workspace.json"] = "\"/work/docs\"", ["docsScope.json"] = """{"base":"abc"}""" });
+        var problem = await StepFactWriter.Write(_run, new Dictionary<string, string>(StringComparer.Ordinal) { ["workspace.json"] = "\"/work/docs\"", ["docsScope.json"] = """{"base":"abc"}""" }, CancellationToken.None);
 
         Assert.Null(problem);
         Assert.Equal("\"/work/docs\"", File.ReadAllText(Path.Combine(_run, "workspace.json")));
@@ -24,11 +24,11 @@ public sealed class StepFactWriterTests : IDisposable
     }
 
     [Fact]
-    public void A_retry_rewrites_a_file_a_first_launch_left()
+    public async Task A_retry_rewrites_a_file_a_first_launch_left()
     {
-        _ = StepFactWriter.Write(_run, new Dictionary<string, string>(StringComparer.Ordinal) { ["brief.json"] = "\"old\"" });
+        _ = await StepFactWriter.Write(_run, new Dictionary<string, string>(StringComparer.Ordinal) { ["brief.json"] = "\"old\"" }, CancellationToken.None);
 
-        _ = StepFactWriter.Write(_run, new Dictionary<string, string>(StringComparer.Ordinal) { ["brief.json"] = "\"new\"" });
+        _ = await StepFactWriter.Write(_run, new Dictionary<string, string>(StringComparer.Ordinal) { ["brief.json"] = "\"new\"" }, CancellationToken.None);
 
         Assert.Equal("\"new\"", File.ReadAllText(Path.Combine(_run, "brief.json")));
     }
@@ -37,9 +37,9 @@ public sealed class StepFactWriterTests : IDisposable
     [InlineData("../escape.json")]
     [InlineData("a/b.json")]
     [InlineData("/etc/escape.json")]
-    public void A_name_that_is_not_one_file_in_the_directory_is_refused_and_nothing_is_written(string name)
+    public async Task A_name_that_is_not_one_file_in_the_directory_is_refused_and_nothing_is_written(string name)
     {
-        var problem = StepFactWriter.Write(_run, new Dictionary<string, string>(StringComparer.Ordinal) { ["ok.json"] = "1", [name] = "2" });
+        var problem = await StepFactWriter.Write(_run, new Dictionary<string, string>(StringComparer.Ordinal) { ["ok.json"] = "1", [name] = "2" }, CancellationToken.None);
 
         Assert.NotNull(problem);
         Assert.Contains(name, problem.Message, StringComparison.Ordinal);
@@ -49,7 +49,7 @@ public sealed class StepFactWriterTests : IDisposable
     [Fact]
     public async Task The_scoping_fact_reader_finds_what_the_launch_wrote_with_the_shape_docs_check_expects()
     {
-        _ = StepFactWriter.Write(_run, new Dictionary<string, string>(StringComparer.Ordinal) { ["workspace.json"] = "\"/work/docs\"", ["docsScope.json"] = """{"base":"abc"}""" });
+        _ = await StepFactWriter.Write(_run, new Dictionary<string, string>(StringComparer.Ordinal) { ["workspace.json"] = "\"/work/docs\"", ["docsScope.json"] = """{"base":"abc"}""" }, CancellationToken.None);
 
         var read = await ScopingFactDirectory.Read(_run, CancellationToken.None);
 
