@@ -40,29 +40,16 @@ internal static partial class CommandTable
             var scope = provider.CreateAsyncScope();
             await using (scope.ConfigureAwait(false))
             {
-                var session = AgentSession.Detect(environment, scope.ServiceProvider.GetRequiredService<IProcessAncestry>(), Interactive());
+                var session = AgentSession.Detect(environment, Interactive());
                 using var interrupt = Interrupt.For(args);   // Ctrl-C ends the streaming verbs and the job-following ones; no other verb listens
                 return await Guarded(interrupt, Console.Error, i => Dispatch(args, session, scope.ServiceProvider, environment, i)).ConfigureAwait(false);
             }
         }
     }
 
-    /// <summary>'sindri serve', refused inside an agent session unless AW_SINDRI_PROVER=1 (P1 plan G6).</summary>
-    private static async Task<int> Serve(Func<string, string?> environment, TimeProvider clock)
-    {
-        Kernel.Error? refused;
-        Output output;
-        var provider = Composition.Compose(new ServiceCollection(), environment, clock).BuildServiceProvider();
-        await using (provider.ConfigureAwait(false))   // only to class the CLI: serve builds its own host
-        {
-            refused = StartCommand.ServeRefusal(AgentSession.Detect(environment, provider.GetRequiredService<IProcessAncestry>(), Interactive()));
-            output = new Output(Console.Out, Console.Error, provider.GetRequiredService<JsonSerializerOptions>());
-        }
-
-        return refused is null
-            ? await ServeCommand.Run(environment, clock, Console.Error).ConfigureAwait(false)
-            : await output.Error(refused).ConfigureAwait(false);
-    }
+    /// <summary>'sindri serve': the control plane in the foreground; the lease keeps a second one out.</summary>
+    private static Task<int> Serve(Func<string, string?> environment, TimeProvider clock) =>
+        ServeCommand.Run(environment, clock, Console.Error);
 
     /// <summary>Runs the verb; a Ctrl-C that cancels a call in flight ends it with 'interrupted' and exit 130 instead of a stack trace. Any other cancellation is a bug and propagates.</summary>
     /// <param name="interrupt">The listener whose token the Ctrl-C cancels.</param>
@@ -114,7 +101,7 @@ internal static partial class CommandTable
             ["launch" or "session", ..] => await LaunchOrSession(args, client, (output, environment), services, (ct, interrupt.Again)).ConfigureAwait(false),
             ["doctor", ..] => await Doctor(args, verbs, harnesses, output, ct).ConfigureAwait(false),
             ["onyx", .. var rest] => await Onyx(rest, verbs, new OnyxVerbs(services, output, session, (hash, to, c) => new Verbs(client, probe, to, services, e => start.EnsureRunning(launch: true, e)).Approve(hash, Interactive(), Console.In, c)), output, ct).ConfigureAwait(false),
-            ["mcp", .. var rest] => await new McpVerbs(services, output, session).Run(rest, ct).ConfigureAwait(false),
+            ["mcp", .. var rest] => await new McpVerbs(services, output).Run(rest, ct).ConfigureAwait(false),
             ["context", ..] => await Context(args, client, output, services, (ct, interrupt.Again)).ConfigureAwait(false),
             ["line", "holdout", .. var rest] => await new LineHoldoutVerbs(client, output, Interactive(), Console.In).Run(rest, ct).ConfigureAwait(false),
             ["recipe" or "workflow" or "scoping" or "design" or "plan" or "line" or "pack" or "outbox" or "takeover" or "handback" or "docs" or "pr", ..] => await Workflows(args, new ScopingCommandTable.Host(services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c), environment), environment), ct).ConfigureAwait(false),
@@ -144,15 +131,15 @@ internal static partial class CommandTable
 
     // Bare 'sindri' (not headless) offers to set Onyx up before it starts the control plane.
     private static StartCommand NewStart(IServiceProvider services, AgentSession session, (ControlPlaneClient Client, IControlPlaneProbe Probe, Output Output) wire, Func<string>? openUi, bool headless)
-        => new(wire.Probe, services.GetRequiredService<IControlPlaneLauncher>(), wire.Client, wire.Output, services.GetRequiredService<TimeProvider>(), session, openUi)
+        => new(wire.Probe, services.GetRequiredService<IControlPlaneLauncher>(), wire.Client, wire.Output, services.GetRequiredService<TimeProvider>(), openUi)
         {
             BeforeStart = headless ? null : OnyxFirstRun(services, session, wire),
         };
 
     // The control plane may not be running yet while the offer's inline approval needs it, so this approval may start it.
-    private static Task<int> Approve(IServiceProvider services, AgentSession session, (ControlPlaneClient Client, IControlPlaneProbe Probe, Output Output) wire, string? hash, CancellationToken ct)
+    private static Task<int> Approve(IServiceProvider services, (ControlPlaneClient Client, IControlPlaneProbe Probe, Output Output) wire, string? hash, CancellationToken ct)
     {
-        var starter = new StartCommand(wire.Probe, services.GetRequiredService<IControlPlaneLauncher>(), wire.Client, wire.Output, services.GetRequiredService<TimeProvider>(), session);
+        var starter = new StartCommand(wire.Probe, services.GetRequiredService<IControlPlaneLauncher>(), wire.Client, wire.Output, services.GetRequiredService<TimeProvider>());
         return new Verbs(wire.Client, wire.Probe, wire.Output, services, e => starter.EnsureRunning(launch: true, e)).Approve(hash, Interactive(), Console.In, ct);
     }
 
@@ -165,7 +152,7 @@ internal static partial class CommandTable
                 await Console.Error.WriteAsync(question).ConfigureAwait(false);
                 return await Console.In.ReadLineAsync(ct).ConfigureAwait(false);
             },
-            c => Onyx(["up"], new Verbs(wire.Client, wire.Probe, wire.Output, services), new OnyxVerbs(services, wire.Output, session, (hash, to, a) => Approve(services, session, (wire.Client, wire.Probe, to), hash, a)), wire.Output, c),
+            c => Onyx(["up"], new Verbs(wire.Client, wire.Probe, wire.Output, services), new OnyxVerbs(services, wire.Output, session, (hash, to, a) => Approve(services, (wire.Client, wire.Probe, to), hash, a)), wire.Output, c),
             Console.Error).Run(ct);
 
     /// <summary>'sindri onyx status|up|down [--json]'.</summary>

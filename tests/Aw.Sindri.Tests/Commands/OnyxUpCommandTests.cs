@@ -49,32 +49,17 @@ public sealed class OnyxUpCommandTests : IDisposable
 
     public void Dispose() => _services.Dispose();
 
-    private static AgentSession Human { get; } = new(Signal: null, Terminal: true, Prover: false);
+    private static AgentSession Human { get; } = new(Terminal: true, Prover: false);
 
     private OnyxVerbs Verbs(AgentSession session) => new(_services, new Output(_out, _error, _json), session);
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Up_as_a_session_is_refused_with_SND_AUTH_002_and_calls_nothing()
+    public async Task Up_runs_for_whoever_starts_it_with_or_without_a_terminal()
     {
-        var code = await Verbs(new AgentSession("CLAUDECODE is set", Terminal: true, Prover: false)).Up(json: false, TestContext.Current.CancellationToken);
+        _ = await Verbs(new AgentSession(Terminal: false, Prover: false)).Up(json: false, TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, code);
-        Assert.Contains("SND-AUTH-002", _error.ToString(), StringComparison.Ordinal);
-        Assert.Contains("CLAUDECODE is set", _error.ToString(), StringComparison.Ordinal);
-        Assert.Contains("ask the human to run `sindri onyx up`", _error.ToString(), StringComparison.Ordinal);
-        Assert.Empty(_rig.Runtime.Calls);
-        Assert.Equal(string.Empty, _out.ToString());
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public async Task Up_without_a_terminal_is_refused()
-    {
-        var code = await Verbs(new AgentSession(Signal: null, Terminal: false, Prover: false)).Up(json: false, TestContext.Current.CancellationToken);
-
-        Assert.Equal(1, code);
-        Assert.Contains("SND-AUTH-002", _error.ToString(), StringComparison.Ordinal);
-        Assert.Contains("no terminal", _error.ToString(), StringComparison.Ordinal);
-        Assert.Empty(_rig.Runtime.Calls);
+        Assert.DoesNotContain("SND-AUTH-002", _error.ToString(), StringComparison.Ordinal);
+        Assert.NotEmpty(_rig.Runtime.Calls);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -276,9 +261,9 @@ public sealed class OnyxUpCommandTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Open_as_a_session_is_refused_and_opens_nothing()
+    public async Task Open_without_a_terminal_is_refused_and_opens_nothing()
     {
-        var code = await Verbs(new AgentSession("CLAUDECODE is set", Terminal: true, Prover: false)).Open(TestContext.Current.CancellationToken);
+        var code = await Verbs(new AgentSession(Terminal: false, Prover: false)).Open(TestContext.Current.CancellationToken);
 
         Assert.Equal(1, code);
         Assert.Contains("SND-AUTH-002", _error.ToString(), StringComparison.Ordinal);
@@ -418,13 +403,12 @@ public sealed class OnyxUpCommandTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Down_as_a_session_is_refused()
+    public async Task Down_runs_for_whoever_starts_it_with_or_without_a_terminal()
     {
-        var code = await Verbs(new AgentSession("CLAUDECODE is set", Terminal: true, Prover: false)).Down(json: false, TestContext.Current.CancellationToken);
+        var code = await Verbs(new AgentSession(Terminal: false, Prover: false)).Down(json: false, TestContext.Current.CancellationToken);
 
-        Assert.Equal(1, code);
-        Assert.Contains("SND-AUTH-002", _error.ToString(), StringComparison.Ordinal);
-        Assert.Empty(_rig.Runtime.Calls);
+        Assert.Equal(0, code);
+        Assert.DoesNotContain("SND-AUTH-002", _error.ToString(), StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -8,9 +8,8 @@ using Aw.Sindri.Features.OnyxUp;
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
-/// 'sindri onyx up' and 'sindri onyx down': they run Docker and write Onyx's files under the Sindri home, so only a human at a terminal runs them (an agent
-/// session or a non-terminal gets SND-AUTH-002, exit 1, like 'mcp register --apply'). Local: they run in this process, need no control plane, and change
-/// nothing for a refused caller. Progress is on standard error (lines and dots, through IOnyxProgress); standard output carries only the summary.
+/// 'sindri onyx up' and 'sindri onyx down': they run Docker and write Onyx's files under the Sindri home, for whoever runs the CLI (an agent
+/// the owner started included). 'onyx open' needs a terminal: it opens a browser page. Local: they run in this process and need no control plane. Progress is on standard error (lines and dots, through IOnyxProgress); standard output carries only the summary.
 /// </summary>
 /// <param name="services">The CLI's scoped services.</param>
 /// <param name="output">Where answers go.</param>
@@ -20,11 +19,6 @@ internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentS
 {
     internal async Task<int> Up(bool json, CancellationToken ct)
     {
-        if (!session.Human)
-        {
-            return await Refused("up", "runs Docker and writes Onyx's files").ConfigureAwait(false);
-        }
-
         Result<OnyxUpResponse> answer;
         try
         {
@@ -76,11 +70,6 @@ internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentS
 
     internal async Task<int> Down(bool json, CancellationToken ct)
     {
-        if (!session.Human)
-        {
-            return await Refused("down", "stops Docker containers").ConfigureAwait(false);
-        }
-
         Result<OnyxDownResponse> answer;
         try
         {
@@ -132,7 +121,7 @@ internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentS
     private async Task<int> Refused(string verb, string what)
     {
         _ = await output.Error(SindriErrors.AuthRefused.With(
-            $"`sindri onyx {verb}` {what}, so only a human at a terminal runs it (this CLI ran as a session: {session.SessionReason}; fix: ask the human to run `sindri onyx {verb}`)")).ConfigureAwait(false);
+            $"`sindri onyx {verb}` {what}, so it needs a terminal ({session.SessionReason}; fix: run `sindri onyx {verb}` at a terminal)")).ConfigureAwait(false);
         return 1;
     }
 }
