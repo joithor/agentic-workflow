@@ -5,6 +5,7 @@ using Aw.Evidence.Core.Guard;
 using Aw.Evidence.Core.Images;
 using Aw.Evidence.Core.Judging;
 using Aw.Evidence.Core.Locks;
+using Aw.Evidence.Core.Publishing;
 using Aw.Evidence.Core.Settings;
 using Aw.Evidence.Core.Stack;
 using Aw.Evidence.Core.Visual;
@@ -18,6 +19,7 @@ using Aw.Evidence.Infrastructure.Images;
 using Aw.Evidence.Infrastructure.Judging;
 using Aw.Evidence.Infrastructure.Locks;
 using Aw.Evidence.Infrastructure.Processes;
+using Aw.Evidence.Infrastructure.Publishing;
 using Aw.Evidence.Infrastructure.Redaction;
 using Aw.Evidence.Infrastructure.Settings;
 using Aw.Evidence.Infrastructure.Stack;
@@ -35,7 +37,7 @@ public static class EvidenceInfrastructureServiceCollectionExtensions
     /// <summary>
     /// Adds the Evidence adapters and their settings: directory locks, run files on disk, the PNG codec, the verdict-cache
     /// manifest, the stack probes (HTTP, docker, TCP), the psql provenance query, environment secrets and settings, the Playwright
-    /// browser and its installer, the unavailable judge, and random ids. The verdict-cache store reads the package's AwJson options,
+    /// browser and its installer, the judge CLI adapter (a stub until it is wired, answering unavailable), the gh runner (a stub until it is wired), and random ids. The verdict-cache store reads the package's AwJson options,
     /// which Composition registers.
     /// </summary>
     /// <param name="services">The service collection.</param>
@@ -57,9 +59,10 @@ public static class EvidenceInfrastructureServiceCollectionExtensions
             .AddSingleton<IEvidenceSettings>(new EnvironmentEvidenceSettings(environment))
             .AddSingleton<IBrowser, PlaywrightBrowser>()
             .AddSingleton<IBrowserInstaller, PlaywrightInstaller>()
-            .AddSingleton<IJudge, UnavailableJudge>()
+            .AddSingleton<IJudge, JudgeCliJudge>()
             .AddSingleton<IApiTransport>(static _ => new HttpApiTransport(TimeSpan.FromSeconds(30)))
             .AddSingleton<ICliRunner>(new ProcessCliRunner(TimeSpan.FromMinutes(2)))
+            .AddSingleton<IGhRunner, ProcessGhRunner>()
             .AddSingleton<IExecutableLocator, FileExecutableLocator>()
             .AddSingleton<IEvidenceTargets, FileEvidenceTargets>()
             .AddSingleton<SqliteDatabaseReader>()
