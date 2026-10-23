@@ -82,11 +82,13 @@ COPY context/code-index.lock /opt/sindri/context/code-index.lock
 COPY deploy/start.sh /opt/sindri/start.sh
 RUN chmod 0755 /opt/sindri/start.sh /opt/sindri/sindri /opt/sindri/judge /opt/sindri/aw-packets
 
-# State is under /data (the volume); the root is read-only, /tmp is the only other writable path.
+# State is under /data (the volume); the root is read-only, /tmp is the only other writable path. Every variable a `kubectl exec`
+# needs is set here, not in start.sh (an exec doesn't run it); the chart adds DOCKER_HOST and the rest (spec §A.1).
 ENV AW_SINDRI_DEPLOY=pod \
     AW_STATE_DIR=/data/state \
     AW_SINDRI_HOME=/data/state/sindri-app \
     HOME=/data/home \
+    DOCKER_CONFIG=/data/home/.docker \
     XDG_CACHE_HOME=/data/home/.cache \
     UV_CACHE_DIR=/data/home/.cache/uv \
     TMPDIR=/tmp \
