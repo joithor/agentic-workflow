@@ -6,4 +6,4 @@ namespace Aw.Sindri.Core.Prove;
 /// <param name="AppOnly">Whether it records an app-only signal instead of (or beside) tests.</param>
 /// <param name="Commit">The entry's red commit; null when it names none.</param>
 /// <param name="Problem">Why the entry is in none of the accepted shapes, naming the item; null otherwise.</param>
-internal sealed record RedEntry(string Item, IReadOnlyList<RedTest> Tests, bool AppOnly, string? Commit, string? Problem);
+public sealed record RedEntry(string Item, IReadOnlyList<RedTest> Tests, bool AppOnly, string? Commit, string? Problem);

@@ -32,7 +32,7 @@ public sealed class RedTestsFactTests
     {
         var fact = Parse("""{"i1":["T1","T2"]}""");
 
-        Assert.Equal(["T1", "T2"], fact.Entries.Single().Tests.Select(static t => t.Id));
+        Assert.Equal(["T1", "T2"], fact.Entries.Single().Tests.Select(static t => t.Name));
         Assert.Null(fact.Entries.Single().Problem);
     }
 

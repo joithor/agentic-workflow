@@ -8,15 +8,15 @@ namespace Aw.Sindri.Core.Prove;
 /// </summary>
 /// <param name="Entries">One entry per key, in the fact's order.</param>
 /// <param name="Problem">Why the fact as a whole is not an object; null otherwise.</param>
-internal sealed record RedTestsFact(IReadOnlyList<RedEntry> Entries, string? Problem)
+public sealed record RedTestsFact(IReadOnlyList<RedEntry> Entries, string? Problem)
 {
     /// <summary>The shape, as the agent and every refusal state it.</summary>
-    internal const string Shape = "{ \"<acceptance item id>\": { \"tests\": [\"<test id>\" | { \"id\": \"<test id>\", \"path\": \"<test file>\" }], \"appOnly\": { \"signal\": \"<signal id>\" }, \"commit\": \"<red commit sha>\", \"output\": \"<failing run, trimmed>\" } } (one key per acceptance item and nothing else at the top level; the value may also be just a list of test ids)";
+    public const string Shape = "{ \"<acceptance item id>\": { \"tests\": [\"<test id>\" | { \"id\": \"<test id>\", \"path\": \"<test file>\" }], \"appOnly\": { \"signal\": \"<signal id>\" }, \"commit\": \"<red commit sha>\", \"output\": \"<failing run, trimmed>\" } } (one key per acceptance item and nothing else at the top level; the value may also be just a list of test ids)";
 
     /// <summary>Parses <paramref name="fact"/>; null and <c language="text">{}</c> hold no entry.</summary>
     /// <param name="fact">The fact.</param>
     /// <returns>The parsed fact.</returns>
-    internal static RedTestsFact Parse(JsonNode? fact) => fact switch
+    public static RedTestsFact Parse(JsonNode? fact) => fact switch
     {
         null => new RedTestsFact([], Problem: null),
         JsonObject obj => new RedTestsFact([.. obj.Select(static e => Entry(e.Key, e.Value))], Problem: null),
@@ -25,7 +25,7 @@ internal sealed record RedTestsFact(IReadOnlyList<RedEntry> Entries, string? Pro
 
     /// <summary>The red commit the entries name and why they can't be used as one, if they can't: none named, or two different ones.</summary>
     /// <returns>The commit, or the problem.</returns>
-    internal (string? Commit, string? Problem) RedCommit()
+    public (string? Commit, string? Problem) RedCommit()
     {
         var named = Entries.Select(static e => (e.Item, e.Commit)).Where(static e => e.Commit is not null).Select(static e => (e.Item, Commit: e.Commit ?? string.Empty)).ToList();
         return named.Select(static n => n.Commit).Distinct(StringComparer.Ordinal).Count() switch

@@ -95,7 +95,7 @@ internal sealed class BuildRedCheckStep(IRunDiff diff, RepoCommandRunner command
             return StepFacts.Done("red");
         }
 
-        var tests = string.Join("; ", red.Entries.Where(static e => e.Tests.Count > 0).Select(static item => $"item {item.Item} ({string.Join(", ", item.Tests.Select(static t => t.Id))})"));
+        var tests = string.Join("; ", red.Entries.Where(static e => e.Tests.Count > 0).Select(static item => $"item {item.Item} ({string.Join(", ", item.Tests.Select(static t => t.Name))})"));
         var vacuous = new RuleFinding("BLD-RED-001", $"every command passed on the red commit, so the red tests of {tests} can't fail; a test that can't fail proves nothing", Detail: ran.Value[^1].Run.Tail);
         return StepFacts.Done("vacuous", ("fact:findings", RuleFinding.ToFact([vacuous])));
     }
