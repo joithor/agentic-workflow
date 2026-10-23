@@ -171,6 +171,18 @@ internal sealed partial class NeedsYouPage : UserControl
 
     private void OnOpenPr(object? sender, RoutedEventArgs e) => _ = _page?.Bar.MergeCard?.Open(CancellationToken.None);
 
+    private void OnVerb(object? sender, RoutedEventArgs e) => _ = (sender as Control)?.DataContext is DeskVerbViewModel verb ? verb.Press() : Task.CompletedTask;
+
+    private void OnVerbConfirm(object? sender, RoutedEventArgs e) => _ = (sender as Control)?.DataContext is DeskVerbViewModel verb ? verb.Confirm() : Task.CompletedTask;
+
+    private void OnVerbKeep(object? sender, RoutedEventArgs e)
+    {
+        if ((sender as Control)?.DataContext is DeskVerbViewModel verb)
+        {
+            verb.Keep();
+        }
+    }
+
     private void OnApprove(object? sender, RoutedEventArgs e) => _ = _page?.Bar.PressApprove();
 
     private void OnTerminal(object? sender, RoutedEventArgs e) => _ = _page?.Bar.CopyTerminal();
