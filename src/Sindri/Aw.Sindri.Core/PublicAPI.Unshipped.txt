@@ -5871,7 +5871,7 @@ const Aw.Sindri.Core.Views.ViewNames.NeedsYou = "needs_you" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Profile = "profile" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Requests = "requests" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Services = "services" -> string!
-const Aw.Sindri.Core.Views.ViewSchema.Version = 8 -> int
+const Aw.Sindri.Core.Views.ViewSchema.Version = 9 -> int
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Cancelled = "outbox.cancelled" -> string!
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Dispatched = "outbox.dispatched" -> string!
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Pending = "outbox.pending" -> string!
@@ -16166,6 +16166,43 @@ static Aw.Sindri.Core.Events.CodeIndexBuilt.operator !=(Aw.Sindri.Core.Events.Co
 static Aw.Sindri.Core.Events.CodeIndexBuilt.operator ==(Aw.Sindri.Core.Events.CodeIndexBuilt? left, Aw.Sindri.Core.Events.CodeIndexBuilt? right) -> bool
 static Aw.Sindri.Core.Events.CodeIndexBuiltLayer.operator !=(Aw.Sindri.Core.Events.CodeIndexBuiltLayer? left, Aw.Sindri.Core.Events.CodeIndexBuiltLayer? right) -> bool
 static Aw.Sindri.Core.Events.CodeIndexBuiltLayer.operator ==(Aw.Sindri.Core.Events.CodeIndexBuiltLayer? left, Aw.Sindri.Core.Events.CodeIndexBuiltLayer? right) -> bool
+Aw.Sindri.Core.Views.CodeIndexRow
+Aw.Sindri.Core.Views.CodeIndexRow.<Clone>$() -> Aw.Sindri.Core.Views.CodeIndexRow!
+Aw.Sindri.Core.Views.CodeIndexRow.Equals(Aw.Sindri.Core.Views.CodeIndexRow? other) -> bool
+Aw.Sindri.Core.Views.CodeIndexRow.CodeIndexRow(string! Repo, string! Commit, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.CodeIndexBuiltLayer!>! Layers, int Files, int Symbols, int Edges, double UnresolvedShare, double AmbiguousShare, int EmbeddedPercent, long Milliseconds, bool Incremental, System.DateTimeOffset BuiltAt, long Sequence) -> void
+Aw.Sindri.Core.Views.CodeIndexRow.Deconstruct(out string! Repo, out string! Commit, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.CodeIndexBuiltLayer!>! Layers, out int Files, out int Symbols, out int Edges, out double UnresolvedShare, out double AmbiguousShare, out int EmbeddedPercent, out long Milliseconds, out bool Incremental, out System.DateTimeOffset BuiltAt, out long Sequence) -> void
+override Aw.Sindri.Core.Views.CodeIndexRow.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Views.CodeIndexRow.GetHashCode() -> int
+override Aw.Sindri.Core.Views.CodeIndexRow.ToString() -> string!
+static Aw.Sindri.Core.Views.CodeIndexRow.operator !=(Aw.Sindri.Core.Views.CodeIndexRow? left, Aw.Sindri.Core.Views.CodeIndexRow? right) -> bool
+static Aw.Sindri.Core.Views.CodeIndexRow.operator ==(Aw.Sindri.Core.Views.CodeIndexRow? left, Aw.Sindri.Core.Views.CodeIndexRow? right) -> bool
+Aw.Sindri.Core.Views.CodeIndexRow.Repo.get -> string!
+Aw.Sindri.Core.Views.CodeIndexRow.Repo.init -> void
+Aw.Sindri.Core.Views.CodeIndexRow.Commit.get -> string!
+Aw.Sindri.Core.Views.CodeIndexRow.Commit.init -> void
+Aw.Sindri.Core.Views.CodeIndexRow.Layers.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Events.CodeIndexBuiltLayer!>!
+Aw.Sindri.Core.Views.CodeIndexRow.Layers.init -> void
+Aw.Sindri.Core.Views.CodeIndexRow.Files.get -> int
+Aw.Sindri.Core.Views.CodeIndexRow.Files.init -> void
+Aw.Sindri.Core.Views.CodeIndexRow.Symbols.get -> int
+Aw.Sindri.Core.Views.CodeIndexRow.Symbols.init -> void
+Aw.Sindri.Core.Views.CodeIndexRow.Edges.get -> int
+Aw.Sindri.Core.Views.CodeIndexRow.Edges.init -> void
+Aw.Sindri.Core.Views.CodeIndexRow.UnresolvedShare.get -> double
+Aw.Sindri.Core.Views.CodeIndexRow.UnresolvedShare.init -> void
+Aw.Sindri.Core.Views.CodeIndexRow.AmbiguousShare.get -> double
+Aw.Sindri.Core.Views.CodeIndexRow.AmbiguousShare.init -> void
+Aw.Sindri.Core.Views.CodeIndexRow.EmbeddedPercent.get -> int
+Aw.Sindri.Core.Views.CodeIndexRow.EmbeddedPercent.init -> void
+Aw.Sindri.Core.Views.CodeIndexRow.Milliseconds.get -> long
+Aw.Sindri.Core.Views.CodeIndexRow.Milliseconds.init -> void
+Aw.Sindri.Core.Views.CodeIndexRow.Incremental.get -> bool
+Aw.Sindri.Core.Views.CodeIndexRow.Incremental.init -> void
+Aw.Sindri.Core.Views.CodeIndexRow.BuiltAt.get -> System.DateTimeOffset
+Aw.Sindri.Core.Views.CodeIndexRow.BuiltAt.init -> void
+Aw.Sindri.Core.Views.CodeIndexRow.Sequence.get -> long
+Aw.Sindri.Core.Views.CodeIndexRow.Sequence.init -> void
+const Aw.Sindri.Core.Views.ViewNames.CodeIndex = "code-index" -> string!
 Aw.Sindri.Core.Worktrees.ITrackedFiles
 Aw.Sindri.Core.Worktrees.ITrackedFiles.Paths(string! checkout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.IDiffContent
