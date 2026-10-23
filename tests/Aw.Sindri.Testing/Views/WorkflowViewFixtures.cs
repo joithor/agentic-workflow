@@ -1,6 +1,7 @@
 #pragma warning disable MA0003, MA0127 // fixture records are positional; their literals are named by the record
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
@@ -526,6 +527,9 @@ public static class WorkflowViewFixtures
             [new ChildGroup("build", RecipeId.From("workflow.step"), 4, 9, [ws1, ws2, ws3, ws4], [], 0, "Step")],
             Counts(41, 3, 1));
     }
+
+    /// <summary>PRJ-sync as <see cref="ProjectBuild"/> with its needs-you row joined (q65): the parked child decides, so the detail opens that child.</summary>
+    public static InstanceDetail OpenChild() => ProjectBuild() with { Open = new NeedsYouOpen("workflow/ITM-01JK3/project/1/step.6", "Answer in the child") };
 
     private static readonly InstanceSummary _prjDocs = Row("ITM-01JKG/project/1", _project, "build", Today(8, 40), null,
         Subject("linear-project", "DOCS", "DOCS · Handbook"),
