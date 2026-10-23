@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Registry;
+using Aw.Sindri.Core.Workflow.RegistryWrites;
 
 namespace Aw.Sindri.Features.ApproveRecipe;
 

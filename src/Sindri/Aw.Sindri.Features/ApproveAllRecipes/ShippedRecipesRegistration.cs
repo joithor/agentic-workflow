@@ -1,5 +1,5 @@
 using Aw.Sindri.Core.Workflow.ApproveAll;
-using Aw.Sindri.Core.Workflow.Registry;
+using Aw.Sindri.Core.Workflow.RegistryWrites;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 

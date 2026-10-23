@@ -2,7 +2,7 @@ using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Registry;
 
-/// <summary>What <see cref="RecipeRegistrar"/> registered and where it stands.</summary>
+/// <summary>What the recipe registrar registered and where it stands.</summary>
 /// <param name="Id">The recipe's id.</param>
 /// <param name="Version">Its version.</param>
 /// <param name="Hash">Its hash.</param>

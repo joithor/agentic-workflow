@@ -6,6 +6,7 @@ using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Registry;
+using Aw.Sindri.Core.Workflow.RegistryWrites;
 
 namespace Aw.Sindri.Features.RegisterRecipe;
 

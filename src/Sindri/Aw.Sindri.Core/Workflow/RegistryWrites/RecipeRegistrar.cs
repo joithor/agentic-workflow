@@ -3,9 +3,10 @@ using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Core.Workflow.Validation;
 
-namespace Aw.Sindri.Core.Workflow.Registry;
+namespace Aw.Sindri.Core.Workflow.RegistryWrites;
 
 /// <summary>
 /// Registers a recipe by hash (engine spec §4.1, §6.3 'recipe register', §8, §9.1): reads and validates the text against this build's catalog and the registry view

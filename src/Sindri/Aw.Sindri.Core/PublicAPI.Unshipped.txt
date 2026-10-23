@@ -17609,7 +17609,6 @@ Aw.Sindri.Core.Workflow.Registry.ApprovalBatch.HeldMs.init -> void
 Aw.Sindri.Core.Workflow.Registry.ApprovalBatch.Deconstruct(out string! Batch, out string! PlanDigest, out long? HeldMs) -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.<Clone>$() -> Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile!
-Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.Deconstruct(out Aw.Sindri.Core.Workflow.Validation.RecipeDocument! Document, out string! File, out string! Text) -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.Document.get -> Aw.Sindri.Core.Workflow.Validation.RecipeDocument!
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.Document.init -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.Equals(Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile? other) -> bool
@@ -17619,7 +17618,6 @@ Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.Hash.get -> Aw.Sindri.Core.Workfl
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.Id.get -> Aw.Sindri.Core.Workflow.Ids.RecipeId
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.Name.get -> string!
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.Recipe.get -> Aw.Sindri.Core.Workflow.Recipes.Recipe!
-Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.ShippedFile(Aw.Sindri.Core.Workflow.Validation.RecipeDocument! Document, string! File, string! Text) -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.Text.get -> string!
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.Text.init -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.Version.get -> int
@@ -17627,19 +17625,19 @@ Aw.Sindri.Core.Workflow.ApproveAll.ShippedPlanRows
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedPlanRows.ShippedPlanRows(Aw.Sindri.Core.Workflow.Registry.IRecipeStore! store, Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! catalog, System.Text.Json.JsonSerializerOptions! json) -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipeApprover
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipeApprover.Approve(Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan! plan, System.IProgress<string!>! progress, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllResult!>!>
-Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipeApprover.ShippedRecipeApprover(Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipeSet! shipped, Aw.Sindri.Core.Workflow.Registry.RecipeRegistrar! registrar, Aw.Sindri.Core.Workflow.Registry.RecipeApprovalPlanner! planner, Aw.Sindri.Core.Workflow.Registry.RecipeApprovalRecorder! recorder, Aw.Sindri.Core.Workflow.Registry.IRecipeStore! store, Aw.Sindri.Core.Commands.ICallerContextAccessor! callers) -> void
+Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipeApprover.ShippedRecipeApprover(Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipeSet! shipped, Aw.Sindri.Core.Workflow.RegistryWrites.RecipeRegistrar! registrar, Aw.Sindri.Core.Workflow.Registry.RecipeApprovalPlanner! planner, Aw.Sindri.Core.Workflow.RegistryWrites.RecipeApprovalRecorder! recorder, Aw.Sindri.Core.Workflow.Registry.IRecipeStore! store, Aw.Sindri.Core.Commands.ICallerContextAccessor! callers) -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlanner
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlanner.Plan(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan!>!>
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlanner.ShippedRecipePlanner(Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipeSet! shipped, Aw.Sindri.Core.Workflow.Registry.IRecipeApprovals! approvals, Aw.Sindri.Core.Workflow.ApproveAll.ShippedPlanRows! rows, Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! catalog, System.Text.Json.JsonSerializerOptions! json) -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipeSet
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipeSet.Files() -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile!>!
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipeSet.ShippedRecipeSet(Aw.Sindri.Core.Workflow.Shipped.IEmbeddedRecipes! embedded, Aw.Sindri.Core.Workflow.IRecipeReader! reader) -> void
-Aw.Sindri.Core.Workflow.Registry.RecipeApprovalRecorder
-Aw.Sindri.Core.Workflow.Registry.RecipeApprovalRecorder.RecipeApprovalRecorder(Aw.Sindri.Core.Events.RecipeEvents! events, Aw.Sindri.Core.Workflow.Registry.IRecipeApprovals! approvals, Aw.Sindri.Core.Workflow.Registry.IRecipeWake! wake, System.TimeProvider! clock) -> void
-Aw.Sindri.Core.Workflow.Registry.RecipeApprovalRecorder.Record(Aw.Sindri.Core.Workflow.Registry.ApprovalPlan! plan, string! actor, Aw.Sindri.Core.Workflow.Registry.ApprovalBatch? batch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<(Aw.Sindri.Core.Workflow.Registry.RecipeApproval! Approval, long Sequence)>!>
-Aw.Sindri.Core.Workflow.Registry.RecipeRegistrar
-Aw.Sindri.Core.Workflow.Registry.RecipeRegistrar.RecipeRegistrar(Aw.Sindri.Core.Workflow.IRecipeReader! reader, Aw.Sindri.Core.Workflow.Registry.IRecipeStore! store, Aw.Sindri.Core.Workflow.Registry.RecipeRegistryReader! registry, Aw.Sindri.Core.Events.RecipeEvents! events, System.Text.Json.JsonSerializerOptions! json, System.TimeProvider! clock) -> void
-Aw.Sindri.Core.Workflow.Registry.RecipeRegistrar.Register(string! text, string! file, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.RegistrarOutcome!>!>
+Aw.Sindri.Core.Workflow.RegistryWrites.RecipeApprovalRecorder
+Aw.Sindri.Core.Workflow.RegistryWrites.RecipeApprovalRecorder.RecipeApprovalRecorder(Aw.Sindri.Core.Events.RecipeEvents! events, Aw.Sindri.Core.Workflow.Registry.IRecipeApprovals! approvals, Aw.Sindri.Core.Workflow.Registry.IRecipeWake! wake, System.TimeProvider! clock) -> void
+Aw.Sindri.Core.Workflow.RegistryWrites.RecipeApprovalRecorder.Record(Aw.Sindri.Core.Workflow.Registry.ApprovalPlan! plan, string! actor, Aw.Sindri.Core.Workflow.Registry.ApprovalBatch? batch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<(Aw.Sindri.Core.Workflow.Registry.RecipeApproval! Approval, long Sequence)>!>
+Aw.Sindri.Core.Workflow.RegistryWrites.RecipeRegistrar
+Aw.Sindri.Core.Workflow.RegistryWrites.RecipeRegistrar.RecipeRegistrar(Aw.Sindri.Core.Workflow.IRecipeReader! reader, Aw.Sindri.Core.Workflow.Registry.IRecipeStore! store, Aw.Sindri.Core.Workflow.Registry.RecipeRegistryReader! registry, Aw.Sindri.Core.Events.RecipeEvents! events, System.Text.Json.JsonSerializerOptions! json, System.TimeProvider! clock) -> void
+Aw.Sindri.Core.Workflow.RegistryWrites.RecipeRegistrar.Register(string! text, string! file, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.RegistrarOutcome!>!>
 Aw.Sindri.Core.Workflow.Registry.RegistrarOutcome
 Aw.Sindri.Core.Workflow.Registry.RegistrarOutcome.<Clone>$() -> Aw.Sindri.Core.Workflow.Registry.RegistrarOutcome!
 Aw.Sindri.Core.Workflow.Registry.RegistrarOutcome.Added.get -> bool
@@ -17667,3 +17665,7 @@ static Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.operator !=(Aw.Sindri.Core
 static Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.operator ==(Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile? left, Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile? right) -> bool
 static Aw.Sindri.Core.Workflow.Registry.RegistrarOutcome.operator !=(Aw.Sindri.Core.Workflow.Registry.RegistrarOutcome? left, Aw.Sindri.Core.Workflow.Registry.RegistrarOutcome? right) -> bool
 static Aw.Sindri.Core.Workflow.Registry.RegistrarOutcome.operator ==(Aw.Sindri.Core.Workflow.Registry.RegistrarOutcome? left, Aw.Sindri.Core.Workflow.Registry.RegistrarOutcome? right) -> bool
+Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, out Aw.Sindri.Core.Workflow.Validation.RecipeDocument! Document, out string! File, out string! Text) -> void
+Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.Hash.init -> void
+Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.Id.init -> void
+Aw.Sindri.Core.Workflow.ApproveAll.ShippedFile.ShippedFile(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, Aw.Sindri.Core.Workflow.Validation.RecipeDocument! Document, string! File, string! Text) -> void

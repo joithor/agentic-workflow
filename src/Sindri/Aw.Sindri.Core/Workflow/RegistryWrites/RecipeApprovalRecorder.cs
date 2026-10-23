@@ -1,8 +1,9 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Aw.Sindri.Core.Workflow.Registry;
 
-namespace Aw.Sindri.Core.Workflow.Registry;
+namespace Aw.Sindri.Core.Workflow.RegistryWrites;
 
 /// <summary>
 /// Records an approved plan (engine spec §4.1, W9): the event, then the row, then (for a drift approval) the wake of the instances parked on that drift. The one place both ApproveRecipe

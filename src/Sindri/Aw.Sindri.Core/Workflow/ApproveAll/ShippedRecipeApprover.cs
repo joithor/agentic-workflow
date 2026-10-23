@@ -2,6 +2,7 @@ using Aw.Kernel;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Registry;
+using Aw.Sindri.Core.Workflow.RegistryWrites;
 
 namespace Aw.Sindri.Core.Workflow.ApproveAll;
 

@@ -21,7 +21,7 @@ public sealed class ShippedRecipeSet(IEmbeddedRecipes embedded, IRecipeReader re
             var text = Encoding.UTF8.GetString(file.Bytes.Span);
             if (reader.Read(text, file.RelativePath).Document is { } document && !found.Exists(s => s.Id == document.Recipe.Id))
             {
-                found.Add(new ShippedFile(document, file.RelativePath, text));
+                found.Add(new ShippedFile(document.Recipe.Id, document.Hash, document, file.RelativePath, text));
             }
         }
 
