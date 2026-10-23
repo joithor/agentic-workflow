@@ -117,6 +117,15 @@ internal sealed partial class ContextPage : UserControl
         }
     }
 
+    // Retry on the failure row: the whole map is read again.
+    private void OnRetryWhole(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is ContextPageViewModel page)
+        {
+            _ = page.ReadWhole(CancellationToken.None);
+        }
+    }
+
     private void OnPick(object? sender, RoutedEventArgs e)
     {
         if (sender is Button { Content: string anchor } && DataContext is ContextPageViewModel page)

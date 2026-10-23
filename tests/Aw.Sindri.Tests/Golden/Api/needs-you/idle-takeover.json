@@ -22,7 +22,11 @@
         "ApplyCommand:handback",
         "ApplyCommand:cancel"
       ],
-      "cli": "sindri handback ITM-0000000000000000000000000000000f/step/1"
+      "cli": "sindri handback ITM-0000000000000000000000000000000f/step/1",
+      "open": {
+        "route": "workflow/ITM-0000000000000000000000000000000f/step/1",
+        "label": "Hand back or cancel"
+      }
     }
   ],
   "empty": null,

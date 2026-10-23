@@ -228,6 +228,10 @@ internal sealed partial class ShellViewModel : ObservableObject
         }
 
         ShowPage(page, filter);
+        if (page == PageId.Context)
+        {
+            _ = Context.Opened(CancellationToken.None);   // the page opens on the whole map, read here with no starting point
+        }
     }
 
     internal void ShowPage(PageId page, HomeFilter filter)

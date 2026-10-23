@@ -53,7 +53,8 @@ internal sealed class GetStatusService(HeldLease held, ProfileReads profiles, IL
         var rows = await healthRows.Read(approved, cancellationToken).ConfigureAwait(false);
         var problems = await healthRows.CodeIndexProblems(approved, cancellationToken).ConfigureAwait(false);
         var standing = profile.ChangedSinceApproval ? ProfileApproval.Changed : profile.NeedsApproval ? ProfileApproval.NeedsApproval : ProfileApproval.Approved;
-        return HealthSummary.For(running, views, rows, standing, problems);
+        var health = HealthSummary.For(running, views, rows, standing, problems);
+        return HealthSummary.WithStuck(health, await healthRows.Stuck(cancellationToken).ConfigureAwait(false));   // API P13: stuck workflow instances make it degraded
     }
 
     private static ProfileStatus Profile(LoadedProfile? approved, RecordedApproval? recorded, Result<LoadedProfile> loaded)

@@ -126,6 +126,14 @@ public sealed class PrOpenEffectTests
     }
 
     [Fact]
+    public async Task The_hand_offs_labels_go_on_the_opened_pull_request()
+    {
+        _ = await Dispatch();
+
+        Assert.Equal(["feature"], Assert.Single(_pulls.Opened).Labels);
+    }
+
+    [Fact]
     public async Task The_profile_decides_draft()
     {
         _ = await _profiles.Save(new LoadedProfile(new SindriProfile(1, "dev", Workflow: new WorkflowSettings(Ship: new ShipSettings(Draft: true))), ProfileHash.From(new string('b', 64)), "/home/profile.yaml"), Token);
