@@ -97,6 +97,7 @@ using Aw.Sindri.Features.StartProcess;
 using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Features.StreamEvents;
 using Aw.Sindri.Features.SweepLostSessions;
+using Aw.Sindri.Features.Scrub;
 using Aw.Sindri.Features.ValidateProfile;
 using Aw.Sindri.Features.WorkflowStats;
 using Microsoft.Extensions.DependencyInjection;
@@ -128,6 +129,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IService<CheckProfileRequest, CheckProfileResponse>, CheckProfileService>()
             .AddScoped<IService<ValidateProfileRequest, ValidateProfileResponse>, ValidateProfileService>()
             .AddScoped<IService<InitProfileRequest, InitProfileResponse>, InitProfileService>()
+            .AddScoped<IService<ScrubRequest, ScrubResponse>, ScrubService>()
             .AddDoctor()
             .AddOnyxStatus()
             .AddScoped<ServeRecords>()
