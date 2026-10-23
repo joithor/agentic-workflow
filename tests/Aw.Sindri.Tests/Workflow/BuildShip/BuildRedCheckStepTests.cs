@@ -144,7 +144,7 @@ public sealed class BuildRedCheckStepTests
 
         var result = await Step(rig).Run(Context("""{"A1":["T1"]}"""), Token);
 
-        Assert.Contains("fact:redTests.commit", result.Failure, StringComparison.Ordinal);
+        Assert.Contains("name the red commit", result.Failure, StringComparison.Ordinal);
         Assert.Empty(rig.Commands.Calls);
     }
 
