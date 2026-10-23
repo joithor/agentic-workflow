@@ -91,7 +91,9 @@ internal static partial class DevServerProcesses
     /// <returns>Its standard output.</returns>
     public static string Capture(string file, params string[] arguments)
     {
-        var info = new ProcessStartInfo(file, arguments) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+        var info = ChildEnvironment.Start(file, arguments);
+        info.RedirectStandardOutput = true;
+        info.RedirectStandardError = true;
         using var process = Process.Start(info) ?? throw new InvalidOperationException($"{file} didn't start");
         var output = process.StandardOutput.ReadToEndAsync();
         _ = process.StandardError.ReadToEndAsync();

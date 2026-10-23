@@ -5,6 +5,7 @@ using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Infrastructure.Workflow;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Infrastructure.Scoping;
 
@@ -119,7 +120,10 @@ internal sealed class GitChangeSource : IChangeSource
 
     private static async ValueTask<Result<string>> Gh(string checkout, string[] args, CancellationToken cancellationToken)
     {
-        var start = new ProcessStartInfo("gh") { WorkingDirectory = checkout, UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+        var start = ChildEnvironment.Start("gh");
+        start.WorkingDirectory = checkout;
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
         foreach (var arg in args)
         {
             start.ArgumentList.Add(arg);

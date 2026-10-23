@@ -27,7 +27,7 @@ public sealed class ChildEnvironmentTests
         var inherited = Environment.GetEnvironmentVariables().Cast<DictionaryEntry>().ToDictionary(e => (string)e.Key, e => (string?)e.Value, StringComparer.Ordinal);
         var extra = new Dictionary<string, string?>(StringComparer.Ordinal) { ["LC_ALL"] = "C", ["GIT_TERMINAL_PROMPT"] = "0" };
 
-        var start = ChildEnvironment.Build("git", ["status"], extra, Parent(("PATH", "/usr/bin")));
+        var start = ChildEnvironment.Build("git", ["status"], extra: extra, parent: Parent(("PATH", "/usr/bin")));
 
         var env = Env(start);
         Assert.All(inherited.Where(p => p.Key is not ("LC_ALL" or "GIT_TERMINAL_PROMPT")), p => Assert.Equal(p.Value, env[p.Key]));
@@ -40,14 +40,14 @@ public sealed class ChildEnvironmentTests
     {
         var removal = new Dictionary<string, string?>(StringComparer.Ordinal) { ["PATH"] = null };
 
-        Assert.DoesNotContain("PATH", Env(ChildEnvironment.Build("x", null, removal, Parent())).Keys);
-        Assert.DoesNotContain("PATH", Env(ChildEnvironment.Build("x", null, removal, PodParent())).Keys);
+        Assert.False(Env(ChildEnvironment.Build("x", arguments: null, extra: removal, parent: Parent())).ContainsKey("PATH"));
+        Assert.False(Env(ChildEnvironment.Build("x", arguments: null, extra: removal, parent: PodParent())).ContainsKey("PATH"));
     }
 
     [Fact, Trait("Lane", "unit")]
     public void The_file_and_arguments_are_set_and_no_shell_is_used()
     {
-        var start = ChildEnvironment.Build("git", ["-C", "/repo", "status"], null, Parent());
+        var start = ChildEnvironment.Build("git", ["-C", "/repo", "status"], extra: null, parent: Parent());
 
         Assert.Equal("git", start.FileName);
         Assert.Equal(["-C", "/repo", "status"], start.ArgumentList);
@@ -57,11 +57,12 @@ public sealed class ChildEnvironmentTests
     [Fact, Trait("Lane", "unit")]
     public void Pod_mode_passes_the_allowlist_and_nothing_else()
     {
-        var env = Env(ChildEnvironment.Build("git", ["status"], null, PodParent()));
+        var env = Env(ChildEnvironment.Build("git", ["status"], extra: null, parent: PodParent()));
 
         Assert.Equal(
             ["AW_SINDRI_DEPLOY", "AW_SINDRI_HOME", "AW_STATE_DIR", "DOTNET_EnableDiagnostics", "HOME", "LANG", "LC_ALL", "PATH", "TMPDIR"],
-            env.Keys.Order(StringComparer.Ordinal));
+            env.Keys.Order(StringComparer.Ordinal),
+            StringComparer.Ordinal);
         Assert.Equal("/data/home", env["HOME"]);
     }
 
@@ -70,12 +71,12 @@ public sealed class ChildEnvironmentTests
     {
         var extra = new Dictionary<string, string?>(StringComparer.Ordinal) { ["GIT_CRED"] = "token-for-this-call", ["GIT_TERMINAL_PROMPT"] = "0" };
 
-        var env = Env(ChildEnvironment.Build("git", ["fetch"], extra, PodParent()));
+        var env = Env(ChildEnvironment.Build("git", ["fetch"], extra: extra, parent: PodParent()));
 
         Assert.Equal("token-for-this-call", env["GIT_CRED"]);
         Assert.Equal("0", env["GIT_TERMINAL_PROMPT"]);
-        Assert.DoesNotContain("AW_FORGE_TOKEN", env.Keys);
-        Assert.DoesNotContain("GITHUB_TOKEN", env.Keys);
+        Assert.False(env.ContainsKey("AW_FORGE_TOKEN"));
+        Assert.False(env.ContainsKey("GITHUB_TOKEN"));
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -86,7 +87,7 @@ public sealed class ChildEnvironmentTests
     public void Only_the_value_pod_selects_pod_mode(string value, bool pod)
     {
         // the parent's AW_STATE_DIR is a sentinel: an allowlisted variable reaches the child from the parent only in pod mode
-        var env = Env(ChildEnvironment.Build("x", null, null, Parent(("AW_SINDRI_DEPLOY", value), ("AW_STATE_DIR", "/sentinel-state"))));
+        var env = Env(ChildEnvironment.Build("x", arguments: null, extra: null, parent: Parent(("AW_SINDRI_DEPLOY", value), ("AW_STATE_DIR", "/sentinel-state"))));
 
         Assert.Equal(pod, env.GetValueOrDefault("AW_STATE_DIR") == "/sentinel-state");
     }

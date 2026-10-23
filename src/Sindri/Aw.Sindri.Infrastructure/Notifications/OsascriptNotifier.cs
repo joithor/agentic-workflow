@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Infrastructure.Notifications;
 
@@ -20,13 +21,10 @@ internal sealed class OsascriptNotifier : IOsNotifier
             return;
         }
 
-        var start = new ProcessStartInfo("osascript",
-            ["-e", "on run argv", "-e", "display notification (item 2 of argv) with title (item 1 of argv)", "-e", "end run", title, text])
-        {
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
+        var start = ChildEnvironment.Start("osascript",
+            ["-e", "on run argv", "-e", "display notification (item 2 of argv) with title (item 1 of argv)", "-e", "end run", title, text]);
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
         try
         {
             using var osascript = Process.Start(start);

@@ -47,5 +47,6 @@
     <InternalsVisibleTo Include="Aw.Sindri.Tests" />
     <InternalsVisibleTo Include="Aw.Sindri.Engine.Tests" />
     <InternalsVisibleTo Include="Aw.Sindri.Testing" />
+    <InternalsVisibleTo Include="sindri" />   <!-- the Host (assembly name sindri): UiLauncher and the wrap launcher start their children through it -->
   </ItemGroup>
 </Project>
