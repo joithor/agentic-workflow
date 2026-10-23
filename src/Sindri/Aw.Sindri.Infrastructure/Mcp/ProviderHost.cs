@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using Aw.Sindri.Core.Mcp;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Infrastructure.Mcp;
 
@@ -72,12 +73,9 @@ internal sealed class ProviderHost(McpSettings settings) : IProviderHost
             return false;
         }
 
-        var start = new ProcessStartInfo("git", ["-C", directory, "ls-files", "--error-unmatch", "--", relativePath])
-        {
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
+        var start = ChildEnvironment.Start("git", ["-C", directory, "ls-files", "--error-unmatch", "--", relativePath]);
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
         try
         {
             using var git = Process.Start(start);

@@ -5,6 +5,7 @@ using System.Text;
 using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Sessions;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Infrastructure.Sessions;
 
@@ -169,7 +170,9 @@ internal sealed class TmuxCli(TimeProvider time, string executable, TimeSpan cal
 
     private Spawned Spawn(TmuxCall call, CancellationTokenSource own, CancellationToken cancellationToken)
     {
-        var start = new ProcessStartInfo(executable) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+        var start = ChildEnvironment.Start(executable);
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
         foreach (var part in (string[])["-S", call.Socket, Name(call.Verb), .. call.Arguments])
         {
             start.ArgumentList.Add(part);

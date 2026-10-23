@@ -1,12 +1,14 @@
-using Aw.Kernel;
 using Aw.Kernel.Services;
-using Aw.Sindri.Core;
+using Aw.Kernel;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Items;
+using Aw.Sindri.Core.NeedsYou;
+using Aw.Sindri.Core.OpenTargets;
 using Aw.Sindri.Core.Views;
-using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Views;
+using Aw.Sindri.Core;
 
 namespace Aw.Sindri.Features.GetInstance;
 
@@ -15,15 +17,15 @@ namespace Aw.Sindri.Features.GetInstance;
 /// 'GetInstance' Query; SND-WF-001 when there is no such instance), and answers the API's <see cref="InstanceDetail"/> (API spec §3.8).
 /// A session caller reads only its own repo's instances: another repo's answers SND-ITEM-404, the answer for an unknown id too (one not-found, so an id never says it exists elsewhere), by the item's repo from the ledger
 /// (<see cref="IItemRepos"/>, never the views, as the item routes' scope does). The title is the item's, else the address; the parent is
-/// resolved by its id; the counts come from the timeline, decisions and requests views.
+/// resolved by its id; the counts come from the timeline, decisions and requests views; 'open' is the instance's own needs-you row's (q65).
 /// </summary>
 /// <param name="directory">Resolves the reference to the instance's address.</param>
 /// <param name="runtime">The instances on Temporal.</param>
 /// <param name="views">The items, timeline, decisions and requests views.</param>
 /// <param name="repos">Where each item belongs, from the ledger.</param>
 /// <param name="callers">The caller, whose repo scope decides what it may read.</param>
-/// <param name="stepRuns">The instance's Step runs, folded from its ledger events.</param>
 /// <param name="contexts">Builds the detail context at the time of the read, with the recipe's display name (null serves none).</param>
+/// <param name="stepRuns">The instance's Step runs, folded from its ledger events.</param>
 internal sealed class GetInstanceService(IInstanceDirectory directory, IInstanceReader runtime, IViewReader views, IItemRepos repos, ICallerContextAccessor callers, DetailContexts contexts, StepRunReader stepRuns)
     : IService<GetInstanceRequest, InstanceDetail>
 {
@@ -66,7 +68,26 @@ internal sealed class GetInstanceService(IInstanceDirectory directory, IInstance
             return runs.Error;
         }
 
-        return InstanceViews.Detail(view.Value, contexts.Of(title, parent, counts.Value, view.Value.Recipe.Id, runs.Value));
+        var context = await contexts.Of(view.Value, new DetailInputs(title, parent, counts.Value, runs.Value), cancellationToken).ConfigureAwait(false);
+        return InstanceViews.Detail(view.Value, context) with { Open = await OpenOf(view.Value.Address, cancellationToken).ConfigureAwait(false) };
+    }
+
+    /// <summary>
+    /// The 'open' of the instance's own needs-you row (q65): its 'park:' row (a root's park, or its deepest parked descendant's), else its 'desk:' row, else its
+    /// 'takeover:' row; null when none waits on it. A row that can't be read is skipped (the detail is not refused for it), as the needs-you joins do.
+    /// </summary>
+    private async ValueTask<NeedsYouOpen?> OpenOf(InstanceAddress address, CancellationToken cancellationToken)
+    {
+        foreach (var id in new[] { NeedsYouRowIds.Park(address), NeedsYouRowIds.Desk(address), NeedsYouRowIds.Takeover(address) })
+        {
+            var record = await views.Get<NeedsYouRowRecord>(ViewNames.NeedsYou, id.Value, cancellationToken).ConfigureAwait(false);
+            if (record.IsSuccess && record.Value is { } found)
+            {
+                return found.Row.Open;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>The title of the item the instance is on; its address when it has none or the view has no row.</summary>
