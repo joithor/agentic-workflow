@@ -21,7 +21,7 @@ public sealed class WorkflowsBoardLayoutTests : FrameHost
     private const double LaneMinLast = 150;
     private const double BoardMin = 1230;
 
-    private async Task<(Avalonia.Controls.Window Window, ShellViewModel Shell)> OnBoard(double width)
+    private async Task<(Window Window, ShellViewModel Shell)> OnBoard(double width)
     {
         Server.InstancesRewrite = LineGolden.AsLine;
         var (window, shell) = await Connected(s => s.Workflows.Lanes.Sum(l => l.Cards.Count) > 0, width, 900);
