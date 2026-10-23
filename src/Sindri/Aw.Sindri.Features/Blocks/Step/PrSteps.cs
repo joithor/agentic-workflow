@@ -18,7 +18,7 @@ internal static class PrSteps
     /// <summary>'step.pr.snapshot': reads the PR's state in §4.3's priority order; the outcome names what to do next.</summary>
     public static BlockDescriptor Snapshot { get; } = BlockStep("step.pr.snapshot", Capability.Network).Takes(Text("pr"), Text("handoff"), Text("recheck"), Text("workspace"))
         .Reports("mergedDocsOpen", "merged", "closed", "restack", "conflict", "ciRed", "comments", "stale", "docsRed", "pending", "green")
-        .Writes(Every("fact:prState"), On("fact:mergedSha", "merged", "mergedDocsOpen"));
+        .Writes(Every("fact:prState"), Every("fact:prStatus"), On("fact:mergedSha", "merged", "mergedDocsOpen"));
 
     /// <summary>'step.pr.ready-check': whether the PR changed while it waits to be merged; 'same' or 'changed'.</summary>
     public static BlockDescriptor ReadyCheck { get; } = BlockStep("step.pr.ready-check", Capability.Network).Takes(Text("pr"), Text("at")).Reports("same", "changed").Writes();

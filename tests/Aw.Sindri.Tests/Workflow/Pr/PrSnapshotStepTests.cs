@@ -395,6 +395,137 @@ public sealed class PrSnapshotStepTests
         Assert.StartsWith("2026-10-22T08:00:00", state.GetProperty("at").GetString(), StringComparison.Ordinal);
     }
 
+    private static JsonElement Status(BlockStepResult result) => Fact(result, "fact:prStatus");
+
+    [Fact]
+    public async Task Every_outcome_writes_prStatus_with_the_exact_shape_the_run_view_reads()
+    {
+        _pull.ChecksState = PullChecksState.Passing;
+
+        var status = Status(await Snapshot());
+
+        Assert.Equal(["pr", "url", "checks", "review", "proof", "docs"], status.EnumerateObject().Select(p => p.Name), StringComparer.Ordinal);
+        Assert.Equal(_pull.Number, status.GetProperty("pr").GetInt32());
+        Assert.Equal(_pull.Link, status.GetProperty("url").GetString());
+        Assert.Equal(["passed", "failed", "pending"], status.GetProperty("checks").EnumerateObject().Select(p => p.Name), StringComparer.Ordinal);
+        Assert.Equal(["open", "resolved"], status.GetProperty("review").EnumerateObject().Select(p => p.Name), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task The_failed_check_count_is_the_failing_checks()
+    {
+        _pull.ChecksState = PullChecksState.Failing;
+        _pull.FailingChecks.Add("build");
+        _pull.FailingChecks.Add("lint");
+
+        var checks = Status(await Snapshot()).GetProperty("checks");
+
+        Assert.Equal(2, checks.GetProperty("failed").GetInt32());
+    }
+
+    [Fact]
+    public async Task The_passed_and_pending_counts_are_the_forges()
+    {
+        _pull.Checks = new PullChecks(PullChecksState.Pending, Head, [], Passed: 7, Pending: 3);
+
+        var checks = Status(await Snapshot()).GetProperty("checks");
+
+        Assert.Equal(7, checks.GetProperty("passed").GetInt32());
+        Assert.Equal(3, checks.GetProperty("pending").GetInt32());
+        Assert.Equal(0, checks.GetProperty("failed").GetInt32());
+    }
+
+    [Fact]
+    public async Task The_review_counts_are_the_unresolved_threads_that_are_not_sindris_and_the_resolved_ones()
+    {
+        _pull.Threads.Add(Thread("t1"));
+        _pull.Threads.Add(Thread("t2", resolved: true));
+        _pull.Threads.Add(Thread("t3", resolved: true));
+        _pull.Threads.Add(Thread("t4", markers: ["sindri:reply"]));
+
+        var review = Status(await Snapshot()).GetProperty("review");
+
+        Assert.Equal(1, review.GetProperty("open").GetInt32());
+        Assert.Equal(2, review.GetProperty("resolved").GetInt32());
+    }
+
+    [Fact]
+    public async Task The_proof_is_null_when_the_instance_holds_no_recheck() =>
+        Assert.Equal(JsonValueKind.Null, Status(await Snapshot()).GetProperty("proof").ValueKind);
+
+    [Theory]
+    [InlineData("held", "passed")]
+    [InlineData("broken", "failed")]
+    [InlineData("nothing", "none")]
+    public async Task The_proof_follows_the_recheck_verdict_on_the_pull_requests_head(string verdict, string expected)
+    {
+        var recheck = $$"""{ "headSha": "{{Head}}", "verdict": "{{verdict}}" }""";
+
+        var proof = Status(await Snapshot(more: new(StringComparer.Ordinal) { ["recheck"] = recheck })).GetProperty("proof");
+
+        Assert.Equal(expected, proof.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task A_recheck_of_another_commit_says_nothing_of_the_head()
+    {
+        var recheck = """{ "headSha": "old00000", "verdict": "held" }""";
+
+        var proof = Status(await Snapshot(more: new(StringComparer.Ordinal) { ["recheck"] = recheck })).GetProperty("proof");
+
+        Assert.Equal(JsonValueKind.Null, proof.ValueKind);
+    }
+
+    [Fact]
+    public async Task The_docs_are_missing_when_no_docs_sync_has_ended() =>
+        Assert.Equal("missing", Status(await Snapshot()).GetProperty("docs").GetProperty("status").GetString());
+
+    [Theory]
+    [InlineData("none")]
+    [InlineData("disabled")]
+    [InlineData("skippedByOwner")]
+    public async Task The_docs_are_notNeeded_when_docs_sync_found_nothing_or_the_owner_skipped_them(string result)
+    {
+        var facts = new Dictionary<string, string>(StringComparer.Ordinal) { ["docsResult"] = $$"""{ "result": "{{result}}" }""" };
+
+        var docs = Status(await Snapshot(more: facts)).GetProperty("docs");
+
+        Assert.Equal("notNeeded", docs.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task The_docs_are_updated_when_the_docs_pull_request_is_green()
+    {
+        var docs = DocsPull();
+        _pull.ChecksState = PullChecksState.Passing;
+
+        var status = Status(await Snapshot(more: DocsFacts(docs))).GetProperty("docs");
+
+        Assert.Equal("updated", status.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task The_docs_are_updated_when_the_docs_pull_request_is_merged()
+    {
+        var docs = DocsPull();
+        docs.State = PullState.Merged;
+
+        var status = Status(await Snapshot(more: DocsFacts(docs))).GetProperty("docs");
+
+        Assert.Equal("updated", status.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task The_docs_are_missing_while_the_docs_pull_request_is_red()
+    {
+        var docs = DocsPull();
+        docs.ChecksState = PullChecksState.Failing;
+
+        var status = Status(await Snapshot(more: DocsFacts(docs))).GetProperty("docs");
+
+        Assert.Equal("missing", status.GetProperty("status").GetString());
+    }
+
     private FakePull DocsPull(string head = "dddd4444")
     {
         var docs = _pulls.Add(new PullRepo(Host, "acme", "app"), "docs/feat/x", head);
