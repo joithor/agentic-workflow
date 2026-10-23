@@ -178,11 +178,18 @@ internal sealed class PrOpenEffect(IPullRequests pulls, IForgeRepos repos, IPack
             return Fail("pr.json needs base, headBranch, headSha and title");
         }
 
+        var labels = Labels(pr);
         var approved = await profile.Latest(cancellationToken).ConfigureAwait(false);
         return approved.IsError
             ? approved.Error
-            : new OpenPull(repo, head, baseRef, sha, title, body, approved.Value?.Profile.Workflow?.Ship?.Draft ?? false, Marker(head));
+            : new OpenPull(repo, head, baseRef, sha, title, body, approved.Value?.Profile.Workflow?.Ship?.Draft ?? false, Marker(head), labels);
     }
+
+    /// <summary>The hand-off's 'labels' (strings only), or null when it names none. They go on at open; an update leaves a pull request's labels as they are.</summary>
+    private static List<string>? Labels(JsonObject? pr) =>
+        pr?["labels"] is JsonArray { Count: > 0 } array
+            ? [.. array.OfType<JsonValue>().Select(static v => v.TryGetValue<string>(out var t) ? t : null).OfType<string>().Where(static t => t.Length > 0)]
+            : null;
 
     /// <summary>The marker a head branch's pull request carries: letters, digits, '.', '_', ':' and '-' only, so the same branch is found again.</summary>
     private static string Marker(string head)
