@@ -26,6 +26,9 @@ internal sealed partial class SindriApiClient
         Call<ProfileApproved>(api, HttpMethod.Post, "/sindri/profile/approve", cancellationToken, new CallOptions(Content: AwJson.Serialize(request, Json)));
 
     /// <inheritdoc />
+    public Task<Result<ProfileRead>> ProfileSummary(Uri api, CancellationToken cancellationToken) => Get<ProfileRead>(api, "/sindri/profile", cancellationToken);
+
+    /// <inheritdoc />
     public Task<Result<RecipeApproved>> ApproveRecipe(Uri api, string id, string hash, ProfileAnswer answer, CancellationToken cancellationToken) =>
         Call<RecipeApproved>(api, HttpMethod.Post, WorkflowRoutes.ApproveRecipe(id, hash), cancellationToken, new CallOptions(Content: AwJson.Serialize(answer, Json)));
 }

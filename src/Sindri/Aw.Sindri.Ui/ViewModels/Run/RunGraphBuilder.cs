@@ -21,8 +21,7 @@ internal static partial class RunGraphBuilder
     {
         ArgumentNullException.ThrowIfNull(line);
         ArgumentNullException.ThrowIfNull(children);
-        var names = recipe?.States.ToDictionary(s => s.State, s => s.DisplayName, StringComparer.Ordinal) ?? [];
-        string NameOf(string id) => names.TryGetValue(id, out var served) && !string.IsNullOrWhiteSpace(served) ? served : WorkflowNames.Of(id, displayName: null);
+        string NameOf(string id) => StateNames.Of(recipe, id);
 
         var stages = line.States
             .Where(c => c is { Child: true, Order: not null, BranchOf: null, Terminal: false })

@@ -109,6 +109,36 @@ public static class HoldoutFiles
         return new JsonObject { ["schemaVersion"] = 1, ["spent"] = new JsonArray([.. marked.Order(StringComparer.Ordinal).Select(static i => (JsonNode?)JsonValue.Create(i))]) }.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
     }
 
+    /// <summary>The set as the store accepts it for <paramref name="phase"/>: it reads as a set of that phase and carries a canary scenario with a phrase.</summary>
+    /// <param name="phase">The phase the set is for.</param>
+    /// <param name="setText">The set file's text.</param>
+    /// <returns>The set; an error naming what is wrong.</returns>
+    public static Result<HoldoutSet> Accept(string phase, string setText)
+    {
+        var parsed = ParseSet(setText);
+        if (parsed.IsError)
+        {
+            return parsed.Error;
+        }
+
+        if (!string.Equals(parsed.Value.Phase, phase, StringComparison.Ordinal))
+        {
+            return SindriErrors.InvalidInput.With($"the hidden set names phase '{parsed.Value.Phase}', not '{phase}'");
+        }
+
+        return string.IsNullOrWhiteSpace(parsed.Value.Canary)
+            ? SindriErrors.InvalidInput.With($"the hidden set of phase '{phase}' has no canary scenario with a phrase")
+            : parsed;
+    }
+
+    /// <summary>The text of a phase's seal file.</summary>
+    /// <param name="phase">The phase key.</param>
+    /// <param name="setHash">The set's hash.</param>
+    /// <param name="planHash">The plan packet's hash.</param>
+    /// <returns>The JSON text.</returns>
+    public static string SealJson(string phase, string setHash, string planHash) =>
+        new JsonObject { ["schemaVersion"] = 1, ["phase"] = phase, ["setHash"] = setHash, ["planHash"] = planHash }.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+
     /// <summary>The error for a file of the store that can't be read.</summary>
     /// <param name="file">The file's name.</param>
     /// <param name="why">What is wrong.</param>

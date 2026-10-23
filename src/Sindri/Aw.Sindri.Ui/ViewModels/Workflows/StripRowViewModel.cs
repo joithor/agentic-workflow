@@ -34,6 +34,12 @@ internal sealed class StripRowViewModel : ObservableObject
     /// <summary>The served chip (the word and tone the chip control draws).</summary>
     public StateChip Chip => _row.Chip;
 
+    /// <summary>The one status the row shows, mapped from the served chip (the shared badge: a glyph and a sentence-case word).</summary>
+    public RunStatus Status => RunStatus.From(_row.Chip);
+
+    /// <summary>The badge's word, as its accessible name.</summary>
+    public string StatusName => Status.Word;
+
     /// <summary>What the instance is about: the subject's label, or its key when it has none.</summary>
     public string Subject => _row.Subject.Label.Length > 0 ? _row.Subject.Label : _row.Subject.Key;
 

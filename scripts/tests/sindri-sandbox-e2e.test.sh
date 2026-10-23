@@ -50,7 +50,8 @@ contains "a flag with no value is refused" "$out" "--stall needs seconds"
 
 out="$(run --feature "$FEATURE" --print-config)"
 contains "defaults: start" "$out" "start=workflow.line"
-contains "defaults: stall" "$out" "stall=300"
+contains "defaults: stall" "$out" "stall=900"
+contains "defaults: max-wait" "$out" "max-wait=10800"
 contains "defaults: publish" "$out" "sindri=publish"
 contains "defaults: no auto-desk" "$out" "auto-desk=0"
 contains "defaults: context on" "$out" "context=1"
@@ -67,6 +68,13 @@ contains "flags: max-wait" "$out" "max-wait=9"
 contains "flags: start" "$out" "start=workflow.scoping"
 contains "flags: desk-max" "$out" "desk-max=3"
 contains "flags: agent" "$out" "agent=claude-code"
+contains "defaults: the demo brief's build command" "$(run --feature "$FEATURE" --print-config)" "build=bash scripts/tests/binaries-lock.test.sh"
+
+out="$(run --feature "$FEATURE" --print-config --build-command "make build" --build-command "make test")"
+contains "flags: build commands in order" "$out" "build=make build
+build=make test"
+out="$(run --feature "$FEATURE" --build-command)"
+contains "--build-command needs a command" "$out" "--build-command needs a command line"
 
 out="$(run --feature "$FEATURE" --desk-max many)"
 contains "--desk-max takes a number" "$out" "--desk-max takes a whole number"
@@ -210,4 +218,15 @@ check "auto-grant: stops at --desk-max" "$rc $(wc -l < "$COMPLETED" | tr -d ' ')
 allowed="$(grep -E '^ *echo "  effects: \[' "$SCRIPT" | grep -oE 'effect\.[a-z.-]+' | sort -u)"
 used="$(cat "$ROOT"/recipes/sindri/*.yaml | grep -oE 'effect\.[a-z][a-z.-]*[a-z]' | sort -u)"
 check "profile: allows every shipped recipe's effect" "$(comm -23 <(printf '%s\n' "$used") <(printf '%s\n' "$allowed") | tr '\n' ' ')" ""
+
+# the profile lists workflow.build.commands whenever a shipped recipe uses step.build.red-check (else build parks needs-answer)
+HOME_DIR="$WORK/profile-home" REPO="$G" CONTEXT=0 AGENT="" BUILD_COMMANDS=("bash scripts/tests/binaries-lock.test.sh" "echo it's")
+write_profile
+profile="$(cat "$HOME_DIR/profile/profile.yaml")"
+if grep -q 'step\.build\.red-check' "$ROOT"/recipes/sindri/*.yaml; then
+  contains "profile: build commands for red-check" "$profile" "  build:
+    commands:
+      - 'bash scripts/tests/binaries-lock.test.sh'
+      - 'echo it''s'"
+fi
 exit "$fail"

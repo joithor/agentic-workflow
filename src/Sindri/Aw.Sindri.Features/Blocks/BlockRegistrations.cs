@@ -78,7 +78,9 @@ internal static class BlockRegistrations
         .AddEffect<PrMergeEffect>()       // PB-E: the merge, expected-head checked
         .AddEffect<PrReplyEffect>()       // PB-E: replies, reactions and marks
         .AddEffect<PrPurgeMarksEffect>()  // PB-E: W26's terminal cleanup of a PR's marks
-        .AddEffect<PrOpenEffect>();       // PB-O (BD1)
+        .AddEffect<PrOpenEffect>()          // PB-O (BD1)
+        .AddEffect<PrCreateStackedEffect>() // PB-E: the stacked docs PR
+        .AddEffect<PrMergeDocsEffect>();    // PB-E: the docs PR after the click
 
     /// <summary>Registers the gates that have runtimes in this build.</summary>
     /// <param name="services">The service collection.</param>
@@ -176,6 +178,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PlanSteps.Check)
         .AddBlockDescriptor(PlanSteps.ExecReview)
         .AddBlockDescriptor(PlanSteps.Holdout)
+        .AddBlockDescriptor(PlanSteps.HoldoutStore)
         .AddBlockDescriptor(PlanSteps.Evidence)
         .AddBlockDescriptor(PlanSteps.Questions)
         .AddBlockDescriptor(PlanSteps.Settle)
@@ -240,6 +243,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PrSteps.ReadyCheck)
         .AddBlockDescriptor(PrSteps.NextComment)
         .AddBlockDescriptor(PrSteps.HeldComment)
+        .AddBlockDescriptor(PrSteps.CiLog)
         .AddBlockDescriptor(PrSteps.CiFix)
         .AddBlockDescriptor(PrSteps.FixComment)
         .AddBlockDescriptor(PrSteps.ReplyDraft)
@@ -254,8 +258,6 @@ internal static class BlockRegistrations
         .AddGate<PrDiffScopeGate>()
         .AddGate<PrSecretScanGate>()
         .AddBlockDescriptor(PrEffects.Restack)
-        .AddBlockDescriptor(PrEffects.CreateStacked)
-        .AddBlockDescriptor(PrEffects.MergeDocs)
         .AddStepInput<PrContextInput>()
         .AddStepInput<PhasePacketInput>()
         .AddStepInput<HandoffNoteInput>();
