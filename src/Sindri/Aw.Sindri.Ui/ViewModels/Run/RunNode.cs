@@ -23,4 +23,7 @@ internal sealed record RunNode(
     string? WorkflowName,
     string? ChildId,
     string? ChildAddress,
-    IReadOnlyList<RunStep> Steps);
+    IReadOnlyList<RunStep> Steps,
+    DateTimeOffset? EnteredAt = null,
+    DateTimeOffset? LeftAt = null,
+    Api.Workflow.RecipeStateKind? StateKind = null);

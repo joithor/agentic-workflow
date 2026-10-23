@@ -31,7 +31,7 @@ internal sealed partial class RunPageViewModel
         Cards = cards;   // last of the drawn parts: the canvas redraws when the cards change, and reads the rest then
         _watched = new HashSet<string>([line.Address, .. children.Values.Select(c => c.Address), .. graph.Nodes.Select(n => n.ChildAddress).OfType<string>()], StringComparer.Ordinal);
         _state = line.State;
-        KeepSource(line, children);
+        KeepSource(line, children, recipe);
         KeepSelection();
         Phase = RunPageState.Shown;
         if (!_opened)
@@ -57,9 +57,15 @@ internal sealed partial class RunPageViewModel
         var at = stages.FindIndex(n => string.Equals(n.Id, node.Id, StringComparison.Ordinal));
         var leadsTo = at >= 0 && at + 1 < stages.Count ? stages[at + 1].Name : null;
         var group = line.Children.FirstOrDefault(g => string.Equals(g.State, node.Id, StringComparison.Ordinal));
-        var extra = group is { Total: > 1 } ? Labels.RunPhasesDone(group.Done, group.Total) : string.Empty;
+        var extra = string.Join(" · ", new[] { group is { Total: > 1 } ? Labels.RunPhasesDone(group.Done, group.Total) : string.Empty, TimesOf(node) }.Where(t => t.Length > 0));
         return new RunCardViewModel(node, rect, at + 1, stages.Count, leadsTo, string.Equals(node.Id, active, StringComparison.Ordinal), extra);
     }
+
+    // How long the latest visit to a stage took, or has been going; nothing when the line does not say when it began.
+    private string TimesOf(RunNode node) => node.EnteredAt is not { } entered ? string.Empty
+        : node.LeftAt is { } left ? Labels.RunTook(Labels.Duration((long)Math.Max(0, (left - entered).TotalSeconds)))
+        : node.Kind == RunNodeKind.Stage && RunStates.IsActive(node.State) ? Labels.RunRunningFor(Labels.Duration((long)Math.Max(0, (clock.GetUtcNow() - entered).TotalSeconds)))
+        : string.Empty;
 
     private (IReadOnlyList<MapEdge> Edges, IReadOnlyList<RunPillViewModel> Pills) EdgesOf(RunGraph graph)
     {

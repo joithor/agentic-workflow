@@ -35,8 +35,22 @@ internal static partial class RunGraphBuilder
         var ends = line.States
             .Where(c => c is { Terminal: true, Outcome: not null })
             .Select(c => new RunNode(c.State, RunNodeKind.End, NameOf(c.State), c.Order, BranchOf: null, EndState(c.Outcome), c.Outcome, WorkflowName: null, ChildId: null, ChildAddress: null, Steps: []));
-        var nodes = stages.Concat(sides).Concat(ends).ToList();
-        return new RunGraph(nodes, Edges(nodes, recipe), BranchesServed: false);
+        var nodes = Decorate(stages.Concat(sides).Concat(ends), line, recipe);
+        var served = recipe?.Transitions is { Count: > 0 };
+        return new RunGraph(nodes, served ? FromTransitions(nodes, recipe!) : Edges(nodes, recipe), BranchesServed: served);
+    }
+
+    // What the recipe and the line's states say about each card: who does the state, and when its latest visit began and ended.
+    private static List<RunNode> Decorate(IEnumerable<RunNode> nodes, InstanceDetail line, RecipeView? recipe)
+    {
+        var cells = line.States.GroupBy(c => c.State, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+        var kinds = recipe?.States.GroupBy(s => s.State, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First().Kind, StringComparer.Ordinal) ?? [];
+        return [.. nodes.Select(n => n with
+        {
+            EnteredAt = cells.GetValueOrDefault(n.Id)?.EnteredAt,
+            LeftAt = cells.GetValueOrDefault(n.Id)?.LeftAt,
+            StateKind = kinds.GetValueOrDefault(n.Id),
+        })];
     }
 
     private static RunNode StageNode(StateCell cell, InstanceDetail line, IReadOnlyDictionary<string, InstanceDetail> children, Func<string, string> nameOf)
