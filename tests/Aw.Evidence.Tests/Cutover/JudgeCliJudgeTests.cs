@@ -44,7 +44,8 @@ public sealed class JudgeCliJudgeTests
         _ = await Create(runner).RepairSelectorAsync(_repair, CancellationToken.None);
 
         var call = Assert.Single(runner.Calls);
-        Assert.Equal((Judge, ["ui-element-repair"]), (call.Executable, call.Args));
+        Assert.Equal(Judge, call.Executable);
+        Assert.Equal(["ui-element-repair"], call.Args);
         using var input = JsonDocument.Parse(call.Stdin!);
         var root = input.RootElement;
         Assert.Equal("open-panel", root.GetProperty("brokenSelector").GetString());
@@ -132,7 +133,8 @@ public sealed class JudgeCliJudgeTests
         var verdict = await Create(runner).CritiqueAsync(new VisualCritiqueRequest("/runs/r1/after.png", BaselineScreenshot: null, "/runs/r1"), CancellationToken.None);
 
         Assert.NotNull(verdict);
-        Assert.Equal((expected, ["the header overlaps the table"], "codex-cli"), (verdict.Decision, verdict.Reasons, verdict.Usage?.Model));
+        Assert.Equal((expected, "codex-cli"), (verdict.Decision, verdict.Usage?.Model));
+        Assert.Equal(["the header overlaps the table"], verdict.Reasons);
     }
 
     [Theory, Trait("Lane", "unit")]
