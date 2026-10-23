@@ -17,6 +17,21 @@ internal static partial class Labels
 
     internal const string ColumnWhere = "Where it runs";
 
+    /// <summary>The Repository column's head.</summary>
+    internal const string ColumnRepo = "Repository";
+
+    /// <summary>The page width under which only Status, Agent and For stay (agents spec §2).</summary>
+    internal const double AgentsWideFrom = 640;
+
+    /// <summary>The button that drops every filter when none of the sessions match them.</summary>
+    internal const string ClearFilters = "Clear filters";
+
+    /// <summary>The button on the empty page that goes to the Workflows page.</summary>
+    internal const string OpenWorkflows = "Open Workflows";
+
+    /// <summary>The amber line over a list that could not be read again.</summary>
+    internal const string AgentsOutOfDate = "Out of date: showing the last list Sindri read.";
+
     internal const string ColumnDoing = "What it is doing";
 
     internal const string ColumnFor = "For";

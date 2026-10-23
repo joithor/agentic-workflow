@@ -100,13 +100,13 @@ internal sealed partial class AgentsPageViewModel(ISindriApi api, IClipboard cli
     public string UnreadableText => Labels.SessionsUnreadable;
 
     /// <summary>The column captions above the rows.</summary>
-    public AgentColumns Columns { get; } = new(Labels.ColumnStatus, Labels.ColumnAgent, Labels.ColumnWhere, Labels.ColumnDoing, Labels.ColumnFor);
+    public AgentColumns Columns { get; } = new(Labels.ColumnStatus, Labels.ColumnAgent, Labels.ColumnRepo, Labels.ColumnWhere, Labels.ColumnDoing, Labels.ColumnFor);
 
     /// <summary>True when there are rows to put the captions over.</summary>
     public bool HasColumns => Groups.Count > 0;
 
     /// <summary>The stale note's words.</summary>
-    public string StaleText => Labels.Stale;
+    public string StaleText => Labels.AgentsOutOfDate;
 #pragma warning restore CA1822, MA0041
 
     /// <summary>True while the rows shown are the last good ones (a read failed).</summary>
@@ -202,6 +202,8 @@ internal sealed partial class AgentsPageViewModel(ISindriApi api, IClipboard cli
         Ended.Clear();
         _ended.Clear();
         (SelectedKey, IsEmpty, EmptyText) = (null, false, string.Empty);
+        OnChanged(nameof(ShowsClearFilters));
+        OnChanged(nameof(ShowsOpenWorkflows));
         OnChanged(nameof(EndedHeader));
         OnChanged(nameof(HasEnded));
         OnChanged(nameof(EndedToggleName));
@@ -252,6 +254,8 @@ internal sealed partial class AgentsPageViewModel(ISindriApi api, IClipboard cli
         ShowEnded(list);
         IsEmpty = kept.Count == 0;
         EmptyText = IsEmpty ? (list.Sessions.Count == 0 ? list.Empty ?? Labels.NoSessionsMatch : Labels.NoSessionsMatch) : string.Empty;
+        OnChanged(nameof(ShowsClearFilters));
+        OnChanged(nameof(ShowsOpenWorkflows));
         Reselect(before);
     }
 
