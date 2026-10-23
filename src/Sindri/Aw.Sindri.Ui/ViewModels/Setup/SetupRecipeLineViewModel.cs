@@ -12,14 +12,27 @@ internal sealed class SetupRecipeLineViewModel
     {
         ArgumentNullException.ThrowIfNull(served);
         Name = RecipeNames.Of(served.Id, served.DisplayName);
-        var approved = string.Equals(served.Standing, "approved", StringComparison.Ordinal);
-        var newer = served.ApprovedVersion is { } was && was < served.Version && !string.Equals(served.Standing, "revoked", StringComparison.Ordinal);   // the shipped version waits while an older one stays approved
-        IsOutdated = newer || (approved && (served.Stale is { Count: > 0 } || (served.ApprovedHash is { } hash && !string.Equals(hash, served.Hash, StringComparison.Ordinal))));
-        Status = newer ? Labels.SetupRecipeNewer(served.ApprovedVersion!.Value, served.Version)   // why: newer is true only when ApprovedVersion has a value
-            : !approved ? Labels.StandingWord(string.Equals(served.Standing, "revoked", StringComparison.Ordinal) ? RecipeStanding.Revoked : RecipeStanding.NotApproved)
-            : IsOutdated ? Labels.SetupRecipeOutOfDate : Labels.SetupRecipeApproved;
+        var newer = ShippedIsNewer(served);
+        IsOutdated = newer || ChangedSinceApproval(served);
+        Status = newer ? Labels.SetupRecipeNewer(served.ApprovedVersion.GetValueOrDefault(), served.Version) : StatusOf(served, IsOutdated);
         AccessibleName = Name + ": " + Status;
     }
+
+    // The shipped version waits while an older one stays approved.
+    private static bool ShippedIsNewer(RecipeSummaryView served) =>
+        served.ApprovedVersion < served.Version && !string.Equals(served.Standing, "revoked", StringComparison.Ordinal);
+
+    // An approved version that pins drifted from or whose hash differs from the shipped one.
+    private static bool ChangedSinceApproval(RecipeSummaryView served) =>
+        string.Equals(served.Standing, "approved", StringComparison.Ordinal)
+        && (served.Stale is { Count: > 0 } || (served.ApprovedHash is { } hash && !string.Equals(hash, served.Hash, StringComparison.Ordinal)));
+
+    private static string StatusOf(RecipeSummaryView served, bool outdated) => served.Standing switch
+    {
+        "approved" => outdated ? Labels.SetupRecipeOutOfDate : Labels.SetupRecipeApproved,
+        "revoked" => Labels.StandingWord(RecipeStanding.Revoked),
+        _ => Labels.StandingWord(RecipeStanding.NotApproved),
+    };
 
     /// <summary>The plain name.</summary>
     public string Name { get; }
