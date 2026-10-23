@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "mapVersion": "v1",
+  "draft": false,
+  "asOf": "2026-01-01T00:00:00.0000000Z",
+  "repo": "aw-split-panes",
+  "detail": "areas",
+  "fallback": "over-budget",
+  "counts": {
+    "nodes": 14,
+    "edges": 15,
+    "byKind": {
+      "feature": 2,
+      "surface": 2,
+      "action": 2,
+      "thing": 1,
+      "flow": 0,
+      "decision": 2,
+      "record": 3,
+      "code": 2
+    }
+  },
+  "areas": [
+    {
+      "key": "area:unassigned",
+      "label": "Not linked to a feature yet",
+      "trust": "trusted",
+      "members": 2,
+      "byKind": {
+        "record": 2
+      },
+      "unassigned": true
+    },
+    {
+      "key": "feature:tabs.tab-manager",
+      "label": "Tab manager",
+      "trust": "trusted",
+      "members": 12,
+      "byKind": {
+        "feature": 2,
+        "surface": 2,
+        "action": 2,
+        "thing": 1,
+        "decision": 2,
+        "record": 1,
+        "code": 2
+      },
+      "unassigned": false
+    }
+  ],
+  "areaEdges": [
+    {
+      "from": "feature:tabs.tab-manager",
+      "to": "area:unassigned",
+      "type": "quotes",
+      "count": 2,
+      "confirmed": 2
+    }
+  ],
+  "truncated": false
+}
