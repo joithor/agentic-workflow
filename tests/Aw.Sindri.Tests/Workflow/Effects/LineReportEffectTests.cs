@@ -47,6 +47,9 @@ public sealed class LineReportEffectTests
     [InlineData("shipped")]
     [InlineData("merged")]
     [InlineData("failed")]
+    [InlineData("parked")]
+    [InlineData("resumed")]
+    [InlineData("ended")]
     public async Task A_report_replies_its_status_with_the_phase_storedfact(string status)
     {
         var done = await Report(status, LineContext);
@@ -90,12 +93,29 @@ public sealed class LineReportEffectTests
     [Theory]
     [InlineData("started")]
     [InlineData("")]
-    public async Task A_status_other_than_shipped_merged_or_failed_is_the_dispatch_error(string status)
+    public async Task A_status_the_line_does_not_track_is_the_dispatch_error(string status)
     {
         var done = await Report(status, LineContext);
 
         Assert.True(done.IsError);
         Assert.Empty(Rows());
+    }
+
+    [Fact]
+    public async Task An_engine_report_of_a_linked_phase_carries_its_attempt_park_reason_outcome_and_packet()
+    {
+        var put = (await _facts.Put(Encoding.UTF8.GetBytes(LineContext), Token)).Value;
+        var stored = JsonDocument.Parse($$"""{"ref":"{{put.Ref}}","sha256":"{{put.Sha256}}"}""").RootElement.Clone();
+        var context = Context("ended", stored, new Dictionary<string, string> { ["ended"] = "resolved", ["packet"] = "sha256:abc", ["parkReason"] = "budget" }, "T-4/line/1/phase.p2.3");
+
+        var done = await new LineReportEffect(_area, _facts, _facts, _clock).Dispatch(context, Token);
+
+        var fact = Assert.Single(done.Value.Facts!).Value;
+        var payload = JsonDocument.Parse((await _facts.Read(new FactValue(fact.Ref, fact.Sha256, fact.HeadSha), Token)).Value).RootElement;
+        Assert.Equal(3, payload.GetProperty("attempt").GetInt32());
+        Assert.Equal("resolved", payload.GetProperty("ended").GetString());
+        Assert.Equal("sha256:abc", payload.GetProperty("packet").GetString());
+        Assert.Equal("budget", payload.GetProperty("parkReason").GetString());
     }
 
     [Fact]
@@ -117,12 +137,18 @@ public sealed class LineReportEffectTests
         return await new LineReportEffect(_area, _facts, _facts, _clock).Dispatch(Context(status, stored), Token);
     }
 
-    private static EffectContext Context(string status, JsonElement line) => new(
-        BlockId.From("effect.line.report"), Instance + ":6:0", "c-1", FromEngine: false, Instance, "T-4", Attempt: 1,
-        new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+    private static EffectContext Context(string status, JsonElement line, Dictionary<string, string>? extras = null, string instance = Instance)
+    {
+        var arguments = new Dictionary<string, JsonElement>(StringComparer.Ordinal)
         {
             ["status"] = JsonDocument.Parse(JsonSerializer.Serialize(status)).RootElement.Clone(),
             ["line"] = line,
-        },
-        new Dictionary<FactKey, JsonElement>(), Text: null);
+        };
+        foreach (var (name, text) in extras ?? [])
+        {
+            arguments[name] = JsonDocument.Parse(JsonSerializer.Serialize(text)).RootElement.Clone();
+        }
+
+        return new(BlockId.From("effect.line.report"), instance + ":6:0", "c-1", FromEngine: false, instance, "T-4", Attempt: 1, arguments, new Dictionary<FactKey, JsonElement>(), Text: null);
+    }
 }
