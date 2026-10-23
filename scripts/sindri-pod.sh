@@ -28,7 +28,7 @@
 #                   Onyx answers and runs the pinned release, then the account steps; at the sign-up step you sign up in the
 #                   browser at the forwarded address and press Enter. Nothing is pulled or started; re-running is safe.
 #                   Ctrl-C during attach stops that command only: the app and the forwards stay until connect ends
-#   --check         report each prerequisite (kubectl, jq, the app binary, exec and port-forward rights, the pod Ready, the
+#   --check         report each prerequisite (kubectl, jq, the app binary, exec and port-forward rights, the sindri container ready, the
 #                   local port free) and exit 0 if all hold, 2 if any does not; changes nothing
 #   --dry-run       print the kubectl and sindri-ui commands and the mirror home's path; run and write nothing
 #
@@ -73,6 +73,11 @@ kc() { kubectl ${kargs[@]+"${kargs[@]}"} "$@"; }
 # The pod's home, resolved in the pod the way the app resolves its own (ControlFilePath.cs).
 pod_read='h="${AW_SINDRI_HOME:-${AW_STATE_DIR:-$HOME/.agentic-workflow}/sindri-app}"; cat "$h/control.json" && echo && echo @@aw-token@@ && cat "$h/auth/human.token"'
 
+# The sindri container's ready flag (true, false, or empty when the pod or the container is not there) and the other
+# containers that are not ready ("name=false ...", information only).
+sindri_ready() { kc get pod "$pod" -o 'jsonpath={.status.containerStatuses[?(@.name=="sindri")].ready}' 2>/dev/null; }
+other_containers() { kc get pod "$pod" -o 'jsonpath={range .status.containerStatuses[?(@.name!="sindri")]}{.name}={.ready} {end}' 2>/dev/null | tr ' ' '\n' | grep -v '=true$' | grep . | paste -sd' ' -; }
+
 alive() { [ -n "$1" ] && kill -0 "$1" 2>/dev/null; }
 
 find_ui() {
@@ -82,7 +87,7 @@ find_ui() {
 }
 
 if [ "$dry" = 1 ]; then
-  echo "+ checks: kubectl auth can-i create pods/exec and pods/portforward; kubectl get pod $pod (Ready); the local port is free; the app binary exists"
+  echo "+ checks: kubectl auth can-i create pods/exec and pods/portforward; kubectl get pod $pod (the sindri container ready); the local port is free; the app binary exists"
   echo "mirror home: ${TMPDIR:-/tmp}/aw-sindri-pod.XXXXXX (0700; control.json and auth/human.token 0600; removed on exit)"
   echo "+ kubectl [--context ${ctx:-<current>}] [--namespace ${ns:-<current>}] exec $pod -c sindri -- sh -c '<cat control.json and auth/human.token>'"
   echo "+ kubectl port-forward pod/$pod ${lport:-<pod port>}:<pod port from control.json>"
@@ -121,10 +126,23 @@ if [ "$have_k" = 1 ]; then
     if [ "$ans" = yes ]; then step_ok "kubectl may create $verb in $ns"
     else step_fail "kubectl is not allowed to 'create $verb' in $ns on $ctx (answer: ${ans:-none})"; fi
   done
-  st="$(kc get pod "$pod" -o 'jsonpath={.status.phase} {.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null)"
-  phase="${st%% *}"
-  if [ "$phase" = Running ] && [ "${st#* }" = True ]; then step_ok "pod $pod is Ready"
-  else step_fail "pod $pod is not Ready (phase: ${phase:-unknown})"; fi
+  # Ready means the sindri container, not the pod: an Onyx container that crash-loops keeps the pod not Ready and Sindri works.
+  # connect waits for it (the retry settings); --check only reports.
+  n=0
+  while :; do
+    sready="$(sindri_ready)"
+    [ "$sready" = true ] || [ "$check" = 1 ] || [ "$n" -ge "$retries" ] && break
+    n=$((n + 1))
+    say "waiting for the sindri container of pod $pod (attempt $n of $retries)"
+    sleep "$retry_wait"
+  done
+  others="$(other_containers)"
+  if [ "$sready" = true ]; then
+    step_ok "the sindri container of pod $pod is ready"
+    [ -z "$others" ] || say "note: other containers in $pod are not ready ($others); Sindri does not need them"
+  else
+    step_fail "the sindri container of pod $pod is not ready (ready: ${sready:-unknown})${others:+; other containers, for information: $others}"
+  fi
   want="$lport"
   if [ -z "$want" ]; then   # the pod's own port, when its control.json is readable already
     want="$(kc exec "$pod" -c sindri -- sh -c "$pod_read" 2>/dev/null | sed '/^@@aw-token@@$/,$d' | jq -r '.url // empty' 2>/dev/null \

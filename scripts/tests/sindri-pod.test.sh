@@ -41,7 +41,11 @@ cat > "$WORK/bin/kubectl" <<'EOS'
 echo "kubectl $*" >> "$CALLS"
 case " $* " in
   *" auth can-i "*) r="${!#}"; if [ -e "$POD/deny-${r//\//_}" ]; then echo no; else echo yes; fi; exit 0 ;;
-  *" get pod "*) [ -e "$POD/no-pod" ] && exit 1; cat "$POD/pod-status" 2>/dev/null || echo "Running True"; exit 0 ;;
+  *" get pod "*) [ -e "$POD/no-pod" ] && exit 1
+    case "$*" in
+      *'@.name!='*) cat "$POD/others" 2>/dev/null; exit 0 ;;
+      *) cat "$POD/sindri-ready" 2>/dev/null || echo true; exit 0 ;;
+    esac ;;
   *" config current-context "*) echo kind-test; exit 0 ;;
   *" config view "*) echo sindri; exit 0 ;;
   *" port-forward "*)
@@ -73,7 +77,7 @@ count() { grep -c -- "$1" "$CALLS" || true; }
 has_epoch() { [ "$(jq -r .epoch "$(mirror_dir)/control.json")" = "$1" ]; }
 has_ui() { grep -q '^ui home=' "$CALLS" && [ -n "$(mirror_dir)" ]; }
 has_line() { grep -q -- "$1" "$CALLS"; }
-reset() { : > "$CALLS"; rm -rf "$AW_STATE_DIR/sindri-pod" "$TMPDIR"/aw-sindri-pod.* "$POD"/deny-* "$POD/no-pod" "$POD/pod-status"; }
+reset() { : > "$CALLS"; rm -rf "$AW_STATE_DIR/sindri-pod" "$TMPDIR"/aw-sindri-pod.* "$POD"/deny-* "$POD/no-pod" "$POD/sindri-ready" "$POD/others"; }
 run_connect() {   # <tag> args...: connect in the background with the fakes on the PATH; stdin is one Enter once $WORK/enter exists
   local tag="$1"; shift
   rm -f "$STOP" "$WORK/enter" "$WORK/runs/$tag.rc"
@@ -197,13 +201,23 @@ rm -f "$POD/deny-pods_exec"; touch "$POD/deny-pods_portforward"
 OUT="$(conn)"; RC=$?
 check "no port-forward right: exit 2 naming pods/portforward" "$RC:$(printf '%s' "$OUT" | grep -c "create pods/portforward")" "2:1"
 rm -f "$POD/deny-pods_portforward"
-echo "Pending False" > "$POD/pod-status"
-OUT="$(conn)"; RC=$?
-check "pod not Ready: exit 2, one line naming the phase" "$RC:$(lines "$OUT"):$(printf '%s' "$OUT" | grep -c 'not Ready (phase: Pending)')" "2:1:1"
+echo false > "$POD/sindri-ready"; echo "onyx-api=false " > "$POD/others"
+OUT="$(AW_SINDRI_POD_RETRIES=2 conn)"; RC=$?
+check "sindri container not ready: waits, then exit 2 naming the container, the other containers as information" \
+  "$RC:$(printf '%s' "$OUT" | grep -c 'attempt 2 of 2'):$(printf '%s' "$OUT" | grep -c 'the sindri container of pod sindri-0 is not ready (ready: false); other containers, for information: onyx-api=false')" "2:1:1"
+rm -f "$POD/sindri-ready"
+reset; echo "onyx-api=false " > "$POD/others"
+run_connect h
+waitfor 10 has_ui
+check "pod not Ready but the sindri container is: connects, the other container only a note" \
+  "$(said h 'note: other containers in sindri-0 are not ready (onyx-api=false)'):$(count '^ui home=')" "1:1"
+finish h >/dev/null
+reset
+rm -f "$POD/others"
 touch "$POD/no-pod"
-OUT="$(conn)"; RC=$?
-check "pod missing: exit 2, phase unknown" "$RC:$(printf '%s' "$OUT" | grep -c 'phase: unknown')" "2:1"
-rm -f "$POD/no-pod" "$POD/pod-status"
+OUT="$(AW_SINDRI_POD_RETRIES=1 conn)"; RC=$?
+check "pod missing: exit 2, ready unknown" "$RC:$(printf '%s' "$OUT" | grep -c 'ready: unknown')" "2:1"
+rm -f "$POD/no-pod"
 if command -v python3 >/dev/null 2>&1; then
   python3 -I -c 'import socket,sys,time
 s=socket.socket(); s.bind(("127.0.0.1",48999)); s.listen(1); open(sys.argv[1],"w").write("up"); time.sleep(120)' "$WORK/listening" &
@@ -234,11 +248,11 @@ OUT="$(conn --check)"; RC=$?
 check "--check: all hold, exit 0, an ok line for each" "$RC:$(printf '%s' "$OUT" | grep -c '^sindri-pod: ok:')" "0:7"
 check "--check: forwards nothing, starts nothing, writes no mirror home" \
   "$(count port-forward):$(count '^ui home='):$(mirror_dir)" "0:0:"
-touch "$POD/deny-pods_exec"; echo "Pending False" > "$POD/pod-status"
+touch "$POD/deny-pods_exec"; echo false > "$POD/sindri-ready"
 OUT="$(AW_SINDRI_UI="$WORK/nope" conn --check)"; RC=$?
 check "--check: reports every failure, not just the first, exit 2" \
-  "$RC:$(printf '%s' "$OUT" | grep -c -e 'sindri-app' -e 'create pods/exec' -e 'not Ready (phase: Pending)')" "2:3"
-rm -f "$POD/deny-pods_exec" "$POD/pod-status"
+  "$RC:$(printf '%s' "$OUT" | grep -c -e 'sindri-app' -e 'create pods/exec' -e 'sindri container of pod sindri-0 is not ready')" "2:3"
+rm -f "$POD/deny-pods_exec" "$POD/sindri-ready"
 reset
 OUT="$(conn --check --onyx)"; RC=$?
 check "--check --onyx: also checks the Onyx port, runs no attach" "$RC:$(printf '%s' "$OUT" | grep -c 'Onyx) is free'):$(count 'exec -it')" "0:1:0"

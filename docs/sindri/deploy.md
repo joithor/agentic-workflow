@@ -15,7 +15,7 @@ The app only follows a `control.json` in a home on your machine, so `connect` bu
 - `auth/human.token` holds the pod's current human token, read over `kubectl exec`.
 
 Before anything else `connect` checks its prerequisites; each failure is one line and exit 2: `kubectl` missing or refused a
-verb (`create pods/exec` or `create pods/portforward`, named in the line), the pod not Ready (its phase is named), the local port
+verb (`create pods/exec` or `create pods/portforward`, named in the line), the `sindri` container of the pod not ready (named; `connect` waits for it up to `AW_SINDRI_POD_RETRIES` attempts first, `--check` only reports; other containers, such as a crash-looping Onyx one, are mentioned only as information and never fail `connect`), the local port
 taken (named, with `--port`), or `sindri-ui` not found (the line names `sindri-app`). `connect --check` reports every
 prerequisite and exits 0 or 2 without starting anything.
 
