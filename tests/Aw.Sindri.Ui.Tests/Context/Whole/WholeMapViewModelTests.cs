@@ -201,7 +201,7 @@ public sealed class WholeMapViewModelTests
     }
 
     [Fact]
-    public void Zooming_into_features_opens_them_beside_the_tiles_that_stay_and_counts_the_ones_left_out()
+    public void Zooming_into_features_keeps_the_answers_nodes_counts_features_left_unopened_and_restores_the_overview()
     {
         var map = new WholeMapViewModel(() => _utc);
         var overview = WholeMapLayoutTests.Draft("areas-over-budget");
@@ -212,8 +212,8 @@ public sealed class WholeMapViewModelTests
         Assert.True(map.ZoomIntoAreas(overview, [opened], [key], notOpened: 2));
 
         Assert.Equal(("2 more features touched", true), (map.MoreTouchedText, map.HasMoreTouched));
-        Assert.Equal(opened.Nodes.Count, map.Geometry!.Nodes.Count);
-        Assert.Equal(overview.Areas.Count - 1, map.Geometry.Tiles.Count);
+        Assert.Equal([key], [.. map.Geometry!.Nodes.Select(n => n.Key)]);
+        Assert.Empty(map.Geometry.Tiles);
         map.Unzoom();
         Assert.Equal((true, 0, string.Empty), (map.Geometry!.ByArea, map.Geometry.Nodes.Count, map.MoreTouchedText));
     }
