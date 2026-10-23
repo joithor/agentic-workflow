@@ -91,7 +91,7 @@ public sealed class UiEvidenceCliTests : IDisposable
     [InlineData(130)]
     public void Any_other_exit_is_refused_as_AW_BUGFIX_017(int exit)
     {
-        _stub.Set("exit", exit.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        _stub.Set("exit", exit.ToString(CultureInfo.InvariantCulture));
 
         var run = Adapter(("AW_UI_EVIDENCE_BIN", _stub.Path)).Run(Request());
 

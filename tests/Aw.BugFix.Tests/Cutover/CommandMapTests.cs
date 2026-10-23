@@ -47,6 +47,6 @@ public sealed class CommandMapTests
     public void The_two_stubbed_rows_have_their_verb_and_an_adapter_stub_waiting_for_unit_2_1(string verb, string adapter, string why)
     {
         Assert.Contains($"\n  {verb} ", CommandTable.Usage, StringComparison.Ordinal);
-        Assert.True(typeof(Aw.BugFix.Infrastructure.BugFixSettings).Assembly.GetTypes().Any(t => t.Name == adapter), why);
+        Assert.True(typeof(Infrastructure.BugFixSettings).Assembly.GetTypes().Any(t => t.Name == adapter), why);
     }
 }
