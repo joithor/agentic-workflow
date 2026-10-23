@@ -1,6 +1,17 @@
 {
   "services": [
     {
+      "name": "code-index-embed",
+      "every": "1m",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null,
+      "actions": [
+        "run"
+      ]
+    },
+    {
       "name": "code-index-main-move",
       "every": "1m",
       "paused": false,
@@ -60,6 +71,17 @@
       "actions": [
         "run",
         "pause"
+      ]
+    },
+    {
+      "name": "pr-watch",
+      "every": "5s",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null,
+      "actions": [
+        "run"
       ]
     },
     {

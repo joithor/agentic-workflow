@@ -6,6 +6,11 @@ internal static partial class Labels
     /// <summary>The heading of the block that says why a step failed.</summary>
     internal const string RunWhatWentWrong = "What went wrong";
 
+    /// <summary>The header link of a run that is another attempt: where the old run is.</summary>
+    /// <param name="address">The old run's address.</param>
+    /// <returns>"again of ITM-01JKX/triage-alert/1".</returns>
+    internal static string RunAgainOf(string address) => "again of " + address;
+
     /// <summary>The step could not be started.</summary>
     internal const string RunReasonLaunch = "The agent could not be started.";
 

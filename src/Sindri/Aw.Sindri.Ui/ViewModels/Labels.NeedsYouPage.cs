@@ -80,6 +80,15 @@ internal static partial class Labels
     /// <summary>The caption of the card's first section.</summary>
     internal const string NeedsYouWhyCaption = "Why this needs you";
 
+    /// <summary>The tag on the button of the outcome the step before the stop recommends.</summary>
+    internal const string NeedsYouSuggested = "Suggested";
+
+    /// <summary>The caption of the box that says what approving does.</summary>
+    internal const string NeedsYouIfApprove = "If you approve";
+
+    /// <summary>The caption of the box that says what sending it back does.</summary>
+    internal const string NeedsYouIfSendBack = "If you send it back";
+
     /// <summary>The caption of a row's detail lines.</summary>
     internal const string NeedsYouRequestCaption = "The request";
 

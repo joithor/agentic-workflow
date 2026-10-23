@@ -162,6 +162,8 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
             {
                 _doneFor = null;   // the finished rows are left behind by this refresh; the board reads them when it is shown
             }
+
+            await ReadNames(url, cancellationToken).ConfigureAwait(true);
         }
         else if (string.Equals(list.Error.Code, SindriUiErrors.BadAnswer.Code, StringComparison.Ordinal) && list.Error.Kind == ErrorKind.Invalid)
         {

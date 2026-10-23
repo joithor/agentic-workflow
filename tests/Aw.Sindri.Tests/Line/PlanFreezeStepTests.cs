@@ -51,6 +51,20 @@ public sealed class PlanFreezeStepTests
     }
 
     [Fact]
+    public async Task A_stored_hidden_set_is_sealed_to_the_plan_packet_just_frozen()
+    {
+        var (facts, station) = await Approved();
+        var set = """{ "schemaVersion": 1, "phase": "expiry-p1", "scenarios": [ { "id": "H1", "item": "AC-1", "kind": "api", "steps": ["s"], "expected": "e" }, { "id": "C", "item": null, "kind": "canary", "steps": [], "expected": "never", "phrase": "canary-abc" } ] }""";
+        _ = (await station.Holdouts.Save("T-1", "expiry-p1", set, TestContext.Current.CancellationToken)).Value;
+
+        var result = await Freeze(station, facts);
+
+        Assert.Equal("frozen", result.Result!.Outcome.Value);
+        var sealedSet = await station.Holdouts.Seal("T-1", "expiry-p1", TestContext.Current.CancellationToken);
+        Assert.Equal((Core.Prove.HoldoutFiles.Hash(set), InMemoryPackets.HashOf(new PacketRef(PacketKind.Plan, PlanLocation))), (sealedSet.Value.SetHash, sealedSet.Value.PlanHash));
+    }
+
+    [Fact]
     public async Task A_second_freeze_of_the_same_packets_is_still_frozen()
     {
         var (facts, station) = await Approved();
@@ -100,7 +114,7 @@ public sealed class PlanFreezeStepTests
     {
         var (facts, station) = await Approved();
 
-        var result = await new PlanFreezeStep(new HashlessFreezes(station.Packets), station.Checkouts).Run(LineStation.Context("step.plan.freeze", LineStation.PlanAddress, facts), TestContext.Current.CancellationToken);
+        var result = await new PlanFreezeStep(new HashlessFreezes(station.Packets), station.Checkouts, station.Holdouts).Run(LineStation.Context("step.plan.freeze", LineStation.PlanAddress, facts), TestContext.Current.CancellationToken);
 
         Assert.Null(result.Result);
         Assert.Contains("no hash", result.Failure, StringComparison.Ordinal);

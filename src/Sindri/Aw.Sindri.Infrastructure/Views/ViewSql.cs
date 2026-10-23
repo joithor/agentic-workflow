@@ -41,6 +41,7 @@ internal static class ViewSql
         [ViewNames.Decisions] = new ViewTable("view_decisions", Columns(ViewNames.Decisions)),
         [ViewNames.NeedsYou] = new ViewTable("view_needs_you", Columns(ViewNames.NeedsYou)),
         [ViewNames.Jobs] = new ViewTable("view_jobs", Columns(ViewNames.Jobs)),
+        [ViewNames.CodeIndex] = new ViewTable("view_code_index"),
         [ViewNames.Launches] = new ViewTable("view_launches", Columns(ViewNames.Launches)),
         [ViewNames.RecipeStats] = new ViewTable("view_recipe_stats"),
     };

@@ -6,7 +6,7 @@ internal static class ShippedDescriptorHashes
     public static IReadOnlyDictionary<string, string> Pinned { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         ["effect.claim.ref"] = "sha256:2a44426d862b3721014969dfcc03a7851f56551f2b9bec9f340e500353a9abd3",
-        ["effect.line.report"] = "sha256:7e5951377422c5c199863a5b9669d8ba5895100a52a87f876bf1fd56d174d63b",
+        ["effect.line.report"] = "sha256:8037e9f18af032ee865ecd62085229b4ca4b96d2dfc8e9cb75a7cfdda84de841",
         ["effect.notify.desk"] = "sha256:c3cb05f7d73c6c539b05acb87c15185c4a9b81d12fb27626b59f12b94e157b07",
         ["evidence.check"] = "sha256:5e8052c5aaf078f6a487a5822fa63d9821a011fa480205fe5bbc8e9f07092d62",
         ["gate.budget.available"] = "sha256:2e11428fb8765eb8e43f62db6dce8dd654cddd1b6685e6c61080037174408135",
@@ -69,11 +69,13 @@ internal static class ShippedDescriptorHashes
         ["step.plan.exec-review"] = "sha256:d1a5de54325eaa16191fc54eefef0cda8a031167d82f6d610681b5efcd4e2ca6",
         ["step.plan.freeze"] = "sha256:29557e97e56f5962cf21cc8d60366cbf03a03b913358d19174a962aefbd716e8",
         ["step.plan.graph"] = "sha256:516dc72ae966ece7785bc5c68923ed357b5db916e130036f566cfc8272651693",
-        ["step.plan.holdout"] = "sha256:6565536e97d9d256dfc1b73de8204fe192b43d9a2cd405b15a606d14ec9e5830",
+        ["step.plan.holdout"] = "sha256:e81f65a6acbf05549dc5c3e58ab2b077b5b10b52f27b3d04aaded977fb40618d",
+        ["step.plan.holdout-store"] = "sha256:afcf37e929350079f35b0461703e0d359b6cbd17576b67574a945c8bdb6d0e7a",
         ["step.plan.intake"] = "sha256:9c9f38af5e0fb0966cf75ed63fa528c501bd6a568020490b11868ac22e5d0e48",
         ["step.plan.questions"] = "sha256:58003556a1851aa52c65ad06f810664a32e281fb566d2f2c0da4f30cf8cbc281",
         ["step.plan.review"] = "sha256:6a6c9c9bdf8ecaf2db2302789e1d84880189a1b172eb422b2da0158ee72f24ac",
         ["step.plan.settle"] = "sha256:79c9a702f5e5badfdbbb19f594c9779fa07a7cd8459051983f09f1392ddc5d39",
+        ["step.pr.ci-log"] = "sha256:1d66db3cb0decc1c7ca167076c8a664298eb82cc574300539f4a64e303617786",
         ["step.produce"] = "sha256:f3641bb5fd611951f4f20b0fc6f85cbec50025d199f3eb8721d2cdd3bf2baf51",
         ["step.prove.before-after"] = "sha256:01da010bcd11eeb97da80170ca98f07e5ce256071343ceecf9a521ab902cace6",
         ["step.prove.collect"] = "sha256:c67b2ae514c786d44d3c2a5d2edab74fcdae626dd7a7bc81710237e3cfa8b073",

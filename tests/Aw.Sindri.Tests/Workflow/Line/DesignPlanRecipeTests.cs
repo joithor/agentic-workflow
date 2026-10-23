@@ -24,7 +24,7 @@ public sealed class DesignPlanRecipeTests
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("workflow.design", "rounds=5;lens=4;lens-runs=40")]
-    [InlineData("workflow.plan", "rounds=5;refreeze=2;revisions=5")]
+    [InlineData("workflow.plan", "rounds=5;refreeze=2;revisions=5;holdouts=3")]
     public void The_loop_caps_are_the_ones_the_spec_names_and_no_token_cap_binds_the_instance(string id, string loops)
     {
         var recipe = Read(id).Recipe;
@@ -45,8 +45,8 @@ public sealed class DesignPlanRecipeTests
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("workflow.design", "check-gaps-twice;evidence-incomplete;fresh-happy;lens-cap-accept;lens-cap-drop;lens-escalates;lens-escalation-stop;lens-findings-revise;revise-after-caps;revise-edits-prior;revise-mode;two-lens-pack")]
-    [InlineData("workflow.plan", "assumed-happy;changed-decision;drop;evidence-incomplete;freeze-mismatch;no-questions;objections;revise-cap;revise-plan")]
+    [InlineData("workflow.design", "check-gaps-twice;evidence-incomplete;fresh-happy;lens-cap-accept;lens-asks-all;lens-cap-drop;lens-escalates;lens-escalation-stop;lens-findings-revise;revise-after-caps;revise-edits-prior;revise-mode;two-lens-pack")]
+    [InlineData("workflow.plan", "assumed-happy;changed-decision;drop;evidence-incomplete;freeze-mismatch;holdout-invalid;no-questions;objections;revise-cap;revise-plan")]
     public void The_recipe_lists_the_seven_cases_of_appendix_b1_and_two_more(string id, string cases)
     {
         var names = Read(id).Recipe.Evals.Select(static e => Path.GetFileNameWithoutExtension(e));

@@ -54,6 +54,38 @@ public sealed class ScopeEvidenceStepTests
         }
     }
 
+    // The gold's two challenger rounds, the last one found something new.
+    private static ScopingFacts FoundLast() => Gold().Edit("challenge", n => n["rounds"]![1]!["verdict"] = "found");
+
+    private static Task<BlockStepResult> RunWithCap(ScopingFacts facts, int? cap) =>
+        new ScopeEvidenceStep(new InMemoryRunArea(), new InMemoryPackets(), new InMemoryRepoCheckouts().With("web", "/work/web"), new FakeRunDiff())
+            .Run(ScopingStepContexts.Of("step.scope.evidence", facts, loopCaps: cap is { } n ? new Dictionary<string, int>(StringComparer.Ordinal) { ["challenge"] = n } : null), Token).AsTask();
+
+    [Fact]
+    public async Task A_found_last_round_is_spent_and_only_warns_when_the_recipes_challenge_cap_is_two()
+    {
+        var result = await RunWithCap(FoundLast(), cap: 2);
+
+        Assert.Equal("complete", result.Result!.Outcome.Value);
+        Assert.Contains(result.Result.Outputs.Keys, k => k.Value == "fact:scopePacket");
+    }
+
+    [Fact]
+    public async Task The_same_rounds_still_fail_when_the_recipes_challenge_cap_is_three()
+    {
+        var result = await RunWithCap(FoundLast(), cap: 3);
+
+        Assert.Equal("incomplete", result.Result!.Outcome.Value);
+    }
+
+    [Fact]
+    public async Task Without_a_recipe_cap_the_challenge_cap_falls_back_to_three()
+    {
+        var result = await RunWithCap(FoundLast(), cap: null);
+
+        Assert.Equal("incomplete", result.Result!.Outcome.Value);
+    }
+
     [Fact]
     public async Task An_acceptance_list_with_a_gap_is_incomplete_and_writes_no_packet()
     {

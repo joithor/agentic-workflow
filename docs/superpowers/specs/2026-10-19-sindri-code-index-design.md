@@ -122,8 +122,8 @@ is immutable and has no sidecars. Readers read the pointer, then open that file 
 Superseded files and leftovers matching exactly `<repo>\.[0-9A-HJKMNP-TV-Z]{26}\.db(-wal|-shm)?` (and no looser glob, since a repo may be called `a.b`) are deleted when no pointer names them, they are not the build file the running build
 recorded in `<repo>.building`, and they are older than 10 minutes (readers hold a file only for one call), at the start and end of each build; the heavy lock means no two builds of a repo run. Files are
 created 0600 explicitly. A repo name is `[A-Za-z0-9_-][A-Za-z0-9._-]{0,63}` (no leading dot; refused otherwise, `SND-CODEIDX-001`) before it goes into any file name,
-and the pointer is opened without following symlinks and must match a ULID, else the index is `damaged`. An incremental build and an
-embeddings continuation each copy the current file once (the cost of immutable files; a large index is hundreds of MB).
+and the pointer is opened without following symlinks and must match a ULID, else the index is `damaged`. An incremental build and each
+embed chunk copy the current file once (the cost of immutable files; a large index is hundreds of MB).
 The index is derived data: a different `user_version` is rebuilt from scratch, never migrated (CI10).
 
 ### 4.2 Schema (version 1)
@@ -303,8 +303,9 @@ The private temp and cache directory (`TMPDIR`, `XDG_CACHE_HOME`, `UV_CACHE_DIR`
 it can resolve elsewhere) and not a model whose name contains `cloud`; redirects are errors; a bad URL or model is
 `SND-CODEIDX-005`. The model must be present with the pinned digest (`/api/tags`), else the layer is `unavailable`
 `SND-CODEIDX-009`. Texts are `name + scrubbed signature + scrubbed body`, cut at 2,000 characters, in batches of 32, written to the
-store as each batch returns. At most 4,096 symbols are embedded per build (a first build of a big repo finishes over
-several builds: `pending`, "N of M embedded", and the service schedules a continuation, §6.3). The
+store as each batch returns. Embedding is its own operation (`EmbedCodeIndex`, §5.7a), outside the heavy slot: a build only stores bodies,
+carries the vectors of unchanged files and records the layer `pending`, "N of M embedded" (or `ok` when none is missing, `disabled` when the profile turns it off);
+the embed run then works through the pending symbols in chunks of 4,096 until none remain, so a repo is fully embedded without waiting for a HEAD move (the service starts it whenever the layer is `pending`, §6.3). The
 embedding step skips `class`-like symbols, as the TS index does. A graph symbol's embed text is its source span from its line to the line before the next graph symbol in the same file (or the end of the file), scrubbed then cut; this is an approximation, since graphify gives no end line. A file whose blob cannot be read leaves its graph symbols without text, and the graph layer's detail counts those files. Nothing in the unit lane talks to Ollama (§11).
 
 ### 5.7 The build slice (`BuildCodeIndex`, Features)
@@ -315,11 +316,20 @@ embedding step skips `class`-like symbols, as the TS index does. A graph symbol'
    `Succeeded` job with `skipped: not-on-main` and no change).
 3. Plan, parse, write structure, call sites, clones and deps into the build file in one transaction per 200 files, reporting a
    progress line each time (`structure 1,400 of 3,100 files`; counts only).
-4. Graph layer (it empties and refills the graph tables), then resolve: one set-based pass builds the syntax edges from `call_sites` and merges the graphify edges; then the embeddings layer. Each layer is in its own try; failure becomes layer status.
+4. Graph layer (it empties and refills the graph tables), then resolve: one set-based pass builds the syntax edges from `call_sites` and merges the graphify edges; then the embeddings layer is recorded from the counts (bodies stay stored until embedded; the build never calls the embedder). Each layer is in its own try; failure becomes layer status.
 5. Write `meta`, check, convert and close the file, switch the pointer (§4.1), append `codeindex.built` (§8). `result.commit` is set
 only when an index at that commit was published, else null.
 Cancellation is honored between files and between batches; a cancelled build deletes its build file and leaves the live
 index alone. The slot is released in a `finally`.
+
+### 5.7a The embed slice (`EmbedCodeIndex`, Features)
+
+No heavy slot. It embeds the repo's pending symbols (those with a stored body and no vector) in chunks of 4,096, each chunk one copy-embed-publish of the live
+index, so progress survives a cancel or a crash and a chunk is the most a cancel loses; it continues until no symbol is pending, the model fails (the layer
+is `unavailable` with the code, the vectors made stay) or the call is cancelled, and answers `Embedded`, `Embeddable` and the layer's state. A build and an embed chunk of the same repo
+never interleave: the store takes a per-repo code-index lock (`IRepoIndexLock`, not a heavy slot) when it starts a build file and the build releases it when it is disposed, so
+neither discards the other's work (a wait past 10 minutes is `SND-CODEIDX-016`, retried later). A move needs no extra work to stay differential: the build already cascades away the
+symbols and vectors of changed and removed files and keeps those of unchanged files, so only changed and new symbols are pending and a move never re-embeds the repo.
 
 ## 6. The background trigger
 
@@ -364,15 +374,9 @@ indexed from a feature branch, and the Health row says why ("checkout is not on 
 
 ### 6.3 Pending layers and first builds
 
-A job that ends with embeddings `pending` records `layersPending: ["embeddings"]` in its result. The service then calls
-`Decide` with that repo's recorded head withheld (null), so a continuation is the same function with a different input,
-not a second path. When to withhold it, and when to suppress a start, is its own small pure function in `CodeIndex.Core`, `IndexContinuationDecision`, called before `Decide` on every tick and every start, including a moved head (inputs: the head, the recorded head, the repo's newest
-jobs with their results' `layersPending`, `embedded` counts and `deferred` flag, and the clock; outputs: `Pass`, `Suppress` (no `Decide` call this tick) or `WithholdRecorded`): after a job that embedded something it says
-"continue" from 2 minutes later; after one that embedded nothing, and after a `deferred: heavy-busy` job (which publishes nothing and writes no
-`codeindex.built`, so `Decide` alone would start it every minute), `Suppress` for 10 minutes, for a moved head as well; after 3 in a row that embedded nothing, never until the head moves. (A large repo's first
-build takes about ten continuations; Health shows the percentage.) A layer that was `unavailable` for a fixable cause
+Embedding is not a build: a repo whose embeddings layer is `pending` gets an `EmbedCodeIndex` job (key `embed:<repo>`, no heavy slot, §5.7a) that runs until the layer is ok, with no HEAD move needed. The built-in `code-index-embed` service (every 1 minute) starts it from `ICodeIndex.Status` and the repo's `embed:` jobs through the pure `EmbedDecision` in `Aw.Sindri.Core/Scheduling`: a running job holds the start, a layer that is not `pending` starts nothing, then the wait after the newest ended job (failures in a row: the 5, 10, 20, 40, 60 minute backoff; `SND-CODEIDX-016` or `013`, a busy or unbuilt index, ends the job `later`, not failed, and waits 2 minutes; a job that ended `pending` with no more vectors than the job before waits 10 minutes; a job that embedded more is followed at once). A build never embeds, so nothing here continues a build: `code-index-main-move` starts a build only for a moved head, a retry after failures (the backoff) or a layers-only build, and a `deferred: heavy-busy` build (which publishes nothing and writes no `codeindex.built`, so `Decide` alone would start it every minute) holds the repo's next start for 10 minutes. (A large repo's first embeddings take many 4,096-symbol chunks; Health shows the percentage.) A layer that was `unavailable` for a fixable cause
 (`SND-CODEIDX-007` to `009`: graphify, sandbox, Ollama or pin missing) is probed at most every 10 minutes (`ICodeIndex.ProbeLayers`:
-the same lock check the build does, no work) and, when it has become available, starts a layers-only continuation, so
+the same lock check the build does, no work) and, when it has become available, starts a layers-only build, so
 fixing the box with `./setup.sh` is enough; nobody has to wait for the next commit to main. A repo registered and approved for the first time has no recorded head, so the next tick starts its first
 build; the owner does nothing.
 
@@ -548,7 +552,7 @@ repo names, version numbers, reason words and counts, never a path or text):
 - `context.map.refreshed` gains `held` (bool; false when the refresh promoted itself).
 The `heads` field is in the stored payload only; the public form of `context.map.published` leaves it and the repo names out, as `repo.added` leaves its path out, and a session's `map status` and lens text are cut to its own repos. One event per map version, not per repo: `repo` is the version's own repo (`MapVersion.Repo`) and `repos` counts the mapped ones. Idempotency keys (the `v` as in `context.map.refreshed`) `context.map.held:<repo>:v<version>`, `context.map.published:<repo>:v<version>`, `context.map.hold.dropped:<repo>:v<version>:<ulid>`. Public form: `held` and `hold.dropped` are not public (they name repos); `published` is public without repo names, heads and counts of repos (`repos` and `staleRepos` become one boolean, `anyStale`); `refreshed` keeps its existing public form. `sindri jobs` and `jobs show` text is as visible to a caller as the jobs list already is to that caller; this section adds no reader.
 
-**Errors.** The code index range is untouched: `SND-CODEIDX-014..029` stay reserved and this section adds no code (the
+**Errors.** The code index range is untouched: `SND-CODEIDX-017..029` stay reserved and this section adds no code (the
 index is read through `Heads`, whose failure is "no index", which is `Absent` or `Coming`, never an error to the map). The map
 side reserves **`SND-CONTEXT-190..194`** (explain owns 180..189) and uses **190** (Conflict): an `Error` the engine returns from `Promote`, `CleanDraft` and `AppendOverrides` when `expectedVersion` is given and the latest draft is another number (a rebuild replaced it, or it was promoted). The publish job maps it to a `Succeeded` result with `Code` 190, drops the hold, and raises nothing. **`SND-CONTEXT-046` keeps its own meaning (no draft, or undecided review items)**, so the job can tell the two apart: 046 fails the job, leaves the hold, and backs off for a person to decide. A
 bad profile value is 001. `191..194` are reserved. The range row in the retrieval spec (§14 phases note) is updated in F1P-b2.
@@ -745,7 +749,10 @@ Area `SND-CODEIDX` (new; free: the TS `SND-INDEX-*` codes stay documented until 
 | `SND-CODEIDX-011` | NotFound | the symbol ref names no symbol in this index | `sindri code-index symbols <name>` |
 | `SND-CODEIDX-012` | Invalid | a query is empty, too broad, or over a limit | narrow it |
 | `SND-CODEIDX-013` | NotFound | no index for this repo yet | none; the first build is queued |
-| `SND-CODEIDX-014..029` | | reserved | |
+| `SND-CODEIDX-014` | Unavailable | the index describes an older commit than the repo's main; only a health row on `GET /status`, the index still answers | rebuild it from the System page; the next tick also builds it |
+| `SND-CODEIDX-015` | Unavailable | a build failed and is retrying after its backoff; only a health row on `GET /status` | `sindri jobs` shows the failed build; `sindri doctor` names the cause |
+| `SND-CODEIDX-016` | Unavailable | the repo's index is locked by another build or embed run past the wait | none; retried later |
+| `SND-CODEIDX-017..029` | | reserved | |
 
 Revision 4 adds none: the map's gate reads `Heads`, whose failure is "no index" (`Coming` or `Absent`), never an error to the map (§6.4 "Errors"; the map side reserves `SND-CONTEXT-190..194`).
 

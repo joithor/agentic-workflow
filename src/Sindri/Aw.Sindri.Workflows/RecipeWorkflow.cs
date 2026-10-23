@@ -40,6 +40,7 @@ internal sealed partial class RecipeWorkflow
     private readonly HashSet<long> _eventsTaken = [];
     private readonly Dictionary<string, Reported> _reported = new(StringComparer.Ordinal);
     private readonly TimerScopes _timers = new(Timers);   // engine P5 (§5.5): unit (a) arms the state timers through it, unit (b) pauses and resumes them
+    private const string LinkedEventsPatch = "ln-wf1-linked-phase-events";   // LN-WF1: a linked instance's reports to its line, its Root attribute and the cancel that reaches it
     private bool _children;   // engine P7: the 'p7-children' marker is in this history (gates run, the slot stub grants); false on a replay of an older one
     private InstanceStart? _start;
     private InterpretedRecipe? _recipe;

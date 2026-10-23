@@ -113,7 +113,38 @@
                   <TextBlock x:Name="NeedsYouWhyText" Classes="body" Text="{Binding Why}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Why}" />
                 </StackPanel>
               </Border>
+              <UniformGrid x:Name="NeedsYouOutcomes" Columns="2" IsVisible="{Binding Bar.HasIfApprove}" Margin="20,8">
+                <Border x:Name="NeedsYouIfApprove" Classes="card-section" IsVisible="{Binding Bar.HasIfApprove}">
+                  <StackPanel Spacing="4">
+                    <TextBlock Classes="eyebrow" Text="{Binding IfApproveCaption}" />
+                    <TextBlock x:Name="NeedsYouIfApproveText" Classes="body" Text="{Binding Bar.IfApprove}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Bar.IfApprove}" />
+                  </StackPanel>
+                </Border>
+                <Border x:Name="NeedsYouIfSendBack" Classes="card-section" IsVisible="{Binding Bar.HasIfSendBack}">
+                  <StackPanel Spacing="4">
+                    <TextBlock Classes="eyebrow" Text="{Binding IfSendBackCaption}" />
+                    <TextBlock x:Name="NeedsYouIfSendBackText" Classes="body" Text="{Binding Bar.IfSendBack}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Bar.IfSendBack}" />
+                  </StackPanel>
+                </Border>
+              </UniformGrid>
               <Border Classes="hairline" />
+              <Border x:Name="NeedsYouMergeCard" Classes="card-section" IsVisible="{Binding Bar.HasMergeCard}">
+                <StackPanel Spacing="4">
+                  <TextBlock Classes="eyebrow" Text="{Binding Bar.MergeCard.Heading}" />
+                  <Button x:Name="NeedsYouMergePr" Classes="row-title" HorizontalAlignment="Left" Click="OnOpenPr" IsEnabled="{Binding Bar.MergeCard.CanOpen}"
+                          Content="{Binding Bar.MergeCard.PrText}" AutomationProperties.Name="{Binding Bar.MergeCard.PrName}" />
+                  <ItemsControl x:Name="NeedsYouMergeLines" ItemsSource="{Binding Bar.MergeCard.Lines}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="ny:MergeCardLine">
+                        <Grid ColumnDefinitions="90,*" AutomationProperties.Name="{Binding Name}">
+                          <TextBlock Classes="caption subtle" Text="{Binding Name}" AutomationProperties.AccessibilityView="Raw" />
+                          <TextBlock Grid.Column="1" Classes="body" Text="{Binding Value}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
               <Border x:Name="NeedsYouRequest" Classes="card-section" IsVisible="{Binding Question, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                 <StackPanel Spacing="4">
                   <TextBlock Classes="eyebrow" Text="{Binding RequestCaption}" />
@@ -264,6 +295,7 @@
                     Click="OnApprove" AutomationProperties.Name="{Binding Bar.ApproveName}">
               <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.AccessibilityView="Raw">
                 <TextBlock Text="{Binding Bar.ApproveWord}" VerticalAlignment="Center" />
+                <TextBlock x:Name="NeedsYouApproveSuggested" Classes="caption" Text="{Binding Bar.SuggestedTag}" IsVisible="{Binding Bar.ApproveSuggested}" VerticalAlignment="Center" />
                 <Border Classes="kbd"><TextBlock Classes="kbd" Text="A" /></Border>
               </StackPanel>
             </Button>
@@ -278,6 +310,7 @@
                     ToolTip.Tip="{Binding Bar.SendBackTooltip}" ToolTip.ShowOnDisabled="True" AutomationProperties.Name="{Binding Bar.SendBackName}" AutomationProperties.HelpText="{Binding Bar.SendBackTooltip}">
               <StackPanel Orientation="Horizontal" Spacing="8" AutomationProperties.AccessibilityView="Raw">
                 <TextBlock Text="{Binding Bar.SendBackWord}" VerticalAlignment="Center" />
+                <TextBlock x:Name="NeedsYouSendBackSuggested" Classes="caption" Text="{Binding Bar.SuggestedTag}" IsVisible="{Binding Bar.SendBackSuggested}" VerticalAlignment="Center" />
                 <Border Classes="kbd"><TextBlock Classes="kbd" Text="D" /></Border>
               </StackPanel>
             </Button>

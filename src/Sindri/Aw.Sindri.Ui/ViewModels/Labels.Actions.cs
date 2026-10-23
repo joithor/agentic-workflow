@@ -26,6 +26,7 @@ internal static partial class Labels
         ["ApproveProfile"] = "Approve profile",
         ["ApproveAllRecipes"] = ApproveAllTitle,
         ["ApproveRecipe"] = "Approve recipe",
+        ["EmbedCodeIndex"] = "Embed code index",
         ["BuildContextMap"] = "Build map",
         ["RefreshContextMap"] = "Refresh map",
         ["PublishContextMap"] = "Publish map",
@@ -85,7 +86,7 @@ internal static partial class Labels
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <summary>The Health page's catalog section.</summary>
-    internal const string ActionsCard = "ACTIONS";
+    internal const string ActionsCard = "Actions";
 
     /// <summary>The copy button.</summary>
     internal const string Copy = "Copy";

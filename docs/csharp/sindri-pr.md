@@ -51,7 +51,7 @@ Exit codes: 0 no findings, 1 findings, 2 usage or a tool error (a missing direct
 | `step.pr.intake` | `seeded` | Reads the pull request once, outputs `fact:workspace` (empty when none given) and seeds the empty facts every later Step reads (`decision`, `ownerNote`, `handoffNote`, `fix`, `reply`, `recheck`). Appends the `start` row. An unreadable PR fails the Step |
 | `step.pr.snapshot` | `mergedDocsOpen`, `merged`, `closed`, `restack`, `conflict`, `ciRed`, `comments`, `stale`, `docsRed`, `pending`, `green` | One forge read of the PR, its threads, its comment marks and (when the instance holds `fact:docsPr`) the docs PR; the first outcome that holds in §4.3's order. Writes `fact:prState` on every outcome and `fact:mergedSha` when merged (the merge commit `fact:merge` holds, else the head). Appends the `snapshot` row |
 
-`fact:prState` is the PR view in camelCase: `link`, `state` (`green` when the outcome is, else the PR's own), `pullState`, `headSha`, `stale`, `head`, `mergeable`, `reviewDecision`, `unresolvedThreads`, `checks` (`state`, `sha`, `failing`), `queue` (`unhandled`, `held`, `untrusted`, `bots`), `comments` (each with its latest mark), `docs`, `mergeBlockedBy`, `workspaceAhead`, `outcome` and `at`. A comment with a mark is handled; a thread carrying a Sindri marker is Sindri's own and never queued.
+`fact:prState` is the PR view in camelCase: `link`, `state` (`green` when the outcome is, else the PR's own), `pullState`, `headSha`, `stale`, `head`, `mergeable`, `reviewDecision`, `unresolvedThreads`, `checks` (`state`, `sha`, `failing`), `queue` (`unhandled`, `held`, `untrusted`, `bots`), `comments` (each with its latest mark), `base`, `docs`, `mergeBlockedBy`, `workspaceAhead`, `outcome` and `at`. `base` is `{ ref, sha, tip, was }`: `ref` and `tip` are the base branch and its head as the forge reports them now (`PullView.Base`, `PullView.BaseSha`); `sha` is the tip of the base the PR was built on, which `effect.pr.restack` replays after. It follows `tip` on the first snapshot and is then kept: a base that moved on keeps the old tip, and a base that merged and was deleted (the forge moves the PR to the default branch, whose tip says nothing about the old base) keeps its last tip with `was` naming the old branch. A restack that settled at this head (`fact:restack` `restacked` or `nothing`, its `head` the PR's head) sets `sha` to `tip` and clears `was`. A PR first seen after its base merged has no earlier tip to keep. A comment with a mark is handled; a thread carrying a Sindri marker is Sindri's own and never queued.
 
 ## Effects (`Features/Blocks/Effect`)
 
@@ -62,8 +62,13 @@ Exit codes: 0 no findings, 1 findings, 2 usage or a tool error (a missing direct
 | `effect.pr.rerun-checks` | none | Asks the forge to run the failed checks again on the commit they failed on (`checks.sha`, else `head.sha`). Writes no row |
 | `effect.pr.merge` | `merged`, `blocked`, `headMoved` | Merges with the forge's expected-head check; the method is the recipe's `method`, else the profile's `workflow.pr.mergeMethod`, else squash. Human caller only (W23). Appends the `merge` row on `merged` |
 | `effect.pr.reply` | none | Forms `thread`, `reaction`, `fixed`, `fixedReplies`, `hold` and `none`. A post is made once per effect identity (Sindri's marker is derived from it); every form writes its comment mark (W26) keyed by the identity, so a redelivery writes none twice; reply text is scrubbed first. Appends a `comment` row |
+| `effect.pr.restack` | `restacked`, `nothing`, `conflict`, `refused` | Moves a stacked PR onto its new base. The new base is the PR's own base branch while the PR that owns it is still open (the base moved), else the default branch (it merged). Arguments: `pr`, and optionally `workspace` (else `fact:workspace`) and `from` (the old base's tip, else `fact:prState` `base.sha`). The workspace must be at the PR's head (else `refused`). Fetches the new base from the workspace's `origin` (`IWorkspaceRebase`), then rebases: with `from`, only the commits after it are replayed, so the old base's commits are dropped even after a squash merge; without it git drops by patch. Scans the rebased range in process (`SHIP-SECRET-001`, `RebasedRangeScan`; a hit names file and line, never the match), retargets the PR, and pushes with a lease on the head the forge saw. `nothing` when the PR is closed or already on its base and has it; a head that has the new base but sits on another base is only retargeted (`restacked`, no push). `conflict` (git could not merge; the paths are in the fact, the rebase is aborted) and `refused` (scan hit, lost lease or remote refusal) push and retarget nothing and put the workspace back on the head it had. Carries `fact:restack` (`outcome`, `oldBase`, `newBase`, `head`, `reason`, `paths`) and appends a `restack` row for every outcome |
 | `effect.pr.create-stacked` | `opened`, `updated`, `rejected` | Pushes the docs workspace's head to `docs/<source head branch>` and opens the docs PR with that branch as its base, or updates Sindri's open one. Arguments: `pr` (the source: `link` and `head.ref`), `on` (the snapshot; `head.sha` is the head the docs describe), `workspace`, `title`. The docs PR is found by its branch and a marker derived from the source (`sindri.docs:<owner>-<name>-<number>`), never by the branch alone. The push is leased: no lease for a new branch (a branch that already exists with no docs PR of ours is `rejected`), else the sha in `fact:docsPr` (the one it last pushed), else the open docs PR's head; a branch someone else moved, a push the remote turns away and a call the forge refuses (`SND-FORGE-002`) are `rejected`. A repeated dispatch after its push landed finds the branch at its own commit and goes on. The docs workspace's `origin` must be the source's repository. Carries `fact:docsPr` (`link`, `number`, `state`, `base`, `head`, `source`, `syncedHead`). Writes no row |
 | `effect.pr.merge-docs` | `merged`, `pending`, `none` | After the source merged, finds the docs PR (same branch and marker) and merges it: `none` when there is none or it is closed or merged already; `pending` (left open) when its checks fail or still run, when it conflicts, or when the forge blocks the merge or the head moved; otherwise it moves the base to the default branch if it is elsewhere and merges with the expected-head check, by the method `effect.pr.merge` uses. One look, nothing waits: `workflow.pr.docsMergeWait` is not read and `docs-merge-owner` retries. No rebase and no secret scan (no workspace). Human caller only (W23). Carries `fact:docsMerge` (`docsPr`, `outcome`, `sha`) and appends a `docsMerge` row for every outcome |
+
+## The babysitter's commands in the status (API18)
+
+`sindri workflow status` and `GET /sindri/workflow/instances/{id}` list the babysitter's recipe verbs for its current state as `allowedCommands` entries with `actionId` `ApplyCommand:command` and a `verb`. In `ready` they are `merge`, `rework`, `comments`, `resync-docs` and `check`, so the app shows one button per verb and a terminal user runs `sindri workflow command <address> <verb>`. `merge` and `rework` are human-trigger verbs: they are listed, and a session's call is refused (`SND-AUTH-002`). Details in `docs/csharp/sindri-workflow.md`.
 
 ## The merge record (BD7)
 
@@ -86,10 +91,37 @@ Every row carries `kind`, `identity`, `instance`, `headSha` and `at`; the kind a
 | `comment` | `effect.pr.reply` | `comment`, `type` (the `decision` argument's `type`), `outcome` (`replied`, `reacted`, `fixed`, `held`, `skipped`), `commit` |
 | `recheck`, `docs` | `effect.pr.record` | `result` |
 | `end` | `effect.pr.record` | `terminal` (`merged`, `closed`, `stopped`, `rework`), `reworkNotesHash` (`sha256:` of `fact:reworkNotes`' content, on `rework` only) |
+| `restack` | `effect.pr.restack` | `oldBase`, `newBase`, `outcome`. `headSha` is the pushed head (the seen head when nothing was pushed) |
 | `merge` | `effect.pr.merge` | `method`, `sha`, `actor` (the optional `actor` argument; null without one) |
-| `docsMerge` | `effect.pr.merge-docs` | `docsPr` (null when there is none), `outcome` (`merged`, `pending`, `none`), `trigger` and `actor` (the optional arguments; null without them). `headSha` is the docs PR's head. `docs-merge-owner` writes no row yet |
+| `docsMerge` | `effect.pr.merge-docs` | `docsPr` (null when there is none), `outcome` (`merged`, `pending`, `none`), `trigger` (the babysitter passes `command.merge` after the click and `ownerDesk` from the owner's desk step) and `actor` (an optional argument; null, since the recipe language has no reference to the caller). `headSha` is the docs PR's head. `docs-merge-owner` writes no row yet |
 
 A step with no instance address still runs and writes nothing.
+
+## `service:pr-watch` (API15)
+
+The producer of `pr.changed` (spec §6.1, §6.2). It is a built-in scheduled service (`pr-watch`, listed by `GET /sindri/services` and `sindri services`), on the scheduler's shortest cadence; **it polls only every `workflow.pr.pollInterval`** (default `60s`, read from the approved profile each run) and is `Quiet` in between.
+
+A poll:
+
+1. Lists the pull requests of the live instances that wait on `pr.changed` (`TemporalWatchedPulls`): open instances whose current state's wait, in the approved recipe, is for `pr.changed`, with their `fact:pr` (a JSON string, or an object with `url` or `link`) read from the fact store.
+2. Reads their digests through `IPullRequests.Digest`, one forge call per host per at most 20 links. A pull request the forge no longer has fails a batch, so then each is read alone and the missing one is left out.
+3. Compares each with the last digest in `<home>/workflow/pr-watch.json` (owner-only, written atomically). A pull request seen for the first time is only recorded. A change records one `pr.changed` per item that waits on it (the event's route is `item`), by `service:pr-watch`: the **outcome is the first of** `merged`, `closed`, `updated` (head moved), `review` (comment count or the forge's version moved) and `ci` (checks changed), and `fact:prEvent` is `{ subject, headSha, changes[], at }`, with `subject` the instance's `fact:pr` exactly and `changes[]` every change in that order.
+4. Records nothing for an unchanged pull request, except one `idle` per `workflow.pr.remindAfter` (default `14d`) of quiet. The same change found again after a failed save is the same ledger row (idempotency key).
+5. Forgets the pull requests nobody waits on any more, and rewrites the file.
+
+A run that recorded nothing is `ScheduledResult.Quiet`.
+
+**Errors.** The forge port maps a refused credential or host to `SND-FORGE-002` (after it re-ran a `command:` credential once on a 401), no forge in the profile to `SND-FORGE-001`, and an unreachable or rate-limiting forge to `SND-FORGE-004`. Waiting instances are left as they are (their own timeouts still run); the service's last run shows the code in `GET /sindri/services`.
+
+| Forge answer | The watcher |
+|---|---|
+| `SND-FORGE-004` (unreachable, 403, 429) | Backs that host off by itself: one poll interval, then doubling to 15 minutes; the other hosts are polled on. After three unanswered polls in a row the run fails with `SND-FORGE-004`. The forge's `Retry-After` is not visible through the port, so the doubling is the only wait |
+| `SND-FORGE-002` | The run fails at once with it (degraded), and the host is backed off |
+| `SND-FORGE-001` | The run fails at once with it |
+
+The spec names the 401 case `SND-FORGE-001` and the unreachable case `SND-FORGE-002`; the codes the port gives them are 002 and 004, and the watcher passes the port's code on.
+
+`sindri doctor` has a `pr-watch` check (`PrWatchDoctorChecks`): ok before the first run or after an ok run; after a failed run it names the code and its fix (`001` warn, `002` fail, `004` warn).
 
 ## Babysitter stats (API19)
 
@@ -113,10 +145,9 @@ The times, tokens, owner actions, CI fixes, rechecks and docs counts come from t
 
 | Gap | Why |
 |---|---|
-| Reading `PullView.Base` | `PullView` carries `Base` since #674, but the rows don't read it yet, so `start.base` is null, `step.pr.snapshot` never reports `restack` and `head.ref` and `base` are not in `fact:prState` |
-| `restack` row | `effect.pr.restack` is a descriptor only until the engine's Retarget lands |
+| Reading `PullView.Base` | `PullView` carries `Base` since #674, but the rows don't read it yet, so `start.base` is null, `step.pr.snapshot` never reports `restack` and `head.ref`, `base.defaultRef` and `base.onto` are not in `fact:prState` (`base.ref`, `base.sha`, `base.tip` and `base.was` are) |
+| `merge-docs` rebase | `effect.pr.merge-docs` has no workspace, so it neither rebases the docs PR nor scans it before the merge (a conflict shows as `pending`) |
 | `docsMerge` row of `docs-merge-owner` | The owner's desk step writes no `doneByHand` or `left` row yet |
 | `effect.pr.open` labels | The open effect does not apply labels yet |
-| `pr-watch` poller | Nothing polls a waiting PR; `ready-check` and the `await` wake-ups wait on it |
 | Hand-off hash check, workspace cut | Intake records the hash but does not check it, and does not cut a workspace from the PR head: no port reaches either |
 | `merge.actor`, `push.comments` | The engine's effect context carries no actor and the push effect has no comment ids; both stay null or empty |
