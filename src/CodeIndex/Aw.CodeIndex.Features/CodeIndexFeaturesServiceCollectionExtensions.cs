@@ -1,5 +1,7 @@
+using Aw.CodeIndex.Core.Embedding;
 using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Features.BuildCodeIndex;
+using Aw.CodeIndex.Features.EmbedCodeIndex;
 using Aw.Kernel.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -20,6 +22,7 @@ public static class CodeIndexFeaturesServiceCollectionExtensions
             .AddSingleton<GraphLayer>()
             .AddSingleton<BuildLayers>()
             .AddSingleton<IService<BuildCodeIndexRequest, BuildReport>, BuildCodeIndexService>()
+            .AddSingleton<IService<EmbedCodeIndexRequest, EmbedCodeIndexResponse>, EmbedCodeIndexService>()
             .AddSingleton<ICodeIndex, CodeIndexFacade>();
     }
 }

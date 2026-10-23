@@ -21,7 +21,7 @@ Nothing in `setup.sh`, the providers or MCP registration points at it.
 
 The engine reads the approved profile's `context:` section and its `repos:`. Every key is optional; the defaults are
 shown. A key this build doesn't know is refused (`SND-CONTEXT-001` with its key path), so a section written for a later
-stage (`labeling`, …, or a key under `sources` beyond `onyx` and `linear.teams`) needs that stage's build.
+stage (`labeling`, …, or a key under `sources` beyond `onyx` and `linear`) needs that stage's build.
 
 ```yaml
 repos:
@@ -705,6 +705,19 @@ may not. Each surface with a key, or a kind and a name, becomes a `propose` row 
 current map has it: after a promote) or `unmapped` (you rejected it). The `POST` answers with the same per-surface list
 (`surfaces`, with each label, node key and status) beside its counts.
 
+### The whole map
+
+```
+$ sindri context map whole [--detail auto|nodes|areas] [--area <key>] [--locate <key>]... [--map-version <v> | --draft] [--json]
+whole map v13@9c2e4f1 · 1840 nodes, 3122 edges · detail: areas (over-budget)
+  41 feature, 388 surface, 210 action, 96 thing, 22 flow, 63 decision, 402 record, 618 code
+  Tabs · 1126 members · 32 feature, 278 surface, …
+  Billing · 312 members · …
+  Not linked to a feature yet · 214 members · 160 record, 54 code
+```
+
+The whole map in one read, the way the app opens on it. A map of at most 500 nodes answers every node and edge; a bigger one answers one entry per area (a top-level feature and everything that hangs off it by the map's own edges, plus one group for what no feature claims), with the edges between areas. `--area <key>` opens one area in full (up to 500 nodes), `--locate <key>` names the area of a node, and `--map-version` or `--draft` read an older version or the draft as the other map reads do. Exit 1 for no map (`SND-CONTEXT-030`) or an area the map lacks (`SND-CONTEXT-200`). Agent sessions may read their own repo's whole map over HTTP; there is no MCP tool for it.
+
 ### Lenses and the file map
 
 ```
@@ -795,9 +808,9 @@ context:
 - `token`: a **secret pointer** to the Onyx admin token Sindri alone uses (a personal access token of the dedicated user `sindri@example.com`, or a service-account key), never the token itself.
   Missing, or text that isn't a pointer, is `SND-CONTEXT-002`; the message doesn't repeat the text (rotate a key that
   was written into the profile).
-- `linear.teams`: team keys (a capital letter, then one or more capitals or digits, e.g. `ENG`). Linear's own `token` and `url` arrive
-  with the native Linear adapter (S-6); this build refuses them (`SND-CONTEXT-001`), like any unknown key under
-  `sources`, `onyx` or `linear`.
+- `linear.teams`, `linear.token`, `linear.url`: the native Linear source (S-6); see [linear.md](linear.md). `teams` are team keys (a capital
+  letter, then one or more capitals or digits, e.g. `ENG`) and also name the Onyx identifier aliases. Any other key under `sources`,
+  `onyx` or `linear` is refused (`SND-CONTEXT-001`).
 
 `sindri profile validate` reports each of these with its key path (`context.sources.onyx.url: …`).
 

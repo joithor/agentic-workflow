@@ -129,7 +129,7 @@ internal sealed partial class NeedsYouPageViewModel : ObservableObject
     public string Reference => Card is { } row ? (row.ShownId.Length > 0 ? row.ShownId : row.Id) : "";
 
     /// <summary>The first section: why the request needs the user, as the row serves it.</summary>
-    public string Why => Card?.Entry is { } entry ? (entry.Reason.Length > 0 ? entry.Reason : entry.Label) : "";
+    public string Why => Bar.DeskWhy.Length > 0 ? Bar.DeskWhy : Card?.Entry is { } entry ? (entry.Reason.Length > 0 ? entry.Reason : entry.Label) : "";
 
     /// <summary>What a decision asks; empty for any other row.</summary>
     public string Question => Card?.Entry.Question ?? "";
@@ -200,7 +200,7 @@ internal sealed partial class NeedsYouPageViewModel : ObservableObject
 
     private static string KindWordOf(NeedsYouEntry entry) => NeedsYouGrouping.KindOf(entry) switch
     {
-        NeedsYouGroupKind.Approvals => Labels.NeedsYouKindApproval,
+        NeedsYouGroupKind.Approvals => entry.Stop is { } stop ? Labels.NeedsYouApprovalStop(stop.N, stop.Of, Workflows.WorkflowNames.Of(stop.State, displayName: null)) : Labels.NeedsYouKindApproval,
         NeedsYouGroupKind.Runs => Labels.NeedsYouKindRun,
         NeedsYouGroupKind.Decisions => Labels.NeedsYouKindDecision,
         NeedsYouGroupKind.Settings => entry.Id.StartsWith("profile:", StringComparison.Ordinal) ? Labels.NeedsYouKindSettings : Labels.NeedsYouKindWorkflow,

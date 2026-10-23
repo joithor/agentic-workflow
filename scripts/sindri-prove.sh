@@ -23,6 +23,12 @@
 #                                         token, the body straight to stdout as it arrives (no buffer file, no status
 #                                         line; exit 0 when it ends, 1 on an HTTP error status, 3 when no response came).
 #   sindri-prove.sh url                   the base URL, for session requests written by hand (no caller header)
+#   sindri-prove.sh publish [--session [--repo NAME]]
+#                                         GET /sindri/context/map/publish (code index spec 6.4): how the current map was published, or that it
+#                                         is held for the code index. As the owner by default (the curl mode's headers); --session sends no caller
+#                                         header, as a session reads it (--repo sends X-Sindri-Repo): only that repo's lines, no tally. Prints the
+#                                         JSON body (its "state" is held, overdue, published, published-without-waiting, published-stale or
+#                                         published-by-hand); exit 0 on 2xx, 1 on another status, 3 when no response came.
 #
 # The guard runs first, for every mode: AW_SINDRI_HOME must be set and its real path strictly inside
 # realpath(${TMPDIR:-/tmp}) or inside a proof folder, <AW_STATE_DIR or ~/.agentic-workflow>/<repo slug>/proof/…,
@@ -48,7 +54,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT/scripts/lib/with-tty.sh"
 
 die() { echo "sindri-prove: $*" >&2; exit 2; }
-usage() { sed -n '5,25p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '5,31p' "$0" | sed 's/^# \{0,1\}//'; }
 
 case "${1:-}" in
   -h | --help) usage; exit 0 ;;
@@ -179,9 +185,35 @@ prove_curl() {
   case "$status" in 2??) exit 0 ;; *) exit 1 ;; esac
 }
 
+# publish [--session [--repo NAME]]: the map's publish state, as the owner (the curl mode) or as a session (no caller header).
+prove_publish() {
+  local path=/sindri/context/map/publish session=0 repo=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --session) session=1; shift ;;
+      --repo) [ $# -ge 2 ] || die "--repo needs a repo name"; repo="$2"; shift 2 ;;
+      *) die "usage: sindri-prove.sh publish [--session [--repo NAME]]" ;;
+    esac
+  done
+  [ -z "$repo" ] || [ "$session" = 1 ] || die "--repo belongs to --session: sindri-prove.sh publish --session --repo NAME"
+  if [ "$session" = 0 ]; then prove_curl GET "$path"; fi
+  local url args=(-sS -X GET) status rc out
+  url="$(base_url)" || exit 2
+  [ -z "$repo" ] || args+=(-H "X-Sindri-Repo: $repo")
+  out="$(mktemp "${TMPDIR:-/tmp}/sindri-prove.XXXXXX")" || die "no temp file"
+  status="$(curl "${args[@]}" -o "$out" -w '%{http_code}' "$url$path")"
+  rc=$?
+  cat "$out"
+  rm -f "$out"
+  echo "HTTP ${status:-000}" >&2
+  [ "$rc" -eq 0 ] || exit 3
+  case "$status" in 2??) exit 0 ;; *) exit 1 ;; esac
+}
+
 case "$1" in
   url) [ $# -eq 1 ] || die "usage: sindri-prove.sh url"; base_url ;;
   curl) shift; prove_curl "$@" ;;
+  publish) shift; prove_publish "$@" ;;
   human)
     shift
     with_tty env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_EXECPATH -u CLAUDE_CODE_SESSION_ID -u CLAUDE_PID -u AW_SINDRI_CHILD -u CODEX_SANDBOX -u CURSOR_AGENT AW_SINDRI_PROVER=1 \

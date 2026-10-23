@@ -38,12 +38,15 @@ internal static partial class DeskBlocks
     internal static string? Resolve(string name) => _ids.Values.Contains(name, StringComparer.Ordinal) ? name : _ids.GetValueOrDefault(name);
 
     /// <summary>Runs the Step's code.</summary>
-    internal static Result<ScopingDeskResponse> Run(string block, ScopeFacts facts) => block switch
+    /// <param name="block">The Step's id.</param>
+    /// <param name="facts">The facts.</param>
+    /// <param name="challengeCap">The running recipe's loops.challenge.cap; the shipped default where no recipe runs the helper (the desk).</param>
+    internal static Result<ScopingDeskResponse> Run(string block, ScopeFacts facts, int challengeCap = ScopeRules.DefaultChallengeRounds) => block switch
     {
         "step.scope.intake" => Intake(facts),
         "step.scope.check" => Check(facts),
         "step.scope.challenge-log" => ChallengeLog(facts),
-        "step.scope.evidence" => Evidence(facts),
+        "step.scope.evidence" => Evidence(facts, challengeCap),
         "step.interview.record" => Record(facts),
         "step.brief.seed" => Seed(),
         "step.scope.gather" => Gather(facts),
@@ -203,10 +206,21 @@ internal static partial class DeskBlocks
         return Reply("step.interview.record", "recorded", Outputs(("answerLog", log)), []);
     }
 
-    private static Result<ScopingDeskResponse> Evidence(ScopeFacts facts)
+    /// <summary>'fact:recommendation' for the owner's stop: approve when no question is left open, else revise (the stop's form shows it as the recommended outcome).</summary>
+    private static JsonObject Recommendation(JsonNode openQuestions)
+    {
+        var open = ScopeJson.Items(openQuestions).Count();
+        return new JsonObject
+        {
+            ["outcome"] = open == 0 ? "approve" : "revise",
+            ["why"] = open == 0 ? "Every check passed and no question is left open." : string.Create(CultureInfo.InvariantCulture, $"{open} question(s) are still open."),
+        };
+    }
+
+    private static Result<ScopingDeskResponse> Evidence(ScopeFacts facts, int challengeCap)
     {
         var assembled = ScopeEvidence.FlagUncited(facts);
-        var report = ScopePacketChecks.Run(assembled, ScopeStage.Evidence);
+        var report = ScopePacketChecks.Run(assembled, ScopeStage.Evidence, challengeCap);
         if (report.Outcome is not ScopeOutcome.Complete)
         {
             var outcome = report.Outcome == ScopeOutcome.Regather ? "regather" : "incomplete";
@@ -224,7 +238,8 @@ internal static partial class DeskBlocks
             ("scopeMap", assembled.Require("scopeMap")),
             ("acceptance", assembled.Require("acceptance")),
             ("coverage", assembled.Require("coverage")),
-            ("openQuestions", assembled.Require("openQuestions")));
+            ("openQuestions", assembled.Require("openQuestions")),
+            ("recommendation", Recommendation(assembled.Require("openQuestions"))));
         return Reply("step.scope.evidence", "complete", outputs, ScopePacket.Build(assembled), report);
     }
 }

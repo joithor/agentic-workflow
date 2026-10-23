@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Features;
 
-/// <summary>Registers the code index's job and service on Sindri's runtime (code index spec §6, §8, CI-9): 'BuildCodeIndex', the 'code-index-main-move' service, the heavy-slot adapter and the map gate's outlooks.</summary>
+/// <summary>Registers the code index's job and service on Sindri's runtime (code index spec §6, §8, CI-9): 'BuildCodeIndex', the 'code-index-main-move' service, 'EmbedCodeIndex' and the 'code-index-embed' service, the heavy-slot adapter and the map gate's outlooks.</summary>
 internal static class CodeIndexJobServiceCollectionExtensions
 {
     /// <summary>Adds the job (keyed 'index:&lt;repo&gt;'), the service and the adapters of the code index's ports; the host registers the facade itself.</summary>
@@ -19,16 +19,29 @@ internal static class CodeIndexJobServiceCollectionExtensions
             .AddScoped<CodeIndexJobScopes>()
             .AddScoped<CodeIndexEventSource>()
             .AddScoped<IIndexOutlooks, CodeIndexOutlooks>()
+            .AddScoped<Core.Doctor.ICodeIndexChecks, CodeIndexDoctor>()
             .AddScoped<IScheduledService, CodeIndexMainMoveService>()
             .AddSingleton(CodeIndexMainMoveService.BuiltIn)
+            .AddScoped<IScheduledService, CodeIndexEmbedService>()
+            .AddSingleton(CodeIndexEmbedService.BuiltIn)
             .AddJob<BuildCodeIndexRequest, BuildCodeIndexResult, BuildCodeIndexService>(
-                static r => IndexJobs.KeyOf(r.Repo), static r => Summary(r), precheck: null, repo: static r => Core.Ids.RepoName.TryFrom(r.Repo, out var repo) ? repo : null);
+                static r => IndexJobs.KeyOf(r.Repo), static r => Summary(r), precheck: null, repo: static r => Core.Ids.RepoName.TryFrom(r.Repo, out var repo) ? repo : null)
+            .AddJob<EmbedCodeIndexRequest, EmbedCodeIndexResult, EmbedCodeIndexService>(
+                static r => IndexJobs.EmbedKeyOf(r.Repo), static r => Summary(r), precheck: null, repo: static r => Core.Ids.RepoName.TryFrom(r.Repo, out var repo) ? repo : null);
     }
+
+    private static string Summary(EmbedCodeIndexResult result) => result.Outcome switch
+    {
+        EmbedCodeIndexResult.Later => $"{result.Repo}: the index was busy or not built, nothing embedded",
+        _ => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{result.Repo}: {result.Embedded:N0} of {result.Embeddable:N0} symbols embedded"),
+    };
 
     private static string Summary(BuildCodeIndexResult result) => result.Outcome switch
     {
         BuildCodeIndexResult.Deferred => $"{result.Repo}: deferred, every heavy-job slot was busy",
         "not-on-main" => $"{result.Repo}: left the default branch, nothing indexed",
-        _ => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{result.Repo} @ {result.Commit?[..7]}: {result.Files:N0} files, {result.Symbols:N0} symbols"),
+        _ => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{result.Repo} @ {result.Commit?[..7]}: {result.Files:N0} files, {result.Symbols:N0} symbols{Pending(result)}"),
     };
+
+    private static string Pending(BuildCodeIndexResult result) => result.LayersPending.Count == 0 ? string.Empty : "; " + string.Join(", ", result.LayersPending) + " pending";
 }

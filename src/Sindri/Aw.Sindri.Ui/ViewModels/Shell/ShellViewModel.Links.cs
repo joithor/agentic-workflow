@@ -33,13 +33,17 @@ internal sealed partial class ShellViewModel
         link = Canonical(link);
         if (link.Kind == DeepLinkKind.NeedsYou && !rowSheet)
         {
+            if (OpenChildOf(link.Subject))
+            {
+                return;   // the tray and a needs-you link take a nested park to its child, as a click on its row does
+            }
+
             OpenNeedsYouInbox(link.Subject);   // a decision row is the decision's own link, so it never gets here
             return;
         }
 
-        if (link.Kind == DeepLinkKind.Workflow && IsLineRun(link.Subject))
+        if (OpenWholePage(link))
         {
-            OpenRunPage(link.Subject!);   // why: IsLineRun is true only for a subject
             return;
         }
 
@@ -53,6 +57,25 @@ internal sealed partial class ShellViewModel
         {
             SelectRowOf(link);
         }
+    }
+
+    // The links that open a whole page of their own, with no sheet: a line run's page, and the Context page for an item (its frozen scope is read as it opens).
+    private bool OpenWholePage(DeepLink link)
+    {
+        if (link.Kind == DeepLinkKind.ContextItem)
+        {
+            GoTo(PageId.Context);
+            _ = Context.OpenForItem(link.Subject!, CancellationToken.None);   // why: a link of this kind always has a subject
+            return true;
+        }
+
+        if (link.Kind == DeepLinkKind.Workflow && IsLineRun(link.Subject))
+        {
+            OpenRunPage(link.Subject!);   // why: IsLineRun is true only for a subject
+            return true;
+        }
+
+        return false;
     }
 
     // One rule for a row's link (the tray, a deep link, a click): a needs-you link whose row is a decision is the decision's own link.
@@ -71,7 +94,7 @@ internal sealed partial class ShellViewModel
         DeepLinkKind.Session => PageId.Agents,
         DeepLinkKind.System => PageId.System,
         DeepLinkKind.Job => PageId.Jobs,   // System's "View job" and the tray open the page with that job's sheet
-        DeepLinkKind.HomeNeedsYou or DeepLinkKind.NeedsYou or DeepLinkKind.Item or DeepLinkKind.Decision or DeepLinkKind.Service or DeepLinkKind.Setup => null,
+        DeepLinkKind.HomeNeedsYou or DeepLinkKind.NeedsYou or DeepLinkKind.ContextItem or DeepLinkKind.Item or DeepLinkKind.Decision or DeepLinkKind.Service or DeepLinkKind.Setup => null,
         _ => null,
     };
 }

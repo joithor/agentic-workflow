@@ -618,6 +618,20 @@ message, which names the full path; the path shows shortened (`~/…`) on its ow
 | Profile fix | `profile.needsApproval` (Sindri's verdict; the app doesn't derive it) | `sindri profile approve` when set |
 | Services | `services[]` | `heartbeat · every 5s · last run 12:00:05Z` (`not run yet`) |
 | Last event | the newest stream event | `service.heartbeat · 12:00:05Z · #42` |
+| Code index (CI-10b) | `GET /sindri/code-index/status` (`repos[]`: `state`, `commit`, `builtAt`, `layers[]`) | One wrapped line per repo, read on connect and after each event: `repo @ abcdef0, 3 min old, structure ok · graph ok · embeddings pending 31%` (its accessible name starts "Code index: "), and a word at the heading, `ok` or `needs a look`. By state: `missing` "first build queued", `damaged` "damaged, rebuilding on the next check", `stale` "(behind main)", `building`, `waiting` "waiting for a free build slot"; a state the app doesn't know shows as served. A layer reads `ok`, `off`, `pending N%` (from "N of M embedded") or `unavailable (SND-CODEIDX-…)`; clones and deps show only when they need a look. A failed read says "The code index can't be read just now." |
+
+**The Context map card (F1P-c, code index spec 6.4).** Up front under the actions, above Details: the eyebrow `CONTEXT MAP`, the state as a glyph and a word at its right, and Sindri's sentences under it. It reads `GET /sindri/context/map/publish` (`ISindriApi.MapPublish`) with the other followed views, on connect and after every event, and shows nothing while the read is refused (no map yet, `SND-CONTEXT-030`).
+
+| State id | Word | Glyph |
+|---|---|---|
+| `held` | `Held for the code index` | ⌛ |
+| `overdue` | `Overdue` | ◇ |
+| `published` | `Published` | ✓ |
+| `published-without-waiting` | `Published without waiting` | ✓ |
+| `published-stale` | `Published, code answers stale` | ◇ |
+| `published-by-hand` | `Published by hand` | ✓ |
+
+A state this build does not know shows the word Sindri sent. The sentences are Sindri's, shown as served ("Code answers are from abcdef0 (older than map v14, which is for 1234567)."; at most two repos, then "and N more"; a session would see only its own repos, but the app is the human). The card never changes the overall pill.
 
 State is always a word, never colour alone; each status text carries an `AutomationProperties.Name`. The look follows
 `docs/sindri/DESIGN.md`: the near-black canvas, charcoal cards with hairline borders, Inter, and the lavender accent only
@@ -646,8 +660,8 @@ depends on nothing else about how `sindri` is built: it talks to the control pla
 **One command before the switch: `sindri-app`** (`scripts/sindri-app.sh`). It builds exactly that layout and runs it:
 when the source changed (a content hash of the files the host build reads, committed or not, with the pinned SDK and
 the platform), it publishes `sindri` framework-dependent and `sindri-ui` NativeAOT (through
-`Aw.Sindri.Ui.AotSmoke/run.sh <dir>`) and the C# `judge` NativeAOT (the publish of `src/Judge/aot-smoke/run.sh`) into `$AW_STATE_DIR/bin/sindri-app/<stamp>/`, keeping the build before it, then
-`exec`s that `sindri` with its arguments and `AW_SINDRI_JUDGE=<stamp dir>/judge` (unless the caller set it; `step.judge.choose` needs `judge choose`, which the TypeScript `judge` on the PATH lacks), so bare `sindri-app` starts the control plane and opens the app. It also
+`Aw.Sindri.Ui.AotSmoke/run.sh <dir>`) the C# `judge` NativeAOT (the publish of `src/Judge/aot-smoke/run.sh`) and `aw-packets` NativeAOT (`src/Packets/aot-smoke/run.sh`) into `$AW_STATE_DIR/bin/sindri-app/<stamp>/`, keeping the build before it, then
+`exec`s that `sindri` with its arguments and `AW_SINDRI_JUDGE=<stamp dir>/judge` (unless the caller set it; `step.judge.choose` needs `judge choose`, which the TypeScript `judge` on the PATH lacks) and `AW_PACKETS_BIN=<stamp dir>/aw-packets` (unless the caller set it; `step.scope.evidence` runs `aw-packets hash`), so bare `sindri-app` starts the control plane and opens the app. It also
 installs the pinned SDK into `~/.dotnet` and fetches the pinned `temporal` when either is missing, and links
 `~/.local/bin/sindri-app` to itself (from the canonical checkout; `AW_SINDRI_APP_NO_LINK=1` skips). It is a side name:
 `sindri` stays the TypeScript CLI until the switch. A control plane already running from an earlier build keeps

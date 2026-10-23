@@ -9,6 +9,7 @@ using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Microsoft.Extensions.Logging;
 using Temporalio.Common;
 using Temporalio.Exceptions;
 using Temporalio.Workflows;
@@ -204,6 +205,7 @@ internal sealed partial class RecipeWorkflow
     /// <summary>The children still live when this instance ends are cancelled (D6); they get a grace period to record their own cancel before the parent-close terminate backstops them.</summary>
     private async Task CancelChildren(WorkflowInstance ended)
     {
+        await CancelLinked(ended).ConfigureAwait(true);
         if (!_children || _childRuns.Count == 0)
         {
             return;
@@ -227,6 +229,47 @@ internal sealed partial class RecipeWorkflow
         _ = await Workflow.WaitConditionAsync(() => live.TrueForAll(static r => r.Done), _childrenGrace).ConfigureAwait(true);
     }
 
+    /// <summary>
+    /// A cancelled instance cancels the instances linked to it (LN-WF1), the phases of a line: they are top-level workflows, so each is found by
+    /// the visibility query ('LiveLinked') and sent 'parentCancel' like a child. An instance that ends any other way has no live phase left.
+    /// </summary>
+    private async Task CancelLinked(WorkflowInstance ended)
+    {
+        if (!string.Equals(ended.Frame.State, EngineStates.Cancelled, StringComparison.Ordinal) || _start is not { } start || !Workflow.Patched(LinkedEventsPatch))
+        {
+            return;
+        }
+
+        var cancel = new CancelRequested(Inbox, CancelOrigin.Parent, Stamp: null, Sequence: null, ended.Id);
+        try
+        {
+            var live = await Workflow.ExecuteActivityAsync((LinkedActivities a) => a.LiveLinkedAsync(new ReleaseRun(start.WorkflowId().Value, start.Item.Value, Repo: string.Empty)), _cleanupOptions).ConfigureAwait(true);
+            foreach (var address in live)
+            {
+                await TellCancel(address, cancel).ConfigureAwait(true);
+            }
+        }
+        catch (Exception failed) when (IsActivityFailure(failed))
+        {
+            NotCancelled(Workflow.Logger, ended.Address.Value, failed.Message);   // boundary: a failed lookup must not change how the instance ended
+        }
+    }
+
+    private static async Task TellCancel(string address, CancelRequested cancel)
+    {
+        try
+        {
+            await Workflow.GetExternalWorkflowHandle<RecipeWorkflow>(address).SignalAsync(wf => wf.ParentCancelAsync(cancel)).ConfigureAwait(true);
+        }
+        catch (Exception failed) when (IsActivityFailure(failed))
+        {
+            // boundary: a linked instance that ended meanwhile needs no cancel
+        }
+    }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "the instances linked to {Address} were not cancelled: {Why}")]
+    private static partial void NotCancelled(ILogger logger, string address, string why);
+
     /// <summary>The event's detail with the mirrored child's address in its suspension, so a needs-you row names the child (the id alone doesn't give the address back).</summary>
     private WorkflowEventDetail Located(WorkflowEventDetail detail, WorkflowInstance after) =>
         _children && after.Suspension?.Mirrors is { } child && _childRuns.TryGetValue(child, out var run) && detail.Delta.Suspension is { } summary
@@ -237,7 +280,7 @@ internal sealed partial class RecipeWorkflow
 
     private static DateTimeOffset? StartedAtOf(InstanceStart? start) => start is { StartedAt: var at } && at != default ? at : null;
 
-    private InstanceViewContext ViewContext() => new(_mirrored, _provenance, ChildViews(), _subject, _contents, _injection, StartedAtOf(_start), _start?.StartedBy, _visits);
+    private InstanceViewContext ViewContext() => new(_mirrored, _provenance, ChildViews(), _subject, _contents, _injection, StartedAtOf(_start), _start?.StartedBy, _visits, Recommendation: _recommendation, Again: _start?.Again);
 
     /// <summary>What a child hands its parent (DT spec §8.4): its declared outputs. A root instance's result carries none; neither does a history from before engine P7.</summary>
     private Dictionary<FactKey, FactValue>? OutputsOf(WorkflowInstance ended)

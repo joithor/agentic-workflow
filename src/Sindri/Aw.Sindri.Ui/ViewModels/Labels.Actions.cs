@@ -19,13 +19,14 @@ internal static partial class Labels
         ["ApplyCommand:command"] = "Send workflow command",
         ["ApplyCommand:handback"] = "Hand back",
         ["ApplyCommand:takeover"] = "Take over",
+        ["RerunInstance"] = "Run again",
         ["AddRepo"] = "Add repo",
         ["OnboardRepo"] = "Onboard repo",
         ["InitProfile"] = "Create profile",
         ["ApproveProfile"] = "Approve profile",
         ["ApproveAllRecipes"] = ApproveAllTitle,
         ["ApproveRecipe"] = "Approve recipe",
-        ["BuildCodeIndex"] = "Build code index",
+        ["EmbedCodeIndex"] = "Embed code index",
         ["BuildContextMap"] = "Build map",
         ["RefreshContextMap"] = "Refresh map",
         ["PublishContextMap"] = "Publish map",
@@ -58,6 +59,7 @@ internal static partial class Labels
         ["ProbeLaunchTargets"] = "Check launch targets again",
         ["PromoteContextMap"] = "Promote map",
         ["ProposeContextMap"] = "Propose map from scope",
+        ["BuildCodeIndex"] = "Build code index",
         ["RebuildViews"] = "Rebuild views",
         ["RegisterMcp"] = "Connect agents",
         ["RegisterRecipe"] = "Register recipe",
@@ -84,7 +86,7 @@ internal static partial class Labels
     }.ToFrozenDictionary(StringComparer.Ordinal);
 
     /// <summary>The Health page's catalog section.</summary>
-    internal const string ActionsCard = "ACTIONS";
+    internal const string ActionsCard = "Actions";
 
     /// <summary>The copy button.</summary>
     internal const string Copy = "Copy";

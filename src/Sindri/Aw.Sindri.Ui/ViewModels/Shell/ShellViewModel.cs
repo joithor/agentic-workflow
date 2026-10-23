@@ -66,14 +66,13 @@ internal sealed partial class ShellViewModel : ObservableObject
         Queue.PageShown(RowScopeOf(CurrentPage));
         var decisions = new DecisionSender(api);
         Item = new ItemSheetViewModel(api, Health.Catalog, clock, decisions);
-        Health.Follow(Queue.Refresh);
-        Health.Follow(Item.Refresh);
+        FollowViews();
         _api = api;
         NeedsYou = new NeedsYouViewModel(preferences, motion ?? new StillMotion(), clock);
         ApproveAll = new ApproveAllViewModel(Health.Catalog, () => Health.ApiUrl(), api, clock, () => NeedsYou.Seen.ReducedMotion);
         Decision = new DecisionSheetViewModel(api, () => Health.ApiUrl(), clock, decisions, clipboard);
         InitNeedsYou(clipboard);
-        Inbox = InitInbox(api, clipboard);
+        Inbox = InitInbox(api, clipboard, (window ?? WindowPorts.None).Launcher);
         Strip = new WorkflowsStripViewModel(clipboard, clock);
         InitStrip();
         window ??= WindowPorts.None;
@@ -92,6 +91,14 @@ internal sealed partial class ShellViewModel : ObservableObject
         Queue.PropertyChanged += OnQueueChanged;
         InitAnnouncements();
         Attention = AttentionSummary.For(feed: null, State, _clock.GetUtcNow());
+    }
+
+    // The views the control plane's follower re-reads on connect and after every event.
+    private void FollowViews()
+    {
+        Health.Follow(Queue.Refresh);
+        Health.Follow(Item.Refresh);
+        Health.Follow(Health.CodeIndex.Refresh);
     }
 
     /// <summary>The app's copy, for the view.</summary>

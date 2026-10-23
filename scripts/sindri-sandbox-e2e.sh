@@ -10,8 +10,8 @@
 #   --repo PATH      the repo to clone (default: this one); the clone gets a new branch sandbox/e2e-<stamp>
 #   --start RECIPE   the recipe to start (default workflow.line)
 #   --title TEXT     the item's title (default: the feature file's first heading)
-#   --stall SECONDS  no progress for this long is a stop (default 300)
-#   --max-wait SEC   the whole follow gives up after this long (default 3600)
+#   --stall SECONDS  no progress for this long is a stop (default 900: an agent Step can run 5-15 min with no ledger change)
+#   --max-wait SEC   the whole follow gives up after this long (default 10800: the whole line takes hours)
 #   --auto-desk      answer a desk state with its default outcome (the first the status offers), and a budget park
 #                    with a grant of 200k tokens (the most one grant may give), recording each
 #   --map FILE       the context map to import (authored map format, docs/sindri/demo-handoff.md 5b); default: a small
@@ -21,6 +21,8 @@
 #   --desk-max N     --auto-desk answers at most N desk states (default 25)
 #   --agent ID       profile workflow.agent.target: agent Steps launch real sessions of that agent (default: none, so
 #                    every Step is completed at the desk and the line stops at the first Step that needs a model)
+#   --build-command CMD  one profile workflow.build.commands entry, repeatable, in order (default: the demo brief's
+#                    test, `bash scripts/tests/binaries-lock.test.sh`); step.build.red-check needs one to fail on red
 #   --no-context     leave the context section out of the profile (scoping then parks at gather: no lenses)
 #   --keep           keep the scratch dir (default: stop serve and delete it on exit)
 #   --print-config   parse the arguments, run the guard, print the configuration and exit 0 (no scratch, no serve)
@@ -41,8 +43,9 @@ PROVE="$ROOT/scripts/sindri-prove.sh"
 die() { echo "sindri-sandbox-e2e: $*" >&2; exit 2; }
 say() { echo "sindri-sandbox-e2e: $*" >&2; }
 
-FEATURE="" SINDRI_ARG="" REPO_SRC="$ROOT" START="workflow.line" TITLE="" STALL=300 MAX_WAIT=3600
+FEATURE="" SINDRI_ARG="" REPO_SRC="$ROOT" START="workflow.line" TITLE="" STALL=900 MAX_WAIT=10800
 AUTO_DESK=0 DESK_MAX=25 AGENT="" KEEP=0 PRINT_CONFIG=0 CONTEXT=1 MAP_FILE="" CODE_FILE=""
+BUILD_COMMANDS=() DEFAULT_BUILD_COMMAND="bash scripts/tests/binaries-lock.test.sh"
 
 usage() { sed -n '2,/^# Tests:/p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; }
 
@@ -62,6 +65,7 @@ parse_args() {
       --code) [ $# -ge 2 ] || die "--code needs a repo path"; CODE_FILE="$2"; shift 2 ;;
       --desk-max) [ $# -ge 2 ] || die "--desk-max needs a number"; DESK_MAX="$2"; shift 2 ;;
       --agent) [ $# -ge 2 ] || die "--agent needs an agent id"; AGENT="$2"; shift 2 ;;
+      --build-command) [ $# -ge 2 ] && [ -n "$2" ] || die "--build-command needs a command line"; BUILD_COMMANDS+=("$2"); shift 2 ;;
       --no-context) CONTEXT=0; shift ;;
       --keep) KEEP=1; shift ;;
       --print-config) PRINT_CONFIG=1; shift ;;
@@ -69,6 +73,7 @@ parse_args() {
     esac
   done
   [ -n "$FEATURE" ] || die "--feature <spec-file> is required"
+  [ ${#BUILD_COMMANDS[@]} -gt 0 ] || BUILD_COMMANDS=("$DEFAULT_BUILD_COMMAND")
   case "$DESK_MAX" in '' | *[!0-9]*) die "--desk-max takes a whole number (got $DESK_MAX)" ;; esac
   case "$STALL" in '' | *[!0-9]*) die "--stall takes whole seconds (got $STALL)" ;; esac
   case "$MAX_WAIT" in '' | *[!0-9]*) die "--max-wait takes whole seconds (got $MAX_WAIT)" ;; esac
@@ -205,7 +210,16 @@ publish_sindri() {
   [ -x "$jout/judge" ] || die "the publish left no judge in $jout"
   cp "$jout/judge" "$out/judge"
   for f in "$jout"/libe_sqlite3.*; do if [ -f "$f" ]; then cp "$f" "$out/"; fi; done
-  say "published sindri and judge at $commit"
+  # aw-packets beside it (NativeAOT): step.scope.evidence runs `aw-packets hash` through AW_PACKETS_BIN, and nothing else puts it on the PATH.
+  local pout="$SCRATCH/packets-bin"
+  say "publishing aw-packets (NativeAOT, $rid) into $out"
+  # shellcheck disable=SC2086 # $pre is the heavy launcher and its flag
+  (cd "$tree" && $pre dotnet publish src/Packets/Aw.Packets.App/Aw.Packets.App.csproj -c Release -r "$rid" \
+    -p:RestoreLockedMode=false -o "$pout") </dev/null >>"$log" 2>&1 || { tail -20 "$log" >&2; die "publishing aw-packets failed"; }
+  [ -x "$pout/aw-packets" ] || die "the publish left no aw-packets in $pout"
+  cp "$pout/aw-packets" "$out/aw-packets"
+  for f in "$pout"/libe_sqlite3.*; do if [ -f "$f" ] && [ ! -e "$out/$(basename "$f")" ]; then cp "$f" "$out/"; fi; done
+  say "published sindri, judge and aw-packets at $commit"
   SINDRI_CMD="$out/sindri"
 }
 
@@ -229,6 +243,10 @@ write_profile() {
     # the effect ids the code registers (grep '\"effect\\.' src/Sindri)
     echo "  effects: [effect.line.report, effect.claim.ref, effect.pr.open, effect.notify.desk, effect.pr.push, effect.pr.reply, effect.pr.record, effect.pr.rerun-checks, effect.pr.restack, effect.pr.create-stacked, effect.pr.merge, effect.pr.merge-docs, effect.pr.purge-marks, effect.line.start-phase]"
     echo "  forge: { adapter: file, hosts: [forge.test] }"
+    # step.build.red-check needs one to fail on the red commit; checks and ship.green need all to pass
+    echo "  build:"
+    echo "    commands:"
+    local c; for c in "${BUILD_COMMANDS[@]}"; do printf "      - '%s'\n" "${c//\'/\'\'}"; done
     if [ -n "$AGENT" ]; then echo "  agent: { target: $AGENT }"; fi
   } > "$file"
   chmod 600 "$file"
@@ -391,6 +409,7 @@ main() {
     guard_scratch "${TMPDIR:-/tmp}" 2>/dev/null || true
     printf 'feature=%s\nsindri=%s\nrepo=%s\nstart=%s\nstall=%s\nmax-wait=%s\nauto-desk=%s\ndesk-max=%s\nagent=%s\ncontext=%s\nkeep=%s\n' \
       "$FEATURE" "${sindri_cmd:-publish}" "$REPO_SRC" "$START" "$STALL" "$MAX_WAIT" "$AUTO_DESK" "$DESK_MAX" "$(or_none "$AGENT")" "$CONTEXT" "$KEEP"
+    printf 'build=%s\n' "${BUILD_COMMANDS[@]}"
     exit 0
   fi
   for t in git jq curl script; do command -v "$t" >/dev/null || die "$t is required"; done
@@ -416,6 +435,14 @@ main() {
     export AW_SINDRI_JUDGE; say "judge: $AW_SINDRI_JUDGE"
   else
     say "judge: none beside sindri and AW_SINDRI_JUDGE unset; step.judge.choose falls back to the judge on the PATH"
+  fi
+
+  # step.scope.evidence runs `aw-packets hash`: point it at the aw-packets beside the binary, unless the caller named one.
+  if [ -z "${AW_PACKETS_BIN:-}" ] && [ -x "$(dirname "$SINDRI_CMD")/aw-packets" ]; then AW_PACKETS_BIN="$(dirname "$SINDRI_CMD")/aw-packets"; fi
+  if [ -n "${AW_PACKETS_BIN:-}" ]; then
+    export AW_PACKETS_BIN; say "aw-packets: $AW_PACKETS_BIN"
+  else
+    say "aw-packets: none beside sindri and AW_PACKETS_BIN unset; step.scope.evidence falls back to aw-packets on the PATH"
   fi
 
   # 3. the target repo: a local clone on a new branch
@@ -453,7 +480,7 @@ main() {
   out="$(human item add "$title" --repo repo 2>&1)"
   ITEM="$(printf '%s\n' "$out" | grep -oE 'ITM-[0-9a-f]+' | head -1)"
   [ -n "$ITEM" ] || die "item add gave no id: $out"
-  printf '{"kind":"brief","path":"%s"}\n' "$FEATURE_REL" > "$SCRATCH/facts/scopeInput.json"
+  printf '{"kind":"brief","repo":"repo","path":"%s"}\n' "$FEATURE_REL" > "$SCRATCH/facts/scopeInput.json"   # repo: scope-input.json requires it (the profile names the clone "repo")
   local base; base="$(git -C "$REPO" rev-parse HEAD)"
   printf '{"line":"line","phase":"1","attempt":1,"base":"%s","runArea":{}}\n' "$base" > "$SCRATCH/facts/lineContext.json"
   local facts=(--fact "fact:scopeInput=$SCRATCH/facts/scopeInput.json")

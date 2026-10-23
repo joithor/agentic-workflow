@@ -1,6 +1,6 @@
 schema: 1
 id: workflow.plan
-version: 5
+version: 7
 description: "Station 3 of the line: the phase graph for a candidate design, its executability review and hidden scenarios, then the owner's after-design stop, which freezes the design, the plan and every phase packet together."
 displayName: "Plan the build in phases"
 why: "Breaks the approved design into phases small enough to build and prove one at a time, then waits for your approval."
@@ -43,6 +43,8 @@ states:
     next: "Review each of {item}'s phases as its builder: executable, context, files, checkable signals."
   holdout:     { displayName: "Write hidden tests", why: "Tests the builder never sees, so passing them cannot be gamed.", kind: active, step: step.plan.holdout, budget: { tokens: 1M }, timeout: { after: 2h, then: park },
                  next: "Write {item}'s hidden scenarios into the holdout store." }
+  holdout-store: { displayName: "Store the hidden tests", why: "Puts the hidden tests where only the evaluator can read them.", kind: active, step: step.plan.holdout-store, loop: holdouts, timeout: { after: 1h, then: park },
+                 next: "Move {item}'s hidden scenarios into the private store and add the canary." }
   evidence:    { kind: active, step: step.plan.evidence, timeout: { after: 1h, then: park },
                  next: "Check {item}'s design and plan evidence and assemble the candidate packets." }
   questions:   { kind: active, step: step.plan.questions, timeout: { after: 1h, then: park },
@@ -69,8 +71,10 @@ transitions:
   - { from: check,  to: exec-review, on: step.completed, when: { outcome: pass } }
   - { from: exec-review, to: holdout, on: step.completed, when: { outcome: executable } }
   - { label: "a builder would struggle: plan again", from: exec-review, to: graph,   on: step.completed, when: { outcome: objections }, produces: [fact:findings] }
-  - { from: holdout,  to: evidence,  on: step.completed, when: { outcome: written },    produces: [fact:holdoutSets] }
-  - { from: evidence, to: questions, on: step.completed, when: { outcome: complete },   produces: [fact:planPacket] }
+  - { from: holdout,  to: holdout-store, on: step.completed, when: { outcome: written }, produces: [fact:holdoutDraft] }
+  - { from: holdout-store, to: evidence, on: step.completed, when: { outcome: stored }, produces: [fact:holdoutSets] }
+  - { label: "hidden tests rejected: write them again", from: holdout-store, to: holdout, on: step.completed, when: { outcome: invalid }, produces: [fact:findings] }
+  - { from: evidence, to: questions, on: step.completed, when: { outcome: complete },   produces: [fact:planPacket, fact:recommendation] }
   - { from: evidence, to: graph,     on: step.completed, when: { outcome: incomplete }, produces: [fact:findings] }
   - { from: questions, to: decide, on: step.completed, when: { outcome: asked }, produces: [fact:questions] }
   - { from: questions, to: stop,   on: step.completed, when: { outcome: none } }
@@ -86,13 +90,14 @@ transitions:
   - { label: "you dropped it", from: stop, to: dropped, on: step.completed, when: { outcome: drop } }
   - { from: freeze, to: planned, on: step.completed, when: { outcome: frozen },   produces: [fact:planPacket, fact:phasePackets] }
   - { from: freeze, to: evidence, on: step.completed, when: { outcome: mismatch }, produces: [fact:findings] }
-loops: { rounds: { cap: 5 }, refreeze: { cap: 2 }, revisions: { cap: 5 } }
+loops: { rounds: { cap: 5 }, refreeze: { cap: 2 }, revisions: { cap: 5 }, holdouts: { cap: 3 } }
 evals:   # the 7 cases of Appendix B.1 (plan's happy-assumed is assumed-happy: the shipped-recipe test wants a *-happy name) and two more
   - evals/workflow.plan/assumed-happy.jsonl
   - evals/workflow.plan/changed-decision.jsonl
   - evals/workflow.plan/drop.jsonl
   - evals/workflow.plan/evidence-incomplete.jsonl
   - evals/workflow.plan/freeze-mismatch.jsonl
+  - evals/workflow.plan/holdout-invalid.jsonl
   - evals/workflow.plan/no-questions.jsonl
   - evals/workflow.plan/objections.jsonl
   - evals/workflow.plan/revise-cap.jsonl

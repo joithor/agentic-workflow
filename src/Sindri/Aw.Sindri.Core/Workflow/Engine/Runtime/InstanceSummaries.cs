@@ -31,11 +31,14 @@ public static class InstanceSummaries
             view.States,
             Cut(RowSentences.Now(view, chip)),
             view.AnswerLine,
-            StatusRecords.ActionIds(view),
+            [.. StatusRecords.ActionIds(view), .. Reruns.Of(view)],
             view.StartedBy,
             view.StartedAt,
             context.LineStage,
-            RootOf(view.Address));
+            RootOf(view.Address),
+            WaitingOn.Of(chip, deskOpen: view.Task is not null, agentRunOpen: view.AgentRun is not null, ended: view.Outcome is not null),
+            view.EngineOwned is { Kind: EngineOwnedKind.TakenOver } ? view.TakenOverBy : null,
+            view.Again);
     }
 
     /// <summary>

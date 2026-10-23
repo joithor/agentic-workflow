@@ -64,8 +64,14 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     /// <summary>The command catalog as controls (read on connect and after a reconnect).</summary>
     public CatalogViewModel Catalog { get; } = new(clipboard, clock);
 
+    /// <summary>The Code index card (code-index spec §7.3, CI-10b); the shell has it followed with the other views.</summary>
+    public CodeIndexCardViewModel CodeIndex { get; } = new(api, clock);
+
     /// <summary>The stalled and rebuilding banners (§4.1), from the services view's asOf.</summary>
     public ViewsBanner Banner { get; } = new();
+
+    /// <summary>The Context map card (code index spec 6.4): how the current map was published, or that it is held for the code index.</summary>
+    public ContextMapCardViewModel ContextMap { get; } = new(api);
 
     /// <summary>The status as labelled values: Home's strip and the Health page's rows.</summary>
     public HealthDetail Detail { get; } = new();
@@ -266,7 +272,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     {
         Pill.Show(State, clock.GetUtcNow() - (_projectedAt ?? _heard), _failedRefreshes >= NotRespondingAfter, _health);
         StripName = Pill.IsDataStale ? HealthLine + " · " + Labels.Stale : HealthLine;
-        Sentence = SentenceFor(State, _health is not null, Pill.IsHealthy, Pill.Problems, HasProfileFix);
+        Sentence = SentenceFor(new SentenceInputs(State, _health is not null, Pill.IsHealthy, Pill.Problems, HasProfileFix, _health?.Sentence));
         ShowSystemState();
     }
 

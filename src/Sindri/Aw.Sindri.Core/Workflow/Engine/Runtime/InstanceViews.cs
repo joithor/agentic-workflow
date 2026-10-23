@@ -82,7 +82,9 @@ public static partial class InstanceViews
             RunningSteps = instance is { Ended: false, Frame.Run.Runtime: not StepRuntime.Desk } ? 1 : 0,
             StartedAt = context.StartedAt,
             StartedBy = context.StartedBy,
+            Again = context.Again,
             Paused = instance.Suspension is { Kind: SuspensionKind.Takeover, Remaining: { } paused } ? paused.Left : null,
+            TakenOverBy = instance.Suspension is { Kind: SuspensionKind.Takeover } taken ? taken.Actor : null,
         };
         return WithLayout(view, new Layout(instance, recipe, task, words), context);
     }
@@ -123,11 +125,15 @@ public static partial class InstanceViews
             view.Facts,
             view.ChildGroups,
             context.Counts,
-            [.. status.Commands.Select(static c => c.ActionId)],
+            [.. status.Commands.Select(static c => c.ActionId), .. Reruns.Of(view)],
             context.StepRuns ?? [],
             context.AsOf,
             view.Steps,
-            view.StartedBy);
+            view.StartedBy)
+        {
+            Again = view.Again,
+            AllowedCommands = [.. view.AllowedCommands.Where(static c => c.Verb is not null)],
+        };
     }
 
     /// <summary>The status layout of <paramref name="view"/> as fields, as of <paramref name="now"/>: a pure function of the view and the time, so the ages, the timeout and the text move with the caller's clock.</summary>
@@ -169,7 +175,7 @@ public static partial class InstanceViews
             ChildGroups = [],
             Step = CurrentStates.Step(from.Instance, from.Recipe),
             Gates = CurrentStates.Gates(from.Instance, from.Recipe),
-            Desk = CurrentStates.Desk(from.Task, from.Recipe),
+            Desk = CurrentStates.Desk(from.Task, from.Recipe, context.Recommendation),
             AnswerLine = from.Words.AnswerLine(),
             ChildPark = from.Words.ChildPark(),
             DriftNote = from.Words.DriftNote(),

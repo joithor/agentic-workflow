@@ -47,6 +47,7 @@ echo "sindri $*"
 echo "root=$DOTNET_ROOT" >&2
 echo "sindri $*" >> "$CALLS"
 echo "judge=${AW_SINDRI_JUDGE:-}" >> "$CALLS"
+echo "packets=${AW_PACKETS_BIN:-}" >> "$CALLS"
 case "$1" in mcp) echo "codex: registered" ; exit "${MCP_EXIT:-0}" ;; esac
 EOF
 export STUB_SINDRI="$WORK/stub-sindri"
@@ -58,6 +59,14 @@ cat > "$WORK/fakebin/dotnet" <<'EOF'
 case "$1" in
   --list-sdks) echo "10.0.401 [/fake/dotnet/sdk]" ;;
   publish)
+    case "$*" in *Aw.Packets.App*)
+      echo "publish-packets" >> "$CALLS"
+      echo "packetsargs=$*" >> "$CALLS"
+      [ "${FAIL_PACKETS:-0}" = 1 ] && { echo "error CS0003: packets boom"; exit 1; }
+      out=""; while [ $# -gt 0 ]; do [ "$1" = -o ] && out="$2"; shift; done
+      mkdir -p "$out"; printf '#!/bin/sh\n' > "$out/aw-packets"; chmod +x "$out/aw-packets"
+      exit 0 ;;
+    esac
     case "$*" in *Aw.Judge.Host*)
       echo "publish-judge" >> "$CALLS"
       echo "judgeargs=$*" >> "$CALLS"
@@ -132,6 +141,11 @@ check "first run: the C# judge is published NativeAOT for the platform, once" \
 check "first run: judge and its e_sqlite3 are in the build, next to sindri" \
   "$(test -x "$B/$S1/judge" && test -f "$B/$S1/libe_sqlite3.so" && echo yes)" "yes"
 check "first run: sindri runs with AW_SINDRI_JUDGE set to the build's judge" "$(grep '^judge=' "$CALLS" | tail -1)" "judge=$B/$S1/judge"
+check "first run: aw-packets is published NativeAOT for the platform, once, and sits next to sindri" \
+  "$(grep -c '^publish-packets$' "$CALLS"):$(grep '^packetsargs=' "$CALLS" | grep -c -- ' -r linux-x64 \| -r osx-arm64 \| -r osx-x64 \| -r linux-arm64 '):$(test -x "$B/$S1/aw-packets" && echo yes)" "1:1:yes"
+check "first run: sindri runs with AW_PACKETS_BIN set to the build's aw-packets" "$(grep '^packets=' "$CALLS" | tail -1)" "packets=$B/$S1/aw-packets"
+OUT="$(AW_PACKETS_BIN=/custom/aw-packets bash "$R/scripts/sindri-app.sh" status 2>/dev/null)"
+check "a caller's AW_PACKETS_BIN is kept" "$(grep '^packets=' "$CALLS" | tail -1)" "packets=/custom/aw-packets"
 OUT="$(AW_SINDRI_JUDGE=/custom/judge bash "$R/scripts/sindri-app.sh" status 2>/dev/null)"
 check "a caller's AW_SINDRI_JUDGE is kept" "$(grep '^judge=' "$CALLS" | tail -1)" "judge=/custom/judge"
 check "first run: DOTNET_ROOT derives from the SDK found (not ~/.dotnet)" "$(grep -c "^root=/fake/dotnet$" "$WORK/err")" "1"
@@ -160,6 +174,10 @@ FAIL_JUDGE=1 bash "$R/scripts/sindri-app.sh" >/dev/null 2>"$WORK/err"; RC=$?
 check "a failed judge publish fails the publish: exit 1, the tail, no new build, the last good build current" \
   "$RC:$(grep -c 'CS0002' "$WORK/err"):$(cat "$B/current")" "1:1:$S3"
 
+FAIL_PACKETS=1 bash "$R/scripts/sindri-app.sh" >/dev/null 2>"$WORK/err"; RC=$?
+check "a failed aw-packets publish fails the publish: exit 1, the tail, no new build, the last good build current" \
+  "$RC:$(grep -c 'CS0003' "$WORK/err"):$(cat "$B/current")" "1:1:$S3"
+
 rm -f "$L"; echo '#!/bin/sh' > "$L"
 bash "$R/scripts/sindri-app.sh" >/dev/null 2>"$WORK/err"
 check "a foreign sindri-app is left alone, with a note" "$(test -L "$L" || echo file):$(grep -c 'already something else' "$WORK/err")" "file:1"
@@ -177,7 +195,7 @@ chmod +x "$AW_STATE_DIR/bin-r1b/heavy"
 echo '// heavy' >> "$R/src/Sindri/Aw.Sindri.Host/New.cs"
 : > "$CALLS"
 bash "$R/scripts/sindri-app.sh" >/dev/null 2>&1
-check "B2: the host, UI and judge publishes all run under heavy --expensive" "$(grep -c '^heavy --expensive$' "$CALLS")" "3"
+check "B2: the host, UI, judge and aw-packets publishes all run under heavy --expensive" "$(grep -c '^heavy --expensive$' "$CALLS")" "4"
 rm -f "$AW_STATE_DIR/bin-r1b/heavy"
 
 # I3: a build for this stamp is not published again, even when it is not the current one; a build the running control

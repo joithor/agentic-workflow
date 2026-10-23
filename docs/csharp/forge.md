@@ -55,8 +55,10 @@ dotnet run --project src/Forge/Aw.Forge.Host -- <command> [options]
 | `pull <link>` | Print the snapshot |
 | `threads <link>` | Print the conversation |
 | `seed thread <link> --author <login> --body <text> [--kind thread\|review\|comment] [--association <text>] [--path <file>] [--bot]` | Seed a thread (file adapter) |
-| `seed checks <link> --state none\|pending\|passing\|failing [--failing <name,name>]` | Seed the head's checks (file adapter) |
+| `seed checks <link> --state none\|pending\|passing\|failing [--failing <name,name>] [--passed <n>] [--pending <n>]` | Seed the head's checks (file adapter); `--passed` and `--pending` set the counts the summary reports (default 0) |
 | `seed advance <link> --sha <sha>` | Move the head out of band (file adapter) |
+
+The checks summary of a snapshot (`pull`) is `{state, sha, failing, passed, pending}`: `failing` names the failing checks, `passed` counts the successful, neutral and skipped ones, `pending` the queued, in-progress and pending ones (GitHub counts them from the check runs; the file adapter reports what `seed checks` set, a re-run turns the failed checks into pending ones, and a new head resets both to 0).
 
 Each command prints one JSON document on stdout. Exit codes: 0 ok; 1 invalid input or not found (`error: ... (AW-FORGE-NNN)` on stderr); 2 usage; 3 refused or the forge unavailable (`refused: ... (AW-FORGE-NNN)`).
 
@@ -114,7 +116,7 @@ The write side is a second test, `GitHubForgeWriteContractTests`, and runs only 
 
 ## Sindri's port
 
-Sindri does not hand `IForge` to its steps and effects. `Aw.Sindri.Core.Forge.IPullRequests` is Sindri's own port, with Sindri's records (`PullView`, `PullChecks`, `PullPush`, `FindPull`, `OpenPull`, `OpenedPull`) and no `Aw.Forge` type in Core or Features. Its members are `Get`, `CheckLog`, `Push`, `PushBranch`, `RerunChecks`, `Find`, `Open`, `Update`, `Threads` (oldest first, with each thread's time, line, edit time and link), `Self` (the login Sindri acts as), `Merge`, `Reply` and `React`; every one answers a `Result<T>` and never throws.
+Sindri does not hand `IForge` to its steps and effects. `Aw.Sindri.Core.Forge.IPullRequests` is Sindri's own port, with Sindri's records (`PullView`, `PullChecks`, `PullPush`, `FindPull`, `OpenPull`, `OpenedPull`) and no `Aw.Forge` type in Core or Features. Its members are `Get`, `CheckLog`, `Push`, `PushBranch`, `RerunChecks`, `Find`, `Open`, `Update`, `Threads` (oldest first, with each thread's time, line, edit time and link), `Self` (the login Sindri acts as), `Merge`, `Reply` and `React` (and `Retarget` and `DefaultBranch`, which `effect.pr.merge-docs` uses to move a docs PR off its merged base); `Find`, `PushBranch` and `Open` also serve `effect.pr.create-stacked`, whose lease is `PushBranch`'s; every one answers a `Result<T>` and never throws.
 
 The adapter lives in `Aw.Sindri.Host/Forge` (the one project that references this package):
 

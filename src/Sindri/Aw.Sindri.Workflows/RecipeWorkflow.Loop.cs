@@ -107,6 +107,7 @@ internal sealed partial class RecipeWorkflow
         if (OwnChange(instance, decision) is { } change)
         {
             after = Enter(after, submission.Trigger.Actor);
+            await ReadRecommendation(after).ConfigureAwait(true);
             await Mirror(Record(instance, change, submission.Trigger), NeedsYou(after)).ConfigureAwait(true);
             Emit(instance, after, EffectsOf(decision), change.Event.Type);   // a takeoverIdle row (P5) is an engine notice
             Spawn(decision);
@@ -216,7 +217,7 @@ internal sealed partial class RecipeWorkflow
             SindriTemporal.NeedsYouKey.ValueSet(needsYou),
             SindriTemporal.TenantKey.ValueSet(start.Tenant),
             SindriTemporal.RingKey.ValueSet(start.Ring.ToString(System.Globalization.CultureInfo.InvariantCulture)),
-            SindriTemporal.RootKey.ValueSet(Workflow.Info.Parent is null),
+            SindriTemporal.RootKey.ValueSet(Workflow.Info.Parent is null && !(Workflow.Patched(LinkedEventsPatch) && start.WorkflowId().LinkedParent() is not null)),   // a linked instance (LN-WF1) is no root
         ];
         if (_recipe is { } recipe)
         {

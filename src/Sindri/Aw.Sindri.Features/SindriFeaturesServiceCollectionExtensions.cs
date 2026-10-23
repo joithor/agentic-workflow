@@ -12,6 +12,7 @@ using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Workflow.ApproveAll;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Stats;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ApplyCommand;
@@ -73,6 +74,7 @@ using Aw.Sindri.Features.OnyxUp;
 using Aw.Sindri.Features.OpenItem;
 using Aw.Sindri.Features.PauseService;
 using Aw.Sindri.Features.PingProcess;
+using Aw.Sindri.Features.PrWatch;
 using Aw.Sindri.Features.ReadInjection;
 using Aw.Sindri.Features.ReadLedger;
 using Aw.Sindri.Features.RebuildViews;
@@ -193,6 +195,7 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<GetQueueRequest>, AcceptAllValidator<GetQueueRequest>>().AddQuery<GetQueueRequest, QueueResponse, GetQueueService>();
         _ = services.AddScoped<IValidator<ExportContextMapRequest>, AcceptAllValidator<ExportContextMapRequest>>().AddQuery<ExportContextMapRequest, MapExported, ExportContextMapService>();
         _ = services.AddScoped<IValidator<GetContextMapRequest>, AcceptAllValidator<GetContextMapRequest>>().AddQuery<GetContextMapRequest, MapStatusView, GetContextMapService>();
+        _ = services.AddScoped<IValidator<GetMapPublishStatusRequest>, AcceptAllValidator<GetMapPublishStatusRequest>>().AddQuery<GetMapPublishStatusRequest, MapPublishStatusView, GetMapPublishStatusService>().AddScoped<MapPublishStatusReader>().AddScoped<IMapPublishCheck, MapPublishDoctorCheck>();
         _ = services.AddScoped<IValidator<GetContextSourcesRequest>, AcceptAllValidator<GetContextSourcesRequest>>().AddQuery<GetContextSourcesRequest, SourcesView, GetContextSourcesService>();
         _ = services.AddScoped<IValidator<GetProfileRequest>, AcceptAllValidator<GetProfileRequest>>().AddQuery<GetProfileRequest, GetProfileResponse, GetProfileService>();
         _ = services.AddScoped<ProfileReads>().AddScoped<HealthServiceRows>();
@@ -219,7 +222,8 @@ public static class SindriFeaturesServiceCollectionExtensions
     private static IServiceCollection AddEngineSlices(this IServiceCollection services)
     {
         _ = services.AddScoped<IValidator<StartInstanceRequest>, AcceptAllValidator<StartInstanceRequest>>().AddCommand<StartInstanceRequest, StartInstanceResponse, StartInstanceService>();
-        _ = services.AddScoped<StartFacts>().AddScoped<ClaimHolders>().AddScoped<EngineFilledReport>();   // engine P6 unit (d): SND-WF-012 against workflow_claims
+        _ = services.AddScoped<IValidator<RerunInstanceRequest>, AcceptAllValidator<RerunInstanceRequest>>().AddCommand<RerunInstanceRequest, StartInstanceResponse, RerunInstanceService>();
+        _ = services.AddScoped<StartFacts>().AddSingleton<IStartFactCheck, ScopeInputStartCheck>().AddScoped<ClaimHolders>().AddScoped<EngineFilledReport>().AddSingleton<ReportOutputTypes>();   // engine P6 unit (d): SND-WF-012 against workflow_claims
         _ = services.AddScoped<IValidator<ApplyCommandRequest>, AcceptAllValidator<ApplyCommandRequest>>().AddCommand<ApplyCommandRequest, ApplyCommandResponse, ApplyCommandService>();
         _ = services.AddScoped<IValidator<CompleteStepRequest>, AcceptAllValidator<CompleteStepRequest>>().AddCommand<CompleteStepRequest, CompleteStepResponse, CompleteStepService>();
         _ = services.AddScoped<IValidator<IssueNonceRequest>, AcceptAllValidator<IssueNonceRequest>>().AddIssue<IssueNonceRequest, IssueNonceResponse, IssueNonceService>();
@@ -236,13 +240,14 @@ public static class SindriFeaturesServiceCollectionExtensions
     private static IServiceCollection AddDoctor(this IServiceCollection services) => services
         .AddScoped<ProfileFacts>()
         .AddScoped<LedgerFacts>()
-        .AddScoped<OnyxDoctor>()
+        .AddScoped<OnyxDoctor>().AddScoped<LinearDoctor>()
         .AddScoped<ContextEngineChecks>()
         .AddScoped<RunDoctorService>()
         .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>>(static sp =>
             new WithMoreChecks(sp.GetRequiredService<RunDoctorService>(), sp.GetServices<IDoctorChecks>()))
         .AddScoped<IDoctorChecks, ContextDoctorChecks>()
         .AddScoped<IDoctorChecks, LauncherDoctorChecks>()
+        .AddScoped<IDoctorChecks, PrWatchDoctorChecks>()                                   // PB spec API15: the PR watcher's last run
         .AddScoped<IDoctorChecks, SetupDoctor>()                                           // SO-A6: `setup`, ok when every step is done or skipped
         .AddScoped<IDoctorChecks, OnyxStackDoctor>()                                       // Onyx P2: `onyx:stack`, after the context rows, only once `onyx up` has run
         .AddSingleton<OnyxReadiness>()
@@ -277,7 +282,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddJob<ApproveAllRecipesRequest, ApproveAllResult, ApproveAllRecipesService>(static _ => ApproveAllRecipesAdmission.Key, static r => ApproveAllRecipesService.Summary(r));
         _ = services.AddScoped<IValidator<ListRecipesRequest>, AcceptAllValidator<ListRecipesRequest>>().AddQuery<ListRecipesRequest, ListRecipesResponse, ListRecipesService>();
         _ = services.AddScoped<IValidator<ShowRecipeRequest>, AcceptAllValidator<ShowRecipeRequest>>().AddQuery<ShowRecipeRequest, RecipeView, ShowRecipeService>();
-        _ = services.AddScoped<WorkflowStatRows>().AddScoped<IWorkflowStatRows>(static sp => sp.GetRequiredService<WorkflowStatRows>()).AddScoped<RecipeStatsSource>().AddScoped<IValidator<GetRecipeStatsRequest>, AcceptAllValidator<GetRecipeStatsRequest>>().AddQuery<GetRecipeStatsRequest, RecipeStats, GetRecipeStatsService>();   // API P12
+        _ = services.AddScoped<WorkflowStatRows>().AddScoped<IWorkflowStatRows>(static sp => sp.GetRequiredService<WorkflowStatRows>()).AddScoped<RecipeStatsSource>().AddScoped<BabysitterStatsSource>().AddScoped<IValidator<GetRecipeStatsRequest>, AcceptAllValidator<GetRecipeStatsRequest>>().AddQuery<GetRecipeStatsRequest, RecipeStats, GetRecipeStatsService>();   // API P12
         _ = services.AddScoped<IValidator<ReadInjectionRequest>, AcceptAllValidator<ReadInjectionRequest>>().AddQuery<ReadInjectionRequest, InjectionView, ReadInjectionService>();
         _ = services.AddScoped<IValidator<GetInstanceFactRequest>, AcceptAllValidator<GetInstanceFactRequest>>().AddQuery<GetInstanceFactRequest, FactView, GetInstanceFactService>();
         _ = services.AddScoped<IValidator<GetInstanceScopingRequest>, AcceptAllValidator<GetInstanceScopingRequest>>().AddQuery<GetInstanceScopingRequest, ScopingView, GetInstanceScopingService>();

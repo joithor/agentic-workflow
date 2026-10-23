@@ -20,6 +20,8 @@
           <TextBlock Classes="body-strong" Text="{Binding Subject}" TextTrimming="CharacterEllipsis" AutomationProperties.AccessibilityView="Raw" />
         </Button>
         <TextBlock x:Name="WorkflowRowReference" Classes="caption mono subtle" Text="{Binding Reference}" TextTrimming="CharacterEllipsis" AutomationProperties.AccessibilityView="Raw" />
+        <TextBlock x:Name="WorkflowRowStarted" Classes="caption subtle" Text="{Binding StartedText}" TextTrimming="CharacterEllipsis"
+                   IsVisible="{Binding StartedText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" AutomationProperties.AccessibilityView="Raw" />
         <wf2:ChildAnswerButton x:Name="WorkflowChildAnswer" DataContext="{Binding ChildAnswer}"
                                IsVisible="{Binding $parent[UserControl].((wf:InstanceRowViewModel)DataContext).ChildAnswer, Converter={x:Static ObjectConverters.IsNotNull}}" />
         <!-- A protected answer is the lock, here in the row so A (and a click) reach its popover even where the columns are hidden. -->

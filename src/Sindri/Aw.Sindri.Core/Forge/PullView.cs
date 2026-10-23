@@ -10,4 +10,5 @@ namespace Aw.Sindri.Core.Forge;
 /// <param name="Checks">The checks.</param>
 /// <param name="Labels">The labels on it, by name.</param>
 /// <param name="Base">The base branch it targets, by name.</param>
-public sealed record PullView(string Link, PullState State, string HeadSha, bool? Mergeable, string? ReviewDecision, int UnresolvedThreads, PullChecks Checks, IReadOnlyList<string> Labels, string Base);
+/// <param name="BaseSha">The base branch's tip now, or null when the forge does not say.</param>
+public sealed record PullView(string Link, PullState State, string HeadSha, bool? Mergeable, string? ReviewDecision, int UnresolvedThreads, PullChecks Checks, IReadOnlyList<string> Labels, string Base, string? BaseSha = null);
