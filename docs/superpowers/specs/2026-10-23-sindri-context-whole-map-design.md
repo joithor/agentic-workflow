@@ -14,7 +14,7 @@ phases to PRs.
 ## 0. Why
 
 The context map page opens empty. Nothing is read until a person types a starting point or a question
-(`ContextPageViewModel.cs:5-9`, "reads nothing before an anchor"), and then the page draws one neighbourhood: three bands around
+(`docs/csharp/sindri-ui.md`, "reads nothing before an anchor"; `ContextPageViewModel` is documented as opened empty with no read made), and then the page draws one neighbourhood: three bands around
 the anchors, from `GET /sindri/context/lenses`. A person who opens the page to see what Sindri knows about the product sees a text
 box. The owner wants the opposite order: the whole map first, so the structure is visible at a glance, and a query as a way to
 zoom into part of it.
@@ -36,7 +36,7 @@ still visible behind it, and one key (Esc) or one click ("Whole map") goes back.
 | W3 | Areas are the map's own features, not a new clustering: every node gets exactly one area by fixed rules over the edges it already has (§2.2), so the grouping is explainable and stable from one map version to the next | writer's call (reversible) |
 | W4 | Layout stays on the client (the app's pure, deterministic view-model layout, as F3's `ContextMapLayout`); the server sends structure only, no coordinates | writer's call, matches F3 |
 | W5 | No new owner step anywhere on this page. Building the map stays the existing one-click "Build the map"; the whole map needs no approval, profile key or setup | the owner's standing rule: everything that needs the owner is one click |
-| W6 | Agent sessions may read the whole map of their own repo (it is a query, like every other map read), labels fenced as untrusted; there is **no** MCP tool for it, since a whole map is too large to be useful in an agent's context (`context_lenses` and `context_node` stay the agent's tools) | writer's call; owner Q2 |
+| W6 | Agent sessions may read the whole map of their own repo (it is a query, like every other map read), labels fenced as untrusted; there is **no** MCP tool for it and the shared door of the deployable spec (`2026-10-23-sindri-deployable-context-design.md` §B.2) does not route it, since a whole map is too large to be useful in an agent's context (`context_lenses` and `context_node` stay the agent's tools) | writer's call; owner Q2 |
 
 ## 2. The data side (context lane)
 
@@ -86,8 +86,14 @@ A pure function in `Aw.Context.Core` (`MapAreas.Assign(GraphSnapshot) → AreaIn
 area and up to 5 others (`alsoIn`, for a node that genuinely sits in several). The rules use only the edge types the map has today
 (`EdgeRules`):
 
-1. **Features.** A feature's area is the root of its `part-of` chain (a feature that is part of no other feature is a root and
-   its own area). A cycle (the map shouldn't have one; the rule must still end) roots at the smallest key on the cycle.
+1. **Features.** A feature's root is the root of its `part-of` chain (a feature that is part of no other feature is a root). A
+   feature with several parents (`EdgeRules` allows it) follows the parent with the smallest key. A cycle (the map shouldn't have one;
+   the rule must still end) roots at the smallest key on the cycle. **The area depth is adaptive:** the areas are the roots, unless
+   one root holds more than half of all nodes or there are fewer than 3 roots; then the areas are that dominant root's children
+   (the roots' own children for a single root), repeated once at most, so a map with one umbrella feature still yields a usable
+   overview. The rules below then give each node the area of the area-feature it reaches (its ancestors, or itself, at that depth); the
+   umbrella feature itself, and anything reaching only it, goes to `area:unassigned`.
+Rules 2 to 4 apply in this order, each reading the areas the earlier ones fixed:
 2. **Surfaces** take the area of the feature they are `part-of`. **Actions** take their surface's area (`on`). **Flows** take the
    area most of their steps' surfaces are in (`step-of`). **Things** take the area of the surfaces and actions that read or write
    them most (`reads`, `writes`).
@@ -109,17 +115,19 @@ map of that order arrives in one answer, and are checked against the first real 
 
 | Limit | Default | Why |
 |---|---|---|
-| Node budget for `nodes` | 1,500 nodes | about 300 KB of JSON at ~200 bytes a node with its edges; one answer, one layout pass |
+| Node budget for `nodes` | 1,500 nodes | about 0.6 MB of JSON at 1,500 nodes and about 2,300 edges (the sample's 412 nodes and 655 edges, scaled); one answer, one layout pass |
 | Area cap for `area=` | 500 nodes per area, then `area.truncated` with full `counts` | the page opens a big area in one read; a bigger area keeps its counts and a "more not shown" chip, as F3 bands do |
 | Areas | 500, then `truncated` | an areas answer stays well under 1 MB for any map |
 | Edges | every edge between returned nodes; `areaEdges` aggregated by (from, to, type) | edges are cheaper than nodes and the page needs them for the layout |
 
 They are constants in `WholeMapRules`, not profile keys (no owner setting to keep, W5); changing them is a reviewed code change.
 
-The answer is computed from the stored graph of one version and kept in memory per (repo, mapVersion, draft, caller scope), the
-last 4 answers, since a map version never changes once written (a draft is recomputed when the draft changes). The first read of a
+The answer is computed from the stored graph of one version and kept in memory per (repo, mapVersion, draft, caller scope, overrides revision), the
+last 4 answers by default (sized by bytes if W1's measurement shows thrash across repos), since a map version's nodes never change once
+written; the overrides layer is shared across versions (retrieval spec), so its revision is in the key, and a draft is recomputed when the draft changes. The first read of a
 version on a 1,500-node map should take well under 200 ms on the owner's box; W1 measures it and records the number in
-`docs/csharp/sindri-context.md`.
+`docs/csharp/sindri-context.md`. W1's exit criteria: if more than half of the real map's nodes land in one area or in
+`area:unassigned`, the PR proposes the adaptive depth's numbers (or a better rule) in writing before merging.
 
 ### 2.4 Errors
 
@@ -137,8 +145,9 @@ page must have. The ui lane writes the visual slice spec (in its F3 spec, beside
 | State | When | What the person sees |
 |---|---|---|
 | **Whole map** (new, the page's first state) | the page opens with no item | `GET map/whole` (detail `auto`) the moment the page is first shown; the map is fitted to the stage; the head reads "Context · the whole map · v<N>" |
-| Whole map, by area | the answer is `detail: areas` | one tile per area (label, member count, a small row of kind counts), the edges between areas drawn with their counts; clicking a tile opens it (`area=`), double-click or zooming in past the level threshold does the same |
-| **Zoomed in** (new) | the person types a starting point or a question and presses Enter, or picks a suggestion, or comes from an item | the existing read runs (`query`, then `lenses`, as today); the camera eases to the box around the answer's nodes (`Motion.Base`; instant under reduced motion); those nodes and their edges are drawn at full strength in their places on the whole map, everything else stays drawn behind at the hover-dim strength (0.42); the lens's band detail (intent above, code below) is the existing inspector and band rows for those nodes. "Whole map" (a button in the control row) or Esc goes back and fits again |
+| Whole map, by area | the answer is `detail: areas` | the head says why in one line ("This map has N items, so it is grouped by feature; open one to see its items", people-facing text says "feature" where the API says "area"); one tile per area (label, member count, a small row of kind counts), the edges between areas drawn with their counts; clicking a tile opens it (`area=`), double-click or zooming in past the level threshold does the same; an area cut at the cap shows a "more not shown" chip with its full counts |
+| Loading and read failure | the open-time read, an area open, or a query's reads are in flight or failed | a quiet loading row over the stage (the existing building style, no spinner storm); a failed read (network, timeout, 5xx) shows "Couldn't read the map" with Retry and keeps whatever was already drawn |
+| **Zoomed in** (new) | the person types a starting point or a question and presses Enter, or picks a suggestion, or comes from an item | the existing read runs (`query`, then `lenses`, as today); the camera eases to the box around the answer's nodes (`Motion.Base`; instant under reduced motion); on a `detail: nodes` map those nodes and their edges are drawn at full strength in their places on the whole map; on a `detail: areas` map the page runs `locate` with the answer's node keys, opens the touched areas with `area=` (the 3 with most answer nodes, then a "N more features touched" chip; each opens in one read, in parallel, with the loading row), and draws the answer's nodes in them at full strength, the other tiles staying as tiles; everything else stays drawn behind at the hover-dim strength (0.42); the lens's band detail (intent above, code below) is the existing inspector and band rows for those nodes. "Whole map" (a button in the control row) or Esc goes back and fits again. **Esc order:** it closes the inspector first, then zooms out; the page handles Esc in the starting-point box too (today's handler skips keys whose source is a text box, which is where focus sits after typing a query and pressing Enter), and a test pins both. A query with no match, or `locate` returning `area: null`, shows the refusal banner with its suggestions over the whole map and moves nothing. In pinned mode the page reads the pinned `mapVersion`; in live mode a newer version shows an "updated" chip and doesn't move the camera until clicked |
 | Item entry | the page is opened from an item | Zoomed in on the item's anchors, as above, with the whole map loaded behind |
 | No map | `SND-CONTEXT-030` | the existing empty state and its one-click "Build the map" |
 | Building | a map build job is running | the existing building overlay; the whole map is read again when the job ends |
@@ -164,7 +173,9 @@ The card keeps the explain spec's rule: it shows for one starting point only, so
   today (`ContextMapWorld.PlaceAll`): the whole map draws nodes and edges in one `Render` pass (as `GraphEdgesControl` already does
   for edges) and only builds controls for what is on screen above the threshold. Budget: the first frame within 1 s of the page
   opening on the owner's box for a 1,500-node map, and panning at the display's frame rate.
-- **Mini-map.** The existing `MiniMapControl` draws from `areas` and `areaEdges`, so it works at both levels.
+- **Mini-map.** The existing `MiniMapControl` (its node type is the Run canvas's `MiniMapNode`, and it is not focusable) gets an adapter from `areas` and `areaEdges` to `MiniMapNode`, and a keyboard story (arrow keys move the view box), so it works at both levels.
+- **First-open zoom.** "Fit the whole world" may fall below the detail threshold on a 1,500-node map; the first open therefore fits the world but never below the threshold's floor, and shows area labels (not node labels) when it is under it, so a person always reads something on opening.
+- **Accessibility.** Every area tile is focusable, has an accessible name (label, member count) and opens on Enter; Tab order is columns left to right, then the control row; the dots have no per-dot accessible nodes, so the page keeps an accessible list of areas (and of the answer's nodes when zoomed in) that J and K walk; an area is identified by its label and a shape or pattern as well as its colour, from a bounded palette in `Theme/` (more than the palette's colours reuse with a distinct pattern, no hex outside `Theme/`); focus moves to the zoom target when a query zooms in and back to the starting-point box on zoom out.
 
 ### 3.3 One click
 
@@ -227,10 +238,10 @@ page does not offer it.
 
 | Phase | Lane | What | Needs |
 |---|---|---|---|
-| **W1 — the whole map read** | context | `MapAreas.Assign` (Core), `WholeMapRules`, the query service and its in-memory cache, `GET /sindri/context/map/whole` with `detail` and `locate`, the CLI verb, `SND-CONTEXT-200` and the 200–209 range row, goldens, the docs section; the measurement (§8) | nothing; the goldens are the first commit so ui can start from them |
+| **W1 — the whole map read** | context | `MapAreas.Assign` (Core), `WholeMapRules`, the query service (through the `IContextEngine` facade, not a Sindri-side port) and its in-memory cache, `GET /sindri/context/map/whole` with `detail` and `locate`, the CLI verb, `SND-CONTEXT-200` and the 200–209 range row, goldens, the docs section; the measurement (§8) | nothing to start; the goldens are the first commit so ui can start from them. The measurement needs the owner-approved first-run home, with a fallback to the fixture's numbers recorded as such |
 | **W2 — open one area** | context | `area=` with its cap and truncation, `area-open` and `area-truncated` goldens | W1 |
 | **W3 — the page opens on the whole map** | ui | DTOs and client for `map/whole`, the open-time read, `WholeMapLayout`, the one-pass drawing and level of detail, the by-area tiles (opening one waits for W2's route: until then a tile click zooms to the tile), the mini-map from areas, the states of §3.1 except Zoomed in | W1's goldens (not W1's merge) |
-| **W4 — a query zooms in** | ui | the zoomed-in state over the whole map, the camera ease, "Whole map" and Esc, item entry through it, the card's "Pick a starting point" line | W3; W2 for opening an area on zoom |
+| **W4 — a query zooms in** | ui | the zoomed-in state over the whole map (including the areas-level zoom of §3.1), the camera ease, "Whole map" and Esc, item entry through it, the card's "Pick a starting point" line, the accessibility of §3.2 | W3; W2 for opening an area on zoom |
 
 Parallel: W1 and W3 start together; W1's first commit is its goldens, which W3 builds its DTOs and fake against. W2 runs beside
 W3. W4 follows W3. The context lane's builders take W1 then W2; the ui lane's take W3 then W4. Each phase is one PR, scoped gate:
