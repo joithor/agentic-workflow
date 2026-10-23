@@ -9,13 +9,7 @@ internal sealed class DetailViews(ItemRow? item = null, int timeline = 0, int de
 {
     public ValueTask<Result<TRow?>> Get<TRow>(string view, string key, CancellationToken cancellationToken)
         where TRow : class =>
-        ValueTask.FromResult<Result<TRow?>>(view switch
-        {
-            ViewNames.NeedsYou when needsYouFails => new Error("SND-TEST-001", ErrorKind.Unavailable, "the needs-you view can't be read"),
-            ViewNames.NeedsYou => needsYou?.FirstOrDefault(r => r.Id.Value == key) is { } row ? new NeedsYouRowRecord(row, 1) as TRow : null,
-            ViewNames.Items when item is not null && item.Id.Value == key => item as TRow,
-            _ => null,
-        });
+        ValueTask.FromResult(Row<TRow>(view, key));
 
     public ValueTask<Result<IReadOnlyList<TRow>>> List<TRow>(string view, CancellationToken cancellationToken)
         where TRow : class =>
@@ -31,6 +25,19 @@ internal sealed class DetailViews(ItemRow? item = null, int timeline = 0, int de
 
     public ValueTask<Result<ProjectorState?>> State(CancellationToken cancellationToken) =>
         ValueTask.FromResult<Result<ProjectorState?>>((ProjectorState?)null);
+
+    private Result<TRow?> Row<TRow>(string view, string key)
+        where TRow : class
+    {
+        if (view == ViewNames.NeedsYou)
+        {
+            return needsYouFails
+                ? new Error("SND-TEST-001", ErrorKind.Unavailable, "the needs-you view can't be read")
+                : Results.Success(needsYou?.FirstOrDefault(r => r.Id.Value == key) is { } row ? new NeedsYouRowRecord(row, 1) as TRow : null);
+        }
+
+        return Results.Success(view == ViewNames.Items && item is not null && item.Id.Value == key ? item as TRow : null);
+    }
 
     private static IReadOnlyList<TRow> Rows<TRow>(int count)
         where TRow : class => [.. Enumerable.Repeat<TRow>(null!, count)];   // why: only the number of rows is read
