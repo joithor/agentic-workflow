@@ -45,7 +45,7 @@ public sealed class WholeMapFramesTests : FrameHost
         whole.Canvas.Settle();
         Assert.Equal(shell.Context.Whole.Geometry!.World.Width, whole.Canvas.WorldBounds.Width);
         Assert.InRange(whole.Canvas.View.Scale, WholeMapViewModel.FirstOpenFloor, WholeMapViewModel.MaxScale);
-        Assert.Equal(shell.Context.Whole.Areas.Count, Named<ItemsControl>(window, "WholeAreas").ItemCount);
+        Assert.DoesNotContain(window.GetVisualDescendants().OfType<Control>(), c => c.Name == "WholeAreas");   // the page is the graph: no row of feature chips
         Assert.Equal(shell.Context.Whole.Head, shell.Context.Head);
         Assert.False(Visible(window, "WholeStatus"));
         Assert.False(Visible(window, "ContextEmpty"));
