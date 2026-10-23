@@ -238,7 +238,7 @@ public abstract partial class SindriApiContract
 
         var map = (await api.WholeMap(_api, new WholeMapQuery("nodes", Area: null, [], MapVersion: null, Draft: false), Token)).Value;
 
-        Expect.Equal(("areas", "over-budget", true), (map.Detail, map.Fallback!, map.Nodes is null));   // why: the golden names the fallback
+        Expect.Equal(("areas", "over-budget", true), (map.Detail, map.Fallback, map.Nodes is null));
     }
 
     [Fact]
@@ -250,7 +250,7 @@ public abstract partial class SindriApiContract
         _ = await api.WholeMap(_api, new WholeMapQuery("areas", "feature:tabs", ["code:a.ts", "code:b.ts"], "v2", Draft: true), Token);
 
         var asked = server.WholeMapAsked[^1];
-        Expect.Equal(("areas", "feature:tabs", "v2", true), (asked.Detail!, asked.Area!, asked.MapVersion!, asked.Draft));   // why: it was asked with all four
+        Expect.Equal(("areas", "feature:tabs", "v2", true), (asked.Detail, asked.Area, asked.MapVersion, asked.Draft));
         Expect.Sequence(["code:a.ts", "code:b.ts"], asked.Locate);
     }
 }
