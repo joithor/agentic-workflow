@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Aw.Evidence.Infrastructure.Judging;
 
+#pragma warning disable MA0182 // kept as the reference for an unwired judge until cutover unit 1.3 decides whether the offline fallback needs it
 /// <summary>
 /// The judge until its CLI adapter lands: <see cref="IsAvailable"/> is false, so callers neither call it nor record a
 /// model invocation; selector repair doesn't happen and the visual verdict stays unchecked (callers fail closed). Called
@@ -47,3 +48,4 @@ internal sealed partial class UnavailableJudge(ILogger<UnavailableJudge> logger)
     [LoggerMessage(Level = LogLevel.Information, Message = "The judge adapter is not wired yet: no selector repair, and visual verdicts stay unchecked")]
     private static partial void NotWired(ILogger logger);
 }
+#pragma warning restore MA0182

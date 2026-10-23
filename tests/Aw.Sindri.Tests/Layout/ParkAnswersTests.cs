@@ -39,7 +39,7 @@ public sealed class ParkAnswersTests
     [InlineData(ParkReason.Budget, null, "--grant-tokens <n>", AnswerKind.GrantTokens)]
     public void A_mirrored_park_whose_reason_gives_the_childs_answer_names_the_childs_own_command_via_the_child(ParkReason reason, ParkKind? parkKind, string args, AnswerKind kind)
     {
-        var answer = ParkAnswers.For(new ParkShape(SuspensionKind.Park, reason, parkKind, Escalation: null, Mirrors: true), _address, grantTokens: "1M", child: "T-3/step/1/step.4")!;
+        var answer = ParkAnswers.For(new ParkShape(SuspensionKind.Park, reason, ParkKind: null, Escalation: null, Mirrors: true, MirroredParkKind: parkKind), _address, grantTokens: "1M", child: "T-3/step/1/step.4")!;
 
         Assert.Equal(($"sindri workflow answer T-3/step/1/step.4 {args}", kind, "child", "T-3/step/1/step.4"), (answer.Cli, answer.Kind, answer.Via, answer.Child));
     }

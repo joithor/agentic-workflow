@@ -24,8 +24,8 @@ namespace Aw.Sindri.Features.GetInstance;
 /// <param name="views">The items, timeline, decisions and requests views.</param>
 /// <param name="repos">Where each item belongs, from the ledger.</param>
 /// <param name="callers">The caller, whose repo scope decides what it may read.</param>
-/// <param name="stepRuns">The instance's Step runs, folded from its ledger events.</param>
 /// <param name="contexts">Builds the detail context at the time of the read, with the recipe's display name (null serves none).</param>
+/// <param name="stepRuns">The instance's Step runs, folded from its ledger events.</param>
 internal sealed class GetInstanceService(IInstanceDirectory directory, IInstanceReader runtime, IViewReader views, IItemRepos repos, ICallerContextAccessor callers, DetailContexts contexts, StepRunReader stepRuns)
     : IService<GetInstanceRequest, InstanceDetail>
 {
@@ -68,8 +68,9 @@ internal sealed class GetInstanceService(IInstanceDirectory directory, IInstance
             return runs.Error;
         }
 
+        var context = await contexts.Of(view.Value, new DetailInputs(title, parent, counts.Value, runs.Value), cancellationToken).ConfigureAwait(false);
         var open = await OpenOf(view.Value.Address, cancellationToken).ConfigureAwait(false);
-        return InstanceViews.Detail(view.Value, contexts.Of(title, parent, counts.Value, view.Value.Recipe.Id, runs.Value)) with { Open = open };
+        return InstanceViews.Detail(view.Value, context) with { Open = open };
     }
 
     /// <summary>

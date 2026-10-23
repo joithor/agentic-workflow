@@ -1,8 +1,11 @@
 using System.Text.Json;
 using Aw.Kernel;
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Features.Blocks.Effect;
@@ -29,8 +32,11 @@ internal sealed class NotifyDeskEffect(IDeskNotices notices, TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();
-        var notice = new DeskNotice(context.Identity, InstanceAddress.From(context.Instance), ItemKey.From(context.Item),
-            ClassOf(context), context.Text ?? Argument(context, "text") ?? context.Instance, clock.GetUtcNow());
+        var address = InstanceAddress.From(context.Instance);
+        var row = RowOf(context, address);
+        var notice = new DeskNotice(context.Identity, address, ItemKey.From(context.Item),
+            ClassOf(context), context.Text ?? Argument(context, "text") ?? context.Instance, clock.GetUtcNow(),
+            row, row is { } id ? "needs-you/" + id.Value : null);   // switch to NeedsYouRoutes once it exists (API A2)
         var sent = await notices.Send(notice, cancellationToken).ConfigureAwait(false);
         if (sent.IsError)
         {
@@ -43,6 +49,15 @@ internal sealed class NotifyDeskEffect(IDeskNotices notices, TimeProvider clock)
     /// <summary>An engine notice carries its class (§6.3); a recipe's notice is info (lane decision, P6 unit (c)).</summary>
     private static NoticeClass ClassOf(EffectContext context) =>
         context.FromEngine && string.Equals(Argument(context, "class"), "interrupt", StringComparison.Ordinal) ? NoticeClass.Interrupt : NoticeClass.Info;
+
+    /// <summary>The needs-you row an engine notice is about, built only through <see cref="NeedsYouRowId"/>: a desk task's own row, a takeover's own row, and a park's or escalation's (a nested one too) on the root's row. A recipe's notice is about no row.</summary>
+    private static NeedsYouRowId? RowOf(EffectContext context, InstanceAddress address) => !context.FromEngine ? null : Argument(context, "row") switch
+    {
+        "desk" => NeedsYouRowIds.Desk(address),
+        "takeover" => NeedsYouRowIds.Takeover(address),
+        "park" => NeedsYouRowIds.Park(InstanceAddress.From(InstanceSummaries.RootOf(address))),
+        _ => null,
+    };
 
     private static string? Argument(EffectContext context, string name) =>
         context.Arguments.TryGetValue(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;

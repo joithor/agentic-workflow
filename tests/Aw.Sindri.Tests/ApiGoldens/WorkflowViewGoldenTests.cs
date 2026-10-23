@@ -32,7 +32,7 @@ public sealed class WorkflowViewGoldenTests : IAsyncLifetime
         ("workflow-status", "parked-child"), ("workflow-status", "unreachable-child"), ("workflow-status", "escalated-child"), ("workflow-status", "mirrored-budget"), ("workflow-status", "mirrored-budget-no-child"), ("workflow-status", "desk-task"), ("workflow-status", "parked-budget"),
         ("workflow-status", "escalated-gate"), ("workflow-status", "taken-over"), ("workflow-status", "done"), ("workflow-status", "agent-run"),
         ("workflow-status", "parked-drift"), ("workflow-status", "needs-answer-step"), ("workflow-status", "needs-answer-wait"),
-        ("workflow-recipe", "workflow.no-outputs"), ("workflow-recipe", "workflow.f5-fields"), ("workflow-recipe", "workflow.scoping"), ("workflow-instance", "f5-state-times"), ("workflow-instance", "f5-rerun-failed"), ("workflow-instance", "f5-desk-recommended"), ("workflow-instance", "lens-ask-multi"), ("workflow-instance", "scoping-interview"), ("workflow-instance", "babysitter-ready-verbs"), ("workflow-recipe", "workflow.pr-babysitter"), ("workflow-recipe", "workflow.design"),
+        ("workflow-recipe", "workflow.no-outputs"), ("workflow-recipe", "workflow.f5-fields"), ("workflow-recipe", "workflow.scoping"), ("workflow-instance", "f5-state-times"), ("workflow-instance", "f5-rerun-failed"), ("workflow-instance", "f5-desk-recommended"), ("workflow-instance", "lens-ask-multi"), ("workflow-instance", "scoping-interview"), ("workflow-instance", "desk-reviews"), ("workflow-instance", "agent-run-session"), ("workflow-status", "parked-dispatch-refused"), ("workflow-status", "agent-run-session"), ("workflow-instance", "babysitter-ready-verbs"), ("workflow-recipe", "workflow.pr-babysitter"), ("workflow-recipe", "workflow.design"),
         .. FixtureRecipes.All.Select(r => ("workflow-recipe", r.Id)),
         ("workflow-instance-fact", "scope-map"), ("workflow-instance-fact", "packet"), ("workflow-instance-fact", "evidence"), ("workflow-instance-fact", "payload"), ("workflow-instance-fact", "packet-unfrozen"),
         ("workflow-instance-fact", "text"), ("workflow-instance-fact", "truncated"), ("workflow-instance-fact", "pr-status"), ("workflow-instance-fact", "lens-ask-escalation"), ("workflow-instance-fact", "scoping-questions"),
@@ -124,6 +124,16 @@ public sealed class WorkflowViewGoldenTests : IAsyncLifetime
         ("workflow-instance", "f5-state-times") => Json(WorkflowViewFixtures.F5StateTimes(), options),
         ("workflow-recipe", var id) when FixtureRecipes.All.Append(FixtureRecipes.Design).Any(r => r.Id == id) => Json(WorkflowViewFixtures.Recipe(id), options),
         ("workflow-instance-fact", _) => Json(WorkflowViewFixtures.Fact(scenario), options),
+        _ => Opened(slug, scenario, options),
+    };
+
+    /// <summary>The q65 goldens: what a desk reviews, the run's session and a park's reason code.</summary>
+    private static string Opened(string slug, string scenario, JsonSerializerOptions options) => (slug, scenario) switch
+    {
+        ("workflow-instance", "desk-reviews") => Json(WorkflowViewFixtures.DeskReviews(), options),
+        ("workflow-instance", "agent-run-session") => Json(WorkflowViewFixtures.AgentRunSession(), options),
+        ("workflow-status", "parked-dispatch-refused") => Json(WorkflowViewFixtures.StatusParkedDispatchRefused(), options),
+        ("workflow-status", "agent-run-session") => Json(WorkflowViewFixtures.StatusAgentRunSession(), options),
         ("workflow-status", _) => Json(Status(scenario), options),
         _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "no such workflow view scenario"),
     };
