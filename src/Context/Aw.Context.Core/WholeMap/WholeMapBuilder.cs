@@ -28,9 +28,11 @@ public static class WholeMapBuilder
         var edges = graph.Edges.Where(e => known.ContainsKey(e.From.Value) && known.ContainsKey(e.To.Value)).ToList();
         var (listed, truncated) = ListAreas(known, areas, rules, text);
         var basis = ask.Basis;
-        var overview = new WholeMapView(
-            1, basis.MapVersion, basis.MapCommit, basis.Draft, basis.AsOf, basis.Repo, WholeMapDetail.Areas, Fallback: null,
-            Counts(known.Values, edges.Count), listed, AreaEdges(edges, areas, listed.Select(a => a.Key).ToHashSet(StringComparer.Ordinal)), Nodes: null, Edges: null, Area: null, Located(ask.Locate, areas, text), truncated);
+        var overview = new WholeMapView(1, basis.MapVersion, basis.Draft, basis.AsOf, basis.Repo, WholeMapDetail.Areas, Counts(known.Values, edges.Count), listed, AreaEdges(edges, areas, listed.Select(a => a.Key).ToHashSet(StringComparer.Ordinal)), truncated)
+        {
+            MapCommit = basis.MapCommit,
+            Located = Located(ask.Locate, areas, text),
+        };
         if (ask.Area is not null)
         {
             return Opened(ask.Area, overview, (known, edges), (areas, rules, text));
