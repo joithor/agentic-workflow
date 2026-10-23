@@ -38,7 +38,48 @@ internal sealed class DeskReporter(ISindriApi api, Func<Uri?> apiUrl, ILauncher?
         var complete = read.Value.Current.Status.Commands.FirstOrDefault(c => c.Verb == StatusVerb.Complete);
         var state = await StateOf(url, read.Value).ConfigureAwait(true);
         var card = await MergeCardOf(url, read.Value).ConfigureAwait(true);
-        return new DeskTarget(instanceId, desk?.Run ?? string.Empty, complete, state?.Why, OutcomeText(state, "approve"), OutcomeText(state, "revise"), desk?.Recommended, card) { Verbs = verbs };
+        var questions = await QuestionsOf(url, read.Value).ConfigureAwait(true);
+        return new DeskTarget(instanceId, desk?.Run ?? string.Empty, complete, state?.Why, OutcomeText(state, "approve"), OutcomeText(state, "revise"), desk?.Recommended, card, questions) { Verbs = verbs };
+    }
+
+    // The ask step's questions; null for a desk that does not ask.
+    private async Task<IReadOnlyList<DeskQuestion>?> QuestionsOf(Uri url, InstanceDetail detail) =>
+        detail.Current.Desk is { } desk && AsksQuestions(desk, detail.Current.Status.Inputs) ? await Questions(url, detail.Id).ConfigureAwait(true) : null;
+
+    // The ask step: the person's answers are the desk's required output and the questions are the escalation fact it was given.
+    private static bool AsksQuestions(DeskForm desk, IReadOnlyList<StatusInput> inputs) =>
+        desk.Outputs.Any(o => string.Equals(o.Key, AnswersKey, StringComparison.Ordinal)) && inputs.Any(i => string.Equals(i.Key, DeskQuestionReader.Key, StringComparison.Ordinal));
+
+    // The whole list comes from the fact read: the instance's fact row only carries a one-line summary.
+    private async Task<IReadOnlyList<DeskQuestion>> Questions(Uri url, string instanceId)
+    {
+        var fact = await api.InstanceFact(url, instanceId, DeskQuestionReader.Key, CancellationToken.None).ConfigureAwait(true);
+        return fact.IsError ? [] : DeskQuestionReader.Of(fact.Value);
+    }
+
+    /// <summary>The fact "answers" for a list of answered questions: [{id, question, answer}] in the order asked.</summary>
+    /// <param name="answered">The questions with their answers.</param>
+    /// <returns>The JSON text.</returns>
+    internal static string AnswersJson(IEnumerable<(string Id, string Question, string Answer)> answered)
+    {
+        ArgumentNullException.ThrowIfNull(answered);
+        using var stream = new MemoryStream();
+        using (var writer = new System.Text.Json.Utf8JsonWriter(stream))
+        {
+            writer.WriteStartArray();
+            foreach (var (id, question, answer) in answered)
+            {
+                writer.WriteStartObject();
+                writer.WriteString("id", id);
+                writer.WriteString("question", question);
+                writer.WriteString("answer", answer);
+                writer.WriteEndObject();
+            }
+
+            writer.WriteEndArray();
+        }
+
+        return Encoding.UTF8.GetString(stream.ToArray());
     }
 
     // The recipe state the instance is in, for its why and its outcomes; null when the recipe cannot be read.
