@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Workflow.Blocks;
 
 namespace Aw.Sindri.Features.GetProfile;
 
@@ -172,14 +173,15 @@ internal static class ProfileGroups
     private static IEnumerable<string> Providers(SindriProfile? approved, SindriProfile live)
     {
         var allowed = new HashSet<string>(approved is null ? [] : JudgeProviders.Effective(approved, repo: null, recipeLiteral: null), StringComparer.Ordinal);
-        return BoxProviders(approved, live, allowed)
+        return BoxProviders(live, allowed)
             .Concat(RepoProviders(approved, live, allowed))
+            .Where(static p => !string.Equals(p, JudgeProviderNames.Rules, StringComparison.Ordinal))
             .Distinct(StringComparer.Ordinal)
             .Select(static p => $"Judge steps may ask {p}");
     }
 
-    private static IEnumerable<string> BoxProviders(SindriProfile? approved, SindriProfile live, HashSet<string> allowed) =>
-        (live.Workflow?.Judge?.Providers ?? (approved is null ? JudgeProviders.Default : [])).Where(p => !allowed.Contains(p));
+    private static IEnumerable<string> BoxProviders(SindriProfile live, HashSet<string> allowed) =>
+        (live.Workflow?.Judge?.Providers ?? []).Where(p => !allowed.Contains(p));
 
     private static IEnumerable<string> RepoProviders(SindriProfile? approved, SindriProfile live, HashSet<string> allowed) =>
         (live.Repos ?? []).SelectMany(repo => (repo.Workflow?.Judge?.Providers ?? []).Where(p => !allowed.Contains(p) && !ApprovedRepoLists(approved, repo.Name, p)));

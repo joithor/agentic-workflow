@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks;
 using Aw.Sindri.Features.GetProfile;
 
@@ -137,6 +138,14 @@ public sealed class ProfileChangesTests
         var changes = ProfileChanges.Between(approved, live, _sentences);
 
         Assert.Equal(["Judge steps may ask jev"], changes.Connections);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Connections_never_name_the_rules_provider_since_it_asks_nothing_outside()
+    {
+        var live = new SindriProfile(1, "t", Workflow: new WorkflowSettings(Judge: new JudgeSettings(["claude-cli", JudgeProviderNames.Rules])));
+
+        Assert.Equal(["Judge steps may ask claude-cli"], ProfileChanges.Between(approved: null, live, _sentences).Connections);
     }
 
     [Fact, Trait("Lane", "unit")]
