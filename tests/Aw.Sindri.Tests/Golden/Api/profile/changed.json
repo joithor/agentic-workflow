@@ -31,5 +31,14 @@
       "pin": "built-in",
       "status": "ok"
     }
-  ]
+  ],
+  "summary": {
+    "repos": [],
+    "services": [
+      "Sindri will run the scorer service every 1 hour"
+    ],
+    "allowance": [],
+    "connections": [],
+    "humanOnly": []
+  }
 }
