@@ -81,6 +81,7 @@ internal sealed partial class ContextPageViewModel
         {
             Show(result.Value, choices: [], fromQuestion);
             NoteRead();
+            await ZoomIntoWhole(api, cancellationToken).ConfigureAwait(true);
         }
         else if (PinnedVersion is not null && string.Equals(result.Error.Code, MapVersionNotRetained, StringComparison.Ordinal))
         {
@@ -128,7 +129,7 @@ internal sealed partial class ContextPageViewModel
         Choices = choices;
         if (view is null)
         {
-            Head = string.Empty;
+            Head = Whole.IsReady ? Whole.Head : string.Empty;   // no neighbourhood: the whole map is what the page shows
             AsOfLiveHint = null;
             Map = null;
             Missing = [];
@@ -152,6 +153,8 @@ internal sealed partial class ContextPageViewModel
         OnChanged(nameof(Problem));
         OnChanged(nameof(HasStack));
         OnChanged(nameof(MapVisible));
+        OnChanged(nameof(ShowWhole));
+        OnChanged(nameof(ShowWholeStatus));
         OnChanged(nameof(InspectorOpen));
         OnChanged(nameof(IsDraft));
         OnChanged(nameof(HasChoices));

@@ -10,8 +10,9 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// <param name="IfApprove">What approving does, as the state's approve outcome says; null when not served.</param>
 /// <param name="IfSendBack">What sending it back does, as the state's first revise outcome says; null when not served.</param>
 /// <param name="Recommended">The outcome the step before the stop recommends, with its why; null when none is served.</param>
+/// <param name="Questions">The ask step's questions, read from the escalation fact; null for every other desk.</param>
 /// <param name="MergeCard">The pull request card, when the instance lists the fact "fact:prStatus" and it read; null otherwise.</param>
-internal sealed record DeskTarget(string InstanceId, string Run, StatusCommand? Complete, string? Why = null, string? IfApprove = null, string? IfSendBack = null, DeskRecommendation? Recommended = null, MergeCardViewModel? MergeCard = null)
+internal sealed record DeskTarget(string InstanceId, string Run, StatusCommand? Complete, string? Why = null, string? IfApprove = null, string? IfSendBack = null, DeskRecommendation? Recommended = null, MergeCardViewModel? MergeCard = null, IReadOnlyList<DeskQuestion>? Questions = null)
 {
     /// <summary>The instance's address, for taking the person to its frame; empty when not read.</summary>
     internal string Address { get; init; } = string.Empty;

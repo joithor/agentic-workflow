@@ -26,6 +26,7 @@ public static class ParkAnswers
         var answering = $"sindri workflow answer {address.Value}";
         return shape switch
         {
+            { Mirrors: true } when child is not null && ChildOwn(shape, child) is { } own => own with { Via = "child", Child = child },
             { Kind: SuspensionKind.Park, Mirrors: true } when !AnswerVariants.ReasonFixesChildFit(shape.Reason) => Pointer(answering, child),
             { Kind: SuspensionKind.Park, Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Drift or ParkKind.ChildRevoked } => null,
             { Kind: SuspensionKind.Park, Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Revoked } => Line(AnswerKind.CancelOnly, $"sindri workflow cancel {address.Value}"),
@@ -33,6 +34,28 @@ public static class ParkAnswers
             { Kind: SuspensionKind.Escalation, Escalation: EscalationKind.Gate } => Line(AnswerKind.Accept, $"{answering} --accept", atTerminal: true),
             { Kind: SuspensionKind.Escalation, Escalation: EscalationKind.Timeout } => Line(AnswerKind.Resume, $"{answering} --resume"),
             { Kind: SuspensionKind.Escalation } => Pointer(answering, child),
+            _ => null,
+        };
+    }
+
+    /// <summary>
+    /// The child's own answer to a mirrored suspension, at the child's address (its grant is the child's recipe's, so '&lt;n&gt;'): the cases the
+    /// reason or the child's carried kind give. A mirror whose child's kind wasn't carried (a signal recorded before it was), a drift, a
+    /// revoked recipe or a deeper child's escalation has none, so the status points at the root instead.
+    /// </summary>
+    /// <param name="shape">The mirror's shape.</param>
+    /// <param name="child">The mirrored child's address.</param>
+    /// <returns>The child's own answer; null when the root's pointer applies.</returns>
+    internal static StatusAnswer? ChildOwn(ParkShape shape, string child)
+    {
+        var answering = $"sindri workflow answer {child}";
+        var park = shape with { ParkKind = shape.MirroredParkKind };
+        return shape switch
+        {
+            { Kind: SuspensionKind.Park, Reason: ParkReason.NeedsAnswer or ParkReason.Budget } => Park(park, answering, "<n>"),
+            { Kind: SuspensionKind.Park, Reason: ParkReason.SpecConflict, MirroredParkKind: ParkKind.Dispatch } => Park(park, answering, "<n>"),
+            { Kind: SuspensionKind.Escalation, MirroredEscalation: EscalationKind.Gate } => Line(AnswerKind.Accept, $"{answering} --accept", atTerminal: true),
+            { Kind: SuspensionKind.Escalation, MirroredEscalation: EscalationKind.Timeout } => Line(AnswerKind.Resume, $"{answering} --resume"),
             _ => null,
         };
     }

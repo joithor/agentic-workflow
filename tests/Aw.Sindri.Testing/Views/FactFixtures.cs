@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Forge;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.GetInstanceFact;
@@ -37,6 +38,14 @@ public static class FactFixtures
     private sealed record Alert(string Source, Incident Incident, string[] Tags);
 
     private sealed record Event(int N, string Kind);
+
+    // The lens loop's escalation entries (Escalation.All's shape, member order included): 'options' only when the question offers choices.
+    private sealed record Escalation(string Kind, [property: JsonPropertyName("question")] string Ask, [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string[]? Options, string Lens, string Finding, string Id);
+
+    // One question of 'fact:questions' (schemas/scoping/questions.json, in its member order): options carry the answer's yields clause and exactly one is recommended; 'other' and 'skip' let the owner write their own or pass.
+    private sealed record Option(string Id, string Answer, string[] Cites, string Rationale, bool Recommended, string Yields);
+
+    private sealed record Question(string Id, string[] Surfaces, string Dimension, int Impact, string[] Blocks, string Trust, [property: JsonPropertyName("question")] string Ask, Option[] Options, bool Other, bool Skip);
 
     private sealed record EventLog(string Source, Event[] Events);
 
@@ -93,6 +102,28 @@ public static class FactFixtures
     private static PullThread Thread(string key, bool resolved) =>
         new(key, PullCommentKind.Thread, "alice", "MEMBER", IsBot: false, resolved, Outdated: false, "a.cs", $"fix {key}", [], new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero), Line: null, EditedAt: null, Url: null);
 
+    // The first three questions of tests/fixtures/scoping/facts/expiry/questions.json: what 'step.interview.questions' leaves in fact:questions for the interview desk.
+    private static Question[] ScopingQuestions() =>
+    [
+        new("Q1", ["S1"], "how long data lives", 3, ["AC-3"], "untrusted", "Decision 0001 says shared links never expire. Does this change replace it, or add a choice beside it?",
+        [
+            new("Q1.a", "Add a choice; links with no time never expire", ["L-history-1", "L-related-1"], "Keeps decision 0001 for every link that picks no time.", Recommended: true, "WHILE a link has no expiry time THE system SHALL keep it valid until it is revoked or its note is deleted"),
+            new("Q1.b", "Replace it: every link gets a default time", ["L-history-1"], "Reverses decision 0001 for all links.", Recommended: false, "WHEN a link is created with no time THE system SHALL give it a default expiry time"),
+            new("Q1.c", "Keep the decision and drop the change", ["L-history-1"], "Leaves links as they are.", Recommended: false, "THE system SHALL keep every shared link valid until it is revoked"),
+        ], Other: true, Skip: true),
+        new("Q2", ["S7"], "what changes for existing data", 3, ["AC-7"], "untrusted", "What happens to the links that already exist?",
+        [
+            new("Q2.a", "They never expire", ["L-code-7", "L-history-1"], "They were made under decision 0001.", Recommended: true, "IF a link was created before this change THEN the system SHALL treat it as having no expiry time"),
+            new("Q2.b", "They get a default time from today", ["L-code-7"], "Gives old links an end date.", Recommended: false, "IF a link was created before this change THEN the system SHALL expire it a default time from today"),
+            new("Q2.c", "They get a default time from their creation", ["L-code-7"], "Many old links would end at once.", Recommended: false, "IF a link was created before this change THEN the system SHALL expire it a default time from its creation"),
+        ], Other: true, Skip: true),
+        new("Q3", ["S3"], "failure", 3, ["AC-2"], "untrusted", "What does someone see when they open an expired link?",
+        [
+            new("Q3.a", "A page that says the link expired", ["L-code-3", "L-product-2"], "Matches how revoked links behave today.", Recommended: true, "WHEN someone opens a link after its expiry time THE system SHALL show that the link has expired and SHALL NOT return the note"),
+            new("Q3.b", "The same not-found answer as an unknown link", ["L-code-3", "L-related-3"], "Hides that the link existed.", Recommended: false, "WHEN someone opens a link after its expiry time THE system SHALL answer as for an unknown link"),
+        ], Other: true, Skip: true),
+    ];
+
     /// <summary>The body behind one fact row, by scenario: scope-map, packet, evidence, text, payload or truncated.</summary>
     /// <param name="scenario">The scenario name.</param>
     /// <returns>The fact view.</returns>
@@ -117,6 +148,13 @@ public static class FactFixtures
         "payload" => new FactView("fact:alert", FactType.Payload, Body(new Alert("pagerduty",
             new Incident("P-2211", "Outbox retry storm", "high", "outbox-dispatcher", "triggered", "2026-10-12T11:02:00Z"), ["prod", "outbox"])), Truncated: false),
         "truncated" => new FactView("fact:history", FactType.Payload, Body(new EventLog("pagerduty", [new Event(1, "triggered"), new Event(2, "acknowledged")])), Truncated: true),
+        "lens-ask-escalation" => new FactView("fact:escalation", FactType.Payload, Body(new Escalation[]
+        {
+            new("productQuestion", "Keep the legacy flow?", ["keep the queue", "drop the queue"], "product", "P1", "q1"),
+            new("ambiguousFix", "Which table owns expiry?", Options: null, "arch", "A2", "q2"),
+            new("productQuestion", "Who is the expiry for?", Options: null, "product", "P3", "q3"),
+        }), Truncated: false),
+        "scoping-questions" => new FactView("fact:questions", FactType.Payload, Body(ScopingQuestions()), Truncated: false),
         "pr-status" => new FactView("fact:prStatus", FactType.Payload, PrStatus(), Truncated: false),
         _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "no such fact scenario"),
     };

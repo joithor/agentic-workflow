@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
+namespace Aw.Sindri.Core.Workflow.Views;
 
 /// <summary>
 /// One command the instance accepts now (engine spec rev 8 §5.1, §6.3; UI spec E-13 '{ actionId, cli }'): the API
@@ -15,4 +15,8 @@ public sealed record AllowedCommand([property: JsonPropertyName("actionId")] str
     /// <summary>The recipe verb of an 'ApplyCommand:command' entry, or null for every other command (omitted from the JSON then).</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Verb { get; init; }
+
+    /// <summary>True on a recipe verb whose transition carries an effect that acts with a human's authority (a block descriptor's HumanTrigger: the babysitter's 'merge'); omitted from the JSON otherwise (PR babysitter spec API18).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? Destructive { get; init; }
 }

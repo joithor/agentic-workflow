@@ -161,7 +161,7 @@ sindri onyx down [--json]               # Stop it (containers only; data, images
 scripts/install-deps.sh                 # AW_DRY_RUN=1 prints only; missing system packages are installed (brew on macOS; sudo + apt-get, dnf, yum, pacman or zypper on Linux); AW_NO_SYSTEM_INSTALL=1 prints the commands and exits 1 instead
 
 # Code index pins (context/code-index.lock: graphify version, date and requirements hash, the Ollama embedding model and digest, disk need; context/code-index-requirements.txt is the hash-pinned requirements; spec docs/superpowers/specs/2026-10-19-sindri-code-index-design.md §9)
-scripts/code-index-lock.sh check        # Shape of the lock, the requirements file's sha256, and parity with sindri/package.json's graphifyPin and graphifyPinDate; exit 0 ok, 1 a check failed, 2 usage
+scripts/code-index-lock.sh check        # Shape of the lock, the requirements file's sha256, and parity with context/graphify.pin (the graphify pin install-deps.sh reads); exit 0 ok, 1 a check failed, 2 usage
 scripts/code-index-lock.sh get <graphify-version|graphify-date|requirements-sha256|model|model-digest|disk-bytes>   # One pinned value (install-deps.sh reads these)
 
 # Rule records (rules/engineering/csharp/*.yaml + schemas/rule-record.schema.json; docs/csharp/rule-records.md)
@@ -207,6 +207,7 @@ bash scripts/tests/sindri-sandbox-e2e.test.sh   # scripts/sindri-sandbox-e2e.sh:
 bash scripts/tests/sindri-ui-fixture.test.sh
 bash scripts/tests/forge-fixture.test.sh    # scripts/forge-fixture.sh over the real aw-forge-fake (dotnet build once): the PR babysitter's fixture PR set, every variant, the guard, --github refusals and dry run
 bash scripts/tests/sindri-app.test.sh
+bash scripts/tests/sindri-pod.test.sh      # scripts/sindri-pod.sh (connect, profile edit, repo add, approve, doctor) with a fake kubectl, sindri-ui and EDITOR: --pod/--release, the dry run, the mirror home and its modes, the container wait and its state, restart and forward retry, refusals, the per-verb exit codes, --onyx (the pod's port, override warning, Onyx off, --adopt), profile edit (init, unchanged, valid, invalid then fixed or aborted, conflict, approve refused), the thin verbs' exit-code passthrough
 bash scripts/tests/readiness-baseline.test.sh
 bash scripts/tests/agent-token.test.sh
 bash scripts/tests/ci-changed-areas.test.sh

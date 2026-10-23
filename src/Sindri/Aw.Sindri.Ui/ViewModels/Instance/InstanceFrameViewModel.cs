@@ -185,6 +185,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         {
             Show(answer.Value);
             await ReadRun(answer.Value, generation, cancellationToken).ConfigureAwait(true);
+            await ReadNames(url, answer.Value, generation, cancellationToken).ConfigureAwait(true);
         }
         else
         {
@@ -223,9 +224,10 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         var header = detail.Current.Status.Header;
         var local = TimeZoneInfo.ConvertTime(header.Since, clock.LocalTimeZone);
         Address = detail.Address;
+        _shown = detail;
         _state = detail.State;
         (Title, Recipe, Hash12, Version) = (detail.Title, detail.Recipe.Id, header.Hash12, string.Create(CultureInfo.InvariantCulture, $"v{header.Version}"));
-        (StateText, Detail) = (header.State, header.Detail ?? string.Empty);
+        Detail = header.Detail ?? string.Empty;
         OnChanged(nameof(RecipeSubject));
         OnChanged(nameof(HasRecipeLink));
         OnChanged(nameof(RecipeLinkName));
@@ -233,7 +235,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         WorkflowName = WorkflowNameOf(detail);
         DetailsText = Labels.DetailsBlock(detail.Address, Recipe, Hash12, Version);
         AddressCopy = new CopyAction(clipboard, clock, Labels.CopyAddressName(detail.Address));
-        Identity = $"{WorkflowName} · {StateText}{(HasDetail ? ": " + Detail : string.Empty)} · {SinceText}";
+        ShowIdentity(detail);
         var terminal = detail.States.FirstOrDefault(s => s.Terminal && string.Equals(s.State, detail.State, StringComparison.Ordinal));
         Note = terminal is null ? string.Empty : Labels.InstanceFinished(terminal.Outcome);
         ProblemText = string.Empty;
@@ -252,7 +254,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
             Subject = subject;
         }
 
-        var band = new StatesBandViewModel(detail.States, detail.OrderedBy, detail.State);
+        var band = new StatesBandViewModel(detail.States, detail.OrderedBy, detail.State, NameOf);
         if (Band is null || !string.Equals(Band.Signature, band.Signature, StringComparison.Ordinal))
         {
             Band = band;
@@ -260,7 +262,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
 
         ShowPanels(detail);
         ShowStepRuns(detail);
-        var expanded = new ExpandedStateViewModel(detail.Current, detail.Address, clipboard, clock) { Commander = _commander ??= new NeedsYou.InstanceCommander(api, () => _url), InstanceId = detail.Id, Launcher = _launcher };
+        var expanded = new ExpandedStateViewModel(detail.Current, detail.Address, clipboard, clock, NameOf) { Commander = _commander ??= new NeedsYou.InstanceCommander(api, () => _url), InstanceId = detail.Id, Launcher = _launcher };
         if (Expanded is null || !string.Equals(Expanded.Signature, expanded.Signature, StringComparison.Ordinal))
         {
             expanded.ChildRequested += (_, e) => OpenRequested?.Invoke(this, e);
@@ -278,6 +280,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
     private void Clear()
     {
         _generation++;
+        _shown = null;
         (Title, Recipe, Hash12, Version, StateText, Detail, SinceText, Identity, ProblemText, Note) = (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
         (WorkflowName, DetailsText, AddressCopy) = (string.Empty, string.Empty, null);
         (Subject, Band, Expanded, StepRuns) = (null, null, null, null);

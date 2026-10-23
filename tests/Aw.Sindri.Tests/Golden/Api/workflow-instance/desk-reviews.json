@@ -1,12 +1,12 @@
 {
-  "address": "ITM-01JN2/design/1",
-  "id": "WFI-f9bdda4737968d6089b67b0810cd8936",
+  "address": "ITM-01JN4/design/1",
+  "id": "WFI-711b3780f7b386968de3891a1d485f42",
   "parent": null,
-  "itemId": "ITM-01JN2",
+  "itemId": "ITM-01JN4",
   "title": "Add expiry to sessions",
   "recipe": {
     "id": "workflow.design",
-    "hash": "sha256:e3b5a1c400000000000000000000000000000000000000000000000000000000",
+    "hash": "sha256:e975aac700000000000000000000000000000000000000000000000000000000",
     "version": 7,
     "urgency": "work",
     "displayName": "Design"
@@ -20,10 +20,10 @@
     "label": "Add expiry to sessions",
     "href": null
   },
-  "orderedBy": "path",
+  "orderedBy": "transition-list",
   "states": [
     {
-      "id": "lens-log",
+      "id": "intake",
       "order": 1,
       "branchOf": null,
       "glyph": "done",
@@ -37,9 +37,128 @@
       "terminal": false
     },
     {
-      "id": "ask",
+      "id": "draft",
       "order": 2,
       "branchOf": null,
+      "glyph": "done",
+      "badge": null,
+      "round": null,
+      "loops": [
+        {
+          "with": "check",
+          "n": 0,
+          "max": 5
+        },
+        {
+          "with": "evidence",
+          "n": 0,
+          "max": 5
+        }
+      ],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "check",
+      "order": 3,
+      "branchOf": null,
+      "glyph": "done",
+      "badge": null,
+      "round": null,
+      "loops": [
+        {
+          "with": "draft",
+          "n": 0,
+          "max": 5
+        }
+      ],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "round",
+      "order": 4,
+      "branchOf": null,
+      "glyph": "done",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "lens",
+      "order": 5,
+      "branchOf": null,
+      "glyph": "done",
+      "badge": null,
+      "round": null,
+      "loops": [
+        {
+          "with": "lens-log",
+          "n": 0,
+          "max": 40
+        }
+      ],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "lens-log",
+      "order": 6,
+      "branchOf": null,
+      "glyph": "done",
+      "badge": null,
+      "round": null,
+      "loops": [
+        {
+          "with": "lens",
+          "n": 0,
+          "max": 40
+        }
+      ],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "evidence",
+      "order": 7,
+      "branchOf": null,
+      "glyph": "done",
+      "badge": null,
+      "round": null,
+      "loops": [
+        {
+          "with": "draft",
+          "n": 0,
+          "max": 5
+        }
+      ],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "ask",
+      "order": null,
+      "branchOf": "lens-log",
       "glyph": "active",
       "badge": null,
       "round": null,
@@ -52,8 +171,36 @@
     },
     {
       "id": "revise",
-      "order": 3,
-      "branchOf": null,
+      "order": null,
+      "branchOf": "lens-log",
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "lens-desk",
+      "order": null,
+      "branchOf": "lens-log",
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": true,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": false
+    },
+    {
+      "id": "apply",
+      "order": null,
+      "branchOf": "intake",
       "glyph": "pending",
       "badge": null,
       "round": null,
@@ -66,7 +213,21 @@
     },
     {
       "id": "designed",
-      "order": 4,
+      "order": 8,
+      "branchOf": null,
+      "glyph": "pending",
+      "badge": null,
+      "round": null,
+      "loops": [],
+      "desk": false,
+      "child": false,
+      "children": null,
+      "outcome": null,
+      "terminal": true
+    },
+    {
+      "id": "dropped",
+      "order": 9,
       "branchOf": null,
       "glyph": "pending",
       "badge": null,
@@ -121,7 +282,7 @@
       "header": {
         "address": "ITM-01JN2/design/1",
         "recipe": "workflow.design",
-        "hash12": "e3b5a1c40000",
+        "hash12": "e975aac70000",
         "version": 7,
         "state": "ask",
         "detail": "desk task",
@@ -169,7 +330,7 @@
           "confirm": "Cancel ITM-01JN2/design/1? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JN2/design/1  workflow.design@e3b5a1c40000  v7  ask: desk task  since 12:22 (4m)\n  next      Answer the 3 questions the reviewers raised on ITM-01JN2, then run: sindri workflow complete\n            ITM-01JN2/design/1 --run 4.1 --outcome done --output fact:answers=<file>\n  inputs    fact:escalation  escalation.json  sha256:5c1e...\n  timeout   parks in 6d 23h 56m (desk)\n  commands  complete, takeover, cancel\n",
+      "text": "ITM-01JN2/design/1  workflow.design@e975aac70000  v7  ask: desk task  since 12:22 (4m)\n  next      Answer the 3 questions the reviewers raised on ITM-01JN2, then run: sindri workflow complete\n            ITM-01JN2/design/1 --run 4.1 --outcome done --output fact:answers=<file>\n  inputs    fact:escalation  escalation.json  sha256:5c1e...\n  timeout   parks in 6d 23h 56m (desk)\n  commands  complete, takeover, cancel\n",
       "injection": []
     }
   },
@@ -199,8 +360,50 @@
       "pending": null
     },
     {
+      "key": "fact:designPacket",
+      "label": "Design packet (candidate)",
+      "type": "packet",
+      "direction": "output",
+      "from": "evidence",
+      "status": "pending",
+      "summary": "not started",
+      "at": null,
+      "by": null,
+      "ref": null,
+      "progress": null,
+      "pending": null
+    },
+    {
+      "key": "fact:design",
+      "label": "Design",
+      "type": "payload",
+      "direction": "output",
+      "from": "evidence",
+      "status": "pending",
+      "summary": "not started",
+      "at": null,
+      "by": null,
+      "ref": null,
+      "progress": null,
+      "pending": null
+    },
+    {
+      "key": "fact:lensRounds",
+      "label": "Lens rounds",
+      "type": "payload",
+      "direction": "output",
+      "from": "evidence",
+      "status": "pending",
+      "summary": "not started",
+      "at": null,
+      "by": null,
+      "ref": null,
+      "progress": null,
+      "pending": null
+    },
+    {
       "key": "fact:escalation",
-      "label": "Questions",
+      "label": "Questions for you",
       "type": "payload",
       "direction": "output",
       "from": "lens-log",
@@ -258,5 +461,6 @@
   "stepRuns": [],
   "asOf": "2026-10-12T12:26:00.0000000Z",
   "steps": [],
-  "startedBy": null
+  "startedBy": null,
+  "allowedCommands": []
 }

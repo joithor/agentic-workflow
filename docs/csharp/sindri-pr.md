@@ -58,7 +58,7 @@ Exit codes: 0 no findings, 1 findings, 2 usage or a tool error (a missing direct
 | Block | Replies | Does |
 |---|---|---|
 | `effect.pr.push` | `pushed`, `pushedSource`, `nothing`, `headMoved`, `rejected` | Pushes the workspace head to the PR head with a lease on the head `fact:prState` saw; never forces and never rebases. Carries `fact:push` (`sha`, `commits`, `comments`, `source`, `cause`, `ciFixes`; `ciFixes` counts a `ci` push once, what `gate.pr.autofix-cap` reads). A dispatch repeated after its push landed is `pushed` with `Existed`. Appends the `push` row on `pushed` and `pushedSource` |
-| `effect.pr.record` | none | Appends a `recheck` or `docs` row from the fact the child returned (`kind`, `result`), or an `end` row on a transition into a terminal (`kind: end`, `terminal`, and `notes` on `rework`) |
+| `effect.pr.record` | none | Appends a `recheck` or `docs` row from the fact the child returned (`kind`, `result`), a `docsMerge` row for the owner desk's `done` and `leave` (`kind: docsMerge`, `outcome: doneByHand|left`, `trigger`), or an `end` row on a transition into a terminal (`kind: end`, `terminal`, and `notes` on `rework`) |
 | `effect.pr.rerun-checks` | none | Asks the forge to run the failed checks again on the commit they failed on (`checks.sha`, else `head.sha`). Writes no row |
 | `effect.pr.merge` | `merged`, `blocked`, `headMoved` | Merges with the forge's expected-head check; the method is the recipe's `method`, else the profile's `workflow.pr.mergeMethod`, else squash. Human caller only (W23). Appends the `merge` row on `merged` |
 | `effect.pr.reply` | none | Forms `thread`, `reaction`, `fixed`, `fixedReplies`, `hold` and `none`. A post is made once per effect identity (Sindri's marker is derived from it); every form writes its comment mark (W26) keyed by the identity, so a redelivery writes none twice; reply text is scrubbed first. Appends a `comment` row |
@@ -87,13 +87,13 @@ Every row carries `kind`, `identity`, `instance`, `headSha` and `at`; the kind a
 |---|---|---|
 | `start` | `step.pr.intake` | `pr`, `base` (always null for now: `PullView.Base` exists since #674, but the row does not read it yet), `handoffHash` (`sha256:` of `fact:handoff`, null without one), `phase` (`fact:phasePacket` id), `startedBy` (`line` when `fact:lineContext` is non-empty, else `hand`) |
 | `snapshot` | `step.pr.snapshot`, when the outcome or the head differs from the previous `fact:prState` | `outcome`, `checks`, `queue` |
-| `push` | `effect.pr.push` | `cause`, `commits`, `comments` (empty for now), `source` |
+| `push` | `effect.pr.push` | `cause`, `commits`, `comments` (the ids of the comments whose latest mark is `fixed` with a commit the push carried), `source` |
 | `comment` | `effect.pr.reply` | `comment`, `type` (the `decision` argument's `type`), `outcome` (`replied`, `reacted`, `fixed`, `held`, `skipped`), `commit` |
 | `recheck`, `docs` | `effect.pr.record` | `result` |
 | `end` | `effect.pr.record` | `terminal` (`merged`, `closed`, `stopped`, `rework`), `reworkNotesHash` (`sha256:` of `fact:reworkNotes`' content, on `rework` only) |
 | `restack` | `effect.pr.restack` | `oldBase`, `newBase`, `outcome`. `headSha` is the pushed head (the seen head when nothing was pushed) |
 | `merge` | `effect.pr.merge` | `method`, `sha`, `actor` (the optional `actor` argument; null without one) |
-| `docsMerge` | `effect.pr.merge-docs` | `docsPr` (null when there is none), `outcome` (`merged`, `pending`, `none`), `trigger` (the babysitter passes `command.merge` after the click and `ownerDesk` from the owner's desk step) and `actor` (an optional argument; null, since the recipe language has no reference to the caller). `headSha` is the docs PR's head. `docs-merge-owner` writes no row yet |
+| `docsMerge` | `effect.pr.merge-docs` | `docsPr` (null when there is none), `outcome` (`merged`, `pending`, `none`; `doneByHand`, `left` from the desk), `trigger` (the babysitter passes `command.merge` after the click and `ownerDesk` from the owner's desk step) and `actor` (an optional argument; null, since the recipe language has no reference to the caller). `headSha` is the docs PR's head. The owner's desk step writes the `doneByHand` and `left` rows through `effect.pr.record` (`kind: docsMerge`, `outcome`, `trigger: ownerDesk`; `docsPr` from `fact:docsMerge` when held, `headSha` null, since the desk holds no docs PR head, `actor` null) |
 
 A step with no instance address still runs and writes nothing.
 
@@ -147,7 +147,5 @@ The times, tokens, owner actions, CI fixes, rechecks and docs counts come from t
 |---|---|
 | Reading `PullView.Base` | `PullView` carries `Base` since #674, but the rows don't read it yet, so `start.base` is null, `step.pr.snapshot` never reports `restack` and `head.ref`, `base.defaultRef` and `base.onto` are not in `fact:prState` (`base.ref`, `base.sha`, `base.tip` and `base.was` are) |
 | `merge-docs` rebase | `effect.pr.merge-docs` has no workspace, so it neither rebases the docs PR nor scans it before the merge (a conflict shows as `pending`) |
-| `docsMerge` row of `docs-merge-owner` | The owner's desk step writes no `doneByHand` or `left` row yet |
-| `effect.pr.open` labels | The open effect does not apply labels yet |
 | Hand-off hash check, workspace cut | Intake records the hash but does not check it, and does not cut a workspace from the PR head: no port reaches either |
-| `merge.actor`, `push.comments` | The engine's effect context carries no actor and the push effect has no comment ids; both stay null or empty |
+| `merge.actor` | The engine's effect context carries no actor, so it stays null |

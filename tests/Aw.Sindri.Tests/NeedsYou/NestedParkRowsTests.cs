@@ -1,11 +1,16 @@
+using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Views;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Views;
+using Aw.Sindri.Features.Blocks.Effect;
+using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Items;
 
 namespace Aw.Sindri.Tests.NeedsYou;
@@ -33,6 +38,22 @@ public sealed class NestedParkRowsTests
         Assert.Equal(Instance(_root), row.Subject.Id.Value);
         Assert.Contains("it needs an answer (" + _phase + ")", row.Reason, StringComparison.Ordinal);
         Assert.Equal(("sindri workflow answer " + _phase + " --text <answer>", ActionId.From("ApplyCommand:answer-text")), (row.Cli, row.PrimaryAction));
+    }
+
+    [Fact]
+    public async Task A_nested_parks_notice_names_the_row_the_projection_builds()
+    {
+        var q = await Started();
+        await Fold(q, EventTypes.WorkflowTransition, Row(_build, Parked(ParkReason.NeedsAnswer, ParkKind.Step)));
+        var notices = new InMemoryDeskNotices();
+        var arguments = new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["class"] = JsonSerializer.SerializeToElement("interrupt"), ["row"] = JsonSerializer.SerializeToElement("park") };
+        var context = new EffectContext(BlockId.From("effect.notify.desk"), "WFI-a:1:n3", "c-1", FromEngine: true, _build, "T-4", Attempt: 1,
+            arguments, new Dictionary<FactKey, JsonElement>(), "parked");
+
+        _ = await new NotifyDeskEffect(notices, TimeProvider.System).Dispatch(context, TestContext.Current.CancellationToken);
+
+        var row = Assert.Single(await Rows(q)).Row;
+        Assert.Equal(row.Id.Value, Assert.Single(notices.Sent).RowId?.Value);
     }
 
     [Fact]
@@ -100,6 +121,31 @@ public sealed class NestedParkRowsTests
     }
 
     [Fact]
+    public async Task A_root_that_mirrors_a_parked_child_serves_the_childs_own_answer()
+    {
+        var q = await Started();
+        await Fold(q, EventTypes.WorkflowTransition, Row(_phase, Parked(ParkReason.NeedsAnswer, ParkKind.Step)));
+
+        await Fold(q, EventTypes.WorkflowTransition, Row(_root, Mirroring(ParkReason.NeedsAnswer, _phase)));
+
+        var row = Assert.Single(await Rows(q)).Row;
+        Assert.Equal(("child", _phase, "sindri workflow answer " + _phase + " --text <answer>"), (row.Via, row.Child, row.Cli));
+    }
+
+    [Fact]
+    public async Task A_deeper_park_below_a_mirroring_root_moves_its_row_to_the_deepest()
+    {
+        var q = await Started();
+        await Fold(q, EventTypes.WorkflowTransition, Row(_phase, Parked(ParkReason.NeedsAnswer, ParkKind.Step)));
+        await Fold(q, EventTypes.WorkflowTransition, Row(_root, Mirroring(ParkReason.NeedsAnswer, _phase)));
+
+        await Fold(q, EventTypes.WorkflowTransition, Row(_build, Parked(ParkReason.SpecConflict, ParkKind.Dispatch)));
+
+        var row = Assert.Single(await Rows(q)).Row;
+        Assert.Equal((_build, "sindri workflow answer " + _build + " --resume"), (row.Child, row.Cli));
+    }
+
+    [Fact]
     public async Task A_nested_park_does_not_block_the_roots_desk_row()
     {
         var q = new ItemQueryHarness();
@@ -138,6 +184,9 @@ public sealed class NestedParkRowsTests
     private static Task Fold(ItemQueryHarness q, string type, WorkflowEventPayload payload) => q.Views.Fold(type, payload, ItemQueryHarness.Id('1'));
 
     private static SuspensionSummary Parked(ParkReason reason, ParkKind kind) => new(SuspensionKind.Park, reason, kind, Escalation: null, Mirrors: null);
+
+    private static SuspensionSummary Mirroring(ParkReason reason, string child) =>
+        new(SuspensionKind.Park, reason, ParkKind.Step, Escalation: null, Mirrors: Instance(child), MirrorsAddress: child);
 
     private static WorkflowEventPayload Row(string address, SuspensionSummary? suspension, FrameSummary? frame = null, string? outcome = null, string? reason = null)
     {

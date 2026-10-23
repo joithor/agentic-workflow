@@ -14,11 +14,17 @@ internal sealed partial class ExpandedStateViewModel : ObservableObject
 {
     private CurrentState _current;
     private readonly string _address;
+    private readonly Func<string, string>? _nameOf;
     private readonly ExpandedCommandViewModel? _cancel;
 
-    internal ExpandedStateViewModel(CurrentState current, string address, IClipboard clipboard, TimeProvider clock)
+    /// <param name="current">The state the instance is in, as served.</param>
+    /// <param name="address">The instance's address.</param>
+    /// <param name="clipboard">Where Copy puts text.</param>
+    /// <param name="clock">The clock for every timing rule.</param>
+    /// <param name="nameOf">A state id in the recipe's words; null reads the id as served.</param>
+    internal ExpandedStateViewModel(CurrentState current, string address, IClipboard clipboard, TimeProvider clock, Func<string, string>? nameOf = null)
     {
-        (_current, _address) = (current, address);
+        (_current, _address, _nameOf) = (current, address, nameOf);
         var status = current.Status;
         Commands = [.. status.Commands.Select(c => new ExpandedCommandViewModel(c, status.Answer?.Kind, address, clipboard, clock))];
         _cancel = Commands.FirstOrDefault(c => c.Verb == StatusVerb.Cancel);
@@ -40,7 +46,7 @@ internal sealed partial class ExpandedStateViewModel : ObservableObject
         AttachCommandCopy = new CopyAction(clipboard, clock, Labels.CopyAttachName(address));
         CopyAttachName = Labels.CopyAttachName(address);
         InitRun(current, address);
-        Name = Labels.ExpandedName(current.State, address);
+        Name = Labels.ExpandedName(State, address);
         CopyStatusName = Labels.CopyStatusName(address);
         StatusCopy = new CopyAction(clipboard, clock, Labels.CopyStatus, Labels.CopyStatus);
     }
@@ -59,7 +65,7 @@ internal sealed partial class ExpandedStateViewModel : ObservableObject
     internal event EventHandler<FrameOpenEventArgs>? ChildRequested;
 
     /// <summary>The state.</summary>
-    public string State => _current.State;
+    public string State => _nameOf?.Invoke(_current.State) ?? _current.State;
 
     /// <summary>The step line ("kind · ref · declaration"), or empty.</summary>
     public string StepLine { get; }
@@ -203,7 +209,7 @@ internal sealed partial class ExpandedStateViewModel : ObservableObject
     /// What the state draws as controls and structure, so a re-read of the same keeps them (and the focus, the open confirm and a Copied label).
     /// The words that move with time (the status text, the timeout, the budget, the next sentence, the child pointer's state) are not: <see cref="Update"/> changes them in place.
     /// </summary>
-    internal string Signature => string.Join('|', _current.State, StepLine, string.Join(',', Gates), string.Join(',', Commands.Select(c => c.Signature)), _current.Status.Child?.Id, AnswerChild?.Child, AnswersInChild, HasNext, HasBudget, HasTimeout, IsPaused, HasDrift, HasAttach, _current.Status.Run?.Launch, _current.Status.ReasonCode, string.Join(',', (_current.Desk?.Reviews ?? []).Select(r => r.Fact + r.Path + r.Url)));
+    internal string Signature => string.Join('|', State, StepLine, string.Join(',', Gates), string.Join(',', Commands.Select(c => c.Signature)), _current.Status.Child?.Id, AnswerChild?.Child, AnswersInChild, HasNext, HasBudget, HasTimeout, IsPaused, HasDrift, HasAttach, _current.Status.Run?.Launch, _current.Status.ReasonCode, string.Join(',', (_current.Desk?.Reviews ?? []).Select(r => r.Fact + r.Path + r.Url)));
 
     /// <summary>Takes a re-read of the same state: the moving words change, the controls stay.</summary>
     /// <param name="current">The state as served now; its <see cref="Signature"/> equals this one's.</param>

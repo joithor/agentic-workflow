@@ -8,6 +8,8 @@
              xmlns:sv="using:Aw.Sindri.Ui.Views.Context.Sources"
              xmlns:cv="using:Aw.Sindri.Ui.Views.Context.Code"
              xmlns:mv="using:Aw.Sindri.Ui.Views.Context.Map"
+             xmlns:wv="using:Aw.Sindri.Ui.Views.Context.Whole"
+             xmlns:wvm="using:Aw.Sindri.Ui.ViewModels.Context.Whole"
              xmlns:ctl="using:Aw.Sindri.Ui.Views.Controls"
              xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
              x:DataType="ctx:ContextPageViewModel">
@@ -94,6 +96,7 @@
           <TextBlock x:Name="PinnedNoteText" Classes="caption subtle" Text="{Binding PinnedNote}" IsVisible="{Binding HasPinnedNote}" VerticalAlignment="Center" TextWrapping="Wrap"
                      AutomationProperties.Name="{Binding PinnedNote}" />
         </StackPanel>
+        <Button x:Name="WholeMapBack" Margin="0,0,16,8" VerticalAlignment="Center" IsVisible="{Binding IsZoomedIn}" Click="OnWholeMapBack" Content="{Binding WholeBackText}" AutomationProperties.Name="{Binding WholeBackText}" />
         <Border x:Name="ContextViewSwitch" Background="{DynamicResource Brush.Surface2}" CornerRadius="{StaticResource Radius.MD}" Padding="2" Margin="0,0,16,8" VerticalAlignment="Center"
                 AutomationProperties.Name="{Binding ViewName}">
           <StackPanel Orientation="Horizontal">
@@ -130,6 +133,19 @@
 
       <!-- The stage: the page scrolls, so the stage is given the height the window leaves (ContextPage.axaml.cs). -->
       <Panel x:Name="ContextStageHost" Grid.Row="1" MinHeight="420">
+        <!-- The page's first state: the whole map, read when the page opens (whole-map spec §3.1); a query's neighbourhood replaces it for now. -->
+        <Panel x:Name="WholeMapHost" IsVisible="{Binding ShowWhole}">
+          <wv:WholeMapView x:Name="WholeMap" DataContext="{Binding Whole}" />
+        </Panel>
+        <!-- A quiet row while the map is read, and Retry when it could not be (whatever was drawn stays). -->
+        <Border x:Name="WholeStatus" IsVisible="{Binding ShowWholeStatus}" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,16,0,0" Padding="14,8"
+                Background="{DynamicResource Brush.Surface1}" BorderBrush="{DynamicResource Brush.Hairline}" BorderThickness="1" CornerRadius="{StaticResource Radius.MD}">
+          <StackPanel Orientation="Horizontal" Spacing="10" DataContext="{Binding Whole}" x:DataType="wvm:WholeMapViewModel">
+            <TextBlock x:Name="WholeLoadingText" Classes="body subtle" Text="{Binding LoadingText}" IsVisible="{Binding IsLoading}" />
+            <TextBlock x:Name="WholeFailedText" Classes="body" Text="{Binding FailedText}" IsVisible="{Binding IsFailed}" />
+            <Button x:Name="WholeRetry" Content="{Binding RetryText}" IsVisible="{Binding IsFailed}" Click="OnRetryWhole" AutomationProperties.Name="{Binding RetryText}" />
+          </StackPanel>
+        </Border>
         <Panel x:Name="LensStackHost" IsVisible="{Binding MapVisible}">
           <mv:ContextMapView x:Name="ContextStack" />
         </Panel>
