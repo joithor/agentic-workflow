@@ -42,7 +42,7 @@ internal static class ContextJobServiceCollectionExtensions
     }
 
     private static string RefreshSummary(RefreshContextMapResult result) => result.Held
-        ? string.Create(CultureInfo.InvariantCulture, $"held: map v{result.Version} waits for the code index")
+        ? MapJobSummaries.Held(result.Version)
         : string.Create(CultureInfo.InvariantCulture, $"map v{result.Version}: {result.Accepted} kept, {result.Removed} removed{(result.Cleanup == "unavailable" ? ", cleanup unavailable" : string.Empty)}");
 
     private static string PublishSummary(PublishContextMapResult result) => result switch
@@ -51,7 +51,7 @@ internal static class ContextJobServiceCollectionExtensions
         { Reason: "NotHeld" } => "no map is held",
         { Reason: "Waiting" } => string.Create(CultureInfo.InvariantCulture, $"map v{result.Version} still waits for the code index"),
         { Reason: "Gone" or "AlreadyCurrent" } => string.Create(CultureInfo.InvariantCulture, $"hold on map v{result.Version} dropped ({result.Reason})"),
-        _ => string.Create(CultureInfo.InvariantCulture, $"map v{result.Version} promoted · {result.Reason}"),
+        _ => MapJobSummaries.Promoted(result.Version, result.Reason ?? string.Empty),
     };
 
     private static string BacktestSummary(RunContextBacktestResult result)

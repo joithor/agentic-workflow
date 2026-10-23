@@ -31,12 +31,13 @@ public static class InstanceSummaries
             view.States,
             Cut(RowSentences.Now(view, chip)),
             view.AnswerLine,
-            StatusRecords.ActionIds(view),
+            [.. StatusRecords.ActionIds(view), .. Reruns.Of(view)],
             view.StartedBy,
             view.StartedAt,
             context.LineStage,
             RootOf(view.Address),
-            Views.WaitingOn.Of(chip, deskOpen: view.Task is not null, agentRunOpen: view.AgentRun is not null, ended: view.Outcome is not null));
+            Views.WaitingOn.Of(chip, deskOpen: view.Task is not null, agentRunOpen: view.AgentRun is not null, ended: view.Outcome is not null),
+            view.Again);
     }
 
     /// <summary>

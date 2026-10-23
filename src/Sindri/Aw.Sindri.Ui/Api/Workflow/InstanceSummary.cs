@@ -20,6 +20,7 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="LineStage">LineStage, as served; null when the item has none.</param>
 /// <param name="RootAddress">RootAddress, as served.</param>
 /// <param name="WaitingOn">Who the instance waits on: 'you', 'agent' or 'engine'; null once it ended (also null from a server before this field).</param>
+/// <param name="Again">The address of the instance this one reruns; read as optional.</param>
 internal sealed record InstanceSummary(
     string Address,
     string Id,
@@ -39,4 +40,5 @@ internal sealed record InstanceSummary(
     DateTimeOffset? StartedAt = null,
     string? LineStage = null,
     string? RootAddress = null,
-    string? WaitingOn = null);
+    string? WaitingOn = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? Again = null);

@@ -113,7 +113,9 @@
   ],
   "now": "unresolved",
   "answer": null,
-  "actions": [],
+  "actions": [
+    "RerunInstance"
+  ],
   "startedBy": null,
   "startedAt": null,
   "lineStage": null,

@@ -97,7 +97,14 @@ internal sealed class ContextMapVerbs(ControlPlaneClient client, Output output, 
             return await Failed(answer.Error).ConfigureAwait(false);
         }
 
-        return json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false) : await output.Text(ContextMapText.Status(answer.Value.Value), 0).ConfigureAwait(false);
+        // The publish half (code index spec 6.4) is a second read; when it fails the map's own status still prints.
+        var publish = await client.Get<MapPublishStatusView>(Route + "/publish", ct).ConfigureAwait(false);
+        if (json)
+        {
+            return await output.Raw(publish.IsError ? answer.Value.Body : ContextMapText.WithPublish(answer.Value.Body, publish.Value.Body), 0).ConfigureAwait(false);
+        }
+
+        return await output.Text(ContextMapText.Status(answer.Value.Value) + (publish.IsError ? string.Empty : ContextMapText.Publish(publish.Value.Value)), 0).ConfigureAwait(false);
     }
 
     private async Task<int> Failed(Kernel.Error error)

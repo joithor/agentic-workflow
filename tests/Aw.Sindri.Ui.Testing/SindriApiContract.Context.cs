@@ -73,6 +73,27 @@ public abstract partial class SindriApiContract
         Expect.Sequence(Names(unmapped), only.Entries.Select(e => e.Name));
     }
 
+    [Fact]
+    public async Task Code_answers_the_callers_and_callees_of_a_known_anchor()
+    {
+        var api = Reach(new FakeSindriApi());
+        var served = GoldenFiles.Node("context-code", "edges-and-lexical");
+
+        var code = (await api.Code(_api, new CodeQuery([(string)served["anchors"]![0]!["key"]!], Draft: false, MapVersion: null), Token)).Value;
+
+        Expect.Equal(((string)served["mapVersion"]!, (string)served["callers"]!["state"]!, (string)served["callees"]!["reason"]!), (code.MapVersion, code.Callers.State, code.Callees.Reason));
+    }
+
+    [Fact]
+    public async Task Code_answers_003_for_an_unknown_anchor()
+    {
+        var api = Reach(new FakeSindriApi());
+
+        var code = await api.Code(_api, new CodeQuery(["feature:nope"], Draft: false, MapVersion: null), Token);
+
+        Expect.Equal("SND-CONTEXT-003", code.Error.Code);
+    }
+
     // The server answers a set with some unresolved anchors as a 200 that names them in missingAnchors; only "nothing resolves" is 003.
     [Fact]
     public async Task Lenses_answers_200_with_missingAnchors_when_only_some_of_a_set_resolves()
@@ -163,4 +184,37 @@ public abstract partial class SindriApiContract
     }
 
     private static string[] Names(JsonNode map) => [.. map["entries"]!.AsArray().Select(e => (string)e!["name"]!)];
+
+    [Fact]
+    public async Task ItemScope_answers_a_frozen_scope_with_its_anchors_and_map_version()
+    {
+        var api = Reach(new FakeSindriApi { ItemScopeAnswer = _ => RouteAnswer.Api("items-id-scope", "scope-found") });
+        var golden = GoldenFiles.Node("items-id-scope", "scope-found");
+
+        var view = (await api.ItemScope(_api, (string)golden["item"]!, Token)).Value;
+
+        var scope = view.Scope!;   // why: the scope-found golden has one
+        Expect.Equal(((string)golden["item"]!, (string)golden["scope"]!["mapVersion"]!, (string)golden["scope"]!["packetHash"]!), (view.Item, scope.MapVersion!, scope.PacketHash));
+        Expect.Sequence(golden["scope"]!["anchors"]!.AsArray().Select(a => ((string)a!["key"]!, (string)a["mapVersion"]!)), scope.Anchors.Select(a => (a.Key, a.MapVersion)));
+    }
+
+    [Fact]
+    public async Task ItemScope_answers_no_scope_as_null_and_mixed_versions_as_a_null_map_version()
+    {
+        var none = (await Reach(new FakeSindriApi()).ItemScope(_api, "ITM-0000000000000000000000000000000f", Token)).Value;
+        var mixed = (await Reach(new FakeSindriApi { ItemScopeAnswer = _ => RouteAnswer.Api("items-id-scope", "scope-mixed-versions") }).ItemScope(_api, "ITM-0000000000000000000000000000000f", Token)).Value;
+
+        Expect.True(none.Scope is null);
+        Expect.Equal((true, 3), (mixed.Scope!.MapVersion is null, mixed.Scope.Anchors.Count));   // why: the mixed golden has a scope
+    }
+
+    [Fact]
+    public async Task ItemScope_refuses_an_unknown_item_with_the_apis_code()
+    {
+        var api = Reach(new FakeSindriApi { ItemScopeAnswer = _ => RouteAnswer.Problem("items-id-scope", "not-found") });
+
+        var result = await api.ItemScope(_api, "ITM-000000000000000000000000000000ff", Token);
+
+        Expect.Equal("SND-ITEM-404", result.Error.Code);
+    }
 }

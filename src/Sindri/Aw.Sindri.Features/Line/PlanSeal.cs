@@ -48,7 +48,8 @@ internal sealed class PlanSeal(IPackets packets, IRunArea area, (string Address,
 
         var fact = planPacket.ToJson();
         fact["phases"] = phases;
-        return StepFacts.Done("complete", ("fact:planPacket", fact));
+        var recommendation = new JsonObject { ["outcome"] = "approve", ["why"] = "Every design and plan check passed and each phase packet validates." };
+        return StepFacts.Done("complete", ("fact:planPacket", fact), ("fact:recommendation", recommendation));
     }
 
     private async ValueTask<(BlockStepResult? Stop, JsonObject? Entry)> Phase(PhaseInput input, CancellationToken cancellationToken)

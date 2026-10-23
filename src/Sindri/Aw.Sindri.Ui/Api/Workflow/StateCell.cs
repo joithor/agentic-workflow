@@ -15,6 +15,8 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="Children">Children, as served.</param>
 /// <param name="Outcome">Outcome, as served.</param>
 /// <param name="Terminal">Terminal, as served.</param>
+/// <param name="EnteredAt">When the latest visit to the state began; read as optional.</param>
+/// <param name="LeftAt">When the latest visit ended; read as optional (none while the state is current).</param>
 internal sealed record StateCell(
     [property: JsonPropertyName("id")] string State,
     int? Order,
@@ -27,4 +29,6 @@ internal sealed record StateCell(
     bool Child,
     Progress? Children,
     string? Outcome,
-    bool Terminal);
+    bool Terminal,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] DateTimeOffset? EnteredAt = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] DateTimeOffset? LeftAt = null);
