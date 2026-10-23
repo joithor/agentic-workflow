@@ -5,8 +5,7 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 
 /// <summary>
 /// The PR babysitter's and docs sync's effects (PB spec §10.1): their descriptors. Push, record, rerun-checks, merge, reply, purge-marks, create-stacked and merge-docs have runtimes (PrPushEffect, PrRecordEffect,
-/// PrRerunChecksEffect, PrMergeEffect, PrReplyEffect, PrPurgeMarksEffect, PrCreateStackedEffect, PrMergeDocsEffect), and so does open (PrOpenEffect, its descriptor its own); restack is a descriptor only until the forge port gives it a runtime,
-/// and a served instance's dispatch of it is refused as an effect with no runtime. 'effect.pr.merge' and 'effect.pr.merge-docs' act with a
+/// PrRerunChecksEffect, PrMergeEffect, PrReplyEffect, PrPurgeMarksEffect, PrCreateStackedEffect, PrMergeDocsEffect), and so does open (PrOpenEffect, its descriptor its own); and restack too (PrRestackEffect). 'effect.pr.merge' and 'effect.pr.merge-docs' act with a
 /// human's authority (W23, RCP-HUMAN-001).
 /// </summary>
 internal static class PrEffects
@@ -25,8 +24,10 @@ internal static class PrEffects
     /// <summary>'effect.pr.rerun-checks': asks the forge to re-run the PR's checks.</summary>
     public static BlockDescriptor RerunChecks { get; } = Of("effect.pr.rerun-checks", humanTrigger: false, "pr", "at");
 
-    /// <summary>'effect.pr.restack': restacks the PR onto its new base.</summary>
-    public static BlockDescriptor Restack { get; } = Of("effect.pr.restack", humanTrigger: false, "pr");
+    /// <summary>'effect.pr.restack': rebases the PR onto its new base without the old base's commits, scans, retargets and pushes with a lease.</summary>
+    public static BlockDescriptor Restack { get; } = Of("effect.pr.restack", humanTrigger: false, "pr", "workspace", "from")
+        with
+    { Outputs = [new OutputSpec(FactKey.From("fact:restack"), [OutcomeName.From("restacked"), OutcomeName.From("nothing"), OutcomeName.From("conflict"), OutcomeName.From("refused")]),], };
 
     /// <summary>'effect.pr.create-stacked': opens (or updates) the stacked docs PR on the source PR's head branch.</summary>
     public static BlockDescriptor CreateStacked { get; } = Of("effect.pr.create-stacked", humanTrigger: false, "pr", "on", "workspace", "title")

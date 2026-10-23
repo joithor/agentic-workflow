@@ -111,6 +111,8 @@ internal sealed partial class RunPage : UserControl
 
     private void OnBack(object? sender, RoutedEventArgs e) => _page?.Back();
 
+    private void OnAgain(object? sender, RoutedEventArgs e) => _page?.OpenAgain();
+
     private void OnNextOption(object? sender, RoutedEventArgs e)
     {
         if (sender is StyledElement { DataContext: RunNextOption option })

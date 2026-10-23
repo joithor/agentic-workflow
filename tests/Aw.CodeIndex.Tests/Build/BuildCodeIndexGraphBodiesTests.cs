@@ -1,9 +1,11 @@
+using Aw.CodeIndex.Core.Embedding;
 using Aw.CodeIndex.Core;
 using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Ports;
 using Aw.CodeIndex.Core.Values;
 using Aw.CodeIndex.Features.BuildCodeIndex;
+using Aw.CodeIndex.Features.EmbedCodeIndex;
 using Aw.CodeIndex.Testing;
 using Aw.Kernel;
 
@@ -23,6 +25,7 @@ public sealed class BuildCodeIndexGraphBodiesTests
         _ = harness.Snapshot.WithFile(BuildHarness.First, "src/a.ts", "function f() { ok(); }").WithFile(BuildHarness.First, "src/b.ts", "function g() { UNREADABLE(); }").WithFile(BuildHarness.First, "src/c.ts", "function h() { ABSENT(); }");
         var service = new BuildCodeIndexService(harness.Heads, harness.Snapshot, new StructureWriter(harness.Snapshot, [harness.Parser], harness.Quarantine, harness.Scrubber), new BuildLayers(new EmbeddingsLayer(harness.Embedder, harness.Clock), new GraphLayer(wrap(harness.Snapshot), harness.Clock, harness.Scrubber, harness.Graph)), harness.Store, harness.Heavy, harness.Clock);
         var result = await service.Handle(new BuildCodeIndexRequest(harness.Repo, BuildHarness.First, new Progress<string>()), Token);
+        _ = await harness.Embed.Handle(new EmbedCodeIndexRequest(harness.Repo, new Progress<string>()), Token);
         return (result.Value, harness.Embedder);
     }
 

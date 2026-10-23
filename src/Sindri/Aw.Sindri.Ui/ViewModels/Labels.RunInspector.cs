@@ -167,6 +167,19 @@ internal static partial class Labels
     /// <summary>Who ran a step, when an agent did.</summary>
     internal const string KindAgent = "AI agent";
 
+    /// <summary>Who does a state, as its recipe says.</summary>
+    /// <param name="kind">The state's kind.</param>
+    /// <returns>The words.</returns>
+    internal static string RunKindWord(Api.Workflow.RecipeStateKind kind) => kind switch
+    {
+        Api.Workflow.RecipeStateKind.Agent => KindAgent,
+        Api.Workflow.RecipeStateKind.Automatic => "Automatic",
+        Api.Workflow.RecipeStateKind.You => KindYou,
+        Api.Workflow.RecipeStateKind.OnlyYou => "Only you",
+        Api.Workflow.RecipeStateKind.SubWorkflow => "Sub-workflow",
+        _ => string.Empty,
+    };
+
     /// <summary>Who ran a step, when you did.</summary>
     internal const string KindYou = "You";
 

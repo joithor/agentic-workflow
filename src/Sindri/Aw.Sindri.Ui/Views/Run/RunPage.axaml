@@ -26,6 +26,8 @@
                 AutomationProperties.Name="{Binding ReferenceCopy.Label}">
           <TextBlock Classes="mono" Text="{Binding Reference}" FontSize="11" LineHeight="14" Foreground="{DynamicResource Brush.InkSubtle}" AutomationProperties.AccessibilityView="Raw" />
         </Button>
+        <Button x:Name="RunAgain" Grid.Column="6" Classes="row-title" HorizontalAlignment="Left" VerticalAlignment="Center" Click="OnAgain" IsVisible="{Binding HasAgain}" Content="{Binding AgainText}"
+                AutomationProperties.Name="{Binding AgainText}" />
         <Panel Grid.Column="7" IsVisible="{Binding Cancel, Converter={x:Static ObjectConverters.IsNotNull}}" VerticalAlignment="Center">
           <ctl:CommandControl x:Name="RunCancel" DataContext="{Binding Cancel}" />
         </Panel>
@@ -70,6 +72,9 @@
             <TextBlock x:Name="RunFailureText" Classes="body subtle" Text="{Binding FailureText}" TextWrapping="Wrap" AutomationProperties.Name="{Binding FailureText}" />
           </StackPanel>
         </Border>
+        <Panel x:Name="RunRerunPanel" IsVisible="{Binding Rerun, Converter={x:Static ObjectConverters.IsNotNull}}" HorizontalAlignment="Center">
+          <ctl:CommandControl x:Name="RunRerun" DataContext="{Binding Rerun}" />
+        </Panel>
         <ItemsControl x:Name="RunNextOptions" ItemsSource="{Binding NextOptions}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" /></ItemsPanelTemplate>

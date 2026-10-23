@@ -26,6 +26,7 @@ internal static partial class Labels
         ["ApproveProfile"] = "Approve profile",
         ["ApproveAllRecipes"] = ApproveAllTitle,
         ["ApproveRecipe"] = "Approve recipe",
+        ["EmbedCodeIndex"] = "Embed code index",
         ["BuildContextMap"] = "Build map",
         ["RefreshContextMap"] = "Refresh map",
         ["PublishContextMap"] = "Publish map",
