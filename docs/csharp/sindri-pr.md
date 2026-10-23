@@ -62,6 +62,8 @@ Exit codes: 0 no findings, 1 findings, 2 usage or a tool error (a missing direct
 | `effect.pr.rerun-checks` | none | Asks the forge to run the failed checks again on the commit they failed on (`checks.sha`, else `head.sha`). Writes no row |
 | `effect.pr.merge` | `merged`, `blocked`, `headMoved` | Merges with the forge's expected-head check; the method is the recipe's `method`, else the profile's `workflow.pr.mergeMethod`, else squash. Human caller only (W23). Appends the `merge` row on `merged` |
 | `effect.pr.reply` | none | Forms `thread`, `reaction`, `fixed`, `fixedReplies`, `hold` and `none`. A post is made once per effect identity (Sindri's marker is derived from it); every form writes its comment mark (W26) keyed by the identity, so a redelivery writes none twice; reply text is scrubbed first. Appends a `comment` row |
+| `effect.pr.create-stacked` | `opened`, `updated`, `rejected` | Pushes the docs workspace's head to `docs/<source head branch>` and opens the docs PR with that branch as its base, or updates Sindri's open one. Arguments: `pr` (the source: `link` and `head.ref`), `on` (the snapshot; `head.sha` is the head the docs describe), `workspace`, `title`. The docs PR is found by its branch and a marker derived from the source (`sindri.docs:<owner>-<name>-<number>`), never by the branch alone. The push is leased: no lease for a new branch (a branch that already exists with no docs PR of ours is `rejected`), else the sha in `fact:docsPr` (the one it last pushed), else the open docs PR's head; a branch someone else moved, a push the remote turns away and a call the forge refuses (`SND-FORGE-002`) are `rejected`. A repeated dispatch after its push landed finds the branch at its own commit and goes on. The docs workspace's `origin` must be the source's repository. Carries `fact:docsPr` (`link`, `number`, `state`, `base`, `head`, `source`, `syncedHead`). Writes no row |
+| `effect.pr.merge-docs` | `merged`, `pending`, `none` | After the source merged, finds the docs PR (same branch and marker) and merges it: `none` when there is none or it is closed or merged already; `pending` (left open) when its checks fail or still run, when it conflicts, or when the forge blocks the merge or the head moved; otherwise it moves the base to the default branch if it is elsewhere and merges with the expected-head check, by the method `effect.pr.merge` uses. One look, nothing waits: `workflow.pr.docsMergeWait` is not read and `docs-merge-owner` retries. No rebase and no secret scan (no workspace). Human caller only (W23). Carries `fact:docsMerge` (`docsPr`, `outcome`, `sha`) and appends a `docsMerge` row for every outcome |
 
 ## The merge record (BD7)
 
@@ -85,6 +87,7 @@ Every row carries `kind`, `identity`, `instance`, `headSha` and `at`; the kind a
 | `recheck`, `docs` | `effect.pr.record` | `result` |
 | `end` | `effect.pr.record` | `terminal` (`merged`, `closed`, `stopped`, `rework`), `reworkNotesHash` (`sha256:` of `fact:reworkNotes`' content, on `rework` only) |
 | `merge` | `effect.pr.merge` | `method`, `sha`, `actor` (the optional `actor` argument; null without one) |
+| `docsMerge` | `effect.pr.merge-docs` | `docsPr` (null when there is none), `outcome` (`merged`, `pending`, `none`), `trigger` and `actor` (the optional arguments; null without them). `headSha` is the docs PR's head. `docs-merge-owner` writes no row yet |
 
 A step with no instance address still runs and writes nothing.
 
@@ -93,7 +96,8 @@ A step with no instance address still runs and writes nothing.
 | Gap | Why |
 |---|---|
 | Reading `PullView.Base` | `PullView` carries `Base` since #674, but the rows don't read it yet, so `start.base` is null, `step.pr.snapshot` never reports `restack` and `head.ref` and `base` are not in `fact:prState` |
-| `restack`, `docsMerge` and `merge-docs` rows | `effect.pr.restack`, `effect.pr.create-stacked` and `effect.pr.merge-docs` are descriptors only until the engine's Retarget lands |
+| `restack` row | `effect.pr.restack` is a descriptor only until the engine's Retarget lands |
+| `docsMerge` row of `docs-merge-owner` | The owner's desk step writes no `doneByHand` or `left` row yet |
 | `effect.pr.open` labels | The open effect does not apply labels yet |
 | `pr-watch` poller | Nothing polls a waiting PR; `ready-check` and the `await` wake-ups wait on it |
 | Hand-off hash check, workspace cut | Intake records the hash but does not check it, and does not cut a workspace from the PR head: no port reaches either |
