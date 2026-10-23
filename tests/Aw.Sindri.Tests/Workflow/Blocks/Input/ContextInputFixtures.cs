@@ -37,7 +37,7 @@ internal static class ContextInputFixtures
     {
         var small = SmallSet(anchors);
         var neighbors = Enumerable.Range(0, reach)
-            .Select(i => new LensReach(NodeKey.From("feature:n" + i), "neighbor " + i, NodeKind.Feature, Provenance.Human, 1, Confirmed: true, Trust.Trusted, 1, [new string('p', 120)]))
+            .Select(i => new LensReach(NodeKey.From(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"feature:n{i}")), string.Create(System.Globalization.CultureInfo.InvariantCulture, $"neighbor {i}"), NodeKind.Feature, Provenance.Human, 1, Confirmed: true, Trust.Trusted, 1, [new string('p', 120)]))
             .ToArray();
         return small with { Bands = small.Bands with { Product = small.Bands.Product with { Neighbors = neighbors } } };
     }

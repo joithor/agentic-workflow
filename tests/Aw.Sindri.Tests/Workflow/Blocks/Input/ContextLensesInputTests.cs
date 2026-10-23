@@ -113,7 +113,7 @@ public sealed class ContextLensesInputTests
 
         Assert.Equal(3, lenses.Calls.Count);
         Assert.Equal(ContextLensesInput.Backoff, time.Waits);
-        Assert.NotNull(filled.Value.Result);
+        _ = Assert.NotNull(filled.Value.Result);
     }
 
     [Fact]

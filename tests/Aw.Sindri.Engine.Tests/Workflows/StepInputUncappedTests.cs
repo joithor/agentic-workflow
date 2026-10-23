@@ -1,4 +1,5 @@
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Tests.Workflows.Inputs;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,7 +24,7 @@ public sealed class StepInputUncappedTests : IDisposable
     [Fact]
     public async Task A_plan_past_the_old_1_MiB_cap_reaches_the_Step_and_the_recorded_history_replays()
     {
-        _probe.Behavior = static _ => new Aw.Sindri.Core.Workflow.Blocks.InjectionSections(new Dictionary<string, string>(StringComparer.Ordinal)
+        _probe.Behavior = static _ => new InjectionSections(new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["a"] = new string('a', 2 * 1024 * 1024),
             ["b"] = new string('b', 2 * 1024 * 1024),
