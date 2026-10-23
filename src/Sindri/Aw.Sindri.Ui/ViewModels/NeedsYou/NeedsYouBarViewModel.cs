@@ -23,7 +23,7 @@ internal sealed partial class NeedsYouBarViewModel : ObservableObject
         nameof(SendWord), nameof(IsSending), nameof(DoneTitle), nameof(DoneBody), nameof(HasBar), nameof(MoreName), nameof(BarName), nameof(ShowsTyped), nameof(TypedBox), nameof(ShowsHold), nameof(ShowsConfirm), nameof(ConfirmEnabled),
         nameof(MergeCard), nameof(HasMergeCard),
         nameof(DeskWhy), nameof(IfApprove), nameof(IfSendBack), nameof(HasIfApprove), nameof(HasIfSendBack),
-        nameof(ApproveSuggested), nameof(SendBackSuggested),
+        nameof(ApproveSuggested), nameof(SendBackSuggested), nameof(Questions), nameof(HasQuestions), nameof(AllAnswered), nameof(QuestionsHint),
         nameof(HasVerbs), nameof(HasMergeVerb), nameof(VerbsEnabled), nameof(VerbNote),
     ];
 
@@ -169,7 +169,7 @@ internal sealed partial class NeedsYouBarViewModel : ObservableObject
         }
 
         _row = row;
-        (_target, _targetKnown, _done) = (null, false, NeedsYouBarOutcome.None);
+        (_target, _targetKnown, _done, Questions) = (null, false, NeedsYouBarOutcome.None, []);
         DrawVerbs();
         (IsSending, HintIsSuccess) = (false, false);
         (Mode, ReasonText, Refusal, ReadToEnd) = (NeedsYouBarMode.Pending, "", "", false);
@@ -187,6 +187,7 @@ internal sealed partial class NeedsYouBarViewModel : ObservableObject
         if (_row is not null && string.Equals(_row.Id, rowId, StringComparison.Ordinal))
         {
             (_target, _targetKnown) = (target, true);
+            Questions = [.. (target?.Questions ?? []).Select(q => new DeskQuestionViewModel(q, Refresh))];
             DrawVerbs();
             Refresh();
         }

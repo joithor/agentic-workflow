@@ -189,6 +189,8 @@ internal sealed partial class NeedsYouPage : UserControl
 
     private void OnSendBack(object? sender, RoutedEventArgs e) => _ = _page?.Bar.PressSendBack();
 
+    private void OnChooseOption(object? sender, RoutedEventArgs e) => ((sender as Button)?.DataContext as DeskQuestionOptionViewModel)?.Choose();
+
     private void OnSend(object? sender, RoutedEventArgs e) => _ = _page?.Bar.Send();
 
     private void OnCancel(object? sender, RoutedEventArgs e) => _page?.Bar.Cancel();
