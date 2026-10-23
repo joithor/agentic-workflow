@@ -105,7 +105,7 @@ public sealed class NestedParkRowsTests
 
         await Fold(q, EventTypes.WorkflowTransition, Row(_phase, Parked(ParkReason.NeedsAnswer, ParkKind.Step)));
 
-        Assert.Equal(["desk:" + Instance(_root), "park:" + Instance(_root)], (await Rows(q)).Select(static r => r.Row.Id.Value).Order(StringComparer.Ordinal));
+        Assert.Equal(["desk:" + Instance(_root), "park:" + Instance(_root)], (await Rows(q)).Select(static r => r.Row.Id.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     [Fact]
