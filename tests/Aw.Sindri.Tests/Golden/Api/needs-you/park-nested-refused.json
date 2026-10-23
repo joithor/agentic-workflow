@@ -23,11 +23,8 @@
       ],
       "cli": "sindri workflow answer ITM-0000000000000000000000000000000f/step/1/phase.p1.1 --resume",
       "open": {
-        "kind": "instance",
-        "id": "ITM-0000000000000000000000000000000f/step/1/phase.p1.1",
         "route": "workflow/ITM-0000000000000000000000000000000f/step/1/phase.p1.1",
-        "label": "Open the parked workflow",
-        "instance": "ITM-0000000000000000000000000000000f/step/1"
+        "label": "Answer in the child"
       },
       "via": "child",
       "child": "ITM-0000000000000000000000000000000f/step/1/phase.p1.1"

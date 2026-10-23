@@ -23,8 +23,6 @@
       ],
       "cli": "sindri decide DEC-00000000000000000000000000000012 accept",
       "open": {
-        "kind": "decision",
-        "id": "DEC-00000000000000000000000000000012",
         "route": "decision/DEC-00000000000000000000000000000012",
         "label": "Review and decide"
       }
@@ -52,8 +50,6 @@
       ],
       "cli": "sindri decide DEC-0000000000000000000000000000001c accept",
       "open": {
-        "kind": "decision",
-        "id": "DEC-0000000000000000000000000000001c",
         "route": "decision/DEC-0000000000000000000000000000001c",
         "label": "Review and decide"
       }
@@ -81,8 +77,6 @@
       ],
       "cli": "sindri decide DEC-00000000000000000000000000000026 accept",
       "open": {
-        "kind": "decision",
-        "id": "DEC-00000000000000000000000000000026",
         "route": "decision/DEC-00000000000000000000000000000026",
         "label": "Review and decide"
       }
@@ -110,8 +104,6 @@
       ],
       "cli": "sindri decide DEC-00000000000000000000000000000030 accept",
       "open": {
-        "kind": "decision",
-        "id": "DEC-00000000000000000000000000000030",
         "route": "decision/DEC-00000000000000000000000000000030",
         "label": "Review and decide"
       }
@@ -139,8 +131,6 @@
       ],
       "cli": "sindri decide DEC-0000000000000000000000000000003a accept",
       "open": {
-        "kind": "decision",
-        "id": "DEC-0000000000000000000000000000003a",
         "route": "decision/DEC-0000000000000000000000000000003a",
         "label": "Review and decide"
       }
@@ -168,8 +158,6 @@
       ],
       "cli": "sindri decide DEC-00000000000000000000000000000044 accept",
       "open": {
-        "kind": "decision",
-        "id": "DEC-00000000000000000000000000000044",
         "route": "decision/DEC-00000000000000000000000000000044",
         "label": "Review and decide"
       }
@@ -197,8 +185,6 @@
       ],
       "cli": "sindri decide DEC-0000000000000000000000000000004e accept",
       "open": {
-        "kind": "decision",
-        "id": "DEC-0000000000000000000000000000004e",
         "route": "decision/DEC-0000000000000000000000000000004e",
         "label": "Review and decide"
       }
@@ -226,8 +212,6 @@
       ],
       "cli": "sindri decide DEC-00000000000000000000000000000058 accept",
       "open": {
-        "kind": "decision",
-        "id": "DEC-00000000000000000000000000000058",
         "route": "decision/DEC-00000000000000000000000000000058",
         "label": "Review and decide"
       }
@@ -255,8 +239,6 @@
       ],
       "cli": "sindri decide DEC-00000000000000000000000000000062 accept",
       "open": {
-        "kind": "decision",
-        "id": "DEC-00000000000000000000000000000062",
         "route": "decision/DEC-00000000000000000000000000000062",
         "label": "Review and decide"
       }
@@ -284,8 +266,6 @@
       ],
       "cli": "sindri decide DEC-0000000000000000000000000000006c accept",
       "open": {
-        "kind": "decision",
-        "id": "DEC-0000000000000000000000000000006c",
         "route": "decision/DEC-0000000000000000000000000000006c",
         "label": "Review and decide"
       }
@@ -313,8 +293,6 @@
       ],
       "cli": "sindri decide DEC-00000000000000000000000000000076 accept",
       "open": {
-        "kind": "decision",
-        "id": "DEC-00000000000000000000000000000076",
         "route": "decision/DEC-00000000000000000000000000000076",
         "label": "Review and decide"
       }
@@ -342,8 +320,6 @@
       ],
       "cli": "sindri decide DEC-00000000000000000000000000000080 accept",
       "open": {
-        "kind": "decision",
-        "id": "DEC-00000000000000000000000000000080",
         "route": "decision/DEC-00000000000000000000000000000080",
         "label": "Review and decide"
       }
@@ -372,10 +348,8 @@
       ],
       "cli": "sindri services run heartbeat",
       "open": {
-        "kind": "service",
-        "id": "heartbeat",
         "route": "service/heartbeat",
-        "label": "Open the failed service"
+        "label": "Open the service"
       }
     },
     {
@@ -401,8 +375,6 @@
       ],
       "cli": "sindri profile approve 932d876195e0684a7eef2cfb155d03297bc90219dd98257fb87549114040c79a",
       "open": {
-        "kind": "profile",
-        "id": "profile:drift",
         "route": "needs-you/profile:drift",
         "label": "Approve the profile"
       }

@@ -23,8 +23,6 @@
       ],
       "cli": "sindri recipe approve workflow.ship",
       "open": {
-        "kind": "recipe",
-        "id": "workflow.ship",
         "route": "recipe/workflow.ship",
         "label": "Review the workflow change"
       }

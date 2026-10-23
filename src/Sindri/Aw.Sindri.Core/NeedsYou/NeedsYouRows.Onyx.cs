@@ -40,6 +40,6 @@ public static partial class NeedsYouRows
             notice.Action is null ? null : ActionId.From(notice.Action),
             notice.Action is null ? [] : [ActionId.From(notice.Action)],
             cli.Value.Text,
-            new NeedsYouOpen(NeedsYouOpenKinds.Service, "onyx", "service/onyx", "Open the failed service"));
+            new NeedsYouOpen("service/onyx", "Open the service"));
     }
 }

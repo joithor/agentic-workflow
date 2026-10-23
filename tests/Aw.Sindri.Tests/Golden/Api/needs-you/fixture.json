@@ -23,8 +23,6 @@
       ],
       "cli": "sindri decide DEC-0000000000000000000000000000001a accept",
       "open": {
-        "kind": "decision",
-        "id": "DEC-0000000000000000000000000000001a",
         "route": "decision/DEC-0000000000000000000000000000001a",
         "label": "Review and decide"
       }
@@ -53,10 +51,8 @@
       ],
       "cli": "sindri services run heartbeat",
       "open": {
-        "kind": "service",
-        "id": "heartbeat",
         "route": "service/heartbeat",
-        "label": "Open the failed service"
+        "label": "Open the service"
       }
     },
     {
@@ -82,8 +78,6 @@
       ],
       "cli": "sindri profile approve 932d876195e0684a7eef2cfb155d03297bc90219dd98257fb87549114040c79a",
       "open": {
-        "kind": "profile",
-        "id": "profile:drift",
         "route": "needs-you/profile:drift",
         "label": "Approve the profile"
       }

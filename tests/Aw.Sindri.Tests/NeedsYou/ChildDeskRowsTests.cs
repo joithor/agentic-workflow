@@ -26,7 +26,7 @@ public sealed class ChildDeskRowsTests
 
         var row = Assert.Single(await Rows(q)).Row;
         Assert.Equal(("desk:" + Instance(_child), NeedsYouKind.Park, ItemQueryHarness.Id('1')), (row.Id.Value, row.Kind, row.Item!.Value));
-        Assert.Equal(new NeedsYouOpen(NeedsYouOpenKinds.Questions, _child, "workflow/" + _child, "Answer the question"), row.Open);
+        Assert.Equal(new NeedsYouOpen("workflow/" + _child, "Answer the question"), row.Open);
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public sealed class ChildDeskRowsTests
         var rows = await Rows(q);
         Assert.Equal(["desk:" + Instance(_child), "park:" + Instance(_root)], rows.Select(static r => r.Row.Id.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
         var park = rows.Single(static r => r.Row.Id.Value.StartsWith("park:", StringComparison.Ordinal)).Row;
-        Assert.Equal((other, new NeedsYouOpen(NeedsYouOpenKinds.Instance, other, "workflow/" + other, "Open the parked workflow", Instance: _root)), (park.Child, park.Open));
+        Assert.Equal((other, new NeedsYouOpen("workflow/" + other, "Answer in the child")), (park.Child, park.Open));
     }
 
     private static async Task<ItemQueryHarness> Started()

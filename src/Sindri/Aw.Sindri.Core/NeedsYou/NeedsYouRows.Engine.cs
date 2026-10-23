@@ -34,7 +34,9 @@ public static partial class NeedsYouRows
         var at = park.Descendant ?? park.Address;
         var answer = AnswerOf(park);
         var (label, words) = Words(suspension, park.Refusal);
-        var open = new NeedsYouOpen(NeedsYouOpenKinds.Instance, at.Value, WorkflowRoute(at), "Open the parked workflow", park.Descendant is null ? null : park.Address.Value);   // a parked descendant's row opens the descendant and names its root
+        var open = answer?.Child is { } child   // a parked descendant, or a mirrored child that decides: the row opens that instance
+            ? new NeedsYouOpen("workflow/" + child, "Answer in the child")
+            : new NeedsYouOpen(WorkflowRoute(at), "Open the workflow");
         var shape = new EngineRow(NeedsYouRowId.Park(park.Address), label, $"{words} ({at.Value})", Urgency.Pulse, answer?.Kind,
             answer?.ActionId ?? _approveRecipe, answer is null ? [_approveRecipe, _cancel] : [answer.ActionId], answer?.Cli ?? Status(at), open, answer?.Via, answer?.Child);
         return Row(item, park.Address, shape, since, scrubber);
@@ -66,7 +68,7 @@ public static partial class NeedsYouRows
     /// <returns>The row.</returns>
     public static NeedsYouRow ForDeskTask(ItemRow item, InstanceAddress address, DateTimeOffset since, ITextScrubber scrubber) =>
         Row(item, address, new EngineRow(NeedsYouRowId.Desk(address), "desk task", $"a desk task is open ({address.Value})", Urgency.Colour, AnswerKind: null, _completeStep, [_completeStep], Status(address),
-            new NeedsYouOpen(NeedsYouOpenKinds.Questions, address.Value, WorkflowRoute(address), "Answer the question")), since, scrubber);
+            new NeedsYouOpen(WorkflowRoute(address), "Answer the question")), since, scrubber);
 
     /// <summary>The 'park' row of a takeover that went idle.</summary>
     /// <param name="item">The item's row.</param>
@@ -76,7 +78,7 @@ public static partial class NeedsYouRows
     /// <returns>The row.</returns>
     public static NeedsYouRow ForIdleTakeover(ItemRow item, InstanceAddress address, DateTimeOffset since, ITextScrubber scrubber) =>
         Row(item, address, new EngineRow(NeedsYouRowId.Takeover(address), "taken over", $"a takeover is idle ({address.Value})", Urgency.Calm, AnswerKind: null, _handback, [_handback, _cancel], $"sindri handback {address.Value}",
-            new NeedsYouOpen(NeedsYouOpenKinds.Instance, address.Value, WorkflowRoute(address), "Open the taken-over workflow")), since, scrubber);
+            new NeedsYouOpen(WorkflowRoute(address), "Hand back or cancel")), since, scrubber);
 
     private static string WorkflowRoute(InstanceAddress address) => "workflow/" + address.Value;
 

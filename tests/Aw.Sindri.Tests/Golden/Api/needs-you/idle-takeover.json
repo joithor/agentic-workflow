@@ -24,10 +24,8 @@
       ],
       "cli": "sindri handback ITM-0000000000000000000000000000000f/step/1",
       "open": {
-        "kind": "instance",
-        "id": "ITM-0000000000000000000000000000000f/step/1",
         "route": "workflow/ITM-0000000000000000000000000000000f/step/1",
-        "label": "Open the taken-over workflow"
+        "label": "Hand back or cancel"
       }
     }
   ],

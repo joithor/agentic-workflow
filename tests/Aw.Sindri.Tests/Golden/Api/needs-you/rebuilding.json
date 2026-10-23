@@ -23,8 +23,6 @@
       ],
       "cli": "sindri decide DEC-00000000000000000000000000000012 accept",
       "open": {
-        "kind": "decision",
-        "id": "DEC-00000000000000000000000000000012",
         "route": "decision/DEC-00000000000000000000000000000012",
         "label": "Review and decide"
       }

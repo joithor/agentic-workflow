@@ -23,8 +23,6 @@
       ],
       "cli": "sindri workflow status T-3/step/1",
       "open": {
-        "kind": "questions",
-        "id": "T-3/step/1",
         "route": "workflow/T-3/step/1",
         "label": "Answer the question"
       },

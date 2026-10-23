@@ -76,7 +76,7 @@ public static partial class NeedsYouRows
             _approveAllRecipes,
             [_approveAllRecipes],
             cli.Value.Text,
-            new NeedsYouOpen(NeedsYouOpenKinds.Setup, "recipes", "setup", "Open setup"));
+            new NeedsYouOpen("setup", "Open setup"));
     }
 
     private static Result<NeedsYouRow> OwnRow(OwnApprovalRow own, DateTimeOffset since, ITextScrubber scrubber)
@@ -104,6 +104,6 @@ public static partial class NeedsYouRows
             _approveRecipe,
             [_approveRecipe],
             cli.Value.Text,
-            new NeedsYouOpen(NeedsYouOpenKinds.Recipe, own.Id.Value, "recipe/" + own.Id.Value, "Review the workflow change"));
+            new NeedsYouOpen("recipe/" + own.Id.Value, "Review the workflow change"));
     }
 }
