@@ -63,6 +63,6 @@ the lease at once). It needs Docker access and is not part of any PR gate's unit
 ## Pins
 
 `deploy/images.lock` holds every third-party image by index digest and per-platform digests; `scripts/images-lock.sh check`
-checks its shape and that the `Dockerfile` names only pinned images (`bash scripts/tests/images-lock.test.sh`). Onyx's chart
-images are `todo` rows until the charts phase (K-C1) resolves them. To bump a base image: look the new digests up with
+checks its shape and that the `Dockerfile` names only pinned images (`bash scripts/tests/images-lock.test.sh`). Onyx's containers
+are pinned in `context/onyx.lock`, not here. To bump a base image: look the new digests up with
 `docker buildx imagetools inspect <repository>:<tag>`, change the lock rows and the `Dockerfile` `FROM`, run the check.

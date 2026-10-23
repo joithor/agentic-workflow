@@ -6,7 +6,7 @@
 #   build    publishes the Sindri host exactly as scripts/sindri-app.sh does (framework-dependent, the shipped recipes embedded),
 #            then judge and aw-packets NativeAOT for the target platform, then runs the shipped recipes' evals
 #   tools    the temporal CLI from binaries.lock (sha256-checked) and graphify at the code index's pin (context/code-index.lock)
-#   runtime  aspnet + git, bubblewrap, tini; uid 1000 (the rootless Docker daemon's user, spec §A.1); read-only-root friendly (all state under /data)
+#   runtime  aspnet + git, bubblewrap, tini; uid 1000; read-only-root friendly (all state under /data)
 # sindri-ui is not built: the image has no desktop.
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0.401-noble@sha256:e70cdb7f80b0348f5cb85f19a8f670fca061f033d57eed12fa003d58b0e06317 AS build
@@ -59,14 +59,11 @@ RUN set -eu; \
  && uv pip install --quiet --python /opt/sindri/graphify/bin/python --require-hashes -r context/code-index-requirements.txt --exclude-newer "$date" \
  && test "$(/opt/sindri/graphify/bin/graphify --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)" = "$ver"
 
-# The docker CLI and the Compose plugin (>= 2.24), copied only: Sindri's managed Onyx mode runs `docker compose` against the rootless
-# Docker-in-Docker sidecar in the same pod (spec §A.1, §A.3). No daemon is installed here.
-FROM docker.io/library/docker:29.9.2-cli@sha256:5e6baf67325a79f64ed3bed6863954d5e05d0f3d4e57cbdb14809346814bbfdb AS dockercli
-
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble@sha256:8af87eba5e7cdafb1514d7388be287365da97c132509e84dfe252ffd552398ca AS runtime
 # git (repos), bubblewrap (the code graph's sandbox), tini (PID 1: it reaps the detached Temporal process), procps (/bin/ps
 # and /bin/kill: the Temporal dev server's lifecycle finds and signals its process through them, DevServerProcesses). The base
-# image's `ubuntu` user holds uid 1000, so it is removed and `sindri` takes the uid (the rootless Docker daemon's, spec §A.1).
+# image's `ubuntu` user holds uid 1000, so it is removed and `sindri` takes the uid (1000 is kept from when it had to match a Docker daemon's; reversible).
+# Onyx's sibling containers in the pod are pinned in context/onyx.lock, not deploy/images.lock.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git bubblewrap tini procps ca-certificates \
  && rm -rf /var/lib/apt/lists/* \
@@ -78,8 +75,6 @@ COPY --from=build /out/sindri /opt/sindri
 COPY --from=tools /opt/sindri/graphify /opt/sindri/graphify
 COPY --from=tools /opt/sindri/python /opt/sindri/python
 COPY --from=tools /out/seed /opt/sindri/seed
-COPY --from=dockercli /usr/local/bin/docker /usr/local/bin/docker
-COPY --from=dockercli /usr/local/libexec/docker/cli-plugins/docker-compose /usr/local/libexec/docker/cli-plugins/docker-compose
 COPY context/code-index.lock /opt/sindri/context/code-index.lock
 COPY deploy/start.sh /opt/sindri/start.sh
 # /opt/sindri is world-readable, so any uid the pod runs the image as can read what Sindri ships.
@@ -92,7 +87,6 @@ ENV AW_SINDRI_DEPLOY=pod \
     AW_STATE_DIR=/data/state \
     AW_SINDRI_HOME=/data/state/sindri-app \
     HOME=/data/home \
-    DOCKER_CONFIG=/data/home/.docker \
     XDG_CACHE_HOME=/data/home/.cache \
     UV_CACHE_DIR=/data/home/.cache/uv \
     TMPDIR=/tmp \

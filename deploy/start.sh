@@ -6,7 +6,7 @@
 # image's root is read-only, so the binary baked into /opt/sindri/seed is copied there when the volume does not hold it yet.
 # The destination is versioned (temporal-<version>), so a new volume gets the binary and so does a new temporal pin after an upgrade;
 # a restart on a volume that already holds this version copies nothing and replaces nothing.
-# The environment (AW_STATE_DIR, HOME, DOCKER_CONFIG, ...) is the image's ENV, not set here: a `kubectl exec` doesn't run this script.
+# The environment (AW_STATE_DIR, HOME, ...) is the image's ENV, not set here: a `kubectl exec` doesn't run this script.
 set -euo pipefail
 
 : "${AW_STATE_DIR:?AW_STATE_DIR must be set (the image sets /data/state)}"
@@ -14,7 +14,7 @@ SEED=/opt/sindri/seed
 SINDRI=/opt/sindri/sindri
 
 umask 077
-mkdir -p "$AW_STATE_DIR" "${HOME:-/data/home}" "${AW_SINDRI_HOME:-$AW_STATE_DIR/sindri-app}" "${HOME:-/data/home}/.docker"
+mkdir -p "$AW_STATE_DIR" "${HOME:-/data/home}" "${AW_SINDRI_HOME:-$AW_STATE_DIR/sindri-app}"
 
 for dir in "$SEED"/cache/bin/*/; do
   [ -d "$dir" ] || continue
