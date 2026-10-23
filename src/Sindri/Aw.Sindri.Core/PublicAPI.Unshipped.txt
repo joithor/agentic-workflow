@@ -7815,6 +7815,7 @@ static Aw.Sindri.Core.Workflow.Engine.InstanceAddress.TryFrom(string? value, out
 static Aw.Sindri.Core.Workflow.Engine.InstanceAddress.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress result) -> bool
 static Aw.Sindri.Core.Workflow.Engine.InstanceAddress.operator !=(Aw.Sindri.Core.Workflow.Engine.InstanceAddress left, Aw.Sindri.Core.Workflow.Engine.InstanceAddress right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.InstanceAddress.operator ==(Aw.Sindri.Core.Workflow.Engine.InstanceAddress left, Aw.Sindri.Core.Workflow.Engine.InstanceAddress right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.InstanceAddress.LinkedId(string! id) -> string?
 static Aw.Sindri.Core.Workflow.Engine.Instances.Frame.operator !=(Aw.Sindri.Core.Workflow.Engine.Instances.Frame? left, Aw.Sindri.Core.Workflow.Engine.Instances.Frame? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Instances.Frame.operator ==(Aw.Sindri.Core.Workflow.Engine.Instances.Frame? left, Aw.Sindri.Core.Workflow.Engine.Instances.Frame? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Instances.LoopState.operator !=(Aw.Sindri.Core.Workflow.Engine.Instances.LoopState? left, Aw.Sindri.Core.Workflow.Engine.Instances.LoopState? right) -> bool
