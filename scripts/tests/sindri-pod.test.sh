@@ -316,7 +316,7 @@ bash "$DIR/sindri-pod.sh" >/dev/null 2>&1; check "no verb: exit 2" "$?" "2"
 cat > "$WORK/bin/ed" <<'EOS'
 #!/usr/bin/env bash
 echo "editor $1" >> "$CALLS"
-[ -e "$POD/ed-change" ] && ! grep -q "^share: true" "$1" && echo "share: true" >> "$1"
+[ -e "$POD/ed-change" ] && ! grep -q "^index.graph.enabled: true" "$1" && echo "index.graph.enabled: true" >> "$1"
 exit 0
 EOS
 chmod +x "$WORK/bin/ed"
@@ -336,7 +336,7 @@ pedit_reset; touch "$POD/ed-change"
 OUT="$(pedit)"; RC=$?
 check "profile edit changed and valid: validate, then put back, then approve" "$RC:$(seq_of)" "0:validate,move,approve"
 check "profile edit: approve runs with -it in the sindri container" "$(count 'exec -it sindri-0 -c sindri -- sindri profile approve')" "1"
-check "profile edit: the pod's profile is the edited one" "$(tail -1 "$POD/profile.yaml")" "share: true"
+check "profile edit: the pod's profile is the edited one" "$(tail -1 "$POD/profile.yaml")" "index.graph.enabled: true"
 check "profile edit: validate ran on the temp copy, not the live path" \
   "$(count 'AW_SINDRI_PROFILE="$1" sindri profile validate _ /data/profile/profile.yaml.edit-')" "1"
 check "profile edit: the final line says what changed and what is next" \
@@ -349,7 +349,7 @@ check "profile edit invalid and left as it was: exit 3, errors shown, editor reo
   "$RC:$(printf '%s' "$OUT" | grep -c 'SND-PROFILE-001 bad key'):$(count '^editor '):$(seq_of)" "3:1:2:validate"
 KEPT="$(ls "$AW_STATE_DIR"/sindri-pod/*/profile-edit/profile.yaml 2>/dev/null | head -1)"
 check "profile edit invalid: your file is kept without the error comments, and its path printed" \
-  "$([ -n "$KEPT" ] && tail -1 "$KEPT"):$(grep -c '^# sindri-pod: ' "$KEPT"):$(printf '%s' "$OUT" | grep -c -F "your file is kept at $KEPT")" "share: true:0:1"
+  "$([ -n "$KEPT" ] && tail -1 "$KEPT"):$(grep -c '^# sindri-pod: ' "$KEPT"):$(printf '%s' "$OUT" | grep -c -F "your file is kept at $KEPT")" "index.graph.enabled: true:0:1"
 check "profile edit invalid: the pod's profile is unchanged" "$(wc -l < "$POD/profile.yaml" | tr -d ' ')" "2"
 check "profile edit invalid: the temp copy in the pod is removed" "$(wc -l < "$POD/rm-calls" | tr -d ' ')" "1"
 
@@ -377,7 +377,7 @@ pedit_reset; touch "$POD/ed-change"
 OUT="$(pedit --no-approve)"; RC=$?
 check "profile edit --no-approve: validate and move, no approve, exit 0, says not approved" \
   "$RC:$(seq_of):$(printf '%s' "$OUT" | tail -1 | grep -c 'profile changed, not yet approved (1 lines differ, valid, in place in sindri-0); next: kubectl exec -it sindri-0 -c sindri -- sindri profile approve')" "0:validate,move:1"
-check "profile edit --no-approve: the pod's profile is the edited one" "$(tail -1 "$POD/profile.yaml")" "share: true"
+check "profile edit --no-approve: the pod's profile is the edited one" "$(tail -1 "$POD/profile.yaml")" "index.graph.enabled: true"
 OUT="$(PATH="$WORK/bin:$PATH" bash "$DIR/sindri-pod.sh" connect --no-approve 2>&1)"; check "--no-approve is for profile edit only: connect refuses it" "$?" "2"
 pedit_reset
 OUT="$(pedit --port 1)"; RC=$?; check "profile edit: connect-only flags are a usage error" "$RC" "2"
@@ -388,7 +388,7 @@ OUT="$(pedit --port 1)"; RC=$?; check "profile edit: connect-only flags are a us
 cat > "$WORK/bin/ed-race" <<'EOS'
 #!/usr/bin/env bash
 echo "editor $1" >> "$CALLS"
-echo "share: true" >> "$1"
+echo "index.graph.enabled: true" >> "$1"
 printf 'schemaVersion: 1\nuser: me\nrepos: [a]\n' > "$POD/profile.yaml"   # a repo add lands while the editor is open
 exit 0
 EOS
@@ -399,7 +399,7 @@ KEPT="$(ls "$AW_STATE_DIR"/sindri-pod/*/profile-edit/profile.yaml 2>/dev/null | 
 check "profile edit conflict: exit 4, nothing replaced, no approve" "$RC:$(grep -c 'repos: \[a\]' "$POD/profile.yaml"):$(seq_of)" "4:1:validate,move"
 check "profile edit conflict: the text names the differing top-level keys and where the edit is kept" \
   "$(printf '%s' "$OUT" | grep -c -F "The profile on the pod changed while you were editing (repos). Nothing was replaced; your edit is kept at $KEPT. Run profile edit again and make the change on top of the new copy.")" "1"
-check "profile edit conflict: your edit is kept" "$(tail -1 "$KEPT")" "share: true"
+check "profile edit conflict: your edit is kept" "$(tail -1 "$KEPT")" "index.graph.enabled: true"
 
 # --- profile edit: no profile in the pod yet: sindri profile init runs first, then it is opened
 pedit_reset; rm -f "$POD/profile.yaml"; touch "$POD/ed-change"

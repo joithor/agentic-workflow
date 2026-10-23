@@ -69,7 +69,7 @@ The wait for the sindri container takes up to 10 minutes, printing its state eve
 
 ## Change the profile in a pod
 
-`scripts/sindri-pod.sh profile edit [--no-approve]` is how you change a share switch, `repo-pull.allowedHosts` or any other
+`scripts/sindri-pod.sh profile edit [--no-approve]` is how you change `repo-pull.allowedHosts`, `index.graph.enabled` or any other
 profile key in a pod: the profile is a file on the pod's volume and the image has no editor. With no profile in the pod it first
 runs `sindri profile init` there (`kubectl exec -it`). It copies `profile.yaml` out of the pod (the path the pod's Sindri
 reads: `AW_SINDRI_PROFILE`, else `<AW_SINDRI_HOME>/profile/profile.yaml`), remembers the pod's copy by its sha256, and opens it
@@ -87,7 +87,7 @@ in `$EDITOR` (`vi` if unset).
   where the preview and the typed word are yours. `--no-approve` stops after the file is in place (the first install, where the one
   approval comes last).
 
-`share.*`, `repo-pull.allowedHosts` and every switch are read from the approved profile, so an edit, and an undo, take effect when
+`repo-pull.allowedHosts`, `index.graph.enabled` and every switch are read from the approved profile, so an edit, and an undo, take effect when
 you approve, not when the file is saved.
 
 Exit codes: 0 changed and approved, unchanged, or `--no-approve` done; 1 approve refused or declined; 2 usage or the pod
