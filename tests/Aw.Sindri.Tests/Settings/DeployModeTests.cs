@@ -27,7 +27,7 @@ public sealed class DeployModeTests
     public async Task Doctor_echoes_pod_mode_and_says_nothing_on_the_desktop()
     {
         var pod = await new DeployDoctorChecks(Read("pod")).Run(TestContext.Current.CancellationToken);
-        var desktop = await new DeployDoctorChecks(Read(null)).Run(TestContext.Current.CancellationToken);
+        var desktop = await new DeployDoctorChecks(Read(deploy: null)).Run(TestContext.Current.CancellationToken);
 
         var check = Assert.Single(pod);
         Assert.Equal((CheckState.Ok, "deploy:mode"), (check.State, check.Name));

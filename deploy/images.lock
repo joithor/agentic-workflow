@@ -1,0 +1,39 @@
+# deploy/images.lock — every third-party image the Sindri deployment pulls, pinned by digest (spec
+# docs/superpowers/specs/2026-10-23-sindri-deployable-context-design.md decision K11, §A.1). Checked by scripts/images-lock.sh check (CI).
+# Rows (whitespace-separated; '#' comments and blank lines are ignored):
+#   image <repository> <tag> <platform> <sha256:digest>   platform is `index` (the multi-arch image index: what a Dockerfile FROM and a
+#                                                         chart name, as <repository>@<digest>) or linux/amd64 or linux/arm64 (the
+#                                                         manifest the index lists for it). A repository has one tag, one index row
+#                                                         and both platform rows.
+#   todo <repository> <phase>                             an image the deployment will pull whose digests are not resolved yet; the
+#                                                         phase (K-C1: the charts) fills it in. `check` lists these and still passes.
+# Resolved 2026-10-23 from the registries' manifest APIs (mcr.microsoft.com, registry-1.docker.io, ghcr.io), anonymous reads:
+#   the index digest is the Docker-Content-Digest of GET /v2/<repository>/manifests/<tag> with an index Accept header, the platform
+#   rows are that index's linux/amd64 and linux/arm64 entries. Recheck with `docker buildx imagetools inspect <repository>:<tag>`.
+# mcr.microsoft.com/dotnet/sdk is the SDK global.json pins (10.0.401) on Ubuntu noble. The aspnet runtime tag floats within 10.0,
+# which is why only its digest is trusted; bump both rows when the SDK pin moves.
+
+image mcr.microsoft.com/dotnet/sdk 10.0.401-noble index sha256:e70cdb7f80b0348f5cb85f19a8f670fca061f033d57eed12fa003d58b0e06317
+image mcr.microsoft.com/dotnet/sdk 10.0.401-noble linux/amd64 sha256:0eeb52c76e35a5431ca707ad2bc75e38006a05393045d8532ae44c15d9474523
+image mcr.microsoft.com/dotnet/sdk 10.0.401-noble linux/arm64 sha256:e47b8fe8c16821354690e16ef744d53a53a9cdae13ad9e000058913cd0368718
+
+image mcr.microsoft.com/dotnet/aspnet 10.0-noble index sha256:8af87eba5e7cdafb1514d7388be287365da97c132509e84dfe252ffd552398ca
+image mcr.microsoft.com/dotnet/aspnet 10.0-noble linux/amd64 sha256:f879b8a9cb3f6694b8b0c9fa530eb0c39d8920db09c05a7edbd6c4c6c104ae1b
+image mcr.microsoft.com/dotnet/aspnet 10.0-noble linux/arm64 sha256:3a05e37c371f358d2b5cb9687d9992171b34b8c9146c283bef865bdbd2c53c55
+
+# uv, copied into the tools stage to install graphify (a distroless image: /uv and /uvx only)
+image ghcr.io/astral-sh/uv 0.13.1 index sha256:4a1f3666816dafadd20ceb71eac9a7d56d7ef30279f7d64048519ab901ada336
+image ghcr.io/astral-sh/uv 0.13.1 linux/amd64 sha256:9a853e40f2eb00f980d265a84fba919dc38ff17750197e7f13c055e4e2f12edd
+image ghcr.io/astral-sh/uv 0.13.1 linux/arm64 sha256:c4ca260ce2a921fb9ea59c6619d4c88c34990b4272524115ab61a70b647d2755
+
+# The Ollama sidecar (K10); 0.40.9 was the newest x.y.z tag on 2026-10-23. Its embedding model is pinned by context/code-index.lock.
+image docker.io/ollama/ollama 0.40.9 index sha256:5c6707fcf2e1a30cffe2ecb7e315584fc87747c389327e4bc711c4959aa1eecc
+image docker.io/ollama/ollama 0.40.9 linux/amd64 sha256:1914dade358389ce67f527f8d54914f0872fdafdc7a95980096ad0ff6a381196
+image docker.io/ollama/ollama 0.40.9 linux/arm64 sha256:bb90a41181172b7b18ec151674dd30f7242c03cd8675e680ae2daebe49bc3c65
+
+# Onyx's chart images (chart 0.8.40 at the context/onyx.lock pin): resolved in K-C1, when the charts are written. Not guessed here.
+todo docker.io/onyxdotapp/onyx-backend K-C1
+todo docker.io/onyxdotapp/onyx-web-server K-C1
+todo docker.io/onyxdotapp/onyx-model-server K-C1
+todo docker.io/library/redis K-C1
+todo docker.io/library/nginx K-C1

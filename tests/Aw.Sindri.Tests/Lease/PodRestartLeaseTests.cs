@@ -2,7 +2,6 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Infrastructure.Lease;
-using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.Lease;
 
