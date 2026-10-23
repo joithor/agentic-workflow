@@ -235,6 +235,27 @@
           </Border>
         </Border>
 
+        <!-- CI-10b (code-index spec §7.3): the Code index card: one wrapped line per repo, its state a word and never colour alone. -->
+        <Border x:Name="CodeIndexPanel" Classes="panel" Width="440" Margin="0,0,12,12" DataContext="{Binding CodeIndex}" x:DataType="shell:CodeIndexCardViewModel">
+          <Border Classes="section last">
+            <StackPanel Spacing="{StaticResource Space.XS}">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock x:Name="CodeIndexEyebrow" Classes="eyebrow head-eyebrow" Text="{Binding Heading}" AutomationProperties.Name="{Binding Heading}" />
+                <TextBlock x:Name="CodeIndexWord" Grid.Column="1" Classes="body-strong" Text="{Binding Word}" AutomationProperties.Name="{Binding Word}" />
+              </Grid>
+              <ItemsControl x:Name="CodeIndexLines" ItemsSource="{Binding Lines}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="shell:CodeIndexLine">
+                    <TextBlock Classes="body" Text="{Binding Text}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Name}" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock x:Name="CodeIndexMessage" Classes="body subtle" Text="{Binding Message}" TextWrapping="Wrap" IsVisible="{Binding HasMessage}"
+                         AutomationProperties.Name="{Binding Message}" />
+            </StackPanel>
+          </Border>
+        </Border>
+
         <Border x:Name="AgentsCard" Classes="panel" Width="440" Margin="0,0,12,12">
           <Border Classes="section last">
             <StackPanel Spacing="{StaticResource Space.XS}">
