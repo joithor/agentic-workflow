@@ -14,7 +14,7 @@ public sealed class LineReportEffectContract : BlockContract
 
     protected override BlockDescriptor Descriptor => LineEffects.Report;
 
-    protected override string ExpectedHash => "sha256:7e5951377422c5c199863a5b9669d8ba5895100a52a87f876bf1fd56d174d63b";
+    protected override string ExpectedHash => "sha256:8037e9f18af032ee865ecd62085229b4ca4b96d2dfc8e9cb75a7cfdda84de841";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

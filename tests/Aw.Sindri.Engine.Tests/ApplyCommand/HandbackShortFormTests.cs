@@ -84,7 +84,7 @@ public sealed class HandbackShortFormTests(DevServer server) : IClassFixture<Dev
     }
 
     /// <summary>An item the ledger holds in <paramref name="repo"/>, as 'item.created' recorded it.</summary>
-    private static async Task<string> ItemIn(Served served, string repo)
+    internal static async Task<string> ItemIn(Served served, string repo)
     {
         var sindri = served.Sindri;
         var ids = sindri.GetRequiredService<IIdGenerator>();

@@ -29,7 +29,7 @@ public sealed class WorkflowViewGoldenTests : IAsyncLifetime
         ("workflow-status", "parked-child"), ("workflow-status", "unreachable-child"), ("workflow-status", "escalated-child"), ("workflow-status", "mirrored-budget"), ("workflow-status", "mirrored-budget-no-child"), ("workflow-status", "desk-task"), ("workflow-status", "parked-budget"),
         ("workflow-status", "escalated-gate"), ("workflow-status", "taken-over"), ("workflow-status", "done"), ("workflow-status", "agent-run"),
         ("workflow-status", "parked-drift"), ("workflow-status", "needs-answer-step"), ("workflow-status", "needs-answer-wait"),
-        ("workflow-recipe", "workflow.no-outputs"), ("workflow-recipe", "workflow.f5-fields"), ("workflow-instance", "f5-state-times"), ("workflow-instance", "f5-rerun-failed"), ("workflow-instance", "f5-desk-recommended"), ("workflow-instance", "babysitter-ready-verbs"),
+        ("workflow-recipe", "workflow.no-outputs"), ("workflow-recipe", "workflow.f5-fields"), ("workflow-instance", "f5-state-times"), ("workflow-instance", "f5-rerun-failed"), ("workflow-instance", "f5-desk-recommended"), ("workflow-instance", "lens-ask-multi"), ("workflow-instance", "babysitter-ready-verbs"),
         .. FixtureRecipes.All.Select(r => ("workflow-recipe", r.Id)),
         ("workflow-instance-fact", "scope-map"), ("workflow-instance-fact", "packet"), ("workflow-instance-fact", "evidence"), ("workflow-instance-fact", "payload"), ("workflow-instance-fact", "packet-unfrozen"),
         ("workflow-instance-fact", "text"), ("workflow-instance-fact", "truncated"), ("workflow-instance-fact", "pr-status"),
@@ -86,7 +86,7 @@ public sealed class WorkflowViewGoldenTests : IAsyncLifetime
         Assert.Equal(body, again);
     }
 
-    private static string Body(string slug, string scenario, JsonSerializerOptions options) => (slug, scenario) switch
+    private static string Body(string slug, string scenario, JsonSerializerOptions options) => (slug, scenario) is ("workflow-instance", "babysitter-ready-verbs") ? Json(BabysitterReady(), options) : (slug, scenario) switch
     {
         ("workflow-instances", "root") => Json(WorkflowViewFixtures.RootList(), options),
         ("workflow-instances", "recipe-filter") => Json(WorkflowViewFixtures.RecipeFilter(), options),
@@ -119,10 +119,10 @@ public sealed class WorkflowViewGoldenTests : IAsyncLifetime
         ("workflow-status", "needs-answer-wait") => Json(WorkflowViewFixtures.StatusNeedsAnswerWait(), options),
         ("workflow-instance", "f5-rerun-failed") => Json(WorkflowViewFixtures.F5RerunFailed(), options),
         ("workflow-instance", "f5-desk-recommended") => Json(WorkflowViewFixtures.F5DeskRecommended(), options),
+        ("workflow-instance", "lens-ask-multi") => Json(WorkflowViewFixtures.LensAskMulti(), options),
         ("workflow-recipe", "workflow.no-outputs") => Json(WorkflowViewFixtures.NoOutputsRecipe(), options),
         ("workflow-recipe", "workflow.f5-fields") => Json(WorkflowViewFixtures.F5FieldsRecipe(), options),
         ("workflow-instance", "f5-state-times") => Json(WorkflowViewFixtures.F5StateTimes(), options),
-        ("workflow-instance", "babysitter-ready-verbs") => Json(BabysitterReady(), options),
         ("workflow-recipe", var id) when FixtureRecipes.All.Any(r => r.Id == id) => Json(WorkflowViewFixtures.Recipe(id), options),
         ("workflow-instance-fact", _) => Json(WorkflowViewFixtures.Fact(scenario), options),
         _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "no such workflow view scenario"),

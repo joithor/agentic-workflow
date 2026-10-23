@@ -41,6 +41,31 @@ public sealed class HumanOnlyReportTests
     }
 
     [Fact(Timeout = 30_000)]
+    public async Task A_session_complete_on_the_babysitters_docs_merge_decision_is_SND_AUTH_002_so_it_cannot_reach_merge_docs()
+    {
+        var desk = new OpenTask("step.pr.docs-merge-decide");
+
+        var refused = await Service(desk, Session()).Handle(Request(), TestContext.Current.CancellationToken);
+
+        Assert.Equal("SND-AUTH-002", refused.Error.Code);
+        Assert.Empty(desk.Sent);
+        Assert.Empty(desk.Attempted);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task A_human_completes_the_babysitters_docs_merge_decision()
+    {
+        var desk = new OpenTask("step.pr.docs-merge-decide");
+
+        var merge = new CompleteStepRequest(_address.Value, RunToken.For(1, 1), OutcomeName.From("merge"), new Dictionary<FactKey, ReadOnlyMemory<byte>>(), _nonce);
+
+        var done = await Service(desk, A.Caller().Human().AtTerminal().Build()).Handle(merge, TestContext.Current.CancellationToken);
+
+        Assert.False(done.IsError, done.IsError ? done.Error.Message : null);
+        _ = Assert.Single(desk.Sent);
+    }
+
+    [Fact(Timeout = 30_000)]
     public async Task A_session_complete_on_a_judge_choose_run_on_the_desk_is_SND_AUTH_002()
     {
         var desk = new OpenTask("step.judge.choose");
