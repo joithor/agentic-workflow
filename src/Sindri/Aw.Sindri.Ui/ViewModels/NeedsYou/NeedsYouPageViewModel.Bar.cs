@@ -30,6 +30,12 @@ internal sealed partial class NeedsYouPageViewModel
     public string KeySendBackWord { get; } = Labels.NeedsYouKeySendBackWord;
 
     // The bar answered or reset: the card or the done card shows.
+    /// <summary>The caption of the box that says what approving does.</summary>
+    public string IfApproveCaption { get; } = Labels.NeedsYouIfApprove;
+
+    /// <summary>The caption of the box that says what sending it back does.</summary>
+    public string IfSendBackCaption { get; } = Labels.NeedsYouIfSendBack;
+
     private void OnBarChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (string.Equals(e.PropertyName, nameof(NeedsYouBarViewModel.IsApproved), StringComparison.Ordinal))

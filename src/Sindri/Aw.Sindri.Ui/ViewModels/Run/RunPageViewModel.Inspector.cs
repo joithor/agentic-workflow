@@ -44,7 +44,7 @@ internal sealed partial class RunPageViewModel
         var step = card.Steps.FirstOrDefault(s => string.Equals(s.Key, key, StringComparison.Ordinal));
         var owner = card.Node.ChildId is { } id && source.Children.TryGetValue(id, out var child) ? child : null;
         var why = source.Recipe?.States.FirstOrDefault(s => string.Equals(s.State, card.Id, StringComparison.Ordinal))?.Why;   // a step reads its stage's why: the stage's recipe state is the one served
-        ShowInspector(new RunCanvasInspectorViewModel(card, step, source.Line, owner, new RunInspectorPorts(Go, () => ClearSelection(), Walk), clipboard, clock, why));
+        ShowInspector(new RunCanvasInspectorViewModel(card, step, source.Line, owner, new RunInspectorPorts(Go, () => ClearSelection(), Walk), clipboard, clock) { Why = why });
     }
 
     private void ShowInspector(RunCanvasInspectorViewModel? inspector)

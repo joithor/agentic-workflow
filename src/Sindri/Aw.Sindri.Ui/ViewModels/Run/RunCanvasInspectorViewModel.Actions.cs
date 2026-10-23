@@ -7,7 +7,10 @@ internal sealed partial class RunCanvasInspectorViewModel
 {
 #pragma warning disable CA1822, MA0041 // fixed words are properties because the view binds them
     /// <summary>The why block: the stage's served why, else the words that say nothing writes it down.</summary>
-    public string WhyText => string.IsNullOrWhiteSpace(_why) ? Labels.RunWhyNotServed : _why;
+    public string WhyText => string.IsNullOrWhiteSpace(Why) ? Labels.RunWhyNotServed : Why;
+
+    /// <summary>The stage's why as the recipe serves it; null or blank when it serves none.</summary>
+    internal string? Why { get; init; }
 
     /// <summary>The line that says the facts are the stage's.</summary>
     public string FactsHeading => Labels.RunFactsWholeStage;

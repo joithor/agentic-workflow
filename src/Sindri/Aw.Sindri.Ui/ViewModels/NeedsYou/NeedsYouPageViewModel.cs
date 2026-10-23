@@ -58,12 +58,6 @@ internal sealed partial class NeedsYouPageViewModel : ObservableObject
     /// <summary>The caption of the card's first section.</summary>
     public string WhyCaption { get; } = Labels.NeedsYouWhyCaption;
 
-    /// <summary>The caption of the box that says what approving does.</summary>
-    public string IfApproveCaption { get; } = Labels.NeedsYouIfApprove;
-
-    /// <summary>The caption of the box that says what sending it back does.</summary>
-    public string IfSendBackCaption { get; } = Labels.NeedsYouIfSendBack;
-
     /// <summary>The caption of the section that says what a decision asks.</summary>
     public string RequestCaption { get; } = Labels.NeedsYouRequestCaption;
 
