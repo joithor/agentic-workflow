@@ -15,7 +15,7 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 
 /// <summary>
 /// 'effect.line.start-phase' (line spec LN-WF1, §8.2): starts <c language="text">workflow.phase</c> for one phase of the line as a linked instance at
-/// '{line}/phase.{id}.{attempt}'. The effect's <c language="text">phase</c> argument is the line's <c language="text">fact:nextPhase</c>, <c language="text">{ phase, attempt, packet, base, stackParent }</c>:
+/// '{line}/phase.{slug of id}.{attempt}'. The effect's <c language="text">phase</c> argument is the line's <c language="text">fact:nextPhase</c>, <c language="text">{ phase, attempt, packet, base, stackParent }</c>:
 /// the phase's frozen packet entry, the branch it builds on ('base': the default branch, or the head branch of the one phase it is stacked on)
 /// and that phase's id. The linked instance gets <c language="text">fact:phasePacket</c> (the packet entry with its <c language="text">base</c> and <c language="text">stackParent</c>) and the line's
 /// <c language="text">fact:lineContext</c>. It is idempotent per (line, phase, attempt): the address is the identity, so a retry or a re-emission finds the instance and
@@ -111,9 +111,9 @@ internal sealed class StartPhaseEffect(IPhaseStarts starts, IFactContents conten
         var node = Read(content) as JsonObject;
         var id = Text(node, "phase");
         var attempt = Attempt(node);
-        if (id is null || !IdShape(id) || attempt is not >= 1 || node?["packet"] is not JsonObject packet)
+        if (id is null || InstanceAddress.LinkedId(id) is null || attempt is not >= 1 || node?["packet"] is not JsonObject packet)
         {
-            return WorkflowErrors.NoRuntime.With("fact:nextPhase must be { phase, attempt, packet, base, stackParent } with a lowercase phase id and an attempt from 1");
+            return WorkflowErrors.NoRuntime.With("fact:nextPhase must be { phase, attempt, packet, base, stackParent } with a phase id of 1 to 64 characters holding a letter or digit (its lowercase slug names the phase instance) and an attempt from 1");
         }
 
         return new Next(id, attempt.Value, (JsonObject)packet.DeepClone(), node["base"]?.DeepClone(), node["stackParent"]?.DeepClone());
@@ -133,8 +133,6 @@ internal sealed class StartPhaseEffect(IPhaseStarts starts, IFactContents conten
             return null;   // boundary: the fact is not JSON; Parse names it
         }
     }
-
-    private static bool IdShape(string id) => id.Length is > 0 and <= 64 && id.All(static c => c is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '-') && id[0] != '-';
 
     /// <summary>The linked instance's inputs: the phase's packet fact, and the line's own <c language="text">fact:lineContext</c> when it has one.</summary>
     private async ValueTask<Result<Dictionary<FactKey, FactValue>>> Inputs(EffectContext context, Next next, CancellationToken cancellationToken)

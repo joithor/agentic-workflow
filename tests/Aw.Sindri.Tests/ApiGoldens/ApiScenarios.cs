@@ -54,11 +54,17 @@ internal static class ApiScenarios
             ? await CodeIndexScenarios.Start(ct, demoBehindMain: scenario == CodeIndexScenarios.StaleScenario)
             : ContextApiScenarios.Handles(slug)
             ? await ContextApiScenarios.Start(slug, scenario, ct)
+            : (slug, scenario) is ("profile", "repo-added")
+            ? await ViewScenarios.StartWithGit(ct)
             : IsSetup(slug, scenario)
             ? await SetupHost(slug, scenario, ct)
             : JobScenarios.Handles(slug, scenario) || JobScopeScenarios.Handles(slug, scenario)
             ? await Jobs.JobHost.Start(ct, pump: false)
-            : LaunchScenarios.Handles(slug, scenario)
+            : await StartLaunchOrLater(slug, scenario, ct);
+
+    /// <summary>The last hosts of <see cref="Start"/>: the launch, approve-all, item-scope and wrapped-session ones, else the plain golden host.</summary>
+    private static async Task<GoldenHost> StartLaunchOrLater(string slug, string scenario, CancellationToken ct) =>
+        LaunchScenarios.Handles(slug, scenario)
             ? await LaunchScenarios.Start(scenario, ct)
             : ApproveAllScenarios.Handles(slug, scenario)
             ? await ApproveAllScenarios.Start(scenario, ct)

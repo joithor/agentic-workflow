@@ -35,6 +35,12 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     /// <summary>Gets the operations called, in order.</summary>
     public IList<string> Calls { get; } = [];
 
+    /// <summary>Gets the merges asked for, in order.</summary>
+    public IList<PullMerge> Merges { get; } = [];
+
+    /// <summary>Gets or sets a status Merge answers instead of merging; null merges when the expected head holds.</summary>
+    public PullMergeStatus? MergeStatus { get; set; }
+
     /// <summary>Gets the pushes asked for, in order.</summary>
     public IList<PullPush> Pushes { get; } = [];
 
@@ -162,8 +168,14 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     {
         ArgumentNullException.ThrowIfNull(request);
         Calls.Add("Merge");
+        Merges.Add(request);
         return Done(Locate(request.Link).Map(p =>
         {
+            if (MergeStatus is { } forced)
+            {
+                return new PullMergeOutcome(forced, MergedSha: null, "set by the test");
+            }
+
             if (p.State != PullState.Open)
             {
                 return new PullMergeOutcome(PullMergeStatus.Blocked, MergedSha: null, "already merged or closed");

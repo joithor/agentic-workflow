@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Aw.Kernel.Ids;
@@ -34,11 +35,40 @@ public readonly partial struct InstanceAddress : ITypedId<InstanceAddress, strin
 
     /// <summary>A linked instance's address under this one (line spec LN-WF1): started by an effect, not by a wait, and named by what it is for.</summary>
     /// <param name="recipe">The linked instance's recipe.</param>
-    /// <param name="id">What it is for (a phase's id): lowercase letters, digits and hyphens.</param>
+    /// <param name="id">What it is for (a phase's id, as the plan names it): its <see cref="LinkedId"/> names the address, so two ids with the same slug share one.</param>
     /// <param name="attempt">The attempt, from 1.</param>
-    /// <returns>'{this}/{recipe name}.{id}.{attempt}'.</returns>
+    /// <returns>'{this}/{recipe name}.{slug of id}.{attempt}'.</returns>
     public InstanceAddress Linked(RecipeId recipe, string id, int attempt) =>
-        From(string.Create(CultureInfo.InvariantCulture, $"{Value}/{recipe.Name}.{id}.{attempt}"));
+        From(string.Create(CultureInfo.InvariantCulture, $"{Value}/{recipe.Name}.{LinkedId(id) ?? id}.{attempt}"));
+
+    /// <summary>The address segment a linked instance's id becomes: lowercase, every run of characters outside letters and digits one hyphen, no hyphen at either end, at most 64 characters.</summary>
+    /// <param name="id">The id as its owner names it (a plan's phase id, "P1").</param>
+    /// <returns>The slug ("p1"), or null when the id is empty, over 64 characters or has no letter or digit.</returns>
+    public static string? LinkedId(string id)
+    {
+        ArgumentNullException.ThrowIfNull(id);
+        if (id.Length is 0 or > 64)
+        {
+            return null;
+        }
+
+        var slug = new StringBuilder(id.Length);
+        foreach (var c in id)
+        {
+            var lower = char.ToLowerInvariant(c);
+            if (lower is (>= 'a' and <= 'z') or (>= '0' and <= '9'))
+            {
+                slug.Append(lower);
+            }
+            else if (slug.Length > 0 && slug[^1] != '-')
+            {
+                slug.Append('-');
+            }
+        }
+
+        var text = slug.ToString().TrimEnd('-');
+        return text.Length == 0 ? null : text;
+    }
 
     /// <summary>The instance this one is linked to (LN-WF1): the address without its last segment when that segment has the linked form; null for a root or a child.</summary>
     /// <returns>The parent's address, or null.</returns>
