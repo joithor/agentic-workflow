@@ -23,7 +23,7 @@ internal static partial class ScopePacketChecks
         var last = rounds[^1];
         var label = string.Create(CultureInfo.InvariantCulture, $"round {rounds.Count}");
         // why: the recipe's challenge loop (cap c.ChallengeCap) is spent at this many rounds; neither a new round nor a redraft can change what the challenger recorded
-        var spent = rounds.Count >= c.ChallengeCap;
+        var spent = Spent(c);
         if (!string.Equals(ScopeJson.Str(last, "verdict"), "nothingNew", StringComparison.Ordinal)
             || ScopeJson.Items(last, "surfaces").Any() || ScopeJson.Items(last, "behaviours").Any())
         {
@@ -41,6 +41,8 @@ internal static partial class ScopePacketChecks
 
         Walked(rounds, label, spent, s);
     }
+
+    private static bool Spent(ScopeContext c) => ScopeJson.Items(c.Facts["challenge"], "rounds").Count() >= c.ChallengeCap;
 
     private static void Walked(List<JsonNode> rounds, string label, bool spent, RuleSink s)
     {
@@ -88,14 +90,27 @@ internal static partial class ScopePacketChecks
         var challenger = LastRun(runs, "step.scope.challenge");
         if (drafter is null || challenger is null)
         {
-            s.Fail(item: null, drafter is null ? "no run record for the drafter" : "no run record for the challenger", "Both agent runs leave a runtime record in runs.json.");
+            Differs(s, c, item: null, drafter is null ? "no run record for the drafter" : "no run record for the challenger", "Both agent runs leave a runtime record in runs.json.");
             return;
         }
 
-        ModelsDiffer(drafter, challenger, s);
+        ModelsDiffer(drafter, challenger, c, s);
     }
 
-    private static void ModelsDiffer(JsonNode drafter, JsonNode challenger, RuleSink s)
+    private static void Differs(RuleSink s, ScopeContext c, string? item, string message, string fix)
+    {
+        // why: once the loop is spent the challenger never reruns, so the drafter can't change which model ran; the owner reads it at the stop
+        if (Spent(c))
+        {
+            s.Warn(item, message + " and the second opinion is spent", fix);
+        }
+        else
+        {
+            s.Fail(item, message, fix);
+        }
+    }
+
+    private static void ModelsDiffer(JsonNode drafter, JsonNode challenger, ScopeContext c, RuleSink s)
     {
         var challengerModel = ScopeJson.Str(challenger, "model");
         if (IsDesk(challenger) || IsDesk(drafter))
@@ -105,7 +120,7 @@ internal static partial class ScopePacketChecks
         }
         else if (string.IsNullOrEmpty(challengerModel) || string.Equals(ScopeJson.Str(drafter, "model"), challengerModel, StringComparison.Ordinal))
         {
-            s.Fail("step.scope.challenge", $"the challenger ran on {challengerModel ?? "no recorded model"}, the drafter's model", "Run the challenger on a different model.");
+            Differs(s, c, "step.scope.challenge", $"the challenger ran on {challengerModel ?? "no recorded model"}, the drafter's model", "Run the challenger on a different model.");
         }
     }
 

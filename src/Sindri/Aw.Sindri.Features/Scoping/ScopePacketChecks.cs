@@ -51,7 +51,8 @@ internal static partial class ScopePacketChecks
     {
         if (fails.Count > 0)
         {
-            return fails.TrueForAll(static f => string.Equals(f.Rule, ScopeRules.Cov2, StringComparison.Ordinal))
+            // why: both rules fail on what the lenses gathered, which a redraft can't change; only gathering again can
+            return fails.TrueForAll(static f => f.Rule is ScopeRules.Cov2 or ScopeRules.Lens1)
                 ? ScopeOutcome.Regather
                 : stage == ScopeStage.Draft ? ScopeOutcome.Gaps : ScopeOutcome.Incomplete;
         }
