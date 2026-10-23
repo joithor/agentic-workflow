@@ -85,19 +85,36 @@
       "unassigned": false
     },
     {
+      "key": "feature:settings",
+      "label": "Settings",
+      "trust": "trusted",
+      "members": 320,
+      "byKind": {
+        "feature": 10,
+        "surface": 76,
+        "action": 39,
+        "thing": 20,
+        "flow": 4,
+        "decision": 14,
+        "record": 40,
+        "code": 117
+      },
+      "unassigned": false
+    },
+    {
       "key": "feature:tabs",
       "label": "Tabs",
       "trust": "trusted",
-      "members": 800,
+      "members": 480,
       "byKind": {
-        "feature": 24,
-        "surface": 188,
-        "action": 97,
-        "thing": 49,
-        "flow": 10,
-        "decision": 35,
-        "record": 100,
-        "code": 297
+        "feature": 14,
+        "surface": 112,
+        "action": 58,
+        "thing": 29,
+        "flow": 6,
+        "decision": 21,
+        "record": 60,
+        "code": 180
       },
       "unassigned": false
     }

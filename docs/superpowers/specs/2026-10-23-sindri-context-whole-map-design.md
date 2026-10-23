@@ -71,6 +71,8 @@ The answer, `WholeMapView` (one record set in `SindriJsonContext`, mirrored in `
   truncated: bool }
 ```
 
+A node's `area` is its parent cluster: the app collapses and expands the map by it, and `area=<key>` is the drill-in (it answers that area's nodes in full). The map holds no symbols (they live in the code index, reached through `context_lenses`' code band and `GET /sindri/context/code`), so there is no symbol level below a code file.
+
 `areas` and `areaEdges` are always there, so the page can draw the overview and a mini-map from any answer. Labels follow the map's
 text rules (`MapText`: scrubbed at ingest and egress, 200 characters); a session or a service gets them fenced
 `<untrusted source="map">`, a human gets clean text beside `trust`, exactly as `lenses` does. The answer carries no evidence, quotes or
@@ -117,8 +119,8 @@ map of that order arrives in one answer, and are checked against the first real 
 
 | Limit | Default | Why |
 |---|---|---|
-| Node budget for `nodes` | 1,500 nodes | about 0.6 MB of JSON at 1,500 nodes and about 2,300 edges (the sample's 412 nodes and 655 edges, scaled); one answer, one layout pass |
-| Area cap for `area=` | 1,500 nodes per area (the node budget), then `area.truncated` with full `counts` | the page opens a big area in one read; a bigger area keeps its counts and a "more not shown" chip, as F3 bands do |
+| Node budget for `nodes` | 500 nodes | the ui lane draws at most about 500 nodes at once; about 0.2 MB of JSON at 500 nodes and about 800 edges (the sample's 412 nodes and 655 edges, scaled); one answer, one layout pass |
+| Area cap for `area=` | 500 nodes per area (the node budget), then `area.truncated` with full `counts` | the page opens a big area in one read; a bigger area keeps its counts and a "more not shown" chip, as F3 bands do |
 | Areas | 500, then `truncated` | an areas answer stays well under 1 MB for any map |
 | Edges | every edge between returned nodes; `areaEdges` aggregated by (from, to, type) | edges are cheaper than nodes and the page needs them for the layout |
 
@@ -127,7 +129,7 @@ They are constants in `WholeMapRules`, not profile keys (no owner setting to kee
 The answer is computed from the stored graph of one version and kept in memory per (repo, mapVersion, draft, caller scope, overrides revision), the
 last 4 answers by default (sized by bytes if W1's measurement shows thrash across repos), since a map version's nodes never change once
 written; the overrides layer is shared across versions (retrieval spec), so its revision is in the key, and a draft is recomputed when the draft changes. The first read of a
-version on a 1,500-node map should take well under 200 ms on the owner's box; W1 measures it and records the number in
+version on a 500-node map should take well under 100 ms on the owner's box; W1 measures it and records the number in
 `docs/csharp/sindri-context.md`. W1's exit criteria: if more than half of the real map's nodes land in one area or in
 `area:unassigned`, the PR proposes the adaptive depth's numbers (or a better rule) in writing before merging.
 
@@ -148,6 +150,7 @@ page must have. The ui lane writes the visual slice spec (in its F3 spec, beside
 |---|---|---|
 | **Whole map** (new, the page's first state) | the page opens with no item | `GET map/whole` (detail `auto`) the moment the page is first shown; the map is fitted to the stage; the head reads "Context · the whole map · v<N>" |
 | Whole map, by area | the answer is `detail: areas` | the head says why in one line ("This map has N items, so it is grouped by feature; open one to see its items", people-facing text says "feature" where the API says "area"); one tile per area (label, member count, a small row of kind counts), the edges between areas drawn with their counts; clicking a tile opens it (`area=`), double-click or zooming in past the level threshold does the same; an area cut at the cap shows a "more not shown" chip with its full counts |
+| No map, loading and building | any of the three | each shows the map's size (`counts`: nodes and edges) and when it was last built (`asOf`), and while a build runs the index wait from `GET /sindri/context/map/publish`, so the person sees what is there, how old it is and what is pending, not a blank stage |
 | Loading and read failure | the open-time read, an area open, or a query's reads are in flight or failed | a quiet loading row over the stage (the existing building style, no spinner storm); a failed read (network, timeout, 5xx) shows "Couldn't read the map" with Retry and keeps whatever was already drawn |
 | **Zoomed in** (new) | the person types a starting point or a question and presses Enter, or picks a suggestion, or comes from an item | the existing read runs (`query`, then `lenses`, as today); the camera eases to the box around the answer's nodes (`Motion.Base`; instant under reduced motion); on a `detail: nodes` map those nodes and their edges are drawn at full strength in their places on the whole map; on a `detail: areas` map the page runs `locate` with the answer's node keys, opens the touched areas with `area=` (the 3 with most answer nodes, then a "N more features touched" chip; each opens in one read, in parallel, with the loading row), and draws the answer's nodes in them at full strength, the other tiles staying as tiles; everything else stays drawn behind at the hover-dim strength (0.42); the lens's band detail (intent above, code below) is the existing inspector and band rows for those nodes. "Whole map" (a button in the control row) or Esc goes back and fits again. **Esc order:** it closes the inspector first, then zooms out; the page handles Esc in the starting-point box too (today's handler skips keys whose source is a text box, which is where focus sits after typing a query and pressing Enter), and a test pins both. A query with no match, or `locate` returning `area: null`, shows the refusal banner with its suggestions over the whole map and moves nothing. In pinned mode the page reads the pinned `mapVersion`; in live mode a newer version shows an "updated" chip and doesn't move the camera until clicked |
 | Item entry | the page is opened from an item | Zoomed in on the item's anchors, as above, with the whole map loaded behind |
@@ -171,12 +174,12 @@ The card keeps the explain spec's rule: it shows for one starting point only, so
 - **Level of detail on zoom.** Below a zoom threshold (the ui lane picks it, about 35%), nodes are drawn as dots in their area's
   colour with no labels and no pills, and each area shows one label; above it, the F3 chips and cards. Label pills for in-area edges
   stay hover-only (F3 decision 2).
-- **Cost.** At 1,500 nodes the page must not create one control per node and pill eagerly, as F3's single-neighbourhood page does
+- **Cost.** At 500 nodes the page must not create one control per node and pill eagerly, as F3's single-neighbourhood page does
   today (`ContextMapWorld.PlaceAll`): the whole map draws nodes and edges in one `Render` pass (as `GraphEdgesControl` already does
   for edges) and only builds controls for what is on screen above the threshold. Budget: the first frame within 1 s of the page
-  opening on the owner's box for a 1,500-node map, and panning at the display's frame rate.
+  opening on the owner's box for a 500-node map, and panning at the display's frame rate.
 - **Mini-map.** The existing `MiniMapControl` (its node type is the Run canvas's `MiniMapNode`, and it is not focusable) gets an adapter from `areas` and `areaEdges` to `MiniMapNode`, and a keyboard story (arrow keys move the view box), so it works at both levels.
-- **First-open zoom.** "Fit the whole world" may fall below the detail threshold on a 1,500-node map; the first open therefore fits the world but never below the threshold's floor, and shows area labels (not node labels) when it is under it, so a person always reads something on opening.
+- **First-open zoom.** "Fit the whole world" may fall below the detail threshold on a 500-node map; the first open therefore fits the world but never below the threshold's floor, and shows area labels (not node labels) when it is under it, so a person always reads something on opening.
 - **Accessibility.** Every area tile is focusable, has an accessible name (label, member count) and opens on Enter; Tab order is columns left to right, then the control row; the dots have no per-dot accessible nodes, so the page keeps an accessible list of areas (and of the answer's nodes when zoomed in) that J and K walk; an area is identified by its label and a shape or pattern as well as its colour, from a bounded palette in `Theme/` (more than the palette's colours reuse with a distinct pattern, no hex outside `Theme/`); focus moves to the zoom target when a query zooms in and back to the starting-point box on zoom out.
 
 ### 3.3 One click
@@ -203,6 +206,7 @@ page does not offer it.
 
 ## 6. Testing
 
+- **W1 goldens:** the real goldens W1 writes must match the shape of the draft goldens under `2026-10-23-sindri-context-whole-map-design/draft-goldens/` (`nodes-small.json`, `areas-over-budget.json`): same fields, same enums, areas sorted by key; the ui lane builds against the drafts first, and a difference is a reviewed change to both.
 - **Unit (context):** `MapAreas.Assign` on built graphs: each rule in §2.2, ties, cycles, `alsoIn` capped at 5, unassigned, and the
   same areas for the same version twice. `WholeMapRules`: the auto choice at the budget and one over it, the over-budget fallback,
   the area cap and its counts, 100 and 101 `locate` keys.
@@ -219,7 +223,7 @@ page does not offer it.
 
 | Q | Question | Default |
 |---|---|---|
-| Q1 | When the map is big, should the first screen still try to show every item, or group them by feature first? | Show every item up to about 1,500; above that, group by feature and open a group with a click |
+| Q1 | When the map is big, should the first screen still try to show every item, or group them by feature first? | Show every item up to about 500; above that, group by feature and open a group with a click |
 | Q2 | Should agent sessions be able to read the whole map of their repo? | Yes, through the HTTP route like every other map read, labels marked untrusted; no new agent tool |
 | Q3 | Items that aren't linked to any feature yet (a ticket that mentions nothing, a code file no feature claims): show them? | Yes, in their own group, "Not linked to a feature yet" |
 | Q4 | When a query zooms in, should the rest of the map stay visible behind it? | Yes, dimmed; Esc or "Whole map" brings it back |
