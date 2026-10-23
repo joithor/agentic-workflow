@@ -12,9 +12,14 @@ internal sealed class StageCellViewModel
 {
     private readonly StateCell _cell;
 
-    internal StageCellViewModel(StateCell cell, bool isCurrent, bool isBlocked)
+    /// <param name="cell">The served cell.</param>
+    /// <param name="isCurrent">True for the state the instance is in.</param>
+    /// <param name="isBlocked">True when a required input is missing and this is the state it waits in.</param>
+    /// <param name="stateName">The state in the recipe's words; null reads the id as served.</param>
+    internal StageCellViewModel(StateCell cell, bool isCurrent, bool isBlocked, string? stateName = null)
     {
         _cell = cell;
+        StateName = stateName ?? cell.State;
         IsCurrent = isCurrent;
         IsBlocked = isBlocked;
         var badge = cell.Badge is { } b ? Labels.CellBadge(b.Kind, b.Reason) : string.Empty;
@@ -24,6 +29,9 @@ internal sealed class StageCellViewModel
 
     /// <summary>The state this cell is.</summary>
     public string State => _cell.State;
+
+    /// <summary>The state in words: the recipe's name for it when served, else its id.</summary>
+    public string StateName { get; }
 
     /// <summary>The leading mark: the progress glyph, the engine badge, or the blocked dash.</summary>
     public string Glyph { get; }
@@ -41,7 +49,7 @@ internal sealed class StageCellViewModel
     public bool IsCurrent { get; }
 
     /// <summary>The name screen readers hear: the state, what the cell says in words, and "current" for the state the instance is in.</summary>
-    public string Name => $"{_cell.State}, {Words()}{(IsCurrent ? ", " + Labels.StageCurrent : string.Empty)}";
+    public string Name => $"{StateName}, {Words()}{(IsCurrent ? ", " + Labels.StageCurrent : string.Empty)}";
 
     internal static string Mark(Api.Workflow.StateGlyph glyph) => glyph switch
     {

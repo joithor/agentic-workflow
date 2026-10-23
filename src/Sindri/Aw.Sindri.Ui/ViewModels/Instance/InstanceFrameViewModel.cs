@@ -185,6 +185,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         {
             Show(answer.Value);
             await ReadRun(answer.Value, generation, cancellationToken).ConfigureAwait(true);
+            await ReadNames(url, answer.Value, generation, cancellationToken).ConfigureAwait(true);
         }
         else
         {
@@ -223,6 +224,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         var header = detail.Current.Status.Header;
         var local = TimeZoneInfo.ConvertTime(header.Since, clock.LocalTimeZone);
         Address = detail.Address;
+        _shown = detail;
         _state = detail.State;
         (Title, Recipe, Hash12, Version) = (detail.Title, detail.Recipe.Id, header.Hash12, string.Create(CultureInfo.InvariantCulture, $"v{header.Version}"));
         (StateText, Detail) = (header.State, header.Detail ?? string.Empty);
@@ -252,7 +254,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
             Subject = subject;
         }
 
-        var band = new StatesBandViewModel(detail.States, detail.OrderedBy, detail.State);
+        var band = new StatesBandViewModel(detail.States, detail.OrderedBy, detail.State, NameOf);
         if (Band is null || !string.Equals(Band.Signature, band.Signature, StringComparison.Ordinal))
         {
             Band = band;
@@ -277,6 +279,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
     private void Clear()
     {
         _generation++;
+        _shown = null;
         (Title, Recipe, Hash12, Version, StateText, Detail, SinceText, Identity, ProblemText, Note) = (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
         (WorkflowName, DetailsText, AddressCopy) = (string.Empty, string.Empty, null);
         (Subject, Band, Expanded, StepRuns) = (null, null, null, null);

@@ -19,7 +19,7 @@ internal sealed class FactRowViewModel : ObservableObject
     private readonly FactViewerRegistry _registry;
     private readonly FactViewerContext _context;
 
-    internal FactRowViewModel(FactRow row, string address, IReadOnlyList<StateCell> states, StatusCommand? complete, FactViewerRegistry registry, FactViewerContext context)
+    internal FactRowViewModel(FactRow row, string address, IReadOnlyList<StateCell> states, StatusCommand? complete, FactViewerRegistry registry, FactViewerContext context, Func<string, string>? nameOf = null)
     {
         (_row, _registry, _context) = (row, registry, context);
         (Key, Label, Address) = (row.Key, FactText.Scrub(row.Label), address);
@@ -29,7 +29,7 @@ internal sealed class FactRowViewModel : ObservableObject
         By = row.By is null ? string.Empty : row.By.StartsWith(HumanPrefix, StringComparison.Ordinal) ? Labels.ByYou : FactText.Scrub(row.By);
         At = row.At is { } at ? Local(at, context.Clock) : string.Empty;
         ProgressText = row.Progress is { } progress ? Labels.ProgressOf(progress) : string.Empty;
-        (From, FromMark) = row.From is { } from ? (Labels.FromState(from), Mark(states, from)) : (string.Empty, string.Empty);
+        (From, FromMark) = row.From is { } from ? (Labels.FromState(nameOf?.Invoke(from) ?? from), Mark(states, from)) : (string.Empty, string.Empty);
         CanView = row.Status != FactStatus.Pending;
         IsAwaiting = row.Status == FactStatus.Pending && row.Pending is not null;
         PendingChip = IsAwaiting ? Labels.AvailableWithU8b : string.Empty;
