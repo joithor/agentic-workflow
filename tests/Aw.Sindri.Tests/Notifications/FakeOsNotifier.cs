@@ -21,7 +21,7 @@ internal sealed class FakeOsNotifier : IOsNotifier
         }
     }
 
-    /// <summary>The click target of each notification shown, in order (null when it had none).</summary>
+    /// <summary>The deep link each notification carried, in order (null for none).</summary>
     public IReadOnlyList<string?> Links
     {
         get

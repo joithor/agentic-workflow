@@ -20,6 +20,7 @@ public sealed class AgentClosingTests
     private static readonly LaunchId _launch = A.FirstLaunchId;
     private readonly List<string> _order = [];
     private readonly Flushes _sampler;
+    private readonly ReportRefusals _refusals = new();
 
     public AgentClosingTests()
     {
@@ -35,6 +36,7 @@ public sealed class AgentClosingTests
             .AddSingleton<IAgentSessions>(sessions ?? new Sessions(_order))
             .AddSingleton<IRunDiff>(new FakeRunDiff())
             .AddSingleton<ILauncher>(new Stops(_order))
+            .AddSingleton(_refusals)
             .AddSingleton<ILogger<AgentClosing>>(NullLogger<AgentClosing>.Instance)
             .AddSingleton<AgentClosing>();
         return services.BuildServiceProvider().GetRequiredService<AgentClosing>();
@@ -47,6 +49,16 @@ public sealed class AgentClosingTests
 
         Assert.Equal(["flush", "usage", "stop"], _order);
         Assert.Equal(42, closed.Tokens);
+    }
+
+    [Fact]
+    public async Task A_close_forgets_the_launchs_refusal_so_nothing_leaks_when_the_watch_never_asked()
+    {
+        _refusals.Record(_launch, "fact:design isn't JSON");
+
+        _ = await Closing().Close(new AgentCloseRun(_launch.Value, Worktree: null, StartHead: null, Measure: false), Token);
+
+        Assert.Null(_refusals.Take(_launch));
     }
 
     [Fact]
