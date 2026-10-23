@@ -51,6 +51,14 @@ internal static partial class Labels
     /// <summary>The amber callout on the sheet of a session that is asking.</summary>
     internal const string SheetAskingCallout = "Answer it in its own terminal; Sindri only shows that it is waiting.";
 
+    /// <summary>The line on the sheet of an ended session that has no resume command.</summary>
+    internal const string SheetNoResume = "There is no command to pick it up again.";
+
+    /// <summary>The line on the sheet of an ended session that has a resume command.</summary>
+    /// <param name="command">The command, as the ended row shows it.</param>
+    /// <returns>"To pick it up again, run: claude --resume abc".</returns>
+    internal static string SheetResumeWith(string command) => "To pick it up again, run: " + command;
+
     /// <summary>The copy chip of the session's ref.</summary>
     internal const string SheetCopyRef = "Copy reference";
 

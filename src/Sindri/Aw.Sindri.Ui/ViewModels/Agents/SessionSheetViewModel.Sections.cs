@@ -16,6 +16,12 @@ internal sealed partial class SessionSheetViewModel
     /// <summary>The fields in groups: where it is working, then timing; a group with no field is left out. The host has its own list.</summary>
     public IReadOnlyList<SessionSectionViewModel> Sections { get; private set => Set(ref field, value); } = [];
 
+    /// <summary>Asks the Agents page whether a ref is a recently ended session and what resumes it: null when it is not one, empty when it has no resume command, else the command.</summary>
+    internal Func<string, string?>? EndedResumeOf { get; set; }
+
+    /// <summary>What the sheet of an ended session says about resuming it; empty for any other sheet.</summary>
+    public string EndedResumeText { get; private set => Set(ref field, value); } = string.Empty;
+
     /// <summary>The Host group's caption.</summary>
     public string HostHeading => Labels.SheetHost;
 
@@ -35,6 +41,15 @@ internal sealed partial class SessionSheetViewModel
     /// <param name="cancellationToken">Cancels the write.</param>
     /// <returns>A task that completes once the clipboard answered.</returns>
     internal Task CopyRef(CancellationToken cancellationToken) => RefCopy?.Run(Ref, cancellationToken) ?? Task.CompletedTask;
+
+    // A session that ended: the page knows its resume command (or that it has none) from the row that opened the sheet.
+    private void DrawEndedResume() =>
+        EndedResumeText = EndedResumeOf?.Invoke(Ref) switch
+        {
+            null => string.Empty,
+            "" => Labels.SheetNoResume,
+            var command => Labels.SheetResumeWith(command),
+        };
 
     private void DrawSections(SessionRowView session)
     {

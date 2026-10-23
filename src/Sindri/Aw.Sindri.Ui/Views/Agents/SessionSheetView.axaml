@@ -13,6 +13,10 @@
             AutomationProperties.Name="{Binding EndedText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
       <TextBlock Classes="body-strong" Text="{Binding EndedText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
     </Border>
+    <Border x:Name="SessionEndedResume" IsVisible="{Binding EndedResumeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+            AutomationProperties.Name="{Binding EndedResumeText}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+      <TextBlock Classes="body muted" Text="{Binding EndedResumeText}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+    </Border>
     <Border x:Name="SessionNote" IsVisible="{Binding Note, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
             AutomationProperties.Name="{Binding Note}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
       <TextBlock Classes="body muted" Text="{Binding Note}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
