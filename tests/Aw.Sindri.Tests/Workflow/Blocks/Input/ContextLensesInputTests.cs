@@ -47,8 +47,20 @@ public sealed class ContextLensesInputTests
 
     private static readonly string[] _hops = ["state", "flow"];
 
-    internal static ContextLensesInput Input(StubLenses lenses, bool profile = true) =>
-        new(EngineProxy.Of(lenses), new ContextInputScopes(new ContextInputFixtures.Profiles(profile ? ContextInputFixtures.Profile() : null)), ContextInputFixtures.NoFacts(), ShippedComposition.Json);
+    /// <summary>A clock whose timers fire at once and remember how long they were asked to wait, so a retry's backoff is seen and costs no time.</summary>
+    internal sealed class ImmediateTime : TimeProvider
+    {
+        public List<TimeSpan> Waits { get; } = [];
+
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+        {
+            Waits.Add(dueTime);
+            return base.CreateTimer(callback, state, TimeSpan.Zero, Timeout.InfiniteTimeSpan);
+        }
+    }
+
+    internal static ContextLensesInput Input(StubLenses lenses, bool profile = true, TimeProvider? time = null) =>
+        new(EngineProxy.Of(lenses), new ContextInputScopes(new ContextInputFixtures.Profiles(profile ? ContextInputFixtures.Profile() : null)), ContextInputFixtures.NoFacts(), ShippedComposition.Json, time ?? new ImmediateTime());
 
     private static StepInputContext Context(RepoName? repo, params string[] anchors) => new(
         BlockId.From(ContextLensesInput.Id), BlockId.From("step.scope.gather"),
@@ -88,6 +100,62 @@ public sealed class ContextLensesInputTests
         Assert.Contains("unavailable", filled.Value.Sections["lenses"], StringComparison.Ordinal);
         Assert.Contains("SND-CONTEXT-003", filled.Value.Sections["lenses"], StringComparison.Ordinal);
         Assert.Null(filled.Value.Result);
+    }
+
+    [Fact]
+    public async Task A_refusal_that_may_pass_is_retried_with_a_bounded_backoff_and_the_view_comes_back_when_the_engine_answers()
+    {
+        var asked = 0;
+        var lenses = new StubLenses(a => ++asked < 3 ? ContextErrors.StoreUnavailable.With("the map is building") : ContextInputFixtures.SmallSet([.. a]));
+        var time = new ImmediateTime();
+
+        var filled = await Input(lenses, time: time).Fill(Context(ContextInputFixtures.Web, "feature:a"), TestContext.Current.CancellationToken);
+
+        Assert.Equal(3, lenses.Calls.Count);
+        Assert.Equal(ContextLensesInput.Backoff, time.Waits);
+        Assert.NotNull(filled.Value.Result);
+    }
+
+    [Fact]
+    public async Task A_lenses_view_that_stays_unavailable_after_the_bounded_retry_is_an_honest_section_with_no_typed_result()
+    {
+        var lenses = new StubLenses(_ => ContextErrors.NoMap.With("the map is still building"));
+        var time = new ImmediateTime();
+
+        var filled = await Input(lenses, time: time).Fill(Context(ContextInputFixtures.Web, "feature:a"), TestContext.Current.CancellationToken);
+
+        Assert.Equal(ContextLensesInput.Backoff.Length + 1, lenses.Calls.Count);
+        Assert.Equal(ContextLensesInput.Backoff.Length, time.Waits.Count);
+        Assert.Contains("SND-CONTEXT-030", filled.Value.Sections["lenses"], StringComparison.Ordinal);
+        Assert.Null(filled.Value.Result);
+    }
+
+    [Fact]
+    public async Task A_refusal_that_cannot_pass_is_not_retried()
+    {
+        var lenses = new StubLenses(_ => ContextErrors.UnknownAnchor.With("no anchor resolved"));
+        var time = new ImmediateTime();
+
+        _ = await Input(lenses, time: time).Fill(Context(ContextInputFixtures.Web, "feature:zzz"), TestContext.Current.CancellationToken);
+
+        _ = Assert.Single(lenses.Calls);
+        Assert.Empty(time.Waits);
+    }
+
+    [Fact]
+    public async Task A_view_far_over_256_KiB_reaches_the_Step_whole_and_the_same_on_a_refill()
+    {
+        var lenses = new StubLenses(a => ContextInputFixtures.BigSet(8000, [.. a]));
+        var input = Input(lenses);
+
+        var first = await input.Fill(Context(ContextInputFixtures.Web, "feature:a"), TestContext.Current.CancellationToken);
+        var second = await input.Fill(Context(ContextInputFixtures.Web, "feature:a"), TestContext.Current.CancellationToken);
+
+        var result = first.Value.Result!.Value;
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(result.GetRawText()) > 1024 * 1024);
+        Assert.Equal(8000, result.GetProperty("bands").GetProperty("product").GetProperty("neighbors").GetArrayLength());
+        Assert.Equal(result.GetRawText(), second.Value.Result!.Value.GetRawText());
+        Assert.Equal(first.Value.Sections["lenses"], second.Value.Sections["lenses"]);
     }
 
     [Fact]
