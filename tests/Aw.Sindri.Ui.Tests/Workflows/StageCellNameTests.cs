@@ -58,6 +58,6 @@ public sealed class StageCellNameTests
         var row = new InstanceRowViewModel(Served, new FakeClipboard(), new FakeTimeProvider(A.Noon), Names(Served, "Design the change"));
 
         Assert.StartsWith("Design the change, ", row.Stages[0].Name, StringComparison.Ordinal);
-        Assert.All(row.Stages, c => Assert.DoesNotContain(c.State + ", ", c.Name.Split("Design the change")[0], StringComparison.Ordinal));
+        Assert.All(row.Stages.Skip(1), c => Assert.StartsWith(WorkflowNames.Of(c.State, displayName: null) + ", ", c.Name, StringComparison.Ordinal));
     }
 }
