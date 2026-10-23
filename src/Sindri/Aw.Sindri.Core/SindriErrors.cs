@@ -252,10 +252,10 @@ public static partial class SindriErrors
     public static readonly ErrorDefinition ForgeUnavailable = new("SND-FORGE-004", ErrorKind.Unavailable, "The forge is unavailable");
 
     /// <summary>Every Sindri error, for ErrorCatalogue.Validate.</summary>
-    public static IReadOnlyList<ErrorDefinition> All => _all.Value;
+    public static IReadOnlyList<ErrorDefinition> All => field ??= Every();
 
-    // Built on first read: the codes live in several partial files, whose static initializers run in file order.
-    private static readonly Lazy<IReadOnlyList<ErrorDefinition>> _all = new(static () =>
+    // A method, not a static initializer: the codes live in several partial files, whose static initializers run in file order.
+    private static ErrorDefinition[] Every() =>
     [
         LeaseHeld, LeaseLost, LeaseStale, ProfileMissing, ProfileInvalid, ProfileHashMismatch, ProfileNeedsTerminal,
         ProfileNotApproved, ApprovalsUnavailable, LedgerSchema, LedgerUnavailable, NotRunning, ApiTimeout, PortInUse, ApiNoCode, ApiInternal,
@@ -265,5 +265,5 @@ public static partial class SindriErrors
         LauncherInvalid, LaunchNotApproved, LaunchFormUnsupported, LaunchPrePushForeign, LaunchPushRefused, LaunchTrustUnavailable, LaunchFactFileTracked, LaunchSessionIdTimedOut, AuthLaunchSecret, SessionSourceFailed, SessionsUnavailable, SessionsTestOverride, SessionNotFound, SessionConflict,
         WorktreeInvalid, WorktreeConflict, WorktreeGitFailed, WorktreeDirty, SetupFolderInvalid, SetupRepoExists, SetupConfirmationRefused, SetupRepoNotInProfile, SetupOnyxCredentialsMissing, SetupOnyxNotWaiting, SetupProfileNotApproved,
         NoForge, ForgeRefused, ForgeNotFound, ForgeUnavailable,
-    ]);
+    ];
 }
