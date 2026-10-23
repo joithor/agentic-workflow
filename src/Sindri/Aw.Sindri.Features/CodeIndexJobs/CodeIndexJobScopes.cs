@@ -84,8 +84,7 @@ internal sealed class CodeIndexJobScopes(IApprovedProfile approvals, ICallerCont
             EmbeddingsUrl: own?.Embeddings?.Url ?? top?.Embeddings?.Url,
             EmbeddingsModel: own?.Embeddings?.Model ?? top?.Embeddings?.Model,
             GraphEnabled: own?.Graph?.Enabled ?? top?.Graph?.Enabled,
-            GraphMaxMB: own?.Graph?.MaxMB ?? top?.Graph?.MaxMB,
-            GraphMaxNodes: own?.Graph?.MaxNodes ?? top?.Graph?.MaxNodes);
+            GraphMaxMB: own?.Graph?.MaxMB ?? top?.Graph?.MaxMB);
     }
 
     private static IReadOnlyList<string>? Join(IReadOnlyList<string>? first, IReadOnlyList<string>? second)

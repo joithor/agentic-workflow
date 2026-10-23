@@ -18,7 +18,7 @@ public sealed class CodeIndexProfileSettingsTests
             MaxFileKB: 4096,
             MaxTotalMB: 2048,
             Embeddings: new ProfileEmbeddings(Enabled: false, Url: "http://127.0.0.1:11500", Model: "mxbai-embed-large"),
-            Graph: new ProfileGraph(Enabled: false, MaxMB: 1024, MaxNodes: 2_000_000)),
+            Graph: new ProfileGraph(Enabled: false, MaxMB: 1024)),
         Repos:
         [
             new RepoEntry("demo", "/work/demo"),
@@ -39,7 +39,6 @@ public sealed class CodeIndexProfileSettingsTests
         Assert.Equal("mxbai-embed-large", demo.Embeddings.Model);
         Assert.False(demo.Graph.Enabled);
         Assert.Equal(1024, demo.Graph.MaxMegabytes);
-        Assert.Equal(2_000_000, demo.Graph.MaxNodes);
     }
 
     [Fact, Trait("Lane", "unit")]

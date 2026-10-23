@@ -21,7 +21,7 @@ public sealed class GraphLayer(IRepoSnapshot snapshot, TimeProvider clock, IBody
 
     /// <summary>
     /// The graph layer (spec §5.5, §5.7): graphify on the whole snapshot, its nodes in files no parser covers stored as graph symbols and its call edges merged
-    /// as 'graphify' edges. A tool that is missing, unsandboxed, off the pin or failed leaves the layer unavailable with its code and no stale edge; only a
+    /// as 'graphify' edges. A tool that is missing, unsandboxed, off the pin or failed leaves the layer unavailable with its code and no stale edge; one that timed out leaves the last good graph in place; only a
     /// failure of the index file itself fails the build.
     /// </summary>
     /// <param name="build">The build file.</param>
@@ -48,6 +48,12 @@ public sealed class GraphLayer(IRepoSnapshot snapshot, TimeProvider clock, IBody
 
         request.Progress.Report("graph");
         var ran = await RunGraph(graph, request, code, cancellationToken).ConfigureAwait(false);
+        if (ran.IsError && IsTimeout(ran.Error))
+        {
+            // A graphify run that ran out of time keeps the last good graph; the layer says it is unavailable (owner q93, 2026-10-23).
+            return Unavailable(ran.Error, now);
+        }
+
         if (ran.IsError)
         {
             var emptied = await StoreGraph(build, EmptyGraph(request, code), cancellationToken).ConfigureAwait(false);
@@ -179,6 +185,9 @@ public sealed class GraphLayer(IRepoSnapshot snapshot, TimeProvider clock, IBody
     }
 
     // Only the three layer codes and their closed-set detail reach the layer row; any other failure reads as 'failed'.
+    private static bool IsTimeout(Error error)
+        => string.Equals(error.Code, CodeIndexErrors.GraphUnavailable.Code, StringComparison.Ordinal) && string.Equals(error.Message, "timeout", StringComparison.Ordinal);
+
     private static LayerRecord Unavailable(Error error, DateTimeOffset now)
     {
         var known = _layerCodes.Contains(error.Code, StringComparer.Ordinal);

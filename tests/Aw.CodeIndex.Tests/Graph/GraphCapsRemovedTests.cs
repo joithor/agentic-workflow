@@ -28,7 +28,7 @@ public sealed class GraphCapsRemovedTests : IDisposable
         var links = string.Join(',', Enumerable.Range(0, 30).Select(i => string.Create(CultureInfo.InvariantCulture, $$"""{"source":"n{{i % 5}}","target":"n{{(i + 1) % 5}}","relation":"calls","confidence":"EXTRACTED","source_file":"src/a.ts","source_location":"L{{i + 1}}"}""")));
         var json = "{\"nodes\":[" + nodes + "],\"links\":[" + links + "]}";
 
-        var parsed = GraphJsonParser.Parse(Encoding.UTF8.GetBytes(json), new HashSet<string>(["src/a.ts"], StringComparer.Ordinal), ["/snap"], maxNodes: 1, new FakeBodyScrubber().Scrub);
+        var parsed = GraphJsonParser.Parse(Encoding.UTF8.GetBytes(json), new HashSet<string>(["src/a.ts"], StringComparer.Ordinal), ["/snap"], new FakeBodyScrubber().Scrub);
 
         Assert.False(parsed.IsError);
         Assert.Equal(5, parsed.Value.Nodes.Count);

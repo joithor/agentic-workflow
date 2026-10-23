@@ -140,7 +140,7 @@ internal sealed partial class GraphifyRunner(GraphifyOptions options, IBodyScrub
         }
 
         var files = request.Files.Select(f => f.Path).ToHashSet(StringComparer.Ordinal);
-        return GraphJsonParser.Parse(json.Value, files, [snapshot, realSnapshot], request.Settings.MaxNodes, scrubber.Scrub);
+        return GraphJsonParser.Parse(json.Value, files, [snapshot, realSnapshot], scrubber.Scrub);
     }
 
     // graph.json is the sandboxed tool's output, read unsandboxed: a regular file through no link, never over the cap.

@@ -15,8 +15,7 @@ public sealed class CodeIndexSettingsTests
         Assert.True(result.Value.Embeddings.Enabled);
         Assert.Equal("http://127.0.0.1:11434", result.Value.Embeddings.Url);
         Assert.Null(result.Value.Embeddings.Model);
-        Assert.Equal(256, result.Value.Graph.MaxMegabytes);
-        Assert.Equal(500_000, result.Value.Graph.MaxNodes);
+        Assert.Equal(1_024, result.Value.Graph.MaxMegabytes);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -34,13 +33,12 @@ public sealed class CodeIndexSettingsTests
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("index.maxFileKB", 0, null, null, null)]
-    [InlineData("index.maxTotalMB", null, -1, null, null)]
-    [InlineData("index.graph.maxMB", null, null, 0, null)]
-    [InlineData("index.graph.maxNodes", null, null, null, 0)]
-    public void Create_names_the_key_path_of_a_bad_number(string keyPath, int? maxFileKb, int? maxTotalMb, int? graphMaxMb, int? graphMaxNodes)
+    [InlineData("index.maxFileKB", 0, null, null)]
+    [InlineData("index.maxTotalMB", null, -1, null)]
+    [InlineData("index.graph.maxMB", null, null, 0)]
+    public void Create_names_the_key_path_of_a_bad_number(string keyPath, int? maxFileKb, int? maxTotalMb, int? graphMaxMb)
     {
-        var result = CodeIndexSettings.Create(new CodeIndexSettingsInput(MaxFileKB: maxFileKb, MaxTotalMB: maxTotalMb, GraphMaxMB: graphMaxMb, GraphMaxNodes: graphMaxNodes));
+        var result = CodeIndexSettings.Create(new CodeIndexSettingsInput(MaxFileKB: maxFileKb, MaxTotalMB: maxTotalMb, GraphMaxMB: graphMaxMb));
 
         Assert.Equal("SND-CODEIDX-001", result.Error.Code);
         Assert.StartsWith(keyPath, result.Error.Message, StringComparison.Ordinal);

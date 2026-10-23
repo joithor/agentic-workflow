@@ -22,8 +22,8 @@ Aw.CodeIndex.Core.CodeIndexSettings.UtilityGlobs.get -> System.Collections.Gener
 Aw.CodeIndex.Core.CodeIndexSettings.UtilityGlobs.init -> void
 Aw.CodeIndex.Core.CodeIndexSettingsInput
 Aw.CodeIndex.Core.CodeIndexSettingsInput.<Clone>$() -> Aw.CodeIndex.Core.CodeIndexSettingsInput!
-Aw.CodeIndex.Core.CodeIndexSettingsInput.CodeIndexSettingsInput(System.Collections.Generic.IReadOnlyList<string!>? DenyPaths = null, System.Collections.Generic.IReadOnlyList<string!>? UtilityGlobs = null, int? MaxFileKB = null, int? MaxTotalMB = null, bool? EmbeddingsEnabled = null, string? EmbeddingsUrl = null, string? EmbeddingsModel = null, bool? GraphEnabled = null, int? GraphMaxMB = null, int? GraphMaxNodes = null) -> void
-Aw.CodeIndex.Core.CodeIndexSettingsInput.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? DenyPaths, out System.Collections.Generic.IReadOnlyList<string!>? UtilityGlobs, out int? MaxFileKB, out int? MaxTotalMB, out bool? EmbeddingsEnabled, out string? EmbeddingsUrl, out string? EmbeddingsModel, out bool? GraphEnabled, out int? GraphMaxMB, out int? GraphMaxNodes) -> void
+Aw.CodeIndex.Core.CodeIndexSettingsInput.CodeIndexSettingsInput(System.Collections.Generic.IReadOnlyList<string!>? DenyPaths = null, System.Collections.Generic.IReadOnlyList<string!>? UtilityGlobs = null, int? MaxFileKB = null, int? MaxTotalMB = null, bool? EmbeddingsEnabled = null, string? EmbeddingsUrl = null, string? EmbeddingsModel = null, bool? GraphEnabled = null, int? GraphMaxMB = null) -> void
+Aw.CodeIndex.Core.CodeIndexSettingsInput.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? DenyPaths, out System.Collections.Generic.IReadOnlyList<string!>? UtilityGlobs, out int? MaxFileKB, out int? MaxTotalMB, out bool? EmbeddingsEnabled, out string? EmbeddingsUrl, out string? EmbeddingsModel, out bool? GraphEnabled, out int? GraphMaxMB) -> void
 Aw.CodeIndex.Core.CodeIndexSettingsInput.DenyPaths.get -> System.Collections.Generic.IReadOnlyList<string!>?
 Aw.CodeIndex.Core.CodeIndexSettingsInput.DenyPaths.init -> void
 Aw.CodeIndex.Core.CodeIndexSettingsInput.EmbeddingsEnabled.get -> bool?
@@ -37,8 +37,6 @@ Aw.CodeIndex.Core.CodeIndexSettingsInput.GraphEnabled.get -> bool?
 Aw.CodeIndex.Core.CodeIndexSettingsInput.GraphEnabled.init -> void
 Aw.CodeIndex.Core.CodeIndexSettingsInput.GraphMaxMB.get -> int?
 Aw.CodeIndex.Core.CodeIndexSettingsInput.GraphMaxMB.init -> void
-Aw.CodeIndex.Core.CodeIndexSettingsInput.GraphMaxNodes.get -> int?
-Aw.CodeIndex.Core.CodeIndexSettingsInput.GraphMaxNodes.init -> void
 Aw.CodeIndex.Core.CodeIndexSettingsInput.MaxFileKB.get -> int?
 Aw.CodeIndex.Core.CodeIndexSettingsInput.MaxFileKB.init -> void
 Aw.CodeIndex.Core.CodeIndexSettingsInput.MaxTotalMB.get -> int?
@@ -526,15 +524,13 @@ Aw.CodeIndex.Core.Model.GraphNode.NodeKey.get -> string!
 Aw.CodeIndex.Core.Model.GraphNode.NodeKey.init -> void
 Aw.CodeIndex.Core.Model.GraphSettings
 Aw.CodeIndex.Core.Model.GraphSettings.<Clone>$() -> Aw.CodeIndex.Core.Model.GraphSettings!
-Aw.CodeIndex.Core.Model.GraphSettings.Deconstruct(out bool Enabled, out int MaxMegabytes, out int MaxNodes) -> void
+Aw.CodeIndex.Core.Model.GraphSettings.Deconstruct(out bool Enabled, out int MaxMegabytes) -> void
 Aw.CodeIndex.Core.Model.GraphSettings.Enabled.get -> bool
 Aw.CodeIndex.Core.Model.GraphSettings.Enabled.init -> void
 Aw.CodeIndex.Core.Model.GraphSettings.Equals(Aw.CodeIndex.Core.Model.GraphSettings? other) -> bool
-Aw.CodeIndex.Core.Model.GraphSettings.GraphSettings(bool Enabled, int MaxMegabytes, int MaxNodes) -> void
+Aw.CodeIndex.Core.Model.GraphSettings.GraphSettings(bool Enabled, int MaxMegabytes) -> void
 Aw.CodeIndex.Core.Model.GraphSettings.MaxMegabytes.get -> int
 Aw.CodeIndex.Core.Model.GraphSettings.MaxMegabytes.init -> void
-Aw.CodeIndex.Core.Model.GraphSettings.MaxNodes.get -> int
-Aw.CodeIndex.Core.Model.GraphSettings.MaxNodes.init -> void
 Aw.CodeIndex.Core.Model.GraphSnapshot
 Aw.CodeIndex.Core.Model.GraphSnapshot.<Clone>$() -> Aw.CodeIndex.Core.Model.GraphSnapshot!
 Aw.CodeIndex.Core.Model.GraphSnapshot.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.GraphNode!>! Nodes, out System.Collections.Generic.IReadOnlyList<Aw.CodeIndex.Core.Model.GraphEdge!>! Edges, out int Dropped) -> void

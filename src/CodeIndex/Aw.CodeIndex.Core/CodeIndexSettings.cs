@@ -31,7 +31,7 @@ public sealed record CodeIndexSettings(
         MaxFileKB: 4_096,
         MaxTotalMB: 4_096,
         Embeddings: new EmbeddingsSettings(Enabled: true, DefaultEmbeddingsUrl, Model: null),
-        Graph: new GraphSettings(Enabled: true, MaxMegabytes: 256, MaxNodes: 500_000));
+        Graph: new GraphSettings(Enabled: true, MaxMegabytes: 1_024));
 
     /// <summary>What the snapshot may keep under these settings.</summary>
     /// <returns>The deny globs and the size caps.</returns>
@@ -58,7 +58,6 @@ public sealed record CodeIndexSettings(
             Positive("index.maxFileKB", input.MaxFileKB)
             ?? Positive("index.maxTotalMB", input.MaxTotalMB)
             ?? Positive("index.graph.maxMB", input.GraphMaxMB)
-            ?? Positive("index.graph.maxNodes", input.GraphMaxNodes)
             ?? Globs("index.denyPaths", input.DenyPaths)
             ?? Globs("index.utilityGlobs", input.UtilityGlobs);
         return problem is null ? null : CodeIndexErrors.SettingsInvalid.With(problem);
@@ -83,7 +82,7 @@ public sealed record CodeIndexSettings(
             input.MaxFileKB ?? Default.MaxFileKB,
             input.MaxTotalMB ?? Default.MaxTotalMB,
             new EmbeddingsSettings(input.EmbeddingsEnabled ?? Default.Embeddings.Enabled, input.EmbeddingsUrl ?? DefaultEmbeddingsUrl, input.EmbeddingsModel),
-            new GraphSettings(input.GraphEnabled ?? Default.Graph.Enabled, input.GraphMaxMB ?? Default.Graph.MaxMegabytes, input.GraphMaxNodes ?? Default.Graph.MaxNodes));
+            new GraphSettings(input.GraphEnabled ?? Default.Graph.Enabled, input.GraphMaxMB ?? Default.Graph.MaxMegabytes));
 
     private static string? Positive(string key, int? value)
         => value is <= 0 ? $"{key}: must be a positive whole number" : null;
