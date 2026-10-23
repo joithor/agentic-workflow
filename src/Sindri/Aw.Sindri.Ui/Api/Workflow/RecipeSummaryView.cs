@@ -13,6 +13,8 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="States">The states, in order (the page counts them). Optional on read.</param>
 /// <param name="Status">The status word: approved, changed, draft or revoked (API E-25); optional on read, the standing and the stale reasons say the same.</param>
 /// <param name="ChildOnly">True when the recipe only ever runs as a child of another; it has no stats of its own.</param>
+/// <param name="ApprovedVersion">The version that is approved when it is older than the shipped <paramref name="Version"/>; null when not served (an older Sindri) or none is approved.</param>
+/// <param name="ApprovedHash">The hash that is approved, as served; null when not served.</param>
 /// <param name="Stats">The recipe's figures over the list's window; left out for a draft and a child-only recipe.</param>
 internal sealed record RecipeSummaryView(string Id, int Version, string Hash, string Standing, string? Name, [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? DisplayName = null,
     [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<string>? Stale = null,
@@ -20,4 +22,6 @@ internal sealed record RecipeSummaryView(string Id, int Version, string Hash, st
     [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<RecipeOutputView>? Outputs = null,
     [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<RecipeStateView>? States = null,
     [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? Status = null, bool ChildOnly = false,
-    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] RecipeListStats? Stats = null);
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] RecipeListStats? Stats = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] int? ApprovedVersion = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? ApprovedHash = null);
