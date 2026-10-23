@@ -142,6 +142,15 @@ internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchCh
             ? new PrRef(uri.Host, $"{parts[^4]}/{parts[^3]}", number) : null;
     }
 
+    private async ValueTask<Result<bool>> Append(Pushed pushed, JsonArray commits, JsonArray comments, CancellationToken cancellationToken) =>
+        await record.Append(new MergeRow(pushed.Request.Instance, pushed.Request.Identity, "push", pushed.Sha, new JsonObject
+        {
+            ["cause"] = pushed.Request.Cause,
+            ["commits"] = commits.DeepClone(),
+            ["comments"] = comments.DeepClone(),
+            ["source"] = pushed.Source,
+        }), cancellationToken).ConfigureAwait(false);
+
     private async ValueTask<Result<EffectDone>> Reply(string outcome, Pushed pushed, bool existed, CancellationToken cancellationToken)
     {
         var comments = await Comments(pushed, cancellationToken).ConfigureAwait(false);
@@ -167,14 +176,7 @@ internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchCh
         };
         if (string.Equals(outcome, "pushed", StringComparison.Ordinal) || string.Equals(outcome, "pushedSource", StringComparison.Ordinal))
         {
-            var row = new MergeRow(pushed.Request.Instance, pushed.Request.Identity, "push", pushed.Sha, new JsonObject
-            {
-                ["cause"] = pushed.Request.Cause,
-                ["commits"] = commits.DeepClone(),
-                ["comments"] = comments.Value.DeepClone(),
-                ["source"] = pushed.Source,
-            });
-            var recorded = await record.Append(row, cancellationToken).ConfigureAwait(false);
+            var recorded = await Append(pushed, commits, comments.Value, cancellationToken).ConfigureAwait(false);
             if (recorded.IsError)
             {
                 return recorded.Error;
