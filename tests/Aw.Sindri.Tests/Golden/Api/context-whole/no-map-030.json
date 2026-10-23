@@ -3,6 +3,10 @@
   "title": "SND-CONTEXT-030",
   "status": 404,
   "detail": "there is no map yet (fix: sindri context map import <file>)",
-  "noMap": { "repos": ["aw-split-panes"] },
+  "noMap": {
+    "repos": [
+      "aw-split-panes"
+    ]
+  },
   "traceId": "<trace>"
 }
