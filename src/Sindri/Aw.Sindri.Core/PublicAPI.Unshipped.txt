@@ -13153,7 +13153,6 @@ Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRow.ChangeWord.init -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRefused.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, out string! Code, out string! Sentence, out string? Cli) -> void
 Aw.Sindri.Core.Workflow.ApproveAll.NoShippedRecipes.NoShippedRecipes() -> void
 Aw.Sindri.Core.Workflow.Views.RecipeView.DisplayName.init -> void
-Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan.Challenge.get -> Aw.Sindri.Core.Challenges.IssuedChallenge!
 Aw.Sindri.Core.Workflow.ApproveAll.PlanChange
 Aw.Sindri.Core.Workflow.ApproveAll.CapabilityId.IsInitialized() -> bool
 Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow.Reason.init -> void
@@ -13693,8 +13692,7 @@ Aw.Sindri.Core.Workflow.Registry.RecipeSummary.Deconstruct(out Aw.Sindri.Core.Wo
 Aw.Sindri.Core.Workflow.Views.InstanceRecipe.InstanceRecipe(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, int Version, Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency, string? DisplayName = null) -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRow!>! Recipes, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow!>! OwnApproval) -> void
 Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan.Batch.get -> Aw.Sindri.Core.Ids.CommandId
-static Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan.Redeem(Aw.Sindri.Core.Challenges.IChallenges! challenges, Aw.Sindri.Core.Challenges.ChallengeAnswer! answer, Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan! plan, Aw.Sindri.Core.Ids.CommandId batch, long? heldMs = null) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan!>!
-Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan.HeldMs.get -> long?
+static Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan.For(Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan! plan, Aw.Sindri.Core.Ids.CommandId batch) -> Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan!
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan.NothingToHold.get -> bool
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan.ShippedRecipePlan(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRow!>! Recipes, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow!>! OwnApproval) -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllPlan.NothingToHold.get -> bool
