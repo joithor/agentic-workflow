@@ -55,9 +55,9 @@ public sealed class ListRecipesTests
         var newer = await r.Line(step2);
 
         Assert.Equal((RecipeStanding.Unapproved, step2.Version, step2.Hash), (newer.Standing, newer.Version, newer.Hash));
-        Assert.Equal(((int?)step.Version, (RecipeHash?)step.Hash), (newer.ApprovedVersion, newer.ApprovedHash));
+        Assert.Equal((step.Version, (RecipeHash?)step.Hash), (newer.ApprovedVersion, newer.ApprovedHash));
         var current = await r.Line(step);
-        Assert.Equal(((int?)step.Version, (RecipeHash?)step.Hash), (current.ApprovedVersion, current.ApprovedHash));
+        Assert.Equal((step.Version, (RecipeHash?)step.Hash), (current.ApprovedVersion, current.ApprovedHash));
         var never = await r.Line(item);
         Assert.Null(never.ApprovedVersion);
         Assert.Null(never.ApprovedHash);

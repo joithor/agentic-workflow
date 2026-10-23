@@ -31,10 +31,8 @@ public sealed class SetupRecipesTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_recipe_never_approved_counts_as_needing_approval()
-    {
+    public void A_recipe_never_approved_counts_as_needing_approval() =>
         Assert.Equal(new RecipesFact(1, 0), SetupRecipes.Count([Line("workflow.item", 1, RecipeStanding.Unapproved, [])]));
-    }
 
     [Fact, Trait("Lane", "unit")]
     public void Only_the_highest_version_of_a_recipe_counts_and_a_revoked_one_is_left_out()
