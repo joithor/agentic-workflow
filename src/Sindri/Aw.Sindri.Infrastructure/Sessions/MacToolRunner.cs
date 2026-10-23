@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Infrastructure.Sessions;
 
@@ -22,7 +23,9 @@ internal sealed class MacToolRunner(TimeSpan budget) : IMacTools
     {
         ArgumentException.ThrowIfNullOrEmpty(tool);
         ArgumentNullException.ThrowIfNull(arguments);
-        var start = new ProcessStartInfo(tool) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+        var start = ChildEnvironment.Start(tool);
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
         foreach (var argument in arguments)
         {
             start.ArgumentList.Add(argument);
