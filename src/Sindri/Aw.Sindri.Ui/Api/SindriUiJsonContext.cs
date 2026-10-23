@@ -82,6 +82,7 @@ namespace Aw.Sindri.Ui.Api;
 [JsonSerializable(typeof(Jobs.JobList))]
 [JsonSerializable(typeof(Jobs.JobView))]
 [JsonSerializable(typeof(JobStarted))]
+[JsonSerializable(typeof(ProfileRead))]
 [JsonSerializable(typeof(Setup.SetupView))]
 [JsonSerializable(typeof(Setup.AddRepoRequest))]
 [JsonSerializable(typeof(Setup.RegisterMcpRequest))]

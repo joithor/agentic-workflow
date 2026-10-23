@@ -118,6 +118,24 @@ public sealed class SetupFramesTests : FrameHost
     });
 
     [Fact]
+    public Task The_profile_row_shows_the_summary_groups_under_the_repo_it_names() => OnUi(async () =>
+    {
+        Server.ProfileAnswer = RouteAnswer.Api("profile", "repo-added");
+        Server.SetupAnswer = SetupFixture.Answer("profile-needs-approval");
+        var (window, shell) = await Connected(s => s.Setup.Steps.Any(r => r.Profile?.Summary.HasSummary == true), 1440, 900);
+        window.SettingsSlot.Content = new SettingsView { DataContext = new SettingsViewModel(new Preferences(new InMemoryPreferencesStore()), Motion, _ => { }, shell.Setup) };
+        shell.GoTo(PageId.Settings);
+        Settle(window);
+
+        var profile = Rows(window).Single(r => ((ViewModels.Setup.SetupStepViewModel)r.DataContext!).Id == "profile");
+        var texts = Named<StackPanel>(profile, "SetupProfileSummary").GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible).Select(t => t.Text).ToList();
+
+        Assert.Contains("demo", texts);
+        Assert.Contains("/work/demo, 1,234 files, 12.6 MB", texts);
+        Assert.Contains("Sindri will keep demo's map up to date on its own", texts);
+    });
+
+    [Fact]
     public Task A_finished_setup_says_so_and_its_rows_are_closed() => OnUi(async () =>
     {
         var (window, shell) = await OnSettings("all-done", 1440);

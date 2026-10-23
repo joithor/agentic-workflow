@@ -80,16 +80,17 @@ public sealed class GoldenContractTests
         ["workflow-challenges-app"] = As<AppChallengeView>,   // the same route's real goldens (setup-once spec §4): the profile's typed challenge and approve-all's held one with its plan
         ["recipes-approve-all-start"] = As<ApproveAllStarted>,   // POST /workflow/recipes/approve-all's 202
         ["approve-all-job"] = As<ApproveAllJob>,   // GET /jobs/{id} of the approval
+        ["profile"] = As<ProfileRead>,   // GET /profile: the approval's plain-words summary is the part the Setup profile step reads (api #782)
         ["profile-approve"] = As<ProfileApproved>,   // POST /profile/approve's approved and preview answers (needs-you slice 3: the typed approve on a drifted-profile row); the refusals are ProblemDetails
         ["recipe-approve"] = As<RecipeApproved>,   // POST /workflow/recipes/{id}@{hash}/approve's accepted answer (needs-you slice 3b: the typed approve on a changed-workflow row; spec-shaped)
         ["workflow-complete"] = As<CompleteStepAccepted>,   // POST /workflow/instances/{id}/runs/{run}/complete's accepted answer (spec-shaped; the engine has no golden for it)
     };
 
-    // Routes the app never calls yet: stop is Health's (U4), the profile route is a later page's (U2+), and the
+    // Routes the app never calls yet: stop is Health's (U4), and the
     // context routes U9 does not read (eval, proposals, query).
     private static readonly HashSet<string> _notRead = new(StringComparer.Ordinal)
     {
-        "stop", "profile",
+        "stop",
         "setup-repos",   // POST /setup/repos (Add repo): the app's call and the job's progress are U3's (SO-U3)
         "context-eval", "context-map-proposals", "context-query", "context-history", "context-subgraph",   // not U9's: eval, proposals (U13) and the query routes are read by the phases that call them
         "items",   // GET /items (the list) is never called; POST /items' created* goldens are read (see the loop)

@@ -147,4 +147,43 @@ public sealed class SetupConfirmTests
 
         Assert.False(Step(setup, "recipes").Workflows!.IsOpen);
     }
+
+    [Fact]
+    public async Task The_profile_row_reads_the_summary_once_per_hash_and_shows_it_even_before_the_app_may_approve()
+    {
+        _f.Server.ProfileAnswer = RouteAnswer.Api("profile", "repo-added");
+
+        var setup = await _f.Read(Token);
+        await setup.Refresh(Url, Token);
+
+        var profile = Step(setup, "profile").Profile!;
+        Assert.False(profile.ShowsTyped);   // the catalog is not ready here: terminal copy
+        Assert.Equal(["demo"], profile.Summary.Groups.Select(g => g.Heading), StringComparer.Ordinal);
+        Assert.Equal(1, _f.Server.ProfileCalls);
+    }
+
+    [Fact]
+    public async Task A_profile_row_that_stops_needing_the_person_drops_its_summary()
+    {
+        _f.Server.ProfileAnswer = RouteAnswer.Api("profile", "repo-added");
+        var setup = await _f.Read(Token);
+        _f.Serve(With("profile-needs-approval", "profile", "done"));
+
+        await setup.Refresh(Url, Token);
+
+        Assert.False(Step(setup, "profile").Profile!.Summary.HasSummary);
+    }
+
+    [Fact]
+    public async Task A_summary_that_cannot_be_read_leaves_the_row_working_and_is_asked_for_again()
+    {
+        _f.Server.ProfileAnswer = RouteAnswer.Problem(System.Net.HttpStatusCode.InternalServerError, "SND-API-001", "The control plane is down");
+        var setup = await _f.Read(Token);
+
+        _f.Server.ProfileAnswer = RouteAnswer.Api("profile", "changed");
+        await setup.Refresh(Url, Token);
+
+        Assert.Equal(["Services"], Step(setup, "profile").Profile!.Summary.Groups.Select(g => g.Heading), StringComparer.Ordinal);
+        Assert.Equal(2, _f.Server.ProfileCalls);
+    }
 }
