@@ -9,6 +9,21 @@ internal static class IndexJobs
 {
     internal static JobKind BuildKind { get; } = JobKind.From("BuildCodeIndex");
 
+    internal static JobKind EmbedKind { get; } = JobKind.From("EmbedCodeIndex");
+
+    /// <summary>'embed:&lt;repo&gt;' (lower case, like <see cref="KeyOf"/>).</summary>
+    internal static JobKey EmbedKeyOf(string repo) => JobKey.From("embed:" + repo.ToLowerInvariant());
+
+    internal static bool IsEmbedOf(JobRow job, string repo) => job.Kind == EmbedKind && job.Key == EmbedKeyOf(repo);
+
+    /// <summary>The result's 'embedded' count, or null when the job has no readable result.</summary>
+    internal static int? EmbeddedOf(JobRow job) =>
+        job.Result is { ValueKind: JsonValueKind.Object } result
+        && result.EnumerateObject().FirstOrDefault(static p => string.Equals(p.Name, "embedded", StringComparison.OrdinalIgnoreCase)) is { Value: { ValueKind: JsonValueKind.Number } count }
+        && count.TryGetInt32(out var embedded)
+            ? embedded
+            : null;
+
     /// <summary>'index:&lt;repo&gt;' (a job key is lower case, so two repos that differ only by case share a key).</summary>
     internal static JobKey KeyOf(string repo) => JobKey.From("index:" + repo.ToLowerInvariant());
 

@@ -142,6 +142,7 @@ internal static partial class Labels
         "RefreshContextMap" => "Refresh the context map",
         "BuildContextMap" => "Build the context map",
         "BuildCodeIndex" => "Build the code index",
+        "EmbedCodeIndex" => "Embed the code index",
         "RunService" => "Run a service",
         "ApproveAllRecipes" => "Approve all workflows",
         "AddRepo" => "Add a repository",

@@ -48,4 +48,14 @@ internal sealed class CodeIndexJobsRig
             "service:code-index-main-move", Now - endedAgo - TimeSpan.FromSeconds(5), state == JobState.Running ? null : Now - endedAgo, [], Rounds: 0, Summary: null,
             state == JobState.Failed ? "SND-CODEIDX-002" : null, result, CancelledBy: null, Sequence: _next));
     }
+
+    /// <summary>Adds an EmbedCodeIndex job of the repo's key, ended <paramref name="endedAgo"/> ago (or running), with the result's outcome and embedded count.</summary>
+    internal void EmbedJob(string repo, JobState state, TimeSpan endedAgo, string? outcome = null, int embedded = 0)
+    {
+        _next++;
+        var result = outcome is null ? (JsonElement?)null : JsonSerializer.SerializeToElement(new { repo, outcome, embedded }, _web);
+        Jobs.Put(new JobRow(JobId.New(Harness.Ids), JobKind.From("EmbedCodeIndex"), JobKey.From("embed:" + repo), Item: null, Repo: null, Service: null, state,
+            "service:code-index-embed", Now - endedAgo - TimeSpan.FromSeconds(5), state == JobState.Running ? null : Now - endedAgo, [], Rounds: 0, Summary: null,
+            state == JobState.Failed ? "SND-CODEIDX-006" : null, result, CancelledBy: null, Sequence: _next));
+    }
 }

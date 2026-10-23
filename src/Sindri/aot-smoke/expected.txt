@@ -145,7 +145,7 @@ false
 "http=403"
 post http=405
 ## sindri services --json | jq (name, every, paused, job)
-[{"name":"code-index-main-move","every":"1m","paused":false,"job":null},{"name":"context-map-refresh","every":"1m","paused":false,"job":null},{"name":"context-sync-gaps","every":"1m","paused":false,"job":null},{"name":"heartbeat","every":"5s","paused":false,"job":null},{"name":"router-stub","every":"5s","paused":false,"job":null},{"name":"setup","every":"1m","paused":false,"job":null},{"name":"workflow-events","every":"5s","paused":false,"job":null}]
+[{"name":"code-index-embed","every":"1m","paused":false,"job":null},{"name":"code-index-main-move","every":"1m","paused":false,"job":null},{"name":"context-map-refresh","every":"1m","paused":false,"job":null},{"name":"context-sync-gaps","every":"1m","paused":false,"job":null},{"name":"heartbeat","every":"5s","paused":false,"job":null},{"name":"router-stub","every":"5s","paused":false,"job":null},{"name":"setup","every":"1m","paused":false,"job":null},{"name":"workflow-events","every":"5s","paused":false,"job":null}]
 ## sindri services run heartbeat (human, terminal)
 job JOB-ID started
 run heartbeat (manual)
@@ -167,6 +167,7 @@ heartbeat paused (sequence SEQ)
 SND-AUTH-002 PauseService is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri services pause <name> (this CLI ran as a session: CLAUDECODE is set)
 exit 2
 ## sindri services
+code-index-embed  every 1m  last: ok  next: TIME
 code-index-main-move  every 1m  last: ok  next: TIME
 context-map-refresh  every 1m  last: ok  next: TIME
 context-sync-gaps  every 1m  last: ok  next: TIME
@@ -177,6 +178,7 @@ workflow-events  every 5s  last: ok  next: TIME
 ## sindri services resume heartbeat (human, terminal)
 heartbeat resumed (sequence SEQ)
 ## sindri services
+code-index-embed  every 1m  last: ok  next: TIME
 code-index-main-move  every 1m  last: ok  next: TIME
 context-map-refresh  every 1m  last: ok  next: TIME
 context-sync-gaps  every 1m  last: ok  next: TIME
