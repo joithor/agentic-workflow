@@ -9931,6 +9931,12 @@ Aw.Sindri.Core.Onyx.ContainerRuntimeKind
 Aw.Sindri.Core.Onyx.ContainerRuntimeKind.Docker = 0 -> Aw.Sindri.Core.Onyx.ContainerRuntimeKind
 Aw.Sindri.Core.Onyx.ContainerRuntimeKind.DockerDesktop = 1 -> Aw.Sindri.Core.Onyx.ContainerRuntimeKind
 Aw.Sindri.Core.Onyx.ContainerRuntimeKind.OrbStack = 2 -> Aw.Sindri.Core.Onyx.ContainerRuntimeKind
+Aw.Sindri.Core.Onyx.DockerDaemonAdvice
+static Aw.Sindri.Core.Onyx.DockerDaemonAdvice.Name(Aw.Sindri.Core.Onyx.ContainerRuntimeKind kind) -> string!
+static Aw.Sindri.Core.Onyx.DockerDaemonAdvice.WaitLine(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts! docker, System.TimeSpan window) -> string!
+Aw.Sindri.Core.Onyx.OnyxFacts.Inspect(System.Threading.CancellationToken cancellationToken) -> Aw.Sindri.Core.Onyx.ContainerRuntimeFacts!
+Aw.Sindri.Core.Onyx.OnyxFacts.Reinspect(System.Threading.CancellationToken cancellationToken) -> Aw.Sindri.Core.Onyx.ContainerRuntimeFacts!
+Aw.Sindri.Core.Onyx.OnyxFacts.NoteWait(System.TimeSpan waited) -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Deconstruct(out bool CliFound, out bool DaemonAnswers, out string? ServerVersion, out bool ComposeV2, out string? ComposeVersion, out long? MemoryBytes, out string? DataRoot, out string? Endpoint, out string? OperatingSystem, out Aw.Sindri.Core.Onyx.DaemonProblem DaemonProblem, out int? WaitedSeconds) -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Equals(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts? other) -> bool
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.MemoryBytes.get -> long?
