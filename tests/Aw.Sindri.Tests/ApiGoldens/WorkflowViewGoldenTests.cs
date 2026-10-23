@@ -29,7 +29,7 @@ public sealed class WorkflowViewGoldenTests : IAsyncLifetime
         ("workflow-recipe", "workflow.no-outputs"), ("workflow-recipe", "workflow.f5-fields"), ("workflow-instance", "f5-state-times"), ("workflow-instance", "f5-rerun-failed"), ("workflow-instance", "f5-desk-recommended"), ("workflow-instance", "lens-ask-multi"),
         .. FixtureRecipes.All.Select(r => ("workflow-recipe", r.Id)),
         ("workflow-instance-fact", "scope-map"), ("workflow-instance-fact", "packet"), ("workflow-instance-fact", "evidence"), ("workflow-instance-fact", "payload"), ("workflow-instance-fact", "packet-unfrozen"),
-        ("workflow-instance-fact", "text"), ("workflow-instance-fact", "truncated"), ("workflow-instance-fact", "pr-status"),
+        ("workflow-instance-fact", "text"), ("workflow-instance-fact", "truncated"), ("workflow-instance-fact", "pr-status"), ("workflow-instance-fact", "lens-ask-escalation"),
     ];
 
     public static TheoryData<string, string> Rows()
