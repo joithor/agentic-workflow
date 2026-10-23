@@ -3,7 +3,9 @@
 # prints the plan and writes nothing; connect writes the mirror home (control.json with the forwarded loopback URL, the pod's
 # pid and epoch, auth/human.token; files 0600, dirs 0700), forwards the pod's own port and starts the app on it; a new
 # epoch or token in the pod rewrites the home; a port-forward that drops is retried; refusals (no kubectl, no sindri-ui, no
-# pod); --onyx forwards the pod's Onyx port and runs `sindri onyx up` in the pod, then re-forwards when status names another port.
+# pod, a pod that is not Ready, a local port that is taken, no rights; --check reports each and exits 0 or 2); the mirror
+# home lives in $TMPDIR and goes on exit (a TERM too), stale ones are removed; the retry loop prints its attempts and is
+# bounded; --onyx forwards the pod's Onyx port and runs `sindri onyx up` in the pod, then re-forwards when status names another port.
 # Run: bash scripts/tests/sindri-pod.test.sh
 set -uo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -21,8 +23,9 @@ cleanup() {
 }
 trap cleanup EXIT
 unset AW_SINDRI_HOME AW_SINDRI_UI
-export HOME="$WORK/home" AW_STATE_DIR="$WORK/state" AW_SINDRI_POD_POLL=0.2 AW_SINDRI_POD_RETRIES=3
-mkdir -p "$HOME" "$WORK/bin" "$WORK/pod" "$WORK/runs"
+export HOME="$WORK/home" AW_STATE_DIR="$WORK/state" AW_SINDRI_POD_POLL=0.2 AW_SINDRI_POD_RETRIES=5 AW_SINDRI_POD_RETRY_WAIT=0.3
+export AW_SINDRI_POD_ONYX_PORT=43000 TMPDIR="$WORK/tmp"
+mkdir -p "$HOME" "$WORK/bin" "$WORK/pod" "$WORK/runs" "$TMPDIR"
 export CALLS="$WORK/calls" POD="$WORK/pod" STOP="$WORK/ui-stop"
 : > "$CALLS"
 
@@ -31,19 +34,21 @@ pod_state() {   # pid epoch token port
   printf '{"url":"http://127.0.0.1:%s","pid":%s,"epoch":%s}\n' "$4" "$1" "$2" > "$POD/control.json"
   printf '%s\n' "$3" > "$POD/token"
 }
-pod_state 41 7 tok-one 7480
+pod_state 41 7 tok-one 47480
 
 cat > "$WORK/bin/kubectl" <<'EOS'
 #!/usr/bin/env bash
 echo "kubectl $*" >> "$CALLS"
 case " $* " in
+  *" auth can-i "*) r="${!#}"; if [ -e "$POD/deny-${r//\//_}" ]; then echo no; else echo yes; fi; exit 0 ;;
+  *" get pod "*) [ -e "$POD/no-pod" ] && exit 1; cat "$POD/pod-status" 2>/dev/null || echo "Running True"; exit 0 ;;
   *" config current-context "*) echo kind-test; exit 0 ;;
   *" config view "*) echo sindri; exit 0 ;;
   *" port-forward "*)
     if [ -e "$POD/pf-fail-once" ] && [[ " $* " == *" pod/"* ]]; then rm -f "$POD/pf-fail-once"; echo "pf failed" >&2; exit 1; fi
     exec sleep 300 ;;
   *" exec -it "*) exit 0 ;;
-  *" onyx status "*) printf '{"state":"running","port":%s}\n' "$(cat "$POD/onyx-port" 2>/dev/null || echo 3000)"; exit 0 ;;
+  *" onyx status "*) printf '{"state":"running","port":%s}\n' "$(cat "$POD/onyx-port" 2>/dev/null || echo 43000)"; exit 0 ;;
   *" exec "*) [ -e "$POD/down" ] && exit 1
     cat "$POD/control.json"; echo "@@aw-token@@"; cat "$POD/token"; exit 0 ;;
 esac
@@ -56,7 +61,8 @@ while [ ! -e "$STOP" ]; do sleep 0.1; done
 EOS
 chmod +x "$WORK/bin/kubectl" "$WORK/bin/sindri-ui"
 export AW_SINDRI_UI="$WORK/bin/sindri-ui"
-MIRROR="$AW_STATE_DIR/sindri-pod/kind-test-sindri"
+mirror_dir() { ls -d "$TMPDIR"/aw-sindri-pod.* 2>/dev/null | head -1; }
+MIRROR=""
 
 mode() { stat -c %a "$1" 2>/dev/null || stat -f %Lp "$1"; }
 waitfor() {   # <seconds> <command...>: poll until it succeeds
@@ -65,10 +71,10 @@ waitfor() {   # <seconds> <command...>: poll until it succeeds
   return 1
 }
 count() { grep -c -- "$1" "$CALLS" || true; }
-has_epoch() { [ "$(jq -r .epoch "$MIRROR/control.json")" = "$1" ]; }
-has_ui() { grep -q '^ui home=' "$CALLS"; }
+has_epoch() { [ "$(jq -r .epoch "$(mirror_dir)/control.json")" = "$1" ]; }
+has_ui() { grep -q '^ui home=' "$CALLS" && [ -n "$(mirror_dir)" ]; }
 has_line() { grep -q -- "$1" "$CALLS"; }
-reset() { : > "$CALLS"; rm -rf "$AW_STATE_DIR/sindri-pod"; }
+reset() { : > "$CALLS"; rm -rf "$AW_STATE_DIR/sindri-pod" "$TMPDIR"/aw-sindri-pod.* "$POD"/deny-* "$POD/no-pod" "$POD/pod-status"; }
 run_connect() {   # <tag> args...: connect in the background with the fakes on the PATH; stdin is one Enter once $WORK/enter exists
   local tag="$1"; shift
   rm -f "$STOP" "$WORK/enter" "$WORK/runs/$tag.rc"
@@ -88,39 +94,46 @@ OUT="$(PATH="/usr/bin:/bin" bash "$DIR/sindri-pod.sh" connect --dry-run --contex
 check "dry run: exit 0, nothing written, no kubectl needed" "$RC:$([ -e "$AW_STATE_DIR/sindri-pod" ] && echo wrote || echo clean)" "0:clean"
 check "dry run: names the exec, the forward, the app and Onyx's up" \
   "$(printf '%s' "$OUT" | grep -c -e 'exec sindri-0 -c sindri' -e 'port-forward pod/sindri-0' -e 'sindri-ui' -e 'onyx up')" "6"
+OUT="$(env -u AW_SINDRI_POD_RETRIES -u AW_SINDRI_POD_RETRY_WAIT PATH="/usr/bin:/bin" bash "$DIR/sindri-pod.sh" connect --dry-run 2>&1)"
+check "dry run: the default is 30 attempts 10 s apart (5 minutes)" "$(printf '%s' "$OUT" | grep -c '30 attempts 10s apart')" "1"
 
 # --- connect: mirror home, forward, app
 run_connect a
 waitfor 10 has_ui; check "connect: the app starts" "$?" "0"
+MIRROR="$(mirror_dir)"
 check "connect: control.json holds the forwarded loopback URL, the pod's pid and epoch" \
-  "$(jq -c . "$MIRROR/control.json")" '{"url":"http://127.0.0.1:7480","pid":41,"epoch":7}'
+  "$(jq -c . "$MIRROR/control.json")" '{"url":"http://127.0.0.1:47480","pid":41,"epoch":7}'
 check "connect: the token file holds the pod's token" "$(cat "$MIRROR/auth/human.token")" "tok-one"
 check "connect: files are 0600, directories 0700" \
   "$(mode "$MIRROR/control.json"):$(mode "$MIRROR/auth/human.token"):$(mode "$MIRROR"):$(mode "$MIRROR/auth")" "600:600:700:700"
 check "connect: the app runs on the mirror home" "$(grep '^ui home=' "$CALLS" | head -1)" "ui home=$MIRROR"
 check "connect: forwards the pod's own port on the chosen context and namespace" \
-  "$(count 'kubectl --context kind-test --namespace sindri port-forward pod/sindri-0 7480:7480')" "1"
+  "$(count 'kubectl --context kind-test --namespace sindri port-forward pod/sindri-0 47480:47480')" "1"
 
 # --- the pod restarts: new pid, epoch and token
-pod_state 52 8 tok-two 7480
+pod_state 52 8 tok-two 47480
 waitfor 10 has_epoch 8; check "restart: the mirror home is rewritten with the new epoch" "$?" "0"
 check "restart: pid and token follow" "$(jq -r .pid "$MIRROR/control.json"):$(cat "$MIRROR/auth/human.token")" "52:tok-two"
 check "restart: files stay 0600" "$(mode "$MIRROR/control.json"):$(mode "$MIRROR/auth/human.token")" "600:600"
 
 # --- the pod's port changes: the forward is restarted on the new port
-pod_state 52 9 tok-two 7481
+pod_state 52 9 tok-two 47481
 waitfor 10 has_epoch 9; check "new port: the home is rewritten" "$?" "0"
 check "new port: the forward is restarted onto the pod's new port, the local one stays" \
-  "$(count 'port-forward pod/sindri-0 7480:7481'):$(jq -r .url "$MIRROR/control.json")" "1:http://127.0.0.1:7480"
+  "$(count 'port-forward pod/sindri-0 47480:47481'):$(jq -r .url "$MIRROR/control.json")" "1:http://127.0.0.1:47480"
 
 # --- pod unreachable for a while: the script retries and recovers
-touch "$POD/down"; sleep 0.6; rm -f "$POD/down"; pod_state 53 10 tok-two 7481
+touch "$POD/down"; sleep 0.6; rm -f "$POD/down"; pod_state 53 10 tok-two 47481
 waitfor 10 has_epoch 10; check "pod down then up: recovered without exiting" "$?" "0"
 check "exit: closing the app ends the script cleanly" "$(finish a)" "0"
 check "exit: the script said the app was closed" "$(said a 'the app was closed')" "1"
+check "connect: prints the connected line" "$(said a 'connected: sindri-0 at http://127.0.0.1:47480; Ctrl-C to stop')" "1"
+check "pod down then up: the attempts were announced and the reconnect said" \
+  "$([ "$(said a 'pod restarting, reconnecting (attempt 1 of 5)')" -ge 1 ] && [ "$(said a 'reconnected to sindri-0')" = 1 ] && echo yes)" "yes"
+check "exit: the mirror home is removed" "$(mirror_dir)" ""
 
 # --- a port-forward that fails once is retried
-reset; pod_state 41 7 tok-one 7480; touch "$POD/pf-fail-once"
+reset; pod_state 41 7 tok-one 47480; touch "$POD/pf-fail-once"
 run_connect b
 waitfor 10 has_ui; check "forward retry: the app still starts" "$?" "0"
 check "forward retry: port-forward ran twice" "$(count 'port-forward pod/sindri-0')" "2"
@@ -130,8 +143,8 @@ check "forward retry: exit 0" "$(finish b)" "0"
 reset
 run_connect c --port 18480 --pod sindri-9
 waitfor 10 has_ui
-check "--port: the forward maps the chosen local port to the pod's, for the chosen pod" "$(count 'port-forward pod/sindri-9 18480:7480')" "1"
-check "--port: control.json carries the local port" "$(jq -r .url "$MIRROR/control.json")" "http://127.0.0.1:18480"
+check "--port: the forward maps the chosen local port to the pod's, for the chosen pod" "$(count 'port-forward pod/sindri-9 18480:47480')" "1"
+check "--port: control.json carries the local port" "$(jq -r .url "$(mirror_dir)/control.json")" "http://127.0.0.1:18480"
 finish c >/dev/null
 
 # --- --onyx: forward the pod's Onyx port, run onyx up in the pod
@@ -140,34 +153,99 @@ run_connect d --onyx
 waitfor 10 has_line 'exec -it'; waitfor 10 has_ui
 check "--onyx: onyx up runs in the sindri container" "$(count 'exec -it sindri-0 -c sindri -- sindri onyx up')" "1"
 SEQ="$(awk '
-  /exec sindri-0 -c sindri -- sh/ && !a {print "read"; a=1} /port-forward pod\/sindri-0 7480/ && !b {print "forward"; b=1}
+  /exec sindri-0 -c sindri -- sh/ && !a {print "read"; a=1} /port-forward pod\/sindri-0 47480/ && !b {print "forward"; b=1}
   /exec -it/ {print "up"}' "$CALLS" | paste -sd, -)"
 check "--onyx: pod read, owner forward, then onyx up" "$SEQ" "read,forward,up"
-waitfor 10 has_line 'port-forward pod/sindri-0 3000:3000'; check "--onyx: the Onyx port is forwarded from the pod" "$?" "0"
+waitfor 10 has_line 'port-forward pod/sindri-0 43000:43000'; check "--onyx: the Onyx port is forwarded from the pod" "$?" "0"
 check "--onyx: no Service forward" "$(count 'port-forward svc/')" "0"
-check "--onyx: the forwarded address is printed" "$(said d 'http://127.0.0.1:3000')" "1"
+check "--onyx: the forwarded address is printed" "$(said d 'http://127.0.0.1:43000')" "1"
 waitfor 10 has_line 'onyx status --json'; check "--onyx: status is read after onyx up" "$?" "0"
-check "--onyx: same port, no second forward" "$(count 'port-forward pod/sindri-0 3000:3000')" "1"
+check "--onyx: same port, no second forward" "$(count 'port-forward pod/sindri-0 43000:43000')" "1"
 finish d >/dev/null
 
 # --- --onyx: Onyx took a fallback port
-reset; echo 3002 > "$POD/onyx-port"
+reset; echo 43002 > "$POD/onyx-port"
 run_connect e --onyx
-waitfor 10 has_line 'port-forward pod/sindri-0 3002:3002'; check "--onyx fallback: the new port is forwarded" "$?" "0"
-check "--onyx fallback: the new address is printed" "$(said e 'http://127.0.0.1:3002')" "1"
+waitfor 10 has_line 'port-forward pod/sindri-0 43002:43002'; check "--onyx fallback: the new port is forwarded" "$?" "0"
+check "--onyx fallback: the new address is printed" "$(said e 'http://127.0.0.1:43002')" "1"
 finish e >/dev/null
 
-# --- refusals
+# --- refusals: one line each, exit 2
+conn() { PATH="$WORK/bin:$PATH" bash "$DIR/sindri-pod.sh" connect "$@" 2>&1; }
+lines() { printf '%s\n' "$1" | grep -c .; }
 reset
 OUT="$(PATH="/usr/bin:/bin" bash "$DIR/sindri-pod.sh" connect 2>&1)"; RC=$?
-check "no kubectl: exit 1 with the sentence" "$RC:$(printf '%s' "$OUT" | grep -c 'kubectl is not on the PATH')" "1:1"
-OUT="$(PATH="$WORK/bin:$PATH" AW_SINDRI_UI="$WORK/nope" bash "$DIR/sindri-pod.sh" connect 2>&1)"; RC=$?
-check "no sindri-ui: exit 1 with the sentence, nothing forwarded" "$RC:$(printf '%s' "$OUT" | grep -c 'no sindri-ui found'):$(count port-forward)" "1:1:0"
-touch "$POD/down"
-OUT="$(PATH="$WORK/bin:$PATH" bash "$DIR/sindri-pod.sh" connect 2>&1)"; RC=$?
-check "pod never reachable: exit 1 after the retry budget" "$RC:$(printf '%s' "$OUT" | grep -c "can't reach sindri-0")" "1:1"
+check "no kubectl: exit 2 with one line" "$RC:$(lines "$OUT"):$(printf '%s' "$OUT" | grep -c 'kubectl is not on the PATH')" "2:1:1"
+OUT="$(AW_SINDRI_UI="$WORK/nope" conn)"; RC=$?
+check "no sindri-ui: exit 2, one line naming sindri-app, nothing forwarded" \
+  "$RC:$(lines "$OUT"):$(printf '%s' "$OUT" | grep -c 'sindri-app'):$(count port-forward)" "2:1:1:0"
+touch "$POD/deny-pods_exec"
+OUT="$(conn)"; RC=$?
+check "no exec right: exit 2, one line naming the verb" "$RC:$(lines "$OUT"):$(printf '%s' "$OUT" | grep -c "create pods/exec")" "2:1:1"
+rm -f "$POD/deny-pods_exec"; touch "$POD/deny-pods_portforward"
+OUT="$(conn)"; RC=$?
+check "no port-forward right: exit 2 naming pods/portforward" "$RC:$(printf '%s' "$OUT" | grep -c "create pods/portforward")" "2:1"
+rm -f "$POD/deny-pods_portforward"
+echo "Pending False" > "$POD/pod-status"
+OUT="$(conn)"; RC=$?
+check "pod not Ready: exit 2, one line naming the phase" "$RC:$(lines "$OUT"):$(printf '%s' "$OUT" | grep -c 'not Ready (phase: Pending)')" "2:1:1"
+touch "$POD/no-pod"
+OUT="$(conn)"; RC=$?
+check "pod missing: exit 2, phase unknown" "$RC:$(printf '%s' "$OUT" | grep -c 'phase: unknown')" "2:1"
+rm -f "$POD/no-pod" "$POD/pod-status"
+if command -v python3 >/dev/null 2>&1; then
+  python3 -I -c 'import socket,sys,time
+s=socket.socket(); s.bind(("127.0.0.1",48999)); s.listen(1); open(sys.argv[1],"w").write("up"); time.sleep(120)' "$WORK/listening" &
+  echo $! > "$WORK/runs/listener.pid"
+  waitfor 10 test -e "$WORK/listening"
+  OUT="$(conn --port 48999)"; RC=$?
+  check "local port taken: exit 2, one line naming the port and --port" \
+    "$RC:$(lines "$OUT"):$(printf '%s' "$OUT" | grep -c 'local port 48999 is taken; pick another with --port'):$(count port-forward)" "2:1:1:0"
+  kill "$(cat "$WORK/runs/listener.pid")" 2>/dev/null
+fi
+
+# --- --check: every prerequisite, exit 0 or 2, nothing started
+reset
+OUT="$(conn --check)"; RC=$?
+check "--check: all hold, exit 0, an ok line for each" "$RC:$(printf '%s' "$OUT" | grep -c '^sindri-pod: ok:')" "0:7"
+check "--check: forwards nothing, starts nothing, writes no mirror home" \
+  "$(count port-forward):$(count '^ui home='):$(mirror_dir)" "0:0:"
+touch "$POD/deny-pods_exec"; echo "Pending False" > "$POD/pod-status"
+OUT="$(AW_SINDRI_UI="$WORK/nope" conn --check)"; RC=$?
+check "--check: reports every failure, not just the first, exit 2" \
+  "$RC:$(printf '%s' "$OUT" | grep -c -e 'sindri-app' -e 'create pods/exec' -e 'not Ready (phase: Pending)')" "2:3"
+rm -f "$POD/deny-pods_exec" "$POD/pod-status"
+
+# --- cleanup: TERM (what Ctrl-C does) removes the mirror home and the port-forward
+reset
+run_connect f
+waitfor 10 has_ui; M="$(mirror_dir)"
+check "cleanup: the mirror home is 0700 and holds the owner pid" "$(mode "$M"):$(test -s "$M/owner.pid" && echo pid)" "700:pid"
+kill -TERM "$(cat "$M/owner.pid")"
+waitfor 10 test -s "$WORK/runs/f.rc"; check "cleanup: TERM ends the script with exit 0" "$(cat "$WORK/runs/f.rc")" "0"
+check "cleanup: the mirror home is gone" "$(mirror_dir)" ""
+touch "$STOP"
+
+# --- stale mirror homes of dead runs are removed on the next run; live and unmarked ones are left
+reset
+mkdir -p "$TMPDIR/aw-sindri-pod.stale" "$TMPDIR/aw-sindri-pod.live" "$TMPDIR/aw-sindri-pod.plain"
+echo 999999 > "$TMPDIR/aw-sindri-pod.stale/owner.pid"; echo $$ > "$TMPDIR/aw-sindri-pod.live/owner.pid"
+run_connect g
+waitfor 10 has_ui
+check "stale: a dead run's home is removed" "$([ -d "$TMPDIR/aw-sindri-pod.stale" ] && echo kept || echo removed)" "removed"
+check "stale: a live run's and an unmarked directory are left" \
+  "$([ -d "$TMPDIR/aw-sindri-pod.live" ] && [ -d "$TMPDIR/aw-sindri-pod.plain" ] && echo kept)" "kept"
+finish g >/dev/null
+
+# --- the retry loop is bounded: the pod never answers
+reset; touch "$POD/down"
+OUT="$(AW_SINDRI_POD_RETRIES=2 conn)"; RC=$?
+check "pod never reachable: exit 1 after the attempts" "$RC:$(printf '%s' "$OUT" | grep -c "can't reach sindri-0")" "1:1"
+check "pod never reachable: attempts 1 and 2 announced, no third" \
+  "$(printf '%s' "$OUT" | grep -c -e 'reconnecting (attempt 1 of 2)' -e 'reconnecting (attempt 2 of 2)'):$(printf '%s' "$OUT" | grep -c 'attempt 3')" "2:0"
+check "pod never reachable: the mirror home is removed too" "$(mirror_dir)" ""
 rm -f "$POD/down"
-PATH="$WORK/bin:$PATH" bash "$DIR/sindri-pod.sh" connect --bogus >/dev/null 2>&1; check "unknown argument: exit 2" "$?" "2"
+conn --bogus >/dev/null; check "unknown argument: exit 2" "$?" "2"
 bash "$DIR/sindri-pod.sh" >/dev/null 2>&1; check "no verb: exit 2" "$?" "2"
 
 exit "$fail"
