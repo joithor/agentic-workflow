@@ -884,6 +884,10 @@ sentence is singular at 1 (a provisional owner default, 2026-10-14 night).
 **Marked previews.** Since P4c a supplied input is served `required: true` and a `generate` input `required: false`; every input of a started instance is present. `workflow-instances/preview-missing-input` (ITM-01JKH) is still a preview (a started instance never misses an input), like the fan-out previews; it gives the UI data for the missing and
 blocked renders. `workflow-recipe/workflow.no-outputs`' `fact:context` is a real `generate` input. `workflow-status/needs-answer-step` is a Step's text-answered park and `needs-answer-wait` a wait's `--resume` park.
 
+## Scrub and the pre-commit hook (cutover unit 4.1)
+
+`sindri scrub` is local (no control plane): bare, it redacts standard input through `Aw.Redaction`; `--staged` scans the added lines of `git diff --cached --unified=0` and exits 1 with `SND-SCRUB-002` on a finding (the pre-commit hook turns that into a refused commit; `scripts/sindri-guard-proof.sh` greps the code); `--install-pre-commit [--repo PATH] [--bin PATH]` writes the hook at `git rev-parse --git-path hooks/pre-commit`. `SND-SCRUB-003` is a foreign hook or a `core.hooksPath` (nothing is written there), `-004` not a repo, `-005` a failed `git diff`. The hook body is v3 (marker `# sindri-pre-commit v3`, no shape line, the stable `~/.local/bin/sindri` baked in, fails closed with `sindri-scrub: ... not found` and a fix naming `./setup.sh`); the installer replaces v2 (`# sindri-pre-commit v2`) and v1 (`# sindri-scrub-pre-commit v1`) and refuses anything else. `repo onboard` installs it through `IRepoHooks` after approval, and doctor reports one `pre-commit:<repo>` line per profile repo (`IRepoHookStates`). P0 declares the slice (`Features/Scrub`), `PreCommitHook`, `PreCommitRepoHooks` and the doctor port as stubs with red tests; unit 4.1 builds them, swaps `NoSecretCheckHook` for `PreCommitRepoHooks` in `OnboardRepoServiceCollectionExtensions` and registers the hook reader.
+
 ## Hook contract
 
 None in S1. The `Hooks → Sindri` cli edge in `deps.yaml` (sindri-nudge) is the TS sindri's until the switch; the C#
