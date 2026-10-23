@@ -30,6 +30,27 @@ public sealed class InstanceDetailAllowedCommandsTests
     }
 
     [Fact]
+    public void Only_the_verb_with_a_human_trigger_effect_is_destructive_in_the_detail()
+    {
+        var detail = InstanceViews.Detail(View("ready"), Context());
+
+        Assert.Equal(
+            [("merge", true), ("rework", null), ("comments", null), ("resync-docs", null), ("check", null)],
+            detail.AllowedCommands.Select(static c => (c.Verb, c.Destructive)));
+    }
+
+    [Fact]
+    public void The_detail_json_writes_destructive_on_merge_only()
+    {
+        var json = JsonSerializer.Serialize(InstanceViews.Detail(View("ready"), Context()), EvalComposition.Options);
+
+        var entries = JsonDocument.Parse(json).RootElement.GetProperty("allowedCommands").EnumerateArray().ToList();
+
+        Assert.Equal(["merge"], entries.Where(static e => e.TryGetProperty("destructive", out var flag) && flag.GetBoolean()).Select(static e => e.GetProperty("verb").GetString()), StringComparer.Ordinal);
+        Assert.Equal(1, entries.Count(static e => e.TryGetProperty("destructive", out _)));
+    }
+
+    [Fact]
     public void The_engines_own_commands_are_not_in_the_list()
     {
         var view = View("ready");

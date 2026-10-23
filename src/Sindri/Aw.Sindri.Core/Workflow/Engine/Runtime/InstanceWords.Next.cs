@@ -41,7 +41,7 @@ internal sealed partial record InstanceWords
         {
             ParkReason.Rounds or ParkReason.NoProgress => $"Parked ({Name(park.Reason.Value)}){where}: {question}.\nGrant more rounds at a terminal, or cancel.",
             ParkReason.Budget => $"Parked (budget){where}: {question}.\nGrant tokens at a terminal, or cancel.",
-            ParkReason.NeedsAnswer when park.ParkKind == ParkKind.Wait => $"Parked{where}: {question}.\nFix the cause, then resume to check again, or cancel.",
+            ParkReason.NeedsAnswer when (park.ParkKind ?? park.MirroredParkKind) == ParkKind.Wait => $"Parked{where}: {question}.\nFix the cause, then resume to check again, or cancel.",
             ParkReason.NeedsAnswer => $"Parked (needs-answer){where}: {question}.\nAnswer with --text; the Step runs again with your answer.",
             ParkReason.Timeout => $"Parked (timeout): {question}.\nResume to give it the full time again, or cancel.",
             ParkReason.SpecConflict when park.Mirrors is not null => $"Parked (spec-conflict){where}: {question}.",
