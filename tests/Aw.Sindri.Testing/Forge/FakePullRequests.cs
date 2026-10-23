@@ -317,6 +317,11 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     {
         ArgumentNullException.ThrowIfNull(links);
         Calls.Add("Digest");
+        if (Failure is { } failure)
+        {
+            return Done<IReadOnlyList<PullDigest>>(failure);
+        }
+
         var digests = new List<PullDigest>(links.Count);
         foreach (var link in links)
         {

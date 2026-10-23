@@ -95,6 +95,32 @@ Every row carries `kind`, `identity`, `instance`, `headSha` and `at`; the kind a
 
 A step with no instance address still runs and writes nothing.
 
+## `service:pr-watch` (API15)
+
+The producer of `pr.changed` (spec §6.1, §6.2). It is a built-in scheduled service (`pr-watch`, listed by `GET /sindri/services` and `sindri services`), on the scheduler's shortest cadence; **it polls only every `workflow.pr.pollInterval`** (default `60s`, read from the approved profile each run) and is `Quiet` in between.
+
+A poll:
+
+1. Lists the pull requests of the live instances that wait on `pr.changed` (`TemporalWatchedPulls`): open instances whose current state's wait, in the approved recipe, is for `pr.changed`, with their `fact:pr` (a JSON string, or an object with `url` or `link`) read from the fact store.
+2. Reads their digests through `IPullRequests.Digest`, one forge call per host per at most 20 links. A pull request the forge no longer has fails a batch, so then each is read alone and the missing one is left out.
+3. Compares each with the last digest in `<home>/workflow/pr-watch.json` (owner-only, written atomically). A pull request seen for the first time is only recorded. A change records one `pr.changed` per item that waits on it (the event's route is `item`), by `service:pr-watch`: the **outcome is the first of** `merged`, `closed`, `updated` (head moved), `review` (comment count or the forge's version moved) and `ci` (checks changed), and `fact:prEvent` is `{ subject, headSha, changes[], at }`, with `subject` the instance's `fact:pr` exactly and `changes[]` every change in that order.
+4. Records nothing for an unchanged pull request, except one `idle` per `workflow.pr.remindAfter` (default `14d`) of quiet. The same change found again after a failed save is the same ledger row (idempotency key).
+5. Forgets the pull requests nobody waits on any more, and rewrites the file.
+
+A run that recorded nothing is `ScheduledResult.Quiet`.
+
+**Errors.** The forge port maps a refused credential or host to `SND-FORGE-002` (after it re-ran a `command:` credential once on a 401), no forge in the profile to `SND-FORGE-001`, and an unreachable or rate-limiting forge to `SND-FORGE-004`. Waiting instances are left as they are (their own timeouts still run); the service's last run shows the code in `GET /sindri/services`.
+
+| Forge answer | The watcher |
+|---|---|
+| `SND-FORGE-004` (unreachable, 403, 429) | Backs that host off by itself: one poll interval, then doubling to 15 minutes; the other hosts are polled on. After three unanswered polls in a row the run fails with `SND-FORGE-004`. The forge's `Retry-After` is not visible through the port, so the doubling is the only wait |
+| `SND-FORGE-002` | The run fails at once with it (degraded), and the host is backed off |
+| `SND-FORGE-001` | The run fails at once with it |
+
+The spec names the 401 case `SND-FORGE-001` and the unreachable case `SND-FORGE-002`; the codes the port gives them are 002 and 004, and the watcher passes the port's code on.
+
+`sindri doctor` has a `pr-watch` check (`PrWatchDoctorChecks`): ok before the first run or after an ok run; after a failed run it names the code and its fix (`001` warn, `002` fail, `004` warn).
+
 ## Babysitter stats (API19)
 
 `GET /sindri/workflow/recipes/workflow.pr-babysitter/stats` answers the usual `RecipeStats` plus a `babysitter` section for the window, which PB-P2 reads to tune the caps and Q5, Q9 and Q12. The section is counted on **every read and never cached**: the merge records are files the effects append to, so no ledger head says when they changed. It is absent for every other recipe and for a child-only answer.
@@ -121,6 +147,5 @@ The times, tokens, owner actions, CI fixes, rechecks and docs counts come from t
 | `restack` row | `effect.pr.restack` is a descriptor only until the engine's Retarget lands |
 | `docsMerge` row of `docs-merge-owner` | The owner's desk step writes no `doneByHand` or `left` row yet |
 | `effect.pr.open` labels | The open effect does not apply labels yet |
-| `pr-watch` poller | Nothing polls a waiting PR; `ready-check` and the `await` wake-ups wait on it |
 | Hand-off hash check, workspace cut | Intake records the hash but does not check it, and does not cut a workspace from the PR head: no port reaches either |
 | `merge.actor`, `push.comments` | The engine's effect context carries no actor and the push effect has no comment ids; both stay null or empty |
