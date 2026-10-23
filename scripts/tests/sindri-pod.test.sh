@@ -5,7 +5,8 @@
 # epoch or token in the pod rewrites the home; a port-forward that drops is retried; refusals (no kubectl, no sindri-ui, no
 # pod, a pod that is not Ready, a local port that is taken, no rights; --check reports each and exits 0 or 2); the mirror
 # home lives in $TMPDIR and goes on exit (a TERM too), stale ones are removed; the retry loop prints its attempts and is
-# bounded; --onyx forwards the pod's Onyx port and runs `sindri onyx attach` in the pod with -it; a failed attach is the exit code.
+# bounded; profile edit (a fake EDITOR): unchanged stops, a valid edit is validated, put back and approved in that order,
+# an invalid one is never approved and its copy kept, a refused approval's exit code propagates; --onyx forwards the pod's Onyx port and runs `sindri onyx attach` in the pod with -it; a failed attach is the exit code.
 # Run: bash scripts/tests/sindri-pod.test.sh
 set -uo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -51,6 +52,13 @@ case " $* " in
   *" port-forward "*)
     if [ -e "$POD/pf-fail-once" ] && [[ " $* " == *" pod/"* ]]; then rm -f "$POD/pf-fail-once"; echo "pf failed" >&2; exit 1; fi
     exec sleep 300 ;;
+  *" exec "*" -- cat "*) cat "$POD/profile.yaml"; exit 0 ;;
+  *" exec -i "*) cat > "$POD/uploaded"; exit 0 ;;
+  *"sindri profile validate"*) cp "$POD/uploaded" "$POD/validated"; rc="$(cat "$POD/validate-rc" 2>/dev/null || echo 1)"
+    [ "$rc" -ge 2 ] && echo "SND-PROFILE-001 bad key" >&2; exit "$rc" ;;
+  *" mv "*) cp "$POD/uploaded" "$POD/profile.yaml"; exit 0 ;;
+  *'echo "${AW_SINDRI_PROFILE'*) echo /data/profile/profile.yaml; exit 0 ;;
+  *"profile approve"*) exit "$(cat "$POD/approve-rc" 2>/dev/null || echo 0)" ;;
   *" exec -it "*) [ -e "$POD/attach-fail" ] && exit "$(cat "$POD/attach-fail")"; exit 0 ;;
   *" exec "*) [ -e "$POD/down" ] && exit 1
     cat "$POD/control.json"; echo "@@aw-token@@"; cat "$POD/token"; exit 0 ;;
@@ -288,5 +296,59 @@ check "pod never reachable: the mirror home is removed too" "$(mirror_dir)" ""
 rm -f "$POD/down"
 conn --bogus >/dev/null; check "unknown argument: exit 2" "$?" "2"
 bash "$DIR/sindri-pod.sh" >/dev/null 2>&1; check "no verb: exit 2" "$?" "2"
+
+# --- profile edit: copy out, edit, validate, put back, approve
+cat > "$WORK/bin/ed" <<'EOS'
+#!/usr/bin/env bash
+echo "editor $1" >> "$CALLS"
+[ -e "$POD/ed-change" ] && echo "share: true" >> "$1"
+exit 0
+EOS
+chmod +x "$WORK/bin/ed"
+printf 'schemaVersion: 1\nuser: me\n' > "$POD/profile.yaml"
+pedit() { printf '%s' "${PEDIT_IN:-}" | env -u VISUAL EDITOR="$WORK/bin/ed" PATH="$WORK/bin:$PATH" bash "$DIR/sindri-pod.sh" profile edit "$@" 2>&1; }
+pedit_reset() { reset; rm -f "$POD/ed-change" "$POD/validate-rc" "$POD/approve-rc" "$POD/uploaded" "$POD/validated"
+  printf 'schemaVersion: 1\nuser: me\n' > "$POD/profile.yaml"; }
+seq_of() { awk '/sindri profile validate/ {print "validate"} / mv / {print "move"} /profile approve/ {print "approve"}' "$CALLS" | paste -sd, -; }
+
+pedit_reset
+OUT="$(pedit)"; RC=$?
+check "profile edit unchanged: exit 0, says so, no validate or approve" \
+  "$RC:$(printf '%s' "$OUT" | grep -c 'profile unchanged; nothing to validate or approve'):$(seq_of)" "0:1:"
+check "profile edit: the profile is read with exec cat at the pod's profile path" "$(count 'exec sindri-0 -c sindri -- cat /data/profile/profile.yaml')" "1"
+
+pedit_reset; touch "$POD/ed-change"
+OUT="$(pedit)"; RC=$?
+check "profile edit changed and valid: validate, then put back, then approve" "$RC:$(seq_of)" "0:validate,move,approve"
+check "profile edit: approve runs with -it in the sindri container" "$(count 'exec -it sindri-0 -c sindri -- sindri profile approve')" "1"
+check "profile edit: the pod's profile is the edited one" "$(tail -1 "$POD/profile.yaml")" "share: true"
+check "profile edit: validate ran on the temp copy, not the live path" \
+  "$(count 'AW_SINDRI_PROFILE="$1" sindri profile validate _ /data/profile/profile.yaml.edit-')" "1"
+check "profile edit: the final line says what changed and what is next" \
+  "$(printf '%s' "$OUT" | tail -1 | grep -c 'profile changed (1 lines differ) and approved in sindri-0; next:')" "1"
+check "profile edit: the local copy is removed on success" "$(ls "$AW_STATE_DIR"/sindri-pod/*/profile-edit 2>/dev/null | head -1)" ""
+
+pedit_reset; touch "$POD/ed-change"; echo 2 > "$POD/validate-rc"
+PEDIT_IN=$'a\n'; OUT="$(pedit)"; RC=$?; unset PEDIT_IN
+check "profile edit invalid: exit 2, errors shown, no move, no approve" \
+  "$RC:$(printf '%s' "$OUT" | grep -c 'SND-PROFILE-001 bad key'):$(seq_of)" "2:1:validate"
+KEPT="$(ls "$AW_STATE_DIR"/sindri-pod/*/profile-edit/profile.yaml 2>/dev/null | head -1)"
+check "profile edit invalid: the local copy is kept and its path printed" \
+  "$([ -n "$KEPT" ] && tail -1 "$KEPT"):$(printf '%s' "$OUT" | grep -c -F "your edited copy is at $KEPT")" "share: true:1"
+check "profile edit invalid: the pod's profile is unchanged" "$(wc -l < "$POD/profile.yaml" | tr -d ' ')" "2"
+
+pedit_reset; touch "$POD/ed-change"; echo 2 > "$POD/validate-rc"
+PEDIT_IN=$'e\na\n'; OUT="$(pedit)"; RC=$?; unset PEDIT_IN
+check "profile edit invalid, edit again: the editor opens twice and validate runs twice" "$RC:$(count '^editor '):$(count 'sindri profile validate')" "2:2:2"
+
+pedit_reset; touch "$POD/ed-change"; echo 5 > "$POD/approve-rc"
+OUT="$(pedit)"; RC=$?
+check "profile edit approve refused: its exit code propagates, order held" "$RC:$(seq_of)" "5:validate,move,approve"
+KEPT="$(ls "$AW_STATE_DIR"/sindri-pod/*/profile-edit/profile.yaml 2>/dev/null | head -1)"
+check "profile edit approve refused: the copy is kept and the next step named" \
+  "$([ -n "$KEPT" ] && echo kept):$(printf '%s' "$OUT" | grep -c 'in place in sindri-0 but not approved')" "kept:1"
+pedit_reset
+OUT="$(pedit --port 1)"; RC=$?; check "profile edit: connect-only flags are a usage error" "$RC" "2"
+
 
 exit "$fail"

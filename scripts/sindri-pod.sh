@@ -3,6 +3,17 @@
 #
 #   sindri-pod.sh connect [--context C] [--namespace N] [--pod P] [--port PORT] [--onyx] [--check] [--dry-run]
 #
+#   sindri-pod.sh profile edit [--context C] [--namespace N] [--pod P]
+#
+# profile edit changes the pod's profile: it copies profile.yaml out of the pod (`kubectl exec ... cat`, at the path the pod's
+# Sindri reads: AW_SINDRI_PROFILE, else <AW_SINDRI_HOME>/profile/profile.yaml), opens it in ${VISUAL:-${EDITOR:-vi}} and
+# stops with "unchanged" when you change nothing. Otherwise it copies the edit to a temp path next to the profile in the pod
+# and runs `sindri profile validate` on it there (AW_SINDRI_PROFILE=<temp path>; exit 0 or 1 is valid, the errors of an invalid
+# one are shown and you choose to edit again or abort). A valid edit is moved into place and
+# `kubectl exec -it <pod> -c sindri -- sindri profile approve` runs at this terminal: the approval is the protected verb you
+# type, and its exit code is this script's. Your edited copy stays under $AW_STATE_DIR/sindri-pod/<context>-<namespace>/profile-edit/
+# on any failure (its path is printed) and is removed on success.
+#
 # connect opens the desktop app on the pod. The app only follows a control.json in a home on this machine, so the script
 # builds one: it port-forwards the pod's loopback owner port (the AW_SINDRI_PORT in the pod's control.json), reads the
 # pod's control.json and fresh human token over `kubectl exec`, and writes a mirror home in a fresh
@@ -42,10 +53,12 @@ set -uo pipefail
 
 say() { echo "sindri-pod: $*" >&2; }
 die() { say "$*"; exit 1; }
-usage() { say "usage: sindri-pod.sh connect [--context C] [--namespace N] [--pod P] [--port PORT] [--onyx] [--check] [--dry-run]"; exit 2; }
+usage() { say "usage: sindri-pod.sh connect [--context C] [--namespace N] [--pod P] [--port PORT] [--onyx] [--check] [--dry-run] | profile edit [--context C] [--namespace N] [--pod P]"; exit 2; }
 
-[ "${1:-}" = connect ] || usage
-shift
+mode=connect
+if [ "${1:-}" = profile ] && [ "${2:-}" = edit ]; then mode=edit; shift 2
+elif [ "${1:-}" = connect ]; then shift
+else usage; fi
 ctx="" ns="" pod=sindri-0 lport="" onyx=0 dry=0 check=0
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -59,6 +72,7 @@ while [ $# -gt 0 ]; do
     *) say "unknown argument '$1'"; usage ;;
   esac
 done
+[ "$mode" = connect ] || [ "$onyx$dry$check$lport" = 000 ] || usage
 case "$lport" in ''|*[!0-9]*) [ -z "$lport" ] || { say "--port must be a number"; exit 2; } ;; esac
 
 retries="${AW_SINDRI_POD_RETRIES:-30}"
@@ -69,6 +83,61 @@ state="${AW_STATE_DIR:-$HOME/.agentic-workflow}"
 
 kargs=()   # --context and --namespace, once both are resolved
 kc() { kubectl ${kargs[@]+"${kargs[@]}"} "$@"; }
+
+# profile edit: see the header.
+profile_edit() {
+  command -v kubectl >/dev/null 2>&1 || die "kubectl is not on the PATH"
+  [ -n "$ctx" ] || ctx="$(kubectl config current-context 2>/dev/null)"
+  [ -n "$ctx" ] || die "no kubectl context (pass --context)"
+  [ -n "$ns" ] || ns="$(kubectl --context "$ctx" config view --minify -o 'jsonpath={..namespace}' 2>/dev/null)"
+  [ -n "$ns" ] || ns=default
+  kargs=(--context "$ctx" --namespace "$ns")
+  local safe dir ppath tmp_remote orig edit ans rc editor out lines
+  safe="$(printf '%s-%s' "$ctx" "$ns" | tr -c 'A-Za-z0-9._-' '_')"
+  dir="$state/sindri-pod/$safe/profile-edit"
+  umask 077
+  mkdir -p "$dir" || die "can't create $dir"
+  orig="$dir/profile.orig.yaml" edit="$dir/profile.yaml"
+  ppath="$(kc exec "$pod" -c sindri -- sh -c 'h="${AW_SINDRI_HOME:-${AW_STATE_DIR:-$HOME/.agentic-workflow}/sindri-app}"; echo "${AW_SINDRI_PROFILE:-$h/profile/profile.yaml}"' 2>/dev/null)"
+  [ -n "$ppath" ] || die "can't read the profile path from $pod in $ctx/$ns"
+  kc exec "$pod" -c sindri -- cat "$ppath" > "$orig" 2>/dev/null || die "can't read $ppath from $pod (does the pod have a profile? run 'sindri profile init' in it)"
+  cp "$orig" "$edit"
+  tmp_remote="$ppath.edit-$$"
+  editor="${VISUAL:-${EDITOR:-vi}}"
+  while :; do
+    sh -c "$editor \"\$1\"" _ "$edit" || { say "the editor failed; your copy is at $edit"; return 1; }
+    if cmp -s "$orig" "$edit"; then
+      rm -r "$dir"
+      say "profile unchanged; nothing to validate or approve"
+      return 0
+    fi
+    kc exec -i "$pod" -c sindri -- sh -c 'cat > "$1"' _ "$tmp_remote" < "$edit" || { say "can't copy the edit into $pod; your copy is at $edit"; return 1; }
+    out="$(kc exec "$pod" -c sindri -- sh -c 'AW_SINDRI_PROFILE="$1" sindri profile validate' _ "$tmp_remote" 2>&1)"; rc=$?
+    if [ "$rc" -ge 2 ]; then
+      printf '%s\n' "$out" >&2
+      say "the edited profile is not valid (sindri profile validate exit $rc)"
+      printf 'sindri-pod: edit again or abort? [e/a] ' >&2
+      read -r ans || ans=a
+      case "$ans" in
+        e|E) continue ;;
+        *) kc exec "$pod" -c sindri -- rm -f "$tmp_remote" >/dev/null 2>&1
+           say "aborted; the pod's profile is unchanged; your edited copy is at $edit"
+           return 2 ;;
+      esac
+    fi
+    break
+  done
+  kc exec "$pod" -c sindri -- sh -c 'mv "$1" "$2"' _ "$tmp_remote" "$ppath" || { say "can't move the edit into place; your copy is at $edit"; return 1; }
+  lines="$(diff "$orig" "$edit" | grep -c '^[<>]')"
+  kc exec -it "$pod" -c sindri -- sindri profile approve; rc=$?
+  if [ "$rc" -ne 0 ]; then
+    say "the profile is in place in $pod but not approved (sindri profile approve exit $rc); your edited copy is at $edit"
+    say "next: kubectl exec -it $pod -c sindri -- sindri profile approve"
+    return "$rc"
+  fi
+  rm -r "$dir"
+  say "profile changed ($lines lines differ) and approved in $pod; next: sindri-pod.sh connect, or 'kubectl exec $pod -c sindri -- sindri status' to see it take effect"
+}
 
 # The pod's home, resolved in the pod the way the app resolves its own (ControlFilePath.cs).
 pod_read='h="${AW_SINDRI_HOME:-${AW_STATE_DIR:-$HOME/.agentic-workflow}/sindri-app}"; cat "$h/control.json" && echo && echo @@aw-token@@ && cat "$h/auth/human.token"'
@@ -85,6 +154,8 @@ find_ui() {
   # shellcheck disable=SC2012
   ls -dt "$state"/bin/sindri-app/*/sindri-ui 2>/dev/null | head -1
 }
+
+[ "$mode" = edit ] && { profile_edit; exit $?; }
 
 if [ "$dry" = 1 ]; then
   echo "+ checks: kubectl auth can-i create pods/exec and pods/portforward; kubectl get pod $pod (the sindri container ready); the local port is free; the app binary exists"

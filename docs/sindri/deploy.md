@@ -39,3 +39,19 @@ app and the forwards stay until `connect` ends. If `attach` fails (Onyx not answ
 version than the pinned one, the exec refused), `connect` says so, keeps the app connected and ends with `attach`'s exit code.
 
 `--dry-run` prints the commands and writes nothing.
+
+## Change the profile in a pod
+
+`scripts/sindri-pod.sh profile edit [--context C] [--namespace N] [--pod P]` is how you change a share switch, `repo-pull.allowedHosts`
+or any other profile key in a pod. It copies `profile.yaml` out of the pod (the path the pod's Sindri reads: `AW_SINDRI_PROFILE`, else
+`<AW_SINDRI_HOME>/profile/profile.yaml`) and opens it in `${VISUAL:-${EDITOR:-vi}}`.
+
+- Nothing changed: it says `profile unchanged; nothing to validate or approve` and stops.
+- Changed: it copies your edit to a temp path next to the profile in the pod and runs `sindri profile validate` on it there. An
+  invalid edit shows the errors and asks whether to edit again or abort; abort leaves the pod's profile as it was.
+- Valid: it moves the edit into place and runs `kubectl exec -it <pod> -c sindri -- sindri profile approve` at your terminal. The
+  approval is the protected verb you type; its exit code is the script's. The profile takes effect only once approved.
+
+Your edited copy stays under `$AW_STATE_DIR/sindri-pod/<context>-<namespace>/profile-edit/` on any failure (the path is printed,
+and after a refused approval the line names the `approve` command to run by hand); it is removed on success. The last line says what
+changed and the next step.
