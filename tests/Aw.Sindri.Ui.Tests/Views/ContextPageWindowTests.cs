@@ -31,7 +31,7 @@ public sealed class ContextPageWindowTests
         {
             var records = new InMemoryEndpointRecords();
             records.Write(A.Record());
-            var shell = new ShellViewModel(records, new FakeSindriApi(), new FakeTimeProvider(A.Noon), new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
+            var shell = new ShellViewModel(records, new FakeSindriApi { WholeMapAnswer = _ => new RouteAnswer(System.Net.HttpStatusCode.InternalServerError, "{}") }, new FakeTimeProvider(A.Noon), new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());   // no whole map: a query draws its neighbourhood
             await shell.Restore(Token);
             var window = new ShellWindow { DataContext = shell };
             try
@@ -75,7 +75,7 @@ public sealed class ContextPageWindowTests
         {
             var records = new InMemoryEndpointRecords();
             records.Write(A.Record());
-            var shell = new ShellViewModel(records, new FakeSindriApi(), new FakeTimeProvider(A.Noon), new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
+            var shell = new ShellViewModel(records, new FakeSindriApi { WholeMapAnswer = _ => new RouteAnswer(System.Net.HttpStatusCode.InternalServerError, "{}") }, new FakeTimeProvider(A.Noon), new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());   // no whole map: the answer draws its neighbourhood, whose nodes are the ones heard
             await shell.Restore(Token);
             var window = new ShellWindow { DataContext = shell };
             try
