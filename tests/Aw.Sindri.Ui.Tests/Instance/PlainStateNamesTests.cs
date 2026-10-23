@@ -1,7 +1,6 @@
 using System.Net;
-using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Ui.Api.Workflow;
+using Aw.Sindri.Ui.Tests.Facts;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Instance;
@@ -79,6 +78,19 @@ public sealed class PlainStateNamesTests
         var from = frame.Facts!.Rows.First(r => r.From.Length > 0 && r.From.Contains(Scoping, StringComparison.Ordinal));
         Assert.Equal(Labels.FromState(Scoping), from.From);
         Assert.DoesNotContain(frame.Facts.Rows, r => string.Equals(r.From, Labels.FromState("scoping"), StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task The_header_and_the_expanded_state_say_the_name_of_the_state_the_instance_is_in()
+    {
+        var current = FixtureInstances.Detail("project-build").Current.Status.Header.State;
+        var recipe = GoldenFiles.Node("workflow-recipe", "workflow.project");
+        recipe["states"]!.AsArray().Single(s => (string?)s!["id"] == current)!["displayName"] = "Where it stands";
+        var frame = await Opened(new RouteAnswer(HttpStatusCode.OK, recipe.ToJsonString()));
+
+        Assert.Equal("Where it stands", frame.StateText);
+        Assert.Equal("Where it stands", frame.Expanded!.State);
+        Assert.Contains("Where it stands", frame.Identity, StringComparison.Ordinal);
     }
 
     [Fact]

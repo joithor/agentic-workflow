@@ -12,6 +12,13 @@ internal sealed partial class InstanceFrameViewModel
     // A state in the recipe's words once the recipe is read, else its id as served.
     private string NameOf(string state) => _names.Served(Recipe, state) ?? state;
 
+    // The header's state in the recipe's words, and the identity line that carries it.
+    private void ShowIdentity(InstanceDetail detail)
+    {
+        StateText = NameOf(detail.Current.Status.Header.State);
+        Identity = $"{WorkflowName} · {StateText}{(HasDetail ? ": " + Detail : string.Empty)} · {SinceText}";
+    }
+
     // Reads the recipe the shown instance runs, once; when it serves names, the parts that say a state are drawn again with them. A recipe that cannot be read leaves the ids.
     private async Task ReadNames(Uri url, InstanceDetail detail, int generation, CancellationToken cancellationToken)
     {
@@ -25,6 +32,7 @@ internal sealed partial class InstanceFrameViewModel
         var read = await api.Recipe(url, recipe, hash: null, cancellationToken).ConfigureAwait(true);
         if (generation == _generation && read.IsSuccess && _names.Add(read.Value) && _shown is { } shown)
         {
+            ShowIdentity(shown);
             ShowParts(shown);
         }
     }
