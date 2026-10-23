@@ -162,4 +162,65 @@ public sealed class ContextWholeZoomTests
 
         Assert.Equal((false, Labels.ContextWholeNoMatch, true), (page.IsZoomedIn, page.Problem, page.ShowWhole));
     }
+
+    // Any answer the lenses give: the map-tabs golden, whatever starting point was asked.
+    private static FakeSindriApi Recording(List<string> asked) => new()
+    {
+        LensesAnswer = q =>
+        {
+            asked.AddRange(q.Anchors);
+            return RouteAnswer.Api("context-lenses", "map-tabs");
+        },
+    };
+
+    [Fact]
+    public async Task A_click_on_a_dimmed_node_makes_it_the_new_starting_point_and_the_camera_goes_to_its_answer()
+    {
+        var asked = new List<string>();
+        var page = Page(Recording(asked));
+        await page.Opened(Token);
+        page.AnchorText = Anchor;
+        await page.Submit(Token);
+        var dimmed = page.Whole.Geometry!.Nodes.First(n => !page.Whole.HitKeys.Contains(n.Key)).Key;
+        var moved = new List<WholeRect>();
+        page.Whole.ZoomRequested += (_, e) => moved.Add(e.Value);
+        asked.Clear();
+
+        await page.ChooseWholeNode(dimmed, Token);
+
+        Assert.Equal([dimmed], asked);
+        Assert.Equal(dimmed, page.AnchorText);
+        _ = Assert.Single(moved);
+        Assert.True(page.IsZoomedIn);
+    }
+
+    [Fact]
+    public async Task A_click_on_a_node_of_the_answer_opens_it_in_the_inspector_and_reads_nothing_new()
+    {
+        var asked = new List<string>();
+        var page = Page(Recording(asked));
+        await page.Opened(Token);
+        page.AnchorText = Anchor;
+        await page.Submit(Token);
+        var hit = page.Whole.HitKeys.First();
+        asked.Clear();
+
+        await page.ChooseWholeNode(hit, Token);
+
+        Assert.Equal((true, 0), (page.InspectorOpen, asked.Count));
+    }
+
+    [Fact]
+    public async Task With_nothing_zoomed_to_a_click_on_any_node_is_the_starting_point()
+    {
+        var asked = new List<string>();
+        var page = Page(Recording(asked));
+        await page.Opened(Token);
+        var key = page.Whole.Geometry!.Nodes[0].Key;
+
+        await page.ChooseWholeNode(key, Token);
+
+        Assert.Equal([key], asked);
+        Assert.Equal(key, page.AnchorText);
+    }
 }

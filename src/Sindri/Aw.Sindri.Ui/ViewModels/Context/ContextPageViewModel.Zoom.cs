@@ -66,6 +66,18 @@ internal sealed partial class ContextPageViewModel
         return Whole.ZoomIntoAreas(overview, [.. reads.Select(r => r.Value)], keys, touched.Count - reads.Length);
     }
 
+    /// <summary>
+    /// A click on a node of the whole map: a node of the answer the camera is on opens in the inspector; any other node (dimmed behind the answer, or any node when nothing is zoomed to)
+    /// becomes the new starting point, read like a picked suggestion, and the camera eases to its answer.
+    /// </summary>
+    /// <param name="key">The node's key.</param>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    /// <returns>When the inspector is filled or the new answer is drawn.</returns>
+    internal Task ChooseWholeNode(string key, CancellationToken cancellationToken = default) =>
+        Whole.IsZoomed && Whole.HitKeys.Contains(key) && Map is { } map && map.Nodes.Any(n => string.Equals(n.Key, key, StringComparison.Ordinal))
+            ? Select(key, cancellationToken)
+            : Pick(key, cancellationToken);
+
     /// <summary>Esc: the inspector closes first, then the camera goes back to the whole map.</summary>
     /// <returns>True when it did something.</returns>
     internal bool Back()

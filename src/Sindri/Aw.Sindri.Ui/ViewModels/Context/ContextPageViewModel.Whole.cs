@@ -21,7 +21,7 @@ internal sealed partial class ContextPageViewModel
     private void InitWhole()
     {
         Whole.AreaOpenRequested += (_, e) => _ = OpenWholeArea(e.Value, CancellationToken.None);
-        Whole.NodeChosen += (_, e) => _ = Select(e.Value);
+        Whole.NodeChosen += (_, e) => _ = ChooseWholeNode(e.Value, CancellationToken.None);
         Ports.Follow((_, cancellationToken) => _wholeWanted && !Whole.IsReady && !Whole.IsLoading && !Whole.IsFailed ? ReadWhole(cancellationToken) : Task.CompletedTask);
     }
 
