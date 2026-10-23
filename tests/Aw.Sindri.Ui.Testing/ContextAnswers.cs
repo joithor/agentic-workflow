@@ -52,11 +52,6 @@ internal static class ContextAnswers
     {
         ArgumentNullException.ThrowIfNull(query);
         var anchors = query.Anchors.Distinct(StringComparer.Ordinal).ToList();
-        if (anchors.Count > 20)
-        {
-            return RouteAnswer.Problem("context-lenses", "set-21-anchors-006");
-        }
-
         if (query.MapVersion is { } pinned && !string.Equals(pinned, "v1", StringComparison.Ordinal))
         {
             return RouteAnswer.Problem("context-lenses", "map-version-not-retained-120");
