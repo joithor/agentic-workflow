@@ -41,6 +41,9 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     /// <summary>Gets or sets a status Merge answers instead of merging; null merges when the expected head holds.</summary>
     public PullMergeStatus? MergeStatus { get; set; }
 
+    /// <summary>Gets or sets an outcome Push answers instead of checking its lease; null checks it.</summary>
+    public PullPushOutcome? PushAnswer { get; set; }
+
     /// <summary>Gets the pushes asked for, in order.</summary>
     public IList<PullPush> Pushes { get; } = [];
 
@@ -114,6 +117,11 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
         Pushes.Add(push);
         return Done(Locate(push.Link).Map(p =>
         {
+            if (PushAnswer is { } forced)
+            {
+                return forced;
+            }
+
             if (p.HeadSha != push.LeaseSha)
             {
                 return PullPushOutcome.HeadMoved;

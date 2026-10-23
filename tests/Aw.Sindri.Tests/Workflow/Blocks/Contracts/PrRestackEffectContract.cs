@@ -2,14 +2,18 @@ using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks.Effect;
+using Aw.Sindri.Testing;
+using Aw.Sindri.Testing.Forge;
+using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Workflow;
 
 namespace Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 
-/// <summary>A descriptor-only block (no runtime until its phase): it hashes, kinds, registers once and resolves nothing.</summary>
 [Lane(TestLane.Unit)]
-public sealed class PrRestackEffectContract : DescriptorContract
+public sealed class PrRestackEffectContract : BlockContract
 {
+    protected override Type Block => typeof(PrRestackEffect);
+
     protected override BlockDescriptor Descriptor => PrEffects.Restack;
 
     protected override string ExpectedHash => "sha256:eecb4203443224d586e11f27893f4938672fec9080e73055d793050368515410";
@@ -17,4 +21,11 @@ public sealed class PrRestackEffectContract : DescriptorContract
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
+
+    protected override async Task InvokeAsync(CancellationToken cancellationToken)
+    {
+        var facts = new InMemoryFactStore();
+        _ = await new PrRestackEffect(new FakePullRequests(["github.com"]), new FakeRunDiff(), new FakeWorkspaceRebase(), new RebasedRangeScan(new FakeDiffContent(), new PassThroughScrubber()), facts, facts, new MergeRecord(new InMemoryRunArea(), TimeProvider.System))
+            .Dispatch(ShippedComposition.Effect("effect.pr.restack"), cancellationToken);
+    }
 }
