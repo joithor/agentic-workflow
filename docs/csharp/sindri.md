@@ -679,7 +679,7 @@ There is no decision, desk, protected, job or step-report tool, and no `sindri_c
 
 | Code | Kind | Meaning |
 |---|---|---|
-| `SND-CONTEXT-021` | Invalid | The call has no `X-Sindri-Repo`, and the tool reads one repo's map (the `context_*` and graph tools; the `sindri_*` tools answer for every repo; a registration always writes it) |
+| `SND-CONTEXT-021` | Invalid | The call has no `X-Sindri-Repo`, and the tool reads one repo's map (the `context_*` and graph tools, and `sindri_request` without an `itemId`; the other `sindri_*` tools answer for every repo; a registration always writes it) |
 | `SND-CONTEXT-022` | Invalid | An argument of the wrong type, a missing required one, an unknown one, or an enum value outside the schema |
 | `SND-CONTEXT-023` | NotFound | Unknown tool (`sindri_decide` and every other absent tool) |
 

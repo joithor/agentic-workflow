@@ -250,7 +250,7 @@ public sealed class SindriRequestToolTests(SharedMcpWorld shared) : IClassFixtur
         await using var none = await McpSession.Open(world.Host, repo: null, ct);
 
         var unknownTool = await mcp.Call("sindri_decide", """{"choice":"accept"}""", ct);
-        var noRepo = await none.Call("context_sources", "{}", ct);
+        var noRepo = await none.Call("sindri_request", Request("note", "Hello."), ct);
         var unknownArgument = await mcp.Call("sindri_request", """{"kind":"note","text":"Hi.","priority":1}""", ct);
         var badKind = await mcp.Call("sindri_request", """{"kind":"approve","text":"Hi."}""", ct);
 
@@ -281,13 +281,13 @@ public sealed class SindriRequestToolTests(SharedMcpWorld shared) : IClassFixtur
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task A_context_call_without_a_repo_matches_its_golden()
+    public async Task A_call_without_a_repo_matches_its_golden()
     {
         var ct = TestContext.Current.CancellationToken;
         var world = shared.World;
         await using var none = await McpSession.Open(world.Host, repo: null, ct);
 
-        var result = await none.Call("context_sources", "{}", ct);
+        var result = await none.Call("sindri_request", Request("note", "Hello."), ct);
 
         McpGolden.Match(result, world.Host.Home, "errors", "no-repo");
     }

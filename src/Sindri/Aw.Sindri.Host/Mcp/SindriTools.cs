@@ -1,7 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
+using Aw.Context.Core;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Requests;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.FileRequest;
@@ -244,6 +246,13 @@ internal static class SindriTools
         if (bound.IsError)
         {
             return McpResults.Failure(services, bound.Error);
+        }
+
+        // why: a request about no item is about the registration's repo, so without the repo header it has nothing to be about
+        if (bound.Value.Item is null && services.GetRequiredService<ICallerContextAccessor>().Current?.Repo is null)
+        {
+            return McpResults.Failure(services, ContextErrors.McpRepoMissing.With(
+                "the call has no X-Sindri-Repo header and names no itemId, so the request has no repo (fix: run 'sindri mcp register' in the work repo, or pass an itemId)"));
         }
 
         var answer = await services.GetRequiredService<IService<FileRequestRequest, RequestFiledResponse>>().Handle(bound.Value, ct).ConfigureAwait(false);
