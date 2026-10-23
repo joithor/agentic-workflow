@@ -86,7 +86,7 @@ public sealed class NotifyDeskEffectTests
         var notice = await Engine(Child, "desk");
 
         Assert.Equal(NeedsYouRowId.Desk(InstanceAddress.From(Child)).Value, notice.RowId?.Value);
-        Assert.NotEqual(NeedsYouRowId.Desk(InstanceAddress.From(Root)).Value, notice.RowId?.Value);
+        Assert.NotEqual(NeedsYouRowId.Desk(InstanceAddress.From(Root)), notice.RowId);
         Assert.Equal("needs-you/" + notice.RowId?.Value, notice.DeepLink);
     }
 

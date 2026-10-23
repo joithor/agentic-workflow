@@ -46,7 +46,7 @@ public sealed class NestedParkRowsTests
         var q = await Started();
         await Fold(q, EventTypes.WorkflowTransition, Row(_build, Parked(ParkReason.NeedsAnswer, ParkKind.Step)));
         var notices = new InMemoryDeskNotices();
-        var arguments = new Dictionary<string, JsonElement> { ["class"] = JsonSerializer.SerializeToElement("interrupt"), ["row"] = JsonSerializer.SerializeToElement("park") };
+        var arguments = new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["class"] = JsonSerializer.SerializeToElement("interrupt"), ["row"] = JsonSerializer.SerializeToElement("park") };
         var context = new EffectContext(BlockId.From("effect.notify.desk"), "WFI-a:1:n3", "c-1", FromEngine: true, _build, "T-4", Attempt: 1,
             arguments, new Dictionary<FactKey, JsonElement>(), "parked");
 
