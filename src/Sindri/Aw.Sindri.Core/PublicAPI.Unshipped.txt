@@ -3662,6 +3662,8 @@ Aw.Sindri.Core.Workflow.Views.AllowedCommand.Deconstruct(out string! Action, out
 Aw.Sindri.Core.Workflow.Views.AllowedCommand.Equals(Aw.Sindri.Core.Workflow.Views.AllowedCommand? other) -> bool
 Aw.Sindri.Core.Workflow.Views.AllowedCommand.Verb.get -> string?
 Aw.Sindri.Core.Workflow.Views.AllowedCommand.Verb.init -> void
+Aw.Sindri.Core.Workflow.Views.AllowedCommand.Destructive.get -> bool?
+Aw.Sindri.Core.Workflow.Views.AllowedCommand.Destructive.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.ApprovedRecipe
 Aw.Sindri.Core.Workflow.Engine.Runtime.ApprovedRecipe.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.ApprovedRecipe!
 Aw.Sindri.Core.Workflow.Engine.Runtime.ApprovedRecipe.ApprovedRecipe(Aw.Sindri.Core.Workflow.Engine.Runtime.RecipeVersion! Version, Aw.Sindri.Core.Workflow.Recipes.Recipe! Recipe) -> void

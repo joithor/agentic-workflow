@@ -90,4 +90,25 @@ public sealed class RecipeVerbCommandsTests
         Assert.Equal("takeover, cancel", StatusLayout.Commands(view));
         Assert.Equal([ActionId.From("ApplyCommand:takeover"), ActionId.From("ApplyCommand:cancel")], StatusRecords.ActionIds(view));
     }
+
+    [Fact]
+    public void Only_the_verb_whose_transition_carries_a_human_trigger_effect_is_destructive()
+    {
+        var view = View(EngineFixture.At(_babysitter, "ready"));
+
+        Assert.Equal(
+            [("merge", true), ("rework", null), ("comments", null), ("resync-docs", null), ("check", null)],
+            view.AllowedCommands.Where(c => c.Verb is not null).Select(c => (c.Verb, c.Destructive)));
+    }
+
+    [Fact]
+    public void The_json_writes_destructive_only_where_it_is_true()
+    {
+        var options = AwJson.CreateOptions(SindriJsonContext.Default);
+
+        var entries = View(EngineFixture.At(_babysitter, "ready")).AllowedCommands.Select(c => JsonSerializer.SerializeToElement(c, options)).ToList();
+
+        Assert.Equal(["merge"], entries.Where(e => e.TryGetProperty("destructive", out var flag) && flag.GetBoolean()).Select(e => e.GetProperty("verb").GetString()), StringComparer.Ordinal);
+        Assert.Equal(1, entries.Count(e => e.TryGetProperty("destructive", out _)));
+    }
 }
