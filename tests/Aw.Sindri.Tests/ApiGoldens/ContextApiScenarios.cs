@@ -98,6 +98,9 @@ internal static class ContextApiScenarios
         ("context-whole", "locate", async (s, ct) => await s.Fetch(WholeRoute("locate=surface%3Acommand%2Fswitch-tab&locate=feature%3Anope.x"), ct)),
         ("context-whole", "draft", async (s, ct) => await s.FetchAfterDraft(WholeRoute("draft=true"), ct)),
         ("context-whole", "no-map-030", async (s, ct) => await s.Fetch(WholeRoute(), ct)),
+        ("context-whole", "no-map-never-run", async (s, ct) => await s.FetchWithViews(WholeRoute(), ct)),
+        ("context-whole", "no-map-approved", async (s, ct) => await s.FetchAfterBuild(WholeRoute(), hung: false, ct)),
+        ("context-whole", "building-in-progress", async (s, ct) => await s.FetchAfterBuild(WholeRoute(), hung: true, ct)),
         ("context-whole", "no-draft-044", async (s, ct) => await s.Fetch(WholeRoute("draft=true"), ct)),
         ("context-whole", "map-version-v1", async (s, ct) => await s.FetchAfterSecondMap(WholeRoute("mapVersion=v1"), ct)),
         ("context-whole", "map-version-not-retained-120", async (s, ct) => await s.Fetch(WholeRoute("mapVersion=v99"), ct)),
@@ -169,13 +172,18 @@ internal static class ContextApiScenarios
         {
             await Rebuild(host, ct);
         }
-        else if ((slug, scenario) != ("context-whole", "no-map-030"))
+        else if (!StartsWithoutMap(slug, scenario))
         {
             await ContextMapApiTests.Import(host, ImportFile(host, slug, scenario));
         }
 
         return host;
     }
+
+    // The whole-map answers for "no map yet" run on a host that imported nothing.
+    private static bool StartsWithoutMap(string slug, string scenario) =>
+        string.Equals(slug, "context-whole", StringComparison.Ordinal)
+        && new[] { "no-map-030", "no-map-never-run", "no-map-approved", "building-in-progress" }.Contains(scenario, StringComparer.Ordinal);
 
     // The code goldens read the CodeLensRepo (a fixed sha); the map names no commit, so the lexical search reads HEAD, except where a scenario says otherwise.
     private static async Task<GoldenHost> StartCode(string scenario, CancellationToken ct)
@@ -300,7 +308,7 @@ internal static class ContextApiScenarios
         }
 
         _ = services.RemoveAll<IClusterSource>();
-        _ = services.AddSingleton<IClusterSource>(new FakeClusterSource());
+        _ = services.AddSingleton(string.Equals(scenario, "building-in-progress", StringComparison.Ordinal) ? new HangingClusterSource() : (IClusterSource)new FakeClusterSource());   // a build that never ends: the answer says it is building
         _ = services.RemoveAll<ICurrentUser>();
         _ = services.AddSingleton<ICurrentUser>(new FakeCurrentUser("golden"));
         _ = services.RemoveAll<HeavyLockSettings>();
