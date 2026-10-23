@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Aw.Sindri.Ui.ViewModels.Components;
 using Aw.Sindri.Ui.ViewModels.Instance;
 
 namespace Aw.Sindri.Ui.Views.Instance;
@@ -65,6 +66,8 @@ internal sealed partial class ExpandedStateView : UserControl
     private void OnAnswerInChild(object? sender, RoutedEventArgs e) => _state?.AnswerInTheChild();
 
     private void OnSession(object? sender, RoutedEventArgs e) => _state?.OpenSession();
+
+    private void OnReview(object? sender, RoutedEventArgs e) => _ = ((sender as Button)?.DataContext as DeskReviewViewModel)?.Open();
 
     private void OnChild(object? sender, RoutedEventArgs e) => _state?.Child?.Open();
 
