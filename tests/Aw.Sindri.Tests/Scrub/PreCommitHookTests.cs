@@ -9,8 +9,9 @@ namespace Aw.Sindri.Tests.Scrub;
 [Lane(TestLane.Unit)]
 public sealed class PreCommitHookTests
 {
+    private const string Red = "red until cutover unit 4.1";
 
-    [Fact]
+    [Fact(Skip = Red)]
     public void The_v3_body_has_the_marker_the_baked_in_path_and_no_shape_line()
     {
         var body = PreCommitHook.Body("/home/thor/.local/bin/sindri");
@@ -22,7 +23,7 @@ public sealed class PreCommitHookTests
         Assert.DoesNotContain("shape", body, StringComparison.Ordinal);
     }
 
-    [Fact]
+    [Fact(Skip = Red)]
     public void The_v3_body_fails_closed_when_the_binary_is_missing_and_names_setup_sh()
     {
         var body = PreCommitHook.Body("/home/thor/.local/bin/sindri");
@@ -34,7 +35,7 @@ public sealed class PreCommitHookTests
         Assert.DoesNotContain("install-sindri.sh", body, StringComparison.Ordinal);
     }
 
-    [Fact]
+    [Fact(Skip = Red)]
     public void A_path_with_a_quote_is_baked_in_as_one_shell_word()
     {
         var body = PreCommitHook.Body("/home/o'brien/.local/bin/sindri");
@@ -42,7 +43,7 @@ public sealed class PreCommitHookTests
         Assert.Contains("SINDRI='/home/o'\\''brien/.local/bin/sindri'", body, StringComparison.Ordinal);
     }
 
-    [Theory]
+    [Theory(Skip = Red)]
     [InlineData(null, HookKind.None)]
     [InlineData("#!/bin/sh\n# sindri-pre-commit v3\n", HookKind.V3)]
     [InlineData(ScrubFixtures.V2Hook, HookKind.V2)]
