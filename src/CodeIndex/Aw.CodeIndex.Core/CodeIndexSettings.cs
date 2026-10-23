@@ -28,7 +28,7 @@ public sealed record CodeIndexSettings(
     public static CodeIndexSettings Default { get; } = new(
         DenyPaths: [],
         UtilityGlobs: [],
-        MaxFileKB: 512,
+        MaxFileKB: 4_096,
         MaxTotalMB: 4_096,
         Embeddings: new EmbeddingsSettings(Enabled: true, DefaultEmbeddingsUrl, Model: null),
         Graph: new GraphSettings(Enabled: true, MaxMegabytes: 256, MaxNodes: 500_000));

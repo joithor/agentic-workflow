@@ -19,16 +19,10 @@ public static class CodeIndexRules
     public const int MaxAmbiguousEdges = 8;
 
     /// <summary>Most symbols one file may hold before it is left unparsed.</summary>
-    public const int MaxSymbolsPerFile = 5_000;
+    public const int MaxSymbolsPerFile = 100_000;
 
     /// <summary>Most call sites one file may hold before it is left unparsed.</summary>
-    public const int MaxCallSitesPerFile = 20_000;
-
-    /// <summary>The largest index file, in bytes (2 GB).</summary>
-    public const long MaxIndexBytes = 2L * 1024 * 1024 * 1024;
-
-    /// <summary>The longest a build may run.</summary>
-    public static readonly TimeSpan MaxBuildTime = TimeSpan.FromHours(2);
+    public const int MaxCallSitesPerFile = 500_000;
 
     /// <summary>The longest a build waits for a heavy-job slot before it ends deferred.</summary>
     public static readonly TimeSpan HeavySlotWait = TimeSpan.FromMinutes(10);
