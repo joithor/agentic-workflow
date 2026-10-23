@@ -14,6 +14,9 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// <param name="MergeCard">The pull request card, when the instance lists the fact "fact:prStatus" and it read; null otherwise.</param>
 internal sealed record DeskTarget(string InstanceId, string Run, StatusCommand? Complete, string? Why = null, string? IfApprove = null, string? IfSendBack = null, DeskRecommendation? Recommended = null, MergeCardViewModel? MergeCard = null, IReadOnlyList<DeskQuestion>? Questions = null)
 {
+    /// <summary>The scoping interview's questions, read from "fact:questions"; null for every other desk.</summary>
+    internal IReadOnlyList<ScopingQuestion>? Scoping { get; init; }
+
     /// <summary>The recipe verbs the instance accepts now, in the order it serves them; empty when it serves none.</summary>
     internal IReadOnlyList<DeskVerb> Verbs { get; init; } = [];
 

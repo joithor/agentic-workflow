@@ -38,23 +38,54 @@ internal sealed class DeskReporter(ISindriApi api, Func<Uri?> apiUrl, ILauncher?
         var complete = read.Value.Current.Status.Commands.FirstOrDefault(c => c.Verb == StatusVerb.Complete);
         var state = await StateOf(url, read.Value).ConfigureAwait(true);
         var card = await MergeCardOf(url, read.Value).ConfigureAwait(true);
-        var questions = await QuestionsOf(url, read.Value).ConfigureAwait(true);
-        return new DeskTarget(instanceId, desk?.Run ?? string.Empty, complete, state?.Why, OutcomeText(state, "approve"), OutcomeText(state, "revise"), desk?.Recommended, card, questions) { Verbs = verbs };
+        var (questions, scoping) = await QuestionsOf(url, read.Value).ConfigureAwait(true);
+        return new DeskTarget(instanceId, desk?.Run ?? string.Empty, complete, state?.Why, OutcomeText(state, "approve"), OutcomeText(state, "revise"), desk?.Recommended, card, questions) { Verbs = verbs, Scoping = scoping };
     }
 
-    // The ask step's questions; null for a desk that does not ask.
-    private async Task<IReadOnlyList<DeskQuestion>?> QuestionsOf(Uri url, InstanceDetail detail) =>
-        detail.Current.Desk is { } desk && AsksQuestions(desk, detail.Current.Status.Inputs) ? await Questions(url, detail.Id).ConfigureAwait(true) : null;
-
-    // The ask step: the person's answers are the desk's required output and the questions are the escalation fact it was given.
-    private static bool AsksQuestions(DeskForm desk, IReadOnlyList<StatusInput> inputs) =>
-        desk.Outputs.Any(o => string.Equals(o.Key, AnswersKey, StringComparison.Ordinal)) && inputs.Any(i => string.Equals(i.Key, DeskQuestionReader.Key, StringComparison.Ordinal));
-
-    // The whole list comes from the fact read: the instance's fact row only carries a one-line summary.
-    private async Task<IReadOnlyList<DeskQuestion>> Questions(Uri url, string instanceId)
+    // The ask step's questions, by the shape the fact is in: words as options are the design review's, objects are the scoping interview's. Neither for a desk that does not ask.
+    private async Task<(IReadOnlyList<DeskQuestion>? Questions, IReadOnlyList<ScopingQuestion>? Scoping)> QuestionsOf(Uri url, InstanceDetail detail)
     {
-        var fact = await api.InstanceFact(url, instanceId, DeskQuestionReader.Key, CancellationToken.None).ConfigureAwait(true);
-        return fact.IsError ? [] : DeskQuestionReader.Of(fact.Value);
+        var key = detail.Current.Desk is { } desk && desk.Outputs.Any(o => string.Equals(o.Key, AnswersKey, StringComparison.Ordinal))
+            ? new[] { DeskQuestionReader.Key, ScopingQuestionReader.Key }.FirstOrDefault(k => detail.Current.Status.Inputs.Any(i => string.Equals(i.Key, k, StringComparison.Ordinal)))
+            : null;
+        if (key is null)
+        {
+            return (null, null);
+        }
+
+        // The whole list comes from the fact read: the instance's fact row only carries a one-line summary.
+        var fact = await api.InstanceFact(url, detail.Id, key, CancellationToken.None).ConfigureAwait(true);
+        if (fact.IsError)
+        {
+            return ([], null);
+        }
+
+        return ScopingQuestionReader.IsScoping(fact.Value) ? (null, ScopingQuestionReader.Of(fact.Value)) : (DeskQuestionReader.Of(fact.Value), null);
+    }
+
+    /// <summary>The interview's "fact:answers" as it stands: the batches so far, or an empty array when nothing was answered yet.</summary>
+    /// <param name="target">The open run.</param>
+    /// <returns>The array's JSON text, or the refusal when it cannot be read or is not an array.</returns>
+    internal async Task<Result<string>> ReadAnswers(DeskTarget target)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        if (apiUrl() is not { } url)
+        {
+            return SindriUiErrors.Unreachable.With("Sindri isn't reachable yet");
+        }
+
+        var fact = await api.InstanceFact(url, target.InstanceId, AnswersKey, CancellationToken.None).ConfigureAwait(true);
+        if (fact.IsError)
+        {
+            return fact.Error.Kind == ErrorKind.NotFound ? "[]" : fact.Error;   // a pending fact is not served yet; any other failure must not overwrite what is there
+        }
+
+        return fact.Value.Body.ValueKind switch
+        {
+            System.Text.Json.JsonValueKind.Array => fact.Value.Body.GetRawText(),
+            System.Text.Json.JsonValueKind.Null or System.Text.Json.JsonValueKind.Undefined => "[]",
+            _ => SindriUiErrors.BadAnswer.With("the answers so far are not a list"),
+        };
     }
 
     /// <summary>The fact "answers" for a list of answered questions: [{id, question, answer}] in the order asked.</summary>
