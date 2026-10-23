@@ -11,7 +11,7 @@ public sealed class CodeIndexSettingsTests
 
         Assert.Equal(CodeIndexSettings.Default, result.Value);
         Assert.Equal(512, result.Value.MaxFileKB);
-        Assert.Equal(200, result.Value.MaxTotalMB);
+        Assert.Equal(4_096, result.Value.MaxTotalMB);
         Assert.True(result.Value.Embeddings.Enabled);
         Assert.Equal("http://127.0.0.1:11434", result.Value.Embeddings.Url);
         Assert.Null(result.Value.Embeddings.Model);
@@ -28,7 +28,7 @@ public sealed class CodeIndexSettingsTests
 
         Assert.Equal(["vendor/**"], settings.DenyPaths);
         Assert.Equal(64, settings.MaxFileKB);
-        Assert.Equal(200, settings.MaxTotalMB);
+        Assert.Equal(4_096, settings.MaxTotalMB);
         Assert.False(settings.Graph.Enabled);
         Assert.Equal("http://[::1]:11434", settings.Embeddings.Url);
     }
@@ -85,7 +85,6 @@ public sealed class CodeIndexSettingsTests
         var limits = CodeIndexSettings.Default.SnapshotLimits();
 
         Assert.Equal(512L * 1024, limits.MaxFileBytes);
-        Assert.Equal(200L * 1024 * 1024, limits.MaxTotalBytes);
-        Assert.Equal(CodeIndexRules.MaxFiles, limits.MaxFiles);
+        Assert.Equal(4_096L * 1024 * 1024, limits.MaxTotalBytes);
     }
 }

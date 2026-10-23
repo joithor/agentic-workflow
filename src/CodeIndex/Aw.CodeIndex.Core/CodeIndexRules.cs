@@ -18,9 +18,6 @@ public static class CodeIndexRules
     /// <summary>Most candidates an ambiguous call keeps as edges; 'candidates' keeps the true count.</summary>
     public const int MaxAmbiguousEdges = 8;
 
-    /// <summary>Most files a snapshot keeps.</summary>
-    public const int MaxFiles = 100_000;
-
     /// <summary>Most symbols one file may hold before it is left unparsed.</summary>
     public const int MaxSymbolsPerFile = 5_000;
 

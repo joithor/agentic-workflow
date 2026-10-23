@@ -27,5 +27,5 @@ public sealed record IndexSettings(
     public const int DefaultMaxFileKB = 512;
 
     /// <summary>The default for 'maxTotalMB'.</summary>
-    public const int DefaultMaxTotalMB = 200;
+    public const int DefaultMaxTotalMB = 4_096;
 }

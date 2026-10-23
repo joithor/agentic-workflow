@@ -9,7 +9,7 @@ namespace Aw.CodeIndex.Tests.Snapshot;
 public sealed class InputRulesNoCeilingTests
 {
     private static readonly CommitSha _commit = CommitSha.From("0123456789abcdef0123456789abcdef01234567");
-    private static readonly SnapshotLimits _limits = new([], MaxFileBytes: 10_000, MaxTotalBytes: 100, MaxFiles: 3);
+    private static readonly SnapshotLimits _limits = new([], MaxFileBytes: 10_000, MaxTotalBytes: 100);
 
     private static TreeEntry Regular(string path, string blob, long size) => new("100644", path, blob, size);
 

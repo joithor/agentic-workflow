@@ -115,7 +115,7 @@ public sealed class IndexCodeIndexKeysTests : IDisposable
     {
         Assert.True(ProfileRules.Check(new SindriProfile(1, "thor", Index: new IndexSettings())).IsSuccess);
         Assert.Equal(512, IndexSettings.DefaultMaxFileKB);
-        Assert.Equal(200, IndexSettings.DefaultMaxTotalMB);
+        Assert.Equal(4_096, IndexSettings.DefaultMaxTotalMB);
         Assert.Equal(256, GraphSettings.DefaultMaxMB);
         Assert.Equal(500_000, GraphSettings.DefaultMaxNodes);
         Assert.Equal("http://127.0.0.1:11434", EmbeddingSettings.DefaultUrl);
