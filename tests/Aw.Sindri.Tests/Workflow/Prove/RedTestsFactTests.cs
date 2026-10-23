@@ -11,6 +11,8 @@ public sealed class RedTestsFactTests
     // What the red agent of run24 wrote, because nothing told it the shape.
     private const string Run24 = """{"commit":"eb60275","file":"scripts/tests/binaries-lock.test.sh","command":"bash x.sh","result":{"exit":1},"tests":[{"name":"list prints","covers":["AC-1"],"status":"failing","why":"exit 2"}]}""";
 
+    private static readonly string[] _topLevel = ["commit", "file", "command", "tests"];
+
     private static RedTestsFact Parse(string json) => RedTestsFact.Parse(JsonNode.Parse(json));
 
     [Fact]
@@ -21,7 +23,7 @@ public sealed class RedTestsFactTests
         Assert.Null(fact.Problem);
         var first = fact.Entries[0];
         Assert.Equal(("AC-1", null), (first.Item, first.Problem));
-        Assert.Equal([new RedTest("Fix_works", "tests/FixTests.cs"), new RedTest("Other", null)], first.Tests);
+        Assert.Equal([new RedTest("Fix_works", "tests/FixTests.cs"), new RedTest("Other", Path: null)], first.Tests);
         Assert.Equal("abc1234", first.Commit);
         Assert.True(fact.Entries[1].AppOnly);
         Assert.Empty(fact.Entries[1].Tests);
@@ -32,7 +34,7 @@ public sealed class RedTestsFactTests
     {
         var fact = Parse("""{"i1":["T1","T2"]}""");
 
-        Assert.Equal(["T1", "T2"], fact.Entries.Single().Tests.Select(static t => t.Name));
+        Assert.Equal(["T1", "T2"], fact.Entries.Single().Tests.Select(static t => t.Name), StringComparer.Ordinal);
         Assert.Null(fact.Entries.Single().Problem);
     }
 
@@ -63,7 +65,7 @@ public sealed class RedTestsFactTests
         var fact = Parse(Run24);
 
         var problems = fact.Entries.Where(static e => e.Problem is not null).ToList();
-        Assert.Equal(["commit", "file", "command", "tests"], problems.Select(static e => e.Item).Where(static i => i is "commit" or "file" or "command" or "tests"));
+        Assert.Equal(["commit", "file", "command", "tests"], problems.Select(static e => e.Item).Where(static i => _topLevel.Contains(i, StringComparer.Ordinal)), StringComparer.Ordinal);
         Assert.All(problems, static e =>
         {
             Assert.Contains(e.Item, e.Problem, StringComparison.Ordinal);
