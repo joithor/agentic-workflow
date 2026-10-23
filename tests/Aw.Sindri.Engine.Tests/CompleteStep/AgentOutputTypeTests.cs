@@ -105,7 +105,7 @@ public sealed class AgentOutputTypeTests
         _ = await service.Handle(Report(1, (_design, "prose")), TestContext.Current.CancellationToken);
         _ = await service.Handle(Report(2, (_design, "more\nprose " + new string('x', 1000))), TestContext.Current.CancellationToken);
 
-        var recorded = _refusals.For(_launch);
+        var recorded = _refusals.Take(_launch);
         Assert.NotNull(recorded);
         Assert.Contains("fact:design", recorded, StringComparison.Ordinal);
         Assert.Contains("isn't JSON", recorded, StringComparison.Ordinal);
@@ -121,7 +121,7 @@ public sealed class AgentOutputTypeTests
 
         _ = await service.Handle(Report(1, (_design, "prose")), TestContext.Current.CancellationToken);
 
-        Assert.Null(_refusals.For(_launch));
+        Assert.Null(_refusals.Take(_launch));
     }
 
     [Fact(Timeout = 30_000)]

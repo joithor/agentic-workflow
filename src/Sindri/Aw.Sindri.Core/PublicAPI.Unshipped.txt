@@ -11078,11 +11078,13 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.operator !=(Aw.Sin
 static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget? right) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState!
-Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.AgentSessionState(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd? EndedAs = null, int? ExitCode = null) -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd? EndedAs, out int? ExitCode) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.AgentSessionState(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd? EndedAs = null, int? ExitCode = null, string? Detail = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd? EndedAs, out int? ExitCode, out string? Detail) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.EndedAs.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd?
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.EndedAs.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.Detail.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.Detail.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.ExitCode.get -> int?
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.ExitCode.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.IsLive.get -> bool
@@ -17591,7 +17593,8 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.PayloadFacts.Violation(Aw.Sindri.C
 static Aw.Sindri.Core.Workflow.Engine.Runtime.PayloadFacts.OutputsOf(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor! descriptor) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.PayloadFacts.WithShapes(System.Collections.Generic.IReadOnlyList<string!>? instructions, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>? payload) -> System.Collections.Generic.IReadOnlyList<string!>?
 Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals
-Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals.For(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> string?
+Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals.Take(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> string?
+Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals.Discard(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals.Record(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, string! text) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals.ReportRefusals() -> void
 const Aw.Sindri.Core.Workflow.Engine.Runtime.ReportRefusals.MaxLength = 300 -> int
