@@ -56,8 +56,8 @@ internal sealed partial class InstanceRowViewModel : ObservableObject
     /// <summary>The compact line a narrow page shows instead of the columns: the workflow and the stage.</summary>
     public string Compact => $"{DisplayName} · {StateName}";
 
-    /// <summary>The state the instance is in, in words: the recipe's displayName for it once the recipe is read, else its id made readable.</summary>
-    public string StateName => _names is null ? WorkflowNames.Of(_row.State, displayName: null) : _names.Of(_row.Recipe.Id, _row.State);
+    /// <summary>The state the instance is in, in words: the recipe's displayName for it once the recipe is read, else its id as served.</summary>
+    public string StateName => _names?.Served(_row.Recipe.Id, _row.State) ?? _row.State;
 
     /// <summary>The recipes' state names were read: the words that name the state are drawn again.</summary>
     internal void NamesChanged()

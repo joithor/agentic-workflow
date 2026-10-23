@@ -7,7 +7,6 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.Tests.Workflows;
-using Aw.Sindri.Ui.ViewModels.Workflows;
 using Aw.Sindri.Ui.Views.Workflows;
 
 namespace Aw.Sindri.Ui.Tests.Views;
@@ -36,10 +35,10 @@ public sealed class WorkflowsStageNamesViewTests : FrameHost
         shell.GoTo(PageId.Workflows);
         Settle(window);
 
-        await Until(window, () => CardNames(window).Any(n => n.Contains("Design the change", StringComparison.Ordinal)));
+        await Until(window, () => CardNames(window).Exists(n => n.Contains("Design the change", StringComparison.Ordinal)));
         Assert.DoesNotContain(CardNames(window), n => n.Contains(", design,", StringComparison.Ordinal));
     });
 
     private static List<string> CardNames(Window window) =>
-        [.. window.GetVisualDescendants().OfType<RunCard>().Select(c => AutomationProperties.GetName(Named<Border>(c, "WorkflowCardFrame")))];
+        [.. window.GetVisualDescendants().OfType<RunCard>().Select(c => AutomationProperties.GetName(Named<Border>(c, "WorkflowCardFrame")) ?? string.Empty)];
 }

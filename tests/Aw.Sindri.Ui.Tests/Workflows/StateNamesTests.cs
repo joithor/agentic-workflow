@@ -1,6 +1,4 @@
-using System.Text.Json;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels.Workflows;
@@ -19,19 +17,15 @@ public sealed class StateNamesTests
         };
 
     [Fact]
-    public void A_recipe_that_names_the_state_gives_its_name()
-    {
+    public void A_recipe_that_names_the_state_gives_its_name() =>
         Assert.Equal("Design the change", StateNames.Of(Recipe("workflow.line", ("design", "Design the change")), "design"));
-    }
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("  ")]
-    public void A_state_with_no_name_reads_as_its_id_made_readable(string? name)
-    {
-        Assert.Equal("Build and prove", StateNames.Of(Recipe("workflow.line", ("build-and-prove", name)), "build-and-prove"));
-    }
+    public void A_state_with_no_name_reads_as_its_id_made_readable(string? name) =>
+        Assert.Equal("Build And Prove", StateNames.Of(Recipe("workflow.line", ("build-and-prove", name)), "build-and-prove"));
 
     [Fact]
     public void A_recipe_that_is_not_read_or_lacks_the_state_falls_back_to_the_id()
@@ -53,10 +47,8 @@ public sealed class StateNamesTests
     }
 
     [Fact]
-    public void A_recipe_that_names_no_state_adds_nothing()
-    {
+    public void A_recipe_that_names_no_state_adds_nothing() =>
         Assert.False(new StateNames().Add(Recipe("workflow.line", ("design", null))));
-    }
 
     [Fact]
     public void A_recipe_is_asked_for_once()

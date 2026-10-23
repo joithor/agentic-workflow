@@ -27,8 +27,14 @@ internal sealed class StateNames
     /// <param name="recipeId">The recipe's id.</param>
     /// <param name="state">The state's id.</param>
     /// <returns>The recipe's displayName for the state, else its id made readable.</returns>
-    internal string Of(string recipeId, string state) =>
-        _byRecipe.TryGetValue(recipeId, out var names) && names.TryGetValue(state, out var served) ? served : WorkflowNames.Of(state, displayName: null);
+    internal string Of(string recipeId, string state) => Served(recipeId, state) ?? WorkflowNames.Of(state, displayName: null);
+
+    /// <summary>The name a read recipe serves for a state.</summary>
+    /// <param name="recipeId">The recipe's id.</param>
+    /// <param name="state">The state's id.</param>
+    /// <returns>The recipe's displayName for the state; null when the recipe is not read or names none.</returns>
+    internal string? Served(string recipeId, string state) =>
+        _byRecipe.TryGetValue(recipeId, out var names) && names.TryGetValue(state, out var served) ? served : null;
 
     /// <summary>True when the recipe has been asked for already (read or not): it is not asked for again.</summary>
     /// <param name="recipeId">The recipe's id.</param>
