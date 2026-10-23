@@ -27,7 +27,7 @@ internal sealed partial class WorkflowsViewModel
         if (all.IsSuccess)
         {
             var before = WalkAddresses();
-            var finished = all.Value.Instances.Where(r => r.States.Any(s => s.Terminal && string.Equals(s.State, r.State, StringComparison.Ordinal))).Select(r => new InstanceRowViewModel(r, clipboard, clock)).ToList();
+            var finished = all.Value.Instances.Where(r => r.States.Any(s => s.Terminal && string.Equals(s.State, r.State, StringComparison.Ordinal))).Select(r => new InstanceRowViewModel(r, clipboard, clock, _names)).ToList();
             finished.ForEach(r => r.SetStale(IsStale));
             DoneRows.Clear();
             finished.ForEach(DoneRows.Add);
