@@ -42,7 +42,9 @@ internal sealed class PrRecordEffect(IMergeRecord record, IFactContents contents
             return state.Error;
         }
 
-        var row = new MergeRow(context.Instance, context.Identity, name, state.Value is { } held ? PrEffectFacts.Head(held) : null, fields.Value);
+        // A docsMerge row's headSha is the docs PR's head, which the desk does not hold.
+        var head = name is not "docsMerge" && state.Value is { } held ? PrEffectFacts.Head(held) : null;
+        var row = new MergeRow(context.Instance, context.Identity, name, head, fields.Value);
         var written = await record.Append(row, cancellationToken).ConfigureAwait(false);
         return written.IsError ? written.Error : new EffectDone(Reply: null, Existed: !written.Value);
     }

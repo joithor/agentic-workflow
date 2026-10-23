@@ -130,7 +130,7 @@ public sealed class PrRecordEffectTests
         Assert.Equal(outcome, row.GetProperty("outcome").GetString());
         Assert.Equal("ownerDesk", row.GetProperty("trigger").GetString());
         Assert.Equal("https://example.test/o/r/pull/9", row.GetProperty("docsPr").GetString());
-        Assert.Equal("h1", row.GetProperty("headSha").GetString());
+        Assert.Equal(JsonValueKind.Null, row.GetProperty("headSha").ValueKind);
     }
 
     [Fact]
