@@ -31,7 +31,7 @@ internal sealed partial class RunPageViewModel
         Cards = cards;   // last of the drawn parts: the canvas redraws when the cards change, and reads the rest then
         _watched = new HashSet<string>([line.Address, .. children.Values.Select(c => c.Address), .. graph.Nodes.Select(n => n.ChildAddress).OfType<string>()], StringComparer.Ordinal);
         _state = line.State;
-        KeepSource(line, children);
+        KeepSource(line, children, recipe);
         KeepSelection();
         Phase = RunPageState.Shown;
         if (!_opened)

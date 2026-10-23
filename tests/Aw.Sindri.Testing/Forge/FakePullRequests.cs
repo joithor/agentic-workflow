@@ -35,6 +35,9 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     /// <summary>Gets the operations called, in order.</summary>
     public IList<string> Calls { get; } = [];
 
+    /// <summary>Gets the log CheckLog answers for a check by name; a check not listed answers "log of NAME".</summary>
+    public IDictionary<string, string> CheckLogs { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
+
     /// <summary>Gets the merges asked for, in order.</summary>
     public IList<PullMerge> Merges { get; } = [];
 
@@ -96,14 +99,14 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     public ValueTask<Result<PullView>> Get(string link, CancellationToken cancellationToken)
     {
         Calls.Add("Get");
-        return Done(Locate(link).Map(p => new PullView(p.Link, p.State, p.HeadSha, p.Mergeable, p.ReviewDecision, p.Threads.Count(static t => t.Kind == PullCommentKind.Thread && !t.Resolved), p.Checks ?? new PullChecks(p.FailingChecks.Count > 0 ? PullChecksState.Failing : p.ChecksState, p.ChecksSha ?? p.HeadSha, [.. p.FailingChecks], Passed: 0, Pending: 0), p.Labels, p.Base)));
+        return Done(Locate(link).Map(p => new PullView(p.Link, p.State, p.HeadSha, p.Mergeable, p.ReviewDecision, p.Threads.Count(static t => t.Kind == PullCommentKind.Thread && !t.Resolved), p.Checks ?? new PullChecks(p.FailingChecks.Count > 0 ? PullChecksState.Failing : p.ChecksState, p.ChecksSha ?? p.HeadSha, [.. p.FailingChecks], Passed: 0, Pending: 0), p.Labels, p.Base, p.BaseSha)));
     }
 
     /// <inheritdoc />
     public ValueTask<Result<string>> CheckLog(string link, string check, CancellationToken cancellationToken)
     {
         Calls.Add("CheckLog");
-        return Done(Locate(link).Map(_ => $"log of {check}"));
+        return Done(Locate(link).Map(_ => CheckLogs.TryGetValue(check, out var log) ? log : $"log of {check}"));
     }
 
     /// <inheritdoc />
@@ -314,6 +317,11 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     {
         ArgumentNullException.ThrowIfNull(links);
         Calls.Add("Digest");
+        if (Failure is { } failure)
+        {
+            return Done<IReadOnlyList<PullDigest>>(failure);
+        }
+
         var digests = new List<PullDigest>(links.Count);
         foreach (var link in links)
         {

@@ -8,7 +8,7 @@ namespace Aw.Sindri.Tests.Scoping.Steps;
 /// <summary>Builds a block Step's context the way the 'RunBlockStep' activity does: each fact as the string element of its stored JSON text.</summary>
 internal static class ScopingStepContexts
 {
-    internal static StepContext Of(string step, ScopingFacts facts, IReadOnlyDictionary<string, JsonElement>? inputs = null) => new(
+    internal static StepContext Of(string step, ScopingFacts facts, IReadOnlyDictionary<string, JsonElement>? inputs = null, IReadOnlyDictionary<string, int>? loopCaps = null) => new(
         BlockId.From(step),
         new Dictionary<string, JsonElement>(StringComparer.Ordinal),
         facts.ToDictionary(static f => FactKey.From("fact:" + f.Key), static f => JsonSerializer.SerializeToElement(f.Value)),
@@ -16,6 +16,7 @@ internal static class ScopingStepContexts
         inputs)
     {
         Address = Address,
+        LoopCaps = loopCaps ?? new Dictionary<string, int>(StringComparer.Ordinal),
     };
 
     /// <summary>The instance the contexts name.</summary>

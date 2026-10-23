@@ -16,7 +16,7 @@ internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider
 
     private static readonly string[] _listProperties =
     [
-        nameof(HasMore), nameof(MoreText), nameof(IsEmpty), nameof(EmptyText), nameof(IsNotServed), nameof(NotServedText), nameof(IsUnreadable), nameof(UnreadableText), nameof(OpenText),
+        nameof(HasMore), nameof(MoreText), nameof(IsEmpty), nameof(EmptyText), nameof(IsLoading), nameof(EmptyLine), nameof(IsNotServed), nameof(NotServedText), nameof(IsUnreadable), nameof(UnreadableText), nameof(OpenText),
     ];
 
     private List<InstanceSummary> _open = [];
@@ -54,6 +54,12 @@ internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider
 
     /// <summary>The served empty sentence; empty unless the strip is empty.</summary>
     public string EmptyText => IsEmpty ? Empty ?? string.Empty : string.Empty;
+
+    /// <summary>True until the first list is read (and the route is served and readable): Home shows skeleton rows.</summary>
+    public bool IsLoading => !IsNotServed && !IsUnreadable && Counts is null;
+
+    /// <summary>The empty line Home shows: the served sentence, or the app's own words when none was served; empty unless the strip is empty.</summary>
+    public string EmptyLine => !IsEmpty ? string.Empty : string.IsNullOrEmpty(Empty) ? Labels.HomeNothingRunning : Empty;
 
     /// <summary>True while the workflow list route is not served yet; only the strip is marked, never Home.</summary>
     public bool IsNotServed { get; private set; }

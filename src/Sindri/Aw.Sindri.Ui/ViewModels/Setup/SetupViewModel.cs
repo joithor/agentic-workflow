@@ -99,6 +99,12 @@ internal sealed partial class SetupViewModel : ObservableObject
     /// <summary>One segment per step: done, working or still to do.</summary>
     public IReadOnlyList<SetupSegment> Segments { get; private set => Set(ref field, value); } = [];
 
+    /// <summary>The steps done, for Home's meter.</summary>
+    public double MeterDone { get; private set => Set(ref field, value); }
+
+    /// <summary>All the steps, the meter's full length.</summary>
+    public double MeterMax { get; private set => Set(ref field, value); }
+
     /// <summary>True when every step is done or skipped.</summary>
     public bool IsFinished { get; private set => Set(ref field, value); }
 
@@ -256,6 +262,7 @@ internal sealed partial class SetupViewModel : ObservableObject
         Lead = !HasSteps ? string.Empty : IsFinished ? Labels.SetupLeadDone : Labels.SetupLead;
         HasSub = HasSteps && !IsFinished;
         Segments = [.. Steps.Select(s => new SetupSegment(s.SegmentKind))];
+        (MeterDone, MeterMax) = (Steps.Count(s => s.IsFinished), Steps.Count);
         FoldHomeLine();
         OnChanged(nameof(IsFootnoteShown));
     }
