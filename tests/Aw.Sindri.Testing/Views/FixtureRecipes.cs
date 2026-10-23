@@ -81,6 +81,16 @@ public static class FixtureRecipes
             S("merge", 3, timeout: T(Hour, TimeoutAction.Park), agent: true), S("done", 4, terminal: true)], [],
         [In("fact:request", "Request", FactType.Text, "text")], []);
 
+    /// <summary>
+    /// workflow.design v7 as far as the ask desk goes (fixture-only, not in <see cref="All"/>): the lens log's 'needsOwner' leaves every question of the round in fact:escalation (a list),
+    /// and the ask desk collects fact:answers, one entry per question. Neither fact is a declared output of the shipped recipe; the fixture declares them so the facts list shows them.
+    /// </summary>
+    public static RecipeShape Design { get; } = new("workflow.design", 7, "e3b5a1c4", RecipeUrgency.Work,
+        [S("lens-log", 1, timeout: T(Hour, TimeoutAction.Park)), S("ask", 2, desk: true, timeout: T(7 * Day, TimeoutAction.Park), block: "step.lens.ask"),
+            S("revise", 3, timeout: T(3 * Hour, TimeoutAction.Park), agent: true), S("designed", 4, terminal: true)], [],
+        [In("fact:scopePacket", "Scope packet (frozen)", FactType.Packet, "packet")],
+        [Out("fact:escalation", "Questions", FactType.Payload, "lens-log"), Out("fact:answers", "Answers", FactType.Payload, "ask")]);
+
     /// <summary>Every shape.</summary>
     public static IReadOnlyList<RecipeShape> All { get; } = [Step, Item, DevDesk, DevTriage, Incident, Triage, Project, Intake, Fork];
 }
