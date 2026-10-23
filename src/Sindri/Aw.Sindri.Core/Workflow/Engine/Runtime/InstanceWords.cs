@@ -64,7 +64,7 @@ internal sealed partial record InstanceWords(WorkflowInstance Instance, Interpre
     /// </summary>
     private string ChildOwnAnswer(Suspension park, ChildView child)
     {
-        var own = ParkAnswers.For(new ParkShape(park.Kind, park.Reason, park.ParkKind, park.Escalation, Mirrors: true), Instance.Address, child: child.Address.Value)!;
+        var own = ParkAnswers.For(new ParkShape(park.Kind, park.Reason, park.ParkKind, park.Escalation, Mirrors: true), Instance.Address, child: child.Address.Value)!;   // why: a mirrored park of a reason TakesChildOwn accepts always has an answer
         var notes = new List<string>();
         if (own.AtTerminal)
         {
