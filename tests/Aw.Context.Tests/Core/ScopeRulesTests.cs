@@ -16,9 +16,9 @@ public sealed class ScopeRulesTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_session_is_refused_with_020_while_sessions_are_off()
+    public void A_session_is_refused_with_020_when_the_owner_turned_sessions_off()
     {
-        var scoped = ScopeRules.Resolve(new ContextSettings(), _repos, new(ContextCallerKind.Session, ContextRepoName.From("split-panes"), ContextClient.Http));
+        var scoped = ScopeRules.Resolve(new ContextSettings { SessionsEnabled = false }, _repos, new(ContextCallerKind.Session, ContextRepoName.From("split-panes"), ContextClient.Http));
 
         Assert.Equal(ContextErrors.SessionsDisabled.Code, scoped.Error.Code);
     }
@@ -38,9 +38,9 @@ public sealed class ScopeRulesTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_session_sees_only_its_own_repo()
+    public void Sessions_are_on_by_default_and_a_session_sees_only_its_own_repo()
     {
-        var scoped = ScopeRules.Resolve(new ContextSettings { SessionsEnabled = true }, _repos, new(ContextCallerKind.Session, ContextRepoName.From("split-panes"), ContextClient.Http));
+        var scoped = ScopeRules.Resolve(new ContextSettings(), _repos, new(ContextCallerKind.Session, ContextRepoName.From("split-panes"), ContextClient.Http));
 
         Assert.Equal(["split-panes"], scoped.Value.Select(r => r.Name.Value), StringComparer.Ordinal);
     }
