@@ -226,7 +226,15 @@ internal sealed partial class RunInspectorViewModel(ISindriApi api, IClipboard c
             return;
         }
 
-        if (WaitingChild() is { } child)
+        var child = WaitingChild();
+        if (_url is { } desk && (await api.NeedsYou(desk, cancellationToken).ConfigureAwait(true)) is { IsSuccess: true, Value: var parks }
+            && parks.Rows.FirstOrDefault(r => IsParkOf(r, row, child)) is { } park)
+        {
+            OpenRequested?.Invoke(this, new OpenRequestedEventArgs(new DeepLink(DeepLinkKind.NeedsYou, park.Id), atDesk: true));   // the answer form is on the desk card, mirrored child parks included
+            return;
+        }
+
+        if (child is not null)
         {
             OpenRequested?.Invoke(this, new OpenRequestedEventArgs(new DeepLink(DeepLinkKind.Workflow, child.Address), FrameIntent.OpenInitial));
             return;
@@ -247,6 +255,12 @@ internal sealed partial class RunInspectorViewModel(ISindriApi api, IClipboard c
 
         OpenRequested?.Invoke(this, new OpenRequestedEventArgs(link, intent));
     }
+
+    // The park row that stands for this run's wait: its own, or its waiting child's (engine #850 mirrors a child's park at the root).
+    private static bool IsParkOf(NeedsYouRowView r, InstanceRowViewModel row, ChildRow? child) =>
+        r.Id.StartsWith("park:", StringComparison.Ordinal)
+        && (string.Equals(r.Subject?.Id, row.InstanceId, StringComparison.Ordinal)
+            || (child is not null && (string.Equals(r.Subject?.Id, child.Id, StringComparison.Ordinal) || string.Equals(r.Child, child.Address, StringComparison.Ordinal))));
 
     // The child that waits on the user (a parked step first), as the stage list shows it.
     private ChildRow? WaitingChild()

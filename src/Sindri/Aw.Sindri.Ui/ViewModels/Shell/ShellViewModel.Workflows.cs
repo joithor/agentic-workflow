@@ -16,6 +16,12 @@ internal sealed partial class ShellViewModel
         Health.FollowInstances(Workflows.Catch);
         Workflows.OpenRequested += (_, e) =>
         {
+            if (e.AtDesk && e.Link is { Kind: DeepLinkKind.NeedsYou, Subject: { } rowId })
+            {
+                OpenNeedsYouInbox(rowId);   // the desk card, not the child its pointer names: the answer form is here
+                return;
+            }
+
             if (e.Link.Subject is { } address)
             {
                 Instance.Intend(address, e.Intent);   // before the sheet opens: the frame does it when the instance is read

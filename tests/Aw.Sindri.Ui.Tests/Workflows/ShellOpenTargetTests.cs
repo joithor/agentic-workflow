@@ -49,6 +49,27 @@ public sealed class ShellOpenTargetTests
     }, Token);
 
     [Fact]
+    public Task Review_and_decide_on_a_run_whose_child_is_parked_ends_at_the_answer_form() => UiThread.Run(async () =>
+    {
+        var shell = await Connected("park-mirrored-child");
+        var instance = JsonNode.Parse(GoldenFiles.Api("workflow-instance", "project-build"))!;
+        instance["itemId"] = null;
+        var parked = instance["children"]![0]!["workstreams"]![1]!["rows"]![0]!;
+        parked["address"] = Child();   // the child the mirrored park row points at
+        parked["chip"] = JsonNode.Parse("""{"word":"PARKED","tone":"neutral"}""");
+        _server.InstanceBody = _ => new RouteAnswer(HttpStatusCode.OK, instance.ToJsonString());
+        var detail = FixtureInstances.Detail("project-build");
+        var summary = FixtureInstances.List("open").Instances.First(r => string.Equals(r.Id, detail.Id, StringComparison.Ordinal)) with { Chip = new Aw.Sindri.Ui.Api.Workflow.StateChip("PARKED", Aw.Sindri.Ui.Api.Workflow.ChipTone.Neutral) };
+        var inspector = shell.Workflows.Inspector;
+        await inspector.Show(new Uri("http://127.0.0.1:7410/"), new Aw.Sindri.Ui.ViewModels.Workflows.InstanceRowViewModel(summary, new FakeClipboard(), _clock), Token);
+
+        await inspector.ReviewAndDecide(Token);
+
+        Assert.True(shell.IsNeedsYouInbox);
+        Assert.True(shell.Inbox.ShowsAnswer);   // the answer form, not the child's copy-only frame
+    }, Token);
+
+    [Fact]
     public Task A_plain_park_keeps_its_sheet_as_the_open_link() => UiThread.Run(async () =>
     {
         var shell = await Connected("park");
