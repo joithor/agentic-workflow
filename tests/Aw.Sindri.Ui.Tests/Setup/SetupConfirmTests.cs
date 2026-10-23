@@ -152,6 +152,7 @@ public sealed class SetupConfirmTests
     public async Task The_profile_row_reads_the_summary_once_per_hash_and_shows_it_even_before_the_app_may_approve()
     {
         _f.Server.ProfileAnswer = RouteAnswer.Api("profile", "repo-added");
+        _f.Serve("profile-needs-approval");
 
         var setup = await _f.Read(Token);
         await setup.Refresh(Url, Token);
@@ -178,6 +179,7 @@ public sealed class SetupConfirmTests
     public async Task A_summary_that_cannot_be_read_leaves_the_row_working_and_is_asked_for_again()
     {
         _f.Server.ProfileAnswer = RouteAnswer.Problem(System.Net.HttpStatusCode.InternalServerError, "SND-API-001", "The control plane is down");
+        _f.Serve("profile-needs-approval");
         var setup = await _f.Read(Token);
 
         _f.Server.ProfileAnswer = RouteAnswer.Api("profile", "changed");

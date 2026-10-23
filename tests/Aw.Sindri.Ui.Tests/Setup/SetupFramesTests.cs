@@ -130,9 +130,9 @@ public sealed class SetupFramesTests : FrameHost
         var profile = Rows(window).Single(r => ((ViewModels.Setup.SetupStepViewModel)r.DataContext!).Id == "profile");
         var texts = Named<StackPanel>(profile, "SetupProfileSummary").GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible).Select(t => t.Text).ToList();
 
-        Assert.Contains("demo", texts);
-        Assert.Contains("/work/demo, 1,234 files, 12.6 MB", texts);
-        Assert.Contains("Sindri will keep demo's map up to date on its own", texts);
+        Assert.Contains(texts, t => string.Equals(t, "demo", StringComparison.Ordinal));
+        Assert.Contains(texts, t => string.Equals(t, "/work/demo, 1,234 files, 12.6 MB", StringComparison.Ordinal));
+        Assert.Contains(texts, t => string.Equals(t, "Sindri will keep demo's map up to date on its own", StringComparison.Ordinal));
     });
 
     [Fact]

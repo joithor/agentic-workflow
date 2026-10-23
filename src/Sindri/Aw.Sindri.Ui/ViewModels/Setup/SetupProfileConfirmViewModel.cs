@@ -232,7 +232,7 @@ internal sealed class SetupProfileConfirmViewModel : ObservableObject
     {
         _session++;
         (_challenge, _asked, _summaryFor, _asking, _sending) = (null, string.Empty, string.Empty, false, false);
-        Summary.Show(null);
+        Summary.Show(summary: null);
         TypedBox.Clear();
     }
 
