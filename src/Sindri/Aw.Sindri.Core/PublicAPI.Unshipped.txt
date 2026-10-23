@@ -1830,10 +1830,25 @@ Aw.Sindri.Core.NeedsYou.NeedsYouRow.Title.init -> void
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Urgency.get -> Aw.Sindri.Core.NeedsYou.Urgency
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Urgency.init -> void
 Aw.Sindri.Core.NeedsYou.NeedsYouRowRecord
+Aw.Sindri.Core.NeedsYou.NestedPark
+Aw.Sindri.Core.NeedsYou.NestedPark.<Clone>$() -> Aw.Sindri.Core.NeedsYou.NestedPark!
+Aw.Sindri.Core.NeedsYou.NestedPark.Address.get -> string!
+Aw.Sindri.Core.NeedsYou.NestedPark.Address.init -> void
+Aw.Sindri.Core.NeedsYou.NestedPark.Deconstruct(out string! Address, out Aw.Sindri.Core.Events.SuspensionSummary! Suspension, out string? Refusal, out long Sequence) -> void
+Aw.Sindri.Core.NeedsYou.NestedPark.Equals(Aw.Sindri.Core.NeedsYou.NestedPark? other) -> bool
+Aw.Sindri.Core.NeedsYou.NestedPark.NestedPark(string! Address, Aw.Sindri.Core.Events.SuspensionSummary! Suspension, string? Refusal, long Sequence) -> void
+Aw.Sindri.Core.NeedsYou.NestedPark.Refusal.get -> string?
+Aw.Sindri.Core.NeedsYou.NestedPark.Refusal.init -> void
+Aw.Sindri.Core.NeedsYou.NestedPark.Sequence.get -> long
+Aw.Sindri.Core.NeedsYou.NestedPark.Sequence.init -> void
+Aw.Sindri.Core.NeedsYou.NestedPark.Suspension.get -> Aw.Sindri.Core.Events.SuspensionSummary!
+Aw.Sindri.Core.NeedsYou.NestedPark.Suspension.init -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouRowRecord.Deconstruct(out Aw.Sindri.Core.NeedsYou.NeedsYouRow! Row, out long Sequence, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.NeedsYou.NestedPark!>? Nested) -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouRowRecord.Nested.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.NeedsYou.NestedPark!>?
+Aw.Sindri.Core.NeedsYou.NeedsYouRowRecord.Nested.init -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouRowRecord.NeedsYouRowRecord(Aw.Sindri.Core.NeedsYou.NeedsYouRow! Row, long Sequence, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.NeedsYou.NestedPark!>? Nested = null) -> void
 Aw.Sindri.Core.NeedsYou.NeedsYouRowRecord.<Clone>$() -> Aw.Sindri.Core.NeedsYou.NeedsYouRowRecord!
-Aw.Sindri.Core.NeedsYou.NeedsYouRowRecord.Deconstruct(out Aw.Sindri.Core.NeedsYou.NeedsYouRow! Row, out long Sequence) -> void
 Aw.Sindri.Core.NeedsYou.NeedsYouRowRecord.Equals(Aw.Sindri.Core.NeedsYou.NeedsYouRowRecord? other) -> bool
-Aw.Sindri.Core.NeedsYou.NeedsYouRowRecord.NeedsYouRowRecord(Aw.Sindri.Core.NeedsYou.NeedsYouRow! Row, long Sequence) -> void
 Aw.Sindri.Core.NeedsYou.NeedsYouRowRecord.Row.get -> Aw.Sindri.Core.NeedsYou.NeedsYouRow!
 Aw.Sindri.Core.NeedsYou.NeedsYouRowRecord.Row.init -> void
 Aw.Sindri.Core.NeedsYou.NeedsYouRowRecord.Sequence.get -> long
