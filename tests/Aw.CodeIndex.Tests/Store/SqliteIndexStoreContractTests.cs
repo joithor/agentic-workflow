@@ -14,7 +14,7 @@ public sealed class SqliteIndexStoreContractTests : IndexStoreContract, IDisposa
 
     private string Indexes => Path.Combine(_root, "code-index");
 
-    protected override IIndexStore Create() => new SqliteIndexStore(Indexes, new FakeTimeProvider(BuiltAt));
+    protected override IIndexStore Create() => new SqliteIndexStore(Indexes, new FakeTimeProvider(BuiltAt), new InProcessCodeIndexLock());
 
     protected override void Corrupt(IIndexStore store, RepoName repo)
     {

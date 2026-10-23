@@ -1,6 +1,7 @@
 using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Features.BuildCodeIndex;
+using Aw.CodeIndex.Features.EmbedCodeIndex;
 using Aw.CodeIndex.Testing;
 
 namespace Aw.CodeIndex.Tests.Build;
@@ -26,10 +27,10 @@ public sealed class BuildCodeIndexGraphEmbeddingsTests
         using var index = new RealIndex(embedder: embedder, graph: new FakeGraphRunner { Graph = _graph });
         var repo = git.AsRepo("web");
 
-        var report = (await index.Service.Handle(new BuildCodeIndexRequest(repo, git.Head, new Progress<string>()), Token)).Value;
+        _ = (await index.Service.Handle(new BuildCodeIndexRequest(repo, git.Head, new Progress<string>()), Token)).Value;
+        var embedded = (await index.Embed.Handle(new EmbedCodeIndexRequest(repo, new Progress<string>()), Token)).Value;
 
-        var layer = report.Layers.Single(l => l.Layer == LayerName.Embeddings);
-        Assert.Equal((2, 2, LayerState.Ok), (report.Embedded, report.Embeddable, layer.State));
+        Assert.Equal((2, 2, LayerState.Ok), (embedded.Embedded, embedded.Embeddable, embedded.Embeddings));
         var texts = embedder.Batches.SelectMany(b => b).ToList();
         Assert.Contains(texts, t => t.Contains("export function placeOrder", StringComparison.Ordinal) && t.Contains("return computeTotal();", StringComparison.Ordinal));
         Assert.Contains(texts, t => t.Contains("return 42;", StringComparison.Ordinal));
@@ -45,10 +46,10 @@ public sealed class BuildCodeIndexGraphEmbeddingsTests
         using var index = new RealIndex(embedder: embedder, graph: new FakeGraphRunner { Graph = graph });
         var repo = git.AsRepo("web");
 
-        var report = (await index.Service.Handle(new BuildCodeIndexRequest(repo, git.Head, new Progress<string>()), Token)).Value;
+        _ = (await index.Service.Handle(new BuildCodeIndexRequest(repo, git.Head, new Progress<string>()), Token)).Value;
+        var embedded = (await index.Embed.Handle(new EmbedCodeIndexRequest(repo, new Progress<string>()), Token)).Value;
 
-        var layer = report.Layers.Single(l => l.Layer == LayerName.Embeddings);
-        Assert.Equal((1, 1, LayerState.Ok), (report.Embedded, report.Embeddable, layer.State));
+        Assert.Equal((1, 1, LayerState.Ok), (embedded.Embedded, embedded.Embeddable, embedded.Embeddings));
         var texts = embedder.Batches.SelectMany(b => b).ToList();
         Assert.Contains(texts, t => t.Contains("return 42;", StringComparison.Ordinal));
         Assert.DoesNotContain(texts, t => t.Contains("class-body-line", StringComparison.Ordinal));

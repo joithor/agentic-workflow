@@ -1,3 +1,4 @@
+using Aw.CodeIndex.Core.Embedding;
 using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Ports;
 using Aw.CodeIndex.Features;
@@ -23,11 +24,12 @@ internal sealed class RealIndex : IDisposable
         Embedder = embedder ?? new FakeEmbedder();
         _ = Directory.CreateDirectory(_directory);
         var snapshot = new GitRepoSnapshot();
-        Store = new SqliteIndexStore(Path.Combine(_directory, "index"), TimeProvider.System);
+        Store = new SqliteIndexStore(Path.Combine(_directory, "index"), TimeProvider.System, new InProcessCodeIndexLock());
         Heavy = heavy ?? new FakeHeavyJobLock();
-        Service = new BuildCodeIndexService(new FakeRepoHeads(), snapshot, new StructureWriter(snapshot, [new CSharpParser()], new FileParseQuarantine(Path.Combine(_directory, "index")), new RedactingBodyScrubber()), new BuildLayers(new EmbeddingsLayer(Embedder, TimeProvider.System), new GraphLayer(snapshot, TimeProvider.System, new RedactingBodyScrubber(), graph)), Store, Heavy, TimeProvider.System);
+        var layers = new BuildLayers(new EmbeddingsLayer(Embedder, TimeProvider.System), new GraphLayer(snapshot, TimeProvider.System, new RedactingBodyScrubber(), graph));
+        Service = new BuildCodeIndexService(new FakeRepoHeads(), snapshot, new StructureWriter(snapshot, [new CSharpParser()], new FileParseQuarantine(Path.Combine(_directory, "index")), new RedactingBodyScrubber()), layers, Store, Heavy, TimeProvider.System);
         Facade = new CodeIndexFacade(Service, Store, Embedder, graph);
-        Embed = new EmbedCodeIndexService();
+        Embed = new EmbedCodeIndexService(Store, layers.Embeddings, TimeProvider.System);
     }
 
     public IEmbedder Embedder { get; }

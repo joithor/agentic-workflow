@@ -36,6 +36,9 @@ public static class CodeIndexRules
     /// <summary>The longest a build waits for a heavy-job slot before it ends deferred.</summary>
     public static readonly TimeSpan HeavySlotWait = TimeSpan.FromMinutes(10);
 
+    /// <summary>The longest a build or an embed chunk waits for the repo's index lock before it ends with SND-CODEIDX-014.</summary>
+    public static readonly TimeSpan IndexLockWait = TimeSpan.FromMinutes(10);
+
     /// <summary>Files written per transaction.</summary>
     public const int FileBatchSize = 200;
 
@@ -48,7 +51,7 @@ public static class CodeIndexRules
     /// <summary>Texts per embedding request.</summary>
     public const int EmbedBatchSize = 32;
 
-    /// <summary>Most symbols embedded per build; a big first build finishes over several.</summary>
+    /// <summary>Most symbols embedded per chunk of an embed run: each chunk is one copy-embed-publish of the index under the repo's index lock, so a crash or a cancel loses at most one chunk and a waiting build waits at most one chunk.</summary>
     public const int MaxEmbeddedPerBuild = 4_096;
 
     /// <summary>A symbol with fewer tokens has no MinHash and no clone rows.</summary>

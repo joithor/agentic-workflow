@@ -1,3 +1,4 @@
+using Aw.CodeIndex.Core.Embedding;
 using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Features.BuildCodeIndex;
 using Aw.CodeIndex.Features.EmbedCodeIndex;

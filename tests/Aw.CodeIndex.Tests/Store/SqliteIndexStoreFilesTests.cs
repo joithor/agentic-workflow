@@ -2,6 +2,7 @@ using Aw.CodeIndex.Core;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Values;
 using Aw.CodeIndex.Infrastructure.Store;
+using Aw.CodeIndex.Testing;
 using Aw.Kernel.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Time.Testing;
@@ -22,6 +23,21 @@ public sealed partial class SqliteIndexStoreFilesTests : IDisposable
     private string Indexes => Path.Combine(_root, "code-index");
 
     public void Dispose() => Directory.Delete(_root, recursive: true);
+
+    [Fact]
+    public async Task A_second_build_of_the_repo_waits_until_the_first_is_disposed()
+    {
+        var store = new SqliteIndexStore(Indexes, _time, new FakeCodeIndexLock());
+        var first = (await store.BeginBuild(_repo, incremental: true, _none)).Value;
+
+        var refused = await store.BeginBuild(_repo, incremental: true, _none);
+        await first.DisposeAsync();
+        var later = await store.BeginBuild(_repo, incremental: true, _none);
+
+        Assert.Equal("SND-CODEIDX-014", refused.Error.Code);
+        Assert.True(later.IsSuccess);
+        await later.Value.DisposeAsync();
+    }
 
     [Fact]
     public async Task A_published_index_is_one_private_file_and_a_pointer_with_no_sidecars()
@@ -151,7 +167,7 @@ public sealed partial class SqliteIndexStoreFilesTests : IDisposable
         }
     }
 
-    private SqliteIndexStore Store() => new(Indexes, _time);
+    private SqliteIndexStore Store() => new(Indexes, _time, new InProcessCodeIndexLock());
 
     private string Pointer => Path.Combine(Indexes, "fixture.current");
 

@@ -13,7 +13,7 @@ namespace Aw.CodeIndex.Infrastructure.Store;
 /// that is the only thing ever replaced, so a reader sees the old index or the new one and a killed build leaves the live
 /// index alone.
 /// </summary>
-internal sealed class SqliteIndexStore(string directory, TimeProvider time) : IIndexStore
+internal sealed class SqliteIndexStore(string directory, TimeProvider time, ICodeIndexLock locks) : IIndexStore
 {
     private readonly IndexFiles _files = new(directory);
 
@@ -49,8 +49,24 @@ internal sealed class SqliteIndexStore(string directory, TimeProvider time) : II
             : CodeIndexErrors.IndexNotBuilt.With($"There is no index for '{repo.Value}' yet.");
     }
 
+    // A build holds the repo's index lock from the copy of the live index to its dispose, so an embed run's chunk and a build never
+    // interleave and neither publishes over the other's work; the build releases it, and a build that fails to start releases it here.
     public async ValueTask<Result<IIndexBuild>> BeginBuild(RepoName repo, bool incremental, CancellationToken cancellationToken)
-        => await SqliteFailure.Guard("Starting a build", async () => await StartBuild(repo, incremental, cancellationToken).ConfigureAwait(false)).ConfigureAwait(false);
+    {
+        var hold = await locks.Take(repo, CodeIndexRules.IndexLockWait, cancellationToken).ConfigureAwait(false);
+        if (hold.IsError)
+        {
+            return hold.Error;
+        }
+
+        var begun = await SqliteFailure.Guard("Starting a build", async () => await StartBuild(repo, incremental, hold.Value, cancellationToken).ConfigureAwait(false)).ConfigureAwait(false);
+        if (begun.IsError)
+        {
+            await hold.Value.DisposeAsync().ConfigureAwait(false);
+        }
+
+        return begun;
+    }
 
     public ValueTask<Result<Unit>> Sweep(RepoName repo, CancellationToken cancellationToken)
     {
@@ -75,7 +91,7 @@ internal sealed class SqliteIndexStore(string directory, TimeProvider time) : II
         return reader.IsError ? reader.Error : reader.Value;
     }
 
-    private async ValueTask<Result<IIndexBuild>> StartBuild(RepoName repo, bool incremental, CancellationToken cancellationToken)
+    private async ValueTask<Result<IIndexBuild>> StartBuild(RepoName repo, bool incremental, IAsyncDisposable hold, CancellationToken cancellationToken)
     {
         _files.EnsureDirectory();
         var previous = incremental ? await UsableLive(repo, cancellationToken).ConfigureAwait(false) : null;
@@ -98,7 +114,7 @@ internal sealed class SqliteIndexStore(string directory, TimeProvider time) : II
             }
 
             started = true;
-            return new SqliteIndexBuild(_files, repo, ulid, connection.Value, previous?.Header);
+            return new SqliteIndexBuild(new BuildTarget(_files, repo, ulid, hold), connection.Value, previous?.Header);
         }
         finally
         {

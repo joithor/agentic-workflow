@@ -34,6 +34,7 @@ public static class CodeIndexInfrastructureServiceCollectionExtensions
             .AddSingleton<IManifestReader, PackageJsonReader>()
             .AddSingleton<IManifestReader, CsprojReader>()
             .AddSingleton<IManifestReader, CentralPackagesReader>()
-            .AddSingleton<IIndexStore>(provider => new SqliteIndexStore(settings.IndexDirectory, provider.GetRequiredService<TimeProvider>()));
+            .AddSingleton<ICodeIndexLock, InProcessCodeIndexLock>()
+            .AddSingleton<IIndexStore>(provider => new SqliteIndexStore(settings.IndexDirectory, provider.GetRequiredService<TimeProvider>(), provider.GetRequiredService<ICodeIndexLock>()));
     }
 }

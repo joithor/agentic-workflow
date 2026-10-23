@@ -1399,3 +1399,11 @@ static Aw.CodeIndex.Core.EmbeddingTarget.IsLoopbackUrl(string! url) -> bool
 Aw.CodeIndex.Core.Graph.GraphBodies
 const Aw.CodeIndex.Core.Graph.GraphBodies.RawSpanMaxCharacters = 64000 -> int
 static Aw.CodeIndex.Core.Graph.GraphBodies.Attach(Aw.CodeIndex.Core.Model.FileRecord! file, string! text, System.Func<string!, string!>! scrub) -> Aw.CodeIndex.Core.Model.FileRecord!
+Aw.CodeIndex.Core.Ports.ICodeIndexLock
+Aw.CodeIndex.Core.Ports.ICodeIndexLock.Take(Aw.CodeIndex.Core.Values.RepoName repo, System.TimeSpan maxWait, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.IAsyncDisposable!>!>
+static readonly Aw.CodeIndex.Core.CodeIndexErrors.IndexBusy -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.CodeIndex.Core.CodeIndexRules.IndexLockWait -> System.TimeSpan
+Aw.CodeIndex.Core.Embedding.EmbeddingsLayer
+Aw.CodeIndex.Core.Embedding.EmbeddingsLayer.EmbeddingsLayer(Aw.CodeIndex.Core.Ports.IEmbedder! embedder, System.TimeProvider! clock) -> void
+Aw.CodeIndex.Core.Embedding.EmbeddingsLayer.Run(Aw.CodeIndex.Core.Ports.IIndexBuild! build, Aw.CodeIndex.Core.Model.EmbeddingsSettings! settings, System.IProgress<string!>! progress, int limit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Model.EmbeddingProgress!>!>
+Aw.CodeIndex.Core.Embedding.EmbeddingsLayer.Record(Aw.CodeIndex.Core.Ports.IIndexBuild! build, Aw.CodeIndex.Core.Model.EmbeddingsSettings! settings, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.CodeIndex.Core.Model.EmbeddingProgress!>!>
