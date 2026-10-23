@@ -6,8 +6,7 @@
 #   ollama-model <name> <digest>                   the embedding model and its manifest digest, as `ollama list` and /api/tags report it
 #   need disk-bytes <n>                            what setup requires free
 # Measured 2026-10-20:
-#   graphify  equals sindri/package.json's sindri.graphifyPin and graphifyPinDate (the check compares them, so the two can't drift
-#             before the switch). The requirements file is `uv pip compile code-index-requirements.in --universal --generate-hashes
+#   graphify  equals context/graphify.pin's row (the check compares them, so the two can't drift). The requirements file is `uv pip compile code-index-requirements.in --universal --generate-hashes
 #             --exclude-newer <date> --python-version 3.11`; the sha256 is of that file.
 #   model     nomic-embed-text:latest is the TS index's default model (sindri/src/profile/schema.ts). The digest is the sha256 of the
 #             manifest GET https://registry.ollama.ai/v2/library/nomic-embed-text/manifests/latest (a manifest read, nothing pulled);
