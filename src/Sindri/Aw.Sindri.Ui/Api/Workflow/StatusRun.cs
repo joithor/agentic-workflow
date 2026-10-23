@@ -6,4 +6,5 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// </summary>
 /// <param name="Runtime">The runtime that runs the Step ('agent').</param>
 /// <param name="Launch">The launch id (LCH-…) of the session; opaque.</param>
-internal sealed record StatusRun(string Runtime, string Launch);
+/// <param name="Session">The session the launch started (provider and id), once it knows it; read as optional.</param>
+internal sealed record StatusRun(string Runtime, string Launch, [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] SessionHandle? Session = null);
