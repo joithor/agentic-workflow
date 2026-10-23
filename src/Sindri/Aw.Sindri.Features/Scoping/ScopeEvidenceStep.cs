@@ -22,11 +22,35 @@ internal sealed class ScopeEvidenceStep(IRunArea area, IPackets packets, IRepoCh
     /// <inheritdoc/>
     public static BlockId Id { get; } = BlockId.From("step.scope.evidence");
 
-    /// <inheritdoc/>
-    protected override ValueTask<Result<IReadOnlyDictionary<string, string>>> Extra(StepContext context, CancellationToken cancellationToken)
+    /// <summary>
+    /// The commit of the checkout the scoping read, as the 'baseSha' fact the packet's scope map is stamped with (by code, never a model: the facts' own 'baseSha' is replaced).
+    /// An item with no repo has no checkout, so its map carries none and the design station stops at intake.
+    /// </summary>
+    /// <param name="context">The Step's context.</param>
+    /// <param name="cancellationToken">Cancelled when the run ends before the Step does.</param>
+    /// <returns>The code's extra facts, or the error that fails the Step.</returns>
+    protected override async ValueTask<Result<IReadOnlyDictionary<string, string>>> Extra(StepContext context, CancellationToken cancellationToken)
     {
-        _ = (checkouts, diff);   // stub: the green commit stamps baseSha
-        return base.Extra(context, cancellationToken);
+        ArgumentNullException.ThrowIfNull(context);
+        if (context.Repo is not { } repo)
+        {
+            return Facts([]);
+        }
+
+        var root = await checkouts.Of(repo, cancellationToken).ConfigureAwait(false);
+        if (root.IsError)
+        {
+            return root.Error;
+        }
+
+        var head = await diff.Head(root.Value, cancellationToken).ConfigureAwait(false);
+        if (head.IsError)
+        {
+            return head.Error;
+        }
+
+        var sha = JsonValue.Create(head.Value) ?? throw new InvalidOperationException("a string is always a value"); // why: Create returns null only for a null string, and a head is not null
+        return Facts(new Dictionary<string, string>(StringComparer.Ordinal) { ["baseSha"] = ScopeJson.Write(sha) });
     }
 
     /// <inheritdoc/>
