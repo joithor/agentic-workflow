@@ -16,6 +16,8 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="ApprovedVersion">The version that is approved when it is older than the shipped <paramref name="Version"/>; null when not served (an older Sindri) or none is approved.</param>
 /// <param name="ApprovedHash">The hash that is approved, as served; null when not served.</param>
 /// <param name="Stats">The recipe's figures over the list's window; left out for a draft and a child-only recipe.</param>
+/// <param name="ApprovedVersion">The version the recipe was last approved at (older than <see cref="Version"/> when a newer one waits for approval); null when it was never approved. Optional on read.</param>
+/// <param name="ApprovedHash">The hash the recipe was last approved at; null when it was never approved. Optional on read.</param>
 internal sealed record RecipeSummaryView(string Id, int Version, string Hash, string Standing, string? Name, [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? DisplayName = null,
     [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<string>? Stale = null,
     [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<RecipeInputView>? Inputs = null,

@@ -14,21 +14,28 @@ namespace Aw.Sindri.Tests.Workflows.Spike;
 public sealed class ServerGuardTests
 {
     /// <summary>
+    /// How long a dev server may take to create its database. A cold first start (the binary not in the page cache, a gate box
+    /// building and testing many projects at once) took over the old 30 s at position 1 of a merge train (gate 826); the wait
+    /// returns the moment the file exists, so a generous bound costs nothing when the box is quiet.
+    /// </summary>
+    private static readonly TimeSpan _startupLimit = TimeSpan.FromSeconds(120);
+
+    /// <summary>
     /// A stand-in host (a shell) starts a real dev server as its child, the way the SDK does, and is then SIGKILLed.
     /// The server is found by the pid the host prints (echo $!), never by a global count: other lanes run servers too.
     /// Its database file existing means startup is done.
     /// </summary>
-    [Fact(Timeout = 60_000)]
+    [Fact(Timeout = 240_000)]
     public Task A_server_started_by_a_host_that_is_SIGKILLed_dies_within_ten_seconds() => ServerOutlivingItsHost(guarded: true, kill: true, TestContext.Current.CancellationToken);
 
     /// <summary>The same for a host that ends normally without stopping the server (a test that forgot, or a Dispose that failed).</summary>
     /// <returns>The test.</returns>
-    [Fact(Timeout = 60_000)]
+    [Fact(Timeout = 240_000)]
     public Task A_server_left_running_by_a_host_that_exits_normally_dies_within_ten_seconds() => ServerOutlivingItsHost(guarded: true, kill: false, TestContext.Current.CancellationToken);
 
     /// <summary>Negative control: without the guard the same SIGKILLed host leaves its server running, so the tests above prove the guard and not the shell.</summary>
     /// <returns>The test.</returns>
-    [Fact(Timeout = 60_000)]
+    [Fact(Timeout = 240_000)]
     public async Task Without_the_guard_the_server_outlives_a_SIGKILLed_host()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -53,7 +60,7 @@ public sealed class ServerGuardTests
 
     /// <summary>Parallel test classes ask for the launcher at once; it is written once, complete and executable, and never rewritten under an exec.</summary>
     /// <returns>The test.</returns>
-    [Fact(Timeout = 60_000)]
+    [Fact(Timeout = 240_000)]
     public async Task Parallel_requests_for_the_launcher_share_one_complete_script_that_is_not_rewritten()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -115,7 +122,7 @@ public sealed class ServerGuardTests
             await host.StandardInput.WriteLineAsync(path.AsMemory(), ct);
             await host.StandardInput.FlushAsync(ct);
             server = int.Parse((await host.StandardOutput.ReadLineAsync(ct))!, CultureInfo.InvariantCulture);
-            await WaitFor(() => File.Exists(database), TimeSpan.FromSeconds(30), "the server never created its database", ct);
+            await WaitFor(() => File.Exists(database), _startupLimit, "the server never created its database", ct);
             Assert.True(Alive(server), "the server did not start");
             return (host, server);
         }
