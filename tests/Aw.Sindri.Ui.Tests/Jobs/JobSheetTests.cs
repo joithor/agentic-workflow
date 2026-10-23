@@ -37,6 +37,7 @@ public sealed class JobSheetTests
         Assert.Equal(("✕ Failed · Ended 5m ago · by Sindri", "it broke", true), (sheet.StateLine, sheet.SummaryText, sheet.Cancel is null));
         Assert.Contains(sheet.Fields, f => f.Label == Labels.JobCodeField && f.Value == "SND-SCHED-001");
         Assert.True(sheet.IsFailedJob);
+        Assert.Equal(("SND-SCHED-001", "it broke SND-SCHED-001"), (sheet.CodeText, sheet.SummaryName));
     }
 
     [Fact]

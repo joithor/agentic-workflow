@@ -134,7 +134,17 @@ public sealed class EventStreamEndpointTests
         var stop = await host.Http.Ask(Post("/sindri/stop", json: null, Human(host.Token.Value)));
 
         Assert.Equal(HttpStatusCode.OK, stop.Status);
-        Assert.Null(await stream.Line());   // the body ended
+        // The stop appends process.stopped before it asks for the shutdown, so a stream that wakes on that append may write its frame
+        // first, depending on who runs first (the stream reads it only if the shutdown hasn't cancelled it yet). Either way the body ends:
+        // read to the end, and the only event a stream may have sent is the stop itself.
+        var lines = new List<string>();
+        while (await stream.Line() is { } line)
+        {
+            lines.Add(line);
+            Assert.True(lines.Count < 20, "the stream kept writing after a stop: " + string.Join(" | ", lines));
+        }
+
+        Assert.All(lines.Where(static l => l.StartsWith("event:", StringComparison.Ordinal)), static l => Assert.Equal("event: process.stopped", l));
     }
 
     private static async Task<GoldenHost> HostWithHeartbeats(int count, CancellationToken ct)

@@ -1,6 +1,9 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using Aw.Sindri.Core.Forge;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.GetInstanceFact;
+using Aw.Sindri.Features.Pr;
 
 namespace Aw.Sindri.Testing.Views;
 
@@ -35,6 +38,9 @@ public static class FactFixtures
     private sealed record Alert(string Source, Incident Incident, string[] Tags);
 
     private sealed record Event(int N, string Kind);
+
+    // The lens loop's escalation entries (Escalation.All's shape, member order included): 'options' only when the question offers choices.
+    private sealed record Escalation(string Kind, [property: JsonPropertyName("question")] string Ask, [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string[]? Options, string Lens, string Finding, string Id);
 
     private sealed record EventLog(string Source, Event[] Events);
 
@@ -79,6 +85,18 @@ public static class FactFixtures
 
     private static JsonElement Body<T>(T value) => JsonSerializer.SerializeToElement(value, _options);
 
+    // The babysitter's merge-stop summary, as the snapshot Step writes it: 5 passed, 2 failing, 1 pending, no recheck of the head (proof null), docs missing.
+    private static JsonElement PrStatus()
+    {
+        var pull = new PullView("https://forge.test/acme/app/pull/12", PullState.Open, "aaaa1111", Mergeable: true, ReviewDecision: null, UnresolvedThreads: 1,
+            new PullChecks(PullChecksState.Failing, "aaaa1111", ["build", "lint"], Passed: 5, Pending: 1), [], "main");
+        var threads = new[] { Thread("t1", resolved: false), Thread("t2", resolved: true), Thread("t3", resolved: true) };
+        return Body(PrStatusFact.Of(recheck: null, docsResult: null, pull, threads, docs: null));
+    }
+
+    private static PullThread Thread(string key, bool resolved) =>
+        new(key, PullCommentKind.Thread, "alice", "MEMBER", IsBot: false, resolved, Outdated: false, "a.cs", $"fix {key}", [], new DateTimeOffset(2026, 10, 1, 9, 0, 0, TimeSpan.Zero), Line: null, EditedAt: null, Url: null);
+
     /// <summary>The body behind one fact row, by scenario: scope-map, packet, evidence, text, payload or truncated.</summary>
     /// <param name="scenario">The scenario name.</param>
     /// <returns>The fact view.</returns>
@@ -103,6 +121,13 @@ public static class FactFixtures
         "payload" => new FactView("fact:alert", FactType.Payload, Body(new Alert("pagerduty",
             new Incident("P-2211", "Outbox retry storm", "high", "outbox-dispatcher", "triggered", "2026-10-12T11:02:00Z"), ["prod", "outbox"])), Truncated: false),
         "truncated" => new FactView("fact:history", FactType.Payload, Body(new EventLog("pagerduty", [new Event(1, "triggered"), new Event(2, "acknowledged")])), Truncated: true),
+        "lens-ask-escalation" => new FactView("fact:escalation", FactType.Payload, Body(new Escalation[]
+        {
+            new("productQuestion", "Keep the legacy flow?", ["keep the queue", "drop the queue"], "product", "P1", "q1"),
+            new("ambiguousFix", "Which table owns expiry?", Options: null, "arch", "A2", "q2"),
+            new("productQuestion", "Who is the expiry for?", Options: null, "product", "P3", "q3"),
+        }), Truncated: false),
+        "pr-status" => new FactView("fact:prStatus", FactType.Payload, PrStatus(), Truncated: false),
         _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "no such fact scenario"),
     };
 }

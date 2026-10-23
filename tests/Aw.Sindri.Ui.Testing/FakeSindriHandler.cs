@@ -101,12 +101,15 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
             "/sindri/workflow/recipes" when request.Method == HttpMethod.Get => Answer(Counted(await server.Recipes(uri, cancellationToken), server.RecipeListAnswer)),
             "/sindri/workflow/instances" when request.Method == HttpMethod.Post =>
                 Answer(Counted(await server.StartInstance(uri, await Body<StartInstanceRequest>(request, cancellationToken), cancellationToken), server.StartAnswer)),
+            { } path when request.Method == HttpMethod.Post && path.StartsWith("/sindri/workflow/instances/", StringComparison.Ordinal) && path.EndsWith("/rerun", StringComparison.Ordinal) =>
+                Answer(Counted(await server.RerunInstance(uri, Uri.UnescapeDataString(path["/sindri/workflow/instances/".Length..^"/rerun".Length]), cancellationToken), server.RerunAnswer)),
             var path when IsServiceCommand(request, path) => await ServiceCommand(request, path, cancellationToken),
             "/sindri/context/map/refresh" when request.Method == HttpMethod.Post => Answer(Counted(await server.RefreshContextMap(uri, cancellationToken), server.RefreshContextMapAnswer)),
             { } path when path.StartsWith("/sindri/context/", StringComparison.Ordinal) => await ContextRoute(request, cancellationToken),
             // LANE ANCHOR U11a: the session reads, as arms above the workflow-read arm. Insert immediately below this marker, never between the markers.
             { } path when request.Method == HttpMethod.Get && (path == "/sindri/sessions" || path.StartsWith("/sindri/sessions/", StringComparison.Ordinal)) => await Sessions(uri, cancellationToken),
             { } path when path == "/sindri/jobs" || path.StartsWith("/sindri/jobs/", StringComparison.Ordinal) => await Jobs(request, cancellationToken),
+            "/sindri/code-index/status" when request.Method == HttpMethod.Get => Answer(Counted(await server.CodeIndexStatus(uri, cancellationToken), server.CodeIndexStatusAnswer)),
             "/sindri/setup" when request.Method == HttpMethod.Get => Answer(Counted(await server.Setup(uri, cancellationToken), server.SetupAnswer)),
             { } path when request.Method == HttpMethod.Post && IsSetupWrite(path) => await SetupWrite(request, path, cancellationToken),
             { } path when request.Method == HttpMethod.Get && path.StartsWith("/sindri/workflow/", StringComparison.Ordinal) => await Workflow(uri, cancellationToken),
@@ -186,9 +189,16 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
     {
         switch (uri.AbsolutePath["/sindri/context/".Length..])
         {
+            case "code":
+                var code = Code(query);
+                _ = await server.Code(uri, code, cancellationToken);
+                return Answer(server.CodeFor(code));
             case "map":
                 _ = await server.MapStatus(uri, query["anchor"], cancellationToken);
                 return Answer(server.MapStatusAnswer);
+            case "map/publish":
+                _ = await server.MapPublish(uri, cancellationToken);
+                return Answer(server.MapPublishAnswer);
             case "node":
                 _ = await server.Node(uri, query["key"] ?? string.Empty, cancellationToken);
                 return Answer(server.NodeAnswer);
@@ -203,6 +213,9 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
                 return Text(HttpStatusCode.NotFound, "{}", "application/json");
         }
     }
+
+    private static CodeQuery Code(System.Collections.Specialized.NameValueCollection query) =>
+        new([.. query.GetValues("anchor") ?? []], Draft: query["draft"] == "true", MapVersion: query["mapVersion"]);
 
     private static LensesQuery Lenses(System.Collections.Specialized.NameValueCollection query) =>
         new([.. query.GetValues("anchor") ?? []], Depth: int.TryParse(query["depth"], NumberStyles.None, CultureInfo.InvariantCulture, out var depth) ? depth : null, Draft: query["draft"] == "true", MapVersion: query["mapVersion"]);
@@ -311,6 +324,7 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
         {
             [var id] => Answer(Counted(await server.Item(uri, id, sequence, cancellationToken), server.ItemAnswer(id))),
             [var id, "timeline"] => Answer(Counted(await server.Timeline(uri, id, After(uri), sequence, cancellationToken), server.TimelineAnswer(id, After(uri)))),
+            [var id, "scope"] => Answer(Counted(await server.ItemScope(uri, id, cancellationToken), server.ItemScopeAnswer(id))),
             [var id, "close"] when request.Method == HttpMethod.Post =>
                 Answer(Counted(await server.CloseItem(uri, id, await Body<CloseItemRequest>(request, cancellationToken), cancellationToken), server.Close)),
             _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),

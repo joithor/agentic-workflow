@@ -9,12 +9,14 @@ namespace Aw.CodeIndex.Testing;
 /// <summary>
 /// A scripted <see cref="ICodeIndex"/> for the surfaces that read it (Sindri's CLI and HTTP routes): repos with a status, symbols and call edges set up by the test. Each edge carries its own coverage; the answer's comes from <see cref="CallCoverage.Of"/> with the symbol's language read from its file extension (.cs full, else partial).
 /// It keeps the facade's scope rule: a repo outside the call's <see cref="CodeIndexScope"/>, or one with no index, answers the same SND-CODEIDX-013 (SND-CODEIDX-011 for a
-/// ref that names no symbol), and <see cref="Status"/> lists only the scope's repos. Build, FileSymbols, Similar and Neighbors answer 013: no reader scripts them yet.
+/// ref that names no symbol), and <see cref="Status"/> lists only the scope's repos. Build, FileSymbols, Similar and Neighbors answer 013 (Embed is scripted by <see cref="WithEmbeddings"/>): no reader scripts them yet.
 /// </summary>
 public sealed class FakeCodeIndex : ICodeIndex
 {
     private readonly Dictionary<RepoName, Repo> _repos = [];
     private readonly List<CodeIndexScope> _scopes = [];
+    private readonly List<RepoName> _embeds = [];
+    private readonly HashSet<RepoName> _buildable = [];
 
     /// <summary>The scopes the calls came with, in order (a test asserts a session's scope held only its repo).</summary>
     public IReadOnlyList<CodeIndexScope> Scopes => _scopes;
@@ -52,6 +54,33 @@ public sealed class FakeCodeIndex : ICodeIndex
         return this;
     }
 
+    /// <summary>Scripts a repo's embeddings layer: <see cref="Status"/> lists it, and <see cref="Embed"/> leaves it in <paramref name="afterEmbed"/> (or answers <see cref="EmbedError"/>).</summary>
+    /// <param name="repo">The repo; it needs a readable index.</param>
+    /// <param name="state">The layer's state now.</param>
+    /// <param name="afterEmbed">The state an embed run leaves it in.</param>
+    /// <returns>This fake.</returns>
+    public FakeCodeIndex WithEmbeddings(RepoName repo, LayerState state, LayerState afterEmbed = LayerState.Ok)
+    {
+        _repos[repo].Embeddings = state;
+        _repos[repo].AfterEmbed = afterEmbed;
+        return this;
+    }
+
+    /// <summary>The repos <see cref="Embed"/> was called for, in order.</summary>
+    public IReadOnlyList<RepoName> Embeds => _embeds;
+
+    /// <summary>When set, <see cref="Embed"/> answers this error instead of embedding.</summary>
+    public Error? EmbedError { get; set; }
+
+    /// <summary>Makes <see cref="ProbeLayers"/> report the repo's graph layer as buildable now (the box was fixed).</summary>
+    /// <param name="repo">The repo.</param>
+    /// <returns>This fake.</returns>
+    public FakeCodeIndex WithGraphBuildable(RepoName repo)
+    {
+        _ = _buildable.Add(repo);
+        return this;
+    }
+
     /// <summary>Marks a repo's index as damaged.</summary>
     /// <param name="repo">The repo.</param>
     /// <returns>This fake.</returns>
@@ -63,6 +92,25 @@ public sealed class FakeCodeIndex : ICodeIndex
 
     public ValueTask<Result<BuildReport>> Build(CodeIndexScope scope, RepoName repo, CommitSha commit, IProgress<string> progress, CancellationToken cancellationToken)
         => Fail<BuildReport>(scope, CodeIndexErrors.IndexNotBuilt);
+
+    public ValueTask<Result<EmbedReport>> Embed(CodeIndexScope scope, RepoName repo, IProgress<string> progress, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(scope);
+        _scopes.Add(scope);
+        _embeds.Add(repo);
+        if (EmbedError is { } error)
+        {
+            return ValueTask.FromResult<Result<EmbedReport>>(error);
+        }
+
+        if (scope.Repos.All(r => r.Name != repo) || Readable(repo) is not { } index)
+        {
+            return Fail<EmbedReport>(CodeIndexErrors.IndexNotBuilt);
+        }
+
+        index.Embeddings = index.AfterEmbed;
+        return Ok(new EmbedReport(repo, Embedded: 1, Embeddable: 1, index.Embeddings ?? LayerState.Ok));
+    }
 
     public ValueTask<Result<StatusAnswer>> Status(CodeIndexScope scope, CancellationToken cancellationToken)
     {
@@ -78,11 +126,15 @@ public sealed class FakeCodeIndex : ICodeIndex
         return Ok<IReadOnlyList<RecordedHead>>([.. scope.Repos.Select(r => new RecordedHead(r.Name, Readable(r.Name)?.Commit))]);
     }
 
+    /// <summary>How many times <see cref="ProbeLayers"/> was called.</summary>
+    public int ProbeCalls { get; private set; }
+
     public ValueTask<Result<IReadOnlyList<LayerProbe>>> ProbeLayers(CodeIndexScope scope, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(scope);
+        ProbeCalls++;
         _scopes.Add(scope);
-        return Ok<IReadOnlyList<LayerProbe>>([.. scope.Repos.Select(r => new LayerProbe(r.Name, []))]);
+        return Ok<IReadOnlyList<LayerProbe>>([.. scope.Repos.Select(r => new LayerProbe(r.Name, _buildable.Contains(r.Name) ? [LayerName.Graph] : []))]);
     }
 
     public ValueTask<Result<FindSymbolsAnswer>> FindSymbols(CodeIndexScope scope, SymbolQuery query, CancellationToken cancellationToken)
@@ -157,7 +209,23 @@ public sealed class FakeCodeIndex : ICodeIndex
     private RepoStatus StatusOf(RepoName name)
         => !_repos.TryGetValue(name, out var repo) ? new RepoStatus(name, IndexState.Missing, Commit: null, BuiltAt: null, [], Counts: null)
             : repo.Damaged ? new RepoStatus(name, IndexState.Damaged, Commit: null, BuiltAt: null, [], Counts: null)
-            : new RepoStatus(name, IndexState.Ok, repo.Commit, BuiltAt, repo.GraphDown ? [new LayerStatus(LayerName.Structure, LayerState.Ok, Code: null, "ok"), GraphOf(repo)] : [new LayerStatus(LayerName.Structure, LayerState.Ok, Code: null, "ok")], new IndexCounts(Files: 1, repo.Symbols.Count, Edges: repo.Edges.Count));
+            : new RepoStatus(name, IndexState.Ok, repo.Commit, BuiltAt, LayersOf(repo), new IndexCounts(Files: 1, repo.Symbols.Count, Edges: repo.Edges.Count));
+
+    private static List<LayerStatus> LayersOf(Repo repo)
+    {
+        var layers = new List<LayerStatus> { new(LayerName.Structure, LayerState.Ok, Code: null, "ok") };
+        if (repo.GraphDown)
+        {
+            layers.Add(GraphOf(repo));
+        }
+
+        if (repo.Embeddings is { } state)
+        {
+            layers.Add(new LayerStatus(LayerName.Embeddings, state, Code: null, state.ToString().ToLowerInvariant()));
+        }
+
+        return layers;
+    }
 
     private static DateTimeOffset BuiltAt { get; } = new(2026, 10, 20, 12, 0, 0, TimeSpan.Zero);
 
@@ -193,6 +261,10 @@ public sealed class FakeCodeIndex : ICodeIndex
         internal bool Damaged { get; init; }
 
         internal bool GraphDown { get; set; }
+
+        internal LayerState? Embeddings { get; set; }
+
+        internal LayerState AfterEmbed { get; set; } = LayerState.Ok;
 
         internal Dictionary<(SymbolRef, CallDirection), (int Unresolved, List<CallEdge> Edges)> Edges { get; } = [];
     }

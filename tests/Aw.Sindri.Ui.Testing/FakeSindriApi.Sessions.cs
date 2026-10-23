@@ -17,7 +17,10 @@ internal sealed partial class FakeSindriApi
     /// <param name="provider">The provider.</param>
     /// <param name="id">The session id.</param>
     /// <returns>The answer.</returns>
-    internal RouteAnswer SessionOneAnswer(string provider, string id) => SessionAnswer ?? SessionAnswers.One(provider, id);
+    internal RouteAnswer SessionOneAnswer(string provider, string id) => SessionOneBody?.Invoke(provider, id) ?? SessionAnswer ?? SessionAnswers.One(provider, id);
+
+    /// <summary>When set, answers a one-session read before the shared answer does; return null to fall through.</summary>
+    public Func<string, string, RouteAnswer?>? SessionOneBody { get; set; }
 
     private int _sessionsCalls;
     private int _sessionCalls;
@@ -34,11 +37,15 @@ internal sealed partial class FakeSindriApi
     /// <summary>The ref (provider/id) of the latest one-session read; null before the first.</summary>
     public string? LastSessionRef { get; private set; }
 
-    public Task<Result<SessionList>> Sessions(Uri api, SessionQuery query, CancellationToken cancellationToken)
+    /// <summary>When set, the list read waits on it before answering (the page shows its reading state meanwhile).</summary>
+    public TaskCompletionSource? SessionsGate { get; set; }
+
+    public async Task<Result<SessionList>> Sessions(Uri api, SessionQuery query, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _sessionsCalls);
         LastSessionsQuery = query;
-        return Task.FromResult(Answer<SessionList>(api, SessionRoutes.List(query), SessionListAnswer()));
+        await WaitFor(SessionsGate, cancellationToken).ConfigureAwait(false);
+        return Answer<SessionList>(api, SessionRoutes.List(query), SessionListAnswer());
     }
 
     public Task<Result<SessionView>> Session(Uri api, string provider, string id, CancellationToken cancellationToken)

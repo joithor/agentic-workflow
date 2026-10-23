@@ -19,5 +19,13 @@
         "edges": 3
       }
     }
+  ],
+  "health": [
+    {
+      "repo": "demo",
+      "state": "ok",
+      "embeddingsPercent": null,
+      "waiting": null
+    }
   ]
 }

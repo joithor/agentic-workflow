@@ -428,6 +428,24 @@
       "confirm": null
     },
     {
+      "action": "EmbedCodeIndex",
+      "class": "job",
+      "allowedCallers": [
+        "human+terminal",
+        "human",
+        "service"
+      ],
+      "terminal": false,
+      "method": null,
+      "route": null,
+      "cli": "sindri services run code-index-embed",
+      "ui": "ready",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null,
+      "confirm": null
+    },
+    {
       "action": "FileRequest",
       "class": "request",
       "allowedCallers": [
@@ -792,6 +810,23 @@
       "method": "POST",
       "route": "/sindri/workflow/recipes",
       "cli": "sindri recipe register <file>",
+      "ui": "ready",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null,
+      "confirm": null
+    },
+    {
+      "action": "RerunInstance",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/workflow/instances/{instanceId}/rerun",
+      "cli": "sindri workflow start <recipe> --item <itemId> --attempt next",
       "ui": "ready",
       "destructive": false,
       "readsViews": false,

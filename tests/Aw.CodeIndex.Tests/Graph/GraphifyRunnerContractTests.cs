@@ -37,13 +37,7 @@ public sealed class GraphifyRunnerContractTests : GraphRunnerContract, IDisposab
     {
         var bin = Directory.CreateDirectory(Path.Combine(_directory, "env", "bin")).FullName;
         var path = Path.Combine(bin, "graphify");
-        File.WriteAllText(path, $"#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo graphify {version}; exit 0; fi\n{body}\n");
-        if (!OperatingSystem.IsWindows())
-        {
-            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.OtherExecute);
-        }
-
-        return path;
+        return ExecutableScript.Write(path, $"if [ \"$1\" = \"--version\" ]; then echo graphify {version}; exit 0; fi\n{body}\n");
     }
 
     private string Writes(string json)
@@ -155,6 +149,42 @@ public sealed class GraphifyRunnerContractTests : GraphRunnerContract, IDisposab
 
         Assert.True(profile.IndexOf("(deny file-read*", StringComparison.Ordinal) < profile.IndexOf("(allow file-read* (subpath \"/Users/u/.agentic-workflow/cache/env\"))", StringComparison.Ordinal));
         Assert.Contains("(deny network*)", profile, StringComparison.Ordinal);
+    }
+
+    // The shipped layout: the environment and the run folder both sit under the hidden state directory. Python resolves its own path
+    // (an lstat of every parent) and extract reads the snapshot it was handed, so both must work, while the rest of the hidden folder stays unreadable.
+    [Fact]
+    public async Task On_macos_the_sandboxed_command_resolves_its_environment_and_reads_its_run_folder_under_the_hidden_state_directory()
+    {
+        Assert.SkipUnless(OperatingSystem.IsMacOS(), "sandbox-exec is macOS only");
+        var home = Resolved(Directory.CreateDirectory(Path.Combine(_directory, "home")).FullName);
+        var state = Path.Combine(home, ".agentic-workflow");
+        var environment = Directory.CreateDirectory(Path.Combine(state, "cache", "code-index", "env", "bin")).Parent!.FullName;
+        var run = Directory.CreateDirectory(Path.Combine(state, "tmp", "code-index", "run-1", "snapshot")).FullName;
+        await File.WriteAllTextAsync(Path.Combine(run, "a.ts"), "export const a = 1;", TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Path.Combine(state, "secret"), "token", TestContext.Current.CancellationToken);
+        var script = "/bin/realpath \"$0/bin\" && /bin/cat \"$1/a.ts\" && ! /bin/cat \"$2/secret\" 2>/dev/null";
+
+        var argv = GraphSandbox.Argv(GraphHost.Current() with { Home = home }, ["/bin/sh", "-c", script, environment, run, state], [run], [environment])!;
+        var ran = await GraphProcess.Spawn(argv, [], run, TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+
+        Assert.NotNull(ran);
+        Assert.Equal(0, ran.Exit);
+        Assert.Contains("export const a = 1;", ran.Stdout, StringComparison.Ordinal);
+        Assert.DoesNotContain("token", ran.Stdout, StringComparison.Ordinal);
+    }
+
+    // The sandbox matches real paths, and the temp folder sits under a link (/var -> /private/var), so every component is resolved.
+    private static string Resolved(string path)
+    {
+        var resolved = "/";
+        foreach (var part in path.Split('/', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var next = Path.Combine(resolved, part);
+            resolved = new DirectoryInfo(next).ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? next;
+        }
+
+        return resolved;
     }
 
     private sealed class Blobs(Dictionary<string, string> contents) : IBlobReader

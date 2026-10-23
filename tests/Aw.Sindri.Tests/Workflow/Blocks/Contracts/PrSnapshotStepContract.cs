@@ -17,7 +17,7 @@ public sealed class PrSnapshotStepContract : BlockContract
 
     protected override BlockDescriptor Descriptor => PrSteps.Snapshot;
 
-    protected override string ExpectedHash => "sha256:7ae7cae364ab7610b56f3b456ced28f20431577c73ce8d7e1604678f419007c4";
+    protected override string ExpectedHash => "sha256:68bb8360b2fa8adb4118de84c52e8e31912532c05c3bef448b7476b082065f07";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

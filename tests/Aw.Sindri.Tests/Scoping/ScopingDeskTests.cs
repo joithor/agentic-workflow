@@ -70,7 +70,7 @@ public sealed class ScopingDeskTests
         Assert.Equal(
             ["acceptance.json", "answers.jsonl", "brief.md", "challenge.json", "coverage.json", "lenses.json", "questions.json", "rounds.jsonl", "runs.json", "scope-map.json", "size.json", "sources.json"],
             response.Files.Where(f => f.Path.StartsWith("scope-packet/", StringComparison.Ordinal)).Select(f => f.Path["scope-packet/".Length..]).Order(StringComparer.Ordinal), StringComparer.Ordinal);
-        Assert.Equal(["acceptance", "coverage", "openQuestions", "scopeMap"], response.Outputs.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);   // fact:scopePacket is the hash the CLI adds
+        Assert.Equal(["acceptance", "coverage", "openQuestions", "recommendation", "scopeMap"], response.Outputs.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);   // fact:scopePacket is the hash the CLI adds
     }
 
     [Fact, Trait("Lane", "unit")]

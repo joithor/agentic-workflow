@@ -20,6 +20,7 @@ internal sealed class CodeIndexJobsRig
     internal static readonly RepoName Demo = RepoName.From("demo");
     internal static readonly RepoName Other = RepoName.From("other");
     private static readonly JsonSerializerOptions _web = new(JsonSerializerDefaults.Web);
+    private static readonly string[] _embeddingsPending = ["embeddings"];
     private int _next;
 
     internal SliceHarness Harness { get; } = new();
@@ -40,12 +41,22 @@ internal sealed class CodeIndexJobsRig
     }
 
     /// <summary>Adds a BuildCodeIndex job of the repo's key, ended <paramref name="endedAgo"/> ago (or running).</summary>
-    internal void Job(string repo, JobState state, TimeSpan endedAgo, string? outcome = null)
+    internal void Job(string repo, JobState state, TimeSpan endedAgo, string? outcome = null, int? embedded = null, bool pending = false)
     {
         _next++;
-        var result = outcome is null ? (JsonElement?)null : JsonSerializer.SerializeToElement(new { repo, outcome }, _web);
+        var result = outcome is null ? (JsonElement?)null : JsonSerializer.SerializeToElement(new { repo, outcome, embedded = embedded ?? 0, layersPending = pending ? _embeddingsPending : (IReadOnlyList<string>)[] }, _web);
         Jobs.Put(new JobRow(JobId.New(Harness.Ids), JobKind.From("BuildCodeIndex"), JobKey.From("index:" + repo), Item: null, Repo: null, Service: null, state,
             "service:code-index-main-move", Now - endedAgo - TimeSpan.FromSeconds(5), state == JobState.Running ? null : Now - endedAgo, [], Rounds: 0, Summary: null,
             state == JobState.Failed ? "SND-CODEIDX-002" : null, result, CancelledBy: null, Sequence: _next));
+    }
+
+    /// <summary>Adds an EmbedCodeIndex job of the repo's key, ended <paramref name="endedAgo"/> ago (or running), with the result's outcome and embedded count.</summary>
+    internal void EmbedJob(string repo, JobState state, TimeSpan endedAgo, string? outcome = null, int embedded = 0)
+    {
+        _next++;
+        var result = outcome is null ? (JsonElement?)null : JsonSerializer.SerializeToElement(new { repo, outcome, embedded }, _web);
+        Jobs.Put(new JobRow(JobId.New(Harness.Ids), JobKind.From("EmbedCodeIndex"), JobKey.From("embed:" + repo), Item: null, Repo: null, Service: null, state,
+            "service:code-index-embed", Now - endedAgo - TimeSpan.FromSeconds(5), state == JobState.Running ? null : Now - endedAgo, [], Rounds: 0, Summary: null,
+            state == JobState.Failed ? "SND-CODEIDX-006" : null, result, CancelledBy: null, Sequence: _next));
     }
 }

@@ -45,6 +45,18 @@ public abstract partial class SindriApiContract
         }
     }
 
+    [Fact]
+    public async Task Rerun_records_the_instance_and_answers_the_started_golden()
+    {
+        var golden = GoldenFiles.Node("workflow-instances-start", "started");
+        var server = new FakeSindriApi();
+
+        var started = (await Reach(server).RerunInstance(_api, "WFI-failed", Token)).Value;
+
+        Expect.Equal(((string)golden["instance"]!["id"]!, (string)golden["instance"]!["address"]!), (started.Instance.Id, started.Instance.Address)); // why: the rerun answers the shape a start does
+        Expect.Sequence(["WFI-failed"], server.Reruns);
+    }
+
     [Theory]
     [MemberData(nameof(StartRefusals))]
     public async Task Start_refusals_are_the_goldens_code_and_detail_as_served(string scenario)

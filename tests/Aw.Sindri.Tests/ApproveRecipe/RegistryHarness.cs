@@ -230,6 +230,7 @@ file static class EffectPortRegistrations
         .AddSingleton<Core.Scoping.IRepoCheckouts>(new InMemoryRepoCheckouts())
         .AddSingleton<IPullRequests>(new Testing.Forge.FakePullRequests(["forge.test"]))
         .AddSingleton<IRunDiff>(new FakeRunDiff())
+        .AddSingleton<IWorkspaceRebase>(new FakeWorkspaceRebase())
         .AddSingleton<IRunArea>(new InMemoryRunArea())
         .AddSingleton<IPrCommentMarks>(new InMemoryPrCommentMarks())
         .AddSingleton<IForgeRepos>(new FakeForgeRepos())

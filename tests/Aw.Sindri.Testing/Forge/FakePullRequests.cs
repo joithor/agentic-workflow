@@ -35,6 +35,18 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     /// <summary>Gets the operations called, in order.</summary>
     public IList<string> Calls { get; } = [];
 
+    /// <summary>Gets the log CheckLog answers for a check by name; a check not listed answers "log of NAME".</summary>
+    public IDictionary<string, string> CheckLogs { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
+
+    /// <summary>Gets the merges asked for, in order.</summary>
+    public IList<PullMerge> Merges { get; } = [];
+
+    /// <summary>Gets or sets a status Merge answers instead of merging; null merges when the expected head holds.</summary>
+    public PullMergeStatus? MergeStatus { get; set; }
+
+    /// <summary>Gets or sets an outcome Push answers instead of checking its lease; null checks it.</summary>
+    public PullPushOutcome? PushAnswer { get; set; }
+
     /// <summary>Gets the pushes asked for, in order.</summary>
     public IList<PullPush> Pushes { get; } = [];
 
@@ -90,14 +102,14 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     public ValueTask<Result<PullView>> Get(string link, CancellationToken cancellationToken)
     {
         Calls.Add("Get");
-        return Done(Locate(link).Map(p => new PullView(p.Link, p.State, p.HeadSha, p.Mergeable, p.ReviewDecision, p.Threads.Count(static t => t.Kind == PullCommentKind.Thread && !t.Resolved), p.Checks ?? new PullChecks(p.FailingChecks.Count > 0 ? PullChecksState.Failing : p.ChecksState, p.ChecksSha ?? p.HeadSha, [.. p.FailingChecks]), p.Labels, p.Base)));
+        return Done(Locate(link).Map(p => new PullView(p.Link, p.State, p.HeadSha, p.Mergeable, p.ReviewDecision, p.Threads.Count(static t => t.Kind == PullCommentKind.Thread && !t.Resolved), p.Checks ?? new PullChecks(p.FailingChecks.Count > 0 ? PullChecksState.Failing : p.ChecksState, p.ChecksSha ?? p.HeadSha, [.. p.FailingChecks], Passed: 0, Pending: 0), p.Labels, p.Base, p.BaseSha)));
     }
 
     /// <inheritdoc />
     public ValueTask<Result<string>> CheckLog(string link, string check, CancellationToken cancellationToken)
     {
         Calls.Add("CheckLog");
-        return Done(Locate(link).Map(_ => $"log of {check}"));
+        return Done(Locate(link).Map(_ => CheckLogs.TryGetValue(check, out var log) ? log : $"log of {check}"));
     }
 
     /// <inheritdoc />
@@ -108,6 +120,11 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
         Pushes.Add(push);
         return Done(Locate(push.Link).Map(p =>
         {
+            if (PushAnswer is { } forced)
+            {
+                return forced;
+            }
+
             if (p.HeadSha != push.LeaseSha)
             {
                 return PullPushOutcome.HeadMoved;
@@ -162,8 +179,14 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     {
         ArgumentNullException.ThrowIfNull(request);
         Calls.Add("Merge");
+        Merges.Add(request);
         return Done(Locate(request.Link).Map(p =>
         {
+            if (MergeStatus is { } forced)
+            {
+                return new PullMergeOutcome(forced, MergedSha: null, "set by the test");
+            }
+
             if (p.State != PullState.Open)
             {
                 return new PullMergeOutcome(PullMergeStatus.Blocked, MergedSha: null, "already merged or closed");
@@ -302,6 +325,11 @@ public sealed class FakePullRequests(IEnumerable<string> hosts) : IPullRequests
     {
         ArgumentNullException.ThrowIfNull(links);
         Calls.Add("Digest");
+        if (Failure is { } failure)
+        {
+            return Done<IReadOnlyList<PullDigest>>(failure);
+        }
+
         var digests = new List<PullDigest>(links.Count);
         foreach (var link in links)
         {
