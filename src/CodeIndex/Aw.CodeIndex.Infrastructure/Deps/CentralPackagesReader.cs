@@ -33,10 +33,6 @@ internal sealed class CentralPackagesReader : IManifestReader
 
             var kind = item.Name.LocalName == "PackageVersion" ? "central" : "global";
             rows.Add(new DepRecord(path, name, ManifestXml.AttributeOrChild(item, "Version"), kind, ManifestXml.IsConditional(item) ? "conditional" : string.Empty));
-            if (rows.Count == CodeIndexRules.MaxDepsPerManifest)
-            {
-                break;
-            }
         }
 
         return rows;

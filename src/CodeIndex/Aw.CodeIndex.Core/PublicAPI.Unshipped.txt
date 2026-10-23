@@ -88,6 +88,11 @@ Aw.CodeIndex.Core.Facade.BuildReport.UnresolvedShare.init -> void
 Aw.CodeIndex.Core.Facade.CallCoverage
 Aw.CodeIndex.Core.Facade.CallDepth
 Aw.CodeIndex.Core.Facade.CallDepth.One = 1 -> Aw.CodeIndex.Core.Facade.CallDepth
+Aw.CodeIndex.Core.Facade.CallDepth.Four = 4 -> Aw.CodeIndex.Core.Facade.CallDepth
+Aw.CodeIndex.Core.Facade.CallDepth.Five = 5 -> Aw.CodeIndex.Core.Facade.CallDepth
+Aw.CodeIndex.Core.Facade.CallDepth.Six = 6 -> Aw.CodeIndex.Core.Facade.CallDepth
+Aw.CodeIndex.Core.Facade.CallDepth.Seven = 7 -> Aw.CodeIndex.Core.Facade.CallDepth
+Aw.CodeIndex.Core.Facade.CallDepth.Eight = 8 -> Aw.CodeIndex.Core.Facade.CallDepth
 Aw.CodeIndex.Core.Facade.CallDepth.Three = 3 -> Aw.CodeIndex.Core.Facade.CallDepth
 Aw.CodeIndex.Core.Facade.CallDepth.Two = 2 -> Aw.CodeIndex.Core.Facade.CallDepth
 Aw.CodeIndex.Core.Facade.CallDirection
@@ -987,15 +992,13 @@ Aw.CodeIndex.Core.Values.SymbolRef.Value.get -> string!
 const Aw.CodeIndex.Core.CodeIndexRules.EmbedBatchSize = 32 -> int
 const Aw.CodeIndex.Core.CodeIndexRules.EmbedTextMaxCharacters = 2000 -> int
 const Aw.CodeIndex.Core.CodeIndexRules.FileBatchSize = 200 -> int
-const Aw.CodeIndex.Core.CodeIndexRules.MaxAmbiguousEdges = 8 -> int
+const Aw.CodeIndex.Core.CodeIndexRules.MaxAmbiguousEdges = 64 -> int
+const Aw.CodeIndex.Core.CodeIndexRules.MaxClones = 1000 -> int
 const Aw.CodeIndex.Core.CodeIndexRules.MaxCallSitesPerFile = 500000 -> int
-const Aw.CodeIndex.Core.CodeIndexRules.MaxDepsPerManifest = 5000 -> int
-const Aw.CodeIndex.Core.CodeIndexRules.MaxEdgesPerLevel = 100 -> int
+const Aw.CodeIndex.Core.CodeIndexRules.MaxEdgesPerLevel = 1000 -> int
 const Aw.CodeIndex.Core.CodeIndexRules.MaxEmbeddedPerBuild = 4096 -> int
-const Aw.CodeIndex.Core.CodeIndexRules.MaxFileSymbolPaths = 200 -> int
-const Aw.CodeIndex.Core.CodeIndexRules.MaxNeighbors = 100 -> int
 const Aw.CodeIndex.Core.CodeIndexRules.MaxQuarantined = 100 -> int
-const Aw.CodeIndex.Core.CodeIndexRules.MaxSymbolHits = 200 -> int
+const Aw.CodeIndex.Core.CodeIndexRules.DefaultSymbolHits = 200 -> int
 const Aw.CodeIndex.Core.CodeIndexRules.MaxSymbolsPerFile = 100000 -> int
 const Aw.CodeIndex.Core.CodeIndexRules.MinCloneTokens = 30 -> int
 const Aw.CodeIndex.Core.CodeIndexRules.MinHashBands = 16 -> int

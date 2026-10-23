@@ -106,8 +106,7 @@ public sealed class NeighborsTests
     [InlineData("   ", 3)]
     [InlineData("text", 0)]
     [InlineData("text", -1)]
-    [InlineData("text", 101)]
-    public async Task A_blank_text_or_a_k_outside_1_to_100_is_a_bad_query(string text, int k)
+    public async Task A_blank_text_or_a_k_below_1_is_a_bad_query(string text, int k)
     {
         var harness = await Built();
 
