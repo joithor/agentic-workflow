@@ -107,6 +107,24 @@ expect "refuses the real instance's port" 2 "7410"
 OUT="$(AW_STATE_DIR="$STATE" "$SCRIPT" up --bogus 2>&1)"; CODE=$?
 expect "an unknown option is a usage error" 2 "unknown option"
 
+echo "context-first-run: the repo name"
+NAMED="$T/work/first-run-main"
+git -C "$REPO" worktree add -q --detach "$NAMED" main
+git -C "$REPO" remote add origin "git@example.com:owner/real-name.git"
+nm() { OUT="$(env AW_STATE_DIR="$STATE" FIRST_RUN_REPO_PATH="$1" FIRST_RUN_REPO_NAME="${2:-}" "$SCRIPT" up --dry-run 2>&1)"; CODE=$?; }
+nm "$NAMED"
+expect "a worktree named differently from its origin gets the origin's name (scp-style URL)" 0 "code-index status --repo real-name"
+git -C "$REPO" remote set-url origin "https://example.com/owner/https-name/"
+nm "$NAMED"
+expect "an https origin with a trailing slash gives its last segment" 0 "--repo https-name"
+nm "$NAMED" custom-name
+expect "FIRST_RUN_REPO_NAME overrides the origin's name" 0 "--repo custom-name"
+nm "$NAMED" "bad name"
+expect "an invalid FIRST_RUN_REPO_NAME is a usage error" 2 "not a profile repo name"
+git -C "$REPO" remote remove origin
+nm "$NAMED"
+expect "with no origin the name falls back to the path's basename" 0 "--repo first-run-main"
+
 echo "context-first-run: the checkout preflight"
 # A real (non-dry) run reaches the preflight; --no-embeddings --no-graph keep it to git, jq and temporal. Only the repo checks matter here.
 pf() { # pf <repo path>: sets OUT and CODE of a real up against that repo

@@ -34,6 +34,7 @@
 #   FIRST_RUN_HOME            default $AW_STATE_DIR/sindri-app-firstrun; its name must start with sindri-app-firstrun
 #   FIRST_RUN_PORT            default 7481 (owner-check.sh uses 7480, the real instance 7410)
 #   FIRST_RUN_REPO_PATH       the checkout to index; default the checkout this script runs from (the shared main checkout is never derived)
+#   FIRST_RUN_REPO_NAME       the repo's name in the profile, items and code index; default the basename of its origin URL (.git stripped), else of the path
 #   FIRST_RUN_BRIEF           the repo-relative file the scoping run reads; default docs/sindri/README.md
 #   FIRST_RUN_INDEX_TIMEOUT   seconds to wait for the first build; default 1800
 #   FIRST_RUN_MAP_POLL_SECONDS  seconds between map status reads while it is held; default 10
@@ -87,7 +88,20 @@ self="scripts/context-first-run.sh"
 
 repo_path="${FIRST_RUN_REPO_PATH:-}"
 [ -n "$repo_path" ] || repo_path="$root"
-repo="$(basename "$repo_path")"
+repo="${FIRST_RUN_REPO_NAME:-}"
+if [ -z "$repo" ]; then
+  origin="$(git -C "$repo_path" remote get-url origin 2>/dev/null || true)"
+  origin="${origin%/}"
+  origin="${origin%.git}"
+  origin="${origin%/}"
+  repo="${origin##*[/:]}"
+  [ -n "$repo" ] || repo="$(basename "$repo_path")"
+fi
+# The shape of a profile repo name (RepoName): 1 to 100 of letters, digits, '.', '_', '-', starting with a letter or digit.
+case "$repo" in
+  '' | [!A-Za-z0-9]* | *[!A-Za-z0-9._-]*) die "the repo name '$repo' is not a profile repo name (letters, digits, '.', '_', '-', starting with a letter or digit); set FIRST_RUN_REPO_NAME" ;;
+esac
+[ "${#repo}" -le 100 ] || die "the repo name '$repo' is longer than 100 characters; set FIRST_RUN_REPO_NAME"
 
 # ---- the guard: this script only ever works in a scratch home of its own ----
 guard() {
