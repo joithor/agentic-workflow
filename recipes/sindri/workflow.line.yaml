@@ -1,6 +1,6 @@
 schema: 1
 id: workflow.line
-version: 5
+version: 6
 description: "Spec-to-proven-PR, end to end. Scoping, design and plan, then a dispatcher (LN-WF1) that starts every ready phase as its own workflow.phase run, up to the profile's parallel limit (default 2), stacking a phase on the open pull request it depends on, until every phase is merged or skipped."
 displayName: "Idea to merged pull request"
 why: "Takes a spec all the way to merged pull requests, stopping for your approval after scoping and after planning."
@@ -74,3 +74,4 @@ evals:
   - evals/workflow.line/plan-failed.jsonl
   - evals/workflow.line/plan-redesign.jsonl
   - evals/workflow.line/scoping-unresolved.jsonl
+  - evals/workflow.line/parked-phase.jsonl

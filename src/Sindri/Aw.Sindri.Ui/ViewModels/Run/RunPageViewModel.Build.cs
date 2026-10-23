@@ -113,14 +113,26 @@ internal sealed partial class RunPageViewModel
         Title = line.Title;
         Reference = line.Address;
         ReferenceCopy = new CopyAction(clipboard, clock, Labels.CopyAddressName(line.Address), Labels.RunCopyReference);
-        var started = runs.FirstOrDefault(r => string.Equals(r.Address, line.Address, StringComparison.Ordinal))?.StartedAt ?? line.Since;
-        StartedText = Labels.RunStarted(Labels.Duration((long)Math.Max(0, (clock.GetUtcNow() - started).TotalSeconds)));
+        var startedAt = runs.FirstOrDefault(r => string.Equals(r.Address, line.Address, StringComparison.Ordinal))?.StartedAt;   // the instance's own start, not a step run's
+        StartedText = StartedLine(startedAt, line);
         var state = graph.Nodes.FirstOrDefault(n => n.Kind == RunNodeKind.End && IsReached(line, n))?.State
             ?? graph.Nodes.FirstOrDefault(n => n.Kind == RunNodeKind.Stage && string.Equals(n.Id, ActiveNodeId, StringComparison.Ordinal))?.State
             ?? RunNodeState.NotStarted;
         var brushes = RunStates.Brushes(state);
         (HeaderState, HeaderWord, HeaderIcon, HeaderBrush, HeaderSoftBrush) = (state, RunStates.Word(state), RunStateIcons.Of(state), brushes.Text, brushes.Soft);
         Cancel = line.Actions.Contains(CancelAction, StringComparer.Ordinal) ? catalog.On(CancelAction, line.Address, send: null) : null;
+    }
+
+    // "Started 11:02 by you" when the instance says when it began; else how long the line has been where it is, as before.
+    private string StartedLine(DateTimeOffset? startedAt, InstanceDetail line)
+    {
+        if (startedAt is not { } at)
+        {
+            return Labels.RunStarted(Labels.Duration((long)Math.Max(0, (clock.GetUtcNow() - line.Since).TotalSeconds)));
+        }
+
+        var now = TimeZoneInfo.ConvertTime(clock.GetUtcNow(), clock.LocalTimeZone);
+        return Labels.WorkflowStarted(Labels.StartedClock(TimeZoneInfo.ConvertTime(at, clock.LocalTimeZone), now), line.StartedBy);
     }
 
     // An end card was reached when the line's own state is it.
