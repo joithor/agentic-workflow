@@ -1,7 +1,37 @@
-node_modules/
-dist/
-*.db
-*.db-shm
-*.db-wal
-.git/
-.worktrees/
+# The Sindri image (Dockerfile) builds from an allowlist: everything is out unless a line below brings it back. The paths are
+# scripts/lib/sindri-build-inputs.sh (what the Sindri host publish reads) plus what the tools and runtime stages copy.
+*
+!global.json
+!nuget.config
+!.editorconfig
+!Directory.*
+!BannedSymbols*.txt
+!CodeMetricsConfig.txt
+!AgenticWorkflow.slnx
+!binaries.lock
+!scripts/binaries-lock.sh
+!context
+!config/launcher
+!config/packs
+!schemas/scoping
+!recipes/sindri
+!src/Aw.Kernel
+!src/Aw.Kernel.Data
+!src/Aw.Kernel.Telemetry
+!src/Redaction
+!src/Aw.Analyzers
+!src/CodeIndex
+!src/Context
+!src/Forge
+!src/Judge
+!src/Packets
+!src/Sindri
+!deploy/start.sh
+# Build output and dependencies, wherever they sit
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/*.db
+**/*.db-shm
+**/*.db-wal
