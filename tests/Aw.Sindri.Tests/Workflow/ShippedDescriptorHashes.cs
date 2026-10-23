@@ -74,6 +74,7 @@ internal static class ShippedDescriptorHashes
         ["step.plan.questions"] = "sha256:58003556a1851aa52c65ad06f810664a32e281fb566d2f2c0da4f30cf8cbc281",
         ["step.plan.review"] = "sha256:6a6c9c9bdf8ecaf2db2302789e1d84880189a1b172eb422b2da0158ee72f24ac",
         ["step.plan.settle"] = "sha256:79c9a702f5e5badfdbbb19f594c9779fa07a7cd8459051983f09f1392ddc5d39",
+        ["step.pr.ci-log"] = "sha256:1d66db3cb0decc1c7ca167076c8a664298eb82cc574300539f4a64e303617786",
         ["step.produce"] = "sha256:f3641bb5fd611951f4f20b0fc6f85cbec50025d199f3eb8721d2cdd3bf2baf51",
         ["step.prove.before-after"] = "sha256:01da010bcd11eeb97da80170ca98f07e5ce256071343ceecf9a521ab902cace6",
         ["step.prove.collect"] = "sha256:c67b2ae514c786d44d3c2a5d2edab74fcdae626dd7a7bc81710237e3cfa8b073",

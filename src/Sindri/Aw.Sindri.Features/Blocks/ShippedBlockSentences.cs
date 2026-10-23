@@ -106,6 +106,7 @@ internal sealed class ShippedBlockSentences : IBlockSentences
         ["step.plan.review"] = "Asks you to approve the design and plan, or send either back",
         ["step.plan.settle"] = "Compares your answers with what the design assumed",
         ["step.pr.ci-fix"] = "Starts an AI agent session that fixes the failing checks of the pull request",
+        ["step.pr.ci-log"] = "Reads the logs of the pull request's failing checks",
         ["step.pr.docs-decide"] = "Asks you what to do when the docs update did not finish or is red",
         ["step.pr.docs-merge-decide"] = "Asks you whether to merge the open documentation pull request",
         ["step.pr.fix-comment"] = "Starts an AI agent session that makes the change a review comment asks for",
