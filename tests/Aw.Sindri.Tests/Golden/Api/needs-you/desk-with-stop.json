@@ -22,6 +22,10 @@
         "CompleteStep"
       ],
       "cli": "sindri workflow status T-3/step/1",
+      "open": {
+        "route": "workflow/T-3/step/1",
+        "label": "Answer the question"
+      },
       "stop": {
         "n": 2,
         "of": 3,
