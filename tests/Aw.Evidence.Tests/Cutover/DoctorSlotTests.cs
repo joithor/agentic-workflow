@@ -1,4 +1,3 @@
-#pragma warning disable xUnit1004 // the red tests of cutover unit 1.4: skipped until it lands (spec §12 P0)
 using Aw.Evidence.Core.Settings;
 using Aw.Evidence.Features.Doctor;
 using Aw.Evidence.Testing;
@@ -13,7 +12,6 @@ namespace Aw.Evidence.Tests.Cutover;
 /// </summary>
 public sealed class DoctorSlotTests
 {
-    private const string Red = "red until cutover unit 1.4";
     private const string Worktree = "/work/wt";
 
     private readonly FakeStackProbe _probe = new() { Title = "App" };
@@ -41,7 +39,7 @@ public sealed class DoctorSlotTests
     private async Task<DoctorResponse> Check(string? worktree = Worktree) =>
         (await new DoctorService(_probe, _settings).Handle(new DoctorRequest(worktree), CancellationToken.None)).Value;
 
-    [Fact(Skip = Red), Trait("Lane", "unit")]
+    [Fact, Trait("Lane", "unit")]
     public async Task A_healthy_slot_prints_the_host_and_the_database_to_use()
     {
         var report = await Check();
@@ -50,7 +48,7 @@ public sealed class DoctorSlotTests
         Assert.Equal(new DoctorSlot(2, Worktree, "http://localhost:3020", "app_2"), report.Slot);
     }
 
-    [Fact(Skip = Red), Trait("Lane", "unit")]
+    [Fact, Trait("Lane", "unit")]
     public async Task Doctor_probes_the_slots_api_port_not_the_main_one()
     {
         _ = _probe.OpenPorts.Remove("localhost:5022");
@@ -61,7 +59,7 @@ public sealed class DoctorSlotTests
         Assert.Contains("api-server (:5022) is not accepting connections", report.Failures, StringComparer.Ordinal);
     }
 
-    [Fact(Skip = Red), Trait("Lane", "unit")]
+    [Fact, Trait("Lane", "unit")]
     public async Task A_port_served_from_another_checkout_is_a_foreign_stack_and_refused()
     {
         _probe.ListenerDirectories[3020] = "/work/main";
@@ -72,7 +70,7 @@ public sealed class DoctorSlotTests
         Assert.Contains(report.Failures, static f => f.StartsWith(":3020 is served from /work/main, not /work/wt", StringComparison.Ordinal));
     }
 
-    [Fact(Skip = Red), Trait("Lane", "unit")]
+    [Fact, Trait("Lane", "unit")]
     public async Task A_listener_inside_a_subdirectory_of_the_worktree_is_this_worktrees_and_a_sibling_with_the_same_prefix_is_not()
     {
         _probe.ListenerDirectories[3020] = $"{Worktree}/apps/web";
@@ -84,7 +82,7 @@ public sealed class DoctorSlotTests
         Assert.StartsWith(":5022 is served from /work/wt-other/api", failure, StringComparison.Ordinal);
     }
 
-    [Fact(Skip = Red), Trait("Lane", "unit")]
+    [Fact, Trait("Lane", "unit")]
     public async Task A_slot_database_that_does_not_exist_says_to_prepare_it_in_the_worktree()
     {
         _probe.Databases.Clear();
@@ -95,7 +93,7 @@ public sealed class DoctorSlotTests
         Assert.Contains(report.Failures, static f => f.StartsWith("database app_2 does not exist", StringComparison.Ordinal) && f.Contains(Worktree, StringComparison.Ordinal));
     }
 
-    [Fact(Skip = Red), Trait("Lane", "unit")]
+    [Fact, Trait("Lane", "unit")]
     public async Task Without_a_slot_database_configured_the_database_check_is_skipped_and_no_database_is_printed()
     {
         _settings.Slots = _settings.Slots! with { Database = null };
@@ -107,7 +105,7 @@ public sealed class DoctorSlotTests
         Assert.Null(report.Slot!.Database);
     }
 
-    [Theory(Skip = Red), Trait("Lane", "unit")]
+    [Theory, Trait("Lane", "unit")]
     [InlineData("STACK_SLOT=0\n")]
     [InlineData("STACK_SLOT=4\n")]            // above UI_EVIDENCE_SLOT_COUNT
     [InlineData("STACK_SLOT=two\n")]
@@ -122,7 +120,7 @@ public sealed class DoctorSlotTests
         Assert.Contains(report.Failures, static f => f.Contains($"{Worktree}/.stack-slot.env has no STACK_SLOT between 1 and 3", StringComparison.Ordinal));
     }
 
-    [Fact(Skip = Red), Trait("Lane", "unit")]
+    [Fact, Trait("Lane", "unit")]
     public async Task A_named_worktree_without_the_slot_file_says_to_claim_a_slot_there_first()
     {
         var report = await Check("/work/no-slot");
@@ -131,7 +129,7 @@ public sealed class DoctorSlotTests
         Assert.Contains(report.Failures, static f => f.Contains("/work/no-slot/.stack-slot.env", StringComparison.Ordinal) && f.Contains("claim a stack slot", StringComparison.Ordinal));
     }
 
-    [Fact(Skip = Red), Trait("Lane", "unit")]
+    [Fact, Trait("Lane", "unit")]
     public async Task A_worktree_with_no_slots_configured_is_refused_not_silently_checked_against_3000()
     {
         _settings.Slots = null;
@@ -142,7 +140,7 @@ public sealed class DoctorSlotTests
         Assert.Contains(report.Failures, static f => f.Contains("no worktree slots are configured", StringComparison.Ordinal));
     }
 
-    [Theory(Skip = Red), Trait("Lane", "unit")]
+    [Theory, Trait("Lane", "unit")]
     [InlineData("app-{slot}")]
     [InlineData("app_{slot}'; select 1; --")]
     public async Task A_slot_database_name_that_is_not_letters_digits_and_underscores_is_refused_before_any_query(string template)
