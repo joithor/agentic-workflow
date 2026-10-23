@@ -147,6 +147,15 @@ public sealed class SetupViewModelTests
     }
 
     [Fact]
+    public async Task Homes_meter_counts_finished_steps_out_of_all_of_them()
+    {
+        var first = await ReadWith("first-run");
+        var progress = await ReadWith("running-progress");
+
+        Assert.Equal(((0.0, 6.0), (5.0, 6.0)), ((first.MeterDone, first.MeterMax), (progress.MeterDone, progress.MeterMax)));
+    }
+
+    [Fact]
     public async Task Home_shows_one_line_while_any_step_is_open_and_none_when_setup_is_finished()
     {
         var open = await ReadWith("profile-needs-approval");

@@ -16,6 +16,7 @@ internal sealed partial class FakeSindriApi
     private readonly List<ApproveProfileRequest> _profileApprovals = [];
     private readonly List<RecipeApprovalSent> _recipeApprovals = [];
     private int _planCalls;
+    private int _profileCalls;
     private int _approveAllJobCalls;
 
     /// <summary>GET /sindri/workflow/recipes/approve-all's answer.</summary>
@@ -29,6 +30,12 @@ internal sealed partial class FakeSindriApi
 
     /// <summary>POST /sindri/profile/approve's answer.</summary>
     public RouteAnswer ApproveProfileAnswer { get; set; } = RouteAnswer.Api("profile-approve", "approved");
+
+    /// <summary>GET /sindri/profile's answer: an approved profile (no summary) by default.</summary>
+    public RouteAnswer ProfileAnswer { get; set; } = RouteAnswer.Api("profile", "approved");
+
+    /// <summary>How many times the profile was read.</summary>
+    public int ProfileCalls => Volatile.Read(ref _profileCalls);
 
     /// <summary>POST /sindri/workflow/recipes/{id}@{hash}/approve's answer.</summary>
     public RouteAnswer ApproveRecipeAnswer { get; set; } = RouteAnswer.SpecShaped("recipe-approve", "approved");
@@ -132,6 +139,12 @@ internal sealed partial class FakeSindriApi
 
         await WaitFor(ApproveProfileGate, cancellationToken).ConfigureAwait(false);
         return Answer<ProfileApproved>(api, "/sindri/profile/approve", ApproveProfileAnswer);
+    }
+
+    public Task<Result<ProfileRead>> ProfileSummary(Uri api, CancellationToken cancellationToken)
+    {
+        _ = Interlocked.Increment(ref _profileCalls);
+        return Task.FromResult(Answer<ProfileRead>(api, "/sindri/profile", ProfileAnswer));
     }
 
     public Task<Result<RecipeApproved>> ApproveRecipe(Uri api, string id, string hash, ProfileAnswer answer, CancellationToken cancellationToken)

@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks.Step;
 using Aw.Sindri.Features.Line;
 using Aw.Sindri.Testing.Packets;
+using Aw.Sindri.Testing.Prove;
 using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Scoping.Steps;
@@ -25,5 +26,5 @@ public sealed class PlanFreezeStepContract : BlockContract
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await new PlanFreezeStep(new InMemoryPackets(), new InMemoryRepoCheckouts()).Run(ScopingStepContexts.Of("step.plan.freeze", []), cancellationToken);
+        _ = await new PlanFreezeStep(new InMemoryPackets(), new InMemoryRepoCheckouts(), new InMemoryHoldoutStore()).Run(ScopingStepContexts.Of("step.plan.freeze", []), cancellationToken);
 }

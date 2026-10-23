@@ -40,6 +40,12 @@ internal partial interface ISindriApi
     /// <returns>The approval, SND-AUTH-002 for an agent session, the API's other refusals (a stale hash, a wrong answer), or SND-UI-002/003.</returns>
     public Task<Result<ProfileApproved>> ApproveProfile(Uri api, ApproveProfileRequest request, CancellationToken cancellationToken);
 
+    /// <summary>GET /sindri/profile: the profile's plain-words approval summary (null while there is nothing to approve).</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The read, the API's refusal, or SND-UI-002/003.</returns>
+    public Task<Result<ProfileRead>> ProfileSummary(Uri api, CancellationToken cancellationToken);
+
     /// <summary>POST /sindri/workflow/recipes/{id}@{hash}/approve: approves one changed workflow by redeeming its typed challenge. A human token only; sent once, never retried by the app.</summary>
     /// <param name="api">The base URL.</param>
     /// <param name="id">The recipe's id.</param>

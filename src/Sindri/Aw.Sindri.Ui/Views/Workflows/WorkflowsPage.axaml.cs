@@ -18,6 +18,36 @@ internal sealed partial class WorkflowsPage : UserControl
         AddHandler(InstanceRow.SelectEvent, OnSelect);
         AddHandler(RecipeGroup.ToggleEvent, OnToggle);
         AddHandler(ChildAnswerButton.FollowEvent, OnChildAnswer);
+        AddHandler(TappedEvent, OnTapped);
+    }
+
+    // A tap on a board card selects it and opens the run drawer on it (a double tap goes on to open the run).
+    private void OnTapped(object? sender, TappedEventArgs e)
+    {
+        if (e.Source is Visual source && source.FindAncestorOfType<RunCard>() is { Address.Length: > 0 } card)
+        {
+            _ = List?.OpenInspector(card.Address);
+        }
+    }
+
+    // The drawer is 48 % of the window, between Size.InspectorMin and Size.Inspector.
+    private void OnTopLevelChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == TopLevel.ClientSizeProperty)
+        {
+            FitDrawer();
+        }
+    }
+
+    private void FitDrawer()
+    {
+        if (TopLevel.GetTopLevel(this) is { } top)
+        {
+            if (this.FindControl<Border>("WorkflowsInspectorHost") is { Child: RunInspectorView drawer })
+            {
+                drawer.Width = InspectorWidth.For(top.ClientSize.Width);
+            }
+        }
     }
 
     private bool _focusWasHere;
@@ -35,12 +65,23 @@ internal sealed partial class WorkflowsPage : UserControl
     {
         base.OnAttachedToVisualTree(e);
         TopLevel.GetTopLevel(this)?.AddHandler(GotFocusEvent, OnFocusMoved, RoutingStrategies.Bubble, handledEventsToo: true);
+        if (TopLevel.GetTopLevel(this) is { } top)
+        {
+            top.PropertyChanged += OnTopLevelChanged;
+        }
+
+        FitDrawer();
     }
 
     /// <inheritdoc />
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         TopLevel.GetTopLevel(this)?.RemoveHandler(GotFocusEvent, OnFocusMoved);
+        if (TopLevel.GetTopLevel(this) is { } top)
+        {
+            top.PropertyChanged -= OnTopLevelChanged;
+        }
+
         base.OnDetachedFromVisualTree(e);
     }
 
