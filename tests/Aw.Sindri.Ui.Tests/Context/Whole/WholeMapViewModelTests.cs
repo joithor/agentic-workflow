@@ -4,7 +4,7 @@ using Aw.Sindri.Ui.ViewModels.Context.Whole;
 
 namespace Aw.Sindri.Ui.Tests.Context.Whole;
 
-/// <summary>The whole map's view model (whole-map spec §3.1, §3.2): its head and notes, the list of features, the zoom thresholds. DRAFT goldens, see <see cref="WholeMapLayoutTests"/>.</summary>
+/// <summary>The whole map's view model (whole-map spec §3.1, §3.2): its head and notes, the list of features, the zoom thresholds. Goldens as in <see cref="WholeMapLayoutTests"/>.</summary>
 [Lane(TestLane.Unit)]
 public sealed class WholeMapViewModelTests
 {
@@ -24,10 +24,10 @@ public sealed class WholeMapViewModelTests
     {
         var map = new WholeMapViewModel(() => _utc);
 
-        map.Show(WholeMapLayoutTests.Draft("draft-nodes-small"));
+        map.Show(WholeMapLayoutTests.Draft("nodes-small"));
 
-        Assert.Equal(("Context · the whole map · v3", false, false), (map.Head, map.ByArea, map.HasNote));
-        Assert.Equal("7 items · 7 links · built 23 Oct 2026 06:00", map.SizeText);
+        Assert.Equal(("Context · the whole map · v1", false, false), (map.Head, map.ByArea, map.HasNote));
+        Assert.Equal("14 items · 15 links · built 1 Jan 2026 00:00", map.SizeText);
         Assert.Equal((true, false, false), (map.IsReady, map.IsLoading, map.IsFailed));
     }
 
@@ -35,7 +35,7 @@ public sealed class WholeMapViewModelTests
     public void An_answer_by_area_says_in_one_line_why_it_is_grouped_by_feature()
     {
         var map = new WholeMapViewModel(() => _utc);
-        var answer = WholeMapLayoutTests.Draft("draft-areas-over-budget");
+        var answer = WholeMapLayoutTests.Draft("areas-over-budget");
 
         map.Show(answer);
 
@@ -49,28 +49,68 @@ public sealed class WholeMapViewModelTests
     public void The_list_of_features_follows_the_map_order_and_each_names_its_size()
     {
         var map = new WholeMapViewModel(() => _utc);
-        var answer = WholeMapLayoutTests.Draft("draft-nodes-small");
+        var answer = WholeMapLayoutTests.Draft("nodes-small");
 
         map.Show(answer);
 
         Assert.Equal(map.Geometry!.Order, map.Areas.Select(a => a.Key), StringComparer.Ordinal);
-        var billing = map.Areas.Single(a => a.Key == "feature:billing");
-        Assert.Equal(("Billing", "3 items", "Billing, 3 items. Press Enter to open."), (billing.Label, billing.MembersText, billing.Name));
-        Assert.Equal("1 code file, 1 feature, 1 screen", billing.KindsText);
+        var tabs = map.Areas.Single(a => a.Key == "feature:tabs.tab-manager");
+        Assert.Equal(("Tab manager", "12 items", "Tab manager, 12 items. Press Enter to open."), (tabs.Label, tabs.MembersText, tabs.Name));
+        Assert.Equal("2 actions, 2 code files, 2 decisions, 2 features, 2 screens, 1 record, 1 thing", tabs.KindsText);
     }
 
     [Fact]
-    public void Opening_a_feature_asks_the_camera_for_its_tile_until_the_route_that_opens_one_exists()
+    public void Opening_a_tile_on_the_overview_asks_the_page_to_read_that_feature()
     {
         var map = new WholeMapViewModel(() => _utc);
-        map.Show(WholeMapLayoutTests.Draft("draft-areas-over-budget"));
-        var asked = new List<WholeRect>();
-        map.ZoomRequested += (_, e) => asked.Add(e.Value);
-        var tile = map.Geometry!.Tiles[1];
+        map.Show(WholeMapLayoutTests.Draft("areas-over-budget"));
+        var asked = new List<string>();
+        map.AreaOpenRequested += (_, e) => asked.Add(e.Value);
 
         map.Areas[1].Open();
 
-        Assert.Equal([tile.Rect], asked);
+        Assert.Equal([map.Areas[1].Key], asked);
+    }
+
+    [Fact]
+    public void Opening_a_feature_on_a_node_level_map_moves_the_camera_to_its_column()
+    {
+        var map = new WholeMapViewModel(() => _utc);
+        map.Show(WholeMapLayoutTests.Draft("nodes-small"));
+        var asked = new List<WholeRect>();
+        map.ZoomRequested += (_, e) => asked.Add(e.Value);
+
+        map.Areas[0].Open();
+
+        Assert.Equal([map.Geometry!.Columns[0].Rect], asked);
+    }
+
+    [Fact]
+    public void An_open_feature_draws_its_items_alone_with_the_way_back_and_back_restores_the_overview()
+    {
+        var map = new WholeMapViewModel(() => _utc);
+        map.Show(WholeMapLayoutTests.Draft("areas-over-budget"));
+        var overview = map.Geometry;
+        var opened = WholeMapLayoutTests.Draft("area-open");
+
+        map.ShowArea(opened);
+
+        Assert.Equal((true, "Tab manager", string.Empty), (map.IsAreaOpen, map.AreaTitle, map.ByAreaNote));
+        Assert.Equal((false, 12, 1), (map.ByArea, map.Geometry!.Nodes.Count, map.Geometry.Columns.Count));
+        map.CloseArea();
+        Assert.Equal((false, true), (map.IsAreaOpen, ReferenceEquals(overview, map.Geometry)));
+        Assert.Equal(Labels.ContextWholeByArea(14), map.ByAreaNote);
+    }
+
+    [Fact]
+    public void A_feature_cut_at_the_cap_says_how_much_is_not_shown()
+    {
+        var map = new WholeMapViewModel(() => _utc);
+        map.Show(WholeMapLayoutTests.Draft("areas-over-budget"));
+
+        map.ShowArea(WholeMapLayoutTests.Draft("area-truncated"));
+
+        Assert.Equal("Showing 5 of 12 items; the rest are not shown.", map.ByAreaNote);
     }
 
     [Fact]
@@ -89,7 +129,7 @@ public sealed class WholeMapViewModelTests
     public void A_failed_read_keeps_what_was_drawn_and_a_new_answer_clears_the_failure()
     {
         var map = new WholeMapViewModel(() => _utc);
-        map.Show(WholeMapLayoutTests.Draft("draft-nodes-small"));
+        map.Show(WholeMapLayoutTests.Draft("nodes-small"));
 
         map.Loading();
         Assert.Equal((true, true, false), (map.IsReady, map.IsLoading, map.IsFailed));
@@ -97,7 +137,7 @@ public sealed class WholeMapViewModelTests
         Assert.Equal((true, false, true), (map.IsReady, map.IsLoading, map.IsFailed));
         Assert.NotNull(map.Geometry);
 
-        map.Show(WholeMapLayoutTests.Draft("draft-nodes-small"));
+        map.Show(WholeMapLayoutTests.Draft("nodes-small"));
         Assert.Equal((true, false, false), (map.IsReady, map.IsLoading, map.IsFailed));
     }
 

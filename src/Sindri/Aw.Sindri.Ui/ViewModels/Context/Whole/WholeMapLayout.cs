@@ -62,6 +62,12 @@ internal static class WholeMapLayout
     internal static WholeMapGeometry Place(WholeMapView map)
     {
         ArgumentNullException.ThrowIfNull(map);
+        if (map.Area is { } opened)
+        {
+            // One feature opened in full: its nodes alone, in one column (the others stay tiles in the overview it came from).
+            map = map with { Areas = [.. map.Areas.Where(a => string.Equals(a.Key, opened.Key, StringComparison.Ordinal))], AreaEdges = [] };
+        }
+
         var order = WholeAreaOrder.Of(map.Areas, map.AreaEdges);
         return map.Nodes is { Count: > 0 } nodes && !string.Equals(map.Detail, "areas", StringComparison.Ordinal)
             ? Columns(map, order, nodes)

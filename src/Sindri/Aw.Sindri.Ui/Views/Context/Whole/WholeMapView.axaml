@@ -11,6 +11,8 @@
        accessible map: Tab walks it, Enter opens); the pannable canvas with the mini-map and the zoom pill over it. -->
   <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
     <StackPanel Spacing="2">
+      <Button x:Name="WholeAllFeatures" Content="{Binding AllFeaturesText}" IsVisible="{Binding IsAreaOpen}" Click="OnAllFeatures" HorizontalAlignment="Left" AutomationProperties.Name="{Binding AllFeaturesText}" />
+      <TextBlock x:Name="WholeAreaTitle" Classes="body-strong" Text="{Binding AreaTitle}" IsVisible="{Binding IsAreaOpen}" AutomationProperties.Name="{Binding AreaTitle}" />
       <TextBlock x:Name="WholeSize" Classes="caption subtle" Text="{Binding SizeText}" AutomationProperties.Name="{Binding SizeText}" />
       <TextBlock x:Name="WholeNote" Classes="body" Text="{Binding ByAreaNote}" IsVisible="{Binding HasNote}" TextWrapping="Wrap" AutomationProperties.Name="{Binding ByAreaNote}" />
     </StackPanel>

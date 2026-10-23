@@ -9,7 +9,7 @@ namespace Aw.Sindri.Ui.Api.Context;
 /// <param name="MapCommit">The commit the map was built at, or null.</param>
 /// <param name="Draft">True when the draft map was read.</param>
 /// <param name="AsOf">When the map was built.</param>
-/// <param name="Repo">The repo.</param>
+/// <param name="Repo">The repo; null when the profile has several and none was asked for.</param>
 /// <param name="Detail">nodes or areas.</param>
 /// <param name="Fallback">over-budget when the answer is areas because the map is over the node budget; else null.</param>
 /// <param name="Counts">The map's size.</param>
@@ -25,7 +25,7 @@ internal sealed record WholeMapView(
     string MapVersion,
     bool Draft,
     DateTimeOffset AsOf,
-    string Repo,
+    string? Repo,
     string Detail,
     WholeCounts Counts,
     IReadOnlyList<WholeArea> Areas,

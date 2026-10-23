@@ -77,7 +77,7 @@ internal sealed partial class WholeMapView : UserControl
     // A new answer: the world and its zoom range change, and the first one is fitted (a later one keeps the person's view).
     private void OnMapChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (string.Equals(e.PropertyName, nameof(WholeMapViewModel.Head), StringComparison.Ordinal))
+        if (string.Equals(e.PropertyName, nameof(WholeMapViewModel.Head), StringComparison.Ordinal) || string.Equals(e.PropertyName, nameof(WholeMapViewModel.IsAreaOpen), StringComparison.Ordinal))
         {
             _fitted = false;
             Arrange();
@@ -179,6 +179,8 @@ internal sealed partial class WholeMapView : UserControl
             tile.Open();
         }
     }
+
+    private void OnAllFeatures(object? sender, RoutedEventArgs e) => _map?.CloseArea();
 
     private void OnZoomIn(object? sender, RoutedEventArgs e) => WholeCanvas.ZoomIn();
 

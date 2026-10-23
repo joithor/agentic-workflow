@@ -28,8 +28,8 @@ internal sealed partial class FakeSindriApi
 
     private readonly List<string> _scopeAsked = [];
 
-    /// <summary>GET /sindri/context/map/whole's answer per query (the draft nodes-small golden by default; a draft until context's real goldens land).</summary>
-    public Func<WholeMapQuery, RouteAnswer> WholeMapAnswer { get; set; } = _ => new RouteAnswer(HttpStatusCode.OK, GoldenFiles.SpecShaped("context-whole", "draft-nodes-small"));
+    /// <summary>GET /sindri/context/map/whole's answer per query (the context-whole goldens by what was asked).</summary>
+    public Func<WholeMapQuery, RouteAnswer> WholeMapAnswer { get; set; } = ContextAnswers.WholeMap;
 
     /// <summary>The whole-map reads asked, in order.</summary>
     public IReadOnlyList<WholeMapQuery> WholeMapAsked { get { lock (_gate) { return [.. _wholeAsked]; } } }

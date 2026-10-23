@@ -26,11 +26,25 @@ internal sealed class WholeMapViewModel : ObservableObject
         _zone = zone ?? (() => TimeZoneInfo.Local);
     }
 
-    /// <summary>Raised when a feature asks the camera to go to its tile (a click, Enter, or opening it).</summary>
+    /// <summary>Raised when a feature asks the camera to go to its tile or column.</summary>
     internal event EventHandler<ValueEventArgs<WholeRect>>? ZoomRequested;
+
+    /// <summary>Raised when a tile (or its entry in the list) is opened: the page reads that feature in full (area=).</summary>
+    internal event EventHandler<ValueEventArgs<string>>? AreaOpenRequested;
 
     /// <summary>Raised when a node of the map is clicked.</summary>
     internal event EventHandler<ValueEventArgs<string>>? NodeChosen;
+
+    private (WholeMapView? Answer, WholeMapGeometry? Geometry, IReadOnlyList<WholeAreaTileViewModel> Areas)? _overview;
+
+    /// <summary>Whether one feature is open in full.</summary>
+    public bool IsAreaOpen { get; private set; }
+
+    /// <summary>The open feature's label; empty on the overview.</summary>
+    public string AreaTitle { get; private set; } = string.Empty;
+
+    /// <summary>The button back to all features.</summary>
+    public string AllFeaturesText { get; } = Labels.ContextWholeAllFeatures;
 
     /// <summary>Whether the first read has ended with an answer.</summary>
     public bool IsReady { get; private set; }
@@ -116,6 +130,7 @@ internal sealed class WholeMapViewModel : ObservableObject
     internal void Show(WholeMapView answer)
     {
         ArgumentNullException.ThrowIfNull(answer);
+        (_overview, IsAreaOpen, AreaTitle) = (null, false, string.Empty);
         Answer = answer;
         Geometry = WholeMapLayout.Place(answer);
         Head = Labels.ContextWholeHead(answer.MapVersion);
@@ -127,14 +142,56 @@ internal sealed class WholeMapViewModel : ObservableObject
         Changed();
     }
 
-    /// <summary>Opens a feature: until the route that answers one feature in full is there, the camera goes to its tile or column.</summary>
+    /// <summary>Opens a feature (a click on its tile, Enter on its entry in the list): on the overview the page reads it in full; on a node-level map the camera goes to its column.</summary>
     /// <param name="key">The area's key.</param>
     internal void OpenArea(string key)
     {
-        if (Geometry is { } geometry && TargetOf(geometry, key) is { } target)
+        if (ByArea && !IsAreaOpen)
+        {
+            AreaOpenRequested?.Invoke(this, new ValueEventArgs<string>(key));
+        }
+        else if (Geometry is { } geometry && TargetOf(geometry, key) is { } target)
         {
             ZoomRequested?.Invoke(this, new ValueEventArgs<WholeRect>(target));
         }
+    }
+
+    /// <summary>One feature was read in full: its items are drawn alone, with a way back to all of them; the overview it came from is kept.</summary>
+    /// <param name="answer">The answer for that feature.</param>
+    internal void ShowArea(WholeMapView answer)
+    {
+        ArgumentNullException.ThrowIfNull(answer);
+        if (answer.Area is not { } opened)
+        {
+            return;
+        }
+
+        _overview ??= (Answer, Geometry, Areas);
+        Answer = answer;
+        Geometry = WholeMapLayout.Place(answer);
+        var label = answer.Areas.FirstOrDefault(a => string.Equals(a.Key, opened.Key, StringComparison.Ordinal))?.Label ?? opened.Key;
+        AreaTitle = label;
+        ByAreaNote = opened.Truncated ? Labels.ContextWholeAreaTruncated(answer.Nodes?.Count ?? 0, opened.Counts.Nodes) : string.Empty;
+        Areas = [];
+        IsAreaOpen = true;
+        (IsLoading, IsFailed) = (false, false);
+        Changed();
+    }
+
+    /// <summary>Goes back from one feature to all of them.</summary>
+    internal void CloseArea()
+    {
+        if (_overview is not { } overview)
+        {
+            return;
+        }
+
+        (Answer, Geometry, Areas) = overview;
+        _overview = null;
+        IsAreaOpen = false;
+        AreaTitle = string.Empty;
+        ByAreaNote = Geometry?.ByArea == true && Answer is { } answer ? Labels.ContextWholeByArea(answer.Counts.Nodes) : string.Empty;
+        Changed();
     }
 
     /// <summary>A node was clicked.</summary>
@@ -147,7 +204,7 @@ internal sealed class WholeMapViewModel : ObservableObject
 
     private void Changed()
     {
-        foreach (var name in (string[])[nameof(IsReady), nameof(IsLoading), nameof(IsFailed), nameof(Head), nameof(ByAreaNote), nameof(HasNote), nameof(SizeText), nameof(ByArea), nameof(Areas)])
+        foreach (var name in (string[])[nameof(IsReady), nameof(IsLoading), nameof(IsFailed), nameof(Head), nameof(ByAreaNote), nameof(HasNote), nameof(SizeText), nameof(ByArea), nameof(Areas), nameof(IsAreaOpen), nameof(AreaTitle)])
         {
             OnChanged(name);
         }

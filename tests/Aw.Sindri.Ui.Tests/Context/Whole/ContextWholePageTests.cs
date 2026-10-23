@@ -1,13 +1,14 @@
 using System.Net;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Context;
 using Aw.Sindri.Ui.ViewModels.Controls;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Ui.Tests.Context.Whole;
 
-/// <summary>The Context page opens on the whole map (whole-map spec §3.1): read once when first shown with no starting point, retried on a failure, and covered by the No map state when there is no map. DRAFT goldens.</summary>
+/// <summary>The Context page opens on the whole map (whole-map spec §3.1): read once when first shown with no starting point, retried on a failure, and covered by the No map state when there is no map. Goldens from #830 (Golden/Api/context-whole).</summary>
 [Lane(TestLane.Unit)]
 public sealed class ContextWholePageTests
 {
@@ -40,7 +41,7 @@ public sealed class ContextWholePageTests
         Assert.Equal(("auto", null, false), (asked.Detail, asked.Area, asked.Draft));
         Assert.Empty(asked.Locate);
         Assert.Equal((true, true, false), (page.Whole.IsReady, page.ShowWhole, page.ShowWholeStatus));
-        Assert.Equal(("Context · the whole map · v3", true), (page.Head, page.HasHead));
+        Assert.Equal(("Context · the whole map · v1", true), (page.Head, page.HasHead));
         Assert.Equal(0, api.ContextCalls);
     }
 
@@ -75,7 +76,7 @@ public sealed class ContextWholePageTests
     public async Task A_failed_read_says_so_with_retry_and_a_retry_reads_again()
     {
         var failing = true;
-        var api = new FakeSindriApi { WholeMapAnswer = q => failing ? new RouteAnswer(HttpStatusCode.InternalServerError, "{}") : new RouteAnswer(HttpStatusCode.OK, GoldenFiles.SpecShaped("context-whole", "draft-nodes-small")) };
+        var api = new FakeSindriApi { WholeMapAnswer = q => failing ? new RouteAnswer(HttpStatusCode.InternalServerError, "{}") : new RouteAnswer(HttpStatusCode.OK, GoldenFiles.Api("context-whole", "nodes-small")) };
         var (page, _) = await Page(api);
 
         await page.Opened(Token);
@@ -91,7 +92,7 @@ public sealed class ContextWholePageTests
     [Fact]
     public async Task A_map_over_the_budget_opens_by_feature()
     {
-        var api = new FakeSindriApi { WholeMapAnswer = _ => new RouteAnswer(HttpStatusCode.OK, GoldenFiles.SpecShaped("context-whole", "draft-areas-over-budget")) };
+        var api = new FakeSindriApi { WholeMapAnswer = _ => new RouteAnswer(HttpStatusCode.OK, GoldenFiles.Api("context-whole", "areas-over-budget")) };
         var (page, _) = await Page(api);
 
         await page.Opened(Token);
@@ -136,7 +137,7 @@ public sealed class ContextWholePageTests
 
         await page.Submit(Token);
 
-        Assert.Equal((true, "Context · the whole map · v3", true), (page.ShowWhole, page.Head, page.HasProblem));
+        Assert.Equal((true, "Context · the whole map · v1", true), (page.ShowWhole, page.Head, page.HasProblem));
     }
 
     [Fact]
@@ -148,7 +149,7 @@ public sealed class ContextWholePageTests
         await page.Opened(Token);
         Assert.True(page.NoMap);
 
-        map[0] = new RouteAnswer(HttpStatusCode.OK, GoldenFiles.SpecShaped("context-whole", "draft-nodes-small"));
+        map[0] = new RouteAnswer(HttpStatusCode.OK, GoldenFiles.Api("context-whole", "nodes-small"));
         await page.ReadWhole(Token);
         foreach (var follow in follows)
         {
@@ -159,5 +160,40 @@ public sealed class ContextWholePageTests
         Assert.Equal(2, api.WholeMapAsked.Count);
     }
 
-    private static string ViewModelsLabelHead(int anchors) => Aw.Sindri.Ui.ViewModels.Labels.ContextHead(anchors);
+    private static string ViewModelsLabelHead(int anchors) => Labels.ContextHead(anchors);
+
+    [Fact]
+    public async Task A_tile_click_reads_that_feature_in_full_with_area_and_draws_it()
+    {
+        var api = new FakeSindriApi { WholeMapAnswer = q => q.Area is null ? RouteAnswer.Api("context-whole", "areas-over-budget") : ContextAnswers.WholeMap(q) };
+        var (page, _) = await Page(api);
+        await page.Opened(Token);
+
+        page.Whole.Areas.Single(a => a.Key == ContextAnswers.OpenArea).Open();
+        await Until(() => page.Whole.IsAreaOpen);
+
+        Assert.Equal(ContextAnswers.OpenArea, api.WholeMapAsked[^1].Area);
+        Assert.Equal((true, false, true), (page.Whole.IsAreaOpen, page.HasProblem, page.ShowWhole));
+    }
+
+    [Fact]
+    public async Task An_area_the_map_does_not_have_is_the_existing_banner_and_the_overview_stays()
+    {
+        var api = new FakeSindriApi { WholeMapAnswer = q => q.Area is null ? RouteAnswer.Api("context-whole", "areas-over-budget") : RouteAnswer.Problem("context-whole", "area-unknown-200") };
+        var (page, _) = await Page(api);
+        await page.Opened(Token);
+
+        await page.OpenWholeArea("feature:nope", Token);
+
+        Assert.Equal((true, false, true), (page.HasProblem, page.Whole.IsAreaOpen, page.ShowWhole));
+        Assert.Contains("isn't in this map", page.Problem, StringComparison.Ordinal);
+    }
+
+    private static async Task Until(Func<bool> done)
+    {
+        for (var i = 0; i < 200 && !done(); i++)
+        {
+            await Task.Delay(10, Token);
+        }
+    }
 }

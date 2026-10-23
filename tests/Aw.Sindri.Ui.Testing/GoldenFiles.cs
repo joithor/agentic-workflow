@@ -22,12 +22,6 @@ internal static class GoldenFiles
     /// <returns>The parsed body.</returns>
     internal static System.Text.Json.Nodes.JsonNode Node(string slug, string scenario) => System.Text.Json.Nodes.JsonNode.Parse(Api(slug, scenario))!;
 
-    /// <summary>A spec-shaped golden parsed.</summary>
-    /// <param name="slug">The route slug.</param>
-    /// <param name="scenario">The scenario.</param>
-    /// <returns>The parsed body.</returns>
-    internal static System.Text.Json.Nodes.JsonNode SpecShapedNode(string slug, string scenario) => System.Text.Json.Nodes.JsonNode.Parse(SpecShaped(slug, scenario))!;
-
     /// <summary>A body written from the API spec's documented shape, standing in until its phase writes the golden.</summary>
     /// <param name="slug">The route slug.</param>
     /// <param name="scenario">The scenario.</param>

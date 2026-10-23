@@ -11,7 +11,7 @@ internal sealed class WholeAreaTileViewModel
     {
         _open = open;
         Key = area.Key;
-        Label = area.Unassigned && area.Label.Length == 0 ? Labels.ContextWholeUnassigned : area.Label;
+        Label = area.Unassigned && area.Label.Length == 0 ? Labels.ContextFilesNoFeature : area.Label;
         MembersText = Labels.ContextWholeMembers(area.Members);
         KindsText = string.Join(", ", area.ByKind.OrderByDescending(k => k.Value).ThenBy(k => k.Key, StringComparer.Ordinal).Select(k => Labels.ContextWholeKindCount(k.Key, k.Value)));
         Name = Labels.ContextWholeTileName(Label, area.Members);

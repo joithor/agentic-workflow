@@ -24,6 +24,27 @@ internal static class ContextAnswers
         [(string)GoldenFiles.Node("context-lenses", Lenses1)["anchor"]!["key"]!, .. GoldenFiles.Node("context-lenses", LensesSet)["anchors"]!.AsArray().Select(a => (string)a!["key"]!)],
         StringComparer.Ordinal);
 
+    /// <summary>The whole map for a query: a refusal golden for what the goldens cannot answer (an area that is not in the map, a version that is not kept), else the golden for what was asked.</summary>
+    /// <param name="query">What was asked.</param>
+    /// <returns>The answer.</returns>
+    internal static RouteAnswer WholeMap(WholeMapQuery query)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        return query switch
+        {
+            { Area: { } area } when !string.Equals(area, OpenArea, StringComparison.Ordinal) => RouteAnswer.Problem("context-whole", "area-unknown-200"),
+            { Area: not null } => RouteAnswer.Api("context-whole", "area-open"),
+            { MapVersion: { } version } when !string.Equals(version, "v1", StringComparison.Ordinal) => RouteAnswer.Problem("context-whole", "map-version-not-retained-120"),
+            { Draft: true } => RouteAnswer.Api("context-whole", "draft"),
+            { Locate.Count: > 0 } => RouteAnswer.Api("context-whole", "locate"),
+            { Detail: "areas" } => RouteAnswer.Api("context-whole", "areas-over-budget"),
+            _ => RouteAnswer.Api("context-whole", "nodes-small"),
+        };
+    }
+
+    /// <summary>The one area the goldens hold in full.</summary>
+    internal const string OpenArea = "feature:tabs.tab-manager";
+
     /// <summary>The lenses for a query: a refusal golden for what the goldens cannot answer, else the golden for one anchor or for a set.</summary>
     /// <param name="query">What was asked.</param>
     /// <returns>The answer.</returns>

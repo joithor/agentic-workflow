@@ -18,7 +18,11 @@ internal sealed partial class ContextPageViewModel
     public bool ShowWholeStatus => ShowMap && !HasStack && !NoMap && !IsBuilding && (Whole.IsLoading || Whole.IsFailed);
 
     // Registered once: whenever the control plane is reachable and the page was shown, a map that is not read yet is read (the first open may have come before the connection).
-    private void InitWhole() => Ports.Follow((_, cancellationToken) => _wholeWanted && !Whole.IsReady && !Whole.IsLoading && !Whole.IsFailed ? ReadWhole(cancellationToken) : Task.CompletedTask);
+    private void InitWhole()
+    {
+        Whole.AreaOpenRequested += (_, e) => _ = OpenWholeArea(e.Value, CancellationToken.None);
+        Ports.Follow((_, cancellationToken) => _wholeWanted && !Whole.IsReady && !Whole.IsLoading && !Whole.IsFailed ? ReadWhole(cancellationToken) : Task.CompletedTask);
+    }
 
     /// <summary>The page was shown: the whole map is read once, with no starting point.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
@@ -60,6 +64,33 @@ internal sealed partial class ContextPageViewModel
             Whole.Failed();
         }
 
+        ChangedWhole();
+    }
+
+    /// <summary>Opens one feature in full (area=): its items replace the overview, with a way back; a feature the map does not have is the existing banner.</summary>
+    /// <param name="area">The area's key.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>When the answer is drawn.</returns>
+    internal async Task OpenWholeArea(string area, CancellationToken cancellationToken = default)
+    {
+        if (Ports.ApiUrl() is not { } api)
+        {
+            return;
+        }
+
+        var read = await Ports.Api.WholeMap(api, new WholeMapQuery("nodes", area, [], PinnedVersion, Draft: false), cancellationToken).ConfigureAwait(true);
+        if (read.IsSuccess)
+        {
+            Whole.ShowArea(read.Value);
+            Problem = string.Empty;
+        }
+        else
+        {
+            Problem = read.Error.Message;
+        }
+
+        OnChanged(nameof(Problem));
+        OnChanged(nameof(HasProblem));
         ChangedWhole();
     }
 

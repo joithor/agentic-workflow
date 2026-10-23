@@ -13,20 +13,20 @@ using Aw.Sindri.Ui.Views.Shell;
 namespace Aw.Sindri.Ui.Tests.Views;
 
 /// <summary>
-/// The Context page opening on the whole map (whole-map spec §3.1) against the in-memory API serving the DRAFT whole-map goldens (Golden/SpecShaped/context-whole,
-/// swapped for context's real ones when W1 lands): the map drawn in one canvas, the list of features, the first open's zoom, no sideways scroll at 900 px, the
+/// The Context page opening on the whole map (whole-map spec §3.1) against the in-memory API serving context's whole-map goldens
+/// (Golden/Api/context-whole, from #830): the map drawn in one canvas, the list of features, the first open's zoom, no sideways scroll at 900 px, the
 /// by-feature overview, and the No map state over it. Saved under frames/ as whole-map-*.png when AW_UI_FRAMES=1.
 /// </summary>
 [Lane(TestLane.Integration)]
 public sealed class WholeMapFramesTests : FrameHost
 {
-    private static RouteAnswer Draft(string name) => new(HttpStatusCode.OK, GoldenFiles.SpecShaped("context-whole", name));
+    private static RouteAnswer Draft(string name) => new(HttpStatusCode.OK, GoldenFiles.Api("context-whole", name));
 
     private async Task<(ShellWindow Window, ShellViewModel Shell)> Open(double width, double height, RouteAnswer? answer = null)
     {
         if (answer is { } served)
         {
-            Server.WholeMapAnswer = _ => served;
+            Server.WholeMapAnswer = q => q.Area is null ? served : ContextAnswers.WholeMap(q);   // an area is read in full from the goldens
         }
 
         var (window, shell) = await Connected(width: width, height: height);
@@ -63,21 +63,22 @@ public sealed class WholeMapFramesTests : FrameHost
     });
 
     [Fact]
-    public Task A_map_over_the_budget_opens_by_feature_with_its_one_line_and_a_click_on_a_feature_zooms_to_it() => OnUi(async () =>
+    public Task A_map_over_the_budget_opens_by_feature_with_its_one_line_and_a_click_on_a_feature_opens_it() => OnUi(async () =>
     {
-        var (window, shell) = await Open(1440, 900, Draft("draft-areas-over-budget"));
+        var (window, shell) = await Open(1440, 900, Draft("areas-over-budget"));
 
         Assert.True(shell.Context.Whole.ByArea);
         Assert.True(Visible(window, "WholeNote"));
         Assert.Equal(shell.Context.Whole.ByAreaNote, Named<TextBlock>(window, "WholeNote").Text);
-        var whole = Named<WholeMapView>(window, "WholeMap");
-        var before = whole.Canvas.View;
-
-        shell.Context.Whole.Areas[0].Open();
-        whole.Canvas.Settle();
-
-        Assert.NotEqual(before, whole.Canvas.View);
         Frame(window, "whole-map-by-area-1440", "w3-");
+
+        shell.Context.Whole.Areas.First(a => a.Key == ContextAnswers.OpenArea).Open();
+        await Until(window, () => shell.Context.Whole.IsAreaOpen);
+        Settle(window);
+
+        Assert.True(Visible(window, "WholeAllFeatures"));
+        Assert.Equal("Tab manager", Named<TextBlock>(window, "WholeAreaTitle").Text);
+        Assert.Equal(12, shell.Context.Whole.Geometry!.Nodes.Count);
     });
 
     [Fact]
@@ -99,7 +100,7 @@ public sealed class WholeMapFramesTests : FrameHost
     public Task A_failed_read_shows_the_failure_row_with_retry_that_reads_again() => OnUi(async () =>
     {
         var failing = true;
-        Server.WholeMapAnswer = _ => failing ? new RouteAnswer(HttpStatusCode.InternalServerError, "{}") : Draft("draft-nodes-small");
+        Server.WholeMapAnswer = _ => failing ? new RouteAnswer(HttpStatusCode.InternalServerError, "{}") : Draft("nodes-small");
         var (window, shell) = await Connected(width: 1440, height: 900);
 
         shell.GoTo(PageId.Context);
@@ -113,5 +114,67 @@ public sealed class WholeMapFramesTests : FrameHost
         await Until(window, () => shell.Context.ShowWhole);
 
         Assert.False(Visible(window, "WholeStatus"));
+    });
+
+    // The proof of whole-map spec §8 for W3: a frame of each state at both widths (saved when AW_UI_FRAMES=1) and the first-frame time on an over-budget map.
+    [Theory]
+    [InlineData(1440, 900, "nodes-small", false)]
+    [InlineData(900, 800, "nodes-small", false)]
+    [InlineData(1440, 900, "areas-over-budget", false)]
+    [InlineData(900, 800, "areas-over-budget", false)]
+    [InlineData(1440, 900, "areas-over-budget", true)]
+    [InlineData(900, 800, "areas-over-budget", true)]
+    public Task Every_map_state_draws_at_both_widths(double width, double height, string golden, bool openArea) => OnUi(async () =>
+    {
+        var (window, shell) = await Open(width, height, Draft(golden));
+        if (openArea)
+        {
+            shell.Context.Whole.Areas.First(a => a.Key == ContextAnswers.OpenArea).Open();
+            await Until(window, () => shell.Context.Whole.IsAreaOpen);
+        }
+
+        Frame(window, string.Create(CultureInfo.InvariantCulture, $"{(openArea ? "area-open" : golden)}-{(int)width}"), "w3-");
+
+        Assert.Equal(openArea, shell.Context.Whole.IsAreaOpen);
+    });
+
+    [Fact]
+    public Task The_loading_failed_and_no_map_states_draw_at_1440() => OnUi(async () =>
+    {
+        var gate = new TaskCompletionSource();
+        Server.WholeMapGate = gate;
+        var (window, shell) = await Connected(width: 1440, height: 900);
+        shell.GoTo(PageId.Context);
+        await Until(window, () => shell.Context.Whole.IsLoading);
+        Frame(window, "loading-1440", "w3-");
+        Server.WholeMapGate = null;
+        Server.WholeMapAnswer = _ => new RouteAnswer(HttpStatusCode.InternalServerError, "{}");
+        _ = gate.TrySetResult();
+        await Until(window, () => shell.Context.Whole.IsFailed);
+        Frame(window, "failed-1440", "w3-");
+        Server.WholeMapAnswer = _ => RouteAnswer.Problem(HttpStatusCode.NotFound, "SND-CONTEXT-030", "no map yet (fix: sindri context map build)");
+        _ = shell.Context.ReadWhole(Token);
+        await Until(window, () => shell.Context.ShowEmpty);
+        Frame(window, "no-map-1440", "w3-");
+
+        Assert.True(Visible(window, "ContextEmpty"));
+    });
+
+    [Fact]
+    public Task The_first_frame_of_an_over_budget_map_comes_within_a_second() => OnUi(async () =>
+    {
+        Server.WholeMapAnswer = _ => Draft("areas-over-budget");
+        var (window, shell) = await Connected(width: 1440, height: 900);
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+
+        shell.GoTo(PageId.Context);
+        await Until(window, () => shell.Context.ShowWhole && window.GetVisualDescendants().OfType<WholeMapView>().Any(v => v.Canvas.Bounds.Width > 0));
+        Settle(window);
+        clock.Stop();
+
+        var dir = Path.Combine(AppContext.BaseDirectory, "frames");
+        _ = Directory.CreateDirectory(dir);
+        await File.WriteAllTextAsync(Path.Combine(dir, "w3-first-frame-ms.txt"), clock.ElapsedMilliseconds.ToString(CultureInfo.InvariantCulture), Token);
+        Assert.True(clock.ElapsedMilliseconds < 1000, string.Create(CultureInfo.InvariantCulture, $"first frame took {clock.ElapsedMilliseconds} ms"));
     });
 }

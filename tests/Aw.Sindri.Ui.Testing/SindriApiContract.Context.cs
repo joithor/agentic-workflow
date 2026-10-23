@@ -219,10 +219,10 @@ public abstract partial class SindriApiContract
     }
 
     [Fact]
-    public async Task WholeMap_answers_the_draft_golden_with_its_counts_areas_nodes_and_edges()
+    public async Task WholeMap_answers_the_golden_with_its_counts_areas_nodes_and_edges()
     {
         var api = Reach(new FakeSindriApi());
-        var golden = GoldenFiles.SpecShapedNode("context-whole", "draft-nodes-small");
+        var golden = GoldenFiles.Node("context-whole", "nodes-small");
 
         var map = (await api.WholeMap(_api, new WholeMapQuery("auto", Area: null, [], MapVersion: null, Draft: false), Token)).Value;
 
@@ -234,7 +234,7 @@ public abstract partial class SindriApiContract
     [Fact]
     public async Task WholeMap_answers_an_over_budget_map_by_area_with_the_reason_and_no_nodes()
     {
-        var api = Reach(new FakeSindriApi { WholeMapAnswer = _ => new RouteAnswer(System.Net.HttpStatusCode.OK, GoldenFiles.SpecShaped("context-whole", "draft-areas-over-budget")) });
+        var api = Reach(new FakeSindriApi { WholeMapAnswer = _ => new RouteAnswer(System.Net.HttpStatusCode.OK, GoldenFiles.Api("context-whole", "areas-over-budget")) });
 
         var map = (await api.WholeMap(_api, new WholeMapQuery("nodes", Area: null, [], MapVersion: null, Draft: false), Token)).Value;
 

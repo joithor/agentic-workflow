@@ -16,6 +16,16 @@ internal static partial class Labels
     internal static string ContextWholeByArea(int items) =>
         string.Create(CultureInfo.InvariantCulture, $"This map has {items} items, so it is grouped by feature; open one to see its items.");
 
+    /// <summary>The button that goes from one open feature back to all of them.</summary>
+    internal const string ContextWholeAllFeatures = "All features";
+
+    /// <summary>What a feature cut at the cap shows.</summary>
+    /// <param name="shown">How many items are drawn.</param>
+    /// <param name="total">How many the feature holds.</param>
+    /// <returns>"Showing 500 of 640 items; the rest are not shown."</returns>
+    internal static string ContextWholeAreaTruncated(int shown, int total) =>
+        string.Create(CultureInfo.InvariantCulture, $"Showing {shown} of {total} items; the rest are not shown.");
+
     /// <summary>The line over the stage while the map is read.</summary>
     internal const string ContextWholeLoading = "Reading the map…";
 
@@ -24,9 +34,6 @@ internal static partial class Labels
 
     /// <summary>The button that reads the map again.</summary>
     internal const string ContextWholeRetry = "Retry";
-
-    /// <summary>The group of what no feature claims, when the answer names none.</summary>
-    internal const string ContextWholeUnassigned = "Not linked to a feature yet";
 
     /// <summary>The size of the map and when it was built.</summary>
     /// <param name="items">Nodes.</param>
