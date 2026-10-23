@@ -163,7 +163,7 @@ public sealed class NeedsYouScopingFormTests
         var sent = Assert.Single(_server.CompleteCalls).Body;
         Assert.Equal("doneAsking", sent.Outcome);
         var batch = JsonNode.Parse(Encoding.UTF8.GetString(sent.Outputs["fact:answers"]))!.AsArray().Single()!;
-        Assert.Single(batch["answers"]!.AsArray());
+        _ = Assert.Single(batch["answers"]!.AsArray());
         Assert.Equal(Served().AsArray().Count, batch["questionIds"]!.AsArray().Count);   // every shown question is named, only the answered ones have an answer
     }
 

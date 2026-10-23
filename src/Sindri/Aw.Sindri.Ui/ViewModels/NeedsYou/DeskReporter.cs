@@ -80,12 +80,13 @@ internal sealed class DeskReporter(ISindriApi api, Func<Uri?> apiUrl, ILauncher?
             return fact.Error.Kind == ErrorKind.NotFound ? "[]" : fact.Error;   // a pending fact is not served yet; any other failure must not overwrite what is there
         }
 
-        return fact.Value.Body.ValueKind switch
+        var body = fact.Value.Body;
+        if (body.ValueKind == System.Text.Json.JsonValueKind.Array)
         {
-            System.Text.Json.JsonValueKind.Array => fact.Value.Body.GetRawText(),
-            System.Text.Json.JsonValueKind.Null or System.Text.Json.JsonValueKind.Undefined => "[]",
-            _ => SindriUiErrors.BadAnswer.With("the answers so far are not a list"),
-        };
+            return body.GetRawText();
+        }
+
+        return body.ValueKind is System.Text.Json.JsonValueKind.Null or System.Text.Json.JsonValueKind.Undefined ? "[]" : SindriUiErrors.BadAnswer.With("the answers so far are not a list");
     }
 
     /// <summary>The fact "answers" for a list of answered questions: [{id, question, answer}] in the order asked.</summary>

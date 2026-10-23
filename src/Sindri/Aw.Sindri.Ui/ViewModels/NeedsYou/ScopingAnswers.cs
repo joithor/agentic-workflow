@@ -24,14 +24,27 @@ internal static class ScopingAnswers
             return null;
         }
 
-        batches.Add(new JsonObject
+        var ids = new JsonArray();
+        foreach (var id in shown)
+        {
+            ids.Add((JsonNode?)JsonValue.Create(id));
+        }
+
+        var answers = new JsonArray();
+        foreach (var answer in chosen)
+        {
+            answers.Add((JsonNode?)answer);
+        }
+
+        JsonNode batch = new JsonObject
         {
             ["round"] = batches.Count + 1,
             ["actor"] = "owner",
             ["at"] = at.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.fffffff'Z'", System.Globalization.CultureInfo.InvariantCulture),
-            ["questionIds"] = new JsonArray([.. shown.Select(id => (JsonNode?)JsonValue.Create(id))]),
-            ["answers"] = new JsonArray([.. chosen.Select(a => (JsonNode?)a)]),
-        });
+            ["questionIds"] = ids,
+            ["answers"] = answers,
+        };
+        batches.Add(batch);
         return batches.ToJsonString();
     }
 }
