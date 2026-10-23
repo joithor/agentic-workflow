@@ -33,7 +33,7 @@ internal sealed class DevServerTemporal(TemporalSettings settings, TemporalDevSe
     {
         try
         {
-            foreach (var running in TemporalDevServer.Find(settings.Home))
+            foreach (var running in server.Find(settings.Home))
             {
                 try
                 {
@@ -56,13 +56,13 @@ internal sealed class DevServerTemporal(TemporalSettings settings, TemporalDevSe
 
     public async ValueTask<TemporalFacts> Inspect(CancellationToken cancellationToken)
     {
-        if (TemporalDevServer.Find(settings.Home) is not [var running, ..])
+        if (server.Find(settings.Home) is not [var running, ..])
         {
             return new TemporalFacts(Running: null, SindriTemporal.PinnedVersion, Version: null, Reachable: false, NamespacePresent: false, Problem: null);
         }
 
         var (answer, problem) = await DevServerProbe.Ask(running.Frontend, settings.Namespace, _inspectWait, cancellationToken).ConfigureAwait(false);
         return new TemporalFacts(new TemporalEndpoint(running.ProcessId, running.Frontend.Port, running.UiPort), SindriTemporal.PinnedVersion,
-            DevServerProcesses.Version(running.Executable), Reachable: answer != DevServerAnswer.Unreachable, NamespacePresent: answer == DevServerAnswer.Ready, problem);
+            server.Version(running.Executable), Reachable: answer != DevServerAnswer.Unreachable, NamespacePresent: answer == DevServerAnswer.Ready, problem);
     }
 }

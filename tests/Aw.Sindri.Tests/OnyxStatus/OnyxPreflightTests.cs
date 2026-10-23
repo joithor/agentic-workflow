@@ -81,8 +81,8 @@ public sealed class OnyxPreflightTests
         var docker = Check(report, "docker");
         Assert.Equal(CheckState.Fail, docker.State);
         Assert.Equal("SND-ONYX-001", docker.Problem?.Code);
-        Assert.Equal("Docker didn't answer within 25 s; it may be starting (Docker Desktop's Resource Saver)", docker.Detail);
-        Assert.Contains("wait", docker.Problem?.Message, StringComparison.Ordinal);
+        Assert.Equal("Docker didn't answer within 25 s; it may be starting", docker.Detail);
+        Assert.Contains("isn't answering (no reply within 25 s)", docker.Problem?.Message, StringComparison.Ordinal);
         Assert.Contains("run this again", docker.Problem?.Message, StringComparison.Ordinal);
         Assert.DoesNotContain("isn't running", docker.Problem?.Message, StringComparison.Ordinal);
     }

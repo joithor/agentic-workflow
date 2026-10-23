@@ -5,6 +5,7 @@ using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Infrastructure;
 using Aw.Sindri.Infrastructure.Auth;
 using Aw.Sindri.Infrastructure.Control;
+using Aw.Sindri.Infrastructure.Processes;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Ledger;
@@ -55,7 +56,7 @@ public sealed class ServeCallerTests : IDisposable
     public async Task Stop_takes_the_real_dev_server_down_with_serve()
     {
         var ct = TestContext.Current.CancellationToken;
-        var temporal = new DevServerTemporal(new TemporalSettings(_home.Path, PinnedTemporal.Path()), new TemporalDevServer());
+        var temporal = new DevServerTemporal(new TemporalSettings(_home.Path, PinnedTemporal.Path()), new TemporalDevServer(ChildEnvironment.Start));
         var serve = ServeCommand.Run(Environment, TimeProvider.System, TextWriter.Null, services =>
         {
             NoTemporal.Use(services);
@@ -75,7 +76,7 @@ public sealed class ServeCallerTests : IDisposable
 
             // why: serve's stop takes its dev server down before it releases the lease; a server left here would outlive the test
             Assert.Equal((HttpStatusCode.OK, 0), (stop.Status, code));
-            Assert.Empty(TemporalDevServer.Find(_home.Path));
+            Assert.Empty(new TemporalDevServer(ChildEnvironment.Start).Find(_home.Path));
         }
         finally
         {
