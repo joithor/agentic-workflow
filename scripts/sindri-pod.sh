@@ -3,7 +3,7 @@
 #
 #   sindri-pod.sh connect [--context C] [--namespace N] [--pod P] [--port PORT] [--onyx] [--check] [--dry-run]
 #
-#   sindri-pod.sh profile edit [--context C] [--namespace N] [--pod P]
+#   sindri-pod.sh profile edit [--no-approve] [--context C] [--namespace N] [--pod P]
 #
 # profile edit changes the pod's profile: it copies profile.yaml out of the pod (`kubectl exec ... cat`, at the path the pod's
 # Sindri reads: AW_SINDRI_PROFILE, else <AW_SINDRI_HOME>/profile/profile.yaml), opens it in ${VISUAL:-${EDITOR:-vi}} and
@@ -11,7 +11,8 @@
 # and runs `sindri profile validate` on it there (AW_SINDRI_PROFILE=<temp path>; exit 0 or 1 is valid, the errors of an invalid
 # one are shown and you choose to edit again or abort). A valid edit is moved into place and
 # `kubectl exec -it <pod> -c sindri -- sindri profile approve` runs at this terminal: the approval is the protected verb you
-# type, and its exit code is this script's. Your edited copy stays under $AW_STATE_DIR/sindri-pod/<context>-<namespace>/profile-edit/
+# type, and its exit code is this script's. --no-approve stops after the profile is in place and says it is not approved (the
+# first install sets several keys, then approves once). Your edited copy stays under $AW_STATE_DIR/sindri-pod/<context>-<namespace>/profile-edit/
 # on any failure (its path is printed) and is removed on success.
 #
 # connect opens the desktop app on the pod. The app only follows a control.json in a home on this machine, so the script
@@ -46,20 +47,21 @@
 # Environment (all optional; .env.example): AW_STATE_DIR, TMPDIR, AW_SINDRI_UI, AW_SINDRI_POD_RETRIES,
 # AW_SINDRI_POD_RETRY_WAIT, AW_SINDRI_POD_POLL, AW_SINDRI_POD_ONYX_PORT.
 # Needs kubectl (exec and port-forward rights on the namespace), jq and sindri-ui (`sindri-app --publish-only`).
-# Each prerequisite failure is one line and exit 2. Exit: 0 the app was closed (or attach's own exit code when it failed) or the script was interrupted, 1 the pod was
-# lost for good (attempts spent), 2 usage or a prerequisite.
+# Each prerequisite failure is one line and exit 2. Exit: 0 the app was closed (or attach's own exit code when it failed) or the script was interrupted, 3 the pod was
+# lost for good (attempts spent), 2 usage or a prerequisite (the sindri container not ready included).
 # Bash 3.2 compatible (macOS /bin/bash).
 set -uo pipefail
 
 say() { echo "sindri-pod: $*" >&2; }
 die() { say "$*"; exit 1; }
-usage() { say "usage: sindri-pod.sh connect [--context C] [--namespace N] [--pod P] [--port PORT] [--onyx] [--check] [--dry-run] | profile edit [--context C] [--namespace N] [--pod P]"; exit 2; }
+give_up() { say "$*"; exit 3; }
+usage() { say "usage: sindri-pod.sh connect [--context C] [--namespace N] [--pod P] [--port PORT] [--onyx] [--check] [--dry-run] | profile edit [--no-approve] [--context C] [--namespace N] [--pod P]"; exit 2; }
 
 mode=connect
 if [ "${1:-}" = profile ] && [ "${2:-}" = edit ]; then mode=edit; shift 2
 elif [ "${1:-}" = connect ]; then shift
 else usage; fi
-ctx="" ns="" pod=sindri-0 lport="" onyx=0 dry=0 check=0
+ctx="" ns="" pod=sindri-0 lport="" onyx=0 dry=0 check=0 noapprove=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --context) [ $# -ge 2 ] || usage; ctx="$2"; shift 2 ;;
@@ -68,11 +70,13 @@ while [ $# -gt 0 ]; do
     --port) [ $# -ge 2 ] || usage; lport="$2"; shift 2 ;;
     --onyx) onyx=1; shift ;;
     --check) check=1; shift ;;
+    --no-approve) noapprove=1; shift ;;
     --dry-run) dry=1; shift ;;
     *) say "unknown argument '$1'"; usage ;;
   esac
 done
 [ "$mode" = connect ] || [ "$onyx$dry$check$lport" = 000 ] || usage
+[ "$mode" = edit ] || [ "$noapprove" = 0 ] || usage
 case "$lport" in ''|*[!0-9]*) [ -z "$lport" ] || { say "--port must be a number"; exit 2; } ;; esac
 
 retries="${AW_SINDRI_POD_RETRIES:-30}"
@@ -129,6 +133,11 @@ profile_edit() {
   done
   kc exec "$pod" -c sindri -- sh -c 'mv "$1" "$2"' _ "$tmp_remote" "$ppath" || { say "can't move the edit into place; your copy is at $edit"; return 1; }
   lines="$(diff "$orig" "$edit" | grep -c '^[<>]')"
+  if [ "$noapprove" = 1 ]; then
+    rm -r "$dir"
+    say "profile changed ($lines lines differ), valid and in place in $pod, not approved (--no-approve); next: kubectl exec -it $pod -c sindri -- sindri profile approve"
+    return 0
+  fi
   kc exec -it "$pod" -c sindri -- sindri profile approve; rc=$?
   if [ "$rc" -ne 0 ]; then
     say "the profile is in place in $pod but not approved (sindri profile approve exit $rc); your edited copy is at $edit"
@@ -309,7 +318,7 @@ reconcile_retrying() {
   [ "$n" -eq 0 ] || say "reconnected to $pod"
 }
 
-reconcile_retrying || die "can't reach $pod in $ctx/$ns after $retries attempts (see $logs)"
+reconcile_retrying || give_up "can't reach $pod in $ctx/$ns after $retries attempts (see $logs)"
 
 AW_SINDRI_HOME="$home" nohup "$ui" >> "$logs/ui.log" 2>&1 &
 ui_pid=$!
@@ -329,6 +338,7 @@ if [ "$onyx" = 1 ]; then
     0) say "Onyx attached" ;;
     130) say "attach stopped; the app stays connected; rerun connect --onyx to continue" ;;
     *) attach_rc=$rc
+       say "attach exited $rc"
        say "sindri onyx attach failed (exit $rc): Onyx is not answering at the forwarded port $onyx_port, runs a different version than the pinned release, or the exec was refused; the app stays connected; rerun connect --onyx" ;;
   esac
 fi
@@ -336,7 +346,7 @@ fi
 while alive "$ui_pid"; do
   sleep_for 1
   alive "$ui_pid" || break
-  reconcile_retrying || die "lost $pod in $ctx/$ns after $retries attempts (see $logs)"
+  reconcile_retrying || give_up "lost $pod in $ctx/$ns after $retries attempts (see $logs)"
 done
 say "the app was closed"
 exit "$attach_rc"

@@ -182,6 +182,7 @@ sleep 0.5
 check "--onyx failure: names the failure and the exit code" "$(said e 'onyx attach failed (exit 3)')" "1"
 check "--onyx failure: says what it may be" "$(said e 'not answering at the forwarded port 43000')" "1"
 check "--onyx failure: the app was still started" "$(count '^ui home=')" "1"
+check "--onyx failure: prints attach exited 3" "$(said e 'attach exited 3')" "1"
 check "--onyx failure: exit code propagates" "$(finish e)" "3"
 rm -f "$POD/attach-fail"
 
@@ -289,7 +290,7 @@ finish g >/dev/null
 # --- the retry loop is bounded: the pod never answers
 reset; touch "$POD/down"
 OUT="$(AW_SINDRI_POD_RETRIES=2 conn)"; RC=$?
-check "pod never reachable: exit 1 after the attempts" "$RC:$(printf '%s' "$OUT" | grep -c "can't reach sindri-0")" "1:1"
+check "pod never reachable: exit 3 after the attempts" "$RC:$(printf '%s' "$OUT" | grep -c "can't reach sindri-0")" "3:1"
 check "pod never reachable: attempts 1 and 2 announced, no third" \
   "$(printf '%s' "$OUT" | grep -c -e 'reconnecting (attempt 1 of 2)' -e 'reconnecting (attempt 2 of 2)'):$(printf '%s' "$OUT" | grep -c 'attempt 3')" "2:0"
 check "pod never reachable: the mirror home is removed too" "$(mirror_dir)" ""
@@ -347,6 +348,12 @@ check "profile edit approve refused: its exit code propagates, order held" "$RC:
 KEPT="$(ls "$AW_STATE_DIR"/sindri-pod/*/profile-edit/profile.yaml 2>/dev/null | head -1)"
 check "profile edit approve refused: the copy is kept and the next step named" \
   "$([ -n "$KEPT" ] && echo kept):$(printf '%s' "$OUT" | grep -c 'in place in sindri-0 but not approved')" "kept:1"
+pedit_reset; touch "$POD/ed-change"
+OUT="$(pedit --no-approve)"; RC=$?
+check "profile edit --no-approve: validate and move, no approve, exit 0, says not approved" \
+  "$RC:$(seq_of):$(printf '%s' "$OUT" | tail -1 | grep -c 'in place in sindri-0, not approved (--no-approve); next: kubectl exec -it sindri-0')" "0:validate,move:1"
+check "profile edit --no-approve: the pod's profile is the edited one" "$(tail -1 "$POD/profile.yaml")" "share: true"
+OUT="$(PATH="$WORK/bin:$PATH" bash "$DIR/sindri-pod.sh" connect --no-approve 2>&1)"; check "--no-approve is for profile edit only: connect refuses it" "$?" "2"
 pedit_reset
 OUT="$(pedit --port 1)"; RC=$?; check "profile edit: connect-only flags are a usage error" "$RC" "2"
 

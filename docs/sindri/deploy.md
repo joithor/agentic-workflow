@@ -26,7 +26,7 @@ it; the next run removes the ones whose owner process is gone. The logs stay und
 side), starts `sindri-ui` on the mirror home and prints `connected: <pod> at <url>; Ctrl-C to stop`. Every `AW_SINDRI_POD_POLL`
 seconds it re-reads the pod. When the forward drops, or the pod restarts (a new pid, epoch and token), it prints
 `pod restarting, reconnecting (attempt n of 30)`, restarts the forward and rewrites the home, one attempt every
-`AW_SINDRI_POD_RETRY_WAIT` seconds (10), up to `AW_SINDRI_POD_RETRIES` attempts (30, so 5 minutes) before it exits 1; the app
+`AW_SINDRI_POD_RETRY_WAIT` seconds (10), up to `AW_SINDRI_POD_RETRIES` attempts (30, so 5 minutes) before it exits 3; the app
 shows "control plane not running" meanwhile. It ends when you close the app, on Ctrl-C, or when the attempts are spent; it
 stops only the port-forwards it started.
 
@@ -42,7 +42,7 @@ version than the pinned one, the exec refused), `connect` says so, keeps the app
 
 ## Change the profile in a pod
 
-`scripts/sindri-pod.sh profile edit [--context C] [--namespace N] [--pod P]` is how you change a share switch, `repo-pull.allowedHosts`
+`scripts/sindri-pod.sh profile edit [--no-approve] [--context C] [--namespace N] [--pod P]` is how you change a share switch, `repo-pull.allowedHosts`
 or any other profile key in a pod. It copies `profile.yaml` out of the pod (the path the pod's Sindri reads: `AW_SINDRI_PROFILE`, else
 `<AW_SINDRI_HOME>/profile/profile.yaml`) and opens it in `${VISUAL:-${EDITOR:-vi}}`.
 
@@ -50,7 +50,8 @@ or any other profile key in a pod. It copies `profile.yaml` out of the pod (the 
 - Changed: it copies your edit to a temp path next to the profile in the pod and runs `sindri profile validate` on it there. An
   invalid edit shows the errors and asks whether to edit again or abort; abort leaves the pod's profile as it was.
 - Valid: it moves the edit into place and runs `kubectl exec -it <pod> -c sindri -- sindri profile approve` at your terminal. The
-  approval is the protected verb you type; its exit code is the script's. The profile takes effect only once approved.
+  approval is the protected verb you type; its exit code is the script's. The profile takes effect only once approved. With `--no-approve` it stops after putting the valid profile in place and says it is not
+  approved (the first install: set several keys, approve once at the end).
 
 Your edited copy stays under `$AW_STATE_DIR/sindri-pod/<context>-<namespace>/profile-edit/` on any failure (the path is printed,
 and after a refused approval the line names the `approve` command to run by hand); it is removed on success. The last line says what
