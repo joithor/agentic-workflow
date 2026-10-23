@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Aw.Kernel;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.EngineReads;
@@ -25,14 +26,15 @@ public static class SindriWorkflowsServiceCollectionExtensions
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="environment">Reads an environment variable (the Sindri home and the state root).</param>
+    /// <param name="childStart">Makes the start info of a child process: the composition passes Infrastructure's child-environment factory (ARCH-PROC-001), so the dev server's shell gets the pod-mode environment.</param>
     /// <returns>The same collection.</returns>
-    public static IServiceCollection AddSindriWorkflows(this IServiceCollection services, Func<string, string?> environment)
+    public static IServiceCollection AddSindriWorkflows(this IServiceCollection services, Func<string, string?> environment, Func<string, IEnumerable<string>?, IReadOnlyDictionary<string, string?>?, ProcessStartInfo> childStart)
     {
         var settings = TemporalSettings.FromEnvironment(environment);
         return services
             .AddSingleton(settings)
             .AddSingleton(new WorkflowsHome(settings.Home))
-            .AddSingleton<TemporalDevServer>()
+            .AddSingleton(new TemporalDevServer(childStart))
             .AddSingleton<ITemporalServer, DevServerTemporal>()
             .AddInterpreterActivities()
             .AddAgentRuntime()

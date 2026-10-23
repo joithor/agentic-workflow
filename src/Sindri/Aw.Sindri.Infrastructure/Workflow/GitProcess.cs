@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Infrastructure.Workflow;
 
@@ -15,12 +16,9 @@ internal static class GitProcess
     internal static async Task<GitRun> Run(string repository, string[] args, CancellationToken cancellationToken, bool hardened = false)
     {
         string[] guard = hardened ? ["-c", "core.fsmonitor=", "-c", "core.hooksPath=/dev/null"] : [];
-        var start = new ProcessStartInfo("git", ["-C", repository, .. guard, .. args])
-        {
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
+        var start = ChildEnvironment.Start("git", ["-C", repository, .. guard, .. args]);
+        start.RedirectStandardOutput = true;
+        start.RedirectStandardError = true;
         start.Environment["LC_ALL"] = "C";   // git's messages are matched in English
         start.Environment["GIT_TERMINAL_PROMPT"] = "0";   // never wait for a credential
         if (hardened)
