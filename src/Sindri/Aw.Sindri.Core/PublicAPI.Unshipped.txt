@@ -12875,7 +12875,7 @@ Aw.Sindri.Core.Setup.SetupRecipes
 static Aw.Sindri.Core.Setup.MapBuildProgress.Parse(string! line) -> Aw.Sindri.Core.Setup.SetupProgress?
 static Aw.Sindri.Core.Setup.McpLocalRegistration.IsRegistered(string? claudeJson, string! checkout, string! repo) -> bool
 static Aw.Sindri.Core.Setup.OnyxFact.From(Aw.Sindri.Core.Onyx.OnyxStatusReport! report) -> Aw.Sindri.Core.Setup.OnyxFact!
-static Aw.Sindri.Core.Setup.SetupRecipes.Count(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeSummary!>! lines) -> Aw.Sindri.Core.Setup.RecipesFact!
+static Aw.Sindri.Core.Setup.SetupRecipes.Count(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeSummary!>! lines, Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan! waiting) -> Aw.Sindri.Core.Setup.RecipesFact!
 Aw.Sindri.Core.Setup.SetupItem.<Clone>$() -> Aw.Sindri.Core.Setup.SetupItem!
 Aw.Sindri.Core.Setup.SetupItem.Deconstruct(out string! Repo, out Aw.Sindri.Core.Setup.SetupState State, out string? Detail) -> void
 Aw.Sindri.Core.Setup.SetupItem.Equals(Aw.Sindri.Core.Setup.SetupItem? other) -> bool
