@@ -100,6 +100,7 @@ internal sealed class ShippedBlockSentences : IBlockSentences
         ["step.plan.exec-review"] = "Starts an AI agent session that reads each phase as its builder would and objects to vague ones",
         ["step.plan.freeze"] = "Locks in the design, the plan and every phase together",
         ["step.plan.graph"] = "Starts an AI agent session that splits the design into phases and orders them",
+        ["step.plan.holdout-store"] = "Moves the hidden tests into the private store and adds the canary",
         ["step.plan.holdout"] = "Starts an AI agent session that writes hidden tests the builder never sees",
         ["step.plan.intake"] = "Loads the design and the approved scope for planning",
         ["step.plan.questions"] = "Turns the open design decisions into questions for you",

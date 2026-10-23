@@ -17045,6 +17045,10 @@ Aw.Sindri.Core.Events.WorkflowEventDelta.Recipe.init -> void
 Aw.Sindri.Core.Events.WorkflowEventDelta.RecipeHash.get -> string?
 Aw.Sindri.Core.Events.WorkflowEventDelta.RecipeHash.init -> void
 Aw.Sindri.Core.Workflow.Registry.RecipeRegistryReader.ChildRecipeIds(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Ids.RecipeId>!>!>
+Aw.Sindri.Core.Prove.IHoldoutStore.Save(string! line, string! phase, string! setText, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Prove.HoldoutSet!>!>
+Aw.Sindri.Core.Prove.IHoldoutStore.SealWith(string! line, string! phase, string! planHash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Prove.HoldoutSeal!>!>
+static Aw.Sindri.Core.Prove.HoldoutFiles.Accept(string! phase, string! setText) -> Aw.Kernel.Result<Aw.Sindri.Core.Prove.HoldoutSet!>!
+static Aw.Sindri.Core.Prove.HoldoutFiles.SealJson(string! phase, string! setHash, string! planHash) -> string!
 const Aw.Sindri.Core.Views.ViewNames.RecipeStats = "recipe-stats" -> string!
 Aw.Sindri.Core.Views.IViewRows.Clear(string! view, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Sindri.Core.Workflow.Stats.IRecipeStatsCache
