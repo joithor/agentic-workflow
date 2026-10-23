@@ -19,6 +19,7 @@ internal static class CodeIndexJobServiceCollectionExtensions
             .AddScoped<CodeIndexJobScopes>()
             .AddScoped<CodeIndexEventSource>()
             .AddScoped<IIndexOutlooks, CodeIndexOutlooks>()
+            .AddScoped<Core.Doctor.ICodeIndexChecks, CodeIndexDoctor>()
             .AddScoped<IScheduledService, CodeIndexMainMoveService>()
             .AddSingleton(CodeIndexMainMoveService.BuiltIn)
             .AddJob<BuildCodeIndexRequest, BuildCodeIndexResult, BuildCodeIndexService>(
@@ -29,6 +30,8 @@ internal static class CodeIndexJobServiceCollectionExtensions
     {
         BuildCodeIndexResult.Deferred => $"{result.Repo}: deferred, every heavy-job slot was busy",
         "not-on-main" => $"{result.Repo}: left the default branch, nothing indexed",
-        _ => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{result.Repo} @ {result.Commit?[..7]}: {result.Files:N0} files, {result.Symbols:N0} symbols"),
+        _ => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{result.Repo} @ {result.Commit?[..7]}: {result.Files:N0} files, {result.Symbols:N0} symbols{Pending(result)}"),
     };
+
+    private static string Pending(BuildCodeIndexResult result) => result.LayersPending.Count == 0 ? string.Empty : "; " + string.Join(", ", result.LayersPending) + " pending";
 }

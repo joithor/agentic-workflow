@@ -4428,6 +4428,10 @@ Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Incremental.get -> bool
 Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Incremental.init -> void
 Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Milliseconds.get -> long
 Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Milliseconds.init -> void
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.LayersPending.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.LayersPending.init -> void
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Embedded.get -> int
+Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Embedded.init -> void
 const Aw.Sindri.Features.CodeIndexJobs.BuildCodeIndexResult.Deferred = "deferred" -> string!
 Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest
 Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest.<Clone>$() -> Aw.Sindri.Features.RegisterMcp.RegisterMcpJobRequest!
@@ -4543,6 +4547,27 @@ override Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.GetHashCode
 override Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.ToString() -> string!
 static Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.operator !=(Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest? left, Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest? right) -> bool
 static Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest.operator ==(Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest? left, Aw.Sindri.Features.GetEngineHistory.GetEngineHistoryRequest? right) -> bool
+Aw.Sindri.Features.CodeIndexReads.CodeIndexStatusView.Health.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.CodeIndexReads.RepoHealth!>!
+Aw.Sindri.Features.CodeIndexReads.CodeIndexStatusView.Health.init -> void
+Aw.Sindri.Features.CodeIndexReads.RepoHealth
+Aw.Sindri.Features.CodeIndexReads.RepoHealth.<Clone>$() -> Aw.Sindri.Features.CodeIndexReads.RepoHealth!
+Aw.Sindri.Features.CodeIndexReads.RepoHealth.Deconstruct(out string! Repo, out string! State, out int? EmbeddingsPercent, out string? Waiting) -> void
+Aw.Sindri.Features.CodeIndexReads.RepoHealth.EmbeddingsPercent.get -> int?
+Aw.Sindri.Features.CodeIndexReads.RepoHealth.EmbeddingsPercent.init -> void
+Aw.Sindri.Features.CodeIndexReads.RepoHealth.Equals(Aw.Sindri.Features.CodeIndexReads.RepoHealth? other) -> bool
+Aw.Sindri.Features.CodeIndexReads.RepoHealth.Repo.get -> string!
+Aw.Sindri.Features.CodeIndexReads.RepoHealth.Repo.init -> void
+Aw.Sindri.Features.CodeIndexReads.RepoHealth.RepoHealth(string! Repo, string! State, int? EmbeddingsPercent, string? Waiting) -> void
+Aw.Sindri.Features.CodeIndexReads.RepoHealth.State.get -> string!
+Aw.Sindri.Features.CodeIndexReads.RepoHealth.State.init -> void
+Aw.Sindri.Features.CodeIndexReads.RepoHealth.Waiting.get -> string?
+Aw.Sindri.Features.CodeIndexReads.RepoHealth.Waiting.init -> void
+override Aw.Sindri.Features.CodeIndexReads.RepoHealth.Equals(object? obj) -> bool
+override Aw.Sindri.Features.CodeIndexReads.RepoHealth.GetHashCode() -> int
+override Aw.Sindri.Features.CodeIndexReads.RepoHealth.ToString() -> string!
+static Aw.Sindri.Features.CodeIndexReads.RepoHealth.Of(Aw.CodeIndex.Core.Facade.RepoStatus! status, Aw.CodeIndex.Core.Model.RepoHead? live, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Jobs.JobRow!>! builds, System.DateTimeOffset now) -> Aw.Sindri.Features.CodeIndexReads.RepoHealth!
+static Aw.Sindri.Features.CodeIndexReads.RepoHealth.operator !=(Aw.Sindri.Features.CodeIndexReads.RepoHealth? left, Aw.Sindri.Features.CodeIndexReads.RepoHealth? right) -> bool
+static Aw.Sindri.Features.CodeIndexReads.RepoHealth.operator ==(Aw.Sindri.Features.CodeIndexReads.RepoHealth? left, Aw.Sindri.Features.CodeIndexReads.RepoHealth? right) -> bool
 Aw.Sindri.Features.GetProfile.GetProfileResponse.Deconstruct(out Aw.Sindri.Core.Ids.ProfileHash? Approved, out System.DateTimeOffset? ApprovedAt, out Aw.Sindri.Core.Ids.ProfileHash? Live, out System.DateTimeOffset? CheckedAt, out bool Changed, out System.Collections.Generic.IReadOnlyList<string!>! ChangedPaths, out Aw.Sindri.Core.Views.AsOf! AsOf, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetProfile.ProfilePack!>! Packs, out Aw.Sindri.Features.GetProfile.ProfileSummary? Summary) -> void
 Aw.Sindri.Features.GetProfile.GetProfileResponse.GetProfileResponse(Aw.Sindri.Core.Ids.ProfileHash? Approved, System.DateTimeOffset? ApprovedAt, Aw.Sindri.Core.Ids.ProfileHash? Live, System.DateTimeOffset? CheckedAt, bool Changed, System.Collections.Generic.IReadOnlyList<string!>! ChangedPaths, Aw.Sindri.Core.Views.AsOf! AsOf, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetProfile.ProfilePack!>! Packs, Aw.Sindri.Features.GetProfile.ProfileSummary? Summary = null) -> void
 Aw.Sindri.Features.GetProfile.GetProfileResponse.Summary.get -> Aw.Sindri.Features.GetProfile.ProfileSummary?

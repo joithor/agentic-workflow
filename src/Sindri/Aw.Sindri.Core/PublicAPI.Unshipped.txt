@@ -7815,6 +7815,7 @@ static Aw.Sindri.Core.Workflow.Engine.InstanceAddress.TryFrom(string? value, out
 static Aw.Sindri.Core.Workflow.Engine.InstanceAddress.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress result) -> bool
 static Aw.Sindri.Core.Workflow.Engine.InstanceAddress.operator !=(Aw.Sindri.Core.Workflow.Engine.InstanceAddress left, Aw.Sindri.Core.Workflow.Engine.InstanceAddress right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.InstanceAddress.operator ==(Aw.Sindri.Core.Workflow.Engine.InstanceAddress left, Aw.Sindri.Core.Workflow.Engine.InstanceAddress right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.InstanceAddress.LinkedId(string! id) -> string?
 static Aw.Sindri.Core.Workflow.Engine.Instances.Frame.operator !=(Aw.Sindri.Core.Workflow.Engine.Instances.Frame? left, Aw.Sindri.Core.Workflow.Engine.Instances.Frame? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Instances.Frame.operator ==(Aw.Sindri.Core.Workflow.Engine.Instances.Frame? left, Aw.Sindri.Core.Workflow.Engine.Instances.Frame? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Instances.LoopState.operator !=(Aw.Sindri.Core.Workflow.Engine.Instances.LoopState? left, Aw.Sindri.Core.Workflow.Engine.Instances.LoopState? right) -> bool
@@ -17190,6 +17191,8 @@ Aw.Sindri.Core.Launch.IAgentTrust.Untrust(string! directory, System.Threading.Ca
 Aw.Sindri.Core.Launch.ILaunchShutdown
 Aw.Sindri.Core.Launch.ILaunchShutdown.StopAll(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int>
 static readonly Aw.Sindri.Core.SindriErrors.LaunchTrustUnavailable -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Doctor.ICodeIndexChecks
+Aw.Sindri.Core.Doctor.ICodeIndexChecks.Check(Aw.Sindri.Core.Profile.LoadedProfile? approved, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Doctor.DoctorCheck![]!>
 Aw.Sindri.Core.Launch.EvaluatorLaunch
 Aw.Sindri.Core.Launch.EvaluatorLaunch.<Clone>$() -> Aw.Sindri.Core.Launch.EvaluatorLaunch!
 Aw.Sindri.Core.Launch.EvaluatorLaunch.Deconstruct(out string! HeadSha, out string! HoldoutPath, out string! PhaseWorktree) -> void
@@ -17247,6 +17250,9 @@ Aw.Sindri.Core.Forge.IPullRequests.DefaultBranch(Aw.Sindri.Core.Forge.PullRepo! 
 Aw.Sindri.Core.Forge.IPullRequests.Digest(System.Collections.Generic.IReadOnlyList<string!>! links, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Forge.PullDigest!>!>!>
 Aw.Sindri.Core.Forge.PullView.Base.get -> string!
 Aw.Sindri.Core.Forge.PullView.Base.init -> void
+Aw.Sindri.Core.Scheduling.IndexBuildWords
+static Aw.Sindri.Core.Scheduling.IndexBuildWords.IsBuildOf(Aw.Sindri.Core.Jobs.JobRow! job, string! repo) -> bool
+static Aw.Sindri.Core.Scheduling.IndexBuildWords.Waiting(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Jobs.JobRow!>! finishedNewestFirst, System.DateTimeOffset now) -> string?
 Aw.Sindri.Core.Workflow.Stats.RecipeStatsSource
 Aw.Sindri.Core.Workflow.Stats.RecipeStatsSource.Of(Aw.Sindri.Core.Workflow.Ids.RecipeId recipe, string? hash, Aw.Sindri.Core.Workflow.Stats.StatsWindow! window, bool pinned, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Stats.RecipeStats!>!>
 Aw.Sindri.Core.Workflow.Stats.RecipeStatsSource.RecipeStatsSource(Aw.Sindri.Core.Workflow.Stats.IWorkflowStatRows! rows, System.TimeProvider! clock, Aw.Sindri.Core.Workflow.Stats.IRecipeStatsCache? cache = null) -> void

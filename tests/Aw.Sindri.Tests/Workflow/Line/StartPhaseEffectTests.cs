@@ -107,7 +107,24 @@ public sealed class StartPhaseEffectTests
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("""{"phase":"P2","attempt":1,"packet":{}}""")]
+    [InlineData("P1", "p1")]
+    [InlineData("WS 2_b", "ws-2-b")]
+    public async Task A_plan_id_keeps_its_name_and_only_the_address_uses_its_slug(string id, string slug)
+    {
+        var next = Next.Replace("\"phase\":\"p2\",\"attempt\"", $"\"phase\":\"{id}\",\"attempt\"", StringComparison.Ordinal);
+
+        var done = await Effect().Dispatch(await Context(next), Token);
+
+        var start = Assert.Single(_starts.Started);
+        Assert.Equal(id, start.Phase);
+        var reply = done.Value.Facts![FactKey.From("fact:phaseEvent")];
+        var content = JsonNode.Parse((await _facts.Read(new FactValue(reply.Ref, reply.Sha256, HeadSha: null), Token)).Value.Span);
+        Assert.Equal((id, $"T-3/line/1/phase.{slug}.1"), (content!["phase"]!.GetValue<string>(), content["instance"]!.GetValue<string>()));
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("""{"phase":"!!!","attempt":1,"packet":{}}""")]
+    [InlineData("""{"phase":"","attempt":1,"packet":{}}""")]
     [InlineData("""{"phase":"p2","attempt":0,"packet":{}}""")]
     [InlineData("""{"phase":"p2","attempt":1}""")]
     [InlineData("not json")]
