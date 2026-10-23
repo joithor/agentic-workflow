@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Sockets;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Infrastructure.Processes;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Tests.Ledger;
-using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Tests.Workflows;
 

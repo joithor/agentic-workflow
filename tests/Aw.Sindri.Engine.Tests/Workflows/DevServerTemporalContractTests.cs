@@ -1,9 +1,9 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Infrastructure.Processes;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Ledger;
-using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Tests.Workflows;
 
