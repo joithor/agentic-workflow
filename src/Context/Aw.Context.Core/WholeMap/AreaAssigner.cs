@@ -3,7 +3,9 @@ using Aw.Context.Core.Graph;
 namespace Aw.Context.Core.WholeMap;
 
 /// <summary>
-/// The rules of <see cref="MapAreas"/> over one graph. A feature's area is the root of its part-of chain (the smallest parent at each step, the smallest key on a cycle); every other node
+/// The rules of <see cref="MapAreas"/> over one graph. The area-features are the roots of the part-of chains (the smallest parent at each step, the smallest key on a cycle), made deeper when
+/// one would hold more than half the nodes or more than the area cap, or when there are fewer than 3 (at most two passes, each replacing a feature by its child features; the replaced feature
+/// and what reaches only it are unassigned). A feature's area is the area-feature at or above it; every other node
 /// takes the area most of the nodes it points at (or that point at it) are in, one vote per edge, ties to the smallest key, the other areas it reaches in 'also in' (at most five).
 /// An area no vote reaches is the unassigned group, and unassigned votes count for nothing.
 /// </summary>
@@ -14,32 +16,83 @@ internal sealed class AreaAssigner
     private readonly Dictionary<string, List<GraphEdge>> _out = new(StringComparer.Ordinal);
     private readonly Dictionary<string, List<GraphEdge>> _in = new(StringComparer.Ordinal);
     private readonly Dictionary<string, NodeArea> _areas = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, List<string>> _parents = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, List<string>> _chains = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _roots = new(StringComparer.Ordinal);
+    private readonly int _areaCap;
 
-    internal AreaAssigner(GraphSnapshot graph)
+    internal AreaAssigner(GraphSnapshot graph, int areaCap)
     {
+        _areaCap = areaCap;
         _kinds = graph.Nodes.GroupBy(n => n.Key.Value, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.First().Key.Kind, StringComparer.Ordinal);
         foreach (var edge in graph.Edges.Where(e => _kinds.ContainsKey(e.From.Value) && _kinds.ContainsKey(e.To.Value)))
         {
             Add(_out, edge.From.Value, edge);
             Add(_in, edge.To.Value, edge);
         }
+
+        foreach (var feature in Keys(NodeKind.Feature))
+        {
+            _parents[feature] = [.. Targets(feature, EdgeType.PartOf).Where(t => _kinds[t] == NodeKind.Feature).Order(StringComparer.Ordinal)];
+        }
+
+        foreach (var feature in _parents.Keys)
+        {
+            (_chains[feature], _roots[feature]) = Chain(feature);
+        }
     }
 
     internal AreaIndex Run()
     {
-        AssignFeatures();
-        Vote(NodeKind.Surface, key => Targets(key, EdgeType.PartOf));
-        Vote(NodeKind.Action, key => Targets(key, EdgeType.On));
-        Vote(NodeKind.Flow, key => Sources(key, EdgeType.StepOf));
-        Vote(NodeKind.Thing, key => Sources(key, EdgeType.Reads, EdgeType.Writes));
-        Vote(NodeKind.Code, key => Targets(key, EdgeType.Implements, EdgeType.Tests));
-        AssignIntent();
+        var set = _roots.Values.ToHashSet(StringComparer.Ordinal);
+        for (var pass = 0; pass < 2; pass++)
+        {
+            Assemble(set);
+            if (Deeper(set) is not { } next)
+            {
+                break;
+            }
+
+            set = next;
+        }
+
+        Assemble(set);
         foreach (var key in _kinds.Keys.Where(k => !_areas.ContainsKey(k)))
         {
             _areas[key] = new NodeArea(AreaIndex.UnassignedKey, []);
         }
 
         return new AreaIndex(_areas);
+    }
+
+    private void Assemble(HashSet<string> areaFeatures)
+    {
+        _areas.Clear();
+        AssignFeatures(areaFeatures);
+        Vote(NodeKind.Surface, key => Targets(key, EdgeType.PartOf));
+        Vote(NodeKind.Action, key => Targets(key, EdgeType.On));
+        Vote(NodeKind.Flow, key => Sources(key, EdgeType.StepOf));
+        Vote(NodeKind.Thing, key => Sources(key, EdgeType.Reads, EdgeType.Writes));
+        Vote(NodeKind.Code, key => Targets(key, EdgeType.Implements, EdgeType.Tests));
+        AssignIntent();
+    }
+
+    // The next set of area-features: each one holding over half the nodes or over the cap is replaced by its child features, and so is the largest when there are fewer than 3; null when nothing can be.
+    private HashSet<string>? Deeper(HashSet<string> set)
+    {
+        var sizes = set.ToDictionary(a => a, a => _areas.Values.Count(v => v.Area == a), StringComparer.Ordinal);
+        var children = set.ToDictionary(a => a, a => _parents.Where(p => p.Value.Count > 0 && p.Value[0] == a && p.Key != a).Select(p => p.Key).ToList(), StringComparer.Ordinal);
+        var replaced = set.Where(a => children[a].Count > 0 && (sizes[a] * 2 > _kinds.Count || sizes[a] > _areaCap)).ToHashSet(StringComparer.Ordinal);
+        if (replaced.Count == 0 && set.Count < 3)
+        {
+            var largest = set.Where(a => children[a].Count > 0).OrderByDescending(a => sizes[a]).ThenBy(a => a, StringComparer.Ordinal).FirstOrDefault();
+            if (largest is not null)
+            {
+                _ = replaced.Add(largest);
+            }
+        }
+
+        return replaced.Count == 0 ? null : [.. set.Except(replaced, StringComparer.Ordinal), .. replaced.SelectMany(a => children[a])];
     }
 
     private static void Add(Dictionary<string, List<GraphEdge>> index, string key, GraphEdge edge)
@@ -60,56 +113,40 @@ internal sealed class AreaAssigner
 
     private IEnumerable<string> Keys(NodeKind kind) => _kinds.Where(p => p.Value == kind).Select(p => p.Key).Order(StringComparer.Ordinal);
 
-    private void AssignFeatures()
-    {
-        var parents = Keys(NodeKind.Feature).ToDictionary(k => k, k => Targets(k, EdgeType.PartOf).Where(t => _kinds[t] == NodeKind.Feature).Order(StringComparer.Ordinal).ToList(), StringComparer.Ordinal);
-        var roots = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var (feature, above) in parents)
-        {
-            var root = Root(feature, parents, roots);
-            var others = above.Select(p => Root(p, parents, roots)).Where(r => r != root).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).Take(AlsoInCap);
-            _areas[feature] = new NodeArea(root, [.. others]);
-        }
-    }
-
-    // Walks the smallest-parent chain; a chain that meets itself roots at the smallest key on the cycle.
-    private static string Root(string start, Dictionary<string, List<string>> parents, Dictionary<string, string> roots)
+    // The chain of a feature up through the smallest parents (itself first) and its root: the last one, or the smallest key on the cycle the chain meets.
+    private (List<string> Chain, string Root) Chain(string start)
     {
         var path = new List<string>();
-        var onPath = new Dictionary<string, int>(StringComparer.Ordinal);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
         var current = start;
-        string root;
-        while (true)
+        while (seen.Add(current))
         {
-            if (roots.TryGetValue(current, out var known))
-            {
-                root = known;
-                break;
-            }
-
-            if (onPath.TryGetValue(current, out var at))
-            {
-                root = path.Skip(at).Order(StringComparer.Ordinal).First();
-                break;
-            }
-
-            onPath[current] = path.Count;
             path.Add(current);
-            if (parents[current].Count == 0)
+            if (_parents[current].Count == 0)
             {
-                root = current;
-                break;
+                return (path, current);
             }
 
-            current = parents[current][0];
+            current = _parents[current][0];
         }
 
-        foreach (var member in path)
+        return (path, path.Skip(path.IndexOf(current)).Order(StringComparer.Ordinal).First());
+    }
+
+    private string? Reach(string feature, HashSet<string> areaFeatures) => _chains[feature].Find(areaFeatures.Contains);
+
+    private void AssignFeatures(HashSet<string> areaFeatures)
+    {
+        foreach (var (feature, above) in _parents)
         {
-            roots[member] = root;
-        }
+            if (Reach(feature, areaFeatures) is not { } area)
+            {
+                continue;
+            }
 
-        return root;
+            var others = above.Skip(1).Select(p => Reach(p, areaFeatures)).OfType<string>().Where(r => r != area).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).Take(AlsoInCap);
+            _areas[feature] = new NodeArea(area, [.. others]);
+        }
     }
 
     private void Vote(NodeKind kind, Func<string, IEnumerable<string>> reaches)

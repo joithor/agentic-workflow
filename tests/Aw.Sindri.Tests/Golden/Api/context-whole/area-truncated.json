@@ -24,36 +24,46 @@
       "key": "area:unassigned",
       "label": "Not linked to a feature yet",
       "trust": "trusted",
-      "members": 2,
+      "members": 8,
       "byKind": {
-        "record": 2
+        "feature": 1,
+        "surface": 1,
+        "action": 1,
+        "thing": 1,
+        "record": 3,
+        "code": 1
       },
       "unassigned": true
     },
     {
-      "key": "feature:tabs.tab-manager",
-      "label": "Tab manager",
+      "key": "feature:tabs.tab-groups",
+      "label": "Tab groups",
       "trust": "trusted",
-      "members": 12,
+      "members": 6,
       "byKind": {
-        "feature": 2,
-        "surface": 2,
-        "action": 2,
-        "thing": 1,
+        "feature": 1,
+        "surface": 1,
+        "action": 1,
         "decision": 2,
-        "record": 1,
-        "code": 2
+        "code": 1
       },
       "unassigned": false
     }
   ],
   "areaEdges": [
     {
-      "from": "feature:tabs.tab-manager",
+      "from": "feature:tabs.tab-groups",
+      "to": "area:unassigned",
+      "type": "part-of",
+      "count": 1,
+      "confirmed": 1
+    },
+    {
+      "from": "feature:tabs.tab-groups",
       "to": "area:unassigned",
       "type": "quotes",
       "count": 2,
-      "confirmed": 2
+      "confirmed": 0
     }
   ],
   "nodes": [
@@ -61,18 +71,7 @@
       "key": "feature:tabs.tab-groups",
       "label": "Tab groups",
       "kind": "feature",
-      "area": "feature:tabs.tab-manager",
-      "alsoIn": [],
-      "trust": "trusted",
-      "provenance": "human",
-      "confidence": 1,
-      "confirmed": true
-    },
-    {
-      "key": "feature:tabs.tab-manager",
-      "label": "Tab manager",
-      "kind": "feature",
-      "area": "feature:tabs.tab-manager",
+      "area": "feature:tabs.tab-groups",
       "alsoIn": [],
       "trust": "trusted",
       "provenance": "human",
@@ -83,18 +82,7 @@
       "key": "surface:command/group-tabs",
       "label": "Group tabs (command)",
       "kind": "surface",
-      "area": "feature:tabs.tab-manager",
-      "alsoIn": [],
-      "trust": "trusted",
-      "provenance": "human",
-      "confidence": 1,
-      "confirmed": true
-    },
-    {
-      "key": "surface:command/switch-tab",
-      "label": "Switch tab (command)",
-      "kind": "surface",
-      "area": "feature:tabs.tab-manager",
+      "area": "feature:tabs.tab-groups",
       "alsoIn": [],
       "trust": "trusted",
       "provenance": "human",
@@ -105,7 +93,29 @@
       "key": "action:tab-groups.group-selected",
       "label": "Group the selected tabs",
       "kind": "action",
-      "area": "feature:tabs.tab-manager",
+      "area": "feature:tabs.tab-groups",
+      "alsoIn": [],
+      "trust": "trusted",
+      "provenance": "human",
+      "confidence": 1,
+      "confirmed": true
+    },
+    {
+      "key": "decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b",
+      "label": "A tab group collapses to one tab in the strip.",
+      "kind": "decision",
+      "area": "feature:tabs.tab-groups",
+      "alsoIn": [],
+      "trust": "trusted",
+      "provenance": "human",
+      "confidence": 1,
+      "confirmed": true
+    },
+    {
+      "key": "decision:ef895edc359f6f847ce34baeacb3670a81a824b521e4cd14371b5dc8894ea1c2",
+      "label": "A tab group stays expanded; collapsing is a per-user setting.",
+      "kind": "decision",
+      "area": "feature:tabs.tab-groups",
       "alsoIn": [],
       "trust": "trusted",
       "provenance": "human",
@@ -124,10 +134,28 @@
       "confirmed": true
     },
     {
-      "from": "feature:tabs.tab-groups",
-      "to": "feature:tabs.tab-manager",
-      "type": "part-of",
-      "link": "edge:bfde89d5c565ec81",
+      "from": "decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b",
+      "to": "feature:tabs.tab-groups",
+      "type": "decides",
+      "link": "edge:0cb7bdbdede8a5e8",
+      "provenance": "human",
+      "confidence": 1,
+      "confirmed": true
+    },
+    {
+      "from": "decision:ef895edc359f6f847ce34baeacb3670a81a824b521e4cd14371b5dc8894ea1c2",
+      "to": "decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b",
+      "type": "supersedes",
+      "link": "edge:9408121fe4ae3d76",
+      "provenance": "human",
+      "confidence": 1,
+      "confirmed": true
+    },
+    {
+      "from": "decision:ef895edc359f6f847ce34baeacb3670a81a824b521e4cd14371b5dc8894ea1c2",
+      "to": "feature:tabs.tab-groups",
+      "type": "decides",
+      "link": "edge:a41786149bc2d1d5",
       "provenance": "human",
       "confidence": 1,
       "confirmed": true
@@ -140,32 +168,23 @@
       "provenance": "human",
       "confidence": 1,
       "confirmed": true
-    },
-    {
-      "from": "surface:command/switch-tab",
-      "to": "feature:tabs.tab-manager",
-      "type": "part-of",
-      "link": "edge:e77c6359aafbc814",
-      "provenance": "human",
-      "confidence": 1,
-      "confirmed": true
     }
   ],
   "area": {
-    "key": "feature:tabs.tab-manager",
+    "key": "feature:tabs.tab-groups",
     "truncated": true,
     "counts": {
-      "nodes": 12,
-      "edges": 13,
+      "nodes": 6,
+      "edges": 6,
       "byKind": {
-        "feature": 2,
-        "surface": 2,
-        "action": 2,
-        "thing": 1,
+        "feature": 1,
+        "surface": 1,
+        "action": 1,
+        "thing": 0,
         "flow": 0,
         "decision": 2,
-        "record": 1,
-        "code": 2
+        "record": 0,
+        "code": 1
       }
     }
   },

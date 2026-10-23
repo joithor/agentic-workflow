@@ -25,36 +25,46 @@
       "key": "area:unassigned",
       "label": "Not linked to a feature yet",
       "trust": "trusted",
-      "members": 2,
+      "members": 8,
       "byKind": {
-        "record": 2
+        "feature": 1,
+        "surface": 1,
+        "action": 1,
+        "thing": 1,
+        "record": 3,
+        "code": 1
       },
       "unassigned": true
     },
     {
-      "key": "feature:tabs.tab-manager",
-      "label": "Tab manager",
+      "key": "feature:tabs.tab-groups",
+      "label": "Tab groups",
       "trust": "trusted",
-      "members": 12,
+      "members": 6,
       "byKind": {
-        "feature": 2,
-        "surface": 2,
-        "action": 2,
-        "thing": 1,
+        "feature": 1,
+        "surface": 1,
+        "action": 1,
         "decision": 2,
-        "record": 1,
-        "code": 2
+        "code": 1
       },
       "unassigned": false
     }
   ],
   "areaEdges": [
     {
-      "from": "feature:tabs.tab-manager",
+      "from": "feature:tabs.tab-groups",
+      "to": "area:unassigned",
+      "type": "part-of",
+      "count": 1,
+      "confirmed": 1
+    },
+    {
+      "from": "feature:tabs.tab-groups",
       "to": "area:unassigned",
       "type": "quotes",
       "count": 2,
-      "confirmed": 2
+      "confirmed": 0
     }
   ],
   "truncated": false

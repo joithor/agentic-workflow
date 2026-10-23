@@ -1,6 +1,6 @@
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
-using Aw.Context.Core.Overrides;
+using Aw.Context.Core.Results;
 using Aw.Kernel;
 
 namespace Aw.Context.Core.WholeMap;
@@ -95,17 +95,17 @@ public static class WholeMapBuilder
             return new WholeMapArea(key, AreaIndex.UnassignedLabel, Results.Trust.Trusted, members.Count, kinds, key == AreaIndex.UnassignedKey);
         }
 
-        var trust = TrustPolicy.ForNode(root, Confirmation.Of(root.Provenance));
+        var trust = TrustPolicy.ForNode(root, root.Provenance == Provenance.Human);
         return new WholeMapArea(key, text.Label(root.Label, trust), trust, members.Count, kinds, Unassigned: false);
     }
 
     private static List<WholeMapAreaEdge> AreaEdges(List<GraphEdge> edges, AreaIndex areas, HashSet<string> listed) =>
         [.. edges
-            .Select(e => (From: areas.ByNode[e.From.Value].Area, To: areas.ByNode[e.To.Value].Area, e.Type, Confirmed: Confirmation.Of(e.Provenance)))
+            .Select(e => (From: areas.ByNode[e.From.Value].Area, To: areas.ByNode[e.To.Value].Area, e.Type, Confirmed: e.Provenance == Provenance.Human))
             .Where(e => e.From != e.To && listed.Contains(e.From) && listed.Contains(e.To))
             .GroupBy(e => (e.From, e.To, e.Type))
             .Select(g => new WholeMapAreaEdge(g.Key.From, g.Key.To, g.Key.Type, g.Count(), g.Count(e => e.Confirmed)))
-            .OrderBy(e => e.From, StringComparer.Ordinal).ThenBy(e => e.To, StringComparer.Ordinal).ThenBy(e => EdgeRules.Name(e.Type), StringComparer.Ordinal)];
+            .OrderBy(e => EdgeRules.Name(e.Type), StringComparer.Ordinal).ThenBy(e => e.From, StringComparer.Ordinal).ThenBy(e => e.To, StringComparer.Ordinal)];
 
     private static List<WholeMapNode> Nodes(IEnumerable<GraphNode> nodes, AreaIndex areas, MapText text) =>
         [.. nodes
@@ -115,7 +115,7 @@ public static class WholeMapBuilder
 
     private static WholeMapNode Node(GraphNode node, NodeArea area, MapText text)
     {
-        var confirmed = Confirmation.Of(node.Provenance);
+        var confirmed = node.Provenance == Provenance.Human;
         var trust = TrustPolicy.ForNode(node, confirmed);
         return new WholeMapNode(node.Key, text.Label(node.Label, trust), node.Key.Kind, area.Area, area.AlsoIn, trust, node.Provenance, node.Confidence, confirmed);
     }
@@ -123,7 +123,7 @@ public static class WholeMapBuilder
     private static List<WholeMapEdge> Edges(List<GraphEdge> edges) =>
         [.. edges
             .OrderBy(e => e.From.Value, StringComparer.Ordinal).ThenBy(e => e.To.Value, StringComparer.Ordinal).ThenBy(e => EdgeRules.Name(e.Type), StringComparer.Ordinal)
-            .Select(e => new WholeMapEdge(e.From, e.To, e.Type, LinkIds.For(e), e.Provenance, e.Confidence, Confirmation.Of(e.Provenance)))];
+            .Select(e => new WholeMapEdge(e.From, e.To, e.Type, LinkIds.For(e), e.Provenance, e.Confidence, e.Provenance == Provenance.Human))];
 
     private static List<WholeMapLocated>? Located(IReadOnlyList<string> keys, AreaIndex areas, MapText text) =>
         keys.Count == 0 ? null : [.. keys.Select(k => new WholeMapLocated(text.Line(k), areas.ByNode.TryGetValue(k, out var found) ? found.Area : null))];
