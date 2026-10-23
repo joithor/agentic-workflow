@@ -100,7 +100,7 @@ internal sealed partial class AgentsPageViewModel(ISindriApi api, IClipboard cli
     public string UnreadableText => Labels.SessionsUnreadable;
 
     /// <summary>The column captions above the rows.</summary>
-    public AgentColumns Columns { get; } = new(Labels.ColumnStatus, Labels.ColumnAgent, Labels.ColumnRepo, Labels.ColumnWhere, Labels.ColumnDoing, Labels.ColumnFor);
+    public AgentColumns Columns { get; } = new(Labels.ColumnStatus, Labels.ColumnAgent, Labels.ColumnRepository, Labels.ColumnWhere, Labels.ColumnDoing, Labels.ColumnFor);
 
     /// <summary>True when there are rows to put the captions over.</summary>
     public bool HasColumns => Groups.Count > 0;

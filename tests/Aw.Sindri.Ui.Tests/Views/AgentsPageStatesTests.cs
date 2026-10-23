@@ -77,7 +77,7 @@ public sealed class AgentsPageStatesTests : FrameHost
         var (window, shell) = await Open();
 
         await Until(window, () => shell.Agents.ProblemLines.Count > 0);
-        Assert.Single(shell.Agents.ProblemLines);
+        _ = Assert.Single(shell.Agents.ProblemLines);
         Assert.True(Visible(window, "AgentsProblems"));
         Assert.True(shell.Agents.Groups.Count > 0);
         Assert.False(Visible(window, "AgentsStale"));

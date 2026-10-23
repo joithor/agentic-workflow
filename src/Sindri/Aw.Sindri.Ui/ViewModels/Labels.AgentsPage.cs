@@ -18,7 +18,7 @@ internal static partial class Labels
     internal const string ColumnWhere = "Where it runs";
 
     /// <summary>The Repository column's head.</summary>
-    internal const string ColumnRepo = "Repository";
+    internal const string ColumnRepository = "Repository";
 
     /// <summary>The page width under which only Status, Agent and For stay (agents spec §2).</summary>
     internal const double AgentsWideFrom = 640;

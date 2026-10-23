@@ -3,7 +3,6 @@ using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
-using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.Views.Agents;
 
 namespace Aw.Sindri.Ui.Tests.Views;
@@ -40,8 +39,9 @@ public sealed class AgentsPageRowsTests : FrameHost
     [Fact]
     public Task Under_640_px_only_status_agent_and_for_stay() => OnUi(async () =>
     {
-        var (window, shell) = await Shown(560);
+        var (window, shell) = await Shown(1440);
 
+        window.GetVisualDescendants().OfType<AgentsPage>().Single().Width = 600;   // the window keeps a minimum width: the page region is narrowed instead
         await Until(window, () => shell.Agents.IsCompact);
         Assert.Equal(["Status", "Agent", "For"], Heads(window), StringComparer.Ordinal);
         Assert.All(window.GetVisualDescendants().OfType<SessionRow>(), r =>
