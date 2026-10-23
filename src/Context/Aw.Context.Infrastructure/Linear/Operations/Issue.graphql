@@ -1,0 +1,11 @@
+query Issue($id: String!) {
+  issue(id: $id) {
+    id identifier title description url createdAt updatedAt
+    state { name type }
+    team { id key name }
+    project { id name }
+    creator { id name }
+    comments(first: 50) { nodes { id body createdAt updatedAt user { id name } } pageInfo { hasNextPage } }
+    attachments(first: 50) { nodes { id title url sourceType createdAt } pageInfo { hasNextPage } }
+  }
+}

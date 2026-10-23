@@ -38,5 +38,19 @@
         "edges": 0
       }
     }
+  ],
+  "health": [
+    {
+      "repo": "demo",
+      "state": "ok",
+      "embeddingsPercent": null,
+      "waiting": null
+    },
+    {
+      "repo": "other",
+      "state": "ok",
+      "embeddingsPercent": null,
+      "waiting": null
+    }
   ]
 }

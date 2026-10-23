@@ -40,6 +40,9 @@ public sealed class FakePull(PullRepo repo, int number, string head, string head
     /// <summary>Gets or sets the base branch (main until Open or Retarget says otherwise).</summary>
     public string Base { get; set; } = "main";
 
+    /// <summary>Gets or sets the base branch's tip now; null when the fake forge says none.</summary>
+    public string? BaseSha { get; set; }
+
     /// <summary>Gets or sets the marker the pull request was opened with.</summary>
     public string? Marker { get; set; }
 

@@ -61,7 +61,11 @@ internal sealed class BuildCodeIndexService(CodeIndexJobScopes scopes, ICodeInde
         report.Embeddable == 0 ? 0 : (int)(100L * report.Embedded / report.Embeddable), report.Milliseconds, report.Incremental);
 
     private static BuildCodeIndexResult Result(BuildReport report) => new(report.Repo.Value, report.Commit?.Value, Word(report.Outcome),
-        report.Counts.Files, report.Counts.Symbols, report.Counts.Edges, report.Incremental, report.Milliseconds);
+        report.Counts.Files, report.Counts.Symbols, report.Counts.Edges, report.Incremental, report.Milliseconds)
+    {
+        LayersPending = [.. report.Layers.Where(static l => l.State == LayerState.Pending).Select(static l => Word(l.Layer))],
+        Embedded = report.Embedded,
+    };
 
     private static string Word(BuildOutcome outcome) => outcome switch
     {

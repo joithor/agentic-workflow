@@ -100,7 +100,10 @@ internal sealed partial class FakeSindriApi
     /// <param name="recipe">The recipe id.</param>
     /// <param name="hash">The hash named, or null.</param>
     /// <returns>The answer.</returns>
-    internal RouteAnswer RecipeAnswer(string recipe, string? hash) => WorkflowAnswer ?? WorkflowAnswers.Recipe(recipe, hash);
+    internal RouteAnswer RecipeAnswer(string recipe, string? hash) => RecipeBody?.Invoke(recipe) ?? WorkflowAnswer ?? WorkflowAnswers.Recipe(recipe, hash);
+
+    /// <summary>When set, answers a recipe read by id before the shared workflow answer does; return null to fall through.</summary>
+    public Func<string, RouteAnswer?>? RecipeBody { get; set; }
 
     // LANE ANCHOR U3': U3' keeps its own fake in FakeSindriApi.Routes.cs; it adds nothing here. Insert immediately above this marker, never between the markers.
     // LANE ANCHOR U8: new workflow answers (commands, complete) and their gates, answered from WorkflowAnswers. Insert immediately below this marker, never between the markers.

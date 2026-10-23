@@ -18,9 +18,30 @@ internal sealed partial class AgentsPage : UserControl
         AddHandler(SessionRow.SelectEvent, OnSelect);
         AddHandler(EndedSessionRow.SelectEvent, OnSelectEnded);
         AddHandler(SessionGroup.ToggleEvent, OnToggle);
+        SizeChanged += OnSized;
     }
 
     private bool _focusWasHere;
+
+    // Under 640 px only Status, Agent and For stay: the page tells the rows, and the head's columns follow.
+    private void OnSized(object? sender, SizeChangedEventArgs e)
+    {
+        if (Page is { } page)
+        {
+            page.Resize(e.NewSize.Width);
+            AgentsColumnsGrid.ColumnDefinitions = ColumnDefinitions.Parse(page.IsCompact ? AgentColumnsLayout.Compact : AgentColumnsLayout.Wide);
+        }
+    }
+
+    private void OnClearFilters(object? sender, RoutedEventArgs e)
+    {
+        ProviderFilter.SelectedIndex = 0;
+        StateFilter.SelectedIndex = 0;
+        RepoFilter.SelectedIndex = 0;
+        Page?.ClearFilters();
+    }
+
+    private void OnOpenWorkflows(object? sender, RoutedEventArgs e) => Page?.RequestWorkflows();
 
     private AgentsPageViewModel? Page => DataContext as AgentsPageViewModel;
 

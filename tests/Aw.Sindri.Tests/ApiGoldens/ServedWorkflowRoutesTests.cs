@@ -29,6 +29,7 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
     public static IReadOnlyList<(string Slug, string Scenario)> Goldens { get; } =
     [
         ("workflow-instance", "not-found"), ("workflow-instance-fact", "not-found"), ("workflow-recipes", "list"), ("workflow-recipes-id-stats", "workflow-item"),   // the stats golden is recorded by RecipeStatsRouteTests
+        ("workflow-recipes-id-stats", "pr-babysitter"), ("workflow-recipes-id-stats", "pr-babysitter-empty"),   // recorded by BabysitterStatsGoldenTests (API19's section, for the app's typed record)
         ("workflow-instances-start", "request"), ("workflow-instances-start", "started"), ("workflow-instances", "start-item-malformed"), ("workflow-instances", "start-missing-input"),
         ("workflow-instances", "start-item-mismatch"), ("workflow-instances", "start-earlier-attempt-live"),
         ("workflow-instances", "start-recipe-legacy"), ("workflow-instances", "start-recipe-revoked"), ("workflow-instances", "start-recipe-drifted"),

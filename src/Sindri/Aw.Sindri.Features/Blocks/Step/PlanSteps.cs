@@ -36,9 +36,14 @@ internal static class PlanSteps
     public static BlockDescriptor ExecReview { get; } = AgentStep("step.plan.exec-review", Capability.Tools)
         .Reads("fact:design", "fact:plan").Reports("executable", "objections").Writes(On("fact:findings", "objections"));
 
-    /// <summary>'step.plan.holdout': hidden scenarios into the holdout store; 'written' with the sets (ids and hashes, never text).</summary>
-    public static BlockDescriptor Holdout { get; } = AgentStep("step.plan.holdout", Capability.Tools)
-        .Reads("fact:design", "fact:plan").Reports("written").Writes(On("fact:holdoutSets", "written"));
+    /// <summary>'step.plan.holdout': the hidden-scenario author writes holdout-sets.json in its run folder, never into a fact or packet (PKT-HOLD-002); 'written' with fact:holdoutDraft naming that folder.</summary>
+    public static BlockDescriptor Holdout { get; } = AgentStep("step.plan.holdout", Capability.Tools | Capability.WriteScope)
+        .Reads("fact:design", "fact:plan").Reports("written").Writes(On("fact:holdoutDraft", "written"));
+
+    /// <summary>'step.plan.holdout-store': moves the author's scenarios into the holdout store, adds the canary and reports the sets (ids, counts and hashes, never text); 'stored', or 'invalid' with findings.</summary>
+    public static BlockDescriptor HoldoutStore { get; } = BlockStep("step.plan.holdout-store", Capability.Tools)
+        .Reads("fact:scopePacket", "fact:plan", "fact:holdoutDraft").Reports("stored", "invalid")
+        .Writes(On("fact:holdoutSets", "stored"), On("fact:findings", "invalid"));
 
     /// <summary>'step.plan.evidence': checks the design and plan evidence and assembles the candidate plan packet; 'complete' or 'incomplete' with findings.</summary>
     public static BlockDescriptor Evidence { get; } = BlockStep("step.plan.evidence", Capability.Tools)

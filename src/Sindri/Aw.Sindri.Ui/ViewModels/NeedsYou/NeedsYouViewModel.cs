@@ -18,7 +18,7 @@ internal sealed partial class NeedsYouViewModel : ObservableObject
 
     private static readonly string[] _listProperties =
     [
-        nameof(Rows), nameof(Count), nameof(HasOverflow), nameof(OverflowText), nameof(IsExpanded), nameof(IsEmpty), nameof(EmptyText),
+        nameof(Rows), nameof(Count), nameof(HasOverflow), nameof(OverflowText), nameof(IsExpanded), nameof(IsEmpty), nameof(EmptyText), nameof(IsLoading), nameof(EmptyLine),
         nameof(HasBanner), nameof(Banner), nameof(HeldCount), nameof(HeldText), nameof(HasHeld), nameof(SheetRow),
     ];
 
@@ -30,6 +30,7 @@ internal sealed partial class NeedsYouViewModel : ObservableObject
     private Func<NeedsYouEntry, bool>? _filter;
     private HashSet<string> _shownIds = new(StringComparer.Ordinal);
     private bool _hasShown;
+    private bool _loaded;
 
     internal NeedsYouViewModel(Preferences preferences, IMotionPreference motion, TimeProvider clock)
     {
@@ -78,6 +79,12 @@ internal sealed partial class NeedsYouViewModel : ObservableObject
 
     /// <summary>The served empty sentence; empty unless the list is empty.</summary>
     internal string EmptyText => IsEmpty ? _feed.Sentence : "";
+
+    /// <summary>True until the first list is read: Home shows skeleton rows instead of an empty line.</summary>
+    internal bool IsLoading => !_loaded;
+
+    /// <summary>The empty line Home shows: the served sentence, or the app's own words when none was served; empty unless the list is read and empty.</summary>
+    internal string EmptyLine => !_loaded || !IsEmpty ? "" : _feed.Sentence.Length > 0 ? _feed.Sentence : Labels.HomeNothingNeedsYou;
 
     /// <summary>True while a stalled or rebuilding banner shows.</summary>
     internal bool HasBanner => _feed.Stalled || _feed.Rebuilding;
@@ -138,6 +145,7 @@ internal sealed partial class NeedsYouViewModel : ObservableObject
     internal void Update(NeedsYouFeed feed, Func<NeedsYouEntry, bool>? show = null)
     {
         _feed = feed;
+        _loaded = true;
         _filter = show;
         Apply();
     }
