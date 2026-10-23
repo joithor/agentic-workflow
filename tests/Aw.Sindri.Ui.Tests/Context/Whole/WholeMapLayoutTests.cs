@@ -32,7 +32,7 @@ public sealed class WholeMapLayoutTests
     {
         var geometry = WholeMapLayout.Place(Draft("nodes-small"));
 
-        Assert.Equal(["feature:tabs.tab-manager", "area:unassigned"], geometry.Order, StringComparer.Ordinal);
+        Assert.Equal(["feature:tabs.tab-groups", "area:unassigned"], geometry.Order, StringComparer.Ordinal);
         Assert.Equal(geometry.Order, geometry.Columns.Select(c => c.Key), StringComparer.Ordinal);
         Assert.False(geometry.ByArea);
     }

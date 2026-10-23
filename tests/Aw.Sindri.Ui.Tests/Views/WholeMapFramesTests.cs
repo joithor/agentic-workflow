@@ -77,8 +77,8 @@ public sealed class WholeMapFramesTests : FrameHost
         Settle(window);
 
         Assert.True(Visible(window, "WholeAllFeatures"));
-        Assert.Equal("Tab manager", Named<TextBlock>(window, "WholeAreaTitle").Text);
-        Assert.Equal(12, shell.Context.Whole.Geometry!.Nodes.Count);
+        Assert.Equal("Tab groups", Named<TextBlock>(window, "WholeAreaTitle").Text);
+        Assert.Equal(6, shell.Context.Whole.Geometry!.Nodes.Count);
     });
 
     [Fact]

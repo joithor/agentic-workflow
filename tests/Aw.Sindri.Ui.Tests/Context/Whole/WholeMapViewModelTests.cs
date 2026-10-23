@@ -54,9 +54,9 @@ public sealed class WholeMapViewModelTests
         map.Show(answer);
 
         Assert.Equal(map.Geometry!.Order, map.Areas.Select(a => a.Key), StringComparer.Ordinal);
-        var tabs = map.Areas.Single(a => a.Key == "feature:tabs.tab-manager");
-        Assert.Equal(("Tab manager", "12 items", "Tab manager, 12 items. Press Enter to open."), (tabs.Label, tabs.MembersText, tabs.Name));
-        Assert.Equal("2 actions, 2 code files, 2 decisions, 2 features, 2 screens, 1 record, 1 thing", tabs.KindsText);
+        var tabs = map.Areas.Single(a => a.Key == "feature:tabs.tab-groups");
+        Assert.Equal(("Tab groups", "6 items", "Tab groups, 6 items. Press Enter to open."), (tabs.Label, tabs.MembersText, tabs.Name));
+        Assert.Equal("2 decisions, 1 action, 1 code file, 1 feature, 1 screen", tabs.KindsText);
     }
 
     [Fact]
@@ -95,8 +95,8 @@ public sealed class WholeMapViewModelTests
 
         map.ShowArea(opened);
 
-        Assert.Equal((true, "Tab manager", string.Empty), (map.IsAreaOpen, map.AreaTitle, map.ByAreaNote));
-        Assert.Equal((false, 12, 1), (map.ByArea, map.Geometry!.Nodes.Count, map.Geometry.Columns.Count));
+        Assert.Equal((true, "Tab groups", string.Empty), (map.IsAreaOpen, map.AreaTitle, map.ByAreaNote));
+        Assert.Equal((false, 6, 1), (map.ByArea, map.Geometry!.Nodes.Count, map.Geometry.Columns.Count));
         map.CloseArea();
         Assert.Equal((false, true), (map.IsAreaOpen, ReferenceEquals(overview, map.Geometry)));
         Assert.Equal(Labels.ContextWholeByArea(14), map.ByAreaNote);
@@ -110,7 +110,7 @@ public sealed class WholeMapViewModelTests
 
         map.ShowArea(WholeMapLayoutTests.Draft("area-truncated"));
 
-        Assert.Equal("Showing 5 of 12 items; the rest are not shown.", map.ByAreaNote);
+        Assert.Equal("Showing 5 of 6 items; the rest are not shown.", map.ByAreaNote);
     }
 
     [Fact]

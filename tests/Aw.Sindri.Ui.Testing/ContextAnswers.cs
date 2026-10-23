@@ -43,7 +43,7 @@ internal static class ContextAnswers
     }
 
     /// <summary>The one area the goldens hold in full.</summary>
-    internal const string OpenArea = "feature:tabs.tab-manager";
+    internal const string OpenArea = "feature:tabs.tab-groups";
 
     /// <summary>The lenses for a query: a refusal golden for what the goldens cannot answer, else the golden for one anchor or for a set.</summary>
     /// <param name="query">What was asked.</param>
