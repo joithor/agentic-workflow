@@ -110,6 +110,39 @@ public sealed class PrRecordEffectTests
         Assert.True(done.IsError);
     }
 
+    [Theory]
+    [InlineData("doneByHand")]
+    [InlineData("left")]
+    public async Task A_docsMerge_row_carries_the_owner_desk_outcome_the_trigger_and_the_docs_pr(string outcome)
+    {
+        var arguments = new Dictionary<string, object>(StringComparer.Ordinal) { ["kind"] = "docsMerge", ["outcome"] = outcome, ["trigger"] = "ownerDesk" };
+        var facts = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["fact:prState"] = PrEffectRig.PrState("h1", "h1"),
+            ["fact:docsMerge"] = """{"docsPr":"https://example.test/o/r/pull/9","outcome":"pending","sha":null}""",
+        };
+
+        var done = await new PrRecordEffect(new MergeRecord(_area, _clock), _rig.Facts).Dispatch(_rig.Context("effect.pr.record", arguments, facts), Token);
+
+        Assert.False(done.Value.Existed);
+        var row = await ReadRow();
+        Assert.Equal("docsMerge", row.GetProperty("kind").GetString());
+        Assert.Equal(outcome, row.GetProperty("outcome").GetString());
+        Assert.Equal("ownerDesk", row.GetProperty("trigger").GetString());
+        Assert.Equal("https://example.test/o/r/pull/9", row.GetProperty("docsPr").GetString());
+        Assert.Equal("h1", row.GetProperty("headSha").GetString());
+    }
+
+    [Fact]
+    public async Task A_docsMerge_outcome_the_desk_does_not_have_is_the_dispatch_error()
+    {
+        var context = _rig.Context("effect.pr.record", new Dictionary<string, object>(StringComparer.Ordinal) { ["kind"] = "docsMerge", ["outcome"] = "merged" });
+
+        var done = await new PrRecordEffect(new MergeRecord(_area, _clock), _rig.Facts).Dispatch(context, Token);
+
+        Assert.True(done.IsError);
+    }
+
     private async Task<JsonElement> ReadRow() =>
         JsonDocument.Parse(Assert.Single((await _area.Read(PrEffectRig.Instance, "babysit.jsonl", Token)).Value.Split('\n', StringSplitOptions.RemoveEmptyEntries))).RootElement;
 
