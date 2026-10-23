@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.ViewModels.Components;
 using Aw.Sindri.Ui.ViewModels.Controls;
@@ -12,6 +13,8 @@ namespace Aw.Sindri.Ui.ViewModels.Confirmations;
 internal sealed class TypedConfirmBoxViewModel : ObservableObject
 {
     private string Action { get; }
+    private readonly CatalogViewModel _catalog;
+    private readonly TimeProvider _clock;
 
     /// <summary>A typed confirmation for one of the three approvals the app confirms.</summary>
     /// <param name="action">ApproveProfile, ApproveRecipe or ApproveAllRecipes; any other id is refused.</param>
@@ -21,9 +24,22 @@ internal sealed class TypedConfirmBoxViewModel : ObservableObject
     {
         ArgumentNullException.ThrowIfNull(catalog);
         ArgumentNullException.ThrowIfNull(clock);
-        Action = AppConfirm.Require(action);
-        Terminal = AppConfirm.Terminal(catalog, action, Labels.TerminalVerb(action), Labels.ConfirmSubject(action), clock);
+        (Action, _catalog, _clock) = (AppConfirm.Require(action), catalog, clock);
+        Terminal = MakeTerminal();
         Live = new LiveAnnouncer(Labels.TypedButton(action));
+        catalog.PropertyChanged += OnCatalogChanged;
+    }
+
+    // The box can be made before the catalog is read (the inbox page is built with the shell): the row decides again when it arrives.
+    private ProtectedActionViewModel? MakeTerminal() => AppConfirm.Terminal(_catalog, Action, Labels.TerminalVerb(Action), Labels.ConfirmSubject(Action), _clock);
+
+    private void OnCatalogChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (string.Equals(e.PropertyName, nameof(CatalogViewModel.Controls), StringComparison.Ordinal) && (Terminal is null) != AppConfirm.IsReady(_catalog, Action))
+        {
+            Terminal = MakeTerminal();
+            OnChanged(nameof(IsReady));
+        }
     }
 
     /// <summary>The polite live region: the mismatch, said when the person presses on a wrong phrase, and the match, said once when the text becomes it; never per key.</summary>
@@ -33,7 +49,7 @@ internal sealed class TypedConfirmBoxViewModel : ObservableObject
     public bool IsReady => Terminal is null;
 
     /// <summary>The terminal copy for a row that is not ready; null when it is.</summary>
-    public ProtectedActionViewModel? Terminal { get; }
+    public ProtectedActionViewModel? Terminal { get; private set => Set(ref field, value); }
 
 #pragma warning disable CA1822, MA0041 // fixed words are properties because the view binds them
     /// <summary>The lead-in before the phrase.</summary>

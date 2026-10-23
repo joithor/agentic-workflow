@@ -68,7 +68,12 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<RouterStubCursor>()                          // engine P7: the stub's cursor file
             .AddScoped<ItemRouter>()
             .AddScoped<IScheduledService, RouterStub>()                // engine P7 unit U3: the router stub (spec §12), 'item.routed' for each workflow.item that starts
-            .AddSingleton(RouterStub.BuiltIn);
+            .AddSingleton(RouterStub.BuiltIn)
+            .AddSingleton<PrWatchStore>()                              // PB spec API15: the watcher's 'pr-watch.json'
+            .AddScoped<PrChangedRecorder>()                            // the watcher's 'pr.changed' rows
+            .AddScoped<IWatchedPulls, TemporalWatchedPulls>()          // the pull requests the live instances wait on
+            .AddScoped<IScheduledService, PrWatchService>()            // PB spec API15: 'pr.changed' from the forge's digests
+            .AddSingleton(PrWatchService.BuiltIn);
 
     /// <summary>The activities the interpreter runs (RunStep, RecordEvent, ReadItemRepo, the effect activities, EvaluateGates) and the Step, effect and gate dispatchers they run blocks through.</summary>
     private static IServiceCollection AddInterpreterActivities(this IServiceCollection services) => services

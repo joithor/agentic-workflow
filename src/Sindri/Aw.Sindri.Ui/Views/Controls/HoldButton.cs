@@ -64,9 +64,6 @@ internal sealed class HoldButton : UserControl
     {
         base.OnDataContextChanged(e);
         Watch(DataContext as HoldButtonViewModel);
-        _terminal.DataContext = _model?.Terminal;
-        _terminal.IsVisible = _model is { IsReady: false };
-        Part.IsVisible = _model is null or { IsReady: true };
         Draw();
     }
 
@@ -98,6 +95,9 @@ internal sealed class HoldButton : UserControl
 
     private void Draw()
     {
+        _terminal.DataContext = _model?.Terminal;
+        _terminal.IsVisible = _model is { IsReady: false };
+        Part.IsVisible = _model is null or { IsReady: true };
         if (_model is not { } model)
         {
             return;

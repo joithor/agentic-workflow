@@ -56,9 +56,10 @@ internal sealed class CatalogViewModel(IClipboard clipboard, TimeProvider clock)
     /// <param name="action">The action id.</param>
     /// <param name="subject">The subject's id, named in the control's accessible name.</param>
     /// <param name="send">Sends the command once; null when nothing is wired to it.</param>
+    /// <param name="confirm">True when the app asks first even though the catalog does not call the command destructive (a spec'd Confirm and Keep, as on Cancel job).</param>
     /// <returns>The control, or null.</returns>
-    internal ControlViewModel? On(string action, string subject, Func<CancellationToken, Task<Result<CommandAcceptedView>>>? send) =>
-        _rows.TryGetValue(action, out var row) ? new ControlViewModel(row, send, Clipboard, clock, subject) : null;
+    internal ControlViewModel? On(string action, string subject, Func<CancellationToken, Task<Result<CommandAcceptedView>>>? send, bool confirm = false) =>
+        _rows.TryGetValue(action, out var row) ? new ControlViewModel(confirm ? row with { Destructive = true } : row, send, Clipboard, clock, subject) : null;
 
     /// <summary>Shows a catalog read from the API at <paramref name="api"/>.</summary>
     /// <param name="api">Where the API answers (the senders call it).</param>

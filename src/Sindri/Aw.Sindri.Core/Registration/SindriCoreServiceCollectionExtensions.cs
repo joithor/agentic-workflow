@@ -77,5 +77,6 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<IProjection, NeedsYouProjection>()
             .AddSingleton<IProjection, JobsProjection>()
             .AddSingleton<IProjection, LaunchesProjection>()
-            .AddSingleton<IProjection, RecipeStatsProjection>();
+            .AddSingleton<IProjection, RecipeStatsProjection>()
+            .AddSingleton<IProjection, CodeIndexProjection>();
 }

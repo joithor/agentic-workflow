@@ -38,4 +38,20 @@ public interface IHoldoutStore
     /// <param name="cancellationToken">Cancels the write.</param>
     /// <returns>True when written.</returns>
     public ValueTask<Result<bool>> MarkSpent(string line, string phase, IReadOnlyCollection<string> scenarios, CancellationToken cancellationToken);
+
+    /// <summary>Writes a phase's hidden set, as the author Step delivers it. The text must read as a set (<see cref="HoldoutFiles.ParseSet"/>) of this phase with a canary phrase, and a sealed set is never replaced.</summary>
+    /// <param name="line">The line's slug.</param>
+    /// <param name="phase">The phase key.</param>
+    /// <param name="setText">The set file's text.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The set as stored, with the hash of its file; an error when the text is not a usable set, the phase is sealed or the store can't be written.</returns>
+    public ValueTask<Result<HoldoutSet>> Save(string line, string phase, string setText, CancellationToken cancellationToken);
+
+    /// <summary>Seals a phase's set to the plan packet it was approved with (<c language="text">seal.json</c>: the set's hash and the plan packet's).</summary>
+    /// <param name="line">The line's slug.</param>
+    /// <param name="phase">The phase key.</param>
+    /// <param name="planHash">The frozen plan packet's hash.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The seal; an error when the phase has no set, the phase is already sealed to another plan or the store can't be written.</returns>
+    public ValueTask<Result<HoldoutSeal>> SealWith(string line, string phase, string planHash, CancellationToken cancellationToken);
 }

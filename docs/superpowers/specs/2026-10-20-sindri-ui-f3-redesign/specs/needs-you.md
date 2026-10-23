@@ -81,7 +81,7 @@ No hex outside `Theme/Tokens.axaml`. Map by role:
 | Approved | `#approved` | the action was accepted: the card is replaced by the done card (glyph, "Scope approved: <item>", one sentence), the row leaves the list, J selects the next; the bar reads "Approved. The row has left your inbox." |
 | Typed confirm | `#set`, `#wf` | the selected row's primary is `ApproveProfile` or `ApproveRecipe` and the catalog says `ready`: bar shows `TypedConfirmBox` (shared control) |
 | Hold | `#all` | the row is `setup:recipes` and `ApproveAllRecipes` is `ready`: bar shows `HoldButton` (shared control) |
-| Terminal-only | `#s3`, `#s1` merge | the primary is protected: bar shows the terminal button (copy); after the copy: "Copied. Paste it in your terminal to approve." in `Success` for `Motion` 1.5 s |
+| Terminal-only | `#s1`, and other protected rows | the primary is protected: bar shows the terminal button (copy); after the copy: "Copied. Paste it in your terminal to approve." in `Success` for `Motion` 1.5 s. **Not the merge** (owner, 2026-10-23, PB3): stop 3's merge is the owner's one click in the app, below |
 | Paused run answer | `#answer`, `#park` | a `park:` row: card has the answer form (section 5); the bar's primary is "Send answer" (or the terminal button when the picked option is protected) |
 | Takeover | `#takeover` | the run view of a taken-over instance (reached from the row's item link or `takeover:` row): canvas node badge "You took over", footer "clock paused, 2h 50m left", inspector with the hand-back box |
 | 2-hour nudge | in `#takeover` | the served `takeover:` row (see Data) sets `NudgeVisible`; the toast has "Hand back" and "Not yet"; Not yet hides it until the next served row |
@@ -130,7 +130,7 @@ Catalog ids (golden `Golden/Api/commands/catalog.json`, 54 rows). The UI sends o
 | Approve scope or design (stops 1, 2) | `CompleteStep` (desk, ready) with outcome `approve` and the `run` token from `desk.run` | A, once read to the end; first A shows "Approve?" (Q3) |
 | Send back (stops 1, 2) | `CompleteStep` with outcome `revise` (stop 2: choice `reviseDesign` or `revisePlan` by the Design/Plan toggle); the reason goes as `--output fact:answers=<text>` | D; reason required (Q4) |
 | Drop (stops) | `CompleteStep` outcome `drop` | NOT in the prototype. Open item 2 |
-| Approve the merge (stop 3) | the row's `CompleteStep ... --outcome merged` is class desk today, but the rule says merge is terminal only. NEW action id needed: `CompleteStep:merge` (protected, `cli-only:typed-confirmation`): api lane, with a catalog golden row and a label. Until then: `ProtectedActionButton` from the row's served `cli`, label `⌂ Approve merge · terminal`, chosen by a client rule on outcome `merged` | copies the command; no send |
+| Approve the merge (stop 3) | the owner's one click in the app (owner, 2026-10-23: PR babysitter spec PB3 wins over the earlier terminal-only rule). The click sends the row's served desk action (`ApplyCommand:command` with verb `merge`, LN-API7: human caller only, a session gets `SND-AUTH-002`) after LN-UI3's one-line confirm, in the Destructive style (the verb entry's `destructive: true`) | sends after the confirm |
 | Send back (stop 3) | `CompleteStep` outcome `rework` | D; reason recorded |
 | Accept / Decline (agent decision) | `Decide` (decision class, ready) with the option id (`accept`, `decline`) and the reason as `--note` | A runs the recommended, D the `rejectLike` option with the reason; button word "Decline" |
 | Approve settings | `ApproveProfile` (protected today, `cli-only:typed-confirmation`; the typed app path is `AppConfirm`, PENDING api SO-A2) | `TypedConfirmBox`; until the flip, terminal copy |
@@ -192,7 +192,7 @@ Every control keeps an `AutomationProperties.Name` that carries the subject ("Ap
 | `NyApprovedHint` | "Approved. The row has left your inbox." |
 | `NyApprovedTitle(what, item)` | "{what} approved: {item}" with body "It is locked in. The next stage has started from exactly this." |
 | `NyCopied` | "Copied. Paste it in your terminal to approve." |
-| `NyTerminalOnly` | "Only you can approve a merge, and only from your terminal. The button copies the command." |
+| `NyTerminalOnly` | "Only you can do this, and only from your terminal. The button copies the command." (not used for the merge: that is one click in the app, owner 2026-10-23) |
 | `NyTypedHint` | "Type the words shown to confirm. This guards against a slip; only you can do this in the app." |
 | `NyHoldHint` | "Press and hold for 1.5 seconds. Let go early and nothing is approved." |
 | `NyKeepSettings` | "Leave it here to keep the current settings." |
@@ -222,7 +222,7 @@ Unknown group, kind or outcome words render the served string raw (the `Words.Kn
 | `NamedControlsTests` | keep every current `x:Name` of `NeedsYouRow`, `NeedsYouSheet`, `DecisionSheet`; add `NeedsYouInbox`, `NeedsYouCard`, `NeedsYouActionBar`, `NeedsYouReason`, `NeedsYouWhy`, `NeedsYouToast` |
 | `NeedsYouKeysTests` | update: D added, X kept as a decision-row alias, E inert, A twice on an unread `desk:` row, Ctrl+Enter, Esc order; keys ignored in a focused `TextBox` |
 | `NeedsYouViewModelTests`, `NeedsYouRowViewModelTests`, `RowSheetViewModelTests` | extend: group assignment by id prefix and kind, `failure:` rows in the fifth group, sticky header counts, selection survives a re-read |
-| `ActionCommandTests`, `NeedsYouActionCliTests` | extend: outcome-to-`CompleteStep` mapping per stop; merge row renders terminal copy; `answer-grant` renders terminal copy with the rounds filled |
+| `ActionCommandTests`, `NeedsYouActionCliTests` | extend: outcome-to-`CompleteStep` mapping per stop; merge row sends its desk action after the one-line confirm; `answer-grant` renders terminal copy with the rounds filled |
 | `ProtectedActionTests` | unchanged contract; add that no bar mode sends a `protected` id |
 | NEW `NeedsYouPageViewModelTests` | modes (Pending, Confirming, SendingBack, Approved), `ReadToEnd`, reason required, one send per press, refusal shown as served |
 | NEW `NeedsYouGroupingTests` | the four kinds and the failure group for the goldens `fixture`, `large`, `desk-task`, `park`, `idle-takeover` |
@@ -237,7 +237,7 @@ Unknown group, kind or outcome words render the served string raw (the `Words.Kn
 ## 8. Build order (each slice red test first)
 
 1. Inbox page and grouping: `NeedsYouPage`, `StickyGroupList`, the group and row templates on the existing rows, the card head and status footer, the entry points and Esc back. Red first: `NeedsYouGroupingTests` (goldens to groups), then `NeedsYouFramesTests` for pending at 1440 and 900. Proves: four kinds distinct, sticky headers, no change to Home or nav.
-2. Action bar and keys: `ActionBar` with Pending, Approve?, Send back and Approved modes, `CompleteStep` and `Decide` mapping, terminal button for the merge and `answer-grant`, D and Ctrl+Enter keys, E placeholder chip. Red first: `NeedsYouPageViewModelTests.A_on_an_unread_desk_row_asks_before_approving` and `NeedsYouKeysTests`. Proves: Q3, Q4, protected rules, one send per press.
+2. Action bar and keys: `ActionBar` with Pending, Approve?, Send back and Approved modes, `CompleteStep` and `Decide` mapping, the merge's one-line confirm, the terminal button for `answer-grant`, D and Ctrl+Enter keys, E placeholder chip. Red first: `NeedsYouPageViewModelTests.A_on_an_unread_desk_row_asks_before_approving` and `NeedsYouKeysTests`. Proves: Q3, Q4, protected rules, one send per press.
 3. Confirm controls in the bar: `TypedConfirmBox` and `HoldButton` (from `specs/setup.md` slice 1) wired for `profile:drift`, single-recipe and approve-all rows, behind the catalog status (terminal copy until `ready`). Red first: `NeedsYouActionCliTests.Profile_row_shows_terminal_copy_until_the_catalog_is_ready`. Proves: no protected id is sent, reuse of `ApproveAllViewModel`.
 4. Paused-run answer form and takeover: the answer options and stepper, the takeover inspector block, clock text, the nudge toast from the `takeover:` row, hand back and the "Handed back" toast. Red first: `TakeoverViewModelTests.Clock_reads_the_served_time_left`. Proves: Q7, Q8, Q12, hand back sends `ApplyCommand:handback` only.
 5. Pending data (separate PRs after other lanes land): "Why this needs you" text and the approve/send-back outcome boxes (engine `why`), stop number and row timeout (api), per-step names and takeover times, the scope viewer for the request body (ui U13), the recipe needs-you kind and the `setup:recipes` row.
@@ -250,7 +250,7 @@ Unknown group, kind or outcome words render the served string raw (the `Words.Kn
 4. Where a `desk:` row is "read": the scroll-to-end flag only; a card shorter than the viewport counts as read at once (the prototype does the same).
 5. Card radius: prototype 16, app max `Radius.LG` 12; use 12 unless the token pass adds 16.
 6. Which fact viewer shows stop 1's scope (counts, done-criteria, what changed): U13's scope viewer is not built; the fallback is the facts panel. Slice 5 waits on it.
-7. Merge approval: the server serves `CompleteStep` as desk for stop 3; the terminal-only rule needs the NEW `CompleteStep:merge` row or a client rule. Ask the api lane which.
+7. Merge approval: settled by the owner (2026-10-23, PB3): stop 3's merge is one click in the app behind LN-UI3's one-line confirm, sent as the served desk action (human caller only); no terminal copy and no `CompleteStep:merge` row.
 8. Run canvas details (node footer, zoom pill, step list) are owned by `specs/run-canvas.md`; confirm the inspector's hand-back box sits in that spec's inspector, not a second copy here.
 
 ## Settled by ideas (2026-10-20, after review)

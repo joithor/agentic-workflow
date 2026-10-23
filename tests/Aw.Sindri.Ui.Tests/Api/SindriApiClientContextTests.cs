@@ -218,6 +218,21 @@ public sealed class SindriApiClientContextTests
     }
 
     [Fact]
+    public async Task CodeIndexStatus_reads_the_status_route_as_the_human_and_parses_the_golden()
+    {
+        var (client, _, handler) = Reach();
+
+        var status = await client.CodeIndexStatus(_api, Token);
+
+        var seen = Assert.Single(handler.Requests);
+        Assert.Equal(("GET", "/sindri/code-index/status", string.Empty), (seen.Method, seen.Path, seen.Query));
+        Assert.Equal(("human", "ui", A.HumanToken), (seen.Caller, seen.Client, seen.Token));
+        var repo = Assert.Single(status.Value.Repos);
+        Assert.Equal(("other", "ok"), (repo.Repo, repo.State));
+        Assert.Equal(("structure", "ok"), (repo.Layers[0].Layer, repo.Layers[0].State));
+    }
+
+    [Fact]
     public async Task The_publish_state_reads_its_golden_from_the_publish_route_and_never_waits_on_the_views()
     {
         var (client, _, handler) = Reach();
