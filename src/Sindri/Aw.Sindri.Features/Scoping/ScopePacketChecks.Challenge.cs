@@ -25,8 +25,8 @@ internal static partial class ScopePacketChecks
         if (!string.Equals(ScopeJson.Str(last, "verdict"), "nothingNew", StringComparison.Ordinal)
             || ScopeJson.Items(last, "surfaces").Any() || ScopeJson.Items(last, "behaviours").Any())
         {
-            // why: the recipe's challenge loop (cap ScopeRules.ChallengeRounds) ends on a found round only when it is spent; a new round can't clear it, so the owner reads it at the stop
-            var spent = rounds.Count >= ScopeRules.ChallengeRounds;
+            // why: the recipe's challenge loop (cap c.ChallengeCap) ends on a found round only when it is spent; a new round can't clear it, so the owner reads it at the stop
+            var spent = rounds.Count >= c.ChallengeCap;
             var message = $"the last challenger round ({label}) found something new";
             if (spent)
             {

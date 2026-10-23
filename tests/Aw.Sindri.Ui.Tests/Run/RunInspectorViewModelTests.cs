@@ -109,6 +109,39 @@ public sealed class RunInspectorViewModelTests
     }
 
     [Fact]
+    public async Task Why_is_the_stages_served_why_when_the_recipe_serves_one()
+    {
+        _server.RecipeBody = _ => new RouteAnswer(HttpStatusCode.OK, RecipeWithWhy("plan", "Turns the idea into a plan you can approve."));
+        var page = await Opened();
+
+        page.Select("plan/produce");
+
+        Assert.Equal("Turns the idea into a plan you can approve.", page.Inspector!.WhyText);
+    }
+
+    [Fact]
+    public async Task A_stage_whose_recipe_state_has_an_empty_why_keeps_the_not_served_line()
+    {
+        _server.RecipeBody = _ => new RouteAnswer(HttpStatusCode.OK, RecipeWithWhy("plan", "  "));
+        var page = await Opened();
+
+        page.Select("plan/produce");
+
+        Assert.Equal(Labels.RunWhyNotServed, page.Inspector!.WhyText);
+    }
+
+    // The f5-fields recipe golden with one more state, "plan", carrying the why (or none).
+    private static string RecipeWithWhy(string state, string why)
+    {
+        var recipe = System.Text.Json.Nodes.JsonNode.Parse(GoldenFiles.Api("workflow-recipe", "workflow.f5-fields"))!;
+        var added = System.Text.Json.Nodes.JsonNode.Parse(recipe["states"]![0]!.ToJsonString())!;
+        added["id"] = state;
+        added["why"] = why;
+        recipe["states"]!.AsArray().Add(added);
+        return recipe.ToJsonString();
+    }
+
+    [Fact]
     public async Task Facts_are_headed_for_the_whole_stage_and_split_by_direction()
     {
         var page = await Opened(facts: [Fact("brief", FactDirection.Input, FactStatus.Produced), Fact("plan", FactDirection.Output, FactStatus.Pending)]);

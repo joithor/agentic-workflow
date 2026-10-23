@@ -61,10 +61,13 @@ internal static class StatusRecords
     /// <returns>One action id per command.</returns>
     public static IReadOnlyList<ActionId> ActionIds(InstanceView view) => [.. Commands(view).Select(static c => c.ActionId)];
 
-    /// <summary>The instance's own verbs in §6.4 order, then the re-approval a drift waits for: each a row of the command catalog.</summary>
+    /// <summary>
+    /// The instance's own verbs in §6.4 order, then the re-approval a drift waits for: each a row of the command catalog. The status verbs are a closed set,
+    /// so a recipe verb (an entry with a <see cref="AllowedCommand.Verb"/>, API18) is not a row here: it is in the view's 'allowedCommands'.
+    /// </summary>
     private static List<StatusCommand> Commands(InstanceView view)
     {
-        var rows = view.AllowedCommands.Select(c => Row(c, view)).ToList();
+        var rows = view.AllowedCommands.Where(static c => c.Verb is null).Select(c => Row(c, view)).ToList();
         if (view.ApproveRow is { } approve)
         {
             rows.Add(approve);

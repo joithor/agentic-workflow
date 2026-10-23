@@ -61,8 +61,25 @@ internal sealed class SessionRowViewModel : ObservableObject, ISessionRef
     /// <summary>The host's label, with the tmux session after it when no lane names the row.</summary>
     public string HostText { get; private set => Set(ref field, value); } = string.Empty;
 
-    /// <summary>Where it runs, in one line: worktree, host, lane or launch.</summary>
+    /// <summary>Where it runs, in one line: host, lane or launch.</summary>
     public string WhereText { get; private set => Set(ref field, value); } = string.Empty;
+
+    /// <summary>The Repository column: the repo, then the last folder of its worktree.</summary>
+    public string RepoText { get; private set => Set(ref field, value); } = string.Empty;
+
+    /// <summary>True under the page width where only Status, Agent and For stay.</summary>
+    public bool IsCompact { get; private set => Set(ref field, value); }
+
+    /// <summary>True when every column shows.</summary>
+    public bool IsWide => !IsCompact;
+
+    /// <summary>Sets the row's layout for the page's width.</summary>
+    /// <param name="compact">True under the width where only three columns stay.</param>
+    internal void SetCompact(bool compact)
+    {
+        IsCompact = compact;
+        OnChanged(nameof(IsWide));
+    }
 
     /// <summary>The lane ("meta · sindri/ideas") or, for a launched session, its launch; else empty.</summary>
     public string LaneText { get; private set => Set(ref field, value); } = string.Empty;
@@ -137,9 +154,10 @@ internal sealed class SessionRowViewModel : ObservableObject, ISessionRef
         (HostText, LaneText) = (HostOf(Row), LaneOf(Row));
         StepText = Row.Launch is { } launch && launch.Instance is { Length: > 0 } ? Labels.SessionStep(launch.State, launch.Attempt) : string.Empty;
         StepName = Row.Launch is { } named && named.Instance is { Length: > 0 } ? Labels.SessionStepName(StepText, named.State) : string.Empty;
-        WhereText = string.Join(" · ", new[] { WorktreeText, HostText, LaneText }.Where(p => p.Length > 0));
+        WhereText = string.Join(" · ", new[] { HostText, LaneText }.Where(p => p.Length > 0));
+        RepoText = string.Join(" · ", new[] { Row.Repo ?? string.Empty, LastFolder(WorktreeText) }.Where(p => p.Length > 0));
         Name = Labels.SessionName(Row.ProviderLabel, title, chip.Word.ToLowerInvariant() + (EstimatedText.Length > 0 ? " (" + EstimatedText + ")" : string.Empty), string.Join(", ", new[] { AskingText, StepText }.Where(p => p.Length > 0)), HostText);
-        Signature = string.Join('|', Row.State, AskingText, EstimatedText, title, WorktreeText, HostText, LaneText, StepText, Row.Focus.Method);
+        Signature = string.Join('|', Row.State, AskingText, EstimatedText, title, WorktreeText, HostText, LaneText, StepText, Row.Focus.Method, Row.Repo);
         Focus.Show(Row.Ref);
         foreach (var name in (string[])[nameof(IsAsking), nameof(HasAsking), nameof(IsEstimated), nameof(HasWorktree), nameof(HasLane), nameof(IsLaunched), nameof(HasStep)])
         {
@@ -150,6 +168,8 @@ internal sealed class SessionRowViewModel : ObservableObject, ISessionRef
     private static string AskingOf(SessionRowView row) => row.Asking is { } asking ? Labels.AskingDetail(asking.Reason, asking.Tool) : string.Empty;
 
     private static string EstimatedOf(SessionRowView row) => row.Estimated && string.Equals(row.StateSource, "transcript", StringComparison.Ordinal) ? "estimated" : string.Empty;
+
+    private static string LastFolder(string path) => Path.GetFileName(path.TrimEnd('/', '\\'));
 
     private static string HostOf(SessionRowView row) => row.Lane is null && row.Host.Session is { Length: > 0 } session ? row.Host.Label + " · " + session : row.Host.Label;
 

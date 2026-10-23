@@ -10,10 +10,11 @@ internal static partial class ScopePacketChecks
     /// <summary>Runs every rule of the stage.</summary>
     /// <param name="facts">The facts.</param>
     /// <param name="stage">Draft runs the draft rules; evidence runs all.</param>
-    internal static ScopingCheckResponse Run(ScopeFacts facts, ScopeStage stage)
+    /// <param name="challengeCap">The running recipe's loops.challenge.cap; <see cref="ScopeRules.DefaultChallengeRounds"/> where no recipe runs the check.</param>
+    internal static ScopingCheckResponse Run(ScopeFacts facts, ScopeStage stage, int challengeCap = ScopeRules.DefaultChallengeRounds)
     {
         ArgumentNullException.ThrowIfNull(facts);
-        var context = new ScopeContext(facts);
+        var context = new ScopeContext(facts, challengeCap);
         var rules = new List<ScopeRuleResult>(ScopeRules.All.Count);
         var fails = new List<ScopeFinding>();
         var warns = new List<ScopeFinding>();

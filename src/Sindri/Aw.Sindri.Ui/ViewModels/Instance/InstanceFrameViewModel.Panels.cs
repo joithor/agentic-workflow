@@ -115,7 +115,7 @@ internal sealed partial class InstanceFrameViewModel
         FrameIntent.FocusPointer => FrameFocus.ChildPointer,
         FrameIntent.FocusRecipe => FrameFocus.Recipe,
         FrameIntent.FocusChildren => FrameFocus.Children,   // see ChildrenFocus: a frame with no children falls back at once
-        FrameIntent.None or FrameIntent.PendingOutput or FrameIntent.AskCancel or FrameIntent.OpenInitial => null,
+        FrameIntent.None or FrameIntent.PendingOutput or FrameIntent.AskCancel or FrameIntent.OpenInitial or FrameIntent.TakeOver or FrameIntent.HandBack => null,
         _ => null,
     };
 

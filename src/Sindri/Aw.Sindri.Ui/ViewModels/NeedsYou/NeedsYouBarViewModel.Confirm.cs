@@ -29,6 +29,21 @@ internal sealed partial class NeedsYouBarViewModel
     /// <summary>False while the request has left the list under the card: the controls go quiet.</summary>
     public bool ConfirmEnabled => Enabled;
 
+    /// <summary>The step's served why for the shown desk request; empty when none is served.</summary>
+    public string DeskWhy => _target?.Why ?? "";
+
+    /// <summary>What approving does, as the step's recipe says; empty when not served.</summary>
+    public string IfApprove => _target?.IfApprove ?? "";
+
+    /// <summary>What sending it back does, as the step's recipe says; empty when not served.</summary>
+    public string IfSendBack => _target?.IfSendBack ?? "";
+
+    /// <summary>True when the approve box has words to show.</summary>
+    public bool HasIfApprove => IfApprove.Length > 0;
+
+    /// <summary>True when the send-back box has words to show.</summary>
+    public bool HasIfSendBack => IfSendBack.Length > 0;
+
     private NeedsYouConfirmKind ConfirmKind => _confirm?.Kind ?? NeedsYouConfirmKind.None;
 
     /// <summary>The typed box was pressed on text that is exactly the challenge's: sends it, once.</summary>

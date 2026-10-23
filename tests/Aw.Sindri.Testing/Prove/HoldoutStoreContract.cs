@@ -166,4 +166,63 @@ public abstract class HoldoutStoreContract
     }
 
     private static string SindriErrorsInvalid => SindriErrors.InvalidInput.Code;
+
+    /// <summary>A saved set reads back as the set the author wrote, with the hash of its file.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_saved_set_reads_back_with_the_hash_of_its_file()
+    {
+        var store = Create();
+
+        var saved = await store.Save(Line, Phase, SetText, Token);
+        var read = await store.Set(Line, Phase, Token);
+
+        Expect.True(saved.IsSuccess && read.IsSuccess);
+        Expect.Equal(HoldoutFiles.Hash(SetText), saved.Value.Hash);
+        Expect.Equal(saved.Value.Hash, read.Value.Hash);
+        Expect.Sequence(["P1-H1", "P1-H2", "P1-C"], read.Value.Scenarios.Select(static s => s.Key));
+    }
+
+    /// <summary>A set of another phase, one with no canary phrase and one that is not a set are refused, and nothing is stored.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_set_of_another_phase_or_with_no_canary_or_not_a_set_is_refused_and_not_stored()
+    {
+        var store = Create();
+        var noCanary = SetText.Replace("\"phrase\": \"violet otter ledger 4417\"", "\"phrase\": \"\"", StringComparison.Ordinal);
+
+        var otherPhase = await store.Save(Line, "p2", SetText, Token);
+        var withoutCanary = await store.Save(Line, Phase, noCanary, Token);
+        var notASet = await store.Save(Line, Phase, "nonsense", Token);
+        var stored = await store.Set(Line, Phase, Token);
+
+        Expect.True(otherPhase.IsError && withoutCanary.IsError && notASet.IsError);
+        Expect.True(stored.IsError);
+    }
+
+    /// <summary>A sealed set is not replaced, and a seal binds the set's hash to the plan packet.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_seal_binds_the_set_to_the_plan_and_a_sealed_set_is_not_replaced()
+    {
+        var store = Create();
+        _ = (await store.Save(Line, Phase, SetText, Token)).Value;
+
+        var sealed1 = await store.SealWith(Line, Phase, "sha256:plan1", Token);
+        var again = await store.SealWith(Line, Phase, "sha256:plan1", Token);
+        var other = await store.SealWith(Line, Phase, "sha256:plan2", Token);
+        var replaced = await store.Save(Line, Phase, SetText.Replace("one record", "two records", StringComparison.Ordinal), Token);
+        var read = await store.Seal(Line, Phase, Token);
+
+        Expect.True(sealed1.IsSuccess && again.IsSuccess);
+        Expect.Equal(HoldoutFiles.Hash(SetText), sealed1.Value.SetHash);
+        Expect.Equal("sha256:plan1", read.Value.PlanHash);
+        Expect.True(other.IsError && replaced.IsError);
+    }
+
+    /// <summary>A phase with no set can't be sealed.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_phase_with_no_set_cannot_be_sealed() =>
+        Expect.True((await Create().SealWith(Line, Phase, "sha256:plan1", Token)).IsError);
 }

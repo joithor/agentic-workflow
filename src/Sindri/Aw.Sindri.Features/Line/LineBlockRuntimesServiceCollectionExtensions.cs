@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Features.Line;
@@ -18,7 +19,9 @@ internal static class LineBlockRuntimesServiceCollectionExtensions
         .AddBlockRuntime<PlanCheckStep>()
         .AddBlockRuntime<PlanEvidenceStep>()
         .AddBlockRuntime<PlanFreezeStep>()
+        .AddBlockRuntime<PlanHoldoutStoreStep>()
         .AddBlockRuntime<PlanIntakeStep>()
         .AddBlockRuntime<PlanQuestionsStep>()
-        .AddBlockRuntime<PlanSettleStep>();
+        .AddBlockRuntime<PlanSettleStep>()
+        .AddSingleton<IAgentStepInstructions, HoldoutAuthorInstructions>();
 }

@@ -65,6 +65,23 @@ internal sealed partial class JobSheetViewModel(ISindriApi api) : ObservableObje
     /// <summary>True when there is a summary.</summary>
     public bool HasSummary => SummaryText.Length > 0;
 
+    /// <summary>The callout's accessible name: the summary, then the code when there is one.</summary>
+    public string SummaryName => HasCode ? SummaryText + " " + CodeText : SummaryText;
+
+    /// <summary>The error code of a failed job, shown under its summary in the callout; empty otherwise.</summary>
+    public string CodeText
+    {
+        get;
+        private set
+        {
+            Set(ref field, value);
+            OnChanged(nameof(HasCode));
+        }
+    } = string.Empty;
+
+    /// <summary>True when the callout carries a code.</summary>
+    public bool HasCode => CodeText.Length > 0;
+
     /// <summary>The Cancel control while the API allows it; else null.</summary>
     public ControlViewModel? Cancel { get; private set => Set(ref field, value); }
 
@@ -223,7 +240,9 @@ internal sealed partial class JobSheetViewModel(ISindriApi api) : ObservableObje
         StateLine = string.Join(" · ", glyph + " " + word, Labels.JobWhen(running, age), "by " + Labels.JobStartedBy(job.StartedBy));
         SummaryText = job.Summary ?? string.Empty;
         IsFailedJob = string.Equals(job.State, "failed", StringComparison.Ordinal);
+        CodeText = IsFailedJob ? job.Code ?? string.Empty : string.Empty;
         OnChanged(nameof(HasSummary));
+        OnChanged(nameof(SummaryName));
         _last = job;
         Cancel = job.Actions.Contains("CancelJob", StringComparer.Ordinal) ? Cancel ?? CancelFor(job) : null;
         Progress = [.. job.Progress.Select(p => p.Line)];
@@ -237,7 +256,7 @@ internal sealed partial class JobSheetViewModel(ISindriApi api) : ObservableObje
 
     private ControlViewModel? CancelFor(JobView job) =>
         job.Actions.Contains("CancelJob", StringComparer.Ordinal)
-            ? _catalog?.On("CancelJob", Heading, ct => _url is { } url ? Api.CancelJob(url, job.Id, ct) : Task.FromResult<Result<CommandAcceptedView>>(SindriUiErrors.Unreachable.With("Sindri isn't reachable yet")))
+            ? _catalog?.On("CancelJob", Heading, ct => _url is { } url ? Api.CancelJob(url, job.Id, ct) : Task.FromResult<Result<CommandAcceptedView>>(SindriUiErrors.Unreachable.With("Sindri isn't reachable yet")), confirm: true)
             : null;
 
     private void Failed(Error error)
@@ -257,11 +276,12 @@ internal sealed partial class JobSheetViewModel(ISindriApi api) : ObservableObje
 
     private void Clear()
     {
-        (Heading, StateLine, SummaryText, ProblemText, Note, ResultText, Cli) = (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
+        (Heading, StateLine, SummaryText, CodeText, ProblemText, Note, ResultText, Cli) = (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
         (Progress, Fields, Cancel, _last) = ([], [], null, null);
         (ProblemCode, CopyLabel, CopyIdLabel) = (string.Empty, Labels.Copy, Labels.Copy);
         _idCopies++;
         _copies++;   // a pending "Copied" reset belongs to the job that was copied
         OnChanged(nameof(HasSummary));
+        OnChanged(nameof(SummaryName));
     }
 }

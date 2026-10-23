@@ -64,6 +64,9 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
     /// <summary>The command catalog as controls (read on connect and after a reconnect).</summary>
     public CatalogViewModel Catalog { get; } = new(clipboard, clock);
 
+    /// <summary>The Code index card (code-index spec §7.3, CI-10b); the shell has it followed with the other views.</summary>
+    public CodeIndexCardViewModel CodeIndex { get; } = new(api, clock);
+
     /// <summary>The stalled and rebuilding banners (§4.1), from the services view's asOf.</summary>
     public ViewsBanner Banner { get; } = new();
 
