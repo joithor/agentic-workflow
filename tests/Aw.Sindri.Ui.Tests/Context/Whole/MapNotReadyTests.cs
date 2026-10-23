@@ -9,6 +9,7 @@ using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Context;
 using Aw.Sindri.Ui.ViewModels.Controls;
+using Aw.Sindri.Ui.ViewModels.Shell;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Ui.Tests.Context.Whole;
@@ -144,7 +145,7 @@ public sealed class MapNotReadyTests
         Assert.True(JsonNode.DeepEquals(Without(served), written), $"{scenario}: {written}");
     }
 
-    private static JsonNode Without(JsonNode served)
+    private static JsonObject Without(JsonNode served)
     {
         var copy = new JsonObject();
         foreach (var name in (string[])["building", "noMap"])

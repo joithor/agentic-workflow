@@ -43,9 +43,9 @@ internal sealed partial class ContextPageViewModel
     /// <summary>Opens the build's job; does nothing when the answer names none.</summary>
     internal void RequestBuildJob()
     {
-        if (HasBuildJob)
+        if (_servedBuilding && _notReady.Building?.JobId is { Length: > 0 } job)
         {
-            JobRequested?.Invoke(this, new JobRequestedEventArgs(new DeepLink(DeepLinkKind.Job, _notReady.Building!.JobId)));
+            JobRequested?.Invoke(this, new JobRequestedEventArgs(new DeepLink(DeepLinkKind.Job, job)));
         }
     }
 
