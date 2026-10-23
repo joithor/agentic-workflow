@@ -4587,3 +4587,38 @@ override Aw.Sindri.Features.StartInstance.RerunInstanceRequest.GetHashCode() -> 
 override Aw.Sindri.Features.StartInstance.RerunInstanceRequest.ToString() -> string!
 static Aw.Sindri.Features.StartInstance.RerunInstanceRequest.operator !=(Aw.Sindri.Features.StartInstance.RerunInstanceRequest? left, Aw.Sindri.Features.StartInstance.RerunInstanceRequest? right) -> bool
 static Aw.Sindri.Features.StartInstance.RerunInstanceRequest.operator ==(Aw.Sindri.Features.StartInstance.RerunInstanceRequest? left, Aw.Sindri.Features.StartInstance.RerunInstanceRequest? right) -> bool
+Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexRequest
+Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexRequest.<Clone>$() -> Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexRequest!
+Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexRequest.Deconstruct(out string! Repo) -> void
+Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexRequest.EmbedCodeIndexRequest(string! Repo) -> void
+Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexRequest.Equals(Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexRequest? other) -> bool
+Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexRequest.Repo.get -> string!
+Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexRequest.Repo.init -> void
+Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult
+Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.<Clone>$() -> Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult!
+Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Deconstruct(out string! Repo, out string! Outcome, out int Embedded, out int Embeddable, out long Milliseconds) -> void
+Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.EmbedCodeIndexResult(string! Repo, string! Outcome, int Embedded, int Embeddable, long Milliseconds) -> void
+Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Embeddable.get -> int
+Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Embeddable.init -> void
+Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Embedded.get -> int
+Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Embedded.init -> void
+Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Equals(Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult? other) -> bool
+Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Milliseconds.get -> long
+Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Milliseconds.init -> void
+Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Outcome.get -> string!
+Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Outcome.init -> void
+Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Repo.get -> string!
+Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Repo.init -> void
+const Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Later = "later" -> string!
+const Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Ok = "ok" -> string!
+const Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Pending = "pending" -> string!
+override Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexRequest.GetHashCode() -> int
+override Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexRequest.ToString() -> string!
+override Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.Equals(object? obj) -> bool
+override Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.GetHashCode() -> int
+override Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.ToString() -> string!
+static Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexRequest.operator !=(Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexRequest? left, Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexRequest? right) -> bool
+static Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexRequest.operator ==(Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexRequest? left, Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexRequest? right) -> bool
+static Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.operator !=(Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult? left, Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult? right) -> bool
+static Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult.operator ==(Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult? left, Aw.Sindri.Features.CodeIndexJobs.EmbedCodeIndexResult? right) -> bool

@@ -135,7 +135,7 @@ public abstract partial class IndexStoreContract
         await ExpectOnlyRun(store);
     }
 
-    /// <summary>A build that is never disposed, as when its process is killed, leaves the live index alone.</summary>
+    /// <summary>A build abandoned unpublished (its process died, which also drops the repo's lock; here it is disposed) leaves the live index alone.</summary>
     /// <returns>A task.</returns>
     [Fact]
     public async Task A_build_that_is_abandoned_leaves_the_live_index_alone()
@@ -146,6 +146,7 @@ public abstract partial class IndexStoreContract
         var abandoned = await Begin(store, incremental: true);
         Succeeds(await abandoned.WriteFiles([FileOf("src/B.cs", SymbolOf("src/B.cs", "B.Other"))], _none), "writing");
 
+        await abandoned.DisposeAsync();
         await ExpectOnlyRun(store);
         var next = await Begin(store, incremental: true);
         await using (next)
@@ -154,7 +155,6 @@ public abstract partial class IndexStoreContract
         }
 
         await ExpectOnlyRun(store);
-        GC.KeepAlive(abandoned);
     }
 
     /// <summary>An incremental build starts from a copy of the live index and shows its header; any other build starts empty.</summary>

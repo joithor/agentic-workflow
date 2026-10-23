@@ -22,8 +22,13 @@ internal sealed class RunCardViewModel : ObservableObject
         IsActive = active;
         FooterText = footerExtra.Length > 0 ? Word + " · " + footerExtra : Word;
         HelpText = leadsTo is null ? string.Empty : Labels.RunLeadsTo(leadsTo);
-        AutomationName = IsStage ? $"{node.Name}, {Labels.StageOf(number, total)}, {Word}" : $"{node.Name}, {Word}";
+        KindWord = node.StateKind is { } kind ? Labels.RunKindWord(kind) : string.Empty;
+        var named = IsStage ? $"{node.Name}, {Labels.StageOf(number, total)}, {Word}" : $"{node.Name}, {Word}";
+        AutomationName = KindWord.Length > 0 ? named + ", " + KindWord : named;
     }
+
+    /// <summary>Who does the state, as its recipe says; empty when the recipe serves no kind.</summary>
+    public string KindWord { get; }
 
     /// <summary>The graph node the card shows.</summary>
     internal RunNode Node { get; }
