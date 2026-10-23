@@ -25,6 +25,7 @@ internal sealed class SetupProfileConfirmViewModel : ObservableObject
     private readonly TimeProvider _clock;
     private AppChallengeView? _challenge;
     private string _asked = string.Empty;   // the hash the challenge in hand was asked for
+    private string _summaryFor = string.Empty;   // the hash the summary in hand was read for
     private bool _asking;
     private bool _sending;
     private bool _wanted;
@@ -35,6 +36,9 @@ internal sealed class SetupProfileConfirmViewModel : ObservableObject
         (_catalog, _url, _hash, _api, _clock) = (catalog, url, hash, api, clock);
         TypedBox = new TypedConfirmBoxViewModel(Action, catalog, clock);
     }
+
+    /// <summary>The plain-words summary of what approving lets Sindri do (shown while the row needs the person, whether or not the app may approve).</summary>
+    public ProfileSummaryViewModel Summary { get; } = new();
 
     /// <summary>The typed box (the shared control's state).</summary>
     public TypedConfirmBoxViewModel TypedBox { get; }
@@ -85,12 +89,13 @@ internal sealed class SetupProfileConfirmViewModel : ObservableObject
             return Task.CompletedTask;
         }
 
+        var read = ReadSummary(_session);
         if (!ShowsTyped || _sending || _asking || (_challenge is not null && string.Equals(_asked, Hash, StringComparison.Ordinal)))
         {
-            return Task.CompletedTask;
+            return read;
         }
 
-        return Ask(_session);
+        return Task.WhenAll(read, Ask(_session));
     }
 
     /// <summary>Sends the typed answer, once. A phrase that ran out is asked for again first and nothing is sent.</summary>
@@ -152,6 +157,30 @@ internal sealed class SetupProfileConfirmViewModel : ObservableObject
         }
     }
 
+    // The summary for the live profile, read once per hash; a failed read is tried again at the next follow, and the person can still approve without it.
+    private async Task ReadSummary(int session)
+    {
+        if (_url() is not { } api || Hash is not { Length: > 0 } hash || string.Equals(hash, _summaryFor, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _summaryFor = hash;
+        var read = await _api.ProfileSummary(api, CancellationToken.None).ConfigureAwait(true);
+        if (session != _session)
+        {
+            return;
+        }
+
+        if (read.IsError)
+        {
+            _summaryFor = string.Empty;
+            return;
+        }
+
+        Summary.Show(read.Value.Summary);
+    }
+
     // The phrase for 'approve profile <hash6>'; its served text is what the box shows and the person types.
     private async Task Ask(int session)
     {
@@ -202,7 +231,8 @@ internal sealed class SetupProfileConfirmViewModel : ObservableObject
     private void Reset()
     {
         _session++;
-        (_challenge, _asked, _asking, _sending) = (null, string.Empty, false, false);
+        (_challenge, _asked, _summaryFor, _asking, _sending) = (null, string.Empty, string.Empty, false, false);
+        Summary.Show(summary: null);
         TypedBox.Clear();
     }
 
