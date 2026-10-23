@@ -3,7 +3,6 @@ using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Context;
 using Aw.Sindri.Ui.Api.Jobs;
 using Aw.Sindri.Ui.Navigation;
-using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.ViewModels.Controls;
 
 namespace Aw.Sindri.Ui.ViewModels.Context;
@@ -38,14 +37,14 @@ internal sealed partial class ContextPageViewModel
     public bool HasBuildJob => _servedBuilding && !string.IsNullOrEmpty(_notReady.Building?.JobId);
 
     /// <summary>Raised when the build's job is asked for; the shell opens the Jobs page on that job's sheet.</summary>
-    internal event EventHandler<JobRequestedEventArgs>? JobRequested;
+    internal event EventHandler<ContextJobRequestedEventArgs>? JobRequested;
 
     /// <summary>Opens the build's job; does nothing when the answer names none.</summary>
     internal void RequestBuildJob()
     {
         if (_servedBuilding && _notReady.Building?.JobId is { Length: > 0 } job)
         {
-            JobRequested?.Invoke(this, new JobRequestedEventArgs(new DeepLink(DeepLinkKind.Job, job)));
+            JobRequested?.Invoke(this, new ContextJobRequestedEventArgs(new DeepLink(DeepLinkKind.Job, job)));
         }
     }
 
@@ -112,7 +111,7 @@ internal sealed partial class ContextPageViewModel
     // The whole map's refusal says why there is no map: a running build, or a first build that has started, is the Building overlay (it wins over No map).
     private void NoteNotReady(Error error)
     {
-        _notReady = MapNotReadyView.From(error);
+        _notReady = MapNotReadyView.From(error, SindriApiClient.Json);
         _servedBuilding = _notReady.Building is not null || _notReady.NoMap?.FirstRunStartedAt is not null;
         if (_servedBuilding)
         {

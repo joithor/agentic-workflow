@@ -10,6 +10,6 @@ namespace Aw.Sindri.Ui.Api.Context;
 /// <param name="ApprovedAt">When the profile was approved.</param>
 /// <param name="FirstRunStartedAt">When the first map build started; set means a first build is going.</param>
 internal sealed record MapNotBuiltView(
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<string>? Repos,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] DateTimeOffset? ApprovedAt,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] DateTimeOffset? FirstRunStartedAt);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<string>? Repos = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] DateTimeOffset? ApprovedAt = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] DateTimeOffset? FirstRunStartedAt = null);

@@ -12,8 +12,8 @@ namespace Aw.Sindri.Ui.Api.Context;
 /// <param name="LastSyncAt">When the last map was synced.</param>
 /// <param name="JobId">The build's job.</param>
 internal sealed record MapBuildingView(
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? SourcesDone,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? SourcesTotal,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] DateTimeOffset? StartedAt,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] DateTimeOffset? LastSyncAt,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? JobId);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? SourcesDone = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? SourcesTotal = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] DateTimeOffset? StartedAt = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] DateTimeOffset? LastSyncAt = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? JobId = null);

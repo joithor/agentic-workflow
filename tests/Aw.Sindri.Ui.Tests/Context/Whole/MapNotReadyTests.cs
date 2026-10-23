@@ -1,5 +1,7 @@
 using System.Net;
+using System.Text.Json;
 using System.Text.Json.Nodes;
+using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
@@ -9,7 +11,6 @@ using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Context;
 using Aw.Sindri.Ui.ViewModels.Controls;
-using Aw.Sindri.Ui.ViewModels.Shell;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Ui.Tests.Context.Whole;
@@ -31,7 +32,7 @@ public sealed class MapNotReadyTests
         "{\"type\":\"about:blank\",\"title\":\"SND-CONTEXT-030\",\"status\":404,\"detail\":\"there is no map yet\""
         + (building is null ? string.Empty : ",\"building\":" + building) + (noMap is null ? string.Empty : ",\"noMap\":" + noMap) + ",\"traceId\":\"<trace>\"}");
 
-    private static async Task<(ContextPageViewModel Page, List<JobRequestedEventArgs> Jobs)> Page(RouteAnswer answer)
+    private static async Task<(ContextPageViewModel Page, List<ContextJobRequestedEventArgs> Jobs)> Page(RouteAnswer answer)
     {
         var api = new FakeSindriApi { WholeMapAnswer = _ => answer };
         var clipboard = new FakeClipboard();
@@ -40,7 +41,7 @@ public sealed class MapNotReadyTests
         var url = new Uri("http://127.0.0.1:1/");
         catalog.Show(url, api, (await api.Commands(url, Token)).Value);
         var page = new ContextPageViewModel(new ContextPorts(api, () => url, clipboard, clock, catalog, _ => { }));
-        var jobs = new List<JobRequestedEventArgs>();
+        var jobs = new List<ContextJobRequestedEventArgs>();
         page.JobRequested += (_, e) => jobs.Add(e);
         await page.Opened(Token);
         return (page, jobs);
@@ -128,17 +129,17 @@ public sealed class MapNotReadyTests
     public void The_two_members_read_and_write_back_exactly_what_the_golden_has(string scenario)
     {
         var served = GoldenFiles.Node("context-whole", scenario);
-        var error = new Aw.Kernel.Error("SND-CONTEXT-030", Aw.Kernel.ErrorKind.NotFound, "x");
+        var error = new Error("SND-CONTEXT-030", ErrorKind.NotFound, "x");
         foreach (var name in (string[])["building", "noMap"])
         {
             if (served[name] is { } member)
             {
-                error = error.WithExtension(name, System.Text.Json.JsonDocument.Parse(member.ToJsonString()).RootElement.Clone());
+                error = error.WithExtension(name, JsonDocument.Parse(member.ToJsonString()).RootElement.Clone());
             }
         }
 
-        var read = MapNotReadyView.From(error);
-        var written = JsonNode.Parse(AwJson.Serialize(read, SindriApiClient.Json))!;
+        var read = MapNotReadyView.From(error, SindriApiClient.Json);
+        var written = JsonNode.Parse(AwJson.Serialize(read, SindriApiClient.Json)) ?? throw new InvalidOperationException("no JSON");
 
         Assert.Equal(served["building"] is not null, read.Building is not null);
         Assert.Equal(served["noMap"] is not null, read.NoMap is not null);
