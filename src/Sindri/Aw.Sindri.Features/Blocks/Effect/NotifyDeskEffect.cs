@@ -35,7 +35,7 @@ internal sealed class NotifyDeskEffect(IDeskNotices notices, TimeProvider clock)
         var row = RowOf(context, address);
         var notice = new DeskNotice(context.Identity, address, ItemKey.From(context.Item),
             ClassOf(context), context.Text ?? Argument(context, "text") ?? context.Instance, clock.GetUtcNow(),
-            row?.Value, row is { } id ? "needs-you/" + id.Value : null);   // switch to NeedsYouRoutes once it exists (API A2)
+            row, row is { } id ? "needs-you/" + id.Value : null);   // switch to NeedsYouRoutes once it exists (API A2)
         var sent = await notices.Send(notice, cancellationToken).ConfigureAwait(false);
         if (sent.IsError)
         {

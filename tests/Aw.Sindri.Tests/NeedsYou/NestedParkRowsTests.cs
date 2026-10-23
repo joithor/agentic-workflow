@@ -53,7 +53,7 @@ public sealed class NestedParkRowsTests
         _ = await new NotifyDeskEffect(notices, TimeProvider.System).Dispatch(context, TestContext.Current.CancellationToken);
 
         var row = Assert.Single(await Rows(q)).Row;
-        Assert.Equal(row.Id.Value, Assert.Single(notices.Sent).RowId);
+        Assert.Equal(row.Id.Value, Assert.Single(notices.Sent).RowId?.Value);
     }
 
     [Fact]

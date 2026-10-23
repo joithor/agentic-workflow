@@ -86,7 +86,7 @@ public sealed class FileDeskNoticesTests : IDisposable
     public async Task A_notice_with_a_row_writes_both_fields_and_hands_the_deep_link_to_the_notifier()
     {
         var row = NeedsYouRowId.Park(InstanceAddress.From("T-4/dev-notify/1")).Value;
-        var notice = DeskNoticesContract.Notice("WFI-a:1:n1") with { RowId = row, DeepLink = "needs-you/" + row };
+        var notice = DeskNoticesContract.Notice("WFI-a:1:n1") with { RowId = NeedsYouRowId.From(row), DeepLink = "needs-you/" + row };
 
         _ = await Notices().Send(notice, Token);
 

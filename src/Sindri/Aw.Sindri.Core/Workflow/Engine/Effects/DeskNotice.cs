@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Aw.Sindri.Core.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Effects;
 
@@ -21,5 +22,5 @@ public sealed record DeskNotice(
     NoticeClass Class,
     string Text,
     DateTimeOffset At,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? RowId = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] NeedsYouRowId? RowId = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? DeepLink = null);

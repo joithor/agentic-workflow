@@ -76,8 +76,8 @@ public sealed class NotifyDeskEffectTests
     {
         var notice = await Engine(Root, "desk");
 
-        Assert.Equal(NeedsYouRowId.Desk(InstanceAddress.From(Root)).Value, notice.RowId);
-        Assert.Equal("needs-you/" + notice.RowId, notice.DeepLink);
+        Assert.Equal(NeedsYouRowId.Desk(InstanceAddress.From(Root)).Value, notice.RowId?.Value);
+        Assert.Equal("needs-you/" + notice.RowId?.Value, notice.DeepLink);
     }
 
     [Fact]
@@ -85,9 +85,9 @@ public sealed class NotifyDeskEffectTests
     {
         var notice = await Engine(Child, "desk");
 
-        Assert.Equal(NeedsYouRowId.Desk(InstanceAddress.From(Child)).Value, notice.RowId);
-        Assert.NotEqual(NeedsYouRowId.Desk(InstanceAddress.From(Root)).Value, notice.RowId);
-        Assert.Equal("needs-you/" + notice.RowId, notice.DeepLink);
+        Assert.Equal(NeedsYouRowId.Desk(InstanceAddress.From(Child)).Value, notice.RowId?.Value);
+        Assert.NotEqual(NeedsYouRowId.Desk(InstanceAddress.From(Root)).Value, notice.RowId?.Value);
+        Assert.Equal("needs-you/" + notice.RowId?.Value, notice.DeepLink);
     }
 
     [Fact]
@@ -95,8 +95,8 @@ public sealed class NotifyDeskEffectTests
     {
         var notice = await Engine(Nested, "park");
 
-        Assert.Equal(NeedsYouRowId.Park(InstanceAddress.From(Root)).Value, notice.RowId);
-        Assert.Equal("needs-you/" + notice.RowId, notice.DeepLink);
+        Assert.Equal(NeedsYouRowId.Park(InstanceAddress.From(Root)).Value, notice.RowId?.Value);
+        Assert.Equal("needs-you/" + notice.RowId?.Value, notice.DeepLink);
     }
 
     [Fact]
@@ -104,8 +104,8 @@ public sealed class NotifyDeskEffectTests
     {
         var notice = await Engine(Child, "takeover");
 
-        Assert.Equal(NeedsYouRowId.Takeover(InstanceAddress.From(Child)).Value, notice.RowId);
-        Assert.Equal("needs-you/" + notice.RowId, notice.DeepLink);
+        Assert.Equal(NeedsYouRowId.Takeover(InstanceAddress.From(Child)).Value, notice.RowId?.Value);
+        Assert.Equal("needs-you/" + notice.RowId?.Value, notice.DeepLink);
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public sealed class NotifyDeskEffectTests
         _ = await effect.Dispatch(Recipe("WFI-a:2:0", "text"), Token);
 
         var notice = Assert.Single(_notices.Sent);
-        Assert.Equal((null, null), (notice.RowId, notice.DeepLink));
+        Assert.Equal((null, null), (notice.RowId?.Value, notice.DeepLink));
     }
 
     /// <summary>An engine notice for <paramref name="instance"/> that names <paramref name="row"/>, as the engine sends it.</summary>
