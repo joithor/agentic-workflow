@@ -17122,6 +17122,10 @@ Aw.Sindri.Core.Workflow.Registry.RecipeSummary.ChildOnly.get -> bool?
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.ChildOnly.init -> void
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.Stats.get -> Aw.Sindri.Core.Workflow.Stats.RecipeListStats?
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.Stats.init -> void
+Aw.Sindri.Core.Workflow.Registry.RecipeSummary.ApprovedVersion.get -> int?
+Aw.Sindri.Core.Workflow.Registry.RecipeSummary.ApprovedVersion.init -> void
+Aw.Sindri.Core.Workflow.Registry.RecipeSummary.ApprovedHash.get -> Aw.Sindri.Core.Workflow.Ids.RecipeHash?
+Aw.Sindri.Core.Workflow.Registry.RecipeSummary.ApprovedHash.init -> void
 Aw.Sindri.Core.Events.WorkflowEventDelta.Recipe.get -> string?
 Aw.Sindri.Core.Events.WorkflowEventDelta.Recipe.init -> void
 Aw.Sindri.Core.Events.WorkflowEventDelta.RecipeHash.get -> string?
