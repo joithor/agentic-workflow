@@ -42,7 +42,7 @@ public sealed class NeedsYouJoinsTests
         var joined = Assert.Single(await Join([row], new SomeInstances(checks)));
 
         var desks = EngineFixture.Step.States.Where(s => s.Value.Step is not null && EngineFixture.Catalog.Find(s.Value.Step.Use) is { DeskCapable: true }).Select(static s => s.Key).ToList();
-        Expect.Equal(new NeedsYouStop(desks.IndexOf("verify") + 1, desks.Count), joined.Stop);
+        Expect.Equal(new NeedsYouStop(desks.IndexOf("verify") + 1, desks.Count, "verify"), joined.Stop);
     }
 
     [Fact]
