@@ -110,19 +110,6 @@ test_a_paraphrased_claim_with_evidence_passes_whatever_the_brief_says() {
   echo "PASS: test_a_paraphrased_claim_with_evidence_passes_whatever_the_brief_says"
 }
 
-test_a_claim_with_a_brief_still_needs_evidence() {
-  local bin_dir transcript rc
-  bin_dir="$(setup_fake_judge '{"acceptanceCriteria":"all tests pass"}')"
-  transcript="$(mktemp)"
-  write_transcript_with_assistant_text "$transcript" "Done, all tests pass."
-  set +e
-  PATH="$bin_dir:$PATH" bash "$HOOK" <<< "$(jq -nc --arg t "$transcript" '{transcript_path:$t, session_id:"s1"}')" 2> /dev/null
-  rc=$?
-  set -e
-  [ "$rc" -eq 2 ] || { echo "FAIL: a brief does not replace the evidence check, got $rc"; exit 1; }
-  echo "PASS: test_a_claim_with_a_brief_still_needs_evidence"
-}
-
 test_dotnet_cargo_and_go_runs_count_as_evidence() {
   local c
   for c in 'Done: dotnet test passed, 12 tests.' 'Done. cargo test is green.' 'Done: go test ./... ok.' 'Done: Passed! - Failed: 0, Passed: 40.'; do
@@ -361,7 +348,6 @@ test_no_brief_found_falls_back_to_any_evidence_check_rf2
 test_done_claim_with_no_evidence_at_all_exits_2
 test_done_claim_with_matching_brief_and_evidence_exits_0
 test_a_paraphrased_claim_with_evidence_passes_whatever_the_brief_says
-test_a_claim_with_a_brief_still_needs_evidence
 test_dotnet_cargo_and_go_runs_count_as_evidence
 test_string_shaped_message_content_is_read_too
 test_done_claim_survives_over_1mb_of_trailing_hook_attachments

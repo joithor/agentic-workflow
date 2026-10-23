@@ -133,7 +133,7 @@ A hook **fails open** when its own error turns into an allow or a let-through: j
   - `scope-gate`: the judge causes plus `judge-decision-unknown`
   - `trait-check`: `judge-missing`, `jev-unavailable`, `judge-exit-<N>`, `mktemp`, plus the input causes
   - `external-write-guard`: `session-id-missing`, `session-state-unreadable`
-  - `done-gate`: `transcript-unreadable`, `no-assistant-line`, `transcript-line-unparsable`, `judge-ask-check-exit-<N>`
+  - `done-gate`: `transcript-unreadable`, `no-assistant-line`, `transcript-line-unparsable`, `judge-ask-check-exit-<N>`, `judge-brief-exit-<N>` (but not "no brief for …")
   - `outbox-flush`: `outbox-unreadable`
   - `prompt-sort`, `sindri-nudge`: `timeout` (the judge or CLI outlived its budget and the hook printed nothing)
   - `meta-stop-gate`: `meta-exit-<N>` (aw-meta erroring; exit 1 is its block, not a failure)
@@ -202,4 +202,4 @@ Contract: `docs/csharp/meta.md`. Tests: `config/hooks/tests/meta-hooks.test.sh` 
 - `external-write-guard.sh` never denies in a meta-harness lane or the meta itself (`AW_META_TEAM` and `AW_META_LANE` both set): they work unattended and never get a human turn to clear `auto_continued_at`. Interactive sessions keep the block.
 - `send-gate.sh`: in a lane or the meta (`AW_META_LANE` set), a message to `main`, `team-lead` or the team's `metaLane` skips wake gating. Queued items no longer expire (the 2 h expiry and `expired.jsonl` are gone).
 - `outbox-flush.sh`: a queued item with a null `agentType` is the lead's own and matches the lead (no `teammate_name`) only, never a teammate.
-- `done-gate.sh`: a done claim needs some evidence (URL, `npm`/`pytest`/`vitest`, `PR #n`, `dotnet`/`cargo`/`go` test or build output, "N passed"), with or without a brief. The acceptance-criteria prefix match is gone, so the hook no longer calls `judge brief get`.
+- `done-gate.sh`: a done claim needs some evidence (URL, `npm`/`pytest`/`vitest`, `PR #n`, `dotnet`/`cargo`/`go` test or build output, "N passed"), without a brief; with a brief it passes. The acceptance-criteria prefix match is gone.

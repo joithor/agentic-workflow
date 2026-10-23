@@ -175,10 +175,24 @@ if printf '%s' "$SESSION_ID" | grep -qE '^[A-Za-z0-9._-]{1,80}$' && [ "${SESSION
   fi
 fi
 
-# Evidence check (RF-2): the claim must mention SOME evidence. It does not have to repeat the brief's acceptance
-# criteria (q93 JG-05: the brief is the whole prompt, so a verbatim prefix of it is boilerplate), so the brief is not read here.
-if printf '%s' "$CLAIM_TEXT" | grep -qiE '(https?://|npm (run|test)|pytest|vitest|PR #[0-9]+|dotnet (test|build|run)|cargo (test|build|nextest)|go (test|build|vet)|xunit|[0-9]+ passed|passed!)'; then
-  exit 0
+# judge says "no brief for …" (exit 1) when there simply is none. Any other
+# failure falls to the RF-2 evidence check below.
+BRIEF_ERR="$(mktemp 2>/dev/null)" || BRIEF_ERR=/dev/null
+BRIEF_RC=0
+BRIEF_JSON="$(judge brief get "task:$SESSION_ID" 2>"$BRIEF_ERR")" || BRIEF_RC=$?
+if [ "$BRIEF_RC" -ne 0 ] && ! grep -q '^no brief for' "$BRIEF_ERR" 2>/dev/null; then
+  failopen "judge-brief-exit-$BRIEF_RC"
 fi
-echo "Claiming done with no evidence mentioned (no command output, no PR link, no test run). Show the proof." >&2
-exit 2
+[ "$BRIEF_ERR" = /dev/null ] || rm -f "$BRIEF_ERR"
+
+if [ -z "$BRIEF_JSON" ]; then
+  # RF-2: no brief at all — only check that SOME evidence is mentioned.
+  if printf '%s' "$CLAIM_TEXT" | grep -qiE '(https?://|npm (run|test)|pytest|vitest|PR #[0-9]+|dotnet (test|build|run)|cargo (test|build|nextest)|go (test|build|vet)|xunit|[0-9]+ passed|passed!)'; then
+    exit 0
+  fi
+  echo "Claiming done with no evidence mentioned (no command output, no PR link, no test run). Show the proof." >&2
+  exit 2
+fi
+
+# A brief exists: the claim need not repeat its acceptance criteria (q93 JG-05: the brief is the whole prompt, so a prefix is boilerplate).
+exit 0

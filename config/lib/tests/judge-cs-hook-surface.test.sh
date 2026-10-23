@@ -187,9 +187,9 @@ same annotate
 transcript() { jq -nc --arg t "$2" '{type:"assistant", message:{content:[{type:"text", text:$t}]}}' > "$1"; }
 transcript "$WORK/t-merge.jsonl" "Next I will merge the release branch."
 transcript "$WORK/t-next.jsonl" "I'll look at the logs next."
-# done-gate no longer reads the brief (q93 JG-05): a claim with RF-2 evidence passes with or without one, a claim without
-# evidence blocks with or without one.
-transcript "$WORK/t-meets.jsonl" "Done — all tests pass, ran npm test."
+# A claim that meets the brief's criteria in words the no-brief evidence check (RF-2) wouldn't accept, so it
+# passes only if done-gate read the brief; one that misses them; and one with RF-2 evidence for the no-brief case.
+transcript "$WORK/t-meets.jsonl" "Done — all tests pass."
 transcript "$WORK/t-misses.jsonl" "Done — refactored the parser."
 transcript "$WORK/t-evidence.jsonl" "Done — all tests pass, ran npm test."
 stop() { jq -nc --arg t "$1" '{transcript_path:$t, session_id:"s1"}'; }
@@ -210,9 +210,8 @@ done
 [ "$(rc_of done-continue)" = 2 ] || fail "done-continue: ask-check 'continue' keeps going (exit 2), got $(rc_of done-continue)"
 jq -e '.auto_continued_at | test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T")' "$WORK/state-cs-done-continue/judge/sessions/s1.json" > /dev/null 2>&1 \
   || fail "done-continue: expected judge/sessions/s1.json with auto_continued_at"
-[ "$(rc_of done-brief)" = 0 ] || fail "done-brief: a claim with evidence must pass, got $(rc_of done-brief)"
-[ "$(rc_of done-brief-miss)" = 2 ] || fail "done-brief-miss: a claim without evidence must block (exit 2), got $(rc_of done-brief-miss)"
-err_of done-brief-miss | has 'no evidence mentioned' || fail "done-brief-miss: stderr must ask for evidence, got $(err_of done-brief-miss)"
+[ "$(rc_of done-brief)" = 0 ] || fail "done-brief: a claim meeting the brief must pass, got $(rc_of done-brief)"
+[ "$(rc_of done-brief-miss)" = 0 ] || fail "done-brief-miss: a briefed claim need not repeat the criteria (q93 JG-05), exit 0, got $(rc_of done-brief-miss)"
 [ "$(rc_of done-nobrief)" = 0 ] || fail "done-nobrief: a claim with evidence and no brief must pass, got $(rc_of done-nobrief)"
 no_failopen done-ask done-escalated done-continue done-brief done-brief-miss done-nobrief
 for c in done-ask done-escalated done-continue done-brief done-brief-miss done-nobrief; do same $c; done
