@@ -23,6 +23,6 @@ public static class SetupRecipes
         var current = lines.GroupBy(static l => l.Id).Select(static g => g.MaxBy(static l => l.Version)).OfType<RecipeSummary>()
             .Where(l => l.Standing != RecipeStanding.Revoked && !pending.Contains(l.Id))
             .ToList();
-        return new RecipesFact(current.Count + pending.Count, current.Count(static l => l.Standing == RecipeStanding.Approved));
+        return new RecipesFact(current.Count + pending.Count, current.Count(static l => l is { Standing: RecipeStanding.Approved, Stale.Count: 0 }));
     }
 }
