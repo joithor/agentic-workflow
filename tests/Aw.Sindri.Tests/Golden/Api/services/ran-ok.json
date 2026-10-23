@@ -62,6 +62,17 @@
       ]
     },
     {
+      "name": "pr-watch",
+      "every": "5s",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null,
+      "actions": [
+        "run"
+      ]
+    },
+    {
       "name": "router-stub",
       "every": "5s",
       "paused": false,
