@@ -76,6 +76,26 @@ public sealed class OnyxFacts(IContainerRuntime runtime, IHostProbes probes, ISi
     public Result<long> MemoryUsedByOthers(CancellationToken cancellationToken)
         => DockerProblem(cancellationToken) is { } problem ? problem : runtime.MemoryUsedOutside(Project, cancellationToken);
 
+    /// <summary>Reads the runtime's facts: the one inspection every question of this instance is judged against (made on first use).</summary>
+    /// <param name="cancellationToken">Cancels the inspection.</param>
+    /// <returns>The runtime's facts.</returns>
+    public ContainerRuntimeFacts Inspect(CancellationToken cancellationToken) => Docker(cancellationToken);
+
+    /// <summary>Asks the runtime again and keeps the new answer for every later question: for `onyx up`, which waits for a Docker that is starting.</summary>
+    /// <param name="cancellationToken">Cancels the inspection.</param>
+    /// <returns>The new facts.</returns>
+    public ContainerRuntimeFacts Reinspect(CancellationToken cancellationToken) => _docker = runtime.Inspect(cancellationToken);
+
+    /// <summary>Records how long a caller waited in all for a daemon that still doesn't answer, so the docker row says it (<see cref="ContainerRuntimeFacts.WaitedSeconds"/>).</summary>
+    /// <param name="waited">The whole wait.</param>
+    public void NoteWait(TimeSpan waited)
+    {
+        if (_docker is { DaemonAnswers: false } docker)
+        {
+            _docker = docker with { WaitedSeconds = (int)waited.TotalSeconds };
+        }
+    }
+
     private ContainerRuntimeFacts Docker(CancellationToken cancellationToken) => _docker ??= runtime.Inspect(cancellationToken);
 
     /// <summary>Finds the port our own Onyx holds: the one the project's live nginx publishes on 127.0.0.1, whatever state.json says (a start that failed or timed out leaves it up, and a lost state file doesn't make it someone else's). The one reading of it, for `up`, doctor and status.</summary>

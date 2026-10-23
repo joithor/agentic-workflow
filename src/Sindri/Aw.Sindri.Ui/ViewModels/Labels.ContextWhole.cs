@@ -68,9 +68,6 @@ internal static partial class Labels
     /// <returns>"Billing, 34 items. Press Enter to open."</returns>
     internal static string ContextWholeTileName(string label, int members) => $"{label}, {ContextWholeMembers(members)}. Press Enter to open.";
 
-    /// <summary>The accessible list of features.</summary>
-    internal const string ContextWholeAreasName = "Features on the map";
-
     /// <summary>The map's accessible name.</summary>
     internal const string ContextWholeCanvasName = "The whole map";
 

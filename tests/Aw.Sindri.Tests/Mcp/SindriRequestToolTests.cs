@@ -226,6 +226,7 @@ public sealed class SindriRequestToolTests(SharedMcpWorld shared) : IClassFixtur
             .Replace(ServiceDescriptor.Singleton(runtime.LoggerFactory)));
         await ViewScenarios.Approve(host, ct);
         var item = await ItemScenarios.Create(host, "Quagga title text", "alpha", body: "Wildebeest body text");
+        await ViewScenarios.CatchUp(host, ct);   // why: the request names the item, which the views must hold before the tool reads it
         await using var pump = McpPump.Start(host);
         await using var mcp = await McpSession.Open(host, "alpha", ct);
 
@@ -233,8 +234,8 @@ public sealed class SindriRequestToolTests(SharedMcpWorld shared) : IClassFixtur
         var read = await mcp.Call("sindri_item", new JsonObject { ["itemId"] = item }.ToJsonString(), ct);
         runtime.Flush();
 
-        Assert.NotEqual(true, filed.IsError);
-        Assert.NotEqual(true, read.IsError);
+        Assert.False(filed.IsError ?? false, Text(filed));
+        Assert.False(read.IsError ?? false, Text(read));
         Assert.NotEmpty(sink.Lines);
         Assert.DoesNotContain("zebra", sink.Text, StringComparison.Ordinal);
         Assert.DoesNotContain("Quagga", sink.Text, StringComparison.Ordinal);

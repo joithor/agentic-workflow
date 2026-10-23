@@ -1,11 +1,13 @@
 #pragma warning disable MA0003, MA0127 // fixture records are positional; their literals are named by the record
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.GetInstanceFact;
+using DeskReviewKind = Aw.Sindri.Core.Workflow.Blocks.DeskReviewKind;
 
 namespace Aw.Sindri.Testing.Views;
 
@@ -226,6 +228,7 @@ public static class WorkflowViewFixtures
             Run = lines.Run,
             TakenOverAt = lines.TakenOverAt,
             TakenOverBy = lines.TakenOverBy,
+            ReasonCode = lines.ReasonCode,
         };
         var name = FixtureRecipes.All.SingleOrDefault(r => r.Id == recipe.Id.Value)?.Name is null ? null : row.Subject.Label;
         return fields with { Text = StatusText.Render(fields, Now, name) };
@@ -333,6 +336,8 @@ public static class WorkflowViewFixtures
 
         public StatusPaused? Paused { get; init; }
 
+        public string? ReasonCode { get; init; }
+
         public DateTimeOffset? TakenOverAt { get; init; }
 
         public string? TakenOverBy { get; init; }
@@ -414,6 +419,14 @@ public static class WorkflowViewFixtures
     public static StatusFields StatusAgentRun() => Status(_agentRun, "agent running",
         "An agent session is working on produce. It reports when it is done; take it over to work on it yourself.", new OpenWork(RunningSteps: 1),
         new StatusLines { Run = new StatusRun("agent", "LCH-01JM3A4B5C6D7E8F") });
+
+    /// <summary>q65: a dispatch park (an effect refused because the setup it needs isn't there) with its typed code, so the app never reads the words to name it.</summary>
+    public static StatusFields StatusParkedDispatchRefused() => Status(_prjCache, "spec-conflict (dispatch)",
+        "effect.claim.ref can't run: repo 'web' isn't in the approved profile. Fix that, then resume to send it again.\nAnswer with --resume once the cause is fixed.", new OpenWork(),
+        new StatusLines { Answer = Answer(AnswerKind.Resume, "ITM-01JKF/project/1"), ReasonCode = "SND-WF-010" });
+
+    /// <summary>q65: the agent run once its launch knows the session: provider and id, the handle the Agents page opens (session/claude-code/{id}).</summary>
+    public static StatusFields StatusAgentRunSession() => StatusAgentRun() with { Run = new StatusRun("agent", "LCH-01JM3A4B5C6D7E8F", new SessionHandle(AgentId.From("claude-code"), SessionId.From("0b1c2d3e-0000-4000-8000-000000000001"))) };
 
     /// <summary>A park with a recorded drift: it takes no answer (API Q-API-4): the recipe re-approval is its own protected command, and the approval resumes the instance.</summary>
     public static StatusFields StatusParkedDrift() => Status(_prjCache, "spec-conflict (drift)",
@@ -604,6 +617,33 @@ public static class WorkflowViewFixtures
                 Produced(_design, "fact:escalation", "3 questions: q1 Keep the legacy flow? · q2 Which table owns expiry? · q3 Who is the expiry for?", At(10, 12, 12, 22), "step.lens.log", Ref(factKey: "fact:escalation")),
                 Fake(_design, "fact:answers", FactStatus.Pending, "awaiting your answers", pending: pending)),
             [], Counts(9, 0, 1));
+    }
+
+    /// <summary>
+    /// q65: the design review's ask desk (<see cref="LensAskMulti"/>) with what it has the person review, as its block declares it: the questions (no place to open), the frozen scope packet
+    /// (its directory, read from the fact's { hash, dir }) and the pull request (its url, read from 'fact:prStatus').
+    /// </summary>
+    public static InstanceDetail DeskReviews()
+    {
+        var detail = LensAskMulti();
+        var form = detail.Current.Desk! with
+        {
+            Reviews =
+            [
+                new DeskReview("fact:escalation", DeskReviewKind.Questions),
+                new DeskReview("fact:scopePacket", DeskReviewKind.Scope, Path: "/home/dev/.agentic-workflow/packets/acme/web/scope-7/frozen"),
+                new DeskReview("fact:prStatus", DeskReviewKind.Pr, Url: "https://github.com/acme/web/pull/412"),
+            ],
+        };
+        var address = InstanceAddress.From("ITM-01JN4/design/1");   // its own instance: the UI fake finds an instance by id
+        return detail with { Address = address, Id = WorkflowInstanceId.Of(address), ItemId = ItemKey.From("ITM-01JN4"), Current = detail.Current with { Desk = form } };
+    }
+
+    /// <summary>q65: an agent run of a running branch with its session handle on the run.</summary>
+    public static InstanceDetail AgentRunSession()
+    {
+        var detail = TransitionList();
+        return detail with { Current = detail.Current with { Status = detail.Current.Status with { Run = new StatusRun("agent", "LCH-01JL3A4B5C6D7E8F", new SessionHandle(AgentId.From("claude-code"), SessionId.From("0b1c2d3e-0000-4000-8000-000000000001"))) } } };
     }
 
     /// <summary>

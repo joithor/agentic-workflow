@@ -87,7 +87,7 @@ Every row carries `kind`, `identity`, `instance`, `headSha` and `at`; the kind a
 |---|---|---|
 | `start` | `step.pr.intake` | `pr`, `base` (always null for now: `PullView.Base` exists since #674, but the row does not read it yet), `handoffHash` (`sha256:` of `fact:handoff`, null without one), `phase` (`fact:phasePacket` id), `startedBy` (`line` when `fact:lineContext` is non-empty, else `hand`) |
 | `snapshot` | `step.pr.snapshot`, when the outcome or the head differs from the previous `fact:prState` | `outcome`, `checks`, `queue` |
-| `push` | `effect.pr.push` | `cause`, `commits`, `comments` (empty for now), `source` |
+| `push` | `effect.pr.push` | `cause`, `commits`, `comments` (the ids of the comments whose latest mark is `fixed` with a commit the push carried), `source` |
 | `comment` | `effect.pr.reply` | `comment`, `type` (the `decision` argument's `type`), `outcome` (`replied`, `reacted`, `fixed`, `held`, `skipped`), `commit` |
 | `recheck`, `docs` | `effect.pr.record` | `result` |
 | `end` | `effect.pr.record` | `terminal` (`merged`, `closed`, `stopped`, `rework`), `reworkNotesHash` (`sha256:` of `fact:reworkNotes`' content, on `rework` only) |
@@ -148,4 +148,4 @@ The times, tokens, owner actions, CI fixes, rechecks and docs counts come from t
 | Reading `PullView.Base` | `PullView` carries `Base` since #674, but the rows don't read it yet, so `start.base` is null, `step.pr.snapshot` never reports `restack` and `head.ref`, `base.defaultRef` and `base.onto` are not in `fact:prState` (`base.ref`, `base.sha`, `base.tip` and `base.was` are) |
 | `merge-docs` rebase | `effect.pr.merge-docs` has no workspace, so it neither rebases the docs PR nor scans it before the merge (a conflict shows as `pending`) |
 | Hand-off hash check, workspace cut | Intake records the hash but does not check it, and does not cut a workspace from the PR head: no port reaches either |
-| `merge.actor`, `push.comments` | The engine's effect context carries no actor and the push effect has no comment ids; both stay null or empty |
+| `merge.actor` | The engine's effect context carries no actor, so it stays null |
