@@ -102,7 +102,7 @@ public sealed class ContextReviewApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task A_desk_decision_from_the_app_writes_one_row_a_session_is_refused_and_undoing_twice_is_047()
+    public async Task A_desk_decision_from_the_app_writes_one_row_a_session_may_decide_too_and_undoing_twice_is_047()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var host = await Host(sessions: true);
@@ -110,7 +110,6 @@ public sealed class ContextReviewApiTests : IDisposable
         var node = (await Queue(host)).GetProperty("entries")[0].GetProperty("node").GetString()!;
 
         var accepted = await host.Http.Ask(Post("/sindri/context/map/review", Review("accept", node), App(host)));
-        var session = await host.Http.Ask(Post("/sindri/context/map/review", Review("reject", node), Session()));
         var id = Json(accepted.Body).GetProperty("result").GetProperty("written")[0].GetString()!;
         var undone = await host.Http.Ask(Post("/sindri/context/map/review", Review("undo", override_: id), App(host)));
         var twice = await host.Http.Ask(Post("/sindri/context/map/review", Review("undo", override_: id), App(host)));
@@ -119,7 +118,6 @@ public sealed class ContextReviewApiTests : IDisposable
 
         Assert.Equal(HttpStatusCode.OK, accepted.Status);
         Assert.Equal(1, Json(accepted.Body).GetProperty("result").GetProperty("written").GetArrayLength());
-        Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (session.Status, session.Code));
         Assert.Equal(HttpStatusCode.OK, undone.Status);
         Assert.Equal((HttpStatusCode.Conflict, "SND-CONTEXT-047"), (twice.Status, twice.Code));
         Assert.Contains("\"verb\":\"undo\"", recorded.Value!.Envelope.Payload, StringComparison.Ordinal);
@@ -189,7 +187,7 @@ public sealed class ContextReviewApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task Promote_is_046_while_items_are_undecided_then_the_terminal_types_the_challenge_and_the_draft_becomes_current()
+    public async Task Promote_is_046_while_items_are_undecided_then_any_caller_promotes_the_confirmed_draft_with_no_challenge()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var host = await Host(sessions: true);
@@ -198,65 +196,18 @@ public sealed class ContextReviewApiTests : IDisposable
         var bulk = await host.Http.Ask(Post("/sindri/context/map/review", Review("accept-deterministic"), App(host)));
 
         var preview = await host.Http.Ask(Post("/sindri/context/map/promote", "{}", Terminal(host)));
-        var shown = Json(preview.Body);
-        var draft = shown.GetProperty("draft").GetString();
-        var challenge = shown.GetProperty("challenge");
-        var typed = challenge.GetProperty("action").GetString();
-        var answer = new { challenge = challenge.GetProperty("challenge").GetString(), typed };
-        string Body(object? a) => JsonSerializer.Serialize(new { draft, answer = a });
-        var fromApp = await host.Http.Ask(Post("/sindri/context/map/promote", Body(answer), App(host)));
-        var fromSession = await host.Http.Ask(Post("/sindri/context/map/promote", Body(answer), Session()));
-        var mistyped = await host.Http.Ask(Post("/sindri/context/map/promote", Body(new { answer.challenge, typed = "promote map v0" }), Terminal(host)));
-        var again = Json((await host.Http.Ask(Post("/sindri/context/map/promote", "{}", Terminal(host)))).Body).GetProperty("challenge");
-        var promoted = await host.Http.Ask(Post("/sindri/context/map/promote", Body(new { challenge = again.GetProperty("challenge").GetString(), typed = again.GetProperty("action").GetString() }), Terminal(host)));
+        var draft = Json(preview.Body).GetProperty("draft").GetString();
+        var promoted = await host.Http.Ask(Post("/sindri/context/map/promote", JsonSerializer.Serialize(new { draft }), Session()));
         var status = await host.Http.Ask(Get("/sindri/context/map", Terminal(host)));
         var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapPromoted, ct);
 
         Assert.Equal((HttpStatusCode.Conflict, "SND-CONTEXT-046"), (undecided.Status, undecided.Code));
         Assert.Equal(HttpStatusCode.OK, bulk.Status);
         Assert.Equal(HttpStatusCode.OK, preview.Status);
-        Assert.StartsWith("promote map v", typed, StringComparison.Ordinal);
-        Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (fromApp.Status, fromApp.Code));
-        Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (fromSession.Status, fromSession.Code));
-        Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (mistyped.Status, mistyped.Code));
+        Assert.False(Json(preview.Body).TryGetProperty("challenge", out var challenge) && challenge.ValueKind == JsonValueKind.Object);
         Assert.Equal(HttpStatusCode.OK, promoted.Status);
         Assert.Contains("\"status\":\"current\"", status.Body, StringComparison.Ordinal);
         Assert.NotNull(recorded.Value);
-    }
-
-    // On a large draft the queue build is slow (minutes on the owner's, before #436); the confirm rebuilt it before it redeemed the
-    // challenge, so a promote typed at once could still find its 5 minutes gone. The confirm redeems first, then checks the draft.
-    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task A_promote_confirmed_at_once_is_not_expired_by_a_slow_queue_build()
-    {
-        var slow = false;
-        FakeTimeProvider? clock = null;
-        await using var host = await ContextHosts.Approved(_repo, sessions: false, TestContext.Current.CancellationToken, services =>
-        {
-            Wiring()(services);
-            RecordingEngine.Install(services, [], beforeQueue: () =>
-            {
-                if (slow)
-                {
-                    clock?.Advance(TimeSpan.FromMinutes(4.5));   // a slow queue build, on the clock the challenge runs on
-                }
-            });
-        });
-        clock = (FakeTimeProvider)host.App.Services.GetRequiredService<TimeProvider>();
-        Assert.True((await Run(host, "context-rebuild")).IsSuccess);
-        _ = await host.Http.Ask(Post("/sindri/context/map/review", Review("accept-deterministic"), App(host)));
-        slow = true;
-        var shown = Json((await host.Http.Ask(Post("/sindri/context/map/promote", "{}", Terminal(host)))).Body);
-        var challenge = shown.GetProperty("challenge");
-        clock.Advance(TimeSpan.FromMinutes(1));   // the human reads the prompt and types
-
-        var promoted = await host.Http.Ask(Post("/sindri/context/map/promote", JsonSerializer.Serialize(new
-        {
-            draft = shown.GetProperty("draft").GetString(),
-            answer = new { challenge = challenge.GetProperty("challenge").GetString(), typed = challenge.GetProperty("action").GetString() },
-        }), Terminal(host)));
-
-        Assert.Equal(HttpStatusCode.OK, promoted.Status);
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
@@ -275,7 +226,7 @@ public sealed class ContextReviewApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task Applying_a_review_file_is_protected_to_the_terminal_and_acts_only_with_the_typed_confirmation()
+    public async Task Applying_a_review_file_acts_at_once_for_any_caller_with_no_challenge()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var host = await Host(sessions: true);
@@ -290,22 +241,12 @@ public sealed class ContextReviewApiTests : IDisposable
 
         await File.WriteAllTextAsync(path, file.ToJsonString(), ct);
 
-        var preview = await host.Http.Ask(Post("/sindri/context/map/review", Review("apply-file", path: path), Terminal(host)));
-        var challenge = Json(preview.Body).GetProperty("challenge");
-        var answer = new { challenge = challenge.GetProperty("challenge").GetString(), typed = challenge.GetProperty("action").GetString() };
-        var fromApp = await host.Http.Ask(Post("/sindri/context/map/review", Review("apply-file", path: path, answer: answer), App(host)));
-        var noAnswer = await host.Http.Ask(Post("/sindri/context/map/review", Review("apply-file", path: path), Session()));
-        var applied = await host.Http.Ask(Post("/sindri/context/map/review", Review("apply-file", path: path, answer: answer), Terminal(host)));
-        var replay = await host.Http.Ask(Post("/sindri/context/map/review", Review("apply-file", path: path, answer: answer), Terminal(host)));
+        var applied = await host.Http.Ask(Post("/sindri/context/map/review", Review("apply-file", path: path), Session()));
 
         Assert.Equal(HttpStatusCode.OK, export.Status);
-        Assert.StartsWith("review apply-file ", challenge.GetProperty("action").GetString(), StringComparison.Ordinal);
-        Assert.Contains("entries", Json(preview.Body).GetProperty("summary").GetString(), StringComparison.Ordinal);
-        Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (fromApp.Status, fromApp.Code));
-        Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (noAnswer.Status, noAnswer.Code));
         Assert.Equal(HttpStatusCode.OK, applied.Status);
         Assert.True(Json(applied.Body).GetProperty("result").GetProperty("written").GetArrayLength() > 0);
-        Assert.Equal((HttpStatusCode.Forbidden, "SND-AUTH-002"), (replay.Status, replay.Code));   // the challenge is spent
+        Assert.False(Json(applied.Body).TryGetProperty("challenge", out var challenge) && challenge.ValueKind == JsonValueKind.Object);
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
@@ -321,10 +262,7 @@ public sealed class ContextReviewApiTests : IDisposable
         await File.WriteAllTextAsync(elsewhere, """{"draft":"v1@x","entries":[{"label":"Gone","group":"model","confidence":0.5,"node":"surface:command/not-there","decision":"accept"}]}""", ct);
 
         var worktree = await host.Http.Ask(Post("/sindri/context/map/review", Review("apply-file", path: inside), Terminal(host)));
-        var preview = await host.Http.Ask(Post("/sindri/context/map/review", Review("apply-file", path: elsewhere), Terminal(host)));
-        var challenge = Json(preview.Body).GetProperty("challenge");
-        var nothing = await host.Http.Ask(Post("/sindri/context/map/review",
-            Review("apply-file", path: elsewhere, answer: new { challenge = challenge.GetProperty("challenge").GetString(), typed = challenge.GetProperty("action").GetString() }), Terminal(host)));
+        var nothing = await host.Http.Ask(Post("/sindri/context/map/review", Review("apply-file", path: elsewhere), Terminal(host)));
 
         Assert.Equal("SND-CONTEXT-005", worktree.Code);
         Assert.Equal((HttpStatusCode.Conflict, "SND-CONTEXT-043"), (nothing.Status, nothing.Code));

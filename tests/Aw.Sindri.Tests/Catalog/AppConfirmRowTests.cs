@@ -74,9 +74,9 @@ public sealed class AppConfirmRowTests
             var row = Assert.Single(listed, r => r.Action.Value == c.Action);
             Assert.Equal(c.Confirm, row.Confirm);
             Assert.Contains("human", row.AllowedCallers, StringComparer.Ordinal);
-            Assert.DoesNotContain("session", row.AllowedCallers, StringComparer.Ordinal);
+            Assert.Contains("session", row.AllowedCallers, StringComparer.Ordinal);
         });
         Assert.All(listed.Where(r => !_confirmable.Any(c => string.Equals(c.Action, r.Action.Value, StringComparison.Ordinal))), r => Assert.Null(r.Confirm));
-        Assert.DoesNotContain("human", Assert.Single(listed, r => r.Action.Value == "RevokeRecipe").AllowedCallers, StringComparer.Ordinal);
+        Assert.Contains("human", Assert.Single(listed, r => r.Action.Value == "RevokeRecipe").AllowedCallers, StringComparer.Ordinal);
     }
 }

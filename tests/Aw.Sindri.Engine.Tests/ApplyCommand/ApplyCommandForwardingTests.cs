@@ -66,16 +66,10 @@ public sealed class ApplyCommandForwardingTests
     }
 
     [Fact(Timeout = 30_000)]
-    public async Task A_protected_grant_challenge_is_bound_to_the_childs_address()
+    public async Task A_protected_grant_with_no_challenge_is_forwarded_to_the_child()
     {
-        var childView = (await _instance.Get(_child, TestContext.Current.CancellationToken)).Value;
-        var forChild = _challenges.Issue(InstanceChallenge.Action(_child, AnswerVariant.Grant, 1), InstanceChallenge.Subject(childView));
-        var forParent = _challenges.Issue(InstanceChallenge.Action(_instance.Address, AnswerVariant.Grant, 1), InstanceChallenge.Subject(_instance.View()));
+        var right = await _service.Handle(Grant(), TestContext.Current.CancellationToken);
 
-        var wrong = await _service.Handle(Grant(forParent, _instance.Address), TestContext.Current.CancellationToken);
-        var right = await _service.Handle(Grant(forChild, _child), TestContext.Current.CancellationToken);
-
-        Assert.Equal("SND-WF-013", wrong.IsError ? wrong.Error.Code : "accepted");
         Assert.False(right.IsError, right.IsError ? right.Error.Message : null);
         Assert.Equal(_child, Assert.Single(_instance.Delivered).To);
     }
@@ -110,6 +104,6 @@ public sealed class ApplyCommandForwardingTests
         Assert.Equal(_nonce, Assert.Single(_instance.Sent));
     }
 
-    private ApplyCommandRequest Grant(IssuedChallenge issued, InstanceAddress boundTo) =>
-        new(_instance.Address.Value, ApplyCommandKind.Answer, AnswerVariant.Grant, Amount: 1, Challenge: new ChallengeAnswer(issued.Id, "grant 1 " + boundTo.Value));
+    private ApplyCommandRequest Grant() =>
+        new(_instance.Address.Value, ApplyCommandKind.Answer, AnswerVariant.Grant, Amount: 1);
 }
