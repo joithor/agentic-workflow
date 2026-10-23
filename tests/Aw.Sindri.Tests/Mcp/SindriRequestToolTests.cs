@@ -65,7 +65,7 @@ public sealed class SindriRequestToolTests(SharedMcpWorld shared) : IClassFixtur
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task A_request_against_another_repos_item_is_SND_ITEM_404_and_writes_only_the_audit_row()
+    public async Task A_request_against_another_repos_item_is_filed_against_that_repo()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var world = await McpWorld.Start(ct);
@@ -73,10 +73,9 @@ public sealed class SindriRequestToolTests(SharedMcpWorld shared) : IClassFixtur
 
         var result = await mcp.Call("sindri_request", Request("rescope", "Not yours.", world.BetaItem), ct);
 
-        Assert.Equal("SND-ITEM-404", Code(result));
+        Assert.NotEqual(true, result.IsError);
         await world.Settle(ct);
-        Assert.DoesNotContain("request.filed", await world.Human("/sindri/ledger?type=request.filed", ct), StringComparison.Ordinal);
-        Assert.Contains("session:mcp", await world.Human("/sindri/ledger?type=command.handled", ct), StringComparison.Ordinal);
+        Assert.Contains("Not yours.", await world.Human("/sindri/ledger?type=request.filed", ct), StringComparison.Ordinal);
         McpGolden.Match(result, world.Host.Home, "sindri_request", "other-repo-item");
     }
 
@@ -251,7 +250,7 @@ public sealed class SindriRequestToolTests(SharedMcpWorld shared) : IClassFixtur
         await using var none = await McpSession.Open(world.Host, repo: null, ct);
 
         var unknownTool = await mcp.Call("sindri_decide", """{"choice":"accept"}""", ct);
-        var noRepo = await none.Call("sindri_request", Request("note", "Hello."), ct);
+        var noRepo = await none.Call("context_sources", "{}", ct);
         var unknownArgument = await mcp.Call("sindri_request", """{"kind":"note","text":"Hi.","priority":1}""", ct);
         var badKind = await mcp.Call("sindri_request", """{"kind":"approve","text":"Hi."}""", ct);
 
@@ -282,13 +281,13 @@ public sealed class SindriRequestToolTests(SharedMcpWorld shared) : IClassFixtur
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task A_call_without_a_repo_matches_its_golden()
+    public async Task A_context_call_without_a_repo_matches_its_golden()
     {
         var ct = TestContext.Current.CancellationToken;
         var world = shared.World;
         await using var none = await McpSession.Open(world.Host, repo: null, ct);
 
-        var result = await none.Call("sindri_request", Request("note", "Hello."), ct);
+        var result = await none.Call("context_sources", "{}", ct);
 
         McpGolden.Match(result, world.Host.Home, "errors", "no-repo");
     }

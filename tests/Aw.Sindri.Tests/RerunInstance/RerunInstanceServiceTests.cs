@@ -49,7 +49,7 @@ public sealed class RerunInstanceServiceTests
     {
         var instances = new SomeInstances(view);
         var start = new CapturingStart(view);
-        var service = new RerunInstanceService(instances, instances, new Contents(), start, new ListInstances.FixedCaller(new CallerContextBuilder().Human().Build()), new FixedRepos());
+        var service = new RerunInstanceService(instances, instances, new Contents(), start);
         return (await service.Handle(new RerunInstanceRequest(view.Id.Value), CancellationToken.None), start);
     }
 
@@ -93,7 +93,7 @@ public sealed class RerunInstanceServiceTests
     public async Task An_instance_that_does_not_exist_is_not_found()
     {
         var instances = new SomeInstances();
-        var service = new RerunInstanceService(instances, instances, new Contents(), new CapturingStart(Ended("failed")), new ListInstances.FixedCaller(new CallerContextBuilder().Human().Build()), new FixedRepos());
+        var service = new RerunInstanceService(instances, instances, new Contents(), new CapturingStart(Ended("failed")));
 
         var result = await service.Handle(new RerunInstanceRequest("WFI-00000000000000000000000000000000"), CancellationToken.None);
 

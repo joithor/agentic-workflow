@@ -100,7 +100,7 @@ public sealed class SessionSheetViewModelTests
         var sheet = await Opened("codex/gone");
 
         Assert.Equal((FramePhase.NotFound, true, "This session has ended.", false), (sheet.Phase, sheet.IsEnded, sheet.EndedText, sheet.IsFocusEnabled));
-        Assert.Equal("no live session has that ref (or it is outside this caller's repo)", sheet.EndedDetail);
+        Assert.Equal("no live session has that ref", sheet.EndedDetail);
         Assert.Empty(sheet.ProblemText);
     }
 

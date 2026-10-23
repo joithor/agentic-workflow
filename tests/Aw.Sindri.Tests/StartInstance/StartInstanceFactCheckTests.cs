@@ -97,7 +97,7 @@ public sealed class StartInstanceFactCheckTests
             FactShas = new Dictionary<string, string>(StringComparer.Ordinal) { ["fact:item"] = ItemSha, ["fact:scopeInput"] = NoRepoSha },
         };
         var instances = new SomeInstances(ended);
-        var rerun = new RerunInstanceService(instances, instances, new Stored(), start, new FixedCaller(new CallerContextBuilder().Human().Build()), new FixedRepos());
+        var rerun = new RerunInstanceService(instances, instances, new Stored(), start);
 
         var started = await rerun.Handle(new RerunInstanceRequest(ended.Id.Value), Token);
 
