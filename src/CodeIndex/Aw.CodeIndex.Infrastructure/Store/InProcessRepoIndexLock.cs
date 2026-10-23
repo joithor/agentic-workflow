@@ -11,7 +11,7 @@ namespace Aw.CodeIndex.Infrastructure.Store;
 /// embed run that takes the lock chunk after chunk cannot starve a build that is waiting). One Sindri process owns the index
 /// directory, so no file lock is needed.
 /// </summary>
-internal sealed class InProcessCodeIndexLock : ICodeIndexLock
+internal sealed class InProcessRepoIndexLock : IRepoIndexLock
 {
     private readonly ConcurrentDictionary<RepoName, SemaphoreSlim> _slots = new();
 

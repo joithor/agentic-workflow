@@ -5,8 +5,8 @@ using Aw.Kernel;
 
 namespace Aw.CodeIndex.Testing;
 
-/// <summary>A per-repo index lock that never waits: a taker of a held repo gets SND-CODEIDX-014 at once, whatever its wait. Tests read <see cref="IsHeld"/> to see a lock is released.</summary>
-public sealed class FakeCodeIndexLock : ICodeIndexLock
+/// <summary>A per-repo index lock that never waits: a taker of a held repo gets SND-CODEIDX-016 at once, whatever its wait. Tests read <see cref="IsHeld"/> to see a lock is released.</summary>
+public sealed class FakeRepoIndexLock : IRepoIndexLock
 {
     private readonly HashSet<RepoName> _held = [];
 
@@ -30,7 +30,7 @@ public sealed class FakeCodeIndexLock : ICodeIndexLock
         }
     }
 
-    private sealed class Held(FakeCodeIndexLock owner, RepoName repo) : IAsyncDisposable
+    private sealed class Held(FakeRepoIndexLock owner, RepoName repo) : IAsyncDisposable
     {
         private int _released;
 

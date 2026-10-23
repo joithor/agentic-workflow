@@ -1437,8 +1437,8 @@ Aw.CodeIndex.Core.Ports.LockState.Unparsable = 1 -> Aw.CodeIndex.Core.Ports.Lock
 Aw.CodeIndex.Core.Graph.GraphBodies
 const Aw.CodeIndex.Core.Graph.GraphBodies.RawSpanMaxCharacters = 64000 -> int
 static Aw.CodeIndex.Core.Graph.GraphBodies.Attach(Aw.CodeIndex.Core.Model.FileRecord! file, string! text, System.Func<string!, string!>! scrub) -> Aw.CodeIndex.Core.Model.FileRecord!
-Aw.CodeIndex.Core.Ports.ICodeIndexLock
-Aw.CodeIndex.Core.Ports.ICodeIndexLock.Take(Aw.CodeIndex.Core.Values.RepoName repo, System.TimeSpan maxWait, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.IAsyncDisposable!>!>
+Aw.CodeIndex.Core.Ports.IRepoIndexLock
+Aw.CodeIndex.Core.Ports.IRepoIndexLock.Take(Aw.CodeIndex.Core.Values.RepoName repo, System.TimeSpan maxWait, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.IAsyncDisposable!>!>
 static readonly Aw.CodeIndex.Core.CodeIndexErrors.IndexBusy -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.CodeIndex.Core.CodeIndexRules.IndexLockWait -> System.TimeSpan
 Aw.CodeIndex.Core.Embedding.EmbeddingsLayer

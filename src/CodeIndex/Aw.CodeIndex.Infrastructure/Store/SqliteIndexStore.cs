@@ -13,7 +13,7 @@ namespace Aw.CodeIndex.Infrastructure.Store;
 /// that is the only thing ever replaced, so a reader sees the old index or the new one and a killed build leaves the live
 /// index alone.
 /// </summary>
-internal sealed class SqliteIndexStore(string directory, TimeProvider time, ICodeIndexLock locks) : IIndexStore
+internal sealed class SqliteIndexStore(string directory, TimeProvider time, IRepoIndexLock locks) : IIndexStore
 {
     private readonly IndexFiles _files = new(directory);
 

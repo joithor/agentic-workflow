@@ -25,7 +25,7 @@ public interface ICodeIndex
     /// <param name="repo">The repo to embed.</param>
     /// <param name="progress">Told a counts-only line per batch ('embeddings 1,400 of 3,100').</param>
     /// <param name="cancellationToken">Cancels the run between batches; every published chunk is kept.</param>
-    /// <returns>Where the embeddings stand. SND-CODEIDX-014 (a build holds the repo's index) and 013 (no index yet) mean try later; 005, 006 and 009 are the model's failures.</returns>
+    /// <returns>Where the embeddings stand. SND-CODEIDX-016 (a build holds the repo's index) and 013 (no index yet) mean try later; 005, 006 and 009 are the model's failures.</returns>
     public ValueTask<Result<EmbedReport>> Embed(CodeIndexScope scope, RepoName repo, IProgress<string> progress, CancellationToken cancellationToken);
 
     /// <summary>Each repo's index state from the files only: no git, no counting.</summary>

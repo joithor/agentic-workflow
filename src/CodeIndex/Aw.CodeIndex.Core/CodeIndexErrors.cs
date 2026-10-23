@@ -44,8 +44,8 @@ public static class CodeIndexErrors
     /// <summary>SND-CODEIDX-013: no index for this repo yet (also a repo outside the caller's scope).</summary>
     public static readonly ErrorDefinition IndexNotBuilt = new("SND-CODEIDX-013", ErrorKind.NotFound, "No index for this repo yet");
 
-    /// <summary>SND-CODEIDX-014: the repo's index stayed locked by another build or embed run past the wait; the caller tries again later.</summary>
-    public static readonly ErrorDefinition IndexBusy = new("SND-CODEIDX-014", ErrorKind.Unavailable, "The repo's index is locked by another build or embed run");
+    /// <summary>SND-CODEIDX-016: the repo's index stayed locked by another build or embed run past the wait; the caller tries again later.</summary>
+    public static readonly ErrorDefinition IndexBusy = new("SND-CODEIDX-016", ErrorKind.Unavailable, "The repo's index is locked by another build or embed run");
 
     /// <summary>Every code-index error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =

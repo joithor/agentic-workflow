@@ -36,7 +36,7 @@ public static class CodeIndexRules
     /// <summary>The longest a build waits for a heavy-job slot before it ends deferred.</summary>
     public static readonly TimeSpan HeavySlotWait = TimeSpan.FromMinutes(10);
 
-    /// <summary>The longest a build or an embed chunk waits for the repo's index lock before it ends with SND-CODEIDX-014.</summary>
+    /// <summary>The longest a build or an embed chunk waits for the repo's index lock before it ends with SND-CODEIDX-016.</summary>
     public static readonly TimeSpan IndexLockWait = TimeSpan.FromMinutes(10);
 
     /// <summary>Files written per transaction.</summary>

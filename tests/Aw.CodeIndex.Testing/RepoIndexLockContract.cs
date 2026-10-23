@@ -6,15 +6,15 @@ using Xunit;
 
 namespace Aw.CodeIndex.Testing;
 
-/// <summary>What every <see cref="ICodeIndexLock"/> honours: one holder per repo, another repo unaffected, a refusal with SND-CODEIDX-014 while held, and a release (even a repeated one) that frees the repo.</summary>
-public abstract class CodeIndexLockContract
+/// <summary>What every <see cref="IRepoIndexLock"/> honours: one holder per repo, another repo unaffected, a refusal with SND-CODEIDX-016 while held, and a release (even a repeated one) that frees the repo.</summary>
+public abstract class RepoIndexLockContract
 {
     private static readonly RepoName _repo = RepoName.From("alpha");
     private static readonly RepoName _other = RepoName.From("beta");
 
     /// <summary>A lock with nothing held.</summary>
     /// <returns>The lock.</returns>
-    protected abstract ICodeIndexLock Create();
+    protected abstract IRepoIndexLock Create();
 
     /// <summary>A free repo is taken.</summary>
     /// <returns>A task.</returns>
@@ -27,7 +27,7 @@ public abstract class CodeIndexLockContract
         await taken.Value.DisposeAsync();
     }
 
-    /// <summary>A held repo refuses a second taker with SND-CODEIDX-014.</summary>
+    /// <summary>A held repo refuses a second taker with SND-CODEIDX-016.</summary>
     /// <returns>A task.</returns>
     [Fact]
     public async Task A_held_repo_is_refused_while_held()
@@ -37,7 +37,7 @@ public abstract class CodeIndexLockContract
 
         var second = await index.Take(_repo, TimeSpan.Zero, CancellationToken.None);
 
-        Require(second.IsError && string.Equals(second.Error.Code, CodeIndexErrors.IndexBusy.Code, StringComparison.Ordinal), "a held repo answers SND-CODEIDX-014");
+        Require(second.IsError && string.Equals(second.Error.Code, CodeIndexErrors.IndexBusy.Code, StringComparison.Ordinal), "a held repo answers SND-CODEIDX-016");
         await first.Value.DisposeAsync();
     }
 

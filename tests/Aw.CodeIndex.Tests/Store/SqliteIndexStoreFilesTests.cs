@@ -27,14 +27,14 @@ public sealed partial class SqliteIndexStoreFilesTests : IDisposable
     [Fact]
     public async Task A_second_build_of_the_repo_waits_until_the_first_is_disposed()
     {
-        var store = new SqliteIndexStore(Indexes, _time, new FakeCodeIndexLock());
+        var store = new SqliteIndexStore(Indexes, _time, new FakeRepoIndexLock());
         var first = (await store.BeginBuild(_repo, incremental: true, _none)).Value;
 
         var refused = await store.BeginBuild(_repo, incremental: true, _none);
         await first.DisposeAsync();
         var later = await store.BeginBuild(_repo, incremental: true, _none);
 
-        Assert.Equal("SND-CODEIDX-014", refused.Error.Code);
+        Assert.Equal("SND-CODEIDX-016", refused.Error.Code);
         Assert.True(later.IsSuccess);
         await later.Value.DisposeAsync();
     }
@@ -167,7 +167,7 @@ public sealed partial class SqliteIndexStoreFilesTests : IDisposable
         }
     }
 
-    private SqliteIndexStore Store() => new(Indexes, _time, new InProcessCodeIndexLock());
+    private SqliteIndexStore Store() => new(Indexes, _time, new InProcessRepoIndexLock());
 
     private string Pointer => Path.Combine(Indexes, "fixture.current");
 

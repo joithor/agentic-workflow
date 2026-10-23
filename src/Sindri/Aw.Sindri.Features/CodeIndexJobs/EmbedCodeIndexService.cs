@@ -11,7 +11,7 @@ namespace Aw.Sindri.Features.CodeIndexJobs;
 
 /// <summary>
 /// The work of a code index embed job (code index spec §6.3, §8): resolves the repo in the caller's scope and runs the facade's embed with the job's progress. It holds no heavy-job slot. A build holding the repo's index
-/// (SND-CODEIDX-014) or an index not built yet (013) ends the job as the 'later' outcome, not a failure; a model that fails or does not match its pin fails it.
+/// (SND-CODEIDX-016) or an index not built yet (013) ends the job as the 'later' outcome, not a failure; a model that fails or does not match its pin fails it.
 /// </summary>
 /// <param name="scopes">The profile's scope and the caller.</param>
 /// <param name="index">The code index.</param>

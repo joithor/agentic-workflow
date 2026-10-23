@@ -24,7 +24,7 @@ internal sealed class RealIndex : IDisposable
         Embedder = embedder ?? new FakeEmbedder();
         _ = Directory.CreateDirectory(_directory);
         var snapshot = new GitRepoSnapshot();
-        Store = new SqliteIndexStore(Path.Combine(_directory, "index"), TimeProvider.System, new InProcessCodeIndexLock());
+        Store = new SqliteIndexStore(Path.Combine(_directory, "index"), TimeProvider.System, new InProcessRepoIndexLock());
         Heavy = heavy ?? new FakeHeavyJobLock();
         var layers = new BuildLayers(new EmbeddingsLayer(Embedder, TimeProvider.System), new GraphLayer(snapshot, TimeProvider.System, new RedactingBodyScrubber(), graph));
         Service = new BuildCodeIndexService(new FakeRepoHeads(), snapshot, new StructureWriter(snapshot, [new CSharpParser()], new FileParseQuarantine(Path.Combine(_directory, "index")), new RedactingBodyScrubber()), layers, Store, Heavy, TimeProvider.System);
