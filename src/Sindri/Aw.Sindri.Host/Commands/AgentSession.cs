@@ -14,9 +14,6 @@ internal sealed record AgentSession(bool Terminal, bool Prover)
     /// <summary>Whether a person can answer here: the verbs that open a browser or ask a question need a terminal.</summary>
     internal bool Human => Terminal;
 
-    /// <summary>Why a terminal-only verb isn't available here ('no terminal').</summary>
-    internal string SessionReason => "no terminal";
-
     /// <summary>Classes this CLI.</summary>
     /// <param name="environment">Reads an environment variable.</param>
     /// <param name="interactive">Whether stdin and stdout are a terminal.</param>

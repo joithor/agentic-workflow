@@ -121,7 +121,7 @@ internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentS
     private async Task<int> Refused(string verb, string what)
     {
         _ = await output.Error(SindriErrors.AuthRefused.With(
-            $"`sindri onyx {verb}` {what}, so it needs a terminal ({session.SessionReason}; fix: run `sindri onyx {verb}` at a terminal)")).ConfigureAwait(false);
+            $"`sindri onyx {verb}` {what}, so it needs a terminal (this CLI has no terminal; fix: run `sindri onyx {verb}` at a terminal)")).ConfigureAwait(false);
         return 1;
     }
 }
