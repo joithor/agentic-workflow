@@ -821,9 +821,7 @@ Aw.Sindri.Features.GetProfile.GetProfileResponse.ChangedPaths.get -> System.Coll
 Aw.Sindri.Features.GetProfile.GetProfileResponse.ChangedPaths.init -> void
 Aw.Sindri.Features.GetProfile.GetProfileResponse.CheckedAt.get -> System.DateTimeOffset?
 Aw.Sindri.Features.GetProfile.GetProfileResponse.CheckedAt.init -> void
-Aw.Sindri.Features.GetProfile.GetProfileResponse.Deconstruct(out Aw.Sindri.Core.Ids.ProfileHash? Approved, out System.DateTimeOffset? ApprovedAt, out Aw.Sindri.Core.Ids.ProfileHash? Live, out System.DateTimeOffset? CheckedAt, out bool Changed, out System.Collections.Generic.IReadOnlyList<string!>! ChangedPaths, out Aw.Sindri.Core.Views.AsOf! AsOf, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetProfile.ProfilePack!>! Packs) -> void
 Aw.Sindri.Features.GetProfile.GetProfileResponse.Equals(Aw.Sindri.Features.GetProfile.GetProfileResponse? other) -> bool
-Aw.Sindri.Features.GetProfile.GetProfileResponse.GetProfileResponse(Aw.Sindri.Core.Ids.ProfileHash? Approved, System.DateTimeOffset? ApprovedAt, Aw.Sindri.Core.Ids.ProfileHash? Live, System.DateTimeOffset? CheckedAt, bool Changed, System.Collections.Generic.IReadOnlyList<string!>! ChangedPaths, Aw.Sindri.Core.Views.AsOf! AsOf, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetProfile.ProfilePack!>! Packs) -> void
 Aw.Sindri.Features.GetProfile.GetProfileResponse.Live.get -> Aw.Sindri.Core.Ids.ProfileHash?
 Aw.Sindri.Features.GetProfile.GetProfileResponse.Live.init -> void
 Aw.Sindri.Features.GetProfile.GetProfileResponse.Packs.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetProfile.ProfilePack!>!
@@ -4506,6 +4504,50 @@ override Aw.Sindri.Features.InitProfile.InitProfileResponse.GetHashCode() -> int
 override Aw.Sindri.Features.InitProfile.InitProfileResponse.ToString() -> string!
 static Aw.Sindri.Features.InitProfile.InitProfileResponse.operator !=(Aw.Sindri.Features.InitProfile.InitProfileResponse? left, Aw.Sindri.Features.InitProfile.InitProfileResponse? right) -> bool
 static Aw.Sindri.Features.InitProfile.InitProfileResponse.operator ==(Aw.Sindri.Features.InitProfile.InitProfileResponse? left, Aw.Sindri.Features.InitProfile.InitProfileResponse? right) -> bool
+Aw.Sindri.Features.GetProfile.GetProfileResponse.Deconstruct(out Aw.Sindri.Core.Ids.ProfileHash? Approved, out System.DateTimeOffset? ApprovedAt, out Aw.Sindri.Core.Ids.ProfileHash? Live, out System.DateTimeOffset? CheckedAt, out bool Changed, out System.Collections.Generic.IReadOnlyList<string!>! ChangedPaths, out Aw.Sindri.Core.Views.AsOf! AsOf, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetProfile.ProfilePack!>! Packs, out Aw.Sindri.Features.GetProfile.ProfileSummary? Summary) -> void
+Aw.Sindri.Features.GetProfile.GetProfileResponse.GetProfileResponse(Aw.Sindri.Core.Ids.ProfileHash? Approved, System.DateTimeOffset? ApprovedAt, Aw.Sindri.Core.Ids.ProfileHash? Live, System.DateTimeOffset? CheckedAt, bool Changed, System.Collections.Generic.IReadOnlyList<string!>! ChangedPaths, Aw.Sindri.Core.Views.AsOf! AsOf, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetProfile.ProfilePack!>! Packs, Aw.Sindri.Features.GetProfile.ProfileSummary? Summary = null) -> void
+Aw.Sindri.Features.GetProfile.GetProfileResponse.Summary.get -> Aw.Sindri.Features.GetProfile.ProfileSummary?
+Aw.Sindri.Features.GetProfile.GetProfileResponse.Summary.init -> void
+Aw.Sindri.Features.GetProfile.ProfileSummary
+Aw.Sindri.Features.GetProfile.ProfileSummary.<Clone>$() -> Aw.Sindri.Features.GetProfile.ProfileSummary!
+Aw.Sindri.Features.GetProfile.ProfileSummary.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetProfile.RepoPreview!>! Repos, out System.Collections.Generic.IReadOnlyList<string!>! Services, out System.Collections.Generic.IReadOnlyList<string!>! Allowance, out System.Collections.Generic.IReadOnlyList<string!>! Connections, out System.Collections.Generic.IReadOnlyList<string!>! HumanOnly) -> void
+Aw.Sindri.Features.GetProfile.ProfileSummary.Equals(Aw.Sindri.Features.GetProfile.ProfileSummary? other) -> bool
+Aw.Sindri.Features.GetProfile.ProfileSummary.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetProfile.RepoPreview!>!
+Aw.Sindri.Features.GetProfile.ProfileSummary.Repos.init -> void
+Aw.Sindri.Features.GetProfile.ProfileSummary.Services.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.GetProfile.ProfileSummary.Services.init -> void
+Aw.Sindri.Features.GetProfile.ProfileSummary.Allowance.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.GetProfile.ProfileSummary.Allowance.init -> void
+Aw.Sindri.Features.GetProfile.ProfileSummary.Connections.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.GetProfile.ProfileSummary.Connections.init -> void
+Aw.Sindri.Features.GetProfile.ProfileSummary.HumanOnly.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.GetProfile.ProfileSummary.HumanOnly.init -> void
+Aw.Sindri.Features.GetProfile.ProfileSummary.ProfileSummary(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetProfile.RepoPreview!>! Repos, System.Collections.Generic.IReadOnlyList<string!>! Services, System.Collections.Generic.IReadOnlyList<string!>! Allowance, System.Collections.Generic.IReadOnlyList<string!>! Connections, System.Collections.Generic.IReadOnlyList<string!>! HumanOnly) -> void
+override Aw.Sindri.Features.GetProfile.ProfileSummary.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetProfile.ProfileSummary.GetHashCode() -> int
+override Aw.Sindri.Features.GetProfile.ProfileSummary.ToString() -> string!
+static Aw.Sindri.Features.GetProfile.ProfileSummary.operator !=(Aw.Sindri.Features.GetProfile.ProfileSummary? left, Aw.Sindri.Features.GetProfile.ProfileSummary? right) -> bool
+static Aw.Sindri.Features.GetProfile.ProfileSummary.operator ==(Aw.Sindri.Features.GetProfile.ProfileSummary? left, Aw.Sindri.Features.GetProfile.ProfileSummary? right) -> bool
+Aw.Sindri.Features.GetProfile.RepoPreview
+Aw.Sindri.Features.GetProfile.RepoPreview.<Clone>$() -> Aw.Sindri.Features.GetProfile.RepoPreview!
+Aw.Sindri.Features.GetProfile.RepoPreview.Deconstruct(out string! Name, out string! Path, out int Files, out double Megabytes, out System.Collections.Generic.IReadOnlyList<string!>! Sentences) -> void
+Aw.Sindri.Features.GetProfile.RepoPreview.Equals(Aw.Sindri.Features.GetProfile.RepoPreview? other) -> bool
+Aw.Sindri.Features.GetProfile.RepoPreview.Name.get -> string!
+Aw.Sindri.Features.GetProfile.RepoPreview.Name.init -> void
+Aw.Sindri.Features.GetProfile.RepoPreview.Path.get -> string!
+Aw.Sindri.Features.GetProfile.RepoPreview.Path.init -> void
+Aw.Sindri.Features.GetProfile.RepoPreview.Files.get -> int
+Aw.Sindri.Features.GetProfile.RepoPreview.Files.init -> void
+Aw.Sindri.Features.GetProfile.RepoPreview.Megabytes.get -> double
+Aw.Sindri.Features.GetProfile.RepoPreview.Megabytes.init -> void
+Aw.Sindri.Features.GetProfile.RepoPreview.Sentences.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.GetProfile.RepoPreview.Sentences.init -> void
+Aw.Sindri.Features.GetProfile.RepoPreview.RepoPreview(string! Name, string! Path, int Files, double Megabytes, System.Collections.Generic.IReadOnlyList<string!>! Sentences) -> void
+override Aw.Sindri.Features.GetProfile.RepoPreview.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetProfile.RepoPreview.GetHashCode() -> int
+override Aw.Sindri.Features.GetProfile.RepoPreview.ToString() -> string!
+static Aw.Sindri.Features.GetProfile.RepoPreview.operator !=(Aw.Sindri.Features.GetProfile.RepoPreview? left, Aw.Sindri.Features.GetProfile.RepoPreview? right) -> bool
+static Aw.Sindri.Features.GetProfile.RepoPreview.operator ==(Aw.Sindri.Features.GetProfile.RepoPreview? left, Aw.Sindri.Features.GetProfile.RepoPreview? right) -> bool
 Aw.Sindri.Features.StartInstance.RerunInstanceRequest
 Aw.Sindri.Features.StartInstance.RerunInstanceRequest.<Clone>$() -> Aw.Sindri.Features.StartInstance.RerunInstanceRequest!
 Aw.Sindri.Features.StartInstance.RerunInstanceRequest.Deconstruct(out string! Instance) -> void
