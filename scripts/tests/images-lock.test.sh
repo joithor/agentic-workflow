@@ -48,19 +48,23 @@ expect "an unknown command is a usage error" 2
 
 f="$(good_body | grep -v 'index' | lock noindex)"
 run check --file "$f" --dockerfile "$NODF"
-expect "a missing index row" 1 "IMAGES-LOCK-003 docker.io/o/app: no index row"
+expect "a missing index row" 1 "IMAGES-LOCK-003 docker.io/o/app:v1: no index row"
 
 f="$(good_body | grep -v 'linux/amd64' | lock noamd)"
 run check --file "$f" --dockerfile "$NODF"
-expect "a missing platform row" 1 "IMAGES-LOCK-003 docker.io/o/app: no linux/amd64 row"
+expect "a missing platform row" 1 "IMAGES-LOCK-003 docker.io/o/app:v1: no linux/amd64 row"
 
 f="$( { good_body; echo "image docker.io/o/app v1 linux/amd64 sha256:$SHA"; } | lock dup)"
 run check --file "$f" --dockerfile "$NODF"
-expect "a repeated platform row" 1 "IMAGES-LOCK-003 [0-9]+: docker.io/o/app linux/amd64 is listed twice"
+expect "a repeated platform row" 1 "IMAGES-LOCK-003 [0-9]+: docker.io/o/app:v1 linux/amd64 is listed twice"
 
 f="$( { good_body; echo "image docker.io/o/app v2 linux/amd64 sha256:$SHA"; } | lock twotags)"
 run check --file "$f" --dockerfile "$NODF"
-expect "two tags for one repository" 1 "IMAGES-LOCK-002 .*tags v1 and v2"
+expect "a second tag of a repository needs its own index and platform rows" 1 "IMAGES-LOCK-003 docker.io/o/app:v2: no index row"
+
+f="$( { good_body; echo "image docker.io/o/app v2 index sha256:$OTHER"; echo "image docker.io/o/app v2 linux/amd64 sha256:$OTHER"; echo "image docker.io/o/app v2 linux/arm64 sha256:$OTHER"; } | lock twotagsok)"
+run check --file "$f" --dockerfile "$NODF"
+expect "a repository may carry several tags, each fully pinned" 0
 
 f="$(good_body | sed "s/index sha256:$SHA/index sha256:abc/" | lock shortdigest)"
 run check --file "$f" --dockerfile "$NODF"
