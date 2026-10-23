@@ -1,6 +1,6 @@
 # The cutover: the install moves from TypeScript to C# in one switch (spec)
 
-**Status:** draft for owner review, rev 4 (2026-10-23). Docs only. The code lands in the phases of §12.
+**Status:** draft for owner review, rev 5 (2026-10-23). Docs only. The code lands in the phases of §12.
 
 **Rev 2 (2026-10-23), /autoplan round 1.** Fixed: the install and the removal script now run in one safe order
 (publish, then clean up and delete the TS judge state, then link; §2, §7.1, §8), so no window has the C# `judge` reading the
@@ -35,6 +35,15 @@ work move to the switch PR, and Q3 joins the questions asked before P1 (§12); t
 the bug-fix skill's `locks.sh` path follows `config/lib/locks.sh`; both rewritten skills open with a one-line "run
 `./setup.sh`" preflight; the `better-sqlite3` build-tools check in `setup.sh` is replaced (§3.5, §4.3, §7.2).
 
+**Rev 5 (2026-10-23): owner answers.** The owner answered §17. Decided: Q1, port the Evidence script features; Q2, **port all
+of the Judge**, so nothing of it is cut (§5.2 maps every TS judge verb to an existing or a new C# verb; the new units 6.0 to
+6.5 join P0, P1 and §13; the unmerge of the `prompt-sort` and `trait-check` registrations, the deleted hooks and the `/judge`
+skill cuts are gone); Q6, **Sindri owns the `ui-evidence` binary**, not the skill (§3.1: built, published, installed and
+versioned in Sindri's install next to `sindri`, with Sindri's stamp; the skill calls Sindri's binary; a `sindri evidence`
+verb is the rejected reading); Q4, Q5 and Q8 as recommended. Q3 and Q7 were not answered separately and keep their
+Recommended answers as decisions, for the owner to confirm. §17 is now "Owner answers (2026-10-23)", with one new open
+question (Q9).
+
 **Decision it implements (owner, 2026-10-20 and 2026-10-23):** the toolkit's install becomes the C# build. Plain `sindri`
 is the C# app (today `scripts/sindri-app.sh` and the name `sindri-app`). `setup.sh` and the provider installers install
 the C# binaries and **remove** the TypeScript packages (`sindri/`, `judge/`, `scorer/`, the TS of `skills/ui-evidence`,
@@ -62,9 +71,9 @@ the C# binaries published by one script. Nothing the hooks, skills or recipes ca
 | TS `sindri evolve`, `scope`, `observe`, `shape`, `profile explain` | CUT | owner 2026-10-20 (`project_evolve_scope_observe_recipes`); recipes later |
 | TS `sindri profile migrate`, `repo onboard --template`, `channel`, `--schema-version` | DROP | no C# profile migration (no TS state is migrated); channels were the TS installer's; sindri-cmds.md rows 17, 27, 32, 34 |
 | skills `correct`, `reflect` | REMOVED | they only drive `sindri evolve` (`skills/correct/SKILL.md:5,28`, `skills/reflect/SKILL.md:5,29`) |
-| judge `prompt-sort`, `trait-check`, `label`, `adjudicate`, `eval`, `import-turns` | CUT unless Q2 says otherwise | no C# verb; §5 |
-| `mods/aw-live` (the /live pane) | UNINSTALLED at the switch unless Q4 says otherwise | it only reads `scorer live` (`mods/aw-live/hooks/register.tsx:39-72`) |
-| Evidence script features (scroll, drag, press, ...) | PORTED unless Q1 says otherwise | §3.3 |
+| judge `prompt-sort`, `trait-check`, `label`, `adjudicate`, `eval`, `import-turns` | PORTED (Q2, owner) | owner 2026-10-23: port all of the Judge; §5.2 maps every verb; units 6.0 to 6.5 |
+| `mods/aw-live` (the /live pane) | UNINSTALLED at the switch (Q4, owner) | it only reads `scorer live` (`mods/aw-live/hooks/register.tsx:39-72`) |
+| Evidence script features (scroll, drag, press, ...) | PORTED (Q1, owner) | §3.3 |
 
 ## 2. What the switch is
 
@@ -95,7 +104,30 @@ The only implementation of UI, API and DB evidence is `Aw.Evidence.Features` (wi
 reached **only** through the `ui-evidence` binary (`Aw.Evidence.Host`, AssemblyName `ui-evidence`, framework-dependent;
 evidence.md:7, :90).
 
-- **The skill** runs `ui-evidence <verb>` from a Bash call. SKILL.md is its instructions.
+**Ownership (owner answer to Q6, 2026-10-23: "no, sindri owns the binary, not the skill").** `ui-evidence` is **Sindri's
+binary**. It is built, published, installed and versioned as part of Sindri, and the skill calls Sindri's binary; the skill
+owns no tool that Sindri borrows. In practice:
+
+- **Packaging and version.** `install-cs.sh` (§7.1) publishes `ui-evidence` in the same stamped directory as `sindri` and
+  `sindri-ui` (`$AW_STATE_DIR/bin/cs/<stamp>/`), from one build with one commit stamp (`SourceRevisionId`, `AwBuildTime`).
+  `bin/cs/current` moves them together at link time, so there is no separate evidence install, stamp or version: Sindri's
+  stamp is the evidence tool's stamp. The framework-dependent publish and the `install-browser` step stay as §7.1 has them.
+- **Install location.** The `~/.local/bin/ui-evidence` wrapper is written by the same `--link` step as the `sindri` wrapper
+  and execs the binary next to `sindri`. The `sindri` wrapper also exports `AW_UI_EVIDENCE_BIN=<current>/ui-evidence`
+  (as it does `AW_SINDRI_JUDGE` and `AW_PACKETS_BIN`, §7.1); BugFix's adapter already resolves that variable (§4.3 a).
+  So the skill, a human, bugfix and the recipe's evidence agent steps run the same file.
+- **Who says so.** `docs/sindri/README.md` (a short "Evidence" paragraph: the binary ships in Sindri's install),
+  `docs/csharp/evidence.md` ("At the switch" opens with the ownership and the install location),
+  `docs/csharp/sindri.md`, the `Evidence` node `note` in `deps.yaml` ("ships in Sindri's install; same stamp as `sindri`"),
+  and the skill text: the rewritten SKILL.md opens "This skill runs Sindri's `ui-evidence` binary" and its preflight says
+  `command -v ui-evidence || echo "run ./setup.sh (the evidence tool ships with Sindri)"` (§4.3 d, §3.5).
+- **Doctor.** `sindri doctor` gets a `setup:ui-evidence` line: found next to `sindri`, answers `help`; a warning when it
+  is missing (unit 4.2; a warning, not a failure, since a box can run Sindri without a browser).
+- **What ownership is not.** The code stays one implementation, `Aw.Evidence.*` (Core, Features, Infrastructure, Host), in
+  its own package so Playwright and Npgsql stay out of the Sindri host. Ownership is about who ships, installs and
+  versions the binary, not a project reference: the declared `Sindri -> Evidence` edge stays `kind: file` (below).
+
+- **The skill** runs Sindri's `ui-evidence <verb>` from a Bash call. SKILL.md is its instructions.
 - **The recipe's evidence agent steps** run the same binary. `step.evidence.ui-run`, `api-run` and `db-run` are Agent
   runtime steps (`EvidenceSteps.cs:21,24,27`); the plan steps are too (`:12,15,18`). The engine launches an agent session
   with a brief (`AgentLaunches.RequestFor`), and the agent runs the CLI.
@@ -123,10 +155,18 @@ evidence.md:7, :90).
   check. Exit mapping for that day: 0 pass, 2 check failed (a result), 3 review pending, 4 run errored, 75 lock busy
   (park), 1 refused (evidence.md:82).
 
-**Q6. How do the recipe's evidence run steps reach Evidence?**
-Recommended: agent steps run the `ui-evidence` binary, briefed from the skill text (the descriptors already say Agent).
-Alternative: Block steps through an `IUiEvidence` port and CLI adapter (one implementation either way; costs a `cli` edge and
-a port, and the 2-minute block bound has to be lifted for it).
+**Decision (Q6, owner 2026-10-23): Sindri owns the binary; the recipe's evidence run steps are agent steps that run it.**
+The owner's words: "no, sindri owns the binary, not the skill". Read for Q6: the evidence binary belongs to Sindri (see
+"Ownership" above), the `ui-evidence` skill calls Sindri's binary, and the agent steps run the same binary briefed from the
+skill text (the descriptors already say Agent). The design is still one implementation reached through one binary by both
+callers, with no in-process compose into the Sindri host (Playwright; the 2-minute block cap).
+
+Rejected readings. (1) A `sindri evidence <verb>` subcommand, which "Sindri owns it" could be read as. Rejected: the
+command would run Playwright and Npgsql inside the `sindri` host (framework-dependent, with a browser download), a browser
+run that "outlasts 10 minutes" would sit in the control plane's own process, and the per-verb agent grant of §3.1 would have
+to become a grant on `sindri` itself, widening every evidence step to every `sindri` verb. The binary is Sindri's by
+ownership and packaging, not by being a verb of `sindri`. (2) Block steps through an `IUiEvidence` port and a CLI adapter:
+costs a `cli` edge and a port, and the 2-minute block bound has to be lifted for it (kept under "Rejected for now").
 
 ### 3.2 Command map: skill command to C# verb
 
@@ -160,23 +200,22 @@ is an object, no `steps[].name`). The run dir must be `$AW_STATE_DIR/ui-evidence
 
 | Gap | What is missing | Closed by |
 |---|---|---|
-| G-a | script features: actions `scroll`, `drag`, `press`; step `index`, `to`, `grabOffset`, `dropOffset`, `holdAlt`, `key`; target prefixes `role:<role>\|<name>`, `text:<text>`, a trailing `#<n>`; `expectedState` kinds `url-search`, `testid-absent`; script-level `login` and `localStorage`; the write-guard keyword rules for the new actions. `StepAction` has only `goto\|click\|fill\|expect-visible`; unknown keys are refused (evidence.md:30-35; `Core/Scripts/StepAction.cs`, `Browser/Locator.cs`, `Guard/StepGuard.cs`; `LoginSpec` exists only in the parity manifest, `Core/Design/LoginSpec.cs`) | Q1; unit 1.1 |
-| G-b | `gh-publish`: push PNGs to the branch `ui-evidence/pr-<n>`, write `pr-comment.md`, exit 0/1/3/4; refuses without `--reviewed` and a provenance value, as the TS verb did | Q7; unit 1.2 |
+| G-a | script features: actions `scroll`, `drag`, `press`; step `index`, `to`, `grabOffset`, `dropOffset`, `holdAlt`, `key`; target prefixes `role:<role>\|<name>`, `text:<text>`, a trailing `#<n>`; `expectedState` kinds `url-search`, `testid-absent`; script-level `login` and `localStorage`; the write-guard keyword rules for the new actions. `StepAction` has only `goto\|click\|fill\|expect-visible`; unknown keys are refused (evidence.md:30-35; `Core/Scripts/StepAction.cs`, `Browser/Locator.cs`, `Guard/StepGuard.cs`; `LoginSpec` exists only in the parity manifest, `Core/Design/LoginSpec.cs`) | decision Q1; unit 1.1 |
+| G-b | `gh-publish`: push PNGs to the branch `ui-evidence/pr-<n>`, write `pr-comment.md`, exit 0/1/3/4; refuses without `--reviewed` and a provenance value, as the TS verb did | decision Q7; unit 1.2 |
 | G-c | `JudgeCliJudge : IJudge` in `Aw.Evidence.Infrastructure/Judging`, replacing `UnavailableJudge` in `Composition.cs`: spawn `judge <question>` with JSON on stdin, parse the envelope. The contract is on main (`docs/csharp/judge.md:176-177`: `ui-element-repair` input `{brokenSelector, step, candidates:[...]}`, outputs `repaired(+chosenIndex)\|no-good-candidate`, threshold 0.6, 10 s; `visual-critique` input `{afterScreenshot, evidenceDir, baselineScreenshot?}`) | unit 1.3 |
 | G-d | `doctor` lacks the slot checks (`UI_EVIDENCE_SLOT_*`, `UI_EVIDENCE_WORKTREE`, foreign-checkout refusal, printing `--host` and the slot DB; SKILL L28-36); `run` and `parity` read no env file, so the SKILL "Configuration" section (L102-139) is wrong for C# (evidence.md:558-560) | unit 1.4: a loader for `deployment.env` and `.ui-evidence.local.env` in `run` and `parity` (plain `KEY=value` lines parsed, never sourced; an allowlist of keys; a variable already set in the environment is never overridden), and the doctor checks |
 | G-e | per-artifact `commit` and `at` (DTC9, `EvidenceSteps.cs:7`): the C# summary has `appBuild` and `finishedAt` but not clearly a per-artifact `commit`. **Not verified in code** | unit 1.4 first checks, then adds if missing |
 | G-f | SKILL.md rewrite (§3.5) and the text for `api-run` and `db-run` | unit 1.5 |
 | G-g | `--db-provenance` (gh-publish, parity) against `--provenance` (publish-plan) | one name across the verbs. Recommended: `--provenance` everywhere, with `--db-provenance` accepted on `parity` for one release only if a caller needs it; decided in unit 1.4 |
 
-**Q1. The script features of G-a.**
-Recommended: port them to C#. They were added for a real app's flows, and the skill text and the live qa-runner depend on them.
-Alternative: cut them from SKILL.md at the switch and tell qa-runner the C# subset (four actions, three target kinds).
+**Decision (Q1, owner 2026-10-23, "the recommended answer"): port the script features of G-a.** They were added for a real
+app's flows, and the skill text and the live qa-runner depend on them. The cut alternative (SKILL.md and qa-runner on the C#
+subset of four actions and three target kinds) is closed.
 
-**Q7. How does `gh-publish` talk to GitHub?**
-Recommended: through the `gh` CLI, with the runner style Evidence already has (`ProcessCliRunner`), behind a port with a
-fake (git data API calls: blob, tree, commit, ref on `ui-evidence/pr-<n>`).
-Alternative: `Aw.Forge`'s GitHub adapter. Forge's adapter is documented read-side (evidence.md gap list), so this needs
-write methods and Forge's credential rules first.
+**Decision (Q7, taken as recommended: the owner did not answer it separately and is asked to confirm): `gh-publish` talks to
+GitHub through the `gh` CLI**, with the runner style Evidence already has (`ProcessCliRunner`), behind a port with a fake
+(git data API calls: blob, tree, commit, ref on `ui-evidence/pr-<n>`). `Aw.Forge`'s GitHub adapter is documented read-side
+(evidence.md gap list), so using it would need write methods and Forge's credential rules first.
 
 ### 3.4 The skill and the recipe stay one path
 
@@ -198,7 +237,7 @@ Two rules keep it so, both checked by a test in phase 1:
 | L14 | verdict text matches `visual` as an object and the `unchecked` rule |
 | L23 | `gh-publish` becomes `ui-evidence gh-publish` (after G-b), flag names per G-g |
 | L24, L73 | no `node` import of `dist/publish.js` or `parity-publish`; use `publish-plan`, `parity-put`, `parity-stale`, `parity-comment` |
-| L42-96 | the script schema section follows the C# schema (G-a, or the trimmed subset per Q1) |
+| L42-96 | the script schema section follows the C# schema (G-a) |
 | L90 | repair through `run` (the judge adapter, G-c) |
 | L102-139 | "Configuration": the env-file loader (G-d) or the plain environment |
 | new | `api-run` and `db-run` sections (`--at base\|head`, `--host`, targets from `<repo>/.agentic-workflow/evidence.json`, `summary.json` on stdout) |
@@ -284,10 +323,10 @@ state, bugfix.md:205).
 | `config/hooks/done-gate.sh:148-152,182-184`, `done-gate-annotate.sh:16` | `judge ask-check` (exit only), `judge brief get` | covered (documented exception: exit 0 = ask) |
 | `config/hooks/subagent-start-map.sh:25-30` | `brief map-by-name`, `map-by-dispatch`, `set-agent-id` | covered |
 | `config/hooks/judge-health.sh:6-14`, `config/statusline.sh:116-132` | `judge health` (`find_bin`: PATH, else `~/.local/bin/judge`) | covered |
-| `config/hooks/prompt-sort.sh:38,53` | `judge prompt-sort` | **GAP** (J2 not built; unknown question exits 64, the hook prints nothing) |
-| `config/hooks/trait-check.sh:62-75` | `${AW_JUDGE_BIN:-judge} trait-check` | **GAP** (no verb) |
+| `config/hooks/prompt-sort.sh:38,53` | `judge prompt-sort` | **BUILD** (unit 6.1; today an unknown question exits 64 and the hook prints nothing) |
+| `config/hooks/trait-check.sh:62-75` | `${AW_JUDGE_BIN:-judge} trait-check` | **BUILD** (unit 6.2; no verb today) |
 | `skills/judge/SKILL.md` | `health`, `why`, `undo`, `approve`, `config get`, `config set <q> enabled\|threshold` | covered |
-| same skill | `label import\|outcomes\|set\|status`, `adjudicate`, `prompt-sort why\|scaffold\|promote`, `config set prompt-sort ...` | **GAP**; `config set prompt-sort` fails `unknown question` |
+| same skill | `label import\|outcomes\|set\|status`, `adjudicate`, `prompt-sort why\|scaffold\|promote`, `config set prompt-sort ...` | **BUILD** (units 6.1, 6.3, 6.4; today `config set prompt-sort` fails `unknown question`) |
 | `src/Evidence` (was `skills/ui-evidence/src/judge-exec.ts`) | `ui-element-repair`, `visual-critique` | questions exist; adapter §3.3 G-c |
 | `src/BugFix` (was `skills/bugFixOrchestrator/src/deps.ts:63-74`) | `resolution-check`, `why` | questions exist; adapter §4.3 |
 | `src/Sindri/Aw.Sindri.Infrastructure/Judge/JudgeCliChoice.cs:24` | `judge choose`; `AW_SINDRI_JUDGE` else PATH | covered (C# only) |
@@ -296,23 +335,69 @@ state, bugfix.md:205).
 
 Judge verbs in C#: `health`, `brief save|get|map-by-name|map-by-dispatch|set-agent-id`, `why`, `undo`, `approve`,
 `config get|set`, and nine questions (`QuestionCatalog.cs:11-19`). Exits: 0 ok, 1 error, 2 escalated (and `ask-check`
-continue), 64 usage.
+continue), 64 usage. The rows marked BUILD are the port of §5.2.
 
-### 5.2 The cut
+### 5.2 The port: every TS judge verb has a C# verb
 
-**Q2. `prompt-sort`, `trait-check`, `label`, `adjudicate`, `eval`.**
-Recommended: cut them from the cutover. The installers stop installing the `prompt-sort` UserPromptSubmit hook and the
-`trait-check` lever; `install-prompt-sort.test.sh` and `install-trait-check.test.sh` go; the `/judge` skill text loses
-the `label`, `adjudicate`, `prompt-sort` and `config set prompt-sort` sections and its pointers to `judge/src/questions/`
-and `scripts/install-judge.sh`; `config/hooks/prompt-sort.sh` and `trait-check.sh` are deleted. Rebuilt later if wanted. Boxes that already have them
-installed keep a registered `aw:prompt-sort` / `trait-check` entry (Claude settings, Codex and Cursor hooks files) and a hook
-copy that calls a script that no longer exists: the provider installers remove those registrations and copies when they run
-(unit 3.1; §7.4). No unmerge helper for hook entries exists on main today (`providers/lib.sh` only removes retired dirs), so
-unit 3.1 writes it and tests it per provider: it matches only entries carrying the `aw:` marker, writes the file
-atomically and keeps one backup next to it. Between the link and that unmerge, the installed `trait-check` hook gets exit 64
-from the C# `judge` and fails open (`*) failopen`, `config/hooks/trait-check.sh`), as `prompt-sort` prints nothing.
-Alternative: port `prompt-sort` before the switch (J2: a question, its config block `promptSort`, the `prompt_sort_*`
-tables, `why|scaffold|promote`), and cut only `trait-check`, `label`, `adjudicate`, `eval`.
+**Decision (Q2, owner 2026-10-23): "port all of Judge hooks. parts of Judge should already be ported for the line recipe i
+think".** Nothing of the TS judge is cut. `prompt-sort`, `trait-check`, `label`, `adjudicate`, `eval` and `eval import-turns`
+all get C# versions before the switch; the `prompt-sort` and `trait-check` hooks stay installed (no unmerge, no hook
+deletion), and the `/judge` skill keeps its `label`, `adjudicate` and `prompt-sort` text. The owner's second sentence is
+right and is checked here: the part of Judge the line recipe needs is already in C#. The shipped recipes use one judge
+verb, `judge choose` (`step.judge.choose`: docs-sync, evidence, pr-babysitter, reproduce and scoping call it through
+`JudgeCliChoice`, `src/Sindri/Aw.Sindri.Infrastructure/Judge/JudgeCliChoice.cs:24`); no recipe or Sindri code calls
+`prompt-sort`, `trait-check`, `label`, `adjudicate` or `eval` (grep of `recipes/sindri` and `src/Sindri` for
+`IJudgeChoice`, `AW_SINDRI_JUDGE` and `step.judge` finds only `choose`). `choose` has no TS version.
+
+**What C# already has to build on** (`src/Judge`, read on `origin/main` b75434304):
+
+- The evaluator and the nine questions (`QuestionCatalog.cs:11-19`), the provider chain (rules, `claude-cli`, `codex-cli`,
+  `cursor-cli`, Jev), the `--providers` allowlist and `AW_JUDGE_PROVIDERS` (`ProvidersFlag.cs`, `ProvidersVariable.cs`), the
+  redactor over `Aw.Redaction`, `IProcessRunner` and the `PATH` locator, the secret source (environment, then keychain), and
+  the SQLite stores with a migration runner (`Migrations/0001_judge.sql`, `0002_approved_at.sql`).
+- The `promptSort` block of `config.json` is already parsed and validated (`Core/Config/PromptSortConfig.cs`: `enabled`,
+  `budgetMs` 200 to 1050, `cooldownPrompts`, `scaffolds` for `brief`, `bugfix`, `ui-evidence`, `plan-first`), and its doc
+  comment says "J2 reads them". Nothing reads it.
+- `docs/csharp/judge.md:368` already lists the `prompt-sort.sh` hook row as "J2".
+- The Jev wire request (`Providers/JevRequest.cs`) carries a map of questions, but the adapter asks one, `decision`; the
+  prompt sorter's one batched request of eleven axes needs a batched call (unit 6.1; whether the wire accepts it as is is
+  **not verified**).
+- YamlDotNet is pinned (`Directory.Packages.props:44`) for the trait files.
+- **Not there:** the tables `eval_items`, `labels`, `prompt_sort_axes` and `prompt_sort_runs` (the TS database has them,
+  `judge/src/db.ts`; the C# migrations have `decisions`, `failures`, `briefs`, `decision_details` only); any transcript
+  reader; a model and effort option on `ClaudeCliProvider` (**not verified**; the TS adjudicator and `prompt-sort
+  adjudicate` ask `claude -p --model opus --effort high`).
+
+**The verb map.** TS source is `judge/src/**` (`cli.ts` is the dispatch); sizes are TS lines, a measure of work and not of
+the C# code. Exits: the judge's own 0 ok, 1 error, 2 escalated, 64 usage, except where the row says.
+
+| TS verb | What it does, inputs and outputs | Called by | C# today | What to build (unit) |
+|---|---|---|---|---|
+| `<question>` (`wake-gate`, `brief-scope`, `ask-check`, `rule-check`, `resolution-check`, `turn-progress`, `ui-element-repair`, `visual-critique`) | stdin JSON, one envelope on stdout | the hooks, `src/Evidence`, `src/BugFix` | present, plus C#-only `choose` | nothing |
+| `undo`, `why`, `approve`, `health`, `config get\|set`, `brief save\|get\|map-by-name\|map-by-dispatch\|set-agent-id` | as `docs/csharp/judge.md` | hooks, statusline, the skill | present | nothing |
+| `prompt-sort` (no subcommand; the hook path) | stdin `{prompt, sessionId}`; skips machine text, slash commands and confirmations (`tier1.ts`); one batched Jev request for 11 axes (nine yes/no, `complexity`, `ambiguity`), each axis blended with a keyword heuristic (`blend.ts`, `heuristics.ts`); plans scaffolds (`scaffolds.ts`, four, each behind `promptSort.scaffolds`, all ship OFF, so by default it records and prints nothing); records one `prompt-sort` decision, `prompt_sort_axes` rows and a `prompt_sort_runs` row; session state `judge/sessions/<sid>.sort.json`; stdout `{context?}`; always exit 0, fails open, hard stop at the budget (`AW_PROMPT_SORT_BUDGET_MS`, hook default 1500) | `config/hooks/prompt-sort.sh` (UserPromptSubmit) | **absent** (config block only) | 6.1: Core `PromptSort` (axes, tier-1 skip, heuristics, blend, scaffold plan), the batched Jev call, the stores and the session-state file in Infrastructure, migration `0004_prompt_sort.sql`, the Host command; reads `promptSort` config; honours `--providers` (no Jev when `jev` is excluded: heuristics only). About 1,000 of the 1,413 TS lines in `prompt-sort/` |
+| `prompt-sort scaffold <name> on\|off`; `config set prompt-sort enabled <bool>` | writes the scaffold switch or `promptSort.enabled` in `config.json` | `/judge` skill | absent; `config set prompt-sort` fails `unknown question` | 6.1: both write the `promptSort` block (it must keep a file the config parser accepts) |
+| `prompt-sort why <decision-id>` | prints the decision, its details, its axes and its run | `/judge` skill | absent | 6.4 |
+| `prompt-sort import [--since 14d]`, `outcomes`, `adjudicate [--limit 80]`, `eval`, `promote [--apply]` | the sorter's eval side: sort items from stored decisions, outcome labels from the transcripts, a stronger-model adjudicator (needs the `claude` CLI; exit 1 without it), an eval report written to `judge/evals/prompt-sort-<stamp>.json` and `.md`, and a promotion verdict per scaffold that `--apply` writes into `config.json` | `/judge` skill, by hand | absent | 6.4 (reads 6.1's stores and 6.3's label and eval code) |
+| `trait-check --edit --file <p>... \| --stop [--base ref] \| --scan [--path p...] [--trait n...]`, with `--budget-ms`, `--min-p`, `--concurrency` | judges the repo's traits (`<repo>/.agents/traits/*.yaml`, overlaid by `<state>/traits/<repo-name>/*.yaml`; `paths` globs scope a trait without a model call; severity `block` or `warn`) against the edited files' diff (edit), the branch diff against `origin/main` (stop) or whole files (scan), in batched Jev requests. Exit 0 nothing to report or skipped, **2 findings** (edit and stop: stderr; scan: JSON lines on stdout), **3 Jev unavailable**, 64 usage. Appends `judge/trait-check/log.jsonl` | `config/hooks/trait-check.sh` (PostToolUse edit, Stop; opt-in lever `install-trait-check.sh`); `--scan` by hand | **absent** (an unknown question, exit 64) | 6.2: Core `Traits` (the trait file, glob match, the diff and request grouping), Infrastructure (git through `IProcessRunner`, the Jev batch, the log file), the Host command; no database; honours `--providers`. 525 TS lines |
+| `label import [--question q] [--since 14d]`, `label outcomes`, `label set <itemId> <label\|skip>`, `label status` | `import` turns stored decisions into eval items; `outcomes` (free) labels `ask-check` items from the next real prompt in the Claude transcripts (`~/.claude/projects`); `set` is a manual override; `status` prints coverage and how often the outcome and adjudicator labels agree. JSON on stdout | `/judge` skill, by hand | absent | 6.3: migration `0003_eval_labels.sql` (`eval_items`, `labels`), the transcript reader, the four commands |
+| `adjudicate <question> [--limit 60]` | asks `claude -p --model opus --effort high` three times per item, stores a label only on a 2-of-3 in-enum majority, never shows the model the judge's own decision; refuses with exit 64 when `--providers` excludes `claude-cli`, exit 1 when the CLI is not on `PATH`; summary JSON on stdout | `/judge` skill, by hand | absent | 6.3 (a model and effort option on the Claude CLI provider, if missing) |
+| `eval <question> [--provider jev] [--variant v] [--labels outcome\|adjudicator\|override\|any] [--collapse x] [--record f] [--replay f]` | re-scores one provider against the labels, calling the provider directly (no chain, no `decisions` rows); `--record` and `--replay` re-run a report change without network; writes a report under `judge/evals/`; exit 64 when the provider is excluded by the allowlist, 1 for an unknown provider or bad `--labels` | `/judge` skill, by hand | absent | 6.3 |
+| `eval import-turns <transcript.jsonl>... [--since 14d]` | builds per-turn eval items from the Edit, Write and MultiEdit calls in transcripts, labelled by line survival and then the next real prompt; does not touch `decisions` | by hand | absent | 6.3 |
+
+The four judge units reimplement in C#; the TS package says what each verb does, never how (`.agents/rules/csharp.md`,
+"Porting a TS package"). The contracts are the C# tests, written red first by the Judge contract unit 6.0 (§12 P0), and
+the two hook rows of §10. The prompt sorter's scaffolds stay OFF by default (shadow mode, as TS shipped them); turning one
+on stays the owner's call through `promote`.
+
+**What the installers and the skill keep.** `scripts/install-judge-hooks.sh` (the renamed hook half of
+`install-judge.sh`, §7.4) keeps installing the `prompt-sort` UserPromptSubmit hook and `AW_NO_PROMPT_SORT` keeps its
+meaning; `scripts/install-trait-check.sh` stays an opt-in lever; `config/hooks/prompt-sort.sh`, `trait-check.sh` and their
+install tests stay (retargeted, §9). No hook registration is unmerged and no hook copy is deleted. The `/judge` skill keeps
+its `label`, `adjudicate`, `prompt-sort` and `config set prompt-sort` sections; the switch PR edits only what names the
+TS build: the sentence that sends undo counts to "the scorer's Judge section" (`skills/judge/SKILL.md:17`), the pointer to
+`scripts/install-judge.sh` and the pointer to `judge/src/questions/` (it becomes `src/Judge/Aw.Judge.Core/Questions/`),
+and the `budgetMs` range, which the skill gives as 200-1400 where the C# config accepts 200 to 1050.
 
 ### 5.3 Judge state
 
@@ -320,10 +405,19 @@ The C# judge uses `$AW_STATE_DIR/judge/decisions.sqlite`, the same path the TS j
 refuses a file that has tables but no matching `schema_version` (AW-DATA-009, `Aw.Kernel.Data/MigrationChecks.cs:45`; the TS
 file has `decisions`, `failures`, `briefs`, `decision_details`, `eval_items`, `labels`, `prompt_sort_*`). Every hook would
 see judge exit 1 and fail open. So the switch **deletes** `judge/decisions.sqlite{,-shm,-wal}` and `judge/config.json`
-(one-way, no archive) and **keeps** `judge/sessions/`, `judge/outbox/` and `judge/teammate-names.jsonl`. The deletion runs
+(one-way, no archive) and **keeps** `judge/sessions/`, `judge/outbox/` and `judge/teammate-names.jsonl`, plus the files the
+ported verbs write outside the database (`judge/evals/` reports, `judge/trait-check/log.jsonl`; §8.1). The deletion runs
 **before** the C# `judge` is linked (§8 step 5, then the link at step 6), so no hook ever sees the C# `judge` over the TS database.
 The only guard beyond that order is the generic migration refusal (AW-DATA-009); the readiness spec's "refuse to start,
 excluding the three hook files" check is **not found in `src`** (verified), so it is not a net this spec relies on.
+
+With the port (§5.2) the C# database gains `eval_items`, `labels`, `prompt_sort_axes` and `prompt_sort_runs` through
+migrations `0003` and `0004`, so a C# file always carries a `schema_version` and the TS-shape test of §8 (tables, no
+`schema_version`) stays right. The TS rows of those tables are **not** migrated, like every other TS state: the labels
+re-derive from the transcripts (`label import`, `label outcomes` and `eval import-turns` are free), the eval history starts
+empty, and re-running `adjudicate` costs Opus tokens (about three runs of 3k tokens per item, `skills/judge/SKILL.md`),
+which the owner chooses to spend or not. The prompt sorter's session files (`judge/sessions/<sid>.sort.json`) live in a kept
+directory, so a pending requirement carries over.
 
 The `scorer` read of `judge/decisions.sqlite` (`scorer/src/live-judge.ts`) goes with the scorer.
 
@@ -386,9 +480,9 @@ list (name and path) in its report (§8 step 10).
   are removed with `config/launchd/`. The code index runs as the `code-index-main-move` service; nothing replaces the rest.
 - **`sindri live`.** Not built (§14).
 
-**Q3. The nudge line text.**
-Recommended: amend the frozen hook-contract line to drop "shape signals" (a cut feature), with the test updated in the same PR.
-Alternative: keep the text as is (a line that advertises a feature that no longer exists).
+**Decision (Q3, taken as recommended: the owner did not answer it separately and is asked to confirm):** amend the frozen
+hook-contract line to drop "shape signals" (a cut feature), with the test updated in the same PR. Keeping the text would
+advertise a feature that no longer exists.
 
 ## 7. The install
 
@@ -409,7 +503,7 @@ installers call it. It follows `scripts/install-meta.sh:101-140` and `scripts/si
 | `judge` | `src/Judge/Aw.Judge.Host` | NativeAOT, ~11 MB | with `libe_sqlite3.*` beside it |
 | `aw-packets` | `src/Packets/Aw.Packets.App` | NativeAOT | |
 | `bugfix-state` | `src/BugFix/Aw.BugFix.Host` | NativeAOT | no SQLite |
-| `ui-evidence` | `src/Evidence/Aw.Evidence.Host` | framework-dependent | Playwright has no AOT (EV L562-567) |
+| `ui-evidence` | `src/Evidence/Aw.Evidence.Host` | framework-dependent | Sindri's evidence binary (§3.1): published with `sindri` and `sindri-ui`, same stamp; Playwright has no AOT (EV L562-567) |
 | `aw-readiness` | `src/Readiness/Aw.Readiness.App` | NativeAOT | |
 
    `aw-meta` stays opt-in through `--with-meta` and keeps `install-meta.sh`.
@@ -431,7 +525,7 @@ Flags: `install-cs.sh [--publish | --link] [--rebuild] [--dry-run]`; with neithe
 Every `~/.local/bin` entry is a **small wrapper**, never a bare link (a link would break when pruning removes a stamp, and
 NativeAOT finding `libe_sqlite3` through a symlink on macOS is unverified, so P2/P4 prove the resolved-path run). The wrapper
 exports `DOTNET_ROOT` and execs `bin/cs/current/<name>` by its resolved path. The `sindri` wrapper also exports
-`AW_SINDRI_JUDGE=<current>/judge` and `AW_PACKETS_BIN=<current>/aw-packets` (what `sindri-app.sh:22-23` injected), then `exec`s the real `sindri` by its
+`AW_SINDRI_JUDGE=<current>/judge` and `AW_PACKETS_BIN=<current>/aw-packets` and `AW_UI_EVIDENCE_BIN=<current>/ui-evidence` (the first two are what `sindri-app.sh:22-23` injected), then `exec`s the real `sindri` by its
 resolved path, so bare `sindri` finds `sindri-ui` next to it (`UiLauncher.Locate` is called with `AppContext.BaseDirectory`,
 `CommandTable.cs:241`, which is the real binary's directory when the wrapper execs it by its resolved path). The wrapper does not publish; publishing is the installer's job, run by `setup.sh` and by hand as `scripts/install-cs.sh --publish` (§7.3).
 
@@ -448,16 +542,15 @@ resolved path, so bare `sindri` finds `sindri-ui` next to it (`UiLauncher.Locate
 | `setup.sh:15,697`, messages naming `sindri index setup` | text |
 | `setup.sh:622-635,717`; `config/lib/setup-onyx-step.sh:6`; `scripts/install-onyx.sh` | `sindri-app` becomes `sindri` |
 | `providers/{claude,codex,cursor}/install.sh` | hook installs move out of `install-judge.sh` and `install-sindri.sh` (§7.4) |
-| `providers/lib.sh:411` | drop `install-live-pane` from the lever list unless Q4 says otherwise |
+| `providers/lib.sh:411` | drop `install-live-pane` from the lever list (Q4) |
 | `setup.sh:229,235` | remove `reflect` and `correct` from `MANAGED_SKILLS`; add them to `DEPRECATED_SKILLS`; the skill-count messages follow |
 
 All edits in this table are made in the switch PR (P3), not in P1. The `install-cs.sh` publish needs the NativeAOT toolchain
 that `install-deps.sh` installs (`setup.sh:287` today, after the old build step), so the PR moves the `install-deps.sh` call
 above the §8 sequence.
 
-`--with-sindri` is no longer a switch. **Q8. Keep `--with-sindri` accepted?** Recommended: accept it as a no-op that prints one
-line ("the C# Sindri is always installed"), for one release, so owner scripts do not break. Alternative: remove it and let
-an unknown flag fail.
+`--with-sindri` is no longer a switch. **Decision (Q8, owner 2026-10-23, "all Recommended"):** it is accepted as a no-op that
+prints one line ("the C# Sindri is always installed"), for one release, so owner scripts do not break.
 
 ### 7.3 Order against setup-once A7a/A7b
 
@@ -471,26 +564,24 @@ Onyx default (`--no-onyx` today, `--with-onyx` after A7b) is not decided here.
 
 ### 7.4 The hook installers keep their hooks
 
-The hooks stay bash and stay installed (`judge-health` for all providers; `sindri-nudge`; the opt-in levers). What goes is
+The hooks stay bash and stay installed (`judge-health` for all providers; `prompt-sort`; `sindri-nudge`; the opt-in levers, `trait-check` among them). What goes is
 the TS half of the two installers:
 
 - `scripts/install-judge.sh`: drop the `npm install && npm run build` and the wrapper (`:35-57`, `package.json` guard
   `:41-44`). The hook half (`--hook-only`) is renamed `scripts/install-judge-hooks.sh`; its callers are
   `providers/claude/install.sh:185-189`, `providers/codex/install.sh:48-49`, `providers/cursor/install.sh:84-85`, and four
-  tests (§9). `AW_NO_PROMPT_SORT` and the `prompt-sort` install go with Q2, and the installers unmerge the old `prompt-sort`
-  and `trait-check` registrations and hook copies from each provider's settings (§5.2).
+  tests (§9). It keeps installing the `prompt-sort` hook and `AW_NO_PROMPT_SORT` keeps its meaning; `install-trait-check.sh`
+  stays the opt-in lever (Q2, §5.2). Nothing is unmerged and no hook copy is deleted.
 - `scripts/install-sindri.sh`: drop channels, the wrapper, the four launchd jobs. The `--hook-only` nudge install (`:57-77`)
   moves to `scripts/install-sindri-hooks.sh`; callers `providers/claude/install.sh:191-196`, `codex/install.sh:50-52`,
   `cursor/install.sh:86-88`. With the C# install always present, the nudge is installed whenever the provider is (Q8 aside).
 
 ### 7.5 The `sindri-app` name
 
-**Q5. What happens to `sindri-app`?**
-Recommended: retire it at the switch. The switch is one-way and the name existed only for the side-by-side period; the
-removal script deletes the `~/.local/bin/sindri-app` link and `$AW_STATE_DIR/bin/sindri-app/`, and `scripts/sindri-app.sh`'s
-publish logic moves to `scripts/install-cs.sh` (its run mode is just `sindri`) and the old file goes. Every `sindri-app <verb>` in docs becomes `sindri <verb>`
-(§9).
-Alternative: keep `sindri-app` as an alias to `sindri` for one release.
+**Decision (Q5, owner 2026-10-23, "all Recommended"): `sindri-app` is retired at the switch.** The switch is one-way and the name
+existed only for the side-by-side period; the removal script deletes the `~/.local/bin/sindri-app` link and
+`$AW_STATE_DIR/bin/sindri-app/`, and `scripts/sindri-app.sh`'s publish logic moves to `scripts/install-cs.sh` (its run mode
+is just `sindri`) and the old file goes. Every `sindri-app <verb>` in docs becomes `sindri <verb>` (§9). No alias is kept.
 
 ## 8. The removal script
 
@@ -523,7 +614,7 @@ by its stamped path, because nothing is linked yet; the cleanup script sets `DOT
 | 6b | First action of `--post-link`: a TS hook running in the gap between steps 5 and 6 can have recreated a TS-shaped database, so test the shape again, delete and retry once; then run `judge health`. The gate fails (exit 3) only on AW-DATA-009 or a `judge` that does not run; `degraded` or `down` for another reason is printed as a warning, not a failure | catches the one window the order leaves |
 | 7 | Remove the remaining TS wrappers when the file matches the TS shape (`exec <node> .../dist/cli.js`; `install-sindri.sh:97` refuses a symlink target): `scorer`, `sindri-next`, and the `sindri-app` link with `$AW_STATE_DIR/bin/sindri-app/`. Anything else (for example `sindri-view`, which no script in the repo creates) is left alone and reported | the links of step 6 already replaced `judge` and `sindri` |
 | 8 | Delete TS state: `$AW_STATE_DIR/sindri/` (ledger, index, channels, git-template, spool, logs), `$AW_STATE_DIR/profile` (a link is unlinked, never followed or recursed into; any delete whose resolved path is outside `$AW_STATE_DIR` is refused), `$AW_STATE_DIR/scorer/`, `$AW_STATE_DIR/audit/`, `<repo-slug>/bugfix/` (open bug fixes restart, §4.3 e; the C# state is `$AW_STATE_DIR/bugfix/<repo-slug>/<ticket-slug>`, a different path, which the P2 proof keeps byte-identical through a second run) | one-way; no archive. Every delete is guarded: `AW_STATE_DIR` must be absolute and non-empty (the guard of `aw_remove_retired_dir`, `providers/lib.sh:391-406`) |
-| 9 | Run `claude plugin uninstall aw-live@agentic-workflow-mods --scope user` and remove the marketplace `agentic-workflow-mods`, best effort (inlined here, because `install-live-pane.sh` is deleted by the same PR), unless Q4 keeps the mod; `aw_remove_retired_dir` on `<checkout>/{judge,scorer,sindri}/{dist,node_modules}` only (the checkout, never `$AW_STATE_DIR/judge/`, whose hook files are kept) | the mod's backend is gone; tracked content stays |
+| 9 | Run `claude plugin uninstall aw-live@agentic-workflow-mods --scope user` and remove the marketplace `agentic-workflow-mods`, best effort (inlined here, because `install-live-pane.sh` is deleted by the same PR); `aw_remove_retired_dir` on `<checkout>/{judge,scorer,sindri}/{dist,node_modules}` only (the checkout, never `$AW_STATE_DIR/judge/`, whose hook files are kept) | the mod's backend is gone; tracked content stays |
 | 10 | Print, and write to `$AW_STATE_DIR/logs/cutover-<timestamp>.log`: what was removed, what was kept, what was left alone, the repos found (name and path), the judge config values that were deleted, and the **next steps** as copy-pasteable lines: `sindri profile init` then the typed `sindri profile approve`, then `sindri repo onboard <path>` for each listed repo, then `sindri doctor` (the C# profile is new and starts empty, so the session nudge says "not onboarded" in every repo until then; that is expected; no TS profile is migrated). `setup.sh` prints the same lines again as its last output, so the lever installers do not bury them. Printed only when something was removed, and again by the next run while the latest log has no `completed` line (written after step 10) | the owner needs the list, and the C# side starts unapproved |
 
 ### 8.1 Script contract
@@ -533,7 +624,8 @@ changed), 3 stopped partway or failed the step 6b gate (re-run `./setup.sh`; eve
 `--dry-run` the same lines are prefixed `would`. The unique irreversible step is 5 and 8: before P4 the owner runs
 `cutover-clean-ts.sh --dry-run` against the **real** state (it is read-only), and the report is read before the flip.
 
-**Kept, never touched:** `judge/sessions/`, `judge/outbox/`, `judge/teammate-names.jsonl` (hook-written);
+**Kept, never touched:** `judge/sessions/`, `judge/outbox/`, `judge/teammate-names.jsonl` (hook-written); `judge/evals/` and
+`judge/trait-check/` (written by the ported verbs, §5.3);
 `context-guard/`, `locks/` (heavy-job, qa-stack, `heavy-slots-cap`, `heavy-meta-reserve`), `hooks/`, `fleet/`;
 `ui-evidence/runs/` (old TS summaries stay unread, EV L619-625); `<repo-slug>/{plans,reviews,proof,verification,design}`,
 `digests/`, `toolkit/`, `logs/`, `meta/`, `bin/`, `cache/`; `$AW_STATE_DIR/sindri-app` (the C# Sindri's home, never touched
@@ -549,12 +641,12 @@ One PR, before the flip (§12 P3; the flip is P4). Every item is a deletion or a
 
 **Directories:** `scorer/`, `judge/`, `sindri/` (121, 88 and 226 tracked files); the TS of `skills/ui-evidence/`
 (`src/`, `package.json`, `scripts/` once unreferenced) and `skills/bugFixOrchestrator/` (`src/`, `package.json`); `config/launchd/`;
-`mods/aw-live` and its marketplace entry unless Q4 keeps it; `skills/correct/`, `skills/reflect/`; `scripts/install-scorer.sh`,
+`mods/aw-live` and its marketplace entry (Q4); `skills/correct/`, `skills/reflect/`; `scripts/install-scorer.sh`,
 `scripts/transcript-audit/`; the `ts-scorer` gate step of `skills/meta/examples/agentic-workflow.team.json:48-50`; `deps.yaml`
 `binPaths` naming TS packages; `config/rules/web-app-rules.json`, `scripts/install-live-pane.sh`, `scripts/probe.sh:125`,
 `skills/judge/SKILL.md:17` and `scripts/readiness-baseline.mjs` where they name TS packages (re-grep `scorer/`, `judge/`,
 `sindri/`, `dist/cli.js` on the PR's tree); `.github/ci-tools/` and `scripts/ci/no-any.mjs` with `scripts/ci/no-any-baseline.json` (holds only
-`{"judge/src/commands.ts":2}`) unless aw-live stays TS.
+`{"judge/src/commands.ts":2}`).
 
 **CI and gates.** `.github/workflows/ci.yml`: the `ts` job (`:48-115`); the npm cache and "Build the CLIs the tests call"
 in `bash-tests` (`:117-160`), replaced by the dotnet publish of `judge` and `sindri` the suites call; in `gate` the
@@ -581,11 +673,11 @@ paragraph becomes a short statement of the installed build; the Tech Stack TS ro
 Rules: `.agents/rules/testing.md` (Vitest policy), `.agents/rules/hooks.md:171` (sindri-nudge installer).
 
 **Bash suites deleted:** `scripts/tests/install-sindri.test.sh`, `scripts/tests/install-scorer-audit.test.sh`,
-`config/lib/tests/install-live-pane.test.sh` (unless Q4), `config/lib/tests/judge-brief-real-cli.test.sh`,
+`config/lib/tests/install-live-pane.test.sh` (Q4), `config/lib/tests/judge-brief-real-cli.test.sh`,
 `config/lib/tests/send-gate-real-judge.test.sh` (both run `node judge/dist/cli.js`; the C# hook-surface test covers the
-contract; retarget at the C# binary if the owner wants them), `config/lib/tests/install-prompt-sort.test.sh` and
-`install-trait-check.test.sh` (with Q2), the case in `providers/tests/install.test.sh:293-305`.
-**Retargeted:** `scripts/tests/install-deps.test.sh` and `code-index-lock.test.sh` (pin source); `scripts/tests/ci-changed-areas.test.sh`,
+contract; retarget at the C# binary if the owner wants them), the case in `providers/tests/install.test.sh:293-305`.
+**Retargeted:** `config/lib/tests/install-prompt-sort.test.sh` and `install-trait-check.test.sh` (they stay under Q2; wherever they call
+`install-judge.sh` they call `install-judge-hooks.sh`, and their judge is the C# one; unit 6.5); `scripts/tests/install-deps.test.sh` and `code-index-lock.test.sh` (pin source); `scripts/tests/ci-changed-areas.test.sh`,
 `ci-bash-tests.test.sh:28,69-80` (the `install-judge.sh` build guard is moot); `scripts/tests/sindri-app.test.sh` (the
 rename; becomes the install test); `config/lib/tests/install-wake-gating.test.sh:23`, `installed-hooks-smoke.test.sh`,
 `aw-state-dir-isolation.test.sh:59-68,114`, `config/hooks/tests/provider-install-hooks.test.sh:123-126` (they call
@@ -606,7 +698,7 @@ rename; becomes the install test); `config/lib/tests/install-wake-gating.test.sh
 
 **Stays Node** (so Node stays a setup prerequisite): `dembrandt` (`setup.sh:461`), `prism-mcp` and `xcodebuildmcp` through `npx`
 (`setup.sh:566-577`), `scripts/package.json` (Ajv for `check-launcher.mjs`, `check-fleet.mjs`, `check-scoping-schemas.mjs`),
-`mods/aw-live` if kept, `.nvmrc`.
+`.nvmrc`.
 
 ## 10. The hook contract stays green
 
@@ -627,6 +719,14 @@ they `jq`, the exit codes and stderr prefixes they branch on, and the files hook
   scorer. `judge_health` (`config/statusline.sh:125`) is called today only from `live_refresh` (`:159`) and the segment returns `--`
   when no scorer exists (`:184`), so removing the scorer would drop the judge segment. The PR therefore moves the
   `judge_health` call into the render path (cached, as the Live cache was), and `statusline.test.sh` keeps a judge-health case.
+- Two rows join the frozen table of `docs/csharp/judge.md` and `judge-cs-hook-surface.test.sh` (unit 6.5): `prompt-sort.sh`
+  (`judge prompt-sort` < `{prompt, sessionId}`; reads `.context`; ignores the exit; the hook's kill budget) and
+  `trait-check.sh` (`judge trait-check --edit --file ... | --stop`; branches on exit 0, 2 with stderr as the message, 3 as
+  `jev-unavailable`, anything else as `judge-exit-N`). Real-hook cases, offline (`AW_JUDGE_PROVIDERS=rules`): `prompt-sort`
+  exits 0, prints nothing and records a decision row (the heuristics path), and a machine-text and a slash-command prompt
+  never reach the judge; `trait-check` in a repo with no traits exits 0, and with a trait and no Jev exits 3 and the hook
+  fails open logging `jev-unavailable`. The findings path and a decisive prompt-sort axis use a stub Jev in the C# unit
+  tests; how a real-hook case reaches a stub Jev is decided in unit 6.5.
 - `config/hooks/tests/judge-health.test.sh` and `failopen.test.sh` use stubs and do not change.
 
 ## 11. The scorer cut, in detail
@@ -635,17 +735,15 @@ they `jq`, the exit codes and stderr prefixes they branch on, and the files hook
 |---|---|
 | `scripts/install-scorer.sh`, plists `scorer`, `scorer-audit`, `$AW_STATE_DIR/scorer/` | removed (§8) |
 | `config/statusline.sh:155,184` | guard stays, refresh goes (§10) |
-| `mods/aw-live` | Q4 |
+| `mods/aw-live` | removed (Q4, owner) |
 | `deps.yaml` Scorer package and edges | deleted (§9). The Evidence `files` edge for `ui-evidence/runs` and the `context-guard` fires-log file need a new owner or removal; unit 3.2 decides, and `check-deps.mjs` is the check |
 | CI, dependabot, labels, `.env.example`, readiness-baseline | §9 |
 | `scorer probe` and `scripts/probe.sh` docs | the reader is gone; `probe.sh` keeps writing, docs say so |
 | daily cost report | none until Sindri rebuilds it (§14) |
 
-**Q4. The `aw-live` mod.**
-Recommended: uninstall it at the switch (`install-live-pane.sh --uninstall`) and delete it from the repo until Sindri has a
-`sindri live`.
-Alternative: keep the `scorer` package installed only for the pane until then. That contradicts the owner's cut and keeps
-Node and the TS build in the install.
+**Decision (Q4, owner 2026-10-23, "all Recommended"): the `aw-live` mod is uninstalled at the switch**
+(`install-live-pane.sh --uninstall`) and deleted from the repo until Sindri has a `sindri live`. Keeping the `scorer` package
+installed only for the pane would contradict the owner's cut and keep Node and the TS build in the install.
 
 ## 12. Phases
 
@@ -655,26 +753,31 @@ Each phase has exit criteria and a proof. Contract units come first (§13).
 
 This spec's tables become test lists, red first (`/new-slice` style). Exit: every §3.2, §4.2, §5.1 and §6.1 row marked
 equivalent has a named test or an existing one; every gap row has a red test or a stub. Proof: `dotnet build -warnaserror`
-zero warnings; the red tests are listed in the PR. Owner decisions Q1, Q2, Q3, Q6 and Q7 are answered before P1 opens; Q4, Q5 and Q8 are answered before P3. A question left open takes its Recommended answer.
+zero warnings; the red tests are listed in the PR. The Judge contract unit 6.0 writes the red tests and stubs for every verb of §5.2, the migrations `0003_eval_labels.sql` and `0004_prompt_sort.sql`, and the hotspot edits (`CommandTable.cs`, `JudgeJsonContext.cs`, `Composition.cs`, `PublicAPI.*.txt`), so that 6.1 to 6.4 write to disjoint scopes. The owner answered Q1 to Q8 on 2026-10-23 (§17); Q3 and Q7 are taken as recommended until the owner confirms. Q9 is answered before P3; a question left open takes its Recommended answer.
 
 ### P1. Close the gaps (parallel waves)
 
 | Unit | Package | Work | Proof |
 |---|---|---|---|
-| 1.1 | Evidence | G-a script features (or the trim, per Q1) with guard rules | unit lane; heavy `BrowserSessionContract` run through the heavy lock |
+| 1.1 | Evidence | G-a script features with guard rules | unit lane; heavy `BrowserSessionContract` run through the heavy lock |
 | 1.2 | Evidence | G-b `gh-publish` (port, gh runner, fake) | unit lane with the fake; owner's scratch-repo check, skipped without a token |
 | 1.3 | Evidence | G-c `JudgeCliJudge`; registered in `Composition.cs` | contract test with a stub `judge`; one run with the real C# judge offline (`AW_JUDGE_PROVIDERS=rules`) |
 | 1.4 | Evidence | G-d doctor slots and env loader; G-e per-artifact `commit` and `at`; G-g flag name | unit lane |
 | 1.5 | Evidence + skills | G-f SKILL.md rewrite; the brief text; `step.evidence.none` and `combine` as `IBlockStep`; per-verb `ui-evidence` grants in `AgentLaunches.RequestFor` (§3.1); §3.4 checks | Sindri unit lane; the Sindri Ui tests in their own gate if a catalog row changes (feedback_lane_gate_ui_tests) |
 | 2.1 | BugFix | §4.3 (a) and (b): both adapters, the digest and check-kind fixes, `aot-smoke` and `expected.txt:18` updated | unit lane; `bash src/BugFix/aot-smoke/run.sh` with a fake `judge` and `ui-evidence` |
 | 2.2 | BugFix skill | §4.3 (d) text | the skill's commands run once in a temp repo through the smoke |
-| 3.1 | Judge | the Q2 cuts (installers, hooks, skill text, tests), the hook-registration unmerge for provider settings (§5.2) and the statusline judge segment (§10). All of it is written and tested in P1 but only **lands in the switch PR** where it changes the installed TS-era toolkit; the unmerge helper is dormant until `setup.sh` calls it | `judge-cs-hook-surface` and `install-*` tests |
+| 3.1 | Judge installers, skill, statusline | `install-judge.sh` split into `install-judge-hooks.sh` (the TS half dropped, the `prompt-sort` hook install kept, §7.4), the `/judge` skill text edits of §5.2 and the statusline judge segment (§10). Written and tested in P1 but only **lands in the switch PR**; nothing is unmerged | `judge-cs-hook-surface`, the `install-*` tests and `statusline.test.sh` |
 | 3.2 | deps/CI | Scorer package out of `deps.yaml`; graphify pin moved (§6.3) | `node scripts/check-deps.mjs`; `install-deps.test.sh`; `code-index-lock.test.sh` |
 | 4.1 | Sindri | `scrub` verbs, `IRepoHooks`, hook v3, `doctor` per-repo line | unit and integration lanes; `scripts/sindri-guard-proof.sh` |
-| 4.2 | Sindri | Q3 text and test; text of `sindri index setup` messages (the `--with-sindri` no-op of Q8 is a `setup.sh` edit of the switch PR) | `sindri-cs-hook-surface` |
-| 5.1 | Install | `scripts/install-cs.sh` (`--publish`, `--link`), the wrappers and their test; `cutover-clean-ts.sh` is P2. The `setup.sh` and provider edits of §7.2 and §7.4 wait for P3 | the install proof of P2, dry run |
+| 4.2 | Sindri | Q3 text and test; the `setup:ui-evidence` doctor line (§3.1); text of `sindri index setup` messages (the `--with-sindri` no-op of Q8 is a `setup.sh` edit of the switch PR) | `sindri-cs-hook-surface`; Sindri unit lane |
+| 5.1 | Install | `scripts/install-cs.sh` (`--publish`, `--link`), the wrappers (with the `AW_UI_EVIDENCE_BIN` export) and their test; `cutover-clean-ts.sh` is P2. The `setup.sh` and provider edits of §7.2 and §7.4 wait for P3 | the install proof of P2, dry run |
+| 6.1 | Judge | `prompt-sort` hook path, `prompt-sort scaffold` and `config set prompt-sort` (§5.2) | unit lane with a stub Jev; the offline real-hook case; `aot-smoke` |
+| 6.2 | Judge | `trait-check` (`--edit`, `--stop`, `--scan`), the trait files and the Jev batch (§5.2) | unit lane with a stub Jev and a temp git repo |
+| 6.3 | Judge | `label import\|outcomes\|set\|status`, `adjudicate`, `eval`, `eval import-turns`, the transcript reader (§5.2) | unit lane over transcript fixtures; a stub `claude` for the adjudicator |
+| 6.4 | Judge | `prompt-sort why\|import\|outcomes\|adjudicate\|eval\|promote` (§5.2); needs 6.1's stores and 6.3's label and eval code | unit lane |
+| 6.5 | Judge + hooks | the two hook rows and real-hook cases of §10, the `judge.md` rows, the `aot-smoke` lines, the retargeted `install-prompt-sort` and `install-trait-check` tests | `bash config/lib/tests/judge-cs-hook-surface.test.sh`; `bash src/Judge/aot-smoke/run.sh`; a cold `judge prompt-sort` timed through the wrapper |
 
-Exit: every gap row of §3.3 and every KEEP-needed row of §6.1 is closed or cut by an owner answer; `dotnet build
+Exit: every gap row of §3.3 and every KEEP-needed row of §6.1 is closed or cut by an owner answer, and every verb of §5.2 has a C# verb; `dotnet build
 -warnaserror`, both lanes, `dotnet format --verify-no-changes`, `scripts/dotnet-verify-packages.sh` pass.
 
 ### P2. The install switch and the removal script, on a scratch box
@@ -686,7 +789,7 @@ install seeded in it: wrappers, state, plists, a profile with one repo, one onbo
 `decisions.sqlite`, and registered `prompt-sort`/`trait-check` entries). Never `HOME=$(mktemp -d)` for dotnet or heavy work (each leaks a 3.3 GB NuGet cache; `feedback_no_temp_home_dotnet`).
 Exit and proof: on the scratch box, `install-cs.sh` publishes, links and verifies; the cleanup removes exactly the §8
 list and leaves the §8 "kept" list byte-identical; the v2 hook is now v3 and refuses a staged secret and passes a clean
-commit; the real hooks, run against the installed binaries, pass the §10 suites; `./setup.sh --providers claude,codex,cursor
+commit; the real hooks, run against the installed binaries, pass the §10 suites (the `prompt-sort` and `trait-check` hooks included, whose seeded registrations stay untouched); `./setup.sh --providers claude,codex,cursor
 --dry-run` is clean; a second run changes nothing, and a flipped box with live C# judge state (a schema-versioned `decisions.sqlite`, a `config.json`) keeps it through a second `./setup.sh`; a cold `sindri repo status --nudge` through the wrapper stays inside the nudge hook's time
 budget (measured, not assumed; the framework-dependent `sindri` is the slowest binary); a failed `--publish` leaves the seeded
 TS install untouched, and a step-1 refusal changes nothing. The step runs in CI (§9). The macOS case (a wrapper exec of a
@@ -705,7 +808,7 @@ Proof: the CI run.
 
 The owner pulls main and runs `./setup.sh` once per box. Exit: `sindri doctor` is ok; `judge health` answers `ok`; a real hook fires (a session
 start prints no `judge: not found`); a real `ui-evidence run` produces a summary with the judge adapter wired; one
-`bugfix-state` run reaches a resolved report; `git commit` in an onboarded repo is checked by v3; `sindri profile init`, the typed `profile approve` and `repo onboard` for
+`bugfix-state` run reaches a resolved report; `git commit` in an onboarded repo is checked by v3; a prompt in a real session records a `prompt-sort` decision (`judge prompt-sort why <id>`); `sindri profile init`, the typed `profile approve` and `repo onboard` for
 each repo the report listed have been run (the C# profile starts empty); bare `sindri` opens the app, or on a box with no
 display prints the status and says how to open it. No rollback is built; if
 a step fails, the owner reports it and the fix goes forward.
@@ -722,7 +825,10 @@ P0 contracts (Wave 0)
  +-- 1.3  Evidence JudgeCliJudge ---+---+--> 1.5 skill + steps + AgentLaunches  --+
  +-- 1.4  Evidence doctor/env/DTC9 -+                                              |
  +-- 2.1  BugFix adapters  --(needs the 1.3 judge contract, not its code)--> 2.2 ---+
- +-- 3.1  Judge cuts ------------------------------------------------------------+
+ +-- 3.1  Judge installers + skill + statusline ---------------------------------+
+ +-- 6.0  Judge contract --+-- 6.1  prompt-sort hook path -+--> 6.4  prompt-sort eval side --+
+                           +-- 6.2  trait-check ------------+--> 6.5  hook-surface + tests --+
+                           +-- 6.3  label/adjudicate/eval -+ (6.4 and 6.5 wait for 6.1 to 6.3)
  +-- 3.2  deps/CI + graphify pin ------------------------------------------------+
  +-- 4.1  Sindri scrub + IRepoHooks + hook v3 --> 4.2 nudge text -----------------+
  +-- 5.1  install-cs.sh (needs the binary list, not the gaps) -------------------+
@@ -734,9 +840,9 @@ P0 contracts (Wave 0)
 
 | Wave | Units | Rule |
 |---|---|---|
-| 0 | P0 contracts | one unit per package, merged first; later units build on red tests |
-| 1 | 1.1, 1.2, 1.3, 1.4, 2.1, 3.1, 3.2, 4.1, 5.1 | disjoint write scopes; all start at once |
-| 2 | 1.5, 2.2, 4.2 | wait for their wave-1 inputs |
+| 0 | P0 contracts, 6.0 for Judge | one unit per package, merged first; later units build on red tests |
+| 1 | 1.1, 1.2, 1.3, 1.4, 2.1, 3.1, 3.2, 4.1, 5.1, 6.1, 6.2, 6.3 | disjoint write scopes; all start at once |
+| 2 | 1.5, 2.2, 4.2, 6.4, 6.5 | wait for their wave-1 inputs |
 | 3 | P2 proof, then P3 | one integrator unit each |
 | 4 | P4 | the owner |
 
@@ -744,7 +850,10 @@ P0 contracts (Wave 0)
 (request, response, port, adapter with no constructor parameters that throws `NotSupportedException`) and merges red; the
 implementers then fill disjoint write scopes: 1.1 owns `Core/Scripts`, `Core/Guard`, `Browser/Locator.cs`; 1.2 owns a new
 `Features/GhPublish`; 1.3 owns `Infrastructure/Judging`; 1.4 owns `Features/Doctor` and a new env loader; 2.1 owns
-`src/BugFix/Aw.BugFix.Infrastructure`; 4.1 owns a new `Aw.Sindri.Features/Scrub` and `OnboardRepo/IRepoHooks`.
+`src/BugFix/Aw.BugFix.Infrastructure`; 4.1 owns a new `Aw.Sindri.Features/Scrub` and `OnboardRepo/IRepoHooks`; 6.1 owns a new
+`Core/PromptSort`, `Features/SortPrompt`, `Infrastructure/PromptSort` and the `prompt-sort` Host command; 6.2 owns `Core/Traits`,
+`Features/CheckTraits` and `Infrastructure/Traits`; 6.3 owns `Core/Evals`, the label, adjudicate, eval and import-turns slices
+and `Infrastructure/Evals`; 6.4 owns `Features/PromptSortEval`. The new Core namespaces join the acyclic graph (`ARCH-CYCLE-001`).
 
 **Hotspot files owned by the integrator only.** `deps.yaml`, `AgenticWorkflow.slnx`, `Directory.Packages.props`,
 `packages.lock.json`, `PublicAPI.*.txt`, `CommandTable.cs` of each host, `Composition.cs` / the package's `Add...()` and its
@@ -781,8 +890,7 @@ that touches a Sindri catalog row, action id or API golden also runs `Aw.Sindri.
 - Recipes for `evolve`, `scope`, `observe`, `shape` and `profile explain` (rebuilt from scratch in C#, owner 2026-10-20).
 - `sindri live` (the replacement for `scorer live` and the `aw-live` pane's numbers).
 - `bugfix-state run-api` and `run-db` verbs (the judge's `api-evidence` and `db-evidence` kinds stay unreachable from the skill).
-- `prompt-sort`, `trait-check`, `label`, `adjudicate`, `eval` (unless Q2's alternative).
-- An `IUiEvidence` port and a `Sindri -> Evidence cli` edge (§3.1, Q6 alternative).
+- An `IUiEvidence` port and a `Sindri -> Evidence cli` edge (§3.1, rejected under Q6).
 - Windows; a second user; any rollback tooling.
 
 ## 15. Risks
@@ -792,7 +900,10 @@ that touches a Sindri catalog row, action id or API golden also runs `Aw.Sindri.
 | Stale per-repo hooks (v2, v1) in repos the TS profile does not list, or a repo moved since onboarding | the v2 `shape` line fails (one stderr line per commit); `scrub --staged` still answers, so no commit is refused | the C# `scrub --staged` serves v2 and v1 hooks unchanged (§6.2); v3 recognises v1 and v2; doctor reports `pre-commit:<repo>` for profile repos; the removal script prints repos it could not reach and how to reinstall (`sindri scrub --install-pre-commit --repo <path>`); the fail-closed message names the fix |
 | Judge state refusal (AW-DATA-009) if `decisions.sqlite` survives | every hook sees judge exit 1; fail-open logs; judge health `down` | §5.3 and §8: step 5 deletes it before the link; the P2 proof seeds a TS-shaped file |
 | .NET runtime missing for the framework-dependent `sindri` and `ui-evidence` | the wrappers fail | `install-cs.sh` installs the pinned SDK into `$DOTNET_ROOT`; the wrappers export it; the install verifies each binary answers |
-| Node stays required (dembrandt, prism-mcp, xcodebuildmcp, Ajv scripts, aw-live if kept) | "no TS" is read as "no Node" | §9 lists what stays Node; `setup.sh` keeps its Node check |
+| Node stays required (dembrandt, prism-mcp, xcodebuildmcp, Ajv scripts) | "no TS" is read as "no Node" | §9 lists what stays Node; `setup.sh` keeps its Node check |
+| The Judge port is the longest P1 item (about 2,560 TS lines in `prompt-sort/`, `trait-check/` and the label, eval, adjudicate and turn-import modules; four feature units) | the switch waits on it | 6.0 lands first so 6.1 to 6.3 start together; the P3 gate needs every §5.2 verb; Q9 asks whether the eval side may follow the switch |
+| A ported hook is slower than its budget (`prompt-sort`: killed at 1500 ms by default; a cold start through the wrapper) | `prompt-sort` prints nothing, `trait-check` fails open | both hooks already fail open; unit 6.5 times a cold `judge prompt-sort` through the wrapper against the hook budget |
+| Ownership read as a verb: someone adds `sindri evidence` | Playwright enters the Sindri host (§3.1, Q6) | the repo check of §3.4 fails when a file outside `src/Evidence/` spawns Playwright |
 | Heavy lock contention (P1 builds, AOT publishes, the browser) | waves stall, a gate starves lanes | §13: queue by depth, the meta reserves and clears its slot (`feedback_meta_clear_gate_reserve`); no per-agent cap |
 | The statusline's Live column shows `--` forever | looks broken | the guard is intended (§10); the README says why |
 | `reflect` and `correct` skills removed | users type a removed command | `setup.sh` removes their links: they move from `MANAGED_SKILLS` (`setup.sh:229`) to `DEPRECATED_SKILLS` (`:235`); removing a name from `MANAGED_SKILLS` alone leaves the link (the prompt answers no when not interactive) |
@@ -809,20 +920,39 @@ that touches a Sindri catalog row, action id or API golden also runs `Aw.Sindri.
 - `2026-10-19-sindri-setup-once-design.md`: the command name (`sindri-app` is read as `sindri` from the switch on; §7.5), the
   statement that `sindri` is the TypeScript build, and the A7a order sentence naming the scorer, judge and TS builds
   (§7.3). Not amended: SO-D5, §5.3, §5.4, the A7a exit codes, §13.1's proof shape.
-- `docs/csharp/evidence.md` "At the switch": adopted; G-a to G-g added.
-- `docs/csharp/bugfix.md`: the digest wording (§4.3 c) and the adapters; `docs/csharp/judge.md`: hook table row `prompt-sort`
-  per Q2.
+- `docs/csharp/evidence.md` "At the switch": adopted; G-a to G-g added; it states that Sindri owns the binary and installs it (§3.1).
+- `docs/csharp/bugfix.md`: the digest wording (§4.3 c) and the adapters; `docs/csharp/judge.md`: the hook-table row `prompt-sort` (J2
+  becomes built), a new `trait-check` row and the verbs of §5.2.
 - `AGENTS.md` and `.agents/rules/{hooks,testing}.md`: §9.
 
-## 17. Questions for the owner
+## 17. Owner answers (2026-10-23)
 
-| # | Question | Recommended | Alternative |
-|---|---|---|---|
-| Q1 | The Evidence script features (G-a) | Port them | Cut them from SKILL.md; qa-runner uses the C# subset |
-| Q2 | `prompt-sort`, `trait-check`, `label`, `adjudicate`, `eval` | Cut from the cutover; rebuild later | Port `prompt-sort` first (J2) |
-| Q3 | The nudge line text | Amend the frozen line to drop "shape signals" | Keep the text |
-| Q4 | The `aw-live` mod | Uninstall and delete until `sindri live` | Keep `scorer` installed only for the pane |
-| Q5 | `sindri-app` | Retire at the switch | Alias for one release |
-| Q6 | How the recipe's evidence run steps reach Evidence | Agent steps run the `ui-evidence` binary | Block steps through an `IUiEvidence` port and CLI adapter |
-| Q7 | `gh-publish` transport | The `gh` CLI runner Evidence already styles | `Aw.Forge`'s GitHub adapter (needs write methods) |
-| Q8 | `--with-sindri` after the switch | Accept as a no-op for one release, print one line | Remove; an unknown flag fails |
+Relayed by the meta; the owner's words are quoted. A row that says "taken as recommended" was not answered separately and
+is a decision only until the owner confirms it.
+
+| # | Question | Answer | Owner's words | Where it landed |
+|---|---|---|---|---|
+| Q1 | The Evidence script features (G-a) | Port them | the recommended answer | §1, §3.3, unit 1.1 |
+| Q2 | `prompt-sort`, `trait-check`, `label`, `adjudicate`, `eval` | **Not cut: port all of the Judge** | "port all of Judge hooks. parts of Judge should already be ported for the line recipe i think" | §1, §5, §7.4, §9, §10, P0 and P1 units 6.0 to 6.5, §13 |
+| Q3 | The nudge line text | Amend the frozen line to drop "shape signals" (taken as recommended, owner to confirm) | not answered separately | §6.3, unit 4.2 |
+| Q4 | The `aw-live` mod | Uninstall and delete until `sindri live` | "all Recommended" | §8 step 9, §9, §11 |
+| Q5 | `sindri-app` | Retire at the switch | "all Recommended" | §7.5, §8 step 7 |
+| Q6 | How the recipe's evidence run steps reach Evidence | **Sindri owns the binary, not the skill**; agent steps and the skill run it | "no, sindri owns the binary, not the skill" | §3.1 "Ownership", the Q6 decision, §7.1, unit 4.2 |
+| Q7 | `gh-publish` transport | The `gh` CLI runner (taken as recommended, owner to confirm) | not answered separately | §3.3, unit 1.2 |
+| Q8 | `--with-sindri` after the switch | A no-op for one release | "all Recommended" | §7.2 |
+
+**How Q6 was read.** The owner's "no" answers whether the skill owns the evidence tool. The reading taken: the `ui-evidence`
+binary belongs to Sindri (built, published, installed and versioned in Sindri's install, next to `sindri`, with Sindri's
+stamp), and the skill calls it. The rejected reading is a `sindri evidence <verb>` subcommand, because it would put
+Playwright and Npgsql in the `sindri` host and widen every evidence step's grant to all `sindri` verbs (§3.1).
+
+### New open question
+
+**Q9. May the eval side of the Judge port follow the switch?** The owner said to port all of the Judge before the switch,
+which is about 2,560 TS lines in four feature units (§5.2, §15). The hook verbs (`prompt-sort`, `trait-check`, units 6.1, 6.2)
+are what the installed hooks call; `label`, `adjudicate`, `eval`, `eval import-turns` and the `prompt-sort` eval side (6.3,
+6.4) are run by hand from the `/judge` skill.
+Recommended: no; the switch PR (P3) waits for all four, as the owner said, and the Judge units start first in wave 1 because
+they are the longest.
+Alternative: P3 waits for 6.1, 6.2 and 6.5's hook cases only, and 6.3 and 6.4 land within a release after the flip (the
+skill text for those verbs then says "available after the next update" until they do).
