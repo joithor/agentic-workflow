@@ -4078,10 +4078,10 @@ Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChanged.Change.get -> Aw.Sindri.Cor
 Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChanged.Change.init -> void
 Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChanged.Child.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
 Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChanged.Child.init -> void
-Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChanged.ChildChanged(string! Actor, Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Child, Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChange Change, Aw.Sindri.Core.Workflow.Engine.ParkReason? Reason, string? Question, Aw.Sindri.Core.Workflow.Engine.TriggerKey ChildEventKey) -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChanged.ChildChanged(string! Actor, Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Child, Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChange Change, Aw.Sindri.Core.Workflow.Engine.ParkReason? Reason, string? Question, Aw.Sindri.Core.Workflow.Engine.TriggerKey ChildEventKey, Aw.Sindri.Core.Workflow.Engine.ParkKind? ParkKind = null, Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChanged.ChildEventKey.get -> Aw.Sindri.Core.Workflow.Engine.TriggerKey
 Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChanged.ChildEventKey.init -> void
-Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChanged.Deconstruct(out string! Actor, out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Child, out Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChange Change, out Aw.Sindri.Core.Workflow.Engine.ParkReason? Reason, out string? Question, out Aw.Sindri.Core.Workflow.Engine.TriggerKey ChildEventKey) -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChanged.Deconstruct(out string! Actor, out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Child, out Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChange Change, out Aw.Sindri.Core.Workflow.Engine.ParkReason? Reason, out string? Question, out Aw.Sindri.Core.Workflow.Engine.TriggerKey ChildEventKey, out Aw.Sindri.Core.Workflow.Engine.ParkKind? ParkKind, out Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation) -> void
 Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChanged.Equals(Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChanged? other) -> bool
 Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChanged.Question.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChanged.Question.init -> void
@@ -9024,7 +9024,7 @@ Aw.Sindri.Core.NeedsYou.ParkRowInput.Suspension.get -> Aw.Sindri.Core.Events.Sus
 Aw.Sindri.Core.NeedsYou.ParkRowInput.Suspension.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape!
-Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind Kind, out Aw.Sindri.Core.Workflow.Engine.ParkReason? Reason, out Aw.Sindri.Core.Workflow.Engine.ParkKind? ParkKind, out Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation, out bool Mirrors) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind Kind, out Aw.Sindri.Core.Workflow.Engine.ParkReason? Reason, out Aw.Sindri.Core.Workflow.Engine.ParkKind? ParkKind, out Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation, out bool Mirrors, out Aw.Sindri.Core.Workflow.Engine.ParkKind? MirroredParkKind, out Aw.Sindri.Core.Workflow.Engine.EscalationKind? MirroredEscalation) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape? other) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Escalation.get -> Aw.Sindri.Core.Workflow.Engine.EscalationKind?
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Escalation.init -> void
@@ -9034,7 +9034,7 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Kind.get -> Aw.Sindri.Core.Work
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Kind.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.ParkKind.get -> Aw.Sindri.Core.Workflow.Engine.ParkKind?
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.ParkKind.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.ParkShape(Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind Kind, Aw.Sindri.Core.Workflow.Engine.ParkReason? Reason, Aw.Sindri.Core.Workflow.Engine.ParkKind? ParkKind, Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation, bool Mirrors = false) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.ParkShape(Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind Kind, Aw.Sindri.Core.Workflow.Engine.ParkReason? Reason, Aw.Sindri.Core.Workflow.Engine.ParkKind? ParkKind, Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation, bool Mirrors = false, Aw.Sindri.Core.Workflow.Engine.ParkKind? MirroredParkKind = null, Aw.Sindri.Core.Workflow.Engine.EscalationKind? MirroredEscalation = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Reason.get -> Aw.Sindri.Core.Workflow.Engine.ParkReason?
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Reason.init -> void
 Aw.Sindri.Core.Workflow.Stats.BabysitterDocsStats.Deconstruct(out int WithMerge, out int OwnerDesk, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Stats.ReasonCount!>! ByOutcome) -> void
@@ -9046,6 +9046,19 @@ override Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Equals(object? obj) ->
 override Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.ToString() -> string!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.ParkAnswers.For(Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape! shape, Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, string! grantTokens = "<n>", string? child = null) -> Aw.Sindri.Core.Workflow.Views.StatusAnswer?
+Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChanged.ParkKind.get -> Aw.Sindri.Core.Workflow.Engine.ParkKind?
+Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChanged.ParkKind.init -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChanged.Escalation.get -> Aw.Sindri.Core.Workflow.Engine.EscalationKind?
+Aw.Sindri.Core.Workflow.Engine.Triggers.ChildChanged.Escalation.init -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.Suspension.MirroredParkKind.get -> Aw.Sindri.Core.Workflow.Engine.ParkKind?
+Aw.Sindri.Core.Workflow.Engine.Instances.Suspension.MirroredParkKind.init -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.Suspension.MirroredEscalation.get -> Aw.Sindri.Core.Workflow.Engine.EscalationKind?
+Aw.Sindri.Core.Workflow.Engine.Instances.Suspension.MirroredEscalation.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.MirroredParkKind.get -> Aw.Sindri.Core.Workflow.Engine.ParkKind?
+Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.MirroredParkKind.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.MirroredEscalation.get -> Aw.Sindri.Core.Workflow.Engine.EscalationKind?
+Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.MirroredEscalation.init -> void
+static Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Of(Aw.Sindri.Core.Workflow.Engine.Instances.Suspension! suspension) -> Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape? left, Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape? left, Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape? right) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceCounts
@@ -12165,10 +12178,14 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceStart.ChildAddress.get -> Aw.Sind
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceStart.ChildAddress.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceStart.ParentId.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId?
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceStart.ParentId.init -> void
-Aw.Sindri.Core.Events.SuspensionSummary.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind Kind, out Aw.Sindri.Core.Workflow.Engine.ParkReason? Reason, out Aw.Sindri.Core.Workflow.Engine.ParkKind? ParkKind, out Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation, out string? Mirrors, out string? MirrorsAddress) -> void
+Aw.Sindri.Core.Events.SuspensionSummary.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind Kind, out Aw.Sindri.Core.Workflow.Engine.ParkReason? Reason, out Aw.Sindri.Core.Workflow.Engine.ParkKind? ParkKind, out Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation, out string? Mirrors, out string? MirrorsAddress, out Aw.Sindri.Core.Workflow.Engine.ParkKind? MirroredParkKind, out Aw.Sindri.Core.Workflow.Engine.EscalationKind? MirroredEscalation) -> void
 Aw.Sindri.Core.Events.SuspensionSummary.MirrorsAddress.get -> string?
+Aw.Sindri.Core.Events.SuspensionSummary.MirroredParkKind.get -> Aw.Sindri.Core.Workflow.Engine.ParkKind?
+Aw.Sindri.Core.Events.SuspensionSummary.MirroredParkKind.init -> void
+Aw.Sindri.Core.Events.SuspensionSummary.MirroredEscalation.get -> Aw.Sindri.Core.Workflow.Engine.EscalationKind?
+Aw.Sindri.Core.Events.SuspensionSummary.MirroredEscalation.init -> void
 Aw.Sindri.Core.Events.SuspensionSummary.MirrorsAddress.init -> void
-Aw.Sindri.Core.Events.SuspensionSummary.SuspensionSummary(Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind Kind, Aw.Sindri.Core.Workflow.Engine.ParkReason? Reason, Aw.Sindri.Core.Workflow.Engine.ParkKind? ParkKind, Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation, string? Mirrors, string? MirrorsAddress = null) -> void
+Aw.Sindri.Core.Events.SuspensionSummary.SuspensionSummary(Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind Kind, Aw.Sindri.Core.Workflow.Engine.ParkReason? Reason, Aw.Sindri.Core.Workflow.Engine.ParkKind? ParkKind, Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation, string? Mirrors, string? MirrorsAddress = null, Aw.Sindri.Core.Workflow.Engine.ParkKind? MirroredParkKind = null, Aw.Sindri.Core.Workflow.Engine.EscalationKind? MirroredEscalation = null) -> void
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Child.get -> string?
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Child.init -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalLedgerRecorder

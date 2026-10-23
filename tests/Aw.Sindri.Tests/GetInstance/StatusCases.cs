@@ -115,7 +115,7 @@ internal static class StatusCases
 
     private static ChildView Child(string state) => new(InstanceAddress.From("T-3/step/1/step.4"), state);
 
-    /// <summary>A park mirroring the child, as the engine builds it (§5.8): the child's reason, no park kind.</summary>
+    /// <summary>A park mirroring the child, as the engine builds it (§5.8): the child's reason, no park kind of its own (the child's is MirroredParkKind).</summary>
     private static WorkflowInstance MirroredPark(ParkReason reason, string question) => Produce() with
     {
         Suspension = Suspended(reason, kind: null, question) with { Mirrors = MirroredId, Resume = Resume(ResumeKind.Forward) },
@@ -124,7 +124,7 @@ internal static class StatusCases
     private static WorkflowInstance MirroredWait()
     {
         var park = MirroredPark(ParkReason.NeedsAnswer, "the child's wait could not read the reply");
-        return park with { Suspension = park.Suspension! with { ParkKind = ParkKind.Wait } };
+        return park with { Suspension = park.Suspension! with { MirroredParkKind = ParkKind.Wait } };
     }
 
     /// <summary>The shipped recipe with no budget on the recipe or any state: a gate.budget refusal has no cap to halve.</summary>
