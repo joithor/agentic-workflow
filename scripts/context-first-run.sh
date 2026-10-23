@@ -35,6 +35,8 @@
 #   FIRST_RUN_REPO_PATH       the checkout to index; default this repo's main checkout (also from a linked worktree)
 #   FIRST_RUN_BRIEF           the repo-relative file the scoping run reads; default docs/sindri/README.md
 #   FIRST_RUN_INDEX_TIMEOUT   seconds to wait for the first build; default 1800
+#   FIRST_RUN_MAP_POLL_SECONDS  seconds between map status reads while it is held; default 10
+#   FIRST_RUN_MAP_TIMEOUT     seconds to wait for a held map; default 1020
 #   SINDRI                    the sindri command line, split on spaces; default scripts/sindri-app.sh (publishes the C# build
 #                             into $AW_STATE_DIR/bin/sindri-app/ when its source changed, then runs it)
 #   AW_SINDRI_UI              the sindri-ui binary; default the newest $AW_STATE_DIR/bin/sindri-app/*/sindri-ui
@@ -74,6 +76,8 @@ state="${AW_STATE_DIR:-$HOME/.agentic-workflow}"
 home="${FIRST_RUN_HOME:-$state/sindri-app-firstrun}"
 port="${FIRST_RUN_PORT:-7481}"
 timeout_s="${FIRST_RUN_INDEX_TIMEOUT:-1800}"
+map_poll="${FIRST_RUN_MAP_POLL_SECONDS:-10}"
+map_timeout="${FIRST_RUN_MAP_TIMEOUT:-1020}"
 brief="${FIRST_RUN_BRIEF:-docs/sindri/README.md}"
 sindri_cmd="${SINDRI:-$root/scripts/sindri-app.sh}"
 read -r -a SX <<<"$sindri_cmd"
@@ -328,7 +332,7 @@ publish_map() {
     sx context map refresh
     check "builds a draft, cleans the review queue and promotes it as you (no typed phrase); with the index built it is not held; exit 0"
     sx context map status --json
-    check "wait up to 17 min while .state is held or overdue (waitForIndexMinutes 15 plus two ticks); fail on published-stale or anything else"
+    check "wait up to $map_timeout s (every $map_poll s) while .state is held or overdue (waitForIndexMinutes 15 plus two ticks); fail on published-stale or anything else"
     return 0
   fi
   sx_out context map status --json
@@ -343,8 +347,8 @@ publish_map() {
       held | overdue) ;;
       *) broke "step 6 (map): the map's state is '$(map_state)', not published; run: $(shown) context map status" ;;
     esac
-    [ "$waited" -lt 1020 ] || broke "step 6 (map): the map was still $(map_state) after ${waited}s; run: $(shown) context map status   (to publish by hand: context map promote)"
-    sleep 10; waited=$((waited + 10))
+    [ "$waited" -lt "$map_timeout" ] || broke "step 6 (map): the map was still $(map_state) after ${waited}s; run: $(shown) context map status   (to publish by hand: context map promote)"
+    sleep "$map_poll"; waited=$((waited + map_poll))
     note "the map is $(map_state), waiting for the code index (${waited}s)"
   done
   echo "  map published (v$(printf '%s' "$OUT" | jq -r '.publishedVersion // "?"' 2>/dev/null), $(map_state))"

@@ -55,7 +55,12 @@ case "$*" in
   "code-index status --repo agentic-workflow --json") flag indexed && { echo '{"repos":[{"state":"ok"}]}'; exit 0; }; echo '{"repos":[{"state":"missing"}]}'; exit 1 ;;
   "code-index status --repo agentic-workflow") echo "agentic-workflow ok" ;;
   "services run code-index-main-move") touch "$AW_SINDRI_HOME/stub/indexed" ;;
-  "context map status --json") flag mapped && { echo '{"state":"published"}'; exit 0; }; exit 1 ;;
+  "context map status --json")
+    flag mapped || exit 1
+    # stub/mapstate: one state per line; each call reads the first and drops it unless it is the last (sticky). Default published.
+    f="$AW_SINDRI_HOME/stub/mapstate"; st=published
+    if [ -s "$f" ]; then st="$(head -1 "$f")"; [ "$(wc -l < "$f")" -le 1 ] || sed -i.bak 1d "$f"; fi
+    printf '{"state":"%s","publishedVersion":1}\n' "$st"; exit 0 ;;
   "context map status") echo "map v1 current" ;;
   "context map refresh") touch "$AW_SINDRI_HOME/stub/mapped" ;;
   "recipe list") flag recipes && echo 'workflow.scoping@0123456789ab approved (shipped)' || echo 'workflow.scoping@0123456789ab unapproved (shipped)' ;;
@@ -133,6 +138,25 @@ else
   if ! logged 'services run' && ! logged 'context map refresh' && ! logged '--headless'; then ok "a finished step is skipped on the second pass"; else fail "a finished step is skipped on the second pass"; sed 's/^/       | /' "$STUB_LOG"; fi
   if logged 'workflow start workflow.scoping --item ITM-0A1B2C --fact fact:scopeInput='; then ok "scoping started on the new item with the brief as its input"; else fail "scoping started on the new item with the brief as its input"; fi
   if grep -q '"path":"docs/sindri/README.md"' "$STATE/sindri-app-firstrun/first-run/scope-input.json"; then ok "the scope input names the repo's brief"; else fail "the scope input names the repo's brief"; fi
+
+  # step 6's waiting paths: forget the map, script the states the status answers, and run again
+  step6() { # step6 <state>… ; leaves OUT and CODE of a continue with a 1 s poll and a 3 s timeout
+    rm -f "$STATE/sindri-app-firstrun/stub/mapped" "$STATE/sindri-app-firstrun/stub/mapstate.bak"
+    : > "$STATE/sindri-app-firstrun/stub/mapstate"
+    local st; for st in "$@"; do echo "$st" >> "$STATE/sindri-app-firstrun/stub/mapstate"; done
+    : > "$STUB_LOG"
+    OUT="$(FIRST_RUN_MAP_POLL_SECONDS=1 FIRST_RUN_MAP_TIMEOUT=3 AW_STATE_DIR="$STATE" FIRST_RUN_REPO_PATH="$REPO" SINDRI="$T/stub-sindri" "$SCRIPT" continue --no-embeddings --no-graph --no-ui 2>&1)"; CODE=$?
+  }
+  step6 held held published
+  expect "a held map is waited for, then published (exit 0)" 0 "the map is held" "map published (v1, published)"
+  if logged 'context map refresh'; then ok "the refresh ran once for it"; else fail "the refresh ran once for it"; fi
+  step6 published-stale
+  expect "published-stale fails step 6 and prints the status command" 1 "step 6 (map)" "'published-stale'" "context map status"
+  step6 held
+  expect "a map still held at the timeout fails step 6" 1 "step 6 (map)" "still held after" "context map status"
+  step6 overdue overdue published-without-waiting
+  expect "overdue is waited for like held, and published-without-waiting passes" 0 "the map is overdue" "map published (v1, published-without-waiting)"
+  rm -f "$STATE/sindri-app-firstrun/stub/mapstate"; : > "$STATE/sindri-app-firstrun/stub/mapped"
 
   run status
   expect "status reads the plane, the index, the map and the item" 0 "ITM-0A1B2C/workflow.scoping/1 running"

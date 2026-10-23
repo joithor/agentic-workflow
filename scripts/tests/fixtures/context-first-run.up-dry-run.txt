@@ -50,7 +50,7 @@
 + AW_SINDRI_HOME=<T>/state/sindri-app-firstrun AW_SINDRI_PORT=7481 <ROOT>/scripts/sindri-app.sh context map refresh
   check: builds a draft, cleans the review queue and promotes it as you (no typed phrase); with the index built it is not held; exit 0
 + AW_SINDRI_HOME=<T>/state/sindri-app-firstrun AW_SINDRI_PORT=7481 <ROOT>/scripts/sindri-app.sh context map status --json
-  check: wait up to 17 min while .state is held or overdue (waitForIndexMinutes 15 plus two ticks); fail on published-stale or anything else
+  check: wait up to 1020 s (every 10 s) while .state is held or overdue (waitForIndexMinutes 15 plus two ticks); fail on published-stale or anything else
 
 == 7. open the Sindri app on the scratch home (Context page)
 + AW_SINDRI_HOME=<T>/state/sindri-app-firstrun AW_SINDRI_PORT=7481 <sindri-ui: $AW_SINDRI_UI, else the newest <T>/state/bin/sindri-app/*/sindri-ui> > <T>/state/sindri-app-firstrun/logs/ui.log 2>&1 &
