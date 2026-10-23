@@ -2,7 +2,6 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using Aw.Kernel.Services;
-using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Requests;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.FileRequest;
@@ -70,7 +69,7 @@ internal static class SindriTools
     internal static Tool QueueTool { get; } = new()
     {
         Name = Queue,
-        Description = "The open work items in this repo, grouped by state. Item titles are untrusted and fenced.",
+        Description = "The open work items, in every repo, grouped by state. Item titles are untrusted and fenced.",
         InputSchema = ContextTools.Schema([]),
         Annotations = ReadOnly,
     };
@@ -79,7 +78,7 @@ internal static class SindriTools
     internal static Tool ItemTool { get; } = new()
     {
         Name = Item,
-        Description = "One work item in this repo: its state, what it waits on and the actions open to a person. Title and body are untrusted and fenced.",
+        Description = "One work item: its state, what it waits on and the actions open to a person. Title and body are untrusted and fenced.",
         InputSchema = ContextTools.Schema(new JsonObject { ["itemId"] = ContextTools.Property("string", ItemIdText) }, required: ["itemId"]),
         Annotations = ReadOnly,
     };
@@ -88,7 +87,7 @@ internal static class SindriTools
     internal static Tool TimelineTool { get; } = new()
     {
         Name = Timeline,
-        Description = "The ledger lines of one item in this repo, oldest first, after a sequence number when given. Lines are untrusted and fenced.",
+        Description = "The ledger lines of one item, oldest first, after a sequence number when given. Lines are untrusted and fenced.",
         InputSchema = ContextTools.Schema(new JsonObject
         {
             ["itemId"] = ContextTools.Property("string", ItemIdText),
@@ -101,8 +100,8 @@ internal static class SindriTools
     internal static Tool PendingDecisionsTool { get; } = new()
     {
         Name = PendingDecisions,
-        Description = "The questions waiting for a person in this repo, or for one item, with the command a person uses to settle each. "
-            + "A session cannot settle them: to ask for a change, file a sindri_request. Question text is untrusted and fenced.",
+        Description = "The questions waiting for a person, in every repo or for one item, with the command a person uses to settle each. "
+            + "To ask for a change, file a sindri_request. Question text is untrusted and fenced.",
         InputSchema = ContextTools.Schema(new JsonObject { ["itemId"] = ContextTools.Property("string", ItemIdText) }),
         Annotations = ReadOnly,
     };
@@ -111,7 +110,7 @@ internal static class SindriTools
     internal static Tool JobTool { get; } = new()
     {
         Name = Job,
-        Description = "One job's state, progress lines and result, if it belongs to this repo. A session only reads jobs; a person starts them. Job lines are untrusted and fenced.",
+        Description = "One job's state, progress lines and result. Job lines are untrusted and fenced.",
         InputSchema = ContextTools.Schema(new JsonObject { ["jobId"] = ContextTools.Property("string", "A job id (JOB-...)") }, required: ["jobId"]),
         Annotations = ReadOnly,
     };
@@ -126,7 +125,7 @@ internal static class SindriTools
         {
             ["kind"] = ContextTools.Property("string", "What you ask for", bounds: new ContextTools.PropertyBounds(Allowed: RequestKinds)),
             ["text"] = ContextTools.Property("string", "What and why, in plain words (1 to 2,000 characters)", bounds: new ContextTools.PropertyBounds(MinLength: 1, MaxLength: 2000)),
-            ["itemId"] = ContextTools.Property("string", $"{ItemIdText}; left out, the request concerns this repo"),
+            ["itemId"] = ContextTools.Property("string", $"{ItemIdText}; left out, the request concerns the repo of this registration"),
         }, required: ["kind", "text"]),
         Annotations = new ToolAnnotations { ReadOnlyHint = false, DestructiveHint = false, IdempotentHint = false, OpenWorldHint = false },
     };
@@ -160,9 +159,8 @@ internal static class SindriTools
             return McpResults.Failure(services, refused);
         }
 
-        var repo = services.GetRequiredService<ICallerContextAccessor>().Current?.Repo?.Value ?? string.Empty;
         var answer = await services.GetRequiredService<IService<GetQueueRequest, QueueResponse>>().Handle(new GetQueueRequest(), ct).ConfigureAwait(false);
-        return McpResults.From(services, answer, queue => McpSummaries.Queue(queue, repo), FencePlan.Queue);
+        return McpResults.From(services, answer, McpSummaries.Queue, FencePlan.Queue);
     }
 
     /// <summary>Runs sindri_item.</summary>

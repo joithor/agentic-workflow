@@ -38,7 +38,9 @@ internal static class McpToolTable
                 $"'{call.Name}' is not a Sindri MCP tool (fix: tools/list names them)")));
         }
 
-        if (services.GetRequiredService<ICallerContextAccessor>().Current?.Repo is null)   // every tool is repo-scoped (API §3.1)
+        // why: only the context and graph tools read one repo's map; the sindri_* tools answer for every repo, as the same call does for a human
+        if (call.Name is ContextTools.Query or ContextTools.Sources or ContextTools.Lenses or GraphTools.Node or GraphTools.Neighbors
+            && services.GetRequiredService<ICallerContextAccessor>().Current?.Repo is null)
         {
             return ValueTask.FromResult(McpResults.Failure(services, ContextErrors.McpRepoMissing.With(
                 "the call has no X-Sindri-Repo header, so it has no repo scope (fix: run 'sindri mcp register' in the work repo and use that registration)")));
