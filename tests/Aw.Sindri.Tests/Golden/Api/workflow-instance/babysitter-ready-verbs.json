@@ -6,7 +6,7 @@
   "title": "Add the offline sync route",
   "recipe": {
     "id": "workflow.pr-babysitter",
-    "hash": "sha256:c8d87d8243ab4fd674c9fb987423e4c096e46e70d2af8480d973a82e0dab3af8",
+    "hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     "version": 5,
     "urgency": "work"
   },
@@ -773,7 +773,7 @@
       "header": {
         "address": "T-3/pr-babysitter/1",
         "recipe": "workflow.pr-babysitter",
-        "hash12": "c8d87d8243ab",
+        "hash12": "bbbbbbbbbbbb",
         "version": 1,
         "state": "ready",
         "detail": null,
@@ -804,7 +804,7 @@
           "confirm": "Cancel T-3/pr-babysitter/1? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "T-3/pr-babysitter/1  workflow.pr-babysitter@c8d87d8243ab  v1  ready  since 00:00 (0s)\n  next      Ready to merge T-3's pull request: CI green on the head, the docs settled (see the view). Merge it, or send\n            it back with rework notes, in the app or with `sindri workflow command T-3/pr-babysitter/1 merge`.\n  commands  takeover, cancel\n",
+      "text": "T-3/pr-babysitter/1  workflow.pr-babysitter@bbbbbbbbbbbb  v1  ready  since 00:00 (0s)\n  next      Ready to merge T-3's pull request: CI green on the head, the docs settled (see the view). Merge it, or send\n            it back with rework notes, in the app or with `sindri workflow command T-3/pr-babysitter/1 merge`.\n  commands  takeover, cancel\n",
       "injection": []
     }
   },
