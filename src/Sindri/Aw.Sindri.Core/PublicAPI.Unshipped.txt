@@ -17595,6 +17595,24 @@ static Aw.Sindri.Core.EngineReads.EngineProjection.Stuck(System.Collections.Gene
 static readonly Aw.Sindri.Core.SindriErrors.EngineNotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.EngineUnavailable -> Aw.Kernel.ErrorDefinition!
 static Aw.Sindri.Core.Health.HealthSummary.WithStuck(Aw.Sindri.Core.Health.HealthReport! report, int stuck) -> Aw.Sindri.Core.Health.HealthReport!
+Aw.Sindri.Core.Setup.IRepoInspector.Weight(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Setup.RepoWeight!>!>
+Aw.Sindri.Core.Setup.RepoGitCache.WeightOf(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Setup.RepoWeight?>
+Aw.Sindri.Core.Setup.RepoWeight
+Aw.Sindri.Core.Setup.RepoWeight.<Clone>$() -> Aw.Sindri.Core.Setup.RepoWeight!
+Aw.Sindri.Core.Setup.RepoWeight.Deconstruct(out string! Path, out int Files, out long Bytes) -> void
+Aw.Sindri.Core.Setup.RepoWeight.Equals(Aw.Sindri.Core.Setup.RepoWeight? other) -> bool
+Aw.Sindri.Core.Setup.RepoWeight.Path.get -> string!
+Aw.Sindri.Core.Setup.RepoWeight.Path.init -> void
+Aw.Sindri.Core.Setup.RepoWeight.Files.get -> int
+Aw.Sindri.Core.Setup.RepoWeight.Files.init -> void
+Aw.Sindri.Core.Setup.RepoWeight.Bytes.get -> long
+Aw.Sindri.Core.Setup.RepoWeight.Bytes.init -> void
+Aw.Sindri.Core.Setup.RepoWeight.RepoWeight(string! Path, int Files, long Bytes) -> void
+override Aw.Sindri.Core.Setup.RepoWeight.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Setup.RepoWeight.GetHashCode() -> int
+override Aw.Sindri.Core.Setup.RepoWeight.ToString() -> string!
+static Aw.Sindri.Core.Setup.RepoWeight.operator !=(Aw.Sindri.Core.Setup.RepoWeight? left, Aw.Sindri.Core.Setup.RepoWeight? right) -> bool
+static Aw.Sindri.Core.Setup.RepoWeight.operator ==(Aw.Sindri.Core.Setup.RepoWeight? left, Aw.Sindri.Core.Setup.RepoWeight? right) -> bool
 Aw.Sindri.Core.Doctor.IMapPublishCheck
 Aw.Sindri.Core.Doctor.IMapPublishCheck.Check(Aw.Sindri.Core.Profile.LoadedProfile? approved, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Doctor.DoctorCheck!>
 Aw.Sindri.Core.Workflow.Engine.Evals.LedgerRecording

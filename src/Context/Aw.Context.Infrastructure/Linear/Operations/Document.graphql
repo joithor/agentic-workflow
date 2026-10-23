@@ -1,0 +1,3 @@
+query Document($id: String!) {
+  document(id: $id) { id title slugId content url createdAt updatedAt creator { id name } project { id name } }
+}
