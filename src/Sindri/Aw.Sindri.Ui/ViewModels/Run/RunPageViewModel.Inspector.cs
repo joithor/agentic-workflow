@@ -16,7 +16,7 @@ internal sealed partial class RunPageViewModel
     /// <summary>Keeps what the inspector reads: the line and the children as the last read served them.</summary>
     /// <param name="line">The line.</param>
     /// <param name="children">Each stage's child, by instance id.</param>
-    /// <param name="recipe">The line's recipe, whose states name what each stage reads and writes; null when it was not read.</param>
+    /// <param name="recipe">The line's recipe, whose states say why each stage matters and name what it reads and writes; null when it was not read.</param>
     private void KeepSource(InstanceDetail line, IReadOnlyDictionary<string, InstanceDetail> children, RecipeView? recipe) => _source = (line, children, recipe);
 
     private void ResetInspector()
@@ -43,7 +43,8 @@ internal sealed partial class RunPageViewModel
 
         var step = card.Steps.FirstOrDefault(s => string.Equals(s.Key, key, StringComparison.Ordinal));
         var owner = card.Node.ChildId is { } id && source.Children.TryGetValue(id, out var child) ? child : null;
-        ShowInspector(new RunCanvasInspectorViewModel(card, step, source.Line, owner, new RunInspectorPorts(Go, () => ClearSelection(), Walk), clipboard, clock) { RecipeState = source.Recipe?.States.FirstOrDefault(s => string.Equals(s.State, card.Id, StringComparison.Ordinal)) });
+        var state = source.Recipe?.States.FirstOrDefault(s => string.Equals(s.State, card.Id, StringComparison.Ordinal));   // a step reads its stage's recipe state: the line's recipe is the one read
+        ShowInspector(new RunCanvasInspectorViewModel(card, step, source.Line, owner, new RunInspectorPorts(Go, () => ClearSelection(), Walk), clipboard, clock) { Why = state?.Why, RecipeState = state });
     }
 
     private void ShowInspector(RunCanvasInspectorViewModel? inspector)
