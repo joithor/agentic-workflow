@@ -351,7 +351,7 @@ check "profile edit approve refused: the copy is kept and the next step named" \
 pedit_reset; touch "$POD/ed-change"
 OUT="$(pedit --no-approve)"; RC=$?
 check "profile edit --no-approve: validate and move, no approve, exit 0, says not approved" \
-  "$RC:$(seq_of):$(printf '%s' "$OUT" | tail -1 | grep -c 'in place in sindri-0, not approved (--no-approve); next: kubectl exec -it sindri-0')" "0:validate,move:1"
+  "$RC:$(seq_of):$(printf '%s' "$OUT" | tail -1 | grep -c 'profile changed, not yet approved (1 lines differ, valid, in place in sindri-0); next: kubectl exec -it sindri-0 -c sindri -- sindri profile approve')" "0:validate,move:1"
 check "profile edit --no-approve: the pod's profile is the edited one" "$(tail -1 "$POD/profile.yaml")" "share: true"
 OUT="$(PATH="$WORK/bin:$PATH" bash "$DIR/sindri-pod.sh" connect --no-approve 2>&1)"; check "--no-approve is for profile edit only: connect refuses it" "$?" "2"
 pedit_reset

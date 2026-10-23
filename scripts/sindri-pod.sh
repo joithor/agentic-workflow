@@ -135,7 +135,7 @@ profile_edit() {
   lines="$(diff "$orig" "$edit" | grep -c '^[<>]')"
   if [ "$noapprove" = 1 ]; then
     rm -r "$dir"
-    say "profile changed ($lines lines differ), valid and in place in $pod, not approved (--no-approve); next: kubectl exec -it $pod -c sindri -- sindri profile approve"
+    say "profile changed, not yet approved ($lines lines differ, valid, in place in $pod); next: kubectl exec -it $pod -c sindri -- sindri profile approve"
     return 0
   fi
   kc exec -it "$pod" -c sindri -- sindri profile approve; rc=$?
