@@ -12,14 +12,17 @@ internal sealed class StageCellViewModel
 {
     private readonly StateCell _cell;
 
+    /// <summary>A cell of a row.</summary>
     /// <param name="cell">The served cell.</param>
     /// <param name="isCurrent">True for the state the instance is in.</param>
-    /// <param name="isBlocked">True when a required input is missing and this is the state it waits in.</param>
-    /// <param name="stateName">The state in the recipe's words; null reads the id as served.</param>
-    internal StageCellViewModel(StateCell cell, bool isCurrent, bool isBlocked, string? stateName = null)
+    /// <param name="isBlocked">True when a required input is missing and this is the state the instance waits in.</param>
+    /// <param name="names">The recipes' state names; null names the state by its id.</param>
+    /// <param name="recipeId">The recipe the cell belongs to, for <paramref name="names"/>.</param>
+    /// <param name="stateName">The state in the recipe's words when the caller already has them (the frame's recipe lookup); it wins over <paramref name="names"/>.</param>
+    internal StageCellViewModel(StateCell cell, bool isCurrent, bool isBlocked, StateNames? names = null, string recipeId = "", string? stateName = null)
     {
         _cell = cell;
-        StateName = stateName ?? cell.State;
+        StateName = stateName ?? (names is null ? cell.State : names.Of(recipeId, cell.State));
         IsCurrent = isCurrent;
         IsBlocked = isBlocked;
         var badge = cell.Badge is { } b ? Labels.CellBadge(b.Kind, b.Reason) : string.Empty;
@@ -48,7 +51,7 @@ internal sealed class StageCellViewModel
     /// <summary>True for the state the instance is in.</summary>
     public bool IsCurrent { get; }
 
-    /// <summary>The name screen readers hear: the state, what the cell says in words, and "current" for the state the instance is in.</summary>
+    /// <summary>The name screen readers hear: the state in the recipe's words (its id when no names are known), what the cell says in words, and "current" for the state the instance is in.</summary>
     public string Name => $"{StateName}, {Words()}{(IsCurrent ? ", " + Labels.StageCurrent : string.Empty)}";
 
     internal static string Mark(Api.Workflow.StateGlyph glyph) => glyph switch

@@ -16,7 +16,7 @@ internal sealed class StateNodeViewModel
     /// <param name="nameOf">A state id in the recipe's words; null reads the ids as served.</param>
     internal StateNodeViewModel(StateCell cell, bool isCurrent, string link, IReadOnlyList<StateNodeViewModel> branches, string? loopsWith = null, Func<string, string>? nameOf = null)
     {
-        _cell = new StageCellViewModel(cell, isCurrent, isBlocked: false, nameOf?.Invoke(cell.State));
+        _cell = new StageCellViewModel(cell, isCurrent, isBlocked: false, stateName: nameOf?.Invoke(cell.State));
         IsCurrent = isCurrent;
         IsTerminal = cell.Terminal;
         Outcome = cell.Outcome ?? string.Empty;
