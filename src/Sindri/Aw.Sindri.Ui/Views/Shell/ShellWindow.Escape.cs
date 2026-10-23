@@ -38,7 +38,7 @@ internal sealed partial class ShellWindow
             return true;
         }
 
-        if (EscapeSheetOrInbox(shell))
+        if (EscapeSheetOrInbox(shell) || EscapeRunDrawer(shell))
         {
             return true;
         }
@@ -51,6 +51,9 @@ internal sealed partial class ShellWindow
         Dispatcher.UIThread.Post(KeepFocus, DispatcherPriority.Loaded);
         return true;
     }
+
+    // The Workflows run drawer closes before Esc leaves anything else.
+    private static bool EscapeRunDrawer(ShellViewModel shell) => shell.IsWorkflows && shell.Workflows.Press("Esc");
 
     // Esc on the run page clears the selection, then leaves the run for the Workflows list.
     private static bool EscapeRunPage(ShellViewModel shell)

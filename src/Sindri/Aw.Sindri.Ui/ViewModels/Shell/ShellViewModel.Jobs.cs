@@ -38,6 +38,7 @@ internal sealed partial class ShellViewModel
             }
         };
         Jobs.OpenRequested += (_, e) => OpenSheet(e.Link);
+        Health.JobRequested += (_, e) => Navigate(e.Link);
         Jobs.ServicesRequested += (_, _) =>
         {
             GoTo(PageId.System);

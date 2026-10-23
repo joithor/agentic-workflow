@@ -69,8 +69,8 @@ internal sealed class SetupStepViewModel : ObservableObject
     /// <summary>What the profile allows in plain words (the profile step before it is approved); empty otherwise.</summary>
     public IReadOnlyList<SetupPreviewLineViewModel> Preview { get; private set; } = [];
 
-    /// <summary>True when there is a preview to show.</summary>
-    public bool HasPreview => Preview.Count > 0;
+    /// <summary>True when there is a preview to show; the profile's own summary (the consent, setup-once spec §5.2) takes its place while there is one.</summary>
+    public bool HasPreview => Preview.Count > 0 && Profile?.Summary.HasSummary != true;
 
     /// <summary>The action, or null.</summary>
     public SetupActionViewModel? Action { get; private set; }
@@ -79,7 +79,15 @@ internal sealed class SetupStepViewModel : ObservableObject
     public SetupRepoFormViewModel? Repo { get; set; }
 
     /// <summary>The typed approval of the profile step; null for every other step.</summary>
-    public SetupProfileConfirmViewModel? Profile { get; set; }
+    public SetupProfileConfirmViewModel? Profile
+    {
+        get;
+        set
+        {
+            field = value;
+            value?.Summary.PropertyChanged += (_, _) => OnChanged(nameof(HasPreview));
+        }
+    }
 
     /// <summary>The plan, hold and typed alternative of the workflows step (the approve-all dialog's own view model); null for every other step.</summary>
     public Approvals.ApproveAllViewModel? Workflows { get; set; }
