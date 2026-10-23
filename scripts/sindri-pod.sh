@@ -20,12 +20,15 @@
 #   --namespace N   namespace (default: the context's, else "default")
 #   --pod P         the pod (default: sindri-0)
 #   --port PORT     the local port the owner port is forwarded to (default: the pod's own port)
-#   --onyx          also forward Onyx's web port, print its sign-up URL, wait for Enter, then run
-#                   `kubectl exec -it <pod> -- sindri onyx attach <cluster address>`
+#   --onyx          also forward the pod's Onyx web port (Onyx runs in the pod's Docker sidecar and publishes it on the pod's
+#                   127.0.0.1; default 3000) and run `kubectl exec -it <pod> -c sindri -- sindri onyx up` at this terminal:
+#                   its preflight, fetch, pull, start and account steps; at the sign-up step you sign up in the browser at
+#                   the forwarded address and press Enter inside `onyx up`. If Onyx took a fallback port, the script reads
+#                   it from `sindri onyx status --json` afterwards and forwards that one too
 #   --dry-run       print the kubectl and sindri-ui commands and the mirror home's path; run and write nothing
 #
 # Environment (all optional; .env.example): AW_STATE_DIR, AW_SINDRI_UI, AW_SINDRI_POD_RETRIES, AW_SINDRI_POD_POLL,
-# AW_SINDRI_POD_ONYX_SERVICE, AW_SINDRI_POD_ONYX_PORT, AW_SINDRI_POD_ONYX_ADDRESS.
+# AW_SINDRI_POD_ONYX_PORT.
 # Needs kubectl (exec and port-forward rights on the namespace), jq and sindri-ui (`sindri-app --publish-only`).
 # Exit: 0 the app was closed or the script was interrupted, 1 a failure (missing tool, retries spent), 2 usage.
 # Bash 3.2 compatible (macOS /bin/bash).
@@ -53,7 +56,6 @@ case "$lport" in ''|*[!0-9]*) [ -z "$lport" ] || { say "--port must be a number"
 
 retries="${AW_SINDRI_POD_RETRIES:-5}"
 poll="${AW_SINDRI_POD_POLL:-5}"
-onyx_svc="${AW_SINDRI_POD_ONYX_SERVICE:-onyx-webserver}"
 onyx_port="${AW_SINDRI_POD_ONYX_PORT:-3000}"
 state="${AW_STATE_DIR:-$HOME/.agentic-workflow}"
 
@@ -71,13 +73,14 @@ find_ui() {
 
 if [ "$dry" = 1 ]; then
   echo "mirror home: $state/sindri-pod/<context>-<namespace>/ (0700; control.json and auth/human.token 0600)"
-  echo "+ kubectl [--context ${ctx:-<current>}] [--namespace ${ns:-<current>}] exec $pod -- sh -c '<cat control.json and auth/human.token>'"
+  echo "+ kubectl [--context ${ctx:-<current>}] [--namespace ${ns:-<current>}] exec $pod -c sindri -- sh -c '<cat control.json and auth/human.token>'"
   echo "+ kubectl port-forward pod/$pod ${lport:-<pod port>}:<pod port from control.json>"
   echo "+ AW_SINDRI_HOME=<mirror home> <sindri-ui: \$AW_SINDRI_UI, else the newest $state/bin/sindri-app/*/sindri-ui>"
   echo "  (every ${poll}s: re-read pid, epoch and token; on a change or a dropped forward, retry up to $retries times and rewrite the mirror home)"
   if [ "$onyx" = 1 ]; then
-    echo "+ kubectl port-forward svc/$onyx_svc $onyx_port:$onyx_port; print http://127.0.0.1:$onyx_port/auth/signup; wait for Enter"
-    echo "+ kubectl exec -it $pod -- sindri onyx attach ${AW_SINDRI_POD_ONYX_ADDRESS:-http://$onyx_svc.<namespace>.svc.cluster.local:$onyx_port}"
+    echo "+ kubectl port-forward pod/$pod $onyx_port:$onyx_port; print http://127.0.0.1:$onyx_port"
+    echo "+ kubectl exec -it $pod -c sindri -- sindri onyx up"
+    echo "+ kubectl exec $pod -c sindri -- sindri onyx status --json; if its port differs from $onyx_port, forward that one too"
   fi
   exit 0
 fi
@@ -100,6 +103,8 @@ mkdir -p "$home/auth" "$home/logs" || die "can't create $home"
 
 pf_pid="" onyx_pf_pid="" ui_pid=""
 cur_pid="" cur_epoch="" cur_token="" remote_port=""
+
+stop_onyx_forward() { [ -z "$onyx_pf_pid" ] || kill "$onyx_pf_pid" 2>/dev/null; onyx_pf_pid=""; }
 
 stop_own() {   # only the port-forwards this run recorded
   [ -z "$pf_pid" ] || kill "$pf_pid" 2>/dev/null
@@ -130,7 +135,7 @@ start_forward() {
 # One reconcile: read the pod, keep the forward on the pod's port, rewrite the mirror home when pid, epoch or token moved.
 reconcile() {
   local out ctl tok pid epoch port
-  out="$(kc exec "$pod" -- sh -c "$pod_read" 2>>"$home/logs/exec.log")" || return 1
+  out="$(kc exec "$pod" -c sindri -- sh -c "$pod_read" 2>>"$home/logs/exec.log")" || return 1
   ctl="$(printf '%s\n' "$out" | sed '/^@@aw-token@@$/,$d')"
   tok="$(printf '%s\n' "$out" | sed '1,/^@@aw-token@@$/d' | head -1 | tr -d '[:space:]')"
   pid="$(printf '%s' "$ctl" | jq -r '.pid // empty' 2>/dev/null)"
@@ -167,12 +172,21 @@ ui_pid=$!
 say "app started (pid $ui_pid) on $home"
 
 if [ "$onyx" = 1 ]; then
-  kubectl "${kargs[@]}" port-forward "svc/$onyx_svc" "$onyx_port:$onyx_port" >> "$home/logs/onyx-port-forward.log" 2>&1 &
+  kubectl "${kargs[@]}" port-forward "pod/$pod" "$onyx_port:$onyx_port" >> "$home/logs/onyx-port-forward.log" 2>&1 &
   onyx_pf_pid=$!
-  say "Onyx: open http://127.0.0.1:$onyx_port/auth/signup and create the admin account, then press Enter here"
-  read -r _ || true
-  kc exec -it "$pod" -- sindri onyx attach "${AW_SINDRI_POD_ONYX_ADDRESS:-http://$onyx_svc.$ns.svc.cluster.local:$onyx_port}" \
-    || say "sindri onyx attach failed; rerun connect --onyx"
+  say "Onyx: forwarded http://127.0.0.1:$onyx_port; 'sindri onyx up' now runs in the pod and asks you to sign up there"
+  if kc exec -it "$pod" -c sindri -- sindri onyx up; then
+    # Onyx may have taken a fallback port; status knows the one it is on.
+    real="$(kc exec "$pod" -c sindri -- sindri onyx status --json 2>>"$home/logs/exec.log" | jq -r '.port // empty' 2>/dev/null)"
+    if [ -n "$real" ] && [ "$real" != "$onyx_port" ]; then
+      stop_onyx_forward
+      kubectl "${kargs[@]}" port-forward "pod/$pod" "$real:$real" >> "$home/logs/onyx-port-forward.log" 2>&1 &
+      onyx_pf_pid=$!
+      say "Onyx is on port $real: open http://127.0.0.1:$real"
+    fi
+  else
+    say "sindri onyx up failed; rerun connect --onyx"
+  fi
 fi
 
 while alive "$ui_pid"; do

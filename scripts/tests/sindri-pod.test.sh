@@ -3,7 +3,7 @@
 # prints the plan and writes nothing; connect writes the mirror home (control.json with the forwarded loopback URL, the pod's
 # pid and epoch, auth/human.token; files 0600, dirs 0700), forwards the pod's own port and starts the app on it; a new
 # epoch or token in the pod rewrites the home; a port-forward that drops is retried; refusals (no kubectl, no sindri-ui, no
-# pod); --onyx forwards Onyx, waits for Enter and then runs `sindri onyx attach` in the pod, in that order.
+# pod); --onyx forwards the pod's Onyx port and runs `sindri onyx up` in the pod, then re-forwards when status names another port.
 # Run: bash scripts/tests/sindri-pod.test.sh
 set -uo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -20,7 +20,7 @@ cleanup() {
   rm -rf "$WORK"
 }
 trap cleanup EXIT
-unset AW_SINDRI_HOME AW_SINDRI_UI AW_SINDRI_POD_ONYX_ADDRESS
+unset AW_SINDRI_HOME AW_SINDRI_UI
 export HOME="$WORK/home" AW_STATE_DIR="$WORK/state" AW_SINDRI_POD_POLL=0.2 AW_SINDRI_POD_RETRIES=3
 mkdir -p "$HOME" "$WORK/bin" "$WORK/pod" "$WORK/runs"
 export CALLS="$WORK/calls" POD="$WORK/pod" STOP="$WORK/ui-stop"
@@ -43,6 +43,7 @@ case " $* " in
     if [ -e "$POD/pf-fail-once" ] && [[ " $* " == *" pod/"* ]]; then rm -f "$POD/pf-fail-once"; echo "pf failed" >&2; exit 1; fi
     exec sleep 300 ;;
   *" exec -it "*) exit 0 ;;
+  *" onyx status "*) printf '{"state":"running","port":%s}\n' "$(cat "$POD/onyx-port" 2>/dev/null || echo 3000)"; exit 0 ;;
   *" exec "*) [ -e "$POD/down" ] && exit 1
     cat "$POD/control.json"; echo "@@aw-token@@"; cat "$POD/token"; exit 0 ;;
 esac
@@ -85,8 +86,8 @@ said() { cat "$WORK/runs/$1.out" "$WORK/runs/$1.err" | grep -c -- "$2" || true; 
 # --- the dry run: prints the plan, calls nothing, writes nothing
 OUT="$(PATH="/usr/bin:/bin" bash "$DIR/sindri-pod.sh" connect --dry-run --context c1 --namespace n1 --onyx 2>&1)"; RC=$?
 check "dry run: exit 0, nothing written, no kubectl needed" "$RC:$([ -e "$AW_STATE_DIR/sindri-pod" ] && echo wrote || echo clean)" "0:clean"
-check "dry run: names the exec, the forward, the app and Onyx's attach" \
-  "$(printf '%s' "$OUT" | grep -c -e 'exec sindri-0' -e 'port-forward pod/sindri-0' -e 'sindri-ui' -e 'onyx attach')" "4"
+check "dry run: names the exec, the forward, the app and Onyx's up" \
+  "$(printf '%s' "$OUT" | grep -c -e 'exec sindri-0 -c sindri' -e 'port-forward pod/sindri-0' -e 'sindri-ui' -e 'onyx up')" "6"
 
 # --- connect: mirror home, forward, app
 run_connect a
@@ -133,21 +134,28 @@ check "--port: the forward maps the chosen local port to the pod's, for the chos
 check "--port: control.json carries the local port" "$(jq -r .url "$MIRROR/control.json")" "http://127.0.0.1:18480"
 finish c >/dev/null
 
-# --- --onyx: forward Onyx, wait for Enter, then attach in the pod
+# --- --onyx: forward the pod's Onyx port, run onyx up in the pod
 reset
 run_connect d --onyx
-waitfor 10 has_line 'port-forward svc/'; waitfor 10 has_ui
-check "--onyx: before Enter the app is up and Onyx forwarded, nothing attached" "$(count 'exec -it')" "0"
-touch "$WORK/enter"
-waitfor 10 has_line 'sindri onyx attach'; check "--onyx: attach runs after Enter" "$?" "0"
+waitfor 10 has_line 'exec -it'; waitfor 10 has_ui
+check "--onyx: onyx up runs in the sindri container" "$(count 'exec -it sindri-0 -c sindri -- sindri onyx up')" "1"
 SEQ="$(awk '
-  /exec sindri-0 -- sh/ && !a {print "read"; a=1} /port-forward pod\// && !b {print "forward"; b=1}
-  /port-forward svc\// && !d {print "onyx-forward"; d=1} /exec -it/ {print "attach"}' "$CALLS" | paste -sd, -)"
-check "--onyx: pod read, forward, Onyx forward, then attach" "$SEQ" "read,forward,onyx-forward,attach"
-check "--onyx: the attach call and its cluster address" \
-  "$(count 'exec -it sindri-0 -- sindri onyx attach http://onyx-webserver.sindri.svc.cluster.local:3000')" "1"
-check "--onyx: the sign-up URL is printed" "$(said d 'http://127.0.0.1:3000/auth/signup')" "1"
+  /exec sindri-0 -c sindri -- sh/ && !a {print "read"; a=1} /port-forward pod\/sindri-0 7480/ && !b {print "forward"; b=1}
+  /exec -it/ {print "up"}' "$CALLS" | paste -sd, -)"
+check "--onyx: pod read, owner forward, then onyx up" "$SEQ" "read,forward,up"
+waitfor 10 has_line 'port-forward pod/sindri-0 3000:3000'; check "--onyx: the Onyx port is forwarded from the pod" "$?" "0"
+check "--onyx: no Service forward" "$(count 'port-forward svc/')" "0"
+check "--onyx: the forwarded address is printed" "$(said d 'http://127.0.0.1:3000')" "1"
+waitfor 10 has_line 'onyx status --json'; check "--onyx: status is read after onyx up" "$?" "0"
+check "--onyx: same port, no second forward" "$(count 'port-forward pod/sindri-0 3000:3000')" "1"
 finish d >/dev/null
+
+# --- --onyx: Onyx took a fallback port
+reset; echo 3002 > "$POD/onyx-port"
+run_connect e --onyx
+waitfor 10 has_line 'port-forward pod/sindri-0 3002:3002'; check "--onyx fallback: the new port is forwarded" "$?" "0"
+check "--onyx fallback: the new address is printed" "$(said e 'http://127.0.0.1:3002')" "1"
+finish e >/dev/null
 
 # --- refusals
 reset
