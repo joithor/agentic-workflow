@@ -84,6 +84,7 @@ public static class SindriWorkflowsServiceCollectionExtensions
         .AddSingleton<ChildActivities>()                           // engine P7: LoadChildren
         .AddSingleton<LiteralFactActivities>()                     // a child's literal inputs, stored under their hash at its start
         .AddSingleton<HeavyLeases>().AddSingleton<HeavyActivities>()   // LN-WF3: TakeHeavy, ReleaseHeavy over IHeavySlots; the leases a worker holds
+        .AddSingleton<LinkedActivities>()                          // LN-WF1: LiveLinked
         .AddSingleton<EngineActivities>()
         .AddSingleton<EffectActivities>()                          // engine P6: RecordEffect, RecheckEffect, RunEffect
         .AddStepInputRuntime()                                     // the Step inputs: FillInput, the in-memory texts and their runner

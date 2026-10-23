@@ -98,6 +98,10 @@ internal sealed partial class RecipeWorkflow
         return [.. notices.Select(static n => n.Command)];
     }
 
+    /// <summary>A linked instance's report to its line (LN-WF1): 'parked', 'resumed' or 'ended', an engine-origin 'effect.line.report'.</summary>
+    private IReadOnlyList<EffectCommand> LineReports(WorkflowInstance? before, WorkflowInstance after) =>
+        Workflow.Patched(LinkedEventsPatch) && LinkedPhaseReports.For(before, after, _mirrored) is { } report ? [report] : [];
+
     /// <summary>
     /// A recipe effect's text (P6 unit (c)): the rendered 'next' of the state its transition entered. An engine notice
     /// carries its own text in its arguments, so it has none here.
@@ -135,7 +139,8 @@ internal sealed partial class RecipeWorkflow
 
             var run = new EffectRun(after.Address.Value, after.Item.Value, after.Attempt, effect, row.Command, TextOf(after, effect), after.Facts, _recipe!.Version, ReplyFacts);   // why: effects run only after Begin set _recipe
             var options = (ActivityOptions)EffectActivities.RunOptions.Clone();
-            options.CancellationToken = Effects().Token;   // a cancel of the instance stops the retries too, not only the delay
+            // a cancel of the instance stops the retries too, not only the delay; but the report of a cancelled end to its line is that cancel's own
+            options.CancellationToken = effect.Origin == CommandOrigin.Engine && effect.Effect.Value == "effect.line.report" ? Workflow.CancellationToken : Effects().Token;
             options.TaskQueue = Workflow.Info.TaskQueue;   // the instance's queue, from settings (never a constant)
             try
             {

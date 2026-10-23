@@ -17207,3 +17207,6 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.Reruns.Action.get -> Aw.Sindri.Cor
 static Aw.Sindri.Core.Workflow.Engine.Runtime.Reruns.Of(Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView! view) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>!
 static Aw.Sindri.Core.Workflow.Views.DeskRecommendation.operator !=(Aw.Sindri.Core.Workflow.Views.DeskRecommendation? left, Aw.Sindri.Core.Workflow.Views.DeskRecommendation? right) -> bool
 static Aw.Sindri.Core.Workflow.Views.DeskRecommendation.operator ==(Aw.Sindri.Core.Workflow.Views.DeskRecommendation? left, Aw.Sindri.Core.Workflow.Views.DeskRecommendation? right) -> bool
+Aw.Sindri.Core.Workflow.Engine.Effects.LinkedPhaseReports
+static Aw.Sindri.Core.Workflow.Engine.Effects.LinkedPhaseReports.For(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance? before, Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! after, int version) -> Aw.Sindri.Core.Workflow.Engine.Decisions.EffectCommand?
+static Aw.Sindri.Core.Workflow.Engine.EffectIdentity.ForLineReport(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId instance, int entry, int version) -> Aw.Sindri.Core.Workflow.Engine.EffectIdentity!

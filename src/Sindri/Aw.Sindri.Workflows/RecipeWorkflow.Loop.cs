@@ -217,7 +217,7 @@ internal sealed partial class RecipeWorkflow
             SindriTemporal.NeedsYouKey.ValueSet(needsYou),
             SindriTemporal.TenantKey.ValueSet(start.Tenant),
             SindriTemporal.RingKey.ValueSet(start.Ring.ToString(System.Globalization.CultureInfo.InvariantCulture)),
-            SindriTemporal.RootKey.ValueSet(Workflow.Info.Parent is null),
+            SindriTemporal.RootKey.ValueSet(Workflow.Info.Parent is null && !(Workflow.Patched(LinkedEventsPatch) && start.WorkflowId().LinkedParent() is not null)),   // a linked instance (LN-WF1) is no root
         ];
         if (_recipe is { } recipe)
         {
