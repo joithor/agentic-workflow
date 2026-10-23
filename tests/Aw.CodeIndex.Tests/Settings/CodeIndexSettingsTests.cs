@@ -10,7 +10,7 @@ public sealed class CodeIndexSettingsTests
         var result = CodeIndexSettings.Create(input: null);
 
         Assert.Equal(CodeIndexSettings.Default, result.Value);
-        Assert.Equal(512, result.Value.MaxFileKB);
+        Assert.Equal(4_096, result.Value.MaxFileKB);
         Assert.Equal(4_096, result.Value.MaxTotalMB);
         Assert.True(result.Value.Embeddings.Enabled);
         Assert.Equal("http://127.0.0.1:11434", result.Value.Embeddings.Url);
