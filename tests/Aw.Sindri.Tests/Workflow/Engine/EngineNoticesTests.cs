@@ -97,6 +97,22 @@ public sealed class EngineNoticesTests
         Assert.Empty(EngineNotices.For(open, Suspensions.Cancel(open), version: 2, deskTaskNotified: false));
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void A_park_names_the_park_row_an_escalation_too_a_desk_task_the_desk_row_and_a_takeover_the_takeover_row()
+    {
+        var open = At(Step, "produce");
+
+        var park = Assert.Single(EngineNotices.For(open, Suspensions.Suspend(open, Park(ParkReason.Timeout, "q")), version: 4, deskTaskNotified: true)).Command;
+        var escalation = Assert.Single(EngineNotices.For(open, Suspensions.Suspend(open, Escalation("q")), version: 4, deskTaskNotified: true)).Command;
+        var desk = Assert.Single(EngineNotices.For(before: null, open, version: 1, deskTaskNotified: false)).Command;
+        var taken = Suspensions.TakeOver(open, "human:thor").Value;
+        var takeover = Assert.Single(EngineNotices.For(taken, taken, version: 7, deskTaskNotified: true, WorkflowEventType.Notified)).Command;
+
+        Assert.Equal(("park", "park", "desk", "takeover"), (Row(park), Row(escalation), Row(desk), Row(takeover)));
+    }
+
+    private static string Row(EffectCommand command) => command.With["row"].Literal!.Value.GetString()!;   // why: an engine notice always names its row
+
     private static string Text(EffectCommand command) => command.With["text"].Literal!.Value.GetString()!;   // why: an engine notice always carries its text
 
     private static Suspension Park(ParkReason reason, string question) =>

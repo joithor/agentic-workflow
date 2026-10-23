@@ -10,7 +10,8 @@ internal interface IOsNotifier
     /// <summary>Shows a notification, or does nothing where none is available. Never fails the caller.</summary>
     /// <param name="title">The title (the instance address).</param>
     /// <param name="text">The body.</param>
+    /// <param name="deepLink">Where a click on the notification goes ('needs-you/&lt;rowId&gt;'), or null; a notifier that can't be clicked ignores it.</param>
     /// <param name="cancellationToken">Cancels the attempt.</param>
     /// <returns>Done.</returns>
-    public ValueTask Show(string title, string text, CancellationToken cancellationToken);
+    public ValueTask Show(string title, string text, string? deepLink, CancellationToken cancellationToken);
 }

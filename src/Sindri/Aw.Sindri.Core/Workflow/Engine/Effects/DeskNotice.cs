@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Aw.Sindri.Core.Workflow.Engine.Effects;
 
 /// <summary>
@@ -10,4 +12,14 @@ namespace Aw.Sindri.Core.Workflow.Engine.Effects;
 /// <param name="Class">Interrupt or info.</param>
 /// <param name="Text">What the notice says.</param>
 /// <param name="At">When it was sent.</param>
-public sealed record DeskNotice(string Identity, InstanceAddress Instance, ItemKey Item, NoticeClass Class, string Text, DateTimeOffset At);
+/// <param name="RowId">The needs-you row the notice is about ('desk:', 'park:' or 'takeover:' …); null for a recipe's notice and for lines written before it existed.</param>
+/// <param name="DeepLink">Where a click on the notice goes ('needs-you/&lt;rowId&gt;'); null when it has no row.</param>
+public sealed record DeskNotice(
+    string Identity,
+    InstanceAddress Instance,
+    ItemKey Item,
+    NoticeClass Class,
+    string Text,
+    DateTimeOffset At,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? RowId = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? DeepLink = null);

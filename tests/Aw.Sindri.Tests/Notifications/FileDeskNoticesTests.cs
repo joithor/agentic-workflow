@@ -1,5 +1,7 @@
 using System.Text.Json;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Effects;
 using Aw.Sindri.Infrastructure;
 using Aw.Sindri.Infrastructure.Notifications;
@@ -78,6 +80,35 @@ public sealed class FileDeskNoticesTests : IDisposable
         Assert.False(again.Value);
         _ = Assert.Single(await File.ReadAllLinesAsync(Path.Combine(_home.Path, "notifications.jsonl"), Token));
         _ = Assert.Single(_os.Shown);
+    }
+
+    [Fact]
+    public async Task A_notice_with_a_row_writes_both_fields_and_hands_the_deep_link_to_the_notifier()
+    {
+        var row = NeedsYouRowId.Park(InstanceAddress.From("T-4/dev-notify/1")).Value;
+        var notice = DeskNoticesContract.Notice("WFI-a:1:n1") with { RowId = row, DeepLink = "needs-you/" + row };
+
+        _ = await Notices().Send(notice, Token);
+
+        var line = JsonDocument.Parse(Assert.Single(await File.ReadAllLinesAsync(Path.Combine(_home.Path, "notifications.jsonl"), Token))).RootElement;
+        Assert.Equal((row, "needs-you/" + row), (line.GetProperty("rowId").GetString(), line.GetProperty("deepLink").GetString()));
+        Assert.Equal("needs-you/" + row, Assert.Single(_os.Links));
+    }
+
+    [Fact]
+    public async Task A_notice_without_a_row_writes_neither_field_and_a_line_from_before_them_still_reads()
+    {
+        var old = """{"identity":"WFI-a:1:n0","instance":"T-4/dev-notify/1","item":"T-4","class":"interrupt","text":"old","at":"2026-10-13T12:00:00+00:00"}""";
+        await File.WriteAllTextAsync(Path.Combine(_home.Path, "notifications.jsonl"), old + "\n", Token);
+        var notices = Notices();
+
+        var again = await notices.Send(DeskNoticesContract.Notice("WFI-a:1:n0"), Token);   // seeded from the old line: a repeat
+        _ = await notices.Send(DeskNoticesContract.Notice("WFI-a:1:n1"), Token);
+
+        Assert.False(again.Value);
+        var added = JsonDocument.Parse((await File.ReadAllLinesAsync(Path.Combine(_home.Path, "notifications.jsonl"), Token))[1]).RootElement;
+        Assert.False(added.TryGetProperty("rowId", out _) || added.TryGetProperty("deepLink", out _));
+        Assert.Null(Assert.Single(_os.Links));
     }
 
     private FileDeskNotices Notices() =>

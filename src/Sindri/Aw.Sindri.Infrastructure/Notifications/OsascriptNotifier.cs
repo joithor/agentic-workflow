@@ -13,7 +13,7 @@ internal sealed class OsascriptNotifier : IOsNotifier
 {
     private static readonly TimeSpan _budget = TimeSpan.FromSeconds(5);
 
-    public async ValueTask Show(string title, string text, CancellationToken cancellationToken)
+    public async ValueTask Show(string title, string text, string? deepLink, CancellationToken cancellationToken)
     {
         if (!OperatingSystem.IsMacOS())
         {

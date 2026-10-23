@@ -3014,8 +3014,12 @@ Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.At.get -> System.DateTimeOffse
 Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.At.init -> void
 Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.Class.get -> Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass
 Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.Class.init -> void
-Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.Deconstruct(out string! Identity, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, out Aw.Sindri.Core.Workflow.Engine.ItemKey Item, out Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass Class, out string! Text, out System.DateTimeOffset At) -> void
-Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.DeskNotice(string! Identity, Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, Aw.Sindri.Core.Workflow.Engine.ItemKey Item, Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass Class, string! Text, System.DateTimeOffset At) -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.DeepLink.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.DeepLink.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.RowId.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.RowId.init -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.Deconstruct(out string! Identity, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, out Aw.Sindri.Core.Workflow.Engine.ItemKey Item, out Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass Class, out string! Text, out System.DateTimeOffset At, out string? RowId, out string? DeepLink) -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.DeskNotice(string! Identity, Aw.Sindri.Core.Workflow.Engine.InstanceAddress Instance, Aw.Sindri.Core.Workflow.Engine.ItemKey Item, Aw.Sindri.Core.Workflow.Engine.Effects.NoticeClass Class, string! Text, System.DateTimeOffset At, string? RowId = null, string? DeepLink = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.Equals(Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice? other) -> bool
 Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.Identity.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Effects.DeskNotice.Identity.init -> void
