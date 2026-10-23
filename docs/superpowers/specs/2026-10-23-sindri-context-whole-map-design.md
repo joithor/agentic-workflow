@@ -47,7 +47,7 @@ still visible behind it, and one key (Esc) or one click ("Whole map") goes back.
 
 | Parameter | Meaning | Default and limits |
 |---|---|---|
-| `detail` | `auto`, `nodes` or `areas` | `auto`: `nodes` when the map's node count is at most the budget (§2.3), else `areas`. `nodes` on a map over the budget answers `areas` with `"fallback": "over-budget"`, never an error |
+| `detail` | `auto`, `nodes` or `areas` | `auto`: `nodes` when the map's node count is at most the budget (§2.3), else `areas`. `nodes` on a map over the budget answers `areas` with `"fallback": "over-budget"`, never an error; `fallback` is set whenever an answer is `areas` because of the budget, `auto` included |
 | `area` | one area key: answers that area's nodes and edges in full (up to the area cap, §2.3), plus its edges to other areas collapsed to area level | absent; an unknown area is `SND-CONTEXT-200` (404) |
 | `locate` | a node key, repeatable: the answer's `located[]` says which area each one is in | up to 100 (more is `SND-CONTEXT-006`); a key not in the map is `{key, area: null}` |
 | `mapVersion` | read a retained version (`v12`, `12`, `v12@a41b07d`), as `lenses` does | the current version; a version not kept is the existing S-LB1a code |
@@ -62,7 +62,7 @@ The answer, `WholeMapView` (one record set in `SindriJsonContext`, mirrored in `
 { schemaVersion: 1, mapVersion, mapCommit?, draft, asOf, repo,
   detail: "nodes" | "areas", fallback?: "over-budget",
   counts: { nodes, edges, byKind: { feature, surface, action, thing, flow, decision, record, code } },
-  areas: [ { key, label, trust, members, byKind: {…}, unassigned: bool } ],          // always present, sorted by key
+  areas: [ { key, label, trust, members, byKind: {…}, unassigned: bool } ],          // always present, sorted by key; members = nodes whose primary area it is (they sum to counts.nodes); trust = the weakest of the area feature's own trust and its members' (trusted | untrusted, as the nodes')
   areaEdges: [ { from, to, type, count, confirmed } ],                                 // between areas; confirmed = how many of count
   nodes?: [ { key, label, kind, area, alsoIn: [area], trust, provenance, confidence, confirmed } ],   // detail=nodes, or the one area
   edges?: [ { from, to, type, link, provenance, confidence, confirmed } ],
@@ -89,8 +89,10 @@ area and up to 5 others (`alsoIn`, for a node that genuinely sits in several). T
 1. **Features.** A feature's root is the root of its `part-of` chain (a feature that is part of no other feature is a root). A
    feature with several parents (`EdgeRules` allows it) follows the parent with the smallest key. A cycle (the map shouldn't have one;
    the rule must still end) roots at the smallest key on the cycle. **The area depth is adaptive:** the areas are the roots, unless
-   one root holds more than half of all nodes or there are fewer than 3 roots; then the areas are that dominant root's children
-   (the roots' own children for a single root), repeated once at most, so a map with one umbrella feature still yields a usable
+   one root's subtree (counted by the nodes the rules below would give it) holds more than half of all nodes, or any area would exceed
+   the area cap, or there are fewer than 3 roots (two roots with one at 51 % are covered by the first test); then that root is
+   replaced by its children (the roots' own children for a single root), repeated once at most; if one area is still dominant after
+   the second pass it stays, and the page shows it truncated with its counts, so a map with one umbrella feature still yields a usable
    overview. The rules below then give each node the area of the area-feature it reaches (its ancestors, or itself, at that depth); the
    umbrella feature itself, and anything reaching only it, goes to `area:unassigned`.
 Rules 2 to 4 apply in this order, each reading the areas the earlier ones fixed:
@@ -116,7 +118,7 @@ map of that order arrives in one answer, and are checked against the first real 
 | Limit | Default | Why |
 |---|---|---|
 | Node budget for `nodes` | 1,500 nodes | about 0.6 MB of JSON at 1,500 nodes and about 2,300 edges (the sample's 412 nodes and 655 edges, scaled); one answer, one layout pass |
-| Area cap for `area=` | 500 nodes per area, then `area.truncated` with full `counts` | the page opens a big area in one read; a bigger area keeps its counts and a "more not shown" chip, as F3 bands do |
+| Area cap for `area=` | 1,500 nodes per area (the node budget), then `area.truncated` with full `counts` | the page opens a big area in one read; a bigger area keeps its counts and a "more not shown" chip, as F3 bands do |
 | Areas | 500, then `truncated` | an areas answer stays well under 1 MB for any map |
 | Edges | every edge between returned nodes; `areaEdges` aggregated by (from, to, type) | edges are cheaper than nodes and the page needs them for the layout |
 
