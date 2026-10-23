@@ -91,9 +91,6 @@ internal sealed partial class WholeMapViewModel : ObservableObject
     /// <summary>The accessible name of the map and of the list of features.</summary>
     public string CanvasName { get; } = Labels.ContextWholeCanvasName;
 
-    /// <summary>The list of features (J and K walk it; Enter opens one): every feature, in the order the map shows them.</summary>
-    public string AreasName { get; } = Labels.ContextWholeAreasName;
-
     /// <summary>The features, in the order the map shows them.</summary>
     public IReadOnlyList<WholeAreaTileViewModel> Areas { get; private set; } = [];
 

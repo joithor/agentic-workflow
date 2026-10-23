@@ -87,8 +87,8 @@ internal static class ChildFixture
         Outcome: null);
 
     /// <summary>A child change delivered through the inbox.</summary>
-    public static ChildChanged Changed(ChildChange change, ParkReason? reason = null, string? question = null, WorkflowInstanceId? child = null) =>
-        new(Inbox, child ?? ChildId, change, reason, question, TriggerKey.For(child ?? ChildId, "run:1.2:" + new string('0', 64)));
+    public static ChildChanged Changed(ChildChange change, ParkReason? reason = null, string? question = null, WorkflowInstanceId? child = null, ParkKind? parkKind = null, EscalationKind? escalation = null) =>
+        new(Inbox, child ?? ChildId, change, reason, question, TriggerKey.For(child ?? ChildId, "run:1.2:" + new string('0', 64)), parkKind, escalation);
 
     /// <summary>Suspends <paramref name="instance"/> as the suspension rules do: a takeover covers what is there, which waits as the pending park.</summary>
     public static WorkflowInstance Push(WorkflowInstance instance, Suspension suspension) => suspension.Kind == SuspensionKind.Takeover

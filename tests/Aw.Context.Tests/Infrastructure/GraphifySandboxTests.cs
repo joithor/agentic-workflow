@@ -45,7 +45,7 @@ public sealed class GraphifySandboxTests
         Assert.Null(GraphifySandbox.Argv(Host(linux: false), ["graphify"], ["/snap"]));
 
     [Fact]
-    public void The_pin_is_the_one_in_sindri_package_json()
+    public void The_pin_is_the_one_in_graphify_pin()
     {
         var root = AppContext.BaseDirectory;
         while (!File.Exists(Path.Combine(root, "AgenticWorkflow.slnx")))
@@ -53,8 +53,10 @@ public sealed class GraphifySandboxTests
             root = Path.GetDirectoryName(root) ?? throw new InvalidOperationException("repo root not found");
         }
 
-        var package = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "sindri", "package.json")));
+        var row = File.ReadAllLines(Path.Combine(root, "context", "graphify.pin"))
+            .Select(line => line.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            .Single(fields => fields.Length == 3 && fields[0] == "graphify");
 
-        Assert.Equal(package.RootElement.GetProperty("sindri").GetProperty("graphifyPin").GetString(), GraphifyOptions.Default.Pin);
+        Assert.Equal(row[1], GraphifyOptions.Default.Pin);
     }
 }

@@ -73,6 +73,19 @@ public sealed class OutboxRefusalTests
         Assert.Equal(_claim, Assert.Single(resumed.Effects).Identity);
     }
 
+    /// <summary>The park carries the typed code of the refusal that made it (q65), so a reader never parses the question.</summary>
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("SND-WF-010")]
+    [InlineData("SND-WF-011")]
+    [InlineData("SND-RECIPE-005")]
+    [InlineData("SND-RECIPE-006")]
+    public void A_refusal_park_carries_the_refusals_code(string code)
+    {
+        var parked = Parked(Decide(Claimed(), Item, new OutboxRefused(Dispatcher, _claimRef, code, Sequence: 96, "the cause"), rules: EngineRules.Default));
+
+        Assert.Equal(code, parked.Suspension!.Code);
+    }
+
     /// <summary>The park's transition records the refusal (code and message) so the needs-you row can say why.</summary>
     [Fact, Trait("Lane", "unit")]
     public void A_refusal_park_records_the_code_and_message_as_the_transitions_reason()

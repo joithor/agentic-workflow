@@ -178,14 +178,6 @@ internal sealed partial class WholeMapView : UserControl
         }
     }
 
-    private void OnAreaChip(object? sender, RoutedEventArgs e)
-    {
-        if (sender is Control { DataContext: WholeAreaTileViewModel tile })
-        {
-            tile.Open();
-        }
-    }
-
     private void OnAllFeatures(object? sender, RoutedEventArgs e) => _map?.CloseArea();
 
     private void OnZoomIn(object? sender, RoutedEventArgs e) => WholeCanvas.ZoomIn();

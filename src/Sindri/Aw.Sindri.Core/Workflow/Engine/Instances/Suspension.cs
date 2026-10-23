@@ -29,6 +29,23 @@ public sealed record Suspension(
     /// </summary>
     public RemainingTimer? Remaining { get; init; }
 
+    /// <summary>The typed code of the refusal that made this park (SND-WF-010, SND-WF-011, SND-RECIPE-005, SND-RECIPE-006), where one did; null (not written) otherwise. <see cref="Runtime.ParkCodes.Of"/> adds the code a reason implies.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? Code { get; init; }
+
+    /// <summary>
+    /// For a mirror: what the mirrored child's own park is about (spec §5.8), so the root's answer line names the child's real command.
+    /// Kept apart from <see cref="ParkKind"/>, which the root's own park rules (drift, revoked, dispatch) read. Null when the child's kind
+    /// was not carried (a signal recorded before it was) or the suspension mirrors nothing.
+    /// </summary>
+    public ParkKind? MirroredParkKind { get; init; }
+
+    /// <summary>
+    /// For a mirror of an escalation: the child's own escalation kind (<see cref="Escalation"/> is always <see cref="EscalationKind.Child"/> on a mirror).
+    /// Null when the kind was not carried or the suspension mirrors nothing.
+    /// </summary>
+    public EscalationKind? MirroredEscalation { get; init; }
+
     /// <summary>
     /// A drift park the re-approval already ended while a takeover held the instance: it waits in the queue only to
     /// re-send its effects once nothing else holds the instance, and is never made the current suspension (spec §3.8).
