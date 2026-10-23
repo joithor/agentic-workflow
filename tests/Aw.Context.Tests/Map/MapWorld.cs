@@ -122,7 +122,7 @@ internal sealed class MapWorld : IDisposable
     public FakeMapFileReader Reader { get; } = new();
 
     /// <summary>How many whole-map answers were built rather than served from the cache.</summary>
-    internal int WholeMapBuilds => _scope.ServiceProvider.GetRequiredService<Aw.Context.Features.GetWholeMap.WholeMapCache>().Builds;
+    internal int WholeMapBuilds => _scope.ServiceProvider.GetRequiredService<Features.GetWholeMap.WholeMapCache>().Builds;
 
     public IContextMap Map => _scope.ServiceProvider.GetRequiredService<IContextMap>();
 

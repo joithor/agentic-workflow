@@ -4,11 +4,11 @@ using Aw.Context.Core.Facade;
 using Aw.Context.Core.History;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Subgraph;
+using Aw.Context.Core.WholeMap;
 using Aw.Context.Features.GetCode;
 using Aw.Context.Features.GetHistory;
 using Aw.Context.Features.GetSubgraph;
 using Aw.Context.Features.GetWholeMap;
-using Aw.Context.Core.WholeMap;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 
