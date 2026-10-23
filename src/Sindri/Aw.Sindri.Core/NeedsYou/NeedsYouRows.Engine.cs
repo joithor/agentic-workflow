@@ -32,13 +32,23 @@ public static partial class NeedsYouRows
         ArgumentNullException.ThrowIfNull(park);
         var suspension = park.Suspension;
         var at = park.Descendant ?? park.Address;
-        var answer = park.Descendant is { } descendant
-            ? ParkAnswers.For(new ParkShape(SuspensionKind.Escalation, Reason: null, ParkKind: null, EscalationKind.Child, Mirrors: false), descendant, child: descendant.Value)   // the descendant decides: a pointer to it
-            : ParkAnswers.For(new ParkShape(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors is not null), at, child: suspension.MirrorsAddress);
+        var answer = AnswerOf(park);
         var (label, words) = Words(suspension, park.Refusal);
         var shape = new EngineRow("park:", label, $"{words} ({at.Value})", Urgency.Pulse, answer?.Kind,
             answer?.ActionId ?? _approveRecipe, answer is null ? [_approveRecipe, _cancel] : [answer.ActionId], answer?.Cli ?? Status(at), answer?.Via, answer?.Child);
         return Row(item, park.Address, shape, since, scrubber);
+    }
+
+    /// <summary>The answer a park row offers: a pointer to the descendant that decides, or the instance's own.</summary>
+    private static Workflow.Views.StatusAnswer? AnswerOf(ParkRowInput park)
+    {
+        if (park.Descendant is { } descendant)
+        {
+            return ParkAnswers.For(new ParkShape(SuspensionKind.Escalation, Reason: null, ParkKind: null, EscalationKind.Child, Mirrors: false), descendant, child: descendant.Value);   // the descendant decides: a pointer to it
+        }
+
+        var suspension = park.Suspension;
+        return ParkAnswers.For(new ParkShape(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors is not null), park.Address, child: suspension.MirrorsAddress);
     }
 
     /// <summary>The 'park' row of an open desk task.</summary>
