@@ -29,6 +29,12 @@ internal sealed partial class NeedsYouBarViewModel
     /// <summary>False while the request has left the list under the card: the controls go quiet.</summary>
     public bool ConfirmEnabled => Enabled;
 
+    /// <summary>The merge stop's pull request card; null when the request has none.</summary>
+    public MergeCardViewModel? MergeCard => _target?.MergeCard;
+
+    /// <summary>True when the card shows.</summary>
+    public bool HasMergeCard => MergeCard is not null;
+
     private NeedsYouConfirmKind ConfirmKind => _confirm?.Kind ?? NeedsYouConfirmKind.None;
 
     /// <summary>The typed box was pressed on text that is exactly the challenge's: sends it, once.</summary>
