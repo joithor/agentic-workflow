@@ -5,7 +5,7 @@
 # epoch or token in the pod rewrites the home; a port-forward that drops is retried; refusals (no kubectl, no sindri-ui, no
 # pod, a pod that is not Ready, a local port that is taken, no rights; --check reports each and exits 0 or 2); the mirror
 # home lives in $TMPDIR and goes on exit (a TERM too), stale ones are removed; the retry loop prints its attempts and is
-# bounded; --onyx forwards the pod's Onyx port and runs `sindri onyx up` in the pod, then re-forwards when status names another port.
+# bounded; --onyx forwards the pod's Onyx port and runs `sindri onyx attach` in the pod with -it; a failed attach is the exit code.
 # Run: bash scripts/tests/sindri-pod.test.sh
 set -uo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -47,8 +47,7 @@ case " $* " in
   *" port-forward "*)
     if [ -e "$POD/pf-fail-once" ] && [[ " $* " == *" pod/"* ]]; then rm -f "$POD/pf-fail-once"; echo "pf failed" >&2; exit 1; fi
     exec sleep 300 ;;
-  *" exec -it "*) exit 0 ;;
-  *" onyx status "*) printf '{"state":"running","port":%s}\n' "$(cat "$POD/onyx-port" 2>/dev/null || echo 43000)"; exit 0 ;;
+  *" exec -it "*) [ -e "$POD/attach-fail" ] && exit "$(cat "$POD/attach-fail")"; exit 0 ;;
   *" exec "*) [ -e "$POD/down" ] && exit 1
     cat "$POD/control.json"; echo "@@aw-token@@"; cat "$POD/token"; exit 0 ;;
 esac
@@ -92,8 +91,8 @@ said() { cat "$WORK/runs/$1.out" "$WORK/runs/$1.err" | grep -c -- "$2" || true; 
 # --- the dry run: prints the plan, calls nothing, writes nothing
 OUT="$(PATH="/usr/bin:/bin" bash "$DIR/sindri-pod.sh" connect --dry-run --context c1 --namespace n1 --onyx 2>&1)"; RC=$?
 check "dry run: exit 0, nothing written, no kubectl needed" "$RC:$([ -e "$AW_STATE_DIR/sindri-pod" ] && echo wrote || echo clean)" "0:clean"
-check "dry run: names the exec, the forward, the app and Onyx's up" \
-  "$(printf '%s' "$OUT" | grep -c -e 'exec sindri-0 -c sindri' -e 'port-forward pod/sindri-0' -e 'sindri-ui' -e 'onyx up')" "6"
+check "dry run: names the exec, the forward, the app and Onyx's attach" \
+  "$(printf '%s' "$OUT" | grep -c -e 'exec sindri-0 -c sindri' -e 'port-forward pod/sindri-0' -e 'sindri-ui' -e 'onyx attach')" "5"
 OUT="$(env -u AW_SINDRI_POD_RETRIES -u AW_SINDRI_POD_RETRY_WAIT PATH="/usr/bin:/bin" bash "$DIR/sindri-pod.sh" connect --dry-run 2>&1)"
 check "dry run: the default is 30 attempts 10 s apart (5 minutes)" "$(printf '%s' "$OUT" | grep -c '30 attempts 10s apart')" "1"
 
@@ -147,28 +146,40 @@ check "--port: the forward maps the chosen local port to the pod's, for the chos
 check "--port: control.json carries the local port" "$(jq -r .url "$(mirror_dir)/control.json")" "http://127.0.0.1:18480"
 finish c >/dev/null
 
-# --- --onyx: forward the pod's Onyx port, run onyx up in the pod
+# --- --onyx: forward the pod's Onyx port, run onyx attach in the pod
 reset
 run_connect d --onyx
 waitfor 10 has_line 'exec -it'; waitfor 10 has_ui
-check "--onyx: onyx up runs in the sindri container" "$(count 'exec -it sindri-0 -c sindri -- sindri onyx up')" "1"
+check "--onyx: attach runs in the sindri container with -it" "$(count 'exec -it sindri-0 -c sindri -- sindri onyx attach')" "1"
+check "--onyx: onyx up is never run" "$(count 'onyx up')" "0"
 SEQ="$(awk '
   /exec sindri-0 -c sindri -- sh/ && !a {print "read"; a=1} /port-forward pod\/sindri-0 47480/ && !b {print "forward"; b=1}
-  /exec -it/ {print "up"}' "$CALLS" | paste -sd, -)"
-check "--onyx: pod read, owner forward, then onyx up" "$SEQ" "read,forward,up"
+  /exec -it/ {print "attach"}' "$CALLS" | paste -sd, -)"
+check "--onyx: pod read, owner forward, then attach" "$SEQ" "read,forward,attach"
 waitfor 10 has_line 'port-forward pod/sindri-0 43000:43000'; check "--onyx: the Onyx port is forwarded from the pod" "$?" "0"
 check "--onyx: no Service forward" "$(count 'port-forward svc/')" "0"
 check "--onyx: the forwarded address is printed" "$(said d 'http://127.0.0.1:43000')" "1"
-waitfor 10 has_line 'onyx status --json'; check "--onyx: status is read after onyx up" "$?" "0"
-check "--onyx: same port, no second forward" "$(count 'port-forward pod/sindri-0 43000:43000')" "1"
-finish d >/dev/null
+check "--onyx: the app is still connected after attach" "$(jq -r .epoch "$(mirror_dir)/control.json")" "7"
+check "--onyx: success ends with exit 0" "$(finish d)" "0"
 
-# --- --onyx: Onyx took a fallback port
-reset; echo 43002 > "$POD/onyx-port"
+# --- --onyx: attach fails; its exit code propagates with a clear text, the app stays up meanwhile
+reset; echo 3 > "$POD/attach-fail"
 run_connect e --onyx
-waitfor 10 has_line 'port-forward pod/sindri-0 43002:43002'; check "--onyx fallback: the new port is forwarded" "$?" "0"
-check "--onyx fallback: the new address is printed" "$(said e 'http://127.0.0.1:43002')" "1"
-finish e >/dev/null
+waitfor 10 has_ui; waitfor 10 has_line 'exec -it'
+sleep 0.5
+check "--onyx failure: names the failure and the exit code" "$(said e 'onyx attach failed (exit 3)')" "1"
+check "--onyx failure: says what it may be" "$(said e 'not answering at the forwarded port 43000')" "1"
+check "--onyx failure: the app was still started" "$(count '^ui home=')" "1"
+check "--onyx failure: exit code propagates" "$(finish e)" "3"
+rm -f "$POD/attach-fail"
+
+# --- --onyx: Ctrl-C in attach (130) stops attach only
+reset; echo 130 > "$POD/attach-fail"
+run_connect f --onyx
+waitfor 10 has_ui; sleep 0.5
+check "--onyx Ctrl-C: attach stopped, app stays" "$(said f 'the app stays connected')" "1"
+check "--onyx Ctrl-C: exit 0" "$(finish f)" "0"
+rm -f "$POD/attach-fail"
 
 # --- refusals: one line each, exit 2
 conn() { PATH="$WORK/bin:$PATH" bash "$DIR/sindri-pod.sh" connect "$@" 2>&1; }
@@ -215,6 +226,9 @@ OUT="$(AW_SINDRI_UI="$WORK/nope" conn --check)"; RC=$?
 check "--check: reports every failure, not just the first, exit 2" \
   "$RC:$(printf '%s' "$OUT" | grep -c -e 'sindri-app' -e 'create pods/exec' -e 'not Ready (phase: Pending)')" "2:3"
 rm -f "$POD/deny-pods_exec" "$POD/pod-status"
+reset
+OUT="$(conn --check --onyx)"; RC=$?
+check "--check --onyx: also checks the Onyx port, runs no attach" "$RC:$(printf '%s' "$OUT" | grep -c 'Onyx) is free'):$(count 'exec -it')" "0:1:0"
 
 # --- cleanup: TERM (what Ctrl-C does) removes the mirror home and the port-forward
 reset

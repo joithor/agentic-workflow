@@ -207,7 +207,7 @@ bash scripts/tests/sindri-sandbox-e2e.test.sh   # scripts/sindri-sandbox-e2e.sh:
 bash scripts/tests/sindri-ui-fixture.test.sh
 bash scripts/tests/forge-fixture.test.sh    # scripts/forge-fixture.sh over the real aw-forge-fake (dotnet build once): the PR babysitter's fixture PR set, every variant, the guard, --github refusals and dry run
 bash scripts/tests/sindri-app.test.sh
-bash scripts/tests/sindri-pod.test.sh      # scripts/sindri-pod.sh connect with a fake kubectl and sindri-ui: dry run, the mirror home and its modes, a restart rewriting it, the forward retry, refusals, --onyx order
+bash scripts/tests/sindri-pod.test.sh      # scripts/sindri-pod.sh connect with a fake kubectl and sindri-ui: dry run, the mirror home and its modes, a restart rewriting it, the forward retry, refusals, --onyx forwarding and attach
 bash scripts/tests/readiness-baseline.test.sh
 bash scripts/tests/agent-token.test.sh
 bash scripts/tests/ci-changed-areas.test.sh

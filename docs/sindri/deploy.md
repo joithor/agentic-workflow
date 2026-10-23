@@ -30,11 +30,12 @@ seconds it re-reads the pod. When the forward drops, or the pod restarts (a new 
 shows "control plane not running" meanwhile. It ends when you close the app, on Ctrl-C, or when the attempts are spent; it
 stops only the port-forwards it started.
 
-`--onyx` also forwards the pod's Onyx web port (Onyx runs in the pod's Docker sidecar and publishes it on the pod's
-`127.0.0.1`; the same port on your machine, default 3000, `AW_SINDRI_POD_ONYX_PORT`) and runs
-`kubectl exec -it <pod> -c sindri -- sindri onyx up` at the same terminal: the preflight, fetch, pull, start and account steps
-as on the desktop. At the sign-up step, sign up in the browser at the forwarded address and press Enter. If Onyx took a fallback
-port, the script forwards that one too. The image pull takes minutes; if the exec drops, run `connect --onyx` again (`onyx up`
-is safe to re-run).
+`--onyx` also forwards the pod's Onyx web port (Onyx runs as sibling containers in the pod, started by the kubelet at install;
+the same port on your machine, default 3000, `AW_SINDRI_POD_ONYX_PORT`) and runs
+`kubectl exec -it <pod> -c sindri -- sindri onyx attach` at the same terminal: it checks Onyx answers and runs the pinned
+release, then the account steps. At the sign-up step, sign up in the browser at the forwarded address and press Enter.
+Nothing is pulled or started, so it takes seconds, and re-running it is safe. Ctrl-C during `attach` stops that command only; the
+app and the forwards stay until `connect` ends. If `attach` fails (Onyx not answering at the forwarded port, a different
+version than the pinned one, the exec refused), `connect` says so, keeps the app connected and ends with `attach`'s exit code.
 
 `--dry-run` prints the commands and writes nothing.
