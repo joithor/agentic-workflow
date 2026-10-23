@@ -186,4 +186,28 @@ public sealed class SetupConfirmTests
         Assert.Equal(["Services"], Step(setup, "profile").Profile!.Summary.Groups.Select(g => g.Heading), StringComparer.Ordinal);
         Assert.Equal(2, _f.Server.ProfileCalls);
     }
+
+    [Fact]
+    public async Task A_served_summary_takes_the_place_of_the_steps_own_preview()
+    {
+        _f.Server.ProfileAnswer = RouteAnswer.Api("profile", "repo-added");
+        _f.Serve("profile-preview");
+
+        var step = Step(await _f.Read(Token), "profile");
+
+        Assert.True(step.Profile!.Summary.HasSummary);
+        Assert.NotEmpty(step.Preview);
+        Assert.False(step.HasPreview);
+    }
+
+    [Fact]
+    public async Task Without_a_summary_the_steps_own_preview_stays()
+    {
+        _f.Serve("profile-preview");   // the default profile read has no summary
+
+        var step = Step(await _f.Read(Token), "profile");
+
+        Assert.False(step.Profile!.Summary.HasSummary);
+        Assert.True(step.HasPreview);
+    }
 }
