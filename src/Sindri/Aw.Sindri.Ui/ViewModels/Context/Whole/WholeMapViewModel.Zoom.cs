@@ -6,7 +6,7 @@ namespace Aw.Sindri.Ui.ViewModels.Context.Whole;
 /// <summary>The whole map's zoom onto a query's answer (<see cref="WholeMapViewModel"/>, continued; whole-map spec §3.1 "Zoomed in").</summary>
 internal sealed partial class WholeMapViewModel
 {
-    /// <summary>The nodes a query's answer holds, drawn at full strength while the rest of the map stays behind them; empty when nothing is zoomed to.</summary>
+    /// <summary>The nodes a query's answer holds. While zoomed, the map draws these and nothing else; empty when nothing is zoomed to.</summary>
     internal IReadOnlySet<string> HitKeys { get; private set; } = new HashSet<string>(StringComparer.Ordinal);
 
     /// <summary>Whether the camera is on a query's answer.</summary>
@@ -30,57 +30,74 @@ internal sealed partial class WholeMapViewModel
     private (WholeMapView? Answer, WholeMapGeometry? Geometry, IReadOnlyList<WholeAreaTileViewModel> Areas)? _beforeZoom;
 
     /// <summary>
-    /// The camera goes to a query's answer: the nodes of the answer that are on this map are drawn at full strength and the camera eases to the box around them.
-    /// The rest of the map stays where it is, dimmed.
+    /// The camera goes to a query's answer. Only that answer's nodes, the links between them, and the features that hold them stay;
+    /// the camera eases to the box around the nodes. "Whole map" puts the rest back.
     /// </summary>
     /// <param name="keys">The keys of the answer's nodes.</param>
     /// <returns>True when any of them is on the map; false moves nothing.</returns>
     internal bool Zoom(IReadOnlyCollection<string> keys)
     {
         ArgumentNullException.ThrowIfNull(keys);
-        if (Geometry is not { } geometry)
+        if (Answer is not { Nodes: { Count: > 0 } nodes } answer || Geometry is null)
         {
             return false;
         }
 
-        var hit = geometry.Nodes.Where(n => keys.Contains(n.Key, StringComparer.Ordinal)).ToList();
+        var hitKeys = keys.ToHashSet(StringComparer.Ordinal);
+        var hit = nodes.Where(n => hitKeys.Contains(n.Key)).ToList();
         if (hit.Count == 0)
         {
             return false;
         }
 
-        HitKeys = hit.Select(n => n.Key).ToHashSet(StringComparer.Ordinal);
-        IsZoomed = true;
-        Changed();
-        ZoomRequested?.Invoke(this, new ValueEventArgs<WholeRect>(WholeZoomBox.Around([.. hit.Select(n => n.Rect)])));
-        return true;
+        var areaKeys = hit.Select(n => n.Area).ToHashSet(StringComparer.Ordinal);
+        var filtered = answer with
+        {
+            Nodes = hit,
+            Edges = [.. (answer.Edges ?? []).Where(e => hitKeys.Contains(e.From) && hitKeys.Contains(e.To))],
+            Areas = [.. answer.Areas.Where(a => areaKeys.Contains(a.Key))],
+            AreaEdges = [.. answer.AreaEdges.Where(e => areaKeys.Contains(e.From) && areaKeys.Contains(e.To))],
+        };
+        var geometry = WholeMapLayout.Place(filtered);
+        return geometry.Nodes.Count > 0 && ApplyZoom(geometry, filtered.Areas, string.Empty);
     }
 
     /// <summary>
-    /// The camera goes to a query's answer by feature: the features it touches are opened in full (the three with most answer nodes, the rest counted), the other tiles stay tiles.
+    /// The camera goes to a query's answer by feature. The opened features keep the answer's nodes only, and features the answer does not touch are left off the graph and off the chip list.
     /// </summary>
     /// <param name="overview">The overview the answer sits in.</param>
     /// <param name="opened">The opened features' answers.</param>
     /// <param name="keys">The keys of the answer's nodes.</param>
-    /// <param name="notOpened">How many touched features were not opened.</param>
+    /// <param name="notOpened">How many touched features were not opened. Their names are not here, so they are counted and not drawn.</param>
     /// <returns>True when any answer node is in an opened feature; false changes nothing.</returns>
     internal bool ZoomIntoAreas(WholeMapView overview, IReadOnlyList<WholeMapView> opened, IReadOnlyCollection<string> keys, int notOpened)
     {
-        ArgumentNullException.ThrowIfNull(overview);
         ArgumentNullException.ThrowIfNull(opened);
-        ArgumentNullException.ThrowIfNull(keys);
-        var geometry = WholeMapLayout.PlaceMixed(overview, opened);
-        if (!geometry.Nodes.Any(n => keys.Contains(n.Key, StringComparer.Ordinal)))
+        var touched = new List<string>();
+        foreach (var area in opened)
         {
-            return false;
+            if (area.Area is { } info)
+            {
+                touched.Add(info.Key);
+            }
         }
 
-        _beforeZoom ??= (Answer, Geometry, Areas);
-        Geometry = geometry;
-        var byKey = overview.Areas.ToDictionary(a => a.Key, StringComparer.Ordinal);
-        Areas = [.. geometry.Order.Select((key, i) => new WholeAreaTileViewModel(byKey[key], i, OpenArea))];
-        MoreTouchedText = notOpened > 0 ? Labels.ContextWholeMoreTouched(notOpened) : string.Empty;
-        return Zoom(keys);
+        return ZoomIntoAreas(overview, opened, keys, touched, notOpened);
+    }
+
+    /// <summary>
+    /// The camera goes to a query's answer by feature. Chips and tiles are the features the answer touches; opened ones show the answer's nodes.
+    /// </summary>
+    /// <param name="overview">The overview the answer sits in.</param>
+    /// <param name="opened">The opened features' answers.</param>
+    /// <param name="keys">The keys of the answer's nodes.</param>
+    /// <param name="touchedAreas">Every feature the answer touches, opened or only counted.</param>
+    /// <returns>True when any answer node is in an opened feature; false changes nothing.</returns>
+    internal bool ZoomIntoAreas(WholeMapView overview, IReadOnlyList<WholeMapView> opened, IReadOnlyCollection<string> keys, IReadOnlyCollection<string> touchedAreas)
+    {
+        ArgumentNullException.ThrowIfNull(touchedAreas);
+        var openedCount = opened.Count(area => area.Area is not null);
+        return ZoomIntoAreas(overview, opened, keys, touchedAreas, Math.Max(0, touchedAreas.Count - openedCount));
     }
 
     /// <summary>Back to the whole map: the answer's nodes stop standing out, features opened for it close, and the camera fits the world again.</summary>
@@ -100,5 +117,61 @@ internal sealed partial class WholeMapViewModel
         (HitKeys, IsZoomed, MoreTouchedText) = (new HashSet<string>(StringComparer.Ordinal), false, string.Empty);
         Changed();
         FitRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    // Features the caller named, plus any opened feature that actually holds an answer node. Nodes outside the answer are dropped before placement.
+    private bool ZoomIntoAreas(WholeMapView overview, IReadOnlyList<WholeMapView> opened, IReadOnlyCollection<string> keys, IReadOnlyCollection<string> touchedAreas, int notOpened)
+    {
+        ArgumentNullException.ThrowIfNull(overview);
+        ArgumentNullException.ThrowIfNull(opened);
+        ArgumentNullException.ThrowIfNull(keys);
+        var hitKeys = keys.ToHashSet(StringComparer.Ordinal);
+        var openedHits = WithHits(opened, hitKeys);
+        if (openedHits.Count == 0)
+        {
+            return false;
+        }
+
+        var relevant = Relevant(overview, touchedAreas, openedHits);
+        var geometry = WholeMapLayout.PlaceMixed(relevant, openedHits);
+        var more = notOpened > 0 ? Labels.ContextWholeMoreTouched(notOpened) : string.Empty;
+        return geometry.Nodes.Count > 0 && ApplyZoom(geometry, relevant.Areas, more);
+    }
+
+    private static List<WholeMapView> WithHits(IReadOnlyList<WholeMapView> opened, HashSet<string> hitKeys) =>
+        [.. opened.Select(area => area with
+        {
+            Nodes = [.. (area.Nodes ?? []).Where(n => hitKeys.Contains(n.Key))],
+            Edges = [.. (area.Edges ?? []).Where(e => hitKeys.Contains(e.From) && hitKeys.Contains(e.To))],
+        }).Where(area => area.Area is not null && area.Nodes is { Count: > 0 })];
+
+    private static WholeMapView Relevant(WholeMapView overview, IReadOnlyCollection<string> touchedAreas, List<WholeMapView> openedHits)
+    {
+        var touched = touchedAreas.ToHashSet(StringComparer.Ordinal);
+        foreach (var area in openedHits)
+        {
+            if (area.Area is { } info)
+            {
+                touched.Add(info.Key);
+            }
+        }
+
+        return overview with
+        {
+            Areas = [.. overview.Areas.Where(a => touched.Contains(a.Key))],
+            AreaEdges = [.. overview.AreaEdges.Where(e => touched.Contains(e.From) && touched.Contains(e.To))],
+        };
+    }
+
+    private bool ApplyZoom(WholeMapGeometry geometry, IReadOnlyList<WholeArea> areas, string moreTouched)
+    {
+        var byKey = areas.ToDictionary(a => a.Key, StringComparer.Ordinal);
+        _beforeZoom ??= (Answer, Geometry, Areas);
+        Geometry = geometry;
+        Areas = [.. geometry.Order.Select((key, i) => new WholeAreaTileViewModel(byKey[key], i, OpenArea))];
+        (HitKeys, IsZoomed, MoreTouchedText) = (geometry.Nodes.Select(n => n.Key).ToHashSet(StringComparer.Ordinal), true, moreTouched);
+        Changed();
+        ZoomRequested?.Invoke(this, new ValueEventArgs<WholeRect>(WholeZoomBox.Around([.. geometry.Nodes.Select(n => n.Rect)])));
+        return true;
     }
 }

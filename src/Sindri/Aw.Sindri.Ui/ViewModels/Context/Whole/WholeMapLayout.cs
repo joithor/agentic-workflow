@@ -93,6 +93,11 @@ internal static class WholeMapLayout
         var nodes = opened.SelectMany(o => o.Nodes ?? []).GroupBy(n => n.Key, StringComparer.Ordinal).Select(g => g.First()).ToList();
         var edges = opened.SelectMany(o => o.Edges ?? []).GroupBy(e => e.Link, StringComparer.Ordinal).Select(g => g.First()).ToList();
         var columns = Columns(overview with { Areas = [.. overview.Areas.Where(a => openKeys.Contains(a.Key))], AreaEdges = [], Nodes = nodes, Edges = edges, Detail = "nodes", Area = null }, open, nodes);
+        if (rest.Count == 0)
+        {
+            return columns;
+        }
+
         var restEdges = overview.AreaEdges.Where(e => restKeys.Contains(e.From) && restKeys.Contains(e.To)).ToList();
         var tiles = Tiles(overview with { Areas = rest, AreaEdges = restEdges }, WholeAreaOrder.Of(rest, restEdges));
         var shift = columns.World.Right + TileGap;

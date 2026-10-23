@@ -63,11 +63,20 @@ internal sealed partial class ContextPageViewModel
             return true;
         }
 
-        return Whole.ZoomIntoAreas(overview, [.. reads.Select(r => r.Value)], keys, touched.Count - reads.Length);
+        var touchedKeys = new List<string>();
+        foreach (var key in touched)
+        {
+            if (key is { } area)
+            {
+                touchedKeys.Add(area);
+            }
+        }
+
+        return Whole.ZoomIntoAreas(overview, [.. reads.Select(r => r.Value)], keys, touchedKeys);
     }
 
     /// <summary>
-    /// A click on a node of the whole map: a node of the answer the camera is on opens in the inspector; any other node (dimmed behind the answer, or any node when nothing is zoomed to)
+    /// A click on a node of the whole map: a node of the answer the camera is on opens in the inspector. Any other node, which is on the graph only when nothing is zoomed to,
     /// becomes the new starting point, read like a picked suggestion, and the camera eases to its answer.
     /// </summary>
     /// <param name="key">The node's key.</param>

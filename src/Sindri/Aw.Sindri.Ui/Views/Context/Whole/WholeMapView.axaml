@@ -17,22 +17,25 @@
       <TextBlock x:Name="WholeNote" Classes="body" Text="{Binding ByAreaNote}" IsVisible="{Binding HasNote}" TextWrapping="Wrap" AutomationProperties.Name="{Binding ByAreaNote}" />
     </StackPanel>
 
-    <ItemsControl x:Name="WholeAreas" Grid.Row="1" ItemsSource="{Binding Areas}" AutomationProperties.Name="{Binding AreasName}">
-      <ItemsControl.ItemsPanel>
-        <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
-      </ItemsControl.ItemsPanel>
-      <ItemsControl.ItemTemplate>
-        <DataTemplate x:DataType="vm:WholeAreaTileViewModel">
-          <Button Classes="area-chip" Click="OnAreaChip" Margin="0,0,6,6" Padding="8,2" AutomationProperties.Name="{Binding Name}">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-              <Border Width="10" Height="10" CornerRadius="5" VerticalAlignment="Center" Background="{Binding Colour, Converter={x:Static wv:AreaBrush.Instance}}" />
-              <TextBlock Classes="caption" Text="{Binding Label}" AutomationProperties.AccessibilityView="Raw" />
-              <TextBlock Classes="caption subtle" Text="{Binding MembersText}" AutomationProperties.AccessibilityView="Raw" />
-            </StackPanel>
-          </Button>
-        </DataTemplate>
-      </ItemsControl.ItemTemplate>
-    </ItemsControl>
+    <!-- Bounded so a repository of features cannot push the graph out of the fixed stage. The list scrolls inside itself. -->
+    <ScrollViewer x:Name="WholeAreasScroll" Grid.Row="1" MaxHeight="112" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" IsTabStop="False">
+      <ItemsControl x:Name="WholeAreas" ItemsSource="{Binding Areas}" AutomationProperties.Name="{Binding AreasName}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:WholeAreaTileViewModel">
+            <Button Classes="area-chip" Click="OnAreaChip" Margin="0,0,6,6" Padding="8,2" AutomationProperties.Name="{Binding Name}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Border Width="10" Height="10" CornerRadius="5" VerticalAlignment="Center" Background="{Binding Colour, Converter={x:Static wv:AreaBrush.Instance}}" />
+                <TextBlock Classes="caption" Text="{Binding Label}" AutomationProperties.AccessibilityView="Raw" />
+                <TextBlock Classes="caption subtle" Text="{Binding MembersText}" AutomationProperties.AccessibilityView="Raw" />
+              </StackPanel>
+            </Button>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
 
     <Grid Grid.Row="2">
       <ctl:ZoomBorder x:Name="WholeCanvas" AutomationProperties.Name="{Binding CanvasName}">
