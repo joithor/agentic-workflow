@@ -374,8 +374,10 @@ transitions:
   - { from: docs-merging, to: docs-merge-owner, on: wait.satisfied, when: { outcome: pending }, produces: [fact:docsMerge] }
   - { from: docs-merge-owner, to: docs-merging, on: step.completed, when: { outcome: merge },
       effects: [{ use: effect.pr.merge-docs, with: { pr: { fact: fact:pr }, trigger: ownerDesk } }] }
-  - { from: docs-merge-owner, to: merged, on: step.completed, when: { any: [ { outcome: done }, { outcome: leave } ] },
-      effects: [{ use: effect.pr.record, with: { kind: end, terminal: merged } }, { use: effect.pr.purge-marks, with: { pr: { fact: fact:pr } } }] }
+  - { from: docs-merge-owner, to: merged, on: step.completed, when: { outcome: done },
+      effects: [{ use: effect.pr.record, with: { kind: docsMerge, outcome: doneByHand, trigger: ownerDesk } }, { use: effect.pr.record, with: { kind: end, terminal: merged } }, { use: effect.pr.purge-marks, with: { pr: { fact: fact:pr } } }] }
+  - { from: docs-merge-owner, to: merged, on: step.completed, when: { outcome: leave },
+      effects: [{ use: effect.pr.record, with: { kind: docsMerge, outcome: left, trigger: ownerDesk } }, { use: effect.pr.record, with: { kind: end, terminal: merged } }, { use: effect.pr.purge-marks, with: { pr: { fact: fact:pr } } }] }
 
   - { from: owner, to: intake,  on: step.completed, when: { outcome: retry } }
   - { from: owner, to: stopped, on: step.completed, when: { outcome: stop },

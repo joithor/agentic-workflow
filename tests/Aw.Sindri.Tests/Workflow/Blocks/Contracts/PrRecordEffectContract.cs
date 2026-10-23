@@ -14,7 +14,7 @@ public sealed class PrRecordEffectContract : BlockContract
 
     protected override BlockDescriptor Descriptor => PrEffects.Record;
 
-    protected override string ExpectedHash => "sha256:a3c58e5dd81913f11883e7200cc3158ea24db2c82b7c4f2c52c3bff4ed1d7601";
+    protected override string ExpectedHash => "sha256:8f11e204e4f135a29b5e3ae0ec5ff558a515c277d176cfd360ca491ea2e44c47";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 
