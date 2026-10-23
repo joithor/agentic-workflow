@@ -12,7 +12,7 @@ internal sealed class ProcessChildLauncher : IChildLauncher
     {
         ArgumentNullException.ThrowIfNull(argv);
         ArgumentNullException.ThrowIfNull(environment);
-        var info = new ProcessStartInfo(argv[0]) { UseShellExecute = false };
+        var info = Composition.StartChild(argv[0]);
         foreach (var argument in argv.Skip(1))
         {
             info.ArgumentList.Add(argument);

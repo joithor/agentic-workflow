@@ -21,19 +21,23 @@ internal sealed class TemporalDevServer
     private readonly TimeSpan _readyWait = TimeSpan.FromSeconds(30);
     private readonly TimeSpan _stopWait = TimeSpan.FromSeconds(10);
     private readonly Func<int> _pickPort;
+    private readonly Func<string, IEnumerable<string>?, IReadOnlyDictionary<string, string?>?, ProcessStartInfo> _start;
 
     /// <summary>How many times a start picks fresh ports when the server exits because one was taken (the pick-then-bind race).</summary>
     internal const int MaxPortAttempts = 3;
 
     /// <summary>The production server: free ports come from the OS (bind 0, read, release).</summary>
-    public TemporalDevServer() : this(FreePort)
+    /// <param name="start">Makes the start info of the detaching shell (the child-environment factory).</param>
+    public TemporalDevServer(Func<string, IEnumerable<string>?, IReadOnlyDictionary<string, string?>?, ProcessStartInfo> start) : this(start, FreePort)
     {
     }
 
     /// <summary>A server whose ports come from <paramref name="pickPort"/> (tests inject one that loses the race).</summary>
+    /// <param name="start">Makes the start info of the detaching shell.</param>
     /// <param name="pickPort">Returns a loopback port believed free.</param>
-    internal TemporalDevServer(Func<int> pickPort)
+    internal TemporalDevServer(Func<string, IEnumerable<string>?, IReadOnlyDictionary<string, string?>?, ProcessStartInfo> start, Func<int> pickPort)
     {
+        _start = start;
         _pickPort = pickPort;
     }
 
@@ -45,7 +49,7 @@ internal sealed class TemporalDevServer
     {
         var home = Path.GetFullPath(start.SindriHome);
         var database = Path.Combine(home, SindriTemporal.DatabaseFile);
-        foreach (var found in DevServerProcesses.On(database))
+        foreach (var found in DevServerProcesses.On(_start, database))
         {
             if ((await DevServerProbe.Ask(found.Frontend, start.Namespace, _adoptWait, cancellationToken).ConfigureAwait(false)).Answer == DevServerAnswer.Ready)
             {
@@ -74,7 +78,7 @@ internal sealed class TemporalDevServer
             return;
         }
 
-        DevServerProcesses.Signal(server.ProcessId, "TERM");
+        DevServerProcesses.Signal(_start, server.ProcessId, "TERM");
         bool exited;
         try
         {
@@ -95,8 +99,13 @@ internal sealed class TemporalDevServer
     /// <summary>The servers running on <paramref name="home"/>'s database.</summary>
     /// <param name="home">The Sindri home.</param>
     /// <returns>The servers.</returns>
-    public static IReadOnlyList<RunningTemporalServer> Find(string home) =>
-        DevServerProcesses.On(Path.Combine(Path.GetFullPath(home), SindriTemporal.DatabaseFile));
+    public IReadOnlyList<RunningTemporalServer> Find(string home) =>
+        DevServerProcesses.On(_start, Path.Combine(Path.GetFullPath(home), SindriTemporal.DatabaseFile));
+
+    /// <summary>The CLI's version, or null when it can't be read.</summary>
+    /// <param name="executable">The 'temporal' executable.</param>
+    /// <returns>The version.</returns>
+    public string? Version(string executable) => DevServerProcesses.Version(_start, executable);
 
     private async Task<RunningTemporalServer> Launch(TemporalServerStart start, string home, string database, CancellationToken cancellationToken)
     {
@@ -191,13 +200,13 @@ internal sealed class TemporalDevServer
     ];
 
     /// <summary>Starts the server detached (see the class summary) and returns its pid, which /bin/sh prints.</summary>
-    private static int Detach(string executable, string[] server, string log)
+    private int Detach(string executable, string[] server, string log)
     {
         const string Script = "umask 077; log=$1; shift; "
             + "if [ -x /usr/bin/perl ]; then /usr/bin/perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV or die \"exec $ARGV[0]: $!\\n\"' \"$@\" </dev/null >>\"$log\" 2>&1 & "
             + "else \"$@\" </dev/null >>\"$log\" 2>&1 & fi; echo $!";
         string[] arguments = [.. new[] { "-c", Script, "sh", log, executable }, .. server];
-        var printed = DevServerProcesses.Capture("/bin/sh", arguments).Trim();
+        var printed = DevServerProcesses.Capture(_start, "/bin/sh", arguments).Trim();
         return int.TryParse(printed, NumberStyles.None, CultureInfo.InvariantCulture, out var pid)
             ? pid
             : throw new InvalidOperationException($"/bin/sh didn't print the dev server's pid (it printed '{printed}')");
@@ -206,7 +215,7 @@ internal sealed class TemporalDevServer
     /// <summary>SIGKILL, then waits (at most 10 s, not cancellable: the signal is sent and the exit follows at once) for the exit.</summary>
     private async Task Kill(int pid)
     {
-        DevServerProcesses.Signal(pid, "KILL");
+        DevServerProcesses.Signal(_start, pid, "KILL");
         _ = await Exited(pid, _stopWait, CancellationToken.None).ConfigureAwait(false);
     }
 
