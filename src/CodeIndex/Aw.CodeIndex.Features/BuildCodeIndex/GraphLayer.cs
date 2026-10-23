@@ -48,21 +48,9 @@ public sealed class GraphLayer(IRepoSnapshot snapshot, TimeProvider clock, IBody
 
         request.Progress.Report("graph");
         var ran = await RunGraph(graph, request, code, cancellationToken).ConfigureAwait(false);
-        if (ran.IsError && IsTimeout(ran.Error))
-        {
-            // A graphify run that ran out of time keeps the last good graph; the layer says it is unavailable (owner q93, 2026-10-23).
-            return Unavailable(ran.Error, now);
-        }
-
         if (ran.IsError)
         {
-            var emptied = await StoreGraph(build, EmptyGraph(request, code), cancellationToken).ConfigureAwait(false);
-            if (emptied.IsError)
-            {
-                return emptied.Error;
-            }
-
-            return Unavailable(ran.Error, now);
+            return await Failed(build, request, code, ran.Error, now, cancellationToken).ConfigureAwait(false);
         }
 
         var merged = await PlanAndStore(build, request, ran.Value, code, cancellationToken).ConfigureAwait(false);
@@ -74,6 +62,22 @@ public sealed class GraphLayer(IRepoSnapshot snapshot, TimeProvider clock, IBody
         var (planned, unread) = merged.Value;
         var detail = string.Create(CultureInfo.InvariantCulture, $"{planned.Files.Sum(f => f.Symbols.Count)} symbols, {planned.Edges.Count} calls, {ran.Value.Dropped + planned.Dropped} dropped{(unread > 0 ? $", {unread} files without text" : string.Empty)}");
         return new LayerRecord(LayerName.Graph, request.Commit.Value, LayerState.Ok, Code: null, detail, now);
+    }
+
+    // A failed run empties the graph, so a layer that is not ok never serves an edge of an earlier build, except a run that ran out of time:
+    // that keeps the last good graph and the layer says it is unavailable (owner q93, 2026-10-23).
+    private async ValueTask<Result<LayerRecord>> Failed(IIndexBuild build, BuildCodeIndexRequest request, IReadOnlyList<SnapshotFile> code, Error error, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        if (!IsTimeout(error))
+        {
+            var emptied = await StoreGraph(build, EmptyGraph(request, code), cancellationToken).ConfigureAwait(false);
+            if (emptied.IsError)
+            {
+                return emptied.Error;
+            }
+        }
+
+        return Unavailable(error, now);
     }
 
     private async ValueTask<Result<(GraphMerged Merged, int Unread)>> PlanAndStore(IIndexBuild build, BuildCodeIndexRequest request, GraphSnapshot graphJson, IReadOnlyList<SnapshotFile> code, CancellationToken cancellationToken)

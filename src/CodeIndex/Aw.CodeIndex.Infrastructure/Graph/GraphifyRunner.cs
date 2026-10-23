@@ -108,7 +108,7 @@ internal sealed partial class GraphifyRunner(GraphifyOptions options, IBodyScrub
         var snapshot = Directory.CreateDirectory(Path.Combine(run, "snapshot")).FullName;
         var priv = Directory.CreateDirectory(Path.Combine(run, "private")).FullName;
         _ = Directory.CreateDirectory(Path.Combine(priv, "cache"));
-        var written = await GraphSnapshotWriter.Write(request, snapshot, options, cancellationToken).ConfigureAwait(false);
+        var written = await GraphSnapshotWriter.Write(request, snapshot, cancellationToken).ConfigureAwait(false);
         if (written.IsError)
         {
             return CodeIndexErrors.GraphUnavailable.With("failed");

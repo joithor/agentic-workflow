@@ -14,10 +14,9 @@ internal static class GraphSnapshotWriter
     /// <summary>Writes the files.</summary>
     /// <param name="request">The files and where their contents come from.</param>
     /// <param name="root">The snapshot folder (already made).</param>
-    /// <param name="options">The graphify options.</param>
     /// <param name="cancellationToken">Cancels the copy.</param>
     /// <returns>Success, or the blob reader's error.</returns>
-    public static async Task<Result<Unit>> Write(GraphRequest request, string root, GraphifyOptions options, CancellationToken cancellationToken)
+    public static async Task<Result<Unit>> Write(GraphRequest request, string root, CancellationToken cancellationToken)
     {
         var anchor = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
         foreach (var file in request.Files)

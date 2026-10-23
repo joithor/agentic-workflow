@@ -43,7 +43,7 @@ public sealed class GraphCapsRemovedTests : IDisposable
         var request = new GraphRequest(RepoName.From("demo"), CommitSha.From(new string('1', 40)), files, new Blobs(), CodeIndexSettings.Default.Graph);
         var snapshot = Directory.CreateDirectory(Path.Combine(_root, "snapshot")).FullName;
 
-        var written = await GraphSnapshotWriter.Write(request, snapshot, options, TestContext.Current.CancellationToken);
+        var written = await GraphSnapshotWriter.Write(request, snapshot, TestContext.Current.CancellationToken);
 
         Assert.False(written.IsError);
         Assert.Equal(141, Directory.GetFiles(snapshot).Length);

@@ -73,21 +73,28 @@ internal sealed class CodeIndexJobScopes(IApprovedProfile approvals, ICallerCont
     /// <summary>The whole 'index:' section a repo sees: the profile's list keys joined with the repo's, each scalar the repo names replacing the profile's (spec §13).</summary>
     private static CodeIndexSettingsInput Input(SindriProfile profile, RepoEntry entry)
     {
-        var top = profile.Index;
-        var own = entry.Index;
-        return new CodeIndexSettingsInput(
+        var top = profile.Index ?? new IndexSettings();
+        var own = entry.Index ?? new IndexSettings();
+        var input = new CodeIndexSettingsInput(
             DenyPaths: RepoDenyGlobs.For(profile, entry),
-            UtilityGlobs: Join(top?.UtilityGlobs, own?.UtilityGlobs),
-            MaxFileKB: own?.MaxFileKB ?? top?.MaxFileKB,
-            MaxTotalMB: own?.MaxTotalMB ?? top?.MaxTotalMB,
-            EmbeddingsEnabled: own?.Embeddings?.Enabled ?? top?.Embeddings?.Enabled,
-            EmbeddingsUrl: own?.Embeddings?.Url ?? top?.Embeddings?.Url,
-            EmbeddingsModel: own?.Embeddings?.Model ?? top?.Embeddings?.Model,
-            GraphEnabled: own?.Graph?.Enabled ?? top?.Graph?.Enabled,
-            GraphMaxMB: own?.Graph?.MaxMB ?? top?.Graph?.MaxMB);
+            UtilityGlobs: Join(top.UtilityGlobs, own.UtilityGlobs),
+            MaxFileKB: own.MaxFileKB ?? top.MaxFileKB,
+            MaxTotalMB: own.MaxTotalMB ?? top.MaxTotalMB);
+        return WithGraph(WithEmbeddings(input, top.Embeddings, own.Embeddings), top.Graph, own.Graph);
     }
 
-    private static IReadOnlyList<string>? Join(IReadOnlyList<string>? first, IReadOnlyList<string>? second)
+    private static CodeIndexSettingsInput WithEmbeddings(CodeIndexSettingsInput input, EmbeddingSettings? top, EmbeddingSettings? own)
+        => input with
+        {
+            EmbeddingsEnabled = own?.Enabled ?? top?.Enabled,
+            EmbeddingsUrl = own?.Url ?? top?.Url,
+            EmbeddingsModel = own?.Model ?? top?.Model,
+        };
+
+    private static CodeIndexSettingsInput WithGraph(CodeIndexSettingsInput input, GraphSettings? top, GraphSettings? own)
+        => input with { GraphEnabled = own?.Enabled ?? top?.Enabled, GraphMaxMB = own?.MaxMB ?? top?.MaxMB };
+
+    private static string[]? Join(IReadOnlyList<string>? first, IReadOnlyList<string>? second)
     {
         string[] all = [.. first ?? [], .. second ?? []];
         return all.Length == 0 ? null : all;
