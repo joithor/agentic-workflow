@@ -290,9 +290,9 @@ is why `SND-CONTEXT-021`, `-022`, `-023` and `-030` get a `shared` variant of th
 | built, empty result | an empty list and the `nothing found` line |
 | built, behind main | the answer with the state note `stale` and `lagSeconds` |
 | business context withheld (the owner switched it off) | the answer plus the `withheld` note (no count, no source) |
-| `context_map_whole`, build or first clone running | a result with `ready: false`, the `setting up` note and the `building` and `noMap` facts of the counts PR (branch `feat/context-whole-map-counts`; Part D §2.5) |
+| `context_map_whole`, build or first clone running | a result with `ready: false`, the `setting up` note and the `building` and `noMap` facts of the counts PR (branch `feat/context-whole-map-counts`; Part D §2.5), iff `building` is present or `noMap.firstRunStartedAt` is set; for a `shared` caller `noMap.repos` holds only the caller's repo and `building.jobId` is dropped |
 | `context_map_whole`, no map and nothing building | `SND-CONTEXT-030`, `shared` text, as for the other tools |
-| `context_map_whole`, an `area` that matches nothing (or whose members the view drops) | `SND-CONTEXT-200`, `shared` text; the same code over HTTP and through the tool |
+| `context_map_whole`, an `area` that matches nothing (or whose members the view drops) | `SND-CONTEXT-200`, `shared` text (the tool wording, as for every MCP caller); the same code over HTTP and through the tool |
 | `context_map_whole`, a `budget` outside 1 to 400 | `SND-CONTEXT-006`, `shared` text |
 | Onyx down, switch on (the default) | the code and docs answer plus the existing note that Onyx is unavailable (`SND-CONTEXT-010`); with the switch off Onyx is never asked, so its being down is invisible to the agent |
 
@@ -540,7 +540,7 @@ camera into it, `GET /sindri/context/map/whole` with a node and an area level. I
 connected app); the HTTP route is not served to the cluster (the guard of §B.2 gives a non-loopback caller 404 for it). **Agents,
 the cluster's included, read the whole map through a new MCP tool, `context_map_whole`** (the owner's answer q79; Part D §2.5): it
 is one of the six `context_*` tools a `shared` caller is offered, takes an optional `area` key and a node `budget` (default 150, at most
-400), and groups an over-budget map by feature, so an agent's context is not flooded (a default answer near 10,000 tokens, the largest under the host's 25,000-token output limit; Part D §2.5 has the arithmetic).
+400), and groups an over-budget map by feature, so an agent's context is not flooded (the largest answer under the host's 25,000-token output limit by a 60,000-byte ceiling; the default sits near the host's 10,000-token warning; Part D §2.5 has the arithmetic).
 
 ## 6. Security
 
