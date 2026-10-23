@@ -167,4 +167,54 @@ public sealed class WholeMapViewModelTests
 
         Assert.Equal((colour, pattern), (c, p.ToString()));
     }
+
+    [Fact]
+    public void Zooming_marks_the_answers_nodes_asks_the_camera_for_their_box_and_unzooming_fits_the_world_again()
+    {
+        var map = new WholeMapViewModel(() => _utc);
+        map.Show(WholeMapLayoutTests.Draft("nodes-small"));
+        var asked = new List<WholeRect>();
+        var fits = 0;
+        map.ZoomRequested += (_, e) => asked.Add(e.Value);
+        map.FitRequested += (_, _) => fits++;
+        var some = map.Geometry!.Nodes.Take(2).Select(n => n.Key).ToList();
+
+        Assert.True(map.Zoom([.. some, "feature:not.on.the.map"]));
+
+        Assert.Equal((true, true), (map.IsZoomed, map.HitKeys.SetEquals(some)));
+        Assert.Equal(WholeZoomBox.Around([.. map.Geometry.Nodes.Where(n => some.Contains(n.Key)).Select(n => n.Rect)]), Assert.Single(asked));
+        map.Unzoom();
+        Assert.Equal((false, 0, 1), (map.IsZoomed, map.HitKeys.Count, fits));
+    }
+
+    [Fact]
+    public void Nothing_on_the_map_moves_nothing()
+    {
+        var map = new WholeMapViewModel(() => _utc);
+        map.Show(WholeMapLayoutTests.Draft("nodes-small"));
+        var moved = false;
+        map.ZoomRequested += (_, _) => moved = true;
+
+        Assert.False(map.Zoom(["feature:not.on.the.map"]));
+
+        Assert.Equal((false, false), (moved, map.IsZoomed));
+    }
+
+    [Fact]
+    public void Zooming_into_features_opens_them_beside_the_tiles_that_stay_and_counts_the_ones_left_out()
+    {
+        var map = new WholeMapViewModel(() => _utc);
+        var overview = WholeMapLayoutTests.Draft("areas-over-budget");
+        map.Show(overview);
+        var opened = WholeMapLayoutTests.Draft("area-open");
+        var key = opened.Nodes![0].Key;
+
+        Assert.True(map.ZoomIntoAreas(overview, [opened], [key], notOpened: 2));
+
+        Assert.Equal(("2 more features touched", true), (map.MoreTouchedText, map.HasMoreTouched));
+        Assert.Equal(opened.Nodes.Count, map.Geometry!.Nodes.Count);
+        Assert.Equal(overview.Areas.Count - 1, map.Geometry.Tiles.Count);
+        map.Unzoom();
+        Assert.Equal((true, 0, string.Empty), (map.Geometry!.ByArea, map.Geometry.Nodes.Count, map.MoreTouchedText));
+    }
 }
