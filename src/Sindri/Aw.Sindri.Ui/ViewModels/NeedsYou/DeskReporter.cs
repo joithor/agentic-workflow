@@ -36,7 +36,7 @@ internal sealed class DeskReporter(ISindriApi api, Func<Uri?> apiUrl, ILauncher?
         var recipe = await api.Recipe(url, read.Value.Recipe.Id, hash: null, CancellationToken.None).ConfigureAwait(true);
         var state = recipe.IsSuccess ? recipe.Value.States.FirstOrDefault(s => string.Equals(s.State, read.Value.Current.State, StringComparison.Ordinal)) : null;
         var card = read.Value.Facts.Any(f => string.Equals(f.Key, PrStatusReader.Key, StringComparison.Ordinal)) ? await MergeCard(url, instanceId).ConfigureAwait(true) : null;
-        return new DeskTarget(instanceId, desk.Run, complete, state?.Why, OutcomeText(state, "approve"), OutcomeText(state, "revise"), card);
+        return new DeskTarget(instanceId, desk.Run, complete, state?.Why, OutcomeText(state, "approve"), OutcomeText(state, "revise"), desk.Recommended, card);
     }
 
     // The merge stop's pull request, when the instance lists it and it reads; a fact that cannot be read leaves the card out, never the request.
