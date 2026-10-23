@@ -25,5 +25,5 @@ public sealed class ScopeEvidenceStepContract : BlockContract
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await new ScopeEvidenceStep(new InMemoryRunArea(), new InMemoryPackets()).Run(ScopingStepContexts.Of("step.scope.evidence", []), cancellationToken);
+        _ = await new ScopeEvidenceStep(new InMemoryRunArea(), new InMemoryPackets(), new InMemoryRepoCheckouts(), new FakeRunDiff()).Run(ScopingStepContexts.Of("step.scope.evidence", []), cancellationToken);
 }

@@ -16,6 +16,7 @@ public sealed class FakeCodeIndex : ICodeIndex
     private readonly Dictionary<RepoName, Repo> _repos = [];
     private readonly List<CodeIndexScope> _scopes = [];
     private readonly List<RepoName> _embeds = [];
+    private readonly HashSet<RepoName> _buildable = [];
 
     /// <summary>The scopes the calls came with, in order (a test asserts a session's scope held only its repo).</summary>
     public IReadOnlyList<CodeIndexScope> Scopes => _scopes;
@@ -71,6 +72,15 @@ public sealed class FakeCodeIndex : ICodeIndex
     /// <summary>When set, <see cref="Embed"/> answers this error instead of embedding.</summary>
     public Error? EmbedError { get; set; }
 
+    /// <summary>Makes <see cref="ProbeLayers"/> report the repo's graph layer as buildable now (the box was fixed).</summary>
+    /// <param name="repo">The repo.</param>
+    /// <returns>This fake.</returns>
+    public FakeCodeIndex WithGraphBuildable(RepoName repo)
+    {
+        _ = _buildable.Add(repo);
+        return this;
+    }
+
     /// <summary>Marks a repo's index as damaged.</summary>
     /// <param name="repo">The repo.</param>
     /// <returns>This fake.</returns>
@@ -116,11 +126,15 @@ public sealed class FakeCodeIndex : ICodeIndex
         return Ok<IReadOnlyList<RecordedHead>>([.. scope.Repos.Select(r => new RecordedHead(r.Name, Readable(r.Name)?.Commit))]);
     }
 
+    /// <summary>How many times <see cref="ProbeLayers"/> was called.</summary>
+    public int ProbeCalls { get; private set; }
+
     public ValueTask<Result<IReadOnlyList<LayerProbe>>> ProbeLayers(CodeIndexScope scope, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(scope);
+        ProbeCalls++;
         _scopes.Add(scope);
-        return Ok<IReadOnlyList<LayerProbe>>([.. scope.Repos.Select(r => new LayerProbe(r.Name, []))]);
+        return Ok<IReadOnlyList<LayerProbe>>([.. scope.Repos.Select(r => new LayerProbe(r.Name, _buildable.Contains(r.Name) ? [LayerName.Graph] : []))]);
     }
 
     public ValueTask<Result<FindSymbolsAnswer>> FindSymbols(CodeIndexScope scope, SymbolQuery query, CancellationToken cancellationToken)
