@@ -13,7 +13,7 @@ internal static class LineRows
     internal static IReadOnlyList<CommandRow> All { get; } =
     [
         new(ActionId.From("ShowLineHoldout"), typeof(ShowLineHoldoutRequest), Variant: null, ActionClass.Protected, ServiceGrants: [],
-            NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
+            NeedsTerminal: true, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
             "POST", "/sindri/line/holdout/show", ShellRows.Form("sindri line holdout show <line> <phase>"), "cli-only:typed-confirmation"),
     ];
 }

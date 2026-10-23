@@ -41,7 +41,7 @@ public static class ActionClassifier
         var action = ActionId.TryFrom(variant is null ? name : name + ":" + variant, out var full) ? full
             : ActionId.TryFrom(name, out var plain) ? plain
             : ActionId.From(Unknown);
-        return Protect(new CommandRow(action, type, variant, ActionClass.Protected, ServiceGrants: [], NeedsTerminal: false, SelfAudited: false,
+        return Protect(new CommandRow(action, type, variant, ActionClass.Protected, ServiceGrants: [], NeedsTerminal: true, SelfAudited: false,
             Destructive: false, ReadsViews: false, Shortcut: null, known?.Method, known?.Route, known?.Cli ?? CliForm.Parse("sindri").Value,
             "cli-only:unclassified"));
     }

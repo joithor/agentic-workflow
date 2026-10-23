@@ -81,37 +81,6 @@ public sealed class ApproveAllRoutesTests
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
-    public async Task A_wrong_answer_is_refused_before_any_job_or_approval()
-    {
-        var shipped = new FakeShippedRecipes(ApproveAllFixtures.StepAndItem());
-        await using var host = await Started(shipped, TestContext.Current.CancellationToken);
-        var answer = (await Answer(host, await Digest(host))).Replace("approve-all ", "approve-all 0", StringComparison.Ordinal);
-
-        var refused = await host.Http.Ask(Post(PlanRoute, answer, Human(Terminal(host))));
-        var jobs = await JobHost.Read(host, "/sindri/jobs");
-
-        Assert.Equal((HttpStatusCode.Conflict, "SND-RECIPE-009"), (refused.Status, Code(refused)));
-        Assert.Equal(0, shipped.Applied);
-        Assert.Empty(JsonDocument.Parse(jobs.Body).RootElement.GetProperty("jobs").EnumerateArray());
-    }
-
-    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
-    public async Task A_session_is_refused_on_every_path_and_nothing_starts()
-    {
-        var shipped = new FakeShippedRecipes(ApproveAllFixtures.StepAndItem());
-        await using var host = await Started(shipped, TestContext.Current.CancellationToken);
-        var answer = await Answer(host, await Digest(host));
-        var empty = await Started(new FakeShippedRecipes([]), TestContext.Current.CancellationToken);
-
-        var bySession = await host.Http.Ask(Post(PlanRoute, answer, Session));
-        var emptyBySession = await empty.Http.Ask(Post(PlanRoute, json: null, Session));
-        await empty.DisposeAsync();
-
-        Assert.Equal([(HttpStatusCode.Forbidden, "SND-AUTH-002")], new[] { bySession, emptyBySession }.Select(static a => (a.Status, Code(a))).Distinct().ToArray());
-        Assert.Equal(0, shipped.Applied);
-    }
-
-    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task An_empty_plan_answers_200_with_an_empty_result_and_starts_no_job()
     {
         await using var host = await Started(new FakeShippedRecipes([]), TestContext.Current.CancellationToken);

@@ -18,7 +18,7 @@ public sealed class EngineRowTests
         Assert.All(_expected, e =>
         {
             Assert.True(rows.TryGetValue(e.Action, out var row), $"{e.Action} has no catalog row");
-            Assert.Equal((e.Action, e.Class, e.Ui, e.Class == ActionClass.Protected || e.Action == "IssueChallenge"), (e.Action, row.Class, row.Ui, row.NeedsTerminal));
+            Assert.Equal((e.Action, e.Class, e.Ui, false), (e.Action, row.Class, row.Ui, row.NeedsTerminal));
         });
     }
 

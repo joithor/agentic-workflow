@@ -103,13 +103,16 @@ public sealed class AuthorizationTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_flag_on_a_row_no_longer_narrows_who_may_run_it()
+    public void A_row_that_needs_a_terminal_still_refuses_everyone_but_a_human_at_one_and_AppConfirm_narrows_nobody()
     {
-        var row = Rows.Of(ActionClass.Issue, "IssueChallenge") with { NeedsTerminal = true, AppConfirm = true };
+        var row = Rows.Of(ActionClass.Protected, "ShowLineHoldout") with { NeedsTerminal = true };
+        var flagged = Rows.Of(ActionClass.Protected, "ApproveProfile") with { AppConfirm = true };
 
-        Assert.True(Table.Decide(ActionClass.Issue, A.Caller().AtTerminal().Build(), row).Allowed);
-        Assert.True(Table.Decide(ActionClass.Issue, A.Caller().Human().Build(), row).Allowed);
-        Assert.True(Table.Decide(ActionClass.Issue, A.Caller().Session().Build(), row).Allowed);
+        Assert.True(Table.Decide(ActionClass.Protected, A.Caller().AtTerminal().Build(), row).Allowed);
+        Assert.False(Table.Decide(ActionClass.Protected, A.Caller().Human().Build(), row).Allowed);
+        Assert.False(Table.Decide(ActionClass.Protected, A.Caller().Session().Build(), row).Allowed);
+        Assert.True(Table.Decide(ActionClass.Protected, A.Caller().Session().Build(), flagged).Allowed);
+        Assert.True(Table.Decide(ActionClass.Protected, A.Caller().Human().Build(), flagged).Allowed);
     }
 
     [Fact, Trait("Lane", "unit")]

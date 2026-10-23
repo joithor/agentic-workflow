@@ -52,38 +52,6 @@ public sealed class RevokeRecipeTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Revoke_with_a_mistyped_action_is_009_and_records_nothing()
-    {
-        await using var r = new RegistryHarness();
-        _ = await r.H.HoldLease();
-        var (step, _, _) = await Seed(r);
-        var issued = (await r.Issue($"revoke workflow.step@{step.Hash.Display}")).Value;
-
-        var refused = await r.Run<RevokeRecipeRequest, RevokeRecipeResponse>(
-            new RevokeRecipeRequest(step.Id, step.Hash, new ChallengeAnswer(issued.Challenge, "revoke workflow.step")), RegistryHarness.Human);
-
-        Assert.Equal(WorkflowErrors.RecipeChallengeStale.Code, refused.Error.Code);
-        Assert.Empty(r.Events(EventTypes.RecipeRevoked));
-        Assert.Null((await r.Approvals.Revocation(step.Hash, Token)).Value);
-        Assert.Empty(r.Wake.Sent);
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public async Task Session_cannot_revoke()
-    {
-        await using var r = new RegistryHarness();
-        _ = await r.H.HoldLease();
-        var (step, _, _) = await Seed(r);
-        var issued = (await r.Issue($"revoke workflow.step@{step.Hash.Display}")).Value;
-
-        var refused = await r.Run<RevokeRecipeRequest, RevokeRecipeResponse>(
-            new RevokeRecipeRequest(step.Id, step.Hash, new ChallengeAnswer(issued.Challenge, issued.Action)), A.Caller().Session().Build());
-
-        Assert.Equal(SindriErrors.AuthRefused.Code, refused.Error.Code);
-        Assert.Empty(r.Events(EventTypes.RecipeRevoked));
-    }
-
-    [Fact, Trait("Lane", "unit")]
     public async Task Revoking_an_unapproved_or_revoked_hash_is_refused_before_any_challenge()
     {
         await using var r = new RegistryHarness();

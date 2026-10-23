@@ -30,7 +30,7 @@ public sealed class ApplyCommandForwardingTests
     public ApplyCommandForwardingTests()
     {
         _challenges = new InMemoryChallenges(_clock);
-        _service = new ApplyCommandService(_instance, _instance, _instance, new InMemoryCommandNonces(_clock), _challenges, _instance);
+        _service = new ApplyCommandService(_instance, _instance, _instance, new InMemoryCommandNonces(_clock), _instance);
         _instance.MirrorChild(_child);
     }
 

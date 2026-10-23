@@ -31,7 +31,7 @@ public sealed class ApplyCommandRetryTests
     {
         _nonces = new InMemoryCommandNonces(_clock);
         _challenges = new InMemoryChallenges(_clock);
-        _service = new ApplyCommandService(_instance, _instance, _instance, _nonces, _challenges, _instance);
+        _service = new ApplyCommandService(_instance, _instance, _instance, _nonces, _instance);
     }
 
     [Fact(Timeout = 30_000)]
