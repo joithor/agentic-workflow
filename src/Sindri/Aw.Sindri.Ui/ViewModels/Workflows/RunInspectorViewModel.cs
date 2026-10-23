@@ -216,7 +216,7 @@ internal sealed partial class RunInspectorViewModel(ISindriApi api, IClipboard c
     internal Task CopyTerminal(CancellationToken cancellationToken) =>
         HasTerminal ? clipboard.SetText(Row!.Protected!.Cli, cancellationToken) : Task.CompletedTask;   // why: HasTerminal holds only for a row with a protected answer
 
-    /// <summary>Review and decide: goes to the Needs you row of the run's item, else to the item, else to the run. Nothing is approved here.</summary>
+    /// <summary>Review and decide: goes to the run's parked child (its frame opens at the answer), else the Needs you row of the run's item, else the item, else the run. Never nothing, and nothing is approved here.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>A task that completes when the shell was asked.</returns>
     internal async Task ReviewAndDecide(CancellationToken cancellationToken)
@@ -226,10 +226,18 @@ internal sealed partial class RunInspectorViewModel(ISindriApi api, IClipboard c
             return;
         }
 
+        if (WaitingChild() is { } child)
+        {
+            OpenRequested?.Invoke(this, new OpenRequestedEventArgs(new DeepLink(DeepLinkKind.Workflow, child.Address), FrameIntent.OpenInitial));
+            return;
+        }
+
         var link = row.Link;
+        var intent = FrameIntent.FocusChildren;   // the run's own frame, at its children, when nothing more specific is known
         if (_detail?.ItemId is { Length: > 0 } item)
         {
             link = new DeepLink(DeepLinkKind.Item, item);
+            intent = FrameIntent.None;
             if (_url is { } url && (await api.NeedsYou(url, cancellationToken).ConfigureAwait(true)) is { IsSuccess: true, Value: var list }
                 && list.Rows.FirstOrDefault(r => string.Equals(r.Item, item, StringComparison.Ordinal)) is { } waiting)
             {
@@ -237,7 +245,14 @@ internal sealed partial class RunInspectorViewModel(ISindriApi api, IClipboard c
             }
         }
 
-        OpenRequested?.Invoke(this, new OpenRequestedEventArgs(link));
+        OpenRequested?.Invoke(this, new OpenRequestedEventArgs(link, intent));
+    }
+
+    // The child that waits on the user (a parked step first), as the stage list shows it.
+    private ChildRow? WaitingChild()
+    {
+        var rows = (_detail?.Children ?? []).SelectMany(g => g.Workstreams.SelectMany(w => w.Rows).Concat(g.Rows)).ToList();
+        return rows.Find(r => RunStatus.From(r.Chip).Kind == RunStatusKind.Paused) ?? rows.Find(r => RunStatus.From(r.Chip).Kind == RunStatusKind.WaitingForYou);
     }
 
     private TimeSpan Age(InstanceDetail detail) => clock.GetUtcNow() - detail.Since;
