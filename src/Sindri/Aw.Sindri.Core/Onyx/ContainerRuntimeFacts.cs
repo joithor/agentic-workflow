@@ -23,4 +23,10 @@ public sealed record ContainerRuntimeFacts(
     /// <summary>Gets a value indicating whether Docker's data lives in a VM (Docker Desktop, OrbStack), so the data root is not a directory on this host even if a directory of that name exists here.</summary>
     public bool DataInVm => OperatingSystem is { } os
         && (os.Contains("Desktop", StringComparison.OrdinalIgnoreCase) || os.Contains("OrbStack", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Gets which runtime serves the CLI: from <see cref="OperatingSystem"/> when the daemon answered, else from the <see cref="Endpoint"/>'s socket path.</summary>
+    public ContainerRuntimeKind Kind => DataInVm ? ContainerRuntimeKind.DockerDesktop : ContainerRuntimeKind.Docker;
+
+    /// <summary>Gets a value indicating whether the daemon may still come up by itself: a local one (or one whose endpoint couldn't be read) that is starting or not running, as opposed to a missing CLI, a refused socket, a missing context or another machine.</summary>
+    public bool DaemonMayStillStart => !DaemonAnswers;
 }
