@@ -106,6 +106,20 @@
   <Color x:Key="Color.VioletSoft">#170f2a</Color>
   <SolidColorBrush x:Key="Brush.VioletSoft" Color="{StaticResource Color.VioletSoft}" />
 
+  <!-- context whole map (whole-map spec §3.2): the bounded palette the areas are told apart by, each also by a pattern, never colour alone -->
+  <Color x:Key="Color.Area1">#7aa2f7</Color>
+  <SolidColorBrush x:Key="Brush.Area1" Color="{StaticResource Color.Area1}" />
+  <Color x:Key="Color.Area2">#e0af68</Color>
+  <SolidColorBrush x:Key="Brush.Area2" Color="{StaticResource Color.Area2}" />
+  <Color x:Key="Color.Area3">#7bd88f</Color>
+  <SolidColorBrush x:Key="Brush.Area3" Color="{StaticResource Color.Area3}" />
+  <Color x:Key="Color.Area4">#c792ea</Color>
+  <SolidColorBrush x:Key="Brush.Area4" Color="{StaticResource Color.Area4}" />
+  <Color x:Key="Color.Area5">#5fd4e0</Color>
+  <SolidColorBrush x:Key="Brush.Area5" Color="{StaticResource Color.Area5}" />
+  <Color x:Key="Color.Area6">#ff9e8f</Color>
+  <SolidColorBrush x:Key="Brush.Area6" Color="{StaticResource Color.Area6}" />
+
   <!-- §14.2 Type ramp at text scale 1.0: size and line height (px) per step. TextScale.Apply writes scaled copies over
        these (0.9–1.3) and records the scale in Type.Scale; the Typography.axaml styles read them as DynamicResource. -->
   <x:Double x:Key="Type.Scale">1</x:Double>
