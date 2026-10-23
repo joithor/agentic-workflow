@@ -1,3 +1,4 @@
+using Aw.Evidence.Core.Data;
 using Aw.Evidence.Core.Judging;
 
 namespace Aw.Evidence.Infrastructure.Judging;
@@ -7,7 +8,7 @@ namespace Aw.Evidence.Infrastructure.Judging;
 /// on stdin and the envelope parsed from stdout (docs/csharp/judge.md, 'Questions'). Until then it says it is not wired, as
 /// <see cref="UnavailableJudge"/> did, so callers neither call it nor record a model invocation.
 /// </summary>
-internal sealed class JudgeCliJudge : IJudge
+internal sealed class JudgeCliJudge(ICliRunner runner, IExecutableLocator locator, Func<string, string?>? environment = null) : IJudge
 {
     /// <inheritdoc/>
     public bool IsAvailable => false;
