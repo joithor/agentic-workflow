@@ -150,7 +150,7 @@ internal sealed partial class NeedsYouBarViewModel
         : TerminalOnly ? Labels.NeedsYouTerminalOnly
         : ShowsTerminal ? Labels.NeedsYouProtectedHint
         : Kind == BarKind.Settings ? Labels.NeedsYouKeepSettings
-        : "";
+        : SuggestedHint;
 
     /// <summary>True when there is a line to show.</summary>
     public bool HasHint => Hint.Length > 0;

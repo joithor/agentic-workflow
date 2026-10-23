@@ -57,9 +57,15 @@ internal sealed partial class RunPageViewModel
         var at = stages.FindIndex(n => string.Equals(n.Id, node.Id, StringComparison.Ordinal));
         var leadsTo = at >= 0 && at + 1 < stages.Count ? stages[at + 1].Name : null;
         var group = line.Children.FirstOrDefault(g => string.Equals(g.State, node.Id, StringComparison.Ordinal));
-        var extra = group is { Total: > 1 } ? Labels.RunPhasesDone(group.Done, group.Total) : string.Empty;
+        var extra = string.Join(" · ", new[] { group is { Total: > 1 } ? Labels.RunPhasesDone(group.Done, group.Total) : string.Empty, TimesOf(node) }.Where(t => t.Length > 0));
         return new RunCardViewModel(node, rect, at + 1, stages.Count, leadsTo, string.Equals(node.Id, active, StringComparison.Ordinal), extra);
     }
+
+    // How long the latest visit to a stage took, or has been going; nothing when the line does not say when it began.
+    private string TimesOf(RunNode node) => node.EnteredAt is not { } entered ? string.Empty
+        : node.LeftAt is { } left ? Labels.RunTook(Labels.Duration((long)Math.Max(0, (left - entered).TotalSeconds)))
+        : node.Kind == RunNodeKind.Stage && RunStates.IsActive(node.State) ? Labels.RunRunningFor(Labels.Duration((long)Math.Max(0, (clock.GetUtcNow() - entered).TotalSeconds)))
+        : string.Empty;
 
     private (IReadOnlyList<MapEdge> Edges, IReadOnlyList<RunPillViewModel> Pills) EdgesOf(RunGraph graph)
     {
@@ -107,14 +113,26 @@ internal sealed partial class RunPageViewModel
         Title = line.Title;
         Reference = line.Address;
         ReferenceCopy = new CopyAction(clipboard, clock, Labels.CopyAddressName(line.Address), Labels.RunCopyReference);
-        var started = runs.FirstOrDefault(r => string.Equals(r.Address, line.Address, StringComparison.Ordinal))?.StartedAt ?? line.Since;
-        StartedText = Labels.RunStarted(Labels.Duration((long)Math.Max(0, (clock.GetUtcNow() - started).TotalSeconds)));
+        var startedAt = runs.FirstOrDefault(r => string.Equals(r.Address, line.Address, StringComparison.Ordinal))?.StartedAt;   // the instance's own start, not a step run's
+        StartedText = StartedLine(startedAt, line);
         var state = graph.Nodes.FirstOrDefault(n => n.Kind == RunNodeKind.End && IsReached(line, n))?.State
             ?? graph.Nodes.FirstOrDefault(n => n.Kind == RunNodeKind.Stage && string.Equals(n.Id, ActiveNodeId, StringComparison.Ordinal))?.State
             ?? RunNodeState.NotStarted;
         var brushes = RunStates.Brushes(state);
         (HeaderState, HeaderWord, HeaderIcon, HeaderBrush, HeaderSoftBrush) = (state, RunStates.Word(state), RunStateIcons.Of(state), brushes.Text, brushes.Soft);
         Cancel = line.Actions.Contains(CancelAction, StringComparer.Ordinal) ? catalog.On(CancelAction, line.Address, send: null) : null;
+    }
+
+    // "Started 11:02 by you" when the instance says when it began; else how long the line has been where it is, as before.
+    private string StartedLine(DateTimeOffset? startedAt, InstanceDetail line)
+    {
+        if (startedAt is not { } at)
+        {
+            return Labels.RunStarted(Labels.Duration((long)Math.Max(0, (clock.GetUtcNow() - line.Since).TotalSeconds)));
+        }
+
+        var now = TimeZoneInfo.ConvertTime(clock.GetUtcNow(), clock.LocalTimeZone);
+        return Labels.WorkflowStarted(Labels.StartedClock(TimeZoneInfo.ConvertTime(at, clock.LocalTimeZone), now), line.StartedBy);
     }
 
     // An end card was reached when the line's own state is it.

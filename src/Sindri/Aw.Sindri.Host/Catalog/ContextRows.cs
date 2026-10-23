@@ -46,6 +46,10 @@ internal static class ContextRows
         new(ActionId.From("BuildCodeIndex"), typeof(BuildCodeIndexRequest), Variant: null, ActionClass.Job, ServiceGrants: [],
             NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
             Method: null, Route: null, ShellRows.Form("sindri services run code-index-main-move"), "ready"),
+        // EmbedCodeIndex has no route and no verb of its own (code index spec 6.3): the code-index-embed service starts it as itself, so the row names the verb that runs that service.
+        new(ActionId.From("EmbedCodeIndex"), typeof(EmbedCodeIndexRequest), Variant: null, ActionClass.Job, ServiceGrants: [],
+            NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
+            Method: null, Route: null, ShellRows.Form("sindri services run code-index-embed"), "ready"),
         new(ActionId.From("ImportContextMap"), typeof(ImportContextMapRequest), Variant: null, ActionClass.Protected, ServiceGrants: [],
             NeedsTerminal: true, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
             "POST", "/sindri/context/map/import", ShellRows.Form("sindri context map import <file>"), "cli-only:typed-confirmation"),

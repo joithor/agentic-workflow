@@ -100,4 +100,60 @@ public sealed class RunPageEndStatesTests
         Assert.Equal(Labels.RunSeeContext, option.Text);
         Assert.Equal(new DeepLink(DeepLinkKind.ContextItem, "ITM-01JN2"), option.Link);
     }
+
+    private async Task<RunPageViewModel> OpenedWithCatalog(InstanceDetail line, List<DeepLink>? links = null)
+    {
+        _server.InstanceBody = id => string.Equals(id, line.Id, StringComparison.Ordinal) ? Body(line) : Body(RunFixtures.Child(id["WFI-".Length..], ("produce", StateGlyph.Done, false)));
+        var catalog = new CatalogViewModel(new FakeClipboard(), new FakeTimeProvider(A.Noon));
+        catalog.Show(_api, _server, (await _server.Commands(_api, Token)).Value);
+        var page = new RunPageViewModel(_server, catalog, new FakeClipboard(), new FakeTimeProvider(A.Noon));
+        page.LinkRequested += (_, e) => links?.Add(e.Link);
+        await page.Open(_api, line.Address, line.Id, Token);
+        return page;
+    }
+
+    [Fact]
+    public async Task Run_again_is_offered_on_an_ended_run_only_when_the_server_lists_it()
+    {
+        var served = await OpenedWithCatalog(Ended("FAILED", "failed") with { Actions = ["RerunInstance"] });
+        var notServed = await OpenedWithCatalog(Ended("FAILED", "failed") with { Actions = [] });
+        var notEnded = await OpenedWithCatalog(RunFixtures.Line("plan") with { Actions = ["RerunInstance"] });
+
+        Assert.Equal(("RerunInstance", "Run again"), (served.Rerun!.Action, served.Rerun.Label));
+        Assert.Null(notServed.Rerun);
+        Assert.Null(notEnded.Rerun);
+    }
+
+    [Fact]
+    public async Task Pressing_Run_again_asks_for_the_rerun_once_and_opens_the_new_run()
+    {
+        var links = new List<DeepLink>();
+        var line = Ended("FAILED", "failed") with { Actions = ["RerunInstance"] };
+        var page = await OpenedWithCatalog(line, links);
+
+        await page.Rerun!.Press(Token);
+
+        Assert.Equal([line.Id], _server.Reruns, StringComparer.Ordinal);
+        var started = (string)GoldenFiles.Node("workflow-instances-start", "started")["instance"]!["address"]!;
+        Assert.Equal(new DeepLink(DeepLinkKind.Workflow, started), Assert.Single(links));
+    }
+
+    [Fact]
+    public async Task A_run_that_is_another_attempt_links_back_to_the_old_one()
+    {
+        var links = new List<DeepLink>();
+        var page = await OpenedWithCatalog(Ended("FAILED", "failed") with { Again = "ITM-01JKX/triage-alert/1" }, links);
+
+        Assert.Equal(("again of ITM-01JKX/triage-alert/1", true), (page.AgainText, page.HasAgain));
+        page.OpenAgain();
+        Assert.Equal(new DeepLink(DeepLinkKind.Workflow, "ITM-01JKX/triage-alert/1"), Assert.Single(links));
+    }
+
+    [Fact]
+    public async Task A_first_attempt_has_no_again_link()
+    {
+        var page = await OpenedWithCatalog(Ended("FAILED", "failed"));
+
+        Assert.Equal((false, string.Empty), (page.HasAgain, page.AgainText));
+    }
 }
