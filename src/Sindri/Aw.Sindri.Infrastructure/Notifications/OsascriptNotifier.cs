@@ -13,6 +13,7 @@ internal sealed class OsascriptNotifier : IOsNotifier
 {
     private static readonly TimeSpan _budget = TimeSpan.FromSeconds(5);
 
+    // 'display notification' has no click, so the deep link is unused here; a clickable notifier takes it.
     public async ValueTask Show(string title, string text, string? deepLink, CancellationToken cancellationToken)
     {
         if (!OperatingSystem.IsMacOS())
