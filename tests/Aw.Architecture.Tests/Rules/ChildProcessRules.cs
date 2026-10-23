@@ -18,8 +18,7 @@ public static class ChildProcessRules
     public static IEnumerable<Violation> Check(IEnumerable<Type> types, string factoryName)
     {
         ArgumentNullException.ThrowIfNull(types);
-        return types.Where(static t => !t.IsNested && t.Name != "<Module>")
-            .Where(t => t.Name != factoryName && IlScan.ConstructedTypes(t).Contains(typeof(ProcessStartInfo)))
+        return types.Where(t => !t.IsNested && t.Name != "<Module>" && t.Name != factoryName && IlScan.ConstructedTypes(t).Contains(typeof(ProcessStartInfo)))
             .Select(t => new Violation(Id, $"{t.FullName} constructs a ProcessStartInfo",
                 $"start the process with {factoryName}.Start(...) (Infrastructure/Processes), which applies the pod-mode child environment"));
     }

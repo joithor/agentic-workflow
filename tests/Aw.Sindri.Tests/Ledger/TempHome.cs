@@ -1,3 +1,4 @@
+using Aw.Sindri.Infrastructure.Processes;
 using Aw.Sindri.Infrastructure.Workflows;
 
 namespace Aw.Sindri.Tests.Ledger;
@@ -18,9 +19,9 @@ public sealed class TempHome : IDisposable
 
     public void Dispose()
     {
-        foreach (var server in TemporalDevServer.Find(Path))
+        foreach (var server in new TemporalDevServer(ChildEnvironment.Start).Find(Path))
         {
-            DevServerProcesses.Signal(server.ProcessId, "KILL");
+            DevServerProcesses.Signal(ChildEnvironment.Start, server.ProcessId, "KILL");
         }
 
         if (Directory.Exists(Path))

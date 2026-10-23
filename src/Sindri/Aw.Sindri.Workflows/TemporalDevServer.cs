@@ -49,7 +49,7 @@ internal sealed class TemporalDevServer
     {
         var home = Path.GetFullPath(start.SindriHome);
         var database = Path.Combine(home, SindriTemporal.DatabaseFile);
-        foreach (var found in DevServerProcesses.On(database))
+        foreach (var found in DevServerProcesses.On(_start, database))
         {
             if ((await DevServerProbe.Ask(found.Frontend, start.Namespace, _adoptWait, cancellationToken).ConfigureAwait(false)).Answer == DevServerAnswer.Ready)
             {
@@ -78,7 +78,7 @@ internal sealed class TemporalDevServer
             return;
         }
 
-        DevServerProcesses.Signal(server.ProcessId, "TERM");
+        DevServerProcesses.Signal(_start, server.ProcessId, "TERM");
         bool exited;
         try
         {
@@ -99,8 +99,13 @@ internal sealed class TemporalDevServer
     /// <summary>The servers running on <paramref name="home"/>'s database.</summary>
     /// <param name="home">The Sindri home.</param>
     /// <returns>The servers.</returns>
-    public static IReadOnlyList<RunningTemporalServer> Find(string home) =>
-        DevServerProcesses.On(Path.Combine(Path.GetFullPath(home), SindriTemporal.DatabaseFile));
+    public IReadOnlyList<RunningTemporalServer> Find(string home) =>
+        DevServerProcesses.On(_start, Path.Combine(Path.GetFullPath(home), SindriTemporal.DatabaseFile));
+
+    /// <summary>The CLI's version, or null when it can't be read.</summary>
+    /// <param name="executable">The 'temporal' executable.</param>
+    /// <returns>The version.</returns>
+    public string? Version(string executable) => DevServerProcesses.Version(_start, executable);
 
     private async Task<RunningTemporalServer> Launch(TemporalServerStart start, string home, string database, CancellationToken cancellationToken)
     {
@@ -210,7 +215,7 @@ internal sealed class TemporalDevServer
     /// <summary>SIGKILL, then waits (at most 10 s, not cancellable: the signal is sent and the exit follows at once) for the exit.</summary>
     private async Task Kill(int pid)
     {
-        DevServerProcesses.Signal(pid, "KILL");
+        DevServerProcesses.Signal(_start, pid, "KILL");
         _ = await Exited(pid, _stopWait, CancellationToken.None).ConfigureAwait(false);
     }
 

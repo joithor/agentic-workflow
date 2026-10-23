@@ -76,7 +76,7 @@ public sealed class ServeCallerTests : IDisposable
 
             // why: serve's stop takes its dev server down before it releases the lease; a server left here would outlive the test
             Assert.Equal((HttpStatusCode.OK, 0), (stop.Status, code));
-            Assert.Empty(TemporalDevServer.Find(_home.Path));
+            Assert.Empty(new TemporalDevServer(ChildEnvironment.Start).Find(_home.Path));
         }
         finally
         {

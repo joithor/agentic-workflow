@@ -15,10 +15,11 @@ internal static partial class DevServerProcesses
     private const string StartDev = " server start-dev ";
 
     /// <summary>The dev servers running on <paramref name="database"/>, read from 'ps'.</summary>
+    /// <param name="start">Makes the start info (the child-environment factory).</param>
     /// <param name="database">The absolute path of the SQLite file.</param>
     /// <returns>The servers, oldest pid first.</returns>
-    public static IReadOnlyList<RunningTemporalServer> On(string database) =>
-        [.. Capture("/bin/ps", "-axww", "-o", "pid=,command=").Split('\n')
+    public static IReadOnlyList<RunningTemporalServer> On(Func<string, IEnumerable<string>?, IReadOnlyDictionary<string, string?>?, ProcessStartInfo> start, string database) =>
+        [.. Capture(start, "/bin/ps", "-axww", "-o", "pid=,command=").Split('\n')
             .Select(line => Parse(line.Trim(), database))
             .OfType<RunningTemporalServer>()
             .OrderBy(s => s.ProcessId)];
@@ -46,24 +47,26 @@ internal static partial class DevServerProcesses
     }
 
     /// <summary>The CLI's version ('temporal version 1.9.1 (Server …)' reads as 1.9.1), or null when it can't be read.</summary>
+    /// <param name="start">Makes the start info (the child-environment factory).</param>
     /// <param name="executable">The 'temporal' executable.</param>
     /// <returns>The version.</returns>
-    public static string? Version(string executable)
+    public static string? Version(Func<string, IEnumerable<string>?, IReadOnlyDictionary<string, string?>?, ProcessStartInfo> start, string executable)
     {
         if (!File.Exists(executable))
         {
             return null;
         }
 
-        var match = VersionLine.Match(Capture(executable, "--version"));
+        var match = VersionLine.Match(Capture(start, executable, "--version"));
         return match.Success ? match.Groups["value"].Value : null;
     }
 
     /// <summary>Sends <paramref name="signal"/> ('TERM', 'KILL', 'STOP', 'CONT') to <paramref name="pid"/>.</summary>
+    /// <param name="start">Makes the start info (the child-environment factory).</param>
     /// <param name="pid">The process.</param>
     /// <param name="signal">The signal's name.</param>
-    public static void Signal(int pid, string signal) =>
-        _ = Capture("/bin/kill", "-s", signal, pid.ToString(CultureInfo.InvariantCulture));
+    public static void Signal(Func<string, IEnumerable<string>?, IReadOnlyDictionary<string, string?>?, ProcessStartInfo> start, int pid, string signal) =>
+        _ = Capture(start, "/bin/kill", "-s", signal, pid.ToString(CultureInfo.InvariantCulture));
 
     /// <summary>True when <paramref name="pid"/> no longer runs.</summary>
     /// <param name="pid">The process.</param>

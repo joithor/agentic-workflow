@@ -59,7 +59,7 @@ public sealed class DevServerTemporalTests : IDisposable
 
         // why: the dev server runs detached (setsid), so one a cancelled stop leaves behind outlives serve and the test run
         Assert.True(DevServerProcesses.Gone(started.Pid), "the dev server is still running");
-        Assert.Empty(TemporalDevServer.Find(_home.Path));
+        Assert.Empty(new TemporalDevServer(ChildEnvironment.Start).Find(_home.Path));
     }
 
     [Fact(Timeout = 60_000)]

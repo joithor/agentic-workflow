@@ -85,7 +85,7 @@ public sealed class TemporalDevServerTests : IDisposable
         var server = new TemporalDevServer(ChildEnvironment.Start);
         var start = new TemporalServerStart(PinnedTemporal.Path(), _home.Path);
         var stuck = await server.StartAsync(start, ct);
-        DevServerProcesses.Signal(stuck.ProcessId, "STOP");   // alive, holding the database, answering nothing
+        DevServerProcesses.Signal(ChildEnvironment.Start, stuck.ProcessId, "STOP");   // alive, holding the database, answering nothing
         RunningTemporalServer? replacement = null;
         try
         {
@@ -98,7 +98,7 @@ public sealed class TemporalDevServerTests : IDisposable
         }
         finally
         {
-            DevServerProcesses.Signal(stuck.ProcessId, "KILL");
+            DevServerProcesses.Signal(ChildEnvironment.Start, stuck.ProcessId, "KILL");
             if (replacement is not null)
             {
                 await server.StopAsync(replacement, ct);
@@ -163,7 +163,7 @@ public sealed class TemporalDevServerTests : IDisposable
 
         Assert.Contains("address already in use", failure.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(TemporalDevServer.MaxPortAttempts * 3, picks);
-        Assert.Empty(TemporalDevServer.Find(_home.Path));
+        Assert.Empty(server.Find(_home.Path));
     }
 
     private static TcpListener Occupy()
@@ -191,7 +191,7 @@ public sealed class TemporalDevServerTests : IDisposable
         await server.StopAsync(running, ct);
 
         Assert.True(DevServerProcesses.Gone(running.ProcessId));
-        Assert.Empty(TemporalDevServer.Find(_home.Path));
+        Assert.Empty(server.Find(_home.Path));
     }
 
     [Fact]

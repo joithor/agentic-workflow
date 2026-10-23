@@ -20,6 +20,13 @@ namespace Aw.Sindri.Host;
 /// <summary>The one composition root, shared by Program.cs and the DI validation test: only the projects' Add…() calls, the clock and the JSON options.</summary>
 internal static class Composition
 {
+    /// <summary>The child-process factory (Infrastructure's), for the Host code that starts a process but may not use Infrastructure itself.</summary>
+    /// <param name="fileName">The executable.</param>
+    /// <param name="arguments">Its arguments.</param>
+    /// <returns>The start info with the pod-mode child environment applied.</returns>
+    internal static System.Diagnostics.ProcessStartInfo StartChild(string fileName, IEnumerable<string>? arguments = null) =>
+        ChildEnvironment.Start(fileName, arguments);
+
     internal static IServiceCollection Compose(IServiceCollection services, Func<string, string?> environment, TimeProvider clock)
         => services
             .AddSingleton(clock)

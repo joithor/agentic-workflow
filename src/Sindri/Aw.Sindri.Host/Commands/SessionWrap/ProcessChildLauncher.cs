@@ -2,7 +2,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using Aw.Kernel;
 using Aw.Sindri.Core;
-using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Host.Commands.SessionWrap;
 
@@ -13,7 +12,7 @@ internal sealed class ProcessChildLauncher : IChildLauncher
     {
         ArgumentNullException.ThrowIfNull(argv);
         ArgumentNullException.ThrowIfNull(environment);
-        var info = ChildEnvironment.Start(argv[0]);
+        var info = Composition.StartChild(argv[0]);
         foreach (var argument in argv.Skip(1))
         {
             info.ArgumentList.Add(argument);
