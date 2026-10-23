@@ -1,19 +1,19 @@
 # Sindri context: the whole map on open, and a query zooms into it
 
-**Part D of** `2026-10-23-sindri-deployable-context-design.md` (the deployable unit). In the pod this is the owner's page, reached through `scripts/sindri-pod.sh connect`; it is not on the shared door.
+**Part D of** `2026-10-23-sindri-deployable-context-design.md` (the deployable unit). In the pod this is the owner's page, reached through `scripts/sindri-pod.sh connect`; the page is not on the shared door, but agents and cluster callers read the same map through the `context_map_whole` tool (§2.5).
 
-**Status:** design, revision 1, for the owner's review · **Date:** 2026-10-23 · **Asked by:** the owner, 2026-10-23 (relayed by
+**Status:** design, revision 2 (the owner's answers q78/q79 of 2026-10-23 applied: Q1 to Q4 decided, and agents read the whole map through a new MCP tool), for the owner's review · **Date:** 2026-10-23 · **Asked by:** the owner, 2026-10-23 (relayed by
 sindri-meta): "the context map page must show the FULL map as soon as it's opened (the whole mapping structure, visualized), and a
 query zooms into that map; today it only shows something after a search." · **Builds on:** the context retrieval spec
 (`2026-10-10-sindri-context-retrieval-design.md`: §8 graph, S-3a/S-3b, S-LB1a/b lenses and subgraph), the F3 context page
 (`~/.agentic-workflow/mockups/f3/specs/context.md`, built as U9 in `docs/csharp/sindri-ui.md`), the explain spec
 (`2026-10-20-sindri-context-explain-design.md`), the API surface spec (`2026-10-10-sindri-api-surface-design.md` §3.7, §4.2, §9) ·
-**Lanes:** context (the data side, W1–W2), ui (the page, W3–W4) · **Next:** the owner reads this; then /specToProvenPR takes §9's
+**Lanes:** context (the data side and the agent tool, W1, W2 and W5), ui (the page, W3–W4) · **Next:** the owner reads this; then /specToProvenPR takes §9's
 phases to PRs.
 
 ## 0. Why
 
-The context map page opens empty. Nothing is read until a person types a starting point or a question
+The context map page opens empty, and an agent can't see the whole map either. Nothing is read until a person types a starting point or a question
 (`docs/csharp/sindri-ui.md`, "reads nothing before an anchor"; `ContextPageViewModel` is documented as opened empty with no read made), and then the page draws one neighbourhood: three bands around
 the anchors, from `GET /sindri/context/lenses`. A person who opens the page to see what Sindri knows about the product sees a text
 box. The owner wants the opposite order: the whole map first, so the structure is visible at a glance, and a query as a way to
@@ -36,7 +36,7 @@ still visible behind it, and one key (Esc) or one click ("Whole map") goes back.
 | W3 | Areas are the map's own features, not a new clustering: every node gets exactly one area by fixed rules over the edges it already has (§2.2), so the grouping is explainable and stable from one map version to the next | writer's call (reversible) |
 | W4 | Layout stays on the client (the app's pure, deterministic view-model layout, as F3's `ContextMapLayout`); the server sends structure only, no coordinates | writer's call, matches F3 |
 | W5 | No new owner step anywhere on this page. Building the map stays the existing one-click "Build the map"; the whole map needs no approval, profile key or setup | the owner's standing rule: everything that needs the owner is one click |
-| W6 | Agent sessions may read the whole map of their own repo (it is a query, like every other map read), labels fenced as untrusted; there is **no** MCP tool for it and the shared door of the deployable spec (`2026-10-23-sindri-deployable-context-design.md` §B.2) does not route it, since a whole map is too large to be useful in an agent's context (`context_lenses` and `context_node` stay the agent's tools) | writer's call; owner Q2 |
+| W6 | Agent sessions read the whole map of their own repo through a **new MCP tool, `context_map_whole`** (§2.5): the repo comes from the caller's `X-Sindri-Repo`, it takes an optional `area` and a node `budget`, an over-budget map is grouped by feature the way the page groups it so an agent's context isn't flooded, labels are fenced as untrusted, and it is offered to `shared` cluster callers too (the deployable spec, §B.2). The HTTP route stays for the page and the CLI | owner, 2026-10-23 (q79; overrides revision 1's "no MCP tool") |
 
 ## 2. The data side (context lane)
 
@@ -136,8 +136,29 @@ version on a 500-node map should take well under 100 ms on the owner's box; W1 m
 ### 2.4 Errors
 
 The retrieval spec's code-range row gains **200–209** for this stage (195–199 stay free): `SND-CONTEXT-200` "No such area in this
-map" (404, fix: read `areas` from `map/whole` first); 201–209 reserved. Everything else reuses existing codes: 006 (bad
+map" (404, fix: read `areas` from `map/whole` first); `SND-CONTEXT-201` "Nothing in this map matches that area" (404, the MCP tool's, §2.5); 202–209 reserved (verified at `jthorare/main`: only 200 is in use). Everything else reuses existing codes: 006 (bad
 `detail`, more than 100 `locate`), 030 (no map), the S-LB1a version codes and the draft code.
+
+### 2.5 The agent tool: `context_map_whole`
+
+Verified at `jthorare/main`: `McpToolTable` lists 12 tools (`context_query`, `context_sources`, `context_lenses`, `context_node`, `context_neighbors`, six `sindri_*` reads, `sindri_request`), each `ContextTools` / `GraphTools` row calls the same service the HTTP route uses under the `session:mcp` caller, and the context error numbers in use stop at `SND-CONTEXT-200` (Part D's first). The new tool is a thirteenth row, `ContextTools.MapWholeTool`, and calls the same `GetContextWholeMapService` as the route, so the areas, the budget and the cache are one implementation.
+
+| Aspect | Rule |
+|---|---|
+| Name and hints | `context_map_whole`, `ReadOnlyHint`, `OpenWorldHint: false`, in the existing `context_*` naming |
+| Repo | from the caller's binding: `X-Sindri-Repo`, as the other tools take it. A call without it is `SND-CONTEXT-021`. No `repo` argument (a session's repo is always its own) |
+| Arguments | `area` (string, optional): an **area key** from an earlier answer's `areas[]` (`feature:tabs`, `area:unassigned`), or a **path prefix** (`src/Sindri/Host/`) that selects the code nodes whose path starts with it, the nodes they `implement` or `test`, and the edges among them. `budget` (integer, optional): the most nodes the answer carries; **default 500** (the page's `WholeMapRules.NodeBudget`), **hard maximum 1000**. Nothing else: `detail`, `locate`, `mapVersion` and `draft` are not offered (the draft map is never read over MCP; an agent asks for the current map). Another argument is `SND-CONTEXT-022` |
+| What `area` does when it matches nothing | `SND-CONTEXT-201` (new, 404): "Nothing in this map matches that area." Fix text: read `areas` from a call with no `area` first, or give a path prefix that exists. (HTTP `area=` keeps `SND-CONTEXT-200`, since it takes only keys; 201 covers a key or a prefix) |
+| A bad `budget` | below 1 or above 1000: `SND-CONTEXT-006` (the existing "query is invalid"), fix text names the range |
+| Fitting the budget | As the page: with no `area`, the answer is `nodes` when the map has at most `budget` nodes. Over budget it is **grouped by feature**: `detail: "areas"`, `fallback: "over-budget"`, one entry per area with its member count and kind counts, the edges between areas, and the "Not linked to a feature yet" group (`area:unassigned`) like any other area. With an `area`, the answer is that area's (or prefix's) nodes up to `budget`; if more match, it carries the full `counts`, `truncated: true`, and when the match spans several areas it groups by area the same way. The agent drills in by calling again with one area's key |
+| Answer shape | The route's `WholeMapView`, **projected to what an agent reads**: `schemaVersion, mapVersion, asOf, repo, detail, fallback?, counts, areas[{key,label,members,byKind}], areaEdges[{from,to,type,count}], nodes?[{key,label,kind,area}], edges?[{from,to,type,suggested?}], area?, truncated, notes[]`. Dropped: `trust` (every label is fenced), `provenance`, `confidence`, `alsoIn`, `located`, `draft`, `mapCommit`; `suggested: true` marks an edge no person has confirmed (the way `context_lenses` marks suggested links). Labels are fenced `<untrusted source="map">`, no evidence, quotes or decision text. An agent that wants the rest of a node calls `context_node` |
+| Cost | Edges are cut at **1.6 times the budget** (the strongest first: confirmed, then by key), with `truncated`. A default answer (500 nodes, up to 800 edges) is **at most 80 KB of JSON, about 20,000 tokens**; the hard maximum (1000 nodes, 1600 edges) is about 40,000. An over-budget map answers areas only, which is a few thousand tokens for tens of areas and at most about 20,000 for the 500-area cap. An agent that wants less passes a smaller `budget` or an `area`. The tool description says so. A budget test pins these sizes (below) |
+| Not ready | The answer carries the **same `building` and `noMap` facts as the HTTP route**, including the counts #837 adds to the route's not-ready answer. It is a result, not a tool error, with the reason in `notes[]`. For a `shared` caller the texts of the deployable spec's §8 apply: a build or first clone running is the `setting up` note; no map and none building is `SND-CONTEXT-030`'s `shared` text. |
+| Who is offered it | Loopback `mcp` callers (the tool list goes from 12 to 13) and `shared` cluster callers: it is a `context_*` tool, so it is in the `shared` list whatever the switches say (the deployable spec's §B.2 Tools row) |
+| `shared` and business context | The answer is built from the `shared` caller's default-deny view of the graph when `share.businessContext` is off, **before** the areas, the counts and the group sizes are computed, so a count never reveals a dropped record. With the switch on (its default) the view is the repo's whole map |
+| Errors | Existing: 021 (no repo), 022 (bad argument), 006 (bad budget), 030 (no map), 045 (repo outside the scope), 020 (sessions off, for `mcp` callers), and for `shared` callers 091. New: **201** only; 202 to 209 stay reserved. The number is the next free one in Part D's range (checked at `jthorare/main`: only 200 exists) and K-B1 or W5 re-checks it at merge |
+
+CLI and HTTP are unchanged by the tool. `SND-CONTEXT-201` joins the retrieval spec's code-range row beside 200.
 
 ## 3. The page (ui lane)
 
@@ -192,7 +213,7 @@ page does not offer it.
 
 - `lenses`, `subgraph`, `node`, `neighbors`, `path`, `query`, `filemap` and their goldens are unchanged; the page keeps using them
   for the zoomed-in read and the inspector.
-- No MCP tool changes (W6). `context_lenses` stays the agent's way into the map.
+- One MCP tool is added (W6, §2.5). `context_lenses` stays the agent's way into one node's neighbourhood; `context_map_whole` is the way into the whole map. No other tool changes.
 - No new table, no migration: areas are computed from the stored graph.
 - No profile key (W5).
 
@@ -201,7 +222,7 @@ page does not offer it.
 - The route is a query and follows every rule queries have: repo scoping for sessions, egress scrub and untrusted fencing of labels,
   ProblemDetails errors, `X-Sindri-After`. It returns no evidence, quotes or decision text, so it shows less than `lenses` does per
   node.
-- A session can't read another repo's whole map (the same `GraphSnapshot.ScopedTo` cut as `lenses`), proven by a test.
+- A session can't read another repo's whole map (the same `GraphSnapshot.ScopedTo` cut as `lenses`), proven by a test, over HTTP and through the tool.
 - The in-memory answer cache is keyed by caller scope, so a session's fenced answer is never served to a human or the reverse.
 
 ## 6. Testing
@@ -213,20 +234,23 @@ page does not offer it.
 - **Integration (context):** the route against a temp `context.db`: goldens under `tests/Aw.Sindri.Tests/Golden/Api/context-whole/`
   (`nodes-small.json`, `areas-over-budget.json`, `area-open.json`, `area-truncated.json`, `locate.json`, `no-map.json`,
   `session-scoped.json`), a session refused another repo, a session's labels fenced, a draft read, a retained version read.
+- **The tool (context lane, W5):** goldens under `tests/Aw.Sindri.Tests/Golden/Mcp/context-map-whole/` (`nodes-small.json`, `areas-over-budget.json`, `area-open.json`, `path-prefix.json`, `not-ready.json` with `noMap` and `building`, `shared-withheld.json`) and the two `tools/list` goldens (13 rows for a loopback `mcp` caller; for `shared` the `context_*` rows including this one, with `sindri_*` as the switches say). **A budget test:** the default answer on a 500-node and 800-edge map is at most 80 KB, a 1000-node answer at most 160 KB, a `budget` of 0 or 1001 is `SND-CONTEXT-006`, and the edge cut at 1.6 times the budget sets `truncated`. **A grouping test:** a map one node over `budget` answers `detail: areas` with `fallback: over-budget`, the unassigned group present and sorted first, member counts summing to `counts.nodes`; an `area` key opens one area and a second call with a smaller `budget` truncates it with full `counts`; a path prefix that spans two areas groups by area; an unknown area is `SND-CONTEXT-201`. Also: a session of another repo is refused; labels are fenced; with `share.businessContext` off a `shared` caller's counts and areas come from the filtered view (a golden with one record of every kind), and with it on they match the loopback golden; `draft`, `locate` and `mapVersion` are refused as unknown arguments.
 - **UI (ui lane):** `WholeMapLayoutTests` (deterministic, columns by barycenter, unassigned last), `ContextPageViewModelTests`
   (the page reads `map/whole` on first show; a query keeps the whole map and sets the zoom target; Esc and "Whole map" go back),
   headless frames at 1440 and 900 for the whole map, by area, zoomed in and no map, and the existing `ContextStateTests`. The UI's
   DTOs are pinned against the W1 goldens (`ContextGoldenTests`).
 - **Owner check (once, by hand):** §8.
 
-## 7. Open questions for the owner (plain words; the default is what we do if you say nothing)
+## 7. The owner's questions, and the answers (2026-10-23, q78/q79)
 
-| Q | Question | Default |
+All four are **decided**.
+
+| Q | Question | Answer |
 |---|---|---|
-| Q1 | When the map is big, should the first screen still try to show every item, or group them by feature first? | Show every item up to about 500; above that, group by feature and open a group with a click |
-| Q2 | Should agent sessions be able to read the whole map of their repo? | Yes, through the HTTP route like every other map read, labels marked untrusted; no new agent tool |
-| Q3 | Items that aren't linked to any feature yet (a ticket that mentions nothing, a code file no feature claims): show them? | Yes, in their own group, "Not linked to a feature yet" |
-| Q4 | When a query zooms in, should the rest of the map stay visible behind it? | Yes, dimmed; Esc or "Whole map" brings it back |
+| Q1 | When the map is big, should the first screen still try to show every item, or group them by feature first? | **Decided: the default.** Show every item up to about 500; above that, group by feature and open a group with a click |
+| Q2 | Should agent sessions be able to read the whole map of their repo? | **Decided: yes, but as an MCP tool** (owner: "yes, but it should be an mcp tool"). `context_map_whole` (§2.5), not only the HTTP route; this overrides revision 1's "no new agent tool" |
+| Q3 | Items that aren't linked to any feature yet: show them? | **Decided: the default.** Yes, in their own group, "Not linked to a feature yet" |
+| Q4 | When a query zooms in, should the rest of the map stay visible behind it? | **Decided: the default.** Yes, dimmed; Esc or "Whole map" brings it back |
 
 ## 8. Proof
 
@@ -237,6 +261,7 @@ page does not offer it.
 - W3's PR: the page opening on the whole map on the UI fixture (`scripts/sindri-ui-fixture.sh context up`, extended with a
   whole-map fixture over the budget and one under), screenshots of each §3.1 state at 1440 and 900, and the first-frame time.
 - W4's PR: a recording or a screenshot pair of a query zooming in and Esc going back, on the fixture and on the real map.
+- W5's PR: the tool's answers on the real map from a session (default, a small `budget`, one area, a path prefix), with the byte size and estimated tokens of each recorded in the PR body and `docs/csharp/sindri-context.md`.
 - Owner check, once: open the app on the real map; the whole map shows with no typing; type a feature's name; the camera zooms to
   it with the rest dimmed behind; Esc goes back.
 
@@ -246,13 +271,14 @@ page does not offer it.
 |---|---|---|---|
 | **W1 — the whole map read** | context | `MapAreas.Assign` (Core), `WholeMapRules`, the query service (through the `IContextEngine` facade, not a Sindri-side port) and its in-memory cache, `GET /sindri/context/map/whole` with `detail` and `locate`, the CLI verb, `SND-CONTEXT-200` and the 200–209 range row, goldens, the docs section; the measurement (§8) | nothing to start; the goldens are the first commit so ui can start from them. The measurement needs the owner-approved first-run home, with a fallback to the fixture's numbers recorded as such |
 | **W2 — open one area** | context | `area=` with its cap and truncation, `area-open` and `area-truncated` goldens | W1 |
+| **W5 — the agent tool** | context | `context_map_whole` (§2.5): `ContextTools.MapWholeTool` and `CallMapWhole`, the argument binding, the projection, the edge cut, `SND-CONTEXT-201` and its range row, the goldens and tests of §6, the `tools/list` goldens, the tool's `shared` row once K-B1 has merged (until then it is offered to `mcp` callers only), the docs section | W1 (the service); W2 for `area`. Not the ui lane, so it runs beside W3 and W4 |
 | **W3 — the page opens on the whole map** | ui | DTOs and client for `map/whole`, the open-time read, `WholeMapLayout`, the one-pass drawing and level of detail, the by-area tiles (opening one waits for W2's route: until then a tile click zooms to the tile), the mini-map from areas, the states of §3.1 except Zoomed in | W1's goldens (not W1's merge) |
 | **W4 — a query zooms in** | ui | the zoomed-in state over the whole map (including the areas-level zoom of §3.1), the camera ease, "Whole map" and Esc, item entry through it, the card's "Pick a starting point" line, the accessibility of §3.2 | W3; W2 for opening an area on zoom |
 
 Parallel: W1 and W3 start together; W1's first commit is its goldens, which W3 builds its DTOs and fake against. W2 runs beside
-W3. W4 follows W3. The context lane's builders take W1 then W2; the ui lane's take W3 then W4. Each phase is one PR, scoped gate:
+W3, and W5 (the context lane's third phase) beside W3 and W4. W4 follows W3. The context lane's builders take W1, then W2 and W5; the ui lane's take W3 then W4. Each phase is one PR, scoped gate:
 build plus the unit and integration lanes of the touched projects, and `Aw.Sindri.Ui.Tests` in every phase (W1 and W2 add API
-goldens the UI pins; team rule).
+goldens the UI pins; team rule; W5 adds an MCP golden, not a UI one, so W5 skips the UI tests unless it changes a shared DTO).
 
 ## 10. Settled in review, and left to the builders
 
