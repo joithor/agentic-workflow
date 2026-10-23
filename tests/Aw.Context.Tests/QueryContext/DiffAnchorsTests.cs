@@ -108,7 +108,7 @@ public sealed class DiffAnchorsTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void More_than_20_anchors_keep_the_first_20_and_say_how_many_there_were()
+    public void Every_claimed_anchor_is_used_however_many_there_are()
     {
         var map = new GraphBuilder();
         var files = new List<(string, ChangeKind)>();
@@ -121,10 +121,10 @@ public sealed class DiffAnchorsTests
 
         var (part, anchors) = Build(Changes([.. files]), map: map);
 
-        Assert.Equal(20, anchors.Count);
+        Assert.Equal(25, anchors.Count);
         Assert.Equal("feature:n00", anchors[0].Key.Value);
-        Assert.Equal("feature:n19", anchors[^1].Key.Value);
-        Assert.Equal((25, true, 25), (part.AnchorsTotal, part.AnchorsTruncated, part.Files.Count));
+        Assert.Equal("feature:n24", anchors[^1].Key.Value);
+        Assert.Equal((25, 25), (part.AnchorsTotal, part.Files.Count));
         Assert.All(part.Files, f => Assert.Single(f.Nodes));
     }
 
