@@ -1,6 +1,6 @@
 schema: 1
 id: workflow.design
-version: 6
+version: 7
 description: "Station 2 of the line: one spec draft from a frozen scope packet, in the repo's style pack, reviewed by the repo's design lens pack on another model until no CRITICAL or HIGH finding is left; ends with a hashed candidate design packet."
 displayName: "Turn the scope into a design"
 why: "Writes the design for the approved scope and has it reviewed from several angles until no serious problem is left."
@@ -77,6 +77,7 @@ evals:   # the 7 cases of Appendix B.1 (plan's happy-assumed is assumed-happy: t
   - evals/workflow.design/fresh-happy.jsonl
   - evals/workflow.design/lens-cap-accept.jsonl
   - evals/workflow.design/lens-cap-drop.jsonl
+  - evals/workflow.design/lens-asks-all.jsonl
   - evals/workflow.design/lens-escalates.jsonl
   - evals/workflow.design/lens-escalation-stop.jsonl
   - evals/workflow.design/lens-findings-revise.jsonl
