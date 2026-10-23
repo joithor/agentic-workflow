@@ -23,6 +23,7 @@ internal static class LineSteps
     /// <summary>'step.line.decide': the owner retries a failed phase, skips it and its dependents, or stops the line.</summary>
     public static BlockDescriptor Decide { get; } = HumanDeskStep("step.line.decide", Capability.None)
         .Reads("fact:phaseBoard")
+        .Reviewing(ReviewOf("fact:phaseBoard", DeskReviewKind.Text))
         .Reports("retry", "skip", "stop")
         .Writes(On("fact:boardEdit", "retry", "skip"));
 }
