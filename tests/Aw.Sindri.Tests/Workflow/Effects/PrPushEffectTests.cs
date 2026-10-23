@@ -4,7 +4,10 @@ using Aw.Sindri.Core.Checks;
 using Aw.Sindri.Core.Forge;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Blocks.Effect;
+using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Effects;
 using Aw.Sindri.Testing.Scoping;
+using Aw.Sindri.Testing.Workflow;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests.Workflow.Effects;
@@ -15,6 +18,8 @@ public sealed class PrPushEffectTests
 {
     private readonly PrEffectRig _rig = new();
     private readonly InMemoryRunArea _area = new();
+
+    private readonly InMemoryPrCommentMarks _marks = new();
 
     private MergeRecord Record => new(_area, new FakeTimeProvider(KnownInstants.Epoch));
 
@@ -76,6 +81,26 @@ public sealed class PrPushEffectTests
     }
 
     [Fact]
+    public async Task The_comments_whose_fix_the_push_carries_are_listed_in_the_fact_and_the_row()
+    {
+        _rig.Diff.Advance(PrEffectRig.Workspace);
+        Range("aaa111+", "fix1", "fix2", "aaa111+");
+        var pr = new PrRef("example.test", "o/r", _rig.Pull.Number);
+        Mark(pr, "c1", "fixed", "fix1");
+        Mark(pr, "c2", "fixed", "elsewhere");
+        Mark(pr, "c3", "held", "fix2");
+
+        var pushed = await Pushed(await Dispatch());
+
+        Assert.Equal(["c1"], pushed.GetProperty("comments").EnumerateArray().Select(static c => c.GetString()), StringComparer.Ordinal);
+        var row = JsonDocument.Parse(Assert.Single((await _area.Read(PrEffectRig.Instance, "babysit.jsonl", Token)).Value.Split('\n', StringSplitOptions.RemoveEmptyEntries))).RootElement;
+        Assert.Equal(["c1"], row.GetProperty("comments").EnumerateArray().Select(static c => c.GetString()), StringComparer.Ordinal);
+    }
+
+    private void Mark(PrRef pr, string comment, string outcome, string commit) =>
+        _ = _marks.Write(new PrCommentMark(pr, PrCommentId.From(comment), EditedAt: null, InstanceAddress.From(PrEffectRig.Instance), outcome, Reason: null, commit, KnownInstants.Epoch, "eff:" + comment), Token).AsTask().Result;
+
+    [Fact]
     public async Task A_dispatch_repeated_after_the_push_landed_is_found_already_pushed()
     {
         _rig.Diff.Advance(PrEffectRig.Workspace);
@@ -131,14 +156,14 @@ public sealed class PrPushEffectTests
     public async Task A_forge_error_is_the_dispatch_error()
     {
         _rig.Diff.Advance(PrEffectRig.Workspace);
-        var effect = new PrPushEffect(new Testing.Forge.FakePullRequests([]), _rig.Diff, _rig.Changes, _rig.Facts, _rig.Facts, Record);
+        var effect = new PrPushEffect(new Testing.Forge.FakePullRequests([]), _rig.Diff, _rig.Changes, _rig.Facts, _rig.Facts, Record, _marks);
 
         var result = await effect.Dispatch(Context(), Token);
 
         Assert.True(result.IsError);
     }
 
-    private PrPushEffect Effect() => new(_rig.Forge, _rig.Diff, _rig.Changes, _rig.Facts, _rig.Facts, Record);
+    private PrPushEffect Effect() => new(_rig.Forge, _rig.Diff, _rig.Changes, _rig.Facts, _rig.Facts, Record, _marks);
 
     [Fact]
     public async Task Every_commit_between_the_lease_and_the_head_is_listed_oldest_first()

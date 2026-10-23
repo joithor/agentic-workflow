@@ -5,6 +5,7 @@ using Aw.Kernel;
 using Aw.Sindri.Core.Checks;
 using Aw.Sindri.Core.Forge;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine.Effects;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 
@@ -23,7 +24,8 @@ namespace Aw.Sindri.Features.Blocks.Effect;
 /// <param name="contents">Reads the facts it takes.</param>
 /// <param name="facts">Stores the fact it replies with.</param>
 /// <param name="record">The merge record, where the push row goes.</param>
-internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchChanges changes, IFactContents contents, IFactStore facts, IMergeRecord record) : IEffectKind, IDescribedBlock
+/// <param name="marks">The comment marks: which comments the pushed commits fix.</param>
+internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchChanges changes, IFactContents contents, IFactStore facts, IMergeRecord record, IPrCommentMarks marks) : IEffectKind, IDescribedBlock
 {
     private static readonly FactKey _push = FactKey.From("fact:push");
 
@@ -109,8 +111,45 @@ internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchCh
         return view.IsError ? view.Error : string.Equals(view.Value.HeadSha, head, StringComparison.Ordinal);
     }
 
+    /// <summary>The ids of the comments whose latest mark is 'fixed' with a commit this push carried (what 'fixedReplies' will answer); empty when none or nothing landed.</summary>
+    private async ValueTask<Result<JsonArray>> Comments(Pushed pushed, CancellationToken cancellationToken)
+    {
+        var ids = new JsonArray();
+        var target = Target(pushed.Request.Link);
+        if (target is null || pushed.Commits.Count == 0)
+        {
+            return ids;
+        }
+
+        var latest = await marks.Latest(target, cancellationToken).ConfigureAwait(false);
+        if (latest.IsError)
+        {
+            return latest.Error;
+        }
+
+        foreach (var mark in latest.Value.Where(m => m.Outcome == "fixed" && m.Commit is { Length: > 0 } c && pushed.Commits.Any(x => x.StartsWith(c, StringComparison.Ordinal) || c.StartsWith(x, StringComparison.Ordinal))))
+        {
+            ids.Add((JsonNode)JsonValue.Create(mark.CommentId.Value));
+        }
+
+        return ids;
+    }
+
+    private static PrRef? Target(string link)
+    {
+        var parts = Uri.TryCreate(link, UriKind.Absolute, out var uri) ? uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries) : [];
+        return uri is not null && parts.Length >= 4 && parts[^2] == "pull" && int.TryParse(parts[^1], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var number)
+            ? new PrRef(uri.Host, $"{parts[^4]}/{parts[^3]}", number) : null;
+    }
+
     private async ValueTask<Result<EffectDone>> Reply(string outcome, Pushed pushed, bool existed, CancellationToken cancellationToken)
     {
+        var comments = await Comments(pushed, cancellationToken).ConfigureAwait(false);
+        if (comments.IsError)
+        {
+            return comments.Error;
+        }
+
         var commits = new JsonArray();
         foreach (var commit in pushed.Commits)
         {
@@ -121,7 +160,7 @@ internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchCh
         {
             ["sha"] = pushed.Sha,
             ["commits"] = commits,
-            ["comments"] = new JsonArray(),
+            ["comments"] = comments.Value,
             ["source"] = pushed.Source,
             ["cause"] = pushed.Request.Cause,
             ["ciFixes"] = pushed.CiFixes,
@@ -132,7 +171,7 @@ internal sealed class PrPushEffect(IPullRequests pulls, IRunDiff diff, IBranchCh
             {
                 ["cause"] = pushed.Request.Cause,
                 ["commits"] = commits.DeepClone(),
-                ["comments"] = new JsonArray(),
+                ["comments"] = comments.Value.DeepClone(),
                 ["source"] = pushed.Source,
             });
             var recorded = await record.Append(row, cancellationToken).ConfigureAwait(false);
