@@ -9,6 +9,7 @@ using Aw.Sindri.Ui.ViewModels.Controls;
 using Aw.Sindri.Ui.ViewModels.Run;
 using Aw.Sindri.Ui.Views.Run;
 using Microsoft.Extensions.Time.Testing;
+using Labels = Aw.Sindri.Ui.ViewModels.Labels;
 
 namespace Aw.Sindri.Ui.Tests.Views;
 
@@ -59,10 +60,10 @@ public sealed class RunPageFramesTests : FrameHost
         return (window, page);
     }
 
-    private static void Fits(Window window, RunPageViewModel page)
+    private static void Fits(Window window, RunPageViewModel page, string word)
     {
         Assert.Equal(RunPageState.Shown, page.Phase);
-        Assert.NotEmpty(page.HeaderWord);
+        Assert.Equal(word, page.HeaderWord);   // the page's own word for the state, from the shared labels
         Assert.Equal(page.HeaderWord, Named<TextBlock>(window, "RunBadgeText").Text);
         Assert.True(Visible(window, "RunHeader"));
         Assert.True(Visible(window, "RunCanvas"));
@@ -74,12 +75,12 @@ public sealed class RunPageFramesTests : FrameHost
         Assert.True(Named<Control>(window, "RunRoot").Bounds.Width <= window.Width + 0.5, "the page is wider than the window");
     }
 
-    private Task Shown(InstanceDetail line, string name, bool failedStep = false) => OnUi(async () =>
+    private Task Shown(InstanceDetail line, string name, string word, bool failedStep = false) => OnUi(async () =>
     {
         var (window, page) = await Opened(line, failedStep);
         try
         {
-            Fits(window, page);
+            Fits(window, page, word);
             Frame(window, "run-" + name + "-1440", Prefix);
         }
         finally
@@ -89,14 +90,14 @@ public sealed class RunPageFramesTests : FrameHost
     });
 
     [Fact]
-    public Task A_running_run() => Shown(Line("RUNNING"), "running");
+    public Task A_running_run() => Shown(Line("RUNNING"), "running", Labels.RunWordRunning);
 
     [Fact]
-    public Task A_run_that_needs_you() => Shown(Line("DECISION"), "needs-you");
+    public Task A_run_that_needs_you() => Shown(Line("DECISION"), "needs-you", Labels.RunWordWaiting);
 
     [Fact]
-    public Task A_run_that_ended_well() => Shown(Line("DONE", "done", "resolved"), "done");
+    public Task A_run_that_ended_well() => Shown(Line("DONE", "done", "resolved"), "done", Labels.RunWordDone);
 
     [Fact]
-    public Task A_failed_run() => Shown(Line("FAILED", "stuck", "failed"), "failed", failedStep: true);
+    public Task A_failed_run() => Shown(Line("FAILED", "stuck", "failed"), "failed", Labels.RunWordFailed, failedStep: true);
 }
