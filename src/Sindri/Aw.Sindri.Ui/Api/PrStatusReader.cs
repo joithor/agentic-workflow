@@ -1,7 +1,8 @@
 using Aw.Kernel;
 using Aw.Kernel.Json;
+using Aw.Sindri.Ui.Api.Workflow;
 
-namespace Aw.Sindri.Ui.Api.Workflow;
+namespace Aw.Sindri.Ui.Api;
 
 /// <summary>Reads the body of a "fact:prStatus" fact into its typed record.</summary>
 internal static class PrStatusReader
