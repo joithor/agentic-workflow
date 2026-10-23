@@ -21,7 +21,11 @@
       "actions": [
         "ApproveAllRecipes"
       ],
-      "cli": "sindri recipe approve-all"
+      "cli": "sindri recipe approve-all",
+      "open": {
+        "route": "setup",
+        "label": "Open setup"
+      }
     }
   ],
   "empty": null,
