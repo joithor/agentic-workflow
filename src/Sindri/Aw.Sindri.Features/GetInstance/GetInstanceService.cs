@@ -69,8 +69,7 @@ internal sealed class GetInstanceService(IInstanceDirectory directory, IInstance
         }
 
         var context = await contexts.Of(view.Value, new DetailInputs(title, parent, counts.Value, runs.Value), cancellationToken).ConfigureAwait(false);
-        var open = await OpenOf(view.Value.Address, cancellationToken).ConfigureAwait(false);
-        return InstanceViews.Detail(view.Value, context) with { Open = open };
+        return InstanceViews.Detail(view.Value, context) with { Open = await OpenOf(view.Value.Address, cancellationToken).ConfigureAwait(false) };
     }
 
     /// <summary>
