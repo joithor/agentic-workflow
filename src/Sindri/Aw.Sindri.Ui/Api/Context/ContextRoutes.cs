@@ -36,6 +36,22 @@ internal static class ContextRoutes
         return With(Root + "/lenses", parts);
     }
 
+    internal static string WholeMap(WholeMapQuery query)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        var parts = new List<string>();
+        Add(parts, "detail", query.Detail);
+        Add(parts, "area", query.Area);
+        parts.AddRange(query.Locate.Select(k => "locate=" + Uri.EscapeDataString(k)));
+        if (query.Draft)
+        {
+            parts.Add("draft=true");
+        }
+
+        Add(parts, "mapVersion", query.MapVersion);
+        return With(Root + "/map/whole", parts);
+    }
+
     internal static string Code(CodeQuery query)
     {
         ArgumentNullException.ThrowIfNull(query);

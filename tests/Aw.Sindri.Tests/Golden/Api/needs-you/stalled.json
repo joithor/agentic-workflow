@@ -21,7 +21,11 @@
       "actions": [
         "Decide"
       ],
-      "cli": "sindri decide DEC-00000000000000000000000000000012 accept"
+      "cli": "sindri decide DEC-00000000000000000000000000000012 accept",
+      "open": {
+        "route": "decision/DEC-00000000000000000000000000000012",
+        "label": "Review and decide"
+      }
     }
   ],
   "empty": "Views are stalled at 8: run `sindri views rebuild`",
