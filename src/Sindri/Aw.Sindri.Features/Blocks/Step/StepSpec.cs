@@ -17,6 +17,7 @@ internal sealed class StepSpec
     private OutcomeName[] _outcomes = [];
     private ParameterSpec[] _parameters = [];
     private TimeSpan? _maxDuration;
+    private ReviewSpec[]? _reviews;
 
     private StepSpec(string id, BlockRuntime runtime, bool humanOnly, Capability capabilities)
     {
@@ -106,10 +107,25 @@ internal sealed class StepSpec
         return this;
     }
 
+    /// <summary>What a desk of this Step has its person review (q65): each fact and its kind. Not part of the descriptor's hash.</summary>
+    /// <param name="reviews">The facts reviewed.</param>
+    /// <returns>The builder.</returns>
+    public StepSpec Reviewing(params ReviewSpec[] reviews)
+    {
+        _reviews = reviews;
+        return this;
+    }
+
+    /// <summary>One thing reviewed: <paramref name="fact"/> of the given <paramref name="kind"/>.</summary>
+    /// <param name="fact">The fact key.</param>
+    /// <param name="kind">What it is.</param>
+    /// <returns>The review.</returns>
+    public static ReviewSpec ReviewOf(string fact, DeskReviewKind kind) => new(FactKey.From(fact), kind);
+
     /// <summary>The facts the Step writes, and the descriptor.</summary>
     /// <param name="outputs">The outputs.</param>
     /// <returns>The descriptor.</returns>
     public BlockDescriptor Writes(params OutputSpec[] outputs) => new(
         _id, BlockKind.Step, Version: 1, _inputs, outputs, _outcomes, _capabilities, Parameters: _parameters, Rung: null, DeskCapable: true,
-        HumanOnly: _humanOnly ? true : null, Runtime: _runtime, MaxDuration: _maxDuration);
+        HumanOnly: _humanOnly ? true : null, Runtime: _runtime, MaxDuration: _maxDuration, Reviews: _reviews);
 }

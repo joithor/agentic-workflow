@@ -9,4 +9,14 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// <param name="AsOf">When the read happened; the composer never reads a clock.</param>
 /// <param name="StepRuns">The Step runs folded from the instance's ledger events; none when not given.</param>
 /// <param name="RecipeDisplayName">The recipe's display name; null serves none.</param>
-public sealed record InstanceDetailContext(string Title, ParentRef? Parent, ViewCounts Counts, DateTimeOffset AsOf, IReadOnlyList<StepRun>? StepRuns = null, string? RecipeDisplayName = null);
+/// <param name="Session">The agent session of the open run, from its launch; null when none is known.</param>
+/// <param name="ReviewTargets">Where each reviewed fact opens, by fact key (<see cref="DeskReviewTargets"/>); null when none were read.</param>
+public sealed record InstanceDetailContext(
+    string Title,
+    ParentRef? Parent,
+    ViewCounts Counts,
+    DateTimeOffset AsOf,
+    IReadOnlyList<StepRun>? StepRuns = null,
+    string? RecipeDisplayName = null,
+    SessionHandle? Session = null,
+    IReadOnlyDictionary<string, DeskReviewTarget>? ReviewTargets = null);
