@@ -109,7 +109,7 @@ public sealed class AgentOutputTypeTests
     private CompleteStepService Service(AgentRun run)
     {
         _files.Open(_launch, Proof);
-        return new(run, run, run, _facts, _nonces, new FixedCaller(A.Caller().Session().Build()), new EngineFilledReport(EvalComposition.Catalog, EvalComposition.Options, _files, new ReportOutputTypes()));
+        return new(run, run, run, _facts, _nonces, new FixedCaller(A.Caller().Session().Build()), new EngineFilledReport(EvalComposition.Catalog, EvalComposition.Options, _files, new ReportOutputTypes(run, _launcher)));
     }
 
     private static CommandNonce Nonce(int n) => CommandNonce.From(n.ToString("x32", System.Globalization.CultureInfo.InvariantCulture));
