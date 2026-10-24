@@ -1,0 +1,7 @@
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.5",
+  "title": "SND-CONTEXT-003",
+  "status": 404,
+  "detail": "no node is named '' (fix: sindri context map status)",
+  "traceId": "<trace>"
+}
