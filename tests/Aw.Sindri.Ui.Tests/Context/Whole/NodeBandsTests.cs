@@ -8,17 +8,17 @@ namespace Aw.Sindri.Ui.Tests.Context.Whole;
 public sealed class NodeBandsTests
 {
     [Theory]
-    [InlineData("record", WholeBand.Intent)]
-    [InlineData("decision", WholeBand.Intent)]
-    [InlineData("feature", WholeBand.Product)]
-    [InlineData("surface", WholeBand.Product)]
-    [InlineData("action", WholeBand.Product)]
-    [InlineData("thing", WholeBand.Product)]
-    [InlineData("flow", WholeBand.Product)]
-    [InlineData("code", WholeBand.Code)]
-    [InlineData("something-new", WholeBand.Other)]
-    [InlineData("", WholeBand.Other)]
-    public void A_kind_sits_in_the_band_the_table_gives_it(string kind, WholeBand band) => Assert.Equal(band, NodeBands.Of(kind));
+    [InlineData("record", "Intent")]
+    [InlineData("decision", "Intent")]
+    [InlineData("feature", "Product")]
+    [InlineData("surface", "Product")]
+    [InlineData("action", "Product")]
+    [InlineData("thing", "Product")]
+    [InlineData("flow", "Product")]
+    [InlineData("code", "Code")]
+    [InlineData("something-new", "Other")]
+    [InlineData("", "Other")]
+    public void A_kind_sits_in_the_band_the_table_gives_it(string kind, string band) => Assert.Equal(Enum.Parse<WholeBand>(band), NodeBands.Of(kind));
 
     [Fact]
     public void The_bands_run_why_then_product_then_code_then_other()
