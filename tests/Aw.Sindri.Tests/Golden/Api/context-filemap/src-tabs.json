@@ -94,5 +94,7 @@
     "reason": "index not built",
     "items": [],
     "code": "SND-CODEIDX-013"
-  }
+  },
+  "nextCursor": null,
+  "total": 3
 }
