@@ -4,7 +4,7 @@ using Aw.Sindri.Features.ContextCalls;
 
 namespace Aw.Sindri.Host.Endpoints;
 
-/// <summary>GET /sindri/context/history?anchor=&amp;since=&amp;before=&amp;draft=&amp;mapVersion=: the stored records, decisions and landed changes behind one or more anchors; a repeated 'anchor' names several.</summary>
+/// <summary>GET /sindri/context/history?anchor=&amp;since=&amp;before=&amp;draft=&amp;mapVersion=: the stored records, decisions and landed changes behind one or more anchors; a repeated 'anchor' names several. QUERY /sindri/context/history takes the same fields as the JSON body ({anchors[], since?, before?, draft?, mapVersion?}) for a list too long for the request line.</summary>
 internal static class GetContextHistoryEndpoint
 {
     internal static RouteGroupBuilder MapGetContextHistory(this RouteGroupBuilder group)
@@ -12,6 +12,11 @@ internal static class GetContextHistoryEndpoint
         _ = group.MapGet("/context/history", static async (string[]? anchor, string? since, string? before, bool? draft, string? mapVersion, IService<GetContextHistoryRequest, HistoryView> history, CancellationToken ct) =>
         {
             var answer = await history.Handle(new GetContextHistoryRequest(anchor ?? [], since, before, draft ?? false, mapVersion), ct).ConfigureAwait(false);
+            return answer.IsError ? HttpResults.Problem(answer.Error) : TypedResults.Ok(answer.Value);
+        });
+        _ = group.MapGroup(string.Empty).WithMetadata(BodyQueryRouteMetadata.Instance).MapMethods("/context/history", [HttpMethods.Query], static async (GetContextHistoryRequest request, IService<GetContextHistoryRequest, HistoryView> history, CancellationToken ct) =>
+        {
+            var answer = await history.Handle(request with { Anchors = request.Anchors ?? [] }, ct).ConfigureAwait(false);
             return answer.IsError ? HttpResults.Problem(answer.Error) : TypedResults.Ok(answer.Value);
         });
         return group;

@@ -105,12 +105,13 @@ public sealed class SettingsReaderTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Labeling_is_off_with_a_400000_token_cap_unless_the_profile_says_otherwise()
+    public void Labeling_is_on_with_a_400000_token_cap_unless_the_profile_says_otherwise()
     {
         var settings = SettingsReader.Read(section: null).Value;
 
-        Assert.Equal((false, 400_000), (settings.Labeling.Enabled, settings.Labeling.MaxTokens));
-        Assert.Equal((false, 400_000), (Read("""{"sessions":{"enabled":true}}""").Value.Labeling.Enabled, Read("{}").Value.Labeling.MaxTokens));
+        Assert.Equal((true, 400_000), (settings.Labeling.Enabled, settings.Labeling.MaxTokens));
+        Assert.Equal((true, 400_000), (Read("""{"sessions":{"enabled":true}}""").Value.Labeling.Enabled, Read("{}").Value.Labeling.MaxTokens));
+        Assert.False(Read("""{"labeling":{"enabled":false}}""").Value.Labeling.Enabled);
     }
 
     [Fact, Trait("Lane", "unit")]
