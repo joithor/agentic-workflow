@@ -20,6 +20,7 @@ internal static class LineServiceCollectionExtensions
     internal static IServiceCollection AddLineSlices(this IServiceCollection services) => services.AddDesignSlices().AddPlanSlices().AddResolveParentsSlices().AddPlanContextSlices()
         .AddScoped<IValidator<GetInstanceDesignStopRequest>, AcceptAllValidator<GetInstanceDesignStopRequest>>()
         .AddQuery<GetInstanceDesignStopRequest, DesignStopView, GetInstanceDesignStopService>()
+        .AddScoped<LineInstances>()
         .AddScoped<IValidator<GetInstanceLineRequest>, AcceptAllValidator<GetInstanceLineRequest>>()
         .AddQuery<GetInstanceLineRequest, LineView, GetInstanceLineService>()
         .AddScoped<IValidator<ShowLineHoldoutRequest>, AcceptAllValidator<ShowLineHoldoutRequest>>()

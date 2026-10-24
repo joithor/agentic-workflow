@@ -9,7 +9,6 @@ using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Features.Design;
 using Aw.Sindri.Features.Line;
 
 namespace Aw.Sindri.Features.GetInstanceLine;
@@ -26,10 +25,9 @@ namespace Aw.Sindri.Features.GetInstanceLine;
 /// <param name="frozen">The freeze records.</param>
 /// <param name="profile">The approved profile, whose <c language="text">workflow.line</c> keys are the limits shown.</param>
 /// <param name="clock">What the wall clock of a running phase is measured to.</param>
-internal sealed class GetInstanceLineService(PlanInstances instances, IInstanceReader reader, IFactContents contents, ITextScrubber scrubber, IFrozenPackets frozen, IApprovedProfile profile, TimeProvider clock)
+internal sealed class GetInstanceLineService(LineInstances instances, IInstanceReader reader, IFactContents contents, ITextScrubber scrubber, IFrozenPackets frozen, IApprovedProfile profile, TimeProvider clock)
     : IService<GetInstanceLineRequest, LineView>
 {
-    private const string LineRecipe = "workflow.line";
     private static readonly RecipeId _phaseRecipe = RecipeId.From("workflow.phase");
     private static readonly (string Station, string Recipe, string Fact)[] _stations =
     [
@@ -41,7 +39,7 @@ internal sealed class GetInstanceLineService(PlanInstances instances, IInstanceR
     public async ValueTask<Result<LineView>> Handle(GetInstanceLineRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var opened = await instances.Open(request.Instance, LineRecipe, cancellationToken).ConfigureAwait(false);
+        var opened = await instances.Open(request.Instance, cancellationToken).ConfigureAwait(false);
         if (opened.IsError)
         {
             return opened.Error;

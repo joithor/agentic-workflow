@@ -7,7 +7,6 @@ using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
-using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Line;
 using Aw.Sindri.Core.Packets;
 using Aw.Sindri.Core.Profile;
@@ -15,7 +14,6 @@ using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Features.Design;
 using Aw.Sindri.Features.GetInstanceLine;
 using Aw.Sindri.Host;
 using Aw.Sindri.Testing;
@@ -100,12 +98,12 @@ public sealed class GetInstanceLineServiceTests
         })]),
     }.ToJsonString();
 
-    private static async Task<Result<LineView>> Read(IEnumerable<InstanceView> views, string line, IFactContents contents, IReadOnlyList<FrozenPacket>? held = null, CallerContext? caller = null, FixedRepos? repos = null)
+    private static async Task<Result<LineView>> Read(IEnumerable<InstanceView> views, string line, IFactContents contents, IReadOnlyList<FrozenPacket>? held = null)
     {
         var all = views.ToArray();
         var instances = new SomeInstances(all);
         var service = new GetInstanceLineService(
-            new PlanInstances(instances, instances, repos ?? new FixedRepos(), new ListInstances.FixedCaller(caller ?? new CallerContextBuilder().Human().Build())),
+            new LineInstances(instances, instances),
             instances,
             contents,
             new Redacting(),
@@ -208,13 +206,14 @@ public sealed class GetInstanceLineServiceTests
     }
 
     [Fact]
-    public async Task A_session_of_another_repo_gets_the_not_found_answer()
+    public async Task An_unknown_instance_is_item_404()
     {
         var facts = new Facts();
         var line = Instance(Line, "workflow.line", facts);
-        var session = new CallerContextBuilder().Session().InRepo("beta").Build();
+        var instances = new SomeInstances(line);
+        var service = new GetInstanceLineService(new LineInstances(instances, instances), instances, facts.Contents, new Redacting(), new InMemoryFrozenPackets([]), new NoProfile(), new FakeTimeProvider(_now));
 
-        var result = await Read([line], Line, facts.Contents, caller: session, repos: new FixedRepos((Item, "alpha")));
+        var result = await service.Handle(new GetInstanceLineRequest(WorkflowInstanceId.Of(InstanceAddress.From("T-9/line/1"))), CancellationToken.None);
 
         Assert.Equal(SindriErrors.ItemNotFound.Code, result.Error.Code);
     }

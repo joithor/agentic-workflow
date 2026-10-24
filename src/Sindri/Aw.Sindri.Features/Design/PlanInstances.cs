@@ -18,14 +18,11 @@ internal sealed class PlanInstances(IInstanceDirectory directory, IInstanceReade
     private const string Recipe = "workflow.plan";
 
     /// <summary>The instance's view, when the caller may read it and it runs the plan recipe.</summary>
-    internal ValueTask<Result<InstanceView>> Open(WorkflowInstanceId instance, CancellationToken cancellationToken) => Open(instance, Recipe, cancellationToken);
-
-    /// <summary>The instance's view, when the caller may read it and it runs <paramref name="recipe"/> (the line board's read, LN-API1, opens a workflow.line instance the same way).</summary>
-    internal async ValueTask<Result<InstanceView>> Open(WorkflowInstanceId instance, string recipe, CancellationToken cancellationToken)
+    internal async ValueTask<Result<InstanceView>> Open(WorkflowInstanceId instance, CancellationToken cancellationToken)
     {
         if (callers.Current is not { } caller)
         {
-            return SindriErrors.AuthRefused.With("a line read needs a caller");
+            return SindriErrors.AuthRefused.With("a stop-2 read needs a caller");
         }
 
         var address = await directory.Resolve(instance.Value, cancellationToken).ConfigureAwait(false);
@@ -45,8 +42,8 @@ internal sealed class PlanInstances(IInstanceDirectory directory, IInstanceReade
             return refused;
         }
 
-        return string.Equals(view.Value.Recipe.Id.Value, recipe, StringComparison.Ordinal)
+        return string.Equals(view.Value.Recipe.Id.Value, Recipe, StringComparison.Ordinal)
             ? view.Value
-            : LineErrors.WrongRecipe.With($"{instance.Value} runs {view.Value.Recipe.Id.Value} (fix: pass the address of a {recipe} instance)");
+            : LineErrors.WrongRecipe.With($"{instance.Value} runs {view.Value.Recipe.Id.Value} (fix: pass the address of a {Recipe} instance)");
     }
 }
