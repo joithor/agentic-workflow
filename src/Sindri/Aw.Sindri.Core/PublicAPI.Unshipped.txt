@@ -8513,6 +8513,7 @@ Aw.Sindri.Core.Events.LaunchViewerPublic.Outcome.init -> void
 Aw.Sindri.Core.Events.SessionEndReason
 Aw.Sindri.Core.Events.SessionEndReason.Exit = 0 -> Aw.Sindri.Core.Events.SessionEndReason
 Aw.Sindri.Core.Events.SessionEndReason.Lost = 1 -> Aw.Sindri.Core.Events.SessionEndReason
+Aw.Sindri.Core.Events.SessionEndReason.Idle = 2 -> Aw.Sindri.Core.Events.SessionEndReason
 Aw.Sindri.Core.Events.SessionEnded
 Aw.Sindri.Core.Events.SessionEnded.<Clone>$() -> Aw.Sindri.Core.Events.SessionEnded!
 Aw.Sindri.Core.Events.SessionEnded.Equals(Aw.Sindri.Core.Events.SessionEnded? other) -> bool
@@ -10942,6 +10943,7 @@ Aw.Sindri.Core.Launch.LaunchFiles
 Aw.Sindri.Core.Launches.ILaunchFiles
 Aw.Sindri.Core.Launches.ILaunchFiles.Forget(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> void
 Aw.Sindri.Core.Launches.ILaunchFiles.SweepStale(System.DateTimeOffset now, System.TimeSpan olderThan, System.Func<Aw.Sindri.Core.Workflow.Engine.LaunchId, bool>! live) -> int
+Aw.Sindri.Core.Launches.ILaunchFiles.TurnEndedAt(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> System.DateTimeOffset?
 Aw.Sindri.Core.Launches.ILaunchFiles.Verify(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, Aw.Sindri.Core.Launches.LaunchSecret secret) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
 Aw.Sindri.Core.Launches.ILostSessions
 Aw.Sindri.Core.Launches.ILostSessions.Sweep(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int>
@@ -10960,6 +10962,7 @@ Aw.Sindri.Core.Launches.LaunchSecret.LaunchSecret(string! Value) -> void
 Aw.Sindri.Core.Launches.LaunchSecret.Value.get -> string!
 Aw.Sindri.Core.Launches.LaunchSecret.Value.init -> void
 const Aw.Sindri.Core.Launch.LaunchFiles.Directory = "launches" -> string!
+const Aw.Sindri.Core.Launch.LaunchFiles.TurnEndedSuffix = ".turn-ended" -> string!
 override Aw.Sindri.Core.Launch.CaptureRule.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Launch.CaptureRule.GetHashCode() -> int
 override Aw.Sindri.Core.Launch.CaptureRule.ToString() -> string!
@@ -10968,9 +10971,11 @@ override Aw.Sindri.Core.Launches.LaunchSecret.ToString() -> string!
 static Aw.Sindri.Core.Launch.CaptureRule.operator !=(Aw.Sindri.Core.Launch.CaptureRule? left, Aw.Sindri.Core.Launch.CaptureRule? right) -> bool
 static Aw.Sindri.Core.Launch.CaptureRule.operator ==(Aw.Sindri.Core.Launch.CaptureRule? left, Aw.Sindri.Core.Launch.CaptureRule? right) -> bool
 static Aw.Sindri.Core.Launch.LaunchFiles.CaptureName(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> string!
+static Aw.Sindri.Core.Launch.LaunchFiles.TurnEndedName(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> string!
 static Aw.Sindri.Core.Launch.LaunchFiles.SessionIdName(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> string!
 static Aw.Sindri.Core.Launches.LaunchRules.HeartbeatEvery.get -> System.TimeSpan
 static Aw.Sindri.Core.Launches.LaunchRules.LostAfter.get -> System.TimeSpan
+static Aw.Sindri.Core.Launches.LaunchRules.IdleAfter.get -> System.TimeSpan
 static Aw.Sindri.Core.Launches.LaunchSecret.operator !=(Aw.Sindri.Core.Launches.LaunchSecret left, Aw.Sindri.Core.Launches.LaunchSecret right) -> bool
 static Aw.Sindri.Core.Launches.LaunchSecret.operator ==(Aw.Sindri.Core.Launches.LaunchSecret left, Aw.Sindri.Core.Launches.LaunchSecret right) -> bool
 ~override Aw.Sindri.Core.Launches.LaunchSecret.Equals(object obj) -> bool
@@ -11139,6 +11144,7 @@ Aw.Sindri.Core.Launches.LaunchSessionEvents.Usage(string! item, Aw.Sindri.Core.E
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd.Exit = 1 -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd.Lost = 2 -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd.Idle = 3 -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd
 static Aw.Sindri.Core.Workflow.Blocks.BlockLimits.Bound(System.TimeSpan max, System.TimeSpan? timerLeft) -> System.TimeSpan
 static Aw.Sindri.Core.Workflow.Engine.Rules.BlockStepTriggers.IsBlockActor(string! actor) -> bool
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.BlockFactUnreadable -> Aw.Kernel.ErrorDefinition!

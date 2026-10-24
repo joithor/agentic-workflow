@@ -37,6 +37,8 @@ internal sealed partial class LaunchFileStore(LauncherOptions options) : ILaunch
         }
     }
 
+    public DateTimeOffset? TurnEndedAt(LaunchId launch) => null;
+
     public void Forget(LaunchId launch)
     {
         LaunchSecrets.Delete(options.SecretsDirectory, launch);

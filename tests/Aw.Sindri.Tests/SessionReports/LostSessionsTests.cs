@@ -38,6 +38,61 @@ public sealed class LostSessionsTests
     }
 
     [Fact]
+    public async Task A_turn_that_ended_120s_ago_with_no_report_ends_the_session_as_idle_while_it_still_beats()
+    {
+        await _s.Started();
+        _s.Liveness.Beat(A.FirstLaunchId, _s.Now);
+        _s.Files.EndTurn(A.FirstLaunchId, _s.Now);
+
+        _s.Views.Slice.Clock.Advance(TimeSpan.FromSeconds(119));
+        _s.Liveness.Beat(A.FirstLaunchId, _s.Now);
+        var early = await Sweeper().Sweep(Token);
+        _s.Views.Slice.Clock.Advance(TimeSpan.FromSeconds(1));
+        _s.Liveness.Beat(A.FirstLaunchId, _s.Now);
+        var swept = await Sweeper().Sweep(Token);
+
+        Expect.Equal((0, 1), (early, swept));
+        var recorded = Assert.Single(_s.Views.Slice.Store.Events);
+        var payload = _s.Views.Slice.Events.Payload<SessionEnded>(recorded).Value;
+        Expect.Equal(($"session.ended:{A.FirstLaunchId.Value}", SessionEndReason.Idle, null), (recorded.IdempotencyKey, payload.Reason, payload.ExitCode));
+        Expect.Equal(A.FirstLaunchId, Assert.Single(_hosted.Forgotten));
+    }
+
+    [Fact]
+    public async Task A_new_turn_starts_the_idle_clock_over()
+    {
+        await _s.Started();
+        _s.Liveness.Beat(A.FirstLaunchId, _s.Now);
+        _s.Files.EndTurn(A.FirstLaunchId, _s.Now);
+        _s.Views.Slice.Clock.Advance(TimeSpan.FromSeconds(100));
+        _s.Liveness.Beat(A.FirstLaunchId, _s.Now);
+        _s.Files.StartTurn(A.FirstLaunchId);
+        _s.Views.Slice.Clock.Advance(TimeSpan.FromSeconds(100));
+        _s.Liveness.Beat(A.FirstLaunchId, _s.Now);
+        _s.Files.EndTurn(A.FirstLaunchId, _s.Now);
+        _s.Views.Slice.Clock.Advance(TimeSpan.FromSeconds(100));
+        _s.Liveness.Beat(A.FirstLaunchId, _s.Now);
+
+        Expect.Equal(0, await Sweeper().Sweep(Token));
+        Expect.Equal(0, _s.Views.Slice.Store.Events.Count);
+    }
+
+    [Fact]
+    public async Task A_session_whose_turn_never_ended_is_never_idle()
+    {
+        await _s.Started();
+        _s.Liveness.Beat(A.FirstLaunchId, _s.Now);
+        for (var minute = 0; minute < 5; minute++)
+        {
+            _s.Views.Slice.Clock.Advance(TimeSpan.FromSeconds(60));
+            _s.Liveness.Beat(A.FirstLaunchId, _s.Now);
+            Expect.Equal(0, await Sweeper().Sweep(Token));
+        }
+
+        Expect.Equal(0, _s.Views.Slice.Store.Events.Count);
+    }
+
+    [Fact]
     public async Task A_lost_session_is_ended_once()
     {
         await _s.Started();
