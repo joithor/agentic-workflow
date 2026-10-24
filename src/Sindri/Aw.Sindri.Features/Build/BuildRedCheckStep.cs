@@ -9,7 +9,7 @@ namespace Aw.Sindri.Features.Build;
 /// <summary>
 /// 'step.build.red-check' on the block runtime (line spec §7.2, BLD-RED-001): the red tests must FAIL on the red commit, before any code. The profile's
 /// <c language="text">workflow.build.commands</c> all run once in the phase worktree on that commit (decision A); at least one must fail ('red'). When every command passes the tests can't fail: 'vacuous' (a finding names the
-/// items and their tests) and the build goes back to 'red'. A command that runs out of time, a worktree off the red commit or with uncommitted files, no red commit in the facts, no command in the profile or no test to run
+/// items and their tests) and the build goes back to 'red'. When every item is app-only there is no test to run and it passes ('red') without running a command; their proof is at prove. A command that runs out of time, a worktree off the red commit or with uncommitted files, no red commit in the facts, no command in the profile or no test to run
 /// fails the Step instead, so the instance parks. The commands run under one heavy slot.
 /// </summary>
 /// <param name="diff">Reads the worktree's head.</param>
@@ -33,6 +33,11 @@ internal sealed class BuildRedCheckStep(IRunDiff diff, RepoCommandRunner command
         if (Wrong(red) is { } wrong)
         {
             return BlockStepResult.Failed($"step.build.red-check can't read fact:redTests: {wrong}");
+        }
+
+        if (red.Entries.Count > 0 && red.Entries.All(static e => e.Tests.Count == 0 && e.AppOnly))
+        {
+            return StepFacts.Done("red");   // nothing a test can fail: the items are app-only (fact:redTests says so), and prove checks them in the running app
         }
 
         if (red.Entries.All(static e => e.Tests.Count == 0))
