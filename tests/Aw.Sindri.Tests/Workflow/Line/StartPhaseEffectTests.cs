@@ -111,8 +111,8 @@ public sealed class StartPhaseEffectTests
             contexts.Add(await Content(start.Inputs[FactKey.From("fact:lineContext")]));
         }
 
-        Assert.Equal(["p1", "p2"], contexts.Select(static c => c!["phase"]!.GetValue<string>()));
-        Assert.Equal(["L-1", "L-1"], contexts.Select(static c => c!["line"]!.GetValue<string>()));
+        Assert.Equal(["p1", "p2"], contexts.Select(static c => c!["phase"]!.GetValue<string>()), StringComparer.Ordinal);
+        Assert.Equal(["L-1", "L-1"], contexts.Select(static c => c!["line"]!.GetValue<string>()), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
