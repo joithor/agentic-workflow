@@ -87,7 +87,8 @@ public sealed class GateHardeningTests : IDisposable
         var c2 = World.Ok(await _w.Record("h1", "/wt/h1", hypothesis: 1)).Candidate;
         var c3 = World.Ok(await _w.Record("h2", "/wt/h2", hypothesis: 2)).Candidate;
         await PassAndJudge(c2, "/wt/h1", JudgeDecision.Escalated);
-        Assert.Equal(BugFixStatus.NeedsHuman, _w.Now.Status);
+        Assert.Null(_w.Now.Candidates[1].Verdict);   // an escalation records nothing
+        Assert.Equal(BugFixStatus.Active, _w.Now.Status);
 
         await PassAndJudge(c3, "/wt/h2", JudgeDecision.Resolved);
 

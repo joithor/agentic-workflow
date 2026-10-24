@@ -138,7 +138,7 @@ public sealed class EvaluateTests : IDisposable
 
         Assert.Equal((JudgeDecision.Escalated, BugFixStatus.Active), (result.Decision, result.Status));
         Assert.Null(_w.Now.Candidates[0].Verdict);
-        Assert.Equal("judge c1", World.Ok(await Resume()).Next.Split(" (")[0]);
+        Assert.StartsWith("judge c1 again", World.Ok(await Resume()).Next, StringComparison.Ordinal);
         Assert.Equal(JudgeDecision.Resolved, World.Ok(await Judge(c1)).Decision);
     }
 
