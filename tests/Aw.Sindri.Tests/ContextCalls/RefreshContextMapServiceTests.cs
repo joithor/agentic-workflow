@@ -75,15 +75,54 @@ public sealed class RefreshContextMapServiceTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_build_error_fails_the_job_with_nothing_cleaned_or_promoted()
+    public async Task A_non_transient_build_error_fails_the_job_at_once_with_nothing_cleaned_or_promoted()
     {
-        _engine.Built = ContextErrors.HeavyLockBusy.With("busy");
+        _engine.Built = ContextErrors.SettingsInvalid.With("context.repos: none");
 
         var result = await Run();
 
-        Assert.Equal(ContextErrors.HeavyLockBusy.Code, result.Error.Code);
+        Assert.Equal(ContextErrors.SettingsInvalid.Code, result.Error.Code);
         Assert.Equal(["MapHeads", "BuildMap"], _engine.Log);
         Assert.Empty(Types());
+    }
+
+    // Drives the job while its backoff waits: the fake clock jumps past each wait as it is asked for.
+    private async Task<Kernel.Result<RefreshContextMapResult>> RunThroughBackoff()
+    {
+        var run = Run();
+        while (!run.IsCompleted)
+        {
+            _h.Clock.Advance(TimeSpan.FromMinutes(10));
+            await Task.Delay(1, Ct);
+        }
+
+        return await run;
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_transient_build_failure_is_retried_and_the_job_then_succeeds()
+    {
+        _engine.BuiltFirst.Enqueue(ContextErrors.StoreUnavailable.With("busy"));
+        _engine.BuiltFirst.Enqueue(ContextErrors.HeavyLockBusy.With("busy"));
+
+        var result = await RunThroughBackoff();
+
+        Assert.True(result.IsSuccess, result.IsError ? result.Error.Code : null);
+        Assert.Equal(3, _engine.Log.Count(static l => l == "BuildMap"));
+        Assert.Contains(_progress, static l => l.StartsWith("retrying (attempt 2 of 4) in 30 s", StringComparison.Ordinal));
+        Assert.Contains(_progress, static l => l.StartsWith("retrying (attempt 3 of 4) in 2 min", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Retries_stop_after_the_last_attempt_and_the_job_fails_with_the_last_error()
+    {
+        _engine.Built = ContextErrors.StoreUnavailable.With("still busy");
+
+        var result = await RunThroughBackoff();
+
+        Assert.Equal(ContextErrors.StoreUnavailable.Code, result.Error.Code);
+        Assert.Contains("still busy", result.Error.Message, StringComparison.Ordinal);
+        Assert.Equal(4, _engine.Log.Count(static l => l == "BuildMap"));
     }
 
     [Fact, Trait("Lane", "unit")]
