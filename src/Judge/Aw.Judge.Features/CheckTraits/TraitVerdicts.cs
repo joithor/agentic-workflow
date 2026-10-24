@@ -1,8 +1,8 @@
 using System.Text.Json.Nodes;
 using Aw.Judge.Core.Batching;
+using Aw.Judge.Core.Ports;
 using Aw.Judge.Core.Providers;
 using Aw.Judge.Core.Traits;
-using Aw.Judge.Core.Ports;
 
 namespace Aw.Judge.Features.CheckTraits;
 

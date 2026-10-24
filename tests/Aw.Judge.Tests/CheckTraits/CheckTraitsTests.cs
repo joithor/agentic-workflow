@@ -1,5 +1,7 @@
 using Aw.Judge.Core.Providers;
 using Aw.Judge.Features.CheckTraits;
+using Aw.Judge.Infrastructure.Processes;
+using Aw.Judge.Infrastructure.Traits;
 using Aw.Judge.Testing;
 
 namespace Aw.Judge.Tests.CheckTraits;
@@ -197,10 +199,10 @@ public sealed class CheckTraitsTests
         using var harness = new CheckTraitsHarness(repo, CheckTraitsHarness.Violating());
         using var elsewhere = new TempStateDirectory();
         var service = new CheckTraitsService(
-            new Aw.Judge.Infrastructure.Processes.SystemProcessRunner(Environment.GetEnvironmentVariable),
-            new Aw.Judge.Infrastructure.Traits.FileTraitStore(elsewhere.Path),
-            new Aw.Judge.Infrastructure.Traits.FileTraitFiles(elsewhere.Path),
-            new Aw.Judge.Infrastructure.Traits.JevTraitJudge(harness.Jev, new FakeInputRedactor(), new InMemoryJudgeConfigStore()),
+            new SystemProcessRunner(Environment.GetEnvironmentVariable),
+            new FileTraitStore(elsewhere.Path),
+            new FileTraitFiles(elsewhere.Path),
+            new JevTraitJudge(harness.Jev, new FakeInputRedactor(), new InMemoryJudgeConfigStore()),
             harness.Log,
             TimeProvider.System);
 

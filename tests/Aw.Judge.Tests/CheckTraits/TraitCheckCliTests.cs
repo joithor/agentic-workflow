@@ -104,7 +104,7 @@ public sealed class TraitCheckCliTests : IDisposable
     {
         Environment = environment ?? new Dictionary<string, string>(StringComparer.Ordinal),
         Overrides = services => services
-            .AddSingleton<IProcessRunner>(new SystemProcessRunner(System.Environment.GetEnvironmentVariable))
+            .AddSingleton<IProcessRunner>(new SystemProcessRunner(Environment.GetEnvironmentVariable))
             .AddSingleton<ITraitFiles>(new FileTraitFiles(_repo.Root))
             .AddSingleton<IBatchClassifier>(jev),
     };
