@@ -150,8 +150,8 @@ internal sealed class ProveHoldoutLogStep(IHoldoutStore store, ICommitText commi
 
         try
         {
-            var packet = JsonNode.Parse(read.Value.Text);
-            return (string?)packet?["id"] is { } id && (string?)packet["baseSha"] is { } baseSha
+            var packet = JsonNode.Parse(read.Value.Text) as JsonObject;   // why: a string index on an array root throws
+            return RecheckFacts.Text(packet?["id"]) is { } id && RecheckFacts.Text(packet?["baseSha"]) is { } baseSha
                 ? (id, baseSha, null)
                 : (null, null, $"can't use the phase packet {dir}: packet.json must name the packet's id and baseSha");
         }

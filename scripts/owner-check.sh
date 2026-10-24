@@ -80,8 +80,9 @@ bounded() { perl -e 'alarm shift; exec @ARGV or die "exec $ARGV[0]: $!"' 30 "$@"
 listening() { (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null; }
 listeners() { if command -v lsof >/dev/null; then lsof -nP -t -iTCP:"$port" -sTCP:LISTEN 2>/dev/null; else fuser -n tcp "$port" 2>/dev/null; fi; }
 # Every call to the PR's build: the scratch home and port, and never AW_SINDRI_PROFILE (it would point the scratch
-# instance at the real profile instead of the edited copy in the scratch home).
-in_scratch=(env -u AW_SINDRI_PROFILE AW_SINDRI_HOME="$home" AW_SINDRI_PORT="$port")
+# instance at the real profile instead of the edited copy in the scratch home). AW_SINDRI_APP_NO_MCP=1 keeps the scratch
+# instance from registering a 'sindri' MCP server in the real ~/.claude.json.
+in_scratch=(env -u AW_SINDRI_PROFILE AW_SINDRI_APP_NO_MCP=1 AW_SINDRI_HOME="$home" AW_SINDRI_PORT="$port")
 
 # yaml_set <file> <a> <b> <c> <value> <insert> — sets a.b.c in a block-style YAML file; with insert=0 only where the
 # key exists. Exit 3 when it can't edit in place (a flow mapping or a scalar on the way).
