@@ -56,6 +56,20 @@ internal static class McpPages
     {
         foreach (var name in obj.Select(property => property.Key).ToArray())
         {
+            if (path.Length == 0 && name == "bands" && obj[name] is JsonObject bands)
+            {
+                // why: the lenses answer groups its lists in three band objects; each band's lists page, nothing inside an item does
+                foreach (var band in bands.Select(property => property.Key).ToArray())
+                {
+                    if (bands[band] is JsonObject child)
+                    {
+                        Slice(child, window, $"bands.{band}.", lists, ref more);
+                    }
+                }
+
+                continue;
+            }
+
             if (obj[name] is not JsonArray array || (path.Length == 0 && _warnings.Contains(name)))
             {
                 continue;

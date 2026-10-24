@@ -4620,10 +4620,8 @@ const Aw.Context.Core.Eval.ProbeScoring.K = 5 -> int
 const Aw.Context.Core.Extract.MapExtractor.Version = 2 -> int
 const Aw.Context.Core.Graph.EntryKey.Version = 1 -> int
 const Aw.Context.Core.Graph.GraphWalk.MaxDepth = 8 -> int
-const Aw.Context.Core.History.HistoryRules.ChangesPerRepo = 10000 -> int
-const Aw.Context.Core.History.HistoryRules.MaxFiles = 200 -> int
+const Aw.Context.Core.History.HistoryRules.ChangesPerRepo = 2147483646 -> int
 const Aw.Context.Core.History.HistoryRules.SubjectChars = 200 -> int
-const Aw.Context.Core.Lenses.DiffAnchors.MaxFiles = 1000 -> int
 const Aw.Context.Core.Linking.DecisionExtractor.MaxQuote = 600 -> int
 const Aw.Context.Core.Map.MapRetention.RetainedVersions = 100 -> int
 const Aw.Context.Core.Onyx.OnyxSettings.DedicatedAccountEmail = "sindri@example.com" -> string!
@@ -4634,10 +4632,8 @@ const Aw.Context.Core.Results.ContextResult.CurrentSchemaVersion = 1 -> int
 const Aw.Context.Core.Review.CleanupPolicy.Batch = 40 -> int
 const Aw.Context.Core.Review.CleanupPolicy.KeepAt = 0.75 -> double
 const Aw.Context.Core.Review.CleanupPolicy.MaxTokens = 100000 -> int
-const Aw.Context.Core.Review.ReviewHistory.DefaultLimit = 200 -> int
-const Aw.Context.Core.Review.ReviewHistory.MaxLimit = 10000 -> int
-const Aw.Context.Core.Review.ReviewLimits.Max = 10000 -> int
-const Aw.Context.Core.Review.ReviewLimits.QueueDefault = 100 -> int
+const Aw.Context.Core.Review.ReviewHistory.DefaultLimit = 2147483647 -> int
+const Aw.Context.Core.Review.ReviewLimits.QueueDefault = 2147483647 -> int
 const Aw.Context.Core.Trust.UntrustedFence.MaxTitle = 200 -> int
 override Aw.Context.Core.Code.CodeData.Equals(object? obj) -> bool
 override Aw.Context.Core.Code.CodeData.GetHashCode() -> int
@@ -6669,13 +6665,11 @@ Aw.Context.Core.WholeMap.WholeMapRules
 Aw.Context.Core.WholeMap.WholeMapRules.<Clone>$() -> Aw.Context.Core.WholeMap.WholeMapRules!
 Aw.Context.Core.WholeMap.WholeMapRules.AreaCap.get -> int
 Aw.Context.Core.WholeMap.WholeMapRules.AreaCap.init -> void
-Aw.Context.Core.WholeMap.WholeMapRules.AreasCap.get -> int
-Aw.Context.Core.WholeMap.WholeMapRules.AreasCap.init -> void
-Aw.Context.Core.WholeMap.WholeMapRules.Deconstruct(out int NodeBudget, out int AreaCap, out int AreasCap) -> void
+Aw.Context.Core.WholeMap.WholeMapRules.Deconstruct(out int NodeBudget, out int AreaCap) -> void
 Aw.Context.Core.WholeMap.WholeMapRules.Equals(Aw.Context.Core.WholeMap.WholeMapRules? other) -> bool
 Aw.Context.Core.WholeMap.WholeMapRules.NodeBudget.get -> int
 Aw.Context.Core.WholeMap.WholeMapRules.NodeBudget.init -> void
-Aw.Context.Core.WholeMap.WholeMapRules.WholeMapRules(int NodeBudget = 500, int AreaCap = 5000, int AreasCap = 5000) -> void
+Aw.Context.Core.WholeMap.WholeMapRules.WholeMapRules(int NodeBudget = 500, int AreaCap = 5000) -> void
 Aw.Context.Core.WholeMap.WholeMapView
 Aw.Context.Core.WholeMap.WholeMapView.<Clone>$() -> Aw.Context.Core.WholeMap.WholeMapView!
 Aw.Context.Core.WholeMap.WholeMapView.Area.get -> Aw.Context.Core.WholeMap.WholeMapAreaInfo?

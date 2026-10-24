@@ -9,7 +9,7 @@ namespace Aw.Sindri.Host.Mcp;
 
 internal static partial class ContextTools
 {
-    /// <summary>Runs context_lenses. The service pages this answer, so the result is not paged again.</summary>
+    /// <summary>Runs context_lenses. The service is asked for the whole answer and McpPages cuts it, like every other tool.</summary>
     /// <param name="services">The request's services.</param>
     /// <param name="arguments">The call's arguments.</param>
     /// <param name="ct">Cancels the call.</param>
@@ -22,6 +22,8 @@ internal static partial class ContextTools
             return McpResults.Failure(services, bound.Error);
         }
 
+        var window = McpArguments.ReadPage(arguments).Value;   // BindLenses read it first, so it is valid here
+
         var answer = await services.GetRequiredService<IService<GetContextLensesAnswerRequest, LensesAnswer>>().Handle(bound.Value, ct).ConfigureAwait(false);
         if (answer.IsError)
         {
@@ -29,8 +31,8 @@ internal static partial class ContextTools
         }
 
         return answer.Value.Many is { } many
-            ? McpResults.Success(services, many, McpSummaries.LensesSet(many))
-            : McpResults.Success(services, answer.Value.One!, McpSummaries.Lenses(answer.Value.One!));   // why: exactly one of One and Many is set
+            ? McpResults.Success(services, many, McpSummaries.LensesSet(many), page: window)
+            : McpResults.Success(services, answer.Value.One!, McpSummaries.Lenses(answer.Value.One!), page: window);   // why: exactly one of One and Many is set
     }
 
     /// <summary>The lenses arguments as a request. The page is read first; SND-CONTEXT-022 for anything else. The draft map is never read over MCP.</summary>
@@ -60,7 +62,7 @@ internal static partial class ContextTools
 
         return anchors.Count == 0 || anchors.Exists(string.IsNullOrWhiteSpace)
             ? ContextErrors.McpArgumentsInvalid.With("context_lenses needs 'anchor', a node key, name or alias (fix: call it with {\"anchor\": \"feature:tabs\"}, or 'anchors' for several)")
-            : new GetContextLensesAnswerRequest(anchors, Draft: false, Depth: null, mapVersion, hops, page.Value.Limit, page.Value.Offset);
+            : new GetContextLensesAnswerRequest(anchors, Draft: false, Depth: null, mapVersion, hops, int.MaxValue, 0)   // why: the whole answer; McpPages applies the window;
     }
 
     /// <summary>One lenses argument into the anchors (a single 'anchor' first) or the map version; false for a wrong type.</summary>

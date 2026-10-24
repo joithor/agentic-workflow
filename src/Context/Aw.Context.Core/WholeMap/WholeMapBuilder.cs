@@ -48,7 +48,7 @@ public static class WholeMapBuilder
             : overview with { Detail = WholeMapDetail.Nodes, Nodes = Nodes(known.Values, areas, text), Edges = Edges(edges) };
     }
 
-    // One area on its own: its nodes in kind and key order up to the cap, and the edges among those.
+    // One area on its own: all its nodes in kind and key order, and the edges among them. Nothing is cut.
     private static Result<WholeMapView> Opened(string key, WholeMapView overview, (Dictionary<string, GraphNode> Known, List<GraphEdge> Edges) graph, (AreaIndex Areas, WholeMapRules Rules, MapText Text) how)
     {
         var members = graph.Known.Values.Where(n => how.Areas.ByNode[n.Key.Value].Area == key).ToList();
@@ -57,8 +57,7 @@ public static class WholeMapBuilder
             return ContextErrors.AreaUnknown.With("that area isn't in this map (fix: read the areas from 'context map whole' first, and name one of their keys)");
         }
 
-        var cut = members.Count > how.Rules.AreaCap;
-        var shown = members.OrderBy(n => n.Key.Kind).ThenBy(n => n.Key.Value, StringComparer.Ordinal).Take(how.Rules.AreaCap).ToList();
+        var shown = members.OrderBy(n => n.Key.Kind).ThenBy(n => n.Key.Value, StringComparer.Ordinal).ToList();
         var shownKeys = shown.Select(n => n.Key.Value).ToHashSet(StringComparer.Ordinal);
         var memberKeys = members.Select(n => n.Key.Value).ToHashSet(StringComparer.Ordinal);
         return overview with
@@ -66,8 +65,7 @@ public static class WholeMapBuilder
             Detail = WholeMapDetail.Nodes,
             Nodes = Nodes(shown, how.Areas, how.Text),
             Edges = Edges([.. graph.Edges.Where(e => shownKeys.Contains(e.From.Value) && shownKeys.Contains(e.To.Value))]),
-            Area = new WholeMapAreaInfo(key, cut, Counts(members, graph.Edges.Count(e => memberKeys.Contains(e.From.Value) && memberKeys.Contains(e.To.Value)))),
-            Truncated = overview.Truncated || cut,
+            Area = new WholeMapAreaInfo(key, Truncated: false, Counts(members, graph.Edges.Count(e => memberKeys.Contains(e.From.Value) && memberKeys.Contains(e.To.Value)))),
         };
     }
 
@@ -82,9 +80,7 @@ public static class WholeMapBuilder
     private static (IReadOnlyList<WholeMapArea> Areas, bool Truncated) ListAreas(Dictionary<string, GraphNode> known, AreaIndex areas, WholeMapRules rules, MapText text)
     {
         List<WholeMapArea> all = [.. known.Values.GroupBy(n => areas.ByNode[n.Key.Value].Area, StringComparer.Ordinal).Select(g => Area(g.Key, [.. g], known, text))];
-        var truncated = all.Count > rules.AreasCap;
-        var chosen = truncated ? all.OrderByDescending(a => a.Members).ThenBy(a => a.Key, StringComparer.Ordinal).Take(rules.AreasCap) : all;
-        return ([.. chosen.OrderBy(a => a.Key, StringComparer.Ordinal)], truncated);
+        return ([.. all.OrderBy(a => a.Key, StringComparer.Ordinal)], Truncated: false);
     }
 
     private static WholeMapArea Area(string key, List<GraphNode> members, Dictionary<string, GraphNode> known, MapText text)
