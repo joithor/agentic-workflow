@@ -11,10 +11,7 @@ internal static partial class LinearText
     /// sanitizer removes markdown and HTML images from the stored text, so their alt text and link are listed again as
     /// plain lines (owner q105, 2026-10-24).
     /// </summary>
-    public static string Of(LinearIssue issue)
-    {
-        return IssueHead(issue) + IssueTail(issue);
-    }
+    public static string Of(LinearIssue issue) => IssueHead(issue) + IssueTail(issue);
 
     /// <summary>A Linear Document: its content.</summary>
     public static string Of(LinearDocument document) => document.Content ?? "";
