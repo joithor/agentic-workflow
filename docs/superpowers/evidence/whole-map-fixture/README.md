@@ -1,7 +1,7 @@
 # Context whole map on the UI fixture (whole-map spec section 8, W3 and W4)
 
 The real app, not a test host: `sindri serve` (the fixture's guarded temp home, `scripts/sindri-ui-fixture.sh up`, `context up`,
-`context whole over|under`) and `sindri-ui` (the Avalonia desktop app, a debug build of main at a78148552) on an Xvfb display,
+`context whole over|under`) and `sindri-ui` (the Avalonia desktop app, a debug build of main 2fb7b2d (chip row removed, #880)) on an Xvfb display,
 driven with XTEST key and mouse events by `scripts/sindri-ui-capture.py`. The app is launched with
 `sindri://context?repo=aw-split-panes`; the frame run is Home, click Context, type a query, Enter, Esc.
 
@@ -20,12 +20,17 @@ driven with XTEST key and mouse events by `scripts/sindri-ui-capture.py`. The ap
 
 | Map | Size | Cold (fresh app) first frame / settled | Warm first frame / settled |
 |---|---|---|---|
-| over (612 nodes, by feature) | 1440x900 | 0.095 s / 0.72 s | 0.14 s / 0.55 s |
-| over | 900x800 | 0.09 s / 0.62 s | 0.09 s / 0.09 s |
-| under (14 nodes) | 1440x900 | 0.08 s / 0.36 s | 0.12 s / 0.95 s |
-| under | 900x800 | 0.07 s / 0.33 s | 0.06 s / 0.06 s |
+| over (612 nodes, by feature) | 1440x900 | 0.45 s / 0.83 s | 0.13 s / 0.21 s |
+| over | 900x800 | 0.10 s / 1.5 s | 0.13 s / 0.13 s |
+| under (14 nodes) | 1440x900 | 0.26 s / 0.58 s | 0.16 s / 1.4 s |
+| under | 900x800 | 0.08 s / 1.4 s (the app was already open, so not cold) | 0.08 s / 0.08 s |
 
-Software-rendered Xvfb on a shared box, one run each: a rough figure, not a benchmark.
+Software-rendered Xvfb on a shared box under memory pressure (about 20 of 32 GB in use), one run each: a rough figure, not a benchmark.
+An earlier run on a78148552 (before the merge of main) measured 0.095 s cold and 0.14 s warm for over at 1440.
+
+## Seen in the frames
+
+At 900 the minimap overlaps the last row of cards on the over-budget whole map (over-900x800-1-whole.png, Area 6).
 
 ## Finding
 
