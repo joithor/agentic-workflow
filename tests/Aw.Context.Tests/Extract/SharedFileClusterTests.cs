@@ -27,4 +27,29 @@ public sealed class SharedFileClusterTests
         var edges = map.Edges.Where(e => e.Type == EdgeType.Implements).ToList();
         Assert.Equal(["code:apps/web/src/Staff/SelfScheduling/schedule.tsx"], edges.Select(e => e.From.Value), StringComparer.Ordinal);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_cluster_of_only_shared_files_proposes_no_feature()
+    {
+        var map = ClusterFeatures.Propose(_repo, Set(Cluster("c1", 0.55,
+            "packages/icons/src/ArrowsDownUp/Fill.tsx",
+            "apps/web/src/Demo/__tests__/demo.unit.test.ts")), [], ExtractedMap.Empty);
+
+        Assert.Equal(ExtractedMap.Empty, map);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_shared_file_does_not_make_its_cluster_claim_the_surfaces_it_defines()
+    {
+        var extracted = MapExtractor.Extract(_repo,
+        [
+            new RepoFile("src/tabs/ids.ts", "export type CommandId = \"close-tab\";"),
+            new RepoFile("src/demo/ids.ts", "export type CommandId = \"split\";"),
+        ]);
+
+        var map = ClusterFeatures.Propose(_repo, Set(Cluster("c1", 0.8, "src/tabs/ids.ts", "src/demo/ids.ts")), [], extracted);
+
+        var claim = Assert.Single(map.Edges, e => e.Type == EdgeType.PartOf);
+        Assert.Equal("surface:command/close-tab", claim.From.Value);
+    }
 }

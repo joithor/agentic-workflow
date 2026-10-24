@@ -22,6 +22,24 @@ public sealed class PackerTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Budget_a_later_section_leaves_unused_goes_back_to_earlier_sections_that_overflowed()
+    {
+        var packed = Packer.Pack([Candidate("graph", "G1", 40), Candidate("graph", "G2", 40), Candidate("graph", "G3", 40), Candidate("records", "R1", 10)], budget: 100);
+
+        Assert.Equal(["G1", "G2"], packed.Sections[0].Items.Select(i => i.Title ?? ""), StringComparer.Ordinal);
+        Assert.Equal(["G3"], packed.Sections[0].More);
+        Assert.Equal(90, packed.Used);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_same_marker_overflowing_twice_is_listed_once()
+    {
+        var packed = Packer.Pack([Candidate("graph", "M", 60), Candidate("graph", "M", 60)], budget: 50);
+
+        Assert.Equal(["M"], packed.Sections.Single().More);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void An_item_is_never_cut_mid_way()
     {
         var packed = Packer.Pack([Candidate("graph", "C1", tokens: 101)], budget: 100);
