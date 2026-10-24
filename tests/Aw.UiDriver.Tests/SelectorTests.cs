@@ -56,19 +56,19 @@ public sealed class SelectorTests
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("exists", WaitState.Exists)]
-    [InlineData("Visible", WaitState.Visible)]
-    [InlineData("hidden", WaitState.Hidden)]
-    [InlineData("gone", WaitState.Gone)]
-    [InlineData("enabled", WaitState.Enabled)]
-    [InlineData("disabled", WaitState.Disabled)]
-    [InlineData("textEquals", WaitState.TextEquals)]
-    [InlineData("textcontains", WaitState.TextContains)]
-    [InlineData(null, WaitState.Visible)]
-    public void A_wait_state_is_read_by_name_and_visible_by_default(string? name, WaitState expected)
+    [InlineData("exists", "Exists")]
+    [InlineData("Visible", "Visible")]
+    [InlineData("hidden", "Hidden")]
+    [InlineData("gone", "Gone")]
+    [InlineData("enabled", "Enabled")]
+    [InlineData("disabled", "Disabled")]
+    [InlineData("textEquals", "TextEquals")]
+    [InlineData("textcontains", "TextContains")]
+    [InlineData(null, "Visible")]
+    public void A_wait_state_is_read_by_name_and_visible_by_default(string? name, string expected)
     {
         Assert.True(WaitStates.TryParse(name, out var state));
-        Assert.Equal(expected, state);
+        Assert.Equal(Enum.Parse<WaitState>(expected), state);
     }
 
     [Theory, Trait("Lane", "unit")]

@@ -49,7 +49,7 @@ public sealed class DriverServerTests : IAsyncLifetime
     [Fact, Trait("Lane", "integration")]
     public async Task A_call_without_the_secret_or_with_a_wrong_one_is_refused()
     {
-        using var none = await Post("/v1/tree", "{}", null);
+        using var none = await Post("/v1/tree", "{}", secret: null);
         using var wrong = await Post("/v1/tree", "{}", "not-the-secret");
         using var right = await Post("/v1/tree", "{}", _files!.Secret);
 
@@ -123,8 +123,6 @@ public sealed class DriverServerTests : IAsyncLifetime
     }
 
     [Fact, Trait("Lane", "integration")]
-    public void The_verbs_are_the_ones_the_command_line_sends()
-    {
+    public void The_verbs_are_the_ones_the_command_line_sends() =>
         Assert.Equal(["tree", "search", "props", "click", "type", "key", "scroll", "wait-for", "screenshot", "window", "action"], Verbs.Names);
-    }
 }

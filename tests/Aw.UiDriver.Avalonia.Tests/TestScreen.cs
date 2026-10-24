@@ -1,39 +1,10 @@
-using System.Windows.Input;
-using Avalonia;
+using System.Globalization;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
-using Aw.UiDriver.Avalonia.Tests;
-
-[assembly: AvaloniaTestApplication(typeof(TestAppBuilder))]
 
 namespace Aw.UiDriver.Avalonia.Tests;
-
-/// <summary>The headless app the driver tests run in: Skia drawing on, so a screenshot has pixels, and no theme, so nothing but the test's own controls is on screen.</summary>
-public static class TestAppBuilder
-{
-    /// <summary>Builds the app for the headless session.</summary>
-    /// <returns>The builder.</returns>
-    public static AppBuilder BuildAvaloniaApp() =>
-        AppBuilder.Configure<Application>().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false });
-}
-
-/// <summary>A command that counts how often it ran.</summary>
-internal sealed class CountingCommand : ICommand
-{
-    public event EventHandler? CanExecuteChanged
-    {
-        add { }
-        remove { }
-    }
-
-    public int Runs { get; private set; }
-
-    public bool CanExecute(object? parameter) => true;
-
-    public void Execute(object? parameter) => Runs++;
-}
 
 /// <summary>The window the tests drive: a form with a button, a text box, a toggle, a disabled button, a scrolling list and a key listener.</summary>
 internal sealed class TestScreen
@@ -56,7 +27,7 @@ internal sealed class TestScreen
         var rows = new StackPanel();
         for (var i = 0; i < 40; i++)
         {
-            rows.Children.Add(new TextBlock { Text = $"row {i}", Height = 20 });
+            rows.Children.Add(new TextBlock { Text = "row " + i.ToString(CultureInfo.InvariantCulture), Height = 20 });
         }
 
         List = new ScrollViewer { Height = 100, Content = rows };

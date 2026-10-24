@@ -51,7 +51,7 @@ public sealed class DriverHostTests
         var limited = (await host.Search(new SearchRequest(new Selector(Type: "TextBlock"), Limit: 3))).Value;
         var byText = (await host.Search(new SearchRequest(new Selector(TextContains: "Ada")))).Value;
 
-        Assert.Equal(["save", "off"], buttons.Matches.Select(static m => m.AutomationId));
+        Assert.Equal<string?>(["save", "off"], buttons.Matches.Select(static m => m.AutomationId), StringComparer.Ordinal);
         Assert.Equal((3, true), (limited.Matches.Count, limited.Total > 3));
         Assert.Contains(byText.Matches, static m => m.AutomationId == "greeting");
         Assert.All(buttons.Matches, static m => Assert.Empty(m.Children));
@@ -144,10 +144,10 @@ public sealed class DriverHostTests
         _ = await host.Scroll(new ScrollRequest(0, 60, new Selector(AutomationId: "list")));
         var first = await TestScreen.OnUi(() => screen.List.Offset.Y);
         _ = await host.Scroll(new ScrollRequest(0, 100_000, new Selector(AutomationId: "list")));
-        var last = await TestScreen.OnUi(() => (screen.List.Offset.Y, screen.List.Extent.Height - screen.List.Viewport.Height));
+        var last = await TestScreen.OnUi(() => (Offset: screen.List.Offset.Y, Max: screen.List.Extent.Height - screen.List.Viewport.Height));
 
         Assert.Equal(60, first);
-        Assert.Equal(last.Item2, last.Item1);
+        Assert.Equal(last.Max, last.Offset);
     }
 
     [Fact, Trait("Lane", "integration")]
