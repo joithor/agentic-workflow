@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Infrastructure.Processes;
 
@@ -28,7 +29,7 @@ internal sealed class UiEvidenceDoctorChecks(Func<string, string?> environment, 
         var run = runner.Run(binary, ["version"], _budget, cancellationToken: cancellationToken);
         if (run is not { Outcome: ToolOutcome.Exited, ExitCode: 0 })
         {
-            return Done(new DoctorCheck(Name, CheckState.Warn, $"{binary} did not answer 'version' ({run.Outcome}, exit {run.ExitCode})", Fix));
+            return Done(new DoctorCheck(Name, CheckState.Warn, string.Create(CultureInfo.InvariantCulture, $"{binary} did not answer 'version' ({run.Outcome.ToString()}, exit {run.ExitCode})"), Fix));
         }
 
         var stamp = run.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault() ?? "answers version";
