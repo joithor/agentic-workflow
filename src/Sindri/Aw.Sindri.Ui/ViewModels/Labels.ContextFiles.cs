@@ -17,6 +17,9 @@ internal static partial class Labels
     /// <summary>The button that goes up one folder.</summary>
     internal const string ContextFilesUp = "Up one folder";
 
+    /// <summary>The filter box's hint.</summary>
+    internal const string ContextFilesFilter = "Filter by name";
+
     /// <summary>The word while a folder is read.</summary>
     internal const string ContextFilesLoading = "Reading the files...";
 

@@ -12,6 +12,15 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
     private string? _repo;
     private string _current = string.Empty;
     private int _generation;
+    private int _filterRun;
+    private LazyFileRows _all = new([], null);
+    private CancellationTokenSource? _debounce;
+
+    /// <summary>How long typing must pause before the filter runs.</summary>
+    internal static readonly TimeSpan FilterDelay = TimeSpan.FromMilliseconds(200);
+
+    /// <summary>How many times the filter has run (a burst of keystrokes runs it once).</summary>
+    internal int FilterRuns => _filterRun;
 
     /// <summary>What the stage reads through.</summary>
     internal ContextPorts Ports { get; } = ports;
@@ -43,7 +52,27 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
     /// <summary>The word for a folder with nothing in it.</summary>
     public string EmptyWord { get; } = Labels.ContextFilesEmpty;
 
-    /// <summary>The rows of the folder shown.</summary>
+    /// <summary>The filter box's hint.</summary>
+    public string FilterHint { get; } = Labels.ContextFilesFilter;
+
+    /// <summary>The filter box's text; the rows follow it once typing pauses.</summary>
+    public string FilterText
+    {
+        get;
+        set
+        {
+            var text = value ?? string.Empty;
+            if (string.Equals(field, text, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            Set(ref field, text);
+            _ = Refilter();
+        }
+    } = string.Empty;
+
+    /// <summary>The rows of the folder shown, built as the list scrolls to them.</summary>
     public IReadOnlyList<FileRowViewModel> Rows { get; private set => Set(ref field, value); } = [];
 
     /// <summary>The folder shown, in words.</summary>
@@ -175,7 +204,8 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
         _current = view.Path;
         Problem = string.Empty;
         Symbols = new SymbolsColumnViewModel(view.Symbols);
-        Rows = [.. view.Entries.Select(e => new FileRowViewModel(e, Symbols))];
+        _all = new LazyFileRows(view.Entries, Symbols);
+        Rows = FilterText.Length == 0 ? _all : _all.Narrow(FilterText);
         PathText = view.Path.Length == 0 ? Labels.ContextFilesRoot : view.Path;
         CanGoUp = view.Path.Length > 0;
         TotalsText = Labels.ContextFilesTotals(view.Totals.Files, view.Totals.Mapped, view.Totals.Suggested, view.Totals.Unmapped);
@@ -184,10 +214,36 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
 
     private void Fail(Error error)
     {
-        Rows = [];
+        _all = new LazyFileRows([], null);
+        Rows = _all;
         TotalsText = string.Empty;
         Note = string.Empty;
         Problem = error.Message;
+    }
+
+    // Typing restarts a pause; only the last text after the pause filters, off the UI thread, and the rows are replaced in one assignment.
+    private async Task Refilter()
+    {
+        _debounce?.Cancel();
+        _debounce?.Dispose();
+        var pause = _debounce = new CancellationTokenSource();
+        try
+        {
+            await Task.Delay(FilterDelay, Ports.Clock, pause.Token).ConfigureAwait(true);
+            var text = FilterText;
+            var all = _all;
+            var narrowed = await Task.Run(() => all.Narrow(text), pause.Token).ConfigureAwait(true);
+            if (!pause.IsCancellationRequested && ReferenceEquals(all, _all))
+            {
+                _filterRun++;
+                Rows = narrowed;
+                Changed();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // a newer keystroke took over
+        }
     }
 
     private void Changed()
