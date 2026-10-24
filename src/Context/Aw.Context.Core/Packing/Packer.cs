@@ -3,7 +3,8 @@ namespace Aw.Context.Core.Packing;
 /// <summary>
 /// Packs items into the budget (spec §8.3): sections in fill order (graph, affects, decisions, code, records); sections
 /// with no candidates are skipped and get no share; the rest split the budget evenly, the remainder goes to the first
-/// section's cap, and unused cap rolls forward; within a section, greedily in the given order (best first), each item
+/// section's cap, unused cap rolls forward, and budget still unused at the end goes back to the earlier sections that
+/// overflowed; within a section, greedily in the given order (best first), each item
 /// whole or not at all; an item that doesn't fit is listed by its marker once. Conflicts and degraded sources are
 /// outside the budget and never pass through here.
 /// </summary>
@@ -18,24 +19,31 @@ public static class Packer
         ArgumentNullException.ThrowIfNull(candidates);
         var active = ActiveSections(candidates);
         var (share, remainder) = Split(budget, active.Count);
-        var used = 0;
-        var truncated = false;
-        var sections = new List<Results.ResultSection>(active.Count);
+        var fills = new FillResult[active.Count];
         var rollover = 0;
         for (var index = 0; index < active.Count; index++)
         {
             var cap = share + rollover + (index == 0 ? remainder : 0);
-            var filled = Fill(active[index], cap);
-            used += filled.Spent;
-            rollover = cap - filled.Spent;
-            truncated |= filled.Truncated;
-            if (filled.Section is { } section)
-            {
-                sections.Add(section);
-            }
+            fills[index] = Fill(active[index], cap);
+            rollover = cap - fills[index].Spent;
         }
 
-        return new Packed(sections, used, truncated);
+        // Budget a later section left unused goes back to the earlier sections that overflowed, in fill order.
+        var spare = budget - fills.Sum(f => f.Spent);
+        for (var index = 0; index < active.Count && spare > 0; index++)
+        {
+            if (!fills[index].Truncated)
+            {
+                continue;
+            }
+
+            var again = Fill(active[index], fills[index].Spent + spare);
+            spare -= again.Spent - fills[index].Spent;
+            fills[index] = again;
+        }
+
+        var sections = fills.Select(f => f.Section).OfType<Results.ResultSection>().ToList();
+        return new Packed(sections, fills.Sum(f => f.Spent), fills.Any(f => f.Truncated));
     }
 
     private static List<SectionCandidates> ActiveSections(IReadOnlyList<PackCandidate> candidates)

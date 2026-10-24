@@ -42,7 +42,7 @@ public static class ClusterFeatures
         var claimed = new HashSet<string>(StringComparer.Ordinal);
         var taken = new HashSet<string>(StringComparer.Ordinal);
         var result = ExtractedMap.Empty;
-        foreach (var cluster in clusters.Clusters.Select(c => (Cluster: c, Files: Files(c))).Where(c => c.Files.Count > 0).OrderBy(c => c.Files[0], StringComparer.Ordinal).ThenBy(c => c.Cluster.Id.Value, StringComparer.Ordinal))
+        foreach (var cluster in clusters.Clusters.Select(c => (Cluster: c, Files: Files(c))).Where(c => c.Files.Any(f => !NotAnImplementer(f))).OrderBy(c => c.Files[0], StringComparer.Ordinal).ThenBy(c => c.Cluster.Id.Value, StringComparer.Ordinal))
         {
             var key = Unique(cluster.Files, taken);
             var label = labels.FirstOrDefault(l => l.Id.Value == cluster.Cluster.Id.Value)?.Label is { } named && !string.IsNullOrWhiteSpace(named)
