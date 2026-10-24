@@ -27,7 +27,7 @@ public sealed class ContextRepoPickerTests
         WholeMapAnswer = q =>
         {
             var node = JsonNode.Parse(GoldenFiles.Api("context-whole", "nodes-small"))!.AsObject();
-            node.Remove("repos");
+            _ = node.Remove("repos");
             if (repos.Length > 0)
             {
                 node["repos"] = new JsonArray([.. repos.Select(r => (JsonNode)new JsonObject { ["name"] = r, ["nodeCount"] = 3 })]);
