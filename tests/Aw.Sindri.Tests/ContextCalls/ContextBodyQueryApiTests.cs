@@ -105,6 +105,22 @@ public sealed class ContextBodyQueryApiTests : IDisposable
         Assert.Equal("SND-CONTEXT-140", bogus.Code);
     }
 
+    [Theory(Timeout = 120_000), Trait("Lane", "integration"), MemberData(nameof(Routes))]
+    public async Task No_anchor_is_400_006_naming_the_call_on_the_get_and_the_query(string route)
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+
+        var get = await host.Http.Ask(Get($"/sindri/context/{route}", Terminal(host)));
+        var query = await host.Http.Ask(Query($"/sindri/context/{route}", Body([]), Terminal(host)));
+
+        Assert.All([get, query], answer =>
+        {
+            Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (answer.Status, answer.Code));
+            Assert.Contains($"a {route} call takes at least 1 anchor, not 0", answer.Body, StringComparison.Ordinal);
+        });
+    }
+
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
     public async Task Query_with_explicit_nulls_for_the_optional_fields_answers_the_same_as_with_them_omitted()
     {
