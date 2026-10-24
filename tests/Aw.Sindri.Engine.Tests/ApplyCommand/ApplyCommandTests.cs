@@ -1,8 +1,6 @@
 using Aw.Kernel.Services;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Workflow.Engine;
-using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Features.ApplyCommand;
 using Aw.Sindri.Tests.CompleteStep;
@@ -14,7 +12,7 @@ namespace Aw.Sindri.Tests.ApplyCommand;
 /// <summary>
 /// 'sindri workflow answer', 'command' and 'cancel' (engine spec rev 8 §5.2, §5.8, §6.2, §6.3) against the pinned dev
 /// server: each is an Update with the nonce as its id, validated before it is accepted; an answer that doesn't fit the
-/// park is SND-WF-003 and records nothing; a protected answer needs its challenge; cancel is exempt from the approval check.
+/// park is SND-WF-003 and records nothing; a protected answer needs no challenge (owner decision q93); cancel is exempt from the approval check.
 /// </summary>
 [Lane(TestLane.Integration)]
 public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServer>, IDisposable
@@ -54,33 +52,15 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
     }
 
     [Fact(Timeout = 120_000)]
-    public async Task Grant_without_its_challenge_is_SND_WF_013_and_records_nothing()
-    {
-        await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
-        var address = await Rounds(served, "T-12");
-        var events = await served.Events(address);
-
-        var granted = await Apply(served, new ApplyCommandRequest(address, ApplyCommandKind.Answer, AnswerVariant.Grant, Text: null, Amount: 1, Verb: null, Nonce: null, Challenge: null));
-
-        Assert.True(granted.IsError);
-        Assert.Equal("SND-WF-013", granted.Error.Code);
-        Assert.Equal(events, await served.Events(address));
-    }
-
-    [Fact(Timeout = 120_000)]
-    public async Task Grant_with_its_challenge_runs_the_withheld_transition()
+    public async Task Grant_with_no_challenge_runs_the_withheld_transition()
     {
         await using var served = await Served.Start(_harness.Home, server.Environment, TestContext.Current.CancellationToken);
         var address = await Rounds(served, "T-13");
-        var parked = await served.Until(address, static v => v.State == "parked");
-        var challenges = served.Sindri.GetRequiredService<IChallenges>();
-        var action = InstanceChallenge.Action(InstanceAddress.From(address), AnswerVariant.Grant, 1);
-        var issued = challenges.Issue(action, InstanceChallenge.Subject(parked));
+        _ = await served.Until(address, static v => v.State == "parked");
 
-        var granted = await Apply(served, new ApplyCommandRequest(address, ApplyCommandKind.Answer, AnswerVariant.Grant, Text: null, Amount: 1, Verb: null, Nonce: null, new ChallengeAnswer(issued.Id, "grant 1 " + address)));
+        var granted = await Apply(served, new ApplyCommandRequest(address, ApplyCommandKind.Answer, AnswerVariant.Grant, Text: null, Amount: 1, Verb: null, Nonce: null, Challenge: null));
 
         Assert.False(granted.IsError, granted.IsError ? granted.Error.Message : null);
-        Assert.Equal("grant 1 " + address, action.Text);
         Assert.Matches(@"^resumed \([a-z]+\): -> produce$", granted.Value.Result.Happened);
         Assert.Equal("produce", granted.Value.Result.Instance.State);
         Assert.Null(granted.Value.Result.Instance.Question);

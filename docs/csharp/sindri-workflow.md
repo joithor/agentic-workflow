@@ -177,7 +177,7 @@ failing rule is `SND-RECIPE-001`, each followed by its rule lines.
 `input: <key> type=<type> kind=<kind|-> [generate="<template>"]` line per input (the type is the declared one, else the one the kind pairs with; a row registered before input kinds shows `kind=-`) and one `output: <key> type=<type> from=<state>` line per output, then the path order (below) and one `loop: <name> <from> -> <to> cap=<n>` line per loop;
 an unknown id or hash is `SND-RECIPE-002`, an id with no approved version `SND-RECIPE-003`. The standing, the approval and the approval preview are not in `show`: `recipe list` has the standing and `recipe approve` prints the preview before it asks. `show --json` prints the served `RecipeView`, `{id, hash, version, name, inputs, outputs, urgency, orderedBy, states, loops}`, where an input is `{key, label, type, kind, required, generate}` (`kind` is `-` on a legacy row, `required` is false for an input with a `generate` template) and an output is `{key, label, type, from}`; the standing, `via` and `stale` are `recipe list` fields, not part of the view. `sindri recipe list [--stale] [--json]` prints one line per registered recipe,
 `<id>@<hash12> <standing> (<via>)[; stale: …]`, where standing is `approved`, `unapproved` or `revoked` and stale names
-`pin-drift` (a pinned block's descriptor changed in this build), `child-stale` (a pinned child was revoked or has a newer approved version) or `legacy-shape` (registered before input kinds; the line's fix is `register the current file at a new version and approve it`, and an unapproved row of that shape carries the mark too);
+`pin-drift` (a pinned block's interface changed in this build; a block whose version alone moved is renewed by the next check, owner q93 2026-10-23: `recipe.approved` with `drift`, actor `service:pin-drift`), `child-stale` (a pinned child was revoked or has a newer approved version) or `legacy-shape` (registered before input kinds; the line's fix is `register the current file at a new version and approve it`, and an unapproved row of that shape carries the mark too);
 `--stale` keeps only the approved ones that are stale. `--json` prints the server's body,
 `{"recipes":[{id, version, hash, standing, via, stale, inputs, urgency, name, outputs, orderedBy, states, loops}]}`, where an input is `{key, label, type, kind, generate}`
 (`type` `null` when not declared, `kind` `null` only on a legacy row, `generate` `null` when the input has no template; `name` is the instance-name template or `null`) and an output is `{key, label, type, from}`. A row registered before `urgency`, `outputs`, `name` and the inputs' `kind` and `generate` existed keeps its stored text and hash and lists with the defaults (`work`, no outputs, no name, no kinds); registering the same
@@ -198,40 +198,38 @@ starts at 1 (WF spec §3.10; the API spec's StateCell says 0-based, an open cros
 
 ## `sindri recipe approve` and `sindri recipe revoke`
 
-Both are `protected` (engine spec §4.2, §6.2, §6.3): only a human at a terminal gets past the command chain; a session
-or a CLI without a terminal gets `SND-AUTH-002` naming the agent variable or process it saw, and nothing is recorded but
-the audit row.
+Both are `protected` by name only (engine spec §4.2, §6.2, §6.3). Owner decision q93: any caller may run them (a human at a
+terminal, a human in the app, an agent session), and neither asks for a typed phrase or a terminal. The CLI prints the
+preview and calls the route; the route ignores a body, so an older app that sends `{challenge, typed, heldMs}` still works.
+Approve still runs the validator and the evals first.
 
 `sindri recipe approve <file|id@hash>`:
 
 1. With a file, the CLI validates it in-process (`SND-RECIPE-001` if it fails) and checks every eval file its `evals:`
    names is present beside it (`SND-RECIPE-008` otherwise; P4 runs them at approve). It registers the file if the server
    doesn't know it yet.
-2. It asks `POST /sindri/workflow/challenges` for `approve <id> <version>` and prints the preview: id, version, hash and
+2. It reads the preview from `POST /sindri/workflow/challenges` (`approve <id> <version>`; the challenge is never redeemed) and prints it: id, version, hash and
    base; the diff against the last approved version of the id (`nothing` for a first approval); the capability uses
    (block, `from -> to`, capabilities and capability parameters); the effect kinds and their allowlist status; the pinned
    blocks with their descriptor hashes and the pinned children; the eval files. A re-approval of an approved hash also
    shows the blocks whose descriptor changed and the drift-parked instances it resumes.
-3. You type the action text, `approve workflow.step 1`. With a file, the CLI re-reads it first and refuses with
-   `SND-RECIPE-009` if it changed while you read.
+3. With a file, the CLI re-reads it and refuses with `SND-RECIPE-009` if it changed while you read, then calls the route.
 4. It prints `approved workflow.step@<hash12>`.
 
-The server refuses before any challenge when the hash is revoked (`SND-RECIPE-005`), the recipe declares no evals
+The server refuses when the hash is revoked (`SND-RECIPE-005`), the recipe declares no evals
 (`SND-RECIPE-008`) or a child it starts has no approved hash to pin (`SND-RECIPE-003`). An approved hash approved again
 with the same pins is not refused: it records nothing, sends the approve wake to its running instances again and prints
 `already approved workflow.step@<hash12>; woke N instances` (exit 0). That is the remedy for a drift-parked instance a first
-wake missed (the wake failed with `SND-API-001`, or it was absorbed before the drift park existed). A wrong typed text, a challenge for another action, an expired one (5 minutes) or one whose
-subject changed (another hash, or other pins: a child approved while you read) is `SND-RECIPE-009` and records nothing.
+wake missed (the wake failed with `SND-API-001`, or it was absorbed before the drift park existed).
 A generated recipe whose base was revoked after it was registered is refused too (`SND-RECIPE-005`). With a file whose
 id and version are registered with other content (edited without raising its version), the CLI refuses before the preview
 with the register call's `SND-RECIPE-007` and its `RCP-VERSION-001` line.
 
-`sindri recipe approve-all [--json]` is the same hold for every shipped recipe at once (setup-once spec §5.3): it reads
-`GET /sindri/workflow/recipes/approve-all`, asks `POST /sindri/workflow/challenges` for `approve-all <digest6>`, prints the
-plan (each recipe and version in the order approval happens, children first, then the recipes approved one at a time), reads
-the typed phrase and posts it to `POST /sindri/workflow/recipes/approve-all`, which starts the `ApproveAllRecipes` job; the
-CLI prints the job id and `sindri jobs show <id>` (`--json`: the started job). A session or a CLI without a terminal gets
-`SND-AUTH-002`, a wrong phrase `SND-RECIPE-009`, and an empty plan prints its sentence, asks nothing and exits 2.
+`sindri recipe approve-all [--json]` approves every shipped recipe at once (setup-once spec §5.3): it reads
+`GET /sindri/workflow/recipes/approve-all`, prints the plan (each recipe and version in the order approval happens, children
+first, then the recipes approved one at a time) and posts to `POST /sindri/workflow/recipes/approve-all`, which starts the
+`ApproveAllRecipes` job; the CLI prints the job id and `sindri jobs show <id>` (`--json`: the started job). No typed phrase and
+no terminal; an empty plan prints its sentence and exits 2.
 
 `sindri recipe revoke <id@hash>` (the hash by 8 or more digits) previews the instances that will park, the takeovers it
 ends, the generated recipes approved from it (revoked with it, recursively) and the parents pinning it as a child
@@ -251,7 +249,7 @@ JSON Schemas: `schemas/recipes/recipe.schema.json` is the long form, generated f
 
 ### Reading
 
-- **Refused YAML** (`RCP-SCHEMA-003`): duplicate keys, anchors, aliases, merge keys, explicit tags, a file over 256 KiB,
+- **Refused YAML** (`RCP-SCHEMA-003`): duplicate keys, anchors, aliases, merge keys, explicit tags, a file over 4 MiB,
   or nesting deeper than 32.
 - **Scalars** follow the YAML 1.2 core schema, so `on` stays a string.
 - **All schema errors** are reported with their line and column, not just the first. When the reader's only findings
@@ -442,7 +440,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-CHOICE-006` | A route state's `uncertain` and `step.failed` transitions come after its branch transitions (the app takes the first transition as the main path) | List the branches first |
 | `RCP-CHILD-001` | A child recipe resolves (registered, or next to the recipe) and gets its inputs | Register it, or put `<id>.yaml` beside the recipe; pass the inputs it declares |
 | `RCP-CHILD-002` | Child recipes form no cycle | Remove a child wait |
-| `RCP-CHILD-003` | Children nest at most 5 deep | Flatten the chain |
+| `RCP-CHILD-003` | Children nest at most 10 deep | Flatten the chain |
 | `RCP-CAP-001` | **Generated recipes only** (run against the base; `recipe validate` doesn't): a generated recipe adds no capability use its base doesn't have | Remove it, or generate from a base that has it |
 | `RCP-CAP-002` | **Generated recipes only:** a generated recipe keeps its base's capability parameters | Set them to the base's values |
 | `RCP-CAP-003` | The recipe's hash is approved and its pinned blocks match the build (registry, P2) | Approve it |
@@ -1138,10 +1136,8 @@ Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
   `RCP-BLOCK-001` at `recipe validate` and at register.
 - **`workflow answer`, `command <verb>`, `cancel`, `takeover`, `handback`** run the `ApplyCommand` slice, in this order: resolve the address
   (a bare item is the root of its latest attempt, `SND-WF-006` listing the candidates when the item has roots of more
-  than one recipe); check the arguments; claim the nonce for exactly this command (`SND-WF-009`); for a protected
-  answer (`--grant`, `--grant-tokens`, `--accept`) redeem its challenge (`IChallenges`, P2's shape; action text
-  `grant n <address>`, `grant-tokens n <address>`, `accept <address>`; subject `instance:<address>@v<version>`, the
-  address and the instance version the preview showed, so any event mirrored since makes it stale; `SND-WF-013`); check the recipe's approval unless the trigger is exempt (cancel, takeover, handback; `SND-RECIPE-005`, `-006`);
+  than one recipe); check the arguments; claim the nonce for exactly this command (`SND-WF-009`); a protected
+  answer (`--grant`, `--grant-tokens`, `--accept`) is checked like any other: no challenge is redeemed (owner decision q93; the request's `challenge` is ignored); check the recipe's approval unless the trigger is exempt (cancel, takeover, handback; `SND-RECIPE-005`, `-006`);
   then send the Update with the nonce as its id. A refusal gives the nonce back. A repeated nonce skips the checks and
   Temporal returns the first outcome, printed `already applied (…)`. The CLI prints the status header and what happened;
   an answer prints the resume action it ran (`resumed (transition): -> produce`).
@@ -1174,7 +1170,7 @@ Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
 
 ## Step inputs at run time
 
-Before a desk Step opens, each input in its `step.inputs` list runs as a `FillInput` activity (id `inputs:{token}:{n}`, 60 s, 3 attempts), in declaration order, once per run token. The activity runs the input in its own scope, checks the section names (`^[a-z][a-z0-9._-]{0,63}$`), scrubs each section and the typed result, then hashes the scrubbed text, so the digest covers exactly what a Step sees. A section or a typed result is at most 256 KiB and a plan at most 1 MiB (`SND-WF-019`, which fails the Step without retries).
+Before a desk Step opens, each input in its `step.inputs` list runs as a `FillInput` activity (id `inputs:{token}:{n}`; it heartbeats every 15 s and fails only after 2 minutes of silence or 30 minutes in all, retries included, with up to 3 attempts for a transient failure; a timeout is `SND-WF-020`, named with the seconds), in declaration order, once per run token. The activity runs the input in its own scope, checks the section names (`^[a-z][a-z0-9._-]{0,63}$`), scrubs each section and the typed result, then hashes the scrubbed text, so the digest covers exactly what a Step sees. A section or a typed result is at most 256 KiB and a plan at most 1 MiB (`SND-WF-019`, which fails the Step without retries).
 
 - **No text is stored.** The activity returns `{section, input, bytes, sha256}` per section and the size and digest of the typed result; that metadata is all Temporal records. The text lives in `MemoryInjectionTexts`, keyed by instance address, state, run token and input, bounded (64 entries, 8 MiB), dropped when a newer run of the instance arrives, and never persisted or logged. A history recorded before the `step-inputs-v1` patch replays without filling.
 - **A later section of the same name replaces the earlier one** in place (`InjectionPlans.Merge`, pure); the plan keeps a warning for each replacement.
@@ -1357,7 +1353,7 @@ Unit (c), as built:
 Engine spec rev 8.1 §3.8, §5.2, §5.5, §5.8, §6.2; UI spec E-6, E-19.
 
 - **`workflow takeover <address>`** (also `sindri takeover <item-or-address>`, a bare item being the root of its latest attempt; class `pause`: an agent session may take over, so the attach hook works) and
-  **`workflow handback <address>`** (also `sindri handback <item-or-address>`; class `desk`: a session is refused `SND-AUTH-002`) are `ApplyCommand` kinds
+  **`workflow handback <address>`** (also `sindri handback <item-or-address>`; class `desk`) are `ApplyCommand` kinds
   `takeover` and `handback`, sent as the `takeover` and `handback` Updates with the nonce as id. Both are exempt from
   the approval check. While the workflow is still open, a takeover of an ended or already taken-over instance, and a handback of one
   that isn't taken over, are `SND-WF-003` from the validator and record nothing. Once an ended instance's workflow has

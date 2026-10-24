@@ -144,7 +144,7 @@ transitions:
   - { label: "the document changed: check it again", from: freeze, to: evidence, on: step.completed, when: { outcome: mismatch }, produces: [fact:findings] }
   - { from: withdraw, to: dropped, on: step.completed, when: { outcome: withdrawn } }
 loops: { rounds: { cap: 10 }, rescope: { cap: 6 }, interview: { cap: 6 }, challenge: { cap: 3 }, refreeze: { cap: 5 }, revise: { cap: 8 } }
-evals:   # 32 cases: the 22 of Appendix B.1, the two recorded-limit cases of the line amendment (commit-not-held, not-synced), idea-child-unresolved and the challenge cap that routes to the desk or to size, and a spent challenge whose walk has a gap that reaches the stop
+evals:   # 33 cases: the 22 of Appendix B.1, the two recorded-limit cases of the line amendment (commit-not-held, not-synced), idea-child-unresolved and the challenge cap that routes to the desk or to size, and a spent challenge whose walk has a gap or whose model repeats the drafter's that reaches the stop, and a lens fault at evidence that regathers
   - evals/workflow.scoping/brief-happy.jsonl
   - evals/workflow.scoping/tracker-happy.jsonl
   - evals/workflow.scoping/idea-child.jsonl
@@ -165,6 +165,8 @@ evals:   # 32 cases: the 22 of Appendix B.1, the two recorded-limit cases of the
   - evals/workflow.scoping/challenge-cap-questions.jsonl
   - evals/workflow.scoping/challenge-cap-size.jsonl
   - evals/workflow.scoping/challenge-spent-walk-gap-stops.jsonl
+  - evals/workflow.scoping/challenge-spent-same-model-stops.jsonl
+  - evals/workflow.scoping/evidence-lens-regather.jsonl
   - evals/workflow.scoping/e2e-run15-capped.jsonl
   - evals/workflow.scoping/e2e-run9-capped.jsonl
   - evals/workflow.scoping/e2e-run16-parked.jsonl

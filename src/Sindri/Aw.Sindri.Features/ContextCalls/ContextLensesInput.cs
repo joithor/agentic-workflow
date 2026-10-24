@@ -31,8 +31,8 @@ internal sealed class ContextLensesInput(IContextEngine lenses, ContextInputScop
     /// <summary>The section the text is under.</summary>
     public const string Section = "lenses";
 
-    /// <summary>The waits between the tries, so a map that is building or an engine that is restarting has about twenty seconds to answer.</summary>
-    internal static readonly TimeSpan[] Backoff = [TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(15)];
+    /// <summary>The waits between the tries, so a map that is building or an engine that is restarting has about two minutes to answer (a busy engine on a big map is slow to come back, and a refusal that keeps passing is still not a failure of the Step).</summary>
+    internal static readonly TimeSpan[] Backoff = [TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(90)];
 
     /// <inheritdoc/>
     public static BlockDescriptor Descriptor { get; } = new(

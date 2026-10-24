@@ -10,7 +10,7 @@ namespace Aw.Sindri.Tests.Catalog;
 
 /// <summary>
 /// PB spec §13 (PB-E): the babysitter's 'ready' state takes 'merge' and 'rework' as recipe verbs, and both are served by the one generic desk row 'ApplyCommand:command' (owner ruling), so an agent
-/// session that sends either is refused SND-AUTH-002 by the authorization chain before the engine hears of it, while a human, in the app or at a terminal, is let through.
+/// session, a human in the app and a human at a terminal are all let through (owner decision q93).
 /// </summary>
 public sealed class BabysitterVerbAuthorizationTests
 {
@@ -19,7 +19,7 @@ public sealed class BabysitterVerbAuthorizationTests
     [Theory, Trait("Lane", "unit")]
     [InlineData("merge")]
     [InlineData("rework")]
-    public void A_session_that_sends_a_ready_verb_is_refused_SND_AUTH_002_and_a_human_is_not(string verb)
+    public void A_session_that_sends_a_ready_verb_is_let_through_like_a_human(string verb)
     {
         var recipe = RecipeReaderTests.Reader.Read(ShippedRecipes.Read("sindri/workflow.pr-babysitter.yaml"), "workflow.pr-babysitter.yaml").Document!.Recipe;
         Assert.Contains(recipe.Transitions, t => t.From.Contains("ready", StringComparer.Ordinal) && string.Equals(t.On, "command." + verb, StringComparison.Ordinal));
@@ -30,8 +30,7 @@ public sealed class BabysitterVerbAuthorizationTests
         var terminal = Authorization.Decide(row.Class, A.Caller().AtTerminal().Client(ClientLabel.Cli).Build(), row);
 
         Assert.Equal("ApplyCommand:command", row.Action.Value);
-        Assert.Equal("SND-AUTH-002", session.Refusal?.Code);
-        Assert.Contains("is a human decision", session.Refusal?.Message, StringComparison.Ordinal);
+        Assert.Null(session.Refusal);
         Assert.Null(app.Refusal);
         Assert.Null(terminal.Refusal);
     }

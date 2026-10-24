@@ -13,6 +13,9 @@ public sealed class FakeLabeler : ILabeler
     /// <summary>When true, the pass names every cluster but reports it incomplete (a later batch failed).</summary>
     public bool Incomplete { get; set; }
 
+    /// <summary>When set, every pass succeeds with no labels and this as its <see cref="LabelPass.Unavailable"/> note.</summary>
+    public string? Unavailable { get; set; }
+
     /// <summary>The clusters shown to the model, across passes.</summary>
     public IList<FileCluster> Shown { get; } = [];
 
@@ -26,6 +29,11 @@ public sealed class FakeLabeler : ILabeler
         if (Failure is { } failure)
         {
             return ValueTask.FromResult<Result<LabelPass>>(failure);
+        }
+
+        if (Unavailable is { } note)
+        {
+            return ValueTask.FromResult(Results.Success(new LabelPass([], Complete: false, Unavailable: note)));
         }
 
         Patterns.Add(extraPatterns);

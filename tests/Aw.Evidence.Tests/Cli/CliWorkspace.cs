@@ -48,9 +48,10 @@ internal sealed class CliWorkspace : IDisposable
 
     private RunningCli Start(IReadOnlyDictionary<string, string> environment, string[] args)
     {
-        // A background job (the heavy wrapper's 'setsid … &') starts with SIGINT and SIGQUIT ignored, the child inherits that, and .NET
-        // keeps an inherited ignore for those two, so the signal tests would hang. On Linux, env resets them and execs dotnet in place (same pid).
-        string[] host = OperatingSystem.IsLinux() ? ["/usr/bin/env", "--default-signal=INT,QUIT", DotnetHost()] : [DotnetHost()];
+        // A background job (the heavy wrapper's 'setsid … &') starts with SIGINT and SIGQUIT ignored, a gate run under nohup with SIGHUP
+        // ignored, the child inherits that, and .NET keeps an inherited ignore, so the signal tests would wait out the lock timeout. On
+        // Linux, env resets all three and execs dotnet in place (same pid).
+        string[] host = OperatingSystem.IsLinux() ? ["/usr/bin/env", "--default-signal=INT,QUIT,HUP", DotnetHost()] : [DotnetHost()];
         var start = new ProcessStartInfo(host[0])
         {
             RedirectStandardOutput = true,
