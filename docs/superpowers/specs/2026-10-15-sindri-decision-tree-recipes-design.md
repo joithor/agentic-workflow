@@ -552,7 +552,7 @@ results: the diff, the root cause, the check, the evidence summary.
 
 ### 8.5 Human-only desk Steps (engine; DT-R)
 
-> Owner q93, 2026-10-23: `step.desk.choose`, `step.evidence.desk`, `step.owner.decide` and a block-runtime Step on the desk are no longer human-only; any caller may report them through `workflow complete`. The text below states the earlier rule for those Steps. `step.interview.answer`, `step.scope.review` and the other human-only Steps keep it.
+> Owner q93, 2026-10-23, reworked by q100, 2026-10-24: `HumanOnly` is no longer an authorization rule. A plain agent session (one the owner started, with no launch secret) may report every desk Step, including `step.interview.answer`, `step.scope.review` and the merge decision; a session Sindri launched is refused on a desk run by `AgentReportAuthority` (SND-AUTH-002, a launch secret on a run no agent runs). The flag still drives the "only you" label, `RCP-HUMAN-001` and the recommendation filter. The text below states the earlier rule.
 
 `BlockDescriptor` gains `HumanOnly` (written only when true, §8.1). `complete` on a human-only Step's run requires
 caller class `human` (API §4). A session gets `SND-AUTH-002`, as for a protected command, without a typed challenge.

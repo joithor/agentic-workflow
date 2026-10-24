@@ -28,8 +28,6 @@ public sealed class BlockRuntimeTests
         var entered = StateEntry.Enter(EngineFixture.At(_route, "evidence-ui"), _route, "route-evidence", EngineFixture.Context());
 
         Assert.Equal(StepRuntime.Desk, entered.Frame.Run?.Runtime);
-        Assert.False(HumanOnlySteps.Applies(EngineFixture.Catalog.Find(_judge)!, StepRuntime.Desk));   // owner q93, 2026-10-23
-        Assert.False(HumanOnlySteps.Applies(EngineFixture.Catalog.Find(_judge)!, StepRuntime.Block));
     }
 
     [Fact]
