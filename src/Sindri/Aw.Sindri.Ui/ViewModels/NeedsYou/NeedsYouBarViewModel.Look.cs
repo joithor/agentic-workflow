@@ -93,8 +93,17 @@ internal sealed partial class NeedsYouBarViewModel
         _ => throw new InvalidOperationException("a kind the bar doesn't know"),
     };
 
+    // The kind's own condition for the primary: a decision's accept is enabled, an approval can be sent.
+    private bool KindAllowsPrimary => Kind switch
+    {
+        BarKind.Decision => AcceptControl is { IsEnabled: true },
+        BarKind.Settings => _confirm?.CanApprove == true,
+        BarKind.None or BarKind.Desk or BarKind.Run => true,
+        _ => throw new InvalidOperationException("a kind the bar doesn't know"),
+    };
+
     /// <summary>True when the primary can be pressed now.</summary>
-    public bool PrimaryEnabled => ShowsPrimary && Enabled && !IsSending && (Kind != BarKind.Desk || _target is not null) && (!HasQuestions || AllAnswered) && (Kind != BarKind.Decision || AcceptControl is { IsEnabled: true }) && (Kind != BarKind.Settings || _confirm?.CanApprove == true);
+    public bool PrimaryEnabled => ShowsPrimary && Enabled && !IsSending && (Kind != BarKind.Desk || _target is not null) && (!HasQuestions || AllAnswered) && KindAllowsPrimary;
 
     /// <summary>True when the send back button shows (disabled with its reason on a settings request).</summary>
     public bool ShowsSendBack => Kind switch

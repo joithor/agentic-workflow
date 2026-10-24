@@ -8,7 +8,10 @@ namespace Aw.Sindri.Ui.Views.Setup;
 /// <summary>The workflows row's plan and its Approve button; the view holds no other logic.</summary>
 internal sealed partial class SetupWorkflowsConfirmView : UserControl
 {
-    public SetupWorkflowsConfirmView() => InitializeComponent();
+    public SetupWorkflowsConfirmView()
+    {
+        InitializeComponent();
+    }
 
     private void OnApprove(object? sender, RoutedEventArgs e) => _ = (DataContext as ApproveAllViewModel)?.Approve();
 }

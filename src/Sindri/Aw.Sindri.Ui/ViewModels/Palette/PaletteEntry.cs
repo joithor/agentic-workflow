@@ -17,9 +17,9 @@ internal sealed class PaletteEntry : ObservableObject
         nameof(ControlViewModel.ErrorCode), nameof(ControlViewModel.ErrorDetail), nameof(ControlViewModel.IsAnnouncingSending),
     ];
 
-    private PaletteEntry(string id, string label, string key, bool enabled, ControlViewModel? control, PageId? page, string notRun = Labels.NotInApp, bool opensForm = false)
+    private PaletteEntry(string id, string label, string key, bool enabled, ControlViewModel? control, PageId? page, string notRun = Labels.NotInApp)
     {
-        (Id, Label, Key, Runs, Control, Page, NotRun, OpensForm) = (id, label, key, enabled, control, page, notRun, opensForm);
+        (Id, Label, Key, Runs, Control, Page, NotRun) = (id, label, key, enabled, control, page, notRun);
         control?.PropertyChanged += OnControlChanged;
     }
 
@@ -27,7 +27,7 @@ internal sealed class PaletteEntry : ObservableObject
     private string NotRun { get; }
 
     // A row the app has no sender for but opens a form (or dialog) for: it is called ready all the same.
-    private bool OpensForm { get; }
+    private bool OpensForm { get; init; }
 
     /// <summary>Stops listening to its control (the palette rebuilt its entries; the control outlives them).</summary>
     internal void Detach() => Control?.PropertyChanged -= OnControlChanged;
@@ -99,7 +99,7 @@ internal sealed class PaletteEntry : ObservableObject
     /// <param name="opensForm">True when the row opens a form or dialog of the app.</param>
     /// <returns>The entry.</returns>
     internal static PaletteEntry For(ControlViewModel control, bool runs, string notRun = Labels.NotInApp, bool opensForm = false) =>
-        new(control.Action, control.Label, control.Shortcut, runs, control, page: null, notRun, opensForm);
+        new(control.Action, control.Label, control.Shortcut, runs, control, page: null, notRun) { OpensForm = opensForm };
 
     /// <summary>A page's entry.</summary>
     /// <param name="page">The page.</param>

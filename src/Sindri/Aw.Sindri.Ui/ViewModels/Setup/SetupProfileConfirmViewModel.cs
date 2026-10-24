@@ -1,6 +1,5 @@
 using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
-using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.ViewModels.Setup;
 
@@ -17,11 +16,15 @@ internal sealed class SetupProfileConfirmViewModel : ObservableObject
     private readonly Func<string?> _hash;
     private readonly ISindriApi _api;
     private string _summaryFor = string.Empty;   // the hash the summary in hand was read for
-    private bool _sending;
     private bool _wanted;
     private int _session;
 
-    internal SetupProfileConfirmViewModel(Func<Uri?> url, Func<string?> hash, ISindriApi api) => (_url, _hash, _api) = (url, hash, api);
+    private bool Sending { get; set; }
+
+    internal SetupProfileConfirmViewModel(Func<Uri?> url, Func<string?> hash, ISindriApi api)
+    {
+        (_url, _hash, _api) = (url, hash, api);
+    }
 
     /// <summary>The plain-words summary of what approving lets Sindri do (shown while the row needs the person).</summary>
     public ProfileSummaryViewModel Summary { get; } = new();
@@ -52,7 +55,7 @@ internal sealed class SetupProfileConfirmViewModel : ObservableObject
     public bool ShowsApprove => _wanted && Hash.Length > 0 && !IsDone;
 
     /// <summary>True when the Approve button can be pressed: shown, and nothing on its way.</summary>
-    public bool CanApprove => ShowsApprove && !_sending;
+    public bool CanApprove => ShowsApprove && !Sending;
 
     /// <summary>True when the profile's hash is not known yet.</summary>
     public bool IsWaiting => _wanted && Hash.Length == 0 && !IsDone;
@@ -90,7 +93,7 @@ internal sealed class SetupProfileConfirmViewModel : ObservableObject
         }
 
         var (session, hash) = (_session, Hash);
-        (_sending, Refusal) = (true, string.Empty);
+        (Sending, Refusal) = (true, string.Empty);
         Announce();
         Result<ProfileApproved> sent;
         try
@@ -101,7 +104,7 @@ internal sealed class SetupProfileConfirmViewModel : ObservableObject
         {
             if (session == _session)
             {
-                _sending = false;
+                Sending = false;
             }
         }
 
@@ -166,7 +169,7 @@ internal sealed class SetupProfileConfirmViewModel : ObservableObject
     private void Reset()
     {
         _session++;
-        (_summaryFor, _sending) = (string.Empty, false);
+        (_summaryFor, Sending) = (string.Empty, false);
         Summary.Show(summary: null);
     }
 

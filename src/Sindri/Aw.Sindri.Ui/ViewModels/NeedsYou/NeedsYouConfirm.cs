@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
-using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.ViewModels.Approvals;
 using Aw.Sindri.Ui.ViewModels.Controls;
 
@@ -17,6 +16,8 @@ internal sealed partial class NeedsYouConfirm : ObservableObject
     private const string ProfileAction = "ApproveProfile";
     private const string RecipeAction = "ApproveRecipe";
     private const string SessionRefusal = "SND-AUTH-002";
+
+    private static readonly string[] _allShown = [nameof(ApproveAllViewModel.Phase), nameof(ApproveAllViewModel.Error), nameof(ApproveAllViewModel.Notice), nameof(ApproveAllViewModel.CanApprove)];
 
     private readonly Func<Uri?> _url;
     private readonly ISindriApi _api;
@@ -69,7 +70,7 @@ internal sealed partial class NeedsYouConfirm : ObservableObject
     internal static bool IsApproval(NeedsYouEntry entry)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        return entry.PrimaryAction is ProfileAction or RecipeAction or ApproveAllViewModel.Action;
+        return new[] { ProfileAction, RecipeAction, ApproveAllViewModel.Action }.Contains(entry.PrimaryAction, StringComparer.Ordinal);
     }
 
     /// <summary>Shows a row: whatever the last one did is dropped, and for approve-all the plan is read.</summary>
@@ -169,7 +170,7 @@ internal sealed partial class NeedsYouConfirm : ObservableObject
     // The approve-all VM moved on (its phase, a refusal or a line): the bar reads it again.
     private void OnAllChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (Kind == NeedsYouConfirmKind.All && e.PropertyName is nameof(ApproveAllViewModel.Phase) or nameof(ApproveAllViewModel.Error) or nameof(ApproveAllViewModel.Notice) or nameof(ApproveAllViewModel.CanApprove))
+        if (Kind == NeedsYouConfirmKind.All && e.PropertyName is { } name && _allShown.Contains(name, StringComparer.Ordinal))
         {
             Changed?.Invoke(this, EventArgs.Empty);
         }

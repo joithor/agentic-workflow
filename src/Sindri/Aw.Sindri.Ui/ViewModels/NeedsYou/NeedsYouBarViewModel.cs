@@ -1,5 +1,3 @@
-using Aw.Sindri.Ui.Platform;
-
 namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 
 /// <summary>
@@ -12,7 +10,6 @@ internal sealed partial class NeedsYouBarViewModel : ObservableObject
 {
     private const string InstanceKind = "instance";
     private const string CompleteStepAction = "CompleteStep";
-    private const string GrantAction = "ApplyCommand:answer-grant";
 
     private static readonly string[] _all =
     [
@@ -126,8 +123,6 @@ internal sealed partial class NeedsYouBarViewModel : ObservableObject
         _ => throw new InvalidOperationException("a group the app doesn't know"),
     };
 
-    private NeedsYouActionControl? PrimaryControl => _row?.Controls.FirstOrDefault(c => c.IsPrimary);
-
     // A desk request is reported by the engine's CompleteStep; the row must serve it ready for the bar to offer it.
     private NeedsYouActionControl? DeskControl => _row?.Controls.FirstOrDefault(c => string.Equals(c.Action.CatalogId, CompleteStepAction, StringComparison.Ordinal) && c.Action.IsReady && c.IsEnabled);
 
@@ -135,8 +130,6 @@ internal sealed partial class NeedsYouBarViewModel : ObservableObject
 
     private NeedsYouActionControl? RejectControl => _row?.Controls.FirstOrDefault(c => c.Action is { RejectLike: true, OptionId.Length: > 0 });
 
-    private static string WordsOf(NeedsYouAction action) =>
-        string.Equals(action.CatalogId, GrantAction, StringComparison.Ordinal) ? Labels.NeedsYouMoreTries : action.Label;
 
     /// <summary>True while the bar asks something Esc withdraws: the reason box, the drop question or "Approve?".</summary>
     internal bool HasOpenQuestion => Mode is NeedsYouBarMode.SendingBack or NeedsYouBarMode.ConfirmingDrop or NeedsYouBarMode.Confirming;

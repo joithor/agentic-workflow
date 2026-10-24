@@ -8,7 +8,10 @@ namespace Aw.Sindri.Ui.Views.Setup;
 /// <summary>The profile row's approval: it draws the view model and passes the click on.</summary>
 internal sealed partial class SetupProfileConfirmView : UserControl
 {
-    public SetupProfileConfirmView() => InitializeComponent();
+    public SetupProfileConfirmView()
+    {
+        InitializeComponent();
+    }
 
     private void OnApprove(object? sender, RoutedEventArgs e) => _ = (DataContext as SetupProfileConfirmViewModel)?.Approve();
 }
