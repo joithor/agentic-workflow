@@ -3165,9 +3165,11 @@ Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger!
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Amount.get -> int?
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Amount.init -> void
-Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Deconstruct(out string! Kind, out Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>? Outputs, out Aw.Sindri.Core.Workflow.Engine.ParkReason? Park, out Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant? Variant, out int? Amount, out string? Reason, out int? Tokens) -> void
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Code.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Code.init -> void
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Deconstruct(out string! Kind, out Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>? Outputs, out Aw.Sindri.Core.Workflow.Engine.ParkReason? Park, out Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant? Variant, out int? Amount, out string? Reason, out int? Tokens, out string? Code) -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Equals(Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger? other) -> bool
-Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.EvalTrigger(string! Kind, Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome = null, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>? Outputs = null, Aw.Sindri.Core.Workflow.Engine.ParkReason? Park = null, Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant? Variant = null, int? Amount = null, string? Reason = null, int? Tokens = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.EvalTrigger(string! Kind, Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome = null, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>? Outputs = null, Aw.Sindri.Core.Workflow.Engine.ParkReason? Park = null, Aw.Sindri.Core.Workflow.Engine.Evals.EvalVariant? Variant = null, int? Amount = null, string? Reason = null, int? Tokens = null, string? Code = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Kind.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Kind.init -> void
 Aw.Sindri.Core.Workflow.Engine.Evals.EvalTrigger.Outcome.get -> Aw.Sindri.Core.Workflow.Ids.OutcomeName?
@@ -12309,6 +12311,7 @@ static Aw.Sindri.Core.Events.ScopingEscape.operator ==(Aw.Sindri.Core.Events.Sco
 const Aw.Sindri.Core.Events.EventTypes.ScopingApproved = "scoping.approved" -> string!
 const Aw.Sindri.Core.Events.EventTypes.ScopingEscape = "scoping.escape" -> string!
 static readonly Aw.Sindri.Core.Scoping.ScopingErrors.PacketToolFailed -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.Scoping.ScopingErrors.LensesUnavailable -> Aw.Kernel.ErrorDefinition!
 Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.Detail.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.Detail.init -> void
 const Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.LaunchReason = "launch" -> string!
