@@ -21,9 +21,14 @@ internal static partial class LinearText
         var images = ImagesIn(issue.Description).Concat(comments.SelectMany(c => ImagesIn(c.Body)))
             .Concat(attachments.Where(IsImage).Select(a => (Alt: a.Title ?? "image", a.Url)))
             .DistinctBy(i => i.Url, StringComparer.Ordinal);
-        return Cut(issue.Description + Section("Comments", comments.Select(c => $"- {c.User?.Name ?? "unknown"} ({Day(c.CreatedAt)}): {c.Body}"), More(issue.Comments, "comments"))
-            + Section("Attachments", attachments.Select(a => $"- {a.Title ?? Host(a.Url)} ({a.SourceType ?? "link"}) {a.Url}"), More(issue.Attachments, "attachments"))
-            + Section("Images", images.Select(i => $"- {i.Alt} {i.Url}"), more: null));
+        var head = issue.Description + Section("Comments", comments.Select(c => $"- {c.User?.Name ?? "unknown"} ({Day(c.CreatedAt)}): {c.Body}"), More(issue.Comments, "comments"));
+        var tail = Section("Attachments", attachments.Select(a => $"- {a.Title ?? Host(a.Url)} ({a.SourceType ?? "link"}) {a.Url}"), More(issue.Attachments, "attachments"))
+            + Section("Images", images.Select(i => $"- {i.Alt} {i.Url}"), more: null);
+
+        // The attachments and images are what the owner wants to survive: the 64 KB goes to the description, then the
+        // comments, and the sections keep what is left whole. Only sections that alone pass 64 KB are cut, at a line.
+        var tailBytes = Encoding.UTF8.GetByteCount(tail);
+        return tailBytes > MaxBytes ? CutLines(tail) : Cut(head, MaxBytes - tailBytes) + tail;
     }
 
     /// <summary>A Linear Document: its content.</summary>
@@ -102,7 +107,19 @@ internal static partial class LinearText
     [GeneratedRegex("\\balt\\s*=\\s*[\"'](?<v>[^\"']*)[\"']", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, matchTimeoutMilliseconds: 1000)]
     private static partial Regex HtmlAlt { get; }
 
-    private static string Cut(string text)
+    private const string MoreMark = "\n(more not shown)";
+
+    // Sections that alone pass the budget: whole lines up to it, then the mark.
+    private static string CutLines(string text)
+    {
+        var kept = Cut(text, MaxBytes - Encoding.UTF8.GetByteCount(MoreMark));
+        var lastLine = kept.LastIndexOf('\n');
+        return (lastLine > 0 ? kept[..lastLine] : kept) + MoreMark;
+    }
+
+    private static string Cut(string text) => Cut(text, MaxBytes);
+
+    private static string Cut(string text, int maxBytes)
     {
         var bytes = 0;
         var end = 0;
@@ -110,7 +127,7 @@ internal static partial class LinearText
         {
             var width = char.IsHighSurrogate(text[end]) && end + 1 < text.Length ? 2 : 1;
             var size = Encoding.UTF8.GetByteCount(text.AsSpan(end, width));
-            if (bytes + size > MaxBytes)
+            if (bytes + size > maxBytes)
             {
                 break;
             }
