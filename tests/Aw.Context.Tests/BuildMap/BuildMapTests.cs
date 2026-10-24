@@ -94,11 +94,11 @@ public sealed class BuildMapTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Labeling_is_off_unless_the_profile_turns_it_on_and_the_labeler_is_never_asked()
+    public async Task Labeling_is_off_when_the_profile_turns_it_off_and_the_labeler_is_never_asked()
     {
         _world.Clusters.Set = new ClusterSet([Cluster("src/commands/ids.ts", "src/commands/registry.ts")], Available: true);
 
-        _ = await _world.Map.BuildMap(progress: null, Scope, MapWorld.None);
+        _ = await _world.Map.BuildMap(progress: null, MapWorld.HumanWith("""{"repos":["aw-split-panes"],"labeling":{"enabled":false}}"""), MapWorld.None);
 
         Assert.Empty(_world.Labeler.Shown);
     }
