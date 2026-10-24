@@ -74,6 +74,6 @@ public sealed class CallerContextBuilder
         var ids = new SequentialIdGenerator();
         return _class == CallerClass.Service
             ? CallerContext.Service(_service ?? "host", ids) with { Repo = _repo }
-            : CallerContext.Http(_class, _terminal, _client, _repo, ids);
+            : CallerContext.Http(new HttpCaller(_class, _terminal, _client, _repo), ids);
     }
 }

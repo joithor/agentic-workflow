@@ -59,7 +59,7 @@ internal static partial class CallerContextMiddleware
 
         var accessor = context.RequestServices.GetRequiredService<ICallerContextAccessor>();
         var ids = context.RequestServices.GetRequiredService<IIdGenerator>();
-        using (accessor.Enter(CallerContext.Http(caller.Class, caller.Terminal, caller.Client, caller.Repo, ids, caller.Launch)))
+        using (accessor.Enter(CallerContext.Http(new HttpCaller(caller.Class, caller.Terminal, caller.Client, caller.Repo, caller.Launch), ids)))
         {
             await next(context).ConfigureAwait(false);
         }
