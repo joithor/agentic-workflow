@@ -61,7 +61,7 @@ public sealed class McpPagesTests
         var items = page.GetProperty("sections")[0].GetProperty("items");
         Assert.Equal(1, items.GetArrayLength());
         Assert.Equal("b", items[0].GetProperty("id").GetString());
-        Assert.Equal(["e4", "e5"], items[0].GetProperty("evidence").EnumerateArray().Select(e => e.GetString()));
+        Assert.Equal(["e4", "e5"], items[0].GetProperty("evidence").EnumerateArray().Select(e => e.GetString()), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -86,7 +86,7 @@ public sealed class McpPagesTests
     [Fact, Trait("Lane", "unit")]
     public void Paging_a_query_answer_reaches_every_item_once_and_more_is_truthful()
     {
-        var items = string.Join(',', Enumerable.Range(0, 250).Select(i => $"{{\"id\":\"i{i}\",\"evidence\":[\"a\",\"b\"]}}"));
+        var items = string.Join(',', Enumerable.Range(0, 250).Select(i => $"{{\"id\":\"i{i.ToString(System.Globalization.CultureInfo.InvariantCulture)}\",\"evidence\":[\"a\",\"b\"]}}"));
         var answer = Json("{\"sections\":[{\"name\":\"graph\",\"items\":[" + items + "],\"more\":[]},{\"name\":\"records\",\"items\":[{\"id\":\"r0\"}],\"more\":[]}],\"truncated\":false}");
 
         var seen = new List<string>();
@@ -106,7 +106,7 @@ public sealed class McpPagesTests
         }
 
         Assert.Equal(3, pages);
-        Assert.Equal(Enumerable.Range(0, 250).Select(i => $"i{i}"), seen);
+        Assert.Equal(Enumerable.Range(0, 250).Select(i => "i" + i.ToString(System.Globalization.CultureInfo.InvariantCulture)), seen, StringComparer.Ordinal);
     }
 
     private static string[] Strings(JsonElement page, string list) =>
@@ -134,7 +134,7 @@ public sealed class McpPagesTests
 
         var lists = McpPages.Apply(answer, new McpWindow(Limit: 1, Offset: 0)).GetProperty("page").GetProperty("lists");
 
-        Assert.Equal(["sections.records.items", "sections.graph.items"], lists.EnumerateObject().Select(p => p.Name));
+        Assert.Equal(["sections.records.items", "sections.graph.items"], lists.EnumerateObject().Select(p => p.Name), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -155,6 +155,6 @@ public sealed class McpPagesTests
 
         var second = McpPages.Apply(answer, new McpWindow(Limit: 1, Offset: 1));
 
-        Assert.Equal(["C2"], second.GetProperty("cites").EnumerateObject().Select(c => c.Name));
+        Assert.Equal(["C2"], second.GetProperty("cites").EnumerateObject().Select(c => c.Name), StringComparer.Ordinal);
     }
 }
