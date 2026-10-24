@@ -302,7 +302,7 @@ public sealed class RefreshContextMapServiceTests
             }
 
             _h.Clock.Advance(TimeSpan.FromMinutes(10));
-            await Task.Delay(1, Ct);
+            await Task.Delay(1, TestContext.Current.CancellationToken);
         }
 
         Assert.True((await run).IsSuccess);
