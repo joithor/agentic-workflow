@@ -13096,6 +13096,7 @@ static readonly Aw.Sindri.Core.SindriErrors.WorktreeGitFailed -> Aw.Kernel.Error
 static readonly Aw.Sindri.Core.SindriErrors.WorktreeDirty -> Aw.Kernel.ErrorDefinition!
 Aw.Sindri.Core.Worktrees.IWorktrees
 Aw.Sindri.Core.Worktrees.IWorktrees.Create(Aw.Sindri.Core.Worktrees.WorktreeRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Worktrees.WorktreeCheckout!>!>
+Aw.Sindri.Core.Worktrees.IWorktrees.Resolve(string! repoRoot, string! branch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
 Aw.Sindri.Core.Worktrees.IWorktrees.Remove(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Sindri.Core.Worktrees.WorktreeCheckout.<Clone>$() -> Aw.Sindri.Core.Worktrees.WorktreeCheckout!
 Aw.Sindri.Core.Worktrees.WorktreeCheckout.Deconstruct(out string! Path, out string! Head, out string! Branch) -> void
