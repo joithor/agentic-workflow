@@ -6,7 +6,7 @@ namespace Aw.Sindri.Tests.Catalog;
 /// <summary>
 /// The engine's catalog rows (engine spec §6.2, §6.3, §10 'Every_engine_variant_has_a_catalog_row'; UI spec §7, E-9,
 /// E-12): every engine command and variant is listed with its class and UI status, and protected rows are terminal-bound.
-/// Protected rows read 'pending:&lt;phase&gt;' until their endpoint is mapped, then 'cli-only:typed-confirmation'.
+/// Protected rows read 'pending:&lt;phase&gt;' until their endpoint is mapped, then 'ready'.
 /// </summary>
 public sealed class EngineRowTests
 {
@@ -36,7 +36,7 @@ public sealed class EngineRowTests
     [
         ("RegisterRecipe", ActionClass.Desk, "ready"),
         ("ApproveRecipe", ActionClass.Protected, "ready"),
-        ("RevokeRecipe", ActionClass.Protected, "cli-only:typed-confirmation"),
+        ("RevokeRecipe", ActionClass.Protected, "ready"),
         ("IssueChallenge", ActionClass.Issue, "ready"),
         ("StartInstance", ActionClass.Desk, "ready"),
         ("RerunInstance", ActionClass.Desk, "ready"),
@@ -44,9 +44,9 @@ public sealed class EngineRowTests
         ("ApplyCommand:answer-text", ActionClass.Desk, "ready"),
         ("ApplyCommand:answer-resume", ActionClass.Desk, "ready"),
         ("ApplyCommand:answer-reject", ActionClass.Desk, "ready"),
-        ("ApplyCommand:answer-grant", ActionClass.Protected, "cli-only:typed-confirmation"),
-        ("ApplyCommand:answer-grant-tokens", ActionClass.Protected, "cli-only:typed-confirmation"),
-        ("ApplyCommand:answer-accept", ActionClass.Protected, "cli-only:typed-confirmation"),
+        ("ApplyCommand:answer-grant", ActionClass.Protected, "ready"),
+        ("ApplyCommand:answer-grant-tokens", ActionClass.Protected, "ready"),
+        ("ApplyCommand:answer-accept", ActionClass.Protected, "ready"),
         ("ApplyCommand:takeover", ActionClass.Pause, "ready"),
         ("ApplyCommand:handback", ActionClass.Desk, "ready"),
         ("ApplyCommand:cancel", ActionClass.Desk, "ready"),

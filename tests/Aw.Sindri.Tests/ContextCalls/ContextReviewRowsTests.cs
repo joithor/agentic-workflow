@@ -33,7 +33,7 @@ public sealed class ContextReviewRowsTests
         Assert.All(_protected, v =>
         {
             var row = Row("ReviewContextMap:" + v);
-            Assert.Equal((ActionClass.Protected, true, "cli-only:typed-confirmation"), (row.Class, row.NeedsTerminal, row.Ui));
+            Assert.Equal((ActionClass.Protected, false, "ready"), (row.Class, row.NeedsTerminal, row.Ui));
             Assert.Equal(typeof(ReviewContextMapRequest), row.CommandType);
         });
     }
@@ -54,7 +54,7 @@ public sealed class ContextReviewRowsTests
         var promote = Row("PromoteContextMap");
         var propose = Row("ProposeContextMap");
 
-        Assert.Equal((ActionClass.Protected, true, "cli-only:typed-confirmation", "/sindri/context/map/promote"), (promote.Class, promote.NeedsTerminal, promote.Ui, promote.Route));
+        Assert.Equal((ActionClass.Protected, false, "ready", "/sindri/context/map/promote"), (promote.Class, promote.NeedsTerminal, promote.Ui, promote.Route));
         Assert.Equal((ActionClass.Job, "ready", "POST", "/sindri/context/map/proposals"), (propose.Class, propose.Ui, propose.Method, propose.Route));
         Assert.True(Table.Decide(propose.Class, A.Caller().AtTerminal().Build(), propose).Allowed);
         Assert.True(Table.Decide(propose.Class, A.Caller().Human().Build(), propose).Allowed);

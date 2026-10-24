@@ -32,7 +32,7 @@ internal static class ContextRows
         .. Protected("delete", "sindri context map review delete <node>"),
         new(ActionId.From("PromoteContextMap"), typeof(PromoteContextMapRequest), Variant: null, ActionClass.Protected, ServiceGrants: [],
             NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
-            "POST", "/sindri/context/map/promote", ShellRows.Form("sindri context map promote"), EngineRowsTypedConfirmation),
+            "POST", "/sindri/context/map/promote", ShellRows.Form("sindri context map promote"), "ready"),
         new(ActionId.From("ProposeContextMap"), typeof(ProposeContextMapRequest), Variant: null, ActionClass.Job, ServiceGrants: [],
             NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
             "POST", "/sindri/context/map/proposals", ShellRows.Form("sindri context map propose <file>"), "ready"),
@@ -60,8 +60,6 @@ internal static class ContextRows
     /// <summary>The backtest's action id (a shared contract with the UI lane: Verb+Context+noun); one constant, so a rename is one line.</summary>
     internal const string BacktestAction = "RunContextBacktest";
 
-    private const string EngineRowsTypedConfirmation = "cli-only:typed-confirmation";
-
     private static CommandRow[] Review(string verb, string cli) =>
     [
         new(ActionId.From("ReviewContextMap:" + verb), typeof(ReviewContextMapRequest), verb, ActionClass.Desk, ServiceGrants: [],
@@ -73,6 +71,6 @@ internal static class ContextRows
     [
         new(ActionId.From("ReviewContextMap:" + verb), typeof(ReviewContextMapRequest), verb, ActionClass.Protected, ServiceGrants: [],
             NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
-            "POST", "/sindri/context/map/review", ShellRows.Form(cli), EngineRowsTypedConfirmation),
+            "POST", "/sindri/context/map/review", ShellRows.Form(cli), "ready"),
     ];
 }

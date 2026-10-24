@@ -11,24 +11,27 @@ using Table = Aw.Sindri.Core.Commands.Authorization;
 
 namespace Aw.Sindri.Tests.Catalog;
 
-/// <summary>The three rows the app confirms (setup-once spec §4 item 7, §7.4): the AppConfirm flag, the confirm column, and what the table does with each caller on them.</summary>
+/// <summary>The three rows the app confirms (setup-once spec §4 item 7, §7.4), after owner decision q93: no row carries the flag or a confirm value, and the table lets the app, the terminal and a session run them.</summary>
 public sealed class AppConfirmRowTests
 {
-    private static readonly (string Action, string? Confirm)[] _confirmable = [("ApproveProfile", "typed"), ("ApproveRecipe", "typed"), ("ApproveAllRecipes", "held")];
+    private static readonly string[] _formerlyConfirmable = ["ApproveProfile", "ApproveRecipe", "ApproveAllRecipes"];
 
     private static IReadOnlyList<CommandRow> Rows { get; } = new CommandCatalog().Rows;
 
     [Fact, Trait("Lane", "unit")]
-    public void Exactly_three_rows_carry_the_flag_and_confirm_is_set_on_those_only()
+    public void No_row_carries_the_flag_a_confirm_value_or_a_typed_confirmation_status()
     {
-        var flagged = Rows.Where(r => r.AppConfirm).Select(r => (r.Action.Value, r.Confirm)).OrderBy(static r => r.Value, StringComparer.Ordinal).ToArray();
-
-        Assert.Equal(_confirmable.OrderBy(static r => r.Action, StringComparer.Ordinal).ToArray(), flagged);
-        Assert.All(Rows.Where(r => !r.AppConfirm), r => Assert.Null(r.Confirm));
+        Assert.All(Rows, r =>
+        {
+            Assert.False(r.AppConfirm, r.Action.Value);
+            Assert.Null(r.Confirm);
+            Assert.NotEqual("cli-only:typed-confirmation", r.Ui);
+        });
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void The_three_rows_are_ready_in_the_app() => Assert.All(Rows.Where(r => r.AppConfirm), r => Assert.Equal("ready", r.Ui));
+    public void The_three_former_rows_are_ready_in_the_app() =>
+        Assert.All(_formerlyConfirmable, a => Assert.Equal("ready", Assert.Single(Rows, r => r.Action.Value == a).Ui));
 
     [Fact, Trait("Lane", "unit")]
     public void The_app_challenge_is_a_desk_row_for_a_human()
@@ -37,14 +40,6 @@ public sealed class AppConfirmRowTests
 
         Assert.Equal((typeof(IssueAppChallengeRequest), ActionClass.Desk, "POST", "/sindri/workflow/challenges/app", "ready", false, false, null),
             (row.CommandType, row.Class, row.Method, row.Route, row.Ui, row.NeedsTerminal, row.AppConfirm, row.Confirm));
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public void The_flagged_rows_are_the_three_requests()
-    {
-        var types = Rows.Where(r => r.AppConfirm).Select(r => r.CommandType).Order(Comparer<Type?>.Create(static (a, b) => string.CompareOrdinal(a?.Name, b?.Name))).ToArray();
-
-        Assert.Equal([typeof(ApproveAllRecipesRequest), typeof(ApproveProfileRequest), typeof(ApproveRecipeRequest)], types);
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -65,18 +60,16 @@ public sealed class AppConfirmRowTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task The_command_list_carries_confirm_and_names_the_app_as_a_caller_of_the_three()
+    public async Task The_command_list_serves_confirm_null_and_names_the_app_and_a_session_as_callers()
     {
         var listed = (await new ListCommandsService(new CommandCatalog()).Handle(new ListCommandsRequest(), TestContext.Current.CancellationToken)).Value.Rows;
 
-        Assert.All(_confirmable, c =>
+        Assert.All(listed, r => Assert.Null(r.Confirm));
+        Assert.All(_formerlyConfirmable.Append("RevokeRecipe"), a =>
         {
-            var row = Assert.Single(listed, r => r.Action.Value == c.Action);
-            Assert.Equal(c.Confirm, row.Confirm);
-            Assert.Contains("human", row.AllowedCallers, StringComparer.Ordinal);
-            Assert.Contains("session", row.AllowedCallers, StringComparer.Ordinal);
+            var callers = Assert.Single(listed, r => r.Action.Value == a).AllowedCallers;
+            Assert.Contains("human", callers, StringComparer.Ordinal);
+            Assert.Contains("session", callers, StringComparer.Ordinal);
         });
-        Assert.All(listed.Where(r => !_confirmable.Any(c => string.Equals(c.Action, r.Action.Value, StringComparison.Ordinal))), r => Assert.Null(r.Confirm));
-        Assert.Contains("human", Assert.Single(listed, r => r.Action.Value == "RevokeRecipe").AllowedCallers, StringComparer.Ordinal);
     }
 }
