@@ -190,7 +190,13 @@ public sealed class ContextWholeZoomTests
         await page.Submit(Token);
 
         Assert.Equal(nodes, page.Whole.Geometry!.Nodes.Count);
-        Assert.True(page.Whole.Shown!.Nodes.Count <= nodes);   // the drawn neighbourhood is the search, and it can reach most of a small map
+        var hits = page.Whole.HitKeys;
+        var expected = page.Whole.Geometry.Edges
+            .Where(e => hits.Contains(e.From) || hits.Contains(e.To))
+            .SelectMany(e => new[] { e.From, e.To })
+            .Concat(hits)
+            .ToHashSet(StringComparer.Ordinal);
+        Assert.Equal(expected.Order(StringComparer.Ordinal), page.Whole.Shown!.Nodes.Select(n => n.Key).Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.All(page.Whole.HitKeys, key => Assert.Contains(page.Whole.Shown.Nodes, n => string.Equals(n.Key, key, StringComparison.Ordinal)));
         _ = page.BackToWholeMap();
         Assert.Empty(page.Whole.HitKeys);
