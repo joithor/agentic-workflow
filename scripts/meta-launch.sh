@@ -12,7 +12,7 @@
 # `tmux attach` line per lane) and each lane's agent (meta.lanesAgent, meta.lanes.<lane>; Claude Code by default).
 # Before it creates anything it looks (read-only: has-session) for `<team>-<lane>` sessions of the lanes it would start on tmux's
 # DEFAULT socket, where a team started before the switch still runs, and refuses (exit 1) if any exist: starting them again
-# would run a second claude on the same transcripts. The owner stops the old team, then relaunches; --allow-legacy (owner only) skips the check.
+# would run a second claude on the same transcripts. The owner stops the old team, then relaunches; --allow-legacy skips the check (the meta session never passes it).
 #   meta-launch.sh [--team <name>] [--lanes a,b,...] [--no-open] [--dry-run] [--allow-legacy]
 #   meta-launch.sh --init-launcher [--viewer warp|print|<terminal id>] [--force] [--stdout]   write launcher.json for this box
 #   AW_META_CONFIG      team config (default $AW_STATE_DIR/meta/teams/<team>/team.json, or the legacy $AW_STATE_DIR/meta/team.json; `aw-meta team-init` writes it)

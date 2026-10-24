@@ -21,7 +21,7 @@ public sealed class ProveIntakeFailLogTests
 
     private static InMemoryBriefFiles Packet() => new InMemoryBriefFiles()
         .With("acceptance.json", """{"schemaVersion":1,"parent":"sha256:aa","items":[{"id":"AC-1","text":"first","status":"failing","evidence":[]},{"id":"AC-2","text":"second","status":"failing","evidence":[]},{"id":"AC-3","text":"old","status":"superseded","supersededBy":"AC-2","evidence":[]}]}""")
-        .With("signals.json", """{"schemaVersion":1,"signals":{"AC-1":[{"id":"SG-1a","kind":"test","statement":"s","runsAt":"head"},{"id":"SG-1b","kind":"api-transcript","statement":"t","runsAt":"base+head"}]}}""");
+        .With("signals.json", """{"schemaVersion":1,"signals":[{"item":"AC-1","id":"SG-1a","kind":"test","statement":"s","runs":"head"},{"item":"AC-1","id":"SG-1b","kind":"api-transcript","statement":"t","runs":"base+head"}]}""");
 
     private static Dictionary<string, string> IntakeFacts() => new(StringComparer.Ordinal)
     {

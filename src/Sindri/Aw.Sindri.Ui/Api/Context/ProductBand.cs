@@ -6,11 +6,9 @@ namespace Aw.Sindri.Ui.Api.Context;
 /// <param name="Affects">Affects, as served.</param>
 /// <param name="Counts">Counts, as served.</param>
 /// <param name="Edges">Edges, as served.</param>
-/// <param name="Truncated">Truncated, as served.</param>
 internal sealed record ProductBand(
     IReadOnlyList<ProductNode> Own,
     IReadOnlyList<ProductNode> Neighbors,
     IReadOnlyList<ProductNode> Affects,
     ProductCounts Counts,
-    IReadOnlyList<LensEdge> Edges,
-    bool Truncated);
+    IReadOnlyList<LensEdge> Edges);
