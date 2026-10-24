@@ -15,7 +15,7 @@ namespace Aw.Sindri.Host.Catalog;
 /// <summary>
 /// The workflow engine's rows (engine spec §6.2, §6.3 route table; UI spec §7, E-9, E-12; API spec §2.1, §4.1). P2's
 /// recipe commands are bound to their types and flip to 'ready' as their units ship them; protected rows end as
-/// 'cli-only:typed-confirmation' once mapped. P4's instance rows and P5's takeover and handback are bound and mapped.
+/// 'ready' once mapped. P4's instance rows and P5's takeover and handback are bound and mapped.
 /// Queries (show, list, get, events) have no rows: the catalog lists commands, variants and issues only (API spec §3.3).
 /// </summary>
 internal static class EngineRows

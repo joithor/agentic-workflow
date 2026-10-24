@@ -66,7 +66,7 @@ public sealed class ContextMapApiTests
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task A_caller_previews_then_imports_with_the_hash_alone_and_the_import_is_recorded()
+    public async Task A_human_previews_then_imports_with_the_hash_alone_and_the_import_is_recorded()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var host = await Approved(sessions: true, ct);
@@ -74,12 +74,14 @@ public sealed class ContextMapApiTests
 
         var preview = await host.Http.Ask(Post("/sindri/context/map/import", Body(file), Human(host.Token.Value)));
         var hash = HashOf(preview.Body);
-        var imported = await host.Http.Ask(Post("/sindri/context/map/import", Body(file, hash), (SindriHeaders.Caller, "session"), (SindriHeaders.Repo, FixtureMap.Repo)));
+        var bySession = await host.Http.Ask(Post("/sindri/context/map/import", Body(file, hash), (SindriHeaders.Caller, "session"), (SindriHeaders.Repo, FixtureMap.Repo)));
+        var imported = await host.Http.Ask(Post("/sindri/context/map/import", Body(file, hash), Human(host.Token.Value)));
         var status = await host.Http.Ask(Get("/sindri/context/map", Human(host.Token.Value)));
         var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapImported, ct);
 
         Assert.Equal(HttpStatusCode.OK, preview.Status);
         Assert.False(JsonDocument.Parse(preview.Body).RootElement.TryGetProperty("challenge", out var challenge) && challenge.ValueKind == JsonValueKind.Object);
+        Assert.Equal((HttpStatusCode.Forbidden, "SND-CONTEXT-020"), (bySession.Status, bySession.Code));   // the context engine's session gate (group F), not the command chain's
         Assert.Equal(HttpStatusCode.OK, imported.Status);
         Assert.Contains("\"status\":\"current\"", imported.Body, StringComparison.Ordinal);
         Assert.Contains("\"nodes\":20", status.Body, StringComparison.Ordinal);

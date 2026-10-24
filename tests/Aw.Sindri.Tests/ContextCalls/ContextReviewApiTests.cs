@@ -187,7 +187,7 @@ public sealed class ContextReviewApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task Promote_is_046_while_items_are_undecided_then_any_caller_promotes_the_confirmed_draft_with_no_challenge()
+    public async Task Promote_is_046_while_items_are_undecided_then_a_human_promotes_the_confirmed_draft_with_no_challenge()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var host = await Host(sessions: true);
@@ -197,7 +197,8 @@ public sealed class ContextReviewApiTests : IDisposable
 
         var preview = await host.Http.Ask(Post("/sindri/context/map/promote", "{}", Terminal(host)));
         var draft = Json(preview.Body).GetProperty("draft").GetString();
-        var promoted = await host.Http.Ask(Post("/sindri/context/map/promote", JsonSerializer.Serialize(new { draft }), Session()));
+        var bySession = await host.Http.Ask(Post("/sindri/context/map/promote", JsonSerializer.Serialize(new { draft }), Session()));
+        var promoted = await host.Http.Ask(Post("/sindri/context/map/promote", JsonSerializer.Serialize(new { draft }), Terminal(host)));
         var status = await host.Http.Ask(Get("/sindri/context/map", Terminal(host)));
         var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapPromoted, ct);
 
@@ -205,6 +206,7 @@ public sealed class ContextReviewApiTests : IDisposable
         Assert.Equal(HttpStatusCode.OK, bulk.Status);
         Assert.Equal(HttpStatusCode.OK, preview.Status);
         Assert.False(Json(preview.Body).TryGetProperty("challenge", out var challenge) && challenge.ValueKind == JsonValueKind.Object);
+        Assert.Equal((HttpStatusCode.Forbidden, "SND-CONTEXT-020"), (bySession.Status, bySession.Code));   // the context engine's own session gate, not the command chain's
         Assert.Equal(HttpStatusCode.OK, promoted.Status);
         Assert.Contains("\"status\":\"current\"", status.Body, StringComparison.Ordinal);
         Assert.NotNull(recorded.Value);
@@ -226,7 +228,7 @@ public sealed class ContextReviewApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task Applying_a_review_file_acts_at_once_for_any_caller_with_no_challenge()
+    public async Task Applying_a_review_file_acts_at_once_for_a_human_with_no_challenge()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var host = await Host(sessions: true);
@@ -241,9 +243,11 @@ public sealed class ContextReviewApiTests : IDisposable
 
         await File.WriteAllTextAsync(path, file.ToJsonString(), ct);
 
-        var applied = await host.Http.Ask(Post("/sindri/context/map/review", Review("apply-file", path: path), Session()));
+        var bySession = await host.Http.Ask(Post("/sindri/context/map/review", Review("apply-file", path: path), Session()));
+        var applied = await host.Http.Ask(Post("/sindri/context/map/review", Review("apply-file", path: path), Terminal(host)));
 
         Assert.Equal(HttpStatusCode.OK, export.Status);
+        Assert.Equal((HttpStatusCode.Forbidden, "SND-CONTEXT-020"), (bySession.Status, bySession.Code));
         Assert.Equal(HttpStatusCode.OK, applied.Status);
         Assert.True(Json(applied.Body).GetProperty("result").GetProperty("written").GetArrayLength() > 0);
         Assert.False(Json(applied.Body).TryGetProperty("challenge", out var challenge) && challenge.ValueKind == JsonValueKind.Object);

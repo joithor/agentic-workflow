@@ -22,7 +22,7 @@ public sealed class ContextReviewRowsTests
     private static CommandRow Row(string action) => Assert.Single(_catalog.Rows, r => r.Action.Value == action);
 
     [Fact, Trait("Lane", "unit")]
-    public void Every_desk_review_variant_is_desk_and_ready_and_every_protected_one_needs_a_terminal_and_the_typed_confirmation()
+    public void Every_desk_review_variant_is_desk_and_ready_and_every_protected_one_is_protected_and_ready()
     {
         Assert.All(_desk, v =>
         {
@@ -49,7 +49,7 @@ public sealed class ContextReviewRowsTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Promote_is_protected_and_proposing_is_a_job_the_app_the_terminal_and_the_engine_may_call_but_a_session_may_not()
+    public void Promote_is_protected_and_proposing_is_a_job_any_caller_the_command_chain_knows_may_call()
     {
         var promote = Row("PromoteContextMap");
         var propose = Row("ProposeContextMap");
@@ -59,7 +59,7 @@ public sealed class ContextReviewRowsTests
         Assert.True(Table.Decide(propose.Class, A.Caller().AtTerminal().Build(), propose).Allowed);
         Assert.True(Table.Decide(propose.Class, A.Caller().Human().Build(), propose).Allowed);
         Assert.True(Table.Decide(propose.Class, A.Caller().Service("engine").Build(), propose).Allowed);
-        Assert.False(Table.Decide(propose.Class, A.Caller().Session().Build(), propose).Allowed);
+        Assert.True(Table.Decide(propose.Class, A.Caller().Session().Build(), propose).Allowed);   // the context engine's own session gate (SND-CONTEXT-020) is a separate, later refusal
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -80,7 +80,7 @@ public sealed class ContextReviewRowsTests
         Assert.Equal((ActionClass.Job, "ready", "POST", "/sindri/context/eval/backtest"), (backtest.Class, backtest.Ui, backtest.Method, backtest.Route));
         Assert.Equal(typeof(RunContextBacktestRequest), backtest.CommandType);
         Assert.Equal("sindri context eval backtest", backtest.Cli.Text);
-        Assert.False(Table.Decide(backtest.Class, A.Caller().Session().Build(), backtest).Allowed);
+        Assert.True(Table.Decide(backtest.Class, A.Caller().Session().Build(), backtest).Allowed);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -94,14 +94,14 @@ public sealed class ContextReviewRowsTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void The_two_context_jobs_are_refused_to_a_session_and_allowed_to_the_terminal_the_app_and_a_service()
+    public void The_two_context_jobs_are_allowed_to_the_terminal_the_app_a_session_and_a_service()
     {
         foreach (var row in new[] { Row("BuildContextMap"), Row("SyncSources") })
         {
             Assert.True(Table.Decide(row.Class, A.Caller().AtTerminal().Build(), row).Allowed);
             Assert.True(Table.Decide(row.Class, A.Caller().Human().Build(), row).Allowed);
             Assert.True(Table.Decide(row.Class, A.Caller().Service("engine").Build(), row).Allowed);
-            Assert.False(Table.Decide(row.Class, A.Caller().Session().Build(), row).Allowed);
+            Assert.True(Table.Decide(row.Class, A.Caller().Session().Build(), row).Allowed);
         }
     }
 
@@ -114,16 +114,14 @@ public sealed class ContextReviewRowsTests
     [InlineData("undo")]
     [InlineData("drop")]
     [InlineData("repoint")]
-    public void A_desk_decision_is_allowed_for_the_terminal_and_the_app_and_refused_for_a_session(string verb)
+    public void A_desk_decision_is_allowed_for_the_terminal_the_app_and_a_session(string verb)
     {
         var request = new ReviewContextMapRequest(verb);
         var row = ActionClassifier.Classify(_catalog, request);
 
         Assert.True(Table.Decide(row.Class, A.Caller().AtTerminal().Build(), row).Allowed);
         Assert.True(Table.Decide(row.Class, A.Caller().Human().Build(), row).Allowed);
-        var session = Table.Decide(row.Class, A.Caller().Session().Build(), row);
-        Assert.False(session.Allowed);
-        Assert.Equal(SindriErrors.AuthRefused.Code, session.Refusal?.Code);
+        Assert.True(Table.Decide(row.Class, A.Caller().Session().Build(), row).Allowed);
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -131,18 +129,18 @@ public sealed class ContextReviewRowsTests
     [InlineData("merge")]
     [InlineData("add")]
     [InlineData("delete")]
-    public void A_protected_review_action_is_allowed_for_the_terminal_only(string verb)
+    public void A_protected_review_action_is_allowed_for_the_terminal_the_app_and_a_session_but_not_a_service(string verb)
     {
         var row = ActionClassifier.Classify(_catalog, new ReviewContextMapRequest(verb));
 
         Assert.True(Table.Decide(row.Class, A.Caller().AtTerminal().Build(), row).Allowed);
-        Assert.False(Table.Decide(row.Class, A.Caller().Human().Build(), row).Allowed);
-        Assert.False(Table.Decide(row.Class, A.Caller().Session().Build(), row).Allowed);
+        Assert.True(Table.Decide(row.Class, A.Caller().Human().Build(), row).Allowed);
+        Assert.True(Table.Decide(row.Class, A.Caller().Session().Build(), row).Allowed);
         Assert.False(Table.Decide(row.Class, A.Caller().Service("engine").Build(), row).Allowed);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void An_unknown_review_verb_fails_closed_to_a_protected_terminal_only_row()
+    public void An_unknown_review_verb_fails_closed_to_a_protected_row()
     {
         var row = ActionClassifier.Classify(_catalog, new ReviewContextMapRequest("obliterate"));
 

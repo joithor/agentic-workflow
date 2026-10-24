@@ -7,7 +7,6 @@ using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Features.OnyxUp;
-using Aw.Sindri.Host;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.ApiGoldens;
 using Aw.Sindri.Tests.Callers;
@@ -174,7 +173,7 @@ public sealed class SetupOnyxRouteTests
     }
 
     [Fact(Timeout = 60_000)]
-    public async Task The_account_route_with_no_job_waiting_is_a_409_and_a_session_is_refused_while_one_waits()
+    public async Task The_account_route_with_no_job_waiting_is_a_409()
     {
         var fakes = new Fakes();
         await using var host = await JobHost.Start(TestContext.Current.CancellationToken, more: fakes.Install);
@@ -182,12 +181,9 @@ public sealed class SetupOnyxRouteTests
         var nobody = await Send(host, "/sindri/onyx/account", Account());
         var job = await StartSetup(host);
         await WaitUntilWaiting(host, job);
-        var session = await host.Http.Ask(Post("/sindri/onyx/account", Account(), (SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli")));
-        var stillWaiting = Json(await JobHost.Retrying(host, () => JobHost.Read(host, $"/sindri/jobs/{job.Value}"), Token)).GetProperty("state").GetString();
 
         Assert.Equal((HttpStatusCode.Conflict, "SND-SETUP-006"), (nobody.Status, nobody.Code));
-        Assert.Equal((HttpStatusCode.Forbidden, "waiting"), (session.Status, stillWaiting));
-        Assert.DoesNotContain(Sentinel, nobody.Body + session.Body + string.Join('\n', fakes.Log.Lines), StringComparison.Ordinal);
+        Assert.DoesNotContain(Sentinel, nobody.Body + string.Join('\n', fakes.Log.Lines), StringComparison.Ordinal);
         await JobHost.Cancel(host, job, Token);
         await JobHost.Settle(host, Token);
     }

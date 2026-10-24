@@ -192,23 +192,6 @@ public sealed class ContextJobsApiTests : IDisposable
         Assert.Equal(["onyx"], synced);   // the source that finished has its event; the one that was running has the run that owns it
     }
 
-    [Fact(Timeout = 90_000), Trait("Lane", "integration")]
-    public async Task A_session_start_of_either_job_is_refused_by_the_gate_and_starts_nothing()
-    {
-        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
-        await using var onyx = await FakeOnyxServer.Start();
-        await using var host = await SyncHost(onyx);
-        (string Name, string Value)[] session = [(SindriHeaders.Caller, "session"), (SindriHeaders.Repo, FixtureMap.Repo)];
-
-        var sync = await host.Http.Ask(Post("/sindri/context/sources/sync", "{}", session));
-        var build = await host.Http.Ask(Post("/sindri/context/map/build", "{}", session));
-
-        Assert.Equal(("SND-AUTH-002", "SND-AUTH-002"), (sync.Code, build.Code));
-        Assert.Contains("sindri context sources sync", sync.Body, StringComparison.Ordinal);
-        Assert.Contains("sindri context map build", build.Body, StringComparison.Ordinal);
-        Assert.Empty(Of(await Ledger(host), EventTypes.JobStarted));
-    }
-
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
     public async Task Map_build_answers_JobStarted_and_the_job_writes_a_draft_and_the_built_event()
     {

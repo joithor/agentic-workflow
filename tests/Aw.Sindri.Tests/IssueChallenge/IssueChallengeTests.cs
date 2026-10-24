@@ -8,7 +8,7 @@ namespace Aw.Sindri.Tests.IssueChallenge;
 
 /// <summary>
 /// Issuing a challenge (engine spec §4.2, API spec §4.1 'issue'): the server parses the action, plans it and returns
-/// the challenge with its preview, to a human at a terminal only. S1-D5: 'approve profile &lt;hash6&gt;' too.
+/// the challenge with its preview, to a human or a session (not a service). S1-D5: 'approve profile &lt;hash6&gt;' too.
 /// </summary>
 public sealed class IssueChallengeTests
 {
@@ -47,29 +47,28 @@ public sealed class IssueChallengeTests
     [Theory, Trait("Lane", "unit")]
     [InlineData("session")]
     [InlineData("app")]
-    public async Task Only_a_human_at_a_terminal_gets_a_challenge(string who)
+    public async Task A_session_and_the_app_get_a_challenge_too(string who)
     {
         await using var r = new RegistryHarness();
         _ = await r.H.HoldLease();
         _ = await r.Shipped("sindri/workflow.step.yaml");
         var caller = who == "session" ? A.Caller().Session().Build() : A.Caller().Human().Client(ClientLabel.Ui).Build();
 
-        var refused = await r.Issue("approve workflow.step 4", caller);
+        var issued = await r.Issue("approve workflow.step 4", caller);
 
-        Assert.Equal(SindriErrors.AuthRefused.Code, refused.Error.Code);
-        Assert.Equal("IssueChallenge is a human decision. Ask the human to run it in a terminal: sindri recipe approve <recipe>", refused.Error.Message);
+        Assert.True(issued.IsSuccess, issued.IsError ? issued.Error.ToString() : null);
     }
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("revoke workflow.step@9ab2d40c1e77", "sindri recipe revoke <recipe>", "sindri recipe approve")]
     [InlineData("approve workflow.step 4", "sindri recipe approve <recipe>", "sindri recipe revoke")]
-    public async Task A_session_is_refused_with_the_one_command_for_its_action(string action, string named, string other)
+    public async Task A_service_is_refused_with_the_one_command_for_its_action(string action, string named, string other)
     {
         await using var r = new RegistryHarness();
         _ = await r.H.HoldLease();
         _ = await r.Shipped("sindri/workflow.step.yaml");
 
-        var refused = await r.Issue(action, A.Caller().Session().Build());
+        var refused = await r.Issue(action, A.Caller().Service("heartbeat").Build());
 
         Assert.Equal(SindriErrors.AuthRefused.Code, refused.Error.Code);
         Assert.EndsWith(named, refused.Error.Message, StringComparison.Ordinal);

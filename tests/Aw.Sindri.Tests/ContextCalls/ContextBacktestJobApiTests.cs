@@ -110,20 +110,6 @@ public sealed class ContextBacktestJobApiTests : IDisposable
     }
 
     [Fact(Timeout = 90_000), Trait("Lane", "integration")]
-    public async Task RunBacktest_start_by_a_session_is_refused_by_the_gate_and_starts_nothing()
-    {
-        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
-        await using var host = await Host();
-
-        var refused = await host.Http.Ask(Post(Route, "{}", [(SindriHeaders.Caller, "session"), (SindriHeaders.Repo, FixtureMap.Repo)]));
-
-        Assert.Equal("SND-AUTH-002", refused.Code);
-        Assert.Contains("sindri context eval backtest", refused.Body, StringComparison.Ordinal);
-        Assert.Empty(_requests);
-        Assert.DoesNotContain(await Ledger(host), e => e.Envelope.Type == EventTypes.JobStarted);
-    }
-
-    [Fact(Timeout = 90_000), Trait("Lane", "integration")]
     public async Task RunBacktest_unknown_arm_is_refused_at_the_start_as_082_before_any_job_exists()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
