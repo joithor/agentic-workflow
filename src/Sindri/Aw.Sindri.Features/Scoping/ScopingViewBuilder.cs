@@ -34,8 +34,14 @@ internal static class ScopingViewBuilder
 
         var rows = ScopeJson.Items(facts["coverage"], "lenses").ToList();
         var limited = rows.Count(static r => ScopeJson.Items(r, "limits").Any());
-        return string.Create(CultureInfo.InvariantCulture, $"{limited} of {ScopeRules.Lenses.Count} lenses limited");
+        var lenses = string.Create(CultureInfo.InvariantCulture, $"{limited} of {ScopeRules.Lenses.Count} lenses limited");
+        return string.Join("; ", new[] { lenses, ScopeCounts.Relevance(facts), ScopeCounts.Gap(facts) }.OfType<string>());
     }
+
+    // The model checks lead the checklist (a warning there is the first thing the owner reads), in the rules' order.
+    private static readonly string[] _modelRules = [ScopeRules.Chal2, ScopeRules.Rel2, ScopeRules.Gap2];
+
+    private static bool IsModelRule(string rule) => _modelRules.Contains(rule, StringComparer.Ordinal);
 
     /// <summary>A section's place in the view: its order, name and heading.</summary>
     private sealed record Heading(int Order, string Name, string Title);
@@ -57,7 +63,7 @@ internal static class ScopingViewBuilder
     private static ScopingSection Checklist(ScopeFacts facts, ScopingCheckResponse report)
     {
         var rows = new List<ScopingRow>();
-        rows.AddRange(report.Warnings.Where(static w => string.Equals(w.Rule, ScopeRules.Chal2, StringComparison.Ordinal))
+        rows.AddRange(report.Warnings.Where(static w => IsModelRule(w.Rule))
             .Select(static w => new ScopingRow(w.Rule, w.Message, "warn", [w.Fix])));
         foreach (var rule in report.Rules)
         {
@@ -79,7 +85,7 @@ internal static class ScopingViewBuilder
             rows.Add(new ScopingRow(rule.Rule, $"{rule.Rule} {status}", status, lines));
         }
 
-        rows.AddRange(report.Warnings.Where(static w => !string.Equals(w.Rule, ScopeRules.Chal2, StringComparison.Ordinal))
+        rows.AddRange(report.Warnings.Where(static w => !IsModelRule(w.Rule))
             .Select(static w => new ScopingRow(w.Rule, w.Message, "warn", [w.Fix])));
         foreach (var row in ScopeJson.Items(facts["coverage"], "lenses"))
         {
@@ -121,7 +127,50 @@ internal static class ScopingViewBuilder
         var rows = ScopeJson.Items(map, "flagged").Select(static f => new ScopingRow(ScopeJson.Str(f, "item") ?? "?", $"{ScopeJson.Str(f, "item")}: {ScopeJson.Str(f, "reason")}", "flagged", []))
             .Concat(ScopeJson.Items(map, "unresolved").Select(static u =>
                 new ScopingRow(ScopeJson.Str(u, "item") ?? ScopeJson.Str(u, "rule") ?? "?", $"{ScopeJson.Str(u, "rule")} {ScopeJson.Str(u, "item")}: {ScopeJson.Str(u, "why")}", "unresolved", []))).ToList();
-        return Section(new Heading(2, "flagged", "Flagged items and unresolved findings"), NotYet(facts, "step.scope.draft", "scopeMap"), rows, "No flagged items");
+        var notYet = NotYet(facts, "step.scope.draft", "scopeMap");
+        var checks = ReviewRows(facts, written: notYet is null);
+        // why: the relevance and gap search rows don't wait for the packet; they show whenever their facts are there
+        return Section(new Heading(2, "flagged", "Flagged items and unresolved findings"), notYet is not null && checks.Count == 0 ? notYet : null, [.. rows, .. checks], "No flagged items");
+    }
+
+    /// <summary>The rows the relevance review and the gap search add: each disputed entry, each candidate the judge could not rule on, each confirmed gap of the last round, or (once the draft is written) the Step that writes a fact still absent.</summary>
+    private static List<ScopingRow> ReviewRows(ScopeFacts facts, bool written)
+    {
+        var rows = new List<ScopingRow>();
+        if (!facts.Has("relevance") && written)
+        {
+            rows.Add(new ScopingRow("relevance", "not yet: written by step.scope.relevance-apply", "not-yet", []));
+        }
+
+        foreach (var entry in ScopeJson.Items(facts["relevance"], "entries").Where(static e => ScopeJson.Bool(e, "disputed") == true))
+        {
+            var id = ScopeJson.Str(entry, "id") ?? "?";
+            var text = $"disputed: {ScopeJson.Str(entry, "label") ?? id} — AI said {ScopeJson.Str(ScopeJson.Obj(entry, "agent"), "class") ?? "nothing"}, judge said {ScopeJson.Str(ScopeJson.Obj(entry, "judge"), "class") ?? "nothing"}";
+            rows.Add(new ScopingRow(id, text, "disputed", [.. new[] { ScopeJson.Str(ScopeJson.Obj(entry, "agent"), "reason") }.OfType<string>().Select(static r => $"AI: {r}")]));
+        }
+
+        if (!facts.Has("gapSearch"))
+        {
+            if (written)
+            {
+                rows.Add(new ScopingRow("gap-search", "not yet: written by step.scope.gap-log", "not-yet", []));
+            }
+
+            return rows;
+        }
+
+        var rounds = ScopeJson.Items(facts["gapSearch"], "rounds").ToList();
+        rows.AddRange(rounds.SelectMany(static r => ScopeJson.Items(r, "candidates"))
+            .Where(static c => string.Equals(ScopeJson.Str(c, "ruling"), "uncertain", StringComparison.Ordinal))
+            .Select(static c => new ScopingRow(ScopeJson.Str(c, "id") ?? "?", $"uncertain: {ScopeJson.Str(c, "title")} ({ScopeJson.Str(c, "citation")})", "uncertain", [])));
+        if (rounds.Count > 0)
+        {
+            rows.AddRange(ScopeJson.Items(rounds[^1], "candidates")
+                .Where(static c => string.Equals(ScopeJson.Str(c, "ruling"), "real-gap", StringComparison.Ordinal))
+                .Select(static c => new ScopingRow(ScopeJson.Str(c, "id") ?? "?", $"open gap: {ScopeJson.Str(c, "title")} ({ScopeJson.Str(c, "citation")})", "open-gap", [])));
+        }
+
+        return rows;
     }
 
     private static ScopingSection Excluded(ScopeFacts facts)

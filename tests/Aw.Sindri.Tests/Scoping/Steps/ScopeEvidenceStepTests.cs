@@ -201,7 +201,7 @@ public sealed class ScopeEvidenceStepTests
         var result = await Run(area, Gold(), runs: records);
 
         Assert.Equal("complete", result.Result!.Outcome.Value);
-        Assert.Equal([ScopingStepContexts.Address], records.Calls.Select(static c => c.Value));
+        Assert.Equal([ScopingStepContexts.Address], records.Calls.Select(static c => c.Value), StringComparer.Ordinal);
         var runs = JsonNode.Parse(result.Result.Outputs[FactKey.From("fact:runs")].GetRawText())!.AsArray();
         Assert.Equal(["step.scope.draft", "step.scope.challenge"], runs.Select(static r => (string?)r!["step"]), StringComparer.Ordinal);
         Assert.Equal("fixture-challenger-model", (string?)runs[1]!["model"]);

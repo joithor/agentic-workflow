@@ -237,7 +237,7 @@ function run() {
     ok(`${dir}/answers.jsonl: one batch per scripted batch of the scoping answers`, answersLog.length === readJson(path.join(SCOPING, "answers", `${c}.json`)).batches.length);
     const challenge = j("challenge.json");
     ok(`${dir}/challenge.json: the last round is empty`, challenge.rounds.length >= 2 && challenge.rounds.at(-1).verdict === "nothingNew" && !challenge.rounds.at(-1).surfaces && !challenge.rounds.at(-1).behaviours);
-    ok(`${dir}: has no index.json (the scoping kind lists twelve files; its hash is the frozen record)`, !fs.existsSync(at("gold", dir, "index.json")));
+    ok(`${dir}: has no index.json (the scoping kind lists fourteen files; its hash is the frozen record)`, !fs.existsSync(at("gold", dir, "index.json")));
     ok(`${dir}/questions.json: every question answered, one recommended option each`, (() => { const asked = new Set(readJsonl(at("gold", dir, "answers.jsonl")).flatMap((b) => b.questionIds)); return j("questions.json").questions.every((q) => asked.has(q.id) && q.options.filter((o) => o.recommended).length === 1); })());
   }
 

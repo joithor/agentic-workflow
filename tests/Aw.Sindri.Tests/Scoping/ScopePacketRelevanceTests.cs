@@ -18,7 +18,7 @@ public sealed class ScopePacketRelevanceTests
         var files = ScopePacket.Build(new ScopeFacts(ScopingFacts.Expiry()));
 
         Assert.Equal(14, files.Count);
-        Assert.Equal([.. ScopePacketFiles.Names.Order(StringComparer.Ordinal)], [.. files.Select(static f => f.Path[Dir.Length..]).Order(StringComparer.Ordinal)], StringComparer.Ordinal);
+        Assert.Equal(ScopePacketFiles.Names.Order(StringComparer.Ordinal).ToArray(), files.Select(static f => f.Path[Dir.Length..]).Order(StringComparer.Ordinal).ToArray(), StringComparer.Ordinal);
         Assert.Contains("relevance.json", ScopePacketFiles.Names);
         Assert.Contains("gap-search.json", ScopePacketFiles.Names);
     }

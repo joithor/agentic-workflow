@@ -41,12 +41,13 @@ internal static partial class DeskBlocks
     /// <param name="block">The Step's id.</param>
     /// <param name="facts">The facts.</param>
     /// <param name="challengeCap">The running recipe's loops.challenge.cap; the shipped default where no recipe runs the helper (the desk).</param>
-    internal static Result<ScopingDeskResponse> Run(string block, ScopeFacts facts, int challengeCap = ScopeRules.DefaultChallengeRounds) => block switch
+    /// <param name="gapCap">The running recipe's loops.gapsearch.cap; the shipped default where no recipe runs the helper (the desk).</param>
+    internal static Result<ScopingDeskResponse> Run(string block, ScopeFacts facts, int challengeCap = ScopeRules.DefaultChallengeRounds, int gapCap = ScopeRules.DefaultGapRounds) => block switch
     {
         "step.scope.intake" => Intake(facts),
         "step.scope.check" => Check(facts),
         "step.scope.challenge-log" => ChallengeLog(facts),
-        "step.scope.evidence" => Evidence(facts, challengeCap),
+        "step.scope.evidence" => Evidence(facts, challengeCap, gapCap),
         "step.interview.record" => Record(facts),
         "step.brief.seed" => Seed(),
         "step.scope.gather" => Gather(facts),
@@ -217,10 +218,10 @@ internal static partial class DeskBlocks
         };
     }
 
-    private static Result<ScopingDeskResponse> Evidence(ScopeFacts facts, int challengeCap)
+    private static Result<ScopingDeskResponse> Evidence(ScopeFacts facts, int challengeCap, int gapCap)
     {
         var assembled = ScopeEvidence.FlagUncited(facts);
-        var report = ScopePacketChecks.Run(assembled, ScopeStage.Evidence, challengeCap);
+        var report = ScopePacketChecks.Run(assembled, ScopeStage.Evidence, challengeCap, gapCap);
         if (report.Outcome is not ScopeOutcome.Complete)
         {
             var outcome = report.Outcome == ScopeOutcome.Regather ? "regather" : "incomplete";
@@ -240,6 +241,12 @@ internal static partial class DeskBlocks
             ("coverage", assembled.Require("coverage")),
             ("openQuestions", assembled.Require("openQuestions")),
             ("recommendation", Recommendation(assembled.Require("openQuestions"))));
+        if (assembled["runs"] is { } runs)
+        {
+            // why: the runs the model checks compared are the ones the packet's runs.json holds, and the freeze re-checks them from this fact
+            outputs["runs"] = ScopeJson.Write(runs);
+        }
+
         return Reply("step.scope.evidence", "complete", outputs, ScopePacket.Build(assembled), report);
     }
 }

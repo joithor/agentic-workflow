@@ -100,7 +100,7 @@ public sealed class ScopingModelRulesTests
     [Fact, Trait("Lane", "unit")]
     public void The_gap_searcher_on_another_model_passes()
     {
-        var response = Run(WithRuns(Record("step.scope.draft", "m-1", "m-1"), Record("step.scope.gap-search", "m-2", "m-2")));
+        var response = Run(WithRuns(Record("step.scope.draft", "m-1", "m-1"), Record("step.scope.gap-search", "fixture-searcher-model", "fixture-searcher-model")));
 
         Assert.Equal(ScopeRuleStatus.Pass, Status(response, "SCP-GAP-002"));
     }
@@ -129,9 +129,9 @@ public sealed class ScopingModelRulesTests
     [Fact, Trait("Lane", "unit")]
     public void A_judge_from_the_relevance_agents_own_vendor_warns_and_another_provider_passes()
     {
-        var same = WithRuns(Record("step.scope.relevance-review", "m-1", vendor: "anthropic"))
+        var same = WithRuns(Record("step.scope.relevance-review", "fixture-reviewer-model", vendor: "anthropic"))
             .Edit("relevance", n => n["judge"]!["providers"] = new JsonArray("claude-cli"));
-        var other = WithRuns(Record("step.scope.relevance-review", "m-1", vendor: "anthropic"))
+        var other = WithRuns(Record("step.scope.relevance-review", "fixture-reviewer-model", vendor: "anthropic"))
             .Edit("relevance", n => n["judge"]!["providers"] = new JsonArray("jev"));
 
         Assert.Equal(ScopeRuleStatus.Warn, Status(Run(same), "SCP-REL-002"));

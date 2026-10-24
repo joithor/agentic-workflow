@@ -72,45 +72,4 @@ internal static partial class ScopePacketChecks
             s.Fail(label, message, fix);
         }
     }
-
-    /// <summary>SCP-CHAL-002: the challenger's model differs from the drafter's; a run at the desk is a warning (its model is self-reported), never a refusal.</summary>
-    private static void ChallengerDiffers(ScopeContext c, RuleSink s)
-    {
-        if (!c.Facts.Has("runs"))
-        {
-            // why: only the desk flow keeps run records; the block runtime has none, and a rule that can never run would hold every packet back
-            s.Warn("step.scope.challenge", "no run records are kept, so the challenger's model was not compared with the drafter's", "Run records come with the agent runtime's run log.");
-            return;
-        }
-
-        var runs = (c.Facts["runs"] is JsonArray all ? all : ScopeJson.Arr(c.Facts["runs"], "runs")) ?? [];
-        var drafter = LastRun(runs, "step.scope.draft");
-        var challenger = LastRun(runs, "step.scope.challenge");
-        if (drafter is null || challenger is null)
-        {
-            s.Fail(item: null, drafter is null ? "no run record for the drafter" : "no run record for the challenger", "Both agent runs leave a runtime record in runs.json.");
-            return;
-        }
-
-        ModelsDiffer(drafter, challenger, s);
-    }
-
-    private static void ModelsDiffer(JsonNode drafter, JsonNode challenger, RuleSink s)
-    {
-        var challengerModel = ScopeJson.Str(challenger, "model");
-        if (IsDesk(challenger) || IsDesk(drafter))
-        {
-            var self = string.IsNullOrEmpty(challengerModel) ? "model not recorded" : "model self-reported";
-            s.Warn("step.scope.challenge", $"challenger ran at the desk: {self}", "Run the challenger on a second model for a recorded model.");
-        }
-        else if (string.IsNullOrEmpty(challengerModel) || string.Equals(ScopeJson.Str(drafter, "model"), challengerModel, StringComparison.Ordinal))
-        {
-            s.Fail("step.scope.challenge", $"the challenger ran on {challengerModel ?? "no recorded model"}, the drafter's model", "Run the challenger on a different model.");
-        }
-    }
-
-    private static JsonNode? LastRun(JsonArray runs, string step) =>
-        ScopeJson.Items(runs).LastOrDefault(r => string.Equals(ScopeJson.Str(r, "step"), step, StringComparison.Ordinal));
-
-    private static bool IsDesk(JsonNode run) => string.Equals(ScopeJson.Str(run, "via"), "desk", StringComparison.Ordinal);
 }

@@ -104,11 +104,11 @@ internal static class ScopingSteps
     public static BlockDescriptor Propose { get; } = BlockStep("step.scope.propose", Capability.Tools)
         .Reads("fact:scopeMap").Reports("proposed", "skipped").Writes(Every("fact:scopeMap"));
 
-    /// <summary>'step.scope.evidence': every check, the packet assembled in the run area; 'complete' re-reports five facts, 'incomplete' and 'regather' carry findings.</summary>
+    /// <summary>'step.scope.evidence': every check, the packet assembled in the run area; 'complete' re-reports five facts and records fact:runs from the ledger, 'incomplete' and 'regather' carry findings.</summary>
     public static BlockDescriptor Evidence { get; } = BlockStep("step.scope.evidence", Capability.Tools)
-        .Reads("fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:answers", "fact:answerLog", "fact:challenge", "fact:openQuestions", "fact:decision", "fact:anchors", "fact:questions")
+        .Reads("fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:answers", "fact:answerLog", "fact:challenge", "fact:openQuestions", "fact:decision", "fact:anchors", "fact:questions", "fact:relevance", "fact:gapSearch", "fact:mapFixes")
         .Reports("complete", "incomplete", "regather")
-        .Writes(On("fact:scopeMap", "complete"), On("fact:acceptance", "complete"), On("fact:coverage", "complete"), On("fact:openQuestions", "complete"), On("fact:scopePacket", "complete"), On("fact:recommendation"), On("fact:findings", "incomplete", "regather"));
+        .Writes(On("fact:scopeMap", "complete"), On("fact:acceptance", "complete"), On("fact:coverage", "complete"), On("fact:openQuestions", "complete"), On("fact:scopePacket", "complete"), On("fact:runs", "complete"), On("fact:recommendation"), On("fact:findings", "incomplete", "regather"));
 
     /// <summary>'step.scope.review': the owner's stop, human-only: approve, revise (notes become answers) or drop.</summary>
     public static BlockDescriptor Review { get; } = HumanDeskStep("step.scope.review", Capability.None)
@@ -116,7 +116,7 @@ internal static class ScopingSteps
 
     /// <summary>'step.scope.freeze': re-runs the evidence checks, confirms the packet's hash and freezes it through aw-packets; 'frozen' re-records fact:scopePacket as {hash, dir}, 'mismatch' carries findings.</summary>
     public static BlockDescriptor Freeze { get; } = BlockStep("step.scope.freeze", Capability.Tools)
-        .Reads("fact:scopePacket", "fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:answers", "fact:answerLog", "fact:challenge", "fact:openQuestions", "fact:decision", "fact:anchors", "fact:questions")
+        .Reads("fact:scopePacket", "fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:answers", "fact:answerLog", "fact:challenge", "fact:openQuestions", "fact:decision", "fact:anchors", "fact:questions", "fact:relevance", "fact:gapSearch", "fact:mapFixes", "fact:runs")
         .Reports("frozen", "mismatch").Writes(On("fact:scopePacket", "frozen"), On("fact:findings", "mismatch"));
 
     /// <summary>'step.scope.withdraw': withdraws the run's undecided map proposals; 'withdrawn'.</summary>

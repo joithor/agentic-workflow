@@ -99,6 +99,6 @@ public sealed class ScopingRelevanceShowTests
 
         var rows = (await Show(facts)).Sections.Single(s => s.Name == "checklist").Rows;
 
-        Assert.Equal(["SCP-CHAL-002", "SCP-REL-002", "SCP-GAP-002"], rows.Take(3).Select(r => r.Key));
+        Assert.Equal(["SCP-CHAL-002", "SCP-REL-002", "SCP-GAP-002"], rows.Take(3).Select(r => r.Key), StringComparer.Ordinal);
     }
 }
