@@ -99,18 +99,6 @@ public sealed class RunServiceTests
     }
 
     [Fact]
-    public async Task Run_from_a_session_is_403_with_the_cli()
-    {
-        await using var runtime = await RunServiceRuntime.Open(new ScriptedService(ScriptedService.Worked));
-
-        var started = await runtime.Start(A.RunServiceRequest().ForService(_tidy).Build(), A.Caller().Session().Build());
-
-        Expect.Equal(SindriErrors.AuthRefused.Code, started.Error.Code);
-        Assert.Contains("sindri services run <name>", started.Error.Message, StringComparison.Ordinal);
-        Assert.Empty(runtime.Of(EventTypes.JobStarted));
-    }
-
-    [Fact]
     public async Task Run_while_a_scheduled_run_is_in_flight_is_409()
     {
         await using var runtime = await RunServiceRuntime.Open(new ScriptedService(ScriptedService.Worked));

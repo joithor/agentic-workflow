@@ -1,5 +1,4 @@
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Workflow.ApproveAll;
@@ -14,17 +13,14 @@ namespace Aw.Sindri.Tests.ApproveAll;
 [Lane(TestLane.Unit)]
 public sealed class ApproveAllRecipesServiceTests
 {
-    private readonly SliceHarness _slice = new();
     private readonly RedeemedPlans _kept = new();
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private async Task<(ApproveAllRecipesRequest Request, RedeemedPlan Plan)> Redeemed(FakeShippedRecipes shipped)
+    private static async Task<(ApproveAllRecipesRequest Request, RedeemedPlan Plan)> Redeemed(FakeShippedRecipes shipped)
     {
         var plan = (await shipped.Plan(Token)).Value;
-        var issued = _slice.Challenges.Issue(ChallengeAction.ApproveAll(plan.Digest), ChallengeSubject.ForApproveAll(plan.Digest));
-        var answer = new ChallengeAnswer(issued.Id, issued.Action.Text);
-        return (new ApproveAllRecipesRequest(answer), RedeemedPlan.Redeem(_slice.Challenges, answer, plan, CommandId.From(new Guid(192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))).Value);
+        return (new ApproveAllRecipesRequest(), RedeemedPlan.For(plan, CommandId.From(new Guid(192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))));
     }
 
     [Fact]

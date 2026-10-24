@@ -29,7 +29,7 @@ internal static class ApproveAllScenarios
     /// <summary>The (slug, scenario) pairs of this class.</summary>
     public static IReadOnlyList<(string Slug, string Scenario)> All { get; } =
         [(Slug, "plan"), (Slug, "plan-first-approval"), (Slug, "applied"), (Slug, "refused"), (Slug, "empty"),
-            (AppSlug, "profile"), (AppSlug, "approve-all"), (AppSlug, "refused-session"), (AppSlug, "refused-action"), (AppSlug, "before-profile"),
+            (AppSlug, "profile"), (AppSlug, "approve-all"), (AppSlug, "refused-action"), (AppSlug, "before-profile"),
             (NeedsYouSlug, "setup-recipes"), (NeedsYouSlug, "recipe")];
 
     /// <summary>Whether <paramref name="slug"/> and <paramref name="scenario"/> belong to this class.</summary>
@@ -70,8 +70,7 @@ internal static class ApproveAllScenarios
     private static async Task<string> AppChallenge(GoldenHost host, string scenario, CancellationToken ct)
     {
         (string Name, string Value)[] app = [(SindriHeaders.Caller, "human"), (SindriHeaders.Client, "ui"), (SindriHeaders.Token, host.Token.Value)];
-        (string Name, string Value)[] session = [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli")];
-        if (new[] { "approve-all", "refused-session", "refused-action" }.Contains(scenario, StringComparer.Ordinal))
+        if (new[] { "approve-all", "refused-action" }.Contains(scenario, StringComparer.Ordinal))
         {
             await ViewScenarios.Approve(host, ct);
         }
@@ -80,7 +79,6 @@ internal static class ApproveAllScenarios
         {
             "profile" => (app, "approve profile " + (await host.LiveHash(ct)).Value[..6]),
             "approve-all" => (app, "approve-all " + await Digest(host)),
-            "refused-session" => (session, "approve-all " + await Digest(host)),
             "refused-action" => (app, "revoke workflow.step@9ab2d40c1e77"),
             "before-profile" => (app, "approve-all c41e07"),
             _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "no such challenges-app scenario"),

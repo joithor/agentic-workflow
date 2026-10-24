@@ -5,7 +5,7 @@ using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.Commands.Chain;
 
-/// <summary>The real chain on ApproveProfile, an AppConfirm row (setup-once spec §4 items 6 and 7): the app passes, a session and no caller don't, and the prover passes only in a marked scratch home.</summary>
+/// <summary>The real chain on ApproveProfile, an AppConfirm row (owner decision q93): the app and a session pass, no caller and a service don't, and the prover needs no marker.</summary>
 public sealed class AppConfirmChainTests
 {
     private static readonly ApproveProfileRequest _preview = new(Hash: null);
@@ -27,39 +27,25 @@ public sealed class AppConfirmChainTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_session_and_a_caller_with_no_token_are_refused_before_the_handler()
+    public async Task A_session_passes_and_a_caller_with_no_token_or_a_service_is_refused_before_the_handler()
     {
         await using var chain = new ChainHarness();
         chain.H.Profiles.Live = SliceHarness.Profile();
         _ = await chain.H.HoldLease();
 
-        Assert.Equal("SND-AUTH-002", await Code(chain, A.Caller().Session().Build()));
+        Assert.Null(await Code(chain, A.Caller().Session().Build()));
         Assert.Equal("SND-AUTH-002", await Code(chain, caller: null));
         Assert.Equal("SND-AUTH-002", await Code(chain, A.Caller().Service("jobs").Build()));
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task The_prover_is_refused_in_a_home_without_the_scratch_marker()
+    public async Task The_prover_passes_with_or_without_the_scratch_marker()
     {
         var prover = A.Caller().Human().Client(ClientLabel.Prover).Build();
-        await using var unmarked = new ChainHarness(prover: new ProverLabel(Allowed: true, MayConfirm: false));
-        await using var default_ = new ChainHarness();
+        await using var unmarked = new ChainHarness(prover: new ProverLabel(Allowed: true));
         unmarked.H.Profiles.Live = SliceHarness.Profile();
-        default_.H.Profiles.Live = SliceHarness.Profile();
         _ = await unmarked.H.HoldLease();
-        _ = await default_.H.HoldLease();
 
-        Assert.Equal("SND-AUTH-002", await Code(unmarked, prover));
-        Assert.Equal("SND-AUTH-002", await Code(default_, prover));
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public async Task The_prover_passes_in_a_home_with_the_scratch_marker()
-    {
-        await using var marked = new ChainHarness(prover: new ProverLabel(Allowed: true, MayConfirm: true));
-        marked.H.Profiles.Live = SliceHarness.Profile();
-        _ = await marked.H.HoldLease();
-
-        Assert.Null(await Code(marked, A.Caller().Human().Client(ClientLabel.Prover).Build()));
+        Assert.Null(await Code(unmarked, prover));
     }
 }
