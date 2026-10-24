@@ -55,6 +55,8 @@ internal static class StepFactWriter
         return null;
     }
 
+    internal static ValueTask<Error?> Outputs(string runDirectory, CancellationToken cancellationToken) => throw new NotSupportedException();
+
     // The refusal for the first name git tracks in the directory; null when none is.
     private static async ValueTask<Error?> Tracked(string root, IEnumerable<string> names, CancellationToken cancellationToken)
     {

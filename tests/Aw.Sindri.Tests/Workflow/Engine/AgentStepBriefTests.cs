@@ -31,8 +31,8 @@ public sealed class AgentStepBriefTests
                 "Sindri Step brief. Instance T-3/scope/1, run 2.1, state draft.",
                 "You read: fact:brief, fact:lenses, fact:coverage, fact:scopeMap, fact:acceptance, fact:findings, fact:answerLog, fact:challenge.",
                 "Outcome drafted: write fact:scopeMap, fact:acceptance.",
-                "Put each output in its own file under the run folder $AW_SINDRI_RUN_DIR, named after the fact.",
-                "Report with: sindri workflow complete T-3/scope/1 --run 2.1 --outcome drafted --output fact:scopeMap=$AW_SINDRI_RUN_DIR/scopeMap --output fact:acceptance=$AW_SINDRI_RUN_DIR/acceptance",
+                "Put each output in its own file under the output folder $AW_SINDRI_RUN_DIR/.sindri-out, named after the fact.",
+                "Report with: sindri workflow complete T-3/scope/1 --run 2.1 --outcome drafted --output fact:scopeMap=$AW_SINDRI_RUN_DIR/.sindri-out/scopeMap --output fact:acceptance=$AW_SINDRI_RUN_DIR/.sindri-out/acceptance",
                 "Your Step ends only when this command succeeds; if it's refused, read the error and fix it."),
             brief);
     }
@@ -44,7 +44,7 @@ public sealed class AgentStepBriefTests
 
         Assert.Contains("Outcome built: write fact:built.", brief, StringComparison.Ordinal);
         Assert.Contains("Outcome blocked: write fact:findings.", brief, StringComparison.Ordinal);
-        Assert.Contains("sindri workflow complete T-3/scope/1 --run 2.1 --outcome <built|blocked> --output fact:<key>=$AW_SINDRI_RUN_DIR/<key>", brief, StringComparison.Ordinal);
+        Assert.Contains("sindri workflow complete T-3/scope/1 --run 2.1 --outcome <built|blocked> --output fact:<key>=$AW_SINDRI_RUN_DIR/.sindri-out/<key>", brief, StringComparison.Ordinal);
         Assert.True(brief.Length < 1500);
     }
 
