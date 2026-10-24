@@ -59,9 +59,9 @@ public sealed class ShellOpenTargetTests
         parked["chip"] = JsonNode.Parse("""{"word":"PARKED","tone":"neutral"}""");
         _server.InstanceBody = _ => new RouteAnswer(HttpStatusCode.OK, instance.ToJsonString());
         var detail = FixtureInstances.Detail("project-build");
-        var summary = FixtureInstances.List("open").Instances.First(r => string.Equals(r.Id, detail.Id, StringComparison.Ordinal)) with { Chip = new Aw.Sindri.Ui.Api.Workflow.StateChip("PARKED", Aw.Sindri.Ui.Api.Workflow.ChipTone.Neutral) };
+        var summary = FixtureInstances.List("open").Instances.First(r => string.Equals(r.Id, detail.Id, StringComparison.Ordinal)) with { Chip = new Ui.Api.Workflow.StateChip("PARKED", Ui.Api.Workflow.ChipTone.Neutral) };
         var inspector = shell.Workflows.Inspector;
-        await inspector.Show(new Uri("http://127.0.0.1:7410/"), new Aw.Sindri.Ui.ViewModels.Workflows.InstanceRowViewModel(summary, new FakeClipboard(), _clock), Token);
+        await inspector.Show(new Uri("http://127.0.0.1:7410/"), new ViewModels.Workflows.InstanceRowViewModel(summary, new FakeClipboard(), _clock), Token);
 
         await inspector.ReviewAndDecide(Token);
 
@@ -69,13 +69,13 @@ public sealed class ShellOpenTargetTests
         Assert.True(shell.Inbox.ShowsAnswer);   // the answer form, not the child's copy-only frame
 
         var form = shell.Inbox.Answer!;   // typing there sends the answer-text for the parked step the row names
-        form.Choose(Aw.Sindri.Ui.ViewModels.NeedsYou.PausedAnswerOption.Hint);
+        form.Choose(ViewModels.NeedsYou.PausedAnswerOption.Hint);
         form.HintText = " try the other recipe ";
         await form.Send();
 
         var (target, body) = Assert.Single(_server.CommandCalls);
         Assert.Equal((string)GoldenFiles.Node("needs-you", "park-mirrored-child")["rows"]![0]!["subject"]!["id"]!, target);
-        Assert.Equal((Aw.Sindri.Ui.Api.Workflow.CommandKind.Answer, (Aw.Sindri.Ui.Api.Workflow.AnswerVariant?)Aw.Sindri.Ui.Api.Workflow.AnswerVariant.Text, (string?)"try the other recipe"), (body.Kind, body.Answer, body.Text));
+        Assert.Equal((Ui.Api.Workflow.CommandKind.Answer, (Ui.Api.Workflow.AnswerVariant?)Ui.Api.Workflow.AnswerVariant.Text, (string?)"try the other recipe"), (body.Kind, body.Answer, body.Text));
         Assert.True(form.IsSent);
     }, Token);
 
