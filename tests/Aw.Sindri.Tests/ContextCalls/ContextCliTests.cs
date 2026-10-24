@@ -163,7 +163,7 @@ public sealed class ContextCliTests
     public void Graph_text_words_every_state_and_its_empty_answers()
     {
         var node = new NodeFact(NodeKey.From("feature:a"), NodeKind.Feature, "A", Provenance.Model, Confirmed: false, Trust.Untrusted, Confidence: 0.5);
-        var view = new NodeView("v1", node, [], [], []);
+        var view = new NodeView("v1", NodeDetail.Of(node), [], [], []);
 
         var shown = ContextGraphText.Node(view, fence: false);
         var lonely = ContextGraphText.Neighbors(new NeighborsView("v1", node.Key, 1, [new NeighborFact(node, 0)], []), fence: false);
@@ -184,7 +184,7 @@ public sealed class ContextCliTests
 
         var texts = new[]
         {
-            ContextGraphText.Node(new NodeView("v1", record, [], [], []), fence: true),
+            ContextGraphText.Node(new NodeView("v1", NodeDetail.Of(record), [], [], []), fence: true),
             ContextGraphText.Neighbors(new NeighborsView("v1", feature.Key, 1, [new NeighborFact(feature, 0), new NeighborFact(record, 1)], [fact]), fence: true),
             ContextGraphText.Path(new PathView("v1", feature.Key, record.Key, Found: true, [new PathFact(fact, Forward: false, record)]), fence: true),
         };
