@@ -8,6 +8,7 @@ using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels.Context.Whole;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Context.Whole;
+using Aw.Sindri.Ui.Views.Controls;
 using Aw.Sindri.Ui.Views.Shell;
 
 namespace Aw.Sindri.Ui.Tests.Views;
@@ -136,7 +137,7 @@ public sealed class WholeMapFramesTests : FrameHost
     });
 
     // The cards (tiles by feature, columns by node) whose rectangle on the stage meets the mini-map's.
-    private static List<Avalonia.Rect> CardsOver(WholeMapGeometry geometry, Aw.Sindri.Ui.Views.Controls.ZoomView view, Avalonia.Rect miniMap)
+    private static List<Avalonia.Rect> CardsOver(WholeMapGeometry geometry, ZoomView view, Avalonia.Rect miniMap)
     {
         var rects = geometry.ByArea ? geometry.Tiles.Select(t => t.Rect) : geometry.Columns.Select(c => c.Rect);
         return [.. rects
