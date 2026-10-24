@@ -227,7 +227,7 @@ public sealed class ShipPackStepTests
         var packet = JsonNode.Parse(rig.Draft()["packet.json"])!;
         Assert.Equal((1, "handoff", "demo-p1-handoff", "owner/name", BaseSha, "draft"), ((int?)packet["schemaVersion"], (string?)packet["kind"], (string?)packet["id"], (string?)packet["repo"], (string?)packet["baseSha"], (string?)packet["status"]));
         Assert.Null(packet["hash"]);
-        Assert.Equal(["pr.json", "body.md", "green.json", "index.json"], ["pr", "body", "green", "index"].Select(k => (string?)packet["links"]![k]), StringComparer.Ordinal);
+        Assert.Equal(["pr.json", "body.md", "green.json", "index.json"], new[] { "pr", "body", "green", "index" }.Select(k => (string?)packet["links"]![k]), StringComparer.Ordinal);
         var index = JsonNode.Parse(rig.Draft()["index.json"])!;
         Assert.Equal(["sha256:proof", "sha256:review"], index["parents"]!.AsArray().Select(static p => (string?)p), StringComparer.Ordinal);
         Assert.Null(index["acceptance"]!["self"]);
