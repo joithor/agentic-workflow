@@ -16,7 +16,7 @@ public sealed class CodeIndexHealthTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static CodeIndexHealth Health(FakeCodeIndex index, FakeRepoHeads heads) => new(index, new RepoHealths(heads, new InMemoryJobViews(), TimeProvider.System));
+    private static CodeIndexHealth Health(FakeCodeIndex index, FakeRepoHeads heads, InMemoryProfiles? live = null) => new(index, new RepoHealths(heads, new InMemoryJobViews(), TimeProvider.System), live ?? new InMemoryProfiles());
 
     private static LoadedProfile Approved()
     {
@@ -56,5 +56,19 @@ public sealed class CodeIndexHealthTests
         Assert.Equal(["SND-CODEIDX-014"], problems.Select(static p => p.Code), StringComparer.Ordinal);
         Assert.Equal(CallerKind.Service, index.Scopes[0].Caller.Kind);
         Assert.Equal(2, index.Scopes[0].Repos.Count);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_live_only_repo_is_read_and_listed_too_owner_q102_CIX_L59()
+    {
+        var fresh = RepoName.From("fresh");
+        var index = new FakeCodeIndex().WithIndex(fresh, _old);
+        var heads = new FakeRepoHeads().With(fresh, _new, onDefaultBranch: true);
+        var live = new InMemoryProfiles { Live = new LoadedProfile(new SindriProfile(1, "thor", Repos: [new RepoEntry("fresh", "/work/fresh")]), "live-hash", "/home/profile.yaml") };
+
+        var problems = await Health(index, heads, live).Problems(Approved(), Token);
+
+        Assert.Contains("fresh", index.Scopes[0].Repos.Select(static r => r.Name.Value));
+        Assert.Equal(["SND-CODEIDX-014"], problems.Select(static p => p.Code), StringComparer.Ordinal);
     }
 }

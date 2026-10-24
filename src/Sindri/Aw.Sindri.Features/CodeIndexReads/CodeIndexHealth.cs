@@ -8,7 +8,7 @@ namespace Aw.Sindri.Features.CodeIndexReads;
 /// Reads every approved repo's index the way the code-index status read does and maps each to its <see cref="CodeIndexProblems"/> row. The scope is a service's: all the approved profile's repos,
 /// not one caller's. Nothing approved, or an index, head or job read that fails, adds no row: status never fails over the index.
 /// </summary>
-internal sealed class CodeIndexHealth(ICodeIndex index, RepoHealths healths) : ICodeIndexHealth
+internal sealed class CodeIndexHealth(ICodeIndex index, RepoHealths healths, IProfileSource live) : ICodeIndexHealth
 {
     public async ValueTask<IReadOnlyList<HealthProblem>> Problems(LoadedProfile? approved, CancellationToken cancellationToken)
     {
@@ -17,6 +17,7 @@ internal sealed class CodeIndexHealth(ICodeIndex index, RepoHealths healths) : I
             return [];
         }
 
+        _ = live;
         var scope = CodeIndexScopes.For(approved.Profile, caller: null);
         if (scope.IsError)
         {

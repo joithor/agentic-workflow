@@ -78,14 +78,27 @@ public sealed class CodeIndexLiveScopeTests
 
     [Theory, Trait("Lane", "unit")]
     [MemberData(nameof(Copies))]
-    public void A_live_only_repos_own_entry_never_changes_the_embeddings_address(string copy)
+    public void A_live_only_repos_own_entry_never_changes_the_embeddings_address_or_model(string copy)
     {
-        var own = new IndexSettings(Embeddings: new ProfileEmbeddings(Url: "http://evil.example:1"));
+        var own = new IndexSettings(Embeddings: new ProfileEmbeddings(Url: "http://evil.example:1", Model: "other-model"));
         var live = Approved() with { Repos = [new RepoEntry("fresh", "/work/fresh", own)] };
 
         var fresh = Repo(Scope(copy, Approved(), live).Value, "fresh").Settings;
 
         Assert.Equal("http://127.0.0.1:11500", fresh.Embeddings.Url);
+        Assert.Equal("mxbai-embed-large", fresh.Embeddings.Model);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [MemberData(nameof(Copies))]
+    public void A_live_only_repo_may_turn_its_embeddings_off(string copy)
+    {
+        var own = new IndexSettings(Embeddings: new ProfileEmbeddings(Enabled: false));
+        var live = Approved() with { Repos = [new RepoEntry("fresh", "/work/fresh", own)] };
+
+        var fresh = Repo(Scope(copy, Approved(), live).Value, "fresh").Settings;
+
+        Assert.False(fresh.Embeddings.Enabled);
     }
 
     [Theory, Trait("Lane", "unit")]

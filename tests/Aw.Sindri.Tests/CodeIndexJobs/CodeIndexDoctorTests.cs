@@ -2,7 +2,9 @@ using Aw.CodeIndex.Core.Facade;
 using Aw.CodeIndex.Core.Model;
 using Aw.CodeIndex.Core.Ports;
 using Aw.CodeIndex.Core.Values;
+using Aw.CodeIndex.Testing;
 using Aw.Sindri.Core.Doctor;
+using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.CodeIndexJobs;
 using IndexRepoHead = Aw.CodeIndex.Core.Model.RepoHead;
 
@@ -121,5 +123,21 @@ public sealed class CodeIndexDoctorTests
     {
         Assert.Equal(CheckState.Ok, Row("code-index:ollama", Probes(LockState.Matches)).State);
         Assert.Equal(CheckState.Warn, Row("code-index:ollama", Probes(LockState.Matches, enabled: false)).State);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_live_only_repo_is_checked_too_owner_q102_CIX_L59()
+    {
+        var rig = new CodeIndexJobsRig();
+        await rig.Approve(TestContext.Current.CancellationToken);
+        var fresh = new SindriProfile(1, "thor", Repos: [new RepoEntry("demo", "/work/demo"), new RepoEntry("other", "/work/other"), new RepoEntry("fresh", "/work/fresh")]);
+        rig.Harness.Profiles.Live = new LoadedProfile(fresh, "live-hash", "/home/profile.yaml");
+        _ = rig.Index.WithIndex(CodeIndexJobsRig.Fresh, CodeIndexJobsRig.Old);
+        var doctor = new CodeIndexDoctor(rig.Index, rig.Heads, rig.Jobs, new FakeEmbedder(), new FakePins(), rig.Harness.Clock, rig.Harness.Profiles);
+        var approved = (await rig.Harness.Profiles.Latest(TestContext.Current.CancellationToken)).Value;
+
+        var rows = await doctor.Check(approved, TestContext.Current.CancellationToken);
+
+        Assert.Contains(rows, static r => r.Name == "code-index:fresh");
     }
 }
