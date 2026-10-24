@@ -15,14 +15,17 @@ namespace Aw.Sindri.Ui.Views.Context.Whole;
 internal sealed partial class WholeMapView : UserControl
 {
     private const double PanStep = 0.1;
-    private const double MiniMapStrip = 140;   // the mini-map (112) and its margins, which a fitted answer keeps clear of
     private WholeMapViewModel? _map;
+    /// <summary>The strip along the stage's bottom edge that the mini-map floats over: its 112 high box, the 14 px margin under it and 14 over it.</summary>
+    internal const double MiniMapBand = 140;
+
     private bool _fitted;
 
     /// <summary>Initializes a new instance of the <see cref="WholeMapView"/> class.</summary>
     public WholeMapView()
     {
         InitializeComponent();
+        WholeCanvas.FitBottomInset = MiniMapBand;
         AutomationProperties.SetName(WholeZoomOut, Labels.ContextMapZoomOut);
         AutomationProperties.SetName(WholeZoomIn, Labels.ContextMapZoomIn);
         AutomationProperties.SetName(WholeZoomFit, Labels.ContextMapZoomFit);
@@ -97,7 +100,7 @@ internal sealed partial class WholeMapView : UserControl
     private void OnFitRequested(object? sender, EventArgs e) => WholeCanvas.Fit();
 
     private void OnZoomRequested(object? sender, ValueEventArgs<WholeRect> e) =>
-        WholeCanvas.FitBounds(new Rect(e.Value.X - 24, e.Value.Y - 24, e.Value.Width + 48, e.Value.Height + 48), MiniMapStrip);
+        WholeCanvas.FitBounds(new Rect(e.Value.X - 24, e.Value.Y - 24, e.Value.Width + 48, e.Value.Height + 48));
 
     // The world, the zoom floor that shows all of it, the mini-map's cards; and, once the stage has a size, the first open.
     private void Arrange()
@@ -112,7 +115,7 @@ internal sealed partial class WholeMapView : UserControl
         WholeMiniMap.World = world;
         WholeMiniMap.Nodes = [.. MiniMapRects(geometry).Select(card => new MiniMapNode(card.Rect, Brush(card.Colour), Selected: false))];
         WholeWorld.InvalidateMeasure();
-        var stage = WholeCanvas.Bounds.Size;
+        var stage = WholeCanvas.FitStage;   // less the strip the mini-map floats over, so no card opens or fits under it
         if (stage.Width <= 0 || stage.Height <= 0 || world.Width <= 0 || world.Height <= 0)
         {
             return;
