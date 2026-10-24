@@ -1388,6 +1388,30 @@ Aw.Context.Core.Graph.DecisionRow.Record.init -> void
 Aw.Context.Core.Graph.DecisionRow.ToKey() -> Aw.Context.Core.Graph.NodeKey
 Aw.Context.Core.Graph.DecisionRow.Wording.get -> string!
 Aw.Context.Core.Graph.DecisionRow.Wording.init -> void
+Aw.Context.Core.Graph.EdgeDetail
+Aw.Context.Core.Graph.EdgeDetail.<Clone>$() -> Aw.Context.Core.Graph.EdgeDetail!
+Aw.Context.Core.Graph.EdgeDetail.From.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.Graph.EdgeDetail.From.init -> void
+Aw.Context.Core.Graph.EdgeDetail.Type.get -> Aw.Context.Core.Graph.EdgeType
+Aw.Context.Core.Graph.EdgeDetail.Type.init -> void
+Aw.Context.Core.Graph.EdgeDetail.To.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.Graph.EdgeDetail.To.init -> void
+Aw.Context.Core.Graph.EdgeDetail.Provenance.get -> Aw.Context.Core.Results.Provenance
+Aw.Context.Core.Graph.EdgeDetail.Provenance.init -> void
+Aw.Context.Core.Graph.EdgeDetail.Confirmed.get -> bool
+Aw.Context.Core.Graph.EdgeDetail.Confirmed.init -> void
+Aw.Context.Core.Graph.EdgeDetail.Trust.get -> Aw.Context.Core.Results.Trust
+Aw.Context.Core.Graph.EdgeDetail.Trust.init -> void
+Aw.Context.Core.Graph.EdgeDetail.Order.get -> int?
+Aw.Context.Core.Graph.EdgeDetail.Order.init -> void
+Aw.Context.Core.Graph.EdgeDetail.OtherKind.get -> Aw.Context.Core.Graph.NodeKind
+Aw.Context.Core.Graph.EdgeDetail.OtherKind.init -> void
+Aw.Context.Core.Graph.EdgeDetail.OtherLabel.get -> string?
+Aw.Context.Core.Graph.EdgeDetail.OtherLabel.init -> void
+Aw.Context.Core.Graph.EdgeDetail.Deconstruct(out Aw.Context.Core.Graph.NodeKey From, out Aw.Context.Core.Graph.EdgeType Type, out Aw.Context.Core.Graph.NodeKey To, out Aw.Context.Core.Results.Provenance Provenance, out bool Confirmed, out Aw.Context.Core.Results.Trust Trust, out int? Order, out Aw.Context.Core.Graph.NodeKind OtherKind, out string? OtherLabel) -> void
+Aw.Context.Core.Graph.EdgeDetail.Equals(Aw.Context.Core.Graph.EdgeDetail? other) -> bool
+Aw.Context.Core.Graph.EdgeDetail.EdgeDetail(Aw.Context.Core.Graph.NodeKey From, Aw.Context.Core.Graph.EdgeType Type, Aw.Context.Core.Graph.NodeKey To, Aw.Context.Core.Results.Provenance Provenance, bool Confirmed, Aw.Context.Core.Results.Trust Trust, int? Order, Aw.Context.Core.Graph.NodeKind OtherKind, string? OtherLabel) -> void
+Aw.Context.Core.Graph.EdgeDetail.ToFact() -> Aw.Context.Core.Graph.EdgeFact!
 Aw.Context.Core.Graph.EdgeFact
 Aw.Context.Core.Graph.EdgeFact.<Clone>$() -> Aw.Context.Core.Graph.EdgeFact!
 Aw.Context.Core.Graph.EdgeFact.Confirmed.get -> bool
@@ -1569,6 +1593,30 @@ Aw.Context.Core.Graph.NodeAlias.Equals(Aw.Context.Core.Graph.NodeAlias? other) -
 Aw.Context.Core.Graph.NodeAlias.NodeAlias(Aw.Context.Core.Graph.NodeKey Alias, Aw.Context.Core.Graph.NodeKey Target) -> void
 Aw.Context.Core.Graph.NodeAlias.Target.get -> Aw.Context.Core.Graph.NodeKey
 Aw.Context.Core.Graph.NodeAlias.Target.init -> void
+Aw.Context.Core.Graph.NodeDetail
+Aw.Context.Core.Graph.NodeDetail.<Clone>$() -> Aw.Context.Core.Graph.NodeDetail!
+Aw.Context.Core.Graph.NodeDetail.Key.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.Graph.NodeDetail.Key.init -> void
+Aw.Context.Core.Graph.NodeDetail.Kind.get -> Aw.Context.Core.Graph.NodeKind
+Aw.Context.Core.Graph.NodeDetail.Kind.init -> void
+Aw.Context.Core.Graph.NodeDetail.Label.get -> string!
+Aw.Context.Core.Graph.NodeDetail.Label.init -> void
+Aw.Context.Core.Graph.NodeDetail.Provenance.get -> Aw.Context.Core.Results.Provenance
+Aw.Context.Core.Graph.NodeDetail.Provenance.init -> void
+Aw.Context.Core.Graph.NodeDetail.Confirmed.get -> bool
+Aw.Context.Core.Graph.NodeDetail.Confirmed.init -> void
+Aw.Context.Core.Graph.NodeDetail.Trust.get -> Aw.Context.Core.Results.Trust
+Aw.Context.Core.Graph.NodeDetail.Trust.init -> void
+Aw.Context.Core.Graph.NodeDetail.Confidence.get -> double
+Aw.Context.Core.Graph.NodeDetail.Confidence.init -> void
+Aw.Context.Core.Graph.NodeDetail.Source.get -> Aw.Context.Core.Graph.NodeSource?
+Aw.Context.Core.Graph.NodeDetail.Source.init -> void
+Aw.Context.Core.Graph.NodeDetail.Description.get -> string?
+Aw.Context.Core.Graph.NodeDetail.Description.init -> void
+Aw.Context.Core.Graph.NodeDetail.Deconstruct(out Aw.Context.Core.Graph.NodeKey Key, out Aw.Context.Core.Graph.NodeKind Kind, out string! Label, out Aw.Context.Core.Results.Provenance Provenance, out bool Confirmed, out Aw.Context.Core.Results.Trust Trust, out double Confidence, out Aw.Context.Core.Graph.NodeSource? Source, out string? Description) -> void
+Aw.Context.Core.Graph.NodeDetail.Equals(Aw.Context.Core.Graph.NodeDetail? other) -> bool
+Aw.Context.Core.Graph.NodeDetail.NodeDetail(Aw.Context.Core.Graph.NodeKey Key, Aw.Context.Core.Graph.NodeKind Kind, string! Label, Aw.Context.Core.Results.Provenance Provenance, bool Confirmed, Aw.Context.Core.Results.Trust Trust, double Confidence, Aw.Context.Core.Graph.NodeSource? Source = null, string? Description = null) -> void
+Aw.Context.Core.Graph.NodeDetail.ToFact() -> Aw.Context.Core.Graph.NodeFact!
 Aw.Context.Core.Graph.NodeFact
 Aw.Context.Core.Graph.NodeFact.<Clone>$() -> Aw.Context.Core.Graph.NodeFact!
 Aw.Context.Core.Graph.NodeFact.Confidence.get -> double
@@ -1608,20 +1656,33 @@ Aw.Context.Core.Graph.NodeKind.Record = 6 -> Aw.Context.Core.Graph.NodeKind
 Aw.Context.Core.Graph.NodeKind.Surface = 1 -> Aw.Context.Core.Graph.NodeKind
 Aw.Context.Core.Graph.NodeKind.Thing = 3 -> Aw.Context.Core.Graph.NodeKind
 Aw.Context.Core.Graph.NodeKinds
+Aw.Context.Core.Graph.NodeSource
+Aw.Context.Core.Graph.NodeSource.<Clone>$() -> Aw.Context.Core.Graph.NodeSource!
+Aw.Context.Core.Graph.NodeSource.Kind.get -> string!
+Aw.Context.Core.Graph.NodeSource.Kind.init -> void
+Aw.Context.Core.Graph.NodeSource.Ref.get -> string!
+Aw.Context.Core.Graph.NodeSource.Ref.init -> void
+Aw.Context.Core.Graph.NodeSource.Title.get -> string?
+Aw.Context.Core.Graph.NodeSource.Title.init -> void
+Aw.Context.Core.Graph.NodeSource.Url.get -> string?
+Aw.Context.Core.Graph.NodeSource.Url.init -> void
+Aw.Context.Core.Graph.NodeSource.Deconstruct(out string! Kind, out string! Ref, out string? Title, out string? Url) -> void
+Aw.Context.Core.Graph.NodeSource.Equals(Aw.Context.Core.Graph.NodeSource? other) -> bool
+Aw.Context.Core.Graph.NodeSource.NodeSource(string! Kind, string! Ref, string? Title = null, string? Url = null) -> void
 Aw.Context.Core.Graph.NodeView
 Aw.Context.Core.Graph.NodeView.<Clone>$() -> Aw.Context.Core.Graph.NodeView!
 Aw.Context.Core.Graph.NodeView.Aliases.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>!
 Aw.Context.Core.Graph.NodeView.Aliases.init -> void
-Aw.Context.Core.Graph.NodeView.Deconstruct(out string! MapVersion, out Aw.Context.Core.Graph.NodeFact! Node, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Aliases, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EdgeFact!>! Out, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EdgeFact!>! In) -> void
+Aw.Context.Core.Graph.NodeView.Deconstruct(out string! MapVersion, out Aw.Context.Core.Graph.NodeDetail! Node, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Aliases, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EdgeDetail!>! Out, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EdgeDetail!>! In) -> void
 Aw.Context.Core.Graph.NodeView.Equals(Aw.Context.Core.Graph.NodeView? other) -> bool
-Aw.Context.Core.Graph.NodeView.In.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EdgeFact!>!
+Aw.Context.Core.Graph.NodeView.In.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EdgeDetail!>!
 Aw.Context.Core.Graph.NodeView.In.init -> void
 Aw.Context.Core.Graph.NodeView.MapVersion.get -> string!
 Aw.Context.Core.Graph.NodeView.MapVersion.init -> void
-Aw.Context.Core.Graph.NodeView.Node.get -> Aw.Context.Core.Graph.NodeFact!
+Aw.Context.Core.Graph.NodeView.Node.get -> Aw.Context.Core.Graph.NodeDetail!
 Aw.Context.Core.Graph.NodeView.Node.init -> void
-Aw.Context.Core.Graph.NodeView.NodeView(string! MapVersion, Aw.Context.Core.Graph.NodeFact! Node, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Aliases, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EdgeFact!>! Out, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EdgeFact!>! In) -> void
-Aw.Context.Core.Graph.NodeView.Out.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EdgeFact!>!
+Aw.Context.Core.Graph.NodeView.NodeView(string! MapVersion, Aw.Context.Core.Graph.NodeDetail! Node, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Aliases, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EdgeDetail!>! Out, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EdgeDetail!>! In) -> void
+Aw.Context.Core.Graph.NodeView.Out.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EdgeDetail!>!
 Aw.Context.Core.Graph.NodeView.Out.init -> void
 Aw.Context.Core.Graph.PathFact
 Aw.Context.Core.Graph.PathFact.<Clone>$() -> Aw.Context.Core.Graph.PathFact!
@@ -2104,11 +2165,11 @@ Aw.Context.Core.Lenses.FileMapEntry.Type.get -> Aw.Context.Core.Lenses.FileEntry
 Aw.Context.Core.Lenses.FileMapEntry.Type.init -> void
 Aw.Context.Core.Lenses.FileMapQuery
 Aw.Context.Core.Lenses.FileMapQuery.<Clone>$() -> Aw.Context.Core.Lenses.FileMapQuery!
-Aw.Context.Core.Lenses.FileMapQuery.Deconstruct(out Aw.Context.Core.Engine.ContextRepoName Repo, out string! Path, out bool UnmappedOnly, out bool Draft) -> void
+Aw.Context.Core.Lenses.FileMapQuery.Deconstruct(out Aw.Context.Core.Engine.ContextRepoName Repo, out string! Path, out bool UnmappedOnly, out bool Draft, out string? Cursor, out int? Limit) -> void
 Aw.Context.Core.Lenses.FileMapQuery.Draft.get -> bool
 Aw.Context.Core.Lenses.FileMapQuery.Draft.init -> void
 Aw.Context.Core.Lenses.FileMapQuery.Equals(Aw.Context.Core.Lenses.FileMapQuery? other) -> bool
-Aw.Context.Core.Lenses.FileMapQuery.FileMapQuery(Aw.Context.Core.Engine.ContextRepoName Repo, string! Path, bool UnmappedOnly, bool Draft) -> void
+Aw.Context.Core.Lenses.FileMapQuery.FileMapQuery(Aw.Context.Core.Engine.ContextRepoName Repo, string! Path, bool UnmappedOnly, bool Draft, string? Cursor = null, int? Limit = null) -> void
 Aw.Context.Core.Lenses.FileMapQuery.Path.get -> string!
 Aw.Context.Core.Lenses.FileMapQuery.Path.init -> void
 Aw.Context.Core.Lenses.FileMapQuery.Repo.get -> Aw.Context.Core.Engine.ContextRepoName
@@ -2158,13 +2219,13 @@ Aw.Context.Core.Lenses.FileMapUnmapped.Path.get -> string!
 Aw.Context.Core.Lenses.FileMapUnmapped.Path.init -> void
 Aw.Context.Core.Lenses.FileMapView
 Aw.Context.Core.Lenses.FileMapView.<Clone>$() -> Aw.Context.Core.Lenses.FileMapView!
-Aw.Context.Core.Lenses.FileMapView.Deconstruct(out int SchemaVersion, out Aw.Context.Core.Engine.ContextRepoName Repo, out string! Sha, out string! MapVersion, out bool Draft, out string! Path, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapEntry!>! Entries, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapUnmapped!>! Unmapped, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapSuggestion!>! Suggested, out Aw.Context.Core.Lenses.FileMapTotals! Totals, out Aw.Context.Core.Lenses.LensSymbols! Symbols) -> void
+Aw.Context.Core.Lenses.FileMapView.Deconstruct(out int SchemaVersion, out Aw.Context.Core.Engine.ContextRepoName Repo, out string! Sha, out string! MapVersion, out bool Draft, out string! Path, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapEntry!>! Entries, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapUnmapped!>! Unmapped, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapSuggestion!>! Suggested, out Aw.Context.Core.Lenses.FileMapTotals! Totals, out Aw.Context.Core.Lenses.LensSymbols! Symbols, out string? NextCursor, out int? Total) -> void
 Aw.Context.Core.Lenses.FileMapView.Draft.get -> bool
 Aw.Context.Core.Lenses.FileMapView.Draft.init -> void
 Aw.Context.Core.Lenses.FileMapView.Entries.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapEntry!>!
 Aw.Context.Core.Lenses.FileMapView.Entries.init -> void
 Aw.Context.Core.Lenses.FileMapView.Equals(Aw.Context.Core.Lenses.FileMapView? other) -> bool
-Aw.Context.Core.Lenses.FileMapView.FileMapView(int SchemaVersion, Aw.Context.Core.Engine.ContextRepoName Repo, string! Sha, string! MapVersion, bool Draft, string! Path, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapEntry!>! Entries, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapUnmapped!>! Unmapped, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapSuggestion!>! Suggested, Aw.Context.Core.Lenses.FileMapTotals! Totals, Aw.Context.Core.Lenses.LensSymbols! Symbols) -> void
+Aw.Context.Core.Lenses.FileMapView.FileMapView(int SchemaVersion, Aw.Context.Core.Engine.ContextRepoName Repo, string! Sha, string! MapVersion, bool Draft, string! Path, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapEntry!>! Entries, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapUnmapped!>! Unmapped, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.FileMapSuggestion!>! Suggested, Aw.Context.Core.Lenses.FileMapTotals! Totals, Aw.Context.Core.Lenses.LensSymbols! Symbols, string? NextCursor = null, int? Total = null) -> void
 Aw.Context.Core.Lenses.FileMapView.MapVersion.get -> string!
 Aw.Context.Core.Lenses.FileMapView.MapVersion.init -> void
 Aw.Context.Core.Lenses.FileMapView.Path.get -> string!
@@ -2862,6 +2923,7 @@ Aw.Context.Core.Linking.IntentSourceState.Records.init -> void
 Aw.Context.Core.Linking.LinkRule
 Aw.Context.Core.Linking.LinkRule.Identifier = 3 -> Aw.Context.Core.Linking.LinkRule
 Aw.Context.Core.Linking.LinkRule.IssueKey = 0 -> Aw.Context.Core.Linking.LinkRule
+Aw.Context.Core.Linking.LinkRule.Name = 5 -> Aw.Context.Core.Linking.LinkRule
 Aw.Context.Core.Linking.LinkRule.Path = 2 -> Aw.Context.Core.Linking.LinkRule
 Aw.Context.Core.Linking.LinkRule.QuotedTitle = 4 -> Aw.Context.Core.Linking.LinkRule
 Aw.Context.Core.Linking.LinkRule.Url = 1 -> Aw.Context.Core.Linking.LinkRule
@@ -3161,6 +3223,7 @@ Aw.Context.Core.Map.MapStatusView.Version.get -> Aw.Context.Core.Map.MapVersion!
 Aw.Context.Core.Map.MapStatusView.Version.init -> void
 Aw.Context.Core.Map.MapText
 Aw.Context.Core.Map.MapText.Body(string! text, Aw.Context.Core.Results.Trust trust) -> string!
+Aw.Context.Core.Map.MapText.Excerpt(string! text, Aw.Context.Core.Results.Trust trust, int max) -> string!
 Aw.Context.Core.Map.MapText.Fact(Aw.Context.Core.Graph.GraphNode! node) -> Aw.Context.Core.Graph.NodeFact!
 Aw.Context.Core.Map.MapText.Label(string! label, Aw.Context.Core.Results.Trust trust) -> string!
 Aw.Context.Core.Map.MapText.Line(string! line) -> string!
@@ -3209,6 +3272,10 @@ Aw.Context.Core.Map.MapView.Overrides.get -> System.Collections.Generic.IReadOnl
 Aw.Context.Core.Map.MapView.UndoCutDecisions(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, System.DateTimeOffset at) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>!
 Aw.Context.Core.Map.MapViewCache
 Aw.Context.Core.Map.MapViewCache.MapViewCache() -> void
+Aw.Context.Core.Map.NodeDetails
+Aw.Context.Core.Map.NodeDetails.Edge(Aw.Context.Core.Graph.EdgeFact! edge, Aw.Context.Core.Graph.NodeKey other) -> Aw.Context.Core.Graph.EdgeDetail!
+Aw.Context.Core.Map.NodeDetails.Node(Aw.Context.Core.Graph.GraphNode! node) -> Aw.Context.Core.Graph.NodeDetail!
+Aw.Context.Core.Map.NodeDetails.NodeDetails(Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Map.MapText! text) -> void
 Aw.Context.Core.Map.ProposedNode
 Aw.Context.Core.Map.ProposedNode.<Clone>$() -> Aw.Context.Core.Map.ProposedNode!
 Aw.Context.Core.Map.ProposedNode.Confidence.get -> double
@@ -4647,6 +4714,7 @@ const Aw.Context.Core.Review.ReviewHistory.DefaultLimit = 200 -> int
 const Aw.Context.Core.Review.ReviewHistory.MaxLimit = 10000 -> int
 const Aw.Context.Core.Review.ReviewLimits.Max = 10000 -> int
 const Aw.Context.Core.Review.ReviewLimits.QueueDefault = 100 -> int
+const Aw.Context.Core.Map.NodeDetails.MaxDescription = 280 -> int
 const Aw.Context.Core.Trust.UntrustedFence.MaxTitle = 200 -> int
 override Aw.Context.Core.Code.CodeData.Equals(object? obj) -> bool
 override Aw.Context.Core.Code.CodeData.GetHashCode() -> int
@@ -4899,6 +4967,15 @@ override Aw.Context.Core.Graph.CascadeResult.ToString() -> string!
 override Aw.Context.Core.Graph.DecisionRow.Equals(object? obj) -> bool
 override Aw.Context.Core.Graph.DecisionRow.GetHashCode() -> int
 override Aw.Context.Core.Graph.DecisionRow.ToString() -> string!
+override Aw.Context.Core.Graph.EdgeDetail.Equals(object? obj) -> bool
+override Aw.Context.Core.Graph.EdgeDetail.GetHashCode() -> int
+override Aw.Context.Core.Graph.EdgeDetail.ToString() -> string!
+override Aw.Context.Core.Graph.NodeDetail.Equals(object? obj) -> bool
+override Aw.Context.Core.Graph.NodeDetail.GetHashCode() -> int
+override Aw.Context.Core.Graph.NodeDetail.ToString() -> string!
+override Aw.Context.Core.Graph.NodeSource.Equals(object? obj) -> bool
+override Aw.Context.Core.Graph.NodeSource.GetHashCode() -> int
+override Aw.Context.Core.Graph.NodeSource.ToString() -> string!
 override Aw.Context.Core.Graph.EdgeFact.Equals(object? obj) -> bool
 override Aw.Context.Core.Graph.EdgeFact.GetHashCode() -> int
 override Aw.Context.Core.Graph.EdgeFact.ToString() -> string!
@@ -5567,7 +5644,7 @@ static Aw.Context.Core.Engine.PublishSettings.operator !=(Aw.Context.Core.Engine
 static Aw.Context.Core.Engine.PublishSettings.operator ==(Aw.Context.Core.Engine.PublishSettings? left, Aw.Context.Core.Engine.PublishSettings? right) -> bool
 static Aw.Context.Core.Engine.QueryRules.CascadeFor(Aw.Context.Core.Engine.CascadeHops? hops, Aw.Context.Core.Engine.ContextSettings! settings) -> Aw.Context.Core.Engine.CascadeOptions!
 static Aw.Context.Core.Engine.QueryRules.Check(Aw.Context.Core.Engine.ContextQuery! query, Aw.Context.Core.Engine.ContextSettings! settings) -> Aw.Kernel.Result<Aw.Context.Core.Engine.ValidQuery!>!
-static Aw.Context.Core.Engine.QueryRules.CheckAnchors(System.Collections.Generic.IReadOnlyList<string!>! anchors) -> Aw.Kernel.Error?
+static Aw.Context.Core.Engine.QueryRules.CheckAnchors(System.Collections.Generic.IReadOnlyList<string!>! anchors, string! call) -> Aw.Kernel.Error?
 static Aw.Context.Core.Engine.QueryRules.CheckDepth(int? depth) -> Aw.Kernel.Error?
 static Aw.Context.Core.Engine.QueryRules.CheckSubgraphGet(System.Collections.Generic.IReadOnlyList<string!>! keys) -> Aw.Kernel.Error?
 static Aw.Context.Core.Engine.QueryRules.FitsQueryUrl(string! value) -> bool
@@ -5738,6 +5815,14 @@ static Aw.Context.Core.Graph.CascadeResult.operator ==(Aw.Context.Core.Graph.Cas
 static Aw.Context.Core.Graph.DecisionRow.KeyFor(Aw.Context.Core.Sources.RecordKey record, string! quote) -> Aw.Context.Core.Graph.NodeKey
 static Aw.Context.Core.Graph.DecisionRow.operator !=(Aw.Context.Core.Graph.DecisionRow? left, Aw.Context.Core.Graph.DecisionRow? right) -> bool
 static Aw.Context.Core.Graph.DecisionRow.operator ==(Aw.Context.Core.Graph.DecisionRow? left, Aw.Context.Core.Graph.DecisionRow? right) -> bool
+static Aw.Context.Core.Graph.EdgeDetail.operator !=(Aw.Context.Core.Graph.EdgeDetail? left, Aw.Context.Core.Graph.EdgeDetail? right) -> bool
+static Aw.Context.Core.Graph.EdgeDetail.operator ==(Aw.Context.Core.Graph.EdgeDetail? left, Aw.Context.Core.Graph.EdgeDetail? right) -> bool
+static Aw.Context.Core.Graph.EdgeDetail.Of(Aw.Context.Core.Graph.EdgeFact! edge, Aw.Context.Core.Graph.NodeKind otherKind, string? otherLabel) -> Aw.Context.Core.Graph.EdgeDetail!
+static Aw.Context.Core.Graph.NodeDetail.operator !=(Aw.Context.Core.Graph.NodeDetail? left, Aw.Context.Core.Graph.NodeDetail? right) -> bool
+static Aw.Context.Core.Graph.NodeDetail.operator ==(Aw.Context.Core.Graph.NodeDetail? left, Aw.Context.Core.Graph.NodeDetail? right) -> bool
+static Aw.Context.Core.Graph.NodeDetail.Of(Aw.Context.Core.Graph.NodeFact! fact, Aw.Context.Core.Graph.NodeSource? source = null, string? description = null) -> Aw.Context.Core.Graph.NodeDetail!
+static Aw.Context.Core.Graph.NodeSource.operator !=(Aw.Context.Core.Graph.NodeSource? left, Aw.Context.Core.Graph.NodeSource? right) -> bool
+static Aw.Context.Core.Graph.NodeSource.operator ==(Aw.Context.Core.Graph.NodeSource? left, Aw.Context.Core.Graph.NodeSource? right) -> bool
 static Aw.Context.Core.Graph.EdgeFact.Of(Aw.Context.Core.Graph.GraphEdge! edge) -> Aw.Context.Core.Graph.EdgeFact!
 static Aw.Context.Core.Graph.EdgeFact.operator !=(Aw.Context.Core.Graph.EdgeFact? left, Aw.Context.Core.Graph.EdgeFact? right) -> bool
 static Aw.Context.Core.Graph.EdgeFact.operator ==(Aw.Context.Core.Graph.EdgeFact? left, Aw.Context.Core.Graph.EdgeFact? right) -> bool
@@ -6306,6 +6391,7 @@ static Aw.Context.Core.Trust.ScrubRuleset.operator ==(Aw.Context.Core.Trust.Scru
 static Aw.Context.Core.Trust.ScrubRuleset.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Trust.ScrubRuleset
 static Aw.Context.Core.Trust.ScrubRuleset.TryFrom(string? value, out Aw.Context.Core.Trust.ScrubRuleset vo) -> bool
 static Aw.Context.Core.Trust.ScrubRuleset.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Trust.ScrubRuleset result) -> bool
+static Aw.Context.Core.Trust.UntrustedFence.CapOnWord(string! text, int max = 200) -> string!
 static Aw.Context.Core.Trust.UntrustedFence.Cap(string! text, int max = 200) -> string!
 static Aw.Context.Core.Trust.UntrustedFence.Escape(string! text) -> string!
 static Aw.Context.Core.Trust.UntrustedFence.Prefix(string! text, int length) -> string!
@@ -6832,4 +6918,17 @@ static readonly Aw.Context.Core.ContextErrors.AreaUnknown -> Aw.Kernel.ErrorDefi
 Aw.Context.Core.WholeMap.WholeMapView.Deconstruct(out int SchemaVersion, out string! MapVersion, out bool Draft, out System.DateTimeOffset AsOf, out string? Repo, out Aw.Context.Core.WholeMap.WholeMapDetail Detail, out Aw.Context.Core.WholeMap.WholeMapCounts! Counts, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapArea!>! Areas, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapAreaEdge!>! AreaEdges, out bool Truncated) -> void
 Aw.Context.Core.WholeMap.WholeMapView.WholeMapView(int SchemaVersion, string! MapVersion, bool Draft, System.DateTimeOffset AsOf, string? Repo, Aw.Context.Core.WholeMap.WholeMapDetail Detail, Aw.Context.Core.WholeMap.WholeMapCounts! Counts, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapArea!>! Areas, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.WholeMap.WholeMapAreaEdge!>! AreaEdges, bool Truncated) -> void
 static Aw.Context.Core.WholeMap.MapAreas.Assign(Aw.Context.Core.Graph.GraphSnapshot! graph, int areaCap) -> Aw.Context.Core.WholeMap.AreaIndex!
+Aw.Context.Core.Lenses.FileMapQuery.Cursor.get -> string?
+Aw.Context.Core.Lenses.FileMapQuery.Cursor.init -> void
+Aw.Context.Core.Lenses.FileMapQuery.Limit.get -> int?
+Aw.Context.Core.Lenses.FileMapQuery.Limit.init -> void
+Aw.Context.Core.Lenses.FileMapView.NextCursor.get -> string?
+Aw.Context.Core.Lenses.FileMapView.NextCursor.init -> void
+Aw.Context.Core.Lenses.FileMapView.Total.get -> int?
+Aw.Context.Core.Lenses.FileMapView.Total.init -> void
+Aw.Context.Core.Lenses.RepoTree
+Aw.Context.Core.Lenses.RepoTree.RepoTree(System.Collections.Generic.IEnumerable<string!>! files) -> void
+const Aw.Context.Core.Lenses.FileMapBuilder.DefaultLimit = 200 -> int
+const Aw.Context.Core.Lenses.FileMapBuilder.MaxLimit = 1000 -> int
+static Aw.Context.Core.Lenses.FileMapBuilder.Build(Aw.Context.Core.Lenses.FileMapBasis! basis, Aw.Context.Core.Lenses.FileMapQuery! query, Aw.Context.Core.Lenses.RepoTree! tree, Aw.Context.Core.Graph.GraphSnapshot! graph) -> Aw.Kernel.Result<Aw.Context.Core.Lenses.FileMapView!>!
 const Aw.Context.Core.Sources.SourceQuery.DefaultLimit = 200 -> int

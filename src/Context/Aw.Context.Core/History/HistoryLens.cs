@@ -20,7 +20,7 @@ public static class HistoryLens
         ArgumentNullException.ThrowIfNull(graph);
         ArgumentNullException.ThrowIfNull(anchors);
         var distinct = anchors.Distinct(StringComparer.Ordinal).ToList();
-        if (QueryRules.CheckAnchors(distinct) is { } refused)
+        if (QueryRules.CheckAnchors(distinct, "history") is { } refused)
         {
             return refused;
         }

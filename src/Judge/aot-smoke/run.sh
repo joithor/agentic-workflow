@@ -2,7 +2,8 @@
 # NativeAOT smoke for judge (src/Judge/Aw.Judge.Host): publish it with PublishAot for the host RID, fail on any
 # trim/AOT (IL2xxx/IL3xxx) warning or a missing bundled e_sqlite3, then run the native binary offline (a bare PATH,
 # AW_JUDGE_PROVIDERS=rules, no Jev key) against a temp AW_STATE_DIR: health, brief save/get, a brief that isn't there,
-# the wake-gate and ask-check pre-rules, a question nothing decides, config get, a usage error and a bad allowlist. The
+# the wake-gate and ask-check pre-rules, a question nothing decides, config get, a usage error, a bad allowlist, the prompt-sort hook path
+# (offline: prints nothing, writes judge/sessions/s1.sort.json) and two not-yet-built verbs. The
 # normalized output (ids and times) must equal expected.txt.
 # AW_LOG_LEVEL is unset on purpose: the contract is that stderr stays clean at the default level (a log line carries a
 # wall-clock time, so it would show up as a diff).
@@ -75,6 +76,11 @@ brief='{"toolUseId":"toolu_1","sessionId":"s1","promptId":"p1","dispatchName":"b
   judge_with bogus health || echo "exit $?"
   echo "## health after"
   judge health || echo "exit $?"
+  echo "## prompt-sort (offline: heuristics, every scaffold off, nothing printed)"
+  printf '%s' '{"prompt":"add a dark mode toggle to the settings page","sessionId":"s1"}' | judge prompt-sort || echo "exit $?"
+  echo "## not yet built (cutover spec 5.2)"
+  judge label status || echo "exit $?"
+  judge prompt-sort why abc || echo "exit $?"
   echo "## state files"
   (cd "$state" && find . -type f ! -name '*-wal' ! -name '*-shm' | sort)
 } >"$out/raw.txt" 2>&1
