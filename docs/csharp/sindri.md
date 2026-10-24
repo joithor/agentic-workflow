@@ -292,6 +292,7 @@ composed by the host from the class and the client label, never taken from a hea
 | `X-Sindri-Terminal` | `1` | Informational (sent with `human` when stdin is a terminal); it decides no authority |
 | `X-Sindri-Client` | `cli`, `ui`, `prover`, `mcp` | Names the actor: `human:cli`, `human:ui`, `human:prover`, else `human:http`; `session:cli`, `session:mcp`, else `session:http`. An unknown label counts as none (logged) |
 | `X-Sindri-Repo` | a repo name | Scopes the caller (enforced from P3); a malformed name is 400 `SND-API-007` |
+| `X-Sindri-Launch` | a launch id (`LCH-…`) | The launch Sindri started this session under (the CLI sends its `AW_SINDRI_LAUNCH`); `CallerContext.Launch` is set for a session caller only, so the engine can tell Sindri's own step children from an owner-started session. A malformed id is 400 `SND-API-007`; one with no open launch is 403 `SND-AUTH-003` |
 | `X-Sindri-Token` | the per-start token | Required with `human`, on queries too: missing or stale is 403 `SND-AUTH-001` ("restart the app or rerun the command"), never a silent downgrade to `session` |
 
 - **The human token.** `sindri serve` mints `auth/human.token` under the home (32 random bytes, base64url; the file

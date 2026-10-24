@@ -96,15 +96,17 @@ Aw.Sindri.Core.Commands.CallerContext
 Aw.Sindri.Core.Commands.CallerContext.<Clone>$() -> Aw.Sindri.Core.Commands.CallerContext!
 Aw.Sindri.Core.Commands.CallerContext.Actor.get -> string!
 Aw.Sindri.Core.Commands.CallerContext.Actor.init -> void
-Aw.Sindri.Core.Commands.CallerContext.CallerContext(Aw.Sindri.Core.Commands.CallerClass Class, bool Terminal, string! Actor, Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.CorrelationId CorrelationId, Aw.Sindri.Core.Ids.RepoName? Repo) -> void
+Aw.Sindri.Core.Commands.CallerContext.CallerContext(Aw.Sindri.Core.Commands.CallerClass Class, bool Terminal, string! Actor, Aw.Sindri.Core.Ids.CommandId CommandId, Aw.Sindri.Core.Ids.CorrelationId CorrelationId, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.Workflow.Engine.LaunchId? Launch = null) -> void
 Aw.Sindri.Core.Commands.CallerContext.Class.get -> Aw.Sindri.Core.Commands.CallerClass
 Aw.Sindri.Core.Commands.CallerContext.Class.init -> void
 Aw.Sindri.Core.Commands.CallerContext.CommandId.get -> Aw.Sindri.Core.Ids.CommandId
 Aw.Sindri.Core.Commands.CallerContext.CommandId.init -> void
 Aw.Sindri.Core.Commands.CallerContext.CorrelationId.get -> Aw.Sindri.Core.Ids.CorrelationId
 Aw.Sindri.Core.Commands.CallerContext.CorrelationId.init -> void
-Aw.Sindri.Core.Commands.CallerContext.Deconstruct(out Aw.Sindri.Core.Commands.CallerClass Class, out bool Terminal, out string! Actor, out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.CorrelationId CorrelationId, out Aw.Sindri.Core.Ids.RepoName? Repo) -> void
+Aw.Sindri.Core.Commands.CallerContext.Deconstruct(out Aw.Sindri.Core.Commands.CallerClass Class, out bool Terminal, out string! Actor, out Aw.Sindri.Core.Ids.CommandId CommandId, out Aw.Sindri.Core.Ids.CorrelationId CorrelationId, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.Workflow.Engine.LaunchId? Launch) -> void
 Aw.Sindri.Core.Commands.CallerContext.Equals(Aw.Sindri.Core.Commands.CallerContext? other) -> bool
+Aw.Sindri.Core.Commands.CallerContext.Launch.get -> Aw.Sindri.Core.Workflow.Engine.LaunchId?
+Aw.Sindri.Core.Commands.CallerContext.Launch.init -> void
 Aw.Sindri.Core.Commands.CallerContext.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
 Aw.Sindri.Core.Commands.CallerContext.Repo.init -> void
 Aw.Sindri.Core.Commands.CallerContext.Terminal.get -> bool
@@ -7156,7 +7158,7 @@ static Aw.Sindri.Core.Commands.Authorization.CallersFor(Aw.Sindri.Core.Commands.
 static Aw.Sindri.Core.Commands.Authorization.Decide(Aw.Sindri.Core.Commands.ActionClass actionClass, Aw.Sindri.Core.Commands.CallerContext? caller, Aw.Sindri.Core.Commands.CommandRow! row) -> Aw.Sindri.Core.Commands.AuthorizationDecision!
 static Aw.Sindri.Core.Commands.AuthorizationDecision.operator !=(Aw.Sindri.Core.Commands.AuthorizationDecision? left, Aw.Sindri.Core.Commands.AuthorizationDecision? right) -> bool
 static Aw.Sindri.Core.Commands.AuthorizationDecision.operator ==(Aw.Sindri.Core.Commands.AuthorizationDecision? left, Aw.Sindri.Core.Commands.AuthorizationDecision? right) -> bool
-static Aw.Sindri.Core.Commands.CallerContext.Http(Aw.Sindri.Core.Commands.CallerClass caller, bool terminal, Aw.Sindri.Core.Commands.ClientLabel client, Aw.Sindri.Core.Ids.RepoName? repo, Aw.Kernel.Ids.IIdGenerator! ids) -> Aw.Sindri.Core.Commands.CallerContext!
+static Aw.Sindri.Core.Commands.CallerContext.Http(Aw.Sindri.Core.Commands.CallerClass caller, bool terminal, Aw.Sindri.Core.Commands.ClientLabel client, Aw.Sindri.Core.Ids.RepoName? repo, Aw.Kernel.Ids.IIdGenerator! ids, Aw.Sindri.Core.Workflow.Engine.LaunchId? launch = null) -> Aw.Sindri.Core.Commands.CallerContext!
 static Aw.Sindri.Core.Commands.CallerContext.Service(string! name, Aw.Kernel.Ids.IIdGenerator! ids) -> Aw.Sindri.Core.Commands.CallerContext!
 static Aw.Sindri.Core.Commands.CallerContext.operator !=(Aw.Sindri.Core.Commands.CallerContext? left, Aw.Sindri.Core.Commands.CallerContext? right) -> bool
 static Aw.Sindri.Core.Commands.CallerContext.operator ==(Aw.Sindri.Core.Commands.CallerContext? left, Aw.Sindri.Core.Commands.CallerContext? right) -> bool

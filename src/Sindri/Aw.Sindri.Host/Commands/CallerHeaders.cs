@@ -87,6 +87,11 @@ internal sealed class CallerHeaders
             headers.Add(SindriHeaders.Token, token.Value);
         }
 
+        if (session.Launch is { } launch)
+        {
+            headers.Add(SindriHeaders.Launch, launch);
+        }
+
         if (await Repo(cancellationToken).ConfigureAwait(false) is { } repo)
         {
             headers.Add(SindriHeaders.Repo, repo.Value);
