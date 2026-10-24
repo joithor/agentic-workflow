@@ -66,11 +66,11 @@ public sealed class ContextMapRefreshServiceTests
             state == JobState.Failed ? "SND-CONTEXT-030" : null, result, CancelledBy: null, Sequence: _next));
     }
 
-    private void PublishJob(JobState state, TimeSpan endedAgo, string? code = null)
+    private void PublishJob(JobState state, TimeSpan endedAgo, string? code = null, string? summary = null)
     {
         _next++;
         _jobs.Put(new JobRow(JobId.New(_h.Ids), JobKind.From("PublishContextMap"), JobKey.From("map-publish:r"), Item: null, Repo: null, Service: null, state,
-            "service:context-map-refresh", _now - endedAgo - TimeSpan.FromSeconds(5), state == JobState.Running ? null : _now - endedAgo, [], Rounds: 0, Summary: null,
+            "service:context-map-refresh", _now - endedAgo - TimeSpan.FromSeconds(5), state == JobState.Running ? null : _now - endedAgo, [], Rounds: 0, summary,
             code ?? (state == JobState.Failed ? "SND-CONTEXT-046" : null), Result: null, CancelledBy: null, Sequence: _next));
     }
 
@@ -434,6 +434,19 @@ public sealed class ContextMapRefreshServiceTests
 
         Assert.Equal(SindriErrors.ServiceFailed.Code, result.Error.Code);
         Assert.Contains("the last 3 map refreshes or publishes failed (SND-CONTEXT-046)", result.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_alarm_names_why_the_newest_failure_failed_not_only_its_code()
+    {
+        Job(JobState.Failed, TimeSpan.FromMinutes(30));
+        Job(JobState.Failed, TimeSpan.FromMinutes(20));
+        PublishJob(JobState.Failed, TimeSpan.FromMinutes(1), "SND-CONTEXT-046", "the code index is not built for repo r");
+        _engine.Heads = [Head("a", "1")];
+
+        var result = await Run(await Service());
+
+        Assert.Contains("(SND-CONTEXT-046: the code index is not built for repo r)", result.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
