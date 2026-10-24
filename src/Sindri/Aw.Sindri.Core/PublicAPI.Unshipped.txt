@@ -13586,12 +13586,12 @@ Aw.Sindri.Core.Scheduling.NoIndexOutlooks.NoIndexOutlooks() -> void
 Aw.Sindri.Core.Scheduling.NoIndexOutlooks.Read(Aw.Sindri.Core.Scheduling.MapHoldState! hold, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Scheduling.IndexOutlookDetail!>!>!>
 Aw.Sindri.Core.Scheduling.RepoWait
 Aw.Sindri.Core.Scheduling.RepoWait.Building = 2 -> Aw.Sindri.Core.Scheduling.RepoWait
-Aw.Sindri.Core.Scheduling.RepoWait.Damaged = 6 -> Aw.Sindri.Core.Scheduling.RepoWait
-Aw.Sindri.Core.Scheduling.RepoWait.NewerIndex = 5 -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.Damaged = 5 -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.NewerIndex = 4 -> Aw.Sindri.Core.Scheduling.RepoWait
 Aw.Sindri.Core.Scheduling.RepoWait.None = 0 -> Aw.Sindri.Core.Scheduling.RepoWait
-Aw.Sindri.Core.Scheduling.RepoWait.NotIndexed = 7 -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.NotIndexed = 6 -> Aw.Sindri.Core.Scheduling.RepoWait
 Aw.Sindri.Core.Scheduling.RepoWait.Queued = 1 -> Aw.Sindri.Core.Scheduling.RepoWait
-Aw.Sindri.Core.Scheduling.RepoWait.Retrying = 4 -> Aw.Sindri.Core.Scheduling.RepoWait
+Aw.Sindri.Core.Scheduling.RepoWait.Retrying = 3 -> Aw.Sindri.Core.Scheduling.RepoWait
 abstract Aw.Sindri.Core.Scheduling.MapPublishAction.<Clone>$() -> Aw.Sindri.Core.Scheduling.MapPublishAction!
 const Aw.Sindri.Core.Scheduling.IndexOutlookRules.FailuresToBroken = 3 -> int
 override Aw.Sindri.Core.Scheduling.IndexAttempt.Equals(object? obj) -> bool
