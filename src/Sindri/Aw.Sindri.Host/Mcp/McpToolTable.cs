@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Diagnostics;
 using Aw.Context.Core;
 using Aw.Sindri.Core.Commands;
@@ -16,6 +17,10 @@ internal static class McpToolTable
 {
     private static readonly IReadOnlyList<Tool> _tools = [ContextTools.QueryTool, ContextTools.SourcesTool, ContextTools.LensesTool, GraphTools.NodeTool, GraphTools.NeighborsTool,
         SindriTools.StatusTool, SindriTools.QueueTool, SindriTools.ItemTool, SindriTools.TimelineTool, SindriTools.PendingDecisionsTool, SindriTools.JobTool, SindriTools.RequestTool];
+
+    // why: only the context and graph tools read one repo's map; the sindri_* tools answer for every repo, as the same call does for a human
+    private static readonly FrozenSet<string> _repoScoped = FrozenSet.Create(StringComparer.Ordinal,
+        ContextTools.Query, ContextTools.Sources, ContextTools.Lenses, GraphTools.Node, GraphTools.Neighbors);
 
     /// <summary>tools/list: every tool, whatever the profile says (a refused call explains itself; context spec §8.6).</summary>
     /// <param name="_">The request (unused).</param>
@@ -38,8 +43,7 @@ internal static class McpToolTable
                 $"'{call.Name}' is not a Sindri MCP tool (fix: tools/list names them)")));
         }
 
-        // why: only the context and graph tools read one repo's map; the sindri_* tools answer for every repo, as the same call does for a human
-        if (call.Name is ContextTools.Query or ContextTools.Sources or ContextTools.Lenses or GraphTools.Node or GraphTools.Neighbors
+        if (_repoScoped.Contains(call.Name)
             && services.GetRequiredService<ICallerContextAccessor>().Current?.Repo is null)
         {
             return ValueTask.FromResult(McpResults.Failure(services, ContextErrors.McpRepoMissing.With(
