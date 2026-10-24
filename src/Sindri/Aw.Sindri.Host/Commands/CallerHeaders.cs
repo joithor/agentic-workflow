@@ -38,15 +38,20 @@ internal sealed class CallerHeaders
     /// <returns>Why the CLI calls as a session, or null for a human.</returns>
     internal async ValueTask<string?> Resolve(CancellationToken cancellationToken)
     {
-        HumanToken? found = null;
-        if (_tokens is not null && await _tokens.Read(cancellationToken).ConfigureAwait(false) is { IsSuccess: true, Value: { } read })
+        _token = await ReadToken(cancellationToken).ConfigureAwait(false);
+        _reason = _session is null || _token is not null ? null : NoToken;
+        return _reason;
+    }
+
+    private async ValueTask<HumanToken?> ReadToken(CancellationToken cancellationToken)
+    {
+        if (_tokens is null)
         {
-            found = read;
+            return null;
         }
 
-        _token = found;
-        _reason = _session is null || found is not null ? null : NoToken;
-        return _reason;
+        var read = await _tokens.Read(cancellationToken).ConfigureAwait(false);
+        return read.IsSuccess ? read.Value : null;
     }
 
     /// <summary>The headers for <paramref name="session"/>.</summary>
