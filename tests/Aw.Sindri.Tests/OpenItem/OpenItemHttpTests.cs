@@ -9,8 +9,6 @@ namespace Aw.Sindri.Tests.OpenItem;
 [Lane(TestLane.Integration)]
 public sealed class OpenItemHttpTests
 {
-    private const string Body = """{"mode":"open","itemVersion":1}""";
-
     [Fact(Timeout = 30_000)]
     public async Task Target_not_matching_AgentId_pattern_is_400()
     {

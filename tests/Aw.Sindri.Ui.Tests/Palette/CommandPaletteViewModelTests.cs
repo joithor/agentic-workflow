@@ -109,13 +109,13 @@ public sealed partial class CommandPaletteViewModelTests
     public void Arrows_move_the_selection_over_entries_that_run()
     {
         _palette.Open();
-        Assert.Equal("ApplyCommand:answer-accept", _palette.Selected?.Id);   // no ready row is in Actions: the first that runs is a copy block
+        Assert.Equal("ImportContextMap", _palette.Selected?.Id);   // no ready row is in Actions: the first that runs is a copy block
 
         _palette.Move(1);
-        Assert.Equal("ApplyCommand:answer-grant", _palette.Selected?.Id);
+        Assert.Equal("InitProfile", _palette.Selected?.Id);
         _palette.Move(-1);
         _palette.Move(-1);
-        Assert.Equal("ApplyCommand:answer-accept", _palette.Selected?.Id);
+        Assert.Equal("ImportContextMap", _palette.Selected?.Id);
         Assert.True(_palette.Selected!.IsSelected);
         Assert.All(_palette.Entries.Where(e => e.Control?.IsPending == true), e => Assert.False(e.IsEnabled));
     }
@@ -154,7 +154,7 @@ public sealed partial class CommandPaletteViewModelTests
     public void Open_and_every_refilter_start_at_the_top_and_only_the_arrows_follow_the_selection()
     {
         _palette.Open();
-        Assert.Equal(("ApplyCommand:answer-accept", false), (_palette.Selected?.Id, _palette.FollowsSelection));
+        Assert.Equal(("ImportContextMap", false), (_palette.Selected?.Id, _palette.FollowsSelection));
 
         _palette.Move(1);
         Assert.True(_palette.FollowsSelection);
@@ -615,14 +615,14 @@ public sealed partial class CommandPaletteViewModelTests
     public async Task A_cli_only_entry_copies_its_cli()
     {
         _palette.Open();
-        _palette.Query = "revokerecipe";
+        _palette.Query = "showlineholdout";
 
         await _palette.Run(_palette.Selected, Token);
 
-        Assert.Equal("sindri recipe revoke <recipe>", _clipboard.Text);
-        Assert.Equal(("Copied", true), (Entry("RevokeRecipe").Status, _palette.IsOpen));
+        Assert.Equal("sindri line holdout show <line> <phase>", _clipboard.Text);
+        Assert.Equal(("Copied", true), (Entry("ShowLineHoldout").Status, _palette.IsOpen));
         _clock.Advance(ControlViewModel.CopiedFor);
-        Assert.Equal("Copy: sindri recipe revoke <recipe>", Entry("RevokeRecipe").Status);
+        Assert.Equal("Copy: sindri line holdout show <line> <phase>", Entry("ShowLineHoldout").Status);
     }
 
     [Fact]
@@ -695,7 +695,7 @@ public sealed partial class CommandPaletteViewModelTests
     public async Task A_copy_changes_the_announcement()
     {
         _palette.Open();
-        _palette.Query = "revoke recipe";
+        _palette.Query = "show line holdout";
 
         await _palette.Run(_palette.Selected, Token);
 

@@ -53,7 +53,7 @@ public sealed class AppConfirmRowTests
         Assert.True(Table.Decide(row.Class, A.Caller().Human().Client(ClientLabel.Ui).Build(), row).Allowed);
         Assert.True(Table.Decide(row.Class, A.Caller().AtTerminal().Client(ClientLabel.Cli).Build(), row).Allowed);
         Assert.True(Table.Decide(row.Class, A.Caller().Session().Build(), row).Allowed);
-        Assert.Equal(SindriErrors.AuthRefused.Code, Table.Decide(row.Class, null, row).Refusal?.Code);
+        Assert.Equal(SindriErrors.AuthRefused.Code, Table.Decide(row.Class, caller: null, row).Refusal?.Code);
         Assert.Equal(row.Class == ActionClass.Job, Table.Decide(row.Class, A.Caller().Service("jobs").Build(), row).Allowed);   // a job row is open to a service; the others are not
     }
 

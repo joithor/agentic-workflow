@@ -7,7 +7,6 @@ using Aw.Context.Testing.Fixtures;
 using Aw.Context.Testing.Map;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ledger;
-using Aw.Sindri.Host;
 using Aw.Sindri.Infrastructure.Locks;
 using Aw.Sindri.Tests.ApiGoldens;
 using Aw.Sindri.Tests.Jobs;
