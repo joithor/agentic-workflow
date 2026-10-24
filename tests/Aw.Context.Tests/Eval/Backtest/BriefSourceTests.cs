@@ -115,7 +115,7 @@ public sealed class BriefSourceTests
         await using var onyx = await FakeOnyxServer.Start();
         using var harness = new OnyxSourceHarness(onyx.Url, onyx.Token);
         using var home = new TempHome();
-        var source = new OnyxBriefSource(new FixedSourceCatalog(new FullPage(harness.Source, copies: 9)));   // 54 hits: Onyx's 50 per search is used up
+        var source = new OnyxBriefSource(new FixedSourceCatalog(new FullPage(harness.Source, copies: 42)));   // 252 hits: the 250 the search asks for are used up
 
         var listing = (await source.Issues(Scope(home), since: null, TestContext.Current.CancellationToken)).Value;
 

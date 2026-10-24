@@ -820,6 +820,7 @@ together with `SindriErrors`. Retired codes stay reserved in `WorkflowErrors.Ret
 | `SND-WF-017` | conflict | The text a pull refilled differs from what the run recorded; nothing is served (re-run the Step) |
 | `SND-WF-018` | conflict | A Step input, re-run on a cache miss, differs from what the run recorded; the Step does not run on different data (re-run the Step) |
 | `SND-WF-019` | invalid | A Step input filled an invalid plan: a bad section name, a section over 256 KiB, a typed result over 256 KiB, or a plan over 1 MiB; the Step fails |
+| `SND-WF-020` | unavailable | A Step input's fill timed out: it ran past 30 minutes, or sent no heartbeat for 2 minutes; the Step fails with the code and the seconds |
 | `SND-BLOCK-001` | unavailable | A fact a block Step reads can't be read; the run ends as `step.failed` with the message as its reason |
 | `SND-BLOCK-002` | unavailable | The approved profile a block Step's providers come from can't be read; the run ends as `step.failed` `profile-unreadable: <code>` |
 | `SND-BLOCK-003` | unavailable | The item's repo (`fact:item`) couldn't be read, so a block Step's per-repo keys can't be resolved; the run ends as `step.failed` `repo-unreadable`, never with the box's list |

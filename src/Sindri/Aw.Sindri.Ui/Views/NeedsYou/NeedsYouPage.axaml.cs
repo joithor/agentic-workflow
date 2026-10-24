@@ -169,6 +169,8 @@ internal sealed partial class NeedsYouPage : UserControl
         }
     }
 
+    private void OnPr(object? sender, RoutedEventArgs e) => _page?.OpenPr();
+
     private void OnOpenPr(object? sender, RoutedEventArgs e) => _ = _page?.Bar.MergeCard?.Open(CancellationToken.None);
 
     private void OnVerb(object? sender, RoutedEventArgs e) => _ = sender is Control { DataContext: DeskVerbViewModel verb } ? verb.Press() : Task.CompletedTask;
@@ -192,6 +194,10 @@ internal sealed partial class NeedsYouPage : UserControl
     private void OnTerminal(object? sender, RoutedEventArgs e) => _ = _page?.Bar.CopyTerminal();
 
     private void OnSendBack(object? sender, RoutedEventArgs e) => _ = _page?.Bar.PressSendBack();
+
+    private void OnScopingChoice(object? sender, RoutedEventArgs e) => ((sender as Button)?.DataContext as ScopingChoiceViewModel)?.Choose();
+
+    private void OnDoneAsking(object? sender, RoutedEventArgs e) => _ = _page?.Bar.PressDoneAsking();
 
     private void OnChooseOption(object? sender, RoutedEventArgs e) => ((sender as Button)?.DataContext as DeskQuestionOptionViewModel)?.Choose();
 

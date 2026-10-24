@@ -19,10 +19,10 @@ internal sealed partial class LinearSearch(LinearClient client, LinearScope scop
 {
     private sealed record Plan(List<string> Terms, DateTimeOffset? Since, int Want);
 
-    private const int MaxTerms = 32;
-    private const int MaxKeys = 10;
+    private const int MaxTerms = 160;   // a query's distinct terms, so one search is not a request per word of a long brief
+    private const int MaxKeys = 50;   // tracker keys looked up by identifier in one search
     private const int MinPerKind = 50;
-    private const int MaxPerKind = 1000;
+    private const int MaxPerKind = 5000;   // the most one kind (issues, documents, projects) returns, whatever limit was asked for
 
     /// <summary>Searches.</summary>
     /// <param name="query">The terms, cut-off, limit and deadline.</param>
