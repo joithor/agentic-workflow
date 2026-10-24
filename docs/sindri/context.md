@@ -573,7 +573,7 @@ index:
 repos:
   - { name: work-app, path: /path/to/work-app, index: { denyPaths: ["private/**"] } }   # this repo's own, added to the above
 context:
-  labeling: { enabled: false, maxTokens: 400000, maxTokensPerSync: 50000 }  # name clusters with a model; over the cap is SND-CONTEXT-042; maxTokensPerSync caps decision extraction in one sync (the rest stays queued); a record whose extraction prompt alone is over it can never be extracted, so it is skipped: counted in `refused`, no decisions, not queued (raise the cap to extract it; it is retried when its version changes)
+  labeling: { enabled: true, maxTokens: 400000, maxTokensPerSync: 50000 }  # on by default (owner decision 2026-10-24; `enabled: false` turns it off): names clusters with a model and sends file paths to it, and extracts decisions per sync; over the cap is SND-CONTEXT-042; maxTokensPerSync caps decision extraction in one sync (the rest stays queued); a record whose extraction prompt alone is over it can never be extracted, so it is skipped: counted in `refused`, no decisions, not queued (raise the cap to extract it; it is retried when its version changes)
   extract: { graphify: { timeoutMinutes: 60, maxSnapshotMB: 2048, maxFileMB: 16, maxGraphMB: 256 } }   # the cluster pass's limits (these are the defaults; 0 is no limit); the surface recognizers are context.extract.recognizers
 services:
   context-rebuild: { every: 24h }                  # proposes the map on a cadence; runs only when named here
