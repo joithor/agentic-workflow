@@ -34,7 +34,7 @@ internal sealed class DriverHost(Func<Window?> window, TimeProvider clock)
         return new SearchResponse([.. found.Take(limit).Select(f => tree.InfoOf(tree.Nodes.First(n => ReferenceEquals(n.Facts, f))))], found.Count);
     });
 
-    internal Task<Result<PropsResponse>> Props(PropsRequest request) => OnUi<PropsResponse>(tree =>
+    internal Task<Result<PropsResponse>> Props(PropsRequest request) => OnUi(tree =>
         tree.Resolve(request.Selector).Map(node => new PropsResponse(tree.InfoOf(node), PropertyValues.Of(node.Visual))));
 
     internal Task<Result<ActedResponse>> Click(ClickRequest request) => Act(request.Selector, static (_, visual) => ElementActions.Click(visual));
@@ -68,7 +68,7 @@ internal sealed class DriverHost(Func<Window?> window, TimeProvider clock)
 
     private static int SizeOf(int? given, double current) => given ?? (int)Math.Round(current, MidpointRounding.AwayFromZero);
 
-    internal Task<Result<byte[]>> Screenshot(ScreenshotRequest request) => OnUi<byte[]>(tree =>
+    internal Task<Result<byte[]>> Screenshot(ScreenshotRequest request) => OnUi(tree =>
     {
         var target = request.Selector is { } selector ? tree.Resolve(selector).Map(static n => n.Visual) : Results.Success<Visual>(tree.Root);
         return target.Bind(visual => Pictures.Png(visual));
@@ -153,7 +153,7 @@ internal sealed class DriverHost(Func<Window?> window, TimeProvider clock)
     }
 
     private async Task<Result<T>> OnUi<T>(Func<UiTree, Result<T>> work) =>
-        await Dispatcher.UIThread.InvokeAsync<Result<T>>(() =>
+        await Dispatcher.UIThread.InvokeAsync(() =>
         {
             if (window() is not { } root)
             {

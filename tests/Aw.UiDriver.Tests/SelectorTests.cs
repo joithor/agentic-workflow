@@ -20,16 +20,16 @@ public sealed class SelectorTests
     [Fact, Trait("Lane", "unit")]
     public void Every_field_given_must_match()
     {
-        Assert.Equal<string>(["0/0"], SelectorMatcher.All(new Selector(AutomationId: "save", Type: "Button"), _tree).Select(static n => n.Id), StringComparer.Ordinal);
+        Assert.Equal(["0/0"], SelectorMatcher.All(new Selector(AutomationId: "save", Type: "Button"), _tree).Select(static n => n.Id), StringComparer.Ordinal);
         Assert.Empty(SelectorMatcher.All(new Selector(AutomationId: "save", Type: "TextBlock"), _tree));
     }
 
     [Fact, Trait("Lane", "unit")]
     public void Text_matches_exactly_and_by_a_part()
     {
-        Assert.Equal<string>(["0/0"], SelectorMatcher.All(new Selector(Text: "Save"), _tree).Select(static n => n.Id), StringComparer.Ordinal);
-        Assert.Equal<string>(["0/0", "0/3"], SelectorMatcher.All(new Selector(TextContains: "Save"), _tree).Select(static n => n.Id), StringComparer.Ordinal);
-        Assert.Equal<string>(["0/2"], SelectorMatcher.All(new Selector(Name: "greeting"), _tree).Select(static n => n.Id), StringComparer.Ordinal);
+        Assert.Equal(["0/0"], SelectorMatcher.All(new Selector(Text: "Save"), _tree).Select(static n => n.Id), StringComparer.Ordinal);
+        Assert.Equal(["0/0", "0/3"], SelectorMatcher.All(new Selector(TextContains: "Save"), _tree).Select(static n => n.Id), StringComparer.Ordinal);
+        Assert.Equal(["0/2"], SelectorMatcher.All(new Selector(Name: "greeting"), _tree).Select(static n => n.Id), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

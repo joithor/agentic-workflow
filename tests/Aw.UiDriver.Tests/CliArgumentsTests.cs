@@ -1,5 +1,6 @@
 using System.Text;
 using Aw.Kernel;
+using Aw.Kernel.Json;
 using Aw.UiDriver.Cli;
 using Aw.UiDriver.Core;
 using Aw.UiDriver.Core.Protocol;
@@ -78,7 +79,7 @@ public sealed class CliArgumentsTests
     private static (string Verb, string Selector, string Text, bool Replace) TypeOf((string Verb, byte[] Body) request)
     {
         var json = Encoding.UTF8.GetString(request.Body);
-        var read = Aw.Kernel.Json.AwJson.Deserialize<TypeRequest>(request.Body, UiDriverJson.Options).Value;
+        var read = AwJson.Deserialize<TypeRequest>(request.Body, UiDriverJson.Options).Value;
         return (request.Verb, read.Selector?.AutomationId ?? string.Empty, read.Text, json.Contains("\"replace\":true", StringComparison.Ordinal));
     }
 }
