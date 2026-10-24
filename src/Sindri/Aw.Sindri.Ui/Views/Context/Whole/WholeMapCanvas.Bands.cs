@@ -38,17 +38,20 @@ internal sealed partial class WholeMapCanvas
         WholeBand.Intent => NodeBands.StyleOf("decision").Accent,
         WholeBand.Product => NodeBands.StyleOf("feature").Accent,
         WholeBand.Code => NodeBands.StyleOf("code").Accent,
+        WholeBand.Other => NodeBands.StyleOf(string.Empty).Accent,
         _ => NodeBands.StyleOf(string.Empty).Accent,
     };
 
     // A chip in its kind's look: pill for the why, card for the product, plate for code; the kind's mark in front of the label; the border stays the area's colour.
-    private void DrawKindChip(DrawingContext context, PlacedNode node, IBrush area, IBrush fill, IBrush ink, bool focused)
+    private void DrawKindChip(DrawingContext context, KindChip chip)
     {
+        var (node, area, fill, ink, focused) = (chip.Node, chip.Area, chip.Fill, chip.Ink, chip.Focused);
         var style = NodeBands.StyleOf(node.Kind);
         var radius = style.Shape switch
         {
             ChipShape.Pill => node.Rect.Height / 2,
             ChipShape.Plate => 2,
+            ChipShape.Card => Radius,
             _ => Radius,
         };
         var rect = new Rect(node.Rect.X, node.Rect.Y, node.Rect.Width, node.Rect.Height);
@@ -82,6 +85,7 @@ internal sealed partial class WholeMapCanvas
                 context.DrawLine(new Pen(brush, 1.8), new Point(at.X - half, at.Y - half), new Point(at.X + half, at.Y));
                 context.DrawLine(new Pen(brush, 1.8), new Point(at.X + half, at.Y), new Point(at.X - half, at.Y + half));
                 break;
+            case KindMark.None:
             default:
                 break;
         }

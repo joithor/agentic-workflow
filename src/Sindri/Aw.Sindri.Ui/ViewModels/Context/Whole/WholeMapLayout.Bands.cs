@@ -74,6 +74,6 @@ internal static partial class WholeMapLayout
     {
         AreaIndex = tile.AreaIndex + openCount,
         Rect = tile.Rect with { X = tile.Rect.X + dx },
-        Cells = tile.BandCells.Select(c => c with { Rect = c.Rect with { X = c.Rect.X + dx } }).ToList(),
+        Cells = [.. tile.BandCells.Select(c => c with { Rect = c.Rect with { X = c.Rect.X + dx } })],
     };
 }

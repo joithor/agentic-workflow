@@ -94,7 +94,7 @@ internal sealed partial class WholeMapCanvas
                     continue;
                 }
 
-                DrawKindChip(context, node, area, chip, ink, string.Equals(node.Key, _focus, StringComparison.Ordinal));
+                DrawKindChip(context, new KindChip(node, area, chip, ink, string.Equals(node.Key, _focus, StringComparison.Ordinal)));
             }
         }
     }

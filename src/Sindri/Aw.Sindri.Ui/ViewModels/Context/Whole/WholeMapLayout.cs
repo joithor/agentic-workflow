@@ -90,7 +90,7 @@ internal static partial class WholeMapLayout
         var restKeys = rest.Select(a => a.Key).ToHashSet(StringComparer.Ordinal);
         var nodes = opened.SelectMany(o => o.Nodes ?? []).GroupBy(n => n.Key, StringComparer.Ordinal).Select(g => g.First()).ToList();
         var edges = opened.SelectMany(o => o.Edges ?? []).GroupBy(e => e.Link, StringComparer.Ordinal).Select(g => g.First()).ToList();
-        var open = inOrder.Where(openKeys.Contains).ToList();
+        List<string> open = [.. inOrder.Where(openKeys.Contains)];
         var floor = Extents(new Dictionary<WholeBand, double>(), KindMeta(overview.Areas.SelectMany(a => a.ByKind)));
         var restEdges = overview.AreaEdges.Where(e => restKeys.Contains(e.From) && restKeys.Contains(e.To)).ToList();
         var restOrder = WholeAreaOrder.Of(rest, restEdges);
