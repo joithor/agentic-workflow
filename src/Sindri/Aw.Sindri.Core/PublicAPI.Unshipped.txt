@@ -13808,26 +13808,23 @@ static Aw.Sindri.Core.Profile.EmbeddingSettings.operator ==(Aw.Sindri.Core.Profi
 const Aw.Sindri.Core.Profile.EmbeddingSettings.DefaultUrl = "http://127.0.0.1:11434" -> string!
 Aw.Sindri.Core.Profile.GraphSettings
 Aw.Sindri.Core.Profile.GraphSettings.<Clone>$() -> Aw.Sindri.Core.Profile.GraphSettings!
-Aw.Sindri.Core.Profile.GraphSettings.GraphSettings(bool? Enabled = null, int? MaxMB = null, int? MaxNodes = null) -> void
-Aw.Sindri.Core.Profile.GraphSettings.Deconstruct(out bool? Enabled, out int? MaxMB, out int? MaxNodes) -> void
+Aw.Sindri.Core.Profile.GraphSettings.GraphSettings(bool? Enabled = null, int? MaxMB = null) -> void
+Aw.Sindri.Core.Profile.GraphSettings.Deconstruct(out bool? Enabled, out int? MaxMB) -> void
 Aw.Sindri.Core.Profile.GraphSettings.Equals(Aw.Sindri.Core.Profile.GraphSettings? other) -> bool
 Aw.Sindri.Core.Profile.GraphSettings.Enabled.get -> bool?
 Aw.Sindri.Core.Profile.GraphSettings.Enabled.init -> void
 Aw.Sindri.Core.Profile.GraphSettings.MaxMB.get -> int?
 Aw.Sindri.Core.Profile.GraphSettings.MaxMB.init -> void
-Aw.Sindri.Core.Profile.GraphSettings.MaxNodes.get -> int?
-Aw.Sindri.Core.Profile.GraphSettings.MaxNodes.init -> void
 override Aw.Sindri.Core.Profile.GraphSettings.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Profile.GraphSettings.GetHashCode() -> int
 override Aw.Sindri.Core.Profile.GraphSettings.ToString() -> string!
 static Aw.Sindri.Core.Profile.GraphSettings.operator !=(Aw.Sindri.Core.Profile.GraphSettings? left, Aw.Sindri.Core.Profile.GraphSettings? right) -> bool
 static Aw.Sindri.Core.Profile.GraphSettings.operator ==(Aw.Sindri.Core.Profile.GraphSettings? left, Aw.Sindri.Core.Profile.GraphSettings? right) -> bool
-const Aw.Sindri.Core.Profile.GraphSettings.DefaultMaxMB = 256 -> int
-const Aw.Sindri.Core.Profile.GraphSettings.DefaultMaxNodes = 500000 -> int
+const Aw.Sindri.Core.Profile.GraphSettings.DefaultMaxMB = 1024 -> int
 Aw.Sindri.Core.Profile.IndexSettings.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? DenyPaths, out System.Collections.Generic.IReadOnlyList<string!>? UtilityGlobs, out int? MaxFileKB, out int? MaxTotalMB, out Aw.Sindri.Core.Profile.EmbeddingSettings? Embeddings, out Aw.Sindri.Core.Profile.GraphSettings? Graph) -> void
 Aw.Sindri.Core.Profile.IndexSettings.IndexSettings(System.Collections.Generic.IReadOnlyList<string!>? DenyPaths = null, System.Collections.Generic.IReadOnlyList<string!>? UtilityGlobs = null, int? MaxFileKB = null, int? MaxTotalMB = null, Aw.Sindri.Core.Profile.EmbeddingSettings? Embeddings = null, Aw.Sindri.Core.Profile.GraphSettings? Graph = null) -> void
-const Aw.Sindri.Core.Profile.IndexSettings.DefaultMaxFileKB = 512 -> int
-const Aw.Sindri.Core.Profile.IndexSettings.DefaultMaxTotalMB = 200 -> int
+const Aw.Sindri.Core.Profile.IndexSettings.DefaultMaxFileKB = 4096 -> int
+const Aw.Sindri.Core.Profile.IndexSettings.DefaultMaxTotalMB = 4096 -> int
 Aw.Sindri.Core.Profile.IndexSettings.DenyPaths.get -> System.Collections.Generic.IReadOnlyList<string!>?
 Aw.Sindri.Core.Profile.IndexSettings.DenyPaths.init -> void
 Aw.Sindri.Core.Profile.IndexSettings.UtilityGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>?

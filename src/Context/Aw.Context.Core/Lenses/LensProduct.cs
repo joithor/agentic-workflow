@@ -24,7 +24,7 @@ internal static class LensProduct
     internal static ProductBand Band(IReadOnlyList<LensItem> own, IReadOnlyList<LensReach> neighbors, IReadOnlyList<LensReach> affects, IReadOnlyList<LensEdge> edges)
     {
         return new ProductBand([.. own], [.. neighbors], [.. affects],
-            new ProductCounts(own.Count, affects.Count) { Neighbors = neighbors.Count, Edges = edges.Count }, [.. edges], Truncated: false);
+            new ProductCounts(own.Count, affects.Count) { Neighbors = neighbors.Count, Edges = edges.Count }, [.. edges]);
     }
 
     /// <summary>The whole lists of one anchor's scope (nothing cut) and the keys of every item.</summary>
