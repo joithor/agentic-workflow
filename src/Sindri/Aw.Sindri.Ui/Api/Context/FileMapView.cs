@@ -12,8 +12,8 @@ namespace Aw.Sindri.Ui.Api.Context;
 /// <param name="Suggested">Suggested, as served.</param>
 /// <param name="Totals">Totals, as served.</param>
 /// <param name="Symbols">Symbols, as served.</param>
-/// <param name="NextCursor">NextCursor, as served: null on the last page.</param>
-/// <param name="Total">Total, as served: the direct children matching the query, over every page.</param>
+/// <param name="NextCursor">Where the next page starts, or null on the last page (and from a server that does not page).</param>
+/// <param name="Total">The direct children there are in all, or null from a server that does not page.</param>
 internal sealed record FileMapView(
     int SchemaVersion,
     string Repo,
