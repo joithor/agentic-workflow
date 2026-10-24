@@ -28,7 +28,6 @@ public sealed class ContextRoutesFenceApiTests : IDisposable
         { "whole", "/sindri/context/map/whole?detail=nodes&repo=aw-split-panes" },
         { "lenses", "/sindri/context/lenses?anchor=feature%3Aa" },
         { "history", "/sindri/context/history?anchor=feature%3Ab" },
-        { "filemap", "/sindri/context/filemap?repo=aw-split-panes&path=src%2Flayout" },
     };
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
@@ -43,6 +42,25 @@ public sealed class ContextRoutesFenceApiTests : IDisposable
 
         Assert.Contains(Fenced, session.Body, StringComparison.Ordinal);
         Assert.Contains(Fenced, human.Body, StringComparison.Ordinal);
+    }
+
+    // why: a file map entry names its features by key only (FileFeature has no label), so there is no model text to fence on this route.
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task The_file_map_lists_a_files_features_by_key_and_carries_no_label_for_either_caller()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await ImportedHost();
+        const string Url = "/sindri/context/filemap?repo=aw-split-panes&path=src%2Flayout";
+
+        var session = await host.Http.Ask(Get(Url, [(SindriHeaders.Caller, "session"), (SindriHeaders.Repo, FixtureMap.Repo)]));
+        var human = await host.Http.Ask(Get(Url, Human(host.Token.Value)));
+
+        Assert.True(session.Status == System.Net.HttpStatusCode.OK && human.Status == System.Net.HttpStatusCode.OK, $"{session.Status} {session.Body} / {human.Status} {human.Body}");
+        Assert.All(new[] { session.Body, human.Body }, body =>
+        {
+            Assert.Contains("\"key\":\"feature:a\"", body, StringComparison.Ordinal);
+            Assert.DoesNotContain("Drafted B", body, StringComparison.Ordinal);
+        });
     }
 
     [Theory(Timeout = 120_000), Trait("Lane", "integration"), MemberData(nameof(Routes))]
