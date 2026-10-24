@@ -16,10 +16,10 @@ internal static class ContextGraphText
     internal static string Node(NodeView view, bool fence)
     {
         var text = new StringBuilder(Invariant($"node {view.Node.Key.Value} · map {view.MapVersion}\n"));
-        _ = text.AppendLine(Invariant($"  {Fenced(view.Node.Label, view.Node.Trust, fence)} · {Kind(view.Node.Key)} · {Facts(view.Node)}"));
+        _ = text.AppendLine(Invariant($"  {Fenced(view.Node.Label, view.Node.Trust, fence)} · {Kind(view.Node.Key)} · {Facts(view.Node.ToFact())}"));
         _ = text.AppendLine(view.Aliases.Count == 0 ? "aliases: none" : "aliases: " + string.Join(", ", view.Aliases.Select(a => a.Value)));
-        Edges(text, "out", view.Out, e => Invariant($"{EdgeRules.Name(e.Type)} {e.To.Value}"));
-        Edges(text, "in", view.In, e => Invariant($"{e.From.Value} {EdgeRules.Name(e.Type)} this"));
+        Edges(text, "out", [.. view.Out.Select(e => e.ToFact())], e => Invariant($"{EdgeRules.Name(e.Type)} {e.To.Value}"));
+        Edges(text, "in", [.. view.In.Select(e => e.ToFact())], e => Invariant($"{e.From.Value} {EdgeRules.Name(e.Type)} this"));
         return text.ToString();
     }
 

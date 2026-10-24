@@ -24,7 +24,7 @@ internal sealed class GetHistoryService(MapReader reader, HistoryPipeline pipeli
         }
 
         var anchors = request.Anchors.Distinct(StringComparer.Ordinal).ToList();
-        if (QueryRules.CheckAnchors(anchors) is { } refused)
+        if (QueryRules.CheckAnchors(anchors, "history") is { } refused)
         {
             return refused;
         }

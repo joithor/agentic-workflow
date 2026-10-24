@@ -16,7 +16,7 @@ namespace Aw.Context.Features.GetFileMap;
 /// map the caller may read, built by FileMapBuilder. A repo outside the profile, outside 'context.repos' or outside a
 /// session's scope is SND-CONTEXT-045 with one answer for every reason, so a scope never reveals what is outside it.
 /// </summary>
-internal sealed class GetFileMapService(MapReader reader, IRepoReader repos, ICodeSymbolSource symbols) : IService<GetFileMapRequest, FileMapView>
+internal sealed class GetFileMapService(MapReader reader, IRepoReader repos, ICodeSymbolSource symbols, RepoTreeCache trees) : IService<GetFileMapRequest, FileMapView>
 {
     public async ValueTask<Result<FileMapView>> Handle(GetFileMapRequest request, CancellationToken cancellationToken)
     {
@@ -29,7 +29,7 @@ internal sealed class GetFileMapService(MapReader reader, IRepoReader repos, ICo
             return repo.IsError ? repo.Error : map.IsError ? map.Error : tree.Error;
         }
 
-        var built = FileMapBuilder.Build(new FileMapBasis(map.Value.Snapshot.Tag, tree.Value.Sha), query, tree.Value.Files, map.Value.Graph);
+        var built = FileMapBuilder.Build(new FileMapBasis(map.Value.Snapshot.Tag, tree.Value.Sha), query, tree.Value.Tree, map.Value.Graph);
         return built.IsError ? built.Error : built.Value with { Symbols = await Symbols(repo.Value, map.Value.Snapshot.Version, built.Value, cancellationToken).ConfigureAwait(false) };
     }
 
@@ -55,11 +55,29 @@ internal sealed class GetFileMapService(MapReader reader, IRepoReader repos, ICo
             : repo;
     }
 
-    /// <summary>The repo's tracked files at HEAD (never a denied path) and the first seven characters of that commit.</summary>
-    private async ValueTask<Result<(string Sha, IReadOnlyList<string> Files)>> Tree(ContextRepo repo, CancellationToken cancellationToken)
+    /// <summary>The repo's tracked files at HEAD (never a denied path), from the cache when HEAD hasn't moved, and the first seven characters of that commit.</summary>
+    private async ValueTask<Result<(string Sha, RepoTree Tree)>> Tree(ContextRepo repo, CancellationToken cancellationToken)
     {
         var head = await repos.Head(repo, cancellationToken).ConfigureAwait(false);
-        var listed = head.IsError ? head.Error : await repos.ListFiles(repo, head.Value, cancellationToken).ConfigureAwait(false);
-        return listed.IsError ? listed.Error : (head.Value[..Math.Min(7, head.Value.Length)], [.. listed.Value.Where(p => !repo.Denies(p))]);
+        if (head.IsError)
+        {
+            return head.Error;
+        }
+
+        var sha = head.Value[..Math.Min(7, head.Value.Length)];
+        if (trees.Find(repo, head.Value) is { } kept)
+        {
+            return (sha, kept);
+        }
+
+        var listed = await repos.ListFiles(repo, head.Value, cancellationToken).ConfigureAwait(false);
+        if (listed.IsError)
+        {
+            return listed.Error;
+        }
+
+        var tree = new RepoTree(listed.Value.Where(p => !repo.Denies(p)));
+        trees.Keep(repo, head.Value, tree);
+        return (sha, tree);
     }
 }

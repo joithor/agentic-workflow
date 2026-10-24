@@ -15,7 +15,7 @@ namespace Aw.Sindri.Host.Commands;
 /// <param name="output">Where the verbs write.</param>
 internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
 {
-    private const string Forms = "context lenses <anchor>... [--depth <0-4>] [--hops <state,flow,dependency,component>] [--draft | --map-version <v>] [--json] | context history <anchor>... [--since <t>] [--before <t>] [--draft | --map-version <v>] [--json] | context filemap --repo <repo> [--path <dir>] [--unmapped] [--draft] [--json] | context filemap accept|reject <link-id>";
+    private const string Forms = "context lenses <anchor>... [--depth <0-4>] [--hops <state,flow,dependency,component>] [--draft | --map-version <v>] [--json] | context history <anchor>... [--since <t>] [--before <t>] [--draft | --map-version <v>] [--json] | context filemap --repo <repo> [--path <dir>] [--unmapped] [--draft] [--cursor <c>] [--limit <n>] [--json] | context filemap accept|reject <link-id>";
 
     internal Task<int> Run(string[] args, CancellationToken ct) => args switch
     {
@@ -38,17 +38,21 @@ internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
         var fence = client.SessionReason is null;
         if (o.Anchors.Distinct(StringComparer.Ordinal).Skip(1).Any())
         {
-            var set = await client.Get<LensesSetView>("/sindri/context/lenses" + query, ct).ConfigureAwait(false);
+            var set = await client.GetOrQuery<GetContextLensesAnswerRequest, LensesSetView>("/sindri/context/lenses", query, Body(o), ct).ConfigureAwait(false);
             return set.IsError ? await Failed(set.Error).ConfigureAwait(false)
                 : o.Json ? await output.Raw(set.Value.Body, 0).ConfigureAwait(false)
                 : await output.Text(ContextLensText.LensesSet(set.Value.Value, fence), 0).ConfigureAwait(false);
         }
 
-        var answer = await client.Get<LensesView>("/sindri/context/lenses" + query, ct).ConfigureAwait(false);
+        var answer = await client.GetOrQuery<GetContextLensesAnswerRequest, LensesView>("/sindri/context/lenses", query, Body(o), ct).ConfigureAwait(false);
         return answer.IsError ? await Failed(answer.Error).ConfigureAwait(false)
             : o.Json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)
             : await output.Text(ContextLensText.Lenses(answer.Value.Value, fence), 0).ConfigureAwait(false);
     }
+
+    /// <summary>The lenses question as the QUERY body; a depth that is no number is left null here, as the GET's own binding refuses it.</summary>
+    private static GetContextLensesAnswerRequest Body((string[] Anchors, string? Depth, string? Hops, bool Draft, string? MapVersion, bool Json) o) =>
+        new(o.Anchors, o.Draft, int.TryParse(o.Depth, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var depth) ? depth : null, o.MapVersion, o.Hops);
 
     private async Task<int> History((string[] Anchors, string? Since, string? Before, bool Draft, string? MapVersion, bool Json) o, CancellationToken ct)
     {
@@ -59,16 +63,17 @@ internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
 
         var query = "?" + string.Join('&', o.Anchors.Select(static a => "anchor=" + Uri.EscapeDataString(a))) + (o.Since is null ? string.Empty : "&since=" + Uri.EscapeDataString(o.Since))
             + (o.Before is null ? string.Empty : "&before=" + Uri.EscapeDataString(o.Before)) + (o.Draft ? "&draft=true" : string.Empty) + (o.MapVersion is null ? string.Empty : "&mapVersion=" + Uri.EscapeDataString(o.MapVersion));
-        var answer = await client.Get<HistoryView>("/sindri/context/history" + query, ct).ConfigureAwait(false);
+        var answer = await client.GetOrQuery<GetContextHistoryRequest, HistoryView>("/sindri/context/history", query, new GetContextHistoryRequest(o.Anchors, o.Since, o.Before, o.Draft, o.MapVersion), ct).ConfigureAwait(false);
         return answer.IsError ? await Failed(answer.Error).ConfigureAwait(false)
             : o.Json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)
             : await output.Text(ContextHistoryText.History(answer.Value.Value, client.SessionReason is null), 0).ConfigureAwait(false);
     }
 
-    private async Task<int> FileMap((string Repo, string? Path, bool Unmapped, bool Draft, bool Json) o, CancellationToken ct)
+    private async Task<int> FileMap((string Repo, string? Path, bool Unmapped, bool Draft, bool Json, string? Cursor, string? Limit) o, CancellationToken ct)
     {
         var query = "?repo=" + Uri.EscapeDataString(o.Repo) + (o.Path is null ? string.Empty : "&path=" + Uri.EscapeDataString(o.Path))
-            + (o.Unmapped ? "&unmapped=true" : string.Empty) + (o.Draft ? "&draft=true" : string.Empty);
+            + (o.Unmapped ? "&unmapped=true" : string.Empty) + (o.Draft ? "&draft=true" : string.Empty)
+            + (o.Cursor is null ? string.Empty : "&cursor=" + Uri.EscapeDataString(o.Cursor)) + (o.Limit is null ? string.Empty : "&limit=" + Uri.EscapeDataString(o.Limit));
         var answer = await client.Get<FileMapView>("/sindri/context/filemap" + query, ct).ConfigureAwait(false);
         return answer.IsError ? await Failed(answer.Error).ConfigureAwait(false)
             : o.Json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)
@@ -96,12 +101,12 @@ internal sealed class ContextLensVerbs(ControlPlaneClient client, Output output)
             : null;
     }
 
-    /// <summary>'--repo R' with [--path P] [--unmapped] [--draft] [--json] in any order.</summary>
-    private static (string Repo, string? Path, bool Unmapped, bool Draft, bool Json)? FileMap(string[] rest)
+    /// <summary>'--repo R' with [--path P] [--unmapped] [--draft] [--cursor C] [--limit N] [--json] in any order.</summary>
+    private static (string Repo, string? Path, bool Unmapped, bool Draft, bool Json, string? Cursor, string? Limit)? FileMap(string[] rest)
     {
-        var flags = Flags(rest, valued: ["--repo", "--path"], bare: ["--unmapped", "--draft", "--json"]);
+        var flags = Flags(rest, valued: ["--repo", "--path", "--cursor", "--limit"], bare: ["--unmapped", "--draft", "--json"]);
         return flags is { Words: [], Values: var v } && v.TryGetValue("--repo", out var repo)
-            ? (repo, v.GetValueOrDefault("--path"), flags.Bare.Contains("--unmapped"), flags.Bare.Contains("--draft"), flags.Bare.Contains("--json"))
+            ? (repo, v.GetValueOrDefault("--path"), flags.Bare.Contains("--unmapped"), flags.Bare.Contains("--draft"), flags.Bare.Contains("--json"), v.GetValueOrDefault("--cursor"), v.GetValueOrDefault("--limit"))
             : null;
     }
 
