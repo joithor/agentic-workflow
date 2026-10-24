@@ -52,7 +52,7 @@ internal static class ContextApiScenarios
         ("context-lenses", "no-draft-044", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&draft=true", ct)),
         ("context-lenses", "set-two-anchors", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&anchor=feature%3Atabs.tab-groups", ct)),
         ("context-lenses", "set-missing-anchor", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&anchor=feature%3Anope.x", ct)),
-        ("context-lenses", "set-21-anchors-006", async (s, ct) => await s.Fetch("/sindri/context/lenses?" + string.Join('&', Enumerable.Range(0, 21).Select(i => "anchor=feature%3Anope." + i.ToString(System.Globalization.CultureInfo.InvariantCulture))), ct)),
+        ("context-lenses", "bad-depth-006", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&depth=9", ct)),
         ("context-lenses", "map-version-v1", async (s, ct) => await s.FetchAfterSecondMap($"/sindri/context/lenses?anchor={Anchor}&mapVersion=v1", ct)),
         ("context-lenses", "map-version-not-retained-120", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&mapVersion=v99", ct)),
         ("context-lenses", "session-set-other-repo", async (s, ct) => await s.FetchAsSession($"/sindri/context/lenses?anchor={Anchor}&anchor=feature%3Aother.thing", ct)),
@@ -72,7 +72,6 @@ internal static class ContextApiScenarios
         ("context-code", "capped", async (s, ct) => await s.Fetch(CodeRoute(), ct)),
         ("context-code", "deadline-152", async (s, ct) => await s.Fetch(CodeRoute(), ct)),
         ("context-code", "unknown-anchor-003", async (s, ct) => await s.Fetch("/sindri/context/code?anchor=feature%3Anope", ct)),
-        ("context-code", "too-many-anchors-006", async (s, ct) => await s.Fetch("/sindri/context/code?" + string.Join('&', Enumerable.Range(0, 21).Select(i => "anchor=feature%3Anope." + i.ToString(System.Globalization.CultureInfo.InvariantCulture))), ct)),
         ("context-code", "not-retained-120", async (s, ct) => await s.Fetch(CodeRoute() + "&mapVersion=v99", ct)),
         ("context-code", "session-other-repo", async (s, ct) => await s.FetchAsSession(CodeRoute("feature%3Aother.thing"), ct)),
         ("context-history", "split-pane", async (s, ct) => await s.Fetch($"/sindri/context/history?anchor={SplitPane}", ct)),
@@ -83,7 +82,6 @@ internal static class ContextApiScenarios
         ("context-history", "no-files-thing", async (s, ct) => await s.Fetch("/sindri/context/history?anchor=thing%3Apane-layout", ct)),
         ("context-history", "unknown-anchor-003", async (s, ct) => await s.Fetch("/sindri/context/history?anchor=feature%3Atabs.nope", ct)),
         ("context-history", "bad-window-006", async (s, ct) => await s.Fetch($"/sindri/context/history?anchor={SplitPane}&since=90d", ct)),
-        ("context-history", "too-many-anchors-006", async (s, ct) => await s.Fetch("/sindri/context/history?" + string.Join('&', Enumerable.Range(0, 21).Select(i => "anchor=feature%3Anope." + i.ToString(System.Globalization.CultureInfo.InvariantCulture))), ct)),
         ("context-history", "map-version-v1", async (s, ct) => await s.FetchAfterSecondMap($"/sindri/context/history?anchor={SplitPane}&mapVersion=v1", ct)),
         ("context-history", "not-retained-120", async (s, ct) => await s.Fetch($"/sindri/context/history?anchor={SplitPane}&mapVersion=v99", ct)),
         ("context-history", "session-other-repo", async (s, ct) => await s.FetchAsSession($"/sindri/context/history?anchor={SplitPane}&anchor=feature%3Aother.thing", ct)),
@@ -98,6 +96,9 @@ internal static class ContextApiScenarios
         ("context-whole", "locate", async (s, ct) => await s.Fetch(WholeRoute("locate=surface%3Acommand%2Fswitch-tab&locate=feature%3Anope.x"), ct)),
         ("context-whole", "draft", async (s, ct) => await s.FetchAfterDraft(WholeRoute("draft=true"), ct)),
         ("context-whole", "no-map-030", async (s, ct) => await s.Fetch(WholeRoute(), ct)),
+        ("context-whole", "no-map-never-run", async (s, ct) => await s.FetchWithViews(WholeRoute(), ct)),
+        ("context-whole", "no-map-approved", async (s, ct) => await s.FetchAfterBuild(WholeRoute(), hung: false, ct)),
+        ("context-whole", "building-in-progress", async (s, ct) => await s.FetchAfterBuild(WholeRoute(), hung: true, ct)),
         ("context-whole", "no-draft-044", async (s, ct) => await s.Fetch(WholeRoute("draft=true"), ct)),
         ("context-whole", "map-version-v1", async (s, ct) => await s.FetchAfterSecondMap(WholeRoute("mapVersion=v1"), ct)),
         ("context-whole", "map-version-not-retained-120", async (s, ct) => await s.Fetch(WholeRoute("mapVersion=v99"), ct)),
@@ -127,11 +128,11 @@ internal static class ContextApiScenarios
         ("context-map-review", "post-repoint", async (s, ct) => await s.PostRepoint(ct)),
         ("context-map-review", "stale-047", async (s, ct) => await s.Stale(ct)),
         ("context-map-review", "post-accept-deterministic", async (s, ct) => await s.AcceptDeterministic(ct)),
-        ("context-map-review", "post-apply-file-preview", async (s, ct) => await s.ApplyFilePreview(ct)),
+        ("context-map-review", "post-apply-file", async (s, ct) => await s.ApplyFile(ct)),
         ("context-map-review-history", "after-accept-undo", async (s, ct) => await s.AcceptThenUndo(ct)),
         ("context-map-proposals", "map-tabs-run", async (s, ct) => await s.Propose(ct)),
         ("context-map-promote", "refused-046", async (s, ct) => await s.PromoteRefused(ct)),
-        ("context-map-promote", "preview", async (s, ct) => await s.PromotePreview(ct)),
+        ("context-map-promote", "promoted", async (s, ct) => await s.Promote(ct)),
     ];
 
     /// <summary>Every (slug, scenario) pair of the context goldens.</summary>
@@ -169,13 +170,18 @@ internal static class ContextApiScenarios
         {
             await Rebuild(host, ct);
         }
-        else if ((slug, scenario) != ("context-whole", "no-map-030"))
+        else if (!StartsWithoutMap(slug, scenario))
         {
             await ContextMapApiTests.Import(host, ImportFile(host, slug, scenario));
         }
 
         return host;
     }
+
+    // The whole-map answers for "no map yet" run on a host that imported nothing.
+    private static bool StartsWithoutMap(string slug, string scenario) =>
+        string.Equals(slug, "context-whole", StringComparison.Ordinal)
+        && new[] { "no-map-030", "no-map-never-run", "no-map-approved", "building-in-progress" }.Contains(scenario, StringComparer.Ordinal);
 
     // The code goldens read the CodeLensRepo (a fixed sha); the map names no commit, so the lexical search reads HEAD, except where a scenario says otherwise.
     private static async Task<GoldenHost> StartCode(string scenario, CancellationToken ct)
@@ -300,7 +306,7 @@ internal static class ContextApiScenarios
         }
 
         _ = services.RemoveAll<IClusterSource>();
-        _ = services.AddSingleton<IClusterSource>(new FakeClusterSource());
+        _ = services.AddSingleton(string.Equals(scenario, "building-in-progress", StringComparison.Ordinal) ? new HangingClusterSource() : (IClusterSource)new FakeClusterSource());   // a build that never ends: the answer says it is building
         _ = services.RemoveAll<ICurrentUser>();
         _ = services.AddSingleton<ICurrentUser>(new FakeCurrentUser("golden"));
         _ = services.RemoveAll<HeavyLockSettings>();

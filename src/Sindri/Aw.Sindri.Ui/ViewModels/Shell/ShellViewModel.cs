@@ -86,7 +86,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         Recipe = new RecipeSheetViewModel(api, clipboard);
         InitRecipe();
         InitAgents(clipboard);
-        InitContext(api, clipboard);
+        InitContext(api, clipboard, window.Launcher);
         InitRunPage(api, clipboard);
         Queue.PropertyChanged += OnQueueChanged;
         InitAnnouncements();
@@ -228,17 +228,27 @@ internal sealed partial class ShellViewModel : ObservableObject
         }
 
         ShowPage(page, filter);
+        OpenPage(page);
+    }
+
+    // What a page does when it is entered: GoTo runs it, and so does Restore for the page the app starts on.
+    private void OpenPage(PageId page)
+    {
+        if (page == PageId.Settings)
+        {
+            Setup.RevealChecklist();   // every way into Settings (the rail, ⌘,, G U, the setup link, Home's line) shows the checklist, its first section
+        }
+
+        if (page == PageId.Context)
+        {
+            _ = Context.Opened(CancellationToken.None);   // the page opens on the whole map, read here with no starting point
+        }
     }
 
     internal void ShowPage(PageId page, HomeFilter filter)
     {
         _ = LeaveNeedsYouInbox();   // any way to a page, Home included, leaves the inbox that shows over it
         SetHomeFilter(filter);
-        if (page == PageId.Settings)
-        {
-            Setup.RevealChecklist();   // every way into Settings (the rail, ⌘,, G U, the setup link, Home's line) shows the checklist, its first section
-        }
-
         if (page != PageId.Workflows || page == CurrentPage)
         {
             CloseRunPage();   // any other page, and the Workflows tab again, leaves a run for the list

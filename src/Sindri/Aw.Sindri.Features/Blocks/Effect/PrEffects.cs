@@ -18,8 +18,8 @@ internal static class PrEffects
     /// <summary>'effect.pr.reply': thread, reaction, fixed, fixedReplies, none or hold forms.</summary>
     public static BlockDescriptor Reply { get; } = Of("effect.pr.reply", humanTrigger: false, "form", "reason", "comment", "decision", "fix", "body", "pr", "push");
 
-    /// <summary>'effect.pr.record': appends a recheck, docs or end row to the merge record.</summary>
-    public static BlockDescriptor Record { get; } = Of("effect.pr.record", humanTrigger: false, "kind", "result", "terminal", "notes");
+    /// <summary>'effect.pr.record': appends a recheck, docs, docsMerge or end row to the merge record.</summary>
+    public static BlockDescriptor Record { get; } = Of("effect.pr.record", humanTrigger: false, "kind", "result", "terminal", "notes", "outcome", "trigger");
 
     /// <summary>'effect.pr.rerun-checks': asks the forge to re-run the PR's checks.</summary>
     public static BlockDescriptor RerunChecks { get; } = Of("effect.pr.rerun-checks", humanTrigger: false, "pr", "at");
@@ -35,7 +35,7 @@ internal static class PrEffects
     { Outputs = [new OutputSpec(FactKey.From("fact:docsPr"), [OutcomeName.From("opened"), OutcomeName.From("updated")]),], };
 
     /// <summary>'effect.pr.merge': merges with the forge's expected-head check; human trigger.</summary>
-    public static BlockDescriptor Merge { get; } = Of("effect.pr.merge", humanTrigger: true, "pr", "at", "method");
+    public static BlockDescriptor Merge { get; } = Of("effect.pr.merge", humanTrigger: true, "pr", "at", "method", "actor");
 
     /// <summary>'effect.pr.purge-marks' (W26, IDEA-033): a babysitter's terminal cleanup, deleting the PR's comment marks.</summary>
     public static BlockDescriptor PurgeMarks { get; } = Of("effect.pr.purge-marks", humanTrigger: false, "pr");

@@ -128,7 +128,7 @@ public static partial class ProofPack
         var lines = new List<string>();
         foreach (var id in ProofChecks.LiveItems(facts.Acceptance))
         {
-            foreach (var signal in (facts.Signals?["signals"]?[id] as JsonArray ?? []).OfType<JsonObject>().Where(s => !SignalProven(facts, id, (string?)s["id"])))
+            foreach (var signal in PhaseSignals.Of(facts.Signals, id).Where(s => !SignalProven(facts, id, (string?)s["id"])))
             {
                 lines.Add($"- {id} / {(string?)signal["id"]} ({(string?)signal["kind"]}): {(string?)signal["statement"]}");
             }

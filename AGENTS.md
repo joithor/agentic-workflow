@@ -59,7 +59,7 @@ agentic-workflow/
 ├── context/       # Pinned external deployments: onyx.lock (Onyx v4.9.0 pins)
 ├── mods/          # Claude Code mods (in-process function hooks): aw-live /live pane. Claude-only
 ├── planning/      # Project documentation
-├── src/           # C# build (in progress): Aw.Kernel (+ .Data, .Telemetry), Redaction, Aw.Analyzers, the tool ports (Packets, Readiness, BugFix; Judge, Evidence), Meta (aw-meta, the /meta harness), Forge (the forge port with GitHub and file adapters), CodeIndex (the Sindri code index block: symbols, callers and callees per repo; library only) and later the new Sindri app — each Core · Features · Infrastructure · Host
+├── src/           # C# build (in progress): Aw.Kernel (+ .Data, .Telemetry), Redaction, Aw.Analyzers, the tool ports (Packets, Readiness, BugFix; Judge, Evidence), UiDriver (the generic Avalonia UI driver and `aw-ui-driver`), Meta (aw-meta, the /meta harness), Forge (the forge port with GitHub and file adapters), CodeIndex (the Sindri code index block: symbols, callers and callees per repo; library only) and later the new Sindri app — each Core · Features · Infrastructure · Host
 ├── tests/         # C# tests: Aw.<Pkg>.Tests (by feature), Aw.<Pkg>.Testing (fakes, builders, contract bases), Aw.Architecture.Tests
 ├── global.json · AgenticWorkflow.slnx · Directory.Build.props · Directory.Build.targets · Directory.Packages.props · nuget.config · .editorconfig · CodeMetricsConfig.txt · BannedSymbols.txt
 ├── .agents/rules/ # Glob-scoped domain rules (.claude/rules and .cursor/rules link here)
@@ -112,6 +112,7 @@ bash src/Judge/aot-smoke/run.sh          # judge under NativeAOT: publish (on a 
 dotnet run --project src/Evidence/Aw.Evidence.Host -- <run|parity|parity-plan|parity-comment|parity-stale|parity-put|publish-plan|doctor|provenance|install-browser|api-run|db-run> …   # ui-evidence, C# build (docs/csharp/evidence.md; api-run: HTTP and CLI contract checks, summary.json on stdout, `--at base|head`, `--host` for requests, targets from <repo>/.agentic-workflow/evidence.json; db-run: read-only SQLite (a copy) or Postgres (identity and role checked) row assertions, same summary contract, Npgsql): exit 0 ok, 1 usage/invalid/refused, 2 a check failed, 3 review pending, 4 the run errored, 75 a lock stayed busy
 dotnet run --project src/BugFix/Aw.BugFix.Host -- <command> --state <dir> [options]   # bugfix-state, the C# /bugFixOrchestrator helper (docs/csharp/bugfix.md); exit 0 ok, 1 bad input, 2 usage, 3 refused
 bash src/BugFix/aot-smoke/run.sh         # bugfix-state under NativeAOT: publish (on a copy), run a bug fix in a temp repo, compare with expected.txt
+dotnet run --project src/UiDriver/Aw.UiDriver.Cli -- [--dir D] <ready|tree|search|props|click|type|key|scroll|wait-for|screenshot|window|action> [flags]   # aw-ui-driver (docs/csharp/ui-driver.md): drives any Avalonia app that calls UseAwUiDriver() and was started with AW_UI_DRIVER=1 (loopback, per-run secret in $AW_UI_DRIVER_DIR); exit 0 ok, 1 usage or invalid, 2 no element / not actionable / timeout, 4 unreachable or app failed
 dotnet run --project src/Forge/Aw.Forge.Host -- <parse|open|pull|threads|seed thread|seed checks|seed advance> …   # aw-forge-fake, the C# forge port's CLI (docs/csharp/forge.md); adapter by AW_FORGE_ADAPTER (file default | github), hosts AW_FORGE_HOSTS, credential AW_FORGE_CREDENTIAL (env:NAME | command:argv, default env:AW_FORGE_TOKEN); one JSON document on stdout; exit 0 ok, 1 invalid or not found, 2 usage, 3 refused or forge unavailable
 dotnet test --project tests/Aw.Forge.Tests --filter-trait "Lane=heavy"   # Owner's GitHub check: the read-side forge contract against a scratch repo; skips unless AW_FORGE_GITHUB_REPO=owner/name and AW_FORGE_TOKEN are set (docs/csharp/forge.md)
 dotnet run --project src/Sindri/Aw.Sindri.Host -- [--headless | serve | status [--follow] [--json] | stop | profile validate|approve | views rebuild [--no-start] | queue [--json] | items [--state S] [--repo R] [--json] | item add <title> [--repo R] | item close <item> [--cancelled] [--version N] | ledger [--after N] [--item X] [--type T] [--max N] [--json] | doctor | services [--json] | services run <name> [--detach] [--json] | services pause|resume <name> | jobs [--state S] [--kind K] [--json] | jobs show <id> [--json] | jobs cancel <id> | agents [--provider P] [--state S] [--repo R] [--json] | agents show <provider>/<id> [--json] | setup [--json]]   # the C# Sindri app (S1 app shell, docs/csharp/sindri.md; `views rebuild` replays the ledger into views.db, the fix when the projector stalls; `agents` lists every live agent session on the box, read-only and never starting serve: exit 0 ok, 1 serve is down or a source failed, 2 error; `setup` prints where setting Sindri up stands, one line per step, read-only and never starting serve: exit 0 when every step is done or skipped, 1 when one is open or serve is down, 2 error); state in AW_SINDRI_HOME (default $AW_STATE_DIR/sindri-app); exit 0 ok, 1 attention, 2 error
@@ -151,6 +152,7 @@ sindri onyx up|down|open                  # The C# Sindri's Onyx: `up` stands th
 # Onyx pins (context/onyx.lock: the Onyx version and commit, deployment-file sha256s, image digests per platform, preflight needs; spec docs/superpowers/specs/2026-10-16-sindri-onyx-managed-design.md §6)
 scripts/onyx-lock.sh check              # Shape of context/onyx.lock: one version row, every image on both platforms, both need rows; exit 0 ok, 1 a check failed
 scripts/onyx-lock.sh verify             # Maintainer-run, network, never in CI: recompute each file sha256 from raw.githubusercontent.com and each image digest from `docker buildx imagetools inspect`, and check the compose names only pinned images; exit 0 all match, 1 a mismatch, 2 usage or network
+scripts/images-lock.sh check             # Shape of deploy/images.lock (every deployment image by index and per-platform digest; unresolved ones are `todo` rows) and that the Dockerfile names only pinned images; exit 0 ok, 1 a check failed
 
 # Sindri-managed Onyx (docs/sindri/onyx.md, docs/csharp/sindri.md; the C# Sindri app, `dotnet run --project src/Sindri/Aw.Sindri.Host --` or the published sindri)
 sindri onyx status [--json]             # Where Onyx stands (not set up / running with url and version / stopped) and whether this box can run the pinned one; read-only, no control plane needed; exit 0 ok, 1 a check needs attention
@@ -161,7 +163,7 @@ sindri onyx down [--json]               # Stop it (containers only; data, images
 scripts/install-deps.sh                 # AW_DRY_RUN=1 prints only; missing system packages are installed (brew on macOS; sudo + apt-get, dnf, yum, pacman or zypper on Linux); AW_NO_SYSTEM_INSTALL=1 prints the commands and exits 1 instead
 
 # Code index pins (context/code-index.lock: graphify version, date and requirements hash, the Ollama embedding model and digest, disk need; context/code-index-requirements.txt is the hash-pinned requirements; spec docs/superpowers/specs/2026-10-19-sindri-code-index-design.md §9)
-scripts/code-index-lock.sh check        # Shape of the lock, the requirements file's sha256, and parity with sindri/package.json's graphifyPin and graphifyPinDate; exit 0 ok, 1 a check failed, 2 usage
+scripts/code-index-lock.sh check        # Shape of the lock, the requirements file's sha256, and parity with context/graphify.pin (the graphify pin install-deps.sh reads); exit 0 ok, 1 a check failed, 2 usage
 scripts/code-index-lock.sh get <graphify-version|graphify-date|requirements-sha256|model|model-digest|disk-bytes>   # One pinned value (install-deps.sh reads these)
 
 # Rule records (rules/engineering/csharp/*.yaml + schemas/rule-record.schema.json; docs/csharp/rule-records.md)
@@ -184,12 +186,13 @@ bash scripts/tests/check-rules.test.sh
 bash scripts/tests/check-launcher.test.sh   # launcher.json schema, fixtures, built-ins and argvHash goldens (node scripts/check-launcher.mjs; Ajv is a dev dependency of scripts/)
 bash scripts/tests/check-fleet.test.sh      # fleet state schema, its valid and invalid fixtures, and the /proc-shaped sessions tree (node scripts/check-fleet.mjs; Ajv as above)
 bash scripts/tests/check-scoping-schemas.test.sh # schemas/scoping/: every schema compiles, its examples get their verdicts, seeds.json matches the recipe's intake (node scripts/check-scoping-schemas.mjs; Ajv as above)
-bash scripts/tests/check-line-schemas.test.sh    # schemas/line/: every report schema compiles, its examples get their verdicts (node scripts/check-line-schemas.mjs; Ajv as above)
+bash scripts/tests/check-line-schemas.test.sh    # schemas/line/ and schemas/pr/: every report schema compiles, its examples get their verdicts (node scripts/check-line-schemas.mjs; Ajv as above)
 bash scripts/tests/check-profile-doc.test.sh # docs/csharp/sindri-profile.md names every SindriProfile key (node scripts/check-profile-doc.mjs)
 bash scripts/tests/scaffold.test.sh
 bash scripts/tests/check-env-example.test.sh
 bash scripts/tests/binaries-lock.test.sh
 bash scripts/tests/onyx-lock.test.sh
+bash scripts/tests/images-lock.test.sh
 bash scripts/tests/code-index-lock.test.sh
 bash scripts/tests/install-deps.test.sh
 bash scripts/tests/denylist-check.test.sh
@@ -207,6 +210,7 @@ bash scripts/tests/sindri-sandbox-e2e.test.sh   # scripts/sindri-sandbox-e2e.sh:
 bash scripts/tests/sindri-ui-fixture.test.sh
 bash scripts/tests/forge-fixture.test.sh    # scripts/forge-fixture.sh over the real aw-forge-fake (dotnet build once): the PR babysitter's fixture PR set, every variant, the guard, --github refusals and dry run
 bash scripts/tests/sindri-app.test.sh
+bash scripts/tests/sindri-pod.test.sh      # scripts/sindri-pod.sh (connect, profile edit, repo add, approve, doctor) with a fake kubectl, sindri-ui and EDITOR: --pod/--release, the dry run, the mirror home and its modes, the container wait and its state, restart and forward retry, refusals, the per-verb exit codes, --onyx (the pod's port, override warning, Onyx off, --adopt), profile edit (init, unchanged, valid, invalid then fixed or aborted, conflict, approve refused), the thin verbs' exit-code passthrough
 bash scripts/tests/readiness-baseline.test.sh
 bash scripts/tests/agent-token.test.sh
 bash scripts/tests/ci-changed-areas.test.sh

@@ -36,6 +36,7 @@ public sealed class AgentOutputTypeTests
     private readonly InMemoryCommandNonces _nonces = new(new FakeTimeProvider());
     private readonly FakeLaunchFiles _files = new();
     private readonly FakeLauncher _launcher = new();
+    private readonly ReportRefusals _refusals = new();
 
     [Fact(Timeout = 30_000)]
     public async Task A_payload_written_as_prose_is_refused_with_the_fix_and_nothing_is_stored_or_sent()
@@ -57,8 +58,8 @@ public sealed class AgentOutputTypeTests
     {
         var run = new AgentRun();
 
-        var object_ = await Service(run).Handle(Report(1, (_design, """{"sections":[]}""")), TestContext.Current.CancellationToken);
-        var array = await Service(run).Handle(Report(2, (_design, "[1, 2]")), TestContext.Current.CancellationToken);
+        var object_ = await Service(run).Handle(Report(1, (_design, """{"spec":"# Design","sections":[]}""")), TestContext.Current.CancellationToken);
+        var array = await Service(run).Handle(Report(2, (_design, """{"spec":"# Design","decisions":[1,2]}""")), TestContext.Current.CancellationToken);
 
         Assert.False(object_.IsError, object_.IsError ? object_.Error.Message : null);
         Assert.False(array.IsError, array.IsError ? array.Error.Message : null);
@@ -72,7 +73,7 @@ public sealed class AgentOutputTypeTests
         var service = Service(run);
 
         var first = await service.Handle(Report(1, (_design, "prose")), TestContext.Current.CancellationToken);
-        var second = await service.Handle(Report(2, (_design, """{"sections":[]}""")), TestContext.Current.CancellationToken);
+        var second = await service.Handle(Report(2, (_design, """{"spec":"# Design","sections":[]}""")), TestContext.Current.CancellationToken);
 
         Assert.True(first.IsError);
         Assert.False(second.IsError, second.IsError ? second.Error.Message : null);
@@ -96,6 +97,79 @@ public sealed class AgentOutputTypeTests
     }
 
     [Fact(Timeout = 30_000)]
+    public async Task The_session_ended_for_a_second_bad_report_has_a_one_line_refusal_naming_the_output_for_the_failed_Step()
+    {
+        var run = new AgentRun();
+        var service = Service(run);
+
+        _ = await service.Handle(Report(1, (_design, "prose")), TestContext.Current.CancellationToken);
+        _ = await service.Handle(Report(2, (_design, "more\nprose " + new string('x', 1000))), TestContext.Current.CancellationToken);
+
+        var recorded = _refusals.Take(_launch);
+        Assert.NotNull(recorded);
+        Assert.Contains("fact:design", recorded, StringComparison.Ordinal);
+        Assert.Contains("isn't JSON", recorded, StringComparison.Ordinal);
+        Assert.DoesNotContain('\n', recorded);
+        Assert.True(recorded.Length <= ReportRefusals.MaxLength);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task A_first_refusal_that_the_agent_corrects_leaves_no_refusal_on_the_launch()
+    {
+        var run = new AgentRun();
+        var service = Service(run);
+
+        _ = await service.Handle(Report(1, (_design, "prose")), TestContext.Current.CancellationToken);
+
+        Assert.Null(_refusals.Take(_launch));
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task A_payload_missing_a_required_field_is_refused_naming_the_field_and_nothing_is_stored_or_sent()
+    {
+        var run = new AgentRun();
+
+        var refused = await Service(run).Handle(Report(1, (_design, """{"sections":[]}""")), TestContext.Current.CancellationToken);
+
+        Assert.Equal("SND-WF-008", refused.Error.Code);
+        Assert.Contains("fact:design", refused.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("spec", refused.Error.Message, StringComparison.Ordinal);
+        Assert.Empty(run.Sent);
+        Assert.Equal(NonceClaim.Fresh, (await _nonces.Claim(Nonce(1), "another command", TestContext.Current.CancellationToken)).Value);
+        Assert.Empty(_launcher.Stops);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task A_second_report_with_a_wrongly_typed_field_ends_the_session_and_the_failed_Step_names_the_field()
+    {
+        var run = new AgentRun();
+        var service = Service(run);
+
+        var first = await service.Handle(Report(1, (_design, """{"spec":"# Design","sections":"none"}""")), TestContext.Current.CancellationToken);
+        var second = await service.Handle(Report(2, (_design, """{"spec":"# Design","sections":"none"}""")), TestContext.Current.CancellationToken);
+
+        Assert.Equal("SND-WF-008", first.Error.Code);
+        Assert.Contains("sections", first.Error.Message, StringComparison.Ordinal);
+        Assert.Equal("SND-WF-008", second.Error.Code);
+        Assert.Equal([_launch], _launcher.Stops);
+        Assert.Contains("sections", _refusals.Take(_launch), StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task A_payload_corrected_to_the_right_fields_passes_after_one_refusal()
+    {
+        var run = new AgentRun();
+        var service = Service(run);
+
+        var first = await service.Handle(Report(1, (_design, """{"sections":[]}""")), TestContext.Current.CancellationToken);
+        var second = await service.Handle(Report(2, (_design, """{"spec":"# Design","sections":[]}""")), TestContext.Current.CancellationToken);
+
+        Assert.True(first.IsError);
+        Assert.False(second.IsError, second.IsError ? second.Error.Message : null);
+        Assert.Empty(_launcher.Stops);
+    }
+
+    [Fact(Timeout = 30_000)]
     public async Task Text_outputs_and_undeclared_facts_are_unchanged()
     {
         var run = new AgentRun();
@@ -109,7 +183,7 @@ public sealed class AgentOutputTypeTests
     private CompleteStepService Service(AgentRun run)
     {
         _files.Open(_launch, Proof);
-        return new(run, run, run, _facts, _nonces, new FixedCaller(A.Caller().Session().Build()), new EngineFilledReport(EvalComposition.Catalog, EvalComposition.Options, _files, new ReportOutputTypes(run, _launcher)));
+        return new(run, run, run, _facts, _nonces, new FixedCaller(A.Caller().Session().Build()), new EngineFilledReport(EvalComposition.Catalog, EvalComposition.Options, _files, new ReportOutputTypes(run, _launcher, _refusals)));
     }
 
     private static CommandNonce Nonce(int n) => CommandNonce.From(n.ToString("x32", System.Globalization.CultureInfo.InvariantCulture));

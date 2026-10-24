@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Aw.Sindri.Core.Prove;
 using Aw.Sindri.Core.Scoping;
 
 namespace Aw.Sindri.Features.Prove;
@@ -41,12 +42,18 @@ internal sealed record PhaseFiles(JsonNode Acceptance, string AcceptanceText, Js
     {
         try
         {
-            var packet = JsonNode.Parse(texts["packet.json"]);
-            var phase = JsonNode.Parse(texts["phase.json"]);
-            var holdout = JsonNode.Parse(texts["holdout.json"]);
-            return packet?["id"] is null || packet["repo"] is null || packet["baseSha"] is null || JsonNode.Parse(texts["acceptance.json"]) is not { } acceptance
+            var signals = JsonNode.Parse(texts["signals.json"]);
+            if (PhaseSignals.Check(signals) is { } wrongSignals)
+            {
+                return (null, wrongSignals);
+            }
+
+            var packet = JsonNode.Parse(texts["packet.json"]) as JsonObject;
+            var phase = JsonNode.Parse(texts["phase.json"]) as JsonObject;
+            var holdout = JsonNode.Parse(texts["holdout.json"]) as JsonObject;
+            return packet?["id"] is null || packet["repo"] is null || packet["baseSha"] is null || JsonNode.Parse(texts["acceptance.json"]) is not JsonObject { } acceptance
                 ? (null, "packet.json must name the packet's id, repo and baseSha, and acceptance.json must be an object")
-                : (new PhaseFiles(acceptance, texts["acceptance.json"], JsonNode.Parse(texts["signals.json"]), (string?)phase?["kind"] ?? string.Empty, (int?)holdout?["count"], (string)packet["id"]!, (string)packet["repo"]!, (string)packet["baseSha"]!), null); // why: the null checks above
+                : (new PhaseFiles(acceptance, texts["acceptance.json"], signals, (string?)phase?["kind"] ?? string.Empty, (int?)holdout?["count"], (string)packet["id"]!, (string)packet["repo"]!, (string)packet["baseSha"]!), null); // why: the null checks above
         }
         catch (Exception e) when (e is JsonException or InvalidOperationException or FormatException)
         {

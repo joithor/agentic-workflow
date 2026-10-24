@@ -28,6 +28,8 @@ every path it writes into a run file is absolute.
 | `parity-stale --attachments <file.json> --keep id,id` | Prints the JSON array of `Pixel diff: ` attachments not kept, from a JSON array of `{id, title}` (other fields ignored) | 0 · 1 |
 | `parity-put --upload <file.json> --file <png>` | Prints the JSON argv of the signed PUT (`curl … -H "<name>: <value>"` for every signed header, verbatim; run it within a minute of signing) from `{url, headers}` | 0 · 1 |
 | `publish-plan <run-dir> --provenance seeded\|unknown [--linear-issue id]` | Prints the publish plan for `summary.json` (below) | 0 · 1 |
+| `gh-publish <run-dir> --repo owner/name --pr N [--provenance seeded\|unknown] [--reviewed file,file]` | **Contract only (cutover unit 1.2 builds it; until then it answers AW-EVIDENCE-015, exit 4).** Pushes a run's images (the step screenshots of `summary.json`, else the side-by-side image of each `parity.json` frame) to the PR's evidence branch `ui-evidence/pr-<n>` through `gh api` (the git data API: no checkout, never force-pushed, on top of earlier runs) under `pr-<n>/<run-id>/`, writes `<run-dir>/pr-comment.md` with each image embedded by a commit-pinned `https://github.com/<repo>/blob/<sha>/…?raw=true` URL, and prints `{provenance, branch, commit, urls, commentFile, post}` (`post` is the `gh pr comment` argv). Seeded data only: a `summary.json` run needs `--provenance seeded` on a local host, a `parity.json` run carries its own; every image must be in `--reviewed` first | 0 pushed · 1 bad usage or input, or provenance not seeded (nothing pushed) · 3 an image is not in `--reviewed` (nothing pushed; `unreviewed` lists them) · 4 `gh` failed (AW-EVIDENCE-025) |
+| `version` | **Contract only (cutover unit 1.4 builds it).** Prints the build stamp on one line, `ui-evidence commit <sha>, built <time>` (Sindri's stamp: the binary ships in Sindri's install) | 0 · 1 usage |
 | `doctor` | Prints `{healthy, failures[]}` for the local stack; each failure is also a stderr line `ui-evidence: doctor: <failure>` | 0 healthy · 2 not · 1 usage |
 | `provenance` | Prints `{provenance: seeded\|unknown, reason}` for the local database | 0 |
 | `install-browser` | Installs the browser the run and parity commands drive; the installer's download progress goes to stderr, so stdout is only `{installed}`. Ctrl-C returns at once (a download already running finishes in Playwright's driver) | 0 · 4 |
@@ -45,7 +47,7 @@ One scheme for every command:
 | 0 | Done; every check passed | — |
 | 1 | Usage error, invalid input, or a guard refused | `ui-evidence: usage: ui-evidence <shape>`; AW-EVIDENCE-001…006, 010, 012, 016, 017, 018, 019, 020, 021, 022 |
 | 2 | A check failed: a step failed or broke (`run`), an expectation did not hold (`api-run`, `db-run`), a box check failed (`parity`), the stack is unhealthy (`doctor`) | the document is still written and printed |
-| 3 | Blocked on review (`parity-plan`) | the plan is still printed |
+| 3 | Blocked on review (`parity-plan`, `gh-publish`) | the plan is still printed |
 | 4 | The run itself errored, or the environment's I/O failed: the browser failed to start or crashed, a frame's anchor is missing, a region runs past the viewport, a file couldn't be read or written (the script included), a lock directory couldn't be made; `api-run`: a request failed, timed out or was redirected off its origin (AW-EVIDENCE-023), a golden file could not be read (011), a CLI call would not start or ran past its limit, or its temporary directory could not be made (AW-EVIDENCE-015, the same code the unexpected-exception line uses); `db-run`: the database cannot be reached or copied (AW-EVIDENCE-024), a script, seed or golden file could not be read (011) or a query fails for a reason other than a refused write (AW-EVIDENCE-015) | AW-EVIDENCE-011, 013, 015, 023, 024 (a stack probe failure, AW-EVIDENCE-014, is never an exit: `doctor` and `provenance` report it in their document) |
 | 75 | A machine lock stayed busy past `--lock-timeout` | AW-EVIDENCE-009 |
 | 130 | Interrupted (SIGINT, SIGTERM, SIGHUP, SIGQUIT): a browser call in flight is abandoned at once and the locks are released on the way out. A second signal terminates the process without waiting (a lock it held is then left for a person to remove) | `ui-evidence: interrupted` |
@@ -87,28 +89,37 @@ rule is listed, joined by `; `.
 | `role` | lower-case kebab-case string (the app's own role name, e.g. `admin`) | yes | the app role; recorded in `summary.json`, not interpreted |
 | `viewports` | (`desktop` \| `phone`)[] | yes | at least one; every step runs in each (desktop 1280x800, phone 375x812) |
 | `steps` | step[] | yes | at least one, run in order (below) |
+| `login` | object \| null | no | a sign-in run before the first step, in each viewport: `emailEnv`, `passwordEnv` (UPPER_SNAKE environment variable names; both required, never a literal credential), and optional `emailSelector` (default `input[type="email"]`), `passwordSelector` (`input[type="password"]`), `submitSelector` (`button[type="submit"]`), `nextSelector` (clicked after the email, two-step forms) and `loginPath` (default `/login`: sign-in is done once the URL path no longer contains it). A variable unset or blank is AW-EVIDENCE-006 before a browser opens |
+| `localStorage` | object (string to string) \| null | no | entries written verbatim into the host origin's localStorage before every page load (feature-flag overrides and similar client toggles) |
 | `planning` | object \| null | no | the planner's own model call, recorded as the first `invocations[]` entry: `pr` (string \| null, also `summary.json`'s `pr`), `model` (string \| null), `elapsedMs`, `inputTokens`, `outputTokens` (integer \| null each, not negative; null is unknown, never zero) |
 
 A step:
 
 | Key | Type | Required | Holds and rules |
 |---|---|---|---|
-| `action` | `goto` \| `click` \| `fill` \| `expect-visible` | yes | what the step does |
-| `target` | string | yes | `goto`: a path on the host (one leading `/`; the host guard below); `click`, `fill`: a `data-testid`; `expect-visible`: visible text |
+| `action` | `goto` \| `click` \| `fill` \| `expect-visible` \| `scroll` \| `drag` \| `press` | yes | what the step does |
+| `target` | string | yes, except for a `press` | `goto`: a path on the host (one leading `/`; the host guard below); `click`, `fill`, `press`: a `data-testid`, `role:<role>\|<accessible name>` or `text:<text>`, with a trailing `#<n>` (1-based, hugging the name: `Day#2`) picking the nth of several matches; `scroll`, `drag`: a `data-testid`; `expect-visible`: visible text. A `role:` or `text:` target is exact and strict (several matches without `#<n>` fail the step), the role is lower-case, and a near-miss prefix (`Role:`, ` text:`) is a schema error. A broken `role:` or `text:` target is never repaired by a model |
 | `expectedState` | object | yes | the state that must hold after the action (below) |
-| `value` | string \| null | no | the text a `fill` types; null or absent types nothing |
+| `value` | string \| null | no | the text a `fill` types; null or absent types nothing. A `scroll`'s position: `end` (default) or `start` (horizontal), `bottom` or `top` (vertical), or a non-negative integer horizontal pixel offset |
+| `index` | integer, not negative | no | `click`, `fill`, `scroll`, `press` with a target: picks the nth match (0-based) when a bare `data-testid` repeats |
+| `to` | string | `drag` only, required there | the destination `data-testid` |
+| `grabOffset`, `dropOffset` | `{x, y}` (both required) | `drag` only | pixels from the source's (destination's) top-left corner; default its centre |
+| `holdAlt` | boolean | `drag` only | holds Alt through the release |
+| `key` | string | `press` only, required there | a Playwright key (`ArrowRight`, `Shift+Tab`), pressed on the target (focused first), or on whatever has focus when there is no target |
 
-`expectedState` is one of five kinds, chosen by its `kind` key (anywhere in the object):
+`expectedState` is one of seven kinds, chosen by its `kind` key (anywhere in the object):
 
 | `kind` | Other keys (all required) | Holds when |
 |---|---|---|
 | `text-visible` | `text` (string, not empty) | some visible element shows the text |
 | `text-absent` | `text` (string, not empty) | no visible element shows the text |
 | `testid-visible` | `testId` (string, not blank) | the element with that `data-testid` is visible |
+| `testid-absent` | `testId` (string, not blank) | no visible element has that `data-testid`; looked at once, right after the action, without waiting for it to go (a leftover after a drag drop fails the step) |
 | `url-path` | `path` (string, not empty) | the page's URL path is `path` |
+| `url-search` | `param` (string, not empty), `value` (string, may be empty) | the URL's query parameter `param` is `value`; the path is not checked |
 | `input-value` | `testId` (string, not blank), `value` (string, may be empty) | that input holds exactly `value` |
 
-A missing `kind` is `missing required property "kind"`; another value names the five kinds. Enum values are matched by
+A missing `kind` is `missing required property "kind"`; another value names the seven kinds. Enum values are matched by
 name only (a number is refused). Unknown keys are refused in every script object (the script, `planning`, each step
 and each `expectedState`, whatever its kind and wherever `kind` sits): a misspelt key is one error naming the file, the
 JSON location and the key (`script <path>: $.steps[0].vaule: unknown property`), never a silently ignored setting such
@@ -258,7 +269,7 @@ Scorer and bugfix-state read these files after their own ports; the fields they 
 | `scriptSha256` † | string | SHA-256 (hex) of the script file's bytes as read: proves which script a run executed |
 | `pr` | string \| null | the script's `planning.pr` |
 | `viewports` | (`desktop` \| `phone`)[] | the script's viewports (1280x800, 375x812) |
-| `steps[]` † | object[] | viewport by viewport, in order: `viewport`, `index` (1-based), `action` (`goto` \| `click` \| `fill` \| `expect-visible`), `target`, `status` † (`passed` \| `failed` \| `broken`), `screenshot` (`<run-dir>/<viewport>-<index>-<action>.png`) |
+| `steps[]` † | object[] | viewport by viewport, in order: `viewport`, `index` (1-based), `action` (`goto` \| `click` \| `fill` \| `expect-visible` \| `scroll` \| `drag` \| `press`), `target` (for a `drag` `<target> → <to>`, for a `press` `<key> on <target>` or the key alone), `status` † (`passed` \| `failed` \| `broken`), `screenshot` (`<run-dir>/<viewport>-<index>-<action>.png`) |
 | `visual` | object | `verdict` † (`unchecked` \| `unchanged` \| `looks-right` \| `looks-off` \| `sloppy`), `reasons` (string[]), `diffScore` (number \| null: the fraction of pixels differing from the baseline, 1 for a size change), `diffImage` (string \| null: `<run-dir>/visual-diff.png`) |
 | `lintFindings[]` | object[] | `viewport`, `rule` (`overlap` \| `misaligned-edge` \| `phone-overflow` \| `truncated-label` \| `clipped` \| `missing-hover-focus` \| `unresolved-placeholder` \| `non-token-color`), `selector`, `detail` |
 | `invocations[]` † | object[] | every model call actually made, in order (none when no judge is wired: "Judge" below): `phase` (`planning` \| `selector-repair` \| `visual-critique`), `model` (string \| null), `elapsedMs` (number \| null), `ok` (false: the judge was called and failed or answered nothing), `inputTokens`, `outputTokens` (number \| null: null is unknown, never zero), `cacheHit` (a verdict-cache hit stands in for a critique) |
@@ -500,10 +511,11 @@ Selector repair and visual critique go through the Core port `IJudge` (`IsAvaila
 don't call it and record nothing in `invocations[]`, because no model ran. A wired judge's null answer means the call
 failed (timed out, errored or answered out of contract); that call is recorded with `ok: false`. Either way every caller
 fails closed: no repair (the step stays `broken`), and the verdict stays `unchecked`. A recorded call carries null
-token counts when the answer reports none. Until `docs/csharp/judge.md` lands, the composition registers
-`UnavailableJudge` (`IsAvailable` false, every answer null; it logs once that it isn't wired), so a run records no
-`selector-repair` or `visual-critique` invocation; the CLI adapter over the C# `judge` binary is BLOCKED on that
-contract.
+token counts when the answer reports none. The CLI adapter over the C# `judge` binary (`JudgeCliJudge`, cutover unit 1.3) runs
+`judge <question>` with the input record on stdin and parses the envelope (`docs/csharp/judge.md`, 'Questions': `ui-element-repair`,
+`visual-critique`); until it lands the composition registers its stub, which reports `IsAvailable` false (every answer null), so a run
+records no `selector-repair` or `visual-critique` invocation and the verdict stays `unchecked`. `UnavailableJudge` stays in the tree as
+the contract's reference for an unwired judge.
 
 ## Host guard
 
@@ -524,7 +536,7 @@ exit 4 and write no `summary.json` / `parity.json`. In `run` that message is the
 run failure as AW-EVIDENCE-015, naming the origin when the page left during sign-in or route opening, and naming the
 frame and its step (`step N … broken`) when it left during a frame step. Sign-in checks again after loading the host and right before it
 types each credential, so a credential is never typed into a page off the vetted origin. A write-looking step is a click (or a `goto`) whose
-target has a write verb (`save`, `submit`, `delete`, …, including fused control names such as `saveBtn`). Selector
+target has a write verb (`save`, `submit`, `delete`, …, including fused control names such as `saveBtn`); for a `role:` or `text:` target the name or text is read, its `#<n>` dropped. Every `drag` counts as a write, and so does a `press` unless its key only navigates (`Shift+` an arrow key, `Home`, `End`, `PageUp`, `PageDown`, `Tab`, `Escape`); `scroll` never does. Selector
 repair is held to the same guard: where writes are refused, a candidate the judge picks whose test id, accessible name
 or text reads like a write is never clicked or filled (it counts as no candidate, so the step stays `broken`). `parity`
 applies the write guard on every host, local included, to its manifest `route` (vetted as the first `goto`) and every
@@ -576,7 +588,8 @@ move behind an AOT host if the browser adapter ever allowed it.
 | `IImageCodec` | `PngCodec` | `FakeImageCodec` |
 | `IVerdictCacheStore` | `FileVerdictCacheStore` | `InMemoryVerdictCacheStore` |
 | `IMachineLocks` | `DirectoryLocks` | `InMemoryMachineLocks` |
-| `IJudge` | `UnavailableJudge` (CLI adapter blocked, above) | `FakeJudge` |
+| `IJudge` | `JudgeCliJudge` (a stub until cutover unit 1.3; `UnavailableJudge` is the unwired reference) | `FakeJudge` |
+| `IGhRunner` (`gh`, one call: arguments and stdin in, exit code and both streams out) | `ProcessGhRunner` (a stub until cutover unit 1.2) | `FakeGhRunner` (scripted, or an in-memory repository answering the git data API) |
 | `IStackProbe`, `IProvenanceQuery` | `ProcessStackProbe`, `DockerPsqlProvenance` | `FakeStackProbe`, `FakeProvenanceQuery` |
 | `ISecretsSource` (credentials by the name the manifest gives) | `EnvironmentSecrets` | `FakeSecrets` |
 | `IEvidenceSettings` (user agent, visual model, preview host pattern, API port, seed policy, app title) | `EnvironmentEvidenceSettings` | `FakeEvidenceSettings` |
@@ -591,7 +604,7 @@ move behind an AOT host if the browser adapter ever allowed it.
 Each port with behaviour to pin has a contract suite in `tests/Aw.Evidence.Testing` that the fake and the adapter both
 run: `BrowserSessionContract` (fake: unit; Playwright on the fixture site: heavy), `BrowserInstallerContract` (fake: unit;
 Playwright: heavy), `RunFilesContract`, `ImageCodecContract`, `VerdictCacheStoreContract`, `MachineLocksContract`,
-`JudgeContract`, `StackProbeContract` (the adapter over a local HTTP server, a stub `docker` and a loopback listener),
+`JudgeContract`, `GhRunnerContract`, `StackProbeContract` (the adapter over a local HTTP server, a stub `docker` and a loopback listener),
 `ProvenanceQueryContract` (the adapter over a stub `docker` playing `psql -At`), `SecretsSourceContract`, `IdGeneratorContract`, `ApiTransportContract` (the adapter over a loopback server), `CliRunnerContract` (over stub programs),
 `ExecutableLocatorContract`, `EvidenceTargetsContract`, `TextScrubberContract` and `ReadOnlyDatabaseContract` (a writing CTE, a side-effecting function, `nextval`, `COPY … TO`, a `PRAGMA` assignment, `VACUUM INTO`, `ATTACH`, `SET transaction_read_only = off` and `COMMIT; INSERT …` each refused with the data and the directory unchanged; the fake and the SQLite adapter run it as unit and integration, Postgres against a throwaway container as heavy). `IEvidenceSettings` has none: its fake is a set of plain values with no behaviour that could
 drift; the adapter's names, defaults, blank-as-unset and env-file fallback are pinned by `EnvironmentEvidenceSettingsTests`.

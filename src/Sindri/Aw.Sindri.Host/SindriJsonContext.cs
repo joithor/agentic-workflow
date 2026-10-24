@@ -14,6 +14,7 @@ using Aw.Kernel;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.EngineReads;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Health;
 using Aw.Sindri.Core.Items;
@@ -70,6 +71,7 @@ using Aw.Sindri.Features.GetNeedsYou;
 using Aw.Sindri.Features.GetProfile;
 using Aw.Sindri.Features.GetQueue;
 using Aw.Sindri.Features.GetRepoStatus;
+using Aw.Sindri.Features.LineDoctor;
 using Aw.Sindri.Features.GetSession;
 using Aw.Sindri.Features.GetSetup;
 using Aw.Sindri.Features.GetStatus;
@@ -103,6 +105,7 @@ using Aw.Sindri.Features.RevokeRecipe;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.RunService;
 using Aw.Sindri.Features.Scoping;
+using Aw.Sindri.Features.Scrub;
 using Aw.Sindri.Features.SessionExit;
 using Aw.Sindri.Features.SessionHeartbeat;
 using Aw.Sindri.Features.SetupOnyx;
@@ -123,7 +126,7 @@ namespace Aw.Sindri.Host;
 /// <summary>The package's one source-generated JSON context (spec §4b.3): through AwJson.CreateOptions, and an http host's resolver after ASP.NET's ProblemDetails context.</summary>
 [JsonSerializable(typeof(AgentLimits))]
 [JsonSerializable(typeof(Error)), JsonSerializable(typeof(SindriProfile)), JsonSerializable(typeof(ControlEndpoint)), JsonSerializable(typeof(Ping))]
-[JsonSerializable(typeof(ApiProblem)), JsonSerializable(typeof(ProcessStarted)), JsonSerializable(typeof(ProcessStopped)), JsonSerializable(typeof(WorkflowEventPayload))]
+[JsonSerializable(typeof(ApiProblem)), JsonSerializable(typeof(ApiProblemBuilding)), JsonSerializable(typeof(ApiProblemNoMap)), JsonSerializable(typeof(ProcessStarted)), JsonSerializable(typeof(ProcessStopped)), JsonSerializable(typeof(WorkflowEventPayload))]
 [JsonSerializable(typeof(ProfileApproved)), JsonSerializable(typeof(Heartbeat)), JsonSerializable(typeof(CommandHandled)), JsonSerializable(typeof(ServiceRan))]
 [JsonSerializable(typeof(ProfileChecked)), JsonSerializable(typeof(ViewsRebuilt)), JsonSerializable(typeof(ItemCreated)), JsonSerializable(typeof(ItemCreatedPublic))]
 [JsonSerializable(typeof(ItemStateChanged)), JsonSerializable(typeof(ItemLinked)), JsonSerializable(typeof(RequestFiled)), JsonSerializable(typeof(RequestFiledPublic))]
@@ -139,7 +142,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ItemRow)), JsonSerializable(typeof(AliasRow)), JsonSerializable(typeof(RequestRow)), JsonSerializable(typeof(HumanDecisionRow))]
 [JsonSerializable(typeof(NeedsYouRowRecord)), JsonSerializable(typeof(NestedPark)), JsonSerializable(typeof(NeedsYouRow)), JsonSerializable(typeof(NeedsYouStop)), JsonSerializable(typeof(NeedsYouSubject)), JsonSerializable(typeof(TimelineRow))]
 [JsonSerializable(typeof(HealthReport)), JsonSerializable(typeof(CommandAccepted)), JsonSerializable(typeof(GetStatusResponse)), JsonSerializable(typeof(StopProcessResponse))]
-[JsonSerializable(typeof(ApproveProfileRequest)), JsonSerializable(typeof(ApproveProfileResponse)), JsonSerializable(typeof(ValidateProfileResponse)), JsonSerializable(typeof(InitProfileResponse)), JsonSerializable(typeof(RunDoctorResponse))]
+[JsonSerializable(typeof(ApproveProfileRequest)), JsonSerializable(typeof(ApproveProfileResponse)), JsonSerializable(typeof(ValidateProfileResponse)), JsonSerializable(typeof(InitProfileResponse)), JsonSerializable(typeof(ScrubResponse)), JsonSerializable(typeof(RunDoctorResponse))]
 [JsonSerializable(typeof(PublicEvent)), JsonSerializable(typeof(LedgerPage)), JsonSerializable(typeof(EventCatalogView)), JsonSerializable(typeof(EventTypeView))]
 [JsonSerializable(typeof(StreamErrorFrame)), JsonSerializable(typeof(InstanceChanged)), JsonSerializable(typeof(ListCommandsRequest)), JsonSerializable(typeof(ListCommandsResponse)), JsonSerializable(typeof(CommandListRow))]
 [JsonSerializable(typeof(ListServicesRequest)), JsonSerializable(typeof(ListServicesResponse)), JsonSerializable(typeof(ServiceView)), JsonSerializable(typeof(GetProfileRequest))]
@@ -159,6 +162,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ScopingApproved)), JsonSerializable(typeof(ScopingEscape)), JsonSerializable(typeof(ScopingView)), JsonSerializable(typeof(ScopingCheckResponse)), JsonSerializable(typeof(ScopingDeskReport))]   // SC-K: the scoping verbs
 [JsonSerializable(typeof(LineCheckResponse)), JsonSerializable(typeof(LineDeskReport)), JsonSerializable(typeof(DesignStopView))]   // LN-K: the line verbs
 [JsonSerializable(typeof(DocsCheckResponse)), JsonSerializable(typeof(DocsCheckFinding))]   // API17: 'docs check'
+[JsonSerializable(typeof(LineDoctorResponse))]   // LN-L: 'line doctor'
 [JsonSerializable(typeof(OnyxStatusResponse))]
 [JsonSerializable(typeof(OnyxSetupState))]
 [JsonSerializable(typeof(OnyxUpResponse))]
@@ -200,6 +204,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(RecipeTransitionLabelView)), JsonSerializable(typeof(RecipeTransitionView)), JsonSerializable(typeof(RecipeOutcomeText)), JsonSerializable(typeof(RecipeFactView)), JsonSerializable(typeof(RecipeManifest)), JsonSerializable(typeof(ManifestEntry)), JsonSerializable(typeof(ManifestInvalid))]
 [JsonSerializable(typeof(EvalShippedResponse)), JsonSerializable(typeof(ShippedRecipeEval))]
 [JsonSerializable(typeof(RecipeOutputView)), JsonSerializable(typeof(RecipeStateView)), JsonSerializable(typeof(RecipeView)), JsonSerializable(typeof(Round)), JsonSerializable(typeof(RecipeStats)), JsonSerializable(typeof(RecipeStatsRow))]   // API P12: GET /workflow/recipes/{id}/stats
+[JsonSerializable(typeof(EngineView)), JsonSerializable(typeof(EngineInstanceList)), JsonSerializable(typeof(EngineHistory))]   // API P13: GET /engine, /engine/instances, /engine/instances/{id}/history (their members are reached through these)
 [JsonSerializable(typeof(StateCell)), JsonSerializable(typeof(StatusAnswer)), JsonSerializable(typeof(StatusBudget)), JsonSerializable(typeof(StatusChild))]
 [JsonSerializable(typeof(StatusCommand)), JsonSerializable(typeof(StatusDrift)), JsonSerializable(typeof(StatusFields)), JsonSerializable(typeof(StatusHeader))]
 [JsonSerializable(typeof(StatusInput)), JsonSerializable(typeof(StatusInjection)), JsonSerializable(typeof(StatusPaused)), JsonSerializable(typeof(StatusTimeout)), JsonSerializable(typeof(StepDeclaration))]

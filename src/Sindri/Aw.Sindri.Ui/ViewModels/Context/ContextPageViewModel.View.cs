@@ -6,21 +6,6 @@ internal sealed partial class ContextPageViewModel
     /// <summary>The label of the starting points box.</summary>
     public string StartsAtLabel { get; } = Labels.ContextMapStartsAt;
 
-    /// <summary>The label of the pinned or live choice.</summary>
-    public string AsOfLabel { get; } = Labels.ContextMapAsOf;
-
-    /// <summary>The pinned choice's words (off until the item's approved map is served).</summary>
-    public string AsOfPinned { get; private set => Set(ref field, value); } = Labels.ContextMapAsOfPinned;
-
-    /// <summary>Why the pinned choice is off.</summary>
-    public string AsOfPinnedHint { get; private set => Set(ref field, value); } = Labels.ContextMapPinnedNotServed;
-
-    /// <summary>The live choice's words.</summary>
-    public string AsOfLive { get; } = Labels.ContextMapAsOfLive;
-
-    /// <summary>The version of the map that answered ("Map v3 @ abc1234"), or null before a read.</summary>
-    public string? AsOfLiveHint { get; private set; }
-
     /// <summary>The view switch's name.</summary>
     public string ViewName { get; } = Labels.ContextMapViewName;
 
@@ -45,6 +30,8 @@ internal sealed partial class ContextPageViewModel
             OnChanged(nameof(ShowFiles));
             OnChanged(nameof(ShowMap));
             OnChanged(nameof(MapVisible));
+            OnChanged(nameof(ShowWhole));
+            OnChanged(nameof(ShowWholeStatus));
             if (value)
             {
                 _ = FileMap.Opened();   // the folder is read as the view opens, so it is never stale
@@ -66,7 +53,7 @@ internal sealed partial class ContextPageViewModel
     }
 
     /// <summary>Whether the canvas is on the stage: there is a map and the map view is the one chosen.</summary>
-    public bool MapVisible => HasStack && ShowMap;
+    public bool MapVisible => HasStack && ShowMap && !Whole.IsReady;
 
     /// <summary>Chooses the view.</summary>
     /// <param name="files">True for the files view, false for the map.</param>

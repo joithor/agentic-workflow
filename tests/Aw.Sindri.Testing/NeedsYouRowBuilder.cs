@@ -1,6 +1,7 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.NeedsYou;
+using Aw.Sindri.Core.OpenTargets;
 using Aw.Sindri.Core.Views;
 
 namespace Aw.Sindri.Testing;
@@ -11,7 +12,8 @@ public sealed class NeedsYouRowBuilder
     private NeedsYouRow _row = new(NeedsYouRowId.From("decision:" + A.FirstDecisionId.Value), NeedsYouKind.Decision, "decision · re-scope",
         new NeedsYouSubject(SubjectKind.Decision, SubjectId.From(A.FirstDecisionId.Value)), Item: null, "Split the work into two items.",
         "re-scope request from session:cli", Repo: null, Urgency.Pulse, KnownInstants.Epoch, RecordedOnly: true, EmptyText.RecordedOnly(),
-        AnswerKind: null, ActionId.From("Decide"), [ActionId.From("Decide")], "sindri decide " + A.FirstDecisionId.Value + " accept");
+        AnswerKind: null, ActionId.From("Decide"), [ActionId.From("Decide")], "sindri decide " + A.FirstDecisionId.Value + " accept",
+        new NeedsYouOpen("decision/" + A.FirstDecisionId.Value, "Review and decide"));
 
     /// <summary>Sets the urgency and when the row started to ask.</summary>
     /// <param name="urgency">The urgency.</param>

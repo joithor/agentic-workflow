@@ -72,6 +72,24 @@ public sealed class RecheckStepsTests
     }
 
     [Fact]
+    public async Task Plan_reads_a_proof_pack_file_that_is_a_list_as_one_with_no_scripts_and_does_not_throw()
+    {
+        var files = new InMemoryBriefFiles().With("before-after.json", """[{"headScript":"proof/ac1.sh"}]""").With("proof.json", """{"items":[{"id":"AC-1","artifacts":[{"script":"proof/ac2.sh"}]}]}""");
+
+        var result = await new RecheckPlanStep(files, new InMemoryRunArea()).Run(PlanContext($$$"""{"proofPack":{"dir":"{{{Pack}}}"}}"""), Token);
+
+        Assert.Equal(["proof/ac2.sh"], Out(result, "recheckPlan")["scripts"]!.AsArray().Select(static s => (string?)s), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task Plan_with_a_hand_off_that_is_a_list_has_nothing_to_prove_again_and_does_not_throw()
+    {
+        var result = await new RecheckPlanStep(ProofPackFiles(), new InMemoryRunArea()).Run(PlanContext("""[{"dir":"x"}]"""), Token);
+
+        Assert.Equal("nothing", result.Result!.Outcome.Value);
+    }
+
+    [Fact]
     public async Task Plan_fails_when_the_proof_pack_cannot_be_read()
     {
         var result = await new RecheckPlanStep(new InMemoryBriefFiles(), new InMemoryRunArea()).Run(PlanContext($$$"""{"proofPack":{"dir":"{{{Pack}}}"}}"""), Token);

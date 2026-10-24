@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Aw.Kernel;
+using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Context;
 
 namespace Aw.Sindri.Ui.ViewModels.Context;
@@ -7,7 +8,6 @@ namespace Aw.Sindri.Ui.ViewModels.Context;
 /// <summary>The lens stack (U9a): the anchor box's read of GET /sindri/context/lenses and what it draws, read-only.</summary>
 internal sealed partial class ContextPageViewModel
 {
-    private const int MaxAnchors = 20;
     private int _generation;
 
     /// <summary>The map of the last answer (F3 spec 1), or null before a read and after a refusal.</summary>
@@ -46,7 +46,13 @@ internal sealed partial class ContextPageViewModel
     public async Task Submit(CancellationToken cancellationToken = default)
     {
         var words = Words(AnchorText);
-        if (words.Count == 0 || Ports.ApiUrl() is not { } api)
+        if (words.Count == 0)
+        {
+            _ = BackToWholeMap();   // Enter on an empty box returns to the full map
+            return;
+        }
+
+        if (Ports.ApiUrl() is not { } api)
         {
             return;
         }
@@ -57,15 +63,7 @@ internal sealed partial class ContextPageViewModel
             return;
         }
 
-        if (anchors.Count > MaxAnchors)
-        {
-            Show(view: null, choices: []);
-            Problem = Labels.ContextTooMany(MaxAnchors);
-            Refresh();
-            return;
-        }
-
-        var result = await Ports.Api.Lenses(api, new LensesQuery(anchors, Depth: null, Draft: false, MapVersion: PinnedVersion), cancellationToken).ConfigureAwait(true);
+        var result = await Ports.Api.Lenses(api, new LensesQuery(anchors, Depth: null, Draft: false, MapVersion: null), cancellationToken).ConfigureAwait(true);
         if (generation != _generation)
         {
             return;
@@ -74,23 +72,25 @@ internal sealed partial class ContextPageViewModel
         await Draw(api, result, fromQuestion, cancellationToken).ConfigureAwait(true);
     }
 
-    // The answer onto the page: the map, the live map once the pinned version is gone, or the refusal with its suggestions.
+    // The answer onto the page: the map, or the refusal with its suggestions.
     private async Task Draw(Uri api, Result<LensesView> result, bool fromQuestion, CancellationToken cancellationToken)
     {
         if (result.IsSuccess)
         {
             Show(result.Value, choices: [], fromQuestion);
             NoteRead();
-        }
-        else if (PinnedVersion is not null && string.Equals(result.Error.Code, MapVersionNotRetained, StringComparison.Ordinal))
-        {
-            await FallBackToLive(cancellationToken).ConfigureAwait(true);
-            return;
+            await ZoomIntoWhole(api, cancellationToken).ConfigureAwait(true);
         }
         else
         {
             Show(view: null, choices: Suggestions(result.Error));
-            Problem = result.Error.Message;
+            Problem = TooLongForOneRead(result.Error) ? Labels.ContextTooLongForOneRead : result.Error.Message;
+            if (Whole.IsReady)
+            {
+                Whole.ApplySearch([], [], zoomed: false);   // nothing resolved: the map dims and says so
+                ChangedWhole();
+            }
+
             await NoteRefusal(api, result.Error, cancellationToken).ConfigureAwait(true);
         }
 
@@ -106,6 +106,11 @@ internal sealed partial class ContextPageViewModel
         AnchorText = anchor;
         return Submit(cancellationToken);
     }
+
+    // A very long anchor list can overrun the server's request line: the bare 414 or 400 says nothing, so the page says it.
+    private static bool TooLongForOneRead(Error error) =>
+        string.Equals(error.Code, SindriUiErrors.BadStatus.Code, StringComparison.Ordinal)
+        && (error.Message.EndsWith(" 414", StringComparison.Ordinal) || error.Message.EndsWith(" 400", StringComparison.Ordinal));
 
     private static List<string> Suggestions(Error error)
     {
@@ -128,15 +133,13 @@ internal sealed partial class ContextPageViewModel
         Choices = choices;
         if (view is null)
         {
-            Head = string.Empty;
-            AsOfLiveHint = null;
+            Head = Whole.IsReady ? Whole.Head : string.Empty;   // no neighbourhood: the whole map is what the page shows
             Map = null;
             Missing = [];
             return;
         }
 
         Head = fromQuestion ? Labels.ContextFromQuestion(view.Anchors.Count) : Labels.ContextHead(view.Anchors.Count);
-        AsOfLiveHint = Labels.ContextMapVersionLine(view.MapVersion, view.MapCommit);
         Map = new ContextMapViewModel(view) { Chosen = key => _ = Select(key) };
         Missing = [.. (view.MissingAnchors ?? []).Select(a => new ContextLine($"{a} · {Labels.ContextNotFound}"))];
     }
@@ -145,13 +148,14 @@ internal sealed partial class ContextPageViewModel
     {
         OnChanged(nameof(Map));
         OnChanged(nameof(Head));
-        OnChanged(nameof(AsOfLiveHint));
         OnChanged(nameof(HasHead));
         OnChanged(nameof(Missing));
         OnChanged(nameof(Choices));
         OnChanged(nameof(Problem));
         OnChanged(nameof(HasStack));
         OnChanged(nameof(MapVisible));
+        OnChanged(nameof(ShowWhole));
+        OnChanged(nameof(ShowWholeStatus));
         OnChanged(nameof(InspectorOpen));
         OnChanged(nameof(IsDraft));
         OnChanged(nameof(HasChoices));

@@ -1,5 +1,6 @@
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.OpenTargets;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -34,10 +35,15 @@ public static partial class NeedsYouRows
         var at = park.Descendant ?? park.Address;
         var answer = AnswerOf(park);
         var (label, words) = Words(suspension, park.Refusal);
-        var shape = new EngineRow("park:", label, $"{words} ({at.Value})", Urgency.Pulse, answer?.Kind,
-            answer?.ActionId ?? _approveRecipe, answer is null ? [_approveRecipe, _cancel] : [answer.ActionId], answer?.Cli ?? Status(at), answer?.Via, answer?.Child);
+        var shape = new EngineRow(NeedsYouRowIds.Park(park.Address), label, $"{words} ({at.Value})", Urgency.Pulse, answer?.Kind,
+            answer?.ActionId ?? _approveRecipe, answer is null ? [_approveRecipe, _cancel] : [answer.ActionId], answer?.Cli ?? Status(at), OpenOf(answer, at), answer?.Via, answer?.Child);
         return Row(item, park.Address, shape, since, scrubber);
     }
+
+    /// <summary>Where a park row opens: a parked descendant, or a mirrored child that decides, opens that instance; any other park its own.</summary>
+    private static NeedsYouOpen OpenOf(Workflow.Views.StatusAnswer? answer, InstanceAddress at) => answer?.Child is { } child
+        ? new NeedsYouOpen("workflow/" + child, "Answer in the child")
+        : new NeedsYouOpen(WorkflowRoute(at), "Open the workflow");
 
     /// <summary>
     /// The answer a park row offers: the instance's own, or for a parked descendant a pointer to it (`via: "child"`) whose cli is
@@ -68,7 +74,7 @@ public static partial class NeedsYouRows
     }
 
     private static ParkShape ShapeOf(SuspensionSummary suspension) =>
-        new(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors is not null);
+        new(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors is not null, suspension.MirroredParkKind, suspension.MirroredEscalation);
 
     /// <summary>The 'park' row of an open desk task.</summary>
     /// <param name="item">The item's row.</param>
@@ -77,7 +83,8 @@ public static partial class NeedsYouRows
     /// <param name="scrubber">Scrubs the text the row stores.</param>
     /// <returns>The row.</returns>
     public static NeedsYouRow ForDeskTask(ItemRow item, InstanceAddress address, DateTimeOffset since, ITextScrubber scrubber) =>
-        Row(item, address, new EngineRow("desk:", "desk task", $"a desk task is open ({address.Value})", Urgency.Colour, AnswerKind: null, _completeStep, [_completeStep], Status(address)), since, scrubber);
+        Row(item, address, new EngineRow(NeedsYouRowIds.Desk(address), "desk task", $"a desk task is open ({address.Value})", Urgency.Colour, AnswerKind: null, _completeStep, [_completeStep], Status(address),
+            new NeedsYouOpen(WorkflowRoute(address), "Answer the question")), since, scrubber);
 
     /// <summary>The 'park' row of a takeover that went idle.</summary>
     /// <param name="item">The item's row.</param>
@@ -86,11 +93,14 @@ public static partial class NeedsYouRows
     /// <param name="scrubber">Scrubs the text the row stores.</param>
     /// <returns>The row.</returns>
     public static NeedsYouRow ForIdleTakeover(ItemRow item, InstanceAddress address, DateTimeOffset since, ITextScrubber scrubber) =>
-        Row(item, address, new EngineRow("takeover:", "taken over", $"a takeover is idle ({address.Value})", Urgency.Calm, AnswerKind: null, _handback, [_handback, _cancel], $"sindri handback {address.Value}"), since, scrubber);
+        Row(item, address, new EngineRow(NeedsYouRowIds.Takeover(address), "taken over", $"a takeover is idle ({address.Value})", Urgency.Calm, AnswerKind: null, _handback, [_handback, _cancel], $"sindri handback {address.Value}",
+            new NeedsYouOpen(WorkflowRoute(address), "Hand back or cancel")), since, scrubber);
+
+    private static string WorkflowRoute(InstanceAddress address) => "workflow/" + address.Value;
 
     private static string Status(InstanceAddress address) => $"sindri workflow status {address.Value}";
 
-    private sealed record EngineRow(string Prefix, string Label, string Reason, Urgency Urgency, Workflow.Views.AnswerKind? AnswerKind, ActionId Primary, IReadOnlyList<ActionId> Actions, string Cli, string? Via = null, string? Child = null);
+    private sealed record EngineRow(NeedsYouRowId Id, string Label, string Reason, Urgency Urgency, Workflow.Views.AnswerKind? AnswerKind, ActionId Primary, IReadOnlyList<ActionId> Actions, string Cli, NeedsYouOpen Open, string? Via = null, string? Child = null);
 
     private static NeedsYouRow Row(ItemRow item, InstanceAddress address, EngineRow shape, DateTimeOffset since, ITextScrubber scrubber)
     {
@@ -98,7 +108,7 @@ public static partial class NeedsYouRows
         ArgumentNullException.ThrowIfNull(scrubber);
         var instance = WorkflowInstanceId.Of(address).Value;
         return new NeedsYouRow(
-            NeedsYouRowId.From(shape.Prefix + instance),
+            shape.Id,
             NeedsYouKind.Park,
             shape.Label,
             new NeedsYouSubject(SubjectKind.Instance, SubjectId.From(instance)),
@@ -114,6 +124,7 @@ public static partial class NeedsYouRows
             shape.Primary,
             shape.Actions,
             shape.Cli,
+            shape.Open,
             shape.Via,
             shape.Child);
     }

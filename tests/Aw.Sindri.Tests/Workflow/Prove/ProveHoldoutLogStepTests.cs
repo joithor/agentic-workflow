@@ -204,6 +204,20 @@ public sealed class ProveHoldoutLogStepTests
         Assert.NotNull(result.Failure);
     }
 
+    [Theory]
+    [InlineData("""[{"id":"p1","baseSha":"abc"}]""")]
+    [InlineData("""{"id":7,"baseSha":"abc"}""")]
+    public async Task A_packet_json_of_another_shape_fails_the_Step_and_does_not_throw(string packet)
+    {
+        var rig = new Rig();
+        _ = rig.Files.With("packet.json", packet);
+
+        var result = await rig.Step().Run(Context(BothPass()), Token);
+
+        Assert.Null(result.Result);
+        Assert.Contains("packet.json", result.Failure, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task A_phase_with_no_hidden_set_fails_the_Step()
     {
