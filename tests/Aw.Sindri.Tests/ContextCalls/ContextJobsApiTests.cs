@@ -193,7 +193,7 @@ public sealed class ContextJobsApiTests : IDisposable
     }
 
     [Fact(Timeout = 90_000), Trait("Lane", "integration")]
-    public async Task A_session_may_start_the_build_but_not_the_source_sync()
+    public async Task A_session_may_start_the_build_and_the_source_sync()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         await using var onyx = await FakeOnyxServer.Start();
@@ -203,9 +203,8 @@ public sealed class ContextJobsApiTests : IDisposable
         var sync = await host.Http.Ask(Post("/sindri/context/sources/sync", "{}", session));
         var build = await host.Http.Ask(Post("/sindri/context/map/build", "{}", session));
 
-        Assert.Equal(("SND-AUTH-002", null), (sync.Code, build.Code));   // build opened to sessions per owner q93 (2026-10-23); the sync stays a human's
-        Assert.Contains("sindri context sources sync", sync.Body, StringComparison.Ordinal);
-        _ = Assert.Single(Of(await Ledger(host), EventTypes.JobStarted));
+        Assert.Equal(((string?)null, (string?)null), (sync.Code, build.Code));   // a session starts every job a human starts (owner q93, 2026-10-23)
+        Assert.Equal(2, Of(await Ledger(host), EventTypes.JobStarted).Count());
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
