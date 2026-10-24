@@ -55,10 +55,10 @@ public sealed class WholeMapSearchFilterTests
 
         map.ApplySearch([Hit(tile.Key)], hitAreas: [], zoomed: false);
 
+        var linked = map.Geometry.AreaEdges.Where(e => string.Equals(e.From, tile.Key, StringComparison.Ordinal) || string.Equals(e.To, tile.Key, StringComparison.Ordinal)).SelectMany(e => new[] { e.From, e.To }).Append(tile.Key).ToHashSet(StringComparer.Ordinal);
         var shown = map.Shown!;
-        Assert.Contains(tile.Key, shown.Tiles.Select(t => t.Key), StringComparer.Ordinal);
-        Assert.True(shown.Tiles.Count < map.Geometry.Tiles.Count);
-        Assert.All(shown.AreaEdges, e => Assert.True(e.From == tile.Key || e.To == tile.Key || (shown.Tiles.Any(t => t.Key == e.From) && shown.Tiles.Any(t => t.Key == e.To))));
+        Assert.Equal(linked.Order(StringComparer.Ordinal), shown.Tiles.Select(t => t.Key).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.All(shown.AreaEdges, e => Assert.True(linked.Contains(e.From) && linked.Contains(e.To)));
     }
 
     [Fact]

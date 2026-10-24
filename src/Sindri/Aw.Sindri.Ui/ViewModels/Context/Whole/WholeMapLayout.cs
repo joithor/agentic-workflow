@@ -64,7 +64,7 @@ internal static partial class WholeMapLayout
         if (map.Area is { } opened)
         {
             // One feature opened in full: its nodes alone, in one column (the others stay tiles in the overview it came from).
-            map = map with { Areas = [.. map.Areas.Where(a => string.Equals(a.Key, opened.Key, StringComparison.Ordinal))], AreaEdges = [] };
+            map = map with { Areas = [.. map.Areas.Where(a => string.Equals(a.Key, opened.Key, StringComparison.Ordinal))], AreaEdges = [], Nodes = map.Nodes?.Where(n => string.Equals(n.Area, opened.Key, StringComparison.Ordinal)).ToList() };
         }
 
         var order = WholeAreaOrder.Of(map.Areas, map.AreaEdges);
