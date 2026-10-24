@@ -6,7 +6,11 @@ namespace Aw.Evidence.Core.Desktop;
 /// <summary>Paints regions over an image, so what is allowed to differ never counts.</summary>
 public static class ImageMasks
 {
-    private const uint MaskColour = 0xFF00FFFF;
+    // Opaque magenta, as red, green, blue and alpha.
+    private const byte MaskRed = 0xFF;
+    private const byte MaskGreen = 0x00;
+    private const byte MaskBlue = 0xFF;
+    private const byte MaskAlpha = 0xFF;
 
     /// <summary>Returns a copy of <paramref name="image"/> with each region painted in one flat colour; a region is clipped to the image.</summary>
     /// <param name="image">The image.</param>
@@ -29,7 +33,7 @@ public static class ImageMasks
                 for (var x = Math.Max(region.X, 0); x < right; x++)
                 {
                     var i = ((y * image.Width) + x) * 4;
-                    (pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3]) = ((byte)(MaskColour >> 24), (byte)(MaskColour >> 16), (byte)(MaskColour >> 8), (byte)MaskColour);
+                    (pixels[i], pixels[i + 1], pixels[i + 2], pixels[i + 3]) = (MaskRed, MaskGreen, MaskBlue, MaskAlpha);
                 }
             }
         }

@@ -16,12 +16,14 @@
         "down"
       ]
     },
-    "capture": {
+    "app": {
       "command": [
-        "scripts/sindri-ui-capture.sh",
-        "--size",
-        "{size}",
-        "{shots}"
+        "scripts/sindri-ui-app.sh"
+      ]
+    },
+    "driver": {
+      "command": [
+        "scripts/aw-ui-driver.sh"
       ]
     },
     "sizes": [

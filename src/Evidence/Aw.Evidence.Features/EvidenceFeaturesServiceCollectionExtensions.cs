@@ -135,6 +135,7 @@ public static class EvidenceFeaturesServiceCollectionExtensions
     private static IServiceCollection AddDesktopSlices(this IServiceCollection services) =>
         services
             .AddScoped<DesktopPlans>()
+            .AddScoped<DesktopDriving>()
             .AddScoped<DesktopStack>()
             .AddScoped<DesktopFrames>()
             .AddScoped<DesktopRunService>()

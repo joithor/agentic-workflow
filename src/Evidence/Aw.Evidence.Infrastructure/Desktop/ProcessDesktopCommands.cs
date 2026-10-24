@@ -7,7 +7,7 @@ using Aw.Kernel;
 namespace Aw.Evidence.Infrastructure.Desktop;
 
 /// <summary>
-/// Runs the repo's fixture and capture commands as child processes: the arguments as given (never a shell), the working directory the repo, the
+/// Runs the repo's fixture command and the UI driver's command line as child processes: the arguments as given (never a shell), the working directory the repo, the
 /// environment inherited plus the run's variables. A program with a directory in its name (scripts/fixture.sh) is the working directory's; a bare
 /// name (dotnet) is looked up on PATH.
 /// </summary>

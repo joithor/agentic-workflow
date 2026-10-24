@@ -401,6 +401,16 @@ edges:
     kind: project
     status: current
     note: "Result, JSON (the in-app server and the client)"
+  - from: SindriUi
+    to: UiDriver
+    kind: project
+    status: current
+    note: "the desktop head (Aw.Sindri.Ui.Desktop) references Aw.UiDriver.Avalonia and calls UseAwUiDriver(args) on its AppBuilder: the app is drivable only when the run sets AW_UI_DRIVER=1 or passes --ui-driver, so a normal launch opens no port (docs/csharp/ui-driver.md)"
+  - from: Evidence
+    to: UiDriver
+    kind: cli
+    status: planned
+    note: "desktop-run drives the app with the aw-ui-driver command line named by the repo's evidence.json desktop.driver (default aw-ui-driver), one process per verb; no project reference. The command comes from the repo's config, so check-deps does not see the launch (status planned until it does)"
   - from: Packets
     to: Kernel
     kind: project

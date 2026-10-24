@@ -12,9 +12,9 @@ namespace Aw.Evidence.Features.DesktopRun;
 
 /// <summary>
 /// Runs the desktop evidence: clears the run directory (so no exit leaves an earlier summary), reads the manifest and the repo's config
-/// (a problem with either is a refusal, exit 1), then holds the QA-stack and heavy-job locks while the seeded app is captured and the
-/// mockups are rendered and compared. A summary is written on every path once the manifest has been read except a lock that stayed busy
-/// (exit 75); a failure of the environment (a fixture or capture command, the browser) is an errored run (exit 4).
+/// (a problem with either is a refusal, exit 1), then holds the QA-stack and heavy-job locks while the seeded app is driven through its UI driver
+/// and the mockups are rendered and compared. A summary is written on every path once the manifest has been read except a lock that stayed busy
+/// (exit 75); a failure of the environment (a fixture command, the app or its driver, the browser) is an errored run (exit 4).
 /// </summary>
 internal sealed class DesktopRunService(DataRunFiles files, DesktopPlans plans, IMachineLocks locks, DesktopStack stack, DesktopFrames frames, TimeProvider clock)
     : IService<DesktopRunRequest, DesktopRunResponse>
@@ -51,15 +51,15 @@ internal sealed class DesktopRunService(DataRunFiles files, DesktopPlans plans, 
 
         await using (lease.Value.ConfigureAwait(false))
         {
-            var captured = await stack.RunAsync(plan, cancellationToken).ConfigureAwait(false);
-            if (captured.IsError)
+            var driven = await stack.RunAsync(plan, cancellationToken).ConfigureAwait(false);
+            if (driven.IsError)
             {
-                return await StopAsync(run, captured.Error, cancellationToken).ConfigureAwait(false);
+                return await StopAsync(run, driven.Error, cancellationToken).ConfigureAwait(false);
             }
 
-            run = run with { Notes = captured.Value };
+            run = run with { Notes = driven.Value.Notes };
 
-            var compared = await frames.CompareAsync(plan, cancellationToken).ConfigureAwait(false);
+            var compared = await frames.CompareAsync(plan, driven.Value.Problems, cancellationToken).ConfigureAwait(false);
             return compared.IsError
                 ? await StopAsync(run, compared.Error, cancellationToken).ConfigureAwait(false)
                 : await WriteAsync(run, Finished(run, compared.Value), cancellationToken).ConfigureAwait(false);

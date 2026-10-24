@@ -1,22 +1,21 @@
 using System.Globalization;
 using Aw.Evidence.Core;
 using Aw.Evidence.Core.Desktop;
-using Aw.Evidence.Core.Files;
+using Aw.Evidence.Core.Geometry;
 using Aw.Kernel;
 
 namespace Aw.Evidence.Features.DesktopRun;
 
 /// <summary>
-/// Builds the seeded data with the repo's fixture command in a scratch directory, captures every screen at every size with its capture
-/// command, and tears the data down again, even after a failure. A command that fails ends the run as errored, with the tail of its stderr.
+/// Builds the seeded data with the repo's fixture command in a scratch directory, drives every screen at every size through the app's UI driver
+/// (each on its own launch of the app), and tears the data down again, even after a failure. A command that fails ends the run as errored, with the
+/// tail of its stderr.
 /// </summary>
-internal sealed class DesktopStack(IDesktopCommands commands, IScratchDirectories scratch, IRunFiles files)
+internal sealed class DesktopStack(IDesktopCommands commands, IScratchDirectories scratch, DesktopDriving driving)
 {
     private const string ScratchPrefix = "aw-desktop-";
-    private const int TailLines = 3;
-    private const int TailLimit = 300;
 
-    internal async ValueTask<Result<IReadOnlyList<string>>> RunAsync(DesktopPlan plan, CancellationToken cancellationToken)
+    internal async ValueTask<Result<DesktopCaptures>> RunAsync(DesktopPlan plan, CancellationToken cancellationToken)
     {
         var home = scratch.Create(ScratchPrefix);
         if (home.IsError)
@@ -27,7 +26,7 @@ internal sealed class DesktopStack(IDesktopCommands commands, IScratchDirectorie
         var environment = new Dictionary<string, string>(plan.Settings.Env, StringComparer.Ordinal) { [plan.Settings.HomeEnv] = home.Value };
         try
         {
-            return await UpAndCaptureAsync(plan, environment, cancellationToken).ConfigureAwait(false);
+            return await UpAndDriveAsync(plan, environment, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -36,9 +35,8 @@ internal sealed class DesktopStack(IDesktopCommands commands, IScratchDirectorie
         }
     }
 
-    private async ValueTask<Result<IReadOnlyList<string>>> UpAndCaptureAsync(DesktopPlan plan, Dictionary<string, string> environment, CancellationToken cancellationToken)
+    private async ValueTask<Result<DesktopCaptures>> UpAndDriveAsync(DesktopPlan plan, Dictionary<string, string> environment, CancellationToken cancellationToken)
     {
-        List<string> notes = [];
         foreach (var step in Steps(plan))
         {
             var ran = await RunCommandAsync(plan, [.. plan.Settings.Fixture.Command, .. step], environment, $"fixture {string.Join(' ', step)}", cancellationToken).ConfigureAwait(false);
@@ -48,43 +46,51 @@ internal sealed class DesktopStack(IDesktopCommands commands, IScratchDirectorie
             }
         }
 
+        List<string> notes = [];
+        Dictionary<string, string> problems = new(StringComparer.Ordinal);
         foreach (var size in plan.Sizes)
         {
-            var captured = await CaptureAsync(plan, size, environment, cancellationToken).ConfigureAwait(false);
-            if (captured.IsError)
+            var driven = await DriveSizeAsync(plan, size, environment, cancellationToken).ConfigureAwait(false);
+            if (driven.IsError)
             {
-                return captured.Error;
+                return driven.Error;
             }
 
-            notes.AddRange(captured.Value.Where(n => !notes.Contains(n, StringComparer.Ordinal)));
+            notes.AddRange(driven.Value.Notes.Where(n => !notes.Contains(n, StringComparer.Ordinal)));
+            foreach (var (key, problem) in driven.Value.Problems)
+            {
+                problems[key] = problem;
+            }
         }
 
-        return notes;
+        return new DesktopCaptures(notes, problems);
     }
 
-    private async ValueTask<Result<IReadOnlyList<string>>> CaptureAsync(DesktopPlan plan, Core.Geometry.ViewportSize size, Dictionary<string, string> environment, CancellationToken cancellationToken)
+    private async ValueTask<Result<DesktopCaptures>> DriveSizeAsync(DesktopPlan plan, ViewportSize size, Dictionary<string, string> environment, CancellationToken cancellationToken)
     {
-        List<(string Route, string Path)> shots = [];
+        List<string> notes = [];
+        Dictionary<string, string> problems = new(StringComparer.Ordinal);
         foreach (var screen in plan.At(size))
         {
-            var target = plan.FilesOf(screen, size).App;
-            var made = await files.CreateDirectoryAsync(target[..target.LastIndexOf('/')], cancellationToken).ConfigureAwait(false);
-            if (made.IsError)
+            var driven = await driving.DriveAsync(plan, screen, size, environment, cancellationToken).ConfigureAwait(false);
+            if (driven.IsError)
             {
-                return made.Error;
+                return driven.Error;
             }
 
-            shots.Add((screen.Route, target));
+            if (!notes.Contains(driven.Value.Display, StringComparer.Ordinal))
+            {
+                notes.Add(driven.Value.Display);
+            }
+
+            if (driven.Value.Problem is { } problem)
+            {
+                problems[DesktopPlan.KeyOf(screen, size)] = problem;
+            }
         }
 
-        var command = DesktopCommandLine.Capture(plan.Settings.Capture.Command, size.Describe(), shots);
-        var captured = await RunCommandAsync(plan, command, environment, $"capture at {size.Describe()}", cancellationToken).ConfigureAwait(false);
-        return captured.IsError ? captured.Error : Results.Success<IReadOnlyList<string>>(Notes(captured.Value));
+        return new DesktopCaptures(notes, problems);
     }
-
-    // The capture command says how it got a display ('display: xvfb-run ...') on stderr; the pack records it.
-    private static List<string> Notes(string standardError) =>
-        [.. standardError.ReplaceLineEndings("\n").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Where(static l => l.StartsWith("display: ", StringComparison.Ordinal))];
 
     // The config's steps, then each screen's own, once each and in order of first use.
     private static List<IReadOnlyList<string>> Steps(DesktopPlan plan)
@@ -120,13 +126,6 @@ internal sealed class DesktopStack(IDesktopCommands commands, IScratchDirectorie
 
         return ran.Value.ExitCode == 0
             ? ran.Value.StandardError
-            : EvidenceErrors.RunFailed.With(string.Create(CultureInfo.InvariantCulture, $"{what} exited {ran.Value.ExitCode}: {Tail(ran.Value.StandardError)}"));
-    }
-
-    private static string Tail(string text)
-    {
-        var lines = text.ReplaceLineEndings("\n").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        var tail = string.Join(" | ", lines.TakeLast(TailLines));
-        return tail.Length <= TailLimit ? tail : "…" + tail[^TailLimit..];
+            : EvidenceErrors.RunFailed.With(string.Create(CultureInfo.InvariantCulture, $"{what} exited {ran.Value.ExitCode}: {CommandTail.Of(ran.Value.StandardError)}"));
     }
 }

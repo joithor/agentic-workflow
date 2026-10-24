@@ -4,7 +4,7 @@ using Aw.Evidence.Core.Geometry;
 
 namespace Aw.Evidence.Features.DesktopRun;
 
-/// <summary>What one run captures and compares: the config, the manifest's screens and the folder the mockups are in.</summary>
+/// <summary>What one run drives and compares: the config, the manifest's screens and the folder the mockups are in.</summary>
 /// <param name="Repo">The repository (absolute).</param>
 /// <param name="RunDirectory">The run directory (absolute).</param>
 /// <param name="DesignDirectory">The mockups' folder (absolute).</param>
@@ -23,6 +23,9 @@ internal sealed record DesktopPlan(string Repo, string RunDirectory, string Desi
         screen.Sizes is { Count: > 0 } named ? [.. named.Select(static s => SizeText.TryParse(s, out var size) ? size : new ViewportSize(0, 0))] : Settings.Sizes;
 
     internal double ThresholdOf(DesktopScreen screen) => screen.Threshold ?? Threshold;
+
+    /// <summary>What names a screen at a size in the maps of one run.</summary>
+    internal static string KeyOf(DesktopScreen screen, ViewportSize size) => screen.Name + "@" + size.Describe();
 
     internal DesktopFiles FilesOf(DesktopScreen screen, ViewportSize size) => DesktopFiles.For(RunDirectory, screen.Name, size.Describe());
 }

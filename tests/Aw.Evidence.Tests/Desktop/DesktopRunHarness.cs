@@ -10,9 +10,9 @@ using Microsoft.Extensions.Time.Testing;
 namespace Aw.Evidence.Tests.Desktop;
 
 /// <summary>
-/// The desktop-run slice over in-memory fakes. The repo's config names a fixture ('fx up', then 'fx items') and a capture program; the capture
-/// "writes" each frame by putting a 40x20 white image where the shot says, and the browser's design frame is the same white image, so a default run
-/// matches pixel for pixel. Two screens, 'home' and 'agents', at the default sizes would be four captures: the manifest narrows them to one size.
+/// The desktop-run slice over in-memory fakes. The repo's config names a fixture ('fx up', then 'fx items'), an app and a driver program; the
+/// driver's screenshot "writes" each frame by putting a 40x20 white image where --out says, and the browser's design frame is the same white image,
+/// so a default run matches pixel for pixel. Two screens, 'home' and 'agents', at the default sizes would be four launches: the config narrows them to one size.
 /// </summary>
 internal sealed class DesktopRunHarness
 {
@@ -22,14 +22,20 @@ internal sealed class DesktopRunHarness
     internal const string Config = """
         {"desktop":{"manifest":"docs/screens.json","homeEnv":"APP_HOME",
           "fixture":{"command":["scripts/fx.sh"],"up":[["up"]],"down":["down"]},
-          "capture":{"command":["bin/capture","--size","{size}","{shots}"]},
+          "app":{"command":["bin/app","--flag"]},"driver":{"command":["bin/aw-ui-driver"]},
           "sizes":["40x20"],"env":{"APP_CLI":"bin/app"}}}
         """;
 
     internal const string Manifest = """
         {"schema":"ui-evidence.desktop-screens/1","designRoot":"mockups","screens":[
-          {"name":"home","route":"page:Home","design":"home.html","fixture":[["items"]],"accepted":["clock text"]},
-          {"name":"agents","route":"page:Agents","design":"agents.html","fixture":[["items"]],"threshold":2}]}
+          {"name":"home","design":"home.html","fixture":[["items"]],"accepted":["clock text"],"steps":[
+            {"action":"launch"},
+            {"action":"click","target":{"automationId":"nav-home"},"expectedState":{"state":"visible"}},
+            {"action":"wait-for","target":{"text":"Home"},"expectedState":{"state":"textContains","text":"Hom"}},
+            {"action":"screenshot"}]},
+          {"name":"agents","design":"agents.html","fixture":[["items"]],"threshold":2,"steps":[
+            {"action":"click","target":{"name":"Agents"}},
+            {"action":"screenshot"}]}]}
         """;
 
     internal DesktopRunHarness()
@@ -38,7 +44,7 @@ internal sealed class DesktopRunHarness
         Page.Screenshot = Codec.Encode(RgbaImage.Filled(40, 20, 0xFFFFFFFF));
         Targets = new FakeEvidenceTargets(TestJson.Options).File(Repo + "/.agentic-workflow/evidence.json", Config);
         _ = Files.With(ManifestPath, Encoding.UTF8.GetBytes(Manifest));
-        _ = Commands.When(IsCapture, WriteFrames);
+        _ = Commands.When(IsShot, WriteFrame);
     }
 
     internal DesktopRunHarness WithoutDesktopConfig()
@@ -54,6 +60,8 @@ internal sealed class DesktopRunHarness
     internal FakeDesktopCommands Commands { get; } = new();
 
     internal FakeScratchDirectories Scratch { get; } = new();
+
+    internal FakeDesktopApps Apps { get; } = new();
 
     internal FakeStaticSite Site { get; } = new();
 
@@ -77,26 +85,19 @@ internal sealed class DesktopRunHarness
         var files = new Aw.Evidence.Core.Data.DataRunFiles(Files, new FakeTextScrubber(), TestJson.Options);
         var service = new ValidatingService<DesktopRunRequest, DesktopRunResponse>(
             new DesktopRunService(
-                files, new DesktopPlans(Targets, TestJson.Options), Locks, new DesktopStack(Commands, Scratch, Files),
+                files, new DesktopPlans(Targets, TestJson.Options), Locks, new DesktopStack(Commands, Scratch, new DesktopDriving(Apps, Commands, Scratch, Files)),
                 new DesktopFrames(Browser, Site, Files, Codec), Clock),
             new DesktopRunValidator());
         return service.Handle(request ?? Request(), cancellationToken);
     }
 
-    // The capture program's own frame: wherever a shot says to write, a 40x20 white image (what the app would render).
-    private static bool IsCapture(CommandSpec command) => command.Argv[0].EndsWith("capture", StringComparison.Ordinal);
+    // The driver's screenshot verb: wherever --out says, a 40x20 white image (what the app would render).
+    internal static bool IsShot(CommandSpec command) => command.Argv[0].EndsWith("aw-ui-driver", StringComparison.Ordinal) && command.Argv.Contains("screenshot", StringComparer.Ordinal);
 
-    private CommandResult WriteFrames(CommandSpec command)
+    private CommandResult WriteFrame(CommandSpec command)
     {
-        for (var i = 0; i < command.Argv.Count; i++)
-        {
-            if (command.Argv[i] == DesktopCommandLine.ShotFlag)
-            {
-                _ = Files.With(command.Argv[i + 2], Codec.Encode(AppFrame));
-            }
-        }
-
-        return new CommandResult(0, string.Empty, "display: xvfb-run (virtual X server)\nsaved frames");
+        _ = Files.With(command.Argv[command.Argv.ToList().IndexOf("--out") + 1], Codec.Encode(AppFrame));
+        return new CommandResult(0, "{\"path\":\"x\"}", string.Empty);
     }
 
     internal RgbaImage AppFrame { get; set; } = RgbaImage.Filled(40, 20, 0xFFFFFFFF);

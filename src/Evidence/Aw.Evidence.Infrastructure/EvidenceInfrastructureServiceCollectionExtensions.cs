@@ -66,6 +66,7 @@ public static class EvidenceInfrastructureServiceCollectionExtensions
             .AddSingleton<ICliRunner>(new ProcessCliRunner(TimeSpan.FromMinutes(2)))
             .AddSingleton<IGhRunner, ProcessGhRunner>()
             .AddSingleton<IDesktopCommands, ProcessDesktopCommands>()
+            .AddSingleton<IDesktopApps, ProcessDesktopApps>()
             .AddSingleton<IScratchDirectories, TempScratchDirectories>()
             .AddSingleton<IStaticSite, LoopbackStaticSite>()
             .AddSingleton<IExecutableLocator, FileExecutableLocator>()

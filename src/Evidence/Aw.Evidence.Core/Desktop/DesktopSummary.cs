@@ -16,7 +16,7 @@ namespace Aw.Evidence.Core.Desktop;
 /// <param name="Screens">Every screen at every size, in manifest order.</param>
 /// <param name="Refusal">Set when a guard refused the run (exit 1).</param>
 /// <param name="Error">Set when the run errored (exit 4).</param>
-/// <param name="Notes">How the frames were made that a reader should know: the capture's 'display: ...' lines (the user's display or a virtual X server).</param>
+/// <param name="Notes">How the frames were made that a reader should know: the app's 'display: ...' lines (the user's display or a virtual X server).</param>
 public sealed record DesktopSummary(
     string Schema,
     string Kind,
@@ -45,46 +45,7 @@ public sealed record DesktopSummary(
         DesktopOutcome.Passed => 0,
         DesktopOutcome.Failed => 2,
         DesktopOutcome.Refused => 1,
+        DesktopOutcome.Errored => 4,
         _ => 4,
     };
-}
-
-/// <summary>One screen at one window size: the pixel verdict and where its images are.</summary>
-/// <param name="Name">The screen.</param>
-/// <param name="Size">The window size, 'WxH'.</param>
-/// <param name="DiffPercent">The share of pixels that differ, in percent (two decimals); 0 when the frames could not be compared.</param>
-/// <param name="Threshold">The limit it was judged by, in percent.</param>
-/// <param name="Passed">True when the frames compared and the difference is within the limit.</param>
-/// <param name="Problem">Why the screen failed beyond the difference (a capture of another size, an unreadable image); null otherwise.</param>
-/// <param name="Files">The screen's images (absolute paths).</param>
-/// <param name="Accepted">The differences the manifest lists as accepted; the review step skips them.</param>
-/// <param name="Masked">How many mask regions were painted over.</param>
-public sealed record DesktopScreenResult(
-    string Name,
-    string Size,
-    double DiffPercent,
-    double Threshold,
-    bool Passed,
-    string? Problem,
-    DesktopFiles Files,
-    IReadOnlyList<string> Accepted,
-    int Masked);
-
-/// <summary>The images of one screen at one size.</summary>
-/// <param name="App">The app's frame.</param>
-/// <param name="Design">The mockup's frame.</param>
-/// <param name="Diff">The pixel diff.</param>
-/// <param name="SideBySide">Design, app and diff in one image.</param>
-public sealed record DesktopFiles(string App, string Design, string Diff, string SideBySide)
-{
-    /// <summary>The images of a screen at a size, below the run directory.</summary>
-    /// <param name="runDirectory">The run directory (absolute).</param>
-    /// <param name="name">The screen.</param>
-    /// <param name="size">The window size, 'WxH'.</param>
-    /// <returns>The paths.</returns>
-    public static DesktopFiles For(string runDirectory, string name, string size)
-    {
-        var folder = runDirectory.TrimEnd('/') + "/" + name + "-" + size + "/";
-        return new DesktopFiles(folder + "app.png", folder + "design.png", folder + "diff.png", folder + "side-by-side.png");
-    }
 }

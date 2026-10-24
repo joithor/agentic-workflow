@@ -6,7 +6,7 @@ namespace Aw.Evidence.Core.Data;
 /// <param name="Schema">'evidence.targets/1' or 'evidence.repo/1' when given.</param>
 /// <param name="Cli">Where programs live and which may run.</param>
 /// <param name="Databases">The databases db-run may read; each entry is checked when the file is read.</param>
-/// <param name="Desktop">What desktop-run needs: the seeded-data and capture commands and the screens manifest.</param>
+/// <param name="Desktop">What desktop-run needs: the seeded-data, app and driver commands and the screens manifest.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record TargetsFile(string? Schema = null, CliTargets? Cli = null, IReadOnlyDictionary<string, DatabaseEntry>? Databases = null, DesktopTargets? Desktop = null)
 {

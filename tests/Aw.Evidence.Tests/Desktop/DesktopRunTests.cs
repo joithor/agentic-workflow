@@ -11,9 +11,11 @@ public sealed class DesktopRunTests
 {
     private const string HomeShot = "/runs/desktop-1/home-40x20/app.png";
     private const string AgentsShot = "/runs/desktop-1/agents-40x20/app.png";
+    private const string HomeDriver = "bin/aw-ui-driver --dir /tmp/aw-driver-2";
+    private const string AgentsDriver = "bin/aw-ui-driver --dir /tmp/aw-driver-3";
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_run_seeds_the_data_once_captures_every_screen_and_tears_down()
+    public async Task A_run_seeds_the_data_once_drives_every_screen_on_its_own_launch_and_tears_down()
     {
         var harness = new DesktopRunHarness();
 
@@ -23,7 +25,16 @@ public sealed class DesktopRunTests
             [
                 "scripts/fx.sh up",
                 "scripts/fx.sh items",
-                $"bin/capture --size 40x20 --shot page:Home {HomeShot} --shot page:Agents {AgentsShot}",
+                $"{HomeDriver} ready --wait-ms 30000",
+                $"{HomeDriver} window --width 40 --height 20",
+                $"{HomeDriver} click --automation-id nav-home",
+                $"{HomeDriver} wait-for --automation-id nav-home --state visible",
+                $"{HomeDriver} wait-for --text Home --state textContains --expect-text Hom",
+                $"{HomeDriver} screenshot --out {HomeShot}",
+                $"{AgentsDriver} ready --wait-ms 30000",
+                $"{AgentsDriver} window --width 40 --height 20",
+                $"{AgentsDriver} click --name Agents",
+                $"{AgentsDriver} screenshot --out {AgentsShot}",
                 "scripts/fx.sh down",
             ],
             harness.Commands.Lines());
@@ -34,6 +45,20 @@ public sealed class DesktopRunTests
         Assert.Equal((DesktopOutcome.Passed, 0), (response.Summary.Outcome, response.Summary.ExitCode()));
         Assert.Equal("passed: 2 screens within their limit", response.Summary.Headline);
         Assert.Equal(["display: xvfb-run (virtual X server)"], response.Summary.Notes);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Each_launch_gets_the_app_command_the_seeded_home_and_its_own_driver_directory_and_ends_when_its_screen_is_done()
+    {
+        var harness = new DesktopRunHarness();
+
+        _ = await harness.Run();
+
+        Assert.Equal(["bin/app --flag", "bin/app --flag"], harness.Apps.Launches.Select(static l => string.Join(' ', l.Argv)));
+        var home = harness.Apps.Launches[0];
+        Assert.Equal((DesktopRunHarness.Repo, "/tmp/aw-desktop-1", "1", "/tmp/aw-driver-2"), (home.WorkingDirectory, home.Environment["APP_HOME"], home.Environment["AW_UI_DRIVER"], home.Environment["AW_UI_DRIVER_DIR"]));
+        Assert.Equal("/tmp/aw-driver-3", harness.Apps.Launches[1].Environment["AW_UI_DRIVER_DIR"]);
+        Assert.Equal(0, harness.Apps.Running);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -86,15 +111,15 @@ public sealed class DesktopRunTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_capture_that_wrote_no_frame_fails_that_screen_with_the_reason()
+    public async Task A_screenshot_that_wrote_no_frame_fails_that_screen_with_the_reason()
     {
         var harness = new DesktopRunHarness();
-        _ = harness.Commands.When(static c => c.Argv[0].EndsWith("capture", StringComparison.Ordinal), _ => new CommandResult(0, string.Empty, string.Empty));
+        _ = harness.Commands.When(DesktopRunHarness.IsShot, _ => new CommandResult(0, string.Empty, string.Empty));
 
         var response = (await harness.Run()).Value;
 
         Assert.Equal(DesktopOutcome.Failed, response.Summary.Outcome);
-        Assert.All(response.Summary.Screens, screen => Assert.StartsWith("the capture wrote no frame", screen.Problem, StringComparison.Ordinal));
+        Assert.All(response.Summary.Screens, screen => Assert.StartsWith("the screenshot wrote no frame", screen.Problem, StringComparison.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -125,16 +150,67 @@ public sealed class DesktopRunTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_capture_that_will_not_start_errors_the_run_and_the_data_is_still_torn_down()
+    public async Task An_app_that_will_not_start_errors_the_run_and_the_data_is_still_torn_down()
     {
         var harness = new DesktopRunHarness();
-        _ = harness.Commands.WontStart.Add("bin/capture");
+        _ = harness.Apps.WontStart.Add("bin/app");
 
         var response = (await harness.Run()).Value;
 
         Assert.Equal(DesktopOutcome.Errored, response.Summary.Outcome);
-        Assert.Equal("capture at 40x20: bin/capture could not start", response.Summary.Error!.Message);
+        Assert.Equal("launch home at 40x20: bin/app could not start", response.Summary.Error!.Message);
         Assert.Equal("scripts/fx.sh down", harness.Commands.Lines()[^1]);
+        Assert.Empty(harness.Scratch.Live);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_driver_that_never_answers_errors_the_run_says_how_the_app_ended_and_stops_the_app()
+    {
+        var harness = new DesktopRunHarness();
+        harness.Apps.EndedAtStart = "exited 1: segfault";
+        _ = harness.Commands.When(static c => c.Argv.Contains("ready", StringComparer.Ordinal), static _ => new CommandResult(4, string.Empty, "aw-ui-driver: AW-UIDRIVER-006 no driver answered in /tmp/aw-driver-2\n"));
+
+        var response = (await harness.Run()).Value;
+
+        Assert.Equal((DesktopOutcome.Errored, EvidenceErrors.RunFailed.Code), (response.Summary.Outcome, response.Summary.Error!.Code));
+        Assert.Equal(
+            "launch home at 40x20: the app's driver did not answer: driver ready exited 4: aw-ui-driver: AW-UIDRIVER-006 no driver answered in /tmp/aw-driver-2 (the app exited 1: segfault)",
+            response.Summary.Error.Message);
+        Assert.Equal(0, harness.Apps.Running);
+        Assert.Empty(harness.Scratch.Live);
+        Assert.Empty(harness.Browser.Sessions);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_step_whose_element_is_not_found_fails_that_screen_with_the_step_and_the_drivers_words_and_the_other_screens_still_run()
+    {
+        var harness = new DesktopRunHarness();
+        _ = harness.Commands.When(static c => c.Argv.Contains("click", StringComparer.Ordinal) && c.Argv.Contains("Agents", StringComparer.Ordinal), static _ => new CommandResult(2, string.Empty, "aw-ui-driver: AW-UIDRIVER-002 no element matches\n"));
+
+        var response = (await harness.Run()).Value;
+
+        Assert.Equal((DesktopOutcome.Failed, 2), (response.Summary.Outcome, response.Summary.ExitCode()));
+        Assert.Equal([true, false], response.Summary.Screens.Select(static s => s.Passed));
+        Assert.Equal("step 1 (click) failed: aw-ui-driver: AW-UIDRIVER-002 no element matches", response.Summary.Screens[1].Problem);
+        Assert.Equal("failed: agents at 40x20 step 1 (click) failed: aw-ui-driver: AW-UIDRIVER-002 no element matches (1 of 2 over)", response.Summary.Headline);
+        Assert.False(harness.Files.Files.ContainsKey(AgentsShot));
+        Assert.Equal(0, harness.Apps.Running);
+        Assert.Empty(harness.Scratch.Live);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_step_that_times_out_is_the_screens_problem_and_a_driver_that_fails_otherwise_is_the_runs_error()
+    {
+        var timedOut = new DesktopRunHarness();
+        _ = timedOut.Commands.When(static c => c.Argv.Contains("wait-for", StringComparer.Ordinal), static _ => new CommandResult(2, string.Empty, "aw-ui-driver: AW-UIDRIVER-004 timed out\n"));
+        var broken = new DesktopRunHarness();
+        _ = broken.Commands.When(static c => c.Argv.Contains("window", StringComparer.Ordinal), static _ => new CommandResult(4, string.Empty, "aw-ui-driver: AW-UIDRIVER-007 the app failed\n"));
+
+        var late = (await timedOut.Run()).Value;
+        var failed = (await broken.Run()).Value;
+
+        Assert.StartsWith("step 2 (click) failed", late.Summary.Screens[0].Problem, StringComparison.Ordinal);
+        Assert.Equal((DesktopOutcome.Errored, "window home at 40x20: window exited 4: aw-ui-driver: AW-UIDRIVER-007 the app failed"), (failed.Summary.Outcome, failed.Summary.Error!.Message));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -158,7 +234,7 @@ public sealed class DesktopRunTests
         var unknown = (await new DesktopRunHarness().Run(DesktopRunHarness.Request(["nope"]))).Value;
 
         Assert.Equal(["agents"], some.Summary.Screens.Select(static s => s.Name));
-        Assert.Equal($"bin/capture --size 40x20 --shot page:Agents {AgentsShot}", harness.Commands.Lines()[^2]);
+        Assert.Equal($"{HomeDriver} screenshot --out {AgentsShot}", harness.Commands.Lines()[^2]);
         Assert.Equal((DesktopOutcome.Refused, 1), (unknown.Summary.Outcome, unknown.Summary.ExitCode()));
         Assert.Contains("nope", unknown.Summary.Refusal!.Message, StringComparison.Ordinal);
     }
@@ -219,7 +295,7 @@ public sealed class DesktopRunTests
     {
         var harness = new DesktopRunHarness();
         using var cancel = new CancellationTokenSource();
-        _ = harness.Commands.When(static c => c.Argv[0].EndsWith("capture", StringComparison.Ordinal), _ =>
+        _ = harness.Commands.When(DesktopRunHarness.IsShot, _ =>
         {
             cancel.Cancel();
             throw new OperationCanceledException(cancel.Token);
@@ -229,5 +305,6 @@ public sealed class DesktopRunTests
 
         Assert.Equal("scripts/fx.sh down", harness.Commands.Lines()[^1]);
         Assert.Empty(harness.Scratch.Live);
+        Assert.Equal(0, harness.Apps.Running);
     }
 }
