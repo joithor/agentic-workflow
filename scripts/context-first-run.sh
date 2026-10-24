@@ -42,6 +42,7 @@
 #   SINDRI                    the sindri command line, split on spaces; default scripts/sindri-app.sh (publishes the C# build
 #                             into $AW_STATE_DIR/bin/sindri-app/ when its source changed, then runs it)
 #   AW_SINDRI_UI              the sindri-ui binary; default the newest $AW_STATE_DIR/bin/sindri-app/*/sindri-ui
+# It exports AW_SINDRI_APP_NO_MCP=1 for every Sindri it starts, so the scratch plane never registers a 'sindri' MCP server in ~/.claude.json.
 #
 # Exit: 0 ok; 1 a step failed (the message names it); 2 usage or a refused setup; 3 stopped for you to approve something.
 # Bash 3.2 compatible (macOS /bin/bash).
@@ -72,6 +73,8 @@ done
 unset TMUX TMUX_PANE
 # The real profile must never steer the scratch instance (owner-check.sh does the same).
 unset AW_SINDRI_PROFILE
+# Every Sindri this script starts is throwaway: sindri-app.sh must not register it as the 'sindri' MCP server in the real ~/.claude.json.
+export AW_SINDRI_APP_NO_MCP=1
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 state="${AW_STATE_DIR:-$HOME/.agentic-workflow}"
@@ -122,7 +125,7 @@ guard() {
 # ---- running things ----
 step()  { echo; echo "== $1"; }
 note()  { echo "-- $*"; }
-shown() { printf '%s' "AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port $sindri_cmd"; }
+shown() { printf '%s' "AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port AW_SINDRI_APP_NO_MCP=1 $sindri_cmd"; }
 # words <args>: the arguments as a shell would need them typed (an argument with a space is quoted).
 words() {
   local a out=""
@@ -391,7 +394,7 @@ open_ui() {
   step "7. open the Sindri app on the scratch home (Context page)"
   if [ "$no_ui" = 1 ]; then note "skipped (--no-ui)"; return 0; fi
   if [ "$dry" = 1 ]; then
-    echo "+ AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port <sindri-ui: \$AW_SINDRI_UI, else the newest $state/bin/sindri-app/*/sindri-ui> > $home/logs/ui.log 2>&1 &"
+    echo "+ AW_SINDRI_HOME=$home AW_SINDRI_PORT=$port AW_SINDRI_APP_NO_MCP=1 <sindri-ui: \$AW_SINDRI_UI, else the newest $state/bin/sindri-app/*/sindri-ui> > $home/logs/ui.log 2>&1 &"
     check "the process is alive 2 s later; its pid is kept in $home/first-run/ui.pid"
     return 0
   fi
