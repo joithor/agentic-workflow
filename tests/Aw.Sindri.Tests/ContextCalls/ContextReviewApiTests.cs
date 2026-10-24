@@ -225,7 +225,7 @@ public sealed class ContextReviewApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task Applying_a_review_file_acts_at_once_for_the_terminal_and_for_a_session()
+    public async Task Applying_a_review_file_acts_at_once_for_a_session_and_a_second_apply_matches_nothing_043()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var host = await Host(sessions: true);
@@ -241,13 +241,13 @@ public sealed class ContextReviewApiTests : IDisposable
         await File.WriteAllTextAsync(path, file.ToJsonString(), ct);
 
         var applied = await host.Http.Ask(Post("/sindri/context/map/review", Review("apply-file", path: path), Session()));
-        var again = await host.Http.Ask(Post("/sindri/context/map/review", Review("apply-file", path: path), Terminal(host)));
+        var again = await host.Http.Ask(Post("/sindri/context/map/review", Review("apply-file", path: path), Terminal(host)));   // every entry is decided by now
 
         Assert.Equal(HttpStatusCode.OK, export.Status);
         Assert.Equal(HttpStatusCode.OK, applied.Status);
         Assert.True(Json(applied.Body).GetProperty("result").GetProperty("written").GetArrayLength() > 0);
         Assert.DoesNotContain("challenge", applied.Body, StringComparison.Ordinal);
-        Assert.Equal(HttpStatusCode.OK, again.Status);
+        Assert.Equal((HttpStatusCode.Conflict, "SND-CONTEXT-043"), (again.Status, again.Code));   // nothing is left to match, and no challenge is asked either
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]

@@ -122,7 +122,7 @@ internal sealed class Scenario(GoldenHost host)
     public async Task<string> SessionReview(CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        return (await host.Http.Ask(Post("/sindri/context/map/import", """{"file":"/x/map.yaml"}""", (SindriHeaders.Caller, "session"), (SindriHeaders.Repo, "aw-split-panes")))).Body;
+        return (await host.Http.Ask(Post("/sindri/context/map/import", """{"path":"/x/map.yaml"}""", (SindriHeaders.Caller, "session"), (SindriHeaders.Repo, "aw-split-panes")))).Body;
     }
 
     /// <summary>The draft is built, then GET as the app.</summary>
