@@ -114,7 +114,7 @@ internal sealed partial class OnyxClient(OnyxSettings settings, OnyxSourceParts 
                 ? "the key isn't accepted (missing, wrong, expired or revoked; /api/me needs only a valid key)"
                 : "the key is missing, wrong, or lacks the admin role POST /api/admin/search needs";
             return ContextErrors.OnyxKeyRefused.With(
-                $"Onyx at {Settings.Address} refused the key on {call.Method} {call.Route} (HTTP {(int)status}): {why}. Fix: create an admin key for a dedicated account "
+                $"Onyx at {Settings.Address} refused the key on {call.Method} {call.Route} (HTTP {((int)status).ToString(CultureInfo.InvariantCulture)}): {why}. Fix: create an admin key for a dedicated account "
                 + $"(`sindri onyx up` makes one), store it behind {TokenKey} (env:, file:, keychain: or op:), then approve the profile again (`sindri profile approve`). "
                 + $"If this isn't your Onyx, another service may answer on {Settings.Address}: check `curl {Settings.Url}api/version` shows a backend_version (spec §8.8).");
         }

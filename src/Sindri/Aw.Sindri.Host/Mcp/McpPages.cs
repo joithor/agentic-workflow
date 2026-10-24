@@ -58,15 +58,7 @@ internal static class McpPages
         {
             if (path.Length == 0 && name == "bands" && obj[name] is JsonObject bands)
             {
-                // why: the lenses answer groups its lists in three band objects; each band's lists page, nothing inside an item does
-                foreach (var band in bands.Select(property => property.Key).ToArray())
-                {
-                    if (bands[band] is JsonObject child)
-                    {
-                        Slice(child, window, $"bands.{band}.", lists, ref more);
-                    }
-                }
-
+                SliceBands(bands, window, lists, ref more);
                 continue;
             }
 
@@ -137,6 +129,18 @@ internal static class McpPages
                 break;
             default:
                 break;
+        }
+    }
+
+    // why: the lenses answer groups its lists in three band objects; each band's lists page, nothing inside an item does
+    private static void SliceBands(JsonObject bands, McpWindow window, JsonObject lists, ref bool more)
+    {
+        foreach (var band in bands.Select(property => property.Key).ToArray())
+        {
+            if (bands[band] is JsonObject child)
+            {
+                Slice(child, window, $"bands.{band}.", lists, ref more);
+            }
         }
     }
 
