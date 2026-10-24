@@ -37,9 +37,6 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
     /// <summary>The breadcrumb's name.</summary>
     public string CrumbsName { get; } = Labels.ContextFilesCrumbsName;
 
-    /// <summary>The repo picker's name.</summary>
-    public string RepoName { get; } = Labels.ContextFilesRepoName;
-
     /// <summary>The word while a folder is read.</summary>
     public string LoadingWord { get; } = Labels.ContextFilesLoading;
 
@@ -51,25 +48,6 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
 
     /// <summary>The folder shown as a breadcrumb: "~ / src / tabs", each step but the last a link to that level.</summary>
     public IReadOnlyList<FileCrumb> Crumbs { get; private set => Set(ref field, value); } = [Top(isLink: false)];
-
-    /// <summary>The repos the Files view can read, by name; one when the index names no other.</summary>
-    public IReadOnlyList<string> Repos { get; private set => Set(ref field, value); } = [];
-
-    /// <summary>Whether the repo picker shows: only when there is more than one repo to pick.</summary>
-    public bool HasRepoPicker => Repos.Count > 1;
-
-    /// <summary>The repo being read. Choosing another reads the top of that one.</summary>
-    public string? SelectedRepo
-    {
-        get => _repo;
-        set
-        {
-            if (value is not null && !string.Equals(value, _repo, StringComparison.Ordinal))
-            {
-                _ = Pick(value);
-            }
-        }
-    }
 
     /// <summary>The totals line (files, in the map, suggested, not in the map).</summary>
     public string TotalsText { get; private set => Set(ref field, value); } = string.Empty;
@@ -132,12 +110,6 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
         }
 
         _repo = repo;
-        await ReadRepos(api, repo, cancellationToken).ConfigureAwait(true);
-        if (generation != _generation)
-        {
-            return;
-        }
-
         var read = await Ports.Api.FileMap(api, new FileMapQuery(repo, path, UnmappedOnly: false, Draft: false), cancellationToken).ConfigureAwait(true);
         if (generation != _generation)
         {
@@ -179,23 +151,19 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
         return crumb.IsLink ? Load(crumb.Path, cancellationToken) : Task.CompletedTask;
     }
 
-    /// <summary>Switches to another repo and reads its top folder; the repo already shown reads nothing.</summary>
+    /// <summary>Switches to another repo (the page's picker): the path goes back to its top, read the next time the view opens or loads.</summary>
     /// <param name="repo">The repo's name.</param>
-    /// <param name="cancellationToken">Cancels the read.</param>
-    /// <returns>When the top folder is shown.</returns>
-    internal Task Pick(string repo, CancellationToken cancellationToken = default)
+    internal void UseRepo(string repo)
     {
         ArgumentNullException.ThrowIfNull(repo);
         if (string.Equals(repo, _repo, StringComparison.Ordinal))
         {
-            return Task.CompletedTask;
+            return;
         }
 
         _repo = repo;
         _current = string.Empty;
         Crumbs = [Top(isLink: false)];
-        OnChanged(nameof(SelectedRepo));
-        return Load(path: null, cancellationToken);
     }
 
     private static FileCrumb Top(bool isLink) => new(Labels.ContextFilesTop, Path: null, isLink);
@@ -224,21 +192,6 @@ internal sealed class FileMapViewModel(ContextPorts ports) : ObservableObject
         }
 
         return status.Value.Version.Repo;
-    }
-
-    // The repos the code index names, once: the picker lists them. When the index can't say, the repo being read is the only one.
-    private async Task ReadRepos(Uri api, string current, CancellationToken cancellationToken)
-    {
-        if (Repos.Count > 0)
-        {
-            return;
-        }
-
-        var status = await Ports.Api.CodeIndexStatus(api, cancellationToken).ConfigureAwait(true);
-        IReadOnlyList<string> named = status.IsSuccess ? [.. status.Value.Repos.Select(r => r.Repo).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)] : [];
-        Repos = named.Count > 0 ? named : [current];
-        OnChanged(nameof(HasRepoPicker));
-        OnChanged(nameof(SelectedRepo));
     }
 
     private void Show(FileMapView view)

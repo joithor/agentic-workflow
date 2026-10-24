@@ -39,7 +39,7 @@ internal sealed partial class ContextPageViewModel
             return false;
         }
 
-        var located = await Ports.Api.WholeMap(api, new WholeMapQuery("areas", Area: null, [.. keys.Take(MaxLocate)], MapVersion: null, Draft: false), cancellationToken).ConfigureAwait(true);
+        var located = await Ports.Api.WholeMap(api, new WholeMapQuery("areas", Area: null, [.. keys.Take(MaxLocate)], MapVersion: null, Draft: false, Repo: _repo), cancellationToken).ConfigureAwait(true);
         if (located.IsError)
         {
             Problem = located.Error.Message;
@@ -53,7 +53,7 @@ internal sealed partial class ContextPageViewModel
             return false;
         }
 
-        var reads = await Task.WhenAll(touched.Take(MaxOpenedAreas).Select(area => Ports.Api.WholeMap(api, new WholeMapQuery("nodes", area, [], MapVersion: null, Draft: false), cancellationToken))).ConfigureAwait(true);
+        var reads = await Task.WhenAll(touched.Take(MaxOpenedAreas).Select(area => Ports.Api.WholeMap(api, new WholeMapQuery("nodes", area, [], MapVersion: null, Draft: false, Repo: _repo), cancellationToken))).ConfigureAwait(true);
         if (reads.FirstOrDefault(r => r.IsError) is { } failed)
         {
             Problem = failed.Error.Message;

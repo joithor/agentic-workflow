@@ -17,8 +17,8 @@ internal static partial class Labels
     /// <summary>The breadcrumb's accessible name.</summary>
     internal const string ContextFilesCrumbsName = "Folder path";
 
-    /// <summary>The repo picker's accessible name.</summary>
-    internal const string ContextFilesRepoName = "Repository";
+    /// <summary>The page's repo picker, by name.</summary>
+    internal const string ContextRepoName = "Repository";
 
     /// <summary>The word while a folder is read.</summary>
     internal const string ContextFilesLoading = "Reading the files...";

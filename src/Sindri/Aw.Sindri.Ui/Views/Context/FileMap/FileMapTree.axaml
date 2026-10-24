@@ -32,11 +32,9 @@
 
   <!-- The Files view (F3 spec 1 §2): one folder at a time, 36 px rows, a suggested row hatched. A folder opens; a file is a row. -->
   <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="8">
-    <Grid ColumnDefinitions="Auto,*,Auto">
-      <ComboBox x:Name="FilesRepo" ItemsSource="{Binding Repos}" SelectedItem="{Binding SelectedRepo, Mode=TwoWay}" IsVisible="{Binding HasRepoPicker}" MinWidth="140" Height="28" Margin="0,0,12,0"
-                VerticalAlignment="Center" AutomationProperties.Name="{Binding RepoName}" />
+    <Grid ColumnDefinitions="*,Auto">
       <!-- The path as a breadcrumb: "~" is the top of the repo; every level but the last is a link, the last is where you are. -->
-      <ItemsControl x:Name="FilesCrumbs" Grid.Column="1" ItemsSource="{Binding Crumbs}" VerticalAlignment="Center" AutomationProperties.Name="{Binding CrumbsName}">
+      <ItemsControl x:Name="FilesCrumbs" ItemsSource="{Binding Crumbs}" VerticalAlignment="Center" AutomationProperties.Name="{Binding CrumbsName}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
             <StackPanel Orientation="Horizontal" Spacing="6" />
@@ -54,7 +52,7 @@
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
-      <TextBlock x:Name="FilesTotals" Grid.Column="2" Classes="caption subtle" Text="{Binding TotalsText}" VerticalAlignment="Center" />
+      <TextBlock x:Name="FilesTotals" Grid.Column="1" Classes="caption subtle" Text="{Binding TotalsText}" VerticalAlignment="Center" />
     </Grid>
 
     <Grid Grid.Row="1" ColumnDefinitions="2*,3*,2*,2*" Margin="8,0" AutomationProperties.AccessibilityView="Raw">

@@ -85,6 +85,8 @@
             <TextBlock x:Name="StartingPointsText" Classes="button" AutomationProperties.AccessibilityView="Raw" />
           </Button>
         </StackPanel>
+        <ComboBox x:Name="ContextRepo" ItemsSource="{Binding Repos}" SelectedItem="{Binding SelectedRepo, Mode=TwoWay}" IsVisible="{Binding HasRepoPicker}" MinWidth="140" Height="28" Margin="0,0,16,8"
+                  VerticalAlignment="Center" AutomationProperties.Name="{Binding RepoName}" />
         <Border x:Name="ContextViewSwitch" Background="{DynamicResource Brush.Surface2}" CornerRadius="{StaticResource Radius.MD}" Padding="2" Margin="0,0,16,8" VerticalAlignment="Center"
                 AutomationProperties.Name="{Binding ViewName}">
           <StackPanel Orientation="Horizontal">

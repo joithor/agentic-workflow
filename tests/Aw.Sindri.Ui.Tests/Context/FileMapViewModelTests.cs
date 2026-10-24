@@ -116,63 +116,6 @@ public sealed class FileMapViewModelTests
         Assert.Equal(calls, api.FileMapAsked.Count);
     }
 
-    private static RouteAnswer Repos(params string[] names) => new(System.Net.HttpStatusCode.OK, new System.Text.Json.Nodes.JsonObject
-    {
-        ["repos"] = new System.Text.Json.Nodes.JsonArray([.. names.Select(n => (System.Text.Json.Nodes.JsonNode)new System.Text.Json.Nodes.JsonObject { ["repo"] = n, ["state"] = "ok", ["commit"] = null, ["builtAt"] = null, ["layers"] = new System.Text.Json.Nodes.JsonArray() })]),
-    }.ToJsonString());
-
-    [Fact]
-    public async Task With_one_repo_there_is_no_picker()
-    {
-        var files = Files(new FakeSindriApi { CodeIndexStatusAnswer = Repos("aw-split-panes") });
-
-        await files.Load(path: null, Token);
-
-        Assert.False(files.HasRepoPicker);
-        Assert.Equal(["aw-split-panes"], files.Repos);
-    }
-
-    [Fact]
-    public async Task With_more_than_one_repo_the_picker_lists_them_and_shows_the_one_being_read()
-    {
-        var files = Files(new FakeSindriApi { CodeIndexStatusAnswer = Repos("other", "aw-split-panes") });
-
-        await files.Load(path: null, Token);
-
-        Assert.True(files.HasRepoPicker);
-        Assert.Equal("aw-split-panes", files.SelectedRepo);
-        Assert.Equal(["aw-split-panes", "other"], files.Repos);
-    }
-
-    [Fact]
-    public async Task Switching_repo_reads_the_top_of_that_repo_and_each_repo_has_its_own_tilde()
-    {
-        var api = new FakeSindriApi { CodeIndexStatusAnswer = Repos("aw-split-panes", "other") };
-        var files = Files(api);
-        await files.Load("src/tabs/", Token);
-
-        await files.Pick("other", Token);
-
-        var last = api.FileMapAsked[^1];
-        Assert.Equal("other", last.Repo);
-        Assert.Null(last.Path);
-        Assert.Equal("other", files.SelectedRepo);
-        Assert.Equal([(Labels.ContextFilesTop, false)], Trail(files));
-    }
-
-    [Fact]
-    public async Task Choosing_the_repo_already_shown_reads_nothing()
-    {
-        var api = new FakeSindriApi { CodeIndexStatusAnswer = Repos("aw-split-panes", "other") };
-        var files = Files(api);
-        await files.Load(path: null, Token);
-        var calls = api.FileMapAsked.Count;
-
-        await files.Pick("aw-split-panes", Token);
-
-        Assert.Equal(calls, api.FileMapAsked.Count);
-    }
-
     [Fact]
     public async Task Opening_a_file_reads_nothing()
     {

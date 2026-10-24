@@ -46,10 +46,11 @@ internal sealed partial class ContextPageViewModel
 
         Whole.Loading();
         ChangedWhole();
-        var read = await Ports.Api.WholeMap(api, new WholeMapQuery("auto", Area: null, [], MapVersion: null, Draft: false), cancellationToken).ConfigureAwait(true);
+        var read = await Ports.Api.WholeMap(api, new WholeMapQuery("auto", Area: null, [], MapVersion: null, Draft: false, Repo: _repo), cancellationToken).ConfigureAwait(true);
         if (read.IsSuccess)
         {
             Whole.Show(read.Value);
+            NoteRepos(read.Value);
             if (_servedBuilding)
             {
                 (IsBuilding, _buildJob, _servedBuilding, _notReady, NoMap) = (false, null, false, MapNotReadyView.None, false);   // the build the answer named is done: the map is here
@@ -86,7 +87,7 @@ internal sealed partial class ContextPageViewModel
             return;
         }
 
-        var read = await Ports.Api.WholeMap(api, new WholeMapQuery("nodes", area, [], MapVersion: null, Draft: false), cancellationToken).ConfigureAwait(true);
+        var read = await Ports.Api.WholeMap(api, new WholeMapQuery("nodes", area, [], MapVersion: null, Draft: false, Repo: _repo), cancellationToken).ConfigureAwait(true);
         if (read.IsSuccess)
         {
             Whole.ShowArea(read.Value);
