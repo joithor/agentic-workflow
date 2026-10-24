@@ -8,7 +8,35 @@ namespace Aw.Sindri.Ui.Views.Controls;
 // The pointer half of the stage: a drag on empty canvas pans, the wheel pans, Ctrl or Cmd with the wheel zooms.
 internal sealed partial class ZoomBorder
 {
+    private readonly PinchTracker _pinch = new();
     private (Point Pointer, ZoomView View, bool Moved)? _drag;
+
+    // A touch pinch (the recognizer) and a trackpad pinch (macOS magnify) both zoom around their origin.
+    private void WirePinch()
+    {
+        GestureRecognizers.Add(new PinchGestureRecognizer());
+        AddHandler(PinchEvent, OnPinch);
+        AddHandler(PinchEndedEvent, (_, _) => _pinch.End());
+        AddHandler(PointerTouchPadGestureMagnifyEvent, OnMagnify);
+    }
+
+    private void OnPinch(object? sender, PinchEventArgs e)
+    {
+        ZoomBy(e.ScaleOrigin, _pinch.Step(e.Scale));
+        e.Handled = true;
+    }
+
+    private void OnMagnify(object? sender, PointerDeltaEventArgs e)
+    {
+        ZoomBy(e.GetPosition(this), PinchTracker.MagnifyFactor(e.Delta.X));
+        e.Handled = true;
+    }
+
+    private void ZoomBy(Point origin, double factor)
+    {
+        Settle();
+        Apply(Kept(View.ZoomAt(origin, factor, Range)));
+    }
 
     /// <inheritdoc/>
     protected override void OnPointerPressed(PointerPressedEventArgs e)
