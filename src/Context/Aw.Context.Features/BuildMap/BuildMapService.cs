@@ -149,7 +149,11 @@ internal sealed class BuildMapService(
     }
 
     private static string[] Degraded(ClusterSet clusters, Result<LabelPass> labels, bool timedOut) =>
-        [.. clusters is { Available: true, Reason: null } ? [] : new[] { clusters.Reason is { } why ? $"clusters: {why}" : "clusters" }, .. labels.IsError || !labels.Value.Complete ? new[] { "labels" } : [], .. timedOut ? new[] { "recognizers" } : []];
+        [.. clusters is { Available: true, Reason: null } ? [] : new[] { clusters.Reason is { } why ? $"clusters: {why}" : "clusters" }, .. LabelNote(labels), .. timedOut ? new[] { "recognizers" } : []];
+
+    private static string[] LabelNote(Result<LabelPass> labels) =>
+        labels is { IsError: false, Value.Unavailable: { } why } ? [$"labels: {ContextErrors.LabelingUnavailable.Code}: {why}"]
+        : labels.IsError || !labels.Value.Complete ? ["labels"] : [];
 
     // A denied path is never read, whatever a recognizer wants.
     private static bool Readable(ContextRepo repo, RecognizerSet recognizers, string path) => !repo.Denies(path) && (Recognizers.MayRead(path) || recognizers.Wants(path));
