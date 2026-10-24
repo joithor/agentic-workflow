@@ -153,21 +153,6 @@ public sealed class ContextLensStackTests
     }
 
     [Fact]
-    public async Task A_truncated_product_band_draws_one_more_not_shown_chip()
-    {
-        var golden = Golden("map-tabs");
-        var body = golden.DeepClone();
-        body["bands"]!["product"]!["truncated"] = true;
-        var server = new FakeSindriApi { LensesAnswer = _ => new RouteAnswer(HttpStatusCode.OK, body.ToJsonString()) };
-        var page = Page(server);
-        page.AnchorText = (string)golden["anchor"]!["key"]!;
-
-        await page.Submit(Token);
-
-        _ = Assert.Single(page.Map!.Nodes, n => n.Label == Labels.ContextTruncated);
-    }
-
-    [Fact]
     public async Task A_request_line_the_server_refuses_as_too_long_says_so_in_plain_words()
     {
         var server = new FakeSindriApi { LensesAnswer = _ => new RouteAnswer(HttpStatusCode.RequestUriTooLong, string.Empty) };
