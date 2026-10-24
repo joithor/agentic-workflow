@@ -5,12 +5,14 @@ internal sealed partial class WholeMapViewModel
 {
     private (WholeMapGeometry Source, HashSet<string> Keep, WholeMapGeometry Shown)? _filtered;
 
-    /// <summary>What is drawn and hit: the whole geometry, or while a search is on, the matches and their direct links; null before the first answer.</summary>
+    private HashSet<string>? Kept => _searchSet ?? _zoomSet;
+
+    /// <summary>What is drawn and hit: the whole geometry, or while a search is on or the camera is on a query's answer, the matches and their direct links; null before the first answer.</summary>
     internal WholeMapGeometry? Shown
     {
         get
         {
-            if (Geometry is not { } geometry || _searchSet is not { } keep)
+            if (Geometry is not { } geometry || Kept is not { } keep)
             {
                 return Geometry;
             }
@@ -25,5 +27,5 @@ internal sealed partial class WholeMapViewModel
     }
 
     /// <summary>The box the camera fits and the minimap shows: the filtered set while a search is on, else the whole world.</summary>
-    internal WholeRect? FitBox => Geometry is { } geometry && Shown is { } shown ? (_searchSet is null ? geometry.World : WholeMapFilter.FitBox(shown, geometry.World)) : null;
+    internal WholeRect? FitBox => Geometry is { } geometry && Shown is { } shown ? (Kept is null ? geometry.World : WholeMapFilter.FitBox(shown, geometry.World)) : null;
 }

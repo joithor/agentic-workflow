@@ -134,7 +134,7 @@ internal sealed partial class WholeMapViewModel
     // During a search only what is drawn can be lit.
     private HashSet<string> Within(HashSet<string> keys)
     {
-        if (_searchSet is { } kept)
+        if (Kept is { } kept)
         {
             keys.IntersectWith(kept);
         }
