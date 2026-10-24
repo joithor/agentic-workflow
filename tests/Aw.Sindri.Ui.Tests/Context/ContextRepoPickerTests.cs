@@ -21,20 +21,19 @@ public sealed class ContextRepoPickerTests
         return new ContextPageViewModel(new ContextPorts(api, () => new Uri("http://127.0.0.1:1/"), clipboard, clock, new CatalogViewModel(clipboard, clock), _ => { }));
     }
 
-    // The overview golden with a repos summary added; no names at all leaves the field out, as an older Sindri would.
+    // The overview golden with its repos summary replaced; no names at all leaves the field out, as an older Sindri would.
     private static FakeSindriApi Serving(params string[] repos) => new()
     {
         WholeMapAnswer = q =>
         {
-            var json = GoldenFiles.Api("context-whole", "nodes-small");
+            var node = JsonNode.Parse(GoldenFiles.Api("context-whole", "nodes-small"))!.AsObject();
+            node.Remove("repos");
             if (repos.Length > 0)
             {
-                var node = JsonNode.Parse(json)!;
                 node["repos"] = new JsonArray([.. repos.Select(r => (JsonNode)new JsonObject { ["name"] = r, ["nodeCount"] = 3 })]);
-                json = node.ToJsonString();
             }
 
-            return new RouteAnswer(HttpStatusCode.OK, json);
+            return new RouteAnswer(HttpStatusCode.OK, node.ToJsonString());
         },
     };
 
