@@ -15,7 +15,7 @@ Onyx's Linear connector reads issues and comments only. The native source also r
 | Projects | `linear:project/<uuid>` | project structure: which issues belong to which project |
 | Linear Documents | `linear:doc/<uuid>` | where PRDs and TDDs live; cited with their `updatedAt` |
 | Project updates | `linear:update/<uuid>` | status history of a project; its latest five are listed in the project's record (an update has no title, so search never lists one by itself) |
-| Issue and pull request attachments | on the issue | the PRs that shipped an issue |
+| Issue attachments | on the issue | the PRs that shipped an issue, and the Slack threads, Figma files and links behind it |
 | Issues with their comments | `linear:issue/<uuid>` | the same issues Onyx returns, cited once (below) |
 
 Every record keys on Linear's immutable UUID; the human identifier (`ENG-482`) is an alias, because it changes when an
@@ -92,6 +92,8 @@ Whether Linear accepts the key is `context sources status`, not doctor:
 | `SND-CONTEXT-010` | Linear was unreachable, missed the deadline or said `rate limited, retry later` (HTTP 429 or a `RATELIMITED` error); the query goes on without it |
 
 The profile's `teams` are applied by Linear in the filter of each read, so the source finds its records however many other projects the workspace has. Lists are read a page at a time (250 nodes, at most 20 pages; the log says when that cut one). An issue's first 50 comments and attachments are read, and its record ends with `(more comments not shown)` when there are more.
+
+An issue's stored text is its description, then `Comments:`, then `Attachments:` (every attachment, one line each: `- <title> (<sourceType>) <url>`; a missing title shows the url's host and a missing source type shows `link`), then `Images:`. The ingest sanitizer removes markdown and HTML images from stored text, so every image found in the description, the comments and the image attachments (png, jpg, jpeg, gif, webp, or an `uploads.linear.app` url) is listed again as `- <alt or image> <url>`, once per url. The images themselves are not fetched or read: only their alt text and link are kept. The whole text is cut at 64 KB. (Changed for owner q105, 2026-10-24.)
 
 An `env:` pointer is read from the control plane's environment as it was when `serve` started, while doctor reads the
 calling shell's, so the two can disagree; `file:` and (on macOS) `keychain:` read the same in both.

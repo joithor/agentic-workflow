@@ -128,7 +128,7 @@ public sealed class LinearSourceContractTests : ContextSourceContract<IContextSo
         Assert.StartsWith("resize-pane-left and resize-pane-right", record.Text, StringComparison.Ordinal);
         Assert.Contains("\n\nComments:\n", record.Text, StringComparison.Ordinal);
         Assert.Contains("Decision: the minimum pane width is 10 columns", record.Text, StringComparison.Ordinal);
-        Assert.Contains("\n\nPull requests:\n- ", record.Text, StringComparison.Ordinal);
+        Assert.Contains("\n\nAttachments:\n- ", record.Text, StringComparison.Ordinal);
         Assert.EndsWith("/pull/5", record.Text.TrimEnd(), StringComparison.Ordinal);
     }
 

@@ -1,17 +1,30 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Aw.Context.Infrastructure.Linear;
 
 /// <summary>The raw text of a fetched Linear record (the engine sanitizes, scrubs and trust-tags it): up to 64 KB of UTF-8, never splitting a surrogate pair.</summary>
-internal static class LinearText
+internal static partial class LinearText
 {
     private const int MaxBytes = 64 * 1024;
 
-    /// <summary>An issue: its description, its comments, and the pull requests attached to it.</summary>
-    public static string Of(LinearIssue issue) =>
-        Cut(issue.Description + Section("Comments", (issue.Comments?.Nodes ?? []).Select(c => $"- {c.User?.Name ?? "unknown"} ({Day(c.CreatedAt)}): {c.Body}"), More(issue.Comments, "comments"))
-            + Section("Pull requests", (issue.Attachments?.Nodes ?? []).Where(IsPullRequest).Select(a => $"- {a.Title ?? "pull request"} {a.Url}"), More(issue.Attachments, "attachments")));
+    /// <summary>
+    /// An issue: its description, its comments, every attachment, and the images found in all three. The ingest
+    /// sanitizer removes markdown and HTML images from the stored text, so their alt text and link are listed again as
+    /// plain lines (owner q105, 2026-10-24).
+    /// </summary>
+    public static string Of(LinearIssue issue)
+    {
+        var comments = issue.Comments?.Nodes ?? [];
+        var attachments = issue.Attachments?.Nodes ?? [];
+        var images = ImagesIn(issue.Description).Concat(comments.SelectMany(c => ImagesIn(c.Body)))
+            .Concat(attachments.Where(IsImage).Select(a => (Alt: a.Title ?? "image", a.Url)))
+            .DistinctBy(i => i.Url, StringComparer.Ordinal);
+        return Cut(issue.Description + Section("Comments", comments.Select(c => $"- {c.User?.Name ?? "unknown"} ({Day(c.CreatedAt)}): {c.Body}"), More(issue.Comments, "comments"))
+            + Section("Attachments", attachments.Select(a => $"- {a.Title ?? Host(a.Url)} ({a.SourceType ?? "link"}) {a.Url}"), More(issue.Attachments, "attachments"))
+            + Section("Images", images.Select(i => $"- {i.Alt} {i.Url}"), more: null));
+    }
 
     /// <summary>A Linear Document: its content.</summary>
     public static string Of(LinearDocument document) => Cut(document.Content ?? "");
@@ -45,8 +58,49 @@ internal static class LinearText
     private static string? More<T>(LinearConnection<T>? connection, string what) =>
         connection?.PageInfo is { HasNextPage: true } ? $"(more {what} not shown)" : null;
 
-    private static bool IsPullRequest(LinearAttachment attachment) =>
-        string.Equals(attachment.SourceType, "github", StringComparison.OrdinalIgnoreCase) && attachment.Url.Contains("/pull/", StringComparison.Ordinal);
+    private static string Host(string url) => Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Host.Length > 0 ? uri.Host : url;
+
+    private static bool IsImage(LinearAttachment attachment) =>
+        Uri.TryCreate(attachment.Url, UriKind.Absolute, out var uri)
+        && (string.Equals(uri.Host, "uploads.linear.app", StringComparison.OrdinalIgnoreCase)
+            || ImageExtensions.Contains(Path.GetExtension(uri.AbsolutePath), StringComparer.OrdinalIgnoreCase));
+
+    private static readonly string[] ImageExtensions = [".png", ".jpg", ".jpeg", ".gif", ".webp"];
+
+    private static IEnumerable<(string Alt, string Url)> ImagesIn(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            yield break;
+        }
+
+        foreach (Match m in MarkdownImage.Matches(text))
+        {
+            yield return (Alt(m.Groups["alt"].Value), m.Groups["url"].Value);
+        }
+
+        foreach (Match tag in HtmlImage.Matches(text))
+        {
+            if (HtmlSrc.Match(tag.Value) is { Success: true } src)
+            {
+                yield return (HtmlAlt.Match(tag.Value) is { Success: true } alt ? Alt(alt.Groups["v"].Value) : "image", src.Groups["v"].Value);
+            }
+        }
+    }
+
+    private static string Alt(string alt) => alt.Trim() is { Length: > 0 } trimmed ? trimmed.ReplaceLineEndings(" ") : "image";
+
+    [GeneratedRegex("!\\[(?<alt>[^\\]\\n]{0,500})\\]\\(\\s*<?(?<url>[^\\s)>]+)>?(?:\\s+\"[^\"\\n]*\")?\\s*\\)", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex MarkdownImage { get; }
+
+    [GeneratedRegex("<img\\b[^>]{0,4000}>", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex HtmlImage { get; }
+
+    [GeneratedRegex("\\bsrc\\s*=\\s*[\"'](?<v>[^\"']+)[\"']", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex HtmlSrc { get; }
+
+    [GeneratedRegex("\\balt\\s*=\\s*[\"'](?<v>[^\"']*)[\"']", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex HtmlAlt { get; }
 
     private static string Cut(string text)
     {
