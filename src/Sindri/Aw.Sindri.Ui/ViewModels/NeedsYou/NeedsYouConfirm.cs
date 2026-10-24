@@ -17,6 +17,7 @@ internal sealed partial class NeedsYouConfirm : ObservableObject
     private const string RecipeAction = "ApproveRecipe";
     private const string SessionRefusal = "SND-AUTH-002";
 
+    private static readonly string[] _approvals = [ProfileAction, RecipeAction, ApproveAllViewModel.Action];
     private static readonly string[] _allShown = [nameof(ApproveAllViewModel.Phase), nameof(ApproveAllViewModel.Error), nameof(ApproveAllViewModel.Notice), nameof(ApproveAllViewModel.CanApprove)];
 
     private readonly Func<Uri?> _url;
@@ -70,7 +71,7 @@ internal sealed partial class NeedsYouConfirm : ObservableObject
     internal static bool IsApproval(NeedsYouEntry entry)
     {
         ArgumentNullException.ThrowIfNull(entry);
-        return new[] { ProfileAction, RecipeAction, ApproveAllViewModel.Action }.Contains(entry.PrimaryAction, StringComparer.Ordinal);
+        return _approvals.Contains(entry.PrimaryAction, StringComparer.Ordinal);
     }
 
     /// <summary>Shows a row: whatever the last one did is dropped, and for approve-all the plan is read.</summary>

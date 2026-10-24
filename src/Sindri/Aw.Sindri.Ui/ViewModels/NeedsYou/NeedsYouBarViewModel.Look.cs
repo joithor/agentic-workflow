@@ -30,9 +30,6 @@ internal sealed partial class NeedsYouBarViewModel
     /// <summary>Closes the reason box or the drop question.</summary>
     public string CancelWord { get; } = Labels.NeedsYouCancel;
 
-    /// <summary>What hovering the terminal button says.</summary>
-    public string TerminalTip { get; } = Labels.NeedsYouTerminalTip;
-
     /// <summary>The reason box's caption.</summary>
     public string ReasonLabel { get; } = Labels.NeedsYouReasonLabel;
 
@@ -153,7 +150,7 @@ internal sealed partial class NeedsYouBarViewModel
 
     private string ApprovedHint => _done switch
     {
-        NeedsYouBarOutcome.Revise or NeedsYouBarOutcome.Rework => Labels.NeedsYouSentBackHint,
+        NeedsYouBarOutcome.Revise => Labels.NeedsYouSentBackHint,
         NeedsYouBarOutcome.Drop => Labels.NeedsYouDroppedHint,
         NeedsYouBarOutcome.None or NeedsYouBarOutcome.Approve or NeedsYouBarOutcome.Answer => Labels.NeedsYouApprovedHint,
         _ => throw new InvalidOperationException("an outcome the bar doesn't know"),
@@ -188,7 +185,7 @@ internal sealed partial class NeedsYouBarViewModel
     /// <summary>The done card's title.</summary>
     public string DoneTitle => _row is null ? "" : _done switch
     {
-        NeedsYouBarOutcome.Revise or NeedsYouBarOutcome.Rework => Labels.NeedsYouSentBackTitle(_row.Title),
+        NeedsYouBarOutcome.Revise => Labels.NeedsYouSentBackTitle(_row.Title),
         NeedsYouBarOutcome.Drop => Labels.NeedsYouDroppedTitle(_row.Title),
         NeedsYouBarOutcome.None or NeedsYouBarOutcome.Approve or NeedsYouBarOutcome.Answer => Labels.NeedsYouApprovedTitle(_row.Title),
         _ => throw new InvalidOperationException("an outcome the bar doesn't know"),
@@ -197,7 +194,7 @@ internal sealed partial class NeedsYouBarViewModel
     /// <summary>The done card's sentence.</summary>
     public string DoneBody => _done switch
     {
-        NeedsYouBarOutcome.Revise or NeedsYouBarOutcome.Rework => Labels.NeedsYouSentBackBody,
+        NeedsYouBarOutcome.Revise => Labels.NeedsYouSentBackBody,
         NeedsYouBarOutcome.Drop => Labels.NeedsYouDroppedBody,
         NeedsYouBarOutcome.None or NeedsYouBarOutcome.Approve or NeedsYouBarOutcome.Answer => Labels.NeedsYouApprovedBody,
         _ => throw new InvalidOperationException("an outcome the bar doesn't know"),

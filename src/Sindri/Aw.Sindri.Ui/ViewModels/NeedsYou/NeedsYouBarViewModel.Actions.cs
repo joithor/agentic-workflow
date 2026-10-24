@@ -194,7 +194,6 @@ internal sealed partial class NeedsYouBarViewModel
     {
         NeedsYouBarOutcome.Approve => "approve",
         NeedsYouBarOutcome.Revise => "revise",
-        NeedsYouBarOutcome.Rework => "rework",
         NeedsYouBarOutcome.Drop => "drop",
         NeedsYouBarOutcome.Answer => "done",
         NeedsYouBarOutcome.None => throw new InvalidOperationException("no outcome to send"),
