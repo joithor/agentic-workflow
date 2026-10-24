@@ -531,11 +531,7 @@ A block is a class with a static descriptor, registered explicitly (no assembly 
 
    Three more optional fields are written only when set: `Runtime` (`desk`, `block` or `agent`: who runs the Step; descriptor-only
    until DT-J, absent means today's rule), `HumanOnly` (true or absent, never false) and `HumanTrigger` (an effect that acts with a
-   human's authority, checked by `RCP-HUMAN-001`; true or absent, and a false reads as absent). A Step is **human-only** when its descriptor
-   says `HumanOnly`, or when its `Runtime` is `block` and it runs on the desk (`HumanOnlySteps.Applies`). `workflow complete` on a
-   human-only Step is `SND-AUTH-002` unless the caller is a human (the app or a terminal): the refusal sits in `CompleteStep`, before
-   the nonce is claimed, so nothing is consumed, and a session report on an instance that can't be read is refused with that read
-   error, not let through. The message names the Step, its state and the command the human runs. Today `CompleteStep` is a desk-class command, so the command chain (`AuthorizingService`) refuses every session with its generic `SND-AUTH-002` before the service runs; this per-Step check is defence in depth, and takes over once a non-human class can reach `CompleteStep` (step reports open to sessions, P10).
+   human's authority, checked by `RCP-HUMAN-001`; true or absent, and a false reads as absent). `HumanOnly` marks a Step the owner decides: the app shows it as "only you" (`RecipeStateKind.OnlyYou`), `RCP-HUMAN-001` counts it as a human act, and a recommendation on it is dropped when it isn't one of the outcomes. It is not an authorization rule (owner q93, 2026-10-23, reworked by q100, 2026-10-24). Who may report a Step depends on who started the agent, not on which Step it is: a plain session (an agent the owner started: no launch secret) may `workflow complete` every desk Step, including the merge decision and the scoping stop. A session Sindri launched reports with its launch secret (`X-Sindri-Launch-Secret`, sent by `workflow complete` from `AW_SINDRI_LAUNCH_SECRET`), and `AgentReportAuthority` refuses that secret on a desk run with `SND-AUTH-002`, before the nonce is claimed, so a launched step child can never answer a human's Step. A session report on an instance that can't be read is refused with that read error. The command chain (`AuthorizingService`) still decides which caller classes reach `CompleteStep` (api's table).
 4. **Use it in a recipe** and run `sindri recipe validate` on it.
 5. **A behaviour change bumps `Version`** in the descriptor, in the reviewed change that makes it. Once approvals pin
    blocks (P2), a changed descriptor parks the instances of every recipe approved against the old one until it is
@@ -569,7 +565,7 @@ what a report must carry, on which outcomes; "every outcome" outputs are on all 
 | `step.evidence.db-run` | agent | `evidencePlan`, `built` | `passed`, `failed` | `evidenceSummary` (every outcome) |
 | `step.evidence.none` | block | `built` | `done` | `evidenceSummary` on done |
 | `step.evidence.combine` | block | `evidenceUi`, `evidenceApi`, `evidenceDb` | `done` | `evidenceSummary` on done |
-| `step.evidence.desk` | desk, human-only | `built` | `recorded`, `noneFound` | `evidenceSummary` (every outcome); `evidenceReason` (every outcome) |
+| `step.evidence.desk` | desk | `built` | `recorded`, `noneFound` | `evidenceSummary` (every outcome); `evidenceReason` (every outcome) |
 | `step.review.round` | block | `change`, `phasePacket`, `lensRounds` | `ready`, `noLens` | `lensQueue`, `lensRounds` on ready |
 | `step.lens.run` | agent; parameters `subject` (required), `bundle` | `lensQueue`, `lensRounds` | `reviewed` | `lensReport` on reviewed |
 | `step.review.log` | block | `lensReport`, `lensRounds`, `lensQueue` | `next`, `clean`, `findings`, `behaviourWrong`, `needsOwner` | `lensRounds` (every outcome); `lensQueue` on next; `review` on clean, findings, behaviourWrong, needsOwner; `escalation` on needsOwner |
@@ -578,7 +574,7 @@ what a report must carry, on which outcomes; "every outcome" outputs are on all 
 | `step.review.apply-answer` | agent | `change`, `review`, `escalation`, `answers` | `fixed`, `needsOwner` | `change` on fixed; `escalation` on needsOwner |
 | `step.lens.ask` | desk, human-only | `escalation` | `answered`, `stop` | `answers` on answered |
 | `step.review.recheck` | agent | `change`, `review` | `clean`, `findings`, `behaviourWrong` | `review` (every outcome) |
-| `step.owner.decide` | desk, human-only | - | `retry`, `stop` | `notes` on retry |
+| `step.owner.decide` | desk | - | `retry`, `stop` | `notes` on retry |
 | `step.ship.green` | block | `phasePacket`, `workspace` | `green`, `red` | `green` on green; `findings` on red |
 | `step.ship.pack` | block | `phasePacket`, `proofPack`, `review`, `lineContext` | `packed` | `handoffDraft` on packed |
 | `step.ship.freeze` | block | `handoffDraft`, `proofPack`, `review` | `frozen`, `stale` | `handoff` on frozen; `findings` on stale |
@@ -682,7 +678,7 @@ Shapes the spec leaves open, chosen here:
 
 Run-area files: `design-packet/` (13 files) in the design instance, `plan-packet/` (7) and `phase-packets/<phase>/` (7 each) in the plan instance, written by the evidence Steps and read by the next station through `fact:*Packet.dir`. A Step has no ledger port (a write needs a lease grant), so `line.escape`, `design.approved` and `plan.approved` rows are not written (the escapes are in `escapes.json`), the holdout sets are not sealed, and LN-CTX1's proposals to the context map are not made; `step.plan.freeze` also cannot re-run the design checks (it reads no scope), so it re-runs the plan checks and confirms the design and plan packets still hash to what the evidence checked. Also known: `DSN-XSPEC-001/-002` and `DSN-STYLE-001` only warn, `PLN-PKT-001`'s `--sizes` is not passed.
 
-`step.judge.choose` is `block` runtime and `step.desk.choose` is `desk` and human-only; their hashes moved once when the two fields
+`step.judge.choose` is `block` runtime and `step.desk.choose` is `desk` and, since owner q93 (2026-10-23) and q100 (2026-10-24), answerable by a plain agent session; their hashes moved once when the two fields
 landed (provisional owner default). The agent runtime (engine P8) moved `step.produce`, `step.build.red`, `step.build.green` and `step.prove.holdout`; every other shipped descriptor hashes as before (`ShippedBlocksTests` pins all of them). `sindri recipe list --stale` shows which approved recipes use a moved descriptor and need re-approval.
 
 ### Lens loop facts (`step.lens.log` and the lens report)
@@ -771,7 +767,7 @@ With **no commands** (no approved profile, or a profile that lists none): red-ch
 The line spec names the facts but not their fields; these are the shapes the prove Steps on the block runtime read and write (`Aw.Sindri.Features/Prove/`, rules in `Aw.Sindri.Core/Prove/ProofChecks.cs`). They are all JSON, and a fact the instance does not hold is a Step failure or, for an optional one, a rule reported as not run.
 
 - `findings`: a list of `{rule, item, message, fix, severity}` (`severity` is `fail` or `warn`; `item` is an acceptance item id or null), the scoping findings shape as a bare list, as `step.build.prepare` seeds it.
-- `proof`: `{head, items[{id, text, signals[{id, kind, statement, runsAt}], artifacts[{kind, path, sha256, commit, at, passing, signal?, superseded?}]}]}`. `step.prove.intake` seeds it from the phase packet's `acceptance.json` (every item that is not `superseded`) and `signals.json`, with no artifacts; `step.prove.collect` appends them (below).
+- `proof`: `{head, items[{id, text, signals[{id, kind, statement, runsAt}], artifacts[{kind, path, sha256, commit, at, passing, signal?, superseded?}]}]}`. `step.prove.intake` seeds it from the phase packet's `acceptance.json` (every item that is not `superseded`) and `signals.json`, with no artifacts. `signals.json` is the flat list the line writes, `{signals: [{item, kind, statement, runs}]}`: intake groups it by `item`, gives a signal with no `id` the id `<item>-s<n>` (n from 1 in the item's own order) and reads `runs` as `runsAt`, the key every prove reader uses (`PhaseSignals`). A packet of another shape (the old map keyed by item id included) fails the Step with the file and the expected shape; `step.prove.collect` appends them (below).
 - `beforeAfter`: `{commit, results[{item, signal, base, head, baseScript?, headScript?}]}`, `base` and `head` being `fail` or `pass`. `holdoutResult`: `{commit, canary?, results[{scenario, item, verdict, category, observed, spent?}]}`, `verdict` being `pass` or `fail`, `canary` `clean` or `leaked`. Both start as `{commit, results: []}`.
 - `redTests` (spec A.7, §7.2): one shape, parsed by `RedTestsFact` (`Aw.Sindri.Core/Prove/`) for `step.build.red-check`, `step.prove.before-after` and `PRV-RED-001` alike, and told to the red agent by `PayloadFacts` (a shape line on `step.build.red`'s brief). An object keyed by item id, with nothing else at the top level. Each value is a list of test ids (`{"i1":["T1"]}`, the short form the recipe evals seed) or `{tests?: [id | {id, path}], appOnly?: {signal}, commit?, output?}`. The red commit is per item: red-check takes it from the items that name one and requires them to agree (none named, or two different, fails the Step; the short form is enough beside an item that names it). `PRV-RED-001` holds when every live (not superseded) item has at least one test or an `appOnly` entry; each item without either is one finding naming it, and a value of another shape is a finding naming the item and the expected shape, never read as "no tests"; red-check fails the Step the same way, naming each wrong key (it is never "red"). `docs` and `config` phases are exempt. Whether the tests failed (BLD-RED-001) is `step.build.red-check`'s, not checked again here. `red.json` of the pack is the fact as it is. `schemas/line/red-tests.json` describes this shape.
 - The canary: a result of `holdoutResult` with `kind` `canary`, or with no `item` (the canary scenario shows no visible item; BS-6's `HoldoutScenario.CanaryKind`), is not a hidden scenario. `PRV-HOLD-001` leaves it out of the count of scenarios that ran and out of the verdict failures, `PRV-HOLD-002` leaves it out of the unspent count, and the pack's `holdout.json` does not list it. `holdout.json`'s `count` in the phase packet counts the hidden scenarios without the canary.
@@ -1393,7 +1389,7 @@ A Step whose descriptor says `runtime: block` and that has a registered `IBlockS
 opens a run with no launch and no desk task, calls the `RunBlockStep` activity (one attempt, no retry; heartbeating so a
 `cancel` is delivered) and feeds the result back as `step.completed` (actor `service:block:<step>`), validated like a
 desk report. An invalid result, a failure or a run past the descriptor's `maxDuration` becomes `step.failed`; the route
-sends it on to the desk twin. A Step with no registered runtime keeps opening a desk run and stays human-only.
+sends it on to the desk twin. A Step with no registered runtime keeps opening a desk run; a plain session may answer it (owner q93/q100).
 
 - **A desk report on a block run is refused** (`SND-WF-003`): the engine runs this Step, so only its own result applies. The
   human waits for the result, runs `cancel`, or answers the desk twin once the run fails. There is no takeover override:

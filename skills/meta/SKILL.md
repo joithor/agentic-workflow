@@ -59,7 +59,7 @@ it prints what you owe and the command that settles it. Settle it, don't argue w
    through its hooks` (the hooks come from `scripts/install-meta.sh --provider codex|cursor`) or, for a CLI with no
    hook system, `lane <l>: <agent>, launch-only: no obligations`: don't message a lane marked launch-only.
    `aw-meta-launch` refuses while the team's lanes still run on tmux's default socket (the pre-switch team). The meta
-   session must never pass `--allow-legacy` or set `AW_META_ALLOW_LEGACY`: they are for the owner only. Tell the owner.
+   session must never pass `--allow-legacy` or set `AW_META_ALLOW_LEGACY`: they skip the check that stops a second agent on the same transcripts. Tell the owner.
    The team runs on its own tmux socket, named after the team, so attach with `tmux -L <team> attach -t =<team>-<lane>`
    (for example `tmux -L sindri attach -t sindri-ideas`), and list its sessions with `tmux -L <team> ls`. A bare
    `tmux attach` looks at tmux's default socket, which the team no longer uses. A team launched before this change
