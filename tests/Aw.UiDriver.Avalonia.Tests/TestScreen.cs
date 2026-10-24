@@ -1,7 +1,9 @@
 using System.Globalization;
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Templates;
 using Avalonia.Threading;
 
 namespace Aw.UiDriver.Avalonia.Tests;
@@ -30,7 +32,17 @@ internal sealed class TestScreen
             rows.Children.Add(new TextBlock { Text = "row " + i.ToString(CultureInfo.InvariantCulture), Height = 20 });
         }
 
-        List = new ScrollViewer { Height = 100, Content = rows };
+        // No theme is loaded, so a scroll viewer has no template; this one is the smallest that scrolls: a content presenter holding the rows.
+        List = new ScrollViewer
+        {
+            Height = 100,
+            Template = new FuncControlTemplate<ScrollViewer>((_, scope) =>
+            {
+                var presenter = new ScrollContentPresenter { Name = "PART_ContentPresenter", Content = rows };
+                scope.Register("PART_ContentPresenter", presenter);
+                return presenter;
+            }),
+        };
         AutomationProperties.SetAutomationId(List, "list");
         var form = new StackPanel { Children = { Greeting, Save, Off, NameBox, Dark, Listener, List } };
         Window = new Window { Width = 400, Height = 300, Title = "Test screen", Content = form };

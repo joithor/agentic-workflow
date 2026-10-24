@@ -62,8 +62,11 @@ internal sealed class DriverHost(Func<Window?> window, TimeProvider clock)
         var root = tree.Root;
         (root.Width, root.Height) = (request.Width ?? root.Width, request.Height ?? root.Height);
         root.UpdateLayout();
-        return new WindowResponse((int)Math.Round(root.Bounds.Width, MidpointRounding.AwayFromZero), (int)Math.Round(root.Bounds.Height, MidpointRounding.AwayFromZero), root.Title ?? string.Empty);
+        // The platform window applies a new size on its own schedule; the answer is the size the window was given, else the size it has.
+        return new WindowResponse(SizeOf(request.Width, root.Bounds.Width), SizeOf(request.Height, root.Bounds.Height), root.Title ?? string.Empty);
     });
+
+    private static int SizeOf(int? given, double current) => given ?? (int)Math.Round(current, MidpointRounding.AwayFromZero);
 
     internal Task<Result<byte[]>> Screenshot(ScreenshotRequest request) => OnUi<byte[]>(tree =>
     {
