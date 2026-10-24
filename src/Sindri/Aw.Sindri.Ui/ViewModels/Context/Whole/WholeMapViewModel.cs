@@ -25,7 +25,11 @@ internal sealed partial class WholeMapViewModel : ObservableObject
     internal WholeMapViewModel(Func<TimeZoneInfo>? zone = null)
     {
         _zone = zone ?? (() => TimeZoneInfo.Local);
+        Panel = new NodePanelViewModel(LookUp, Jump);
     }
+
+    /// <summary>The side panel of the node a click pinned.</summary>
+    internal NodePanelViewModel Panel { get; }
 
     /// <summary>Raised when a feature asks the camera to go to its tile or column.</summary>
     internal event EventHandler<ValueEventArgs<WholeRect>>? ZoomRequested;

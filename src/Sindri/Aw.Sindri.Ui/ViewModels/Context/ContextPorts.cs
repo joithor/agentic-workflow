@@ -14,4 +14,5 @@ namespace Aw.Sindri.Ui.ViewModels.Context;
 /// <param name="Clock">The clock for every timing rule.</param>
 /// <param name="Catalog">The command catalog, for the desk rows and the lock buttons' CLI.</param>
 /// <param name="Follow">Registers a view to re-read on connect and after every event (the shell's Health.Follow), so a stage registers its own refresh from its own view model.</param>
-internal sealed record ContextPorts(ISindriApi Api, Func<Uri?> ApiUrl, IClipboard Clipboard, TimeProvider Clock, CatalogViewModel Catalog, Action<Func<Uri, CancellationToken, Task>> Follow);
+/// <param name="Launcher">Hands a link to the system; null when the host has none.</param>
+internal sealed record ContextPorts(ISindriApi Api, Func<Uri?> ApiUrl, IClipboard Clipboard, TimeProvider Clock, CatalogViewModel Catalog, Action<Func<Uri, CancellationToken, Task>> Follow, ILauncher? Launcher = null);
