@@ -7,7 +7,7 @@ namespace Aw.Sindri.Ui.ViewModels.Context.Whole;
 /// answer is areas as columns (ordered by <see cref="WholeAreaOrder"/>) with the three bands across them, the same bands in every column;
 /// an areas-level answer is one tile per area on a grid, in the same order.
 /// </summary>
-internal static class WholeMapLayout
+internal static partial class WholeMapLayout
 {
     /// <summary>A node's width.</summary>
     internal const double NodeWidth = 120;
@@ -30,31 +30,30 @@ internal static class WholeMapLayout
     /// <summary>The height of the space between bands.</summary>
     internal const double BandGap = 40;
 
-    /// <summary>A tile's width.</summary>
-    internal const double TileWidth = 220;
+    /// <summary>The height of the strip over a band's rows, where its title sits.</summary>
+    internal const double LaneLabel = 24;
 
-    /// <summary>A tile's height.</summary>
-    internal const double TileHeight = 110;
+    /// <summary>The space under a band's last row, inside its lane.</summary>
+    internal const double LanePad = 6;
 
-    /// <summary>The space between tiles.</summary>
+    /// <summary>The height of one line of kind counts in an overview column.</summary>
+    internal const double KindLine = 20;
+
+    /// <summary>The width of an area's column on the overview.</summary>
+    internal const double OverviewWidth = 144;
+
+    /// <summary>The space between the overview's columns and the open columns beside them.</summary>
     internal const double TileGap = 32;
 
     /// <summary>The margin around the world.</summary>
     internal const double Margin = 24;
 
     private const double ColumnWidth = (Across * (NodeWidth + NodeGap)) + ColumnGutter;
-    private const double NodeCell = NodeHeight + NodeGap;
 
-    /// <summary>The band a node kind sits in.</summary>
+    /// <summary>The band a node kind sits in (<see cref="NodeBands"/>).</summary>
     /// <param name="kind">The node kind.</param>
-    /// <returns>Decisions and records above, code below, everything else in the product band (an unknown kind too).</returns>
-    internal static WholeBand BandOf(string kind) => kind switch
-    {
-        "decision" or "record" => WholeBand.Intent,
-        "code" => WholeBand.Code,
-        "feature" or "surface" or "action" or "thing" or "flow" => WholeBand.Product,
-        _ => WholeBand.Product,
-    };
+    /// <returns>Its band.</returns>
+    internal static WholeBand BandOf(string kind) => NodeBands.Of(kind);
 
     /// <summary>Places an answer.</summary>
     /// <param name="map">The answer.</param>
@@ -87,47 +86,32 @@ internal static class WholeMapLayout
         ArgumentNullException.ThrowIfNull(opened);
         var openKeys = opened.Where(o => o.Area is not null).Select(o => o.Area!.Key).ToHashSet(StringComparer.Ordinal);   // why: filtered on Area
         var inOrder = WholeAreaOrder.Of(overview.Areas, overview.AreaEdges);
-        var open = inOrder.Where(openKeys.Contains).ToList();
         var rest = overview.Areas.Where(a => !openKeys.Contains(a.Key)).ToList();
         var restKeys = rest.Select(a => a.Key).ToHashSet(StringComparer.Ordinal);
         var nodes = opened.SelectMany(o => o.Nodes ?? []).GroupBy(n => n.Key, StringComparer.Ordinal).Select(g => g.First()).ToList();
         var edges = opened.SelectMany(o => o.Edges ?? []).GroupBy(e => e.Link, StringComparer.Ordinal).Select(g => g.First()).ToList();
-        var columns = Columns(overview with { Areas = [.. overview.Areas.Where(a => openKeys.Contains(a.Key))], AreaEdges = [], Nodes = nodes, Edges = edges, Detail = "nodes", Area = null }, open, nodes);
+        List<string> open = [.. inOrder.Where(openKeys.Contains)];
+        var floor = Extents([], KindMeta(overview.Areas.SelectMany(a => a.ByKind)));
         var restEdges = overview.AreaEdges.Where(e => restKeys.Contains(e.From) && restKeys.Contains(e.To)).ToList();
-        var tiles = Tiles(overview with { Areas = rest, AreaEdges = restEdges }, WholeAreaOrder.Of(rest, restEdges));
+        var restOrder = WholeAreaOrder.Of(rest, restEdges);
+        var restMap = overview with { Areas = rest, AreaEdges = restEdges };
+        var columns = Columns(overview with { Areas = [.. overview.Areas.Where(a => openKeys.Contains(a.Key))], AreaEdges = [], Nodes = nodes, Edges = edges, Detail = "nodes", Area = null }, open, nodes, Tiles(restMap, restOrder, floor).Bands);
+        var tiles = Tiles(restMap, restOrder, columns.Bands);
         var shift = columns.World.Right + TileGap;
-        var placedTiles = tiles.Tiles.Select(t => t with { AreaIndex = t.AreaIndex + open.Count, Rect = t.Rect with { X = t.Rect.X + shift } }).ToList();
+        var placedTiles = tiles.Tiles.Select(t => Shifted(t, shift, open.Count)).ToList();
         var areaEdges = tiles.AreaEdges.Select(e => e with { X1 = e.X1 + shift, X2 = e.X2 + shift }).ToList();
         var world = new WholeRect(0, 0, shift + tiles.World.Width, Math.Max(columns.World.Height, tiles.World.Height));
         return new WholeMapGeometry(world, ByArea: false, [.. columns.Order, .. tiles.Order], columns.Columns, columns.Nodes, placedTiles, columns.Edges, areaEdges, columns.Bands);
     }
 
-    private static WholeMapGeometry Tiles(WholeMapView map, IReadOnlyList<string> order)
-    {
-        var byKey = map.Areas.ToDictionary(a => a.Key, StringComparer.Ordinal);
-        var across = Math.Max(1, (int)Math.Ceiling(Math.Sqrt(order.Count)));
-        var tiles = order.Select((key, i) =>
-        {
-            var area = byKey[key];
-            var rect = new WholeRect(Margin + (i % across * (TileWidth + TileGap)), Margin + (i / across * (TileHeight + TileGap)), TileWidth, TileHeight);
-            var kinds = area.ByKind.OrderByDescending(k => k.Value).ThenBy(k => k.Key, StringComparer.Ordinal).ToList();
-            return new PlacedTile(key, area.Label, i, rect, area.Members, kinds, area.Unassigned);
-        }).ToList();
-        var centre = tiles.ToDictionary(t => t.Key, t => t.Rect, StringComparer.Ordinal);
-        var edges = map.AreaEdges.Where(e => centre.ContainsKey(e.From) && centre.ContainsKey(e.To)).Select(e =>
-            new PlacedAreaEdge(e.From, e.To, e.Type, e.Count, e.Confirmed, centre[e.From].CenterX, centre[e.From].CenterY, centre[e.To].CenterX, centre[e.To].CenterY)).ToList();
-        var rows = order.Count == 0 ? 0 : ((order.Count - 1) / across) + 1;
-        var world = new WholeRect(0, 0, (2 * Margin) + (Math.Min(across, Math.Max(1, order.Count)) * (TileWidth + TileGap)) - TileGap, (2 * Margin) + (rows * (TileHeight + TileGap)) - TileGap);
-        return new WholeMapGeometry(world, ByArea: true, order, [], [], tiles, [], edges, []);
-    }
-
-    private static WholeMapGeometry Columns(WholeMapView map, IReadOnlyList<string> order, IReadOnlyList<WholeNode> nodes)
+    private static WholeMapGeometry Columns(WholeMapView map, IReadOnlyList<string> order, IReadOnlyList<WholeNode> nodes, IReadOnlyList<PlacedBand>? floor = null)
     {
         var index = order.Select((k, i) => (k, i)).ToDictionary(p => p.k, p => p.i, StringComparer.Ordinal);
         var labels = map.Areas.ToDictionary(a => a.Key, a => a.Label, StringComparer.Ordinal);
         var kept = nodes.Where(n => index.ContainsKey(n.Area)).ToList();
         var groups = kept.GroupBy(n => (Area: index[n.Area], Band: BandOf(n.Kind))).ToDictionary(g => g.Key, g => g.OrderBy(n => n.Kind, StringComparer.Ordinal).ThenBy(n => n.Key, StringComparer.Ordinal).ToList());
-        var bands = BandExtents(groups);
+        var need = groups.GroupBy(g => g.Key.Band).ToDictionary(g => g.Key, g => g.Max(x => Math.Ceiling(x.Value.Count / (double)Across)) * NodeCell);
+        var bands = Extents(need, KindMeta(kept.GroupBy(n => n.Kind, StringComparer.Ordinal).Select(g => new KeyValuePair<string, int>(g.Key, g.Count()))), floor);
         var placed = new List<PlacedNode>(kept.Count);
         foreach (var ((area, band), members) in groups.OrderBy(g => g.Key.Area).ThenBy(g => g.Key.Band))
         {
@@ -143,38 +127,12 @@ internal static class WholeMapLayout
             }
         }
 
-        var height = bands.Count == 0 ? HeaderHeight + (2 * Margin) : bands[^1].Top + bands[^1].Height + Margin;
+        var height = bands[^1].Top + bands[^1].Height + Margin;
         var columns = order.Select((key, i) => new AreaColumn(key, labels.GetValueOrDefault(key, key), i, new WholeRect(Margin + (i * ColumnWidth), Margin, ColumnWidth - ColumnGutter, height - (2 * Margin)))).ToList();
         var position = placed.ToDictionary(p => p.Key, StringComparer.Ordinal);
         var edges = (map.Edges ?? []).Where(e => position.ContainsKey(e.From) && position.ContainsKey(e.To)).Select(e =>
             new PlacedEdge(e.From, e.To, e.Type, e.Confirmed, position[e.From].Rect.CenterX, position[e.From].Rect.CenterY, position[e.To].Rect.CenterX, position[e.To].Rect.CenterY)).ToList();
         var world = new WholeRect(0, 0, (2 * Margin) + (Math.Max(1, order.Count) * ColumnWidth) - ColumnGutter, height);
         return new WholeMapGeometry(world, ByArea: false, order, columns, placed, [], edges, [], bands);
-    }
-
-    // The three bands stacked under the headers, each as tall as its fullest column needs, so a band lines up across every column.
-    private static List<PlacedBand> BandExtents(Dictionary<(int Area, WholeBand Band), List<WholeNode>> groups)
-    {
-        var bands = new List<PlacedBand>();
-        var top = Margin + HeaderHeight;
-        foreach (var band in Enum.GetValues<WholeBand>())
-        {
-            var rows = groups.Where(g => g.Key.Band == band).Select(g => (int)Math.Ceiling(g.Value.Count / (double)Across)).DefaultIfEmpty(0).Max();
-            if (rows == 0)
-            {
-                continue;
-            }
-
-            var height = rows * NodeCell;
-            bands.Add(new PlacedBand(band, top, height));
-            top += height + BandGap;
-        }
-
-        if (bands.Count > 0)
-        {
-            top -= BandGap;
-        }
-
-        return bands;
     }
 }
