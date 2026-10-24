@@ -30,6 +30,8 @@ public sealed class ShipPackStepTests
 
     private const string SetText = """{ "schemaVersion": 1, "phase": "demo-p1", "scenarios": [ { "id": "H1", "item": "AC-1", "kind": "api", "steps": ["open an expired link"], "expected": "status 410" }, { "id": "C1", "item": null, "kind": "canary", "steps": [], "expected": "never", "phrase": "violet otter ledger 4417" } ] }""";
 
+    private static readonly string[] _linkKeys = ["pr", "body", "green", "index"];
+
     private static readonly Dictionary<string, string> _baseFacts = new(StringComparer.Ordinal)
     {
         ["phasePacket"] = $$"""{"hash":"sha256:phase","dir":"{{PacketDir}}","base":{"rule":"default-branch","ref":""},"stackParent":null}""",
@@ -227,7 +229,7 @@ public sealed class ShipPackStepTests
         var packet = JsonNode.Parse(rig.Draft()["packet.json"])!;
         Assert.Equal((1, "handoff", "demo-p1-handoff", "owner/name", BaseSha, "draft"), ((int?)packet["schemaVersion"], (string?)packet["kind"], (string?)packet["id"], (string?)packet["repo"], (string?)packet["baseSha"], (string?)packet["status"]));
         Assert.Null(packet["hash"]);
-        Assert.Equal(["pr.json", "body.md", "green.json", "index.json"], new[] { "pr", "body", "green", "index" }.Select(k => (string?)packet["links"]![k]), StringComparer.Ordinal);
+        Assert.Equal(["pr.json", "body.md", "green.json", "index.json"], _linkKeys.Select(k => (string?)packet["links"]![k]), StringComparer.Ordinal);
         var index = JsonNode.Parse(rig.Draft()["index.json"])!;
         Assert.Equal(["sha256:proof", "sha256:review"], index["parents"]!.AsArray().Select(static p => (string?)p), StringComparer.Ordinal);
         Assert.Null(index["acceptance"]!["self"]);
