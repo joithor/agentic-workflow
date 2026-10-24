@@ -134,7 +134,7 @@ public sealed class FileMapPagingTests
         gate.SetResult();
         await Task.Delay(50, Token);
 
-        Assert.Equal("src/other/", files.PathText);
+        Assert.Equal("src/other/", files.Crumbs[^1].Path, StringComparer.Ordinal);
         Assert.Equal(200, files.Loaded);
         Assert.StartsWith("src/other/", files.Rows[0].Path, StringComparison.Ordinal);
     }

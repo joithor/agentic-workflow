@@ -16,6 +16,7 @@ public sealed class PhaseSeedStepTests
 {
     private const string Checkout = "/repos/dev";
     private const string Base = "1111111111111111111111111111111111111111";
+    private const string ParentHead = "3333333333333333333333333333333333333333";
     private const string Path = "/repos/dev/.claude/worktrees/sindri-L-1-p2";
 
     private static readonly string[] _empty = ["buildNotes", "built", "change", "redTests"];
@@ -50,6 +51,67 @@ public sealed class PhaseSeedStepTests
         Assert.Equal(Path, (string?)Out(result, "workspace"));
         var again = await worktrees.Create(new WorktreeRequest(Checkout, Base, "sindri/L-1/p2", Path), Token);   // the same request is idempotent only if the Step made exactly this checkout
         Assert.Equal(new WorktreeCheckout(Path, Base, "sindri/L-1/p2"), again.Value);
+    }
+
+    private const string StackedPacket = """{"hash":"sha256:aa","dir":"/packets/p2","base":{"rule":"dependency-head","ref":"sindri/L-1/p1"},"stackParent":"p1"}""";
+
+    [Fact]
+    public async Task A_stacked_phase_starts_at_its_parents_head_not_the_line_base()
+    {
+        var worktrees = Repo().WithRepo(Checkout, Base, ParentHead).WithBranch(Checkout, "sindri/L-1/p1", ParentHead);
+
+        var result = await Step(worktrees).Run(Context(f => f["phasePacket"] = StackedPacket), Token);
+
+        Assert.Equal("seeded", result.Result!.Outcome.Value);
+        var again = await worktrees.Create(new WorktreeRequest(Checkout, ParentHead, "sindri/L-1/p2", Path), Token);   // idempotent only if the Step made exactly this checkout
+        Assert.Equal(new WorktreeCheckout(Path, ParentHead, "sindri/L-1/p2"), again.Value);
+    }
+
+    [Fact]
+    public async Task A_phase_on_the_default_branch_still_starts_at_the_line_base()
+    {
+        var worktrees = Repo().WithRepo(Checkout, Base, ParentHead).WithBranch(Checkout, "sindri/L-1/p1", ParentHead);
+
+        var result = await Step(worktrees).Run(Context(f => f["phasePacket"] = """{"hash":"sha256:aa","dir":"/packets/p2","base":{"rule":"default-branch","ref":""},"stackParent":null}"""), Token);
+
+        Assert.Equal("seeded", result.Result!.Outcome.Value);
+        var again = await worktrees.Create(new WorktreeRequest(Checkout, Base, "sindri/L-1/p2", Path), Token);
+        Assert.Equal(new WorktreeCheckout(Path, Base, "sindri/L-1/p2"), again.Value);
+    }
+
+    [Fact]
+    public async Task A_dependency_head_that_does_not_resolve_fails_the_Step_and_never_falls_back_to_the_line_base()
+    {
+        var worktrees = Repo();
+
+        var result = await Step(worktrees).Run(Context(f => f["phasePacket"] = StackedPacket), Token);
+
+        Assert.Null(result.Result);
+        Assert.Contains("sindri/L-1/p1", result.Failure, StringComparison.Ordinal);
+        var made = await worktrees.Create(new WorktreeRequest(Checkout, Base, "sindri/L-1/p2", Path), Token);   // nothing was made at any base, so this is a fresh create
+        Assert.True(made.IsSuccess);
+    }
+
+    [Theory]
+    [InlineData("""{"hash":"sha256:aa","base":{"rule":"dependency-head","ref":""}}""")]
+    [InlineData("""{"hash":"sha256:aa","base":{"rule":"dependency-head"}}""")]
+    public async Task A_dependency_head_without_a_ref_fails_the_Step(string packet)
+    {
+        var result = await Step(Repo()).Run(Context(f => f["phasePacket"] = packet), Token);
+
+        Assert.Null(result.Result);
+        Assert.Contains("dependency-head", result.Failure, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Two_phases_of_one_line_get_two_worktrees_and_two_branches()
+    {
+        var worktrees = Repo();
+
+        var first = await Step(worktrees).Run(Context(f => f["lineContext"] = f["lineContext"].Replace("\"p2\"", "\"p1\"", StringComparison.Ordinal)), Token);
+        var second = await Step(worktrees).Run(Context(), Token);
+
+        Assert.Equal(["/repos/dev/.claude/worktrees/sindri-L-1-p1", Path], [(string?)Out(first, "workspace"), (string?)Out(second, "workspace")]);
     }
 
     [Fact]

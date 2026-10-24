@@ -31,6 +31,7 @@ internal sealed partial class ContextPageViewModel
     private void InitWhole()
     {
         Whole.AreaOpenRequested += (_, e) => _ = OpenWholeArea(e.Value, CancellationToken.None);
+        Whole.HomeRequested += (_, _) => MapHome();
         Whole.Panel.Launcher = Ports.Launcher ?? NullLauncher.Instance;
         Whole.Panel.Loader = async (key, cancellationToken) => Ports.ApiUrl() is { } api ? await Ports.Api.Node(api, key, cancellationToken).ConfigureAwait(true) : null;
         Whole.NodeChosen += (_, e) => _ = ChooseWholeNode(e.Value, CancellationToken.None);
@@ -58,10 +59,11 @@ internal sealed partial class ContextPageViewModel
 
         Whole.Loading();
         ChangedWhole();
-        var read = await Ports.Api.WholeMap(api, new WholeMapQuery("auto", Area: null, [], PinnedVersion, Draft: false), cancellationToken).ConfigureAwait(true);
+        var read = await Ports.Api.WholeMap(api, new WholeMapQuery("auto", Area: null, [], MapVersion: null, Draft: false, Repo: _repo), cancellationToken).ConfigureAwait(true);
         if (read.IsSuccess)
         {
             Whole.Show(read.Value);
+            NoteRepos(read.Value);
             if (_servedBuilding)
             {
                 (IsBuilding, _buildJob, _servedBuilding, _notReady, NoMap) = (false, null, false, MapNotReadyView.None, false);   // the build the answer named is done: the map is here
@@ -98,7 +100,7 @@ internal sealed partial class ContextPageViewModel
             return;
         }
 
-        var read = await Ports.Api.WholeMap(api, new WholeMapQuery("nodes", area, [], PinnedVersion, Draft: false), cancellationToken).ConfigureAwait(true);
+        var read = await Ports.Api.WholeMap(api, new WholeMapQuery("nodes", area, [], MapVersion: null, Draft: false, Repo: _repo), cancellationToken).ConfigureAwait(true);
         if (read.IsSuccess)
         {
             Whole.ShowArea(read.Value);
@@ -112,6 +114,16 @@ internal sealed partial class ContextPageViewModel
         OnChanged(nameof(Problem));
         OnChanged(nameof(HasProblem));
         ChangedWhole();
+    }
+
+    /// <summary>"~" on the map: back to the whole map from a query's answer, or from one open feature to all of them.</summary>
+    internal void MapHome()
+    {
+        if (!BackToWholeMap())
+        {
+            Whole.CloseArea();
+            ChangedWhole();
+        }
     }
 
     private void ChangedWhole()

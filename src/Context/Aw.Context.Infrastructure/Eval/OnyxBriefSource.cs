@@ -15,7 +15,7 @@ namespace Aw.Context.Infrastructure.Eval;
 /// </summary>
 internal sealed class OnyxBriefSource(ISourceCatalog catalog) : IBriefSource
 {
-    private const int MaxHits = 50;
+    private const int MaxHits = 250;   // the most one team search asks Onyx for; a search that returns all of them is reported as capped
     private static readonly TimeSpan _deadline = TimeSpan.FromSeconds(30);
     private const string OnyxId = "onyx";
 

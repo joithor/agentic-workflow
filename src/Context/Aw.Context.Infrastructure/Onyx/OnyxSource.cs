@@ -15,7 +15,7 @@ namespace Aw.Context.Infrastructure.Onyx;
 /// is discarded, D3), drops documents an Onyx admin hid (admin search includes them; a standard search doesn't), keys
 /// each hit with <see cref="OnyxRecordKeys"/>, marks hits changed after the query's as-of time
 /// leaky, and applies the limit itself (Onyx returns up to 50). Fetch reads 'document-size-info', then 'chunk-info' per
-/// chunk in order, joined with blank lines, up to 64 KB; the title and author come from this source's own earlier hit
+/// chunk in order, joined with blank lines; the title and author come from this source's own earlier hit
 /// for the document (the fetch routes carry neither), else the id and none, and the updated time from the reference's
 /// version. Versions is Unavailable: no v4.9.0 route gives updated_at by id.
 /// </summary>
@@ -29,7 +29,6 @@ internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, 
     private const string SizeRoute = "/api/document/document-size-info";
     private const string ChunkRoute = "/api/document/chunk-info";
     private const string MeRoute = "/api/me";
-    private const int MaxTextBytes = 64 * 1024;
     private const int MaxRemembered = 1024;
     private static readonly SourceId _id = SourceId.From("onyx");
     private static readonly SourceVersion _unversioned = SourceVersion.From("unversioned");
@@ -171,12 +170,11 @@ internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, 
         _seen[document.DocumentId] = new OnyxHitFacts(document.SemanticIdentifier, document.PrimaryOwners is [var first, ..] ? first : null, document.UpdatedAt, document.CreatedAt);
     }
 
-    /// <summary>The document's chunks in order, joined with blank lines; stops fetching once 64 KB are in and cuts there.</summary>
+    /// <summary>The document's chunks in order, joined with blank lines; every chunk, however long: the record is read whole.</summary>
     private async ValueTask<Result<string>> Text(string document, int chunks, CancellationToken cancellationToken)
     {
         var text = new StringBuilder();
-        var bytes = 0;
-        for (var chunk = 0; chunk < chunks && bytes < MaxTextBytes; chunk++)
+        for (var chunk = 0; chunk < chunks; chunk++)
         {
             var call = OnyxCall.Get(ChunkRoute, ("document_id", document), ("chunk_id", chunk.ToString(CultureInfo.InvariantCulture)));
             var reply = await client.Call<OnyxChunkReply>(call, callDeadline, cancellationToken).ConfigureAwait(false);
@@ -187,31 +185,9 @@ internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, 
 
             var part = text.Length == 0 ? reply.Value.Content : "\n\n" + reply.Value.Content;
             _ = text.Append(part);
-            bytes += Encoding.UTF8.GetByteCount(part);
         }
 
-        return Cut(text.ToString());
-    }
-
-    /// <summary>The longest prefix of <paramref name="text"/> within 64 KB of UTF-8, never splitting a surrogate pair.</summary>
-    private static string Cut(string text)
-    {
-        var bytes = 0;
-        var end = 0;
-        while (end < text.Length)
-        {
-            var width = char.IsHighSurrogate(text[end]) && end + 1 < text.Length ? 2 : 1;
-            var size = Encoding.UTF8.GetByteCount(text.AsSpan(end, width));
-            if (bytes + size > MaxTextBytes)
-            {
-                break;
-            }
-
-            bytes += size;
-            end += width;
-        }
-
-        return end == text.Length ? text : text[..end];
+        return text.ToString();
     }
 
     private static DateTimeOffset? UpdatedAt(SourceVersion version) =>

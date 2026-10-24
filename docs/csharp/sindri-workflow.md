@@ -177,7 +177,7 @@ failing rule is `SND-RECIPE-001`, each followed by its rule lines.
 `input: <key> type=<type> kind=<kind|-> [generate="<template>"]` line per input (the type is the declared one, else the one the kind pairs with; a row registered before input kinds shows `kind=-`) and one `output: <key> type=<type> from=<state>` line per output, then the path order (below) and one `loop: <name> <from> -> <to> cap=<n>` line per loop;
 an unknown id or hash is `SND-RECIPE-002`, an id with no approved version `SND-RECIPE-003`. The standing, the approval and the approval preview are not in `show`: `recipe list` has the standing and `recipe approve` prints the preview before it asks. `show --json` prints the served `RecipeView`, `{id, hash, version, name, inputs, outputs, urgency, orderedBy, states, loops}`, where an input is `{key, label, type, kind, required, generate}` (`kind` is `-` on a legacy row, `required` is false for an input with a `generate` template) and an output is `{key, label, type, from}`; the standing, `via` and `stale` are `recipe list` fields, not part of the view. `sindri recipe list [--stale] [--json]` prints one line per registered recipe,
 `<id>@<hash12> <standing> (<via>)[; stale: …]`, where standing is `approved`, `unapproved` or `revoked` and stale names
-`pin-drift` (a pinned block's descriptor changed in this build), `child-stale` (a pinned child was revoked or has a newer approved version) or `legacy-shape` (registered before input kinds; the line's fix is `register the current file at a new version and approve it`, and an unapproved row of that shape carries the mark too);
+`pin-drift` (a pinned block's interface changed in this build; a block whose version alone moved is renewed by the next check, owner q93 2026-10-23: `recipe.approved` with `drift`, actor `service:pin-drift`), `child-stale` (a pinned child was revoked or has a newer approved version) or `legacy-shape` (registered before input kinds; the line's fix is `register the current file at a new version and approve it`, and an unapproved row of that shape carries the mark too);
 `--stale` keeps only the approved ones that are stale. `--json` prints the server's body,
 `{"recipes":[{id, version, hash, standing, via, stale, inputs, urgency, name, outputs, orderedBy, states, loops}]}`, where an input is `{key, label, type, kind, generate}`
 (`type` `null` when not declared, `kind` `null` only on a legacy row, `generate` `null` when the input has no template; `name` is the instance-name template or `null`) and an output is `{key, label, type, from}`. A row registered before `urgency`, `outputs`, `name` and the inputs' `kind` and `generate` existed keeps its stored text and hash and lists with the defaults (`work`, no outputs, no name, no kinds); registering the same
@@ -251,7 +251,7 @@ JSON Schemas: `schemas/recipes/recipe.schema.json` is the long form, generated f
 
 ### Reading
 
-- **Refused YAML** (`RCP-SCHEMA-003`): duplicate keys, anchors, aliases, merge keys, explicit tags, a file over 256 KiB,
+- **Refused YAML** (`RCP-SCHEMA-003`): duplicate keys, anchors, aliases, merge keys, explicit tags, a file over 4 MiB,
   or nesting deeper than 32.
 - **Scalars** follow the YAML 1.2 core schema, so `on` stays a string.
 - **All schema errors** are reported with their line and column, not just the first. When the reader's only findings
@@ -437,11 +437,11 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-CHOICE-002` | `choices` is a literal list (not `{ fact }` or `{ profile }`) and each entry is text `"<outcome>: <criterion>"`: the outcome is `[a-z][A-Za-z0-9]{0,31}` (camelCase), the criterion 1 to 400 characters. An unquoted `- ui: ...` is a YAML mapping and gets the quote fix | Quote the entry; write the choices as a literal list |
 | `RCP-CHOICE-003` | Outcome names are distinct, and none is `uncertain` (the Step adds it) | Give each choice its own outcome |
 | `RCP-CHOICE-004` | `facts` is a literal list of at least one fact key; a hyphenated key gets the camelCase fix | List the facts the question reads |
-| `RCP-CHOICE-005` | Every route state routes `uncertain`, if it does, to a `step.desk.choose` state whose `from` names it, and has a `step.failed` transition to that twin; a twin's `from` is a literal naming a route state (not `{ fact }` or `{ profile }`) | Route to the desk twin; set `from:` to the route state |
+| `RCP-CHOICE-005` | A route state that routes `uncertain` to a desk twin sends it to a `step.desk.choose` state whose `from` names it, and has a `step.failed` transition to that twin; a twin's `from` is a literal naming a route state (not `{ fact }` or `{ profile }`) | Route to the desk twin; set `from:` to the route state |
 | `RCP-CHOICE-006` | A route state's `uncertain` and `step.failed` transitions come after its branch transitions (the app takes the first transition as the main path) | List the branches first |
 | `RCP-CHILD-001` | A child recipe resolves (registered, or next to the recipe) and gets its inputs | Register it, or put `<id>.yaml` beside the recipe; pass the inputs it declares |
 | `RCP-CHILD-002` | Child recipes form no cycle | Remove a child wait |
-| `RCP-CHILD-003` | Children nest at most 5 deep | Flatten the chain |
+| `RCP-CHILD-003` | Children nest at most 10 deep | Flatten the chain |
 | `RCP-CAP-001` | **Generated recipes only** (run against the base; `recipe validate` doesn't): a generated recipe adds no capability use its base doesn't have | Remove it, or generate from a base that has it |
 | `RCP-CAP-002` | **Generated recipes only:** a generated recipe keeps its base's capability parameters | Set them to the base's values |
 | `RCP-CAP-003` | The recipe's hash is approved and its pinned blocks match the build (registry, P2) | Approve it |
@@ -576,12 +576,12 @@ what a report must carry, on which outcomes; "every outcome" outputs are on all 
 | `step.review.recheck` | agent | `change`, `review` | `clean`, `findings`, `behaviourWrong` | `review` (every outcome) |
 | `step.owner.decide` | desk | - | `retry`, `stop` | `notes` on retry |
 | `step.ship.green` | block | `phasePacket`, `workspace` | `green`, `red` | `green` on green; `findings` on red |
-| `step.ship.pack` | block | `phasePacket`, `proofPack`, `review`, `lineContext` | `packed` | `handoffDraft` on packed |
+| `step.ship.pack` | block | `phasePacket`, `proofPack`, `review`, `lineContext`, `workspace`, `green` | `packed` | `handoffDraft` on packed |
 | `step.ship.freeze` | block | `handoffDraft`, `proofPack`, `review` | `frozen`, `stale` | `handoff` on frozen; `findings` on stale |
 | `step.ship.open` | desk, human-only | `handoff`, `workspace` | `opened`, `updated`, `refused` | `pr` on opened and updated (stands in for `effect.pr.open`; nothing reaches the forge) |
 | `step.ship.return` | block | `findings` | `noted` | `returnNotes` on noted |
 | `step.docs.scope` | block | `pr`, `phasePacket` | `candidates`, `none`, `disabled`, `notOpen` | `docsResult` (every outcome); `docsScope`, `prState`, `findings`, `handoffNote`, `workspace` on candidates |
-| `step.docs.update` | agent | `docsScope`, `prState`, `findings`, `handoffNote`, `phasePacket` | `changed`, `noChange`, `blocked` | `handoffNote` (every outcome) |
+| `step.docs.update` | agent | `docsScope`, `prState`, `findings`, `handoffNote`, `phasePacket`, `workspace` | `changed`, `noChange`, `blocked` | `handoffNote` (every outcome) |
 | `step.docs.check` | block | `docsScope`, `workspace` | `pass`, `fail` | `findings` on fail |
 | `step.docs.open-pr` | desk, human-only | `pr`, `workspace` | `opened`, `updated`, `rejected` | `docsPr` on opened and updated (stands in for `effect.pr.create-stacked`; nothing reaches the forge) |
 
@@ -738,7 +738,7 @@ Each round queues the lenses whose `when` holds, in pack order, as `fact:lensQue
 |---|---|---|
 | `fact:phasePacket`, `fact:activePacket` | `{ hash, dir, repo? }`: the packet's frozen hash and directory; `repo` is a checkout of the repository it builds on (PKT-BASE-001 needs the base commit), which `step.build.prepare` sets to `fact:workspace` | the phase's seed (`hash`, `dir`), prepare (`repo`), amend (the child's) |
 | `fact:answers` | object `{ allow?: string[], reason?: string, revert?: string[] }`, the shape the shipped `workflow.build` evals use. `allow` holds the granted paths (repo-relative globs or `new: <path>`); amend needs at least one, and takes the owner's `reason` or the stock line `allowed at the scope desk` | prepare seeds `{}`; the scope desk writes it |
-| `fact:handoffDraft` | `{ dir, head, workspace }`: the hand-off packet directory (`pr.json`, `body.md`, `green.json`, `packet.json`, `index.json`), the head it was packed on, and the phase worktree | `step.ship.pack` (at the desk until its fact shapes are settled) |
+| `fact:handoffDraft` | `{ dir, head, workspace }`: the hand-off packet directory (`pr.json`, `body.md`, `green.json`, `packet.json`, `index.json`), the head it was packed on, and the phase worktree | `step.ship.pack` |
 | `fact:proofPack`, `fact:review` | each holds `head`, the commit its run covered | `step.prove.evidence`, `step.review.record` |
 | `fact:handoff` | `{ hash, dir }`: the frozen hand-off | freeze |
 | `fact:findings` | array of `{ rule, message }` | `SHIP-SHA-001` on stale |
@@ -1173,7 +1173,7 @@ Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
 
 ## Step inputs at run time
 
-Before a desk Step opens, each input in its `step.inputs` list runs as a `FillInput` activity (id `inputs:{token}:{n}`, 60 s, 3 attempts), in declaration order, once per run token. The activity runs the input in its own scope, checks the section names (`^[a-z][a-z0-9._-]{0,63}$`), scrubs each section and the typed result, then hashes the scrubbed text, so the digest covers exactly what a Step sees. A section or a typed result is at most 256 KiB and a plan at most 1 MiB (`SND-WF-019`, which fails the Step without retries).
+Before a desk Step opens, each input in its `step.inputs` list runs as a `FillInput` activity (id `inputs:{token}:{n}`; it heartbeats every 15 s and fails only after 2 minutes of silence or 30 minutes in all, retries included, with up to 3 attempts for a transient failure; a timeout is `SND-WF-020`, named with the seconds), in declaration order, once per run token. The activity runs the input in its own scope, checks the section names (`^[a-z][a-z0-9._-]{0,63}$`), scrubs each section and the typed result, then hashes the scrubbed text, so the digest covers exactly what a Step sees. A section or a typed result is at most 256 KiB and a plan at most 1 MiB (`SND-WF-019`, which fails the Step without retries).
 
 - **No text is stored.** The activity returns `{section, input, bytes, sha256}` per section and the size and digest of the typed result; that metadata is all Temporal records. The text lives in `MemoryInjectionTexts`, keyed by instance address, state, run token and input, bounded (64 entries, 8 MiB), dropped when a newer run of the instance arrives, and never persisted or logged. A history recorded before the `step-inputs-v1` patch replays without filling.
 - **A later section of the same name replaces the earlier one** in place (`InjectionPlans.Merge`, pure); the plan keeps a warning for each replacement.
@@ -1492,4 +1492,4 @@ usage, the measured empty diff, and the stop of the session) before it decides.
 - **The engine's reports (gap 1).** A linked instance (its address has the linked form, `InstanceAddress.LinkedParent()` is not null) tells its line when it parks (a park or an escalation), resumes or ends: `Emit` adds one engine-origin `effect.line.report` (`LinkedPhaseReports.For`), like a notice (no dispatch delay, no recheck), whose reply's causer is the linked instance, so `route: parent` reaches the line. The payload's `phase` is the plan's id ("P1") read from the instance's `fact:phasePacket`, never the address slug; it also adds `attempt` (the address's), `parkReason` on `parked`, and on `ended` `ended` (the terminal outcome: `PhaseBoard` reads `resolved` as merged and anything else, `cancelled` included, as failed) and `packet`: the sha256 of the linked instance's `fact:phasePacket` input. Amendments (LN-PKT1) don't exist yet, so that is the packet the phase started with, not the newest. The identity is `{instance}:{entry}:n{version}.l`, one per change, so a phase that parks and resumes twice reports four times. The report of a cancelled end is not stopped by that cancel. A Temporal-level cancel of the workflow (not the `cancel` command) ends without a transition and reports nothing.
 - **Linked instances are not roots.** The `Root` search attribute is false for a linked instance as it is for a child, so `list --root true` shows the line and not its phases.
 - **Cancel cascades.** An instance that ends `cancelled` sends `parentCancel` to each live instance linked to it (the `LiveLinked` activity: the live instances of its item whose `LinkedParent()` is it), as it does to its Temporal children, so each records its own `cancelled`. A line that ends any other way has no live phase. All three are behind the patch `ln-wf1-linked-phase-events`.
-- **The owner.** A failed phase sends the line to `step.line.decide`: `retry` (the next attempt), `skip` (the phase and, transitively, its dependents) or `stop` (the line ends `failed`). `ticks` (cap 400) bounds the dispatch loop.
+- **The owner.** A failed phase sends the line to `step.line.decide`: `retry` (the next attempt), `skip` (the phase and, transitively, its dependents) or `stop` (the line ends `failed`). `ticks` (cap 5000) bounds the dispatch loop.
