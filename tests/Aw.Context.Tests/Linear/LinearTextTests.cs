@@ -7,10 +7,13 @@ public sealed class LinearTextTests
 {
     private const string Pic = "https://uploads.linear.app/ws/abc/shot.png";
 
-    private static LinearIssue Issue(string? description = null, IReadOnlyList<LinearComment>? comments = null, IReadOnlyList<LinearAttachment>? attachments = null, bool moreAttachments = false) =>
+    private static LinearIssue Issue(string? description = null, IReadOnlyList<LinearComment>? comments = null, IReadOnlyList<LinearAttachment>? attachments = null, bool moreAttachments = false, string? project = null, IReadOnlyList<LinearRelation>? relations = null, IReadOnlyList<LinearRelation>? inverse = null) =>
         new("id", "SPL-1", "Title", DateTimeOffset.UnixEpoch, description,
             Comments: comments is null ? null : new LinearConnection<LinearComment>(comments),
-            Attachments: attachments is null ? null : new LinearConnection<LinearAttachment>(attachments, new LinearPageInfo(moreAttachments)));
+            Attachments: attachments is null ? null : new LinearConnection<LinearAttachment>(attachments, new LinearPageInfo(moreAttachments)),
+            Project: project is null ? null : new LinearNamed("p", project),
+            Relations: relations is null ? null : new LinearConnection<LinearRelation>(relations),
+            InverseRelations: inverse is null ? null : new LinearConnection<LinearRelation>(inverse));
 
     private static LinearComment Comment(string body) => new("c", body, DateTimeOffset.UnixEpoch);
 
@@ -146,6 +149,42 @@ public sealed class LinearTextTests
         Assert.Contains("comment 0 ", text, StringComparison.Ordinal);
         Assert.DoesNotContain("comment 399 ", text, StringComparison.Ordinal);
         Assert.EndsWith("\n\nAttachments:\n- A (link) https://example.com/a\n- B (link) https://example.com/b", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_project_is_a_line()
+    {
+        var text = LinearText.Of(Issue(description: "desc", project: "Split panes"));
+
+        Assert.Contains("\n\nProject: Split panes", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Relations_are_listed_both_ways()
+    {
+        var text = LinearText.Of(Issue(
+            relations: [new("blocks", RelatedIssue: new("SPL-2", "Second"))],
+            inverse: [new("duplicate", Issue: new("SPL-3", "Third"))]));
+
+        Assert.Contains("\n\nRelations:\n- blocks SPL-2 Second\n- (from) duplicate SPL-3 Third", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void No_project_and_no_relations_add_no_lines()
+    {
+        var text = LinearText.Of(Issue(description: "plain", relations: [], inverse: []));
+
+        Assert.Equal("plain", text);
+    }
+
+    [Fact]
+    public void A_long_description_still_keeps_the_project_and_relations()
+    {
+        var text = LinearText.Of(Issue(description: new string('x', 70_000), project: "Split panes", relations: [new("related", RelatedIssue: new("SPL-2", "Second"))]));
+
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(text) <= 64 * 1024);
+        Assert.Contains("Project: Split panes", text, StringComparison.Ordinal);
+        Assert.Contains("- related SPL-2 Second", text, StringComparison.Ordinal);
     }
 
     [Fact]
