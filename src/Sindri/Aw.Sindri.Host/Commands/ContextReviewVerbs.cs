@@ -111,7 +111,7 @@ internal sealed class ContextReviewVerbs(ControlPlaneClient client, Output outpu
     {
         var done = await client.Post<ReviewContextMapRequest, ReviewContextMapResponse>(Route + "/review", request, ct).ConfigureAwait(false);
         return done.IsError ? await Failed(done.Error).ConfigureAwait(false)
-            : json ? await output.Raw(done.Body, 0).ConfigureAwait(false)
+            : json ? await output.Raw(done.Value.Body, 0).ConfigureAwait(false)
             : await output.Text(ContextReviewText.Review(done.Value.Value), 0).ConfigureAwait(false);
     }
 
