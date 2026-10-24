@@ -79,7 +79,7 @@ public sealed class WholeNodePanelTests
     [Fact]
     public async Task A_source_with_a_link_shows_and_opens_and_a_description_shows()
     {
-        var (page, launcher, _) = await Open(Served(""", "source": { "kind": "ticket", "ref": "LIN-12", "title": "Restore layout", "url": "https://linear.app/x/issue/LIN-12" }, "description": "Keeps the tabs."));
+        var (page, launcher, _) = await Open(Served(""", "source": { "kind": "ticket", "ref": "LIN-12", "title": "Restore layout", "url": "https://linear.app/x/issue/LIN-12" }, "description": "Keeps the tabs." """));
 
         await Click(page, Node);
         await page.Whole.Panel.OpenSource(Token);
