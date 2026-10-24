@@ -82,8 +82,7 @@
         "records": 3,
         "decisions": 0,
         "orphaned": null
-      },
-      "truncated": false
+      }
     },
     "product": {
       "own": [
@@ -295,8 +294,7 @@
           "confirmed": true,
           "confidence": 1
         }
-      ],
-      "truncated": false
+      ]
     },
     "code": {
       "files": [
@@ -424,8 +422,7 @@
         "files": 6,
         "symbols": 0,
         "featuresWithNoCode": 0
-      },
-      "truncated": false
+      }
     }
   },
   "edges": [],

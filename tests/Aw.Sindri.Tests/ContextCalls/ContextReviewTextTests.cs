@@ -137,9 +137,9 @@ public sealed class ContextReviewTextTests
         var decision = new LensDecision(NodeKey.From("decision:2"), "stays expanded", [node], [NodeKey.From("decision:1")], Quotes: null, Provenance.Human, Confirmed: true, Trust.Trusted, At: null, Quote: null, "stays expanded", NodeKind.Decision);
         return new LensesView(1, new LensAnchor(node, "Tab manager", NodeKind.Feature, Trust.Trusted), "v13", Draft: false, 2, DateTimeOffset.UnixEpoch,
             new LensBands(
-                new IntentBand([record], [decision], new IntentCounts(1, 1, Orphaned: null), Truncated: false),
-                new ProductBand([own], [], [], new ProductCounts(1, 0), [], Truncated: false),
-                new CodeBand([file], LensSymbols.Unavailable, new CodeCounts(1, 0, 1), Truncated: false)),
+                new IntentBand([record], [decision], new IntentCounts(1, 1, Orphaned: null)),
+                new ProductBand([own], [], [], new ProductCounts(1, 0), []),
+                new CodeBand([file], LensSymbols.Unavailable, new CodeCounts(1, 0, 1))),
             [], [new LensConflict(ConflictKind.Supersedes, node, NodeKey.From("decision:2"), "decision:1", "decision:2 supersedes decision:1", [], [])],
             new LensCoverage(6, new CoverageIntent(4, 6), new CoverageProduct(3, 6), new CoverageCode(2, 6, "file", 1), [new LensGap(NodeKey.From("surface:command/x"), [GapKind.Intent, GapKind.Code], Note: null)]),
             new LensSearched([], "v13", 2, [], [], new SearchedBands(new BandSearched(Empty: false), new BandSearched(Empty: false), new BandSearched(Empty: false))),

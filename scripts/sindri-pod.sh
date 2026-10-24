@@ -42,7 +42,7 @@
 #                    (the fields src/Sindri/Aw.Sindri.Ui/Api/ControlRecord.cs reads; the app checks pid and epoch against
 #                    GET /sindri/ping and never checks the pid is alive locally, so the pod's own pid is right)
 #   auth/human.token the pod's per-start human token (src/Sindri/Aw.Sindri.Ui.Desktop/ControlFilePath.cs)
-# and starts sindri-ui on it (AW_SINDRI_HOME=<mirror>). First it waits up to 10 minutes for the sindri container to be
+# and starts sindri-ui on it (AW_SINDRI_HOME=<mirror>, AW_SINDRI_APP_NO_MCP=1 so the mirror never registers an MCP server in ~/.claude.json). First it waits up to 10 minutes for the sindri container to be
 # ready, printing its state every 15 s. The script then watches: when the port-forward drops or the pod's pid, epoch or token
 # changes (a restart), it re-reads the pod, restarts the forward and rewrites the mirror home; the app shows its "control
 # plane not running" state meanwhile and the script prints "pod restarting, reconnecting (attempt n of 30)". The script ends
@@ -285,7 +285,7 @@ if [ "$dry" = 1 ]; then
   echo "mirror home: ${TMPDIR:-/tmp}/aw-sindri-pod.XXXXXX (0700; control.json and auth/human.token 0600; removed on exit)"
   echo "+ kubectl [--context ${ctx:-<current>}] [--namespace ${ns:-<current>}] exec $pod -c sindri -- sh -c '<cat control.json and auth/human.token>'"
   echo "+ kubectl port-forward pod/$pod ${lport:-<pod port>}:<pod port from control.json>"
-  echo "+ AW_SINDRI_HOME=<mirror home> <sindri-ui: \$AW_SINDRI_UI, else the newest $state/bin/sindri-app/*/sindri-ui>"
+  echo "+ AW_SINDRI_APP_NO_MCP=1 AW_SINDRI_HOME=<mirror home> <sindri-ui: \$AW_SINDRI_UI, else the newest $state/bin/sindri-app/*/sindri-ui>"
   echo "  (every ${poll}s: re-read pid, epoch and token; on a change or a dropped forward, retry up to $retries attempts ${retry_wait}s apart and rewrite the mirror home)"
   if [ "$onyx" = 1 ]; then
     echo "+ kubectl exec $pod -c sindri -- sh -c 'printf %s \$AW_SINDRI_ONYX_URL'   (Onyx's port; unset means Onyx is off: refused)"
@@ -451,7 +451,7 @@ reconcile_retrying() {
 
 reconcile_retrying || give_up "can't reach $pod in $ctx/$ns after $retries attempts (see $logs)"
 
-AW_SINDRI_HOME="$home" nohup "$ui" >> "$logs/ui.log" 2>&1 &
+AW_SINDRI_APP_NO_MCP=1 AW_SINDRI_HOME="$home" nohup "$ui" >> "$logs/ui.log" 2>&1 &
 ui_pid=$!
 say "app started (pid $ui_pid) on $home"
 say "connected: $pod at http://127.0.0.1:$lport; Ctrl-C to stop"

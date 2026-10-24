@@ -18317,3 +18317,7 @@ static Aw.Sindri.Core.Prove.RedTest.operator ==(Aw.Sindri.Core.Prove.RedTest? le
 static Aw.Sindri.Core.Prove.RedTestsFact.operator !=(Aw.Sindri.Core.Prove.RedTestsFact? left, Aw.Sindri.Core.Prove.RedTestsFact? right) -> bool
 static Aw.Sindri.Core.Prove.RedTestsFact.operator ==(Aw.Sindri.Core.Prove.RedTestsFact? left, Aw.Sindri.Core.Prove.RedTestsFact? right) -> bool
 static Aw.Sindri.Core.Prove.RedTestsFact.Parse(System.Text.Json.Nodes.JsonNode? fact) -> Aw.Sindri.Core.Prove.RedTestsFact!
+Aw.Sindri.Core.Prove.PhaseSignals
+static Aw.Sindri.Core.Prove.PhaseSignals.Check(System.Text.Json.Nodes.JsonNode? signals) -> string?
+static Aw.Sindri.Core.Prove.PhaseSignals.Of(System.Text.Json.Nodes.JsonNode? signals, string! item) -> System.Collections.Generic.IReadOnlyList<System.Text.Json.Nodes.JsonObject!>!
+static Aw.Sindri.Core.Prove.PhaseSignals.Shape.get -> string!

@@ -121,24 +121,37 @@ queued
 ## sindri request note Smoke request (session)
 REQ-ID filed; DEC-ID waits for a human (sequence SEQ)
 ## sindri needs-you
+decision · note  smoke  [smoke]  since TIME
+  note request from session:mcp
+  recorded; acted on once the workflow engine runs
+  sindri decide DEC-ID accept
 decision · note  Smoke request  since TIME
   note request from session:cli
   recorded; acted on once the workflow engine runs
   sindri decide DEC-ID accept
+setup · workflows  Approve all new workflows (27)  since TIME
+  27 workflows wait for your approval.
+  sindri recipe approve-all
 ## sindri decide DEC-ID accept (session)
 SND-AUTH-002 Decide is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri decide <decisionId> <choice> [--note <note>] (this CLI ran as a session: CLAUDECODE is set)
 exit 2
 ## sindri decide DEC-ID accept (human, terminal)
 DEC-ID decided: accept (sequence SEQ)
 ## sindri needs-you
-Nothing needs you. 0 running, 0 queued.
+decision · note  smoke  [smoke]  since TIME
+  note request from session:mcp
+  recorded; acted on once the workflow engine runs
+  sindri decide DEC-ID accept
+setup · workflows  Approve all new workflows (27)  since TIME
+  27 workflows wait for your approval.
+  sindri recipe approve-all
 ## sindri requests --state accepted
 REQ-ID  note  accepted  by session:cli  since TIME  decision DEC-ID
   Smoke request
 ## sindri ledger --json --after 0 | jq (human: command.handled is listed)
 true
 ## sindri ledger --json --after 0 | jq (session: public types only)
-false
+true
 ## sindri ledger --item <closed item> --json | jq (the item's events)
 ["item.created","item.state-changed"]
 ## GET /sindri/events/catalog | jq (public types, their invalidates)
@@ -219,7 +232,7 @@ ok    context:sync      no context sources, so nothing syncs
 ok    context:mcp-scope no user-wide 'sindri' MCP entry for Claude Code, Codex or Cursor
 ok    launcher:adoption no opens in the last 30 days
 ok    pr-watch          the watcher's last run was ok
-warn  setup             not finished: recipes (todo), mcp (todo), map (todo) (fix: sindri recipe approve-all)
+warn  setup             not finished: recipes (needs-you), mcp (todo), map (todo) (fix: sindri recipe approve-all)
 warn  setup:repo-hook   No secret-check hook yet: add it when the installer ships (fix: add a pre-commit hook that refuses secret-shaped text to each repo by hand)
 ok    forge:credential  no forge configured
 warn  codex:read-only   pending: owner probe (fix: in that harness, sindri doctor --probe --harness codex:read-only > tests/Aw.Sindri.Tests/Golden/Probe/codex-read-only.json; docs/csharp/sindri.md, 'The harness probe')
