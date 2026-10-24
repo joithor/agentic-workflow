@@ -32,6 +32,7 @@ internal sealed partial class RecipeWorkflow
         _dropsTexts = Workflow.Patched("step-inputs-drop-v1");   // so does the eviction at the Step's end
         _capsPlan = Workflow.Patched("step-inputs-plan-cap-v1");   // a plan over the cap fails the Step: a history that filled past it before must replay as it ran
         _uncapsPlan = Workflow.Patched("step-inputs-no-plan-cap-v1");   // new runs keep no cap (a big map's view is a long text, not a failure); a history without this marker keeps the cap it ran under
+        _unavailable = Workflow.Patched("step-unavailable-v1");   // a Step failure no transition takes is retried, then parks as unavailable; a history without the marker parks needs-answer at once as it did
     }
 
     private bool _fillsInputs;
@@ -39,6 +40,7 @@ internal sealed partial class RecipeWorkflow
     private bool _dropsTexts;
     private bool _capsPlan;
     private bool _uncapsPlan;
+    private bool _unavailable;
     private string? _filled;
     private InjectionPlan _injection = InjectionPlan.Empty;
     private List<InjectionFill> _fills = [];
@@ -82,8 +84,7 @@ internal sealed partial class RecipeWorkflow
             }
             catch (ActivityFailureException e) when (e.InnerException is not CanceledFailureException)
             {
-                var code = e.InnerException is ApplicationFailureException { ErrorType: { } t } ? t : "failed";   // never the message: it could carry text
-                return await InputsFailed(instance, open, $"input {request.Input.Value} failed: {code}", request.Input.Value, code.StartsWith("SND-", StringComparison.Ordinal) ? code : null).ConfigureAwait(true);
+                return await InputFailed(instance, open, request.Input, e).ConfigureAwait(true);
             }
 
             if (_capsPlan && !_uncapsPlan && InjectionPlans.Bytes([.. fills.Select(static f => f.Recorded)]) > InjectionPlans.PlanCap)
@@ -97,6 +98,13 @@ internal sealed partial class RecipeWorkflow
         _injection = InjectionPlans.Merge([.. fills.Select(static f => f.Recorded)]);
         await MirrorInjection(instance, open).ConfigureAwait(true);
         return default;
+    }
+
+    // The failure's code only (never the message: it could carry text); a typed SND- code also becomes the park's.
+    private Task<Filling> InputFailed(WorkflowInstance instance, OpenRun open, BlockId input, ActivityFailureException failure)
+    {
+        var code = failure.InnerException is ApplicationFailureException { ErrorType: { } type } ? type : "failed";
+        return InputsFailed(instance, open, $"input {input.Value} failed: {code}", input.Value, code.StartsWith("SND-", StringComparison.Ordinal) ? code : null);
     }
 
     /// <summary>

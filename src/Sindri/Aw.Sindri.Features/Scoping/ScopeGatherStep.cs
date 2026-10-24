@@ -1,5 +1,5 @@
 using Aw.Kernel;
-using Aw.Sindri.Core;
+using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 
