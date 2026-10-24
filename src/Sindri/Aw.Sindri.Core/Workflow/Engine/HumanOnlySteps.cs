@@ -4,7 +4,7 @@ namespace Aw.Sindri.Core.Workflow.Engine;
 
 /// <summary>
 /// Which Steps only a human may report (DT spec §8.5, scoping-station spec W3): a Step whose descriptor says
-/// <see cref="BlockDescriptor.HumanOnly"/>, and a block-runtime Step while it runs on the desk. Pure.
+/// <see cref="BlockDescriptor.HumanOnly"/>. A block-runtime Step on the desk is answerable by any caller (owner q93, 2026-10-23). Pure.
 /// </summary>
 public static class HumanOnlySteps
 {
@@ -15,6 +15,6 @@ public static class HumanOnlySteps
     public static bool Applies(BlockDescriptor step, StepRuntime runOn)
     {
         ArgumentNullException.ThrowIfNull(step);
-        return runOn == StepRuntime.Desk && (step.HumanOnly == true || step.Runtime == BlockRuntime.Block);
+        return runOn == StepRuntime.Desk && step.HumanOnly == true;
     }
 }

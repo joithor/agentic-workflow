@@ -28,9 +28,9 @@ public sealed class HumanOnlyReportTests
     private readonly InMemoryCommandNonces _nonces = new(new FakeTimeProvider());
 
     [Fact(Timeout = 30_000)]
-    public async Task A_session_complete_on_a_desk_choose_run_is_SND_AUTH_002_and_claims_nothing()
+    public async Task A_session_complete_on_a_scope_review_run_is_SND_AUTH_002_and_claims_nothing()
     {
-        var desk = new OpenTask("step.desk.choose");
+        var desk = new OpenTask("step.scope.review");
 
         var refused = await Service(desk, Session()).Handle(Request(), TestContext.Current.CancellationToken);
 
@@ -65,15 +65,20 @@ public sealed class HumanOnlyReportTests
         _ = Assert.Single(desk.Sent);
     }
 
-    [Fact(Timeout = 30_000)]
-    public async Task A_session_complete_on_a_judge_choose_run_on_the_desk_is_SND_AUTH_002()
+    /// <summary>Owner q93, 2026-10-23: the desk twins of the decision tree, the evidence desk and the owner's decision are answerable by an agent session; the instance moves on.</summary>
+    [Theory(Timeout = 30_000)]
+    [InlineData("step.desk.choose")]
+    [InlineData("step.judge.choose")]
+    [InlineData("step.owner.decide")]
+    [InlineData("step.evidence.desk")]
+    public async Task A_session_answers_a_desk_run_that_q93_opened_to_agents(string step)
     {
-        var desk = new OpenTask("step.judge.choose");
+        var desk = new OpenTask(step);
 
-        var refused = await Service(desk, Session()).Handle(Request(), TestContext.Current.CancellationToken);
+        var done = await Service(desk, Session()).Handle(Request(), TestContext.Current.CancellationToken);
 
-        Assert.Equal("SND-AUTH-002", refused.Error.Code);
-        Assert.Empty(desk.Attempted);
+        Assert.False(done.IsError, done.IsError ? done.Error.Message : null);
+        _ = Assert.Single(desk.Sent);
     }
 
     [Fact(Timeout = 30_000)]
@@ -92,7 +97,7 @@ public sealed class HumanOnlyReportTests
     [InlineData(false)]
     public async Task A_human_in_the_app_or_a_terminal_completes_a_human_only_step(bool terminal)
     {
-        var desk = new OpenTask("step.desk.choose");
+        var desk = new OpenTask("step.scope.review");
         var human = terminal ? A.Caller().Human().AtTerminal().Build() : A.Caller().Human().Build();
 
         var done = await Service(desk, human).Handle(Request(), TestContext.Current.CancellationToken);
@@ -104,7 +109,7 @@ public sealed class HumanOnlyReportTests
     [Fact(Timeout = 30_000)]
     public async Task A_stale_run_on_a_human_only_step_is_answered_by_the_send_not_refused()
     {
-        var desk = new OpenTask("step.desk.choose");
+        var desk = new OpenTask("step.scope.review");
         var stale = new CompleteStepRequest(_address.Value, RunToken.For(2, 1), OutcomeName.From("api"), new Dictionary<FactKey, ReadOnlyMemory<byte>>(), _nonce);
 
         var refused = await Service(desk, Session()).Handle(stale, TestContext.Current.CancellationToken);
@@ -113,22 +118,19 @@ public sealed class HumanOnlyReportTests
     }
 
     [Fact(Timeout = 30_000)]
-    public async Task The_refusal_names_the_block_state_and_the_human_command()
+    public async Task The_refusal_names_the_step_state_and_the_human_command()
     {
-        var desk = new OpenTask("step.desk.choose");
+        var desk = new OpenTask("step.scope.review");
 
         var refused = await Service(desk, Session()).Handle(Request(), TestContext.Current.CancellationToken);
 
         Assert.Equal(
-            $"CompleteStep on 'step.desk.choose' (state 'route-evidence-desk') is a human-only Step. Ask the human to run it in a terminal or the Sindri app: sindri workflow complete T-7/evidence/1 --run {RunToken.For(1, 1).Value} --outcome api",
+            $"CompleteStep on 'step.scope.review' (state 'route-evidence-desk') is a human-only Step. Ask the human to run it in a terminal or the Sindri app: sindri workflow complete T-7/evidence/1 --run {RunToken.For(1, 1).Value} --outcome api",
             refused.Error.Message);
     }
 
     /// <summary>Review run 1 (I2): the command in the refusal lists the outputs the Step requires on the reported outcome, as the status line does.</summary>
     [Theory(Timeout = 30_000)]
-    [InlineData("step.evidence.desk", "recorded", " --output fact:evidenceSummary=<file> --output fact:evidenceReason=<file>")]
-    [InlineData("step.owner.decide", "retry", " --output fact:notes=<file>")]
-    [InlineData("step.owner.decide", "stop", "")]
     [InlineData("step.phase.decide", "rebuild", " --output fact:buildNotes=<file>")]
     [InlineData("step.phase.decide", "stop", "")]
     [InlineData("step.babysit.watch", "merged", " --output fact:mergedSha=<file>")]
@@ -147,7 +149,7 @@ public sealed class HumanOnlyReportTests
     [Fact(Timeout = 30_000)]
     public async Task A_session_retry_on_a_claimed_nonce_is_refused_and_keeps_the_claim()
     {
-        var desk = new OpenTask("step.desk.choose");
+        var desk = new OpenTask("step.scope.review");
         _ = await _nonces.Claim(_nonce, "earlier report", TestContext.Current.CancellationToken);
 
         var refused = await Service(desk, Session()).Handle(Request(), TestContext.Current.CancellationToken);
@@ -160,7 +162,7 @@ public sealed class HumanOnlyReportTests
     [Fact(Timeout = 30_000)]
     public async Task A_session_retry_on_a_claimed_nonce_with_an_unreadable_instance_is_that_error()
     {
-        var desk = new OpenTask("step.desk.choose") { Unreadable = true };
+        var desk = new OpenTask("step.scope.review") { Unreadable = true };
         _ = await _nonces.Claim(_nonce, "earlier report", TestContext.Current.CancellationToken);
 
         var refused = await Service(desk, Session()).Handle(Request(), TestContext.Current.CancellationToken);
@@ -184,7 +186,7 @@ public sealed class HumanOnlyReportTests
     [Fact(Timeout = 30_000)]
     public async Task A_fresh_session_report_on_an_instance_that_cant_be_read_is_that_error_and_claims_nothing()
     {
-        var desk = new OpenTask("step.desk.choose") { Unreadable = true };
+        var desk = new OpenTask("step.scope.review") { Unreadable = true };
 
         var refused = await Service(desk, Session()).Handle(Request(), TestContext.Current.CancellationToken);
 
