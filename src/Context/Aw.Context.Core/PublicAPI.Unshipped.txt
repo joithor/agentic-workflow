@@ -3275,7 +3275,7 @@ Aw.Context.Core.Map.MapViewCache.MapViewCache() -> void
 Aw.Context.Core.Map.NodeDetails
 Aw.Context.Core.Map.NodeDetails.Edge(Aw.Context.Core.Graph.EdgeFact! edge, Aw.Context.Core.Graph.NodeKey other) -> Aw.Context.Core.Graph.EdgeDetail!
 Aw.Context.Core.Map.NodeDetails.Node(Aw.Context.Core.Graph.GraphNode! node) -> Aw.Context.Core.Graph.NodeDetail!
-Aw.Context.Core.Map.NodeDetails.NodeDetails(Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Map.MapText! text) -> void
+Aw.Context.Core.Map.NodeDetails.NodeDetails(Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Map.MapText! text, string? mapRepo = null) -> void
 Aw.Context.Core.Map.ProposedNode
 Aw.Context.Core.Map.ProposedNode.<Clone>$() -> Aw.Context.Core.Map.ProposedNode!
 Aw.Context.Core.Map.ProposedNode.Confidence.get -> double
@@ -6981,3 +6981,5 @@ const Aw.Context.Core.Lenses.FileMapBuilder.DefaultLimit = 200 -> int
 const Aw.Context.Core.Lenses.FileMapBuilder.MaxLimit = 1000 -> int
 static Aw.Context.Core.Lenses.FileMapBuilder.Build(Aw.Context.Core.Lenses.FileMapBasis! basis, Aw.Context.Core.Lenses.FileMapQuery! query, Aw.Context.Core.Lenses.RepoTree! tree, Aw.Context.Core.Graph.GraphSnapshot! graph) -> Aw.Kernel.Result<Aw.Context.Core.Lenses.FileMapView!>!
 const Aw.Context.Core.Sources.SourceQuery.DefaultLimit = 200 -> int
+Aw.Context.Core.Graph.NodeDetail.Repo.get -> string?
+Aw.Context.Core.Graph.NodeDetail.Repo.init -> void
