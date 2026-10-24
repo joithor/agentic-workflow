@@ -83,10 +83,10 @@ public sealed class RulesLinkerTests
     {
         var links = RulesLinker.Link(_r103, "Add the toggle-orientation command, keep paneResizeStep stable and use layout.orientation.", Map(), _known, _teams);
 
+        var identified = links.Where(l => l.Rule == LinkRule.Identifier).ToList();   // "layout.orientation" also names a feature by alias, which the name rule suggests apart
         Assert.Equal(
             ["feature:layout.split-pane.orientation", "surface:command/toggle-orientation", "surface:setting/paneResizeStep"],
-            links.Select(l => l.Target.Value).ToList());
-        Assert.All(links, l => Assert.Equal(LinkRule.Identifier, l.Rule));
+            identified.Select(l => l.Target.Value).ToList());
 
         var inside = RulesLinker.Link(_r103, "Fix pretoggle-orientations and xpaneResizeStepy later.", Map(), _known, _teams);
         Assert.Empty(inside);
