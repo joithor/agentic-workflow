@@ -202,12 +202,12 @@ public sealed class ApplyCommandTests(DevServer server) : IClassFixture<DevServe
 
     private static string Numbered(string text, int n) => text + n.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
-    /// <summary>Starts 'workflow.step' on <paramref name="item"/> and runs it to a rounds park: three rounds, each with new findings.</summary>
+    /// <summary>Starts 'workflow.step' on <paramref name="item"/> and runs it to a rounds park: five rounds (the cap), each with new findings.</summary>
     private async Task<string> Rounds(Served served, string item)
     {
         var address = item + "/step/1";
         _ = await served.Cli("start", "workflow.step", "--item", item, "--fact", "fact:spec=" + _harness.File("spec.md", "the spec"));
-        for (var round = 1; round <= 3; round++)
+        for (var round = 1; round <= 5; round++)
         {
             _ = await served.Report(address, "done", ("fact:output", _harness.File(Numbered("out", round) + ".md", Numbered("output ", round))));
             _ = await served.Report(address, "failed", ("fact:findings", _harness.File(Numbered("findings", round) + ".md", Numbered("findings ", round))));
