@@ -18249,7 +18249,7 @@ static Aw.Sindri.Core.Line.LinePacket.operator !=(Aw.Sindri.Core.Line.LinePacket
 static Aw.Sindri.Core.Line.LinePacket.operator ==(Aw.Sindri.Core.Line.LinePacket? left, Aw.Sindri.Core.Line.LinePacket? right) -> bool
 Aw.Sindri.Core.Line.LinePhaseView
 Aw.Sindri.Core.Line.LinePhaseView.<Clone>$() -> Aw.Sindri.Core.Line.LinePhaseView!
-Aw.Sindri.Core.Line.LinePhaseView.Id.get -> string!
+Aw.Sindri.Core.Line.LinePhaseView.Id.get -> Aw.Sindri.Core.Line.LinePhaseId
 Aw.Sindri.Core.Line.LinePhaseView.Id.init -> void
 Aw.Sindri.Core.Line.LinePhaseView.Attempt.get -> int
 Aw.Sindri.Core.Line.LinePhaseView.Attempt.init -> void
@@ -18271,11 +18271,28 @@ Aw.Sindri.Core.Line.LinePhaseView.Tokens.get -> int
 Aw.Sindri.Core.Line.LinePhaseView.Tokens.init -> void
 Aw.Sindri.Core.Line.LinePhaseView.WallMinutes.get -> int
 Aw.Sindri.Core.Line.LinePhaseView.WallMinutes.init -> void
-Aw.Sindri.Core.Line.LinePhaseView.Deconstruct(out string! Id, out int Attempt, out string? Address, out string! State, out string? ParkReason, out string? Pr, out string? Base, out string? Worktree, out string! Now, out int Tokens, out int WallMinutes) -> void
+Aw.Sindri.Core.Line.LinePhaseView.Deconstruct(out Aw.Sindri.Core.Line.LinePhaseId Id, out int Attempt, out string? Address, out string! State, out string? ParkReason, out string? Pr, out string? Base, out string? Worktree, out string! Now, out int Tokens, out int WallMinutes) -> void
 Aw.Sindri.Core.Line.LinePhaseView.Equals(Aw.Sindri.Core.Line.LinePhaseView? other) -> bool
-Aw.Sindri.Core.Line.LinePhaseView.LinePhaseView(string! Id, int Attempt, string? Address, string! State, string? ParkReason, string? Pr, string? Base, string? Worktree, string! Now, int Tokens, int WallMinutes) -> void
+Aw.Sindri.Core.Line.LinePhaseView.LinePhaseView(Aw.Sindri.Core.Line.LinePhaseId Id, int Attempt, string? Address, string! State, string? ParkReason, string? Pr, string? Base, string? Worktree, string! Now, int Tokens, int WallMinutes) -> void
 override Aw.Sindri.Core.Line.LinePhaseView.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Line.LinePhaseView.GetHashCode() -> int
 override Aw.Sindri.Core.Line.LinePhaseView.ToString() -> string!
 static Aw.Sindri.Core.Line.LinePhaseView.operator !=(Aw.Sindri.Core.Line.LinePhaseView? left, Aw.Sindri.Core.Line.LinePhaseView? right) -> bool
 static Aw.Sindri.Core.Line.LinePhaseView.operator ==(Aw.Sindri.Core.Line.LinePhaseView? left, Aw.Sindri.Core.Line.LinePhaseView? right) -> bool
+Aw.Sindri.Core.Line.LinePhaseId
+Aw.Sindri.Core.Line.LinePhaseId.Equals(Aw.Sindri.Core.Line.LinePhaseId other) -> bool
+Aw.Sindri.Core.Line.LinePhaseId.Equals(Aw.Sindri.Core.Line.LinePhaseId other, System.Collections.Generic.IEqualityComparer<Aw.Sindri.Core.Line.LinePhaseId>! comparer) -> bool
+Aw.Sindri.Core.Line.LinePhaseId.GetTypeCode() -> System.TypeCode
+Aw.Sindri.Core.Line.LinePhaseId.IsInitialized() -> bool
+Aw.Sindri.Core.Line.LinePhaseId.LinePhaseId() -> void
+Aw.Sindri.Core.Line.LinePhaseId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Sindri.Core.Line.LinePhaseId.Value.get -> string!
+override Aw.Sindri.Core.Line.LinePhaseId.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Line.LinePhaseId.GetHashCode() -> int
+override Aw.Sindri.Core.Line.LinePhaseId.ToString() -> string!
+static Aw.Sindri.Core.Line.LinePhaseId.From(string! value) -> Aw.Sindri.Core.Line.LinePhaseId
+static Aw.Sindri.Core.Line.LinePhaseId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Line.LinePhaseId
+static Aw.Sindri.Core.Line.LinePhaseId.TryFrom(string? value, out Aw.Sindri.Core.Line.LinePhaseId vo) -> bool
+static Aw.Sindri.Core.Line.LinePhaseId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Line.LinePhaseId result) -> bool
+static Aw.Sindri.Core.Line.LinePhaseId.operator !=(Aw.Sindri.Core.Line.LinePhaseId left, Aw.Sindri.Core.Line.LinePhaseId right) -> bool
+static Aw.Sindri.Core.Line.LinePhaseId.operator ==(Aw.Sindri.Core.Line.LinePhaseId left, Aw.Sindri.Core.Line.LinePhaseId right) -> bool

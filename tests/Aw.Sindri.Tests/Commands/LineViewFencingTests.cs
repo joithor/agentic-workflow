@@ -9,8 +9,8 @@ public sealed class LineViewFencingTests
     private static readonly LineView _view = new(
         [new LineStation("scoping", Instance: null, new LinePacket("scoping", "sha256:" + new string('1', 64), Frozen: true)), new LineStation("design", Instance: null, Packet: null)],
         [
-            new LinePhaseView("p1", 1, "T-3/line/1/phase.p1.1", "failed", "out of budget", "https://example.test/pull/1", "default-branch", "/work/p1", "Parked.", 10, 5),
-            new LinePhaseView("p2", 0, Address: null, "waiting", ParkReason: null, Pr: null, Base: null, Worktree: null, string.Empty, 0, 0),
+            new LinePhaseView(LinePhaseId.From("p1"), 1, "T-3/line/1/phase.p1.1", "failed", "out of budget", "https://example.test/pull/1", "default-branch", "/work/p1", "Parked.", 10, 5),
+            new LinePhaseView(LinePhaseId.From("p2"), 0, Address: null, "waiting", ParkReason: null, Pr: null, Base: null, Worktree: null, string.Empty, 0, 0),
         ],
         Parallel: 2,
         MaxOpenPrs: 4);
@@ -23,7 +23,7 @@ public sealed class LineViewFencingTests
         Assert.NotEqual("out of budget", fenced.Phases[0].ParkReason, StringComparer.Ordinal);
         Assert.Contains("out of budget", fenced.Phases[0].ParkReason, StringComparison.Ordinal);
         Assert.NotEqual("Parked.", fenced.Phases[0].Now, StringComparer.Ordinal);
-        Assert.Equal(("p1", "failed", "https://example.test/pull/1", "/work/p1"), (fenced.Phases[0].Id, fenced.Phases[0].State, fenced.Phases[0].Pr, fenced.Phases[0].Worktree));
+        Assert.Equal(("p1", "failed", "https://example.test/pull/1", "/work/p1"), (fenced.Phases[0].Id.Value, fenced.Phases[0].State, fenced.Phases[0].Pr, fenced.Phases[0].Worktree));
         Assert.Equal((null, string.Empty), (fenced.Phases[1].ParkReason, fenced.Phases[1].Now));
         Assert.Equal(_view.Stations, fenced.Stations);
     }

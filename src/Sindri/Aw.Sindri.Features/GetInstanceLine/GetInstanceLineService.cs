@@ -122,7 +122,7 @@ internal sealed class GetInstanceLineService(LineInstances instances, IInstanceR
         var state = PhaseRow.Name(row.State);
         if (row.Attempt < 1)
         {
-            return new LinePhaseView(row.Phase, row.Attempt, Address: null, state, row.ParkReason is null ? null : scrubber.Scrub(row.ParkReason), Pr: null, Base: null, Worktree: null, Now: string.Empty, Tokens: 0, WallMinutes: 0);
+            return new LinePhaseView(LinePhaseId.From(row.Phase), row.Attempt, Address: null, state, row.ParkReason is null ? null : scrubber.Scrub(row.ParkReason), Pr: null, Base: null, Worktree: null, Now: string.Empty, Tokens: 0, WallMinutes: 0);
         }
 
         var address = line.Address.Linked(_phaseRecipe, row.Phase, row.Attempt);
@@ -130,7 +130,7 @@ internal sealed class GetInstanceLineService(LineInstances instances, IInstanceR
         if (instance.IsError)
         {
             // why: a started phase whose instance can't be read (not yet visible, or purged) still shows its board row
-            return new LinePhaseView(row.Phase, row.Attempt, address.Value, state, row.ParkReason is null ? null : scrubber.Scrub(row.ParkReason), Pr: null, Base: null, Worktree: null, Now: string.Empty, Tokens: 0, WallMinutes: 0);
+            return new LinePhaseView(LinePhaseId.From(row.Phase), row.Attempt, address.Value, state, row.ParkReason is null ? null : scrubber.Scrub(row.ParkReason), Pr: null, Base: null, Worktree: null, Now: string.Empty, Tokens: 0, WallMinutes: 0);
         }
 
         var view = instance.Value;
@@ -145,7 +145,7 @@ internal sealed class GetInstanceLineService(LineInstances instances, IInstanceR
         var end = view.Outcome is null ? clock.GetUtcNow() : view.Since;
         var minutes = view.StartedAt is { } started ? (int)Math.Max(0, (end - started).TotalMinutes) : 0;
         return new LinePhaseView(
-            row.Phase,
+            LinePhaseId.From(row.Phase),
             row.Attempt,
             address.Value,
             state,

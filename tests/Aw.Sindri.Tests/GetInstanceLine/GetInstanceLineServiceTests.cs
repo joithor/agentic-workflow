@@ -139,7 +139,7 @@ public sealed class GetInstanceLineServiceTests
         Assert.Equal(new LinePacket("design", _designHash, Frozen: true), view.Stations[1].Packet);
         Assert.Null(view.Stations[2].Packet);
         Assert.Equal(Line + "/plan.4", view.Stations[2].Instance);
-        Assert.Equal(["p1", "p2", "p3"], view.Phases.Select(p => p.Id), StringComparer.Ordinal);
+        Assert.Equal(["p1", "p2", "p3"], view.Phases.Select(p => p.Id.Value), StringComparer.Ordinal);
         Assert.Equal((2, 4), (view.Parallel, view.MaxOpenPrs));
     }
 
@@ -149,7 +149,7 @@ public sealed class GetInstanceLineServiceTests
         var view = await Gold();
 
         var p1 = view.Phases[0];
-        Assert.Equal(new LinePhaseView("p1", 1, Line + "/phase.p1.1", "running", null, "https://github.com/o/r/pull/7", "sindri/expiry/p0", "/work/expiry/p1", "Waiting for the build.", 1234, 90), p1);
+        Assert.Equal(new LinePhaseView(LinePhaseId.From("p1"), 1, Line + "/phase.p1.1", "running", null, "https://github.com/o/r/pull/7", "sindri/expiry/p0", "/work/expiry/p1", "Waiting for the build.", 1234, 90), p1);
     }
 
     [Fact]
@@ -157,7 +157,7 @@ public sealed class GetInstanceLineServiceTests
     {
         var view = await Gold();
 
-        Assert.Equal(new LinePhaseView("p2", 0, null, "waiting", null, null, null, null, string.Empty, 0, 0), view.Phases[1]);
+        Assert.Equal(new LinePhaseView(LinePhaseId.From("p2"), 0, null, "waiting", null, null, null, null, string.Empty, 0, 0), view.Phases[1]);
         Assert.Equal(("failed", "the build ran out of budget", Line + "/phase.p3.2"), (view.Phases[2].State, view.Phases[2].ParkReason, view.Phases[2].Address));
     }
 
@@ -169,7 +169,7 @@ public sealed class GetInstanceLineServiceTests
 
         var result = await Read([line], Line, facts.Contents);
 
-        Assert.Equal(new LinePhaseView("p1", 1, Line + "/phase.p1.1", "running", null, null, null, null, string.Empty, 0, 0), result.Value.Phases[0]);
+        Assert.Equal(new LinePhaseView(LinePhaseId.From("p1"), 1, Line + "/phase.p1.1", "running", null, null, null, null, string.Empty, 0, 0), result.Value.Phases[0]);
     }
 
     [Fact]
