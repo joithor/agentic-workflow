@@ -57,19 +57,30 @@ public static class FileMapBuilder
         var first = FirstAfter(children, path, query.Cursor);
         if (first < 0)
         {
-            return ContextErrors.QueryInvalid.With($"the cursor '{(query.Cursor!.Length <= 80 ? query.Cursor : "(a long cursor)")}' is not a child of '{path}' (fix: use the nextCursor of the previous page, or none)");
+            return BadCursor(query.Cursor, path);
         }
 
+        return Page(new FileMapPageInput(basis, query, path, range), tree, links, children, first);
+    }
+
+    private static Error BadCursor(string? cursor, string path) =>
+        ContextErrors.QueryInvalid.With($"the cursor '{(cursor is { Length: > 80 } ? "(a long cursor)" : cursor)}' is not a child of '{path}' (fix: use the nextCursor of the previous page, or none)");
+
+    private static FileMapView Page(FileMapPageInput input, RepoTree tree, FileLinks links, List<TreeChild> children, int first)
+    {
+        var query = input.Query;
         // No cursor and no limit is the unpaged ask: every child, as before paging existed. Either one pages, 200 entries unless a limit says otherwise.
         var limit = query.Cursor is null && query.Limit is null ? children.Count : Math.Clamp(query.Limit ?? DefaultLimit, 1, MaxLimit);
         var page = children.Skip(first).Take(limit).ToList();
         var entries = page.Select(c => FileMapRollup.Entry(c, tree, links)).ToList();
         var next = first + page.Count < children.Count ? page[^1].Path : null;
         var suggested = page.SelectMany(c => Enumerable.Range(c.Start, c.End - c.Start)).SelectMany(i => links.Suggestions(tree.Files[i])).ToList();
-        var totals = Totals(Enumerable.Range(range.Start, range.End - range.Start).Select(i => tree.Files[i]), links);
-        return new FileMapView(1, query.Repo, basis.Sha, basis.MapVersion, query.Draft, path, entries,
+        var totals = Totals(Enumerable.Range(input.Range.Start, input.Range.End - input.Range.Start).Select(i => tree.Files[i]), links);
+        return new FileMapView(1, query.Repo, input.Basis.Sha, input.Basis.MapVersion, query.Draft, input.Path, entries,
             [.. entries.Where(e => e.Status == FileMapStatus.Unmapped).Select(e => new FileMapUnmapped(e.Path, e.Files))], suggested, totals, LensSymbols.Unavailable, next, children.Count);
     }
+
+    private sealed record FileMapPageInput(FileMapBasis Basis, FileMapQuery Query, string Path, (int Start, int End) Range);
 
     // The index of the first child after the cursor (0 without one), or -1 when the cursor names no child of the path. A cursor is the path of the last entry of the previous page.
     private static int FirstAfter(List<TreeChild> children, string path, string? cursor)
@@ -105,15 +116,9 @@ public static class FileMapBuilder
         foreach (var file in under)
         {
             files++;
-            switch (tree.StatusOf(file))
-            {
-                case FileMapStatus.Mapped:
-                    mapped++;
-                    break;
-                case FileMapStatus.Suggested:
-                    suggested++;
-                    break;
-            }
+            var status = tree.StatusOf(file);
+            mapped += status == FileMapStatus.Mapped ? 1 : 0;
+            suggested += status == FileMapStatus.Suggested ? 1 : 0;
         }
 
         return new FileMapTotals(files, mapped, suggested, files - mapped - suggested);

@@ -148,14 +148,18 @@ internal static class ContextLensText
             _ = text.AppendLine(Invariant($"  suggested {s.File} implements {s.Feature.Value} {s.Confidence:0.00}  accept: sindri context filemap accept {s.LinkId.Value}"));
         }
 
+        MoreLine(text, view);
+        var t = view.Totals;
+        _ = text.AppendLine(Invariant($"{t.Mapped} mapped, {t.Suggested} suggested, {t.Unmapped} unmapped · symbols: {view.Symbols.State.ToString().ToLowerInvariant()}{SymbolWords.Why(view.Symbols.Reason, view.Symbols.Commit, view.Symbols.AsOfCommit)}"));
+        return text.ToString();
+    }
+
+    private static void MoreLine(StringBuilder text, FileMapView view)
+    {
         if (view.NextCursor is { } next)
         {
             _ = text.AppendLine(Invariant($"  more: {view.Entries.Count} of {view.Total} shown  next page: --cursor '{next}'"));
         }
-
-        var t = view.Totals;
-        _ = text.AppendLine(Invariant($"{t.Mapped} mapped, {t.Suggested} suggested, {t.Unmapped} unmapped · symbols: {view.Symbols.State.ToString().ToLowerInvariant()}{SymbolWords.Why(view.Symbols.Reason, view.Symbols.Commit, view.Symbols.AsOfCommit)}"));
-        return text.ToString();
     }
 
     private static void Intent(StringBuilder text, IntentBand band, bool fence)

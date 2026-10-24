@@ -78,7 +78,7 @@ public sealed class FileMapPagingTests
         var files = Files(0, 0, loose: 1200);
 
         Assert.Equal(1000, Page(files, limit: 5000).Value.Entries.Count);
-        Assert.Single(Page(files, limit: 0).Value.Entries);
+        _ = Assert.Single(Page(files, limit: 0).Value.Entries);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -87,8 +87,8 @@ public sealed class FileMapPagingTests
         var view = Page(Files(3, 4), limit: 2).Value;
 
         Assert.Equal(new FileMapTotals(Files: 12, Mapped: 1, Suggested: 0, Unmapped: 11), view.Totals);
-        Assert.Equal(["dir00/", "dir01/"], view.Entries.Select(e => e.Path));
-        Assert.Equal(["dir00/", "dir01/"], view.Unmapped.Select(u => u.Path));
+        Assert.Equal(["dir00/", "dir01/"], view.Entries.Select(e => e.Path), StringComparer.Ordinal);
+        Assert.Equal(["dir00/", "dir01/"], view.Unmapped.Select(u => u.Path), StringComparer.Ordinal);
         Assert.Equal("dir01/", view.NextCursor);
     }
 
@@ -99,10 +99,10 @@ public sealed class FileMapPagingTests
 
         var view = Page(files, limit: 3, unmapped: true).Value;
 
-        Assert.Equal(["dir00/", "dir01/", "dir02/"], view.Entries.Select(e => e.Path));
+        Assert.Equal(["dir00/", "dir01/", "dir02/"], view.Entries.Select(e => e.Path), StringComparer.Ordinal);
         Assert.Equal(5, view.Total);
         Assert.Equal("dir02/", view.NextCursor);
-        Assert.Equal(["dir03/", "dir04/"], Page(files, view.NextCursor, 3, unmapped: true).Value.Entries.Select(e => e.Path));
+        Assert.Equal(["dir03/", "dir04/"], Page(files, view.NextCursor, 3, unmapped: true).Value.Entries.Select(e => e.Path), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -121,7 +121,7 @@ public sealed class FileMapPagingTests
 
         var view = Page(files, cursor: "loose001a.md").Value;
 
-        Assert.Equal(["loose002.md", "loose003.md"], view.Entries.Select(e => e.Path));
+        Assert.Equal(["loose002.md", "loose003.md"], view.Entries.Select(e => e.Path), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -146,12 +146,12 @@ public sealed class FileMapPagingTests
         FileMapView? last = null;
         foreach (var cursor in new string?[] { null, "dir09/", "dir19/" })
         {
-            last = (await world.Engine.FileMap(new FileMapQuery(_repo, string.Empty, false, false, cursor, 10), MapWorld.Human, MapWorld.None)).Value;
+            last = (await world.Engine.FileMap(new FileMapQuery(_repo, string.Empty, UnmappedOnly: false, Draft: false, cursor, 10), MapWorld.Human, MapWorld.None)).Value;
             Assert.Equal(10, last.Entries.Count);
         }
 
         Assert.Equal((1, 3), (reader.Lists, reader.Heads));
-        Assert.Null((await world.Engine.FileMap(new FileMapQuery(_repo, string.Empty, false, false, "dir29/", 10), MapWorld.Human, MapWorld.None)).Value.NextCursor);
+        Assert.Null((await world.Engine.FileMap(new FileMapQuery(_repo, string.Empty, UnmappedOnly: false, Draft: false, "dir29/", 10), MapWorld.Human, MapWorld.None)).Value.NextCursor);
         Assert.Equal(1, reader.Lists);
     }
 

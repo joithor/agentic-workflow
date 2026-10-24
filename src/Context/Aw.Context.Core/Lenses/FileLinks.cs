@@ -13,7 +13,7 @@ internal sealed class FileLinks
     private readonly Dictionary<string, HashSet<string>> _decisions = new(StringComparer.Ordinal);
 
     // One index per applied graph: a graph is immutable and the process keeps the same instance per map version, so a directory listing never re-walks every edge.
-    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<GraphSnapshot, FileLinks> _all = new();
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<GraphSnapshot, FileLinks> _all = [];
 
     /// <param name="graph">The graph.</param>
     /// <param name="repo">The repo whose links are read, or null for every link: an edge whose file evidence ('repo:&lt;repo&gt;/&lt;path&gt;') names only other repos is left out; one with no repo evidence counts for any repo.</param>

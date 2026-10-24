@@ -38,14 +38,14 @@ public sealed class RepoTree
             var slash = rest.IndexOf('/');
             if (slash < 0)
             {
-                children.Add(new TreeChild(rest.ToString(), _files[i], false, i, i + 1));
+                children.Add(new TreeChild(rest.ToString(), _files[i], IsDirectory: false, i, i + 1));
                 i++;
                 continue;
             }
 
             var directory = prefix + rest[..(slash + 1)].ToString();
             var end = UpperBound(directory, i, range.End);
-            children.Add(new TreeChild(rest[..slash].ToString(), directory, true, i, end));
+            children.Add(new TreeChild(rest[..slash].ToString(), directory, IsDirectory: true, i, end));
             i = end;
         }
 
@@ -90,11 +90,3 @@ public sealed class RepoTree
         return low;
     }
 }
-
-/// <summary>One direct child of a directory and the range of files under it.</summary>
-/// <param name="Name">Its name, without a trailing '/'.</param>
-/// <param name="Path">Its path from the root, with a trailing '/' for a directory.</param>
-/// <param name="IsDirectory">Whether it is a directory.</param>
-/// <param name="Start">The first file's index in the tree.</param>
-/// <param name="End">One past the last.</param>
-internal sealed record TreeChild(string Name, string Path, bool IsDirectory, int Start, int End);
