@@ -7,7 +7,7 @@ namespace Aw.Sindri.Ui.ViewModels.Approvals;
 
 /// <summary>
 /// The approve-all dialog (setup-once spec §4, §5.3): the plan in words, then one Approve click. The approval runs as a job the dialog
-/// follows. Nothing here approves on its own: only the person's click, and an agent session is refused by the server (SND-AUTH-002),
+/// follows. Nothing here approves on its own: only the person's click, and one of Sindri's own steps is refused by the server (SND-AUTH-002),
 /// which the dialog says in plain words.
 /// </summary>
 internal sealed partial class ApproveAllViewModel : ObservableObject

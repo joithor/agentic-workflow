@@ -38,8 +38,8 @@ internal static partial class Labels
     /// <summary>Spoken when the plan is ready to approve.</summary>
     internal const string ApproveReady = "Ready to approve. Press the Approve button.";
 
-    /// <summary>An agent session asked: only the person at the app may approve.</summary>
-    internal const string ApproveSessionRefused = "Only you can approve from the app. An agent session can't.";
+    /// <summary>A step Sindri launched itself answered: Sindri's own steps are refused.</summary>
+    internal const string ApproveSessionRefused = "Sindri's own steps can't answer this.";
 
     /// <summary>A second approval was asked for while one runs (SND-JOB-409).</summary>
     internal const string ApproveAlreadyRunning = "Approve all is already running.";

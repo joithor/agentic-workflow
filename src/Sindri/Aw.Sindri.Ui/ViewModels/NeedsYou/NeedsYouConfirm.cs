@@ -165,7 +165,7 @@ internal sealed partial class NeedsYouConfirm : ObservableObject
                 : NeedsYouConfirmKind.All;
     }
 
-    // A refusal in words: an agent session is told in plain words that the app is the person's.
+    // A refusal in words: Sindri's own steps are told in plain words they can't answer.
     private static string Words(Error error) => string.Equals(error.Code, SessionRefusal, StringComparison.Ordinal) ? Labels.ApproveSessionRefused : error.Message;
 
     // The approve-all VM moved on (its phase, a refusal or a line): the bar reads it again.
