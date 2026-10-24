@@ -401,7 +401,6 @@ Fix: run Sindri first (`sindri-app`), then run the command.
 | `SND-LEASE-001` | Another live process holds the host lease | One control plane per box: use the running one, or `sindri-app stop` |
 | `SND-CLI-002` | `serve` didn't come up, or Temporal didn't | `logs/serve.log`, `logs/temporal.log`; `scripts/binaries-lock.sh fetch temporal` |
 | `SND-PROFILE-003` | The hash you approved isn't the live profile's | Run `profile approve` without a hash and copy the new one |
-| `SND-PROFILE-004` | Approving needs a terminal and the typed confirmation | Run it in your own terminal and type the challenge exactly |
 | `SND-PROFILE-006` "does not match the current profile" | You ran the TypeScript `sindri` (copied from a hint), which checks its own profile | Before the switch, read every `sindri` in a hint as `sindri-app`: rerun as `sindri-app profile approve <hash>` |
 | `SND-PROFILE-006` from `sindri-app` | The approved snapshots can't be read or written | Check the permissions and free disk under `~/.agentic-workflow/sindri-app/approved/` |
 | `SND-VIEW-001` | The views stalled | `sindri-app views rebuild` |

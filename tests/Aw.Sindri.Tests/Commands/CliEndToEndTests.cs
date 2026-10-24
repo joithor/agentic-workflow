@@ -34,28 +34,6 @@ public sealed class CliEndToEndTests : IDisposable
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
-    public async Task Session_cli_stop_and_approve_are_SND_AUTH_002_with_the_session_note_and_exit_2()
-    {
-        var ct = TestContext.Current.CancellationToken;
-        await using var app = await Started(ct);
-        var hash = (await app.Services.GetRequiredService<IProfileSource>().Load(ct)).Value.Hash;
-        await using var scope = app.Services.CreateAsyncScope();
-        using var client = Client(app, human: false);
-        var verbs = Verbs(app, client, scope.ServiceProvider);
-
-        var stop = await verbs.Stop(ct);
-        var approve = await verbs.Approve(hash.Value, interactive: true, new StringReader(hash.Abbreviated + "\n"), ct);
-
-        Assert.Equal((2, 2), (stop, approve));
-        var lines = _error.ToString().ReplaceLineEndings("\n").Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        Assert.Equal(2, lines.Length);
-        Assert.All(lines, line => Assert.StartsWith("SND-AUTH-002 ", line, StringComparison.Ordinal));
-        Assert.All(lines, line => Assert.EndsWith(" (this CLI ran as a session: the per-start human token isn't readable)", line, StringComparison.Ordinal));
-        Assert.NotNull(app.Services.GetRequiredService<HeldLease>().Current);   // the refused stop stopped nothing
-        await app.StopAsync(ct);
-    }
-
-    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task Human_cli_sends_the_token_file_and_passes_the_caller_middleware()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -66,9 +44,9 @@ public sealed class CliEndToEndTests : IDisposable
         using var client = Client(app, human: true);
         var verbs = Verbs(app, client, scope.ServiceProvider);
 
-        var staleCode = await verbs.Approve(stale.Value, interactive: true, new StringReader("approve profile " + stale.Abbreviated + "\n"), ct);
+        var staleCode = await verbs.Approve(stale.Value, ct);
         var staleError = _error.ToString();
-        var approved = await verbs.Approve(hash.Value, interactive: true, new StringReader("approve profile " + hash.Abbreviated + "\n"), ct);
+        var approved = await verbs.Approve(hash.Value, ct);
 
         Assert.Equal(2, staleCode);
         Assert.StartsWith("SND-PROFILE-003 ", staleError, StringComparison.Ordinal);   // the service answered: the middleware let the human in

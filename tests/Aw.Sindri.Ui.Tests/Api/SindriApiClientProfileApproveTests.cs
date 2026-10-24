@@ -33,9 +33,9 @@ public sealed class SindriApiClientProfileApproveTests
     }
 
     [Fact]
-    public async Task A_session_refusal_comes_back_as_the_servers_code()
+    public async Task A_served_refusal_comes_back_as_the_servers_code()
     {
-        var canned = new Canned(HttpStatusCode.Forbidden, GoldenFiles.Api("profile-approve", "refused-session"));
+        var canned = new Canned(HttpStatusCode.Forbidden, RouteAnswer.Refused().Body);
         var client = new SindriApiClient(new HttpClient(canned), new InMemoryHumanToken("tok-1"), TimeProvider.System);
 
         var done = await client.ApproveProfile(_api, new ApproveProfileRequest(Hash, new ProfileAnswer("CHL-1", "x")), Token);

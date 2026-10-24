@@ -29,22 +29,6 @@ public sealed class McpCliTests
         Assert.Equal("""{"repo":"demo","checkout":"/work/demo","arguments":["mcp","add"],"applied":false,"providers":[{"provider":"codex","outcome":"needsTrust","detail":"x","fix":null}]}""", json);
     }
 
-    [Fact, Trait("Lane", "unit")]
-    public async Task Apply_is_not_refused_whoever_runs_it()
-    {
-        var profiles = new InMemoryProfiles();
-        var live = SliceHarness.Profile();
-        _ = await profiles.Save(live with { Profile = live.Profile with { Repos = [new RepoEntry("demo", "/work/demo")] } }, TestContext.Current.CancellationToken);
-        var service = new RegisterMcpService(profiles, new FakeRepoLocator(), new InMemoryEndpointFile(), new FakeClaudeCli(), new FakeProviderHost());
-        await using var services = new ServiceCollection().AddSingleton<IService<RegisterMcpRequest, RegisterMcpResponse>>(service).BuildServiceProvider();
-        using var error = new StringWriter();
-
-        _ = await new McpVerbs(services, new Output(TextWriter.Null, error, AwJson.CreateOptions(SindriJsonContext.Default)))
-            .Run(["register", "--repo", "demo", "--apply"], TestContext.Current.CancellationToken);
-
-        Assert.DoesNotContain("SND-AUTH-002", error.ToString(), StringComparison.Ordinal);
-    }
-
     [Theory, Trait("Lane", "unit")]
     [InlineData(new[] { "register", "--repo", "demo", "--providers", "all" }, "claude: would register", "codex: would register")]
     [InlineData(new[] { "register", "--repo", "demo", "--providers", "codex,cursor" }, "cursor: would register", "codex: would register")]

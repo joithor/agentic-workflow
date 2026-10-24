@@ -10,7 +10,6 @@ using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
-using Temporalio.Common;
 using Temporalio.Exceptions;
 using Temporalio.Workflows;
 
@@ -31,12 +30,14 @@ internal sealed partial class RecipeWorkflow
         _mirrorsInjection = Workflow.Patched("step-inputs-injection-row-v1");   // the ledger row adds a local activity: its own marker
         _dropsTexts = Workflow.Patched("step-inputs-drop-v1");   // so does the eviction at the Step's end
         _capsPlan = Workflow.Patched("step-inputs-plan-cap-v1");   // a plan over the cap fails the Step: a history that filled past it before must replay as it ran
+        _uncapsPlan = Workflow.Patched("step-inputs-no-plan-cap-v1");   // new runs keep no cap (a big map's view is a long text, not a failure); a history without this marker keeps the cap it ran under
     }
 
     private bool _fillsInputs;
     private bool _mirrorsInjection;
     private bool _dropsTexts;
     private bool _capsPlan;
+    private bool _uncapsPlan;
     private string? _filled;
     private InjectionPlan _injection = InjectionPlan.Empty;
     private List<InjectionFill> _fills = [];
@@ -80,11 +81,10 @@ internal sealed partial class RecipeWorkflow
             }
             catch (ActivityFailureException e) when (e.InnerException is not CanceledFailureException)
             {
-                var code = e.InnerException is ApplicationFailureException { ErrorType: { } t } ? t : "failed";   // never the message: it could carry text
-                return await InputsFailed(instance, open, $"input {request.Input.Value} failed: {code}").ConfigureAwait(true);
+                return await InputsFailed(instance, open, InputFillPolicy.Reason(request.Input.Value, e.InnerException)).ConfigureAwait(true);   // a code, never the message: it could carry text
             }
 
-            if (_capsPlan && InjectionPlans.Bytes([.. fills.Select(static f => f.Recorded)]) > InjectionPlans.PlanCap)
+            if (_capsPlan && !_uncapsPlan && InjectionPlans.Bytes([.. fills.Select(static f => f.Recorded)]) > InjectionPlans.PlanCap)
             {
                 // the plan is one budget for the run: past it the Step fails (SND-WF-019) and the texts held so far go
                 return await InputsFailed(instance, open, $"inputs failed: {WorkflowErrors.InjectionInvalid.Code} the plan is over {InjectionPlans.PlanCap} bytes").ConfigureAwait(true);
@@ -165,13 +165,8 @@ internal sealed partial class RecipeWorkflow
         return fresh;
     }
 
-    private static ActivityOptions FillOptions(OpenRun open, int n, RecipeState state) => new()
-    {
-        ActivityId = string.Create(CultureInfo.InvariantCulture, $"inputs:{open.Token.Value}:{n}"),
-        TaskQueue = StepTaskQueue.For(state, Workflow.Info.TaskQueue),
-        StartToCloseTimeout = TimeSpan.FromSeconds(60),
-        RetryPolicy = new RetryPolicy { MaximumAttempts = 3, InitialInterval = TimeSpan.FromSeconds(1), BackoffCoefficient = 2 },
-    };
+    private static ActivityOptions FillOptions(OpenRun open, int n, RecipeState state) =>
+        InputFillPolicy.Options(string.Create(CultureInfo.InvariantCulture, $"inputs:{open.Token.Value}:{n}"), StepTaskQueue.For(state, Workflow.Info.TaskQueue));
 
     /// <summary>Parks the instance for the input whose runtime is gone, mirrors it, and stops the Step from opening.</summary>
     private async Task<WorkflowInstance> ParkNoRuntime(WorkflowInstance before, OpenRun open, StepUse step, BlockId input)

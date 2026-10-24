@@ -7,7 +7,9 @@
     "provenance": "human",
     "confirmed": true,
     "trust": "trusted",
-    "confidence": 1
+    "confidence": 1,
+    "source": null,
+    "description": null
   },
   "aliases": [],
   "out": [],
@@ -19,7 +21,9 @@
       "provenance": "deterministic",
       "confirmed": false,
       "trust": "trusted",
-      "order": null
+      "order": null,
+      "otherKind": "code",
+      "otherLabel": "TabManager.ts"
     },
     {
       "from": "feature:tabs.tab-groups",
@@ -28,7 +32,9 @@
       "provenance": "human",
       "confirmed": true,
       "trust": "trusted",
-      "order": null
+      "order": null,
+      "otherKind": "feature",
+      "otherLabel": "Tab groups"
     },
     {
       "from": "record:linear:issue/0e5a1b00-0000-4000-8000-000000000203",
@@ -37,7 +43,9 @@
       "provenance": "human",
       "confirmed": true,
       "trust": "trusted",
-      "order": null
+      "order": null,
+      "otherKind": "record",
+      "otherLabel": "Tab manager spec"
     },
     {
       "from": "surface:command/switch-tab",
@@ -46,7 +54,9 @@
       "provenance": "human",
       "confirmed": true,
       "trust": "trusted",
-      "order": null
+      "order": null,
+      "otherKind": "surface",
+      "otherLabel": "Switch tab (command)"
     }
   ]
 }

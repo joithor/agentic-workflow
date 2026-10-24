@@ -4,8 +4,8 @@ namespace Aw.Sindri.Core.Commands;
 
 /// <summary>
 /// The authorization table (API spec §4.2) as data: which caller may run which action class. Pure; the command chain's
-/// AuthorizingService asks it, and the command list renders <see cref="CallersFor(CommandRow)"/>. A row that needs a terminal
-/// narrows any class to a human at one; a desk row may name the in-process services it grants ('service:host' →
+/// AuthorizingService asks it, and the command list renders <see cref="CallersFor(CommandRow)"/>. A human at a terminal, a human in the app
+/// and an agent session may run every class a human may (owner decision q93: no caller is refused a desk, job, decision or protected action). The one exception is a row that still needs a terminal (the line holdout read, which hides scenarios from the agent that implements them): it narrows any class to a human at one. A desk row may name the in-process services it grants ('service:host' →
 /// StopProcess). 'step-report' is a launched session's (its launch secret is checked by the service, API spec §8.1), and 'local' never runs through the API, so it refuses everyone.
 /// </summary>
 public static class Authorization
@@ -19,10 +19,10 @@ public static class Authorization
         [ActionClass.Request] = Who.Terminal | Who.App | Who.Session | Who.Service,
         [ActionClass.StepReport] = Who.Session,
         [ActionClass.Pause] = Who.Terminal | Who.App | Who.Session | Who.Service,
-        [ActionClass.Job] = Who.Terminal | Who.App | Who.Service,
-        [ActionClass.Decision] = Who.Terminal | Who.App,
-        [ActionClass.Desk] = Who.Terminal | Who.App,
-        [ActionClass.Protected] = Who.Terminal,
+        [ActionClass.Job] = Who.Terminal | Who.App | Who.Session | Who.Service,
+        [ActionClass.Decision] = Who.Terminal | Who.App | Who.Session,
+        [ActionClass.Desk] = Who.Terminal | Who.App | Who.Session,
+        [ActionClass.Protected] = Who.Terminal | Who.App | Who.Session,
         [ActionClass.Local] = Who.None,
         [ActionClass.Issue] = Who.Terminal | Who.App | Who.Session,
     };
@@ -46,9 +46,7 @@ public static class Authorization
     {
         ArgumentNullException.ThrowIfNull(row);
         var who = WhoIs(caller);
-        var app = row.AppConfirm ? Who.App : Who.None;   // the three rows the app confirms (setup-once spec §4 item 7): the handler redeems the challenge before its first write
-        var allowed = (((Allowed(actionClass) | app) & who) != Who.None || Granted(actionClass, caller, row))
-            && (!row.NeedsTerminal || who == Who.Terminal || (who == Who.App && row.AppConfirm));
+        var allowed = ((Allowed(actionClass) & who) != Who.None || Granted(actionClass, caller, row)) && (!row.NeedsTerminal || who == Who.Terminal);
         return new AuthorizationDecision(caller?.Actor ?? "none", allowed ? null : Refusal(row));
     }
 
@@ -72,11 +70,6 @@ public static class Authorization
     {
         ArgumentNullException.ThrowIfNull(row);
         var callers = CallersFor(row.Class, row.ServiceGrants);
-        if (row.AppConfirm)
-        {
-            return [HumanAtTerminal, HumanInApp];   // a flagged row is a human's, at a terminal or in the app, and nobody else's
-        }
-
         return row.NeedsTerminal ? [.. callers.Where(static c => string.Equals(c, HumanAtTerminal, StringComparison.Ordinal))] : callers;
     }
 
@@ -99,9 +92,8 @@ public static class Authorization
         && actor.StartsWith(ServicePrefix, StringComparison.Ordinal)
         && row.ServiceGrants.Contains(actor[ServicePrefix.Length..], StringComparer.Ordinal);
 
-    private static Error Refusal(CommandRow row)
-    {
-        var where = (row.Class == ActionClass.Protected || row.NeedsTerminal) && !row.AppConfirm ? "in a terminal" : "in a terminal or the Sindri app";
-        return SindriErrors.AuthRefused.With($"{row.Action.Value} is a human decision. Ask the human to run it {where}: {row.Cli.Text}");
-    }
+    private static Error Refusal(CommandRow row) =>
+        SindriErrors.AuthRefused.With(row.NeedsTerminal
+            ? $"{row.Action.Value} is a human decision. Ask the human to run it in a terminal: {row.Cli.Text}"
+            : $"{row.Action.Value} is not available to this caller: {row.Cli.Text}");
 }

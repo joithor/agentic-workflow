@@ -74,7 +74,7 @@ public sealed class SindriApiClientContextTests
     [InlineData("unknown-anchor-003", "SND-CONTEXT-003", ErrorKind.NotFound, "suggestedAnchors")]
     [InlineData("ambiguous-037", "SND-CONTEXT-037", ErrorKind.Conflict, "candidates")]
     [InlineData("no-draft-044", "SND-CONTEXT-044", null, null)]
-    [InlineData("set-21-anchors-006", "SND-CONTEXT-006", null, null)]
+    [InlineData("bad-depth-006", "SND-CONTEXT-006", null, null)]
     [InlineData("map-version-not-retained-120", "SND-CONTEXT-120", null, null)]
     public async Task Lenses_maps_each_refusal_to_its_code_detail_and_extension(string scenario, string code, ErrorKind? kind, string? extension)
     {
@@ -163,14 +163,14 @@ public sealed class SindriApiClientContextTests
     }
 
     [Fact]
-    public async Task ReviewDecision_a_session_refusal_reads_as_SND_AUTH_002()
+    public async Task ReviewDecision_a_session_decision_reads_like_any_other()
     {
         var (client, server, _) = Reach();
-        server.ReviewDecided = RouteAnswer.Problem("context-map-review", "session-auth-002");
+        server.ReviewDecided = RouteAnswer.Api("context-map-review", "session-accept");
 
         var decision = await client.ReviewDecision(_api, new ReviewDecisionRequest(DeskVerb.Accept, Node: "code:x"), Token);
 
-        Assert.Equal(("SND-AUTH-002", ErrorKind.Forbidden), (decision.Error.Code, decision.Error.Kind));
+        Assert.True(decision.IsSuccess, decision.IsError ? decision.Error.Message : null);
     }
 
     [Fact]

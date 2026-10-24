@@ -21,8 +21,8 @@ namespace Aw.Meta.Features.LaneRecycle;
 internal sealed class RecycleRunner(PaneSubmitter pane, ILaneSessions sessions, ILaneFiles files, IRunningLog log, IDelay delay, TimeProvider clock)
 {
     internal const string ClearLine = "/clear";
-    internal static readonly TimeSpan Wait = TimeSpan.FromSeconds(60);
-    private const string WaitSeconds = "60";
+    internal static readonly TimeSpan Wait = TimeSpan.FromSeconds(180);
+    private const string WaitSeconds = "180";
     internal static readonly TimeSpan Poll = TimeSpan.FromSeconds(2);
 
     internal static IReadOnlyList<string> Steps(RecyclePlan plan) =>

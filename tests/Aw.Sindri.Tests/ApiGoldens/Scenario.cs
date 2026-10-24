@@ -95,6 +95,13 @@ internal sealed class Scenario(GoldenHost host)
         return (await host.Http.Ask(CallerRequests.Query(route, json, AppHeaders()))).Body;
     }
 
+    /// <summary>QUERY a body query as an agent session of the fixture repo (X-Sindri-Repo): its scope, not the human's.</summary>
+    public async Task<string> QueryAsSession(string route, string json, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        return (await host.Http.Ask(CallerRequests.Query(route, json, (SindriHeaders.Caller, "session"), (SindriHeaders.Repo, "aw-split-panes")))).Body;
+    }
+
     /// <summary>QUERY a body query from a browser page (an Origin header): refused as a command is.</summary>
     public async Task<string> QueryForeignOrigin(string route, string json, CancellationToken ct)
     {
@@ -118,7 +125,7 @@ internal sealed class Scenario(GoldenHost host)
         return await Fetch(route, ct);
     }
 
-    /// <summary>POST map/review as an agent session: refused before the review runs.</summary>
+    /// <summary>POST map/import as an agent session: still refused before it runs (import keeps the typed confirmation, owner q93, 2026-10-23).</summary>
     public async Task<string> SessionReview(CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
@@ -184,8 +191,8 @@ internal sealed class Scenario(GoldenHost host)
         return await Decide(Review("accept-deterministic"));
     }
 
-    /// <summary>Exporting the queue, then applying the file from a terminal: the preview and its challenge.</summary>
-    public async Task<string> ApplyFilePreview(CancellationToken ct)
+    /// <summary>Exporting the queue, then applying the file from a terminal: it acts at once, with no challenge.</summary>
+    public async Task<string> ApplyFile(CancellationToken ct)
     {
         await Draft(ct);
         var path = Json(await Fetch("/sindri/context/map/review/export", ct)).GetProperty("path").GetString() ?? string.Empty;
@@ -219,8 +226,8 @@ internal sealed class Scenario(GoldenHost host)
         return (await host.Http.Ask(Post("/sindri/context/map/promote", "{}", TerminalHeaders()))).Body;
     }
 
-    /// <summary>Promoting once every item is decided: the preview and its challenge.</summary>
-    public async Task<string> PromotePreview(CancellationToken ct)
+    /// <summary>Promoting once every item is decided: it promotes at once, with no challenge.</summary>
+    public async Task<string> Promote(CancellationToken ct)
     {
         await Draft(ct);
         _ = await Decide(Review("accept", link: _link));

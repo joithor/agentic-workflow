@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Blocks;
-using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Validation;
@@ -192,7 +191,14 @@ public sealed class RecipeRegistryReader(IRecipeStore store, IRecipeApprovals ap
 
         var (standing, stale) = Stand(parsed.Value, latest.Value, revoked.Value, current);
         var order = StatePathOrder.Of(parsed.Value);
-        return new RecipeSummary(recipe.Id, recipe.Version, recipe.Hash, standing, latest.Value?.Via, stale, parsed.Value.Inputs, parsed.Value.Urgency, parsed.Value.Outputs, order.OrderedBy, order.States, order.Loops, parsed.Value.Name, names?.Of(recipe.Id));
+
+        // The approval the recipe stands on, else the highest version of its id approved before (a newer shipped version waits for its own approval).
+        var approvedAt = standing == RecipeStanding.Approved ? latest.Value : current.Where(a => a.Id == recipe.Id).MaxBy(static a => a.Version);
+        return new RecipeSummary(recipe.Id, recipe.Version, recipe.Hash, standing, latest.Value?.Via, stale, parsed.Value.Inputs, parsed.Value.Urgency, parsed.Value.Outputs, order.OrderedBy, order.States, order.Loops, parsed.Value.Name, names?.Of(recipe.Id))
+        {
+            ApprovedVersion = approvedAt?.Version,
+            ApprovedHash = approvedAt?.Hash,
+        };
     }
 
     /// <summary>
@@ -208,8 +214,8 @@ public sealed class RecipeRegistryReader(IRecipeStore store, IRecipeApprovals ap
         }
 
         var stale = new List<StaleReason>();
-        if (PinRules.Check(latest, revocation: null, PinRules.Blocks(parsed, catalog, json)) == ApprovalCheck.Drifted)
-        {
+        if (PinRules.Drifts(latest, PinRules.Blocks(parsed, catalog, json)))
+        {   // a version bump alone is renewed at the next check (PinRenewals), so it isn't stale
             stale.Add(StaleReason.PinDrift);
         }
 
