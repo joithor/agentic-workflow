@@ -80,6 +80,7 @@ public sealed class SindriApiClientContextTests
     [InlineData("ambiguous-037", "SND-CONTEXT-037", ErrorKind.Conflict, "candidates")]
     [InlineData("no-draft-044", "SND-CONTEXT-044", null, null)]
     [InlineData("bad-depth-006", "SND-CONTEXT-006", null, null)]
+    [InlineData("query-no-anchor-006", "SND-CONTEXT-006", null, null)]
     [InlineData("map-version-not-retained-120", "SND-CONTEXT-120", null, null)]
     public async Task Lenses_maps_each_refusal_to_its_code_detail_and_extension(string scenario, string code, ErrorKind? kind, string? extension)
     {
@@ -128,6 +129,18 @@ public sealed class SindriApiClientContextTests
         var served = Assert.Single(server.CodeQueries);
         Assert.Equal([key, "feature:other"], served.Anchors);
         Assert.Equal((true, "v2"), (served.Draft, served.MapVersion));
+    }
+
+    [Fact]
+    public async Task Code_maps_a_call_with_no_anchor_to_006_and_its_detail()
+    {
+        var (client, server, _) = Reach();
+        var golden = RouteAnswer.Problem("context-code", "query-no-anchor-006");
+        server.CodeAnswer = golden;
+
+        var code = await client.Code(_api, new CodeQuery([], Draft: false, MapVersion: null), Token);
+
+        Assert.Equal(("SND-CONTEXT-006", (string)JsonNode.Parse(golden.Body)!["detail"]!), (code.Error.Code, code.Error.Message));
     }
 
     [Fact]

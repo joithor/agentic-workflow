@@ -148,14 +148,23 @@ internal static class ContextLensText
             _ = text.AppendLine(Invariant($"  suggested {s.File} implements {s.Feature.Value} {s.Confidence:0.00}  accept: sindri context filemap accept {s.LinkId.Value}"));
         }
 
+        MoreLine(text, view);
         var t = view.Totals;
         _ = text.AppendLine(Invariant($"{t.Mapped} mapped, {t.Suggested} suggested, {t.Unmapped} unmapped · symbols: {view.Symbols.State.ToString().ToLowerInvariant()}{SymbolWords.Why(view.Symbols.Reason, view.Symbols.Commit, view.Symbols.AsOfCommit)}"));
         return text.ToString();
     }
 
+    private static void MoreLine(StringBuilder text, FileMapView view)
+    {
+        if (view.NextCursor is { } next)
+        {
+            _ = text.AppendLine(Invariant($"  more: {view.Entries.Count} of {view.Total} shown  next page: --cursor '{next}'"));
+        }
+    }
+
     private static void Intent(StringBuilder text, IntentBand band, bool fence)
     {
-        _ = text.AppendLine(Invariant($"intent (records {band.Counts.Records}, decisions {band.Counts.Decisions}{(band.Truncated ? ", truncated" : string.Empty)}):"));
+        _ = text.AppendLine(Invariant($"intent (records {band.Counts.Records}, decisions {band.Counts.Decisions}):"));
         if (band.Records.Count + band.Decisions.Count == 0)
         {
             _ = text.AppendLine("  none");
@@ -174,7 +183,7 @@ internal static class ContextLensText
 
     private static void Product(StringBuilder text, ProductBand band, bool fence)
     {
-        _ = text.AppendLine(Invariant($"product (own {band.Counts.Own}, affects {band.Counts.Affects}{(band.Truncated ? ", truncated" : string.Empty)}):"));
+        _ = text.AppendLine(Invariant($"product (own {band.Counts.Own}, affects {band.Counts.Affects}):"));
         foreach (var item in band.Own)
         {
             _ = text.AppendLine(Invariant($"  own  {Fenced(item.Label, item.Trust, fence)}  {item.Kind.ToString().ToLowerInvariant()}  {item.Provenance.ToString().ToLowerInvariant()} {item.Confidence:0.00}  {(item.Confirmed ? "confirmed" : "suggested")}  {item.Node.Value}"));
@@ -191,7 +200,7 @@ internal static class ContextLensText
 
     private static void Code(StringBuilder text, CodeBand band)
     {
-        _ = text.AppendLine(Invariant($"code (files {band.Counts.Files}, features with no code {band.Counts.FeaturesWithNoCode}{(band.Truncated ? ", truncated" : string.Empty)}; symbols {band.Symbols.State.ToString().ToLowerInvariant()}{(band.Symbols.Reason is null ? string.Empty : $": {band.Symbols.Reason}")}):"));
+        _ = text.AppendLine(Invariant($"code (files {band.Counts.Files}, features with no code {band.Counts.FeaturesWithNoCode}; symbols {band.Symbols.State.ToString().ToLowerInvariant()}{(band.Symbols.Reason is null ? string.Empty : $": {band.Symbols.Reason}")}):"));
         if (band.Files.Count == 0)
         {
             _ = text.AppendLine("  none");

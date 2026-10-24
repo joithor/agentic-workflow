@@ -588,6 +588,13 @@
           "Microsoft.Extensions.DependencyInjection": "[10.0.12, 10.0.12]"
         }
       },
+      "aw-ui-driver": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )",
+          "Aw.UiDriver.Core": "[1.0.0, )"
+        }
+      },
       "aw.bugfix.core": {
         "type": "Project",
         "dependencies": {
@@ -851,6 +858,20 @@
           "Aw.Sindri.Core": "[1.0.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.12, 10.0.12]",
           "Temporalio": "[1.19.0, 1.19.0]"
+        }
+      },
+      "aw.uidriver.avalonia": {
+        "type": "Project",
+        "dependencies": {
+          "Avalonia": "[12.1.3, 12.1.3]",
+          "Aw.Kernel": "[1.0.0, )",
+          "Aw.UiDriver.Core": "[1.0.0, )"
+        }
+      },
+      "aw.uidriver.core": {
+        "type": "Project",
+        "dependencies": {
+          "Aw.Kernel": "[1.0.0, )"
         }
       },
       "bugfix-state": {

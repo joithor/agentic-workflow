@@ -21,10 +21,10 @@ public static class FixtureRecipes
     private static ShapeOutput Out(string key, string label, FactType type, string from) => new(key, label, type, from);
 
     /// <summary>workflow.step v4 (recipes/sindri/workflow.step.yaml): produce, checks, verify, done; the revisions loop returns to produce.</summary>
-    public static RecipeShape Step { get; } = new("workflow.step", 4, "f039848fd714d2a46a4d3d216083bff1815821cd3e3b4f1bc6402bbb44bd54fa", RecipeUrgency.Work,
-        [S("produce", 1, desk: true, timeout: T(4 * Hour, TimeoutAction.Park), tokens: 1_000_000, block: "step.produce"), S("checks", 2, desk: true, timeout: T(30, TimeoutAction.Retry), block: "step.checks"),
-            S("verify", 3, desk: true, timeout: T(Hour, TimeoutAction.Park), block: "step.verify"), S("done", 4, terminal: true)],
-        [new ShapeLoop("revisions", "checks", "produce", 3), new ShapeLoop("revisions", "verify", "produce", 3)],
+    public static RecipeShape Step { get; } = new("workflow.step", 4, "f511ce1fc529b5b471731b4023a1f07774af2f9a8836344fd5818f5aef644784", RecipeUrgency.Work,
+        [S("produce", 1, desk: true, timeout: T(4 * Hour, TimeoutAction.Park), tokens: 5_000_000, block: "step.produce"), S("checks", 2, desk: true, timeout: T(30, TimeoutAction.Retry), block: "step.checks"),
+            S("verify", 3, desk: true, timeout: T(4 * Hour, TimeoutAction.Park), block: "step.verify"), S("done", 4, terminal: true)],
+        [new ShapeLoop("revisions", "checks", "produce", 5), new ShapeLoop("revisions", "verify", "produce", 5)],
         [In("fact:spec", "Spec", FactType.Text, "text")], []);
 
     /// <summary>workflow.dev-desk-round-trip v1: export (desk), import, done; the rounds loop returns from import to export.</summary>
@@ -106,7 +106,7 @@ public static class FixtureRecipes
     /// ('fact:questions' from 'questions', 'fact:answers' from the 'interview' desk, 'fact:answerLog' from 'record') declared beside the six outputs the file lists, so the facts list shows them.
     /// The recipe golden is the real recipe's view (WorkflowViewGoldenTests), so the hash here is the file's.
     /// </summary>
-    public static RecipeShape Scoping { get; } = new("workflow.scoping", 9, "dd97186e006e7cbc83cac6f05c604bf97a186d84ba5cdcc2c3ab2476436212d5", RecipeUrgency.Work,
+    public static RecipeShape Scoping { get; } = new("workflow.scoping", 9, "8ce8892e922b78d872158f1c1afc02b04a1805558c0902fa9df28acc475bb3a1", RecipeUrgency.Work,
         [S("intake", 1, desk: true, block: "step.scope.intake", timeout: T(Hour, TimeoutAction.Park)),
             S("read-brief", 2, desk: true, block: "step.scope.read-brief", timeout: T(Hour, TimeoutAction.Park)),
             S("gather", 3, desk: true, block: "step.scope.gather", timeout: T(30, TimeoutAction.Park)),

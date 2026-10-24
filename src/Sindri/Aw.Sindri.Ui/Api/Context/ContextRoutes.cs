@@ -26,6 +26,7 @@ internal static class ContextRoutes
         var parts = new List<string>();
         Add(parts, "detail", query.Detail);
         Add(parts, "area", query.Area);
+        Add(parts, "repo", query.Repo);
         parts.AddRange(query.Locate.Select(k => "locate=" + Uri.EscapeDataString(k)));
         if (query.Draft)
         {
@@ -54,6 +55,8 @@ internal static class ContextRoutes
             parts.Add("draft=true");
         }
 
+        Add(parts, "cursor", query.Cursor);
+        parts.AddRange(Limit(query.Limit));
         return With(Root + "/filemap", parts);
     }
 
