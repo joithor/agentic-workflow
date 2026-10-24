@@ -30,7 +30,7 @@ context:
   repos: [work-app]                                    # the profile repos the engine maps; default: all of them
   docs: { globs: ["docs/**/*.md", "**/PRD*.md", "**/TDD*.md"] }   # repo-relative; letters, digits and ._-/* only
   deadline: 4s                                         # per query, 100ms to 60s
-  maxBudget: 200000                                    # the largest token budget a request may ask for
+  # maxBudget (retired): token budgets are gone; an old profile that still has the key loads, and the key is ignored
   minHits: 3
   sessions: { enabled: false }                         # whether agent sessions may read context at all (any transport)
 services:
@@ -64,12 +64,12 @@ when named). `context sources status` shows each intent source's last sync, link
 ```bash
 $SINDRI context query "split pane orientation"            # text
 $SINDRI context query "split pane orientation" --json     # the API's JSON, unchanged
-$SINDRI context query "…" --budget 4000                   # tokens; default 8000, capped at context.maxBudget (200000)
+$SINDRI context query "…" --budget 4000                   # retired: read and ignored (the answer holds every ranked item)
 $SINDRI context sources status [--json]                   # each source's state; whether sessions may read
 $SINDRI context query --item SPL-103                      # a tracker key, or a Sindri item id (ITM-...): its record, decisions and conflicts, with citations
 ```
 
-HTTP: `GET /sindri/context/query?q=…&budget=…` and `GET /sindri/context/sources`, behind the loopback guard (a
+HTTP: `GET /sindri/context/query?q=…` (a `budget` parameter is still accepted and ignored) and `GET /sindri/context/sources`, behind the loopback guard (a
 foreign `Host` is 400, a foreign browser `Origin` 403) and the API's caller rules. `--node` and `--symbol` (graph anchors) answer
 `SND-CONTEXT-003` when the anchor is unknown.
 
@@ -94,7 +94,7 @@ context q_01a130fa0e7a… · anchors: none · map: none · as of 2026-10-12T16:3
     `PaneLayout` (`src/layout/PaneLayout.ts`) is the single source of truth for how a tab's panes are arranged: …
     </untrusted>
 
-budget: 202 of 8000 tokens (estimate)
+size: 202 tokens (estimate)
 
 sources:
   [C1] repo:split-panes/docs/architecture.md  repo-docs split-panes/docs/architecture.md#L5-L10  version 2c5fdb91f990  current
@@ -141,8 +141,10 @@ Phase 1 tools (both read-only):
 
 | Tool | Arguments | Answer |
 |---|---|---|
-| `context_query` | `q`, or one anchor `node` / `item` / `symbol`; `depth?`, `hops?`, `budget?` | `structuredContent`: the same result JSON as `context query --json`; text: counts, anchors, conflicts, degraded sources and the citation keys, never the records' text a second time |
+| `context_query` | `q`, or one anchor `node` / `item` / `symbol`; `depth?`, `hops?`, `limit?`, `offset?` (`budget?` is accepted and ignored) | `structuredContent`: the same result JSON as `context query --json`; text: counts, anchors, conflicts, degraded sources and the citation keys, never the records' text a second time |
 | `context_sources` | none | `structuredContent`: the sources view plus `instance` (the Sindri build and port that answered); text: the same, then the `context sources status` table |
+
+**Paging (every MCP tool).** `limit` and `offset` are both optional: `offset` defaults to 0 and `limit` to 100 items. A `limit` under 1 or an `offset` under 0 is `SND-CONTEXT-006`. Only the answer's top-level lists page (a section's or group's own list included); each list keeps its own window by index, and an item is never cut inside (its evidence and sources stay whole). The answer gains `page: {offset, limit, more, lists}`: `more` is true while some list has items past this page, and `lists` gives each list's `total` and its own `more`. A query answer holds every ranked item (there is no token budget and `truncated` is always false), so paging with a growing `offset` until `more` is false reaches every item.
 
 Claude Code hands the model `structuredContent` rather than the text block when a result has both, so everything a
 session needs is in `structuredContent`; the text block is for clients that show text only. The draft map is never
@@ -156,7 +158,7 @@ learns why. Refusals are tool errors
 | `SND-CONTEXT-020` | Session reads are off, or a session asked for a human or service job (map import, preview, build, export) |
 | `SND-CONTEXT-003` | An anchor outside the session's repo, or unknown; also every call whose `X-Sindri-Repo` isn't a repo the profile maps (re-run `sindri mcp register` in the work repo). A header that isn't a valid repo name at all is refused before MCP, with HTTP 400 `SND-API-007`. Over HTTP, a graph call's problem also carries `suggestedAnchors`, an array of at most 5 in-scope node keys; over MCP the error is only `{code, message}`, and the keys are in the message's `try …` text |
 | `SND-CONTEXT-037` | A name matches several nodes the caller may see; the message lists them. Only the HTTP problem carries `candidates` (an array of at most 100 keys); over MCP the error is only `{code, message}` |
-| `SND-CONTEXT-006` | The question is invalid (no words, two shapes, depth or budget out of range) |
+| `SND-CONTEXT-006` | The question is invalid (no words, two shapes, depth out of range) |
 | `SND-CONTEXT-021` | The call has no `X-Sindri-Repo` (use a registration from `sindri mcp register`) |
 | `SND-PROFILE-005` | No profile is approved yet, so no repo is mapped (the human runs `sindri profile approve`) |
 | `SND-CONTEXT-022` | An argument of the wrong type, or one the tool doesn't have |

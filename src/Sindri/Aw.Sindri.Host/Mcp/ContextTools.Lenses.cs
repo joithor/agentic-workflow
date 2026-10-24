@@ -60,7 +60,7 @@ internal static partial class ContextTools
 
         return anchors.Count == 0 || anchors.Exists(string.IsNullOrWhiteSpace)
             ? ContextErrors.McpArgumentsInvalid.With("context_lenses needs 'anchor', a node key, name or alias (fix: call it with {\"anchor\": \"feature:tabs\"}, or 'anchors' for several)")
-            : new GetContextLensesAnswerRequest(anchors, Draft: false, Depth: null, mapVersion, hops, page.Value?.Limit, page.Value?.Offset);
+            : new GetContextLensesAnswerRequest(anchors, Draft: false, Depth: null, mapVersion, hops, page.Value.Limit, page.Value.Offset);
     }
 
     /// <summary>One lenses argument into the anchors (a single 'anchor' first) or the map version; false for a wrong type.</summary>

@@ -6,9 +6,10 @@ using System.Text.Json.Nodes;
 namespace Aw.Sindri.Host.Mcp;
 
 /// <summary>
-/// Pages a tool answer: every list keeps one window of items, and page.more says another page follows.
-/// Counts and other objects stay the full answer. The section and group buckets stay whole, because they are the
-/// answer's shape and their lists are what pages.
+/// Pages a tool answer: every top-level list keeps its own window of items (the same offset and limit, applied to each list
+/// by its own index, so a page is stable whatever the other lists hold), and page.more says another page follows in some
+/// list. An item is never cut inside: its evidence, sources and other arrays stay whole. Counts and other objects stay the
+/// full answer. The section and group buckets stay whole, because they are the answer's shape and their lists are what pages.
 /// </summary>
 internal static class McpPages
 {
@@ -18,7 +19,7 @@ internal static class McpPages
     // why: these arrays are the buckets (one section or queue group each), not a list a caller pages through
     private static readonly FrozenSet<string> _buckets = FrozenSet.Create(StringComparer.Ordinal, "sections", "groups");
 
-    /// <summary>The answer with one page of each list, and a page object.</summary>
+    /// <summary>The answer with one page of each top-level list, and a page object.</summary>
     /// <param name="answer">The whole answer.</param>
     /// <param name="window">Which page.</param>
     /// <returns>The page. A non-object answer is returned unchanged.</returns>
@@ -30,52 +31,51 @@ internal static class McpPages
         }
 
         var more = false;
-        Slice(root, window, ref more);
+        var lists = new JsonObject();
+        Slice(root, window, "", lists, ref more);
         root["page"] = new JsonObject
         {
             ["offset"] = window.Offset,
             ["limit"] = window.Limit,
             ["more"] = more,
+            ["lists"] = lists,
         };
         using var document = JsonDocument.Parse(root.ToJsonString(_write));
         return document.RootElement.Clone();
     }
 
-    private static void Slice(JsonObject obj, McpWindow window, ref bool more)
+    // Only the object's own arrays are lists; a bucket's objects are sliced one level down, and nothing is sliced inside an item.
+    private static void Slice(JsonObject obj, McpWindow window, string path, JsonObject lists, ref bool more)
     {
         foreach (var name in obj.Select(property => property.Key).ToArray())
         {
-            switch (obj[name])
+            if (obj[name] is not JsonArray array)
             {
-                case JsonArray array when _buckets.Contains(name):
-                    foreach (var item in array)
-                    {
-                        if (item is JsonObject child)
-                        {
-                            Slice(child, window, ref more);
-                        }
-                    }
-
-                    break;
-                case JsonArray array:
-                    obj[name] = Cut(array, window, ref more);
-                    break;
-                case JsonObject child:
-                    Slice(child, window, ref more);
-                    break;
-                default:
-                    break;
+                continue;
             }
+
+            if (path.Length == 0 && _buckets.Contains(name))
+            {
+                for (var index = 0; index < array.Count; index++)
+                {
+                    if (array[index] is JsonObject child)
+                    {
+                        Slice(child, window, $"{name}[{index}].", lists, ref more);
+                    }
+                }
+
+                continue;
+            }
+
+            obj[name] = Cut(array, window, path + name, lists, ref more);
         }
     }
 
-    private static JsonArray Cut(JsonArray array, McpWindow window, ref bool more)
+    private static JsonArray Cut(JsonArray array, McpWindow window, string path, JsonObject lists, ref bool more)
     {
-        if (array.Count > window.Offset + window.Limit)
-        {
-            more = true;
-        }
-
+        var listMore = (long)array.Count > (long)window.Offset + window.Limit;
+        more |= listMore;
+        lists[path] = new JsonObject { ["total"] = array.Count, ["more"] = listMore };
         var cut = new JsonArray();
         if (window.Offset >= array.Count)
         {
@@ -85,13 +85,7 @@ internal static class McpPages
         var count = Math.Min(window.Limit, array.Count - window.Offset);
         for (var index = 0; index < count; index++)
         {
-            var item = array[window.Offset + index]?.DeepClone();
-            if (item is JsonObject child)
-            {
-                Slice(child, window, ref more);
-            }
-
-            cut.Add(item);
+            cut.Add(array[window.Offset + index]?.DeepClone());
         }
 
         return cut;

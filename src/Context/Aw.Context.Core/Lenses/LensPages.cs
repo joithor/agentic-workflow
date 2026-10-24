@@ -57,7 +57,7 @@ public static class LensPages
 
     private static T[] Take<T>(IReadOnlyList<T> items, int limit, int offset, ref bool more)
     {
-        if (items.Count > offset + limit)
+        if (items.Count > (long)offset + limit)
         {
             more = true;
         }

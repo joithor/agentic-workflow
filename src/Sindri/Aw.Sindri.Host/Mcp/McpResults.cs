@@ -17,7 +17,7 @@ internal static class McpResults
     /// <param name="value">The answer.</param>
     /// <param name="summary">The text block.</param>
     /// <param name="fence">The free-text fields to fence in the answer, or null when it carries none.</param>
-    /// <param name="page">The page of each list, or null for the whole answer.</param>
+    /// <param name="page">The page of each top-level list, or null for the whole answer (a tool call always passes one).</param>
     /// <returns>The tool result.</returns>
     internal static CallToolResult Success<T>(IServiceProvider services, T value, string summary, FencePlan? fence = null, McpWindow? page = null)
     {
@@ -46,7 +46,7 @@ internal static class McpResults
     /// <param name="result">The service's result.</param>
     /// <param name="summary">Summarises a successful answer.</param>
     /// <param name="fence">The free-text fields to fence in the answer, or null when it carries none.</param>
-    /// <param name="page">The page of each list, or null for the whole answer.</param>
+    /// <param name="page">The page of each top-level list, or null for the whole answer (a tool call always passes one).</param>
     /// <returns>The tool result.</returns>
     internal static CallToolResult From<T>(IServiceProvider services, Result<T> result, Func<T, string> summary, FencePlan? fence = null, McpWindow? page = null) =>
         result.IsError ? Failure(services, result.Error) : Success(services, result.Value, summary(result.Value), fence, page);

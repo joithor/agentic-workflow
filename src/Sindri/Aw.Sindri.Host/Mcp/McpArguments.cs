@@ -16,10 +16,10 @@ internal static class McpArguments
     /// <summary>The page arguments every tool takes.</summary>
     internal static readonly string[] PageNames = ["limit", "offset"];
 
-    /// <summary>The page the call asked for. Both absent is the whole answer. A wrong type is SND-CONTEXT-022; a value out of range is SND-CONTEXT-006.</summary>
+    /// <summary>The page the call asked for. Both are optional: offset defaults to 0 and limit to <see cref="McpWindow.DefaultLimit"/>. A wrong type is SND-CONTEXT-022; a limit under 1 or an offset under 0 is SND-CONTEXT-006.</summary>
     /// <param name="arguments">The call's arguments.</param>
-    /// <returns>The page, null for the whole answer, or the refusal.</returns>
-    internal static Result<McpWindow?> ReadPage(IDictionary<string, JsonElement>? arguments)
+    /// <returns>The page or the refusal.</returns>
+    internal static Result<McpWindow> ReadPage(IDictionary<string, JsonElement>? arguments)
     {
         if (ReadWhole(arguments, "limit", out var limit) is { } limitError)
         {
@@ -36,9 +36,7 @@ internal static class McpArguments
             return refused;
         }
 
-        return limit is int kept
-            ? Aw.Kernel.Results.Success<McpWindow?>(new McpWindow(kept, offset ?? 0))
-            : Aw.Kernel.Results.Success<McpWindow?>(value: null);
+        return new McpWindow(limit ?? McpWindow.DefaultLimit, offset ?? 0);
     }
 
     /// <summary>The arguments without the page, so a tool's own binder does not see them.</summary>

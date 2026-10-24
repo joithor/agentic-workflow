@@ -27,9 +27,9 @@ internal static partial class ContextTools
 
     private const string HopsText = "The cascade hops, a comma list of state, flow, dependency and component; default state, flow and dependency";
 
-    /// <summary>The sentence every tool's description ends with. Omit the arguments for the whole answer.</summary>
-    internal const string PageSentence = " Pass limit and offset for one page of each list; omit them for the whole answer. "
-        + "offset skips that many items and limit keeps that many, page.more says another page follows, and the counts stay the full totals.";
+    /// <summary>The sentence every tool's description ends with.</summary>
+    internal const string PageSentence = " Every top-level list is paged: limit (1 or more, default 100) keeps that many items and offset (0 or more, default 0) skips that many, "
+        + "each list on its own. page.more says another page follows in some list and page.lists gives each list's total; items are never cut inside, and the counts stay the full totals.";
 
     private static readonly string[] _texts = ["q", "node", "item", "symbol", "diff", "hops", "mapVersion"];
     private static readonly string[] _lensesArguments = ["anchor", "anchors", "mapVersion", "hops", "limit", "offset"];
@@ -51,10 +51,10 @@ internal static partial class ContextTools
             ["diff"] = Property("string", "Two commit shas joined by '..' (base..head), not branch names"),
             ["depth"] = Property("integer", "Cascade depth (deeper than 8 is read as 8)", minimum: 0),
             ["hops"] = Property("string", HopsText),
-            ["budget"] = Property("integer", "Token budget for the answer", minimum: 1),
+            ["budget"] = Property("integer", "Ignored: the answer holds every ranked item (page it with limit and offset)"),
             ["mapVersion"] = Property("string", "A retained map version to read as of, such as v3; omit for the current map"),
-            ["limit"] = Property("integer", "How many items to keep from each list; omit for the whole answer", minimum: 1),
-            ["offset"] = Property("integer", "How many items to skip in each list; omit for the start", minimum: 0),
+            ["limit"] = Property("integer", "How many items to keep from each list (default 100)", minimum: 1),
+            ["offset"] = Property("integer", "How many items to skip in each list (default 0)", minimum: 0),
         }),
         Annotations = new ToolAnnotations { ReadOnlyHint = true, OpenWorldHint = false },
     };
@@ -87,8 +87,8 @@ internal static partial class ContextTools
             },
             ["mapVersion"] = Property("string", "A retained map version to read as of, such as v3; omit for the current map"),
             ["hops"] = Property("string", HopsText),
-            ["limit"] = Property("integer", "How many items to keep from each list; omit for the whole answer", minimum: 1),
-            ["offset"] = Property("integer", "How many items to skip in each list; omit for the start", minimum: 0),
+            ["limit"] = Property("integer", "How many items to keep from each list (default 100)", minimum: 1),
+            ["offset"] = Property("integer", "How many items to skip in each list (default 0)", minimum: 0),
         }),
         Annotations = new ToolAnnotations { ReadOnlyHint = true, OpenWorldHint = false },
     };
@@ -233,8 +233,8 @@ internal static partial class ContextTools
     /// <returns>The page properties.</returns>
     internal static JsonObject PageProperties() => new()
     {
-        ["limit"] = Property("integer", "How many items to keep from each list; omit for the whole answer", minimum: 1),
-        ["offset"] = Property("integer", "How many items to skip in each list; omit for the start", minimum: 0),
+        ["limit"] = Property("integer", "How many items to keep from each list (default 100)", minimum: 1),
+        ["offset"] = Property("integer", "How many items to skip in each list (default 0)", minimum: 0),
     };
 
     /// <summary>The optional limits of a string property.</summary>
