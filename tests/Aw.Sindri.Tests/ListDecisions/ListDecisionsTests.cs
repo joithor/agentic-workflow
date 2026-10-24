@@ -135,7 +135,7 @@ public sealed class ListDecisionsTests
 
         var result = await Service().Handle(A.ListDecisionsRequest().Build(), RequestQueryHarness.Token);
 
-        Assert.Single(result.Value.Decisions);
+        _ = Assert.Single(result.Value.Decisions);
     }
 
     [Fact]
