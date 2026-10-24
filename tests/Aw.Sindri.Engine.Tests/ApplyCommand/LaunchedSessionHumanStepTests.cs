@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.ApplyCommand;
 using Aw.Sindri.Testing.Challenges;
+using Aw.Sindri.Testing.Workflow;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests.ApplyCommand;
