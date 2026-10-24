@@ -14,8 +14,7 @@ way to tune it without leaving the conversation.
 - `judge health` — status (`ok`/`degraded`) and failures in the last 24h.
 - `judge why <id>` — the full stored decision: question, content class, provider, decision,
   confidence, reason code, latency.
-- `judge undo <id>` — marks a decision undone. Undos feed the error rate in the scorer's Judge
-  section; a rising error rate for one question is a strong signal to raise its threshold or
+- `judge undo <id>` — marks a decision undone. Undos count as errors; a rising error rate for one question is a strong signal to raise its threshold or
   disable it.
 - `judge approve <id>` — clears an escalated decision (prefixes its `reason_code` with
   `approved:`) so it's visibly resolved when reviewed later.
