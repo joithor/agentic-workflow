@@ -814,6 +814,12 @@ context:
 
 `sindri profile validate` reports each of these with its key path (`context.sources.onyx.url: …`).
 
+### Links follow the current map
+
+Links are recomputed against the current map: after a map is imported or promoted, the next sync (`context sources sync`) links again every record a node's search still returns, because a record counts as linked only under the map version it was linked against. Nothing but the cleaned text of the sync run is used; no record text is kept.
+
+Besides the exact rules (issue keys and URLs, repo paths, quoted titles, identifiers), a `name` rule suggests links: a record whose text holds a feature's label or an alias of it as whole words (at least two words and four characters, not only common words, naming exactly one feature; the longest phrase wins) is linked to that feature with confidence 0.5. Its `mentions` edge has model provenance, so it is AI-suggested and unconfirmed (dashed) until a person confirms it, unless another rule links the same feature. It still places the record in the feature's area. Glossary aliases join in once they are in the map.
+
 ### Secret pointers
 
 | Pointer | Resolves to |
