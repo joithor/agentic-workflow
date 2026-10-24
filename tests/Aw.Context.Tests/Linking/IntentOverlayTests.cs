@@ -56,6 +56,20 @@ public sealed class IntentOverlayTests
         Assert.Empty(result.Graph.Edges);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void A_link_made_only_by_a_name_is_a_model_provenance_mention_and_any_other_rule_makes_it_deterministic()
+    {
+        const string target = "feature:layout.split-pane.orientation";
+        var byName = new IntentLink(_r103, NodeKey.From(target), LinkRule.Name, 0.5, "cd34");
+
+        var suggested = IntentOverlay.Apply(Map(), new IntentLayer([_record], [byName], [], []));
+        var confirmed = IntentOverlay.Apply(Map(), new IntentLayer([_record], [byName, Link(target)], [], []));
+
+        var edge = Assert.Single(suggested.Graph.Edges);
+        Assert.Equal((EdgeType.Mentions, Provenance.Model, 0.5), (edge.Type, edge.Provenance, edge.Confidence));
+        Assert.Equal(Provenance.Deterministic, Assert.Single(confirmed.Graph.Edges).Provenance);
+    }
+
     private static readonly RecordKey _r104 = RecordKey.From("linear:issue/0e5a1b00-0000-4000-8000-000000000104");
     private static readonly IntentRecord _target = new(_r104, SourceId.From("onyx"), "2026-07-22T10:20:00+00:00", "Restore pane layout", ["SPL-104"]);
 

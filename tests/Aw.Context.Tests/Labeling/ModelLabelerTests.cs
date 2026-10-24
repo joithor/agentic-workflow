@@ -103,13 +103,14 @@ public sealed class ModelLabelerTests
     }
 
     [Fact]
-    public async Task A_model_that_fails_is_its_error()
+    public async Task A_model_that_cant_be_reached_before_any_answer_is_an_unavailable_note_naming_the_fix()
     {
         var failing = new FailingModel();
 
         var labels = await new ModelLabeler(failing, new RedactionScrubberFactory(new FakeTimeProvider())).Label([Cluster("c1", "a.ts", "b.ts")], [], 10_000, Ct);
 
-        Assert.Equal("SND-CONTEXT-010", labels.Error.Code);
+        Assert.True(labels.IsSuccess);
+        Assert.Contains(LabelPass.NoModelFix, labels.Value.Unavailable, StringComparison.Ordinal);
     }
 
     [Fact]
