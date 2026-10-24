@@ -6,7 +6,6 @@ using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Evidence;
-using Aw.Sindri.Testing.Workflow;
 
 namespace Aw.Sindri.Tests.Workflow.Evidence;
 
@@ -56,8 +55,8 @@ public sealed partial class EvidenceAgentGrantsTests
     {
         foreach (var block in _briefedSteps.Append("step.evidence.publish"))
         {
-            Assert.DoesNotContain("Bash(ui-evidence:*)", Tools(block));
-            Assert.Equal(block == "step.evidence.publish", Tools(block).Contains("Bash(ui-evidence gh-publish:*)"));
+            Assert.DoesNotContain(Tools(block), static t => t == "Bash(ui-evidence:*)");
+            Assert.Equal(block == "step.evidence.publish", Tools(block).Contains("Bash(ui-evidence gh-publish:*)", StringComparer.Ordinal));
         }
     }
 
@@ -67,7 +66,7 @@ public sealed partial class EvidenceAgentGrantsTests
         var tools = Tools("step.evidence.api-run", writes: true);
 
         Assert.Equal(["Bash(ui-evidence doctor:*)", "Bash(ui-evidence api-run:*)"], tools.Where(static t => t.StartsWith("Bash(ui-evidence", StringComparison.Ordinal)));
-        Assert.Contains("Bash(git commit:*)", tools);
+        Assert.Contains(tools, static t => t == "Bash(git commit:*)");
     }
 
     [Theory]
@@ -96,10 +95,10 @@ public sealed partial class EvidenceAgentGrantsTests
         var binary = BinaryVerbs();
         foreach (var block in _briefedSteps)
         {
-            var named = NamedVerbs(Brief(block)).Distinct().Order(StringComparer.Ordinal).ToArray();
+            var named = NamedVerbs(Brief(block)).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
 
             Assert.Equal([.. EvidenceGrants.VerbsFor(block).Order(StringComparer.Ordinal)], named);
-            Assert.All(named, verb => Assert.Contains(verb, binary));
+            Assert.All(named, verb => Assert.Contains(binary, v => v == verb));
         }
     }
 
@@ -135,7 +134,7 @@ public sealed partial class EvidenceAgentGrantsTests
         var skill = File.ReadAllText(Path.Combine(RepoRoot(), "skills", "ui-evidence", "SKILL.md"));
         var skillVerbs = NamedVerbs(skill).ToHashSet(StringComparer.Ordinal);
 
-        Assert.All(_briefedSteps.SelectMany(static b => NamedVerbs(Brief(b))).Distinct(), verb => Assert.Contains(verb, skillVerbs));
+        Assert.All(_briefedSteps.SelectMany(static b => NamedVerbs(Brief(b))).Distinct(StringComparer.Ordinal), verb => Assert.Contains(skillVerbs, v => v == verb));
     }
 
     [GeneratedRegex(@"--host\s+(\S+)")]
