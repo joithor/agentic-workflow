@@ -106,6 +106,28 @@ public sealed class ContextBodyQueryApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Query_with_explicit_nulls_for_the_optional_fields_answers_the_same_as_with_them_omitted()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+        (string Route, string WithNulls, string Omitted)[] cases =
+        [
+            ("lenses", """{"anchors":["feature:tabs.tab-manager","feature:layout.split-pane"],"depth":null,"draft":false,"mapVersion":null,"hops":null}""", """{"anchors":["feature:tabs.tab-manager","feature:layout.split-pane"]}"""),
+            ("code", """{"anchors":["feature:tabs.tab-manager","feature:layout.split-pane"],"draft":false,"mapVersion":null}""", """{"anchors":["feature:tabs.tab-manager","feature:layout.split-pane"]}"""),
+        ];
+
+        foreach (var (route, withNulls, omitted) in cases)
+        {
+            var nulls = await host.Http.Ask(Query($"/sindri/context/{route}", withNulls, Terminal(host)));
+            var plain = await host.Http.Ask(Query($"/sindri/context/{route}", omitted, Terminal(host)));
+
+            Assert.Equal(HttpStatusCode.OK, nulls.Status);
+            Assert.Equal(HttpStatusCode.OK, plain.Status);
+            Assert.Equal(plain.Body, nulls.Body);
+        }
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
     public async Task History_query_takes_since_and_before()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
