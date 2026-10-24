@@ -171,6 +171,6 @@ public sealed class RulesLinkerTests
     {
         var links = RulesLinker.Link(_r103, "Fix the split orientation toggle.", Map(), _known, _teams);
 
-        Assert.Equal(["feature:layout.split-pane.orientation"], links.Select(l => l.Target.Value));
+        Assert.Equal(["feature:layout.split-pane.orientation"], links.Select(l => l.Target.Value), StringComparer.Ordinal);
     }
 }

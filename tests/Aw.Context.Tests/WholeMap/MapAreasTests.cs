@@ -8,6 +8,7 @@ public sealed class MapAreasTests
     private static readonly string[] _chain = ["feature:a", "feature:a.b", "feature:a.b.c", "feature:z"];
     private static readonly string[] _cycle = ["feature:m", "feature:b", "feature:c", "feature:leaf"];
     private static readonly string[] _umbrella = ["feature:u", "surface:screen/own"];
+    private static readonly string[] _records = ["record:r1", "record:r2", "record:r3"];
     private static readonly string[] _loose = ["record:lonely", "code:orphan.ts", "surface:screen/s", "action:do", "decision:d"];
 
     private static string AreaOf(AreaIndex index, string key) => index.ByNode[key].Area;
@@ -235,7 +236,7 @@ public sealed class MapAreasTests
 
         var index = MapAreas.Assign(graph);
 
-        Assert.Equal("feature:a feature:a feature:a", string.Join(' ', new[] { "record:r1", "record:r2", "record:r3" }.Select(k => AreaOf(index, k))));
+        Assert.Equal("feature:a feature:a feature:a", string.Join(' ', _records.Select(k => AreaOf(index, k))));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -246,7 +247,7 @@ public sealed class MapAreasTests
 
         var index = MapAreas.Assign(graph);
 
-        Assert.All(new[] { "record:r1", "record:r2", "record:r3" }, k => Assert.Equal(AreaIndex.UnassignedKey, AreaOf(index, k)));
+        Assert.All(_records, k => Assert.Equal(AreaIndex.UnassignedKey, AreaOf(index, k)));
     }
 
     private static string Flat(AreaIndex index) => string.Join('\n', index.ByNode.OrderBy(p => p.Key, StringComparer.Ordinal).Select(p => p.Key + "=" + p.Value.Area + "+" + string.Join(',', p.Value.AlsoIn)));
