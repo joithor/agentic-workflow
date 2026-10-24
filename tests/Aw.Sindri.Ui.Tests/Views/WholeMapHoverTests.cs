@@ -7,6 +7,7 @@ using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels.Context.Whole;
 using Aw.Sindri.Ui.Views.Context.Whole;
+using Aw.Sindri.Ui.Views.Controls;
 
 namespace Aw.Sindri.Ui.Tests.Views;
 
@@ -29,7 +30,7 @@ public sealed class WholeMapHoverTests : FrameHost
     // Brings a key's box into view at full size, and returns where its centre is in the window.
     private static Point Centre(Avalonia.Controls.Window window, WholeMapView whole, WholeRect rect)
     {
-        whole.Canvas.SetView(Aw.Sindri.Ui.Views.Controls.ZoomView.Identity with { X = 200 - rect.CenterX, Y = 200 - rect.CenterY });
+        whole.Canvas.SetView(ZoomView.Identity with { X = 200 - rect.CenterX, Y = 200 - rect.CenterY });
         window.UpdateLayout();
         return whole.World.TranslatePoint(new Point(rect.CenterX, rect.CenterY), window)!.Value;
     }
@@ -50,8 +51,8 @@ public sealed class WholeMapHoverTests : FrameHost
         window.MouseUp(at, MouseButton.Left);
         Assert.Equal(tile.Key, map.Pinned);
         window.MouseMove(new Point(2, 2));
-        Settle(window);
-        Assert.Equal((tile.Key, 1.0), (map.Pinned, whole.World.DimStrength));   // the pin keeps it dimmed after the pointer left
+        await Until(window, () => whole.World.DimStrength >= 1);   // the pin keeps it dimmed after the pointer left
+        Assert.Equal(tile.Key, map.Pinned);
 
         Named<Avalonia.Controls.TextBox>(window, "AnchorBox").RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Escape });
         await Until(window, () => whole.World.DimStrength <= 0);
