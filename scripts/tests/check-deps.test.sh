@@ -453,7 +453,7 @@ csproj "$d" tests/Aw.Beta.Tests/Aw.Beta.Tests.csproj ../../src/Alpha/Aw.Alpha.In
 csproj "$d" src/Beta/Aw.Beta.Features/Aw.Beta.Features.csproj ../../Aw.Kernel/Aw.Kernel.csproj ../../Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj; run "$d"
 expect "test code also reaches other packages only through Core" 1 "DEPS-PROJ-007" "Aw.Beta.Tests -> Aw.Alpha.Infrastructure"
 
-d="$(fixture core-only)"; perl -0pi -e 's/kind: project\n    status: planned/kind: project\n    status: current/; s/(    projectPrefix: Aw.Alpha\n)/$1    exports: [Aw.Alpha.Infrastructure]\n/' "$d/deps.yaml"; edge "$d" Beta Alpha project current
+d="$(fixture core-only-exports)"; perl -0pi -e 's/kind: project\n    status: planned/kind: project\n    status: current/; s/(    projectPrefix: Aw.Alpha\n)/$1    exports: [Aw.Alpha.Infrastructure]\n/' "$d/deps.yaml"; edge "$d" Beta Alpha project current
 csproj "$d" src/Aw.Kernel/Aw.Kernel.csproj; csproj "$d" src/Alpha/Aw.Alpha.Core/Aw.Alpha.Core.csproj; csproj "$d" src/Alpha/Aw.Alpha.Infrastructure/Aw.Alpha.Infrastructure.csproj; csproj "$d" src/Alpha/Aw.Alpha.Features/Aw.Alpha.Features.csproj
 csproj "$d" src/Beta/Aw.Beta.Features/Aw.Beta.Features.csproj ../../Aw.Kernel/Aw.Kernel.csproj ../../Alpha/Aw.Alpha.Infrastructure/Aw.Alpha.Infrastructure.csproj; run "$d"
 expect "a project the owner lists under exports may be referenced" 0 "deps: ok"

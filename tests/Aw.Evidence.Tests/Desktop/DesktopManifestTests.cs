@@ -6,6 +6,7 @@ namespace Aw.Evidence.Tests.Desktop;
 
 public sealed class DesktopManifestTests
 {
+#pragma warning disable MA0136 // a raw string with line ends is the readable form of this JSON
     private const string Head = "\"schema\":\"ui-evidence.desktop-screens/1\",\"designRoot\":\"mockups\"";
 
     private static string Manifest(string screens, string head = Head) => "{" + head + ",\"screens\":[" + screens + "]}";

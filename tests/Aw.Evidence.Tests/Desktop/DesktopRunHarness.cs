@@ -17,6 +17,7 @@ namespace Aw.Evidence.Tests.Desktop;
 /// </summary>
 internal sealed class DesktopRunHarness
 {
+#pragma warning disable MA0136 // a raw string with line ends is the readable form of this JSON
     internal const string Repo = "/work/repo";
     internal const string ManifestPath = "/work/repo/docs/screens.json";
     internal const string RunDirectory = "/runs/desktop-1";
