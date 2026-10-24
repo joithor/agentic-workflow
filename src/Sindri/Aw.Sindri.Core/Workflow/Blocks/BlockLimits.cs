@@ -8,6 +8,11 @@ public static class BlockLimits
 
     private static readonly TimeSpan _margin = TimeSpan.FromSeconds(1);
 
+    /// <summary>Whether <paramref name="descriptor"/> sets its own 'maxDuration' (stub).</summary>
+    /// <param name="descriptor">The Step's descriptor.</param>
+    /// <returns>True when it sets one.</returns>
+    public static bool IsExplicit(BlockDescriptor descriptor) => throw new NotSupportedException();
+
     /// <summary>The longest <paramref name="descriptor"/>'s Step may run.</summary>
     /// <param name="descriptor">The Step's descriptor.</param>
     /// <returns>Its 'maxDuration', else <see cref="Fallback"/>.</returns>

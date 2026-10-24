@@ -45,6 +45,9 @@ public sealed record DecisionContext(
     /// </summary>
     public bool LegacyLaunchRound { get; init; }
 
+    /// <summary>Whether a state's timeout with 'then: park' parks at its first expiry (stub: not read yet).</summary>
+    public bool LegacyTimeoutPark { get; init; }
+
     /// <summary>
     /// Where this build runs a Step that is not at the desk (P8 D5, one map): <see cref="StepRuntime.Block"/> for a registered block runtime whose descriptor says
     /// <see cref="BlockRuntime.Block"/>, <see cref="StepRuntime.Agent"/> for a Step an agent session runs. A Step in neither is at the desk when it is deskCapable.
