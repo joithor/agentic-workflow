@@ -18447,10 +18447,10 @@ override Aw.Sindri.Core.Line.LineSetupFacts.GetHashCode() -> int
 override Aw.Sindri.Core.Line.LineSetupFacts.ToString() -> string!
 static Aw.Sindri.Core.Line.LineSetupFacts.operator !=(Aw.Sindri.Core.Line.LineSetupFacts? left, Aw.Sindri.Core.Line.LineSetupFacts? right) -> bool
 static Aw.Sindri.Core.Line.LineSetupFacts.operator ==(Aw.Sindri.Core.Line.LineSetupFacts? left, Aw.Sindri.Core.Line.LineSetupFacts? right) -> bool
-Aw.Sindri.Core.Line.LineDoctorRules
-static Aw.Sindri.Core.Line.LineDoctorRules.Check(Aw.Sindri.Core.Profile.SindriProfile! profile, string! repo, Aw.Sindri.Core.Profile.BoxLimits! box, Aw.Sindri.Core.Line.LineSetupFacts! facts) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Doctor.DoctorCheck!>!
-static Aw.Sindri.Core.Line.LineDoctorRules.CredentialVariable(Aw.Sindri.Core.Profile.SindriProfile! profile) -> string?
-static Aw.Sindri.Core.Line.LineDoctorRules.Missing(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Doctor.DoctorCheck!>! checks) -> Aw.Kernel.Error?
+Aw.Sindri.Core.Doctor.LineDoctorRules
+static Aw.Sindri.Core.Doctor.LineDoctorRules.Check(Aw.Sindri.Core.Profile.SindriProfile! profile, string! repo, Aw.Sindri.Core.Profile.BoxLimits! box, Aw.Sindri.Core.Line.LineSetupFacts! facts) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Doctor.DoctorCheck!>!
+static Aw.Sindri.Core.Doctor.LineDoctorRules.CredentialVariable(Aw.Sindri.Core.Profile.SindriProfile! profile) -> string?
+static Aw.Sindri.Core.Doctor.LineDoctorRules.Missing(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Doctor.DoctorCheck!>! checks) -> Aw.Kernel.Error?
 Aw.Sindri.Core.Prove.RedEntry
 Aw.Sindri.Core.Prove.RedEntry.AppOnly.get -> bool
 Aw.Sindri.Core.Prove.RedEntry.AppOnly.init -> void

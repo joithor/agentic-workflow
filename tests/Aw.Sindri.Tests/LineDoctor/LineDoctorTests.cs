@@ -4,7 +4,7 @@ using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Line;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.LineDoctor;
-using Aw.Sindri.Host.Commands.Line;
+using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.LineDoctor;
