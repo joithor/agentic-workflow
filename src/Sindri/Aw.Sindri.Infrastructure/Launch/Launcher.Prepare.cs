@@ -70,7 +70,13 @@ internal sealed partial class Launcher
 
     /// <summary>The Step's pack and its declared read facts, in its run directory before the session starts; the first refusal, else null.</summary>
     private static async ValueTask<Error?> WriteStepFiles(LaunchRequest request, string workDir, CancellationToken cancellationToken) =>
-        WriteBundle(request, workDir) ?? await WriteFacts(request, workDir, cancellationToken).ConfigureAwait(false);
+        WriteBundle(request, workDir) ?? await WriteFacts(request, workDir, cancellationToken).ConfigureAwait(false) ?? await WriteOutputFolder(request, workDir, cancellationToken).ConfigureAwait(false);
+
+    /// <summary>The folder the Step's outputs go to, made and excluded from git before the session starts (an attended launch has no Step and no outputs).</summary>
+    private static async ValueTask<Error?> WriteOutputFolder(LaunchRequest request, string workDir, CancellationToken cancellationToken) =>
+        request is { Attended: false, Step: not null }
+            ? await StepFactWriter.Outputs(StepEnvironment.For(request).GetValueOrDefault(StepEnvironment.RunDirectory, workDir), cancellationToken).ConfigureAwait(false)
+            : null;
 
     /// <summary>The Step's declared read facts, as files in its run directory before the session starts (an attended launch has none, as it has no bundle: a human open has no Step directory and no brief to name the files); an error when a name is refused.</summary>
     private static async ValueTask<Error?> WriteFacts(LaunchRequest request, string workDir, CancellationToken cancellationToken) =>

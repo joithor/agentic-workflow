@@ -171,7 +171,7 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
                 _ = await server.Lenses(uri, lenses, cancellationToken);
                 return Answer(server.LensesAnswer(lenses));
             case "filemap":
-                var files = new FileMapQuery(query["repo"] ?? string.Empty, Path: query["path"], UnmappedOnly: query["unmapped"] == "true", Draft: query["draft"] == "true");
+                var files = new FileMapQuery(query["repo"] ?? string.Empty, Path: query["path"], UnmappedOnly: query["unmapped"] == "true", Draft: query["draft"] == "true", Cursor: query["cursor"], Limit: limit);
                 _ = await server.FileMap(uri, files, cancellationToken);
                 return Answer(server.FileMapFor(files));
             case "map/review":
@@ -217,7 +217,7 @@ internal sealed partial class FakeSindriHandler(FakeSindriApi server) : HttpMess
                 _ = await server.MapStatus(uri, query["anchor"], cancellationToken);
                 return Answer(server.MapStatusAnswer);
             case "map/whole":
-                var whole = new WholeMapQuery(query["detail"], query["area"], [.. query.GetValues("locate") ?? []], query["mapVersion"], query["draft"] == "true");
+                var whole = new WholeMapQuery(query["detail"], query["area"], [.. query.GetValues("locate") ?? []], query["mapVersion"], query["draft"] == "true", query["repo"]);
                 _ = await server.WholeMap(uri, whole, cancellationToken);
                 return Answer(server.WholeMapAnswer(whole));
             case "map/publish":

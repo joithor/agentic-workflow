@@ -35,14 +35,15 @@ public static class JudgeInfrastructureServiceCollectionExtensions
             .AddScoped<IDecisionLog, SqliteDecisionLog>()
             .AddScoped<IBriefStore, SqliteBriefStore>()
             .AddScoped<IPromptSortStore, SqlitePromptSortStore>()
-            .AddScoped<ISortSessionStore, FileSortSessionStore>()
+            .AddScoped<ISortSessionStore>(_ => new FileSortSessionStore(Path.Combine(settings.StateDirectory, "sessions")))
             .AddScoped<IJudgeConfigStore>(sp => new FileJudgeConfigStore(settings.StateDirectory, sp.GetRequiredService<JsonSerializerOptions>()))
             .AddSingleton<IInputRedactor>(new AwInputRedactor(Redactor.Default))
             .AddSingleton<IExecutableLocator>(new PathExecutableLocator(environment))
             .AddSingleton<IProcessRunner>(new SystemProcessRunner(environment))
             .AddSingleton<ISecretSource>(sp => new KeychainSecretSource(environment, sp.GetRequiredService<IProcessRunner>()))
             .AddSingleton<IIdGenerator, RandomIdGenerator>()
-            .AddModelProviders(environment);
+            .AddModelProviders(environment)
+            .AddTraitCheckInfrastructure(environment);
     }
 
     /// <summary>
