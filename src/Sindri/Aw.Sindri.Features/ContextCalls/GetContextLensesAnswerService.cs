@@ -20,7 +20,7 @@ internal sealed class GetContextLensesAnswerService(IService<GetContextLensesReq
 
         if (anchors.Length == 0)
         {
-            return QueryRules.CheckAnchors(anchors, "lenses")!;
+            return QueryRules.CheckAnchors(anchors, "lenses")!; // why: CheckAnchors answers an error for an empty set
         }
 
         var one = await single.Handle(new GetContextLensesRequest(anchors[0], request.Draft, request.Depth, request.MapVersion, request.Hops), cancellationToken).ConfigureAwait(false);
