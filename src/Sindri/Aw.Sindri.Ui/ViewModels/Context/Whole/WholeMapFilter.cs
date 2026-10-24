@@ -20,7 +20,7 @@ internal static class WholeMapFilter
             Edges = [.. geometry.Edges.Where(e => keep.Contains(e.From) && keep.Contains(e.To))],
             AreaEdges = [.. geometry.AreaEdges.Where(e => keep.Contains(e.From) && keep.Contains(e.To))],
             Columns = [.. geometry.Columns.Where(c => areas.Contains(c.AreaIndex))],
-            Bands = [.. geometry.Bands.Where(b => nodes.Any(n => n.Rect.CenterY >= b.Top && n.Rect.CenterY <= b.Top + b.Height))],
+            Bands = [.. geometry.Bands.Where(b => nodes.Exists(n => n.Rect.CenterY >= b.Top && n.Rect.CenterY <= b.Top + b.Height))],
         };
     }
 
