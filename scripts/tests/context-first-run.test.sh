@@ -42,6 +42,7 @@ norm() { sed -e "s#$T#<T>#g" -e "s#$ROOT#<ROOT>#g"; }
 cat > "$T/stub-sindri" <<'STUB'
 #!/usr/bin/env bash
 echo "home=$(basename "${AW_SINDRI_HOME:-unset}") port=${AW_SINDRI_PORT:-unset} $*" >> "$STUB_LOG"
+echo "${AW_SINDRI_APP_NO_MCP:-unset}" >> "$STUB_LOG.mcp"
 flag() { [ -e "$AW_SINDRI_HOME/stub/$1" ]; }
 case "$*" in
   "profile init") printf 'schemaVersion: 1\nuser: "thor"\nworkflow:\n  effects: []\n' > "$AW_SINDRI_HOME/profile/profile.yaml" ;;
@@ -184,6 +185,7 @@ else
   run continue --no-embeddings --no-graph --no-ui
   expect "after approval, continue serves, indexes, maps, then stops for the recipes (exit 3)" 3 "recipe approve-all"
   if logged '--headless' && logged 'services run code-index-main-move' && logged 'context map refresh'; then ok "serve, the index build and the map refresh ran"; else fail "serve, the index build and the map refresh ran"; fi
+  if [ -s "$STUB_LOG.mcp" ] && [ "$(sort -u "$STUB_LOG.mcp")" = 1 ]; then ok "every sindri call runs with AW_SINDRI_APP_NO_MCP=1 (no MCP registration in ~/.claude.json)"; else fail "every sindri call runs with AW_SINDRI_APP_NO_MCP=1"; sort "$STUB_LOG.mcp" | uniq -c | sed 's/^/       | /'; fi
   if ! logged 'item add'; then ok "no item was added before the recipes were approved"; else fail "no item was added before the recipes were approved"; fi
 
   : > "$STATE/sindri-app-firstrun/stub/recipes"
