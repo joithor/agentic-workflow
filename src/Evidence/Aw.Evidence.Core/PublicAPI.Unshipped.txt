@@ -2684,8 +2684,8 @@ static Aw.Evidence.Core.Desktop.DesktopStep.operator !=(Aw.Evidence.Core.Desktop
 static Aw.Evidence.Core.Desktop.DesktopStep.operator ==(Aw.Evidence.Core.Desktop.DesktopStep? left, Aw.Evidence.Core.Desktop.DesktopStep? right) -> bool
 Aw.Evidence.Core.Desktop.DesktopTarget
 Aw.Evidence.Core.Desktop.DesktopTarget.<Clone>$() -> Aw.Evidence.Core.Desktop.DesktopTarget!
-Aw.Evidence.Core.Desktop.DesktopTarget.AutomationId.get -> string?
-Aw.Evidence.Core.Desktop.DesktopTarget.AutomationId.init -> void
+Aw.Evidence.Core.Desktop.DesktopTarget.Automation.get -> string?
+Aw.Evidence.Core.Desktop.DesktopTarget.Automation.init -> void
 Aw.Evidence.Core.Desktop.DesktopTarget.Name.get -> string?
 Aw.Evidence.Core.Desktop.DesktopTarget.Name.init -> void
 Aw.Evidence.Core.Desktop.DesktopTarget.Type.get -> string?
@@ -2696,8 +2696,8 @@ Aw.Evidence.Core.Desktop.DesktopTarget.Contains.get -> string?
 Aw.Evidence.Core.Desktop.DesktopTarget.Contains.init -> void
 Aw.Evidence.Core.Desktop.DesktopTarget.Index.get -> int?
 Aw.Evidence.Core.Desktop.DesktopTarget.Index.init -> void
-Aw.Evidence.Core.Desktop.DesktopTarget.DesktopTarget(string? AutomationId = null, string? Name = null, string? Type = null, string? Text = null, string? Contains = null, int? Index = null) -> void
-Aw.Evidence.Core.Desktop.DesktopTarget.Deconstruct(out string? AutomationId, out string? Name, out string? Type, out string? Text, out string? Contains, out int? Index) -> void
+Aw.Evidence.Core.Desktop.DesktopTarget.DesktopTarget(string? Automation = null, string? Name = null, string? Type = null, string? Text = null, string? Contains = null, int? Index = null) -> void
+Aw.Evidence.Core.Desktop.DesktopTarget.Deconstruct(out string? Automation, out string? Name, out string? Type, out string? Text, out string? Contains, out int? Index) -> void
 Aw.Evidence.Core.Desktop.DesktopTarget.Equals(Aw.Evidence.Core.Desktop.DesktopTarget? other) -> bool
 override Aw.Evidence.Core.Desktop.DesktopTarget.Equals(object? obj) -> bool
 override Aw.Evidence.Core.Desktop.DesktopTarget.GetHashCode() -> int

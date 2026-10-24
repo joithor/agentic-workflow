@@ -33,11 +33,13 @@ internal static partial class DesktopScreenRules
     {
         foreach (var mask in screen.Masks ?? [])
         {
-            problems.AddIf(mask is null || mask.W < 1 || mask.H < 1 || mask.X < 0 || mask.Y < 0, $"{at}.masks: a mask needs x, y of 0 or more and w, h of 1 or more");
+            problems.AddIf(mask is null || IsEmptyRegion(mask), $"{at}.masks: a mask needs x, y of 0 or more and w, h of 1 or more");
             problems.AddIf(mask is not null && string.IsNullOrWhiteSpace(mask.Why), $"{at}.masks: a mask needs a 'why'");
             problems.AddIf(mask?.Size is { } size && !SizeText.TryParse(size, out _), $"{at}.masks: size '{mask?.Size}' is not a size like 1440x900");
         }
     }
+
+    private static bool IsEmptyRegion(ScreenMask mask) => mask.W < 1 || mask.H < 1 || mask.X < 0 || mask.Y < 0;
 
     [GeneratedRegex("^[a-z0-9][a-z0-9-]{0,63}\\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 100)]
     private static partial Regex ScreenName { get; }

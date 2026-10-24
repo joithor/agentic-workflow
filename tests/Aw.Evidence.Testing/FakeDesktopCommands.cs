@@ -40,7 +40,7 @@ public sealed class FakeDesktopCommands : IDesktopCommands
             return ValueTask.FromResult<Result<CommandResult>>(EvidenceErrors.RunFailed.With($"{command.Argv[0]} could not start"));
         }
 
-        var rule = _rules.Find(r => r.Matches(command));
-        return ValueTask.FromResult<Result<CommandResult>>(rule.Answer is null ? new CommandResult(0, string.Empty, string.Empty) : rule.Answer(command));
+        var (_, answer) = _rules.Find(r => r.Matches(command));
+        return ValueTask.FromResult<Result<CommandResult>>(answer is null ? new CommandResult(0, string.Empty, string.Empty) : answer(command));
     }
 }

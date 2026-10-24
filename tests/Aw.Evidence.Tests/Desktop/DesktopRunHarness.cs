@@ -1,4 +1,5 @@
 using System.Text;
+using Aw.Evidence.Core.Data;
 using Aw.Evidence.Core.Desktop;
 using Aw.Evidence.Core.Images;
 using Aw.Evidence.Features.DesktopRun;
@@ -82,7 +83,7 @@ internal sealed class DesktopRunHarness
 
     internal ValueTask<Result<DesktopRunResponse>> Run(DesktopRunRequest? request = null, CancellationToken cancellationToken = default)
     {
-        var files = new Aw.Evidence.Core.Data.DataRunFiles(Files, new FakeTextScrubber(), TestJson.Options);
+        var files = new DataRunFiles(Files, new FakeTextScrubber(), TestJson.Options);
         var service = new ValidatingService<DesktopRunRequest, DesktopRunResponse>(
             new DesktopRunService(
                 files, new DesktopPlans(Targets, TestJson.Options), Locks, new DesktopStack(Commands, Scratch, new DesktopDriving(Apps, Commands, Scratch, Files)),

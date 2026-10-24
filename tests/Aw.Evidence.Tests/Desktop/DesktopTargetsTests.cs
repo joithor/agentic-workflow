@@ -1,5 +1,6 @@
 using Aw.Evidence.Core;
 using Aw.Evidence.Core.Data;
+using Aw.Kernel;
 
 namespace Aw.Evidence.Tests.Desktop;
 
@@ -10,7 +11,7 @@ public sealed class DesktopTargetsTests
 
     private static string Config(string desktop) => "{\"desktop\":{" + desktop + "}}";
 
-    private static Aw.Kernel.Result<ResolvedTargets> Read(string json) => TargetsReader.Read(TestJson.Utf8(json), TestJson.Options);
+    private static Result<ResolvedTargets> Read(string json) => TargetsReader.Read(TestJson.Utf8(json), TestJson.Options);
 
     [Fact, Trait("Lane", "unit")]
     public void A_desktop_part_reads_with_its_defaults_filled_in()
@@ -42,10 +43,7 @@ public sealed class DesktopTargetsTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_config_without_a_desktop_part_has_none()
-    {
-        Assert.Null(Read("{}").Value.Desktop);
-    }
+    public void A_config_without_a_desktop_part_has_none() => Assert.Null(Read("{}").Value.Desktop);
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("\"manifest\":\"/abs.json\",\"homeEnv\":\"APP_HOME\",FX,APPCMD", "$.desktop.manifest: must be a file path below the repo")]

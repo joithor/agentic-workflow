@@ -98,7 +98,7 @@ internal sealed class DesktopDriving(IDesktopApps apps, IDesktopCommands command
             }
         }
 
-        return Results.Success<string?>(null);
+        return Results.Success<string?>(value: null);
     }
 
     // Exit 0 is done (null); the driver's 'a check failed' exit is the screen's problem; any other exit is an error of the environment.
@@ -112,7 +112,7 @@ internal sealed class DesktopDriving(IDesktopApps apps, IDesktopCommands command
 
         return ran.Value.ExitCode switch
         {
-            0 => Results.Success<string?>(null),
+            0 => Results.Success<string?>(value: null),
             CheckFailed => Results.Success<string?>($"{label} failed: {CommandTail.Of(ran.Value.StandardError)}"),
             _ => EvidenceErrors.RunFailed.With(string.Create(CultureInfo.InvariantCulture, $"{label} exited {ran.Value.ExitCode}: {CommandTail.Of(ran.Value.StandardError)}")),
         };
@@ -125,6 +125,7 @@ internal sealed class DesktopDriving(IDesktopApps apps, IDesktopCommands command
         DesktopAction.Launch => "launch",
         DesktopAction.Click => "click",
         DesktopAction.Type => "type",
+        DesktopAction.Key => "key",
         DesktopAction.WaitFor => "wait-for",
         DesktopAction.Screenshot => "screenshot",
         _ => "step",

@@ -1,5 +1,6 @@
 using Aw.Evidence.Core;
 using Aw.Evidence.Core.Desktop;
+using Aw.Kernel;
 
 namespace Aw.Evidence.Tests.Desktop;
 
@@ -11,7 +12,7 @@ public sealed class DesktopManifestTests
 
     private const string Home = """{"name":"home","design":"home.html","steps":[{"action":"screenshot"}]}""";
 
-    private static Aw.Kernel.Result<DesktopManifest> Read(string json) => DesktopManifestReader.Read(TestJson.Utf8(json), TestJson.Options);
+    private static Result<DesktopManifest> Read(string json) => DesktopManifestReader.Read(TestJson.Utf8(json), TestJson.Options);
 
     [Fact, Trait("Lane", "unit")]
     public void A_manifest_with_a_screen_reads_and_keeps_every_field()
@@ -37,7 +38,7 @@ public sealed class DesktopManifestTests
             [DesktopAction.Launch, DesktopAction.Click, DesktopAction.Type, DesktopAction.Key, DesktopAction.WaitFor, DesktopAction.Screenshot],
             screen.Steps.Select(static s => s.Action));
         var click = screen.Steps[1];
-        Assert.Equal((new DesktopTarget(AutomationId: "nav-workflows", Index: 1), new DesktopExpectedState("visible"), 4000), (click.Target, click.ExpectedState, click.TimeoutMs));
+        Assert.Equal((new DesktopTarget(Automation: "nav-workflows", Index: 1), new DesktopExpectedState("visible"), 4000), (click.Target, click.ExpectedState, click.TimeoutMs));
         Assert.Equal(("sync", true), (screen.Steps[2].Value, screen.Steps[2].Replace));
     }
 

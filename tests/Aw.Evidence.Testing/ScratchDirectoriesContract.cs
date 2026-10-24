@@ -1,4 +1,3 @@
-using Aw.Evidence.Core.Desktop;
 using Xunit;
 
 namespace Aw.Evidence.Testing;

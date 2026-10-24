@@ -41,7 +41,7 @@ public static class DriverCommandLine
             lines.Add([.. head, .. own]);
         }
 
-        if (step.Action is (DesktopAction.Click or DesktopAction.Type or DesktopAction.Key) && step.ExpectedState is not null)
+        if (step.Action is DesktopAction.Click or DesktopAction.Type or DesktopAction.Key && step.ExpectedState is not null)
         {
             lines.Add([.. head, .. Wait(selector, step)]);
         }
@@ -89,7 +89,7 @@ public static class DriverCommandLine
         List<string> flags = [];
         (string Flag, string? Value)[] named =
         [
-            ("--automation-id", target.AutomationId), ("--name", target.Name), ("--type", target.Type), ("--text", target.Text), ("--contains", target.Contains),
+            ("--automation-id", target.Automation), ("--name", target.Name), ("--type", target.Type), ("--text", target.Text), ("--contains", target.Contains),
             ("--index", target.Index is { } index ? Text(index) : null),
         ];
         foreach (var (flag, value) in named)

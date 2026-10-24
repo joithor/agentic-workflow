@@ -173,10 +173,11 @@ packages:
     kind: package
     tier: 1
     projectPrefix: Aw.UiDriver
+    exports: [Aw.UiDriver.Avalonia]
     ts: null
     src: src/UiDriver
     bins: [aw-ui-driver]
-    note: "a free, generic, Playwright-like driver for any Avalonia app, modelled on the DevTools MCP tool set: Aw.UiDriver.Core (protocol, selectors, wait rules), Aw.UiDriver.Avalonia (the in-app loopback server an app opts into with UseAwUiDriver(); unshaped, like the UI projects) and Aw.UiDriver.Cli (the client and the aw-ui-driver command; unshaped). It knows no app; a scripted run (desktop evidence) uses the CLI, so other packages need no project edge"
+    note: "a free, generic, Playwright-like driver for any Avalonia app, modelled on the DevTools MCP tool set: Aw.UiDriver.Core (protocol, selectors, wait rules), Aw.UiDriver.Avalonia (the in-app loopback server an app opts into with UseAwUiDriver(); unshaped, like the UI projects) and Aw.UiDriver.Cli (the client and the aw-ui-driver command; unshaped). `exports` lists Aw.UiDriver.Avalonia because an app has to link the in-app server to be drivable (a reviewed DEPS-PROJ-007 carve-out; the CLI and Core stay the contract for everyone else). It knows no app; a scripted run (desktop evidence) uses the CLI, so other packages need no project edge"
   - id: Readiness
     kind: package
     tier: 1

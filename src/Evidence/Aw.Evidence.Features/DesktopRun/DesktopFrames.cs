@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text;
 using Aw.Evidence.Core;
 using Aw.Evidence.Core.Browser;

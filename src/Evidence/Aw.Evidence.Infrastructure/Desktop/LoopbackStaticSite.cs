@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using Aw.Evidence.Core;
@@ -24,7 +25,7 @@ internal sealed class LoopbackStaticSite : IStaticSite
         {
             var port = FreePort();
             var listener = new HttpListener();
-            listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+            listener.Prefixes.Add(string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}/"));
             try
             {
                 listener.Start();
@@ -35,7 +36,7 @@ internal sealed class LoopbackStaticSite : IStaticSite
                 continue;
             }
 
-            return ValueTask.FromResult<Result<IServedSite>>(new ServedSite(listener, $"http://127.0.0.1:{port}", Path.GetFullPath(directory)));
+            return ValueTask.FromResult<Result<IServedSite>>(new ServedSite(listener, string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}"), Path.GetFullPath(directory)));
         }
 
         return ValueTask.FromResult<Result<IServedSite>>(EvidenceErrors.RunFailed.With("no free loopback port for the design pages"));

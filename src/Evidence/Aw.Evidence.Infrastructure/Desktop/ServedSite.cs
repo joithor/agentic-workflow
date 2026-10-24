@@ -16,7 +16,7 @@ internal sealed class ServedSite : IServedSite
         _listener = listener;
         _root = root.TrimEnd('/');
         Origin = origin;
-        _loop = Task.Run(ServeAsync);
+        _loop = Task.Run(ServeAsync, _stop.Token);
     }
 
     /// <inheritdoc/>
@@ -57,13 +57,15 @@ internal sealed class ServedSite : IServedSite
         }
     }
 
+    private static bool IsRead(string method) => string.Equals(method, "GET", StringComparison.Ordinal) || string.Equals(method, "HEAD", StringComparison.Ordinal);
+
     private async Task AnswerAsync(HttpListenerContext context)
     {
         try
         {
             var method = context.Request.HttpMethod;
-            var file = method is "GET" or "HEAD" ? FileOf(context.Request.Url?.AbsolutePath) : null;
-            if (method is not ("GET" or "HEAD"))
+            var file = IsRead(method) ? FileOf(context.Request.Url?.AbsolutePath) : null;
+            if (!IsRead(method))
             {
                 context.Response.StatusCode = (int)HttpStatusCode.MethodNotAllowed;
             }

@@ -19,7 +19,7 @@ public sealed class DesktopRunTests
     {
         var harness = new DesktopRunHarness();
 
-        var response = (await harness.Run()).Value;
+        var response = (await harness.Run(cancellationToken: TestContext.Current.CancellationToken)).Value;
 
         Assert.Equal(
             [
@@ -52,7 +52,7 @@ public sealed class DesktopRunTests
     {
         var harness = new DesktopRunHarness();
 
-        _ = await harness.Run();
+        _ = await harness.Run(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(["bin/app --flag", "bin/app --flag"], harness.Apps.Launches.Select(static l => string.Join(' ', l.Argv)));
         var home = harness.Apps.Launches[0];
@@ -66,7 +66,7 @@ public sealed class DesktopRunTests
     {
         var harness = new DesktopRunHarness();
 
-        var response = (await harness.Run()).Value;
+        var response = (await harness.Run(cancellationToken: TestContext.Current.CancellationToken)).Value;
 
         var summary = response.Summary;
         Assert.Equal((DesktopSummary.SchemaName, DesktopSummary.KindName, "desktop-1", "abc123"), (summary.Schema, summary.Kind, summary.RunId.Value, summary.AppBuild));
@@ -84,7 +84,7 @@ public sealed class DesktopRunTests
     {
         var harness = new DesktopRunHarness();
 
-        _ = await harness.Run();
+        _ = await harness.Run(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(["/work/repo/docs/mockups"], harness.Site.Served);
         var session = Assert.Single(harness.Browser.Sessions);
@@ -102,7 +102,7 @@ public sealed class DesktopRunTests
             AppFrame = TestImages.Draw(40, 20, static (x, y) => x is >= 10 and < 15 && y is >= 5 and < 9 ? 0x000000FF : 0xFFFFFFFF),
         };
 
-        var response = (await harness.Run()).Value;
+        var response = (await harness.Run(cancellationToken: TestContext.Current.CancellationToken)).Value;
 
         Assert.Equal((DesktopOutcome.Failed, 2), (response.Summary.Outcome, response.Summary.ExitCode()));
         Assert.Equal("failed: agents at 40x20 differs 2.5% (limit 2%) (1 of 2 over)", response.Summary.Headline);
@@ -116,7 +116,7 @@ public sealed class DesktopRunTests
         var harness = new DesktopRunHarness();
         _ = harness.Commands.When(DesktopRunHarness.IsShot, _ => new CommandResult(0, string.Empty, string.Empty));
 
-        var response = (await harness.Run()).Value;
+        var response = (await harness.Run(cancellationToken: TestContext.Current.CancellationToken)).Value;
 
         Assert.Equal(DesktopOutcome.Failed, response.Summary.Outcome);
         Assert.All(response.Summary.Screens, screen => Assert.StartsWith("the screenshot wrote no frame", screen.Problem, StringComparison.Ordinal));
@@ -127,7 +127,7 @@ public sealed class DesktopRunTests
     {
         var harness = new DesktopRunHarness { AppFrame = RgbaImage.Filled(40, 24, 0xFFFFFFFF) };
 
-        var response = (await harness.Run()).Value;
+        var response = (await harness.Run(cancellationToken: TestContext.Current.CancellationToken)).Value;
 
         Assert.Equal("the frames differ in size: app 40x24, design 40x20", response.Summary.Screens[0].Problem);
         Assert.False(response.Summary.Screens[0].Passed);
@@ -139,7 +139,7 @@ public sealed class DesktopRunTests
         var harness = new DesktopRunHarness();
         _ = harness.Commands.When(static c => c.Argv is [_, "up", ..], static _ => new CommandResult(7, string.Empty, "starting\nno temporal binary\n"));
 
-        var response = (await harness.Run()).Value;
+        var response = (await harness.Run(cancellationToken: TestContext.Current.CancellationToken)).Value;
 
         Assert.Equal((DesktopOutcome.Errored, 4), (response.Summary.Outcome, response.Summary.ExitCode()));
         Assert.Equal((EvidenceErrors.RunFailed.Code, "fixture up exited 7: starting | no temporal binary"), (response.Summary.Error!.Code, response.Summary.Error.Message));
@@ -155,7 +155,7 @@ public sealed class DesktopRunTests
         var harness = new DesktopRunHarness();
         _ = harness.Apps.WontStart.Add("bin/app");
 
-        var response = (await harness.Run()).Value;
+        var response = (await harness.Run(cancellationToken: TestContext.Current.CancellationToken)).Value;
 
         Assert.Equal(DesktopOutcome.Errored, response.Summary.Outcome);
         Assert.Equal("launch home at 40x20: bin/app could not start", response.Summary.Error!.Message);
@@ -170,7 +170,7 @@ public sealed class DesktopRunTests
         harness.Apps.EndedAtStart = "exited 1: segfault";
         _ = harness.Commands.When(static c => c.Argv.Contains("ready", StringComparer.Ordinal), static _ => new CommandResult(4, string.Empty, "aw-ui-driver: AW-UIDRIVER-006 no driver answered in /tmp/aw-driver-2\n"));
 
-        var response = (await harness.Run()).Value;
+        var response = (await harness.Run(cancellationToken: TestContext.Current.CancellationToken)).Value;
 
         Assert.Equal((DesktopOutcome.Errored, EvidenceErrors.RunFailed.Code), (response.Summary.Outcome, response.Summary.Error!.Code));
         Assert.Equal(
@@ -187,7 +187,7 @@ public sealed class DesktopRunTests
         var harness = new DesktopRunHarness();
         _ = harness.Commands.When(static c => c.Argv.Contains("click", StringComparer.Ordinal) && c.Argv.Contains("Agents", StringComparer.Ordinal), static _ => new CommandResult(2, string.Empty, "aw-ui-driver: AW-UIDRIVER-002 no element matches\n"));
 
-        var response = (await harness.Run()).Value;
+        var response = (await harness.Run(cancellationToken: TestContext.Current.CancellationToken)).Value;
 
         Assert.Equal((DesktopOutcome.Failed, 2), (response.Summary.Outcome, response.Summary.ExitCode()));
         Assert.Equal([true, false], response.Summary.Screens.Select(static s => s.Passed));
@@ -206,8 +206,8 @@ public sealed class DesktopRunTests
         var broken = new DesktopRunHarness();
         _ = broken.Commands.When(static c => c.Argv.Contains("window", StringComparer.Ordinal), static _ => new CommandResult(4, string.Empty, "aw-ui-driver: AW-UIDRIVER-007 the app failed\n"));
 
-        var late = (await timedOut.Run()).Value;
-        var failed = (await broken.Run()).Value;
+        var late = (await timedOut.Run(cancellationToken: TestContext.Current.CancellationToken)).Value;
+        var failed = (await broken.Run(cancellationToken: TestContext.Current.CancellationToken)).Value;
 
         Assert.StartsWith("step 2 (click) failed", late.Summary.Screens[0].Problem, StringComparison.Ordinal);
         Assert.Equal((DesktopOutcome.Errored, "window home at 40x20: window exited 4: aw-ui-driver: AW-UIDRIVER-007 the app failed"), (failed.Summary.Outcome, failed.Summary.Error!.Message));
@@ -219,7 +219,7 @@ public sealed class DesktopRunTests
         var harness = new DesktopRunHarness();
         harness.Browser.FailsToStart = true;
 
-        var response = (await harness.Run()).Value;
+        var response = (await harness.Run(cancellationToken: TestContext.Current.CancellationToken)).Value;
 
         Assert.Equal((DesktopOutcome.Errored, EvidenceErrors.BrowserFailed.Code), (response.Summary.Outcome, response.Summary.Error!.Code));
         Assert.Equal(0, harness.Site.Running);
@@ -230,8 +230,8 @@ public sealed class DesktopRunTests
     {
         var harness = new DesktopRunHarness();
 
-        var some = (await harness.Run(DesktopRunHarness.Request(["agents"]))).Value;
-        var unknown = (await new DesktopRunHarness().Run(DesktopRunHarness.Request(["nope"]))).Value;
+        var some = (await harness.Run(DesktopRunHarness.Request(["agents"]), TestContext.Current.CancellationToken)).Value;
+        var unknown = (await new DesktopRunHarness().Run(DesktopRunHarness.Request(["nope"]), TestContext.Current.CancellationToken)).Value;
 
         Assert.Equal(["agents"], some.Summary.Screens.Select(static s => s.Name));
         Assert.Equal($"{HomeDriver} screenshot --out {AgentsShot}", harness.Commands.Lines()[^2]);
@@ -244,7 +244,7 @@ public sealed class DesktopRunTests
     {
         var harness = new DesktopRunHarness().WithoutDesktopConfig();
 
-        var response = (await harness.Run()).Value;
+        var response = (await harness.Run(cancellationToken: TestContext.Current.CancellationToken)).Value;
 
         Assert.Equal((DesktopOutcome.Refused, EvidenceErrors.TargetsInvalid.Code), (response.Summary.Outcome, response.Summary.Refusal!.Code));
         Assert.Empty(harness.Commands.Calls);
@@ -257,7 +257,7 @@ public sealed class DesktopRunTests
         var harness = new DesktopRunHarness();
         _ = harness.Files.With(DesktopRunHarness.ManifestPath, "{\"schema\":\"nope\"}"u8.ToArray());
 
-        var response = (await harness.Run()).Value;
+        var response = (await harness.Run(cancellationToken: TestContext.Current.CancellationToken)).Value;
 
         Assert.Equal((DesktopOutcome.Refused, EvidenceErrors.DesktopManifestInvalid.Code), (response.Summary.Outcome, response.Summary.Refusal!.Code));
         Assert.Contains("schema: must be ui-evidence.desktop-screens/1", response.Summary.Refusal.Message, StringComparison.Ordinal);
@@ -271,7 +271,7 @@ public sealed class DesktopRunTests
         _ = harness.Files.With(DesktopRunHarness.SummaryPath, [1]);
         _ = harness.Files.Files.Remove(DesktopRunHarness.ManifestPath);
 
-        var result = await harness.Run();
+        var result = await harness.Run(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(EvidenceErrors.FileNotFound.Code, result.Error.Code);
         Assert.False(harness.Files.Files.ContainsKey(DesktopRunHarness.SummaryPath));
@@ -283,7 +283,7 @@ public sealed class DesktopRunTests
         var harness = new DesktopRunHarness();
         _ = harness.Locks.AlwaysBusy.Add(LockKind.QaStack);
 
-        var result = await harness.Run();
+        var result = await harness.Run(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(EvidenceErrors.LockBusy.Code, result.Error.Code);
         Assert.Empty(harness.Commands.Calls);

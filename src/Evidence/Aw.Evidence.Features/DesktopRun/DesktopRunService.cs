@@ -71,8 +71,8 @@ internal sealed class DesktopRunService(DataRunFiles files, DesktopPlans plans, 
     {
         var coded = new CodedMessage(error.Code, error.Message);
         var summary = error.Kind == ErrorKind.Unavailable
-            ? Compose(run, DesktopOutcome.Errored, "errored: " + error.Message, [], refusal: null, coded)
-            : Compose(run, DesktopOutcome.Refused, Number.Text($"refused: {error.Code} {Number.ShortPaths(error.Message)}"), [], coded, failure: null);
+            ? Compose(run, new Verdict(DesktopOutcome.Errored, "errored: " + error.Message, [], Failure: coded))
+            : Compose(run, new Verdict(DesktopOutcome.Refused, Number.Text($"refused: {error.Code} {Number.ShortPaths(error.Message)}"), [], Refusal: coded));
         return WriteAsync(run, summary, cancellationToken);
     }
 
@@ -95,16 +95,18 @@ internal sealed class DesktopRunService(DataRunFiles files, DesktopPlans plans, 
         var headline = failed.Count == 0
             ? string.Create(CultureInfo.InvariantCulture, $"passed: {screens.Count} {(screens.Count == 1 ? "screen" : "screens")} within their limit")
             : string.Create(CultureInfo.InvariantCulture, $"failed: {failed[0].Name} at {failed[0].Size} {Describe(failed[0])} ({failed.Count} of {screens.Count} over)");
-        return Compose(run, failed.Count == 0 ? DesktopOutcome.Passed : DesktopOutcome.Failed, headline, screens, refusal: null, failure: null);
+        return Compose(run, new Verdict(failed.Count == 0 ? DesktopOutcome.Passed : DesktopOutcome.Failed, headline, screens));
     }
 
     private static string Describe(DesktopScreenResult screen) =>
         screen.Problem ?? string.Create(CultureInfo.InvariantCulture, $"differs {screen.DiffPercent:0.##}% (limit {screen.Threshold:0.##}%)");
 
-    private DesktopSummary Compose(RunFacts run, DesktopOutcome outcome, string headline, IReadOnlyList<DesktopScreenResult> screens, CodedMessage? refusal, CodedMessage? failure) =>
+    private DesktopSummary Compose(RunFacts run, Verdict verdict) =>
         new(
             DesktopSummary.SchemaName, DesktopSummary.KindName, RunId.From(RunPath.NameOf(run.Request.RunDirectory)), run.Started, clock.GetUtcNow(), run.Request.AppBuild,
-            run.Sha256, outcome, RecordedText.Of(run.Scrubber, headline, RecordedText.HeadlineLimit), screens, refusal, failure, run.Notes);
+            run.Sha256, verdict.Outcome, RecordedText.Of(run.Scrubber, verdict.Headline, RecordedText.HeadlineLimit), verdict.Screens, verdict.Refusal, verdict.Failure, run.Notes);
+
+    private sealed record Verdict(DesktopOutcome Outcome, string Headline, IReadOnlyList<DesktopScreenResult> Screens, CodedMessage? Refusal = null, CodedMessage? Failure = null);
 
     private sealed record RunFacts(DesktopRunRequest Request, string Sha256, DateTimeOffset Started, ITextScrubber Scrubber)
     {

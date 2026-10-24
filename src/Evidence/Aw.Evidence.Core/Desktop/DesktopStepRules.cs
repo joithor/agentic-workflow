@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Aw.Evidence.Core.Desktop;
 
 /// <summary>The checks of a screen's script.</summary>
@@ -17,10 +19,10 @@ internal static class DesktopStepRules
         problems.AddIf(steps.Any(static s => s is null), $"{at}: holds a null entry");
         var real = steps.Where(static s => s is not null).ToList();
         problems.AddIf(real.Skip(1).Any(static s => s.Action == DesktopAction.Launch), $"{at}: launch is only the first step");
-        problems.AddIf(real.Count(static s => s.Action == DesktopAction.Screenshot) != 1 || real[^1].Action != DesktopAction.Screenshot, $"{at}: must end with exactly one screenshot (the frame that is compared)");
+        problems.AddIf(real.Where(static s => s.Action == DesktopAction.Screenshot).Take(2).Count() != 1 || real[^1].Action != DesktopAction.Screenshot, $"{at}: must end with exactly one screenshot (the frame that is compared)");
         for (var i = 0; i < real.Count; i++)
         {
-            CheckStep(real[i], $"{at}[{i}]", problems);
+            CheckStep(real[i], string.Create(CultureInfo.InvariantCulture, $"{at}[{i}]"), problems);
         }
     }
 

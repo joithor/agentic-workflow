@@ -62,7 +62,7 @@ internal sealed class DesktopPlans(IEvidenceTargets targets, JsonSerializerOptio
             {
                 parts.RemoveAt(parts.Count - 1);
             }
-            else if (segment != "." && segment != "..")
+            else if (segment is not ("." or ".."))
             {
                 parts.Add(segment);
             }
