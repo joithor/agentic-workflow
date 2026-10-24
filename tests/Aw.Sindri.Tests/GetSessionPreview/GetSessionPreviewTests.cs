@@ -206,14 +206,16 @@ public sealed class GetSessionPreviewTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Preview_answers_a_session_caller_like_a_human_for_a_ref_it_cannot_see()
+    public async Task Preview_answers_a_session_caller_like_a_human_for_an_unknown_and_a_stale_ref()
     {
         var service = Service();
         using var session = _r.SessionOf("api");
 
         var unknown = await service.Handle(Ask(new SessionRef(AgentId.From("codex"), SessionId.From("nope"))), SessionsRig.Token);
+        var stale = await service.Handle(Ask(expect: SessionData.T0), SessionsRig.Token);
 
-        Assert.Equal(SindriErrors.SessionNotFound.Code, unknown.Error.Code);   // owner decision q93: a session is no longer refused the preview; the repo scope still hides other repos' sessions
+        Assert.Equal([SindriErrors.SessionNotFound.Code, SindriErrors.SessionConflict.Code], [unknown.Error.Code, stale.Error.Code]);
+        Assert.Equal(0, _panes.Reads);
     }
 
     [Fact, Trait("Lane", "unit")]
