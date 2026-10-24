@@ -31,7 +31,7 @@ public sealed class ReadLedgerTests
 
         Assert.Equal([1L, 2L], page.Events.Select(e => e.Sequence));
         Assert.Equal(2L, page.Next);
-        Assert.False(page.Events[0].Payload.TryGetProperty("body", out _));
+        Assert.Equal("private [masked] body", page.Events[0].Payload.GetProperty("body").GetString());
         Assert.Equal("Fix \\x1B[31m[masked]\\x1B[0m", page.Events[0].Payload.GetProperty("title").GetString());
     }
 

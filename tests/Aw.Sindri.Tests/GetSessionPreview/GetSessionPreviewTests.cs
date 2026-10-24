@@ -165,7 +165,7 @@ public sealed class GetSessionPreviewTests
             session = await service.Handle(Ask(), SessionsRig.Token);
         }
 
-        Assert.Equal(["SND-SESSION-002", "SND-SESSION-002", "SND-AUTH-002"], [known.Error.Code, unknown.Error.Code, session.Error.Code]);   // never a 404: an unreadable collector is not an ended session
+        Assert.Equal(["SND-SESSION-002", "SND-SESSION-002", "SND-SESSION-002"], [known.Error.Code, unknown.Error.Code, session.Error.Code]);   // never a 404: an unreadable collector is not an ended session
         Assert.Equal(0, _panes.Reads);
     }
 

@@ -95,6 +95,7 @@ public sealed class GetNeedsYouTests
             Assert.Empty((await Get()).Rows);
         }
 
+        AddRepoJob(JobState.Succeeded, n: 1, kind: "RegisterMcp");   // the run ended; the newest job is the failed one
         AddRepoJob(JobState.Failed, "no", n: 2, kind: "RegisterMcp");
         using (_q.Session(repo: null))
         {

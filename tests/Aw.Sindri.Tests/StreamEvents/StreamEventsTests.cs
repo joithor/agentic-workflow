@@ -143,6 +143,7 @@ public sealed class StreamEventsTests
         var views = new ViewsHarness();
         var h = views.Slice;
         var created = new ItemCreated(h.Ids.New<CommandId>(), A.FirstItemId, "t", RepoName.From("elsewhere"), Link: null, Body: null, Owner: null);
+        await Append(h, await h.HoldLease(), EventTypes.ItemCreated, created, "item.created:1", A.FirstItemId.Value);   // an id resolves through the ledger
         await views.Fold(EventTypes.ItemCreated, created, A.FirstItemId);
         using var entered = h.Callers.Enter(new CallerContextBuilder().Session().InRepo("demo").Build());
         var service = StreamEventsServices.Over(h, new PassThroughScrubber(), new ViewItemResolver(views.Views));

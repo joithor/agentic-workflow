@@ -196,15 +196,15 @@ public sealed class SindriQueryToolsTests(SeededMcp seed) : IClassFixture<Seeded
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task Sindri_pending_decisions_with_none_pending_says_so()
+    public async Task Sindri_pending_decisions_of_a_repo_without_any_lists_the_others()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var beta = await seed.Open("beta", ct);
 
         var none = await beta.Call("sindri_pending_decisions", "{}", ct);
 
-        Assert.Equal(0, none.StructuredContent!.Value.GetProperty("decisions").GetArrayLength());
-        McpGolden.Match(none, seed.Host.Home, "sindri_pending_decisions", "none");
+        Assert.Equal(seed.AlphaDecision, Assert.Single(none.StructuredContent!.Value.GetProperty("decisions").EnumerateArray()).GetProperty("id").GetString());
+        McpGolden.Match(none, seed.Host.Home, "sindri_pending_decisions", "beta");
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
