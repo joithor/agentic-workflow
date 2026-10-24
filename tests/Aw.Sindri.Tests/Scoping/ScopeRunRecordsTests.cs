@@ -7,11 +7,13 @@ using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Scoping;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Features.Blocks.Step;
 using Aw.Sindri.Infrastructure.Workflow;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Scoping;
@@ -32,7 +34,7 @@ public sealed class ScopeRunRecordsTests : ScopeRunRecordsContract
     protected override async ValueTask<IScopeRunRecords> Create()
     {
         _grant = await _slice.HoldLease();
-        return new ScopeRunRecords(_slice.Store, _slice.Events, new Instances(), new StepRunRecipes(ScopingRecipe()));
+        return new ScopeRunRecords(_slice.Store, _slice.Events, new Instances(), new StepRunRecipes(ScopingRecipe()), Catalog());
     }
 
     protected override async ValueTask Launched(IScopeRunRecords records, ScopeLaunch launch) =>
@@ -55,6 +57,8 @@ public sealed class ScopeRunRecordsTests : ScopeRunRecordsContract
         var appended = await _slice.Store.Append(_slice.Events.Entry(type, payload, key, A.FirstItemId.Value), _grant!, TestContext.Current.CancellationToken);   // why: Create ran first
         Assert.True(appended.IsSuccess);
     }
+
+    private static BlockCatalog Catalog() => new([ScopingSteps.Draft, ScopingSteps.Challenge, GapSearchSteps.GapSearch], []);
 
     private static Recipe ScopingRecipe() => Of(
         "draft",

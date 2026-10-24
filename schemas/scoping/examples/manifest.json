@@ -199,6 +199,90 @@
       "source": "spec A.4: the verdict"
     },
     {
+      "file": "gap-candidates.valid.json",
+      "schema": "gap-candidates.json",
+      "valid": true,
+      "source": "issue 966 spec 4.4: the output example"
+    },
+    {
+      "file": "gap-candidates.none.valid.json",
+      "schema": "gap-candidates.json",
+      "valid": true,
+      "source": "spec 4.4: report none if you find none"
+    },
+    {
+      "file": "gap-candidates.bad-kind.invalid.json",
+      "schema": "gap-candidates.json",
+      "valid": false,
+      "source": "kind is one of surface, writer, reader, job, migration, screen, record, other"
+    },
+    {
+      "file": "gap-candidates.no-query.invalid.json",
+      "schema": "gap-candidates.json",
+      "valid": false,
+      "source": "query is required"
+    },
+    {
+      "file": "gap-candidates.long-excerpt.invalid.json",
+      "schema": "gap-candidates.json",
+      "valid": false,
+      "source": "excerpt is at most 400 characters"
+    },
+    {
+      "file": "gap-candidates.no-model.invalid.json",
+      "schema": "gap-candidates.json",
+      "valid": false,
+      "source": "model is required"
+    },
+    {
+      "file": "gap-rulings.valid.json",
+      "schema": "gap-rulings.json",
+      "valid": true,
+      "source": "issue 966 spec 4.5: the output example, with an uncertain ruling"
+    },
+    {
+      "file": "gap-rulings.bad-ruling.invalid.json",
+      "schema": "gap-rulings.json",
+      "valid": false,
+      "source": "ruling is real-gap, already-covered, not-in-scope or uncertain"
+    },
+    {
+      "file": "gap-rulings.no-reason-code.invalid.json",
+      "schema": "gap-rulings.json",
+      "valid": false,
+      "source": "every ruling carries the judge's reason code"
+    },
+    {
+      "file": "gap-search.fact.valid.json",
+      "schema": "gap-search.json",
+      "valid": true,
+      "source": "issue 966 spec 4.6: the cumulative record"
+    },
+    {
+      "file": "gap-search.file.valid.json",
+      "schema": "gap-search.json",
+      "valid": true,
+      "source": "spec 4.6 plus the packet-file envelope"
+    },
+    {
+      "file": "gap-search.seed.valid.json",
+      "schema": "gap-search.json",
+      "valid": true,
+      "source": "spec 3.3: the seed intake writes"
+    },
+    {
+      "file": "gap-search.local-id.invalid.json",
+      "schema": "gap-search.json",
+      "valid": false,
+      "source": "a candidate in the record has a global id G<round>.<n>"
+    },
+    {
+      "file": "gap-search.no-counts.invalid.json",
+      "schema": "gap-search.json",
+      "valid": false,
+      "source": "every round carries its counts"
+    },
+    {
       "file": "challenge.fact.valid.json",
       "schema": "challenge.json",
       "valid": true,
