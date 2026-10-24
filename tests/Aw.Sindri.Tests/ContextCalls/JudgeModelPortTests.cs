@@ -71,7 +71,7 @@ public sealed class JudgeModelPortTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_provider_that_errors_or_times_out_falls_through_to_the_next_and_none_answering_is_an_unavailable_source()
+    public async Task A_provider_that_errors_or_times_out_falls_through_to_the_next_and_none_answering_is_042_naming_the_fix()
     {
         var failing = new Provider(ProviderName.ClaudeCli, new ProviderUnavailable(ProviderUnavailable.Timeout));
         var errored = new Provider(ProviderName.CodexCli, new ProviderErrored("bad-json"));
@@ -79,7 +79,7 @@ public sealed class JudgeModelPortTests
 
         var answer = await port.Ask(_request, TestContext.Current.CancellationToken);
 
-        Assert.Equal(ContextErrors.SourceUnavailable.Code, answer.Error.Code);
+        Assert.Equal(ContextErrors.LabelingUnavailable.Code, answer.Error.Code);
         _ = Assert.Single(failing.Asked);
         _ = Assert.Single(errored.Asked);
     }
@@ -91,6 +91,6 @@ public sealed class JudgeModelPortTests
 
         var answer = await port.Ask(_request, TestContext.Current.CancellationToken);
 
-        Assert.Equal(ContextErrors.SourceUnavailable.Code, answer.Error.Code);
+        Assert.Equal(ContextErrors.LabelingUnavailable.Code, answer.Error.Code);
     }
 }

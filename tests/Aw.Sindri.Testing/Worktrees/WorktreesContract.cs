@@ -1,3 +1,4 @@
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Worktrees;
 using Xunit;
 
@@ -33,6 +34,33 @@ public abstract class WorktreesContract
         Expect.Equal(request.Path, made.Value.Path);
         Expect.Equal(f.Base, made.Value.Head);
         Expect.Equal(request.Branch, made.Value.Branch);
+    }
+
+    /// <summary>A branch a worktree made resolves to the commit it sits at.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_branch_resolves_to_its_commit()
+    {
+        var f = await Create();
+        var made = await f.Worktrees.Create(Request(f), Token);
+
+        var tip = await f.Worktrees.Resolve(f.RepoRoot, made.Value.Branch, Token);
+
+        Expect.True(tip.IsSuccess);
+        Expect.Equal(f.Base, tip.Value);
+    }
+
+    /// <summary>A branch the repo does not have is a git failure, never a guess.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task An_unknown_branch_does_not_resolve()
+    {
+        var f = await Create();
+
+        var tip = await f.Worktrees.Resolve(f.RepoRoot, "sindri/nowhere", Token);
+
+        Expect.True(tip.IsError);
+        Expect.Equal(SindriErrors.WorktreeGitFailed.Code, tip.Error.Code);
     }
 
     /// <summary>Asking twice for the same checkout returns it.</summary>
