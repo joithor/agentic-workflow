@@ -28,8 +28,8 @@ internal sealed class GetContextLensesAnswerService(IService<GetContextLensesReq
     }
 
     private static LensesView Page(LensesView view, GetContextLensesAnswerRequest request) =>
-        request.Limit is { } limit ? LensPages.Window(view, limit, request.Offset ?? 0) : view;
+        request.Limit is null && request.Offset is null ? view : LensPages.Window(view, request.Limit ?? int.MaxValue, request.Offset ?? 0);
 
     private static LensesSetView Page(LensesSetView view, GetContextLensesAnswerRequest request) =>
-        request.Limit is { } limit ? LensPages.Window(view, limit, request.Offset ?? 0) : view;
+        request.Limit is null && request.Offset is null ? view : LensPages.Window(view, request.Limit ?? int.MaxValue, request.Offset ?? 0);
 }

@@ -40,12 +40,11 @@ public sealed class ContextCliTests
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("depth", "abc", "(fix: --depth 2)")]
-    [InlineData("depth", "-1", "(fix: --depth 2)")]
-    [InlineData("budget", "abc", "(fix: --budget 4000)")]
-    public void The_cli_adds_its_own_flag_to_a_depth_or_budget_006(string field, string text, string fix)
+    [InlineData("abc", "(fix: --depth 2)")]
+    [InlineData("-1", "(fix: --depth 2)")]
+    public void The_cli_adds_its_own_flag_to_a_depth_006(string text, string fix)
     {
-        var error = (field == "depth" ? QueryRules.ParseDepth(text) : QueryRules.ParseBudget(text)).Error;
+        var error = QueryRules.ParseDepth(text).Error;
 
         var shown = QueryFlagHints.Add(error);
 
@@ -97,10 +96,8 @@ public sealed class ContextCliTests
     public void The_hint_matcher_follows_the_engines_own_rule_text()
     {
         var depth = QueryRules.ParseDepth("abc").Error;
-        var budget = QueryRules.ParseBudget("abc").Error;
 
         Assert.StartsWith(QueryRules.DepthMessage, depth.Message, StringComparison.Ordinal);
-        Assert.StartsWith(QueryRules.BudgetMessage, budget.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

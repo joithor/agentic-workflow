@@ -31,7 +31,7 @@ internal static class GraphTools
         InputSchema = ContextTools.Schema(new JsonObject
         {
             ["key"] = ContextTools.Property("string", "A product-graph node key, name or alias"),
-            ["limit"] = ContextTools.Property("integer", "How many items to keep from each list; omit for the whole answer", minimum: 1),
+            ["limit"] = ContextTools.Property("integer", "How many items to keep from each list (default 100)", minimum: 1),
             ["offset"] = ContextTools.Property("integer", "How many items to skip in each list; omit for the start", minimum: 0),
         }, required: ["key"]),
         Annotations = new ToolAnnotations { ReadOnlyHint = true, OpenWorldHint = false },
@@ -47,7 +47,7 @@ internal static class GraphTools
         {
             ["key"] = ContextTools.Property("string", "A product-graph node key, name or alias"),
             ["depth"] = ContextTools.Property("integer", "How many edges away to look (default 1; the engine bounds it)", minimum: 0),
-            ["limit"] = ContextTools.Property("integer", "How many items to keep from each list; omit for the whole answer", minimum: 1),
+            ["limit"] = ContextTools.Property("integer", "How many items to keep from each list (default 100)", minimum: 1),
             ["offset"] = ContextTools.Property("integer", "How many items to skip in each list; omit for the start", minimum: 0),
         }, required: ["key"]),
         Annotations = new ToolAnnotations { ReadOnlyHint = true, OpenWorldHint = false },

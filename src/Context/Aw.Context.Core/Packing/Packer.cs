@@ -1,54 +1,20 @@
 namespace Aw.Context.Core.Packing;
 
 /// <summary>
-/// Packs items into the budget (spec §8.3): sections in fill order (graph, affects, decisions, code, records); sections
-/// with no candidates are skipped and get no share; the rest split the budget evenly, the remainder goes to the first
-/// section's cap, unused cap rolls forward, and budget still unused at the end goes back to the earlier sections that
-/// overflowed; within a section, greedily in the given order (best first), each item
-/// whole or not at all; an item that doesn't fit is listed by its marker once. Conflicts and degraded sources are
-/// outside the budget and never pass through here.
+/// Groups the ranked items into sections (spec §8.3): sections in fill order (graph, affects, decisions, code, records),
+/// sections with no candidates skipped, and every item kept, whole and in the given order (best first). There is no token
+/// budget: the answer holds the whole ranked result set, and a caller pages it. Conflicts and degraded sources never pass
+/// through here.
 /// </summary>
 public static class Packer
 {
-    /// <summary>Packs <paramref name="candidates"/> into <paramref name="budget"/> tokens.</summary>
+    /// <summary>Groups <paramref name="candidates"/> into sections.</summary>
     /// <param name="candidates">The items, best first within each section.</param>
-    /// <param name="budget">The token budget.</param>
-    /// <returns>The sections, the tokens used and whether anything was cut to a reference.</returns>
-    public static Packed Pack(IReadOnlyList<PackCandidate> candidates, int budget)
+    /// <returns>The sections and the tokens their items take; nothing is dropped.</returns>
+    public static Packed Pack(IReadOnlyList<PackCandidate> candidates)
     {
         ArgumentNullException.ThrowIfNull(candidates);
-        var active = ActiveSections(candidates);
-        var (share, remainder) = Split(budget, active.Count);
-        var fills = new FillResult[active.Count];
-        var rollover = 0;
-        for (var index = 0; index < active.Count; index++)
-        {
-            var cap = share + rollover + (index == 0 ? remainder : 0);
-            fills[index] = Fill(active[index], cap);
-            rollover = cap - fills[index].Spent;
-        }
-
-        // Budget a later section left unused goes back to the earlier sections that overflowed, in fill order.
-        var spare = budget - fills.Sum(f => f.Spent);
-        for (var index = 0; index < active.Count && spare > 0; index++)
-        {
-            if (!fills[index].Truncated)
-            {
-                continue;
-            }
-
-            var again = Fill(active[index], fills[index].Spent + spare);
-            spare -= again.Spent - fills[index].Spent;
-            fills[index] = again;
-        }
-
-        var sections = fills.Select(f => f.Section).OfType<Results.ResultSection>().ToList();
-        return new Packed(sections, fills.Sum(f => f.Spent), fills.Any(f => f.Truncated));
-    }
-
-    private static List<SectionCandidates> ActiveSections(IReadOnlyList<PackCandidate> candidates)
-    {
-        var byName = new Dictionary<string, List<PackCandidate>>(StringComparer.Ordinal);
+        var byName = new Dictionary<string, List<Results.ResultItem>>(StringComparer.Ordinal);
         foreach (var candidate in candidates)
         {
             if (!byName.TryGetValue(candidate.Section, out var list))
@@ -57,52 +23,18 @@ public static class Packer
                 byName.Add(candidate.Section, list);
             }
 
-            list.Add(candidate);
+            list.Add(candidate.Item);
         }
 
-        var active = new List<SectionCandidates>();
+        var sections = new List<Results.ResultSection>();
         foreach (var name in Results.ResultSection.FillOrder)
         {
-            if (byName.TryGetValue(name, out var list))
+            if (byName.TryGetValue(name, out var items))
             {
-                active.Add(new SectionCandidates(name, list));
+                sections.Add(new Results.ResultSection(name, items, []));
             }
         }
 
-        return active;
+        return new Packed(sections, sections.Sum(s => s.Items.Sum(i => i.Tokens)));
     }
-
-    private static (int Share, int Remainder) Split(int budget, int count) =>
-        count == 0 ? (0, 0) : (budget / count, budget % count);
-
-    private static FillResult Fill(SectionCandidates section, int cap)
-    {
-        var items = new List<Results.ResultItem>();
-        var more = new List<string>();
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        var spent = 0;
-        var truncated = false;
-        foreach (var candidate in section.Candidates)
-        {
-            if (spent + candidate.Item.Tokens <= cap)
-            {
-                items.Add(candidate.Item);
-                spent += candidate.Item.Tokens;
-                continue;
-            }
-
-            truncated = true;
-            if (seen.Add(candidate.Marker))
-            {
-                more.Add(candidate.Marker);
-            }
-        }
-
-        var packed = items.Count > 0 || more.Count > 0 ? new Results.ResultSection(section.Name, items, more) : null;
-        return new FillResult(packed, spent, truncated);
-    }
-
-    private sealed record SectionCandidates(string Name, IReadOnlyList<PackCandidate> Candidates);
-
-    private sealed record FillResult(Results.ResultSection? Section, int Spent, bool Truncated);
 }

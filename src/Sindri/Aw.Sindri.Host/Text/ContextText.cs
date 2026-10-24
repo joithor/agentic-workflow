@@ -43,7 +43,7 @@ internal static class ContextText
             Section(text, section);
         }
 
-        _ = text.AppendLine(Invariant($"budget: {result.Budget.Used} of {result.Budget.Asked} tokens{(result.Budget.Estimate ? " (estimate)" : string.Empty)}{(result.Truncated ? ", truncated" : string.Empty)}"));
+        _ = text.AppendLine(Invariant($"size: {result.Budget.Used} tokens{(result.Budget.Estimate ? " (estimate)" : string.Empty)}"));
         Citations(text, result.Cites);
         return text.ToString();
     }

@@ -76,7 +76,7 @@ internal static partial class SindriTools
         InputSchema = ContextTools.Schema(new JsonObject
         {
             ["itemId"] = ContextTools.Property("string", ItemIdText),
-            ["limit"] = ContextTools.Property("integer", "How many items to keep from each list; omit for the whole answer", minimum: 1),
+            ["limit"] = ContextTools.Property("integer", "How many items to keep from each list (default 100)", minimum: 1),
             ["offset"] = ContextTools.Property("integer", "How many items to skip in each list; omit for the start", minimum: 0),
         }, required: ["itemId"]),
         Annotations = ReadOnly,
@@ -91,7 +91,7 @@ internal static partial class SindriTools
         {
             ["itemId"] = ContextTools.Property("string", ItemIdText),
             ["after"] = ContextTools.Property("integer", "Return lines after this sequence number (the 'next' of the last page)", minimum: 0),
-            ["limit"] = ContextTools.Property("integer", "How many items to keep from each list; omit for the whole answer", minimum: 1),
+            ["limit"] = ContextTools.Property("integer", "How many items to keep from each list (default 100)", minimum: 1),
             ["offset"] = ContextTools.Property("integer", "How many items to skip in each list; omit for the start", minimum: 0),
         }, required: ["itemId"]),
         Annotations = ReadOnly,
@@ -106,7 +106,7 @@ internal static partial class SindriTools
         InputSchema = ContextTools.Schema(new JsonObject
         {
             ["itemId"] = ContextTools.Property("string", ItemIdText),
-            ["limit"] = ContextTools.Property("integer", "How many items to keep from each list; omit for the whole answer", minimum: 1),
+            ["limit"] = ContextTools.Property("integer", "How many items to keep from each list (default 100)", minimum: 1),
             ["offset"] = ContextTools.Property("integer", "How many items to skip in each list; omit for the start", minimum: 0),
         }),
         Annotations = ReadOnly,
@@ -120,7 +120,7 @@ internal static partial class SindriTools
         InputSchema = ContextTools.Schema(new JsonObject
         {
             ["jobId"] = ContextTools.Property("string", "A job id (JOB-...)"),
-            ["limit"] = ContextTools.Property("integer", "How many items to keep from each list; omit for the whole answer", minimum: 1),
+            ["limit"] = ContextTools.Property("integer", "How many items to keep from each list (default 100)", minimum: 1),
             ["offset"] = ContextTools.Property("integer", "How many items to skip in each list; omit for the start", minimum: 0),
         }, required: ["jobId"]),
         Annotations = ReadOnly,
@@ -138,7 +138,7 @@ internal static partial class SindriTools
             ["kind"] = ContextTools.Property("string", "What you ask for", bounds: new ContextTools.PropertyBounds(Allowed: RequestKinds)),
             ["text"] = ContextTools.Property("string", "What and why, in plain words (1 to 65,536 characters)", bounds: new ContextTools.PropertyBounds(MinLength: 1, MaxLength: 65_536)),
             ["itemId"] = ContextTools.Property("string", $"{ItemIdText}; left out, the request concerns the repo of this registration"),
-            ["limit"] = ContextTools.Property("integer", "How many items to keep from each list; omit for the whole answer", minimum: 1),
+            ["limit"] = ContextTools.Property("integer", "How many items to keep from each list (default 100)", minimum: 1),
             ["offset"] = ContextTools.Property("integer", "How many items to skip in each list; omit for the start", minimum: 0),
         }, required: ["kind", "text"]),
         Annotations = new ToolAnnotations { ReadOnlyHint = false, DestructiveHint = false, IdempotentHint = false, OpenWorldHint = false },
@@ -259,5 +259,5 @@ internal static partial class SindriTools
     }
 
     /// <summary>The page, or SND-CONTEXT-022 / SND-CONTEXT-006. Unknown names are left to the tool's own binder.</summary>
-    private static Aw.Kernel.Result<McpWindow?> ReadPage(IDictionary<string, JsonElement>? arguments) => McpArguments.ReadPage(arguments);
+    private static Aw.Kernel.Result<McpWindow> ReadPage(IDictionary<string, JsonElement>? arguments) => McpArguments.ReadPage(arguments);
 }

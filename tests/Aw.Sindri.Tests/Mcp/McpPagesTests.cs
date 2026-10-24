@@ -38,16 +38,79 @@ public sealed class McpPagesTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_page_is_a_limit_of_1_or_more_and_an_offset_of_0_or_more()
+    public void A_page_is_an_optional_limit_of_1_or_more_and_an_optional_offset_of_0_or_more()
     {
-        Assert.Null(McpArguments.ReadPage(arguments: null).Value);
+        Assert.Equal(new McpWindow(McpWindow.DefaultLimit, 0), McpArguments.ReadPage(arguments: null).Value);
         Assert.Equal(new McpWindow(20, 0), McpArguments.ReadPage(Args("""{"limit":20}""")).Value);
         Assert.Equal(new McpWindow(20, 3), McpArguments.ReadPage(Args("""{"limit":20,"offset":3}""")).Value);
+        Assert.Equal(new McpWindow(McpWindow.DefaultLimit, 1), McpArguments.ReadPage(Args("""{"offset":1}""")).Value);
 
-        Assert.Equal("SND-CONTEXT-006", McpArguments.ReadPage(Args("""{"offset":1}""")).Error.Code);
         Assert.Equal("SND-CONTEXT-006", McpArguments.ReadPage(Args("""{"limit":0}""")).Error.Code);
+        Assert.Equal("SND-CONTEXT-006", McpArguments.ReadPage(Args("""{"limit":-3}""")).Error.Code);
+        Assert.Equal("SND-CONTEXT-006", McpArguments.ReadPage(Args("""{"offset":-1}""")).Error.Code);
         Assert.Equal("SND-CONTEXT-022", McpArguments.ReadPage(Args("""{"limit":"2"}""")).Error.Code);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Arrays_inside_an_item_are_never_sliced()
+    {
+        var answer = Json("""{ "sections": [{ "name": "graph", "items": [ {"id":"a","evidence":["e1","e2","e3"]}, {"id":"b","evidence":["e4","e5"]}, {"id":"c","evidence":["e6"]} ], "more": [] }], "edges": ["x", "y", "z"] }""");
+
+        var page = McpPages.Apply(answer, new McpWindow(Limit: 1, Offset: 1));
+
+        var items = page.GetProperty("sections")[0].GetProperty("items");
+        Assert.Equal(1, items.GetArrayLength());
+        Assert.Equal("b", items[0].GetProperty("id").GetString());
+        Assert.Equal(["e4", "e5"], items[0].GetProperty("evidence").EnumerateArray().Select(e => e.GetString()));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Each_top_level_list_has_its_own_window_so_a_short_list_does_not_move_the_others()
+    {
+        var answer = Json("""{ "conflicts": ["c0"], "suggestedAnchors": ["s0", "s1", "s2", "s3"], "degraded": [] }""");
+
+        var first = McpPages.Apply(answer, new McpWindow(Limit: 2, Offset: 0));
+        var second = McpPages.Apply(answer, new McpWindow(Limit: 2, Offset: 2));
+
+        Assert.Equal(["c0"], Strings(first, "conflicts"));
+        Assert.Equal(["s0", "s1"], Strings(first, "suggestedAnchors"));
+        Assert.Empty(Strings(second, "conflicts"));
+        Assert.Equal(["s2", "s3"], Strings(second, "suggestedAnchors"));
+        Assert.True(first.GetProperty("page").GetProperty("more").GetBoolean());
+        Assert.False(second.GetProperty("page").GetProperty("more").GetBoolean());
+        var lists = first.GetProperty("page").GetProperty("lists");
+        Assert.Equal((1, false, 4, true), (lists.GetProperty("conflicts").GetProperty("total").GetInt32(), lists.GetProperty("conflicts").GetProperty("more").GetBoolean(),
+            lists.GetProperty("suggestedAnchors").GetProperty("total").GetInt32(), lists.GetProperty("suggestedAnchors").GetProperty("more").GetBoolean()));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Paging_a_query_answer_reaches_every_item_once_and_more_is_truthful()
+    {
+        var items = string.Join(',', Enumerable.Range(0, 250).Select(i => $"{{\"id\":\"i{i}\",\"evidence\":[\"a\",\"b\"]}}"));
+        var answer = Json("{\"sections\":[{\"name\":\"graph\",\"items\":[" + items + "],\"more\":[]},{\"name\":\"records\",\"items\":[{\"id\":\"r0\"}],\"more\":[]}],\"truncated\":false}");
+
+        var seen = new List<string>();
+        var offset = 0;
+        var pages = 0;
+        while (true)
+        {
+            var page = McpPages.Apply(answer, new McpWindow(Limit: 100, Offset: offset));
+            seen.AddRange(page.GetProperty("sections")[0].GetProperty("items").EnumerateArray().Select(i => i.GetProperty("id").GetString()!));
+            pages++;
+            if (!page.GetProperty("page").GetProperty("more").GetBoolean())
+            {
+                break;
+            }
+
+            offset += 100;
+        }
+
+        Assert.Equal(3, pages);
+        Assert.Equal(Enumerable.Range(0, 250).Select(i => $"i{i}"), seen);
+    }
+
+    private static string[] Strings(JsonElement page, string list) =>
+        [.. page.GetProperty(list).EnumerateArray().Select(item => item.GetString()!)];
 
     private static string[] Names(JsonElement page, string list, string property = "name") =>
         [.. page.GetProperty(list).EnumerateArray().Select(item => item.GetProperty(property).GetString()!)];
