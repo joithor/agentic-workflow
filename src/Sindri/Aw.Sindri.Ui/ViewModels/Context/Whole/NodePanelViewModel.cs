@@ -1,0 +1,235 @@
+using Aw.Kernel;
+using Aw.Sindri.Ui.Api.Context;
+using Aw.Sindri.Ui.Platform;
+
+namespace Aw.Sindri.Ui.ViewModels.Context.Whole;
+
+/// <summary>
+/// The whole map's side panel for the node a click pinned: its kind and title, where it came from (with a link when one is served), a short
+/// description, and its links grouped by band. Source and description are optional; when the control plane does not serve them nothing shows.
+/// </summary>
+internal sealed class NodePanelViewModel : ObservableObject
+{
+    private static readonly string[] _knownKinds = ["decision", "record", "feature", "surface", "action", "thing", "flow", "code"];
+
+    private readonly Func<string, (string Label, string Kind)?> _lookup;
+    private readonly Action<string> _jump;
+    private CancellationTokenSource? _reading;
+    private Uri? _link;
+
+    internal NodePanelViewModel(Func<string, (string Label, string Kind)?> lookup, Action<string> jump)
+    {
+        (_lookup, _jump) = (lookup, jump);
+    }
+
+    /// <summary>Reads a node; null while the page has no connection. Set by the page.</summary>
+    internal Func<string, CancellationToken, Task<Result<NodeView>>?>? Loader { get; set; }
+
+    /// <summary>Opens a link; set by the page.</summary>
+    internal ILauncher Launcher { get; set; } = NullLauncher.Instance;
+
+    /// <summary>Gets a value indicating whether the panel shows.</summary>
+    public bool IsOpen { get; private set; }
+
+    /// <summary>Gets a value indicating whether the read is in flight.</summary>
+    public bool IsLoading { get; private set; }
+
+    /// <summary>Gets a value indicating whether the read failed.</summary>
+    public bool IsFailed { get; private set; }
+
+    /// <summary>Gets the key of the node the panel is about; null when closed.</summary>
+    internal string? Key { get; private set; }
+
+    /// <summary>Gets the node's kind, as served; empty until read.</summary>
+    public string Kind { get; private set; } = string.Empty;
+
+    /// <summary>Gets the node's label; empty until read.</summary>
+    public string Title { get; private set; } = string.Empty;
+
+    /// <summary>Gets the source line ("ticket: LIN-12"); empty when none is served.</summary>
+    public string SourceText { get; private set; } = string.Empty;
+
+    /// <summary>Gets a value indicating whether a source is served.</summary>
+    public bool HasSource => SourceText.Length > 0;
+
+    /// <summary>Gets a value indicating whether the source has a link to open.</summary>
+    public bool HasLink => _link is not null;
+
+    /// <summary>Gets the short description; empty when none is served.</summary>
+    public string Description { get; private set; } = string.Empty;
+
+    /// <summary>Gets a value indicating whether a description is served.</summary>
+    public bool HasDescription => Description.Length > 0;
+
+    /// <summary>Gets the links, grouped by band; empty bands are left out.</summary>
+    public IReadOnlyList<NodeEdgeGroupViewModel> Groups { get; private set; } = [];
+
+    /// <summary>Gets a value indicating whether the node has any link.</summary>
+    public bool HasGroups => Groups.Count > 0;
+
+    /// <summary>Gets the panel's name.</summary>
+    public string PanelName { get; } = Labels.ContextNodePanelName;
+
+    /// <summary>Gets the close button's words.</summary>
+    public string CloseText { get; } = Labels.ContextNodePanelClose;
+
+    /// <summary>Gets the loading line.</summary>
+    public string LoadingText { get; } = Labels.ContextNodePanelLoading;
+
+    /// <summary>Gets the failure line.</summary>
+    public string FailedText { get; } = Labels.ContextNodePanelFailed;
+
+    /// <summary>Gets the heading over the links.</summary>
+    public string LinksText { get; } = Labels.ContextNodePanelLinks;
+
+    /// <summary>Gets the open-source button's words.</summary>
+    public string OpenSourceText { get; } = Labels.ContextNodePanelOpenSource;
+
+    /// <summary>The band a kind sits in.</summary>
+    /// <param name="kind">The node kind.</param>
+    /// <returns>The band; Other for a kind this build does not know.</returns>
+    internal static NodePanelBand BandOf(string kind) =>
+        _knownKinds.Contains(kind, StringComparer.Ordinal)
+            ? WholeMapLayout.BandOf(kind) switch
+            {
+                WholeBand.Intent => NodePanelBand.Why,
+                WholeBand.Code => NodePanelBand.Code,
+                WholeBand.Product => NodePanelBand.Product,
+                _ => NodePanelBand.Other,
+            }
+            : NodePanelBand.Other;
+
+    /// <summary>Opens the panel on a node and reads it.</summary>
+    /// <param name="key">The node's key.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>When the panel shows the answer or the failure.</returns>
+    internal Task Open(string key, CancellationToken cancellationToken = default) => Reading = Read(key, cancellationToken);
+
+    /// <summary>Gets the latest read, for a caller that wants to wait for it.</summary>
+    internal Task Reading { get; private set; } = Task.CompletedTask;
+
+    private async Task Read(string key, CancellationToken cancellationToken)
+    {
+        _reading?.Cancel();
+        var reading = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _reading = reading;
+        var known = _lookup(key);
+        (Key, IsOpen, IsLoading, IsFailed) = (key, true, true, false);
+        Clear();
+        (Kind, Title) = known is { } k ? (k.Kind, k.Label) : (KindOf(key), key);
+        Changed();
+        var read = Loader?.Invoke(key, reading.Token);
+        Result<NodeView>? answer = null;
+        try
+        {
+            answer = read is null ? null : await read.ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        if (reading.IsCancellationRequested || !ReferenceEquals(_reading, reading))
+        {
+            return;   // another node was opened, or the panel closed
+        }
+
+        if (answer is { IsSuccess: true } ok)
+        {
+            Fill(ok.Value);
+        }
+        else
+        {
+            (IsLoading, IsFailed) = (false, true);
+        }
+
+        Changed();
+    }
+
+    /// <summary>Closes the panel (the close button, Esc).</summary>
+    /// <returns>True when it was open.</returns>
+    internal bool Close()
+    {
+        if (!IsOpen)
+        {
+            return false;
+        }
+
+        _reading?.Cancel();
+        _reading = null;
+        (Key, IsOpen, IsLoading, IsFailed) = (null, false, false, false);
+        Clear();
+        Changed();
+        return true;
+    }
+
+    /// <summary>Opens the source's link in the system's browser.</summary>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <returns>When the system answered.</returns>
+    internal async Task OpenSource(CancellationToken cancellationToken = default)
+    {
+        if (_link is { } link)
+        {
+            _ = await Launcher.OpenUri(link, cancellationToken).ConfigureAwait(true);
+        }
+    }
+
+    private static string KindOf(string key) => key.IndexOf(':', StringComparison.Ordinal) is var i and > 0 ? key[..i] : string.Empty;
+
+    private void Clear()
+    {
+        (Kind, Title, SourceText, Description, _link) = (string.Empty, string.Empty, string.Empty, string.Empty, null);
+        Groups = [];
+    }
+
+    private void Fill(NodeView view)
+    {
+        var node = view.Node;
+        (IsLoading, IsFailed) = (false, false);
+        (Kind, Title) = (node.Kind, node.Label);
+        Description = node.Description?.Trim() ?? string.Empty;
+        if (node.Source is { } source)
+        {
+            var text = string.IsNullOrWhiteSpace(source.Title) ? source.Ref : source.Title;
+            SourceText = Labels.ContextNodePanelSource(source.Kind, text);
+            _link = LinkOf(source.Url);
+        }
+
+        var rows = view.Out.Select(e => Row(e.To, e.Type, outgoing: true)).Concat(view.In.Select(e => Row(e.From, e.Type, outgoing: false)));
+        Groups =
+        [
+            .. rows.GroupBy(r => r.Band)
+                .OrderBy(g => g.Key)
+                .Select(g => new NodeEdgeGroupViewModel(TitleOf(g.Key), [.. g.Select(r => r.Row)])),
+        ];
+    }
+
+    private (NodePanelBand Band, NodeEdgeRowViewModel Row) Row(string other, string type, bool outgoing)
+    {
+        var known = _lookup(other);
+        var kind = known?.Kind ?? KindOf(other);
+        var label = known?.Label ?? other;
+        return (BandOf(kind), new NodeEdgeRowViewModel(other, Labels.ContextNodePanelEdge(label, type, outgoing), _jump));
+    }
+
+    // Only a web link is opened; any other scheme is shown as the plain reference.
+    private static Uri? LinkOf(string? url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var uri) && (string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal) || string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.Ordinal)) ? uri : null;
+
+    private static string TitleOf(NodePanelBand band) => band switch
+    {
+        NodePanelBand.Why => Labels.ContextMapBandIntent,
+        NodePanelBand.Product => Labels.ContextMapBandProduct,
+        NodePanelBand.Code => Labels.ContextMapBandCode,
+        NodePanelBand.Other => Labels.ContextNodePanelOther,
+        _ => throw new ArgumentOutOfRangeException(nameof(band), band, null),
+    };
+
+    private void Changed()
+    {
+        foreach (var name in (string[])[nameof(IsOpen), nameof(IsLoading), nameof(IsFailed), nameof(Kind), nameof(Title), nameof(SourceText), nameof(HasSource), nameof(HasLink), nameof(Description), nameof(HasDescription), nameof(Groups), nameof(HasGroups)])
+        {
+            OnChanged(name);
+        }
+    }
+}
