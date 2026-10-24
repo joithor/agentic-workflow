@@ -66,7 +66,7 @@ public sealed class HealthTests
 
         Assert.Equal(new HeavySlots(3, 2, 5, A.At(50)), health.Heavy);
         Assert.Equal("heavy reservation: 2 of 3 slots (queue depth 5) - set it with meta-gate-reserve 5", health.Heavy!.Line());
-        Assert.Equal("builders: 4 per lane (disk 132 GB free, mem 15 GB available)", health.Builders!.Line());
+        Assert.Equal("builders: 12 per lane (disk 132 GB free, mem 15 GB available)", health.Builders!.Line());
         Assert.False(health.Attention);
     }
 
@@ -108,7 +108,7 @@ public sealed class HealthTests
 
         var health = await Check();
 
-        Assert.Equal(4, health.Builders!.PerLane);
+        Assert.Equal(42, health.Builders!.PerLane);   // no cap: (200 GB - 30 GB floor) / (1 lane x 4 GB)
         Assert.Null(health.Heavy);
     }
 

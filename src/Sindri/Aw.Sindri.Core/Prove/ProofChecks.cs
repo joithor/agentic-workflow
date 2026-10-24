@@ -35,7 +35,7 @@ public static partial class ProofChecks
     /// <param name="acceptance">The phase packet's acceptance.json.</param>
     /// <returns>The ids.</returns>
     public static IReadOnlyList<string> LiveItems(JsonNode acceptance) =>
-        [.. (acceptance?["items"] as JsonArray ?? []).OfType<JsonObject>().Where(static i => (string?)i["status"] != "superseded").Select(static i => (string?)i["id"] ?? string.Empty)];
+        [.. ((acceptance as JsonObject)?["items"] as JsonArray ?? []).OfType<JsonObject>().Where(static i => (string?)i["status"] != "superseded").Select(static i => (string?)i["id"] ?? string.Empty)];
 
     private static void Artifacts(ProofFacts facts, List<ProofFinding> failures, List<string> unrunnable)
     {
@@ -104,7 +104,7 @@ public static partial class ProofChecks
     }
 
     private static IEnumerable<(string Item, string Signal)> BaseAndHead(ProofFacts facts) =>
-        LiveItems(facts.Acceptance).SelectMany(id => (facts.Signals?["signals"]?[id] as JsonArray ?? []).OfType<JsonObject>()
+        LiveItems(facts.Acceptance).SelectMany(id => PhaseSignals.Of(facts.Signals, id)
             .Where(static s => (string?)s["runsAt"] == "base+head").Select(s => (id, (string?)s["id"] ?? string.Empty)));
 
     // fact:redTests (spec A.7, §7.2) is parsed by RedTestsFact, as build's red-check parses it. BLD-RED-001 (the tests failed) is build's red-check.

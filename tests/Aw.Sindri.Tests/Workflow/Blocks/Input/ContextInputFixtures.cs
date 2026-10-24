@@ -23,9 +23,9 @@ internal static class ContextInputFixtures
         var nodes = anchors.Select(a => new LensAnchor(NodeKey.From(a), a, NodeKind.Feature, Trust.Trusted)).ToArray();
         return new LensesSetView(2, nodes, [], "v3", Draft: false, 2, DateTimeOffset.UnixEpoch,
             new LensBands(
-                new IntentBand([], [], new IntentCounts(0, 0, Orphaned: null), Truncated: false),
-                new ProductBand([.. nodes.Select(n => new LensItem(n.Key, n.Label, NodeKind.Feature, Provenance.Human, 1, Confirmed: true, Trust.Trusted))], [], [], new ProductCounts(nodes.Length, 0), [], Truncated: false),
-                new CodeBand([], LensSymbols.Unavailable, new CodeCounts(0, 0, 0), Truncated: false)),
+                new IntentBand([], [], new IntentCounts(0, 0, Orphaned: null)),
+                new ProductBand([.. nodes.Select(n => new LensItem(n.Key, n.Label, NodeKind.Feature, Provenance.Human, 1, Confirmed: true, Trust.Trusted))], [], [], new ProductCounts(nodes.Length, 0), []),
+                new CodeBand([], LensSymbols.Unavailable, new CodeCounts(0, 0, 0))),
             [], [],
             new LensCoverage(nodes.Length, new CoverageIntent(0, nodes.Length), new CoverageProduct(nodes.Length, nodes.Length), new CoverageCode(0, nodes.Length, "file", 0), []),
             new LensSearched([], "v3", 2, [], [], new SearchedBands(new BandSearched(Empty: true), new BandSearched(Empty: false), new BandSearched(Empty: true))),

@@ -51,7 +51,7 @@ public sealed class ProveEvidenceRunnerTests
     {
         var files = new InMemoryBriefFiles()
             .With("acceptance.json", """{"schemaVersion":1,"parent":"sha256:aa","items":[{"id":"AC-1","text":"one","status":"failing","evidence":[]}]}""")
-            .With("signals.json", """{"schemaVersion":1,"signals":{"AC-1":[{"id":"SG-1a","kind":"test","statement":"s1","runsAt":"head"}]}}""")
+            .With("signals.json", """{"schemaVersion":1,"signals":[{"item":"AC-1","id":"SG-1a","kind":"test","statement":"s1","runs":"head"}]}""")
             .With("phase.json", """{"kind":"feature"}""")
             .With("holdout.json", """{"schemaVersion":1,"setHash":"sha256:aa","count":2}""")
             .With("packet.json", """{"schemaVersion":1,"kind":"phase","id":"line-p1","repo":"owner/name","baseSha":"1111111111111111111111111111111111111111","status":"frozen","hash":null,"links":{}}""");
