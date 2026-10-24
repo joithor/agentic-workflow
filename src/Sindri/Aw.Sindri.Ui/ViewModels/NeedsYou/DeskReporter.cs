@@ -13,6 +13,9 @@ namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 /// </summary>
 internal sealed class DeskReporter(ISindriApi api, Func<Uri?> apiUrl, ILauncher? launcher = null)
 {
+    /// <summary>Opens a link or a file for a review button.</summary>
+    internal ILauncher Launcher { get; } = launcher ?? NullLauncher.Instance;
+
     private const string AnswersKey = "fact:answers";
     private readonly HashSet<string> _inFlight = new(StringComparer.Ordinal);
 
@@ -39,7 +42,7 @@ internal sealed class DeskReporter(ISindriApi api, Func<Uri?> apiUrl, ILauncher?
         var state = await StateOf(url, read.Value).ConfigureAwait(true);
         var card = await MergeCardOf(url, read.Value).ConfigureAwait(true);
         var questions = await QuestionsOf(url, read.Value).ConfigureAwait(true);
-        return new DeskTarget(instanceId, desk?.Run ?? string.Empty, complete, state?.Why, OutcomeText(state, "approve"), OutcomeText(state, "revise"), desk?.Recommended, card, questions) { Verbs = verbs };
+        return Target(new DeskTarget(instanceId, desk?.Run ?? string.Empty, complete, state?.Why, OutcomeText(state, "approve"), OutcomeText(state, "revise"), desk?.Recommended, card, questions) { Verbs = verbs }, read.Value);
     }
 
     // The ask step's questions; null for a desk that does not ask.
@@ -82,6 +85,15 @@ internal sealed class DeskReporter(ISindriApi api, Func<Uri?> apiUrl, ILauncher?
         return Encoding.UTF8.GetString(stream.ToArray());
     }
 
+    // What the step asks the person to read, the session that runs it and the code behind its state.
+    private static DeskTarget Target(DeskTarget target, InstanceDetail detail) => target with
+    {
+        Address = detail.Address,
+        Reviews = detail.Current.Desk?.Reviews ?? [],
+        SessionRef = detail.Current.Status.Run?.Session?.Ref(),
+        ReasonCode = detail.Current.Status.ReasonCode,
+    };
+
     // The recipe state the instance is in, for its why and its outcomes; null when the recipe cannot be read.
     private async Task<RecipeStateView?> StateOf(Uri url, InstanceDetail detail)
     {
@@ -93,12 +105,12 @@ internal sealed class DeskReporter(ISindriApi api, Func<Uri?> apiUrl, ILauncher?
     private async Task<MergeCardViewModel?> MergeCardOf(Uri url, InstanceDetail detail) =>
         detail.Facts.Any(f => string.Equals(f.Key, PrStatusReader.Key, StringComparison.Ordinal)) ? await MergeCard(url, detail.Id).ConfigureAwait(true) : null;
 
-    // The recipe verbs of the instance: one per distinct verb the engine serves, in its order. The merge asks first until the engine marks which verbs are destructive.
+    // The recipe verbs of the instance: one per distinct verb the engine serves, in its order.
     private static List<DeskVerb> VerbsOf(IReadOnlyList<AllowedCommandView>? commands) =>
         [.. (commands ?? [])
             .Where(c => string.Equals(c.ActionId, "ApplyCommand:command", StringComparison.Ordinal) && !string.IsNullOrWhiteSpace(c.Verb))
             .DistinctBy(c => c.Verb, StringComparer.Ordinal)
-            .Select(c => new DeskVerb(c.Verb!, c.Cli, c.Destructive ?? string.Equals(c.Verb, "merge", StringComparison.Ordinal)))];   // why: filtered to a verb above
+            .Select(c => new DeskVerb(c.Verb!, c.Cli, c.Destructive == true))];   // why: filtered to a verb above
 
     /// <summary>Sends a recipe verb, once: a press while another report for the instance is in flight does nothing.</summary>
     /// <param name="target">The shown request.</param>

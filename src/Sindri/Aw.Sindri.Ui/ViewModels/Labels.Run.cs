@@ -116,7 +116,7 @@ internal static partial class Labels
     }
 
     /// <summary>The visible words of the link from an agent Step to its session.</summary>
-    internal const string SessionLink = "Agent session ▸";
+    internal const string SessionLink = "Open the agent session";
 
     /// <summary>The session link's accessible name.</summary>
     /// <param name="sessionRef">The session's ref.</param>
