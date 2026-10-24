@@ -3,7 +3,6 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 using Aw.Context.Testing.Engine;
-using Aw.Context.Testing.Map;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Context.Tests.QueryContext;
