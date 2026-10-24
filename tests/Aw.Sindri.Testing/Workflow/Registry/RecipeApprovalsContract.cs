@@ -47,6 +47,22 @@ public abstract class RecipeApprovalsContract
         Expect.Equal(2, (await approvals.History(step.Id, 1, step.Hash, Token)).Value.Count);
     }
 
+    /// <summary>A block pin keeps its interface hash through the store; one recorded without it reads back without (owner q93, 2026-10-23).</summary>
+    [Fact]
+    public async Task Block_pins_keep_their_interface_hash()
+    {
+        var approvals = Create();
+        var step = RegistryData.Recipe("workflow.step");
+        var pins = new RecipePins(
+            [new BlockPin(BlockId.From("step.produce"), RegistryData.Descriptor("v1"), RegistryData.Descriptor("shape")), new BlockPin(BlockId.From("step.verify"), RegistryData.Descriptor("v1"))], []);
+        _ = await approvals.Approve(RegistryData.Approval(step, pins), Token);
+
+        var read = (await approvals.Latest(step.Id, 1, step.Hash, Token)).Value!.Pins.Blocks;
+
+        Expect.Equal(RegistryData.Descriptor("shape"), read[0].Interface);
+        Expect.True(read[1].Interface is null);
+    }
+
     /// <summary>A revoked hash can't be approved again (SND-RECIPE-005), and its revocation is found.</summary>
     [Fact]
     public async Task Revoked_hash_cannot_be_approved_again()
