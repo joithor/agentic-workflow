@@ -14,8 +14,9 @@ namespace Aw.Sindri.Features.CodeIndexReads;
 /// answers the same not-found as one never built and the status lists nothing else (spec §7.3).
 /// </summary>
 /// <param name="approvals">The approved profiles.</param>
+/// <param name="live">The live profile file: its repos the approved profile doesn't name are indexed too (owner q102, CIX-L59).</param>
 /// <param name="callers">The current caller.</param>
-internal sealed class CodeIndexScopes(IApprovedProfile approvals, ICallerContextAccessor callers)
+internal sealed class CodeIndexScopes(IApprovedProfile approvals, IProfileSource live, ICallerContextAccessor callers)
 {
     /// <summary>The scope of the call running now.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
@@ -30,6 +31,14 @@ internal sealed class CodeIndexScopes(IApprovedProfile approvals, ICallerContext
 
         return For(loaded.Profile, callers.Current);
     }
+
+    /// <summary>The scope an approved profile, the live profile and a caller make (owner q102, CIX-L59): the approved repos, then every live repo the approved profile doesn't name.</summary>
+    /// <param name="approved">The approved profile: the only source of the top-level 'index:' section (deny globs, embeddings address).</param>
+    /// <param name="live">The live profile, or null when there is none.</param>
+    /// <param name="caller">The Sindri caller, or null for an in-process service.</param>
+    /// <returns>The scope; SND-CODEIDX-001 when a repo's settings are invalid.</returns>
+    internal static Result<CodeIndexScope> For(SindriProfile approved, SindriProfile? live, CallerContext? caller)
+        => throw new NotSupportedException();
 
     /// <summary>The scope a profile and a caller make.</summary>
     /// <param name="profile">The approved profile.</param>

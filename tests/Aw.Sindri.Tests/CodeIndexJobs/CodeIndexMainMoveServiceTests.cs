@@ -5,6 +5,7 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
+using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Features.CodeIndexJobs;
 using Microsoft.Extensions.Logging;
@@ -50,6 +51,18 @@ public sealed class CodeIndexMainMoveServiceTests
         Assert.False(result.Value.Idle);
         Assert.Equal([new BuildCodeIndexRequest("demo", CodeIndexJobsRig.New.Value)], _start.Requests);
         Assert.Equal(["service:code-index-main-move"], _start.Actors);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_repo_added_to_the_live_profile_only_is_built_on_the_next_tick_owner_q102_CIX_L59()
+    {
+        var live = new SindriProfile(1, "thor", Repos: [new RepoEntry("demo", "/work/demo"), new RepoEntry("fresh", "/work/fresh")]);
+        _rig.Harness.Profiles.Live = new LoadedProfile(live, "live-hash", "/home/profile.yaml");
+        _ = _rig.Heads.With(CodeIndexJobsRig.Fresh, CodeIndexJobsRig.New, onDefaultBranch: true);
+
+        _ = await Run();
+
+        Assert.Equal([new BuildCodeIndexRequest("fresh", CodeIndexJobsRig.New.Value)], _start.Requests);
     }
 
     [Fact, Trait("Lane", "unit")]
