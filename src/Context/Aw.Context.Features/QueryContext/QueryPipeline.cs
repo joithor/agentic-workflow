@@ -208,11 +208,14 @@ internal sealed partial class QueryPipeline(IScrubberFactory scrubberFactory, II
     {
         var (sources, ingest) = call;
         var fetched = new List<FetchedRecord>();
-        foreach (var item in items)
+        var gone = new Dictionary<SourceId, int>();
+        for (var next = 0; next < items.Count; next++)
         {
+            var item = items[next];
             if (deadline - clock.GetUtcNow() <= TimeSpan.Zero)
             {
-                break;   // no claim without a citation: what wasn't fetched in time isn't shown (search already answered)
+                NoteUnread(items.Skip(next), degraded);   // no claim without a citation: what wasn't fetched in time isn't shown, but the answer says so
+                break;
             }
 
             var hit = item.Hits[0];
@@ -220,7 +223,11 @@ internal sealed partial class QueryPipeline(IScrubberFactory scrubberFactory, II
             var record = await SourceCalls.Within(source, (deadline - clock.GetUtcNow(), clock), t => source.Fetch(hit.Ref, t), ct).ConfigureAwait(false);
             if (record.IsError)
             {
-                if (record.Error.Kind != ErrorKind.NotFound && degraded.TrueForAll(d => d.Source != hit.Ref.Source))
+                if (record.Error.Kind == ErrorKind.NotFound)
+                {
+                    gone[hit.Ref.Source] = gone.GetValueOrDefault(hit.Ref.Source) + 1;
+                }
+                else if (degraded.TrueForAll(d => d.Source != hit.Ref.Source))
                 {
                     degraded.Add(SourceCalls.Degraded(hit.Ref.Source, record.Error, clock.GetUtcNow()));
                 }
@@ -236,7 +243,26 @@ internal sealed partial class QueryPipeline(IScrubberFactory scrubberFactory, II
             fetched.Add(new FetchedRecord(item, source, ingest.Clean(record.Value.Title, singleLine: true), cut, aliases));
         }
 
+        foreach (var (id, count) in gone.Where(g => degraded.TrueForAll(d => d.Source != g.Key) && !fetched.Exists(f => f.Source.Describe().Id == g.Key)))
+        {
+            degraded.Add(new DegradedSource(id, ContextErrors.SourceUnavailable.Code,
+                $"{id.Value} found {count} matching record(s), but each was gone (not found) when read, so none is shown: check the source's index against its documents (sindri context sources status)", clock.GetUtcNow()));
+        }
+
         return fetched;
+    }
+
+    /// <summary>Tells, per source, that records its search found were not read because the query's deadline ran out first: a missing record is never read as no match.</summary>
+    private void NoteUnread(IEnumerable<FusedItem> unread, List<DegradedSource> degraded)
+    {
+        foreach (var group in unread.GroupBy(i => i.Hits[0].Ref.Source))
+        {
+            if (degraded.TrueForAll(d => d.Source != group.Key))
+            {
+                degraded.Add(new DegradedSource(group.Key, ContextErrors.SourceUnavailable.Code,
+                    $"{group.Key.Value} missed the query's deadline: {group.Count()} matching record(s) were found but not read in time, so they are not shown (raise 'context.deadline')", clock.GetUtcNow()));
+            }
+        }
     }
 
     /// <summary>
