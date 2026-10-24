@@ -56,7 +56,7 @@ public sealed class ContextRoutesFenceApiTests : IDisposable
         var human = await host.Http.Ask(Get(Url, Human(host.Token.Value)));
 
         Assert.True(session.Status == System.Net.HttpStatusCode.OK && human.Status == System.Net.HttpStatusCode.OK, $"{session.Status} {session.Body} / {human.Status} {human.Body}");
-        Assert.All(new[] { session.Body, human.Body }, body =>
+        Assert.All([session.Body, human.Body], body =>
         {
             Assert.Contains("\"key\":\"feature:a\"", body, StringComparison.Ordinal);
             Assert.DoesNotContain("Drafted B", body, StringComparison.Ordinal);
