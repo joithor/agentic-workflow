@@ -55,8 +55,7 @@ public sealed class FileMapPagingTests
 
     private static (FileMapViewModel Files, FakeSindriApi Api, FakeTimeProvider Clock) Paged(bool pages = true)
     {
-        var api = new FakeSindriApi();
-        api.FileMapResponder = q => Page(q, q.Path ?? string.Empty, pages);
+        var api = new FakeSindriApi { FileMapResponder = q => Page(q, q.Path ?? string.Empty, pages) };
         var clipboard = new FakeClipboard();
         var clock = new FakeTimeProvider(A.Noon);
         return (new FileMapViewModel(new ContextPorts(api, () => new Uri("http://127.0.0.1:1/"), clipboard, clock, new CatalogViewModel(clipboard, clock), _ => { })), api, clock);
@@ -99,7 +98,7 @@ public sealed class FileMapPagingTests
         _ = files.Rows[360];
         await Until(() => files.Loaded == Total);
 
-        Assert.Equal([null, "src/tabs/" + Name(199), "src/tabs/" + Name(399)], api.FileMapQueries.Select(q => q.Cursor));
+        Assert.Equal<string?>([null, "src/tabs/" + Name(199), "src/tabs/" + Name(399)], api.FileMapQueries.Select(q => q.Cursor), StringComparer.Ordinal);
         Assert.Equal(Total, files.Rows.Count);
         Assert.Equal(Name(450), files.Rows[450].Name);
         Assert.Equal(3, api.FileMapQueries.Count);
@@ -113,7 +112,7 @@ public sealed class FileMapPagingTests
 
         _ = files.Rows[100];
         _ = files.Rows[149];
-        Assert.Single(api.FileMapQueries);
+        _ = Assert.Single(api.FileMapQueries);
 
         _ = files.Rows[150];
         Assert.Equal(2, api.FileMapQueries.Count);
@@ -148,8 +147,8 @@ public sealed class FileMapPagingTests
         await files.Load("src/tabs/", Token);
 
         Assert.Equal(Total, files.Rows.Count);
-        Assert.All(files.Rows, r => Assert.NotEqual(Labels.ContextFilesLoading, r.Name));
-        Assert.Single(api.FileMapQueries);
+        Assert.All(files.Rows, r => Assert.False(string.Equals(Labels.ContextFilesLoading, r.Name, StringComparison.Ordinal)));
+        _ = Assert.Single(api.FileMapQueries);
     }
 
     [Fact]
