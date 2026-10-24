@@ -101,6 +101,17 @@ public sealed class QueryRulesTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_lenses_page_is_a_limit_of_1_or_more_and_an_offset_of_0_or_more()
+    {
+        Assert.Null(QueryRules.CheckPage(limit: null, offset: null));
+        Assert.Null(QueryRules.CheckPage(20, offset: null));
+        Assert.Null(QueryRules.CheckPage(20, 0));
+        Assert.Equal(ContextErrors.QueryInvalid.Code, QueryRules.CheckPage(limit: null, offset: 1)!.Code);
+        Assert.Equal(ContextErrors.QueryInvalid.Code, QueryRules.CheckPage(0, 0)!.Code);
+        Assert.Equal(QueryRules.PageMessage, QueryRules.CheckPage(10, -1)!.Message);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_symbol_inside_a_file_is_unknown_until_the_code_index_phase() =>
         Assert.Equal(ContextErrors.UnknownAnchor.Code, QueryRules.Check(new ContextQuery(Text: null, Node: null, Item: null, Symbol: "src/a.ts#render"), new()).Error.Code);
 

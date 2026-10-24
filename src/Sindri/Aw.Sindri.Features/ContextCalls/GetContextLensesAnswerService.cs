@@ -1,3 +1,4 @@
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Lenses;
 using Aw.Kernel;
 using Aw.Kernel.Services;
@@ -10,14 +11,25 @@ internal sealed class GetContextLensesAnswerService(IService<GetContextLensesReq
 {
     public async ValueTask<Result<LensesAnswer>> Handle(GetContextLensesAnswerRequest request, CancellationToken cancellationToken)
     {
+        if (QueryRules.CheckPage(request.Limit, request.Offset) is { } refused)
+        {
+            return refused;
+        }
+
         var anchors = request.Anchors.Distinct(StringComparer.Ordinal).ToArray();
         if (anchors.Length > 1)
         {
             var many = await set.Handle(new GetContextLensesSetRequest(anchors, request.Draft, request.Depth, request.MapVersion, request.Hops), cancellationToken).ConfigureAwait(false);
-            return many.IsError ? many.Error : new LensesAnswer(One: null, Many: many.Value);
+            return many.IsError ? many.Error : new LensesAnswer(One: null, Many: Page(many.Value, request));
         }
 
         var one = await single.Handle(new GetContextLensesRequest(anchors.Length == 0 ? string.Empty : anchors[0], request.Draft, request.Depth, request.MapVersion, request.Hops), cancellationToken).ConfigureAwait(false);
-        return one.IsError ? one.Error : new LensesAnswer(One: one.Value, Many: null);
+        return one.IsError ? one.Error : new LensesAnswer(Page(one.Value, request), Many: null);
     }
+
+    private static LensesView Page(LensesView view, GetContextLensesAnswerRequest request) =>
+        request.Limit is { } limit ? LensPages.Window(view, limit, request.Offset ?? 0) : view;
+
+    private static LensesSetView Page(LensesSetView view, GetContextLensesAnswerRequest request) =>
+        request.Limit is { } limit ? LensPages.Window(view, limit, request.Offset ?? 0) : view;
 }

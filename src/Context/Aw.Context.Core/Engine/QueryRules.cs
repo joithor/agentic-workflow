@@ -28,6 +28,9 @@ public static partial class QueryRules
     /// <summary>What a bad budget's 006 starts with (a transport adds its own hint after it).</summary>
     public const string BudgetMessage = "budget must be a whole number of tokens, 1 or more";
 
+    /// <summary>What a bad lenses page's 006 says.</summary>
+    public const string PageMessage = "limit must be a whole number of 1 or more, and offset a whole number of 0 or more";
+
     /// <summary>What the 006 for two or no question shapes says (a transport adds its own spelling of the shapes after it).</summary>
     public const string ShapeMessage = "ask exactly one of: text, node, item or symbol";
 
@@ -138,6 +141,14 @@ public static partial class QueryRules
     /// <returns>Null when absent or 0 to <see cref="MaxDepth"/>, else the error.</returns>
     public static Error? CheckDepth(int? depth) =>
         depth is { } value && value is < 0 or > MaxDepth ? OutOfRange(DepthMessage, value.ToString(CultureInfo.InvariantCulture)) : null;
+
+    /// <summary>The 006 for a lenses page: absent is the whole answer; a limit of 1 or more with an offset of 0 or more (absent is 0) is one page.</summary>
+    /// <param name="limit">How many items to keep, or null for the whole answer.</param>
+    /// <param name="offset">How many items to skip, or null for the start.</param>
+    /// <returns>Null when the page is absent or in range, else the error.</returns>
+    public static Error? CheckPage(int? limit, int? offset) =>
+        limit is null && offset is null ? null
+        : limit is null or < 1 || offset is < 0 ? ContextErrors.QueryInvalid.With(PageMessage) : null;
 
     /// <summary>The 006 for an anchor set that is empty; any number of anchors is taken.</summary>
     /// <param name="anchors">The distinct anchor values.</param>
