@@ -22,7 +22,7 @@ public sealed class AppConfirmRowTests
         {
             Assert.False(r.AppConfirm, r.Action.Value);
             Assert.Null(r.Confirm);
-            Assert.NotEqual("cli-only:typed-confirmation", r.Ui);
+            Assert.NotEqual("cli-only:typed-confirmation", r.Ui, StringComparer.Ordinal);
         });
     }
 

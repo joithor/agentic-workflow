@@ -3,7 +3,6 @@ using Aw.Context.Testing.Engine;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
-using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Events;

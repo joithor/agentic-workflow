@@ -27,7 +27,7 @@ internal static class LaunchScenarios
     public static IReadOnlyList<(string Slug, string Scenario)> All { get; } =
     [
         ("items-id-open", "requested"), ("items-id-open", "in-progress-008"), ("items-id-open", "budget-hard-010"), ("items-id-open", "budget-soft-warning"),
-        ("items-id-open", "bad-target"), ("items-id-open", "closed-item"), ("items-id-open", "attach-no-session-006"), 
+        ("items-id-open", "bad-target"), ("items-id-open", "closed-item"), ("items-id-open", "attach-no-session-006"),
         ("items-id-open", "refused-origin"),
         ("launches-id", "requested"), ("launches-id", "started-opened"), ("launches-id", "started-unconfirmed"), ("launches-id", "started-late-attach"),
         ("launches-id", "started-viewer-failed"), ("launches-id", "started-print"), ("launches-id", "failed-host-stage"), ("launches-id", "failed-expired-007"),

@@ -24,7 +24,7 @@ internal static class LaunchTargetScenarios
         ("launch-targets", "detected"), ("launch-targets", "file-exec-template"), ("launch-targets", "print"), ("launch-targets", "config-invalid"),
         ("launch-targets", "no-gui"), ("launch-targets", "budget-hard"), ("launch-targets", "budget-soft"), ("launch-targets", "no-usage-reader"),
         ("launch-targets", "override"), ("launch-targets", "not-probed"),
-        ("launch-targets-probe", "started"), 
+        ("launch-targets-probe", "started"),
     ];
 
     /// <summary>Whether <paramref name="slug"/> and <paramref name="scenario"/> belong to this class.</summary>

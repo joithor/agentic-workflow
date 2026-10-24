@@ -1,4 +1,3 @@
-using Aw.Sindri.Core;
 using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.ListSessions;

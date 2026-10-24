@@ -35,7 +35,7 @@ internal static class JobScenarios
         ("services", "paused"), ("services", "running-job"), ("services", "manual-ok"), ("needs-you", "after-manual-run"), ("needs-you", "unknown-service"), ("events", "job-lifecycle"),
         ("jobs-id", "running"), ("jobs-id", "succeeded"), ("jobs-id", "failed"), ("jobs-id", "cancelled"), ("jobs-id", "interrupted"), ("jobs-id", "progress-capped"),
         ("jobs-id", "context-backtest"), ("jobs-id", "ansi-escaped"), ("jobs-id", "result"), ("jobs-id", "not-found"), ("jobs-id", "bad-id"), ("jobs-id", "session-other-repo"), ("jobs-id", "stalled"),
-        ("jobs-id-cancel", "accepted"), ("jobs-id-cancel", "already-ended"), ("jobs-id-cancel", "not-found"), 
+        ("jobs-id-cancel", "accepted"), ("jobs-id-cancel", "already-ended"), ("jobs-id-cancel", "not-found"),
         ("jobs", "running"), ("jobs", "empty"), ("jobs", "by-kind"), ("jobs", "empty-unfiltered"), ("jobs", "bad-kind"), ("jobs", "bad-state"),
     ];
 

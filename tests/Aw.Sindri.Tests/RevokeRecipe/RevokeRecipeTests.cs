@@ -1,4 +1,3 @@
-using Aw.Sindri.Core;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow;
@@ -7,7 +6,6 @@ using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Features.RevokeRecipe;
-using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Workflow.Registry;
 using Aw.Sindri.Tests.ApproveRecipe;
 

@@ -1,4 +1,3 @@
-using Aw.Sindri.Core;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow;
@@ -6,7 +5,6 @@ using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Features.ApproveRecipe;
-using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Workflow.Registry;
 
 namespace Aw.Sindri.Tests.ApproveRecipe;
@@ -77,11 +75,4 @@ public sealed class ApproveRecipeRefusalTests
 
     private static Task<Kernel.Result<ApproveRecipeResponse>> Approve(RegistryHarness r, RegisteredRecipe recipe, ChallengeId challenge, string typed) =>
         r.Run<ApproveRecipeRequest, ApproveRecipeResponse>(new ApproveRecipeRequest(recipe.Id, recipe.Hash, new ChallengeAnswer(challenge, typed)), RegistryHarness.Human);
-
-    private static async Task AssertNothingRecorded(RegistryHarness r, RegisteredRecipe recipe, Kernel.Result<ApproveRecipeResponse> refused, string code)
-    {
-        Assert.Equal(code, refused.Error.Code);
-        Assert.Empty(r.Events(EventTypes.RecipeApproved));
-        Assert.Null((await r.Approvals.Latest(recipe.Id, recipe.Version, recipe.Hash, Token)).Value);
-    }
 }

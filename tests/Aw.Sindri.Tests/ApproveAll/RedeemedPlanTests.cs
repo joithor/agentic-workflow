@@ -1,7 +1,6 @@
 using System.Reflection;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Ids;
-using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.ApproveAll;
 using Aw.Sindri.Core.Workflow.Ids;
 

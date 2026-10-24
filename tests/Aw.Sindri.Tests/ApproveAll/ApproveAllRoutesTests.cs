@@ -1,6 +1,5 @@
 using System.Net;
 using System.Text.Json;
-using Aw.Sindri.Host;
 using Aw.Sindri.Testing.Workflow.ApproveAll;
 using Aw.Sindri.Tests.ApiGoldens;
 using Aw.Sindri.Tests.Callers;
@@ -14,8 +13,6 @@ namespace Aw.Sindri.Tests.ApproveAll;
 public sealed class ApproveAllRoutesTests
 {
     private static string Terminal(GoldenHost host) => host.Token.Value;
-
-    private static (string Name, string Value)[] Session => [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli")];
 
     private static string Code(Answer answer) => answer.Code ?? string.Empty;
 

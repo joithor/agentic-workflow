@@ -76,7 +76,7 @@ public sealed class CancelJobTests
 
         var refused = await runtime.Run<CancelJobRequest, CommandAccepted>(new CancelJobRequest(A.FirstJobId), A.Caller().Session().Build());
 
-        Assert.NotEqual(SindriErrors.AuthRefused.Code, refused.IsError ? refused.Error.Code : null);
+        Assert.NotEqual(SindriErrors.AuthRefused.Code, refused.IsError ? refused.Error.Code : null, StringComparer.Ordinal);
     }
 
     [Fact]

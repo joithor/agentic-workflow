@@ -5,7 +5,6 @@ using Aw.Kernel.Json;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Workflow.Registry;
-using Aw.Sindri.Host;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Callers;
 using Aw.Sindri.Tests.Workflow;

@@ -13,12 +13,11 @@ namespace Aw.Sindri.Tests.ApproveAll;
 [Lane(TestLane.Unit)]
 public sealed class ApproveAllRecipesServiceTests
 {
-    private readonly SliceHarness _slice = new();
     private readonly RedeemedPlans _kept = new();
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private async Task<(ApproveAllRecipesRequest Request, RedeemedPlan Plan)> Redeemed(FakeShippedRecipes shipped)
+    private static async Task<(ApproveAllRecipesRequest Request, RedeemedPlan Plan)> Redeemed(FakeShippedRecipes shipped)
     {
         var plan = (await shipped.Plan(Token)).Value;
         return (new ApproveAllRecipesRequest(), RedeemedPlan.For(plan, CommandId.From(new Guid(192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))));
