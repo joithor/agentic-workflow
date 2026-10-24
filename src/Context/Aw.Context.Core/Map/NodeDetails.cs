@@ -52,8 +52,12 @@ public sealed class NodeDetails
         NodeKind.Record => ForRecord(node.Key.Name, withTitle: false),
         NodeKind.Code => new NodeSource("file", _text.Line(node.Key.Name)),
         NodeKind.Decision when decision is not null => ForRecord(decision.Record.Value, withTitle: true),
-        _ => node.EvidenceOrEmpty.Count > 0 ? ForRecord(node.EvidenceOrEmpty[0].Key.Value, withTitle: true) : null,
+        NodeKind.Decision or NodeKind.Feature or NodeKind.Surface or NodeKind.Action or NodeKind.Thing or NodeKind.Flow => FromEvidence(node),
+        _ => null,
     };
+
+    private NodeSource? FromEvidence(GraphNode node) =>
+        node.EvidenceOrEmpty.Count > 0 ? ForRecord(node.EvidenceOrEmpty[0].Key.Value, withTitle: true) : null;
 
     private NodeSource ForRecord(string record, bool withTitle)
     {

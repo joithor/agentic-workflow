@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
@@ -114,7 +115,7 @@ public sealed class ShowNodeTests : IDisposable
     private const string Ticket = "linear:issue/0e5a1b00-0000-4000-8000-000000000a01";
     private const string Quoted = "linear:issue/0e5a1b00-0000-4000-8000-000000000a02";
     private const string ShortQuote = "keep the pane in view";
-    private static readonly string _longQuote = string.Join(' ', Enumerable.Range(1, 80).Select(i => $"w{i:00}"));
+    private static readonly string _longQuote = string.Join(' ', Enumerable.Range(1, 80).Select(i => string.Create(CultureInfo.InvariantCulture, $"w{i:00}")));
 
     private static string DetailMap(string quote) => MapWorld.Yaml(
         "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:",
@@ -218,7 +219,7 @@ public sealed class ShowNodeTests : IDisposable
         Assert.Equal(
             [("code:src/a.ts", NodeKind.Code, "a.ts"), ("feature:b", NodeKind.Feature, "Model said so"), ("record:" + Ticket, NodeKind.Record, "Ticket title")],
             center.In.Where(e => e.Type != EdgeType.Decides).Select(e => (e.From.Value, e.OtherKind, e.OtherLabel)));
-        Assert.Contains(center.In, e => e is { Type: EdgeType.Decides, OtherKind: NodeKind.Decision, OtherLabel: "Decided." });
+        Assert.Contains(center.In, e => e is { Type: EdgeType.Decides, OtherKind: NodeKind.Decision } && string.Equals(e.OtherLabel, "Decided.", StringComparison.Ordinal));
         Assert.Equal([("feature:a", NodeKind.Feature, "Alpha")], model.Out.Select(e => (e.To.Value, e.OtherKind, e.OtherLabel)));
     }
 
