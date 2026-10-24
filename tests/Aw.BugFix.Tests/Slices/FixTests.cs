@@ -116,6 +116,18 @@ public sealed class FixTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task An_approved_test_change_records_its_reason_in_the_history()
+    {
+        await _w.Reproduced();
+        _ = World.Ok(await _w.Start());
+        _ = _w.Fix(changes: new(StringComparer.Ordinal) { ["src/app.ts"] = "fixed\n", ["tests/helpers.sh"] = "new fixture shape\n" });
+
+        _ = World.Ok(await _w.Record(allowTestChanges: true, reason: "the fixture encoded the old API"));
+
+        Assert.Contains("the fixture encoded the old API", _w.Now.History[^1].Command, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_refused_test_change_names_the_flag_and_asks_no_human()
     {
         await _w.Reproduced();
