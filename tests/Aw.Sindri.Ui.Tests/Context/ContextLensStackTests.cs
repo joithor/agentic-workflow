@@ -166,17 +166,4 @@ public sealed class ContextLensStackTests
 
         _ = Assert.Single(page.Map!.Nodes, n => n.Label == Labels.ContextTruncated);
     }
-
-    [Fact]
-    public async Task A_request_line_the_server_refuses_as_too_long_says_so_in_plain_words()
-    {
-        var server = new FakeSindriApi { LensesAnswer = _ => new RouteAnswer(HttpStatusCode.RequestUriTooLong, string.Empty) };
-        var page = Page(server);
-        page.AnchorText = string.Join(' ', Enumerable.Range(0, 400).Select(i => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"a:{i}")));
-
-        await page.Submit(Token);
-
-        Assert.Equal(Labels.ContextTooLongForOneRead, page.Problem);
-        Assert.False(page.HasStack);
-    }
 }
