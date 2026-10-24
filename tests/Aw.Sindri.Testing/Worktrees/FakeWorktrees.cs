@@ -31,6 +31,21 @@ public sealed class FakeWorktrees : IWorktrees
         return this;
     }
 
+    /// <summary>Tells the fake a branch of a repo that a worktree did not make, such as a parent phase's pushed head branch.</summary>
+    /// <param name="repoRoot">The repo's path.</param>
+    /// <param name="branch">The branch name.</param>
+    /// <param name="commit">The commit it points at.</param>
+    /// <returns>This fake.</returns>
+    public FakeWorktrees WithBranch(string repoRoot, string branch, string commit)
+    {
+        lock (_gate)
+        {
+            _branches[(repoRoot, branch)] = commit;
+        }
+
+        return this;
+    }
+
     /// <summary>Leaves an uncommitted file in the worktree at <paramref name="path"/>.</summary>
     /// <param name="path">The worktree's path.</param>
     public void MakeDirty(string path)
@@ -81,6 +96,24 @@ public sealed class FakeWorktrees : IWorktrees
         lock (_gate)
         {
             return ValueTask.FromResult(Make(request));
+        }
+    }
+
+    /// <inheritdoc/>
+    public ValueTask<Result<string>> Resolve(string repoRoot, string branch, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(repoRoot);
+        ArgumentNullException.ThrowIfNull(branch);
+        lock (_gate)
+        {
+            if (!Path.IsPathRooted(repoRoot) || string.IsNullOrWhiteSpace(branch) || branch.StartsWith('-') || branch.Any(c => char.IsWhiteSpace(c) || char.IsControl(c)))
+            {
+                return ValueTask.FromResult<Result<string>>(SindriErrors.WorktreeInvalid.With("RepoRoot must be absolute and Branch a name without spaces that does not start with '-'"));
+            }
+
+            return ValueTask.FromResult<Result<string>>(_repos.ContainsKey(repoRoot) && _branches.TryGetValue((repoRoot, branch), out var tip)
+                ? tip
+                : SindriErrors.WorktreeGitFailed.With($"the branch {branch} is not known in {repoRoot}"));
         }
     }
 
