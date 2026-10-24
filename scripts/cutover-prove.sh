@@ -293,7 +293,13 @@ if [ "$(uname -s)" = Darwin ]; then
   for n in scorer scorer-audit sindri-observe sindri-index-quick sindri-index sindri-evolve; do roots+=("$LAUNCH/com.agentic-workflow.$n.plist"); done
 fi
 left=""
-for r in "${roots[@]}"; do if [ -e "$r" ] || [ -L "$r" ]; then left="$left $r"; fi; done
+# the post-link `judge health` (spec §8 step 6b) creates the C# database at the TS path: a database the C# judge accepts is not left
+cs_db=0
+if [ -f "$STATE/judge/decisions.sqlite" ] && judge health > /dev/null 2>&1; then cs_db=1; fi
+for r in "${roots[@]}"; do
+  case "$r" in "$STATE/judge/decisions.sqlite"*) [ "$cs_db" = 1 ] && continue ;; esac
+  if [ -e "$r" ] || [ -L "$r" ]; then left="$left $r"; fi
+done
 tpl="$(git config --global --get init.templateDir 2> /dev/null || true)"
 [ -z "$tpl" ] || left="$left init.templateDir=$tpl"
 if [ -z "$left" ]; then pass removed-exactly-8; else fail removed-exactly-8 "still there:$left"; fi
