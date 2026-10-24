@@ -55,6 +55,7 @@ internal static class ScopingSteps
     /// <summary>'step.scope.draft': the scope map and the acceptance list from the lenses; 'drafted'.</summary>
     // TODO(W9/L-17): read-only capability (no descriptor field yet; the launch enforces it)
     public static BlockDescriptor Draft { get; } = AgentStep("step.scope.draft", Capability.Tools)
+        .Takes(Text("model"))
         .Reads("fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:findings", "fact:answerLog", "fact:challenge")
         .Reports("drafted").Writes(On("fact:scopeMap", "drafted"), On("fact:acceptance", "drafted"));
 
@@ -85,13 +86,14 @@ internal static class ScopingSteps
         .Reports("updated", "rescope")
         .Writes(On("fact:scopeMap", "updated", "rescope"), On("fact:acceptance", "updated", "rescope"), On("fact:openQuestions", "updated", "rescope"));
 
-    /// <summary>'step.scope.reanchor': anchors the changed map from the context engine's text shape; 'anchored'.</summary>
+    /// <summary>'step.scope.reanchor': anchors the changed map from the context engine's text shape, the anchors a confirmed gap named first; 'anchored'.</summary>
     public static BlockDescriptor Reanchor { get; } = BlockStep("step.scope.reanchor", Capability.Tools)
-        .Reads("fact:scopeMap", "fact:anchors", "fact:lenses").Reports("anchored").Writes(On("fact:anchors", "anchored"));
+        .Reads("fact:scopeMap", "fact:anchors", "fact:lenses", "fact:gapAnchors").Reports("anchored").Writes(On("fact:anchors", "anchored"));
 
     /// <summary>'step.scope.challenge': a second model's look for missed surfaces and behaviours; reports only its own round.</summary>
     // TODO(W9/L-17): read-only capability (no descriptor field yet; the launch enforces it)
     public static BlockDescriptor Challenge { get; } = AgentStep("step.scope.challenge", Capability.Tools)
+        .Takes(Text("model"))
         .Reads("fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:answerLog", "fact:challenge")
         .Reports("nothingNew", "found").Writes(Every("fact:challengeRound"));
 

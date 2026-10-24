@@ -28,7 +28,7 @@ public sealed class ScopingBlocksTests
     [InlineData("step.interview.answer", BlockRuntime.Desk, true, "fact:questions,fact:answerLog", "answered,doneAsking", "", "fact:answers=answered,doneAsking;fact:interviewClosed=doneAsking", Capability.None)]
     [InlineData("step.interview.record", BlockRuntime.Block, false, "fact:answers,fact:answerLog", "recorded", "", "fact:answerLog=recorded", Capability.None)]
     [InlineData("step.interview.apply", BlockRuntime.Agent, false, "fact:brief,fact:lenses,fact:coverage,fact:questions,fact:answers,fact:answerLog,fact:scopeMap,fact:acceptance,fact:openQuestions,fact:anchors", "updated,rescope", "", "fact:scopeMap=updated,rescope;fact:acceptance=updated,rescope;fact:openQuestions=updated,rescope", Capability.Tools)]
-    [InlineData("step.scope.reanchor", BlockRuntime.Block, false, "fact:scopeMap,fact:anchors,fact:lenses", "anchored", "", "fact:anchors=anchored", Capability.Tools)]
+    [InlineData("step.scope.reanchor", BlockRuntime.Block, false, "fact:scopeMap,fact:anchors,fact:lenses,fact:gapAnchors", "anchored", "", "fact:anchors=anchored", Capability.Tools)]
     [InlineData("step.scope.challenge", BlockRuntime.Agent, false, "fact:brief,fact:lenses,fact:coverage,fact:scopeMap,fact:acceptance,fact:answerLog,fact:challenge", "nothingNew,found", "fact:challengeRound", "", Capability.Tools)]
     [InlineData("step.scope.challenge-log", BlockRuntime.Block, false, "fact:challenge,fact:challengeRound", "nothingNew,found", "fact:challenge", "fact:findings=found", Capability.None)]
     [InlineData("step.scope.propose", BlockRuntime.Block, false, "fact:scopeMap", "proposed,skipped", "fact:scopeMap", "", Capability.Tools)]

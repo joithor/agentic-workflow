@@ -94,6 +94,7 @@ internal static partial class DeskBlocks
         var keys = ScopeJson.Items(facts["scopeMap"], "surfaces").Select(static s => ScopeJson.Str(s, "key")).OfType<string>().ToList();
         var suggested = Suggested(facts["contextQuery"], required: false);
         var ordered = ScopeJson.Strings(facts["anchors"]).Where(static a => a.StartsWith("code:", StringComparison.Ordinal))
+            .Concat(ScopeJson.Strings(facts["gapAnchors"]))
             .Concat(keys.Where(static k => !k.StartsWith("code:", StringComparison.Ordinal)))
             .Concat(keys.Where(static k => k.StartsWith("code:", StringComparison.Ordinal)))
             .Concat(suggested.Anchors)

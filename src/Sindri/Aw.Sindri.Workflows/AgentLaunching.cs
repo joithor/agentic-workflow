@@ -45,6 +45,11 @@ internal sealed class AgentLaunching(ILauncher launcher, AgentTargetResolver tar
             return new AgentLaunched(Worktree: null, StartHead: null, new AgentLaunchFailure(string.Equals(bundle.Error.Code, PackErrors.PinMismatch.Code, StringComparison.Ordinal) ? AgentLaunchFailureKind.Park : AgentLaunchFailureKind.StepFailed, bundle.Error.Code, bundle.Error.Message));   // an unpinned or changed pack parks for the owner (SND-PACK-002); any other pack failure ends the Step
         }
 
+        if (run.ModelProfile is { } profile)
+        {
+            return new AgentLaunched(Worktree: null, StartHead: null, new AgentLaunchFailure(AgentLaunchFailureKind.StepFailed, "SND-LAUNCH-013", AgentModels.Refusal(profile)));   // the launcher's own refusal of a model it can't express
+        }
+
         var asked = await Request(run, target.Value, workspace.Value, bundle.Value, cancellationToken).ConfigureAwait(false);
         if (asked.IsError)
         {
@@ -73,7 +78,7 @@ internal sealed class AgentLaunching(ILauncher launcher, AgentTargetResolver tar
         var block = BlockId.From(run.Run.Step.Block);
         var descriptor = catalog.Find(block);
         var facts = await StepFactFiles.Build(descriptor, run.Facts, inputs.Contents, inputs.Scrubber, cancellationToken).ConfigureAwait(false);
-        return facts.IsError ? facts.Error : AgentLaunches.RequestFor(run.Run, target, descriptor, new AgentLaunchExtras(PayloadFacts.WithShapes(Told(block), run.Payloads), workspace, bundle, facts.Value));   // the Step's own lines, then the shape of each payload output
+        return facts.IsError ? facts.Error : AgentLaunches.RequestFor(run.Run, target, descriptor, new AgentLaunchExtras(PayloadFacts.WithShapes(Told(block), run.Payloads), workspace, bundle, facts.Value, run.Model));   // the Step's own lines, then the shape of each payload output
     }
 
     private static AgentLaunched StepFailed(Error error) => new(Worktree: null, StartHead: null, new AgentLaunchFailure(AgentLaunchFailureKind.StepFailed, error.Code, error.Message));
