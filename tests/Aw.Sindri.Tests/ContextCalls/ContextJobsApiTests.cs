@@ -203,7 +203,8 @@ public sealed class ContextJobsApiTests : IDisposable
         var sync = await host.Http.Ask(Post("/sindri/context/sources/sync", "{}", session));
         var build = await host.Http.Ask(Post("/sindri/context/map/build", "{}", session));
 
-        Assert.Equal(((string?)null, (string?)null), (sync.Code, build.Code));   // a session starts every job a human starts (owner q93, 2026-10-23)
+        Assert.Null(sync.Code);   // a session starts every job a human starts (owner q93, 2026-10-23)
+        Assert.Null(build.Code);
         Assert.Equal(2, Of(await Ledger(host), EventTypes.JobStarted).Count());
     }
 
