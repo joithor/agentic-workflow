@@ -50,11 +50,6 @@ internal static partial class ContextMapLayout
             var when = d.At.ToString("MMM d", CultureInfo.InvariantCulture);
             yield return new Entry(d.Node, d.Label, d.Kind, MapBand.Intent, Row.Intent, MapShape.Card, Width: 250, IsAnchor: false, d.Confirmed, d.Provenance, Confidence: 1, when, Path: string.Empty, inConflict.Contains(d.Node), LinkId: null, Order: 0, Untrusted: IsUntrusted(d.Trust));
         }
-
-        if (intent.Truncated)
-        {
-            yield return More(MapBand.Intent, Row.Intent);
-        }
     }
 
     private static IEnumerable<Entry> ProductEntries(LensesView view)
@@ -66,11 +61,6 @@ internal static partial class ContextMapLayout
         {
             var anchor = anchors.Contains(n.Node);
             yield return new Entry(n.Node, n.Label, n.Kind, MapBand.Product, ProductRow(n, anchor, acting), anchor ? MapShape.Card : MapShape.Chip, anchor ? 280 : 170, anchor, n.Confirmed, n.Provenance, n.Confidence, Detail: string.Empty, Path: string.Empty, HasConflict: false, LinkId: null, Order: 0, Untrusted: IsUntrusted(n.Trust));
-        }
-
-        if (product.Truncated)
-        {
-            yield return More(MapBand.Product, Row.Features);
         }
     }
 
@@ -84,11 +74,6 @@ internal static partial class ContextMapLayout
             var dir = slash < 0 ? string.Empty : f.Path[..slash];
             yield return new Entry("code:" + f.Path, name, test ? "test" : "file", MapBand.Code, test ? Row.Tests : Row.Files, MapShape.Chip, test ? 176 : 150, IsAnchor: false, f.Confirmed, f.Provenance, f.Confidence, dir, f.Path, HasConflict: false, f.LinkId, Order: 0, Untrusted: IsUntrusted(f.Trust));
         }
-
-        if (code.Truncated)
-        {
-            yield return More(MapBand.Code, Row.Files);
-        }
     }
 
     private static readonly HashSet<string> _actingTypes = new(["on", "reads", "writes"], StringComparer.Ordinal);
@@ -99,7 +84,4 @@ internal static partial class ContextMapLayout
         anchor || string.Equals(n.Kind, "feature", StringComparison.Ordinal) ? Row.Features
         : string.Equals(n.Kind, "action", StringComparison.Ordinal) || string.Equals(n.Kind, "data", StringComparison.Ordinal) || acting.Contains(n.Node) ? Row.Actions
         : Row.Surfaces;
-
-    // The chip that says the band was cut short.
-    private static Entry More(MapBand band, Row row) => new("more:" + band.ToString().ToLowerInvariant(), Labels.ContextTruncated, "more", band, row, MapShape.Chip, Width: 170, IsAnchor: false, Confirmed: true, Provenance: "human", Confidence: 1, Detail: string.Empty, Path: string.Empty, HasConflict: false, LinkId: null, Order: 0);
 }

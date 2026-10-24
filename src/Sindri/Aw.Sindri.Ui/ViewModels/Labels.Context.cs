@@ -40,7 +40,4 @@ internal static partial class Labels
 
     /// <summary>The box's line when the server could not take that many topics in one read.</summary>
     internal const string ContextTooLongForOneRead = "Too many topics for one read. Try fewer.";
-
-    /// <summary>The word for something the band was cut short of.</summary>
-    internal const string ContextTruncated = "more not shown";
 }

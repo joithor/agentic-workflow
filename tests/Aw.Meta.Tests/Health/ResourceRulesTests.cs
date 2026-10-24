@@ -72,7 +72,7 @@ public sealed class ResourceRulesTests
     [Fact, Trait("Lane", "unit")]
     public void Full_swap_with_ram_to_spare_keeps_the_configured_builders()
     {
-        var advice = BuilderAdvice.Compute(Host(diskGb: 900, memGb: 14, swapUsedGb: 8), _limits, new BuildersConfig(), lanes: 2);
+        var advice = BuilderAdvice.Compute(Host(diskGb: 900, memGb: 14, swapUsedGb: 8), _limits, new BuildersConfig(MaxPerLane: 4), lanes: 2);
 
         Assert.Equal((4, null), (advice.PerLane, advice.Limit));
     }
@@ -81,6 +81,29 @@ public sealed class ResourceRulesTests
     public void A_maximum_below_one_or_no_lanes_still_gives_at_least_one_builder()
     {
         Assert.Equal(1, BuilderAdvice.Compute(Host(), _limits, new BuildersConfig(MaxPerLane: 0), lanes: 0).PerLane);
-        Assert.Equal(4, BuilderAdvice.Compute(Host(diskGb: 100), _limits, new BuildersConfig(), lanes: 0).PerLane);
+        Assert.Equal(4, BuilderAdvice.Compute(Host(diskGb: 100), _limits, new BuildersConfig(MaxPerLane: 4), lanes: 0).PerLane);
     }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(132, 8)]    // (132 - 30) / (3 lanes x 4) = 8: no cap, the disk is the only limit
+    [InlineData(78, 4)]
+    [InlineData(53, 1)]
+    public void With_no_configured_maximum_the_disk_alone_sets_the_builders(long diskGb, int perLane)
+    {
+        var advice = BuilderAdvice.Compute(Host(diskGb: diskGb), _limits, new BuildersConfig(), lanes: 3);
+
+        Assert.Equal((perLane, null), (advice.PerLane, advice.MaxPerLane));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void With_no_maximum_and_worktrees_that_take_no_disk_nothing_limits_the_builders()
+    {
+        var advice = BuilderAdvice.Compute(Host(), _limits, new BuildersConfig(WorktreeGb: 0), lanes: 3);
+
+        Assert.Equal((int.MaxValue, null, "builders: no limit per lane (disk 100 GB free, mem 16 GB available)"), (advice.PerLane, advice.Limit, advice.Line()));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_builders_default_sets_no_maximum() =>
+        Assert.Null(new BuildersConfig().MaxPerLane);
 }
