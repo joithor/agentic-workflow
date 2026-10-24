@@ -84,7 +84,7 @@ internal sealed class ProcessDesktopApps : IDesktopApps
         }
 
         return OnPath("xvfb-run", environment.GetValueOrDefault("PATH")) is { } xvfb
-            ? (Wrapper: [xvfb, "-a", "-s", VirtualScreen], Note: "display: xvfb-run (virtual X server 1920x1200x24)")
+            ? (Wrapper: new[] { xvfb, "-a", "-s", VirtualScreen }, Note: "display: xvfb-run (virtual X server 1920x1200x24)")
             : EvidenceErrors.RunFailed.With("no DISPLAY and no xvfb-run on PATH (install xvfb to run the app headless)");
     }
 
