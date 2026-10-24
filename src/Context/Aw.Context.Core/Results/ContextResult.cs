@@ -14,8 +14,6 @@ namespace Aw.Context.Core.Results;
 /// <param name="Conflicts">Typed disagreements between intent and behavior.</param>
 /// <param name="SuggestedAnchors">Anchors the caller may use next.</param>
 /// <param name="Degraded">Sources that didn't answer, each with its code.</param>
-/// <param name="Truncated">Always false: the answer holds the whole ranked result set (the field stays so older readers keep working).</param>
-/// <param name="Budget">The size of the answer: <c>Asked</c> is always 0 (no budget is asked), <c>Used</c> is the tokens its items take.</param>
 /// <param name="Cites">The citations, by marker ('C1', 'C2', …).</param>
 /// <param name="Diff">The diff shape's facts, or null for every other shape (left out of JSON).</param>
 public sealed record ContextResult(
@@ -29,8 +27,6 @@ public sealed record ContextResult(
     IReadOnlyList<ResultConflict> Conflicts,
     IReadOnlyList<string> SuggestedAnchors,
     IReadOnlyList<DegradedSource> Degraded,
-    bool Truncated,
-    BudgetUse Budget,
     IReadOnlyDictionary<string, Citation> Cites,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] DiffPart? Diff = null)
 {

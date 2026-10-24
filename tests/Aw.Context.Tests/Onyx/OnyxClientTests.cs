@@ -36,7 +36,6 @@ public sealed class OnyxClientTests
     [InlineData(HttpStatusCode.OK, "<html>not onyx</html>")]
     [InlineData(HttpStatusCode.UnprocessableEntity, "{\"error_code\":\"VALIDATION_ERROR\",\"detail\":\"Request validation failed.\"}")]
     [InlineData(HttpStatusCode.NotFound, "{\"error_code\":\"NOT_FOUND\",\"detail\":\"Not Found\"}")]
-    [InlineData(HttpStatusCode.Unauthorized, "{}")]
     public async Task A_reply_that_is_not_v4_9_0s_is_051_naming_the_pinned_version(HttpStatusCode status, string body)
     {
         var result = await Search(new ScriptedHandler((_, _) => Task.FromResult(Reply(status, body))));
@@ -44,6 +43,19 @@ public sealed class OnyxClientTests
         Assert.Equal(ContextErrors.OnyxUnexpectedReply.Code, result.Error.Code);
         Assert.Equal(Kernel.ErrorKind.Unavailable, result.Error.Kind);
         Assert.Contains("v4.9.0", result.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(HttpStatusCode.Unauthorized)]
+    [InlineData(HttpStatusCode.Forbidden)]
+    public async Task A_401_or_403_is_a_refused_key_with_the_fix_not_a_version_mismatch(HttpStatusCode status)
+    {
+        var result = await Search(new ScriptedHandler((_, _) => Task.FromResult(Reply(status, "{}"))));
+
+        Assert.Equal(ContextErrors.OnyxKeyRefused.Code, result.Error.Code);
+        Assert.Contains("Fix:", result.Error.Message, StringComparison.Ordinal);
+        Assert.Contains($"HTTP {(int)status}", result.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("onyx.version", result.Error.Message, StringComparison.Ordinal);
     }
 
     [Theory, Trait("Lane", "unit")]

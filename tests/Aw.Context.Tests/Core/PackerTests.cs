@@ -16,7 +16,6 @@ public sealed class PackerTests
 
         Assert.Equal(["graph", "records"], packed.Sections.Select(s => s.Name), StringComparer.Ordinal);
         Assert.Equal(["C1", "C3", "C4"], packed.Sections[1].Items.Select(i => i.Title ?? ""), StringComparer.Ordinal);
-        Assert.All(packed.Sections, section => Assert.Empty(section.More));
         Assert.Equal(130, packed.Used);
     }
 
@@ -28,7 +27,6 @@ public sealed class PackerTests
         var packed = Packer.Pack(candidates);
 
         Assert.Equal(500, packed.Sections.Single().Items.Count);
-        Assert.Empty(packed.Sections.Single().More);
         Assert.Equal(2_500_000, packed.Used);
     }
 

@@ -132,19 +132,23 @@ public sealed class SindriQueryToolsTests(SeededMcp seed) : IClassFixture<Seeded
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task Sindri_item_timeline_pages_with_after_and_says_next()
+    public async Task Sindri_item_timeline_pages_by_limit_and_offset_only_with_no_second_cursor()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var mcp = await seed.Open("alpha", ct);
 
         var first = await mcp.Call("sindri_item_timeline", Args("itemId", seed.LongItem), ct);
-        var next = first.StructuredContent!.Value.GetProperty("next").GetInt64().ToString(CultureInfo.InvariantCulture);
-        var last = await mcp.Call("sindri_item_timeline", $$"""{"itemId":"{{seed.LongItem}}","after":{{next}}}""", ct);
+        var last = await mcp.Call("sindri_item_timeline", $$"""{"itemId":"{{seed.LongItem}}","offset":100}""", ct);
+        var small = await mcp.Call("sindri_item_timeline", $$"""{"itemId":"{{seed.LongItem}}","limit":10,"offset":95}""", ct);
+        var after = await mcp.Call("sindri_item_timeline", $$"""{"itemId":"{{seed.LongItem}}","after":5}""", ct);
 
-        Assert.Equal(100, first.StructuredContent.Value.GetProperty("entries").GetArrayLength());
-        Assert.Contains($"100 lines, next after {next}", Text(first), StringComparison.Ordinal);
+        Assert.Equal(100, first.StructuredContent!.Value.GetProperty("entries").GetArrayLength());
+        Assert.True(first.StructuredContent.Value.GetProperty("page").GetProperty("more").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, first.StructuredContent.Value.GetProperty("next").ValueKind);
         Assert.Equal(1, last.StructuredContent!.Value.GetProperty("entries").GetArrayLength());
-        Assert.Equal(JsonValueKind.Null, last.StructuredContent.Value.GetProperty("next").ValueKind);
+        Assert.False(last.StructuredContent.Value.GetProperty("page").GetProperty("more").GetBoolean());
+        Assert.Equal(6, small.StructuredContent!.Value.GetProperty("entries").GetArrayLength());
+        Assert.True(after.IsError);   // why: 'after' is gone from the tool; a second cursor beside limit/offset would disagree with it
         var line = last.StructuredContent.Value.GetProperty("entries")[0].GetProperty("line").GetString()!;
         Assert.StartsWith("<untrusted source=\"sindri:timeline\"", line, StringComparison.Ordinal);
         Assert.NotNull(McpFenceReader.AuthorOf(line));   // why: the entry's actor
@@ -163,15 +167,15 @@ public sealed class SindriQueryToolsTests(SeededMcp seed) : IClassFixture<Seeded
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task Sindri_item_timeline_rejects_a_negative_after_and_serves_another_repos_item()
+    public async Task Sindri_item_timeline_serves_another_repos_item_and_refuses_a_bad_window()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var mcp = await seed.Open("alpha", ct);
 
-        var negative = await mcp.Call("sindri_item_timeline", $$"""{"itemId":"{{seed.AlphaItem}}","after":-1}""", ct);
+        var negative = await mcp.Call("sindri_item_timeline", $$"""{"itemId":"{{seed.AlphaItem}}","offset":-1}""", ct);
         var other = await mcp.Call("sindri_item_timeline", Args("itemId", seed.BetaItem), ct);
 
-        Assert.Equal("SND-CONTEXT-022", Code(negative));
+        Assert.Equal("SND-CONTEXT-006", Code(negative));
         Assert.NotEqual(true, other.IsError);
     }
 

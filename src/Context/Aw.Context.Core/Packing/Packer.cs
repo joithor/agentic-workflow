@@ -31,7 +31,7 @@ public static class Packer
         {
             if (byName.TryGetValue(name, out var items))
             {
-                sections.Add(new Results.ResultSection(name, items, []));
+                sections.Add(new Results.ResultSection(name, items));
             }
         }
 

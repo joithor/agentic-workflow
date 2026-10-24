@@ -9,7 +9,7 @@ namespace Aw.Sindri.Host.Mcp;
 /// Pages a tool answer: every top-level list keeps its own window of items (the same offset and limit, applied to each list
 /// by its own index, so a page is stable whatever the other lists hold), and page.more says another page follows in some
 /// list. An item is never cut inside: its evidence, sources and other arrays stay whole. Counts and other objects stay the
-/// full answer. The section and group buckets stay whole, because they are the answer's shape and their lists are what pages.
+/// full answer. A degraded source is a warning, not a result, so that list is never cut; the citations are cut to those the page's items name. The section and group buckets stay whole, because they are the answer's shape and their lists are what pages.
 /// </summary>
 internal static class McpPages
 {
@@ -18,6 +18,12 @@ internal static class McpPages
 
     // why: these arrays are the buckets (one section or queue group each), not a list a caller pages through
     private static readonly FrozenSet<string> _buckets = FrozenSet.Create(StringComparer.Ordinal, "sections", "groups");
+
+    // why: a warning is not a result list. A source that failed must never be hidden by the window, so these stay whole.
+    private static readonly FrozenSet<string> _warnings = FrozenSet.Create(StringComparer.Ordinal, "degraded");
+
+    // why: the citations are looked up by marker; a page keeps only the ones its own items and conflicts name, so a page shrinks with its window
+    private const string Cites = "cites";
 
     /// <summary>The answer with one page of each top-level list, and a page object.</summary>
     /// <param name="answer">The whole answer.</param>
@@ -33,6 +39,7 @@ internal static class McpPages
         var more = false;
         var lists = new JsonObject();
         Slice(root, window, "", lists, ref more);
+        KeepPageCites(root);
         root["page"] = new JsonObject
         {
             ["offset"] = window.Offset,
@@ -49,7 +56,7 @@ internal static class McpPages
     {
         foreach (var name in obj.Select(property => property.Key).ToArray())
         {
-            if (obj[name] is not JsonArray array)
+            if (obj[name] is not JsonArray array || (path.Length == 0 && _warnings.Contains(name)))
             {
                 continue;
             }
@@ -60,7 +67,9 @@ internal static class McpPages
                 {
                     if (array[index] is JsonObject child)
                     {
-                        Slice(child, window, $"{name}[{index}].", lists, ref more);
+                        // why: the bucket's name keys the list, so 'sections.graph.items' means the same list on every page and in every answer
+                        var label = child["name"] is JsonValue named && named.TryGetValue<string>(out var bucket) && bucket.Length > 0 ? bucket : index.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                        Slice(child, window, $"{name}.{label}.", lists, ref more);
                     }
                 }
 
@@ -68,6 +77,52 @@ internal static class McpPages
             }
 
             obj[name] = Cut(array, window, path + name, lists, ref more);
+        }
+    }
+
+    // Drops the citations no kept item or conflict names (a marker is any string value in the page outside 'cites' and 'page').
+    private static void KeepPageCites(JsonObject root)
+    {
+        if (root[Cites] is not JsonObject cites)
+        {
+            return;
+        }
+
+        var named = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var property in root.Where(p => p.Key != Cites))
+        {
+            Collect(property.Value, named);
+        }
+
+        foreach (var marker in cites.Select(c => c.Key).Where(k => !named.Contains(k)).ToArray())
+        {
+            _ = cites.Remove(marker);
+        }
+    }
+
+    private static void Collect(JsonNode? node, HashSet<string> strings)
+    {
+        switch (node)
+        {
+            case JsonValue value when value.TryGetValue<string>(out var text):
+                _ = strings.Add(text);
+                break;
+            case JsonArray array:
+                foreach (var child in array)
+                {
+                    Collect(child, strings);
+                }
+
+                break;
+            case JsonObject obj:
+                foreach (var property in obj)
+                {
+                    Collect(property.Value, strings);
+                }
+
+                break;
+            default:
+                break;
         }
     }
 

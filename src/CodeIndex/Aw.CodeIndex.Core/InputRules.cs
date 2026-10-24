@@ -59,9 +59,24 @@ public static class InputRules
             return entry.Length > 7 && segments.Any(s => s.EndsWith(entry[7..], StringComparison.OrdinalIgnoreCase));
         }
 
-        return entry.StartsWith("regex:", StringComparison.Ordinal)
-            ? segments.Any(s => System.Text.RegularExpressions.Regex.IsMatch(s, entry[6..], System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1)))
-            : null;
+        return entry.StartsWith("regex:", StringComparison.Ordinal) ? AnySegmentMatchesRegex(entry[6..], segments) : null;
+    }
+
+    // An invalid or runaway expression matches nothing (the profile check refuses a bad one; a hand-written settings file must not throw inside a snapshot).
+    private static bool AnySegmentMatchesRegex(string pattern, string[] segments)
+    {
+        try
+        {
+            return segments.Any(s => System.Text.RegularExpressions.Regex.IsMatch(s, pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1)));
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+        catch (System.Text.RegularExpressions.RegexMatchTimeoutException)
+        {
+            return false;
+        }
     }
 
     /// <summary>Whether a path matches any of the globs, ignoring case ('*' and '?' inside a segment, '**' across segments).</summary>

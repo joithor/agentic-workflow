@@ -123,16 +123,16 @@ public sealed class ContextCliTests
         var cite = new Citation(RecordKey.From("repo:split-panes/docs/architecture.md"),
             [new CitationRef(SourceId.From("repo-docs"), ExternalId.From("split-panes/docs/architecture.md#L1-L9"), SourceVersion.From("3b18e512dba7"))
                 { Current = SourceVersion.From("9c0ffee") }], Permalink: null, Trust.Untrusted, CitationState.Stale);
-        var result = new ContextResult(1, QueryId.From("q_1"), new ContextQuery("x"), [], MapVersion: null, at, [new ResultSection("records", [item], ["C2"])], [], [],
-            [new DegradedSource(SourceId.From("onyx"), "SND-CONTEXT-010", "Onyx did not answer", at)], Truncated: true, new BudgetUse(10, 9, Estimate: true),
-            new Dictionary<string, Citation>(StringComparer.Ordinal) { ["C1"] = cite });
+        var result = new ContextResult(1, QueryId.From("q_1"), new ContextQuery("x"), [], MapVersion: null, at, [new ResultSection("records", [item])], [], [],
+            [new DegradedSource(SourceId.From("onyx"), "SND-CONTEXT-010", "Onyx did not answer", at)], new Dictionary<string, Citation>(StringComparer.Ordinal) { ["C1"] = cite });
 
         var text = ContextText.Render(result);
 
         Assert.Contains("DEGRADED onyx: SND-CONTEXT-010 Onyx did not answer", text, StringComparison.Ordinal);
         Assert.Contains("[C1] Architecture", text, StringComparison.Ordinal);
         Assert.Contains("<untrusted source=\"repo-docs\">body</untrusted>", text, StringComparison.Ordinal);
-        Assert.Contains("+1 more (references only): C2", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("references only", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("size:", text, StringComparison.Ordinal);
         Assert.Contains("version 3b18e512dba7 → 9c0ffee  stale", text, StringComparison.Ordinal);
         Assert.DoesNotContain("\u001b[", text, StringComparison.Ordinal);
     }
@@ -147,7 +147,7 @@ public sealed class ContextCliTests
             Path = ["feature:layout.split-pane.orientation", "writes thing:pane-layout", "reads action:tab-manager.restore-layout"],
         };
         var result = new ContextResult(1, QueryId.From("q_1"), new ContextQuery(Text: null, Node: "feature:layout.split-pane.orientation"), ["feature:layout.split-pane.orientation"],
-            "v1", at, [new ResultSection("affects", [item], [])], [], [], [], Truncated: false, new BudgetUse(10, 9, Estimate: true), new Dictionary<string, Citation>(StringComparer.Ordinal));
+            "v1", at, [new ResultSection("affects", [item])], [], [], [], new Dictionary<string, Citation>(StringComparer.Ordinal));
 
         var text = ContextText.Render(result);
 
@@ -287,5 +287,5 @@ public sealed class ContextCliTests
     }
 
     private static ContextResult Only(Citation cite) => new(1, QueryId.From("q_1"), new ContextQuery("x"), [], MapVersion: null, DateTimeOffset.UnixEpoch, [], [], [], [],
-        Truncated: false, new BudgetUse(10, 0, Estimate: true), new Dictionary<string, Citation>(StringComparer.Ordinal) { ["C1"] = cite });
+        new Dictionary<string, Citation>(StringComparer.Ordinal) { ["C1"] = cite });
 }

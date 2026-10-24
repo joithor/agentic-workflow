@@ -34,8 +34,8 @@ internal sealed class ResultAssembly(IEgressScrubber egress, QueryId queryId, Da
         var conflicts = graph.Conflicts.Select(c => c with { Intent = [.. c.Intent.Select(k => MarkerOf(k, graph, recordMarkers)).Distinct(StringComparer.Ordinal)] }).ToList();
         var packed = Packer.Pack(candidates);
         return new ContextResult(ContextResult.CurrentSchemaVersion, queryId, query, graph.Anchors, graph.MapVersion, asOf, packed.Sections,
-            conflicts, graph.Suggested, [.. records.Degraded.Select(d => d with { Message = egress.Scrub(d.Message).Text })], Truncated: false,
-            new BudgetUse(Asked: 0, packed.Used, Estimate: true), cites, graph.Diff)
+            conflicts, graph.Suggested, [.. records.Degraded.Select(d => d with { Message = egress.Scrub(d.Message).Text })],
+            cites, graph.Diff)
         {
             SkippedComponents = graph.SkippedComponents.Count == 0 ? null : graph.SkippedComponents,
         };

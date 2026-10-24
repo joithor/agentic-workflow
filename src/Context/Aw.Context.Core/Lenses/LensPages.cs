@@ -11,8 +11,9 @@ public static class LensPages
     public static LensesView Window(LensesView view, int limit, int offset)
     {
         ArgumentNullException.ThrowIfNull(view);
-        var (bands, edges, more) = Cut(view.Bands, view.Edges, limit, offset);
-        return view with { Bands = bands, Edges = edges, Page = new LensWindow(offset, limit, more) };
+        var totals = new Dictionary<string, int>(StringComparer.Ordinal);
+        var (bands, edges, more) = Cut(view.Bands, view.Edges, limit, offset, totals);
+        return view with { Bands = bands, Edges = edges, Page = new LensWindow(offset, limit, more) { Totals = totals } };
     }
 
     /// <summary>The page of <paramref name="view"/> at <paramref name="offset"/>, <paramref name="limit"/> items long.</summary>
@@ -23,12 +24,13 @@ public static class LensPages
     public static LensesSetView Window(LensesSetView view, int limit, int offset)
     {
         ArgumentNullException.ThrowIfNull(view);
-        var (bands, edges, more) = Cut(view.Bands, view.Edges, limit, offset);
-        return view with { Bands = bands, Edges = edges, Page = new LensWindow(offset, limit, more) };
+        var totals = new Dictionary<string, int>(StringComparer.Ordinal);
+        var (bands, edges, more) = Cut(view.Bands, view.Edges, limit, offset, totals);
+        return view with { Bands = bands, Edges = edges, Page = new LensWindow(offset, limit, more) { Totals = totals } };
     }
 
     private static (LensBands Bands, IReadOnlyList<LensEdge> Edges, bool More) Cut(
-        LensBands bands, IReadOnlyList<LensEdge> edges, int limit, int offset)
+        LensBands bands, IReadOnlyList<LensEdge> edges, int limit, int offset, Dictionary<string, int> totals)
     {
         var more = false;
         var product = bands.Product;
@@ -39,24 +41,25 @@ public static class LensPages
             {
                 Product = product with
                 {
-                    Own = Take(product.Own, limit, offset, ref more),
-                    Neighbors = Take(product.Neighbors, limit, offset, ref more),
-                    Affects = Take(product.Affects, limit, offset, ref more),
-                    Edges = Take(product.Edges, limit, offset, ref more),
+                    Own = Take(product.Own, limit, offset, ref more, totals, "bands.product.own"),
+                    Neighbors = Take(product.Neighbors, limit, offset, ref more, totals, "bands.product.neighbors"),
+                    Affects = Take(product.Affects, limit, offset, ref more, totals, "bands.product.affects"),
+                    Edges = Take(product.Edges, limit, offset, ref more, totals, "bands.product.edges"),
                 },
                 Intent = intent with
                 {
-                    Records = Take(intent.Records, limit, offset, ref more),
-                    Decisions = Take(intent.Decisions, limit, offset, ref more),
+                    Records = Take(intent.Records, limit, offset, ref more, totals, "bands.intent.records"),
+                    Decisions = Take(intent.Decisions, limit, offset, ref more, totals, "bands.intent.decisions"),
                 },
-                Code = code with { Files = Take(code.Files, limit, offset, ref more) },
+                Code = code with { Files = Take(code.Files, limit, offset, ref more, totals, "bands.code.files") },
             },
-            Take(edges, limit, offset, ref more),
+            Take(edges, limit, offset, ref more, totals, "edges"),
             more);
     }
 
-    private static T[] Take<T>(IReadOnlyList<T> items, int limit, int offset, ref bool more)
+    private static T[] Take<T>(IReadOnlyList<T> items, int limit, int offset, ref bool more, Dictionary<string, int> totals, string path)
     {
+        totals[path] = items.Count;
         if (items.Count > (long)offset + limit)
         {
             more = true;

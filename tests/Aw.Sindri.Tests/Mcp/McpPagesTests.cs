@@ -126,4 +126,35 @@ public sealed class McpPagesTests
 
     private static Dictionary<string, JsonElement> Args(string json) =>
         JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json)!;
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_bucket_list_is_keyed_by_the_bucket_name_not_its_position()
+    {
+        var answer = Json("""{ "sections": [{ "name": "records", "items": [{"id":"r"}] }, { "name": "graph", "items": [{"id":"g"}] }] }""");
+
+        var lists = McpPages.Apply(answer, new McpWindow(Limit: 1, Offset: 0)).GetProperty("page").GetProperty("lists");
+
+        Assert.Equal(["sections.records.items", "sections.graph.items"], lists.EnumerateObject().Select(p => p.Name));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Degraded_sources_are_a_warning_and_survive_every_window()
+    {
+        var answer = Json("""{ "degraded": [{"source":"onyx"}, {"source":"linear"}], "suggestedAnchors": ["a", "b"] }""");
+
+        var past = McpPages.Apply(answer, new McpWindow(Limit: 1, Offset: 1));
+
+        Assert.Equal(2, past.GetProperty("degraded").GetArrayLength());
+        Assert.False(past.GetProperty("page").GetProperty("lists").TryGetProperty("degraded", out _));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_page_keeps_only_the_citations_its_own_items_name()
+    {
+        var answer = Json("""{ "sections": [{ "name": "records", "items": [{"id":"a","cites":["C1"]}, {"id":"b","cites":["C2"]}] }], "cites": { "C1": {"k":1}, "C2": {"k":2} } }""");
+
+        var second = McpPages.Apply(answer, new McpWindow(Limit: 1, Offset: 1));
+
+        Assert.Equal(["C2"], second.GetProperty("cites").EnumerateObject().Select(c => c.Name));
+    }
 }

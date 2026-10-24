@@ -147,6 +147,7 @@ public sealed class InputRulesTests
     [InlineData("src/a.Generated.ts", "suffix:.generated.ts", true)]
     [InlineData("src/v2/a.ts", "regex:^v\\d+$", true)]
     [InlineData("src/v2b/a.ts", "regex:^v\\d+$", false)]
+    [InlineData("src/a.ts", "regex:(", false)]   // an invalid expression matches nothing and never throws
     public void MatchesAny_applies_a_prefix_suffix_or_regex_role_entry_to_a_segment(string path, string entry, bool expected)
         => Assert.Equal(expected, InputRules.MatchesAny(path, [entry]));
 

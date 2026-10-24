@@ -2596,6 +2596,8 @@ Aw.Context.Core.Lenses.LensWindow.LensWindow(int Offset, int Limit, bool More) -
 Aw.Context.Core.Lenses.LensWindow.Limit.get -> int
 Aw.Context.Core.Lenses.LensWindow.Limit.init -> void
 Aw.Context.Core.Lenses.LensWindow.More.get -> bool
+Aw.Context.Core.Lenses.LensWindow.Totals.get -> System.Collections.Generic.IReadOnlyDictionary<string!, int>?
+Aw.Context.Core.Lenses.LensWindow.Totals.init -> void
 Aw.Context.Core.Lenses.LensWindow.More.init -> void
 Aw.Context.Core.Lenses.LensWindow.Offset.get -> int
 Aw.Context.Core.Lenses.LensWindow.Offset.init -> void
@@ -3537,17 +3539,6 @@ Aw.Context.Core.Ranking.SourceAnswer.Hits.init -> void
 Aw.Context.Core.Ranking.SourceAnswer.Source.get -> Aw.Context.Core.Sources.SourceId
 Aw.Context.Core.Ranking.SourceAnswer.Source.init -> void
 Aw.Context.Core.Ranking.SourceAnswer.SourceAnswer(Aw.Context.Core.Sources.SourceId Source, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.SourceHit!>! Hits) -> void
-Aw.Context.Core.Results.BudgetUse
-Aw.Context.Core.Results.BudgetUse.<Clone>$() -> Aw.Context.Core.Results.BudgetUse!
-Aw.Context.Core.Results.BudgetUse.Asked.get -> int
-Aw.Context.Core.Results.BudgetUse.Asked.init -> void
-Aw.Context.Core.Results.BudgetUse.BudgetUse(int Asked, int Used, bool Estimate) -> void
-Aw.Context.Core.Results.BudgetUse.Deconstruct(out int Asked, out int Used, out bool Estimate) -> void
-Aw.Context.Core.Results.BudgetUse.Equals(Aw.Context.Core.Results.BudgetUse? other) -> bool
-Aw.Context.Core.Results.BudgetUse.Estimate.get -> bool
-Aw.Context.Core.Results.BudgetUse.Estimate.init -> void
-Aw.Context.Core.Results.BudgetUse.Used.get -> int
-Aw.Context.Core.Results.BudgetUse.Used.init -> void
 Aw.Context.Core.Results.ChangeKind
 Aw.Context.Core.Results.ChangeKind.Added = 0 -> Aw.Context.Core.Results.ChangeKind
 Aw.Context.Core.Results.ChangeKind.Deleted = 2 -> Aw.Context.Core.Results.ChangeKind
@@ -3598,14 +3589,10 @@ Aw.Context.Core.Results.ContextResult.Anchors.get -> System.Collections.Generic.
 Aw.Context.Core.Results.ContextResult.Anchors.init -> void
 Aw.Context.Core.Results.ContextResult.AsOf.get -> System.DateTimeOffset
 Aw.Context.Core.Results.ContextResult.AsOf.init -> void
-Aw.Context.Core.Results.ContextResult.Budget.get -> Aw.Context.Core.Results.BudgetUse!
-Aw.Context.Core.Results.ContextResult.Budget.init -> void
 Aw.Context.Core.Results.ContextResult.Cites.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>!
 Aw.Context.Core.Results.ContextResult.Cites.init -> void
 Aw.Context.Core.Results.ContextResult.Conflicts.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultConflict!>!
 Aw.Context.Core.Results.ContextResult.Conflicts.init -> void
-Aw.Context.Core.Results.ContextResult.ContextResult(int SchemaVersion, Aw.Context.Core.Results.QueryId QueryId, Aw.Context.Core.Engine.ContextQuery! Query, System.Collections.Generic.IReadOnlyList<string!>! Anchors, string? MapVersion, System.DateTimeOffset AsOf, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultSection!>! Sections, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultConflict!>! Conflicts, System.Collections.Generic.IReadOnlyList<string!>! SuggestedAnchors, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DegradedSource!>! Degraded, bool Truncated, Aw.Context.Core.Results.BudgetUse! Budget, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites, Aw.Context.Core.Results.DiffPart? Diff = null) -> void
-Aw.Context.Core.Results.ContextResult.Deconstruct(out int SchemaVersion, out Aw.Context.Core.Results.QueryId QueryId, out Aw.Context.Core.Engine.ContextQuery! Query, out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out string? MapVersion, out System.DateTimeOffset AsOf, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultSection!>! Sections, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultConflict!>! Conflicts, out System.Collections.Generic.IReadOnlyList<string!>! SuggestedAnchors, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DegradedSource!>! Degraded, out bool Truncated, out Aw.Context.Core.Results.BudgetUse! Budget, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites, out Aw.Context.Core.Results.DiffPart? Diff) -> void
 Aw.Context.Core.Results.ContextResult.Degraded.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DegradedSource!>!
 Aw.Context.Core.Results.ContextResult.Degraded.init -> void
 Aw.Context.Core.Results.ContextResult.Diff.get -> Aw.Context.Core.Results.DiffPart?
@@ -3625,8 +3612,6 @@ Aw.Context.Core.Results.ContextResult.SkippedComponents.get -> System.Collection
 Aw.Context.Core.Results.ContextResult.SkippedComponents.init -> void
 Aw.Context.Core.Results.ContextResult.SuggestedAnchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Context.Core.Results.ContextResult.SuggestedAnchors.init -> void
-Aw.Context.Core.Results.ContextResult.Truncated.get -> bool
-Aw.Context.Core.Results.ContextResult.Truncated.init -> void
 Aw.Context.Core.Results.DegradedSource
 Aw.Context.Core.Results.DegradedSource.<Clone>$() -> Aw.Context.Core.Results.DegradedSource!
 Aw.Context.Core.Results.DegradedSource.Code.get -> string!
@@ -3794,15 +3779,13 @@ Aw.Context.Core.Results.ResultItem.Why.get -> System.Collections.Generic.IReadOn
 Aw.Context.Core.Results.ResultItem.Why.init -> void
 Aw.Context.Core.Results.ResultSection
 Aw.Context.Core.Results.ResultSection.<Clone>$() -> Aw.Context.Core.Results.ResultSection!
-Aw.Context.Core.Results.ResultSection.Deconstruct(out string! Name, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultItem!>! Items, out System.Collections.Generic.IReadOnlyList<string!>! More) -> void
+Aw.Context.Core.Results.ResultSection.Deconstruct(out string! Name, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultItem!>! Items) -> void
 Aw.Context.Core.Results.ResultSection.Equals(Aw.Context.Core.Results.ResultSection? other) -> bool
 Aw.Context.Core.Results.ResultSection.Items.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultItem!>!
 Aw.Context.Core.Results.ResultSection.Items.init -> void
-Aw.Context.Core.Results.ResultSection.More.get -> System.Collections.Generic.IReadOnlyList<string!>!
-Aw.Context.Core.Results.ResultSection.More.init -> void
 Aw.Context.Core.Results.ResultSection.Name.get -> string!
 Aw.Context.Core.Results.ResultSection.Name.init -> void
-Aw.Context.Core.Results.ResultSection.ResultSection(string! Name, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultItem!>! Items, System.Collections.Generic.IReadOnlyList<string!>! More) -> void
+Aw.Context.Core.Results.ResultSection.ResultSection(string! Name, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultItem!>! Items) -> void
 Aw.Context.Core.Results.SkippedComponent
 Aw.Context.Core.Results.SkippedComponent.<Clone>$() -> Aw.Context.Core.Results.SkippedComponent!
 Aw.Context.Core.Results.SkippedComponent.Deconstruct(out string! Unit, out int Features) -> void
@@ -4184,6 +4167,8 @@ Aw.Context.Core.Sources.ExternalId.Value.get -> string!
 Aw.Context.Core.Sources.IChangeFeed
 Aw.Context.Core.Sources.IChangeFeed.Changes(Aw.Context.Core.Sources.SourceCursor? after, int limit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Sources.ChangePage!>!>
 Aw.Context.Core.Sources.IContextSource
+Aw.Context.Core.Sources.ISourceNotes
+Aw.Context.Core.Sources.ISourceNotes.TakeNotes() -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Context.Core.Sources.IContextSource.Describe() -> Aw.Context.Core.Sources.SourceDescriptor!
 Aw.Context.Core.Sources.IContextSource.Fetch(Aw.Context.Core.Sources.SourceRef! reference, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Sources.SourceRecord!>!>
 Aw.Context.Core.Sources.IContextSource.Probe(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Context.Core.Sources.SourceHealth!>
@@ -5291,9 +5276,6 @@ override Aw.Context.Core.Ranking.FusedItem.ToString() -> string!
 override Aw.Context.Core.Ranking.SourceAnswer.Equals(object? obj) -> bool
 override Aw.Context.Core.Ranking.SourceAnswer.GetHashCode() -> int
 override Aw.Context.Core.Ranking.SourceAnswer.ToString() -> string!
-override Aw.Context.Core.Results.BudgetUse.Equals(object? obj) -> bool
-override Aw.Context.Core.Results.BudgetUse.GetHashCode() -> int
-override Aw.Context.Core.Results.BudgetUse.ToString() -> string!
 override Aw.Context.Core.Results.Citation.Equals(object? obj) -> bool
 override Aw.Context.Core.Results.Citation.GetHashCode() -> int
 override Aw.Context.Core.Results.Citation.ToString() -> string!
@@ -5559,7 +5541,6 @@ static Aw.Context.Core.Engine.ContextScope.operator !=(Aw.Context.Core.Engine.Co
 static Aw.Context.Core.Engine.ContextScope.operator ==(Aw.Context.Core.Engine.ContextScope? left, Aw.Context.Core.Engine.ContextScope? right) -> bool
 static Aw.Context.Core.Engine.ContextSettings.DefaultDocGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Context.Core.Engine.ContextSettings.DefaultSchemaGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>!
-static Aw.Context.Core.Engine.ContextSettings.DefaultTestGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Context.Core.Engine.ContextSettings.operator !=(Aw.Context.Core.Engine.ContextSettings? left, Aw.Context.Core.Engine.ContextSettings? right) -> bool
 static Aw.Context.Core.Engine.ContextSettings.operator ==(Aw.Context.Core.Engine.ContextSettings? left, Aw.Context.Core.Engine.ContextSettings? right) -> bool
 static Aw.Context.Core.Engine.DiffRange.operator !=(Aw.Context.Core.Engine.DiffRange? left, Aw.Context.Core.Engine.DiffRange? right) -> bool
@@ -6127,8 +6108,6 @@ static Aw.Context.Core.Ranking.FusedItem.operator ==(Aw.Context.Core.Ranking.Fus
 static Aw.Context.Core.Ranking.RankFusion.Fuse(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Ranking.SourceAnswer!>! answers) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Ranking.FusedItem!>!
 static Aw.Context.Core.Ranking.SourceAnswer.operator !=(Aw.Context.Core.Ranking.SourceAnswer? left, Aw.Context.Core.Ranking.SourceAnswer? right) -> bool
 static Aw.Context.Core.Ranking.SourceAnswer.operator ==(Aw.Context.Core.Ranking.SourceAnswer? left, Aw.Context.Core.Ranking.SourceAnswer? right) -> bool
-static Aw.Context.Core.Results.BudgetUse.operator !=(Aw.Context.Core.Results.BudgetUse? left, Aw.Context.Core.Results.BudgetUse? right) -> bool
-static Aw.Context.Core.Results.BudgetUse.operator ==(Aw.Context.Core.Results.BudgetUse? left, Aw.Context.Core.Results.BudgetUse? right) -> bool
 static Aw.Context.Core.Results.Citation.operator !=(Aw.Context.Core.Results.Citation? left, Aw.Context.Core.Results.Citation? right) -> bool
 static Aw.Context.Core.Results.Citation.operator ==(Aw.Context.Core.Results.Citation? left, Aw.Context.Core.Results.Citation? right) -> bool
 static Aw.Context.Core.Results.CitationRef.operator !=(Aw.Context.Core.Results.CitationRef? left, Aw.Context.Core.Results.CitationRef? right) -> bool

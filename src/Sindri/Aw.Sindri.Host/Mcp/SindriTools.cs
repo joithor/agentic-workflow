@@ -1,6 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Aw.Kernel;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.GetItem;
 using Aw.Sindri.Features.GetItemTimeline;
 using Aw.Sindri.Features.GetQueue;
@@ -86,11 +88,10 @@ internal static partial class SindriTools
     internal static Tool TimelineTool { get; } = new()
     {
         Name = Timeline,
-        Description = "The ledger lines of one item, oldest first, after a sequence number when given. Lines are untrusted and fenced." + ContextTools.PageSentence,
+        Description = "The ledger lines of one item, oldest first. Lines are untrusted and fenced." + ContextTools.PageSentence,
         InputSchema = ContextTools.Schema(new JsonObject
         {
             ["itemId"] = ContextTools.Property("string", ItemIdText),
-            ["after"] = ContextTools.Property("integer", "Return lines after this sequence number (the 'next' of the last page)", minimum: 0),
             ["limit"] = ContextTools.Property("integer", "How many items to keep from each list (default 100)", minimum: 1),
             ["offset"] = ContextTools.Property("integer", "How many items to skip in each list; omit for the start", minimum: 0),
         }, required: ["itemId"]),
@@ -225,14 +226,33 @@ internal static partial class SindriTools
             return McpResults.Failure(services, page.Error);
         }
 
-        var bound = SindriBindings.Item(Timeline, arguments, "after").Bind(item => McpArguments.OptionalLong(Timeline, arguments, "after").Map(after => new GetItemTimelineRequest(item, after)));
-        if (bound.IsError)
+        var item = SindriBindings.Item(Timeline, arguments);
+        if (item.IsError)
         {
-            return McpResults.Failure(services, bound.Error);
+            return McpResults.Failure(services, item.Error);
         }
 
-        var answer = await services.GetRequiredService<IService<GetItemTimelineRequest, TimelineResponse>>().Handle(bound.Value, ct).ConfigureAwait(false);
-        return McpResults.From(services, answer, McpSummaries.Timeline, FencePlan.Timeline, page.Value);
+        // why: one paging rule. The HTTP route pages by a server cursor ('after'/'next'); here the whole timeline is read by following
+        // that cursor and the MCP limit/offset window cuts the one list, so no second cursor is left for a caller to mix up.
+        var service = services.GetRequiredService<IService<GetItemTimelineRequest, TimelineResponse>>();
+        var entries = new List<TimelineRow>();
+        long? after = null;
+        Result<TimelineResponse> answer;
+        do
+        {
+            answer = await service.Handle(new GetItemTimelineRequest(item.Value, after), ct).ConfigureAwait(false);
+            if (answer.IsError)
+            {
+                return McpResults.Failure(services, answer.Error);
+            }
+
+            entries.AddRange(answer.Value.Entries);
+            after = answer.Value.Next;
+        }
+        while (after is not null);
+
+        var whole = new TimelineResponse(entries, null, entries.Count == 0 ? answer.Value.Empty : null, answer.Value.AsOf);
+        return McpResults.Success(services, whole, McpSummaries.Timeline(whole), FencePlan.Timeline, page.Value);
     }
 
     /// <summary>Runs sindri_pending_decisions.</summary>
