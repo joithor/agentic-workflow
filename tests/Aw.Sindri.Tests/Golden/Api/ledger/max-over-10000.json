@@ -1,7 +1,7 @@
 {
   "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
-  "title": "SND-CONTEXT-006",
+  "title": "SND-CLI-003",
   "status": 400,
-  "detail": "a lenses call takes 1 to 20 anchors, not 21",
+  "detail": "max is 1 to 10000 (fix: --max 100)",
   "traceId": "<trace>"
 }
