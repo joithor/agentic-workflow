@@ -50,6 +50,6 @@ public sealed partial class CommandPaletteViewModelTests
 
         await palette.Run(palette.Entries.Single(e => e.Id == "ApproveAllRecipes"), Token);
 
-        Assert.Equal((0, "sindri-app recipe approve-all"), (opened, _clipboard.Text));
+        Assert.Equal((0, "sindri recipe approve-all"), (opened, _clipboard.Text));
     }
 }
