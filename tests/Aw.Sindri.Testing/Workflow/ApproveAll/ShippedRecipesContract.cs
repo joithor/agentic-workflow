@@ -1,4 +1,3 @@
-using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.ApproveAll;
 using Aw.Sindri.Core.Workflow.Ids;
 using Xunit;
