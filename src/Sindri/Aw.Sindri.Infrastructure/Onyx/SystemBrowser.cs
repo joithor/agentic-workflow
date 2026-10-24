@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using Aw.Sindri.Core.Onyx;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Infrastructure.Onyx;
 
@@ -18,12 +19,9 @@ internal sealed class SystemBrowser : IBrowser
 
         try
         {
-            var start = new ProcessStartInfo(OperatingSystem.IsMacOS() ? "open" : "xdg-open", [url.AbsoluteUri])
-            {
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-            };
+            var start = ChildEnvironment.Start(OperatingSystem.IsMacOS() ? "open" : "xdg-open", [url.AbsoluteUri]);
+            start.RedirectStandardOutput = true;
+            start.RedirectStandardError = true;
             using var process = Process.Start(start);
             return process is not null;
         }

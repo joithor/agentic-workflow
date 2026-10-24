@@ -18,16 +18,14 @@ public sealed class NeedsYouAskDeskTests
 
     private static string Fact(string body) => $$"""{"key":"fact:escalation","type":"payload","body":{{body}},"truncated":false}""";
 
-    private const string ThreeQuestions =
-        """[{"id":"q1","kind":"productQuestion","question":"Keep the legacy flow?","options":["Keep it","Drop it"],"lens":"product","finding":"F-1"},""" +
-        """{"id":"q2","kind":"ambiguousFix","question":"Which table owns expiry?","lens":"data"},""" +
-        """{"id":"q3","kind":"ambiguousFix","question":"Who is the expiry for?"}]""";
+    // The served escalation fact (workflow-instance-fact/lens-ask-escalation, #834): q1 offers options, q2 and q3 are free text.
+    private static readonly string _golden = GoldenFiles.Api("workflow-instance-fact", "lens-ask-escalation");
 
     // The lens-ask-multi golden: the escalation fact is listed as an input; its full list comes from the fact read.
-    private async Task<NeedsYouBarViewModel> Bar(string escalationBody)
+    private async Task<NeedsYouBarViewModel> Bar(string? escalationBody = null)
     {
         _server.InstanceBody = _ => new RouteAnswer(HttpStatusCode.OK, GoldenFiles.Api("workflow-instance", "lens-ask-multi"));
-        _server.FactBody = (_, key) => string.Equals(key, "fact:escalation", StringComparison.Ordinal) ? new RouteAnswer(HttpStatusCode.OK, Fact(escalationBody)) : null;
+        _server.FactBody = (_, key) => string.Equals(key, "fact:escalation", StringComparison.Ordinal) ? new RouteAnswer(HttpStatusCode.OK, escalationBody is null ? _golden : Fact(escalationBody)) : null;
         var bar = new NeedsYouBarViewModel(new DeskReporter(_server, () => _api), new FakeClipboard(), _clock);
         bar.Show(new NeedsYouRowViewModel(NeedsYouRows.Desk(), seen: true, reducedMotion: false, arrived: false, _clock));
         await bar.Loaded;
@@ -37,11 +35,11 @@ public sealed class NeedsYouAskDeskTests
     [Fact]
     public async Task An_array_of_questions_gives_one_field_each_in_the_order_served()
     {
-        var bar = await Bar(ThreeQuestions);
+        var bar = await Bar();
 
         Assert.True(bar.HasQuestions);
         Assert.Equal(["Keep the legacy flow?", "Which table owns expiry?", "Who is the expiry for?"], bar.Questions.Select(q => q.Prompt), StringComparer.Ordinal);
-        Assert.Equal(["From the product review", "From the data review", ""], bar.Questions.Select(q => q.Context), StringComparer.Ordinal);
+        Assert.Equal(["From the product review", "From the arch review", "From the product review"], bar.Questions.Select(q => q.Context), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -56,24 +54,24 @@ public sealed class NeedsYouAskDeskTests
     [Fact]
     public async Task Options_are_choices_that_fill_the_answer()
     {
-        var bar = await Bar(ThreeQuestions);
+        var bar = await Bar();
         var first = bar.Questions[0];
 
-        Assert.Equal(["Keep it", "Drop it"], first.Options.Select(o => o.Text), StringComparer.Ordinal);
+        Assert.Equal(["keep the queue", "drop the queue"], first.Options.Select(o => o.Text), StringComparer.Ordinal);
         Assert.False(bar.Questions[1].HasOptions);
 
         first.Options[1].Choose();
 
-        Assert.Equal(("Drop it", true), (first.Answer, first.IsAnswered));
+        Assert.Equal(("drop the queue", true), (first.Answer, first.IsAnswered));
     }
 
     [Fact]
     public async Task Every_answer_is_needed_before_the_answers_can_be_sent()
     {
-        var bar = await Bar(ThreeQuestions);
+        var bar = await Bar();
 
         Assert.Equal(("Send answers", false, "Answer every question to send."), (bar.ApproveWord, bar.PrimaryEnabled, bar.QuestionsHint));
-        bar.Questions[0].Answer = "Keep it";
+        bar.Questions[0].Answer = "keep the queue";
         bar.Questions[1].Answer = "   ";
         Assert.False(bar.PrimaryEnabled);
         await bar.PressApprove();
@@ -89,7 +87,7 @@ public sealed class NeedsYouAskDeskTests
     [Fact]
     public async Task The_answers_are_sent_once_as_id_question_answer_in_order()
     {
-        var bar = await Bar(ThreeQuestions);
+        var bar = await Bar();
         bar.Questions[0].Options[0].Choose();
         bar.Questions[1].Answer = " expiry_rules ";
         bar.Questions[2].Answer = "the tenant admin";
@@ -100,7 +98,7 @@ public sealed class NeedsYouAskDeskTests
         Assert.Equal("done", sent.Outcome);
         var answers = JsonNode.Parse(Encoding.UTF8.GetString(sent.Outputs["fact:answers"]))!.AsArray();
         Assert.Equal(
-            [("q1", "Keep the legacy flow?", "Keep it"), ("q2", "Which table owns expiry?", "expiry_rules"), ("q3", "Who is the expiry for?", "the tenant admin")],
+            [("q1", "Keep the legacy flow?", "keep the queue"), ("q2", "Which table owns expiry?", "expiry_rules"), ("q3", "Who is the expiry for?", "the tenant admin")],
             answers.Select(a => (a!["id"]!.GetValue<string>(), a["question"]!.GetValue<string>(), a["answer"]!.GetValue<string>())));
     }
 

@@ -32,10 +32,7 @@ internal static class UiLauncher
 
         try
         {
-            using var process = Process.Start(new ProcessStartInfo("/bin/sh", ["-c", "exec nohup \"$0\" </dev/null >/dev/null 2>&1", path])
-            {
-                UseShellExecute = false,
-            });
+            using var process = Process.Start(Composition.StartChild("/bin/sh", ["-c", "exec nohup \"$0\" </dev/null >/dev/null 2>&1", path]));
             return process is null
                 ? "couldn't start /bin/sh; use sindri status"
                 : string.Create(CultureInfo.InvariantCulture, $"opened ({Path.GetFileName(path)}, pid {process.Id})");

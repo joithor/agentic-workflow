@@ -60,7 +60,8 @@ internal static class PlanSteps
 
     /// <summary>'step.plan.review': the after-design stop, human-only: approve, revise the design, revise the plan, or drop.</summary>
     public static BlockDescriptor Review { get; } = HumanDeskStep("step.plan.review", Capability.None)
-        .Reads("fact:planPacket", "fact:design").Reports("approve", "reviseDesign", "revisePlan", "drop")
+        .Reads("fact:planPacket", "fact:design").Reviewing(ReviewOf("fact:planPacket", DeskReviewKind.Plan), ReviewOf("fact:design", DeskReviewKind.Design))
+        .Reports("approve", "reviseDesign", "revisePlan", "drop")
         .Writes(On("fact:answers", "reviseDesign", "revisePlan"));
 
     /// <summary>'step.plan.freeze': re-checks and freezes the design, plan and phase packets together; 'frozen' or 'mismatch'.</summary>

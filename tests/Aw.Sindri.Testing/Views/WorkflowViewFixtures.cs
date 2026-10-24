@@ -1,11 +1,14 @@
 #pragma warning disable MA0003, MA0127 // fixture records are positional; their literals are named by the record
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.OpenTargets;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.GetInstanceFact;
+using DeskReviewKind = Aw.Sindri.Core.Workflow.Blocks.DeskReviewKind;
 
 namespace Aw.Sindri.Testing.Views;
 
@@ -41,6 +44,7 @@ public static class WorkflowViewFixtures
     private static readonly RecipeShape _devTriage = FixtureRecipes.DevTriage;
     private static readonly RecipeShape _devDesk = FixtureRecipes.DevDesk;
     private static readonly RecipeShape _fork = FixtureRecipes.Fork;
+    private static readonly RecipeShape _scoping = FixtureRecipes.Scoping;
     // this instance was started on the scope packet alone and lists fact:answers (no declared output of the shipped recipe) as the ask desk's pending output, so its shape narrows the inputs and adds it
     private static readonly RecipeShape _design = FixtureRecipes.Design with
     {
@@ -225,6 +229,7 @@ public static class WorkflowViewFixtures
             Run = lines.Run,
             TakenOverAt = lines.TakenOverAt,
             TakenOverBy = lines.TakenOverBy,
+            ReasonCode = lines.ReasonCode,
         };
         var name = FixtureRecipes.All.SingleOrDefault(r => r.Id == recipe.Id.Value)?.Name is null ? null : row.Subject.Label;
         return fields with { Text = StatusText.Render(fields, Now, name) };
@@ -332,6 +337,8 @@ public static class WorkflowViewFixtures
 
         public StatusPaused? Paused { get; init; }
 
+        public string? ReasonCode { get; init; }
+
         public DateTimeOffset? TakenOverAt { get; init; }
 
         public string? TakenOverBy { get; init; }
@@ -413,6 +420,14 @@ public static class WorkflowViewFixtures
     public static StatusFields StatusAgentRun() => Status(_agentRun, "agent running",
         "An agent session is working on produce. It reports when it is done; take it over to work on it yourself.", new OpenWork(RunningSteps: 1),
         new StatusLines { Run = new StatusRun("agent", "LCH-01JM3A4B5C6D7E8F") });
+
+    /// <summary>q65: a dispatch park (an effect refused because the setup it needs isn't there) with its typed code, so the app never reads the words to name it.</summary>
+    public static StatusFields StatusParkedDispatchRefused() => Status(_prjCache, "spec-conflict (dispatch)",
+        "effect.claim.ref can't run: repo 'web' isn't in the approved profile. Fix that, then resume to send it again.\nAnswer with --resume once the cause is fixed.", new OpenWork(),
+        new StatusLines { Answer = Answer(AnswerKind.Resume, "ITM-01JKF/project/1"), ReasonCode = "SND-WF-010" });
+
+    /// <summary>q65: the agent run once its launch knows the session: provider and id, the handle the Agents page opens (session/claude-code/{id}).</summary>
+    public static StatusFields StatusAgentRunSession() => StatusAgentRun() with { Run = new StatusRun("agent", "LCH-01JM3A4B5C6D7E8F", new SessionHandle(AgentId.From("claude-code"), SessionId.From("0b1c2d3e-0000-4000-8000-000000000001"))) };
 
     /// <summary>A park with a recorded drift: it takes no answer (API Q-API-4): the recipe re-approval is its own protected command, and the approval resumes the instance.</summary>
     public static StatusFields StatusParkedDrift() => Status(_prjCache, "spec-conflict (drift)",
@@ -503,7 +518,7 @@ public static class WorkflowViewFixtures
         evidence,
     ];
 
-    /// <summary>PRJ-sync: build, four of nine children done in four workstreams, a scope map, a packet and evidence; one child parked.</summary>
+    /// <summary>PRJ-sync: build, four of nine children done in four workstreams, a scope map, a packet and evidence; one child parked, so its needs-you row's open (q65) is that child.</summary>
     public static InstanceDetail ProjectBuild()
     {
         var status = Status(_prjSync, null, "Waiting on 9 children: 4 done, 1 running, 1 parked, 3 not started.", new OpenWork(OpenChildren: 5),
@@ -523,13 +538,14 @@ public static class WorkflowViewFixtures
             [Child(parent, 6, "ITM-01JD7", "Background sync (iOS)", StateGlyph.Active, "produce", owned: park), Child(parent, 7, "ITM-01JF3", "doctor views line", StateGlyph.Pending, "produce", age: 3_120),
                 Child(parent, 8, "ITM-01JF4", "Tray badge on Linux", StateGlyph.Pending, "produce", age: 2_400)]);
         var ws4 = new Workstream("ws-4", "Rollout", [Child(parent, 9, "ITM-01JF8", "Receipt verify route", StateGlyph.Pending, "produce", age: 720)]);
-        return Detail(_prjSync, "Offline sync", PathOrdering.Path,
+        var detail = Detail(_prjSync, "Offline sync", PathOrdering.Path,
             new CurrentState("build", new StepDeclaration("wait", "workflow.step", "one child per packet task"),
                 [new GateLine(BlockId.From("gate.evidence.all"), "exit", null, "Every child has its evidence pack."), new GateLine(BlockId.From("gate.judge.verify"), "exit", 0.8, "The judge scores the build at least 0.8.")],
                 null, status),
             _project.Facts([.. ProjectFacts(At(10, 12, 9, 14), Fake(_project, "fact:evidence", FactStatus.InProgress, "4 of 9 packs", reference: Ref(factKey: "fact:evidence"), progress: new Progress(4, 9)))]),
             [new ChildGroup("build", RecipeId.From("workflow.step"), 4, 9, [ws1, ws2, ws3, ws4], [], 0, "Step")],
             Counts(41, 3, 1));
+        return detail with { Open = new NeedsYouOpen("workflow/ITM-01JK3/project/1/step.6", "Answer in the child") };
     }
 
     private static readonly InstanceSummary _prjDocs = Row("ITM-01JKG/project/1", _project, "build", Today(8, 40), null,
@@ -603,6 +619,58 @@ public static class WorkflowViewFixtures
                 Produced(_design, "fact:escalation", "3 questions: q1 Keep the legacy flow? · q2 Which table owns expiry? · q3 Who is the expiry for?", At(10, 12, 12, 22), "step.lens.log", Ref(factKey: "fact:escalation")),
                 Fake(_design, "fact:answers", FactStatus.Pending, "awaiting your answers", pending: pending)),
             [], Counts(9, 0, 1));
+    }
+
+    /// <summary>
+    /// q65: the design review's ask desk (<see cref="LensAskMulti"/>) with what it has the person review, as its block declares it: the questions (no place to open), the frozen scope packet
+    /// (its directory, read from the fact's { hash, dir }) and the pull request (its url, read from 'fact:prStatus').
+    /// </summary>
+    public static InstanceDetail DeskReviews()
+    {
+        var detail = LensAskMulti();
+        var form = detail.Current.Desk! with
+        {
+            Reviews =
+            [
+                new DeskReview("fact:escalation", DeskReviewKind.Questions),
+                new DeskReview("fact:scopePacket", DeskReviewKind.Scope, Path: "/home/dev/.agentic-workflow/packets/acme/web/scope-7/frozen"),
+                new DeskReview("fact:prStatus", DeskReviewKind.Pr, Url: "https://github.com/acme/web/pull/412"),
+            ],
+        };
+        var address = InstanceAddress.From("ITM-01JN4/design/1");   // its own instance: the UI fake finds an instance by id
+        return detail with { Address = address, Id = WorkflowInstanceId.Of(address), ItemId = ItemKey.From("ITM-01JN4"), Current = detail.Current with { Desk = form } };
+    }
+
+    /// <summary>q65: an agent run of a running branch with its session handle on the run.</summary>
+    public static InstanceDetail AgentRunSession()
+    {
+        var detail = TransitionList();
+        return detail with { Current = detail.Current with { Status = detail.Current.Status with { Run = new StatusRun("agent", "LCH-01JL3A4B5C6D7E8F", new SessionHandle(AgentId.From("claude-code"), SessionId.From("0b1c2d3e-0000-4000-8000-000000000001"))) } } };
+    }
+
+    /// <summary>
+    /// ITM-01JN3: workflow.scoping parked at its 'interview' desk (step.interview.answer, human-only) in the first round: 'questions' left three questions in fact:questions (each with options, one
+    /// recommended; schemas/scoping/questions.json), and the answer log and the answers are still empty. The desk completes with 'answered' (fact:answers, the loop goes on) or 'doneAsking' (fact:answers
+    /// and the interview is closed); both outcomes are in the status text, which is where a desk form lists them.
+    /// </summary>
+    public static InstanceDetail ScopingInterview()
+    {
+        var row = Row("ITM-01JN3/scoping/1", _scoping, "interview", Today(12, 10), null, Subject("text", "ITM-01JN3", "Expiry for shared links"),
+            _scoping.Cells("interview", round: 1, Shape(("interview", c => c with { Round = new Round(1, 4) }))), "needs your answers (desk)", "CompleteStep", "ApplyCommand:takeover", "ApplyCommand:cancel");
+        var answered = "sindri workflow complete ITM-01JN3/scoping/1 --run 6.1 --outcome answered --output fact:answers=<file>";
+        var doneAsking = "sindri workflow complete ITM-01JN3/scoping/1 --run 6.1 --outcome doneAsking --output fact:answers=<file>";
+        var status = Status(row, "desk task", $"Answer the 3 questions on ITM-01JN3, then run:\n{answered}\nor, to stop asking and close the interview:\n{doneAsking}", new OpenWork(CompleteCli: answered),
+            DeskLines(new StatusInput("fact:questions", "questions.json", Hash("7e3a90b1")), 172_800, "interview"));
+        var pending = new FactPending(true, ["answers.payload"], Act("CompleteStep"));
+        return Detail(row, "Expiry for shared links", PathOrdering.Path,
+            new CurrentState("interview", new StepDeclaration("active", "step.interview.answer", "the owner's answers to the questions; pick an option, write your own under other, or skip one"), [],
+                new DeskForm(RunToken.From("6.1"), [new DeskOutput("fact:answers", FactType.Payload, true)], ["answers.payload"], Act("CompleteStep")), status),
+            _scoping.Facts(
+                Produced(_scoping, "fact:scopeInput", "brief: shared links expire", At(10, 12, 12, 0), "human:cli", Ref(factKey: "fact:scopeInput")),
+                Produced(_scoping, "fact:questions", "3 questions: Q1 Does this replace decision 0001? · Q2 What happens to links that already exist? · Q3 What does someone see on an expired link?", At(10, 12, 12, 10), "step.interview.questions", Ref(factKey: "fact:questions")),
+                Fake(_scoping, "fact:answerLog", FactStatus.Produced, "empty: no answers yet", At(10, 12, 12, 5), "step.scope.intake"),
+                Fake(_scoping, "fact:answers", FactStatus.Pending, "awaiting your answers", pending: pending)),
+            [], Counts(7, 0, 1));
     }
 
     /// <summary>pagerduty P-2211: escalated at the severity gate; the accept needs a terminal.</summary>

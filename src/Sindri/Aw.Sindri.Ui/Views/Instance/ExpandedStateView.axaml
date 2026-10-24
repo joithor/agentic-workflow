@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:inst="using:Aw.Sindri.Ui.ViewModels.Instance"
+             xmlns:comps="using:Aw.Sindri.Ui.ViewModels.Components"
              xmlns:comp="using:Aw.Sindri.Ui.Views.Components"
              x:Class="Aw.Sindri.Ui.Views.Instance.ExpandedStateView"
              x:DataType="inst:ExpandedStateViewModel">
@@ -28,6 +29,19 @@
               AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
         <TextBlock x:Name="ExpandedRunLine" Classes="body" Text="{Binding RunLine}" AutomationProperties.AccessibilityView="Raw" />
       </Border>
+      <TextBlock x:Name="ExpandedReason" Classes="body" Text="{Binding ReasonLine}" IsVisible="{Binding HasReasonLine}" TextWrapping="Wrap" AutomationProperties.Name="{Binding ReasonLine}" />
+      <ItemsControl x:Name="ExpandedReviews" ItemsSource="{Binding Reviews}" IsVisible="{Binding HasReviews}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="comps:DeskReviewViewModel">
+            <Button Classes="row-title" Margin="0,0,8,4" Content="{Binding Label}" Click="OnReview" AutomationProperties.Name="{Binding Name}" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
       <Button x:Name="ExpandedSession" Classes="row-title" HorizontalAlignment="Left" Content="{Binding SessionLinkText}" Click="OnSession" IsVisible="{Binding HasSession}"
               AutomationProperties.Name="{Binding SessionLinkName}" />
       <TextBlock x:Name="ExpandedLaunch" Classes="caption" Text="{Binding LaunchLine}" IsVisible="{Binding HasLaunchLine}" TextWrapping="Wrap"

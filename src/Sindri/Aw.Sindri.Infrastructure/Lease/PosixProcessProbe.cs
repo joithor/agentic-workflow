@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Infrastructure.Lease;
 
@@ -63,11 +64,9 @@ internal sealed class PosixProcessProbe : IProcessProbe
             return File.ReadAllText("/proc/sys/kernel/random/boot_id").Trim();
         }
 
-        using var sysctl = Process.Start(new ProcessStartInfo("/usr/sbin/sysctl", ["-n", "kern.bootsessionuuid"])
-        {
-            RedirectStandardOutput = true,
-            UseShellExecute = false,
-        }) ?? throw new InvalidOperationException("sysctl didn't start");
+        var start = ChildEnvironment.Start("/usr/sbin/sysctl", ["-n", "kern.bootsessionuuid"]);
+        start.RedirectStandardOutput = true;
+        using var sysctl = Process.Start(start) ?? throw new InvalidOperationException("sysctl didn't start");
         var id = sysctl.StandardOutput.ReadToEnd().Trim();
         sysctl.WaitForExit();
         return id.Length > 0 ? id : throw new InvalidOperationException("sysctl kern.bootsessionuuid printed nothing");

@@ -12,19 +12,6 @@ Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse.Provenance.get -> A
 Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse.Provenance.init -> void
 Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse.Reason.get -> string!
 Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse.Reason.init -> void
-Aw.Evidence.Features.Doctor.DoctorRequest
-Aw.Evidence.Features.Doctor.DoctorRequest.<Clone>$() -> Aw.Evidence.Features.Doctor.DoctorRequest!
-Aw.Evidence.Features.Doctor.DoctorRequest.DoctorRequest() -> void
-Aw.Evidence.Features.Doctor.DoctorRequest.Equals(Aw.Evidence.Features.Doctor.DoctorRequest? other) -> bool
-Aw.Evidence.Features.Doctor.DoctorResponse
-Aw.Evidence.Features.Doctor.DoctorResponse.<Clone>$() -> Aw.Evidence.Features.Doctor.DoctorResponse!
-Aw.Evidence.Features.Doctor.DoctorResponse.Deconstruct(out bool Healthy, out System.Collections.Generic.IReadOnlyList<string!>! Failures) -> void
-Aw.Evidence.Features.Doctor.DoctorResponse.DoctorResponse(bool Healthy, System.Collections.Generic.IReadOnlyList<string!>! Failures) -> void
-Aw.Evidence.Features.Doctor.DoctorResponse.Equals(Aw.Evidence.Features.Doctor.DoctorResponse? other) -> bool
-Aw.Evidence.Features.Doctor.DoctorResponse.Failures.get -> System.Collections.Generic.IReadOnlyList<string!>!
-Aw.Evidence.Features.Doctor.DoctorResponse.Failures.init -> void
-Aw.Evidence.Features.Doctor.DoctorResponse.Healthy.get -> bool
-Aw.Evidence.Features.Doctor.DoctorResponse.Healthy.init -> void
 Aw.Evidence.Features.EvidenceFeaturesServiceCollectionExtensions
 Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest
 Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest.<Clone>$() -> Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest!
@@ -201,12 +188,6 @@ override Aw.Evidence.Features.CheckProvenance.CheckProvenanceRequest.ToString() 
 override Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse.Equals(object? obj) -> bool
 override Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse.GetHashCode() -> int
 override Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse.ToString() -> string!
-override Aw.Evidence.Features.Doctor.DoctorRequest.Equals(object? obj) -> bool
-override Aw.Evidence.Features.Doctor.DoctorRequest.GetHashCode() -> int
-override Aw.Evidence.Features.Doctor.DoctorRequest.ToString() -> string!
-override Aw.Evidence.Features.Doctor.DoctorResponse.Equals(object? obj) -> bool
-override Aw.Evidence.Features.Doctor.DoctorResponse.GetHashCode() -> int
-override Aw.Evidence.Features.Doctor.DoctorResponse.ToString() -> string!
 override Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest.Equals(object? obj) -> bool
 override Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest.GetHashCode() -> int
 override Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest.ToString() -> string!
@@ -259,10 +240,6 @@ static Aw.Evidence.Features.CheckProvenance.CheckProvenanceRequest.operator !=(A
 static Aw.Evidence.Features.CheckProvenance.CheckProvenanceRequest.operator ==(Aw.Evidence.Features.CheckProvenance.CheckProvenanceRequest? left, Aw.Evidence.Features.CheckProvenance.CheckProvenanceRequest? right) -> bool
 static Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse.operator !=(Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse? left, Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse? right) -> bool
 static Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse.operator ==(Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse? left, Aw.Evidence.Features.CheckProvenance.CheckProvenanceResponse? right) -> bool
-static Aw.Evidence.Features.Doctor.DoctorRequest.operator !=(Aw.Evidence.Features.Doctor.DoctorRequest? left, Aw.Evidence.Features.Doctor.DoctorRequest? right) -> bool
-static Aw.Evidence.Features.Doctor.DoctorRequest.operator ==(Aw.Evidence.Features.Doctor.DoctorRequest? left, Aw.Evidence.Features.Doctor.DoctorRequest? right) -> bool
-static Aw.Evidence.Features.Doctor.DoctorResponse.operator !=(Aw.Evidence.Features.Doctor.DoctorResponse? left, Aw.Evidence.Features.Doctor.DoctorResponse? right) -> bool
-static Aw.Evidence.Features.Doctor.DoctorResponse.operator ==(Aw.Evidence.Features.Doctor.DoctorResponse? left, Aw.Evidence.Features.Doctor.DoctorResponse? right) -> bool
 static Aw.Evidence.Features.EvidenceFeaturesServiceCollectionExtensions.AddEvidenceFeatures(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest.operator !=(Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest? left, Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest? right) -> bool
 static Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest.operator ==(Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest? left, Aw.Evidence.Features.InstallBrowser.InstallBrowserRequest? right) -> bool
@@ -376,3 +353,95 @@ static Aw.Evidence.Features.DbRun.DbRunRequest.operator !=(Aw.Evidence.Features.
 static Aw.Evidence.Features.DbRun.DbRunRequest.operator ==(Aw.Evidence.Features.DbRun.DbRunRequest? left, Aw.Evidence.Features.DbRun.DbRunRequest? right) -> bool
 static Aw.Evidence.Features.DbRun.DbRunResponse.operator !=(Aw.Evidence.Features.DbRun.DbRunResponse? left, Aw.Evidence.Features.DbRun.DbRunResponse? right) -> bool
 static Aw.Evidence.Features.DbRun.DbRunResponse.operator ==(Aw.Evidence.Features.DbRun.DbRunResponse? left, Aw.Evidence.Features.DbRun.DbRunResponse? right) -> bool
+Aw.Evidence.Features.GhPublish.GhPublishRequest
+Aw.Evidence.Features.GhPublish.GhPublishRequest.<Clone>$() -> Aw.Evidence.Features.GhPublish.GhPublishRequest!
+Aw.Evidence.Features.GhPublish.GhPublishRequest.Equals(Aw.Evidence.Features.GhPublish.GhPublishRequest? other) -> bool
+Aw.Evidence.Features.GhPublish.GhPublishRequest.GhPublishRequest(string! RunDirectory, string! Repo, int Pr, Aw.Evidence.Core.Guard.DbProvenance? Provenance, System.Collections.Generic.IReadOnlyList<string!>! Reviewed) -> void
+override Aw.Evidence.Features.GhPublish.GhPublishRequest.Equals(object? obj) -> bool
+override Aw.Evidence.Features.GhPublish.GhPublishRequest.GetHashCode() -> int
+override Aw.Evidence.Features.GhPublish.GhPublishRequest.ToString() -> string!
+static Aw.Evidence.Features.GhPublish.GhPublishRequest.operator !=(Aw.Evidence.Features.GhPublish.GhPublishRequest? left, Aw.Evidence.Features.GhPublish.GhPublishRequest? right) -> bool
+static Aw.Evidence.Features.GhPublish.GhPublishRequest.operator ==(Aw.Evidence.Features.GhPublish.GhPublishRequest? left, Aw.Evidence.Features.GhPublish.GhPublishRequest? right) -> bool
+Aw.Evidence.Features.GhPublish.GhPublishRequest.Deconstruct(out string! RunDirectory, out string! Repo, out int Pr, out Aw.Evidence.Core.Guard.DbProvenance? Provenance, out System.Collections.Generic.IReadOnlyList<string!>! Reviewed) -> void
+Aw.Evidence.Features.GhPublish.GhPublishRequest.RunDirectory.get -> string!
+Aw.Evidence.Features.GhPublish.GhPublishRequest.RunDirectory.init -> void
+Aw.Evidence.Features.GhPublish.GhPublishRequest.Repo.get -> string!
+Aw.Evidence.Features.GhPublish.GhPublishRequest.Repo.init -> void
+Aw.Evidence.Features.GhPublish.GhPublishRequest.Pr.get -> int
+Aw.Evidence.Features.GhPublish.GhPublishRequest.Pr.init -> void
+Aw.Evidence.Features.GhPublish.GhPublishRequest.Provenance.get -> Aw.Evidence.Core.Guard.DbProvenance?
+Aw.Evidence.Features.GhPublish.GhPublishRequest.Provenance.init -> void
+Aw.Evidence.Features.GhPublish.GhPublishRequest.Reviewed.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Features.GhPublish.GhPublishRequest.Reviewed.init -> void
+Aw.Evidence.Features.GhPublish.GhPublishResponse
+Aw.Evidence.Features.GhPublish.GhPublishResponse.<Clone>$() -> Aw.Evidence.Features.GhPublish.GhPublishResponse!
+Aw.Evidence.Features.GhPublish.GhPublishResponse.Equals(Aw.Evidence.Features.GhPublish.GhPublishResponse? other) -> bool
+Aw.Evidence.Features.GhPublish.GhPublishResponse.GhPublishResponse(Aw.Evidence.Core.Guard.Provenance Provenance, bool ReviewBlocked, System.Collections.Generic.IReadOnlyList<string!>! Unreviewed, string? Branch, string? Commit, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Urls, string? CommentFile, System.Collections.Generic.IReadOnlyList<string!>! Post) -> void
+override Aw.Evidence.Features.GhPublish.GhPublishResponse.Equals(object? obj) -> bool
+override Aw.Evidence.Features.GhPublish.GhPublishResponse.GetHashCode() -> int
+override Aw.Evidence.Features.GhPublish.GhPublishResponse.ToString() -> string!
+static Aw.Evidence.Features.GhPublish.GhPublishResponse.operator !=(Aw.Evidence.Features.GhPublish.GhPublishResponse? left, Aw.Evidence.Features.GhPublish.GhPublishResponse? right) -> bool
+static Aw.Evidence.Features.GhPublish.GhPublishResponse.operator ==(Aw.Evidence.Features.GhPublish.GhPublishResponse? left, Aw.Evidence.Features.GhPublish.GhPublishResponse? right) -> bool
+Aw.Evidence.Features.GhPublish.GhPublishResponse.Deconstruct(out Aw.Evidence.Core.Guard.Provenance Provenance, out bool ReviewBlocked, out System.Collections.Generic.IReadOnlyList<string!>! Unreviewed, out string? Branch, out string? Commit, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Urls, out string? CommentFile, out System.Collections.Generic.IReadOnlyList<string!>! Post) -> void
+Aw.Evidence.Features.GhPublish.GhPublishResponse.Provenance.get -> Aw.Evidence.Core.Guard.Provenance
+Aw.Evidence.Features.GhPublish.GhPublishResponse.Provenance.init -> void
+Aw.Evidence.Features.GhPublish.GhPublishResponse.ReviewBlocked.get -> bool
+Aw.Evidence.Features.GhPublish.GhPublishResponse.ReviewBlocked.init -> void
+Aw.Evidence.Features.GhPublish.GhPublishResponse.Unreviewed.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Features.GhPublish.GhPublishResponse.Unreviewed.init -> void
+Aw.Evidence.Features.GhPublish.GhPublishResponse.Branch.get -> string?
+Aw.Evidence.Features.GhPublish.GhPublishResponse.Branch.init -> void
+Aw.Evidence.Features.GhPublish.GhPublishResponse.Commit.get -> string?
+Aw.Evidence.Features.GhPublish.GhPublishResponse.Commit.init -> void
+Aw.Evidence.Features.GhPublish.GhPublishResponse.Urls.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Evidence.Features.GhPublish.GhPublishResponse.Urls.init -> void
+Aw.Evidence.Features.GhPublish.GhPublishResponse.CommentFile.get -> string?
+Aw.Evidence.Features.GhPublish.GhPublishResponse.CommentFile.init -> void
+Aw.Evidence.Features.GhPublish.GhPublishResponse.Post.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Features.GhPublish.GhPublishResponse.Post.init -> void
+Aw.Evidence.Features.Doctor.DoctorSlot
+Aw.Evidence.Features.Doctor.DoctorSlot.<Clone>$() -> Aw.Evidence.Features.Doctor.DoctorSlot!
+Aw.Evidence.Features.Doctor.DoctorSlot.Equals(Aw.Evidence.Features.Doctor.DoctorSlot? other) -> bool
+Aw.Evidence.Features.Doctor.DoctorSlot.DoctorSlot(int Number, string! Worktree, string! Host, string? Database) -> void
+override Aw.Evidence.Features.Doctor.DoctorSlot.Equals(object? obj) -> bool
+override Aw.Evidence.Features.Doctor.DoctorSlot.GetHashCode() -> int
+override Aw.Evidence.Features.Doctor.DoctorSlot.ToString() -> string!
+static Aw.Evidence.Features.Doctor.DoctorSlot.operator !=(Aw.Evidence.Features.Doctor.DoctorSlot? left, Aw.Evidence.Features.Doctor.DoctorSlot? right) -> bool
+static Aw.Evidence.Features.Doctor.DoctorSlot.operator ==(Aw.Evidence.Features.Doctor.DoctorSlot? left, Aw.Evidence.Features.Doctor.DoctorSlot? right) -> bool
+Aw.Evidence.Features.Doctor.DoctorSlot.Deconstruct(out int Number, out string! Worktree, out string! Host, out string? Database) -> void
+Aw.Evidence.Features.Doctor.DoctorSlot.Number.get -> int
+Aw.Evidence.Features.Doctor.DoctorSlot.Number.init -> void
+Aw.Evidence.Features.Doctor.DoctorSlot.Worktree.get -> string!
+Aw.Evidence.Features.Doctor.DoctorSlot.Worktree.init -> void
+Aw.Evidence.Features.Doctor.DoctorSlot.Host.get -> string!
+Aw.Evidence.Features.Doctor.DoctorSlot.Host.init -> void
+Aw.Evidence.Features.Doctor.DoctorSlot.Database.get -> string?
+Aw.Evidence.Features.Doctor.DoctorSlot.Database.init -> void
+Aw.Evidence.Features.Doctor.DoctorRequest
+Aw.Evidence.Features.Doctor.DoctorRequest.<Clone>$() -> Aw.Evidence.Features.Doctor.DoctorRequest!
+Aw.Evidence.Features.Doctor.DoctorRequest.Equals(Aw.Evidence.Features.Doctor.DoctorRequest? other) -> bool
+Aw.Evidence.Features.Doctor.DoctorRequest.DoctorRequest(string? Worktree = null) -> void
+override Aw.Evidence.Features.Doctor.DoctorRequest.Equals(object? obj) -> bool
+override Aw.Evidence.Features.Doctor.DoctorRequest.GetHashCode() -> int
+override Aw.Evidence.Features.Doctor.DoctorRequest.ToString() -> string!
+static Aw.Evidence.Features.Doctor.DoctorRequest.operator !=(Aw.Evidence.Features.Doctor.DoctorRequest? left, Aw.Evidence.Features.Doctor.DoctorRequest? right) -> bool
+static Aw.Evidence.Features.Doctor.DoctorRequest.operator ==(Aw.Evidence.Features.Doctor.DoctorRequest? left, Aw.Evidence.Features.Doctor.DoctorRequest? right) -> bool
+Aw.Evidence.Features.Doctor.DoctorRequest.Deconstruct(out string? Worktree) -> void
+Aw.Evidence.Features.Doctor.DoctorRequest.Worktree.get -> string?
+Aw.Evidence.Features.Doctor.DoctorRequest.Worktree.init -> void
+Aw.Evidence.Features.Doctor.DoctorResponse
+Aw.Evidence.Features.Doctor.DoctorResponse.<Clone>$() -> Aw.Evidence.Features.Doctor.DoctorResponse!
+Aw.Evidence.Features.Doctor.DoctorResponse.Equals(Aw.Evidence.Features.Doctor.DoctorResponse? other) -> bool
+Aw.Evidence.Features.Doctor.DoctorResponse.DoctorResponse(bool Healthy, System.Collections.Generic.IReadOnlyList<string!>! Failures, Aw.Evidence.Features.Doctor.DoctorSlot? Slot = null) -> void
+override Aw.Evidence.Features.Doctor.DoctorResponse.Equals(object? obj) -> bool
+override Aw.Evidence.Features.Doctor.DoctorResponse.GetHashCode() -> int
+override Aw.Evidence.Features.Doctor.DoctorResponse.ToString() -> string!
+static Aw.Evidence.Features.Doctor.DoctorResponse.operator !=(Aw.Evidence.Features.Doctor.DoctorResponse? left, Aw.Evidence.Features.Doctor.DoctorResponse? right) -> bool
+static Aw.Evidence.Features.Doctor.DoctorResponse.operator ==(Aw.Evidence.Features.Doctor.DoctorResponse? left, Aw.Evidence.Features.Doctor.DoctorResponse? right) -> bool
+Aw.Evidence.Features.Doctor.DoctorResponse.Deconstruct(out bool Healthy, out System.Collections.Generic.IReadOnlyList<string!>! Failures, out Aw.Evidence.Features.Doctor.DoctorSlot? Slot) -> void
+Aw.Evidence.Features.Doctor.DoctorResponse.Healthy.get -> bool
+Aw.Evidence.Features.Doctor.DoctorResponse.Healthy.init -> void
+Aw.Evidence.Features.Doctor.DoctorResponse.Failures.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Evidence.Features.Doctor.DoctorResponse.Failures.init -> void
+Aw.Evidence.Features.Doctor.DoctorResponse.Slot.get -> Aw.Evidence.Features.Doctor.DoctorSlot?
+Aw.Evidence.Features.Doctor.DoctorResponse.Slot.init -> void

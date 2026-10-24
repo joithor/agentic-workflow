@@ -87,6 +87,7 @@ using Aw.Sindri.Features.RevokeRecipe;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.SampleSessionUsage;
 using Aw.Sindri.Features.Scoping;
+using Aw.Sindri.Features.Scrub;
 using Aw.Sindri.Features.SessionExit;
 using Aw.Sindri.Features.SessionHeartbeat;
 using Aw.Sindri.Features.Sessions;
@@ -128,6 +129,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IService<CheckProfileRequest, CheckProfileResponse>, CheckProfileService>()
             .AddScoped<IService<ValidateProfileRequest, ValidateProfileResponse>, ValidateProfileService>()
             .AddScoped<IService<InitProfileRequest, InitProfileResponse>, InitProfileService>()
+            .AddScoped<IService<ScrubRequest, ScrubResponse>, ScrubService>()
             .AddDoctor()
             .AddOnyxStatus()
             .AddScoped<ServeRecords>()
@@ -140,7 +142,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddRecipeTools()
             .AddRecipeBlocks()
             .AddRegistrySlices()
-            .AddContextSlices().AddCodeIndexReads()
+            .AddContextSlices().AddCodeIndexReads().AddEngineReads()
             .AddContextJobs()
             .AddCodeIndexJobs()
             .AddEngineSlices()
@@ -223,14 +225,15 @@ public static class SindriFeaturesServiceCollectionExtensions
     {
         _ = services.AddScoped<IValidator<StartInstanceRequest>, AcceptAllValidator<StartInstanceRequest>>().AddCommand<StartInstanceRequest, StartInstanceResponse, StartInstanceService>();
         _ = services.AddScoped<IValidator<RerunInstanceRequest>, AcceptAllValidator<RerunInstanceRequest>>().AddCommand<RerunInstanceRequest, StartInstanceResponse, RerunInstanceService>();
-        _ = services.AddScoped<StartFacts>().AddSingleton<IStartFactCheck, ScopeInputStartCheck>().AddScoped<ClaimHolders>().AddScoped<EngineFilledReport>().AddSingleton<ReportOutputTypes>();   // engine P6 unit (d): SND-WF-012 against workflow_claims
+        _ = services.AddScoped<StartFacts>().AddSingleton<IStartFactCheck, ScopeInputStartCheck>().AddScoped<ClaimHolders>().AddScoped<EngineFilledReport>().AddSingleton<ReportOutputTypes>();
+        services.TryAddSingleton<ReportRefusals>();   // the Workflows watch takes what the check records; one instance, whichever registers first   // engine P6 unit (d): SND-WF-012 against workflow_claims
         _ = services.AddScoped<IValidator<ApplyCommandRequest>, AcceptAllValidator<ApplyCommandRequest>>().AddCommand<ApplyCommandRequest, ApplyCommandResponse, ApplyCommandService>();
         _ = services.AddScoped<IValidator<CompleteStepRequest>, AcceptAllValidator<CompleteStepRequest>>().AddCommand<CompleteStepRequest, CompleteStepResponse, CompleteStepService>();
         _ = services.AddScoped<IValidator<IssueNonceRequest>, AcceptAllValidator<IssueNonceRequest>>().AddIssue<IssueNonceRequest, IssueNonceResponse, IssueNonceService>();
         _ = services.AddScoped<IStepRunSource, LedgerStepRunSource>();
         _ = services.AddScoped<StepRunReader>();
         _ = services.AddScoped<IValidator<GetInstanceRequest>, AcceptAllValidator<GetInstanceRequest>>().AddQuery<GetInstanceRequest, InstanceDetail, GetInstanceService>();
-        _ = services.AddScoped<InstanceRows>().AddScoped<DetailContexts>();
+        _ = services.AddScoped<InstanceRows>().AddScoped<DetailContexts>().AddScoped<InstanceJoins>();
         _ = services.AddScoped<IValidator<ListInstancesRequest>, AcceptAllValidator<ListInstancesRequest>>().AddQuery<ListInstancesRequest, InstanceList, ListInstancesService>();
         _ = services.AddScoped<IValidator<GetInstanceEventsRequest>, AcceptAllValidator<GetInstanceEventsRequest>>().AddQuery<GetInstanceEventsRequest, GetInstanceEventsResponse, GetInstanceEventsService>();
         return services;
@@ -251,6 +254,7 @@ public static class SindriFeaturesServiceCollectionExtensions
         .AddScoped<IDoctorChecks, SetupDoctor>()                                           // SO-A6: `setup`, ok when every step is done or skipped
         .AddScoped<IDoctorChecks, OnyxStackDoctor>()                                       // Onyx P2: `onyx:stack`, after the context rows, only once `onyx up` has run
         .AddSingleton<OnyxReadiness>()
+        .AddScoped<OnyxDockerWait>()                                                       // `onyx up` waits for a Docker that is starting (scoped: it re-inspects through the scope's OnyxFacts)
         .AddSingleton<IOnyxUpStep, OnyxFetchStep>()                                         // Onyx P2: the steps of `onyx up`, in this order
         .AddSingleton<IOnyxUpStep, OnyxConfigStep>()
         .AddSingleton<IOnyxUpStep, OnyxPullStep>()
@@ -275,7 +279,7 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<RevokeRecipeRequest>, AcceptAllValidator<RevokeRecipeRequest>>().AddCommand<RevokeRecipeRequest, RevokeRecipeResponse, RevokeRecipeService>();
         _ = services.AddScoped<IValidator<IssueChallengeRequest>, AcceptAllValidator<IssueChallengeRequest>>().AddIssue<IssueChallengeRequest, IssueChallengeResponse, IssueChallengeService>();
         services.TryAddSingleton<IRecipeDisplayNames, NoRecipeDisplayNames>();   // until the engine supplies the recipes' names and its shipped set
-        services.TryAddSingleton<IShippedRecipes, NoShippedRecipes>();
+        _ = services.AddShippedRecipes();   // the recipes this build embeds, against the registry and the approvals (setup-once spec §5.3)
         _ = services.AddScoped<ApproveAllPlanReader>().AddSingleton<RedeemedPlans>();   // setup-once spec §5.3: approve-all is a query for the plan and a job for the hold
         _ = services.AddScoped<IValidator<GetApproveAllPlanRequest>, AcceptAllValidator<GetApproveAllPlanRequest>>().AddQuery<GetApproveAllPlanRequest, ApproveAllPlan, GetApproveAllPlanService>();
         _ = services.AddScoped<IJobAdmission<ApproveAllRecipesRequest>, ApproveAllRecipesAdmission>()

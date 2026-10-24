@@ -1,11 +1,16 @@
+using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Views;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Views;
+using Aw.Sindri.Features.Blocks.Effect;
+using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Items;
 
 namespace Aw.Sindri.Tests.NeedsYou;
@@ -33,6 +38,22 @@ public sealed class NestedParkRowsTests
         Assert.Equal(Instance(_root), row.Subject.Id.Value);
         Assert.Contains("it needs an answer (" + _phase + ")", row.Reason, StringComparison.Ordinal);
         Assert.Equal(("sindri workflow answer " + _phase + " --text <answer>", ActionId.From("ApplyCommand:answer-text")), (row.Cli, row.PrimaryAction));
+    }
+
+    [Fact]
+    public async Task A_nested_parks_notice_names_the_row_the_projection_builds()
+    {
+        var q = await Started();
+        await Fold(q, EventTypes.WorkflowTransition, Row(_build, Parked(ParkReason.NeedsAnswer, ParkKind.Step)));
+        var notices = new InMemoryDeskNotices();
+        var arguments = new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["class"] = JsonSerializer.SerializeToElement("interrupt"), ["row"] = JsonSerializer.SerializeToElement("park") };
+        var context = new EffectContext(BlockId.From("effect.notify.desk"), "WFI-a:1:n3", "c-1", FromEngine: true, _build, "T-4", Attempt: 1,
+            arguments, new Dictionary<FactKey, JsonElement>(), "parked");
+
+        _ = await new NotifyDeskEffect(notices, TimeProvider.System).Dispatch(context, TestContext.Current.CancellationToken);
+
+        var row = Assert.Single(await Rows(q)).Row;
+        Assert.Equal(row.Id.Value, Assert.Single(notices.Sent).RowId?.Value);
     }
 
     [Fact]

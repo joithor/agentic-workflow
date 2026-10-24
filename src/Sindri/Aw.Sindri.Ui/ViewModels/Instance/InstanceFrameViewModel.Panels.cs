@@ -56,6 +56,16 @@ internal sealed partial class InstanceFrameViewModel
         Facts.IsOpen |= wasOpen;   // the person's choice survives a re-read
     }
 
+    // A review with nothing to open: the facts panel opens at that fact.
+    private void ShowFact(string key)
+    {
+        if (Facts is { } facts)
+        {
+            facts.IsOpen = true;
+            Focus(FrameFocus.PendingOutput, key);
+        }
+    }
+
     /// <summary>Raised when the frame asks the view to put focus on one of its parts.</summary>
     internal event EventHandler<FrameFocusEventArgs>? FocusRequested;
 

@@ -34,4 +34,27 @@ public sealed class PackBundleLaunchTests
 
         Assert.Null(request.Step?.Bundle);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_fact_files_are_on_the_Steps_arguments_and_the_brief_names_them_in_one_line()
+    {
+        var files = new Dictionary<string, string>(StringComparer.Ordinal) { ["workspace.json"] = "\"/work\"", ["docsScope.json"] = "{}" };
+
+        var request = AgentLaunches.RequestFor(Run(), _target, descriptor: null, new AgentLaunchExtras(Facts: files));
+
+        Assert.Same(files, request.Step?.Facts);
+        var lines = request.Step!.Brief!.Split('\n').Where(l => l.Contains("docsScope.json", StringComparison.Ordinal)).ToArray();
+        var line = Assert.Single(lines);
+        Assert.Contains("$AW_SINDRI_RUN_DIR", line, StringComparison.Ordinal);
+        Assert.Contains("workspace.json", line, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_Step_with_no_fact_files_carries_none_and_its_brief_has_no_such_line()
+    {
+        var request = AgentLaunches.RequestFor(Run(), _target);
+
+        Assert.Null(request.Step?.Facts);
+        Assert.DoesNotContain(".json", request.Step!.Brief!, StringComparison.Ordinal);
+    }
 }

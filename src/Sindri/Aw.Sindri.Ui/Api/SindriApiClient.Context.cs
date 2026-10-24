@@ -20,6 +20,10 @@ internal sealed partial class SindriApiClient
         Get<ItemScopeView>(api, "/sindri/items/" + Uri.EscapeDataString(itemId) + "/scope", cancellationToken);
 
     /// <inheritdoc />
+    public Task<Result<WholeMapView>> WholeMap(Uri api, WholeMapQuery query, CancellationToken cancellationToken) =>
+        Get<WholeMapView>(api, ContextRoutes.WholeMap(query), cancellationToken);
+
+    /// <inheritdoc />
     public Task<Result<FileMapView>> FileMap(Uri api, FileMapQuery query, CancellationToken cancellationToken) =>
         Get<FileMapView>(api, ContextRoutes.FileMap(query), cancellationToken);
 

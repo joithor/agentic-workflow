@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
@@ -102,6 +103,37 @@ public sealed class ChildPropagationTests
         Assert.Equal(Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes("{\"rounds\":3}"))), value.Sha256);
         Assert.Null(value.HeadSha);
         Assert.False(start.Inputs.ContainsKey(profiled));
+    }
+
+    private const string ChildAddress = "T-3/item/1/step.4";
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(ParkReason.NeedsAnswer, ParkKind.Wait, "sindri workflow answer T-3/item/1/step.4 --resume [--text <answer>]")]
+    [InlineData(ParkReason.NeedsAnswer, ParkKind.Step, "sindri workflow answer T-3/item/1/step.4 --text <answer>")]
+    [InlineData(ParkReason.SpecConflict, ParkKind.Dispatch, "sindri workflow answer T-3/item/1/step.4 --resume")]
+    [InlineData(ParkReason.SpecConflict, null, "sindri workflow answer T-3/item/1 <the child's answer>")]
+    public void A_mirrored_park_carries_the_childs_park_kind_so_the_root_names_the_childs_command(ParkReason reason, ParkKind? kind, string cli)
+    {
+        var effect = ChildPropagation.ToParent(Waiting, Item, Changed(ChildChange.Parked, reason, "the child parked", parkKind: kind));
+
+        var mirror = Assert.IsType<Suspension>(effect.Suspend);
+        Assert.Equal(kind, mirror.MirroredParkKind);
+        Assert.Null(mirror.ParkKind);
+        Assert.Equal(cli, ParkAnswers.For(ParkShape.Of(mirror), Waiting.Address, child: ChildAddress)!.Cli);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(EscalationKind.Gate, "sindri workflow answer T-3/item/1/step.4 --accept")]
+    [InlineData(EscalationKind.Timeout, "sindri workflow answer T-3/item/1/step.4 --resume")]
+    [InlineData(EscalationKind.Child, "sindri workflow answer T-3/item/1 <the child's answer>")]
+    [InlineData(null, "sindri workflow answer T-3/item/1 <the child's answer>")]
+    public void A_mirrored_escalation_carries_the_childs_escalation_so_the_root_names_the_childs_command(EscalationKind? kind, string cli)
+    {
+        var effect = ChildPropagation.ToParent(Waiting, Item, Changed(ChildChange.Escalated, question: "the child escalated", escalation: kind));
+
+        var mirror = Assert.IsType<Suspension>(effect.Suspend);
+        Assert.Equal((kind, EscalationKind.Child), (mirror.MirroredEscalation, mirror.Escalation));
+        Assert.Equal(cli, ParkAnswers.For(ParkShape.Of(mirror), Waiting.Address, child: ChildAddress)!.Cli);
     }
 
     [Fact, Trait("Lane", "unit")]
