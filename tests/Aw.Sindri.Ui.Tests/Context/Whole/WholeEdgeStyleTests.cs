@@ -9,7 +9,7 @@ public sealed class WholeEdgeStyleTests
 {
     private static PlacedEdge Edge(string from, string to, bool confirmed = true, double confidence = 1, string type = "part-of") => new(from, to, type, confirmed, 0, 0, 10, 10, confidence);
 
-    private static PlacedNode Node(string key, int area) => new(key, key, "feature", area, new WholeRect(0, 0, 10, 10), confirmed: true);
+    private static PlacedNode Node(string key, int area) => new(key, key, "feature", area, new WholeRect(0, 0, 10, 10), Confirmed: true);
 
     [Fact]
     public void A_confirmed_edge_is_solid_and_its_pill_is_the_words()
