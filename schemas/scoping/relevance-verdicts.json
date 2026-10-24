@@ -69,10 +69,10 @@
             "then": {
               "properties": {
                 "fix": {
-                  "enum": []
+                  "not": {}
                 },
                 "relabelTo": {
-                  "enum": []
+                  "not": {}
                 }
               }
             },
@@ -101,7 +101,7 @@
             "else": {
               "properties": {
                 "relabelTo": {
-                  "enum": []
+                  "not": {}
                 }
               }
             }
