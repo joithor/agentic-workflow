@@ -121,7 +121,7 @@ public sealed class NeighborsTests
     {
         var harness = await Built();
 
-        var answer = await harness.Facade.Neighbors(harness.Scope, BuildHarness.Name, new string('x', 5_000), 1, Token);
+        var answer = await harness.Facade.Neighbors(harness.Scope, BuildHarness.Name, new string('x', CodeIndexRules.EmbedTextMaxCharacters + 1_000), 1, Token);
 
         Assert.False(answer.IsError);
         Assert.Equal(CodeIndexRules.EmbedTextMaxCharacters, harness.Embedder.Batches[^1].Single().Length);

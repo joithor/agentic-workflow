@@ -110,7 +110,7 @@ public sealed class BuildCodeIndexGraphTests
         var repo = git.AsRepo("web");
         _ = await Build(index, repo, git.Head);
         var g = await Find(index, repo, "g");
-        git.WriteFile("src/a.ts", FileA + "// edit\n");
+        git.WriteFile("src/c.ts", "export const z = 1;\n");   // a file the graph does not touch: the files whose graph rows are kept
         var second = git.Commit("edit");
         tool.RunError = CodeIndexErrors.GraphUnavailable.With("timeout");
 

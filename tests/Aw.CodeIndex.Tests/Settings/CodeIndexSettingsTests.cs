@@ -82,7 +82,7 @@ public sealed class CodeIndexSettingsTests
     {
         var limits = CodeIndexSettings.Default.SnapshotLimits();
 
-        Assert.Equal(512L * 1024, limits.MaxFileBytes);
+        Assert.Equal(4_096L * 1024, limits.MaxFileBytes);
         Assert.Equal(4_096L * 1024 * 1024, limits.MaxTotalBytes);
     }
 }
