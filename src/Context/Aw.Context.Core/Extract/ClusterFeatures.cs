@@ -57,7 +57,7 @@ public static class ClusterFeatures
     private static ExtractedMap One(Candidate candidate, ExtractedMap extracted, HashSet<string> claimed)
     {
         var (repo, key, label, confidence, files) = candidate;
-        var inCluster = files.ToHashSet(StringComparer.Ordinal);
+        var inCluster = files.Where(f => !NotAnImplementer(f)).ToHashSet(StringComparer.Ordinal);
         var nodes = new List<GraphNode> { new(key, label, Provenance.Model, confidence) };
         var edges = new List<GraphEdge>();
         foreach (var file in files)
