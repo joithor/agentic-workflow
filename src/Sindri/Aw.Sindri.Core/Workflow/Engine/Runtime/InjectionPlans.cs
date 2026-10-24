@@ -3,7 +3,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// <summary>The pure merge of the filled inputs into one plan (plan decision 3): no I/O and no clock, so the workflow can run it.</summary>
 public static class InjectionPlans
 {
-    /// <summary>The most bytes one Step's inputs filled together in a run recorded before 'step-inputs-no-plan-cap-v1'; a replay of such a history still applies it, a new run does not.</summary>
+    /// <summary>The most bytes one Step's inputs filled together in a run recorded before 'step-inputs-no-plan-cap-v1'; a replay of such a history still applies it, a new run does not. It stays at 1 MiB only because replay must decide as the history did; it protects determinism, not a run.</summary>
     public const int PlanCap = 1024 * 1024;
 
     /// <summary>The bytes the inputs filled together: every section and typed result of every input, replaced sections included, because their texts are all held.</summary>

@@ -40,6 +40,24 @@ public static class UntrustedFence
         return text.Length <= max ? text : string.Concat(Prefix(text, max - 1), "…");
     }
 
+    /// <summary><paramref name="text"/> cut to at most <paramref name="max"/> characters on a word boundary, with '…' when cut (a text with no space is cut like <see cref="Cap"/>).</summary>
+    /// <param name="text">The text.</param>
+    /// <param name="max">The most characters kept, the ellipsis included.</param>
+    /// <returns>The capped text.</returns>
+    public static string CapOnWord(string text, int max = MaxTitle)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentOutOfRangeException.ThrowIfLessThan(max, 2);
+        if (text.Length <= max)
+        {
+            return text;
+        }
+
+        var kept = Prefix(text, max - 1);
+        var boundary = char.IsWhiteSpace(text[kept.Length]) ? kept.Length : kept.LastIndexOf(' ');
+        return string.Concat(boundary > 0 ? kept[..boundary].TrimEnd() : kept, "…");
+    }
+
     /// <summary>The first <paramref name="length"/> UTF-16 units of <paramref name="text"/>, one fewer when the cut would split a surrogate pair.</summary>
     /// <param name="text">The text.</param>
     /// <param name="length">The most units kept.</param>
