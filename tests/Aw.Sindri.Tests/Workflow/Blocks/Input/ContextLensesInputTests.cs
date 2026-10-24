@@ -226,17 +226,15 @@ public sealed class ContextLensesInputTests
     }
 
     [Fact]
-    public async Task A_huge_view_is_cut_at_whole_lines_under_the_cap_and_says_how_many_were_left_out()
+    public async Task A_view_of_thousands_of_anchors_reaches_the_Step_whole_with_its_typed_result()
     {
         var lenses = new StubLenses(_ => ContextInputFixtures.SmallSet([.. Enumerable.Range(0, 20000).Select(i => "feature:f" + i.ToString(System.Globalization.CultureInfo.InvariantCulture))]));
 
         var filled = await Input(lenses).Fill(Context(ContextInputFixtures.Web, "feature:a"), TestContext.Current.CancellationToken);
 
         var text = filled.Value.Sections["lenses"];
-        Assert.True(System.Text.Encoding.UTF8.GetByteCount(text) < 256 * 1024);
-        Assert.Matches("\\[\\d+ more lines not shown", text);
-        Assert.Null(filled.Value.Result);
-        Assert.Contains("typed result is over", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("more lines not shown", text, StringComparison.Ordinal);
+        Assert.Equal(20000, filled.Value.Result!.Value.GetProperty("anchors").GetArrayLength());
     }
 
     [Fact]
