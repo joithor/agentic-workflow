@@ -16,15 +16,18 @@ public sealed class GraphCapsRemovedTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "aw-graph-caps-" + RealTime.NewGuid().ToString("N"));
 
-    public GraphCapsRemovedTests() => Directory.CreateDirectory(_root);
+    public GraphCapsRemovedTests()
+    {
+        _ = Directory.CreateDirectory(_root);
+    }
 
     public void Dispose() => Directory.Delete(_root, recursive: true);
 
     [Fact, Trait("Lane", "unit")]
     public void A_graph_with_more_nodes_and_edges_than_the_old_caps_is_read()
     {
-        var node = (string id, string file) => $$"""{"id":"{{id}}","label":"{{id}}()","source_file":"{{file}}","source_location":"L1","_callable":true}""";
-        var nodes = string.Join(',', Enumerable.Range(0, 5).Select(i => node(string.Create(CultureInfo.InvariantCulture, $"n{i}"), "src/a.ts")));
+        static string Node(string id, string file) => $$"""{"id":"{{id}}","label":"{{id}}()","source_file":"{{file}}","source_location":"L1","_callable":true}""";
+        var nodes = string.Join(',', Enumerable.Range(0, 5).Select(i => Node(string.Create(CultureInfo.InvariantCulture, $"n{i}"), "src/a.ts")));
         var links = string.Join(',', Enumerable.Range(0, 30).Select(i => string.Create(CultureInfo.InvariantCulture, $$"""{"source":"n{{i % 5}}","target":"n{{(i + 1) % 5}}","relation":"calls","confidence":"EXTRACTED","source_file":"src/a.ts","source_location":"L{{i + 1}}"}""")));
         var json = "{\"nodes\":[" + nodes + "],\"links\":[" + links + "]}";
 
