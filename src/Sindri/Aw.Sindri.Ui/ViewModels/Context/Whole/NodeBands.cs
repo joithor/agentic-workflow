@@ -39,8 +39,8 @@ internal static class NodeBands
     internal static string Title(WholeBand band) => band switch
     {
         WholeBand.Intent => Labels.ContextWholeBandWhy,
-        WholeBand.Product => Labels.ContextWholeBandProduct,
-        WholeBand.Code => Labels.ContextWholeBandCode,
+        WholeBand.Product => Labels.ContextMapAreaProduct,
+        WholeBand.Code => Labels.ContextMapAreaCode,
         WholeBand.Other => Labels.ContextWholeBandOther,
         _ => Labels.ContextWholeBandOther,
     };

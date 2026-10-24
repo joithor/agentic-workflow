@@ -6,12 +6,6 @@ internal static partial class Labels
     /// <summary>The band of decisions and records.</summary>
     internal const string ContextWholeBandWhy = "Why";
 
-    /// <summary>The band of features, screens, actions, things and flows.</summary>
-    internal const string ContextWholeBandProduct = "Product";
-
-    /// <summary>The band of code files.</summary>
-    internal const string ContextWholeBandCode = "Code";
-
     /// <summary>The band of every other kind.</summary>
     internal const string ContextWholeBandOther = "Other";
 }
