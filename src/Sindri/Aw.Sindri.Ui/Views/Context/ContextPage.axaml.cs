@@ -161,12 +161,17 @@ internal sealed partial class ContextPage : UserControl
         {
             Sync(_page);
         }
+        else if (_page is not null && string.Equals(e.PropertyName, nameof(ContextPageViewModel.AnchorText), StringComparison.Ordinal))
+        {
+            AnchorClear.IsVisible = _page.AnchorText.Length > 0;   // the clear button shows while the box holds something
+        }
     }
 
     // The parts of the control row that take lists or controls the view model does not bind: the coverage strip.
     private void Sync(ContextPageViewModel page)
     {
         ContextStack.DataContext = page.Map;
+        AnchorClear.IsVisible = page.AnchorText.Length > 0;
         if (page.Map is { } map)
         {
             ContextCoverageStrip.Areas = map.CoverageAreas;

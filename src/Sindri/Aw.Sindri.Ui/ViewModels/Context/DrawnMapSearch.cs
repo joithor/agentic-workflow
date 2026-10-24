@@ -1,3 +1,5 @@
+using Aw.Sindri.Ui.ViewModels.Context.Whole;
+
 namespace Aw.Sindri.Ui.ViewModels.Context;
 
 /// <summary>The search the box uses today: the anchors and lenses read behind "Starts at" already resolved the query, and the items they drew are the matches.</summary>

@@ -45,7 +45,6 @@ internal sealed partial class ContextPageViewModel : ObservableObject
         set
         {
             Set(ref field, value);
-            OnChanged(nameof(CanClearSearch));
             if (string.IsNullOrWhiteSpace(value))
             {
                 _ = BackToWholeMap();   // an empty box is no search: the full map again

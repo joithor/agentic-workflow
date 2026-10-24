@@ -1,3 +1,5 @@
+using Aw.Sindri.Ui.ViewModels.Context.Whole;
+
 namespace Aw.Sindri.Ui.ViewModels.Context;
 
 /// <summary>Resolves what is typed in the search box to the items it matches on the map; the ranked full-text endpoint replaces the implementation with one change.</summary>

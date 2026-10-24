@@ -81,7 +81,7 @@
           <TextBlock Classes="eyebrow" Text="{Binding StartsAtLabel}" VerticalAlignment="Center" AutomationProperties.AccessibilityView="Raw" />
           <TextBox x:Name="AnchorBox" KeyDown="OnAnchorKey" MinWidth="220" Text="{Binding AnchorText, Mode=TwoWay}" PlaceholderText="{Binding AnchorHint}"
                    AutomationProperties.Name="{Binding AnchorLabel}" />
-          <Button x:Name="AnchorClear" IsVisible="{Binding CanClearSearch}" Click="OnClearSearch" VerticalAlignment="Center" Content="{Binding SearchClearText}" AutomationProperties.Name="{Binding SearchClearText}" />
+          <Button x:Name="AnchorClear" IsVisible="False" Click="OnClearSearch" VerticalAlignment="Center" Content="{Binding SearchClearText}" AutomationProperties.Name="{Binding SearchClearText}" />
           <TextBlock x:Name="SearchNoteText" Classes="caption subtle" Text="{Binding SearchNote}" IsVisible="{Binding HasSearchNote}" VerticalAlignment="Center"
                      AutomationProperties.Name="{Binding SearchNote}" />
         </StackPanel>

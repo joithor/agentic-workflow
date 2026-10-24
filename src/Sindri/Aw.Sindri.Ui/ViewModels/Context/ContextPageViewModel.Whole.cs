@@ -23,9 +23,6 @@ internal sealed partial class ContextPageViewModel
     /// <summary>Whether the note shows.</summary>
     public bool HasSearchNote => Whole.NoMatches;
 
-    /// <summary>Whether the clear button shows: the box holds something.</summary>
-    public bool CanClearSearch => AnchorText.Length > 0;
-
     /// <summary>The clear button's words.</summary>
     public string SearchClearText { get; } = Labels.ContextSearchClear;
 

@@ -28,7 +28,11 @@ internal sealed partial class ContextPageViewModel
         IReadOnlyList<string> keys = [.. hits.Select(h => h.Key)];
         _unopenedHitAreas = [];
         var zoomed = Whole.AnswerByArea ? await ZoomIntoAreas(api, keys, cancellationToken).ConfigureAwait(true) : Whole.Zoom(keys);
-        Whole.ApplySearch(hits, _unopenedHitAreas, zoomed);
+        if (zoomed || hits.Count == 0 || _unopenedHitAreas.Count > 0)
+        {
+            Whole.ApplySearch(hits, _unopenedHitAreas, zoomed);   // an answer with none of its items on the map is not a search
+        }
+
         if (!zoomed)
         {
             Problem = Labels.ContextWholeNoMatch;
@@ -88,12 +92,6 @@ internal sealed partial class ContextPageViewModel
     /// <returns>True when it did something.</returns>
     internal bool Back()
     {
-        if (Whole.SearchActive)
-        {
-            ClearSearch();
-            return true;   // Esc ends a search before anything else
-        }
-
         if (Whole.ClearPin())
         {
             return true;   // Esc lets a pinned highlight go first
@@ -102,6 +100,12 @@ internal sealed partial class ContextPageViewModel
         if (InspectorOpen)
         {
             CloseInspector();
+            return true;
+        }
+
+        if (Whole.SearchActive)
+        {
+            ClearSearch();   // the box empties too
             return true;
         }
 

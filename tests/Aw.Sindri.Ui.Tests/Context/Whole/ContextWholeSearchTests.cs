@@ -2,6 +2,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Context;
+using Aw.Sindri.Ui.ViewModels.Context.Whole;
 using Aw.Sindri.Ui.ViewModels.Controls;
 using Microsoft.Extensions.Time.Testing;
 
@@ -48,7 +49,7 @@ public sealed class ContextWholeSearchTests
 
         Assert.True(page.Back());
 
-        Assert.Equal((false, string.Empty, false), (page.Whole.SearchActive, page.AnchorText, page.CanClearSearch));
+        Assert.Equal((false, string.Empty), (page.Whole.SearchActive, page.AnchorText));
     }
 
     [Fact]
@@ -70,11 +71,16 @@ public sealed class ContextWholeSearchTests
     {
         var page = Page();
         await page.Opened(Token);
-        page.Whole.Show(WholeMapLayoutTests.Draft("nodes-small") with { Nodes = [], Edges = [] });
+        page.MapSearch = new NoHits();
         page.AnchorText = Anchor;
 
         await page.Submit(Token);
 
         Assert.Equal((true, Labels.ContextSearchNoMatches), (page.HasSearchNote, page.SearchNote));
+    }
+
+    private sealed class NoHits : IMapSearch
+    {
+        public Task<IReadOnlyList<MapSearchHit>> Search(string query, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<MapSearchHit>>([]);
     }
 }

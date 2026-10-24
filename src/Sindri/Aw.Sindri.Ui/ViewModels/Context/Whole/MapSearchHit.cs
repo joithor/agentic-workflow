@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Ui.ViewModels.Context;
+namespace Aw.Sindri.Ui.ViewModels.Context.Whole;
 
 /// <summary>One match of a search over the map, shaped like a hit of the context search endpoint so the swap is a new adapter.</summary>
 /// <param name="Key">The node's key.</param>
