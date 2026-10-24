@@ -100,7 +100,7 @@ public sealed class FileMapViewModelTests
         await files.Go(files.Crumbs[0], Token);
 
         Assert.Equal([(Labels.ContextFilesTop, false)], Trail(files));
-        Assert.Equal(["src/tabs/", "src/", null], api.FileMapAsked.Select(q => q.Path), StringComparer.Ordinal);
+        Assert.Equal(["src/tabs/", "src/", null], api.FileMapQueries.Select(q => q.Path), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -109,11 +109,11 @@ public sealed class FileMapViewModelTests
         var api = new FakeSindriApi();
         var files = Files(api);
         await files.Load("src/", Token);
-        var calls = api.FileMapAsked.Count;
+        var calls = api.FileMapQueries.Count;
 
         await files.Go(files.Crumbs[^1], Token);
 
-        Assert.Equal(calls, api.FileMapAsked.Count);
+        Assert.Equal(calls, api.FileMapQueries.Count);
     }
 
     [Fact]

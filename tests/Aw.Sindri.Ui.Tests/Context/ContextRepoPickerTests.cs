@@ -105,7 +105,7 @@ public sealed class ContextRepoPickerTests
 
         await page.PickRepo("beta", Token);
 
-        var last = api.FileMapAsked[^1];
+        var last = api.FileMapQueries[^1];
         Assert.Equal("beta", last.Repo);
         Assert.Null(last.Path);
     }

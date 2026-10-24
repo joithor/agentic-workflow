@@ -82,6 +82,8 @@ internal static class ContextRoutes
             parts.Add("draft=true");
         }
 
+        Add(parts, "cursor", query.Cursor);
+        parts.AddRange(Limit(query.Limit));
         return With(Root + "/filemap", parts);
     }
 
