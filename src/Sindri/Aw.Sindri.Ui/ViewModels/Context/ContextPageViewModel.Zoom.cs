@@ -2,17 +2,16 @@ using Aw.Sindri.Ui.Api.Context;
 
 namespace Aw.Sindri.Ui.ViewModels.Context;
 
-/// <summary>A query zooms into the whole map (<see cref="ContextPageViewModel"/>, continued; whole-map spec §3.1 "Zoomed in"): the answer's nodes stand out on the map, the camera eases to them, Esc and "Whole map" go back.</summary>
+/// <summary>A query zooms into the whole map (<see cref="ContextPageViewModel"/>, continued; whole-map spec §3.1 "Zoomed in"): the answer's nodes stand out on the map, the camera eases to them, Esc goes back.</summary>
 internal sealed partial class ContextPageViewModel
 {
     private const int MaxOpenedAreas = 3;
     private const int MaxLocate = 100;
 
+    private IReadOnlyCollection<string> _unopenedHitAreas = [];   // the features a search touched that stay tiles
+
     /// <summary>Whether the camera is on a query's answer.</summary>
     public bool IsZoomedIn => Whole.IsZoomed;
-
-    /// <summary>The "Whole map" button's words.</summary>
-    public string WholeBackText => Whole.BackText;
 
     // After the existing read drew its answer: it is shown as a zoom onto the whole map when the map is there (the map behind it stays), else as the neighbourhood.
     private async Task ZoomIntoWhole(Uri api, CancellationToken cancellationToken)
@@ -22,8 +21,15 @@ internal sealed partial class ContextPageViewModel
             return;
         }
 
-        IReadOnlyList<string> keys = [.. map.Nodes.Select(n => n.Key)];
+        var hits = await MapSearch.Search(AnchorText, cancellationToken).ConfigureAwait(true);
+        IReadOnlyList<string> keys = [.. hits.Select(h => h.Key)];
+        _unopenedHitAreas = [];
         var zoomed = Whole.AnswerByArea ? await ZoomIntoAreas(api, keys, cancellationToken).ConfigureAwait(true) : Whole.Zoom(keys);
+        if (zoomed || hits.Count == 0 || _unopenedHitAreas.Count > 0)
+        {
+            Whole.ApplySearch(hits, _unopenedHitAreas, zoomed);   // an answer with none of its items on the map is not a search
+        }
+
         if (!zoomed)
         {
             Problem = Labels.ContextWholeNoMatch;
@@ -42,7 +48,7 @@ internal sealed partial class ContextPageViewModel
             return false;
         }
 
-        var located = await Ports.Api.WholeMap(api, new WholeMapQuery("areas", Area: null, [.. keys.Take(MaxLocate)], PinnedVersion, Draft: false), cancellationToken).ConfigureAwait(true);
+        var located = await Ports.Api.WholeMap(api, new WholeMapQuery("areas", Area: null, [.. keys.Take(MaxLocate)], MapVersion: null, Draft: false, Repo: _repo), cancellationToken).ConfigureAwait(true);
         if (located.IsError)
         {
             Problem = located.Error.Message;
@@ -56,13 +62,14 @@ internal sealed partial class ContextPageViewModel
             return false;
         }
 
-        var reads = await Task.WhenAll(touched.Take(MaxOpenedAreas).Select(area => Ports.Api.WholeMap(api, new WholeMapQuery("nodes", area, [], PinnedVersion, Draft: false), cancellationToken))).ConfigureAwait(true);
+        var reads = await Task.WhenAll(touched.Take(MaxOpenedAreas).Select(area => Ports.Api.WholeMap(api, new WholeMapQuery("nodes", area, [], MapVersion: null, Draft: false, Repo: _repo), cancellationToken))).ConfigureAwait(true);
         if (reads.FirstOrDefault(r => r.IsError) is { } failed)
         {
             Problem = failed.Error.Message;
             return true;
         }
 
+        _unopenedHitAreas = [.. touched.Skip(reads.Length).OfType<string>()];
         return Whole.ZoomIntoAreas(overview, [.. reads.Select(r => r.Value)], keys, touched.Count - reads.Length);
     }
 
@@ -82,9 +89,14 @@ internal sealed partial class ContextPageViewModel
     /// <returns>True when it did something.</returns>
     internal bool Back()
     {
+        if (Whole.Panel.Close())
+        {
+            return true;   // Esc closes the node panel first and the pin stays
+        }
+
         if (Whole.ClearPin())
         {
-            return true;   // Esc lets a pinned highlight go first
+            return true;   // then it lets a pinned highlight go first
         }
 
         if (InspectorOpen)
@@ -93,14 +105,27 @@ internal sealed partial class ContextPageViewModel
             return true;
         }
 
+        if (Whole.SearchActive)
+        {
+            ClearSearch();   // the box empties too
+            return true;
+        }
+
         return BackToWholeMap();
     }
 
-    /// <summary>"Whole map": the answer stops standing out and the camera fits the world again.</summary>
+    /// <summary>The clear button and Esc: the box empties, nothing dims and the camera fits the whole map.</summary>
+    internal void ClearSearch()
+    {
+        AnchorText = string.Empty;   // an empty box ends the search itself
+        _ = BackToWholeMap();
+    }
+
+    /// <summary>Back to the whole map: the answer stops standing out and the camera fits the world again.</summary>
     /// <returns>True when the camera was on an answer.</returns>
     internal bool BackToWholeMap()
     {
-        if (!Whole.IsZoomed)
+        if (!Whole.IsZoomed && !Whole.SearchActive)
         {
             return false;
         }

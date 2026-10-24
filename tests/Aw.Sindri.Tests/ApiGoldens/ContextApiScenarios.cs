@@ -52,7 +52,7 @@ internal static class ContextApiScenarios
         ("context-lenses", "no-draft-044", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&draft=true", ct)),
         ("context-lenses", "set-two-anchors", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&anchor=feature%3Atabs.tab-groups", ct)),
         ("context-lenses", "set-missing-anchor", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&anchor=feature%3Anope.x", ct)),
-        ("context-lenses", "bad-depth-006", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&depth=9", ct)),
+        ("context-lenses", "bad-depth-006", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&depth=-1", ct)),
         ("context-lenses", "map-version-v1", async (s, ct) => await s.FetchAfterSecondMap($"/sindri/context/lenses?anchor={Anchor}&mapVersion=v1", ct)),
         ("context-lenses", "map-version-not-retained-120", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&mapVersion=v99", ct)),
         ("context-lenses", "session-set-other-repo", async (s, ct) => await s.FetchAsSession($"/sindri/context/lenses?anchor={Anchor}&anchor=feature%3Aother.thing", ct)),
@@ -128,11 +128,11 @@ internal static class ContextApiScenarios
         ("context-map-review", "post-repoint", async (s, ct) => await s.PostRepoint(ct)),
         ("context-map-review", "stale-047", async (s, ct) => await s.Stale(ct)),
         ("context-map-review", "post-accept-deterministic", async (s, ct) => await s.AcceptDeterministic(ct)),
-        ("context-map-review", "post-apply-file-preview", async (s, ct) => await s.ApplyFilePreview(ct)),
+        ("context-map-review", "post-apply-file", async (s, ct) => await s.ApplyFile(ct)),
         ("context-map-review-history", "after-accept-undo", async (s, ct) => await s.AcceptThenUndo(ct)),
         ("context-map-proposals", "map-tabs-run", async (s, ct) => await s.Propose(ct)),
         ("context-map-promote", "refused-046", async (s, ct) => await s.PromoteRefused(ct)),
-        ("context-map-promote", "preview", async (s, ct) => await s.PromotePreview(ct)),
+        ("context-map-promote", "promoted", async (s, ct) => await s.Promote(ct)),
     ];
 
     /// <summary>Every (slug, scenario) pair of the context goldens.</summary>
@@ -285,7 +285,7 @@ internal static class ContextApiScenarios
             "  - {from: \"code:src/share/Share.ts\", to: \"feature:share.sharing\", type: implements}",
             "  - {from: \"code:src/share/Share.ts\", to: \"feature:share.export\", type: implements}",
         };
-        for (var i = 0; i < 6; i++)
+        for (var i = 0; i < 51; i++)
         {
             var key = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"feature:util.u{i}");
             nodes.Add(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"  - {{key: \"{key}\", label: \"U{i}\"}}"));

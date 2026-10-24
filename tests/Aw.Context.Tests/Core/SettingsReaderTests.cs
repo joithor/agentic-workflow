@@ -14,7 +14,7 @@ public sealed class SettingsReaderTests
     {
         var settings = SettingsReader.Read(section: null).Value;
 
-        Assert.Equal((TimeSpan.FromSeconds(4), 32_000, 3, false), (settings.Deadline, settings.MaxBudget, settings.MinHits, settings.SessionsEnabled));
+        Assert.Equal((TimeSpan.FromSeconds(10), 200_000, 3, true), (settings.Deadline, settings.MaxBudget, settings.MinHits, settings.SessionsEnabled));
         Assert.Equal(ContextSettings.DefaultDocGlobs, settings.DocGlobs);
         Assert.Null(settings.Repos);
     }
@@ -31,18 +31,18 @@ public sealed class SettingsReaderTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_cascade_depth_over_4_is_SND_CONTEXT_001_at_its_key()
+    public void A_cascade_depth_over_8_is_SND_CONTEXT_001_at_its_key()
     {
-        var settings = Read("""{"cascadeDepth":5}""");
+        var settings = Read("""{"cascadeDepth":9}""");
 
         Assert.StartsWith("context.cascadeDepth:", settings.Error.Message, StringComparison.Ordinal);
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData(null, 5)]
+    [InlineData(null, 50)]
     [InlineData(1, 1)]
-    [InlineData(50, 50)]
-    public void The_component_fan_out_defaults_to_5_and_takes_1_to_50(int? fanOut, int expected)
+    [InlineData(500, 500)]
+    public void The_component_fan_out_defaults_to_50_and_takes_1_to_500(int? fanOut, int expected)
     {
         var settings = fanOut is null ? SettingsReader.Read(section: null) : Read("{\"cascadeComponentFanOut\":" + fanOut.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}");
 
@@ -51,8 +51,8 @@ public sealed class SettingsReaderTests
 
     [Theory, Trait("Lane", "unit")]
     [InlineData(0)]
-    [InlineData(51)]
-    public void A_component_fan_out_outside_1_to_50_is_SND_CONTEXT_001_at_its_key(int fanOut)
+    [InlineData(501)]
+    public void A_component_fan_out_outside_1_to_500_is_SND_CONTEXT_001_at_its_key(int fanOut)
     {
         var settings = Read("{\"cascadeComponentFanOut\":" + fanOut.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}");
 
@@ -63,9 +63,9 @@ public sealed class SettingsReaderTests
     [Fact, Trait("Lane", "unit")]
     public void Every_key_is_read()
     {
-        var settings = Read("""{"repos":["split-panes"],"docs":{"globs":["docs/**/*.md"]},"deadline":"500ms","maxBudget":6000,"minHits":1,"sessions":{"enabled":true}}""").Value;
+        var settings = Read("""{"repos":["split-panes"],"docs":{"globs":["docs/**/*.md"]},"deadline":"500ms","maxBudget":6000,"minHits":1,"sessions":{"enabled":false}}""").Value;
 
-        Assert.Equal((TimeSpan.FromMilliseconds(500), 6_000, 1, true), (settings.Deadline, settings.MaxBudget, settings.MinHits, settings.SessionsEnabled));
+        Assert.Equal((TimeSpan.FromMilliseconds(500), 6_000, 1, false), (settings.Deadline, settings.MaxBudget, settings.MinHits, settings.SessionsEnabled));
         Assert.Equal(["docs/**/*.md"], settings.DocGlobs, StringComparer.Ordinal);
         Assert.Equal(["split-panes"], settings.Repos!.Select(r => r.Value), StringComparer.Ordinal);   // why: set above
     }
@@ -84,7 +84,7 @@ public sealed class SettingsReaderTests
     [InlineData("""{"scrub":{"extra":[]}}""", "context:")]
     [InlineData("""{"scrub":{"extraPatterns":[{"id":"a","pattern":"b","flags":"i"}]}}""", "context:")]
     [InlineData("""{"deadline":"soon"}""", "context.deadline:")]
-    [InlineData("""{"deadline":"90s"}""", "context.deadline:")]
+    [InlineData("""{"deadline":"301s"}""", "context.deadline:")]
     [InlineData("""{"maxBudget":10}""", "context.maxBudget:")]
     [InlineData("""{"minHits":99}""", "context.minHits:")]
     [InlineData("""{"docs":{"globs":["../etc/*"]}}""", "context.docs.globs:")]
