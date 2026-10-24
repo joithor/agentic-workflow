@@ -1,9 +1,9 @@
 using System.Globalization;
 using Aw.Kernel;
-using Aw.Sindri.Core.Doctor;
+using Aw.Sindri.Core.Line;
 using Aw.Sindri.Core.Profile;
 
-namespace Aw.Sindri.Core.Line;
+namespace Aw.Sindri.Core.Doctor;
 
 /// <summary>
 /// The checks of 'sindri line doctor' (line spec Appendix D, LN-WF9): the approved profile's line keys for one repo and what the checkout and the environment hold. Pure: the facts are read by the caller.

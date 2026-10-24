@@ -1231,9 +1231,12 @@ Aw.Context.Core.Extract.LabelPass
 Aw.Context.Core.Extract.LabelPass.<Clone>$() -> Aw.Context.Core.Extract.LabelPass!
 Aw.Context.Core.Extract.LabelPass.Complete.get -> bool
 Aw.Context.Core.Extract.LabelPass.Complete.init -> void
-Aw.Context.Core.Extract.LabelPass.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.ClusterLabel!>! Labels, out bool Complete) -> void
+Aw.Context.Core.Extract.LabelPass.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.ClusterLabel!>! Labels, out bool Complete, out string? Unavailable) -> void
 Aw.Context.Core.Extract.LabelPass.Equals(Aw.Context.Core.Extract.LabelPass? other) -> bool
-Aw.Context.Core.Extract.LabelPass.LabelPass(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.ClusterLabel!>! Labels, bool Complete = true) -> void
+Aw.Context.Core.Extract.LabelPass.LabelPass(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.ClusterLabel!>! Labels, bool Complete = true, string? Unavailable = null) -> void
+Aw.Context.Core.Extract.LabelPass.Unavailable.get -> string?
+Aw.Context.Core.Extract.LabelPass.Unavailable.init -> void
+const Aw.Context.Core.Extract.LabelPass.NoModelFix = "log in to an agent CLI (claude, codex or cursor-agent) so Sindri can ask it, or set 'context.labeling.enabled: false' in the profile" -> string!
 Aw.Context.Core.Extract.LabelPass.Labels.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.ClusterLabel!>!
 Aw.Context.Core.Extract.LabelPass.Labels.init -> void
 Aw.Context.Core.Extract.MapExtraction
@@ -2920,6 +2923,7 @@ Aw.Context.Core.Linking.IntentSourceState.Records.init -> void
 Aw.Context.Core.Linking.LinkRule
 Aw.Context.Core.Linking.LinkRule.Identifier = 3 -> Aw.Context.Core.Linking.LinkRule
 Aw.Context.Core.Linking.LinkRule.IssueKey = 0 -> Aw.Context.Core.Linking.LinkRule
+Aw.Context.Core.Linking.LinkRule.Name = 5 -> Aw.Context.Core.Linking.LinkRule
 Aw.Context.Core.Linking.LinkRule.Path = 2 -> Aw.Context.Core.Linking.LinkRule
 Aw.Context.Core.Linking.LinkRule.QuotedTitle = 4 -> Aw.Context.Core.Linking.LinkRule
 Aw.Context.Core.Linking.LinkRule.Url = 1 -> Aw.Context.Core.Linking.LinkRule
