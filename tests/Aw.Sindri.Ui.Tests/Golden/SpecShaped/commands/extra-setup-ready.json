@@ -202,7 +202,7 @@
       "destructive": false,
       "readsViews": false,
       "shortcut": null,
-      "confirm": "held"
+      "confirm": null
     },
     {
       "action": "ApproveProfile",
@@ -219,7 +219,7 @@
       "destructive": false,
       "readsViews": false,
       "shortcut": null,
-      "confirm": "typed"
+      "confirm": null
     },
     {
       "action": "ApproveRecipe",
@@ -236,7 +236,7 @@
       "destructive": false,
       "readsViews": false,
       "shortcut": null,
-      "confirm": "typed"
+      "confirm": null
     },
     {
       "action": "BuildContextMap",
