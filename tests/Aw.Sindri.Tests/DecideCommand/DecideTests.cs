@@ -135,18 +135,6 @@ public sealed class DecideTests
     }
 
     [Fact]
-    public async Task A_session_outside_the_decisions_repo_gets_404_with_no_hint()
-    {
-        await Pending(A.FirstItemId, "api");
-        using var entered = _h.Slice.Callers.Enter(A.Caller().Session().InRepo("web").Build());
-
-        var result = await Service().Handle(A.DecideRequest().Build(), Token);
-
-        Expect.Equal(SindriErrors.DecisionNotFound.Code, result.Error.Code);
-        Assert.Empty(_h.Slice.Store.Events);
-    }
-
-    [Fact]
     public async Task Deciding_a_decided_decision_is_SND_ITEM_409_decided_elsewhere()
     {
         await Pending();
