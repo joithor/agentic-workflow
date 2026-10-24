@@ -74,7 +74,7 @@ public sealed class WholeNodePanelTests
             panel.Groups.Select(g => g.Title), StringComparer.Ordinal);
         Assert.Equal(["← " + KnownLabel(page, Record) + " · mentions", "← Use tabs · cites"], panel.Groups[0].Rows.Select(r => r.Text), StringComparer.Ordinal);
         Assert.Contains(panel.Groups[1].Rows, r => r.Key == Surface && r.Text.EndsWith(" · touches", StringComparison.Ordinal) && r.Text.StartsWith("→ ", StringComparison.Ordinal));
-        Assert.Equal(["← code:src/tabs/TabManager.ts · implements"], panel.Groups[2].Rows.Select(r => r.Text), StringComparer.Ordinal);
+        Assert.Equal(["← " + KnownLabel(page, "code:src/tabs/TabManager.ts") + " · implements"], panel.Groups[2].Rows.Select(r => r.Text), StringComparer.Ordinal);   // named by the drawn map ("TabManager.ts"), not by its key
         Assert.Equal(["← mystery:x · relates"], panel.Groups[3].Rows.Select(r => r.Text), StringComparer.Ordinal);
     }
 
