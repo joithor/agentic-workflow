@@ -46,7 +46,7 @@ public sealed class LauncherTests : IDisposable
     {
         var none = new NoSessionHost();
 
-        var result = await Make(attended => attended ? none : _host).Launch(A.LaunchRequest().Unattended(Step()).Build(), CancellationToken.None);
+        var result = await Make(attended => attended ? none : _host).Launch(A.LaunchRequest().InDirectory(_home).Unattended(Step()).Build(), CancellationToken.None);
 
         Expect.True(result is StartedLaunch { Viewer.Kind: ViewerOutcomeKind.Skipped, Host.Kind: HostKind.Tmux });
         Expect.Equal(0, _viewer.Requests.Count);
@@ -205,7 +205,7 @@ public sealed class LauncherTests : IDisposable
     [Fact]
     public async Task A_Step_on_an_added_entry_with_no_argvHash_is_Failed_012()
     {
-        var result = await Make(hostFor: null, viewer: null, AgentEntries.Aider).Launch(A.LaunchRequest().WithAgent(AgentId.From("aider")).Unattended(Step()).Build(), CancellationToken.None);
+        var result = await Make(hostFor: null, viewer: null, AgentEntries.Aider).Launch(A.LaunchRequest().InDirectory(_home).WithAgent(AgentId.From("aider")).Unattended(Step()).Build(), CancellationToken.None);
 
         Expect.True(result is FailedLaunch failed && failed.Error.Code == SindriErrors.LaunchNotApproved.Code);
         Expect.Equal(0, _host.LiveCount);
@@ -215,7 +215,7 @@ public sealed class LauncherTests : IDisposable
     public async Task A_Step_policy_file_is_written_0600_passed_as_settings_and_deleted_on_stop()
     {
         var launcher = Make();
-        var request = A.LaunchRequest().Unattended(Step(new StepPolicy(["Read"], StepPermissionMode.ReadOnly, WritablePath: null))).Build();
+        var request = A.LaunchRequest().InDirectory(_home).Unattended(Step(new StepPolicy(["Read"], StepPermissionMode.ReadOnly, WritablePath: null))).Build();
 
         _ = await launcher.Launch(request, CancellationToken.None);
 
@@ -234,7 +234,7 @@ public sealed class LauncherTests : IDisposable
     {
         var options = new LauncherOptions(_home) { SindriHome = "/sindri/home" };
         var launcher = new Launcher(new LauncherParts(new AgentCatalog([AgentEntries.ClaudeCode]), _ => _host, _viewer, options, _clock) { ResolveBin = static (_, _) => ValueTask.FromResult<string?>(null) });
-        var request = A.LaunchRequest().Unattended(Step(new StepPolicy(["Read"], StepPermissionMode.ReadOnly, WritablePath: null))).Build();
+        var request = A.LaunchRequest().InDirectory(_home).Unattended(Step(new StepPolicy(["Read"], StepPermissionMode.ReadOnly, WritablePath: null))).Build();
 
         _ = await launcher.Launch(request, CancellationToken.None);
 
@@ -246,7 +246,7 @@ public sealed class LauncherTests : IDisposable
     [Fact]
     public async Task A_Step_brief_is_appended_to_the_seed()
     {
-        var request = A.LaunchRequest().Unattended(Step() with { Brief = "Report with: sindri workflow complete X." }).Build();
+        var request = A.LaunchRequest().InDirectory(_home).Unattended(Step() with { Brief = "Report with: sindri workflow complete X." }).Build();
 
         _ = await Make().Launch(request, CancellationToken.None);
 
@@ -256,7 +256,7 @@ public sealed class LauncherTests : IDisposable
     [Fact]
     public async Task A_Step_without_a_brief_keeps_the_plain_seed()
     {
-        var request = A.LaunchRequest().Unattended(Step()).Build();
+        var request = A.LaunchRequest().InDirectory(_home).Unattended(Step()).Build();
 
         _ = await Make().Launch(request, CancellationToken.None);
 
@@ -266,7 +266,7 @@ public sealed class LauncherTests : IDisposable
     [Fact]
     public async Task A_Step_policy_an_entry_cannot_express_is_Failed_013_and_starts_nothing()
     {
-        var request = A.LaunchRequest().WithAgent(AgentId.From("cursor")).Unattended(Step(new StepPolicy(["Read"], StepPermissionMode.Plan, WritablePath: null))).Build();
+        var request = A.LaunchRequest().InDirectory(_home).WithAgent(AgentId.From("cursor")).Unattended(Step(new StepPolicy(["Read"], StepPermissionMode.Plan, WritablePath: null))).Build();
 
         var result = await Make().Launch(request, CancellationToken.None);
 
