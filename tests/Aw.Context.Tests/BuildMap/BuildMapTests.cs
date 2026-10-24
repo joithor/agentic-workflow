@@ -179,7 +179,7 @@ public sealed class BuildMapTests : IDisposable
 
         Assert.True(report.IsSuccess, report.IsError ? report.Error.Code : null);
         Assert.Equal(0, _world.HeavyLock.Taken);
-        Assert.Single(await Versions());
+        _ = Assert.Single(await Versions());
     }
 
     [Fact, Trait("Lane", "unit")]
