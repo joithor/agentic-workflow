@@ -3,7 +3,7 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Features.LineDoctor;
 
-namespace Aw.Sindri.Host.Commands.Line;
+namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// 'sindri line doctor [&lt;repo&gt;] [--json]' (line spec Appendix D, LN-API4, class local): whether a repo is set up for the line. Reads the approved profile, the checkout and the box's cap in this process, writes
