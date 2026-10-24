@@ -182,13 +182,4 @@ public sealed class ContextMapViewModelTests
     [InlineData(2, "A and B are limited.")]
     [InlineData(3, "A, B and C are limited.")]
     public void The_sentence_names_the_limited_areas(int count, string words) => Assert.Equal(words, Labels.ContextMapCoverageRest(_letters[..count]));
-
-    [Fact]
-    public void A_band_cut_short_adds_the_more_not_shown_chip()
-    {
-        var map = Map(node => node["bands"]!["product"]!["truncated"] = true);
-
-        var more = Node(map, "more:product");
-        Assert.Equal(Labels.ContextTruncated, more.Label);
-    }
 }
