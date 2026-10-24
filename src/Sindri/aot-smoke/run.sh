@@ -93,7 +93,7 @@ if [ -z "${DOTNET_ROOT:-}" ]; then
   export DOTNET_ROOT
 fi
 
-export AW_SINDRI_HOME="$work/home" AW_SINDRI_PORT=0
+export AW_SINDRI_HOME="$work/home" AW_SINDRI_PORT=0 AW_SINDRI_APP_NO_MCP=1   # no automatic MCP registration: it would write a local-scope entry for the temp repo into the real ~/.claude.json
 mkdir -p "$AW_SINDRI_HOME/profile"
 : >"$AW_SINDRI_HOME/.prover-scratch"   # the smoke runs as the prover in a home it created (setup-once spec §4 item 6): the marker lets it confirm, as sindri-prove.sh does
 mkdir -p "$work/repo"   # the repo 'smoke' the mcp() helper names in X-Sindri-Repo (sindri_request files against an approved profile's repo)
@@ -208,7 +208,7 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   session request note "Smoke request"
   settle
   run needs-you
-  decision="$(bounded "$bin" needs-you --json </dev/null | jq -r '.rows[0].subject.id')"
+  decision="$(bounded "$bin" needs-you --json </dev/null | jq -r '[.rows[] | select(.title == "Smoke request")][0].subject.id')"
   session decide "$decision" accept
   human decide "$decision" accept </dev/null
   settle
