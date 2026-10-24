@@ -18,7 +18,7 @@ namespace Aw.Sindri.Core.Workflow.Registry;
 /// <param name="catalog">This build's blocks, against which an approval's pins drift.</param>
 /// <param name="json">The package's AwJson options (they read the stored text and hash the descriptors).</param>
 /// <param name="renewals">Renews an approval whose pinned blocks moved only by version.</param>
-internal sealed class RegistryApprovedRecipes(IRecipeStore store, IRecipeApprovals approvals, BlockCatalog catalog, JsonSerializerOptions json, PinRenewals renewals) : IApprovedRecipes
+internal sealed class RegistryApprovedRecipes(IRecipeStore store, IRecipeApprovals approvals, BlockCatalog catalog, JsonSerializerOptions json, IPinRenewals renewals) : IApprovedRecipes
 {
     public async ValueTask<Result<ApprovedRecipe>> Latest(RecipeId id, CancellationToken cancellationToken)
     {

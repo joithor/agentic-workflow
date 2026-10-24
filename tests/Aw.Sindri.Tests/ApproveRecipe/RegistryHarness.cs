@@ -99,7 +99,7 @@ internal sealed class RegistryHarness : IAsyncDisposable
 
     public IServiceProvider Services => _provider;
 
-    private PinRenewals Renewals(IServiceProvider sp) => new(Approvals, sp.GetRequiredService<Core.Events.RecipeEvents>(), Wake, H.Callers, H.Ids, H.Clock);
+    private Core.Events.PinRenewals Renewals(IServiceProvider sp) => new(Approvals, sp.GetRequiredService<Core.Events.RecipeEvents>(), Wake, H.Callers, H.Ids, H.Clock);
 
     public SliceHarness H { get; } = new();
 

@@ -1,10 +1,10 @@
 using Aw.Kernel;
 using Aw.Kernel.Ids;
 using Aw.Sindri.Core.Commands;
-using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Aw.Sindri.Core.Workflow.Registry;
 
-namespace Aw.Sindri.Core.Workflow.Registry;
+namespace Aw.Sindri.Core.Events;
 
 /// <summary>
 /// Renews an approval whose pinned blocks moved only by version (owner q93, 2026-10-23; ENG-064, RC-04): the recipe, its hash and its
@@ -18,15 +18,10 @@ namespace Aw.Sindri.Core.Workflow.Registry;
 /// <param name="callers">Where the renewal's actor is entered.</param>
 /// <param name="ids">The ids of that caller.</param>
 /// <param name="clock">When the renewal happened.</param>
-internal sealed class PinRenewals(IRecipeApprovals approvals, RecipeEvents events, IRecipeWake wake, ICallerContextAccessor callers, IIdGenerator ids, TimeProvider clock)
+internal sealed class PinRenewals(IRecipeApprovals approvals, RecipeEvents events, IRecipeWake wake, ICallerContextAccessor callers, IIdGenerator ids, TimeProvider clock) : IPinRenewals
 {
     private const string Actor = "pin-drift";
 
-    /// <summary>Renews <paramref name="standing"/> against <paramref name="build"/>.</summary>
-    /// <param name="standing">The latest approval of the recipe.</param>
-    /// <param name="build">This build's block pins for the recipe; they must be <see cref="PinRules.Compatible"/> with it.</param>
-    /// <param name="cancellationToken">Cancels the writes.</param>
-    /// <returns>True when the approval now holds (renewed here, or by another check first); an error when the renewal could not be written.</returns>
     public async ValueTask<Result<bool>> Renew(RecipeApproval standing, IReadOnlyList<BlockPin> build, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(standing);
